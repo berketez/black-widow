@@ -1,0 +1,1814 @@
+% ============================================================================
+% BOLUM 3: HEDEF TESPIT SISTEMI
+% BOLUM 4: STATIK ANALIZ
+% Karadul (Black Widow) --- Teknik Dokuman
+% ============================================================================
+% Bu dosya \include veya \input ile main.tex'ten dahil edilir.
+% \chapter{} main.tex'te tanimlidir; burada \section ve \subsection kullanilir.
+% ============================================================================
+
+% ============================================================================
+%                       B O L U M   3
+%              HEDEF TESPIT SISTEMI (Target Detection)
+% ============================================================================
+
+\section{Hedef Tespit Sistemine Genel Bakis}
+\label{sec:target-overview}
+
+Karadul pipeline'inin ilk asamasi olan \emph{hedef tespit sistemi}, analiz edilecek dosyanin turunu, dilini ve metadata'sini belirler. Bu asama, sonraki tum islemlerin temelini oluturur: yanlis bir tespit, yanlis analyzer zincirine yonlendirme ve basarisiz analiz demektir.
+
+\begin{tanim}[Hedef Tespit Problemi]
+Bir $b \in \mathcal{B}$ binary dosyasi verildiginde, hedef tespit fonksiyonu:
+\begin{equation}
+\label{eq:target-detect}
+\mathcal{D}: \mathcal{B} \longrightarrow \mathcal{T} \times \mathcal{L} \times \mathcal{M}
+\end{equation}
+seklinde tanimlanir. Burada:
+\begin{itemize}
+\item $\mathcal{T} = \{\text{MACHO}, \text{ELF}, \text{PE}, \text{JS\_BUNDLE}, \text{ELECTRON}, \text{GO}, \text{UNIVERSAL}, \ldots\}$: 12 eleman\-li hedef tipi kumesi.
+\item $\mathcal{L} = \{\text{C}, \text{C++}, \text{Rust}, \text{Go}, \text{Swift}, \text{ObjC}, \text{JavaScript}, \ldots\}$: 13 eleman\-li dil kumesi.
+\item $\mathcal{M}$: metadata sozlugu (mimari, bundler, framework vb.).
+\end{itemize}
+\end{tanim}
+
+Tespit sistemi \file{target.py} dosyasinda \code{TargetDetector} sinifi olarak implement edilmistir. Toplam 630 satir Python kodundan olusur.
+
+% --- TikZ: Tespit Akis Diyagrami ---
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm and 2.5cm,
+    every node/.style={font=\small},
+    block/.style={rectangle, draw=sectioncyan, fill=boxbg, text=white,
+                  minimum width=3.5cm, minimum height=1cm, rounded corners=3pt},
+    decision/.style={diamond, draw=yellow!70!white, fill=boxbg, text=white,
+                     aspect=2, inner sep=2pt},
+    arrow/.style={-{Stealth[length=3mm]}, thick, white},
+]
+    % Nodes
+    \node[block] (input) {Dosya Yolu Girisi};
+    \node[decision, below=of input] (isdir) {Dizin mi?};
+    \node[block, right=of isdir] (appbundle) {.app Bundle Analizi};
+    \node[decision, below=of isdir] (ext) {Uzanti Kontrolu};
+    \node[block, right=of ext] (jsdetect) {JS Bundle Analizi};
+    \node[block, below=of ext] (magic) {Magic Bytes Okuma};
+    \node[decision, below=of magic] (format) {Format Tespiti};
+    \node[block, below left=1.2cm and 0.5cm of format] (macho) {Mach-O};
+    \node[block, below=of format] (elf) {ELF};
+    \node[block, below right=1.2cm and 0.5cm of format] (pe) {PE};
+    \node[block, right=3cm of format] (zip) {ZIP (JAR/APK)};
+    \node[block, below=2.5cm of format] (lang) {Dil Tespiti};
+    \node[block, below=of lang] (output) {\textbf{TargetInfo}};
+
+    % Arrows
+    \draw[arrow] (input) -- (isdir);
+    \draw[arrow] (isdir) -- node[above, font=\tiny]{.app} (appbundle);
+    \draw[arrow] (isdir) -- node[right, font=\tiny]{dosya} (ext);
+    \draw[arrow] (ext) -- node[above, font=\tiny]{.js/.mjs} (jsdetect);
+    \draw[arrow] (ext) -- node[right, font=\tiny]{diger} (magic);
+    \draw[arrow] (magic) -- (format);
+    \draw[arrow] (format) -- (macho);
+    \draw[arrow] (format) -- (elf);
+    \draw[arrow] (format) -- (pe);
+    \draw[arrow] (format) -- (zip);
+    \draw[arrow] (macho) |- (lang);
+    \draw[arrow] (elf) -- (lang);
+    \draw[arrow] (pe) |- (lang);
+    \draw[arrow] (lang) -- (output);
+    \draw[arrow] (jsdetect) |- (output);
+    \draw[arrow] (appbundle) |- (output);
+\end{tikzpicture}
+\caption{Hedef tespit akis diyagrami. Dosya yolundan TargetInfo'ya uzanan karar agaci.}
+\label{fig:target-flow}
+\end{figure}
+
+
+% ===================================================================
+\section{Magic Byte Sistemi}
+\label{sec:magic-bytes}
+
+Her binary dosya formati, dosyanin ilk birkac byte'inda kendine ozgu bir \emph{magic number} barindirir. Bu sabitler, dosya turunu hizli ve guvenilir sekilde tanimlama amaciyla kullanilir.
+
+\subsection{Temel Magic Byte Tanimlari}
+
+\file{target.py:L53--L66}'da tanimlanan sabitler:
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{llll}
+\toprule
+\textbf{\color{sectioncyan}Format} & \textbf{\color{sectioncyan}Magic (hex)} & \textbf{\color{sectioncyan}Endianness} & \textbf{\color{sectioncyan}Python Sabiti} \\
+\midrule
+Mach-O 64-bit   & \texttt{0xFEEDFACF} & Big-endian    & \code{\_MACHO\_64\_MAGIC} \\
+Mach-O 32-bit   & \texttt{0xFEEDFACE} & Big-endian    & \code{\_MACHO\_32\_MAGIC} \\
+Mach-O 64 Cigam & \texttt{0xCFFAEDFE} & Little-endian & \code{\_MACHO\_64\_CIGAM} \\
+Mach-O 32 Cigam & \texttt{0xCEFAEDFE} & Little-endian & \code{\_MACHO\_32\_CIGAM} \\
+Universal       & \texttt{0xCAFEBABE} & Big-endian    & \code{\_UNIVERSAL\_MAGIC} \\
+ELF             & \texttt{7F 45 4C 46} & ---           & \code{\_ELF\_MAGIC} \\
+PE (DOS)        & \texttt{4D 5A}       & ---           & \code{\_PE\_MAGIC} \\
+ZIP (JAR/APK)   & \texttt{50 4B 03 04} & ---           & \code{\_ZIP\_MAGIC} \\
+\bottomrule
+\end{tabular}
+\caption{Desteklenen binary formatlarinin magic byte'lari.}
+\label{tab:magic-bytes}
+\end{table}
+
+\subsection{Big-Endian ve Little-Endian (Cigam) Kavrami}
+\label{sec:endianness}
+
+Mach-O formati iki farkli byte sirasini destekler. ``Cigam'' sozcugu ``magic'' kelimesinin tersten yazilisidir ve little-endian kodlamayi isaret eder.
+
+\begin{tanim}[Byte Order]
+$n$ byte'lik bir $v$ tamsayisi icin:
+\begin{equation}
+\label{eq:big-endian}
+v_{\text{BE}} = \sum_{i=0}^{n-1} b_i \cdot 256^{n-1-i}
+\quad\text{(big-endian)}
+\end{equation}
+\begin{equation}
+\label{eq:little-endian}
+v_{\text{LE}} = \sum_{i=0}^{n-1} b_i \cdot 256^{i}
+\quad\text{(little-endian)}
+\end{equation}
+Burada $b_i$, dosyadan okunan $i$'inci byte'dir.
+\end{tanim}
+
+\paragraph{Sayisal Ornek.}
+\texttt{0xFEEDFACF} sabitinin bellekteki gorunumu:
+
+\begin{center}
+\begin{tikzpicture}[
+    cell/.style={rectangle, draw=sectioncyan, fill=boxbg, text=white,
+                 minimum width=1.8cm, minimum height=0.8cm},
+]
+    % Big-endian
+    \node at (-3, 1.2) {\color{sectioncyan}\textbf{Big-endian (Magic):}};
+    \node[cell] at (0, 0.5) {\texttt{0xFE}};
+    \node[cell] at (2, 0.5) {\texttt{0xED}};
+    \node[cell] at (4, 0.5) {\texttt{0xFA}};
+    \node[cell] at (6, 0.5) {\texttt{0xCF}};
+    \node at (8, 0.5) {\color{gray!70!white}\small addr 0..3};
+
+    % Little-endian
+    \node at (-3, -0.8) {\color{yellow!70!white}\textbf{Little-endian (Cigam):}};
+    \node[cell] at (0, -1.5) {\texttt{0xCF}};
+    \node[cell] at (2, -1.5) {\texttt{0xFA}};
+    \node[cell] at (4, -1.5) {\texttt{0xED}};
+    \node[cell] at (6, -1.5) {\texttt{0xFE}};
+    \node at (8, -1.5) {\color{gray!70!white}\small addr 0..3};
+\end{tikzpicture}
+\end{center}
+
+\code{\_read\_magic} metodu (\file{target.py:L604--L614}) dosyanin ilk 4 byte'ini her zaman big-endian olarak okur:
+
+\begin{lstlisting}[language=Python, caption={struct.unpack ile magic byte okuma}]
+@staticmethod
+def _read_magic(path: Path) -> int | None:
+    """Dosyanin ilk 4 byte'ini big-endian uint32 olarak oku."""
+    try:
+        with open(path, "rb") as f:
+            data = f.read(4)
+        if len(data) < 4:
+            return None
+        return struct.unpack(">I", data)[0]  # ">" = big-endian, "I" = uint32
+    except OSError:
+        return None
+\end{lstlisting}
+
+Bu tasarim sayesinde, big-endian Mach-O dosyalari dogrudan \texttt{0xFEEDFACF} ile eslesirken, little-endian dosyalar \texttt{0xCFFAEDFE} degerini dondurur ve \code{\_MACHO\_64\_CIGAM} sabiti ile eslestirilir.
+
+\paragraph{struct.unpack Format Karakterleri.}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{cll}
+\toprule
+\textbf{\color{sectioncyan}Karakter} & \textbf{\color{sectioncyan}Anlam} & \textbf{\color{sectioncyan}Boyut} \\
+\midrule
+\texttt{>} & Big-endian byte order & --- \\
+\texttt{<} & Little-endian byte order & --- \\
+\texttt{I} & Unsigned 32-bit integer & 4 byte \\
+\texttt{H} & Unsigned 16-bit integer & 2 byte \\
+\texttt{Q} & Unsigned 64-bit integer & 8 byte \\
+\texttt{B} & Unsigned 8-bit integer & 1 byte \\
+\bottomrule
+\end{tabular}
+\caption{Python \texttt{struct.unpack} format karakterleri.}
+\label{tab:struct-format}
+\end{table}
+
+
+% ===================================================================
+\section{Mach-O Format Yapisi}
+\label{sec:macho-format}
+
+Apple'in Mach-O (Mach Object) formati, macOS, iOS, watchOS ve tvOS uzerinde kullanilan native binary formatidir. Karadul'un birincil hedef formatidir.
+
+\subsection{Mach-O Header Yapisi}
+
+Mach-O dosyasinin ilk 32 byte'i \texttt{mach\_header\_64} yapisini icerir:
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{llrl}
+\toprule
+\textbf{\color{sectioncyan}Alan} & \textbf{\color{sectioncyan}Tip} & \textbf{\color{sectioncyan}Offset} & \textbf{\color{sectioncyan}Aciklama} \\
+\midrule
+\texttt{magic}      & uint32 & 0  & \texttt{0xFEEDFACF} (64-bit) \\
+\texttt{cputype}    & int32  & 4  & CPU ailesi (ARM64: \texttt{0x100000C}) \\
+\texttt{cpusubtype} & int32  & 8  & CPU alt tipi \\
+\texttt{filetype}   & uint32 & 12 & Dosya tipi (2=executable, 6=dylib) \\
+\texttt{ncmds}      & uint32 & 16 & Load command sayisi \\
+\texttt{sizeofcmds} & uint32 & 20 & Tum load command'larin toplam boyutu \\
+\texttt{flags}      & uint32 & 24 & Binary flag'leri (PIE, stripped vb.) \\
+\texttt{reserved}   & uint32 & 28 & Rezerve (64-bit icin) \\
+\bottomrule
+\end{tabular}
+\caption{Mach-O 64-bit header alanlari.}
+\label{tab:macho-header}
+\end{table}
+
+% --- TikZ: Mach-O File Layout ---
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    segment/.style={rectangle, draw=sectioncyan, fill=boxbg, text=white,
+                    minimum width=6cm, minimum height=0.9cm},
+    label/.style={font=\small\ttfamily, text=gray!70!white},
+]
+    \node[segment, fill=blue!20!black] (header) at (0, 0)
+        {\textbf{Mach-O Header} (32 bytes)};
+
+    \node[segment, fill=cyan!15!black] (lc1) at (0, -1.2)
+        {LC\_SEGMENT\_64 (\texttt{\_\_TEXT})};
+    \node[segment, fill=cyan!15!black] (lc2) at (0, -2.4)
+        {LC\_SEGMENT\_64 (\texttt{\_\_DATA})};
+    \node[segment, fill=cyan!10!black] (lc3) at (0, -3.6)
+        {LC\_SYMTAB};
+    \node[segment, fill=cyan!10!black] (lc4) at (0, -4.8)
+        {LC\_DYSYMTAB};
+    \node[segment, fill=cyan!8!black] (lcn) at (0, -6.0)
+        {LC\_LOAD\_DYLIB $\times$ N};
+
+    \node[segment, fill=green!15!black] (text) at (0, -7.5)
+        {\textbf{\_\_TEXT Segment} (kod + string'ler)};
+    \node[segment, fill=yellow!10!black] (data) at (0, -8.7)
+        {\textbf{\_\_DATA Segment} (global veriler)};
+    \node[segment, fill=red!10!black] (link) at (0, -9.9)
+        {\textbf{\_\_LINKEDIT} (sembol tablolari)};
+
+    % Labels
+    \node[label, right] at (3.5, 0) {Offset 0x00};
+    \node[label, right] at (3.5, -1.2) {Load Commands};
+    \node[label, right] at (3.5, -6.0) {baslangi\c{c}};
+    \node[label, right] at (3.5, -7.5) {Executable kod};
+    \node[label, right] at (3.5, -8.7) {Read-write};
+    \node[label, right] at (3.5, -9.9) {Read-only};
+
+    % Brace for Load Commands
+    \draw[decorate, decoration={brace, amplitude=8pt, mirror}, thick, white]
+        (3.2, -0.6) -- (3.2, -6.5)
+        node[midway, right=10pt, font=\small, text=white] {ncmds adet};
+\end{tikzpicture}
+\caption{Mach-O 64-bit dosya yapisi. Header + Load Commands + Segments.}
+\label{fig:macho-layout}
+\end{figure}
+
+\subsection{Load Commands}
+
+Load command'lar, isletim sisteminin binary'yi nasil yukleyecegini ve baglayacagini tarif eder. Karadul'un \code{MachOAnalyzer} sinifi (\file{macho.py:L389--L391}) \texttt{otool -l} komutuyla tum load command'lari cikarir.
+
+Onemli load command turleri:
+
+\begin{description}
+\item[\texttt{LC\_SEGMENT\_64}:] Bir segment'in bellek adresini, boyutunu ve icerigini tanimlar. Her segment birden fazla \emph{section} icerebilir.
+\item[\texttt{LC\_SYMTAB}:] Sembol tablosunun offset ve boyutunu belirtir.
+\item[\texttt{LC\_DYSYMTAB}:] Dinamik sembol tablosu bilgilerini icerir.
+\item[\texttt{LC\_LOAD\_DYLIB}:] Yuklenmesi gereken bir dinamik kutuphanenin yolunu belirtir.
+\item[\texttt{LC\_UUID}:] Binary'nin benzersiz tanimlayicisi (build ID).
+\item[\texttt{LC\_CODE\_SIGNATURE}:] Apple code signing bilgisi.
+\end{description}
+
+\subsection{Segment ve Section Yapisi}
+
+Mach-O dosyasindaki temel segmentler:
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{llp{7cm}}
+\toprule
+\textbf{\color{sectioncyan}Segment} & \textbf{\color{sectioncyan}Section'lar} & \textbf{\color{sectioncyan}Aciklama} \\
+\midrule
+\texttt{\_\_TEXT} & \texttt{\_\_text, \_\_stubs, \_\_stub\_helper, \_\_cstring, \_\_const} & Executable kod, sabit string'ler. Read-only + execute. \\
+\texttt{\_\_DATA} & \texttt{\_\_data, \_\_bss, \_\_common, \_\_la\_symbol\_ptr, \_\_got} & Global degiskenler, BSS. Read-write. \\
+\texttt{\_\_DATA\_CONST} & \texttt{\_\_const, \_\_cfstring, \_\_objc\_classlist} & Salt-okunur veri (runtime'da write-protect). \\
+\texttt{\_\_LINKEDIT} & (monolitik) & Sembol tablolari, string tablolari, code signature. Read-only. \\
+\bottomrule
+\end{tabular}
+\caption{Mach-O segmentleri ve section'lari.}
+\label{tab:macho-segments}
+\end{table}
+
+Karadul'un \code{lief} entegrasyonu (\file{macho.py:L431--L495}) tum segment ve section bilgilerini programatik olarak cikarir:
+
+\begin{lstlisting}[language=Python, caption={lief ile segment/section cikartma}]
+binary = lief.parse(str(binary_path))
+for seg in binary.segments:
+    result["segments"].append({
+        "name": seg.name,
+        "virtual_address": seg.virtual_address,
+        "virtual_size": seg.virtual_size,
+        "file_offset": seg.file_offset,
+        "file_size": seg.file_size,
+    })
+for sec in binary.sections:
+    result["sections"].append({
+        "name": sec.name,
+        "segment": sec.segment.name,
+        "size": sec.size,
+        "offset": sec.offset,
+    })
+\end{lstlisting}
+
+
+% ===================================================================
+\section{ELF Format Yapisi}
+\label{sec:elf-format}
+
+ELF (Executable and Linkable Format), Linux ve diger Unix-benzeri sistemlerde kullanilan standart binary formatidir. Magic byte'i \texttt{7F 45 4C 46} ($\backslash$x7fELF) ile baslar (\file{target.py:L64}).
+
+\subsection{ELF Header}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{llrl}
+\toprule
+\textbf{\color{sectioncyan}Alan} & \textbf{\color{sectioncyan}Tip} & \textbf{\color{sectioncyan}Offset} & \textbf{\color{sectioncyan}Aciklama} \\
+\midrule
+\texttt{e\_ident[0..3]}  & byte[4]  & 0   & Magic: \texttt{7F 45 4C 46} \\
+\texttt{e\_ident[4]}     & uint8    & 4   & Class: 1=32-bit, 2=64-bit \\
+\texttt{e\_ident[5]}     & uint8    & 5   & Data: 1=LE, 2=BE \\
+\texttt{e\_type}         & uint16   & 16  & Tip: 2=ET\_EXEC, 3=ET\_DYN \\
+\texttt{e\_machine}      & uint16   & 18  & Mimari: 0x3E=x86\_64, 0xB7=AArch64 \\
+\texttt{e\_entry}        & uint64   & 24  & Entry point adresi \\
+\texttt{e\_phoff}        & uint64   & 32  & Program header table offset \\
+\texttt{e\_shoff}        & uint64   & 40  & Section header table offset \\
+\texttt{e\_phnum}        & uint16   & 56  & Program header sayisi \\
+\texttt{e\_shnum}        & uint16   & 60  & Section header sayisi \\
+\bottomrule
+\end{tabular}
+\caption{ELF 64-bit header alanlari (secilmis).}
+\label{tab:elf-header}
+\end{table}
+
+\subsection{ELF ve Mach-O Karsilastirmasi}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}Kavram} & \textbf{\color{sectioncyan}Mach-O} & \textbf{\color{sectioncyan}ELF} \\
+\midrule
+Kod bolumu    & \texttt{\_\_TEXT,\_\_text} & \texttt{.text} \\
+Veri bolumu   & \texttt{\_\_DATA,\_\_data} & \texttt{.data} \\
+Salt-okunur   & \texttt{\_\_DATA\_CONST}   & \texttt{.rodata} \\
+Sembol tablosu & \texttt{LC\_SYMTAB}       & \texttt{.symtab} / \texttt{.dynsym} \\
+Dinamik baglama & \texttt{LC\_LOAD\_DYLIB} & \texttt{.dynamic} + \texttt{DT\_NEEDED} \\
+Magic number  & \texttt{0xFEEDFACF}        & \texttt{7F 45 4C 46} \\
+\bottomrule
+\end{tabular}
+\caption{Mach-O ve ELF terminoloji eslestirmesi.}
+\label{tab:macho-elf-compare}
+\end{table}
+
+Karadul, ELF binary'ler icin \texttt{otool} adimlarini atlar (\file{macho.py:L122--L143}), dogrudan \texttt{nm}, \texttt{strings} ve Ghidra headless analiz kullanir.
+
+
+% ===================================================================
+\section{PE Format Yapisi}
+\label{sec:pe-format}
+
+PE (Portable Executable), Microsoft Windows'un native binary formatidir. Magic byte'i \texttt{4D 5A} (ASCII ``MZ'') ile baslar ve \emph{DOS header} icerir.
+
+\subsection{PE Dosya Yapisi}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    segment/.style={rectangle, draw=sectioncyan, fill=boxbg, text=white,
+                    minimum width=5.5cm, minimum height=0.8cm},
+]
+    \node[segment, fill=red!15!black] (dos) at (0, 0)
+        {\textbf{DOS Header} (\texttt{MZ})};
+    \node[segment, fill=red!10!black] (stub) at (0, -1.1)
+        {DOS Stub};
+    \node[segment, fill=blue!15!black] (pe) at (0, -2.2)
+        {\textbf{PE Signature} (\texttt{PE\textbackslash 0\textbackslash 0})};
+    \node[segment, fill=cyan!15!black] (coff) at (0, -3.3)
+        {COFF Header};
+    \node[segment, fill=cyan!12!black] (opt) at (0, -4.4)
+        {Optional Header (PE32+)};
+    \node[segment, fill=green!12!black] (sec) at (0, -5.5)
+        {Section Table};
+    \node[segment, fill=green!15!black] (text) at (0, -6.8)
+        {\texttt{.text} (kod)};
+    \node[segment, fill=yellow!10!black] (rdata) at (0, -7.9)
+        {\texttt{.rdata} (salt-okunur veri)};
+    \node[segment, fill=yellow!8!black] (data) at (0, -9.0)
+        {\texttt{.data} (veri)};
+    \node[segment, fill=red!8!black] (rsrc) at (0, -10.1)
+        {\texttt{.rsrc} (kaynaklar)};
+
+    % Offset labels
+    \node[font=\small\ttfamily, text=gray!70!white, right] at (3, 0) {0x00};
+    \node[font=\small\ttfamily, text=gray!70!white, right] at (3, -2.2) {e\_lfanew};
+    \node[font=\small\ttfamily, text=gray!70!white, right] at (3, -6.8) {Virtual sections};
+\end{tikzpicture}
+\caption{PE dosya yapisi. DOS header'daki \texttt{e\_lfanew} alani PE signature'a isaret eder.}
+\label{fig:pe-layout}
+\end{figure}
+
+Karadul'un PE tespit mantigi (\file{target.py:L402--L430}):
+
+\begin{enumerate}
+\item Ilk 2 byte \texttt{MZ} mi? $\to$ PE adayi.
+\item .NET kontrolu: \code{\_is\_dotnet()} metodu \texttt{mscoree.dll} veya \texttt{\_CorExeMain} arar.
+\item Delphi kontrolu: \code{\_is\_delphi()} metodu ``Borland Delphi'', mangled name pattern'leri arar.
+\item Hic biri degilse: genel \code{PE\_BINARY} olarak siniflandirir.
+\end{enumerate}
+
+
+% ===================================================================
+\section{Universal Binary (Fat Binary)}
+\label{sec:universal-binary}
+
+Apple'in Universal Binary formati, birden fazla mimarinin tek dosyada birlestirilmesini saglar. Magic byte'i \texttt{0xCAFEBABE}'dir.
+
+\begin{uyari}[Dikkat: Java Class File Cakismasi]
+\texttt{0xCAFEBABE}, Java class dosyalarinin da magic byte'idir. Ancak pratikte bu bir sorun yaratmaz, cunku:
+\begin{enumerate}
+\item Java class dosyalari genellikle .jar (ZIP) icinde gelir ve \texttt{PK} magic'i ile baslar.
+\item Tek basina \texttt{.class} dosyalari nadiren analiz hedefi olur.
+\item Karadul, \texttt{0xCAFEBABE} goruldugunde dosya boyutu ve icerik heuristikleri uygular.
+\end{enumerate}
+\end{uyari}
+
+Universal binary tespit edildikten sonra (\file{macho.py:L85--L110}), \texttt{lipo} komutu ile tercih edilen mimari cikarilir:
+
+\begin{lstlisting}[language=Python, caption={lipo thin ile mimari cikartma}]
+# Oncelik: arm64 (Apple Silicon) > x86_64
+proc = subprocess.run(
+    ["lipo", str(binary_path), "-thin", "arm64",
+     "-output", str(thin_path)],
+    capture_output=True, text=True, timeout=30,
+)
+if proc.returncode == 0:
+    binary_path = thin_path  # arm64 slice ile devam et
+\end{lstlisting}
+
+
+% ===================================================================
+\section{Dil Tespit Algoritmasi}
+\label{sec:language-detection}
+
+Binary icindeki string'lerden kaynak programlama dilini tespit etmek, Karadul'un en onemli heuristik adimlarindan biridir. \file{target.py:L470--L491}'de implement edilen bu algoritma, bir \emph{puanlama sistemi} kullanir.
+
+\subsection{Puanlama Sistemi}
+
+\begin{tanim}[Dil Puanlama]
+$\mathcal{S} = \{(s_i, l_i)\}_{i=1}^{N}$ imza kumesi verildiginde, her dil $l \in \mathcal{L}$ icin puan:
+\begin{equation}
+\label{eq:lang-score}
+\text{score}(l) = \sum_{i=1}^{N} \mathbb{1}[s_i \in \text{binary\_text}] \cdot \mathbb{1}[l_i = l]
+\end{equation}
+Tespit edilen dil:
+\begin{equation}
+\label{eq:lang-argmax}
+\hat{l} = \arg\max_{l \in \mathcal{L}} \text{score}(l)
+\end{equation}
+Eger $\text{score}(\hat{l}) = 0$ ise, $\hat{l} = \text{UNKNOWN}$ dondurulur.
+\end{tanim}
+
+\subsection{Dil Imza Tablosu}
+
+\file{target.py:L136--L154}'te tanimlanan \code{\_LANGUAGE\_SIGNATURES} sozlugu:
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}String Imzasi} & \textbf{\color{sectioncyan}Dil} & \textbf{\color{sectioncyan}Aciklama} \\
+\midrule
+\texttt{rust\_begin\_unwind}  & Rust      & Panic handler baslangici \\
+\texttt{rust\_panic}          & Rust      & Panic cagirma fonksiyonu \\
+\texttt{\_\_rust\_alloc}      & Rust      & Bellek ayirici \\
+\texttt{core::panicking}      & Rust      & Core kutuphane panic modulu \\
+\texttt{runtime.gopanic}      & Go        & Go runtime panic \\
+\texttt{runtime.goexit}       & Go        & Goroutine cikis \\
+\texttt{runtime/internal}     & Go        & Runtime internal paket \\
+\texttt{go.buildid}           & Go        & Build identifier \\
+\texttt{\_swift\_}            & Swift     & Swift runtime prefix \\
+\texttt{Swift.}               & Swift     & Swift modulleri \\
+\texttt{\_\_cxa\_throw}       & C++       & C++ exception throwing \\
+\texttt{std::}                & C++       & C++ standard kutuphane \\
+\texttt{objc\_msgSend}        & Obj-C     & Objective-C mesaj gonderme \\
+\texttt{@objc}                & Obj-C     & Objective-C dekoratoru \\
+\texttt{NSObject}             & Obj-C     & Foundation sinifi \\
+\bottomrule
+\end{tabular}
+\caption{Dil tespit imza tablosu (\code{\_LANGUAGE\_SIGNATURES}).}
+\label{tab:lang-sigs}
+\end{table}
+
+\subsection{Naive Bayes Perspektifi}
+
+Dil tespitini Bayesian bir cercevede formalize edebiliriz. Her imza $s_i$'nin binary'de bulunmasi, dilin $l$ olmasi olasiligini guncelleyen bir \emph{evidence} olarak gorulur.
+
+\begin{equation}
+\label{eq:naive-bayes-lang}
+P(l \given s_1, s_2, \ldots, s_N) \propto P(l) \prod_{i=1}^{N} P(s_i \given l)
+\end{equation}
+
+Karadul'un mevcut implementasyonunda $P(l)$ uniform prior ve $P(s_i \given l) \in \{0, 1\}$ (deterministik) olarak basitlestirilmistir. Bu, formul~(\ref{eq:lang-score})'daki toplam sayma ile esdegerdir.
+
+\paragraph{Karmasiklik Analizi.} Dosyanin ilk 1~MB'i okunur ($\bigO{1}$ --- sabit boyut), $N = 15$ imza uzerinde dogrusal tarama yapilir. Toplam:
+\begin{equation}
+\label{eq:lang-complexity}
+T_{\text{lang}} = \bigO{|\text{1MB}| \times N} = \bigO{N} \approx \bigO{1}
+\end{equation}
+
+
+% ===================================================================
+\section{Go Binary Tespiti}
+\label{sec:go-detection}
+
+Go dili, derlenmis binary'lere son derece zengin metadata gomer. Bu metadata, tersine muhendislik icin degerlidir ve Karadul bunu iki asamada tespit eder.
+
+\subsection{GOPCLNTAB (Program Counter Line Table)}
+
+Go derleyicisi, her binary'ye bir \texttt{pclntab} (program counter line table) ekler. Bu tablo fonksiyon adlarini, dosya yollarini ve satir numaralarini icerir. \file{go\_binary.py:L47--L60}'da tanimlanan magic byte'lar:
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{\color{sectioncyan}Go Versiyonu} & \textbf{\color{sectioncyan}GOPCLNTAB Magic} \\
+\midrule
+Go 1.2+  & \texttt{0xFB 0xFF 0xFF 0xFF 0x00 0x00} \\
+Go 1.16+ & \texttt{0xFA 0xFF 0xFF 0xFF 0x00 0x00} \\
+Go 1.18+ & \texttt{0xF0 0xFF 0xFF 0xFF 0x00 0x00} \\
+Go 1.20+ & \texttt{0xF1 0xFF 0xFF 0xFF 0x00 0x00} \\
+\bottomrule
+\end{tabular}
+\caption{GOPCLNTAB magic byte'lari Go versiyonlarina gore.}
+\label{tab:gopclntab-magic}
+\end{table}
+
+\file{target.py:L493--L516}'deki \code{\_is\_go\_binary} metodu, ilk 2~MB icinde bu magic byte'lari ve Go runtime string'lerini arar:
+
+\begin{lstlisting}[language=Python, caption={Go binary tespit algoritmasi}]
+def _is_go_binary(self, path: Path) -> bool:
+    with open(path, "rb") as f:
+        data = f.read(2_097_152)  # 2 MB
+    # GOPCLNTAB magic bytes
+    if b"GOPCLNTAB" in data or b"\xFB\xFF\xFF\xFF\x00\x00" in data:
+        return True
+    # go.buildid section
+    if b"go.buildid" in data or b"Go build" in data:
+        return True
+    # Runtime string'leri
+    text = data.decode("ascii", errors="replace")
+    go_markers = ("runtime.gopanic", "runtime.goexit", "runtime/internal")
+    return any(marker in text for marker in go_markers)
+\end{lstlisting}
+
+\subsection{Go Binary Isim Kurtarma Zenginligi}
+
+Go binary'ler, strip edilse bile GOPCLNTAB genellikle korunur. Bu, Go'yu tersine muhendislik icin ``en kolay hedef'' yapar:
+
+\begin{equation}
+\label{eq:go-recovery}
+\text{Kurtarma Orani}_{\text{Go}} \approx 70\%\text{--}95\%
+\end{equation}
+
+Karsilastirma olarak, tipik bir stripped C/C++ binary'de bu oran $<5\%$'tir.
+
+
+% ===================================================================
+\section{.NET ve Delphi Tespiti}
+\label{sec:dotnet-delphi}
+
+\subsection{.NET Assembly Tespiti}
+
+.NET assembly'leri PE formati icinde paketlenmis IL (Intermediate Language) kodudur. Karadul, \file{target.py:L518--L536}'daki \code{\_is\_dotnet} metodu ile tespit eder:
+
+\begin{itemize}
+\item \texttt{mscoree.dll}: .NET CLR runtime yukleyicisi --- her .NET PE'de bulunur.
+\item \texttt{\_CorExeMain}: .NET entry point fonksiyonu.
+\item \texttt{mscorlib} veya \texttt{System.Runtime}: .NET framework referanslari.
+\end{itemize}
+
+Herhangi birinin binary icinde bulunmasi, .NET assembly oldugunu gosterir.
+
+\subsection{Delphi Binary Tespiti}
+
+Delphi compiler'in urettigi binary'lerde kendine ozgu \emph{mangled name} pattern'leri vardir. \file{target.py:L538--L571}'deki \code{\_is\_delphi} metodu iki asamali tespit uygular:
+
+\textbf{Asama 1 --- Bilinen string'ler:} ``Borland Delphi'', ``CodeGear Delphi'', ``Embarcadero Delphi'', \texttt{@System@TObject@}, \texttt{System.SysUtils} string'lerinden en az 2 tanesinin bulunmasi yeterlidir.
+
+\textbf{Asama 2 --- Mangled name regex:}
+\begin{equation}
+\label{eq:delphi-regex}
+\texttt{@[A-Z][\ldots]@[A-Z][\ldots]@[A-Za-z\_][\ldots]\$qqr}
+\end{equation}
+Bu pattern, Delphi'nin \texttt{@Unit@Class@Method\$qqr} seklindeki mangled fonksiyon isimlerini yakalar. 5 veya daha fazla eslesme Delphi binary oldugunu gosterir.
+
+\begin{equation}
+\label{eq:delphi-confidence}
+\text{confidence}_{\text{Delphi}} =
+\begin{cases}
+0.95 & \text{string\_hits} \geq 2 \\
+0.85 & \text{regex\_matches} \geq 5 \\
+0.0  & \text{aksi halde}
+\end{cases}
+\end{equation}
+
+
+% ===================================================================
+\section{JavaScript Bundle Tespiti}
+\label{sec:js-detection}
+
+JavaScript dosyalari uzanti tabanli (\texttt{.js}, \texttt{.mjs}, \texttt{.cjs}) tespit edilir ve ardindan bundler tespiti yapilir.
+
+\subsection{Bundler Tespit Sistemi}
+
+\file{target.py:L126--L133}'te tanimlanan imza tablosu:
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{\color{sectioncyan}Imza String'i} & \textbf{\color{sectioncyan}Bundler} \\
+\midrule
+\texttt{\_\_webpack\_require\_\_} & webpack \\
+\texttt{\_\_webpack\_modules\_\_} & webpack \\
+\texttt{parcelRequire}            & Parcel \\
+\texttt{System.register}          & SystemJS \\
+\texttt{\_rollupPluginBabelHelpers} & Rollup \\
+\texttt{define([}                  & AMD/RequireJS \\
+\bottomrule
+\end{tabular}
+\caption{JS bundler imza tablosu.}
+\label{tab:js-bundlers}
+\end{table}
+
+Tespit algoritmasi:
+\begin{enumerate}
+\item Dosyanin ilk 64~KB'i okunur (\file{target.py:L288--L291}).
+\item Her imza string'i icin dogrusal arama yapilir.
+\item Ilk eslesen bundler, metadata'ya kaydedilir.
+\end{enumerate}
+
+\paragraph{Karmasiklik.} $K = 6$ imza, $M = 65536$ byte okuma:
+\begin{equation}
+\label{eq:bundler-complexity}
+T_{\text{bundler}} = \bigO{K \times M} = \bigO{1}
+\end{equation}
+
+\subsection{esbuild Tespiti}
+
+esbuild, imza tablosunda yoktur cunku belirgin bir runtime marker'i birakmaz. Bu nedenle, bilinen bundler'lardan hicbiri eslesmediyse ve dosya minified gorunuyorsa, metadata'ya \texttt{bundler: null} olarak kaydedilir. Kullanici tarafindan manuel belirtilebilir.
+
+\subsection{Webpack vs Parcel vs Rollup Farklari}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lp{3.5cm}p{3.5cm}p{3.5cm}}
+\toprule
+\textbf{\color{sectioncyan}Ozellik} & \textbf{\color{sectioncyan}webpack} & \textbf{\color{sectioncyan}Parcel} & \textbf{\color{sectioncyan}Rollup} \\
+\midrule
+Runtime          & \texttt{\_\_webpack\_require\_\_} & \texttt{parcelRequire} & Yok (tree-shaken) \\
+Modul ID         & Sayisal / string & Hash-based & Degisken adi \\
+Unpack kolayligi & Kolay & Orta & Zor \\
+\bottomrule
+\end{tabular}
+\caption{Bundler runtime farklari ve Karadul'un unpack stratejisi.}
+\label{tab:bundler-compare}
+\end{table}
+
+
+% ===================================================================
+\section{Electron .app Bundle Analizi}
+\label{sec:electron-detection}
+
+Electron uygulamalari, macOS'ta \texttt{.app} bundle formunda dagitilir. Karadul, \file{target.py:L215--L279} ve \file{electron.py} ile Electron tespiti yapar.
+
+\subsection{Electron Tespit Algoritmasi}
+
+\begin{enumerate}
+\item \texttt{.app/Contents/Resources/app.asar} veya \texttt{.app/Contents/Resources/app/} dizini kontrol edilir.
+\item Varsa: \texttt{ELECTRON\_APP} tipi atanir, dil \texttt{JAVASCRIPT} olarak ayarlanir.
+\item Yoksa: standart macOS uygulamasi olarak siniflandirilir.
+\end{enumerate}
+
+\subsection{ASAR Arsiv Formati}
+
+ASAR (Atom Shell Archive), Electron'un kullandigi ozel bir arsiv formatidir. JSON-tabanli bir header ve birlesmis dosya icerikleri icerir:
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    segment/.style={rectangle, draw=sectioncyan, fill=boxbg, text=white,
+                    minimum width=5cm, minimum height=0.7cm},
+]
+    \node[segment, fill=blue!15!black] (hdr) at (0, 0)
+        {Header Size (4 byte, LE uint32)};
+    \node[segment, fill=cyan!15!black] (json) at (0, -1.0)
+        {JSON Header (dosya listesi + offset'ler)};
+    \node[segment, fill=green!15!black] (f1) at (0, -2.0)
+        {File Content 1};
+    \node[segment, fill=green!12!black] (f2) at (0, -3.0)
+        {File Content 2};
+    \node[segment, fill=green!10!black] (fn) at (0, -4.0)
+        {File Content N};
+\end{tikzpicture}
+\caption{ASAR arsiv yapisi.}
+\label{fig:asar-format}
+\end{figure}
+
+ASAR extraction (\file{electron.py:L346--L397}):
+\begin{lstlisting}[language=Python, caption={ASAR extraction komutu}]
+cmd = [
+    npx_path, "--yes", "@electron/asar",
+    "extract", str(asar_path), str(output_dir),
+]
+result = self._runner.run_command(cmd, timeout=timeout)
+\end{lstlisting}
+
+\subsection{Ana JS Dosyasi Bulma Stratejisi}
+
+Extract edilen ASAR icinde onlarca JS dosyasi olabilir. Karadul, ana dosyayi su sirayla arar (\file{electron.py:L453--L498}):
+
+\begin{enumerate}
+\item \texttt{package.json}'dan \texttt{"main"} field'ini oku.
+\item Bilinen isim adaylarina bak: \texttt{dist/cli.js}, \texttt{dist/main.js}, \texttt{dist/index.js}, \texttt{app/main.js}, \ldots (12 aday; \file{electron.py:L32--L46}).
+\item Hicbiri yoksa: en buyuk JS dosyasini sec.
+\end{enumerate}
+
+
+% ===================================================================
+\section{SHA-256 Streaming Hash}
+\label{sec:sha256-hash}
+
+Her hedef icin benzersiz bir taniimlayici olarak SHA-256 hash hesaplanir. \file{target.py:L616--L629}'daki \code{\_compute\_sha256} metodu \emph{streaming} yaklasimiyla calisir.
+
+\subsection{Streaming Hash Algoritmasi}
+
+\begin{lstlisting}[language=Python, caption={8~KB chunk'larla SHA-256 hesaplama}]
+_HASH_CHUNK_SIZE = 8192  # 8 KB
+
+@staticmethod
+def _compute_sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        while True:
+            chunk = f.read(8192)
+            if not chunk:
+                break
+            h.update(chunk)
+    return h.hexdigest()
+\end{lstlisting}
+
+\subsection{Neden 8~KB Chunk?}
+
+\begin{itemize}
+\item \textbf{Bellek verimliligi:} 224~MB binary tamamen RAM'e alinmaz; sabit 8~KB tampon kullanilir.
+\item \textbf{Sayfa hizalanmasi:} Cogu isletim sistemi 4~KB sayfa boyutu kullanir; 8~KB = 2 sayfa, I/O kararliligi saglar.
+\item \textbf{Performans:} Daha kucuk chunk'lar syscall overhead'i arttirir; daha buyuk chunk'lar cache'i kirletir. 8~KB iyi bir denge noktasidir.
+\end{itemize}
+
+\paragraph{Karmasiklik.}
+\begin{equation}
+\label{eq:sha256-complexity}
+T_{\text{SHA256}} = \bigO{\frac{n}{8192}} = \bigO{n}
+\end{equation}
+burada $n$ dosya boyutudur (byte).
+
+\subsection{Collision Olasiligi}
+
+SHA-256, 256-bit cikti ureten bir kriptografik hash fonksiyonudur.
+
+\begin{equation}
+\label{eq:collision-birthday}
+P(\text{collision} \given k \text{ dosya}) \approx 1 - e^{-k^2 / (2 \cdot 2^{256})}
+\end{equation}
+
+$k = 10^{9}$ dosya icin:
+\begin{equation}
+\label{eq:collision-numeric}
+P \approx \frac{(10^9)^2}{2^{257}} \approx \frac{10^{18}}{2.31 \times 10^{77}} \approx 4.33 \times 10^{-59}
+\end{equation}
+
+Bu, pratik amaclar icin sifir kabul edilir. SHA-256'nin ikinci preimage direnci $2^{256}$ islem gerektirir ki bu evrenin yasi boyunca tum yeryuzu bilgisayarlariyla bile ulasilamaz.
+
+
+% ===================================================================
+\section{False Positive Analizi}
+\label{sec:false-positive}
+
+Magic byte tabanli tespit, false positive riski tasir. Bu bolum, her format icin cakisma olasiliklerini analiz eder.
+
+\subsection{Magic Byte Collision Hesabi}
+
+Rastgele bir dosyanin ilk $k$ byte'inin belirli bir magic byte ile eslesmesi olasiligi:
+
+\begin{equation}
+\label{eq:magic-fp}
+P(\text{FP}_k) = \frac{1}{256^k}
+\end{equation}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{\color{sectioncyan}Format} & \textbf{\color{sectioncyan}$k$ (byte)} & \textbf{\color{sectioncyan}$P(\text{FP})$} & \textbf{\color{sectioncyan}1/N} \\
+\midrule
+Mach-O (4 byte magic)    & 4 & $2.33 \times 10^{-10}$ & 4.3 milyar dosyada 1 \\
+ELF (4 byte magic)       & 4 & $2.33 \times 10^{-10}$ & 4.3 milyar dosyada 1 \\
+PE (2 byte ``MZ'')       & 2 & $1.53 \times 10^{-5}$  & 65.536 dosyada 1 \\
+ZIP (4 byte magic)       & 4 & $2.33 \times 10^{-10}$ & 4.3 milyar dosyada 1 \\
+\bottomrule
+\end{tabular}
+\caption{Magic byte false positive olasiliklari.}
+\label{tab:magic-fp}
+\end{table}
+
+PE formati icin 2 byte'lik magic, daha yuksek false positive riski tasir. Ancak Karadul, PE tespitinden sonra ek kontroller (PE signature, section table validity) uygulayarak bu riski azaltir.
+
+\subsection{Coklu Kontrol Stratejisi}
+
+Karadul'un false positive oranini azaltan katmanli yaklasimi:
+
+\begin{equation}
+\label{eq:multi-check-fp}
+P(\text{FP}_{\text{toplam}}) = P(\text{FP}_{\text{magic}}) \times P(\text{FP}_{\text{icerik}}) \times P(\text{FP}_{\text{uzanti}})
+\end{equation}
+
+Ornegin, PE icin:
+\begin{equation}
+P(\text{FP}_{\text{PE}}) = \frac{1}{256^2} \times P(\text{valid section table}) \times P(\texttt{.exe}/\texttt{.dll}) \approx 10^{-12}
+\end{equation}
+
+
+\begin{ozet}
+Hedef Tespit Sistemi, Karadul pipeline'inin temeli olarak 12 farkli binary formatini ve 13 programlama dilini tespit eder. Magic byte karsilastirmasi $\bigO{1}$ zamanda calisir, dil tespiti puanlama tabanlidir ve $\bigO{1}$ karmasikliga sahiptir. SHA-256 streaming hash $\bigO{n}$ ile dosya butunlugunu garanti eder. False positive orani, coklu kontrol stratejisi ile $10^{-10}$ mertebesinin altinda tutulur. Tum bu islemler \file{target.py}'daki 630 satirlik \code{TargetDetector} sinifinda birlestirilmistir.
+\end{ozet}
+
+
+% ============================================================================
+%                       B O L U M   4
+%                     STATIK ANALIZ
+% ============================================================================
+
+\newpage
+
+\section{Statik Analize Genel Bakis}
+\label{sec:static-overview}
+
+Statik analiz, bir programi \emph{calistirmadan} --- yalnizca yapisinan inceleyerek --- bilgi cikarma surecidir. Karadul'un statik analiz katmani iki ana dal icindenir:
+
+\begin{enumerate}
+\item \textbf{Binary Statik Analiz} (\file{macho.py}): Mach-O, ELF, PE binary'ler icin otool, nm, strings, lief ve Ghidra headless.
+\item \textbf{JavaScript Statik Analiz} (\file{javascript.py}): Babel AST ile fonksiyon/string/import/export cikartma.
+\end{enumerate}
+
+\begin{tanim}[Statik Analiz Formalizasyonu]
+Bir hedef $t \in \mathcal{T}$ uzerinde statik analiz fonksiyonu:
+\begin{equation}
+\label{eq:static-analysis}
+\mathcal{A}_{\text{static}}: \mathcal{T} \longrightarrow \mathcal{F} \times \mathcal{S} \times \mathcal{I} \times \mathcal{G}
+\end{equation}
+Burada:
+\begin{itemize}
+\item $\mathcal{F}$: Fonksiyon kumesi (isim, adres, boyut, decompiled kod)
+\item $\mathcal{S}$: String kumesi (literal, referans adresi)
+\item $\mathcal{I}$: Import/export kumesi (kutuplhane, sembol)
+\item $\mathcal{G}$: Call graph (yonlu graf, $G = (V, E)$ burada $V$ fonksiyonlar, $E$ cagri iliskileri)
+\end{itemize}
+\end{tanim}
+
+% --- TikZ: Statik Analiz Pipeline ---
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.3cm,
+    block/.style={rectangle, draw=sectioncyan, fill=boxbg, text=white,
+                  minimum width=3.5cm, minimum height=0.8cm, rounded corners=2pt,
+                  font=\small},
+    arrow/.style={-{Stealth[length=2.5mm]}, thick, white},
+]
+    % Binary track
+    \node[block, fill=blue!15!black] (bin_input) {Native Binary};
+    \node[block, below=of bin_input] (otool) {otool -L, -l};
+    \node[block, below=of otool] (strings) {strings extraction};
+    \node[block, below=of strings] (nm) {nm -g (symbols)};
+    \node[block, below=of nm] (lief) {lief header parse};
+    \node[block, below=of lief] (ghidra) {Ghidra Headless};
+    \node[block, below=of ghidra, fill=green!15!black] (bin_out) {StageResult};
+
+    % JS track
+    \node[block, fill=yellow!15!black, right=4cm of bin_input] (js_input) {JS Bundle};
+    \node[block, below=of js_input] (copy) {Raw Copy};
+    \node[block, below=of copy] (chunk) {ChunkedProcessor};
+    \node[block, below=of chunk] (babel) {Babel AST Parse};
+    \node[block, below=of babel] (extract) {Function/String Extract};
+    \node[block, below=of extract] (webpack) {Webpack Module ID};
+    \node[block, below=of webpack, fill=green!15!black] (js_out) {StageResult};
+
+    % Arrows
+    \draw[arrow] (bin_input) -- (otool);
+    \draw[arrow] (otool) -- (strings);
+    \draw[arrow] (strings) -- (nm);
+    \draw[arrow] (nm) -- (lief);
+    \draw[arrow] (lief) -- (ghidra);
+    \draw[arrow] (ghidra) -- (bin_out);
+
+    \draw[arrow] (js_input) -- (copy);
+    \draw[arrow] (copy) -- (chunk);
+    \draw[arrow] (chunk) -- (babel);
+    \draw[arrow] (babel) -- (extract);
+    \draw[arrow] (extract) -- (webpack);
+    \draw[arrow] (webpack) -- (js_out);
+
+    % Labels
+    \node[font=\footnotesize\bfseries, text=sectioncyan] at ([yshift=0.7cm]bin_input.north) {Binary Track};
+    \node[font=\footnotesize\bfseries, text=yellow!70!white] at ([yshift=0.7cm]js_input.north) {JavaScript Track};
+\end{tikzpicture}
+\caption{Statik analiz iki paralel track: binary ve JavaScript.}
+\label{fig:static-pipeline}
+\end{figure}
+
+
+% ===================================================================
+\section{Binary Statik Analiz Araclari}
+\label{sec:binary-static-tools}
+
+\code{MachOAnalyzer} sinifi (\file{macho.py:L34--L610}), native binary'ler icin 7 adimlik bir statik analiz pipeline'i isletir.
+
+\subsection{otool: Dynamic Library ve Load Command Analizi}
+
+macOS'a ozgu \texttt{otool} araci, Mach-O binary'lerin yapisal bilgilerini cikarir.
+
+\paragraph{otool -L: Dynamic Libraries.}
+\file{macho.py:L362--L387}'deki \code{\_run\_otool\_libs} metodu:
+
+\begin{lstlisting}[language=Python, caption={otool -L cikti parse'i}]
+output = self.runner.run_otool(binary_path, flags=["-L"])
+for line in output.splitlines()[1:]:  # ilk satir dosya adi
+    parts = line.strip().split(" (")
+    lib_path = parts[0].strip()
+    version_info = parts[1].rstrip(")") if len(parts) > 1 else ""
+    libraries.append({"path": lib_path, "version_info": version_info})
+\end{lstlisting}
+
+\paragraph{otool -l: Load Commands.}
+Tum load command'lari ham metin olarak kaydeder (\file{macho.py:L389--L391}). Bu cikti, segment offset'leri, UUID, code signature ve encryption bilgilerini icerir.
+
+\paragraph{Karmasiklik.} Her iki komut da $\bigO{n}$ dosya boyutuyla orantili zamanda calisir. Tipik bir 10~MB binary icin $<1$~saniye.
+
+\subsection{nm: Symbol Table Extraction}
+
+\texttt{nm -g} komutu, binary'nin global (export) sembollerini cikarir. \file{macho.py:L393--L429}'daki \code{\_run\_nm} metodu:
+
+\begin{lstlisting}[language=Python, caption={nm cikti formati}]
+# nm cikti formati: "ADDRESS TYPE NAME"
+# Ornekler:
+# 0000000100003a40 T _main
+# 0000000100004b20 T _process_data
+#                  U _printf        (undefined/external)
+for line in result.stdout.splitlines():
+    parts = line.strip().split(None, 2)
+    if len(parts) == 3:
+        symbols.append({
+            "address": parts[0],  # hex adres
+            "type": parts[1],     # T=text, D=data, U=undefined
+            "name": parts[2],     # sembol adi
+        })
+\end{lstlisting}
+
+\paragraph{Symbol Type Kodlari.}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{cl}
+\toprule
+\textbf{\color{sectioncyan}Kod} & \textbf{\color{sectioncyan}Anlam} \\
+\midrule
+\texttt{T/t} & Text (kod) section'da tanimli / lokal \\
+\texttt{D/d} & Data section'da tanimli / lokal \\
+\texttt{B/b} & BSS (sifir-initialize) section / lokal \\
+\texttt{S/s} & Diger section'da tanimli / lokal \\
+\texttt{U}   & Undefined (baska kutuphane\-den import) \\
+\bottomrule
+\end{tabular}
+\caption{nm sembol tip kodlari.}
+\label{tab:nm-types}
+\end{table}
+
+\subsection{strings: String Extraction}
+\label{sec:strings-extraction}
+
+Binary icindeki okunabilir string'ler, tersine muhendisligin en degerli bilgi kaynaklarindan biridir. Karadul iki yontem kullanir:
+
+\textbf{1. Subprocess yontemi} (kucuk binary'ler, $<$100~MB): Sistemin \texttt{strings} komutunu SubprocessRunner ile calistirir.
+
+\textbf{2. mmap yontemi} (buyuk binary'ler, $\geq$100~MB): \file{macho.py:L497--L572}'deki \code{\_extract\_strings\_mmap} metodu, dosyayi \texttt{mmap} ile belleye map'leyerek byte-by-byte tarar:
+
+\begin{lstlisting}[language=Python, caption={mmap ile string extraction}]
+with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+    for i in range(mm.size()):
+        byte = mm[i]
+        if 0x20 <= byte <= 0x7E:  # Printable ASCII
+            current.append(byte)
+        else:
+            if len(current) >= min_length:
+                strings.append(bytes(current).decode("ascii"))
+                if len(strings) >= max_strings:
+                    return strings  # Erken cikis
+            current = []
+\end{lstlisting}
+
+\paragraph{mmap Avantajlari.}
+\begin{itemize}
+\item OS seviyesinde sayfa sayfa okuma --- tum dosya RAM'e alinmaz.
+\item 224~MB binary icin $\sim$15 saniye (subprocess ile $>$30 saniye).
+\item \texttt{max\_strings = 50000} limiti ile bellek kullanimi kontrol altinda.
+\end{itemize}
+
+\paragraph{Karmasiklik.}
+\begin{equation}
+\label{eq:strings-complexity}
+T_{\text{strings}} = \bigO{n}
+\end{equation}
+Tek gecis (single pass) algoritmasi. Her byte tam bir kez incelenir.
+
+
+% ===================================================================
+\section{Ghidra Headless Analiz}
+\label{sec:ghidra-headless}
+
+Ghidra, NSA tarafindan gelistirilen acik kaynakli bir tersine muhendislik framework'udur. Karadul, Ghidra'yi \emph{headless} modda (GUI olmadan) kullanarak derinlemesine binary analiz yapar.
+
+\subsection{PyGhidra API vs CLI Modu}
+
+\file{headless.py:L1--L68}'de iki calisma modu desteklenir:
+
+\begin{enumerate}
+\item \textbf{PyGhidra API (tercih edilen):} \texttt{pyghidra.open\_program} ile Ghidra JVM dogrudan Python 3 process'i icinde baslatilir. Hizli, stabil, ama Ghidra + PyGhidra kurulumu gerektirir.
+\item \textbf{CLI fallback:} \texttt{analyzeHeadless} komutu ile ayri bir JVM process'i baslatilir. Jython gerektirir, daha yavas.
+\end{enumerate}
+
+\subsection{Decompilation Pipeline}
+
+Ghidra'nin decompilation sureci P-code (Processor code) ara temsilini kullanir:
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.2cm,
+    block/.style={rectangle, draw=sectioncyan, fill=boxbg, text=white,
+                  minimum width=3.2cm, minimum height=0.7cm, rounded corners=2pt,
+                  font=\small},
+    arrow/.style={-{Stealth[length=2.5mm]}, thick, white},
+]
+    \node[block] (bin) {Raw Binary};
+    \node[block, below=of bin] (disasm) {Disassembly};
+    \node[block, below=of disasm] (pcode) {P-code IR};
+    \node[block, below=of pcode] (ssa) {SSA Form};
+    \node[block, below=of ssa] (opt) {Optimization Passes};
+    \node[block, below=of opt] (decomp) {C Pseudocode};
+
+    \draw[arrow] (bin) -- node[right, font=\tiny] {SLEIGH} (disasm);
+    \draw[arrow] (disasm) -- node[right, font=\tiny] {Lifting} (pcode);
+    \draw[arrow] (pcode) -- node[right, font=\tiny] {Analysis} (ssa);
+    \draw[arrow] (ssa) -- node[right, font=\tiny] {Dead code elim.} (opt);
+    \draw[arrow] (opt) -- node[right, font=\tiny] {Struct recovery} (decomp);
+\end{tikzpicture}
+\caption{Ghidra decompilation pipeline: Binary $\to$ P-code $\to$ C pseudocode.}
+\label{fig:ghidra-pipeline}
+\end{figure}
+
+\paragraph{P-code.}
+P-code, Ghidra'nin mimariden bagimsiz ara dilidir. Her native instruction (ARM64, x86\_64 vb.) bir veya birden fazla P-code islemine donusturulur. Bu, Ghidra'nin tek bir decompiler'la 40+ mimariyi desteklemesini saglar.
+
+\subsection{Ghidra Script'leri}
+
+Karadul, Ghidra'ya 5 ozel script gonderir:
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lp{8cm}}
+\toprule
+\textbf{\color{sectioncyan}Script} & \textbf{\color{sectioncyan}Gorevi} \\
+\midrule
+\texttt{function\_lister.py}  & Tum fonksiyonlarin listesi (isim, adres, boyut) \\
+\texttt{string\_extractor.py} & Cross-reference'li string cikartma \\
+\texttt{call\_graph.py}       & Fonksiyonlar arasi cagri grafinin cikarilmasi \\
+\texttt{decompile\_all.py}    & Her fonksiyonun C pseudocode'a cevirilmesi \\
+\texttt{export\_results.py}   & Tum sonuclarin JSON olarak birlestirilmesi \\
+\bottomrule
+\end{tabular}
+\caption{Karadul'un Ghidra script'leri.}
+\label{tab:ghidra-scripts}
+\end{table}
+
+
+% ===================================================================
+\section{Mach-O Segment/Section Analizi}
+\label{sec:macho-sections}
+
+\code{lief} kutuphanesi ile Mach-O binary'nin tum segment ve section bilgileri programatik olarak cikarilir (\file{macho.py:L431--L495}).
+
+\subsection{\_\_TEXT Segmenti}
+
+\begin{description}
+\item[\texttt{\_\_text}:] Derlenm\-is makine kodu. ARM64 veya x86\_64 instruction'lar.
+\item[\texttt{\_\_stubs}:] Lazy binding stub'lari --- dinamik kutuplhane fonksiyonlarina ilk cagridaki trampoline.
+\item[\texttt{\_\_stub\_helper}:] Stub helper fonksiyonlari --- dyld'e geri cagri.
+\item[\texttt{\_\_cstring}:] Null-terminated C string'leri.
+\item[\texttt{\_\_const}:] Salt-okunur sabitler.
+\item[\texttt{\_\_unwind\_info}:] Exception handling unwind bilgileri.
+\end{description}
+
+\subsection{\_\_DATA Segmenti}
+
+\begin{description}
+\item[\texttt{\_\_data}:] Initialize edilmis global degiskenler.
+\item[\texttt{\_\_bss}:] Sifir-initialize edilmis degiskenler (dosyada yer kaplamaz).
+\item[\texttt{\_\_la\_symbol\_ptr}:] Lazy symbol pointer'lar --- ilk cagri sirasinda doldurulur.
+\item[\texttt{\_\_got}:] Global Offset Table --- non-lazy symbol pointer'lar.
+\end{description}
+
+\subsection{\_\_LINKEDIT Segmenti}
+
+Monolitik bir segment olup sembol tablolari, string tablolari, code signature ve diger baglama bilgilerini icerir. Bu segmentin ic yapisi \texttt{LC\_SYMTAB} ve \texttt{LC\_DYSYMTAB} load command'lari ile tarif edilir.
+
+
+% ===================================================================
+\section{Symbol Extraction: SYMTAB ve DYSYMTAB}
+\label{sec:symbol-extraction}
+
+\subsection{SYMTAB (Symbol Table)}
+
+\texttt{LC\_SYMTAB} load command'i, sembol tablosunun dosya icindeki konumunu belirtir:
+
+\begin{equation}
+\label{eq:symtab-struct}
+\text{LC\_SYMTAB} =
+\begin{cases}
+\texttt{symoff}  & \text{sembol tablosu offset'i} \\
+\texttt{nsyms}   & \text{sembol sayisi} \\
+\texttt{stroff}  & \text{string tablosu offset'i} \\
+\texttt{strsize} & \text{string tablosu boyutu}
+\end{cases}
+\end{equation}
+
+Her sembol girisi (\texttt{nlist\_64}) 16 byte'tir:
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{llr}
+\toprule
+\textbf{\color{sectioncyan}Alan} & \textbf{\color{sectioncyan}Tip} & \textbf{\color{sectioncyan}Boyut} \\
+\midrule
+\texttt{n\_strx}  & uint32 & 4 byte (string tablosu index'i) \\
+\texttt{n\_type}  & uint8  & 1 byte (tip flag'leri) \\
+\texttt{n\_sect}  & uint8  & 1 byte (section numarasi) \\
+\texttt{n\_desc}  & uint16 & 2 byte (aciklama) \\
+\texttt{n\_value} & uint64 & 8 byte (sembol adresi) \\
+\bottomrule
+\end{tabular}
+\caption{\texttt{nlist\_64} sembol girisi yapisi.}
+\label{tab:nlist64}
+\end{table}
+
+\subsection{DYSYMTAB (Dynamic Symbol Table)}
+
+Dinamik baglayici (dyld) tarafindan kullanilan ek bilgileri icerir: hangi sembollerin local, hangilesinin external, hangilerinin undefined oldugunu belirten index'ler.
+
+\paragraph{Karadul'un sembol cikartma stratejisi:}
+\begin{enumerate}
+\item \texttt{nm -g} ile global sembolleri al (\file{macho.py:L393}).
+\item lief ile tum segment/section bilgisini al (\file{macho.py:L431}).
+\item Ghidra ile fonksiyon listesini al (decompilation dahil).
+\item Uc kaynagi birlestir: \texttt{nm} $\cup$ \texttt{lief} $\cup$ \texttt{Ghidra}.
+\end{enumerate}
+
+
+% ===================================================================
+\section{JavaScript Babel AST Analizi}
+\label{sec:babel-ast}
+
+JavaScript statik analizi, \texttt{@babel/parser} ile kaynak kodu Abstract Syntax Tree (AST) agacina donusturur ve bu agac uzerinde gezinerek bilgi cikarir.
+
+\subsection{AST Kavramsal Yapisi}
+
+\begin{tanim}[Abstract Syntax Tree]
+Bir kaynak kod $s$ icin AST, yaprak dugumleri token'lar, ic dugumleri sentaktik yapilar olan bir koklu agactir:
+\begin{equation}
+\label{eq:ast-def}
+\text{AST}(s) = (V, E, r, \lambda)
+\end{equation}
+Burada:
+\begin{itemize}
+\item $V$: dugum kumesi
+\item $E \subseteq V \times V$: ebeveyn-cocuk iliskileri
+\item $r \in V$: kok dugum (Program)
+\item $\lambda: V \to \text{NodeType}$: dugum tip etiketi
+\end{itemize}
+\end{tanim}
+
+\subsection{Babel Parser Entegrasyonu}
+
+Karadul, Babel'i dogrudan Python'dan degil, Node.js scriptleri uzerinden cagirir (\file{javascript.py:L49--L162}):
+
+\begin{lstlisting}[language=Python, caption={deobfuscate.mjs cagirma}]
+cmd = [
+    str(self.config.tools.node),
+    "--max-old-space-size=8192",
+    str(deobfuscate_script),
+    str(analysis_file),
+]
+sub_result = self._runner.run_command(
+    cmd, timeout=effective_timeout, cwd=self._scripts_dir,
+)
+result_json = sub_result.parsed_json
+\end{lstlisting}
+
+\subsection{Cikarilan AST Node Tipleri}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{llp{5.5cm}}
+\toprule
+\textbf{\color{sectioncyan}Node Tipi} & \textbf{\color{sectioncyan}Kategori} & \textbf{\color{sectioncyan}Aciklama} \\
+\midrule
+\texttt{FunctionDeclaration}   & Fonksiyon & \texttt{function foo() \{...\}} \\
+\texttt{ArrowFunctionExpression} & Fonksiyon & \texttt{(x) => x + 1} \\
+\texttt{ClassMethod}           & Fonksiyon & \texttt{class Foo \{ bar() \{...\} \}} \\
+\texttt{FunctionExpression}    & Fonksiyon & \texttt{const f = function() \{...\}} \\
+\texttt{StringLiteral}         & String    & \texttt{"hello world"} \\
+\texttt{TemplateLiteral}       & String    & \texttt{`Hello \$\{name\}`} \\
+\texttt{ImportDeclaration}     & Import    & \texttt{import x from 'y'} \\
+\texttt{ExportNamedDeclaration} & Export   & \texttt{export \{ foo \}} \\
+\texttt{CallExpression}        & Cagri     & \texttt{foo(a, b)} \\
+\bottomrule
+\end{tabular}
+\caption{Babel AST'den cikarilan node tipleri.}
+\label{tab:ast-nodes}
+\end{table}
+
+\subsection{Fonksiyon Extraction Algoritmasi}
+
+Babel AST uzerinde \texttt{traverse} ile derinlemesine gezinti yapilir. Her fonksiyon node'u icin:
+
+\begin{enumerate}
+\item \textbf{Isim:} \texttt{FunctionDeclaration.id.name}, \texttt{ClassMethod.key.name}, veya anonim fonksiyonlar icin \texttt{null}.
+\item \textbf{Parametre sayisi:} \texttt{node.params.length}.
+\item \textbf{Baslangic/bitis satir numaralari:} \texttt{node.loc.start.line}, \texttt{node.loc.end.line}.
+\item \textbf{Govde boyutu:} Bitis - baslangic satir farki.
+\end{enumerate}
+
+\paragraph{Pseudocode:}
+\begin{lstlisting}[language=JavaScript, caption={Fonksiyon extraction pseudocode}]
+traverse(ast, {
+  "FunctionDeclaration|ArrowFunctionExpression|ClassMethod"(path) {
+    functions.push({
+      name: path.node.id?.name || path.node.key?.name || null,
+      params: path.node.params.length,
+      loc: path.node.loc,
+      body_size: path.node.loc.end.line - path.node.loc.start.line,
+    });
+  }
+});
+\end{lstlisting}
+
+\subsection{String Extraction}
+
+AST'den iki tipteki string cikarilir:
+
+\textbf{1. StringLiteral:} Tek veya cift tirnak icindeki sabit string'ler. Degeri dogrudan \texttt{node.value}'dan alinir.
+
+\textbf{2. TemplateLiteral:} Backtick icindeki sablonlu string'ler. \texttt{node.quasis} dizisindeki \texttt{cooked} degerleri birlestirilir.
+
+\paragraph{Karmasiklik.} AST traversal $\bigO{|V|}$ --- dugum sayisiyla dogrusal.
+
+
+% ===================================================================
+\section{Webpack Modul ID Tespiti}
+\label{sec:webpack-modules}
+
+Webpack bundle'lari, her modulu bir ID ile tanimlar ve \texttt{\_\_webpack\_require\_\_(id)} ile yukler.
+
+\subsection{Webpack Runtime Yapisi}
+
+Tipik bir webpack bundle'in yapisi:
+
+\begin{lstlisting}[language=JavaScript, caption={Webpack bundle yapisi (basitlestirilmis)}]
+(function(modules) {
+  // webpack bootstrap
+  function __webpack_require__(moduleId) {
+    // cache kontrolu
+    if (installedModules[moduleId]) return installedModules[moduleId].exports;
+    // yeni modul
+    var module = installedModules[moduleId] = { exports: {} };
+    modules[moduleId].call(module.exports, module, module.exports,
+                           __webpack_require__);
+    return module.exports;
+  }
+  __webpack_require__(0); // entry point
+})({
+  0: function(module, exports, __webpack_require__) { /* ... */ },
+  1: function(module, exports, __webpack_require__) { /* ... */ },
+  // ...
+});
+\end{lstlisting}
+
+\subsection{Modul ID Cikartma Algoritmasi}
+
+Babel AST uzerinde \texttt{CallExpression} node'lari taranir:
+
+\begin{enumerate}
+\item \texttt{callee.name === "\_\_webpack\_require\_\_"} mi kontrol edilir.
+\item Argument olarak sayi veya string literal alinir --- bu modul ID'dir.
+\item ID'ler toplanir ve \texttt{webpack-modules} artifact'i olarak kaydedilir.
+\end{enumerate}
+
+\file{javascript.py:L213--L220}'de kayit:
+\begin{lstlisting}[language=Python, caption={Webpack modul kaydi}]
+webpack_modules = result_json.get("webpack_modules", [])
+if webpack_modules:
+    wp_path = workspace.save_json("static", "webpack-modules", {
+        "module_ids": webpack_modules,
+        "count": len(webpack_modules),
+    })
+\end{lstlisting}
+
+\subsection{Modul ID Mapping}
+
+Webpack 4+ surumlerde modul ID'leri deterministik hash'lerdir:
+\begin{equation}
+\label{eq:webpack-id}
+\text{module\_id} = \text{MD4}(\text{relative\_path})[:4] \quad \text{(webpack 4)}
+\end{equation}
+\begin{equation}
+\label{eq:webpack5-id}
+\text{module\_id} = \text{MD4}(\text{absolute\_path + loaders})[:4] \quad \text{(webpack 5)}
+\end{equation}
+
+Bu hash'ler, orijinal dosya yolunu geri kazanmayi olanaklsiz kilar; ancak modul sayisi ve bagimlilik yapisi analizlerinde kullanilir.
+
+
+% ===================================================================
+\section{Buyuk Dosya Destegi: ChunkedProcessor}
+\label{sec:chunked-processor}
+
+200~MB+ JavaScript dosyalari Babel parser'in bellek limitlerini asar. \file{chunked\_processor.py}'deki \code{ChunkedProcessor} sinifi bu problemi cozer.
+
+\subsection{Chunk Bolme Algoritmasi}
+
+\begin{tanim}[Brace-Aware Chunking]
+Bir JS dosyasi $F = (l_1, l_2, \ldots, l_n)$ satirlarindan olusmaktadir. Brace derinligi:
+\begin{equation}
+\label{eq:brace-depth}
+d(i) = d(i-1) + \#\{l_i\}^{\texttt{\{}} - \#\{l_i\}^{\texttt{\}}}
+\end{equation}
+Bir chunk siniri $i$'de olusur eger:
+\begin{equation}
+\label{eq:chunk-boundary}
+d(i) = 0 \quad \wedge \quad \sum_{j=k}^{i} |l_j| \geq C_{\max}
+\end{equation}
+Burada $C_{\max}$ = \code{max\_chunk\_mb} $\times 1024^2$ (varsayilan 50~MB).
+\end{tanim}
+
+\file{chunked\_processor.py:L113--L223}'teki implementasyon:
+
+\begin{lstlisting}[language=Python, caption={Brace-aware chunking}]
+depth = 0
+for line_num, line in enumerate(f, start=1):
+    for ch in line:
+        if ch == "{": depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth < 0: depth = 0
+    current_lines.append(line)
+    current_size += len(line.encode("utf-8"))
+    # Chunk boundary: depth=0 ve yeterince buyuk
+    if depth == 0 and current_size >= max_chunk_bytes:
+        write_chunk(current_lines)
+        current_lines, current_size = [], 0
+\end{lstlisting}
+
+\subsection{Top-Level Statement Tespiti}
+
+Chunk sinirlari, tercihen top-level statement baslangiclarina hizalanir. \file{chunked\_processor.py:L22--L36}'daki pattern'ler:
+
+\begin{lstlisting}[language=Python, caption={Top-level statement pattern'leri}]
+_TOP_LEVEL_STARTS = (
+    "function ", "async function ", "class ",
+    "const ", "let ", "var ",
+    "export ", "module.exports", "exports.",
+    "Object.defineProperty", "__webpack_require__",
+    '"use strict"', "'use strict'",
+)
+\end{lstlisting}
+
+\subsection{Paralel Isleme}
+
+\code{ChunkedProcessor.process\_chunks} metodu (\file{chunked\_processor.py:L225--L258}) hem sirali hem paralel isleme destekler:
+
+\begin{equation}
+\label{eq:parallel-speedup}
+S_p = \frac{T_{\text{sequential}}}{T_{\text{parallel}}} \leq \min(p, N_{\text{chunks}})
+\end{equation}
+
+Burada $p$ = \code{max\_workers} (varsayilan 4), $N_{\text{chunks}}$ toplam chunk sayisi. Python GIL nedeniyle I/O-bound islemlerde etkilidir, CPU-bound islemlerde sinirlidir.
+
+\paragraph{Veri Yapilari.}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{\color{sectioncyan}Sinif} & \textbf{\color{sectioncyan}Icerik} \\
+\midrule
+\code{ChunkInfo}   & path, index, start\_line, end\_line, size\_bytes, line\_count \\
+\code{ChunkResult} & chunk, success, data, error \\
+\code{SplitResult}  & success, chunks[], total\_lines, errors[] \\
+\bottomrule
+\end{tabular}
+\caption{ChunkedProcessor veri yapilari.}
+\label{tab:chunk-dataclasses}
+\end{table}
+
+
+% ===================================================================
+\section{FLIRT Signature Sistemi}
+\label{sec:flirt-signatures}
+
+FLIRT (Fast Library Identification and Recognition Technology), IDA Pro'nun kutuphane fonksiyon tanima sistemidir. Karadul, \file{flirt\_parser.py}'de kendi FLIRT-uyumlu parser'ini implement eder.
+
+\subsection{.pat Dosya Formati}
+
+FLIRT pattern dosyasi (\texttt{.pat}) su formatta satirlar icerir:
+
+\begin{verbatim}
+HEXBYTES CRC16 SIZE TOTAL :OFFSET NAME [REFERENCED...]
+\end{verbatim}
+
+\paragraph{Ornek:}
+\begin{verbatim}
+558BEC83EC10 0C 0025 003A :0000 _my_function
+558BEC........8B4508 00 0000 001F :0000 _another_func ^0010 _ref
+\end{verbatim}
+
+Burada \texttt{..} wildcard byte'i temsil eder (herhangi bir deger eslesir).
+
+\subsection{Pattern Matching Algoritmasi}
+
+\file{flirt\_parser.py:L721--L779}'deki \code{match\_function\_bytes} metodu:
+
+\begin{tanim}[Masked Byte Comparison]
+Bir fonksiyonun ilk $n$ byte'i $f = (f_0, f_1, \ldots, f_{n-1})$ ve bir FLIRT pattern'i $(p, m)$ (pattern + mask) verildiginde:
+\begin{equation}
+\label{eq:flirt-match}
+\text{match}(f, p, m) = \bigwedge_{i=0}^{|p|-1}
+\begin{cases}
+f_i = p_i & \text{eger } m_i = \texttt{0xFF} \\
+\text{true} & \text{eger } m_i = \texttt{0x00} \text{ (wildcard)}
+\end{cases}
+\end{equation}
+\end{tanim}
+
+\paragraph{Confidence Hesabi.}
+\begin{equation}
+\label{eq:flirt-confidence}
+\text{conf}(p, m) = \min\!\left(0.98,\; \text{base\_conf} \times \frac{|\{i : m_i = \texttt{0xFF}\}|}{|p|}\right)
+\end{equation}
+Burada \texttt{base\_conf} = 0.95 (FLIRT imzalarinin yuksek guvenilirligi).
+
+\subsection{Hex-to-Bytes-with-Mask Donusumu}
+
+\file{flirt\_parser.py:L218--L256}'deki \code{\_hex\_to\_bytes\_with\_mask} metodu:
+
+\begin{lstlisting}[language=Python, caption={Hex string ile mask olusturma}]
+# "558BEC..8B45" -> (pattern_bytes, mask_bytes)
+i = 0
+while i < len(hex_str):
+    if hex_str[i:i+2] == "..":
+        pattern_bytes.append(0x00)
+        mask_bytes.append(0x00)   # Wildcard
+    else:
+        pattern_bytes.append(int(hex_str[i:i+2], 16))
+        mask_bytes.append(0xFF)   # Kesin
+    i += 2
+\end{lstlisting}
+
+\subsection{SignatureDB Entegrasyonu}
+
+FLIRT parser, bagimsiz bir modul olarak tasarlanmistir. SignatureDB'ye enjeksiyon \code{inject\_into\_signature\_db} metodu ile yapilir (\file{flirt\_parser.py:L647--L715}):
+
+\begin{equation}
+\label{eq:flirt-inject}
+\text{SignatureDB} = \text{SignatureDB}_{\text{builtin}} \cup \text{FLIRT}_{\text{external}}
+\end{equation}
+
+Duplikasyon kontrolu yapilir: builtin DB'deki imzalar onceliklidir, ayni isimli FLIRT imzasi atlanir.
+
+\paragraph{Karadul'un toplam imza sayisi:}
+\begin{equation}
+|\text{SignatureDB}| = 6100+ \text{ (builtin)} + \text{FLIRT external} \approx 1.5\text{M+}
+\end{equation}
+
+
+% ===================================================================
+\section{Assembly Instruction Analizi}
+\label{sec:assembly-analysis}
+
+\file{assembly\_analyzer.py}'deki \code{AssemblyAnalyzer} sinifi, Ghidra decompiler'in kacirdigi dusuk seviye bilgileri dogrudan assembly instruction'lardan cikarir.
+
+\subsection{ARM64 (AArch64) vs x86\_64}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}Ozellik} & \textbf{\color{sectioncyan}ARM64 (AArch64)} & \textbf{\color{sectioncyan}x86\_64} \\
+\midrule
+Instruction boyutu  & Sabit 4 byte         & Degisken 1--15 byte \\
+Register sayisi     & 31 genel amacli      & 16 genel amacli \\
+Calling convention  & AAPCS64              & System V AMD64 / Win64 \\
+Parametre register  & x0--x7 (8 adet)      & rdi,rsi,rdx,rcx,r8,r9 (6 adet) \\
+Return register     & x0, x1               & rax, rdx \\
+SIMD extension      & NEON                 & SSE/AVX \\
+Endianness          & Little-endian        & Little-endian \\
+\bottomrule
+\end{tabular}
+\caption{ARM64 ve x86\_64 mimari karsilastirmasi.}
+\label{tab:arm-vs-x86}
+\end{table}
+
+\subsection{Calling Convention Tespiti}
+
+\file{assembly\_analyzer.py:L207--L224}'deki \code{\_detect\_calling\_convention}:
+
+\begin{lstlisting}[language=Python, caption={Calling convention tespiti}]
+if arch == "aarch64":
+    return "aapcs64"
+
+first_lines = "\n".join(lines[:20]).lower()
+# System V AMD64: rdi, rsi parametreler
+if re.search(r"\brdi\b", first_lines) and re.search(r"\brsi\b", first_lines):
+    return "sysv_amd64"
+# Windows x64: rcx, rdx parametreler
+if re.search(r"\brcx\b", first_lines) and not re.search(r"\brdi\b", first_lines):
+    return "win64"
+return "sysv_amd64"  # macOS/Linux default
+\end{lstlisting}
+
+\subsection{Stack Frame Analizi}
+
+Fonksiyonun stack frame boyutu, prolog'daki \texttt{sub rsp, N} instruction'indan cikarilir:
+
+\begin{equation}
+\label{eq:stack-frame}
+\text{frame\_size} =
+\begin{cases}
+N & \text{eger } \texttt{sub rsp, N} \text{ bulunduysa} \\
+0 & \text{aksi halde (leaf function)}
+\end{cases}
+\end{equation}
+
+Stack degiskenleri \texttt{[rbp-0xNN]} pattern'leri ile tespit edilir. Ardisik offset farklari degisken boyutunu verir:
+
+\begin{equation}
+\label{eq:stack-var-size}
+\text{size}(v_i) = \text{offset}(v_{i+1}) - \text{offset}(v_i)
+\end{equation}
+
+\subsection{SIMD Pattern Tespiti}
+
+\file{assembly\_analyzer.py:L82--L110}'da tanimlanan instruction setleri:
+
+\begin{description}
+\item[SSE:] \texttt{addps}, \texttt{mulps}, \texttt{movaps}, \ldots --- 128-bit SIMD (float32$\times$4)
+\item[AVX:] \texttt{vaddps}, \texttt{vmulps}, \texttt{vfmadd231ps}, \ldots --- 256-bit SIMD (float32$\times$8)
+\item[NEON:] \texttt{fmla}, \texttt{fadd}, \texttt{ld1}, \texttt{st1}, \ldots --- ARM 128-bit SIMD
+\item[Crypto:] \texttt{aesenc}, \texttt{sha256rnds2}, \texttt{pclmulqdq}, \texttt{aese}, \ldots --- AES-NI / ARM Crypto Extensions
+\end{description}
+
+FMA (Fused Multiply-Add) instruction'larinin varligii, dot product veya matris carpiimi pattern'ini isaret eder.
+
+
+% ===================================================================
+\section{Entropy Analizi ile Packing Tespiti}
+\label{sec:entropy-packing}
+
+Paketlenm\-is (packed) binary'ler, normal binary'lerden ayirt edilebilir entropy profilleri gosterir.
+
+\subsection{Shannon Entropisi}
+
+\begin{equation}
+\label{eq:shannon-entropy}
+H(X) = -\sum_{x \in \mathcal{X}} p(x) \log_2 p(x)
+\end{equation}
+
+Burada $p(x) = \text{freq}(x) / n$, byte $x$'in frekans olasiligidir. $H$ degerleri:
+
+\begin{itemize}
+\item $H = 0$: Tamamen tekduze (tek byte tekrari).
+\item $H \approx 4$--$5$: Tipik executable binary (kod + veri).
+\item $H \approx 6$--$7$: Sikistirilmis veri veya rastgele-benzeri bolgeler.
+\item $H \approx 8$: Tamamen rastgele / sifrelenmis / UPX-packed.
+\end{itemize}
+
+\file{packed\_binary.py:L137--L160}'daki implementasyon:
+\begin{lstlisting}[language=Python, caption={Shannon entropy hesaplama}]
+def calculate_entropy(data: bytes) -> float:
+    if not data:
+        return 0.0
+    freq = [0] * 256
+    for byte in data:
+        freq[byte] += 1
+    length = len(data)
+    entropy = 0.0
+    for f in freq:
+        if f > 0:
+            p = f / length
+            entropy -= p * math.log2(p)
+    return entropy
+\end{lstlisting}
+
+\paragraph{Karmasiklik.}
+\begin{equation}
+\label{eq:entropy-complexity}
+T_{\text{entropy}} = \bigO{n + 256} = \bigO{n}
+\end{equation}
+Tek gecis frekans sayma + 256 eleman toplam.
+
+\subsection{Packing Karar Algoritmasi}
+
+\file{packed\_binary.py:L209--L388}'deki \code{PackingDetector.detect} metodu 5 adimli bir tespit uygular:
+
+\begin{enumerate}
+\item \textbf{UPX kontrolu:} \texttt{UPX!} magic byte'i aranir. Bulunursa: $\text{confidence} = 0.95$.
+\item \textbf{PyInstaller kontrolu:} \texttt{MEI} magic byte'i (8 byte). Bulunursa: $\text{confidence} = 0.95$.
+\item \textbf{Nuitka kontrolu:} \texttt{\_\_nuitka\_}, \texttt{nuitka-compiled} string'leri. Bulunursa: $\text{confidence} = 0.85$.
+\item \textbf{Entropy analizi:} $H > 7.0$ esigi ve $>\!50\%$ packed section orani.
+\item \textbf{Import heuristigi:} $<\!10$ import $\implies$ muhtemelen packed.
+\end{enumerate}
+
+Karar formulu:
+\begin{equation}
+\label{eq:packing-decision}
+\text{is\_packed} =
+\begin{cases}
+\text{true, UPX} & \texttt{UPX!} \in \text{binary} \\
+\text{true, PyInstaller} & \texttt{MEI} \in \text{binary} \\
+\text{true, Nuitka} & \texttt{nuitka} \in \text{binary} \\
+\text{true, unknown} & H > 7.0 \wedge \text{packed\_ratio} > 0.5 \\
+\text{true, generic} & H > 6.5 \wedge \text{imports} < 10 \\
+\text{false} & \text{aksi halde}
+\end{cases}
+\end{equation}
+
+% --- TikZ: Entropy Distribution ---
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=12cm, height=6cm,
+    xlabel={Entropy ($H$)},
+    ylabel={Binary sayisi (goreli)},
+    xmin=0, xmax=8.5,
+    ymin=0, ymax=1.1,
+    xtick={0,1,2,3,4,5,6,7,8},
+    grid=both,
+    grid style={gray!20!black},
+    axis background/.style={fill=black},
+    axis line style={white},
+    tick style={white},
+    ticklabel style={white},
+    xlabel style={white},
+    ylabel style={white},
+    legend style={fill=boxbg, draw=sectioncyan, text=white, at={(0.98,0.98)}, anchor=north east},
+]
+    % Normal binary dağılımı
+    \addplot[domain=2:7, samples=100, thick, cyan, smooth]
+        {exp(-0.5*((x-4.5)/0.8)^2)};
+    \addlegendentry{Normal binary}
+
+    % Packed binary dağılımı
+    \addplot[domain=6:8.5, samples=100, thick, red, smooth]
+        {0.9*exp(-0.5*((x-7.5)/0.3)^2)};
+    \addlegendentry{Packed binary}
+
+    % Threshold çizgisi
+    \draw[yellow, dashed, thick] (axis cs:7,0) -- (axis cs:7,1.1);
+    \node[yellow, font=\small] at (axis cs:7.3,1.0) {$H=7.0$};
+\end{axis}
+\end{tikzpicture}
+\caption{Normal vs packed binary entropy dagilimi. $H = 7.0$ esigi optimal ayirim noktasidir.}
+\label{fig:entropy-distribution}
+\end{figure}
+
+
+% ===================================================================
+\section{Her Analyzer Icin Giris/Cikis Veri Yapilari}
+\label{sec:analyzer-io}
+
+Tum analyzer'lar ortak bir arayuz kullanir: \code{BaseAnalyzer} soyut sinifinden miras alir ve \code{StageResult} dondurur.
+
+\subsection{Giris Veri Yapisi: TargetInfo}
+
+\begin{lstlisting}[language=Python, caption={TargetInfo veri yapisi}]
+@dataclass
+class TargetInfo:
+    path: Path              # Dosya yolu
+    name: str               # Hedef adi
+    target_type: TargetType # 12 tip
+    language: Language       # 13 dil
+    file_size: int          # Byte
+    file_hash: str          # SHA-256
+    metadata: dict[str, Any]# Ek bilgi
+\end{lstlisting}
+
+\subsection{Cikis Veri Yapisi: StageResult}
+
+\begin{lstlisting}[language=Python, caption={StageResult veri yapisi}]
+@dataclass
+class StageResult:
+    stage_name: str                  # "static", "deobfuscate", ...
+    success: bool                    # Basarili mi
+    duration_seconds: float          # Sure
+    artifacts: dict[str, Path]       # Cikti dosyalari
+    stats: dict[str, object]         # Istatistikler
+    errors: list[str]                # Hata mesajlari
+\end{lstlisting}
+
+\subsection{Analyzer Giris/Cikis Ozet Tablosu}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lp{4cm}p{6cm}}
+\toprule
+\textbf{\color{sectioncyan}Analyzer} & \textbf{\color{sectioncyan}Giris} & \textbf{\color{sectioncyan}Cikis Artifact'leri} \\
+\midrule
+MachOAnalyzer & Mach-O/ELF/PE binary + Workspace & dynamic\_libraries, load\_commands, strings\_raw, symbols, lief\_analysis, ghidra\_* \\
+JavaScriptAnalyzer & JS dosya + Workspace & ast\_analysis, functions, strings, imports\_exports, webpack\_modules \\
+ElectronAnalyzer & .app bundle + Workspace & asar\_extracted\_dir, js\_files, electron-analysis.json \\
+GoBinaryAnalyzer & Go binary + Workspace & go\_functions, go\_buildinfo, go\_types \\
+PackingDetector & Binary path & PackingInfo (is\_packed, type, entropy, evidence) \\
+FLIRTParser & .pat/.json dosya & FLIRTSignature listesi (name, library, byte\_pattern, mask) \\
+AssemblyAnalyzer & Assembly text + arch & AssemblyAnalysisResult (convention, params, stack, simd) \\
+\bottomrule
+\end{tabular}
+\caption{Her analyzer'in giris ve cikis veri yapilari.}
+\label{tab:analyzer-io}
+\end{table}
+
+\subsection{Graceful Degradation}
+
+Karadul'un statik analiz katmaninin kritik tasarim prensibi: herhangi bir alt-aracin basarisizligi pipeline'i durdurmaz. \file{macho.py:L284--L291}'deki basari kriterr:
+
+\begin{lstlisting}[language=Python, caption={Kismi basari kriteri}]
+return StageResult(
+    stage_name="static",
+    success=len(errors) == 0 or len(artifacts) > 0,  # En az 1 artifact yeterli
+    # ...
+)
+\end{lstlisting}
+
+Bu, ``ya hep ya hic'' yerine ``ne kadar bilgi cikarabilirsen o kadar iyi'' yaklasimini benimser.
+
+
+% ===================================================================
+\section{Binary Intelligence: String Clustering ve Mimari Cikarim}
+\label{sec:binary-intelligence}
+
+\file{macho.py:L222--L280}'de cagirilan \code{BinaryIntelligence} modulu, cikarilan string, sembol ve dylib verilerini birlestirerek ust seviye mimarik bilgi cikarir:
+
+\begin{itemize}
+\item \textbf{App type tespiti:} CLI, GUI, daemon, library, framework.
+\item \textbf{Subsystem tespiti:} networking, database, crypto, UI, logging.
+\item \textbf{Algoritma tespiti:} AES, SHA, zlib, protobuf, JSON.
+\item \textbf{Guvenlik mekanizmasi tespiti:} certificate pinning, code signing, anti-debug.
+\item \textbf{Protokol tespiti:} HTTP/2, gRPC, WebSocket, MQTT.
+\end{itemize}
+
+Bu bilgiler, ileriki asamalarda fonksiyon isimlendirme ve rapor uretiminde kullanilir.
+
+
+\begin{ozet}
+Statik Analiz katmani, Karadul'un bilgi toplama omurgasidir. Binary track'te otool, nm, strings, lief ve Ghidra Headless 7 adimli bir analiz pipeline'i olusturur. JavaScript track'te Babel AST analizi fonksiyon, string, import/export ve webpack modul bilgilerini cikarir. Buyuk dosyalar (200~MB+) icin ChunkedProcessor brace-aware bolme stratejisi kullanir. FLIRT signature sistemi, 1.5~M+ imza ile kutuphane fonksiyon tanimlamasi yapar. Assembly analiz, calling convention, stack frame ve SIMD pattern tespiti ile derin bilgi saglar. Entropy analizi, packed binary tespitini $H > 7.0$ esigi ile yapar. Tum bu bilesenler, graceful degradation prensibiyle calisir: herhangi bir alt aracin basarisizligi pipeline'i durdurmaz.
+\end{ozet}

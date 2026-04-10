@@ -1,0 +1,515 @@
+\contentsline {chapter}{\numberline {1}Giris ve Motivasyon}{18}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Tersine Muhendislik Nedir?}{18}{section.1.1}%
+\contentsline {subsection}{\numberline {1.1.1}Neden Onemli?}{18}{subsection.1.1.1}%
+\contentsline {subsection}{\numberline {1.1.2}Endustri Baglami}{19}{subsection.1.1.2}%
+\contentsline {subsection}{\numberline {1.1.3}Mevcut Cozumlerin Sinirliliklari}{19}{subsection.1.1.3}%
+\contentsline {subsection}{\numberline {1.1.4}Karadul'un Yaklasimi ve Farki}{20}{subsection.1.1.4}%
+\contentsline {section}{\numberline {1.2}Proje Kapsami}{20}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Dogrulanan Gercek Hedefler}{20}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Bu Dokumanin Organizasyonu}{20}{section.1.4}%
+\contentsline {chapter}{\numberline {2}Pipeline Mimarisi}{22}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Pipeline Pattern --- Matematiksel Temel}{22}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Formal Tanim}{22}{subsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.1.2}Gercek Dependency Grafi}{22}{subsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.1.3}Topolojik Siralama}{23}{subsection.2.1.3}%
+\contentsline {subsection}{\numberline {2.1.4}Neden Sequential Pipeline?}{24}{subsection.2.1.4}%
+\contentsline {section}{\numberline {2.2}PipelineContext --- Shared State Pattern}{25}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Error Recovery --- Circuit Breaker Pattern}{25}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}State Machine Modeli}{25}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Exponential Backoff}{26}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.3}Neden Exponential Backoff?}{26}{subsection.2.3.3}%
+\contentsline {subsection}{\numberline {2.3.4}Jitter}{27}{subsection.2.3.4}%
+\contentsline {subsection}{\numberline {2.3.5}Basari Olasiligi}{27}{subsection.2.3.5}%
+\contentsline {chapter}{\numberline {3}Hedef Tespit Sistemi}{28}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Magic Number Sistemi}{28}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Collision Olasiligi}{28}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Big-Endian vs Little-Endian Okuma}{29}{subsection.3.1.2}%
+\contentsline {section}{\numberline {3.2}Dil Tespit Algoritmasi}{29}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Puanlama Sistemi}{29}{subsection.3.2.1}%
+\contentsline {section}{\numberline {3.3}JavaScript Bundler Tespiti}{29}{section.3.3}%
+\contentsline {section}{\numberline {3.4}SHA-256 Hashing}{30}{section.3.4}%
+\contentsline {section}{\numberline {3.5}Mach-O Format Detaylari}{30}{section.3.5}%
+\contentsline {subsection}{\numberline {3.5.1}Header $\to $ Load Commands $\to $ Segments $\to $ Sections}{30}{subsection.3.5.1}%
+\contentsline {subsection}{\numberline {3.5.2}Universal Binary (Fat Binary)}{31}{subsection.3.5.2}%
+\contentsline {subsection}{\numberline {3.5.3}CAFEBABE Cakismasi}{32}{subsection.3.5.3}%
+\contentsline {section}{\numberline {3.6}ELF Format ve Go Binary Tespiti}{32}{section.3.6}%
+\contentsline {subsection}{\numberline {3.6.1}ELF Yapisi}{32}{subsection.3.6.1}%
+\contentsline {subsection}{\numberline {3.6.2}GOPCLNTAB (Go Program Counter Line Number Table)}{33}{subsection.3.6.2}%
+\contentsline {section}{\numberline {3.7}PE Format ve .NET/Delphi Ayrimi}{33}{section.3.7}%
+\contentsline {subsection}{\numberline {3.7.1}PE Yapisi}{33}{subsection.3.7.1}%
+\contentsline {subsection}{\numberline {3.7.2}.NET Tespiti: mscoree.dll}{34}{subsection.3.7.2}%
+\contentsline {subsection}{\numberline {3.7.3}Delphi Binary Tespiti}{34}{subsection.3.7.3}%
+\contentsline {section}{\numberline {3.8}Dil Tespit Algoritmasi --- Bayes Perspektifi}{34}{section.3.8}%
+\contentsline {subsection}{\numberline {3.8.1}Mevcut Puanlama Sistemi}{34}{subsection.3.8.1}%
+\contentsline {subsection}{\numberline {3.8.2}Naive Bayes Formulasyonu}{35}{subsection.3.8.2}%
+\contentsline {subsection}{\numberline {3.8.3}False Positive Analizi}{36}{subsection.3.8.3}%
+\contentsline {section}{\numberline {3.9}Bundler Tespit Heuristikleri}{36}{section.3.9}%
+\contentsline {subsection}{\numberline {3.9.1}webpack Runtime Yapisi}{36}{subsection.3.9.1}%
+\contentsline {subsection}{\numberline {3.9.2}esbuild --- Tespiti Zor}{37}{subsection.3.9.2}%
+\contentsline {subsection}{\numberline {3.9.3}Bundler Tespitinin Ooenemi}{37}{subsection.3.9.3}%
+\contentsline {section}{\numberline {3.10}SHA-256 Hashing --- Detayli Analiz}{37}{section.3.10}%
+\contentsline {subsection}{\numberline {3.10.1}Merkle-Damg\r {a}rd Construction}{37}{subsection.3.10.1}%
+\contentsline {subsection}{\numberline {3.10.2}8KB Chunk Boyutu Optimalligi}{37}{subsection.3.10.2}%
+\contentsline {subsection}{\numberline {3.10.3}Collision Olasiligi}{38}{subsection.3.10.3}%
+\contentsline {chapter}{\numberline {4}Statik Analiz}{39}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Binary Statik Analiz}{39}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Mach-O Analizi}{39}{subsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.1.2}Symbol Extraction}{39}{subsection.4.1.2}%
+\contentsline {subsection}{\numberline {4.1.3}Ghidra Headless Analiz}{40}{subsection.4.1.3}%
+\contentsline {section}{\numberline {4.2}JavaScript Statik Analiz}{40}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Hedef Tespit Sistemine Genel Bakis}{41}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Magic Byte Sistemi}{41}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}Temel Magic Byte Tanimlari}{43}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}Big-Endian ve Little-Endian (Cigam) Kavrami}{43}{subsection.4.4.2}%
+\contentsline {paragraph}{Sayisal Ornek.}{43}{equation.4.3}%
+\contentsline {paragraph}{struct.unpack Format Karakterleri.}{44}{lstnumber.4.3.11}%
+\contentsline {section}{\numberline {4.5}Mach-O Format Yapisi}{44}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}Mach-O Header Yapisi}{44}{subsection.4.5.1}%
+\contentsline {subsection}{\numberline {4.5.2}Load Commands}{46}{subsection.4.5.2}%
+\contentsline {subsection}{\numberline {4.5.3}Segment ve Section Yapisi}{46}{subsection.4.5.3}%
+\contentsline {section}{\numberline {4.6}ELF Format Yapisi}{47}{section.4.6}%
+\contentsline {subsection}{\numberline {4.6.1}ELF Header}{47}{subsection.4.6.1}%
+\contentsline {subsection}{\numberline {4.6.2}ELF ve Mach-O Karsilastirmasi}{47}{subsection.4.6.2}%
+\contentsline {section}{\numberline {4.7}PE Format Yapisi}{48}{section.4.7}%
+\contentsline {subsection}{\numberline {4.7.1}PE Dosya Yapisi}{48}{subsection.4.7.1}%
+\contentsline {section}{\numberline {4.8}Universal Binary (Fat Binary)}{49}{section.4.8}%
+\contentsline {section}{\numberline {4.9}Dil Tespit Algoritmasi}{49}{section.4.9}%
+\contentsline {subsection}{\numberline {4.9.1}Puanlama Sistemi}{50}{subsection.4.9.1}%
+\contentsline {subsection}{\numberline {4.9.2}Dil Imza Tablosu}{50}{subsection.4.9.2}%
+\contentsline {subsection}{\numberline {4.9.3}Naive Bayes Perspektifi}{50}{subsection.4.9.3}%
+\contentsline {paragraph}{Karmasiklik Analizi.}{51}{equation.4.6}%
+\contentsline {section}{\numberline {4.10}Go Binary Tespiti}{51}{section.4.10}%
+\contentsline {subsection}{\numberline {4.10.1}GOPCLNTAB (Program Counter Line Table)}{51}{subsection.4.10.1}%
+\contentsline {subsection}{\numberline {4.10.2}Go Binary Isim Kurtarma Zenginligi}{52}{subsection.4.10.2}%
+\contentsline {section}{\numberline {4.11}.NET ve Delphi Tespiti}{52}{section.4.11}%
+\contentsline {subsection}{\numberline {4.11.1}.NET Assembly Tespiti}{52}{subsection.4.11.1}%
+\contentsline {subsection}{\numberline {4.11.2}Delphi Binary Tespiti}{52}{subsection.4.11.2}%
+\contentsline {section}{\numberline {4.12}JavaScript Bundle Tespiti}{53}{section.4.12}%
+\contentsline {subsection}{\numberline {4.12.1}Bundler Tespit Sistemi}{53}{subsection.4.12.1}%
+\contentsline {paragraph}{Karmasiklik.}{54}{Item.37}%
+\contentsline {subsection}{\numberline {4.12.2}esbuild Tespiti}{54}{subsection.4.12.2}%
+\contentsline {subsection}{\numberline {4.12.3}Webpack vs Parcel vs Rollup Farklari}{54}{subsection.4.12.3}%
+\contentsline {section}{\numberline {4.13}Electron .app Bundle Analizi}{54}{section.4.13}%
+\contentsline {subsection}{\numberline {4.13.1}Electron Tespit Algoritmasi}{54}{subsection.4.13.1}%
+\contentsline {subsection}{\numberline {4.13.2}ASAR Arsiv Formati}{54}{subsection.4.13.2}%
+\contentsline {subsection}{\numberline {4.13.3}Ana JS Dosyasi Bulma Stratejisi}{55}{subsection.4.13.3}%
+\contentsline {section}{\numberline {4.14}SHA-256 Streaming Hash}{55}{section.4.14}%
+\contentsline {subsection}{\numberline {4.14.1}Streaming Hash Algoritmasi}{55}{subsection.4.14.1}%
+\contentsline {subsection}{\numberline {4.14.2}Neden 8~KB Chunk?}{56}{subsection.4.14.2}%
+\contentsline {paragraph}{Karmasiklik.}{56}{subsection.4.14.2}%
+\contentsline {subsection}{\numberline {4.14.3}Collision Olasiligi}{56}{subsection.4.14.3}%
+\contentsline {section}{\numberline {4.15}False Positive Analizi}{57}{section.4.15}%
+\contentsline {subsection}{\numberline {4.15.1}Magic Byte Collision Hesabi}{57}{subsection.4.15.1}%
+\contentsline {subsection}{\numberline {4.15.2}Coklu Kontrol Stratejisi}{57}{subsection.4.15.2}%
+\contentsline {section}{\numberline {4.16}Statik Analize Genel Bakis}{59}{section.4.16}%
+\contentsline {section}{\numberline {4.17}Binary Statik Analiz Araclari}{59}{section.4.17}%
+\contentsline {subsection}{\numberline {4.17.1}otool: Dynamic Library ve Load Command Analizi}{59}{subsection.4.17.1}%
+\contentsline {paragraph}{otool -L: Dynamic Libraries.}{59}{subsection.4.17.1}%
+\contentsline {paragraph}{otool -l: Load Commands.}{61}{lstnumber.4.9.6}%
+\contentsline {paragraph}{Karmasiklik.}{61}{lstnumber.4.9.6}%
+\contentsline {subsection}{\numberline {4.17.2}nm: Symbol Table Extraction}{61}{subsection.4.17.2}%
+\contentsline {paragraph}{Symbol Type Kodlari.}{61}{lstnumber.4.10.13}%
+\contentsline {subsection}{\numberline {4.17.3}strings: String Extraction}{62}{subsection.4.17.3}%
+\contentsline {paragraph}{mmap Avantajlari.}{62}{lstnumber.4.11.11}%
+\contentsline {paragraph}{Karmasiklik.}{62}{lstnumber.4.11.11}%
+\contentsline {section}{\numberline {4.18}Ghidra Headless Analiz}{63}{section.4.18}%
+\contentsline {subsection}{\numberline {4.18.1}PyGhidra API vs CLI Modu}{63}{subsection.4.18.1}%
+\contentsline {subsection}{\numberline {4.18.2}Decompilation Pipeline}{63}{subsection.4.18.2}%
+\contentsline {paragraph}{P-code.}{63}{figure.4.6}%
+\contentsline {subsection}{\numberline {4.18.3}Ghidra Script'leri}{63}{subsection.4.18.3}%
+\contentsline {section}{\numberline {4.19}Mach-O Segment/Section Analizi}{64}{section.4.19}%
+\contentsline {subsection}{\numberline {4.19.1}\_\_TEXT Segmenti}{64}{subsection.4.19.1}%
+\contentsline {subsection}{\numberline {4.19.2}\_\_DATA Segmenti}{65}{subsection.4.19.2}%
+\contentsline {subsection}{\numberline {4.19.3}\_\_LINKEDIT Segmenti}{65}{subsection.4.19.3}%
+\contentsline {section}{\numberline {4.20}Symbol Extraction: SYMTAB ve DYSYMTAB}{65}{section.4.20}%
+\contentsline {subsection}{\numberline {4.20.1}SYMTAB (Symbol Table)}{65}{subsection.4.20.1}%
+\contentsline {subsection}{\numberline {4.20.2}DYSYMTAB (Dynamic Symbol Table)}{66}{subsection.4.20.2}%
+\contentsline {paragraph}{Karadul'un sembol cikartma stratejisi:}{66}{subsection.4.20.2}%
+\contentsline {section}{\numberline {4.21}JavaScript Babel AST Analizi}{66}{section.4.21}%
+\contentsline {subsection}{\numberline {4.21.1}AST Kavramsal Yapisi}{66}{subsection.4.21.1}%
+\contentsline {subsection}{\numberline {4.21.2}Babel Parser Entegrasyonu}{66}{subsection.4.21.2}%
+\contentsline {subsection}{\numberline {4.21.3}Cikarilan AST Node Tipleri}{67}{subsection.4.21.3}%
+\contentsline {subsection}{\numberline {4.21.4}Fonksiyon Extraction Algoritmasi}{67}{subsection.4.21.4}%
+\contentsline {paragraph}{Pseudocode:}{68}{Item.55}%
+\contentsline {subsection}{\numberline {4.21.5}String Extraction}{68}{subsection.4.21.5}%
+\contentsline {paragraph}{Karmasiklik.}{68}{subsection.4.21.5}%
+\contentsline {section}{\numberline {4.22}Webpack Modul ID Tespiti}{68}{section.4.22}%
+\contentsline {subsection}{\numberline {4.22.1}Webpack Runtime Yapisi}{68}{subsection.4.22.1}%
+\contentsline {subsection}{\numberline {4.22.2}Modul ID Cikartma Algoritmasi}{69}{subsection.4.22.2}%
+\contentsline {subsection}{\numberline {4.22.3}Modul ID Mapping}{70}{subsection.4.22.3}%
+\contentsline {section}{\numberline {4.23}Buyuk Dosya Destegi: ChunkedProcessor}{70}{section.4.23}%
+\contentsline {subsection}{\numberline {4.23.1}Chunk Bolme Algoritmasi}{70}{subsection.4.23.1}%
+\contentsline {subsection}{\numberline {4.23.2}Top-Level Statement Tespiti}{71}{subsection.4.23.2}%
+\contentsline {subsection}{\numberline {4.23.3}Paralel Isleme}{71}{subsection.4.23.3}%
+\contentsline {paragraph}{Veri Yapilari.}{71}{equation.4.26}%
+\contentsline {section}{\numberline {4.24}FLIRT Signature Sistemi}{72}{section.4.24}%
+\contentsline {subsection}{\numberline {4.24.1}.pat Dosya Formati}{72}{subsection.4.24.1}%
+\contentsline {paragraph}{Ornek:}{72}{subsection.4.24.1}%
+\contentsline {subsection}{\numberline {4.24.2}Pattern Matching Algoritmasi}{72}{subsection.4.24.2}%
+\contentsline {paragraph}{Confidence Hesabi.}{72}{equation.4.27}%
+\contentsline {subsection}{\numberline {4.24.3}Hex-to-Bytes-with-Mask Donusumu}{73}{subsection.4.24.3}%
+\contentsline {subsection}{\numberline {4.24.4}SignatureDB Entegrasyonu}{73}{subsection.4.24.4}%
+\contentsline {paragraph}{Karadul'un toplam imza sayisi:}{73}{equation.4.29}%
+\contentsline {section}{\numberline {4.25}Assembly Instruction Analizi}{73}{section.4.25}%
+\contentsline {subsection}{\numberline {4.25.1}ARM64 (AArch64) vs x86\_64}{73}{subsection.4.25.1}%
+\contentsline {subsection}{\numberline {4.25.2}Calling Convention Tespiti}{74}{subsection.4.25.2}%
+\contentsline {subsection}{\numberline {4.25.3}Stack Frame Analizi}{74}{subsection.4.25.3}%
+\contentsline {subsection}{\numberline {4.25.4}SIMD Pattern Tespiti}{75}{subsection.4.25.4}%
+\contentsline {section}{\numberline {4.26}Entropy Analizi ile Packing Tespiti}{75}{section.4.26}%
+\contentsline {subsection}{\numberline {4.26.1}Shannon Entropisi}{75}{subsection.4.26.1}%
+\contentsline {paragraph}{Karmasiklik.}{76}{lstnumber.4.20.13}%
+\contentsline {subsection}{\numberline {4.26.2}Packing Karar Algoritmasi}{76}{subsection.4.26.2}%
+\contentsline {section}{\numberline {4.27}Her Analyzer Icin Giris/Cikis Veri Yapilari}{77}{section.4.27}%
+\contentsline {subsection}{\numberline {4.27.1}Giris Veri Yapisi: TargetInfo}{77}{subsection.4.27.1}%
+\contentsline {subsection}{\numberline {4.27.2}Cikis Veri Yapisi: StageResult}{77}{subsection.4.27.2}%
+\contentsline {subsection}{\numberline {4.27.3}Analyzer Giris/Cikis Ozet Tablosu}{78}{subsection.4.27.3}%
+\contentsline {subsection}{\numberline {4.27.4}Graceful Degradation}{78}{subsection.4.27.4}%
+\contentsline {section}{\numberline {4.28}Binary Intelligence: String Clustering ve Mimari Cikarim}{79}{section.4.28}%
+\contentsline {chapter}{\numberline {5}JavaScript Deobfuscation}{80}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Obfuscation Nedir?}{80}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Standart 4 Adimli Zincir}{80}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Graceful Degradation}{81}{subsection.5.2.1}%
+\contentsline {section}{\numberline {5.3}9 Fazli Deep Deobfuscation}{81}{section.5.3}%
+\contentsline {subsection}{\numberline {5.3.1}Faz 1: Constant Folding (Sabit Katlama)}{81}{subsection.5.3.1}%
+\contentsline {subsection}{\numberline {5.3.2}Faz 2: Dead Code Elimination}{81}{subsection.5.3.2}%
+\contentsline {subsection}{\numberline {5.3.3}Faz 3: String Unhexing}{82}{subsection.5.3.3}%
+\contentsline {subsection}{\numberline {5.3.4}Faz 4: Computed-to-Static Property}{82}{subsection.5.3.4}%
+\contentsline {subsection}{\numberline {5.3.5}Faz 5--8: Ileri Basitlestirmeler}{82}{subsection.5.3.5}%
+\contentsline {subsection}{\numberline {5.3.6}Faz 9: Semantik Degisken Isimlendirme}{82}{subsection.5.3.6}%
+\contentsline {section}{\numberline {5.4}Abstract Syntax Tree (AST) --- Derinlemesine}{83}{section.5.4}%
+\contentsline {subsection}{\numberline {5.4.1}Formal Tanim}{83}{subsection.5.4.1}%
+\contentsline {subsection}{\numberline {5.4.2}Babel vs Acorn (ESTree)}{84}{subsection.5.4.2}%
+\contentsline {subsection}{\numberline {5.4.3}Hesaplama Karmasikligi}{84}{subsection.5.4.3}%
+\contentsline {section}{\numberline {5.5}Constant Folding --- Lattice Teorisi}{84}{section.5.5}%
+\contentsline {subsection}{\numberline {5.5.1}Abstract Interpretation Framework}{84}{subsection.5.5.1}%
+\contentsline {subsection}{\numberline {5.5.2}Karadul Implementasyonu}{85}{subsection.5.5.2}%
+\contentsline {subsection}{\numberline {5.5.3}Sinirlar}{85}{subsection.5.5.3}%
+\contentsline {section}{\numberline {5.6}Dead Code Elimination --- Liveness Analizi}{86}{section.5.6}%
+\contentsline {subsection}{\numberline {5.6.1}Dataflow Denklemleri}{86}{subsection.5.6.1}%
+\contentsline {subsection}{\numberline {5.6.2}Karadul'un Basitlestirilmis Yaklasimi}{86}{subsection.5.6.2}%
+\contentsline {section}{\numberline {5.7}String Obfuscation Teknikleri ve Coezeuemleri}{87}{section.5.7}%
+\contentsline {subsection}{\numberline {5.7.1}6 Yaygin Teknik}{87}{subsection.5.7.1}%
+\contentsline {subsection}{\numberline {5.7.2}Statik Analiz vs Runtime Emulation}{87}{subsection.5.7.2}%
+\contentsline {section}{\numberline {5.8}Computed-to-Static --- Soundness Analizi}{87}{section.5.8}%
+\contentsline {section}{\numberline {5.9}Semantik Degisken Isimlendirme --- 25 Kural Motoru}{88}{section.5.9}%
+\contentsline {subsection}{\numberline {5.9.1}Mimari}{88}{subsection.5.9.1}%
+\contentsline {subsection}{\numberline {5.9.2}Kural Detaylari}{88}{subsection.5.9.2}%
+\contentsline {subsection}{\numberline {5.9.3}Neden LLM Kullanilmiyor?}{89}{subsection.5.9.3}%
+\contentsline {section}{\numberline {5.10}Webpack Module Extraction --- Detayli}{89}{section.5.10}%
+\contentsline {subsection}{\numberline {5.10.1}Extraction Algoritmasi}{89}{subsection.5.10.1}%
+\contentsline {subsection}{\numberline {5.10.2}esbuild vs webpack}{90}{subsection.5.10.2}%
+\contentsline {section}{\numberline {5.11}Chunked Processing --- 200MB+ Dosyalar}{90}{section.5.11}%
+\contentsline {subsection}{\numberline {5.11.1}Problem}{90}{subsection.5.11.1}%
+\contentsline {subsection}{\numberline {5.11.2}Neden 512KB Chunk?}{90}{subsection.5.11.2}%
+\contentsline {subsection}{\numberline {5.11.3}Boundary Tespiti}{91}{subsection.5.11.3}%
+\contentsline {subsection}{\numberline {5.11.4}Acorn Fallback --- 32MB+ Dosyalar}{91}{subsection.5.11.4}%
+\contentsline {section}{\numberline {5.12}Obfuscation: Formal Tanim ve Teorik Temel}{91}{section.5.12}%
+\contentsline {subsection}{\numberline {5.12.1}Semantik Koruma Teoremi}{91}{subsection.5.12.1}%
+\contentsline {subsection}{\numberline {5.12.2}Obfuscation Karmasiklik Siniflamasi}{92}{subsection.5.12.2}%
+\contentsline {section}{\numberline {5.13}Yaygin Obfuscation Teknikleri}{93}{section.5.13}%
+\contentsline {subsection}{\numberline {5.13.1}Minification}{93}{subsection.5.13.1}%
+\contentsline {subsection}{\numberline {5.13.2}String Encoding}{93}{subsection.5.13.2}%
+\contentsline {subsection}{\numberline {5.13.3}Control Flow Flattening (CFF)}{94}{subsection.5.13.3}%
+\contentsline {subsection}{\numberline {5.13.4}Opaque Predicates}{95}{subsection.5.13.4}%
+\contentsline {subsection}{\numberline {5.13.5}Dead Code Injection}{96}{subsection.5.13.5}%
+\contentsline {subsection}{\numberline {5.13.6}String Array Rotation}{96}{subsection.5.13.6}%
+\contentsline {section}{\numberline {5.14}Abstract Syntax Tree (AST) Temelleri}{97}{section.5.14}%
+\contentsline {subsection}{\numberline {5.14.1}BNF ve Context-Free Grammar (CFG)}{97}{subsection.5.14.1}%
+\contentsline {subsection}{\numberline {5.14.2}Parse Tree vs Abstract Syntax Tree}{97}{subsection.5.14.2}%
+\contentsline {subsection}{\numberline {5.14.3}ESTree Spesifikasyonu}{98}{subsection.5.14.3}%
+\contentsline {subsection}{\numberline {5.14.4}Babel Parser Oezellikleri}{98}{subsection.5.14.4}%
+\contentsline {section}{\numberline {5.15}Standart 4 Adimli Deobfuscation Zinciri}{98}{section.5.15}%
+\contentsline {subsection}{\numberline {5.15.1}Graceful Degradation Formuelue}{99}{subsection.5.15.1}%
+\contentsline {subsection}{\numberline {5.15.2}Dosya Isimlendirme Konvansiyonu}{100}{subsection.5.15.2}%
+\contentsline {section}{\numberline {5.16}Adim 1: Beautify}{100}{section.5.16}%
+\contentsline {subsection}{\numberline {5.16.1}Konfiguerasyon Parametreleri}{100}{subsection.5.16.1}%
+\contentsline {subsection}{\numberline {5.16.2}Etki Analizi}{100}{subsection.5.16.2}%
+\contentsline {subsection}{\numberline {5.16.3}Fallback Davranisi}{101}{subsection.5.16.3}%
+\contentsline {section}{\numberline {5.17}Adim 2: Synchrony Deobfuscation}{101}{section.5.17}%
+\contentsline {subsection}{\numberline {5.17.1}Calismaa Mekanizmasi}{101}{subsection.5.17.1}%
+\contentsline {subsection}{\numberline {5.17.2}Boyut Analizi}{102}{subsection.5.17.2}%
+\contentsline {section}{\numberline {5.18}9 Fazli Deep Deobfuscation Pipeline}{102}{section.5.18}%
+\contentsline {subsection}{\numberline {5.18.1}Faz 1: Parse (Tolerant Mode)}{103}{subsection.5.18.1}%
+\contentsline {subsection}{\numberline {5.18.2}Faz 2: Constant Folding (Sabit Katlama)}{104}{subsection.5.18.2}%
+\contentsline {subsubsection}{Lattice Teorisi ve Abstract Interpretation}{104}{subsection.5.18.2}%
+\contentsline {subsubsection}{Karadul Implementasyonu}{104}{equation.5.24}%
+\contentsline {subsection}{\numberline {5.18.3}Faz 3: Dead Code Elimination}{105}{subsection.5.18.3}%
+\contentsline {subsubsection}{Liveness Analysis Temeli}{105}{subsection.5.18.3}%
+\contentsline {subsubsection}{Fixed-Point Iteration}{106}{equation.5.26}%
+\contentsline {subsubsection}{Karadul Implementasyonu}{106}{equation.5.27}%
+\contentsline {subsection}{\numberline {5.18.4}Faz 4: Computed-to-Static Property}{107}{subsection.5.18.4}%
+\contentsline {subsection}{\numberline {5.18.5}Faz 5: Comma Expression Splitting}{108}{subsection.5.18.5}%
+\contentsline {subsection}{\numberline {5.18.6}Faz 6: Variable Declaration Splitting}{108}{subsection.5.18.6}%
+\contentsline {subsection}{\numberline {5.18.7}Faz 7: Ternary $\to $ If/Else}{109}{subsection.5.18.7}%
+\contentsline {subsection}{\numberline {5.18.8}Faz 8: Arrow $\to $ Named Function}{109}{subsection.5.18.8}%
+\contentsline {subsection}{\numberline {5.18.9}Faz 9: Smart Variable Renaming}{110}{subsection.5.18.9}%
+\contentsline {subsubsection}{Uec Kural Kategorisi}{110}{subsection.5.18.9}%
+\contentsline {subsubsection}{Tek Harf Fallback Tablosu}{110}{table.5.8}%
+\contentsline {subsection}{\numberline {5.18.10}Faz 10: Semantic Renaming (Deep Usage-Based)}{111}{subsection.5.18.10}%
+\contentsline {subsubsection}{Kullanim Bilgisi Toplama (\_collectUsage10)}{111}{subsection.5.18.10}%
+\contentsline {subsubsection}{12 Kural Motoru}{111}{lstnumber.5.17.14}%
+\contentsline {subsubsection}{Phase 10+: Enhanced Rename (cursor-enhanced-rename.mjs)}{111}{table.5.9}%
+\contentsline {section}{\numberline {5.19}Webpack Module Extraction}{112}{section.5.19}%
+\contentsline {subsection}{\numberline {5.19.1}Desteklenen Bundle Formatlari}{112}{subsection.5.19.1}%
+\contentsline {subsection}{\numberline {5.19.2}\_\_webpack\_require\_\_ Mekanizmasi}{112}{subsection.5.19.2}%
+\contentsline {subsection}{\numberline {5.19.3}esbuild vs Webpack Format Farklari}{113}{subsection.5.19.3}%
+\contentsline {section}{\numberline {5.20}Buyuk Dosya Isleme: Chunked Processing}{114}{section.5.20}%
+\contentsline {subsection}{\numberline {5.20.1}Esik Degeri ve Tetikleme}{114}{subsection.5.20.1}%
+\contentsline {subsection}{\numberline {5.20.2}Stream-Parse Pipeline}{114}{subsection.5.20.2}%
+\contentsline {subsection}{\numberline {5.20.3}Timeout Hesaplaması}{114}{subsection.5.20.3}%
+\contentsline {section}{\numberline {5.21}Control Flow Flattening (CFF) Deflattening}{115}{section.5.21}%
+\contentsline {subsection}{\numberline {5.21.1}Tespit Algoritması}{115}{subsection.5.21.1}%
+\contentsline {subsection}{\numberline {5.21.2}State Transition Graph Cikarma}{115}{subsection.5.21.2}%
+\contentsline {subsection}{\numberline {5.21.3}Topological Sort ile Yeniden Olusturma}{115}{subsection.5.21.3}%
+\contentsline {subsection}{\numberline {5.21.4}Karmasiklik Analizi}{116}{subsection.5.21.4}%
+\contentsline {section}{\numberline {5.22}Opaque Predicate Removal}{116}{section.5.22}%
+\contentsline {subsection}{\numberline {5.22.1}Tespit Stratejileri}{116}{subsection.5.22.1}%
+\contentsline {subsection}{\numberline {5.22.2}Z3 Entegrasyonu}{117}{subsection.5.22.2}%
+\contentsline {subsection}{\numberline {5.22.3}Eliminasyon}{117}{subsection.5.22.3}%
+\contentsline {section}{\numberline {5.23}String Decryption}{117}{section.5.23}%
+\contentsline {subsection}{\numberline {5.23.1}Desteklenen Sifreleme Yoentemleri}{117}{subsection.5.23.1}%
+\contentsline {subsection}{\numberline {5.23.2}Stack String Reconstruction}{118}{subsection.5.23.2}%
+\contentsline {subsection}{\numberline {5.23.3}XOR Brute-Force}{118}{subsection.5.23.3}%
+\contentsline {section}{\numberline {5.24}Acorn Fallback}{118}{section.5.24}%
+\contentsline {subsection}{\numberline {5.24.1}Babel vs Acorn Karsilastirmasi}{118}{subsection.5.24.1}%
+\contentsline {section}{\numberline {5.25}Problem Tanimi: Coklu Kaynak, Tek Isim}{120}{section.5.25}%
+\contentsline {section}{\numberline {5.26}Bayes Teoremi: Temelden Turetme}{120}{section.5.26}%
+\contentsline {subsection}{\numberline {5.26.1}Kosula Bagli Olasilik}{120}{subsection.5.26.1}%
+\contentsline {subsection}{\numberline {5.26.2}Isimlendirme Baglaminda Anlami}{121}{subsection.5.26.2}%
+\contentsline {subsection}{\numberline {5.26.3}Ardisik Kanit Birlestirme}{121}{subsection.5.26.3}%
+\contentsline {section}{\numberline {5.27}Log-Odds Formu: Neden ve Nasil}{121}{section.5.27}%
+\contentsline {subsection}{\numberline {5.27.1}Odds ve Log-Odds}{121}{subsection.5.27.1}%
+\contentsline {subsection}{\numberline {5.27.2}Turetme}{122}{subsection.5.27.2}%
+\contentsline {subsection}{\numberline {5.27.3}Korelasyon Duzeltmesi}{122}{subsection.5.27.3}%
+\contentsline {subsection}{\numberline {5.27.4}Neden Log Space?}{122}{subsection.5.27.4}%
+\contentsline {section}{\numberline {5.28}Sigmoid Fonksiyonu: Logit'in Tersi}{122}{section.5.28}%
+\contentsline {subsection}{\numberline {5.28.1}Sigmoid'in Ozellikleri}{123}{subsection.5.28.1}%
+\contentsline {subsection}{\numberline {5.28.2}Overflow Korumasi}{123}{subsection.5.28.2}%
+\contentsline {section}{\numberline {5.29}7 Kaynak Detayli Aciklama}{123}{section.5.29}%
+\contentsline {subsection}{\numberline {5.29.1}binary\_extractor ($w = 1.0$)}{123}{subsection.5.29.1}%
+\contentsline {subsection}{\numberline {5.29.2}c\_namer ($w = 1.0$)}{124}{subsection.5.29.2}%
+\contentsline {subsection}{\numberline {5.29.3}string\_intel ($w = 0.8$)}{124}{subsection.5.29.3}%
+\contentsline {subsection}{\numberline {5.29.4}signature\_db ($w = 1.0$)}{124}{subsection.5.29.4}%
+\contentsline {subsection}{\numberline {5.29.5}swift\_demangle ($w = 1.0$)}{125}{subsection.5.29.5}%
+\contentsline {subsection}{\numberline {5.29.6}source\_matcher ($w = 0.85$)}{125}{subsection.5.29.6}%
+\contentsline {subsection}{\numberline {5.29.7}llm4decompile ($w = 0.5$)}{125}{subsection.5.29.7}%
+\contentsline {subsection}{\numberline {5.29.8}byte\_pattern ($w = 1.0$)}{126}{subsection.5.29.8}%
+\contentsline {section}{\numberline {5.30}Korelasyon-Aware Agirliklar: Bilgi Kurami}{126}{section.5.30}%
+\contentsline {subsection}{\numberline {5.30.1}Neden $w_i < 1$?}{126}{subsection.5.30.1}%
+\contentsline {subsection}{\numberline {5.30.2}Kaynak Agirliklari Tablosu}{126}{subsection.5.30.2}%
+\contentsline {subsection}{\numberline {5.30.3}Overconfidence Problemi: Somut Ornek}{126}{subsection.5.30.3}%
+\contentsline {section}{\numberline {5.31}Gruplama Stratejisi: 5 Seviye}{127}{section.5.31}%
+\contentsline {subsection}{\numberline {5.31.1}Seviye 1: Exact Multi-Match}{128}{subsection.5.31.1}%
+\contentsline {subsection}{\numberline {5.31.2}Seviye 2: Partial Match}{128}{subsection.5.31.2}%
+\contentsline {subsection}{\numberline {5.31.3}Seviye 3: Semantic Match}{129}{subsection.5.31.3}%
+\contentsline {subsubsection}{Expand-Then-Intersect Algoritmasi}{129}{table.5.14}%
+\contentsline {subsection}{\numberline {5.31.4}Seviye 4: Voting}{130}{subsection.5.31.4}%
+\contentsline {subsection}{\numberline {5.31.5}Seviye 5: Single Source}{130}{subsection.5.31.5}%
+\contentsline {section}{\numberline {5.32}Normalize Isim Karsilastirmasi}{131}{section.5.32}%
+\contentsline {section}{\numberline {5.33}UNK Threshold: Precision vs Recall}{131}{section.5.33}%
+\contentsline {subsection}{\numberline {5.33.1}NSA-Grade Felsefe}{131}{subsection.5.33.1}%
+\contentsline {subsection}{\numberline {5.33.2}ROC Analizi}{132}{subsection.5.33.2}%
+\contentsline {section}{\numberline {5.34}Somut Hesaplama Ornekleri}{132}{section.5.34}%
+\contentsline {subsection}{\numberline {5.34.1}Senaryo 1: Uc Kaynak Ayni Isim (Exact Multi-Match)}{132}{subsection.5.34.1}%
+\contentsline {subsection}{\numberline {5.34.2}Senaryo 2: Iki Kaynak Partial Match}{133}{subsection.5.34.2}%
+\contentsline {subsection}{\numberline {5.34.3}Senaryo 3: Tek Kaynak, Dusuk Confidence $\to $ UNK}{134}{subsection.5.34.3}%
+\contentsline {section}{\numberline {5.35}Hesaplama Karmasikligi}{135}{section.5.35}%
+\contentsline {subsection}{\numberline {5.35.1}Genel Karmasiklik}{135}{subsection.5.35.1}%
+\contentsline {subsection}{\numberline {5.35.2}Alt Islem Karmasikliklari}{135}{subsection.5.35.2}%
+\contentsline {subsection}{\numberline {5.35.3}Pratikte Performans}{136}{subsection.5.35.3}%
+\contentsline {section}{\numberline {5.36}Overconfidence Problemi ve Cozumu}{136}{section.5.36}%
+\contentsline {subsection}{\numberline {5.36.1}Naive Bayes Hatasi}{136}{subsection.5.36.1}%
+\contentsline {subsection}{\numberline {5.36.2}Korelasyon ile Duzeltme}{136}{subsection.5.36.2}%
+\contentsline {subsection}{\numberline {5.36.3}Sonuc}{137}{subsection.5.36.3}%
+\contentsline {chapter}{\numberline {6}Bayesian Isim Fuzyonu}{138}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Problem Tanimi}{138}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Bayesian Inference Temelleri}{138}{section.6.2}%
+\contentsline {subsection}{\numberline {6.2.1}Bayes Teoremi}{138}{subsection.6.2.1}%
+\contentsline {subsection}{\numberline {6.2.2}Log-Odds Formu}{139}{subsection.6.2.2}%
+\contentsline {subsection}{\numberline {6.2.3}Neden Log-Odds?}{139}{subsection.6.2.3}%
+\contentsline {section}{\numberline {6.3}Korelasyon-Aware Agirliklar}{139}{section.6.3}%
+\contentsline {subsection}{\numberline {6.3.1}Neden $w_i < 1$?}{139}{subsection.6.3.1}%
+\contentsline {subsection}{\numberline {6.3.2}Kaynak Agirliklari Tablosu}{140}{subsection.6.3.2}%
+\contentsline {section}{\numberline {6.4}Somut Hesaplama Oernegi}{140}{section.6.4}%
+\contentsline {subsection}{\numberline {6.4.1}Ikinci Oernek: Tam Bagimsiz Kaynaklar}{141}{subsection.6.4.1}%
+\contentsline {subsection}{\numberline {6.4.2}Uecuencue Oernek: Tek Kaynak, Duesueek Confidence}{141}{subsection.6.4.2}%
+\contentsline {section}{\numberline {6.5}Gruplama Stratejisi}{142}{section.6.5}%
+\contentsline {subsection}{\numberline {6.5.1}Partial Overlap Hesabi}{142}{subsection.6.5.1}%
+\contentsline {subsection}{\numberline {6.5.2}UNK Threshold}{142}{subsection.6.5.2}%
+\contentsline {subsection}{\numberline {6.5.3}Ikili Threshold Sistemi}{142}{subsection.6.5.3}%
+\contentsline {subsection}{\numberline {6.5.4}ROC Perspektifi}{143}{subsection.6.5.4}%
+\contentsline {subsection}{\numberline {6.5.5}Hesaplama Karmasikligi}{143}{subsection.6.5.5}%
+\contentsline {chapter}{\numberline {7}Kaynak Kod Rekonstruksiyonu}{144}{chapter.7}%
+\contentsline {section}{\numberline {7.1}6 Katmanli C Naming}{144}{section.7.1}%
+\contentsline {section}{\numberline {7.2}FLIRT Signature Matching}{144}{section.7.2}%
+\contentsline {section}{\numberline {7.3}NPM Source Matching}{145}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Algoritma Tespiti}{145}{section.7.4}%
+\contentsline {section}{\numberline {7.5}Kaynak Kod Rekonstruksiyonuna Giris}{146}{section.7.5}%
+\contentsline {section}{\numberline {7.6}6 Katmanli C Isimlendirme Sistemi (c\_namer.py)}{146}{section.7.6}%
+\contentsline {subsection}{\numberline {7.6.1}Mimari Genel Bakis}{147}{subsection.7.6.1}%
+\contentsline {subsubsection}{Cascade Classifier Analojisi}{147}{figure.7.1}%
+\contentsline {subsection}{\numberline {7.6.2}Katman 1: Symbol / Export Table}{148}{subsection.7.6.2}%
+\contentsline {subsection}{\numberline {7.6.3}Katman 2: String Context Analysis}{149}{subsection.7.6.3}%
+\contentsline {subsection}{\numberline {7.6.4}Katman 3: API Call Pattern Matching}{149}{subsection.7.6.4}%
+\contentsline {subsection}{\numberline {7.6.5}Katman 4: Call Graph Structure}{150}{subsection.7.6.5}%
+\contentsline {subsection}{\numberline {7.6.6}Katman 5: Dataflow Analysis}{151}{subsection.7.6.6}%
+\contentsline {subsection}{\numberline {7.6.7}Katman 6: Type-Based Inference}{151}{subsection.7.6.7}%
+\contentsline {subsection}{\numberline {7.6.8}Toplam Bilgi Entropisi Azaltma}{152}{subsection.7.6.8}%
+\contentsline {section}{\numberline {7.7}Tip Kurtarma (c\_type\_recoverer.py)}{153}{section.7.7}%
+\contentsline {subsection}{\numberline {7.7.1}Struct Recovery}{153}{subsection.7.7.1}%
+\contentsline {subsection}{\numberline {7.7.2}Enum Recovery}{154}{subsection.7.7.2}%
+\contentsline {subsection}{\numberline {7.7.3}VTable Recovery}{154}{subsection.7.7.3}%
+\contentsline {section}{\numberline {7.8}Algoritma Tespiti (c\_algorithm\_id.py)}{154}{section.7.8}%
+\contentsline {subsection}{\numberline {7.8.1}Katman 1: Sabit-Bazli Tanimlar (Constant-Based)}{154}{subsection.7.8.1}%
+\contentsline {subsection}{\numberline {7.8.2}Katman 2: Yapi-Bazli Tespit (Structure-Based)}{156}{subsection.7.8.2}%
+\contentsline {subsection}{\numberline {7.8.3}Katman 3: API Korelasyonu}{156}{subsection.7.8.3}%
+\contentsline {section}{\numberline {7.9}Yorum Uretimi (c\_comment\_generator.py)}{156}{section.7.9}%
+\contentsline {section}{\numberline {7.10}Proje Yapilandirma}{157}{section.7.10}%
+\contentsline {subsection}{\numberline {7.10.1}project\_reconstructor.py -- Modul Iskele Olusturma}{157}{subsection.7.10.1}%
+\contentsline {subsection}{\numberline {7.10.2}C Project Builder (c\_project\_builder.py)}{158}{subsection.7.10.2}%
+\contentsline {subsection}{\numberline {7.10.3}project\_builder.py -- CMake/Makefile Uretimi}{158}{subsection.7.10.3}%
+\contentsline {section}{\numberline {7.11}NPM Source Matching}{159}{section.7.11}%
+\contentsline {subsection}{\numberline {7.11.1}AST Structural Hash (ast\_fingerprinter.py)}{159}{subsection.7.11.1}%
+\contentsline {subsection}{\numberline {7.11.2}Tree Edit Distance (Zhang-Shasha)}{159}{subsection.7.11.2}%
+\contentsline {subsection}{\numberline {7.11.3}Structural Matcher Pipeline}{160}{subsection.7.11.3}%
+\contentsline {section}{\numberline {7.12}Parametre Kurtarma (param\_recovery.py)}{160}{section.7.12}%
+\contentsline {subsection}{\numberline {7.12.1}TypeScript .d.ts Mapping (dts\_namer.py)}{161}{subsection.7.12.1}%
+\contentsline {section}{\numberline {7.13}Guvenlik Analiz Algoritmalarinin Temeli}{162}{section.7.13}%
+\contentsline {section}{\numberline {7.14}Shannon Entropy ve Packer Tespiti}{162}{section.7.14}%
+\contentsline {subsection}{\numberline {7.14.1}Shannon Entropy Formulu}{162}{subsection.7.14.1}%
+\contentsline {subsection}{\numberline {7.14.2}Section-Level Entropy Profiling}{163}{subsection.7.14.2}%
+\contentsline {subsection}{\numberline {7.14.3}Packing Tespit Karari}{163}{subsection.7.14.3}%
+\contentsline {subsection}{\numberline {7.14.4}Packer Signature'lari}{163}{subsection.7.14.4}%
+\contentsline {subsection}{\numberline {7.14.5}Chi-Squared Uniformity Test}{164}{subsection.7.14.5}%
+\contentsline {section}{\numberline {7.15}YARA Pattern Matching}{164}{section.7.15}%
+\contentsline {subsection}{\numberline {7.15.1}Aho-Corasick Algoritma Temeli}{164}{subsection.7.15.1}%
+\contentsline {subsection}{\numberline {7.15.2}YARA Kural Yapisi}{166}{subsection.7.15.2}%
+\contentsline {subsection}{\numberline {7.15.3}Hex Pattern + Wildcard}{167}{subsection.7.15.3}%
+\contentsline {section}{\numberline {7.16}Control Flow Graph (CFG) Analizi}{167}{section.7.16}%
+\contentsline {subsection}{\numberline {7.16.1}Formal Tanim}{167}{subsection.7.16.1}%
+\contentsline {subsection}{\numberline {7.16.2}Basic Block ve Leader Detection}{167}{subsection.7.16.2}%
+\contentsline {subsection}{\numberline {7.16.3}Dominator Tree -- Lengauer-Tarjan}{168}{subsection.7.16.3}%
+\contentsline {subsection}{\numberline {7.16.4}Loop Detection ve Back Edges}{168}{subsection.7.16.4}%
+\contentsline {section}{\numberline {7.17}Opaque Predicate Tespiti}{168}{section.7.17}%
+\contentsline {subsection}{\numberline {7.17.1}Tanim ve Amaclari}{169}{subsection.7.17.1}%
+\contentsline {subsection}{\numberline {7.17.2}Matematiksel Ispat: $x^2 + x \equiv 0 \pmod {2}$}{169}{subsection.7.17.2}%
+\contentsline {subsection}{\numberline {7.17.3}Symbolic Execution ile Tespit (Z3)}{170}{subsection.7.17.3}%
+\contentsline {subsection}{\numberline {7.17.4}Rice's Theorem ve Undecidability}{170}{subsection.7.17.4}%
+\contentsline {section}{\numberline {7.18}Control Flow Flattening (CFF) Deflattening}{170}{section.7.18}%
+\contentsline {subsection}{\numberline {7.18.1}CFF Nedir?}{170}{subsection.7.18.1}%
+\contentsline {subsection}{\numberline {7.18.2}Deflattening Algoritmasi}{171}{subsection.7.18.2}%
+\contentsline {section}{\numberline {7.19}Ghidra Decompilation Pipeline}{171}{section.7.19}%
+\contentsline {subsection}{\numberline {7.19.1}Binary'den C Koduna Yolculuk}{171}{subsection.7.19.1}%
+\contentsline {section}{\numberline {7.20}Dynamic Analysis -- Frida}{172}{section.7.20}%
+\contentsline {subsection}{\numberline {7.20.1}Inline Hooking vs PLT/GOT Hooking}{172}{subsection.7.20.1}%
+\contentsline {subsection}{\numberline {7.20.2}API Tracing}{173}{subsection.7.20.2}%
+\contentsline {subsection}{\numberline {7.20.3}Anti-Debug Bypass}{173}{subsection.7.20.3}%
+\contentsline {section}{\numberline {7.21}Binary Diffing (BinDiff)}{173}{section.7.21}%
+\contentsline {subsection}{\numberline {7.21.1}CFG Isomorphism Problemi}{173}{subsection.7.21.1}%
+\contentsline {subsection}{\numberline {7.21.2}5 Strateji ile Fonksiyon Eslestirme}{174}{subsection.7.21.2}%
+\contentsline {subsection}{\numberline {7.21.3}Hungarian Algorithm ile Optimal Eslestirme}{174}{subsection.7.21.3}%
+\contentsline {section}{\numberline {7.22}Byte Pattern Matching}{175}{section.7.22}%
+\contentsline {subsection}{\numberline {7.22.1}FLIRT Signature Eslestirme}{175}{subsection.7.22.1}%
+\contentsline {subsection}{\numberline {7.22.2}Fuzzy Matching -- Compiler Optimization Farklari}{175}{subsection.7.22.2}%
+\contentsline {subsection}{\numberline {7.22.3}Inline Fonksiyon Tespiti (inline\_detector.py)}{175}{subsection.7.22.3}%
+\contentsline {section}{\numberline {7.23}Performans Analizine Giris}{177}{section.7.23}%
+\contentsline {section}{\numberline {7.24}Amdahl Yasasi ve Ghidra Darbogazlari}{177}{section.7.24}%
+\contentsline {subsection}{\numberline {7.24.1}Amdahl Yasasi}{177}{subsection.7.24.1}%
+\contentsline {section}{\numberline {7.25}Gustafson Yasasi -- Alternatif Perspektif}{178}{section.7.25}%
+\contentsline {section}{\numberline {7.26}JVM Heap Yonetimi -- Ghidra}{178}{section.7.26}%
+\contentsline {subsection}{\numberline {7.26.1}G1GC (Garbage First Garbage Collector)}{178}{subsection.7.26.1}%
+\contentsline {subsection}{\numberline {7.26.2}Heap Sizing Formulu}{179}{subsection.7.26.2}%
+\contentsline {subsection}{\numberline {7.26.3}GC Pressure ve Batch Processing}{179}{subsection.7.26.3}%
+\contentsline {section}{\numberline {7.27}Node.js V8 Heap Yonetimi}{179}{section.7.27}%
+\contentsline {section}{\numberline {7.28}Chunked Processing}{180}{section.7.28}%
+\contentsline {subsection}{\numberline {7.28.1}Motivasyon ve 512 KB Chunk Optimal Analizi}{180}{subsection.7.28.1}%
+\contentsline {subsection}{\numberline {7.28.2}mmap vs Buffered Read}{180}{subsection.7.28.2}%
+\contentsline {subsection}{\numberline {7.28.3}Disk I/O Throughput Analizi}{181}{subsection.7.28.3}%
+\contentsline {section}{\numberline {7.29}Ghidra Batch Optimization}{181}{section.7.29}%
+\contentsline {subsection}{\numberline {7.29.1}5000 Fonksiyon/Batch Mantigi}{181}{subsection.7.29.1}%
+\contentsline {section}{\numberline {7.30}Apple Silicon Optimizasyonu}{182}{section.7.30}%
+\contentsline {subsection}{\numberline {7.30.1}P-core vs E-core Stratejisi}{182}{subsection.7.30.1}%
+\contentsline {subsection}{\numberline {7.30.2}Unified Memory Architecture (UMA)}{182}{subsection.7.30.2}%
+\contentsline {section}{\numberline {7.31}Scalability Analizi}{183}{section.7.31}%
+\contentsline {subsection}{\numberline {7.31.1}Binary Boyutu vs Islem Suresi}{183}{subsection.7.31.1}%
+\contentsline {section}{\numberline {7.32}Docker Container}{183}{section.7.32}%
+\contentsline {subsection}{\numberline {7.32.1}Overhead Analizi}{183}{subsection.7.32.1}%
+\contentsline {subsection}{\numberline {7.32.2}Multi-Stage Build}{184}{subsection.7.32.2}%
+\contentsline {section}{\numberline {7.33}Error Recovery}{184}{section.7.33}%
+\contentsline {subsection}{\numberline {7.33.1}Circuit Breaker Pattern}{185}{subsection.7.33.1}%
+\contentsline {subsection}{\numberline {7.33.2}Exponential Backoff + Jitter}{186}{subsection.7.33.2}%
+\contentsline {subsection}{\numberline {7.33.3}MTBF ve MTTR}{186}{subsection.7.33.3}%
+\contentsline {subsection}{\numberline {7.33.4}$P(\text {success after } k \text { retries})$}{187}{subsection.7.33.4}%
+\contentsline {subsection}{\numberline {7.33.5}Idempotency}{187}{subsection.7.33.5}%
+\contentsline {chapter}{\numberline {8}Guevenlik Analiz Algoritmalari}{189}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Entropy Analizi ve Packer Tespiti}{189}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Control Flow Graph Analizi}{189}{section.8.2}%
+\contentsline {subsection}{\numberline {8.2.1}Dominator Tree}{190}{subsection.8.2.1}%
+\contentsline {section}{\numberline {8.3}Opaque Predicate Tespiti}{190}{section.8.3}%
+\contentsline {section}{\numberline {8.4}Entropy Analizi --- Shannon Entropy Turetmesi}{190}{section.8.4}%
+\contentsline {subsection}{\numberline {8.4.1}Turetme}{190}{subsection.8.4.1}%
+\contentsline {subsection}{\numberline {8.4.2}Implementasyon}{191}{subsection.8.4.2}%
+\contentsline {subsection}{\numberline {8.4.3}Packer Entropy Profilleri}{191}{subsection.8.4.3}%
+\contentsline {subsection}{\numberline {8.4.4}Chi-Squared Uniformity Testi}{192}{subsection.8.4.4}%
+\contentsline {section}{\numberline {8.5}YARA Pattern Matching --- Aho-Corasick}{192}{section.8.5}%
+\contentsline {subsection}{\numberline {8.5.1}Aho-Corasick Algoritmasi}{192}{subsection.8.5.1}%
+\contentsline {subsection}{\numberline {8.5.2}Karadul'daki Dahili Kurallar}{192}{subsection.8.5.2}%
+\contentsline {section}{\numberline {8.6}Control Flow Graph --- Dominator Tree}{193}{section.8.6}%
+\contentsline {subsection}{\numberline {8.6.1}Dominator Hesaplama}{193}{subsection.8.6.1}%
+\contentsline {subsection}{\numberline {8.6.2}Loop Detection}{193}{subsection.8.6.2}%
+\contentsline {section}{\numberline {8.7}Opaque Predicate --- Formal Analiz}{193}{section.8.7}%
+\contentsline {section}{\numberline {8.8}Ghidra Decompilation Pipeline}{194}{section.8.8}%
+\contentsline {section}{\numberline {8.9}Cryptographic Algorithm Identification}{194}{section.8.9}%
+\contentsline {subsection}{\numberline {8.9.1}AES S-Box}{195}{subsection.8.9.1}%
+\contentsline {subsection}{\numberline {8.9.2}SHA-256 Initial Hash Values}{195}{subsection.8.9.2}%
+\contentsline {subsection}{\numberline {8.9.3}ChaCha20 Sigma Sabitleri}{195}{subsection.8.9.3}%
+\contentsline {section}{\numberline {8.10}Amdahl Yasasi --- Detayli Analiz}{195}{section.8.10}%
+\contentsline {subsection}{\numberline {8.10.1}Pipeline Paralellestirilmesi}{195}{subsection.8.10.1}%
+\contentsline {section}{\numberline {8.11}JVM Heap Yoenetimi --- G1GC}{196}{section.8.11}%
+\contentsline {subsection}{\numberline {8.11.1}Ghidra icin Heap Boyutlandirma}{196}{subsection.8.11.1}%
+\contentsline {subsection}{\numberline {8.11.2}G1GC vs ZGC}{196}{subsection.8.11.2}%
+\contentsline {section}{\numberline {8.12}Apple Silicon Optimizasyonu}{197}{section.8.12}%
+\contentsline {subsection}{\numberline {8.12.1}M4 Max Spesifikasyonlari}{197}{subsection.8.12.1}%
+\contentsline {subsection}{\numberline {8.12.2}P-core Otomatik Tespiti}{197}{subsection.8.12.2}%
+\contentsline {subsection}{\numberline {8.12.3}Unified Memory Architecture (UMA)}{197}{subsection.8.12.3}%
+\contentsline {section}{\numberline {8.13}Docker Container Overhead}{197}{section.8.13}%
+\contentsline {subsection}{\numberline {8.13.1}Performans Karsilastirmasi}{198}{subsection.8.13.1}%
+\contentsline {chapter}{\numberline {9}Performans ve Oelceklendirme}{199}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Amdahl Yasasi}{199}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Bellek Yoenetimi}{199}{section.9.2}%
+\contentsline {subsection}{\numberline {9.2.1}Ghidra JVM Heap}{199}{subsection.9.2.1}%
+\contentsline {subsection}{\numberline {9.2.2}Chunked Processing}{200}{subsection.9.2.2}%
+\contentsline {section}{\numberline {9.3}Apple Silicon Optimizasyonu}{200}{section.9.3}%
+\contentsline {chapter}{\numberline {10}Tasarim Kararlari ve Retrospektif}{201}{chapter.10}%
+\contentsline {section}{\numberline {10.1}Onemli Kararlar}{201}{section.10.1}%
+\contentsline {subsection}{\numberline {10.1.1}LLM Tabanli Isimlendirmenin Terk Edilmesi}{201}{subsection.10.1.1}%
+\contentsline {subsection}{\numberline {10.1.2}Python + JavaScript Hibrit Mimarisi}{201}{subsection.10.1.2}%
+\contentsline {subsection}{\numberline {10.1.3}Graceful Degradation}{201}{subsection.10.1.3}%
+\contentsline {section}{\numberline {10.2}Ne Ise Yaradi?}{202}{section.10.2}%
+\contentsline {section}{\numberline {10.3}Ne Yaramadi?}{202}{section.10.3}%
+\contentsline {section}{\numberline {10.4}Gelecek Calismalar}{202}{section.10.4}%
+\contentsline {chapter}{\numberline {A}Parametre Tablosu}{203}{appendix.A}%
+\contentsline {section}{\numberline {A.1}Timeout Parametreleri}{203}{section.A.1}%
+\contentsline {section}{\numberline {A.2}Bayesian Fusion Parametreleri}{203}{section.A.2}%
+\contentsline {section}{\numberline {A.3}Binary Analiz Parametreleri}{203}{section.A.3}%
+\contentsline {chapter}{\numberline {B}Muelakat Hazirlik}{205}{appendix.B}%
+\contentsline {section}{\numberline {B.1}Soru 1: Projeyi bir cuemleyle acikla}{205}{section.B.1}%
+\contentsline {section}{\numberline {B.2}Soru 2: Bayesian fusion nasil calisiyor?}{205}{section.B.2}%
+\contentsline {section}{\numberline {B.3}Soru 3: Neden LLM kullanmiyorsun?}{205}{section.B.3}%
+\contentsline {section}{\numberline {B.4}Soru 4: Pipeline neden sequential?}{206}{section.B.4}%
+\contentsline {section}{\numberline {B.5}Soru 5: Graceful degradation nasil calisiyor?}{206}{section.B.5}%
+\contentsline {section}{\numberline {B.6}Soru 6: 200MB+ dosyalari nasil isle\-yorsunuz?}{206}{section.B.6}%
+\contentsline {section}{\numberline {B.7}Soru 7: Constant folding nedir?}{206}{section.B.7}%
+\contentsline {section}{\numberline {B.8}Soru 8: Circuit breaker neden var?}{206}{section.B.8}%
+\contentsline {section}{\numberline {B.9}Soru 9: FLIRT signature matching nasil calisiyor?}{206}{section.B.9}%
+\contentsline {section}{\numberline {B.10}Soru 10: UNK threshold neden 0.30?}{207}{section.B.10}%
+\contentsline {section}{\numberline {B.11}Soru 11: Magic byte nedir?}{207}{section.B.11}%
+\contentsline {section}{\numberline {B.12}Soru 12: Entropy ile packer nasil tespit edilir?}{207}{section.B.12}%
+\contentsline {section}{\numberline {B.13}Soru 13: Dead code elimination nasil calisiyor?}{207}{section.B.13}%
+\contentsline {section}{\numberline {B.14}Soru 14: Opaque predicate nedir?}{207}{section.B.14}%
+\contentsline {section}{\numberline {B.15}Soru 15: Webpack bundle'i nasil ayristi\-riyorsunuz?}{207}{section.B.15}%
+\contentsline {section}{\numberline {B.16}Soru 16: Projenin en zor kismi neydi?}{208}{section.B.16}%
+\contentsline {section}{\numberline {B.17}Soru 17: Projede kac satir kod var?}{208}{section.B.17}%
+\contentsline {section}{\numberline {B.18}Soru 18: Korelasyon-aware agirlik ne demek?}{208}{section.B.18}%
+\contentsline {section}{\numberline {B.19}Soru 19: Bu proje hangi sorunu coezer?}{208}{section.B.19}%
+\contentsline {section}{\numberline {B.20}Soru 20: Gelecekte ne yapmayi planliyorsun?}{208}{section.B.20}%

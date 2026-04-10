@@ -1,0 +1,2200 @@
+% ============================================================================
+% BOLUM 5 & 6: JavaScript Deobfuscation + Bayesian Isim Fuzyonu
+% ============================================================================
+% Bu dosya main.tex'teki Bolum 5 ve 6'nin GENISLETILMIS versiyonudur.
+% main.tex'te \input{chapters/ch05_06_deobf_bayesian} ile dahil edilebilir.
+% ONEMLI: \chapter tanimlanmaz, cunku chapter main.tex'te tanimlidir.
+%         Burada \section ve \subsection seviyesinde yazilir.
+% ============================================================================
+
+
+% ############################################################################
+%
+%                    B O L U M   5 :   D E O B F U S C A T I O N
+%
+% ############################################################################
+
+% Bu bolum, Karadul'un en yenilikci bilesenlerinden birini --- 9 fazli derin
+% JavaScript deobfuscation pipeline'ini --- detayli olarak aciklar.
+% Kaynak kodlar:
+%   - karadul/deobfuscators/manager.py
+%   - karadul/deobfuscators/deep_pipeline.py
+%   - karadul/deobfuscators/babel_pipeline.py
+%   - karadul/deobfuscators/synchrony_wrapper.py
+%   - karadul/deobfuscators/string_decryptor.py
+%   - karadul/deobfuscators/opaque_predicate.py
+%   - karadul/deobfuscators/cff_deflattener.py
+%   - scripts/deobfuscate.mjs
+%   - scripts/deep-deobfuscate.mjs
+%   - scripts/beautify.mjs
+%   - scripts/smart-webpack-unpack.mjs
+%   - scripts/cursor-enhanced-rename.mjs
+
+
+% ===================================================================
+\section{Obfuscation: Formal Tanim ve Teorik Temel}
+\label{sec:obf-formal}
+% ===================================================================
+
+\subsection{Semantik Koruma Teoremi}
+
+Kod obfuscation, bir programin kaynak kodunu, davranisini degistirmeden okunamazlastirma islemidir. Bunu formal olarak tanimlayalim.
+
+\begin{tanim}[Obfuscation Fonksiyonu]
+Bir obfuscation fonksiyonu $\mathcal{O}: \mathcal{P} \to \mathcal{P}$ asagidaki kosullari saglayan bir donustumdur:
+\begin{enumerate}
+\item \textbf{Semantik koruma:} Her girdi $x$ icin, $\mathcal{O}(P)(x) = P(x)$
+\item \textbf{Polinom yavaslatma:} $|\mathcal{O}(P)| \leq \text{poly}(|P|)$ ve calisma suresi polinomial olarak artar
+\item \textbf{Analiz zorlugu:} Herhangi bir analiz $A$ icin, $A(\mathcal{O}(P))$'den elde edilen bilgi, $A(P')$'den ($P'$ erisim saglanmamis bir program) elde edilenden anlamli olarak fazla degildir
+\end{enumerate}
+\end{tanim}
+
+Bu tanimi daha kompakt yazarsak:
+
+\begin{equation}
+\mathcal{O}: \mathcal{P} \to \mathcal{P}, \quad \forall P \in \mathcal{P}: \quad \llbracket \mathcal{O}(P) \rrbracket = \llbracket P \rrbracket
+\label{eq:semantic-preservation}
+\end{equation}
+
+burada $\llbracket \cdot \rrbracket$ programin denotational semantigini (yani giris-cikis davranisini) gosterir.
+
+\begin{theorem}[Obfuscation Tersini Alma]
+Eger $\mathcal{O}$ yalnizca \textbf{syntactic} donusumler uyguluyorsa (string encoding, isim degistirme, control flow yeniden yapilama), o zaman bir ters-obfuscation fonksiyonu $\mathcal{D}$ oyle vardir ki:
+\begin{equation}
+\mathcal{D}(\mathcal{O}(P)) \approx P
+\label{eq:deobf-inverse}
+\end{equation}
+burada $\approx$ yapisal esdegerlik (structural equivalence) anlamindadir.
+\end{theorem}
+
+\textit{Ispat fikri:} Syntactic obfuscation, AST uzerinde terslenebilir donusumler uygular. Her donusum $t_i$ icin bir ters $t_i^{-1}$ mevcuttur. Obfuscation $\mathcal{O} = t_n \circ \cdots \circ t_1$ ise, $\mathcal{D} = t_1^{-1} \circ \cdots \circ t_n^{-1}$ dir. Ancak pratikte $t_i$'ler bilinmez; dolayisiyla Karadul gibi araclar \textbf{heuristik ters donusumleri} uygulamak zorundadir.
+
+\subsection{Obfuscation Karmasiklik Siniflamasi}
+
+Obfuscation tekniklerini bilgi-kuramsal zorluk derecesine gore siniflandiririz:
+
+\begin{equation}
+\text{Zorluk}(\mathcal{O}) = -\sum_{i} p_i \log_2 p_i + \text{cfg\_depth}(\mathcal{O}(P))
+\label{eq:obf-complexity}
+\end{equation}
+
+burada ilk terim Shannon entropisi, ikinci terim control flow graph derinligidir.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llcc}
+\toprule
+\textbf{\color{sectioncyan}Teknik} & \textbf{\color{sectioncyan}Zorluk} & \textbf{\color{sectioncyan}Tersinirlik} & \textbf{\color{sectioncyan}Karadul Kapsami} \\
+\midrule
+Minification & Dusuk & $\sim$100\% & Beautify \\
+String encoding & Dusuk & $\sim$100\% & String unhex \\
+Dead code injection & Orta & $\sim$95\% & Dead code elim. \\
+String rotation & Orta & $\sim$90\% & Synchrony \\
+Opaque predicates & Orta--Yuksek & $\sim$85\% & Pattern + Z3 \\
+Control flow flattening & Yuksek & $\sim$70\% & CFF deflattener \\
+Virtualization & Cok yuksek & $\sim$30\% & Kismi destek \\
+\bottomrule
+\end{tabular}
+\caption{Obfuscation teknikleri ve zorluk dereceleri.}
+\label{tab:obf-techniques}
+\end{table}
+
+
+% ===================================================================
+\section{Yaygin Obfuscation Teknikleri}
+\label{sec:obf-techniques}
+% ===================================================================
+
+\subsection{Minification}
+
+En basit obfuscation formu. Kaynak koddan gereksiz bilgileri (bosluk, yorum, uzun degisken isimleri) kaldirarak dosya boyutunu kucultme ve okunakliligi azaltma islevidir.
+
+\begin{lstlisting}[language=JavaScript, caption={Minification oncesi ve sonrasi}]
+// Orijinal (okunabilir):
+function calculateTotalPrice(items, taxRate) {
+    let subtotal = 0;
+    for (const item of items) {
+        subtotal += item.price * item.quantity;
+    }
+    return subtotal * (1 + taxRate);
+}
+
+// Minified:
+function a(b,c){let d=0;for(const e of b)d+=e.price*e.quantity;return d*(1+c)}
+\end{lstlisting}
+
+Minification bilgi kaybina neden olur: degisken isimleri \code{a}, \code{b}, \code{c} orijinal semantigini tasimaz. Ancak \textbf{program davranisi} aynidir --- Denklem~\ref{eq:semantic-preservation} gecerlidir.
+
+\subsection{String Encoding}
+
+String literal'ler cogunlukla iki yontemle gizlenir:
+
+\textbf{Hex encoding:}
+\begin{equation}
+\text{encode}_{\text{hex}}(s) = \text{concat}_{i=0}^{|s|-1} \texttt{"\textbackslash x"} \cdot \text{hex}(\text{charCodeAt}(s, i))
+\end{equation}
+
+\textbf{Unicode encoding:}
+\begin{equation}
+\text{encode}_{\text{unicode}}(s) = \text{concat}_{i=0}^{|s|-1} \texttt{"\textbackslash u"} \cdot \text{pad}(\text{hex}(\text{codePointAt}(s, i)), 4)
+\end{equation}
+
+\textbf{Base64 encoding:}
+\begin{equation}
+\text{encode}_{\text{b64}}(s) = \texttt{atob("} \cdot \text{base64}(s) \cdot \texttt{")}
+\end{equation}
+
+Ornek: \code{"Hello"} $\to$ \code{"\textbackslash x48\textbackslash x65\textbackslash x6c\textbackslash x6c\textbackslash x6f"} $\to$ \code{atob("SGVsbG8=")}
+
+\subsection{Control Flow Flattening (CFF)}
+
+CFF, programin dogal kontrol akisini bir \texttt{while-switch} dispatcher'a donusturur:
+
+\begin{lstlisting}[language=JavaScript, caption={CFF ornegi}]
+// Orijinal:
+function process(x) {
+    let a = x + 1;    // Block 0
+    let b = a * 2;    // Block 1
+    if (b > 10) {     // Block 2
+        return b;     // Block 3
+    }
+    return a;          // Block 4
+}
+
+// CFF uygulanmis:
+function process(x) {
+    let state = 0, a, b;
+    while (true) {
+        switch (state) {
+            case 0: a = x + 1; state = 1; break;
+            case 1: b = a * 2; state = 2; break;
+            case 2: state = b > 10 ? 3 : 4; break;
+            case 3: return b;
+            case 4: return a;
+        }
+    }
+}
+\end{lstlisting}
+
+CFF'nin formal modeli bir sonlu durum makinesidir (FSM):
+
+\begin{equation}
+\text{CFF}(P) = (Q, \Sigma, \delta, q_0, F)
+\end{equation}
+
+burada $Q$ state kuemesi, $\delta: Q \times \Sigma \to Q$ gecis fonksiyonu, $q_0$ baslangic durumu ve $F \subseteq Q$ bitis durumlaridir.
+
+\begin{center}
+\begin{tikzpicture}[
+  state/.style={circle, draw=sectioncyan, fill=boxbg, minimum size=1.2cm, text=white, font=\small\bfseries},
+  arrow/.style={-{Stealth[length=3mm]}, thick, color=gray!70!white},
+  every node/.style={font=\small},
+]
+  \node[state] (q0) at (0,0) {$q_0$};
+  \node[state] (q1) at (3,0) {$q_1$};
+  \node[state] (q2) at (6,0) {$q_2$};
+  \node[state, fill=green!20!black] (q3) at (9,1) {$q_3$};
+  \node[state, fill=green!20!black] (q4) at (9,-1) {$q_4$};
+
+  \draw[arrow] (-1.5,0) -- (q0);
+  \draw[arrow] (q0) -- node[above, text=gray!60!white] {\texttt{a=x+1}} (q1);
+  \draw[arrow] (q1) -- node[above, text=gray!60!white] {\texttt{b=a*2}} (q2);
+  \draw[arrow] (q2) -- node[above, text=gray!60!white, sloped] {\texttt{b>10}} (q3);
+  \draw[arrow] (q2) -- node[below, text=gray!60!white, sloped] {\texttt{b<=10}} (q4);
+
+  \node[below=0.6cm, font=\tiny, text=cyan!70!white] at (q3.south) {return b};
+  \node[below=0.6cm, font=\tiny, text=cyan!70!white] at (q4.south) {return a};
+\end{tikzpicture}
+\end{center}
+
+\subsection{Opaque Predicates}
+
+Opaque predicate, her zaman ayni sonucu veren (true veya false) ama statik analizin bunu kolayca cikaramayacagi ifadelerdir.
+
+\begin{tanim}[Opaque Predicate]
+Bir ifade $\varphi$ icin:
+\begin{itemize}
+\item $\varphi^T$: Her zaman true ($\forall \sigma: \llbracket \varphi \rrbracket_\sigma = \text{true}$)
+\item $\varphi^F$: Her zaman false ($\forall \sigma: \llbracket \varphi \rrbracket_\sigma = \text{false}$)
+\item $\varphi^?$: Bazen true, bazen false (gercek dallanma)
+\end{itemize}
+burada $\sigma$ program state'ini temsil eder.
+\end{tanim}
+
+\file{opaque\_predicate.py} dosyasinda tanimlanan oruntuleri inceleyelim:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{5cm}cp{6cm}}
+\toprule
+\textbf{\color{sectioncyan}Oruuntu} & \textbf{\color{sectioncyan}Sonuc} & \textbf{\color{sectioncyan}Matematik Ispati} \\
+\midrule
+\code{x*(x+1) \% 2 == 0} & $\varphi^T$ & Ardisik iki sayinin carpimi daima cifttir \\
+\code{(x | 1) != 0} & $\varphi^T$ & OR 1 her zaman $\neq 0$ verir \\
+\code{(a \& b) == (a \& b)} & $\varphi^T$ & Her ifade kendisiyle esittir \\
+\code{2*(x/2) <= x} & $\varphi^T$ & Tamsayi bolumuenun oezelligi: $\lfloor x/2 \rfloor \cdot 2 \leq x$ \\
+\code{x*(x+1) \% 2 != 0} & $\varphi^F$ & Yukaridakinin tueuemleri \\
+\code{x != x} (int) & $\varphi^F$ & Tamsayi kendisiyle esit (NaN notu asagida) \\
+\bottomrule
+\end{tabular}
+\caption{Opaque predicate oruntuleri ve ispatlar. \textbf{Uyari:} \code{x == x} IEEE 754 NaN icin \texttt{false} dondurur; \file{opaque\_predicate.py} bu nedenle float baglam icin confidence'i 0.60'a dusurur.}
+\label{tab:opaque-predicates}
+\end{table}
+
+\subsection{Dead Code Injection}
+
+Opaque predicate'ler ile birlesirildiginde, hicbir zaman calistirilmayan sahte kod bloklari eklenir:
+
+\begin{lstlisting}[language=JavaScript, caption={Dead code injection ornegi}]
+if (x * (x + 1) % 2 === 0) {
+    // Gercek kod (her zaman calisir)
+    processPayment(amount);
+} else {
+    // Dead code (asla calismaz)
+    launchMissiles();  // dikkat dagitma amacli
+    deleteDatabase();  // analisti yaniltma
+}
+\end{lstlisting}
+
+\subsection{String Array Rotation}
+
+obfuscator.io gibi araclar tum string'leri bir diziye tasir, diziyi kaydirma (rotation) islemiyle karistirip indeksle erisirir:
+
+\begin{lstlisting}[language=JavaScript, caption={String rotation ornegi}]
+// Orijinal:
+console.log("Hello");
+
+// Obfuscated:
+var _0x1234 = ["Hello", "log", "World"];
+(function(_0x, _0y) {
+    var _0z = function(_0w) { while(--_0w) { _0x.push(_0x.shift()); } };
+    _0z(++_0y);
+})(_0x1234, 0x1);  // Diziyi 1 kaydır
+console[_0x1234[0]](_0x1234[1]);  // console.log("World") -- indeksler degisti!
+\end{lstlisting}
+
+Karadul'un \texttt{synchrony} biliseni bu patterni dogrudan cozer cunku synchrony, obfuscator.io spesifik bir deobfuscation aracidir.
+
+
+% ===================================================================
+\section{Abstract Syntax Tree (AST) Temelleri}
+\label{sec:ast-basics}
+% ===================================================================
+
+Tum deobfuscation pipeline'i AST uzerinde calisir. Bu bolum AST'nin ne oldugunu, parse tree ile farkini ve ESTree standardini aciklar.
+
+\subsection{BNF ve Context-Free Grammar (CFG)}
+
+JavaScript dili bir context-free grammar (CFG) ile tanimlenir:
+
+\begin{equation}
+G = (V, \Sigma, R, S)
+\end{equation}
+
+burada $V$ non-terminal semboller, $\Sigma$ terminal semboller, $R$ uretim kurallari ve $S$ baslangic sembolueduer.
+
+JavaScript'in basitlestirilmis BNF'inde \texttt{IfStatement}:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small\color{white}, frame=none]
+IfStatement ::= "if" "(" Expression ")" Statement ("else" Statement)?
+Expression  ::= AssignmentExpression | Expression "," AssignmentExpression
+Statement   ::= Block | IfStatement | ForStatement | ExpressionStatement | ...
+\end{lstlisting}
+
+\subsection{Parse Tree vs Abstract Syntax Tree}
+
+\textbf{Parse tree} (concrete syntax tree), gramerin her uretim kuralini icerir --- parantezler, noktalama isaretleri, terminal semboller hepsi agacta gorunur. \textbf{AST} ise semantik olarak anlamsiz node'lari atar.
+
+\begin{center}
+\begin{tikzpicture}[
+  node distance=0.8cm and 0.5cm,
+  treenode/.style={rectangle, rounded corners=2pt, draw=sectioncyan, fill=boxbg, text=white, font=\scriptsize, minimum height=0.6cm, minimum width=1cm},
+  leaf/.style={rectangle, rounded corners=2pt, draw=green!60!white, fill=black!80!white, text=green!60!white, font=\scriptsize\ttfamily, minimum height=0.5cm},
+  edge from parent/.style={draw=gray!60!white, -{Stealth[length=2mm]}, thin},
+  level 1/.style={sibling distance=3.5cm},
+  level 2/.style={sibling distance=1.8cm},
+  level 3/.style={sibling distance=1.2cm},
+]
+  % AST tarafı
+  \node[treenode, fill=cyan!20!black] {BinaryExpression (+)}
+    child { node[treenode] {Identifier}
+      child { node[leaf] {a} }
+    }
+    child { node[treenode] {NumericLiteral}
+      child { node[leaf] {1} }
+    };
+
+  \node[above=0.3cm, font=\small\color{sectioncyan}] at (0, 1.2) {AST: \texttt{a + 1}};
+\end{tikzpicture}
+\end{center}
+
+\subsection{ESTree Spesifikasyonu}
+
+JavaScript AST'si icin fiili standart \textbf{ESTree} spesifikasyonudur (\texttt{https://github.com/estree/estree}). Babel parser, ESTree'nin genisletilmis bir versiyonunu uretir:
+
+\begin{itemize}
+\item \textbf{Babel AST:} \code{StringLiteral}, \code{NumericLiteral}, \code{ObjectProperty}
+\item \textbf{Acorn/ESTree:} \code{Literal}, \code{Property}
+\end{itemize}
+
+Bu fark \file{deobfuscate.mjs}'te asagidaki kontrol ile ele alinir:
+
+\begin{lstlisting}[language=JavaScript, caption={Babel vs Acorn AST tespiti (deobfuscate.mjs)}]
+const usedAcorn = ast.body !== undefined && !ast.program;
+// Babel AST'de ast.program var, Acorn'da yok
+\end{lstlisting}
+
+\subsection{Babel Parser Oezellikleri}
+
+\file{deep-deobfuscate.mjs} Babel parser'i su opsiyonlarla cagrilir:
+
+\begin{lstlisting}[language=JavaScript, caption={Babel parser konfigurasyonu}]
+ast = parse(source, {
+  sourceType: "unambiguous",
+  allowImportExportEverywhere: true,
+  allowReturnOutsideFunction: true,
+  errorRecovery: true,  // Parse hatalarinda devam et
+  plugins: ["jsx", "typescript", "decorators-legacy",
+    "classProperties", "dynamicImport",
+    "optionalChaining", "nullishCoalescingOperator",
+    "topLevelAwait", "importMeta"],
+});
+\end{lstlisting}
+
+\code{errorRecovery: true} kritik bir secimdir. 30MB+ minified dosyalarda parser kismen basarisiz olabilir; bu mod, hatalari toplar ama parse islemini durdurmaz. Boylece kismi AST uzerinde islem yapilabilir.
+
+
+% ===================================================================
+\section{Standart 4 Adimli Deobfuscation Zinciri}
+\label{sec:std-chain-detail}
+% ===================================================================
+
+\file{manager.py} dosyasindaki \code{DeobfuscationManager} sinifi, standart 4 adimli zinciri orkestre eder:
+
+\begin{center}
+\begin{tikzpicture}[
+  pstep/.style={rectangle, draw=sectioncyan, fill=boxbg, minimum width=3.2cm, minimum height=1.4cm, text=white, font=\small\bfseries, rounded corners=3pt, align=center},
+  arrow/.style={-{Stealth[length=3mm]}, thick, color=gray!70!white},
+  fail/.style={-{Stealth[length=2mm]}, dashed, color=red!60!white, thick},
+  node distance=1.2cm,
+]
+  \node[pstep] (input) at (0,0) {Obfuscated\\JS Dosyasi};
+  \node[pstep] (beautify) at (4.5,0) {1. Beautify\\(js-beautify)};
+  \node[pstep] (synchrony) at (9,0) {2. Synchrony\\(obfuscator.io)};
+  \node[pstep] (babel) at (4.5,-3) {3. Babel AST\\(9 faz transform)};
+  \node[pstep] (webpack) at (9,-3) {4. Webpack\\Unpack};
+  \node[pstep, fill=green!15!black] (output) at (13.5,-3) {Deobfuscated\\Cikti};
+
+  \draw[arrow] (input) -- (beautify);
+  \draw[arrow] (beautify) -- (synchrony);
+  \draw[arrow] (synchrony) |- (babel);
+  \draw[arrow] (babel) -- (webpack);
+  \draw[arrow] (webpack) -- (output);
+
+  % Graceful degradation
+  \draw[fail] (beautify.south) -- ++(0,-0.8) node[midway, right, font=\tiny, text=red!60!white] {fail} -| (synchrony.south);
+  \draw[fail] (synchrony.south) -- ++(0,-0.4) node[midway, right, font=\tiny, text=red!60!white] {fail} -- (babel.north);
+
+  \node[below=0.2cm, font=\tiny, text=gray!50!white] at (beautify.south east) {\file{beautify.mjs}};
+  \node[below=0.2cm, font=\tiny, text=gray!50!white] at (synchrony.south east) {\file{synchrony}};
+  \node[below=0.2cm, font=\tiny, text=gray!50!white] at (babel.south east) {\file{deobfuscate.mjs}};
+  \node[below=0.2cm, font=\tiny, text=gray!50!white] at (webpack.south east) {\file{smart-webpack-unpack.mjs}};
+\end{tikzpicture}
+\end{center}
+
+\subsection{Graceful Degradation Formuelue}
+
+Her adim basarisiz olabilir. Bu durumda bir onceki basarili cikti sonraki adima gecilir:
+
+\begin{equation}
+\text{output}(i) = \begin{cases}
+\text{step}_i(\text{output}(i-1)) & \text{eger } \text{step}_i \text{ basarili} \\
+\text{output}(i-1) & \text{eger } \text{step}_i \text{ basarisiz (fallback)}
+\end{cases}
+\label{eq:graceful-degradation}
+\end{equation}
+
+Zincirin en az bir adimi basarili olursa, tum zincir ``basarili'' sayilir:
+
+\begin{equation}
+\text{success}(\text{chain}) = \bigvee_{i=1}^{n} \text{success}(\text{step}_i)
+\label{eq:chain-success}
+\end{equation}
+
+\file{manager.py} bunu su kodla implement eder:
+
+\begin{lstlisting}[language=Python, caption={Graceful degradation -- manager.py, run\_chain()}]
+for idx, step_name in enumerate(effective_chain, start=1):
+    step_output = deob_dir / f"{idx:02d}_{step_name}{input_file.suffix}"
+    try:
+        step_success = self._execute_step(
+            step_name, current_input, step_output, deob_dir)
+    except Exception as exc:
+        step_success = False
+    if step_success and step_output.exists():
+        result.steps_completed.append(step_name)
+        current_input = step_output  # Sonraki adimin girdisi
+    else:
+        result.steps_failed.append(step_name)
+        # current_input degismez -> onceki basarili cikti kullanilir
+\end{lstlisting}
+
+\subsection{Dosya Isimlendirme Konvansiyonu}
+
+Her adim, ciktisini numarali dosya olarak kaydeder:
+
+\begin{center}
+\begin{tabular}{ll}
+\code{00\_original.js} & Orijinal obfuscated dosya \\
+\code{01\_beautify.js} & Beautify sonrasi \\
+\code{02\_synchrony.js} & Synchrony sonrasi \\
+\code{03\_babel\_transforms.js} & Babel AST sonrasi \\
+\code{04\_webpack\_unpack.js} & Webpack modul ayirma sonrasi \\
+\end{tabular}
+\end{center}
+
+Bu sayede her adimin ciktisi bagimsiz olarak incelenebilir --- debug ve audit icin kritik.
+
+
+% ===================================================================
+\section{Adim 1: Beautify}
+\label{sec:beautify}
+% ===================================================================
+
+\file{beautify.mjs}, \texttt{js-beautify} kutuphanesini kullanan basit ama kritik bir onisleme adimidir. Minified kod tek satir halindedir; AST parse bile basa\-ri\-siz olabilir cunku Babel'in ternary+arrow+object pattern'lerinde takilma riski vardir.
+
+\subsection{Konfiguerasyon Parametreleri}
+
+\begin{lstlisting}[language=JavaScript, caption={js-beautify konfigurasyonu -- beautify.mjs}]
+js_beautify(source, {
+  indent_size: 2,
+  indent_char: " ",
+  max_preserve_newlines: 2,
+  brace_style: "collapse,preserve-inline",
+  wrap_line_length: 120,
+  break_chained_methods: true,
+  end_with_newline: true,
+});
+\end{lstlisting}
+
+\subsection{Etki Analizi}
+
+Beautify'in etkisini olcmek icin genisleme oranini (expansion ratio) tanimlayalim:
+
+\begin{equation}
+R_{\text{expand}} = \frac{L_{\text{out}}}{L_{\text{in}}}
+\end{equation}
+
+burada $L_{\text{in}}$ girdi satir sayisi, $L_{\text{out}}$ cikti satir sayisi. Tipik degerler:
+
+\begin{itemize}
+\item Agresif minification (tek satir): $R_{\text{expand}} \approx 100\text{--}500$
+\item Orta minification: $R_{\text{expand}} \approx 2\text{--}5$
+\item Zaten formatlenmis: $R_{\text{expand}} \approx 1$
+\end{itemize}
+
+\subsection{Fallback Davranisi}
+
+Beautify basarisiz olursa, girdi dosyasi dogrudan ciktiya kopyalanir:
+
+\begin{lstlisting}[language=Python, caption={Beautify fallback -- manager.py}]
+def _step_beautify(self, input_file, output_file):
+    beautify_script = self._config.scripts_dir / "beautify.mjs"
+    if not beautify_script.exists():
+        shutil.copy2(input_file, output_file)  # Fallback
+        return True
+\end{lstlisting}
+
+
+% ===================================================================
+\section{Adim 2: Synchrony Deobfuscation}
+\label{sec:synchrony}
+% ===================================================================
+
+\file{synchrony\_wrapper.py}, \texttt{synchrony} aracini saran bir Python wrapper'dir. Synchrony, obfuscator.io spesifik bir deobfuscation aracidir ve string rotation, string array, control flow flattening gibi obfuscator.io'ya oezgue teknikleri cozer.
+
+\subsection{Calismaa Mekanizmasi}
+
+\begin{enumerate}
+\item \textbf{Shebang soyma:} Eger dosya \code{\#!/usr/bin/env node} ile basliyorsa, synchrony'nin Acorn parser'i bunu parse edemez. Wrapper gecici dosyada shebang'i soyar, islem sonrasi geri ekler.
+\item \textbf{Source type deneme:} Synchrony uc modda denenir: \code{both}, \code{module}, \code{script}. ESM dosyalarda \code{ImportDeclaration} hatasi alinirsa \code{module} moduna gecilir.
+\item \textbf{Dogrudan dosya ciktisi:} \code{-o} flag'i ile stdout yerine dogrudan dosyaya yazar. Buyuk dosyalarda memory overhead'i onler.
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption={Synchrony calisma akisi -- synchrony\_wrapper.py}]
+source_types = ["both", "module", "script"]
+for source_type in source_types:
+    cmd = [sync_path, str(actual_input),
+           "-o", str(output_file),
+           "--type", source_type]
+    result = self._runner.run_command(cmd, timeout=timeout)
+    if result.success:
+        break
+    if "ImportDeclaration" in result.stderr:
+        continue  # ESM hatasi, module modunu dene
+\end{lstlisting}
+
+\subsection{Boyut Analizi}
+
+Synchrony basarili oldugunda dosya boyutu genellikle \textbf{kucueluer} cunku string rotation ve dead code kaldirilir:
+
+\begin{equation}
+R_{\text{sync}} = \frac{|\text{output}|}{|\text{input}|} \in [0.3, 1.0]
+\end{equation}
+
+$R_{\text{sync}} < 0.5$ ise agresif obfuscation kaldirilmis demektir.
+
+
+% ===================================================================
+\section{9 Fazli Deep Deobfuscation Pipeline}
+\label{sec:deep-deobf-detail}
+% ===================================================================
+
+\file{deep-deobfuscate.mjs} dosyasi, 10 asamali (9 transform + 1 parse) derin deobfuscation pipeline'i uygular. Phase 2--8, \textbf{visitor-merge optimizasyonu} ile tek bir AST traverse'da birlestirilmistir --- bu webcrack yaklasimi, 7 ayri traverse yerine 1 traverse kullanarak $\sim$3--5x hiz kazanci saglar.
+
+\begin{center}
+\begin{tikzpicture}[
+  phase/.style={rectangle, draw=sectioncyan, fill=boxbg, minimum width=4cm, minimum height=0.8cm, text=white, font=\scriptsize\bfseries, rounded corners=2pt},
+  merged/.style={rectangle, draw=yellow!70!white, fill=boxbg, minimum width=4cm, minimum height=0.8cm, text=yellow!70!white, font=\scriptsize\bfseries, rounded corners=2pt},
+  arrow/.style={-{Stealth[length=2mm]}, thin, color=gray!60!white},
+  node distance=0.5cm,
+]
+  \node[phase] (p1) {Phase 1: Parse};
+  \node[merged, below=of p1] (p2) {Phase 2: Constant Folding};
+  \node[merged, below=of p2] (p3) {Phase 3: Dead Code Elim.};
+  \node[merged, below=of p3] (p4) {Phase 4: Computed $\to$ Static};
+  \node[merged, below=of p4] (p5) {Phase 5: Comma Split};
+  \node[merged, below=of p5] (p6) {Phase 6: Var Decl. Split};
+  \node[merged, below=of p6] (p7) {Phase 7: Ternary $\to$ If};
+  \node[merged, below=of p7] (p8) {Phase 8: Arrow $\to$ Function};
+  \node[phase, below=of p8] (p9) {Phase 9: Smart Rename};
+  \node[phase, below=of p9] (p10) {Phase 10: Semantic Rename};
+
+  \draw[arrow] (p1) -- (p2);
+  \draw[arrow] (p2) -- (p3);
+  \draw[arrow] (p3) -- (p4);
+  \draw[arrow] (p4) -- (p5);
+  \draw[arrow] (p5) -- (p6);
+  \draw[arrow] (p6) -- (p7);
+  \draw[arrow] (p7) -- (p8);
+  \draw[arrow] (p8) -- (p9);
+  \draw[arrow] (p9) -- (p10);
+
+  % Merge bracket
+  \draw[yellow!70!white, thick, decorate, decoration={brace, amplitude=8pt, mirror}]
+    ([xshift=2.3cm]p2.north east) -- ([xshift=2.3cm]p8.south east)
+    node[midway, right=10pt, text=yellow!70!white, font=\scriptsize, align=left] {Tek AST\\traverse\\(visitor-merge)};
+
+  % Separate bracket
+  \draw[sectioncyan, thick, decorate, decoration={brace, amplitude=8pt, mirror}]
+    ([xshift=2.3cm]p9.north east) -- ([xshift=2.3cm]p10.south east)
+    node[midway, right=10pt, text=sectioncyan, font=\scriptsize, align=left] {Ayri\\traverse\\(scope gerekli)};
+\end{tikzpicture}
+\end{center}
+
+\subsection{Faz 1: Parse (Tolerant Mode)}
+\label{sec:phase1}
+
+Babel parser \code{errorRecovery: true} ile calistirilir. Basarisiz olursa iki fallback mevcuttur:
+
+\begin{enumerate}
+\item \textbf{Pre-beautify + retry:} Minified kaynak once \code{js-beautify} ile formatlanir, sonra Babel tekrar denenir. 30MB+ dosyalarda Babel'in ternary/arrow/object pattern'lerinde takilma sorunu bu yontemle cogunlukla cozulur.
+\item \textbf{Dosya kopyalama:} Her iki yontem de basarisiz olursa, kaynak dosya oldugu gibi output'a kopyalanir. Boylece sonraki pipeline adimlari (webpack unpack) en azindan orijinal dosya uzerinde devam edebilir.
+\end{enumerate}
+
+\begin{equation}
+\text{parse}(S) = \begin{cases}
+\text{Babel}(S) & \text{basarili} \\
+\text{Babel}(\text{beautify}(S)) & \text{pre-beautify ile retry} \\
+S & \text{fallback: kaynak kopyalama}
+\end{cases}
+\end{equation}
+
+
+\subsection{Faz 2: Constant Folding (Sabit Katlama)}
+\label{sec:phase2-cf}
+
+Constant folding, derleme/analiz zamaninda hesaplanabilir ifadeleri literal degerleriyle degistirme islemidir.
+
+\subsubsection{Lattice Teorisi ve Abstract Interpretation}
+
+Constant folding, abstract interpretation cercevesinde bir \textbf{flat lattice} uzerinde calisir:
+
+\begin{equation}
+L = \{\bot, c_1, c_2, \ldots, c_n, \top\}
+\end{equation}
+
+burada:
+\begin{itemize}
+\item $\bot$: Degisken henuz kullanilmadi (undefined)
+\item $c_i$: Degisken sabit $c_i$ degerinde
+\item $\top$: Degisken birden fazla deger alabilir (non-constant)
+\end{itemize}
+
+\begin{equation}
+\text{meet}(x, y) = \begin{cases}
+x & \text{eger } x = y \\
+\top & \text{eger } x \neq y \text{ ve her ikisi de } \neq \bot \\
+y & \text{eger } x = \bot \\
+x & \text{eger } y = \bot
+\end{cases}
+\end{equation}
+
+\subsubsection{Karadul Implementasyonu}
+
+\file{deep-deobfuscate.mjs} Phase 2'de asagidaki donusumler uygulanir:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}Node Tipi} & \textbf{\color{sectioncyan}Donusum} & \textbf{\color{sectioncyan}Ornek} \\
+\midrule
+BinaryExpression (+) & String concat & \code{"He"+"llo"} $\to$ \code{"Hello"} \\
+BinaryExpression (+) & Numeric add & \code{1+2} $\to$ \code{3} \\
+BinaryExpression ($*$, $/$, $-$) & Aritmetik & \code{6*7} $\to$ \code{42} \\
+BinaryExpression ($|$,$\&$,$\hat{}$,$\ll$,$\gg$) & Bitwise & \code{0xFF \& 0x0F} $\to$ \code{15} \\
+UnaryExpression (!) & Negation & \code{!0} $\to$ \code{true} \\
+UnaryExpression (void) & Void & \code{void 0} $\to$ \code{undefined} \\
+\bottomrule
+\end{tabular}
+\caption{Constant folding donusumm tablosu.}
+\label{tab:constant-folding}
+\end{table}
+
+Guevenlik kontrolu: Bolme islemlerinde \code{right.value !== 0} kontrol edilir ve $\text{Number.isFinite}(result)$ dogrulanir. Overfllow, NaN ve Infinity sonuclari degistirilmez.
+
+\begin{lstlisting}[language=JavaScript, caption={Constant folding visitor -- BinaryExpression}]
+BinaryExpression: {
+  exit(path) {
+    const { left, right, operator } = path.node;
+    // String concatenation
+    if (operator === "+" && t.isStringLiteral(left)
+        && t.isStringLiteral(right)) {
+      path.replaceWith(t.stringLiteral(left.value + right.value));
+      cnt2++;
+    }
+    // Numeric operations
+    if (t.isNumericLiteral(left) && t.isNumericLiteral(right)) {
+      let result;
+      switch (operator) {
+        case "+": result = left.value + right.value; break;
+        case "-": result = left.value - right.value; break;
+        // ... (*, /, %, **, |, &, ^, <<, >>, >>>)
+      }
+      if (result !== undefined && Number.isFinite(result)) {
+        path.replaceWith(t.numericLiteral(result));
+        cnt2++;
+      }
+    }
+  }
+}
+\end{lstlisting}
+
+\textbf{Neden \code{exit} visitor?} Bottom-up traversal sayesinde ic node'lar once islenir: \code{(1+2)*3}'te once \code{1+2=3}, sonra \code{3*3=9}. \code{enter} kullansaydik, ic node'lar henuz fold edilmemis olurdu.
+
+
+\subsection{Faz 3: Dead Code Elimination}
+\label{sec:phase3-dce}
+
+\subsubsection{Liveness Analysis Temeli}
+
+Liveness analysis, her program noktasinda hangi degiskenlerin ``canli'' (daha sonra kullanilacak) oldugunu belirler:
+
+\begin{equation}
+\text{live\_in}(B) = \text{gen}(B) \cup (\text{live\_out}(B) \setminus \text{kill}(B))
+\label{eq:live-in}
+\end{equation}
+\begin{equation}
+\text{live\_out}(B) = \bigcup_{S \in \text{succ}(B)} \text{live\_in}(S)
+\label{eq:live-out}
+\end{equation}
+
+burada:
+\begin{itemize}
+\item $\text{gen}(B)$: $B$ blogunda kullanilan (okunan) degiskenler
+\item $\text{kill}(B)$: $B$ blogunda tanimlanan (yazilan) degiskenler
+\end{itemize}
+
+\subsubsection{Fixed-Point Iteration}
+
+Liveness analysis, denklem sistemi sabit noktaya ulasana kadar iteratif olarak cozulur:
+
+\begin{equation}
+\text{live\_in}^{(k+1)}(B) = \text{gen}(B) \cup \left(\text{live\_out}^{(k)}(B) \setminus \text{kill}(B)\right)
+\end{equation}
+
+Karmasiklik: $\bigO{|B| \times |V|}$ burada $|B|$ basic block sayisi, $|V|$ degisken sayisi.
+
+\subsubsection{Karadul Implementasyonu}
+
+Phase 3, \code{IfStatement} ve \code{ConditionalExpression} node'larini isle\-r:
+
+\begin{lstlisting}[language=JavaScript, caption={Dead code elimination -- IfStatement}]
+IfStatement: {
+  exit(path) {
+    const test = path.node.test;
+    // if (false) {...} -> kaldir veya else branch'i al
+    if (t.isBooleanLiteral(test) && test.value === false) {
+      if (path.node.alternate) path.replaceWith(path.node.alternate);
+      else path.remove();
+      cnt3++;
+    }
+    // if (true) {X} else {Y} -> X
+    if (t.isBooleanLiteral(test) && test.value === true) {
+      path.replaceWith(path.node.consequent);
+      cnt3++;
+    }
+    // if (0) -> remove, if (1) -> consequent
+    if (t.isNumericLiteral(test)) {
+      if (test.value === 0) { /* remove or alternate */ }
+      else { path.replaceWith(path.node.consequent); }
+      cnt3++;
+    }
+  }
+}
+\end{lstlisting}
+
+\textbf{Phase 2 ile etkilesim:} Phase 2 \code{!0 $\to$ true} donusumunu yapar. Phase 3, \code{exit} visitor kullandigi icin, ayni traverse'da Phase 2'nin ciktisini gorebilir. Ornegin \code{if(!0)\{X\}} once \code{if(true)\{X\}} olur (Phase 2), sonra \code{X} olur (Phase 3).
+
+
+\subsection{Faz 4: Computed-to-Static Property}
+\label{sec:phase4-cts}
+
+Bu faz, \code{obj["foo"]} gibi computed property erisimlerini \code{obj.foo} gibi statik erisimlere donusturur.
+
+\begin{equation}
+\text{obj}[\texttt{"key"}] \xrightarrow{\text{Faz 4}} \text{obj}.\texttt{key}
+\quad \text{eger } \texttt{key} \in \text{ValidIdentifier}
+\end{equation}
+
+\begin{tanim}[Valid Identifier]
+Bir string \code{key} gecerli JavaScript identifier ise ve reserved word degilse donusum guevenlidir:
+\begin{equation}
+\text{ValidIdentifier}(\texttt{key}) = \texttt{/\^{}[a-zA-Z\_\$][a-zA-Z0-9\_\$]*\$/}.test(\texttt{key}) \wedge \neg\text{isReserved}(\texttt{key})
+\end{equation}
+\end{tanim}
+
+AST duenuesuemuee:
+\begin{itemize}
+\item \code{MemberExpression}: \code{computed: true} $\to$ \code{computed: false}
+\item \code{ObjectProperty}: Computed key'i identifier'a donustur
+\end{itemize}
+
+\begin{lstlisting}[language=JavaScript, caption={Computed to static -- MemberExpression}]
+MemberExpression(path) {
+  if (!path.node.computed) return;
+  const prop = path.node.property;
+  if (!t.isStringLiteral(prop)) return;
+  if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(prop.value)
+      && !isReservedWord(prop.value)) {
+    path.node.computed = false;
+    path.node.property = t.identifier(prop.value);
+    cnt4++;
+  }
+}
+\end{lstlisting}
+
+
+\subsection{Faz 5: Comma Expression Splitting}
+\label{sec:phase5-comma}
+
+JavaScript'te virgul operatoru (\code{SequenceExpression}) birden fazla ifadeyi tek bir expression'da birlestirir. Obfuscator'lar bunu okunakliligi azaltmak icin kullanir:
+
+\begin{lstlisting}[language=JavaScript]
+// Obfuscated:
+return a = 1, b = 2, c = 3, process(a, b, c);
+// Deobfuscated (Faz 5 sonrasi):
+a = 1;
+b = 2;
+c = 3;
+return process(a, b, c);
+\end{lstlisting}
+
+Donusum ucg bag\-lam icin uygulanir:
+
+\begin{enumerate}
+\item \textbf{ExpressionStatement:} \code{(a, b, c);} $\to$ \code{a; b; c;}
+\item \textbf{ReturnStatement:} \code{return (a, b, c);} $\to$ \code{a; b; return c;}
+\item \textbf{ThrowStatement:} \code{throw (a, b, c);} $\to$ \code{a; b; throw c;}
+\end{enumerate}
+
+\begin{equation}
+\text{split}(\texttt{return}(e_1, e_2, \ldots, e_n)) = \left[\text{expr}(e_1), \ldots, \text{expr}(e_{n-1}), \texttt{return}\; e_n\right]
+\end{equation}
+
+
+\subsection{Faz 6: Variable Declaration Splitting}
+\label{sec:phase6-vardecl}
+
+Tek bir \code{var/let/const} icindeki birden fazla tanimlama ayri satirlara bolunur:
+
+\begin{lstlisting}[language=JavaScript]
+// Oncesi:
+var a = 1, b = 2, c = fn(), d = [];
+// Sonrasi:
+var a = 1;
+var b = 2;
+var c = fn();
+var d = [];
+\end{lstlisting}
+
+\textbf{Guvenlik kontrolleri:} For-loop init (\code{for(var i=0, j=0; ...)}), for-in ve for-of icerisindeki deklarasyonlar bolunmez:
+
+\begin{lstlisting}[language=JavaScript, caption={Variable declaration split -- guvenlik kontrolleri}]
+if (path.parent.type === "ForStatement" && path.key === "init") return;
+if (path.parent.type === "ForInStatement") return;
+if (path.parent.type === "ForOfStatement") return;
+\end{lstlisting}
+
+
+\subsection{Faz 7: Ternary $\to$ If/Else}
+\label{sec:phase7-ternary}
+
+Uzun ternary ifadeler if/else bloklarina donusturulur. ``Uzun'' tanimi: test + consequent + alternate toplam karakter sayisi $\geq 80$:
+
+\begin{equation}
+|\text{code}(\text{test})| + |\text{code}(\text{cons})| + |\text{code}(\text{alt})| \geq 80
+\end{equation}
+
+\begin{lstlisting}[language=JavaScript]
+// Oncesi (tek satir, okunamaz):
+isAuthenticated ? renderDashboard(user, session) : redirectToLogin(returnUrl);
+// Sonrasi:
+if (isAuthenticated) {
+  renderDashboard(user, session);
+} else {
+  redirectToLogin(returnUrl);
+}
+\end{lstlisting}
+
+
+\subsection{Faz 8: Arrow $\to$ Named Function}
+\label{sec:phase8-arrow}
+
+\code{const foo = () => \{...\}} formundaki arrow function'lar named function declaration'a donusturulur:
+
+\begin{lstlisting}[language=JavaScript]
+// Oncesi:
+const processData = (items) => { return items.map(x => x * 2); };
+// Sonrasi:
+function processData(items) { return items.map(x => x * 2); }
+\end{lstlisting}
+
+\textbf{Semantik guevenlik:} \code{this} kullanan arrow function'lar donusturulmez. Arrow function'larda \code{this} lexical scope'a baglidir; normal function'larda ise call-site'a baglidir. Bu semantik fark bozulmamalidir:
+
+\begin{lstlisting}[language=JavaScript, caption={Arrow-to-function this kontrolu}]
+const { code: bodyCode } = generate(arrow.body, { compact: true });
+if (!bodyCode.includes("this.") && !bodyCode.includes("this[")) {
+    // Guvenli: donustur
+    const funcDecl = t.functionDeclaration(
+      t.identifier(decl.id.name), arrow.params, arrow.body,
+      arrow.generator || false, arrow.async || false);
+    path.replaceWith(funcDecl);
+}
+\end{lstlisting}
+
+
+\subsection{Faz 9: Smart Variable Renaming}
+\label{sec:phase9-rename}
+
+Bu faz, minified identifier'lari (1--2 karakter) anlamli isimlere donusturur. LLM \textbf{kullanmaz} --- tamamen heuristik kurallara dayanir. Babel \code{scope.rename()} API'si ile scope-safe renaming yapilir.
+
+\subsubsection{Uec Kural Kategorisi}
+
+\begin{enumerate}
+\item \textbf{Module-based:} \code{require("fs")} $\to$ degisken \code{fs} olarak adlandirilir
+\item \textbf{Usage-based:} Degisken uzerinde \code{.push()}, \code{.map()} cagriliyorsa $\to$ \code{items}
+\item \textbf{Fallback:} Tek harf degiskenler icin varsayilan isimler (\code{i} $\to$ \code{idx}, \code{e} $\to$ \code{elem})
+\end{enumerate}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{3.5cm}p{4cm}p{4.5cm}}
+\toprule
+\textbf{\color{sectioncyan}Pattern} & \textbf{\color{sectioncyan}Tespit Yontemi} & \textbf{\color{sectioncyan}Yeni Isim} \\
+\midrule
+\code{require("fs")} & CallExpression analizi & \code{fs} \\
+\code{require("path")} & CallExpression analizi & \code{path} \\
+\code{require("express")} & CallExpression analizi & \code{express} \\
+\code{catch(e)} & CatchClause param & \code{error} \\
+\code{x.push()}, \code{x.map()} & Usage (Array API) & \code{items} \\
+\code{x.trim()}, \code{x.split()} & Usage (String API) & \code{text} \\
+\code{x.message}, \code{x.stack} & Property access & \code{err} \\
+\code{x.then()}, \code{x.catch()} & Usage (Promise API) & \code{promise} \\
+Express \code{(req, res, next)} & Paramettre pozisyonu & \code{request, response, next} \\
+esbuild \code{(exports, module)} & Factory pattern & \code{exports, module} \\
+\bottomrule
+\end{tabular}
+\caption{Phase 9 smart rename kural ornekleri.}
+\label{tab:phase9-rules}
+\end{table}
+
+\subsubsection{Tek Harf Fallback Tablosu}
+
+\begin{lstlisting}[language=JavaScript, caption={Tek harf fallback mapping}]
+const defaults = {
+  a: "arg", b: "buf", c: "ctx", d: "data",
+  e: "elem", f: "fn", g: "gen", h: "handler",
+  i: "idx", j: "jdx", k: "key", l: "len",
+  m: "mod", n: "count", o: "opts", p: "param",
+  q: "query", r: "res", s: "str", t: "tmp",
+  u: "usr", v: "val", w: "writer",
+};
+\end{lstlisting}
+
+
+\subsection{Faz 10: Semantic Renaming (Deep Usage-Based)}
+\label{sec:phase10-semantic}
+
+Phase 10, Phase 9'un basit pattern matching'ini asarak, Babel scope + binding analizi ile her minified identifier'in kullanim baglamini derinlemesine analiz eder. \textbf{12 kural motoru} ile calisir.
+
+\subsubsection{Kullanim Bilgisi Toplama (\_collectUsage10)}
+
+Her identifier icin asagidaki bilgiler toplanir:
+
+\begin{lstlisting}[language=JavaScript, caption={Usage bilgi yapisi}]
+{
+  methodCalls: Set,       // x.push(), x.split() gibi
+  propertyReads: Set,     // x.length, x.name gibi
+  propertyWrites: Set,    // x.count = 5 gibi
+  calledAs: boolean,      // x() seklinde cagriliyor mu
+  comparedWith: string[], // x === "GET" gibi karsilastirmalar
+  typeofChecks: string[], // typeof x === "function" gibi
+  usedInForOf: boolean,   // for(const y of x) iteratorde mi
+  destructured: boolean,  // const {a, b} = x seklinde mi
+  indexAccessed: boolean,  // x[0] seklinde mi
+  arithmeticOperand: boolean, // x + 1 gibi aritmetikte mi
+  thrownAsError: boolean, // throw x seklinde mi
+  usedInNew: boolean,     // new x() seklinde mi
+}
+\end{lstlisting}
+
+\subsubsection{12 Kural Motoru}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{clcp{4.5cm}}
+\toprule
+\textbf{\color{sectioncyan}\#} & \textbf{\color{sectioncyan}Kural} & \textbf{\color{sectioncyan}Conf.} & \textbf{\color{sectioncyan}Tespit Kriteri} \\
+\midrule
+1 & \code{require\_module} & 0.95 & \code{require("fs")} $\to$ \code{fs} \\
+2 & \code{new\_error} & 0.90 & \code{new Error()} pattern \\
+3 & \code{error\_props} & 0.90 & \code{.message} + \code{.stack} props \\
+4 & \code{string\_api} & 0.85 & $\geq$2 string method \\
+5 & \code{array\_api} & 0.85 & $\geq$2 array method \\
+6 & \code{promise\_api} & 0.85 & \code{.then()} + \code{.catch()} \\
+7 & \code{fs\_api} & 0.90 & \code{readFileSync}, \code{writeFile} \\
+8 & \code{http\_req} & 0.80 & $\geq$2 of \code{body,params,query,headers} \\
+9 & \code{dom\_api} & 0.85 & $\geq$2 DOM property \\
+10 & \code{callback} & 0.80 & \code{calledAs} + \code{typeof === "function"} \\
+11 & \code{for\_of\_item} & 0.80 & \code{for(const x of iterable)} \\
+12 & \code{multi\_compare} & 0.70 & $\geq$3 string karsilastirmasi \\
+\bottomrule
+\end{tabular}
+\caption{Phase 10 semantic renaming kural motoru.}
+\label{tab:phase10-rules}
+\end{table}
+
+\subsubsection{Phase 10+: Enhanced Rename (cursor-enhanced-rename.mjs)}
+
+\file{cursor-enhanced-rename.mjs}, Phase 10'un kapsamadigi 15 ek kural ile kalan minified identifier'lari isle\-r. \file{deep\_pipeline.py}'da Adim 2.5 olarak calistirilir:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{clp{5.5cm}}
+\toprule
+\textbf{\color{sectioncyan}\#} & \textbf{\color{sectioncyan}Kural} & \textbf{\color{sectioncyan}Aciklama} \\
+\midrule
+11 & Prototype access & \code{x.prototype} $\to$ \code{cls} \\
+12 & Binary ops dominant & Cok fazla \code{+}, \code{-}, \code{<<} $\to$ \code{offset} \\
+13 & Purely called & Sadece cagriliyor $\to$ \code{handler} \\
+14 & Event listener pos & Callback pozisyonu $\to$ \code{eventArg} \\
+15 & Member assign & Atama kaynagi $\to$ \code{ref} \\
+16 & Single property & Tek prop baskini $\to$ contextual \\
+17 & Conditional return & \code{return x ? a : b} $\to$ \code{result} \\
+18 & Switch/if chain & Karsilastirma zinciri $\to$ \code{kind} \\
+19 & Namespace access & \code{X.C}, \code{X.Q} $\to$ \code{ns} \\
+20 & Loop counter & \code{for} init $\to$ \code{idx} \\
+21 & Await expression & \code{await x} $\to$ \code{awaited} \\
+22 & Default param ctx & Varsayilan deger $\to$ \code{optParam} \\
+23 & Clash dedup & Phase 9 artigi $\to$ re-score \\
+24 & Length/size dominant & \code{.length} baskini $\to$ \code{collection} \\
+25 & Bitwise dominant & \code{|}, \code{\&}, \code{\^{}} $\to$ \code{flags} \\
+\bottomrule
+\end{tabular}
+\caption{Enhanced rename ek kurallari (Kural 11--25).}
+\label{tab:enhanced-rules}
+\end{table}
+
+
+% ===================================================================
+\section{Webpack Module Extraction}
+\label{sec:webpack-unpack}
+% ===================================================================
+
+\file{smart-webpack-unpack.mjs}, webpack ve esbuild bundle'larini modullerine ayiran akilli bir module splitter'dir. 7 farkli bundle formatini destekler.
+
+\subsection{Desteklenen Bundle Formatlari}
+
+\begin{enumerate}
+\item \textbf{esbuild CJS wrapper:} \code{var X = U((exports, module) => \{...\})}
+\item \textbf{esbuild ESM interop:} \code{var Y = Q1(X)}
+\item \textbf{esbuild re-export:} \code{lb(target, \{name: () => ref\})}
+\item \textbf{Webpack IIFE object:} \code{(function(modules) \{...\})(\{0: function(e,t,n)\{...\}\})}
+\item \textbf{Webpack IIFE array:} \code{[function(e,t,n)\{...\}, ...]}
+\item \textbf{Webpack 5 named:} \code{\_\_webpack\_modules\_\_ = \{"./src/file.js": ...\}}
+\item \textbf{Top-level IIFE:} \code{(function() \{...\})()} --- kapsayici IIFE'leri ayirma
+\end{enumerate}
+
+\subsection{\_\_webpack\_require\_\_ Mekanizmasi}
+
+Webpack bundle'larinda moduller \code{\_\_webpack\_require\_\_(id)} ile birbirini cagrilir. Bu pattern AST'de tespit edilir:
+
+\begin{lstlisting}[language=JavaScript, caption={Webpack module tespiti -- deobfuscate.mjs}]
+if (callee.name === "__webpack_require__"
+    && node.arguments.length >= 1) {
+  const arg = node.arguments[0];
+  if (arg.type === "NumericLiteral") moduleId = arg.value;
+  else if (arg.type === "StringLiteral") moduleId = arg.value;
+  if (moduleId !== null && !_webpackIdSet.has(moduleId)) {
+    _webpackIdSet.add(moduleId);
+    webpackModules.push(moduleId);
+  }
+}
+\end{lstlisting}
+
+\subsection{esbuild vs Webpack Format Farklari}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{3.5cm}p{5cm}p{5cm}}
+\toprule
+\textbf{\color{sectioncyan}Ozellik} & \textbf{\color{sectioncyan}Webpack} & \textbf{\color{sectioncyan}esbuild} \\
+\midrule
+Modul sarmalama & IIFE + nesne/dizi & CJS factory wrapper \\
+Modul ID & Sayisal (0, 1, 2...) & Degisken adi \\
+Dependency & \code{\_\_webpack\_require\_\_} & Dogrudan degisken referansi \\
+Entry point & Ilk cagri arg. & Top-level kod \\
+Tree shaking & Plugin bazli & Varsayilan \\
+\bottomrule
+\end{tabular}
+\caption{Webpack vs esbuild bundle farklari.}
+\label{tab:webpack-vs-esbuild}
+\end{table}
+
+
+% ===================================================================
+\section{Buyuk Dosya Isleme: Chunked Processing}
+\label{sec:chunked}
+% ===================================================================
+
+200MB+ dosyalar icin standart AST parsing bellege sigmaz. \file{deep\_pipeline.py} otomatik olarak \textbf{chunked processing} moduna gecer.
+
+\subsection{Esik Degeri ve Tetikleme}
+
+\begin{equation}
+\text{mode} = \begin{cases}
+\text{normal} & \text{eger dosya} < 100\text{ MB} \\
+\text{chunked} & \text{eger dosya} \geq 100\text{ MB}
+\end{cases}
+\end{equation}
+
+\file{deep\_pipeline.py}'da \code{LARGE\_FILE\_THRESHOLD\_MB = 100} olarak tanimli.
+
+\subsection{Stream-Parse Pipeline}
+
+\begin{enumerate}
+\item \textbf{stream-parse.mjs:} Dosyayi top-level block'lara ayirir (\code{--max-block-kb 512})
+\item \textbf{Her block'u bagimsiz isle:} \code{deep-deobfuscate.mjs} her chunk uzerinde ayri calisir (120s timeout/block)
+\item \textbf{Birlestir:} Tum chunk ciktilari tek dosyada birlestirilir
+\item \textbf{Webpack unpack:} Birlestirilmis dosya uzerinde modul ayirma
+\item \textbf{Ikinci pass:} Her modul uzerinde variable renaming
+\end{enumerate}
+
+\begin{equation}
+T_{\text{chunked}} \approx T_{\text{split}} + n \cdot T_{\text{deob/chunk}} + T_{\text{merge}} + T_{\text{unpack}}
+\end{equation}
+
+burada $n$ chunk sayisi, $T_{\text{deob/chunk}}$ chunk basina deobfuscation suresi.
+
+\subsection{Timeout Hesaplaması}
+
+\file{deep\_pipeline.py} dosya boyutuna gore dinamik timeout hesaplar:
+
+\begin{equation}
+T_{\text{timeout}} = \max(300, \min(1800, \lceil S_{\text{MB}} \times 100 \rceil)) \text{ saniye}
+\label{eq:timeout}
+\end{equation}
+
+burada $S_{\text{MB}}$ dosya boyutu megabayt cinsindendir. Minimum 5 dakika, maksimum 30 dakika.
+
+
+% ===================================================================
+\section{Control Flow Flattening (CFF) Deflattening}
+\label{sec:cff-deflattening}
+% ===================================================================
+
+\file{cff\_deflattener.py}, CFF obfuscation'ini geri alan bir Python modul-udur. Hem C hem JavaScript uzerinde calisir.
+
+\subsection{Tespit Algoritması}
+
+CFF dispatcher pattern regex ile tespit edilir:
+
+\begin{lstlisting}[language=Python, caption={CFF dispatcher tespiti}]
+# JS CFF pattern
+_WHILE_SWITCH_JS = re.compile(
+    r"(?:while\s*\(\s*(?:!0|true|1)\s*\)|for\s*\(\s*;;\s*\))\s*\{"
+    r"\s*switch\s*\(\s*(\w+)\s*\)\s*\{",
+    re.IGNORECASE,
+)
+\end{lstlisting}
+
+\subsection{State Transition Graph Cikarma}
+
+Her \code{case} blogundan state gecisleri cikarilarak bir yoenluee graf (directed graph) olusturulur:
+
+\begin{equation}
+G = (V, E) \quad \text{burada } V = \{s_0, s_1, \ldots, s_n\}, \quad E = \{(s_i, s_j) : s_i \xrightarrow{\text{state}} s_j\}
+\end{equation}
+
+\begin{center}
+\begin{tikzpicture}[
+  state/.style={circle, draw=sectioncyan, fill=boxbg, minimum size=0.9cm, text=white, font=\small},
+  arrow/.style={-{Stealth[length=2.5mm]}, thick, color=gray!70!white},
+  every node/.style={font=\scriptsize},
+]
+  \node[state] (s0) at (0,0) {0};
+  \node[state] (s3) at (2.5,0) {3};
+  \node[state] (s1) at (5,0) {1};
+  \node[state] (s5) at (7.5,0) {5};
+  \node[state] (s2) at (5,-1.5) {2};
+
+  \draw[arrow] (s0) -- (s3);
+  \draw[arrow] (s3) -- (s1);
+  \draw[arrow] (s1) -- (s5);
+  \draw[arrow] (s3) -- (s2);
+
+  \node[above=0.2cm, text=green!60!white] at (s0) {entry};
+  \node[above=0.2cm, text=red!60!white] at (s5) {exit};
+\end{tikzpicture}
+\end{center}
+
+\subsection{Topological Sort ile Yeniden Olusturma}
+
+State transition graph'i uzerinde BFS-based topological sort uygulanarak orijinal kod sirasi elde edilir:
+
+\begin{lstlisting}[language=Python, caption={Topological sort -- cff\_deflattener.py}]
+def _topological_sort(self, graph, blocks):
+    order, visited = [], set()
+    entry = blocks[0].state_value
+    queue = [entry]
+    while queue:
+        state = queue.pop(0)
+        if state in visited: continue
+        visited.add(state)
+        order.append(state)
+        for ns in graph.get(state, []):
+            if ns not in visited:
+                queue.append(ns)
+    # Ziyaret edilmemis state'leri sona ekle
+    for block in blocks:
+        if block.state_value not in visited:
+            order.append(block.state_value)
+    return order
+\end{lstlisting}
+
+\subsection{Karmasiklik Analizi}
+
+\begin{equation}
+T_{\text{CFF}} = \bigO{|C| + |V| + |E|}
+\end{equation}
+
+burada $|C|$ case sayisi, $|V|$ state sayisi (=$|C|$), $|E|$ gecis sayisi. Pratikte $|E| \leq 2|V|$ (her case en fazla 2 gecis yapar --- true/false branch).
+
+
+% ===================================================================
+\section{Opaque Predicate Removal}
+\label{sec:opaque-removal}
+% ===================================================================
+
+\file{opaque\_predicate.py}, bilinen opaque predicate pattern'lerini regex ile tespit edip dead code'u isaretler veya kaldirir.
+
+\subsection{Tespit Stratejileri}
+
+\begin{enumerate}
+\item \textbf{Pattern matching:} 7 always-true + 4 always-false regex pattern (Tablo~\ref{tab:opaque-predicates})
+\item \textbf{Constant folding:} Sabit deger kullanan branch'ler (Phase 3 ile entegre)
+\item \textbf{Z3 SMT solver (opsiyonel):} Karmasik opaque predicate'lar icin symbolic verification
+\end{enumerate}
+
+\subsection{Z3 Entegrasyonu}
+
+Eger z3-solver kurulu ise, pattern matching ile tespit edilemeyen karmasik predicate'lar Z3 ile dogrulanabilir:
+
+\begin{equation}
+\text{is\_opaque}(\varphi) = \begin{cases}
+\text{true} & \text{eger } Z3.\text{prove}(\forall x: \varphi(x) = \text{true}) \\
+\text{false} & \text{eger } Z3.\text{find\_counterexample}(\varphi) \neq \varnothing
+\end{cases}
+\end{equation}
+
+\file{opaque\_predicate.py}'da Z3 lazy-load yapilir:
+
+\begin{lstlisting}[language=Python, caption={Z3 lazy-load -- opaque\_predicate.py}]
+if use_z3:
+    try:
+        import z3  # noqa: F401
+        self._z3_available = True
+    except ImportError:
+        logger.info("z3-solver bulunamadi, "
+                     "pattern-based tespit kullanilacak")
+\end{lstlisting}
+
+\subsection{Eliminasyon}
+
+\begin{itemize}
+\item \textbf{Always-true:} \code{if(OPAQUE\_TRUE)\{X\} else \{Y\}} $\to$ \code{X}
+\item \textbf{Always-false:} \code{if(OPAQUE\_FALSE)\{X\} else \{Y\}} $\to$ \code{Y} (veya sil)
+\end{itemize}
+
+
+% ===================================================================
+\section{String Decryption}
+\label{sec:string-decrypt}
+% ===================================================================
+
+\file{string\_decryptor.py}, binary'lerdeki sifrelenmis string'leri cozen bir moduld-ur. JavaScript deobfuscation ile dogrudan ilgili olmasa da, Karadul'un genel deobfuscation yeteneginin parcasidir.
+
+\subsection{Desteklenen Sifreleme Yoentemleri}
+
+\begin{enumerate}
+\item \textbf{XOR single-byte:} \code{buf[i] \^{}= 0xNN}
+\item \textbf{XOR multi-byte:} \code{buf[i] \^{}= key[i \% keylen]}
+\item \textbf{XOR rolling:} \code{prev = buf[i] \^{} prev}
+\item \textbf{RC4:} S-box initialization + swap pattern
+\item \textbf{Base64:} \code{atob("SGVsbG8=")}
+\item \textbf{Stack string:} Char-by-char push (Ghidra decompile ciktisinda)
+\end{enumerate}
+
+\subsection{Stack String Reconstruction}
+
+Ghidra decompile ciktisinda ardisik local degiskenlere tek karakter atamalari ``stack string'' olarak yeniden birlestirilir:
+
+\begin{lstlisting}[language=Python, caption={Stack string ornegi (Ghidra decompile ciktisi)}]
+local_28 = 0x48;  # 'H'
+local_27 = 0x65;  # 'e'
+local_26 = 0x6c;  # 'l'
+local_25 = 0x6c;  # 'l'
+local_24 = 0x6f;  # 'o'
+# -> "Hello" (confidence: 0.85)
+\end{lstlisting}
+
+\subsection{XOR Brute-Force}
+
+Kisa string'ler icin tum 256 tek-byte anahtar denenerek en yuksek ``printable'' skorlu sonuc secilir:
+
+\begin{equation}
+\text{score}(k) = \frac{|\{c \in \text{decrypt}(d, k) : c \in \text{printable}\}|}{|\text{decrypt}(d, k)|}
+\end{equation}
+
+$\text{score}(k) > 0.7$ olan ilk 5 sonuc dondurulur.
+
+
+% ===================================================================
+\section{Acorn Fallback}
+\label{sec:acorn-fallback}
+% ===================================================================
+
+Babel parser 32MB+ dosyalarda veya ozel syntax pattern'lerinde basarisiz olabilir. \file{deobfuscate.mjs} bu durumda Acorn parser'a duser.
+
+\subsection{Babel vs Acorn Karsilastirmasi}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{\color{sectioncyan}Ozellik} & \textbf{\color{sectioncyan}Babel} & \textbf{\color{sectioncyan}Acorn} \\
+\midrule
+AST formati & Babel (genisletilmis) & ESTree (standart) \\
+Error recovery & \checkmark & Kismi \\
+TypeScript desteegi & \checkmark (plugin) & $\times$ \\
+JSX desteegi & \checkmark (plugin) & $\times$ \\
+Performans (30MB) & $\sim$45s & $\sim$8s \\
+Memory (30MB) & $\sim$4GB & $\sim$1.5GB \\
+\bottomrule
+\end{tabular}
+\caption{Babel vs Acorn parser karsilastirmasi.}
+\label{tab:babel-vs-acorn}
+\end{table}
+
+Acorn, \file{deobfuscate.mjs}'te lazy-load edilir ve sadece Babel basarisiz olursa yuklenir:
+
+\begin{lstlisting}[language=JavaScript, caption={Acorn lazy-load}]
+let acorn = null, acornWalk = null;
+function loadAcorn() {
+  try {
+    acorn = _require("acorn");
+    acornWalk = _require("acorn-walk");
+    return true;
+  } catch { return false; }
+}
+\end{lstlisting}
+
+
+\begin{ozet}
+JavaScript deobfuscation, 4 adimli standart zincir (beautify $\to$ synchrony $\to$ babel $\to$ webpack) ve 10 fazli derin transform pipeline'indan olusur. Phase 2--8, visitor-merge optimizasyonu ile tek AST traverse'da birlestirilmistir ($\sim$3--5x hiz kazanci). Graceful degradation her adimda basarisizliga tolerans saglar. Faz 9--10'daki LLM-siz semantik isimlendirme toplam 25+ heuristik kuralla etkileyici sonuclar ueretir. 200MB+ dosyalar icin stream-parse ile chunked processing otomatik devreye girer. CFF deflattening, opaque predicate removal ve string decryption ek moduller olarak pipeline'i guclendirir.
+\end{ozet}
+
+
+\clearpage
+
+% ############################################################################
+%
+%          B O L U M   6 :   B A Y E S I A N   I S I M   F U Z Y O N U
+%
+% ############################################################################
+
+% Bu bolum, Karadul'un en yenilikci algoritmasi olan Bayesian log-odds isim
+% birlestirme sistemini detayli olarak turetir.
+% Kaynak kod: karadul/reconstruction/name_merger.py
+
+
+% ===================================================================
+\section{Problem Tanimi: Coklu Kaynak, Tek Isim}
+\label{sec:naming-problem-detail}
+% ===================================================================
+
+Tersine muhendislikte, bir sembolun (fonksiyon, degisken) gercek ismi bilinmez. Birden fazla \textbf{bagimsiz} kaynak, farkli isimler onerir. Soru sudur: bu onerilerden hangisi dogru, ve nasil birlestiririz?
+
+\begin{tanim}[Isim Fuzyon Problemi]
+Verilen:
+\begin{itemize}
+\item Bir sembol $s$ (orijinal ismi bilinmiyor, orn. \code{FUN\_00401000})
+\item $K$ adet kaynak, her biri bir isim onerisi ve confidence degeri ureten: $(n_i, c_i, \text{source}_i)$ icin $i = 1, \ldots, K$
+\end{itemize}
+
+Hedef: $s$ icin en uygun ismi $n^*$ sec ve sonucun dogruluk olasililigini $P^*$ hesapla.
+\end{tanim}
+
+\begin{example}
+\code{FUN\_00401000} icin:
+\begin{itemize}
+\item \textbf{signature\_db:} \code{SSL\_connect} (confidence: 0.85, $w=1.0$)
+\item \textbf{string\_intel:} \code{ssl\_handshake} (confidence: 0.70, $w=0.8$)
+\item \textbf{c\_namer:} \code{connect\_tls} (confidence: 0.60, $w=1.0$)
+\item \textbf{llm4decompile:} \code{ssl\_init\_connection} (confidence: 0.55, $w=0.5$)
+\end{itemize}
+Dort farkli isim! Ama hepsi ``SSL baglantisi'' kavramina isaret ediyor. Bayesian fusion bunu nasil cozer?
+\end{example}
+
+
+% ===================================================================
+\section{Bayes Teoremi: Temelden Turetme}
+\label{sec:bayes-derivation}
+% ===================================================================
+
+\subsection{Kosula Bagli Olasilik}
+
+Iki olay $A$ ve $B$ icin:
+
+\begin{equation}
+\prob{A \cap B} = \prob{A \given B} \cdot \prob{B} = \prob{B \given A} \cdot \prob{A}
+\label{eq:joint-prob}
+\end{equation}
+
+Buradan Bayes teoremi turetilir:
+
+\begin{equation}
+\boxed{
+\prob{H \given E} = \frac{\prob{E \given H} \cdot \prob{H}}{\prob{E}}
+}
+\label{eq:bayes-theorem}
+\end{equation}
+
+\subsection{Isimlendirme Baglaminda Anlami}
+
+\begin{itemize}
+\item $H$: ``Bu sembolun gercek ismi $X$'tir'' hipotezi
+\item $E_i$: ``Kaynak $i$, $X$ ismini $c_i$ confidence ile onerdi'' kaniti
+\item $\prob{H}$: \textbf{Prior} --- hipotez hakkinda onceki inancimiz (baslangicta $0.5$)
+\item $\prob{E_i \given H}$: \textbf{Likelihood} --- eger isim gercekten $X$ ise, kaynak $i$'nin bunu $c_i$ ile onermesinin olasiligi. Bunu $\approx c_i$ olarak modelliyoruz.
+\item $\prob{E_i \given \neg H}$: Eger isim $X$ \textbf{degilse}, kaynak $i$'nin yine de $X$ onerme olasiligi $\approx 1 - c_i$.
+\item $\prob{H \given E_i}$: \textbf{Posterior} --- kanit sonrasi guncellenminsi inanc
+\end{itemize}
+
+\subsection{Ardisik Kanit Birlestirme}
+
+Birden fazla kaniti ardisik olarak birlestirmek icin, her kanitin \textbf{likelihood ratio} (LR) degerini kullaniriz:
+
+\begin{equation}
+\text{LR}_i = \frac{\prob{E_i \given H}}{\prob{E_i \given \neg H}} = \frac{c_i}{1 - c_i}
+\label{eq:lr}
+\end{equation}
+
+Ardisik Bayes guncellemesi:
+
+\begin{equation}
+\frac{\prob{H \given E_1, E_2, \ldots, E_n}}{\prob{\neg H \given E_1, E_2, \ldots, E_n}} = \frac{\prob{H}}{\prob{\neg H}} \cdot \prod_{i=1}^{n} \text{LR}_i
+\end{equation}
+
+\textbf{Eger kaynaklar bagimsiz ise} (naive Bayes varsayimi).
+
+
+% ===================================================================
+\section{Log-Odds Formu: Neden ve Nasil}
+\label{sec:logodds-derivation}
+% ===================================================================
+
+\subsection{Odds ve Log-Odds}
+
+Odds (bahis orani):
+
+\begin{equation}
+\text{odds}(H) = \frac{\prob{H}}{1 - \prob{H}}
+\end{equation}
+
+Log-odds (logit):
+
+\begin{equation}
+\text{logit}(H) = \log\frac{\prob{H}}{1 - \prob{H}}
+\end{equation}
+
+\subsection{Turetme}
+
+Ardisik Bayes guncellemesinin her iki tarafinin logaritmasini alalim:
+
+\begin{align}
+\log\frac{\prob{H \given \mathbf{E}}}{\prob{\neg H \given \mathbf{E}}} &= \log\frac{\prob{H}}{\prob{\neg H}} + \sum_{i=1}^{n} \log \text{LR}_i \\
+&= \log\frac{\prob{H}}{1 - \prob{H}} + \sum_{i=1}^{n} \log\frac{c_i}{1 - c_i}
+\end{align}
+
+\subsection{Korelasyon Duzeltmesi}
+
+Naive Bayes, kaynakların bagimsiz oldugunu varsayar. Ancak bazilari korelasyonludur (ornegin \code{llm4decompile} tum diger kaynaklari dolayli olarak kullanir). Korelasyonlu kaynaklarin etkisini azaltmak icin agirlik $w_i \in (0, 1]$ eklenir:
+
+\begin{equation}
+\boxed{
+\text{log-odds}(H) = \underbrace{\log\frac{p_0}{1 - p_0}}_{\text{prior}} + \sum_{i=1}^{n} w_i \cdot \underbrace{\log\frac{c_i}{1 - c_i}}_{\text{log-LR}_i}
+}
+\label{eq:logodds-weighted}
+\end{equation}
+
+burada $p_0 = 0.5$ prior (notr baslangic: $\log(0.5/0.5) = 0$).
+
+\subsection{Neden Log Space?}
+
+\begin{enumerate}
+\item \textbf{Numerik stabilite:} Carpim yerine toplam. $\prod_i c_i$ ile $n=10$ kaynak icin floating point underflow olusabilir. Toplam bu sorunu ortadan kaldirir.
+\item \textbf{Korelasyon duzeltmesi:} $w_i$ ile dogrudan carpma log space'te lineer agirliklamaya denk gelir. Olasilik uzayinda bu $\text{LR}_i^{w_i}$ demektir --- bilgi-kuramsal olarak ``kaynagin bilgi katkisini $w_i$ oranina indir'' anlamina gelir.
+\item \textbf{Sigmoid ile donusum:} Sonuc dogal olarak $[0,1]$ araligina doner.
+\end{enumerate}
+
+
+% ===================================================================
+\section{Sigmoid Fonksiyonu: Logit'in Tersi}
+\label{sec:sigmoid}
+% ===================================================================
+
+Log-odds'u tekrar olasiliga donusturmek icin sigmoid ($\sigma$) fonksiyonunu kullaniriz:
+
+\begin{equation}
+\prob{H \given \mathbf{E}} = \sigmoid(\text{log-odds}) = \frac{1}{1 + e^{-\text{log-odds}}}
+\label{eq:sigmoid-def}
+\end{equation}
+
+\subsection{Sigmoid'in Ozellikleri}
+
+\begin{enumerate}
+\item $\sigma(0) = 0.5$ (notr: log-odds = 0 ise emin degiliz)
+\item $\lim_{x \to \infty} \sigma(x) = 1$ (cok guclu kanit $\to$ kesinlik)
+\item $\lim_{x \to -\infty} \sigma(x) = 0$ (cok guclu karsi kanit $\to$ red)
+\item $\sigma'(x) = \sigma(x)(1 - \sigma(x))$ (turevi kendisindendir)
+\item $\sigma(-x) = 1 - \sigma(x)$ (simetri)
+\end{enumerate}
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+  width=10cm, height=5cm,
+  domain=-6:6,
+  samples=100,
+  axis lines=middle,
+  xlabel={log-odds},
+  ylabel={$\sigma(\text{log-odds})$},
+  every axis x label/.style={at=(current axis.right of origin), anchor=west},
+  every axis y label/.style={at=(current axis.above origin), anchor=south},
+  xtick={-4,-2,0,2,4},
+  ytick={0,0.25,0.5,0.75,1.0},
+  ymin=-0.05, ymax=1.05,
+  grid=major,
+  grid style={gray!20!black},
+  axis line style={gray!60!white},
+  tick label style={color=gray!60!white, font=\scriptsize},
+  label style={color=sectioncyan, font=\small},
+]
+  \addplot[cyan, thick] {1/(1+exp(-x))};
+  \addplot[red!60!white, dashed, thick] coordinates {(0,0) (0,0.5)};
+  \addplot[red!60!white, dashed, thick] coordinates {(-6,0.5) (0,0.5)};
+  \node[color=yellow!70!white, font=\scriptsize] at (axis cs:3, 0.3) {$\sigma(x) = \frac{1}{1+e^{-x}}$};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+\subsection{Overflow Korumasi}
+
+\file{name\_merger.py}'da sigmoid icin overflow korumasi uygulanir:
+
+\begin{lstlisting}[language=Python, caption={Sigmoid overflow korumasi -- name\_merger.py}]
+if log_odds > 20.0:
+    p = 1.0       # exp(-20) ~ 2e-9, 1.0'a cok yakin
+elif log_odds < -20.0:
+    p = 0.0       # exp(20) ~ 5e8, 0.0'a cok yakin
+else:
+    p = 1.0 / (1.0 + math.exp(-log_odds))
+\end{lstlisting}
+
+Ayrica sonuc $[c_{\min}, c_{\max}] = [0.01, 0.99]$ araligina kliplenir --- asla ``\%100 emin'' veya ``\%0 emin'' demiyoruz.
+
+
+% ===================================================================
+\section{7 Kaynak Detayli Aciklama}
+\label{sec:sources}
+% ===================================================================
+
+\subsection{binary\_extractor ($w = 1.0$)}
+
+Debug string'ler, RTTI (Run-Time Type Information) ve build path bilgileri derleyici tarafindan binary'ye gomulur. Bu bilgi \textbf{ground truth}'a en yakin kaynaktir:
+
+\begin{itemize}
+\item Debug string'ler: \code{\_\_func\_\_} makrosu, assert mesajlari
+\item RTTI: C++ sinif isimleri (\code{typeinfo name})
+\item Build path: \code{/Users/dev/project/src/ssl\_connect.c}
+\end{itemize}
+
+$w = 1.0$ cunku bu bilgi derleyiciden dogrudan gelir --- hicbir tahmin yoktur.
+
+\subsection{c\_namer ($w = 1.0$)}
+
+6 katmanli heuristik isimlendirme motoru:
+
+\begin{enumerate}
+\item Fonksiyon imzasi analizi (parametre tipleri, donus tipi)
+\item String kullanimi (hata mesajlari, log string'leri)
+\item Cagrilan fonksiyonlar (API pattern tespiti)
+\item Veri akisi analizi (tanimlama-kullanim zincirleri)
+\item Algoritma tespiti (hash, sort, compress pattern'leri)
+\item Statistiksel isim onerisi
+\end{enumerate}
+
+$w = 1.0$ cunku 6 katman zaten kendi icinde filtrelenmis; cift zayiflatma gereksiz.
+
+\subsection{string\_intel ($w = 0.8$)}
+
+Error mesajlari, protocol handler string'leri ve sabit mesajlardan fonksiyon ismi cikarimi:
+
+\begin{lstlisting}[language=Python]
+# Ornek: error mesajindan isim cikarimi
+"Failed to connect SSL socket" -> ssl_connect (conf: 0.70)
+\end{lstlisting}
+
+$w = 0.8$ cunku error mesajlari, debug string'ler ile kismen ortak kaynaklardan beslenir.
+
+\subsection{signature\_db ($w = 1.0$)}
+
+FLIRT (Fast Library Identification and Recognition Technology) ile 1.5M+ kutuphane fonksiyon imzasi eslestirilir. Bu tamamen \textbf{byte-level} bir eslestirmedir:
+
+\begin{equation}
+\text{match}(f) = \argmax_{s \in \text{FLIRT\_DB}} \text{similarity}(\text{bytes}(f), \text{bytes}(s))
+\end{equation}
+
+$w = 1.0$ cunku byte pattern tamamen bagimsiz bir bilgi kaynagi.
+
+\subsection{swift\_demangle ($w = 1.0$)}
+
+Swift binary'lerinde mangled sembol isimleri (ornegin \code{\_\$s4main7MyClassC9processSSyS2SF}) demangle edilerek orijinal isim elde edilir:
+
+\begin{equation}
+\text{demangle}(\code{\_\$s4main7MyClassC9processSSyS2SF}) = \code{main.MyClass.process(String) -> String}
+\end{equation}
+
+$w = 1.0$ cunku demangle \textbf{kesin} bilgidir, tahmin degil.
+
+\subsection{source\_matcher ($w = 0.85$)}
+
+NPM paket fingerprinting: Obfuscated JS kodundaki string ve yapi pattern'leri bilinen NPM paketleri ile eslestirilir:
+
+\begin{itemize}
+\item Benzersiz string literal'ler (hata mesajlari, API endpoint'leri)
+\item Fonksiyon imza pattern'leri (parametre sayisi + kullanim)
+\item Export yapisi (modul cikti formati)
+\end{itemize}
+
+$w = 0.85$ cunku heuristik bazli ama yuksek kesinlikli.
+
+\subsection{llm4decompile ($w = 0.5$)}
+
+Makine ogrenmesi modeli ile isim tahmini. Neden $w = 0.5$?
+
+\begin{uyari}[LLM Korelasyon Problemi]
+LLM modeli, egitim verisinde tum diger kaynaklarin bilgisini dolayli olarak iciyor:
+\begin{itemize}
+\item Kutuphane imzalari (signature\_db ile korelasyonlu)
+\item Debug string pattern'leri (binary\_extractor ile korelasyonlu)
+\item Error mesaj kaliplari (string\_intel ile korelasyonlu)
+\end{itemize}
+Bu nedenle LLM'in bilgi katkisi ``yarisina'' indirilir: $w = 0.5$.
+\end{uyari}
+
+\subsection{byte\_pattern ($w = 1.0$)}
+
+Kutuphane fonksiyonlarinin byte-level fuzzy matching ile tespiti. FLIRT'ten farki: FLIRT kesin imza kullanirken, byte\_pattern fuzzy threshold ile calisir. Yine de tamamen bagimsiz bir byte-level kaynak.
+
+
+% ===================================================================
+\section{Korelasyon-Aware Agirliklar: Bilgi Kurami}
+\label{sec:correlation-theory}
+% ===================================================================
+
+\subsection{Neden $w_i < 1$?}
+
+Iki kaynak $S_i$ ve $S_j$ arasindaki korelasyonu mutual information ile olceriz:
+
+\begin{equation}
+I(S_i; S_j) = \sum_{s_i, s_j} p(s_i, s_j) \log\frac{p(s_i, s_j)}{p(s_i) \cdot p(s_j)}
+\label{eq:mutual-info}
+\end{equation}
+
+Eger $I(S_i; S_j) > 0$ ise, iki kaynak ortak bilgi tasir. Her ikisini de $w=1.0$ ile saymak bu ortak bilgiyi \textbf{iki kez} sayar ve \textbf{overconfidence} olusturur.
+
+Korelasyon duzeltme prensibimiz:
+
+\begin{equation}
+w_i = 1 - \frac{I(S_i; S_{\text{others}})}{H(S_i)}
+\label{eq:weight-from-mi}
+\end{equation}
+
+burada $H(S_i)$ kaynak $i$'nin entropisi. Pratikte Denklem~\ref{eq:weight-from-mi} yerine ampirik agirliklar kullanilir (Tablo~\ref{tab:weights-detail}).
+
+\subsection{Kaynak Agirliklari Tablosu}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llp{6.5cm}}
+\toprule
+\textbf{\color{sectioncyan}Kaynak} & \textbf{\color{sectioncyan}$w_i$} & \textbf{\color{sectioncyan}Gerekce} \\
+\midrule
+binary\_extractor & 1.0 & Derleyici ciktisi, tamamen bagimsiz \\
+c\_namer & 1.0 & 6 katman kendi icinde filtrelenmis \\
+string\_intel & 0.8 & Error msg.~binary\_extractor ile kismi korelasyon \\
+signature\_db & 1.0 & FLIRT byte pattern, tamamen bagimsiz \\
+swift\_demangle & 1.0 & Deterministik demangle, kesin bilgi \\
+source\_matcher & 0.85 & NPM heuristik, bagimsiz ama kesin degil \\
+llm4decompile & 0.5 & Tum kaynaklari dolayli kullaniyor \\
+byte\_pattern & 1.0 & Byte-level fuzzy match, bagimsiz \\
+\midrule
+\textit{Bilinmeyen kaynak} & 0.7 & Varsayilan fallback \\
+\bottomrule
+\end{tabular}
+\caption{Kaynak agirliklari, korelasyon analizi ve gerekceler.}
+\label{tab:weights-detail}
+\end{table}
+
+\subsection{Overconfidence Problemi: Somut Ornek}
+
+Naive Bayes ($w_i = 1.0$ her kaynak icin) ile korelasyon-aware karsilastirma:
+
+\begin{align}
+\text{Naive } (w_i = 1): \quad \text{log-odds} &= 0 + 1.0 \cdot \log\frac{0.85}{0.15} + 1.0 \cdot \log\frac{0.70}{0.30} + 1.0 \cdot \log\frac{0.60}{0.40} \\
+&= 1.735 + 0.847 + 0.405 = 2.987 \\
+P_{\text{naive}} &= \sigma(2.987) = 0.952 \quad (\text{\textbf{\%95.2}})
+\end{align}
+
+\begin{align}
+\text{Corrected}: \quad \text{log-odds} &= 0 + 1.0 \cdot 1.735 + 0.8 \cdot 0.847 + 0.5 \cdot 0.405 \\
+&= 1.735 + 0.678 + 0.203 = 2.616 \\
+P_{\text{corr}} &= \sigma(2.616) = 0.932 \quad (\text{\textbf{\%93.2}})
+\end{align}
+
+\textbf{Fark:} Naive Bayes \%95.2 derken, korelasyon duzeltmesi \%93.2 der --- \%2 daha muhafazakar ve \textbf{daha dogru}. Cunku llm4decompile'in verdigi bilginin bir kismi zaten diger kaynaklarda mevcuttu.
+
+
+% ===================================================================
+\section{Gruplama Stratejisi: 5 Seviye}
+\label{sec:grouping-detail}
+% ===================================================================
+
+\file{name\_merger.py}'deki \code{\_merge\_candidates()} fonksiyonu, adaylari 5 seviyeli bir hiyerarsiden gecirir. Her seviye bir oncekinden daha gevşek bir eslestirme kullanir.
+
+\begin{center}
+\begin{tikzpicture}[
+  level/.style={rectangle, draw=sectioncyan, fill=boxbg, minimum width=5cm, minimum height=0.9cm, text=white, font=\small, rounded corners=2pt, align=center},
+  arrow/.style={-{Stealth[length=2.5mm]}, thick, color=gray!60!white},
+  fail/.style={-{Stealth[length=2mm]}, dashed, color=red!50!white},
+  node distance=0.7cm,
+]
+  \node[level] (l1) {Seviye 1: Exact Multi-Match};
+  \node[level, below=of l1] (l2) {Seviye 2: Partial Match};
+  \node[level, below=of l2] (l3) {Seviye 3: Semantic Match};
+  \node[level, below=of l3] (l4) {Seviye 4: Voting ($\geq$3)};
+  \node[level, below=of l4] (l5) {Seviye 5: Single Source};
+
+  \draw[arrow] (l1) -- node[right, font=\tiny, text=red!50!white] {eslesmezse} (l2);
+  \draw[arrow] (l2) -- node[right, font=\tiny, text=red!50!white] {eslesmezse} (l3);
+  \draw[arrow] (l3) -- node[right, font=\tiny, text=red!50!white] {eslesmezse} (l4);
+  \draw[arrow] (l4) -- node[right, font=\tiny, text=red!50!white] {eslesmezse} (l5);
+
+  \node[right=1.5cm, font=\scriptsize, text=green!60!white] at (l1.east) {En yuksek guven};
+  \node[right=1.5cm, font=\scriptsize, text=yellow!70!white] at (l3.east) {Orta guven};
+  \node[right=1.5cm, font=\scriptsize, text=red!60!white] at (l5.east) {En dusuk guven};
+\end{tikzpicture}
+\end{center}
+
+\subsection{Seviye 1: Exact Multi-Match}
+
+Ayni normalize isim $\geq 2$ \textbf{farkli} kaynaktan geldiyse, dogrudan Bayesian merge:
+
+\begin{lstlisting}[language=Python, caption={Exact multi-match -- name\_merger.py}]
+for norm_name, group in name_groups.items():
+    if len(group) >= 2:
+        sources = set(c.source for c in group)
+        if len(sources) >= 2:
+            conf = bayesian_merge(
+                [c.confidence for c in group],
+                [c.source for c in group], self._cfg)
+            return MergedName(..., merge_method="bayesian_multi")
+\end{lstlisting}
+
+\subsection{Seviye 2: Partial Match}
+
+Farkli isimler arasinda prefix/suffix varyanti aranir. Ornegin:
+\begin{itemize}
+\item \code{cycle\_sizes\_default} vs \code{cycle\_size} $\to$ partial match
+\item \code{active\_event\_monitor} vs \code{event\_monitor} $\to$ partial match
+\end{itemize}
+
+Overlap skoru:
+
+\begin{equation}
+\text{overlap}(A, B) = \begin{cases}
+\frac{|A_{\text{short}}|}{|A_{\text{long}}|} & \text{eger } A_{\text{short}} \subset A_{\text{long}} \text{ (substring)} \\[6pt]
+J(W_A, W_B) = \frac{|W_A \cap W_B|}{|W_A \cup W_B|} & \text{aksi halde (Jaccard)}
+\end{cases}
+\label{eq:overlap}
+\end{equation}
+
+$\text{overlap} \geq 0.5$ ise partial match kabul edilir. Penalty:
+
+\begin{equation}
+\text{penalty} = 0.7 + 0.3 \times \text{overlap}
+\end{equation}
+
+Tam substring ($\text{overlap} = 1.0$) $\to$ penalty $= 1.0$ (penalty yok). Kismi overlap ($\text{overlap} = 0.5$) $\to$ penalty $= 0.85$.
+
+
+\subsection{Seviye 3: Semantic Match}
+
+\file{name\_merger.py}'de 20 adet \code{frozenset} ile kelime gruplari tanimlidir. Iki isim, ayni gruba dusen kelimeleri paylasiyorsa ``semantik olarak benzer'' sayilir.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{3cm}p{9cm}}
+\toprule
+\textbf{\color{sectioncyan}Grup Adi} & \textbf{\color{sectioncyan}Kelimeler} \\
+\midrule
+Gonderme & send, transmit, write, emit, dispatch, post \\
+Alma & recv, receive, read, get, fetch \\
+Olusturma & init, initialize, setup, create, construct, new, alloc \\
+Yok etme & destroy, cleanup, teardown, free, delete, release, close, dispose \\
+Parse/Decode & parse, decode, deserialize, unmarshal, extract \\
+Encode & serialize, encode, marshal, format, stringify \\
+Isleyici & handle, process, on, dispatch, callback, handler \\
+Dogrulama & check, validate, verify, test, assert, is, has \\
+Koleksiyon ekle & add, insert, append, push, enqueue, put \\
+Koleksiyon sil & remove, delete, erase, pop, dequeue, take \\
+Boyut & size, length, count, num, len, total \\
+Tampon & buf, buffer, data, bytes, payload, blob \\
+Mesaj & msg, message, packet, frame, request, response \\
+Hata & err, error, fault, failure, exception \\
+Baglam & ctx, context, state, env, session \\
+Konfiguerasyon & cfg, config, configuration, settings, options, prefs \\
+Baglanti & conn, connection, socket, link, channel \\
+Loglama & log, print, trace, debug, info, warn \\
+Kilit alma & lock, acquire, enter, begin, grab \\
+Kilit birakma & unlock, release, leave, end, drop \\
+\bottomrule
+\end{tabular}
+\caption{Semantik kelime gruplari (20 frozenset).}
+\label{tab:semantic-groups}
+\end{table}
+
+\subsubsection{Expand-Then-Intersect Algoritmasi}
+
+\begin{enumerate}
+\item Her isim kelimelere ayrilir: \code{ssl\_handshake} $\to$ \{ssl, handshake\}
+\item Her kelime, ait oldugu semantic grubun \textbf{tum kelimeleri} ile genisletilir:
+      \code{handshake} $\notin$ herhangi bir grup; \code{connect} $\to$ \{conn, connection, socket, link, channel\}
+\item Genisletilmis kumelerin kesisimi kontrol edilir
+\item Kesisim orani $\geq 0.3$ ise semantik benzerlik var
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption={Semantic similarity -- name\_merger.py}]
+def _is_semantically_similar(self, name1, name2):
+    words1 = set(self._normalize(name1).split("_"))
+    words2 = set(self._normalize(name2).split("_"))
+    # Dogrudan kelime kesisimi
+    common = words1 & words2
+    if common and len(common) / max(len(words1), len(words2)) >= 0.5:
+        return True
+    # Semantic group genisletme
+    expanded1 = set()
+    for w in words1:
+        if w in self._word_to_group:
+            expanded1 |= self._word_to_group[w]
+        expanded1.add(w)
+    # ... ayni expanded2 icin ...
+    overlap = expanded1 & expanded2
+    union = expanded1 | expanded2
+    return len(overlap) / len(union) >= 0.3
+\end{lstlisting}
+
+Semantik match'te confidence \textbf{0.85x penalty} ile carpilir cunku isimler tam eslesmiyor:
+
+\begin{equation}
+c_i^{\text{semantic}} = c_i \times 0.85
+\end{equation}
+
+
+\subsection{Seviye 4: Voting}
+
+$\geq 3$ kaynak ayni normalize ismi veriyorsa, cogunluk kazanir:
+
+\begin{equation}
+n^* = \argmax_{n} \sum_{i=1}^{K} \mathbb{1}[\text{normalize}(n_i) = n]
+\end{equation}
+
+Eger $\text{count}(n^*) \geq 3$ ise, bu adaylar Bayesian merge'e girer.
+
+\subsection{Seviye 5: Single Source}
+
+Tek kaynak kaldiysa, Bayesian merge gerekmez. Ancak kaynagin $w_i$ deger ile duzeltme yapilir:
+
+\begin{equation}
+c_{\text{adjusted}} = \sigma\left(w_i \cdot \log\frac{c_i}{1 - c_i}\right)
+\end{equation}
+
+$w_i < 1$ ise bu ``tek kaynaga fazla guvenme'' demektir.
+
+
+% ===================================================================
+\section{Normalize Isim Karsilastirmasi}
+\label{sec:normalize}
+% ===================================================================
+
+Farkli kaynaklar farkli konvansiyonlarda isim uretir. Karsilastirma oncesi normalizasyon sart:
+
+\begin{lstlisting}[language=Python, caption={Isim normalizasyonu -- name\_merger.py}]
+def _normalize(self, name):
+    # camelCase -> snake_case
+    name = re.sub(r"([a-z])([A-Z])", r"\1_\2", name)
+    # Prefix'leri kaldir (m_, s_, g_, p_)
+    name = re.sub(r"^[msgp]_", "", name)
+    return name.lower().strip("_")
+\end{lstlisting}
+
+Ornekler:
+\begin{itemize}
+\item \code{SSLConnect} $\to$ \code{ssl\_connect}
+\item \code{m\_sslConnect} $\to$ \code{ssl\_connect}
+\item \code{ssl\_connect} $\to$ \code{ssl\_connect} (degismez)
+\item \code{g\_SSLHandler} $\to$ \code{ssl\_handler}
+\end{itemize}
+
+
+% ===================================================================
+\section{UNK Threshold: Precision vs Recall}
+\label{sec:unk-threshold}
+% ===================================================================
+
+\subsection{NSA-Grade Felsefe}
+
+\begin{uyari}[Yanlis Isim Tehlikesi]
+Tersine muhendislikte yanlis isim, isimsizden \textbf{cok daha kotu}dur:
+\begin{itemize}
+\item Yanlis isim $\to$ analist yanlis yolda saatler/gunler harcar
+\item UNK (isimsiz) $\to$ analist ``bilmiyorum'' der, dikkatli devam eder
+\end{itemize}
+
+\textbf{Sonuc:} Dusuk confidence'li isimleri \textbf{atamayiz}. $c < 0.30$ ise UNK.
+\end{uyari}
+
+\subsection{ROC Analizi}
+
+UNK threshold secimi, precision ve recall arasinda trade-off'tur:
+
+\begin{equation}
+\text{Precision} = \frac{TP}{TP + FP}, \quad \text{Recall} = \frac{TP}{TP + FN}
+\end{equation}
+
+\begin{itemize}
+\item \textbf{Threshold $\uparrow$:} Precision $\uparrow$ (daha az yanlis isim), Recall $\downarrow$ (daha cok UNK)
+\item \textbf{Threshold $\downarrow$:} Precision $\downarrow$ (daha cok yanlis isim), Recall $\uparrow$ (daha az UNK)
+\end{itemize}
+
+Karadul'un secimi: $\theta_{\text{UNK}} = 0.30$. Bu, \textbf{Type I error maliyetinin Type II error maliyetinden cok daha yuksek} olmasi varsayimindan gelir:
+
+\begin{equation}
+\text{Cost}_{\text{wrong\_name}} \gg \text{Cost}_{\text{UNK}} \implies \theta_{\text{UNK}} \text{ yuksek tutulur}
+\end{equation}
+
+
+% ===================================================================
+\section{Somut Hesaplama Ornekleri}
+\label{sec:bayesian-examples}
+% ===================================================================
+
+\subsection{Senaryo 1: Uc Kaynak Ayni Isim (Exact Multi-Match)}
+
+\code{FUN\_00401000} icin uc kaynak ayni normalize ismi veriyor:
+
+\begin{center}
+\begin{tabular}{llcc}
+\toprule
+Kaynak & Onerilen Isim & $c_i$ & $w_i$ \\
+\midrule
+signature\_db & \code{SSL\_connect} & 0.85 & 1.0 \\
+string\_intel & \code{SSL\_connect} & 0.70 & 0.8 \\
+c\_namer & \code{ssl\_connect} & 0.60 & 1.0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Normalize edilince uc isim de \code{ssl\_connect} --- exact multi-match!
+
+\textbf{Adim 1: Prior log-odds}
+\begin{equation}
+\ell_0 = \log\frac{0.5}{0.5} = 0
+\end{equation}
+
+\textbf{Adim 2: Her kaynağin log-LR katkisi}
+\begin{align}
+\Delta\ell_1 &= w_1 \cdot \log\frac{c_1}{1-c_1} = 1.0 \cdot \log\frac{0.85}{0.15} = 1.0 \cdot 1.7346 = 1.7346 \\[4pt]
+\Delta\ell_2 &= w_2 \cdot \log\frac{c_2}{1-c_2} = 0.8 \cdot \log\frac{0.70}{0.30} = 0.8 \cdot 0.8473 = 0.6779 \\[4pt]
+\Delta\ell_3 &= w_3 \cdot \log\frac{c_3}{1-c_3} = 1.0 \cdot \log\frac{0.60}{0.40} = 1.0 \cdot 0.4055 = 0.4055
+\end{align}
+
+\textbf{Adim 3: Toplam log-odds}
+\begin{equation}
+\ell = 0 + 1.7346 + 0.6779 + 0.4055 = 2.8180
+\end{equation}
+
+\textbf{Adim 4: Sigmoid}
+\begin{equation}
+P = \sigma(2.8180) = \frac{1}{1 + e^{-2.8180}} = \frac{1}{1 + 0.05975} = 0.9436
+\end{equation}
+
+\begin{basari}[Senaryo 1 Sonuc]
+Uc kaynak birlestirildiginde \textbf{\%94.4 guvenle} \code{ssl\_connect} ismi atanir. En iyi tek kaynak \%85'ti --- Bayesian fusion \%9.4 puan ekledi.
+\end{basari}
+
+
+\subsection{Senaryo 2: Iki Kaynak Partial Match}
+
+\code{FUN\_00501234} icin iki kaynak benzer ama farkli isimler veriyor:
+
+\begin{center}
+\begin{tabular}{llcc}
+\toprule
+Kaynak & Onerilen Isim & $c_i$ & $w_i$ \\
+\midrule
+binary\_extractor & \code{process\_message} & 0.80 & 1.0 \\
+c\_namer & \code{handle\_message\_data} & 0.65 & 1.0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Normalize: \code{process\_message} vs \code{handle\_message\_data}
+
+\textbf{Kelime kumesi:} $\{$process, message$\}$ vs $\{$handle, message, data$\}$. Jaccard:
+
+\begin{equation}
+J = \frac{|\{\text{message}\}|}{|\{\text{process, message, handle, data}\}|} = \frac{1}{4} = 0.25 < 0.5
+\end{equation}
+
+Dogrudan Jaccard $< 0.5$, ama ``handle'' ve ``process'' ayni semantic gruba dusur (Tablo~\ref{tab:semantic-groups}: ``handle, process, on, dispatch, callback, handler''). Semantic expansion sonrasi:
+
+Expanded$_1$ = $\{$process, message, handle, on, dispatch, callback, handler$\}$ \\
+Expanded$_2$ = $\{$handle, message, data, process, on, dispatch, callback, handler, bytes, payload, blob, buf, buffer$\}$
+
+\begin{equation}
+\frac{|\text{Expanded}_1 \cap \text{Expanded}_2|}{|\text{Expanded}_1 \cup \text{Expanded}_2|} = \frac{7}{13} = 0.538 \geq 0.3
+\end{equation}
+
+Semantic match! Penalty $= 0.85$:
+
+\begin{align}
+\Delta\ell_1 &= 1.0 \cdot \log\frac{0.80 \times 0.85}{1 - 0.80 \times 0.85} = 1.0 \cdot \log\frac{0.68}{0.32} = 0.7538 \\[4pt]
+\Delta\ell_2 &= 1.0 \cdot \log\frac{0.65 \times 0.85}{1 - 0.65 \times 0.85} = 1.0 \cdot \log\frac{0.5525}{0.4475} = 0.2107 \\[4pt]
+\ell &= 0 + 0.7538 + 0.2107 = 0.9645 \\[4pt]
+P &= \sigma(0.9645) = \frac{1}{1 + e^{-0.9645}} = 0.724
+\end{align}
+
+\begin{basari}[Senaryo 2 Sonuc]
+Semantic match ile iki kaynak birlestirildiginde \textbf{\%72.4 guvenle} \code{process\_message} (daha kisa isim) atanir. Penalty olmadan \%80 olacakti --- semantik belirsizlik \%7.6 dusurdu.
+\end{basari}
+
+
+\subsection{Senaryo 3: Tek Kaynak, Dusuk Confidence $\to$ UNK}
+
+\code{FUN\_00601000} icin sadece bir kaynak var:
+
+\begin{center}
+\begin{tabular}{llcc}
+\toprule
+Kaynak & Onerilen Isim & $c_i$ & $w_i$ \\
+\midrule
+llm4decompile & \code{init\_module} & 0.45 & 0.5 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Tek kaynak, Single Source (Seviye 5):
+
+\begin{align}
+\ell &= w_1 \cdot \log\frac{c_1}{1-c_1} = 0.5 \cdot \log\frac{0.45}{0.55} = 0.5 \cdot (-0.2007) = -0.1003 \\[4pt]
+P &= \sigma(-0.1003) = \frac{1}{1 + e^{0.1003}} = 0.4749
+\end{align}
+
+$P = 0.475 < \theta_{\text{UNK}} = 0.30$? Hayir, $0.475 > 0.30$.
+
+Ama bekleyin --- burada $P < 0.5$, yani model ``bu ismin dogru olma olasiligi \%50'den az'' diyor. Rasyonel bir analist buna guvenm-ez.
+
+Esik degeri $\theta_{\text{UNK}} = 0.30$ ile $P = 0.475 > 0.30$ oldugu icin \textit{teknik olarak} isim atanir. Ancak pratikte bu dusuk confidence'li isim dikkatle ele alinir.
+
+Simdi daha dusuk confidence ile deneyelim: $c_1 = 0.35$:
+
+\begin{align}
+\ell &= 0.5 \cdot \log\frac{0.35}{0.65} = 0.5 \cdot (-0.6190) = -0.3095 \\
+P &= \sigma(-0.3095) = 0.4233
+\end{align}
+
+$P = 0.423 > 0.30$ --- hala UNK sinirinin uzerinde. Ancak $c_1 = 0.15$:
+
+\begin{align}
+\ell &= 0.5 \cdot \log\frac{0.15}{0.85} = 0.5 \cdot (-1.7346) = -0.8673 \\
+P &= \sigma(-0.8673) = 0.296
+\end{align}
+
+$P = 0.296 < 0.30$ $\to$ \textbf{UNK!} Isim atanmaz.
+
+\begin{uyari}[Senaryo 3 Sonuc]
+LLM kaynaginin tek basina confidence $= 0.15$, $w = 0.5$ ile verdigi isim UNK olarak kalir. \textbf{Yanlis isim, isimsizden kotudur.}
+\end{uyari}
+
+
+% ===================================================================
+\section{Hesaplama Karmasikligi}
+\label{sec:complexity}
+% ===================================================================
+
+\subsection{Genel Karmasiklik}
+
+$N$ adet sembol ve her sembol icin ortalama $K$ aday icin:
+
+\begin{equation}
+T_{\text{merge}} = \bigO{N \cdot K^2}
+\end{equation}
+
+Kare terimi, her aday ciftinin partial/semantic karsilastirmasinden gelir.
+
+\subsection{Alt Islem Karmasikliklari}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}Islem} & \textbf{\color{sectioncyan}Karmasiklik} & \textbf{\color{sectioncyan}Aciklama} \\
+\midrule
+Normalizasyon & $\bigO{|n|}$ & Regex + lowercase, string uzunlugu ile lineer \\
+Exact match & $\bigO{K}$ & Hash-based gruplama \\
+Partial overlap & $\bigO{K^2 \cdot |n|}$ & Tum ciftleri karsilastir, her biri $\bigO{|n|}$ \\
+Semantic match & $\bigO{K^2 \cdot |W|}$ & Kelime genisletme + kesisim, $|W|$ = kelime sayisi \\
+Bayesian merge & $\bigO{K}$ & Log-odds toplami (lineer) \\
+\bottomrule
+\end{tabular}
+\caption{Alt islem karmasikliklari.}
+\label{tab:complexity}
+\end{table}
+
+\subsection{Pratikte Performans}
+
+Tipik degerler: $N \approx 5000$ (bir binary'deki fonksiyon sayisi), $K \approx 3$ (ortalama kaynak sayisi):
+
+\begin{equation}
+T \approx 5000 \times 3^2 = 45{,}000 \text{ islem}
+\end{equation}
+
+Python'da bu $< 0.1$s surer --- bottleneck tamamen decompilation ve statik analiz asamalarindadir.
+
+
+% ===================================================================
+\section{Overconfidence Problemi ve Cozumu}
+\label{sec:overconfidence}
+% ===================================================================
+
+\subsection{Naive Bayes Hatasi}
+
+Naive Bayes, tum kaynaklarin \textbf{kosula bagli bagimsiz} oldugunu varsayar:
+
+\begin{equation}
+\prob{E_1, E_2, \ldots, E_n \given H} = \prod_{i=1}^{n} \prob{E_i \given H}
+\end{equation}
+
+Bu varsayim genellikle \textbf{yanlistir}. Eger iki kaynak korelasyonlu ise, ayni bilgiyi iki kez saymis oluruz.
+
+\subsection{Korelasyon ile Duzeltme}
+
+Log-odds formulunde $w_i$ korelasyonu absorbe eder:
+
+\begin{equation}
+\text{LR}_i^{\text{effective}} = \text{LR}_i^{w_i}
+\end{equation}
+
+$w_i = 1$: Kaynak tamamen bagimsiz $\to$ tam bilgi katkisi. \\
+$w_i = 0.5$: Kaynak yari korelasyonlu $\to$ bilgi katkisi ``yarisina'' iner. \\
+$w_i = 0$: Kaynak tamamen bagimli $\to$ bilgi katkisi sifir (sayilmaz).
+
+Bilgi-kuramsal olarak bu, log-likelihood ratio'nun eksponent ile olceklenmesidir:
+
+\begin{equation}
+\text{effective info gain}_i = w_i \cdot \text{KL}(\prob{\cdot \given E_i} \| \prob{\cdot})
+\end{equation}
+
+burada KL divergence bilgi kazancini olcer.
+
+\subsection{Sonuc}
+
+\begin{basari}[Bayesian Fusion Avantajlari]
+\begin{enumerate}
+\item Coklu kaynaklari sistematik olarak birlestirir --- el ile ``en iyi kaynagi sec'' yerine matematiksel optimal
+\item Korelasyonu modelleyerek overconfidence'i onler
+\item UNK threshold ile yanlis isim atama riskini minimize eder
+\item Log-odds formunda numerik olarak stabil
+\item Her adimi tamamen deterministik ve auditlenebilir
+\end{enumerate}
+\end{basari}
+
+
+\begin{ozet}
+Bayesian isim fuzyonu, 7+ bagimsiz kaynaktan gelen isimleri korelasyon-aware log-odds ile birlestirir. 5 seviyeli gruplama (exact $\to$ partial $\to$ semantic $\to$ voting $\to$ single) her durum icin uygun strateji secer. $w_i < 1$ agirliklari korelasyonlu kaynaklarin etkisini bilgi-kuramsal olarak azaltir. UNK threshold (\%30) NSA-grade felsefe ile yanlis isimlendirmeyi onler. Somut orneklerde: uc kaynak exact match ile \%85'ten \%94.4'e, iki kaynak semantic match ile \%72.4'e yukseltildi; tek dusuk-confidence kaynak ise UNK olarak dogru sekilde reddedildi. Karmasiklik $\bigO{N \cdot K^2}$ ile pratikte milisaniye mertebesinde calisir.
+\end{ozet}

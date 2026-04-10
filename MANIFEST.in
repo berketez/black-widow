@@ -1,0 +1,35 @@
+# Package metadata
+include LICENSE
+include README.md
+include pyproject.toml
+
+# Signature databases
+include signatures_homebrew.json
+include signatures_homebrew_bytes.json
+include sigs_macos_system.json
+recursive-include sigs *.json *.ngdb *.txt
+
+# Ghidra scripts
+recursive-include ghidra-scripts *.py *.java
+
+# Node.js helper scripts (deobfuscation, unpacking)
+recursive-include scripts *.mjs *.js *.py
+exclude scripts/node_modules
+prune scripts/node_modules
+
+# Documentation
+recursive-include docs *.md
+
+# Tests
+recursive-include tests *.py
+
+# Package data
+recursive-include karadul *.py *.js *.yar
+
+# Exclude build artifacts
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *.egg-info
+global-exclude .DS_Store
+prune workspaces
+prune targets

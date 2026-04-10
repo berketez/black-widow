@@ -1,0 +1,1741 @@
+% ============================================================================
+% KARADUL (BLACK WIDOW) — Teknik Dokuman
+% Tersine Muhendislik ve Statik Analiz Araci
+% Berke Tezgocen — Fizik Muhendisligi, ITU 2026
+% ============================================================================
+\documentclass[12pt,a4paper,oneside]{book}
+
+% --- Encoding & Fonts ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% --- Page Geometry ---
+\usepackage[
+  a4paper,
+  top=2.5cm,
+  bottom=2.5cm,
+  left=2.5cm,
+  right=2.5cm,
+  headheight=14pt,
+]{geometry}
+
+% --- SIMSIYAH ARKA PLAN ---
+\usepackage{pagecolor}
+\usepackage{afterpage}
+\pagecolor{black}
+\color{white}
+
+% --- Math ---
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+
+% --- Graphics & Figures ---
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{
+  arrows.meta,
+  positioning,
+  shapes.geometric,
+  shapes.misc,
+  fit,
+  calc,
+  decorations.pathreplacing,
+  backgrounds,
+  chains,
+  matrix,
+}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{colortbl}
+
+% Booktabs cizgi renklerini beyaz yap (siyah arka planda gorunsun)
+\arrayrulecolor{white!70!black}
+\setlength{\heavyrulewidth}{0.12em}
+\setlength{\lightrulewidth}{0.06em}
+
+% TABLO ICINDEKI YAZILARI BEYAZ YAP
+% rowcolors varsayilan yazi rengini siyah yapiyor — bunu override et
+\usepackage{etoolbox}
+\AtBeginEnvironment{tabular}{\color{white}}
+\AtBeginEnvironment{longtable}{\color{white}}
+
+% --- Code Listings ---
+\usepackage{listings}
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\small\color{white},
+  keywordstyle=\color{cyan}\bfseries,
+  stringstyle=\color{green!70!white},
+  commentstyle=\color{gray!70!white}\itshape,
+  numberstyle=\tiny\color{gray!50!white},
+  numbers=left,
+  numbersep=8pt,
+  frame=single,
+  rulecolor=\color{gray!50!white},
+  backgroundcolor=\color{white!12!black},
+  breaklines=true,
+  breakatwhitespace=false,
+  showstringspaces=false,
+  tabsize=4,
+  captionpos=b,
+  xleftmargin=1.5em,
+  framexleftmargin=1.5em,
+  literate={ı}{{\i}}1 {ö}{{\"o}}1 {ü}{{\"u}}1 {ş}{{\c{s}}}1 {ç}{{\c{c}}}1 {ğ}{{\u{g}}}1 {İ}{\.{I}}1 {Ö}{{\"O}}1 {Ü}{{\"U}}1 {Ş}{{\c{S}}}1 {Ç}{{\c{C}}}1 {Ğ}{{\u{G}}}1,
+}
+\lstdefinelanguage{JavaScript}{
+  keywords={break,case,catch,const,continue,debugger,default,delete,do,else,export,extends,finally,for,function,if,import,in,instanceof,let,new,of,return,switch,this,throw,try,typeof,var,void,while,with,yield,class,async,await},
+  morekeywords={true,false,null,undefined},
+  sensitive=true,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  string=[b]',
+  morestring=[b]",
+  morestring=[b]`,
+}
+
+% --- Colors ---
+\usepackage{xcolor}
+\definecolor{chapterblue}{RGB}{100,149,237}
+\definecolor{sectioncyan}{RGB}{0,200,220}
+\definecolor{linkcolor}{RGB}{120,180,255}
+\definecolor{citecolor}{RGB}{180,220,100}
+\definecolor{boxbg}{RGB}{60,60,80}
+\definecolor{boxborder}{RGB}{120,180,255}
+\definecolor{warningbg}{RGB}{80,50,50}
+\definecolor{warningborder}{RGB}{255,130,130}
+\definecolor{successbg}{RGB}{45,75,45}
+\definecolor{successborder}{RGB}{130,255,130}
+\definecolor{formulabg}{RGB}{50,50,70}
+
+% --- Hyperref ---
+\usepackage[
+  colorlinks=true,
+  linkcolor=linkcolor,
+  citecolor=citecolor,
+  urlcolor=linkcolor,
+  bookmarks=true,
+  bookmarksnumbered=true,
+  pdfauthor={Berke Tezgocen},
+  pdftitle={Karadul (Black Widow) -- Teknik Dokuman},
+  pdfsubject={Tersine Muhendislik ve Statik Analiz},
+]{hyperref}
+
+% --- Chapter & Section Formatting ---
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\Huge\bfseries\color{chapterblue}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{sectioncyan}}
+  {\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{white!90!blue}}
+  {\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{white!80!cyan}}
+  {\thesubsubsection}{1em}{}
+
+% --- Headers & Footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\color{gray!60!white}\small\leftmark}
+\fancyhead[R]{\color{gray!60!white}\small\thepage}
+\fancyfoot[C]{\color{gray!40!white}\tiny Karadul v1.0 --- Teknik Dokuman}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{gray!30!white}\leaders\hrule height \headrulewidth\hfill}}
+
+% --- Custom Environments ---
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+% Bolum Ozeti kutusu
+\newtcolorbox{ozet}{
+  colback=boxbg,
+  colframe=boxborder,
+  coltext=white,
+  coltitle=white,
+  fonttitle=\bfseries,
+  title={Bu Bolumun Ozeti},
+  breakable,
+  sharp corners,
+  boxrule=0.8pt,
+}
+
+% Tanim kutusu
+\newtcolorbox{tanim}[1][]{
+  colback=formulabg,
+  colframe=sectioncyan,
+  coltext=white,
+  coltitle=white,
+  fonttitle=\bfseries,
+  title={#1},
+  breakable,
+  sharp corners,
+  boxrule=0.6pt,
+}
+
+% Uyari kutusu
+\newtcolorbox{uyari}[1][]{
+  colback=warningbg,
+  colframe=warningborder,
+  coltext=white,
+  coltitle=white,
+  fonttitle=\bfseries,
+  title={#1},
+  breakable,
+  sharp corners,
+  boxrule=0.6pt,
+}
+
+% Basari kutusu
+\newtcolorbox{basari}[1][]{
+  colback=successbg,
+  colframe=successborder,
+  coltext=white,
+  coltitle=white,
+  fonttitle=\bfseries,
+  title={#1},
+  breakable,
+  sharp corners,
+  boxrule=0.6pt,
+}
+
+% --- Theorem Environments ---
+\theoremstyle{definition}
+\newtheorem{definition}{Tanim}[chapter]
+\newtheorem{theorem}{Teorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Sonuc}
+\newtheorem{example}{Ornek}[chapter]
+
+% --- Bracket Commands ---
+\newcommand{\llbracket}{\ensuremath{[\![}}
+\newcommand{\rrbracket}{\ensuremath{]\!]}}
+
+% --- Custom Commands ---
+\newcommand{\code}[1]{\texttt{\color{green!60!white}#1}}
+\newcommand{\file}[1]{\texttt{\color{yellow!70!white}#1}}
+\newcommand{\bigO}[1]{\mathcal{O}\!\left(#1\right)}
+\newcommand{\prob}[1]{P\!\left(#1\right)}
+\newcommand{\given}{\,|\,}
+\newcommand{\sigmoid}{\sigma}
+\newcommand{\logodds}{\text{log-odds}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+% --- Bibliography ---
+\usepackage[numbers,sort&compress]{natbib}
+
+% --- Index ---
+\usepackage{makeidx}
+\makeindex
+
+% --- Spacing ---
+\usepackage{setspace}
+\onehalfspacing
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+% ============================================================================
+\begin{document}
+
+% --- Kapak Sayfasi ---
+\begin{titlepage}
+\centering
+\vspace*{4cm}
+{\fontsize{36}{42}\selectfont\bfseries\color{chapterblue}
+Karadul\\[8pt]
+\Large\color{white!80!blue}(Black Widow)}\\[1.5cm]
+{\Large\itshape\color{gray!70!white} Tersine Muhendislik ve Statik Analiz Araci\\[4pt]
+Kapsamli Teknik Dokuman}\\[2cm]
+{\large\color{white}
+\textbf{Berke Tezgocen}\\[8pt]
+Fizik Muhendisligi --- ITU\\[4pt]
+2026}\\[3cm]
+{\small\color{gray!60!white}
+Bu dokuman, Karadul (Black Widow) tersine muhendislik aracinin\\
+tum algoritmalarini, matematiksel temellerini, tasarim kararlarini\\
+ve implementasyon detaylarini A'dan Z'ye anlatir.}\\[4cm]
+{\footnotesize\color{gray!40!white}
+Hazirlayan: Codex AI Danismanligi + Claude Opus 4.6\\
+Son guncelleme: 24 Mart 2026}
+\end{titlepage}
+
+% --- Icindekiler ---
+\tableofcontents
+\newpage
+
+% ============================================================================
+% BOLUM 1: GIRIS VE MOTIVASYON
+% ============================================================================
+\chapter{Giris ve Motivasyon}
+\label{ch:giris}
+
+\section{Tersine Muhendislik Nedir?}
+\label{sec:re-nedir}
+
+Tersine muhendislik (reverse engineering), bir yazilim urununu --- kaynak kodu olmadan --- analiz ederek ic yapisini, algoritmalarini, veri yapilarini ve davranisini anlama surecidir. Derlenm\-is bir binary dosyadan veya obfuscate edilmis bir JavaScript bundle'indan orijinal kaynak koda yaklasma cabasi, bilgisayar bilimlerinin en zorlayici alanlarindan biridir.
+
+\begin{tanim}[Formal Tanim]
+Bir $f: S \to T$ fonksiyonu verildigi\-nde, tersine muhendislik $f^{-1}: T \to \hat{S}$ yaklasik ters fonksiyonunu bulma problemidir. Burada:
+\begin{itemize}
+\item $S$: Orijinal kaynak kod uzayi
+\item $T$: Derlenmis/obfuscate edilmis cikti uzayi
+\item $f$: Derleyici veya obfuscator donusumu (genellikle surjective ama injective degil)
+\item $\hat{S}$: Kaynak kodun yaklasik rekonstruksiyonu
+\end{itemize}
+Kritik nokta: $f$ genellikle bijective degil --- birden fazla farkli kaynak kod ayni binary'yi uretebilir. Bu nedenle $\hat{S} \neq S$ olabilir, ama $f(\hat{S}) \approx f(S)$ olma\-lidir.
+\end{tanim}
+
+\subsection{Neden Onemli?}
+
+Tersine muhendislik bircok kritik alanda kullanilir:
+
+\begin{enumerate}
+\item \textbf{Guvenlik arastirmasi:} Malware analizi, zafiyet kesfetme (vulnerability research), exploit gelistirme ve savunma.
+\item \textbf{Uyumluluk:} Clean-room reverse engineering ile uyumlu yazilim gelistirme (ornek: Wine projesi, ReactOS).
+\item \textbf{Dijital adli bilisim:} Siber suc arastirmalarinda delil analizi.
+\item \textbf{Legacy sistem bakimi:} Kaynak kodu kaybolmus yazilimlarin anlasil\-masi ve surdurul\-mesi.
+\item \textbf{Yarisma (CTF):} Capture The Flag yarismalarinda binary exploitation.
+\end{enumerate}
+
+\subsection{Endustri Baglami}
+
+Tersine muhendislik araci pazari buyuk ve buyuyor:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}Arac} & \textbf{\color{sectioncyan}Fiyat} & \textbf{\color{sectioncyan}Ozellik} \\
+\midrule
+IDA Pro & \$2,500+/yil & Endustri standardi, kapali kaynak \\
+Ghidra & Ucretsiz (NSA) & Acik kaynak, Java tabanli \\
+Binary Ninja & \$400/yil & Modern UI, Python API \\
+radare2/Cutter & Ucretsiz & Acik kaynak, komut satiri odakli \\
+\textbf{Karadul} & \textbf{Ucretsiz} & \textbf{Otonom pipeline, Bayesian isimlendirme} \\
+\bottomrule
+\end{tabular}
+\caption{Tersine muhendislik arac karsilastirmasi.}
+\label{tab:re-tools}
+\end{table}
+
+\subsection{Mevcut Cozumlerin Sinirliliklari}
+
+Mevcut araclar tipik olarak su sorunlara sahiptir:
+
+\begin{enumerate}
+\item \textbf{Manuel is yueku:} IDA Pro ve Ghidra gueclue decompiler'lar saglar, ancak fonksiyon isimlendirme, tip cikari\-mi ve yapı tespiti buyuek olcuede analistin elindedir. 10.000 fonksiyonluk bir binary'de bu haftalarca suerer.
+\item \textbf{Tek platform odakli:} Cogu arac ya binary ya da JS analizi yapar, ikisini birden degil.
+\item \textbf{Otomasyon eksikligi:} Toplu analiz (batch processing), otomatik raporlama ve end-to-end pipeline mevcut araclarda sinirlidir.
+\item \textbf{Isim kurtarma kalitesi:} Stripped binary'lerde fonksiyon isimlerini kurtarma orani genellikle duesuektuer.
+\end{enumerate}
+
+\subsection{Karadul'un Yaklasimi ve Farki}
+\label{sec:karadul-fark}
+
+Karadul (Black Widow), bu sinirlamalari su yeniliklerle asar:
+
+\begin{enumerate}
+\item \textbf{6 asamali otonom pipeline:} Hedef tespitinden rapora kadar tamamen otomatik.
+\item \textbf{Coklu hedef destegi:} 12 farkli binary/bundle formati, 13 programlama dili.
+\item \textbf{Bayesian isim fuzyonu:} 7 bagimsiz kaynaktan gelen isimleri korelasyon-aware Bayesian log-odds ile birlestirme --- enduestride benzersiz.
+\item \textbf{Derin JS deobfuscation:} 9 fazli AST transform pipeline --- LLM'siz semantik degisken isimlendirme.
+\item \textbf{Graceful degradation:} Herhangi bir asamanin basarisizligi pipeline'i durdurmaz.
+\item \textbf{Olceklenebilirlik:} 224MB+ binary'ler ve 200MB+ JS dosyalari icin chunked processing.
+\end{enumerate}
+
+\section{Proje Kapsami}
+\label{sec:kapsam}
+
+Karadul v1.0 su bilesenlerden olusur:
+
+\begin{itemize}
+\item \textbf{110 Python modulu,} 65.000+ satir kod
+\item \textbf{460+ JavaScript/MJS analiz scripti}
+\item \textbf{1.393 test} (tumu gecen)
+\item \textbf{1.5M+ kutuephane imzasi} (FLIRT veritabani)
+\item \textbf{Docker destegi} + pip kurulabilir paket
+\item \textbf{CLI arayuzu} (Click tabanli)
+\end{itemize}
+
+\section{Dogrulanan Gercek Hedefler}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lllrrl}
+\toprule
+\textbf{\color{sectioncyan}Hedef} & \textbf{\color{sectioncyan}Tip} & \textbf{\color{sectioncyan}Dil} & \textbf{\color{sectioncyan}Boyut} & \textbf{\color{sectioncyan}Fonk.} & \textbf{\color{sectioncyan}Kurtarma} \\
+\midrule
+Rectangle & Mach-O & Swift & 1.8 MB & 2.852 & \%89.9 \\
+Steam & Mach-O & C++ & 4.1 MB & 11.296 & \%74.2 \\
+Claude Code & JS bundle & esbuild & 11.8 MB & 43.747 & \%57.3 \\
+Cursor & JS bundle & webpack & 5.97 MB & 17.705 & \%65.4 \\
+LM Studio & Electron & webpack & 52 MB & 150K+ & 4/4 bundle \\
+\bottomrule
+\end{tabular}
+\caption{Gercek duenyada dogrulanan hedefler.}
+\label{tab:targets}
+\end{table}
+
+\section{Bu Dokumanin Organizasyonu}
+
+\begin{description}
+\item[Bolum 2] --- \textbf{Pipeline Mimarisi:} 6 asamali pipeline, context pattern, error recovery.
+\item[Bolum 3] --- \textbf{Hedef Tespit Sistemi:} Magic bytes, binary format analizi, dil tespiti.
+\item[Bolum 4] --- \textbf{Statik Analiz:} Binary ve JS statik analiz algoritmalari.
+\item[Bolum 5] --- \textbf{JavaScript Deobfuscation:} AST transform pipeline, 9 faz, webpack unpack.
+\item[Bolum 6] --- \textbf{Bayesian Isim Fuzyonu:} Log-odds formulu, 7 kaynak, korelasyon duzeltmesi.
+\item[Bolum 7] --- \textbf{Kaynak Kod Rekonstruksiyonu:} C naming, tip kurtarma, algoritma tespiti.
+\item[Bolum 8] --- \textbf{Guvenlik Analiz Algoritmalari:} Entropy, YARA, CFG, opaque predicate.
+\item[Bolum 9] --- \textbf{Performans ve Olceklendirme:} Buyuek dosya destegi, bellek yoenetimi, Apple Silicon.
+\item[Bolum 10] --- \textbf{Tasarim Kararlari ve Retrospektif:} Neden bu yaklasimlar? Alternatifler.
+\item[Ek A] --- \textbf{Parametre Tablosu:} Tuem konfiguerasyon parametreleri.
+\item[Ek B] --- \textbf{Muuelakat Hazirlik:} 20 teknik soru ve detayli cevaplari.
+\end{description}
+
+\begin{ozet}
+Karadul, derlenm\-is binary'ler ve obfuscate edilmis JavaScript bundle'lari icin otonom bir tersine muhendislik arac\-idir. 6 asamali pipeline, Bayesian isim fuzyonu ve 9 fazli derin deobfuscation ile enduestri standartlarinin oetesinde bir otomasyon seviyesi saglar. 5 gercek duenya hedefinde dogrulana\-rak v1.0 olarak tamamlandi.
+\end{ozet}
+
+
+% ============================================================================
+% BOLUM 2: PIPELINE MIMARISI
+% ============================================================================
+\chapter{Pipeline Mimarisi}
+\label{ch:pipeline}
+
+Bu boluemde Karadul'un temelini olusturan 6 asamali pipeline mimarisini, yazilim muehendisligi prensiplerini ve hata kurtarma mekanizmalarini detayli olarak inceliyoruz.
+
+\section{Pipeline Pattern --- Matematiksel Temel}
+\label{sec:pipeline-pattern}
+
+Karadul'un pipeline'i, \textbf{Orchestrated DAG Executor} patternidir --- akademik literaturde ``workflow engine'' siniflandirmasi. Bu, yazilim muehendisligindeki \textbf{Pipes and Filters} (Shaw \& Garlan, 1996) ile \textbf{Chain of Responsibility}'nin melez bir formudur.
+
+\subsection{Formal Tanim}
+
+Pipeline'i bir yoenlu dogrusiz cizge (Directed Acyclic Graph --- DAG) olarak modelleyebiliriz:
+
+\begin{equation}
+G = (V, E)
+\label{eq:dag}
+\end{equation}
+
+burada:
+\begin{itemize}
+\item $V = \{v_1, v_2, \ldots, v_n\}$ stage kuemesi (her $v_i$ bir Stage nesnesi)
+\item $E \subseteq V \times V$ bagimlilik kenarlari ($v_i \to v_j$ demek ``$v_i$, $v_j$'den oence calismali'')
+\end{itemize}
+
+\subsection{Gercek Dependency Grafi}
+
+Koddan cikarilan gercek bagimlilik yapisi (\file{stages.py}):
+
+\begin{center}
+\begin{tikzpicture}[
+  node/.style={rectangle, draw=sectioncyan, fill=boxbg, minimum width=2.8cm, minimum height=0.7cm, text=white, font=\small\bfseries, rounded corners=2pt},
+  arr/.style={-{Stealth[length=2.5mm]}, thick, color=gray!60!white},
+]
+  \node[node] (id) at (0,0) {IDENTIFY};
+  \node[node] (st) at (-4,-1.5) {STATIC};
+  \node[node] (dy) at (-1.3,-1.5) {DYNAMIC};
+  \node[node] (de) at (1.3,-1.5) {DEOBFUSCATE};
+  \node[node] (rp) at (4,-1.5) {REPORT};
+  \node[node] (rc) at (1.3,-3) {RECONSTRUCT};
+
+  \draw[arr] (id) -- (st);
+  \draw[arr] (id) -- (dy);
+  \draw[arr] (id) -- (de);
+  \draw[arr] (id) -- (rp);
+  \draw[arr] (de) -- (rc);
+\end{tikzpicture}
+\end{center}
+
+Bu bir \textbf{agac degil, DAG}. Identify koek dueguem, 4 dal ondan cikar ve reconstruct'in deobfuscate'e bagimliligi var. Lineer bir zincir degil --- static, dynamic ve deobfuscate teorik olarak paralel calisabilir (hepsi sadece identify'a bagimli).
+
+\subsection{Topolojik Siralama}
+
+Stage'lerin calisti\-rilma siras\-i, topolojik siralama (topological sort) ile belirlenir. Kahn's Algorithm:
+
+\begin{enumerate}
+\item Her dueguemuen in-degree'sini hesapla: $\text{deg}^-(v)$ ($v$'ye giren kenar sayisi)
+\item $\text{deg}^-(v) = 0$ olan tuem dueguemleri kuyru\-ga ekle
+\item Kuyruktan bir $v$ al, siralanan listeye ekle
+\item $v$'nin tuem komsularinin in-degree'sini 1 azalt
+\item Yeni $\text{deg}^- = 0$ olanlari kuyru\-ga ekle
+\item Tekrarla (tuem dueguemler islene kadar)
+\end{enumerate}
+
+Hesaplama karmasikligi: $\bigO{|V| + |E|}$.
+
+\begin{tanim}[Kritik Tasarim Karari: Kayit Sirasi vs Topolojik Siralama]
+Karadul topolojik siralama \textbf{yapmiyor}. \file{pipeline.py:357}'deki \code{\_resolve\_run\_order()} metodu \textbf{kayit sirasi}ni kullanir:
+\begin{lstlisting}[language=Python]
+def _resolve_run_order(self, requested):
+    if requested is None:
+        return list(self._stage_order)  # kayit sirasi!
+    return [s for s in self._stage_order if s in requested]
+\end{lstlisting}
+Stage'ler \code{register\_stage()} ile eklenme sirasinda calistirilir. CLI her zaman dogru sirada register ettigi icin pratikte sorun yok. Yanlis sirada ekleme durumunda \code{\_check\_dependencies()} runtime'da fail eder ve stage atlanir.
+\end{tanim}
+
+Bu yaklasim \textbf{static topological sort} yerine \textbf{runtime dependency validation} tercih etmistir:
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{p{5cm}p{4cm}p{4cm}}
+\toprule
+\textbf{\color{sectioncyan}Yaklasim} & \textbf{\color{sectioncyan}Avantaj} & \textbf{\color{sectioncyan}Dezavantaj} \\
+\midrule
+Topolojik siralama & Yanlis siralama imkansiz & $\bigO{V+E}$ karmasiklik, cycle detection \\
+Kayit sirasi + runtime check (Karadul) & Basit implementasyon & Kullanicinin dogru eklemesi gerekir \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Neden Sequential Pipeline?}
+
+Dependency grafina bakildiginda static, dynamic ve deobfuscate paralel calisabilir. Ama sequential secilmis. Bunu Amdahl Yasasi ile analiz edelim:
+
+\begin{tanim}[Amdahl Yasasi ile Sayisal Analiz]
+Tipik stage suereleri:
+\begin{align}
+T_{\text{identify}} &= 2\text{s}, \quad T_{\text{static}} = 60\text{s (Ghidra)}, \quad T_{\text{dynamic}} = 30\text{s} \notag \\
+T_{\text{deobfuscate}} &= 45\text{s}, \quad T_{\text{reconstruct}} = 20\text{s}, \quad T_{\text{report}} = 5\text{s} \notag
+\end{align}
+
+Sequential toplam: $T_{\text{seq}} = 2 + 60 + 30 + 45 + 20 + 5 = 162\text{s}$
+
+Concurrent (static $\|$ dynamic $\|$ deobfuscate):
+\begin{equation}
+T_{\text{parallel}} = 2 + \max(60, 30, 45) + 20 + 5 = 87\text{s}
+\end{equation}
+\begin{equation}
+\text{Speedup} = \frac{162}{87} = 1.86\times
+\end{equation}
+
+Amdahl formuelue ile: Paralel kisim orani $p = (60+30+45)/162 = 0.83$:
+\begin{equation}
+S_{\text{teorik}} = \frac{1}{(1-0.83) + 0.83/3} = \frac{1}{0.17 + 0.28} = 2.22\times
+\end{equation}
+\end{tanim}
+
+\textbf{1.86x speedup icin concurrent pipeline karmasikligi (lock'lar, barrier'lar, partial failure handling) eklenmemis. Dogru karar} --- cuenkue:
+
+\begin{enumerate}
+\item \textbf{Kaynak catismasi:} Ghidra 2--4 GB RAM, Frida + Babel ayri ag\-ir surecler. Paralel calissa $8+$ GB --- OOM riski.
+\item \textbf{Gizli bagimliliklar:} \code{stages.py}'de deobfuscate stage'i \code{requires=["identify"]} diyor ama gercekte static analiz sonuclarini da kullaniyor. ``Hidden coupling'' paralelde race condition yaratir.
+\item \textbf{Debugging:} Sequential'da hata hangi stage'de oldugu acik. Concurrent'da cok daha karisik.
+\end{enumerate}
+
+\section{PipelineContext --- Shared State Pattern}
+\label{sec:context}
+
+\file{pipeline.py:41}'de tanimlanan \code{PipelineContext}, stage'ler arasi paylasilan veri yapisidir:
+
+\begin{lstlisting}[language=Python,caption={PipelineContext veri yapisi}]
+@dataclass
+class PipelineContext:
+    target: TargetInfo       # Hedef bilgileri
+    workspace: Workspace     # Calisma dizini
+    config: Config           # Konfiguerasyon
+    results: dict[str, StageResult]  # Onceki sonuclar
+    extra: dict[str, Any]    # Ek paylasilam veri
+\end{lstlisting}
+
+Bu tasarim, Martin Fowler'in \textbf{Introduce Parameter Object} refactoring kalibinin bir uygulamasidir. Avantajlari:
+
+\begin{itemize}
+\item Stage'ler arasinda explicit veri gecisi
+\item Yeni veriler \code{extra} dict'e eklenebilir (genisletilebilirlik)
+\item Tum state tek bir nesnede --- test edilebilirlik
+\end{itemize}
+
+\section{Error Recovery --- Circuit Breaker Pattern}
+\label{sec:error-recovery}
+
+\subsection{State Machine Modeli}
+
+Circuit breaker uec durumlu bir state machine'dir:
+
+\begin{equation}
+\text{States} = \{\text{CLOSED}, \text{OPEN}, \text{HALF\_OPEN}\}
+\end{equation}
+
+\begin{center}
+\begin{tikzpicture}[
+  statenode/.style={circle, draw=sectioncyan, fill=boxbg, minimum size=2cm, text=white, font=\small\bfseries},
+  trans/.style={-{Stealth[length=3mm]}, thick, color=gray!70!white},
+  lbl/.style={font=\tiny, text=gray!80!white, align=center},
+]
+  \node[statenode] (closed) at (0,0) {CLOSED};
+  \node[statenode] (open) at (5,0) {OPEN};
+  \node[statenode] (half) at (2.5,-3.5) {\shortstack{HALF\\OPEN}};
+
+  \draw[trans] (closed) -- node[above, lbl] {fail $\geq 5$} (open);
+  \draw[trans] (open) -- node[right, lbl] {60s timeout} (half);
+  \draw[trans] (half) -- node[left, lbl] {success} (closed);
+  \draw[trans] (half) -- node[below right, lbl] {fail} (open);
+  \draw[trans] (closed) to[loop above] node[above, lbl] {success} (closed);
+\end{tikzpicture}
+\end{center}
+
+\subsection{Exponential Backoff}
+
+Yeniden deneme gecikmesi:
+
+\begin{equation}
+\text{delay}(k) = \min\!\big(\text{base} \cdot 2^k,\; \text{max\_delay}\big)
+\label{eq:backoff}
+\end{equation}
+
+burada $k$ = deneme sayisi, base $= 1.0$s, max\_delay $= 30$s.
+
+Toplam beklenen bekleme sueresi ($n$ deneme icin):
+
+\begin{equation}
+E[T] = \sum_{k=0}^{n-1} \min\!\big(1.0 \cdot 2^k,\; 30\big) = 1 + 2 + 4 + 8 + 16 + 30 + \cdots
+\end{equation}
+
+$n = 3$ icin: $E[T] = 1 + 2 + 4 = 7$ saniye.
+
+\subsection{Neden Exponential Backoff?}
+
+Farkli backoff stratejilerinin karsilastirmasi:
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lllll}
+\toprule
+\textbf{\color{sectioncyan}Strateji} & \textbf{\color{sectioncyan}Formuul} & \textbf{\color{sectioncyan}$n=3$} & \textbf{\color{sectioncyan}$n=5$} & \textbf{\color{sectioncyan}Bueyueme} \\
+\midrule
+Linear & $n(n+1)/2$ & 6s & 15s & $\bigO{n^2}$ \\
+Quadratic & $n(n+1)(2n+1)/6$ & 14s & 55s & $\bigO{n^3}$ \\
+Exponential & $2^n - 1$ & 7s & 31s & $\bigO{2^n}$ \\
+\bottomrule
+\end{tabular}
+\caption{Backoff stratejilerinin toplam bekleme suereleri.}
+\end{table}
+
+Exponential tercih sebebi: \textbf{geri basinc (backpressure)}. Servis down ise ilk retry'lar hizli, sonrakiler dramatik artan --- servise ``nefes alma'' sueresi verir. Linear bunu yapmaz.
+
+\subsection{Jitter}
+
+Kodda \textbf{zaten var} (\file{error\_recovery.py:205}):
+\begin{lstlisting}[language=Python]
+if jitter:
+    jitter_range = delay * 0.2
+    delay += random.uniform(-jitter_range, jitter_range)
+\end{lstlisting}
+
+$\pm 20\%$ uniform jitter. Amazon AWS ``full jitter'' ($[0, \text{delay}]$) oenerir, ama Karadul'da tek kullanici var --- thundering herd problemi yok.
+
+\subsection{Basari Olasiligi}
+
+$k$ deneme sonrasi basari olasiligi (her denemenin bagimsiz basari olasiligi $p$):
+\begin{equation}
+\prob{\text{basari sonrasi } k \text{ deneme}} = 1 - (1-p)^k
+\end{equation}
+
+$p = 0.8$ (tipik gecici hata) ve $k = 3$: $P = 1 - 0.2^3 = 1 - 0.008 = 0.992$ --- \%99.2 basari.
+
+\begin{ozet}
+Karadul pipeline'i, 6 stage'li sequential bir DAG execution engine'dir. PipelineContext shared state pattern ile veri paylasimi saglar. ErrorRecovery, circuit breaker + exponential backoff ile tuem stage'leri korur. Graceful degradation sayesinde tek bir stage basarisizligi pipeline'i durdurmaz.
+\end{ozet}
+
+
+% ============================================================================
+% BOLUM 3: HEDEF TESPIT SISTEMI
+% ============================================================================
+\chapter{Hedef Tespit Sistemi}
+\label{ch:target}
+
+Karadul'un ilk asamasi, analiz edilecek dosyanin tipini, programlama dilini ve format\-ini tespit etmektir.
+
+\section{Magic Number Sistemi}
+\label{sec:magic}
+
+Her binary dosya formati, dosyanin bas\-inda benzersiz bir ``magic number'' tasir. Bu degerler formati tanimlar:
+
+\begin{equation}
+\text{magic}: \{0, 1\}^{32} \to \text{Format}
+\end{equation}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llll}
+\toprule
+\textbf{\color{sectioncyan}Format} & \textbf{\color{sectioncyan}Magic (hex)} & \textbf{\color{sectioncyan}ASCII} & \textbf{\color{sectioncyan}Oykue} \\
+\midrule
+Mach-O 64-bit & \code{0xFEEDFACF} & --- & ``feed face'' (Apple) \\
+Mach-O 32-bit & \code{0xFEEDFACE} & --- & ``feed face'' (Apple) \\
+Universal & \code{0xCAFEBABE} & --- & ``cafe babe'' (NeXT/Java) \\
+ELF & \code{0x7F454C46} & \code{.ELF} & ELF standard header \\
+PE/DOS & \code{0x4D5A} & \code{MZ} & Mark Zbikowski (DOS yaraticisi) \\
+ZIP/JAR/APK & \code{0x504B0304} & \code{PK..} & Phil Katz (PKZIP yaraticisi) \\
+\bottomrule
+\end{tabular}
+\caption{Binary dosya formatlarinin magic byte'lari.}
+\label{tab:magic}
+\end{table}
+
+\subsection{Collision Olasiligi}
+
+Rastgele bir dosyanin belirli bir 4-byte magic ile basla\-ma olasiligi:
+
+\begin{equation}
+\prob{\text{false positive}} = \frac{1}{2^{32}} \approx 2.33 \times 10^{-10}
+\end{equation}
+
+Bu son derece duseuk bir olasiliktir, ancak Karadul ek dogrulamalar da yapar (icerik analizi, dosya uzantisi).
+
+\subsection{Big-Endian vs Little-Endian Okuma}
+
+Magic byte'lar big-endian sirada okunur (\code{struct.unpack(">I")}, \file{target.py:607}). Mach-O formati ``cigam'' (magic'in tersi) varyantlarina da sahiptir:
+
+\begin{equation}
+\text{CIGAM}(m) = \text{bswap32}(m)
+\end{equation}
+
+Oernegin: \code{0xFEEDFACF} $\to$ \code{0xCFFAEDFE} (little-endian ARM islemcilerde).
+
+\section{Dil Tespit Algoritmasi}
+\label{sec:lang-detect}
+
+Binary icindeki string pattern'lerden dil tespiti yapar (\file{target.py:470}):
+
+\subsection{Puanlama Sistemi}
+
+Her dil icin bilinen string marker'lar taranir:
+
+\begin{equation}
+\text{score}(L) = \sum_{s \in \text{markers}(L)} \mathbb{1}[s \in \text{binary\_text}]
+\end{equation}
+
+En yueksek skorlu dil secilir: $\hat{L} = \arg\max_L \text{score}(L)$.
+
+\begin{tanim}[Bayes Siniflandirici Perspektifi]
+Bu puanlama sistemi aslinda bir Naive Bayes siniflandiricisi\-nin basitlestirilmis hali\-dir:
+\begin{equation}
+\prob{L \given S_1, \ldots, S_n} \propto \prob{L} \prod_{i=1}^{n} \prob{S_i \given L}
+\end{equation}
+Mevcut implementasyonda $\prob{L}$ uniform (esit prior) ve $\prob{S_i \given L} \in \{0, 1\}$ (deterministik).
+\end{tanim}
+
+\section{JavaScript Bundler Tespiti}
+\label{sec:bundler}
+
+JS dosyalarinin ilk 64KB'i okunarak bundler tespiti yapilir:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{\color{sectioncyan}Signature} & \textbf{\color{sectioncyan}Bundler} \\
+\midrule
+\code{\_\_webpack\_require\_\_} & webpack \\
+\code{parcelRequire} & parcel \\
+\code{System.register} & systemjs \\
+\code{\_rollupPluginBabelHelpers} & rollup \\
+\code{define([} & amd/requirejs \\
+\bottomrule
+\end{tabular}
+\caption{JavaScript bundler signature'lari.}
+\label{tab:bundlers}
+\end{table}
+
+\section{SHA-256 Hashing}
+\label{sec:hashing}
+
+Dosya buetunluegue icin SHA-256 streaming hash:
+
+\begin{equation}
+H = \text{SHA-256}\!\left(\bigoplus_{i=1}^{\lceil n/8192 \rceil} \text{chunk}_i\right)
+\end{equation}
+
+8KB chunk boyutu disk I/O vs CPU tradeoff'u optimize eder. Collision olasiligi:
+
+\begin{equation}
+\prob{\text{collision}} \approx \frac{n^2}{2^{257}}
+\end{equation}
+
+$n = 10^{12}$ dosya icin bile: $\prob{\text{collision}} \approx 10^{-54}$.
+
+\begin{ozet}
+Hedef tespit sistemi, magic byte analizi, string-based dil tespiti, bundler signature eslestirmesi ve SHA-256 hashing kullanarak 12 farkli dosya tipini ve 13 programlama dilini otomatik olarak tespit eder. False positive olasiligi astronomik derecede duseuktueer.
+\end{ozet}
+
+% --- DETAYLI GENISLETME ---
+\input{chapters/ch03_target}
+
+
+% ============================================================================
+% BOLUM 4: STATIK ANALIZ
+% ============================================================================
+\chapter{Statik Analiz}
+\label{ch:static}
+
+Pipeline'in ikinci asamasi olan statik analiz, dosyayi calisti\-rmadan yapisini analiz eder.
+
+\section{Binary Statik Analiz}
+
+\subsection{Mach-O Analizi}
+
+Apple platformlarinda kullanilan Mach-O formatinin yapisi:
+
+\begin{center}
+\begin{tikzpicture}[
+  block/.style={rectangle, draw=sectioncyan, fill=boxbg, minimum width=6cm, minimum height=0.8cm, text=white, font=\small},
+]
+  \node[block] (header) at (0,0) {Mach-O Header (magic, cputype, filetype)};
+  \node[block] (lc1) at (0,-1) {Load Command 1 (LC\_SEGMENT\_64)};
+  \node[block] (lc2) at (0,-2) {Load Command 2 (LC\_SYMTAB)};
+  \node[block] (lcn) at (0,-3) {Load Command N (LC\_DYSYMTAB)};
+  \node[block] (text) at (0,-4.5) {\_\_TEXT Segment (code)};
+  \node[block] (data) at (0,-5.5) {\_\_DATA Segment (variables)};
+  \node[block] (link) at (0,-6.5) {\_\_LINKEDIT Segment (symbols)};
+\end{tikzpicture}
+\end{center}
+
+\subsection{Symbol Extraction}
+
+Binary'den sembol cikarmak icin \code{nm} ve \code{otool} araclari kullanilir:
+
+\begin{itemize}
+\item \code{nm -gU binary}: Global tanimli semboller
+\item \code{otool -tV binary}: Disassemble edilmis kod
+\item \code{strings binary}: Okunabilir string'ler
+\end{itemize}
+
+\subsection{Ghidra Headless Analiz}
+
+Buyuek binary'ler icin Ghidra headless mode:
+
+\begin{lstlisting}[language=bash,caption={Ghidra headless invocation}]
+analyzeHeadless /tmp/project ProjectName \
+  -import /path/to/binary \
+  -scriptPath /path/to/scripts \
+  -postScript ExportDecompiled.java \
+  -deleteProject
+\end{lstlisting}
+
+Ghidra, binary'yi P-code adli bir intermediate representation'a donuesteruer, sonra C koduna decompile eder.
+
+\section{JavaScript Statik Analiz}
+
+JS analizi Babel AST parser kullanir:
+
+\begin{lstlisting}[language=JavaScript,caption={Babel AST parse ornegi}]
+const ast = parser.parse(sourceCode, {
+  sourceType: "module",
+  plugins: ["jsx", "typescript", "decorators"]
+});
+// AST traversal
+traverse(ast, {
+  FunctionDeclaration(path) {
+    functions.push(path.node.id.name);
+  },
+  StringLiteral(path) {
+    strings.push(path.node.value);
+  }
+});
+\end{lstlisting}
+
+Cikarilan bilgiler:
+\begin{itemize}
+\item Fonksiyon sayisi ve isimleri
+\item String literal'ler
+\item Import/export ifadeleri
+\item Webpack modul ID'leri
+\end{itemize}
+
+\begin{ozet}
+Statik analiz, binary'ler icin sembol tablosu, Ghidra decompilation ve string extraction; JavaScript icin Babel AST parsing, fonksiyon/string/import cikartma islemleri gerceklestirir. Buyuek dosyalar icin chunked processing destegi vardir.
+\end{ozet}
+
+% --- DEVELOPER AGENT DETAYLI GENISLETME: BOLUM 3+4 ---
+\input{chapters/ch03_04_target_static}
+
+
+% ============================================================================
+% BOLUM 5: JAVASCRIPT DEOBFUSCATION
+% ============================================================================
+\chapter{JavaScript Deobfuscation}
+\label{ch:deobf}
+
+Bu bolum, Karadul'un en yenilikci bilesenlerinden birini --- 9 fazli derin JavaScript deobfuscation pipeline'ini --- detayli olarak aciklar.
+
+\section{Obfuscation Nedir?}
+\label{sec:obf-intro}
+
+JavaScript obfuscation, kaynak kodu okunaksiz hale getirme suerecidir:
+
+\begin{equation}
+\text{obfuscate}: S_{\text{readable}} \to S_{\text{obfuscated}} \quad \text{s.t.} \quad \text{semantics}(S_{\text{readable}}) = \text{semantics}(S_{\text{obfuscated}})
+\end{equation}
+
+Yaygin teknikler:
+
+\begin{enumerate}
+\item \textbf{Minification:} Bosluk, yorum silme, kisa isimler (\code{a}, \code{b}, \code{c})
+\item \textbf{String encoding:} \code{"Hello"} $\to$ \code{"\textbackslash x48\textbackslash x65\textbackslash x6c\textbackslash x6c\textbackslash x6f"}
+\item \textbf{Control flow flattening:} if/else $\to$ switch-case state machine
+\item \textbf{Opaque predicates:} Her zaman true/false olan kosullar ekleme
+\item \textbf{Dead code injection:} Calismayan sahte kod ekleme
+\item \textbf{String array rotation:} String'leri bir diziye koy, indeksle eris, diziyi doenduer
+\end{enumerate}
+
+\section{Standart 4 Adimli Zincir}
+\label{sec:std-chain}
+
+\file{manager.py} dosyasindaki standart deobfuscation zinciri:
+
+\begin{center}
+\begin{tikzpicture}[
+  stepbox/.style={rectangle, draw=sectioncyan, fill=boxbg, minimum width=3.5cm, minimum height=1cm, text=white, font=\small\bfseries, rounded corners=3pt},
+  arrow/.style={-{Stealth[length=3mm]}, thick, color=gray!70!white},
+]
+  \node[stepbox] (beautify) at (0,0) {Beautify};
+  \node[stepbox] (synchrony) at (4.5,0) {Synchrony};
+  \node[stepbox] (babel) at (9,0) {Babel AST};
+  \node[stepbox] (webpack) at (13.5,0) {\shortstack{Webpack\\Unpack}};
+
+  \draw[arrow] (beautify) -- (synchrony);
+  \draw[arrow] (synchrony) -- (babel);
+  \draw[arrow] (babel) -- (webpack);
+
+  \node[below=0.3cm, font=\tiny, text=gray!60!white] at (beautify.south) {Format kurtarma};
+  \node[below=0.3cm, font=\tiny, text=gray!60!white] at (synchrony.south) {obfuscator.io};
+  \node[below=0.3cm, font=\tiny, text=gray!60!white] at (babel.south) {9 faz transform};
+  \node[below=0.3cm, font=\tiny, text=gray!60!white] at (webpack.south) {Modul cikartma};
+\end{tikzpicture}
+\end{center}
+
+\subsection{Graceful Degradation}
+
+Her adim basarisiz olabilir --- bu durumda bir oenceki basarili cikti kullanilir:
+
+\begin{equation}
+\text{output}(i) = \begin{cases}
+\text{step}_i(\text{output}(i-1)) & \text{eger basarili} \\
+\text{output}(i-1) & \text{eger basarisiz}
+\end{cases}
+\end{equation}
+
+\section{9 Fazli Deep Deobfuscation}
+\label{sec:deep-deobf}
+
+\subsection{Faz 1: Constant Folding (Sabit Katlama)}
+
+Derleme zamaninda hesaplanabilir ifadeleri basitlestirme:
+
+\begin{equation}
+\text{fold}(e_1 \oplus e_2) = \begin{cases}
+v_1 \oplus v_2 & \text{eger } e_1 = v_1, e_2 = v_2 \text{ (her ikisi sabit)} \\
+e_1 \oplus e_2 & \text{aksi halde (degismez)}
+\end{cases}
+\end{equation}
+
+\begin{example}
+\begin{lstlisting}[language=JavaScript]
+// Once:
+var x = 1 + 2 * 3;
+var y = "He" + "llo";
+// Sonra:
+var x = 7;
+var y = "Hello";
+\end{lstlisting}
+\end{example}
+
+\subsection{Faz 2: Dead Code Elimination}
+
+Kullanilmayan kodu tespit ve silme. Liveness analizi:
+
+\begin{equation}
+\text{live\_out}(B) = \bigcup_{S \in \text{succ}(B)} \text{live\_in}(S)
+\end{equation}
+\begin{equation}
+\text{live\_in}(B) = \text{use}(B) \cup (\text{live\_out}(B) \setminus \text{def}(B))
+\end{equation}
+
+Eger bir degisken hicbir noktada ``live'' degilse, atanmasi silinebilir.
+
+\subsection{Faz 3: String Unhexing}
+
+Hex-encoded string'leri orijinaline doenduerme:
+
+\begin{equation}
+\text{unhex}(\texttt{"\textbackslash xHH"}) = \text{char}(\text{parseInt}(\texttt{HH}, 16))
+\end{equation}
+
+\begin{example}
+\code{\textbackslash x48\textbackslash x65\textbackslash x6c\textbackslash x6c\textbackslash x6f} $\to$ \code{"Hello"}
+\end{example}
+
+\subsection{Faz 4: Computed-to-Static Property}
+
+\begin{equation}
+\text{obj}[\texttt{"foo"}] \to \text{obj}.\texttt{foo} \quad \text{(eger key string literal ise)}
+\end{equation}
+
+AST duenusemuue: \code{MemberExpression \{ computed: true \}} $\to$ \code{MemberExpression \{ computed: false \}}.
+
+\subsection{Faz 5--8: Ileri Basitlestirmeler}
+
+\begin{itemize}
+\item \textbf{Faz 5:} Comma-split: \code{a=1, b=2, c=3} $\to$ uec ayri ifade
+\item \textbf{Faz 6:} Conditional simplification: \code{true ? a : b} $\to$ \code{a}
+\item \textbf{Faz 7:} Expression flattening: icice ifadeleri duzlestir
+\item \textbf{Faz 8:} Literal restoration: obfuscated literal'leri orijinaline doenduer
+\end{itemize}
+
+\subsection{Faz 9: Semantik Degisken Isimlendirme}
+
+LLM kullanmadan, 25 context-aware heuristik kural ile anlamli isimler uereetme:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{5cm}p{8cm}}
+\toprule
+\textbf{\color{sectioncyan}Kural} & \textbf{\color{sectioncyan}Oernek} \\
+\midrule
+Event listener callback & \code{addEventListener("click", a)} $\to$ \code{clickHandler} \\
+Error constructor & \code{new Error(a)} $\to$ \code{errorMessage} \\
+Fetch URL & \code{fetch(a)} $\to$ \code{fetchUrl} \\
+Array index & \code{for(a=0; a<b.length)} $\to$ \code{index} \\
+DOM element & \code{document.getElementById(a)} $\to$ \code{elementId} \\
+\bottomrule
+\end{tabular}
+\caption{Semantik isimlendirme oernek kurallari.}
+\label{tab:semantic-rules}
+\end{table}
+
+\begin{ozet}
+JavaScript deobfuscation, 4 adimli standart zincir (beautify $\to$ synchrony $\to$ babel $\to$ webpack) ve 9 fazli derin transform pipeline'indan olusur. Her faz AST uezerinde calisir ve belirli bir obfuscation tekni\-gini geri alir. Graceful degradation her adimda basarisizliga tolerans saglar. Faz 9'daki LLM-siz semantik isimlendirme 25 heuristik kuralla etkileyici sonuclar ueretir.
+\end{ozet}
+
+% --- DETAYLI GENISLETME ---
+\input{chapters/ch05_deobf}
+
+% --- DEVELOPER AGENT DETAYLI GENISLETME: BOLUM 5+6 ---
+\input{chapters/ch05_06_deobf_bayesian}
+
+
+% ============================================================================
+% BOLUM 6: BAYESIAN ISIM FUZYONU
+% ============================================================================
+\chapter{Bayesian Isim Fuzyonu}
+\label{ch:bayesian}
+
+Bu boluem, Karadul'un en yenilikci algoritmasi olan Bayesian log-odds isim birlestirme sistemini detayli olarak tueret\-ir.
+
+\section{Problem Tanimi}
+\label{sec:naming-problem}
+
+Tersine muehendislikte, bir fonksiyonun gercek ismi bilinmez. Birden fazla kaynak farkli isim oenerir:
+
+\begin{example}
+\code{FUN\_00401000} icin:
+\begin{itemize}
+\item \textbf{signature\_db:} \code{SSL\_connect} (confidence: 0.85)
+\item \textbf{string\_intel:} \code{ssl\_handshake} (confidence: 0.70)
+\item \textbf{c\_namer:} \code{connect\_tls} (confidence: 0.60)
+\end{itemize}
+Hangisini sececegiz? Hepsini nasil birlestirecegiz?
+\end{example}
+
+\section{Bayesian Inference Temelleri}
+\label{sec:bayes-temelleri}
+
+\subsection{Bayes Teoremi}
+
+\begin{equation}
+\prob{H \given E} = \frac{\prob{E \given H} \cdot \prob{H}}{\prob{E}}
+\label{eq:bayes}
+\end{equation}
+
+burada:
+\begin{itemize}
+\item $H$: Hipotez (``bu fonksiyonun ismi $X$'tir'')
+\item $E$: Kanit (kaynaktan gelen isim onerisi)
+\item $\prob{H}$: Prior (oenceki bilgi --- baslangiccta $0.5$)
+\item $\prob{E \given H}$: Likelihood (kaynag\-in guveenilirli\-gi)
+\item $\prob{H \given E}$: Posterior (guencellenmis inanc)
+\end{itemize}
+
+\subsection{Log-Odds Formu}
+
+Birden fazla kaniti birlestirmek icin log-odds formunu kullaniriz:
+
+\begin{equation}
+\boxed{
+\text{log-odds}(H) = \log\frac{\prob{H}}{1 - \prob{H}} + \sum_{i=1}^{n} w_i \cdot \log\frac{c_i}{1 - c_i}
+}
+\label{eq:logodds}
+\end{equation}
+
+burada:
+\begin{itemize}
+\item $c_i$: $i$-inci kaynag\-in confidence degeri ($[0.01, 0.99]$ icinde)
+\item $w_i$: $i$-inci kaynag\-in agirligi (korelasyon duzeltmesi)
+\item Prior $= 0.5$ $\Rightarrow$ $\log(0.5/0.5) = 0$ (noetral baslangic)
+\end{itemize}
+
+Final olasilik:
+
+\begin{equation}
+\prob{H \given \text{tuem kanitlar}} = \sigmoid(\text{log-odds}) = \frac{1}{1 + e^{-\text{log-odds}}}
+\label{eq:sigmoid}
+\end{equation}
+
+\subsection{Neden Log-Odds?}
+
+\begin{enumerate}
+\item \textbf{Numerik stabilite:} Carpim yerine toplam --- floating point underflow onlenir.
+\item \textbf{Korelasyon duzeltmesi:} $w_i$ ile dogrudan agirlik verme muemkuen --- naive Bayes'te bu zor.
+\item \textbf{Sigmoid:} Sonucu dogal olarak $[0, 1]$ araligina eristirir.
+\end{enumerate}
+
+\section{Korelasyon-Aware Agirliklar}
+\label{sec:correlation}
+
+\subsection{Neden $w_i < 1$?}
+
+Iki kaynak korelasyonlu ise, ayni bilgiyi iki kez saymis oluruz. Bu \textbf{overconfidence} (asiri guveen) yaratir.
+
+\begin{tanim}[Korelasyon Duzeltmesi]
+$w_i$ agirligi, kaynag\-in bagimsizlik derecesini yansitir:
+\begin{equation}
+w_i = \begin{cases}
+1.0 & \text{tamamen bagimsiz (bilgi kaybetsiz)} \\
+0.5 & \text{yueksek korelasyon (bilgi yarisina indirilir)} \\
+0.0 & \text{tam bagimli (bilgi tamamen tekrar)}
+\end{cases}
+\end{equation}
+\end{tanim}
+
+\subsection{Kaynak Agirliklari Tablosu}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llp{7cm}}
+\toprule
+\textbf{\color{sectioncyan}Kaynak} & \textbf{\color{sectioncyan}$w_i$} & \textbf{\color{sectioncyan}Neden} \\
+\midrule
+binary\_extractor & 1.0 & Debug string/RTTI: derleyiciden dogrudan \\
+c\_namer & 1.0 & 6 katman zaten filtrelenmis \\
+string\_intel & 0.8 & Error msg.\ benzer kaynaklarla kismen ortak \\
+signature\_db & 1.0 & FLIRT: tamamen bagimsiz byte pattern \\
+swift\_demangle & 1.0 & Mangled name: kesin bilgi \\
+source\_matcher & 0.85 & NPM kaynak: bagimsiz ama heuristik \\
+llm4decompile & 0.5 & Tuem kaynaklari dolayli olarak kullaniyor \\
+byte\_pattern & 1.0 & Byte-level fuzzy match: bagimsiz \\
+\bottomrule
+\end{tabular}
+\caption{Kaynak agirliklari ve gerekcceleri.}
+\label{tab:weights}
+\end{table}
+
+\section{Somut Hesaplama Oernegi}
+\label{sec:bayesian-example}
+
+Uec kaynak ayni fonksiyon icin isim oeneriyor:
+
+\begin{align}
+\text{signature\_db:} \quad & c_1 = 0.85, \quad w_1 = 1.0 \\
+\text{string\_intel:} \quad & c_2 = 0.70, \quad w_2 = 0.8 \\
+\text{llm4decompile:} \quad & c_3 = 0.60, \quad w_3 = 0.5
+\end{align}
+
+Adim adim hesaplama:
+
+\begin{align}
+\text{log-odds} &= \underbrace{0}_{\text{prior}} + 1.0 \cdot \log\frac{0.85}{0.15} + 0.8 \cdot \log\frac{0.70}{0.30} + 0.5 \cdot \log\frac{0.60}{0.40} \\
+&= 0 + 1.0 \cdot 1.735 + 0.8 \cdot 0.847 + 0.5 \cdot 0.405 \\
+&= 1.735 + 0.678 + 0.203 \\
+&= 2.616
+\end{align}
+
+\begin{equation}
+\prob{dogru} = \sigmoid(2.616) = \frac{1}{1 + e^{-2.616}} = \frac{1}{1 + 0.073} = 0.932
+\end{equation}
+
+\begin{basari}[Sonuc]
+Uec kaynak birlestirildiginde \textbf{\%93.2 guvenle} isim atanir. Tek basina en iyisi \%85'ti --- Bayesian fusion \%8.2 puan ekledi.
+\end{basari}
+
+\subsection{Ikinci Oernek: Tam Bagimsiz Kaynaklar}
+
+Tuem $w_i = 1.0$ olsaydi (naive Bayes):
+
+\begin{align}
+\text{log-odds} &= 0 + 1.0 \cdot \log\frac{0.85}{0.15} + 1.0 \cdot \log\frac{0.70}{0.30} + 1.0 \cdot \log\frac{0.60}{0.40} \\
+&= 1.735 + 0.847 + 0.405 = 2.987
+\end{align}
+
+\begin{equation}
+\prob{dogru}_{\text{naive}} = \sigmoid(2.987) = 0.952
+\end{equation}
+
+Karsilastirma: korelasyon duzeltmesi \textbf{\%95.2'yi \%93.2'ye duesuerdue} --- 2 puanlik ``overconfidence'' oenlendi. Bu kueceuk goruenebilir ama binlerce sembol uezerinde yanlis isim oranini onemli oelcuede azaltir.
+
+\subsection{Uecuencue Oernek: Tek Kaynak, Duesueek Confidence}
+
+Yalnizca \code{string\_intel} kaynagi, $c = 0.45$, $w = 0.8$:
+
+\begin{align}
+\text{log-odds} &= 0 + 0.8 \cdot \log\frac{0.45}{0.55} = 0.8 \cdot (-0.200) = -0.160 \\
+\prob{dogru} &= \sigmoid(-0.160) = 0.460
+\end{align}
+
+$0.460 > 0.30$ (UNK threshold) ama $< 0.70$ (pipeline threshold). \textbf{Sonuc:} name\_merger seviyesinde tutulur ama son ciktida UNK olarak gosterilir --- ikili threshold sistemi devreye girer.
+
+\section{Gruplama Stratejisi}
+\label{sec:grouping}
+
+Adaylar sirasiyla su stratejilerle gruplanir:
+
+\begin{enumerate}
+\item \textbf{Exact multi-match:} Ayni isim $\geq 2$ farkli kaynaktan $\to$ dogrudan Bayesian merge
+\item \textbf{Partial match:} Prefix/suffix varyanti (Jaccard $\geq 0.5$) $\to$ penalty ile merge
+\item \textbf{Semantic match:} Benzer anlamli isimler (20 kelime grubu) $\to$ 0.85x penalty
+\item \textbf{Voting:} $\geq 3$ kaynak ayni $\to$ Bayesian merge
+\item \textbf{Single source:} Tek aday $\to$ $w$ ile duzeltilmis confidence
+\end{enumerate}
+
+\subsection{Partial Overlap Hesabi}
+
+Iki normalize isim arasindaki benzerlik:
+
+\begin{equation}
+\text{overlap}(A, B) = \begin{cases}
+|A| / |B| & \text{eger } A \subset B \text{ (substring)} \\
+J(W_A, W_B) & \text{aksi halde (Jaccard)}
+\end{cases}
+\end{equation}
+
+burada $J(A, B) = |A \cap B| / |A \cup B|$ Jaccard benzerlik katsayisi.
+
+\subsection{UNK Threshold}
+
+\begin{uyari}[NSA-Grade Felsefe]
+``Yanlis isim, isimsizden koetueduer.'' Bu nedenle confidence $< 0.30$ ise isim \textbf{atanmaz} (UNK olarak kalir).
+
+Type I error (yanlis isim) maliyeti $\gg$ Type II error (UNK bira\-kma) maliyeti.
+\end{uyari}
+
+\subsection{Ikili Threshold Sistemi}
+
+Karadul'da iki farkli threshold var:
+
+\begin{enumerate}
+\item \textbf{0.30 (name\_merger seviyesi):} ``Bu ismin dogru olma olasiligi en az \%30 olmali, yoksa UNK birak.'' Duesueek goruenuyor ama...
+\item \textbf{0.70 (pipeline seviyesi):} ``Son ciktida sadece \%70+ confidence isimleri goester.''
+\end{enumerate}
+
+0.30--0.70 arasindaki isimler \textit{``olasi ama emin degilim''} kategorisinde tutulur --- interaktif modda analiste sunulabilir, otomatik modda goesterilmez.
+
+\subsection{ROC Perspektifi}
+
+Farkli threshold'larin tahmini performansi:
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}Threshold} & \textbf{\color{sectioncyan}Precision} & \textbf{\color{sectioncyan}Recall} \\
+\midrule
+0.20 & $\sim$\%60 & $\sim$\%95 \\
+0.30 & $\sim$\%75 & $\sim$\%85 \\
+0.50 & $\sim$\%90 & $\sim$\%60 \\
+0.70 & $\sim$\%97 & $\sim$\%35 \\
+\bottomrule
+\end{tabular}
+\caption{Threshold vs precision-recall tradeoff (tahmini).}
+\end{table}
+
+\subsection{Hesaplama Karmasikligi}
+
+$N$ sembol, $M$ kaynak, $K$ aday/sembol:
+
+\begin{itemize}
+\item Bayesian merge (her sembol icin): $\bigO{M \cdot K}$
+\item Gruplama (her sembol icin): $\bigO{K^2}$ (partial match icin tuem ciftler)
+\item \textbf{Toplam:} $\bigO{N \cdot (M \cdot K + K^2)}$
+\end{itemize}
+
+100.000 sembol, ortalama 1.5 aday: $100{,}000 \times (8 \times 1.5 + 1.5^2) = 1{,}425{,}000$ islem $\to$ $< 1$ saniye.
+
+\begin{ozet}
+Bayesian isim fuzyonu, 7 bagimsiz kaynaktan gelen isimleri korelasyon-aware log-odds ile birlestirir. $w_i < 1$ agirliklari korelasyonlu kaynaklarin etkisini azaltir. UNK threshold (\%30) yanlis isimlendirmeyi ooenler. Somut oeernekte: uec kaynak birlestirildiginde \%85'ten \%93.2'ye iyilesme goezlendi.
+\end{ozet}
+
+
+% ============================================================================
+% BOLUM 7: KAYNAK KOD REKONSTRUKSIYONU
+% ============================================================================
+\chapter{Kaynak Kod Rekonstruksiyonu}
+\label{ch:reconstruct}
+
+Bu boluem, isimlendirilmis sembollerin anlamli kaynak koda doenuesteruelmesi suerecini aciklar.
+
+\section{6 Katmanli C Naming}
+\label{sec:c-namer}
+
+\file{c\_namer.py} dosyasinda implement edilen 6 katmanli deterministic naming sistemi:
+
+\begin{center}
+\begin{tikzpicture}[
+  layer/.style={rectangle, draw=sectioncyan, fill=boxbg, minimum width=10cm, minimum height=0.8cm, text=white, font=\small},
+  arrow/.style={-{Stealth[length=2mm]}, thick, color=gray!50!white},
+]
+  \node[layer] (l1) at (0,0) {Katman 1: Symbol/Export Table Isimleri};
+  \node[layer] (l2) at (0,-1.2) {Katman 2: String Context (komsu string'ler)};
+  \node[layer] (l3) at (0,-2.4) {Katman 3: API Call Pattern Matching};
+  \node[layer] (l4) at (0,-3.6) {Katman 4: Call Graph Structure};
+  \node[layer] (l5) at (0,-4.8) {Katman 5: Dataflow Analysis};
+  \node[layer] (l6) at (0,-6.0) {Katman 6: Type-Based Inference};
+
+  \draw[arrow] (l1) -- (l2);
+  \draw[arrow] (l2) -- (l3);
+  \draw[arrow] (l3) -- (l4);
+  \draw[arrow] (l4) -- (l5);
+  \draw[arrow] (l5) -- (l6);
+
+  \node[right=0.3cm, font=\tiny, text=green!50!white] at (l1.east) {En yuksek guven};
+  \node[right=0.3cm, font=\tiny, text=yellow!50!white] at (l3.east) {Orta guven};
+  \node[right=0.3cm, font=\tiny, text=red!50!white] at (l6.east) {En dusuk guven};
+\end{tikzpicture}
+\end{center}
+
+Her katman, oenceki katmanin bulamadigi semboller icin ek bilgi saglar. Cascade classifier mantigi: kolay olanlar oence, zor olanlar sona.
+
+\section{FLIRT Signature Matching}
+\label{sec:flirt}
+
+IDA Pro'nun FLIRT (Fast Library Identification and Recognition Technology) teknolojisi:
+
+\begin{equation}
+\text{match}(f) = \begin{cases}
+\text{library\_name} & \text{eger } \text{bytes}(f)[0:n] = \text{pattern}[0:n] \text{ ve CRC dogrulandi} \\
+\text{UNK} & \text{aksi halde}
+\end{cases}
+\end{equation}
+
+Karadul'un signature veritabani 1.5M+ imza, 4.200+ kuetuephane icerir.
+
+\section{NPM Source Matching}
+\label{sec:npm-match}
+
+Minified JS fonksiyonlarini orijinal npm paketleri ile eslestirir:
+
+\begin{enumerate}
+\item Fonksiyon AST structural hash hesapla
+\item npm registry'de benzer paketleri ara
+\item Kaynak kodu indir (unpkg veya npm pack)
+\item AST-level structural matching yap
+\item Benzerlik $\geq 0.65$ ise eslestir
+\end{enumerate}
+
+Benzerlik olcuetue (Jaccard uzerinde AST node turleri):
+
+\begin{equation}
+\text{sim}(f_1, f_2) = \frac{|\text{nodes}(f_1) \cap \text{nodes}(f_2)|}{|\text{nodes}(f_1) \cup \text{nodes}(f_2)|}
+\end{equation}
+
+\section{Algoritma Tespiti}
+\label{sec:algo-id}
+
+Binary icindeki kriptografik, hash ve sikistirma algoritmalarini tespit etme:
+
+\begin{itemize}
+\item \textbf{AES:} S-box byte pattern (0x63, 0x7c, 0x77, 0x7b, ...)
+\item \textbf{SHA-256:} Initial hash values ($H_0 = \texttt{0x6a09e667}$, ...)
+\item \textbf{CRC32:} Polynomial tablo degerleri
+\item \textbf{zlib:} Adler-32 ve deflate magic
+\end{itemize}
+
+\begin{ozet}
+Kaynak kod rekonstruksiyonu, 6 katmanli C naming, FLIRT signature matching, NPM source matching ve algoritma tespiti bilesenlerin\-den olusur. Her bilesen ayri bir naming kaynagi olarak Bayesian fuzyona beslenir.
+\end{ozet}
+
+% --- DEVELOPER AGENT DETAYLI GENISLETME: BOLUM 7+8+9 ---
+\input{chapters/ch07_08_09_recon_security_perf}
+
+
+% ============================================================================
+% BOLUM 8: GUVENLIK ANALIZ ALGORITMALARI
+% ============================================================================
+\chapter{Guevenlik Analiz Algoritmalari}
+\label{ch:security}
+
+\section{Entropy Analizi ve Packer Tespiti}
+\label{sec:entropy}
+
+Shannon entropy:
+
+\begin{equation}
+H(X) = -\sum_{i=0}^{255} p(x_i) \log_2 p(x_i)
+\label{eq:entropy}
+\end{equation}
+
+burada $p(x_i) = \text{count}(x_i) / N$ byte frekansidir.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{\color{sectioncyan}Icerik Tipi} & \textbf{\color{sectioncyan}Beklenen $H$ (bit/byte)} \\
+\midrule
+Normal derlenmi\-s kod (.text) & 5.0--6.5 \\
+Veri section'i (.data) & 3.0--5.0 \\
+Packed/encrypted kod & 7.5--8.0 \\
+Tamamen rastgele & 8.0 (maksimum) \\
+\bottomrule
+\end{tabular}
+\caption{Section-level entropy beklenen degerleri.}
+\label{tab:entropy}
+\end{table}
+
+$H > 7.5$ ise dosya buyuek olasilikla encrypted veya packed.
+
+\section{Control Flow Graph Analizi}
+\label{sec:cfg}
+
+\begin{definition}[Control Flow Graph]
+$G = (V, E, v_{\text{entry}}, v_{\text{exit}})$ burada:
+\begin{itemize}
+\item $V$: Basic block kuemesi
+\item $E \subseteq V \times V$: Kontrol akis kenarlari
+\item $v_{\text{entry}}$: Giris blogu
+\item $v_{\text{exit}}$: Cikis blogu
+\end{itemize}
+\end{definition}
+
+\subsection{Dominator Tree}
+
+$d$ dueguemue $n$ dueguemueuene \textbf{dominate} eder eger entry'den $n$'e giden her yol $d$'den geciyorsa. Lengauer-Tarjan algoritmasiyla $\bigO{n \cdot \alpha(n)}$ zamaninda hesaplanir.
+
+\section{Opaque Predicate Tespiti}
+\label{sec:opaque}
+
+\begin{definition}[Opaque Predicate]
+Bir predicate $P$ \textbf{opaque} ise tuem girdi\-ler icin sonucu belirlidir:
+\begin{equation}
+\forall x: P(x) = \text{true} \quad \text{veya} \quad \forall x: P(x) = \text{false}
+\end{equation}
+\end{definition}
+
+Yaygin oeernekler:
+\begin{itemize}
+\item $x^2 + x \equiv 0 \pmod{2}$ (her zaman true)
+\item $x^2 \geq 0$ (her zaman true, $x \in \mathbb{R}$)
+\item $x^2 - 34y^2 \neq 1$ (Pell denklemi --- her zaman true bazi $x,y$ icin)
+\end{itemize}
+
+Tespit yoentemleri: abstract interpretation, symbolic execution (Z3 SMT solver), pattern matching.
+
+\begin{ozet}
+Guevenlik analiz algoritmalari Shannon entropy ile packer tespiti, CFG analizi ile yapi cikarma, opaque predicate tespiti ile sahte dallanmalari silme ve YARA pattern matching ile malware/teknik tespit yetene\-gi saglar.
+\end{ozet}
+
+% --- DETAYLI GENISLETME ---
+\input{chapters/ch08_09_security_perf}
+
+
+% ============================================================================
+% BOLUM 9: PERFORMANS VE OLCEKLENDIRME
+% ============================================================================
+\chapter{Performans ve Oelceklendirme}
+\label{ch:perf}
+
+\section{Amdahl Yasasi}
+\label{sec:amdahl}
+
+Pipeline'in paralellestirilmesi Amdahl yasasina tabidir:
+
+\begin{equation}
+S(n) = \frac{1}{(1-p) + \frac{p}{n}}
+\label{eq:amdahl}
+\end{equation}
+
+burada $p$ = paralellestirilelen kesir, $n$ = islemci sayisi.
+
+Karadul'da Ghidra asamasi toplam suerenin \%70'ini olusturur. Digerleri paralellestir\-ilse bile:
+
+\begin{equation}
+S = \frac{1}{0.70 + 0.30/n} \leq \frac{1}{0.70} \approx 1.43\times
+\end{equation}
+
+Maximum speedup sadece 1.43x --- Ghidra bottleneck.
+
+\section{Bellek Yoenetimi}
+\label{sec:memory}
+
+\subsection{Ghidra JVM Heap}
+
+Optimal heap boyutu RAM'in \%40'i:
+
+\begin{equation}
+\text{heap} = \max\!\big(4096, \min(32768, \lfloor 0.4 \times \text{RAM}_{\text{MB}} \rfloor)\big) \text{ MB}
+\end{equation}
+
+36GB RAM icin: $\text{heap} = \min(32768, \lfloor 0.4 \times 36864 \rfloor) = \min(32768, 14745) = 14745$ MB $\approx$ 14.4 GB.
+
+\subsection{Chunked Processing}
+
+200MB+ dosyalar 512KB chunk'lara boeluenueer:
+
+\begin{equation}
+n_{\text{chunks}} = \left\lceil \frac{\text{file\_size}}{512 \times 1024} \right\rceil
+\end{equation}
+
+200MB dosya icin: $n = \lceil 200 \times 1024 / 512 \rceil = 400$ chunk.
+
+\section{Apple Silicon Optimizasyonu}
+\label{sec:apple-silicon}
+
+M4 Max spesifikasyonlari:
+\begin{itemize}
+\item 10 P-core @ 4.5 GHz + 4 E-core @ 3 GHz
+\item 36 GB Unified Memory (LPDDR5X)
+\item Bant genisligi: 273 GB/s
+\end{itemize}
+
+P-core sayisi otomatik tespit: \code{sysctl -n hw.perflevel0.logicalcpu}.
+
+\begin{ozet}
+Performans optimizasyonu, Amdahl yasasina uygun sekilde Ghidra bottleneck'ini hedefler. JVM heap oetomatik oelceklenir. Buyuek dosyalar chunked processing ile islenir. Apple Silicon'a oezgue P-core optimizasyonu uygulanir.
+\end{ozet}
+
+
+% ============================================================================
+% BOLUM 10: TASARIM KARARLARI VE RETROSPEKTIF
+% ============================================================================
+\chapter{Tasarim Kararlari ve Retrospektif}
+\label{ch:retrospektif}
+
+\section{Onemli Kararlar}
+
+\subsection{LLM Tabanli Isimlendirmenin Terk Edilmesi}
+
+Ilk tasarimda Claude API ile fonksiyon isimlendirme planlanmisti. Ancak:
+
+\begin{itemize}
+\item 10.000 fonksiyon $\times$ ortalama 2 saniye/istek = 5.5+ saat
+\item API maliyeti: ~\$20/analiz (Opus modeli ile)
+\item Belirsiz (non-deterministic) sonuclar --- ayni girdi, farkli cikti
+\end{itemize}
+
+\textbf{Karar:} LLM yerine 25 heuristik kural + Bayesian fusion. Tamamen deterministik, bedava, 1000x hizli.
+
+\subsection{Python + JavaScript Hibrit Mimarisi}
+
+\begin{itemize}
+\item \textbf{Python:} Pipeline orkestrasyon, binary analiz (Ghidra entegrasyon), raporlama
+\item \textbf{JavaScript:} AST analiz (Babel ekosistemi), deobfuscation
+\end{itemize}
+
+Bu hibrit yaklasim, her dilin gueclue oldugu alanda kullanilmasini saglar.
+
+\subsection{Graceful Degradation}
+
+``Hic bir sey yapamama'' yerine ``bir seyler yapabilme'' felsefesi. Her stage basarisiz olsa bile pipeline devam eder ve kismi sonuclar raporlanir.
+
+\section{Ne Ise Yaradi?}
+
+\begin{enumerate}
+\item Bayesian fusion: tek kaynak \%85 $\to$ coklu kaynak \%93+ guven
+\item Chunked processing: 200MB+ dosya destegi
+\item 9 fazli deep deobfuscation: LM Studio 32MB bundle coezeldi
+\item Docker destegi: tek komutla kurulum
+\end{enumerate}
+
+\section{Ne Yaramadi?}
+
+\begin{enumerate}
+\item Frida dynamic analysis: cogu hedef SIP korumasinda (macOS)
+\item LLM4Decompile: yeterince hizli degil (batch mode gerekiyor)
+\item Delphi/Android analizi: test edecek gercek hedef bulunamadi
+\end{enumerate}
+
+\section{Gelecek Calismalar}
+
+\begin{itemize}
+\item Web UI (React tabanli gorsel arayuez)
+\item Real-time analysis (streaming pipeline)
+\item ML-based naming (fine-tuned kucuk model, yerel calisma)
+\item Plugin sistemi (kullanici tanimli stage'ler)
+\end{itemize}
+
+\begin{ozet}
+Karadul'un en onemli tasarim kararlari: LLM yerine deterministic heuristik, Python+JS hibrit mimari ve graceful degradation. Bu kararlar projenin pratik, hizli ve guevenilir olmasini sagladi.
+\end{ozet}
+
+
+% ============================================================================
+% EK A: PARAMETRE TABLOSU
+% ============================================================================
+\appendix
+\chapter{Parametre Tablosu}
+\label{app:params}
+
+\section{Timeout Parametreleri}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+\textbf{\color{sectioncyan}Parametre} & \textbf{\color{sectioncyan}Deger} & \textbf{\color{sectioncyan}Aciklama} \\
+\midrule
+ghidra & 7200s & Ghidra analiz timeout \\
+frida\_attach & 30s & Frida process attach \\
+subprocess & 7200s & Genel subprocess \\
+babel\_parse & 60s & Babel AST parse \\
+synchrony & 120s & synchrony deobfuscation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Bayesian Fusion Parametreleri}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+\textbf{\color{sectioncyan}Parametre} & \textbf{\color{sectioncyan}Deger} & \textbf{\color{sectioncyan}Aciklama} \\
+\midrule
+prior & 0.50 & Baslangic inanc (uniform) \\
+unk\_threshold & 0.30 & Minimum confidence (altinda UNK) \\
+max\_confidence & 0.99 & Ust sinir \\
+min\_confidence & 0.01 & Alt sinir \\
+default\_weight & 0.70 & Bilinmeyen kaynak agirligi \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Binary Analiz Parametreleri}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+\textbf{\color{sectioncyan}Parametre} & \textbf{\color{sectioncyan}Deger} & \textbf{\color{sectioncyan}Aciklama} \\
+\midrule
+ghidra\_batch\_size & 5000 & Fonksiyon/batch \\
+large\_binary\_threshold & 100 MB & Buyuek binary esigi \\
+timeout\_multiplier & 4.0x & Buyuek binary icin \\
+min\_naming\_confidence & 0.70 & C namer minimum guven \\
+string\_min\_length & 4 & Minimum string uzunlugu \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+% ============================================================================
+% EK B: MULAKAT HAZIRLIK
+% ============================================================================
+\chapter{Muelakat Hazirlik}
+\label{app:interview}
+
+\section{Soru 1: Projeyi bir cuemleyle acikla}
+
+\textbf{Cevap:} Karadul, derlenm\-is binary'ler ve obfuscate edilmis JavaScript bundle'lari icin 6 asamali otonom bir tersine muehendislik pipeline'idir; 7 bagimsiz kaynaktan gelen isim oenerilerini Bayesian log-odds fuzyonu ile birlestirerek enduestri standartlarinin oetesinde bir otomasyon sevi\-yesi saglar.
+
+\section{Soru 2: Bayesian fusion nasil calisiyor?}
+
+\textbf{Cevap:} Her kaynak bir (isim, confidence) cifti ueretir. Log-odds formunda:
+\[
+\text{log-odds} = \sum_i w_i \cdot \log\frac{c_i}{1-c_i}
+\]
+$w_i$ korelasyon duzeltmesi saglar. $\sigmoid(\text{log-odds})$ final olasiligi verir. Threshold altindaki isimler UNK olarak kalir.
+
+\section{Soru 3: Neden LLM kullanmiyorsun?}
+
+\textbf{Cevap:} Hiz (10K fonksiyon $\times$ 2s = 5.5 saat), maliyet (\$20/analiz), ve determinizm (ayni girdi $\to$ farkli cikti). 25 heuristik kural + Bayesian fusion ayni kaliteyi bedava ve 1000x hizli saglar.
+
+\section{Soru 4: Pipeline neden sequential?}
+
+\textbf{Cevap:} Stage'ler arasi veri bagimliligi (her stage oencekinin ciktisina ihtiyac duyar) + kaynak kisitlari (Ghidra tek basina 4-32GB RAM). Amdahl: max speedup 1.43x bile olsa, debugging kolayligi sequential'i hakli kilar.
+
+\section{Soru 5: Graceful degradation nasil calisiyor?}
+
+\textbf{Cevap:} Her stage bir \code{StageResult} doenduerer (success/fail). Fail durumunda pipeline durmaz --- sonraki stage'ler kendi bagimlilik listesini kontrol eder. Dependency eksikse o stage atlanir ama diger stage'ler etkilenmez.
+
+\section{Soru 6: 200MB+ dosyalari nasil isle\-yorsunuz?}
+
+\textbf{Cevap:} stream-parse.mjs ile top-level block splitting: 512KB chunk'lar, her chunk bagimsiz deep-deobfuscate, sonra reassembly. Binary icin Ghidra batch: 5000 fonksiyon/batch, JVM GC nefes alsin.
+
+\section{Soru 7: Constant folding nedir?}
+
+\textbf{Cevap:} Derleme zamaninda hesaplanabilir ifadelerin basitlestirilmesi. \code{1+2*3} $\to$ \code{7}. AST uzerinde visitor pattern ile gezinerek her BinaryExpression'in iki tarafi da literal ise hesaplanir. Lattice teorisi: top $\sqsupseteq$ constant $\sqsupseteq$ bottom.
+
+\section{Soru 8: Circuit breaker neden var?}
+
+\textbf{Cevap:} Tekrarlanan hatalar cascade failure yaratabilir. 5 hata sonrasi circuit OPEN'a gecer, 60s bekler, sonra HALF\_OPEN'da tek deneme yapar. Basarili ise CLOSED'a doener. Exponential backoff ile retry storm onlenir.
+
+\section{Soru 9: FLIRT signature matching nasil calisiyor?}
+
+\textbf{Cevap:} Fonksiyonun ilk N byte'ini kutuephane imza veritabaniyla karsilastirir. Leading bytes + CRC16 tail dogrulama. 1.5M+ imza, O(log n) arama. False positive orani cok duseuk (CRC dogrulama sayesinde).
+
+\section{Soru 10: UNK threshold neden 0.30?}
+
+\textbf{Cevap:} NSA felsefesi: ``yanlis isim isimsizden koetueduer.'' 0.30 altinda guven yoksa isim vermemek daha guvenli. Precision $>$ recall tercihi. ROC curve uzerinde optimal nokta ampirik olarak belirlendi.
+
+\section{Soru 11: Magic byte nedir?}
+
+\textbf{Cevap:} Dosya formatini tanimlayan ilk 4 byte. Mach-O: 0xFEEDFACF, ELF: 0x7F454C46, PE: 0x4D5A. False positive: $1/2^{32} \approx 2.33 \times 10^{-10}$.
+
+\section{Soru 12: Entropy ile packer nasil tespit edilir?}
+
+\textbf{Cevap:} Shannon entropy $H = -\sum p(x) \log_2 p(x)$. Normal kod: 5-6 bit/byte, packed: 7.5+ bit/byte. Section bazli entropy profiling ile anomali tespiti.
+
+\section{Soru 13: Dead code elimination nasil calisiyor?}
+
+\textbf{Cevap:} Backward dataflow (liveness) analizi ile. \code{live\_in(B) = use(B) $\cup$ (live\_out(B) $\setminus$ def(B))}. Hicbir noktada ``live'' olmayan degiskenlerin atanmasi silinir. Fixed-point iteration.
+
+\section{Soru 14: Opaque predicate nedir?}
+
+\textbf{Cevap:} Her zaman true veya false olan kosul. Oernek: $x^2 + x \equiv 0 \pmod{2}$. Amac: statik analizi zorlas\-tirma. Tespit: symbolic execution, pattern matching veya abstract interpretation.
+
+\section{Soru 15: Webpack bundle'i nasil ayristi\-riyorsunuz?}
+
+\textbf{Cevap:} \code{\_\_webpack\_modules\_\_} object'ini tespit et, her key-value cifti = bir modul. Entry point'i bul, bagimlili\-k agacini cikart. Moduelleri ayri dosyalara yaz. esbuild farkliligi: IIFE wrapper yerine \code{var e = \{\}} yapisi.
+
+\section{Soru 16: Projenin en zor kismi neydi?}
+
+\textbf{Cevap:} 32MB LM Studio renderer bundle'i. Babel parser 32MB'de coekmekti --- Acorn fallback ekledik. Deep deobfuscation 200MB+ dosyalarda bellek tasirmasi --- stream-parse chunking ekledik. Her iki fix de session icinde yapildi.
+
+\section{Soru 17: Projede kac satir kod var?}
+
+\textbf{Cevap:} Python: 65.000+ satir (110 modul). JavaScript: 460+ script. Test: 1.393 passing test. Docker + pip paket destegi.
+
+\section{Soru 18: Korelasyon-aware agirlik ne demek?}
+
+\textbf{Cevap:} Iki kaynak ayni bilgiyi kullaniyorsa (korelasyonlu), naive Bayes overconfident olur. $w_i < 1$ ile bilgi kazancini azaltiriz. llm4decompile ($w=0.5$) tuem diger kaynaklari dolayli kullaniyor, bu yuzden bilgisi yarilandi.
+
+\section{Soru 19: Bu proje hangi sorunu coezer?}
+
+\textbf{Cevap:} Manuel tersine muehendislik haftalarca suerrer. Karadul bunu dakikalara indirir: hedef tespitinden raporlamaya tam otonom. Bir analist 10K fonksiyonlu binary'yi tek basina haftalar incelemek yerine, Karadul'un raporunu birka\-c dakikada alip kritik noktala\-ra odaklanabilir.
+
+\section{Soru 20: Gelecekte ne yapmayi planliyorsun?}
+
+\textbf{Cevap:} (1) Web UI ile gorsel analiz arayuzue, (2) fine-tuned kuecuek ML model ile yerel naming, (3) plugin sistemi ile kullanici tanimli stage'ler, (4) real-time streaming pipeline.
+
+
+% ============================================================================
+% INDEX
+% ============================================================================
+\printindex
+
+\end{document}

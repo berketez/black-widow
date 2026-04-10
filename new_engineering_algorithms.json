@@ -1,0 +1,1366 @@
+[
+  {
+    "name": "vof_volume_of_fluid",
+    "category": "cfd_multiphase",
+    "formula_latex": "\\frac{\\partial \\alpha}{\\partial t} + \\nabla \\cdot (\\alpha \\mathbf{u}) = 0, \\quad \\rho = \\alpha \\rho_1 + (1-\\alpha)\\rho_2",
+    "keywords": ["vof", "volume of fluid", "free surface", "multiphase", "interface", "alpha", "advection", "piecewise linear"],
+    "constants": [],
+    "confidence": 0.85,
+    "description": "Volume of Fluid method for tracking free surfaces and interfaces in multiphase flows. Alpha=1 for fluid 1, alpha=0 for fluid 2."
+  },
+  {
+    "name": "level_set_method",
+    "category": "cfd_multiphase",
+    "formula_latex": "\\frac{\\partial \\phi}{\\partial t} + \\mathbf{u} \\cdot \\nabla \\phi = 0, \\quad |\\nabla \\phi| = 1 \\text{ (reinitialization)}",
+    "keywords": ["level set", "signed distance", "interface tracking", "reinitialization", "heaviside", "phi"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Level set method for interface tracking. Phi is a signed distance function; zero level set defines the interface."
+  },
+  {
+    "name": "lattice_boltzmann",
+    "category": "cfd_mesoscale",
+    "formula_latex": "f_i(\\mathbf{x}+\\mathbf{e}_i \\Delta t, t+\\Delta t) - f_i(\\mathbf{x},t) = -\\frac{1}{\\tau}(f_i - f_i^{eq}), \\quad f_i^{eq} = w_i \\rho \\left[1 + \\frac{\\mathbf{e}_i \\cdot \\mathbf{u}}{c_s^2} + \\frac{(\\mathbf{e}_i \\cdot \\mathbf{u})^2}{2c_s^4} - \\frac{\\mathbf{u}\\cdot\\mathbf{u}}{2c_s^2}\\right]",
+    "keywords": ["lbm", "lattice boltzmann", "bgk", "collision", "streaming", "distribution function", "d2q9", "d3q19", "d3q27"],
+    "constants": [
+      {"name": "cs_squared", "value": 0.3333333333333333, "description": "c_s^2 = 1/3 lattice sound speed squared (D2Q9/D3Q19)"},
+      {"name": "w0_d2q9", "value": 0.4444444444444444, "description": "w0 = 4/9 center weight D2Q9"},
+      {"name": "w1_d2q9", "value": 0.1111111111111111, "description": "w1 = 1/9 axis weight D2Q9"},
+      {"name": "w2_d2q9", "value": 0.0277777777777778, "description": "w2 = 1/36 diagonal weight D2Q9"}
+    ],
+    "confidence": 0.90,
+    "description": "Lattice Boltzmann Method with BGK collision operator. Solves NS equations via mesoscale particle distribution functions on a lattice."
+  },
+  {
+    "name": "des_detached_eddy",
+    "category": "cfd_turbulence",
+    "formula_latex": "\\tilde{d} = \\min(d, C_{DES} \\Delta), \\quad \\Delta = \\max(\\Delta x, \\Delta y, \\Delta z)",
+    "keywords": ["des", "detached eddy", "hybrid rans les", "ddes", "iddes", "cdes", "length scale"],
+    "constants": [
+      {"name": "C_DES", "value": 0.65, "hex": "3fe4cccccccccccd", "description": "DES constant (Spalart-Allmaras based)"}
+    ],
+    "confidence": 0.82,
+    "description": "Detached Eddy Simulation -- hybrid RANS/LES switching based on grid spacing vs wall distance."
+  },
+  {
+    "name": "standard_k_epsilon",
+    "category": "cfd_turbulence",
+    "formula_latex": "\\nu_t = C_\\mu \\frac{k^2}{\\epsilon}, \\quad \\frac{\\partial k}{\\partial t} + u_j \\frac{\\partial k}{\\partial x_j} = P_k - \\epsilon + \\frac{\\partial}{\\partial x_j}\\left[\\left(\\nu + \\frac{\\nu_t}{\\sigma_k}\\right)\\frac{\\partial k}{\\partial x_j}\\right]",
+    "keywords": ["standard k epsilon", "launder spalding", "turbulence model", "eddy viscosity", "cmu", "sigma_k", "sigma_epsilon"],
+    "constants": [
+      {"name": "C_mu", "value": 0.09, "hex": "3fb70a3d70a3d70a", "description": "Eddy viscosity coefficient"},
+      {"name": "C1_epsilon", "value": 1.44, "hex": "3ff70a3d70a3d70a", "description": "Production coefficient"},
+      {"name": "C2_epsilon", "value": 1.92, "hex": "3ffeb851eb851eb8", "description": "Dissipation coefficient"},
+      {"name": "sigma_k", "value": 1.0, "description": "k diffusion Prandtl number"},
+      {"name": "sigma_epsilon", "value": 1.3, "hex": "3ff4cccccccccccd", "description": "epsilon diffusion Prandtl number"}
+    ],
+    "confidence": 0.88,
+    "description": "Standard k-epsilon turbulence model (Launder & Spalding 1974). Two-equation RANS model."
+  },
+  {
+    "name": "rsm_reynolds_stress",
+    "category": "cfd_turbulence",
+    "formula_latex": "\\frac{\\partial \\overline{u_i' u_j'}}{\\partial t} + C_{ij} = P_{ij} + D_{ij} - \\epsilon_{ij} + \\Pi_{ij} + \\Omega_{ij}",
+    "keywords": ["rsm", "reynolds stress model", "second moment closure", "pressure strain", "return to isotropy", "anisotropy"],
+    "constants": [
+      {"name": "C1_LRR", "value": 1.8, "hex": "3ffccccccccccccd", "description": "Slow pressure-strain (LRR)"},
+      {"name": "C2_LRR", "value": 0.6, "hex": "3fe3333333333333", "description": "Rapid pressure-strain (LRR)"},
+      {"name": "Cs", "value": 0.22, "hex": "3fcc28f5c28f5c29", "description": "Diffusion coefficient"}
+    ],
+    "confidence": 0.85,
+    "description": "Reynolds Stress Model (LRR/SSG). Full second-moment closure, 7 transport equations."
+  },
+  {
+    "name": "immersed_boundary_method",
+    "category": "cfd_numerics",
+    "formula_latex": "\\mathbf{f}(\\mathbf{x},t) = \\int_{\\Gamma} \\mathbf{F}(s,t) \\, \\delta(\\mathbf{x}-\\mathbf{X}(s,t)) \\, ds",
+    "keywords": ["immersed boundary", "ibm", "delta function", "lagrangian", "eulerian", "peskin", "forcing"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Immersed Boundary Method (Peskin). Couples Lagrangian structure to Eulerian fluid via regularized delta function."
+  },
+  {
+    "name": "piso_algorithm",
+    "category": "cfd_pressure_velocity",
+    "formula_latex": "\\text{Predictor: } a_P \\mathbf{u}^* = H(\\mathbf{u}^n) - \\nabla p^n, \\quad \\text{Corrector 1: } \\nabla^2 p' = \\nabla \\cdot \\mathbf{u}^*, \\quad \\text{Corrector 2: } \\nabla^2 p'' = \\nabla \\cdot \\mathbf{u}^{**}",
+    "keywords": ["piso", "pressure implicit split operator", "predictor", "corrector", "momentum", "pressure correction", "issa"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "PISO algorithm (Issa 1985). Pressure-velocity coupling with one predictor and two corrector steps. Used in transient CFD."
+  },
+  {
+    "name": "muscl_scheme",
+    "category": "cfd_numerics",
+    "formula_latex": "u_{i+1/2}^L = u_i + \\frac{1}{4}\\left[(1-\\kappa)(u_i-u_{i-1}) + (1+\\kappa)(u_{i+1}-u_i)\\right]\\phi(r)",
+    "keywords": ["muscl", "monotone upstream", "slope limiter", "van leer", "minmod", "superbee", "reconstruction"],
+    "constants": [
+      {"name": "kappa_muscl", "value": 0.3333333333333333, "description": "kappa=1/3 third-order upwind biased"}
+    ],
+    "confidence": 0.80,
+    "description": "MUSCL (Monotone Upstream-centered Schemes for Conservation Laws) reconstruction with slope limiters."
+  },
+  {
+    "name": "weno_scheme",
+    "category": "cfd_numerics",
+    "formula_latex": "u_{i+1/2} = \\sum_{k=0}^{r-1} \\omega_k \\hat{u}_{i+1/2}^{(k)}, \\quad \\omega_k = \\frac{\\alpha_k}{\\sum \\alpha_k}, \\quad \\alpha_k = \\frac{d_k}{(\\epsilon+\\beta_k)^2}",
+    "keywords": ["weno", "weighted essentially non-oscillatory", "smoothness indicator", "stencil", "fifth order", "weno5"],
+    "constants": [
+      {"name": "d0_weno5", "value": 0.1, "description": "WENO5 ideal weight d0"},
+      {"name": "d1_weno5", "value": 0.6, "description": "WENO5 ideal weight d1"},
+      {"name": "d2_weno5", "value": 0.3, "description": "WENO5 ideal weight d2"},
+      {"name": "epsilon_weno", "value": 1e-6, "description": "Small number to avoid division by zero"}
+    ],
+    "confidence": 0.85,
+    "description": "WENO (Weighted Essentially Non-Oscillatory) scheme for high-order shock-capturing in compressible flows."
+  },
+  {
+    "name": "roe_solver",
+    "category": "cfd_riemann",
+    "formula_latex": "\\mathbf{F}_{i+1/2} = \\frac{1}{2}(\\mathbf{F}_L+\\mathbf{F}_R) - \\frac{1}{2}\\sum_{k=1}^{m}|\\tilde{\\lambda}_k|\\tilde{\\alpha}_k \\tilde{\\mathbf{r}}_k",
+    "keywords": ["roe", "approximate riemann", "flux difference splitting", "roe average", "eigenvalue", "entropy fix"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Roe's approximate Riemann solver for Euler/NS equations. Uses Roe-averaged states for flux computation."
+  },
+  {
+    "name": "hllc_solver",
+    "category": "cfd_riemann",
+    "formula_latex": "\\mathbf{F}^{HLLC} = \\begin{cases} \\mathbf{F}_L & S_L \\geq 0 \\\\ \\mathbf{F}_{*L} & S_L \\leq 0 \\leq S_* \\\\ \\mathbf{F}_{*R} & S_* \\leq 0 \\leq S_R \\\\ \\mathbf{F}_R & S_R \\leq 0 \\end{cases}",
+    "keywords": ["hllc", "hll", "riemann solver", "contact wave", "wave speed", "toro", "flux"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "HLLC Riemann solver (Toro). Restores contact discontinuity missing in basic HLL. Three wave speeds: S_L, S_*, S_R."
+  },
+  {
+    "name": "mixed_up_formulation",
+    "category": "fea_advanced",
+    "formula_latex": "\\begin{bmatrix} \\mathbf{K} & \\mathbf{G} \\\\ \\mathbf{G}^T & \\mathbf{0} \\end{bmatrix} \\begin{bmatrix} \\mathbf{u} \\\\ \\mathbf{p} \\end{bmatrix} = \\begin{bmatrix} \\mathbf{f} \\\\ \\mathbf{0} \\end{bmatrix}",
+    "keywords": ["mixed formulation", "u-p formulation", "incompressible", "saddle point", "inf-sup", "brezzi", "lbb condition"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Mixed u-p formulation for nearly incompressible elasticity. Displacement-pressure split avoids volumetric locking."
+  },
+  {
+    "name": "b_bar_method",
+    "category": "fea_advanced",
+    "formula_latex": "\\bar{\\mathbf{B}} = \\mathbf{B}_{dev} + \\bar{\\mathbf{B}}_{vol}, \\quad \\bar{\\mathbf{B}}_{vol} = \\frac{1}{V_e}\\int_{\\Omega_e} \\mathbf{B}_{vol}\\,d\\Omega",
+    "keywords": ["b bar", "b-bar", "selective reduced integration", "volumetric locking", "mean dilatation"],
+    "constants": [],
+    "confidence": 0.75,
+    "description": "B-bar method (Hughes 1980). Replaces volumetric B-matrix with element-averaged value to prevent locking."
+  },
+  {
+    "name": "reduced_integration_hourglass",
+    "category": "fea_advanced",
+    "formula_latex": "\\mathbf{K}_{stab} = \\alpha \\int_{\\Omega} \\boldsymbol{\\gamma}^T \\boldsymbol{\\gamma}\\,d\\Omega, \\quad \\boldsymbol{\\gamma} = \\mathbf{h} - (\\mathbf{h}^T \\mathbf{b})\\mathbf{b}",
+    "keywords": ["hourglass", "reduced integration", "zero energy mode", "stabilization", "flanagan belytschko", "perturbation"],
+    "constants": [
+      {"name": "alpha_hourglass", "value": 0.1, "description": "Typical hourglass stiffness scaling factor (0.05-0.15)"}
+    ],
+    "confidence": 0.80,
+    "description": "Hourglass control for reduced-integration elements. Adds stabilization stiffness to suppress zero-energy modes."
+  },
+  {
+    "name": "mortar_contact",
+    "category": "fea_contact",
+    "formula_latex": "\\int_{\\gamma_c} \\lambda \\cdot \\delta g_N \\, d\\gamma = 0, \\quad g_N = (\\mathbf{x}^{(1)} - \\mathbf{x}^{(2)}) \\cdot \\mathbf{n}",
+    "keywords": ["mortar", "contact", "segment to segment", "lagrange multiplier", "gap function", "non-matching mesh"],
+    "constants": [],
+    "confidence": 0.75,
+    "description": "Mortar contact method. Enforces contact constraints via Lagrange multipliers on non-matching meshes."
+  },
+  {
+    "name": "xfem_extended_fem",
+    "category": "fea_fracture",
+    "formula_latex": "\\mathbf{u}^h(\\mathbf{x}) = \\sum_i N_i(\\mathbf{x})\\mathbf{u}_i + \\sum_j N_j(\\mathbf{x})H(\\mathbf{x})\\mathbf{a}_j + \\sum_k N_k(\\mathbf{x})\\sum_{l=1}^{4}F_l(\\mathbf{x})\\mathbf{b}_k^l",
+    "keywords": ["xfem", "extended fem", "enrichment", "heaviside", "crack tip", "partition of unity", "level set crack"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Extended Finite Element Method (XFEM). Enriches standard FE space with Heaviside and crack-tip functions for fracture."
+  },
+  {
+    "name": "cohesive_zone_model",
+    "category": "fea_fracture",
+    "formula_latex": "T_n = \\sigma_{max} \\frac{\\delta_n}{\\delta_c} \\exp\\left(-\\frac{\\delta_n}{\\delta_c}\\right), \\quad G_c = \\int_0^{\\infty} T_n(\\delta_n)\\,d\\delta_n",
+    "keywords": ["cohesive zone", "czm", "traction separation", "debonding", "delamination", "bilinear", "exponential", "gc"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Cohesive zone model for fracture/delamination. Traction-separation law relates interfacial tractions to opening displacements."
+  },
+  {
+    "name": "phase_field_fracture",
+    "category": "fea_fracture",
+    "formula_latex": "\\Psi = \\int_{\\Omega}\\left[(1-d)^2 \\psi_0^+(\\boldsymbol{\\varepsilon}) + \\psi_0^-(\\boldsymbol{\\varepsilon})\\right]d\\Omega + G_c\\int_{\\Omega}\\left[\\frac{d^2}{2l_0}+\\frac{l_0}{2}|\\nabla d|^2\\right]d\\Omega",
+    "keywords": ["phase field", "fracture", "damage", "at1", "at2", "regularization", "length scale", "gc", "crack density"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Phase-field fracture model (AT2 formulation). Regularizes sharp crack with diffuse damage field d. l_0 is length scale parameter."
+  },
+  {
+    "name": "neo_hookean",
+    "category": "fea_hyperelastic",
+    "formula_latex": "W = \\frac{\\mu}{2}(\\bar{I}_1 - 3) + \\frac{K}{2}(J-1)^2, \\quad \\mathbf{S} = 2\\frac{\\partial W}{\\partial \\mathbf{C}}",
+    "keywords": ["neo hookean", "hyperelastic", "strain energy", "rubber", "large deformation", "invariant", "deviatoric"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Neo-Hookean hyperelastic model. Simplest incompressible hyperelastic law. mu=shear modulus, K=bulk modulus."
+  },
+  {
+    "name": "mooney_rivlin",
+    "category": "fea_hyperelastic",
+    "formula_latex": "W = C_{10}(\\bar{I}_1-3) + C_{01}(\\bar{I}_2-3) + \\frac{K}{2}(J-1)^2",
+    "keywords": ["mooney rivlin", "hyperelastic", "rubber", "strain energy", "c10", "c01", "two parameter"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Mooney-Rivlin hyperelastic model. Two-parameter model for moderate strains in rubber-like materials."
+  },
+  {
+    "name": "ogden_model",
+    "category": "fea_hyperelastic",
+    "formula_latex": "W = \\sum_{p=1}^{N} \\frac{\\mu_p}{\\alpha_p}(\\bar{\\lambda}_1^{\\alpha_p}+\\bar{\\lambda}_2^{\\alpha_p}+\\bar{\\lambda}_3^{\\alpha_p}-3)",
+    "keywords": ["ogden", "hyperelastic", "principal stretch", "rubber", "alpha", "mu", "multi-term"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Ogden hyperelastic model. N-term model using principal stretches, fits rubber data over large strain range."
+  },
+  {
+    "name": "arruda_boyce",
+    "category": "fea_hyperelastic",
+    "formula_latex": "W = \\mu \\sum_{i=1}^{5} \\frac{C_i}{\\lambda_m^{2i-2}}(\\bar{I}_1^i - 3^i), \\quad C_1=\\tfrac{1}{2},\\;C_2=\\tfrac{1}{20},\\;C_3=\\tfrac{11}{1050},\\;C_4=\\tfrac{19}{7000},\\;C_5=\\tfrac{519}{673750}",
+    "keywords": ["arruda boyce", "eight chain", "hyperelastic", "rubber", "chain stretch", "locking stretch", "lambda_m"],
+    "constants": [
+      {"name": "C1", "value": 0.5, "description": "Arruda-Boyce coefficient C1"},
+      {"name": "C2", "value": 0.05, "description": "Arruda-Boyce coefficient C2"},
+      {"name": "C3", "value": 0.010476190476, "description": "11/1050"},
+      {"name": "C4", "value": 0.002714285714, "description": "19/7000"},
+      {"name": "C5", "value": 0.000770479704, "description": "519/673750"}
+    ],
+    "confidence": 0.88,
+    "description": "Arruda-Boyce eight-chain hyperelastic model. Micromechanically motivated, uses chain locking stretch lambda_m."
+  },
+  {
+    "name": "von_mises_plasticity",
+    "category": "fea_plasticity",
+    "formula_latex": "f(\\boldsymbol{\\sigma}) = \\sqrt{\\frac{3}{2}\\mathbf{s}:\\mathbf{s}} - \\sigma_y(\\bar{\\varepsilon}^p) \\leq 0, \\quad \\dot{\\boldsymbol{\\varepsilon}}^p = \\dot{\\gamma}\\frac{\\partial f}{\\partial \\boldsymbol{\\sigma}}",
+    "keywords": ["von mises", "j2 plasticity", "yield surface", "radial return", "associative flow", "isotropic hardening", "sigma_y"],
+    "constants": [],
+    "confidence": 0.85,
+    "description": "von Mises (J2) plasticity with associative flow rule and isotropic hardening. Radial return mapping algorithm."
+  },
+  {
+    "name": "drucker_prager_plasticity",
+    "category": "fea_plasticity",
+    "formula_latex": "f = q + p\\tan\\beta - d = 0, \\quad q = \\sqrt{3J_2}, \\quad p = \\frac{1}{3}\\text{tr}(\\boldsymbol{\\sigma})",
+    "keywords": ["drucker prager", "pressure dependent", "granular", "soil", "friction angle", "cohesion", "cap model"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Drucker-Prager yield criterion. Pressure-dependent plasticity for soils, concrete, granular materials."
+  },
+  {
+    "name": "cam_clay",
+    "category": "fea_plasticity",
+    "formula_latex": "f = q^2 + M^2 p(p - p_c) = 0, \\quad \\dot{p}_c = \\frac{1+e_0}{\\lambda-\\kappa}p_c \\dot{\\varepsilon}_v^p",
+    "keywords": ["cam clay", "modified cam clay", "critical state", "soil mechanics", "consolidation", "preconsolidation", "yield locus"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Modified Cam-Clay model for soil. Elliptical yield surface in p-q space with hardening linked to plastic volumetric strain."
+  },
+  {
+    "name": "norton_creep",
+    "category": "fea_creep",
+    "formula_latex": "\\dot{\\varepsilon}_{cr} = A \\sigma^n \\exp\\left(-\\frac{Q}{RT}\\right)",
+    "keywords": ["norton", "power law creep", "steady state creep", "activation energy", "creep exponent", "arrhenius"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Norton power-law creep model. Steady-state creep rate is power function of stress with Arrhenius temperature dependence."
+  },
+  {
+    "name": "pid_controller",
+    "category": "control_systems",
+    "formula_latex": "u(t) = K_p e(t) + K_i \\int_0^t e(\\tau)\\,d\\tau + K_d \\frac{de(t)}{dt}",
+    "keywords": ["pid", "proportional", "integral", "derivative", "controller", "error", "kp", "ki", "kd", "anti-windup"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "PID (Proportional-Integral-Derivative) controller. Most widely used feedback controller in industrial automation."
+  },
+  {
+    "name": "lqr_controller",
+    "category": "control_systems",
+    "formula_latex": "J = \\int_0^{\\infty}(\\mathbf{x}^T\\mathbf{Q}\\mathbf{x} + \\mathbf{u}^T\\mathbf{R}\\mathbf{u})\\,dt, \\quad \\mathbf{u} = -\\mathbf{K}\\mathbf{x}, \\quad \\mathbf{K} = \\mathbf{R}^{-1}\\mathbf{B}^T\\mathbf{P}, \\quad \\mathbf{A}^T\\mathbf{P}+\\mathbf{P}\\mathbf{A}-\\mathbf{P}\\mathbf{B}\\mathbf{R}^{-1}\\mathbf{B}^T\\mathbf{P}+\\mathbf{Q}=0",
+    "keywords": ["lqr", "linear quadratic regulator", "riccati", "optimal control", "state feedback", "are", "q matrix", "r matrix"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Linear Quadratic Regulator. Optimal state feedback via Algebraic Riccati Equation (ARE). Minimizes quadratic cost."
+  },
+  {
+    "name": "kalman_filter",
+    "category": "control_systems",
+    "formula_latex": "\\hat{\\mathbf{x}}_{k|k-1} = \\mathbf{F}_k \\hat{\\mathbf{x}}_{k-1|k-1} + \\mathbf{B}_k \\mathbf{u}_k, \\quad \\mathbf{P}_{k|k-1} = \\mathbf{F}_k\\mathbf{P}_{k-1|k-1}\\mathbf{F}_k^T + \\mathbf{Q}_k, \\quad \\mathbf{K}_k = \\mathbf{P}_{k|k-1}\\mathbf{H}_k^T(\\mathbf{H}_k\\mathbf{P}_{k|k-1}\\mathbf{H}_k^T+\\mathbf{R}_k)^{-1}",
+    "keywords": ["kalman", "kalman filter", "predict", "update", "covariance", "innovation", "gain", "state estimation"],
+    "constants": [],
+    "confidence": 0.85,
+    "description": "Linear Kalman filter for optimal state estimation. Predict-update cycle with Kalman gain minimizing mean squared error."
+  },
+  {
+    "name": "extended_kalman_filter",
+    "category": "control_systems",
+    "formula_latex": "\\hat{\\mathbf{x}}_{k|k-1} = f(\\hat{\\mathbf{x}}_{k-1|k-1}, \\mathbf{u}_k), \\quad \\mathbf{F}_k = \\left.\\frac{\\partial f}{\\partial \\mathbf{x}}\\right|_{\\hat{\\mathbf{x}}_{k-1|k-1}}, \\quad \\mathbf{H}_k = \\left.\\frac{\\partial h}{\\partial \\mathbf{x}}\\right|_{\\hat{\\mathbf{x}}_{k|k-1}}",
+    "keywords": ["ekf", "extended kalman", "nonlinear", "jacobian", "linearization", "state estimation"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Extended Kalman Filter for nonlinear systems. Linearizes dynamics/observation via Jacobians at current estimate."
+  },
+  {
+    "name": "unscented_kalman_filter",
+    "category": "control_systems",
+    "formula_latex": "\\mathcal{X}_0 = \\hat{\\mathbf{x}}, \\quad \\mathcal{X}_i = \\hat{\\mathbf{x}} + \\left(\\sqrt{(n+\\lambda)\\mathbf{P}}\\right)_i, \\quad W_0^{(m)} = \\frac{\\lambda}{n+\\lambda}, \\quad W_i = \\frac{1}{2(n+\\lambda)}",
+    "keywords": ["ukf", "unscented kalman", "sigma points", "unscented transform", "merwe", "nonlinear"],
+    "constants": [
+      {"name": "alpha_ukf", "value": 0.001, "description": "Spread of sigma points (typical 1e-4 to 1)"},
+      {"name": "beta_ukf", "value": 2.0, "description": "Prior distribution (2 optimal for Gaussian)"},
+      {"name": "kappa_ukf", "value": 0.0, "description": "Secondary scaling parameter"}
+    ],
+    "confidence": 0.82,
+    "description": "Unscented Kalman Filter. Uses deterministic sigma points instead of Jacobians for nonlinear state estimation."
+  },
+  {
+    "name": "mpc_model_predictive",
+    "category": "control_systems",
+    "formula_latex": "\\min_{\\mathbf{u}_{0:N-1}} \\sum_{k=0}^{N-1}\\left[\\|\\mathbf{x}_k-\\mathbf{x}_{ref}\\|_Q^2 + \\|\\mathbf{u}_k\\|_R^2\\right] + \\|\\mathbf{x}_N-\\mathbf{x}_{ref}\\|_P^2 \\quad \\text{s.t. } \\mathbf{x}_{k+1}=f(\\mathbf{x}_k,\\mathbf{u}_k)",
+    "keywords": ["mpc", "model predictive control", "receding horizon", "prediction horizon", "constraints", "qp"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Model Predictive Control. Solves finite-horizon optimal control online at each timestep with constraints."
+  },
+  {
+    "name": "luenberger_observer",
+    "category": "control_systems",
+    "formula_latex": "\\dot{\\hat{\\mathbf{x}}} = \\mathbf{A}\\hat{\\mathbf{x}} + \\mathbf{B}\\mathbf{u} + \\mathbf{L}(\\mathbf{y} - \\mathbf{C}\\hat{\\mathbf{x}})",
+    "keywords": ["luenberger", "observer", "state observer", "estimation", "observer gain", "eigenvalue placement"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Luenberger state observer. Estimates full state from output measurements using observer gain matrix L."
+  },
+  {
+    "name": "pole_placement",
+    "category": "control_systems",
+    "formula_latex": "\\det(s\\mathbf{I} - \\mathbf{A} + \\mathbf{B}\\mathbf{K}) = \\prod_{i=1}^{n}(s-p_i)",
+    "keywords": ["pole placement", "ackermann", "eigenvalue assignment", "state feedback", "controllability"],
+    "constants": [],
+    "confidence": 0.75,
+    "description": "Pole placement (eigenvalue assignment) via state feedback. Places closed-loop poles at desired locations."
+  },
+  {
+    "name": "bode_analysis",
+    "category": "control_systems",
+    "formula_latex": "|G(j\\omega)| = 20\\log_{10}|G(j\\omega)|\\;\\text{dB}, \\quad \\angle G(j\\omega) = \\arctan\\frac{\\text{Im}(G(j\\omega))}{\\text{Re}(G(j\\omega))}",
+    "keywords": ["bode", "frequency response", "magnitude", "phase", "gain margin", "phase margin", "transfer function"],
+    "constants": [],
+    "confidence": 0.72,
+    "description": "Bode plot analysis. Magnitude and phase of transfer function vs frequency. Key for stability margin assessment."
+  },
+  {
+    "name": "nyquist_analysis",
+    "category": "control_systems",
+    "formula_latex": "N = Z - P, \\quad \\text{where } N = \\text{encirclements of } (-1,0)",
+    "keywords": ["nyquist", "stability", "encirclement", "contour", "open loop", "frequency response"],
+    "constants": [],
+    "confidence": 0.72,
+    "description": "Nyquist stability criterion. Number of encirclements of (-1,0) by G(jw) determines closed-loop stability."
+  },
+  {
+    "name": "fft_cooley_tukey",
+    "category": "dsp",
+    "formula_latex": "X[k] = \\sum_{m=0}^{N/2-1}x[2m]W_{N/2}^{mk} + W_N^k\\sum_{m=0}^{N/2-1}x[2m+1]W_{N/2}^{mk}, \\quad W_N = e^{-j2\\pi/N}",
+    "keywords": ["fft", "cooley tukey", "radix 2", "dit", "dif", "butterfly", "twiddle factor", "bit reversal"],
+    "constants": [],
+    "confidence": 0.85,
+    "description": "FFT Cooley-Tukey radix-2 DIT algorithm. O(N log N) complexity. Recursively splits DFT into even/odd sub-problems."
+  },
+  {
+    "name": "dft_definition",
+    "category": "dsp",
+    "formula_latex": "X[k] = \\sum_{n=0}^{N-1} x[n]\\,e^{-j2\\pi kn/N}, \\quad x[n] = \\frac{1}{N}\\sum_{k=0}^{N-1} X[k]\\,e^{j2\\pi kn/N}",
+    "keywords": ["dft", "discrete fourier transform", "idft", "inverse", "frequency domain", "spectrum"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Discrete Fourier Transform and its inverse. Maps time-domain signal to frequency-domain representation."
+  },
+  {
+    "name": "parks_mcclellan",
+    "category": "dsp",
+    "formula_latex": "\\min_{a_k} \\max_{\\omega \\in S} |W(\\omega)[D(\\omega)-H(\\omega)]|, \\quad H(\\omega) = \\sum_{k=0}^{M} a_k \\cos(k\\omega)",
+    "keywords": ["parks mcclellan", "remez", "equiripple", "minimax", "fir design", "optimal filter", "chebyshev approximation"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Parks-McClellan (Remez exchange) algorithm for optimal equiripple FIR filter design. Minimax approximation."
+  },
+  {
+    "name": "butterworth_design",
+    "category": "dsp",
+    "formula_latex": "|H(j\\omega)|^2 = \\frac{1}{1+(\\omega/\\omega_c)^{2N}}, \\quad \\text{poles: } s_k = \\omega_c e^{j\\pi(2k+N-1)/(2N)}",
+    "keywords": ["butterworth", "maximally flat", "iir", "lowpass", "poles", "cutoff frequency", "order"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Butterworth filter design. Maximally flat magnitude response in passband. All-pole transfer function."
+  },
+  {
+    "name": "chebyshev_filter",
+    "category": "dsp",
+    "formula_latex": "|H(j\\omega)|^2 = \\frac{1}{1+\\epsilon^2 T_N^2(\\omega/\\omega_c)}, \\quad T_N(x) = \\cos(N\\arccos(x))",
+    "keywords": ["chebyshev", "type 1", "type 2", "equiripple", "passband ripple", "iir", "poles"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Chebyshev Type I filter. Equiripple in passband, monotonic in stopband. Sharper rolloff than Butterworth for same order."
+  },
+  {
+    "name": "elliptic_filter",
+    "category": "dsp",
+    "formula_latex": "|H(j\\omega)|^2 = \\frac{1}{1+\\epsilon^2 R_N^2(\\omega/\\omega_c)}, \\quad R_N = \\text{Chebyshev rational function}",
+    "keywords": ["elliptic", "cauer", "equiripple passband", "equiripple stopband", "iir", "jacobi"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Elliptic (Cauer) filter. Equiripple in both passband and stopband. Steepest transition for given order."
+  },
+  {
+    "name": "hilbert_transform",
+    "category": "dsp",
+    "formula_latex": "\\hat{x}(t) = \\frac{1}{\\pi}\\text{P.V.}\\int_{-\\infty}^{\\infty}\\frac{x(\\tau)}{t-\\tau}\\,d\\tau, \\quad z(t) = x(t) + j\\hat{x}(t)",
+    "keywords": ["hilbert", "analytic signal", "envelope", "instantaneous frequency", "phase", "cauchy principal value"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Hilbert transform. Produces analytic signal for envelope/instantaneous frequency extraction."
+  },
+  {
+    "name": "wavelet_transform",
+    "category": "dsp",
+    "formula_latex": "W(a,b) = \\frac{1}{\\sqrt{|a|}}\\int_{-\\infty}^{\\infty}x(t)\\psi^*\\!\\left(\\frac{t-b}{a}\\right)dt, \\quad \\text{DWT: } c_{j,k} = \\sum_n x[n]\\tilde{\\psi}_{j,k}[n]",
+    "keywords": ["wavelet", "cwt", "dwt", "multiresolution", "scale", "daubechies", "haar", "morlet", "decomposition"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Continuous/Discrete Wavelet Transform. Time-frequency analysis with adaptive resolution. CWT for analysis, DWT for compression."
+  },
+  {
+    "name": "welch_psd",
+    "category": "dsp",
+    "formula_latex": "\\hat{S}_{xx}(f) = \\frac{1}{KLU}\\sum_{k=0}^{K-1}\\left|\\sum_{n=0}^{L-1}w[n]x_k[n]e^{-j2\\pi fn}\\right|^2, \\quad U = \\frac{1}{L}\\sum_{n=0}^{L-1}|w[n]|^2",
+    "keywords": ["welch", "psd", "power spectral density", "periodogram", "overlap", "windowing", "averaging"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Welch's method for PSD estimation. Averages modified periodograms of overlapping windowed segments."
+  },
+  {
+    "name": "goertzel_algorithm",
+    "category": "dsp",
+    "formula_latex": "s[n] = x[n] + 2\\cos(2\\pi k/N)s[n-1] - s[n-2], \\quad X[k] = s[N-1] - e^{-j2\\pi k/N}s[N-2]",
+    "keywords": ["goertzel", "single frequency", "dtmf", "recursive", "dft bin"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Goertzel algorithm. Computes single DFT bin efficiently using second-order IIR. O(N) for one frequency."
+  },
+  {
+    "name": "dh_forward_kinematics",
+    "category": "robotics",
+    "formula_latex": "\\mathbf{T}_n^0 = \\prod_{i=1}^{n} \\mathbf{A}_i, \\quad \\mathbf{A}_i = \\begin{bmatrix}c\\theta_i & -s\\theta_i c\\alpha_i & s\\theta_i s\\alpha_i & a_i c\\theta_i \\\\ s\\theta_i & c\\theta_i c\\alpha_i & -c\\theta_i s\\alpha_i & a_i s\\theta_i \\\\ 0 & s\\alpha_i & c\\alpha_i & d_i \\\\ 0 & 0 & 0 & 1\\end{bmatrix}",
+    "keywords": ["denavit hartenberg", "dh parameters", "forward kinematics", "homogeneous transformation", "joint", "link"],
+    "constants": [],
+    "confidence": 0.85,
+    "description": "Denavit-Hartenberg forward kinematics. Chain of homogeneous transforms from base to end-effector using DH convention."
+  },
+  {
+    "name": "inverse_kinematics_jacobian",
+    "category": "robotics",
+    "formula_latex": "\\dot{\\mathbf{x}} = \\mathbf{J}(\\mathbf{q})\\dot{\\mathbf{q}}, \\quad \\Delta\\mathbf{q} = \\mathbf{J}^{\\dagger}\\Delta\\mathbf{x}, \\quad \\mathbf{J}^{\\dagger} = \\mathbf{J}^T(\\mathbf{J}\\mathbf{J}^T+\\lambda^2\\mathbf{I})^{-1}",
+    "keywords": ["inverse kinematics", "jacobian", "pseudoinverse", "damped least squares", "end effector", "ik"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Jacobian-based inverse kinematics with damped least squares (DLS). Iteratively solves for joint angles from end-effector pose."
+  },
+  {
+    "name": "quintic_polynomial_trajectory",
+    "category": "robotics",
+    "formula_latex": "q(t) = a_0+a_1 t+a_2 t^2+a_3 t^3+a_4 t^4+a_5 t^5, \\quad \\text{with } q(0),\\dot{q}(0),\\ddot{q}(0),q(T),\\dot{q}(T),\\ddot{q}(T) \\text{ given}",
+    "keywords": ["quintic", "trajectory", "polynomial", "smooth", "jerk", "motion planning", "fifth order"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Quintic polynomial trajectory planning. Ensures continuous position, velocity, and acceleration at start/end."
+  },
+  {
+    "name": "trapezoidal_velocity_profile",
+    "category": "robotics",
+    "formula_latex": "v(t) = \\begin{cases} \\frac{v_{max}}{t_a}t & 0 \\leq t < t_a \\\\ v_{max} & t_a \\leq t < t_a+t_c \\\\ v_{max}-\\frac{v_{max}}{t_d}(t-t_a-t_c) & t_a+t_c \\leq t \\leq T \\end{cases}",
+    "keywords": ["trapezoidal", "velocity profile", "acceleration", "cruise", "deceleration", "motion profile", "s-curve"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Trapezoidal velocity profile for motion planning. Three phases: acceleration, constant velocity, deceleration."
+  },
+  {
+    "name": "a_star_pathfinding",
+    "category": "robotics",
+    "formula_latex": "f(n) = g(n) + h(n), \\quad g(n) = \\text{cost from start to } n, \\quad h(n) = \\text{heuristic estimate to goal}",
+    "keywords": ["a star", "astar", "pathfinding", "heuristic", "open set", "closed set", "admissible", "graph search"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "A* pathfinding algorithm. Best-first graph search with admissible heuristic. Optimal and complete."
+  },
+  {
+    "name": "rrt_rapidly_exploring",
+    "category": "robotics",
+    "formula_latex": "\\mathbf{x}_{new} = \\mathbf{x}_{near} + \\eta\\frac{\\mathbf{x}_{rand}-\\mathbf{x}_{near}}{\\|\\mathbf{x}_{rand}-\\mathbf{x}_{near}\\|}",
+    "keywords": ["rrt", "rapidly exploring random tree", "motion planning", "sampling", "collision free", "rrt star"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Rapidly-exploring Random Trees (RRT). Sampling-based motion planning for high-dimensional configuration spaces."
+  },
+  {
+    "name": "slam_ekf",
+    "category": "robotics",
+    "formula_latex": "\\begin{bmatrix}\\hat{\\mathbf{x}}_r \\\\ \\hat{\\mathbf{m}}\\end{bmatrix}_{k+1} = f\\left(\\begin{bmatrix}\\hat{\\mathbf{x}}_r \\\\ \\hat{\\mathbf{m}}\\end{bmatrix}_k, \\mathbf{u}_k\\right), \\quad \\mathbf{P} \\in \\mathbb{R}^{(3+2N)\\times(3+2N)}",
+    "keywords": ["slam", "simultaneous localization", "mapping", "ekf slam", "landmark", "loop closure", "particle filter"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "EKF-SLAM for simultaneous localization and mapping. Joint state of robot pose and landmark positions."
+  },
+  {
+    "name": "quaternion_rotation",
+    "category": "robotics",
+    "formula_latex": "\\mathbf{p}' = \\mathbf{q} \\otimes \\mathbf{p} \\otimes \\mathbf{q}^*, \\quad \\mathbf{q} = \\cos\\frac{\\theta}{2} + \\sin\\frac{\\theta}{2}(u_x\\mathbf{i}+u_y\\mathbf{j}+u_z\\mathbf{k}), \\quad \\|\\mathbf{q}\\|=1",
+    "keywords": ["quaternion", "rotation", "unit quaternion", "hamilton", "conjugate", "slerp", "gimbal lock"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Quaternion rotation. Gimbal-lock-free 3D rotation representation. Computationally efficient, numerically stable."
+  },
+  {
+    "name": "rodrigues_rotation",
+    "category": "robotics",
+    "formula_latex": "\\mathbf{v}' = \\mathbf{v}\\cos\\theta + (\\mathbf{k}\\times\\mathbf{v})\\sin\\theta + \\mathbf{k}(\\mathbf{k}\\cdot\\mathbf{v})(1-\\cos\\theta)",
+    "keywords": ["rodrigues", "axis angle", "rotation formula", "rotation vector", "so3", "exponential map"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Rodrigues' rotation formula. Rotates vector v by angle theta around unit axis k. Equivalent to matrix exponential on SO(3)."
+  },
+  {
+    "name": "tsiolkovsky_rocket",
+    "category": "aerospace",
+    "formula_latex": "\\Delta v = I_{sp}\\,g_0 \\ln\\frac{m_0}{m_f} = v_e \\ln\\frac{m_0}{m_f}",
+    "keywords": ["tsiolkovsky", "rocket equation", "delta v", "specific impulse", "mass ratio", "exhaust velocity", "propellant"],
+    "constants": [
+      {"name": "g0", "value": 9.80665, "hex": "40239a0000000000", "description": "Standard gravity m/s^2"}
+    ],
+    "confidence": 0.85,
+    "description": "Tsiolkovsky rocket equation. Relates delta-v to exhaust velocity and mass ratio. Foundation of rocket propulsion."
+  },
+  {
+    "name": "kepler_orbit",
+    "category": "aerospace",
+    "formula_latex": "r = \\frac{a(1-e^2)}{1+e\\cos\\nu}, \\quad T = 2\\pi\\sqrt{\\frac{a^3}{\\mu}}, \\quad E - e\\sin E = M",
+    "keywords": ["kepler", "orbit", "eccentricity", "semi-major axis", "true anomaly", "eccentric anomaly", "mean anomaly", "period"],
+    "constants": [
+      {"name": "mu_earth", "value": 398600441800000.0, "description": "Earth gravitational parameter mu (m^3/s^2)"}
+    ],
+    "confidence": 0.85,
+    "description": "Kepler orbital mechanics. Orbit equation, period, and Kepler's equation relating mean and eccentric anomaly."
+  },
+  {
+    "name": "vis_viva",
+    "category": "aerospace",
+    "formula_latex": "v^2 = \\mu\\left(\\frac{2}{r}-\\frac{1}{a}\\right)",
+    "keywords": ["vis viva", "orbital velocity", "specific energy", "elliptic orbit", "escape velocity"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Vis-viva equation. Relates orbital velocity to position and semi-major axis. Derived from energy conservation."
+  },
+  {
+    "name": "isa_atmosphere",
+    "category": "aerospace",
+    "formula_latex": "T = T_0 + L \\cdot h, \\quad p = p_0\\left(\\frac{T}{T_0}\\right)^{-g_0/(LR)}, \\quad \\rho = \\frac{p}{R_{air}T}",
+    "keywords": ["isa", "international standard atmosphere", "altitude", "temperature lapse", "pressure", "density", "troposphere"],
+    "constants": [
+      {"name": "T0", "value": 288.15, "hex": "4072013333333333", "description": "Sea level temperature (K)"},
+      {"name": "p0", "value": 101325.0, "hex": "40f8bfa800000000", "description": "Sea level pressure (Pa)"},
+      {"name": "L", "value": -0.0065, "hex": "bf7aa93c7cac4586", "description": "Temperature lapse rate (K/m)"},
+      {"name": "R_air", "value": 287.058, "hex": "4071f0e560418937", "description": "Specific gas constant dry air (J/kg/K)"}
+    ],
+    "confidence": 0.88,
+    "description": "International Standard Atmosphere. Temperature, pressure, density as functions of geopotential altitude."
+  },
+  {
+    "name": "six_dof_eom",
+    "category": "aerospace",
+    "formula_latex": "m\\dot{\\mathbf{V}} = \\mathbf{F} - m\\boldsymbol{\\omega}\\times\\mathbf{V}, \\quad \\mathbf{I}\\dot{\\boldsymbol{\\omega}} = \\mathbf{M} - \\boldsymbol{\\omega}\\times(\\mathbf{I}\\boldsymbol{\\omega})",
+    "keywords": ["6dof", "six degrees", "equations of motion", "rigid body", "euler equations", "angular momentum", "inertia tensor"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "6-DOF rigid body equations of motion. Newton-Euler formulation in body-fixed frame for flight dynamics."
+  },
+  {
+    "name": "drag_coefficient",
+    "category": "aerospace",
+    "formula_latex": "D = \\frac{1}{2}\\rho v^2 S C_D, \\quad C_D = C_{D0} + \\frac{C_L^2}{\\pi e AR}",
+    "keywords": ["drag", "lift", "aerodynamic", "drag polar", "parasitic", "induced", "oswald", "aspect ratio"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Aerodynamic drag model with drag polar. Total drag = parasitic + induced drag. e is Oswald efficiency factor."
+  },
+  {
+    "name": "hohmann_transfer",
+    "category": "aerospace",
+    "formula_latex": "\\Delta v_1 = \\sqrt{\\frac{\\mu}{r_1}}\\left(\\sqrt{\\frac{2r_2}{r_1+r_2}}-1\\right), \\quad \\Delta v_2 = \\sqrt{\\frac{\\mu}{r_2}}\\left(1-\\sqrt{\\frac{2r_1}{r_1+r_2}}\\right)",
+    "keywords": ["hohmann", "transfer orbit", "delta v", "circular orbit", "apoapsis", "periapsis", "maneuver"],
+    "constants": [],
+    "confidence": 0.85,
+    "description": "Hohmann transfer orbit. Minimum-energy two-impulse transfer between coplanar circular orbits."
+  },
+  {
+    "name": "thrust_equation",
+    "category": "aerospace",
+    "formula_latex": "F = \\dot{m} v_e + (p_e - p_a) A_e, \\quad I_{sp} = \\frac{F}{\\dot{m}\\,g_0}",
+    "keywords": ["thrust", "nozzle", "exhaust", "mass flow", "pressure thrust", "momentum thrust", "specific impulse"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Rocket thrust equation. Sum of momentum thrust and pressure thrust at nozzle exit."
+  },
+  {
+    "name": "van_der_waals",
+    "category": "chemical_engineering",
+    "formula_latex": "\\left(p + \\frac{a}{V_m^2}\\right)(V_m - b) = RT",
+    "keywords": ["van der waals", "equation of state", "real gas", "intermolecular", "excluded volume", "eos"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "van der Waals equation of state. Corrects ideal gas law for intermolecular attractions (a) and molecular volume (b)."
+  },
+  {
+    "name": "peng_robinson_eos",
+    "category": "chemical_engineering",
+    "formula_latex": "p = \\frac{RT}{V_m-b} - \\frac{a(T)}{V_m(V_m+b)+b(V_m-b)}, \\quad a(T) = 0.45724\\frac{R^2 T_c^2}{p_c}\\alpha(T_r,\\omega)",
+    "keywords": ["peng robinson", "equation of state", "cubic eos", "acentric factor", "fugacity", "vle", "phase equilibrium"],
+    "constants": [
+      {"name": "Omega_a", "value": 0.45724, "hex": "3fdd43efc28d3d25", "description": "PR EOS parameter a coefficient"},
+      {"name": "Omega_b", "value": 0.07780, "hex": "3fb3ee63df1ac9e6", "description": "PR EOS parameter b coefficient"}
+    ],
+    "confidence": 0.88,
+    "description": "Peng-Robinson equation of state. Industry-standard cubic EOS for VLE calculations in process engineering."
+  },
+  {
+    "name": "srk_eos",
+    "category": "chemical_engineering",
+    "formula_latex": "p = \\frac{RT}{V_m-b} - \\frac{a(T)}{V_m(V_m+b)}, \\quad a(T) = 0.42748\\frac{R^2 T_c^2}{p_c}\\alpha(T_r,\\omega)",
+    "keywords": ["soave redlich kwong", "srk", "cubic eos", "equation of state", "acentric factor"],
+    "constants": [
+      {"name": "Omega_a_SRK", "value": 0.42748, "hex": "3fdb5fcd7e9e4ccf", "description": "SRK parameter a coefficient"},
+      {"name": "Omega_b_SRK", "value": 0.08664, "hex": "3fb62d81d3d80b46", "description": "SRK parameter b coefficient"}
+    ],
+    "confidence": 0.86,
+    "description": "Soave-Redlich-Kwong equation of state. Cubic EOS widely used for hydrocarbon systems."
+  },
+  {
+    "name": "antoine_equation",
+    "category": "chemical_engineering",
+    "formula_latex": "\\log_{10} p^* = A - \\frac{B}{C+T}",
+    "keywords": ["antoine", "vapor pressure", "saturation", "boiling point", "clausius clapeyron", "vle"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Antoine equation for vapor pressure correlation. Three-parameter fit of saturation pressure vs temperature."
+  },
+  {
+    "name": "arrhenius_equation",
+    "category": "chemical_engineering",
+    "formula_latex": "k = A\\exp\\left(-\\frac{E_a}{RT}\\right)",
+    "keywords": ["arrhenius", "reaction rate", "activation energy", "pre-exponential", "frequency factor", "kinetics"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Arrhenius equation for chemical reaction rate constant. Exponential temperature dependence with activation energy."
+  },
+  {
+    "name": "cstr_reactor",
+    "category": "chemical_engineering",
+    "formula_latex": "V = \\frac{F_{A0} X_A}{-r_A}, \\quad \\tau = \\frac{V}{v_0} = \\frac{C_{A0} X_A}{-r_A}",
+    "keywords": ["cstr", "continuous stirred tank", "reactor", "conversion", "residence time", "backmix", "design equation"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "CSTR (Continuous Stirred-Tank Reactor) design equation. Perfect mixing: uniform concentration throughout."
+  },
+  {
+    "name": "pfr_reactor",
+    "category": "chemical_engineering",
+    "formula_latex": "\\frac{dF_A}{dV} = r_A, \\quad V = F_{A0}\\int_0^{X_A}\\frac{dX_A}{-r_A}",
+    "keywords": ["pfr", "plug flow reactor", "tubular", "conversion", "no mixing", "residence time"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "PFR (Plug Flow Reactor) design equation. No axial mixing, composition varies along reactor length."
+  },
+  {
+    "name": "ficks_diffusion",
+    "category": "chemical_engineering",
+    "formula_latex": "J_A = -D_{AB}\\frac{dC_A}{dz}, \\quad \\frac{\\partial C_A}{\\partial t} = D_{AB}\\nabla^2 C_A",
+    "keywords": ["fick", "diffusion", "mass transfer", "concentration gradient", "diffusivity", "flux", "second law"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Fick's laws of diffusion. First law: flux proportional to concentration gradient. Second law: transient diffusion equation."
+  },
+  {
+    "name": "lmtd_heat_exchanger",
+    "category": "chemical_engineering",
+    "formula_latex": "Q = U A \\Delta T_{lm}, \\quad \\Delta T_{lm} = \\frac{\\Delta T_1 - \\Delta T_2}{\\ln(\\Delta T_1/\\Delta T_2)}",
+    "keywords": ["lmtd", "log mean temperature", "heat exchanger", "ua", "overall heat transfer", "counterflow", "parallel flow"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "LMTD method for heat exchanger design. Uses logarithmic mean temperature difference for sizing."
+  },
+  {
+    "name": "ntu_effectiveness",
+    "category": "chemical_engineering",
+    "formula_latex": "\\varepsilon = \\frac{Q}{Q_{max}} = f(NTU, C_r), \\quad NTU = \\frac{UA}{C_{min}}, \\quad C_r = \\frac{C_{min}}{C_{max}}",
+    "keywords": ["ntu", "effectiveness", "heat exchanger", "capacity ratio", "counterflow", "crossflow", "shell and tube"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "NTU-effectiveness method for heat exchangers. Alternative to LMTD when outlet temperatures are unknown."
+  },
+  {
+    "name": "conjugate_gradient_method",
+    "category": "optimization",
+    "formula_latex": "\\mathbf{x}_{k+1} = \\mathbf{x}_k + \\alpha_k \\mathbf{d}_k, \\quad \\mathbf{d}_{k+1} = -\\nabla f_{k+1}+\\beta_k\\mathbf{d}_k, \\quad \\beta_k^{FR} = \\frac{\\|\\nabla f_{k+1}\\|^2}{\\|\\nabla f_k\\|^2}",
+    "keywords": ["conjugate gradient", "fletcher reeves", "polak ribiere", "nonlinear cg", "direction", "beta"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Nonlinear conjugate gradient method. Fletcher-Reeves or Polak-Ribiere variants. Effective for large-scale unconstrained optimization."
+  },
+  {
+    "name": "bfgs_method",
+    "category": "optimization",
+    "formula_latex": "\\mathbf{H}_{k+1} = \\left(\\mathbf{I}-\\frac{\\mathbf{s}_k\\mathbf{y}_k^T}{\\mathbf{y}_k^T\\mathbf{s}_k}\\right)\\mathbf{H}_k\\left(\\mathbf{I}-\\frac{\\mathbf{y}_k\\mathbf{s}_k^T}{\\mathbf{y}_k^T\\mathbf{s}_k}\\right)+\\frac{\\mathbf{s}_k\\mathbf{s}_k^T}{\\mathbf{y}_k^T\\mathbf{s}_k}",
+    "keywords": ["bfgs", "quasi newton", "hessian update", "inverse hessian", "l-bfgs", "limited memory", "secant condition"],
+    "constants": [],
+    "confidence": 0.85,
+    "description": "BFGS quasi-Newton optimization. Rank-2 update of inverse Hessian approximation. Superlinear convergence."
+  },
+  {
+    "name": "l_bfgs_method",
+    "category": "optimization",
+    "formula_latex": "\\mathbf{d}_k = -\\mathbf{H}_k \\nabla f_k, \\quad \\text{two-loop recursion with } m \\text{ stored } (\\mathbf{s}_i, \\mathbf{y}_i) \\text{ pairs}",
+    "keywords": ["l-bfgs", "limited memory bfgs", "two loop recursion", "large scale", "memory efficient"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "L-BFGS (Limited-memory BFGS). Stores only m vector pairs instead of full Hessian. Standard for large-scale optimization."
+  },
+  {
+    "name": "simulated_annealing_opt",
+    "category": "optimization",
+    "formula_latex": "P(\\text{accept}) = \\begin{cases} 1 & \\Delta E \\leq 0 \\\\ e^{-\\Delta E / T} & \\Delta E > 0 \\end{cases}, \\quad T_{k+1} = \\alpha T_k, \\; 0 < \\alpha < 1",
+    "keywords": ["simulated annealing", "metropolis", "cooling schedule", "temperature", "global optimization", "combinatorial"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Simulated annealing for global optimization. Accepts uphill moves with probability decreasing with temperature."
+  },
+  {
+    "name": "genetic_algorithm",
+    "category": "optimization",
+    "formula_latex": "\\text{Selection} \\to \\text{Crossover}(p_c) \\to \\text{Mutation}(p_m) \\to \\text{Fitness evaluation} \\to \\text{Elitism}",
+    "keywords": ["genetic algorithm", "ga", "crossover", "mutation", "selection", "fitness", "population", "chromosome", "elitism"],
+    "constants": [
+      {"name": "p_crossover", "value": 0.8, "description": "Typical crossover probability"},
+      {"name": "p_mutation", "value": 0.01, "description": "Typical mutation probability"}
+    ],
+    "confidence": 0.78,
+    "description": "Genetic algorithm for evolutionary optimization. Population-based metaheuristic inspired by natural selection."
+  },
+  {
+    "name": "particle_swarm",
+    "category": "optimization",
+    "formula_latex": "\\mathbf{v}_i^{t+1} = w\\mathbf{v}_i^t + c_1 r_1(\\mathbf{p}_i-\\mathbf{x}_i^t)+c_2 r_2(\\mathbf{g}-\\mathbf{x}_i^t), \\quad \\mathbf{x}_i^{t+1}=\\mathbf{x}_i^t+\\mathbf{v}_i^{t+1}",
+    "keywords": ["pso", "particle swarm", "swarm intelligence", "inertia weight", "cognitive", "social", "global best"],
+    "constants": [
+      {"name": "w_inertia", "value": 0.7298, "hex": "3fe75ebc4ce94e00", "description": "Constriction coefficient inertia weight"},
+      {"name": "c1", "value": 1.49618, "hex": "3ff7f1d86c44c27e", "description": "Cognitive (personal best) parameter"},
+      {"name": "c2", "value": 1.49618, "hex": "3ff7f1d86c44c27e", "description": "Social (global best) parameter"}
+    ],
+    "confidence": 0.85,
+    "description": "Particle Swarm Optimization (PSO). Swarm-based metaheuristic. Particles follow personal and global best positions."
+  },
+  {
+    "name": "sgd_optimizer",
+    "category": "optimization",
+    "formula_latex": "\\mathbf{w}_{t+1} = \\mathbf{w}_t - \\eta \\nabla L(\\mathbf{w}_t; \\mathbf{x}_i, y_i)",
+    "keywords": ["sgd", "stochastic gradient descent", "mini batch", "learning rate", "gradient", "backpropagation"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Stochastic Gradient Descent. Updates parameters using gradient of loss on random mini-batch."
+  },
+  {
+    "name": "momentum_optimizer",
+    "category": "optimization",
+    "formula_latex": "\\mathbf{v}_{t+1} = \\beta\\mathbf{v}_t + \\nabla L(\\mathbf{w}_t), \\quad \\mathbf{w}_{t+1} = \\mathbf{w}_t - \\eta\\mathbf{v}_{t+1}",
+    "keywords": ["momentum", "sgd momentum", "polyak", "heavy ball", "accelerated"],
+    "constants": [
+      {"name": "beta_momentum", "value": 0.9, "hex": "3feccccccccccccd", "description": "Typical momentum coefficient"}
+    ],
+    "confidence": 0.78,
+    "description": "SGD with momentum (Polyak heavy ball). Accumulates past gradients to dampen oscillations and accelerate convergence."
+  },
+  {
+    "name": "adagrad_optimizer",
+    "category": "optimization",
+    "formula_latex": "\\mathbf{G}_{t} = \\mathbf{G}_{t-1} + (\\nabla L_t)^2, \\quad \\mathbf{w}_{t+1} = \\mathbf{w}_t - \\frac{\\eta}{\\sqrt{\\mathbf{G}_t + \\epsilon}}\\nabla L_t",
+    "keywords": ["adagrad", "adaptive gradient", "per parameter", "learning rate decay", "sparse"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "AdaGrad optimizer. Adapts learning rate per parameter based on accumulated squared gradients."
+  },
+  {
+    "name": "rmsprop_optimizer",
+    "category": "optimization",
+    "formula_latex": "\\mathbf{v}_t = \\gamma\\mathbf{v}_{t-1} + (1-\\gamma)(\\nabla L_t)^2, \\quad \\mathbf{w}_{t+1} = \\mathbf{w}_t - \\frac{\\eta}{\\sqrt{\\mathbf{v}_t+\\epsilon}}\\nabla L_t",
+    "keywords": ["rmsprop", "root mean square", "adaptive", "hinton", "exponential moving average"],
+    "constants": [
+      {"name": "gamma_rmsprop", "value": 0.9, "description": "Decay rate for squared gradient moving average"},
+      {"name": "epsilon_rmsprop", "value": 1e-8, "description": "Numerical stability constant"}
+    ],
+    "confidence": 0.80,
+    "description": "RMSProp optimizer (Hinton). Fixes AdaGrad's diminishing learning rate with exponential moving average of squared gradients."
+  },
+  {
+    "name": "bayesian_optimization",
+    "category": "optimization",
+    "formula_latex": "\\mathbf{x}_{next} = \\arg\\max_{\\mathbf{x}} \\alpha(\\mathbf{x}|\\mathcal{D}), \\quad \\alpha_{EI}(\\mathbf{x}) = \\mathbb{E}[\\max(f(\\mathbf{x})-f^+, 0)]",
+    "keywords": ["bayesian optimization", "gaussian process", "acquisition function", "expected improvement", "surrogate", "ei", "ucb"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Bayesian optimization. Uses Gaussian process surrogate and acquisition function (EI, UCB) for black-box optimization."
+  },
+  {
+    "name": "trust_region_newton",
+    "category": "optimization",
+    "formula_latex": "\\min_{\\mathbf{p}} m_k(\\mathbf{p}) = f_k + \\nabla f_k^T \\mathbf{p} + \\frac{1}{2}\\mathbf{p}^T\\mathbf{B}_k\\mathbf{p} \\quad \\text{s.t. } \\|\\mathbf{p}\\| \\leq \\Delta_k",
+    "keywords": ["trust region", "newton cg", "cauchy point", "dogleg", "radius update", "quadratic model"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Trust-region Newton-CG method. Minimizes quadratic model within trust radius. Robust for non-convex problems."
+  },
+  {
+    "name": "admm_optimization",
+    "category": "optimization",
+    "formula_latex": "\\mathbf{x}^{k+1} = \\arg\\min_{\\mathbf{x}} f(\\mathbf{x})+\\frac{\\rho}{2}\\|\\mathbf{A}\\mathbf{x}+\\mathbf{B}\\mathbf{z}^k-\\mathbf{c}+\\mathbf{u}^k\\|_2^2",
+    "keywords": ["admm", "alternating direction", "method of multipliers", "splitting", "consensus", "proximal", "augmented lagrangian"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "ADMM (Alternating Direction Method of Multipliers). Decomposes convex optimization into tractable sub-problems."
+  },
+  {
+    "name": "runge_kutta_fehlberg",
+    "category": "time_integration",
+    "formula_latex": "\\mathbf{y}_{n+1} = \\mathbf{y}_n + \\sum_{i=1}^{6} b_i \\mathbf{k}_i, \\quad \\hat{\\mathbf{y}}_{n+1} = \\mathbf{y}_n + \\sum_{i=1}^{6} \\hat{b}_i \\mathbf{k}_i, \\quad \\text{err} = \\|\\mathbf{y}_{n+1}-\\hat{\\mathbf{y}}_{n+1}\\|",
+    "keywords": ["rkf45", "runge kutta fehlberg", "adaptive step", "error estimate", "embedded", "dormand prince"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Runge-Kutta-Fehlberg (RKF45). Embedded pair for adaptive step-size control. 4th/5th order error estimation."
+  },
+  {
+    "name": "adams_bashforth",
+    "category": "time_integration",
+    "formula_latex": "y_{n+1} = y_n + h\\sum_{j=0}^{s-1}b_j f_{n-j}, \\quad \\text{AB4: } y_{n+1}=y_n+\\frac{h}{24}(55f_n-59f_{n-1}+37f_{n-2}-9f_{n-3})",
+    "keywords": ["adams bashforth", "multistep", "explicit", "ab2", "ab3", "ab4", "predictor"],
+    "constants": [
+      {"name": "b0_ab4", "value": 2.291666666666667, "description": "55/24 Adams-Bashforth 4 coefficient"},
+      {"name": "b1_ab4", "value": -2.458333333333333, "description": "-59/24 Adams-Bashforth 4 coefficient"},
+      {"name": "b2_ab4", "value": 1.541666666666667, "description": "37/24 Adams-Bashforth 4 coefficient"},
+      {"name": "b3_ab4", "value": -0.375, "description": "-9/24 Adams-Bashforth 4 coefficient"}
+    ],
+    "confidence": 0.82,
+    "description": "Adams-Bashforth explicit multistep methods. Uses past function evaluations. AB4 is 4th-order with 4 history points."
+  },
+  {
+    "name": "adams_moulton",
+    "category": "time_integration",
+    "formula_latex": "y_{n+1} = y_n + h\\sum_{j=-1}^{s-1}b_j f_{n-j}, \\quad \\text{AM3: } y_{n+1}=y_n+\\frac{h}{12}(5f_{n+1}+8f_n-f_{n-1})",
+    "keywords": ["adams moulton", "implicit multistep", "corrector", "am2", "am3", "predictor corrector"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Adams-Moulton implicit multistep methods. Used as corrector in predictor-corrector pairs."
+  },
+  {
+    "name": "crank_nicolson",
+    "category": "time_integration",
+    "formula_latex": "\\frac{u^{n+1}-u^n}{\\Delta t} = \\frac{1}{2}\\left[F(u^{n+1})+F(u^n)\\right]",
+    "keywords": ["crank nicolson", "implicit", "second order", "trapezoidal rule", "a-stable", "heat equation"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Crank-Nicolson time integration. Trapezoidal rule, 2nd-order accurate, A-stable. Standard for parabolic PDEs."
+  },
+  {
+    "name": "verlet_integration",
+    "category": "time_integration",
+    "formula_latex": "\\mathbf{x}(t+\\Delta t) = 2\\mathbf{x}(t) - \\mathbf{x}(t-\\Delta t) + \\mathbf{a}(t)\\Delta t^2, \\quad \\text{Velocity Verlet: } \\mathbf{x}_{n+1}=\\mathbf{x}_n+\\mathbf{v}_n\\Delta t+\\frac{1}{2}\\mathbf{a}_n\\Delta t^2",
+    "keywords": ["verlet", "leapfrog", "stormer", "symplectic", "molecular dynamics", "velocity verlet", "energy conservation"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Verlet/velocity-Verlet integration. Symplectic, time-reversible, excellent energy conservation for Hamiltonian systems."
+  },
+  {
+    "name": "sparse_direct_solver",
+    "category": "linear_algebra",
+    "formula_latex": "\\mathbf{A} = \\mathbf{P}^T\\mathbf{L}\\mathbf{U}\\mathbf{Q}, \\quad \\text{fill-in minimized by reordering}",
+    "keywords": ["sparse", "direct solver", "supernodal", "multifrontal", "fill-in", "reordering", "amd", "metis", "mumps", "pardiso"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Sparse direct solver (supernodal/multifrontal). Uses fill-reducing reordering (AMD/METIS) for efficiency."
+  },
+  {
+    "name": "multigrid_method",
+    "category": "linear_algebra",
+    "formula_latex": "\\text{Pre-smooth} \\to \\text{Restrict residual} \\to \\text{Coarse solve} \\to \\text{Prolongate} \\to \\text{Post-smooth}",
+    "keywords": ["multigrid", "v-cycle", "w-cycle", "restriction", "prolongation", "smoothing", "coarse grid", "amg"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Multigrid method (geometric/algebraic). O(N) solver using hierarchy of grids. V-cycle and W-cycle variants."
+  },
+  {
+    "name": "gmres_solver",
+    "category": "linear_algebra",
+    "formula_latex": "\\mathbf{x}_m = \\mathbf{x}_0 + \\mathbf{V}_m \\mathbf{y}_m, \\quad \\mathbf{y}_m = \\arg\\min_{\\mathbf{y}}\\|\\beta\\mathbf{e}_1 - \\mathbf{\\bar{H}}_m\\mathbf{y}\\|_2",
+    "keywords": ["gmres", "generalized minimal residual", "krylov", "arnoldi", "restart", "preconditioning", "nonsymmetric"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "GMRES (Generalized Minimal Residual). Krylov subspace method for nonsymmetric linear systems. Uses Arnoldi process."
+  },
+  {
+    "name": "bicgstab_solver",
+    "category": "linear_algebra",
+    "formula_latex": "\\mathbf{p}_i = \\mathbf{r}_i + \\beta_i(\\mathbf{p}_{i-1}-\\omega_{i-1}\\mathbf{A}\\mathbf{p}_{i-1}), \\quad \\alpha_i = \\frac{\\langle\\hat{\\mathbf{r}}_0,\\mathbf{r}_i\\rangle}{\\langle\\hat{\\mathbf{r}}_0,\\mathbf{A}\\mathbf{p}_i\\rangle}",
+    "keywords": ["bicgstab", "biconjugate gradient stabilized", "krylov", "nonsymmetric", "van der vorst"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "BiCGSTAB (Bi-Conjugate Gradient Stabilized). Krylov solver for nonsymmetric systems, smoother convergence than BiCG."
+  },
+  {
+    "name": "incomplete_lu",
+    "category": "linear_algebra",
+    "formula_latex": "\\mathbf{A} \\approx \\mathbf{L}\\mathbf{U}, \\quad l_{ij}=0 \\text{ if } a_{ij}=0 \\text{ (ILU(0))}, \\quad \\text{Fill level } p: \\text{ILU}(p)",
+    "keywords": ["ilu", "incomplete lu", "preconditioner", "fill level", "ilut", "ilu0", "sparse factorization"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Incomplete LU factorization. Sparse preconditioner that drops fill-in entries. ILU(0) preserves sparsity pattern."
+  },
+  {
+    "name": "svd_decomposition",
+    "category": "linear_algebra",
+    "formula_latex": "\\mathbf{A} = \\mathbf{U}\\boldsymbol{\\Sigma}\\mathbf{V}^T, \\quad \\sigma_1 \\geq \\sigma_2 \\geq \\cdots \\geq \\sigma_r > 0",
+    "keywords": ["svd", "singular value decomposition", "rank", "pseudoinverse", "low rank", "truncated svd", "pca"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Singular Value Decomposition. Fundamental factorization for rank analysis, least squares, PCA, and compression."
+  },
+  {
+    "name": "rayleigh_quotient",
+    "category": "linear_algebra",
+    "formula_latex": "R(\\mathbf{x}) = \\frac{\\mathbf{x}^T\\mathbf{A}\\mathbf{x}}{\\mathbf{x}^T\\mathbf{x}}, \\quad \\lambda_{min} \\leq R(\\mathbf{x}) \\leq \\lambda_{max}",
+    "keywords": ["rayleigh quotient", "eigenvalue bound", "variational", "min max", "ritz value"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Rayleigh quotient for eigenvalue estimation. Provides best eigenvalue estimate for given eigenvector approximation."
+  },
+  {
+    "name": "gauss_elimination",
+    "category": "linear_algebra",
+    "formula_latex": "a_{ij}^{(k+1)} = a_{ij}^{(k)} - \\frac{a_{ik}^{(k)}}{a_{kk}^{(k)}} a_{kj}^{(k)}, \\quad \\text{with partial pivoting}",
+    "keywords": ["gaussian elimination", "row reduction", "pivoting", "back substitution", "echelon form"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Gaussian elimination with partial pivoting. Direct method for linear systems. O(n^3) complexity."
+  },
+  {
+    "name": "nusselt_correlation",
+    "category": "heat_transfer",
+    "formula_latex": "Nu = C \\, Re^m Pr^n, \\quad Nu = \\frac{hL}{k}, \\quad Re = \\frac{\\rho u L}{\\mu}, \\quad Pr = \\frac{\\mu c_p}{k}",
+    "keywords": ["nusselt", "reynolds", "prandtl", "heat transfer coefficient", "correlation", "dittus boelter", "convection"],
+    "constants": [
+      {"name": "C_DB", "value": 0.023, "description": "Dittus-Boelter coefficient"},
+      {"name": "m_DB", "value": 0.8, "description": "Dittus-Boelter Reynolds exponent"},
+      {"name": "n_DB_heating", "value": 0.4, "description": "Dittus-Boelter Prandtl exponent (heating)"},
+      {"name": "n_DB_cooling", "value": 0.3, "description": "Dittus-Boelter Prandtl exponent (cooling)"}
+    ],
+    "confidence": 0.82,
+    "description": "Nusselt number correlations for convective heat transfer. Dittus-Boelter for turbulent internal flow."
+  },
+  {
+    "name": "rayleigh_benard",
+    "category": "heat_transfer",
+    "formula_latex": "Ra = \\frac{g\\beta(T_h-T_c)L^3}{\\nu\\alpha}, \\quad Ra_c = 1708 \\text{ (onset of convection)}",
+    "keywords": ["rayleigh", "benard", "natural convection", "buoyancy", "critical rayleigh", "grashof"],
+    "constants": [
+      {"name": "Ra_critical", "value": 1708.0, "hex": "4096b00000000000", "description": "Critical Rayleigh number for onset of Benard convection"}
+    ],
+    "confidence": 0.82,
+    "description": "Rayleigh-Benard convection. Ra number determines onset and nature of buoyancy-driven convection."
+  },
+  {
+    "name": "finite_volume_method",
+    "category": "numerical_methods",
+    "formula_latex": "\\frac{d}{dt}\\int_{\\Omega}\\phi\\,dV + \\oint_{\\partial\\Omega}\\phi\\mathbf{u}\\cdot\\mathbf{n}\\,dA = \\oint_{\\partial\\Omega}\\Gamma\\nabla\\phi\\cdot\\mathbf{n}\\,dA + \\int_{\\Omega}S\\,dV",
+    "keywords": ["finite volume", "fvm", "conservation", "flux", "cell centered", "vertex centered", "divergence theorem"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Finite Volume Method. Integral conservation over control volumes. Naturally conservative, standard in CFD."
+  },
+  {
+    "name": "boundary_element_method",
+    "category": "numerical_methods",
+    "formula_latex": "c(\\mathbf{x})u(\\mathbf{x}) + \\int_{\\Gamma}q^*(\\mathbf{x},\\mathbf{y})u(\\mathbf{y})\\,d\\Gamma = \\int_{\\Gamma}u^*(\\mathbf{x},\\mathbf{y})q(\\mathbf{y})\\,d\\Gamma",
+    "keywords": ["bem", "boundary element", "green function", "fundamental solution", "singular integral", "laplace"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Boundary Element Method. Reduces domain problem to boundary integral. Uses fundamental solution (Green's function)."
+  },
+  {
+    "name": "spectral_method",
+    "category": "numerical_methods",
+    "formula_latex": "u_N(x) = \\sum_{k=0}^{N}\\hat{u}_k \\phi_k(x), \\quad \\text{Galerkin: } \\langle R_N, \\phi_j \\rangle = 0, \\; j=0,...,N",
+    "keywords": ["spectral", "fourier", "chebyshev", "legendre", "spectral element", "exponential convergence", "galerkin"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Spectral methods. Expand solution in global basis (Fourier, Chebyshev, Legendre). Exponential convergence for smooth problems."
+  },
+  {
+    "name": "isogeometric_analysis",
+    "category": "numerical_methods",
+    "formula_latex": "\\mathbf{u}^h(\\boldsymbol{\\xi}) = \\sum_{A=1}^{n} R_{A,p}(\\boldsymbol{\\xi})\\mathbf{d}_A, \\quad R_{A,p} = \\text{NURBS basis functions}",
+    "keywords": ["iga", "isogeometric", "nurbs", "spline", "cad integration", "higher order", "hughes"],
+    "constants": [],
+    "confidence": 0.75,
+    "description": "Isogeometric Analysis (IGA). Uses NURBS basis from CAD geometry directly as FE shape functions. Exact geometry."
+  },
+  {
+    "name": "sparse_matrix_csr",
+    "category": "data_structures",
+    "formula_latex": "\\text{CSR: } (\\mathbf{val}, \\mathbf{col\\_idx}, \\mathbf{row\\_ptr}), \\quad \\text{Memory: } O(nnz + n)",
+    "keywords": ["csr", "csc", "sparse matrix", "compressed row", "compressed column", "coo", "nnz"],
+    "constants": [],
+    "confidence": 0.75,
+    "description": "Compressed Sparse Row (CSR) format. Standard sparse matrix storage. O(nnz) memory, efficient row-slice and SpMV."
+  },
+  {
+    "name": "monte_carlo_integration",
+    "category": "numerical_methods",
+    "formula_latex": "I = \\int_\\Omega f(\\mathbf{x})\\,d\\mathbf{x} \\approx \\frac{V}{N}\\sum_{i=1}^{N}f(\\mathbf{x}_i), \\quad \\sigma_I = \\frac{V}{\\sqrt{N}}\\sigma_f",
+    "keywords": ["monte carlo", "integration", "random sampling", "variance reduction", "importance sampling", "convergence rate"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Monte Carlo integration. Convergence rate O(1/sqrt(N)) independent of dimension. Ideal for high-dimensional integrals."
+  },
+  {
+    "name": "hermite_interpolation",
+    "category": "numerical_methods",
+    "formula_latex": "H_{2n+1}(x) = \\sum_{i=0}^{n}f(x_i)H_i(x) + \\sum_{i=0}^{n}f'(x_i)\\hat{H}_i(x)",
+    "keywords": ["hermite", "interpolation", "osculating", "derivative matching", "cubic hermite", "tangent"],
+    "constants": [],
+    "confidence": 0.75,
+    "description": "Hermite interpolation. Matches both function values and derivatives at nodes. Cubic Hermite uses 4 data points."
+  },
+  {
+    "name": "richardson_extrapolation",
+    "category": "numerical_methods",
+    "formula_latex": "I = I(h) + c_p h^p + c_{p+1}h^{p+1} + \\cdots, \\quad I^* = \\frac{2^p I(h/2)-I(h)}{2^p-1}",
+    "keywords": ["richardson", "extrapolation", "order improvement", "romberg", "error estimation"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Richardson extrapolation. Improves accuracy by combining results at different step sizes. Basis for Romberg integration."
+  },
+  {
+    "name": "elastic_wave_equation",
+    "category": "structural_dynamics",
+    "formula_latex": "\\rho \\ddot{\\mathbf{u}} = \\nabla \\cdot \\boldsymbol{\\sigma} + \\mathbf{f}, \\quad c_p = \\sqrt{\\frac{\\lambda+2\\mu}{\\rho}}, \\quad c_s = \\sqrt{\\frac{\\mu}{\\rho}}",
+    "keywords": ["elastic wave", "p-wave", "s-wave", "longitudinal", "transverse", "seismic", "wave speed", "lame"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Elastic wave equation. P-wave (compressional) and S-wave (shear) propagation in solids. Basis for seismology and NDE."
+  },
+  {
+    "name": "rayleigh_damping",
+    "category": "structural_dynamics",
+    "formula_latex": "\\mathbf{C} = \\alpha_M \\mathbf{M} + \\beta_K \\mathbf{K}, \\quad \\zeta_i = \\frac{\\alpha_M}{2\\omega_i}+\\frac{\\beta_K \\omega_i}{2}",
+    "keywords": ["rayleigh damping", "proportional damping", "alpha", "beta", "mass proportional", "stiffness proportional", "damping ratio"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Rayleigh (proportional) damping. Damping matrix as linear combination of mass and stiffness matrices."
+  },
+  {
+    "name": "wilson_theta",
+    "category": "structural_dynamics",
+    "formula_latex": "\\mathbf{M}\\ddot{\\mathbf{u}}_{n+\\theta} + \\mathbf{C}\\dot{\\mathbf{u}}_{n+\\theta}+\\mathbf{K}\\mathbf{u}_{n+\\theta} = \\mathbf{F}_{n+\\theta}, \\quad \\theta \\geq 1.37",
+    "keywords": ["wilson theta", "implicit", "unconditionally stable", "time integration", "structural dynamics"],
+    "constants": [
+      {"name": "theta_wilson", "value": 1.4, "description": "Typical Wilson theta parameter for unconditional stability"}
+    ],
+    "confidence": 0.78,
+    "description": "Wilson-theta method for structural dynamics. Unconditionally stable for theta >= 1.37. Extended Newmark variant."
+  },
+  {
+    "name": "stress_intensity_factor",
+    "category": "fracture_mechanics",
+    "formula_latex": "K_I = \\sigma\\sqrt{\\pi a}\\,Y(a/W), \\quad G = \\frac{K_I^2}{E'}, \\quad E' = \\begin{cases}E & \\text{plane stress}\\\\E/(1-\\nu^2) & \\text{plane strain}\\end{cases}",
+    "keywords": ["stress intensity", "k_ic", "fracture toughness", "crack", "griffith", "irwin", "energy release rate"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Stress intensity factor and energy release rate. K_I characterizes crack-tip stress field. G = K^2/E' (Irwin relation)."
+  },
+  {
+    "name": "j_integral",
+    "category": "fracture_mechanics",
+    "formula_latex": "J = \\oint_{\\Gamma}\\left(W\\,dy - \\mathbf{T}\\cdot\\frac{\\partial\\mathbf{u}}{\\partial x}\\,ds\\right), \\quad J = G \\text{ (for linear elastic)}",
+    "keywords": ["j integral", "rice", "path independent", "energy release", "crack driving force", "elasto-plastic fracture"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "J-integral (Rice 1968). Path-independent contour integral for fracture. Equals G for linear elastic, extends to plasticity."
+  },
+  {
+    "name": "paris_law",
+    "category": "fracture_mechanics",
+    "formula_latex": "\\frac{da}{dN} = C(\\Delta K)^m, \\quad \\Delta K = K_{max}-K_{min}",
+    "keywords": ["paris", "fatigue crack", "crack growth rate", "stress intensity range", "da/dn", "paris erdogan"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Paris fatigue crack growth law. Power-law relation between crack growth rate and stress intensity factor range."
+  },
+  {
+    "name": "navier_stokes_compressible",
+    "category": "cfd_governing",
+    "formula_latex": "\\frac{\\partial \\rho}{\\partial t}+\\nabla\\cdot(\\rho\\mathbf{u})=0, \\quad \\frac{\\partial(\\rho\\mathbf{u})}{\\partial t}+\\nabla\\cdot(\\rho\\mathbf{u}\\otimes\\mathbf{u}+p\\mathbf{I})=\\nabla\\cdot\\boldsymbol{\\tau}",
+    "keywords": ["compressible navier stokes", "euler equations", "conservation form", "shock", "mach number", "total energy"],
+    "constants": [
+      {"name": "gamma_air", "value": 1.4, "hex": "3ff6666666666666", "description": "Ratio of specific heats for air"}
+    ],
+    "confidence": 0.85,
+    "description": "Compressible Navier-Stokes equations in conservation form. Full system with energy equation for high-Mach flows."
+  },
+  {
+    "name": "turbulence_wall_function",
+    "category": "cfd_turbulence",
+    "formula_latex": "u^+ = \\begin{cases}y^+ & y^+ < 11.06 \\\\ \\frac{1}{\\kappa}\\ln(y^+)+B & y^+ > 11.06\\end{cases}, \\quad y^+ = \\frac{y u_\\tau}{\\nu}, \\quad u^+=\\frac{u}{u_\\tau}",
+    "keywords": ["wall function", "log law", "von karman", "buffer layer", "viscous sublayer", "y plus", "u tau"],
+    "constants": [
+      {"name": "kappa_karman", "value": 0.41, "hex": "3fda3d70a3d70a3d", "description": "von Karman constant"},
+      {"name": "B_log_law", "value": 5.2, "hex": "4014cccccccccccd", "description": "Log-law additive constant (smooth wall)"},
+      {"name": "y_plus_transition", "value": 11.06, "description": "Viscous-log layer transition y+"}
+    ],
+    "confidence": 0.85,
+    "description": "Turbulent wall functions (law of the wall). Bridges viscous sublayer to log-law region. Avoids resolving boundary layer."
+  },
+  {
+    "name": "dynamic_smagorinsky",
+    "category": "cfd_turbulence",
+    "formula_latex": "C_s^2 = \\frac{\\langle L_{ij}M_{ij}\\rangle}{\\langle M_{ij}M_{ij}\\rangle}, \\quad L_{ij} = \\widehat{\\bar{u}_i\\bar{u}_j}-\\hat{\\bar{u}}_i\\hat{\\bar{u}}_j",
+    "keywords": ["dynamic smagorinsky", "germano identity", "les", "test filter", "dynamic procedure", "lilly"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Dynamic Smagorinsky model (Germano 1991). Computes Cs dynamically from resolved scales using test filter."
+  },
+  {
+    "name": "sa_ddes",
+    "category": "cfd_turbulence",
+    "formula_latex": "\\tilde{d} = d - f_d \\max(0, d - C_{DES}\\Delta), \\quad f_d = 1 - \\tanh\\left[(8r_d)^3\\right]",
+    "keywords": ["ddes", "delayed des", "shielding function", "sa-ddes", "hybrid rans-les"],
+    "constants": [
+      {"name": "C_DES_SA", "value": 0.65, "description": "DES constant for SA base model"}
+    ],
+    "confidence": 0.80,
+    "description": "Delayed Detached Eddy Simulation (DDES). Adds shielding function fd to prevent grid-induced separation in boundary layers."
+  },
+  {
+    "name": "ale_formulation",
+    "category": "cfd_numerics",
+    "formula_latex": "\\left.\\frac{\\partial \\phi}{\\partial t}\\right|_{\\chi} + (\\mathbf{u}-\\hat{\\mathbf{u}})\\cdot\\nabla\\phi = \\text{RHS}, \\quad \\hat{\\mathbf{u}} = \\text{mesh velocity}",
+    "keywords": ["ale", "arbitrary lagrangian eulerian", "mesh motion", "moving mesh", "fsi", "fluid structure"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Arbitrary Lagrangian-Eulerian formulation. Moving mesh framework for FSI and free-surface problems."
+  },
+  {
+    "name": "cfl_condition",
+    "category": "cfd_numerics",
+    "formula_latex": "CFL = \\frac{(|u|+c)\\Delta t}{\\Delta x} \\leq CFL_{max}, \\quad \\Delta t \\leq CFL_{max} \\frac{\\Delta x}{|u|+c}",
+    "keywords": ["cfl", "courant", "friedrichs", "lewy", "stability condition", "time step", "explicit"],
+    "constants": [
+      {"name": "CFL_max_explicit", "value": 1.0, "description": "Maximum CFL for typical explicit schemes"}
+    ],
+    "confidence": 0.82,
+    "description": "Courant-Friedrichs-Lewy condition. Necessary stability condition for explicit time-stepping schemes."
+  },
+  {
+    "name": "tvd_limiter",
+    "category": "cfd_numerics",
+    "formula_latex": "\\phi(r) = \\max(0, \\min(2r,1), \\min(r,2)) \\quad \\text{(superbee)}, \\quad r = \\frac{\\Delta u_{i-1/2}}{\\Delta u_{i+1/2}}",
+    "keywords": ["tvd", "total variation diminishing", "flux limiter", "minmod", "superbee", "van leer", "van albada", "monotone"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "TVD (Total Variation Diminishing) flux limiters. Prevent oscillations near discontinuities while maintaining accuracy."
+  },
+  {
+    "name": "gauss_jordan_elimination",
+    "category": "linear_algebra",
+    "formula_latex": "[\\mathbf{A}|\\mathbf{I}] \\to [\\mathbf{I}|\\mathbf{A}^{-1}]",
+    "keywords": ["gauss jordan", "matrix inverse", "augmented matrix", "reduced row echelon"],
+    "constants": [],
+    "confidence": 0.75,
+    "description": "Gauss-Jordan elimination for matrix inversion. Augments A with identity and row-reduces to RREF."
+  },
+  {
+    "name": "cholesky_ldl",
+    "category": "linear_algebra",
+    "formula_latex": "\\mathbf{A} = \\mathbf{L}\\mathbf{D}\\mathbf{L}^T, \\quad d_{ii} = a_{ii} - \\sum_{k=1}^{i-1}l_{ik}^2 d_{kk}",
+    "keywords": ["ldl", "ldlt", "cholesky variant", "symmetric", "indefinite", "pivoting", "bunch kaufman"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "LDL^T factorization. Cholesky variant without square roots. Works for symmetric indefinite with pivoting."
+  },
+  {
+    "name": "eigenvalue_qr_shift",
+    "category": "linear_algebra",
+    "formula_latex": "\\mathbf{A}_k - \\mu_k \\mathbf{I} = \\mathbf{Q}_k\\mathbf{R}_k, \\quad \\mathbf{A}_{k+1} = \\mathbf{R}_k\\mathbf{Q}_k + \\mu_k\\mathbf{I}",
+    "keywords": ["qr algorithm", "wilkinson shift", "implicit", "hessenberg", "eigenvalue", "schur decomposition"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "QR algorithm with shifts for eigenvalue computation. Wilkinson shift for cubic convergence. Standard for dense matrices."
+  },
+  {
+    "name": "inverse_distance_weighting",
+    "category": "interpolation",
+    "formula_latex": "f(\\mathbf{x}) = \\frac{\\sum_{i=1}^{N} w_i(\\mathbf{x}) f_i}{\\sum_{i=1}^{N}w_i(\\mathbf{x})}, \\quad w_i(\\mathbf{x}) = \\frac{1}{d(\\mathbf{x},\\mathbf{x}_i)^p}",
+    "keywords": ["idw", "inverse distance", "interpolation", "shepard", "spatial", "scattered data"],
+    "constants": [],
+    "confidence": 0.75,
+    "description": "Inverse Distance Weighting (Shepard's method). Spatial interpolation weighted by inverse distance power p."
+  },
+  {
+    "name": "kriging_interpolation",
+    "category": "interpolation",
+    "formula_latex": "\\hat{Z}(\\mathbf{x}_0) = \\sum_{i=1}^{n}\\lambda_i Z(\\mathbf{x}_i), \\quad \\min \\text{Var}[\\hat{Z}-Z] \\text{ s.t. } \\sum\\lambda_i=1",
+    "keywords": ["kriging", "gaussian process", "variogram", "semivariogram", "ordinary kriging", "geostatistics", "best linear unbiased"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Kriging (Gaussian process regression). Best Linear Unbiased Predictor (BLUP) for spatial interpolation."
+  },
+  {
+    "name": "radial_basis_function",
+    "category": "interpolation",
+    "formula_latex": "f(\\mathbf{x}) = \\sum_{i=1}^{N}w_i \\phi(\\|\\mathbf{x}-\\mathbf{x}_i\\|), \\quad \\text{e.g., } \\phi(r)=e^{-(\\epsilon r)^2}",
+    "keywords": ["rbf", "radial basis", "thin plate spline", "multiquadric", "gaussian rbf", "meshfree"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Radial Basis Function interpolation. Meshfree method using distance-based basis functions."
+  },
+  {
+    "name": "galerkin_weak_form",
+    "category": "fea_fundamentals",
+    "formula_latex": "\\int_\\Omega \\boldsymbol{\\varepsilon}^T(\\delta\\mathbf{u}) \\boldsymbol{\\sigma}\\,d\\Omega = \\int_\\Omega \\delta\\mathbf{u}^T \\mathbf{b}\\,d\\Omega + \\int_{\\Gamma_t}\\delta\\mathbf{u}^T \\mathbf{t}\\,d\\Gamma",
+    "keywords": ["galerkin", "weak form", "virtual work", "variational", "bilinear form", "test function", "trial function"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Galerkin weak form (principle of virtual work). Foundation of FEM -- weighted residual with test functions from same space."
+  },
+  {
+    "name": "mass_lumping",
+    "category": "fea_fundamentals",
+    "formula_latex": "M_{ii}^{lump} = \\rho \\int_\\Omega N_i\\,d\\Omega \\cdot \\frac{\\sum_j M_{ij}^{cons}}{\\sum_j M_{ij}^{cons}} = \\rho \\int_\\Omega N_i\\,d\\Omega",
+    "keywords": ["mass lumping", "lumped mass", "diagonal mass", "row sum", "explicit dynamics", "hmt"],
+    "constants": [],
+    "confidence": 0.75,
+    "description": "Mass lumping (diagonalization). Creates diagonal mass matrix for efficient explicit time integration."
+  },
+  {
+    "name": "mach_number_relations",
+    "category": "aerospace",
+    "formula_latex": "Ma = \\frac{v}{a}, \\quad \\frac{T_0}{T}=1+\\frac{\\gamma-1}{2}Ma^2, \\quad \\frac{p_0}{p}=\\left(1+\\frac{\\gamma-1}{2}Ma^2\\right)^{\\gamma/(\\gamma-1)}",
+    "keywords": ["mach", "isentropic", "stagnation", "total pressure", "total temperature", "compressible flow"],
+    "constants": [
+      {"name": "gamma_air", "value": 1.4, "hex": "3ff6666666666666", "description": "Specific heat ratio for air"}
+    ],
+    "confidence": 0.85,
+    "description": "Isentropic flow relations. Stagnation-to-static ratios as functions of Mach number for compressible flow."
+  },
+  {
+    "name": "normal_shock_relations",
+    "category": "aerospace",
+    "formula_latex": "Ma_2^2 = \\frac{Ma_1^2+(2/(\\gamma-1))}{(2\\gamma/(\\gamma-1))Ma_1^2-1}, \\quad \\frac{p_2}{p_1}=\\frac{2\\gamma Ma_1^2-(\\gamma-1)}{\\gamma+1}",
+    "keywords": ["normal shock", "rankine hugoniot", "shock wave", "jump conditions", "entropy increase"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Normal shock relations (Rankine-Hugoniot). Post-shock Mach, pressure, temperature, density ratios from pre-shock Mach."
+  },
+  {
+    "name": "prandtl_meyer_expansion",
+    "category": "aerospace",
+    "formula_latex": "\\nu(Ma) = \\sqrt{\\frac{\\gamma+1}{\\gamma-1}}\\arctan\\sqrt{\\frac{\\gamma-1}{\\gamma+1}(Ma^2-1)} - \\arctan\\sqrt{Ma^2-1}",
+    "keywords": ["prandtl meyer", "expansion fan", "supersonic", "turning angle", "isentropic expansion"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Prandtl-Meyer expansion function. Relates Mach number to turning angle in supersonic isentropic expansion."
+  },
+  {
+    "name": "thin_airfoil_theory",
+    "category": "aerospace",
+    "formula_latex": "C_L = 2\\pi\\alpha, \\quad C_{m,LE} = -\\frac{C_L}{4}, \\quad x_{cp} = \\frac{c}{4}",
+    "keywords": ["thin airfoil", "lift coefficient", "angle of attack", "aerodynamic center", "quarter chord"],
+    "constants": [
+      {"name": "cl_alpha", "value": 6.283185307179586, "description": "2*pi lift curve slope per radian"}
+    ],
+    "confidence": 0.80,
+    "description": "Thin airfoil theory. CL = 2*pi*alpha for symmetric airfoil. Aerodynamic center at quarter chord."
+  },
+  {
+    "name": "panel_method",
+    "category": "aerospace",
+    "formula_latex": "\\phi(\\mathbf{x}) = \\phi_\\infty + \\sum_{j=1}^{N}\\int_{panel_j}\\left[\\sigma_j G(\\mathbf{x},\\mathbf{y}) + \\mu_j \\frac{\\partial G}{\\partial n_y}\\right]dS_j",
+    "keywords": ["panel method", "source", "doublet", "vortex panel", "potential flow", "hess smith", "kutta condition"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Panel method for potential flow. Distributes sources/doublets on body surface panels. Hess-Smith formulation."
+  },
+  {
+    "name": "vortex_lattice_method",
+    "category": "aerospace",
+    "formula_latex": "\\mathbf{v}_{ind} = \\frac{\\Gamma}{4\\pi}\\frac{(r_1+r_2)(\\mathbf{r}_1\\times\\mathbf{r}_2)}{r_1 r_2(r_1 r_2+\\mathbf{r}_1\\cdot\\mathbf{r}_2)}, \\quad \\sum_j a_{ij}\\Gamma_j = -\\mathbf{V}_\\infty\\cdot\\hat{n}_i",
+    "keywords": ["vlm", "vortex lattice", "horseshoe vortex", "biot savart", "lifting surface", "induced drag"],
+    "constants": [],
+    "confidence": 0.78,
+    "description": "Vortex Lattice Method. Models lifting surfaces with horseshoe vortices. Fast aerodynamic analysis for wings."
+  },
+  {
+    "name": "gurson_tvergaard_needleman",
+    "category": "fea_damage",
+    "formula_latex": "\\Phi = \\left(\\frac{q}{\\sigma_y}\\right)^2 + 2f^* q_1 \\cosh\\left(\\frac{3q_2 p}{2\\sigma_y}\\right) - (1+q_3 f^{*2}) = 0",
+    "keywords": ["gurson", "gtn", "void growth", "damage", "ductile fracture", "porosity", "nucleation", "coalescence"],
+    "constants": [
+      {"name": "q1_GTN", "value": 1.5, "description": "GTN model parameter q1"},
+      {"name": "q2_GTN", "value": 1.0, "description": "GTN model parameter q2"},
+      {"name": "q3_GTN", "value": 2.25, "description": "GTN model parameter q3 (=q1^2)"}
+    ],
+    "confidence": 0.85,
+    "description": "Gurson-Tvergaard-Needleman (GTN) damage model. Pressure-dependent yield with void volume fraction for ductile fracture."
+  },
+  {
+    "name": "johnson_cook_plasticity",
+    "category": "fea_plasticity",
+    "formula_latex": "\\sigma_y = (A+B\\bar{\\varepsilon}^{p\\,n})(1+C\\ln\\dot{\\varepsilon}^*)(1-T^{*m})",
+    "keywords": ["johnson cook", "strain rate", "temperature", "dynamic plasticity", "impact", "high strain rate"],
+    "constants": [],
+    "confidence": 0.85,
+    "description": "Johnson-Cook plasticity model. Empirical model for strain hardening, strain rate, and temperature effects. Used for impact/crash."
+  },
+  {
+    "name": "rankine_hugoniot",
+    "category": "cfd_shock",
+    "formula_latex": "\\rho_1 u_1 = \\rho_2 u_2, \\quad p_1+\\rho_1 u_1^2 = p_2+\\rho_2 u_2^2, \\quad h_1+\\frac{u_1^2}{2}=h_2+\\frac{u_2^2}{2}",
+    "keywords": ["rankine hugoniot", "jump conditions", "shock", "conservation", "discontinuity"],
+    "constants": [],
+    "confidence": 0.80,
+    "description": "Rankine-Hugoniot jump conditions across a shock wave. Conservation of mass, momentum, energy across discontinuity."
+  },
+  {
+    "name": "spalding_law",
+    "category": "cfd_turbulence",
+    "formula_latex": "y^+ = u^+ + e^{-\\kappa B}\\left[e^{\\kappa u^+}-1-\\kappa u^+-\\frac{(\\kappa u^+)^2}{2}-\\frac{(\\kappa u^+)^3}{6}\\right]",
+    "keywords": ["spalding", "universal wall law", "continuous", "viscous sublayer", "log layer", "composite profile"],
+    "constants": [],
+    "confidence": 0.82,
+    "description": "Spalding's single-formula wall law. Continuous composite profile covering viscous sublayer through log layer."
+  }
+]

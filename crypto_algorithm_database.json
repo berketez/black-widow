@@ -1,0 +1,1445 @@
+[
+  {
+    "name": "aes_128",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = E_K(P) \\text{ where } K \\in \\{0,1\\}^{128}, \\text{10 rounds, SubBytes-ShiftRows-MixColumns-AddRoundKey}",
+    "keywords": ["aes", "rijndael", "SubBytes", "ShiftRows", "MixColumns", "AddRoundKey", "key_schedule", "Nk=4", "Nr=10", "AES_encrypt", "AES_set_encrypt_key"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B", "0xF2", "0x6B", "0x6F", "0xC5", "0x30", "0x01", "0x67", "0xFE", "0xD7", "0xAB", "0x76", "0xCA"],
+    "constants_hex_notes": "AES S-box first 16 bytes: 63 7C 77 7B F2 6B 6F C5 30 01 67 2B FE D7 AB 76. Rcon: 01 02 04 08 10 20 40 80 1B 36. Inverse S-box starts: 52 09 6A D5 30 36 A5 38",
+    "confidence": 0.98,
+    "description": "AES-128 block cipher, 10 rounds, 128-bit key"
+  },
+  {
+    "name": "aes_192",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = E_K(P) \\text{ where } K \\in \\{0,1\\}^{192}, \\text{12 rounds}",
+    "keywords": ["aes", "rijndael", "Nk=6", "Nr=12", "AES_encrypt"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B", "0xF2", "0x6B", "0x6F", "0xC5"],
+    "constants_hex_notes": "Same S-box as AES-128. Distinguisher: key schedule uses 6-word (192-bit) key, 12 rounds",
+    "confidence": 0.95,
+    "description": "AES-192 block cipher, 12 rounds, 192-bit key"
+  },
+  {
+    "name": "aes_256",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = E_K(P) \\text{ where } K \\in \\{0,1\\}^{256}, \\text{14 rounds}",
+    "keywords": ["aes", "rijndael", "Nk=8", "Nr=14", "AES_encrypt", "AES_256"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B", "0xF2", "0x6B", "0x6F", "0xC5"],
+    "constants_hex_notes": "Same S-box as AES-128. Distinguisher: key schedule uses 8-word (256-bit) key, 14 rounds, extra SubWord in key expansion",
+    "confidence": 0.95,
+    "description": "AES-256 block cipher, 14 rounds, 256-bit key"
+  },
+  {
+    "name": "aes_gcm",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = \\text{GCTR}(K, J_0, P), \\quad T = \\text{GHASH}(H, A, C) \\oplus E_K(J_0)",
+    "keywords": ["gcm", "ghash", "gctr", "galois", "gf_mul", "aad", "auth_tag", "nonce", "j0", "inc32", "GCM128_CONTEXT"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B", "0xE1000000", "0xE100000000000000"],
+    "constants_hex_notes": "AES S-box + GF(2^128) reduction polynomial R = 0xE1 << 120 = 0xE1000000_00000000_00000000_00000000. GHASH uses this for multiplication",
+    "confidence": 0.95,
+    "description": "AES in Galois/Counter Mode with authentication tag"
+  },
+  {
+    "name": "aes_ctr",
+    "category": "symmetric_encryption",
+    "formula_latex": "C_i = P_i \\oplus E_K(\\text{nonce} \\| \\text{counter}_i)",
+    "keywords": ["ctr", "counter", "nonce", "increment", "AES_ctr128_encrypt", "CRYPTO_ctr128_encrypt"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B"],
+    "constants_hex_notes": "AES S-box. CTR mode pattern: counter increment + XOR with plaintext",
+    "confidence": 0.90,
+    "description": "AES in Counter mode"
+  },
+  {
+    "name": "aes_cbc",
+    "category": "symmetric_encryption",
+    "formula_latex": "C_i = E_K(P_i \\oplus C_{i-1}), \\quad C_0 = IV",
+    "keywords": ["cbc", "iv", "padding", "PKCS7", "PKCS5", "AES_cbc_encrypt", "CBC_ENCRYPT"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B"],
+    "constants_hex_notes": "AES S-box. CBC pattern: XOR with previous ciphertext block before encryption",
+    "confidence": 0.90,
+    "description": "AES in Cipher Block Chaining mode"
+  },
+  {
+    "name": "aes_xts",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = E_{K_1}(P \\oplus T) \\oplus T, \\quad T = E_{K_2}(i) \\otimes \\alpha^j",
+    "keywords": ["xts", "tweak", "gf_mulx", "disk_encrypt", "sector", "XTS_ENCRYPT", "aes_xts"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B", "0x87"],
+    "constants_hex_notes": "AES S-box + GF(2^128) primitive element alpha for tweak: 0x87 (x^7 + x^2 + x + 1 reduction)",
+    "confidence": 0.90,
+    "description": "AES in XEX-based Tweaked-codebook mode with ciphertext Stealing"
+  },
+  {
+    "name": "chacha20",
+    "category": "symmetric_encryption",
+    "formula_latex": "\\text{state} = \\text{QR}^{20}(\\sigma \\| K \\| \\text{counter} \\| \\text{nonce}), \\quad \\text{QR}(a,b,c,d): a{+}{=}b; d{\\oplus}{=}a; d{\\lll}{=}16; \\ldots",
+    "keywords": ["chacha", "quarter_round", "QR", "expand 32-byte k", "sigma", "QUARTERROUND", "chacha20_block"],
+    "constants": ["0x61707865", "0x3320646E", "0x79622D32", "0x6B206574"],
+    "constants_hex_notes": "\"expand 32-byte k\" as 4 uint32: 0x61707865 0x3320646E 0x79622D32 0x6B206574. Rotation amounts: 16, 12, 8, 7",
+    "confidence": 0.97,
+    "description": "ChaCha20 stream cipher, 20 rounds, 256-bit key"
+  },
+  {
+    "name": "chacha20_poly1305",
+    "category": "aead",
+    "formula_latex": "C = \\text{ChaCha20}(K, N, P), \\quad T = \\text{Poly1305}(\\text{otk}, \\text{AAD} \\| C)",
+    "keywords": ["chacha20", "poly1305", "aead", "otk", "one_time_key", "crypto_aead_chacha20poly1305"],
+    "constants": ["0x61707865", "0x3320646E", "0x79622D32", "0x6B206574", "0x0FFFFFFF", "0x0FFFFFFC"],
+    "constants_hex_notes": "ChaCha20 sigma constants + Poly1305 clamp mask: r[3],r[7],r[11],r[15] AND 0x0F; r[4],r[8],r[12] AND 0xFC",
+    "confidence": 0.95,
+    "description": "ChaCha20-Poly1305 AEAD construction (RFC 8439)"
+  },
+  {
+    "name": "des",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = IP^{-1}(\\text{Feistel}^{16}(IP(P), K_{1..16}))",
+    "keywords": ["des", "feistel", "ip_table", "expansion", "permutation", "DES_encrypt", "DES_set_key", "parity_bit"],
+    "constants": ["58", "50", "42", "34", "26", "18", "10", "2", "14", "4", "13", "1", "2", "15", "11", "8"],
+    "constants_hex_notes": "Initial Permutation table starts: 58 50 42 34 26 18 10 2. DES S-box 1 first row: 14 4 13 1 2 15 11 8 3 10 6 12 5 9 0 7. PC-1 table starts: 57 49 41 33 25 17 9 1",
+    "confidence": 0.95,
+    "description": "Data Encryption Standard, 16 Feistel rounds, 56-bit effective key"
+  },
+  {
+    "name": "triple_des",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = E_{K_1}(D_{K_2}(E_{K_3}(P)))",
+    "keywords": ["3des", "triple_des", "ede", "DES_ede3", "tdes", "DES_EDE"],
+    "constants": ["58", "50", "42", "34", "26", "18", "10", "2"],
+    "constants_hex_notes": "Same DES S-boxes and permutation tables, but applied three times (EDE pattern)",
+    "confidence": 0.90,
+    "description": "Triple DES (3DES/TDES), encrypt-decrypt-encrypt with 2 or 3 keys"
+  },
+  {
+    "name": "blowfish",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = \\text{Feistel}^{16}(P, P_0..P_{17}), \\quad F(x) = ((S_1[a] + S_2[b]) \\oplus S_3[c]) + S_4[d]",
+    "keywords": ["blowfish", "bf_encrypt", "BF_set_key", "p_array", "sbox", "feistel", "BF_ROUNDS"],
+    "constants": ["0x243F6A88", "0x85A308D3", "0x13198A2E", "0x03707344", "0xA4093822", "0x299F31D0"],
+    "constants_hex_notes": "P-array initial values (from pi digits): 0x243F6A88 0x85A308D3 0x13198A2E 0x03707344 0xA4093822 0x299F31D0 0x082EFA98 0xEC4E6C89",
+    "confidence": 0.97,
+    "description": "Blowfish block cipher, 16 Feistel rounds, variable key up to 448 bits"
+  },
+  {
+    "name": "twofish",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = \\text{Feistel}^{16}(P, K), \\text{ MDS matrix + PHT + key-dependent S-boxes}",
+    "keywords": ["twofish", "mds", "pht", "q_permutation", "h_function", "key_dependent_sbox", "reed_solomon"],
+    "constants": ["0x169", "0x14D", "0x01", "0xA4", "0x55", "0x87", "0x5A"],
+    "constants_hex_notes": "MDS polynomial: 0x169 (x^8 + x^6 + x^5 + x^3 + 1). RS polynomial: 0x14D (x^8 + x^6 + x^3 + x^2 + 1). Q0 permutation starts: 0x08 0x01 0x07 0x0D 0x06",
+    "confidence": 0.92,
+    "description": "Twofish block cipher, 16 Feistel rounds, 128/192/256-bit key"
+  },
+  {
+    "name": "serpent",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = FP(\\hat{R}_{31}(\\ldots\\hat{R}_0(IP(P), K)\\ldots))",
+    "keywords": ["serpent", "sbox", "linear_transform", "golden_ratio", "serpent_encrypt"],
+    "constants": ["0x9E3779B9"],
+    "constants_hex_notes": "Golden ratio constant phi = (sqrt(5)-1)/2 * 2^32 = 0x9E3779B9 used in key schedule. 8 distinct 4-bit S-boxes",
+    "confidence": 0.85,
+    "description": "Serpent block cipher, 32 rounds, 128/192/256-bit key (AES finalist)"
+  },
+  {
+    "name": "camellia",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = \\text{Feistel}^{18/24}(P, K), \\text{ FL/FL}^{-1} \\text{ every 6 rounds}",
+    "keywords": ["camellia", "fl_function", "flinv", "sigma", "sp_box", "CAMELLIA_encrypt"],
+    "constants": ["0xA09E667F", "0x3BCC908B", "0xB67AE858", "0x4CAA73B2", "0xC6EF372F", "0xE94F82BE"],
+    "constants_hex_notes": "Sigma constants (from SHA-256 H values split): sigma1=0xA09E667F3BCC908B, sigma2=0xB67AE8584CAA73B2, sigma3=0xC6EF372FE94F82BE, sigma4=0x54FF53A5F1D36F1C, sigma5=0x10E527FADE682D1D, sigma6=0xB05688C2B3E6C1FD",
+    "confidence": 0.92,
+    "description": "Camellia block cipher, 18/24 Feistel rounds, used in TLS and Japanese government"
+  },
+  {
+    "name": "aria",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = \\text{SPN}^{12/14/16}(P, K), \\text{ diffusion layer: 16x16 involutory binary matrix}",
+    "keywords": ["aria", "sbox1", "sbox2", "diffusion_layer", "ARIA_encrypt"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B", "0xE2", "0x4E", "0x6B"],
+    "constants_hex_notes": "ARIA S-box 1 is same as AES S-box (0x63 0x7C 0x77...). S-box 2 is the bitwise inverse. Constants C1,C2,C3 for key schedule derived from golden ratio",
+    "confidence": 0.85,
+    "description": "ARIA block cipher, Korean standard (NSRI), 12/14/16 rounds"
+  },
+  {
+    "name": "sm4",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = R^{32}(P, rk_0..rk_{31}), \\quad \\tau(A) = (\\text{Sbox}(a_0), \\ldots), \\quad L(B) = B \\oplus (B\\lll 2) \\oplus (B\\lll 10) \\oplus (B\\lll 18) \\oplus (B\\lll 24)",
+    "keywords": ["sm4", "chinese", "national_standard", "tau_transform", "L_transform", "SM4_encrypt"],
+    "constants": ["0xD6", "0x90", "0xE9", "0xFE", "0xCC", "0xE1", "0x3D", "0xB7", "0x16", "0xB6", "0x14", "0xC2"],
+    "constants_hex_notes": "SM4 S-box starts: D6 90 E9 FE CC E1 3D B7 16 B6 14 C2 28 FB 2C 03. System parameter FK: 0xA3B1BAC6 0x56AA3350 0x677D9197 0xB27022DC. Constant key CK[0]=0x00070E15",
+    "confidence": 0.93,
+    "description": "SM4 (formerly SMS4), Chinese national block cipher standard, 32 rounds"
+  },
+  {
+    "name": "rc4",
+    "category": "symmetric_encryption",
+    "formula_latex": "\\text{KSA:} S[i] \\leftrightarrow S[j], j=(j+S[i]+K[i\\bmod l])\\bmod 256; \\quad \\text{PRGA:} i{+}{+}, j{+}{=}S[i], \\text{swap}, \\text{output}=S[(S[i]+S[j])\\bmod 256]",
+    "keywords": ["rc4", "arcfour", "KSA", "PRGA", "key_scheduling", "RC4_set_key", "identity_permutation"],
+    "constants": ["0x00", "0x01", "0x02", "0x03", "0x04", "0x05", "0x06", "0x07", "0x08", "0x09", "0x0A", "0x0B", "0x0C", "0x0D", "0x0E", "0x0F"],
+    "constants_hex_notes": "Identity permutation S[0..255] = {0,1,2,...,255} initialized in KSA. Detection: 256-byte array init loop with swap pattern. Common false positive source",
+    "confidence": 0.75,
+    "description": "RC4 (ARC4) stream cipher, variable key size"
+  },
+  {
+    "name": "rc5",
+    "category": "symmetric_encryption",
+    "formula_latex": "A = ((A \\oplus B) \\lll B) + S[2i], \\quad B = ((B \\oplus A) \\lll A) + S[2i+1]",
+    "keywords": ["rc5", "data_dependent_rotation", "magic_constant", "RC5_ENCRYPT"],
+    "constants": ["0xB7E15163", "0x9E3779B9"],
+    "constants_hex_notes": "P32 = 0xB7E15163 = Odd((e-2)*2^32). Q32 = 0x9E3779B9 = Odd((phi-1)*2^32). Key expansion: S[0]=P, S[i]=S[i-1]+Q",
+    "confidence": 0.90,
+    "description": "RC5 block cipher, data-dependent rotations, variable rounds/key/block"
+  },
+  {
+    "name": "rc6",
+    "category": "symmetric_encryption",
+    "formula_latex": "t = (B \\times (2B+1)) \\lll \\log_2 w, \\quad u = (D \\times (2D+1)) \\lll \\log_2 w",
+    "keywords": ["rc6", "quadratic_function", "multiplication", "RC6_ENCRYPT"],
+    "constants": ["0xB7E15163", "0x9E3779B9"],
+    "constants_hex_notes": "Same P32/Q32 as RC5. Distinguisher: uses integer multiplication (x*(2x+1)) which RC5 does not",
+    "confidence": 0.88,
+    "description": "RC6 block cipher, AES finalist, uses integer multiplication"
+  },
+  {
+    "name": "tea",
+    "category": "symmetric_encryption",
+    "formula_latex": "\\text{sum} += \\delta; \\quad v_0 += ((v_1 \\ll 4)+K_0) \\oplus (v_1+\\text{sum}) \\oplus ((v_1 \\gg 5)+K_1)",
+    "keywords": ["tea", "tiny_encryption", "delta", "TEA_encrypt"],
+    "constants": ["0x9E3779B9"],
+    "constants_hex_notes": "Delta = 0x9E3779B9 (golden ratio). TEA uses 64 Feistel rounds (32 cycles). Pattern: sum += delta in loop",
+    "confidence": 0.88,
+    "description": "Tiny Encryption Algorithm, 64 rounds, 128-bit key, 64-bit block"
+  },
+  {
+    "name": "xtea",
+    "category": "symmetric_encryption",
+    "formula_latex": "v_0 += ((v_1\\ll 4 \\oplus v_1\\gg 5) + v_1) \\oplus (\\text{sum} + K[\\text{sum} \\& 3])",
+    "keywords": ["xtea", "extended_tea", "XTEA_encrypt"],
+    "constants": ["0x9E3779B9"],
+    "constants_hex_notes": "Same delta as TEA. Distinguisher: key indexing uses (sum>>11) & 3 and sum & 3 alternating",
+    "confidence": 0.85,
+    "description": "Extended TEA (XTEA), fixes TEA key schedule weakness"
+  },
+  {
+    "name": "cast5",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = \\text{Feistel}^{12/16}(P, K), \\text{ 4 large S-boxes (8->32 bit)}",
+    "keywords": ["cast5", "cast_128", "CAST_encrypt", "CAST_set_key"],
+    "constants": ["0x30FB40D4", "0x9FA0FF0B", "0x6BECCD2F", "0x3F258C7A"],
+    "constants_hex_notes": "S-box 1 starts: 0x30FB40D4 0x9FA0FF0B 0x6BECCD2F 0x3F258C7A 0x1E213F2F 0x9C004DD3 0x6003E540 0x CF9FC949",
+    "confidence": 0.90,
+    "description": "CAST-128 (CAST5) block cipher, 12 or 16 Feistel rounds"
+  },
+  {
+    "name": "idea",
+    "category": "symmetric_encryption",
+    "formula_latex": "\\text{Operations:} \\oplus, \\boxplus_{2^{16}}, \\odot_{2^{16}+1}",
+    "keywords": ["idea", "multiplication_mod", "0x10001", "IDEA_encrypt"],
+    "constants": ["0x10001"],
+    "constants_hex_notes": "Multiplication modulo 2^16 + 1 = 0x10001. Eight 8.5-round structure mixing XOR, addition mod 2^16, multiplication mod 2^16+1",
+    "confidence": 0.88,
+    "description": "International Data Encryption Algorithm, 8.5 rounds"
+  },
+  {
+    "name": "salsa20",
+    "category": "symmetric_encryption",
+    "formula_latex": "\\text{state} = \\text{columnround}^{10}(\\text{rowround}^{10}(\\sigma \\| K \\| \\text{nonce} \\| \\text{counter}))",
+    "keywords": ["salsa20", "quarter_round", "columnround", "rowround", "expand 32-byte k", "expand 16-byte k", "sigma", "tau"],
+    "constants": ["0x61707865", "0x3320646E", "0x79622D32", "0x6B206574", "0x61707865", "0x3120646E", "0x79622D36", "0x6B206574"],
+    "constants_hex_notes": "sigma (256-bit key): 'expa' 'nd 3' '2-by' 'te k' = 0x61707865 0x3320646E 0x79622D32 0x6B206574. tau (128-bit key): 'expa' 'nd 1' '6-by' 'te k' = 0x61707865 0x3120646E 0x79622D36 0x6B206574",
+    "confidence": 0.95,
+    "description": "Salsa20 stream cipher, 20 rounds, predecessor of ChaCha20"
+  },
+  {
+    "name": "gost_28147_89",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = \\text{Feistel}^{32}(P, K), \\quad f(x) = S(x \\boxplus K_i) \\lll 11",
+    "keywords": ["gost", "magma", "28147", "russian_cipher", "GOST_encrypt"],
+    "constants": ["4", "10", "9", "2", "13", "8", "0", "14", "6", "11", "1", "12", "7", "15", "5", "3"],
+    "constants_hex_notes": "GOST S-box 1 (Central Bank variant): 4 10 9 2 13 8 0 14 6 11 1 12 7 15 5 3. 32 Feistel rounds, rotation by 11 bits",
+    "confidence": 0.88,
+    "description": "GOST 28147-89 (Magma) Russian block cipher, 32 Feistel rounds"
+  },
+  {
+    "name": "kuznyechik",
+    "category": "symmetric_encryption",
+    "formula_latex": "C = \\text{SPN}^{10}(P, K), \\quad L(x) = l^{16}(x), \\quad l: \\text{GF}(2^8) \\text{ multiplication}",
+    "keywords": ["kuznyechik", "grasshopper", "34_12_2015", "russian", "GOST_R_34_12"],
+    "constants": ["0xFC", "0xEE", "0xDD", "0x11", "0xCF", "0x6E", "0x31", "0x16"],
+    "constants_hex_notes": "Kuznyechik S-box starts: FC EE DD 11 CF 6E 31 16 FB C4 FA DA 23 C5 04 4D. Linear transformation uses GF(2^8) with irreducible polynomial x^8 + x^7 + x^6 + x + 1 = 0x1C3",
+    "confidence": 0.88,
+    "description": "Kuznyechik (GOST R 34.12-2015), modern Russian block cipher"
+  },
+  {
+    "name": "rsa_pkcs1_v15",
+    "category": "asymmetric_encryption",
+    "formula_latex": "C = M^e \\bmod n, \\quad M = C^d \\bmod n, \\quad ed \\equiv 1 \\pmod{\\phi(n)}",
+    "keywords": ["rsa", "modular_exponentiation", "montgomery", "bignum", "RSA_public_encrypt", "RSA_private_decrypt", "PKCS1", "padding", "0x00 0x02"],
+    "constants": ["0x10001", "0x03", "0x00 0x02"],
+    "constants_hex_notes": "Common public exponent e=65537=0x10001 (or e=3=0x03). PKCS#1 v1.5 padding starts: 0x00 0x02 <random> 0x00 <message>",
+    "confidence": 0.92,
+    "description": "RSA with PKCS#1 v1.5 padding"
+  },
+  {
+    "name": "rsa_oaep",
+    "category": "asymmetric_encryption",
+    "formula_latex": "\\text{OAEP:} \\quad \\text{maskedSeed} = \\text{seed} \\oplus \\text{MGF1}(\\text{maskedDB}), \\quad \\text{EM} = 0x00 \\| \\text{maskedSeed} \\| \\text{maskedDB}",
+    "keywords": ["rsa", "oaep", "mgf1", "mask_generation", "RSA_padding_add_PKCS1_OAEP", "lHash", "ps"],
+    "constants": ["0x10001"],
+    "constants_hex_notes": "Public exponent e=0x10001. OAEP label hash (empty string SHA-256): 0xe3b0c44298fc1c14... OAEP encoding: 0x00 || maskedSeed || maskedDB",
+    "confidence": 0.90,
+    "description": "RSA with Optimal Asymmetric Encryption Padding (OAEP)"
+  },
+  {
+    "name": "diffie_hellman",
+    "category": "key_exchange",
+    "formula_latex": "A = g^a \\bmod p, \\quad B = g^b \\bmod p, \\quad K = B^a = A^b = g^{ab} \\bmod p",
+    "keywords": ["diffie_hellman", "dh", "generator", "modular_exponentiation", "DH_generate_key", "DH_compute_key", "safe_prime"],
+    "constants": ["0x02", "0x05"],
+    "constants_hex_notes": "Common generators: g=2 or g=5. RFC 3526 MODP groups: Group 14 (2048-bit) prime starts 0xFFFFFFFF FFFFFFFF C90FDAA2... Well-known primes detectable by first/last bytes",
+    "confidence": 0.85,
+    "description": "Diffie-Hellman key exchange over finite field"
+  },
+  {
+    "name": "ecdh",
+    "category": "key_exchange",
+    "formula_latex": "Q_A = d_A \\cdot G, \\quad K = d_A \\cdot Q_B = d_B \\cdot Q_A",
+    "keywords": ["ecdh", "elliptic_curve", "scalar_multiplication", "point_mul", "EC_POINT_mul", "ECDH_compute_key", "secp256r1", "P-256"],
+    "constants": [],
+    "constants_hex_notes": "P-256 (secp256r1) prime p = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF. Curve25519 prime p = 2^255 - 19",
+    "confidence": 0.85,
+    "description": "Elliptic Curve Diffie-Hellman key exchange"
+  },
+  {
+    "name": "elgamal",
+    "category": "asymmetric_encryption",
+    "formula_latex": "C = (g^k \\bmod p, \\; M \\cdot y^k \\bmod p), \\quad y = g^x \\bmod p",
+    "keywords": ["elgamal", "modular_exponentiation", "random_k", "shared_secret"],
+    "constants": [],
+    "constants_hex_notes": "Uses same modular exponentiation as DH. Distinguisher: ciphertext is a pair (c1, c2), decryption computes c1^x then divides",
+    "confidence": 0.75,
+    "description": "ElGamal encryption scheme"
+  },
+  {
+    "name": "dsa",
+    "category": "digital_signature",
+    "formula_latex": "r = (g^k \\bmod p) \\bmod q, \\quad s = k^{-1}(H(m) + xr) \\bmod q",
+    "keywords": ["dsa", "digital_signature", "DSA_sign", "DSA_verify", "modular_inverse", "subgroup_order"],
+    "constants": [],
+    "constants_hex_notes": "DSA uses (p, q, g) parameter set. q is 160/224/256-bit subgroup order. Signature is pair (r, s)",
+    "confidence": 0.80,
+    "description": "Digital Signature Algorithm (DSA)"
+  },
+  {
+    "name": "ecdsa",
+    "category": "digital_signature",
+    "formula_latex": "r = (k \\cdot G)_x \\bmod n, \\quad s = k^{-1}(e + rd) \\bmod n",
+    "keywords": ["ecdsa", "ECDSA_sign", "ECDSA_verify", "secp256r1", "secp256k1", "P-256", "nonce_k", "scalar_mul"],
+    "constants": [],
+    "constants_hex_notes": "secp256k1 (Bitcoin) order n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141. P-256 order n = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551",
+    "confidence": 0.88,
+    "description": "Elliptic Curve Digital Signature Algorithm"
+  },
+  {
+    "name": "ed25519",
+    "category": "digital_signature",
+    "formula_latex": "R = rB, \\quad S = r + H(R \\| A \\| M) \\cdot a \\pmod{\\ell}, \\quad \\ell = 2^{252} + 27742317777372353535851937790883648493",
+    "keywords": ["ed25519", "EdDSA", "curve25519", "twisted_edwards", "basepoint", "cofactor_8", "crypto_sign_ed25519"],
+    "constants": ["0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED"],
+    "constants_hex_notes": "Field prime p = 2^255 - 19 = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED. Base point B_y = 0x6666...6658. Group order l = 0x1000000000000000000000000000000014DEF9DEA2F79CD65812631A5CF5D3ED. d = -121665/121666 mod p",
+    "confidence": 0.93,
+    "description": "Ed25519 signature scheme (EdDSA on Curve25519)"
+  },
+  {
+    "name": "ed448",
+    "category": "digital_signature",
+    "formula_latex": "R = rB, \\quad S = r + H(R \\| A \\| M) \\cdot a \\pmod{\\ell}",
+    "keywords": ["ed448", "goldilocks", "curve448", "EdDSA", "cofactor_4"],
+    "constants": [],
+    "constants_hex_notes": "Field prime p = 2^448 - 2^224 - 1. Group order l = 2^446 - 13818066809895115352007386748515426880336692474882178609894547503885",
+    "confidence": 0.85,
+    "description": "Ed448 signature scheme (EdDSA on Curve448-Goldilocks)"
+  },
+  {
+    "name": "x25519",
+    "category": "key_exchange",
+    "formula_latex": "Q = \\text{scalar\\_mult}(k, P) \\text{ on Montgomery curve } y^2 = x^3 + 486662x^2 + x",
+    "keywords": ["x25519", "curve25519", "montgomery_ladder", "scalar_mult", "X25519", "crypto_scalarmult"],
+    "constants": ["0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED", "0x0000000000000000000000000000000000000000000000000000000000076D06"],
+    "constants_hex_notes": "Field prime p = 2^255 - 19. Montgomery coefficient A = 486662 = 0x76D06. Basepoint u = 9",
+    "confidence": 0.92,
+    "description": "X25519 ECDH key exchange (Curve25519 Montgomery form)"
+  },
+  {
+    "name": "sm2",
+    "category": "asymmetric_encryption",
+    "formula_latex": "C = (C_1 \\| C_3 \\| C_2), \\quad C_1 = kG, \\quad C_2 = M \\oplus \\text{KDF}(kP_B), \\quad C_3 = \\text{SM3}(x_2 \\| M \\| y_2)",
+    "keywords": ["sm2", "chinese_ecc", "SM2_sign", "SM2_verify", "SM2_encrypt", "sm2p256v1"],
+    "constants": [],
+    "constants_hex_notes": "SM2 recommended curve: p = 0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF. a = p-3. b = 0x28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93",
+    "confidence": 0.85,
+    "description": "SM2 Chinese national elliptic curve algorithm"
+  },
+  {
+    "name": "sha1",
+    "category": "hash",
+    "formula_latex": "H_0=\\text{0x67452301}, H_1=\\text{0xEFCDAB89}, \\ldots, \\quad f_t, K_t \\text{ for 80 rounds}",
+    "keywords": ["sha1", "SHA1", "SHA_1", "CC_SHA1", "sha1_update", "sha1_final", "160_bit"],
+    "constants": ["0x67452301", "0xEFCDAB89", "0x98BADCFE", "0x10325476", "0xC3D2E1F0", "0x5A827999", "0x6ED9EBA1", "0x8F1BBCDC", "0xCA62C1D6"],
+    "constants_hex_notes": "Initial hash H0-H4: 0x67452301 0xEFCDAB89 0x98BADCFE 0x10325476 0xC3D2E1F0. Round constants K: 0x5A827999 (0-19), 0x6ED9EBA1 (20-39), 0x8F1BBCDC (40-59), 0xCA62C1D6 (60-79). 80 rounds, 160-bit output",
+    "confidence": 0.98,
+    "description": "SHA-1 hash function, 80 rounds, 160-bit digest (DEPRECATED)"
+  },
+  {
+    "name": "sha256",
+    "category": "hash",
+    "formula_latex": "H_0^{(0)}=\\text{0x6A09E667}, \\ldots, \\quad \\Sigma_0, \\Sigma_1, \\sigma_0, \\sigma_1, Ch, Maj \\text{ for 64 rounds}",
+    "keywords": ["sha256", "SHA256", "SHA_256", "CC_SHA256", "sha256_update", "sha256_final", "256_bit"],
+    "constants": ["0x6A09E667", "0xBB67AE85", "0x3C6EF372", "0xA54FF53A", "0x510E527F", "0x9B05688C", "0x1F83D9AB", "0x5BE0CD19", "0x428A2F98", "0x71374491", "0xB5C0FBCF", "0xE9B5DBA5"],
+    "constants_hex_notes": "Initial hash H0-H7: 0x6A09E667 0xBB67AE85 0x3C6EF372 0xA54FF53A 0x510E527F 0x9B05688C 0x1F83D9AB 0x5BE0CD19. First 8 round constants K: 0x428A2F98 0x71374491 0xB5C0FBCF 0xE9B5DBA5 0x3956C25B 0x59F111F1 0x923F82A4 0xAB1C5ED5. 64 rounds total, 256-bit output",
+    "confidence": 0.99,
+    "description": "SHA-256 hash function, 64 rounds, 256-bit digest"
+  },
+  {
+    "name": "sha384",
+    "category": "hash",
+    "formula_latex": "\\text{SHA-512 truncated to 384 bits with different IV}",
+    "keywords": ["sha384", "SHA384", "SHA_384", "CC_SHA384"],
+    "constants": ["0xCBBB9D5DC1059ED8", "0x629A292A367CD507", "0x9159015A3070DD17", "0x152FECD8F70E5939"],
+    "constants_hex_notes": "SHA-384 initial hash values (different from SHA-512): H0=0xCBBB9D5DC1059ED8, H1=0x629A292A367CD507, H2=0x9159015A3070DD17, H3=0x152FECD8F70E5939, H4=0x67332667FFC00B31, H5=0x8EB44A8768581511, H6=0xDB0C2E0D64F98FA7, H7=0x47B5481DBEFA4FA4",
+    "confidence": 0.95,
+    "description": "SHA-384 hash function (SHA-512 with different IV, truncated output)"
+  },
+  {
+    "name": "sha512",
+    "category": "hash",
+    "formula_latex": "H_0^{(0)}=\\text{0x6A09E667F3BCC908}, \\ldots, \\quad 80 \\text{ rounds with 64-bit words}",
+    "keywords": ["sha512", "SHA512", "SHA_512", "CC_SHA512", "sha512_update", "sha512_final", "512_bit"],
+    "constants": ["0x6A09E667F3BCC908", "0xBB67AE8584CAA73B", "0x3C6EF372FE94F82B", "0xA54FF53A5F1D36F1", "0x428A2F98D728AE22", "0x7137449123EF65CD"],
+    "constants_hex_notes": "Initial hash H0-H7 (64-bit): 0x6A09E667F3BCC908 0xBB67AE8584CAA73B 0x3C6EF372FE94F82B 0xA54FF53A5F1D36F1 0x510E527FADE682D1 0x9B05688C2B3E6C1F 0x1F83D9ABFB41BD6B 0x5BE0CD19137E2179. 80 rounds, 80 K constants (64-bit)",
+    "confidence": 0.98,
+    "description": "SHA-512 hash function, 80 rounds, 512-bit digest"
+  },
+  {
+    "name": "sha3_keccak",
+    "category": "hash",
+    "formula_latex": "f = \\iota \\circ \\chi \\circ \\pi \\circ \\rho \\circ \\theta, \\quad \\text{state: } 5 \\times 5 \\times 64 = 1600 \\text{ bits, 24 rounds}",
+    "keywords": ["sha3", "keccak", "sponge", "absorb", "squeeze", "theta", "rho", "pi", "chi", "iota", "rate", "capacity", "SHA3_256", "SHAKE128", "SHAKE256"],
+    "constants": ["0x0000000000000001", "0x0000000000008082", "0x800000000000808A", "0x8000000080008000", "0x000000000000808B", "0x0000000080000001"],
+    "constants_hex_notes": "24 round constants (iota step): RC[0]=0x0000000000000001, RC[1]=0x0000000000008082, RC[2]=0x800000000000808A, RC[3]=0x8000000080008000, RC[4]=0x000000000000808B, RC[5]=0x0000000080000001, RC[6]=0x8000000080008081, RC[7]=0x8000000000008009, ... RC[23]=0x8000000080008008",
+    "confidence": 0.97,
+    "description": "SHA-3 (Keccak) sponge-based hash family, 24 rounds"
+  },
+  {
+    "name": "md5",
+    "category": "hash",
+    "formula_latex": "a_0=\\text{0x67452301}, b_0=\\text{0xEFCDAB89}, c_0=\\text{0x98BADCFE}, d_0=\\text{0x10325476}, \\quad T_i = \\lfloor 2^{32} |\\sin(i+1)| \\rfloor",
+    "keywords": ["md5", "MD5", "MD5_Init", "MD5_Update", "MD5_Final", "CC_MD5", "128_bit"],
+    "constants": ["0x67452301", "0xEFCDAB89", "0x98BADCFE", "0x10325476", "0xD76AA478", "0xE8C7B756", "0x242070DB", "0xC1BDCEEE"],
+    "constants_hex_notes": "Init values: A=0x67452301, B=0xEFCDAB89, C=0x98BADCFE, D=0x10325476. T table (floor(2^32*abs(sin(i)))): T[1]=0xD76AA478, T[2]=0xE8C7B756, T[3]=0x242070DB, T[4]=0xC1BDCEEE, T[5]=0xF57C0FAF, T[6]=0x4787C62A, T[7]=0xA8304613, T[8]=0xFD469501. 64 rounds, 128-bit output",
+    "confidence": 0.98,
+    "description": "MD5 hash function, 64 rounds, 128-bit digest (BROKEN)"
+  },
+  {
+    "name": "md4",
+    "category": "hash",
+    "formula_latex": "\\text{Same init as MD5}, \\quad \\sqrt{2} \\rightarrow \\text{0x5A827999}, \\quad \\sqrt{3} \\rightarrow \\text{0x6ED9EBA1}",
+    "keywords": ["md4", "MD4", "MD4_Init", "MD4_Update"],
+    "constants": ["0x67452301", "0xEFCDAB89", "0x98BADCFE", "0x10325476", "0x5A827999", "0x6ED9EBA1"],
+    "constants_hex_notes": "Same init as MD5. Round 2 constant: 0x5A827999 = floor(2^30 * sqrt(2)). Round 3 constant: 0x6ED9EBA1 = floor(2^30 * sqrt(3)). 48 rounds (3x16), 128-bit output",
+    "confidence": 0.90,
+    "description": "MD4 hash function, predecessor of MD5 (BROKEN)"
+  },
+  {
+    "name": "blake2b",
+    "category": "hash",
+    "formula_latex": "\\text{IV from SHA-512}, \\quad G(v, a, b, c, d, x, y): \\text{mixing with rotations } 32, 24, 16, 63",
+    "keywords": ["blake2b", "BLAKE2b", "blake2b_init", "blake2b_update", "blake2b_final", "crypto_generichash"],
+    "constants": ["0x6A09E667F3BCC908", "0xBB67AE8584CAA73B", "0x3C6EF372FE94F82B", "0xA54FF53A5F1D36F1", "0x510E527FADE682D1", "0x9B05688C2B3E6C1F", "0x1F83D9ABFB41BD6B", "0x5BE0CD19137E2179"],
+    "constants_hex_notes": "IV = SHA-512 initial hash values (same 8 x 64-bit values). Rotation amounts: 32, 24, 16, 63. Sigma permutation table: {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}, {14,10,4,8,9,15,13,6,1,12,0,2,11,7,5,3}, ... 12 rounds",
+    "confidence": 0.93,
+    "description": "BLAKE2b hash, up to 512-bit digest, optimized for 64-bit platforms"
+  },
+  {
+    "name": "blake2s",
+    "category": "hash",
+    "formula_latex": "\\text{IV from SHA-256}, \\quad G: \\text{rotations } 16, 12, 8, 7",
+    "keywords": ["blake2s", "BLAKE2s", "blake2s_init", "blake2s_update", "blake2s_final"],
+    "constants": ["0x6A09E667", "0xBB67AE85", "0x3C6EF372", "0xA54FF53A", "0x510E527F", "0x9B05688C", "0x1F83D9AB", "0x5BE0CD19"],
+    "constants_hex_notes": "IV = SHA-256 initial hash values (same 8 x 32-bit values). Rotation amounts: 16, 12, 8, 7. 10 rounds. Can be confused with SHA-256 by IV alone -- check rotation constants",
+    "confidence": 0.90,
+    "description": "BLAKE2s hash, up to 256-bit digest, optimized for 32-bit platforms"
+  },
+  {
+    "name": "blake3",
+    "category": "hash",
+    "formula_latex": "\\text{Merkle tree of BLAKE2s-like compressions}, \\quad \\text{IV from SHA-256}",
+    "keywords": ["blake3", "BLAKE3", "blake3_hasher", "blake3_update", "blake3_finalize", "chunk", "parent_node"],
+    "constants": ["0x6A09E667", "0xBB67AE85", "0x3C6EF372", "0xA54FF53A", "0x510E527F", "0x9B05688C", "0x1F83D9AB", "0x5BE0CD19"],
+    "constants_hex_notes": "Same SHA-256 IV as BLAKE2s. Distinguisher: Merkle tree structure, 7 rounds (vs 10 for BLAKE2s), domain separation flags in state word",
+    "confidence": 0.88,
+    "description": "BLAKE3 hash, Merkle tree parallelizable, variable-length output"
+  },
+  {
+    "name": "ripemd160",
+    "category": "hash",
+    "formula_latex": "H_0=\\text{0x67452301}, \\ldots, \\quad \\text{two parallel Feistel chains, 80 rounds each}",
+    "keywords": ["ripemd", "ripemd160", "RIPEMD160", "RIPEMD160_Init", "RIPEMD160_Update"],
+    "constants": ["0x67452301", "0xEFCDAB89", "0x98BADCFE", "0x10325476", "0xC3D2E1F0", "0x5A827999", "0x6ED9EBA1", "0x8F1BBCDC", "0xA953FD4E", "0x50A28BE6", "0x5C4DD124", "0x6D703EF3", "0x7A6D76E9"],
+    "constants_hex_notes": "Init values same as SHA-1/MD4. Left-line constants: 0x5A827999 0x6ED9EBA1 0x8F1BBCDC 0xA953FD4E. Right-line constants: 0x50A28BE6 0x5C4DD124 0x6D703EF3 0x7A6D76E9. Distinguisher: dual parallel chains",
+    "confidence": 0.93,
+    "description": "RIPEMD-160 hash, 160-bit, used in Bitcoin address generation"
+  },
+  {
+    "name": "whirlpool",
+    "category": "hash",
+    "formula_latex": "\\text{Miyaguchi-Preneel with 10-round AES-like block cipher on 512-bit state}",
+    "keywords": ["whirlpool", "WHIRLPOOL", "whirlpool_init", "C0_table", "C1_table"],
+    "constants": ["0x18", "0x23", "0xC6", "0xE8", "0x87", "0xB8", "0x01", "0x4F"],
+    "constants_hex_notes": "Whirlpool S-box starts: 18 23 C6 E8 87 B8 01 4F 36 A6 D2 F5 79 6F 91 52. 10 rounds, 8x8 state matrix, GF(2^8) MDS diffusion. 512-bit output",
+    "confidence": 0.90,
+    "description": "Whirlpool hash, 512-bit digest, AES-like internal structure"
+  },
+  {
+    "name": "sm3",
+    "category": "hash",
+    "formula_latex": "\\text{Merkle-Damgard, 64 rounds}, \\quad IV = \\text{0x7380166F 0x4914B2B9} \\ldots",
+    "keywords": ["sm3", "SM3", "chinese_hash", "SM3_Init", "SM3_Update"],
+    "constants": ["0x7380166F", "0x4914B2B9", "0x172442D7", "0xDA8A0600", "0xA96F30BC", "0x163138AA", "0xE38DEE4D", "0xB0FB0E4E", "0x79CC4519", "0x7A879D8A"],
+    "constants_hex_notes": "Initial hash values: 0x7380166F 0x4914B2B9 0x172442D7 0xDA8A0600 0xA96F30BC 0x163138AA 0xE38DEE4D 0xB0FB0E4E. Round constant T[j]: 0x79CC4519 (j=0..15), 0x7A879D8A (j=16..63). 64 rounds, 256-bit output",
+    "confidence": 0.93,
+    "description": "SM3 Chinese national hash standard, 64 rounds, 256-bit"
+  },
+  {
+    "name": "pbkdf2",
+    "category": "kdf",
+    "formula_latex": "DK = T_1 \\| T_2 \\| \\ldots, \\quad T_i = U_1 \\oplus U_2 \\oplus \\ldots \\oplus U_c, \\quad U_1 = \\text{PRF}(P, S \\| \\text{INT}(i))",
+    "keywords": ["pbkdf2", "PBKDF2", "PKCS5_PBKDF2_HMAC", "CCKeyDerivationPBKDF", "iteration_count", "salt", "derived_key"],
+    "constants": [],
+    "constants_hex_notes": "No unique constants. Detection: nested HMAC loops with XOR accumulation. Common iteration counts: 10000, 100000, 600000. Look for salt concatenation and INT_32_BE(i)",
+    "confidence": 0.80,
+    "description": "Password-Based Key Derivation Function 2"
+  },
+  {
+    "name": "bcrypt",
+    "category": "kdf",
+    "formula_latex": "\\text{EksBlowfishSetup}(\\text{cost}, \\text{salt}, \\text{password}), \\quad \\text{then 64x encrypt } \\text{\"OrpheanBeholderScryDoubt\"}",
+    "keywords": ["bcrypt", "eksblowfish", "cost_factor", "OrpheanBeholderScryDoubt", "bcrypt_hashpw"],
+    "constants": ["0x243F6A88", "0x85A308D3", "0x4F727068", "0x65616E42", "0x65686F6C", "0x64657253"],
+    "constants_hex_notes": "Blowfish P-array + magic string 'OrpheanBeholderScryDoubt' = 0x4F727068 0x65616E42 0x65686F6C 0x64657253 0x63727944 0x6F756274. Cost factor: 2^cost iterations",
+    "confidence": 0.93,
+    "description": "bcrypt password hashing (Blowfish-based)"
+  },
+  {
+    "name": "scrypt",
+    "category": "kdf",
+    "formula_latex": "B_i = \\text{PBKDF2}(P, S, 1), \\quad V_j = \\text{BlockMix}^N, \\quad \\text{memory-hard sequential access}",
+    "keywords": ["scrypt", "BlockMix", "ROMix", "Salsa20_8", "memory_hard", "crypto_pwhash_scryptsalsa208sha256", "N_parameter", "r_parameter", "p_parameter"],
+    "constants": ["0x61707865", "0x3320646E", "0x79622D32", "0x6B206574"],
+    "constants_hex_notes": "Uses Salsa20/8 internally (same sigma constants). Memory parameter N (power of 2), block size r, parallelism p. Memory usage: 128*N*r bytes",
+    "confidence": 0.88,
+    "description": "scrypt memory-hard password KDF"
+  },
+  {
+    "name": "argon2",
+    "category": "kdf",
+    "formula_latex": "\\text{Memory-hard: } m \\text{ KiB blocks}, t \\text{ passes}, p \\text{ lanes}",
+    "keywords": ["argon2", "argon2i", "argon2d", "argon2id", "crypto_pwhash", "memory_hard", "Argon2_Context", "ARGON2_VERSION"],
+    "constants": ["0x13"],
+    "constants_hex_notes": "Argon2 version: 0x13 (v1.3). Uses BLAKE2b internally for compression. Types: 0x00=Argon2d, 0x01=Argon2i, 0x02=Argon2id. String marker: '$argon2id$'",
+    "confidence": 0.90,
+    "description": "Argon2 memory-hard password hashing (PHC winner)"
+  },
+  {
+    "name": "hkdf",
+    "category": "kdf",
+    "formula_latex": "\\text{PRK} = \\text{HMAC}(\\text{salt}, \\text{IKM}), \\quad \\text{OKM} = T_1 \\| T_2 \\| \\ldots, \\quad T_i = \\text{HMAC}(\\text{PRK}, T_{i-1} \\| \\text{info} \\| i)",
+    "keywords": ["hkdf", "HKDF", "hkdf_extract", "hkdf_expand", "HKDF_Extract", "HKDF_Expand", "info_string"],
+    "constants": [],
+    "constants_hex_notes": "No unique constants. Two-phase: Extract (HMAC with salt) and Expand (HMAC chain with counter byte). Detection: HMAC chain with single-byte counter appended",
+    "confidence": 0.78,
+    "description": "HMAC-based Key Derivation Function (RFC 5869)"
+  },
+  {
+    "name": "hmac",
+    "category": "mac",
+    "formula_latex": "\\text{HMAC}(K, m) = H((K' \\oplus \\text{opad}) \\| H((K' \\oplus \\text{ipad}) \\| m))",
+    "keywords": ["hmac", "HMAC", "HMAC_Init", "HMAC_Update", "HMAC_Final", "CCHmac", "ipad", "opad"],
+    "constants": ["0x36", "0x5C"],
+    "constants_hex_notes": "ipad = 0x36 repeated to block size. opad = 0x5C repeated to block size. Pattern: key XOR with 0x36/0x5C padding, double hash",
+    "confidence": 0.95,
+    "description": "Hash-based Message Authentication Code"
+  },
+  {
+    "name": "cmac",
+    "category": "mac",
+    "formula_latex": "T = \\text{AES}_{K}(M_n \\oplus \\text{prev} \\oplus K_1), \\quad K_1 = L \\cdot x \\text{ in GF}(2^{128})",
+    "keywords": ["cmac", "CMAC", "AES_CMAC", "omac", "subkey_generation", "double_block"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B", "0x87"],
+    "constants_hex_notes": "AES S-box + constant Rb = 0x87 for GF(2^128) doubling. Pattern: L = AES_K(0^128), then K1 = L<<1 XOR Rb if MSB(L)=1",
+    "confidence": 0.85,
+    "description": "Cipher-based Message Authentication Code (AES-CMAC)"
+  },
+  {
+    "name": "gmac",
+    "category": "mac",
+    "formula_latex": "T = \\text{GHASH}(H, \\text{AAD}) \\oplus E_K(J_0)",
+    "keywords": ["gmac", "GMAC", "ghash", "galois_mac"],
+    "constants": ["0xE1000000"],
+    "constants_hex_notes": "GF(2^128) reduction polynomial R. GMAC is GCM without plaintext (AAD-only authentication)",
+    "confidence": 0.82,
+    "description": "Galois Message Authentication Code (GCM without encryption)"
+  },
+  {
+    "name": "poly1305",
+    "category": "mac",
+    "formula_latex": "\\text{tag} = (\\sum_{i=1}^{q} (c_i + 2^{128}) \\cdot r^{q+1-i} + s) \\bmod 2^{130} - 5) \\bmod 2^{128}",
+    "keywords": ["poly1305", "Poly1305", "poly1305_auth", "clamp_r", "crypto_onetimeauth"],
+    "constants": ["0x0FFFFFFF", "0x0FFFFFFC"],
+    "constants_hex_notes": "Clamp mask for r: top 4 bits of each 32-bit word cleared, bits 2,3,4 of words 1,2,3 cleared. Specifically: r[3],r[7],r[11],r[15] &= 0x0F; r[4],r[8],r[12] &= 0xFC. Prime: 2^130 - 5 = 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+    "confidence": 0.90,
+    "description": "Poly1305 one-time authenticator"
+  },
+  {
+    "name": "siphash",
+    "category": "mac",
+    "formula_latex": "v_0 = k_0 \\oplus \\text{0x736f6d6570736575}, \\ldots, \\quad c \\text{ compression + } d \\text{ finalization rounds}",
+    "keywords": ["siphash", "SipHash", "siphash_2_4", "siphash_4_8", "sipround"],
+    "constants": ["0x736F6D6570736575", "0x646F72616E646F6D", "0x6C7967656E657261", "0x7465646279746573"],
+    "constants_hex_notes": "Initialization constants (ASCII): v0 XOR 'somepseu'=0x736F6D6570736575, v1 XOR 'dorandom'=0x646F72616E646F6D, v2 XOR 'lygenera'=0x6C7967656E657261, v3 XOR 'tedbytes'=0x7465646279746573",
+    "confidence": 0.92,
+    "description": "SipHash-2-4 keyed hash (hash table DoS protection)"
+  },
+  {
+    "name": "crc32",
+    "category": "checksum",
+    "formula_latex": "\\text{CRC}(M) = M(x) \\cdot x^{32} \\bmod G(x), \\quad G(x) = x^{32} + x^{26} + x^{23} + \\ldots + 1",
+    "keywords": ["crc32", "CRC32", "crc_table", "polynomial", "crc32_update"],
+    "constants": ["0xEDB88320", "0x04C11DB7", "0x00000000", "0x77073096", "0xEE0E612C", "0x990951BA"],
+    "constants_hex_notes": "Reflected polynomial: 0xEDB88320 (CRC-32). Normal polynomial: 0x04C11DB7. Lookup table starts: 0x00000000 0x77073096 0xEE0E612C 0x990951BA 0x076DC419 0x706AF48F 0xE963A535 0x9E6495A3",
+    "confidence": 0.97,
+    "description": "CRC-32 cyclic redundancy check"
+  },
+  {
+    "name": "crc16_ccitt",
+    "category": "checksum",
+    "formula_latex": "G(x) = x^{16} + x^{12} + x^5 + 1",
+    "keywords": ["crc16", "ccitt", "CRC16", "xmodem"],
+    "constants": ["0x1021", "0x8408"],
+    "constants_hex_notes": "CRC-16-CCITT normal polynomial: 0x1021. Reflected: 0x8408",
+    "confidence": 0.90,
+    "description": "CRC-16-CCITT checksum"
+  },
+  {
+    "name": "adler32",
+    "category": "checksum",
+    "formula_latex": "A = 1 + \\sum D_i \\bmod 65521, \\quad B = \\sum A_i \\bmod 65521, \\quad \\text{Adler32} = B \\cdot 65536 + A",
+    "keywords": ["adler32", "adler", "65521", "ADLER32"],
+    "constants": ["0xFFF1"],
+    "constants_hex_notes": "Modulus = 65521 = 0xFFF1 (largest prime < 2^16). Used in zlib alongside deflate",
+    "confidence": 0.92,
+    "description": "Adler-32 checksum (used in zlib)"
+  },
+  {
+    "name": "tls12_handshake",
+    "category": "protocol",
+    "formula_latex": "\\text{ClientHello} \\rightarrow \\text{ServerHello} \\rightarrow \\text{Certificate} \\rightarrow \\text{KeyExchange} \\rightarrow \\text{Finished}",
+    "keywords": ["tls", "ssl", "handshake", "ClientHello", "ServerHello", "master_secret", "PRF", "SSL_connect", "SSL_accept", "SSL_CTX_new", "TLS_method"],
+    "constants": ["0x0301", "0x0303", "0x16", "0x01", "0x02", "0x0B", "0x0C", "0x0D", "0x0E", "0x10", "0x14"],
+    "constants_hex_notes": "TLS record type: 0x16 (handshake). Versions: TLS 1.0=0x0301, TLS 1.2=0x0303. Handshake types: ClientHello=0x01, ServerHello=0x02, Certificate=0x0B, ServerKeyExchange=0x0C, CertificateRequest=0x0D, ServerHelloDone=0x0E, ClientKeyExchange=0x10, Finished=0x14. PRF label: 'master secret', 'key expansion'",
+    "confidence": 0.88,
+    "description": "TLS 1.2 handshake protocol"
+  },
+  {
+    "name": "tls13_handshake",
+    "category": "protocol",
+    "formula_latex": "\\text{1-RTT:} \\text{ClientHello}+\\text{key\\_share} \\rightarrow \\text{ServerHello}+\\text{EncryptedExtensions}+\\text{Finished}",
+    "keywords": ["tls13", "tls_1_3", "key_share", "psk", "early_data", "0-RTT", "TLS_AES_128_GCM_SHA256", "TLS_CHACHA20_POLY1305_SHA256"],
+    "constants": ["0x0304", "0x1301", "0x1302", "0x1303"],
+    "constants_hex_notes": "TLS 1.3 version: 0x0304. Cipher suites: TLS_AES_128_GCM_SHA256=0x1301, TLS_AES_256_GCM_SHA384=0x1302, TLS_CHACHA20_POLY1305_SHA256=0x1303. HKDF-based key schedule. Supported versions extension: 0x002B",
+    "confidence": 0.88,
+    "description": "TLS 1.3 handshake protocol (RFC 8446)"
+  },
+  {
+    "name": "x509_certificate",
+    "category": "pki",
+    "formula_latex": "",
+    "keywords": ["x509", "certificate", "issuer", "subject", "validity", "public_key", "SecCertificateCreateWithData", "X509_verify_cert", "d2i_X509"],
+    "constants": ["0x30", "0x82", "0x02", "0x01"],
+    "constants_hex_notes": "ASN.1 DER SEQUENCE tag: 0x30. Long-form length: 0x82. OID for SHA256WithRSA: 1.2.840.113549.1.1.11 = 0x2A 0x86 0x48 0x86 0xF7 0x0D 0x01 0x01 0x0B. OID for ecPublicKey: 1.2.840.10045.2.1",
+    "confidence": 0.85,
+    "description": "X.509 certificate parsing and validation"
+  },
+  {
+    "name": "asn1_der",
+    "category": "pki",
+    "formula_latex": "",
+    "keywords": ["asn1", "der", "ber", "tlv", "SEQUENCE", "INTEGER", "BIT_STRING", "OCTET_STRING", "OID", "d2i_", "i2d_"],
+    "constants": ["0x30", "0x31", "0x02", "0x03", "0x04", "0x05", "0x06", "0x0C", "0x13", "0x16", "0x17", "0x18", "0xA0", "0xA1", "0xA3"],
+    "constants_hex_notes": "ASN.1 tags: SEQUENCE=0x30, SET=0x31, INTEGER=0x02, BIT_STRING=0x03, OCTET_STRING=0x04, NULL=0x05, OID=0x06, UTF8String=0x0C, PrintableString=0x13, IA5String=0x16, UTCTime=0x17, GeneralizedTime=0x18, Context[0]=0xA0",
+    "confidence": 0.82,
+    "description": "ASN.1 DER/BER encoding format"
+  },
+  {
+    "name": "jwt",
+    "category": "protocol",
+    "formula_latex": "\\text{JWT} = \\text{Base64url}(\\text{header}) \\cdot \\text{Base64url}(\\text{payload}) \\cdot \\text{Base64url}(\\text{signature})",
+    "keywords": ["jwt", "JSON_Web_Token", "header", "payload", "signature", "HS256", "RS256", "ES256", "alg", "typ", "iat", "exp", "sub", "iss"],
+    "constants": [],
+    "constants_hex_notes": "String markers: 'eyJ' (base64url of '{\"' - JWT header prefix). Common alg values: 'HS256', 'RS256', 'ES256', 'none' (vulnerability!). Header always contains 'alg' and 'typ':'JWT'",
+    "confidence": 0.85,
+    "description": "JSON Web Token (RFC 7519)"
+  },
+  {
+    "name": "oauth2",
+    "category": "protocol",
+    "formula_latex": "",
+    "keywords": ["oauth", "authorization_code", "access_token", "refresh_token", "client_id", "client_secret", "redirect_uri", "scope", "grant_type", "bearer"],
+    "constants": [],
+    "constants_hex_notes": "String markers: 'grant_type=authorization_code', 'grant_type=client_credentials', 'Bearer ', 'access_token', 'token_type', 'expires_in'. Endpoints: /authorize, /token, /revoke",
+    "confidence": 0.75,
+    "description": "OAuth 2.0 authorization framework"
+  },
+  {
+    "name": "kerberos",
+    "category": "protocol",
+    "formula_latex": "\\text{AS-REQ} \\rightarrow \\text{AS-REP}(\\text{TGT}) \\rightarrow \\text{TGS-REQ} \\rightarrow \\text{TGS-REP}(\\text{ticket}) \\rightarrow \\text{AP-REQ}",
+    "keywords": ["kerberos", "krb5", "TGT", "TGS", "AS_REQ", "AS_REP", "AP_REQ", "AP_REP", "KDC", "realm", "principal"],
+    "constants": ["0x05", "0x0A", "0x0B", "0x0C", "0x0D", "0x0E"],
+    "constants_hex_notes": "Kerberos version: 5 (0x05). Message types: AS-REQ=10(0x0A), AS-REP=11(0x0B), TGS-REQ=12(0x0C), TGS-REP=13(0x0D), AP-REQ=14(0x0E), AP-REP=15(0x0F). Port 88. OID: 1.2.840.113554.1.2.2",
+    "confidence": 0.82,
+    "description": "Kerberos v5 authentication protocol"
+  },
+  {
+    "name": "ipsec_esp",
+    "category": "network_security",
+    "formula_latex": "\\text{ESP} = \\text{SPI} \\| \\text{SeqNum} \\| E_K(\\text{Payload} \\| \\text{Padding} \\| \\text{PadLen} \\| \\text{NextHdr}) \\| \\text{ICV}",
+    "keywords": ["ipsec", "esp", "spi", "security_association", "IKE", "encapsulating_security_payload"],
+    "constants": ["0x32"],
+    "constants_hex_notes": "IP protocol number for ESP: 50 (0x32). AH: 51 (0x33). SPI field: 4 bytes at start. IKE port: UDP 500 and 4500 (NAT-T). IKEv2 initiator cookie detection",
+    "confidence": 0.80,
+    "description": "IPsec Encapsulating Security Payload"
+  },
+  {
+    "name": "ipsec_ah",
+    "category": "network_security",
+    "formula_latex": "\\text{AH} = \\text{NextHdr} \\| \\text{PayloadLen} \\| \\text{SPI} \\| \\text{SeqNum} \\| \\text{ICV}",
+    "keywords": ["ipsec", "ah", "authentication_header", "integrity_check_value"],
+    "constants": ["0x33"],
+    "constants_hex_notes": "IP protocol number for AH: 51 (0x33)",
+    "confidence": 0.78,
+    "description": "IPsec Authentication Header"
+  },
+  {
+    "name": "ikev2",
+    "category": "network_security",
+    "formula_latex": "\\text{IKE\\_SA\\_INIT} \\rightarrow \\text{IKE\\_AUTH} \\rightarrow \\text{CREATE\\_CHILD\\_SA}",
+    "keywords": ["ikev2", "ike", "isakmp", "INIT", "AUTH", "CHILD_SA", "cookie", "nonce", "SA_payload"],
+    "constants": ["0x21", "0x22", "0x23", "0x24", "0x25"],
+    "constants_hex_notes": "IKEv2 exchange types: IKE_SA_INIT=34(0x22), IKE_AUTH=35(0x23), CREATE_CHILD_SA=36(0x24), INFORMATIONAL=37(0x25). Payload types: SA=33, KE=34, N=40, D=42. Port 500/4500",
+    "confidence": 0.78,
+    "description": "IKEv2 key exchange for IPsec"
+  },
+  {
+    "name": "wireguard_noise",
+    "category": "network_security",
+    "formula_latex": "\\text{Noise\\_IKpsk2:} \\quad \\text{handshake} = \\text{ChaCha20-Poly1305}(\\text{BLAKE2s-KDF}(\\ldots))",
+    "keywords": ["wireguard", "noise", "Noise_IKpsk2", "handshake_init", "handshake_response", "wg_peer", "wg_device"],
+    "constants": ["0x61707865", "0x3320646E", "0x79622D32", "0x6B206574", "0x6A09E667", "0xBB67AE85"],
+    "constants_hex_notes": "WireGuard uses ChaCha20-Poly1305 (sigma constants) + BLAKE2s (SHA-256 IV). Construction: 'Noise_IKpsk2_25519_ChaChaPoly_BLAKE2s'. Handshake message types: 1=init, 2=response, 3=cookie",
+    "confidence": 0.85,
+    "description": "WireGuard VPN (Noise IKpsk2 protocol)"
+  },
+  {
+    "name": "ssh_key_exchange",
+    "category": "network_security",
+    "formula_latex": "K = \\text{DH/ECDH}(e, f), \\quad H = \\text{hash}(V_C \\| V_S \\| I_C \\| I_S \\| K_S \\| e \\| f \\| K)",
+    "keywords": ["ssh", "key_exchange", "kex", "curve25519-sha256", "diffie-hellman-group14-sha256", "SSH_MSG_KEXINIT", "SSH_MSG_NEWKEYS"],
+    "constants": ["0x14", "0x15", "0x1E", "0x1F", "0x20", "0x21"],
+    "constants_hex_notes": "SSH message types: KEXINIT=20(0x14), NEWKEYS=21(0x15), KEXDH_INIT=30(0x1E), KEXDH_REPLY=31(0x1F). SSH banner: 'SSH-2.0-'. Port 22. Key exchange algorithms: curve25519-sha256, diffie-hellman-group14-sha256",
+    "confidence": 0.82,
+    "description": "SSH key exchange protocol"
+  },
+  {
+    "name": "stack_canary",
+    "category": "binary_security",
+    "formula_latex": "",
+    "keywords": ["__stack_chk_fail", "__stack_chk_guard", "stack_canary", "stack_protector", "stack_smashing", "GS_cookie"],
+    "constants": [],
+    "constants_hex_notes": "Function call __stack_chk_fail at function epilogue. Pattern: load canary value from TLS/global, compare with saved value on stack, branch to __stack_chk_fail if mismatch. x86: mov eax, [gs:0x14] or [fs:0x28]",
+    "confidence": 0.95,
+    "description": "Stack canary / stack smashing protection"
+  },
+  {
+    "name": "aslr_detection",
+    "category": "binary_security",
+    "formula_latex": "",
+    "keywords": ["aslr", "PIE", "position_independent", "mmap", "randomize_va_space", "_dyld_get_image_vmaddr_slide", "getauxval"],
+    "constants": [],
+    "constants_hex_notes": "Detection: check /proc/sys/kernel/randomize_va_space, getauxval(AT_RANDOM), dladdr() for base address calculation. Macho-O: MH_PIE flag (0x200000) in mach_header.flags",
+    "confidence": 0.80,
+    "description": "Address Space Layout Randomization detection"
+  },
+  {
+    "name": "cfi_check",
+    "category": "binary_security",
+    "formula_latex": "",
+    "keywords": ["cfi", "control_flow_integrity", "__cfi_check", "__cfi_slowpath", "indirect_call_check", "type_id"],
+    "constants": [],
+    "constants_hex_notes": "Clang CFI: __cfi_check function, __cfi_slowpath runtime check. MSVC: Control Flow Guard (/guard:cf), _guard_check_icall. Intel CET: ENDBRANCH (0xF3 0x0F 0x1E) instruction",
+    "confidence": 0.82,
+    "description": "Control Flow Integrity checks"
+  },
+  {
+    "name": "shadow_stack",
+    "category": "binary_security",
+    "formula_latex": "",
+    "keywords": ["shadow_stack", "CET", "ENDBRANCH", "ENDBR64", "ENDBR32", "ret_protection", "SHSTK"],
+    "constants": ["0xF3", "0x0F", "0x1E", "0xFA", "0xFB"],
+    "constants_hex_notes": "Intel CET ENDBR64 opcode: F3 0F 1E FA. ENDBR32 opcode: F3 0F 1E FB. Shadow stack instructions: RDSSPD/RDSSPQ, INCSSPD/INCSSPQ, SAVEPREVSSP, RSTORSSP, WRSSD/WRSSQ",
+    "confidence": 0.82,
+    "description": "Hardware shadow stack (Intel CET)"
+  },
+  {
+    "name": "code_signing",
+    "category": "binary_security",
+    "formula_latex": "",
+    "keywords": ["codesign", "code_signature", "SecCodeCheckValidity", "CSCopySigningInformation", "LC_CODE_SIGNATURE", "CDHash"],
+    "constants": ["0xFADE0CC0", "0xFADE0CC1", "0xFADE0C00", "0xFADE0C01", "0xFADE0C02"],
+    "constants_hex_notes": "Apple code signing magics: EmbeddedSignature=0xFADE0CC0, DetachedSignature=0xFADE0CC1, CodeDirectory=0xFADE0C02, Requirements=0xFADE0C01, Entitlements=0xFADE7171. SuperBlob magic: 0xFADE0C00",
+    "confidence": 0.90,
+    "description": "Code signing verification (macOS/iOS)"
+  },
+  {
+    "name": "anti_debug_ptrace",
+    "category": "anti_analysis",
+    "formula_latex": "",
+    "keywords": ["ptrace", "PTRACE_TRACEME", "PT_DENY_ATTACH", "sysctl", "P_TRACED", "anti_debug"],
+    "constants": ["0x1F", "0x001F"],
+    "constants_hex_notes": "ptrace(PT_DENY_ATTACH, 0, 0, 0): PT_DENY_ATTACH = 31 (0x1F) on macOS. sysctl({CTL_KERN, KERN_PROC, KERN_PROC_PID}) then check info.kp_proc.p_flag & P_TRACED. Linux: PTRACE_TRACEME=0",
+    "confidence": 0.92,
+    "description": "Anti-debugging via ptrace"
+  },
+  {
+    "name": "anti_debug_sysctl",
+    "category": "anti_analysis",
+    "formula_latex": "",
+    "keywords": ["sysctl", "CTL_KERN", "KERN_PROC", "KERN_PROC_PID", "kp_proc", "p_flag", "P_TRACED"],
+    "constants": ["0x01", "0x0E", "0x01", "0x0800"],
+    "constants_hex_notes": "sysctl MIB: CTL_KERN=1, KERN_PROC=14, KERN_PROC_PID=1. P_TRACED flag = 0x0800. Pattern: sysctl() + check p_flag & 0x0800",
+    "confidence": 0.90,
+    "description": "Anti-debugging via sysctl process flags"
+  },
+  {
+    "name": "vm_detection_cpuid",
+    "category": "anti_analysis",
+    "formula_latex": "",
+    "keywords": ["cpuid", "hypervisor", "vmware", "virtualbox", "CPUID_leaf", "vm_detect", "in_port"],
+    "constants": ["0x40000000", "0x564D5868"],
+    "constants_hex_notes": "CPUID leaf 0x40000000: hypervisor vendor string. VMware backdoor: IN(0x5658, ECX=0x0A), magic=0x564D5868 ('VMXh'). VirtualBox: 'VBoxVBoxVBox'. Hyper-V: 'Microsoft Hv'. KVM: 'KVMKVMKVM'",
+    "confidence": 0.88,
+    "description": "Virtual machine detection via CPUID"
+  },
+  {
+    "name": "vm_detection_timing",
+    "category": "anti_analysis",
+    "formula_latex": "\\Delta t = \\text{RDTSC}_{\\text{after}} - \\text{RDTSC}_{\\text{before}}",
+    "keywords": ["rdtsc", "timing_check", "rdtscp", "clock_gettime", "gettimeofday", "mach_absolute_time", "QueryPerformanceCounter"],
+    "constants": ["0x0F", "0x31"],
+    "constants_hex_notes": "RDTSC opcode: 0F 31. RDTSCP opcode: 0F 01 F9. Pattern: two timestamp reads with comparison, threshold typically > 1000-10000 cycles indicates VM/debugger",
+    "confidence": 0.82,
+    "description": "VM/debugger detection via timing side channels"
+  },
+  {
+    "name": "control_flow_flattening",
+    "category": "obfuscation",
+    "formula_latex": "",
+    "keywords": ["dispatcher", "state_variable", "switch", "flatten", "bogus_branch", "OLLVM", "Hikari"],
+    "constants": [],
+    "constants_hex_notes": "Pattern: single while(true) loop containing large switch/case statement. State variable determines next block. Functions have abnormally high cyclomatic complexity. Common in OLLVM, Hikari, obfuscator-llvm",
+    "confidence": 0.75,
+    "description": "Control flow flattening obfuscation"
+  },
+  {
+    "name": "opaque_predicate",
+    "category": "obfuscation",
+    "formula_latex": "x^2 + x \\equiv 0 \\pmod{2} \\quad \\text{(always true)}",
+    "keywords": ["opaque_predicate", "dead_code", "bogus_condition", "unreachable"],
+    "constants": [],
+    "constants_hex_notes": "Pattern: conditions that always evaluate to same value, e.g., (x*(x+1))%2 == 0 (always true), 7*y^2 - 1 != z^2 (always true). Surrounded by junk code on false path",
+    "confidence": 0.65,
+    "description": "Opaque predicate obfuscation"
+  },
+  {
+    "name": "string_encryption",
+    "category": "obfuscation",
+    "formula_latex": "s_i = c_i \\oplus k_{i \\bmod |k|}",
+    "keywords": ["string_decrypt", "decrypt_string", "xor_decode", "deobfuscate", "string_table", "encrypted_strings"],
+    "constants": [],
+    "constants_hex_notes": "Pattern: array of encrypted bytes, decryption function called before use, result often passed to API. Common: single-byte XOR, rolling XOR, RC4-encrypted strings. Look for byte arrays followed by decrypt+API call",
+    "confidence": 0.70,
+    "description": "String encryption/obfuscation patterns"
+  },
+  {
+    "name": "base64",
+    "category": "encoding",
+    "formula_latex": "",
+    "keywords": ["base64", "b64encode", "b64decode", "Base64", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"],
+    "constants": [],
+    "constants_hex_notes": "Alphabet string: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/' (standard) or '+/' replaced with '-_' (URL-safe). Padding: '='. 3-byte to 4-char encoding pattern",
+    "confidence": 0.90,
+    "description": "Base64 encoding/decoding"
+  },
+  {
+    "name": "aes_ni",
+    "category": "hardware_crypto",
+    "formula_latex": "",
+    "keywords": ["AESENC", "AESDEC", "AESENCLAST", "AESDECLAST", "AESKEYGENASSIST", "AESIMC", "_mm_aesenc_si128"],
+    "constants": ["0x66", "0x0F", "0x38", "0xDC", "0xDD", "0xDE", "0xDF", "0xDB"],
+    "constants_hex_notes": "AES-NI opcodes: AESENC=66 0F 38 DC, AESENCLAST=66 0F 38 DD, AESDEC=66 0F 38 DE, AESDECLAST=66 0F 38 DF, AESKEYGENASSIST=66 0F 3A DF, AESIMC=66 0F 38 DB. Detection in disassembly is definitive",
+    "confidence": 0.99,
+    "description": "AES-NI hardware instructions"
+  },
+  {
+    "name": "clmul",
+    "category": "hardware_crypto",
+    "formula_latex": "\\text{PCLMULQDQ:} \\quad c(x) = a(x) \\cdot b(x) \\text{ in GF}(2^n)",
+    "keywords": ["PCLMULQDQ", "CLMUL", "carry_less_mul", "_mm_clmulepi64_si128", "ghash_clmul"],
+    "constants": ["0x66", "0x0F", "0x3A", "0x44"],
+    "constants_hex_notes": "PCLMULQDQ opcode: 66 0F 3A 44. Used for GHASH in AES-GCM, CRC computation. Imm8 selects which 64-bit halves to multiply",
+    "confidence": 0.95,
+    "description": "Carry-less multiplication (CLMUL) for GF(2^n)"
+  },
+  {
+    "name": "sha_ni",
+    "category": "hardware_crypto",
+    "formula_latex": "",
+    "keywords": ["SHA1RNDS4", "SHA1NEXTE", "SHA1MSG1", "SHA1MSG2", "SHA256RNDS2", "SHA256MSG1", "SHA256MSG2", "_mm_sha256rnds2_epu32"],
+    "constants": ["0x0F", "0x38", "0xC8", "0xC9", "0xCA", "0xCB", "0xCC", "0xCD", "0xCE", "0xCF"],
+    "constants_hex_notes": "SHA-NI opcodes: SHA1RNDS4=0F 3A CC, SHA1NEXTE=0F 38 C8, SHA1MSG1=0F 38 C9, SHA1MSG2=0F 38 CA, SHA256RNDS2=0F 38 CB, SHA256MSG1=0F 38 CC, SHA256MSG2=0F 38 CD",
+    "confidence": 0.98,
+    "description": "SHA-NI hardware instructions for SHA-1/SHA-256"
+  },
+  {
+    "name": "arm_crypto_ext",
+    "category": "hardware_crypto",
+    "formula_latex": "",
+    "keywords": ["AESE", "AESD", "AESMC", "AESIMC", "SHA1C", "SHA1M", "SHA1P", "SHA1H", "SHA1SU0", "SHA1SU1", "SHA256H", "SHA256H2", "SHA256SU0", "SHA256SU1", "PMULL"],
+    "constants": [],
+    "constants_hex_notes": "ARM Crypto Extensions: AESE (AES single round encrypt), AESD (decrypt), AESMC (MixColumns), AESIMC (InvMixColumns). SHA: SHA1C/SHA1M/SHA1P (SHA-1 hash), SHA256H/SHA256H2. PMULL for GF(2^128). Check for NEON + crypto feature flags",
+    "confidence": 0.95,
+    "description": "ARM Cryptography Extensions (AES, SHA, PMULL)"
+  },
+  {
+    "name": "zlib_deflate",
+    "category": "compression",
+    "formula_latex": "",
+    "keywords": ["deflate", "inflate", "z_stream", "deflateInit", "inflateInit", "compress2", "uncompress", "adler32", "window_bits"],
+    "constants": ["0x78", "0x01", "0x78", "0x5E", "0x78", "0x9C", "0x78", "0xDA", "0x1F", "0x8B"],
+    "constants_hex_notes": "zlib header: 0x78 0x01 (no compression), 0x78 0x5E (fast), 0x78 0x9C (default), 0x78 0xDA (best). gzip magic: 0x1F 0x8B 0x08. Raw deflate: no header. Adler-32 checksum at end",
+    "confidence": 0.92,
+    "description": "zlib/deflate compression"
+  },
+  {
+    "name": "lzma",
+    "category": "compression",
+    "formula_latex": "",
+    "keywords": ["lzma", "LZMA", "lzma_decode", "lzma2", "xz", "7z", "range_coder"],
+    "constants": ["0xFD", "0x37", "0x7A", "0x58", "0x5A", "0x00"],
+    "constants_hex_notes": "XZ magic: FD 37 7A 58 5A 00. 7z magic: 37 7A BC AF 27 1C. LZMA properties byte encodes (lc, lp, pb). Range coder initialization: 0xFF bytes",
+    "confidence": 0.88,
+    "description": "LZMA/LZMA2/XZ compression"
+  },
+  {
+    "name": "curve25519_field_ops",
+    "category": "elliptic_curve",
+    "formula_latex": "p = 2^{255} - 19, \\quad y^2 = x^3 + 486662x^2 + x",
+    "keywords": ["fe25519", "fe_mul", "fe_sq", "fe_invert", "fe_pow22523", "reduce", "carry_propagate"],
+    "constants": ["0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED", "19", "486662", "121666"],
+    "constants_hex_notes": "Prime p = 2^255 - 19. Constant 19 appears in reduction. Montgomery A = 486662. Edwards d = -121665/121666. Limb representation: 5x51-bit or 10x25.5-bit. Look for multiply-and-reduce-by-19 pattern",
+    "confidence": 0.90,
+    "description": "Curve25519 field arithmetic primitives"
+  },
+  {
+    "name": "secp256k1",
+    "category": "elliptic_curve",
+    "formula_latex": "y^2 = x^3 + 7 \\pmod{p}, \\quad p = 2^{256} - 2^{32} - 977",
+    "keywords": ["secp256k1", "bitcoin", "ecdsa", "scalar_mul", "point_add", "point_double", "jacobian"],
+    "constants": ["0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F", "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"],
+    "constants_hex_notes": "Prime p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F. Order n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141. Generator Gx = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798. a=0, b=7",
+    "confidence": 0.92,
+    "description": "secp256k1 elliptic curve (Bitcoin)"
+  },
+  {
+    "name": "secp256r1_p256",
+    "category": "elliptic_curve",
+    "formula_latex": "y^2 = x^3 - 3x + b \\pmod{p}, \\quad p = 2^{256} - 2^{224} + 2^{192} + 2^{96} - 1",
+    "keywords": ["secp256r1", "P-256", "prime256v1", "NIST_P256", "EC_GROUP_new_by_curve_name"],
+    "constants": ["0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF"],
+    "constants_hex_notes": "Prime p = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF. Order n = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551. a = p-3, b = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B",
+    "confidence": 0.90,
+    "description": "NIST P-256 (secp256r1/prime256v1) elliptic curve"
+  },
+  {
+    "name": "secp384r1_p384",
+    "category": "elliptic_curve",
+    "formula_latex": "y^2 = x^3 - 3x + b \\pmod{p}, \\quad p = 2^{384} - 2^{128} - 2^{96} + 2^{32} - 1",
+    "keywords": ["secp384r1", "P-384", "NIST_P384"],
+    "constants": ["0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFF"],
+    "constants_hex_notes": "P-384 prime p. Used in TLS, government applications (Suite B). 384-bit key size",
+    "confidence": 0.85,
+    "description": "NIST P-384 (secp384r1) elliptic curve"
+  },
+  {
+    "name": "montgomery_multiplication",
+    "category": "bignum_arithmetic",
+    "formula_latex": "\\text{MonPro}(a, b) = a \\cdot b \\cdot R^{-1} \\bmod n, \\quad R = 2^k",
+    "keywords": ["montgomery", "mont_mul", "mont_reduce", "BN_mod_mul_montgomery", "MONT_CTX", "n_prime", "R_squared"],
+    "constants": [],
+    "constants_hex_notes": "No fixed constants. Detection: multiply + reduce without division, uses precomputed n' = -n^(-1) mod R. Pattern: a*b then shift/mask instead of mod. R is power of 2 matching word size",
+    "confidence": 0.75,
+    "description": "Montgomery modular multiplication"
+  },
+  {
+    "name": "chinese_remainder_theorem",
+    "category": "bignum_arithmetic",
+    "formula_latex": "x \\equiv a_i \\pmod{m_i}, \\quad x = \\sum a_i M_i M_i^{-1} \\bmod M",
+    "keywords": ["crt", "chinese_remainder", "RSA_CRT", "dP", "dQ", "qInv", "p", "q"],
+    "constants": [],
+    "constants_hex_notes": "No fixed constants. RSA-CRT pattern: separate mod p and mod q computations, then CRT recombination. Look for dP = d mod (p-1), dQ = d mod (q-1), qInv = q^(-1) mod p",
+    "confidence": 0.80,
+    "description": "Chinese Remainder Theorem (RSA-CRT optimization)"
+  },
+  {
+    "name": "fortuna_csprng",
+    "category": "random",
+    "formula_latex": "\\text{Generate:} C = E_K(C), \\quad \\text{Reseed:} K = \\text{SHA-256}(K \\| s)",
+    "keywords": ["fortuna", "csprng", "random_pool", "reseed", "generator_gate", "accumulator"],
+    "constants": [],
+    "constants_hex_notes": "Uses AES-256 as block cipher (S-box constants present) and SHA-256 for reseeding. 32 pools for seed accumulation. Pattern: counter-mode AES with periodic reseeding from entropy pools",
+    "confidence": 0.72,
+    "description": "Fortuna CSPRNG (Apple/FreeBSD random)"
+  },
+  {
+    "name": "chacha20_csprng",
+    "category": "random",
+    "formula_latex": "\\text{output} = \\text{ChaCha20}(K, N, \\text{counter}++)",
+    "keywords": ["chacha20_rng", "arc4random", "getrandom", "getentropy", "SecRandomCopyBytes"],
+    "constants": ["0x61707865", "0x3320646E", "0x79622D32", "0x6B206574"],
+    "constants_hex_notes": "ChaCha20 sigma constants. Linux kernel (5.x+) and OpenBSD arc4random use ChaCha20 for CSPRNG. Detection: ChaCha20 block function with counter increment, seeded from entropy source",
+    "confidence": 0.80,
+    "description": "ChaCha20-based CSPRNG"
+  },
+  {
+    "name": "xorshift",
+    "category": "random",
+    "formula_latex": "x \\mathrel{\\hat{}}= x \\ll a; \\quad x \\mathrel{\\hat{}}= x \\gg b; \\quad x \\mathrel{\\hat{}}= x \\ll c",
+    "keywords": ["xorshift", "xorshift128", "xorshift128+", "xoshiro", "splitmix64", "PRNG"],
+    "constants": [],
+    "constants_hex_notes": "No fixed constants but characteristic shift amounts. xorshift128+: shifts 23, 17, 26. xoshiro256**: shift 17, rotate 45, shift 9. splitmix64: 0x9E3779B97F4A7C15 (golden ratio). NOT cryptographically secure",
+    "confidence": 0.70,
+    "description": "XorShift family PRNG (NOT cryptographic)"
+  },
+  {
+    "name": "mersenne_twister",
+    "category": "random",
+    "formula_latex": "x_{k+n} = x_{k+m} \\oplus (x_k^u \\| x_{k+1}^l) \\cdot A",
+    "keywords": ["mt19937", "mersenne_twister", "twist", "temper", "MT_STATE", "genrand"],
+    "constants": ["0x9908B0DF", "0x9D2C5680", "0xEFC60000", "0x6C078965", "624", "397"],
+    "constants_hex_notes": "MT19937: matrix A = 0x9908B0DF, tempering: 0x9D2C5680, 0xEFC60000. State: 624 words, m=397. Initialization: 0x6C078965 (or 0x5489 for older init). Tempering shifts: 11, 7, 15, 18. NOT cryptographically secure",
+    "confidence": 0.92,
+    "description": "Mersenne Twister MT19937 PRNG (NOT cryptographic)"
+  },
+  {
+    "name": "upx_packer",
+    "category": "packer",
+    "formula_latex": "",
+    "keywords": ["UPX", "UPX!", "upx_decompress", "NRV", "LZMA", "stub"],
+    "constants": ["0x55505821"],
+    "constants_hex_notes": "UPX magic: 'UPX!' = 0x55505821 in packed section header. Section names: UPX0, UPX1, UPX2. Decompression stubs use NRV2B/NRV2D/NRV2E or LZMA",
+    "confidence": 0.95,
+    "description": "UPX packer detection"
+  },
+  {
+    "name": "vmprotect",
+    "category": "packer",
+    "formula_latex": "",
+    "keywords": ["vmprotect", "vmp", "VMProtect", ".vmp0", ".vmp1", "vm_entry", "vm_handler", "vm_dispatcher"],
+    "constants": [],
+    "constants_hex_notes": "Section names: .vmp0, .vmp1. Detection: VM-based obfuscation with dispatcher loop, handler table, virtual registers. Heavy use of push/pop, virtual stack machine. Import table often encrypted",
+    "confidence": 0.85,
+    "description": "VMProtect commercial protector"
+  },
+  {
+    "name": "themida",
+    "category": "packer",
+    "formula_latex": "",
+    "keywords": ["themida", "winlicense", "oreans", "SecureEngine", "vm_protect", "code_virtualization"],
+    "constants": [],
+    "constants_hex_notes": "Detection: multiple VM layers, anti-debug/anti-dump, import redirection. Section names often randomized but can have '.themida'. Driver-level protection on Windows. Heavy polymorphic code",
+    "confidence": 0.80,
+    "description": "Themida/WinLicense protector"
+  },
+  {
+    "name": "saml",
+    "category": "protocol",
+    "formula_latex": "",
+    "keywords": ["saml", "SAML", "assertion", "SAMLRequest", "SAMLResponse", "NameID", "AuthnRequest", "Issuer", "StatusCode"],
+    "constants": [],
+    "constants_hex_notes": "XML namespace: 'urn:oasis:names:tc:SAML:2.0:assertion'. String markers: '<saml:', '<samlp:', 'SAMLRequest=', 'SAMLResponse=', 'RelayState='. Base64-encoded XML payloads",
+    "confidence": 0.78,
+    "description": "SAML 2.0 authentication protocol"
+  },
+  {
+    "name": "ocsp",
+    "category": "pki",
+    "formula_latex": "",
+    "keywords": ["ocsp", "OCSP", "OCSPRequest", "OCSPResponse", "BasicOCSPResponse", "certStatus", "good", "revoked"],
+    "constants": [],
+    "constants_hex_notes": "OCSP OID: 1.3.6.1.5.5.7.48.1. Response types: successful=0, malformedRequest=1, internalError=2, tryLater=3, sigRequired=5, unauthorized=6. Content-Type: application/ocsp-request/response",
+    "confidence": 0.78,
+    "description": "OCSP (Online Certificate Status Protocol)"
+  },
+  {
+    "name": "crl",
+    "category": "pki",
+    "formula_latex": "",
+    "keywords": ["crl", "CRL", "certificate_revocation", "X509_CRL", "revokedCertificates", "crlNumber", "issuingDistributionPoint"],
+    "constants": [],
+    "constants_hex_notes": "CRL OID for distribution point: 2.5.29.31. CRL Number OID: 2.5.29.20. ASN.1 SEQUENCE containing issuer, thisUpdate, nextUpdate, revokedCertificates list",
+    "confidence": 0.75,
+    "description": "Certificate Revocation List"
+  },
+  {
+    "name": "sha512_256",
+    "category": "hash",
+    "formula_latex": "\\text{SHA-512/256: SHA-512 with different IV, truncated to 256 bits}",
+    "keywords": ["sha512_256", "SHA512_256", "sha512t"],
+    "constants": ["0x22312194FC2BF72C", "0x9F555FA3C84C64C2", "0x2393B86B6F53B151", "0x963877195940EABD"],
+    "constants_hex_notes": "SHA-512/256 has unique IV: H0=0x22312194FC2BF72C, H1=0x9F555FA3C84C64C2, H2=0x2393B86B6F53B151, H3=0x963877195940EABD, H4=0x96283EE2A88EFFE3, H5=0xBE5E1E2553863992, H6=0x2B0199FC2C85B8AA, H7=0x0EB72DDC81C52CA2",
+    "confidence": 0.88,
+    "description": "SHA-512/256 hash (SHA-512 with different IV, truncated)"
+  },
+  {
+    "name": "streebog",
+    "category": "hash",
+    "formula_latex": "\\text{GOST R 34.11-2012 (Streebog)}, \\quad \\text{12 rounds with 512-bit state}",
+    "keywords": ["streebog", "GOST_34_11", "gost2012", "stribog"],
+    "constants": [],
+    "constants_hex_notes": "Streebog 256 IV: all 0x01 bytes (512-bit). Streebog 512 IV: all 0x00 bytes. S-box (Pi): FC EE DD 11 CF 6E 31 16... (same as Kuznyechik). 12 rounds, 8x8 byte state",
+    "confidence": 0.82,
+    "description": "Streebog (GOST R 34.11-2012) Russian hash standard"
+  },
+  {
+    "name": "shake128",
+    "category": "hash",
+    "formula_latex": "\\text{SHAKE128}(M, d) = \\text{Keccak}[256](M \\| 1111, d)",
+    "keywords": ["shake128", "SHAKE128", "xof", "extendable_output"],
+    "constants": ["0x0000000000000001", "0x0000000000008082"],
+    "constants_hex_notes": "Same Keccak round constants. SHAKE128 rate: 1344 bits. Capacity: 256 bits. Domain separator: 0x1F (appended before padding)",
+    "confidence": 0.85,
+    "description": "SHAKE128 extendable output function (SHA-3 family)"
+  },
+  {
+    "name": "shake256",
+    "category": "hash",
+    "formula_latex": "\\text{SHAKE256}(M, d) = \\text{Keccak}[512](M \\| 1111, d)",
+    "keywords": ["shake256", "SHAKE256", "xof", "extendable_output"],
+    "constants": ["0x0000000000000001", "0x0000000000008082"],
+    "constants_hex_notes": "Same Keccak round constants. SHAKE256 rate: 1088 bits. Capacity: 512 bits. Domain separator: 0x1F",
+    "confidence": 0.85,
+    "description": "SHAKE256 extendable output function (SHA-3 family)"
+  },
+  {
+    "name": "xchacha20_poly1305",
+    "category": "aead",
+    "formula_latex": "\\text{subkey} = \\text{HChaCha20}(K, N[0..15]), \\quad C = \\text{ChaCha20-Poly1305}(\\text{subkey}, N[16..23], P)",
+    "keywords": ["xchacha20", "hchacha20", "extended_nonce", "crypto_aead_xchacha20poly1305"],
+    "constants": ["0x61707865", "0x3320646E", "0x79622D32", "0x6B206574"],
+    "constants_hex_notes": "Same ChaCha20 sigma constants. Distinguisher: 24-byte nonce (vs 12 for ChaCha20-Poly1305). HChaCha20 extracts subkey using first 16 bytes of nonce",
+    "confidence": 0.90,
+    "description": "XChaCha20-Poly1305 AEAD with extended nonce"
+  },
+  {
+    "name": "aes_siv",
+    "category": "aead",
+    "formula_latex": "\\text{IV} = \\text{S2V}(K_1, \\text{AAD}_1, \\ldots, P), \\quad C = \\text{AES-CTR}(K_2, \\text{IV}, P)",
+    "keywords": ["siv", "S2V", "AES_SIV", "deterministic_aead", "synthetic_iv", "cmac_chain"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B", "0x87"],
+    "constants_hex_notes": "AES S-box + CMAC doubling constant 0x87. SIV provides nonce-misuse resistance. Pattern: CMAC chain (S2V) followed by CTR encryption",
+    "confidence": 0.82,
+    "description": "AES-SIV nonce-misuse resistant AEAD (RFC 5297)"
+  },
+  {
+    "name": "aes_ccm",
+    "category": "aead",
+    "formula_latex": "T = \\text{CBC-MAC}(K, B_0 \\| \\text{AAD} \\| P), \\quad C = \\text{CTR}(K, A_0, P) \\| (T \\oplus E_K(A_0))",
+    "keywords": ["ccm", "AES_CCM", "CBC_MAC", "counter_mode", "adata"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B"],
+    "constants_hex_notes": "AES S-box. CCM combines CTR mode + CBC-MAC. Nonce length: 7-13 bytes. Used in IEEE 802.15.4, Bluetooth, TLS",
+    "confidence": 0.82,
+    "description": "AES-CCM authenticated encryption"
+  },
+  {
+    "name": "aegis",
+    "category": "aead",
+    "formula_latex": "\\text{AEGIS-128L: 8 AES rounds per 256-bit message block}",
+    "keywords": ["aegis", "AEGIS_128L", "AEGIS_256", "aes_round", "state_update"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B", "0x000101020305080D", "0xDB3D18556DC22FF1"],
+    "constants_hex_notes": "Uses AES round function internally (S-box present). AEGIS-128L constant C0 = 0x000101020305080D1522375990E97962 (Fibonacci), C1 = 0xDB3D18556DC22FF12011314273B528DD. Very fast AEAD",
+    "confidence": 0.80,
+    "description": "AEGIS AEAD (AES-based, very fast)"
+  },
+  {
+    "name": "ghash",
+    "category": "mac",
+    "formula_latex": "\\text{GHASH}(H, X) = X_m \\cdot H^m \\oplus \\ldots \\oplus X_1 \\cdot H \\quad \\text{in GF}(2^{128})",
+    "keywords": ["ghash", "GHASH", "gf128_mul", "galois_multiply", "gcm_ghash"],
+    "constants": ["0xE100000000000000"],
+    "constants_hex_notes": "GF(2^128) irreducible polynomial: x^128 + x^7 + x^2 + x + 1. Reduction constant R = 0xE1 shifted. Pattern: 128-bit multiplication with XOR reduction. Often using precomputed tables (4-bit or 8-bit)",
+    "confidence": 0.85,
+    "description": "GHASH universal hash function (used in GCM)"
+  },
+  {
+    "name": "chacha20_ietf",
+    "category": "symmetric_encryption",
+    "formula_latex": "\\text{IETF variant: 32-bit counter + 96-bit nonce (vs original 64/64)}",
+    "keywords": ["chacha20_ietf", "96_bit_nonce", "32_bit_counter", "IETF_ChaCha20"],
+    "constants": ["0x61707865", "0x3320646E", "0x79622D32", "0x6B206574"],
+    "constants_hex_notes": "Same sigma constants. IETF variant (RFC 8439): state[12] = 32-bit counter, state[13..15] = 96-bit nonce. Original: state[12..13] = 64-bit counter, state[14..15] = 64-bit nonce",
+    "confidence": 0.90,
+    "description": "ChaCha20-IETF with 96-bit nonce (RFC 8439)"
+  },
+  {
+    "name": "aes_ecb",
+    "category": "symmetric_encryption",
+    "formula_latex": "C_i = E_K(P_i) \\quad \\text{(no chaining)}",
+    "keywords": ["ecb", "AES_ecb_encrypt", "ECB_ENCRYPT", "no_iv"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B"],
+    "constants_hex_notes": "AES S-box. ECB mode: each block encrypted independently (no IV, no chaining). INSECURE for multi-block messages",
+    "confidence": 0.85,
+    "description": "AES in Electronic Codebook mode (INSECURE)"
+  },
+  {
+    "name": "aes_cfb",
+    "category": "symmetric_encryption",
+    "formula_latex": "C_i = P_i \\oplus E_K(C_{i-1}), \\quad C_0 = IV",
+    "keywords": ["cfb", "AES_cfb_encrypt", "CFB_ENCRYPT", "feedback"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B"],
+    "constants_hex_notes": "AES S-box. CFB mode: encrypt previous ciphertext, XOR with plaintext",
+    "confidence": 0.82,
+    "description": "AES in Cipher Feedback mode"
+  },
+  {
+    "name": "aes_ofb",
+    "category": "symmetric_encryption",
+    "formula_latex": "O_i = E_K(O_{i-1}), \\quad C_i = P_i \\oplus O_i, \\quad O_0 = IV",
+    "keywords": ["ofb", "AES_ofb_encrypt", "OFB_ENCRYPT", "output_feedback"],
+    "constants": ["0x63", "0x7C", "0x77", "0x7B"],
+    "constants_hex_notes": "AES S-box. OFB mode: encrypt previous output, XOR with plaintext. Key stream independent of plaintext",
+    "confidence": 0.80,
+    "description": "AES in Output Feedback mode"
+  },
+  {
+    "name": "aes_key_wrap",
+    "category": "symmetric_encryption",
+    "formula_latex": "A = \\text{0xA6A6A6A6A6A6A6A6}, \\quad (A, R_n) = W^{-1}(C)",
+    "keywords": ["key_wrap", "AES_wrap_key", "AES_unwrap_key", "RFC3394", "default_iv"],
+    "constants": ["0xA6A6A6A6A6A6A6A6", "0xA65959A6"],
+    "constants_hex_notes": "Default IV: 0xA6A6A6A6A6A6A6A6 (RFC 3394). Alternative IV for KWP: 0xA65959A6 (RFC 5649). 6 rounds of wrap/unwrap",
+    "confidence": 0.88,
+    "description": "AES Key Wrap (RFC 3394)"
+  },
+  {
+    "name": "rijndael_sbox_full",
+    "category": "symmetric_encryption",
+    "formula_latex": "S(x) = A \\cdot x^{-1} + c \\quad \\text{in GF}(2^8), \\quad A = \\text{affine matrix}",
+    "keywords": ["sbox", "S_box", "SubBytes", "rijndael", "affine_transform", "gf256_inv"],
+    "constants": [
+      "0x63", "0x7C", "0x77", "0x7B", "0xF2", "0x6B", "0x6F", "0xC5",
+      "0x30", "0x01", "0x67", "0x2B", "0xFE", "0xD7", "0xAB", "0x76",
+      "0xCA", "0x82", "0xC9", "0x7D", "0xFA", "0x59", "0x47", "0xF0",
+      "0xAD", "0xD4", "0xA2", "0xAF", "0x9C", "0xA4", "0x72", "0xC0"
+    ],
+    "constants_hex_notes": "Full AES S-box (256 bytes): 63 7C 77 7B F2 6B 6F C5 30 01 67 2B FE D7 AB 76 CA 82 C9 7D FA 59 47 F0 AD D4 A2 AF 9C A4 72 C0 B7 FD 93 26 36 3F F7 CC 34 A5 E5 F1 71 D8 31 15 04 C7 23 C3 18 96 05 9A 07 12 80 E2 EB 27 B2 75 09 83 2C 1A 1B 6E 5A A0 52 3B D6 B3 29 E3 2F 84 53 D1 00 ED 20 FC B1 5B 6A CB BE 39 4A 4C 58 CF D0 EF AA FB 43 4D 33 85 45 F9 02 7F 50 3C 9F A8... Inverse S-box starts: 52 09 6A D5 30 36 A5 38",
+    "confidence": 0.99,
+    "description": "AES/Rijndael S-box (full 256-byte lookup table)"
+  },
+  {
+    "name": "des_sbox_full",
+    "category": "symmetric_encryption",
+    "formula_latex": "",
+    "keywords": ["des_sbox", "DES_sbox", "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"],
+    "constants": [
+      "14", "4", "13", "1", "2", "15", "11", "8", "3", "10", "6", "12", "5", "9", "0", "7",
+      "0", "15", "7", "4", "14", "2", "13", "1", "10", "6", "12", "11", "9", "5", "3", "8"
+    ],
+    "constants_hex_notes": "DES S-box 1: {14,4,13,1,2,15,11,8,3,10,6,12,5,9,0,7}, {0,15,7,4,14,2,13,1,10,6,12,11,9,5,3,8}, {4,1,14,8,13,6,2,11,15,12,9,7,3,10,5,0}, {15,12,8,2,4,9,1,7,5,11,3,14,10,0,6,13}. 8 S-boxes, each 6->4 bit",
+    "confidence": 0.95,
+    "description": "DES S-box tables (8 boxes, each 4x16)"
+  },
+  {
+    "name": "rsa_key_generation",
+    "category": "asymmetric_encryption",
+    "formula_latex": "n = p \\cdot q, \\quad \\phi(n) = (p-1)(q-1), \\quad d = e^{-1} \\bmod \\phi(n)",
+    "keywords": ["RSA_generate_key", "BN_generate_prime", "primality_test", "miller_rabin", "BN_is_prime", "genprime"],
+    "constants": ["0x10001"],
+    "constants_hex_notes": "Public exponent e = 65537 = 0x10001. Key sizes: 2048, 3072, 4096 bits. Miller-Rabin primality test witnesses. Pattern: two large prime generation + modular inverse",
+    "confidence": 0.88,
+    "description": "RSA key pair generation"
+  },
+  {
+    "name": "des_key_schedule",
+    "category": "symmetric_encryption",
+    "formula_latex": "\\text{PC-1} \\rightarrow \\text{left shifts} \\rightarrow \\text{PC-2} \\times 16 \\text{ subkeys}",
+    "keywords": ["des_key_schedule", "PC1", "PC2", "key_rotation", "DES_set_key_checked"],
+    "constants": ["57", "49", "41", "33", "25", "17", "9", "1"],
+    "constants_hex_notes": "PC-1 table: 57 49 41 33 25 17 9 1 58 50 42 34 26 18 10 2 ... PC-2 table: 14 17 11 24 1 5 3 28 15 6 21 10 23 19 12 4 ... Left shift schedule: 1 1 2 2 2 2 2 2 1 2 2 2 2 2 2 1",
+    "confidence": 0.92,
+    "description": "DES key schedule (PC-1, PC-2, rotations)"
+  },
+  {
+    "name": "aes_rcon",
+    "category": "symmetric_encryption",
+    "formula_latex": "\\text{Rcon}[i] = [rc_i, 0, 0, 0], \\quad rc_1 = 1, \\quad rc_i = 2 \\cdot rc_{i-1} \\text{ in GF}(2^8)",
+    "keywords": ["rcon", "round_constant", "key_expansion", "AES_Rcon"],
+    "constants": ["0x01", "0x02", "0x04", "0x08", "0x10", "0x20", "0x40", "0x80", "0x1B", "0x36"],
+    "constants_hex_notes": "AES round constants: 0x01 0x02 0x04 0x08 0x10 0x20 0x40 0x80 0x1B 0x36 (for 10 rounds). GF(2^8) with irreducible polynomial x^8+x^4+x^3+x+1 = 0x11B",
+    "confidence": 0.95,
+    "description": "AES round constants (Rcon) for key expansion"
+  },
+  {
+    "name": "sha256_k_constants",
+    "category": "hash",
+    "formula_latex": "K_i = \\lfloor 2^{32} \\cdot \\text{frac}(\\sqrt[3]{p_i}) \\rfloor \\quad \\text{for first 64 primes}",
+    "keywords": ["sha256_K", "round_constants", "cube_root_primes"],
+    "constants": [
+      "0x428A2F98", "0x71374491", "0xB5C0FBCF", "0xE9B5DBA5",
+      "0x3956C25B", "0x59F111F1", "0x923F82A4", "0xAB1C5ED5",
+      "0xD807AA98", "0x12835B01", "0x243185BE", "0x550C7DC3",
+      "0x72BE5D74", "0x80DEB1FE", "0x9BDC06A7", "0xC19BF174"
+    ],
+    "constants_hex_notes": "All 64 SHA-256 round constants K[0..63], derived from cube roots of first 64 primes. First 16 shown. K[16..31]: 0xE49B69C1 0xEFBE4786 0x0FC19DC6 0x240CA1CC 0x2DE92C6F 0x4A7484AA 0x5CB0A9DC 0x76F988DA 0x983E5152 0xA831C66D 0xB00327C8 0xBF597FC7 0xC6E00BF3 0xD5A79147 0x06CA6351 0x14292967",
+    "confidence": 0.99,
+    "description": "SHA-256 round constants K[0..63]"
+  },
+  {
+    "name": "md5_t_table",
+    "category": "hash",
+    "formula_latex": "T[i] = \\lfloor 2^{32} \\cdot |\\sin(i+1)| \\rfloor",
+    "keywords": ["md5_T", "sine_table", "md5_round_constants"],
+    "constants": [
+      "0xD76AA478", "0xE8C7B756", "0x242070DB", "0xC1BDCEEE",
+      "0xF57C0FAF", "0x4787C62A", "0xA8304613", "0xFD469501",
+      "0x698098D8", "0x8B44F7AF", "0xFFFF5BB1", "0x895CD7BE",
+      "0x6B901122", "0xFD987193", "0xA679438E", "0x49B40821"
+    ],
+    "constants_hex_notes": "MD5 T table: 64 values derived from sine function. T[1..16] shown above. Highly distinctive -- finding 3+ consecutive T values is definitive MD5 identification",
+    "confidence": 0.99,
+    "description": "MD5 sine-derived round constants T[1..64]"
+  },
+  {
+    "name": "blowfish_p_array_full",
+    "category": "symmetric_encryption",
+    "formula_latex": "",
+    "keywords": ["blowfish_p", "P_array", "pi_hex"],
+    "constants": [
+      "0x243F6A88", "0x85A308D3", "0x13198A2E", "0x03707344",
+      "0xA4093822", "0x299F31D0", "0x082EFA98", "0xEC4E6C89",
+      "0x452821E6", "0x38D01377", "0xBE5466CF", "0x34E90C6C",
+      "0xC0AC29B7", "0xC97C50DD", "0x3F84D5B5", "0xB5470917",
+      "0x9216D5D9", "0x8979FB1B"
+    ],
+    "constants_hex_notes": "All 18 P-array values (from hex digits of pi). First 4 are most distinctive. S-box 1 starts: 0xD1310BA6 0x98DFB5AC 0x2FFD72DB 0xD01ADFB7",
+    "confidence": 0.97,
+    "description": "Blowfish P-array (18 subkeys from pi)"
+  },
+  {
+    "name": "keccak_round_constants_full",
+    "category": "hash",
+    "formula_latex": "RC[i] = \\bigoplus_{j=0}^{6} \\text{rc}(j+7i) \\cdot 2^{2^j-1}",
+    "keywords": ["keccak_RC", "iota_constants", "round_constants_keccak"],
+    "constants": [
+      "0x0000000000000001", "0x0000000000008082", "0x800000000000808A",
+      "0x8000000080008000", "0x000000000000808B", "0x0000000080000001",
+      "0x8000000080008081", "0x8000000000008009", "0x000000000000008A",
+      "0x0000000000000088", "0x0000000080008009", "0x000000008000000A",
+      "0x000000008000808B", "0x800000000000008B", "0x8000000000008089",
+      "0x8000000000008003", "0x8000000000008002", "0x8000000000000080",
+      "0x000000000000800A", "0x800000008000000A", "0x8000000080008081",
+      "0x8000000000008080", "0x0000000080000001", "0x8000000080008008"
+    ],
+    "constants_hex_notes": "All 24 Keccak/SHA-3 round constants. These are the iota step constants for 24 rounds. Finding any 3+ consecutive values is definitive SHA-3/Keccak identification",
+    "confidence": 0.99,
+    "description": "Keccak/SHA-3 all 24 round constants"
+  },
+  {
+    "name": "sha1_k_constants",
+    "category": "hash",
+    "formula_latex": "K = \\{\\lfloor 2^{30} \\sqrt{2} \\rfloor, \\lfloor 2^{30} \\sqrt{3} \\rfloor, \\lfloor 2^{30} \\sqrt{5} \\rfloor, \\lfloor 2^{30} \\sqrt{10} \\rfloor\\}",
+    "keywords": ["sha1_K", "sha1_round_constants"],
+    "constants": ["0x5A827999", "0x6ED9EBA1", "0x8F1BBCDC", "0xCA62C1D6"],
+    "constants_hex_notes": "SHA-1 round constants: 0x5A827999 (rounds 0-19, sqrt(2)), 0x6ED9EBA1 (rounds 20-39, sqrt(3)), 0x8F1BBCDC (rounds 40-59, sqrt(5)), 0xCA62C1D6 (rounds 60-79, sqrt(10)). 4 values for 80 rounds",
+    "confidence": 0.97,
+    "description": "SHA-1 round constants K[0..3]"
+  },
+  {
+    "name": "tls_prf",
+    "category": "protocol",
+    "formula_latex": "\\text{PRF}(\\text{secret}, \\text{label}, \\text{seed}) = \\text{P\\_SHA256}(\\text{secret}, \\text{label} \\| \\text{seed})",
+    "keywords": ["tls_prf", "PRF", "P_hash", "master_secret", "key_expansion", "client_finished", "server_finished"],
+    "constants": [],
+    "constants_hex_notes": "String labels: 'master secret', 'key expansion', 'client finished', 'server finished', 'extended master secret'. HMAC-based PRF using SHA-256 (TLS 1.2) or HKDF (TLS 1.3)",
+    "confidence": 0.82,
+    "description": "TLS pseudo-random function"
+  },
+  {
+    "name": "noise_protocol",
+    "category": "protocol",
+    "formula_latex": "\\text{Noise\\_XX:} \\quad \\text{e, es, s, ss pattern with symmetric state}",
+    "keywords": ["noise", "Noise_IK", "Noise_XX", "Noise_NK", "handshake_state", "symmetric_state", "cipher_state"],
+    "constants": ["0x61707865", "0x3320646E", "0x79622D32", "0x6B206574"],
+    "constants_hex_notes": "Construction string: 'Noise_XX_25519_ChaChaPoly_BLAKE2s' or variants. Uses ChaCha20-Poly1305 (sigma constants) and Curve25519. Protocol name hash as initialization constant",
+    "confidence": 0.80,
+    "description": "Noise Protocol Framework (used in WireGuard, Signal, etc.)"
+  },
+  {
+    "name": "signal_protocol",
+    "category": "protocol",
+    "formula_latex": "\\text{X3DH} + \\text{Double Ratchet}",
+    "keywords": ["signal", "x3dh", "double_ratchet", "prekey", "identity_key", "ratchet_step", "message_key"],
+    "constants": [],
+    "constants_hex_notes": "Uses X25519 (Curve25519), HKDF, AES-256-CBC or ChaCha20. X3DH info string: 'WhisperText'. Double ratchet KDF chain. String markers: 'WhisperText', 'SignalMessage'",
+    "confidence": 0.75,
+    "description": "Signal Protocol (X3DH + Double Ratchet)"
+  },
+  {
+    "name": "mte_arm",
+    "category": "binary_security",
+    "formula_latex": "",
+    "keywords": ["MTE", "memory_tagging", "IRG", "ADDG", "SUBG", "STG", "LDG", "CMPP"],
+    "constants": [],
+    "constants_hex_notes": "ARM MTE instructions: IRG (insert random tag), ADDG/SUBG (add/subtract tag), STG/LDG (store/load tag), CMPP (compare with tag). 4-bit tag in top bits of pointer. ARM v8.5-A+",
+    "confidence": 0.78,
+    "description": "ARM Memory Tagging Extension"
+  },
+  {
+    "name": "dilithium",
+    "category": "post_quantum",
+    "formula_latex": "\\text{Lattice-based signature: } z = y + cs, \\quad \\|z\\|_\\infty < \\gamma_1 - \\beta",
+    "keywords": ["dilithium", "CRYSTALS", "ML-DSA", "lattice", "NTT", "pqcrystals", "polyvec"],
+    "constants": ["0x7FE001"],
+    "constants_hex_notes": "Dilithium (ML-DSA) modulus q = 8380417 = 0x7FE001. NTT (Number Theoretic Transform) root of unity. NIST PQC standard. Parameters: (k,l) = (4,4) for level 2, (6,5) for level 3, (8,7) for level 5",
+    "confidence": 0.82,
+    "description": "CRYSTALS-Dilithium / ML-DSA post-quantum signature"
+  },
+  {
+    "name": "kyber",
+    "category": "post_quantum",
+    "formula_latex": "\\text{Lattice-based KEM: } c = (u, v), \\quad u = A^T r + e_1, \\quad v = t^T r + e_2 + \\lceil q/2 \\rceil m",
+    "keywords": ["kyber", "CRYSTALS", "ML-KEM", "lattice", "NTT", "pqcrystals", "polyvec", "kem_encaps", "kem_decaps"],
+    "constants": ["0xD01"],
+    "constants_hex_notes": "Kyber (ML-KEM) modulus q = 3329 = 0xD01. NTT root of unity: 17. Parameters: Kyber512 (k=2), Kyber768 (k=3), Kyber1024 (k=4). NIST PQC standard for key encapsulation",
+    "confidence": 0.82,
+    "description": "CRYSTALS-Kyber / ML-KEM post-quantum key encapsulation"
+  }
+]

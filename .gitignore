@@ -1,0 +1,50 @@
+targets/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+node_modules/
+.pytest_cache/
+.coverage
+htmlcov/
+scripts/node_modules/
+scripts/package-lock.json
+*.DS_Store
+
+# Analiz ciktilari -- hassas veri icerebilir
+workspaces/
+sigs/
+
+# Buyuk signature dosyalari (repo'ya eklenmemeli)
+signatures_homebrew.json
+signatures_homebrew_bytes.json
+sigs_macos_system.json
+
+# Ghidra proje dosyalari
+*.gdt
+*.rep
+*.lock
+ghidra_projects/
+*.ghidra/
+
+# BSim veritabani dosyalari (H2 file-based DB)
+*.bsim/
+bsim_db/
+*.mv.db
+*.trace.db
+
+# Gecici subprocess ciktilari
+--output
+
+# PyTorch model dosyalari
+*.pt
+*.pth
+
+# Ghidra project files
+*.gpr
+
+# Log dosyalari
+*.log

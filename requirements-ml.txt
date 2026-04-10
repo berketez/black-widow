@@ -1,0 +1,9 @@
+# ML dependencies for Karadul v3.0
+# llm4decompile ve model_base icin
+torch>=2.2.0
+transformers>=4.40.0
+tokenizers>=0.19.0
+safetensors>=0.4.0
+accelerate>=0.30.0
+# capstone for assembly analysis
+capstone>=5.0.0

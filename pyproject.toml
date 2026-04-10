@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "karadul"
+version = "1.9.2"
+description = "Black Widow (Karadul) — Multi-language reverse engineering and binary reconstruction suite"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Berke Tezgocen"},
+]
+keywords = [
+    "reverse-engineering",
+    "binary-analysis",
+    "decompilation",
+    "deobfuscation",
+    "malware-analysis",
+    "ghidra",
+    "electron",
+    "javascript",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Disassemblers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "click>=8.1",
+    "rich>=13.0",
+    "pyyaml>=6.0",
+    "dataclasses-json>=0.6",
+    "tqdm>=4.60",
+]
+
+[project.urls]
+Homepage = "https://github.com/berketezgocen/karadul"
+Documentation = "https://github.com/berketezgocen/karadul/tree/main/docs"
+Issues = "https://github.com/berketezgocen/karadul/issues"
+
+[project.optional-dependencies]
+binary = ["capstone>=5.0", "lief>=0.14"]
+dynamic = ["frida-tools>=12.0"]
+ghidra = ["capstone>=5.0", "lief>=0.14"]
+js = ["pyyaml>=6.0"]
+yara = ["yara-python>=4.3"]
+ml = ["torch>=2.2.0", "transformers>=4.40.0", "tokenizers>=0.19.0", "safetensors>=0.4.0", "accelerate>=0.30.0"]
+deobf = ["z3-solver>=4.12.0"]
+computation = ["z3-solver>=4.12.0", "sympy>=1.12"]
+full = ["karadul[binary,dynamic,ghidra,js,yara,ml,deobf,computation,dev]"]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "mypy>=1.8"]
+all = ["karadul[full]"]
+
+[project.scripts]
+karadul = "karadul.cli:main"
+karadul-hack = "karadul.hacker_cli:main"
+blackwidow = "karadul.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["karadul*"]
+
+[tool.setuptools.package-data]
+karadul = [
+    "ghidra/*.py",
+    "frida/*.js",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+markers = [
+    "network: tests that require network access",
+]

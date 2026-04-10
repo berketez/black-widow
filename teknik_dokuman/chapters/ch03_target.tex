@@ -1,0 +1,335 @@
+% ============================================================================
+% BOLUM 3 GENISLETME: HEDEF TESPIT SISTEMI — DETAYLI
+% ============================================================================
+
+% Bu dosya main.tex'teki Bolum 3'un SONUNA \input ile eklenir
+
+\section{Mach-O Format Detaylari}
+\label{sec:macho-detail}
+
+Apple platformlarinda kullanilan Mach-O (Mach Object) formati, NeXTSTEP mirasinin urunudur. Carnegie Mellon'daki Mach kernel projesi (1985) icin tasarlanmistir.
+
+\subsection{Header $\to$ Load Commands $\to$ Segments $\to$ Sections}
+
+Mach-O dosyasi katmanli bir yapidir:
+
+\begin{center}
+\begin{tikzpicture}[
+  block/.style={rectangle, draw=sectioncyan, fill=boxbg, minimum width=8cm, minimum height=0.7cm, text=white, font=\footnotesize},
+  sep/.style={rectangle, draw=gray!30!white, fill=black!70!white, minimum width=8cm, minimum height=0.3cm},
+]
+  \node[block] (header) at (0,0) {Mach-O Header (32 byte): magic, cputype, filetype, ncmds};
+  \node[block] (lc1) at (0,-0.9) {LC\_SEGMENT\_64: \_\_TEXT segment tanimlamasi};
+  \node[block] (lc2) at (0,-1.8) {LC\_SYMTAB: Symbol table offset ve boyut};
+  \node[block] (lc3) at (0,-2.7) {LC\_DYSYMTAB: Dynamic symbol bilgisi};
+  \node[block] (lc4) at (0,-3.6) {LC\_DYLIB: Bagli kutuphane bilgisi};
+  \node[sep] (s1) at (0,-4.3) {};
+  \node[block] (text) at (0,-5.0) {\_\_TEXT Segment: derlenm\-is makine kodu, string sabitleri};
+  \node[block] (data) at (0,-5.9) {\_\_DATA Segment: global degiskenler, BSS};
+  \node[block] (link) at (0,-6.8) {\_\_LINKEDIT Segment: symbol table, string table};
+\end{tikzpicture}
+\end{center}
+
+\textbf{Header} (mach\_header\_64, 32 byte):
+\begin{itemize}
+\item \code{magic} (4 byte): \code{0xFEEDFACF} (64-bit) veya \code{0xFEEDFACE} (32-bit)
+\item \code{cputype}: \code{CPU\_TYPE\_ARM64 = 0x0100000C}, \code{CPU\_TYPE\_X86\_64 = 0x01000007}
+\item \code{filetype}: \code{MH\_EXECUTE} (2), \code{MH\_DYLIB} (6), \code{MH\_BUNDLE} (8)
+\item \code{ncmds}: Load command sayisi
+\item \code{flags}: \code{MH\_PIE} (position independent), \code{MH\_TWOLEVEL} (iki seviyeli namespace)
+\end{itemize}
+
+\textbf{Segmentler:} Bellek yuekleme birimi. \code{\_\_TEXT} segmenti yurutuluebilir ama yazilamaz (W\^{}X, code signing icin kritik). \code{\_\_DATA} segmenti okunur-yazilir.
+
+\subsection{Universal Binary (Fat Binary)}
+
+Birden fazla mimari icin tek dosyada derlenmis binary:
+
+\begin{center}
+\begin{tikzpicture}[
+  block/.style={rectangle, draw=sectioncyan, fill=boxbg, minimum width=7cm, minimum height=0.7cm, text=white, font=\footnotesize},
+]
+  \node[block] (fat) at (0,0) {Fat Header: magic=0xCAFEBABE, nfat\_arch=2};
+  \node[block] (a0) at (0,-0.9) {fat\_arch[0]: arm64 -- offset, size, alignment};
+  \node[block] (a1) at (0,-1.8) {fat\_arch[1]: x86\_64 -- offset, size, alignment};
+  \node[block,fill=boxbg!80!blue] (m0) at (0,-3.0) {ARM64 Mach-O (tam dosya)};
+  \node[block,fill=boxbg!80!green] (m1) at (0,-3.9) {x86\_64 Mach-O (tam dosya)};
+\end{tikzpicture}
+\end{center}
+
+Karadul'un \file{macho.py}'sindaki \code{analyze\_static()} bunu dogru handle eder:
+\begin{lstlisting}[language=Python]
+if target.target_type == TargetType.UNIVERSAL_BINARY:
+    # lipo -thin arm64 ile sadece ARM slice'i cikar
+    proc = subprocess.run(["lipo", str(binary_path), "-thin", "arm64", ...])
+\end{lstlisting}
+
+\textbf{Neden universal binary hala kullanilir:} Apple 2020'de Intel'den ARM64'e gecti. Universal binary gecis doeneminde zorunlu --- M-serisi ARM64, eski Mac'ler x86\_64 calistirir. Rosetta 2 JIT translation katmani sadece ARM64 slice yoksa devreye girer.
+
+\subsection{CAFEBABE Cakismasi}
+
+\begin{uyari}[Potansiyel Sorun]
+\code{0xCAFEBABE} magic hem Java class dosyalarinda hem Apple universal binary'lerinde kullanilir. Ayrim: Java'da magic'ten sonra minor/major version byte'lari gelir (oernegin \code{0x0000003D} = Java 17), fat binary'de ise mimari sayisi gelir (1--9 arasi kueceuk integer). Mevcut Karadul implementasyonu bu ayrimi \textbf{yapmiyor} --- potansiyel false positive kaynagi.
+\end{uyari}
+
+
+\section{ELF Format ve Go Binary Tespiti}
+\label{sec:elf-go}
+
+\subsection{ELF Yapisi}
+
+ELF (Executable and Linkable Format), Unix System V Release 4 (1989) ile standartlastirilmistir:
+
+\begin{itemize}
+\item \textbf{e\_ident[16]:} Ilk 16 byte --- magic (\code{7F 45 4C 46}), class (32/64-bit), endianness, version, OS/ABI
+\item \textbf{Program Headers:} Runtime yuekleme bilgisi --- \code{PT\_LOAD}, \code{PT\_INTERP}, \code{PT\_DYNAMIC}
+\item \textbf{Section Headers:} Link-time bilgisi --- \code{.text}, \code{.rodata}, \code{.data}, \code{.bss}, \code{.symtab}
+\end{itemize}
+
+\textbf{Kritik fark:} Program headers = runtime view (loader kullanir), section headers = link-time view (linker kullanir). Stripped binary'de section headers \textbf{silinebilir} ama program headers silinmez.
+
+\subsection{GOPCLNTAB (Go Program Counter Line Number Table)}
+
+Go binary'lerinin en onemli ic yapisi. Her Go binary'de bulunur --- \textbf{stripped olsa bile} genellikle kalir, cueuenkue Go runtime panic/recover/stack trace icin buna bagimlidir.
+
+GOPCLNTAB icerigi:
+\begin{itemize}
+\item Her fonksiyonun baslangic adresi (PC)
+\item Fonksiyon adi (tam package path: \code{main.(*Server).HandleRequest})
+\item Kaynak dosya yolu
+\item Satir numarasi mapping'i (PC $\to$ satir)
+\item Stack frame boyutu
+\end{itemize}
+
+\textbf{Magic byte evrimi} (Karadul 4 versiyonu da handle ediyor):
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}Magic} & \textbf{\color{sectioncyan}Go Versiyon} & \textbf{\color{sectioncyan}Neden Degisti} \\
+\midrule
+\code{FB FF FF FF 00 00} & Go 1.2--1.15 & Orijinal format \\
+\code{FA FF FF FF 00 00} & Go 1.16--1.17 & Format yeniden tasarim \\
+\code{F0 FF FF FF 00 00} & Go 1.18--1.19 & Register-based ABI \\
+\code{F1 FF FF FF 00 00} & Go 1.20+ & Gueuencel format \\
+\bottomrule
+\end{tabular}
+\caption{GOPCLNTAB magic byte evrimi.}
+\end{table}
+
+
+\section{PE Format ve .NET/Delphi Ayrimi}
+\label{sec:pe-dotnet-delphi}
+
+\subsection{PE Yapisi}
+
+PE (Portable Executable) formati, her Windows .exe, .dll, .sys dosyasi:
+
+\begin{itemize}
+\item \textbf{DOS Header} (64 byte): \code{e\_magic="MZ"} (Mark Zbikowski, DOS yaraticisi), \code{e\_lfanew} = PE offset
+\item \textbf{DOS Stub} ($\sim$64 byte): ``This program cannot be run in DOS mode''
+\item \textbf{PE Signature} (4 byte): \code{"PE\textbackslash 0\textbackslash 0"}
+\item \textbf{COFF Header} (20 byte): Machine, NumberOfSections, TimeDateStamp
+\item \textbf{Optional Header}: Entry point, ImageBase, \textbf{Data Directories} (16 adet)
+\item \textbf{Data Directory index 14} = CLR Runtime Header --- bu entry sifirdan bueyuekse \textbf{.NET assembly}
+\end{itemize}
+
+\subsection{.NET Tespiti: mscoree.dll}
+
+Her .NET executable'da import table'da \code{mscoree.dll} referansi bulunur:
+
+\begin{lstlisting}[language=Python]
+# target.py satir 524-536
+if b"mscoree.dll" in data or b"_CorExeMain" in data:
+    return True
+if b"mscorlib" in data or b"System.Runtime" in data:
+    return True
+\end{lstlisting}
+
+\textbf{False positive neredeyse imkansiz:} \code{mscoree.dll} string'i yalnizca .NET binary'lerinde bulunur.
+
+\begin{equation}
+\prob{.NET \given \text{mscoree.dll bulundu}} \approx 0.999
+\end{equation}
+
+\subsection{Delphi Binary Tespiti}
+
+Delphi binary'leri native x86/x64 makine kodu icerir. Ayirt edici ozellikler:
+
+\textbf{RTTI (Runtime Type Information):} Her class icin otomatik uretilir, binary'nin \code{.rdata} section'inda goemuelueduer:
+
+\begin{lstlisting}[language=Python]
+# Delphi mangled name pattern:
+# @Unit@Class@Method$qqr
+pattern = rb"@([A-Z]\w+)@([A-Z]\w+)@([A-Za-z_]\w*)\$qqr"
+\end{lstlisting}
+
+\code{\$qqr} suffixi ``no parameters'' anlamina gelir (Delphi mangling convention).
+
+\textbf{Tespit hiyerarsisi:} \file{target.py}'da oencelik sirasi dogru:
+\begin{enumerate}
+\item \code{\_is\_dotnet()} $\to$ DOTNET\_ASSEMBLY
+\item \code{\_is\_delphi()} $\to$ DELPHI\_BINARY
+\item Fallback $\to$ PE\_BINARY
+\end{enumerate}
+
+.NET kontrolu daha belirgin (mscoree.dll) bu yueuezden oence yapilmali.
+
+
+\section{Dil Tespit Algoritmasi --- Bayes Perspektifi}
+\label{sec:lang-bayes}
+
+\subsection{Mevcut Puanlama Sistemi}
+
+\file{target.py:470}'deki dil tespiti basit bir sayma yaklasimi kullaniyor:
+
+\begin{equation}
+\text{score}(L) = \sum_{s \in \text{markers}(L)} \mathbb{1}[s \in \text{binary\_text}]
+\end{equation}
+
+Her signature esit agirlikta --- \code{rust\_begin\_unwind} ile \code{std::} ayni puani verir.
+
+\subsection{Naive Bayes Formulasyonu}
+
+Bu problem bir Bayes siniflandiricidir:
+
+\begin{equation}
+\prob{L \given S_1, \ldots, S_n} \propto \prob{L} \prod_{i=1}^{n} \prob{S_i \given L}
+\end{equation}
+
+\textbf{Prior olasiliklar} platform-conditioned olabilir:
+\begin{itemize}
+\item Mach-O ise: Swift/Obj-C prior'u yueksek
+\item ELF ise: C/Go prior'u yueksek
+\item PE ise: C++/.NET/Delphi prior'u yueksek
+\end{itemize}
+
+\textbf{Signature likelihood'lari:}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lllll}
+\toprule
+\textbf{\color{sectioncyan}Signature} & \textbf{\color{sectioncyan}$\prob{S \given \text{Rust}}$} & \textbf{\color{sectioncyan}$\prob{S \given \text{C++}}$} & \textbf{\color{sectioncyan}$\prob{S \given \text{Go}}$} & \textbf{\color{sectioncyan}Gueuec} \\
+\midrule
+\code{rust\_begin\_unwind} & 0.98 & 0.001 & 0.001 & Cok gueueclue \\
+\code{std::} & 0.15 & 0.95 & 0.02 & Cakisma riski \\
+\code{runtime.gopanic} & 0.001 & 0.001 & 0.99 & Cok gueueclue \\
+\code{objc\_msgSend} & 0.001 & 0.01 & 0.001 & Obj-C kesin \\
+\bottomrule
+\end{tabular}
+\caption{Dil tespit signature likelihood degerleri.}
+\end{table}
+
+\begin{tanim}[Iyilestirme Oenerisi]
+Mevcut esit agirlikli sayma yerine agirlikli puanlama daha dogru olur:
+\begin{lstlisting}[language=Python]
+_LANGUAGE_WEIGHTS = {
+    "rust_begin_unwind": (Language.RUST, 3),  # Cok guclu
+    "std::":             (Language.CPP, 1),   # Zayif (cakisma)
+    "runtime.gopanic":   (Language.GO, 3),    # Cok guclu
+}
+\end{lstlisting}
+\end{tanim}
+
+\subsection{False Positive Analizi}
+
+\textbf{En yueksek risk: \code{std::}} --- Rust binary'leri C++ standard library ile linklenebilir (FFI), Go binary'leri cgo ile C++ kodu icerebilir. Bu durumda \code{std::} yanlis dili goesterir.
+
+\textbf{En yueksek false negative riski:} Stripped binary'ler (agresif \code{-s -w}) cogu string'i siler.
+
+\begin{uyari}[Tutarsizlik]
+\code{\_detect\_language\_from\_binary()} 1MB okurken, \code{\_is\_go\_binary()} 2MB okuyor. Go binary'lerin bueyuekluegueuenden mantikli ama genel dil tespiti icin de 2MB daha dogru sonuc verir.
+\end{uyari}
+
+
+\section{Bundler Tespit Heuristikleri}
+\label{sec:bundler-detail}
+
+\subsection{webpack Runtime Yapisi}
+
+webpack duenyanin en yaygin JS bundler'idir. Temel yapi:
+
+\begin{lstlisting}[language=JavaScript]
+var __webpack_modules__ = {
+  "./src/index.js": function(module, exports, __webpack_require__) {
+    // Modul kodu
+  }
+};
+function __webpack_require__(moduleId) {
+  var cachedModule = __webpack_module_cache__[moduleId];
+  if (cachedModule !== undefined) return cachedModule.exports;
+  var module = __webpack_module_cache__[moduleId] = { exports: {} };
+  __webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+  return module.exports;
+}
+\end{lstlisting}
+
+\code{\_\_webpack\_require\_\_} fonksiyonu: (1) Cache'e bak, (2) modul fonksiyonunu CommonJS convention ile cagir, (3) sonucu cache'e yaz.
+
+\subsection{esbuild --- Tespiti Zor}
+
+esbuild (Go ile yazilmis) minimal output ueretir --- belirgin bir runtime signature'i \textbf{yoktur}. Bu kasitli tasarim karari. Karadul'un mevcut sistemi esbuild ciktisini tespit \textbf{edemez} --- gueuencel JS ekosisteminde giderek onemli bir eksiklik.
+
+\subsection{Bundler Tespitinin Ooenemi}
+
+Bundler tespiti deobfuscation stratejisini belirler:
+\begin{itemize}
+\item \textbf{webpack:} Module map parse edilebilir, her modul ayri dosyaya yazilabilir
+\item \textbf{parcel:} Benzer module map yapisi
+\item \textbf{rollup:} Tek dosya, modul sinirlari silindigi icin parcalamak zor
+\item \textbf{esbuild:} Agresif inlining, moduelleri ayirmak neredeyse imkansiz
+\end{itemize}
+
+
+\section{SHA-256 Hashing --- Detayli Analiz}
+\label{sec:sha256-detail}
+
+\subsection{Merkle-Damg\r{a}rd Construction}
+
+SHA-256 su pipeline'i izler:
+
+\begin{equation}
+M \xrightarrow{\text{padding}} M_1 | M_2 | \cdots | M_n \quad \text{(512-bit bloklar)}
+\end{equation}
+
+\begin{align}
+H_0 &= \text{IV (Initial Value, 256-bit sabit)} \notag \\
+H_i &= f(H_{i-1}, M_i) \quad i = 1, 2, \ldots, n \notag \\
+\text{Hash} &= H_n \notag
+\end{align}
+
+Compression function $f$: 64 round, her round'da Ch, Maj, $\Sigma$ fonksiyonlari (bitwise operations).
+
+\subsection{8KB Chunk Boyutu Optimalligi}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}Chunk Boyutu} & \textbf{\color{sectioncyan}Throughput} & \textbf{\color{sectioncyan}Bellek} \\
+\midrule
+256 B & $\sim$200 MB/s & 256 B \\
+4 KB & $\sim$800 MB/s & 4 KB \\
+\textbf{8 KB} & $\sim$\textbf{850 MB/s} & \textbf{8 KB} \\
+64 KB & $\sim$870 MB/s & 64 KB \\
+1 MB & $\sim$860 MB/s & 1 MB \\
+\bottomrule
+\end{tabular}
+\caption{Hash chunk boyutu vs throughput. 8KB ``sweet spot''.}
+\end{table}
+
+8KB = 128 $\times$ 64B (SHA-256 compression block size) --- mueuekemmel hizalanma. L1 cache'te ($\sim$32--64KB) rahatca sigar.
+
+\subsection{Collision Olasiligi}
+
+Birthday paradox'undan:
+
+\begin{equation}
+\prob{\text{collision}, n \text{ dosya}} = 1 - e^{-n^2 / (2 \cdot 2^{256})} \approx \frac{n^2}{2^{257}}
+\end{equation}
+
+$n = 10^{12}$ (1 trilyon dosya): $P \approx 10^{18} / 2^{257} \approx 10^{-59}$ --- astronomik derecede dueueseek.
+
+$P = 0.5$ icin gerekli $n$: $n \approx 2^{128} \approx 3.4 \times 10^{38}$ dosya --- evrendeki atom sayisindan ($\sim 10^{80}$) bile kat kat azdir, yine de collision pratikte imkansiz.

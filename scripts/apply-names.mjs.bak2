@@ -1,0 +1,575 @@
+#!/usr/bin/env node
+/**
+ * apply-names.mjs -- Context-analyzer ciktisindaki isimleri kodda uygula
+ *
+ * Black Widow v3.0 -- Karadul
+ *
+ * SCOPE-AWARE VERSION:
+ *   context-analyzer.mjs'nin scope_renames listesini kullanarak
+ *   her scope'taki degiskeni dogru ismiyle rename eder.
+ *
+ *   Eger scope_renames yoksa (eski format), flat variables map'i kullanir.
+ *
+ * Kullanim:
+ *   node --max-old-space-size=8192 apply-names.mjs <input.js> <names.json> <output.js>
+ *     [--min-confidence 0.4]
+ *     [--dry-run]
+ *
+ * Cikti (stdout JSON):
+ *   {
+ *     "success": true,
+ *     "renamed": 142,
+ *     "skipped": 23,
+ *     "scope_aware": true,
+ *     "mappings": {"scope1::e": "request", "scope2::e": "error"},
+ *     "output": "/path/to/output.js"
+ *   }
+ */
+
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { parse } from "@babel/parser";
+import _traverse from "@babel/traverse";
+import _generate from "@babel/generator";
+import * as t from "@babel/types";
+
+const traverse = _traverse.default || _traverse;
+const generate = _generate.default || _generate;
+
+// ---------- CLI ----------
+const args = process.argv.slice(2);
+const positional = args.filter((a) => !a.startsWith("--"));
+
+const flags = new Map();
+for (let i = 0; i < args.length; i++) {
+  if (args[i].startsWith("--") && args[i + 1] && !args[i + 1].startsWith("--")) {
+    flags.set(args[i], args[i + 1]);
+    i++;
+  } else if (args[i].startsWith("--")) {
+    flags.set(args[i], "true");
+  }
+}
+
+const MIN_CONFIDENCE = parseFloat(flags.get("--min-confidence") || "0.4");
+const DRY_RUN = flags.has("--dry-run");
+
+function emit(obj) {
+  process.stdout.write(JSON.stringify(obj) + "\n");
+}
+
+if (positional.length < 3) {
+  emit({
+    success: false,
+    renamed: 0,
+    skipped: 0,
+    mappings: {},
+    errors: [
+      "Kullanim: node apply-names.mjs <input.js> <names.json> <output.js> [--min-confidence 0.4] [--dry-run]",
+    ],
+  });
+  process.exit(1);
+}
+
+const inputPath = resolve(positional[0]);
+const namesPath = resolve(positional[1]);
+const outputPath = resolve(positional[2]);
+
+// ---------- Dosyalari oku ----------
+let source, namesData;
+
+try {
+  source = readFileSync(inputPath, "utf-8");
+} catch (err) {
+  emit({ success: false, renamed: 0, skipped: 0, mappings: {}, errors: [`JS dosyasi okunamadi: ${err.message}`] });
+  process.exit(1);
+}
+
+try {
+  namesData = JSON.parse(readFileSync(namesPath, "utf-8"));
+} catch (err) {
+  emit({ success: false, renamed: 0, skipped: 0, mappings: {}, errors: [`Names JSON okunamadi: ${err.message}`] });
+  process.exit(1);
+}
+
+const errors = [];
+
+// ---------- Scope-aware mi kontrol et ----------
+const isScopeAware = !!(namesData.scope_renames && namesData.scope_renames.length > 0);
+
+// =====================================================================
+// PHASE 0: DUPLICATE DECLARATION FIX (ayni pre-process)
+// =====================================================================
+// apply-names.mjs de ayni duplicate fix'i yapmali cunku scope-aware
+// traverse kullanacak
+
+let ast;
+let duplicatesFixed = 0;
+
+try {
+  ast = parse(source, {
+    sourceType: "unambiguous",
+    allowReturnOutsideFunction: true,
+    allowSuperOutsideMethod: true,
+    allowImportExportEverywhere: true,
+    errorRecovery: true,
+    plugins: [
+      "jsx", "typescript", "decorators-legacy", "classProperties",
+      "classPrivateProperties", "classPrivateMethods", "dynamicImport",
+      "optionalChaining", "nullishCoalescingOperator", "logicalAssignment",
+      "numericSeparator", "optionalCatchBinding", "throwExpressions",
+      "topLevelAwait", "exportDefaultFrom", "exportNamespaceFrom",
+      "asyncGenerators", "objectRestSpread", "importMeta", "importAssertions",
+    ],
+  });
+} catch (err) {
+  emit({
+    success: false, renamed: 0, skipped: 0, mappings: {},
+    errors: [`Parse hatasi: ${err.message}`],
+  });
+  process.exit(0);
+}
+
+// Duplicate fix pre-process
+function findFunctionScope(path) {
+  let current = path.parentPath;
+  while (current) {
+    const type = current.node?.type;
+    if (type === "FunctionDeclaration" || type === "FunctionExpression" ||
+        type === "ArrowFunctionExpression" || type === "Program") {
+      return current.node;
+    }
+    current = current.parentPath;
+  }
+  return null;
+}
+
+function findBlockScope(path) {
+  let current = path.parentPath;
+  while (current) {
+    const type = current.node?.type;
+    if (type === "FunctionDeclaration" || type === "FunctionExpression" ||
+        type === "ArrowFunctionExpression" || type === "Program" ||
+        type === "BlockStatement" || type === "ForStatement" ||
+        type === "ForInStatement" || type === "ForOfStatement" ||
+        type === "SwitchStatement") {
+      return current.node;
+    }
+    current = current.parentPath;
+  }
+  return null;
+}
+
+try {
+  traverse(ast, {
+    noScope: true,
+    VariableDeclaration(path) {
+      const declarations = path.node.declarations;
+      const kind = path.node.kind;
+
+      let scopeBlock = kind === "var" ? findFunctionScope(path) : findBlockScope(path);
+      if (!scopeBlock) scopeBlock = ast;
+      if (!scopeBlock._seenVarNames) scopeBlock._seenVarNames = new Map();
+      const seen = scopeBlock._seenVarNames;
+
+      const toConvert = [];
+      for (let i = 0; i < declarations.length; i++) {
+        const decl = declarations[i];
+        if (!decl.id || decl.id.type !== "Identifier") continue;
+        const name = decl.id.name;
+        if (seen.has(name)) {
+          toConvert.push({ index: i, decl });
+          duplicatesFixed++;
+        } else {
+          seen.set(name, kind);
+        }
+      }
+
+      if (toConvert.length === 0) return;
+
+      if (toConvert.length === declarations.length) {
+        const assignments = toConvert.map(({ decl }) => {
+          if (decl.init) return t.assignmentExpression("=", t.identifier(decl.id.name), decl.init);
+          return null;
+        }).filter(Boolean);
+
+        if (assignments.length === 0) {
+          try { path.remove(); } catch(_) {}
+          return;
+        }
+
+        const isForInit = path.parent?.type === "ForStatement" && path.parent.init === path.node;
+        const isForInLeft = (path.parent?.type === "ForInStatement" || path.parent?.type === "ForOfStatement") && path.parent.left === path.node;
+
+        if (isForInit || isForInLeft) {
+          if (assignments.length === 1) {
+            try { path.replaceWith(assignments[0]); } catch(_) { path.node.kind = "var"; }
+          } else {
+            try { path.replaceWith(t.sequenceExpression(assignments)); } catch(_) { path.node.kind = "var"; }
+          }
+        } else {
+          if (assignments.length === 1) {
+            try { path.replaceWith(t.expressionStatement(assignments[0])); } catch(_) { path.node.kind = "var"; }
+          } else {
+            try { path.replaceWith(t.expressionStatement(t.sequenceExpression(assignments))); } catch(_) { path.node.kind = "var"; }
+          }
+        }
+        return;
+      }
+
+      const assignmentExprs = [];
+      for (const { index, decl } of toConvert.reverse()) {
+        declarations.splice(index, 1);
+        if (decl.init) {
+          assignmentExprs.push(t.assignmentExpression("=", t.identifier(decl.id.name), decl.init));
+        }
+      }
+      if (assignmentExprs.length > 0) {
+        const isForInit = path.parent?.type === "ForStatement" && path.parent.init === path.node;
+        if (isForInit) return;
+        try {
+          const stmts = assignmentExprs.map(a => t.expressionStatement(a));
+          for (const stmt of stmts.reverse()) path.insertBefore(stmt);
+        } catch (_) {
+          path.node.kind = "var";
+          for (const { decl } of toConvert) declarations.push(decl);
+        }
+      }
+    },
+  });
+} catch (err) {
+  errors.push(`Duplicate fix hatasi: ${err.message}`);
+}
+
+// Temizle
+traverse(ast, {
+  noScope: true,
+  enter(path) {
+    if (path.node._seenVarNames) delete path.node._seenVarNames;
+  },
+});
+
+console.error(`[apply-names] ${duplicatesFixed} duplicate duzeltildi, scope_aware=${isScopeAware}`);
+
+// Babel Scope monkey-patch (duplicate declaration toleransi)
+try {
+  const scopeModule = await import("@babel/traverse");
+  const Scope = (scopeModule.default || scopeModule).Scope ||
+    Object.values(scopeModule).find(v => v?.prototype?.registerBinding);
+
+  if (Scope?.prototype?.registerBinding) {
+    const originalRegisterBinding = Scope.prototype.registerBinding;
+    Scope.prototype.registerBinding = function(kind, path, bindingPath) {
+      try {
+        return originalRegisterBinding.call(this, kind, path, bindingPath);
+      } catch (err) {
+        if (err.message?.includes("Duplicate declaration")) return;
+        throw err;
+      }
+    };
+    console.error("[apply-names] Scope.registerBinding patched");
+  } else {
+    try {
+      const { Scope: S2 } = await import("/Users/apple/Desktop/black-widow/scripts/node_modules/@babel/traverse/lib/scope/index.js");
+      if (S2?.prototype?.registerBinding) {
+        const orig = S2.prototype.registerBinding;
+        S2.prototype.registerBinding = function(kind, path, bindingPath) {
+          try { return orig.call(this, kind, path, bindingPath); }
+          catch (err) { if (err.message?.includes("Duplicate declaration")) return; throw err; }
+        };
+        console.error("[apply-names] Scope.registerBinding patched (direct)");
+      }
+    } catch(_) {}
+  }
+} catch (patchErr) {
+  console.error("[apply-names] Scope patch basarisiz:", patchErr.message);
+}
+
+// =====================================================================
+// SCOPE-AWARE RENAME
+// =====================================================================
+
+if (isScopeAware) {
+  // scope_renames listesinden bir lookup map olustur
+  // scopeId::originalName -> { newName, confidence }
+  const scopeRenameMap = new Map();
+  let skipped = 0;
+
+  for (const rename of namesData.scope_renames) {
+    if (!rename.newName || rename.newName === rename.originalName) {
+      skipped++;
+      continue;
+    }
+    if (rename.confidence < MIN_CONFIDENCE) {
+      skipped++;
+      continue;
+    }
+
+    const key = `${rename.scopeId}::${rename.originalName}`;
+    const existing = scopeRenameMap.get(key);
+    if (!existing || rename.confidence > existing.confidence) {
+      scopeRenameMap.set(key, {
+        newName: rename.newName,
+        confidence: rename.confidence,
+      });
+    }
+  }
+
+  console.error(`[apply-names] ${scopeRenameMap.size} scope-aware rename mapping, ${skipped} skipped`);
+
+  // Scope-aware traverse -- her Identifier'i kendi scope'unda rename et
+  const appliedMappings = {};
+  let renameCount = 0;
+  const renamedNodes = new Set();
+
+  function getScopeId(path) {
+    try {
+      const scope = path.scope;
+      if (scope && scope.block) {
+        const block = scope.block;
+        if (block.loc && block.loc.start) {
+          const funcName =
+            block.id?.name ||
+            (block.type === "Program" ? "program" : block.type);
+          return `${funcName}@${block.loc.start.line}:${block.loc.start.column}`;
+        }
+        if (scope.uid !== undefined) return `scope_${scope.uid}`;
+      }
+    } catch (_) {}
+
+    let current = path;
+    while (current) {
+      const node = current.node;
+      if (
+        node &&
+        (node.type === "FunctionDeclaration" ||
+          node.type === "FunctionExpression" ||
+          node.type === "ArrowFunctionExpression" ||
+          node.type === "Program" ||
+          node.type === "ClassMethod" ||
+          node.type === "ObjectMethod")
+      ) {
+        if (node.loc?.start) {
+          const name = node.id?.name || node.type;
+          return `${name}@${node.loc.start.line}:${node.loc.start.column}`;
+        }
+      }
+      current = current.parentPath;
+    }
+    return "global";
+  }
+
+  try {
+    traverse(ast, {
+      Identifier(path) {
+        const name = path.node.name;
+        if (name.length > 3) return;
+        if (renamedNodes.has(path.node)) return;
+
+        // Skip: property access, object key, label vs.
+        if (path.parent.type === "MemberExpression" && path.parent.property === path.node && !path.parent.computed) return;
+        if (path.parent.type === "ObjectProperty" && path.parent.key === path.node && !path.parent.computed && !path.parent.shorthand) return;
+        if (path.parent.type === "ObjectMethod" && path.parent.key === path.node && !path.parent.computed) return;
+        if (path.parent.type === "ClassMethod" && path.parent.key === path.node && !path.parent.computed) return;
+        if (path.parent.type === "ClassProperty" && path.parent.key === path.node && !path.parent.computed) return;
+        if (path.parent.type === "LabeledStatement" || path.parent.type === "BreakStatement" || path.parent.type === "ContinueStatement") return;
+        if (path.parent.type === "ImportSpecifier" && path.parent.imported === path.node) return;
+        if (path.parent.type === "ExportSpecifier" && path.parent.exported === path.node) return;
+
+        // Scope-aware lookup
+        const scopeId = getScopeId(path);
+        const key = `${scopeId}::${name}`;
+        const mapping = scopeRenameMap.get(key);
+
+        if (!mapping) {
+          // Bu scope'ta bu isim icin mapping yok
+          // Ust scope'lara bak (binding resolution)
+          // path.scope.getBinding ile gercek binding'in scope'unu bul
+          let actualKey = null;
+          try {
+            const binding = path.scope?.getBinding(name);
+            if (binding) {
+              // Binding'in tanimlandigi scope'un ID'sini bul
+              const bindingScope = binding.scope;
+              if (bindingScope && bindingScope.block) {
+                const block = bindingScope.block;
+                if (block.loc?.start) {
+                  const funcName = block.id?.name || (block.type === "Program" ? "program" : block.type);
+                  const bindingScopeId = `${funcName}@${block.loc.start.line}:${block.loc.start.column}`;
+                  actualKey = `${bindingScopeId}::${name}`;
+                }
+              }
+            }
+          } catch (_) {}
+
+          if (actualKey && scopeRenameMap.has(actualKey)) {
+            const actualMapping = scopeRenameMap.get(actualKey);
+
+            // Shorthand object property
+            if (path.parent.type === "ObjectProperty" && path.parent.shorthand && path.parent.value === path.node) {
+              path.parent.shorthand = false;
+            }
+
+            path.node.name = actualMapping.newName;
+            renamedNodes.add(path.node);
+            renameCount++;
+
+            const mappingKey = `${actualKey}`;
+            if (!appliedMappings[mappingKey]) {
+              appliedMappings[mappingKey] = { from: name, to: actualMapping.newName };
+            }
+          }
+          return;
+        }
+
+        // Shorthand object property
+        if (path.parent.type === "ObjectProperty" && path.parent.shorthand && path.parent.value === path.node) {
+          path.parent.shorthand = false;
+        }
+
+        path.node.name = mapping.newName;
+        renamedNodes.add(path.node);
+        renameCount++;
+
+        const mappingKey = `${key}`;
+        if (!appliedMappings[mappingKey]) {
+          appliedMappings[mappingKey] = { from: name, to: mapping.newName };
+        }
+      },
+    });
+  } catch (err) {
+    errors.push(`Scope-aware rename hatasi: ${err.message}`);
+
+    // Fallback: flat rename
+    console.error(`[apply-names] Scope-aware rename basarisiz, flat fallback'a donuluyor: ${err.message}`);
+    flatRename(namesData.variables || {});
+  }
+
+  // Cikti
+  if (!DRY_RUN) {
+    try {
+      const { code } = generate(ast, { comments: true, compact: false, concise: false, retainLines: true });
+      writeFileSync(outputPath, code, "utf-8");
+    } catch (err) {
+      emit({
+        success: false, renamed: renameCount, skipped,
+        scope_aware: true, mappings: appliedMappings,
+        errors: [...errors, `Code generation hatasi: ${err.message}`],
+      });
+      process.exit(0);
+    }
+  }
+
+  emit({
+    success: true,
+    renamed: renameCount,
+    skipped,
+    scope_aware: true,
+    duplicates_fixed: duplicatesFixed,
+    mappings: appliedMappings,
+    output: DRY_RUN ? null : outputPath,
+    dry_run: DRY_RUN,
+    min_confidence: MIN_CONFIDENCE,
+    errors,
+  });
+
+} else {
+  // =====================================================================
+  // FLAT RENAME (eski noScope davranisi -- geriye uyumluluk)
+  // =====================================================================
+  flatRename(namesData.variables || {});
+}
+
+function flatRename(variableNames) {
+  const globalRenames = new Map();
+  let skipped = 0;
+
+  for (const [originalName, info] of Object.entries(variableNames)) {
+    if (!info.suggested_name || info.suggested_name === originalName) {
+      skipped++;
+      continue;
+    }
+    if (info.confidence < MIN_CONFIDENCE) {
+      skipped++;
+      continue;
+    }
+
+    const existing = globalRenames.get(originalName);
+    if (!existing || info.confidence > existing.confidence) {
+      globalRenames.set(originalName, {
+        newName: info.suggested_name,
+        confidence: info.confidence,
+      });
+    }
+  }
+
+  const renameMap = new Map();
+  for (const [originalName, { newName }] of globalRenames) {
+    renameMap.set(originalName, newName);
+  }
+
+  const appliedMappings = {};
+  let renameCount = 0;
+  const renamedNodes = new Set();
+
+  try {
+    traverse(ast, {
+      noScope: true,
+      Identifier(path) {
+        const name = path.node.name;
+        if (!renameMap.has(name)) return;
+        if (renamedNodes.has(path.node)) return;
+
+        if (path.parent.type === "MemberExpression" && path.parent.property === path.node && !path.parent.computed) return;
+        if (path.parent.type === "ObjectProperty" && path.parent.key === path.node && !path.parent.computed && !path.parent.shorthand) return;
+        if (path.parent.type === "ObjectMethod" && path.parent.key === path.node && !path.parent.computed) return;
+        if (path.parent.type === "ClassMethod" && path.parent.key === path.node && !path.parent.computed) return;
+        if (path.parent.type === "ClassProperty" && path.parent.key === path.node && !path.parent.computed) return;
+        if (path.parent.type === "LabeledStatement" || path.parent.type === "BreakStatement" || path.parent.type === "ContinueStatement") return;
+        if (path.parent.type === "ImportSpecifier" && path.parent.imported === path.node) return;
+        if (path.parent.type === "ExportSpecifier" && path.parent.exported === path.node) return;
+
+        if (path.parent.type === "ObjectProperty" && path.parent.shorthand && path.parent.value === path.node) {
+          path.parent.shorthand = false;
+        }
+
+        const newName = renameMap.get(name);
+        path.node.name = newName;
+        renamedNodes.add(path.node);
+        renameCount++;
+
+        if (!appliedMappings[name]) {
+          appliedMappings[name] = newName;
+        }
+      },
+    });
+  } catch (err) {
+    errors.push(`Flat rename hatasi: ${err.message}`);
+  }
+
+  if (!DRY_RUN) {
+    try {
+      const { code } = generate(ast, { comments: true, compact: false, concise: false, retainLines: true });
+      writeFileSync(outputPath, code, "utf-8");
+    } catch (err) {
+      emit({
+        success: false, renamed: renameCount, skipped,
+        scope_aware: false, mappings: appliedMappings,
+        errors: [...errors, `Code generation hatasi: ${err.message}`],
+      });
+      process.exit(0);
+    }
+  }
+
+  emit({
+    success: true,
+    renamed: renameCount,
+    skipped,
+    scope_aware: false,
+    duplicates_fixed: duplicatesFixed,
+    mappings: appliedMappings,
+    output: DRY_RUN ? null : outputPath,
+    dry_run: DRY_RUN,
+    min_confidence: MIN_CONFIDENCE,
+    errors,
+  });
+}

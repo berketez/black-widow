@@ -1,0 +1,426 @@
+% ============================================================================
+% BOLUM 5 GENISLETME: JAVASCRIPT DEOBFUSCATION — COK DETAYLI
+% ============================================================================
+
+\section{Abstract Syntax Tree (AST) --- Derinlemesine}
+\label{sec:ast-deep}
+
+\subsection{Formal Tanim}
+
+AST, kaynak kodun soezdizimsel yapisini soyutlastiran bir yoenlue, etiketli agactir:
+
+\begin{definition}[Abstract Syntax Tree]
+$T = (V, E, r, L)$ burada:
+\begin{itemize}
+\item $V$: dugum (node) kuemesi
+\item $E \subseteq V \times V$: kenar kuemesi (parent $\to$ child)
+\item $r \in V$: koek dugum (root)
+\item $L: V \to \text{NodeTypes}$: etiketleme fonksiyonu
+\end{itemize}
+\end{definition}
+
+\textbf{Parse tree vs AST farki:} Parse tree (Concrete Syntax Tree --- CST) gramerin her intermediate kuralini goesterir. AST sadece semantik olarak anlamli oegeleri tutar.
+
+\begin{example}
+\code{1 + 2 * 3} icin CST:
+\begin{lstlisting}
+ExpressionStatement
+  Expression
+    AdditiveExpression
+      NumericLiteral("1") "+" MultiplicativeExpression
+        NumericLiteral("2") "*" NumericLiteral("3")
+\end{lstlisting}
+
+AST (Babel):
+\begin{lstlisting}
+BinaryExpression { operator: "+",
+  left: NumericLiteral(1),
+  right: BinaryExpression { operator: "*",
+    left: NumericLiteral(2),
+    right: NumericLiteral(3)
+  }
+}
+\end{lstlisting}
+\end{example}
+
+\subsection{Babel vs Acorn (ESTree)}
+
+Karadul her iki parser'i da kullanir. Kritik farklar:
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}Kavram} & \textbf{\color{sectioncyan}Acorn (ESTree)} & \textbf{\color{sectioncyan}Babel AST} \\
+\midrule
+String literal & \code{Literal \{ value: "hello" \}} & \code{StringLiteral \{ value: "hello" \}} \\
+Sayi literal & \code{Literal \{ value: 42 \}} & \code{NumericLiteral \{ value: 42 \}} \\
+Object key & \code{Property} & \code{ObjectProperty} \\
+Program & \code{Program \{ body: [...] \}} & \code{File \{ program: \{ body \} \}} \\
+\bottomrule
+\end{tabular}
+\caption{Babel vs Acorn AST node tipleri.}
+\end{table}
+
+\file{deobfuscate.mjs:164}'te bu ayrim handle ediliyor:
+\begin{lstlisting}[language=JavaScript]
+const usedAcorn = ast.body !== undefined && !ast.program;
+\end{lstlisting}
+
+\subsection{Hesaplama Karmasikligi}
+
+Parse etme: $\bigO{n}$ burada $n$ = token sayisi. Babel'in parser'i Pratt parsing (top-down operator precedence) kullanir. AST node sayisi $\sim \bigO{n}$ cueuenkue her token en fazla sabit sayida node ueretir.
+
+
+\section{Constant Folding --- Lattice Teorisi}
+\label{sec:const-fold-deep}
+
+\subsection{Abstract Interpretation Framework}
+
+Abstract interpretation'da her degisken degeri bir lattice uezerinde izlenir:
+
+\begin{center}
+\begin{tikzpicture}[
+  nd/.style={circle, draw=sectioncyan, fill=boxbg, minimum size=1.2cm, text=white, font=\small},
+]
+  \node[nd] (top) at (0,2) {$\top$};
+  \node[nd] (c1) at (-2,0) {$c_1$};
+  \node[nd] (c2) at (0,0) {$c_2$};
+  \node[nd] (c3) at (2,0) {$c_3$};
+  \node[nd] (bot) at (0,-2) {$\bot$};
+
+  \draw[gray!50!white] (top) -- (c1);
+  \draw[gray!50!white] (top) -- (c2);
+  \draw[gray!50!white] (top) -- (c3);
+  \draw[gray!50!white] (c1) -- (bot);
+  \draw[gray!50!white] (c2) -- (bot);
+  \draw[gray!50!white] (c3) -- (bot);
+\end{tikzpicture}
+\end{center}
+
+\begin{itemize}
+\item $\top$ (top): Degiskenin degeri henueuez belli degil
+\item $c_i$ (constant): Tam olarak bilinen sabit deger
+\item $\bot$ (bottom): Birden fazla farkli deger atanmis, sabit degil
+\end{itemize}
+
+Transfer fonksiyonu $f$: \code{x = 3 + 4} ise $f(x) = 7$ (constant). \code{x = a + b} ve $a = 3$, $b = \top$ ise $f(x) = \top$.
+
+\subsection{Karadul Implementasyonu}
+
+\file{deep-deobfuscate.mjs} Phase 2'de \textbf{exit visitor} (bottom-up) kullanilir:
+
+\begin{lstlisting}[language=JavaScript]
+// BinaryExpression.exit:
+if (t.isNumericLiteral(left) && t.isNumericLiteral(right)) {
+    let result;
+    switch (operator) {
+        case "+": result = left.value + right.value; break;
+        case "-": result = left.value - right.value; break;
+        case "*": result = left.value * right.value; break;
+        // ... 11 operator toplam
+    }
+    if (result !== undefined && Number.isFinite(result)) {
+        path.replaceWith(t.numericLiteral(result));
+    }
+}
+\end{lstlisting}
+
+\textbf{Neden exit visitor?} Bottom-up calisir: ic node oence, parent sonra. \code{1 + 2 * 3}'te oence \code{*} degerlendirilir (leaf'lere daha yakin), sonra \code{+}.
+
+\begin{example}[UnaryExpression Katlama]
+\begin{lstlisting}[language=JavaScript]
+// !0 -> true, !1 -> false (Phase 2)
+if (operator === "!" && t.isNumericLiteral(argument)) {
+    path.replaceWith(t.booleanLiteral(!argument.value));
+}
+// void 0 -> undefined
+if (operator === "void" && argument.value === 0) {
+    path.replaceWith(t.identifier("undefined"));
+}
+\end{lstlisting}
+\end{example}
+
+\subsection{Sinirlar}
+
+Karadul'un constant folder'i sadece \textbf{literal-to-literal} katlar:
+
+\begin{lstlisting}[language=JavaScript]
+const A = 10;
+const B = A + 5;  // Bu KATLANMAZ: A Identifier, NumericLiteral degil
+\end{lstlisting}
+
+Interprocedural constant propagation icin Kildall'in worklist algoritmasi gerekir --- $\bigO{N \cdot D}$ burada $D$ = lattice yueksekligi. Deobfuscation baglaminda literal-to-literal cogunlukla yeterli.
+
+
+\section{Dead Code Elimination --- Liveness Analizi}
+\label{sec:dce-deep}
+
+\subsection{Dataflow Denklemleri}
+
+CFG uezerinde backward analysis:
+
+\begin{equation}
+\text{LIVE\_out}[B] = \bigcup_{S \in \text{succ}(B)} \text{LIVE\_in}[S]
+\end{equation}
+
+\begin{equation}
+\text{LIVE\_in}[B] = \text{use}(B) \cup \big(\text{LIVE\_out}[B] \setminus \text{def}(B)\big)
+\end{equation}
+
+\textbf{Fixed-point iteration:} Tuem bloklari $\text{LIVE\_in}$ ve $\text{LIVE\_out}$ degismeyene kadar itere et. Karmasiklik: $\bigO{N \cdot D}$ burada $N$ = basic block sayisi, $D$ = iterasyon sayisi (pratikte 2--5).
+
+\subsection{Karadul'un Basitlestirilmis Yaklasimi}
+
+Tam liveness analysis yerine \textbf{constant-test elimination}:
+
+\begin{lstlisting}[language=JavaScript]
+// Phase 3: IfStatement.exit
+if (t.isBooleanLiteral(test) && test.value === true) {
+    path.replaceWith(path.node.consequent);  // if(true){X} -> X
+}
+if (t.isBooleanLiteral(test) && test.value === false) {
+    if (path.node.alternate) {
+        path.replaceWith(path.node.alternate);  // if(false){X}else{Y} -> Y
+    } else {
+        path.remove();  // if(false){X} -> (silindi)
+    }
+}
+\end{lstlisting}
+
+\textbf{Phase 2 + Phase 3 sinerjisi:} Phase 2 \code{!0}'yi \code{true}'ya cevirir, Phase 3 \code{if(true)} goerueuep temizler. Exit visitor sayesinde tek AST traverse'da her iki faz da calisir.
+
+
+\section{String Obfuscation Teknikleri ve Coezeuemleri}
+\label{sec:string-obf}
+
+\subsection{6 Yaygin Teknik}
+
+\begin{enumerate}
+\item \textbf{Hex Encoding:} \code{"\textbackslash x48\textbackslash x65\textbackslash x6c\textbackslash x6c\textbackslash x6f"} $\to$ \code{"Hello"}
+
+Reverse: \code{/\textbackslash\textbackslash x([0-9a-fA-F]\{2\})/g} ile decode.
+
+\item \textbf{Unicode Escape:} \code{"\textbackslash u0048\textbackslash u0065..."} $\to$ \code{"Hello"}
+
+\item \textbf{CharCode Array:} \code{String.fromCharCode(72, 101, 108, 108, 111)} $\to$ \code{"Hello"}
+
+AST'de CallExpression ile \code{String.fromCharCode} tespiti, arguments hepsi NumericLiteral ise derleme zamaninda hesapla.
+
+\item \textbf{Base64:} \code{atob("SGVsbG8=")} $\to$ \code{"Hello"}
+
+\item \textbf{String Array Rotation (obfuscator.io):}
+\begin{lstlisting}[language=JavaScript]
+var _0x1234 = ["log", "Hello", "console"];
+(function(_0xa, _0xb) {
+    while (--_0xb) { _0xa.push(_0xa.shift()); }
+})(_0x1234, 0x2);
+// Simdi _0x1234[0]="console", [1]="log", [2]="Hello"
+\end{lstlisting}
+
+Reverse: Rotation miktarini tespit et, arrayi rotate et, referanslari degistir.
+
+\item \textbf{XOR Cipher:} Key bilgisi gerekir. Statik analiz ile key literal ise coezeueuelebilir.
+\end{enumerate}
+
+\subsection{Statik Analiz vs Runtime Emulation}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{p{3.5cm}p{4cm}p{4cm}}
+\toprule
+\textbf{\color{sectioncyan}Yaklasim} & \textbf{\color{sectioncyan}Avantaj} & \textbf{\color{sectioncyan}Dezavantaj} \\
+\midrule
+AST-based statik & Gueuevenli, eval yok & Dinamik key'leri coezemez \\
+eval() emulation & Her seyi cozer & Kod enjeksiyon riski \\
+Sandboxed VM & Gueuevenli runtime & Performans maliyeti \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Karadul dogru tercihi yapmis: synchrony AST-based statik analiz kullaniyor, eval \textbf{kullanmiyor}.
+
+
+\section{Computed-to-Static --- Soundness Analizi}
+\label{sec:computed-deep}
+
+Doenueuseueuem: \code{obj["foo"]} $\to$ \code{obj.foo}
+
+\begin{tanim}[Gueuevenli Doenueuseueuem Kosullari]
+\begin{enumerate}
+\item Property key bir StringLiteral olmali (degisken/expression degil)
+\item Key degeri gecerli JavaScript identifier olmali: \code{/\^{}[a-zA-Z\_\$][a-zA-Z0-9\_\$]*\$/}
+\item Key degeri reserved word \textbf{olmamali}
+\end{enumerate}
+\end{tanim}
+
+\textbf{Gueuevenli olmayan} durumlar:
+\begin{itemize}
+\item \code{obj["class"]} --- reserved word
+\item \code{obj["foo-bar"]} --- tire gecerli identifier degil
+\item \code{obj[variable]} --- StringLiteral degil
+\item \code{obj[fn()]} --- runtime degeri
+\end{itemize}
+
+Karadul \textbf{soundness'i completeness'a tercih eder} --- yanlis doenueuseueuem kodun anlamini degistirir ve geri alinmasi cok zor.
+
+
+\section{Semantik Degisken Isimlendirme --- 25 Kural Motoru}
+\label{sec:semantic-rename-deep}
+
+\subsection{Mimari}
+
+\begin{center}
+\begin{tikzpicture}[
+  box/.style={rectangle, draw=sectioncyan, fill=boxbg, minimum width=5cm, minimum height=0.7cm, text=white, font=\small},
+  arr/.style={-{Stealth[length=2.5mm]}, thick, color=gray!60!white},
+]
+  \node[box] (input) at (0,0) {Minified identifier: e, t, n};
+  \node[box] (usage) at (0,-1.2) {Usage Info Collection (tum reference'lar)};
+  \node[box] (rules) at (0,-2.4) {10 Kural Motoru (name, confidence)};
+  \node[box] (select) at (0,-3.6) {En Yueueksek Confidence Secimi (esik: 0.3)};
+  \node[box] (rename) at (0,-4.8) {Scope-Aware Rename (Babel scope.rename)};
+
+  \draw[arr] (input) -- (usage);
+  \draw[arr] (usage) -- (rules);
+  \draw[arr] (rules) -- (select);
+  \draw[arr] (select) -- (rename);
+\end{tikzpicture}
+\end{center}
+
+\subsection{Kural Detaylari}
+
+\textbf{Kural 1 --- API Call Context:} $\sim$80 method 10 kategoriye ayrilmis:
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\begin{tabular}{llll}
+\toprule
+\textbf{\color{sectioncyan}Kategori} & \textbf{\color{sectioncyan}Method Oernekleri} & \textbf{\color{sectioncyan}Sonuc} & \textbf{\color{sectioncyan}Conf.} \\
+\midrule
+String (24) & split, trim, replace, match & \code{str} veya \code{text} & 0.85 \\
+Array (25) & push, pop, map, filter, reduce & \code{items} & 0.85 \\
+Map/Set & get+set+has & \code{cache} & 0.80 \\
+Promise & then+catch & \code{promise} & 0.80 \\
+EventEmitter & on+emit & \code{emitter} & 0.80 \\
+Stream & pipe+write & \code{stream} & 0.80 \\
+Buffer & readUInt8, writeUInt8 & \code{buffer} & 0.85 \\
+RegExp & test+exec & \code{regex} & 0.85 \\
+Date & getTime, toISOString & \code{date} & 0.80 \\
+\bottomrule
+\end{tabular}
+\caption{API Call Context kural detaylari.}
+\end{table}
+
+\textbf{Kural 3 --- Property Access Patterns} (en yueueksek precision):
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}Property Pattern} & \textbf{\color{sectioncyan}Sonuc} & \textbf{\color{sectioncyan}Conf.} \\
+\midrule
+\code{.message} + \code{.stack} & \code{error} (Error object) & 0.90 \\
+\code{.body} + \code{.params} + \code{.query} & \code{request} (HTTP) & 0.90 \\
+\code{.innerHTML} + \code{.classList} & \code{element} (DOM) & 0.85 \\
+\code{.readFileSync} & \code{fs} (Node.js fs module) & 0.90 \\
+\code{.resolve} + \code{.join} & \code{path} (Node.js path module) & 0.85 \\
+\bottomrule
+\end{tabular}
+\caption{Property Access pattern'lari.}
+\end{table}
+
+\subsection{Neden LLM Kullanilmiyor?}
+
+\begin{enumerate}
+\item \textbf{Hiz:} 50K identifier $\times$ $\sim$100ms/istek = 83 dakika (LLM). Heuristik: $< 2$ saniye.
+\item \textbf{Determinizm:} Ayni girdi $\to$ her seferinde ayni cikti.
+\item \textbf{Maliyet:} API maliyeti $\sim$\$20/analiz.
+\item \textbf{Cevrimdisi:} Internet gerektirmez.
+\end{enumerate}
+
+Trade-off: LLM ``processUserAuthentication'' gibi akilli isimler ueretebilir. Ama 25 kural pratikte yeterli ve 1000$\times$ hizli.
+
+
+\section{Webpack Module Extraction --- Detayli}
+\label{sec:webpack-deep}
+
+\subsection{Extraction Algoritmasi}
+
+\file{deobfuscate.mjs:543--581}'de:
+
+\begin{enumerate}
+\item \textbf{Module object tespiti:} \code{ObjectExpression} visitor ile bueyueuek key-value object'leri bul
+\item \textbf{Heuristik:} En az 2 numeric/string key $+$ en az 2 function value $\to$ webpack module object
+\item \textbf{Cikarma:} Her key-value cifti bir modul. \code{generate()} ile kaynak kodunu cikar, ayri dosyaya yaz
+\end{enumerate}
+
+\begin{lstlisting}[language=JavaScript]
+// Heuristik (satir 548-566):
+let numericKeyCount = 0, funcValueCount = 0;
+for (const prop of props) {
+    if (key.type === "NumericLiteral" || key.type === "StringLiteral")
+        numericKeyCount++;
+    if (prop.value.type === "FunctionExpression")
+        funcValueCount++;
+}
+if (numericKeyCount >= 2 && funcValueCount >= 2) {
+    // Webpack module object tespit edildi!
+}
+\end{lstlisting}
+
+\subsection{esbuild vs webpack}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}Ozellik} & \textbf{\color{sectioncyan}webpack} & \textbf{\color{sectioncyan}esbuild} \\
+\midrule
+Module storage & Object literal & Array veya Object \\
+Loader & \code{\_\_webpack\_require\_\_} & \code{\_\_require} veya inline \\
+Tree shaking & Sinirli & Agresif (ESM-native) \\
+Module ID & Numeric veya string hash & Path-based string \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Chunked Processing --- 200MB+ Dosyalar}
+\label{sec:chunked-deep}
+
+\subsection{Problem}
+
+200MB JS dosyasi icin Babel parse: $\sim$4--8$\times$ bellek kullanimi $\to$ 800MB--1.6GB heap. Node.js default heap 1.5GB $\to$ bellek tasmasi.
+
+\subsection{Neden 512KB Chunk?}
+
+\file{stream-parse.mjs:33}'te: \code{maxBlockKb = 512}
+
+\begin{enumerate}
+\item \textbf{Babel bellek:} 512KB $\times$ 8 = 4MB per chunk. 8GB heap icinde yuezlerce chunk islenebilir.
+\item \textbf{JS statement boyutu:} Cogu top-level fonksiyon 1--50KB. 512KB bueyueuek fonksiyonlari bile tek chunk'ta tutar.
+\item \textbf{Cache:} Apple Silicon L2 cache $\sim$16MB. 512KB rahatca sigar.
+\end{enumerate}
+
+\subsection{Boundary Tespiti}
+
+\textbf{Brace depth tracking:} \code{\{} goerueueluuence depth++, \code{\}} goerueuelueuence depth-{}-. \code{depth === 0} iken yeni top-level statement $\to$ split.
+
+\begin{uyari}[Cross-Chunk Reference Sorunu]
+Bir chunk'taki degisken baska chunk'ta tanimli olabilir. Karadul her chunk'i bagimsiz isleyip sonuclari birlestirir --- en basit ve performansli ama semantic bilgi kaybina yol acar.
+\end{uyari}
+
+\subsection{Acorn Fallback --- 32MB+ Dosyalar}
+
+Babel parser 32MB+ dosyalarda coekmekti. Coezeueuem: ueuec katmanli hata kurtarma:
+
+\begin{enumerate}
+\item \textbf{Babel parse:} Normal deneme
+\item \textbf{Pre-beautify + Babel:} Babel basarisiz $\to$ js-beautify ile formatlayip tekrar dene
+\item \textbf{Acorn fallback:} Babel yine basarisiz $\to$ Acorn parser devreye girer
+\end{enumerate}
+
+Bu fix, LM Studio 32MB renderer bundle'ini coezeueuep 4/4 bundle basarisini sagladi.

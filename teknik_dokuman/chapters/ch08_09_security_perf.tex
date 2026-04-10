@@ -1,0 +1,360 @@
+% ============================================================================
+% BOLUM 8-9 GENISLETME: GUVENLIK + PERFORMANS DETAYLI
+% ============================================================================
+
+% --- BOLUM 8 GENISLETME ---
+
+\section{Entropy Analizi --- Shannon Entropy Turetmesi}
+\label{sec:entropy-deep}
+
+\subsection{Turetme}
+
+Bilgi miktari: Bir olayin sasirticilik derecesi $I(x) = -\log_2 p(x)$ bit. Beklenen bilgi = entropy:
+
+\begin{equation}
+\boxed{H(X) = -\sum_{x=0}^{255} p(x) \log_2 p(x)}
+\label{eq:shannon-entropy}
+\end{equation}
+
+\textbf{Oezellikler:}
+\begin{itemize}
+\item $H = 0$: Tuem byte'lar ayni (sifir belirsizlik)
+\item $H = 8$: Tam dueuezgueuen dagilim (maksimum belirsizlik --- 1 byte = 8 bit)
+\item Encrypted/compressed veri $H \to 8$'e yaklasir
+\end{itemize}
+
+\subsection{Implementasyon}
+
+\file{packed\_binary.py:137--160}:
+
+\begin{lstlisting}[language=Python]
+def calculate_entropy(data: bytes) -> float:
+    freq = [0] * 256
+    for byte in data:
+        freq[byte] += 1
+    length = len(data)
+    entropy = 0.0
+    for f in freq:
+        if f > 0:  # 0*log(0) = 0 limiti
+            p = f / length
+            entropy -= p * math.log2(p)
+    return entropy
+\end{lstlisting}
+
+Karmasiklik: $\bigO{n}$ tek gecis.
+
+\subsection{Packer Entropy Profilleri}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{llp{6cm}}
+\toprule
+\textbf{\color{sectioncyan}Packer} & \textbf{\color{sectioncyan}$H$ Arali\-gi} & \textbf{\color{sectioncyan}Profil} \\
+\midrule
+Normal kod (.text) & 5.0--6.5 & Instruction encoding, tekrar eden opcode'lar \\
+UPX & 7.0--7.5 & Ilk 2--4KB'da decompressor stub (H$\sim$4.0), geri kalan compressed \\
+Themida & 7.4--7.9 & Tuem code+data birlesti\-rilmis encrypted blob \\
+VMProtect & 7.5--7.95 & .vmp0/.vmp1 section'lari, VM bytecode \\
+\bottomrule
+\end{tabular}
+\caption{Packer entropy profilleri.}
+\end{table}
+
+\subsection{Chi-Squared Uniformity Testi}
+
+\begin{tanim}[Karadul'da Eksik Iyilestirme]
+Shannon entropy yueksek olabilir ama gercekten rasgele mi, yoksa yapisal ama yueksek entropili mi ayirt etmek icin chi-squared testi gerekir:
+
+\begin{equation}
+\chi^2 = \sum_{x=0}^{255} \frac{(O_x - E)^2}{E} \quad \text{burada } E = n/256
+\end{equation}
+
+Serbestlik derecesi $k = 255$:
+\begin{itemize}
+\item $\chi^2 < 293.2$ ($p > 0.05$): Encrypted/truly random
+\item $\chi^2 > 293.2$: Compressed ama encrypted degil
+\end{itemize}
+
+Bu ayrim onemli: UPX (compressed) $\chi^2 > 400$, AES-CBC (encrypted) $\chi^2 \sim 220$--$280$.
+\end{tanim}
+
+
+\section{YARA Pattern Matching --- Aho-Corasick}
+\label{sec:yara-deep}
+
+\subsection{Aho-Corasick Algoritmasi}
+
+$k$ adet pattern'den (toplam uzunluk $m$) trie + failure link'ler olusturulur:
+
+\begin{enumerate}
+\item \textbf{Trie olusturma:} $\bigO{m}$ --- her pattern'i trie'ye ekle
+\item \textbf{Failure link'ler:} $\bigO{m}$ --- BFS ile her node icin en uzun uyusan suffix'i bul
+\item \textbf{Tarama:} $\bigO{n + z}$ --- girdi uzerinde tek gecis, $z$ = toplam eslesme sayisi
+\end{enumerate}
+
+\textbf{Toplam:} $\bigO{n + m + z}$ --- 1000 YARA kuralinda 5000 hex pattern olsa bile girdi dosyasi uzerinde \textbf{tek gecis} yeterli.
+
+\subsection{Karadul'daki Dahili Kurallar}
+
+\file{yara\_scanner.py:111--319}'da 40 kural tanimli:
+\begin{itemize}
+\item 8 crypto pattern (AES S-Box, SHA-256, ChaCha20, CRC32)
+\item 7 packer signature (UPX, Themida, PyInstaller)
+\item 8 compiler marker
+\item Anti-debug, network, obfuscation pattern'leri
+\end{itemize}
+
+
+\section{Control Flow Graph --- Dominator Tree}
+\label{sec:cfg-deep}
+
+\subsection{Dominator Hesaplama}
+
+$d$ duegueumue $n$'i \textbf{dominate} eder eger entry'den $n$'e giden \textbf{her yol} $d$'den geciyorsa.
+
+\textbf{Lengauer-Tarjan algoritmasi:} $\bigO{n \cdot \alpha(n)}$ burada $\alpha$ = ters Ackermann fonksiyonu (pratikte $< 5$, neredeyse sabit).
+
+Adimlar:
+\begin{enumerate}
+\item DFS tree olustur
+\item Semi-dominator hesapla (union-find ile)
+\item Immediate dominator belirle
+\end{enumerate}
+
+\subsection{Loop Detection}
+
+\textbf{Natural loop:} Back edge $(u, v)$ icin $v$ dom $u$ kosulunu saglayan kenar. Loop body = $v$'nin dominate ettigi ve $u$'ya ulasabilen tuem node'lar.
+
+Tespit: $\bigO{V + E}$ --- DFS ile back edge bul, sonra her back edge icin loop body hesapla.
+
+
+\section{Opaque Predicate --- Formal Analiz}
+\label{sec:opaque-deep}
+
+\begin{theorem}[Opaque Predicate Ornegi]
+$\forall x \in \mathbb{Z}: \quad x^2 + x \equiv 0 \pmod{2}$
+
+\textbf{Kanit:} Ardisik iki tamsayidan biri her zaman cifttir: $x(x+1) = 2k$ bir $k$ icin. Dolayisiyla $x^2 + x = x(x+1) \equiv 0 \pmod{2}$. $\square$
+\end{theorem}
+
+\begin{uyari}[x*x >= 0 Tehlikesi]
+Signed int32 overflow: $x = 46341$ icin $x^2 = 2{,}147{,}488{,}281$, int32'de $-2{,}147{,}479{,}015 < 0$. Bu nedenle \code{x*x >= 0} opaque predicate olarak \textbf{gueuevenli degil}.
+\end{uyari}
+
+\textbf{Tespit yoentemleri:}
+\begin{enumerate}
+\item \textbf{Pattern matching:} Bilinen pattern veritabani --- $\bigO{P \cdot N}$
+\item \textbf{Abstract interpretation:} Program state'leri abstract domain'de --- sound ama incomplete
+\item \textbf{Symbolic execution (Z3):} SMT solver ile her predicate'i sorgula --- sound ve complete (decidable fragment icin) ama NP-hard
+\end{enumerate}
+
+Rice's theorem: ``Bu predicate daima true mu?'' genel olarak \textbf{karar verilemez}. Ancak bitvector arithmetic (sabit genislik integer) \textbf{decidable}.
+
+
+\section{Ghidra Decompilation Pipeline}
+\label{sec:ghidra-deep}
+
+\begin{center}
+\begin{tikzpicture}[
+  box/.style={rectangle, draw=sectioncyan, fill=boxbg, minimum width=5cm, minimum height=0.6cm, text=white, font=\footnotesize},
+  arr/.style={-{Stealth[length=2mm]}, thick, color=gray!60!white},
+]
+  \node[box] (bin) at (0,0) {Binary (raw bytes)};
+  \node[box] (dis) at (0,-1) {[1] Disassembly (Sleigh)};
+  \node[box] (pcode) at (0,-2) {[2] P-Code Lifting (Raw P-code)};
+  \node[box] (simp) at (0,-3) {[3] P-Code Simplification};
+  \node[box] (ssa) at (0,-4) {[4] SSA Construction};
+  \node[box] (df) at (0,-5) {[5] Data-flow Analysis};
+  \node[box] (struct) at (0,-6) {[6] Control-flow Structuring};
+  \node[box] (emit) at (0,-7) {[7] C Code Emission};
+
+  \draw[arr] (bin) -- (dis);
+  \draw[arr] (dis) -- (pcode);
+  \draw[arr] (pcode) -- (simp);
+  \draw[arr] (simp) -- (ssa);
+  \draw[arr] (ssa) -- (df);
+  \draw[arr] (df) -- (struct);
+  \draw[arr] (struct) -- (emit);
+\end{tikzpicture}
+\end{center}
+
+\textbf{P-Code:} Ghidra'nin RISC benzeri register-transfer level IR. Oernek:
+
+x86 \code{add eax, [rbp-0x10]}:
+\begin{lstlisting}
+$U1 = INT_SUB rbp, 0x10
+$U2 = LOAD ram($U1)
+eax  = INT_ADD eax, $U2
+\end{lstlisting}
+
+\textbf{SSA (Static Single Assignment):} Her degisken tam bir kez atanir. Birden fazla atama $\to$ phi-node:
+\begin{lstlisting}
+x_1 = 5;
+if (...) x_2 = 10;
+x_3 = phi(x_1, x_2);  // Merge noktasi
+\end{lstlisting}
+
+
+\section{Cryptographic Algorithm Identification}
+\label{sec:crypto-deep}
+
+\subsection{AES S-Box}
+
+AES (Rijndael) S-box ilk 8 byte: \code{0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5}.
+
+False positive olasiligi: $P = (1/256)^8 = 2^{-64} \approx 5.4 \times 10^{-20}$ --- pratikte sifir.
+
+\subsection{SHA-256 Initial Hash Values}
+
+\begin{align}
+H_0 &= \texttt{0x6A09E667} && \text{(ilk 8 asal sayinin karekueuekueuenueuen kesirli kismi)} \notag \\
+H_1 &= \texttt{0xBB67AE85} && (\sqrt{2}) \notag \\
+H_2 &= \texttt{0x3C6EF372} && (\sqrt{3}) \notag \\
+H_3 &= \texttt{0xA54FF53A} && (\sqrt{5}) \notag
+\end{align}
+
+Karadul $H_0$--$H_3$'ue ariyor (128 bit). False positive: $2^{-128}$.
+
+\subsection{ChaCha20 Sigma Sabitleri}
+
+\code{0x61707865} = ``expa'', \code{0x3320646E} = ``nd 3'', \code{0x79622D32} = ``2-by'', \code{0x6B206574} = ``te k''
+
+$\to$ ``expand 32-byte k'' --- Daniel Bernstein'in tasarimi.
+
+
+% --- BOLUM 9 GENISLETME ---
+
+\section{Amdahl Yasasi --- Detayli Analiz}
+\label{sec:amdahl-deep}
+
+\subsection{Pipeline Paralellestirilmesi}
+
+Serializable fraction ($s$) = seri calismasi GEREKEN stage'lerin orani:
+
+\begin{equation}
+s = \frac{T_{\text{identify}} + T_{\text{reconstruct}} + T_{\text{report}}}{T_{\text{total}}}
+\end{equation}
+
+\begin{itemize}
+\item Best case: $s = (1 + 20 + 2) / 38 = 0.61$
+\item Worst case: $s = (2 + 300 + 5) / 667 = 0.46$
+\end{itemize}
+
+Amdahl limiti (sonsuz islemci):
+\begin{align}
+S_{\text{max, best}} &= 1/s = 1/0.61 = 1.64\times \\
+S_{\text{max, worst}} &= 1/0.46 = 2.17\times
+\end{align}
+
+3 islemci ile (static $\|$ dynamic $\|$ deobfuscate):
+\begin{equation}
+S_3 = \frac{1}{s + (1-s)/3}
+\end{equation}
+
+\begin{itemize}
+\item Best case: $1/(0.61 + 0.13) = 1.35\times$
+\item Worst case: $1/(0.46 + 0.18) = 1.56\times$
+\end{itemize}
+
+\textbf{Sonuc:} En iyimser senaryoda bile $2.2\times$'ten fazla speedup elde edilemez. Sequential pipeline karari mantikli.
+
+
+\section{JVM Heap Yoenetimi --- G1GC}
+\label{sec:jvm-deep}
+
+\subsection{Ghidra icin Heap Boyutlandirma}
+
+\begin{equation}
+\text{heap} = \max\!\big(4096, \min(32768, \lfloor 0.4 \times \text{RAM}_{\text{MB}} \rfloor)\big)
+\end{equation}
+
+36GB RAM icin: $\min(32768, \lfloor 0.4 \times 36864 \rfloor) = 14745$ MB $\approx 14.4$ GB.
+
+\textbf{Neden \%40?}
+\begin{itemize}
+\item Cok bueyueuek heap ($> 50\%$) $\to$ uzun GC pause (G1GC full GC kacinilmaz)
+\item Cok kueueceueuek heap $\to$ OutOfMemoryError (Ghidra decompile data structures)
+\item \%40 deneysel sweet spot: GC pause $< 1$s, OOM riski dueueseueuek
+\end{itemize}
+
+\subsection{G1GC vs ZGC}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}GC} & \textbf{\color{sectioncyan}Pause} & \textbf{\color{sectioncyan}Throughput} \\
+\midrule
+G1GC (Ghidra default) & 50--200ms (mixed), 1--5s (full) & \%90--95 \\
+ZGC & $< 10$ms (sub-millisecond hedef) & \%85--90 \\
+Shenandoah & $< 10$ms & \%85--90 \\
+\bottomrule
+\end{tabular}
+\caption{JVM GC karsilastirmasi.}
+\end{table}
+
+Ghidra icin G1GC dogru secenek --- batch decompile'da throughput onemli, pause onemli degil.
+
+
+\section{Apple Silicon Optimizasyonu}
+\label{sec:apple-deep}
+
+\subsection{M4 Max Spesifikasyonlari}
+
+\begin{itemize}
+\item 10 P-core @ 4.5 GHz + 4 E-core @ $\sim$3 GHz
+\item 36 GB Unified Memory (LPDDR5X)
+\item Bant genisligi: 273 GB/s
+\item L2 cache: $\sim$16 MB (P-core paylasilir)
+\end{itemize}
+
+\subsection{P-core Otomatik Tespiti}
+
+\file{config.py:14--30}:
+
+\begin{lstlisting}[language=Python]
+def _detect_cpu_cores() -> int:
+    try:
+        result = subprocess.run(
+            ["sysctl", "-n", "hw.perflevel0.logicalcpu"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0:
+            return int(result.stdout.strip())
+    except Exception:
+        pass
+    return max(2, int(os.cpu_count() * 0.7))
+\end{lstlisting}
+
+\textbf{Neden P-core sayisi?} E-core'lar batch islem icin uygun degil --- dueueseueuek saat hizi. Ghidra thread'lerini P-core'lara yoenlendirmek \%30--50 performans artisi saglar.
+
+\subsection{Unified Memory Architecture (UMA)}
+
+CPU ve GPU ayni RAM'i paylasiyor. Avantaj: veri kopyalama yok, sifir-copy paylasilim. Dezavantaj: CPU ve GPU ayni bant genisligini paylasiyor.
+
+Karadul icin UMA avantaji sinirli (GPU kullanilmiyor). Ama gelecekte ML-based naming (LLM4Decompile) MPS backend'i ile GPU hizlandirma mumkun.
+
+
+\section{Docker Container Overhead}
+\label{sec:docker-deep}
+
+\subsection{Performans Karsilastirmasi}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{\color{sectioncyan}Metrik} & \textbf{\color{sectioncyan}Native} & \textbf{\color{sectioncyan}Docker (VirtioFS)} \\
+\midrule
+CPU & 1.0$\times$ & 0.95--0.98$\times$ \\
+Bellek & 1.0$\times$ & 0.98$\times$ (cgroup overhead) \\
+Disk I/O & 1.0$\times$ & 0.5--0.8$\times$ (macOS volume mount) \\
+Network & 1.0$\times$ & 0.90--0.95$\times$ \\
+\bottomrule
+\end{tabular}
+\caption{Docker vs native performans (macOS, VirtioFS).}
+\end{table}
+
+\textbf{En bueyueuek bottleneck:} macOS'ta volume mount. VirtioFS, eski gRPC-FUSE'dan $\sim$2$\times$ hizli ama native'den hala \%20--50 yavas.
+
+\textbf{Coezeueuem:} Karadul'un Dockerfile'i multi-stage build kullaniyor --- workspace'i container icinde tutarak volume mount overhead'ini azaltiyor.

@@ -1,0 +1,18 @@
+{
+  "name": "@karadul/scripts",
+  "version": "3.0.0",
+  "type": "module",
+  "description": "Black Widow (Karadul) JS analysis scripts — Babel AST, beautify, webpack unpack",
+  "private": true,
+  "dependencies": {
+    "@babel/generator": "^7.28.0",
+    "@babel/parser": "^7.28.0",
+    "@babel/traverse": "^7.28.0",
+    "@babel/types": "^7.28.0",
+    "acorn": "^8.16.0",
+    "acorn-loose": "^8.5.2",
+    "acorn-walk": "^8.3.5",
+    "escodegen": "^2.1.0",
+    "js-beautify": "^1.15.0"
+  }
+}
