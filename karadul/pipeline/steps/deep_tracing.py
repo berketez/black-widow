@@ -154,8 +154,8 @@ class DeepTracingStep(Step):
     # --- internals -----------------------------------------------------
 
     @staticmethod
-    def _collect_all_algorithms(algo_result, eng_result) -> list:
-        all_algos: list = []
+    def _collect_all_algorithms(algo_result: Any, eng_result: Any) -> list[Any]:
+        all_algos: list[Any] = []
         if algo_result and getattr(algo_result, "success", False):
             all_algos.extend(algo_result.algorithms)
         if eng_result and getattr(eng_result, "success", False):
@@ -163,7 +163,7 @@ class DeepTracingStep(Step):
         return all_algos
 
     @staticmethod
-    def _make_publish_artifact(ctx: StepContext):
+    def _make_publish_artifact(ctx: StepContext) -> Any:
         """Artifact yayinlayici closure — produce_artifact proxy.
 
         v1.11.0 Phase 1C: `pc.metadata['artifacts_pending']` yerine

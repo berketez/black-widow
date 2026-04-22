@@ -99,13 +99,13 @@ class SemanticNamingStep(Step):
     # --- internals -----------------------------------------------------
 
     @staticmethod
-    def _collect_all_algorithms(algo_result, eng_result) -> list:
+    def _collect_all_algorithms(algo_result: Any, eng_result: Any) -> list[Any]:
         """stages.py _collect_all_algorithms'in step-local kopyasi.
 
         Downstream step'ler de ayni veriyi seed'den alacagi icin ortak helper
         daha sonra (M2+) karadul.pipeline.steps._common_helpers'a tasinabilir.
         """
-        all_algos: list = []
+        all_algos: list[Any] = []
         if algo_result and getattr(algo_result, "success", False):
             all_algos.extend(algo_result.algorithms)
         if eng_result and getattr(eng_result, "success", False):

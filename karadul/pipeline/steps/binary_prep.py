@@ -79,7 +79,7 @@ class BinaryPrepStep(Step):
         # Downstream shim icin: metadata["file_cache"] birebir set et
         # (stages.py'deki eski davranisi korumak icin)
         if not hasattr(pc, "metadata") or pc.metadata is None:
-            pc.metadata = {}  # type: ignore[attr-defined]
+            pc.metadata = {}
         pc.metadata["file_cache"] = file_cache
 
         return {
@@ -92,12 +92,12 @@ class BinaryPrepStep(Step):
     # --- internals -----------------------------------------------------
 
     @staticmethod
-    def _resolve_byte_match_binary(target, workspace, ctx: StepContext) -> Path:
+    def _resolve_byte_match_binary(target: Any, workspace: Any, ctx: StepContext) -> Path:
         """Universal binary ise arm64 thin slice'i dondur, aksi halde target.path."""
-        binary_for_byte_match = target.path
+        binary_for_byte_match: Path = target.path
         if target.target_type == TargetType.UNIVERSAL_BINARY:
-            raw_dir = workspace.get_stage_dir("raw")
-            thin_arm64 = raw_dir / f"{target.name}_arm64"
+            raw_dir: Path = workspace.get_stage_dir("raw")
+            thin_arm64: Path = raw_dir / f"{target.name}_arm64"
             if thin_arm64.exists():
                 ctx.stats["byte_match_binary"] = "arm64_slice"
                 logger.info(

@@ -104,7 +104,7 @@ class ParallelAlgoEngStep(Step):
         }
 
     @staticmethod
-    def _absorb_artifacts(ctx: StepContext, artifacts: dict) -> None:
+    def _absorb_artifacts(ctx: StepContext, artifacts: dict[str, Any]) -> None:
         """Worker dict'inden gelen artifact'lari StageResult'a yay.
 
         v1.11.0 Phase 1C: `pc.metadata['artifacts_pending']` yerine
@@ -123,7 +123,7 @@ class ParallelAlgoEngStep(Step):
 
 
 def _run_binary_name_extraction(
-    *, pc, strings_json, functions_json, call_graph_json,
+    *, pc: Any, strings_json: Any, functions_json: Any, call_graph_json: Any,
 ) -> dict[str, Any]:
     """stages.py L1603-1651'den birebir tasindi."""
     if not pc.config.binary_reconstruction.enable_binary_name_extraction:
@@ -186,7 +186,7 @@ def _run_binary_name_extraction(
 
 
 def _run_engineering_analysis(
-    *, pc, decompiled_dir, functions_json,
+    *, pc: Any, decompiled_dir: Any, functions_json: Any,
 ) -> dict[str, Any]:
     """stages.py L1653-1686'dan birebir tasindi."""
     if not pc.config.binary_reconstruction.enable_engineering_analysis:

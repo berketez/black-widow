@@ -67,7 +67,7 @@ class NamingPhaseResult:
 
 def run_naming_phase(
     *,
-    ctx,
+    ctx: Any,
     iter_index: int,
     decompiled_dir: Path,
     reconstructed_dir: Path,
@@ -87,7 +87,7 @@ def run_naming_phase(
     sig_matches: Any,
     algo_result: Any,
     eng_result: Any,
-    pcode_naming_candidates: list[dict],
+    pcode_naming_candidates: list[dict[str, Any]],
     computation_result: Any,
     bindiff_confidence_map: dict[str, tuple[str, float, str]],
     stats: dict[str, Any],
@@ -209,7 +209,7 @@ def _compute_namer_output(
 
 def _run_c_namer(
     *,
-    ctx,
+    ctx: Any,
     iter_index: int,
     decompiled_dir: Path,
     reconstructed_dir: Path,

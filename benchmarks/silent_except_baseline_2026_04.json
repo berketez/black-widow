@@ -43,5 +43,33 @@
       "test_v1100_pipeline_fixes": "22 pass",
       "total": "97 pass, 0 fail"
     }
+  },
+  "faz2_reconstruction_scope": {
+    "scope": "karadul/reconstruction/ (excl recovery_layers/)",
+    "before": 58,
+    "after": 48,
+    "fixed_count": 10,
+    "wave": 2,
+    "fix_pattern": "logger.debug (+ exc_info for pass/return_none)",
+    "fixed_items": [
+      {"file": "karadul/reconstruction/c_namer.py", "line": 1407, "pattern": "pass", "except_type": "OSError"},
+      {"file": "karadul/reconstruction/c_namer.py", "line": 2534, "pattern": "return_none", "except_type": "ImportError"},
+      {"file": "karadul/reconstruction/c_namer.py", "line": 2589, "pattern": "return_none", "except_type": "ImportError"},
+      {"file": "karadul/reconstruction/c_namer.py", "line": 2734, "pattern": "continue", "except_type": "re.error"},
+      {"file": "karadul/reconstruction/binary_name_extractor.py", "line": 263, "pattern": "pass", "except_type": "(FileNotFoundError, subprocess.TimeoutExpired, OSError)"},
+      {"file": "karadul/reconstruction/binary_name_extractor.py", "line": 2324, "pattern": "pass", "except_type": "OSError"},
+      {"file": "karadul/reconstruction/binary_name_extractor.py", "line": 2362, "pattern": "pass", "except_type": "Exception"},
+      {"file": "karadul/reconstruction/engineering/struct_recovery.py", "line": 1024, "pattern": "continue", "except_type": "OSError"},
+      {"file": "karadul/reconstruction/engineering/struct_recovery.py", "line": 1505, "pattern": "continue", "except_type": "OSError"},
+      {"file": "karadul/reconstruction/engineering/struct_recovery.py", "line": 1716, "pattern": "continue", "except_type": "OSError"}
+    ],
+    "remaining_reconstruction_scope": 48,
+    "remaining_recovery_layers_scope": 17,
+    "tests_after_fix": {
+      "test_binary_reconstruction": "pre-existing 3 fails (TestSignatureDB library names) - NOT caused by this wave",
+      "test_reconstruction": "pass",
+      "test_step_struct_recovery": "6 pass",
+      "total_new_failures": 0
+    }
   }
 }

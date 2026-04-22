@@ -186,21 +186,21 @@ class GhidraMetadataStep(Step):
     @staticmethod
     def _run_signature_db(
         *,
-        pc,
-        target,
+        pc: Any,
+        target: Any,
         functions_json: Path,
         strings_json: Path,
         call_graph_json: Path,
         decompiled_dir: Path,
         ctx: StepContext,
-    ) -> list:
+    ) -> list[Any]:
         """Signature DB matching — stages.py L1320-1359.
 
         Hatalari atip bos liste doner (downstream'a engel olma).
         """
         pc.report_progress("Signature DB matching...", 0.05)
         step_start = time.monotonic()
-        sig_matches: list = []
+        sig_matches: list[Any] = []
 
         platform = _TARGET_PLATFORM_MAP.get(target.target_type)
 

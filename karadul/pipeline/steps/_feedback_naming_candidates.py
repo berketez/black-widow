@@ -31,8 +31,17 @@ def collect_candidates(
     pcode_naming_candidates: list[dict[str, Any]],
     iter_index: int,
     stats: dict[str, Any],
+    bsim_shadow: dict[str, Any] | None = None,
+    bsim_fusion_min_similarity: float = 0.7,
+    bsim_fusion_max_candidates: int = 3,
 ) -> dict[str, list[Any]]:
-    """Tum kaynaklardan candidates_by_symbol sozlugu olustur."""
+    """Tum kaynaklardan candidates_by_symbol sozlugu olustur.
+
+    bsim_shadow: v1.11.0 BSim kopru. None ise BSim evidence eklenmez
+    (shadow mode davranisi). Dict verildiginde ``matches`` alanindaki
+    BSim eslemeleri source="bsim" ile eklenir. Caller (run_name_merger),
+    shadow_mode=False AND use_bsim_fusion=True oldugunda dict gonderir.
+    """
     candidates_by_symbol: dict[str, list[Any]] = {}
 
     _add_binary_extractor(extracted_names, candidates_by_symbol)
@@ -48,6 +57,15 @@ def collect_candidates(
 
     if pcode_naming_candidates:
         _add_pcode(pcode_naming_candidates, candidates_by_symbol)
+
+    if bsim_shadow:
+        _add_bsim(
+            bsim_shadow=bsim_shadow,
+            candidates=candidates_by_symbol,
+            min_similarity=bsim_fusion_min_similarity,
+            max_per_function=bsim_fusion_max_candidates,
+            stats=stats,
+        )
 
     return candidates_by_symbol
 
@@ -223,6 +241,115 @@ def _add_pcode(
         pcode_added += 1
     if pcode_added > 0:
         logger.info("P-Code naming: %d candidate eklendi", pcode_added)
+
+
+def _add_bsim(
+    *,
+    bsim_shadow: dict[str, Any],
+    candidates: dict[str, list[Any]],
+    min_similarity: float,
+    max_per_function: int,
+    stats: dict[str, Any],
+) -> None:
+    """BSim kopru (v1.11.0 Hafta 2): shadow payload -> NamingCandidate.
+
+    Shadow payload formati ``bsim_match.BSimMatchStep._build_shadow_payload``
+    tarafindan uretilir:
+
+        {
+          "version": "1",
+          "mode": "shadow" | "live-dump-only",
+          "matches": [
+            {"function_addr": "0x...", "function_name": "FUN_xxx",
+             "bsim_candidates": [
+                {"name": str, "similarity": float, "binary": str}, ...
+             ]}
+          ]
+        }
+
+    Confidence olarak BSim similarity skorunu dogrudan kullaniyoruz.
+    Source-bazli weight (``NameMergerConfig.source_weights["bsim"] = 0.85``)
+    NameMerger'in kendi Bayesian log-odds fusion'inda uygulanir;
+    burada ayrica kesrin carpilmasi double-damping olur.
+    """
+    matches = bsim_shadow.get("matches") or []
+    if not isinstance(matches, list) or not matches:
+        return
+
+    added = 0
+    skipped_unnamed = 0
+    skipped_low_sim = 0
+    skipped_no_key = 0
+    for entry in matches:
+        if not isinstance(entry, dict):
+            continue
+        func_name = str(entry.get("function_name", "") or "")
+        func_addr = str(entry.get("function_addr", "") or "")
+
+        # Hedef sembol anahtari: once function_name (Ghidra FUN_xxx),
+        # yoksa function_addr'den FUN_XXX uret.
+        old_key = func_name.strip()
+        if not old_key and func_addr:
+            # "0x004012a0" -> "FUN_004012a0"
+            addr_clean = func_addr.lower().lstrip("0x").lstrip("0")
+            if addr_clean:
+                old_key = f"FUN_{addr_clean}"
+        if not old_key or len(old_key) < 2:
+            skipped_no_key += 1
+            continue
+
+        # Sadece adlandirilmamis fonksiyonlar icin oneri uret
+        if not _is_unnamed(old_key):
+            skipped_unnamed += 1
+            continue
+
+        bsim_cands = entry.get("bsim_candidates") or []
+        if not isinstance(bsim_cands, list):
+            continue
+
+        # top-N similarity desc (shadow payload zaten sortli ama
+        # defansif olarak yeniden sortla)
+        ranked = sorted(
+            (c for c in bsim_cands if isinstance(c, dict)),
+            key=lambda c: float(c.get("similarity", 0.0) or 0.0),
+            reverse=True,
+        )[:max_per_function]
+
+        for cand in ranked:
+            cand_name = str(cand.get("name", "") or "").strip()
+            if not cand_name:
+                continue
+            try:
+                sim = float(cand.get("similarity", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                sim = 0.0
+            if sim < min_similarity:
+                skipped_low_sim += 1
+                continue
+            binary = str(cand.get("binary", "") or "")
+            candidates.setdefault(old_key, []).append(
+                NamingCandidate(
+                    cand_name,
+                    sim,
+                    "bsim",
+                    reason=f"BSim match (sim={sim:.3f}, binary={binary})",
+                ),
+            )
+            added += 1
+
+    if added:
+        logger.info(
+            "BSim fusion: %d naming candidate eklendi (skip: %d unnamed, "
+            "%d low-sim, %d no-key)",
+            added, skipped_unnamed, skipped_low_sim, skipped_no_key,
+        )
+        stats["bsim_fusion_candidates"] = added
+    else:
+        logger.debug(
+            "BSim fusion: 0 candidate (skip: %d unnamed, %d low-sim, "
+            "%d no-key)",
+            skipped_unnamed, skipped_low_sim, skipped_no_key,
+        )
 
 
 def _is_unnamed(name: str, *, include_unnamed: bool = True) -> bool:

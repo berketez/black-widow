@@ -7,6 +7,7 @@ Aho-Corasick replacement bu dosyada.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import shutil
@@ -64,6 +65,21 @@ def run_name_merger(
             min_confidence=pc.config.binary_reconstruction.min_naming_confidence,
             merger_config=pc.config.name_merger,
         )
+
+        # v1.11.0 Hafta 2 kopru: BSim shadow -> fusion evidence.
+        # Kural: shadow_mode=True (default) -> BSim fusion'a yazmaz.
+        #        shadow_mode=False AND use_bsim_fusion=True -> evidence ekle.
+        bsim_shadow_payload = _maybe_load_bsim_shadow_for_fusion(
+            ctx=ctx, stats=stats,
+        )
+        bsim_cfg = getattr(pc.config, "bsim", None)
+        bsim_fusion_min_sim = float(
+            getattr(bsim_cfg, "fusion_min_similarity", 0.7),
+        )
+        bsim_fusion_max_n = int(
+            getattr(bsim_cfg, "fusion_max_candidates_per_function", 3),
+        )
+
         candidates_by_symbol = collect_candidates(
             extracted_names=extracted_names,
             naming_result=naming_result,
@@ -74,6 +90,9 @@ def run_name_merger(
             pcode_naming_candidates=pcode_naming_candidates,
             iter_index=iter_index,
             stats=stats,
+            bsim_shadow=bsim_shadow_payload,
+            bsim_fusion_min_similarity=bsim_fusion_min_sim,
+            bsim_fusion_max_candidates=bsim_fusion_max_n,
         )
         if not candidates_by_symbol:
             return final_naming_map, current_named_set, decompiled_dir
@@ -181,6 +200,78 @@ def _apply_aho_replace(
         len(merge_process), len(all_merge_files), CPU_PERF_CORES,
     )
     return current_named_set
+
+
+def _maybe_load_bsim_shadow_for_fusion(
+    *,
+    ctx,
+    stats: dict[str, Any],
+) -> dict[str, Any] | None:
+    """BSim shadow payload'i fusion kanalina kabul edilebilirse dondur.
+
+    Kopru kurallari:
+      - cfg.bsim.enabled False -> None (NO-OP)
+      - cfg.bsim.shadow_mode True (default) -> None (shadow davranisi korunur)
+      - cfg.bsim.use_bsim_fusion False (default) -> None (opt-in)
+      - Hepsi gecerse: once pipeline step cikti dict'i, yoksa artifact disk
+        dosyasi okunur. None donusu "veri yok" anlamina gelir, collector
+        bu durumda BSim evidence eklemez.
+    """
+    pc = ctx.pipeline_context
+    bsim_cfg = getattr(pc.config, "bsim", None)
+    if bsim_cfg is None:
+        return None
+    if not bool(getattr(bsim_cfg, "enabled", False)):
+        stats["bsim_fusion_status"] = "disabled"
+        return None
+    shadow_mode = bool(getattr(bsim_cfg, "shadow_mode", True))
+    use_fusion = bool(getattr(bsim_cfg, "use_bsim_fusion", False))
+    if shadow_mode or not use_fusion:
+        # Mevcut shadow davranisi -- fusion'a YAZMA
+        stats["bsim_fusion_status"] = (
+            "shadow" if shadow_mode else "fusion-flag-off"
+        )
+        return None
+
+    # 1) StepContext.artifacts uzerinden dogrudan al (en hizli yol).
+    #    bsim_match step'i "bsim_shadow" anahtari ile produces eder.
+    payload: dict[str, Any] | None = None
+    try:
+        artifacts = getattr(ctx, "artifacts", None)
+        if artifacts is not None:
+            candidate = artifacts.get("bsim_shadow")
+            if isinstance(candidate, dict):
+                payload = candidate
+    except Exception as exc:  # pragma: no cover - defansif
+        logger.debug(
+            "ctx.artifacts['bsim_shadow'] erisim hatasi: %s",
+            exc, exc_info=True,
+        )
+
+    # 2) Fallback: disk artifact'i oku
+    if payload is None:
+        try:
+            recon_dir = pc.workspace.get_stage_dir("reconstructed")
+            shadow_path = recon_dir / "bsim_shadow.json"
+            if shadow_path.exists():
+                payload = json.loads(
+                    shadow_path.read_text(
+                        encoding="utf-8", errors="replace",
+                    ),
+                )
+        except Exception as exc:  # pragma: no cover - defansif
+            logger.debug(
+                "bsim_shadow.json disk okuma hatasi: %s",
+                exc, exc_info=True,
+            )
+            payload = None
+
+    if not payload or not isinstance(payload, dict):
+        stats["bsim_fusion_status"] = "no-data"
+        return None
+
+    stats["bsim_fusion_status"] = "active"
+    return payload
 
 
 def _select_merge_files(

@@ -65,7 +65,11 @@ decompilers = ["angr>=9.2"]
 # Python tarafinda ek bagimliligi yok; Ghidra + Java 17+ + Gradle kurulumu
 # scripts/setup_typeforge.sh ile yapilir.
 typeforge = []
-full = ["karadul[binary,dynamic,ghidra,js,yara,ml,deobf,computation,perf,decompilers,typeforge,dev]"]
+# TRex, vendor/trex/ Rust CLI'i subprocess ile calistirir. Python bagimliligi yok.
+# Gereksinim: cargo build --release (vendor/trex/) + Ghidra + Java 17+
+# Rust toolchain kurulumu Berke'nin karari (Faz 2).
+trex = []
+full = ["karadul[binary,dynamic,ghidra,js,yara,ml,deobf,computation,perf,decompilers,typeforge,trex,dev]"]
 dev = ["pytest>=8.0", "pytest-cov>=5.0", "mypy>=1.8"]
 all = ["karadul[full]"]
 

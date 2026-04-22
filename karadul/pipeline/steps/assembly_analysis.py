@@ -56,9 +56,10 @@ class AssemblyAnalysisStep(Step):
         asm_results: dict[str, Any] = {}
 
         try:
-            from karadul.analyzers.assembly_analyzer import AssemblyAnalyzer
+            import karadul.analyzers.assembly_analyzer as _aa_mod
 
-            asm_analyzer = AssemblyAnalyzer()
+            aa_cls: Any = _aa_mod.AssemblyAnalyzer
+            asm_analyzer: Any = aa_cls()
             if functions_json and functions_json.exists():
                 arch = self._detect_arch(target, func_data, functions_json)
 
@@ -98,7 +99,7 @@ class AssemblyAnalysisStep(Step):
     # --- internals -----------------------------------------------------
 
     @staticmethod
-    def _detect_arch(target, func_data: Any, functions_json) -> str:
+    def _detect_arch(target: Any, func_data: Any, functions_json: Any) -> str:
         """Mimariyi target + ghidra metadata'dan cikar.
 
         Orijinal davranis (L1971-1987):
@@ -141,7 +142,7 @@ class AssemblyAnalysisStep(Step):
             ctx.stats["asm_simd_functions"] = simd_funcs[:20]
 
     @staticmethod
-    def _save_artifact(pc, ctx: StepContext, asm_results: dict[str, Any]) -> None:
+    def _save_artifact(pc: Any, ctx: StepContext, asm_results: dict[str, Any]) -> None:
         """Assembly analysis sonuclarini workspace'e JSON olarak kaydet.
 
         Orijinal davranista sadece ilk 500 fonksiyon detayi yaziliyordu

@@ -351,6 +351,19 @@ class BSimConfig:
     # sadece artifacts/bsim_shadow.json dump eder. Hafta 2 veri toplandiktan
     # sonra False'a cekilip fusion'a baglanacak.
     shadow_mode: bool = True
+    # v1.11.0 Hafta 2 kopru: shadow_mode=False VE use_bsim_fusion=True
+    # oldugunda name merger collect_candidates icinde BSim evidence'i
+    # source="bsim" ile eklenir. Varsayilan False -- opt-in. Rollback:
+    # use_bsim_fusion=False yeter, shadow dump davranisi aynen kalir.
+    use_bsim_fusion: bool = False
+    # Fusion'da BSim evidence'ini kabul etmek icin minimum similarity.
+    # min_similarity (0.7) query esigi; bu (fusion_min_similarity) fusion'a
+    # evidence'in gecmesi icin gerekli ek esik. shadow payload zaten
+    # min_similarity uzerindekilerle dolu, burasi fusion icin ekstra filtre.
+    fusion_min_similarity: float = 0.7
+    # Fonksiyon basina fusion'a en fazla kac BSim adayi eklenecek.
+    # (Cok fazla aday ayni evidence'i birden fazla sayar; top-N ile sinirla.)
+    fusion_max_candidates_per_function: int = 3
 
 
 @dataclass

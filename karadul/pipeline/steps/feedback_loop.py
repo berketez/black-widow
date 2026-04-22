@@ -54,7 +54,7 @@ class FeedbackLoopStep(Step):
         # yazimlari pc.metadata None ise AttributeError atar. Test mock'larinda
         # bu alan bos olabiliyor; baslamadan garantiye al.
         if getattr(pc, "metadata", None) is None:
-            pc.metadata = {}  # type: ignore[attr-defined]
+            pc.metadata = {}
 
         # --- Config (M19: max_iter validation) ---
         if cfg.pipeline_iterations < 1:
@@ -83,7 +83,7 @@ class FeedbackLoopStep(Step):
             loop_decompiled_dir=a["decompiled_dir"],
         )
         prev_named: set[str] = set()
-        iteration_stats: list[dict] = []
+        iteration_stats: list[dict[str, Any]] = []
         convergence_reason = "max_iter"
         incremental_files: list[Path] | None = None
         decompiled_dir: Path = a["decompiled_dir"]
@@ -198,7 +198,7 @@ class FeedbackLoopStep(Step):
                     file_cache=file_cache,
                     incremental_files=incremental_files,
                 )
-                pc.metadata["file_cache"] = file_cache  # type: ignore[attr-defined]
+                pc.metadata["file_cache"] = file_cache
 
         # --- Post-loop ---
         # v1.10.0 H6: son iterasyonun ciktisini da file_cache'e yansit.
@@ -211,7 +211,7 @@ class FeedbackLoopStep(Step):
                 file_cache=file_cache,
                 incremental_files=None,
             )
-            pc.metadata["file_cache"] = file_cache  # type: ignore[attr-defined]
+            pc.metadata["file_cache"] = file_cache
 
         ctx.stats["pipeline_iterations_run"] = len(iteration_stats)
         ctx.stats["pipeline_iteration_details"] = iteration_stats
@@ -243,7 +243,7 @@ class FeedbackLoopStep(Step):
     # ----- helpers ---------------------------------------------------
 
     @staticmethod
-    def _pre_instantiate(pc) -> tuple[Any, Any, Any]:
+    def _pre_instantiate(pc: Any) -> tuple[Any, Any, Any]:
         """v1.9.2 QW4: Engine/Namer/Recoverer instance'larini bir kez olustur."""
         comp_engine = None
         c_namer = None

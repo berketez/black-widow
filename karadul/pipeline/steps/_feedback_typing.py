@@ -43,7 +43,7 @@ class TypingPhaseResult:
 
 def run_typing_phase(
     *,
-    ctx,
+    ctx: Any,
     iter_index: int,
     decompiled_dir: Path,
     reconstructed_dir: Path,
@@ -117,7 +117,7 @@ def run_typing_phase(
 
 def _run_type_recovery(
     *,
-    ctx,
+    ctx: Any,
     iter_index: int,
     decompiled_dir: Path,
     reconstructed_dir: Path,
@@ -214,7 +214,7 @@ def _run_type_recovery(
     return type_result
 
 
-def _compute_comp_structs(computation_result: Any) -> list | None:
+def _compute_comp_structs(computation_result: Any) -> list[Any] | None:
     """Computation Recovery struct'larini TypeRecoverer formatina cevir."""
     if not (computation_result and computation_result.success):
         return None

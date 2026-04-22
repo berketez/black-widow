@@ -1404,8 +1404,8 @@ class CVariableNamer:
                 json.dumps(full_map, indent=2, ensure_ascii=False),
                 encoding="utf-8",
             )
-        except OSError:
-            pass
+        except OSError as e:
+            logger.debug("naming_map.json yazilamadi (%s): %s", map_file, e, exc_info=True)
 
         total_renamed = len(naming_map) + total_local
         logger.info(
@@ -2531,7 +2531,8 @@ class CVariableNamer:
 
         try:
             from karadul.reconstruction.api_param_db import APIParamDB
-        except ImportError:
+        except ImportError as e:
+            logger.debug("api_param_db import edilemedi, strateji atlandi: %s", e, exc_info=True)
             return
 
         if not hasattr(self, '_api_param_db'):
@@ -2586,7 +2587,8 @@ class CVariableNamer:
                 InStackReconstructor,
                 _IN_STACK_RE,
             )
-        except ImportError:
+        except ImportError as e:
+            logger.debug("fortran_param_db import edilemedi, strateji atlandi: %s", e, exc_info=True)
             return
 
         # in_stack var mi hizli kontrol
@@ -2731,7 +2733,11 @@ class CVariableNamer:
                     specific = re.compile(
                         pattern.pattern.replace("PARAM", re.escape(var_name))
                     )
-                except re.error:
+                except re.error as e:
+                    logger.debug(
+                        "Local var pattern derlenemedi (var=%s, pattern=%r): %s",
+                        var_name, pattern.pattern, e,
+                    )
                     continue
                 if _line_search(specific):
                     if conf > best_conf:

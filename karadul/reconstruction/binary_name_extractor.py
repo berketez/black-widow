@@ -260,8 +260,8 @@ def _demangle_symbol(mangled: str) -> str | None:
         demangled = result.stdout.strip()
         if demangled and demangled != mangled:
             return demangled
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
-        pass
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as e:
+        logger.debug("c++filt demangle basarisiz (mangled=%r): %s", mangled, e)
     return None
 
 
@@ -2321,8 +2321,8 @@ class BinaryNameExtractor:
                                 out.add(m.group(1))
                             for m in modern_re.finditer(content):
                                 out.add(m.group(1))
-                        except OSError:
-                            pass
+                        except OSError as e:
+                            logger.debug("Swift demangle: %s dosyasi okunamadi: %s", cf, e)
                     break
         else:
             logger.debug("Swift demangle: workspace_root bulunamadi, C dosyalari taranamiyor")
@@ -2359,8 +2359,11 @@ class BinaryNameExtractor:
                         proc.kill()
                         try:
                             proc.communicate(timeout=5)
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug(
+                                "xcrun swift-demangle kill sonrasi communicate hatasi (batch %d-%d): %s",
+                                i, i + len(batch), e,
+                            )
                         logger.warning(
                             "xcrun swift-demangle timeout (batch %d-%d)",
                             i, i + len(batch),

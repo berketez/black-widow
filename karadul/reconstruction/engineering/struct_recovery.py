@@ -1021,7 +1021,8 @@ class StructRecoveryEngine:
         for c_file in c_files:
             try:
                 content = c_file.read_text(encoding="utf-8", errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("struct_recovery: %s dosyasi okunamadi (offset toplama): %s", c_file, e)
                 continue
 
             functions = self._extract_functions(content, func_meta, c_file.stem)
@@ -1502,7 +1503,8 @@ class StructRecoveryEngine:
         for c_file in c_files:
             try:
                 content = c_file.read_text(encoding="utf-8", errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("struct_recovery: %s dosyasi okunamadi (param map): %s", c_file, e)
                 continue
 
             for m in _FUNC_DEF_RE.finditer(content):
@@ -1713,7 +1715,8 @@ class StructRecoveryEngine:
         for c_file in c_files:
             try:
                 content = c_file.read_text(encoding="utf-8", errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("struct_recovery: %s dosyasi okunamadi (ptr map): %s", c_file, e)
                 continue
 
             # Fonksiyonlari cikar

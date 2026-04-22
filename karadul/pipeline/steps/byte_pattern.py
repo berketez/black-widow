@@ -96,12 +96,12 @@ class BytePatternStep(Step):
     # --- internals -----------------------------------------------------
 
     @staticmethod
-    def _collect_flirt_signatures(*, pc, binary_for_byte_match: Path) -> list:
+    def _collect_flirt_signatures(*, pc: Any, binary_for_byte_match: Path) -> list[Any]:
         """FLIRT signature'larini homebrew + sigs/ + external + binary'den topla.
 
         stages.py L1373-1411 ile birebir ayni.
         """
-        all_byte_sigs: list = []
+        all_byte_sigs: list[Any] = []
         try:
             from karadul.analyzers.flirt_parser import FLIRTParser
             fp = FLIRTParser()
@@ -142,7 +142,7 @@ class BytePatternStep(Step):
         return all_byte_sigs
 
     @staticmethod
-    def _process_bp_result(*, bp_result, bpm, ctx: StepContext) -> dict[str, str]:
+    def _process_bp_result(*, bp_result: Any, bpm: Any, ctx: StepContext) -> dict[str, str]:
         """bp_result'i stats'a yaz, naming map olustur, artifact kaydet.
 
         stages.py L1419-1443 ile ayni davranis.

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def run_bindiff(
     *,
-    ctx,
+    ctx: Any,
     func_data: Any,
     string_data: Any,
     functions_json: Path,
@@ -79,7 +79,7 @@ def run_bindiff(
 
 def _config_source(
     *,
-    pc, differ,
+    pc: Any, differ: Any,
     target_func_data: Any,
     target_str_data: Any,
     bindiff_confidence_map: dict[str, tuple[str, float, str]],
@@ -130,7 +130,7 @@ def _config_source(
 
 def _refdb_source(
     *,
-    pc, differ,
+    pc: Any, differ: Any,
     target_func_data: Any,
     target_str_data: Any,
     call_graph_json: Path,

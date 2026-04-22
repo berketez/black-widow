@@ -38,13 +38,13 @@ class IterOutcome:
     iter_duration: float
     current_named_set: set[str]
     newly_named: set[str]
-    new_iter_stats: dict
+    new_iter_stats: dict[str, Any]
     decompiled_dir: Path
 
 
 def run_one_iteration(
     *,
-    ctx,
+    ctx: Any,
     iter_index: int,
     max_iter: int,
     decompiled_dir: Path,
@@ -72,7 +72,7 @@ def run_one_iteration(
     sig_matches: Any,
     algo_result: Any,
     eng_result: Any,
-    pcode_naming_candidates: list[dict],
+    pcode_naming_candidates: list[dict[str, Any]],
     binary_hash_16: str,
     target_type: Any,
     # scalars

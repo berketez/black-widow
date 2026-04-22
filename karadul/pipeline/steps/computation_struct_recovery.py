@@ -27,7 +27,7 @@ from karadul.pipeline.registry import Step, register_step
 logger = logging.getLogger(__name__)
 
 
-def _extract_accesses_from_pcode(pcode_result: Any) -> list:
+def _extract_accesses_from_pcode(pcode_result: Any) -> list[Any]:
     """PcodeAnalysisResult'tan MemoryAccess listesi cikar (best-effort).
 
     v1.10.0 Batch 6A: ``_extract_accesses_per_function`` kullan (bu duz
@@ -35,13 +35,13 @@ def _extract_accesses_from_pcode(pcode_result: Any) -> list:
     step artik per-function cagirisi yapiyor).
     """
     grouped = _extract_accesses_per_function(pcode_result)
-    flat: list = []
+    flat: list[Any] = []
     for _fn_key, fn_accesses in grouped.items():
         flat.extend(fn_accesses)
     return flat
 
 
-def _extract_accesses_per_function(pcode_result: Any) -> dict:
+def _extract_accesses_per_function(pcode_result: Any) -> dict[str, list[Any]]:
     """PcodeAnalysisResult'tan fonksiyon-basina MemoryAccess haritasi cikar.
 
     v1.10.0 Batch 6A (Codex __unknown__ coupling fix):
@@ -59,7 +59,7 @@ def _extract_accesses_per_function(pcode_result: Any) -> dict:
     """
     from karadul.computation.struct_recovery import MemoryAccess
 
-    per_fn: dict[str, list] = {}
+    per_fn: dict[str, list[Any]] = {}
     if pcode_result is None:
         return per_fn
 
@@ -68,7 +68,7 @@ def _extract_accesses_per_function(pcode_result: Any) -> dict:
     for fn in functions:
         fn_name = getattr(fn, "name", "") or getattr(fn, "address", "?")
         fn_key = fn_name or "?"
-        accesses: list = []
+        accesses: list[Any] = []
         ops = getattr(fn, "ops", []) or []
         # FonksiyonBazli SSA/var isimleri yoksa fn adresinden fallback key uret.
         for op in ops:
@@ -155,7 +155,7 @@ class ComputationStructRecoveryStep(Step):
         cfg_computation = getattr(pc.config, "computation", None)
 
         step_start = time.monotonic()
-        empty_result = {
+        empty_result: dict[str, Any] = {
             "computation_struct_result": None,
             "recovered_struct_candidates": [],
             "timing_computation_struct_recovery": 0.0,
@@ -213,7 +213,7 @@ class ComputationStructRecoveryStep(Step):
             # per-worker Z3 Context). Tek component veya
             # ``enable_parallel_solve=False`` ise otomatik olarak sequential
             # solve_from_raw'a duser.
-            all_candidates: list = []
+            all_candidates: list[Any] = []
             total_accesses = 0
             total_explained = 0
             total_solver_time = 0.0

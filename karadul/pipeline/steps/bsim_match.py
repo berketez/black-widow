@@ -121,19 +121,29 @@ class BSimMatchStep(Step):
             time.monotonic() - step_start, 3,
         )
 
+        use_bsim_fusion = bool(getattr(bsim_cfg, "use_bsim_fusion", False))
         if shadow_mode:
             logger.info(
                 "BSim SHADOW: %d fonksiyon, %d esleme — fusion'a YAZILMADI",
                 len(shadow_payload["matches"]),
                 shadow_payload["total_matches"],
             )
+        elif use_bsim_fusion:
+            # v1.11.0 Hafta 2: kopru aktif. Bu step yalnizca dump'i
+            # garanti eder; asil evidence enjeksiyonunu _feedback_naming_merger
+            # (run_name_merger) bu payload'i okuyarak yapiyor.
+            logger.info(
+                "BSim FUSION aktif: %d fonksiyon, %d esleme shadow dump'tan "
+                "NameMerger'a gonderilecek (source=bsim, weight=0.85).",
+                len(shadow_payload["matches"]),
+                shadow_payload["total_matches"],
+            )
         else:
-            # KRITIK: shadow_mode False olsa bile bu sprint'te fusion'a
-            # YAZMIYORUZ. Sadece uyari ile iz birak — takim kararinda
-            # fusion wiring'i ayri commit'te eklenecek.
+            # shadow_mode=False AMA use_bsim_fusion=False — opt-in bekleniyor
             logger.warning(
-                "BSim shadow_mode=False AMA fusion wiring henuz yok. "
-                "Shadow dump ile devam ediliyor. NameMerger baglanmadi.",
+                "BSim shadow_mode=False AMA use_bsim_fusion=False — "
+                "kopru kapali. NameMerger'a YAZILMADI. Aktifleştirmek "
+                "icin: config.bsim.use_bsim_fusion = True.",
             )
 
         return {
