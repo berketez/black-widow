@@ -70,9 +70,7 @@ class EngineeringAnnotationStep(Step):
                 if annot_result and annot_result.success:
                     ctx.stats["block_annotations"] = annot_result.total_annotations
                     ctx.stats["annotated_files"] = len(annot_result.annotated_files)
-                    self._publish_artifact(
-                        pc, "annotated_sources", annotated_dir,
-                    )
+                    ctx.produce_artifact("annotated_sources", annotated_dir)
                     if annot_result.annotated_files:
                         resulting_dir = annotated_dir
                     logger.info(
@@ -94,8 +92,3 @@ class EngineeringAnnotationStep(Step):
             "timing_block_annotation": timing,
         }
 
-    @staticmethod
-    def _publish_artifact(pc, key: str, value: Any) -> None:
-        if pc.metadata is None:
-            pc.metadata = {}  # type: ignore[attr-defined]
-        pc.metadata.setdefault("artifacts_pending", {})[key] = value

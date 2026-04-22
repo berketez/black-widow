@@ -90,10 +90,10 @@ class StructRecoveryStep(Step):
                         struct_result.field_access_rewrites
                     )
                     if struct_result.types_header_path:
-                        # Artifact'lari metadata uzerinden downstream'e gecir
-                        pc.metadata.setdefault("artifacts_pending", {})[
-                            "enriched_types_header"
-                        ] = struct_result.types_header_path
+                        ctx.produce_artifact(
+                            "enriched_types_header",
+                            struct_result.types_header_path,
+                        )
                     if struct_result.rewritten_files:
                         resulting_dir = struct_dir
                     logger.info(

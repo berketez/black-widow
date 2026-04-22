@@ -68,7 +68,7 @@ def run_calibration(
                     "matches": [cm.to_dict() for cm in calibrated_matches],
                 },
             )
-            _pin_artifact(pc, "engineering_calibrated", cal_path)
+            ctx.produce_artifact("engineering_calibrated", cal_path)
             ctx.stats["engineering_calibrated_count"] = len(calibrated_matches)
             logger.info(
                 "Confidence calibration: %d matches calibrated",
@@ -115,7 +115,9 @@ def _extract_func_bodies(
 # ---------------------------------------------------------------------------
 
 
-def run_merge(*, pc, algo_result, eng_result, calibrated_matches) -> None:
+def run_merge(
+    *, pc, algo_result, eng_result, calibrated_matches, ctx: StepContext,
+) -> None:
     """algorithms_merged.json artifact uret."""
     if not (eng_result and eng_result.success and eng_result.algorithms):
         return
@@ -139,7 +141,7 @@ def run_merge(*, pc, algo_result, eng_result, calibrated_matches) -> None:
     merged_path = pc.workspace.save_json(
         "reconstructed", "algorithms_merged", merged_algos,
     )
-    _pin_artifact(pc, "algorithms_merged", merged_path)
+    ctx.produce_artifact("algorithms_merged", merged_path)
 
 
 # ---------------------------------------------------------------------------
@@ -285,12 +287,5 @@ def run_capa_merge(
 
 
 # ---------------------------------------------------------------------------
-# Ortak yardimci
+# Ortak yardimci (v1.11.0 Phase 1C'de kaldirildi — ctx.produce_artifact kullan)
 # ---------------------------------------------------------------------------
-
-
-def _pin_artifact(pc, name: str, path) -> None:
-    """pc.metadata['artifacts_pending'] icine artifact yolunu yaz."""
-    if pc.metadata is None:
-        pc.metadata = {}  # type: ignore[attr-defined]
-    pc.metadata.setdefault("artifacts_pending", {})[name] = path

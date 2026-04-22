@@ -117,7 +117,7 @@ class DeepTracingStep(Step):
                 call_graph_data=call_graph_data,
             )
 
-            publish = self._make_publish_artifact(pc)
+            publish = self._make_publish_artifact(ctx)
 
             # 7.3 Algorithm Composition Analysis
             _dh.analyze_composition(
@@ -163,10 +163,13 @@ class DeepTracingStep(Step):
         return all_algos
 
     @staticmethod
-    def _make_publish_artifact(pc):
-        """Artifact yayinlayici closure — shim pattern."""
+    def _make_publish_artifact(ctx: StepContext):
+        """Artifact yayinlayici closure — produce_artifact proxy.
+
+        v1.11.0 Phase 1C: `pc.metadata['artifacts_pending']` yerine
+        `ctx.produce_artifact`. Helper fonksiyonlara (deep_tracing_helpers)
+        geriye dogru uyumlu `publish(key, value)` signature'i sunulur.
+        """
         def _publish(key: str, value: Any) -> None:
-            if pc.metadata is None:
-                pc.metadata = {}  # type: ignore[attr-defined]
-            pc.metadata.setdefault("artifacts_pending", {})[key] = value
+            ctx.produce_artifact(key, value)
         return _publish

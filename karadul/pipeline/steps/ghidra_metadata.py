@@ -233,13 +233,7 @@ class GhidraMetadataStep(Step):
                         ],
                     },
                 )
-                # Shim: eski yoldaki artifacts dict'e yazilsin diye metadata'ya
-                # da iliyoruz.
-                if pc.metadata is None:
-                    pc.metadata = {}  # type: ignore[attr-defined]
-                pc.metadata.setdefault("artifacts_pending", {})[
-                    "signature_matches"
-                ] = sig_path
+                ctx.produce_artifact("signature_matches", sig_path)
                 logger.info(
                     "Signature DB: %d fonksiyon tanindi", len(sig_matches),
                 )

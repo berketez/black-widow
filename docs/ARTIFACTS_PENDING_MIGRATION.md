@@ -1,8 +1,27 @@
 # `artifacts_pending` -> `StepContext.produce_artifact` Migration Plani
 
 **Hedef release:** v1.11.0
-**Durum:** Planlama asamasi (2026-04-21)
+**Durum:** TAMAMLANDI (2026-04-21) — Phase 1C
 **Etkilenen step sayisi:** 14 step (14 dosya, 21 occurrence)
+
+## TAMAMLANDI — Degisiklik Ozeti (v1.11.0)
+
+- `StepContext.produce_artifact(key, value)` API eklendi (`context.py`).
+- `StepContext._stage_artifacts` (private) + `stage_artifacts` property
+  (read-only view) stage-level artifact'lar icin ayri kanal.
+- Runner step execution sirasinda `ctx._current_step_meta = spec` enjekte
+  eder (`runner.py:80`), step bitince temizler (`finally` guard).
+- 14 step'te `pc.metadata.setdefault("artifacts_pending", {})[key] = value`
+  deseni `ctx.produce_artifact(key, value)` ile degistirildi.
+- Helper fonksiyonlar (`_pin_artifact`, `_publish_artifact`, `_absorb_artifacts`,
+  `_make_publish_artifact`) ctx uzerinden calisacak sekilde refactor edildi.
+- `finalize.py` oncelikli olarak `ctx.stage_artifacts`'tan okur; legacy
+  `pc.metadata["artifacts_pending"]` fallback olarak korundu (stages.py shim
+  ve henuz migrate edilmemis testler icin).
+- `produce_artifact` geriye uyumluluk icin `pc.metadata["artifacts_pending"]`
+  mirror'unu da yazar — v1.12.0'da bu mirror kaldirilacak.
+- Yeni test dosyasi: `tests/test_produce_artifact.py` (12 test).
+- Toplam: 157 PASS (step testleri + pipeline smoke + produce_artifact), 0 FAIL.
 
 ---
 

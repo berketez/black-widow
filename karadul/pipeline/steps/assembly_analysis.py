@@ -176,11 +176,6 @@ class AssemblyAnalysisStep(Step):
             asm_path = pc.workspace.save_json(
                 "reconstructed", "assembly_analysis", asm_data,
             )
-            # Downstream shim: artifacts_pending aracılığıyla StageResult'a ulaşır
-            if pc.metadata is None:
-                pc.metadata = {}  # type: ignore[attr-defined]
-            pc.metadata.setdefault("artifacts_pending", {})[
-                "assembly_analysis"
-            ] = asm_path
+            ctx.produce_artifact("assembly_analysis", asm_path)
         except Exception:
             logger.debug("Assembly analysis artifact kaydi basarisiz", exc_info=True)

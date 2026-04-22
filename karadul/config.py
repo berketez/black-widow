@@ -581,6 +581,12 @@ class DecompilersConfig:
     primary_backend: str = "ghidra"
     enable_parallel_decomp: bool = False
     secondary_backend: Optional[str] = None
+    # v1.11.0 Phase 1B: Fallback chain. Primary backend `is_available()` False
+    # dondurur veya decompile() sirasinda RuntimeError firlatilirsa, listedeki
+    # siradaki backend denenir. Default ["ghidra"] -- angr primary secilirse
+    # Ghidra'ya duserim; ghidra primary ise (default) bos chain gibi davranir
+    # (primary==fallback[0] ise tekrar denenmez).
+    fallback_chain: list = field(default_factory=lambda: ["ghidra"])
 
 
 @dataclass

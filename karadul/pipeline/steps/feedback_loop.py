@@ -223,10 +223,12 @@ class FeedbackLoopStep(Step):
             len(iteration_stats), time.monotonic() - loop_start,
         )
 
-        # Step runner ekstra artifact kabul etmedigi icin artifacts_out'u
-        # pipeline_context.metadata uzerinden downstream'e gecir.
+        # v1.11.0 Phase 1C: artifacts_out'u produce_artifact uzerinden yay.
+        # artifacts_out loop icinde _feedback_loop_iter.run_one_iteration
+        # tarafindan dolduruluyor (computation/naming/typing faz ciktilari).
         if artifacts_out:
-            pc.metadata.setdefault("artifacts_pending", {}).update(artifacts_out)
+            for key, value in artifacts_out.items():
+                ctx.produce_artifact(key, value)
 
         return {
             "naming_result": state.last_naming_result,

@@ -48,11 +48,15 @@ class FinalizeStep(Step):
             if pipeline_start is not None else 0.0
         )
 
-        # shim tarafindan yazilan artifacts_pending + caller-provided artifacts
-        # (assembly_analysis, engineering_analysis_md, project_dir, ...) hepsi
-        # pc.metadata["artifacts_pending"]'de toplandi.
-        pending = (pc.metadata or {}).get("artifacts_pending", {})
-        artifacts: dict = dict(pending)
+        # v1.11.0 Phase 1C: Artifact'lar iki kanaldan gelebilir:
+        #   1. ctx.stage_artifacts — produce_artifact() ile yayilan (yeni yol)
+        #   2. pc.metadata["artifacts_pending"] — eski shim (stages.py +
+        #      geriye uyumluluk mirror'i)
+        # Yeni yol one cikarilir; eski yol fallback. v1.12.0'da (2) kalkacak.
+        artifacts: dict = dict(ctx.stage_artifacts)
+        legacy_pending = (pc.metadata or {}).get("artifacts_pending", {})
+        for key, value in legacy_pending.items():
+            artifacts.setdefault(key, value)
 
         errors = list(ctx.errors)
         stats = dict(ctx.stats)

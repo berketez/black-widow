@@ -78,11 +78,7 @@ class AlgorithmIdStep(Step):
                         ],
                     },
                 )
-                if pc.metadata is None:
-                    pc.metadata = {}  # type: ignore[attr-defined]
-                pc.metadata.setdefault("artifacts_pending", {})[
-                    "algorithms"
-                ] = algo_path
+                ctx.produce_artifact("algorithms", algo_path)
                 ctx.stats["algorithms_detected"] = algo_result.total_detected
                 ctx.stats["algorithms_by_category"] = algo_result.by_category
                 logger.info(

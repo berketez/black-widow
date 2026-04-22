@@ -89,6 +89,7 @@ class ConfidenceFilterStep(Step):
             algo_result=algo_result,
             eng_result=eng_result,
             calibrated_matches=calibrated_matches,
+            ctx=ctx,
         )
 
         # 3. Match budget — algo_result/eng_result listelerini yerinde kirpar

@@ -79,12 +79,18 @@ class PipelineRunner:
 
             step = spec.cls()
             t0 = time.monotonic()
+            # v1.11.0 Phase 1C: produce_artifact() icin current step meta
+            # enjekte et; step.run() bitince geri al (degismez baska step'e
+            # sizmasin).
+            ctx._current_step_meta = spec
             try:
                 new_artifacts = step.run(ctx)
             except Exception as exc:
                 ctx.errors.append(f"{spec.name}: {exc}")
                 logger.exception("Step '%s' basarisiz", spec.name)
                 raise
+            finally:
+                ctx._current_step_meta = None
 
             duration = time.monotonic() - t0
             ctx.stats[f"{spec.name}_duration_s"] = round(duration, 4)

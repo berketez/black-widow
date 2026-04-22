@@ -61,7 +61,11 @@ deobf = ["z3-solver>=4.12.0"]
 computation = ["z3-solver>=4.12.0", "sympy>=1.12", "networkx>=3.0"]
 perf = ["lmdb>=1.4", "msgpack>=1.0"]
 decompilers = ["angr>=9.2"]
-full = ["karadul[binary,dynamic,ghidra,js,yara,ml,deobf,computation,perf,decompilers,dev]"]
+# TypeForge, Ghidra headless wrapper uzerinden subprocess ile calisir.
+# Python tarafinda ek bagimliligi yok; Ghidra + Java 17+ + Gradle kurulumu
+# scripts/setup_typeforge.sh ile yapilir.
+typeforge = []
+full = ["karadul[binary,dynamic,ghidra,js,yara,ml,deobf,computation,perf,decompilers,typeforge,dev]"]
 dev = ["pytest>=8.0", "pytest-cov>=5.0", "mypy>=1.8"]
 all = ["karadul[full]"]
 
@@ -89,4 +93,5 @@ markers = [
     "integration: tests that need root/SIP/external daemon (Frida spawn etc.)",
     "benchmark: long-running performance tests (skipped in default suite)",
     "requires_external_binary: tests that need system libs (libsqlite3, libcrypto) present on host",
+    "requires_typeforge: tests that need TypeForge CLI installed (Ghidra headless wrapper)",
 ]

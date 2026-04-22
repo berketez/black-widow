@@ -86,7 +86,7 @@ class CommentGenerationStep(Step):
                     ctx.stats["vuln_warnings"] = comment_result.vulnerability_warnings
                     ctx.stats["logic_comments"] = comment_result.logic_comments
                     ctx.stats["computation_annotations"] = comment_result.computation_annotations
-                    self._publish_artifact(pc, "commented_sources", comment_dir)
+                    ctx.produce_artifact("commented_sources", comment_dir)
                     resulting_dir = comment_dir
                     logger.info(
                         "Comments: %d yorum eklendi (%d guvenlik, %d logic, %d computation)",
@@ -109,13 +109,3 @@ class CommentGenerationStep(Step):
             "timing_comment_generation": timing,
         }
 
-    @staticmethod
-    def _publish_artifact(pc, key: str, value: Any) -> None:
-        """Orijinal `artifacts[key] = value` davranisinin shim karsiligi.
-
-        pc.metadata['artifacts_pending'] uzerinden StageResult.artifacts'a
-        ulasir (T3.5 finalize step'i ve eski stages.py shim'i okuyor).
-        """
-        if pc.metadata is None:
-            pc.metadata = {}  # type: ignore[attr-defined]
-        pc.metadata.setdefault("artifacts_pending", {})[key] = value

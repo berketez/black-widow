@@ -55,7 +55,7 @@ class ProjectBuildStep(Step):
             )
             if build_result.success:
                 ctx.stats["project_files"] = build_result.files_written
-                self._publish_artifact(pc, "project_dir", project_dir)
+                ctx.produce_artifact("project_dir", project_dir)
                 logger.info(
                     "Project built: %d dosya", build_result.files_written,
                 )
@@ -71,8 +71,3 @@ class ProjectBuildStep(Step):
             "timing_project_build": timing,
         }
 
-    @staticmethod
-    def _publish_artifact(pc, key: str, value: Any) -> None:
-        if pc.metadata is None:
-            pc.metadata = {}  # type: ignore[attr-defined]
-        pc.metadata.setdefault("artifacts_pending", {})[key] = value

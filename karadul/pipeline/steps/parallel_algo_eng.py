@@ -84,14 +84,14 @@ class ParallelAlgoEngStep(Step):
         if name_dict.get("success"):
             binary_name_result = name_dict.get("result", {}) or {}
             ctx.stats.update(name_dict.get("stats", {}))
-            self._absorb_artifacts(pc, name_dict.get("artifacts", {}))
+            self._absorb_artifacts(ctx, name_dict.get("artifacts", {}))
         elif not name_dict.get("skipped") and "error" in name_dict:
             ctx.errors.append(name_dict["error"])
 
         if eng_dict.get("success"):
             eng_result = eng_dict.get("result")
             ctx.stats.update(eng_dict.get("stats", {}))
-            self._absorb_artifacts(pc, eng_dict.get("artifacts", {}))
+            self._absorb_artifacts(ctx, eng_dict.get("artifacts", {}))
         elif not eng_dict.get("skipped") and "error" in eng_dict:
             ctx.errors.append(eng_dict["error"])
 
@@ -104,18 +104,17 @@ class ParallelAlgoEngStep(Step):
         }
 
     @staticmethod
-    def _absorb_artifacts(pc, artifacts: dict) -> None:
-        """Artifact dict'ini pc.metadata['artifacts_pending']'e yaz.
+    def _absorb_artifacts(ctx: StepContext, artifacts: dict) -> None:
+        """Worker dict'inden gelen artifact'lari StageResult'a yay.
 
-        Runner artifact'lari pipeline artifact'i olarak saklar; eski
-        stages.py ise bunlari StageResult.artifacts'a yazmak istiyor.
-        Shim modunda aradaki koprüyü metadata uzerinden saglariz.
+        v1.11.0 Phase 1C: `pc.metadata['artifacts_pending']` yerine
+        `ctx.produce_artifact`. Her worker (binary_name, engineering)
+        kendi dict'inde artifact dondurur; burada birlesir.
         """
         if not artifacts:
             return
-        if pc.metadata is None:
-            pc.metadata = {}  # type: ignore[attr-defined]
-        pc.metadata.setdefault("artifacts_pending", {}).update(artifacts)
+        for key, value in artifacts.items():
+            ctx.produce_artifact(key, value)
 
 
 # ---------------------------------------------------------------------------

@@ -82,15 +82,13 @@ class EngineeringAnalysisStep(Step):
                 eng_json_path = pc.workspace.save_json(
                     "reconstructed", "engineering_analysis", eng_analysis,
                 )
-                self._publish_artifact(
-                    pc, "engineering_analysis", eng_json_path,
-                )
+                ctx.produce_artifact("engineering_analysis", eng_json_path)
 
                 reconstructed_dir = pc.workspace.get_stage_dir("reconstructed")
                 md_report = formula_rec.generate_report(formulas)
                 md_path = reconstructed_dir / "engineering_analysis.md"
                 md_path.write_text(md_report, encoding="utf-8")
-                self._publish_artifact(pc, "engineering_analysis_md", md_path)
+                ctx.produce_artifact("engineering_analysis_md", md_path)
 
                 ctx.stats["engineering_domains"] = len(domain_report.domain_summary)
                 ctx.stats["engineering_formulas"] = len(formulas)
@@ -122,8 +120,3 @@ class EngineeringAnalysisStep(Step):
             "timing_engineering_analysis": timing,
         }
 
-    @staticmethod
-    def _publish_artifact(pc, key: str, value: Any) -> None:
-        if pc.metadata is None:
-            pc.metadata = {}  # type: ignore[attr-defined]
-        pc.metadata.setdefault("artifacts_pending", {})[key] = value

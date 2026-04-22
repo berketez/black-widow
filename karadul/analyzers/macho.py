@@ -795,10 +795,97 @@ class MachOAnalyzer(BaseAnalyzer):
     def _run_ghidra(
         self, binary_path: Path, workspace: Workspace,
     ) -> dict[str, Any] | None:
-        """Ghidra headless analiz calistir.
+        """Decompiler backend'i calistir.
 
-        Ghidra mevcut degilse None dondurur.
+        v1.11.0 Phase 1B: Backend-agnostic. `config.decompilers.primary_backend`
+        'ghidra' ise eski Ghidra yolu aynen korunur (3576 PASS baseline). 'angr'
+        (veya ileride baska) secilirse AngrBackend.decompile() cagrilir ve
+        sonuc Ghidra JSON semasina cevrilip static/'e yazilir -- downstream
+        pipeline step'leri (ghidra_metadata, binary_prep, semantic_naming...)
+        dokunulmadan calisir.
+
+        Fallback: primary backend `is_available()` False ise
+        `create_backend_with_fallback()` chain'i yurutur. Normalde Ghidra kurulu
+        oldugu icin angr kurulu degilken angr primary secilirse Ghidra'ya duser.
+
+        Returns:
+            Ghidra analyze() ile birebir uyumlu dict (scripts_output icerir).
+            Hic bir backend kullanilamiyorsa None.
         """
+        primary = getattr(
+            self.config.decompilers, "primary_backend", "ghidra",
+        ).lower()
+
+        # Fast path: primary == ghidra + ghidra mevcut => eski kod YOLU (TEST
+        # BASELINE burasi). Dokunulmamis davranis.
+        if primary == "ghidra" and self.ghidra.is_available():
+            return self._run_ghidra_legacy(binary_path, workspace)
+
+        # Backend-agnostic yol: factory ile secim + fallback.
+        try:
+            from karadul.decompilers import create_backend_with_fallback
+
+            backend, tried = create_backend_with_fallback(self.config)
+        except Exception as exc:
+            logger.warning(
+                "Decompiler backend olusturulamadi (primary=%s): %s",
+                primary, exc,
+            )
+            # Son care: eski Ghidra yolu (mevcut self.ghidra).
+            if self.ghidra.is_available():
+                return self._run_ghidra_legacy(binary_path, workspace)
+            return None
+
+        if backend.name == "ghidra":
+            # Factory ghidra'ya duserse eski yolu kullan -- JSON adapter
+            # gereksiz (Ghidra zaten Ghidra JSON uretiyor).
+            logger.info("Decompiler backend: ghidra (tried=%s)", tried)
+            # Mevcut self.ghidra'yi kullan; backend lazy-init ayni instance'i
+            # paylasmayabilir ama davranis aynidir.
+            return self._run_ghidra_legacy(binary_path, workspace)
+
+        # Non-Ghidra backend (angr, vs). decompile() cagir ve JSON'a cevir.
+        logger.info(
+            "Decompiler backend: %s (tried=%s)", backend.name, tried,
+        )
+        try:
+            from karadul.decompilers.pipeline_adapter import (
+                write_ghidra_shape_artifacts,
+            )
+
+            static_dir = workspace.get_stage_dir("static")
+            decompile_out = static_dir / f"{backend.name}_output"
+            decompile_out.mkdir(parents=True, exist_ok=True)
+
+            timeout = float(
+                getattr(self.config.timeouts, "ghidra_analysis", 3600),
+            )
+            result = backend.decompile(
+                binary=binary_path,
+                output_dir=decompile_out,
+                timeout=timeout,
+            )
+        except Exception as exc:
+            logger.error(
+                "Non-Ghidra backend '%s' cokti: %s. Ghidra'ya dusuluyor.",
+                backend.name, exc,
+            )
+            if self.ghidra.is_available():
+                return self._run_ghidra_legacy(binary_path, workspace)
+            return {"success": False, "error": str(exc)}
+
+        # Ghidra sema'sina cevir + static/ altina yaz (downstream step'ler
+        # icin).
+        ghidra_dict = write_ghidra_shape_artifacts(
+            result=result,
+            output_dir=workspace.get_stage_dir("static"),
+        )
+        return ghidra_dict
+
+    def _run_ghidra_legacy(
+        self, binary_path: Path, workspace: Workspace,
+    ) -> dict[str, Any] | None:
+        """Orijinal Ghidra headless yolu -- 3576 PASS baseline korunur."""
         if not self.ghidra.is_available():
             logger.info("Ghidra mevcut degil, atlanacak")
             return None

@@ -20,7 +20,11 @@ from karadul.decompilers.base import (
     DecompileResult,
     DecompilerBackend,
 )
-from karadul.decompilers.factory import available_backends, create_backend
+from karadul.decompilers.factory import (
+    available_backends,
+    create_backend,
+    create_backend_with_fallback,
+)
 from karadul.decompilers.ghidra_backend import GhidraBackend
 
 __all__ = [
@@ -30,5 +34,6 @@ __all__ = [
     "GhidraBackend",
     "AngrBackend",
     "create_backend",
+    "create_backend_with_fallback",
     "available_backends",
 ]

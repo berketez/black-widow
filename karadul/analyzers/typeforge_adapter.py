@@ -1,18 +1,27 @@
 """TypeForge adapter -- binary/LLVM IR'den struct rekonstruksiyonu.
 
-TypeForge (BSD-3, Python+LLVM) opsiyonel harici CLI'dir. Kurulu degilse
-``is_available()`` False doner, pipeline sessiz devam eder.
+TypeForge (S&P 2025, Java/Ghidra Extension) opsiyonel harici CLI'dir.
+Kurulu degilse ``is_available()`` False doner, pipeline sessiz devam eder.
+
+TypeForge, Rust CLI degil -- Ghidra headless wrapper'i olarak calisir.
+Kurulum: ``scripts/setup_typeforge.sh`` (Ghidra 11+, Java 17+, Gradle gerekli)
+
+CLI arayuzu beklentisi (wrapper'in urettigi format):
+    typeforge --binary <path> [--llvm-ir <path>] --output-dir <dir>
+    stdout: {"structs": [...]}
 
 Tasarim:
     - Subprocess cagrisi ``_run_subprocess``'te izole; monkeypatch ile mock'lanir.
     - Her hata ``TypeForgeResult.errors``'a dusurulur, exception sizmaz.
     - Magic number yok: timeout/min_conf ``BinaryReconstructionConfig``'ten.
+    - Yol onceligi: KARADUL_TYPEFORGE_PATH env var > config.typeforge_path > PATH.
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import shutil
 import subprocess
 import time
@@ -83,19 +92,47 @@ class TypeForgeAdapter:
     # ------------------------------------------------------------------
 
     def _find_typeforge(self) -> str | None:
-        """TypeForge CLI yolu -- config'de belirtilmisse oncelik, yoksa PATH."""
+        """TypeForge CLI yolu -- oncelik sirasi: env var > config > PATH.
+
+        Oncelik:
+            1. ``KARADUL_TYPEFORGE_PATH`` cevre degiskeni (setup_typeforge.sh'in yazdigi yol)
+            2. ``config.binary_reconstruction.typeforge_path``
+            3. ``shutil.which("typeforge")`` -- PATH uzerindeki herhangi bir wrapper
+
+        Hicbiri yoksa ``None`` doner; ``is_available()`` False uretir ve
+        pipeline sessiz devam eder. Kullaniciya ``scripts/setup_typeforge.sh``
+        calistirmasi onerilir.
+        """
+        # 1) Cevre degiskeni (en yuksek oncelik)
+        env_path = os.environ.get("KARADUL_TYPEFORGE_PATH")
+        if env_path:
+            p = Path(env_path).expanduser()
+            if p.exists() and p.is_file():
+                logger.debug("TypeForge env var'dan alindi: %s", p)
+                return str(p)
+            logger.warning(
+                "KARADUL_TYPEFORGE_PATH tanimli ama dosya yok: %s -- "
+                "scripts/setup_typeforge.sh ile yeniden kurun.",
+                env_path,
+            )
+
+        # 2) Config'deki yol
         br = getattr(self.config, "binary_reconstruction", None)
         if br is not None:
             configured = getattr(br, "typeforge_path", None)
             if configured:
                 p = Path(configured).expanduser()
                 if p.exists() and p.is_file():
+                    logger.debug("TypeForge config'den alindi: %s", p)
                     return str(p)
                 logger.debug(
-                    "Yapilandirilan typeforge_path mevcut degil: %s", configured,
+                    "Config typeforge_path mevcut degil: %s", configured,
                 )
-        # PATH uzerinden ara
+
+        # 3) PATH uzerinden ara
         which = shutil.which("typeforge")
+        if which:
+            logger.debug("TypeForge PATH'te bulundu: %s", which)
         return which
 
     def is_available(self) -> bool:
@@ -104,7 +141,12 @@ class TypeForgeAdapter:
             return self._available_cache
         self._available_cache = self._typeforge_path is not None
         if not self._available_cache:
-            logger.debug("TypeForge CLI bulunamadi (PATH + config.typeforge_path bos)")
+            logger.debug(
+                "TypeForge CLI bulunamadi. Kurulum icin: "
+                "bash scripts/setup_typeforge.sh  "
+                "(Ghidra 11+, Java 17+, Gradle gerekli). "
+                "Kurulumdan sonra: export KARADUL_TYPEFORGE_PATH=~/.karadul/typeforge/typeforge",
+            )
         else:
             logger.debug("TypeForge bulundu: %s", self._typeforge_path)
         return self._available_cache
@@ -123,7 +165,10 @@ class TypeForgeAdapter:
         result = TypeForgeResult()
 
         if not self.is_available():
-            result.errors.append("TypeForge kurulu degil (is_available=False)")
+            result.errors.append(
+                "TypeForge kurulu degil -- 'bash scripts/setup_typeforge.sh' calistirin "
+                "veya KARADUL_TYPEFORGE_PATH env var'i tanimlayin.",
+            )
             result.duration_seconds = time.perf_counter() - start
             return result
 

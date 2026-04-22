@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.11.0] - unreleased
+
+### Changed
+- **Phase 1C: `artifacts_pending` shim migration** — 14 step'te
+  `pc.metadata.setdefault("artifacts_pending", {})[key] = value` pattern'i
+  `StepContext.produce_artifact(key, value)` API'sine cevrildi. Etkilenen
+  dosyalar: `algorithm_id`, `assembly_analysis`, `byte_pattern`,
+  `comment_generation`, `_confidence_helpers`, `deep_tracing`,
+  `engineering_analysis`, `engineering_annotation`, `feedback_loop`,
+  `ghidra_metadata`, `parallel_algo_eng`, `project_build`, `struct_recovery`
+  + reader `finalize`. Stage-level side artifact'lar artik runner'in
+  produces contract'ini bypass etmiyor, ayri `_stage_artifacts` kanalindan
+  akiyor. Geriye uyumluluk: `pc.metadata["artifacts_pending"]` mirror'u
+  v1.12.0'a kadar korunuyor (DeprecationWarning bir sonraki sprint'te).
+- Runner step execution'da `ctx._current_step_meta = spec` enjeksiyonu ile
+  opsiyonel registry validation destegi (soft check, debug-only log).
+
+### Added
+- `tests/test_produce_artifact.py` — 12 yeni test (basic produce,
+  overwrite warning, registry validation, read-only view, finalize okuma,
+  runner enjeksiyon cleanup).
+
 ## [1.10.0] - 2026-04-21
 
 ### Added — Yeni Paketler (CPU-only mimari)

@@ -75,6 +75,11 @@ class TestCollectHelper:
 
 class TestPublishArtifact:
     def test_publish_to_pending(self, fake_pc) -> None:
-        publisher = DeepTracingStep._make_publish_artifact(fake_pc)
+        """v1.11.0 Phase 1C: _make_publish_artifact(ctx) -> ctx.produce_artifact."""
+        ctx = StepContext(pipeline_context=fake_pc)
+        publisher = DeepTracingStep._make_publish_artifact(ctx)
         publisher("foo", "bar")
+        # Yeni kanal: ctx.stage_artifacts
+        assert ctx.stage_artifacts["foo"] == "bar"
+        # Geriye uyumluluk mirror'i: pc.metadata
         assert fake_pc.metadata["artifacts_pending"]["foo"] == "bar"

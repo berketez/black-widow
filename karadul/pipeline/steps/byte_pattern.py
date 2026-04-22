@@ -168,11 +168,7 @@ class BytePatternStep(Step):
                     "matches": bp_result.matches,
                 },
             )
-            if pc.metadata is None:
-                pc.metadata = {}  # type: ignore[attr-defined]
-            pc.metadata.setdefault("artifacts_pending", {})[
-                "byte_pattern_matches"
-            ] = bp_path
+            ctx.produce_artifact("byte_pattern_matches", bp_path)
             logger.info(
                 "Byte Pattern Matching: %d/%d FUN_xxx tanindi (%.1f%%)",
                 bp_result.total_matched,
