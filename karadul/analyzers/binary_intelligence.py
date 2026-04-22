@@ -1378,6 +1378,55 @@ _VULNERABILITY_PATTERNS: list[tuple[str, str, str]] = [
 
 
 # ---------------------------------------------------------------------------
+# v1.10.0 Batch 3D: Fortran binary-type gate.
+# _gfortran_* pattern'leri Fortran olmayan binary'lerde false positive
+# uretiyordu (ornegin "exit_i4" yerine basit "exit" tokeni). Gate, en az
+# 2 ayirici Fortran runtime marker aramadan Fortran algoritmalarini
+# raporlamaz.
+# ---------------------------------------------------------------------------
+FORTRAN_RUNTIME_MARKERS: tuple[str, ...] = (
+    "_gfortran_main",
+    "_gfortran_runtime_error",
+    "_gfortran_stop",
+    "_gfortran_st_",
+    "_gfortran_transfer_",
+    "__fortran_",
+    "for_write_seq_lis",
+    "for_read_seq_lis",
+    "_FortranA",
+    "flangrti",
+)
+
+_FORTRAN_MIN_MARKERS = 2
+
+
+def _is_fortran_binary(symbols_or_strings) -> bool:
+    """Binary gercekten Fortran kodu mu iceriyor? False positive gate.
+
+    En az _FORTRAN_MIN_MARKERS tane ayri Fortran runtime marker
+    gorulmelidir. Tek basina "_gfortran_xyz" gecen bir sabit string
+    (ornegin hata mesaji) tek basina yeter sayilmaz.
+
+    Args:
+        symbols_or_strings: Binary sembolleri ve/veya string havuzu.
+
+    Returns:
+        True: guvenle Fortran binary'si. False: gate kapali, Fortran
+        category algoritmalari bastirilmali.
+    """
+    hit_markers: set[str] = set()
+    for entry in symbols_or_strings:
+        if not entry:
+            continue
+        for marker in FORTRAN_RUNTIME_MARKERS:
+            if marker in entry:
+                hit_markers.add(marker)
+                if len(hit_markers) >= _FORTRAN_MIN_MARKERS:
+                    return True
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Pre-compiled patterns (module-level, bir kez derlenir)
 # ---------------------------------------------------------------------------
 
@@ -1732,8 +1781,17 @@ class BinaryIntelligence:
         """String ve symbol havuzundan algoritmalar tespit et."""
         algorithms: list[Algorithm] = []
         combined_text = "\n".join(all_text)
+        # v1.10.0 Batch 3D: Fortran binary-type gate -- fortran_runtime
+        # kategorisi false positive'lerini onle.
+        fortran_gate_open = _is_fortran_binary(all_text)
 
         for algo_name, algo_data in ALGORITHM_PATTERNS.items():
+            # Fortran kategorisini sadece gercekten Fortran binary'lerinde rapor et.
+            if (
+                algo_data.get("category") == "fortran_runtime"
+                and not fortran_gate_open
+            ):
+                continue
             pattern = re.compile(algo_data["pattern"], re.IGNORECASE)
             matches = pattern.findall(combined_text)
             if matches:
@@ -1970,7 +2028,14 @@ class BinaryIntelligence:
     def _find_algorithms_in_code(self, code: str) -> list[str]:
         """Decompiled kodda kullanilan algoritmalari bul."""
         found: list[str] = []
+        # v1.10.0 Batch 3D: Fortran binary-type gate (tek fonksiyon scope'unda).
+        fortran_gate_open = _is_fortran_binary([code])
         for algo_name, algo_data in ALGORITHM_PATTERNS.items():
+            if (
+                algo_data.get("category") == "fortran_runtime"
+                and not fortran_gate_open
+            ):
+                continue
             pattern = re.compile(algo_data["pattern"], re.IGNORECASE)
             if pattern.search(code):
                 found.append(algo_name)

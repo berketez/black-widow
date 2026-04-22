@@ -1,15 +1,20 @@
-"""Algoritma-baglam-bilinçli semantik parametre isimlendirici -- Karadul v1.7.2
+"""Algoritma-baglam-bilinçli semantik parametre isimlendirici -- Karadul v1.10.0 M2 T4
 
 Ghidra'nin otomatik parametre isimlerini (param_N, src_N, dest_N) algoritma
 tespiti sonuclarina dayanarak anlamli muhendislik isimlerine donusturur.
 
-Alti katmanli strateji (oncelik sirasina gore):
-  Strateji 0: Signature-Based Naming       (conf 0.92)  -- v1.7.2: signature_db ile eslesen fonksiyonun bilinen param isimlerini kopyala
-  Strateji 1: Algorithm Template Matching  (conf 0.85)  -- Tespit edilen algoritmaya gore sablon
-  Strateji 2: Call Graph Propagation       (conf 0.75)  -- Caller'daki isimli arg callee'ye yayilir
-  Strateji 3: Struct Field Context         (conf 0.70)  -- Module 1 struct tespitinden isim
-  Strateji 4: Type + Usage Heuristic       (conf 0.60)  -- Tip ve kullanim oruntusunden isim
-  Strateji 5: Call-Context Naming          (conf 0.65)  -- v1.7.2: Fonksiyonun cagirdigi API'lerden parametre ismi cikarimi
+Yedi katmanli strateji (oncelik sirasina gore, conf tavani):
+  Strateji -1: SigDB Params Passthrough    (conf 0.95)  -- v1.10.0 M2 T4: FLIRT/sig DB'den orijinal param isimleri (sig_match.params)
+  Strateji  0: API_PARAM_DB Static Lookup  (conf 0.92)  -- v1.7.2: bilinen kutuphane fonksiyonlarinin dokumentasyon param isimleri
+  Strateji  1: Algorithm Template Matching (conf 0.85)  -- Tespit edilen algoritmaya gore sablon
+  Strateji  2: Call Graph Propagation      (conf 0.75)  -- Caller'daki isimli arg callee'ye yayilir
+  Strateji  3: Struct Field Context        (conf 0.70)  -- Module 1 struct tespitinden isim
+  Strateji  4: Type + Usage Heuristic      (conf 0.60)  -- Tip ve kullanim oruntusunden isim
+  Strateji  5: Call-Context Naming         (conf 0.65)  -- v1.7.2: Fonksiyonun cagirdigi API'lerden parametre ismi cikarimi
+
+Strateji -1 ve 0 ayni fonksiyonun farkli bilgi kaynaklarindan uretilir;
+`sig_match.params` (sig DB payload'i) varsa o oncelik alir, yoksa API_PARAM_DB
+statik tabloya dusulur. NameMerger cakisma durumunda en yuksek conf kazanir.
 
 CVariableNamer'dan (c_namer.py) farkli olarak, bu modul fonksiyonun *ne yaptigini*
 (algoritma tespiti) bilir ve parametre isimlerini buna gore secer.
@@ -1206,6 +1211,9 @@ _W_SIG_MATCHES: dict[str, Any] = {}
 _W_API_PARAM_DB: Any = None
 _W_ENRICHED_STRUCTS: list | None = None
 _W_REVERSE_GRAPH: dict[str, list[str]] = {}
+# v1.10.0 M2 T4: sig DB params koprusu flag'leri
+_W_SIG_PARAMS_ENABLED: bool = True
+_W_SIG_PARAMS_WEIGHT: float = 0.95
 
 
 def _worker_init(
@@ -1216,11 +1224,14 @@ def _worker_init(
     sig_matches: dict[str, Any],
     enriched_structs: list | None,
     reverse_graph: dict[str, list[str]],
+    sig_params_enabled: bool = True,
+    sig_params_weight: float = 0.95,
 ) -> None:
     """ProcessPoolExecutor worker initializer -- buyuk verileri global'e ata."""
     global _W_FUNC_CODES, _W_FUNCTIONS, _W_FUNC_ALGORITHMS
     global _W_FUNC_DOMAINS, _W_SIG_MATCHES, _W_API_PARAM_DB
     global _W_ENRICHED_STRUCTS, _W_REVERSE_GRAPH
+    global _W_SIG_PARAMS_ENABLED, _W_SIG_PARAMS_WEIGHT
 
     _W_FUNC_CODES = func_codes
     _W_FUNCTIONS = functions
@@ -1229,6 +1240,8 @@ def _worker_init(
     _W_SIG_MATCHES = sig_matches
     _W_ENRICHED_STRUCTS = enriched_structs
     _W_REVERSE_GRAPH = reverse_graph
+    _W_SIG_PARAMS_ENABLED = bool(sig_params_enabled)
+    _W_SIG_PARAMS_WEIGHT = float(sig_params_weight)
 
     # API param DB her worker'da lazy-load (pickle-safe olmayabilir)
     try:
@@ -1260,8 +1273,10 @@ def _worker_process_chunk(func_names: list[str]) -> list[SemanticName]:
 
         candidates: list[SemanticName] = []
 
-        # Strateji 0: Signature-based naming
-        if func_name in _W_SIG_MATCHES and _W_API_PARAM_DB is not None:
+        # Strateji 0: Signature-based naming (sig_db_params -> API_PARAM_DB).
+        # v1.10.0 M2 T4: API_PARAM_DB None olsa bile sig_match.params ile ad
+        # uretebiliriz; guard'i gevsettik.
+        if func_name in _W_SIG_MATCHES:
             candidates.extend(
                 _worker_apply_signature_based(func_name, params)
             )
@@ -1341,16 +1356,44 @@ def _worker_apply_signature_based(
     func_name: str,
     params: list[dict],
 ) -> list[SemanticName]:
-    """Worker versiyonu: Strateji 0 -- Signature-based naming."""
+    """Worker versiyonu: Strateji 0 -- Signature-based naming.
+
+    Oncelik:
+      1. sig_match.params (v1.10.0 M2 T4, conf 0.95, source=sig_db_params)
+      2. API_PARAM_DB statik lookup (v1.7.2, conf 0.92, source=signature_based)
+    """
     results: list[SemanticName] = []
     sig_match = _W_SIG_MATCHES.get(func_name)
-    if sig_match is None or _W_API_PARAM_DB is None:
+    if sig_match is None:
         return results
 
     matched_name = getattr(sig_match, "matched_name", "")
     sig_confidence = getattr(sig_match, "confidence", 0.0)
     library = getattr(sig_match, "library", "")
     if not matched_name:
+        return results
+
+    domain = _W_FUNC_DOMAINS.get(func_name, "generic")
+
+    # v1.10.0 M2 T4: Once sig DB payload params'ini dene
+    sig_db_params = getattr(sig_match, "params", None)
+    if _W_SIG_PARAMS_ENABLED and sig_db_params:
+        sd = _names_from_sig_db_params_worker(
+            func_name=func_name,
+            matched_name=matched_name,
+            library=library,
+            sig_confidence=sig_confidence,
+            sig_db_params=sig_db_params,
+            params=params,
+            domain=domain,
+            base_conf=_W_SIG_PARAMS_WEIGHT,
+        )
+        if sd:
+            return sd
+        # Fallback'e dus
+
+    # Fallback: API_PARAM_DB
+    if _W_API_PARAM_DB is None:
         return results
 
     known_params = _W_API_PARAM_DB.get_param_names(matched_name)
@@ -1361,7 +1404,6 @@ def _worker_apply_signature_based(
     if not known_params:
         return results
 
-    domain = _W_FUNC_DOMAINS.get(func_name, "generic")
     base_conf = 0.92  # _BASE_CONFIDENCE["signature_based"]
 
     for param in params:
@@ -1389,6 +1431,68 @@ def _worker_apply_signature_based(
             domain=domain,
         ))
     return results
+
+
+def _names_from_sig_db_params_worker(
+    *,
+    func_name: str,
+    matched_name: str,
+    library: str,
+    sig_confidence: float,
+    sig_db_params: list[dict],
+    params: list[dict],
+    domain: str,
+    base_conf: float,
+) -> list[SemanticName]:
+    """Worker versiyonu: sig_match.params -> SemanticName listesi.
+
+    Sequential ``_names_from_sig_db_params`` ile davranissal birebir. Modul
+    seviyesinde tekrar yazilmasinin sebebi: worker process'lerde self baglam
+    olmadigi icin saf fonksiyon olmali.
+    """
+    out: list[SemanticName] = []
+    by_index: dict[int, str] = {}
+    for seq, sp in enumerate(sig_db_params):
+        if not isinstance(sp, dict):
+            continue
+        idx = sp.get("index")
+        name = sp.get("name", "")
+        if not isinstance(name, str) or not name:
+            continue
+        if isinstance(idx, int) and idx >= 0:
+            by_index[idx] = name
+        else:
+            by_index[seq] = name
+    if not by_index:
+        return out
+
+    for param in params:
+        param_name = param.get("name", "")
+        param_pos = param.get("position", -1)
+        if param_pos < 0 or param_pos not in by_index:
+            continue
+        if not _is_auto_or_generic_name(param_name):
+            continue
+        known_name = by_index[param_pos]
+        if not known_name:
+            continue
+
+        conf = base_conf * max(0.5, min(1.0, sig_confidence))
+        conf = min(0.98, conf)
+
+        out.append(SemanticName(
+            original_name=param_name,
+            semantic_name=_sanitize_c_name(known_name),
+            function_name=func_name,
+            confidence=round(conf, 3),
+            source="sig_db_params",
+            reason=(
+                f"SigDB params: {func_name} = {matched_name} ({library}), "
+                f"param[{param_pos}] = '{known_name}'"
+            ),
+            domain=domain,
+        ))
+    return out
 
 
 def _worker_apply_algorithm_templates(
@@ -1691,7 +1795,8 @@ class SemanticParameterNamer:
     """
 
     _STRATEGY_PRIORITY = {
-        "signature_based": 5,        # v1.7.2: highest priority -- known function params
+        "sig_db_params": 6,          # v1.10.0 M2 T4: sig DB payload params (en yuksek)
+        "signature_based": 5,        # v1.7.2: API_PARAM_DB statik lookup
         "algorithm_template": 4,
         "call_graph_propagation": 3,
         "struct_context": 2,
@@ -1700,7 +1805,8 @@ class SemanticParameterNamer:
     }
 
     _BASE_CONFIDENCE = {
-        "signature_based": 0.92,     # v1.7.2: almost certain -- from known API signatures
+        "sig_db_params": 0.95,       # v1.10.0 M2 T4: sig DB payload params (tavan)
+        "signature_based": 0.92,     # v1.7.2: API_PARAM_DB statik lookup
         "algorithm_template": 0.85,
         "call_graph_propagation": 0.75,
         "struct_context": 0.70,
@@ -1849,6 +1955,15 @@ class SemanticParameterNamer:
                 total_funcs, n_workers, chunk_size,
             )
             try:
+                _br_cfg = getattr(self._config, "binary_reconstruction", None)
+                _sp_enabled = (
+                    getattr(_br_cfg, "sig_params_enabled", True)
+                    if _br_cfg is not None else True
+                )
+                _sp_weight = (
+                    getattr(_br_cfg, "sig_params_source_weight", 0.95)
+                    if _br_cfg is not None else 0.95
+                )
                 with ProcessPoolExecutor(
                     max_workers=n_workers,
                     initializer=_worker_init,
@@ -1860,6 +1975,8 @@ class SemanticParameterNamer:
                         self._sig_matches,
                         enriched_structs,
                         self._reverse_graph,
+                        _sp_enabled,
+                        _sp_weight,
                     ),
                 ) as pool:
                     for chunk_result in pool.map(_worker_process_chunk, chunks):
@@ -2128,24 +2245,66 @@ class SemanticParameterNamer:
         func_name: str,
         params: list[dict],
     ) -> list[SemanticName]:
-        """Signature DB ile eslesen fonksiyonlarin bilinen param isimlerini kopyala.  # v1.7.2
+        """Signature DB ile eslesen fonksiyonlarin bilinen param isimlerini kopyala.
+
+        Iki bilgi kaynagi, oncelik sirasi:
+          1. ``sig_match.params`` (v1.10.0 M2 T4) -- Sig DB payload'inda tasinan
+             orijinal parametre isimleri. Source: ``sig_db_params``, conf 0.95.
+             ``config.binary_reconstruction.sig_params_enabled`` ile kapatilabilir.
+          2. ``APIParamDB`` statik lookup (v1.7.2) -- Kod-embedded dokumantasyon
+             tablosundan bilinen API parametre isimleri. Source: ``signature_based``,
+             conf 0.92. Sig DB payload'inda params yoksa (veya feature flag off)
+             fallback olarak kullanilir.
 
         Ornek: FUN_00401000 -> signature_db ile "sqlite3_open" olarak tanimlandi.
-        APIParamDB'de sqlite3_open(filename, ppDb) biliniyor.
-        -> param_1 = "filename", param_2 = "ppDb"
-
-        Bu strateji en yuksek onceliktedir (conf 0.92) cunku isim kaynagi
-        kesindir -- orijinal kutuphanenin dokumantasyonundan gelmektedir.
+        Sig DB payload'inda ``params=[{"name": "filename", ...}, {"name": "ppDb", ...}]``
+        varsa 0.95 ile kullanilir. Yoksa APIParamDB'de sqlite3_open(filename, ppDb)
+        bilgisine fallback.
         """
         results: list[SemanticName] = []
         sig_match = self._sig_matches.get(func_name)
-        if sig_match is None or self._api_param_db is None:
+        if sig_match is None:
             return results
 
         matched_name = getattr(sig_match, "matched_name", "")
         sig_confidence = getattr(sig_match, "confidence", 0.0)
         library = getattr(sig_match, "library", "")
         if not matched_name:
+            return results
+
+        domain = self._func_domains.get(func_name, "generic")
+
+        # v1.10.0 M2 T4: Once sig DB payload params'ini dene (source: sig_db_params)
+        br_cfg = getattr(self._config, "binary_reconstruction", None)
+        sig_params_enabled = (
+            getattr(br_cfg, "sig_params_enabled", True) if br_cfg is not None else True
+        )
+        sig_params_weight = (
+            getattr(br_cfg, "sig_params_source_weight", 0.95) if br_cfg is not None else 0.95
+        )
+        sig_db_params = getattr(sig_match, "params", None)
+        if sig_params_enabled and sig_db_params:
+            results = self._names_from_sig_db_params(
+                func_name=func_name,
+                matched_name=matched_name,
+                library=library,
+                sig_confidence=sig_confidence,
+                sig_db_params=sig_db_params,
+                params=params,
+                domain=domain,
+                base_conf=sig_params_weight,
+            )
+            if results:
+                logger.debug(
+                    "SigDB params naming: %s -> %s: %d params renamed (conf=%.2f)",
+                    func_name, matched_name, len(results), sig_params_weight,
+                )
+                return results
+            # sig DB payload vardi ama hicbir isim uretilemedi (tum isimler
+            # bos/generic esigini gecemedi) -> API_PARAM_DB'ye fallback
+
+        # Fallback: APIParamDB statik lookup (v1.7.2, source: signature_based)
+        if self._api_param_db is None:
             return results
 
         # APIParamDB'den bilinen parametre isimlerini al
@@ -2158,7 +2317,6 @@ class SemanticParameterNamer:
         if not known_params:
             return results
 
-        domain = self._func_domains.get(func_name, "generic")
         base_conf = self._BASE_CONFIDENCE["signature_based"]
 
         for param in params:
@@ -2194,6 +2352,69 @@ class SemanticParameterNamer:
             )
 
         return results
+
+    def _names_from_sig_db_params(
+        self,
+        *,
+        func_name: str,
+        matched_name: str,
+        library: str,
+        sig_confidence: float,
+        sig_db_params: list[dict],
+        params: list[dict],
+        domain: str,
+        base_conf: float,
+    ) -> list[SemanticName]:
+        """v1.10.0 M2 T4: sig_match.params'i SemanticName listesine cevir.
+
+        Sig DB payload formati: ``[{"name": str, "type": str, "index": int}, ...]``
+        Ghidra parametre listesinin pozisyonu (``param["position"]``) sig DB
+        payload'undaki ``index`` ile eslesir. Index yoksa liste sirasi varsayilir.
+        """
+        out: list[SemanticName] = []
+        # index -> name haritasi kur (None/eksikse liste sirasi)
+        by_index: dict[int, str] = {}
+        for seq, sp in enumerate(sig_db_params):
+            if not isinstance(sp, dict):
+                continue
+            idx = sp.get("index")
+            name = sp.get("name", "")
+            if not isinstance(name, str) or not name:
+                continue
+            if isinstance(idx, int) and idx >= 0:
+                by_index[idx] = name
+            else:
+                by_index[seq] = name
+        if not by_index:
+            return out
+
+        for param in params:
+            param_name = param.get("name", "")
+            param_pos = param.get("position", -1)
+            if param_pos < 0 or param_pos not in by_index:
+                continue
+            if not _is_auto_or_generic_name(param_name):
+                continue
+            known_name = by_index[param_pos]
+            if not known_name:
+                continue
+
+            conf = base_conf * max(0.5, min(1.0, sig_confidence))
+            conf = min(0.98, conf)
+
+            out.append(SemanticName(
+                original_name=param_name,
+                semantic_name=_sanitize_c_name(known_name),
+                function_name=func_name,
+                confidence=round(conf, 3),
+                source="sig_db_params",
+                reason=(
+                    f"SigDB params: {func_name} = {matched_name} ({library}), "
+                    f"param[{param_pos}] = '{known_name}'"
+                ),
+                domain=domain,
+            ))
+        return out
 
     # ------------------------------------------------------------------
     # Strateji 1: Algoritma Sablon Eslestirme

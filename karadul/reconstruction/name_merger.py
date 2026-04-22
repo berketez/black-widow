@@ -42,21 +42,12 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from karadul.config import NameMergerConfig
+# v1.10.0 H8 fix: NamingCandidate duplicate'ini kaldir, tek kaynak olarak
+# signature_fusion'daki tanimi kullan. Her iki dataclass da ayni alanlara
+# sahipti (name, confidence, source, reason) -- ikinci tanim dead code idi.
+from karadul.reconstruction.recovery_layers.signature_fusion import NamingCandidate
 
 logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------------
-# Veri yapilari
-# ---------------------------------------------------------------------------
-
-@dataclass
-class NamingCandidate:
-    """Tek bir kaynaktan gelen isim onerisi."""
-    name: str
-    confidence: float
-    source: str  # "c_namer", "binary_extractor", "string_intel", "signature_db", "source_matcher", "llm4decompile", ...
-    reason: str = ""
 
 
 @dataclass
@@ -116,21 +107,41 @@ def bayesian_merge(
     confidences: list[float],
     sources: list[str],
     cfg: NameMergerConfig,
+    weights_override: list[float] | None = None,
 ) -> float:
-    """Korelasyon-aware Bayesian birlestirme.
+    """Korelasyon-aware, heuristik weighted logit fusion (KALIBRE EDILMEMIS).
 
-    Log-odds formunda:
-        log_odds = log(prior/(1-prior))
-                   + SUM_i  w_i * log(conf_i / (1 - conf_i))
+    NOT: Bu fonksiyon **heuristik** weighted log-odds birlesimidir, **kalibre
+    edilmis bir posterior olasilik DEGILDIR**. Platt/isotonic kalibrasyon
+    ``karadul.computation.signature_fusion`` altinda ayrica yapilir.
 
-    w_i kaynak bazli agirlik -- korelasyonu absorbe eder.
-    w_i = 1 -> tamamen bagimsiz kaynak.
-    w_i < 1 -> diger kaynaklarla korelasyonlu.
+    Formul (sigmoid / inverse-logit):
+
+        posterior = sigmoid( logit(prior) + SUM_i  w_i * logit(p_i) )
+
+        logit(x) = log(x / (1 - x))
+        sigmoid(y) = 1 / (1 + exp(-y))
+
+    Burada:
+      - ``logit(prior)`` baseline terimidir. ``prior = cfg.multi_source_prior``.
+        Varsayilan 0.5 ise logit(0.5) = 0, yani prior baslangicta notr.
+      - ``w_i`` kaynak bazli agirlik (``cfg.source_weights`` + opsiyonel
+        ``weights_override`` carpani). ``config.py:170`` araligindan gelir.
+      - Korelasyon duzeltmesi heuristik **shrinkage** olarak uygulanir:
+        ``w_i <= 1.0`` ise bagimsiz-olmayan kaynaklardan gelen bilgi
+        kazanci azaltilir (LR^w). ``w_i = 1`` tamamen bagimsiz varsayar,
+        ``w_i < 1`` diger kaynaklarla korelasyonlu varsayar. Bu formel
+        bir Bayes copula DEGIL, pratik bir damping'dir.
 
     Args:
         confidences: Her adayin confidence degeri (0-1 arasi)
         sources: Her adayin kaynak ismi
         cfg: NameMergerConfig (weights, thresholds)
+        weights_override: (v1.10.0 C4 fix) Opsiyonel ek weight carpani.
+            Her kaynak icin w_i = cfg.source_weights[source] * weights_override[i].
+            None ise sadece cfg.source_weights kullanilir. Penalty'ler
+            (partial match vb.) burada enjekte edilmeli -- confidence'a DEGIL
+            (aksi halde log-odds space'de yanlis damping olur).
 
     Returns:
         Birlestirilmis posterior olasilik [min_confidence, max_confidence]
@@ -138,13 +149,21 @@ def bayesian_merge(
     if not confidences:
         return cfg.multi_source_prior
 
+    if weights_override is not None and len(weights_override) != len(confidences):
+        raise ValueError(
+            f"weights_override uzunlugu ({len(weights_override)}) "
+            f"confidences uzunlugu ({len(confidences)}) ile ayni olmali."
+        )
+
     # Prior: uniform (0.5) -> log_odds = 0
     log_odds = math.log(cfg.multi_source_prior / (1.0 - cfg.multi_source_prior))
 
-    for conf, source in zip(confidences, sources):
+    for idx, (conf, source) in enumerate(zip(confidences, sources)):
         # Confidence'i [0.01, 0.99] araligina klipleyelim ki log(0) patlamamsin
         conf = max(cfg.min_confidence, min(cfg.max_confidence, conf))
         w = cfg.source_weights.get(source, cfg.default_weight)
+        if weights_override is not None:
+            w *= weights_override[idx]
 
         # Log-likelihood ratio
         lr = conf / (1.0 - conf)
@@ -404,14 +423,18 @@ class NameMerger:
                     best_candidate = max(shorter_group, key=lambda c: c.confidence)
                     sources = list(set(c.source for c in all_in_pair))
 
-                    # Partial match penalty: confidence'lari overlap oraniyla carpilir
+                    # Partial match penalty: v1.10.0 C4 fix -- penalty confidence
+                    # yerine Bayesian WEIGHT'e uygulanir. Aksi halde log-odds
+                    # uzayinda yanlis damping olusur (confidence*penalty ayni
+                    # posterior'a esit degildir weight*penalty ile).
                     # Tam substring (overlap=1.0) -> az penalty
                     # Kismi overlap (overlap=0.5) -> cok penalty
                     penalty = 0.7 + 0.3 * overlap  # 0.85 - 1.0 arasi
                     conf = bayesian_merge(
-                        [c.confidence * penalty for c in all_in_pair],
+                        [c.confidence for c in all_in_pair],
                         [c.source for c in all_in_pair],
                         self._cfg,
+                        weights_override=[penalty] * len(all_in_pair),
                     )
 
                     best_match = MergedName(

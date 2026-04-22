@@ -9,6 +9,8 @@ from typing import Optional
 
 import yaml
 
+from karadul.computation.config import ComputationConfig
+
 
 import logging
 
@@ -184,12 +186,64 @@ class NameMergerConfig:
         "cross_binary_transfer": 0.80,         # CFG fingerprint cache -- cross-binary eslestirme
         "callee_profile": 0.75,                # Callee-profile propagation -- domain-based inference
         "capa_capability": 0.85,               # CAPA capability detection -- Mandiant rule-based
+        # v1.10.0 C1 fix: Semantic namer kaynaklarini Bayesian weight tablosuna ekle.
+        # Bu kaynaklar daha once tanimsizdi -> default_weight=0.7 aliyorlardi (yanlis).
+        "sig_db_params": 1.0,            # FLIRT/BSim sig DB payload params -- tam guven
+        "signature_based": 0.95,         # API_PARAM_DB statik lookup (libc/POSIX)
+        "algorithm_template": 0.85,      # Algoritma template match (crypto/hash vb.)
+        "call_graph_propagation": 0.75,  # Call graph hop-based propagation
+        "struct_context": 0.70,          # Struct field context isim cikarimi
+        "call_context": 0.65,            # Callee-based inference
+        "type_heuristic": 0.55,          # Tip ve kullanim oruntusu
+        # v1.10.0 M4 entegrasyon: computation paketleri NameMerger evidence source'u
+        "cfg_iso_template": 0.85,            # CFG hibrit iso template eslemesi
+        "computation_fusion": 0.90,          # Log-odds ensemble fusion (byte+CFG+proto)
+        "computation_struct_recovery": 0.80, # MaxSMT struct layout kurtarma
     })
     default_weight: float = 0.7     # Bilinmeyen kaynak icin fallback
     unk_threshold: float = 0.30     # Altinda isim atanmaz (UNK)
     max_confidence: float = 0.99    # Ust sinir (asla %100 deme)
     min_confidence: float = 0.01    # Alt sinir (asla %0 deme)
     multi_source_prior: float = 0.5 # Baslangic prior (uniform)
+
+    @classmethod
+    def load_tuned_weights(cls, path: Path) -> "NameMergerConfig":
+        """`scripts/tune_merger_weights.py` ciktisindan weight'leri yukle.
+
+        v1.10.0 Batch 5A: Tuning JSON'u source_weights'i override eder.
+        Diger alanlar varsayilanlari korur. Dosya yoksa/bozuksa varsayilan
+        config dondurulur + uyari log'lanir.
+
+        Args:
+            path: `sigs/tuned_weights.json` yolu.
+
+        Returns:
+            NameMergerConfig instance (tuned veya default fallback).
+        """
+        import json as _json
+        import logging as _logging
+        _log = _logging.getLogger(__name__)
+        cfg = cls()
+        p = Path(path) if not isinstance(path, Path) else path
+        if not p.exists():
+            _log.warning("tuned_weights.json bulunamadi: %s", p)
+            return cfg
+        try:
+            data = _json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, _json.JSONDecodeError) as exc:
+            _log.error("tuned_weights.json parse hatasi: %s", exc)
+            return cfg
+        weights = data.get("weights")
+        if not isinstance(weights, dict):
+            _log.error("tuned_weights.json formatsız (weights key yok)")
+            return cfg
+        # Mevcut source_weights'i overlay et
+        updated = dict(cfg.source_weights)
+        for k, v in weights.items():
+            if isinstance(v, (int, float)) and 0.0 <= v <= 1.0:
+                updated[k] = float(v)
+        cfg.source_weights = updated
+        return cfg
 
 
 @dataclass
@@ -256,10 +310,32 @@ class BinaryReconstructionConfig:
     # v1.7.4: Pipeline feedback loop -- type recovery <-> naming iterasyonu
     pipeline_iterations: int = 3           # Max iterasyon sayisi (1 = eski davranis, loop yok)
     pipeline_convergence_threshold: float = 0.01  # Yeni isim orani < %1 ise dur
+    # v1.10.0 M1 T3.4: per-iteration timeout (guvenlik agi)
+    pipeline_iteration_timeout: float = 600.0  # Saniye, iter bu kadardan uzun surerse sonrakiler atlanir
+    # v1.10.0 M2 T6: minimum yeni isim esigi. Bu altinda ise converge.
+    # 1 default -> hic yeni isim yoksa converge kabul et (yoksa max_iter'a kadar devam).
+    pipeline_min_new_names_per_iter: int = 1
     # v1.8.6: CAPA capability detection -- Mandiant CAPA ile fonksiyon capability tespiti
     enable_capa: bool = True                # CAPA scan aktif mi (flare-capa yoksa sessiz atla)
     capa_rules_path: str = ""               # Bos = ~/.cache/karadul/capa-rules/ (default)
     capa_timeout: int = 600                 # CAPA scan timeout (saniye)
+    # v1.10.0 M2 T4: SignatureDB params -> semantic_namer koprusu.
+    # SignatureMatch.params None degilse (sig DB'de orijinal param isimleri var),
+    # API_PARAM_DB statik lookup'tan ONCE denenir ve daha yuksek confidence ile yazilir.
+    # Default True (bug fix niteliginde, feature flag yalnizca acil geri cikis icin).
+    sig_params_enabled: bool = True
+    sig_params_source_weight: float = 0.95  # API_PARAM_DB (0.92) ve digerlerinden yuksek
+    # v1.10.0 M3 T8: TypeForge struct reconstruction (opsiyonel, harici arac).
+    # TypeForge kurulu degilse ya da flag off ise pipeline aynen devam eder.
+    # Graceful: kurulum eksikse sessiz atlama, hata fiyasko degil.
+    enable_typeforge: bool = False
+    typeforge_path: str | None = None        # Bos -> PATH'te 'typeforge' aranir
+    typeforge_timeout: float = 600.0         # Subprocess timeout (saniye)
+    typeforge_min_confidence: float = 0.85   # Merge icin minimum guven esigi
+    # v1.10.0 M3 T9: C++ RTTI/vtable reconstruction (Itanium ABI, single inheritance)
+    enable_rtti_recovery: bool = False       # Default kapali, opt-in feature
+    rtti_abi: str = "itanium"                # "itanium" | "msvc" (msvc v1.10.1'de)
+    rtti_max_vtable_entries: int = 64        # Vtable basina max okunacak method slot
 
 
 @dataclass
@@ -323,7 +399,11 @@ class ComputationRecoveryConfig:
     # --- Katman toggle'lari ---
     enable_constraint_solver: bool = True       # Layer 1: Z3/heuristic struct constraint
     enable_cfg_fingerprint: bool = True         # Layer 2: CFG template matching
-    enable_signature_fusion: bool = True        # Layer 3: Dempster-Shafer fusion
+    # v1.10.0 C2+C3: Dempster-Shafer fusion DEPRECATED -- double-counting
+    # riski (codex teyit). Log-odds ensemble + Platt calibration icin
+    # ``ComputationConfig.enable_computation_fusion`` kullanilmali.
+    # Default True -> False yapildi; v1.11.0'da tamamen kaldirilacak.
+    enable_signature_fusion: bool = False        # DEPRECATED: v1.11.0'da kaldirilacak. Yerine ComputationConfig.enable_computation_fusion kullan.
     enable_formula_extraction: bool = True      # Layer 4: C -> math formula
     # --- Threshold'lar ---
     constraint_min_fields: int = 2              # Struct olarak kabul icin min field sayisi
@@ -343,6 +423,164 @@ class ComputationRecoveryConfig:
     go_specific_patterns: bool = True           # Go dilinin ozel pattern'lerini kullan
     # --- Performans ---
     max_functions_per_layer: int = 0            # 0 = limitsiz
+    # --- CFG Isomorphism (v1.10.0 M4 beta) ---
+    # Hibrit matching: WL fingerprint + LSH -> VF2 rerank -> anchor validation.
+    # Codex uyarisi: tek algoritma %60 tavan, hibrit sart.
+    # v1.10.0: Berke karari "ship it" -- default AKTIF. Kapatmak icin
+    # cli.py --no-cfg-iso veya YAML computation_recovery.enable_cfg_iso: false.
+    enable_cfg_iso: bool = True                 # v1.10.0'dan itibaren default AKTIF
+    cfg_iso_num_wl_iterations: int = 3          # WL iterasyon sayisi
+    cfg_iso_lsh_num_hashes: int = 128           # MinHash imza boyutu
+    # v1.10.0 Batch 6A: band_size 4 -> 8 (Codex audit). num_bands=128/band_size,
+    # threshold t = (1/num_bands)^(1/band_size). 4 -> t~0.50 (cok gevsek, s=0.5'te
+    # %87 candidate); 8 -> t~0.71 (orta sert); 16 -> t~0.84 (cok sert).
+    # Siki sinif: s=0.71'in altinda candidate oranini dusurerek false positive'i
+    # azaltir; VF2 rerank listesi daha anlamli olur.
+    cfg_iso_lsh_band_size: int = 8              # LSH band boyutu
+    cfg_iso_top_k_candidates: int = 10          # LSH top-K aday sayisi
+    cfg_iso_min_confidence: float = 0.7         # Final min confidence
+    cfg_iso_anchor_required_for_small_cfg: bool = True  # Kucuk CFG ambiguous guard
+    cfg_iso_small_cfg_threshold: int = 4        # Altinda "kucuk" CFG sayilir
+    cfg_iso_small_cfg_penalty: float = 0.4      # Kucuk CFG + anchor yok cezasi
+    # v1.10.0 C1 (perf fix): VF2 NP-complete; buyuk CFG'lerde saniyeler
+    # surebilir. Her VF2 match cagrisi icin saniye cinsi timeout. 0 -> disabled.
+    # v1.10.0 Batch 6A: default 5s -> 30s (Codex audit). Artik hard-stop
+    # multiprocessing ile korumaliyiz, timeout bitince CPU geri aliniyor.
+    # Node cap (500) ile buyuk CFG'ler zaten VF2 atlar; 30s icin bile
+    # pathological graflarda takilma riski yok.
+    cfg_iso_vf2_timeout_s: float = 30.0         # Saniye cinsinden VF2 timeout
+    cfg_iso_vf2_node_cap: int = 500             # VF2 max node sayisi; ustunde atla
+
+
+@dataclass
+class PipelineConfig:
+    """v1.10.0: Step registry pipeline konfigurasyonu.
+
+    use_step_registry=False default — eski stages.py monolith'i kullanilir.
+    True ise yeni karadul.pipeline paketinden step'ler calisir.
+    """
+    use_step_registry: bool = False
+
+
+@dataclass
+class PerfConfig:
+    """v1.10.0: Performans / bellek optimizasyonu ayarlari.
+
+    LMDB-backed SignatureDB:
+      use_lmdb_sigdb=False default -- eski dict-based SignatureDB kullanilir (~3GB RAM).
+      True ise karadul.analyzers.sigdb_lmdb.LMDBSignatureDB kullanilir (~250MB RAM).
+      Gecis icin: scripts/build_sig_lmdb.py ile LMDB olusturulmali.
+
+    lmdb_l1_cache_size: Sicak sembol lookup icin in-process LRU cache boyutu.
+    sig_lmdb_path: None ise ~/.karadul/signatures.lmdb kullanilir.
+
+    Naming ThreadPool paralelligi (M2 T2):
+      parallel_naming=False default -- eski ProcessPool yolu korunur.
+      True ise karadul.naming.ParallelNamingRunner kullanilir (file-level
+      ThreadPool, 3-5x hiz hedefi).
+
+    naming_max_workers: None -> CPU_PERF_CORES kullanilir.
+    naming_chunk_size: Her thread'e verilen c_file sayisi (cache-friendly
+      256 varsayilan).
+    naming_chunk_timeout: Tek chunk'in max calisma suresi (saniye). Asilirsa
+      chunk basarisiz isaretlenir ve errors listesine eklenir.
+    """
+    # v1.10.0 M2 (perf fix, KALIR KARAR): Default False biraktik. LMDB DB
+    # mevcut test fixture'larindan FARKLI veri tasiyor (Ornek: `_dispatch_once`
+    # LMDB'de libSystem, dict'te libdispatch). Testleri bozmadan switch yapmak
+    # icin once LMDB rebuild gerekir. Opt-in olarak kaliyor; kullanici
+    # kendi DB'sini insa edip flag'i True yapmali.
+    use_lmdb_sigdb: bool = False
+    sig_lmdb_path: Optional[Path] = None
+    lmdb_l1_cache_size: int = 8192
+    parallel_naming: bool = False
+    naming_max_workers: Optional[int] = None
+    naming_chunk_size: int = 256
+    naming_chunk_timeout: float = 60.0
+
+
+@dataclass
+class SecurityConfig:
+    """v1.10.0 Fix Sprint + Batch 5B: Guvenlik sinirlari.
+
+    max_archive_extract_size: ZIP/TAR bomb koruma sinir (byte). Arsiv
+        icindeki uncompressed_size toplami bu degeri asarsa extraction
+        reddedilir. Default 2GB.
+
+    max_download_size: _download_file chunked read ust siniri (byte).
+        Response bu degeri asarsa baglanti kesilir. Default 500MB.
+
+    allowed_download_schemes: _download_file tarafindan kabul edilen
+        URL scheme'leri (case-insensitive). "http" default DEGIL --
+        sadece TLS.
+
+    restrict_download_redirects_to_same_host: True ise urllib redirect'te
+        ilk URL'nin hostname'inden farkli bir host'a yonlendirme
+        reddedilir (Host header SSRF koruma).
+
+    v1.10.0 Batch 5B (Red Team 2. tur):
+    max_jar_attr_len_bytes: .class dosyasi attribute_info.attribute_length
+        (u4) ust siniri. 4GB allocation DoS koruma.
+
+    max_binary_size_bytes: analiz edilecek binary dosyanin max boyutu.
+        packed_binary full-read() 10GB OOM koruma.
+
+    max_decompress_bytes: Streaming zlib/gzip decompress ust siniri. Tek
+        bir payload'un uncompressed hali bu degeri gecemez.
+
+    max_z3_access_count: struct constraint solver'a verilen access listesi
+        uzunlugu. Z3 exponential timeout koruma.
+
+    max_flirt_entries: FLIRT signature DB'ye yukleme esnasinda tek dosya
+        basi kabul edilen signature sayisi. Malicious .pat (1M entry)
+        memory koruma.
+
+    max_flirt_hex_length: .pat satirindaki hex pattern string uzunlugu.
+        Regex CPU DoS.
+
+    pyinstaller_reserved_names: Windows reserved dosya isimleri; extraction
+        esnasinda bu isimlere denk gelen entry'ler reddedilir (Windows
+        host uzerinde device acilmasini onler).
+    """
+    max_archive_extract_size: int = 2 * 1024 ** 3         # 2GB
+    max_download_size: int = 500 * 1024 ** 2              # 500MB
+    allowed_download_schemes: tuple[str, ...] = ("https",)
+    restrict_download_redirects_to_same_host: bool = True
+    # v1.10.0 Batch 5B
+    max_jar_attr_len_bytes: int = 10 * 1024 * 1024        # 10MB
+    max_binary_size_bytes: int = 500 * 1024 * 1024        # 500MB
+    max_decompress_bytes: int = 100 * 1024 * 1024         # 100MB
+    max_z3_access_count: int = 10_000
+    max_flirt_entries: int = 100_000
+    max_flirt_hex_length: int = 512
+    max_otool_output_bytes: int = 64 * 1024 * 1024        # 64MB
+    max_capa_stderr_bytes: int = 1 * 1024 * 1024          # 1MB
+    # Windows reserved names (extraction reject) -- CVE COM1.txt vs.
+    pyinstaller_reserved_names: tuple[str, ...] = (
+        "CON", "PRN", "AUX", "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+    )
+
+
+@dataclass
+class DecompilersConfig:
+    """v1.10.0 M2 T10: Decompiler backend secimi (Ghidra lock-in kirma).
+
+    primary_backend: "ghidra" (default) | "angr". angr opsiyonel extra;
+        kurulu degilse runtime'da `is_available()` False doner ve calistirma
+        RuntimeError atar. Ghidra hicbir durumda kaldirilmaz -- default path.
+
+    enable_parallel_decomp: True ise primary + secondary backend paralel
+        calistirilir ve sonuclar karsilastirilabilir (ileriki sprint; bu
+        version'da hala tek backend cagirilir, flag yer tutucudur).
+
+    secondary_backend: Paralel mod icin ikinci backend. None ise paralel
+        kapali.
+    """
+    primary_backend: str = "ghidra"
+    enable_parallel_decomp: bool = False
+    secondary_backend: Optional[str] = None
 
 
 @dataclass
@@ -364,6 +602,12 @@ class Config:
     computation_recovery: ComputationRecoveryConfig = field(
         default_factory=ComputationRecoveryConfig,
     )
+    # v1.4.0.alpha: LLM'siz hesaplama bazli kurtarma (MaxSMT struct vb.).
+    computation: ComputationConfig = field(default_factory=ComputationConfig)
+    pipeline: PipelineConfig = field(default_factory=PipelineConfig)
+    perf: PerfConfig = field(default_factory=PerfConfig)
+    decompilers: DecompilersConfig = field(default_factory=DecompilersConfig)
+    security: SecurityConfig = field(default_factory=SecurityConfig)
     project_root: Path = field(default_factory=lambda: Path.cwd())
     scripts_dir: Path = field(default_factory=lambda: Path(__file__).parent.parent / "scripts")
     ghidra_scripts_dir: Path = field(default_factory=lambda: Path(__file__).parent / "ghidra" / "scripts")
@@ -437,13 +681,53 @@ class Config:
             for k, v in data["computation_recovery"].items():
                 if hasattr(cfg.computation_recovery, k):
                     setattr(cfg.computation_recovery, k, v)
+        if "computation" in data:
+            for k, v in data["computation"].items():
+                if hasattr(cfg.computation, k):
+                    setattr(cfg.computation, k, v)
+        if "pipeline" in data:
+            for k, v in data["pipeline"].items():
+                if hasattr(cfg.pipeline, k):
+                    setattr(cfg.pipeline, k, v)
+        if "perf" in data:
+            for k, v in data["perf"].items():
+                if hasattr(cfg.perf, k):
+                    if k == "sig_lmdb_path" and v is not None:
+                        setattr(cfg.perf, k, Path(v))
+                    else:
+                        setattr(cfg.perf, k, v)
+        if "decompilers" in data:
+            for k, v in data["decompilers"].items():
+                if hasattr(cfg.decompilers, k):
+                    setattr(cfg.decompilers, k, v)
+        if "security" in data:
+            for k, v in data["security"].items():
+                if hasattr(cfg.security, k):
+                    if k in ("allowed_download_schemes", "pyinstaller_reserved_names") and isinstance(v, list):
+                        setattr(cfg.security, k, tuple(v))
+                    else:
+                        setattr(cfg.security, k, v)
         return cfg
 
     def validate(self) -> list[str]:
         """Kritik araçların varlığını kontrol et."""
-        warnings = []
+        warnings_list = []
         if not self.tools.ghidra_headless.exists():
-            warnings.append(f"Ghidra analyzeHeadless bulunamadı: {self.tools.ghidra_headless}")
+            warnings_list.append(f"Ghidra analyzeHeadless bulunamadı: {self.tools.ghidra_headless}")
         if not self.tools.synchrony.exists():
-            warnings.append(f"synchrony bulunamadı: {self.tools.synchrony}")
-        return warnings
+            warnings_list.append(f"synchrony bulunamadı: {self.tools.synchrony}")
+        # v1.10.0 Fix-10: Config bridge / double-counting guard.
+        # Eski D-S fusion + yeni log-odds fusion AYNI ANDA aktif olursa kanit
+        # iki kere sayiliyor (codex teyit: belief mass double-counting).
+        # Fail-loud: uyari listesine ekle, engine tarafi da DeprecationWarning atar.
+        if (
+            self.computation_recovery.enable_signature_fusion
+            and self.computation.enable_computation_fusion
+        ):
+            warnings_list.append(
+                "ComputationRecoveryConfig.enable_signature_fusion (D-S, "
+                "DEPRECATED) ve ComputationConfig.enable_computation_fusion "
+                "(log-odds) AYNI ANDA aktif -- double-counting riski. "
+                "D-S'yi kapatin (v1.11.0'da otomatik kaldirilacak)."
+            )
+        return warnings_list

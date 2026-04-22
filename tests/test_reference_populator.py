@@ -502,7 +502,13 @@ class TestReferencePopulatorCompile:
             assert not success
 
     def test_run_shell_step_success(self):
-        """Basarili shell komutu."""
+        """Basarili shell komutu.
+
+        v1.10.0 Fix Sprint HIGH-3: 'echo' whitelist'ten cikarildi
+        (CWE-78 icin _ALLOWED_SHELL_CMDS: make/cmake/ar/ranlib/strip/ln/
+        ./configure/./Configure). Testi whitelist'teki 'make --version'
+        ile calistiriyoruz (macOS'ta stock GNU Make, returncode=0 doner).
+        """
         with tempfile.TemporaryDirectory() as tmpdir:
             cache_dir = Path(tmpdir) / "cache"
             pop = ReferencePopulator(cache_dir=cache_dir)
@@ -512,8 +518,8 @@ class TestReferencePopulatorCompile:
 
             step = {
                 "type": "shell",
-                "command": "echo",
-                "args": ["hello"],
+                "command": "make",
+                "args": ["--version"],
             }
 
             success = pop._run_shell_step(build_dir, step)

@@ -39,7 +39,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
+from karadul.core.safe_subprocess import resolve_tool
+
 logger = logging.getLogger(__name__)
+
+# v1.10.0 Batch 5B MED-15/16: FLIRT DoS koruma sabitleri.
+# Bu degerler modul sabit -- caller istenirse monkey-patch edebilir.
+# SecurityConfig ile tutarli:
+#   max_flirt_entries=100_000
+#   max_flirt_hex_length=512
+_MAX_FLIRT_ENTRIES = 100_000
+_MAX_FLIRT_HEX_LENGTH = 512
 
 # .pat satir formati regex:
 # HEXBYTES(.. wildcard iceren) CRC16 SIZE TOTAL :OFFSET NAME [REFERENCED...]
@@ -51,7 +61,12 @@ _PAT_LINE_RE = re.compile(
     r"^"
     r"(?P<hexbytes>[0-9A-Fa-f.]+)"   # Hex bytes (.. = wildcard)
     r"\s+"
-    r"(?P<crc16>[0-9A-Fa-f]{2,4})"   # CRC16 (2 veya 4 hex digit)
+    # v1.10.0 H7 (revize, Batch 3C): FLIRT .pat formatinda bu alan aslinda
+    # "CRC16 alanin uzunlugu" (CRC'nin hesaplandigi byte sayisi, 0-255) ya
+    # da dogrudan CRC16 degeri olabilir. IDA sigmake tool'u cogu zaman 2
+    # hex digit (1 byte) olarak yazar (ornek: "0C", "AB"). Eski "{4}" kisiti
+    # gecerli .pat satirlarini None'a dusuruyordu. 2 VEYA 4 digit kabul et.
+    r"(?P<crc16>[0-9A-Fa-f]{2,4})"   # CRC16 alani (2 veya 4 hex digit)
     r"\s+"
     r"(?P<size>[0-9A-Fa-f]{4})"      # Fonksiyon boyutu (hex)
     r"\s+"
@@ -111,21 +126,27 @@ class FLIRTParser:
         self._detect_tools()
 
     def _detect_tools(self) -> None:
-        """nm ve otool araclarinin varligi kontrol et."""
+        """nm ve otool araclarinin varligi kontrol et.
+
+        v1.10.0 Batch 5B CRITICAL-2: resolve_tool ile PATH hijack koruma.
+        shutil.which `$PATH` siralamasina baglidir; attacker
+        ``~/.local/bin/nm`` yerlestirirse hijack edilir. resolve_tool
+        yalnizca OS-kurulu whitelist path'lerden arac secer.
+        """
         # macOS system nm tercih (Anaconda nm dylib okuyamayabilir)
         for candidate in ["/usr/bin/nm", "/Library/Developer/CommandLineTools/usr/bin/nm"]:
             if Path(candidate).is_file():
                 self._nm_path = candidate
                 break
         if not self._nm_path:
-            self._nm_path = shutil.which("nm")
+            self._nm_path = resolve_tool("nm")
 
         for candidate in ["/usr/bin/otool"]:
             if Path(candidate).is_file():
                 self._otool_path = candidate
                 break
         if not self._otool_path:
-            self._otool_path = shutil.which("otool")
+            self._otool_path = resolve_tool("otool")
 
     # ------------------------------------------------------------------
     # .pat dosyasi parsing
@@ -162,7 +183,15 @@ class FLIRTParser:
             logger.error("PAT dosyasi okunamadi: %s -- %s", pat_path, e)
             return []
 
+        # v1.10.0 Batch 5B MED-15: entry sayisi ust siniri.
+        # Malicious .pat 100M satir olabilir -> RAM patlar.
         for line_no, line in enumerate(content.splitlines(), 1):
+            if len(signatures) >= _MAX_FLIRT_ENTRIES:
+                logger.warning(
+                    "FLIRT entry limit %d asildi (%s), geri kalan atlandi",
+                    _MAX_FLIRT_ENTRIES, pat_path.name,
+                )
+                break
             line = line.strip()
             # Bos satir, yorum, separator
             if not line or line.startswith("#") or line.startswith("---"):
@@ -188,11 +217,26 @@ class FLIRTParser:
         Returns:
             FLIRTSignature veya None (parse edilemezse).
         """
+        # v1.10.0 Batch 5B MED-16: hex pattern CPU DoS reddedici.
+        # _PAT_LINE_RE icindeki `[0-9A-Fa-f.]+` quantifier O(n) ama satir
+        # basi 100KB olsa regex match yine uzun surebilir. On-fly length
+        # check hem regex'i hem sonraki hex->bytes donusumunu kisaltir.
+        if len(line) > _MAX_FLIRT_HEX_LENGTH * 2:
+            # Hex + meta fields toplami, guvenli ust sinir
+            logger.debug("FLIRT .pat line cok uzun reddedildi: len=%d", len(line))
+            return None
+
         m = _PAT_LINE_RE.match(line)
         if not m:
             return None
 
         hex_str = m.group("hexbytes")
+        if len(hex_str) > _MAX_FLIRT_HEX_LENGTH:
+            logger.warning(
+                "FLIRT hex pattern %d > max %d, reddedildi",
+                len(hex_str), _MAX_FLIRT_HEX_LENGTH,
+            )
+            return None
         crc16 = int(m.group("crc16"), 16)
         size = int(m.group("size"), 16)
         offset = int(m.group("offset"), 16)

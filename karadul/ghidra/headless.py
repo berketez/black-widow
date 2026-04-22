@@ -2035,8 +2035,14 @@ class GhidraHeadless:
             for script in scripts:
                 cmd.extend(["-postScript", str(script)])
 
+        # v1.10.0 Batch 5B HIGH-10: Ghidra scripts'i icinde path traversal
+        # koruma. KARADUL_WORKSPACE_ROOT env'i script'lere hangi dizinin
+        # disina cikilamayacagini soyler; script'ler get_output_dir icinde
+        # Path.relative_to(workspace_root) check yapar.
+        workspace_root = str(Path(output_dir).resolve().parent)
         env = {
             "KARADUL_OUTPUT": str(output_dir),
+            "KARADUL_WORKSPACE_ROOT": workspace_root,
             "_JAVA_OPTIONS": (
                 f"-Xmx{self.config.analysis.ghidra_max_heap_mb}m "
                 f"-XX:+UseG1GC -XX:ParallelGCThreads={CPU_PERF_CORES} "

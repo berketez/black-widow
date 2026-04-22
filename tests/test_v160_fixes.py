@@ -326,14 +326,14 @@ class TestDotallRegexSafety:
 
     def test_constraint_solver_chunk_based_go_detection(self) -> None:
         """Go map pattern buyuk inputta da calisir."""
-        from karadul.reconstruction.computation.constraint_solver import _GO_MAP_RE
+        from karadul.reconstruction.recovery_layers.constraint_solver import _GO_MAP_RE
         code = "runtime.makemap(typ, 8)"
         match = _GO_MAP_RE.search(code)
         assert match is not None
 
     def test_constraint_solver_linked_list_chunk_safe(self) -> None:
         """Linked list DOTALL regex 5KB chunk icinde calisir."""
-        from karadul.reconstruction.computation.constraint_solver import (
+        from karadul.reconstruction.recovery_layers.constraint_solver import (
             _LINKED_LIST_LOOP_RE, _iter_loop_chunks,
         )
         # Kucuk input: dogrudan match
@@ -350,7 +350,7 @@ class TestDotallRegexSafety:
 
     def test_formula_extractor_chunk_based_dotall(self) -> None:
         """v1.8.0: formula_extractor _safe_dotall_search chunk-bazli calisir."""
-        from karadul.reconstruction.computation.formula_extractor import (
+        from karadul.reconstruction.recovery_layers.formula_extractor import (
             _safe_dotall_search, ACCUMULATOR_RE,
         )
         # Kucuk inputta esleme calismali
@@ -361,7 +361,7 @@ class TestDotallRegexSafety:
     def test_formula_extractor_handles_large_safely(self) -> None:
         """v1.8.0: Buyuk inputta chunk-bazli arama timeout yapmaz."""
         import time
-        from karadul.reconstruction.computation.formula_extractor import (
+        from karadul.reconstruction.recovery_layers.formula_extractor import (
             _safe_dotall_search, MATRIX_MUL_RE,
         )
         # 100K input -- artik atlanmak yerine chunk-bazli islenir

@@ -401,13 +401,22 @@ class TestSourceResolver:
 
     @pytest.mark.network
     def test_resolve_scoped_package(self):
-        """Scoped paket (@org/name) cekme."""
+        """Scoped paket (@org/name) cekme.
+
+        @types/node gercek bir scoped paket. resolve() ya ResolvedSource
+        dondurmeli (kaynak cekilebildi) ya da None (ag yok/404) — ama
+        exception atmamali. Scoped paket pattern'inin cokmemesi garanti.
+        """
         resolver = SourceResolver()
         source = resolver.resolve("@types/node")
 
-        # @types/node bir .d.ts paketi, kaynak kodu olmayabilir ama package.json var
-        # Onemli olan 404 vermemesi
-        # (bu paket typings iceriyor, main "index.d.ts" olabilir)
+        # GERCEK ASSERTION: exception yok + tipik dogru tipte sonuc.
+        # None kabul (ag yok) ama ResolvedSource ise package_name tutarli.
+        assert source is None or source.package_name == "@types/node"
+        if source is not None:
+            # Scoped paket gerçekten cekildiyse version string dolu olmali.
+            assert source.version
+            assert source.version.count(".") >= 1
 
     @pytest.mark.network
     def test_version_resolution(self):

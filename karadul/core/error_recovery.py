@@ -35,8 +35,9 @@ class CircuitState(Enum):
     HALF_OPEN = "half_open"  # Deneme modu -- tek istek gecir
 
 
-class CircuitBreakerOpenError(Exception):
-    """Circuit breaker acikken cagri yapildiginda."""
+# CircuitBreakerOpenError artik karadul.exceptions hiyerarsisinin parcasi.
+# Geriye uyumluluk icin bu modulden de yeniden ihrac ediyoruz.
+from karadul.exceptions import CircuitBreakerOpenError  # noqa: E402,F401
 
 
 @dataclass

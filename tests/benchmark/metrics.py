@@ -24,11 +24,21 @@ class NamingResult:
     recovered: str
     score: float  # 0.0 - 1.0
     match_type: str  # "exact", "semantic", "partial", "wrong", "missing"
+    # v1.10.0 Batch 5A: Per-source F1 hesaplamasi icin ek alan.
+    # Ornek: "sig_db", "c_namer", "ngram", "string_intel", "ensemble".
+    # Bos string = genel/bilinmiyor (geriye uyumlu).
+    source: str = ""
 
 
 @dataclass
 class BenchmarkMetrics:
-    """Aggregate metrics for a benchmark run."""
+    """Aggregate metrics for a benchmark run.
+
+    v1.10.0 Batch 5A eklemeleri:
+      - precision, recall, f1: Isim kurtarmanin classification F1 skoru.
+      - per_source_*: Kaynak bazli kirilim (NamingResult.source alanindan).
+      - confusion_matrix: match_type -> {match_type: count} iki boyutlu tablo.
+    """
 
     total_symbols: int = 0
     exact_matches: int = 0
@@ -36,6 +46,28 @@ class BenchmarkMetrics:
     partial_matches: int = 0
     wrong_names: int = 0
     missing_names: int = 0  # FUN_xxx / var_N still present
+
+    # v1.10.0: F1 / precision / recall
+    # Tanimlar:
+    #   TP = exact + semantic + partial (anlamli, dogru isim)
+    #   FP = wrong (isim uretildi ama yanlis)
+    #   FN = missing (isim uretilemedi)
+    #   TN: anlamli degil bu baglamda (yoktur)
+    precision: float = 0.0
+    recall: float = 0.0
+    f1: float = 0.0
+
+    # v1.10.0: Kaynak bazli kirilim -- source -> metric
+    per_source_precision: dict[str, float] = field(default_factory=dict)
+    per_source_recall: dict[str, float] = field(default_factory=dict)
+    per_source_f1: dict[str, float] = field(default_factory=dict)
+
+    # v1.10.0: Confusion matrix (match_type -> match_type -> count).
+    # Normalde "expected" (dogru olan) match_type'dan "actual"'a gecisler
+    # hesaplaniyor; ancak burada her NamingResult'in kendi match_type'i
+    # hem beklenen hem gerceklesen oldugu icin diagonal matris.
+    # Kullanim: match_type dagilimini gormek.
+    confusion_matrix: dict[str, dict[str, int]] = field(default_factory=dict)
 
     @property
     def accuracy(self) -> float:
@@ -70,12 +102,29 @@ class BenchmarkMetrics:
             "missing_names": self.missing_names,
             "accuracy": round(self.accuracy, 2),
             "recovery_rate": round(self.recovery_rate, 2),
+            # v1.10.0 eklemeleri
+            "precision": round(self.precision, 4),
+            "recall": round(self.recall, 4),
+            "f1": round(self.f1, 4),
+            "per_source_precision": {
+                k: round(v, 4) for k, v in self.per_source_precision.items()
+            },
+            "per_source_recall": {
+                k: round(v, 4) for k, v in self.per_source_recall.items()
+            },
+            "per_source_f1": {
+                k: round(v, 4) for k, v in self.per_source_f1.items()
+            },
+            "confusion_matrix": {
+                k: dict(v) for k, v in self.confusion_matrix.items()
+            },
         }
 
     def summary(self) -> str:
         """Human-readable single-line summary."""
         return (
             f"accuracy={self.accuracy:.1f}% recovery={self.recovery_rate:.1f}% "
+            f"f1={self.f1:.3f} "
             f"(exact={self.exact_matches} semantic={self.semantic_matches} "
             f"partial={self.partial_matches} wrong={self.wrong_names} "
             f"missing={self.missing_names} / total={self.total_symbols})"
@@ -215,7 +264,19 @@ class AccuracyCalculator:
         return NamingResult(original, recovered, 0.0, "wrong")
 
     def calculate_metrics(self, comparisons: list[NamingResult]) -> BenchmarkMetrics:
-        """Calculate aggregate metrics from individual comparisons."""
+        """Calculate aggregate metrics from individual comparisons.
+
+        v1.10.0 Batch 5A: F1 / precision / recall / per-source ve confusion
+        matrix da hesaplanir.
+
+        F1 tanimi (multi-class -> binary indirgeme):
+            TP = exact + semantic + partial (anlamli dogru isim uretildi)
+            FP = wrong (isim uretildi ama yanlis)
+            FN = missing (isim uretilemedi, Ghidra placeholder)
+            precision = TP / (TP + FP)
+            recall    = TP / (TP + FN)
+            F1        = 2*P*R / (P+R)
+        """
         metrics = BenchmarkMetrics(total_symbols=len(comparisons))
         for c in comparisons:
             if c.match_type == "exact":
@@ -228,7 +289,72 @@ class AccuracyCalculator:
                 metrics.missing_names += 1
             else:
                 metrics.wrong_names += 1
+
+        # Global F1 / precision / recall
+        metrics.precision, metrics.recall, metrics.f1 = self._compute_prf(
+            tp=metrics.exact_matches + metrics.semantic_matches + metrics.partial_matches,
+            fp=metrics.wrong_names,
+            fn=metrics.missing_names,
+        )
+
+        # Per-source kirilim
+        per_src = self.compute_per_source(comparisons)
+        metrics.per_source_precision = per_src["precision"]
+        metrics.per_source_recall = per_src["recall"]
+        metrics.per_source_f1 = per_src["f1"]
+
+        # Confusion matrix (diagonal: match_type -> match_type)
+        # Her match_type icin sayac, daha karmasik senaryolar icin cerceve.
+        cm: dict[str, dict[str, int]] = {}
+        for c in comparisons:
+            mt = c.match_type or "unknown"
+            cm.setdefault(mt, {}).setdefault(mt, 0)
+            cm[mt][mt] += 1
+        metrics.confusion_matrix = cm
+
         return metrics
+
+    @staticmethod
+    def _compute_prf(tp: int, fp: int, fn: int) -> tuple[float, float, float]:
+        """Precision, Recall, F1 hesapla. Sifir-bolme korumali."""
+        prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = (2 * prec * rec / (prec + rec)) if (prec + rec) > 0 else 0.0
+        return prec, rec, f1
+
+    def compute_per_source(
+        self,
+        comparisons: list[NamingResult],
+    ) -> dict[str, dict[str, float]]:
+        """Kaynak (source) bazli precision/recall/F1 hesapla.
+
+        NamingResult.source alanina gore gruplandirir. Source="" olanlar
+        "unknown" kategorisinde toplanir.
+
+        Returns:
+            {"precision": {source: val}, "recall": {source: val}, "f1": {source: val}}
+        """
+        buckets: dict[str, dict[str, int]] = {}
+        for c in comparisons:
+            src = c.source or "unknown"
+            b = buckets.setdefault(src, {"tp": 0, "fp": 0, "fn": 0})
+            if c.match_type in ("exact", "semantic", "partial"):
+                b["tp"] += 1
+            elif c.match_type == "missing":
+                b["fn"] += 1
+            else:  # wrong
+                b["fp"] += 1
+
+        out_p: dict[str, float] = {}
+        out_r: dict[str, float] = {}
+        out_f: dict[str, float] = {}
+        for src, b in buckets.items():
+            p, r, f = self._compute_prf(b["tp"], b["fp"], b["fn"])
+            out_p[src] = p
+            out_r[src] = r
+            out_f[src] = f
+
+        return {"precision": out_p, "recall": out_r, "f1": out_f}
 
     # ------------------------------------------------------------------
     # Internal helpers

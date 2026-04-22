@@ -617,6 +617,54 @@ def _builtin_rules() -> list[BuiltinRule]:
 # YARA kural kaynak kodu uretimi
 # ---------------------------------------------------------------------------
 
+# YARA identifier syntax: [A-Za-z_][A-Za-z0-9_]* (en fazla 128 karakter)
+_YARA_IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,127}$")
+
+
+def _validate_yara_identifier(name: str, kind: str = "identifier") -> str:
+    """v1.10.0 Fix Sprint MED-2: YARA rule name / tag identifier dogrulama.
+
+    Identifier YARA syntax'ine uygun olmali; uygun degilse rule injection
+    onlemek icin ValueError atar. _rule_to_yara_source icinde cagrildigi
+    yer: rule.name ve rule.tags. add_rule kullanan kodun bu kisiti bilmesi
+    gerekir.
+    """
+    if not isinstance(name, str) or not _YARA_IDENT_RE.match(name):
+        raise ValueError(
+            f"Gecersiz YARA {kind}: {name!r} "
+            f"(izinli: ^[A-Za-z_][A-Za-z0-9_]{{0,127}}$)"
+        )
+    return name
+
+
+def _escape_yara_meta(value: str) -> str:
+    """v1.10.0 Fix Sprint MED-2: YARA meta string value escape.
+
+    YARA meta stringleri double-quote ile delimit edilir. Kotu niyetli
+    girdiler (rule injection) backslash ve double-quote kullanarak meta
+    bloklarini kirip yeni rule/condition enjekte edebilir. Ayrica control
+    karakterler (0x00-0x1F) YARA syntax'i bozabilir.
+
+    Args:
+        value: Escape edilecek string.
+
+    Returns:
+        Guvenli escape edilmis string.
+
+    Raises:
+        ValueError: value icinde control karakter (0x00-0x1F) varsa.
+    """
+    if not isinstance(value, str):
+        value = str(value)
+    for c in value:
+        if ord(c) < 0x20:
+            raise ValueError(
+                f"YARA meta icinde control character yasak: 0x{ord(c):02x}"
+            )
+    # Sirasi onemli: once backslash, sonra double-quote
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def _rule_to_yara_source(rule: BuiltinRule) -> str:
     """BuiltinRule'dan YARA kaynak kodu uret (yara-python compile icin).
 
@@ -633,24 +681,37 @@ def _rule_to_yara_source(rule: BuiltinRule) -> str:
     """
     parts = []
 
+    # v1.10.0 Fix Sprint MED-2: Rule name ve tag identifier validasyonu
+    # (kullanici add_rule ile enjekte edilmis ise rule injection riskine karsi).
+    safe_name = _validate_yara_identifier(rule.name, kind="rule name")
+    safe_tags = [_validate_yara_identifier(t, kind="tag") for t in (rule.tags or [])]
+
     # Rule header
-    tag_str = " ".join(rule.tags) if rule.tags else ""
+    tag_str = " ".join(safe_tags)
     if tag_str:
-        parts.append(f"rule {rule.name} : {tag_str} {{")
+        parts.append(f"rule {safe_name} : {tag_str} {{")
     else:
-        parts.append(f"rule {rule.name} {{")
+        parts.append(f"rule {safe_name} {{")
 
     # Meta
     if rule.meta:
         parts.append("    meta:")
         for k, v in rule.meta.items():
             if isinstance(v, str):
-                parts.append(f'        {k} = "{v}"')
+                # v1.10.0 Fix Sprint MED-2: YARA meta value icinde backslash/
+                # double-quote escape, control char (0x00-0x1F) reddet.
+                escaped = _escape_yara_meta(v)
+                parts.append(f'        {k} = "{escaped}"')
             elif isinstance(v, bool):
                 val = "true" if v else "false"
                 parts.append(f"        {k} = {val}")
-            else:
+            elif isinstance(v, (int, float)):
+                # sayisal degerleri dogrudan emit et (tip guvenligi)
                 parts.append(f"        {k} = {v}")
+            else:
+                # Bilinmeyen tip (obje vb.) str'e cast ederken escape et
+                escaped = _escape_yara_meta(str(v))
+                parts.append(f'        {k} = "{escaped}"')
 
     # Strings
     string_defs = []
@@ -966,18 +1027,16 @@ class YaraScanner:
         Byte pattern'ler icin basit ``in`` (subsequence) araması,
         string pattern'ler icin regex araması yapar.
 
+        PERF/MEM (v1.10.0 C5): Eskiden `data.decode("latin-1")` ile tum
+        binary ikinci kez (str kopyasi) RAM'e aliniyordu. 200 MB binary
+        icin +200-400 MB (Python 3 str overhead) OOM riski. Yeni versiyon:
+        regex'i dogrudan bytes uzerinde calistirir (`re.finditer(b"...", data)`).
+
         Returns:
             (matches, errors)
         """
         errors: list[str] = []
         matches: list[YaraMatch] = []
-
-        # Metin olarak da arayabilmek icin decode (latin-1 = byte-transparent)
-        try:
-            text = data.decode("latin-1")
-        except Exception:
-            logger.debug("Binary data latin-1 decode basarisiz, bos string kullaniliyor", exc_info=True)
-            text = ""
 
         for rule in self._builtin_rules:
             found_strings: list[tuple[int, str, bytes]] = []
@@ -988,28 +1047,40 @@ class YaraScanner:
                 if offset >= 0:
                     found_strings.append((offset, f"$b{i}", bp))
 
-            # String/regex pattern eslestirme
+            # String/regex pattern eslestirme -- bytes uzerinde
             for i, sp in enumerate(rule.string_patterns):
+                sp_bytes = sp.encode("latin-1") if isinstance(sp, str) else sp
+                # Once bytes regex dene
                 try:
-                    for m in re.finditer(sp.encode("latin-1"), data, re.IGNORECASE):
+                    for m in re.finditer(sp_bytes, data, re.IGNORECASE):
                         found_strings.append((
                             m.start(),
                             f"$s{i}",
                             m.group(),
                         ))
                         break  # Kural basina ilk eslesme yeterli
+                    continue
                 except re.error:
-                    # Regex compile hatasi — string olarak dene
-                    try:
-                        for m in re.finditer(re.escape(sp), text, re.IGNORECASE):
-                            found_strings.append((
-                                m.start(),
-                                f"$s{i}",
-                                m.group().encode("latin-1"),
-                            ))
-                            break
-                    except Exception:
-                        logger.debug("YARA kural derleme basarisiz, atlaniyor", exc_info=True)
+                    logger.debug(
+                        "YARA fallback: bytes regex derleme basarisiz, literal fallback",
+                        exc_info=True,
+                    )
+                # Fallback: pattern regex olarak gecerli degil -> literal arama
+                # (re.escape ile literal match; case-insensitive icin re.IGNORECASE.)
+                try:
+                    escaped = re.escape(sp_bytes)
+                    m2 = re.search(escaped, data, re.IGNORECASE)
+                    if m2 is not None:
+                        found_strings.append((
+                            m2.start(),
+                            f"$s{i}",
+                            m2.group(),
+                        ))
+                except Exception:
+                    logger.debug(
+                        "YARA fallback: literal arama basarisiz, atlaniyor",
+                        exc_info=True,
+                    )
 
             # Condition kontrolu
             matched = False

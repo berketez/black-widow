@@ -257,6 +257,13 @@ class TestNgramVocab:
         assert v.count_by_id(0) == 8
 
     def test_save_load(self, tmp_path):
+        """v1.10.0 Fix-9 C5 (sahte test duzeltmesi):
+        Onceki test `assert v2.lookup("buffer") >= 0` tarzi kullaniyordu.
+        Bu zayif -- test `lookup` miss durumunda -1 donuyor (>= 0 cakismaz)
+        ama farkli ID'lerin UNIQUE oldugunu, orijinal count'larin KORUNDUGUNU,
+        VE reverse()/count_by_id()'in persistance'tan sonra dogru cevap
+        verdigini dogrulamiyordu. Simdi round-trip invariant'lari test edilir.
+        """
         v = NgramVocab()
         v.add("buffer", 100)
         v.add("counter", 50)
@@ -267,9 +274,30 @@ class TestNgramVocab:
 
         v2 = NgramVocab.load(path)
         assert len(v2) == 3
-        assert v2.lookup("buffer") >= 0
-        assert v2.lookup("counter") >= 0
-        assert v2.lookup("pointer") >= 0
+
+        # 3 ismin ID'si bulunmali ve birbirinden farkli olmali
+        id_buf = v2.lookup("buffer")
+        id_cnt = v2.lookup("counter")
+        id_ptr = v2.lookup("pointer")
+        assert id_buf != -1, "buffer ID bulunamadi"
+        assert id_cnt != -1, "counter ID bulunamadi"
+        assert id_ptr != -1, "pointer ID bulunamadi"
+        assert len({id_buf, id_cnt, id_ptr}) == 3, (
+            f"ID'ler unique olmali: buf={id_buf}, cnt={id_cnt}, ptr={id_ptr}"
+        )
+
+        # Round-trip: reverse(id) orijinal ismi vermeli
+        assert v2.reverse(id_buf) == "buffer"
+        assert v2.reverse(id_cnt) == "counter"
+        assert v2.reverse(id_ptr) == "pointer"
+
+        # Count korundu mu (frequency persistance)
+        assert v2.count_by_id(id_buf) == 100
+        assert v2.count_by_id(id_cnt) == 50
+        assert v2.count_by_id(id_ptr) == 75
+
+        # Olmayan isim -1 donmeli (negatif dogrulama)
+        assert v2.lookup("nonexistent_word") == -1
 
     def test_save_sorted_by_frequency(self, tmp_path):
         v = NgramVocab()

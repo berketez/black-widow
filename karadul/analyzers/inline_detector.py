@@ -137,11 +137,16 @@ _INLINE_PATTERNS: list[dict[str, Any]] = [
         "hint": "abs({var})",
     },
     # Ternary variant: x < 0 ? -x : x
+    # v1.10.0 M8: Confidence 0.85 -> 0.60, "abs_candidate" isimi.
+    # Ternary pattern cok genel -- "distance = dx < 0 ? -dx : dx" gibi
+    # local variable abs'lar abs() fonksiyon cagrisi olarak yanlislikla
+    # etiketleniyordu. Dusuk confidence + candidate ismi ile false
+    # positive'leri downstream filtreleyebiliriz.
     {
-        "name": "abs_ternary",
+        "name": "abs_candidate",
         "function_name": "abs",
         "category": "arithmetic",
-        "confidence": 0.85,
+        "confidence": 0.60,
         "regex": re.compile(
             r"(\w+)\s*<\s*0\s*\?\s*-\s*\1\s*:\s*\1",
         ),

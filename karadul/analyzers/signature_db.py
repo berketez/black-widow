@@ -158,6 +158,10 @@ class SignatureMatch:
     purpose: str = ""       # "SHA-256 hash computation"
     category: str = ""      # "crypto", "compression"
     version: str = ""       # Kutuphane versiyonu (biliniyorsa)
+    # v1.10.0 M2 T4: bilinen sig DB'den tasinan parametre metadata'si.
+    # Format: [{"name": str, "type": str, "index": int}, ...]
+    # None = sig DB'de params bilgisi yok (fallback'e API_PARAM_DB yolu kullanilir).
+    params: list[dict] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -169,6 +173,7 @@ class SignatureMatch:
             "purpose": self.purpose,
             "category": self.category,
             "version": self.version,
+            "params": self.params,
         }
 
 
@@ -1580,6 +1585,37 @@ _PROTOBUF_SIGNATURES: dict[str, dict[str, str]] = {
     "google::protobuf::util::JsonStringToMessage": {"lib": "protobuf", "purpose": "JSON to protobuf conversion", "category": "serialization"},
     "google::protobuf::util::MessageToJsonString": {"lib": "protobuf", "purpose": "protobuf to JSON conversion", "category": "serialization"},
 }
+
+
+# v1.10.0 M6 (perf fix): Modul-level basename index.
+# _match_by_symbol icinde her C++ symbol icin 90+ protobuf imzasi uzerinde
+# linear scan yapiliyordu. Bu index basename -> (sym_name, info) eslesmesini
+# O(1) dict.get ile yapiyor. Insertion-order korundugu icin ilk eslesme
+# deterministik donulur (eski behavior ile ayni).
+#
+# Format: {"SerializeToString": ("google::protobuf::MessageLite::SerializeToString",
+#                                 {"lib": "protobuf", ...})}
+_PROTOBUF_BASENAME_INDEX: dict[str, tuple[str, dict[str, str]]] = {}
+
+
+def _build_protobuf_basename_index() -> None:
+    """_PROTOBUF_SIGNATURES icinden basename -> (full_name, info) index'i insa et.
+
+    Sadece "::"-li (namespace'li) isimler icin calisir; basename, son "::"den
+    sonraki parcadir. First-wins: ayni basename'e sahip birden fazla sembol
+    varsa insertion-order ilk eslesen tutulur (eski loop semantigi ile ayni).
+    """
+    _PROTOBUF_BASENAME_INDEX.clear()
+    for _sym_name, _info in _PROTOBUF_SIGNATURES.items():
+        if "::" not in _sym_name:
+            continue
+        _basename = _sym_name.rsplit("::", 1)[-1]
+        if _basename and _basename not in _PROTOBUF_BASENAME_INDEX:
+            _PROTOBUF_BASENAME_INDEX[_basename] = (_sym_name, _info)
+
+
+# Modul yuklenirken bir kez insa et (protobuf sigs sabit, instance-bagimsiz).
+_build_protobuf_basename_index()
 
 
 # ---------------------------------------------------------------------------
@@ -8840,11 +8876,78 @@ class SignatureDB:
         # Katman 3: Call pattern imzalari
         self._call_sigs: list[tuple[frozenset[str], str, str, str, float]] = []
 
+        # v1.10.0: LMDB backend (opsiyonel, feature flag ile)
+        self._lmdb_backend: Any = None  # Optional[LMDBSignatureDB]
+
+        # Feature flag: config.perf.use_lmdb_sigdb
+        # True ise LMDB backend kullanilir (dict RAM'e yuklenmez), False'da eski yol
+        _perf = getattr(self._config, "perf", None)
+        _use_lmdb = bool(_perf and getattr(_perf, "use_lmdb_sigdb", False))
+
+        if _use_lmdb:
+            self._init_lmdb_backend()
+
         # Builtin + external DB yukle (cache'ten veya ilk kez)
+        # LMDB aktifken sadece builtin (kod-embedded) yuklenir, external yol atlanir
         self._load_builtin_signatures()
 
         # FindCrypt-Ghidra kripto sabitleri (byte pattern olarak)
+        # LMDB backend'den bagimsiz -- kod-embedded kripto sabitleri
         self._load_findcrypt_constants()
+
+    # ------------------------------------------------------------------
+    # v1.10.0: LMDB backend init
+    # ------------------------------------------------------------------
+
+    def _init_lmdb_backend(self) -> None:
+        """LMDB backend'i ac (config.perf.use_lmdb_sigdb=True iken).
+
+        Hata durumunda None birakir ve eski yola dusurur (graceful fallback).
+        """
+        try:
+            from karadul.analyzers.sigdb_lmdb import (
+                LMDBSignatureDB,
+                default_lmdb_path,
+                is_lmdb_available,
+            )
+        except ImportError as exc:
+            logger.warning(
+                "LMDB backend import edilemedi: %s. Eski dict yolu kullaniliyor.", exc,
+            )
+            return
+
+        if not is_lmdb_available():
+            logger.warning("lmdb modulu yuklu degil. Eski dict yolu kullaniliyor.")
+            return
+
+        perf = self._config.perf
+        path = perf.sig_lmdb_path or default_lmdb_path()
+
+        try:
+            self._lmdb_backend = LMDBSignatureDB(
+                path,
+                readonly=True,
+                l1_cache_size=perf.lmdb_l1_cache_size,
+            )
+            stats = self._lmdb_backend.total_entries
+            logger.info(
+                "LMDB backend aktif: %s (symbols=%d, string_sigs=%d, "
+                "call_sigs=%d, byte_sigs=%d)",
+                path, stats["symbols"], stats["string_sigs"],
+                stats["call_sigs"], stats["byte_sigs"],
+            )
+        except FileNotFoundError:
+            # v1.10.0 M2: use_lmdb_sigdb=True default olunca LMDB dosyasi
+            # olmayan kullanicilarda bu log her acilista tetiklenir -- gurultu
+            # olmaması icin INFO seviyesine dusur. Graceful fallback zaten var.
+            logger.info(
+                "LMDB bulunamadi: %s. scripts/build_sig_lmdb.py ile olusturun. "
+                "Simdilik eski dict yolu kullaniliyor.", path,
+            )
+        except Exception as exc:
+            logger.warning(
+                "LMDB acilamadi (%s). Eski dict yolu kullaniliyor.", exc,
+            )
 
     # ------------------------------------------------------------------
     # DB yukleme
@@ -9152,8 +9255,20 @@ class SignatureDB:
     # ------------------------------------------------------------------
 
     def add_byte_signature(self, sig: FunctionSignature) -> None:
-        """Kullanici tanimli byte pattern imzasi ekle."""
-        if sig.byte_pattern and len(sig.byte_pattern) != len(sig.byte_mask):
+        """Kullanici tanimli byte pattern imzasi ekle.
+
+        v1.10.0 Batch 3D MED: programmatic user bug'larini maskelememek icin
+        bos sig.name ve bos byte_pattern reject edilir.
+        """
+        if not sig.name or not sig.name.strip():
+            raise ValueError(
+                "SignatureDB.add_byte_signature: sig.name bos olamaz"
+            )
+        if not sig.byte_pattern:
+            raise ValueError(
+                "SignatureDB.add_byte_signature: sig.byte_pattern bos olamaz"
+            )
+        if len(sig.byte_pattern) != len(sig.byte_mask):
             raise ValueError(
                 f"byte_pattern ({len(sig.byte_pattern)}) ve byte_mask ({len(sig.byte_mask)}) "
                 "uzunluklari esit olmali"
@@ -9167,7 +9282,18 @@ class SignatureDB:
         library: str,
         purpose: str = "",
     ) -> None:
-        """Kullanici tanimli string reference imzasi ekle."""
+        """Kullanici tanimli string reference imzasi ekle.
+
+        v1.10.0 Batch 3D MED: bos matched_name veya bos keywords reject edilir.
+        """
+        if not matched_name or not matched_name.strip():
+            raise ValueError(
+                "SignatureDB.add_string_signature: matched_name bos olamaz"
+            )
+        if not keywords:
+            raise ValueError(
+                "SignatureDB.add_string_signature: keywords bos olamaz"
+            )
         self._string_sigs[keywords] = (matched_name, library, purpose)
 
     def add_call_pattern(
@@ -9178,7 +9304,18 @@ class SignatureDB:
         purpose: str = "",
         confidence: float = 0.80,
     ) -> None:
-        """Kullanici tanimli call pattern imzasi ekle."""
+        """Kullanici tanimli call pattern imzasi ekle.
+
+        v1.10.0 Batch 3D MED: bos matched_name veya bos callees reject edilir.
+        """
+        if not matched_name or not matched_name.strip():
+            raise ValueError(
+                "SignatureDB.add_call_pattern: matched_name bos olamaz"
+            )
+        if not callees:
+            raise ValueError(
+                "SignatureDB.add_call_pattern: callees bos olamaz"
+            )
         self._call_sigs.append((callees, matched_name, library, purpose, confidence))
 
     # ------------------------------------------------------------------
@@ -9201,6 +9338,50 @@ class SignatureDB:
         if _GHIDRA_AUTO_NAME_RE.match(func_name):
             return None
 
+        # v1.10.0: LMDB backend varsa once onu dene (dict DB'den ONCE, cunku
+        # LMDB'de external sigs var, dict'te sadece builtin)
+        if self._lmdb_backend is not None:
+            _lmdb_info = self._lmdb_backend.lookup_symbol(func_name)
+            if _lmdb_info:
+                if _is_platform_compatible(
+                    _lmdb_info["lib"], _lmdb_info.get("category", ""),
+                    target_platform, _lmdb_info.get("_platforms"),
+                ):
+                    return SignatureMatch(
+                        original_name=func_name,
+                        matched_name=func_name.lstrip("_"),
+                        library=_lmdb_info["lib"],
+                        confidence=0.98,
+                        match_method="symbol",
+                        purpose=_lmdb_info.get("purpose", ""),
+                        category=_lmdb_info.get("category", ""),
+                        params=_lmdb_info.get("params"),  # v1.10.0 M2 T4
+                    )
+                # v1.10.0 C2: LMDB'de platform uyumsuz -> return None YERINE
+                # builtin dict'e dus; builtin'de ayni sembol yerel platformla
+                # uyumlu olabilir.
+            # macOS _ prefix: hem without hem with dene
+            if not func_name.startswith("_"):
+                _lmdb_info = self._lmdb_backend.lookup_symbol(f"_{func_name}")
+                if _lmdb_info:
+                    if _is_platform_compatible(
+                        _lmdb_info["lib"], _lmdb_info.get("category", ""),
+                        target_platform, _lmdb_info.get("_platforms"),
+                    ):
+                        return SignatureMatch(
+                            original_name=func_name,
+                            matched_name=func_name,
+                            library=_lmdb_info["lib"],
+                            confidence=0.97,
+                            match_method="symbol",
+                            purpose=_lmdb_info.get("purpose", ""),
+                            category=_lmdb_info.get("category", ""),
+                            params=_lmdb_info.get("params"),  # v1.10.0 M2 T4
+                        )
+                    # v1.10.0 C2: platform mismatch -> builtin fallback
+            # LMDB miss veya platform mismatch -> dict DB'ye (builtin) dus
+            # Burada return etmiyoruz, builtin de aranmali
+
         # Direkt eslestirme
         info = self._symbol_db.get(func_name)
         if info:
@@ -9217,6 +9398,7 @@ class SignatureDB:
                 match_method="symbol",
                 purpose=info.get("purpose", ""),
                 category=info.get("category", ""),
+                params=info.get("params"),  # v1.10.0 M2 T4
             )
 
         # _ prefix ile dene (macOS C convention)
@@ -9237,25 +9419,39 @@ class SignatureDB:
                     match_method="symbol",
                     purpose=info.get("purpose", ""),
                     category=info.get("category", ""),
+                    params=info.get("params"),  # v1.10.0 M2 T4
                 )
 
         # Protobuf demangled isimleri icin partial match
-        for sym_name, info in _PROTOBUF_SIGNATURES.items():
-            if func_name.endswith(sym_name.split("::")[-1]) and "::" in sym_name:
-                if not _is_platform_compatible(
+        # v1.10.0 M6 (perf fix): Modul-level basename index ile O(1) lookup.
+        # Eski O(n) loop ~60+ signature uzerinde her C++ symbol icin linear
+        # scan yapiyordu. Artik: basename cikar -> dict.get. Deterministik
+        # sonuc (insertion-order ilk eslesen).
+        if "::" in func_name:
+            _proto_basename = func_name.rsplit("::", 1)[-1]
+        else:
+            _proto_basename = func_name
+        hit = _PROTOBUF_BASENAME_INDEX.get(_proto_basename)
+        if hit is not None:
+            sym_name, info = hit
+            # Original semantic: func_name.endswith(basename). Basename zaten
+            # _proto_basename; True. Ama ust-seviye "::"-li sembol oldugu
+            # kontrolu korunsun (endswith eski formda da vardi).
+            if "::" in sym_name and func_name.endswith(_proto_basename):
+                if _is_platform_compatible(
                     info["lib"], info.get("category", ""), target_platform,
                     info.get("_platforms"),
                 ):
-                    continue
-                return SignatureMatch(
-                    original_name=func_name,
-                    matched_name=sym_name,
-                    library=info["lib"],
-                    confidence=0.85,
-                    match_method="symbol",
-                    purpose=info.get("purpose", ""),
-                    category=info.get("category", ""),
-                )
+                    return SignatureMatch(
+                        original_name=func_name,
+                        matched_name=sym_name,
+                        library=info["lib"],
+                        confidence=0.85,
+                        match_method="symbol",
+                        purpose=info.get("purpose", ""),
+                        category=info.get("category", ""),
+                        params=info.get("params"),  # v1.10.0 M2 T4
+                    )
 
         return None
 
@@ -9271,7 +9467,10 @@ class SignatureDB:
         Masked compare: byte_mask'teki 0xFF olan pozisyonlarda birebir eslesme
         aranir, 0x00 olan pozisyonlar wildcard (herhangi deger olabilir).
         """
-        if not func_bytes or not self._byte_signatures:
+        if not func_bytes:
+            return None
+        # v1.10.0 C3: builtin bos olsa bile LMDB'de byte sigs olabilir.
+        if not self._byte_signatures and self._lmdb_backend is None:
             return None
 
         best_match: Optional[SignatureMatch] = None
@@ -9320,6 +9519,57 @@ class SignatureDB:
                         purpose=sig.purpose,
                         category=sig.category,
                         version=sig.version,
+                    )
+
+        # v1.10.0 C3: LMDB'de byte_sigs DB'sini de sorgula (builtin miss
+        # veya ek dis kaynaklardan gelenler icin).
+        if self._lmdb_backend is not None and best_match is None:
+            try:
+                from karadul.analyzers.sigdb_lmdb import BYTE_KEY_LEN as _BKL
+                # Ilk BYTE_KEY_LEN byte prefix scan -> caller tarafinda mask check
+                candidates = self._lmdb_backend.match_byte_prefix(
+                    func_bytes[:_BKL], max_results=32,
+                )
+            except Exception:
+                candidates = []
+            for payload in candidates:
+                try:
+                    pattern = bytes.fromhex(payload.get("byte_pattern_hex", ""))
+                    mask = bytes.fromhex(payload.get("byte_mask_hex", ""))
+                except ValueError:
+                    continue
+                plen = len(pattern)
+                if plen == 0 or plen != len(mask) or len(func_bytes) < plen:
+                    continue
+                size_range = payload.get("size_range")
+                if size_range and func_size > 0:
+                    try:
+                        min_s, max_s = size_range
+                        if func_size < min_s or func_size > max_s:
+                            continue
+                    except (TypeError, ValueError):
+                        pass
+                # Masked compare
+                ok = True
+                for i in range(plen):
+                    if mask[i] == 0xFF and func_bytes[i] != pattern[i]:
+                        ok = False
+                        break
+                if not ok:
+                    continue
+                fixed_bytes = sum(1 for b in mask if b == 0xFF)
+                conf = min(0.95, 0.60 + (fixed_bytes / plen) * 0.35)
+                if conf > best_conf:
+                    best_conf = conf
+                    best_match = SignatureMatch(
+                        original_name="",
+                        matched_name=payload.get("name", "unknown"),
+                        library=payload.get("library", ""),
+                        confidence=conf,
+                        match_method="byte_pattern",
+                        purpose=payload.get("purpose", ""),
+                        category=payload.get("category", ""),
+                        version=payload.get("version", ""),
                     )
 
         return best_match
@@ -9379,6 +9629,29 @@ class SignatureDB:
                         purpose=purpose,
                     )
 
+        # v1.10.0 C3: LMDB'deki string_sigs DB'sini de sorgula (builtin
+        # miss durumunda / builtin yuklenmedigi senaryolarda). Exact
+        # canonical key araması: func_strings tam olarak bir imza kume'siyle
+        # eslestiginde match.
+        if self._lmdb_backend is not None and best_match is None:
+            try:
+                hit = self._lmdb_backend.lookup_string_sig(strings_used)
+            except Exception:
+                hit = None
+            if hit:
+                matched_name, library, purpose = hit
+                # Exact-set match -> builtin "all keywords matched" ile ayni
+                # confidence skalasi. Kume boyutunu bilmiyoruz; orta deger.
+                conf = min(0.92, 0.65 + len(set(strings_used)) * 0.07)
+                return SignatureMatch(
+                    original_name="",
+                    matched_name=matched_name,
+                    library=library,
+                    confidence=conf,
+                    match_method="string_ref",
+                    purpose=purpose,
+                )
+
         return best_match
 
     # ------------------------------------------------------------------
@@ -9427,6 +9700,26 @@ class SignatureDB:
                         match_method="call_pattern",
                         purpose=purpose,
                     )
+
+        # v1.10.0 C3: LMDB call_sigs DB'sini de sorgula (exact canonical
+        # kume eslestirme). builtin miss ise LMDB'de dogrudan kume aranir.
+        if self._lmdb_backend is not None and best_match is None:
+            try:
+                hit = self._lmdb_backend.lookup_call_sig(callees)
+            except Exception:
+                hit = None
+            if hit:
+                matched_name, library, purpose, base_conf = hit
+                # Exact kume match -> coverage=1.0
+                conf = min(0.95, base_conf * 1.0)
+                return SignatureMatch(
+                    original_name="",
+                    matched_name=matched_name,
+                    library=library,
+                    confidence=conf,
+                    match_method="call_pattern",
+                    purpose=purpose,
+                )
 
         return best_match
 
@@ -9845,6 +10138,10 @@ class SignatureDB:
                 _plat = entry.get("platforms") or file_default_platforms
                 if _plat:
                     entry_dict["_platforms"] = _plat
+                # v1.10.0 H4: Format 1 icin params propagation (Format 2
+                # zaten yapiyordu). Fortran / typed param metadata kopyalanir.
+                if "params" in entry:
+                    entry_dict["params"] = entry["params"]
 
                 self._symbol_db[name] = entry_dict
                 added += 1
@@ -9897,6 +10194,9 @@ class SignatureDB:
                 _plat = info.get("platforms") or file_default_platforms
                 if _plat:
                     entry_dict["_platforms"] = _plat
+                # v1.10.0 H4: Format 3 (flat) icin params propagation.
+                if "params" in info:
+                    entry_dict["params"] = info["params"]
 
                 self._symbol_db[name] = entry_dict
                 added += 1

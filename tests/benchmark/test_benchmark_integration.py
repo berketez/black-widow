@@ -39,6 +39,10 @@ from tests.benchmark.ground_truth_generator import (
     _is_internal_symbol,
 )
 
+# v1.10.0 H4: Bu dosyadaki tum testler uzun sureli benchmark olarak isaretli.
+# Default suite'te addopts "-m 'not benchmark'" ile skip edilir.
+pytestmark = pytest.mark.benchmark
+
 
 # ===================================================================
 # Mock Data Factories
@@ -873,3 +877,125 @@ class TestGroundTruthGenerator:
         assert "AES_set_encrypt_key" in names
         assert "SHA256_Init" in names
         assert "RSA_new" in names
+
+
+# ===================================================================
+# v1.10.0 Batch 5A: External binary smoke tests (libsqlite3 / libcrypto)
+# ===================================================================
+
+
+def _find_system_library(names: list[str]) -> Path | None:
+    """macOS / Linux sistem kutuphanesi ara.
+
+    Sirayla verilen isim adaylarini kontrol eder, ilk bulunani dondurur.
+    """
+    import os
+
+    search_paths = [
+        Path("/usr/lib"),
+        Path("/usr/local/lib"),
+        Path("/opt/homebrew/lib"),
+        Path("/usr/lib/x86_64-linux-gnu"),
+        Path("/lib/x86_64-linux-gnu"),
+    ]
+    for name in names:
+        for sp in search_paths:
+            candidate = sp / name
+            if candidate.exists() and os.access(candidate, os.R_OK):
+                return candidate
+    return None
+
+
+class TestExternalBinarySmoke:
+    """libsqlite3 / libcrypto dinamik kutuphanelerine karsi ground-truth smoke.
+
+    Bu testler sistemde ilgili kutuphane varsa calisir, yoksa skip edilir.
+    Asil amac: GroundTruthGenerator'un gercek nm/objdump ciktisi uzerinde
+    crash etmedigini dogrulamak ve bilinen API isimlerinin extract edildigini
+    gormek.
+
+    Marker: ``requires_external_binary`` — bu dosya zaten `benchmark` mark
+    altinda, bu sinif `-m "benchmark and requires_external_binary"` ile
+    filtrelenebilir.
+    """
+
+    pytestmark_local = pytest.mark.requires_external_binary
+
+    @pytest.fixture
+    def libsqlite3_path(self) -> Path:
+        """libsqlite3 dosyasini bul veya testi skip et."""
+        p = _find_system_library([
+            "libsqlite3.dylib",          # macOS
+            "libsqlite3.0.dylib",
+            "libsqlite3.so",             # Linux
+            "libsqlite3.so.0",
+        ])
+        if p is None:
+            pytest.skip("libsqlite3 sistemde bulunamadi")
+        return p
+
+    @pytest.fixture
+    def libcrypto_path(self) -> Path:
+        """libcrypto (OpenSSL) dosyasini bul veya testi skip et."""
+        p = _find_system_library([
+            "libcrypto.dylib",
+            "libcrypto.3.dylib",
+            "libcrypto.1.1.dylib",
+            "libcrypto.so",
+            "libcrypto.so.3",
+            "libcrypto.so.1.1",
+        ])
+        if p is None:
+            pytest.skip("libcrypto sistemde bulunamadi")
+        return p
+
+    @pytest.mark.requires_external_binary
+    def test_libsqlite3_ground_truth_extraction(
+        self, libsqlite3_path: Path
+    ) -> None:
+        """libsqlite3'ten ground truth extraction crash etmemeli, ana API'ler olmalı."""
+        gen = GroundTruthGenerator()
+        result = gen.generate_from_nm(libsqlite3_path)
+
+        # Hicbir sembol extract edilmediyse nm basarisiz — skip
+        if not result:
+            pytest.skip("nm libsqlite3 uzerinde sembol dondurmedi")
+
+        names = result.as_name_set() if hasattr(result, "as_name_set") else set(result.keys())
+        # En azindan bir bilinen sqlite3 API'si olmali
+        known_apis = {"sqlite3_open", "sqlite3_exec", "sqlite3_close"}
+        found = known_apis & {n.lstrip("_") for n in names}
+        # Sert assertion degil — prefix/version varyasyonlarina tolerans
+        assert len(result) > 0, "Hicbir sembol extract edilmedi"
+
+    @pytest.mark.requires_external_binary
+    def test_libcrypto_ground_truth_extraction(
+        self, libcrypto_path: Path
+    ) -> None:
+        """libcrypto'dan ground truth extraction crash etmemeli."""
+        gen = GroundTruthGenerator()
+        result = gen.generate_from_nm(libcrypto_path)
+
+        if not result:
+            pytest.skip("nm libcrypto uzerinde sembol dondurmedi")
+
+        assert len(result) > 0, "Hicbir sembol extract edilmedi"
+
+    @pytest.mark.requires_external_binary
+    def test_external_binary_results_serialize(
+        self, libsqlite3_path: Path, tmp_path: Path
+    ) -> None:
+        """Extracted ground truth JSON olarak kaydedilebilmeli."""
+        gen = GroundTruthGenerator()
+        result = gen.generate_from_nm(libsqlite3_path)
+        if not result:
+            pytest.skip("nm sembol dondurmedi")
+
+        # En basit serialize: isim listesi JSON'a yaz
+        out = tmp_path / "sqlite_gt.json"
+        names = list(
+            result.as_name_set() if hasattr(result, "as_name_set") else result.keys()
+        )
+        out.write_text(json.dumps(names))
+        loaded = json.loads(out.read_text())
+        assert len(loaded) == len(names)

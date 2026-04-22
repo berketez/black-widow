@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os as _os_module
 import shutil
+import stat as _stat_module
 import subprocess
 import time
 from pathlib import Path
@@ -22,6 +24,7 @@ from karadul.analyzers import register_analyzer
 from karadul.analyzers.base import BaseAnalyzer
 from karadul.config import Config
 from karadul.core.result import StageResult
+from karadul.core.safe_subprocess import resolve_tool, safe_run
 from karadul.core.subprocess_runner import SubprocessRunner
 from karadul.core.target import TargetInfo, TargetType
 from karadul.core.workspace import Workspace
@@ -29,6 +32,18 @@ from karadul.ghidra.headless import GhidraHeadless
 from karadul.ghidra.project import GhidraProject
 
 logger = logging.getLogger(__name__)
+
+# TOCTOU-safe kopyalama yardimcilari (v1.10.0 Batch 5B HIGH-4).
+_os_fstat = _os_module.fstat
+_os_chmod = _os_module.chmod
+
+
+def _stat_is_regular(st: Any) -> bool:
+    """os.stat_result/os.fstat_result'un regular file'a isaret ettigini dogrula."""
+    try:
+        return _stat_module.S_ISREG(st.st_mode)
+    except AttributeError:
+        return False
 
 
 @register_analyzer(TargetType.MACHO_BINARY)
@@ -54,7 +69,28 @@ class MachOAnalyzer(BaseAnalyzer):
     def __init__(self, config: Config) -> None:
         super().__init__(config)
         self.runner = SubprocessRunner(config)
-        self.ghidra = GhidraHeadless(config)
+        # v1.10.0 M4 (Berke karari): backend factory adapter.
+        # create_backend() ghidra backend'i icin dahili olarak GhidraHeadless
+        # sariyor; davranis ozdes. Config'te decompilers.primary_backend
+        # "angr" olarak set edilirse AngrBackend kullanilir.
+        # Fallback: backend olusturulmasi basarisiz ise (factory/config hatasi)
+        # dogrudan GhidraHeadless'a don.
+        try:
+            from karadul.decompilers import create_backend as _create_backend
+
+            self._backend = _create_backend(config)
+            # Ghidra backend'in lazy-init property'si uzerinden GhidraHeadless
+            # instance'ini al (eski analyze_static kodu self.ghidra uzerinden
+            # direkt cagri yapiyor; davranisi bozmamak icin ayni referansi tut).
+            _backend_ghidra = getattr(self._backend, "ghidra", None)
+            self.ghidra = _backend_ghidra if _backend_ghidra is not None else GhidraHeadless(config)
+        except Exception as _exc:  # pragma: no cover - defensive
+            logger.debug(
+                "Backend factory basarisiz, GhidraHeadless direkt kullanilacak: %s",
+                _exc,
+            )
+            self._backend = None
+            self.ghidra = GhidraHeadless(config)
 
     def analyze_static(self, target: TargetInfo, workspace: Workspace) -> StageResult:
         """Native binary statik analizi (Mach-O, ELF, PE).
@@ -111,12 +147,49 @@ class MachOAnalyzer(BaseAnalyzer):
                 logger.warning("lipo thin hatasi: %s", exc)
                 errors.append(f"lipo thin hatasi: {exc}")
 
-        # 1. Raw binary'yi kopyala
+        # 1. Raw binary'yi isaretle.
+        # v1.10.0 Batch 5B HIGH-4: TOCTOU-safe kopyalama. Eski yol
+        # ``is_file() + os.symlink()`` sırasinda attacker binary_path'i
+        # symlink ile degistirebilirdi (time-of-check to time-of-use).
+        # Yeni yol: open()+fstat() ile handle acilir, inode dogrulanir,
+        # copyfileobj ayni handle uzerinden calisir. Symlink pattern'i
+        # tamamen kaldirildi -- basit kopya (disk kullanimi marjinal).
         try:
             raw_copy = workspace.get_stage_dir("raw") / target.name
-            if binary_path.is_file():
-                shutil.copy2(str(binary_path), str(raw_copy))
+            # Ayni dosya kontrolu (universal thin slice edge case)
+            try:
+                same_file = raw_copy.resolve() == binary_path.resolve()
+            except (OSError, RuntimeError):
+                same_file = False
+            if same_file:
                 artifacts["raw_binary"] = raw_copy
+            else:
+                # Eski sembol varsa temizle (follow_symlinks=False)
+                if raw_copy.is_symlink() or raw_copy.exists():
+                    try:
+                        raw_copy.unlink()
+                    except OSError:
+                        logger.debug(
+                            "Raw binary mevcut dosya silinemedi: %s",
+                            raw_copy, exc_info=True,
+                        )
+                # TOCTOU-safe: fh.fileno() uzerinden read
+                with open(binary_path, "rb") as src_fh:
+                    src_stat = _os_fstat(src_fh.fileno())
+                    if not _stat_is_regular(src_stat):
+                        errors.append(
+                            "Raw binary duzgun dosya degil (device/fifo?): %s"
+                            % binary_path
+                        )
+                    else:
+                        with open(raw_copy, "wb") as dst_fh:
+                            shutil.copyfileobj(src_fh, dst_fh, length=1024 * 1024)
+                        # Permission bitlerini koru (copy2 davranisinin bir bolumu)
+                        try:
+                            _os_chmod(raw_copy, src_stat.st_mode & 0o7777)
+                        except OSError:
+                            pass
+                        artifacts["raw_binary"] = raw_copy
         except OSError as exc:
             errors.append("Raw binary kopyalanamadi: %s" % exc)
 
@@ -337,9 +410,21 @@ class MachOAnalyzer(BaseAnalyzer):
             # Ghidra ciktisi yoksa, sadece decompiled.json'dan bilgi al
             decompiled_json = static_dir / "ghidra_decompiled.json"
             if decompiled_json.exists():
+                dst = deobf_dir / "decompiled.json"
                 try:
-                    shutil.copy2(str(decompiled_json), str(deobf_dir / "decompiled.json"))
-                    artifacts["decompiled_json"] = deobf_dir / "decompiled.json"
+                    # v1.10.0 Batch 5B HIGH-4: symlink pattern kaldirildi.
+                    # TOCTOU-safe fstat + copyfileobj.
+                    if dst.is_symlink() or dst.exists():
+                        try:
+                            dst.unlink()
+                        except OSError:
+                            pass
+                    with open(decompiled_json, "rb") as _src_fh:
+                        _src_st = _os_fstat(_src_fh.fileno())
+                        if _stat_is_regular(_src_st):
+                            with open(dst, "wb") as _dst_fh:
+                                shutil.copyfileobj(_src_fh, _dst_fh, length=1024 * 1024)
+                    artifacts["decompiled_json"] = dst
                 except OSError as exc:
                     errors.append("decompiled.json kopyalanamadi: %s" % exc)
             else:
@@ -390,8 +475,36 @@ class MachOAnalyzer(BaseAnalyzer):
         }
 
     def _run_otool_load_commands(self, binary_path: Path) -> str:
-        """otool -l ile load commands ciktisini al."""
-        return self.runner.run_otool(binary_path, flags=["-l"])
+        """otool -l ile load commands ciktisini al.
+
+        v1.10.0 Batch 5B MED-12: otool -l stdout unbounded -> max_bytes ile
+        sinirla. Dev-size binary icin otool -l 500MB+ olabilir; ondan
+        aciri Ghidra/bellege sigmaz. Limit SecurityConfig'ten geliyor.
+        """
+        max_out = self.config.security.max_otool_output_bytes
+        otool_path = resolve_tool("otool") or str(self.config.tools.otool)
+        try:
+            result = safe_run(
+                [otool_path, "-l", str(binary_path)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=False,  # binary safety -- byte sayiyoruz
+                timeout=60,
+            )
+        except subprocess.TimeoutExpired:
+            logger.warning("otool -l timeout: %s", binary_path)
+            return ""
+        except FileNotFoundError:
+            return ""
+
+        raw = result.stdout or b""
+        if len(raw) > max_out:
+            logger.warning(
+                "otool -l ciktisi %d > max %d, kirpiliyor (%s)",
+                len(raw), max_out, binary_path,
+            )
+            raw = raw[:max_out]
+        return raw.decode("utf-8", errors="replace")
 
     def _run_nm(self, binary_path: Path) -> dict[str, Any] | None:
         """nm ile symbol table'i cikar."""
@@ -542,21 +655,39 @@ class MachOAnalyzer(BaseAnalyzer):
                 logger.warning("__BUN segmenti bulunamadi: %s", binary_path)
                 return None
 
-            # Segment content'ini raw bytes olarak oku
-            # lief'in content property'si bazen eksik/bos olabiliyor,
-            # dogrudan dosyadan offset+size ile okumak daha guvenilir
-            raw_data = binary_path.read_bytes()
+            # Segment content'ini raw bytes olarak oku (v1.10.0 H3: mmap)
+            # Eskiden `binary_path.read_bytes()` ile tum binary (200 MB+) RAM'e
+            # aliniyordu. `mmap` ile yalnizca offset+size bolumu alinir, geri
+            # kalani OS'un sayfa cache'inde kalir, anlik RSS = segment boyutu.
+            import mmap as _mmap
             offset = bun_segment.file_offset
             size = bun_segment.file_size
-
-            if offset + size > len(raw_data):
+            segment_bytes: bytes
+            # v1.10.0 Batch 5B MED-13: negatif offset veya size; malicious
+            # __BUN segment integer overflow/underflow koruma.
+            if offset < 0 or size < 0 or size > (2 * 1024 ** 3):
                 logger.warning(
-                    "__BUN segment sinirlari dosya disinda: offset=%d size=%d file=%d",
-                    offset, size, len(raw_data),
+                    "__BUN segment gecersiz offset/size: offset=%d size=%d",
+                    offset, size,
                 )
                 return None
-
-            segment_bytes = raw_data[offset:offset + size]
+            try:
+                with open(binary_path, "rb") as _fh:
+                    file_size = _os_fstat(_fh.fileno()).st_size
+                    if offset + size > file_size:
+                        logger.warning(
+                            "__BUN segment sinirlari dosya disinda: "
+                            "offset=%d size=%d file=%d",
+                            offset, size, file_size,
+                        )
+                        return None
+                    with _mmap.mmap(
+                        _fh.fileno(), 0, access=_mmap.ACCESS_READ,
+                    ) as mm:
+                        segment_bytes = bytes(mm[offset:offset + size])
+            except (OSError, ValueError) as exc:
+                logger.warning("BUN segment mmap okuma hatasi: %s", exc)
+                return None
             logger.info(
                 "__BUN segment bulundu: offset=%d size=%d (%.1f MB)",
                 offset, size, size / (1024 * 1024),
@@ -605,6 +736,10 @@ class MachOAnalyzer(BaseAnalyzer):
         bellege map'leyerek ASCII string'leri cikarir. mmap OS seviyesinde
         sayfa sayfa okur, tum dosyayi RAM'e almaz.
 
+        PERF (v1.10.0 C1): Python byte-by-byte loop yerine `re.finditer`
+        kullanir. 200 MB binary'de ~30 dk -> ~2-3 sn (100-1000x hizlanma).
+        Regex C implementasyonu sayfa-sayfa mmap'i tarayabilir.
+
         Args:
             binary_path: Binary dosya yolu.
             min_length: Minimum string uzunlugu.
@@ -614,48 +749,35 @@ class MachOAnalyzer(BaseAnalyzer):
             Cikarilan string listesi.
         """
         import mmap
+        import re as _re
 
         strings: list[str] = []
+        # Minimum uzunluk >= 1 olmali (re repeat spec guvenligi)
+        if min_length < 1:
+            min_length = 1
+        # re.finditer mmap nesnelerini dogrudan tarayabilir (buffer protocol).
+        # [\x20-\x7E]{N,} = printable ASCII, space (0x20) - tilde (0x7E).
+        ascii_re = _re.compile(
+            rb"[\x20-\x7E]{%d,}" % min_length,
+        )
 
         try:
             with open(binary_path, "rb") as f:
                 # mmap ile dosyayi bellege maple (read-only)
                 with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
                     file_size = mm.size()
-                    current: list[int] = []
-                    processed = 0
-
-                    for i in range(file_size):
-                        byte = mm[i]
-                        # Printable ASCII: 0x20 (space) - 0x7E (~)
-                        if 0x20 <= byte <= 0x7E:
-                            current.append(byte)
-                        else:
-                            if len(current) >= min_length:
-                                strings.append(bytes(current).decode("ascii"))
-                                if len(strings) >= max_strings:
-                                    logger.info(
-                                        "mmap strings: max_strings (%d) limitine ulasildi "
-                                        "(dosyanin %.0f%%'si taranmis)",
-                                        max_strings,
-                                        (i / file_size) * 100,
-                                    )
-                                    return strings
-                            current = []
-
-                        # Her 50MB'de progress logla
-                        processed += 1
-                        if processed % (50 * 1024 * 1024) == 0:
+                    for match in ascii_re.finditer(mm):
+                        raw = match.group()
+                        # decode kesin basarili: regex zaten ASCII range [0x20-0x7E]
+                        strings.append(raw.decode("ascii"))
+                        if len(strings) >= max_strings:
                             logger.info(
-                                "mmap strings: %.0f MB / %.0f MB taranmis (%d string bulundu)",
-                                processed / (1024 * 1024),
-                                file_size / (1024 * 1024),
-                                len(strings),
+                                "mmap strings: max_strings (%d) limitine ulasildi "
+                                "(dosyanin %.0f%%'si taranmis)",
+                                max_strings,
+                                (match.end() / file_size) * 100 if file_size else 100,
                             )
-
-                    # Dosya sonunda kalan string
-                    if len(current) >= min_length:
-                        strings.append(bytes(current).decode("ascii"))
+                            return strings
 
         except (OSError, ValueError) as exc:
             logger.error("mmap string extraction hatasi: %s", exc)

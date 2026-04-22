@@ -984,6 +984,70 @@ class CTypeRecoverer:
         )
 
     # ------------------------------------------------------------------
+    # v1.10.0 M3 T8: TypeForge merge hook (opsiyonel, harici kaynak)
+    # ------------------------------------------------------------------
+
+    def recover_types_with_typeforge(
+        self,
+        binary: Path,
+        existing_structs: list[RecoveredStruct],
+        llvm_ir: Path | None = None,
+    ) -> tuple[list[RecoveredStruct], dict[str, Any]]:
+        """TypeForge adapter'i calistir ve mevcut listeyi guncelle.
+
+        Feature flag (``binary_reconstruction.enable_typeforge``) kapali
+        veya TypeForge kurulu degilse, mevcut liste DEGISMEDEN dondurulur.
+        Bu metot ``recover()`` akisindan BAGIMSIZ -- caller istege bagli
+        cagirir, pipeline'a opsiyonel ek katmandir.
+
+        Args:
+            binary: Hedef binary dosyasi.
+            existing_structs: Daha onceki recovery'den (Ghidra/pattern/
+                computation) gelen struct listesi.
+            llvm_ir: Opsiyonel LLVM IR dosyasi (TypeForge icin).
+
+        Returns:
+            (structs, stats_dict):
+                - structs: TypeForge ile merge edilmis yeni struct listesi.
+                - stats_dict: ``{added, replaced, kept_existing,
+                  filtered_low_conf, skipped_reason}`` -- skipped_reason
+                  TypeForge atlandiginda dolu, aksi halde ''.
+        """
+        br = getattr(self.config, "binary_reconstruction", None)
+        if br is None or not getattr(br, "enable_typeforge", False):
+            return existing_structs, {"skipped_reason": "feature_flag_off"}
+
+        # Lazy import -- test ortaminda TypeForge olmasa bile bu dosya import edilebilir.
+        from karadul.analyzers.typeforge_adapter import TypeForgeAdapter
+        from karadul.reconstruction.c_type_recoverer_ext import (
+            merge_typeforge_structs,
+        )
+
+        adapter = TypeForgeAdapter(self.config)
+        if not adapter.is_available():
+            return existing_structs, {"skipped_reason": "typeforge_not_installed"}
+
+        result = adapter.analyze_binary(Path(binary), llvm_ir=llvm_ir)
+        if result.errors and not result.structs:
+            return existing_structs, {
+                "skipped_reason": "typeforge_error",
+                "errors": result.errors,
+            }
+
+        min_conf = float(getattr(br, "typeforge_min_confidence", 0.85))
+        merged, stats = merge_typeforge_structs(
+            existing_structs, result, min_confidence=min_conf,
+        )
+        return merged, {
+            "added": stats.added,
+            "replaced": stats.replaced,
+            "kept_existing": stats.kept_existing,
+            "filtered_low_conf": stats.filtered_low_conf,
+            "duration_seconds": result.duration_seconds,
+            "skipped_reason": "",
+        }
+
+    # ------------------------------------------------------------------
     # State Management
     # ------------------------------------------------------------------
 

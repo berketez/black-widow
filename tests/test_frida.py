@@ -343,8 +343,14 @@ class TestMemoryScanner:
 # Test 6: Gercek Frida spawn (opsiyonel)
 # -------------------------------------------------------------------
 
+@pytest.mark.integration
 class TestFridaRealSpawn:
-    """Gercek Frida spawn testleri -- SIP veya izin sorunu varsa skip."""
+    """Gercek Frida spawn testleri -- SIP veya izin sorunu varsa skip.
+
+    macOS SIP nedeniyle normal kullanicida spawn fail eder. Integration
+    marker ile default suite'ten cikarildi. Calistirmak icin:
+        pytest -m integration tests/test_frida.py
+    """
 
     @pytest.mark.skipif(
         not Path("/usr/local/bin/node").exists() and not Path("/opt/homebrew/bin/node").exists(),

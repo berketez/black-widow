@@ -17,7 +17,7 @@ from karadul.reconstruction.c_algorithm_id import (
     CAlgorithmIdentifier,
     STRUCTURAL_PATTERNS,
 )
-from karadul.reconstruction.computation.cfg_fingerprint import (
+from karadul.reconstruction.recovery_layers.cfg_fingerprint import (
     CFGFingerprint,
     CFGFingerprinter,
     CFGMatch,

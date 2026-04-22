@@ -112,7 +112,7 @@ def test_small_body_works():
 
 def test_linked_list_re_no_backtracking():
     r"""constraint_solver _LINKED_LIST_RE: negated char class ile safe."""
-    from karadul.reconstruction.computation.constraint_solver import _LINKED_LIST_RE
+    from karadul.reconstruction.recovery_layers.constraint_solver import _LINKED_LIST_RE
 
     # Normal match: calismali
     normal = "ptr = *(long *)(ptr + 0x8);"

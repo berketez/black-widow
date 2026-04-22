@@ -470,26 +470,37 @@ class SwiftBinaryAnalyzer(BaseAnalyzer):
             batch = mangled[i:i + batch_size]
             input_text = "\n".join(batch) + "\n"
 
+            # v1.10.0 Fix Sprint HIGH-5: Popen context manager + timeout
+            # kill/wait ile kaynak sizintisi onleme.
             try:
-                proc = subprocess.Popen(
+                with subprocess.Popen(
                     ["xcrun", "swift-demangle"],
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
-                )
-                stdout, _ = proc.communicate(input_text, timeout=60)
-                output_lines = stdout.strip().split("\n")
+                ) as proc:
+                    try:
+                        stdout, _ = proc.communicate(input_text, timeout=60)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+                        try:
+                            proc.communicate(timeout=5)
+                        except Exception:
+                            pass
+                        logger.warning(
+                            "xcrun swift-demangle batch timeout (batch %d)", i,
+                        )
+                        continue
+                    output_lines = stdout.strip().split("\n")
 
-                # xcrun swift-demangle satir satir okuyup satir satir yazar
-                for sym, demangled in zip(batch, output_lines):
-                    demangled = demangled.strip()
-                    if demangled and demangled != sym:
-                        demangled_map[sym] = demangled
-            except (subprocess.TimeoutExpired, OSError) as exc:
+                    # xcrun swift-demangle satir satir okuyup satir satir yazar
+                    for sym, demangled in zip(batch, output_lines):
+                        demangled = demangled.strip()
+                        if demangled and demangled != sym:
+                            demangled_map[sym] = demangled
+            except OSError as exc:
                 logger.warning("xcrun swift-demangle batch hatasi: %s", exc)
-                if hasattr(exc, "process"):
-                    exc.process.kill()
 
         symbols = []
         for sym in mangled:
@@ -649,30 +660,41 @@ class SwiftBinaryAnalyzer(BaseAnalyzer):
                     swift_syms.append(name)
 
             # Toplu demangle: tek subprocess, stdin pipe
+            # v1.10.0 Fix Sprint HIGH-5: Popen context manager -- proses kapanma
+            # ve FD sizinti engelleme.
             if swift_syms:
                 syms_batch = swift_syms[:3000]  # limit
                 input_text = "\n".join(syms_batch) + "\n"
                 try:
-                    proc = subprocess.Popen(
+                    with subprocess.Popen(
                         ["xcrun", "swift-demangle"],
                         stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         text=True,
-                    )
-                    stdout, _ = proc.communicate(input_text, timeout=60)
-                    output_lines = stdout.strip().split("\n")
+                    ) as proc:
+                        try:
+                            stdout, _ = proc.communicate(input_text, timeout=60)
+                        except subprocess.TimeoutExpired:
+                            proc.kill()
+                            try:
+                                proc.communicate(timeout=5)
+                            except Exception:
+                                pass
+                            logger.warning("xcrun swift-demangle protocol batch timeout")
+                            stdout = ""
+                        output_lines = stdout.strip().split("\n") if stdout else []
 
-                    for sym, demangled in zip(syms_batch, output_lines):
-                        demangled = demangled.strip()
-                        match = _PROTOCOL_WITNESS.search(demangled)
-                        if match:
-                            witnesses.append({
-                                "protocol_method": match.group(1),
-                                "conformance": match.group(2),
-                                "mangled": sym,
-                            })
-                except (subprocess.TimeoutExpired, OSError) as exc:
+                        for sym, demangled in zip(syms_batch, output_lines):
+                            demangled = demangled.strip()
+                            match = _PROTOCOL_WITNESS.search(demangled)
+                            if match:
+                                witnesses.append({
+                                    "protocol_method": match.group(1),
+                                    "conformance": match.group(2),
+                                    "mangled": sym,
+                                })
+                except OSError as exc:
                     logger.warning("xcrun swift-demangle protocol batch hatasi: %s", exc)
         else:
             # Fallback: strings'te protocol witness pattern'i ara
@@ -753,39 +775,49 @@ class SwiftBinaryAnalyzer(BaseAnalyzer):
                         metadata_syms.append((name, "nominal_descriptor"))
 
                 # Toplu demangle: tek subprocess
+                # v1.10.0 Fix Sprint HIGH-5: Popen context manager.
                 if metadata_syms:
                     sym_names = [s[0] for s in metadata_syms]
                     input_text = "\n".join(sym_names) + "\n"
                     try:
-                        proc = subprocess.Popen(
+                        with subprocess.Popen(
                             ["xcrun", "swift-demangle"],
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
                             text=True,
-                        )
-                        stdout, _ = proc.communicate(input_text, timeout=60)
-                        output_lines = stdout.strip().split("\n")
+                        ) as proc:
+                            try:
+                                stdout, _ = proc.communicate(input_text, timeout=60)
+                            except subprocess.TimeoutExpired:
+                                proc.kill()
+                                try:
+                                    proc.communicate(timeout=5)
+                                except Exception:
+                                    pass
+                                logger.warning("xcrun swift-demangle type metadata timeout")
+                                stdout = ""
+                            output_lines = stdout.strip().split("\n") if stdout else []
 
-                        for (name, kind), demangled in zip(metadata_syms, output_lines):
-                            demangled = demangled.strip()
-                            if kind == "metadata_accessor":
-                                tm_match = _TYPE_METADATA.search(demangled)
-                                if tm_match:
-                                    type_name = tm_match.group(1)
-                                    if not any(t["name"] == type_name for t in types):
-                                        types.append({
-                                            "name": type_name,
-                                            "kind": "metadata_accessor",
-                                            "mangled": name,
-                                        })
-                            elif kind == "nominal_descriptor":
-                                nd_match = _NOMINAL_TYPE_DESCRIPTOR.search(demangled)
-                                if nd_match:
-                                    desc = nd_match.group(1)
-                                    if desc not in nominal_descriptors:
-                                        nominal_descriptors.append(desc)
-                    except (subprocess.TimeoutExpired, OSError) as exc:
+                            for (name, kind), demangled in zip(metadata_syms, output_lines):
+                                demangled = demangled.strip()
+                                if kind == "metadata_accessor":
+                                    tm_match = _TYPE_METADATA.search(demangled)
+                                    if tm_match:
+                                        type_name = tm_match.group(1)
+                                        if not any(t["name"] == type_name for t in types):
+                                            types.append({
+                                                "name": type_name,
+                                                "kind": "metadata_accessor",
+                                                "mangled": name,
+                                            })
+                                elif kind == "nominal_descriptor":
+                                    nd_match = _NOMINAL_TYPE_DESCRIPTOR.search(demangled)
+                                    if nd_match:
+                                        desc = nd_match.group(1)
+                                        if desc not in nominal_descriptors:
+                                            nominal_descriptors.append(desc)
+                    except OSError as exc:
                         logger.warning("xcrun swift-demangle type metadata batch hatasi: %s", exc)
 
         if not types and not nominal_descriptors and not enum_cases:

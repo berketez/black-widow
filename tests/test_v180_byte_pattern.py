@@ -279,12 +279,17 @@ class TestSelectivityEdgeCases:
     """Sinir degerleri."""
 
     def test_exactly_max_selective(self, tmp_path):
-        """Tam max_selective sayisinda match -> penalty yok."""
+        """Tam max_selective sayisinda match -> penalty yok.
+
+        v1.10.0 M7 sonrasi default max_selective artik pattern uzunluguna
+        orantili (``max(2, min_pattern_length//8)`` = 2 for len=16); bu
+        regresyon-koruma testi eski sabit 5 davranisini explicit dogrular.
+        """
         pattern = b"\x55\x48\x89\xe5\x41\x57\x41\x56\x41\x55\x41\x54\x53\x48\x81\xec"
         sig = FakeSig(name="_func_f", byte_pattern=pattern)
 
-        # max_selective=5, 5 fonksiyon -> penalty yok
-        result = _run_match(tmp_path, 5, pattern, sig)
+        # max_selective=5 (v1.8.0 davranisi), 5 fonksiyon -> penalty yok
+        result = _run_match(tmp_path, 5, pattern, sig, max_selective=5)
         assert result.total_matched == 5
         for match_info in result.matches.values():
             assert match_info["confidence"] >= 0.80
@@ -296,7 +301,9 @@ class TestSelectivityEdgeCases:
 
         # max_selective=5, 6 fonksiyon -> penalty (conf*0.5)
         # min_confidence=0.40 kullanarak penalty sonrasi elenmesin
-        result = _run_match(tmp_path, 6, pattern, sig, min_confidence=0.40)
+        result = _run_match(
+            tmp_path, 6, pattern, sig, min_confidence=0.40, max_selective=5,
+        )
         assert result.total_matched == 6
         for match_info in result.matches.values():
             assert match_info["confidence"] < 0.60  # penalize edildi (orijinal ~0.90 * 0.5)

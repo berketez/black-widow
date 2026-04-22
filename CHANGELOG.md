@@ -1,5 +1,90 @@
 # Changelog
 
+## [1.10.0] - 2026-04-21
+
+### Added — Yeni Paketler (CPU-only mimari)
+- **`karadul/computation/`** — Hesaplama bazli kurtarma (LLM'siz): struct MaxSMT (Z3), CFG isomorphism hibrit (WL + LSH + VF2++ + anchor), signature fusion (log-odds ensemble + Platt)
+- **`karadul/pipeline/`** — 20 atomik step registry + StepContext (binary_prep, ghidra_metadata, byte_pattern, pcode_cfg, algorithm_id, parallel_algo_eng, confidence_filter, assembly_analysis, feedback_loop, struct_recovery, inline_detection, semantic_naming, flow_simplify, comment_generation, capa_annotation, engineering_annotation, project_build, engineering_analysis, deep_tracing, finalize)
+- **`karadul/quality/`** — Readability Scorer (6 boyut, dwarfdump ground truth, CLI `karadul score`, 13 dosya)
+- **`karadul/naming/`** — Hybrid thread + process pool naming runner
+- **`karadul/decompilers/`** — Protocol tabanli backend abstraction (Ghidra + angr adapter)
+- **`karadul/resources/capa_name_map.json`** — 86 CAPA addr → funcname entry
+
+### Added — Yeni Modüller
+- **LMDB SignatureDB** (`karadul/analyzers/sigdb_lmdb.py`): 9.2M signature, 2GB on-disk, cold start 14,400x hizli, +0 MB RSS (mmap)
+- **TypeForge adapter** (`karadul/analyzers/typeforge_adapter.py`): Subprocess + LLVM IR, kurulu degilse graceful skip
+- **C++ RTTI scanner** (`karadul/analyzers/cpp_rtti.py`): Itanium ABI (single + multi + virtual inheritance, diamond) + MSVC RTTI (Windows x86/x64, Complete Object Locator + Class Hierarchy Descriptor + BaseClassDescriptor, `.?AV` / `.?AU` type_info demangling, template + nested namespace), cxxfilt entegre, CLI `karadul rtti`. Yeni public API: `CppRttiAnalyzer.analyze(binary_path) -> CppRttiResult` otomatik ELF/Mach-O -> Itanium, PE -> MSVC rotalamasi.
+- **Platform map merkezi** (`karadul/core/platform_map.py`): `_TARGET_PLATFORM_MAP` tek kaynaktan import
+- `karadul/reconstruction/ts_declarations_namer.py` — TypeScript `.d.ts` parser (standalone API, v1.11 pipeline entegrasyonu planli)
+- `karadul/computation/struct_recovery/field_namer.py` — MaxSMT struct field naming (Bayesian fusion, standalone API, v1.11 pipeline entegrasyonu planli)
+
+### Changed — Rename/Yeniden Yapilanma
+- `karadul/reconstruction/computation/` → `karadul/reconstruction/recovery_layers/` (39 import guncellendi)
+- Eski computation/*.py dosyalari silindi (callee_profile_propagator, cfg_fingerprint, constraint_solver, engine, formula_extractor, signature_fusion + templates/)
+- **`gpu_utils.py` silindi** — CPU-only karar, GPU yolu v1.5.0+'a ertelendi
+- Feedback loop karadul/pipeline/steps/feedback/ altina alindi (sub-runner, 12 helper, 3 faz + convergence)
+- Semantic namer priority chain: sig DB params (0.95) > API patterns (0.92)
+
+### Security — Fix Sprint Batch 1 + Batch 2 (2026-04-20/21)
+- **HIGH** CWE-22: Path traversal `startswith` → `Path.resolve().relative_to()` (workspace.py 2x, reference_populator.py 3x, packed_binary.py 1x)
+- **HIGH** CWE-409: ZIP bomb 2GB uncompressed limit + config alani (`reference_populator.py`)
+- **HIGH** CWE-78: `_ALLOWED_SHELL_CMDS` daraltildi (cp/mv/mkdir/install/echo kaldirildi) + args validation
+- **HIGH** CWE-88: `c++filt` argv injection — `--` separator eklendi (2 yer)
+- **HIGH** CWE-404: Popen context manager (swift_binary, dwarf_extractor, binary_name_extractor)
+- **MED** CWE-918: HTTPS scheme whitelist + max_bytes + same-host redirect (3 yer)
+- **MED** CWE-116: YARA meta escape (", \, control char reddi)
+- **MED** CWE-377: Ghidra script `/tmp` → `tempfile.mkdtemp()` (~10 dosya)
+- **MED** CWE-459: `stages.py` NamedTemporaryFile cleanup NameError fix
+
+### Algorithm / Correctness Fixes
+- **Struct recovery**: `same_object` vs `same_type` ayrimi (aliasing semantigi)
+- **CFG fingerprint**: Hibrit zorunlu — WL + LSH on + VF2++ + anchor (tek algoritma yasak)
+- **Signature fusion**: Log-odds ensemble (eski Bayesian/D-S carpma kaldirildi), Platt calibration, 3-threshold abstain/reject/accept
+- **Convergence bug**: Empty merger -> 5 reason kategorisi ile erken cikis
+- **Feedback loop** 54 NameError (`functionsjson` vs `functions_json`)
+- **Frida SIP** testleri `@pytest.mark.integration` ile isaretlendi
+- **DWARF extractor**: `tests/test_dwarf_extractor.py` modernize (DWARF agent)
+
+### Performance
+- **LMDB mmap**: RAM 3GB → 0MB aktarimi (platform-aware SignatureDB korunuyor)
+- **Naming parallel**: Hybrid ThreadPool + ProcessPool flag bazli, 3-5x hizlanma
+- **Cold start**: Module-level signature dict parse'i LMDB cursor'a tasindi (14,400x)
+- **Step registry**: 20 atomik step, ornegin yeniden calistirilabilir (incremental pipeline)
+
+### Tests
+- **Yeni test dosyalari**: test_batch_v1_10_0, test_capa_funcname_mapping, test_cfg_isomorphism, test_computation_integration, test_convergence_fix, test_struct_maxsmt, test_v1100_fix_sprint, test_v1100_pipeline_fixes, test_v1100_recon_naming_fixes, test_signature_fusion, test_parallel_naming_perf, test_cpp_rtti_msvc (28), test_cpp_rtti_multi_inheritance (16)
+- **Test toplami: 2794 → 3241 PASS** (+447 yeni, 0 FAIL, 0 regression)
+
+### Dependencies (pyproject.toml)
+- Extras eklendi: `perf` (lmdb, msgpack), `cpp` (cxxfilt), `decompilers` (angr)
+- `ml` extras (torch/transformers/...) CPU-only karar sonrasi opsiyonel kaldi
+- Version: 1.9.2 → 1.10.0
+
+### Kalan Teknik Borc (v1.11+)
+- Eski `stages.py` feedback_loop kodu else branch'inde (feature flag ile yasiyor)
+- `artifacts_pending` shim pattern (step izolasyonunu hafif bozuyor)
+- TypeForge gercek kurulum (adapter hazir, kendisi yok)
+- angr `stages.py` entegrasyonu (backend hazir, pipeline degil)
+- Integration test (step-by-step full pipeline)
+
+### Known Limitations (v1.10.0)
+
+#### v1.10.1'e ertelenen
+- (Bosaltildi — MSVC RTTI ve Itanium multi/virtual inheritance Batch 3E kapsaminda v1.10.0'a eklendi.)
+
+#### v1.11.0'a ertelenen teknik borc
+- **`artifacts_pending` shim pattern:** 14 step `pc.metadata.setdefault("artifacts_pending", {})` pattern'i ile step izolasyonunu gevsetiyor. Explicit `StepContext.produce_artifact(key, value)` API'sine gecirilmeli + registry `produces` validation'i ile baglanmali. Migration plani: `docs/ARTIFACTS_PENDING_MIGRATION.md`.
+- **Eski `enable_signature_fusion` flag:** `karadul/config.py:367` DEPRECATED durumda, `ComputationConfig.enable_computation_fusion` kullanilmali. v1.11.0'da silinecek.
+- **Eski Dempster-Shafer fusion yolu:** `karadul/reconstruction/recovery_layers/engine.py:171` `DeprecationWarning` atiyor. v1.11.0'da silinecek; log-odds ensemble tek yol olacak.
+- **TypeForge gercek entegrasyon:** `karadul/analyzers/typeforge_adapter.py` subprocess + LLVM IR protokolu hazir, TypeForge'un kendisi kurulu degil. Optional extras ile opsiyonel kalacak.
+- **angr `stages.py` entegrasyonu:** Backend hazir (`karadul/decompilers/`), ama `stages.py` pipeline'ina baglanmadi. Flag mevcut, aktif entegrasyon yok.
+- **Integration smoke test kapsami:** `tests/test_pipeline_integration_smoke.py` lineer ve diamond zinciri kapsiyor; tum 20 step'i end-to-end gercek binary ile kosan integration test yok.
+
+#### Bilincli tasarim kararlari
+- **CPU-only:** v1.10.0 GPU kod yollarini tamamen kaldirdi. `gpu_utils.py` silindi. Onceki surumlerde GPU destegi yoktu ve geri de gelmeyecek — CPU-only, karadul'un temel tasarim prensibi.
+- **LLM'siz:** Hesaplama bazli kurtarma (Z3 MaxSMT, CFG isomorphism, log-odds fusion) LLM tabanli yaklasimlara alternatif. LLM entegrasyonu planlanmiyor.
+- **Struct recovery default `True`:** Ship-it karari. Kapatmak icin `--no-maxsmt-struct` CLI flag'i veya YAML config.
+
 ## [1.9.2] - 2026-04-09
 
 ### Security

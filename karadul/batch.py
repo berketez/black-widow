@@ -6,12 +6,16 @@ paralel pipeline'dan gecirir. 10 performance core kullanir.
 
 from __future__ import annotations
 
+import difflib
+import logging
 import os
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 # Apple Silicon: 10 performance core kullan (E-core haric)
 from karadul.config import CPU_PERF_CORES
@@ -127,11 +131,25 @@ def resolve_targets(target_spec: str) -> dict[str, str]:
     elif spec == "cursor":
         return dict(CURSOR_TARGETS)
     else:
-        names = [n.strip() for n in spec.split(",")]
-        result = {}
+        # v1.10.0 E10: Bilinmeyen target adlari icin uyari + oneri.
+        # Onceki davranis: sessizce atlama -> kullanici hata tespit edemiyordu.
+        names = [n.strip() for n in spec.split(",") if n.strip()]
+        result: dict[str, str] = {}
+        known_names = list(ALL_TARGETS.keys())
         for name in names:
             if name in ALL_TARGETS:
                 result[name] = ALL_TARGETS[name]
+            else:
+                suggestions = difflib.get_close_matches(
+                    name, known_names, n=3, cutoff=0.6,
+                )
+                if suggestions:
+                    logger.warning(
+                        "Target bulunamadi: %s, atlaniyor (oneri: %s)",
+                        name, ", ".join(suggestions),
+                    )
+                else:
+                    logger.warning("Target bulunamadi: %s, atlaniyor", name)
         return result
 
 
@@ -147,7 +165,14 @@ def analyze_single_target(
         name: Hedef adi.
         path_str: Hedef dosya yolu.
         project_root: Workspace'lerin olusturulacagi ust dizin.
-        skip_dynamic: Dinamik analizi atla.
+        skip_dynamic: Dinamik analizi atla. False ise DynamicAnalysisStage
+            (Frida) pipeline'a eklenir.
+
+    v1.10.0 H5 fix: Onceden ``skip_dynamic`` parametresi fonksiyon imzasinda
+    vardi ama Pipeline kurarken hic kullanilmiyordu; dolayisiyla
+    ``skip_dynamic=False`` cagirisi bile dinamik stage'i calistirmiyordu.
+    Artik ``skip_dynamic=False`` durumunda ``DynamicAnalysisStage`` identify
+    sonrasi register ediliyor.
     """
     from karadul.config import Config
     from karadul.core.pipeline import Pipeline
@@ -181,6 +206,14 @@ def analyze_single_target(
         pipeline = Pipeline(cfg)
         pipeline.register_stage(IdentifyStage())
         pipeline.register_stage(StaticAnalysisStage())
+        # v1.10.0 H5: skip_dynamic=False ise dinamik analizi ekle.
+        if not skip_dynamic:
+            try:
+                from karadul.stages import DynamicAnalysisStage
+                pipeline.register_stage(DynamicAnalysisStage())
+            except ImportError:
+                # Frida opsiyonel -- yoksa dinamik atlanir
+                pass
         pipeline.register_stage(DeobfuscationStage())
         pipeline.register_stage(ReconstructionStage())
         pipeline.register_stage(ReportStage())

@@ -162,8 +162,11 @@ class TestEdgeCases:
 # ─────────────────────────────────────────────────────────
 # Gercek binary testleri (varsa calistir)
 # ─────────────────────────────────────────────────────────
-CLAUDE_CODE_PATH = Path("/opt/homebrew/bin/claude")
-CODEX_PATH = Path("/opt/homebrew/bin/codex")
+import shutil as _shutil
+_claude_resolved = _shutil.which("claude")
+CLAUDE_CODE_PATH = Path(_claude_resolved).resolve() if _claude_resolved else Path("/nonexistent/claude")
+_codex_resolved = _shutil.which("codex")
+CODEX_PATH = Path(_codex_resolved).resolve() if _codex_resolved else Path("/nonexistent/codex")
 
 
 class TestRealBinaries:

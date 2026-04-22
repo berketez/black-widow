@@ -33,6 +33,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from karadul.core.safe_subprocess import resolve_tool, safe_run
+
 logger = logging.getLogger(__name__)
 
 # Varsayilan capa kurallarinin bulundugu dizin
@@ -40,6 +42,71 @@ DEFAULT_RULES_PATH = Path.home() / ".cache" / "karadul" / "capa-rules"
 
 # Timeout: buyuk binary'lerde capa yavas olabilir
 DEFAULT_TIMEOUT_SECONDS = 600
+
+# Harici CAPA namespace -> fonksiyon ismi haritasi (resources/capa_name_map.json)
+# Lazy-load + cache: bir kere okunur, sonra bellekte kalir.
+_NAME_MAP_JSON_PATH = Path(__file__).resolve().parent.parent / "resources" / "capa_name_map.json"
+_EXTERNAL_NAME_MAP_CACHE: dict[str, str] | None = None
+
+
+def _normalize_addr(addr: str | int) -> str:
+    """CAPA adres stringini kanonik forma cevir.
+
+    Kanonik form: lowercase hex, '0x' prefix YOK, minimum 8 hex (zfill).
+    Boyle bir padding sayesinde `"0x401234"`, `"401234"`, `"0x00401234"`
+    tumunun karsiligi `"00401234"` olur ve ghidra_functions.json
+    anahtarlariyla (genelde `"0x00401234"` ya da `"00401234"` seklinde
+    yazilan) dogru eslesir.
+
+    64-bit adresler (16 hex) dokunulmaz halde kalir; yalnizca 8'den kucuk
+    olanlar 8 hex'e padlenir. `int` verilirse hex'e cevrilir.
+    """
+    if isinstance(addr, int):
+        s = f"{addr:x}"
+    else:
+        s = str(addr).strip().lower()
+    # 0x prefix'leri (varsa birden fazla) temizle
+    while s.startswith("0x"):
+        s = s[2:]
+    # Leading zero'lari silip en az 8 hex'e padle (64-bit 16 hex ise koru)
+    s = s.lstrip("0") or "0"
+    if len(s) <= 8:
+        s = s.zfill(8)
+    return s
+
+
+def _load_external_name_map() -> dict[str, str]:
+    """resources/capa_name_map.json'u yukle (lazy + cache'li).
+
+    Dosya yoksa bos dict doner. Bu sayede `capa_name_map.json`
+    deployment'ta eksik olsa bile CAPAScanner patlamaz.
+    """
+    global _EXTERNAL_NAME_MAP_CACHE
+    if _EXTERNAL_NAME_MAP_CACHE is not None:
+        return _EXTERNAL_NAME_MAP_CACHE
+    try:
+        if _NAME_MAP_JSON_PATH.is_file():
+            with _NAME_MAP_JSON_PATH.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                _EXTERNAL_NAME_MAP_CACHE = {
+                    str(k): str(v) for k, v in data.items()
+                    if isinstance(v, str)
+                }
+            else:
+                _EXTERNAL_NAME_MAP_CACHE = {}
+        else:
+            _EXTERNAL_NAME_MAP_CACHE = {}
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.debug("capa_name_map.json yuklenemedi: %s", exc)
+        _EXTERNAL_NAME_MAP_CACHE = {}
+    return _EXTERNAL_NAME_MAP_CACHE
+
+
+def _reset_external_name_map_cache() -> None:
+    """Test yardimcisi: cache'i sifirla (JSON'u tekrar yukletmek icin)."""
+    global _EXTERNAL_NAME_MAP_CACHE
+    _EXTERNAL_NAME_MAP_CACHE = None
 
 # Capability isimlerini C fonksiyon isimlerine cevirirken kullanilan
 # ozel isimlendirme tablosu.  Genel pattern:
@@ -137,10 +204,21 @@ class CAPACapability:
 
 @dataclass
 class CAPAScanResult:
-    """CAPA scan sonucu."""
+    """CAPA scan sonucu.
+
+    Iki paralel anahtarlama destekler:
+    - `function_capabilities`: adres -> capability listesi (CAPA'nin native formatı)
+    - `capability_by_funcname`: fonksiyon ismi -> capability listesi (pipeline icin)
+
+    Reconstruction pipeline'i fonksiyon ismiyle calistigi icin,
+    `capability_by_funcname` gecilecek ghidra functions_data sayesinde doldurulur.
+    Eger `functions_data` verilmezse `capability_by_funcname` bos kalir (graceful).
+    """
     success: bool = False
-    # func_address (hex str) -> capability listesi
+    # func_address (hex str) -> capability listesi (CAPA native)
     function_capabilities: dict[str, list[CAPACapability]] = field(default_factory=dict)
+    # function_name -> capability listesi (reconstruction pipeline icin)
+    capability_by_funcname: dict[str, list[CAPACapability]] = field(default_factory=dict)
     # file-level capability'ler (fonksiyona bagli olmayan)
     file_capabilities: list[CAPACapability] = field(default_factory=list)
     total_rules_matched: int = 0
@@ -163,6 +241,10 @@ class CAPAScanResult:
             "function_capabilities": {
                 addr: [c.to_dict() for c in caps]
                 for addr, caps in self.function_capabilities.items()
+            },
+            "capability_by_funcname": {
+                fname: [c.to_dict() for c in caps]
+                for fname, caps in self.capability_by_funcname.items()
             },
             "file_capabilities": [c.to_dict() for c in self.file_capabilities],
             "errors": self.errors,
@@ -201,6 +283,10 @@ class CAPAScanner:
         self._timeout = timeout
         self._capa_available: bool | None = None  # lazy check
         self._cli_path: str | None = None
+        # PERF (v1.10.0 H12): rglob sonucunu cache'le.
+        # is_available() birden fazla kez cagirilabildiginden eskiden
+        # 1000+ .yml dosyasi her cagrida tekrar tariandi.
+        self._yml_count: int | None = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -219,8 +305,10 @@ class CAPAScanner:
             self._capa_available = False
             return False
 
-        # En az birkac .yml dosyasi olmali
-        yml_count = sum(1 for _ in self._rules_path.rglob("*.yml"))
+        # En az birkac .yml dosyasi olmali (cached -- v1.10.0 H12)
+        if self._yml_count is None:
+            self._yml_count = sum(1 for _ in self._rules_path.rglob("*.yml"))
+        yml_count = self._yml_count
         if yml_count < 10:
             logger.debug(
                 "CAPA kurallar dizininde yeterli kural yok (%d < 10): %s",
@@ -229,8 +317,8 @@ class CAPAScanner:
             self._capa_available = False
             return False
 
-        # CLI mevcut mu?
-        cli = shutil.which("capa")
+        # v1.10.0 Batch 5B CRITICAL-2: resolve_tool ile PATH hijack koruma.
+        cli = resolve_tool("capa")
         if cli:
             self._cli_path = cli
             self._capa_available = True
@@ -251,11 +339,19 @@ class CAPAScanner:
         self._capa_available = False
         return False
 
-    def scan(self, binary_path: Path) -> CAPAScanResult:
+    def scan(
+        self,
+        binary_path: Path,
+        functions_data: dict[str, Any] | None = None,
+    ) -> CAPAScanResult:
         """Binary'yi tara, fonksiyon -> capability listesi dondur.
 
         Args:
             binary_path: Taranacak binary dosya yolu.
+            functions_data: Opsiyonel ghidra functions.json indeksi:
+                `{normalized_addr: {"name": "...", ...}}` seklinde.
+                Verildiginde sonuca `capability_by_funcname` da eklenir.
+                None ise sadece adres bazli `function_capabilities` doldurulur.
 
         Returns:
             CAPAScanResult: Scan sonuclari.
@@ -280,8 +376,65 @@ class CAPAScanner:
         else:
             result = self._scan_via_api(binary_path)
 
+        # Fonksiyon ismi indeksini doldur (functions_data varsa)
+        if functions_data is not None and result.success:
+            result.capability_by_funcname = self._build_funcname_index(
+                result.function_capabilities, functions_data,
+            )
+
         result.duration_seconds = time.monotonic() - start
         return result
+
+    def _build_funcname_index(
+        self,
+        function_capabilities: dict[str, list[CAPACapability]],
+        functions_data: dict[str, Any],
+    ) -> dict[str, list[CAPACapability]]:
+        """Address-keyed capability'leri function-name-keyed'e cevir.
+
+        Her adres iki yolla aranir:
+        1. `_normalize_addr(addr)` ile kanonik form
+        2. Ham addr stringi (functions_data dogrudan CAPA formatinda ise)
+
+        `functions_data` degerleri dict olmali; `"name"` yoksa `FUN_<addr>`
+        duserek fallback uretilir (ghidra'nin default isimlendirmesi).
+        Baska formatlar (ornegin `{addr: "name_str"}`) da tolere edilir.
+        """
+        name_index: dict[str, list[CAPACapability]] = {}
+        if not isinstance(functions_data, dict):
+            return name_index
+
+        # functions_data'nin anahtarlarini da normalize et (hizli lookup icin)
+        normalized_fd: dict[str, Any] = {}
+        for k, v in functions_data.items():
+            try:
+                normalized_fd[_normalize_addr(k)] = v
+            except Exception:
+                # Anahtar hex degil — orijinaliyle kal
+                normalized_fd[str(k).lower()] = v
+
+        for addr_str, caps in function_capabilities.items():
+            if not caps:
+                continue
+            try:
+                norm = _normalize_addr(addr_str)
+            except Exception:
+                norm = str(addr_str).lower()
+
+            fn_entry = normalized_fd.get(norm)
+            if fn_entry is None:
+                # Fallback: functions_data'da bu adres yok — FUN_xxx ismi ver
+                fname = f"FUN_{norm}"
+            elif isinstance(fn_entry, dict):
+                fname = fn_entry.get("name") or f"FUN_{norm}"
+            elif isinstance(fn_entry, str):
+                fname = fn_entry
+            else:
+                fname = f"FUN_{norm}"
+
+            name_index.setdefault(fname, []).extend(caps)
+
+        return name_index
 
     def get_function_names(
         self,
@@ -349,25 +502,66 @@ class CAPAScanner:
     # ------------------------------------------------------------------
 
     def _scan_via_cli(self, binary_path: Path) -> CAPAScanResult:
-        """capa CLI ile JSON ciktisi al ve parse et."""
+        """capa CLI ile JSON ciktisi al ve parse et.
+
+        PERF/MEM (v1.10.0 C6): Eskiden `capture_output=True` ile tum JSON
+        (100+ MB olabilir) stdout uzerinden Python bellegine aktariliyordu.
+        Yeni versiyon `-o/--output-file` flag'ini kullanip diske yazdirir,
+        sonra dosyayi stream ile okur. Subprocess stderr hala yakalanir
+        (kucuk, hata mesaji icin), stdout `DEVNULL`'a yonlendirilir.
+        """
+        # CAPA cikti dosyasi: binary ile ayni dizinde gecici dosya
+        import tempfile as _tempfile
+        tmp_out = _tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", prefix="capa_out_",
+            delete=False, encoding="utf-8",
+        )
+        tmp_out.close()
+        output_file = Path(tmp_out.name)
+
         cmd = [
             self._cli_path,
             str(binary_path),
-            "-j",                           # JSON output
-            "-r", str(self._rules_path),    # kural dizini
-            "-q",                           # quiet (progress bar yok)
+            "-j",                                # JSON output
+            "-r", str(self._rules_path),         # kural dizini
+            "-q",                                # quiet (progress bar yok)
+            "-o", str(output_file),              # JSON dosyaya yaz (stdout degil)
         ]
 
         logger.info("CAPA CLI calistiriliyor: %s", " ".join(cmd))
 
         try:
-            proc = subprocess.run(
+            # v1.10.0 Batch 5B MED-19: stderr unbounded koruma.
+            # stderr text=True + PIPE -> rich Python string build, kotu
+            # durumda ~1GB olabilir. Bytes mode okuyup cap uyguluyoruz.
+            proc = safe_run(
                 cmd,
-                capture_output=True,
-                text=True,
+                stdout=subprocess.DEVNULL,          # stdout bellege almama
+                stderr=subprocess.PIPE,             # stderr byte mode
+                text=False,
                 timeout=self._timeout,
             )
+            # stderr kap limitle, unicode-decode errors replace
+            _stderr_cap = 1 * 1024 * 1024  # 1MB, SecurityConfig ile uyumlu
+            _raw_stderr = proc.stderr or b""
+            if len(_raw_stderr) > _stderr_cap:
+                logger.warning(
+                    "CAPA stderr %d > cap %d, kirpiliyor", len(_raw_stderr), _stderr_cap,
+                )
+                _raw_stderr = _raw_stderr[:_stderr_cap]
+            # proc.stderr (str) alanini override et downstream caller'lar icin
+            proc_stderr_decoded = _raw_stderr.decode("utf-8", errors="replace")
+            # Yeniden atamak icin CompletedProcess'in stderr'ini override
+            # bir namedtuple degil, basit attribute; direkt yazabiliriz.
+            try:
+                proc.stderr = proc_stderr_decoded
+            except AttributeError:
+                pass
         except subprocess.TimeoutExpired:
+            try:
+                output_file.unlink(missing_ok=True)
+            except OSError:
+                pass
             return CAPAScanResult(
                 success=False,
                 errors=[
@@ -376,44 +570,53 @@ class CAPAScanner:
                 ],
             )
         except FileNotFoundError:
+            try:
+                output_file.unlink(missing_ok=True)
+            except OSError:
+                pass
             return CAPAScanResult(
                 success=False,
                 errors=["capa CLI bulunamadi"],
             )
 
-        if proc.returncode != 0:
-            stderr = (proc.stderr or "").strip()
-            # Bazi hatalar beklenen: format desteklenmiyor vb.
-            if "UnsupportedFormatError" in stderr or "not appear to be a supported" in stderr:
+        try:
+            if proc.returncode != 0:
+                stderr = (proc.stderr or "").strip()
+                # Bazi hatalar beklenen: format desteklenmiyor vb.
+                if "UnsupportedFormatError" in stderr or "not appear to be a supported" in stderr:
+                    return CAPAScanResult(
+                        success=False,
+                        errors=[
+                            f"CAPA bu binary formatini desteklemiyor: "
+                            f"{binary_path.name} (sadece PE/ELF/shellcode)"
+                        ],
+                    )
                 return CAPAScanResult(
                     success=False,
-                    errors=[
-                        f"CAPA bu binary formatini desteklemiyor: "
-                        f"{binary_path.name} (sadece PE/ELF/shellcode)"
-                    ],
+                    errors=[f"CAPA CLI hatasi (exit {proc.returncode}): {stderr[:500]}"],
                 )
-            return CAPAScanResult(
-                success=False,
-                errors=[f"CAPA CLI hatasi (exit {proc.returncode}): {stderr[:500]}"],
-            )
 
-        # JSON parse
-        stdout = proc.stdout.strip()
-        if not stdout:
-            return CAPAScanResult(
-                success=False,
-                errors=["CAPA bos cikti uretti"],
-            )
+            # JSON parse -- dosyadan stream
+            try:
+                if not output_file.exists() or output_file.stat().st_size == 0:
+                    return CAPAScanResult(
+                        success=False,
+                        errors=["CAPA bos cikti uretti"],
+                    )
+                with output_file.open("r", encoding="utf-8") as fh:
+                    data = json.load(fh)
+            except (OSError, json.JSONDecodeError) as exc:
+                return CAPAScanResult(
+                    success=False,
+                    errors=[f"CAPA JSON parse hatasi: {exc}"],
+                )
 
-        try:
-            data = json.loads(stdout)
-        except json.JSONDecodeError as exc:
-            return CAPAScanResult(
-                success=False,
-                errors=[f"CAPA JSON parse hatasi: {exc}"],
-            )
-
-        return self._parse_json_output(data)
+            return self._parse_json_output(data)
+        finally:
+            try:
+                output_file.unlink(missing_ok=True)
+            except OSError:
+                pass
 
     # ------------------------------------------------------------------
     # Python API scan (fallback)
@@ -645,26 +848,41 @@ class CAPAScanner:
 def capability_to_function_name(capability: str) -> str:
     """CAPA capability ismini C fonksiyon ismine donustur.
 
-    Strateji:
-    1. Bilinen mapping tablosunda varsa direkt kullan
-    2. Yoksa generic donusum uygula:
+    Strateji (oncelik sirasi):
+    1. Dahili `_CAPABILITY_NAME_MAP` (kod icinde tanimli, en guvenilir)
+    2. Harici `resources/capa_name_map.json` (lazy load, cache'li)
+       - CAPA namespace/rule path formatini destekler:
+         ornegin `"crypto/aes/encrypt"` -> `"aes_encrypt_block"`
+    3. Generic heuristic donusum:
        - Kucuk harfe cevir
+       - "using X" / "via X" pattern'lerini one al
        - Ozel karakterleri '_' ile degistir
-       - Art arda '_' temizle
        - Max 63 karakter (C identifier limit)
 
     Examples:
-        "encrypt data using AES"     -> "aes_encrypt"
-        "send HTTP request"          -> "http_request_send"
-        "create mutex"               -> "mutex_create"
-        "check for debugger"         -> "debugger_check"
-        "obfuscated with Base64"     -> "base64_obfuscated"
+        "encrypt data using AES"     -> "aes_encrypt"       (dahili)
+        "crypto/aes/encrypt"         -> "aes_encrypt_block" (JSON)
+        "send HTTP request"          -> "http_request_send" (dahili)
+        "create mutex"               -> "mutex_create"      (dahili)
+        "check for debugger"         -> "debugger_check"    (dahili)
+        "obfuscated with Base64"     -> "base64_obfuscated" (heuristic)
     """
-    # Bilinen mapping
+    # 1) Bilinen dahili mapping
     if capability in _CAPABILITY_NAME_MAP:
         return _CAPABILITY_NAME_MAP[capability]
 
-    # Generic donusum
+    # 2) Harici JSON mapping (capa_name_map.json) - kanonikleştirilmiş anahtarlar
+    external = _load_external_name_map()
+    if external:
+        # Direkt eslesme
+        if capability in external:
+            return external[capability]
+        # Namespace path formatini normalize ederek dene
+        cap_lower = capability.lower().strip()
+        if cap_lower in external:
+            return external[cap_lower]
+
+    # 3) Generic donusum
     name = capability.lower().strip()
 
     # "using X" pattern'ini onde al: "encrypt data using AES" -> "aes_encrypt_data"

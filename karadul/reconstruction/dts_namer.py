@@ -472,11 +472,29 @@ class DtsNamer:
             f"https://unpkg.com/{package_name}@{version}/types/index.d.ts",
         ]
 
+        # v1.10.0 Fix Sprint MED-1: Scheme whitelist ve max_bytes limit.
+        from urllib.parse import urlparse
+        MAX_DTS_BYTES = 5 * 1024 * 1024  # 5MB yeterli (en buyuk .d.ts typescript-eslint ~1MB)
+
         for url in urls:
+            parsed = urlparse(url)
+            if (parsed.scheme or "").lower() != "https":
+                logger.debug("DTS URL scheme reddedildi: %s", url)
+                continue
             try:
                 req = urllib.request.Request(url, headers={"User-Agent": "karadul/1.0"})
                 with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                    content = resp.read().decode("utf-8", errors="replace")
+                    final_scheme = (urlparse(resp.url).scheme or "").lower()
+                    if final_scheme != "https":
+                        logger.debug("DTS redirect scheme reddedildi: %s", resp.url)
+                        continue
+                    raw = resp.read(MAX_DTS_BYTES + 1)
+                    if len(raw) > MAX_DTS_BYTES:
+                        logger.warning(
+                            "DTS %d+ byte, limit %d: %s", MAX_DTS_BYTES, MAX_DTS_BYTES, url,
+                        )
+                        continue
+                    content = raw.decode("utf-8", errors="replace")
                     if content and "export" in content:
                         logger.info("DTS indirme basarili: %s", url)
                         return content

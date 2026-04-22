@@ -78,7 +78,7 @@ class TestConstraintSolver:
     """ConstraintSolver unit testleri."""
 
     def _solver(self, **kw: Any):
-        from karadul.reconstruction.computation.constraint_solver import (
+        from karadul.reconstruction.recovery_layers.constraint_solver import (
             ConstraintSolver,
         )
         return ConstraintSolver(_make_config(**kw))
@@ -134,7 +134,7 @@ class TestConstraintSolver:
         d = _create_decompiled_dir(tmp_path, {"init_struct.c": code})
 
         # Z3'u "yok" olarak mock'la
-        import karadul.reconstruction.computation.constraint_solver as cs_mod
+        import karadul.reconstruction.recovery_layers.constraint_solver as cs_mod
         orig = cs_mod._Z3_AVAILABLE
         try:
             cs_mod._Z3_AVAILABLE = False
@@ -382,7 +382,7 @@ class TestConstraintSolver:
         solver = self._solver()
         result = solver.solve(d)
 
-        import karadul.reconstruction.computation.constraint_solver as cs_mod
+        import karadul.reconstruction.recovery_layers.constraint_solver as cs_mod
         if cs_mod._Z3_AVAILABLE:
             # Z3 ile union detection
             union_structs = [s for s in result.structs if s.is_union]
@@ -504,7 +504,7 @@ class TestCFGFingerprint:
     """CFGFingerprinter unit testleri."""
 
     def _fingerprinter(self, **kw: Any):
-        from karadul.reconstruction.computation.cfg_fingerprint import (
+        from karadul.reconstruction.recovery_layers.cfg_fingerprint import (
             CFGFingerprinter,
         )
         return CFGFingerprinter(config=kw)
@@ -550,7 +550,7 @@ class TestCFGFingerprint:
 
     def test_cosine_similarity_padding(self) -> None:
         """16-dim vs 24-dim backward compat -- padding ile cosine similarity."""
-        from karadul.reconstruction.computation.cfg_fingerprint import (
+        from karadul.reconstruction.recovery_layers.cfg_fingerprint import (
             CFGFingerprinter,
         )
 
@@ -597,7 +597,7 @@ class TestSignatureFusion:
     """SignatureFusion unit testleri."""
 
     def _fusion(self, **kw: Any):
-        from karadul.reconstruction.computation.signature_fusion import (
+        from karadul.reconstruction.recovery_layers.signature_fusion import (
             SignatureFusion,
         )
         return SignatureFusion(config=kw)
@@ -669,7 +669,7 @@ class TestSignatureFusion:
 
     def test_hypothesis_normalization(self) -> None:
         """quicksort == quick_sort == QuickSort normalize edilmeli."""
-        from karadul.reconstruction.computation.signature_fusion import (
+        from karadul.reconstruction.recovery_layers.signature_fusion import (
             SignatureFusion,
         )
         assert SignatureFusion._normalize_hypothesis("quicksort") == "quicksort"
@@ -710,7 +710,7 @@ class TestFormulaExtractor:
     """FormulaExtractor unit testleri."""
 
     def _extractor(self, **kw: Any):
-        from karadul.reconstruction.computation.formula_extractor import (
+        from karadul.reconstruction.recovery_layers.formula_extractor import (
             FormulaExtractor,
         )
         config = _make_config(**kw)
@@ -1298,24 +1298,42 @@ void sha256_init(void) {{
         )
 
     def test_scan_constants_small_threshold(self) -> None:
-        """Tum sabitler <256 ise min 6 unique + %90 esleme zorunlu."""
+        """Tum sabitler <256 olan algoritmalar icin min 6 unique + %90 esleme zorunlu.
+
+        Kural (c_algorithm_id.py L920-923): bir algoritma grubu iceriksiz
+        olarak tum-kucuk-sabitlerden olusuyorsa threshold=6 uygulanir.
+        5 unique kucuk sabit (1..5) iceren bir body, boyle bir tum-kucuk
+        algoritma icin eslesmemelidir.
+
+        MD5 T tablosu (T_table) 64 buyuk sabit (hepsi > 256), HMAC ipad/opad
+        ise sadece 0x36/0x5C (all_small=True, 2<6) — her ikisi de 5 kucuk
+        rakamla eslesmemeli. Karsin karisık gruplu (bir kisminda buyuk
+        sabit) algoritmalar (Keccak gibi) required>=1 ile eslesebilir;
+        test bu karisik durumu HARIC tutar.
+        """
         from karadul.reconstruction.c_algorithm_id import CAlgorithmIdentifier
 
         identifier = CAlgorithmIdentifier()
-        # 5 unique kucuk sabit -- esik 6, karsilanmamali
         body = "/* " + "x" * 600 + " */ "
         body += "int vals[] = {1, 2, 3, 4, 5};"
         matches = identifier._scan_constants(body, "test_func", "0x1000")
-        # 5 < 6 unique minimum, hicbir small-constant algoritma eslesmemeli
-        # (buyuk sabitli algoritmalar da eslesemez, zira bu kucuk sayilar)
-        # Not: bazi algoritmalar buyuk sabit kullanir, onlar icin bu test gecerli degil
-        # Ama kucuk-sabit-only algoritmalar (eski HMAC ipad/opad gibi) icin gecerli
-        # Bu assertion: kucuk sabitlerle false positive olmamali
+
+        # GERCEK ASSERTION 1: toplam match cok dusuk olmali.
+        # 5 kucuk sabit boylesine yaygin pattern; gereksiz sayida
+        # algoritma false positive uretmemelidir.
+        assert len(matches) < 5, (
+            f"5 genel kucuk sabit ile {len(matches)} algoritma match'i "
+            f"uretildi (filtreleme zayif): {[m.name for m in matches]}"
+        )
+
+        # GERCEK ASSERTION 2: tum-kucuk-sabit-only algoritmalar
+        # (HMAC ipad/opad gibi) eslesmemeli. 5<6 esigi net cakisir.
+        small_only_algos = {"HMAC"}  # bu algo'nun sig_groups hepsi <256
         for m in matches:
-            # Eger match varsa, kucuk sabit esiginden kaynaklanmamali
-            if m.detection_method == "constant":
-                # Sabitlerin hepsi buyuk (>= 256) olmali
-                pass  # Bu kontrol, specific false positive'leri engeller
+            assert m.name not in small_only_algos, (
+                f"{m.name} small-constant-only algoritma; 5<6 esigi altinda "
+                f"match vermemeliydi: evidence={m.evidence}"
+            )
 
     def test_body_size_filter(self) -> None:
         """< 500 char fonksiyon -> bos sonuc."""
@@ -1422,7 +1440,7 @@ class TestEngineDataFlow:
 
     def test_l1_to_l3_data_flow(self, tmp_path: Path) -> None:
         """Constraint solver sonuclari (structs) -> fusion'a aktarilmali."""
-        from karadul.reconstruction.computation.engine import (
+        from karadul.reconstruction.recovery_layers.engine import (
             ComputationRecoveryEngine,
         )
 
@@ -1453,7 +1471,7 @@ class TestEngineDataFlow:
 
     def test_disabled_noop(self, tmp_path: Path) -> None:
         """enabled=False -> aninda don, hicbir is yapma."""
-        from karadul.reconstruction.computation.engine import (
+        from karadul.reconstruction.recovery_layers.engine import (
             ComputationRecoveryEngine,
         )
 
@@ -1474,7 +1492,7 @@ class TestEngineDataFlow:
 
     def test_layer_exception_isolation(self, tmp_path: Path) -> None:
         """Bir katman fail ederse diger katmanlar devam etmeli."""
-        from karadul.reconstruction.computation.engine import (
+        from karadul.reconstruction.recovery_layers.engine import (
             ComputationRecoveryEngine,
         )
 

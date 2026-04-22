@@ -27,6 +27,9 @@ from tests.benchmark.benchmark_runner import (
     run_sample_benchmark,
 )
 
+# v1.10.0 H4: benchmark suite'in parcasi, default run'da skip edilir.
+pytestmark = pytest.mark.benchmark
+
 
 # ===================================================================
 # Fixtures
@@ -359,10 +362,15 @@ class TestBenchmarkMetrics:
     def test_to_dict_keys(self) -> None:
         m = BenchmarkMetrics(total_symbols=5, exact_matches=2, missing_names=1)
         d = m.to_dict()
+        # v1.10.0 Batch 5A: F1 / per-source / confusion matrix alanlari eklendi.
         expected_keys = {
             "total_symbols", "exact_matches", "semantic_matches",
             "partial_matches", "wrong_names", "missing_names",
             "accuracy", "recovery_rate",
+            # Yeni alanlar
+            "precision", "recall", "f1",
+            "per_source_precision", "per_source_recall", "per_source_f1",
+            "confusion_matrix",
         }
         assert set(d.keys()) == expected_keys
 
@@ -580,3 +588,164 @@ class TestNamingResult:
         s = repr(r)
         assert "NamingResult" in s
         assert "partial" in s
+
+    def test_source_field_default_empty(self) -> None:
+        """v1.10.0: source alani opsiyonel, default ''."""
+        r = NamingResult("x", "y", 1.0, "exact")
+        assert r.source == ""
+
+    def test_source_field_settable(self) -> None:
+        """v1.10.0: source alani belirtilebilir."""
+        r = NamingResult("x", "y", 1.0, "exact", source="ngram")
+        assert r.source == "ngram"
+
+
+# ===================================================================
+# v1.10.0 Batch 5A: F1 / Per-Source / Confusion Matrix
+# ===================================================================
+
+
+class TestF1Metrics:
+    """Global F1, precision, recall testleri."""
+
+    def test_perfect_f1(self, calc: AccuracyCalculator) -> None:
+        """Tum exact match -> F1=1.0"""
+        comparisons = [
+            NamingResult("a", "a", 1.0, "exact"),
+            NamingResult("b", "b", 1.0, "exact"),
+            NamingResult("c", "c", 1.0, "exact"),
+        ]
+        m = calc.calculate_metrics(comparisons)
+        assert m.precision == 1.0
+        assert m.recall == 1.0
+        assert m.f1 == 1.0
+
+    def test_all_missing_f1_zero(self, calc: AccuracyCalculator) -> None:
+        """Tum missing -> recall=0 (TP=0, FN=3) -> F1=0."""
+        comparisons = [
+            NamingResult("a", "FUN_00401000", 0.0, "missing"),
+            NamingResult("b", "FUN_00401100", 0.0, "missing"),
+        ]
+        m = calc.calculate_metrics(comparisons)
+        assert m.recall == 0.0
+        assert m.f1 == 0.0
+
+    def test_all_wrong_f1_zero(self, calc: AccuracyCalculator) -> None:
+        """Tum wrong -> precision=0 (TP=0, FP=3) -> F1=0."""
+        comparisons = [
+            NamingResult("a", "render_xyz", 0.0, "wrong"),
+            NamingResult("b", "draw_foo", 0.0, "wrong"),
+        ]
+        m = calc.calculate_metrics(comparisons)
+        assert m.precision == 0.0
+        assert m.f1 == 0.0
+
+    def test_mixed_f1(self, calc: AccuracyCalculator) -> None:
+        """Karisik sonuc: F1 formulune uymali.
+
+        TP=2 (1 exact + 1 partial), FP=1 (wrong), FN=1 (missing)
+        P = 2 / 3 = 0.667
+        R = 2 / 3 = 0.667
+        F1 = 2*P*R/(P+R) = 0.667
+        """
+        comparisons = [
+            NamingResult("a", "a", 1.0, "exact"),
+            NamingResult("b", "b_xx", 0.5, "partial"),
+            NamingResult("c", "random", 0.0, "wrong"),
+            NamingResult("d", "FUN_001", 0.0, "missing"),
+        ]
+        m = calc.calculate_metrics(comparisons)
+        assert m.precision == pytest.approx(2/3, rel=0.01)
+        assert m.recall == pytest.approx(2/3, rel=0.01)
+        assert m.f1 == pytest.approx(2/3, rel=0.01)
+
+    def test_f1_partial_counted_as_tp(self, calc: AccuracyCalculator) -> None:
+        """Partial match TP'ye dahil olmali."""
+        comparisons = [
+            NamingResult("a", "foo", 0.5, "partial"),
+            NamingResult("b", "bar", 0.5, "partial"),
+        ]
+        m = calc.calculate_metrics(comparisons)
+        assert m.precision == 1.0  # TP=2, FP=0
+        assert m.recall == 1.0      # TP=2, FN=0
+        assert m.f1 == 1.0
+
+    def test_empty_comparisons_f1_zero(self, calc: AccuracyCalculator) -> None:
+        """Bos girdi -> tum metrikler 0."""
+        m = calc.calculate_metrics([])
+        assert m.precision == 0.0
+        assert m.recall == 0.0
+        assert m.f1 == 0.0
+
+
+class TestPerSourceMetrics:
+    """Kaynak (source) bazli kirilim testleri."""
+
+    def test_single_source(self, calc: AccuracyCalculator) -> None:
+        """Tek kaynakli comparisonlar: per-source == global."""
+        comparisons = [
+            NamingResult("a", "a", 1.0, "exact", source="sig_db"),
+            NamingResult("b", "b", 1.0, "exact", source="sig_db"),
+        ]
+        m = calc.calculate_metrics(comparisons)
+        assert m.per_source_f1["sig_db"] == 1.0
+        assert m.per_source_precision["sig_db"] == 1.0
+        assert m.per_source_recall["sig_db"] == 1.0
+
+    def test_multi_source_breakdown(self, calc: AccuracyCalculator) -> None:
+        """Farkli kaynaklar ayri F1 alir."""
+        comparisons = [
+            # sig_db: 2 exact / 0 yanlis -> F1 = 1.0
+            NamingResult("a", "a", 1.0, "exact", source="sig_db"),
+            NamingResult("b", "b", 1.0, "exact", source="sig_db"),
+            # ngram: 1 exact / 1 missing -> P=1.0, R=0.5, F1=0.667
+            NamingResult("c", "c", 1.0, "exact", source="ngram"),
+            NamingResult("d", "FUN_001", 0.0, "missing", source="ngram"),
+        ]
+        m = calc.calculate_metrics(comparisons)
+        assert m.per_source_f1["sig_db"] == 1.0
+        assert m.per_source_f1["ngram"] == pytest.approx(2/3, rel=0.01)
+
+    def test_no_source_goes_to_unknown(self, calc: AccuracyCalculator) -> None:
+        """source='' -> 'unknown' bucket."""
+        comparisons = [
+            NamingResult("a", "a", 1.0, "exact"),  # source default ""
+        ]
+        m = calc.calculate_metrics(comparisons)
+        assert "unknown" in m.per_source_f1
+
+    def test_compute_per_source_returns_dict(self, calc: AccuracyCalculator) -> None:
+        """compute_per_source 3 alanlik dict dondurmeli."""
+        comparisons = [
+            NamingResult("a", "a", 1.0, "exact", source="x"),
+        ]
+        result = calc.compute_per_source(comparisons)
+        assert set(result.keys()) == {"precision", "recall", "f1"}
+        assert "x" in result["f1"]
+
+
+class TestConfusionMatrix:
+    """Confusion matrix dagilim testleri."""
+
+    def test_confusion_matrix_counts_match_types(
+        self, calc: AccuracyCalculator
+    ) -> None:
+        """Her match_type icin sayim yapilmali."""
+        comparisons = [
+            NamingResult("a", "a", 1.0, "exact"),
+            NamingResult("b", "b", 1.0, "exact"),
+            NamingResult("c", "d", 0.0, "wrong"),
+        ]
+        m = calc.calculate_metrics(comparisons)
+        assert m.confusion_matrix["exact"]["exact"] == 2
+        assert m.confusion_matrix["wrong"]["wrong"] == 1
+
+    def test_confusion_matrix_in_to_dict(
+        self, calc: AccuracyCalculator
+    ) -> None:
+        """confusion_matrix serialize edilebilmeli."""
+        comparisons = [NamingResult("a", "a", 1.0, "exact")]
+        m = calc.calculate_metrics(comparisons)
+        d = m.to_dict()
+        assert "confusion_matrix" in d
+        assert d["confusion_matrix"]["exact"]["exact"] == 1

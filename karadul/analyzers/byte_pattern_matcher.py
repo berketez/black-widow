@@ -78,7 +78,7 @@ class BytePatternMatcher:
         min_pattern_length: int = MIN_PATTERN_LENGTH,
         min_confidence: float = 0.60,
         read_size: int = 32,
-        max_selective: int = 5,
+        max_selective: Optional[int] = None,
         max_suspicious: int = 20,
     ) -> None:
         """
@@ -88,12 +88,22 @@ class BytePatternMatcher:
             min_confidence: Eslestirme icin minimum confidence esigi.
             read_size: Her fonksiyondan okunacak byte sayisi.
             max_selective: Bu sayiya kadar match -> penalty yok (1-max_selective).
+                None (default) ise ``max(2, min_pattern_length // 8)`` formulu
+                kullanilir -- pattern ne kadar uzun olursa o kadar fazla
+                eslestirmeye tolerans tanir (v1.10.0 M7). Kisa pattern + cok
+                match = false positive; uzun pattern + cok match = normal
+                compiler helper paylasimi.
             max_suspicious: Bu sayinin uzerinde match -> discard (max_suspicious+).
                 max_selective+1 ile max_suspicious arasi confidence * 0.5.
         """
         self._min_pattern_length = max(min_pattern_length, 8)
         self._min_confidence = min_confidence
         self._read_size = read_size
+        # v1.10.0 M7: pattern uzunluguna orantili selective esigi.
+        # min_pattern_length=16 -> max_selective=2 (sıkı)
+        # min_pattern_length=64 -> max_selective=8 (genis)
+        if max_selective is None:
+            max_selective = max(2, self._min_pattern_length // 8)
         self._max_selective = max_selective
         self._max_suspicious = max_suspicious
         self._otool_path = self._find_otool()
@@ -417,13 +427,39 @@ class BytePatternMatcher:
         vmaddr, fileoff = self._parse_text_segment_header(binary_path)
         return vmaddr, fileoff, fat_offset
 
+    # Mach-O CPU type sabitleri (mach/machine.h)
+    _CPU_TYPE_X86_64 = 0x01000007   # CPU_TYPE_X86 (7) | CPU_ARCH_ABI64 (0x01000000)
+    _CPU_TYPE_ARM64 = 0x0100000C    # CPU_TYPE_ARM (12) | CPU_ARCH_ABI64
+    _CPU_TYPE_X86 = 0x00000007
+    _CPU_TYPE_ARM = 0x0000000C
+
+    @staticmethod
+    def _preferred_cputype() -> int:
+        """Host mimarisi icin tercih edilen Mach-O cputype."""
+        import platform as _platform
+        m = _platform.machine().lower()
+        if m in ("arm64", "aarch64"):
+            return BytePatternMatcher._CPU_TYPE_ARM64
+        if m in ("x86_64", "amd64"):
+            return BytePatternMatcher._CPU_TYPE_X86_64
+        if m.startswith("arm"):
+            return BytePatternMatcher._CPU_TYPE_ARM
+        return BytePatternMatcher._CPU_TYPE_X86_64  # yaygin default
+
     def _get_fat_offset(self, binary_path: Path) -> int:
-        """Universal (fat) binary'nin ilk slice offset'ini dondur.
+        """Universal (fat) binary'nin dogru slice offset'ini dondur.
 
-        Mach-O fat binary (magic 0xCAFEBABE veya 0xBEBAFECA): ilk architecture'un
-        offset'ini fat header'dan okur. Normal Mach-O veya diger format ise 0 dondurur.
+        v1.10.0 H11: Eskiden HER ZAMAN ilk arch'in offset'i donuyordu.
+        Universal binary'de ilk arch genelde x86_64 oldugundan Apple Silicon
+        uzerinde yanlis slice tarandi (pattern eslesmeleri kayiyordu). Yeni
+        versiyon:
+          1. Host mimarisini `platform.machine()` ile tespit et
+          2. Tum fat_arch entries'lerini dogru cputype icin tara
+          3. Bulursa: o slice'in offset'ini don
+          4. Bulamazsa: fallback olarak ilk arch'in offset'i (eski davranis)
 
-        lipo -detailed_info kullanilamazsa, fat header'i dogrudan parse eder.
+        Mach-O fat binary (magic 0xCAFEBABE veya 0xBEBAFECA). Normal Mach-O
+        veya diger format ise 0 dondurur.
         """
         try:
             with open(binary_path, "rb") as f:
@@ -438,7 +474,9 @@ class BytePatternMatcher:
         if magic != fat_magic_be and magic != fat_magic_le:
             return 0
 
-        # Fat binary -- ilk arch offset'ini parse et
+        preferred_cpu = self._preferred_cputype()
+
+        # Fat binary -- tum arch entries'lerini parse et, dogru cputype'i sec
         import struct
         try:
             with open(binary_path, "rb") as f:
@@ -449,28 +487,53 @@ class BytePatternMatcher:
 
                 if magic == fat_magic_be:
                     nfat = struct.unpack(">I", nfat_raw)[0]
+                    fmt = ">5I"
                 else:
                     nfat = struct.unpack("<I", nfat_raw)[0]
+                    fmt = "<5I"
 
                 if nfat == 0:
                     return 0
+                # Mantiksiz nfat (dosya bozuksa) koru
+                if nfat > 64:
+                    logger.debug(
+                        "BytePatternMatcher: nfat %d cok yuksek, 64 ile sinirlandi",
+                        nfat,
+                    )
+                    nfat = 64
 
-                # Ilk fat_arch struct (her biri 20 byte):
+                first_offset: Optional[int] = None
+                preferred_offset: Optional[int] = None
+                # Her fat_arch struct 20 byte:
                 #   uint32_t cputype, cpusubtype, offset, size, align
-                arch_raw = f.read(20)
-                if len(arch_raw) < 20:
+                for _idx in range(nfat):
+                    arch_raw = f.read(20)
+                    if len(arch_raw) < 20:
+                        break
+                    cputype, _cpusubtype, offset, _size, _align = struct.unpack(
+                        fmt, arch_raw,
+                    )
+                    if first_offset is None:
+                        first_offset = offset
+                    if cputype == preferred_cpu:
+                        preferred_offset = offset
+                        break
+
+                chosen = (
+                    preferred_offset
+                    if preferred_offset is not None
+                    else first_offset
+                )
+                if chosen is None:
                     return 0
 
-                if magic == fat_magic_be:
-                    _, _, offset, _, _ = struct.unpack(">5I", arch_raw)
-                else:
-                    _, _, offset, _, _ = struct.unpack("<5I", arch_raw)
-
                 logger.debug(
-                    "BytePatternMatcher: Fat binary, ilk slice offset=0x%x (nfat=%d)",
-                    offset, nfat,
+                    "BytePatternMatcher: Fat binary, slice offset=0x%x "
+                    "(nfat=%d, preferred_cpu=0x%x, matched=%s)",
+                    chosen, nfat, preferred_cpu,
+                    preferred_offset is not None,
                 )
-                return offset
+                return chosen
 
         except (OSError, struct.error) as e:
             logger.debug("Fat header parse hatasi: %s", e)
@@ -637,6 +700,10 @@ class BytePatternMatcher:
     # Internal: byte eslestirme
     # ------------------------------------------------------------------
 
+    # NOT (v1.10.0 H5): Esas implementasyon `_match_bytes_with_sig_index`'ta.
+    # Eski API (sadece info tuple'i donen) testler icin wrapper alias olarak
+    # korunuyor -- v1.10.0 Batch 3C Fix #2.
+
     def _match_bytes(
         self,
         func_bytes: bytes,
@@ -644,81 +711,18 @@ class BytePatternMatcher:
         signatures: list[Any],
         sig_index: dict[bytes, list[int]],
     ) -> Optional[tuple[str, str, float, str, str]]:
-        """Fonksiyonun byte'larini signature'larla karsilastir.
+        """Backward-compat wrapper: (name, library, conf, category, purpose).
 
-        Index-based hizli filtreleme + masked compare.
-
-        Returns:
-            (matched_name, library, confidence, category, purpose) veya None.
+        Yeni kod `_match_bytes_with_sig_index` kullanir (sig index'i de
+        dondurur). Eski API -- testler ve external caller'lar icin.
         """
-        if len(func_bytes) < self._min_pattern_length:
+        result = self._match_bytes_with_sig_index(
+            func_bytes, func_size, signatures, sig_index,
+        )
+        if result is None:
             return None
-
-        best: Optional[tuple[str, str, float, str, str]] = None
-        best_conf = 0.0
-
-        # 1. Ilk 4 byte ile index lookup
-        candidate_indices: list[int] = []
-        key = func_bytes[:4]
-        if key in sig_index:
-            candidate_indices.extend(sig_index[key])
-        # Wildcard sig'leri her zaman kontrol et
-        if b"WILD" in sig_index:
-            candidate_indices.extend(sig_index[b"WILD"])
-
-        if not candidate_indices:
-            return None
-
-        # 2. Her aday signature icin masked compare
-        for idx in candidate_indices:
-            sig = signatures[idx]
-            pattern = getattr(sig, "byte_pattern", b"")
-            mask = getattr(sig, "mask", b"") or getattr(sig, "byte_mask", b"")
-
-            plen = len(pattern)
-            if plen < self._min_pattern_length:
-                continue
-            if len(func_bytes) < plen:
-                continue
-
-            # Mask yoksa tum byte'lar sabit varsay
-            if not mask or len(mask) != plen:
-                mask = b"\xff" * plen
-
-            # Size range kontrolu (eger sig'de varsa)
-            size_range = getattr(sig, "size_range", (0, 0))
-            if size_range != (0, 0) and func_size > 0:
-                min_s, max_s = size_range
-                if func_size < min_s or func_size > max_s:
-                    continue
-
-            # Masked compare
-            matched = True
-            for i in range(plen):
-                if mask[i] == 0xFF:
-                    if func_bytes[i] != pattern[i]:
-                        matched = False
-                        break
-
-            if matched:
-                # Confidence: sabit byte orani * pattern uzunlugu bonusu
-                fixed_bytes = sum(1 for b in mask if b == 0xFF)
-                fixed_ratio = fixed_bytes / plen if plen > 0 else 0
-                # Uzun pattern -> daha yuksek confidence
-                length_bonus = min(0.10, (plen - 16) * 0.005) if plen > 16 else 0.0
-                conf = min(0.95, 0.60 + fixed_ratio * 0.30 + length_bonus)
-
-                if conf > best_conf and conf >= self._min_confidence:
-                    best_conf = conf
-                    best = (
-                        getattr(sig, "name", "unknown"),
-                        getattr(sig, "library", "unknown"),
-                        conf,
-                        getattr(sig, "category", "") or getattr(sig, "library", ""),
-                        getattr(sig, "purpose", ""),
-                    )
-
-        return best
+        _idx, info = result
+        return info
 
     def _match_bytes_with_sig_index(
         self,
@@ -771,15 +775,21 @@ class BytePatternMatcher:
                 if func_size < min_s or func_size > max_s:
                     continue
 
-            matched = True
-            for i in range(plen):
-                if mask[i] == 0xFF:
-                    if func_bytes[i] != pattern[i]:
-                        matched = False
-                        break
+            # v1.10.0 H5 (perf fix): Python loop yerine integer XOR ile
+            # maskeli karsilastirma. plen tipik 16-32 byte -> int(128-256 bit).
+            # `(func XOR pattern) AND mask == 0` formulu:
+            #   - mask'in 0xFF oldugu pozisyonda XOR non-zero ise fail.
+            #   - mask'in 0x00 oldugu pozisyonda (wildcard) sonuc 0.
+            # Bu pure-C path -- Python-level loop tamamen kalkar. Mask'i
+            # 0/0xFF disindaki biledik byte'lar icin de dogru calisir.
+            sub = func_bytes[:plen]
+            sub_i = int.from_bytes(sub, "big")
+            pat_i = int.from_bytes(pattern, "big")
+            mask_i = int.from_bytes(mask, "big")
+            matched = ((sub_i ^ pat_i) & mask_i) == 0
 
             if matched:
-                fixed_bytes = sum(1 for b in mask if b == 0xFF)
+                fixed_bytes = mask.count(b"\xff")
                 fixed_ratio = fixed_bytes / plen if plen > 0 else 0
                 length_bonus = min(0.10, (plen - 16) * 0.005) if plen > 16 else 0.0
                 conf = min(0.95, 0.60 + fixed_ratio * 0.30 + length_bonus)

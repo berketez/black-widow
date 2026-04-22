@@ -38,6 +38,7 @@ from karadul.analyzers.base import BaseAnalyzer
 from karadul.analyzers import register_analyzer
 from karadul.config import Config
 from karadul.core.result import StageResult
+from karadul.core.safe_subprocess import resolve_tool
 from karadul.core.target import TargetInfo, TargetType
 from karadul.core.workspace import Workspace
 
@@ -522,8 +523,8 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
 
     def __init__(self, config: Config) -> None:
         super().__init__(config)
-        self._ilspy_path = shutil.which("ilspycmd")
-        self._monodis_path = shutil.which("monodis")
+        self._ilspy_path = resolve_tool("ilspycmd")
+        self._monodis_path = resolve_tool("monodis")
 
     @staticmethod
     def can_handle(target_info: TargetInfo) -> bool:

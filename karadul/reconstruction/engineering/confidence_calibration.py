@@ -21,9 +21,12 @@ Date: 2026-03-25
 """
 from __future__ import annotations
 
+import logging
 import math
 from dataclasses import dataclass
 from typing import Literal
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Tier definitions
@@ -715,7 +718,23 @@ def calibrate_compact(
 # ---------------------------------------------------------------------------
 
 def _demo() -> None:
-    """Run demonstration scenarios showing the calibration framework."""
+    """Run demonstration scenarios showing the calibration framework.
+
+    CLI entry point; `python -m karadul.reconstruction.engineering
+    .confidence_calibration --log-level INFO` seklinde calistirilabilir.
+    Print yerine logger kullanir -- production'da noise yaratmaz.
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Confidence calibration demo")
+    parser.add_argument(
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
+    args = parser.parse_args()
+    logging.basicConfig(level=args.log_level, format="%(message)s")
+
     scenarios = [
         # Description, kwargs
         ("Structural only (noisy, e.g. 'batch_norm' in FEA code)",
@@ -752,9 +771,9 @@ def _demo() -> None:
          dict(p_constant=0.90, p_api=0.95, call_graph_consistency=0.9)),
     ]
 
-    print("=" * 90)
-    print("CONFIDENCE CALIBRATION FRAMEWORK -- DEMONSTRATION")
-    print("=" * 90)
+    logger.info("=" * 90)
+    logger.info("CONFIDENCE CALIBRATION FRAMEWORK -- DEMONSTRATION")
+    logger.info("=" * 90)
 
     for desc, kwargs in scenarios:
         result = calibrate_confidence(**kwargs)
@@ -766,15 +785,19 @@ def _demo() -> None:
             kwargs.get("call_graph_consistency", 0),
             kwargs.get("n_sources", 0),
         )
-        print(f"\n--- {desc}")
-        print(f"    Inputs: {kwargs}")
-        print(f"    Raw fused:   {result.raw_fused:.4f}")
-        print(f"    Calibrated:  {result.calibrated:.4f}  [{result.tier}]")
-        print(f"    Compact:     {compact_cal:.4f}  [{compact_tier}]")
-        print(f"    Sources:     {result.n_sources} (eff: {result.breakdown['n_sources_effective']})")
-        print(f"    Breakdown:   {result.breakdown}")
+        logger.info("\n--- %s", desc)
+        logger.info("    Inputs: %s", kwargs)
+        logger.info("    Raw fused:   %.4f", result.raw_fused)
+        logger.info("    Calibrated:  %.4f  [%s]", result.calibrated, result.tier)
+        logger.info("    Compact:     %.4f  [%s]", compact_cal, compact_tier)
+        logger.info(
+            "    Sources:     %d (eff: %s)",
+            result.n_sources,
+            result.breakdown["n_sources_effective"],
+        )
+        logger.info("    Breakdown:   %s", result.breakdown)
 
-    print("\n" + "=" * 90)
+    logger.info("\n%s", "=" * 90)
 
 
 if __name__ == "__main__":

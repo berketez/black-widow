@@ -71,8 +71,20 @@ _DOWNLOAD_TIMEOUT = 120
 _COMPILE_TIMEOUT = 300
 
 # Izin verilen compiler ve shell komutlari (CWE-78 onlemi)
+# v1.10.0 Fix Sprint HIGH-3: Whitelist daraltildi. cp/mv/mkdir/install/echo
+# KALDIRILDI cunku arsiv ek compile adimi disinda beklenmiyor ve metachar
+# enjeksiyonunu zenginlestiriyorlar. Sadece gercek build komutlari kaldi.
 _ALLOWED_COMPILERS = frozenset({"cc", "gcc", "clang", "g++", "clang++", "c99"})
-_ALLOWED_SHELL_CMDS = frozenset({"make", "cmake", "ar", "ranlib", "strip", "install", "echo", "cp", "mv", "mkdir", "ln"})
+_ALLOWED_SHELL_CMDS = frozenset({"make", "cmake", "ar", "ranlib", "strip", "ln", "./configure", "./Configure"})
+
+# v1.10.0 Fix Sprint HIGH-3: Shell metachar karakterleri (argument icerisinde
+# izinsiz). "CFLAGS=-g -O2" gibi tek tirnak gerektirmeyen arg'lar kalir.
+_SHELL_METACHARS = frozenset(";&|`$<>\n\r(){}\\\"'")
+
+# v1.10.0 Fix Sprint HIGH-2: ZIP/TAR bomb koruma sinir (byte).
+# config.SecurityConfig.max_archive_extract_size degerini kullaniyor, ama
+# config erisimi olmayan static code path'leri icin default yazildi.
+_DEFAULT_MAX_ARCHIVE_SIZE = 2 * 1024 ** 3  # 2GB
 
 # Desteklenen kutuphaneler ve URL sablonlari
 # Her kutuphane icin: url_template, archive_type, compile_steps
@@ -496,48 +508,141 @@ class ReferencePopulator:
         return None
 
     @staticmethod
-    def _download_file(url: str, dest: Path) -> None:
-        """URL'den dosya indir."""
+    def _download_file(
+        url: str,
+        dest: Path,
+        max_bytes: int = 500 * 1024 ** 2,
+        allowed_schemes: tuple[str, ...] = ("https",),
+        same_host_redirects: bool = True,
+    ) -> None:
+        """URL'den dosya indir.
+
+        v1.10.0 Fix Sprint MED-1:
+        - URL scheme whitelist (default: yalniz "https").
+        - max_bytes chunked read; limit asilirsa partial dosya silinir.
+        - Redirect: ayni hostname disina yonlendirme reddedilir
+          (SSRF ve data exfiltration koruma).
+        """
+        from urllib.parse import urlparse
+
+        parsed = urlparse(url)
+        scheme = (parsed.scheme or "").lower()
+        if scheme not in {s.lower() for s in allowed_schemes}:
+            raise ValueError(
+                f"Izin verilmeyen URL scheme: {scheme!r} (izinli: {allowed_schemes})"
+            )
+        initial_host = parsed.hostname
+
+        class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
+                new_parsed = urlparse(newurl)
+                new_scheme = (new_parsed.scheme or "").lower()
+                if new_scheme not in {s.lower() for s in allowed_schemes}:
+                    raise urllib.error.HTTPError(
+                        newurl, code,
+                        f"Redirect scheme reddedildi: {new_scheme!r}",
+                        headers, fp,
+                    )
+                if same_host_redirects and new_parsed.hostname != initial_host:
+                    raise urllib.error.HTTPError(
+                        newurl, code,
+                        f"Redirect host reddedildi: {new_parsed.hostname!r} "
+                        f"(initial: {initial_host!r})",
+                        headers, fp,
+                    )
+                return super().redirect_request(
+                    req, fp, code, msg, headers, newurl,
+                )
+
+        opener = urllib.request.build_opener(_SameHostRedirect)
         req = urllib.request.Request(
             url,
             headers={"User-Agent": "karadul-reference-populator/1.0"},
         )
-        with urllib.request.urlopen(req, timeout=_DOWNLOAD_TIMEOUT) as resp:
-            if resp.status != 200:
-                raise urllib.error.URLError(f"HTTP {resp.status}")
-            with open(dest, "wb") as f:
-                shutil.copyfileobj(resp, f)
+
+        chunk = 1024 * 1024  # 1MB
+        total = 0
+        try:
+            with opener.open(req, timeout=_DOWNLOAD_TIMEOUT) as resp:
+                if resp.status != 200:
+                    raise urllib.error.URLError(f"HTTP {resp.status}")
+                with open(dest, "wb") as f:
+                    while True:
+                        buf = resp.read(chunk)
+                        if not buf:
+                            break
+                        total += len(buf)
+                        if total > max_bytes:
+                            raise ValueError(
+                                f"Download {total} byte, limit {max_bytes}"
+                            )
+                        f.write(buf)
+        except Exception:
+            # Partial dosyayi sil (kirli state birakma)
+            if dest.exists():
+                try:
+                    dest.unlink()
+                except OSError:
+                    pass
+            raise
 
     @staticmethod
-    def _extract_archive(archive_path: Path, dest_dir: Path, archive_type: str) -> None:
-        """Arsiv dosyasini cikar."""
+    def _extract_archive(
+        archive_path: Path,
+        dest_dir: Path,
+        archive_type: str,
+        max_extract_size: int = _DEFAULT_MAX_ARCHIVE_SIZE,
+    ) -> None:
+        """Arsiv dosyasini cikar.
+
+        v1.10.0 Fix Sprint HIGH-1/HIGH-2:
+        - Path traversal: Path.relative_to kullanilir (prefix confusion yok).
+        - ZIP/TAR bomb: uncompressed toplam max_extract_size'i asarsa reddedilir.
+        """
+        dest_root = dest_dir.resolve()
+
+        def _assert_inside(member_path: Path, member_name: str) -> None:
+            try:
+                member_path.resolve().relative_to(dest_root)
+            except ValueError:
+                raise ValueError(
+                    f"Guvenlik: arsiv path traversal engellendi: {member_name}"
+                ) from None
+
         if archive_type == "zip":
             with zipfile.ZipFile(archive_path, "r") as zf:
-                # Guvenlik: path traversal kontrolu (CWE-22)
+                total = 0
                 for member in zf.infolist():
-                    member_path = (dest_dir / member.filename).resolve()
-                    if not str(member_path).startswith(str(dest_dir.resolve())):
+                    _assert_inside(dest_dir / member.filename, member.filename)
+                    total += member.file_size
+                    if total > max_extract_size:
                         raise ValueError(
-                            f"Guvenlik: ZIP path traversal engellendi: {member.filename}"
+                            f"Guvenlik: arsiv {total} byte (ZIP bomb?), "
+                            f"limit {max_extract_size}"
                         )
                 zf.extractall(dest_dir)
         elif archive_type in ("tar.gz", "tgz"):
             with tarfile.open(archive_path, "r:gz") as tf:
-                # Guvenlik: path traversal kontrolu
+                total = 0
                 for member in tf.getmembers():
-                    member_path = Path(dest_dir / member.name).resolve()
-                    if not str(member_path).startswith(str(dest_dir.resolve())):
+                    _assert_inside(Path(dest_dir / member.name), member.name)
+                    total += max(0, member.size)
+                    if total > max_extract_size:
                         raise ValueError(
-                            f"Guvenlik: arsiv path traversal: {member.name}"
+                            f"Guvenlik: arsiv {total} byte (TAR bomb?), "
+                            f"limit {max_extract_size}"
                         )
                 tf.extractall(dest_dir, filter="data")
         elif archive_type == "tar.xz":
             with tarfile.open(archive_path, "r:xz") as tf:
+                total = 0
                 for member in tf.getmembers():
-                    member_path = Path(dest_dir / member.name).resolve()
-                    if not str(member_path).startswith(str(dest_dir.resolve())):
+                    _assert_inside(Path(dest_dir / member.name), member.name)
+                    total += max(0, member.size)
+                    if total > max_extract_size:
                         raise ValueError(
-                            f"Guvenlik: arsiv path traversal: {member.name}"
+                            f"Guvenlik: arsiv {total} byte (TAR bomb?), "
+                            f"limit {max_extract_size}"
                         )
                 tf.extractall(dest_dir, filter="data")
         else:
@@ -690,11 +795,33 @@ class ReferencePopulator:
         if not command:
             return False
 
-        # CWE-78: Shell komutu whitelist kontrolu
-        command_base = Path(command).name
-        if command_base not in _ALLOWED_SHELL_CMDS:
-            logger.warning("Izin verilmeyen komut: %s", command)
-            return False
+        # CWE-78: Shell komutu whitelist kontrolu.
+        # v1.10.0 Fix Sprint HIGH-3: ./configure ve ./Configure tam match'le
+        # kabul, diger komutlar basename ile.
+        if command in _ALLOWED_SHELL_CMDS:
+            pass
+        else:
+            command_base = Path(command).name
+            if command_base not in _ALLOWED_SHELL_CMDS:
+                logger.warning("Izin verilmeyen komut: %s", command)
+                return False
+
+        # v1.10.0 Fix Sprint HIGH-3: args injection onleme.
+        # - Mutlak path (/etc/..., /bin/..., C:\...) yasak: cwd build_dir disina
+        #   cikilmamasi icin. CFLAGS=-g -O2 gibi arg'lar sorun degil.
+        # - Shell metacharakter (;, &, |, `, $, <, >, newline, vb.) yasak:
+        #   subprocess.run shell=False olsa bile argv[i] ile komut zincirleme
+        #   bazi build tool'larinda (make -f ...) yan etkili olabilir.
+        for arg in args:
+            if not isinstance(arg, str):
+                logger.warning("Non-string argument reddedildi: %r", arg)
+                return False
+            if arg.startswith("/") or (len(arg) >= 3 and arg[1:3] == ":\\"):
+                logger.warning("Mutlak path argumanda reddedildi: %s", arg)
+                return False
+            if any(c in _SHELL_METACHARS for c in arg):
+                logger.warning("Shell metacharacter argumanda reddedildi: %r", arg)
+                return False
 
         cmd = [command] + args
         logger.info("Shell komutu: %s (cwd: %s)", " ".join(cmd), build_dir)

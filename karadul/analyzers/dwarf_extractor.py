@@ -302,30 +302,41 @@ class DwarfExtractor:
         Tum ciktiyi bellegte tutmaz -- buyuk binary'ler (100MB+ dwarfdump output)
         icin guvenlidir.
 
+        v1.10.0 Fix Sprint HIGH-5: Popen context manager + TimeoutExpired
+        durumunda kill/wait ile kaynak sizintisi onlendi.
+
         Yields:
             DwarfFunction nesneleri (her DW_TAG_subprogram icin bir tane).
         """
-        proc = subprocess.Popen(
+        with subprocess.Popen(
             ["dwarfdump", "--debug-info", str(self._dwarf_target)],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
             bufsize=1,  # Satir buffered
-        )
-
-        try:
-            yield from self._parse_lines(proc.stdout)
-        finally:
-            # Process'i temiz kapat
+        ) as proc:
             try:
-                proc.stdout.close()
-            except Exception:
-                logger.debug("Session/kaynak kapatma basarisiz, atlaniyor", exc_info=True)
-            try:
-                proc.stderr.close()
-            except Exception:
-                logger.debug("Session/kaynak kapatma basarisiz, atlaniyor", exc_info=True)
-            proc.wait(timeout=5)
+                yield from self._parse_lines(proc.stdout)
+            finally:
+                # Process'i temiz kapat
+                try:
+                    if proc.stdout is not None:
+                        proc.stdout.close()
+                except Exception:
+                    logger.debug("Session/kaynak kapatma basarisiz, atlaniyor", exc_info=True)
+                try:
+                    if proc.stderr is not None:
+                        proc.stderr.close()
+                except Exception:
+                    logger.debug("Session/kaynak kapatma basarisiz, atlaniyor", exc_info=True)
+                try:
+                    proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    try:
+                        proc.wait(timeout=5)
+                    except Exception:
+                        pass
 
     def _parse_lines(self, line_iter) -> Iterator[DwarfFunction]:
         """dwarfdump satir stream'ini parse et.

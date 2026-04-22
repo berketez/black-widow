@@ -271,8 +271,11 @@ class TestMatchExports:
         ]
         result = namer.match_exports(minified, dts)
         assert result.matched == {"a": "chunk", "b": "compact", "c": "concat"}
-        assert "order" in result.method
-        assert result.confidence >= 0.5
+        assert result.method == "exact+order"
+        # v1.10.0 Batch 3D: sahte >= 0 yerine gercek davranis testi.
+        # Order-based match icin match_exports 0.7 sabit guven verir (bkz.
+        # dts_namer.py:409). Bu degisirse test kasitli kirilmali.
+        assert result.confidence == pytest.approx(0.7)
 
     def test_runtime_filtered_match(self, namer: DtsNamer) -> None:
         """dts'de type/interface gibi runtime olmayan export'lar filtrelenmeli."""

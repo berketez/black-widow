@@ -142,7 +142,20 @@ class SourceResolver:
 
         Redirect'leri takip eder, final URL'yi dondurur (versiyon cozme icin).
         Retry: 3 deneme, exponential backoff.
+
+        v1.10.0 Fix Sprint MED-1:
+        - URL scheme whitelist (yalniz "https") -- file://, gopher:// vb. reddi.
+        - Max 50MB response (source paketi daha buyuk olmaz).
         """
+        from urllib.parse import urlparse
+
+        parsed = urlparse(url)
+        scheme = (parsed.scheme or "").lower()
+        if scheme != "https":
+            logger.warning("Izin verilmeyen URL scheme: %r (%s)", scheme, url)
+            return None, None
+        MAX_RESPONSE_BYTES = 50 * 1024 * 1024  # 50 MB kaynak paketi icin yeterli
+
         self._rate_limit()
 
         delay = RETRY_BACKOFF
@@ -156,8 +169,22 @@ class SourceResolver:
                     },
                 )
                 with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
-                    content = resp.read().decode("utf-8", errors="replace")
                     final_url = resp.url  # redirect sonrasi gercek URL
+                    final_scheme = (urlparse(final_url).scheme or "").lower()
+                    if final_scheme != "https":
+                        logger.warning(
+                            "Redirect sonrasi scheme reddedildi: %r (%s)",
+                            final_scheme, final_url,
+                        )
+                        return None, None
+                    raw = resp.read(MAX_RESPONSE_BYTES + 1)
+                    if len(raw) > MAX_RESPONSE_BYTES:
+                        logger.warning(
+                            "Response %d+ byte, limit %d: %s",
+                            MAX_RESPONSE_BYTES, MAX_RESPONSE_BYTES, url,
+                        )
+                        return None, None
+                    content = raw.decode("utf-8", errors="replace")
                     return content, final_url
             except urllib.error.HTTPError as e:
                 if e.code == 404:

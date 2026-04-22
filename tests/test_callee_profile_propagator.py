@@ -27,7 +27,7 @@ from typing import Any
 
 import pytest
 
-from karadul.reconstruction.computation.callee_profile_propagator import (
+from karadul.reconstruction.recovery_layers.callee_profile_propagator import (
     CalleeProfilePropagator,
     PropagatedName,
     PropagationResult,
@@ -423,7 +423,7 @@ class TestEdgeCases:
 
     def test_fused_identification_objects(self) -> None:
         """dict yerine FusedIdentification objesi ile calismali."""
-        from karadul.reconstruction.computation.signature_fusion import (
+        from karadul.reconstruction.recovery_layers.signature_fusion import (
             FusedIdentification,
         )
         fused = {
@@ -483,7 +483,7 @@ class TestSignatureFusionIntegration:
     """SignatureFusion ile entegrasyon testleri."""
 
     def _fusion(self, **kw: Any):
-        from karadul.reconstruction.computation.signature_fusion import (
+        from karadul.reconstruction.recovery_layers.signature_fusion import (
             SignatureFusion,
         )
         return SignatureFusion(config=kw)

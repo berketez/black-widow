@@ -192,6 +192,50 @@ def _is_ghidra_auto_name(name: str) -> bool:
     )
 
 
+# v1.10.0 H1: Fortran trailing-underscore heuristic'i libc/GCC ASM stub
+# isimleri icin false positive verir. Conservative blacklist ile bunlar
+# Fortran sayilmaz (gfortran callee hint yoksa).
+_NON_FORTRAN_UNDERSCORE_NAMES: frozenset[str] = frozenset({
+    "_memcpy_", "_memset_", "_memmove_", "_memcmp_",
+    "_strcpy_", "_strncpy_", "_strcmp_", "_strncmp_",
+    "_strlen_", "_strcat_", "_strncat_",
+    "_gcc_personality_v0_",
+    "_unwind_resume_", "_unwind_backtrace_",
+    "_dl_runtime_resolve_", "_dl_fini_",
+    "_init_", "_fini_",  # ELF init/fini sections
+    "_start_", "_end_",
+    "_exit_", "___exit_",
+})
+
+# _pthread_*_ ve __libc_*_ pattern'lerini ayri regex ile yakala.
+_PTHREAD_UNDERSCORE_RE = re.compile(r"^_pthread_\w+_$")
+_LIBC_UNDERSCORE_RE = re.compile(r"^__libc_\w+_$")
+
+
+def _is_non_fortran_underscore_name(name: str) -> bool:
+    """ASM stub/libc wrapper isimlerini Fortran detection'dan hariç tut.
+
+    `name.startswith("_") and name.endswith("_")` heuristic'i
+    Fortran name mangling icin iyi calisir AMA _memcpy_, _pthread_*_,
+    _gcc_personality_v0_ gibi libc/GCC wrapper isimleri de bu pattern'e
+    uyar. Bu fn conservative blacklist uygular -- emin isimleri eler.
+
+    Args:
+        name: Fonksiyon ismi (zaten startswith/endswith "_" garantili).
+
+    Returns:
+        True ise isim Fortran DEGIL, heuristic reddedilmeli.
+    """
+    lower = name.lower()
+    if lower in _NON_FORTRAN_UNDERSCORE_NAMES:
+        return True
+    if _PTHREAD_UNDERSCORE_RE.match(lower):
+        return True
+    if _LIBC_UNDERSCORE_RE.match(lower):
+        return True
+    return False
+
+
 def _sanitize_c_name(name: str, preserve_case: bool = False) -> str:
     """Onerilen ismi gecerli C identifier'a donustur.
 
@@ -2556,13 +2600,17 @@ class CVariableNamer:
 
         is_fortran = self._fortran_param_db.has_gfortran_callees(callee_names)
 
-        # Trailing underscore kontrolu (fallback)
+        # Trailing underscore kontrolu (fallback).
+        # v1.10.0 H1 fix: _memcpy_, _gcc_personality_v0_, _pthread_*_ gibi
+        # libc/GCC ASM stub/wrapper isimleri de `_..._` pattern'ine uyuyor ama
+        # Fortran DEGIL. Conservative blacklist ile false positive'i azaltiyoruz.
         if not is_fortran:
             name = func_info.name
             if (len(name) >= 3
                     and name.startswith("_")
                     and name.endswith("_")
-                    and not name.startswith("__")):
+                    and not name.startswith("__")
+                    and not _is_non_fortran_underscore_name(name)):
                 is_fortran = True
 
         if not is_fortran:

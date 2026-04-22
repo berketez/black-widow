@@ -773,6 +773,10 @@ class TestExtractFunctions:
         mock_proc.stdout = iter(SAMPLE_DWARFDUMP_SIMPLE.splitlines(keepends=True))
         mock_proc.stderr = MagicMock()
         mock_proc.wait.return_value = 0
+        # v1.10.0 HIGH-5 fix: Popen artik `with` context manager; mock'un
+        # __enter__ kendisini dondurmeli (gercek Popen.__enter__ self doner).
+        mock_proc.__enter__.return_value = mock_proc
+        mock_proc.__exit__.return_value = False
 
         with patch("karadul.analyzers.dwarf_extractor.subprocess.Popen", return_value=mock_proc):
             result = ext.extract_functions()
@@ -796,6 +800,10 @@ class TestToGroundTruth:
         mock_proc.stdout = iter(dwarfdump_output.splitlines(keepends=True))
         mock_proc.stderr = MagicMock()
         mock_proc.wait.return_value = 0
+        # v1.10.0 HIGH-5 fix: Popen artik `with` context manager; mock'un
+        # __enter__ kendisini dondurmeli (gercek Popen.__enter__ self doner).
+        mock_proc.__enter__.return_value = mock_proc
+        mock_proc.__exit__.return_value = False
         return ext, mock_proc
 
     def test_ground_truth_format(self, tmp_path):
@@ -872,6 +880,10 @@ class TestToSignatureJson:
         mock_proc.stdout = iter(dwarfdump_output.splitlines(keepends=True))
         mock_proc.stderr = MagicMock()
         mock_proc.wait.return_value = 0
+        # v1.10.0 HIGH-5 fix: Popen artik `with` context manager; mock'un
+        # __enter__ kendisini dondurmeli (gercek Popen.__enter__ self doner).
+        mock_proc.__enter__.return_value = mock_proc
+        mock_proc.__exit__.return_value = False
         return ext, mock_proc
 
     def test_signature_json_top_level_keys(self, tmp_path):
@@ -981,6 +993,10 @@ class TestEdgeCases:
         mock_proc.stdout = iter([])
         mock_proc.stderr = MagicMock()
         mock_proc.wait.return_value = 0
+        # v1.10.0 HIGH-5 fix: Popen artik `with` context manager; mock'un
+        # __enter__ kendisini dondurmeli (gercek Popen.__enter__ self doner).
+        mock_proc.__enter__.return_value = mock_proc
+        mock_proc.__exit__.return_value = False
 
         with patch("karadul.analyzers.dwarf_extractor.subprocess.Popen", return_value=mock_proc):
             result = ext.extract_functions()
@@ -1003,6 +1019,10 @@ class TestEdgeCases:
         mock_proc.stdout = iter(garbage_lines)
         mock_proc.stderr = MagicMock()
         mock_proc.wait.return_value = 0
+        # v1.10.0 HIGH-5 fix: Popen artik `with` context manager; mock'un
+        # __enter__ kendisini dondurmeli (gercek Popen.__enter__ self doner).
+        mock_proc.__enter__.return_value = mock_proc
+        mock_proc.__exit__.return_value = False
 
         with patch("karadul.analyzers.dwarf_extractor.subprocess.Popen", return_value=mock_proc):
             result = ext.extract_functions()

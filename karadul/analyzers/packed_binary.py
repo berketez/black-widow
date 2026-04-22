@@ -27,8 +27,36 @@ from pathlib import Path
 from typing import Any, Optional
 
 from karadul.config import Config
+from karadul.core.safe_subprocess import resolve_tool, safe_run, safe_zlib_decompress
 
 logger = logging.getLogger(__name__)
+
+
+# v1.10.0 Batch 5B MED-11: Windows reserved file names.
+# APK/PyInstaller icindeki "CON.txt", "PRN" gibi girdiler Windows host
+# uzerinde device acilmasina sebep olur (veya crash). Case-insensitive
+# karsilastirma icin buyuk harfe cevrilmis set.
+_WINDOWS_RESERVED_NAMES = frozenset({
+    "CON", "PRN", "AUX", "NUL",
+    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+})
+
+
+def _is_windows_reserved(name: str) -> bool:
+    """Path'in herhangi bir bileseni Windows reserved name mi?"""
+    # Path separator normalize
+    parts = name.replace("\\", "/").split("/")
+    for p in parts:
+        stem = p.split(".")[0].upper().strip()
+        if stem in _WINDOWS_RESERVED_NAMES:
+            return True
+    return False
+
+
+# v1.10.0 Batch 5B CRITICAL-3: PyInstaller zlib decompress limit (100MB).
+# staticmethod _extract_entry icinde self.config erisemiyor; modul sabit.
+_MAX_PYINSTALLER_DECOMPRESS = 100 * 1024 * 1024
 
 
 # ---------------------------------------------------------------------------
@@ -137,26 +165,40 @@ class UnpackResult:
 def calculate_entropy(data: bytes) -> float:
     """Shannon entropisini hesapla.
 
+    PERF (v1.10.0 H5): Eski versiyon Python `for byte in data` ile
+    byte-by-byte sayim yapiyordu -- 1 MB chunk icin ~100 ms. Yeni versiyon
+    numpy varsa `np.bincount`, yoksa C-seviyesinde `collections.Counter`
+    kullanir; 1 MB chunk ~1-5 ms (20-100x hizlanma).
+
     Args:
         data: Byte dizisi.
 
     Returns:
         float: 0.0 (uniform) - 8.0 (random/compressed/encrypted) arasi entropy.
     """
-    if not data:
+    length = len(data)
+    if length == 0:
         return 0.0
 
-    freq = [0] * 256
-    for byte in data:
-        freq[byte] += 1
+    # Fast path: numpy
+    try:
+        import numpy as _np
+        arr = _np.frombuffer(data, dtype=_np.uint8)
+        counts = _np.bincount(arr, minlength=256)
+        nonzero = counts[counts > 0].astype(_np.float64)
+        probs = nonzero / length
+        return float(-_np.sum(probs * _np.log2(probs)))
+    except ImportError:
+        pass
 
-    length = len(data)
+    # Fallback: Counter (C seviyesinde sayar, Python loop'tan cok daha hizli)
+    from collections import Counter as _Counter
+    counter = _Counter(data)
     entropy = 0.0
-    for f in freq:
+    for f in counter.values():
         if f > 0:
             p = f / length
             entropy -= p * math.log2(p)
-
     return entropy
 
 
@@ -200,6 +242,14 @@ NUITKA_SIGNATURES = [
     b"NUITKA_PACKAGE_",
     b"nuitka_module",
 ]
+
+# PERF (v1.10.0 H6): Tek pass icin alternatif regex.
+# Eskiden her imza icin `sig in data` tarama -> 5 x O(N) full scan.
+# Simdi re.finditer tek pass, ilk eslesmede cikilabilir (imza bulundu mu?).
+import re as _re  # noqa: E402 (module-level re import)
+_NUITKA_RE = _re.compile(
+    b"|".join(_re.escape(sig) for sig in NUITKA_SIGNATURES),
+)
 
 
 # ---------------------------------------------------------------------------
@@ -248,8 +298,23 @@ class PackingDetector:
                 evidence=["Dosya bulunamadi: %s" % binary_path],
             )
 
+        # v1.10.0 Batch 5B HIGH-5: limitsiz read() 10GB OOM koruma.
+        # SecurityConfig.max_binary_size_bytes asilirsa analizi reddet.
+        # Cagrici binary'yi once boyutu icin stat ediyor; biz de ikinci
+        # defa kontrol ediyoruz (TOCTOU safe -- fstat kullaniyoruz).
+        max_size = self.config.security.max_binary_size_bytes
         try:
             with open(binary_path, "rb") as f:
+                st = os.fstat(f.fileno())
+                if st.st_size > max_size:
+                    return PackingInfo(
+                        is_packed=False,
+                        packing_type=PackingType.NONE,
+                        confidence=0.0,
+                        evidence=[
+                            "Binary cok buyuk: %d > %d byte (OOM koruma)" % (st.st_size, max_size),
+                        ],
+                    )
                 data = f.read()
         except OSError as exc:
             return PackingInfo(
@@ -472,18 +537,31 @@ class PackingDetector:
     def _check_nuitka(data: bytes) -> Optional[list[str]]:
         """Nuitka imza stringlerini ara.
 
+        PERF (v1.10.0 H6): Tek regex pass. Eski kod her imza icin ayri
+        `sig in data` tarama yapiyordu (5 x O(N)). Yeni versiyon birlesik
+        alternation regex (`_NUITKA_RE`) ile tek pass. Bulunan tum benzersiz
+        eslesmeler toplanir.
+
         Args:
             data: Binary verisi.
 
         Returns:
             list veya None: Bulunan Nuitka imza listesi, bulunamazsa None.
         """
-        found = []
-        for sig in NUITKA_SIGNATURES:
-            if sig in data:
-                found.append("Nuitka imzasi: %s" % sig.decode("ascii", errors="replace"))
-
-        return found if found else None
+        found_sigs: set[bytes] = set()
+        for m in _NUITKA_RE.finditer(data):
+            found_sigs.add(m.group())
+            # 5 imzadan 5'i bulundu -> erken cik
+            if len(found_sigs) >= len(NUITKA_SIGNATURES):
+                break
+        if not found_sigs:
+            return None
+        # Orijinal sirayi koru (NUITKA_SIGNATURES order)
+        return [
+            "Nuitka imzasi: %s" % sig.decode("ascii", errors="replace")
+            for sig in NUITKA_SIGNATURES
+            if sig in found_sigs
+        ]
 
     def _analyze_section_entropies(self, data: bytes, name: str) -> list[SectionEntropy]:
         """Binary veriyi section'lara bolup entropy hesapla.
@@ -808,28 +886,49 @@ class PyInstallerExtractor:
         if not name:
             return None
 
+        # v1.10.0 Batch 5B MED-11: Windows reserved names reddet.
+        # APK/PyInstaller icinde "CON.txt" -> Windows host'ta device acar.
+        if _is_windows_reserved(name):
+            logger.warning("PyInstaller entry Windows reserved name, reddedildi: %s", name)
+            return None
+
         offset = pkg_start + entry["entry_offset"]
         length = entry["data_length"]
 
-        if offset + length > len(data):
+        # v1.10.0 Batch 5B MED-17: TOC entry sanity checks.
+        if offset < 0 or length < 0 or length > len(data) or offset + length > len(data):
+            logger.warning(
+                "PyInstaller entry offset/length sanity check fail: "
+                "offset=%d length=%d total=%d",
+                offset, length, len(data),
+            )
             return None
 
         raw = data[offset:offset + length]
 
-        # Compressed ise decompress et (bomb korumali)
-        MAX_DECOMPRESS = 100 * 1024 * 1024  # 100MB limit
+        # v1.10.0 Batch 5B CRITICAL-3: streaming zlib decompress + bomb koruma.
+        # Eski `zlib.decompress(raw)` tek seferde acardi; 1KB input 10GB
+        # uncompressed olabilir. Yeni ``safe_zlib_decompress`` max_size+1
+        # isteyip erken bomb tespiti yapar.
         if entry["is_compressed"] and length > 0:
-            try:
-                decompressed = zlib.decompress(raw)
-                if len(decompressed) > MAX_DECOMPRESS:
-                    logger.warning(
-                        "Decompress bomb: %s (%d bytes > %d limit)",
-                        name, len(decompressed), MAX_DECOMPRESS,
-                    )
-                    return None
-                raw = decompressed
-            except zlib.error:
-                pass
+            decompressed = safe_zlib_decompress(
+                raw, max_size=_MAX_PYINSTALLER_DECOMPRESS,
+            )
+            if decompressed is None:
+                logger.warning(
+                    "PyInstaller entry decompress reddedildi (bomb/hatali): %s",
+                    name,
+                )
+                return None
+            # Uncompressed_length ile tutarlilik (metadata guvenilmez ama sinyal)
+            expected = entry.get("uncompressed_length", 0)
+            if expected and abs(len(decompressed) - expected) > (expected // 10 + 1024):
+                logger.debug(
+                    "PyInstaller uncompressed_length uyusmazlik: "
+                    "meta=%d actual=%d (%s)",
+                    expected, len(decompressed), name,
+                )
+            raw = decompressed
 
         # Dosya adini guvenli hale getir
         safe_name = name.replace("/", os.sep).replace("\\", os.sep)
@@ -839,8 +938,11 @@ class PyInstallerExtractor:
         safe_name = os.sep.join(parts) if parts else "unnamed"
 
         out_path = (output_dir / safe_name).resolve()
-        # Path traversal son kontrol
-        if not str(out_path).startswith(str(output_dir.resolve())):
+        # v1.10.0 Fix Sprint HIGH-1: Path.relative_to ile prefix confusion
+        # kapatildi. "/tmp/stage" vs "/tmp/stage-evil/..." guvenle ayrilir.
+        try:
+            out_path.relative_to(output_dir.resolve())
+        except ValueError:
             logger.warning("Path traversal engellendi: %s", name)
             return None
 
@@ -888,11 +990,14 @@ class PyInstallerExtractor:
         """
         decompiled = []
 
-        # uncompyle6 veya decompyle3 mevcut mu?
+        # v1.10.0 Batch 5B CRITICAL-2: resolve_tool ile PATH hijack koruma.
         decompiler = None
+        decompiler_path = None
         for tool in ["uncompyle6", "decompyle3"]:
-            if shutil.which(tool) is not None:
+            resolved = resolve_tool(tool)
+            if resolved is not None:
                 decompiler = tool
+                decompiler_path = resolved
                 break
 
         if decompiler is None:
@@ -910,8 +1015,9 @@ class PyInstallerExtractor:
             out_path = decompiled_dir / (out_name + ".py")
 
             try:
-                result = subprocess.run(
-                    [decompiler, "-o", str(out_path), str(pyc_file.path)],
+                # decompiler_path: resolve_tool ile onceden dogrulanmis
+                result = safe_run(
+                    [decompiler_path or decompiler, "-o", str(out_path), str(pyc_file.path)],
                     capture_output=True,
                     text=True,
                     timeout=30,
@@ -1007,8 +1113,8 @@ class BinaryUnpacker:
         start = time.monotonic()
         errors = []
 
-        # upx mevcut mu?
-        upx_path = shutil.which("upx")
+        # v1.10.0 Batch 5B CRITICAL-2: resolve_tool ile PATH hijack koruma.
+        upx_path = resolve_tool("upx")
         if upx_path is None:
             return UnpackResult(
                 success=False,
@@ -1031,9 +1137,9 @@ class BinaryUnpacker:
                 output_dir=output_dir,
             )
 
-        # upx -d ile decompress
+        # upx -d ile decompress (safe_run: LD_PRELOAD-drop + whitelist env)
         try:
-            result = subprocess.run(
+            result = safe_run(
                 [upx_path, "-d", str(unpacked_path)],
                 capture_output=True,
                 text=True,

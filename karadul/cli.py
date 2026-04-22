@@ -19,6 +19,7 @@ import signal
 import subprocess
 import sys
 import time
+import warnings
 from pathlib import Path
 from typing import Optional
 
@@ -65,10 +66,88 @@ STAGE_LABELS: dict[str, str] = {
 }
 
 
+def _is_noninteractive() -> bool:
+    """
+    CI / non-TTY ortaminda interaktif prompt gostermemek icin guard.
+
+    v1.10.0 Batch 3D HIGH fix: click.prompt() / click.confirm() CI'da
+    (stdin TTY degil) EOFError veya hang yaratiyordu. Bu helper ile
+    tum interaktif sorular "safe default"a dusuruluyor.
+    """
+    try:
+        if not sys.stdin.isatty():
+            return True
+    except (ValueError, AttributeError):
+        # stdin kapali veya mock -- non-interactive say
+        return True
+    if os.environ.get("CI"):
+        return True
+    if os.environ.get("KARADUL_NONINTERACTIVE"):
+        return True
+    return False
+
+
 def _load_config(config_path: Optional[str]) -> Config:
     """Config dosyasini yukle. Basarisizsa varsayilan don."""
     path = Path(config_path) if config_path else None
     return Config.load(path)
+
+
+# v1.10.0 E8: Ctrl+C sirasinda olusan yarim workspace'leri temizlemek ve
+# kullanici dostu hata mesaji vermek icin dekorator.
+def _graceful_interrupt(func):
+    """Click komutlarini KeyboardInterrupt'a karsi sarmalayan dekorator.
+
+    - Yarim yazilan workspace (pipeline tamamlanmadan olusmus) temizlenir.
+    - Kullaniciya sade bir mesaj gosterilir, traceback basilmaz.
+    - Click'in standart abort mekanizmasi ile exit kodu 130 doner.
+
+    Kullanim::
+
+        @main.command()
+        @click.pass_context
+        @_graceful_interrupt
+        def analyze(ctx, ...):
+            ...
+    """
+    import functools
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # Click ctx context ilk argument olarak gelir (@pass_context ile).
+        ctx = None
+        for a in args:
+            if isinstance(a, click.Context):
+                ctx = a
+                break
+        try:
+            return func(*args, **kwargs)
+        except KeyboardInterrupt:
+            err_console.print(
+                "\n[yellow]Kullanici tarafindan iptal edildi (Ctrl+C). "
+                "Yarim kalan workspace temizleniyor...[/yellow]"
+            )
+            # Yarim workspace temizligi: ctx.obj icinde 'pending_workspace'
+            # varsa sil. Pipeline/komutlar bunu set edebilir.
+            try:
+                if ctx is not None and ctx.obj:
+                    pending = ctx.obj.get("pending_workspace")
+                    if pending:
+                        pending_path = Path(pending)
+                        if pending_path.exists() and pending_path.is_dir():
+                            shutil.rmtree(pending_path, ignore_errors=True)
+                            err_console.print(
+                                f"[dim]  Silindi: {pending_path}[/dim]"
+                            )
+            except Exception as exc:  # pragma: no cover - best-effort temizlik
+                logger.debug("Ctrl+C temizligi basarisiz: %s", exc)
+
+            if ctx is not None:
+                ctx.abort()
+            # ctx yoksa (pass_context unutulmussa) standart exit kodu ile cik
+            sys.exit(130)
+
+    return wrapper
 
 
 def _format_size(size: int) -> str:
@@ -275,7 +354,27 @@ def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
               help="Temiz cikti dizini (src/, report.html, naming_map.json vb.).")
 @click.option("--format", "output_format", type=click.Choice(["clean", "raw"]),
               default="clean", help="Cikti formati: clean (duzenlenmis) veya raw (ham).")
+# v1.10.0 M4 flag'leri (Berke karari: ship-it default TRUE; --no-* ile kapat)
+@click.option("--experimental-step-registry", is_flag=True, default=False,
+              help="[v1.10.0] Yeni step registry pipeline'ini kullan (eski monolith yerine).")
+@click.option("--lmdb-sigdb", is_flag=True, default=False,
+              help="[v1.10.0] LMDB-backed signature DB'yi kullan (~3GB -> ~250MB RAM).")
+@click.option("--parallel-naming", is_flag=True, default=False,
+              help="[v1.10.0] ThreadPool tabanli paralel naming (3-5x hiz).")
+@click.option("--no-cfg-iso", is_flag=True, default=False,
+              help="[v1.10.0] Default-aktif CFG isomorphism template matching'i KAPAT.")
+@click.option("--no-computation-fusion", is_flag=True, default=False,
+              help="[v1.10.0] Default-aktif log-odds fusion ensemble'i KAPAT.")
+@click.option("--no-maxsmt-struct", is_flag=True, default=False,
+              help="[v1.10.0] MaxSMT struct layout recovery'i zorla KAPAT (default zaten kapali; geriye uyum flag'i).")
+@click.option("--maxsmt-struct", is_flag=True, default=False,
+              help="[v1.10.0 Batch 6C] Deneysel MaxSMT struct layout recovery'i AC (default: kapali, opt-in).")
+@click.option("--decompiler-backend",
+              type=click.Choice(["ghidra", "angr"], case_sensitive=False),
+              default=None,
+              help="[v1.10.0] Decompiler backend secimi (varsayilan: ghidra).")
 @click.pass_context
+@_graceful_interrupt
 def analyze(
     ctx: click.Context,
     target: str,
@@ -292,6 +391,14 @@ def analyze(
     deep: Optional[bool],                  # v1.6.5
     clean_output_dir: Optional[str],
     output_format: str,
+    experimental_step_registry: bool,      # v1.10.0 M4
+    lmdb_sigdb: bool,                      # v1.10.0 M4
+    parallel_naming: bool,                 # v1.10.0 M4
+    no_cfg_iso: bool,                      # v1.10.0 M4
+    no_computation_fusion: bool,           # v1.10.0 M4
+    no_maxsmt_struct: bool,                # v1.10.0 M4
+    maxsmt_struct: bool,                   # v1.10.0 Batch 6C opt-in
+    decompiler_backend: Optional[str],     # v1.10.0 M4
 ) -> None:
     """Hedef uzerinde tam analiz pipeline calistir."""
     from karadul.core.pipeline import Pipeline
@@ -317,6 +424,24 @@ def analyze(
     if use_ml:
         cfg.ml.enable_llm4decompile = True
 
+    # v1.10.0 M4 flag'leri -> config'e aktar
+    if experimental_step_registry:
+        cfg.pipeline.use_step_registry = True
+    if lmdb_sigdb:
+        cfg.perf.use_lmdb_sigdb = True
+    if parallel_naming:
+        cfg.perf.parallel_naming = True
+    if no_cfg_iso:
+        cfg.computation_recovery.enable_cfg_iso = False
+    if no_computation_fusion:
+        cfg.computation.enable_computation_fusion = False
+    if maxsmt_struct:
+        cfg.computation.enable_computation_struct_recovery = True
+    if no_maxsmt_struct:
+        cfg.computation.enable_computation_struct_recovery = False
+    if decompiler_backend is not None:
+        cfg.decompilers.primary_backend = decompiler_backend.lower()
+
     # Computation recovery ayarlari  # v1.6.5: --deep > --compute > --compute-recovery
     _compute_resolved = False
 
@@ -326,6 +451,15 @@ def analyze(
         if deep:
             cfg.computation_recovery.enable_constraint_solver = True
             cfg.computation_recovery.enable_cfg_fingerprint = True
+            # DEPRECATED v1.10.0: D-S fusion. --deep bunu hala aciyor backward
+            # compat icin; v1.11.0'da --deep log-odds fusion'a gecirilecek.
+            warnings.warn(
+                "--deep, DEPRECATED D-S signature fusion'i etkinlestirdi. "
+                "v1.11.0'da yerine ComputationConfig.enable_computation_fusion "
+                "(log-odds ensemble) kullanilacak.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             cfg.computation_recovery.enable_signature_fusion = True
             cfg.computation_recovery.enable_formula_extraction = True
             cfg.deep_trace.enable_deep_trace = True
@@ -340,6 +474,14 @@ def analyze(
             cfg.computation_recovery.enabled = True
             cfg.computation_recovery.enable_constraint_solver = True
             cfg.computation_recovery.enable_cfg_fingerprint = True
+            # DEPRECATED v1.10.0 -> kaldirilacak v1.11.0. Bkz. engine.py L163.
+            warnings.warn(
+                "--compute full, DEPRECATED D-S signature fusion'i "
+                "etkinlestirdi. v1.11.0'da log-odds ensemble (ComputationConfig."
+                "enable_computation_fusion) varsayilan olacak.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             cfg.computation_recovery.enable_signature_fusion = True
             cfg.computation_recovery.enable_formula_extraction = True
         elif compute_mode == "standard":
@@ -356,13 +498,22 @@ def analyze(
         _compute_resolved = True
 
     if not _compute_resolved and target_path.is_file() and not target_path.suffix:
-        # Hicbir flag verilmedi ve hedef binary gibi gorunuyor -- interaktif sor
-        console.print()
-        console.print("[bold]Enable computation-based recovery?[/bold] (slower but more accurate)")
-        console.print("  [cyan][1][/cyan] Yes - Enhanced type inference + CFG matching + formula extraction")
-        console.print("  [cyan][0][/cyan] No  - Standard analysis")
-        choice = click.prompt("", type=click.IntRange(0, 1), default=0)
-        cfg.computation_recovery.enabled = bool(choice)
+        # Hicbir flag verilmedi ve hedef binary gibi gorunuyor -- interaktif sor.
+        # v1.10.0 Batch 3D HIGH: CI / non-TTY ortamda hang olmasin diye
+        # _is_noninteractive() guard. Heavy feature oldugundan safe default = OFF.
+        if _is_noninteractive():
+            cfg.computation_recovery.enabled = False
+            logger.debug(
+                "Non-interactive ortam tespit edildi, computation_recovery=False "
+                "(override: --compute-mode full / --compute-recovery)"
+            )
+        else:
+            console.print()
+            console.print("[bold]Enable computation-based recovery?[/bold] (slower but more accurate)")
+            console.print("  [cyan][1][/cyan] Yes - Enhanced type inference + CFG matching + formula extraction")
+            console.print("  [cyan][0][/cyan] No  - Standard analysis")
+            choice = click.prompt("", type=click.IntRange(0, 1), default=0)
+            cfg.computation_recovery.enabled = bool(choice)
 
     # Banner
     _print_banner()
@@ -570,6 +721,14 @@ def run(target: str, workspace_dir: str, yes: bool) -> None:
             "guvenilmeyen kaynaktan gelebilir."
         )
         console.print(f"   Dizin: [cyan]{reconstructed}[/cyan]")
+        # v1.10.0 Batch 3D HIGH: non-interactive ortamda --yes olmadan
+        # sessizce abort et (hang yerine). Untrusted kod icin safe default = REFUSE.
+        if _is_noninteractive():
+            err_console.print(
+                "[bold red]HATA:[/bold red] Non-interactive ortam (CI/non-TTY); "
+                "guvenlik onayi icin --yes / -y flag'i gerekli."
+            )
+            sys.exit(2)
         if not click.confirm("Kodu calistirmak istediginizden emin misiniz?"):
             console.print("[dim]Iptal edildi.[/dim]")
             return
@@ -581,12 +740,24 @@ def run(target: str, workspace_dir: str, yes: bool) -> None:
         border_style="green",
     ))
 
+    # v1.10.0 Batch 5B CRITICAL-2: resolve_tool + safe_run.
+    # "npm" / "node" hedefleri bu yordamla yalnizca OS-kurulu yollardan
+    # cikar. Eski ``shutil.which`` PATH hijack'e aciktir.
+    from karadul.core.safe_subprocess import resolve_tool as _resolve_tool
+    from karadul.core.safe_subprocess import safe_run as _safe_run
+
+    npm_path = _resolve_tool("npm")
+    node_path = _resolve_tool("node")
+
     # package.json var mi?
     package_json = reconstructed / "package.json"
     if package_json.exists():
+        if npm_path is None:
+            err_console.print("[bold red]HATA:[/bold red] npm bulunamadi (whitelist path)")
+            sys.exit(1)
         console.print("[dim]npm install --ignore-scripts...[/dim]")
-        proc_install = subprocess.run(
-            ["npm", "install", "--ignore-scripts"],
+        proc_install = _safe_run(
+            [npm_path, "install", "--ignore-scripts"],
             cwd=str(reconstructed),
             capture_output=True,
             text=True,
@@ -595,8 +766,8 @@ def run(target: str, workspace_dir: str, yes: bool) -> None:
             err_console.print(f"[yellow]npm install uyarisi:[/yellow] {proc_install.stderr[:200]}")
 
         console.print("[dim]npm start...[/dim]")
-        proc_start = subprocess.run(
-            ["npm", "start"],
+        proc_start = _safe_run(
+            [npm_path, "start"],
             cwd=str(reconstructed),
             capture_output=False,
         )
@@ -610,9 +781,12 @@ def run(target: str, workspace_dir: str, yes: bool) -> None:
                 if f.name in ("index.js", "main.js"):
                     main_file = f
                     break
+            if node_path is None:
+                err_console.print("[bold red]HATA:[/bold red] node bulunamadi (whitelist path)")
+                sys.exit(1)
             console.print(f"[dim]node {main_file.name}...[/dim]")
-            proc = subprocess.run(
-                ["node", str(main_file)],
+            proc = _safe_run(
+                [node_path, str(main_file)],
                 cwd=str(reconstructed),
                 capture_output=False,
             )
@@ -676,10 +850,15 @@ def clean(target: str, output_dir: str) -> None:
     base_dir = Path(output_dir).resolve()
     workspace_path = (base_dir / target).resolve()
 
-    # Path traversal koruması: workspace_path, base_dir altında olmalı
-    if not str(workspace_path).startswith(str(base_dir) + "/") and workspace_path != base_dir:
-        err_console.print(f"[bold red]HATA:[/bold red] Gecersiz hedef adi (path traversal engellendi): {target}")
-        sys.exit(1)
+    # Path traversal korumasi: workspace_path, base_dir altinda olmali.
+    # v1.10.0 Fix Sprint HIGH-1: startswith prefix confusion (base "/tmp/ws"
+    # vs "/tmp/ws-evil/...") yerine Path.relative_to kullan.
+    if workspace_path != base_dir:
+        try:
+            workspace_path.relative_to(base_dir)
+        except ValueError:
+            err_console.print(f"[bold red]HATA:[/bold red] Gecersiz hedef adi (path traversal engellendi): {target}")
+            sys.exit(1)
 
     if not workspace_path.exists():
         err_console.print(f"[bold red]HATA:[/bold red] Workspace bulunamadi: {workspace_path}")
@@ -879,6 +1058,7 @@ def batch() -> None:
 @click.option("--skip-dynamic", is_flag=True, default=False,
               help="Dinamik analizi atla (varsayilan: False).")
 @click.pass_context
+@_graceful_interrupt
 def batch_analyze(ctx: click.Context, targets: str, output_dir: Optional[str], skip_dynamic: bool) -> None:
     """Tum hedefleri toplu analiz et.
 
@@ -1301,3 +1481,202 @@ def bsim_list(config_path: Optional[str]) -> None:
     console.print(table)
     console.print(f"\n[dim]Konum: {db.db_path}[/dim]")
     db.close()
+
+
+# ---------------------------------------------------------------
+# karadul score <reconstructed_dir>
+# ---------------------------------------------------------------
+@main.command()
+@click.argument("reconstructed_dir", type=click.Path(exists=True, file_okay=False))
+@click.option(
+    "--baseline", "-b", type=click.Path(exists=True),
+    default=None,
+    help="Debug binary yolu (ground truth karsilastirmasi).",
+)
+@click.option(
+    "--json", "json_output", is_flag=True,
+    help="Sonucu JSON olarak stdout'a yaz.",
+)
+@click.option(
+    "--details", is_flag=True,
+    help="Her boyut icin detayli ham sayilari goster.",
+)
+@click.pass_context
+@_graceful_interrupt
+def score(
+    ctx: click.Context,
+    reconstructed_dir: str,
+    baseline: Optional[str],
+    json_output: bool,
+    details: bool,
+) -> None:
+    """Reconstructed C dizininin okunabilirlik skorunu olc.
+
+    6 boyutta 0-100 arasi skor uretir:
+    fonksiyon isimleri, parametre isimleri, lokal degiskenler,
+    tip kalitesi, yorumlar, kod yapisi.
+    """
+    import json as _json
+
+    from karadul.quality import ReadabilityScorer
+
+    scorer = ReadabilityScorer()
+    target_dir = Path(reconstructed_dir).resolve()
+
+    result = scorer.score_directory(target_dir)
+
+    compare_result = None
+    if baseline:
+        baseline_result = scorer.score_ground_truth(Path(baseline))
+        compare_result = scorer.compare(baseline_result, result)
+
+    if json_output:
+        payload = {
+            "source": result.source,
+            "total_score": result.total_score,
+            "dimensions": result.dimensions,
+        }
+        if details:
+            payload["details"] = result.details
+        if compare_result is not None:
+            payload["compare"] = {
+                "baseline_score": compare_result.baseline_score,
+                "reconstructed_score": compare_result.reconstructed_score,
+                "delta": compare_result.delta,
+                "normalized": compare_result.normalized,
+                "dimension_deltas": compare_result.dimension_deltas,
+            }
+        click.echo(_json.dumps(payload, indent=2, ensure_ascii=False))
+        return
+
+    # Rich tablo cikisi
+    console.print(Panel(
+        f"[bold]Readability Score[/bold]\n"
+        f"Kaynak: [cyan]{result.source}[/cyan]\n"
+        f"Dosya: [dim]{result.details.get('file_count', 0)}[/dim]",
+        border_style="cyan",
+    ))
+
+    table = Table(title="Boyut Skorlari", border_style="cyan")
+    table.add_column("Boyut", style="bold")
+    table.add_column("Skor", justify="right")
+    table.add_column("Agirlik", justify="right", style="dim")
+    weights = {
+        "function_names": scorer.config.weight_function_names,
+        "param_names": scorer.config.weight_param_names,
+        "local_vars": scorer.config.weight_local_vars,
+        "type_quality": scorer.config.weight_type_quality,
+        "comments": scorer.config.weight_comments,
+        "code_structure": scorer.config.weight_code_structure,
+    }
+    for name, val in result.dimensions.items():
+        table.add_row(name, f"{val:.2f}", f"{weights.get(name, 0):.2f}")
+    console.print(table)
+
+    console.print(
+        f"\n[bold green]Toplam:[/bold green] "
+        f"[bold]{result.total_score:.2f}/100[/bold]"
+    )
+
+    if details:
+        console.print(Rule("Detaylar"))
+        for name, val in result.details.items():
+            if name == "file_count":
+                continue
+            console.print(f"[bold]{name}[/bold]:")
+            console.print(val)
+
+    if compare_result is not None:
+        console.print(Rule("Baseline Karsilastirma (Debug = 100)"))
+        cmp_table = Table(border_style="cyan")
+        cmp_table.add_column("Boyut", style="bold")
+        cmp_table.add_column("Baseline", justify="right")
+        cmp_table.add_column("Reconstructed", justify="right")
+        cmp_table.add_column("Delta", justify="right")
+        for name, vals in compare_result.dimension_deltas.items():
+            cmp_table.add_row(
+                name,
+                f"{vals['baseline']:.2f}",
+                f"{vals['reconstructed']:.2f}",
+                f"{vals['delta']:.2f}",
+            )
+        console.print(cmp_table)
+        console.print(
+            f"\n[bold]Toplam delta:[/bold] {compare_result.delta:.2f}  "
+            f"[dim](reconstructed/baseline: {compare_result.normalized:.2f}%)[/dim]"
+        )
+
+
+@main.command("rtti")
+@click.argument("binary", type=click.Path(exists=True, dir_okay=False))
+@click.option(
+    "--json", "json_output", is_flag=True,
+    help="Sonucu JSON olarak stdout'a yaz.",
+)
+@click.option(
+    "--abi", type=click.Choice(["itanium", "msvc"]), default="itanium",
+    help="Kullanilacak RTTI ABI (msvc v1.10.1'de).",
+)
+@click.pass_context
+@_graceful_interrupt
+def rtti(ctx: click.Context, binary: str, json_output: bool, abi: str) -> None:
+    """C++ RTTI/vtable bilgisini cikar ve yazdir (v1.10.0 M3 T9).
+
+    Itanium ABI (Linux/macOS g++/clang) destegi. Single inheritance only.
+    Binary sembollerinden _ZTI*, _ZTV* pattern'lerini bulur; vtable
+    layout'undan metod binding'lerini reconstruct eder.
+    """
+    import json as _json
+
+    from karadul.analyzers.cpp_rtti import RTTIParser
+
+    if abi == "msvc":
+        err_console.print("[yellow]MSVC ABI henuz desteklenmiyor (v1.10.1 planinda).[/yellow]")
+        sys.exit(2)
+
+    parser = RTTIParser(config=None)
+    hierarchy = parser.parse_itanium(Path(binary))
+
+    if json_output:
+        payload = {
+            "binary": str(binary),
+            "abi": abi,
+            "class_count": len(hierarchy.classes),
+            "classes": [
+                {
+                    "name": c.name,
+                    "mangled_name": c.mangled_name,
+                    "typeinfo_addr": c.typeinfo_addr,
+                    "vtable_addr": c.vtable_addr,
+                    "methods": c.methods,
+                    "base_classes": c.base_classes,
+                }
+                for c in hierarchy.classes
+            ],
+        }
+        click.echo(_json.dumps(payload, indent=2, ensure_ascii=False))
+        return
+
+    console.print(Panel(
+        f"[bold]C++ RTTI Analizi[/bold]\n"
+        f"Binary: [cyan]{binary}[/cyan]\n"
+        f"ABI: [cyan]{abi}[/cyan]\n"
+        f"Sinif sayisi: [bold]{len(hierarchy.classes)}[/bold]",
+        border_style="cyan",
+    ))
+    if not hierarchy.classes:
+        console.print("[yellow]RTTI sembolu bulunamadi.[/yellow]")
+        return
+    table = Table(title="C++ Siniflari", border_style="cyan")
+    table.add_column("Sinif", style="bold")
+    table.add_column("typeinfo", style="dim")
+    table.add_column("vtable", style="dim")
+    table.add_column("metod", justify="right")
+    for c in hierarchy.classes:
+        table.add_row(
+            c.name,
+            c.typeinfo_addr,
+            c.vtable_addr or "-",
+            str(len(c.methods)),
+        )
+    console.print(table)

@@ -63,6 +63,11 @@ _GENERIC_VAR_RE = re.compile(
 
 # Runtime deger araliklari -- tip cikarimi icin
 _POINTER_THRESHOLD = 0x1000        # Bu adresin ustu pointer
+# v1.10.0 M9: 64-bit pointer classification esigi. 1MB ustu deger
+# modern 64-bit ASLR heap/stack adresi -- pointer olarak siniflandir.
+# Eski deger 0x7f000000 (~2GB) 32-bit user-space sinirina dayali idi;
+# 64-bit'te false negative'e neden oluyordu.
+_POINTER_CLASSIFY_MIN = 0x100000   # 1MB -- 64-bit pointer alt siniri
 _CHAR_RANGE = (0x20, 0x7e)         # Yazdirilabilir ASCII
 _SMALL_INT_MAX = 0xffff            # size_t/int olasiligi yuksek
 _NEGATIVE_MASK = 0x80000000        # 32-bit signed negatif kontrol
@@ -393,8 +398,12 @@ class DynamicNamer:
             return
 
         # var = api_call(...) pattern'ini bul
+        # v1.10.0 C6 fix: _GENERIC_VAR_RE ile SENKRON olmali. Eksik olanlar:
+        # in_\w+, pvVar\d+, ppvVar\d+, puVar\d+, plVar\d+
         assign_re = re.compile(
-            r'(\b(?:param_\d+|local_[0-9a-fA-F]+|[a-z]Var\d+|[iuplscb]Var\d+|p[a-z]Var\d+|pp[a-z]Var\d+))\s*='
+            r'(\b(?:param_\d+|local_[0-9a-fA-F]+|[a-z]Var\d+|[iuplscb]Var\d+'
+            r'|in_\w+|pvVar\d+|ppvVar\d+|puVar\d+|plVar\d+'
+            r'|p[a-z]Var\d+|pp[a-z]Var\d+))\s*='
             r'\s*(\w+)\s*\('
         )
 
@@ -644,7 +653,9 @@ class DynamicNamer:
             return "int"
 
         # Buyuk deger -> pointer
-        if value > 0x7f000000:
+        # v1.10.0 M9 fix: 64-bit binary'de 64-bit pointer'lar daima > 1MB.
+        # Eski esik 0x7f000000 (~2GB) cok yuksekti, 32-bit pointer heuristic'i.
+        if value > _POINTER_CLASSIFY_MIN:
             return "void *"
 
         # Yazdirilabilir ASCII araliginda -> olasi char

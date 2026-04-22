@@ -104,7 +104,7 @@ class TestBayesianMerge:
 # 2. CFG Fingerprint Active Features
 # ---------------------------------------------------------------------------
 
-from karadul.reconstruction.computation.cfg_fingerprint import CFGFingerprinter
+from karadul.reconstruction.recovery_layers.cfg_fingerprint import CFGFingerprinter
 
 
 class TestCFGActiveFeatures:
@@ -183,7 +183,7 @@ class TestCFGActiveFeatures:
 # 3. D-S Conflict Metric
 # ---------------------------------------------------------------------------
 
-from karadul.reconstruction.computation.signature_fusion import (
+from karadul.reconstruction.recovery_layers.signature_fusion import (
     EvidenceMass,
     FusedIdentification,
     SignatureFusion,

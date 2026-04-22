@@ -34,9 +34,9 @@ from karadul.analyzers import get_analyzer
 # ---------------------------------------------------------------------------
 
 SAMPLE_MACHO = Path(__file__).parent / "fixtures" / "sample_macho"
-CODEX_CLI = Path(
-    "/opt/homebrew/Caskroom/codex/0.118.0/codex-aarch64-apple-darwin"
-)
+import shutil as _shutil
+_codex_resolved = _shutil.which("codex")
+CODEX_CLI = Path(_codex_resolved).resolve() if _codex_resolved else Path("/nonexistent/codex")
 
 
 @pytest.fixture
@@ -258,12 +258,22 @@ class TestGhidraProject:
         assert not proj.project_dir.exists()
 
     def test_cleanup_idempotent(self, workspace: Workspace, config: Config) -> None:
-        """Cleanup iki kez cagrildiginda hata vermemeli."""
+        """Cleanup iki kez cagrildiginda hata vermemeli ve dizin gercekten silinmis olmali."""
         proj = GhidraProject(workspace, config)
         proj.create()
+        # create sonrasi dizin mevcut.
+        assert proj.project_dir.exists()
+        # Icine gecici dosya yaz — cleanup silmeli.
+        (proj.project_dir / "stale.tmp").write_text("kalinti")
+        assert any(proj.project_dir.iterdir())
+
         proj.cleanup()
-        # Ikinci cleanup hata vermemeli
+        # GERCEK ASSERTION: dizin gerçekten yok edildi.
+        assert not proj.project_dir.exists()
+
+        # Ikinci cleanup hata vermemeli (idempotent).
         proj.cleanup()
+        assert not proj.project_dir.exists()
 
 
 # ---------------------------------------------------------------------------

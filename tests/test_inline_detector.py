@@ -64,12 +64,16 @@ class TestAbsDetection:
         assert matches[0].confidence >= 0.90
 
     def test_abs_ternary(self, detector: InlineDetector) -> None:
-        """x < 0 ? -x : x pattern'i abs() olarak tespit edilmeli."""
+        """x < 0 ? -x : x pattern'i abs() olarak tespit edilmeli.
+
+        v1.10.0 M8: pattern_name "abs_ternary" -> "abs_candidate"
+        (ternary cok genel, false positive azaltmak icin dusuk confidence).
+        """
         code = "result = n < 0 ? -n : n;"
         matches = detector.detect_in_code(code)
         assert len(matches) == 1
         assert matches[0].function_name == "abs"
-        assert matches[0].pattern_name == "abs_ternary"
+        assert matches[0].pattern_name == "abs_candidate"
 
     def test_abs_branch_with_spaces(self, detector: InlineDetector) -> None:
         """Bosluklu abs pattern'i de calismali."""

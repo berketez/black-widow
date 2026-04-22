@@ -102,9 +102,14 @@ class Workspace:
             Kaydedilen dosyanin yolu.
         """
         stage_dir = self.get_stage_dir(stage)
+        # v1.10.0 Fix Sprint: startswith prefix confusion yerine relative_to.
+        # /tmp/stage  ile /tmp/stage-evil/... ayrimini yalniz relative_to yapar.
         artifact_path = (stage_dir / name).resolve()
-        if not str(artifact_path).startswith(str(stage_dir.resolve())):
-            raise ValueError(f"Path traversal engellendi: {name}")
+        stage_root = stage_dir.resolve()
+        try:
+            artifact_path.relative_to(stage_root)
+        except ValueError:
+            raise ValueError(f"Path traversal engellendi: {name}") from None
         artifact_path.parent.mkdir(parents=True, exist_ok=True)
 
         if isinstance(data, str):
@@ -131,10 +136,13 @@ class Workspace:
             Dosya icerigi veya None (dosya yoksa).
         """
         stage_dir = self.get_stage_dir(stage)
+        # v1.10.0 Fix Sprint: CWE-22 -- prefix confusion karsi relative_to kullan.
         artifact_path = (stage_dir / name).resolve()
-        # CWE-22 fix: path traversal kontrolu (save_artifact ile tutarli)
-        if not str(artifact_path).startswith(str(stage_dir.resolve())):
-            raise ValueError(f"Path traversal engellendi: {name}")
+        stage_root = stage_dir.resolve()
+        try:
+            artifact_path.relative_to(stage_root)
+        except ValueError:
+            raise ValueError(f"Path traversal engellendi: {name}") from None
 
         if not artifact_path.exists():
             return None

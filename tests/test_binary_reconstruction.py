@@ -1684,7 +1684,7 @@ class TestSignatureDB:
         assert result is None or isinstance(result, SignatureMatch)
 
     def test_match_result_serializable(self, config):
-        """SignatureMatch.to_dict JSON-serializable."""
+        """SignatureMatch.to_dict JSON round-trip stabil olmali."""
         sm = SignatureMatch(
             original_name="FUN_123",
             matched_name="EVP_EncryptInit",
@@ -1695,7 +1695,17 @@ class TestSignatureDB:
             category="crypto",
         )
         d = sm.to_dict()
-        json.dumps(d)  # hata vermemeli
+        # GERCEK ASSERTION: round-trip stabilitesi.
+        json_str = json.dumps(d)
+        restored = json.loads(json_str)
+        assert restored == d
+        # Temel alanlarin korundugunu ayrica teyit et.
+        assert restored["original_name"] == "FUN_123"
+        assert restored["matched_name"] == "EVP_EncryptInit"
+        assert restored["confidence"] == 0.95
+        assert restored["match_method"] == "symbol"
+        assert restored["library"] == "openssl"
+        assert restored["category"] == "crypto"
 
     def test_stats(self, config):
         """stats() dogru yapida istatistik dondurmeli."""

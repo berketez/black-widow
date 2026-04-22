@@ -251,8 +251,10 @@ def _demangle_symbol(mangled: str) -> str | None:
         Demangled string veya None (basarisiz ise).
     """
     try:
+        # v1.10.0 Fix Sprint HIGH-4: "--" separator ile argv injection onleme.
+        # Mangled symbol "-" ile basliyorsa c++filt flag olarak yorumlayabilir.
         result = subprocess.run(
-            ['c++filt', mangled],
+            ['c++filt', '--', mangled],
             capture_output=True, text=True, timeout=5,
         )
         demangled = result.stdout.strip()
@@ -1820,11 +1822,17 @@ class BinaryNameExtractor:
 
         result: dict[str, str] = {}
 
+        # v1.10.0 Fix Sprint HIGH-4: input sanitization. Satir bazli
+        # c++filt protokolunde CR/LF karakteri shift yaratir; NUL ve
+        # non-printable karakterleri de at.
+        def _sanitize_sym(sym: str) -> str:
+            return "".join(ch for ch in sym if ch.isprintable() and ch not in ("\r", "\n"))
+
         # Batch size: 500 symbol birden
         batch_size = 500
         for i in range(0, len(unique_symbols), batch_size):
             batch = unique_symbols[i:i + batch_size]
-            input_text = '\n'.join(batch) + '\n'
+            input_text = '\n'.join(_sanitize_sym(s) for s in batch) + '\n'
 
             try:
                 proc = subprocess.run(
@@ -1832,6 +1840,7 @@ class BinaryNameExtractor:
                     input=input_text,
                     capture_output=True, text=True,
                     timeout=30,
+                    shell=False,
                 )
                 if proc.returncode == 0:
                     lines = proc.stdout.strip().split('\n')
@@ -2335,22 +2344,37 @@ class BinaryNameExtractor:
 
         for i in range(0, len(symbols), batch_size):
             batch = symbols[i:i + batch_size]
+            # v1.10.0 Fix Sprint HIGH-5: Popen context manager ile kaynak sizintisi
+            # onleme. TimeoutExpired icinde kill() + wait() yapiyoruz, proc asla
+            # gc'ye dusmeden kapanacak.
             try:
-                proc = subprocess.Popen(
+                with subprocess.Popen(
                     ["xcrun", "swift-demangle"],
                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE, text=True,
-                )
-                stdout, _ = proc.communicate("\n".join(batch), timeout=30)
-                if proc.returncode != 0:
-                    logger.warning("xcrun swift-demangle hata kodu: %d", proc.returncode)
-                    continue
+                ) as proc:
+                    try:
+                        stdout, _ = proc.communicate("\n".join(batch), timeout=30)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+                        try:
+                            proc.communicate(timeout=5)
+                        except Exception:
+                            pass
+                        logger.warning(
+                            "xcrun swift-demangle timeout (batch %d-%d)",
+                            i, i + len(batch),
+                        )
+                        continue
+                    if proc.returncode != 0:
+                        logger.warning("xcrun swift-demangle hata kodu: %d", proc.returncode)
+                        continue
 
-                lines = stdout.strip().split("\n")
-                for mangled, demangled in zip(batch, lines):
-                    demangled = demangled.strip()
-                    if demangled and demangled != mangled:
-                        result[mangled] = demangled
+                    lines = stdout.strip().split("\n")
+                    for mangled, demangled in zip(batch, lines):
+                        demangled = demangled.strip()
+                        if demangled and demangled != mangled:
+                            result[mangled] = demangled
 
             except FileNotFoundError:
                 logger.debug("xcrun swift-demangle bulunamadi, regex fallback kullanilacak")
@@ -2360,13 +2384,6 @@ class BinaryNameExtractor:
                     if parsed:
                         result[sym] = parsed
                 break
-            except subprocess.TimeoutExpired:
-                logger.warning("xcrun swift-demangle timeout (batch %d-%d)",
-                               i, i + len(batch))
-                try:
-                    proc.kill()
-                except Exception:
-                    logger.debug("Subprocess calistirma basarisiz, atlaniyor", exc_info=True)
 
         return result
 

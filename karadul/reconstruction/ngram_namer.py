@@ -110,6 +110,25 @@ _C_TOKEN_RE = re.compile(r"[a-zA-Z_]\w*|0x[0-9a-fA-F]+|[0-9]+|[^\s]")
 # Degisken marker pattern (@@var_N@@ formatinda)
 _VAR_MARKER = "@@"
 
+# Flank normalizasyonu icin: @@var_N@@ -> @@var_X@@ (pozisyon-bagimsiz)
+# v1.10.0 Batch 6B fix: Flank icindeki @@var_N@@ marker'larinin N'si,
+# fonksiyondaki degisken kullanim sirasina bagli degisiyor. Ayni context
+# farkli pozisyonlarda farkli hash uretir. Bunu normalize ederek
+# "burada bir degisken var" bilgisini korur ama N kimligini siler.
+_VAR_N_RE = re.compile(r"^@@var_\d+@@$")
+_FLANK_VAR_PLACEHOLDER = "@@var_X@@"
+
+
+def _mask_flank_vars(span: list[str]) -> list[str]:
+    """Bir span icindeki tum @@var_N@@ token'larini @@var_X@@ ile degistir.
+
+    Hem build hem predict tarafinda kullanilir ki hash'ler uyumlu olsun.
+    """
+    return [
+        _FLANK_VAR_PLACEHOLDER if _VAR_N_RE.match(t) else t
+        for t in span
+    ]
+
 # N-gram boyutlari (XTRIDE config)
 NGRAM_SIZES = (48, 12, 8, 4, 2)
 
@@ -214,6 +233,13 @@ def _extract_centered_ngrams(
 ) -> Iterator[tuple[bytes, int, str]]:
     """Centered n-gram'lari cikar.
 
+    v1.10.0 Batch 5A (DB v2 uyumluluk): Center pozisyonunu `@@var_0@@`
+    ile normalize eder. DB build zamaninda da ayni normalization
+    kullanildigi icin hash'ler kararli match eder. Onceki davranistan
+    farki: center'daki `@@var_N@@` (N=0,1,2,...) yerine her durumda
+    `@@var_0@@` kullaniliyor. Bu, ayni baglamda farkli pozisyonlardaki
+    degiskenlerin ayni n-gram olarak gorulmesini saglar.
+
     Yields:
         (hash_key, position, original_var_name)
     """
@@ -222,8 +248,15 @@ def _extract_centered_ngrams(
 
     for orig_pos, var_name in var_positions.items():
         pos = orig_pos + half  # padded offset
-        span = padded[pos - half: pos + half + 1]
-        key = ngram_hash(span)
+        span = list(padded[pos - half: pos + half + 1])
+        # Center'i sabit marker ile normalize et (DB build ile uyumlu).
+        span[half] = "@@var_0@@"
+        # v1.10.0 Batch 6B: Flank'lardaki @@var_N@@ marker'lari da
+        # pozisyon-bagimsiz @@var_X@@ ile maskle (build ile uyumlu).
+        left = _mask_flank_vars(span[:half])
+        right = _mask_flank_vars(span[half + 1:])
+        normalized = left + [span[half]] + right
+        key = ngram_hash(normalized)
         yield key, orig_pos, var_name
 
 
@@ -241,8 +274,10 @@ def _extract_flanking_ngrams(
 
     for orig_pos, var_name in var_positions.items():
         pos = orig_pos + size
-        left = padded[pos - size: pos]
-        right = padded[pos + 1: pos + 1 + size]
+        # v1.10.0 Batch 6B: Flank icindeki @@var_N@@ marker'lari pozisyon
+        # bagimli N icerir — normalize et (DB build ile uyumlu).
+        left = _mask_flank_vars(padded[pos - size: pos])
+        right = _mask_flank_vars(padded[pos + 1: pos + 1 + size])
 
         yield ngram_hash(left, b"left"), orig_pos, var_name, "left"
         yield ngram_hash(right, b"right"), orig_pos, var_name, "right"
@@ -366,20 +401,29 @@ class NgramDB:
         return None
 
     def save(self, path: Path) -> None:
-        """Binary formatta kaydet."""
+        """Binary formatta kaydet.
+
+        v1.10.0 Batch 6B fix: `topk` sabitini TOP_K sabit degerine alir
+        (onceden `_predictions[0]`'in uzunluguna gore aliyor — yanlis,
+        cunku her entry'nin prediction sayisi farkli olabilir, ama dosya
+        formati sabit-boyut). Sonucta load tarafi desenkronize olup dogru
+        hash'leri bulamiyordu. Fix: her entry EXACTLY TOP_K predictions
+        ile yazilsin (eksikse 0-padding).
+        """
+        topk = TOP_K
         with open(path, "wb") as f:
             # Header: magic(4) + version(4) + size(4) + count(4) + topk(4)
-            topk = len(self._predictions[0]) if self._predictions else TOP_K
             f.write(b"NGDB")
             f.write(struct.pack("<IIII", 1, self.size, len(self._hashes), topk))
 
             for i, h in enumerate(self._hashes):
                 f.write(h)  # 12 bytes
                 f.write(struct.pack("<I", self._totals[i]))
-                for vid, cnt in self._predictions[i]:
+                # Her zaman TOP_K adet (vid, cnt) pair yaz — eksikse 0 pad.
+                preds = self._predictions[i][:topk]
+                for vid, cnt in preds:
                     f.write(struct.pack("<II", vid, cnt))
-                # Pad if fewer than topk
-                for _ in range(topk - len(self._predictions[i])):
+                for _ in range(topk - len(preds)):
                     f.write(struct.pack("<II", 0, 0))
 
     @classmethod

@@ -604,24 +604,56 @@ class TestInferNamesCryptoContext:
         assert len(crypto_suggestions) == 0
 
     def test_cccrypt_matching(self, tmp_path):
-        """macOS CCCrypt API de eslesmeli."""
+        """macOS tipi algoritma (kCCAlgorithmAES128) evidence'a dusmeli.
+
+        v1.10.0 Fix-9 C1 (sahte test duzeltmesi):
+        Onceki test `assert len(crypto_suggestions) >= 0` tautolojisi
+        kullaniyordu -- `len(...) >= 0` her zaman True oldugu icin test HIC
+        KIRMIYORDU. Simdi gercek davranis dogrulanir:
+          - Crypto strategy en az 1 oneri uretmeli,
+          - `kCCAlgorithmAES128` algoritma ismi evidence'a yansimali.
+
+        Strategy 4 APIParamDB'deki bir crypto API'ye ihtiyac duyar. Testin
+        platform-bagimsiz olmasi icin EVP_EncryptInit_ex (OpenSSL, daima DB'de)
+        kullaniliyor; algoritma ismi ise macOS-tipi AES128 sabit tutuluyor.
+        """
+        # Strategy 4 sadece Strategy 1 (API param) bos kalirsa devreye girer.
+        # Bu yuzden api_calls BOS verilir -- aksi halde tum parametreler
+        # API param olarak claim edilir ve crypto_suggestions daima 0 olur.
         trace = _make_trace(
-            api_calls=[{"name": "CCCrypt", "args": {}}],
+            api_calls=[],
             crypto_operations=[{"algorithm": "kCCAlgorithmAES128"}],
         )
         path = _write_trace(tmp_path, trace)
         namer = DynamicNamer(path)
         namer.load_trace()
 
-        # CCCrypt APIParamDB'de tanimli mi kontrol et
-        param_names = namer._api_db.get_param_names("CCCrypt")
-        if param_names:
-            args = ", ".join(f"param_{i+1}" for i in range(len(param_names)))
-            code = f"CCCrypt({args});"
-            results = namer.infer_names("FUN_001", code)
-            crypto_suggestions = [s for s in results if "crypto" in s.evidence.lower()]
-            # CCCrypt APIParamDB'de varsa oneriler gelmeli
-            assert len(crypto_suggestions) >= 0  # DB'de yoksa 0 da olabilir
+        # EVP_EncryptInit_ex APIParamDB'de olmali (test fixture sabiti)
+        param_names = namer._api_db.get_param_names("EVP_EncryptInit_ex")
+        assert param_names, (
+            "EVP_EncryptInit_ex APIParamDB'de tanimli degil; fixture bozuk"
+        )
+
+        code = (
+            "EVP_EncryptInit_ex(param_1, param_2, param_3, param_4, param_5);"
+        )
+        results = namer.infer_names("FUN_001", code)
+        crypto_suggestions = [
+            s for s in results if "crypto" in s.evidence.lower()
+        ]
+
+        # Gercek davranis: crypto oneri UYGULANMIS olmali
+        assert len(crypto_suggestions) > 0, (
+            "Crypto strategy hic oneri uretmedi; crypto_operations varken "
+            "Strategy 4 devreye girmeliydi"
+        )
+        # Algoritma ismi evidence'ta olmali
+        assert any(
+            "kCCAlgorithmAES128" in s.evidence for s in crypto_suggestions
+        ), (
+            "kCCAlgorithmAES128 hicbir crypto evidence'inda gozukmedi: "
+            f"{[s.evidence for s in crypto_suggestions]}"
+        )
 
 
 # ========================================================================
@@ -1397,21 +1429,23 @@ class TestClassifyIntValue:
         assert DynamicNamer._classify_int_value(0xffff) == "int"
 
     def test_large_pointer(self):
+        # v1.10.0 M9: 64-bit pointer esigi 0x100000 (1MB) uzerine alindi.
+        assert DynamicNamer._classify_int_value(0x100001) == "void *"
         assert DynamicNamer._classify_int_value(0x7f000001) == "void *"
         assert DynamicNamer._classify_int_value(0xFFFFFFFF) == "void *"
 
     def test_medium_uint(self):
-        """0xffff < value <= 0x7f000000 arasi -> uint32_t."""
+        """v1.10.0 M9: 0xffff < value <= 0x100000 arasi -> uint32_t."""
         assert DynamicNamer._classify_int_value(0x10000) == "uint32_t"
         assert DynamicNamer._classify_int_value(0x100000) == "uint32_t"
 
     def test_boundary_below_pointer(self):
-        """0x7f000000 tam sinirda -- pointer degil, uint32_t olmali."""
-        assert DynamicNamer._classify_int_value(0x7f000000) == "uint32_t"
+        """v1.10.0 M9: 0x100000 tam sinirda -- pointer degil, uint32_t olmali."""
+        assert DynamicNamer._classify_int_value(0x100000) == "uint32_t"
 
     def test_boundary_above_pointer(self):
-        """0x7f000001 -- pointer olmali."""
-        assert DynamicNamer._classify_int_value(0x7f000001) == "void *"
+        """v1.10.0 M9: 0x100001 -- pointer olmali (1MB uzeri)."""
+        assert DynamicNamer._classify_int_value(0x100001) == "void *"
 
     def test_boundary_char_low(self):
         """0x1f -- ASCII printable altinda, kucuk int."""
