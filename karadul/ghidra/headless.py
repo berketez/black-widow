@@ -2117,8 +2117,10 @@ class GhidraHeadless:
         True ise legacy/ altindaki Jython 2.7 orijinaller kullanilir.
         Default False -> yeni PyGhidra 3.0 / Python 3 uyumlu script'ler.
 
-        Migrate edilmis script'ler (Faz 1): function_lister.py
-        Henuz migrate edilmemis 9 script her iki modda da scripts_dir/ altindan
+        Migrate edilmis script'ler:
+          - Faz 1 (Dalga 2): function_lister.py
+          - Faz 1.2 (Dalga 3): string_extractor.py, type_recovery.py
+        Henuz migrate edilmemis 7 script her iki modda da scripts_dir/ altindan
         yuklenir -- legacy bayragi acik olsa bile bu dosyalara dokunulmaz
         (zaten Py2/Py3 ortak syntax'la yazilmislar).
         """
@@ -2128,9 +2130,13 @@ class GhidraHeadless:
             self.config.perf, "use_legacy_jython_scripts", False
         )
 
-        # v1.11.0 Faz 1: Bu set legacy backup'i mevcut olan migrate edilmis
-        # script'leri tutar. Faz 2/3'te genisler.
-        migrated_scripts = {"function_lister.py"}
+        # v1.11.0 Faz 1.2: Bu set legacy backup'i mevcut olan migrate edilmis
+        # script'leri tutar. Faz 2'de genisler.
+        migrated_scripts = {
+            "function_lister.py",   # Dalga 2 (v1.11.0 Faz 1)
+            "string_extractor.py",  # Dalga 3 (v1.11.0 Faz 1.2)
+            "type_recovery.py",     # Dalga 3 (v1.11.0 Faz 1.2)
+        }
 
         ordered_names = [
             "function_lister.py",

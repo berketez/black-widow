@@ -1,36 +1,24 @@
-# Ghidra Python Script -- PyGhidra 3.0 (Python 3.10+) uyumlu
+# Ghidra Python Script -- Jython 2.7 uyumlu
 # @category BlackWidow
 # @description Extract struct/enum/typedef type information from DataTypeManager
-#
-# v1.11.0 Jython Sunset Faz 1.2: Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/type_recovery.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
-#
-# UYARI: Bu script Ghidra JVM icinde PyGhidra engine altinda calisir. Ghidra API
-# objeleri (currentProgram, DataTypeManager vb.) global scope'ta mevcuttur.
-# JPype tipleri (java.lang.String, java.lang.Long vb.) -> Python tiplerine
-# explicit donusum (str/int/bool) defansif olarak uygulanir.
-#
-# PERFORMANS NOTU: Buyuk binary'lerde DataTypeManager binlerce tip icerebilir.
-# getAllDataTypes() 4 ayri dongude cagrilir (structures, enums, typedefs,
-# func_defs); bu bilincli secim cunku Ghidra iterator'leri tek-gecisli (forward
-# only) ve tekrar iterate edilemez. Memory footprint kucuk (iterator lazy).
 
-from __future__ import annotations
+# UYARI: Bu script Ghidra JVM icinde calisir. Ghidra API objeleri
+# (currentProgram, DataTypeManager vb.) global scope'ta mevcuttur.
+# Python 3 syntax'i KULLANILMAMALIDIR (f-string yok, print statement).
 
 import json
 import os
 import tempfile
 
-from ghidra.program.model.data import Enum
-from ghidra.program.model.data import FunctionDefinition
-from ghidra.program.model.data import Pointer  # noqa: F401
 from ghidra.program.model.data import Structure
-from ghidra.program.model.data import TypeDef
 from ghidra.program.model.data import Union
+from ghidra.program.model.data import Enum
+from ghidra.program.model.data import TypeDef
+from ghidra.program.model.data import FunctionDefinition
+from ghidra.program.model.data import Pointer
 
 
-def get_output_dir() -> str:
+def get_output_dir():
     """KARADUL_OUTPUT ortam degiskeninden cikti dizinini al (CWE-377 guvenli).
 
     v1.10.0 Batch 5B HIGH-10: KARADUL_WORKSPACE_ROOT path traversal koruma.
@@ -58,12 +46,8 @@ def get_output_dir() -> str:
     return output
 
 
-def extract_structures(dtm) -> list:
+def extract_structures(dtm):
     """DataTypeManager'dan tum composite (struct/union) tipleri cikar.
-
-    PyGhidra 3.0 notu: Her Java donusu (getName, getDescription vb.)
-    explicit str()/int() wrap -- java.lang.String instance'lari JSON
-    serializer'da TypeError atar.
 
     Args:
         dtm: Ghidra DataTypeManager nesnesi.
@@ -71,7 +55,7 @@ def extract_structures(dtm) -> list:
     Returns:
         list: struct bilgileri listesi.
     """
-    structures: list = []
+    structures = []
     all_types = dtm.getAllDataTypes()
 
     while all_types.hasNext():
@@ -80,13 +64,13 @@ def extract_structures(dtm) -> list:
         if isinstance(dt, Structure) or isinstance(dt, Union):
             is_union = isinstance(dt, Union)
             entry = {
-                "name": str(dt.getName()),
+                "name": dt.getName(),
                 "category": str(dt.getCategoryPath()),
                 "kind": "union" if is_union else "struct",
-                "size": int(dt.getLength()),
-                "alignment": int(dt.getAlignment()),
-                "description": str(dt.getDescription() or ""),
-                "field_count": int(dt.getNumComponents()),
+                "size": dt.getLength(),
+                "alignment": dt.getAlignment(),
+                "description": dt.getDescription() or "",
+                "field_count": dt.getNumComponents(),
                 "fields": [],
             }
 
@@ -94,12 +78,12 @@ def extract_structures(dtm) -> list:
             components = dt.getComponents()
             for comp in components:
                 field_entry = {
-                    "name": str(comp.getFieldName() or "(unnamed)"),
+                    "name": comp.getFieldName() or "(unnamed)",
                     "type": str(comp.getDataType()),
-                    "offset": int(comp.getOffset()),
-                    "size": int(comp.getLength()),
-                    "comment": str(comp.getComment() or ""),
-                    "ordinal": int(comp.getOrdinal()),
+                    "offset": comp.getOffset(),
+                    "size": comp.getLength(),
+                    "comment": comp.getComment() or "",
+                    "ordinal": comp.getOrdinal(),
                 }
                 entry["fields"].append(field_entry)
 
@@ -108,7 +92,7 @@ def extract_structures(dtm) -> list:
     return structures
 
 
-def extract_enums(dtm) -> list:
+def extract_enums(dtm):
     """DataTypeManager'dan tum enum tiplerini cikar.
 
     Args:
@@ -117,7 +101,7 @@ def extract_enums(dtm) -> list:
     Returns:
         list: enum bilgileri listesi.
     """
-    enums: list = []
+    enums = []
     all_types = dtm.getAllDataTypes()
 
     while all_types.hasNext():
@@ -125,20 +109,19 @@ def extract_enums(dtm) -> list:
 
         if isinstance(dt, Enum):
             entry = {
-                "name": str(dt.getName()),
+                "name": dt.getName(),
                 "category": str(dt.getCategoryPath()),
-                "size": int(dt.getLength()),
-                "description": str(dt.getDescription() or ""),
-                "value_count": int(dt.getCount()),
+                "size": dt.getLength(),
+                "description": dt.getDescription() or "",
+                "value_count": dt.getCount(),
                 "values": [],
             }
 
-            # Enum degerlerini cikar. getNames() -> java.lang.String[]
+            # Enum degerlerini cikar
             for name in dt.getNames():
-                name_py = str(name)
                 value = dt.getValue(name)
                 entry["values"].append({
-                    "name": name_py,
+                    "name": name,
                     "value": int(value),
                 })
 
@@ -147,7 +130,7 @@ def extract_enums(dtm) -> list:
     return enums
 
 
-def extract_typedefs(dtm) -> list:
+def extract_typedefs(dtm):
     """DataTypeManager'dan tum typedef bilgilerini cikar.
 
     Args:
@@ -156,7 +139,7 @@ def extract_typedefs(dtm) -> list:
     Returns:
         list: typedef bilgileri listesi.
     """
-    typedefs: list = []
+    typedefs = []
     all_types = dtm.getAllDataTypes()
 
     while all_types.hasNext():
@@ -165,19 +148,19 @@ def extract_typedefs(dtm) -> list:
         if isinstance(dt, TypeDef):
             base_type = dt.getBaseDataType()
             entry = {
-                "name": str(dt.getName()),
+                "name": dt.getName(),
                 "category": str(dt.getCategoryPath()),
                 "base_type": str(base_type),
-                "base_type_name": str(base_type.getName()),
-                "size": int(dt.getLength()),
-                "description": str(dt.getDescription() or ""),
+                "base_type_name": base_type.getName(),
+                "size": dt.getLength(),
+                "description": dt.getDescription() or "",
             }
             typedefs.append(entry)
 
     return typedefs
 
 
-def extract_function_definitions(dtm) -> list:
+def extract_function_definitions(dtm):
     """DataTypeManager'dan fonksiyon tanimlarini cikar.
 
     Bunlar gercek fonksiyonlar degil, DataTypeManager'daki
@@ -189,7 +172,7 @@ def extract_function_definitions(dtm) -> list:
     Returns:
         list: fonksiyon tanimi bilgileri listesi.
     """
-    func_defs: list = []
+    func_defs = []
     all_types = dtm.getAllDataTypes()
 
     while all_types.hasNext():
@@ -197,17 +180,17 @@ def extract_function_definitions(dtm) -> list:
 
         if isinstance(dt, FunctionDefinition):
             entry = {
-                "name": str(dt.getName()),
+                "name": dt.getName(),
                 "category": str(dt.getCategoryPath()),
                 "return_type": str(dt.getReturnType()),
                 "calling_convention": str(dt.getCallingConventionName() or ""),
-                "param_count": int(len(dt.getArguments())),
+                "param_count": len(dt.getArguments()),
                 "parameters": [],
             }
 
             for arg in dt.getArguments():
                 entry["parameters"].append({
-                    "name": str(arg.getName() or "(unnamed)"),
+                    "name": arg.getName() or "(unnamed)",
                     "type": str(arg.getDataType()),
                 })
 
@@ -216,12 +199,7 @@ def extract_function_definitions(dtm) -> list:
     return func_defs
 
 
-def summarize_categories(
-    structures: list,
-    enums: list,
-    typedefs: list,
-    func_defs: list,
-) -> list:
+def summarize_categories(structures, enums, typedefs, func_defs):
     """Tip kategorilerinin dagitimini hesapla.
 
     Args:
@@ -231,9 +209,9 @@ def summarize_categories(
         func_defs: function definition listesi.
 
     Returns:
-        list: [{"path": str, "count": int}, ...] azalan siralamada.
+        dict: kategori -> sayi eslesmesi.
     """
-    cat_counts: dict = {}
+    cat_counts = {}
 
     for item_list in [structures, enums, typedefs, func_defs]:
         for item in item_list:
@@ -247,9 +225,9 @@ def summarize_categories(
     return [{"path": k, "count": v} for k, v in sorted_cats]
 
 
-def main() -> None:
+def main():
     output_dir = get_output_dir()
-    dtm = currentProgram.getDataTypeManager()  # type: ignore[name-defined]
+    dtm = currentProgram.getDataTypeManager()
 
     structures = extract_structures(dtm)
     enums = extract_enums(dtm)
@@ -259,7 +237,7 @@ def main() -> None:
     categories = summarize_categories(structures, enums, typedefs, func_defs)
 
     result = {
-        "program": str(currentProgram.getName()),  # type: ignore[name-defined]
+        "program": str(currentProgram.getName()),
         "total_structures": len(structures),
         "total_enums": len(enums),
         "total_typedefs": len(typedefs),
@@ -273,10 +251,8 @@ def main() -> None:
     }
 
     output_path = os.path.join(output_dir, "types.json")
-    # PyGhidra 3.0: encoding=utf-8 + ensure_ascii=False Unicode tip isimlerini
-    # (C++ demangled template'ler, Unicode identifier'lar) korur.
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
+    with open(output_path, "w") as f:
+        json.dump(result, f, indent=2)
 
     print("BlackWidow: Type recovery: %d structs, %d enums, %d typedefs, %d func_defs -> %s" % (
         len(structures), len(enums), len(typedefs), len(func_defs), output_path,

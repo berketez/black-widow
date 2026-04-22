@@ -120,12 +120,12 @@ class TestFeatureFlag:
         ghidra = GhidraHeadless(cfg)
         scripts = ghidra.get_default_scripts()
 
-        # Faz 1'de sadece function_lister migrate edildi; digerleri ana dizinde
+        # Faz 1 Dalga 2: function_lister migrate
+        # Faz 1.2 Dalga 3: string_extractor + type_recovery migrate
+        # Kalan 7 script henuz ana scripts_dir/ altinda (Faz 2 hedef).
         non_migrated = {
-            "string_extractor.py",
             "call_graph.py",
             "decompile_all.py",
-            "type_recovery.py",
             "xref_analysis.py",
             "pcode_analysis.py",
             "cfg_extraction.py",
@@ -136,6 +136,40 @@ class TestFeatureFlag:
             if script.name in non_migrated:
                 assert "legacy" not in script.parts, (
                     f"{script.name} legacy'den yuklenmemeli (henuz migrate edilmedi)"
+                )
+
+    def test_dalga3_migrated_scripts_load_from_legacy_when_flag_on(self) -> None:
+        """Faz 1.2 Dalga 3: Flag True -> string_extractor/type_recovery legacy'den."""
+        from karadul.config import Config
+        from karadul.ghidra.headless import GhidraHeadless
+
+        cfg = Config()
+        cfg.perf.use_legacy_jython_scripts = True
+        ghidra = GhidraHeadless(cfg)
+        scripts = ghidra.get_default_scripts()
+
+        migrated_in_dalga3 = {"string_extractor.py", "type_recovery.py"}
+        for script in scripts:
+            if script.name in migrated_in_dalga3:
+                assert "legacy" in script.parts, (
+                    f"{script.name} flag=True iken legacy/'den yuklenmeli"
+                )
+
+    def test_dalga3_migrated_scripts_use_new_when_flag_off(self) -> None:
+        """Faz 1.2 Dalga 3: Default flag=False -> yeni PyGhidra 3.0 versiyonlari."""
+        from karadul.config import Config
+        from karadul.ghidra.headless import GhidraHeadless
+
+        cfg = Config()
+        assert cfg.perf.use_legacy_jython_scripts is False
+        ghidra = GhidraHeadless(cfg)
+        scripts = ghidra.get_default_scripts()
+
+        migrated_in_dalga3 = {"string_extractor.py", "type_recovery.py"}
+        for script in scripts:
+            if script.name in migrated_in_dalga3:
+                assert "legacy" not in script.parts, (
+                    f"{script.name} flag=False iken yeni versiyonu yuklenmeli"
                 )
 
 
