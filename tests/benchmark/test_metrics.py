@@ -363,14 +363,17 @@ class TestBenchmarkMetrics:
         m = BenchmarkMetrics(total_symbols=5, exact_matches=2, missing_names=1)
         d = m.to_dict()
         # v1.10.0 Batch 5A: F1 / per-source / confusion matrix alanlari eklendi.
+        # v1.11.0 Bug 3: fun_residue_pct, type_precision, type_recall eklendi.
         expected_keys = {
             "total_symbols", "exact_matches", "semantic_matches",
             "partial_matches", "wrong_names", "missing_names",
             "accuracy", "recovery_rate",
-            # Yeni alanlar
+            # v1.10.0
             "precision", "recall", "f1",
             "per_source_precision", "per_source_recall", "per_source_f1",
             "confusion_matrix",
+            # v1.11.0
+            "fun_residue_pct", "type_precision", "type_recall",
         }
         assert set(d.keys()) == expected_keys
 

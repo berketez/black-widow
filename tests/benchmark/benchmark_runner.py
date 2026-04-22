@@ -57,6 +57,84 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# v1.11.0 Bug 2 fix: Symbol mapping helper
+# Naming map anahtarları genelde sembol adı ("_print_info") olurken ground
+# truth anahtarları Ghidra tarzı ("FUN_1000004ac") olabilir. Workspace içindeki
+# ghidra_functions.json ve symbols.json dosyalarından adres↔sembol eşlemesi
+# çıkarıp iki namespace arası normalizasyon yaparız.
+# ---------------------------------------------------------------------------
+
+
+def _addr_to_fun_key(addr: str) -> str:
+    """Ham adres stringini FUN_<hex> formatına çevir.
+
+    Örn: "100000460" -> "FUN_00000000100000460" değil, "FUN_100000460"
+    Ground truth üreticisi `hex_part.lstrip("0").zfill(8)` kullanıyor; aynı
+    kuralı buraya uyguluyoruz ki iki taraf tutarlı olsun.
+    """
+    addr = (addr or "").strip()
+    if not addr:
+        return ""
+    # 0x önekini at, başındaki sıfırları kırp, min 8 hex'e pad et.
+    clean = addr.lower().replace("0x", "").lstrip("0") or "0"
+    return f"FUN_{clean.zfill(8)}"
+
+
+def find_symbol_mapping(workspace_dir: Optional[Path]) -> dict[str, str]:
+    """Workspace içinden FUN_<addr> ↔ symbol_name eşlemesi çıkar.
+
+    Kaynaklar (öncelik sırası):
+      1. `<ws>/static/ghidra_functions.json` — Ghidra'nın fonksiyon listesi
+      2. `<ws>/static/symbols.json` — nm tabanlı sembol listesi
+
+    Returns:
+        {"FUN_100000460": "_add", "_add": "FUN_100000460", ...} — çift yönlü
+        bir sözlük. Hem adres hem isim anahtar olabilir (normalizasyon kolay
+        olsun diye). İsim çakışmasında Ghidra kayıtları kazanır.
+    """
+    mapping: dict[str, str] = {}
+    if not workspace_dir or not workspace_dir.exists():
+        return mapping
+
+    # 1) ghidra_functions.json
+    gf_path = workspace_dir / "static" / "ghidra_functions.json"
+    if gf_path.is_file():
+        try:
+            data = json.loads(gf_path.read_text(encoding="utf-8"))
+            for fn in data.get("functions", []):
+                name = fn.get("name") or ""
+                addr = fn.get("address") or ""
+                if not name or not addr:
+                    continue
+                fun_key = _addr_to_fun_key(addr)
+                if fun_key:
+                    mapping[fun_key] = name
+                    mapping[name] = fun_key
+        except (json.JSONDecodeError, OSError) as exc:
+            logger.warning("ghidra_functions.json okunamadı: %s", exc)
+
+    # 2) symbols.json — yalnızca ghidra'da olmayanları ekle
+    sym_path = workspace_dir / "static" / "symbols.json"
+    if sym_path.is_file():
+        try:
+            data = json.loads(sym_path.read_text(encoding="utf-8"))
+            for s in data.get("symbols", []):
+                name = s.get("name") or ""
+                addr = s.get("address") or ""
+                if not name or not addr:
+                    continue
+                fun_key = _addr_to_fun_key(addr)
+                if not fun_key:
+                    continue
+                mapping.setdefault(fun_key, name)
+                mapping.setdefault(name, fun_key)
+        except (json.JSONDecodeError, OSError) as exc:
+            logger.warning("symbols.json okunamadı: %s", exc)
+
+    return mapping
+
+
+# ---------------------------------------------------------------------------
 # Sample ground truth for quick testing without real binaries
 # ---------------------------------------------------------------------------
 
@@ -179,14 +257,43 @@ class BenchmarkRunner:
         self.output_dir = output_dir
 
     @staticmethod
-    def _load_naming_map(path: Path) -> dict[str, str]:
-        """Load naming_map.json with v1.5.5 scoped format backward compat."""
+    def _load_naming_map(path: Path) -> dict:
+        """Load naming_map.json. v1.5.5 formatını olduğu gibi döndürür;
+        düzleştirme `_flatten_naming_map` içinde yapılır.
+        """
         with open(path, encoding="utf-8") as f:
-            raw = json.load(f)
-        # v1.5.5: {"global": {...}, "per_function": {...}} format
-        if isinstance(raw, dict) and "global" in raw:
-            return raw["global"]
-        return raw
+            return json.load(f)
+
+    @staticmethod
+    def _flatten_naming_map(naming_map: dict) -> dict[str, str]:
+        """v1.5.5 formatındaki naming_map'i `{isim: yeni_isim}` sözlüğüne indirger.
+
+        Yapı örnekleri:
+          - `{"FUN_1": "main"}` → düz, olduğu gibi döner.
+          - `{"global": {...}, "per_function": {fn: {var: renamed}}}` → tüm
+            haritalar tek seviyede birleşir. Global kazanır (çakışmada).
+        """
+        if not isinstance(naming_map, dict):
+            return {}
+        if "global" not in naming_map and "per_function" not in naming_map:
+            # Düz harita: değerlerin string olduğunu varsay.
+            return {k: v for k, v in naming_map.items() if isinstance(v, str)}
+
+        flat: dict[str, str] = {}
+        pf = naming_map.get("per_function") or {}
+        if isinstance(pf, dict):
+            for _fn, inner in pf.items():
+                if isinstance(inner, dict):
+                    for k, v in inner.items():
+                        if isinstance(v, str):
+                            flat[k] = v
+        # Global son yazılır ki çakışmada global kazansın.
+        gl = naming_map.get("global") or {}
+        if isinstance(gl, dict):
+            for k, v in gl.items():
+                if isinstance(v, str):
+                    flat[k] = v
+        return flat
 
     # ------------------------------------------------------------------
     # Mode 1: Mock data
@@ -195,18 +302,28 @@ class BenchmarkRunner:
     def run_mock(
         self,
         ground_truth: dict[str, str],
-        naming_map: dict[str, str],
+        naming_map: dict,
         config_info: Optional[dict] = None,
+        workspace_dir: Optional[Path] = None,
     ) -> BenchmarkResult:
         """Run benchmark with in-memory dictionaries.
 
         Args:
             ground_truth: placeholder -> original_name mapping.
-            naming_map: placeholder -> recovered_name mapping (Karadul output).
+            naming_map: Karadul naming map — düz `{placeholder: name}` veya
+                v1.5.5 formatı (`{"global": {...}, "per_function": {...}}`)
+                olabilir.
             config_info: Optional metadata about the run.
+            workspace_dir: Varsa `<ws>/static/` dizinindeki ghidra_functions +
+                symbols dosyalarından adres↔sembol cross-ref için kullanılır.
         """
-        comparisons = self._compare_maps(ground_truth, naming_map)
+        sym_map = find_symbol_mapping(workspace_dir) if workspace_dir else {}
+        comparisons = self._compare_maps(ground_truth, naming_map, sym_map)
         metrics = self.calculator.calculate_metrics(comparisons)
+
+        # Bug 3: FUN_ residue oranı raporla.
+        flat_nm = self._flatten_naming_map(naming_map)
+        metrics.fun_residue_pct = self.calculator.calculate_fun_residue(flat_nm)
 
         result = BenchmarkResult(
             metrics=metrics,
@@ -231,6 +348,7 @@ class BenchmarkRunner:
         ground_truth_json: Path,
         naming_map_json: Path,
         config_info: Optional[dict] = None,
+        workspace_dir: Optional[Path] = None,
     ) -> BenchmarkResult:
         """Run benchmark from JSON files.
 
@@ -250,9 +368,13 @@ class BenchmarkRunner:
             ground_truth = json.load(f)
 
         naming_map = self._load_naming_map(naming_map_json)
+        sym_map = find_symbol_mapping(workspace_dir) if workspace_dir else {}
 
-        comparisons = self._compare_maps(ground_truth, naming_map)
+        comparisons = self._compare_maps(ground_truth, naming_map, sym_map)
         metrics = self.calculator.calculate_metrics(comparisons)
+        metrics.fun_residue_pct = self.calculator.calculate_fun_residue(
+            self._flatten_naming_map(naming_map)
+        )
 
         result = BenchmarkResult(
             metrics=metrics,
@@ -303,6 +425,9 @@ class BenchmarkRunner:
 
         comparisons = self._compare_maps(ground_truth, naming_map)
         metrics = self.calculator.calculate_metrics(comparisons)
+        metrics.fun_residue_pct = self.calculator.calculate_fun_residue(
+            self._flatten_naming_map(naming_map)
+        )
 
         result = BenchmarkResult(
             metrics=metrics,
@@ -332,19 +457,62 @@ class BenchmarkRunner:
     def _compare_maps(
         self,
         ground_truth: dict[str, str],
-        naming_map: dict[str, str],
+        naming_map: dict,
+        symbol_mapping: Optional[dict[str, str]] = None,
     ) -> list[NamingResult]:
         """Compare ground truth against naming map, symbol by symbol.
 
-        For each symbol in ground truth:
-        - If naming_map has a recovered name -> compare
-        - If naming_map doesn't have it -> treat as still-unnamed (score 0, missing)
+        v1.11.0 Bug 2 fix: Naming map hem düz, hem v1.5.5 scoped format
+        (`global` + `per_function`) olabilir. Ground truth genelde `FUN_<hex>`
+        anahtarlı, naming_map ise fonksiyon adı (ör: `_print_info`) anahtarlı
+        olabilir. `symbol_mapping` (ghidra_functions.json üzerinden üretilen
+        `FUN_<hex>` ↔ `<name>` haritası) ile bu iki namespace arası arama
+        yaparız.
+
+        Arama sırası:
+          1. Düz naming_map'e `placeholder` ile bak.
+          2. `symbol_mapping[placeholder]` varsa (ör. `FUN_xxx` → `_print_info`)
+             yeni isimle düz haritada tekrar dene.
+          3. Ground truth değeri (sembol adı) naming_map anahtarı olabilir mi
+             diye kontrol et.
+          4. Hiçbiri yoksa → missing.
         """
         comparisons: list[NamingResult] = []
+        flat_nm = self._flatten_naming_map(naming_map)
+        sym_map = symbol_mapping or {}
 
         for placeholder, original_name in ground_truth.items():
-            recovered = naming_map.get(placeholder, placeholder)
-            # If not in naming_map, recovered == placeholder (still FUN_xxx)
+            recovered: Optional[str] = None
+
+            # 1) Direkt anahtar
+            if placeholder in flat_nm:
+                recovered = flat_nm[placeholder]
+
+            # 2) Sembol-eşlemesi: FUN_xxx -> <symbol_name> -> flat_nm
+            if recovered is None and placeholder in sym_map:
+                alt_key = sym_map[placeholder]
+                if alt_key in flat_nm:
+                    recovered = flat_nm[alt_key]
+
+            # 3) Orijinal isim naming_map anahtarı olmuş olabilir
+            #    (karadul bazı fonksiyonlar için orijinal adı koruyor)
+            if recovered is None and original_name in flat_nm:
+                recovered = flat_nm[original_name]
+
+            # 4) Sembol haritasında bu isim korunmuş mu? Karadul
+            #    export sembollerini (ör: _add) genelde rename etmez —
+            #    orijinal isim workspace'te yaşıyorsa bu "exact" sayılır.
+            if recovered is None and placeholder in sym_map:
+                preserved = sym_map[placeholder]
+                # sym_map FUN_xxx -> name ve name -> FUN_xxx her iki yönü
+                # tutuyor; biz burada FUN_xxx yönünü kullanıyoruz.
+                if preserved and not preserved.startswith("FUN_"):
+                    recovered = preserved
+
+            # 5) Yine de bulamadık → placeholder kalmış kabul et
+            if recovered is None:
+                recovered = placeholder
+
             result = self.calculator.compare_name(original_name, recovered)
             comparisons.append(result)
 

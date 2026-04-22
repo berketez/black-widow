@@ -69,6 +69,15 @@ class BenchmarkMetrics:
     # Kullanim: match_type dagilimini gormek.
     confusion_matrix: dict[str, dict[str, int]] = field(default_factory=dict)
 
+    # v1.11.0 Bug 3: Ek metrikler.
+    # fun_residue_pct — naming_map içinde hala FUN_/sub_/DAT_ vb. placeholder
+    # kalmış isimlerin oranı (0.0 - 100.0). Düşük olması iyidir.
+    fun_residue_pct: float = 0.0
+    # type_precision / type_recall — struct_recovery JSON çıktısındaki
+    # tip tahminlerinin DWARF ground truth'a karşı P/R değerleri.
+    type_precision: float = 0.0
+    type_recall: float = 0.0
+
     @property
     def accuracy(self) -> float:
         """Weighted accuracy score (0-100%).
@@ -118,6 +127,10 @@ class BenchmarkMetrics:
             "confusion_matrix": {
                 k: dict(v) for k, v in self.confusion_matrix.items()
             },
+            # v1.11.0 ek metrikler
+            "fun_residue_pct": round(self.fun_residue_pct, 2),
+            "type_precision": round(self.type_precision, 4),
+            "type_recall": round(self.type_recall, 4),
         }
 
     def summary(self) -> str:
@@ -321,6 +334,100 @@ class AccuracyCalculator:
         rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
         f1 = (2 * prec * rec / (prec + rec)) if (prec + rec) > 0 else 0.0
         return prec, rec, f1
+
+    # ------------------------------------------------------------------
+    # v1.11.0 Bug 3: Ek metrikler
+    # ------------------------------------------------------------------
+
+    def calculate_fun_residue(self, naming_map: dict[str, str]) -> float:
+        """naming_map içinde hala placeholder kalmış isimlerin yüzdesini döndür.
+
+        Placeholder = FUN_xxx, sub_xxx, DAT_xxx, var_xxx, local_xxx, uVar1 vb.
+        (bkz: `_UNNAMED_PATTERNS`). Boş harita → 0.0.
+
+        Args:
+            naming_map: Düz `{original_key: new_name}` haritası. v1.5.5 scoped
+                formatı ise çağırmadan önce flatten edilmelidir.
+
+        Returns:
+            0.0 - 100.0 aralığında yüzde. Düşük = iyi (daha az artık kaldı).
+        """
+        if not naming_map:
+            return 0.0
+        total = len(naming_map)
+        residue = 0
+        for _key, new_name in naming_map.items():
+            if not isinstance(new_name, str):
+                continue
+            if self._is_unnamed(new_name):
+                residue += 1
+        return (residue / total) * 100.0 if total else 0.0
+
+    def calculate_type_precision_recall(
+        self,
+        predicted_types: dict[str, str],
+        ground_truth_types: dict[str, str],
+    ) -> tuple[float, float]:
+        """struct_recovery çıktısı vs DWARF ground truth karşılaştırması.
+
+        Args:
+            predicted_types: `{symbol_or_field: type_string}` — struct_recovery
+                JSON çıktısı. Örn: `{"var1": "uint32_t", "ctx.flags": "int"}`.
+            ground_truth_types: Aynı yapıda DWARF'tan çıkarılmış gerçek tipler.
+
+        Returns:
+            (precision, recall) — 0.0 - 1.0 aralığında. Tip eşitliği
+            normalize edilir (küçük harf, boşluk/pointer işaretleri korunur
+            ama `unsigned int` / `uint32_t` gibi yaygın eşanlamlılar tek bir
+            kanonik forma indirilir).
+        """
+        if not predicted_types and not ground_truth_types:
+            return 0.0, 0.0
+
+        def _norm_type(t: str) -> str:
+            t = (t or "").strip().lower()
+            # Çoklu boşluğu sadele
+            t = re.sub(r"\s+", " ", t)
+            # Yaygın C eşanlamlıları
+            aliases = {
+                "unsigned int": "uint32_t",
+                "unsigned long": "uint64_t",
+                "unsigned short": "uint16_t",
+                "unsigned char": "uint8_t",
+                "signed int": "int32_t",
+                "signed long": "int64_t",
+                "signed short": "int16_t",
+                "signed char": "int8_t",
+                "long long": "int64_t",
+                "unsigned long long": "uint64_t",
+            }
+            return aliases.get(t, t)
+
+        tp = 0
+        fp = 0
+        for key, ptype in predicted_types.items():
+            gt = ground_truth_types.get(key)
+            if gt is None:
+                # Ground truth'ta yoksa hatalı tahmin sayılmaz, atla
+                # (type recall hesabını bozmasın diye).
+                fp += 1
+                continue
+            if _norm_type(ptype) == _norm_type(gt):
+                tp += 1
+            else:
+                fp += 1
+
+        # Recall: GT'deki her sembol tahmin edildi mi?
+        missed = 0
+        for key, gt in ground_truth_types.items():
+            if key not in predicted_types:
+                missed += 1
+
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        total_gt = len(ground_truth_types)
+        # Recall: doğru tahmin / toplam GT
+        recall = tp / total_gt if total_gt > 0 else 0.0
+        return precision, recall
 
     def compute_per_source(
         self,

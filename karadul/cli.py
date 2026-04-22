@@ -993,25 +993,34 @@ def benchmark(
     from tests.benchmark.benchmark_runner import BenchmarkRunner
 
     runner = BenchmarkRunner(output_dir=output_path.parent)
-    result = runner.run_from_naming_map(
-        ground_truth_json=Path("/dev/null"),  # Placeholder, we override below
-        naming_map_json=nm_path,
-        config_info={"binary": str(binary), "ground_truth_source": "nm" if not ground_truth else "json"},
-    )
 
-    # Actually run with our gt_map directly (override JSON loading)
+    # v1.11.0 Bug 1 fix: Önceden `run_from_naming_map` `/dev/null` placeholder
+    # ile çağrılıyor, sonra override ediliyordu → JSONDecodeError. Artık gt_map
+    # zaten elimizde olduğu için doğrudan `run_mock`'a veriyoruz. Naming map'i
+    # manuel yükleyip (global+per_function destekli) adres↔sembol cross-ref
+    # yapmak için workspace dizinini de iletiyoruz.
     nm_map_raw = _json.loads(nm_path.read_text(encoding="utf-8"))
-    # v1.5.5 compat: naming_map.json artik {"global": {...}, "per_function": {...}}
-    # olabilir. Benchmark icin flat map (global) kullan.
-    if isinstance(nm_map_raw, dict) and "global" in nm_map_raw:
-        nm_map = nm_map_raw["global"]
-    else:
-        nm_map = nm_map_raw
-    result = runner.run_mock(gt_map, nm_map, config_info={
-        "binary": str(binary),
-        "ground_truth_source": "nm" if not ground_truth else "json",
-        "ground_truth_symbols": len(gt_map),
-    })
+
+    # Workspace kökünü (timestamp klasörü) bulalım: naming_map genelde
+    # <ws>/reconstructed/src/naming_map.json altında yaşıyor.
+    workspace_dir: Optional[Path] = None
+    for parent in nm_path.resolve().parents:
+        if (parent / "static").is_dir() and (parent / "reconstructed").is_dir():
+            workspace_dir = parent
+            break
+
+    result = runner.run_mock(
+        gt_map,
+        nm_map_raw,
+        config_info={
+            "binary": str(binary),
+            "ground_truth_source": "nm" if not ground_truth else "json",
+            "ground_truth_symbols": len(gt_map),
+            "naming_map_file": str(nm_path),
+            "workspace_dir": str(workspace_dir) if workspace_dir else "",
+        },
+        workspace_dir=workspace_dir,
+    )
 
     # Save report
     result.save_json(output_path)
@@ -1034,6 +1043,10 @@ def benchmark(
     results_table.add_row("", "")
     results_table.add_row("Accuracy", f"[bold]{metrics.accuracy:.1f}%[/bold]")
     results_table.add_row("Recovery Rate", f"[bold]{metrics.recovery_rate:.1f}%[/bold]")
+    results_table.add_row("Precision", f"{metrics.precision:.3f}")
+    results_table.add_row("Recall", f"{metrics.recall:.3f}")
+    results_table.add_row("F1", f"[bold]{metrics.f1:.3f}[/bold]")
+    results_table.add_row("FUN_ residue", f"{metrics.fun_residue_pct:.1f}%")
 
     console.print(results_table)
     console.print()
