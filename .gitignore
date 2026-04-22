@@ -48,3 +48,6 @@ bsim_db/
 
 # Log dosyalari
 *.log
+
+# Third-party vendor repos (submodule degil, sadece recon icin)
+vendor/
