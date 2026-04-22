@@ -1,25 +1,17 @@
-# Ghidra Python Script -- PyGhidra 3.0 (Python 3.10+) uyumlu
+# Ghidra Python Script -- Jython 2.7 uyumlu
 # @category BlackWidow
 # @description Extract all functions with metadata (name, address, size, params)
-#
-# v1.11.0 Jython Sunset Faz 1: Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/function_lister.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
-#
-# UYARI: Bu script Ghidra JVM icinde PyGhidra engine altinda calisir. Ghidra API
-# objeleri (currentProgram, FunctionManager vb.) global scope'ta mevcuttur.
-# JPype tipleri (java.lang.String, java.lang.Long vb.) -> Python tiplerine
-# explicit donusum (str/int/list) defansif olarak uygulanir.
 
-from __future__ import annotations
+# UYARI: Bu script Ghidra JVM icinde calisir. Ghidra API objeleri
+# (currentProgram, FunctionManager vb.) global scope'ta mevcuttur.
+# Python 3 syntax'i KULLANILMAMALIDIR (f-string yok, print statement).
 
 import json
 import os
 import sys
 import tempfile
 
-
-def get_output_dir() -> str:
+def get_output_dir():
     """KARADUL_OUTPUT ortam degiskeninden cikti dizinini al (CWE-377 guvenli).
 
     v1.10.0 Batch 5B HIGH-10: KARADUL_WORKSPACE_ROOT path traversal koruma.
@@ -47,41 +39,35 @@ def get_output_dir() -> str:
     return output
 
 
-def extract_functions() -> list:
-    """Tum fonksiyonlari meta verileriyle birlikte cikar.
-
-    PyGhidra 3.0 notu: JPype Java proxy objelerinde str()/int() wrap
-    ZORUNLU -- aksi halde downstream JSON serialization'da java.lang.String
-    instance'lari gorulebilir ve json.dumps TypeError atar.
-    """
-    fm = currentProgram.getFunctionManager()  # type: ignore[name-defined]
-    functions: list = []
+def extract_functions():
+    """Tum fonksiyonlari meta verileriyle birlikte cikar."""
+    fm = currentProgram.getFunctionManager()
+    functions = []
 
     for func in fm.getFunctions(True):  # True = forward iterator
-        # JPype boundary: her Java donusu explicit Python tipine wrap
         entry = {
-            "name": str(func.getName()),
+            "name": func.getName(),
             "address": str(func.getEntryPoint()),
             "size": int(func.getBody().getNumAddresses()),
-            "param_count": int(func.getParameterCount()),
+            "param_count": func.getParameterCount(),
             "return_type": str(func.getReturnType()),
-            "is_thunk": bool(func.isThunk()),
+            "is_thunk": func.isThunk(),
             "calling_convention": str(func.getCallingConventionName()),
-            "is_external": bool(func.isExternal()),
+            "is_external": func.isExternal(),
         }
 
         # Parametre detaylari
-        params: list = []
-        for i in range(int(func.getParameterCount())):
+        params = []
+        for i in range(func.getParameterCount()):
             param = func.getParameter(i)
             params.append({
-                "name": str(param.getName()),
+                "name": param.getName(),
                 "type": str(param.getDataType()),
-                "ordinal": int(param.getOrdinal()),
+                "ordinal": param.getOrdinal(),
             })
         entry["parameters"] = params
 
-        # Fonksiyonun kaynak bilgisi (SourceType enum -> str)
+        # Fonksiyonun kaynak bilgisi (varsa)
         source = func.getSymbol().getSource()
         entry["source"] = str(source)
 
@@ -90,21 +76,19 @@ def extract_functions() -> list:
     return functions
 
 
-def main() -> None:
+def main():
     output_dir = get_output_dir()
     functions = extract_functions()
 
     result = {
         "total": len(functions),
-        "program": str(currentProgram.getName()),  # type: ignore[name-defined]
+        "program": str(currentProgram.getName()),
         "functions": functions,
     }
 
     output_path = os.path.join(output_dir, "functions.json")
-    # PyGhidra 3.0: encoding=utf-8 + ensure_ascii=False non-ASCII isimleri korur
-    # (mangled C++ demangled halleri, Unicode identifier'lar vb.)
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
+    with open(output_path, "w") as f:
+        json.dump(result, f, indent=2)
 
     print("BlackWidow: Extracted %d functions -> %s" % (len(functions), output_path))
 

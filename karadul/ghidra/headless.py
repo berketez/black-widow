@@ -2111,8 +2111,26 @@ class GhidraHeadless:
         return None
 
     def get_default_scripts(self) -> list[Path]:
-        """Varsayilan Ghidra scriptlerinin listesini dondur."""
+        """Varsayilan Ghidra scriptlerinin listesini dondur.
+
+        v1.11.0 Jython Sunset Faz 1: config.perf.use_legacy_jython_scripts
+        True ise legacy/ altindaki Jython 2.7 orijinaller kullanilir.
+        Default False -> yeni PyGhidra 3.0 / Python 3 uyumlu script'ler.
+
+        Migrate edilmis script'ler (Faz 1): function_lister.py
+        Henuz migrate edilmemis 9 script her iki modda da scripts_dir/ altindan
+        yuklenir -- legacy bayragi acik olsa bile bu dosyalara dokunulmaz
+        (zaten Py2/Py3 ortak syntax'la yazilmislar).
+        """
         scripts_dir = self.config.ghidra_scripts_dir
+        legacy_dir = scripts_dir / "legacy"
+        use_legacy = getattr(
+            self.config.perf, "use_legacy_jython_scripts", False
+        )
+
+        # v1.11.0 Faz 1: Bu set legacy backup'i mevcut olan migrate edilmis
+        # script'leri tutar. Faz 2/3'te genisler.
+        migrated_scripts = {"function_lister.py"}
 
         ordered_names = [
             "function_lister.py",
@@ -2129,7 +2147,13 @@ class GhidraHeadless:
 
         available: list[Path] = []
         for name in ordered_names:
-            script_path = scripts_dir / name
+            if use_legacy and name in migrated_scripts:
+                script_path = legacy_dir / name
+                if not script_path.exists():
+                    # Legacy yedek eksik -> yeni script'e fallback
+                    script_path = scripts_dir / name
+            else:
+                script_path = scripts_dir / name
             if script_path.exists():
                 available.append(script_path)
 

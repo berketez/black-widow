@@ -53,7 +53,7 @@ Issues = "https://github.com/berketezgocen/karadul/issues"
 binary = ["capstone>=5.0", "lief>=0.14"]
 cpp = ["cxxfilt>=0.3"]
 dynamic = ["frida-tools>=12.0"]
-ghidra = ["capstone>=5.0", "lief>=0.14"]
+ghidra = ["capstone>=5.0", "lief>=0.14", "pyghidra>=3.0.0,<4.0"]
 js = ["pyyaml>=6.0"]
 yara = ["yara-python>=4.3.0"]  # v1.10.0 Batch 5B HIGH-9: CVE-2019-11517 koruma (<4.3 zayif)
 ml = ["torch>=2.2.0", "transformers>=4.40.0", "tokenizers>=0.19.0", "safetensors>=0.4.0", "accelerate>=0.30.0"]
