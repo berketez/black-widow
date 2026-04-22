@@ -304,3 +304,187 @@ def test_execute_binary_artifact_parity_golden() -> None:
       4. Hash mismatch icinde ilk farkliligi readable formatta rapor et.
     """
     raise NotImplementedError("Faz 2 gorevi")
+
+
+# ---------------------------------------------------------------------------
+# Faz 2 — adim 1 parity: _prepare_workspace + _load_binary
+# ---------------------------------------------------------------------------
+# Bu testler v1.12.0 Faz 2'nin ilk split adimini dogrular:
+#   - ``ReconstructionStage._prepare_workspace`` (plan §3 metot 1 Setup)
+#   - ``ReconstructionStage._load_binary`` (plan §3 metot 1 Load)
+# Golden fixture'daki static/ altindaki ghidra_*.json dosyalari tmp bir
+# workspace'e kopyalanir, metotlar izole cagrilir, rc state'i beklenen
+# alanlari icermeli.
+
+
+def _build_context_and_stage_from_golden(tmp_path: Path):
+    """Golden fixture'i tmp workspace'e kopyalayip bir context insa et."""
+    import shutil
+    from unittest.mock import MagicMock
+
+    from karadul.core.pipeline import PipelineContext
+    from karadul.core.target import Language, TargetInfo, TargetType
+    from karadul.core.workspace import Workspace
+    from karadul.stages import ReconstructionStage
+
+    # Sahte binary dosyasi (MACH-O olmasi zorunlu degil; _load_binary
+    # sadece path'i okur, icerige bakmaz).
+    fake_bin = tmp_path / "sample_macho"
+    fake_bin.write_bytes(b"\xcf\xfa\xed\xfe" + b"\x00" * 16)
+
+    # Workspace kurulumu — stage dizinleri otomatik olusur (create() cagirisinda).
+    workspace = Workspace(base_dir=tmp_path / "ws", target_name="sample_macho")
+    workspace.create()
+    static_dir = workspace.get_stage_dir("static")
+    _ = workspace.get_stage_dir("deobfuscated")
+
+    # Golden static JSON'larini static_dir'e kopyala (monolith load bu
+    # konumdan okumaya fallback eder — deob_dir bos kalsin).
+    gs = GOLDEN_DIR / "static"
+    for fn in (
+        "ghidra_functions.json",
+        "ghidra_strings.json",
+        "ghidra_call_graph.json",
+        "ghidra_types.json",
+        "ghidra_xrefs.json",
+        "ghidra_pcode.json",
+        "ghidra_cfg.json",
+        "ghidra_function_id.json",
+    ):
+        src = gs / fn
+        if src.exists():
+            shutil.copy(src, static_dir / fn)
+
+    # Decompiled C dosyasi minimum 1 tane olmak zorunda — yoksa
+    # _load_binary erken cikis yapar.
+    decompiled_dir = static_dir / "ghidra_output" / "decompiled"
+    decompiled_dir.mkdir(parents=True, exist_ok=True)
+    (decompiled_dir / "FUN_00001000.c").write_text(
+        "void FUN_00001000(void) { return; }\n",
+        encoding="utf-8",
+    )
+
+    # Target + context kur.
+    target = TargetInfo(
+        path=fake_bin,
+        name="sample_macho",
+        target_type=TargetType.MACHO_BINARY,
+        language=Language.C,
+        file_size=fake_bin.stat().st_size,
+        file_hash="0" * 64,
+    )
+    config = MagicMock()
+    config.binary_reconstruction.enable_byte_pattern_matching = False
+    context = PipelineContext(target=target, workspace=workspace, config=config)
+
+    stage = ReconstructionStage()
+    return stage, context
+
+
+def test_prepare_workspace_parity(tmp_path: Path) -> None:
+    """_prepare_workspace cagirisi ``rc`` state'ini plan §3 metot 1 ile uyumlu doldurur."""
+    from karadul.pipeline.reconstruction_context import ReconstructionContext
+
+    stage, context = _build_context_and_stage_from_golden(tmp_path)
+
+    rc = ReconstructionContext(start=0.0, stage_name=stage.name)
+    stage._prepare_workspace(context, rc)
+
+    # Artifacts/stats/errors init
+    assert rc.errors == []
+    assert rc.artifacts == {}
+    assert rc.stats == {}
+    # Workspace dizinleri
+    assert rc.static_dir is not None
+    assert rc.static_dir.is_dir()
+    assert rc.reconstructed_dir is not None
+    assert rc.dirs["deobfuscated"].is_dir()
+    assert rc.dirs["static"] == rc.static_dir
+    assert rc.dirs["reconstructed"] == rc.reconstructed_dir
+    # binary_path rc icine isaretlenmeli
+    assert rc.binary_path is not None
+    assert rc.binary_path.name == "sample_macho"
+    # workspace_dir — Workspace.path
+    assert rc.workspace_dir is not None
+    assert rc.workspace_dir.is_dir()
+
+
+def test_load_binary_parity(tmp_path: Path) -> None:
+    """_load_binary cagirisi sonrasi rc.ph1_artifacts beklenen alanlari icerir."""
+    from karadul.pipeline.reconstruction_context import ReconstructionContext
+
+    stage, context = _build_context_and_stage_from_golden(tmp_path)
+
+    rc = ReconstructionContext(start=0.0, stage_name=stage.name)
+    stage._prepare_workspace(context, rc)
+    loaded = stage._load_binary(context, rc)
+
+    # Erken cikis yasanmamali
+    assert rc.phase1_short_circuit is False
+    assert rc.phase1_early_return is None
+
+    # Dict donusu eski lokal isimlere bit-identik
+    for key in (
+        "binary_for_byte_match",
+        "decompiled_dir",
+        "c_files",
+        "_file_cache",
+        "functions_json",
+        "strings_json",
+        "call_graph_json",
+        "ghidra_types_json",
+        "xrefs_json",
+        "pcode_json",
+        "cfg_json",
+        "fid_json",
+        "decompiled_json",
+        "output_dir",
+        "_func_data",
+        "_string_data",
+        "_call_graph_data",
+    ):
+        assert key in loaded, f"_load_binary donusu eksik: {key}"
+
+    # rc mirror'lari
+    assert rc.file_cache is loaded["_file_cache"]
+    assert rc.ph1_artifacts["functions_json_path"] == loaded["functions_json"]
+    assert rc.ph1_artifacts["strings_json_path"] == loaded["strings_json"]
+    assert rc.ph1_artifacts["call_graph_json_path"] == loaded["call_graph_json"]
+    assert rc.ph1_artifacts["decompiled_dir"] == loaded["decompiled_dir"]
+
+    # c_files gercekten Load edilmis mi? (asgari 1 dosya)
+    assert len(loaded["c_files"]) >= 1
+    # Golden JSON'lari parse edilmis mi?
+    assert loaded["_func_data"] is not None, "functions_json parse edilmedi"
+    # output_dir (reconstructed/src) olusturulmus olmali
+    assert loaded["output_dir"].is_dir()
+    # stats source_c_files sayisi
+    assert rc.stats.get("source_c_files") == len(loaded["c_files"])
+    # context.metadata["file_cache"] de yerlestirilmis olmali
+    assert context.metadata.get("file_cache") is rc.file_cache
+
+
+def test_load_binary_short_circuit_when_no_c_files(tmp_path: Path) -> None:
+    """Decompiled C dosyasi yoksa _load_binary rc.phase1_short_circuit set eder."""
+    import shutil
+
+    from karadul.pipeline.reconstruction_context import ReconstructionContext
+
+    stage, context = _build_context_and_stage_from_golden(tmp_path)
+    # Tum decompiled dosyalarini sil.
+    for d in (
+        context.workspace.get_stage_dir("static") / "ghidra_output" / "decompiled",
+        context.workspace.get_stage_dir("deobfuscated") / "decompiled",
+    ):
+        if d.exists():
+            shutil.rmtree(d)
+
+    rc = ReconstructionContext(start=0.0, stage_name=stage.name)
+    stage._prepare_workspace(context, rc)
+    result = stage._load_binary(context, rc)
+
+    assert rc.phase1_short_circuit is True
+    assert rc.phase1_early_return is not None
+    assert rc.phase1_early_return.success is False
+    assert any("C dosyasi" in e for e in rc.phase1_early_return.errors)
+    assert result == {}

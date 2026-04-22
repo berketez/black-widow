@@ -25,6 +25,7 @@ from karadul.analyzers import get_analyzer
 from karadul.core.pipeline import PipelineContext, Stage
 from karadul.core.result import StageResult
 from karadul.core.target import TargetDetector, TargetType, Language
+from karadul.pipeline.reconstruction_context import ReconstructionContext
 
 # NameMerger opsiyonel -- import hatasi olursa None kalir
 try:
@@ -1144,16 +1145,279 @@ class ReconstructionStage(Stage):
         result.stage_name = self.name
         return result
 
-    def _execute_binary(self, context: PipelineContext, start: float) -> StageResult:
-        """Binary reconstruction — decompile edilmis C'yi okunabilir yap."""
-        errors: list[str] = []
-        artifacts: dict[str, Path] = {}
-        stats: dict = {}
+    # ------------------------------------------------------------------
+    # v1.12.0 Faz 2 split adim 1: Setup + Load alt metotlari.
+    # Plan: docs/migrations/stages_split_plan.md §3 (metot 1).
+    # Kural: Kese-yapistir + _ReconCtx kullanim. Mantik degismedi.
+    # ------------------------------------------------------------------
+
+    def _prepare_workspace(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> None:
+        """_execute_binary Setup bolumu (plan §3 metot 1).
+
+        Eski satirlar 1147-1156 karsiligi. Errors/artifacts/stats init,
+        target + workspace dizinleri ``rc``'ye yazilir. Hicbir yan-etki
+        yoktur — sadece dir path'leri cozulur (workspace.get_stage_dir
+        idempotent).
+        """
+
+        rc.errors = []
+        rc.artifacts = {}
+        rc.stats = {}
 
         target = context.target
         static_dir = context.workspace.get_stage_dir("static")
         deob_dir = context.workspace.get_stage_dir("deobfuscated")
         reconstructed_dir = context.workspace.get_stage_dir("reconstructed")
+
+        rc.static_dir = static_dir
+        rc.reconstructed_dir = reconstructed_dir
+        # deob_dir ``dirs`` sozlugunde, cunku ReconstructionContext'te
+        # explicit alani yok (Faz 2 ilerisinde eklenebilir).
+        rc.dirs["deobfuscated"] = deob_dir
+        rc.dirs["static"] = static_dir
+        rc.dirs["reconstructed"] = reconstructed_dir
+        # workspace_dir: context.workspace.path (Workspace.path property).
+        ws_root = getattr(context.workspace, "path", None)
+        if ws_root is not None:
+            rc.workspace_dir = Path(ws_root)
+        bin_path = getattr(target, "path", None)
+        if bin_path is not None:
+            rc.binary_path = Path(bin_path)
+
+    def _load_binary(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> dict[str, Any]:
+        """_execute_binary Load bolumu (plan §3'te metot 1'in devami).
+
+        Sadece **monolith yolu** (step registry flag KAPALI) icin
+        calisir. Eski satirlar 1298-1432 karsiligi — lipo-thin arm64
+        slice cozumu, decompiled C dosyalari toplama, file_cache,
+        ghidra JSON path'lerini tespit + ilk 3'unu (functions, strings,
+        call_graph) parse cache'e yukleme.
+
+        Ciktilar (lokal degiskenlere koprulemek icin dict dondurur;
+        ``rc``'ye de mirror yazilir):
+
+        - ``binary_for_byte_match``: Path (fat binary ise arm64 slice)
+        - ``c_files``: list[Path]
+        - ``decompiled_dir``: Path
+        - ``file_cache``: dict[str, str]  (rc.file_cache ile ayni)
+        - ``functions_json`` / ``strings_json`` / ``call_graph_json``
+          / ``ghidra_types_json`` / ``xrefs_json`` / ``pcode_json``
+          / ``cfg_json`` / ``fid_json`` / ``decompiled_json``: Path
+        - ``output_dir``: Path (reconstructed/src)
+        - ``_func_data`` / ``_string_data`` / ``_call_graph_data``
+          parse edilmis JSON icerikleri (None olabilir)
+
+        None donuyorsa **erken cikis** gerekir — ``rc.phase1_short_circuit``
+        True set edilir ve ``rc.phase1_early_return`` StageResult
+        tutulur. Cagirici bu durumda dogrudan return eder.
+        """
+
+        target = context.target
+        static_dir = rc.static_dir
+        deob_dir = rc.dirs.get("deobfuscated")
+        reconstructed_dir = rc.reconstructed_dir
+        errors = rc.errors  # alias — rc.errors ve errors ayni liste
+
+        # Universal binary ise lipo-thin arm64 slice'i bul (macho.py olusturur)
+        # Byte pattern matching icin fat binary degil, dogru arch slice kullanilmali.
+        binary_for_byte_match = target.path
+        if target.target_type == TargetType.UNIVERSAL_BINARY:
+            raw_dir = context.workspace.get_stage_dir("raw")
+            thin_arm64 = raw_dir / f"{target.name}_arm64"
+            if thin_arm64.exists():
+                binary_for_byte_match = thin_arm64
+                rc.stats["byte_match_binary"] = "arm64_slice"
+                logger.info(
+                    "BytePatternMatcher: arm64 thin slice kullaniliyor: %s",
+                    thin_arm64,
+                )
+            else:
+                logger.warning(
+                    "BytePatternMatcher: arm64 thin slice bulunamadi (%s), "
+                    "fat binary kullanilacak -- arch mismatch olabilir",
+                    thin_arm64,
+                )
+
+        # Decompiled C dosyalarini bul
+        decompiled_dir = deob_dir / "decompiled"
+        if not decompiled_dir.exists():
+            decompiled_dir = static_dir / "ghidra_output" / "decompiled"
+
+        c_files = sorted(decompiled_dir.rglob("*.c")) if decompiled_dir.exists() else []
+        if not c_files:
+            rc.phase1_short_circuit = True
+            rc.phase1_early_return = StageResult(
+                stage_name=self.name,
+                success=False,
+                duration_seconds=time.monotonic() - rc.start,
+                errors=["Decompile edilmis C dosyasi bulunamadi"],
+            )
+            return {}
+
+        rc.stats["source_c_files"] = len(c_files)
+        logger.info("Binary reconstruction: %d C dosyasi islenecek", len(c_files))
+
+        # --- v1.4.3: File content cache (geri getirildi, lightweight) ---
+        # v1.2.3'te RAM endisesiyle kaldirilmisti. Ancak downstream moduller
+        # ayni dosyalari tekrar tekrar okuyor (ConfidenceCalibrator, InlineDetector vb.).
+        # Tek seferlik okuma ile I/O tekrarini onluyoruz.
+        _file_cache: dict[str, str] = {}
+        for _cf in c_files:
+            try:
+                _file_cache[_cf.name] = _cf.read_text(encoding="utf-8", errors="replace")
+            except Exception:
+                logger.debug("Dosya cache'e okunamadi: %s, atlaniyor", _cf.name, exc_info=True)
+        _cache_mb = sum(len(v) for v in _file_cache.values()) / (1024 * 1024)
+        logger.info("File cache: %d dosya, %.1f MB", len(_file_cache), _cache_mb)
+        # context uzerinden downstream modullere gecir
+        if not hasattr(context, "metadata"):
+            context.metadata = {}  # type: ignore[attr-defined]
+        context.metadata["file_cache"] = _file_cache  # type: ignore[attr-defined]
+
+        # Ghidra metadata dosyalarini bul -- deobf dizininde varsa oradan al (binary_deobfuscator kopyalar),
+        # yoksa static'ten oku.
+        functions_json = deob_dir / "ghidra_functions.json"
+        if not functions_json.exists():
+            functions_json = static_dir / "ghidra_functions.json"
+        strings_json = deob_dir / "ghidra_strings.json"
+        if not strings_json.exists():
+            strings_json = static_dir / "ghidra_strings.json"
+        call_graph_json = deob_dir / "ghidra_call_graph.json"
+        if not call_graph_json.exists():
+            call_graph_json = static_dir / "ghidra_call_graph.json"
+        ghidra_types_json = deob_dir / "ghidra_types.json"
+        if not ghidra_types_json.exists():
+            ghidra_types_json = static_dir / "ghidra_types.json"
+        xrefs_json = deob_dir / "ghidra_xrefs.json"
+        if not xrefs_json.exists():
+            xrefs_json = static_dir / "ghidra_xrefs.json"
+
+        # P-Code ve CFG JSON'lari (v1.2.3+)
+        pcode_json = deob_dir / "ghidra_pcode.json"
+        if not pcode_json.exists():
+            pcode_json = static_dir / "ghidra_pcode.json"
+        cfg_json = deob_dir / "ghidra_cfg.json"
+        if not cfg_json.exists():
+            cfg_json = static_dir / "ghidra_cfg.json"
+
+        # FunctionID JSON'i (v1.2.4+ PDB/FID sprint)
+        fid_json = deob_dir / "ghidra_function_id.json"
+        if not fid_json.exists():
+            fid_json = static_dir / "ghidra_function_id.json"
+
+        # v1.8: Ghidra decompiled.json (pcode_high_vars tip bilgisi icin)
+        decompiled_json = deob_dir / "decompiled.json"
+        if not decompiled_json.exists():
+            decompiled_json = static_dir / "decompiled.json"
+        if not decompiled_json.exists():
+            # ghidra_output altinda da olabilir
+            _ghidra_out = static_dir / "ghidra_output" / "decompiled.json"
+            if _ghidra_out.exists():
+                decompiled_json = _ghidra_out
+
+        output_dir = reconstructed_dir / "src"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # --- v1.2.2 Performans: JSON cache ---
+        # functions_json ve strings_json tekrar tekrar parse ediliyor (8+ kez).
+        # Bir kez parse et, cache'ten kullan.
+        _func_data = None
+        if functions_json and functions_json.exists():
+            try:
+                _func_data = json.loads(
+                    functions_json.read_text(encoding="utf-8", errors="replace"),
+                )
+            except Exception as exc:
+                logger.warning("functions_json parse hatasi: %s -- %s", functions_json, exc)
+                errors.append(f"functions_json parse hatasi: {exc}")
+
+        _string_data = None
+        if strings_json and strings_json.exists():
+            try:
+                _string_data = json.loads(
+                    strings_json.read_text(encoding="utf-8", errors="replace"),
+                )
+            except Exception as exc:
+                logger.warning("strings_json parse hatasi: %s -- %s", strings_json, exc)
+                errors.append(f"strings_json parse hatasi: {exc}")
+
+        _call_graph_data = None
+        if call_graph_json and call_graph_json.exists():
+            try:
+                _call_graph_data = json.loads(
+                    call_graph_json.read_text(encoding="utf-8", errors="replace"),
+                )
+            except Exception as exc:
+                logger.warning("call_graph_json parse hatasi: %s -- %s", call_graph_json, exc)
+                errors.append(f"call_graph_json parse hatasi: {exc}")
+                pass
+
+        # rc uzerine mirror yaz (parity test icin).
+        rc.file_cache = _file_cache
+        rc.ph1_artifacts.update({
+            "binary_for_byte_match": binary_for_byte_match,
+            "c_files": c_files,
+            "decompiled_dir": decompiled_dir,
+            "functions_json_path": functions_json,
+            "strings_json_path": strings_json,
+            "call_graph_json_path": call_graph_json,
+            "ghidra_types_json_path": ghidra_types_json,
+            "xrefs_json_path": xrefs_json,
+            "pcode_json_path": pcode_json,
+            "cfg_json_path": cfg_json,
+            "fid_json_path": fid_json,
+            "decompiled_json_path": decompiled_json,
+            "output_dir": output_dir,
+            "functions_data": _func_data,
+            "strings_data": _string_data,
+            "call_graph_data": _call_graph_data,
+        })
+
+        # Cagiriciya koprulenecek lokal degiskenler (eski scope ile bit-identik).
+        return {
+            "binary_for_byte_match": binary_for_byte_match,
+            "decompiled_dir": decompiled_dir,
+            "c_files": c_files,
+            "_file_cache": _file_cache,
+            "functions_json": functions_json,
+            "strings_json": strings_json,
+            "call_graph_json": call_graph_json,
+            "ghidra_types_json": ghidra_types_json,
+            "xrefs_json": xrefs_json,
+            "pcode_json": pcode_json,
+            "cfg_json": cfg_json,
+            "fid_json": fid_json,
+            "decompiled_json": decompiled_json,
+            "output_dir": output_dir,
+            "_func_data": _func_data,
+            "_string_data": _string_data,
+            "_call_graph_data": _call_graph_data,
+        }
+
+    def _execute_binary(self, context: PipelineContext, start: float) -> StageResult:
+        """Binary reconstruction — decompile edilmis C'yi okunabilir yap.
+
+        v1.12.0 Faz 2 split (adim 1/~18): Setup + Load bolumleri ayri
+        metotlara tasindi (``_prepare_workspace``, ``_load_binary``).
+        Geri kalan govde (registry dal + monolith Phase 1/2/3) bu
+        iterasyonda DOKUNULMADI. Kopru: rc.X -> eski lokal isimler.
+        """
+        rc = ReconstructionContext(start=start, stage_name=self.name)
+        self._prepare_workspace(context, rc)
+
+        # Eski lokal isimlere koprule (_execute_binary govdesi bunlari kullaniyor).
+        errors: list[str] = rc.errors
+        artifacts: dict[str, Path] = rc.artifacts
+        stats: dict = rc.stats
+
+        target = context.target
+        static_dir = rc.static_dir
+        deob_dir = rc.dirs["deobfuscated"]
+        reconstructed_dir = rc.reconstructed_dir
 
         # v1.10.0 M1 T3.5: step registry shim. Feature flag False default.
         # True ise karadul.pipeline.runner uzerinden Phase 1 (8 step): T3.2'nin
@@ -1296,140 +1560,38 @@ class ReconstructionStage(Stage):
                 artifacts.update(_pending2)
         else:
             # --- ESKI YOL (M1 boyunca korunuyor, reviewer onayinda silinecek) ---
-            # Universal binary ise lipo-thin arm64 slice'i bul (macho.py olusturur)
-            # Byte pattern matching icin fat binary degil, dogru arch slice kullanilmali.
-            binary_for_byte_match = target.path
-            if target.target_type == TargetType.UNIVERSAL_BINARY:
-                raw_dir = context.workspace.get_stage_dir("raw")
-                thin_arm64 = raw_dir / f"{target.name}_arm64"
-                if thin_arm64.exists():
-                    binary_for_byte_match = thin_arm64
-                    stats["byte_match_binary"] = "arm64_slice"
-                    logger.info(
-                        "BytePatternMatcher: arm64 thin slice kullaniliyor: %s",
-                        thin_arm64,
-                    )
-                else:
-                    logger.warning(
-                        "BytePatternMatcher: arm64 thin slice bulunamadi (%s), "
-                        "fat binary kullanilacak -- arch mismatch olabilir",
-                        thin_arm64,
-                    )
+            # v1.12.0 Faz 2 split adim 1: Load bolumu _load_binary metoduna
+            # tasindi (plan §3). _load_binary erken cikis gerekirse
+            # rc.phase1_short_circuit True set eder.
+            _loaded = self._load_binary(context, rc)
+            if rc.phase1_short_circuit:
+                assert rc.phase1_early_return is not None  # mypy icin
+                return rc.phase1_early_return
 
-            # Decompiled C dosyalarini bul
-            decompiled_dir = deob_dir / "decompiled"
-            if not decompiled_dir.exists():
-                decompiled_dir = static_dir / "ghidra_output" / "decompiled"
-
-            c_files = sorted(decompiled_dir.rglob("*.c")) if decompiled_dir.exists() else []
-            if not c_files:
-                return StageResult(
-                    stage_name=self.name,
-                    success=False,
-                    duration_seconds=time.monotonic() - start,
-                    errors=["Decompile edilmis C dosyasi bulunamadi"],
-                )
-
-            stats["source_c_files"] = len(c_files)
-            logger.info("Binary reconstruction: %d C dosyasi islenecek", len(c_files))
+            # rc'den/dict'ten eski lokal degisken isimlerine koprule
+            # (1700+ satir ilerideki govde bu isimleri kullaniyor).
+            binary_for_byte_match = _loaded["binary_for_byte_match"]
+            decompiled_dir = _loaded["decompiled_dir"]
+            c_files = _loaded["c_files"]
+            _file_cache = _loaded["_file_cache"]
+            functions_json = _loaded["functions_json"]
+            strings_json = _loaded["strings_json"]
+            call_graph_json = _loaded["call_graph_json"]
+            ghidra_types_json = _loaded["ghidra_types_json"]
+            xrefs_json = _loaded["xrefs_json"]
+            pcode_json = _loaded["pcode_json"]
+            cfg_json = _loaded["cfg_json"]
+            fid_json = _loaded["fid_json"]
+            decompiled_json = _loaded["decompiled_json"]
+            output_dir = _loaded["output_dir"]
+            _func_data = _loaded["_func_data"]
+            _string_data = _loaded["_string_data"]
+            _call_graph_data = _loaded["_call_graph_data"]
 
             # v1.9.2: naming_result'i method basinda None olarak tanimla (dir() anti-pattern fix)
+            # NOT: Bu satir Load bolumunun ortasinda bulunuyordu; split sirasinda
+            # Load metodundan cikarildi, burada korundu (davranis ayni).
             naming_result = None
-
-            # --- v1.4.3: File content cache (geri getirildi, lightweight) ---
-            # v1.2.3'te RAM endisesiyle kaldirilmisti. Ancak downstream moduller
-            # ayni dosyalari tekrar tekrar okuyor (ConfidenceCalibrator, InlineDetector vb.).
-            # Tek seferlik okuma ile I/O tekrarini onluyoruz.
-            _file_cache: dict[str, str] = {}
-            for _cf in c_files:
-                try:
-                    _file_cache[_cf.name] = _cf.read_text(encoding="utf-8", errors="replace")
-                except Exception:
-                    logger.debug("Dosya cache'e okunamadi: %s, atlaniyor", _cf.name, exc_info=True)
-            _cache_mb = sum(len(v) for v in _file_cache.values()) / (1024 * 1024)
-            logger.info("File cache: %d dosya, %.1f MB", len(_file_cache), _cache_mb)
-            # context uzerinden downstream modullere gecir
-            if not hasattr(context, "metadata"):
-                context.metadata = {}  # type: ignore[attr-defined]
-            context.metadata["file_cache"] = _file_cache  # type: ignore[attr-defined]
-
-            # Ghidra metadata dosyalarini bul -- deobf dizininde varsa oradan al (binary_deobfuscator kopyalar),
-            # yoksa static'ten oku.
-            functions_json = deob_dir / "ghidra_functions.json"
-            if not functions_json.exists():
-                functions_json = static_dir / "ghidra_functions.json"
-            strings_json = deob_dir / "ghidra_strings.json"
-            if not strings_json.exists():
-                strings_json = static_dir / "ghidra_strings.json"
-            call_graph_json = deob_dir / "ghidra_call_graph.json"
-            if not call_graph_json.exists():
-                call_graph_json = static_dir / "ghidra_call_graph.json"
-            ghidra_types_json = deob_dir / "ghidra_types.json"
-            if not ghidra_types_json.exists():
-                ghidra_types_json = static_dir / "ghidra_types.json"
-            xrefs_json = deob_dir / "ghidra_xrefs.json"
-            if not xrefs_json.exists():
-                xrefs_json = static_dir / "ghidra_xrefs.json"
-
-            # P-Code ve CFG JSON'lari (v1.2.3+)
-            pcode_json = deob_dir / "ghidra_pcode.json"
-            if not pcode_json.exists():
-                pcode_json = static_dir / "ghidra_pcode.json"
-            cfg_json = deob_dir / "ghidra_cfg.json"
-            if not cfg_json.exists():
-                cfg_json = static_dir / "ghidra_cfg.json"
-
-            # FunctionID JSON'i (v1.2.4+ PDB/FID sprint)
-            fid_json = deob_dir / "ghidra_function_id.json"
-            if not fid_json.exists():
-                fid_json = static_dir / "ghidra_function_id.json"
-
-            # v1.8: Ghidra decompiled.json (pcode_high_vars tip bilgisi icin)
-            decompiled_json = deob_dir / "decompiled.json"
-            if not decompiled_json.exists():
-                decompiled_json = static_dir / "decompiled.json"
-            if not decompiled_json.exists():
-                # ghidra_output altinda da olabilir
-                _ghidra_out = static_dir / "ghidra_output" / "decompiled.json"
-                if _ghidra_out.exists():
-                    decompiled_json = _ghidra_out
-
-            output_dir = reconstructed_dir / "src"
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            # --- v1.2.2 Performans: JSON cache ---
-            # functions_json ve strings_json tekrar tekrar parse ediliyor (8+ kez).
-            # Bir kez parse et, cache'ten kullan.
-            _func_data = None
-            if functions_json and functions_json.exists():
-                try:
-                    _func_data = json.loads(
-                        functions_json.read_text(encoding="utf-8", errors="replace"),
-                    )
-                except Exception as exc:
-                    logger.warning("functions_json parse hatasi: %s -- %s", functions_json, exc)
-                    errors.append(f"functions_json parse hatasi: {exc}")
-
-            _string_data = None
-            if strings_json and strings_json.exists():
-                try:
-                    _string_data = json.loads(
-                        strings_json.read_text(encoding="utf-8", errors="replace"),
-                    )
-                except Exception as exc:
-                    logger.warning("strings_json parse hatasi: %s -- %s", strings_json, exc)
-                    errors.append(f"strings_json parse hatasi: {exc}")
-
-            _call_graph_data = None
-            if call_graph_json and call_graph_json.exists():
-                try:
-                    _call_graph_data = json.loads(
-                        call_graph_json.read_text(encoding="utf-8", errors="replace"),
-                    )
-                except Exception as exc:
-                    logger.warning("call_graph_json parse hatasi: %s -- %s", call_graph_json, exc)
-                    errors.append(f"call_graph_json parse hatasi: {exc}")
-                    pass
 
             # 0. Signature DB Matching (bilinen kutuphane fonksiyonlarini tani)
             context.report_progress("Signature DB matching...", 0.05)
