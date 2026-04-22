@@ -1,0 +1,67 @@
+name: Benchmark Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  benchmark:
+    name: Benchmark Threshold Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install karadul (core + dev extras)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[binary,computation,dev]"
+
+      - name: Run mock benchmark
+        id: benchmark
+        run: |
+          python scripts/run_mock_benchmark.py \
+            --binary tests/fixtures/sample_macho \
+            --mock \
+            --output /tmp/bench_current.json
+        env:
+          KARADUL_MOCK_BENCHMARK: "1"
+
+      - name: Check thresholds against baseline
+        id: threshold_check
+        run: |
+          python scripts/check_benchmark_thresholds.py \
+            --current /tmp/bench_current.json \
+            --baseline benchmarks/baseline_metrics.json \
+            --report /tmp/bench_report.md
+
+      - name: Show report in job summary
+        if: always()
+        run: |
+          cat /tmp/bench_report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.sha }}
+          path: |
+            /tmp/bench_current.json
+            /tmp/bench_report.md
+          retention-days: 30
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request' && always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: /tmp/bench_report.md
+        continue-on-error: true

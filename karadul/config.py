@@ -341,12 +341,16 @@ class BinaryReconstructionConfig:
 @dataclass
 class BSimConfig:
     """BSim fonksiyon benzerlik analizi ayarlari."""
-    enabled: bool = False                   # Varsayilan kapali (agir islem)
+    enabled: bool = True                    # v1.11.0 shadow default AKTIF (guvenli)
     default_database: str = "karadul_bsim"
     db_path: str = ""                       # Bos = ~/.cache/karadul/bsim/
     auto_query: bool = True                 # Analiz sonrasi otomatik sorgu
     min_similarity: float = 0.7             # Minimum benzerlik esigi
     max_results_per_function: int = 5       # Fonksiyon basina max sonuc
+    # v1.11.0 shadow-mode: pipeline step'i fusion/NameMerger'a YAZMAZ,
+    # sadece artifacts/bsim_shadow.json dump eder. Hafta 2 veri toplandiktan
+    # sonra False'a cekilip fusion'a baglanacak.
+    shadow_mode: bool = True
 
 
 @dataclass

@@ -11,6 +11,7 @@ from __future__ import annotations
 from karadul.pipeline.steps import (  # noqa: F401
     binary_prep,
     ghidra_metadata,
+    bsim_match,
     byte_pattern,
     pcode_cfg_analysis,
     algorithm_id,
@@ -39,6 +40,7 @@ __all__ = [
     "algorithm_id",
     "assembly_analysis",
     "binary_prep",
+    "bsim_match",
     "byte_pattern",
     "capa_annotation",
     "cfg_iso_match",

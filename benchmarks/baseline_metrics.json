@@ -1,0 +1,24 @@
+{
+  "version": "v1.11.0",
+  "date": "2026-04-22",
+  "description": "Baseline benchmark metrics for Karadul CI gate. Updated after each intentional improvement.",
+  "binaries": {
+    "sample_macho": {
+      "f1": 0.909,
+      "precision": 0.833,
+      "recall": 1.000,
+      "accuracy": 0.833,
+      "recovery_rate": 1.000,
+      "fun_residue_pct": 0.0,
+      "type_precision": 0.0,
+      "total_symbols": 6
+    }
+  },
+  "thresholds": {
+    "f1_min": 0.85,
+    "fun_residue_max_pct": 5.0,
+    "type_precision_min": 0.75,
+    "regression_warning_pct": 5.0,
+    "regression_fail_pct": 10.0
+  }
+}

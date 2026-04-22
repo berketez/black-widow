@@ -1178,6 +1178,11 @@ class ReconstructionStage(Stage):
                 runner = PipelineRunner(steps=[
                     "binary_prep",
                     "ghidra_metadata",
+                    # v1.11.0 Hafta 1: BSim SHADOW MODE — ghidra_metadata
+                    # sonrasi (bsim_matches.json resolve edilebilsin),
+                    # byte_pattern oncesi. Fusion'a/NameMerger'a YAZMAZ,
+                    # sadece bsim_shadow.json dump eder.
+                    "bsim_match",
                     "byte_pattern",
                     "pcode_cfg_analysis",
                     "cfg_iso_match",
