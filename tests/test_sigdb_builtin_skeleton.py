@@ -48,13 +48,22 @@ class TestSigdbBuiltinImports:
         assert hasattr(mod, "SIGNATURES"), f"{name}.SIGNATURES yok"
         assert isinstance(mod.SIGNATURES, dict), f"{name}.SIGNATURES dict degil"
 
+    # Faz 2 pilot'ta `crypto` dolduruldu; kalan 16 kategori hala placeholder.
+    _FAZ2_MIGRATED: frozenset[str] = frozenset({"crypto"})
+
     @pytest.mark.parametrize("name", _EXPECTED_CATEGORIES)
-    def test_module_placeholder_empty(self, name: str) -> None:
-        """Faz 1: placeholder dosyalari bos dict ile gelir (Faz 2 doldurur)."""
+    def test_module_placeholder_state(self, name: str) -> None:
+        """Faz 2 pilot: yalnizca `crypto` dolu, digerleri hala bos placeholder."""
         mod = importlib.import_module(f"karadul.analyzers.sigdb_builtin.{name}")
-        assert mod.SIGNATURES == {}, (
-            f"{name}.SIGNATURES Faz 1'de bos olmali; Faz 2 data migration'da dolar"
-        )
+        if name in self._FAZ2_MIGRATED:
+            assert mod.SIGNATURES, (
+                f"{name}.SIGNATURES Faz 2'de dolmali (pilot migration yapildi)"
+            )
+        else:
+            assert mod.SIGNATURES == {}, (
+                f"{name}.SIGNATURES hala Faz 1 placeholder olmali; "
+                f"Faz 2 dalga 2'de dolacak"
+            )
 
     def test_count_is_17(self) -> None:
         assert len(_EXPECTED_CATEGORIES) == 17
@@ -64,11 +73,13 @@ class TestSigdbBuiltinDispatcher:
     """Dispatcher API."""
 
     def test_get_category_known(self) -> None:
+        """Faz 2 pilot sonrasi crypto dolu dict dondurur (detay: migration testi)."""
         from karadul.analyzers.sigdb_builtin import get_category
 
         sigs = get_category("crypto")
         assert isinstance(sigs, dict)
-        assert sigs == {}  # placeholder
+        # Faz 2 pilot sonrasi bos degil; birebir icerik test_sigdb_crypto_migration'da
+        assert sigs, "Faz 2 pilot sonrasi crypto kategorisi dolu olmali"
 
     def test_get_category_unknown_raises(self) -> None:
         from karadul.analyzers.sigdb_builtin import get_category

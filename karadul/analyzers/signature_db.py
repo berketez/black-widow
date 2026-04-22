@@ -1241,6 +1241,38 @@ _WINCRYPTO_SIGNATURES: dict[str, dict[str, str]] = {
 
 
 # ---------------------------------------------------------------------------
+# sig_db Faz 2 — crypto kategori override (pilot migration)
+# ---------------------------------------------------------------------------
+# Veri `karadul.analyzers.sigdb_builtin.crypto` modulune tasindi. Asagidaki
+# override, eski dict'leri silmeden yeni kaynak-of-truth'a baglar. Import
+# basarisiz olursa (ornek: sigdb_builtin paketi yok / bozuk) eski inline
+# dict'ler kullanilmaya devam eder — geriye uyumlu, rollback kolay.
+try:
+    from karadul.analyzers.sigdb_builtin.crypto import (
+        SIGNATURES as _BUILTIN_CRYPTO_SIGNATURES,
+    )
+except ImportError:  # pragma: no cover - paket yoksa legacy fallback
+    _BUILTIN_CRYPTO_SIGNATURES = None  # type: ignore[assignment]
+
+if _BUILTIN_CRYPTO_SIGNATURES is not None:
+    _OPENSSL_SIGNATURES = _BUILTIN_CRYPTO_SIGNATURES.get(
+        "openssl_signatures", _OPENSSL_SIGNATURES
+    )
+    _BORINGSSL_SIGNATURES = _BUILTIN_CRYPTO_SIGNATURES.get(
+        "boringssl_signatures", _BORINGSSL_SIGNATURES
+    )
+    _LIBSODIUM_SIGNATURES = _BUILTIN_CRYPTO_SIGNATURES.get(
+        "libsodium_signatures", _LIBSODIUM_SIGNATURES
+    )
+    _MBEDTLS_SIGNATURES = _BUILTIN_CRYPTO_SIGNATURES.get(
+        "mbedtls_signatures", _MBEDTLS_SIGNATURES
+    )
+    _WINCRYPTO_SIGNATURES = _BUILTIN_CRYPTO_SIGNATURES.get(
+        "wincrypto_signatures", _WINCRYPTO_SIGNATURES
+    )
+
+
+# ---------------------------------------------------------------------------
 # Builtin Signature Database -- zlib
 # ---------------------------------------------------------------------------
 
@@ -8828,6 +8860,13 @@ _FINDCRYPT_CONSTANTS: list[tuple[str, str, str, str]] = [
     ("zinflate_lengthexBytestraBits", "00000000000000000000000000000000000000000000000000000000000000000100000001000000010000000100000002000000020000000200000002000000", "compression", "zlib inflate length extra bits (FindCrypt)"),
     ("zinflate_lengthStarts", "030000000400000005000000060000000700000008000000090000000a0000000b0000000d0000000f0000001100000013000000170000001b0000001f000000", "compression", "zlib inflate length starts (FindCrypt)"),
 ]
+
+
+# sig_db Faz 2 — _FINDCRYPT_CONSTANTS override (pilot migration, ayni modul).
+if _BUILTIN_CRYPTO_SIGNATURES is not None:
+    _FINDCRYPT_CONSTANTS = _BUILTIN_CRYPTO_SIGNATURES.get(
+        "findcrypt_constants", _FINDCRYPT_CONSTANTS
+    )
 
 
 # ---------------------------------------------------------------------------
