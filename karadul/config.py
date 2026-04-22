@@ -489,18 +489,33 @@ class PerfConfig:
     naming_chunk_timeout: Tek chunk'in max calisma suresi (saniye). Asilirsa
       chunk basarisiz isaretlenir ve errors listesine eklenir.
     """
-    # v1.10.0 M2 (perf fix, KALIR KARAR): Default False biraktik. LMDB DB
-    # mevcut test fixture'larindan FARKLI veri tasiyor (Ornek: `_dispatch_once`
-    # LMDB'de libSystem, dict'te libdispatch). Testleri bozmadan switch yapmak
-    # icin once LMDB rebuild gerekir. Opt-in olarak kaliyor; kullanici
-    # kendi DB'sini insa edip flag'i True yapmali.
-    use_lmdb_sigdb: bool = False
+    # v1.12.0 sig_db Faz 1: Default True'ya cektik (auto-detect).
+    # Davranis: flag True iken ~/.karadul/signatures.lmdb VARSA LMDB backend
+    # aktif, YOKSA FileNotFoundError yakalanir ve eski dict yoluna graceful
+    # fallback olur (bkz. SignatureDB._init_lmdb_backend). Boylece kullanici
+    # LMDB insa etmemise de eski davranis korunur; insa ederse otomatik
+    # dusuk-RAM moduna gecer.
+    #
+    # Tarihce (v1.10.0 M2): Default False idi -- LMDB DB fixture farki
+    # (Ornek: `_dispatch_once` LMDB'de libSystem, dict'te libdispatch). Bu
+    # risk artik sadece LMDB DOSYASI VAR VE ICERIGI ESKI/FARKLI ise geciyor;
+    # dosya yoksa risk sifir (dict yolu calisir).
+    use_lmdb_sigdb: bool = True
     sig_lmdb_path: Optional[Path] = None
     lmdb_l1_cache_size: int = 8192
     parallel_naming: bool = False
     naming_max_workers: Optional[int] = None
     naming_chunk_size: int = 256
     naming_chunk_timeout: float = 60.0
+
+    # v1.11.0 Jython Sunset Faz 1: Ghidra scriptleri icin PyGhidra 3.0 /
+    # Python 3 migrasyonu. Default False -> yeni migrate edilmis script'ler
+    # (karadul/ghidra/scripts/*.py) kullanilir. True -> legacy/ altindaki
+    # Jython 2.7 orijinaller kullanilir (acil rollback icin).
+    # Env override: KARADUL_USE_LEGACY_JYTHON=1 (ileride eklenecek).
+    # Faz 1 kapsami: function_lister.py (Faz 2'de string_extractor,
+    # type_recovery; Faz 3'te kalan 7 script).
+    use_legacy_jython_scripts: bool = False
 
 
 @dataclass

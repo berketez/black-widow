@@ -1,0 +1,84 @@
+{
+  "functions": [
+    {
+      "address": "100000460",
+      "calling_convention": "unknown",
+      "is_external": false,
+      "is_thunk": false,
+      "name": "_add",
+      "param_count": 0,
+      "parameters": [],
+      "return_type": "undefined",
+      "size": 32,
+      "source": "IMPORTED"
+    },
+    {
+      "address": "100000480",
+      "calling_convention": "unknown",
+      "is_external": false,
+      "is_thunk": false,
+      "name": "_multiply",
+      "param_count": 0,
+      "parameters": [],
+      "return_type": "undefined",
+      "size": 32,
+      "source": "IMPORTED"
+    },
+    {
+      "address": "1000004a0",
+      "calling_convention": "unknown",
+      "is_external": false,
+      "is_thunk": false,
+      "name": "_get_greeting",
+      "param_count": 0,
+      "parameters": [],
+      "return_type": "undefined",
+      "size": 12,
+      "source": "IMPORTED"
+    },
+    {
+      "address": "1000004ac",
+      "calling_convention": "unknown",
+      "is_external": false,
+      "is_thunk": false,
+      "name": "_print_info",
+      "param_count": 0,
+      "parameters": [],
+      "return_type": "undefined",
+      "size": 52,
+      "source": "IMPORTED"
+    },
+    {
+      "address": "1000004e0",
+      "calling_convention": "unknown",
+      "is_external": false,
+      "is_thunk": false,
+      "name": "entry",
+      "param_count": 0,
+      "parameters": [],
+      "return_type": "undefined",
+      "size": 152,
+      "source": "IMPORTED"
+    },
+    {
+      "address": "100000578",
+      "calling_convention": "unknown",
+      "is_external": false,
+      "is_thunk": true,
+      "name": "_printf",
+      "param_count": 1,
+      "parameters": [
+        {
+          "name": "param_1",
+          "ordinal": 0,
+          "type": "char *"
+        }
+      ],
+      "return_type": "int",
+      "size": 12,
+      "source": "IMPORTED"
+    }
+  ],
+  "program": "sample_macho",
+  "total": 6
+}

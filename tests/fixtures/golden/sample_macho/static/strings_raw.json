@@ -1,0 +1,11 @@
+{
+  "strings": [
+    "Hello from BlackWidow test binary",
+    "BlackWidow test binary v1.0",
+    "Architecture: ARM64",
+    "Purpose: Ghidra integration testing",
+    "add(1, 2) = %d",
+    "multiply(3, 4) = %d"
+  ],
+  "total": 6
+}

@@ -1,0 +1,202 @@
+{
+  "program": "sample_macho",
+  "strings": [
+    {
+      "address": "100000364",
+      "function": null,
+      "length": 20,
+      "type": "string",
+      "value": "/usr/lib/dyld"
+    },
+    {
+      "address": "1000003f0",
+      "function": null,
+      "length": 32,
+      "type": "string",
+      "value": "/usr/lib/libSystem.B.dylib"
+    },
+    {
+      "address": "100000584",
+      "function": null,
+      "length": 34,
+      "type": "TerminatedCString",
+      "value": "Hello from BlackWidow test binary"
+    },
+    {
+      "address": "1000005a6",
+      "function": null,
+      "length": 29,
+      "type": "TerminatedCString",
+      "value": "BlackWidow test binary v1.0\\n"
+    },
+    {
+      "address": "1000005c3",
+      "function": null,
+      "length": 21,
+      "type": "TerminatedCString",
+      "value": "Architecture: ARM64\\n"
+    },
+    {
+      "address": "1000005d8",
+      "function": null,
+      "length": 37,
+      "type": "TerminatedCString",
+      "value": "Purpose: Ghidra integration testing\\n"
+    },
+    {
+      "address": "1000005fd",
+      "function": null,
+      "length": 16,
+      "type": "TerminatedCString",
+      "value": "add(1, 2) = %d\\n"
+    },
+    {
+      "address": "10000060d",
+      "function": null,
+      "length": 21,
+      "type": "TerminatedCString",
+      "value": "multiply(3, 4) = %d\\n"
+    },
+    {
+      "address": "100000622",
+      "function": null,
+      "length": 4,
+      "type": "TerminatedCString",
+      "value": "%s\\n"
+    },
+    {
+      "address": "100000626",
+      "function": null,
+      "length": 1,
+      "type": "TerminatedCString",
+      "value": ""
+    },
+    {
+      "address": "100000627",
+      "function": null,
+      "length": 1,
+      "type": "TerminatedCString",
+      "value": ""
+    },
+    {
+      "address": "100008055",
+      "function": null,
+      "length": 8,
+      "type": "string",
+      "value": "_printf"
+    },
+    {
+      "address": "100008062",
+      "function": null,
+      "length": 2,
+      "type": "string",
+      "value": "_"
+    },
+    {
+      "address": "100008083",
+      "function": null,
+      "length": 4,
+      "type": "string",
+      "value": "ain"
+    },
+    {
+      "address": "100008088",
+      "function": null,
+      "length": 8,
+      "type": "string",
+      "value": "ultiply"
+    },
+    {
+      "address": "100008098",
+      "function": null,
+      "length": 19,
+      "type": "string",
+      "value": "_mh_execute_header"
+    },
+    {
+      "address": "1000080ac",
+      "function": null,
+      "length": 4,
+      "type": "string",
+      "value": "add"
+    },
+    {
+      "address": "1000080b1",
+      "function": null,
+      "length": 13,
+      "type": "string",
+      "value": "get_greeting"
+    },
+    {
+      "address": "1000080bf",
+      "function": null,
+      "length": 2,
+      "type": "string",
+      "value": "m"
+    },
+    {
+      "address": "1000080c2",
+      "function": null,
+      "length": 11,
+      "type": "string",
+      "value": "print_info"
+    },
+    {
+      "address": "100008152",
+      "function": null,
+      "length": 20,
+      "type": "string",
+      "value": "__mh_execute_header"
+    },
+    {
+      "address": "100008166",
+      "function": null,
+      "length": 5,
+      "type": "string",
+      "value": "_add"
+    },
+    {
+      "address": "10000816b",
+      "function": null,
+      "length": 14,
+      "type": "string",
+      "value": "_get_greeting"
+    },
+    {
+      "address": "100008179",
+      "function": null,
+      "length": 6,
+      "type": "string",
+      "value": "_main"
+    },
+    {
+      "address": "10000817f",
+      "function": null,
+      "length": 10,
+      "type": "string",
+      "value": "_multiply"
+    },
+    {
+      "address": "100008189",
+      "function": null,
+      "length": 12,
+      "type": "string",
+      "value": "_print_info"
+    },
+    {
+      "address": "100008195",
+      "function": null,
+      "length": 8,
+      "type": "string",
+      "value": "_printf"
+    },
+    {
+      "address": "10000820c",
+      "function": null,
+      "length": 13,
+      "type": "string",
+      "value": "sample_macho"
+    }
+  ],
+  "total": 28
+}

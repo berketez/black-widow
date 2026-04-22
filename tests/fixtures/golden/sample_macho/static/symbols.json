@@ -1,0 +1,41 @@
+{
+  "binary": "<RELATIVE_PATH>",
+  "symbols": [
+    {
+      "address": "0000000100000000",
+      "name": "__mh_execute_header",
+      "type": "T"
+    },
+    {
+      "address": "0000000100000460",
+      "name": "_add",
+      "type": "T"
+    },
+    {
+      "address": "00000001000004a0",
+      "name": "_get_greeting",
+      "type": "T"
+    },
+    {
+      "address": "00000001000004e0",
+      "name": "_main",
+      "type": "T"
+    },
+    {
+      "address": "0000000100000480",
+      "name": "_multiply",
+      "type": "T"
+    },
+    {
+      "address": "00000001000004ac",
+      "name": "_print_info",
+      "type": "T"
+    },
+    {
+      "address": null,
+      "name": "_printf",
+      "type": "U"
+    }
+  ],
+  "total": 7
+}

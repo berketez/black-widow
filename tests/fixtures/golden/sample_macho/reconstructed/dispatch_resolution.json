@@ -1,0 +1,13 @@
+{
+  "augmented_edges_count": 0,
+  "candidate_count": 0,
+  "errors": [],
+  "external_count": 0,
+  "removed_edges_count": 0,
+  "resolution_rate": 0.0,
+  "resolved_count": 0,
+  "selector_map_size": 1,
+  "success": true,
+  "total_dispatch_sites": 0,
+  "unresolved_count": 0
+}

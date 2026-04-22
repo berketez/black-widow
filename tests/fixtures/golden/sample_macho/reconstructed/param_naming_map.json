@@ -1,0 +1,20 @@
+{
+  "functions": {
+    "_add": {
+      "domain": "unknown",
+      "renames": {
+        "param_1": "status",
+        "param_2": "enabled"
+      }
+    },
+    "_multiply": {
+      "domain": "unknown",
+      "renames": {
+        "param_1": "status",
+        "param_2": "enabled"
+      }
+    }
+  },
+  "total_renamed": 4,
+  "version": "1.7.2"
+}

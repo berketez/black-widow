@@ -1,0 +1,12 @@
+{
+  "matches": [
+    {
+      "confidence": 0.98,
+      "library": "libc",
+      "matched": "printf",
+      "original": "_printf",
+      "purpose": "formatted stdout print"
+    }
+  ],
+  "total": 1
+}

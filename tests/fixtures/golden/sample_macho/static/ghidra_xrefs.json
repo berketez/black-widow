@@ -1,0 +1,138 @@
+{
+  "function_xrefs": {
+    "100000460": {
+      "address": "100000460",
+      "called_by": [
+        {
+          "address": "1000004e0",
+          "name": "entry"
+        }
+      ],
+      "functions_called": [],
+      "name": "_add",
+      "strings_used": []
+    },
+    "100000480": {
+      "address": "100000480",
+      "called_by": [
+        {
+          "address": "1000004e0",
+          "name": "entry"
+        }
+      ],
+      "functions_called": [],
+      "name": "_multiply",
+      "strings_used": []
+    },
+    "1000004a0": {
+      "address": "1000004a0",
+      "called_by": [
+        {
+          "address": "1000004e0",
+          "name": "entry"
+        }
+      ],
+      "functions_called": [],
+      "name": "_get_greeting",
+      "strings_used": [
+        {
+          "address": "100000584",
+          "value": "Hello from BlackWidow test binary"
+        }
+      ]
+    },
+    "1000004ac": {
+      "address": "1000004ac",
+      "called_by": [
+        {
+          "address": "1000004e0",
+          "name": "entry"
+        }
+      ],
+      "functions_called": [
+        {
+          "address": "100000578",
+          "name": "_printf"
+        }
+      ],
+      "name": "_print_info",
+      "strings_used": [
+        {
+          "address": "1000005a6",
+          "value": "BlackWidow test binary v1.0\\n"
+        },
+        {
+          "address": "1000005c3",
+          "value": "Architecture: ARM64\\n"
+        },
+        {
+          "address": "1000005d8",
+          "value": "Purpose: Ghidra integration testing\\n"
+        }
+      ]
+    },
+    "1000004e0": {
+      "address": "1000004e0",
+      "called_by": [],
+      "functions_called": [
+        {
+          "address": "1000004ac",
+          "name": "_print_info"
+        },
+        {
+          "address": "100000460",
+          "name": "_add"
+        },
+        {
+          "address": "100000578",
+          "name": "_printf"
+        },
+        {
+          "address": "100000480",
+          "name": "_multiply"
+        },
+        {
+          "address": "1000004a0",
+          "name": "_get_greeting"
+        }
+      ],
+      "name": "entry",
+      "strings_used": [
+        {
+          "address": "1000005fd",
+          "value": "add(1, 2) = %d\\n"
+        },
+        {
+          "address": "10000060d",
+          "value": "multiply(3, 4) = %d\\n"
+        },
+        {
+          "address": "100000622",
+          "value": "%s\\n"
+        }
+      ]
+    },
+    "100000578": {
+      "address": "100000578",
+      "called_by": [
+        {
+          "address": "1000004e0",
+          "name": "entry"
+        },
+        {
+          "address": "1000004ac",
+          "name": "_print_info"
+        }
+      ],
+      "functions_called": [],
+      "name": "_printf",
+      "strings_used": []
+    }
+  },
+  "program": "sample_macho",
+  "statistics": {
+    "total_functions": 6,
+    "total_globals_with_xrefs": 20,
+    "total_strings_with_xrefs": 7
+  }
+}

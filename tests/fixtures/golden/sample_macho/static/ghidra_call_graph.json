@@ -1,0 +1,148 @@
+{
+  "edges": [
+    {
+      "from": "1000004ac",
+      "from_name": "_print_info",
+      "to": "100000578",
+      "to_name": "_printf"
+    },
+    {
+      "from": "1000004e0",
+      "from_name": "entry",
+      "to": "1000004ac",
+      "to_name": "_print_info"
+    },
+    {
+      "from": "1000004e0",
+      "from_name": "entry",
+      "to": "100000460",
+      "to_name": "_add"
+    },
+    {
+      "from": "1000004e0",
+      "from_name": "entry",
+      "to": "100000578",
+      "to_name": "_printf"
+    },
+    {
+      "from": "1000004e0",
+      "from_name": "entry",
+      "to": "100000480",
+      "to_name": "_multiply"
+    },
+    {
+      "from": "1000004e0",
+      "from_name": "entry",
+      "to": "1000004a0",
+      "to_name": "_get_greeting"
+    }
+  ],
+  "nodes": {
+    "100000460": {
+      "address": "100000460",
+      "callee_count": 0,
+      "callees": [],
+      "caller_count": 1,
+      "callers": [
+        {
+          "address": "1000004e0",
+          "name": "entry"
+        }
+      ],
+      "name": "_add"
+    },
+    "100000480": {
+      "address": "100000480",
+      "callee_count": 0,
+      "callees": [],
+      "caller_count": 1,
+      "callers": [
+        {
+          "address": "1000004e0",
+          "name": "entry"
+        }
+      ],
+      "name": "_multiply"
+    },
+    "1000004a0": {
+      "address": "1000004a0",
+      "callee_count": 0,
+      "callees": [],
+      "caller_count": 1,
+      "callers": [
+        {
+          "address": "1000004e0",
+          "name": "entry"
+        }
+      ],
+      "name": "_get_greeting"
+    },
+    "1000004ac": {
+      "address": "1000004ac",
+      "callee_count": 1,
+      "callees": [
+        {
+          "address": "100000578",
+          "name": "_printf"
+        }
+      ],
+      "caller_count": 1,
+      "callers": [
+        {
+          "address": "1000004e0",
+          "name": "entry"
+        }
+      ],
+      "name": "_print_info"
+    },
+    "1000004e0": {
+      "address": "1000004e0",
+      "callee_count": 5,
+      "callees": [
+        {
+          "address": "1000004ac",
+          "name": "_print_info"
+        },
+        {
+          "address": "100000460",
+          "name": "_add"
+        },
+        {
+          "address": "100000578",
+          "name": "_printf"
+        },
+        {
+          "address": "100000480",
+          "name": "_multiply"
+        },
+        {
+          "address": "1000004a0",
+          "name": "_get_greeting"
+        }
+      ],
+      "caller_count": 0,
+      "callers": [],
+      "name": "entry"
+    },
+    "100000578": {
+      "address": "100000578",
+      "callee_count": 0,
+      "callees": [],
+      "caller_count": 2,
+      "callers": [
+        {
+          "address": "1000004e0",
+          "name": "entry"
+        },
+        {
+          "address": "1000004ac",
+          "name": "_print_info"
+        }
+      ],
+      "name": "_printf"
+    }
+  },
+  "program": "sample_macho",
+  "total_edges": 6,
+  "total_functions": 6
+}

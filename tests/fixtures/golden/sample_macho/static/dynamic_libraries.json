@@ -1,0 +1,10 @@
+{
+  "binary": "<RELATIVE_PATH>",
+  "libraries": [
+    {
+      "path": "<RELATIVE_PATH>",
+      "version_info": "compatibility version 1.0.0, current version 1356.0.0"
+    }
+  ],
+  "total": 1
+}

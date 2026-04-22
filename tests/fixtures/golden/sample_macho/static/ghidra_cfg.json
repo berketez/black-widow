@@ -1,0 +1,122 @@
+{
+  "functions": [
+    {
+      "address": "100000460",
+      "back_edges": [],
+      "block_count": 1,
+      "blocks": [
+        {
+          "end_address": "10000047f",
+          "instruction_count": 8,
+          "size": 32,
+          "start_address": "100000460"
+        }
+      ],
+      "cyclomatic_complexity": 1,
+      "edge_count": 0,
+      "edges": [],
+      "loop_headers": [],
+      "name": "_add"
+    },
+    {
+      "address": "100000480",
+      "back_edges": [],
+      "block_count": 1,
+      "blocks": [
+        {
+          "end_address": "10000049f",
+          "instruction_count": 8,
+          "size": 32,
+          "start_address": "100000480"
+        }
+      ],
+      "cyclomatic_complexity": 1,
+      "edge_count": 0,
+      "edges": [],
+      "loop_headers": [],
+      "name": "_multiply"
+    },
+    {
+      "address": "1000004a0",
+      "back_edges": [],
+      "block_count": 1,
+      "blocks": [
+        {
+          "end_address": "1000004ab",
+          "instruction_count": 3,
+          "size": 12,
+          "start_address": "1000004a0"
+        }
+      ],
+      "cyclomatic_complexity": 1,
+      "edge_count": 0,
+      "edges": [],
+      "loop_headers": [],
+      "name": "_get_greeting"
+    },
+    {
+      "address": "1000004ac",
+      "back_edges": [],
+      "block_count": 1,
+      "blocks": [
+        {
+          "end_address": "1000004df",
+          "instruction_count": 13,
+          "size": 52,
+          "start_address": "1000004ac"
+        }
+      ],
+      "cyclomatic_complexity": 1,
+      "edge_count": 0,
+      "edges": [],
+      "loop_headers": [],
+      "name": "_print_info"
+    },
+    {
+      "address": "1000004e0",
+      "back_edges": [],
+      "block_count": 1,
+      "blocks": [
+        {
+          "end_address": "100000577",
+          "instruction_count": 38,
+          "size": 152,
+          "start_address": "1000004e0"
+        }
+      ],
+      "cyclomatic_complexity": 1,
+      "edge_count": 0,
+      "edges": [],
+      "loop_headers": [],
+      "name": "entry"
+    },
+    {
+      "address": "100000578",
+      "back_edges": [],
+      "block_count": 1,
+      "blocks": [
+        {
+          "end_address": "100000583",
+          "instruction_count": 3,
+          "size": 12,
+          "start_address": "100000578"
+        }
+      ],
+      "cyclomatic_complexity": 2,
+      "edge_count": 1,
+      "edges": [
+        {
+          "edge_type": "unconditional_jump",
+          "from_block": "100000578",
+          "to_block": "100000578"
+        }
+      ],
+      "loop_headers": [],
+      "name": "_printf"
+    }
+  ],
+  "program": "sample_macho",
+  "total_blocks": 6,
+  "total_edges": 1,
+  "total_functions": 6
+}

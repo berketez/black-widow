@@ -1,0 +1,1110 @@
+{
+  "enums": [],
+  "program": "sample_macho",
+  "structures": [
+    {
+      "category": "/MachO",
+      "field_count": 2,
+      "fields": [
+        {
+          "name": "tool",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "version",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        }
+      ],
+      "kind": "struct",
+      "name": "build_tool_version",
+      "size": 8
+    },
+    {
+      "category": "/MachO",
+      "field_count": 7,
+      "fields": [
+        {
+          "name": "cmd",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cmdsize",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "platform",
+          "offset": 8,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "minos",
+          "offset": 12,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "sdk",
+          "offset": 16,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "ntools",
+          "offset": 20,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "build_tool_version[]",
+          "offset": 24,
+          "size": 8,
+          "type": "build_tool_version[1]"
+        }
+      ],
+      "kind": "struct",
+      "name": "build_version_command",
+      "size": 32
+    },
+    {
+      "category": "/MachO",
+      "field_count": 2,
+      "fields": [
+        {
+          "name": "type",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "offset",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        }
+      ],
+      "kind": "struct",
+      "name": "CS_BlobIndex",
+      "size": 8
+    },
+    {
+      "category": "/MachO",
+      "field_count": 21,
+      "fields": [
+        {
+          "name": "magic",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "length",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "version",
+          "offset": 8,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "flags",
+          "offset": 12,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "hashOffset",
+          "offset": 16,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "identOffset",
+          "offset": 20,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nSpecialSlots",
+          "offset": 24,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nCodeSlots",
+          "offset": 28,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "codeLimit",
+          "offset": 32,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "hashSize",
+          "offset": 36,
+          "size": 1,
+          "type": "byte"
+        },
+        {
+          "name": "hashType",
+          "offset": 37,
+          "size": 1,
+          "type": "byte"
+        },
+        {
+          "name": "platform",
+          "offset": 38,
+          "size": 1,
+          "type": "byte"
+        },
+        {
+          "name": "pageSize",
+          "offset": 39,
+          "size": 1,
+          "type": "byte"
+        },
+        {
+          "name": "spare2",
+          "offset": 40,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "scatterOffset",
+          "offset": 44,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "teamOffset",
+          "offset": 48,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "spare3",
+          "offset": 52,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "codeLimit64",
+          "offset": 56,
+          "size": 8,
+          "type": "qword"
+        },
+        {
+          "name": "execSegBase",
+          "offset": 64,
+          "size": 8,
+          "type": "qword"
+        },
+        {
+          "name": "execSegLimit",
+          "offset": 72,
+          "size": 8,
+          "type": "qword"
+        },
+        {
+          "name": "execSegFlags",
+          "offset": 80,
+          "size": 8,
+          "type": "qword"
+        }
+      ],
+      "kind": "struct",
+      "name": "CS_CodeDirectory",
+      "size": 88
+    },
+    {
+      "category": "/MachO",
+      "field_count": 4,
+      "fields": [
+        {
+          "name": "magic",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "length",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "count",
+          "offset": 8,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "index",
+          "offset": 12,
+          "size": 8,
+          "type": "CS_BlobIndex[1]"
+        }
+      ],
+      "kind": "struct",
+      "name": "CS_SuperBlob",
+      "size": 20
+    },
+    {
+      "category": "/MachO",
+      "field_count": 4,
+      "fields": [
+        {
+          "name": "cmd",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cmdsize",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "dataoff",
+          "offset": 8,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "datasize",
+          "offset": 12,
+          "size": 4,
+          "type": "dword"
+        }
+      ],
+      "kind": "struct",
+      "name": "dyld_chained_fixups_command",
+      "size": 16
+    },
+    {
+      "category": "/MachO",
+      "field_count": 7,
+      "fields": [
+        {
+          "name": "fixups_version",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "starts_offset",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "imports_offset",
+          "offset": 8,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "symbols_offset",
+          "offset": 12,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "imports_count",
+          "offset": 16,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "imports_format",
+          "offset": 20,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "symbols_format",
+          "offset": 24,
+          "size": 4,
+          "type": "dword"
+        }
+      ],
+      "kind": "struct",
+      "name": "dyld_chained_fixups_header",
+      "size": 28
+    },
+    {
+      "category": "/MachO",
+      "field_count": 3,
+      "fields": [
+        {
+          "name": "lib_ordinal",
+          "offset": 0,
+          "size": 1,
+          "type": "dword:8(storage:1,bitOffset:0)"
+        },
+        {
+          "name": "weak_import",
+          "offset": 1,
+          "size": 1,
+          "type": "dword:1(storage:1,bitOffset:0)"
+        },
+        {
+          "name": "name_offset",
+          "offset": 1,
+          "size": 3,
+          "type": "dword:23(storage:3,bitOffset:1)"
+        }
+      ],
+      "kind": "struct",
+      "name": "dyld_chained_import",
+      "size": 4
+    },
+    {
+      "category": "/MachO",
+      "field_count": 2,
+      "fields": [
+        {
+          "name": "seg_count",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "seg_info_offset",
+          "offset": 4,
+          "size": 16,
+          "type": "dword[4]"
+        }
+      ],
+      "kind": "struct",
+      "name": "dyld_chained_starts_in_image",
+      "size": 20
+    },
+    {
+      "category": "/MachO",
+      "field_count": 7,
+      "fields": [
+        {
+          "name": "size",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "page_size",
+          "offset": 4,
+          "size": 2,
+          "type": "word"
+        },
+        {
+          "name": "pointer_format",
+          "offset": 6,
+          "size": 2,
+          "type": "word"
+        },
+        {
+          "name": "segment_offset",
+          "offset": 8,
+          "size": 8,
+          "type": "IBO64DataType: typedef ImageBaseOffset64 pointer64"
+        },
+        {
+          "name": "max_valid_pointer",
+          "offset": 16,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "page_count",
+          "offset": 20,
+          "size": 2,
+          "type": "word"
+        },
+        {
+          "name": "page_starts",
+          "offset": 22,
+          "size": 2,
+          "type": "word[1]"
+        }
+      ],
+      "kind": "struct",
+      "name": "dyld_chained_starts_in_segment",
+      "size": 24
+    },
+    {
+      "category": "/MachO",
+      "field_count": 4,
+      "fields": [
+        {
+          "name": "name",
+          "offset": 0,
+          "size": 4,
+          "type": "/MachO/lc_str\npack(disabled)\nStructure lc_str {\n   0   dword   4   offset   \"\"\n}\nLength: 4 Alignment: 1\n"
+        },
+        {
+          "name": "timestamp",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "current_version",
+          "offset": 8,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "compatibility_version",
+          "offset": 12,
+          "size": 4,
+          "type": "dword"
+        }
+      ],
+      "kind": "struct",
+      "name": "dylib",
+      "size": 16
+    },
+    {
+      "category": "/MachO",
+      "field_count": 3,
+      "fields": [
+        {
+          "name": "cmd",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cmdsize",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "dylib",
+          "offset": 8,
+          "size": 16,
+          "type": "/MachO/dylib\npack(disabled)\nStructure dylib {\n   0   lc_str   4   name   \"\"\n   4   dword   4   timestamp   \"\"\n   8   dword   4   current_version   \"\"\n   12   dword   4   compatibility_version   \"\"\n}\nLength: 16 Alignment: 1\n"
+        }
+      ],
+      "kind": "struct",
+      "name": "dylib_command",
+      "size": 24
+    },
+    {
+      "category": "/MachO",
+      "field_count": 3,
+      "fields": [
+        {
+          "name": "cmd",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cmdsize",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "name",
+          "offset": 8,
+          "size": 4,
+          "type": "/MachO/lc_str\npack(disabled)\nStructure lc_str {\n   0   dword   4   offset   \"\"\n}\nLength: 4 Alignment: 1\n"
+        }
+      ],
+      "kind": "struct",
+      "name": "dylinker_command",
+      "size": 12
+    },
+    {
+      "category": "/MachO",
+      "field_count": 20,
+      "fields": [
+        {
+          "name": "cmd",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cmdsize",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "ilocalsym",
+          "offset": 8,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nlocalsym",
+          "offset": 12,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "iextdefsym",
+          "offset": 16,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nextdefsym",
+          "offset": 20,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "iundefsym",
+          "offset": 24,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nundefsym",
+          "offset": 28,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "tocoff",
+          "offset": 32,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "ntoc",
+          "offset": 36,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "modtaboff",
+          "offset": 40,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nmodtab",
+          "offset": 44,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "extrefsymoff",
+          "offset": 48,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nextrefsyms",
+          "offset": 52,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "indirectsymoff",
+          "offset": 56,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nindirectsyms",
+          "offset": 60,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "extreloff",
+          "offset": 64,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nextrel",
+          "offset": 68,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "locreloff",
+          "offset": 72,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nlocrel",
+          "offset": 76,
+          "size": 4,
+          "type": "dword"
+        }
+      ],
+      "kind": "struct",
+      "name": "dysymtab_command",
+      "size": 80
+    },
+    {
+      "category": "/MachO",
+      "field_count": 4,
+      "fields": [
+        {
+          "name": "cmd",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cmdsize",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "entryoff",
+          "offset": 8,
+          "size": 8,
+          "type": "qword"
+        },
+        {
+          "name": "stacksize",
+          "offset": 16,
+          "size": 8,
+          "type": "qword"
+        }
+      ],
+      "kind": "struct",
+      "name": "entry_point_command",
+      "size": 24
+    },
+    {
+      "category": "/MachO",
+      "field_count": 1,
+      "fields": [
+        {
+          "name": "offset",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        }
+      ],
+      "kind": "struct",
+      "name": "lc_str",
+      "size": 4
+    },
+    {
+      "category": "/MachO",
+      "field_count": 4,
+      "fields": [
+        {
+          "name": "cmd",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cmdsize",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "dataoff",
+          "offset": 8,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "datasize",
+          "offset": 12,
+          "size": 4,
+          "type": "dword"
+        }
+      ],
+      "kind": "struct",
+      "name": "linkedit_data_command",
+      "size": 16
+    },
+    {
+      "category": "/MachO",
+      "field_count": 8,
+      "fields": [
+        {
+          "name": "magic",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cputype",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cpusubtype",
+          "offset": 8,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "filetype",
+          "offset": 12,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "ncmds",
+          "offset": 16,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "sizeofcmds",
+          "offset": 20,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "flags",
+          "offset": 24,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "reserved",
+          "offset": 28,
+          "size": 4,
+          "type": "dword"
+        }
+      ],
+      "kind": "struct",
+      "name": "mach_header",
+      "size": 32
+    },
+    {
+      "category": "/MachO",
+      "field_count": 5,
+      "fields": [
+        {
+          "name": "n_strx",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "n_type",
+          "offset": 4,
+          "size": 1,
+          "type": "byte"
+        },
+        {
+          "name": "n_sect",
+          "offset": 5,
+          "size": 1,
+          "type": "byte"
+        },
+        {
+          "name": "n_desc",
+          "offset": 6,
+          "size": 2,
+          "type": "word"
+        },
+        {
+          "name": "n_value",
+          "offset": 8,
+          "size": 8,
+          "type": "qword"
+        }
+      ],
+      "kind": "struct",
+      "name": "nlist",
+      "size": 16
+    },
+    {
+      "category": "/MachO",
+      "field_count": 12,
+      "fields": [
+        {
+          "name": "sectname",
+          "offset": 0,
+          "size": 16,
+          "type": "string"
+        },
+        {
+          "name": "segname",
+          "offset": 16,
+          "size": 16,
+          "type": "string"
+        },
+        {
+          "name": "addr",
+          "offset": 32,
+          "size": 8,
+          "type": "qword"
+        },
+        {
+          "name": "size",
+          "offset": 40,
+          "size": 8,
+          "type": "qword"
+        },
+        {
+          "name": "offset",
+          "offset": 48,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "align",
+          "offset": 52,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "reloff",
+          "offset": 56,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nrelocs",
+          "offset": 60,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "flags",
+          "offset": 64,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "reserved1",
+          "offset": 68,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "reserved2",
+          "offset": 72,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "reserved3",
+          "offset": 76,
+          "size": 4,
+          "type": "dword"
+        }
+      ],
+      "kind": "struct",
+      "name": "section",
+      "size": 80
+    },
+    {
+      "category": "/MachO",
+      "field_count": 11,
+      "fields": [
+        {
+          "name": "cmd",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cmdsize",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "segname",
+          "offset": 8,
+          "size": 16,
+          "type": "string"
+        },
+        {
+          "name": "vmaddr",
+          "offset": 24,
+          "size": 8,
+          "type": "qword"
+        },
+        {
+          "name": "vmsize",
+          "offset": 32,
+          "size": 8,
+          "type": "qword"
+        },
+        {
+          "name": "fileoff",
+          "offset": 40,
+          "size": 8,
+          "type": "qword"
+        },
+        {
+          "name": "filesize",
+          "offset": 48,
+          "size": 8,
+          "type": "qword"
+        },
+        {
+          "name": "maxprot",
+          "offset": 56,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "initprot",
+          "offset": 60,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nsects",
+          "offset": 64,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "flags",
+          "offset": 68,
+          "size": 4,
+          "type": "dword"
+        }
+      ],
+      "kind": "struct",
+      "name": "segment_command",
+      "size": 72
+    },
+    {
+      "category": "/MachO",
+      "field_count": 3,
+      "fields": [
+        {
+          "name": "cmd",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cmdsize",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "version",
+          "offset": 8,
+          "size": 8,
+          "type": "qword"
+        }
+      ],
+      "kind": "struct",
+      "name": "source_version_command",
+      "size": 16
+    },
+    {
+      "category": "/MachO",
+      "field_count": 6,
+      "fields": [
+        {
+          "name": "cmd",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cmdsize",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "symoff",
+          "offset": 8,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "nsyms",
+          "offset": 12,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "stroff",
+          "offset": 16,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "strsize",
+          "offset": 20,
+          "size": 4,
+          "type": "dword"
+        }
+      ],
+      "kind": "struct",
+      "name": "symtab_command",
+      "size": 24
+    },
+    {
+      "category": "/MachO",
+      "field_count": 3,
+      "fields": [
+        {
+          "name": "cmd",
+          "offset": 0,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "cmdsize",
+          "offset": 4,
+          "size": 4,
+          "type": "dword"
+        },
+        {
+          "name": "uuid",
+          "offset": 8,
+          "size": 16,
+          "type": "byte[16]"
+        }
+      ],
+      "kind": "struct",
+      "name": "uuid_command",
+      "size": 24
+    }
+  ],
+  "total_enums": 0,
+  "total_structures": 24,
+  "total_typedefs": 1,
+  "total_types": 25,
+  "typedefs": [
+    {
+      "base_type": "pointer64",
+      "category": "/",
+      "name": "ImageBaseOffset64",
+      "size": 8
+    }
+  ]
+}

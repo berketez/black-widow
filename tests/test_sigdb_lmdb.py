@@ -403,12 +403,17 @@ class TestAdapterFeatureFlag:
     """``SignatureDB`` adapter katmani LMDB flag'ine gore dogru yola gidiyor mu?"""
 
     def test_adapter_feature_flag_false_uses_dict(self):
-        """use_lmdb_sigdb=False -> eski dict yolu, _lmdb_backend=None."""
+        """use_lmdb_sigdb=False -> eski dict yolu, _lmdb_backend=None.
+
+        v1.12.0 Faz 1: default True oldugu icin bu test acikca False'a
+        cekmek zorunda. Onceden ``assert cfg.perf.use_lmdb_sigdb is False``
+        idi; default degisikligi sonrasi explicit override gerekiyor.
+        """
         from karadul.analyzers.signature_db import SignatureDB
         from karadul.config import Config
 
         cfg = Config()
-        assert cfg.perf.use_lmdb_sigdb is False  # default
+        cfg.perf.use_lmdb_sigdb = False  # v1.12.0: default True, burada override
         db = SignatureDB(cfg)
         assert db._lmdb_backend is None
         # Dict DB doldurulmali (builtin en az birkac bin sembol icerir)

@@ -1,0 +1,55 @@
+{
+  "binary_symbols": 6,
+  "byte_patterns": 6,
+  "signatures": [
+    {
+      "category": "sample_macho",
+      "confidence": 0.9,
+      "library": "sample_macho",
+      "name": "__mh_execute_header",
+      "purpose": "",
+      "size": 0
+    },
+    {
+      "category": "sample_macho",
+      "confidence": 0.9,
+      "library": "sample_macho",
+      "name": "_add",
+      "purpose": "",
+      "size": 0
+    },
+    {
+      "category": "sample_macho",
+      "confidence": 0.9,
+      "library": "sample_macho",
+      "name": "_get_greeting",
+      "purpose": "",
+      "size": 0
+    },
+    {
+      "category": "sample_macho",
+      "confidence": 0.9,
+      "library": "sample_macho",
+      "name": "_main",
+      "purpose": "",
+      "size": 0
+    },
+    {
+      "category": "sample_macho",
+      "confidence": 0.9,
+      "library": "sample_macho",
+      "name": "_multiply",
+      "purpose": "",
+      "size": 0
+    },
+    {
+      "category": "sample_macho",
+      "confidence": 0.9,
+      "library": "sample_macho",
+      "name": "_print_info",
+      "purpose": "",
+      "size": 0
+    }
+  ],
+  "total": 6
+}

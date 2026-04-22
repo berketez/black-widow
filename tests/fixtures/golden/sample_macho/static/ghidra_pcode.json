@@ -1,0 +1,19 @@
+{
+  "format": "jsonl",
+  "functions": [],
+  "jsonl_path": "<RELATIVE_PATH>",
+  "mode": "jsonl",
+  "program": "static",
+  "stats": {
+    "mnemonic_distribution": {
+      "CALL": 10,
+      "CALLIND": 1,
+      "COPY": 12,
+      "INT_ADD": 1,
+      "INT_MULT": 1,
+      "RETURN": 6
+    }
+  },
+  "total_functions": 6,
+  "total_pcode_ops": 31
+}
