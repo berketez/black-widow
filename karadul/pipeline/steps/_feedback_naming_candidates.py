@@ -28,12 +28,12 @@ def collect_candidates(
     refdiff_naming: dict[str, str],
     fid_json: Path,
     computation_result: Any,
-    pcode_naming_candidates: list[dict],
+    pcode_naming_candidates: list[dict[str, Any]],
     iter_index: int,
     stats: dict[str, Any],
-) -> dict[str, list]:
+) -> dict[str, list[Any]]:
     """Tum kaynaklardan candidates_by_symbol sozlugu olustur."""
-    candidates_by_symbol: dict[str, list] = {}
+    candidates_by_symbol: dict[str, list[Any]] = {}
 
     _add_binary_extractor(extracted_names, candidates_by_symbol)
     _add_c_namer(naming_result, candidates_by_symbol)
@@ -59,7 +59,7 @@ def collect_candidates(
 
 def _add_binary_extractor(
     extracted_names: dict[str, str],
-    candidates: dict[str, list],
+    candidates: dict[str, list[Any]],
 ) -> None:
     for old_name, new_name in extracted_names.items():
         if not old_name or len(old_name) < 2 or not new_name:
@@ -70,7 +70,7 @@ def _add_binary_extractor(
 
 
 def _add_c_namer(
-    naming_result: Any, candidates: dict[str, list],
+    naming_result: Any, candidates: dict[str, list[Any]],
 ) -> None:
     if naming_result is None or not hasattr(naming_result, "naming_map"):
         return
@@ -84,7 +84,7 @@ def _add_c_namer(
 
 def _add_bindiff(
     bindiff_confidence_map: dict[str, tuple[str, float, str]],
-    candidates: dict[str, list],
+    candidates: dict[str, list[Any]],
 ) -> None:
     if not bindiff_confidence_map:
         return
@@ -101,7 +101,7 @@ def _add_bindiff(
 
 
 def _add_refdiff(
-    refdiff_naming: dict[str, str], candidates: dict[str, list],
+    refdiff_naming: dict[str, str], candidates: dict[str, list[Any]],
 ) -> None:
     if not refdiff_naming:
         return
@@ -117,7 +117,7 @@ def _add_refdiff(
     )
 
 
-def _add_fid(fid_json: Path, candidates: dict[str, list]) -> None:
+def _add_fid(fid_json: Path, candidates: dict[str, list[Any]]) -> None:
     if not (fid_json and fid_json.exists()):
         return
     try:
@@ -144,7 +144,7 @@ def _add_fid(fid_json: Path, candidates: dict[str, list]) -> None:
 
 def _add_computation(
     computation_result: Any,
-    candidates: dict[str, list],
+    candidates: dict[str, list[Any]],
     iter_index: int,
     stats: dict[str, Any],
 ) -> None:
@@ -203,7 +203,7 @@ def _add_computation(
 
 
 def _add_pcode(
-    pcode_naming_candidates: list[dict], candidates: dict[str, list],
+    pcode_naming_candidates: list[dict[str, Any]], candidates: dict[str, list[Any]],
 ) -> None:
     pcode_added = 0
     for nc in pcode_naming_candidates:

@@ -57,11 +57,11 @@ class PcodeCfgAnalysisStep(Step):
     @staticmethod
     def _analyze_pcode(
         *, pcode_json: Path, ctx: StepContext,
-    ) -> tuple[Any, list]:
+    ) -> tuple[Any, list[dict[str, Any]]]:
         """stages.py L1453-1532: stats_only / JSONL / legacy mod tespiti."""
         step_start = time.monotonic()
         pcode_result: Any = None
-        pcode_naming_candidates: list = []
+        pcode_naming_candidates: list[dict[str, Any]] = []
 
         if not (pcode_json and pcode_json.exists()):
             ctx.stats["timing_pcode"] = round(
@@ -113,7 +113,7 @@ class PcodeCfgAnalysisStep(Step):
     @staticmethod
     def _analyze_pcode_jsonl(
         *, pcode_json: Path, header: str, ctx: StepContext,
-    ) -> tuple[Any, list]:
+    ) -> tuple[Any, list[dict[str, Any]]]:
         """v1.5: JSONL streaming analiz."""
         from karadul.analyzers.pcode_analyzer import PcodeAnalyzer
 
@@ -140,7 +140,7 @@ class PcodeCfgAnalysisStep(Step):
         ctx.stats["pcode_functions_analyzed"] = pcode_result.total_functions
         ctx.stats["pcode_total_ops"] = pcode_result.total_pcode_ops
 
-        naming_candidates: list = []
+        naming_candidates: list[dict[str, Any]] = []
         for func_pcode in pcode_result.functions:
             nc_list = pcode_analyzer.generate_naming_candidates(func_pcode)
             naming_candidates.extend(nc_list)
@@ -157,7 +157,7 @@ class PcodeCfgAnalysisStep(Step):
     @staticmethod
     def _analyze_pcode_legacy(
         *, pcode_json: Path, ctx: StepContext,
-    ) -> tuple[Any, list]:
+    ) -> tuple[Any, list[dict[str, Any]]]:
         """Legacy: tam pcode JSON parse."""
         from karadul.analyzers.pcode_analyzer import PcodeAnalyzer
 
@@ -166,7 +166,7 @@ class PcodeCfgAnalysisStep(Step):
         ctx.stats["pcode_functions_analyzed"] = pcode_result.total_functions
         ctx.stats["pcode_total_ops"] = pcode_result.total_pcode_ops
 
-        naming_candidates: list = []
+        naming_candidates: list[dict[str, Any]] = []
         for func_pcode in pcode_result.functions:
             nc_list = pcode_analyzer.generate_naming_candidates(func_pcode)
             naming_candidates.extend(nc_list)

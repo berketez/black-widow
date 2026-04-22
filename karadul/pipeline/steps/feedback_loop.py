@@ -252,20 +252,29 @@ class FeedbackLoopStep(Step):
             try:
                 from karadul.reconstruction.recovery_layers import ComputationRecoveryEngine
                 comp_engine = ComputationRecoveryEngine(pc.config)
-            except ImportError:
-                pass
+            except ImportError as e:
+                # Graceful degradation: recovery_layers opsiyonel, yoksa None kalir.
+                logger.debug(
+                    "ComputationRecoveryEngine import basarisiz: %s", e, exc_info=True,
+                )
         if pc.config.binary_reconstruction.enable_c_naming:
             try:
                 from karadul.reconstruction.c_namer import CVariableNamer
                 c_namer = CVariableNamer(pc.config)
-            except ImportError:
-                pass
+            except ImportError as e:
+                # Graceful degradation: c_namer opsiyonel, yoksa None kalir.
+                logger.debug(
+                    "CVariableNamer import basarisiz: %s", e, exc_info=True,
+                )
         if pc.config.binary_reconstruction.enable_type_recovery:
             try:
                 from karadul.reconstruction.c_type_recoverer import CTypeRecoverer
                 type_rec = CTypeRecoverer(pc.config)
-            except ImportError:
-                pass
+            except ImportError as e:
+                # Graceful degradation: type_recoverer opsiyonel, yoksa None kalir.
+                logger.debug(
+                    "CTypeRecoverer import basarisiz: %s", e, exc_info=True,
+                )
         return comp_engine, c_namer, type_rec
 
     @staticmethod

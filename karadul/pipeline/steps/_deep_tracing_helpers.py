@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +22,9 @@ def resolve_dispatch(
     strings_json: Path,
     call_graph_data: Any,
     reconstructed_dir: Path,
-    stats: dict,
-    errors: list,
-    workspace,
+    stats: dict[str, Any],
+    errors: list[str],
+    workspace: Any,
 ) -> tuple[Any, Path | None]:
     """Virtual dispatch resolution (ObjC/Swift/C++). stages.py L3769-3814.
 
@@ -101,8 +101,8 @@ def analyze_data_flow(
     augmented_cg_json: Path | None,
     xrefs_json: Path,
     reconstructed_dir: Path,
-    stats: dict,
-    errors: list,
+    stats: dict[str, Any],
+    errors: list[str],
 ) -> Any:
     """Inter-procedural data flow. stages.py L3817-3840."""
     data_flow_result = None
@@ -140,8 +140,8 @@ def propagate_param_names(
     call_graph_json: Path,
     augmented_cg_json: Path | None,
     sig_matches: Any,
-    stats: dict,
-    errors: list,
+    stats: dict[str, Any],
+    errors: list[str],
 ) -> None:
     """Inter-procedural parameter name propagation. stages.py L3843-3862."""
     try:
@@ -236,14 +236,14 @@ def resolve_call_graph(
 
 def analyze_composition(
     call_graph_data: Any,
-    all_algos: list,
+    all_algos: list[Any],
     data_flow_result: Any,
     dispatch_result: Any,
     reconstructed_dir: Path,
-    stats: dict,
-    errors: list,
-    workspace,
-    publish_artifact,
+    stats: dict[str, Any],
+    errors: list[str],
+    workspace: Any,
+    publish_artifact: Callable[[str, Path], None],
 ) -> None:
     """Algorithm Composition Analysis. stages.py L3874-3901."""
     logger.info(
@@ -287,12 +287,12 @@ def analyze_composition(
 
 def deep_trace(
     call_graph_data: Any,
-    all_algos: list,
+    all_algos: list[Any],
     dispatch_result: Any,
     reconstructed_dir: Path,
-    stats: dict,
-    errors: list,
-    publish_artifact,
+    stats: dict[str, Any],
+    errors: list[str],
+    publish_artifact: Callable[[str, Path], None],
 ) -> None:
     """Deep Call Chain Tracing. stages.py L3904-3931."""
     logger.info(

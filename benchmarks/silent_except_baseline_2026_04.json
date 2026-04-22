@@ -1,0 +1,47 @@
+{
+  "date": "2026-04-22",
+  "scope": "karadul/pipeline/ (pipeline + steps)",
+  "measurement_tool": "benchmarks/_silent_except_scan.py (multi-line aware)",
+  "global_context": {
+    "reviewer_plan_total_all_karadul": 183,
+    "reviewer_plan_pipeline_steps_estimate": 4,
+    "actual_pipeline_scope_true_silent": 7,
+    "note": "Reviewer plani Type A pass + C continue saydi (=4). Bu baseline Type B return/return_none de dahil (=7). True-silent: body tek statement, log yok."
+  },
+  "total": 7,
+  "by_file": {
+    "karadul/pipeline/steps/_confidence_helpers.py": [
+      {"line": 101, "pattern": "continue", "except_type": "OSError", "body_line": 102, "fixed": true, "priority": 5}
+    ],
+    "karadul/pipeline/steps/bsim_match.py": [
+      {"line": 157, "pattern": "return_none", "except_type": "Exception", "body_line": 158, "fixed": true, "priority": 4},
+      {"line": 170, "pattern": "continue", "except_type": "OSError", "body_line": 171, "fixed": true, "priority": 6}
+    ],
+    "karadul/pipeline/steps/computation_struct_recovery.py": [
+      {"line": 126, "pattern": "continue", "except_type": "ValueError", "body_line": 128, "fixed": true, "priority": 7}
+    ],
+    "karadul/pipeline/steps/feedback_loop.py": [
+      {"line": 255, "pattern": "pass", "except_type": "ImportError", "body_line": 256, "fixed": true, "priority": 1},
+      {"line": 261, "pattern": "pass", "except_type": "ImportError", "body_line": 262, "fixed": true, "priority": 2},
+      {"line": 267, "pattern": "pass", "except_type": "ImportError", "body_line": 268, "fixed": true, "priority": 3}
+    ]
+  },
+  "pattern_counts": {"continue": 3, "return_none": 1, "pass": 3},
+  "exception_type_counts": {"OSError": 2, "Exception": 1, "ValueError": 1, "ImportError": 3},
+  "faz1_status": {
+    "fixed_count": 7,
+    "remaining_pipeline_scope": 0,
+    "fix_pattern": "logger.debug + exc_info (import/exception), logger.debug (OSError loop skip)",
+    "behavior_change": "none (silent -> silent + log)",
+    "tests_after_fix": {
+      "test_step_feedback_loop": "26 pass",
+      "test_bsim_shadow_step": "6 pass",
+      "test_step_confidence_filter": "11 pass",
+      "test_step_struct_recovery": "6 pass",
+      "test_pipeline": "15 pass",
+      "test_pipeline_integration_smoke": "11 pass",
+      "test_v1100_pipeline_fixes": "22 pass",
+      "total": "97 pass, 0 fail"
+    }
+  }
+}

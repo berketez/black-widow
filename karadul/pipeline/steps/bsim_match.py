@@ -154,7 +154,12 @@ class BSimMatchStep(Step):
         try:
             static_dir = pc.workspace.get_stage_dir("static")
             deob_dir = pc.workspace.get_stage_dir("deobfuscated")
-        except Exception:
+        except Exception as e:
+            # Workspace stage-dir yoksa (pipeline init eksik) -> None don.
+            logger.debug(
+                "workspace stage-dir alinamadi, bsim_matches aranmayacak: %s",
+                e, exc_info=True,
+            )
             return None
 
         candidates = [
@@ -167,7 +172,9 @@ class BSimMatchStep(Step):
             try:
                 if c.exists():
                     return c
-            except OSError:
+            except OSError as e:
+                # Graceful: mount/izin hatasi olan path'i atla.
+                logger.debug("bsim_matches path erisim hatasi %s: %s", c, e)
                 continue
         return None
 

@@ -30,9 +30,9 @@ logger = logging.getLogger(__name__)
 
 
 def run_calibration(
-    *, pc, eng_result, c_files: list[Path], file_cache: dict[str, str],
+    *, pc: Any, eng_result: Any, c_files: list[Path], file_cache: dict[str, str],
     ctx: StepContext,
-) -> list | None:
+) -> list[Any] | None:
     """ConfidenceCalibrator ile match'leri kalibre et."""
     step_start = time.monotonic()
     calibrated_matches = None
@@ -98,7 +98,9 @@ def _extract_func_bodies(
             if content is None:
                 try:
                     content = cf.read_text(encoding="utf-8", errors="replace")
-                except OSError:
+                except OSError as e:
+                    # Graceful: dosya okunamazsa skip (kaldirilmis veya izin yok).
+                    logger.debug("C dosyasi okunamadi, atlaniyor %s: %s", cf, e)
                     continue
             for fm in re.finditer(r"\b(\w+)\s*\([^)]*\)\s*\{", content):
                 fn = fm.group(1)
@@ -116,7 +118,8 @@ def _extract_func_bodies(
 
 
 def run_merge(
-    *, pc, algo_result, eng_result, calibrated_matches, ctx: StepContext,
+    *, pc: Any, algo_result: Any, eng_result: Any, calibrated_matches: list[Any] | None,
+    ctx: StepContext,
 ) -> None:
     """algorithms_merged.json artifact uret."""
     if not (eng_result and eng_result.success and eng_result.algorithms):
@@ -149,7 +152,9 @@ def run_merge(
 # ---------------------------------------------------------------------------
 
 
-def run_match_budget(*, pc, algo_result, eng_result, ctx: StepContext) -> None:
+def run_match_budget(
+    *, pc: Any, algo_result: Any, eng_result: Any, ctx: StepContext,
+) -> None:
     """En dusuk confidence match'leri kes (MAX_ALGO_MATCHES)."""
     max_algo = pc.config.binary_reconstruction.max_algo_matches
     total = (
@@ -171,7 +176,7 @@ def run_match_budget(*, pc, algo_result, eng_result, ctx: StepContext) -> None:
         for a in eng_result.algorithms:
             all_merged.append(("eng", a))
 
-    def conf_key(item):
+    def conf_key(item: tuple[str, Any]) -> Any:
         _, a = item
         if hasattr(a, "confidence"):
             return a.confidence
@@ -224,10 +229,10 @@ def run_byte_pattern_merge(
 
 
 def run_capa_merge(
-    *, pc, extracted_names: dict[str, str], ctx: StepContext,
-) -> dict:
+    *, pc: Any, extracted_names: dict[str, str], ctx: StepContext,
+) -> dict[str, Any]:
     """CAPA capability sonuclarini naming'e entegre."""
-    capa_capabilities: dict = {}
+    capa_capabilities: dict[str, Any] = {}
     step_start = time.monotonic()
 
     if not pc.config.binary_reconstruction.enable_capa:

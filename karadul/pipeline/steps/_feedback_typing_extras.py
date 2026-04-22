@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def run_xtride_typing(
     *,
-    ctx,
+    ctx: Any,
     iter_index: int,
     decompiled_dir: Path,
     incremental_files: list[Path] | None,
@@ -38,7 +38,7 @@ def run_xtride_typing(
         xtride_improved = 0
 
         xfiles = _target_files(decompiled_dir, incremental_files, iter_index)
-        pat_cache: dict[str, re.Pattern] = {}
+        pat_cache: dict[str, re.Pattern[str]] = {}
         for xf in xfiles:
             try:
                 xcode = xf.read_text(encoding="utf-8", errors="replace")
@@ -95,7 +95,7 @@ def run_xtride_typing(
 
 def run_dynamic_naming(
     *,
-    ctx,
+    ctx: Any,
     iter_index: int,
     decompiled_dir: Path,
     incremental_files: list[Path] | None,
@@ -136,7 +136,7 @@ def run_dynamic_naming(
         dyn_files = _target_files(
             decompiled_dir, incremental_files, iter_index,
         )
-        pat_cache: dict[str, re.Pattern] = {}
+        pat_cache: dict[str, re.Pattern[str]] = {}
         for df in dyn_files:
             try:
                 dcode = df.read_text(encoding="utf-8", errors="replace")
@@ -182,7 +182,7 @@ def run_dynamic_naming(
 
 def run_ngram_naming(
     *,
-    ctx,
+    ctx: Any,
     iter_index: int,
     decompiled_dir: Path,
     incremental_files: list[Path] | None,
@@ -215,7 +215,7 @@ def run_ngram_naming(
         ngram_files = _target_files(
             decompiled_dir, incremental_files, iter_index,
         )
-        pat_cache: dict[str, re.Pattern] = {}
+        pat_cache: dict[str, re.Pattern[str]] = {}
         for nf in ngram_files:
             try:
                 ncode = nf.read_text(encoding="utf-8", errors="replace")

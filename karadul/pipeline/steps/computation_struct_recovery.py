@@ -123,8 +123,12 @@ def _extract_accesses_per_function(pcode_result: Any) -> dict:
                     width=int(width),
                     access_type=access_type,
                 ))
-            except ValueError:
-                # width/offset sanity hatasi -> atla.
+            except ValueError as e:
+                # Graceful: width/offset sanity hatasi -> atla (invalid access).
+                logger.debug(
+                    "MemoryAccess sanity fail (var=%s, off=%s, w=%s): %s",
+                    var_name, offset, width, e,
+                )
                 continue
 
         if accesses:

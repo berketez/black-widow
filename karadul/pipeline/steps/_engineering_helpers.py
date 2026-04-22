@@ -61,7 +61,7 @@ def collect_binary_hints(
     return None
 
 
-def normalize_strings(string_data: Any) -> list | None:
+def normalize_strings(string_data: Any) -> list[Any] | None:
     """DomainClassifier'a verilecek string listesini hazirla.
 
     Orijinal davranis (stages.py L3686-3697): string_data list ise aynen
@@ -83,13 +83,13 @@ def normalize_strings(string_data: Any) -> list | None:
     return None
 
 
-def collect_algorithm_list(algo_result, eng_result) -> list:
+def collect_algorithm_list(algo_result: Any, eng_result: Any) -> list[Any]:
     """algo_result + eng_result'tan algoritma listesi olustur.
 
     Orijinal davranis stages.py L3641-3645 ve `_collect_all_algorithms` ile
     ayni — duplikasyonu onlemek icin cagiran step bu helper'i kullaniyor.
     """
-    all_algo_list: list = []
+    all_algo_list: list[Any] = []
     if algo_result and getattr(algo_result, "success", False):
         all_algo_list.extend(algo_result.algorithms)
     if eng_result and getattr(eng_result, "success", False):
@@ -98,10 +98,10 @@ def collect_algorithm_list(algo_result, eng_result) -> list:
 
 
 def build_analysis_payload(
-    domain_report,
-    formulas,
-    computation_result,
-) -> dict:
+    domain_report: Any,
+    formulas: Any,
+    computation_result: Any,
+) -> dict[str, Any]:
     """Engineering analysis JSON payload'unu olustur.
 
     Orijinal davranis stages.py L3711-3734. Ciktidaki ekstra alanlar:
