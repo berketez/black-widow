@@ -651,7 +651,7 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
             stage_name="static",
             success=True,
             duration_seconds=duration,
-            artifacts={"dotnet_analysis": str(output_path)},
+            artifacts={"dotnet_analysis": output_path},
             stats={
                 "total_types": metadata.get("type_count", 0),
                 "total_methods": metadata.get("method_count", 0),
@@ -698,7 +698,7 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
         return StageResult(
             stage_name="reconstruct", success=True,
             duration_seconds=time.monotonic() - start,
-            artifacts={"dotnet_project": str(output_dir)},
+            artifacts={"dotnet_project": output_dir},
             stats={"reconstructed": True}, errors=[],
         )
 
@@ -755,9 +755,9 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
 
         return metadata
 
-    def _detect_obfuscation(self, path: Path, metadata: dict) -> dict:
+    def _detect_obfuscation(self, path: Path, metadata: dict[str, Any]) -> dict[str, Any]:
         """.NET obfuscation tespiti."""
-        result = {"detected": False, "type": None, "evidence": []}
+        result: dict[str, Any] = {"detected": False, "type": None, "evidence": []}
 
         refs = metadata.get("references", [])
         namespaces = metadata.get("namespaces", [])
@@ -786,13 +786,18 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
 
         return result
 
-    def _decompile_with_ilspy(self, path: Path, output_dir: Path) -> dict:
+    def _decompile_with_ilspy(self, path: Path, output_dir: Path) -> dict[str, Any]:
         """ILSpy CLI ile decompile."""
-        result = {"success": False, "output_dir": str(output_dir), "source_files": 0}
+        result: dict[str, Any] = {"success": False, "output_dir": str(output_dir), "source_files": 0}
+
+        # ILSpy path yoksa erken don (caller guard bekleniyor ama defansif).
+        if not self._ilspy_path:
+            result["error"] = "ILSpy path not configured"
+            return result
 
         try:
             output_dir.mkdir(parents=True, exist_ok=True)
-            cmd = [
+            cmd: list[str] = [
                 self._ilspy_path,
                 str(path),
                 "--project",
@@ -818,9 +823,12 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
 
         return result
 
-    def _disassemble_with_monodis(self, path: Path, workspace: Workspace) -> dict:
+    def _disassemble_with_monodis(self, path: Path, workspace: Workspace) -> dict[str, Any]:
         """monodis ile IL disassembly."""
-        result = {"success": False}
+        result: dict[str, Any] = {"success": False}
+        if not self._monodis_path:
+            result["error"] = "monodis path not configured"
+            return result
         try:
             output_path = workspace.get_stage_dir("static") / "il_disassembly.il"
             proc = subprocess.run(
@@ -833,9 +841,9 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
             result["error"] = str(e)
         return result
 
-    def _extract_from_strings(self, path: Path) -> dict:
+    def _extract_from_strings(self, path: Path) -> dict[str, Any]:
         """Fallback: strings ile bilgi cikar."""
-        result = {"classes": [], "methods": []}
+        result: dict[str, list[str]] = {"classes": [], "methods": []}
         try:
             proc = subprocess.run(
                 ["strings", str(path)],

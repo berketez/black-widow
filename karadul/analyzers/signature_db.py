@@ -111,11 +111,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
-# Prefer ujson for faster JSON parsing (~2x on large files), fallback to stdlib
+# Prefer ujson for faster JSON parsing (~2x on large files), fallback to stdlib.
+# ujson icin tip stub'i mevcut degil -> import-untyped sustur.
 try:
-    import ujson as json
+    import ujson as json  # type: ignore[import-untyped]
 except ImportError:
-    import json  # type: ignore[no-redef]
+    import json
 
 from karadul.config import Config
 
@@ -1627,7 +1628,7 @@ _PROTOBUF_SIGNATURES: dict[str, dict[str, str]] = {
 #
 # Format: {"SerializeToString": ("google::protobuf::MessageLite::SerializeToString",
 #                                 {"lib": "protobuf", ...})}
-_PROTOBUF_BASENAME_INDEX: dict[str, tuple[str, dict[str, str]]] = {}
+_PROTOBUF_BASENAME_INDEX: dict[str, tuple[str, dict[str, Any]]] = {}
 
 
 def _build_protobuf_basename_index() -> None:
@@ -4203,6 +4204,54 @@ if _BUILTIN_PE_RUNTIME_SIGNATURES is not None:
     _MSVC_CRT_SIGNATURES = _BUILTIN_PE_RUNTIME_SIGNATURES.get(
         "msvc_crt_signatures", _MSVC_CRT_SIGNATURES
     )
+
+
+# ---------------------------------------------------------------------------
+# sig_db Faz 7D — Windows GUI / security / graphics override (dalga 7D)
+# ---------------------------------------------------------------------------
+# Veri `karadul.analyzers.sigdb_builtin.windows_gui` modulune tasindi.
+# Kapsama: user32 (GUI core + mesaj + menu + dialog + input + clipboard +
+# hook), advapi32 (registry + service + token + legacy CryptoAPI + event
+# log + ACL), gdi32 (DC + pen/brush + font/text + bitmap/blit + region +
+# path + metafile). Yaklasik 560+ entry.
+#
+# Legacy `_WIN32_USER32_GDI32_SIGNATURES` (25 entry) ve
+# `_WIN32_ADVAPI32_SIGNATURES` (20 entry) override EDILIR. Overlap entry'ler
+# ayni `lib` etiketi tasir (idempotent); genisleme agirlikli olarak YENI
+# Unicode/ANSI eslenikleri ve alt kategorileri ekler.
+#
+# Legacy dict'ler SILINMEDI; import basarisiz olursa inline fallback aktif
+# kalir (crypto/compression/network/pe_runtime ile ayni desen).
+
+# Fallback: windows_gui modulu yoksa bos dict (legacy override uygulanmaz).
+_WIN32_USER32_SIGNATURES: dict[str, dict[str, str]] = {}
+_WIN32_ADVAPI32_FULL_SIGNATURES: dict[str, dict[str, str]] = {}
+_WIN32_GDI32_SIGNATURES: dict[str, dict[str, str]] = {}
+
+try:
+    from karadul.analyzers.sigdb_builtin.windows_gui import (
+        SIGNATURES as _BUILTIN_WINDOWS_GUI_SIGNATURES,
+    )
+except ImportError:  # pragma: no cover - paket yoksa legacy fallback
+    _BUILTIN_WINDOWS_GUI_SIGNATURES = None  # type: ignore[assignment]
+
+if _BUILTIN_WINDOWS_GUI_SIGNATURES is not None:
+    _WIN32_USER32_SIGNATURES = _BUILTIN_WINDOWS_GUI_SIGNATURES.get(
+        "user32_signatures", _WIN32_USER32_SIGNATURES
+    )
+    _WIN32_ADVAPI32_FULL_SIGNATURES = _BUILTIN_WINDOWS_GUI_SIGNATURES.get(
+        "advapi32_signatures", _WIN32_ADVAPI32_FULL_SIGNATURES
+    )
+    _WIN32_GDI32_SIGNATURES = _BUILTIN_WINDOWS_GUI_SIGNATURES.get(
+        "gdi32_signatures", _WIN32_GDI32_SIGNATURES
+    )
+    # Legacy kucuk dict'leri de override et (identity parity + genisleme).
+    # _WIN32_USER32_GDI32_SIGNATURES: user32 + gdi32 birlesik
+    _WIN32_USER32_GDI32_SIGNATURES = {
+        **_WIN32_USER32_SIGNATURES,
+        **_WIN32_GDI32_SIGNATURES,
+    }
+    _WIN32_ADVAPI32_SIGNATURES = _WIN32_ADVAPI32_FULL_SIGNATURES
 
 
 # ---------------------------------------------------------------------------
@@ -9014,8 +9063,9 @@ class SignatureDB:
         # Katman 1: Byte pattern imzalari (kullanici ekler, builtin bos)
         self._byte_signatures: list[FunctionSignature] = []
 
-        # Symbol-based hizli lookup: name -> {lib, purpose, category}
-        self._symbol_db: dict[str, dict[str, str]] = {}
+        # Symbol-based hizli lookup: name -> {lib, purpose, category, _platforms, params, ...}
+        # Heterojen: string alanlar + _platforms (list[str]) + params (list[dict]) -> Any gerekiyor.
+        self._symbol_db: dict[str, dict[str, Any]] = {}
 
         # Katman 2: String reference imzalari
         self._string_sigs: dict[frozenset[str], tuple[str, str, str]] = {}
@@ -10362,7 +10412,7 @@ class SignatureDB:
         )
         return added
 
-    def load_flirt_signatures(self, paths: list[str]) -> int:
+    def load_flirt_signatures(self, paths: list[str] | list[str | Path]) -> int:
         """FLIRT/JSON imzalarini external path'lerden yukle.
 
         FLIRTParser kullanarak .pat ve .json dosyalarini okur,
@@ -10383,7 +10433,10 @@ class SignatureDB:
         from karadul.analyzers.flirt_parser import FLIRTParser
 
         parser = FLIRTParser()
-        total_added = parser.load_and_inject(self, paths)
+        # FLIRTParser.load_and_inject `list[str | Path]` bekliyor; caller'dan
+        # list[str] gelirse invariant nedeniyle mypy hata verir, cast et.
+        paths_union: list[str | Path] = list(paths)
+        total_added = parser.load_and_inject(self, paths_union)
         logger.info(
             "FLIRT signatures yuklendi: %d yeni signature (toplam: %d)",
             total_added, len(self._symbol_db),

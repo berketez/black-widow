@@ -22,7 +22,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from karadul.reconstruction.ml.model_base import MLNamingModel, NamingPrediction
 
@@ -94,8 +94,9 @@ class LLM4DecompileModel(MLNamingModel):
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
         self.dtype_str = dtype
-        self._tokenizer = None
-        self._model = None
+        # transformers tiplemesi mevcut ortamda eksik olabilir -> Any.
+        self._tokenizer: Any = None
+        self._model: Any = None
 
     def load(self) -> None:
         """Model agirliklarini yukle."""
@@ -137,13 +138,14 @@ class LLM4DecompileModel(MLNamingModel):
         else:
             dtype = torch.float32
 
-        # Model
-        self._model = AutoModelForCausalLM.from_pretrained(
+        # Model (transformers API dinamik tip -> Any'e sakla).
+        _loaded_model: Any = AutoModelForCausalLM.from_pretrained(
             str(self.model_path),
             torch_dtype=dtype,
             local_files_only=True,
             low_cpu_mem_usage=True,
         )
+        self._model = _loaded_model
 
         # Device'a tasi (MPS icin parcali tasima gerekebilir)
         try:
@@ -153,7 +155,6 @@ class LLM4DecompileModel(MLNamingModel):
                 "Model %s device'a tasinamadi, CPU'da calisacak: %s",
                 self.device, e,
             )
-            self.device = "cpu"
             import torch
             self.device = torch.device("cpu")
             self._model = self._model.to(self.device)

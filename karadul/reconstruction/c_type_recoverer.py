@@ -205,54 +205,56 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
             string_context[sm.group("var")] = sm.group("str")
 
         # 7. Type usage tracking ��� worker icinde filtrele (IPC azalt)
-        m = _str_func_re.search(stripped)
-        if m:
-            var = m.group(1)
+        # Not: `m` burada `Optional[Match[str]]` olarak yeniden type'lanir — yukari
+        # kisimdaki `for m in ...finditer(...)` loop degiskenlerinden farkli.
+        sm_opt: re.Match[str] | None = _str_func_re.search(stripped)
+        if sm_opt:
+            var = sm_opt.group(1)
             type_usages.setdefault(var, []).append("string_func_arg")
-        m = _bool_re.search(stripped)
-        if m:
-            var = m.group(1)
+        sm_opt = _bool_re.search(stripped)
+        if sm_opt:
+            var = sm_opt.group(1)
             type_usages.setdefault(var, []).append("boolean_test")
-        m = _alloc_re.search(stripped)
-        if m:
-            var = m.group(1)
+        sm_opt = _alloc_re.search(stripped)
+        if sm_opt:
+            var = sm_opt.group(1)
             type_usages.setdefault(var, []).append("alloc_result")
 
         # v1.7.2: Ek context tespiti
-        m = _deref_re.search(stripped)
-        if m:
-            var = m.group(1)
+        sm_opt = _deref_re.search(stripped)
+        if sm_opt:
+            var = sm_opt.group(1)
             type_usages.setdefault(var, []).append("pointer_deref")
-        m = _ptr_arith_re.search(stripped)
-        if m:
-            var = m.group(1)
+        sm_opt = _ptr_arith_re.search(stripped)
+        if sm_opt:
+            var = sm_opt.group(1)
             type_usages.setdefault(var, []).append("pointer_arithmetic")
-        m = _array_re.search(stripped)
-        if m:
-            var = m.group(1)
+        sm_opt = _array_re.search(stripped)
+        if sm_opt:
+            var = sm_opt.group(1)
             type_usages.setdefault(var, []).append("array_access")
-        m = _shift_re.search(stripped)
-        if m:
-            var = m.group(1)
+        sm_opt = _shift_re.search(stripped)
+        if sm_opt:
+            var = sm_opt.group(1)
             type_usages.setdefault(var, []).append("bitwise_op")
-        m = _cmp_re.search(stripped)
-        if m:
-            var = m.group(1)
+        sm_opt = _cmp_re.search(stripped)
+        if sm_opt:
+            var = sm_opt.group(1)
             type_usages.setdefault(var, []).append("comparison")
-        m = _arith_re.search(stripped)
-        if m:
-            var = m.group(1)
+        sm_opt = _arith_re.search(stripped)
+        if sm_opt:
+            var = sm_opt.group(1)
             type_usages.setdefault(var, []).append("arithmetic")
         # v1.8: Float literal assignment
-        m = _float_assign_re.search(stripped)
-        if m:
-            var = m.group(1)
+        sm_opt = _float_assign_re.search(stripped)
+        if sm_opt:
+            var = sm_opt.group(1)
             type_usages.setdefault(var, []).append("float_literal_assign")
         # v1.8: Typed malloc cast -- var = (double *)malloc(...)
-        m = _malloc_cast_re.search(stripped)
-        if m:
-            var = m.group(1)
-            cast_type = m.group(2).strip()
+        sm_opt = _malloc_cast_re.search(stripped)
+        if sm_opt:
+            var = sm_opt.group(1)
+            cast_type = sm_opt.group(2).strip()
             type_usages.setdefault(var, []).append(f"malloc_cast:{cast_type}")
         # v1.8: Pointer cast dereference -- *(double *)(param_1 + 0x10)
         for cm in _cast_deref_re.finditer(stripped):
@@ -264,9 +266,9 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
             var = ism.group(1)
             type_usages.setdefault(var, []).append(f"in_stack_usage:{current_func}")
         # Return: hangi degisken return ediliyor?
-        m = _return_re.search(stripped)
-        if m:
-            var = m.group(1)
+        sm_opt = _return_re.search(stripped)
+        if sm_opt:
+            var = sm_opt.group(1)
             type_usages.setdefault(var, []).append(f"return_in:{current_func}")
         # Fonksiyon cagrisi arguman takibi
         for fm in _func_call_re.finditer(stripped):
@@ -948,9 +950,9 @@ class CTypeRecoverer:
         output_files: list[Path] = []
         with ProcessPoolExecutor(max_workers=num_workers) as pool:
             futs_apply = [pool.submit(_apply_types_worker, *args) for args in apply_args]
-            for i, fut in enumerate(futs_apply):
+            for i, apply_fut in enumerate(futs_apply):
                 try:
-                    r = fut.result(timeout=600)
+                    r = apply_fut.result(timeout=600)
                     if r:
                         output_files.append(Path(r))
                 except TimeoutError:
@@ -2285,7 +2287,7 @@ class CTypeRecoverer:
 
             # Struct signature eslesmesi: subset veya exact match
             best_match: str | None = None
-            best_score = 0
+            best_score: float = 0.0
             for sig_offsets, struct_name in struct_signatures.items():
                 # offsets, sig_offsets'in bir subset'i veya tam eslesmesi mi?
                 common = offsets & sig_offsets

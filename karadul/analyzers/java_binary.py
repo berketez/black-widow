@@ -332,8 +332,8 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(json.dumps(result_data, indent=2, default=str))
 
-        artifacts = {"java_analysis": str(output_path)}
-        stats = {
+        artifacts: dict[str, Path] = {"java_analysis": output_path}
+        stats: dict[str, Any] = {
             "total_classes": jar_info.get("class_count", 0),
             "total_packages": len(jar_info.get("packages", [])),
             "obfuscated": obf_info.get("detected", False),
@@ -355,7 +355,7 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
         """ProGuard/R8 obfuscation geri alma."""
         start = time.monotonic()
         errors: list[str] = []
-        artifacts: dict[str, str] = {}
+        artifacts: dict[str, Path] = {}
 
         # Onceki asamadan analiz sonucunu oku
         analysis_path = workspace.get_stage_dir("static") / "java_analysis.json"
@@ -381,7 +381,7 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
         mapping_file = obf.get("mapping_file")
         if mapping_file and Path(mapping_file).exists():
             mapping = self._parse_proguard_mapping(Path(mapping_file))
-            artifacts["proguard_mapping"] = str(mapping_file)
+            artifacts["proguard_mapping"] = Path(mapping_file)
             logger.info("ProGuard mapping yuklendi: %d sinif eslesmesi", len(mapping))
         else:
             logger.info("ProGuard mapping dosyasi bulunamadi")
@@ -421,7 +421,7 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
         return StageResult(
             stage_name="reconstruct", success=True,
             duration_seconds=time.monotonic() - start,
-            artifacts={"java_project": str(output_dir)},
+            artifacts={"java_project": output_dir},
             stats={"reconstructed": True}, errors=[],
         )
 
@@ -429,9 +429,9 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _analyze_jar_contents(self, path: Path) -> dict:
+    def _analyze_jar_contents(self, path: Path) -> dict[str, Any]:
         """JAR/APK icindeki dosyalari analiz et."""
-        result = {
+        result: dict[str, Any] = {
             "class_count": 0,
             "resource_count": 0,
             "packages": [],
@@ -467,9 +467,9 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
 
         return result
 
-    def _extract_manifest(self, path: Path) -> dict:
+    def _extract_manifest(self, path: Path) -> dict[str, Any]:
         """MANIFEST.MF veya AndroidManifest.xml oku."""
-        manifest = {}
+        manifest: dict[str, Any] = {}
 
         try:
             with zipfile.ZipFile(path) as zf:
@@ -503,9 +503,9 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
 
         return manifest
 
-    def _detect_obfuscation(self, path: Path, jar_info: dict) -> dict:
+    def _detect_obfuscation(self, path: Path, jar_info: dict[str, Any]) -> dict[str, Any]:
         """ProGuard/R8 obfuscation tespiti."""
-        result = {
+        result: dict[str, Any] = {
             "detected": False,
             "type": None,
             "evidence": [],
@@ -537,13 +537,18 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
 
         return result
 
-    def _decompile_with_jadx(self, path: Path, output_dir: Path) -> dict:
+    def _decompile_with_jadx(self, path: Path, output_dir: Path) -> dict[str, Any]:
         """jadx ile JAR/APK decompile."""
-        result = {"success": False, "output_dir": str(output_dir), "source_files": 0}
+        result: dict[str, Any] = {"success": False, "output_dir": str(output_dir), "source_files": 0}
+
+        # Caller _jadx_path'in None olmadigini kontrol etmeli (analyze() icinde
+        # `if self._jadx_path` guard'i var). Defansif olarak burada da dogrula.
+        if not self._jadx_path:
+            return result
 
         try:
             output_dir.mkdir(parents=True, exist_ok=True)
-            cmd = [
+            cmd: list[str] = [
                 self._jadx_path,
                 "--no-debug-info",
                 "--no-replace-consts",
@@ -715,8 +720,9 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
 
             # --- Constant pool parse ---
             cp_count = struct.unpack(">H", r.read(2))[0]
-            # Index 0 kullanilmaz, constant pool 1..cp_count-1
-            cp = [None] * cp_count  # type: ignore[assignment]
+            # Index 0 kullanilmaz, constant pool 1..cp_count-1.
+            # Entry = (tag_name, value) — heterogen (str|int|None).
+            cp: list[tuple[str, Any] | None] = [None] * cp_count
             i = 1
             while i < cp_count:
                 tag = struct.unpack("B", r.read(1))[0]
@@ -776,18 +782,20 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
 
             def resolve_utf8(idx: int) -> str:
                 """Constant pool index'inden UTF-8 string coz."""
-                if 0 < idx < cp_count and cp[idx] is not None:
-                    if cp[idx][0] == "utf8":
-                        return cp[idx][1]
-                    elif cp[idx][0] == "class":
-                        return resolve_utf8(cp[idx][1])
+                if 0 < idx < cp_count:
+                    entry = cp[idx]
+                    if entry is not None:
+                        if entry[0] == "utf8":
+                            return str(entry[1])
+                        elif entry[0] == "class":
+                            return resolve_utf8(int(entry[1]))
                 return ""
 
             # UTF8 string'leri topla
-            all_strings = []
+            all_strings: list[str] = []
             for entry in cp:
                 if entry is not None and entry[0] == "utf8":
-                    all_strings.append(entry[1])
+                    all_strings.append(str(entry[1]))
             result["strings"] = all_strings[:2000]  # max 2000
 
             # access_flags, this_class, super_class

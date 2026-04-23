@@ -1,26 +1,189 @@
 # Changelog
 
-## [1.11.0] - unreleased
+## [1.11.0-beta] - 2026-04-23
 
-### Changed
-- **Phase 1C: `artifacts_pending` shim migration** — 14 step'te
-  `pc.metadata.setdefault("artifacts_pending", {})[key] = value` pattern'i
-  `StepContext.produce_artifact(key, value)` API'sine cevrildi. Etkilenen
-  dosyalar: `algorithm_id`, `assembly_analysis`, `byte_pattern`,
-  `comment_generation`, `_confidence_helpers`, `deep_tracing`,
-  `engineering_analysis`, `engineering_annotation`, `feedback_loop`,
-  `ghidra_metadata`, `parallel_algo_eng`, `project_build`, `struct_recovery`
-  + reader `finalize`. Stage-level side artifact'lar artik runner'in
-  produces contract'ini bypass etmiyor, ayri `_stage_artifacts` kanalindan
-  akiyor. Geriye uyumluluk: `pc.metadata["artifacts_pending"]` mirror'u
-  v1.12.0'a kadar korunuyor (DeprecationWarning bir sonraki sprint'te).
-- Runner step execution'da `ctx._current_step_meta = spec` enjeksiyonu ile
-  opsiyonel registry validation destegi (soft check, debug-only log).
+Beta sürümü — stabil 1.11.0 ve 1.12.0 roadmap'te. Kapsam: Jython sunset Faz 1
+tamamlandı (10/10 script PyGhidra 3.0'a taşındı), sig_db modüler migrasyonu
+4/17 kategori (1421 sembol), stages.py split (CC 800 → 523, -650 LOC),
+benchmark altyapısı preserved/renamed ayrımı ve gerçek stripped Linux ELF
+baseline'ı, angr pipeline adapter + artifacts_pending API, BSim shadow +
+opsiyonel fusion köprü, TRex P-code export iskelet, CI benchmark gate.
+v1.10.0 sonrası 15 commit, 170 dosya değişti (+22479 / -1415 LOC).
 
 ### Added
-- `tests/test_produce_artifact.py` — 12 yeni test (basic produce,
-  overwrite warning, registry validation, read-only view, finalize okuma,
-  runner enjeksiyon cleanup).
+- **angr pipeline entegrasyonu** — backend-agnostik `pipeline_adapter` ile
+  Ghidra dışında angr decompiler backend'i ilk iskelet (Protocol tabanlı
+  decompiler abstraction üzerinden). [commit `b28c229`]
+- **`artifacts_pending` → `produce_artifact` API migrasyonu** — 14 step
+  (`algorithm_id`, `assembly_analysis`, `byte_pattern`, `comment_generation`,
+  `_confidence_helpers`, `deep_tracing`, `engineering_analysis`,
+  `engineering_annotation`, `feedback_loop`, `ghidra_metadata`,
+  `parallel_algo_eng`, `project_build`, `struct_recovery` + reader
+  `finalize`) `StepContext.produce_artifact(key, value)` çağrısına çevrildi.
+  Stage-level side artifact'lar runner'ın `produces` contract'ını bypass
+  etmiyor; ayrı `_stage_artifacts` kanalından akıyor. Runner step
+  execution'da `ctx._current_step_meta = spec` enjeksiyonu (soft registry
+  validation, debug-only log). [commit `b28c229`]
+- **TypeForge adapter altyapısı** — Z3 MaxSMT köprüsü iskeleti
+  (`karadul/analyzers/typeforge_adapter.py`); subprocess + LLVM IR yolu,
+  kurulu değilse graceful skip. [commit `b28c229`]
+- **BSim shadow mode + opsiyonel fusion köprüsü** — `use_bsim_fusion` flag
+  (default `False`); `_feedback_naming_candidates.py` içinde `_add_bsim`
+  helper (+108 LOC), `_feedback_naming_merger.py` fusion loader (+75 LOC),
+  `BSimConfig` 4 yeni alan. 3 binary shadow dataset toplandı (2599 match).
+  **Not:** BSim native API erişilemedi, lite mode discrete similarity
+  skalasıyla ({1.0, 0.85, 0.65}) çalışıyor. [commit `b056d93`, `03c3312`,
+  `0cfa1ec`]
+- **TRex P-code export iskeleti** — `karadul/pipeline/steps/trex_export.py`
+  yeni step, `ghidra/scripts/trex/{PCodeExporter,VariableExporter}.java`
+  Ghidra eklentisi, `pyproject.toml` `[trex]` extras. [commit `b056d93`]
+- **`sigdb_builtin/` modüler sig_db** — `crypto.py` 621 entry (495 override
+  + 126 FindCrypt), `compression.py` 214 entry (ZLIB 58 + BZIP2 17 +
+  LZ4 25 + ZSTD 42 + ext 72), `network.py` 340 entry (libcurl 67 +
+  POSIX 43 + nghttp2 28 + websocket 18 + macOS/Apple 85 + ext 99),
+  `pe_runtime.py` 246 entry (kernel32 60 + ntdll 14 + msvc_crt 172).
+  Toplam **1421 unique sembol** (4/17 kategori migre; kalan 13 kategori
+  `signature_db.py` 10242 LOC monolit içinde). [commit `64c276d`,
+  `03c3312`, `6ba1d1c`]
+- **Benchmark preserved/renamed ayrımı** — `NamingResult.match_type` değeri
+  `"preserved"` eklendi. `BenchmarkMetrics` yeni alanlar:
+  `preserved_names`, `renamed_total`, `renamed_precision`, `renamed_recall`,
+  `renamed_f1`, `renamed_accuracy`. `accuracy` ve `recovery_rate`
+  denominator'dan preserved semboller çıkarıldı (geriye uyumlu:
+  `preserved_names=0` iken eski davranış birebir korunuyor). [commit
+  `6cca612`]
+- **Linux ELF stripped fixture** — `tests/benchmark/fixtures/linux_elf_stripped/`
+  altında `fixture.c` (726 B) → gcc:12 Docker/Colima aarch64 -g -O1 ile
+  derlendi. `sample_elf` (71 KB, debug) + `sample_elf_stripped` (66 KB,
+  `strip --strip-all`) + `ground_truth.json` (6 user fonksiyonu) +
+  `README.md` reproducible reçete. [commit `6cca612`]
+- **CI benchmark gate** — `.github/workflows/benchmark.yml` (82 satır,
+  7 adım), `scripts/ci_baseline_check.py` floor kontrolü + regresyon
+  check. Floor: `renamed_f1 >= 0.0` (v1.13'te 0.5'e yükselecek). Ghidra
+  kurulumu atlanır (pre-computed fixture + `_compare_maps` unit testi).
+  `.github/workflows/README.md` debug rehberi. [commit `6ba1d1c`]
+- **PyGhidra 3.0 migrate edilen Ghidra scriptleri (10/10)** —
+  `function_lister`, `string_extractor`, `type_recovery`, `call_graph`,
+  `cfg_extraction`, `xref_analysis`, `decompile_all`, `export_results`,
+  `function_id_extractor`, `pcode_analysis`. Her birinde AST + JSON schema
+  + header parity testi. [commit `fb33d02`, `b2c50a7`, `03c3312`, `6ba1d1c`]
+- **Parity test kümesi** — `test_jython_migration.py`,
+  `test_function_lister_parity.py`, `test_string_extractor_parity.py`,
+  `test_type_recovery_parity.py`, `test_call_graph_parity.py`,
+  `test_cfg_extraction_parity.py`, `test_xref_analysis_parity.py`,
+  `test_stages_split_parity.py` (14 → 25 → 35 test),
+  `test_sigdb_compression_migration.py`, `test_sigdb_network_migration.py`,
+  `test_bsim_fusion_integration.py` (15), `test_trex_export_skeleton.py`
+  (7), `test_typeforge_adapter_integration.py` (212 satır),
+  `test_produce_artifact.py` (12), `test_benchmark_preserved_v1110_wave5.py`
+  (7).
+
+### Changed
+- **`stages.py` split** — `_execute_binary` 3173 → 2520 satır (-650),
+  cyclomatic complexity 800 → 523. Faz 2: `_prepare_workspace` +
+  `_load_binary` helper'ları ayrıldı. Faz 3: `_run_signature_matching`
+  (56 / CC=5), `_run_byte_pattern_matching` (106 / CC=17),
+  `_run_pcode_analysis` (94 / CC=11), `_run_cfg_analysis` (38 / CC=5),
+  `_run_algorithm_engineering` (382 / CC=73). Faz 6A: 382 satırlık
+  `_run_algorithm_engineering` 24 satırlık coordinator'a düşürüldü
+  (CC=73 → CC=1); 4 yeni yardımcı (`_run_parallel_analysis`,
+  `_merge_analysis_results`, `_calibrate_and_clamp`, `_apply_capa_naming`).
+  `ReconstructionContext` yeni alanlar: `byte_pattern_names`,
+  `calibrated_matches`. [commit `4cae00e`, `03c3312`, `6ba1d1c`]
+- **Jython 2.7 → PyGhidra 3.0 sunset Faz 1 tamamlandı** — 10/10 script
+  migrate, tüm orijinaller `karadul/ghidra/scripts/legacy/` altında
+  backup. Feature flag `config.perf.use_legacy_jython_scripts`
+  (default `False`) acil rollback için korunuyor.
+  `karadul/ghidra/headless.py::get_default_scripts()` flag'e göre
+  `scripts_dir` veya `legacy_dir` seçer. `pyproject.toml` `[ghidra]`
+  extras'a `pyghidra>=3.0.0,<4.0` eklendi.
+- **`benchmark_runner._compare_maps` step 4** — preserved semboller artık
+  `NamingResult(match_type="preserved")` olarak dönüyor,
+  `calculator.compare_name` çağrılmıyor (exact damgası düşmüyor).
+  Düzeltme öncesi F1=1.000 sahte skor üretiyordu. [commit `6cca612`]
+- **`constraint_solver.py` silent except** — 17/17 batch fix (OSError +
+  ValueError + TypeError üçlü yakalama + `logger.debug` + `continue`,
+  davranış korundu). [commit `03c3312`]
+- **Feedback loop helper tip iyileştirmeleri** — pipeline/scope mypy
+  strict mode hatası 65 → 18 (`_deep_tracing_helpers`,
+  `_feedback_naming_candidates`, `_feedback_typing_extras`,
+  `_engineering_helpers`, `pcode_cfg_analysis`, diğerleri).
+
+### Fixed
+- **macOS strip sahte-stripping yanıltıcı metriği** — macOS `strip` export
+  sembollerini dyld için koruyor; `benchmark_runner` bunları "exact match"
+  sayarak F1=1.000 üretiyordu. Gerçek Linux ELF `strip --strip-all`
+  baseline'ında karadul user fonksiyonlarını resolve edemiyor (F1=0.000,
+  recovery=0%). Baseline dondu: `benchmarks/stripped_baseline_2026_04_23_real.json`.
+  [commit `6cca612`]
+- **50 manuel mypy hata fix (hot-path helper modülleri)** —
+  `_deep_tracing_helpers` (15), `_feedback_naming_candidates` (11),
+  `pcode_cfg_analysis` (6), `_engineering_helpers` (6),
+  `_feedback_typing_extras` (6), `_confidence_helpers` (4),
+  `feedback_loop` (4). pipeline/ scope: 780 → daha düşük (baseline
+  `benchmarks/mypy_baseline_2026_04.txt`). [commit `8112139`, `b056d93`]
+- **Silent except Faz 1 + Faz 2 (10 fix)** — pipeline/ scope 7/7:
+  `feedback_loop` (3 `ImportError`), `bsim_match` (Exception + OSError),
+  `_confidence_helpers` (OSError), `computation_struct_recovery` (ValueError).
+  reconstruction/ scope 10/10: `c_namer` (4),
+  `binary_name_extractor` (3), `engineering/struct_recovery` (3).
+  Davranış korundu (silent → silent+log, `raise` eklenmedi). [commit
+  `8112139`, `b056d93`]
+- **Benchmark CLI crash + key-space cross-ref + fun_residue + type P/R**
+  — benchmark altyapısı düzeltmeleri. [commit `426a288`]
+- **`reconstruction_context.py` `workspace_dir`** — stages.py split öncesi
+  önceki commit'te merge edilmiş, net diff yok. [commit `4cae00e`]
+
+### Deprecated
+- **Jython 2.7 Ghidra scriptleri** — `karadul/ghidra/scripts/legacy/`
+  altındaki 10 orijinal dosya v1.13'te kaldırılacak. `legacy/__init__.py`
+  paket olarak işaretli.
+- **`config.perf.use_legacy_jython_scripts` flag** — default `False`,
+  rollback güvenlik ağı olarak v1.12'de kalıyor, v1.13'te kaldırılacak.
+- **`pc.metadata["artifacts_pending"]` mirror** — geriye uyumluluk için
+  v1.12.0'a kadar korunuyor, bir sonraki sprint'te `DeprecationWarning`
+  devreye girecek.
+
+### Scope Lock
+v1.11.0 ile kapsam **kilitlendi** (bkz. `karadul-v1100-progress.md`):
+- **Öncelik:** Desktop binary (Windows PE, Linux ELF, macOS Mach-O) +
+  Malware / Security (reverse engineering, sandbox triage, IoC çıkarımı)
+  + Open source library analizi.
+- **Mobile-lite:** Tanıma + parse katmanı (IPA/APK container açma,
+  `Info.plist`, `AndroidManifest.xml`, ana binary lokalizasyonu).
+- **Kapsam dışı (yapılmayacak):** iOS decryption / FairPlay, ARM64e PAC
+  muhakemesi, `dyld_shared_cache` deep extraction, il2cpp deep metadata,
+  Hermes bytecode, Flutter AOT tree-shaking, embedded firmware RTOS
+  reconstruction. Bu alanlar `v1.20+` değerlendirmesine bırakıldı.
+
+### Known Limitations (beta)
+- **Stripped Linux ELF user fonksiyonları resolve edilemiyor** —
+  `renamed_f1 = 0.000`, `recovery = 0%`, 6/6 user fonksiyonu missing
+  (yalnızca 5 sig_db hit = libc / compiler runtime). Kritik hedef,
+  v1.12.0'ın öncelikli iş kalemi.
+- **BSim native API erişilmiyor** — lite mode discrete similarity
+  ({1.0, 0.85, 0.65}) devrede, sürekli skala yok. `fusion_min_similarity`
+  önerisi 0.7 → 0.85 (bkz. shadow dataset).
+- **`_calibrate_and_clamp` CC=48** — Dalga 7'de iç split önerildi, beta'ya
+  yetişmedi.
+- **Ghidra 12.0_DEV** üzerinde çalışılıyor; 12.0.4 stable kurulumu v1.12'ye
+  ertelendi.
+- **`signature_db.py` 10242 LOC monolit** hâlâ duruyor; 13/17 kategori
+  migrasyon bekliyor (PE/MSVC tamamlandı, crypto/compression/network
+  tamamlandı).
+- **macOS benchmark baseline'ı yanıltıcı** — sahte strip nedeniyle üretilen
+  eski F1=1.000 rakamları arşivde; gerçek baseline Linux ELF fixture'ından.
+
+### Metrics
+- Test: 3241 (v1.10.0) → 3576 → ~3800+ (v1.11.0-beta)
+- Silent except fix: 34 (pipeline/ 7 + reconstruction/ 10 +
+  constraint_solver 17)
+- mypy fix: 102 toplam (pipeline-scope 65 → 18)
+- sig_db entry: 0 → 1421 (4/17 kategori modüler)
+- Jython → PyGhidra: 10/10 script
+- stages.py `_execute_binary`: 3173 → 2520 LOC (-650), CC 800 → 523
+- Commit v1.10.0 sonrası: **15**
+- Dosya değişimi: **170 dosya**, **+22479 / -1415 LOC**
 
 ## [1.10.0] - 2026-04-21
 

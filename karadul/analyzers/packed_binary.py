@@ -493,7 +493,7 @@ class PackingDetector:
             # Gercek offset'e donustur
             offset = len(data) - len(search_region) + offset
 
-        result = {
+        result: dict[str, Any] = {
             "cookie_offset": offset,
             "magic_found": True,
         }
@@ -588,8 +588,14 @@ class PackingDetector:
                     if len(sec_data) < 256:
                         continue
                     ent = calculate_entropy(sec_data)
+                    # lief section.name `str | bytes` — bytes ise decode et.
+                    raw_name = sec.name
+                    if isinstance(raw_name, bytes):
+                        sec_name = raw_name.decode("utf-8", errors="replace") or "(unnamed)"
+                    else:
+                        sec_name = raw_name or "(unnamed)"
                     sections.append(SectionEntropy(
-                        name=sec.name or "(unnamed)",
+                        name=sec_name,
                         offset=sec.offset if hasattr(sec, "offset") else 0,
                         size=len(sec_data),
                         entropy=ent,
@@ -988,7 +994,7 @@ class PyInstallerExtractor:
         Returns:
             list: Decompile edilmis ExtractedFile listesi.
         """
-        decompiled = []
+        decompiled: list[ExtractedFile] = []
 
         # v1.10.0 Batch 5B CRITICAL-2: resolve_tool ile PATH hijack koruma.
         decompiler = None
@@ -1205,8 +1211,8 @@ class BinaryUnpacker:
             UnpackResult: Metadata cikartma sonucu.
         """
         start = time.monotonic()
-        errors = []
-        extracted = []
+        errors: list[str] = []
+        extracted: list[ExtractedFile] = []
 
         try:
             with open(binary_path, "rb") as f:
@@ -1221,7 +1227,7 @@ class BinaryUnpacker:
             )
 
         # Nuitka metadatasini cikar
-        metadata = {
+        metadata: dict[str, list[str]] = {
             "nuitka_signatures_found": [],
             "python_strings": [],
             "module_names": [],
@@ -1325,7 +1331,12 @@ class BinaryUnpacker:
                         continue
 
                     entropy = calculate_entropy(sec_data)
-                    sec_name = sec.name or "unnamed"
+                    # lief section.name `str | bytes`, normalize edilip kullanilir.
+                    raw_name = sec.name
+                    if isinstance(raw_name, bytes):
+                        sec_name = raw_name.decode("utf-8", errors="replace") or "unnamed"
+                    else:
+                        sec_name = raw_name or "unnamed"
                     safe_name = sec_name.strip(".").replace("/", "_").replace("\\", "_")
                     if not safe_name:
                         safe_name = "section_%d" % sec.offset if hasattr(sec, "offset") else "section"

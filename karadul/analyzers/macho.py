@@ -18,7 +18,10 @@ import stat as _stat_module
 import subprocess
 import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from karadul.decompilers.base import DecompilerBackend
 
 from karadul.analyzers import register_analyzer
 from karadul.analyzers.base import BaseAnalyzer
@@ -78,7 +81,7 @@ class MachOAnalyzer(BaseAnalyzer):
         try:
             from karadul.decompilers import create_backend as _create_backend
 
-            self._backend = _create_backend(config)
+            self._backend: DecompilerBackend | None = _create_backend(config)
             # Ghidra backend'in lazy-init property'si uzerinden GhidraHeadless
             # instance'ini al (eski analyze_static kodu self.ghidra uzerinden
             # direkt cagri yapiyor; davranisi bozmamak icin ayni referansi tut).
@@ -518,7 +521,7 @@ class MachOAnalyzer(BaseAnalyzer):
             logger.debug("nm basarisiz: %s", result.stderr[:200])
             return None
 
-        symbols = []
+        symbols: list[dict[str, Any]] = []
         for line in result.stdout.splitlines():
             line = line.strip()
             if not line:
@@ -560,8 +563,11 @@ class MachOAnalyzer(BaseAnalyzer):
             if binary is None:
                 return None
 
+            # lief Binary union format attribute'u icerebilir ama COFF yoktur —
+            # getattr ile guvenli eris.
+            binary_format = getattr(binary, "format", None)
             result: dict[str, Any] = {
-                "format": str(binary.format),
+                "format": str(binary_format) if binary_format is not None else "unknown",
                 "header": {},
                 "segments": [],
                 "sections": [],
@@ -578,15 +584,15 @@ class MachOAnalyzer(BaseAnalyzer):
                     "flags": int(h.flags) if hasattr(h, "flags") else None,
                 }
 
-            # Segments
+            # Segments (lief Segment union — attribute'lar getattr ile alinir)
             if hasattr(binary, "segments"):
                 for seg in binary.segments:
                     result["segments"].append({
-                        "name": seg.name,
-                        "virtual_address": seg.virtual_address,
-                        "virtual_size": seg.virtual_size,
-                        "file_offset": seg.file_offset,
-                        "file_size": seg.file_size,
+                        "name": getattr(seg, "name", None),
+                        "virtual_address": getattr(seg, "virtual_address", None),
+                        "virtual_size": getattr(seg, "virtual_size", None),
+                        "file_offset": getattr(seg, "file_offset", None),
+                        "file_size": getattr(seg, "file_size", None),
                     })
 
             # Sections
@@ -599,10 +605,12 @@ class MachOAnalyzer(BaseAnalyzer):
                         "offset": sec.offset,
                     })
 
-            # Libraries
+            # Libraries (lief lib union — name attribute getattr ile alinir)
             if hasattr(binary, "libraries"):
                 for lib in binary.libraries:
-                    result["libraries"].append(str(lib.name))
+                    lib_name = getattr(lib, "name", None)
+                    if lib_name is not None:
+                        result["libraries"].append(str(lib_name))
 
             return result
 
@@ -643,11 +651,12 @@ class MachOAnalyzer(BaseAnalyzer):
                 logger.warning("lief binary parse edemedi: %s", binary_path)
                 return None
 
-            # __BUN segmentini bul
+            # __BUN segmentini bul (lief Segment union, name getattr ile alinir)
             bun_segment = None
             if hasattr(binary, "segments"):
                 for seg in binary.segments:
-                    if seg.name in ("__BUN", "__bun"):
+                    seg_name = getattr(seg, "name", None)
+                    if seg_name in ("__BUN", "__bun"):
                         bun_segment = seg
                         break
 
@@ -660,8 +669,8 @@ class MachOAnalyzer(BaseAnalyzer):
             # aliniyordu. `mmap` ile yalnizca offset+size bolumu alinir, geri
             # kalani OS'un sayfa cache'inde kalir, anlik RSS = segment boyutu.
             import mmap as _mmap
-            offset = bun_segment.file_offset
-            size = bun_segment.file_size
+            offset = int(getattr(bun_segment, "file_offset", 0))
+            size = int(getattr(bun_segment, "file_size", 0))
             segment_bytes: bytes
             # v1.10.0 Batch 5B MED-13: negatif offset veya size; malicious
             # __BUN segment integer overflow/underflow koruma.

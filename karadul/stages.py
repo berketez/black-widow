@@ -88,6 +88,49 @@ def _collect_all_algorithms(algo_result, eng_result) -> list:
     return all_algos
 
 
+# ---------------------------------------------------------------------------
+# Match budget helper'lari (v1.11.0 Dalga 7)
+#
+# ``ReconstructionStage._apply_match_budget`` icindeki confidence sort key
+# lambda'si + koleksiyon + toplam sayimi CC'yi 23'e cikariyordu. Bu uc kucuk
+# helper yan etki yok: sadece okuma + saf donusum.
+# ---------------------------------------------------------------------------
+
+
+def _match_budget_total(algo_result: Any, eng_result: Any) -> int:
+    """``algo_result`` + ``eng_result`` basarili ise toplam match sayisi."""
+    total = 0
+    if algo_result and algo_result.success:
+        total += len(algo_result.algorithms)
+    if eng_result and eng_result.success:
+        total += len(eng_result.algorithms)
+    return total
+
+
+def _collect_tagged_matches(
+    algo_result: Any, eng_result: Any,
+) -> list[tuple[str, Any]]:
+    """Crypto + engineering match'lerini ``(tag, match)`` tuple'larinda birlestir."""
+    tagged: list[tuple[str, Any]] = []
+    if algo_result and algo_result.success:
+        for a in algo_result.algorithms:
+            tagged.append(("crypto", a))
+    if eng_result and eng_result.success:
+        for a in eng_result.algorithms:
+            tagged.append(("eng", a))
+    return tagged
+
+
+def _match_budget_sort_key(item: tuple[str, Any]) -> float:
+    """Sort key -- match'in ``confidence``'ini cikar (attr / dict / 0 fallback)."""
+    _tag, match = item
+    if hasattr(match, "confidence"):
+        return float(match.confidence)
+    if isinstance(match, dict):
+        return float(match.get("confidence", 0))
+    return 0.0
+
+
 class IdentifyStage(Stage):
     """Hedef tanimlama stage'i.
 
@@ -1944,21 +1987,46 @@ class ReconstructionStage(Stage):
     def _calibrate_and_clamp(
         self, context: PipelineContext, rc: ReconstructionContext
     ) -> None:
-        """Confidence calibration + match budget clamp (Dalga 6A #3).
+        """Confidence calibration + merged algorithms JSON + match budget.
 
-        1.5.1: Engineering sonuclarini confidence calibrator'dan gecir.
-        1.6: Engineering + crypto merge JSON dosyasi (kalibre matches
-        varsa icine ekle).
-        v1.4.3 Match Budget: downstream modullerin isleyecegi match
-        sayisini ``max_algo_matches`` ile sinirla -- en dusuk confidence
-        match'leri kes.
+        v1.11.0 Dalga 7: CC=48 -> 3 alt metot (her biri CC <= 15).
+        Davranis degismez; alt-adimlarin sirali kompozisyonu orjinal
+        monolitik govde ile bit-identik cikti uretir.
+
+        Alt adimlar:
+
+        1. ``_run_confidence_calibration`` -- engineering sonuclarini
+           ``ConfidenceCalibrator`` ile kalibre eder, ``rc.calibrated_
+           matches`` doldurur ve ``timing_confidence_calibration`` stat'ini
+           yazar.
+        2. ``_write_merged_algorithms`` -- engineering + crypto + (varsa)
+           kalibre matches merge JSON artifact'i ``algorithms_merged``
+           olarak yazar.
+        3. ``_apply_match_budget`` -- ``max_algo_matches`` ile algo/eng
+           match listelerini confidence'e gore kirpar.
+        """
+        self._run_confidence_calibration(context, rc)
+        self._write_merged_algorithms(context, rc)
+        self._apply_match_budget(context, rc)
+
+    def _run_confidence_calibration(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> None:
+        """Engineering sonuclarini ConfidenceCalibrator'dan gecir (Dalga 7 #1).
+
+        1.5.1: ``eng_result.algorithms`` kalibre edilir, ``rc.calibrated_
+        matches`` doldurulur ve ``engineering_calibrated`` artifact'i
+        (varsa) yazilir. Calibrator yoksa veya exception atarsa sessiz/
+        log ile gecilir -- davranis monolitik halle ayni.
+
+        ``rc.calibrated_matches`` burada set edilir; sonraki iki adim
+        (merge JSON + match budget) hem ``algo_result`` / ``eng_result``
+        listelerini hem de kalibre sonuclari ``rc`` uzerinden okur.
         """
         c_files = rc.ph1_artifacts["c_files"]
         _file_cache = rc.file_cache
-        algo_result = rc.algo_result
         eng_result = rc.eng_result
 
-        # 1.5.1: Confidence Calibration -- engineering sonuclarini kalibre et
         _step_start = time.monotonic()
         calibrated_matches = None
         if eng_result and eng_result.success and eng_result.algorithms:
@@ -2023,7 +2091,27 @@ class ReconstructionStage(Stage):
 
         rc.stats["timing_confidence_calibration"] = round(time.monotonic() - _step_start, 1)
 
-        # 1.6: Engineering + Crypto sonuclarini birlestir
+        # Kalibre matches'i rc'ye commit et -- sonraki iki adim (merge JSON
+        # + match budget) buradan okur. Monolitik kodda bu satir match
+        # budget'in ardindan yaziliyordu; ``calibrated_matches`` listesi
+        # clamp tarafindan DEGISTIRILMIYOR, o yuzden erken commit bit-
+        # identik cikti uretir.
+        rc.calibrated_matches = calibrated_matches
+
+    def _write_merged_algorithms(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> None:
+        """Engineering + crypto + kalibre matches merge JSON uret (Dalga 7 #2).
+
+        1.6: ``eng_result`` basarili ve algoritma iceriyorsa, crypto
+        (algo_result) + engineering algoritmalarini tek JSON'da birlestirir
+        ve ``algorithms_merged`` artifact'i olarak kaydeder. Kalibre sonuc
+        varsa JSON icine ayri bir ``calibrated`` listesi eklenir.
+        """
+        algo_result = rc.algo_result
+        eng_result = rc.eng_result
+        calibrated_matches = rc.calibrated_matches
+
         if eng_result and eng_result.success and eng_result.algorithms:
             merged_algos = {
                 "total": (algo_result.total_detected if algo_result and algo_result.success else 0)
@@ -2039,51 +2127,48 @@ class ReconstructionStage(Stage):
             )
             rc.artifacts["algorithms_merged"] = merged_path
 
+    def _apply_match_budget(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> None:
+        """Match budget clamp -- downstream match sayisini sinirla (Dalga 7 #3).
+
+        v1.4.3: ``max_algo_matches`` > 0 ve toplam match sayisi budget'i
+        asiyorsa, crypto + engineering listelerini confidence'e gore
+        birlestirip en yuksek N tanesini tutar. ``algo_result.algorithms``
+        ve ``eng_result.algorithms`` listelerini yerinde gunceller ve
+        ``match_budget_original`` / ``match_budget_kept`` stat'lerini yazar.
+        """
+        algo_result = rc.algo_result
+        eng_result = rc.eng_result
+
         # v1.4.3: Match Budget -- downstream modullerin isleyecegi match sayisini sinirla.
         # 18K+ match StructRecovery/SemanticNamer/CompositionAnalyzer'i yavaslatiyor.
         # En dusuk confidence match'leri kes, algo_result ve eng_result listelerini kirp.
         MAX_ALGO_MATCHES = context.config.binary_reconstruction.max_algo_matches
-        _total_matches = (
-            (len(algo_result.algorithms) if algo_result and algo_result.success else 0)
-            + (len(eng_result.algorithms) if eng_result and eng_result.success else 0)
-        )
-        if MAX_ALGO_MATCHES > 0 and _total_matches > MAX_ALGO_MATCHES:
-            logger.warning(
-                "Algorithm match budget: %d > %d, truncating by confidence",
-                _total_matches, MAX_ALGO_MATCHES,
-            )
-            # Tum match'leri birlesik listede sirala, en yuksek confidence'i tut
-            _all_merged = []
-            if algo_result and algo_result.success:
-                for a in algo_result.algorithms:
-                    _all_merged.append(("crypto", a))
-            if eng_result and eng_result.success:
-                for a in eng_result.algorithms:
-                    _all_merged.append(("eng", a))
-            _all_merged.sort(
-                key=lambda x: x[1].confidence if hasattr(x[1], "confidence") else (
-                    x[1].get("confidence", 0) if isinstance(x[1], dict) else 0
-                ),
-                reverse=True,
-            )
-            _all_merged = _all_merged[:MAX_ALGO_MATCHES]
-            # Ayristir ve geri yaz
-            _kept_crypto = [a for tag, a in _all_merged if tag == "crypto"]
-            _kept_eng = [a for tag, a in _all_merged if tag == "eng"]
-            if algo_result and algo_result.success:
-                algo_result.algorithms = _kept_crypto
-            if eng_result and eng_result.success:
-                eng_result.algorithms = _kept_eng
-            logger.info(
-                "Match budget applied: crypto=%d, eng=%d (total=%d)",
-                len(_kept_crypto), len(_kept_eng), len(_kept_crypto) + len(_kept_eng),
-            )
-            rc.stats["match_budget_original"] = _total_matches
-            rc.stats["match_budget_kept"] = len(_kept_crypto) + len(_kept_eng)
+        _total_matches = _match_budget_total(algo_result, eng_result)
+        if MAX_ALGO_MATCHES <= 0 or _total_matches <= MAX_ALGO_MATCHES:
+            return
 
-        # Kalibre matches'i rc'ye commit et (1.6 merge dosyasi da yazildi,
-        # ondan sonra match budget clamp algo/eng listelerini kirpmis olabilir).
-        rc.calibrated_matches = calibrated_matches
+        logger.warning(
+            "Algorithm match budget: %d > %d, truncating by confidence",
+            _total_matches, MAX_ALGO_MATCHES,
+        )
+        _all_merged = _collect_tagged_matches(algo_result, eng_result)
+        _all_merged.sort(key=_match_budget_sort_key, reverse=True)
+        _all_merged = _all_merged[:MAX_ALGO_MATCHES]
+
+        _kept_crypto = [a for tag, a in _all_merged if tag == "crypto"]
+        _kept_eng = [a for tag, a in _all_merged if tag == "eng"]
+        if algo_result and algo_result.success:
+            algo_result.algorithms = _kept_crypto
+        if eng_result and eng_result.success:
+            eng_result.algorithms = _kept_eng
+        logger.info(
+            "Match budget applied: crypto=%d, eng=%d (total=%d)",
+            len(_kept_crypto), len(_kept_eng), len(_kept_crypto) + len(_kept_eng),
+        )
+        rc.stats["match_budget_original"] = _total_matches
+        rc.stats["match_budget_kept"] = len(_kept_crypto) + len(_kept_eng)
 
     def _apply_capa_naming(
         self, context: PipelineContext, rc: ReconstructionContext
