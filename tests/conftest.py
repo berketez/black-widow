@@ -32,6 +32,56 @@ def _warm_signature_db_cache() -> None:
         pass  # Import/init hatasi test suite'i durdurmamali
 
 
+# ---------------------------------------------------------------------------
+# Step registry test izolasyonu
+# ---------------------------------------------------------------------------
+#
+# Sorun: `karadul.pipeline.steps` paketi ilk import edildiginde, her step
+# modulunun `@register_step` decorator'u global `_REGISTRY` dict'ine
+# yazar. Python sys.modules cache'ledigi icin paket ikinci kez import
+# edilince decorator'lar tekrar calismaz. Bazi test'ler
+# `_clear_registry_for_tests()` cagirip registry'yi bosaltiyor ama
+# save/restore yapmiyor — bu durumda sonraki test'ler bos registry ile
+# karsilasiyor ve `get_step(...)` KeyError firlatiyor (25 test fail).
+#
+# Cozum: session basinda paketi bir kez import edip baseline snapshot al;
+# her test'ten sonra registry'yi baseline'a geri yukle (autouse=True).
+
+@pytest.fixture(scope="session")
+def _step_registry_baseline() -> dict:
+    """Session basinda tam yuklu registry'nin snapshot'i.
+
+    karadul.pipeline.steps paketi import edilir (decorator yan etkisi
+    registry'yi doldurur), ardindan mevcut `_REGISTRY` dict'inin kopyasi
+    dondurulur. Sonraki test'lerin restore'u bu snapshot'a gore yapilir.
+    """
+    try:
+        import karadul.pipeline  # noqa: F401 — decorator yan etkisi icin
+        from karadul.pipeline.registry import _REGISTRY
+        return dict(_REGISTRY)
+    except Exception:
+        # Import basarisiz olursa bos baseline dondur; etkilenen test'ler
+        # zaten kendi hatalarini verir.
+        return {}
+
+
+@pytest.fixture(autouse=True)
+def _restore_step_registry(_step_registry_baseline: dict) -> Generator[None, None, None]:
+    """Her test sonrasi `_REGISTRY`'yi session baseline'ina geri yukle.
+
+    Test icinde `_clear_registry_for_tests()` veya baska mutasyon
+    yapilmis olsa bile, sonraki test'e gecerken registry tam yuklu halde
+    olur. Test ICINDE mutasyon serbest — yalnizca test sinirinda resetlenir.
+    """
+    yield
+    try:
+        from karadul.pipeline.registry import _REGISTRY
+        _REGISTRY.clear()
+        _REGISTRY.update(_step_registry_baseline)
+    except Exception:
+        pass  # teardown hatasi test sonucunu gizlememeli
+
+
 @pytest.fixture
 def tmp_workspace(tmp_path: Path) -> Path:
     """Gecici workspace dizini olustur ve dondur."""

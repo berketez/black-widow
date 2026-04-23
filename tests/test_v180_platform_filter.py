@@ -197,16 +197,40 @@ class TestMatchFunctionPlatformFilter:
         assert result.library == "kernel32"
 
     def test_msvcrt_blocked_on_macho(self, sig_db: SignatureDB) -> None:
-        """msvcrt fonksiyonlari macOS'ta eslesmemeli (Bug 7 root cause)."""
-        # msvcrt lib isimli entry var mi kontrol et
+        """msvcrt-spesifik fonksiyonlar macOS'ta eslesmemeli (Bug 7 root cause).
+
+        Not: `_open`, `_close`, `_read` gibi POSIX-subset isimler hem msvcrt
+        (Windows CRT) hem libSystem (macOS) icinde LEGITIMATE olarak bulunur.
+        macOS hedefinde LMDB fallback'i libSystem match'i dondurmeli -- bu
+        dogru davranis, bug degil. Bu test gercekten Windows-only olan
+        msvcrt sembollerini (kqueue/conio/process/debug API) hedefler.
+        """
+        # Builtin'de msvcrt kayitli AMA LMDB'de farkli platform karsiligi
+        # OLMAYAN sembolleri sec (gercek msvcrt-only = Windows-spesifik).
         msvcrt_entries = [
             name for name, info in sig_db._symbol_db.items()
             if info.get("lib") == "msvcrt"
         ]
         if not msvcrt_entries:
             pytest.skip("No msvcrt entries in DB")
-        # Herhangi bir msvcrt entry'si macOS'ta eslesmemeli
-        for entry_name in msvcrt_entries[:5]:
+
+        # POSIX-subset olmayan, sadece msvcrt'de var olan sembolleri filtrele.
+        # LMDB'de ayni isim libSystem (macOS POSIX) altinda kayitliysa test
+        # dogru sekilde skip eder -- o sembol hem macho hem pe'de mesru.
+        msvcrt_only: list[str] = []
+        for name in msvcrt_entries:
+            if sig_db._lmdb_backend is not None:
+                lm = sig_db._lmdb_backend.lookup_symbol(name)
+                if lm is not None and lm.get("lib") != "msvcrt":
+                    # Ayni sembol baska bir lib altinda kayitli -> POSIX-subset
+                    continue
+            msvcrt_only.append(name)
+
+        if not msvcrt_only:
+            pytest.skip("No msvcrt-only entries in DB (all POSIX-subset)")
+
+        # Herhangi bir Windows-spesifik msvcrt sembolu macOS'ta eslesmemeli.
+        for entry_name in msvcrt_only[:5]:
             result = sig_db.match_function(
                 func_name=entry_name, target_platform="macho",
             )

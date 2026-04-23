@@ -2476,13 +2476,15 @@ _POSIX_NETWORKING_SIGNATURES: dict[str, dict[str, str]] = {
     "_getpeername": {"lib": "libc", "purpose": "get remote peer address", "category": "network"},
     "_select": {"lib": "libc", "purpose": "synchronous I/O multiplexing", "category": "network"},
     "_poll": {"lib": "libc", "purpose": "poll file descriptors", "category": "network"},
-    "_epoll_create": {"lib": "libc", "purpose": "create epoll instance", "category": "network"},
-    "_epoll_create1": {"lib": "libc", "purpose": "create epoll instance (flags)", "category": "network"},
-    "_epoll_ctl": {"lib": "libc", "purpose": "control epoll instance", "category": "network"},
-    "_epoll_wait": {"lib": "libc", "purpose": "wait for epoll events", "category": "network"},
-    "_kqueue": {"lib": "libc", "purpose": "create kqueue instance (BSD)", "category": "network"},
-    "_kevent": {"lib": "libc", "purpose": "register/poll kqueue events", "category": "network"},
-    "_kevent64": {"lib": "libc", "purpose": "register/poll kqueue events (64-bit)", "category": "network"},
+    # epoll Linux-only syscall ailesi: linux_network category ile ELF-only filtre
+    "_epoll_create": {"lib": "libc", "purpose": "create epoll instance", "category": "linux_network"},
+    "_epoll_create1": {"lib": "libc", "purpose": "create epoll instance (flags)", "category": "linux_network"},
+    "_epoll_ctl": {"lib": "libc", "purpose": "control epoll instance", "category": "linux_network"},
+    "_epoll_wait": {"lib": "libc", "purpose": "wait for epoll events", "category": "linux_network"},
+    # kqueue BSD/macOS-only: macos_io category ile Mach-O-only filtre
+    "_kqueue": {"lib": "libc", "purpose": "create kqueue instance (BSD)", "category": "macos_io"},
+    "_kevent": {"lib": "libc", "purpose": "register/poll kqueue events", "category": "macos_io"},
+    "_kevent64": {"lib": "libc", "purpose": "register/poll kqueue events (64-bit)", "category": "macos_io"},
     "_getaddrinfo": {"lib": "libc", "purpose": "DNS name resolution", "category": "network"},
     "_freeaddrinfo": {"lib": "libc", "purpose": "free addrinfo list", "category": "network"},
     "_gai_strerror": {"lib": "libc", "purpose": "getaddrinfo error string", "category": "network"},
@@ -9537,8 +9539,57 @@ class SignatureDB:
         if _GHIDRA_AUTO_NAME_RE.match(func_name):
             return None
 
-        # v1.10.0: LMDB backend varsa once onu dene (dict DB'den ONCE, cunku
-        # LMDB'de external sigs var, dict'te sadece builtin)
+        # v1.12.0 sig_db Faz 2 fix: Builtin dict ONCE, LMDB sonra.
+        # Sebep: LMDB fixture'i eski/coarse olabilir (orn: `_dispatch_once`
+        # LMDB'de `libSystem` umbrella, dict'te `libdispatch` spesifik).
+        # Builtin dict curated source-of-truth; LMDB sadece eksik sembolleri
+        # tamamlar (external FLIRT/JSON). Bu sayede LMDB stale iken de
+        # dogru attribution dondurulur.
+        # Platform uyumsuzluk builtin'de saptanirsa, LMDB fallback'e devam
+        # eder -- LMDB farkli platform sinyali verebilir.
+
+        # Direkt eslestirme (builtin)
+        info = self._symbol_db.get(func_name)
+        if info:
+            if _is_platform_compatible(
+                info["lib"], info.get("category", ""), target_platform,
+                info.get("_platforms"),
+            ):
+                return SignatureMatch(
+                    original_name=func_name,
+                    matched_name=func_name.lstrip("_"),
+                    library=info["lib"],
+                    confidence=0.98,
+                    match_method="symbol",
+                    purpose=info.get("purpose", ""),
+                    category=info.get("category", ""),
+                    params=info.get("params"),  # v1.10.0 M2 T4
+                )
+            # Platform mismatch -> builtin return etme, LMDB fallback'e dus.
+            # Ayni sembol LMDB'de farkli platform ile tanimlanmis olabilir.
+
+        # _ prefix ile dene (macOS C convention, builtin)
+        if not func_name.startswith("_"):
+            prefixed = f"_{func_name}"
+            info_p = self._symbol_db.get(prefixed)
+            if info_p:
+                if _is_platform_compatible(
+                    info_p["lib"], info_p.get("category", ""), target_platform,
+                    info_p.get("_platforms"),
+                ):
+                    return SignatureMatch(
+                        original_name=func_name,
+                        matched_name=func_name,
+                        library=info_p["lib"],
+                        confidence=0.97,
+                        match_method="symbol",
+                        purpose=info_p.get("purpose", ""),
+                        category=info_p.get("category", ""),
+                        params=info_p.get("params"),  # v1.10.0 M2 T4
+                    )
+
+        # Builtin miss -> LMDB backend (varsa). LMDB'nin amaci external
+        # sigs (FLIRT/JSON) eklemek, builtin'i override etmemek.
         if self._lmdb_backend is not None:
             _lmdb_info = self._lmdb_backend.lookup_symbol(func_name)
             if _lmdb_info:
@@ -9556,10 +9607,8 @@ class SignatureDB:
                         category=_lmdb_info.get("category", ""),
                         params=_lmdb_info.get("params"),  # v1.10.0 M2 T4
                     )
-                # v1.10.0 C2: LMDB'de platform uyumsuz -> return None YERINE
-                # builtin dict'e dus; builtin'de ayni sembol yerel platformla
-                # uyumlu olabilir.
-            # macOS _ prefix: hem without hem with dene
+                # v1.10.0 C2: LMDB'de platform uyumsuz -> devam et
+            # macOS _ prefix: hem without hem with dene (LMDB)
             if not func_name.startswith("_"):
                 _lmdb_info = self._lmdb_backend.lookup_symbol(f"_{func_name}")
                 if _lmdb_info:
@@ -9577,49 +9626,6 @@ class SignatureDB:
                             category=_lmdb_info.get("category", ""),
                             params=_lmdb_info.get("params"),  # v1.10.0 M2 T4
                         )
-                    # v1.10.0 C2: platform mismatch -> builtin fallback
-            # LMDB miss veya platform mismatch -> dict DB'ye (builtin) dus
-            # Burada return etmiyoruz, builtin de aranmali
-
-        # Direkt eslestirme
-        info = self._symbol_db.get(func_name)
-        if info:
-            if not _is_platform_compatible(
-                info["lib"], info.get("category", ""), target_platform,
-                info.get("_platforms"),
-            ):
-                return None
-            return SignatureMatch(
-                original_name=func_name,
-                matched_name=func_name.lstrip("_"),
-                library=info["lib"],
-                confidence=0.98,
-                match_method="symbol",
-                purpose=info.get("purpose", ""),
-                category=info.get("category", ""),
-                params=info.get("params"),  # v1.10.0 M2 T4
-            )
-
-        # _ prefix ile dene (macOS C convention)
-        if not func_name.startswith("_"):
-            prefixed = f"_{func_name}"
-            info = self._symbol_db.get(prefixed)
-            if info:
-                if not _is_platform_compatible(
-                    info["lib"], info.get("category", ""), target_platform,
-                    info.get("_platforms"),
-                ):
-                    return None
-                return SignatureMatch(
-                    original_name=func_name,
-                    matched_name=func_name,
-                    library=info["lib"],
-                    confidence=0.97,
-                    match_method="symbol",
-                    purpose=info.get("purpose", ""),
-                    category=info.get("category", ""),
-                    params=info.get("params"),  # v1.10.0 M2 T4
-                )
 
         # Protobuf demangled isimleri icin partial match
         # v1.10.0 M6 (perf fix): Modul-level basename index ile O(1) lookup.

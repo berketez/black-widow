@@ -32,7 +32,8 @@ from karadul.ghidra.bsim import (
 
 @pytest.fixture
 def config() -> Config:
-    """Varsayilan Config (BSim kapali)."""
+    """Varsayilan Config (BSim shadow-only: enabled=True, shadow_mode=True,
+    use_bsim_fusion=False -- v1.11.0 Dalga 4)."""
     return Config()
 
 
@@ -135,14 +136,26 @@ class TestBSimConfig:
     """BSimConfig dataclass testleri."""
 
     def test_bsim_config_defaults(self) -> None:
-        """Varsayilan degerler dogru olmali."""
+        """Varsayilan degerler dogru olmali.
+
+        v1.11.0 Dalga 4 (BSim fusion kopru): enabled=True default
+        (shadow_mode=True oldugu icin fusion'a yazmaz, sadece
+        artifacts/bsim_shadow.json dump'i yapar -- guvenli log-only
+        mod). Fusion gerceklesmesi icin shadow_mode=False VE
+        use_bsim_fusion=True opt-in gerekli.
+        """
         cfg = BSimConfig()
-        assert cfg.enabled is False
+        assert cfg.enabled is True
         assert cfg.default_database == "karadul_bsim"
         assert cfg.db_path == ""
         assert cfg.auto_query is True
         assert cfg.min_similarity == 0.7
         assert cfg.max_results_per_function == 5
+        # Dalga 4 fusion alanlari: varsayilan guvenli (shadow-only)
+        assert cfg.shadow_mode is True
+        assert cfg.use_bsim_fusion is False
+        assert cfg.fusion_min_similarity == 0.7
+        assert cfg.fusion_max_candidates_per_function == 3
 
     def test_bsim_config_custom(self) -> None:
         """Ozel degerler atanabilmeli."""
@@ -428,8 +441,15 @@ class TestBSimDisabled:
     """BSim devre disi testleri."""
 
     def test_bsim_disabled_in_config(self, config: Config) -> None:
-        """Varsayilan Config'de BSim kapali olmali."""
-        assert config.bsim.enabled is False
+        """Varsayilan Config'de BSim shadow-only olmali (fusion kapali).
+
+        v1.11.0 Dalga 4: enabled=True default artik (shadow dump icin),
+        fakat shadow_mode=True + use_bsim_fusion=False oldugu icin
+        NameMerger'a/fusion'a evidence YAYMAZ -- log-only davranis.
+        Yani "devre disi" testi = fusion pipeline'da aktif degil.
+        """
+        assert config.bsim.shadow_mode is True
+        assert config.bsim.use_bsim_fusion is False
 
 
 # ---------------------------------------------------------------------------
