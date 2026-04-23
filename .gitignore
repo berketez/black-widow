@@ -51,3 +51,8 @@ bsim_db/
 
 # Third-party vendor repos (submodule degil, sadece recon icin)
 vendor/
+
+# v1.11.0 Dalga 5 - mypy cache ve mock benchmark çıktıları
+.mypy_cache/
+benchmark_mock_*.json
+benchmark_report.json

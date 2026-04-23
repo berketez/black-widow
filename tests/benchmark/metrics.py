@@ -23,7 +23,10 @@ class NamingResult:
     original: str
     recovered: str
     score: float  # 0.0 - 1.0
-    match_type: str  # "exact", "semantic", "partial", "wrong", "missing"
+    # v1.11.0 Dalga 5: "preserved" eklendi — sembol hiç stripped olmadı,
+    # karadul rename çalışmadı, binary'den isim doğrudan okundu. Bu challenge
+    # değildir; F1/accuracy hesabına TP olarak sayılmaz.
+    match_type: str  # "exact", "semantic", "partial", "wrong", "missing", "preserved"
     # v1.10.0 Batch 5A: Per-source F1 hesaplamasi icin ek alan.
     # Ornek: "sig_db", "c_namer", "ngram", "string_intel", "ensemble".
     # Bos string = genel/bilinmiyor (geriye uyumlu).
@@ -46,16 +49,30 @@ class BenchmarkMetrics:
     partial_matches: int = 0
     wrong_names: int = 0
     missing_names: int = 0  # FUN_xxx / var_N still present
+    # v1.11.0 Dalga 5: preserved = sembol stripped olmadı (ör. macOS strip
+    # export korur, dynamic export'lar dyld için tutulur). Bu semboller
+    # karadul için challenge değildir — binary'den isim doğrudan okundu.
+    # F1/accuracy hesabında TP sayılmaz, ayrı raporlanır.
+    preserved_names: int = 0
 
-    # v1.10.0: F1 / precision / recall
+    # v1.10.0: F1 / precision / recall — v1.11.0 Dalga 5'te preserved hariç.
     # Tanimlar:
     #   TP = exact + semantic + partial (anlamli, dogru isim)
     #   FP = wrong (isim uretildi ama yanlis)
     #   FN = missing (isim uretilemedi)
+    #   preserved: TP/FP/FN hiçbirinde değil — challenge değil
     #   TN: anlamli degil bu baglamda (yoktur)
     precision: float = 0.0
     recall: float = 0.0
     f1: float = 0.0
+
+    # v1.11.0 Dalga 5: "renamed_*" — challenge'a maruz kalan sembollerin
+    # (preserved hariç) F1/accuracy skoru. Asıl başarı kriteri bu.
+    renamed_total: int = 0
+    renamed_precision: float = 0.0
+    renamed_recall: float = 0.0
+    renamed_f1: float = 0.0
+    renamed_accuracy: float = 0.0
 
     # v1.10.0: Kaynak bazli kirilim -- source -> metric
     per_source_precision: dict[str, float] = field(default_factory=dict)
@@ -83,23 +100,36 @@ class BenchmarkMetrics:
         """Weighted accuracy score (0-100%).
 
         Exact=1.0, Semantic=0.8, Partial=0.5, Wrong/Missing=0.0
+
+        v1.11.0 Dalga 5: preserved semboller (strip edilmemiş, karadul
+        rename'e maruz kalmadı) hem numerator'dan hem denominator'dan
+        çıkarılır. Amaç: gerçek rename başarısını ölçmek; macOS sahte
+        strip gibi durumlarda F1=1.0 yanıltıcısını engellemek.
+        preserved_names=0 iken davranış eski sürümle birebir aynıdır.
         """
-        if self.total_symbols == 0:
+        denom = self.total_symbols - self.preserved_names
+        if denom <= 0:
             return 0.0
         score = (
             self.exact_matches * 1.0
             + self.semantic_matches * 0.8
             + self.partial_matches * 0.5
         )
-        return (score / self.total_symbols) * 100
+        return (score / denom) * 100
 
     @property
     def recovery_rate(self) -> float:
-        """% of symbols that got any name (not FUN_xxx/sub_xxx etc)."""
-        if self.total_symbols == 0:
+        """% of symbols that got any name (not FUN_xxx/sub_xxx etc).
+
+        v1.11.0 Dalga 5: preserved semboller denominator'dan düşülür;
+        gerçek kurtarma başarısını ölçmek için challenge'a maruz kalan
+        (stripped) semboller üzerinden yüzde hesaplanır.
+        """
+        denom = self.total_symbols - self.preserved_names
+        if denom <= 0:
             return 0.0
-        named = self.total_symbols - self.missing_names
-        return (named / self.total_symbols) * 100
+        named = denom - self.missing_names
+        return (named / denom) * 100
 
     def to_dict(self) -> dict:
         return {
@@ -131,16 +161,28 @@ class BenchmarkMetrics:
             "fun_residue_pct": round(self.fun_residue_pct, 2),
             "type_precision": round(self.type_precision, 4),
             "type_recall": round(self.type_recall, 4),
+            # v1.11.0 Dalga 5: preserved/renamed ayrımı
+            "preserved_names": self.preserved_names,
+            "renamed_total": self.renamed_total,
+            "renamed_precision": round(self.renamed_precision, 4),
+            "renamed_recall": round(self.renamed_recall, 4),
+            "renamed_f1": round(self.renamed_f1, 4),
+            "renamed_accuracy": round(self.renamed_accuracy, 2),
         }
 
     def summary(self) -> str:
-        """Human-readable single-line summary."""
+        """Human-readable single-line summary.
+
+        v1.11.0 Dalga 5: preserved sayısı ayrı alanda görünür; accuracy ve
+        recovery preserved hariç hesaplandığı için yanıltıcı değil.
+        """
         return (
             f"accuracy={self.accuracy:.1f}% recovery={self.recovery_rate:.1f}% "
             f"f1={self.f1:.3f} "
             f"(exact={self.exact_matches} semantic={self.semantic_matches} "
             f"partial={self.partial_matches} wrong={self.wrong_names} "
-            f"missing={self.missing_names} / total={self.total_symbols})"
+            f"missing={self.missing_names} preserved={self.preserved_names} "
+            f"/ total={self.total_symbols})"
         )
 
 
@@ -292,7 +334,10 @@ class AccuracyCalculator:
         """
         metrics = BenchmarkMetrics(total_symbols=len(comparisons))
         for c in comparisons:
-            if c.match_type == "exact":
+            # v1.11.0 Dalga 5: preserved ayrı sayılır, TP/FP/FN'e dahil değil.
+            if c.match_type == "preserved":
+                metrics.preserved_names += 1
+            elif c.match_type == "exact":
                 metrics.exact_matches += 1
             elif c.match_type == "semantic":
                 metrics.semantic_matches += 1
@@ -303,12 +348,32 @@ class AccuracyCalculator:
             else:
                 metrics.wrong_names += 1
 
-        # Global F1 / precision / recall
+        # Global F1 / precision / recall — preserved dahil değil (zaten yukarıda
+        # ayrı sayaçta, TP/FP/FN hiçbirine düşmedi).
         metrics.precision, metrics.recall, metrics.f1 = self._compute_prf(
             tp=metrics.exact_matches + metrics.semantic_matches + metrics.partial_matches,
             fp=metrics.wrong_names,
             fn=metrics.missing_names,
         )
+
+        # v1.11.0 Dalga 5: renamed_* — challenge'a maruz kalan (preserved hariç)
+        # sembollerin F1/accuracy'si. Mevcut exact/semantic/partial/wrong/missing
+        # sayaçları zaten preserved hariç olduğu için P/R/F1 global ile birebir
+        # aynıdır. Ayrımın asıl değeri renamed_accuracy'de: denominator olarak
+        # renamed_total kullanır, gerçek rename başarısını gösterir.
+        metrics.renamed_total = metrics.total_symbols - metrics.preserved_names
+        metrics.renamed_precision = metrics.precision
+        metrics.renamed_recall = metrics.recall
+        metrics.renamed_f1 = metrics.f1
+        if metrics.renamed_total > 0:
+            score = (
+                metrics.exact_matches * 1.0
+                + metrics.semantic_matches * 0.8
+                + metrics.partial_matches * 0.5
+            )
+            metrics.renamed_accuracy = (score / metrics.renamed_total) * 100
+        else:
+            metrics.renamed_accuracy = 0.0
 
         # Per-source kirilim
         per_src = self.compute_per_source(comparisons)

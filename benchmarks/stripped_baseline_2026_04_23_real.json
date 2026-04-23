@@ -1,0 +1,81 @@
+{
+  "version": "v1.11.0 Dalga 5",
+  "fixture": "tests/benchmark/fixtures/linux_elf_stripped",
+  "naming_map": "/tmp/karadul_elf_stripped_run/naming_map.json",
+  "ground_truth_count": 6,
+  "naming_map_count": 5,
+  "metrics": {
+    "total_symbols": 6,
+    "exact_matches": 0,
+    "semantic_matches": 0,
+    "partial_matches": 0,
+    "wrong_names": 0,
+    "missing_names": 6,
+    "accuracy": 0.0,
+    "recovery_rate": 0.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "per_source_precision": {
+      "unknown": 0.0
+    },
+    "per_source_recall": {
+      "unknown": 0.0
+    },
+    "per_source_f1": {
+      "unknown": 0.0
+    },
+    "confusion_matrix": {
+      "missing": {
+        "missing": 6
+      }
+    },
+    "fun_residue_pct": 0.0,
+    "type_precision": 0.0,
+    "type_recall": 0.0,
+    "preserved_names": 0,
+    "renamed_total": 6,
+    "renamed_precision": 0.0,
+    "renamed_recall": 0.0,
+    "renamed_f1": 0.0,
+    "renamed_accuracy": 0.0
+  },
+  "per_symbol": [
+    {
+      "original": "cleanup_session",
+      "recovered": "FUN_4006e0",
+      "match_type": "missing",
+      "score": 0.0
+    },
+    {
+      "original": "encrypt_buffer",
+      "recovered": "FUN_4006a0",
+      "match_type": "missing",
+      "score": 0.0
+    },
+    {
+      "original": "init_context",
+      "recovered": "FUN_4006d4",
+      "match_type": "missing",
+      "score": 0.0
+    },
+    {
+      "original": "main",
+      "recovered": "FUN_4006e4",
+      "match_type": "missing",
+      "score": 0.0
+    },
+    {
+      "original": "parse_config",
+      "recovered": "FUN_400684",
+      "match_type": "missing",
+      "score": 0.0
+    },
+    {
+      "original": "send_packet",
+      "recovered": "FUN_400698",
+      "match_type": "missing",
+      "score": 0.0
+    }
+  ]
+}

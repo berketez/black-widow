@@ -119,18 +119,25 @@ def test_find_symbol_mapping_from_workspace(tmp_path: Path) -> None:
 def test_compare_maps_cross_ref_via_symbol_mapping() -> None:
     """Bug 2: GT FUN_<addr> tarafında, naming_map sembol adında olunca
     symbol_mapping ile köprüleme yapılmalı.
+
+    v1.11.0 Dalga 5: Sembol haritasında preserved olan (karadul rename
+    yapmamış, binary export'u korunmuş) semboller artık "exact" değil
+    "preserved" olarak işaretlenir. macOS strip sahte-stripping
+    sorununu önlemek için F1/accuracy'den hariç tutulur.
     """
     runner = BenchmarkRunner()
     gt = {"FUN_100000460": "_add"}
     # Naming map fonksiyon adını ANAHTAR olarak tutuyor, değer yok.
-    # Symbol mapping preserved case: karadul ismi bozmamış.
+    # Symbol mapping preserved case: karadul ismi bozmamış, binary'den geldi.
     nm = {"global": {}, "per_function": {"_add": {"iVar1": "result"}}}
     sym_map = {"FUN_100000460": "_add", "_add": "FUN_100000460"}
 
     comparisons = runner._compare_maps(gt, nm, sym_map)
     assert len(comparisons) == 1
-    # _add sembol haritasında preserve edilmiş → exact sayılmalı
-    assert comparisons[0].match_type == "exact"
+    # _add sembol haritasında preserve edilmiş → preserved (challenge değil)
+    assert comparisons[0].match_type == "preserved"
+    assert comparisons[0].score == 0.0
+    assert comparisons[0].recovered == "_add"
 
 
 def test_compare_maps_without_symbol_mapping_falls_back_to_missing() -> None:

@@ -1,0 +1,49 @@
+{
+  "binary_path": "tests/benchmark/fixtures/linux_elf_stripped/sample_elf",
+  "symbol_count": 6,
+  "function_count": 6,
+  "data_count": 0,
+  "metadata": {
+    "generator": "karadul-fixture-gen",
+    "source": "fixture.c",
+    "compiler": "gcc 12 / Linux aarch64 ELF",
+    "flags": "-g -O1",
+    "nm_flags": "--defined-only",
+    "filter": "type==T, no internal prefix",
+    "karadul_version": "v1.11.0",
+    "wave": "Dalga 5 — Linux ELF stripped baseline",
+    "note": "aarch64 ELF (Colima/gcc:12 container). strip --strip-all removes all symbols from sample_elf_stripped."
+  },
+  "symbols": [
+    {
+      "address": "0x00000000004006e0",
+      "name": "cleanup_session",
+      "type": "T"
+    },
+    {
+      "address": "0x00000000004006a0",
+      "name": "encrypt_buffer",
+      "type": "T"
+    },
+    {
+      "address": "0x00000000004006d4",
+      "name": "init_context",
+      "type": "T"
+    },
+    {
+      "address": "0x00000000004006e4",
+      "name": "main",
+      "type": "T"
+    },
+    {
+      "address": "0x0000000000400684",
+      "name": "parse_config",
+      "type": "T"
+    },
+    {
+      "address": "0x0000000000400698",
+      "name": "send_packet",
+      "type": "T"
+    }
+  ]
+}

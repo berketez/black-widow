@@ -500,14 +500,26 @@ class BenchmarkRunner:
                 recovered = flat_nm[original_name]
 
             # 4) Sembol haritasında bu isim korunmuş mu? Karadul
-            #    export sembollerini (ör: _add) genelde rename etmez —
-            #    orijinal isim workspace'te yaşıyorsa bu "exact" sayılır.
+            #    export sembollerini (ör: _add) genelde rename etmez.
+            #    v1.11.0 Dalga 5 KRİTİK FİX: BU BİR CHALLENGE DEĞİL —
+            #    sembol stripped olmadı, binary'den isim doğrudan okundu.
+            #    Daha önce `recovered = preserved` yapıp "exact" sayıyorduk;
+            #    bu, macOS'ta exports (dyld için) strip edilmediğinden
+            #    benchmark'ı şişiriyordu. Artık "preserved" kategorisinde
+            #    işaretlenir ve F1/accuracy hesabından hariç tutulur.
             if recovered is None and placeholder in sym_map:
                 preserved = sym_map[placeholder]
                 # sym_map FUN_xxx -> name ve name -> FUN_xxx her iki yönü
                 # tutuyor; biz burada FUN_xxx yönünü kullanıyoruz.
                 if preserved and not preserved.startswith("FUN_"):
-                    recovered = preserved
+                    comparisons.append(NamingResult(
+                        original=original_name,
+                        recovered=preserved,
+                        score=0.0,  # F1 hesabında TP sayılmayacağı için 0
+                        match_type="preserved",
+                        source="",
+                    ))
+                    continue
 
             # 5) Yine de bulamadık → placeholder kalmış kabul et
             if recovered is None:

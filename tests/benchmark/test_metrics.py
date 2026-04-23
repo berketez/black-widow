@@ -364,6 +364,7 @@ class TestBenchmarkMetrics:
         d = m.to_dict()
         # v1.10.0 Batch 5A: F1 / per-source / confusion matrix alanlari eklendi.
         # v1.11.0 Bug 3: fun_residue_pct, type_precision, type_recall eklendi.
+        # v1.11.0 Dalga 5: preserved/renamed ayrimi alanlari eklendi.
         expected_keys = {
             "total_symbols", "exact_matches", "semantic_matches",
             "partial_matches", "wrong_names", "missing_names",
@@ -374,6 +375,10 @@ class TestBenchmarkMetrics:
             "confusion_matrix",
             # v1.11.0
             "fun_residue_pct", "type_precision", "type_recall",
+            # v1.11.0 Dalga 5
+            "preserved_names", "renamed_total",
+            "renamed_precision", "renamed_recall", "renamed_f1",
+            "renamed_accuracy",
         }
         assert set(d.keys()) == expected_keys
 
@@ -752,3 +757,105 @@ class TestConfusionMatrix:
         d = m.to_dict()
         assert "confusion_matrix" in d
         assert d["confusion_matrix"]["exact"]["exact"] == 1
+
+
+# ===================================================================
+# v1.11.0 Dalga 5: Preserved Kategorisi
+# ===================================================================
+
+
+class TestPreservedCategory:
+    """v1.11.0 Dalga 5: preserved semboller F1/accuracy'den hariç tutulur."""
+
+    def test_preserved_not_counted_as_tp(self):
+        """preserved sembol TP sayılmaz, F1'e katkı yok."""
+        calc = AccuracyCalculator()
+        results = [
+            NamingResult("parse_config", "parse_config", 1.0, "exact"),
+            NamingResult("send_packet", "send_packet", 0.0, "preserved"),
+            NamingResult("encrypt", "FUN_401000", 0.0, "missing"),
+        ]
+        m = calc.calculate_metrics(results)
+        assert m.total_symbols == 3
+        assert m.exact_matches == 1
+        assert m.preserved_names == 1
+        assert m.missing_names == 1
+        # TP = 1 (exact), FN = 1 (missing), FP = 0
+        # precision = 1/1 = 1.0, recall = 1/2 = 0.5, f1 = 0.667
+        assert m.precision == pytest.approx(1.0)
+        assert m.recall == pytest.approx(0.5)
+        assert m.f1 == pytest.approx(2 * 1.0 * 0.5 / 1.5, abs=0.01)
+
+    def test_preserved_excluded_from_accuracy(self):
+        """accuracy denominator = total - preserved."""
+        calc = AccuracyCalculator()
+        # 4 sembolün 2'si preserved, 1 exact, 1 missing
+        # renamed_total = 2, score = 1.0 (exact)
+        # accuracy = 1.0/2 * 100 = 50.0 (preserved hariç)
+        results = [
+            NamingResult("a", "a", 0.0, "preserved"),
+            NamingResult("b", "b", 0.0, "preserved"),
+            NamingResult("c", "c", 1.0, "exact"),
+            NamingResult("d", "FUN_x", 0.0, "missing"),
+        ]
+        m = calc.calculate_metrics(results)
+        assert m.preserved_names == 2
+        assert m.accuracy == pytest.approx(50.0)
+        assert m.renamed_total == 2
+        assert m.renamed_accuracy == pytest.approx(50.0)
+
+    def test_all_preserved_accuracy_zero(self):
+        """Hepsi preserved -> accuracy=0 (challenge yok)."""
+        calc = AccuracyCalculator()
+        results = [
+            NamingResult("a", "a", 0.0, "preserved"),
+            NamingResult("b", "b", 0.0, "preserved"),
+        ]
+        m = calc.calculate_metrics(results)
+        assert m.preserved_names == 2
+        assert m.accuracy == 0.0
+        assert m.renamed_total == 0
+        assert m.renamed_accuracy == 0.0
+        assert m.f1 == 0.0
+
+    def test_backward_compat_no_preserved(self):
+        """Preserved yoksa eski davranış aynı kalır."""
+        calc = AccuracyCalculator()
+        results = [
+            NamingResult("parse_config", "parse_config", 1.0, "exact"),
+            NamingResult("send", "transmit", 0.8, "semantic"),
+        ]
+        m = calc.calculate_metrics(results)
+        assert m.preserved_names == 0
+        assert m.renamed_total == 2
+        assert m.accuracy == pytest.approx((1.0 + 0.8) / 2 * 100)
+        # Eski ve yeni aynı sonucu verir
+        assert m.accuracy == m.renamed_accuracy
+        assert m.f1 == m.renamed_f1
+
+    def test_to_dict_contains_new_fields(self):
+        """to_dict yeni alanları içerir."""
+        calc = AccuracyCalculator()
+        results = [
+            NamingResult("a", "a", 0.0, "preserved"),
+            NamingResult("b", "b", 1.0, "exact"),
+        ]
+        m = calc.calculate_metrics(results)
+        d = m.to_dict()
+        assert "preserved_names" in d
+        assert d["preserved_names"] == 1
+        assert "renamed_total" in d
+        assert d["renamed_total"] == 1
+        assert "renamed_f1" in d
+        assert "renamed_accuracy" in d
+
+    def test_summary_shows_preserved(self):
+        """summary() preserved sayısını içerir."""
+        calc = AccuracyCalculator()
+        results = [
+            NamingResult("a", "a", 0.0, "preserved"),
+            NamingResult("b", "b", 1.0, "exact"),
+        ]
+        m = calc.calculate_metrics(results)
+        s = m.summary()
+        assert "preserved=1" in s
