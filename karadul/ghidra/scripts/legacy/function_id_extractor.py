@@ -1,29 +1,18 @@
-# Ghidra Python Script -- PyGhidra 3.0 (Python 3.10+) uyumlu
+# Ghidra Python Script -- Jython 2.7 uyumlu
 # @category BlackWidow
 # @description Extract FunctionID matches (library function identification)
-#
-# v1.11.0 Jython Sunset Faz 1.4 (Dalga 6B): Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/function_id_extractor.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
-#
-# NOT: Ghidra'nin otomatik analizinden sonra FunctionID tarafindan
-# taninan kutuphane fonksiyonlarini cikarir.
-#
-# UYARI: Bu script Ghidra JVM icinde PyGhidra engine altinda calisir. Ghidra API
-# objeleri (currentProgram, FunctionManager vb.) global scope'ta mevcuttur.
-# JPype tipleri (java.lang.String, java.lang.Long vb.) -> Python tiplerine
-# explicit donusum (str/int/bool) defansif olarak uygulanir.
 
-from __future__ import annotations
+# UYARI: Bu script Ghidra JVM icinde calisir.
+# Python 3 syntax'i KULLANILMAMALIDIR (f-string yok, type hints yok).
+# Ghidra'nin otomatik analizinden sonra FunctionID tarafindan
+# taninan kutuphane fonksiyonlarini cikarir.
 
 import json
 import os
 import tempfile
 
-from ghidra.program.model.symbol import SourceType
 
-
-def get_output_dir() -> str:
+def get_output_dir():
     """KARADUL_OUTPUT ortam degiskeninden cikti dizinini al (CWE-377 guvenli).
 
     v1.10.0 Batch 5B HIGH-10: KARADUL_WORKSPACE_ROOT path traversal koruma.
@@ -51,7 +40,7 @@ def get_output_dir() -> str:
     return output
 
 
-def extract_function_id_matches() -> dict:
+def extract_function_id_matches():
     """FunctionID tarafindan taninan fonksiyonlari cikar.
 
     Ghidra'nin otomatik analizi sirasinda FunctionID analyzer
@@ -60,20 +49,17 @@ def extract_function_id_matches() -> dict:
 
     FUN_ ile baslayan fonksiyonlar taninmamis demektir.
     SourceType.ANALYSIS + non-FUN_ isim = FunctionID eslesmesi.
-
-    PyGhidra 3.0 notu: `from ghidra.program.model.symbol import SourceType`
-    artik modul seviyesine tasindi. Jython 2.7'deki lazy import kaldirildi;
-    PyGhidra 3.0 eager import'u tercih eder (JPype proxy resolution daha
-    hizli). Davranis degismez -- SourceType enum karsilastirmasi aynidir.
     """
-    fm = currentProgram.getFunctionManager()  # type: ignore[name-defined]
-    matches: list = []
+    from ghidra.program.model.symbol import SourceType
+
+    fm = currentProgram.getFunctionManager()
+    matches = []
     total_functions = 0
     skipped_fun = 0
 
     for func in fm.getFunctions(True):
         total_functions += 1
-        func_name = str(func.getName())
+        func_name = func.getName()
 
         # FUN_ ile baslayan = taninmamis
         if func_name.startswith("FUN_"):
@@ -81,7 +67,7 @@ def extract_function_id_matches() -> dict:
             continue
 
         # Thunk ve external fonksiyonlari atla
-        if bool(func.isThunk()) or bool(func.isExternal()):
+        if func.isThunk() or func.isExternal():
             continue
 
         # Symbol kaynagini kontrol et
@@ -102,26 +88,26 @@ def extract_function_id_matches() -> dict:
         library = ""
         comment = func.getComment()
         if comment:
-            library = str(comment)
+            library = comment
 
         # Namespace'ten library bilgisi
         namespace = func.getParentNamespace()
-        if namespace is not None and str(namespace.getName()) != "Global":
+        if namespace and namespace.getName() != "Global":
             if not library:
-                library = str(namespace.getName())
+                library = namespace.getName()
 
-        match_entry: dict = {
+        match_entry = {
             "name": func_name,
             "address": str(func.getEntryPoint()),
             "source": str(source),
             "library": library,
             "size": int(func.getBody().getNumAddresses()),
-            "param_count": int(func.getParameterCount()),
+            "param_count": func.getParameterCount(),
         }
         matches.append(match_entry)
 
-    result: dict = {
-        "program": str(currentProgram.getName()),  # type: ignore[name-defined]
+    result = {
+        "program": currentProgram.getName(),
         "total_functions": total_functions,
         "total_unnamed": skipped_fun,
         "total_matches": len(matches),
@@ -131,9 +117,8 @@ def extract_function_id_matches() -> dict:
     # Cikti dosyasina yaz
     output_dir = get_output_dir()
     output_path = os.path.join(output_dir, "function_id.json")
-    # PyGhidra 3.0: encoding=utf-8 + ensure_ascii=False non-ASCII isimleri korur
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
+    with open(output_path, "w") as f:
+        json.dump(result, f, indent=2)
 
     print("FunctionID: %d / %d fonksiyon tanimlandi" % (len(matches), total_functions))
     return result

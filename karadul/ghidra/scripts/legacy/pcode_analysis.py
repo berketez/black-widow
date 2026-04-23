@@ -1,28 +1,17 @@
-# Ghidra Python Script -- PyGhidra 3.0 (Python 3.10+) uyumlu
+# Ghidra Python Script -- Jython 2.7 uyumlu
 # @category BlackWidow
 # @description Extract P-Code intermediate representation for dataflow analysis
-#
-# v1.11.0 Jython Sunset Faz 1.4 (Dalga 6B): Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/pcode_analysis.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
-#
-# NOT: Bu script CLI fallback icin kullanilir. PyGhidra native path
-# karadul/ghidra/headless.py uzerinden bypass edilir. Yine de parity
-# korumasi icin migrate edilmistir.
-#
-# UYARI: Bu script Ghidra JVM icinde PyGhidra engine altinda calisir. Ghidra API
-# objeleri (currentProgram, DecompInterface, HighFunction vb.) global scope'ta
-# mevcuttur. JPype tipleri (java.lang.String, java.lang.Long vb.) -> Python
-# tiplerine explicit donusum (str/int/bool) defansif olarak uygulanir.
 
-from __future__ import annotations
+# UYARI: Bu script Ghidra JVM icinde calisir.
+# Python 3 syntax'i KULLANILMAMALIDIR.
+# f-string YOK, type hints YOK, print statement/function farki yok.
 
 import json
 import os
 import tempfile
 import time
 
-from ghidra.app.decompiler import DecompileOptions, DecompInterface
+from ghidra.app.decompiler import DecompInterface, DecompileOptions
 from ghidra.util.task import ConsoleTaskMonitor
 
 
@@ -31,7 +20,7 @@ BATCH_SIZE = 5000       # Buyuk binary'ler icin batch isleme
 DECOMPILE_TIMEOUT = 30  # fonksiyon basina max saniye
 
 
-def get_output_dir() -> str:
+def get_output_dir():
     """KARADUL_OUTPUT ortam degiskeninden cikti dizinini al (CWE-377 guvenli).
 
     v1.10.0 Batch 5B HIGH-10: KARADUL_WORKSPACE_ROOT path traversal koruma.
@@ -59,15 +48,11 @@ def get_output_dir() -> str:
     return output
 
 
-def varnode_to_dict(varnode) -> dict | None:
+def varnode_to_dict(varnode):
     """Bir Varnode nesnesini JSON-serializable dict'e donustur.
 
     Varnode, P-Code'un temel veri birimi: register, constant, unique temp
     veya memory adresi olabilir.
-
-    PyGhidra 3.0 notu: JPype boolean proxy'lerini bool() ile wrap eder --
-    aksi halde json.dumps java.lang.Boolean instance'larinda
-    TypeError atabilir.
 
     Args:
         varnode: Ghidra Varnode nesnesi (None olabilir).
@@ -79,21 +64,21 @@ def varnode_to_dict(varnode) -> dict | None:
         return None
 
     space = varnode.getAddress().getAddressSpace()
-    space_name = str(space.getName()) if space is not None else "unknown"
+    space_name = space.getName() if space is not None else "unknown"
 
     return {
         "space": space_name,
-        "offset": int(varnode.getOffset()),
-        "size": int(varnode.getSize()),
-        "is_constant": bool(varnode.isConstant()),
-        "is_register": bool(varnode.isRegister()),
-        "is_unique": bool(varnode.isUnique()),
-        "is_address": bool(varnode.isAddress()),
+        "offset": varnode.getOffset(),
+        "size": varnode.getSize(),
+        "is_constant": varnode.isConstant(),
+        "is_register": varnode.isRegister(),
+        "is_unique": varnode.isUnique(),
+        "is_address": varnode.isAddress(),
         "high_variable": None,  # Asagida doldurulacak (HighVariable varsa)
     }
 
 
-def extract_pcode_ops(high_func) -> list:
+def extract_pcode_ops(high_func):
     """HighFunction'dan tum PcodeOp'lari cikar.
 
     Her PcodeOp icin mnemonic, sequence number, output varnode ve
@@ -106,10 +91,10 @@ def extract_pcode_ops(high_func) -> list:
     Returns:
         list: PcodeOp bilgileri listesi.
     """
-    ops: list = []
+    ops = []
 
     # HighVariable -> Varnode eslesmesi olustur (degisken isim/tip bilgisi icin)
-    high_var_map: dict = {}  # varnode_key -> {name, type}
+    high_var_map = {}  # varnode_key -> {name, type}
     local_sym_map = high_func.getLocalSymbolMap()
     if local_sym_map is not None:
         symbols = local_sym_map.getSymbols()
@@ -117,16 +102,16 @@ def extract_pcode_ops(high_func) -> list:
             sym = symbols.next()
             high_var = sym.getHighVariable()
             if high_var is not None:
-                var_name = str(sym.getName())
+                var_name = sym.getName()
                 var_type = str(sym.getDataType()) if sym.getDataType() is not None else "undefined"
                 # HighVariable'in temsil ettigi tum varnode'lari isle
                 instances = high_var.getInstances()
                 if instances is not None:
                     for vn in instances:
                         key = "%s:%d:%d" % (
-                            str(vn.getAddress().getAddressSpace().getName()),
-                            int(vn.getOffset()),
-                            int(vn.getSize()),
+                            vn.getAddress().getAddressSpace().getName(),
+                            vn.getOffset(),
+                            vn.getSize(),
                         )
                         high_var_map[key] = {
                             "name": var_name,
@@ -138,9 +123,9 @@ def extract_pcode_ops(high_func) -> list:
     while pcode_iter.hasNext():
         pcode_op = pcode_iter.next()
 
-        mnemonic = str(pcode_op.getMnemonic())
+        mnemonic = pcode_op.getMnemonic()
         seq = pcode_op.getSeqnum()
-        seq_num = int(seq.getTime())
+        seq_num = seq.getTime()
         address = str(seq.getTarget())
 
         # Output varnode
@@ -153,8 +138,8 @@ def extract_pcode_ops(high_func) -> list:
                 output_dict["high_variable"] = hv["name"]
 
         # Input varnode'lar
-        inputs: list = []
-        num_inputs = int(pcode_op.getNumInputs())
+        inputs = []
+        num_inputs = pcode_op.getNumInputs()
         for i in range(num_inputs):
             in_vn = pcode_op.getInput(i)
             in_dict = varnode_to_dict(in_vn)
@@ -176,7 +161,7 @@ def extract_pcode_ops(high_func) -> list:
     return ops
 
 
-def extract_high_variables(high_func) -> list:
+def extract_high_variables(high_func):
     """HighFunction'dan high-level degisken bilgilerini cikar.
 
     Decompiler'in tanimladigi degiskenlerin isim, tip, depolama alani
@@ -188,7 +173,7 @@ def extract_high_variables(high_func) -> list:
     Returns:
         list: Degisken bilgileri listesi.
     """
-    variables: list = []
+    variables = []
     local_sym_map = high_func.getLocalSymbolMap()
     if local_sym_map is None:
         return variables
@@ -196,11 +181,11 @@ def extract_high_variables(high_func) -> list:
     symbols = local_sym_map.getSymbols()
     while symbols.hasNext():
         sym = symbols.next()
-        var_entry: dict = {
-            "name": str(sym.getName()),
+        var_entry = {
+            "name": sym.getName(),
             "type": str(sym.getDataType()) if sym.getDataType() is not None else "undefined",
-            "size": int(sym.getSize()),
-            "is_parameter": bool(sym.isParameter()),
+            "size": sym.getSize(),
+            "is_parameter": sym.isParameter(),
         }
 
         # Depolama bilgisi (storage)
@@ -208,8 +193,8 @@ def extract_high_variables(high_func) -> list:
         if high_var is not None:
             rep = high_var.getRepresentative()
             if rep is not None:
-                var_entry["storage_space"] = str(rep.getAddress().getAddressSpace().getName())
-                var_entry["storage_offset"] = int(rep.getOffset())
+                var_entry["storage_space"] = rep.getAddress().getAddressSpace().getName()
+                var_entry["storage_offset"] = rep.getOffset()
             else:
                 var_entry["storage_space"] = "unknown"
                 var_entry["storage_offset"] = 0
@@ -222,7 +207,7 @@ def extract_high_variables(high_func) -> list:
     return variables
 
 
-def extract_pcode_for_all_functions() -> dict:
+def extract_pcode_for_all_functions():
     """Tum fonksiyonlar icin P-Code bilgisini cikar.
 
     DecompInterface ile her fonksiyonu decompile edip HighFunction'dan
@@ -236,12 +221,12 @@ def extract_pcode_for_all_functions() -> dict:
     decomp = DecompInterface()
     options = DecompileOptions()
     decomp.setOptions(options)
-    decomp.openProgram(currentProgram)  # type: ignore[name-defined]
+    decomp.openProgram(currentProgram)
 
     monitor = ConsoleTaskMonitor()
-    fm = currentProgram.getFunctionManager()  # type: ignore[name-defined]
+    fm = currentProgram.getFunctionManager()
 
-    functions: list = []
+    functions = []
     total_ops = 0
     success_count = 0
     fail_count = 0
@@ -264,7 +249,7 @@ def extract_pcode_for_all_functions() -> dict:
                 batch_num, func_index, elapsed,
             ))
 
-        func_name = str(func.getName())
+        func_name = func.getName()
         func_addr = str(func.getEntryPoint())
 
         try:
@@ -287,7 +272,7 @@ def extract_pcode_for_all_functions() -> dict:
             # High-level degisken bilgileri cikar
             high_vars = extract_high_variables(high_func)
 
-            func_entry: dict = {
+            func_entry = {
                 "name": func_name,
                 "address": func_addr,
                 "op_count": len(ops),
@@ -308,7 +293,7 @@ def extract_pcode_for_all_functions() -> dict:
     total_time = time.time() - start_time
 
     # Mnemonic dagilim istatistikleri
-    mnemonic_counts: dict = {}
+    mnemonic_counts = {}
     for func_entry in functions:
         for op in func_entry["ops"]:
             mn = op["mnemonic"]
@@ -319,7 +304,7 @@ def extract_pcode_for_all_functions() -> dict:
     top_mnemonics = sorted_mnemonics[:20]
 
     return {
-        "program": str(currentProgram.getName()),  # type: ignore[name-defined]
+        "program": str(currentProgram.getName()),
         "total_functions_analyzed": success_count,
         "total_functions_failed": fail_count,
         "total_pcode_ops": total_ops,
@@ -333,15 +318,14 @@ def extract_pcode_for_all_functions() -> dict:
     }
 
 
-def main() -> None:
+def main():
     output_dir = get_output_dir()
     result = extract_pcode_for_all_functions()
 
     # Sonucu JSON olarak kaydet
     output_path = os.path.join(output_dir, "ghidra_pcode.json")
-    # PyGhidra 3.0: encoding=utf-8 + ensure_ascii=False non-ASCII isimleri korur
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
+    with open(output_path, "w") as f:
+        json.dump(result, f, indent=2)
 
     print("BlackWidow: P-Code extracted: %d functions, %d ops (failed=%d, %.1fs) -> %s" % (
         result["total_functions_analyzed"],

@@ -1,46 +1,34 @@
-# Ghidra Python Script -- PyGhidra 3.0 (Python 3.10+) uyumlu
+# Ghidra Python Script -- Jython 2.7 uyumlu
 # @category BlackWidow
 # @description Decompile all functions with disassembly, xrefs and stack frame info
 # @keybinding
 # @menupath
 # @toolbar
-#
-# v1.11.0 Jython Sunset Faz 1.4 (Dalga 6B): Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/decompile_all.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
-#
-# NOT: Bu script CLI fallback icin kullanilir. PyGhidra native path
-# karadul/ghidra/headless.py uzerinden bypass edilir. Yine de parity
-# korumasi icin migrate edilmistir.
-#
-# UYARI: Bu script Ghidra JVM icinde PyGhidra engine altinda calisir. Ghidra API
-# objeleri (currentProgram, DecompInterface vb.) global scope'ta mevcuttur.
-# JPype tipleri (java.lang.String, java.lang.Long vb.) -> Python tiplerine
-# explicit donusum (str/int/bool) defansif olarak uygulanir.
+
+# UYARI: Bu script Ghidra JVM icinde calisir.
+# Python 3 syntax'i KULLANILMAMALIDIR.
 # Limitsiz: tum fonksiyonlari decompile eder.
 
-from __future__ import annotations
-
 import json
-import logging
 import os
 import re
 import tempfile
 import time
 
-from ghidra.app.decompiler import DecompileOptions, DecompInterface
+from ghidra.app.decompiler import DecompInterface, DecompileOptions
 from ghidra.util.task import ConsoleTaskMonitor
 
 
-logger = logging.getLogger(__name__)
-
 # Limitler
+import logging
+
+logger = logging.getLogger(__name__)
 MAX_FUNCTIONS = 0  # 0 = limitsiz, tum fonksiyonlari isle
 MAX_TIME_SECONDS = 0  # 0 = limitsiz
 DECOMPILE_TIMEOUT = 30  # fonksiyon basina max 30 saniye
 
 
-def get_output_dir() -> str:
+def get_output_dir():
     """KARADUL_OUTPUT ortam degiskeninden cikti dizinini al (CWE-377 guvenli).
 
     v1.10.0 Batch 5B HIGH-10: KARADUL_WORKSPACE_ROOT path traversal koruma.
@@ -68,10 +56,10 @@ def get_output_dir() -> str:
     return output
 
 
-def safe_filename(name: str) -> str:
+def safe_filename(name):
     """Fonksiyon adini dosya adi icin guvenli hale getir."""
     # Ozel karakterleri alt cizgi ile degistir
-    safe = re.sub(r'[^\w\-.]', '_', str(name))
+    safe = re.sub(r'[^\w\-.]', '_', name)
     # Bos string kontrolu
     if not safe:
         safe = "unnamed"
@@ -81,14 +69,11 @@ def safe_filename(name: str) -> str:
     return safe
 
 
-def extract_disassembly(func) -> list:
+def extract_disassembly(func):
     """Fonksiyonun disassembly'sini cikar.
 
     Listing API ile fonksiyon body'sindeki tum instruction'lari toplar.
     Her instruction icin adres, mnemonic ve operand bilgisi doner.
-
-    PyGhidra 3.0 notu: JPype proxy objeleri (java.lang.String) str() ile
-    wrap edilir -- json.dumps TypeError riskini engeller.
 
     Args:
         func: Ghidra Function nesnesi.
@@ -96,31 +81,31 @@ def extract_disassembly(func) -> list:
     Returns:
         list: instruction bilgileri listesi.
     """
-    listing = currentProgram.getListing()  # type: ignore[name-defined]
-    instructions: list = []
+    listing = currentProgram.getListing()
+    instructions = []
 
     code_units = listing.getCodeUnits(func.getBody(), True)
     while code_units.hasNext():
         cu = code_units.next()
         # Sadece instruction'lari al (data unit'leri atla)
         try:
-            mnemonic = str(cu.getMnemonicString())
+            mnemonic = cu.getMnemonicString()
         except Exception:
             logger.debug("Ghidra islemi basarisiz, atlaniyor", exc_info=True)
             continue
 
-        instr_entry: dict = {
+        instr_entry = {
             "address": str(cu.getAddress()),
             "mnemonic": mnemonic,
         }
 
         # Operand'lari topla
-        num_operands = int(cu.getNumOperands())
-        operands: list = []
+        num_operands = cu.getNumOperands()
+        operands = []
         for i in range(num_operands):
             op_str = cu.getDefaultOperandRepresentation(i)
             if op_str:
-                operands.append(str(op_str))
+                operands.append(op_str)
         instr_entry["operands"] = operands
 
         # Tam instruction string
@@ -131,7 +116,7 @@ def extract_disassembly(func) -> list:
     return instructions
 
 
-def extract_xrefs(func) -> dict:
+def extract_xrefs(func):
     """Fonksiyonun cross-reference bilgisini cikar.
 
     Callers: bu fonksiyonu kim cagiriyor
@@ -143,37 +128,37 @@ def extract_xrefs(func) -> dict:
     Returns:
         dict: callers ve callees listeleri.
     """
-    fm = currentProgram.getFunctionManager()  # type: ignore[name-defined]
-    ref_mgr = currentProgram.getReferenceManager()  # type: ignore[name-defined]
+    fm = currentProgram.getFunctionManager()
+    ref_mgr = currentProgram.getReferenceManager()
     func_addr = str(func.getEntryPoint())
 
     # Callers: bu fonksiyona referans verenler
-    callers: list = []
-    seen_callers: set = set()
+    callers = []
+    seen_callers = set()
     refs_to = ref_mgr.getReferencesTo(func.getEntryPoint())
     for ref in refs_to:
-        if bool(ref.getReferenceType().isCall()):
+        if ref.getReferenceType().isCall():
             caller = fm.getFunctionContaining(ref.getFromAddress())
             if caller is not None:
                 ca = str(caller.getEntryPoint())
                 if ca != func_addr and ca not in seen_callers:
                     seen_callers.add(ca)
                     callers.append({
-                        "name": str(caller.getName()),
+                        "name": caller.getName(),
                         "address": ca,
                         "call_site": str(ref.getFromAddress()),
                     })
 
     # Callees: bu fonksiyonun cagirdiklari
-    callees: list = []
-    seen_callees: set = set()
+    callees = []
+    seen_callees = set()
     body = func.getBody()
     addr_iter = body.getAddresses(True)
     while addr_iter.hasNext():
         addr = addr_iter.next()
         refs_from = ref_mgr.getReferencesFrom(addr)
         for ref in refs_from:
-            if bool(ref.getReferenceType().isCall()):
+            if ref.getReferenceType().isCall():
                 callee = fm.getFunctionAt(ref.getToAddress())
                 if callee is None:
                     callee = fm.getFunctionContaining(ref.getToAddress())
@@ -182,7 +167,7 @@ def extract_xrefs(func) -> dict:
                     if ca != func_addr and ca not in seen_callees:
                         seen_callees.add(ca)
                         callees.append({
-                            "name": str(callee.getName()),
+                            "name": callee.getName(),
                             "address": ca,
                             "call_site": str(addr),
                         })
@@ -195,7 +180,7 @@ def extract_xrefs(func) -> dict:
     }
 
 
-def extract_stack_frame(func) -> dict | None:
+def extract_stack_frame(func):
     """Fonksiyonun stack frame layout'unu cikar.
 
     Stack frame icindeki tum degiskenleri (lokal ve parametre)
@@ -205,29 +190,29 @@ def extract_stack_frame(func) -> dict | None:
         func: Ghidra Function nesnesi.
 
     Returns:
-        dict veya None: stack frame bilgileri.
+        dict: stack frame bilgileri.
     """
     frame = func.getStackFrame()
     if frame is None:
         return None
 
-    variables: list = []
+    variables = []
     for var in frame.getStackVariables():
-        var_entry: dict = {
-            "name": str(var.getName()),
-            "offset": int(var.getStackOffset()),
-            "size": int(var.getLength()),
+        var_entry = {
+            "name": var.getName(),
+            "offset": var.getStackOffset(),
+            "size": var.getLength(),
             "type": str(var.getDataType()),
         }
         # Parametre mi, lokal mi?
-        if int(var.getStackOffset()) >= 0:
+        if var.getStackOffset() >= 0:
             var_entry["kind"] = "parameter"
         else:
             var_entry["kind"] = "local"
 
         comment = var.getComment()
         if comment:
-            var_entry["comment"] = str(comment)
+            var_entry["comment"] = comment
 
         variables.append(var_entry)
 
@@ -235,17 +220,17 @@ def extract_stack_frame(func) -> dict | None:
     variables.sort(key=lambda v: v["offset"], reverse=True)
 
     return {
-        "frame_size": int(frame.getFrameSize()),
-        "local_size": int(frame.getLocalSize()),
-        "parameter_offset": int(frame.getParameterOffset()),
-        "parameter_size": int(frame.getParameterSize()),
-        "return_address_offset": int(frame.getReturnAddressOffset()),
+        "frame_size": frame.getFrameSize(),
+        "local_size": frame.getLocalSize(),
+        "parameter_offset": frame.getParameterOffset(),
+        "parameter_size": frame.getParameterSize(),
+        "return_address_offset": frame.getReturnAddressOffset(),
         "variable_count": len(variables),
         "variables": variables,
     }
 
 
-def decompile_functions() -> dict:
+def decompile_functions():
     """Tum fonksiyonlari decompile et, disassembly/xref/stack bilgisiyle zenginlestir.
 
     DecompInterface kullanarak her fonksiyonu C pseudo-koduna
@@ -261,12 +246,12 @@ def decompile_functions() -> dict:
     decomp = DecompInterface()
     options = DecompileOptions()
     decomp.setOptions(options)
-    decomp.openProgram(currentProgram)  # type: ignore[name-defined]
+    decomp.openProgram(currentProgram)
 
     monitor = ConsoleTaskMonitor()
-    fm = currentProgram.getFunctionManager()  # type: ignore[name-defined]
+    fm = currentProgram.getFunctionManager()
 
-    results: list = []
+    results = []
     success_count = 0
     fail_count = 0
     skipped_count = 0
@@ -293,7 +278,7 @@ def decompile_functions() -> dict:
                 skipped_count += 1
             break
 
-        func_name = str(func.getName())
+        func_name = func.getName()
         func_addr = str(func.getEntryPoint())
         func_size = int(func.getBody().getNumAddresses())
 
@@ -304,7 +289,6 @@ def decompile_functions() -> dict:
             if decomp_result is not None and decomp_result.depiledFunction() is not None:
                 c_code = decomp_result.getDecompiledFunction().getC()
                 if c_code:
-                    c_code = str(c_code)
                     # Disassembly cikar
                     disasm = extract_disassembly(func)
 
@@ -317,8 +301,7 @@ def decompile_functions() -> dict:
                     # Dosyaya yaz (decompile + disassembly birlikte)
                     filename = safe_filename(func_name) + ".c"
                     filepath = os.path.join(decompiled_dir, filename)
-                    # PyGhidra 3.0: encoding=utf-8 -- non-ASCII isimler korunur
-                    with open(filepath, "w", encoding="utf-8") as f:
+                    with open(filepath, "w") as f:
                         f.write("// Function: %s\n" % func_name)
                         f.write("// Address:  %s\n" % func_addr)
                         f.write("// Size:     %d bytes\n" % func_size)
@@ -362,7 +345,7 @@ def decompile_functions() -> dict:
                                     instr["text"],
                                 ))
 
-                    result_entry: dict = {
+                    result_entry = {
                         "name": func_name,
                         "address": func_addr,
                         "file": filename,
@@ -428,7 +411,7 @@ def decompile_functions() -> dict:
     }
 
 
-def main() -> None:
+def main():
     output_dir = get_output_dir()
     result = decompile_functions()
 
@@ -440,9 +423,8 @@ def main() -> None:
         result_copy["functions_truncated"] = True
 
     output_path = os.path.join(output_dir, "decompiled.json")
-    # PyGhidra 3.0: encoding=utf-8 + ensure_ascii=False non-ASCII isimleri korur
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result_copy, f, indent=2, ensure_ascii=False)
+    with open(output_path, "w") as f:
+        json.dump(result_copy, f, indent=2)
 
     print("BlackWidow: Decompiled %d/%d functions (failed=%d, skipped=%d, %.1fs) -> %s" % (
         result["success"],

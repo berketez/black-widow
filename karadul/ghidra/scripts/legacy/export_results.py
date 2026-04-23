@@ -1,28 +1,17 @@
-# Ghidra Python Script -- PyGhidra 3.0 (Python 3.10+) uyumlu
+# Ghidra Python Script -- Jython 2.7 uyumlu
 # @category BlackWidow
 # @description Combine all analysis results into a single JSON
-#
-# v1.11.0 Jython Sunset Faz 1.4 (Dalga 6B): Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/export_results.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
-#
-# NOT: Bu script en son calistirilmalidir (diger scriptlerin ciktilarini birlestirir).
-# CLI fallback icin kullanilir; PyGhidra native path karadul/ghidra/headless.py
-# uzerinden bypass edilir. Yine de parity korumasi icin migrate edilmistir.
-#
-# UYARI: Bu script Ghidra JVM icinde PyGhidra engine altinda calisir. Ghidra API
-# objeleri (currentProgram vb.) global scope'ta mevcuttur. JPype tipleri
-# (java.lang.String, java.lang.Long vb.) -> Python tiplerine explicit donusum
-# (str/int/bool) defansif olarak uygulanir.
 
-from __future__ import annotations
+# UYARI: Bu script Ghidra JVM icinde calisir.
+# Python 3 syntax'i KULLANILMAMALIDIR.
+# Bu script en son calistirilmalidir (diger scriptlerin ciktilarini birlestirir).
 
 import json
 import os
 import tempfile
 
 
-def get_output_dir() -> str:
+def get_output_dir():
     """KARADUL_OUTPUT ortam degiskeninden cikti dizinini al (CWE-377 guvenli).
 
     v1.10.0 Batch 5B HIGH-10: KARADUL_WORKSPACE_ROOT path traversal koruma.
@@ -50,40 +39,31 @@ def get_output_dir() -> str:
     return output
 
 
-def load_json_safe(path: str) -> dict | None:
-    """JSON dosyasini guvenli yukle, hata durumunda None dondur.
-
-    PyGhidra 3.0 notu: encoding=utf-8 ile acilir -- non-ASCII isimli
-    fonksiyon/string'ler Jython 2.7 default (latin-1) ile yazilmis olsa
-    bile UTF-8 BOM'suz dosyalar hatasiz okunur.
-    """
+def load_json_safe(path):
+    """JSON dosyasini guvenli yukle, hata durumunda None dondur."""
     if not os.path.exists(path):
         return None
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r") as f:
             return json.load(f)
     except (ValueError, IOError) as e:
         print("BlackWidow: JSON yukleme hatasi: %s: %s" % (path, e))
         return None
 
 
-def get_program_info() -> dict:
-    """Program bilgilerini topla.
-
-    PyGhidra 3.0 notu: JPype proxy tipleri str/int/bool wrap'lenerek
-    json.dumps TypeError'i engellenir.
-    """
-    prog = currentProgram  # type: ignore[name-defined]
+def get_program_info():
+    """Program bilgilerini topla."""
+    prog = currentProgram
     lang = prog.getLanguage()
     compiler = prog.getCompilerSpec()
 
-    info: dict = {
+    info = {
         "name": str(prog.getName()),
         "path": str(prog.getExecutablePath()),
         "language": str(lang.getLanguageID()),
         "processor": str(lang.getProcessor()),
         "endian": str(lang.isBigEndian() and "big" or "little"),
-        "address_size": int(lang.getDefaultSpace().getSize()),
+        "address_size": lang.getDefaultSpace().getSize(),
         "compiler": str(compiler.getCompilerSpecID()),
         "executable_format": str(prog.getExecutableFormat()),
         "image_base": str(prog.getImageBase()),
@@ -92,7 +72,7 @@ def get_program_info() -> dict:
     }
 
     # Entry point
-    entry_points: list = []
+    entry_points = []
     sym_table = prog.getSymbolTable()
     for symbol in sym_table.getExternalEntryPointIterator():
         entry_points.append(str(symbol))
@@ -100,17 +80,17 @@ def get_program_info() -> dict:
 
     # Memory blokları
     memory = prog.getMemory()
-    blocks: list = []
+    blocks = []
     for block in memory.getBlocks():
         blocks.append({
-            "name": str(block.getName()),
+            "name": block.getName(),
             "start": str(block.getStart()),
             "end": str(block.getEnd()),
-            "size": int(block.getSize()),
+            "size": block.getSize(),
             "permissions": "%s%s%s" % (
-                "r" if bool(block.isRead()) else "-",
-                "w" if bool(block.isWrite()) else "-",
-                "x" if bool(block.isExecute()) else "-",
+                "r" if block.isRead() else "-",
+                "w" if block.isWrite() else "-",
+                "x" if block.isExecute() else "-",
             ),
             "type": str(block.getType()),
         })
@@ -119,7 +99,7 @@ def get_program_info() -> dict:
     return info
 
 
-def main() -> None:
+def main():
     output_dir = get_output_dir()
 
     # Onceki scriptlerin ciktilarini yukle
@@ -132,7 +112,7 @@ def main() -> None:
     program_info = get_program_info()
 
     # Ozet istatistikler
-    summary: dict = {
+    summary = {
         "program": program_info,
         "function_count": functions_data["total"] if functions_data else 0,
         "string_count": strings_data["total"] if strings_data else 0,
@@ -143,7 +123,7 @@ def main() -> None:
     }
 
     # Birlesik sonuc
-    combined: dict = {
+    combined = {
         "summary": summary,
         "program_info": program_info,
     }
@@ -185,9 +165,8 @@ def main() -> None:
         }
 
     output_path = os.path.join(output_dir, "combined_results.json")
-    # PyGhidra 3.0: encoding=utf-8 + ensure_ascii=False non-ASCII isimleri korur
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(combined, f, indent=2, ensure_ascii=False)
+    with open(output_path, "w") as f:
+        json.dump(combined, f, indent=2)
 
     print("BlackWidow: Combined results exported -> %s" % output_path)
     print("  Functions: %d" % summary["function_count"])

@@ -2118,11 +2118,14 @@ class GhidraHeadless:
         Default False -> yeni PyGhidra 3.0 / Python 3 uyumlu script'ler.
 
         Migrate edilmis script'ler:
-          - Faz 1 (Dalga 2): function_lister.py
-          - Faz 1.2 (Dalga 3): string_extractor.py, type_recovery.py
-        Henuz migrate edilmemis 7 script her iki modda da scripts_dir/ altindan
-        yuklenir -- legacy bayragi acik olsa bile bu dosyalara dokunulmaz
-        (zaten Py2/Py3 ortak syntax'la yazilmislar).
+          - Faz 1   (Dalga 2):  function_lister.py
+          - Faz 1.2 (Dalga 3):  string_extractor.py, type_recovery.py
+          - Faz 1.3 (Dalga 4):  call_graph.py, cfg_extraction.py, xref_analysis.py
+          - Faz 1.4 (Dalga 6B): decompile_all.py, export_results.py,
+                                 function_id_extractor.py, pcode_analysis.py
+        Tum 10 Ghidra scripti artik PyGhidra 3.0'a migrate edildi. Legacy
+        bayragi acik oldugunda scripts/legacy/ altindaki Jython 2.7
+        backup'lari yuklenir (rollback icin).
         """
         scripts_dir = self.config.ghidra_scripts_dir
         legacy_dir = scripts_dir / "legacy"
@@ -2130,15 +2133,19 @@ class GhidraHeadless:
             self.config.perf, "use_legacy_jython_scripts", False
         )
 
-        # v1.11.0 Faz 1.3: Bu set legacy backup'i mevcut olan migrate edilmis
-        # script'leri tutar. Faz 2'de genisler.
+        # v1.11.0 Faz 1.4: Bu set legacy backup'i mevcut olan migrate edilmis
+        # script'leri tutar. Dalga 6B ile 10/10 tamamlandi.
         migrated_scripts = {
-            "function_lister.py",   # Dalga 2 (v1.11.0 Faz 1)
-            "string_extractor.py",  # Dalga 3 (v1.11.0 Faz 1.2)
-            "type_recovery.py",     # Dalga 3 (v1.11.0 Faz 1.2)
-            "call_graph.py",        # Dalga 4 (v1.11.0 Faz 1.3)
-            "cfg_extraction.py",    # Dalga 4 (v1.11.0 Faz 1.3)
-            "xref_analysis.py",     # Dalga 4 (v1.11.0 Faz 1.3)
+            "function_lister.py",         # Dalga 2  (v1.11.0 Faz 1)
+            "string_extractor.py",        # Dalga 3  (v1.11.0 Faz 1.2)
+            "type_recovery.py",           # Dalga 3  (v1.11.0 Faz 1.2)
+            "call_graph.py",              # Dalga 4  (v1.11.0 Faz 1.3)
+            "cfg_extraction.py",          # Dalga 4  (v1.11.0 Faz 1.3)
+            "xref_analysis.py",           # Dalga 4  (v1.11.0 Faz 1.3)
+            "decompile_all.py",           # Dalga 6B (v1.11.0 Faz 1.4)
+            "export_results.py",          # Dalga 6B (v1.11.0 Faz 1.4)
+            "function_id_extractor.py",   # Dalga 6B (v1.11.0 Faz 1.4)
+            "pcode_analysis.py",          # Dalga 6B (v1.11.0 Faz 1.4)
         }
 
         ordered_names = [

@@ -1704,35 +1704,52 @@ class ReconstructionStage(Stage):
     def _run_algorithm_engineering(
         self, context: PipelineContext, rc: ReconstructionContext
     ) -> None:
-        """Algorithm ID + Engineering + Binary Name + Calibration + Budget + CAPA (plan §3 metot 7).
+        """Algorithm ID + Engineering + Binary Name + Calibration + Budget + CAPA.
 
-        Eski ``_execute_binary`` satir 1835-2184 karsiligi. Paralel olarak
-        (ThreadPoolExecutor, 3 worker) algorithm identification, binary
-        name extraction ve engineering analysis calistirir; sonra
-        confidence calibration, engineering+crypto merge, match budget
-        clamp ve CAPA capability naming'i uygular.
+        v1.11.0 Dalga 6A: 4 alt-adima bolundu (CC=73 -> ~15 ortalama).
+        Davranis degismez, sadece yapi degisir. Aynindan log mesajlari,
+        ayni artifact'ler, ayni sira.
 
-        Tum dogrudan ``rc.ph1_artifacts`` ve ``rc.byte_pattern_names``
-        girdisine bagli; ``rc.algo_result``, ``rc.eng_result``,
-        ``rc.extracted_names``, ``rc.calibrated_matches``,
-        ``rc.capa_capabilities`` doldurulur.
+        Alt adimlar:
+
+        1. ``_run_parallel_analysis`` -- 3 worker paralel algorithm ID +
+           binary name extraction + engineering analysis.
+        2. ``_merge_analysis_results`` -- paralel sonuclari rc'ye aktar,
+           engineering+crypto merge dosyasi uret.
+        3. ``_calibrate_and_clamp`` -- confidence calibration + match
+           budget clamp.
+        4. ``_apply_capa_naming`` -- CAPA capability -> isim donusumu,
+           byte_pattern_names + CAPA merge.
+        """
+        parallel_result = self._run_parallel_analysis(context, rc)
+        self._merge_analysis_results(context, rc, parallel_result)
+        self._calibrate_and_clamp(context, rc)
+        self._apply_capa_naming(context, rc)
+
+    def _run_parallel_analysis(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> dict[str, Any]:
+        """3 worker paralel Algorithm ID + Binary Name + Engineering (Dalga 6A #1).
+
+        ThreadPoolExecutor ile uc bagimsiz islemi paralel calistirir ve
+        raw dict sonuclari dondurur (merge ``_merge_analysis_results``
+        sorumlulugunda).
+
+        Returns:
+            ``{"algo_dict": ..., "name_dict": ..., "eng_dict": ...}``
+            -- her biri ``{"success": bool, "result": ..., "stats": ...,
+            "artifacts": ..., "skipped"/"error": ...}`` formatinda.
         """
         decompiled_dir = rc.ph1_artifacts["decompiled_dir"]
         functions_json = rc.ph1_artifacts["functions_json_path"]
         strings_json = rc.ph1_artifacts["strings_json_path"]
         call_graph_json = rc.ph1_artifacts["call_graph_json_path"]
-        c_files = rc.ph1_artifacts["c_files"]
-        _file_cache = rc.file_cache
-        byte_pattern_names = rc.byte_pattern_names
 
         context.report_progress("Algorithm ID + Binary Name Extraction...", 0.25)
         # 1 & 1.5: Algorithm ID ve Binary Name Extraction PARALEL
         _step_start = time.monotonic()
         # v1.9.2: Thread-safe -- her worker kendi result'ini return eder,
         # main thread'de merge edilir. nonlocal + shared dict anti-pattern kaldirildi.
-        algo_result = None
-        extracted_names: dict[str, str] = {}
-        eng_result = None
 
         def _run_algorithm_id():
             """Algorithm Identification (constant + structural + API tarama)."""
@@ -1866,6 +1883,36 @@ class ReconstructionStage(Stage):
         _name_dict = name_future.result()
         _eng_dict = eng_future.result()
 
+        rc.stats["timing_algo_name_eng_parallel"] = round(time.monotonic() - _step_start, 1)
+        return {
+            "algo_dict": _algo_dict,
+            "name_dict": _name_dict,
+            "eng_dict": _eng_dict,
+        }
+
+    def _merge_analysis_results(
+        self,
+        context: PipelineContext,
+        rc: ReconstructionContext,
+        parallel_result: dict[str, Any],
+    ) -> None:
+        """Paralel sonuclari rc'ye aktar ve engineering+crypto merge dosyasi uret (Dalga 6A #2).
+
+        ``_run_parallel_analysis`` dondurdugu dict'i parse eder;
+        rc.algo_result, rc.eng_result ve (gecici) extracted_names'i
+        doldurur. Engineering + crypto merge dosyasini ``calibrate``
+        ADIMINDAN SONRA uretmek gerekir cunku kalibre matches merge'e
+        eklenir -- bu metot sadece algo/eng sonuclarini commit eder,
+        merge dosyasi ``_calibrate_and_clamp`` tarafindan yazilir.
+        """
+        _algo_dict = parallel_result["algo_dict"]
+        _name_dict = parallel_result["name_dict"]
+        _eng_dict = parallel_result["eng_dict"]
+
+        algo_result = None
+        extracted_names: dict[str, str] = {}
+        eng_result = None
+
         if _algo_dict.get("success"):
             algo_result = _algo_dict.get("result")
             rc.stats.update(_algo_dict.get("stats", {}))
@@ -1887,7 +1934,29 @@ class ReconstructionStage(Stage):
         elif not _eng_dict.get("skipped") and "error" in _eng_dict:
             rc.errors.append(_eng_dict["error"])
 
-        rc.stats["timing_algo_name_eng_parallel"] = round(time.monotonic() - _step_start, 1)
+        # Aragecici commit -- calibrate_and_clamp bu alanlari ayrica
+        # mutasyona ugratir (match budget clamp eng_result/algo_result
+        # icindeki algorithms listesini kirpabilir).
+        rc.algo_result = algo_result
+        rc.eng_result = eng_result
+        rc.extracted_names = extracted_names
+
+    def _calibrate_and_clamp(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> None:
+        """Confidence calibration + match budget clamp (Dalga 6A #3).
+
+        1.5.1: Engineering sonuclarini confidence calibrator'dan gecir.
+        1.6: Engineering + crypto merge JSON dosyasi (kalibre matches
+        varsa icine ekle).
+        v1.4.3 Match Budget: downstream modullerin isleyecegi match
+        sayisini ``max_algo_matches`` ile sinirla -- en dusuk confidence
+        match'leri kes.
+        """
+        c_files = rc.ph1_artifacts["c_files"]
+        _file_cache = rc.file_cache
+        algo_result = rc.algo_result
+        eng_result = rc.eng_result
 
         # 1.5.1: Confidence Calibration -- engineering sonuclarini kalibre et
         _step_start = time.monotonic()
@@ -2012,6 +2081,25 @@ class ReconstructionStage(Stage):
             rc.stats["match_budget_original"] = _total_matches
             rc.stats["match_budget_kept"] = len(_kept_crypto) + len(_kept_eng)
 
+        # Kalibre matches'i rc'ye commit et (1.6 merge dosyasi da yazildi,
+        # ondan sonra match budget clamp algo/eng listelerini kirpmis olabilir).
+        rc.calibrated_matches = calibrated_matches
+
+    def _apply_capa_naming(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> None:
+        """Byte pattern names + CAPA capability -> isim donusumu (Dalga 6A #4).
+
+        1.8: ``rc.byte_pattern_names`` (byte pattern matcher cikisi)
+        icindeki eslestirmeleri extracted_names'e merge eder (mevcut
+        isimleri EZMEZ -- binary_name_extractor sonuclari oncelikli).
+        1.8.5: Eger ``enable_capa`` acik ve ``static/capa_capabilities``
+        JSON'u varsa, CAPA capability'lerini ranked fonksiyon isimlerine
+        cevirir ve henuz isimlendirilmemis fonksiyonlara atar.
+        """
+        byte_pattern_names = rc.byte_pattern_names
+        extracted_names = rc.extracted_names
+
         # 1.8. Byte pattern sonuclarini extracted_names'e merge et
         # (byte_pattern_names c_namer'in pre_names'ine gidecek)
         if byte_pattern_names:
@@ -2076,11 +2164,9 @@ class ReconstructionStage(Stage):
                 logger.debug("CAPA naming entegrasyonu hatasi: %s", exc)
         rc.stats["timing_capa_naming"] = round(time.monotonic() - _step_start, 1)
 
-        # rc state'e commit
-        rc.algo_result = algo_result
-        rc.eng_result = eng_result
+        # rc state'e commit (extracted_names yerel ref'i rc.extracted_names
+        # ile ayni dict objesini mutasyona ugratti; CAPA icin ayrica atiyoruz).
         rc.extracted_names = extracted_names
-        rc.calibrated_matches = calibrated_matches
         rc.capa_capabilities = _capa_capabilities
 
     def _execute_binary(self, context: PipelineContext, start: float) -> StageResult:

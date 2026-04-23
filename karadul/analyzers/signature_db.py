@@ -4168,6 +4168,44 @@ _WIN32_NTDLL_SIGNATURES: dict[str, dict[str, str]] = {
 
 
 # ---------------------------------------------------------------------------
+# MSVC CRT fallback (sig_db Faz 6C) — legacy'de karsiligi yok.
+# `sigdb_builtin.pe_runtime` import basarisiz olursa bos kalir.
+# `_load_builtin_signatures` tuple'i bu sembolu bekler.
+# ---------------------------------------------------------------------------
+_MSVC_CRT_SIGNATURES: dict[str, dict[str, str]] = {}
+
+
+# ---------------------------------------------------------------------------
+# sig_db Faz 6C — PE/MSVC runtime kategori override (dalga 6C)
+# ---------------------------------------------------------------------------
+# Veri `karadul.analyzers.sigdb_builtin.pe_runtime` modulune tasindi. Ayni
+# rollback-guvenli override pattern'i (crypto/compression/network ile ozdes).
+# Uc dict hedefler:
+#   - kernel32 / ntdll   -> legacy uzerine identity parity (veri degismez)
+#   - msvc_crt           -> YENI coverage (180+ MSVCRT/UCRT/VCRUNTIME entry)
+# NOT: msvc_crt entry'lerinin bir alt kumesi (~77) legacy
+#      `_MEGA_BATCH_1_SIGNATURES` icinde mevcuttur; ayni icerikle cakisir
+#      (idempotent update).
+try:
+    from karadul.analyzers.sigdb_builtin.pe_runtime import (
+        SIGNATURES as _BUILTIN_PE_RUNTIME_SIGNATURES,
+    )
+except ImportError:  # pragma: no cover - paket yoksa legacy fallback
+    _BUILTIN_PE_RUNTIME_SIGNATURES = None  # type: ignore[assignment]
+
+if _BUILTIN_PE_RUNTIME_SIGNATURES is not None:
+    _WIN32_KERNEL32_SIGNATURES = _BUILTIN_PE_RUNTIME_SIGNATURES.get(
+        "kernel32_signatures", _WIN32_KERNEL32_SIGNATURES
+    )
+    _WIN32_NTDLL_SIGNATURES = _BUILTIN_PE_RUNTIME_SIGNATURES.get(
+        "ntdll_signatures", _WIN32_NTDLL_SIGNATURES
+    )
+    _MSVC_CRT_SIGNATURES = _BUILTIN_PE_RUNTIME_SIGNATURES.get(
+        "msvc_crt_signatures", _MSVC_CRT_SIGNATURES
+    )
+
+
+# ---------------------------------------------------------------------------
 # Linux-specific syscall wrappers (~35)
 # glibc/musl wrapper'lari.  macOS binary'lerinde bulunmaz ama
 # cross-platform analiz icin gerekli.
@@ -9180,6 +9218,8 @@ class SignatureDB:
             _MACOS_EXT_SIGNATURES,
             _MEGA_BATCH_1_SIGNATURES,
             _MEGA_BATCH_2_SIGNATURES,
+            # v1.12.0 Faz 6C: PE/MSVC runtime (yeni coverage)
+            _MSVC_CRT_SIGNATURES,
         ):
             self._symbol_db.update(db)
 

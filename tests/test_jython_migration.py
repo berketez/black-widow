@@ -110,8 +110,12 @@ class TestFeatureFlag:
         assert "legacy" in fl_paths[0].parts
 
     def test_non_migrated_scripts_unaffected_by_flag(self) -> None:
-        """Flag True bile olsa henuz migrate edilmemis script'ler ana
-        scripts_dir'den yuklenmeli (legacy backup'lari yok)."""
+        """v1.11.0 Dalga 6B sonrası tüm default scriptler migrate edildi.
+
+        Flag True iken HEPSİ legacy/'den yüklenmeli; migrate edilmemiş
+        script kalmadığı için non_migrated set'i boş. Ileride yeni bir
+        script eklenirse (migrate edilmemiş) burada tekrar doldurulur.
+        """
         from karadul.config import Config
         from karadul.ghidra.headless import GhidraHeadless
 
@@ -120,16 +124,12 @@ class TestFeatureFlag:
         ghidra = GhidraHeadless(cfg)
         scripts = ghidra.get_default_scripts()
 
-        # Faz 1 Dalga 2: function_lister migrate
-        # Faz 1.2 Dalga 3: string_extractor + type_recovery migrate
-        # Faz 1.3 Dalga 4: call_graph + cfg_extraction + xref_analysis migrate
-        # Kalan 4 script henuz ana scripts_dir/ altinda (Faz 2 hedef).
-        non_migrated = {
-            "decompile_all.py",
-            "pcode_analysis.py",
-            "function_id_extractor.py",
-            "export_results.py",
-        }
+        # Faz 1 Dalga 2: function_lister
+        # Faz 1.2 Dalga 3: string_extractor + type_recovery
+        # Faz 1.3 Dalga 4: call_graph + cfg_extraction + xref_analysis
+        # Faz 1.4 Dalga 6B: decompile_all + export_results +
+        #                    function_id_extractor + pcode_analysis
+        non_migrated: set[str] = set()
         for script in scripts:
             if script.name in non_migrated:
                 assert "legacy" not in script.parts, (
@@ -217,6 +217,64 @@ class TestFeatureFlag:
         import py_compile
 
         for name in ("call_graph.py", "cfg_extraction.py", "xref_analysis.py"):
+            script = SCRIPTS_DIR / name
+            assert script.exists(), f"Migrate edilmis script bulunamadi: {script}"
+            py_compile.compile(str(script), doraise=True)
+
+    def test_dalga6_migrated_scripts_load_from_legacy_when_flag_on(self) -> None:
+        """Faz 1.4 Dalga 6B: flag=True -> 4 yeni migrate legacy'den."""
+        from karadul.config import Config
+        from karadul.ghidra.headless import GhidraHeadless
+
+        cfg = Config()
+        cfg.perf.use_legacy_jython_scripts = True
+        ghidra = GhidraHeadless(cfg)
+        scripts = ghidra.get_default_scripts()
+
+        migrated_in_dalga6 = {
+            "decompile_all.py",
+            "export_results.py",
+            "function_id_extractor.py",
+            "pcode_analysis.py",
+        }
+        for script in scripts:
+            if script.name in migrated_in_dalga6:
+                assert "legacy" in script.parts, (
+                    f"{script.name} flag=True iken legacy/'den yuklenmeli"
+                )
+
+    def test_dalga6_migrated_scripts_use_new_when_flag_off(self) -> None:
+        """Faz 1.4 Dalga 6B: default flag=False -> yeni PyGhidra 3.0."""
+        from karadul.config import Config
+        from karadul.ghidra.headless import GhidraHeadless
+
+        cfg = Config()
+        assert cfg.perf.use_legacy_jython_scripts is False
+        ghidra = GhidraHeadless(cfg)
+        scripts = ghidra.get_default_scripts()
+
+        migrated_in_dalga6 = {
+            "decompile_all.py",
+            "export_results.py",
+            "function_id_extractor.py",
+            "pcode_analysis.py",
+        }
+        for script in scripts:
+            if script.name in migrated_in_dalga6:
+                assert "legacy" not in script.parts, (
+                    f"{script.name} flag=False iken yeni versiyonu yuklenmeli"
+                )
+
+    def test_dalga6_migrated_scripts_py3_compile(self) -> None:
+        """Faz 1.4 Dalga 6B: 4 yeni migrate py_compile OK (Python 3)."""
+        import py_compile
+
+        for name in (
+            "decompile_all.py",
+            "export_results.py",
+            "function_id_extractor.py",
+            "pcode_analysis.py",
+        ):
             script = SCRIPTS_DIR / name
             assert script.exists(), f"Migrate edilmis script bulunamadi: {script}"
             py_compile.compile(str(script), doraise=True)
