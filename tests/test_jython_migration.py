@@ -122,13 +122,11 @@ class TestFeatureFlag:
 
         # Faz 1 Dalga 2: function_lister migrate
         # Faz 1.2 Dalga 3: string_extractor + type_recovery migrate
-        # Kalan 7 script henuz ana scripts_dir/ altinda (Faz 2 hedef).
+        # Faz 1.3 Dalga 4: call_graph + cfg_extraction + xref_analysis migrate
+        # Kalan 4 script henuz ana scripts_dir/ altinda (Faz 2 hedef).
         non_migrated = {
-            "call_graph.py",
             "decompile_all.py",
-            "xref_analysis.py",
             "pcode_analysis.py",
-            "cfg_extraction.py",
             "function_id_extractor.py",
             "export_results.py",
         }
@@ -171,6 +169,57 @@ class TestFeatureFlag:
                 assert "legacy" not in script.parts, (
                     f"{script.name} flag=False iken yeni versiyonu yuklenmeli"
                 )
+
+    def test_dalga4_migrated_scripts_load_from_legacy_when_flag_on(self) -> None:
+        """Faz 1.3 Dalga 4: Flag True -> call_graph/cfg_extraction/xref_analysis legacy'den."""
+        from karadul.config import Config
+        from karadul.ghidra.headless import GhidraHeadless
+
+        cfg = Config()
+        cfg.perf.use_legacy_jython_scripts = True
+        ghidra = GhidraHeadless(cfg)
+        scripts = ghidra.get_default_scripts()
+
+        migrated_in_dalga4 = {
+            "call_graph.py",
+            "cfg_extraction.py",
+            "xref_analysis.py",
+        }
+        for script in scripts:
+            if script.name in migrated_in_dalga4:
+                assert "legacy" in script.parts, (
+                    f"{script.name} flag=True iken legacy/'den yuklenmeli"
+                )
+
+    def test_dalga4_migrated_scripts_use_new_when_flag_off(self) -> None:
+        """Faz 1.3 Dalga 4: Default flag=False -> yeni PyGhidra 3.0 versiyonlari."""
+        from karadul.config import Config
+        from karadul.ghidra.headless import GhidraHeadless
+
+        cfg = Config()
+        assert cfg.perf.use_legacy_jython_scripts is False
+        ghidra = GhidraHeadless(cfg)
+        scripts = ghidra.get_default_scripts()
+
+        migrated_in_dalga4 = {
+            "call_graph.py",
+            "cfg_extraction.py",
+            "xref_analysis.py",
+        }
+        for script in scripts:
+            if script.name in migrated_in_dalga4:
+                assert "legacy" not in script.parts, (
+                    f"{script.name} flag=False iken yeni versiyonu yuklenmeli"
+                )
+
+    def test_dalga4_migrated_scripts_py3_compile(self) -> None:
+        """Faz 1.3 Dalga 4: 3 script py_compile OK (Python 3 syntax)."""
+        import py_compile
+
+        for name in ("call_graph.py", "cfg_extraction.py", "xref_analysis.py"):
+            script = SCRIPTS_DIR / name
+            assert script.exists(), f"Migrate edilmis script bulunamadi: {script}"
+            py_compile.compile(str(script), doraise=True)
 
 
 class TestScriptOrderPreserved:

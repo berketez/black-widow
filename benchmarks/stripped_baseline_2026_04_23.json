@@ -1,0 +1,107 @@
+{
+  "date": "2026-04-23",
+  "version": "v1.11.0-beta",
+  "description": "Gercek stripped binary baseline olcumu. DIKKAT: Bu olcumlerin buyuk kismi METODOLOJIK SORUNLARI ortaya cikardi; gorunen F1/precision degerleri sahte-yuksek. Detaylar 'analysis' bolumunde.",
+  "fixtures": {
+    "sample_macho_debug": {
+      "size_bytes": 33600,
+      "strip_level": "unstripped (has debug + locals)",
+      "export_symbols_nm": 6,
+      "ghidra_functions_total": null,
+      "ghidra_functions_fun_prefix": null,
+      "benchmark": {
+        "f1": 0.909,
+        "precision": 0.833,
+        "recall": 1.000,
+        "fun_residue_pct": 0.0,
+        "total_symbols": 6,
+        "source": "benchmarks/baseline_metrics.json"
+      },
+      "notes": "v1.11.0 baseline. Debug symbols present, misleading."
+    },
+    "sample_macho_stripped": {
+      "size_bytes": 34080,
+      "strip_level": "strip (default) - BUT export table still intact",
+      "export_symbols_nm": 1,
+      "ghidra_functions_total": 6,
+      "ghidra_functions_fun_prefix": 0,
+      "analyze_duration_sec": 16.9,
+      "analyze_status": "OK (5/5 stages)",
+      "benchmark": {
+        "f1": 1.000,
+        "precision": 1.000,
+        "recall": 1.000,
+        "fun_residue_pct": 0.0,
+        "total_symbols": 1,
+        "exact_matches": 1,
+        "preserved_matches": 1,
+        "karadul_actual_renames": 0
+      },
+      "notes": "TRIVIAL: nm GT has only __mh_execute_header. Karadul did not rename anything new. F1=1/1 is an artifact of GT size."
+    },
+    "libsqlite3_stripped": {
+      "size_bytes": 1270336,
+      "strip_level": "system-stripped dylib - export table intact",
+      "export_symbols_nm": 348,
+      "ghidra_functions_total": 2696,
+      "ghidra_functions_fun_prefix": 4,
+      "fun_prefix_pct_real": 0.15,
+      "analyze_duration_sec": 900,
+      "analyze_status": "TIMEOUT at 15min (static=763s done, deobfuscate=5.6s done, reconstruct partial, report incomplete) - naming_map.json was produced before timeout",
+      "benchmark": {
+        "f1": 1.000,
+        "precision": 1.000,
+        "recall": 1.000,
+        "fun_residue_pct": 0.0,
+        "total_symbols": 348,
+        "exact_matches": 348,
+        "preserved_matches": 348,
+        "karadul_actual_renames": 0,
+        "naming_map_size": {
+          "global_keys": 134,
+          "per_function_keys": 2121,
+          "per_function_var_renames": 14775
+        }
+      },
+      "notes": "TRIVIAL-HIGH: All 348 GT symbols matched via symbols.json cross-ref (export table preserved in dylib). Per-symbol 'recovered' is literally the nm name. Karadul's real contribution (naming 2696-348=2348 internal functions) is NOT measured here."
+    }
+  },
+  "analysis": {
+    "methodological_issues": [
+      "Issue 1: macOS 'strip' (default) does not remove the export symbol table from Mach-O exe/dylib. The test fixtures used here are NOT truly stripped in the 'every function is FUN_<addr>' sense.",
+      "Issue 2: benchmark_runner.find_symbol_mapping reads static/symbols.json (which contains nm output) and uses it to cross-reference ground truth back to preserved names. When nm symbols survive, GT lookups trivially succeed even if karadul naming_map is empty.",
+      "Issue 3: Ground truth is generated via nm, which only sees export symbols. Non-export internal functions (the ones karadul actually renames) are never in GT, so karadul's real naming quality is untested.",
+      "Issue 4: FUN_ residue is computed over flat(naming_map). karadul's per_function keys never start with FUN_ (they get the Ghidra symbol-table name which retained export/thunk names), so residue is near-0 regardless of quality."
+    ],
+    "debug_vs_stripped_delta": {
+      "sample_macho_debug_f1": 0.909,
+      "sample_macho_stripped_f1": 1.000,
+      "delta_f1": "+0.091 (GOING UP?!)",
+      "interpretation": "Delta is nonsensical: debug build had 6 GT symbols and karadul mis-named 1 of them, stripped build has 1 GT symbol and got it exact. Both measurements are fragile."
+    },
+    "real_residue_per_fixture": {
+      "sample_macho_stripped": "0/6 FUN_ (0%) in ghidra_functions.json - all names came from export table",
+      "libsqlite3_stripped": "4/2696 FUN_ (0.15%) in ghidra_functions.json - 99.85% names preserved by Ghidra/export"
+    }
+  },
+  "recommendations": {
+    "ci_gate": "DO NOT switch CI gate to these 'stripped' fixtures yet. They measure trivial preservation, not naming quality. Current sample_macho baseline is misleading but at least exercises the rename pipeline (1 wrong rename in 6).",
+    "required_fixture_work": [
+      "Build a TRULY stripped fixture: compile sample_macho with -s and also rewrite Mach-O LC_SYMTAB to drop export names (e.g., use 'strip -Sx' + custom postprocessor, or target ELF with 'strip --strip-all').",
+      "Add a Linux ELF fixture (e.g., compile sample.c on Linux or cross-compile, then 'strip --strip-all'). ELF strip removes .symtab cleanly and forces Ghidra to produce FUN_<addr> names. This gives a realistic 100%-FUN_ baseline.",
+      "Target metric on truly-stripped fixture: 'how many FUN_<addr> did karadul successfully rename to something meaningful?' rather than 'did it match nm output?'."
+    ],
+    "benchmark_runner_fix": [
+      "Remove or gate step 4 of _compare_maps (the 'preserved name via symbols.json' path). Currently this inflates F1 for any binary with intact export tables.",
+      "Add 'renamed_from_placeholder' counter: number of GT entries where recovered != placeholder AND recovered != nm-preserved name. This is the true signal.",
+      "Split metrics by 'preserved' vs 'recovered': export-symbol GT entries should get their own category and should NOT count toward the main F1."
+    ],
+    "week2_priority": [
+      "P0: Add a Linux ELF truly-stripped fixture to the repo (e.g., tests/fixtures/sample_elf_stripped). This unblocks all real metric work.",
+      "P1: Fix _compare_maps so 'preserved' and 'karadul-renamed' are distinguished. Update baseline_metrics.json with both numbers.",
+      "P2: FUN_ residue must be measured against ghidra_functions.json (full function list), not only flat(naming_map).",
+      "P3: Re-compute all deltas with the two fixes above. Current debug -> stripped delta of +0.091 is noise."
+    ],
+    "v1_20_5_target_revision": "Keep revising AFTER P0-P1 are done. Any performance target based on current F1=0.909 / F1=1.000 numbers is built on sand."
+  }
+}

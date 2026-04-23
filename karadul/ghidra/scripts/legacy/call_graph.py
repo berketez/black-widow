@@ -1,28 +1,16 @@
-# Ghidra Python Script -- PyGhidra 3.0 (Python 3.10+) uyumlu
+# Ghidra Python Script -- Jython 2.7 uyumlu
 # @category BlackWidow
 # @description Extract call graph (callers and callees for each function)
-#
-# v1.11.0 Jython Sunset Faz 1.3 (Dalga 4): Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/call_graph.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
-#
-# NOT: Bu script CLI fallback icin kullanilir. PyGhidra native path
-# karadul/ghidra/headless.py:253 uzerinden bypass edilir. Yine de
-# parity korumasi icin migrate edilmistir.
-#
-# UYARI: Bu script Ghidra JVM icinde PyGhidra engine altinda calisir. Ghidra API
-# objeleri (currentProgram, FunctionManager, ReferenceManager vb.) global
-# scope'ta mevcuttur. JPype tipleri (java.lang.String, java.lang.Long vb.) ->
-# Python tiplerine explicit donusum (str/int/bool) defansif olarak uygulanir.
 
-from __future__ import annotations
+# UYARI: Bu script Ghidra JVM icinde calisir.
+# Python 3 syntax'i KULLANILMAMALIDIR.
 
 import json
 import os
 import tempfile
 
 
-def get_output_dir() -> str:
+def get_output_dir():
     """KARADUL_OUTPUT ortam degiskeninden cikti dizinini al (CWE-377 guvenli).
 
     v1.10.0 Fix Sprint MED-4: tempfile.mkdtemp() ile rastgele isim.
@@ -51,36 +39,32 @@ def get_output_dir() -> str:
     return output
 
 
-def extract_call_graph() -> tuple:
+def extract_call_graph():
     """Her fonksiyon icin caller ve callee listelerini cikar.
 
     Ghidra'nin referans yoneticisini kullanarak
     UNCONDITIONAL_CALL referanslarini takip eder.
-
-    PyGhidra 3.0 notu: JPype Java proxy objelerinde str()/int() wrap
-    ZORUNLU -- aksi halde downstream JSON serialization'da java.lang.String
-    instance'lari gorulebilir ve json.dumps TypeError atar.
     """
-    fm = currentProgram.getFunctionManager()  # type: ignore[name-defined]
-    ref_mgr = currentProgram.getReferenceManager()  # type: ignore[name-defined]
+    fm = currentProgram.getFunctionManager()
+    ref_mgr = currentProgram.getReferenceManager()
 
-    nodes: dict = {}   # addr -> {name, callers[], callees[]}
-    edges: list = []   # {from, to, from_name, to_name}
+    nodes = {}   # addr -> {name, callers[], callees[]}
+    edges = []   # {from, to, from_name, to_name}
 
     for func in fm.getFunctions(True):
-        func_name = str(func.getName())
+        func_name = func.getName()
         func_addr = str(func.getEntryPoint())
 
-        callers: list = []
-        callees: list = []
+        callers = []
+        callees = []
 
         # Callers: bu fonksiyona kim cagri yapiyor?
         refs_to = ref_mgr.getReferencesTo(func.getEntryPoint())
         for ref in refs_to:
-            if bool(ref.getReferenceType().isCall()):
+            if ref.getReferenceType().isCall():
                 caller_func = fm.getFunctionContaining(ref.getFromAddress())
                 if caller_func is not None:
-                    caller_name = str(caller_func.getName())
+                    caller_name = caller_func.getName()
                     caller_addr = str(caller_func.getEntryPoint())
                     if caller_addr != func_addr:  # self-call haric
                         callers.append({
@@ -95,12 +79,12 @@ def extract_call_graph() -> tuple:
             addr = addr_set_iter.next()
             refs_from = ref_mgr.getReferencesFrom(addr)
             for ref in refs_from:
-                if bool(ref.getReferenceType().isCall()):
+                if ref.getReferenceType().isCall():
                     callee_func = fm.getFunctionAt(ref.getToAddress())
                     if callee_func is None:
                         callee_func = fm.getFunctionContaining(ref.getToAddress())
                     if callee_func is not None:
-                        callee_name = str(callee_func.getName())
+                        callee_name = callee_func.getName()
                         callee_addr = str(callee_func.getEntryPoint())
                         if callee_addr != func_addr:  # self-call haric
                             callees.append({
@@ -115,15 +99,15 @@ def extract_call_graph() -> tuple:
                             })
 
         # Unique callers/callees (adrese gore)
-        seen_callers: set = set()
-        unique_callers: list = []
+        seen_callers = set()
+        unique_callers = []
         for c in callers:
             if c["address"] not in seen_callers:
                 seen_callers.add(c["address"])
                 unique_callers.append(c)
 
-        seen_callees: set = set()
-        unique_callees: list = []
+        seen_callees = set()
+        unique_callees = []
         for c in callees:
             if c["address"] not in seen_callees:
                 seen_callees.add(c["address"])
@@ -139,8 +123,8 @@ def extract_call_graph() -> tuple:
         }
 
     # Unique edges
-    seen_edges: set = set()
-    unique_edges: list = []
+    seen_edges = set()
+    unique_edges = []
     for e in edges:
         key = (e["from"], e["to"])
         if key not in seen_edges:
@@ -150,9 +134,9 @@ def extract_call_graph() -> tuple:
     return nodes, unique_edges
 
 
-def find_root_functions(nodes) -> list:
+def find_root_functions(nodes):
     """Caller'i olmayan (root) fonksiyonlari bul."""
-    roots: list = []
+    roots = []
     for addr, node in nodes.items():
         if node["caller_count"] == 0 and node["callee_count"] > 0:
             roots.append({
@@ -163,9 +147,9 @@ def find_root_functions(nodes) -> list:
     return roots
 
 
-def find_leaf_functions(nodes) -> list:
+def find_leaf_functions(nodes):
     """Callee'si olmayan (leaf) fonksiyonlari bul."""
-    leaves: list = []
+    leaves = []
     for addr, node in nodes.items():
         if node["callee_count"] == 0 and node["caller_count"] > 0:
             leaves.append({
@@ -176,14 +160,14 @@ def find_leaf_functions(nodes) -> list:
     return leaves
 
 
-def main() -> None:
+def main():
     output_dir = get_output_dir()
     nodes, edges = extract_call_graph()
     roots = find_root_functions(nodes)
     leaves = find_leaf_functions(nodes)
 
     result = {
-        "program": str(currentProgram.getName()),  # type: ignore[name-defined]
+        "program": str(currentProgram.getName()),
         "total_functions": len(nodes),
         "total_edges": len(edges),
         "root_functions": len(roots),
@@ -195,9 +179,8 @@ def main() -> None:
     }
 
     output_path = os.path.join(output_dir, "call_graph.json")
-    # PyGhidra 3.0: encoding=utf-8 + ensure_ascii=False non-ASCII isimleri korur
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
+    with open(output_path, "w") as f:
+        json.dump(result, f, indent=2)
 
     print("BlackWidow: Call graph extracted: %d nodes, %d edges -> %s" % (
         len(nodes), len(edges), output_path,

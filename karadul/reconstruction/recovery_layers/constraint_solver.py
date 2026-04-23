@@ -688,7 +688,8 @@ class ConstraintSolver:
             func_name = c_file.stem
             try:
                 content = c_file.read_text(errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("cast_deref: C dosyasi okunamadi %s: %s", c_file, e, exc_info=True)
                 continue
 
             for line in content.splitlines():
@@ -696,7 +697,8 @@ class ConstraintSolver:
                 for m in _CAST_DEREF.finditer(line):
                     try:
                         offset = _parse_offset(m.group("offset"))
-                    except (ValueError, TypeError):
+                    except (ValueError, TypeError) as e:
+                        logger.debug("cast_deref: offset parse atlandi func=%s: %s", func_name, e, exc_info=True)
                         continue
 
                     raw_type = m.group("type").strip()
@@ -746,7 +748,8 @@ class ConstraintSolver:
             func_name = c_file.stem
             try:
                 content = c_file.read_text(errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("array_index: C dosyasi okunamadi %s: %s", c_file, e, exc_info=True)
                 continue
 
             for m in _ARRAY_INDEX.finditer(content):
@@ -758,7 +761,8 @@ class ConstraintSolver:
 
                 try:
                     stride = _parse_offset(m.group("stride"))
-                except (ValueError, TypeError):
+                except (ValueError, TypeError) as e:
+                    logger.debug("array_index: stride parse atlandi func=%s base=%s: %s", func_name, base_var, e, exc_info=True)
                     continue
 
                 idx2 = m.group("idx2")
@@ -1199,7 +1203,8 @@ class ConstraintSolver:
             func_name = c_file.stem
             try:
                 content = c_file.read_text(errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("param_types: C dosyasi okunamadi %s: %s", c_file, e, exc_info=True)
                 continue
 
             # v1.8.0: Parametre tip cikarim regex'leri hep O(n) safe
@@ -1324,7 +1329,8 @@ class ConstraintSolver:
             func_name = c_file.stem
             try:
                 content = c_file.read_text(errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("return_types: C dosyasi okunamadi %s: %s", c_file, e, exc_info=True)
                 continue
 
             # v1.8.0: Return-tip cikarim regex'leri [^;]+, \w+ kullanir -> O(n) safe.
@@ -1420,7 +1426,8 @@ class ConstraintSolver:
             func_name = c_file.stem
             try:
                 content = c_file.read_text(errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("mutex_pattern: C dosyasi okunamadi %s: %s", c_file, e, exc_info=True)
                 continue
 
             # Bu fonksiyonda mutex pattern'i var mi?
@@ -1522,7 +1529,8 @@ class ConstraintSolver:
             func_name = c_file.stem
             try:
                 content = c_file.read_text(errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("bitfield: C dosyasi okunamadi %s: %s", c_file, e, exc_info=True)
                 continue
 
             # Extract: (var >> N) & MASK
@@ -1531,7 +1539,8 @@ class ConstraintSolver:
                 try:
                     shift = _parse_offset(m.group("shift"))
                     mask = _parse_offset(m.group("mask"))
-                except (ValueError, TypeError):
+                except (ValueError, TypeError) as e:
+                    logger.debug("bitfield_extract: parse atlandi func=%s var=%s: %s", func_name, var, e, exc_info=True)
                     continue
                 bf_map[var][(shift, mask)]["funcs"].add(func_name)
                 bf_map[var][(shift, mask)]["ops"].add("extract")
@@ -1551,7 +1560,8 @@ class ConstraintSolver:
                         lowest = _find_lowest_set_bit(mask)
                         bf_map[var][(lowest, mask >> lowest)]["funcs"].add(func_name)
                         bf_map[var][(lowest, mask >> lowest)]["ops"].add("set")
-                except (ValueError, TypeError):
+                except (ValueError, TypeError) as e:
+                    logger.debug("bitfield_set: parse atlandi func=%s var=%s: %s", func_name, var, e, exc_info=True)
                     continue
 
             # Test: if (var & MASK)
@@ -1559,7 +1569,8 @@ class ConstraintSolver:
                 var = m.group("var")
                 try:
                     mask = _parse_offset(m.group("mask"))
-                except (ValueError, TypeError):
+                except (ValueError, TypeError) as e:
+                    logger.debug("bitfield_test: mask parse atlandi func=%s var=%s: %s", func_name, var, e, exc_info=True)
                     continue
                 lowest = _find_lowest_set_bit(mask)
                 bf_map[var][(lowest, mask >> lowest)]["funcs"].add(func_name)
@@ -1637,7 +1648,8 @@ class ConstraintSolver:
             func_name = c_file.stem
             try:
                 content = c_file.read_text(errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("dispatch_table: C dosyasi okunamadi %s: %s", c_file, e, exc_info=True)
                 continue
 
             # Computed function call: (*(code**)(TABLE + idx * STRIDE))(...)
@@ -1747,7 +1759,8 @@ class ConstraintSolver:
             func_name = c_file.stem
             try:
                 content = c_file.read_text(errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("linked_list: C dosyasi okunamadi %s: %s", c_file, e, exc_info=True)
                 continue
 
             # v1.8.0: _LINKED_LIST_RE O(n) safe (negated char class).
@@ -1760,7 +1773,8 @@ class ConstraintSolver:
                 type_str = m.group("type").strip()
                 try:
                     offset = _parse_offset(m.group("offset"))
-                except (ValueError, TypeError):
+                except (ValueError, TypeError) as e:
+                    logger.debug("linked_list: offset parse atlandi func=%s var=%s: %s", func_name, var, e, exc_info=True)
                     continue
 
                 key = (func_name, var, offset)
@@ -1801,7 +1815,8 @@ class ConstraintSolver:
                     var = m.group("var")
                     try:
                         offset = _parse_offset(m.group("offset"))
-                    except (ValueError, TypeError):
+                    except (ValueError, TypeError) as e:
+                        logger.debug("linked_list_loop: offset parse atlandi func=%s var=%s: %s", func_name, var, e, exc_info=True)
                         continue
 
                     key = (func_name, var, offset)
@@ -1855,7 +1870,8 @@ class ConstraintSolver:
             func_name = c_file.stem
             try:
                 content = c_file.read_text(errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("go_slice: C dosyasi okunamadi %s: %s", c_file, e, exc_info=True)
                 continue
 
             # Go Slice: 24-byte struct (ptr @0, len @8, cap @16)
@@ -1964,7 +1980,8 @@ class ConstraintSolver:
             func_name = c_file.stem
             try:
                 content = c_file.read_text(errors="replace")
-            except OSError:
+            except OSError as e:
+                logger.debug("vtable_dispatch: C dosyasi okunamadi %s: %s", c_file, e, exc_info=True)
                 continue
 
             for m in _VTABLE_DISPATCH_RE.finditer(content):

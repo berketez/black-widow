@@ -48,21 +48,23 @@ class TestSigdbBuiltinImports:
         assert hasattr(mod, "SIGNATURES"), f"{name}.SIGNATURES yok"
         assert isinstance(mod.SIGNATURES, dict), f"{name}.SIGNATURES dict degil"
 
-    # Faz 2 pilot'ta `crypto` dolduruldu; kalan 16 kategori hala placeholder.
-    _FAZ2_MIGRATED: frozenset[str] = frozenset({"crypto"})
+    # Faz 2 pilot: `crypto` dolduruldu.
+    # Faz 3 dalga: `compression` + `network` dolduruldu.
+    # Kalan 14 kategori Faz 4+ icin hala placeholder.
+    _MIGRATED: frozenset[str] = frozenset({"crypto", "compression", "network"})
 
     @pytest.mark.parametrize("name", _EXPECTED_CATEGORIES)
     def test_module_placeholder_state(self, name: str) -> None:
-        """Faz 2 pilot: yalnizca `crypto` dolu, digerleri hala bos placeholder."""
+        """Migrasyon durumu: `crypto`, `compression`, `network` dolu; digerleri placeholder."""
         mod = importlib.import_module(f"karadul.analyzers.sigdb_builtin.{name}")
-        if name in self._FAZ2_MIGRATED:
+        if name in self._MIGRATED:
             assert mod.SIGNATURES, (
-                f"{name}.SIGNATURES Faz 2'de dolmali (pilot migration yapildi)"
+                f"{name}.SIGNATURES migrate edilmis kategori, dolu olmali"
             )
         else:
             assert mod.SIGNATURES == {}, (
-                f"{name}.SIGNATURES hala Faz 1 placeholder olmali; "
-                f"Faz 2 dalga 2'de dolacak"
+                f"{name}.SIGNATURES hala placeholder olmali; "
+                f"ileride Faz 4+ dalgasinda dolacak"
             )
 
     def test_count_is_17(self) -> None:

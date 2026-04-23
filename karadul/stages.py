@@ -1398,13 +1398,702 @@ class ReconstructionStage(Stage):
             "_call_graph_data": _call_graph_data,
         }
 
+    # ------------------------------------------------------------------
+    # v1.12.0 Faz 3 split — static metadata Phase 1 alt metotlari
+    # Bkz: docs/migrations/stages_split_plan.md §3 (metot 3-7)
+    # KESE-YAPIŞTIR: mantik degisikligi YOK. Sadece monolith yolu
+    # (_use_step_registry=False) icin cagirilir. Tum metotlar `rc`
+    # uzerinden state mutate eder; downstream kod rc.X -> local bridging
+    # ile ayni isimlere kavusur.
+    # ------------------------------------------------------------------
+
+    def _run_signature_matching(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> None:
+        """Signature DB matching (plan §3 metot 3).
+
+        Eski ``_execute_binary`` satir 1596-1635 karsiligi. Bilinen
+        kutuphane fonksiyonlarini platform-aware (v1.8.0 Bug 7 fix)
+        SignatureDB ile eslestirir. ``rc.sig_matches`` doldurulur.
+        """
+        target = context.target
+        functions_json = rc.ph1_artifacts["functions_json_path"]
+        strings_json = rc.ph1_artifacts["strings_json_path"]
+        call_graph_json = rc.ph1_artifacts["call_graph_json_path"]
+        decompiled_dir = rc.ph1_artifacts["decompiled_dir"]
+
+        context.report_progress("Signature DB matching...", 0.05)
+        _step_start = time.monotonic()
+        sig_matches: list = []
+
+        # v1.8.0: Platform-aware signature filtering (Bug 7 fix)
+        # v1.9.2: _TARGET_PLATFORM_MAP artik module-level constant
+        _sig_platform = _TARGET_PLATFORM_MAP.get(target.target_type)
+
+        try:
+            from karadul.analyzers.signature_db import SignatureDB
+            sig_db = SignatureDB(context.config, target_platform=_sig_platform)
+            sig_matches = sig_db.match_all(
+                functions_json, strings_json, call_graph_json, decompiled_dir,
+                target_platform=_sig_platform,
+            )
+            rc.stats["signature_matches"] = len(sig_matches)
+            if sig_matches:
+                sig_path = context.workspace.save_json(
+                    "reconstructed", "signature_matches", {
+                        "total": len(sig_matches),
+                        "matches": [
+                            {"original": m.original_name, "matched": m.matched_name,
+                             "library": m.library, "confidence": m.confidence,
+                             "purpose": m.purpose}
+                            for m in sig_matches
+                        ],
+                    },
+                )
+                rc.artifacts["signature_matches"] = sig_path
+                logger.info(
+                    "Signature DB: %d fonksiyon tanindi", len(sig_matches),
+                )
+        except ImportError:
+            logger.debug("SignatureDB modulu bulunamadi, atlaniyor")
+        except Exception as exc:
+            logger.warning("Signature DB hatasi: %s", exc)
+            rc.errors.append(f"Signature DB hatasi: {exc}")
+
+        rc.stats["timing_signature_db"] = round(time.monotonic() - _step_start, 1)
+        rc.sig_matches = sig_matches
+
+    def _run_byte_pattern_matching(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> None:
+        """Byte pattern matching (plan §3 metot 4).
+
+        Eski ``_execute_binary`` satir 1637-1727 karsiligi. FLIRT
+        signature'lari + binary'den extract edilmis sembolleri kullanarak
+        ``FUN_xxx`` fonksiyonlarini byte pattern ile tanir.
+        ``rc.byte_pattern_names`` doldurulur.
+        """
+        binary_for_byte_match = rc.ph1_artifacts["binary_for_byte_match"]
+        functions_json = rc.ph1_artifacts["functions_json_path"]
+
+        context.report_progress("Byte pattern matching...", 0.10)
+        # 0.5. Byte Pattern Matching -- FUN_xxx fonksiyonlarini byte pattern ile tani
+        _step_start = time.monotonic()
+        byte_pattern_names: dict[str, str] = {}
+        if context.config.binary_reconstruction.enable_byte_pattern_matching:
+            try:
+                from karadul.analyzers.byte_pattern_matcher import BytePatternMatcher
+
+                bpm = BytePatternMatcher(
+                    min_confidence=context.config.binary_reconstruction.min_naming_confidence,
+                )
+
+                # FLIRT signature'larini topla (StaticAnalysisStage'de yuklenmis olabilir)
+                all_byte_sigs = []
+                try:
+                    from karadul.analyzers.flirt_parser import FLIRTParser
+                    fp = FLIRTParser()
+
+                    # Homebrew + sigs/ + external path signature'lari
+                    project_root = context.config.project_root
+
+                    # Byte pattern'li signature'lar (build_byte_signatures.py ciktisi)
+                    homebrew_bytes_sigs = project_root / "signatures_homebrew_bytes.json"
+                    if homebrew_bytes_sigs.exists():
+                        all_byte_sigs.extend(fp.load_json_signatures(homebrew_bytes_sigs))
+
+                    # Genel homebrew sigs (isim-based, byte pattern olmayabilir)
+                    homebrew_sigs = project_root / "signatures_homebrew.json"
+                    if homebrew_sigs.exists():
+                        all_byte_sigs.extend(fp.load_json_signatures(homebrew_sigs))
+
+                    sigs_dir = project_root / "sigs"
+                    if sigs_dir.is_dir():
+                        all_byte_sigs.extend(fp.load_directory(sigs_dir))
+
+                    ext_paths = context.config.binary_reconstruction.external_signature_paths
+                    for ext_path in ext_paths:
+                        p = Path(ext_path)
+                        if p.is_file() and p.suffix == ".json":
+                            all_byte_sigs.extend(fp.load_json_signatures(p))
+                        elif p.is_file() and p.suffix == ".pat":
+                            all_byte_sigs.extend(fp.load_pat_file(p))
+                        elif p.is_dir():
+                            all_byte_sigs.extend(fp.load_directory(p))
+
+                    # Binary'den dogrudan symbol extraction (byte pattern'li)
+                    # Universal binary ise thin slice kullan (arch uyumu icin)
+                    binary_sigs = fp.extract_from_binary(binary_for_byte_match)
+                    all_byte_sigs.extend(binary_sigs)
+                except Exception as exc:
+                    logger.debug("FLIRT signature toplama hatasi: %s", exc)
+
+                if all_byte_sigs:
+                    bp_result = bpm.match_unknown_functions(
+                        binary_path=binary_for_byte_match,
+                        functions_json=functions_json,
+                        known_signatures=all_byte_sigs,
+                    )
+                    if bp_result.total_matched > 0:
+                        byte_pattern_names = bpm.to_naming_map(bp_result)
+                        rc.stats["byte_pattern_matched"] = bp_result.total_matched
+                        rc.stats["byte_pattern_total_unknown"] = bp_result.total_unknown
+                        rc.stats["byte_pattern_match_rate"] = f"{bp_result.match_rate:.1%}"
+
+                        # Sonuclari kaydet
+                        bp_path = context.workspace.save_json(
+                            "reconstructed", "byte_pattern_matches", {
+                                "total_matched": bp_result.total_matched,
+                                "total_unknown": bp_result.total_unknown,
+                                "match_rate": bp_result.match_rate,
+                                "duration_seconds": bp_result.duration_seconds,
+                                "matches": bp_result.matches,
+                            },
+                        )
+                        rc.artifacts["byte_pattern_matches"] = bp_path
+                        logger.info(
+                            "Byte Pattern Matching: %d/%d FUN_xxx tanindi (%.1f%%)",
+                            bp_result.total_matched,
+                            bp_result.total_unknown,
+                            bp_result.match_rate * 100,
+                        )
+                    if bp_result.errors:
+                        rc.errors.extend(bp_result.errors)
+
+            except ImportError:
+                logger.debug("BytePatternMatcher bulunamadi, atlaniyor")
+            except Exception as exc:
+                logger.warning("Byte pattern matching hatasi: %s", exc)
+                rc.errors.append(f"Byte pattern matching hatasi: {exc}")
+
+        rc.stats["timing_byte_pattern"] = round(time.monotonic() - _step_start, 1)
+        rc.byte_pattern_names = byte_pattern_names
+
+    def _run_pcode_analysis(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> None:
+        """P-Code dataflow analizi (plan §3 metot 5).
+
+        Eski ``_execute_binary`` satir 1729-1808 karsiligi. stats_only /
+        jsonl / legacy uc mod destekler. ``rc.pcode_result`` ve
+        ``rc.pcode_naming_candidates`` doldurulur.
+        """
+        pcode_json = rc.ph1_artifacts["pcode_json_path"]
+
+        # 0.7: P-Code dataflow analizi (opsiyonel, v1.2.3+)
+        _step_start = time.monotonic()
+        _pcode_result = None
+        _pcode_naming_candidates: list = []  # v1.5: naming candidate'ler
+        if pcode_json and pcode_json.exists():
+            try:
+                with open(pcode_json, "r", encoding="utf-8") as _pf:
+                    _pcode_header = _pf.read(4096)
+
+                _is_stats_only = '"mode": "stats_only"' in _pcode_header
+                _is_jsonl = '"mode": "jsonl"' in _pcode_header
+
+                if _is_stats_only:
+                    # v1.4.4: stats_only — 4.7GB parse etme
+                    _pcode_data = json.loads(_pcode_header)
+                    rc.stats["pcode_functions_analyzed"] = _pcode_data.get("total_functions", 0)
+                    rc.stats["pcode_total_ops"] = _pcode_data.get("total_pcode_ops", 0)
+                    logger.info(
+                        "P-Code stats-only: %d fonksiyon, %d op",
+                        rc.stats["pcode_functions_analyzed"],
+                        rc.stats["pcode_total_ops"],
+                    )
+                elif _is_jsonl:
+                    # v1.5: JSONL streaming — lightweight pcode analiz
+                    from karadul.analyzers.pcode_analyzer import PcodeAnalyzer
+                    _pcode_data = json.loads(_pcode_header)
+                    _jsonl_path_str = _pcode_data.get("jsonl_path", "")
+
+                    if _jsonl_path_str:
+                        _jsonl_path = Path(_jsonl_path_str)
+                    else:
+                        # Fallback: pcode.json yanindaki pcode.jsonl
+                        _jsonl_path = pcode_json.parent / "pcode.jsonl"
+
+                    if _jsonl_path.exists():
+                        pcode_analyzer = PcodeAnalyzer()
+                        _pcode_result = pcode_analyzer.analyze_streaming(_jsonl_path)
+                        rc.stats["pcode_functions_analyzed"] = _pcode_result.total_functions
+                        rc.stats["pcode_total_ops"] = _pcode_result.total_pcode_ops
+
+                        # v1.5: Naming candidate uretimi
+                        for func_pcode in _pcode_result.functions:
+                            nc_list = pcode_analyzer.generate_naming_candidates(func_pcode)
+                            _pcode_naming_candidates.extend(nc_list)
+
+                        rc.stats["pcode_naming_candidates"] = len(_pcode_naming_candidates)
+                        logger.info(
+                            "P-Code JSONL: %d fonksiyon, %d op, %d naming candidate",
+                            _pcode_result.total_functions,
+                            _pcode_result.total_pcode_ops,
+                            len(_pcode_naming_candidates),
+                        )
+                    else:
+                        logger.warning("JSONL dosyasi bulunamadi: %s", _jsonl_path)
+                        rc.stats["pcode_functions_analyzed"] = _pcode_data.get("total_functions", 0)
+                        rc.stats["pcode_total_ops"] = _pcode_data.get("total_pcode_ops", 0)
+                else:
+                    # Legacy: tam pcode JSON (eski davranis)
+                    from karadul.analyzers.pcode_analyzer import PcodeAnalyzer
+                    pcode_analyzer = PcodeAnalyzer()
+                    _pcode_result = pcode_analyzer.analyze(pcode_json)
+                    rc.stats["pcode_functions_analyzed"] = _pcode_result.total_functions
+                    rc.stats["pcode_total_ops"] = _pcode_result.total_pcode_ops
+
+                    # Legacy modda da naming candidate uret
+                    for func_pcode in _pcode_result.functions:
+                        nc_list = pcode_analyzer.generate_naming_candidates(func_pcode)
+                        _pcode_naming_candidates.extend(nc_list)
+
+                    logger.info(
+                        "P-Code legacy: %d fonksiyon, %d op, %d naming candidate",
+                        _pcode_result.total_functions,
+                        _pcode_result.total_pcode_ops,
+                        len(_pcode_naming_candidates),
+                    )
+            except ImportError:
+                logger.debug("PcodeAnalyzer bulunamadi, atlaniyor")
+            except Exception as exc:
+                logger.warning("P-Code analiz hatasi: %s", exc)
+        rc.stats["timing_pcode"] = round(time.monotonic() - _step_start, 1)
+        rc.pcode_result = _pcode_result
+        rc.pcode_naming_candidates = _pcode_naming_candidates
+
+    def _run_cfg_analysis(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> None:
+        """CFG analizi (plan §3 metot 6).
+
+        Eski ``_execute_binary`` satir 1810-1833 karsiligi. CFGAnalyzer
+        ile fonksiyon/blok/edge istatistikleri cikarilir.
+        ``rc.cfg_result`` doldurulur (``cfg_naming`` None kalir — monolith
+        bu alani uretmez).
+        """
+        cfg_json = rc.ph1_artifacts["cfg_json_path"]
+
+        # 0.8: CFG analizi (opsiyonel, v1.2.3+)
+        _step_start = time.monotonic()
+        _cfg_result = None
+        if cfg_json and cfg_json.exists():
+            try:
+                from karadul.analyzers.cfg_analyzer import CFGAnalyzer
+                cfg_analyzer = CFGAnalyzer()
+                _cfg_result = cfg_analyzer.analyze(cfg_json)
+                rc.stats["cfg_functions_analyzed"] = _cfg_result.total_functions
+                rc.stats["cfg_total_blocks"] = _cfg_result.total_blocks
+                rc.stats["cfg_total_edges"] = _cfg_result.total_edges
+                cfg_summary = cfg_analyzer.get_summary(_cfg_result)
+                rc.stats["cfg_classification"] = cfg_summary.get("classification_distribution", {})
+                logger.info(
+                    "CFG analiz: %d fonksiyon, %d blok, %d edge",
+                    _cfg_result.total_functions,
+                    _cfg_result.total_blocks,
+                    _cfg_result.total_edges,
+                )
+            except ImportError:
+                logger.debug("CFGAnalyzer bulunamadi, atlaniyor")
+            except Exception as exc:
+                logger.warning("CFG analiz hatasi: %s", exc)
+        rc.stats["timing_cfg"] = round(time.monotonic() - _step_start, 1)
+        rc.cfg_result = _cfg_result
+
+    def _run_algorithm_engineering(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> None:
+        """Algorithm ID + Engineering + Binary Name + Calibration + Budget + CAPA (plan §3 metot 7).
+
+        Eski ``_execute_binary`` satir 1835-2184 karsiligi. Paralel olarak
+        (ThreadPoolExecutor, 3 worker) algorithm identification, binary
+        name extraction ve engineering analysis calistirir; sonra
+        confidence calibration, engineering+crypto merge, match budget
+        clamp ve CAPA capability naming'i uygular.
+
+        Tum dogrudan ``rc.ph1_artifacts`` ve ``rc.byte_pattern_names``
+        girdisine bagli; ``rc.algo_result``, ``rc.eng_result``,
+        ``rc.extracted_names``, ``rc.calibrated_matches``,
+        ``rc.capa_capabilities`` doldurulur.
+        """
+        decompiled_dir = rc.ph1_artifacts["decompiled_dir"]
+        functions_json = rc.ph1_artifacts["functions_json_path"]
+        strings_json = rc.ph1_artifacts["strings_json_path"]
+        call_graph_json = rc.ph1_artifacts["call_graph_json_path"]
+        c_files = rc.ph1_artifacts["c_files"]
+        _file_cache = rc.file_cache
+        byte_pattern_names = rc.byte_pattern_names
+
+        context.report_progress("Algorithm ID + Binary Name Extraction...", 0.25)
+        # 1 & 1.5: Algorithm ID ve Binary Name Extraction PARALEL
+        _step_start = time.monotonic()
+        # v1.9.2: Thread-safe -- her worker kendi result'ini return eder,
+        # main thread'de merge edilir. nonlocal + shared dict anti-pattern kaldirildi.
+        algo_result = None
+        extracted_names: dict[str, str] = {}
+        eng_result = None
+
+        def _run_algorithm_id():
+            """Algorithm Identification (constant + structural + API tarama)."""
+            if not context.config.binary_reconstruction.enable_algorithm_id:
+                return {"success": False, "skipped": True}
+            try:
+                from karadul.reconstruction.c_algorithm_id import CAlgorithmIdentifier
+                algo_id = CAlgorithmIdentifier(context.config)
+                _algo_res = algo_id.identify(decompiled_dir, functions_json, strings_json)
+                if _algo_res.success:
+                    algo_path = context.workspace.save_json(
+                        "reconstructed", "algorithms", {
+                            "total": _algo_res.total_detected,
+                            "algorithms": [
+                                {"name": a.name, "category": a.category,
+                                 "confidence": a.confidence, "function": a.function_name,
+                                 "evidence": a.evidence}
+                                for a in _algo_res.algorithms
+                            ],
+                        },
+                    )
+                    logger.info("Algorithm ID: %d tespit edildi", _algo_res.total_detected)
+                    return {
+                        "success": True,
+                        "result": _algo_res,
+                        "stats": {
+                            "algorithms_detected": _algo_res.total_detected,
+                            "algorithms_by_category": _algo_res.by_category,
+                        },
+                        "artifacts": {"algorithms": algo_path},
+                    }
+                return {"success": True, "result": _algo_res, "stats": {}, "artifacts": {}}
+            except Exception as exc:
+                logger.warning("Algorithm identification hatasi: %s", exc)
+                return {"success": False, "error": f"Algorithm ID hatasi: {exc}"}
+
+        def _run_binary_name_extraction():
+            """Binary Name Extraction (debug strings, build paths, RTTI)."""
+            if not context.config.binary_reconstruction.enable_binary_name_extraction:
+                return {"success": False, "skipped": True}
+            try:
+                from karadul.reconstruction.binary_name_extractor import BinaryNameExtractor
+                extractor = BinaryNameExtractor(context.config)
+                extract_result = extractor.extract(
+                    strings_json=strings_json,
+                    functions_json=functions_json,
+                    call_graph_json=call_graph_json,
+                )
+                if extract_result.success and extract_result.names:
+                    _names = {
+                        n.original_name: n.recovered_name
+                        for n in extract_result.names
+                    }
+                    extract_path = context.workspace.save_json(
+                        "reconstructed", "binary_names", {
+                            "total": len(_names),
+                            "names": {n.original_name: {
+                                "recovered": n.recovered_name,
+                                "source": n.source,
+                                "confidence": n.confidence,
+                                "class": n.class_name,
+                            } for n in extract_result.names},
+                            "classes": extract_result.class_methods,
+                        },
+                    )
+                    logger.info(
+                        "Binary Name Extraction: %d isim, %d class",
+                        len(_names), len(extract_result.class_methods),
+                    )
+                    return {
+                        "success": True,
+                        "result": _names,
+                        "stats": {
+                            "binary_names_extracted": len(_names),
+                            "classes_detected": len(extract_result.class_methods),
+                        },
+                        "artifacts": {"binary_names": extract_path},
+                    }
+                return {"success": True, "result": {}, "stats": {}, "artifacts": {}}
+            except ImportError:
+                logger.debug("BinaryNameExtractor bulunamadi, atlaniyor")
+                return {"success": False, "skipped": True}
+            except Exception as exc:
+                logger.warning("Binary name extraction hatasi: %s", exc)
+                return {"success": False, "error": f"Binary name extraction hatasi: {exc}"}
+
+        def _run_engineering_analysis():
+            """Engineering Algorithm Analysis (multi-domain: eng, finans, ML, DSP)."""
+            if not context.config.binary_reconstruction.enable_engineering_analysis:
+                return {"success": False, "skipped": True}
+            try:
+                from karadul.reconstruction.engineering import (
+                    EngineeringAlgorithmAnalyzer,
+                )
+                eng_analyzer = EngineeringAlgorithmAnalyzer()
+                _eng_res = eng_analyzer.identify(decompiled_dir, functions_json)
+                if _eng_res and _eng_res.success:
+                    eng_path = context.workspace.save_json(
+                        "reconstructed", "engineering_algorithms", _eng_res.to_dict(),
+                    )
+                    logger.info(
+                        "Engineering Algorithm ID: %d tespit edildi",
+                        _eng_res.total_detected,
+                    )
+                    return {
+                        "success": True,
+                        "result": _eng_res,
+                        "stats": {
+                            "engineering_algorithms_detected": _eng_res.total_detected,
+                            "engineering_by_category": _eng_res.by_category,
+                        },
+                        "artifacts": {"engineering_algorithms": eng_path},
+                    }
+                return {"success": True, "result": _eng_res, "stats": {}, "artifacts": {}}
+            except ImportError:
+                logger.debug("EngineeringAlgorithmAnalyzer bulunamadi, atlaniyor")
+                return {"success": False, "skipped": True}
+            except Exception as exc:
+                logger.warning("Engineering algorithm analysis hatasi: %s", exc)
+                return {"success": False, "error": f"Engineering algorithm analysis hatasi: {exc}"}
+
+        # Uc bagimsiz islemi paralel calistir
+        logger.info("Algorithm ID + Engineering Analysis + Binary Name Extraction paralel baslatiliyor")
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            algo_future = pool.submit(_run_algorithm_id)
+            name_future = pool.submit(_run_binary_name_extraction)
+            eng_future = pool.submit(_run_engineering_analysis)
+
+        # v1.9.2: Main thread'de thread-safe merge
+        _algo_dict = algo_future.result()
+        _name_dict = name_future.result()
+        _eng_dict = eng_future.result()
+
+        if _algo_dict.get("success"):
+            algo_result = _algo_dict.get("result")
+            rc.stats.update(_algo_dict.get("stats", {}))
+            rc.artifacts.update(_algo_dict.get("artifacts", {}))
+        elif not _algo_dict.get("skipped") and "error" in _algo_dict:
+            rc.errors.append(_algo_dict["error"])
+
+        if _name_dict.get("success"):
+            extracted_names = _name_dict.get("result", {})
+            rc.stats.update(_name_dict.get("stats", {}))
+            rc.artifacts.update(_name_dict.get("artifacts", {}))
+        elif not _name_dict.get("skipped") and "error" in _name_dict:
+            rc.errors.append(_name_dict["error"])
+
+        if _eng_dict.get("success"):
+            eng_result = _eng_dict.get("result")
+            rc.stats.update(_eng_dict.get("stats", {}))
+            rc.artifacts.update(_eng_dict.get("artifacts", {}))
+        elif not _eng_dict.get("skipped") and "error" in _eng_dict:
+            rc.errors.append(_eng_dict["error"])
+
+        rc.stats["timing_algo_name_eng_parallel"] = round(time.monotonic() - _step_start, 1)
+
+        # 1.5.1: Confidence Calibration -- engineering sonuclarini kalibre et
+        _step_start = time.monotonic()
+        calibrated_matches = None
+        if eng_result and eng_result.success and eng_result.algorithms:
+            try:
+                from karadul.reconstruction.engineering import ConfidenceCalibrator
+
+                calibrator = ConfidenceCalibrator()
+
+                # Call-graph ve function bodies cikar (varsa)
+                # v1.4.3: _file_cache'den oku (disk I/O tekrari yok)
+                func_bodies: dict[str, str] = {}
+                all_func_names: list[str] = []
+                try:
+                    for _cf in c_files:
+                        content = _file_cache.get(_cf.name)
+                        if content is None:
+                            try:
+                                content = _cf.read_text(encoding="utf-8", errors="replace")
+                            except OSError:
+                                continue
+                        for fm in re.finditer(
+                            r"\b(\w+)\s*\([^)]*\)\s*\{", content,
+                        ):
+                            fn = fm.group(1)
+                            if fn not in func_bodies:
+                                func_bodies[fn] = content[fm.start():fm.start() + 3000]
+                                all_func_names.append(fn)
+                except Exception:
+                    logger.debug("Fonksiyon body parse basarisiz, atlaniyor", exc_info=True)
+
+                call_graph = calibrator.build_call_graph_from_bodies(
+                    func_bodies, all_func_names,
+                )
+
+                calibrated_matches = calibrator.calibrate(
+                    eng_result.algorithms,
+                    call_graph,
+                    all_func_names,
+                    function_bodies=func_bodies or None,
+                )
+
+                if calibrated_matches:
+                    cal_path = context.workspace.save_json(
+                        "reconstructed", "engineering_calibrated",
+                        {
+                            "total": len(calibrated_matches),
+                            "summary": calibrator.summarize(calibrated_matches),
+                            "matches": [cm.to_dict() for cm in calibrated_matches],
+                        },
+                    )
+                    rc.artifacts["engineering_calibrated"] = cal_path
+                    rc.stats["engineering_calibrated_count"] = len(calibrated_matches)
+                    logger.info(
+                        "Confidence calibration: %d matches calibrated",
+                        len(calibrated_matches),
+                    )
+            except ImportError:
+                logger.debug("ConfidenceCalibrator bulunamadi, atlaniyor")
+            except Exception as exc:
+                logger.warning("Confidence calibration hatasi: %s", exc)
+                rc.errors.append(f"Confidence calibration hatasi: {exc}")
+
+        rc.stats["timing_confidence_calibration"] = round(time.monotonic() - _step_start, 1)
+
+        # 1.6: Engineering + Crypto sonuclarini birlestir
+        if eng_result and eng_result.success and eng_result.algorithms:
+            merged_algos = {
+                "total": (algo_result.total_detected if algo_result and algo_result.success else 0)
+                    + eng_result.total_detected,
+                "crypto_algorithms": [a.to_dict() for a in (algo_result.algorithms if algo_result and algo_result.success else [])],
+                "engineering_algorithms": [a.to_dict() for a in eng_result.algorithms],
+            }
+            # Kalibre edilmis sonuclar varsa merged'e ekle
+            if calibrated_matches:
+                merged_algos["calibrated"] = [cm.to_dict() for cm in calibrated_matches]
+            merged_path = context.workspace.save_json(
+                "reconstructed", "algorithms_merged", merged_algos,
+            )
+            rc.artifacts["algorithms_merged"] = merged_path
+
+        # v1.4.3: Match Budget -- downstream modullerin isleyecegi match sayisini sinirla.
+        # 18K+ match StructRecovery/SemanticNamer/CompositionAnalyzer'i yavaslatiyor.
+        # En dusuk confidence match'leri kes, algo_result ve eng_result listelerini kirp.
+        MAX_ALGO_MATCHES = context.config.binary_reconstruction.max_algo_matches
+        _total_matches = (
+            (len(algo_result.algorithms) if algo_result and algo_result.success else 0)
+            + (len(eng_result.algorithms) if eng_result and eng_result.success else 0)
+        )
+        if MAX_ALGO_MATCHES > 0 and _total_matches > MAX_ALGO_MATCHES:
+            logger.warning(
+                "Algorithm match budget: %d > %d, truncating by confidence",
+                _total_matches, MAX_ALGO_MATCHES,
+            )
+            # Tum match'leri birlesik listede sirala, en yuksek confidence'i tut
+            _all_merged = []
+            if algo_result and algo_result.success:
+                for a in algo_result.algorithms:
+                    _all_merged.append(("crypto", a))
+            if eng_result and eng_result.success:
+                for a in eng_result.algorithms:
+                    _all_merged.append(("eng", a))
+            _all_merged.sort(
+                key=lambda x: x[1].confidence if hasattr(x[1], "confidence") else (
+                    x[1].get("confidence", 0) if isinstance(x[1], dict) else 0
+                ),
+                reverse=True,
+            )
+            _all_merged = _all_merged[:MAX_ALGO_MATCHES]
+            # Ayristir ve geri yaz
+            _kept_crypto = [a for tag, a in _all_merged if tag == "crypto"]
+            _kept_eng = [a for tag, a in _all_merged if tag == "eng"]
+            if algo_result and algo_result.success:
+                algo_result.algorithms = _kept_crypto
+            if eng_result and eng_result.success:
+                eng_result.algorithms = _kept_eng
+            logger.info(
+                "Match budget applied: crypto=%d, eng=%d (total=%d)",
+                len(_kept_crypto), len(_kept_eng), len(_kept_crypto) + len(_kept_eng),
+            )
+            rc.stats["match_budget_original"] = _total_matches
+            rc.stats["match_budget_kept"] = len(_kept_crypto) + len(_kept_eng)
+
+        # 1.8. Byte pattern sonuclarini extracted_names'e merge et
+        # (byte_pattern_names c_namer'in pre_names'ine gidecek)
+        if byte_pattern_names:
+            # Byte pattern eslestirmeleri yuksek guvenilirlik --
+            # binary_name_extractor sonuclari varsa onlari EZMEsin diye
+            # sadece henuz isimlendirilmemis fonksiyonlari ekle.
+            for old_name, new_name in byte_pattern_names.items():
+                if old_name not in extracted_names:
+                    extracted_names[old_name] = new_name
+            logger.info(
+                "Byte pattern names merged: %d isim (toplam extracted_names: %d)",
+                len(byte_pattern_names), len(extracted_names),
+            )
+
+        # 1.8.5: CAPA capability sonuclarini naming'e entegre et
+        _capa_capabilities: dict = {}  # addr -> [cap_name, ...]  (comment pipeline icin de)
+        _step_start = time.monotonic()
+        if context.config.binary_reconstruction.enable_capa:
+            try:
+                _capa_data = context.workspace.load_json("static", "capa_capabilities")
+                if _capa_data and _capa_data.get("success"):
+                    func_caps = _capa_data.get("function_capabilities", {})
+                    _capa_capabilities = func_caps  # Ham veriyi koru (comment icin)
+
+                    # Capability'den fonksiyon isimleri uret
+                    from karadul.analyzers.capa_scanner import (
+                        capability_to_function_name,
+                        rank_capabilities,
+                        CAPACapability,
+                    )
+                    _capa_names_added = 0
+                    for func_addr, cap_list in func_caps.items():
+                        if func_addr in extracted_names:
+                            continue  # Daha guvenilir bir kaynak zaten isim vermis
+                        if not cap_list:
+                            continue
+                        # Cap dicts'i CAPACapability'ye cevir ve sirala
+                        caps = [
+                            CAPACapability(
+                                name=c.get("name", ""),
+                                namespace=c.get("namespace", ""),
+                            )
+                            for c in cap_list
+                            if isinstance(c, dict)
+                        ]
+                        ranked = rank_capabilities(caps)
+                        if ranked:
+                            best_name = capability_to_function_name(ranked[0].name)
+                            if best_name:
+                                extracted_names[func_addr] = best_name
+                                _capa_names_added += 1
+
+                    if _capa_names_added > 0:
+                        logger.info(
+                            "CAPA names merged: %d isim (toplam extracted_names: %d)",
+                            _capa_names_added, len(extracted_names),
+                        )
+                        rc.stats["capa_names_added"] = _capa_names_added
+            except FileNotFoundError:
+                logger.debug("CAPA sonuclari bulunamadi (static stage'de calistirilmamis)")
+            except Exception as exc:
+                logger.debug("CAPA naming entegrasyonu hatasi: %s", exc)
+        rc.stats["timing_capa_naming"] = round(time.monotonic() - _step_start, 1)
+
+        # rc state'e commit
+        rc.algo_result = algo_result
+        rc.eng_result = eng_result
+        rc.extracted_names = extracted_names
+        rc.calibrated_matches = calibrated_matches
+        rc.capa_capabilities = _capa_capabilities
+
     def _execute_binary(self, context: PipelineContext, start: float) -> StageResult:
         """Binary reconstruction — decompile edilmis C'yi okunabilir yap.
 
-        v1.12.0 Faz 2 split (adim 1/~18): Setup + Load bolumleri ayri
-        metotlara tasindi (``_prepare_workspace``, ``_load_binary``).
-        Geri kalan govde (registry dal + monolith Phase 1/2/3) bu
-        iterasyonda DOKUNULMADI. Kopru: rc.X -> eski lokal isimler.
+        v1.12.0 Faz 2 split: Setup + Load (``_prepare_workspace``,
+        ``_load_binary``) ayri metotlara tasindi.
+        v1.12.0 Faz 3 split (plan §3 metot 3-7): static Phase 1
+        analyzer bolumleri (sig DB, byte pattern, pcode, CFG,
+        algorithm + engineering) ``_run_*`` metotlarina tasindi —
+        sadece monolith yolu (``_use_step_registry=False``) calistirir.
+        Feedback loop + struct recovery + Phase 3 monolith **Faz 4**'te.
+        Kopru: rc.X -> eski lokal isimler (downstream kod ayni).
         """
         rc = ReconstructionContext(start=start, stage_name=self.name)
         self._prepare_workspace(context, rc)
@@ -1593,595 +2282,25 @@ class ReconstructionStage(Stage):
             # Load metodundan cikarildi, burada korundu (davranis ayni).
             naming_result = None
 
-            # 0. Signature DB Matching (bilinen kutuphane fonksiyonlarini tani)
-            context.report_progress("Signature DB matching...", 0.05)
-            _step_start = time.monotonic()
-            sig_matches = []
-
-            # v1.8.0: Platform-aware signature filtering (Bug 7 fix)
-            # v1.9.2: _TARGET_PLATFORM_MAP artik module-level constant
-            _sig_platform = _TARGET_PLATFORM_MAP.get(target.target_type)
-
-            try:
-                from karadul.analyzers.signature_db import SignatureDB
-                sig_db = SignatureDB(context.config, target_platform=_sig_platform)
-                sig_matches = sig_db.match_all(
-                    functions_json, strings_json, call_graph_json, decompiled_dir,
-                    target_platform=_sig_platform,
-                )
-                stats["signature_matches"] = len(sig_matches)
-                if sig_matches:
-                    sig_path = context.workspace.save_json(
-                        "reconstructed", "signature_matches", {
-                            "total": len(sig_matches),
-                            "matches": [
-                                {"original": m.original_name, "matched": m.matched_name,
-                                 "library": m.library, "confidence": m.confidence,
-                                 "purpose": m.purpose}
-                                for m in sig_matches
-                            ],
-                        },
-                    )
-                    artifacts["signature_matches"] = sig_path
-                    logger.info(
-                        "Signature DB: %d fonksiyon tanindi", len(sig_matches),
-                    )
-            except ImportError:
-                logger.debug("SignatureDB modulu bulunamadi, atlaniyor")
-            except Exception as exc:
-                logger.warning("Signature DB hatasi: %s", exc)
-                errors.append(f"Signature DB hatasi: {exc}")
-
-            stats["timing_signature_db"] = round(time.monotonic() - _step_start, 1)
-
-            context.report_progress("Byte pattern matching...", 0.10)
-            # 0.5. Byte Pattern Matching -- FUN_xxx fonksiyonlarini byte pattern ile tani
-            _step_start = time.monotonic()
-            byte_pattern_names: dict[str, str] = {}
-            if context.config.binary_reconstruction.enable_byte_pattern_matching:
-                try:
-                    from karadul.analyzers.byte_pattern_matcher import BytePatternMatcher
-
-                    bpm = BytePatternMatcher(
-                        min_confidence=context.config.binary_reconstruction.min_naming_confidence,
-                    )
-
-                    # FLIRT signature'larini topla (StaticAnalysisStage'de yuklenmis olabilir)
-                    all_byte_sigs = []
-                    try:
-                        from karadul.analyzers.flirt_parser import FLIRTParser
-                        fp = FLIRTParser()
-
-                        # Homebrew + sigs/ + external path signature'lari
-                        project_root = context.config.project_root
-
-                        # Byte pattern'li signature'lar (build_byte_signatures.py ciktisi)
-                        homebrew_bytes_sigs = project_root / "signatures_homebrew_bytes.json"
-                        if homebrew_bytes_sigs.exists():
-                            all_byte_sigs.extend(fp.load_json_signatures(homebrew_bytes_sigs))
-
-                        # Genel homebrew sigs (isim-based, byte pattern olmayabilir)
-                        homebrew_sigs = project_root / "signatures_homebrew.json"
-                        if homebrew_sigs.exists():
-                            all_byte_sigs.extend(fp.load_json_signatures(homebrew_sigs))
-
-                        sigs_dir = project_root / "sigs"
-                        if sigs_dir.is_dir():
-                            all_byte_sigs.extend(fp.load_directory(sigs_dir))
-
-                        ext_paths = context.config.binary_reconstruction.external_signature_paths
-                        for ext_path in ext_paths:
-                            p = Path(ext_path)
-                            if p.is_file() and p.suffix == ".json":
-                                all_byte_sigs.extend(fp.load_json_signatures(p))
-                            elif p.is_file() and p.suffix == ".pat":
-                                all_byte_sigs.extend(fp.load_pat_file(p))
-                            elif p.is_dir():
-                                all_byte_sigs.extend(fp.load_directory(p))
-
-                        # Binary'den dogrudan symbol extraction (byte pattern'li)
-                        # Universal binary ise thin slice kullan (arch uyumu icin)
-                        binary_sigs = fp.extract_from_binary(binary_for_byte_match)
-                        all_byte_sigs.extend(binary_sigs)
-                    except Exception as exc:
-                        logger.debug("FLIRT signature toplama hatasi: %s", exc)
-
-                    if all_byte_sigs:
-                        bp_result = bpm.match_unknown_functions(
-                            binary_path=binary_for_byte_match,
-                            functions_json=functions_json,
-                            known_signatures=all_byte_sigs,
-                        )
-                        if bp_result.total_matched > 0:
-                            byte_pattern_names = bpm.to_naming_map(bp_result)
-                            stats["byte_pattern_matched"] = bp_result.total_matched
-                            stats["byte_pattern_total_unknown"] = bp_result.total_unknown
-                            stats["byte_pattern_match_rate"] = f"{bp_result.match_rate:.1%}"
-
-                            # Sonuclari kaydet
-                            bp_path = context.workspace.save_json(
-                                "reconstructed", "byte_pattern_matches", {
-                                    "total_matched": bp_result.total_matched,
-                                    "total_unknown": bp_result.total_unknown,
-                                    "match_rate": bp_result.match_rate,
-                                    "duration_seconds": bp_result.duration_seconds,
-                                    "matches": bp_result.matches,
-                                },
-                            )
-                            artifacts["byte_pattern_matches"] = bp_path
-                            logger.info(
-                                "Byte Pattern Matching: %d/%d FUN_xxx tanindi (%.1f%%)",
-                                bp_result.total_matched,
-                                bp_result.total_unknown,
-                                bp_result.match_rate * 100,
-                            )
-                        if bp_result.errors:
-                            errors.extend(bp_result.errors)
-
-                except ImportError:
-                    logger.debug("BytePatternMatcher bulunamadi, atlaniyor")
-                except Exception as exc:
-                    logger.warning("Byte pattern matching hatasi: %s", exc)
-                    errors.append(f"Byte pattern matching hatasi: {exc}")
-
-            stats["timing_byte_pattern"] = round(time.monotonic() - _step_start, 1)
-
-            # 0.7: P-Code dataflow analizi (opsiyonel, v1.2.3+)
-            _step_start = time.monotonic()
-            _pcode_result = None
-            _pcode_naming_candidates = []  # v1.5: naming candidate'ler
-            if pcode_json and pcode_json.exists():
-                try:
-                    with open(pcode_json, "r", encoding="utf-8") as _pf:
-                        _pcode_header = _pf.read(4096)
-
-                    _is_stats_only = '"mode": "stats_only"' in _pcode_header
-                    _is_jsonl = '"mode": "jsonl"' in _pcode_header
-
-                    if _is_stats_only:
-                        # v1.4.4: stats_only — 4.7GB parse etme
-                        _pcode_data = json.loads(_pcode_header)
-                        stats["pcode_functions_analyzed"] = _pcode_data.get("total_functions", 0)
-                        stats["pcode_total_ops"] = _pcode_data.get("total_pcode_ops", 0)
-                        logger.info(
-                            "P-Code stats-only: %d fonksiyon, %d op",
-                            stats["pcode_functions_analyzed"],
-                            stats["pcode_total_ops"],
-                        )
-                    elif _is_jsonl:
-                        # v1.5: JSONL streaming — lightweight pcode analiz
-                        from karadul.analyzers.pcode_analyzer import PcodeAnalyzer
-                        _pcode_data = json.loads(_pcode_header)
-                        _jsonl_path_str = _pcode_data.get("jsonl_path", "")
-
-                        if _jsonl_path_str:
-                            _jsonl_path = Path(_jsonl_path_str)
-                        else:
-                            # Fallback: pcode.json yanindaki pcode.jsonl
-                            _jsonl_path = pcode_json.parent / "pcode.jsonl"
-
-                        if _jsonl_path.exists():
-                            pcode_analyzer = PcodeAnalyzer()
-                            _pcode_result = pcode_analyzer.analyze_streaming(_jsonl_path)
-                            stats["pcode_functions_analyzed"] = _pcode_result.total_functions
-                            stats["pcode_total_ops"] = _pcode_result.total_pcode_ops
-
-                            # v1.5: Naming candidate uretimi
-                            for func_pcode in _pcode_result.functions:
-                                nc_list = pcode_analyzer.generate_naming_candidates(func_pcode)
-                                _pcode_naming_candidates.extend(nc_list)
-
-                            stats["pcode_naming_candidates"] = len(_pcode_naming_candidates)
-                            logger.info(
-                                "P-Code JSONL: %d fonksiyon, %d op, %d naming candidate",
-                                _pcode_result.total_functions,
-                                _pcode_result.total_pcode_ops,
-                                len(_pcode_naming_candidates),
-                            )
-                        else:
-                            logger.warning("JSONL dosyasi bulunamadi: %s", _jsonl_path)
-                            stats["pcode_functions_analyzed"] = _pcode_data.get("total_functions", 0)
-                            stats["pcode_total_ops"] = _pcode_data.get("total_pcode_ops", 0)
-                    else:
-                        # Legacy: tam pcode JSON (eski davranis)
-                        from karadul.analyzers.pcode_analyzer import PcodeAnalyzer
-                        pcode_analyzer = PcodeAnalyzer()
-                        _pcode_result = pcode_analyzer.analyze(pcode_json)
-                        stats["pcode_functions_analyzed"] = _pcode_result.total_functions
-                        stats["pcode_total_ops"] = _pcode_result.total_pcode_ops
-
-                        # Legacy modda da naming candidate uret
-                        for func_pcode in _pcode_result.functions:
-                            nc_list = pcode_analyzer.generate_naming_candidates(func_pcode)
-                            _pcode_naming_candidates.extend(nc_list)
-
-                        logger.info(
-                            "P-Code legacy: %d fonksiyon, %d op, %d naming candidate",
-                            _pcode_result.total_functions,
-                            _pcode_result.total_pcode_ops,
-                            len(_pcode_naming_candidates),
-                        )
-                except ImportError:
-                    logger.debug("PcodeAnalyzer bulunamadi, atlaniyor")
-                except Exception as exc:
-                    logger.warning("P-Code analiz hatasi: %s", exc)
-            stats["timing_pcode"] = round(time.monotonic() - _step_start, 1)
-
-            # 0.8: CFG analizi (opsiyonel, v1.2.3+)
-            _step_start = time.monotonic()
-            _cfg_result = None
-            if cfg_json and cfg_json.exists():
-                try:
-                    from karadul.analyzers.cfg_analyzer import CFGAnalyzer
-                    cfg_analyzer = CFGAnalyzer()
-                    _cfg_result = cfg_analyzer.analyze(cfg_json)
-                    stats["cfg_functions_analyzed"] = _cfg_result.total_functions
-                    stats["cfg_total_blocks"] = _cfg_result.total_blocks
-                    stats["cfg_total_edges"] = _cfg_result.total_edges
-                    cfg_summary = cfg_analyzer.get_summary(_cfg_result)
-                    stats["cfg_classification"] = cfg_summary.get("classification_distribution", {})
-                    logger.info(
-                        "CFG analiz: %d fonksiyon, %d blok, %d edge",
-                        _cfg_result.total_functions,
-                        _cfg_result.total_blocks,
-                        _cfg_result.total_edges,
-                    )
-                except ImportError:
-                    logger.debug("CFGAnalyzer bulunamadi, atlaniyor")
-                except Exception as exc:
-                    logger.warning("CFG analiz hatasi: %s", exc)
-            stats["timing_cfg"] = round(time.monotonic() - _step_start, 1)
-
-            context.report_progress("Algorithm ID + Binary Name Extraction...", 0.25)
-            # 1 & 1.5: Algorithm ID ve Binary Name Extraction PARALEL
-            _step_start = time.monotonic()
-            # v1.9.2: Thread-safe -- her worker kendi result'ini return eder,
-            # main thread'de merge edilir. nonlocal + shared dict anti-pattern kaldirildi.
-            algo_result = None
-            extracted_names: dict[str, str] = {}
-            eng_result = None
-
-            def _run_algorithm_id():
-                """Algorithm Identification (constant + structural + API tarama)."""
-                if not context.config.binary_reconstruction.enable_algorithm_id:
-                    return {"success": False, "skipped": True}
-                try:
-                    from karadul.reconstruction.c_algorithm_id import CAlgorithmIdentifier
-                    algo_id = CAlgorithmIdentifier(context.config)
-                    _algo_res = algo_id.identify(decompiled_dir, functions_json, strings_json)
-                    if _algo_res.success:
-                        algo_path = context.workspace.save_json(
-                            "reconstructed", "algorithms", {
-                                "total": _algo_res.total_detected,
-                                "algorithms": [
-                                    {"name": a.name, "category": a.category,
-                                     "confidence": a.confidence, "function": a.function_name,
-                                     "evidence": a.evidence}
-                                    for a in _algo_res.algorithms
-                                ],
-                            },
-                        )
-                        logger.info("Algorithm ID: %d tespit edildi", _algo_res.total_detected)
-                        return {
-                            "success": True,
-                            "result": _algo_res,
-                            "stats": {
-                                "algorithms_detected": _algo_res.total_detected,
-                                "algorithms_by_category": _algo_res.by_category,
-                            },
-                            "artifacts": {"algorithms": algo_path},
-                        }
-                    return {"success": True, "result": _algo_res, "stats": {}, "artifacts": {}}
-                except Exception as exc:
-                    logger.warning("Algorithm identification hatasi: %s", exc)
-                    return {"success": False, "error": f"Algorithm ID hatasi: {exc}"}
-
-            def _run_binary_name_extraction():
-                """Binary Name Extraction (debug strings, build paths, RTTI)."""
-                if not context.config.binary_reconstruction.enable_binary_name_extraction:
-                    return {"success": False, "skipped": True}
-                try:
-                    from karadul.reconstruction.binary_name_extractor import BinaryNameExtractor
-                    extractor = BinaryNameExtractor(context.config)
-                    extract_result = extractor.extract(
-                        strings_json=strings_json,
-                        functions_json=functions_json,
-                        call_graph_json=call_graph_json,
-                    )
-                    if extract_result.success and extract_result.names:
-                        _names = {
-                            n.original_name: n.recovered_name
-                            for n in extract_result.names
-                        }
-                        extract_path = context.workspace.save_json(
-                            "reconstructed", "binary_names", {
-                                "total": len(_names),
-                                "names": {n.original_name: {
-                                    "recovered": n.recovered_name,
-                                    "source": n.source,
-                                    "confidence": n.confidence,
-                                    "class": n.class_name,
-                                } for n in extract_result.names},
-                                "classes": extract_result.class_methods,
-                            },
-                        )
-                        logger.info(
-                            "Binary Name Extraction: %d isim, %d class",
-                            len(_names), len(extract_result.class_methods),
-                        )
-                        return {
-                            "success": True,
-                            "result": _names,
-                            "stats": {
-                                "binary_names_extracted": len(_names),
-                                "classes_detected": len(extract_result.class_methods),
-                            },
-                            "artifacts": {"binary_names": extract_path},
-                        }
-                    return {"success": True, "result": {}, "stats": {}, "artifacts": {}}
-                except ImportError:
-                    logger.debug("BinaryNameExtractor bulunamadi, atlaniyor")
-                    return {"success": False, "skipped": True}
-                except Exception as exc:
-                    logger.warning("Binary name extraction hatasi: %s", exc)
-                    return {"success": False, "error": f"Binary name extraction hatasi: {exc}"}
-
-            def _run_engineering_analysis():
-                """Engineering Algorithm Analysis (multi-domain: eng, finans, ML, DSP)."""
-                if not context.config.binary_reconstruction.enable_engineering_analysis:
-                    return {"success": False, "skipped": True}
-                try:
-                    from karadul.reconstruction.engineering import (
-                        EngineeringAlgorithmAnalyzer,
-                    )
-                    eng_analyzer = EngineeringAlgorithmAnalyzer()
-                    _eng_res = eng_analyzer.identify(decompiled_dir, functions_json)
-                    if _eng_res and _eng_res.success:
-                        eng_path = context.workspace.save_json(
-                            "reconstructed", "engineering_algorithms", _eng_res.to_dict(),
-                        )
-                        logger.info(
-                            "Engineering Algorithm ID: %d tespit edildi",
-                            _eng_res.total_detected,
-                        )
-                        return {
-                            "success": True,
-                            "result": _eng_res,
-                            "stats": {
-                                "engineering_algorithms_detected": _eng_res.total_detected,
-                                "engineering_by_category": _eng_res.by_category,
-                            },
-                            "artifacts": {"engineering_algorithms": eng_path},
-                        }
-                    return {"success": True, "result": _eng_res, "stats": {}, "artifacts": {}}
-                except ImportError:
-                    logger.debug("EngineeringAlgorithmAnalyzer bulunamadi, atlaniyor")
-                    return {"success": False, "skipped": True}
-                except Exception as exc:
-                    logger.warning("Engineering algorithm analysis hatasi: %s", exc)
-                    return {"success": False, "error": f"Engineering algorithm analysis hatasi: {exc}"}
-
-            # Uc bagimsiz islemi paralel calistir
-            logger.info("Algorithm ID + Engineering Analysis + Binary Name Extraction paralel baslatiliyor")
-            with ThreadPoolExecutor(max_workers=3) as pool:
-                algo_future = pool.submit(_run_algorithm_id)
-                name_future = pool.submit(_run_binary_name_extraction)
-                eng_future = pool.submit(_run_engineering_analysis)
-
-            # v1.9.2: Main thread'de thread-safe merge
-            _algo_dict = algo_future.result()
-            _name_dict = name_future.result()
-            _eng_dict = eng_future.result()
-
-            if _algo_dict.get("success"):
-                algo_result = _algo_dict.get("result")
-                stats.update(_algo_dict.get("stats", {}))
-                artifacts.update(_algo_dict.get("artifacts", {}))
-            elif not _algo_dict.get("skipped") and "error" in _algo_dict:
-                errors.append(_algo_dict["error"])
-
-            if _name_dict.get("success"):
-                extracted_names = _name_dict.get("result", {})
-                stats.update(_name_dict.get("stats", {}))
-                artifacts.update(_name_dict.get("artifacts", {}))
-            elif not _name_dict.get("skipped") and "error" in _name_dict:
-                errors.append(_name_dict["error"])
-
-            if _eng_dict.get("success"):
-                eng_result = _eng_dict.get("result")
-                stats.update(_eng_dict.get("stats", {}))
-                artifacts.update(_eng_dict.get("artifacts", {}))
-            elif not _eng_dict.get("skipped") and "error" in _eng_dict:
-                errors.append(_eng_dict["error"])
-
-            stats["timing_algo_name_eng_parallel"] = round(time.monotonic() - _step_start, 1)
-
-            # 1.5.1: Confidence Calibration -- engineering sonuclarini kalibre et
-            _step_start = time.monotonic()
-            calibrated_matches = None
-            if eng_result and eng_result.success and eng_result.algorithms:
-                try:
-                    from karadul.reconstruction.engineering import ConfidenceCalibrator
-
-                    calibrator = ConfidenceCalibrator()
-
-                    # Call-graph ve function bodies cikar (varsa)
-                    # v1.4.3: _file_cache'den oku (disk I/O tekrari yok)
-                    func_bodies: dict[str, str] = {}
-                    all_func_names: list[str] = []
-                    try:
-                        for _cf in c_files:
-                            content = _file_cache.get(_cf.name)
-                            if content is None:
-                                try:
-                                    content = _cf.read_text(encoding="utf-8", errors="replace")
-                                except OSError:
-                                    continue
-                            for fm in re.finditer(
-                                r"\b(\w+)\s*\([^)]*\)\s*\{", content,
-                            ):
-                                fn = fm.group(1)
-                                if fn not in func_bodies:
-                                    func_bodies[fn] = content[fm.start():fm.start() + 3000]
-                                    all_func_names.append(fn)
-                    except Exception:
-                        logger.debug("Fonksiyon body parse basarisiz, atlaniyor", exc_info=True)
-
-                    call_graph = calibrator.build_call_graph_from_bodies(
-                        func_bodies, all_func_names,
-                    )
-
-                    calibrated_matches = calibrator.calibrate(
-                        eng_result.algorithms,
-                        call_graph,
-                        all_func_names,
-                        function_bodies=func_bodies or None,
-                    )
-
-                    if calibrated_matches:
-                        cal_path = context.workspace.save_json(
-                            "reconstructed", "engineering_calibrated",
-                            {
-                                "total": len(calibrated_matches),
-                                "summary": calibrator.summarize(calibrated_matches),
-                                "matches": [cm.to_dict() for cm in calibrated_matches],
-                            },
-                        )
-                        artifacts["engineering_calibrated"] = cal_path
-                        stats["engineering_calibrated_count"] = len(calibrated_matches)
-                        logger.info(
-                            "Confidence calibration: %d matches calibrated",
-                            len(calibrated_matches),
-                        )
-                except ImportError:
-                    logger.debug("ConfidenceCalibrator bulunamadi, atlaniyor")
-                except Exception as exc:
-                    logger.warning("Confidence calibration hatasi: %s", exc)
-                    errors.append(f"Confidence calibration hatasi: {exc}")
-
-            stats["timing_confidence_calibration"] = round(time.monotonic() - _step_start, 1)
-
-            # 1.6: Engineering + Crypto sonuclarini birlestir
-            if eng_result and eng_result.success and eng_result.algorithms:
-                merged_algos = {
-                    "total": (algo_result.total_detected if algo_result and algo_result.success else 0)
-                        + eng_result.total_detected,
-                    "crypto_algorithms": [a.to_dict() for a in (algo_result.algorithms if algo_result and algo_result.success else [])],
-                    "engineering_algorithms": [a.to_dict() for a in eng_result.algorithms],
-                }
-                # Kalibre edilmis sonuclar varsa merged'e ekle
-                if calibrated_matches:
-                    merged_algos["calibrated"] = [cm.to_dict() for cm in calibrated_matches]
-                merged_path = context.workspace.save_json(
-                    "reconstructed", "algorithms_merged", merged_algos,
-                )
-                artifacts["algorithms_merged"] = merged_path
-
-            # v1.4.3: Match Budget -- downstream modullerin isleyecegi match sayisini sinirla.
-            # 18K+ match StructRecovery/SemanticNamer/CompositionAnalyzer'i yavaslatiyor.
-            # En dusuk confidence match'leri kes, algo_result ve eng_result listelerini kirp.
-            MAX_ALGO_MATCHES = context.config.binary_reconstruction.max_algo_matches
-            _total_matches = (
-                (len(algo_result.algorithms) if algo_result and algo_result.success else 0)
-                + (len(eng_result.algorithms) if eng_result and eng_result.success else 0)
-            )
-            if MAX_ALGO_MATCHES > 0 and _total_matches > MAX_ALGO_MATCHES:
-                logger.warning(
-                    "Algorithm match budget: %d > %d, truncating by confidence",
-                    _total_matches, MAX_ALGO_MATCHES,
-                )
-                # Tum match'leri birlesik listede sirala, en yuksek confidence'i tut
-                _all_merged = []
-                if algo_result and algo_result.success:
-                    for a in algo_result.algorithms:
-                        _all_merged.append(("crypto", a))
-                if eng_result and eng_result.success:
-                    for a in eng_result.algorithms:
-                        _all_merged.append(("eng", a))
-                _all_merged.sort(
-                    key=lambda x: x[1].confidence if hasattr(x[1], "confidence") else (
-                        x[1].get("confidence", 0) if isinstance(x[1], dict) else 0
-                    ),
-                    reverse=True,
-                )
-                _all_merged = _all_merged[:MAX_ALGO_MATCHES]
-                # Ayristir ve geri yaz
-                _kept_crypto = [a for tag, a in _all_merged if tag == "crypto"]
-                _kept_eng = [a for tag, a in _all_merged if tag == "eng"]
-                if algo_result and algo_result.success:
-                    algo_result.algorithms = _kept_crypto
-                if eng_result and eng_result.success:
-                    eng_result.algorithms = _kept_eng
-                logger.info(
-                    "Match budget applied: crypto=%d, eng=%d (total=%d)",
-                    len(_kept_crypto), len(_kept_eng), len(_kept_crypto) + len(_kept_eng),
-                )
-                stats["match_budget_original"] = _total_matches
-                stats["match_budget_kept"] = len(_kept_crypto) + len(_kept_eng)
-
-            # 1.8. Byte pattern sonuclarini extracted_names'e merge et
-            # (byte_pattern_names c_namer'in pre_names'ine gidecek)
-            if byte_pattern_names:
-                # Byte pattern eslestirmeleri yuksek guvenilirlik --
-                # binary_name_extractor sonuclari varsa onlari EZMEsin diye
-                # sadece henuz isimlendirilmemis fonksiyonlari ekle.
-                for old_name, new_name in byte_pattern_names.items():
-                    if old_name not in extracted_names:
-                        extracted_names[old_name] = new_name
-                logger.info(
-                    "Byte pattern names merged: %d isim (toplam extracted_names: %d)",
-                    len(byte_pattern_names), len(extracted_names),
-                )
-
-            # 1.8.5: CAPA capability sonuclarini naming'e entegre et
-            _capa_capabilities: dict = {}  # addr -> [cap_name, ...]  (comment pipeline icin de)
-            _step_start = time.monotonic()
-            if context.config.binary_reconstruction.enable_capa:
-                try:
-                    _capa_data = context.workspace.load_json("static", "capa_capabilities")
-                    if _capa_data and _capa_data.get("success"):
-                        func_caps = _capa_data.get("function_capabilities", {})
-                        _capa_capabilities = func_caps  # Ham veriyi koru (comment icin)
-
-                        # Capability'den fonksiyon isimleri uret
-                        from karadul.analyzers.capa_scanner import (
-                            capability_to_function_name,
-                            rank_capabilities,
-                            CAPACapability,
-                        )
-                        _capa_names_added = 0
-                        for func_addr, cap_list in func_caps.items():
-                            if func_addr in extracted_names:
-                                continue  # Daha guvenilir bir kaynak zaten isim vermis
-                            if not cap_list:
-                                continue
-                            # Cap dicts'i CAPACapability'ye cevir ve sirala
-                            caps = [
-                                CAPACapability(
-                                    name=c.get("name", ""),
-                                    namespace=c.get("namespace", ""),
-                                )
-                                for c in cap_list
-                                if isinstance(c, dict)
-                            ]
-                            ranked = rank_capabilities(caps)
-                            if ranked:
-                                best_name = capability_to_function_name(ranked[0].name)
-                                if best_name:
-                                    extracted_names[func_addr] = best_name
-                                    _capa_names_added += 1
-
-                        if _capa_names_added > 0:
-                            logger.info(
-                                "CAPA names merged: %d isim (toplam extracted_names: %d)",
-                                _capa_names_added, len(extracted_names),
-                            )
-                            stats["capa_names_added"] = _capa_names_added
-                except FileNotFoundError:
-                    logger.debug("CAPA sonuclari bulunamadi (static stage'de calistirilmamis)")
-                except Exception as exc:
-                    logger.debug("CAPA naming entegrasyonu hatasi: %s", exc)
-            stats["timing_capa_naming"] = round(time.monotonic() - _step_start, 1)
+            # v1.12.0 Faz 3 split (plan §3, metot 3-7): static Phase 1
+            # metotlara tasindi. rc.X -> eski lokal isimlere kopruleme.
+            # Metotlar rc.ph1_artifacts / rc.file_cache / rc.byte_pattern_names
+            # girdilerine bagli, rc.* alanlarini yazarlar.
+            self._run_signature_matching(context, rc)
+            sig_matches = rc.sig_matches
+            self._run_byte_pattern_matching(context, rc)
+            byte_pattern_names = rc.byte_pattern_names
+            self._run_pcode_analysis(context, rc)
+            _pcode_result = rc.pcode_result
+            _pcode_naming_candidates = rc.pcode_naming_candidates
+            self._run_cfg_analysis(context, rc)
+            _cfg_result = rc.cfg_result
+            self._run_algorithm_engineering(context, rc)
+            algo_result = rc.algo_result
+            eng_result = rc.eng_result
+            extracted_names = rc.extracted_names
+            calibrated_matches = rc.calibrated_matches
+            _capa_capabilities = rc.capa_capabilities
 
         # 1.9. Assembly Analysis -- Ghidra decompiler fallback
         # v1.10.0 M1 T3.5: Step registry modunda bu is asm_analysis step'i

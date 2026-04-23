@@ -162,12 +162,17 @@ class ReconstructionContext:
     # ---- Analyzer sonuclari (eski monolith Phase 1) ----
     sig_matches: list[Any] = field(default_factory=list)
     byte_pattern_matches: list[Any] = field(default_factory=list)
+    # byte_pattern_names: BytePatternMatcher.to_naming_map ciktisi
+    # (orig_name -> recovered_name). extracted_names'e merge edilir.
+    byte_pattern_names: dict[str, str] = field(default_factory=dict)
     pcode_result: Any = None
     pcode_naming_candidates: list[Any] = field(default_factory=list)
     cfg_result: Any = None
     cfg_naming: Any = None
     algo_result: Any = None
     eng_result: Any = None
+    # Confidence calibrated engineering matches (v1.5.1)
+    calibrated_matches: Any = None
     extracted_names: dict[str, Any] = field(default_factory=dict)
     capa_capabilities: dict[str, Any] = field(default_factory=dict)
     asm_result: Any = None

@@ -1,17 +1,9 @@
-# Ghidra Python Script -- PyGhidra 3.0 (Python 3.10+) uyumlu
+# Ghidra Python Script -- Jython 2.7 uyumlu
 # @category BlackWidow
 # @description Extract control flow graphs (basic blocks and edges) per function
-#
-# v1.11.0 Jython Sunset Faz 1.3 (Dalga 4): Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/cfg_extraction.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
-#
-# UYARI: Bu script Ghidra JVM icinde PyGhidra engine altinda calisir. Ghidra API
-# objeleri (currentProgram, BasicBlockModel vb.) global scope'ta mevcuttur.
-# JPype tipleri (java.lang.String, java.lang.Long vb.) -> Python tiplerine
-# explicit donusum (str/int/bool/float) defansif olarak uygulanir.
 
-from __future__ import annotations
+# UYARI: Bu script Ghidra JVM icinde calisir.
+# Python 3 syntax'i KULLANILMAMALIDIR (f-string yok, type hints yok).
 
 import json
 import os
@@ -25,7 +17,7 @@ from ghidra.util.task import ConsoleTaskMonitor
 BATCH_SIZE = 5000
 
 
-def get_output_dir() -> str:
+def get_output_dir():
     """KARADUL_OUTPUT ortam degiskeninden cikti dizinini al (CWE-377 guvenli).
 
     v1.10.0 Fix Sprint MED-4: tempfile.mkdtemp() ile rastgele isim (8 byte
@@ -65,22 +57,22 @@ def classify_edge(flow_type, dest_addr, src_addr):
 
     Returns:
         str: Edge tipi -- "fall_through", "conditional_jump", "unconditional_jump"
-             veya "unknown". Call edge'leri None donulur (CFG disi).
+             veya "unknown".
     """
-    if bool(flow_type.isFallthrough()):
+    if flow_type.isFallthrough():
         return "fall_through"
-    if bool(flow_type.isConditional()):
+    if flow_type.isConditional():
         return "conditional_jump"
-    if bool(flow_type.isUnConditional()):
+    if flow_type.isUnConditional():
         # isCall() olan unconditional dallanmalari haric tut --
         # bunlar fonksiyon cagrilari, CFG edge'i degil
-        if bool(flow_type.isCall()):
+        if flow_type.isCall():
             return None
         return "unconditional_jump"
     return "unknown"
 
 
-def is_back_edge(src_end_addr, dest_start_addr) -> bool:
+def is_back_edge(src_end_addr, dest_start_addr):
     """Basit back-edge heuristigi: hedef adres < kaynak adres.
 
     Gercek dominator-based back-edge tespiti Python 3 tarafinda
@@ -93,10 +85,10 @@ def is_back_edge(src_end_addr, dest_start_addr) -> bool:
     Returns:
         bool: Hedef adres kaynak adresinden kucukse True.
     """
-    return bool(dest_start_addr.compareTo(src_end_addr) < 0)
+    return dest_start_addr.compareTo(src_end_addr) < 0
 
 
-def extract_function_cfg(func, block_model, monitor) -> dict | None:
+def extract_function_cfg(func, block_model, monitor):
     """Tek bir fonksiyon icin CFG cikar.
 
     BasicBlockModel kullanarak fonksiyonun body'sindeki
@@ -111,13 +103,13 @@ def extract_function_cfg(func, block_model, monitor) -> dict | None:
         dict: Fonksiyonun CFG bilgilerini iceren sozluk.
               Hata durumunda None doner.
     """
-    func_name = str(func.getName())
+    func_name = func.getName()
     func_addr = str(func.getEntryPoint())
     body = func.getBody()
 
-    blocks: list = []
-    edges: list = []
-    block_addrs: set = set()  # Tekrar onleme icin
+    blocks = []
+    edges = []
+    block_addrs = set()  # Tekrar onleme icin
 
     # Bu fonksiyonun body'sindeki tum basic block'lari al
     block_iter = block_model.getCodeBlocksContaining(body, monitor)
@@ -174,13 +166,13 @@ def extract_function_cfg(func, block_model, monitor) -> dict | None:
     complexity = num_edges - num_blocks + 2 if num_blocks > 0 else 0
 
     # Back-edge'leri ayri listele (loop ipucu)
-    back_edges: list = []
+    back_edges = []
     for e in edges:
         if e["is_back_edge"]:
             back_edges.append((e["from_block"], e["to_block"]))
 
     # Loop header adaylarini belirle (back-edge hedefleri)
-    loop_headers = list({be[1] for be in back_edges})
+    loop_headers = list(set(be[1] for be in back_edges))
 
     return {
         "name": func_name,
@@ -196,7 +188,7 @@ def extract_function_cfg(func, block_model, monitor) -> dict | None:
     }
 
 
-def extract_all_cfgs() -> tuple:
+def extract_all_cfgs():
     """Tum fonksiyonlar icin CFG cikar.
 
     BATCH_SIZE kadar fonksiyon isler. Tek bir fonksiyonda
@@ -205,18 +197,18 @@ def extract_all_cfgs() -> tuple:
     Returns:
         tuple: (functions listesi, istatistik sozlugu).
     """
-    fm = currentProgram.getFunctionManager()  # type: ignore[name-defined]
+    fm = currentProgram.getFunctionManager()
     monitor = ConsoleTaskMonitor()
-    block_model = BasicBlockModel(currentProgram)  # type: ignore[name-defined]
+    block_model = BasicBlockModel(currentProgram)
 
-    functions: list = []
+    functions = []
     error_count = 0
     skipped_count = 0
     processed = 0
 
     for func in fm.getFunctions(True):
         if processed >= BATCH_SIZE:
-            skipped_count = int(fm.getFunctionCount()) - processed
+            skipped_count = fm.getFunctionCount() - processed
             break
 
         try:
@@ -226,7 +218,7 @@ def extract_all_cfgs() -> tuple:
         except Exception as e:
             error_count += 1
             print("BlackWidow CFG: HATA fonksiyon %s (%s): %s" % (
-                str(func.getName()), str(func.getEntryPoint()), str(e),
+                func.getName(), str(func.getEntryPoint()), str(e),
             ))
 
         processed += 1
@@ -234,7 +226,7 @@ def extract_all_cfgs() -> tuple:
         # Her 500 fonksiyonda ilerleme raporu
         if processed % 500 == 0:
             print("BlackWidow CFG: %d / %d fonksiyon islendi..." % (
-                processed, min(int(fm.getFunctionCount()), BATCH_SIZE),
+                processed, min(fm.getFunctionCount(), BATCH_SIZE),
             ))
 
     stats = {
@@ -247,7 +239,7 @@ def extract_all_cfgs() -> tuple:
     return functions, stats
 
 
-def compute_global_stats(functions) -> dict:
+def compute_global_stats(functions):
     """Tum fonksiyonlar uzerinden toplu istatistikler hesapla.
 
     Args:
@@ -312,14 +304,14 @@ def compute_global_stats(functions) -> dict:
     }
 
 
-def main() -> None:
+def main():
     """Ana calisma fonksiyonu: CFG cikar, istatistik hesapla, JSON'a yaz."""
     output_dir = get_output_dir()
     functions, extraction_stats = extract_all_cfgs()
     global_stats = compute_global_stats(functions)
 
     result = {
-        "program": str(currentProgram.getName()),  # type: ignore[name-defined]
+        "program": str(currentProgram.getName()),
         "total_functions": len(functions),
         "extraction_stats": extraction_stats,
         "global_stats": global_stats,
@@ -327,9 +319,8 @@ def main() -> None:
     }
 
     output_path = os.path.join(output_dir, "ghidra_cfg.json")
-    # PyGhidra 3.0: encoding=utf-8 + ensure_ascii=False non-ASCII isimleri korur
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
+    with open(output_path, "w") as f:
+        json.dump(result, f, indent=2)
 
     print("BlackWidow CFG: %d fonksiyon islendi -> %s" % (
         len(functions), output_path,

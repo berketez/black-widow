@@ -2130,12 +2130,15 @@ class GhidraHeadless:
             self.config.perf, "use_legacy_jython_scripts", False
         )
 
-        # v1.11.0 Faz 1.2: Bu set legacy backup'i mevcut olan migrate edilmis
+        # v1.11.0 Faz 1.3: Bu set legacy backup'i mevcut olan migrate edilmis
         # script'leri tutar. Faz 2'de genisler.
         migrated_scripts = {
             "function_lister.py",   # Dalga 2 (v1.11.0 Faz 1)
             "string_extractor.py",  # Dalga 3 (v1.11.0 Faz 1.2)
             "type_recovery.py",     # Dalga 3 (v1.11.0 Faz 1.2)
+            "call_graph.py",        # Dalga 4 (v1.11.0 Faz 1.3)
+            "cfg_extraction.py",    # Dalga 4 (v1.11.0 Faz 1.3)
+            "xref_analysis.py",     # Dalga 4 (v1.11.0 Faz 1.3)
         }
 
         ordered_names = [

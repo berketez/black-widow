@@ -1,17 +1,10 @@
-# Ghidra Python Script -- PyGhidra 3.0 (Python 3.10+) uyumlu
+# Ghidra Python Script -- Jython 2.7 uyumlu
 # @category BlackWidow
 # @description Build cross-reference map for functions, strings, and globals
-#
-# v1.11.0 Jython Sunset Faz 1.3 (Dalga 4): Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/xref_analysis.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
-#
-# UYARI: Bu script Ghidra JVM icinde PyGhidra engine altinda calisir. Ghidra API
-# objeleri (currentProgram, ReferenceManager vb.) global scope'ta mevcuttur.
-# JPype tipleri (java.lang.String, java.lang.Long vb.) -> Python tiplerine
-# explicit donusum (str/int/bool) defansif olarak uygulanir.
 
-from __future__ import annotations
+# UYARI: Bu script Ghidra JVM icinde calisir. Ghidra API objeleri
+# (currentProgram, ReferenceManager vb.) global scope'ta mevcuttur.
+# Python 3 syntax'i KULLANILMAMALIDIR (f-string yok, print statement).
 
 import json
 import os
@@ -21,7 +14,7 @@ from ghidra.program.model.symbol import RefType
 from ghidra.program.model.symbol import SymbolType
 
 
-def get_output_dir() -> str:
+def get_output_dir():
     """KARADUL_OUTPUT ortam degiskeninden cikti dizinini al (CWE-377 guvenli).
 
     v1.10.0 Batch 5B HIGH-10: Path traversal koruma. Eger
@@ -51,31 +44,27 @@ def get_output_dir() -> str:
     return output
 
 
-def build_function_xref_map() -> dict:
+def build_function_xref_map():
     """Her fonksiyon icin: kullandigi string'ler, global'ler ve xref istatistikleri.
 
     Her fonksiyonun body adres araligi icindeki tum referanslari tarar.
     Referans hedeflerinin tipine gore string, global ve fonksiyon
     kategorilerine ayirir.
 
-    PyGhidra 3.0 notu: JPype Java proxy objelerinde str()/int()/bool() wrap
-    ZORUNLU -- aksi halde downstream JSON serialization'da java.lang.String
-    instance'lari gorulebilir ve json.dumps TypeError atar.
-
     Returns:
         dict: fonksiyon adresi -> xref bilgileri eslesmesi.
     """
-    fm = currentProgram.getFunctionManager()  # type: ignore[name-defined]
-    ref_mgr = currentProgram.getReferenceManager()  # type: ignore[name-defined]
-    listing = currentProgram.getListing()  # type: ignore[name-defined]
+    fm = currentProgram.getFunctionManager()
+    ref_mgr = currentProgram.getReferenceManager()
+    listing = currentProgram.getListing()
 
-    func_xrefs: dict = {}
+    func_xrefs = {}
 
     for func in fm.getFunctions(True):
-        func_name = str(func.getName())
+        func_name = func.getName()
         func_addr = str(func.getEntryPoint())
 
-        entry: dict = {
+        entry = {
             "name": func_name,
             "address": func_addr,
             "strings_used": [],       # bu fonksiyonun referans verdigi string'ler
@@ -87,9 +76,9 @@ def build_function_xref_map() -> dict:
         }
 
         # Fonksiyon body'sindeki tum adreslerden cikan referanslar
-        seen_strings: set = set()
-        seen_globals: set = set()
-        seen_callees: set = set()
+        seen_strings = set()
+        seen_globals = set()
+        seen_callees = set()
 
         body = func.getBody()
         addr_iter = body.getAddresses(True)
@@ -101,7 +90,7 @@ def build_function_xref_map() -> dict:
                 to_addr = ref.getToAddress()
                 ref_type = ref.getReferenceType()
 
-                if bool(ref_type.isCall()):
+                if ref_type.isCall():
                     # Fonksiyon cagrisi
                     entry["call_refs_from"] += 1
                     callee = fm.getFunctionAt(to_addr)
@@ -112,10 +101,10 @@ def build_function_xref_map() -> dict:
                         if callee_addr not in seen_callees:
                             seen_callees.add(callee_addr)
                             entry["functions_called"].append({
-                                "name": str(callee.getName()),
+                                "name": callee.getName(),
                                 "address": callee_addr,
                             })
-                elif bool(ref_type.isData()):
+                elif ref_type.isData():
                     # Data referansi -- string mi, global mi?
                     entry["data_refs_from"] += 1
 
@@ -130,12 +119,10 @@ def build_function_xref_map() -> dict:
                             if to_addr_str not in seen_strings:
                                 seen_strings.add(to_addr_str)
                                 value = data.getDefaultValueRepresentation()
-                                if value is not None:
-                                    value = str(value)
-                                    if len(value) >= 2:
-                                        if (value[0] == '"' and value[-1] == '"') or \
-                                           (value[0] == "'" and value[-1] == "'"):
-                                            value = value[1:-1]
+                                if value and len(value) >= 2:
+                                    if (value[0] == '"' and value[-1] == '"') or \
+                                       (value[0] == "'" and value[-1] == "'"):
+                                        value = value[1:-1]
                                 entry["strings_used"].append({
                                     "address": to_addr_str,
                                     "value": value,
@@ -148,22 +135,22 @@ def build_function_xref_map() -> dict:
                                 entry["globals_accessed"].append({
                                     "address": to_addr_str,
                                     "type": str(data.getDataType().getName()),
-                                    "size": int(data.getLength()),
+                                    "size": data.getLength(),
                                     "access": "read",  # varsayilan, asagida guncellenir
                                 })
 
         # Caller'lar (bu fonksiyona referans verenler)
-        seen_callers: set = set()
+        seen_callers = set()
         refs_to = ref_mgr.getReferencesTo(func.getEntryPoint())
         for ref in refs_to:
-            if bool(ref.getReferenceType().isCall()):
+            if ref.getReferenceType().isCall():
                 caller = fm.getFunctionContaining(ref.getFromAddress())
                 if caller is not None:
                     caller_addr = str(caller.getEntryPoint())
                     if caller_addr != func_addr and caller_addr not in seen_callers:
                         seen_callers.add(caller_addr)
                         entry["called_by"].append({
-                            "name": str(caller.getName()),
+                            "name": caller.getName(),
                             "address": caller_addr,
                         })
 
@@ -172,7 +159,7 @@ def build_function_xref_map() -> dict:
     return func_xrefs
 
 
-def build_string_xref_map() -> list:
+def build_string_xref_map():
     """Her string icin: hangi fonksiyonlar bu string'e referans veriyor.
 
     Programdaki tum tanimli string veri tiplerini bulur ve her birine
@@ -181,12 +168,12 @@ def build_string_xref_map() -> list:
     Returns:
         list: string xref kayitlari listesi.
     """
-    listing = currentProgram.getListing()  # type: ignore[name-defined]
-    ref_mgr = currentProgram.getReferenceManager()  # type: ignore[name-defined]
-    fm = currentProgram.getFunctionManager()  # type: ignore[name-defined]
+    listing = currentProgram.getListing()
+    ref_mgr = currentProgram.getReferenceManager()
+    fm = currentProgram.getFunctionManager()
 
-    string_xrefs: list = []
-    seen_addrs: set = set()
+    string_xrefs = []
+    seen_addrs = set()
 
     data_iter = listing.getDefinedData(True)
     while data_iter.hasNext():
@@ -203,16 +190,14 @@ def build_string_xref_map() -> list:
         seen_addrs.add(addr_str)
 
         value = data.getDefaultValueRepresentation()
-        if value is not None:
-            value = str(value)
-            if len(value) >= 2:
-                if (value[0] == '"' and value[-1] == '"') or \
-                   (value[0] == "'" and value[-1] == "'"):
-                    value = value[1:-1]
+        if value and len(value) >= 2:
+            if (value[0] == '"' and value[-1] == '"') or \
+               (value[0] == "'" and value[-1] == "'"):
+                value = value[1:-1]
 
         # Bu string'e referans veren fonksiyonlar
-        referencing_funcs: list = []
-        seen_funcs: set = set()
+        referencing_funcs = []
+        seen_funcs = set()
         refs = ref_mgr.getReferencesTo(addr)
         for ref in refs:
             from_func = fm.getFunctionContaining(ref.getFromAddress())
@@ -221,16 +206,16 @@ def build_string_xref_map() -> list:
                 if from_addr not in seen_funcs:
                     seen_funcs.add(from_addr)
                     referencing_funcs.append({
-                        "name": str(from_func.getName()),
+                        "name": from_func.getName(),
                         "address": from_addr,
                         "ref_address": str(ref.getFromAddress()),
                         "ref_type": str(ref.getReferenceType()),
                     })
 
-        entry: dict = {
+        entry = {
             "address": addr_str,
             "value": value,
-            "length": int(data.getLength()),
+            "length": data.getLength(),
             "type": str(data.getDataType().getName()),
             "referenced_by_count": len(referencing_funcs),
             "referenced_by": referencing_funcs,
@@ -238,16 +223,14 @@ def build_string_xref_map() -> list:
 
         # String hangi fonksiyon icinde tanimli?
         containing_func = fm.getFunctionContaining(addr)
-        entry["defined_in_function"] = (
-            str(containing_func.getName()) if containing_func is not None else None
-        )
+        entry["defined_in_function"] = containing_func.getName() if containing_func else None
 
         string_xrefs.append(entry)
 
     return string_xrefs
 
 
-def build_global_xref_map() -> list:
+def build_global_xref_map():
     """Her global degisken icin: hangi fonksiyonlar okuyor/yaziyor.
 
     Symbol tablosundan global label'lari bulur ve her birine gelen
@@ -256,12 +239,12 @@ def build_global_xref_map() -> list:
     Returns:
         list: global degisken xref kayitlari listesi.
     """
-    sym_table = currentProgram.getSymbolTable()  # type: ignore[name-defined]
-    ref_mgr = currentProgram.getReferenceManager()  # type: ignore[name-defined]
-    fm = currentProgram.getFunctionManager()  # type: ignore[name-defined]
-    listing = currentProgram.getListing()  # type: ignore[name-defined]
+    sym_table = currentProgram.getSymbolTable()
+    ref_mgr = currentProgram.getReferenceManager()
+    fm = currentProgram.getFunctionManager()
+    listing = currentProgram.getListing()
 
-    globals_xrefs: list = []
+    globals_xrefs = []
 
     # Symbol tablosundan global label'lari tara
     sym_iter = sym_table.getAllSymbols(True)
@@ -281,7 +264,7 @@ def build_global_xref_map() -> list:
 
         # Bu adrese referans var mi?
         refs = ref_mgr.getReferencesTo(sym_addr)
-        ref_list: list = []
+        ref_list = []
         for ref in refs:
             ref_list.append(ref)
 
@@ -294,16 +277,16 @@ def build_global_xref_map() -> list:
         data_size = 0
         if data is not None:
             data_type_name = str(data.getDataType().getName())
-            data_size = int(data.getLength())
+            data_size = data.getLength()
             # String'leri atla (string_xref_map'de zaten var)
             if "string" in data_type_name.lower() or "cstring" in data_type_name.lower():
                 continue
 
         # Referanslari read/write olarak siniflandir
-        readers: list = []     # READ referans veren fonksiyonlar
-        writers: list = []     # WRITE referans veren fonksiyonlar
-        seen_readers: set = set()
-        seen_writers: set = set()
+        readers = []     # READ referans veren fonksiyonlar
+        writers = []     # WRITE referans veren fonksiyonlar
+        seen_readers = set()
+        seen_writers = set()
 
         for ref in ref_list:
             from_func = fm.getFunctionContaining(ref.getFromAddress())
@@ -314,11 +297,11 @@ def build_global_xref_map() -> list:
             ref_type = ref.getReferenceType()
 
             # WRITE referans tipleri
-            if bool(ref_type.isWrite()):
+            if ref_type.isWrite():
                 if func_addr not in seen_writers:
                     seen_writers.add(func_addr)
                     writers.append({
-                        "name": str(from_func.getName()),
+                        "name": from_func.getName(),
                         "address": func_addr,
                         "ref_address": str(ref.getFromAddress()),
                     })
@@ -327,18 +310,18 @@ def build_global_xref_map() -> list:
                 if func_addr not in seen_readers:
                     seen_readers.add(func_addr)
                     readers.append({
-                        "name": str(from_func.getName()),
+                        "name": from_func.getName(),
                         "address": func_addr,
                         "ref_address": str(ref.getFromAddress()),
                     })
 
-        entry: dict = {
-            "name": str(sym.getName()),
+        entry = {
+            "name": sym.getName(),
             "address": str(sym_addr),
             "type": data_type_name or "undefined",
             "size": data_size,
             "symbol_type": str(sym_type),
-            "is_external": bool(sym.isExternalEntryPoint()),
+            "is_external": sym.isExternalEntryPoint(),
             "reader_count": len(readers),
             "writer_count": len(writers),
             "readers": readers,
@@ -350,7 +333,7 @@ def build_global_xref_map() -> list:
     return globals_xrefs
 
 
-def compute_statistics(func_xrefs, string_xrefs, global_xrefs) -> dict:
+def compute_statistics(func_xrefs, string_xrefs, global_xrefs):
     """Xref istatistiklerini hesapla.
 
     Args:
@@ -363,17 +346,16 @@ def compute_statistics(func_xrefs, string_xrefs, global_xrefs) -> dict:
     """
     # En cok referans alan string'ler (top 20)
     sorted_strings = sorted(string_xrefs, key=lambda s: s["referenced_by_count"], reverse=True)
-    top_strings: list = []
+    top_strings = []
     for s in sorted_strings[:20]:
-        value = s["value"] if s["value"] is not None else ""
         top_strings.append({
             "address": s["address"],
-            "value": value[:100],  # uzun stringleri kes
+            "value": s["value"][:100],  # uzun stringleri kes
             "ref_count": s["referenced_by_count"],
         })
 
     # En cok cagrilan fonksiyonlar (top 20)
-    func_call_counts: list = []
+    func_call_counts = []
     for addr, fdata in func_xrefs.items():
         func_call_counts.append({
             "name": fdata["name"],
@@ -386,7 +368,7 @@ def compute_statistics(func_xrefs, string_xrefs, global_xrefs) -> dict:
 
     # En cok yazilan global'ler (top 20)
     sorted_globals = sorted(global_xrefs, key=lambda g: g["writer_count"], reverse=True)
-    top_globals: list = []
+    top_globals = []
     for g in sorted_globals[:20]:
         top_globals.append({
             "name": g["name"],
@@ -417,7 +399,7 @@ def compute_statistics(func_xrefs, string_xrefs, global_xrefs) -> dict:
     }
 
 
-def main() -> None:
+def main():
     output_dir = get_output_dir()
 
     print("BlackWidow: Building function xref map...")
@@ -433,7 +415,7 @@ def main() -> None:
     stats = compute_statistics(func_xrefs, string_xrefs, global_xrefs)
 
     result = {
-        "program": str(currentProgram.getName()),  # type: ignore[name-defined]
+        "program": str(currentProgram.getName()),
         "statistics": stats,
         "function_xrefs": func_xrefs,
         "string_xrefs": string_xrefs,
@@ -441,9 +423,8 @@ def main() -> None:
     }
 
     output_path = os.path.join(output_dir, "xrefs.json")
-    # PyGhidra 3.0: encoding=utf-8 + ensure_ascii=False non-ASCII isimleri korur
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
+    with open(output_path, "w") as f:
+        json.dump(result, f, indent=2)
 
     print("BlackWidow: Xref analysis: %d functions, %d strings, %d globals -> %s" % (
         stats["total_functions"],

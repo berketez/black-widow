@@ -6303,6 +6303,76 @@ _COMPRESSION_EXT_SIGNATURES: dict[str, dict[str, str]] = {
 
 
 # ---------------------------------------------------------------------------
+# sig_db Faz 3 — compression kategori override (dalga 3)
+# ---------------------------------------------------------------------------
+# Veri `karadul.analyzers.sigdb_builtin.compression` modulune tasindi.
+# Asagidaki override, eski dict'leri silmeden yeni kaynak-of-truth'a baglar.
+# Import basarisiz olursa (ornek: sigdb_builtin paketi yok / bozuk) eski
+# inline dict'ler kullanilmaya devam eder — geriye uyumlu, rollback kolay.
+try:
+    from karadul.analyzers.sigdb_builtin.compression import (
+        SIGNATURES as _BUILTIN_COMPRESSION_SIGNATURES,
+    )
+except ImportError:  # pragma: no cover - paket yoksa legacy fallback
+    _BUILTIN_COMPRESSION_SIGNATURES = None  # type: ignore[assignment]
+
+if _BUILTIN_COMPRESSION_SIGNATURES is not None:
+    _ZLIB_SIGNATURES = _BUILTIN_COMPRESSION_SIGNATURES.get(
+        "zlib_signatures", _ZLIB_SIGNATURES
+    )
+    _BZIP2_SIGNATURES = _BUILTIN_COMPRESSION_SIGNATURES.get(
+        "bzip2_signatures", _BZIP2_SIGNATURES
+    )
+    _LZ4_SIGNATURES = _BUILTIN_COMPRESSION_SIGNATURES.get(
+        "lz4_signatures", _LZ4_SIGNATURES
+    )
+    _ZSTD_SIGNATURES = _BUILTIN_COMPRESSION_SIGNATURES.get(
+        "zstd_signatures", _ZSTD_SIGNATURES
+    )
+    _COMPRESSION_EXT_SIGNATURES = _BUILTIN_COMPRESSION_SIGNATURES.get(
+        "compression_ext_signatures", _COMPRESSION_EXT_SIGNATURES
+    )
+
+
+# ---------------------------------------------------------------------------
+# sig_db Faz 3 — network kategori override (dalga 3)
+# ---------------------------------------------------------------------------
+# Veri `karadul.analyzers.sigdb_builtin.network` modulune tasindi. Ayni
+# rollback-guvenli override pattern'i (crypto/compression ile ozdes).
+# NOT: SSL/TLS lib'leri crypto kategorisine aittir; burada yalnizca
+# network-layer imzalari (HTTP, TCP/UDP, WebSocket, DNS, ...) vardir.
+try:
+    from karadul.analyzers.sigdb_builtin.network import (
+        SIGNATURES as _BUILTIN_NETWORK_SIGNATURES,
+    )
+except ImportError:  # pragma: no cover - paket yoksa legacy fallback
+    _BUILTIN_NETWORK_SIGNATURES = None  # type: ignore[assignment]
+
+if _BUILTIN_NETWORK_SIGNATURES is not None:
+    _LIBCURL_SIGNATURES = _BUILTIN_NETWORK_SIGNATURES.get(
+        "libcurl_signatures", _LIBCURL_SIGNATURES
+    )
+    _POSIX_NETWORKING_SIGNATURES = _BUILTIN_NETWORK_SIGNATURES.get(
+        "posix_networking_signatures", _POSIX_NETWORKING_SIGNATURES
+    )
+    _NGHTTP2_SIGNATURES = _BUILTIN_NETWORK_SIGNATURES.get(
+        "nghttp2_signatures", _NGHTTP2_SIGNATURES
+    )
+    _WEBSOCKET_SIGNATURES = _BUILTIN_NETWORK_SIGNATURES.get(
+        "websocket_signatures", _WEBSOCKET_SIGNATURES
+    )
+    _MACOS_NETWORKING_SIGNATURES = _BUILTIN_NETWORK_SIGNATURES.get(
+        "macos_networking_signatures", _MACOS_NETWORKING_SIGNATURES
+    )
+    _APPLE_NETWORK_FRAMEWORK_SIGNATURES = _BUILTIN_NETWORK_SIGNATURES.get(
+        "apple_network_framework_signatures", _APPLE_NETWORK_FRAMEWORK_SIGNATURES
+    )
+    _NETWORKING_EXT_SIGNATURES = _BUILTIN_NETWORK_SIGNATURES.get(
+        "networking_ext_signatures", _NETWORKING_EXT_SIGNATURES
+    )
+
+
+# ---------------------------------------------------------------------------
 # EXTENDED: Logging/Observability Libraries (~50 imza)
 # syslog, journald, ETW, DTrace probes
 # ---------------------------------------------------------------------------

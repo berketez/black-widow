@@ -71,5 +71,54 @@
       "test_step_struct_recovery": "6 pass",
       "total_new_failures": 0
     }
+  },
+  "faz3_recovery_layers_scope": {
+    "scope": "karadul/reconstruction/recovery_layers/",
+    "wave": 3,
+    "fix_pattern": "logger.debug(message, context, exc_info=True) + continue (davranis degismedi)",
+    "behavior_change": "none (silent continue -> logged continue)",
+    "constraint_solver_batch": {
+      "file": "karadul/reconstruction/recovery_layers/constraint_solver.py",
+      "before": 17,
+      "after": 0,
+      "fixed_count": 17,
+      "fixed_items": [
+        {"line": 691, "pattern": "continue", "except_type": "OSError", "context": "cast_deref c_file read"},
+        {"line": 699, "pattern": "continue", "except_type": "(ValueError, TypeError)", "context": "cast_deref offset parse"},
+        {"line": 749, "pattern": "continue", "except_type": "OSError", "context": "array_index c_file read"},
+        {"line": 761, "pattern": "continue", "except_type": "(ValueError, TypeError)", "context": "array_index stride parse"},
+        {"line": 1202, "pattern": "continue", "except_type": "OSError", "context": "param_types c_file read"},
+        {"line": 1327, "pattern": "continue", "except_type": "OSError", "context": "return_types c_file read"},
+        {"line": 1423, "pattern": "continue", "except_type": "OSError", "context": "mutex_pattern c_file read"},
+        {"line": 1525, "pattern": "continue", "except_type": "OSError", "context": "bitfield c_file read"},
+        {"line": 1534, "pattern": "continue", "except_type": "(ValueError, TypeError)", "context": "bitfield_extract shift/mask parse"},
+        {"line": 1554, "pattern": "continue", "except_type": "(ValueError, TypeError)", "context": "bitfield_set bit/mask parse"},
+        {"line": 1562, "pattern": "continue", "except_type": "(ValueError, TypeError)", "context": "bitfield_test mask parse"},
+        {"line": 1640, "pattern": "continue", "except_type": "OSError", "context": "dispatch_table c_file read"},
+        {"line": 1750, "pattern": "continue", "except_type": "OSError", "context": "linked_list c_file read"},
+        {"line": 1763, "pattern": "continue", "except_type": "(ValueError, TypeError)", "context": "linked_list offset parse"},
+        {"line": 1804, "pattern": "continue", "except_type": "(ValueError, TypeError)", "context": "linked_list_loop offset parse"},
+        {"line": 1858, "pattern": "continue", "except_type": "OSError", "context": "go_slice c_file read"},
+        {"line": 1967, "pattern": "continue", "except_type": "OSError", "context": "vtable_dispatch c_file read"}
+      ]
+    },
+    "other_recovery_layers": {
+      "cfg_fingerprint.py": "0 silent (tumu logger.warning/exception ile isleniyor)",
+      "formula_extractor.py": "0 silent (3 except recovery fallback, silent degil)",
+      "signature_fusion.py": "0 silent (tumu logger ile)",
+      "engine.py": "0 silent (tumu logger.exception/debug ile)",
+      "callee_profile_propagator.py": "0 except blocks",
+      "note": "Diger dosyalarda silent except bulunmadi. Tahmin 10 yerine 0 gercek."
+    },
+    "total_faz3_fixed": 17,
+    "tests_after_fix": {
+      "test_step_struct_recovery": "6 pass",
+      "test_struct_maxsmt": "29 pass",
+      "test_struct_parallel_solve": "15 pass",
+      "test_computation_integration": "38 pass",
+      "test_computation_recovery": "74 pass",
+      "total": "162 pass, 0 fail",
+      "regression": "none"
+    }
   }
 }

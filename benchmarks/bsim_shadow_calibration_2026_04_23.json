@@ -1,0 +1,341 @@
+{
+  "date": "2026-04-23",
+  "version": "v1.11.0-beta",
+  "sprint": "Dalga 4 - BSim shadow kalibrasyon (hafta 1)",
+  "environment": {
+    "bsim_mode": "bsim_lite",
+    "bsim_mode_note": "Ghidra native BSim (features.bsim) Java API bu kurulumda erisilmedi -> lite fallback. Lite metrigi: structural+opcode hash match -> 1.0 | structural-only -> 0.85 | opcode-only -> 0.65. Discrete; fuzzy LSH degil.",
+    "database": "karadul_bsim",
+    "db_location": "~/.cache/karadul/bsim",
+    "config_defaults": {
+      "enabled": true,
+      "shadow_mode": true,
+      "use_bsim_fusion": false,
+      "min_similarity": 0.7,
+      "max_results_per_function": 5,
+      "fusion_min_similarity": 0.7,
+      "fusion_max_candidates_per_function": 3
+    }
+  },
+  "binaries": {
+    "sample_macho": {
+      "binary": "sample_macho",
+      "database": "karadul_bsim",
+      "mode": "shadow",
+      "total_matches": 5,
+      "unique_functions_with_matches": 5,
+      "similarity_stats_all_candidates": {
+        "count": 5,
+        "min": 1.0,
+        "max": 1.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "p10": 1.0,
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p99": 1.0
+      },
+      "similarity_stats_top1": {
+        "count": 5,
+        "min": 1.0,
+        "max": 1.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "p10": 1.0,
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p99": 1.0
+      },
+      "candidate_count_per_match": {
+        "count": 5,
+        "min": 1,
+        "max": 1,
+        "mean": 1
+      },
+      "fun_prefix_count": 0,
+      "empty_name_count": 0,
+      "binary_sources": {
+        "sample_macho_stripped": 5
+      },
+      "similarity_histogram": {
+        "[0.00,0.50)": 0,
+        "[0.50,0.60)": 0,
+        "[0.60,0.65)": 0,
+        "[0.65,0.70)": 0,
+        "[0.70,0.75)": 0,
+        "[0.75,0.80)": 0,
+        "[0.80,0.85)": 0,
+        "[0.85,0.90)": 0,
+        "[0.90,0.95)": 0,
+        "[0.95,0.99)": 0,
+        "[0.99,1.00)": 0,
+        "[1.00]": 5
+      },
+      "top_matches_preview": [
+        {
+          "function_addr": "100000460",
+          "function_name": "100000460",
+          "top_candidate": "_add",
+          "top_similarity": 1.0,
+          "binary": "sample_macho_stripped"
+        },
+        {
+          "function_addr": "100000480",
+          "function_name": "100000480",
+          "top_candidate": "_multiply",
+          "top_similarity": 1.0,
+          "binary": "sample_macho_stripped"
+        },
+        {
+          "function_addr": "1000004a0",
+          "function_name": "1000004a0",
+          "top_candidate": "_get_greeting",
+          "top_similarity": 1.0,
+          "binary": "sample_macho_stripped"
+        },
+        {
+          "function_addr": "1000004ac",
+          "function_name": "1000004ac",
+          "top_candidate": "_print_info",
+          "top_similarity": 1.0,
+          "binary": "sample_macho_stripped"
+        },
+        {
+          "function_addr": "1000004e0",
+          "function_name": "1000004e0",
+          "top_candidate": "entry",
+          "top_similarity": 1.0,
+          "binary": "sample_macho_stripped"
+        }
+      ],
+      "shadow_path": "/private/tmp/kd_bsim_shadow_sample_v2/workspaces/sample_macho/20260422_215402/reconstructed/bsim_shadow.json"
+    },
+    "sample_macho_stripped": {
+      "binary": "sample_macho_stripped",
+      "database": "karadul_bsim",
+      "mode": "shadow",
+      "total_matches": 5,
+      "unique_functions_with_matches": 5,
+      "similarity_stats_all_candidates": {
+        "count": 5,
+        "min": 1.0,
+        "max": 1.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "p10": 1.0,
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p99": 1.0
+      },
+      "similarity_stats_top1": {
+        "count": 5,
+        "min": 1.0,
+        "max": 1.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "p10": 1.0,
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p99": 1.0
+      },
+      "candidate_count_per_match": {
+        "count": 5,
+        "min": 1,
+        "max": 1,
+        "mean": 1
+      },
+      "fun_prefix_count": 0,
+      "empty_name_count": 0,
+      "binary_sources": {
+        "sample_macho": 5
+      },
+      "similarity_histogram": {
+        "[0.00,0.50)": 0,
+        "[0.50,0.60)": 0,
+        "[0.60,0.65)": 0,
+        "[0.65,0.70)": 0,
+        "[0.70,0.75)": 0,
+        "[0.75,0.80)": 0,
+        "[0.80,0.85)": 0,
+        "[0.85,0.90)": 0,
+        "[0.90,0.95)": 0,
+        "[0.95,0.99)": 0,
+        "[0.99,1.00)": 0,
+        "[1.00]": 5
+      },
+      "top_matches_preview": [
+        {
+          "function_addr": "100000460",
+          "function_name": "100000460",
+          "top_candidate": "_add",
+          "top_similarity": 1.0,
+          "binary": "sample_macho"
+        },
+        {
+          "function_addr": "100000480",
+          "function_name": "100000480",
+          "top_candidate": "_multiply",
+          "top_similarity": 1.0,
+          "binary": "sample_macho"
+        },
+        {
+          "function_addr": "1000004a0",
+          "function_name": "1000004a0",
+          "top_candidate": "_get_greeting",
+          "top_similarity": 1.0,
+          "binary": "sample_macho"
+        },
+        {
+          "function_addr": "1000004ac",
+          "function_name": "1000004ac",
+          "top_candidate": "_print_info",
+          "top_similarity": 1.0,
+          "binary": "sample_macho"
+        },
+        {
+          "function_addr": "1000004e0",
+          "function_name": "1000004e0",
+          "top_candidate": "entry",
+          "top_similarity": 1.0,
+          "binary": "sample_macho"
+        }
+      ],
+      "shadow_path": "/private/tmp/kd_bsim_shadow_stripped/workspaces/sample_macho_stripped/20260422_215422/reconstructed/bsim_shadow.json"
+    },
+    "libsqlite3.dylib": {
+      "binary": "libsqlite3.dylib",
+      "database": "karadul_bsim",
+      "mode": "shadow",
+      "total_matches": 2589,
+      "unique_functions_with_matches": 2589,
+      "similarity_stats_all_candidates": {
+        "count": 2589,
+        "min": 1.0,
+        "max": 1.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "p10": 1.0,
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p99": 1.0
+      },
+      "similarity_stats_top1": {
+        "count": 2589,
+        "min": 1.0,
+        "max": 1.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "p10": 1.0,
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "p99": 1.0
+      },
+      "candidate_count_per_match": {
+        "count": 2589,
+        "min": 1,
+        "max": 1,
+        "mean": 1
+      },
+      "fun_prefix_count": 4,
+      "empty_name_count": 0,
+      "binary_sources": {
+        "libsqlite3_stripped.dylib": 2589
+      },
+      "similarity_histogram": {
+        "[0.00,0.50)": 0,
+        "[0.50,0.60)": 0,
+        "[0.60,0.65)": 0,
+        "[0.65,0.70)": 0,
+        "[0.70,0.75)": 0,
+        "[0.75,0.80)": 0,
+        "[0.80,0.85)": 0,
+        "[0.85,0.90)": 0,
+        "[0.90,0.95)": 0,
+        "[0.95,0.99)": 0,
+        "[0.99,1.00)": 0,
+        "[1.00]": 2589
+      },
+      "top_matches_preview": [
+        {
+          "function_addr": "00001258",
+          "function_name": "00001258",
+          "top_candidate": "_sqlite3_status64",
+          "top_similarity": 1.0,
+          "binary": "libsqlite3_stripped.dylib"
+        },
+        {
+          "function_addr": "0000136c",
+          "function_name": "0000136c",
+          "top_candidate": "_sqlite3_mutex_enter",
+          "top_similarity": 1.0,
+          "binary": "libsqlite3_stripped.dylib"
+        },
+        {
+          "function_addr": "00001380",
+          "function_name": "00001380",
+          "top_candidate": "_sqlite3_mutex_leave",
+          "top_similarity": 1.0,
+          "binary": "libsqlite3_stripped.dylib"
+        },
+        {
+          "function_addr": "00001394",
+          "function_name": "00001394",
+          "top_candidate": "_sqlite3_status",
+          "top_similarity": 1.0,
+          "binary": "libsqlite3_stripped.dylib"
+        },
+        {
+          "function_addr": "00001428",
+          "function_name": "00001428",
+          "top_candidate": "_sqlite3_db_status64",
+          "top_similarity": 1.0,
+          "binary": "libsqlite3_stripped.dylib"
+        }
+      ],
+      "shadow_path": "/private/tmp/kd_bsim_shadow_sqlite/workspaces/libsqlite3.3.53.0/20260422_215431/reconstructed/bsim_shadow.json"
+    }
+  },
+  "recommendation": {
+    "fusion_min_similarity": 0.85,
+    "fusion_max_candidates_per_function": 3,
+    "global_top1_count": 2599,
+    "global_top1_mean": 1.0,
+    "global_top1_median": 1.0,
+    "global_top1_min": 1.0,
+    "global_top1_max": 1.0,
+    "unique_discrete_values": [
+      1.0
+    ],
+    "bsim_lite_degenerate": true,
+    "reasoning": "bsim_lite mode ozel durumu: tum 2599 top-1 benzerlik = 1.0 (structural+opcode hash ikisi de match). Lite metrigi yalnizca {1.0, 0.85, 0.65} discrete deger uretir; 'dagilim' yok. Fusion esigi 0.85 -> structural-only match'leri de kabul eder (0.85). Native BSim (Ghidra 12+ LSH) kurulunca gercek fuzzy dagilim cikacak."
+  },
+  "false_positive_assessment": {
+    "fun_prefix_total": 4,
+    "empty_name_total": 0,
+    "note": "Bu veri setindeki eslesmeler kendi stripped twin'lerinden geliyor (self-match). sample_macho <-> sample_macho_stripped, libsqlite3 <-> libsqlite3_stripped. Yapisal farkli binary'ler eklenince (hafta 2) gercek FP riski goruluebilir."
+  },
+  "week1_conclusions": [
+    "bsim_lite kendi stripped twin'ine karsi %100 structural+opcode match veriyor; bu beklenen.",
+    "libsqlite3 uzerinde 2589 match dondu; recovered isimler gercek sqlite API'si (ornek: _sqlite3_status64, _sessionMergeRecord). Shadow icin FAYDALI veri.",
+    "Similarity dagilimi DEGENERE (%100 = 1.0) -- kalibrasyonun anlamli olmasi icin native BSim veya farkli binary'lerden (hafta 2) cross-match lazim.",
+    "Fusion esigi 0.85 onerilir: lite'in 0.85 bandi structural-only match'leri kurtarir (opcode farkliligina ragmen ayni fonksiyon), 0.65 opcode-only bandi FP riski cok yuksek oldugu icin elenir."
+  ],
+  "week2_recommendations": [
+    "Ghidra BSim native (features.bsim) kurulumu dene -- gercek LSH similarity icin sart.",
+    "2-3 FARKLI binary ekle (different compile flags, different projects, strip+optimize varyantlari).",
+    "use_bsim_fusion=True aktive et, baseline F1 delta olc.",
+    "fusion_min_similarity=0.85 (bu rapor) ile baslat, shadow verisi fuzzy dagilim uretmeye baslarsa revize et."
+  ]
+}

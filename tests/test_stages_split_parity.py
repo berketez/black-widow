@@ -488,3 +488,146 @@ def test_load_binary_short_circuit_when_no_c_files(tmp_path: Path) -> None:
     assert rc.phase1_early_return.success is False
     assert any("C dosyasi" in e for e in rc.phase1_early_return.errors)
     assert result == {}
+
+
+# ---------------------------------------------------------------------------
+# Faz 3 — static metadata Phase 1 parity (plan §3 metot 3-7)
+# ---------------------------------------------------------------------------
+# Bu testler v1.12.0 Faz 3 split'i dogrular:
+#   _run_signature_matching, _run_byte_pattern_matching,
+#   _run_pcode_analysis, _run_cfg_analysis, _run_algorithm_engineering.
+# Her metot rc.ph1_artifacts (ve byte_pattern_names zinciri) girdisine
+# bagli; sonuclari rc.sig_matches/.byte_pattern_names/.pcode_result/.
+# cfg_result/.algo_result vb. alanlara yazar. Testler yalnizca *cagri
+# basarili + rc field'lari set* garantisi verir — ic gercek davranis
+# golden SHA256 parity testine (Faz 2'nin @skipped testi) birakilir.
+
+
+def _disable_heavy_features(context) -> None:
+    """Agir Phase 1 feature'larini kapa — unit test skoru icin yeterli."""
+    cr = context.config.binary_reconstruction
+    cr.enable_byte_pattern_matching = False
+    cr.enable_algorithm_id = False
+    cr.enable_binary_name_extraction = False
+    cr.enable_engineering_analysis = False
+    cr.enable_capa = False
+    # Match budget 0 = disable (ayni davranis monolith'te)
+    cr.max_algo_matches = 0
+
+
+def _prepare_rc(tmp_path: Path):
+    """Ortak kurulum: stage + context + rc (prepare_workspace + load_binary yapilmis)."""
+    from karadul.pipeline.reconstruction_context import ReconstructionContext
+
+    stage, context = _build_context_and_stage_from_golden(tmp_path)
+    _disable_heavy_features(context)
+    rc = ReconstructionContext(start=0.0, stage_name=stage.name)
+    stage._prepare_workspace(context, rc)
+    stage._load_binary(context, rc)
+    assert rc.phase1_short_circuit is False
+    return stage, context, rc
+
+
+def test_run_signature_matching_parity(tmp_path: Path) -> None:
+    """_run_signature_matching rc.sig_matches'e liste yazar, timing stat'i koyar."""
+    stage, context, rc = _prepare_rc(tmp_path)
+
+    stage._run_signature_matching(context, rc)
+
+    # rc.sig_matches dolduruldu (liste, bos olabilir ama tip kesin)
+    assert isinstance(rc.sig_matches, list)
+    # timing stat eklendi
+    assert "timing_signature_db" in rc.stats
+    # Errors listesine kiril hata yok (fixture'da sig DB import'u basarili ama
+    # eslesme olmayabilir — bu durumda sig_matches=[] ve hata yok).
+
+
+def test_run_byte_pattern_matching_parity(tmp_path: Path) -> None:
+    """_run_byte_pattern_matching flag KAPALI iken bos dict uretir, timing koyar."""
+    stage, context, rc = _prepare_rc(tmp_path)
+
+    stage._run_byte_pattern_matching(context, rc)
+
+    # Flag kapali -> byte_pattern_names bos dict, stat yine set.
+    assert isinstance(rc.byte_pattern_names, dict)
+    assert rc.byte_pattern_names == {}
+    assert "timing_byte_pattern" in rc.stats
+
+
+def test_run_pcode_analysis_parity(tmp_path: Path) -> None:
+    """_run_pcode_analysis rc.pcode_result / rc.pcode_naming_candidates set eder."""
+    stage, context, rc = _prepare_rc(tmp_path)
+
+    stage._run_pcode_analysis(context, rc)
+
+    # Golden fixture'da ghidra_pcode.json var; hangi mod (stats_only/jsonl/legacy)
+    # oldugundan bagimsiz timing_pcode set edilmeli.
+    assert "timing_pcode" in rc.stats
+    # pcode_naming_candidates hic istisnasiz list olmali.
+    assert isinstance(rc.pcode_naming_candidates, list)
+    # rc.pcode_result None ya da PcodeResult — iki durum da kabul.
+
+
+def test_run_cfg_analysis_parity(tmp_path: Path) -> None:
+    """_run_cfg_analysis rc.cfg_result set eder (ya da None), timing koyar."""
+    stage, context, rc = _prepare_rc(tmp_path)
+
+    stage._run_cfg_analysis(context, rc)
+
+    assert "timing_cfg" in rc.stats
+    # cfg_result None olabilir (cfg_json bos / parse hatasi) ya da CFGResult.
+    # Golden fixture'da ghidra_cfg.json var, dogal beklentimiz None-disi
+    # ama bu test minimum parity kontrolu — CFGAnalyzer davranisi baska test.
+
+
+def test_run_algorithm_engineering_parity(tmp_path: Path) -> None:
+    """_run_algorithm_engineering tum flag'ler KAPALI iken bos sonuclarla biter.
+
+    Disable edilmis modda:
+      - algo_result = None (skipped)
+      - eng_result = None (skipped)
+      - extracted_names = {} (binary_name_extraction skipped; byte_pattern
+        bos; CAPA kapali)
+      - calibrated_matches = None
+      - capa_capabilities = {}
+    Timing stat yine set edilir.
+    """
+    stage, context, rc = _prepare_rc(tmp_path)
+
+    stage._run_algorithm_engineering(context, rc)
+
+    assert rc.algo_result is None
+    assert rc.eng_result is None
+    assert rc.extracted_names == {}
+    assert rc.calibrated_matches is None
+    assert rc.capa_capabilities == {}
+    # Timing'ler kuruldu (paralel bolum + calibration + capa)
+    assert "timing_algo_name_eng_parallel" in rc.stats
+    assert "timing_confidence_calibration" in rc.stats
+    assert "timing_capa_naming" in rc.stats
+
+
+def test_run_static_phase1_methods_exist() -> None:
+    """5 yeni metodun ReconstructionStage uzerinde var oldugunu dogrula."""
+    from karadul.stages import ReconstructionStage
+
+    stage = ReconstructionStage()
+    for name in (
+        "_run_signature_matching",
+        "_run_byte_pattern_matching",
+        "_run_pcode_analysis",
+        "_run_cfg_analysis",
+        "_run_algorithm_engineering",
+    ):
+        assert callable(getattr(stage, name, None)), f"Metot eksik: {name}"
+
+
+def test_recon_context_byte_pattern_names_field() -> None:
+    """v1.12.0 Faz 3 -- ReconstructionContext.byte_pattern_names alani var mi?"""
+    from karadul.pipeline.reconstruction_context import ReconstructionContext
+
+    ctx = ReconstructionContext()
+    assert hasattr(ctx, "byte_pattern_names")
+    assert ctx.byte_pattern_names == {}
+    assert hasattr(ctx, "calibrated_matches")
+    assert ctx.calibrated_matches is None
