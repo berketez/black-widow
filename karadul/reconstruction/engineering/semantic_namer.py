@@ -1311,7 +1311,7 @@ def _worker_process_chunk(func_names: list[str]) -> list[SemanticName]:
     return all_candidates
 
 
-def _worker_get_params(func_name: str) -> list[dict[str, str]]:
+def _worker_get_params(func_name: str) -> list[dict[str, Any]]:
     """Worker: Fonksiyon parametrelerini dondur (JSON'dan veya koddan parse)."""
     func_info = _W_FUNCTIONS.get(func_name)
     if func_info and func_info.get("params"):
@@ -2065,7 +2065,7 @@ class SemanticParameterNamer:
         # 7. param_naming_map.json kaydet
         map_path = output_dir.parent / "param_naming_map.json"
         try:
-            map_data = {
+            map_data: dict[str, Any] = {
                 "version": "1.7.2",  # v1.7.2
                 "total_renamed": len(all_names),
                 "functions": {},
@@ -2189,7 +2189,7 @@ class SemanticParameterNamer:
                         break
                 i += 1
 
-    def _get_function_params(self, func_name: str) -> list[dict[str, str]]:
+    def _get_function_params(self, func_name: str) -> list[dict[str, Any]]:
         """Fonksiyonun parametrelerini dondur.
 
         Oncelik: functions_json'dan. Yoksa kod imzasindan parse et.

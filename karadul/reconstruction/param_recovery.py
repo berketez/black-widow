@@ -361,8 +361,8 @@ class ParamRecovery:
         """
         # Adim 1: Recover
         result = self.recover(input_file, recovery_json, timeout=timeout)
-        if not result.success or result.recovered == 0:
-            # Recovery basarisiz veya 0 sonuc -- girdi dosyasini oldugun gibi kopyala
+        if not result.success or result.recovered == 0 or result.recovery_json is None:
+            # Recovery basarisiz, 0 sonuc veya JSON yok -- girdi dosyasini oldugun gibi kopyala
             if not result.success:
                 logger.warning("ParamRecovery basarisiz, adim atlaniyor")
             else:

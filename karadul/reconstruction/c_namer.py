@@ -1199,9 +1199,9 @@ class CVariableNamer:
             max_workers=num_workers,
             initializer=_init_heuristic_worker,
             initargs=initargs,
-        ) as pool:
+        ) as proc_pool:
             futs = {
-                pool.submit(_run_heuristics_worker, fi): fi
+                proc_pool.submit(_run_heuristics_worker, fi): fi
                 for fi in func_list
             }
             try:
@@ -1555,7 +1555,7 @@ class CVariableNamer:
 
         # ijson varsa streaming JSON, yoksa chunk'li okuma
         try:
-            import ijson  # type: ignore[import-untyped]
+            import ijson
             with open(path, "rb") as f:
                 # "strings.item" prefix'i ile her string objesini teker teker al
                 for raw in ijson.items(f, "strings.item"):

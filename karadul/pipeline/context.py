@@ -106,7 +106,7 @@ class StepContext:
         # yol pc.metadata["artifacts_pending"]'i okuyor. v1.12.0'da kalkacak.
         pc = self.pipeline_context
         if getattr(pc, "metadata", None) is None:
-            pc.metadata = {}  # type: ignore[attr-defined]
+            pc.metadata = {}
         pc.metadata.setdefault("artifacts_pending", {})[key] = value
 
     def _write_artifacts(self, new_artifacts: dict[str, Any]) -> None:

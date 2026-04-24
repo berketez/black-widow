@@ -534,7 +534,7 @@ class ReferencePopulator:
         initial_host = parsed.hostname
 
         class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
-            def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
                 new_parsed = urlparse(newurl)
                 new_scheme = (new_parsed.scheme or "").lower()
                 if new_scheme not in {s.lower() for s in allowed_schemes}:
@@ -624,9 +624,9 @@ class ReferencePopulator:
         elif archive_type in ("tar.gz", "tgz"):
             with tarfile.open(archive_path, "r:gz") as tf:
                 total = 0
-                for member in tf.getmembers():
-                    _assert_inside(Path(dest_dir / member.name), member.name)
-                    total += max(0, member.size)
+                for tmember in tf.getmembers():
+                    _assert_inside(Path(dest_dir / tmember.name), tmember.name)
+                    total += max(0, tmember.size)
                     if total > max_extract_size:
                         raise ValueError(
                             f"Guvenlik: arsiv {total} byte (TAR bomb?), "
@@ -636,9 +636,9 @@ class ReferencePopulator:
         elif archive_type == "tar.xz":
             with tarfile.open(archive_path, "r:xz") as tf:
                 total = 0
-                for member in tf.getmembers():
-                    _assert_inside(Path(dest_dir / member.name), member.name)
-                    total += max(0, member.size)
+                for tmember in tf.getmembers():
+                    _assert_inside(Path(dest_dir / tmember.name), tmember.name)
+                    total += max(0, tmember.size)
                     if total > max_extract_size:
                         raise ValueError(
                             f"Guvenlik: arsiv {total} byte (TAR bomb?), "

@@ -776,14 +776,16 @@ def _demo() -> None:
     logger.info("=" * 90)
 
     for desc, kwargs in scenarios:
-        result = calibrate_confidence(**kwargs)
+        # Demo scenarios dict[str, float] tipinde; calibrate_confidence int param'lari
+        # da float kabul ediyor ama mypy strict imzada takiliyor -- cast ile koptur.
+        result = calibrate_confidence(**kwargs)  # type: ignore[arg-type]
         compact_cal, compact_tier = calibrate_compact(
             kwargs.get("p_constant", 0) or kwargs.get("p_c", 0),
             kwargs.get("p_structural", 0) or kwargs.get("p_s", 0),
             kwargs.get("p_api", 0) or kwargs.get("p_a", 0),
-            kwargs.get("n_negative", 0),
+            int(kwargs.get("n_negative", 0)),
             kwargs.get("call_graph_consistency", 0),
-            kwargs.get("n_sources", 0),
+            int(kwargs.get("n_sources", 0)),
         )
         logger.info("\n--- %s", desc)
         logger.info("    Inputs: %s", kwargs)

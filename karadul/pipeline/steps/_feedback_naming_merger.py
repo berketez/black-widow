@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 def run_name_merger(
     *,
-    ctx,
+    ctx: Any,
     iter_index: int,
     decompiled_dir: Path,
     reconstructed_dir: Path,
@@ -204,7 +204,7 @@ def _apply_aho_replace(
 
 def _maybe_load_bsim_shadow_for_fusion(
     *,
-    ctx,
+    ctx: Any,
     stats: dict[str, Any],
 ) -> dict[str, Any] | None:
     """BSim shadow payload'i fusion kanalina kabul edilebilirse dondur.

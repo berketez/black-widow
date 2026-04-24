@@ -460,7 +460,7 @@ class StringIntelligence:
         results: list[StringIntelResult] = []
 
         # --- glibc assert: "file.c:10: func_name: Assertion `expr` failed." ---
-        m = _GLIBC_ASSERT_RE.search(value)
+        m: re.Match[str] | None = _GLIBC_ASSERT_RE.search(value)
         if m:
             func_raw = m.group(1)
             results.extend(
@@ -705,6 +705,8 @@ class StringIntelligence:
         - org.freedesktop.DBus.Method -> dbus method
         """
         results: list[StringIntelResult] = []
+        # finditer sonrasi search sonuclarini da tutabilen m: Optional.
+        m: re.Match[str] | None
 
         # --- Steam k_EMsg style ---
         for m in _STEAM_EMSG_RE.finditer(value):
@@ -952,6 +954,8 @@ class StringIntelligence:
         """
         results: list[StringIntelResult] = []
         stripped = value.strip()
+        # finditer + search sonuclarini ortak m: Optional degiskende tutar.
+        m: re.Match[str] | None
 
         # Minimum length and skip overly long strings (likely not names)
         if len(stripped) < 4 or len(stripped) > 60:

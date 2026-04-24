@@ -197,7 +197,7 @@ _PE_ONLY_LIBS: frozenset[str] = frozenset({
 })
 
 _MACHO_ONLY_LIBS: frozenset[str] = frozenset({
-    "libdispatch", "libobjc", "swift_runtime",
+    "libdispatch", "libobjc", "swift_runtime", "libswiftCore",
     "CoreFoundation", "Foundation", "AppKit",
     "CoreGraphics", "CoreImage", "CoreML", "CoreData",
     "CoreBluetooth", "CoreLocation", "CoreAudio", "CoreVideo",
@@ -217,7 +217,7 @@ _ELF_ONLY_LIBS: frozenset[str] = frozenset({
 # Category prefix -> platform mapping.
 # Eger category bu prefix'lerden biri ile basliyorsa, o platform'a ozeldir.
 _PE_ONLY_CATEGORY_PREFIXES: tuple[str, ...] = ("win_",)
-_MACHO_ONLY_CATEGORY_PREFIXES: tuple[str, ...] = ("macos_", "objc_runtime")
+_MACHO_ONLY_CATEGORY_PREFIXES: tuple[str, ...] = ("macos_", "objc_runtime", "swift_runtime")
 _ELF_ONLY_CATEGORY_PREFIXES: tuple[str, ...] = ("linux_",)
 
 
@@ -4257,6 +4257,99 @@ if _BUILTIN_WINDOWS_GUI_SIGNATURES is not None:
 
 
 # ---------------------------------------------------------------------------
+# Fallback dict'ler — Faz 7 modern_runtime override oncesi bos tanimlanir.
+# `sigdb_builtin.modern_runtime` import basarisiz olursa bos kalir; legacy
+# `_RUST_STDLIB_SIGNATURES` / `_GO_RUNTIME_SIGNATURES` BOZULMAZ, bu iki
+# dict onlara EK genisleme getirir (idempotent update).
+# ---------------------------------------------------------------------------
+_MODERN_RUST_RUNTIME_SIGNATURES: dict[str, dict[str, str]] = {}
+_MODERN_GO_RUNTIME_SIGNATURES: dict[str, dict[str, str]] = {}
+
+
+# ---------------------------------------------------------------------------
+# sig_db Faz 7 — Modern runtime (Rust + Go) kategori override (dalga 7)
+# ---------------------------------------------------------------------------
+# Veri `karadul.analyzers.sigdb_builtin.modern_runtime` modulune tasindi.
+# Mevcut `_RUST_STDLIB_SIGNATURES` / `_GO_RUNTIME_SIGNATURES` /
+# `_RUST_EXT_SIGNATURES` / `_GO_EXT_SIGNATURES` dict'leri KORUNUR —
+# bu iki yeni dict EK genisleme saglar (demangled core::* / std::* isim
+# formlari, tokio/reqwest/hyper, serde, clap, aes-gcm, chacha20poly1305,
+# Go scheduler/GC/map-fast-path, net/http, crypto/tls, encoding).
+#
+# Malware-specific framework (Sliver, BlackCat, Chisel vb.) iceriK YOK;
+# v1.13+ malware_signatures modulune birakilir.
+#
+# Cakisan anahtarlar ayni ``lib`` / ``purpose`` tasir; tuple siralama
+# dict.update idempotent'tir. Platform-bagimsiz etiketler kullanilir
+# (``rust_*`` / ``go_*``); filter blocklamaz.
+try:
+    from karadul.analyzers.sigdb_builtin.modern_runtime import (
+        SIGNATURES as _BUILTIN_MODERN_RUNTIME_SIGNATURES,
+    )
+except ImportError:  # pragma: no cover - paket yoksa legacy fallback
+    _BUILTIN_MODERN_RUNTIME_SIGNATURES = None  # type: ignore[assignment]
+
+if _BUILTIN_MODERN_RUNTIME_SIGNATURES is not None:
+    _MODERN_RUST_RUNTIME_SIGNATURES = _BUILTIN_MODERN_RUNTIME_SIGNATURES.get(
+        "rust_runtime_signatures", _MODERN_RUST_RUNTIME_SIGNATURES
+    )
+    _MODERN_GO_RUNTIME_SIGNATURES = _BUILTIN_MODERN_RUNTIME_SIGNATURES.get(
+        "go_runtime_signatures", _MODERN_GO_RUNTIME_SIGNATURES
+    )
+
+
+# ---------------------------------------------------------------------------
+# Fallback dict'ler — Faz 6 apple_runtime override oncesi bos tanimlanir.
+# `sigdb_builtin.apple_runtime` import basarisiz olursa bos kalir; legacy
+# `_MACOS_SYSTEM_SIGNATURES` / `_MACOS_EXT_SIGNATURES` BOZULMAZ, bu uc dict
+# onlara EK genisleme getirir (idempotent update).
+# ---------------------------------------------------------------------------
+_APPLE_OBJC_RUNTIME_SIGNATURES: dict[str, dict[str, str]] = {}
+_APPLE_SWIFT_RUNTIME_SIGNATURES: dict[str, dict[str, str]] = {}
+_APPLE_COREFOUNDATION_SIGNATURES: dict[str, dict[str, str]] = {}
+
+
+# ---------------------------------------------------------------------------
+# sig_db Faz 6 — Apple runtime (Obj-C + Swift + CoreFoundation) override
+# ---------------------------------------------------------------------------
+# Veri `karadul.analyzers.sigdb_builtin.apple_runtime` modulune tasindi.
+# macOS/iOS Mach-O binary analizi icin kritik uc dict:
+#   - objc_runtime  -> libobjc ARC + dispatch + introspection (~185 entry)
+#   - swift_runtime -> libswiftCore ARC + cast + metadata + stdlib (~130)
+#   - corefoundation -> CFString/Array/Dict/Data/URL/Bundle/RunLoop (~195)
+#
+# Legacy `_MACOS_SYSTEM_SIGNATURES` icinde `_objc_*` / `_swift_*` mangled
+# Mach-O sembolleri (leading underscore) zaten mevcut; bu modul UNMANGLED
+# isim formlari eklediginden AYRI anahtar kumesidir (cakisma yok).
+# Legacy `_MACOS_EXT_SIGNATURES` icindeki CoreFoundation entry'leri ile
+# cakisan anahtarlar ayni ``lib`` / ``category="macos_cf"`` tasir —
+# idempotent update.
+#
+# Platform filtrelemesi:
+#   - `objc_runtime` kategorisi `_MACHO_ONLY_CATEGORY_PREFIXES` ile macho-only.
+#   - `swift_runtime` kategorisi ayni tuple'a eklendi (yukarida).
+#   - `macos_cf` zaten `macos_` prefix'i ile macho-only.
+#   - `libswiftCore` lib'i `_MACHO_ONLY_LIBS` frozenset'ine eklendi.
+try:
+    from karadul.analyzers.sigdb_builtin.apple_runtime import (
+        SIGNATURES as _BUILTIN_APPLE_RUNTIME_SIGNATURES,
+    )
+except ImportError:  # pragma: no cover - paket yoksa legacy fallback
+    _BUILTIN_APPLE_RUNTIME_SIGNATURES = None  # type: ignore[assignment]
+
+if _BUILTIN_APPLE_RUNTIME_SIGNATURES is not None:
+    _APPLE_OBJC_RUNTIME_SIGNATURES = _BUILTIN_APPLE_RUNTIME_SIGNATURES.get(
+        "objc_runtime_signatures", _APPLE_OBJC_RUNTIME_SIGNATURES
+    )
+    _APPLE_SWIFT_RUNTIME_SIGNATURES = _BUILTIN_APPLE_RUNTIME_SIGNATURES.get(
+        "swift_runtime_signatures", _APPLE_SWIFT_RUNTIME_SIGNATURES
+    )
+    _APPLE_COREFOUNDATION_SIGNATURES = _BUILTIN_APPLE_RUNTIME_SIGNATURES.get(
+        "corefoundation_signatures", _APPLE_COREFOUNDATION_SIGNATURES
+    )
+
+
+# ---------------------------------------------------------------------------
 # Linux-specific syscall wrappers (~35)
 # glibc/musl wrapper'lari.  macOS binary'lerinde bulunmaz ama
 # cross-platform analiz icin gerekli.
@@ -6458,6 +6551,34 @@ if _BUILTIN_NETWORK_SIGNATURES is not None:
     )
     _NETWORKING_EXT_SIGNATURES = _BUILTIN_NETWORK_SIGNATURES.get(
         "networking_ext_signatures", _NETWORKING_EXT_SIGNATURES
+    )
+
+
+# ---------------------------------------------------------------------------
+# sig_db Faz 8 — VM runtime (JNI + Python C API) override (dalga 8)
+# ---------------------------------------------------------------------------
+# Veri `karadul.analyzers.sigdb_builtin.vm_runtime` modulune tasindi. Legacy
+# `_JAVA_JNI_SIGNATURES` (~50 entry) ve `_PYTHON_CAPI_SIGNATURES` (~80 entry)
+# override EDILIR. Yeni modul kanonik etiketleme kullanir:
+#   - JNI:           lib=jvm/libjvm, category=jni       (legacy: jni/java)
+#   - Python C API:  lib=python/libpython, category=python_c_api  (legacy: python/python)
+#
+# Hybrid binary analizi (libjvm.so / libpython.so embed) icin genisletilmis
+# kapsama saglar. Legacy dict'ler SILINMEDI; rollback icin override yontemi
+# kullanilir (crypto/compression/network/pe_runtime/windows_gui ile ayni desen).
+try:
+    from karadul.analyzers.sigdb_builtin.vm_runtime import (
+        SIGNATURES as _BUILTIN_VM_RUNTIME_SIGNATURES,
+    )
+except ImportError:  # pragma: no cover - paket yoksa legacy fallback
+    _BUILTIN_VM_RUNTIME_SIGNATURES = None  # type: ignore[assignment]
+
+if _BUILTIN_VM_RUNTIME_SIGNATURES is not None:
+    _JAVA_JNI_SIGNATURES = _BUILTIN_VM_RUNTIME_SIGNATURES.get(
+        "jni_signatures", _JAVA_JNI_SIGNATURES
+    )
+    _PYTHON_CAPI_SIGNATURES = _BUILTIN_VM_RUNTIME_SIGNATURES.get(
+        "python_c_api_signatures", _PYTHON_CAPI_SIGNATURES
     )
 
 
@@ -9251,6 +9372,9 @@ class SignatureDB:
             _WIN32_EXT_SIGNATURES,
             _RUST_EXT_SIGNATURES,
             _GO_EXT_SIGNATURES,
+            # sig_db Faz 7 — modern_runtime expansion (Rust + Go)
+            _MODERN_RUST_RUNTIME_SIGNATURES,
+            _MODERN_GO_RUNTIME_SIGNATURES,
             _LIBC_EXT_SIGNATURES,
             _NETWORKING_EXT_SIGNATURES,
             _DATABASE_EXT_SIGNATURES,
@@ -9272,6 +9396,10 @@ class SignatureDB:
             _MEGA_BATCH_2_SIGNATURES,
             # v1.12.0 Faz 6C: PE/MSVC runtime (yeni coverage)
             _MSVC_CRT_SIGNATURES,
+            # v1.11.0 Faz 6: Apple runtime (Obj-C + Swift + CoreFoundation)
+            _APPLE_OBJC_RUNTIME_SIGNATURES,
+            _APPLE_SWIFT_RUNTIME_SIGNATURES,
+            _APPLE_COREFOUNDATION_SIGNATURES,
         ):
             self._symbol_db.update(db)
 

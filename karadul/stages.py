@@ -187,7 +187,7 @@ class StaticAnalysisStage(Stage):
     """
 
     name = "static"
-    requires = ["identify"]
+    requires: tuple[str, ...] = ("identify",)
 
     def execute(self, context: PipelineContext) -> StageResult:
         """Analyzer ile statik analiz calistir."""
@@ -527,7 +527,7 @@ class DynamicAnalysisStage(Stage):
     """
 
     name = "dynamic"
-    requires = ["identify"]  # static'ten bagimsiz calisabilir
+    requires: tuple[str, ...] = ("identify",)  # static'ten bagimsiz calisabilir
 
     def execute(self, context: PipelineContext) -> StageResult:
         """Frida ile dinamik analiz calistir."""
@@ -734,7 +734,7 @@ class DeobfuscationStage(Stage):
     """
 
     name = "deobfuscate"
-    requires = ["identify"]
+    requires: tuple[str, ...] = ("identify",)
 
     def __init__(self, *, use_deep: bool = True) -> None:
         self._use_deep = use_deep
@@ -978,7 +978,7 @@ class ReconstructionStage(Stage):
     """
 
     name = "reconstruct"
-    requires = ["identify"]  # v1.9.1: deobfuscate -> identify (native binary'de deobf gereksiz)
+    requires: tuple[str, ...] = ("identify",)  # v1.9.1: deobfuscate -> identify (native binary'de deobf gereksiz)
 
     def __init__(self, *, use_project_reconstructor: bool = True) -> None:
         self._use_project_reconstructor = use_project_reconstructor
@@ -1260,9 +1260,13 @@ class ReconstructionStage(Stage):
         """
 
         target = context.target
-        static_dir = rc.static_dir
-        deob_dir = rc.dirs.get("deobfuscated")
-        reconstructed_dir = rc.reconstructed_dir
+        # mypy narrowing: _prepare_workspace cagrildigi icin None olamaz.
+        assert rc.static_dir is not None, "_prepare_workspace static_dir set etmedi"
+        assert rc.reconstructed_dir is not None, "_prepare_workspace reconstructed_dir set etmedi"
+        assert "deobfuscated" in rc.dirs, "_prepare_workspace deob_dir set etmedi"
+        static_dir: Path = rc.static_dir
+        deob_dir: Path = rc.dirs["deobfuscated"]
+        reconstructed_dir: Path = rc.reconstructed_dir
         errors = rc.errors  # alias — rc.errors ve errors ayni liste
 
         # Universal binary ise lipo-thin arm64 slice'i bul (macho.py olusturur)
@@ -1318,8 +1322,8 @@ class ReconstructionStage(Stage):
         logger.info("File cache: %d dosya, %.1f MB", len(_file_cache), _cache_mb)
         # context uzerinden downstream modullere gecir
         if not hasattr(context, "metadata"):
-            context.metadata = {}  # type: ignore[attr-defined]
-        context.metadata["file_cache"] = _file_cache  # type: ignore[attr-defined]
+            context.metadata = {}
+        context.metadata["file_cache"] = _file_cache
 
         # Ghidra metadata dosyalarini bul -- deobf dizininde varsa oradan al (binary_deobfuscator kopyalar),
         # yoksa static'ten oku.
@@ -2275,9 +2279,12 @@ class ReconstructionStage(Stage):
         stats: dict = rc.stats
 
         target = context.target
-        static_dir = rc.static_dir
-        deob_dir = rc.dirs["deobfuscated"]
-        reconstructed_dir = rc.reconstructed_dir
+        # mypy narrowing: _prepare_workspace bu alanlari set eder, None olamaz.
+        assert rc.static_dir is not None, "_prepare_workspace static_dir set etmedi"
+        assert rc.reconstructed_dir is not None, "_prepare_workspace reconstructed_dir set etmedi"
+        static_dir: Path = rc.static_dir
+        deob_dir: Path = rc.dirs["deobfuscated"]
+        reconstructed_dir: Path = rc.reconstructed_dir
 
         # v1.10.0 M1 T3.5: step registry shim. Feature flag False default.
         # True ise karadul.pipeline.runner uzerinden Phase 1 (8 step): T3.2'nin
@@ -3102,7 +3109,7 @@ class ReconstructionStage(Stage):
                             _ref_path = Path(ref_db_path) if ref_db_path else Path.home() / ".cache" / "karadul" / "ref_db"
                             _ref_path.mkdir(parents=True, exist_ok=True)
                             if detections:  # Version tespit edildiyse eslestir
-                                differ = ReferenceDiffer(
+                                ref_differ = ReferenceDiffer(
                                     reference_db_path=_ref_path,
                                     auto_populate=True,
                                 )
@@ -3128,7 +3135,7 @@ class ReconstructionStage(Stage):
                                         logger.debug("Call graph JSON parse basarisiz (refdiff)", exc_info=True)
 
                                 for det in detections:
-                                    rd_result = differ.match(
+                                    rd_result = ref_differ.match(
                                         target_functions=_func_data_for_refdiff or {},
                                         target_strings=_string_data_for_refdiff,
                                         target_cfg=_cfg_data_for_refdiff,
@@ -3850,7 +3857,7 @@ class ReconstructionStage(Stage):
                             _file_cache[_cf.name] = _cf.read_text(encoding="utf-8", errors="replace")
                         except Exception:
                             logger.debug("Dosya cache'e okunamadi, atlaniyor", exc_info=True)
-                context.metadata["file_cache"] = _file_cache  # type: ignore[attr-defined]
+                context.metadata["file_cache"] = _file_cache
         # === v1.7.5: Pipeline feedback loop sonu ===
 
         stats["pipeline_iterations_run"] = len(_iteration_stats)
@@ -4534,8 +4541,9 @@ class ReconstructionStage(Stage):
                     "total_formulas": len(formulas),
                 }
                 if domain_report.domain_summary:
+                    _dsum = domain_report.domain_summary
                     eng_analysis["primary_domain"] = max(
-                        domain_report.domain_summary, key=domain_report.domain_summary.get,
+                        _dsum, key=lambda k: _dsum[k],
                     )
 
                 # v1.5.2: Computation fusion identifications'i engineering
@@ -4685,8 +4693,8 @@ class ReconstructionStage(Stage):
             all_algos = _collect_all_algorithms(algo_result, eng_result)
 
             # v1.2.2: augmented varsa onu oku (yeni dosya), yoksa cache'den al
-            if augmented_cg_json and augmented_cgjson.exists():
-                call_graph_data = json.loads(augmented_cgjson.read_text(errors="replace"))
+            if augmented_cg_json and augmented_cg_json.exists():
+                call_graph_data = json.loads(augmented_cg_json.read_text(errors="replace"))
             else:
                 call_graph_data = _call_graph_data or {}
 
@@ -4923,7 +4931,11 @@ class ReconstructionStage(Stage):
 
         try:
             param_result = param_recovery.recover(current_file)
-            if param_result.success and param_result.recovered > 0:
+            if (
+                param_result.success
+                and param_result.recovered > 0
+                and param_result.recovery_json is not None
+            ):
                 param_output = reconstructed_dir / f"{current_file.stem}.params.js"
                 try:
                     applied = param_recovery.apply_to_file(
@@ -5159,7 +5171,7 @@ class ReportStage(Stage):
     """
 
     name = "report"
-    requires = ["identify"]  # static opsiyonel -- basarisiz olsa bile rapor uretilmeli
+    requires: tuple[str, ...] = ("identify",)  # static opsiyonel -- basarisiz olsa bile rapor uretilmeli
 
     def execute(self, context: PipelineContext) -> StageResult:
         """Uc formatta rapor uret."""
@@ -5342,10 +5354,10 @@ def _inject_capa_comments(
             if m:
                 func_name = m.group(2)
                 if func_name in name_to_caps:
-                    caps = name_to_caps[func_name]
+                    func_caps: list[str] = name_to_caps[func_name]
                     # Onceki satir zaten /** ... */ ise, mevcut blogun sonuna ekle
                     # Yoksa yeni blok olustur
-                    cap_lines = [f" * @capability {cap}" for cap in caps]
+                    cap_lines = [f" * @capability {cap}" for cap in func_caps]
                     comment_block = "/**\n" + "\n".join(cap_lines) + "\n */"
                     new_lines.append(comment_block)
                     modified = True

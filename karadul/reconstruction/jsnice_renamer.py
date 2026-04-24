@@ -54,7 +54,7 @@ class JSNiceRenamer:
         Returns:
             JSNiceResult
         """
-        if not self.is_available:
+        if self._jsnice_path is None:
             return JSNiceResult(
                 success=False,
                 errors=["jsnice kurulu değil: npm install -g jsnice"],
@@ -121,7 +121,7 @@ class JSNiceRenamer:
 
     def rename_chunk(self, js_code: str) -> str | None:
         """JS kod parçasını JSNice'den geçir, sonucu döndür."""
-        if not self.is_available:
+        if self._jsnice_path is None:
             return None
 
         import tempfile

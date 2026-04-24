@@ -1230,14 +1230,14 @@ URL_HINTS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\.gcf$"), "cache"),
 ]
 
-# Hata mesaji pattern -> fonksiyon isim ipucu
-ERROR_HINTS: list[tuple[re.Pattern[str], str]] = [
+# Hata mesaji pattern -> fonksiyon isim ipucu (grup-bazli ekstraksiyon yap: None = capture grubu kullan)
+ERROR_HINTS: list[tuple[re.Pattern[str], str | None]] = [
     (re.compile(r"(?:error|failed|failure|cannot|unable|couldn't|can't)\s+(?:to\s+)?(\w+)", re.I), None),  # extract verb
     (re.compile(r"(?:Error|ERROR):\s*(\w+)", re.I), None),
 ]
 
-# Log fonksiyon isim mesajlari
-LOG_HINTS: list[tuple[re.Pattern[str], str]] = [
+# Log fonksiyon isim mesajlari (None = capture grubu kullan)
+LOG_HINTS: list[tuple[re.Pattern[str], str | None]] = [
     (re.compile(r"(\w+)::\s*(\w+)"), None),  # ClassName::MethodName
     (re.compile(r"^(\w+)\s*\(\)"), None),  # FuncName()
     (re.compile(r"Entering\s+(\w+)"), None),

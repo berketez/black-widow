@@ -47,7 +47,10 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from karadul.reconstruction.reference_populator import ReferencePopulator
 
 logger = logging.getLogger(__name__)
 
@@ -684,7 +687,9 @@ class ReferenceDiffer:
         self._min_similarity = min_similarity
         self._min_confidence = min_confidence
         self._auto_populate = auto_populate
-        self._populator = None  # lazy init
+        # lazy init: `_try_auto_populate` cagrisinda ReferencePopulator kurulur.
+        # Quoted tip circular import'u onler.
+        self._populator: "ReferencePopulator | None" = None
 
     def match(
         self,

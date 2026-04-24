@@ -44,7 +44,7 @@ class FormulaInfo:
     parameters: dict[str, str] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        d = {
+        d: dict[str, Any] = {
             "algorithm": self.algorithm,
             "latex": self.latex,
             "ascii": self.ascii,

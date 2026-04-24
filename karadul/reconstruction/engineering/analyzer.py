@@ -20,7 +20,7 @@ import threading
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from karadul.config import CPU_PERF_CORES
 from karadul.reconstruction.c_algorithm_id import AlgorithmMatch, CAlgorithmResult
@@ -32,6 +32,9 @@ from karadul.reconstruction.engineering.constants import (
 )
 from karadul.reconstruction.engineering.patterns import ENGINEERING_PATTERNS
 from karadul.reconstruction.engineering.apis import ENGINEERING_APIS, API_COMBINED_REGEX
+
+if TYPE_CHECKING:
+    from karadul.reconstruction.engineering.patterns import StructuralPattern
 
 logger = logging.getLogger(__name__)
 
@@ -162,6 +165,7 @@ def _worker_analyze_file(
     global _worker_analyzer
     if _worker_analyzer is None:
         _worker_init()
+    assert _worker_analyzer is not None  # _worker_init() sonrasi garantili
     return _worker_analyzer._analyze_file(filepath, func_meta, has_domain)
 
 # Noisy-OR birlestirmede ust sinir.  Asla %100 deme.

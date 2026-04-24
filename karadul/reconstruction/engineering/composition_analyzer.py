@@ -737,8 +737,8 @@ class AlgorithmCompositionAnalyzer:
         self,
         call_graph: dict,
         algorithms: list[AlgorithmMatch] | list[dict],
-        data_flow: dict | None = None,
-        dispatch_result: dict | None = None,
+        data_flow: Any | None = None,
+        dispatch_result: Any | None = None,
         functions_json: Path | None = None,
     ) -> CompositionResult:
         """Discover algorithm compositions.
@@ -829,11 +829,11 @@ class AlgorithmCompositionAnalyzer:
             for comp in compositions:
                 for stage in comp.stages:
                     clustered_funcs.update(stage.functions)
+            # algo_dicts zaten _normalize_algorithms cikisi -> list[dict].
             unclustered = [
-                a.get("name", "") if isinstance(a, dict) else a.name
+                a.get("name", "")
                 for a in algo_dicts
-                if (a.get("function_name", "") if isinstance(a, dict) else "")
-                not in clustered_funcs
+                if a.get("function_name", "") not in clustered_funcs
             ]
 
         except Exception as exc:
@@ -1746,9 +1746,9 @@ class AlgorithmCompositionAnalyzer:
             if sfunc in already_covered:
                 continue
 
-            callees = set(adjacency.get(sfunc, []))
+            callee_set: set[str] = set(adjacency.get(sfunc, []))
             callers = reverse_adj.get(sfunc, set())
-            neighborhood = callees | callers
+            neighborhood = callee_set | callers
             conv_neighbors = neighborhood & convergence_funcs
 
             if not conv_neighbors:

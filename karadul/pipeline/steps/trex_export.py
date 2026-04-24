@@ -40,7 +40,15 @@ class TRexExportStep(Step):
     """
 
     def run(self, ctx: StepContext) -> dict[str, Any]:
-        trex_cfg: dict[str, Any] = ctx.pipeline_context.config.get("trex", {})
+        # Config'te 'trex' alani Faz 2'de eklenecek. Su an getattr ile
+        # guvenli erisim -- yoksa bos dict (enabled=False davranisi).
+        _cfg_obj = getattr(ctx.pipeline_context.config, "trex", None)
+        if _cfg_obj is None:
+            trex_cfg: dict[str, Any] = {}
+        elif isinstance(_cfg_obj, dict):
+            trex_cfg = _cfg_obj
+        else:
+            trex_cfg = {"enabled": getattr(_cfg_obj, "enabled", False)}
 
         if not trex_cfg.get("enabled", False):
             logger.debug("TRex export devre disi (trex.enabled=false), atlanıyor.")
@@ -52,7 +60,7 @@ class TRexExportStep(Step):
         # 3. Ciktilari parse et, fusion'a evidence olarak ekle
 
         binary_path = Path(ctx.artifacts["binary_path"])
-        workspace_dir = ctx.pipeline_context.workspace.root
+        workspace_dir = ctx.pipeline_context.workspace.path
 
         lifted_path = workspace_dir / (binary_path.name + ".pcode-exported")
         vars_path = workspace_dir / (binary_path.name + ".var-exported")

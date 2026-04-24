@@ -514,7 +514,8 @@ class BinaryNameExtractor:
         # 1b. Xref dosyasini yukle (opsiyonel -- function_xrefs.strings_used verisi)
         # Bu veri, hangi fonksiyonun hangi string'leri referans ettigini icerir.
         # ghidra_strings.json'da xref yoksa (eski format), buradan alinir.
-        self._func_string_refs: dict[str, list[dict]] = {}  # func_addr -> [{address, value}]
+        # (__init__'te bos dict olarak annote edildi; re-entry'de sifirla.)
+        self._func_string_refs = {}
         xrefs_json = strings_json.parent / "ghidra_xrefs.json"
         if xrefs_json.exists():
             try:
@@ -688,7 +689,8 @@ class BinaryNameExtractor:
 
         raw_strings = data.get('strings', [])
         self._strings = []
-        self._string_to_funcs: dict[int, list[str]] = {}  # string_addr -> [func_names]
+        # (__init__'te annote edildi; re-load'da sifirla.)
+        self._string_to_funcs = {}
 
         for s in raw_strings:
             try:
@@ -2222,7 +2224,7 @@ class BinaryNameExtractor:
                 # Fonksiyon listesinde bu mangled isimle eslesen var mi?
                 matching_func = func_name_lookup.get(mangled)
                 if matching_func is not None:
-                    orig_fname = matching_func.name if isinstance(matching_func, _FuncEntry) else matching_func.get("name", "")
+                    orig_fname = matching_func.name
                     # Ghidra otomatik isimlerini (FUN_xxx) veya $ ile baslayanlari rename et
                     if _GHIDRA_AUTO_FUNC_RE.match(orig_fname) or orig_fname.startswith("$"):
                         names.append(ExtractedName(
@@ -2623,11 +2625,11 @@ class BinaryNameExtractor:
         reverse_map: dict[str, tuple[str, float]] = {}  # recovered -> (original, conf)
         for orig, recovered in list(self._naming_map.items()):
             extracted = best_by_func[orig]
-            existing = reverse_map.get(recovered)
-            if existing is None or extracted.confidence > existing[1]:
+            prev_entry = reverse_map.get(recovered)
+            if prev_entry is None or extracted.confidence > prev_entry[1]:
                 # Oncekini kaldir
-                if existing:
-                    self._naming_map.pop(existing[0], None)
+                if prev_entry:
+                    self._naming_map.pop(prev_entry[0], None)
                 reverse_map[recovered] = (orig, extracted.confidence)
             else:
                 # Bu daha dusuk confidence -- kaldir

@@ -38,7 +38,7 @@ class InferResult:
 
 
 # Isim-bazli tip eslestirme
-_NAME_TYPE_PATTERNS: list[tuple[re.Pattern, str]] = [
+_NAME_TYPE_PATTERNS: list[tuple[re.Pattern, str | None]] = [
     # Boolean
     (re.compile(r"^is[A-Z]"), "boolean"),
     (re.compile(r"^has[A-Z]"), "boolean"),

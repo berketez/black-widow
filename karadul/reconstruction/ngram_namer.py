@@ -664,6 +664,8 @@ class NgramNamer:
                     )
 
         # 4. Her degisken icin en iyi tahmini sec
+        # Lambda icinde type narrowing korunmadigindan local alias:
+        vocab = self._vocab
         for var_name, name_scores in candidates.items():
             if not name_scores:
                 continue
@@ -671,8 +673,8 @@ class NgramNamer:
             # Sirala: skor desc, esitse vocab frekansi desc
             ranked = sorted(
                 name_scores.items(),
-                key=lambda x: (-x[1], -self._vocab.count_by_id(
-                    self._vocab.lookup(x[0])
+                key=lambda x: (-x[1], -vocab.count_by_id(
+                    vocab.lookup(x[0])
                 )),
             )
             best_name, best_score = ranked[0]

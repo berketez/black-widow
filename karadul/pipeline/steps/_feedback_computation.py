@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def run_computation_phase(
     *,
-    ctx,
+    ctx: Any,
     iter_index: int,
     decompiled_dir: Path,
     reconstructed_dir: Path,

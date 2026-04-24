@@ -12,11 +12,14 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from karadul.config import Config
 from karadul.core.target import TargetInfo
 from karadul.core.workspace import Workspace
+
+if TYPE_CHECKING:
+    from karadul.reconstruction.dependency_resolver import DependencyResolver
 
 logger = logging.getLogger(__name__)
 

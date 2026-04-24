@@ -509,7 +509,7 @@ class DeepCallChainTracer:
         self,
         call_graph: dict,
         algorithms: list | None = None,
-        dispatch_result: dict | None = None,
+        dispatch_result: Any | None = None,
         functions_json: Path | None = None,
         top_n: int = 5,
     ) -> list[TraceResult]:
@@ -806,7 +806,7 @@ class DeepCallChainTracer:
             if isinstance(dispatch_result, dict):
                 comps = dispatch_result.get("compositions", [])
             elif hasattr(dispatch_result, "compositions"):
-                comps = dispatch_result.compositions  # type: ignore
+                comps = dispatch_result.compositions
             for comp in comps:
                 if isinstance(comp, dict):
                     stages = comp.get("stages", [])

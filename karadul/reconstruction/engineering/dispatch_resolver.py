@@ -633,8 +633,9 @@ class VirtualDispatchResolver:
                 })
 
         # --- Source 5: C++ RTTI from function/symbol names ---
-        self._vtable_map: dict[str, str] = {}   # class_name -> vtable address
-        self._rtti_hierarchy: dict[str, str] = {}  # child -> parent (C++ only)
+        # (__init__'te annote edildi; re-entry'de sifirla.)
+        self._vtable_map = {}
+        self._rtti_hierarchy = {}
 
         for fn in data.get("functions", []):
             name = fn["name"]

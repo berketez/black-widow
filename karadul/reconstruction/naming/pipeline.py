@@ -18,11 +18,15 @@ import logging
 import shutil
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .npm_fingerprinter import NpmFingerprinter
 from .structural_analyzer import StructuralAnalyzer
 from .llm_namer import LLMNamer
 from .result import NamingManifest, NamingResult
+
+if TYPE_CHECKING:
+    from karadul.config import Config
 
 logger = logging.getLogger(__name__)
 

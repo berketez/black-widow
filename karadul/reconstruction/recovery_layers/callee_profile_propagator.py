@@ -266,7 +266,8 @@ class CalleeProfilePropagator:
             config = {}
         elif hasattr(config, "__dataclass_fields__"):
             import dataclasses
-            config = dataclasses.asdict(config)
+            # hasattr kontrolunden gecti -> gercekten dataclass; mypy'a anlat.
+            config = dataclasses.asdict(config)  # type: ignore[arg-type]
         elif not isinstance(config, dict):
             # Son care: bilinmeyen tip -> bos dict, varsayilanlara dus.
             config = {}

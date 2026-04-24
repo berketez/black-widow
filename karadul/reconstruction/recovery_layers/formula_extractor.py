@@ -3160,6 +3160,8 @@ class FormulaExtractor:
         is_pack = pack_match is not None
         is_unpack = unpack_match is not None
         match = pack_match or unpack_match
+        # 3157'de erken return oldugu icin match burada None olamaz.
+        assert match is not None
 
         confidence = 0.82
         # Her iki yonde de varsa (encode+decode) daha kesin
@@ -3183,7 +3185,7 @@ class FormulaExtractor:
             confidence = min(confidence + 0.05, 0.95)
 
         snippet = self._extract_snippet(code, match.start(), match.end())
-        variables = []
+        variables: list[str] = []
 
         if is_pack:
             op_type = "Pack"

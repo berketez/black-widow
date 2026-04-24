@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def run_reference_differ(
     *,
-    ctx,
+    ctx: Any,
     iter_index: int,
     func_data: Any,
     string_data: Any,
@@ -89,7 +89,7 @@ def run_reference_differ(
 
 def _match_against_db(
     *,
-    pc, detections,
+    pc: Any, detections: Any,
     func_data: Any,
     string_data: Any,
     functions_json: Path,

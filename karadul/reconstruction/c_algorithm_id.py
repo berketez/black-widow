@@ -387,7 +387,7 @@ STRUCTURAL_PATTERNS: dict[str, dict[str, Any]] = {
 # Yaklasim 3: API korelasyonu (bilinen crypto API cagrilari)
 # ---------------------------------------------------------------------------
 
-CRYPTO_APIS: dict[str, dict[str, str]] = {
+CRYPTO_APIS: dict[str, dict[str, Any]] = {
     # Apple CommonCrypto
     "CCCrypt": {"algorithm": "AES/DES/3DES", "category": "symmetric_cipher"},
     "CCCryptorCreate": {"algorithm": "AES/DES/3DES", "category": "symmetric_cipher"},
@@ -759,7 +759,7 @@ class CAlgorithmIdentifier:
         if not directory.exists():
             errors.append(f"Directory does not exist: {directory}")
             return []
-        files = []
+        files: list[Path] = []
         for ext in ("*.c", "*.h", "*.cpp", "*.cc"):
             files.extend(directory.glob(ext))
         # Alt dizinleri de tara

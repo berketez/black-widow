@@ -653,7 +653,7 @@ def _normalize_func_name(
 # ---------------------------------------------------------------------------
 
 
-def _batch_confidence_update(
+def _batch_confidence_update(  # type: ignore[no-redef]  # v1.4.3 yeni imza eski 149'u override eder
     confidences: list[float],
     bonuses: list[float],
     max_val: float = 1.0,
@@ -673,7 +673,7 @@ def _batch_confidence_update(
     return [min(c + b, max_val) for c, b in zip(confidences, bonuses)]
 
 
-def _batch_struct_confidence(
+def _batch_struct_confidence(  # type: ignore[no-redef]  # v1.4.3 yeni imza eski 65'i override eder
     writer_callers_matrix: list[list[int]],
     reader_callers_matrix: list[list[int]],
     writer_callees_matrix: list[list[int]],
@@ -746,7 +746,7 @@ def _dedup_edges(
     return sorted(idx for idx, _ in best.values())
 
 
-def _pipeline_longest_path(
+def _pipeline_longest_path(  # type: ignore[no-redef]  # v1.4.3 yeni imza eski 100'u override eder
     adj: dict[str, set[str]],
     relevant_nodes: set[str],
 ) -> tuple[dict[str, int], dict[str, str | None]]:
@@ -2613,7 +2613,7 @@ class InterProceduralDataFlow:
         if not params_str.strip() or params_str.strip() == "void":
             return []
 
-        params: list[dict[str, Any]] = []
+        parsed_params: list[dict[str, Any]] = []
         for i, param_decl in enumerate(params_str.split(",")):
             param_decl = param_decl.strip()
             if not param_decl:
@@ -2628,13 +2628,13 @@ class InterProceduralDataFlow:
             # Pointer yildizi isimde olabilir
             pname = pname.lstrip("*")
 
-            params.append({
+            parsed_params.append({
                 "name": pname,
                 "type": ptype,
                 "ordinal": i,
             })
 
-        return params
+        return parsed_params
 
     # ------------------------------------------------------------------
     # Cikti yazma
