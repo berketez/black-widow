@@ -30,16 +30,16 @@ from __future__ import annotations
 import json
 import logging
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from karadul.ghidra._bsim_shadow import (
+    build_shadow_payload as _build_shadow_payload_impl,
+)
 from karadul.pipeline.context import StepContext
 from karadul.pipeline.registry import Step, register_step
 
 logger = logging.getLogger(__name__)
-
-_SHADOW_VERSION = "1"
 
 
 @register_step(
@@ -194,91 +194,9 @@ class BSimMatchStep(Step):
         raw_data: dict[str, Any] | None,
         shadow_mode: bool,
     ) -> dict[str, Any]:
-        """bsim_matches.json'i fonksiyon bazli gruplanmis shadow formatina cevir.
-
-        Input (headless.py L406-L419 format):
-            {
-              "total_matches": N,
-              "database": "...",
-              "matches": [
-                {"query_function": str, "query_address": hex-str,
-                 "matched_function": str, "matched_program": str,
-                 "similarity": float}, ...
-              ]
-            }
-
-        Output (v1 shadow):
-            {
-              "version": "1",
-              "mode": "shadow" | "live-dump-only",
-              "timestamp": iso8601,
-              "database": str,
-              "total_matches": int,
-              "matches": [
-                {"function_addr": hex-str, "function_name": str,
-                 "bsim_candidates": [
-                    {"name": str, "similarity": float, "binary": str}, ...
-                 ]}, ...
-              ]
-            }
-        """
-        mode = "shadow" if shadow_mode else "live-dump-only"
-        now = datetime.now(timezone.utc).isoformat()
-
-        base: dict[str, Any] = {
-            "version": _SHADOW_VERSION,
-            "mode": mode,
-            "timestamp": now,
-            "database": "",
-            "total_matches": 0,
-            "matches": [],
-        }
-
-        if not raw_data or not isinstance(raw_data, dict):
-            return base
-
-        base["database"] = str(raw_data.get("database", "") or "")
-        raw_matches = raw_data.get("matches") or []
-        if not isinstance(raw_matches, list):
-            return base
-
-        # Fonksiyon bazli grupla: query_function + query_address anahtarli
-        grouped: dict[tuple[str, str], dict[str, Any]] = {}
-        total = 0
-        for m in raw_matches:
-            if not isinstance(m, dict):
-                continue
-            q_name = str(m.get("query_function", "") or "")
-            q_addr = str(m.get("query_address", "") or "")
-            if not q_name and not q_addr:
-                continue
-            key = (q_addr, q_name)
-            entry = grouped.setdefault(key, {
-                "function_addr": q_addr,
-                "function_name": q_name,
-                "bsim_candidates": [],
-            })
-            try:
-                sim = float(m.get("similarity", 0.0) or 0.0)
-            except (TypeError, ValueError):
-                sim = 0.0
-            entry["bsim_candidates"].append({
-                "name": str(m.get("matched_function", "") or ""),
-                "similarity": sim,
-                "binary": str(m.get("matched_program", "") or ""),
-            })
-            total += 1
-
-        # Deterministik cikti: function_addr -> function_name'e gore sirala,
-        # her fonksiyonun candidate'larini similarity desc sirala.
-        matches_out: list[dict[str, Any]] = []
-        for key in sorted(grouped.keys()):
-            entry = grouped[key]
-            entry["bsim_candidates"].sort(
-                key=lambda c: c.get("similarity", 0.0), reverse=True,
-            )
-            matches_out.append(entry)
-
-        base["total_matches"] = total
-        base["matches"] = matches_out
-        return base
+        """Geriye uyumluluk shim'i — gercek implementasyon
+        ``karadul.ghidra._bsim_shadow.build_shadow_payload``."""
+        return _build_shadow_payload_impl(
+            raw_data=raw_data,
+            shadow_mode=shadow_mode,
+        )

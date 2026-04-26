@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  KARADUL_F1_THRESHOLD: "0.85"
+
 jobs:
   benchmark:
     name: Benchmark Smoke + renamed_f1 Gate
@@ -50,6 +53,78 @@ jobs:
             --baseline benchmarks/stripped_baseline_2026_04_23_real.json \
             --floor 0.0
 
+      # ------------------------------------------------------------------
+      # sample_macho F1 hard-fail gate (v1.11.0+)
+      #
+      # Fixture: tests/fixtures/sample_macho (macOS Mach-O, preserved symbols)
+      # Baseline: benchmarks/baseline_metrics.json (F1=0.909, 2026-04-22)
+      # Threshold: KARADUL_F1_THRESHOLD (env var, default 0.85)
+      #
+      # Rationale (2026-04-23 critical findings):
+      #   macOS strip is "sahte" (symbols stay in dyld cache), runner bias exists.
+      #   Threshold is CONSERVATIVE (regression guard), not a capability claim.
+      #   0.85 gives 0.06 headroom vs current baseline 0.909.
+      #
+      # Linux ELF stripped gate is intentionally NOT raised here (preliminary,
+      # target v1.13+ sprint). Only sample_macho gate is enforced.
+      # ------------------------------------------------------------------
+      - name: Run sample_macho mock benchmark
+        run: |
+          python scripts/run_mock_benchmark.py \
+            --binary tests/fixtures/sample_macho \
+            --output /tmp/bench_current.json \
+            --mock
+          echo "--- bench_current.json ---"
+          cat /tmp/bench_current.json
+
+      - name: Check sample_macho F1 hard-fail gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, sys
+          path = '/tmp/bench_current.json'
+          try:
+              with open(path) as f:
+                  data = json.load(f)
+          except FileNotFoundError:
+              print(f"HARD-FAIL: {path} bulunamadi (mock benchmark step calismadi mi?)")
+              sys.exit(1)
+          except json.JSONDecodeError as exc:
+              print(f"HARD-FAIL: {path} bozuk JSON: {exc}")
+              sys.exit(1)
+          m = data.get('metrics', data)
+          if 'f1' not in m:
+              print(f"HARD-FAIL: 'f1' alani yok. Mevcut anahtarlar: {sorted(m.keys())}")
+              sys.exit(1)
+          try:
+              f1 = float(m['f1'])
+          except (TypeError, ValueError) as exc:
+              print(f"HARD-FAIL: f1 numerik degil: {m['f1']!r} ({exc})")
+              sys.exit(1)
+          try:
+              threshold = float(os.environ['KARADUL_F1_THRESHOLD'])
+          except KeyError:
+              print("HARD-FAIL: KARADUL_F1_THRESHOLD env var tanimsiz")
+              sys.exit(1)
+          except ValueError as exc:
+              print(f"HARD-FAIL: KARADUL_F1_THRESHOLD parse hatasi: {exc}")
+              sys.exit(1)
+          print(f"F1={f1:.6f}  threshold={threshold:.6f}")
+          if f1 < threshold:
+              print(f"HARD-FAIL: F1={f1:.6f} < threshold {threshold:.6f}, regresyon!")
+              sys.exit(1)
+          print(f"PASS: F1={f1:.6f} >= threshold {threshold:.6f}")
+          PY
+
+      - name: Check sample_macho full threshold suite
+        run: |
+          python scripts/check_benchmark_thresholds.py \
+            --current /tmp/bench_current.json \
+            --baseline benchmarks/baseline_metrics.json \
+            --report /tmp/bench_report.md
+          cat /tmp/bench_report.md
+
       - name: Upload benchmark artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -57,6 +132,8 @@ jobs:
           name: benchmark-results-${{ github.sha }}
           path: |
             benchmarks/stripped_baseline_2026_04_23_real.json
+            /tmp/bench_current.json
+            /tmp/bench_report.md
           retention-days: 30
 
       - name: Post gate result to job summary
@@ -64,19 +141,46 @@ jobs:
         run: |
           python -c "
           import json, sys
-          path = 'benchmarks/stripped_baseline_2026_04_23_real.json'
-          with open(path) as f:
-              data = json.load(f)
-          m = data.get('metrics', {})
-          rf1 = m.get('renamed_f1', 0.0)
+
+          # Linux ELF stripped metrics
+          elf_path = 'benchmarks/stripped_baseline_2026_04_23_real.json'
+          with open(elf_path) as f:
+              elf_data = json.load(f)
+          elf_m = elf_data.get('metrics', {})
+
+          # sample_macho mock metrics
+          macho_path = '/tmp/bench_current.json'
+          try:
+              with open(macho_path) as f:
+                  macho_data = json.load(f)
+              macho_m = macho_data.get('metrics', {})
+          except Exception:
+              macho_m = {}
+
+          threshold = '${KARADUL_F1_THRESHOLD}'
+          macho_f1 = macho_m.get('f1', 0.0)
+          gate_status = 'PASS' if macho_f1 >= float(threshold) else 'FAIL'
+
           print('## Karadul Benchmark Gate', flush=True)
           print('', flush=True)
+          print('### sample_macho (Mach-O preserved, mock) — F1 Hard-Fail Gate', flush=True)
           print(f'| Metric | Value |', flush=True)
           print(f'|--------|-------|', flush=True)
-          print(f'| renamed_f1 | {rf1:.4f} |', flush=True)
-          print(f'| accuracy | {m.get(\"accuracy\", 0.0):.4f} |', flush=True)
-          print(f'| f1 | {m.get(\"f1\", 0.0):.4f} |', flush=True)
-          print(f'| fun_residue_pct | {m.get(\"fun_residue_pct\", 0.0):.2f}% |', flush=True)
+          print(f'| f1 | **{macho_f1:.4f}** |', flush=True)
+          print(f'| threshold | {threshold} |', flush=True)
+          print(f'| gate | **{gate_status}** |', flush=True)
+          print(f'| precision | {macho_m.get(\"precision\", 0.0):.4f} |', flush=True)
+          print(f'| recall | {macho_m.get(\"recall\", 0.0):.4f} |', flush=True)
+          print(f'| fun_residue_pct | {macho_m.get(\"fun_residue_pct\", 0.0):.2f}% |', flush=True)
           print('', flush=True)
-          print('> Floor: renamed_f1 >= 0.0 (v1.11 beta; will raise to 0.5 in v1.13)', flush=True)
+          print('### Linux ELF stripped (preliminary, floor=0.0)', flush=True)
+          print(f'| Metric | Value |', flush=True)
+          print(f'|--------|-------|', flush=True)
+          print(f'| renamed_f1 | {elf_m.get(\"renamed_f1\", 0.0):.4f} |', flush=True)
+          print(f'| accuracy | {elf_m.get(\"accuracy\", 0.0):.4f} |', flush=True)
+          print(f'| f1 | {elf_m.get(\"f1\", 0.0):.4f} |', flush=True)
+          print(f'| fun_residue_pct | {elf_m.get(\"fun_residue_pct\", 0.0):.2f}% |', flush=True)
+          print('', flush=True)
+          print('> sample_macho gate: threshold 0.85 (regresyon koruyucu, v1.11.0+)', flush=True)
+          print('> Linux ELF gate: floor 0.0 (preliminary; v1.13+ sprint hedefi)', flush=True)
           " >> \$GITHUB_STEP_SUMMARY

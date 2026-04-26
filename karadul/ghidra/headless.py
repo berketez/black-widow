@@ -420,6 +420,35 @@ class GhidraHeadless:
                             scripts_output["bsim"] = bsim_data
                             self._save_output(output_dir, "bsim_matches.json", bsim_data)
                             log_lines.append("BSim query: %d esleme" % bsim_result.total_matches)
+                            # v1.11.0 Hafta 2: legacy yolda da shadow dump
+                            # uretilsin ki use_step_registry=False olan
+                            # kosumlarda bsim_shadow.json eksik kalmasin
+                            # (BSim wiring bulgusu #1, ADR 0008 sonrasi).
+                            try:
+                                from karadul.ghidra._bsim_shadow import (
+                                    build_shadow_payload,
+                                )
+                                shadow_mode = bool(
+                                    getattr(self.config.bsim, "shadow_mode", True)
+                                )
+                                shadow_payload = build_shadow_payload(
+                                    raw_data=bsim_data,
+                                    shadow_mode=shadow_mode,
+                                )
+                                self._save_output(
+                                    output_dir,
+                                    "bsim_shadow.json",
+                                    shadow_payload,
+                                )
+                                log_lines.append(
+                                    "BSim shadow dump: %d fonksiyon"
+                                    % len(shadow_payload["matches"])
+                                )
+                            except Exception as exc:  # pragma: no cover
+                                logger.warning(
+                                    "BSim shadow dump basarisiz (legacy yol): %s",
+                                    exc,
+                                )
                         bsim_db.close()
                     except ImportError:
                         log_lines.append("WARN: BSim modulu bulunamadi")
