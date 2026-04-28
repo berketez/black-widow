@@ -13,7 +13,7 @@ import time
 from typing import Any
 
 from karadul.core.pipeline import StageResult
-from karadul.pipeline.context import StepContext
+from karadul.pipeline.context import StepContext, _warn_legacy_artifacts_pending
 from karadul.pipeline.registry import Step, register_step
 
 logger = logging.getLogger(__name__)
@@ -52,11 +52,16 @@ class FinalizeStep(Step):
         #   1. ctx.stage_artifacts — produce_artifact() ile yayilan (yeni yol)
         #   2. pc.metadata["artifacts_pending"] — eski shim (stages.py +
         #      geriye uyumluluk mirror'i)
-        # Yeni yol one cikarilir; eski yol fallback. v1.12.0'da (2) kalkacak.
+        # Yeni yol one cikarilir; eski yol fallback. v1.13.0'da (2) kalkacak.
+        # v1.12.0: legacy_pending kullanildiginda DeprecationWarning verilir.
         artifacts: dict = dict(ctx.stage_artifacts)
         legacy_pending = (pc.metadata or {}).get("artifacts_pending", {})
-        for key, value in legacy_pending.items():
-            artifacts.setdefault(key, value)
+        if legacy_pending:
+            _warn_legacy_artifacts_pending(
+                "finalize.py legacy mirror fallback (v1.13'te kalkacak)",
+            )
+            for key, value in legacy_pending.items():
+                artifacts.setdefault(key, value)
 
         errors = list(ctx.errors)
         stats = dict(ctx.stats)

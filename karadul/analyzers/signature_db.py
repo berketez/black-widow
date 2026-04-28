@@ -6641,6 +6641,30 @@ _LOGGING_EXT_SIGNATURES: dict[str, dict[str, str]] = {
 
 
 # ---------------------------------------------------------------------------
+# sig_db Faz 9 — logging kategori override (pilot, ADR 0008 Grup 10)
+# ---------------------------------------------------------------------------
+# Veri `karadul.analyzers.sigdb_builtin.logging` modulune tasindi. Tip A
+# yumusak override pattern'i (crypto/compression/network/vm_runtime ile
+# ozdes): legacy `_LOGGING_SIGNATURES` (45 entry) ve `_LOGGING_EXT_SIGNATURES`
+# (38 entry) inline gövdeleri SILINMEDI; rollback bandi olarak korunur.
+# Toplam 83 imza override edilir.
+try:
+    from karadul.analyzers.sigdb_builtin.logging import (
+        SIGNATURES as _BUILTIN_LOGGING_SIGNATURES,
+    )
+except ImportError:  # pragma: no cover - paket yoksa legacy fallback
+    _BUILTIN_LOGGING_SIGNATURES = None  # type: ignore[assignment]
+
+if _BUILTIN_LOGGING_SIGNATURES is not None:
+    _LOGGING_SIGNATURES = _BUILTIN_LOGGING_SIGNATURES.get(
+        "logging_signatures", _LOGGING_SIGNATURES
+    )
+    _LOGGING_EXT_SIGNATURES = _BUILTIN_LOGGING_SIGNATURES.get(
+        "logging_ext_signatures", _LOGGING_EXT_SIGNATURES
+    )
+
+
+# ---------------------------------------------------------------------------
 # EXTENDED: Multimedia/Graphics Extra (~100 imza)
 # Vulkan, Direct3D, DirectX, FreeType, Harfbuzz, Cairo
 # ---------------------------------------------------------------------------

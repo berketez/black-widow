@@ -630,6 +630,10 @@ class PackingDetector:
         lief ile gercek import tablosunu okumaya calisir.
         Basarisiz olursa None dondurur.
 
+        Native crash koruma: lief.parse() subprocess izolasyonunda
+        calistirilir (v1.12 teknik borc). Malformed/packed binary
+        cocuk process'i SIGSEGV'le oldurse bile None doneriz.
+
         Args:
             data: Binary verisi.
 
@@ -637,24 +641,17 @@ class PackingDetector:
             int veya None: Import sayisi.
         """
         try:
-            import lief
-            binary = lief.parse(data)
-            if binary is None:
+            from karadul.utils.lief_subprocess import parse_bytes_in_subprocess
+            result = parse_bytes_in_subprocess(data, timeout=30)
+            if result is None:
                 return None
-
-            # Mach-O: imported symbols
-            if hasattr(binary, "imported_symbols"):
-                symbols = list(binary.imported_symbols)
-                return len(symbols)
-
-            # ELF: imported functions
-            if hasattr(binary, "imported_functions"):
-                return len(list(binary.imported_functions))
-
+            imports = result.get("imports") or []
+            return len(imports) if imports else None
+        except ImportError:
+            return None
         except Exception:
-            logger.debug("Unpack islemi basarisiz, atlaniyor", exc_info=True)
-
-        return None
+            logger.debug("Lief subprocess import sayim basarisiz, atlaniyor", exc_info=True)
+            return None
 
 
 # ---------------------------------------------------------------------------

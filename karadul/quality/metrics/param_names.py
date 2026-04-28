@@ -18,7 +18,7 @@ from karadul.quality.metrics._source_reader import read_source as _read_source
 from karadul.quality.patterns import is_ghidra_param_name
 
 try:
-    from pycparser import c_ast, c_parser  # type: ignore[import-untyped]
+    from pycparser import c_ast, c_parser
     _HAS_PYCPARSER = True
 except ImportError:  # pragma: no cover - environment dependent
     _HAS_PYCPARSER = False

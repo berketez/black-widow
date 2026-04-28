@@ -30,7 +30,7 @@ try:
     _Z3_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _Z3_AVAILABLE = False
-    z3 = None  # type: ignore
+    z3 = None
 
 from karadul.computation.config import ComputationConfig
 from karadul.computation.struct_recovery.aliasing import AliasingAnalyzer

@@ -137,7 +137,7 @@ def demangle_itanium(mangled: str) -> str:
     # Mach-O "__Z..." -> "_Z..."
     candidate = mangled[1:] if mangled.startswith("__Z") else mangled
     try:
-        import cxxfilt  # type: ignore
+        import cxxfilt
         try:
             return cxxfilt.demangle(candidate)
         except cxxfilt.InvalidName:
@@ -173,7 +173,7 @@ def batch_demangle(names: list[str]) -> dict[str, str]:
         for orig in unique
     ]
     try:
-        import cxxfilt  # type: ignore
+        import cxxfilt
         out: dict[str, str] = {}
         for orig, cand in candidates:
             try:
@@ -622,7 +622,7 @@ class RTTIParser:
     def _load_binary(self, binary_path: Path) -> Any:
         """lief.Binary objesi dondur (yoksa None)."""
         try:
-            import lief  # type: ignore
+            import lief
         except ImportError:
             logger.warning("lief kurulu degil, RTTI parse atlanacak")
             return None
@@ -1059,7 +1059,7 @@ class MSVCRTTIParser:
     # ---- binary loading
     def _load_binary(self, binary_path: Path) -> Any:
         try:
-            import lief  # type: ignore
+            import lief
         except ImportError:
             logger.warning("lief kurulu degil, MSVC RTTI parse atlanacak")
             return None

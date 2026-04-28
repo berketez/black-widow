@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+from typing import Any
 
 from ghidra.program.model.data import Enum
 from ghidra.program.model.data import FunctionDefinition
@@ -79,7 +80,7 @@ def extract_structures(dtm) -> list:
 
         if isinstance(dt, Structure) or isinstance(dt, Union):
             is_union = isinstance(dt, Union)
-            entry = {
+            entry: dict[str, Any] = {
                 "name": str(dt.getName()),
                 "category": str(dt.getCategoryPath()),
                 "kind": "union" if is_union else "struct",
@@ -124,7 +125,7 @@ def extract_enums(dtm) -> list:
         dt = all_types.next()
 
         if isinstance(dt, Enum):
-            entry = {
+            entry: dict[str, Any] = {
                 "name": str(dt.getName()),
                 "category": str(dt.getCategoryPath()),
                 "size": int(dt.getLength()),
@@ -196,7 +197,7 @@ def extract_function_definitions(dtm) -> list:
         dt = all_types.next()
 
         if isinstance(dt, FunctionDefinition):
-            entry = {
+            entry: dict[str, Any] = {
                 "name": str(dt.getName()),
                 "category": str(dt.getCategoryPath()),
                 "return_type": str(dt.getReturnType()),

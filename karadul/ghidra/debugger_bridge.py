@@ -605,7 +605,7 @@ class DebuggerBridge:
             except OSError:
                 pass
             try:
-                script_path.unlink(missing_ok=True)  # type: ignore[possibly-undefined]
+                script_path.unlink(missing_ok=True)
             except (OSError, NameError):
                 pass
 

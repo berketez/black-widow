@@ -373,6 +373,8 @@ def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
               type=click.Choice(["ghidra", "angr"], case_sensitive=False),
               default=None,
               help="[v1.10.0] Decompiler backend secimi (varsayilan: ghidra).")
+@click.option("--bsim-shadow-dump", is_flag=True, default=False,
+              help="[v1.12] BSim shadow dump JSON uret (shadow_mode opt-out, dump-only mod).")
 @click.pass_context
 @_graceful_interrupt
 def analyze(
@@ -399,6 +401,7 @@ def analyze(
     no_maxsmt_struct: bool,                # v1.10.0 M4
     maxsmt_struct: bool,                   # v1.10.0 Batch 6C opt-in
     decompiler_backend: Optional[str],     # v1.10.0 M4
+    bsim_shadow_dump: bool,                # v1.12 BSim shadow dump tetikleyici
 ) -> None:
     """Hedef uzerinde tam analiz pipeline calistir."""
     from karadul.core.pipeline import Pipeline
@@ -441,6 +444,14 @@ def analyze(
         cfg.computation.enable_computation_struct_recovery = False
     if decompiler_backend is not None:
         cfg.decompilers.primary_backend = decompiler_backend.lower()
+
+    # v1.12: --bsim-shadow-dump -> BSim shadow dump'i explicit tetikle.
+    # Defaults zaten enabled=True/shadow_mode=True/auto_query=True (BSimConfig)
+    # ama kullanici config dosyasinda kapatmis olabilir; explicit override.
+    if bsim_shadow_dump:
+        cfg.bsim.enabled = True
+        cfg.bsim.shadow_mode = True
+        cfg.bsim.auto_query = True
 
     # Computation recovery ayarlari  # v1.6.5: --deep > --compute > --compute-recovery
     _compute_resolved = False

@@ -31,7 +31,7 @@ try:
     _Z3_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _Z3_AVAILABLE = False
-    z3 = None  # type: ignore
+    z3 = None
 
 logger = logging.getLogger(__name__)
 

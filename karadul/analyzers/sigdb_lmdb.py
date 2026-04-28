@@ -56,14 +56,14 @@ import msgpack
 
 # blake3 opsiyonel (hızlı), yoksa hashlib.blake2b fallback
 try:
-    import blake3 as _blake3  # type: ignore[import]
+    import blake3 as _blake3
 
     def _fast_hash(data: bytes, digest_size: int = 16) -> bytes:
         # blake3 32 byte dondurur; istenen boyuta truncate
         return _blake3.blake3(data).digest(length=digest_size)
 
 except ImportError:
-    _blake3 = None  # type: ignore[assignment]
+    _blake3 = None
 
     def _fast_hash(data: bytes, digest_size: int = 16) -> bytes:
         return hashlib.blake2b(data, digest_size=digest_size).digest()
@@ -71,10 +71,10 @@ except ImportError:
 
 # lmdb bagimliligi opsiyonel (graceful degradation)
 try:
-    import lmdb  # type: ignore[import]
+    import lmdb
     _LMDB_AVAILABLE = True
 except ImportError:
-    lmdb = None  # type: ignore[assignment]
+    lmdb = None
     _LMDB_AVAILABLE = False
 
 
@@ -368,10 +368,10 @@ class LMDBSignatureDB:
         # get_metadata ``__meta__:`` fallback path'ine dusuyor.
         try:
             self._db_meta = self._env.open_db(_DB_META, create=not readonly)
-        except lmdb.NotFoundError:  # type: ignore[attr-defined]
+        except lmdb.NotFoundError:
             # Readonly + eski LMDB -> meta DB yok. Symbols'daki __meta__:
             # prefix'i fallback olarak kullanilacak.
-            self._db_meta = None  # type: ignore[assignment]
+            self._db_meta = None
 
     # ------------------------------------------------------------------
     # Context manager

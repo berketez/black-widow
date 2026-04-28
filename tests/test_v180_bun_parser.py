@@ -84,63 +84,45 @@ class TestBunTargetDetection:
     """__BUN segmenti olan/olmayan binary tespiti."""
 
     def test_bun_detected_with_lief(self, tmp_path: Path, detector: TargetDetector):
-        """lief ile __BUN segmenti olan binary -> BUN_BINARY."""
+        """lief subprocess ile __BUN segmenti olan binary -> BUN_BINARY.
+
+        v1.12: lief artik subprocess izolasyonunda calisiyor (parse_in_subprocess).
+        Test parent process'teki lief import'unu degil, subprocess return value'sunu mock'lar.
+        """
         # Gercek Mach-O header
         binary_file = tmp_path / "bun_app"
         binary_file.write_bytes(_make_macho_bytes(b"\x00" * 256))
 
-        # lief mock: segments listesinde __BUN olan binary
-        mock_seg_text = MagicMock()
-        mock_seg_text.name = "__TEXT"
-        mock_seg_bun = MagicMock()
-        mock_seg_bun.name = "__BUN"
-
-        mock_binary = MagicMock()
-        mock_binary.segments = [mock_seg_text, mock_seg_bun]
-
-        with patch("karadul.core.target.lief", create=True) as mock_lief:
-            # lief modulu import edildiginde mock donsun
-            import sys
-            mock_lief_module = MagicMock()
-            mock_lief_module.parse.return_value = mock_binary
-
-            with patch.dict(sys.modules, {"lief": mock_lief_module}):
-                # _has_bun_segment icinde import lief yapilacak
-                info = detector.detect(binary_file)
+        # parse_in_subprocess mock: segments listesinde __BUN olan binary
+        with patch(
+            "karadul.utils.lief_subprocess.parse_in_subprocess",
+            return_value={"segments": ["__TEXT", "__BUN"]},
+        ):
+            info = detector.detect(binary_file)
 
         assert info.target_type == TargetType.BUN_BINARY
         assert info.language == Language.JAVASCRIPT
 
     def test_no_bun_segment_stays_macho(self, plain_macho_file: Path, detector: TargetDetector):
         """__BUN segmenti olmayan binary -> MACHO_BINARY kalir."""
-        # lief mock: sadece __TEXT segmenti
-        mock_seg_text = MagicMock()
-        mock_seg_text.name = "__TEXT"
-
-        mock_binary = MagicMock()
-        mock_binary.segments = [mock_seg_text]
-
-        import sys
-        mock_lief_module = MagicMock()
-        mock_lief_module.parse.return_value = mock_binary
-
-        with patch.dict(sys.modules, {"lief": mock_lief_module}):
+        with patch(
+            "karadul.utils.lief_subprocess.parse_in_subprocess",
+            return_value={"segments": ["__TEXT"]},
+        ):
             info = detector.detect(plain_macho_file)
 
         assert info.target_type == TargetType.MACHO_BINARY
 
     def test_bun_fallback_raw_bytes(self, bun_macho_file: Path, detector: TargetDetector):
-        """lief yoksa fallback: raw bytes'ta __BUN stringi -> BUN_BINARY."""
-        import sys
+        """lief subprocess None dondurdugunde fallback: raw bytes'ta __BUN -> BUN_BINARY.
 
-        # lief import'u ImportError firlatsin
-        original_modules = sys.modules.copy()
-
-        # lief'i sil ki ImportError firlatsin
-        with patch.dict(sys.modules, {"lief": None}):
-            # import lief -> ImportError olacak (None modulu import edilemez)
-            # Ama _has_bun_segment bu durumda fallback kullanir
-            # Fallback: raw bytes'ta __BUN arar
+        v1.12: Subprocess crash/None senaryosu icin parse_in_subprocess None mock'lanir,
+        kod yolu raw bytes fallback'ine duser.
+        """
+        with patch(
+            "karadul.utils.lief_subprocess.parse_in_subprocess",
+            return_value=None,
+        ):
             info = detector.detect(bun_macho_file)
 
         assert info.target_type == TargetType.BUN_BINARY
@@ -150,17 +132,10 @@ class TestBunTargetDetection:
         binary_file = tmp_path / "bun_test"
         binary_file.write_bytes(_make_macho_bytes(b"\x00" * 256))
 
-        mock_seg_bun = MagicMock()
-        mock_seg_bun.name = "__BUN"
-
-        mock_binary = MagicMock()
-        mock_binary.segments = [mock_seg_bun]
-
-        import sys
-        mock_lief_module = MagicMock()
-        mock_lief_module.parse.return_value = mock_binary
-
-        with patch.dict(sys.modules, {"lief": mock_lief_module}):
+        with patch(
+            "karadul.utils.lief_subprocess.parse_in_subprocess",
+            return_value={"segments": ["__BUN"]},
+        ):
             info = detector.detect(binary_file)
 
         assert info.metadata.get("bun_compiled") is True
@@ -372,17 +347,10 @@ class TestBunCaseInsensitive:
         binary_file = tmp_path / "bun_lower"
         binary_file.write_bytes(_make_macho_bytes(b"\x00" * 256))
 
-        mock_seg = MagicMock()
-        mock_seg.name = "__bun"
-
-        mock_binary = MagicMock()
-        mock_binary.segments = [mock_seg]
-
-        import sys
-        mock_lief_module = MagicMock()
-        mock_lief_module.parse.return_value = mock_binary
-
-        with patch.dict(sys.modules, {"lief": mock_lief_module}):
+        with patch(
+            "karadul.utils.lief_subprocess.parse_in_subprocess",
+            return_value={"segments": ["__bun"]},
+        ):
             info = detector.detect(binary_file)
 
         assert info.target_type == TargetType.BUN_BINARY

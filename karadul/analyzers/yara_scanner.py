@@ -757,8 +757,8 @@ class YaraScanner:
 
     def __init__(self) -> None:
         self._yara_available = False
-        self._yara = None           # yara module reference
-        self._compiled_rules = None  # yara.Rules nesnesi
+        self._yara: Any = None           # yara module reference
+        self._compiled_rules: Any = None  # yara.Rules nesnesi (veya tuple birlesik)
         self._builtin_rules: list[BuiltinRule] = []
         self._external_rule_paths: list[Path] = []
         self._rules_compiled = False
@@ -916,6 +916,7 @@ class YaraScanner:
             return
 
         yara = self._yara
+        assert yara is not None, "_compile_yara called without yara module"
         sources: dict[str, str] = {}
 
         # Dahili kurallar -> YARA kaynak koduna cevir

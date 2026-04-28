@@ -1,5 +1,114 @@
 # Changelog
 
+## [1.12.0] - TBD (kod kalite sürümü)
+
+Bu sürüm yeni özellik üretmiyor; v1.11.0'da biriken teknik borcun kapatılmasına
+ayrılmış. Üç ana eksen: mypy temizliği, `signature_db.py` monolitinin
+parçalanması ve BSim'in shadow ölçümünden gerçek native API'ye geçişi.
+
+### Hedefler
+- **mypy 77 → 0** (`karadul/` scope). v1.11.0'da Faz 4 ile 322 → 77 düşürüldü;
+  kalan 77 hatayı modül modül kapatmak.
+- **`signature_db.py` dismantle Faz 9 → 23** (ADR 0008'e göre). 13 kategori
+  daha kendi modülüne taşınacak, monolit ~10.450 LOC → ~500 LOC hedefi.
+  Faz A-DELETE adımında legacy dict'ler tamamen silinecek (v1.13).
+- **BSim native API** — şu anda lite mode discrete similarity ({1.0, 0.85, 0.65})
+  ile çalışıyor. Native binding'in çözülmesi ve gerçek similarity skorlarına
+  geçiş.
+- **Benchmark gerçek ölçüm gap'i** — v1.11.0 kritik bulgu: macOS strip altyapısı
+  sembol bırakıyor, runner bias mevcut. Stripped Linux ELF fixture'ı baseline
+  kabul edilecek; macOS strip akışı ya düzeltilecek ya CI'dan çıkarılacak.
+- **DeprecationWarning temizliği** — pytest çalıştırması sırasında biriken
+  uyarıların kategorize edilip giderilmesi.
+
+### Tamamlananlar
+_(Bu bölüm sürüm ilerledikçe doldurulacak.)_
+
+### Bilinen Sorunlar
+- mypy 77 hata `karadul/` scope'unda mevcut.
+- BSim native API erişilemediği için fusion skorları discrete.
+- macOS Mach-O strip baseline'ı sembol koruyor — gerçek "stripped" değil.
+- Test suite içinde DeprecationWarning'ler (Pydantic v2 migration kalıntıları
+  başta olmak üzere) henüz toplu olarak ele alınmadı.
+
+
+## [1.11.0] - 2026-04-26 (final)
+
+v1.11.0-beta'nın iki haftalık sertleştirme döneminin sonunda atılan stabil
+sürüm. Beta tag'inden bu yana iki commit eklendi; ana odak: sig_db modüler
+migrasyonunun ikinci dalgası (8/17 kategori), v1.12 mypy temizliği için ön
+çalışma, BSim shadow ölçümünün legacy yolda da devreye girmesi ve benchmark
+CI gate'inin sağlamlaştırılması. Tüm test suite (4187 test) yeşil.
+
+### Yenilikler
+- **sig_db modüler migrasyonu — 8/17 kategori (3342 unique sembol).**
+  Beta'da 4 kategori (1421 sembol) modüler `sigdb_builtin/` paketine taşınmıştı.
+  Final sürümde üç yeni modül daha eklendi:
+  - `apple_runtime.py` — 514 entry, macOS-only platform filtreli.
+    `objc_runtime` (185), `swift_runtime` (134, 30 stdlib mangled dahil),
+    `corefoundation` (195). `_MACHO_ONLY_LIBS` ve
+    `_MACHO_ONLY_CATEGORY_PREFIXES` listeleri genişletildi.
+  - `modern_runtime.py` — 424 entry, cross-platform.
+    `rust_runtime` (188: rust_std, tokio, reqwest, hyper, serde, clap,
+    aes, chacha20) ve `go_runtime` (236: runtime, net/http, crypto/tls,
+    encoding/json, os, fmt). Sliver/BlackCat gibi malware-specific
+    framework'ler bilinçli olarak ayrıldı, v1.13 `malware_signatures`
+    kapsamına alınacak.
+  - `vm_runtime.py` — 417 entry, cross-platform.
+    `jni` (158: JNI_OnLoad, FindClass, CallXxxMethod aileleri) ve
+    `python_c_api` (259: Py2 + Py3 PyModule/PyRun/PyObject/PyTuple/
+    PyList/PyDict/PyLong/PyFloat/PyBytes/PyUnicode/PyErr/PyType/PyArg/
+    PyGILState). Android ART v1.13 mobile-lite kapsamında.
+- **Kalan kategoriler için dismantle planı (ADR 0008).**
+  `docs/adr/0008_signature_db_remaining_categories.md` (451 satır).
+  Kalan 13 kategorinin 102 dict yapı haritası, Faz 9-23 sıralaması ve
+  Faz A-DELETE (v1.13) ile legacy dict silme protokolü dokümante edildi.
+  Hedef: monolit `signature_db.py` (~10.450 LOC) → ~500 LOC, %95 azalma.
+- **BSim shadow legacy yolda devreye girdi.**
+  Shadow payload üretimi `karadul/ghidra/_bsim_shadow.py` shared utility'sine
+  taşındı; `bsim_match.py` geriye uyumluluk için shim oldu. `headless.py`
+  legacy yolda da `bsim_shadow.json` yazıyor — `use_step_registry=False`
+  default modunda BSim shadow ölçüm gap'i kapandı. 25 yeni unit test
+  (`tests/test_bsim_shadow_utility.py`).
+
+### Düzeltmeler
+- **Benchmark CI gate hardening.** `.github/workflows/benchmark.yml` gate
+  adımı `bc` shell + Python karışımından tek bir Python heredoc'una
+  dönüştürüldü. `set -euo pipefail` ile birlikte FileNotFound, JSONDecode,
+  eksik `f1`, sayısal olmayan değer ve threshold parse hatalarına ayrı
+  hard-fail yolları eklendi. Edge-case dry-run'lar:
+  F1=0.9091/0.85 → PASS; F1=0.84 / 0.0 / eksik / "bozuk" → FAIL doğrulandı.
+- **mypy hata sayısı 322 → 77.** v1.12 mypy Faz 4: `stages.py` 54→0,
+  `pipeline/` 8→0, `reconstruction/` 75→0. Path narrowing, `re.Match` guard,
+  `TYPE_CHECKING` import'ları, duplicate attribute temizliği. 21 dosya
+  dokunuldu, davranış değişikliği yok.
+- **Test sayımı 4096 → 4187.** Beta sonrası +91 yeni test (BSim utility,
+  shadow integration, sigdb migration parity). 14 skipped, 0 fail.
+
+### Dismantle Planı
+v1.11.0 ile birlikte iki ADR yürürlükte:
+- **ADR 0007** (`docs/adr/0007_signature_db_dismantle_plan.md`) — yüksek
+  seviye dismantle stratejisi. Faz A (v1.11-12 modüler migration),
+  Faz A-DELETE (v1.13 legacy dict silme), Faz B (v1.14 platform filter
+  extract), Faz C (v1.15 opsiyonel match logic extract), Faz D (final
+  ~500 LOC).
+- **ADR 0008** (`docs/adr/0008_signature_db_remaining_categories.md`) —
+  kalan 13 kategorinin somut sıralaması: Faz 9-23. `runtimes.py` yeni
+  dosya olarak ayrılacak, Faz 19 seri çalışacak, `misc_batch` tamamen
+  silinecek, A-DELETE 13 commit halinde yapılacak.
+
+### Bilinen Sorunlar
+- **BSim native API erişilemiyor.** Lite mode discrete similarity skalasıyla
+  ({1.0, 0.85, 0.65}) çalışıyor. Fusion skorları gerçek vector similarity'ye
+  yükseltilemediği için `use_bsim_fusion=False` default kalıyor. v1.12 hedefi.
+- **Benchmark altyapısı kısmen temsili.** macOS strip akışı sembol bırakıyor;
+  yalnız stripped Linux ELF fixture'ı gerçek baseline kabul ediliyor.
+  Renamed F1 floor şimdilik `0.0`; v1.13'te `0.5`'e yükseltilecek.
+- **mypy 77 hata** `karadul/` scope'unda kalıyor (v1.12'de kapatılacak).
+- **`signature_db.py` 10.242 LOC monolit** olarak duruyor; 9/17 kategori hâlâ
+  içinde. Dismantle Faz 9-23 v1.12'de devam edecek.
+
+
 ## [1.11.0-beta] - 2026-04-23
 
 Beta sürümü — stabil 1.11.0 ve 1.12.0 roadmap'te. Kapsam: Jython sunset Faz 1

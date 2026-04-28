@@ -939,7 +939,7 @@ STRING_PATTERNS: dict[str, dict[str, Any]] = {
 # Algoritma pattern'leri -- belirli algoritmalari tespit icin
 # ---------------------------------------------------------------------------
 
-ALGORITHM_PATTERNS: dict[str, dict[str, str]] = {
+ALGORITHM_PATTERNS: dict[str, dict[str, Any]] = {
     # Hash algorithmalari
     "SHA-256": {"pattern": r"sha.?256|SHA256|CC_SHA256", "category": "hash", "usage": "data integrity, signature verification"},
     "SHA-512": {"pattern": r"sha.?512|SHA512|CC_SHA512", "category": "hash", "usage": "extended hash operations"},
@@ -1908,7 +1908,7 @@ class BinaryIntelligence:
         subsystem_map = {s.name: s.confidence for s in subsystems}
 
         best_type = "generic"
-        best_score = 0
+        best_score: float = 0.0
 
         for app_type, rules in APP_TYPE_RULES.items():
             # Zorunlu alt sistem kontrolu -- hem var olmali hem de yeterli confidence
@@ -1970,16 +1970,16 @@ class BinaryIntelligence:
             standard = [s for s in security if s.risk_level == "standard"]
             if kernel:
                 lines.append("  KERNEL level:")
-                for s in kernel:
-                    lines.append(f"    {s.name} -- {s.description}")
+                for sec in kernel:
+                    lines.append(f"    {sec.name} -- {sec.description}")
             if elevated:
                 lines.append("  ELEVATED level:")
-                for s in elevated:
-                    lines.append(f"    {s.name} -- {s.description}")
+                for sec in elevated:
+                    lines.append(f"    {sec.name} -- {sec.description}")
             if standard:
                 lines.append(f"  STANDARD level: ({len(standard)} mechanisms)")
-                for s in standard[:5]:
-                    lines.append(f"    {s.name}")
+                for sec in standard[:5]:
+                    lines.append(f"    {sec.name}")
 
         if protocols:
             lines.append(f"\nProtocols ({len(protocols)}):")

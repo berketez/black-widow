@@ -149,11 +149,11 @@ def _detect_delphi_binary(data: bytes) -> dict[str, Any]:
     ]
 
     marker_hits = 0
-    for marker in delphi_markers:
-        if marker in data:
+    for byte_marker in delphi_markers:
+        if byte_marker in data:
             marker_hits += 1
             if marker_hits == 1:
-                result["evidence"].append(f"Runtime marker: {marker[:40].decode('ascii', errors='replace')}")
+                result["evidence"].append(f"Runtime marker: {byte_marker[:40].decode('ascii', errors='replace')}")
 
     if marker_hits >= 3:
         result["is_delphi"] = True
@@ -623,7 +623,7 @@ class DelphiBinaryAnalyzer(BaseAnalyzer):
             stage_name="static",
             success=True,
             duration_seconds=duration,
-            artifacts={"delphi_analysis": str(output_path)},
+            artifacts={"delphi_analysis": output_path},
             stats=stats,
             errors=errors,
         )
@@ -672,7 +672,7 @@ class DelphiBinaryAnalyzer(BaseAnalyzer):
         return StageResult(
             stage_name="reconstruct", success=True,
             duration_seconds=time.monotonic() - start,
-            artifacts={"delphi_project": str(output_dir)},
+            artifacts={"delphi_project": output_dir},
             stats={"reconstructed": True, "forms_generated": len(dfm_forms)},
             errors=[],
         )

@@ -132,7 +132,7 @@ class AngrBackend:
         timeout: float,
     ) -> tuple[list[DecompiledFunction], dict[str, list[str]], list[str]]:
         """CFGFast + Decompiler pass. angr kurulu olmali."""
-        import angr  # type: ignore
+        import angr
 
         errors: list[str] = []
         functions: list[DecompiledFunction] = []
@@ -216,7 +216,7 @@ class AngrBackend:
         Best-effort: kurulu degilse bos liste doner.
         """
         try:
-            import angr  # type: ignore
+            import angr
 
             proj = angr.Project(str(binary), auto_load_libs=False)
             out: list[dict] = []

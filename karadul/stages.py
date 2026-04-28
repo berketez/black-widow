@@ -25,6 +25,7 @@ from karadul.analyzers import get_analyzer
 from karadul.core.pipeline import PipelineContext, Stage
 from karadul.core.result import StageResult
 from karadul.core.target import TargetDetector, TargetType, Language
+from karadul.pipeline.context import _warn_legacy_artifacts_pending
 from karadul.pipeline.reconstruction_context import ReconstructionContext
 
 # NameMerger opsiyonel -- import hatasi olursa None kalir
@@ -2373,6 +2374,9 @@ class ReconstructionStage(Stage):
             errors.extend(step_ctx.errors)
             _pending = (context.metadata or {}).get("artifacts_pending", {})
             if _pending:
+                _warn_legacy_artifacts_pending(
+                    "stages.py Phase 1 mirror okumasi (v1.13'te kalkacak)",
+                )
                 artifacts.update(_pending)
 
             # v1.9.2: naming_result init (dir() anti-pattern fix)
@@ -2424,6 +2428,9 @@ class ReconstructionStage(Stage):
             errors.extend(step_ctx2.errors)
             _pending2 = (context.metadata or {}).get("artifacts_pending", {})
             if _pending2:
+                _warn_legacy_artifacts_pending(
+                    "stages.py Phase 2 mirror okumasi (v1.13'te kalkacak)",
+                )
                 artifacts.update(_pending2)
         else:
             # --- ESKI YOL (M1 boyunca korunuyor, reviewer onayinda silinecek) ---

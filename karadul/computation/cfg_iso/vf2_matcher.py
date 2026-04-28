@@ -32,8 +32,8 @@ try:
     from networkx.algorithms.isomorphism import DiGraphMatcher
     _NX_AVAILABLE = True
 except Exception:  # pragma: no cover - dep yoksa graceful
-    nx = None  # type: ignore[assignment]
-    DiGraphMatcher = None  # type: ignore[assignment]
+    nx = None
+    DiGraphMatcher = None
     _NX_AVAILABLE = False
 
 if TYPE_CHECKING:  # pragma: no cover

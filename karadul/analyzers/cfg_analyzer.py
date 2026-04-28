@@ -12,6 +12,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
+from collections.abc import Sequence
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -312,7 +313,7 @@ class CFGAnalyzer:
         def dominates(a: str, b: str) -> bool:
             """a block'u b block'unu dominate ediyor mu?"""
             visited: set[str] = set()
-            current = b
+            current: str | None = b
             while current is not None and current not in visited:
                 if current == a:
                     return True
@@ -382,7 +383,7 @@ class CFGAnalyzer:
                         continue
                     fallback_headers_seen.add(header)
                     # Body hesabi: basit BFS geriye (predecessor'lar)
-                    body: set[str] = {header}
+                    body = {header}
                     tail = edge.from_block
                     if tail != header:
                         body.add(tail)
@@ -696,7 +697,7 @@ class CFGAnalyzer:
         return finger1
 
     @staticmethod
-    def _safe_avg(values: list[int | float]) -> float:
+    def _safe_avg(values: Sequence[int | float]) -> float:
         """Bos liste icin guvenli ortalama.
 
         Args:

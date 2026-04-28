@@ -103,11 +103,17 @@ class StepContext:
         self._stage_artifacts[key] = value
 
         # Geriye uyumluluk mirror'i: stages.py shim'i ve finalize.py eski
-        # yol pc.metadata["artifacts_pending"]'i okuyor. v1.12.0'da kalkacak.
+        # yol pc.metadata["artifacts_pending"]'i okuyor. v1.13.0'da kalkacak.
+        # v1.12.0: yazim hala yapilir (kirilma yok) ama DeprecationWarning
+        # ile sinyal verilir. Producer tarafta (produce_artifact) tek bir
+        # kere uyari yeterli — okuyucu tarafta da ayrica uyari var.
         pc = self.pipeline_context
         if getattr(pc, "metadata", None) is None:
             pc.metadata = {}
         pc.metadata.setdefault("artifacts_pending", {})[key] = value
+        _warn_legacy_artifacts_pending(
+            "produce_artifact mirror yazimi (v1.11 gecici kopru)",
+        )
 
     def _write_artifacts(self, new_artifacts: dict[str, Any]) -> None:
         """Sadece runner tarafindan cagrilmasi gerekir (private).
@@ -123,12 +129,16 @@ def _warn_legacy_artifacts_pending(caller_hint: str = "") -> None:
 
     Migration'da yardim icin: v1.11.0 Phase 1C'de produce_artifact API'si
     geldi; eski pattern'i cagiran kodlar icin DeprecationWarning.
+
+    v1.12.0: Mirror hala yaziliyor/okunuyor ama her erisim noktasinda
+    DeprecationWarning patlatilir.
+    v1.13.0: artifacts_pending mirror tamamen kaldirilacak; bu helper da
+    silinecek.
     """
     warnings.warn(
-        f"pc.metadata['artifacts_pending'] DEPRECATED "
-        f"({caller_hint or 'dogrudan erisim'}); "
-        f"StepContext.produce_artifact(key, value) kullanin. "
-        f"v1.12.0'da kaldirilacak.",
+        f"artifacts_pending v1.13'te kaldirilacak; "
+        f"ctx.artifacts kullanin (mirror v1.11 gecici kopruydu). "
+        f"Detay: {caller_hint or 'dogrudan erisim'}.",
         DeprecationWarning,
         stacklevel=3,
     )

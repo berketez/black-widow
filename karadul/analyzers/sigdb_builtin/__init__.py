@@ -56,7 +56,7 @@ def get_category(name: str) -> dict[str, Any]:
             f"Known: {sorted(_CATEGORIES)}"
         )
     module = importlib.import_module(f"karadul.analyzers.sigdb_builtin.{name}")
-    return module.SIGNATURES  # type: ignore[no-any-return]
+    return module.SIGNATURES
 
 
 def list_categories() -> list[str]:

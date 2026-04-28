@@ -628,23 +628,26 @@ class TargetDetector:
         Bun runtime `bun build --compile` ile JS kodunu __BUN segmentine gomer.
         lief ile segment listesini tarar; lief yoksa raw bytes'ta segment
         adini arar (fallback).
+
+        Native crash koruma: lief.parse() subprocess izolasyonunda
+        calistirilir (v1.12 teknik borc). Cocuk SIGSEGV olsa bile parent
+        etkilenmez.
         """
         try:
-            import lief
-            binary = lief.parse(str(path))
-            if binary is None:
+            from karadul.utils.lief_subprocess import parse_in_subprocess
+            result = parse_in_subprocess(path, timeout=30)
+            if result is not None:
+                segments = result.get("segments") or []
+                if any(seg in ("__BUN", "__bun") for seg in segments):
+                    return True
+                # lief sonuc dondurdu ama __BUN yok → fallback'e gerek yok
                 return False
-            if hasattr(binary, "segments"):
-                for seg in binary.segments:
-                    if seg.name in ("__BUN", "__bun"):
-                        return True
-            return False
         except ImportError:
             pass
         except Exception:
-            logger.debug("Lief ile BUN segment kontrolu basarisiz, atlaniyor", exc_info=True)
+            logger.debug("Lief subprocess BUN segment kontrolu basarisiz, atlaniyor", exc_info=True)
 
-        # Fallback: lief yoksa raw bytes'ta segment adini ara
+        # Fallback: lief yoksa veya subprocess None dondurduyse raw bytes ara
         try:
             with open(path, "rb") as f:
                 # Ilk 4KB'de segment header'lari olmali

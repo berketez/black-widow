@@ -145,7 +145,7 @@ class ParallelNamingRunner:
         for attr in ("rename_c_file", "extract_names_from_file"):
             cand = getattr(namer, attr, None)
             if callable(cand):
-                return cand  # type: ignore[no-any-return]
+                return cand
         return None
 
     def _process_chunk(
