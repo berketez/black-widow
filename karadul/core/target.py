@@ -291,6 +291,9 @@ class TargetDetector:
                 is_electron = True
         if is_electron:
             effective_asar = asar_path if (asar_path and asar_path.exists()) else app_dir
+            # mypy: is_electron True ise effective_asar mutlaka non-None
+            # (asar_path.exists() veya app_dir.exists() koşulu sağlandı)
+            assert effective_asar is not None
             components.append({
                 "path": str(effective_asar),
                 "type": "electron_app",

@@ -997,6 +997,7 @@ def benchmark(
             )
             sys.exit(1)
 
+    assert nm_path is not None  # mypy: sys.exit yukarıda garanti veriyor
     console.print(f"[dim]Naming map:[/dim] {nm_path}")
     console.print()
 
