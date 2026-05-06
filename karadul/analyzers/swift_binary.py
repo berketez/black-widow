@@ -425,7 +425,7 @@ class SwiftBinaryAnalyzer(BaseAnalyzer):
 
                 if name:
                     all_nm_symbols.append({
-                        "address": address or None,
+                        "address": address or "",
                         "type": sym_type,
                         "name": name,
                     })
@@ -884,7 +884,7 @@ class SwiftBinaryAnalyzer(BaseAnalyzer):
                 })
             elif len(parts) == 2:
                 symbols.append({
-                    "address": None,
+                    "address": "",
                     "type": parts[0],
                     "name": parts[1],
                 })

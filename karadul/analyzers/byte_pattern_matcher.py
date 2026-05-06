@@ -543,6 +543,8 @@ class BytePatternMatcher:
         self, binary_path: Path
     ) -> tuple[Optional[int], Optional[int]]:
         """otool -l ciktisindann __TEXT segment vmaddr ve fileoff parse et."""
+        if not self._otool_path:
+            return None, None
         try:
             result = subprocess.run(
                 [self._otool_path, "-l", str(binary_path)],

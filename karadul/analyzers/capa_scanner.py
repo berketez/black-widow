@@ -510,6 +510,8 @@ class CAPAScanner:
         sonra dosyayi stream ile okur. Subprocess stderr hala yakalanir
         (kucuk, hata mesaji icin), stdout `DEVNULL`'a yonlendirilir.
         """
+        # mypy: çağıran taraf (374) `_cli_path` non-None garantisi sağlar
+        assert self._cli_path is not None, "_scan_via_cli before CLI resolved"
         # CAPA cikti dosyasi: binary ile ayni dizinde gecici dosya
         import tempfile as _tempfile
         tmp_out = _tempfile.NamedTemporaryFile(

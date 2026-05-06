@@ -395,6 +395,8 @@ class FLIRTParser:
         Returns:
             [(address, type, name), ...] listesi.
         """
+        if not self._nm_path:
+            return []
         try:
             result = subprocess.run(
                 [self._nm_path, "-g", str(binary_path)],
@@ -435,6 +437,8 @@ class FLIRTParser:
 
     def _parse_text_segment_otool(self, binary_path: Path) -> tuple[Optional[int], Optional[int]]:
         """otool -l ciktisından __TEXT segment vmaddr ve fileoff parse et."""
+        if not self._otool_path:
+            return None, None
         try:
             result = subprocess.run(
                 [self._otool_path, "-l", str(binary_path)],

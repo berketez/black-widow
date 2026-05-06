@@ -14,6 +14,7 @@ Config uyumlu: BinaryReconstructionConfig.enable_string_decryption
 from __future__ import annotations
 
 import base64
+import binascii
 import logging
 import re
 from dataclasses import dataclass, field
@@ -338,7 +339,7 @@ class StringDecryptor:
                         confidence=0.75,
                         location=filename,
                     ))
-            except (base64.binascii.Error, UnicodeDecodeError, ValueError):
+            except (binascii.Error, UnicodeDecodeError, ValueError):
                 pass
 
         return results
