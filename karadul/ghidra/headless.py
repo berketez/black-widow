@@ -645,11 +645,19 @@ class GhidraHeadless:
                                 "to_name": callee.getName(),
                             })
 
-            # Deduplicate
-            seen_c = set()
-            unique_callers = [c for c in callers if c["address"] not in seen_c and not seen_c.add(c["address"])]
-            seen_e = set()
-            unique_callees = [c for c in callees if c["address"] not in seen_e and not seen_e.add(c["address"])]
+            # Deduplicate (set.add None döner, comprehension trick yerine açık döngü)
+            seen_c: set = set()
+            unique_callers = []
+            for c in callers:
+                if c["address"] not in seen_c:
+                    seen_c.add(c["address"])
+                    unique_callers.append(c)
+            seen_e: set = set()
+            unique_callees = []
+            for c in callees:
+                if c["address"] not in seen_e:
+                    seen_e.add(c["address"])
+                    unique_callees.append(c)
 
             nodes[func_addr] = {
                 "name": func_name,
@@ -1288,8 +1296,8 @@ class GhidraHeadless:
         ref_mgr = program.getReferenceManager()
         listing = program.getListing()
 
-        func_xrefs = {}
-        string_ref_counts = {}  # addr -> ref count
+        func_xrefs: dict = {}
+        string_ref_counts: dict[str, int] = {}  # addr -> ref count
 
         for func in fm.getFunctions(True):
             func_name = func.getName()
@@ -1400,7 +1408,7 @@ class GhidraHeadless:
         fm = program.getFunctionManager()
         functions_data = []
         total_ops = 0
-        mnemonic_dist = {}
+        mnemonic_dist: dict[str, int] = {}
         BATCH_SIZE = 5000
         DECOMPILE_TIMEOUT = 30
         func_count = 0

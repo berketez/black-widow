@@ -204,7 +204,9 @@ class GhidraProgramDiff:
 
         # PyGhidra JVM'i baslat
         from karadul.ghidra.headless import _ensure_pyghidra_started
-        ghidra_install = self.config.tools.ghidra_install
+        # v1.12: ToolPaths.ghidra_install yok; analyzeHeadless'tan kurulum kökünü türet
+        # (.../support/analyzeHeadless -> .../support -> .../<ghidra_install>)
+        ghidra_install = self.config.tools.ghidra_headless.parent.parent
         _ensure_pyghidra_started(ghidra_install)
 
         import pyghidra
@@ -594,8 +596,11 @@ class GhidraProgramDiff:
 
         # Adres tabanlari eslestirme -- her eslesmeyen f1 icin en yakin f2'yi bul
         if unmatched_f1 and unmatched_f2:
-            f2_addrs = [(f, _addr_int(f.address)) for f in unmatched_f2]
-            f2_addrs = [(f, a) for f, a in f2_addrs if a is not None]
+            f2_addrs_raw = [(f, _addr_int(f.address)) for f in unmatched_f2]
+            # mypy: None filter sonrası tip int garanti
+            f2_addrs: list[tuple[_FuncInfo, int]] = [
+                (f, a) for f, a in f2_addrs_raw if a is not None
+            ]
 
             addr_matched_f2: set[str] = set()  # Zaten eslesmis f2 adresleri
 

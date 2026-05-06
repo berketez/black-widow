@@ -463,7 +463,7 @@ class BSimDatabase:
         # Mod secimi
         if _check_bsim():
             self.mode = "native"
-            self._native = _BSimNativeWrapper(self.db_path)
+            self._native: Optional[_BSimNativeWrapper] = _BSimNativeWrapper(self.db_path)
             self._lite: Optional[_BSimLiteIndex] = None
             logger.info("BSim native mod aktif")
         else:

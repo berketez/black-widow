@@ -52,7 +52,7 @@ class GhidraBackend:
     # ------------------------------------------------------------------
 
     @property
-    def ghidra(self):
+    def ghidra(self) -> Any:
         """GhidraHeadless instance'ini lazy yarat."""
         if self._ghidra is None:
             from karadul.ghidra.headless import GhidraHeadless
