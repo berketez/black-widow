@@ -97,7 +97,9 @@ class ReadabilityScorer:
         # Validation: agirliklar toplamı 1.0 olmali
         self.config.validate()
 
-        self._metrics = {
+        # mypy: heterogen metric türleri (FunctionNamesMetric, ParamNamesMetric, ...)
+        # ortak base class olmadığı için Any ile annotate ediyoruz
+        self._metrics: dict[str, tuple[Any, float]] = {
             "function_names": (
                 FunctionNamesMetric(self.config),
                 self.config.weight_function_names,

@@ -25,7 +25,7 @@ def _esc(text: Any) -> str:
     return html.escape(str(text))
 
 
-def _format_size(size: int) -> str:
+def _format_size(size: int | float) -> str:
     """Byte degerini okunabilir formata cevir."""
     if not isinstance(size, (int, float)) or size == 0:
         return "N/A"

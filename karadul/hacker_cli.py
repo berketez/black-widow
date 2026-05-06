@@ -775,7 +775,7 @@ def _stage_one_liner(stage_name: str, stats: dict[str, Any]) -> str:
 _ALL_STAGES_ORDERED = ["identify", "static", "dynamic", "deobfuscate", "reconstruct", "report"]
 
 
-def _build_dashboard(state: LiveAnalysisState) -> Group:
+def _build_dashboard(state: LiveAnalysisState) -> Panel:
     """3-panelli canli dashboard olustur.
 
     Panel 1 (ust): Header + pipeline ilerleme + stage listesi
@@ -889,9 +889,10 @@ def _build_dashboard(state: LiveAnalysisState) -> Group:
     lines.append(f"  [{DM}]{'─' * 60}[/]")
 
     if state.current_stage and state.is_running:
-        label = _STAGE_DESCRIPTIONS.get(state.current_stage, {}).get(
+        label_raw = _STAGE_DESCRIPTIONS.get(state.current_stage, {}).get(
             "label", state.current_stage.upper()
         )
+        label = str(label_raw)  # _STAGE_DESCRIPTIONS heterogen value (str|list)
         lines.append(f"  [{M}]\u25fc {label.upper()}[/]")
 
         if state.sub_progress_frac >= 0:
@@ -1103,7 +1104,7 @@ def analyze_with_live_output(target_path: str) -> None:
     total_stages = len(pipeline.registered_stages)
 
     # 3. Live analysis state olustur
-    log_buf = deque(maxlen=50)
+    log_buf: deque[str] = deque(maxlen=50)
     state = LiveAnalysisState(
         target_name=target_file.name,
         target_type=info.target_type.value,

@@ -316,10 +316,11 @@ class AliasingAnalyzer:
         ]
         orphan_accesses: list[MemoryAccess] = []
         for acc in accesses:
-            comp_idx = var_to_component.get(acc.var_name)
-            if comp_idx is None:
+            # mypy: comp_idx üst scope'ta int olarak shadowlanmıştı, yeni isim kullan
+            acc_comp_idx = var_to_component.get(acc.var_name)
+            if acc_comp_idx is None:
                 orphan_accesses.append(acc)
             else:
-                per_component_accesses[comp_idx].append(acc)
+                per_component_accesses[acc_comp_idx].append(acc)
 
         return per_component_classes, per_component_accesses, orphan_accesses
