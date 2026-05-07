@@ -1,15 +1,18 @@
 """sig_db Faz 1 iskelet testleri.
 
 v1.12.0 ``karadul/analyzers/sigdb_builtin/`` dizini 17 kategori placeholder
-modulu + dispatcher icerir. Bu testler:
+modulu + dispatcher icerir. v1.13 Dalga 1 Wave 3'te 18. kategori olarak
+``malware_tier1`` (Tier-1 malware content pack) eklenmistir.
 
-1. 17 kategori modulu import edilebiliyor mu?
+Bu testler:
+
+1. Tum kategori modulleri import edilebiliyor mu?
 2. Her modul ``SIGNATURES`` dict expose ediyor mu (Faz 1: bos)?
 3. Dispatcher ``get_category("crypto")`` bos dict donduruyor mu?
 4. Dispatcher tanimsiz kategoride ValueError atiyor mu?
 5. LMDB auto-detect: default True, LMDB dosyasi yokken fallback calisiyor
    mu?
-6. ``list_categories()`` 17 eleman donduruyor mu?
+6. ``list_categories()`` 18 eleman donduruyor mu (17 + malware_tier1)?
 """
 from __future__ import annotations
 
@@ -30,6 +33,7 @@ _EXPECTED_CATEGORIES = [
     "linux_system",
     "logging",
     "macos_apple",
+    "malware_tier1",
     "network",
     "posix_system",
     "runtimes",
@@ -52,10 +56,14 @@ class TestSigdbBuiltinImports:
     # Faz 3 dalga: `compression` + `network` dolduruldu.
     # Faz 9 pilot (ADR 0008 Grup 10): `logging` dolduruldu.
     # Faz 10 (ADR 0007 A6): `languages` (V8/Lua/Ruby 155 entry) dolduruldu.
+    # v1.13 Dalga 1 Wave 3: `malware_tier1` content pack (Sliver+CS, 86 entry)
     # NOT: pe_runtime/windows_gui/apple_runtime/modern_runtime/vm_runtime de
     # v1.11 dalgalarinda dolduruldu; bu listenin geriye donuk genisletilmesi
     # ayri bir cleanup PR'inda yapilacaktir (mevcut testlerde regresyon yok).
-    _MIGRATED: frozenset[str] = frozenset({"crypto", "compression", "network", "logging", "languages"})
+    _MIGRATED: frozenset[str] = frozenset({
+        "crypto", "compression", "network", "logging", "languages",
+        "malware_tier1",
+    })
 
     @pytest.mark.parametrize("name", _EXPECTED_CATEGORIES)
     def test_module_placeholder_state(self, name: str) -> None:
@@ -71,8 +79,9 @@ class TestSigdbBuiltinImports:
                 f"ileride Faz 4+ dalgasinda dolacak"
             )
 
-    def test_count_is_17(self) -> None:
-        assert len(_EXPECTED_CATEGORIES) == 17
+    def test_count_is_18(self) -> None:
+        # 17 v1.12.0 kategori + 1 v1.13 Dalga 1 Wave 3 (malware_tier1)
+        assert len(_EXPECTED_CATEGORIES) == 18
 
 
 class TestSigdbBuiltinDispatcher:
@@ -104,7 +113,7 @@ class TestSigdbBuiltinDispatcher:
         from karadul.analyzers.sigdb_builtin import list_categories
 
         cats = list_categories()
-        assert len(cats) == 17
+        assert len(cats) == 18
         assert sorted(cats) == _EXPECTED_CATEGORIES
         # Siralanmis donmeli
         assert cats == sorted(cats)

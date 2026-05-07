@@ -35,6 +35,7 @@ _CATEGORIES: frozenset[str] = frozenset({
     "logging",
     "strings_module",
     "calls",
+    "malware_tier1",
 })
 
 
