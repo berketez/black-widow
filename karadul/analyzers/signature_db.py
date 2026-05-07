@@ -7008,6 +7008,29 @@ if _BUILTIN_LANG_SIGNATURES is not None:
 
 
 # ---------------------------------------------------------------------------
+# v1.13 Dalga 1 — malware_tier1 content pack (Sliver + Cobalt Strike)
+# ---------------------------------------------------------------------------
+# Tier-1 imza paketi tamamen yeni veridir; signature_db.py icinde inline legacy
+# kaynak YOK (Tip A "rollback bandi" pattern'i UYGUN DEGIL). Tip B "yeni dict
+# bind" pattern'i kullanilir: import basarisiz olursa bos dict'lerle no-op
+# fallback. Toplam 87 entry: Sliver 54 + Cobalt Strike 33.
+#
+# Veri konumu: karadul/analyzers/sigdb_builtin/malware_tier1.py
+# Defansif kullanim: forensics / IOC / pentest fingerprinting (LLM yok,
+# deterministic sembol/string lookup).
+try:
+    from karadul.analyzers.sigdb_builtin.malware_tier1 import (
+        SIGNATURES as _BUILTIN_MALWARE_TIER1_SIGS,
+    )
+    _SLIVER_SIGNATURES = _BUILTIN_MALWARE_TIER1_SIGS.get("sliver", {})
+    _COBALTSTRIKE_SIGNATURES = _BUILTIN_MALWARE_TIER1_SIGS.get("cobaltstrike", {})
+except ImportError:  # pragma: no cover - paket yoksa bos fallback (no-op)
+    _BUILTIN_MALWARE_TIER1_SIGS = None  # type: ignore[assignment]
+    _SLIVER_SIGNATURES = {}
+    _COBALTSTRIKE_SIGNATURES = {}
+
+
+# ---------------------------------------------------------------------------
 # EXTENDED: Message Queue / Event Systems (~60 imza)
 # ZeroMQ, RabbitMQ/AMQP, Kafka, MQTT
 # ---------------------------------------------------------------------------
@@ -9461,6 +9484,9 @@ class SignatureDB:
             _APPLE_OBJC_RUNTIME_SIGNATURES,
             _APPLE_SWIFT_RUNTIME_SIGNATURES,
             _APPLE_COREFOUNDATION_SIGNATURES,
+            # v1.13 Dalga 1: Tier-1 malware content pack (Sliver + Cobalt Strike)
+            _SLIVER_SIGNATURES,
+            _COBALTSTRIKE_SIGNATURES,
         ):
             self._symbol_db.update(db)
 

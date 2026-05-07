@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from karadul.analyzers import register_analyzer
+from karadul.analyzers import rust_demangler as _rust_demangler
 from karadul.analyzers.macho import MachOAnalyzer
 from karadul.config import Config
 from karadul.core.result import StageResult
@@ -160,26 +161,39 @@ class RustBinaryAnalyzer(MachOAnalyzer):
     def _demangle_rust(self, mangled: str) -> str:
         """Rust mangled symbol'u demangle et.
 
-        Basit heuristic: Itanium ABI mangling'den
-        namespace::function formatina donusturur.
-        Tam demangling icin rustfilt araci gereklidir.
+        v1.13: Asil is ``rust_demangler`` modulune delege edilir; o modul
+        rustfilt CLI varsa subprocess ile, yoksa native parser ile
+        ``_ZN``/``_R`` prefixli sembolleri cozer ve hash suffix'i kaldirir.
+        Modul ``None`` donerse veya sembolu degistirmezse, geriye-uyumluluk
+        icin yerel basit heuristic (``_demangle_itanium``) fallback olarak
+        calistirilir.
+
+        Geriye-uyumluluk soz: Eski testler "demangle edilemeyen sembol
+        oldugu gibi donmeli" davranisini bekler; bu yuzden None yerine
+        orijinal ``mangled`` dondurulur.
 
         Args:
-            mangled: Mangled symbol adi (orn: "_ZN4core3fmt5write...")
+            mangled: Mangled symbol adi (orn: "_ZN4core3fmt5write...").
 
         Returns:
-            Demangle edilmis isim veya orjinal (basarisizsa).
+            Demangle edilmis isim veya orjinal sembol (basarisizsa).
         """
         if not mangled:
             return mangled
 
-        # Itanium ABI: _ZN<len1><name1><len2><name2>...E
+        # 1) Asil yol: ortak rust_demangler moduluna delege
+        try:
+            new_dem = _rust_demangler.demangle(mangled)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("rust_demangler hata: %s -> %s", mangled, exc)
+            new_dem = None
+        if new_dem and new_dem != mangled:
+            return new_dem
+
+        # 2) Fallback: yerel basit heuristic (eski davranisi koru)
         if mangled.startswith("_ZN"):
             return self._demangle_itanium(mangled[3:])
-
-        # Rust v0: _RN<...>
         if mangled.startswith("_RN"):
-            # v0 mangling daha karmasik, basit cikarma dene
             return self._demangle_itanium(mangled[3:])
 
         return mangled

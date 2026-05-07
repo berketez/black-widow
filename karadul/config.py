@@ -336,6 +336,11 @@ class BinaryReconstructionConfig:
     enable_rtti_recovery: bool = False       # Default kapali, opt-in feature
     rtti_abi: str = "itanium"                # "itanium" | "msvc" (msvc v1.10.1'de)
     rtti_max_vtable_entries: int = 64        # Vtable basina max okunacak method slot
+    # v1.13 Dalga 1: anti-debug + packer fingerprint pipeline step'leri.
+    # Default True -- opt-out flag'leri. KARADUL_DISABLE_ANTI_DEBUG vb.
+    # ile ileride env override eklenebilir.
+    enable_anti_debug_detection: bool = True  # AntiDebugStep
+    enable_packer_fingerprint: bool = True    # PackerFingerprintStep
 
 
 @dataclass

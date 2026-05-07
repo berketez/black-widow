@@ -1617,6 +1617,120 @@ class ReconstructionStage(Stage):
         rc.stats["timing_byte_pattern"] = round(time.monotonic() - _step_start, 1)
         rc.byte_pattern_names = byte_pattern_names
 
+    def _run_anti_debug_and_packer(
+        self, context: PipelineContext, rc: ReconstructionContext
+    ) -> None:
+        """v1.13 Dalga 1: anti-debug + packer fingerprint legacy hookup.
+
+        Step registry yolu (PipelineRunner) ile ayni davranisi mimic eder.
+        Hem ``static/anti_debug_findings.json`` hem ``static/packer_fingerprints.json``
+        artifact'larini yazar; istatistikleri rc.stats'a aktarir. Hata
+        durumunda pipeline'i kirmaz (defansif).
+        """
+        binary_for_byte_match = rc.ph1_artifacts.get("binary_for_byte_match")
+        if binary_for_byte_match is None:
+            return
+
+        recon_cfg = context.config.binary_reconstruction
+
+        # 1) Anti-debug
+        if getattr(recon_cfg, "enable_anti_debug_detection", True):
+            ad_start = time.monotonic()
+            try:
+                from karadul.analyzers.anti_debug_detector import (
+                    AntiDebugDetector,
+                )
+
+                detector = AntiDebugDetector(
+                    target=context.target,
+                    binary_path=binary_for_byte_match,
+                )
+                findings = detector.detect()
+                findings_dicts = [f.to_dict() for f in findings]
+                summary: dict[str, Any] = {}
+                try:
+                    summary = detector.summary(findings)
+                except Exception:
+                    summary = {}
+                payload = {
+                    "binary_path": str(binary_for_byte_match),
+                    "total_findings": len(findings_dicts),
+                    "findings": findings_dicts,
+                    "summary": summary,
+                }
+                ad_path = context.workspace.save_json(
+                    "static", "anti_debug_findings", payload,
+                )
+                rc.artifacts["anti_debug_findings"] = ad_path
+                rc.stats["anti_debug_total"] = len(findings_dicts)
+                if findings_dicts:
+                    top = findings_dicts[0]
+                    rc.stats["anti_debug_top_technique"] = top.get(
+                        "technique", "?",
+                    )
+                    rc.stats["anti_debug_top_confidence"] = float(
+                        top.get("confidence", 0.0),
+                    )
+                rc.stats["anti_debug_status"] = "ok"
+            except ImportError:
+                logger.debug("AntiDebugDetector bulunamadi, atlaniyor")
+                rc.stats["anti_debug_status"] = "module_missing"
+            except Exception as exc:
+                logger.warning("Anti-debug hatasi (atlaniyor): %s", exc)
+                rc.errors.append(f"anti_debug: {exc}")
+                rc.stats["anti_debug_status"] = "error"
+            rc.stats["timing_anti_debug"] = round(
+                time.monotonic() - ad_start, 3,
+            )
+        else:
+            rc.stats["anti_debug_status"] = "disabled"
+
+        # 2) Packer fingerprint
+        if getattr(recon_cfg, "enable_packer_fingerprint", True):
+            pf_start = time.monotonic()
+            try:
+                from karadul.analyzers.packer_fingerprint import (
+                    PackerFingerprintDetector,
+                )
+
+                detector_pf = PackerFingerprintDetector(binary_for_byte_match)
+                fingerprints = detector_pf.detect()
+                fp_dicts = [fp.to_dict() for fp in fingerprints]
+                payload_pf = {
+                    "binary_path": str(binary_for_byte_match),
+                    "total_fingerprints": len(fp_dicts),
+                    "fingerprints": fp_dicts,
+                }
+                pf_path = context.workspace.save_json(
+                    "static", "packer_fingerprints", payload_pf,
+                )
+                rc.artifacts["packer_fingerprints"] = pf_path
+                rc.stats["packer_total"] = len(fp_dicts)
+                if fp_dicts:
+                    top_fp = fp_dicts[0]
+                    rc.stats["packer_top_name"] = top_fp.get(
+                        "packer_name", "?",
+                    )
+                    rc.stats["packer_top_confidence"] = float(
+                        top_fp.get("confidence", 0.0),
+                    )
+                    rc.stats["packer_top_layers"] = int(
+                        top_fp.get("layers_matched", 0),
+                    )
+                rc.stats["packer_fingerprint_status"] = "ok"
+            except ImportError:
+                logger.debug("PackerFingerprintDetector bulunamadi, atlaniyor")
+                rc.stats["packer_fingerprint_status"] = "module_missing"
+            except Exception as exc:
+                logger.warning("Packer fingerprint hatasi (atlaniyor): %s", exc)
+                rc.errors.append(f"packer_fingerprint: {exc}")
+                rc.stats["packer_fingerprint_status"] = "error"
+            rc.stats["timing_packer_fingerprint"] = round(
+                time.monotonic() - pf_start, 3,
+            )
+        else:
+            rc.stats["packer_fingerprint_status"] = "disabled"
+
     def _run_pcode_analysis(
         self, context: PipelineContext, rc: ReconstructionContext
     ) -> None:
@@ -2316,6 +2430,13 @@ class ReconstructionStage(Stage):
                     # sadece bsim_shadow.json dump eder.
                     "bsim_match",
                     "byte_pattern",
+                    # v1.13 Dalga 1: anti-debug + packer fingerprint.
+                    # binary_prep sonrasi (binary_for_byte_match resolve edildi),
+                    # pcode_cfg_analysis oncesi. Yalnizca ham binary'i okurlar,
+                    # sonraki adimlara ekstra artifact (anti_debug_findings,
+                    # packer_fingerprints) ureterek static/ altinda yazarlar.
+                    "anti_debug",
+                    "packer_fingerprint",
                     "pcode_cfg_analysis",
                     "cfg_iso_match",
                     "algorithm_id",
@@ -2475,6 +2596,10 @@ class ReconstructionStage(Stage):
             sig_matches = rc.sig_matches
             self._run_byte_pattern_matching(context, rc)
             byte_pattern_names = rc.byte_pattern_names
+            # v1.13 Dalga 1: anti-debug + packer fingerprint legacy hookup.
+            # Step registry yolu ile ayni davranisi sergiler; kapsam
+            # analyzer cagrisi + JSON artifact yazimi.
+            self._run_anti_debug_and_packer(context, rc)
             self._run_pcode_analysis(context, rc)
             _pcode_result = rc.pcode_result
             _pcode_naming_candidates = rc.pcode_naming_candidates

@@ -75,6 +75,15 @@ class MarkdownReporter:
         # Static Analysis
         lines.extend(self._section_static(result))
 
+        # v1.13 Dalga 1: Anti-Debug Findings (workspace static/anti_debug_findings.json)
+        lines.extend(self._section_anti_debug(workspace))
+
+        # v1.13 Dalga 1: Detected Packer (workspace static/packer_fingerprints.json)
+        lines.extend(self._section_packer(workspace))
+
+        # v1.13 Dalga 1: Malware IOC (Sliver / Cobalt Strike sembol match)
+        lines.extend(self._section_malware_ioc(result, workspace))
+
         # Dynamic Analysis
         lines.extend(self._section_dynamic(result))
 
@@ -372,6 +381,213 @@ class MarkdownReporter:
                 )
                 lines.append("")
 
+        return lines
+
+    # ------------------------------------------------------------------
+    # v1.13 Dalga 1 — yeni capability section'lari
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _severity_icon(score: float) -> tuple[str, str]:
+        """Severity score icin (icon, label) uretir.
+
+        Esikler: >=0.7 high, >=0.4 medium, <0.4 info.
+        """
+        if score >= 0.7:
+            return ("[HIGH]", "high")
+        if score >= 0.4:
+            return ("[MED]", "medium")
+        return ("[INFO]", "info")
+
+    def _section_anti_debug(self, workspace: Workspace) -> list[str]:
+        """Anti-Debug findings bolumu (static/anti_debug_findings.json).
+
+        JSON formati (anti_debug.py step uretir):
+          {
+            "score": float (0..1),
+            "findings": [
+              {"technique": str, "category": str, "confidence": float,
+               "evidence": str},
+              ...
+            ]
+          }
+        Dosya yoksa veya parse edilemezse bolum atlanir (hata atilmaz).
+        """
+        data = workspace.load_json("static", "anti_debug_findings")
+        if not data:
+            return []
+
+        findings = data.get("findings") or []
+        if not findings:
+            return []
+
+        score = float(data.get("score", 0.0) or 0.0)
+        icon, severity = self._severity_icon(score)
+
+        lines = [
+            f"## Anti-Debug Findings {icon}",
+            "",
+            f"- **Severity:** {severity} (score: {score:.2f})",
+            f"- **Total findings:** {len(findings)}",
+            "",
+            "| Technique | Category | Confidence | Evidence |",
+            "|-----------|----------|------------|----------|",
+        ]
+
+        for f in findings:
+            tech = str(f.get("technique", "?"))
+            cat = str(f.get("category", "?"))
+            conf = f.get("confidence", 0.0)
+            try:
+                conf_str = f"{float(conf):.2f}"
+            except (TypeError, ValueError):
+                conf_str = str(conf)
+            ev = str(f.get("evidence", ""))
+            # Markdown table guvenligi: pipe ve newline temizle
+            ev = ev.replace("|", "\\|").replace("\n", " ")[:120]
+            lines.append(f"| {tech} | {cat} | {conf_str} | {ev} |")
+
+        lines.append("")
+        return lines
+
+    def _section_packer(self, workspace: Workspace) -> list[str]:
+        """Detected Packer bolumu (static/packer_fingerprints.json).
+
+        JSON formati (packer_fingerprint.py step uretir):
+          {
+            "score": float (0..1),
+            "packers": [
+              {"technique": str, "category": str, "confidence": float,
+               "evidence": str},
+              ...
+            ]
+          }
+        Dosya yoksa veya bos packers ise bolum atlanir.
+        """
+        data = workspace.load_json("static", "packer_fingerprints")
+        if not data:
+            return []
+
+        packers = data.get("packers") or data.get("findings") or []
+        if not packers:
+            return []
+
+        score = float(data.get("score", 0.0) or 0.0)
+        icon, severity = self._severity_icon(score)
+
+        lines = [
+            f"## Detected Packer {icon}",
+            "",
+            f"- **Severity:** {severity} (score: {score:.2f})",
+            f"- **Packers detected:** {len(packers)}",
+            "",
+            "| Technique | Category | Confidence | Evidence |",
+            "|-----------|----------|------------|----------|",
+        ]
+
+        for p in packers:
+            tech = str(p.get("technique", p.get("name", "?")))
+            cat = str(p.get("category", "packer"))
+            conf = p.get("confidence", 0.0)
+            try:
+                conf_str = f"{float(conf):.2f}"
+            except (TypeError, ValueError):
+                conf_str = str(conf)
+            ev = str(p.get("evidence", ""))
+            ev = ev.replace("|", "\\|").replace("\n", " ")[:120]
+            lines.append(f"| {tech} | {cat} | {conf_str} | {ev} |")
+
+        lines.append("")
+        return lines
+
+    def _section_malware_ioc(
+        self, result: PipelineResult, workspace: Workspace
+    ) -> list[str]:
+        """Malware IOC bolumu — Sliver/CS sembol match'lerini filtreler.
+
+        Kaynak oncelikli sirayla:
+          1. workspace static/signature_matches.json (varsa) -> "matches" listesi
+             icinden category=malware veya tier=1 olanlar.
+          2. result.stages["static"].stats["signature_matches"] -> liste
+
+        Her match icin family + tier + symbol/lib gosterilir.
+        Dosya/veri yoksa bolum atlanir (hata atilmaz).
+        """
+        matches: list[dict[str, Any]] = []
+
+        sig_data = workspace.load_json("static", "signature_matches")
+        if sig_data:
+            raw = sig_data.get("matches") or sig_data.get("signature_matches") or []
+            if isinstance(raw, list):
+                matches = [m for m in raw if isinstance(m, dict)]
+
+        if not matches and "static" in result.stages:
+            stats = result.stages["static"].stats
+            raw_stats = stats.get("signature_matches")
+            if isinstance(raw_stats, list):
+                matches = [m for m in raw_stats if isinstance(m, dict)]
+
+        if not matches:
+            return []
+
+        # Tier-1 malware filtresi: family in {sliver, cobaltstrike} VEYA
+        # category == malware VEYA tier == "1"/1
+        tier1_families = {"sliver", "cobaltstrike"}
+        ioc_matches: list[dict[str, Any]] = []
+        for m in matches:
+            family = str(m.get("family", "")).lower()
+            category = str(m.get("category", "")).lower()
+            tier = str(m.get("tier", ""))
+            if (
+                family in tier1_families
+                or category == "malware"
+                or tier == "1"
+            ):
+                ioc_matches.append(m)
+
+        if not ioc_matches:
+            return []
+
+        # Family bazli sayma
+        sliver_n = sum(
+            1 for m in ioc_matches
+            if str(m.get("family", "")).lower() == "sliver"
+        )
+        cs_n = sum(
+            1 for m in ioc_matches
+            if str(m.get("family", "")).lower() == "cobaltstrike"
+        )
+
+        # Severity: malware IOC bulundugunda her zaman high
+        score = 1.0 if ioc_matches else 0.0
+        icon, severity = self._severity_icon(score)
+
+        lines = [
+            f"## Malware IOC {icon}",
+            "",
+            f"- **Severity:** {severity} (Tier-1 malware family fingerprint)",
+            f"- **Total IOC matches:** {len(ioc_matches)}",
+        ]
+        if sliver_n:
+            lines.append(f"- **Sliver:** {sliver_n} sembol")
+        if cs_n:
+            lines.append(f"- **Cobalt Strike:** {cs_n} sembol")
+        lines.append("")
+        lines.append("| Symbol | Family | Lib | Tier | Purpose |")
+        lines.append("|--------|--------|-----|------|---------|")
+
+        for m in ioc_matches:
+            sym = str(m.get("symbol", m.get("name", "?")))
+            family = str(m.get("family", "?"))
+            lib = str(m.get("lib", "?"))
+            tier = str(m.get("tier", "?"))
+            purpose = str(m.get("purpose", ""))
+            sym = sym.replace("|", "\\|")[:80]
+            purpose = purpose.replace("|", "\\|").replace("\n", " ")[:120]
+            lines.append(
+                f"| `{sym}` | {family} | {lib} | {tier} | {purpose} |"
+            )
+
+        lines.append("")
         return lines
 
     def _section_artifacts(self, result: PipelineResult) -> list[str]:

@@ -156,6 +156,11 @@ class HTMLReporter:
         # Stats dashboard
         parts.append(self._stats_dashboard(result))
 
+        # v1.13 Dalga 1: Anti-Debug + Packer + Malware IOC sections
+        parts.append(self._anti_debug_section(workspace))
+        parts.append(self._packer_section(workspace))
+        parts.append(self._malware_ioc_section(result, workspace))
+
         # Architecture section (Binary Intelligence)
         parts.append(self._architecture_section(result, workspace))
 
@@ -285,6 +290,194 @@ class HTMLReporter:
         return (
             "<h2>Statistics</h2>"
             f"<div class=\"stat-grid\">{boxes}</div>"
+        )
+
+    # ------------------------------------------------------------------
+    # v1.13 Dalga 1 — yeni capability section'lari
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _severity_class(score: float) -> tuple[str, str, str]:
+        """Severity score icin (badge_class, label, color) doner.
+
+        Mevcut .high/.medium/.low CSS class'lari ile uyumlu (subsystem-card).
+        Esikler: >=0.7 high, >=0.4 medium, <0.4 low.
+        """
+        if score >= 0.7:
+            return ("high", "HIGH", "#f85149")
+        if score >= 0.4:
+            return ("medium", "MEDIUM", "#d29922")
+        return ("low", "INFO", "#8b949e")
+
+    def _anti_debug_section(self, workspace: Workspace) -> str:
+        """Anti-Debug findings HTML bolumu (static/anti_debug_findings.json)."""
+        data = workspace.load_json("static", "anti_debug_findings")
+        if not data:
+            return ""
+
+        findings = data.get("findings") or []
+        if not findings:
+            return ""
+
+        score = float(data.get("score", 0.0) or 0.0)
+        sev_class, sev_label, sev_color = self._severity_class(score)
+
+        rows: list[str] = [
+            "<tr>"
+            "<th>Technique</th><th>Category</th>"
+            "<th>Confidence</th><th>Evidence</th>"
+            "</tr>"
+        ]
+        for f in findings:
+            tech = _esc(f.get("technique", "?"))
+            cat = _esc(f.get("category", "?"))
+            conf = f.get("confidence", 0.0)
+            try:
+                conf_str = f"{float(conf):.2f}"
+            except (TypeError, ValueError):
+                conf_str = _esc(conf)
+            ev = _esc(str(f.get("evidence", ""))[:200])
+            rows.append(
+                f"<tr><td>{tech}</td><td>{cat}</td>"
+                f"<td>{conf_str}</td><td>{ev}</td></tr>"
+            )
+
+        return (
+            "<h2>Anti-Debug Findings</h2>"
+            f"<div class=\"subsystem-card {sev_class}\">"
+            f"<span class=\"subsystem-name\">Severity: "
+            f"<span style=\"color: {sev_color};\">{sev_label}</span></span>"
+            f"<div class=\"subsystem-meta\">Score: {score:.2f} | "
+            f"{len(findings)} findings</div>"
+            "</div>"
+            f"<table>{''.join(rows)}</table>"
+        )
+
+    def _packer_section(self, workspace: Workspace) -> str:
+        """Detected Packer HTML bolumu (static/packer_fingerprints.json)."""
+        data = workspace.load_json("static", "packer_fingerprints")
+        if not data:
+            return ""
+
+        packers = data.get("packers") or data.get("findings") or []
+        if not packers:
+            return ""
+
+        score = float(data.get("score", 0.0) or 0.0)
+        sev_class, sev_label, sev_color = self._severity_class(score)
+
+        rows: list[str] = [
+            "<tr>"
+            "<th>Technique</th><th>Category</th>"
+            "<th>Confidence</th><th>Evidence</th>"
+            "</tr>"
+        ]
+        for p in packers:
+            tech = _esc(p.get("technique", p.get("name", "?")))
+            cat = _esc(p.get("category", "packer"))
+            conf = p.get("confidence", 0.0)
+            try:
+                conf_str = f"{float(conf):.2f}"
+            except (TypeError, ValueError):
+                conf_str = _esc(conf)
+            ev = _esc(str(p.get("evidence", ""))[:200])
+            rows.append(
+                f"<tr><td>{tech}</td><td>{cat}</td>"
+                f"<td>{conf_str}</td><td>{ev}</td></tr>"
+            )
+
+        return (
+            "<h2>Detected Packer</h2>"
+            f"<div class=\"subsystem-card {sev_class}\">"
+            f"<span class=\"subsystem-name\">Severity: "
+            f"<span style=\"color: {sev_color};\">{sev_label}</span></span>"
+            f"<div class=\"subsystem-meta\">Score: {score:.2f} | "
+            f"{len(packers)} packers detected</div>"
+            "</div>"
+            f"<table>{''.join(rows)}</table>"
+        )
+
+    def _malware_ioc_section(
+        self, result: PipelineResult, workspace: Workspace
+    ) -> str:
+        """Malware IOC HTML bolumu — Sliver/CS sembol match'lerini filtreler."""
+        matches: list[dict[str, Any]] = []
+
+        sig_data = workspace.load_json("static", "signature_matches")
+        if sig_data:
+            raw = sig_data.get("matches") or sig_data.get("signature_matches") or []
+            if isinstance(raw, list):
+                matches = [m for m in raw if isinstance(m, dict)]
+
+        if not matches and "static" in result.stages:
+            stats = result.stages["static"].stats
+            raw_stats = stats.get("signature_matches")
+            if isinstance(raw_stats, list):
+                matches = [m for m in raw_stats if isinstance(m, dict)]
+
+        if not matches:
+            return ""
+
+        tier1_families = {"sliver", "cobaltstrike"}
+        ioc_matches: list[dict[str, Any]] = []
+        for m in matches:
+            family = str(m.get("family", "")).lower()
+            category = str(m.get("category", "")).lower()
+            tier = str(m.get("tier", ""))
+            if (
+                family in tier1_families
+                or category == "malware"
+                or tier == "1"
+            ):
+                ioc_matches.append(m)
+
+        if not ioc_matches:
+            return ""
+
+        sliver_n = sum(
+            1 for m in ioc_matches
+            if str(m.get("family", "")).lower() == "sliver"
+        )
+        cs_n = sum(
+            1 for m in ioc_matches
+            if str(m.get("family", "")).lower() == "cobaltstrike"
+        )
+
+        sev_class, sev_label, sev_color = self._severity_class(1.0)
+
+        rows: list[str] = [
+            "<tr>"
+            "<th>Symbol</th><th>Family</th><th>Lib</th>"
+            "<th>Tier</th><th>Purpose</th>"
+            "</tr>"
+        ]
+        for m in ioc_matches:
+            sym = _esc(str(m.get("symbol", m.get("name", "?")))[:120])
+            family = _esc(m.get("family", "?"))
+            lib = _esc(m.get("lib", "?"))
+            tier = _esc(m.get("tier", "?"))
+            purpose = _esc(str(m.get("purpose", ""))[:160])
+            rows.append(
+                f"<tr><td><code>{sym}</code></td><td>{family}</td>"
+                f"<td>{lib}</td><td>{tier}</td><td>{purpose}</td></tr>"
+            )
+
+        family_summary = []
+        if sliver_n:
+            family_summary.append(f"Sliver: {sliver_n}")
+        if cs_n:
+            family_summary.append(f"Cobalt Strike: {cs_n}")
+        family_str = " | ".join(family_summary) if family_summary else ""
+
+        return (
+            "<h2>Malware IOC</h2>"
+            f"<div class=\"subsystem-card {sev_class}\">"
+            f"<span class=\"subsystem-name\">Severity: "
+            f"<span style=\"color: {sev_color};\">{sev_label}</span> "
+            "(Tier-1 family fingerprint)</span>"
+            f"<div class=\"subsystem-meta\">Total IOC matches: "
+            f"{len(ioc_matches)}{(' | ' + family_str) if family_str else ''}</div>"
+            "</div>"
+            f"<table>{''.join(rows)}</table>"
         )
 
     def _architecture_section(self, result: PipelineResult, workspace: Workspace) -> str:

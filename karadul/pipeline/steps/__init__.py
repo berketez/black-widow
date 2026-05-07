@@ -34,10 +34,14 @@ from karadul.pipeline.steps import (  # noqa: F401
     cfg_iso_match,
     computation_struct_recovery,
     computation_fusion,
+    # v1.13 Dalga 1: anti-debug + packer fingerprint
+    anti_debug,
+    packer_fingerprint,
 )
 
 __all__ = [
     "algorithm_id",
+    "anti_debug",
     "assembly_analysis",
     "binary_prep",
     "bsim_match",
@@ -56,6 +60,7 @@ __all__ = [
     "flow_simplify",
     "ghidra_metadata",
     "inline_detection",
+    "packer_fingerprint",
     "parallel_algo_eng",
     "pcode_cfg_analysis",
     "project_build",
