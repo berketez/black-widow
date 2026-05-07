@@ -1,9 +1,35 @@
 # ADR 0007: signature_db.py Dismantle Planı
 
-**Durum:** Önerildi (2026-04-23)
+**Durum:** Önerildi (2026-04-23) → Kısmen uygulandı (v1.11.0–v1.12 dalga 2)
 **Karar verici:** Berke (nihai), Architect (plan sahibi)
 **Önceki ADR'ler:** ADR-003 (LMDB sigdb), ADR-002 (Binary name recovery)
 **İlgili sürümler:** v1.11.0 (aktif geliştirme) → v1.15 (hedef son durum)
+
+---
+
+> ## Güncelleme — 2026-05-07 (v1.12 Dalga 2 Sonu)
+>
+> **İlerleme özeti:**
+> - **7 kategori migrate edildi** (override pattern, legacy dict in-place):
+>   1. `crypto` (621 entry, v1.11.0)
+>   2. `compression` (214 entry, v1.11.0)
+>   3. `network` (340 entry, v1.11.0)
+>   4. `pe_runtime` (246 entry, v1.11.0)
+>   5. `windows_gui` (566 entry, v1.11.0)
+>   6. `logging` (83 entry, v1.12 dalga 1, commit `99a4fbb`) — Faz 9
+>   7. `languages` (155 entry, v1.12 dalga 2) — Faz 10 (V8/Lua/Ruby)
+> - **Toplam migrate:** ~2 225 entry (yaklaşık 7/18 kategori).
+> - `signature_db.py` halen **10 639 LOC** (override pattern legacy dict'i in-place tuttuğu için dosya küçülmedi — bu tasarımdı).
+>
+> **Faz A-DELETE kararı (Codex 2026-05-07 önerisi):**
+> - Faz A-DELETE **kesin olarak v1.13'e ertelendi**. v1.12 sonunda partial silme yapılmayacak.
+> - Gerekçe: Henüz 11 kategori legacy kalıyor (POSIX, Linux, macOS, WinAPI, runtimes, DB, graphics, event_utils, game_ml, strings, calls). Partial A-DELETE → karışık override+silme durumu, audit yükü, override pattern karmaşası.
+> - Detay: bkz. `docs/adr/0007_a_delete_v113_decision.md` (yeni karar dosyası).
+>
+> **Yeniden takvimleme:**
+> - Kalan 11 kategori migration (orijinal A1–A13'ten 7'si bitti) **v1.13–v1.15** arasına dağıtılacak.
+> - A-DELETE giriş kriteri: 18/18 kategori migrate edilmiş + override yeşil + parity testleri PASS.
+> - Faz B (platform filter extract) yine v1.14 hedefinde, A-DELETE ile çakışmıyor.
 
 ---
 
@@ -450,7 +476,7 @@ Roadmap uyumu: v1.11 → v1.20.5 ana roadmap'te dismantle mevcut fazları **para
 ## 10. Açık Sorular (Berke Kararı Gerekli)
 
 1. **Faz A sırası:** A1-A6 paralel PR'lar mı (hızlı ama merge conflict), yoksa seri mi (yavaş ama temiz)? Öneri: **seri**, her faz 2-3 gün.
-2. **A-DELETE zamanlaması:** v1.13'e atlayalım mı, yoksa v1.12 sonu da olabilir mi? Öneri: **v1.13**, 1 sürüm koruma band'ı.
+2. ~~**A-DELETE zamanlaması:** v1.13'e atlayalım mı, yoksa v1.12 sonu da olabilir mi?~~ **KARAR (2026-05-07): v1.13'e ertelendi.** Codex önerisi (2026-05-07) ışığında v1.12 sonunda partial A-DELETE yapılmayacak. Gerekçe: 11 kategori henüz legacy kaldığı için partial silme override pattern karmaşası ve audit yükü doğurur; tek seferlik temiz A-DELETE daha güvenli. Detaylı karar: `docs/adr/0007_a_delete_v113_decision.md`. Giriş kriteri: 18/18 kategori migrate edilmiş + 1 sürüm boyunca override pattern altında stabil çalışmış olmalı.
 3. **Faz C yapılacak mı:** 1 415 LOC match logic extract değer mi, yoksa 1 200 LOC'da kalalım mı? Öneri: **v1.15 başında karar ver**, Faz A+B sonrası okunabilirlik değerlendir.
 4. **LMDB schema bump:** Migrasyonla birlikte yapılsın mı, yoksa ayrı? Öneri: **ayrı** (ADR-003 scope).
 5. **Yeni alt modül isimleri:** `sigdb_builtin/` içindeki 16 stub dosya mevcut iskelet isimlendirmesiyle uyumlu (Faz A tablosunda korundu). Ek isim değişikliği **yok**.
