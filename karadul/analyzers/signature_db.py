@@ -6790,6 +6790,9 @@ _GRAPHICS_EXT_SIGNATURES: dict[str, dict[str, str]] = {
 # EXTENDED: Node.js / V8 Engine (~80 imza)
 # V8 embedder API ve Node.js native addon pattern'leri.
 # ---------------------------------------------------------------------------
+# DEPRECATED — kaldirilacak: v1.13 (Faz A-DELETE). Veri sigdb_builtin/languages.py
+# modulune tasindi; bu blok sig_db Faz 10 (ADR 0007 A6) kapsaminda rollback
+# bandi olarak korunur. Yeni eklemeleri languages.py icine yapin.
 
 _V8_NODE_SIGNATURES: dict[str, dict[str, str]] = {
     # --- V8 core ---
@@ -6875,6 +6878,9 @@ _V8_NODE_SIGNATURES: dict[str, dict[str, str]] = {
 # EXTENDED: Lua Embedding (~40 imza)
 # Lua C API - embedded scripting patterns.
 # ---------------------------------------------------------------------------
+# DEPRECATED — kaldirilacak: v1.13 (Faz A-DELETE). Veri sigdb_builtin/languages.py
+# modulune tasindi; bu blok sig_db Faz 10 (ADR 0007 A6) kapsaminda rollback
+# bandi olarak korunur. Yeni eklemeleri languages.py icine yapin.
 
 _LUA_SIGNATURES: dict[str, dict[str, str]] = {
     "luaL_newstate": {"lib": "lua", "purpose": "create new Lua state", "category": "lua"},
@@ -6935,6 +6941,9 @@ _LUA_SIGNATURES: dict[str, dict[str, str]] = {
 # ---------------------------------------------------------------------------
 # EXTENDED: Ruby C Extension API (~30 imza)
 # ---------------------------------------------------------------------------
+# DEPRECATED — kaldirilacak: v1.13 (Faz A-DELETE). Veri sigdb_builtin/languages.py
+# modulune tasindi; bu blok sig_db Faz 10 (ADR 0007 A6) kapsaminda rollback
+# bandi olarak korunur. Yeni eklemeleri languages.py icine yapin.
 
 _RUBY_SIGNATURES: dict[str, dict[str, str]] = {
     "ruby_init": {"lib": "ruby", "purpose": "initialize Ruby interpreter", "category": "ruby"},
@@ -6968,6 +6977,34 @@ _RUBY_SIGNATURES: dict[str, dict[str, str]] = {
     "rb_thread_schedule": {"lib": "ruby", "purpose": "schedule Ruby thread", "category": "ruby"},
     "Data_Wrap_Struct": {"lib": "ruby", "purpose": "wrap C struct as Ruby object", "category": "ruby"},
 }
+
+
+# ---------------------------------------------------------------------------
+# sig_db Faz 10 — languages kategori override (ADR 0007 A6)
+# ---------------------------------------------------------------------------
+# Veri `karadul.analyzers.sigdb_builtin.languages` modulune tasindi. Tip A
+# yumusak override pattern'i (logging Faz 9 ile ozdes): yukaridaki legacy
+# `_V8_NODE_SIGNATURES` (73 entry), `_LUA_SIGNATURES` (52 entry) ve
+# `_RUBY_SIGNATURES` (30 entry) inline gövdeleri SILINMEDI; rollback bandi
+# olarak korunur. Toplam 155 imza override edilir. v1.13 Faz A-DELETE'te
+# kaldirilacak.
+try:
+    from karadul.analyzers.sigdb_builtin.languages import (
+        SIGNATURES as _BUILTIN_LANG_SIGNATURES,
+    )
+except ImportError:  # pragma: no cover - paket yoksa legacy fallback
+    _BUILTIN_LANG_SIGNATURES = None  # type: ignore[assignment]
+
+if _BUILTIN_LANG_SIGNATURES is not None:
+    _V8_NODE_SIGNATURES = _BUILTIN_LANG_SIGNATURES.get(
+        "v8_node", _V8_NODE_SIGNATURES
+    )
+    _LUA_SIGNATURES = _BUILTIN_LANG_SIGNATURES.get(
+        "lua", _LUA_SIGNATURES
+    )
+    _RUBY_SIGNATURES = _BUILTIN_LANG_SIGNATURES.get(
+        "ruby", _RUBY_SIGNATURES
+    )
 
 
 # ---------------------------------------------------------------------------

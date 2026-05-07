@@ -51,10 +51,11 @@ class TestSigdbBuiltinImports:
     # Faz 2 pilot: `crypto` dolduruldu.
     # Faz 3 dalga: `compression` + `network` dolduruldu.
     # Faz 9 pilot (ADR 0008 Grup 10): `logging` dolduruldu.
+    # Faz 10 (ADR 0007 A6): `languages` (V8/Lua/Ruby 155 entry) dolduruldu.
     # NOT: pe_runtime/windows_gui/apple_runtime/modern_runtime/vm_runtime de
     # v1.11 dalgalarinda dolduruldu; bu listenin geriye donuk genisletilmesi
     # ayri bir cleanup PR'inda yapilacaktir (mevcut testlerde regresyon yok).
-    _MIGRATED: frozenset[str] = frozenset({"crypto", "compression", "network", "logging"})
+    _MIGRATED: frozenset[str] = frozenset({"crypto", "compression", "network", "logging", "languages"})
 
     @pytest.mark.parametrize("name", _EXPECTED_CATEGORIES)
     def test_module_placeholder_state(self, name: str) -> None:
