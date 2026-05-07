@@ -384,7 +384,8 @@ def test_previous_migrations_still_intact() -> None:
     from karadul.analyzers.sigdb_builtin.network import SIGNATURES as net
     from karadul.analyzers.sigdb_builtin.pe_runtime import SIGNATURES as pe
 
-    assert len(cry) == 6
+    # v1.13 Wave 1: 7. anahtar "modern_crypto_signatures" eklendi.
+    assert len(cry) == 7
     assert len(comp) == 5
     assert len(net) == 7
     assert len(pe) == 3

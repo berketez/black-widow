@@ -22,11 +22,16 @@ def test_sigdb_builtin_crypto_importable() -> None:
 
     assert hasattr(crypto, "SIGNATURES")
     assert isinstance(crypto.SIGNATURES, dict)
-    assert len(crypto.SIGNATURES) == 6
+    # v1.13 Wave 1: 7. anahtar "modern_crypto_signatures" eklendi.
+    assert len(crypto.SIGNATURES) == 7
 
 
 def test_sigdb_builtin_crypto_has_expected_keys() -> None:
-    """SIGNATURES 6 top-level anahtar icerir (5 dict + 1 list)."""
+    """SIGNATURES 7 top-level anahtar icerir (6 dict + 1 list).
+
+    v1.13 Wave 1: ``modern_crypto_signatures`` eklendi (ChaCha20/Salsa20/
+    Blake2/Blake3/Poly1305 modern stream cipher + hash imzalari).
+    """
     from karadul.analyzers.sigdb_builtin import crypto
 
     expected = {
@@ -36,6 +41,7 @@ def test_sigdb_builtin_crypto_has_expected_keys() -> None:
         "mbedtls_signatures",
         "wincrypto_signatures",
         "findcrypt_constants",
+        "modern_crypto_signatures",
     }
     assert set(crypto.SIGNATURES.keys()) == expected
 
@@ -51,6 +57,8 @@ def test_sigdb_builtin_crypto_entry_counts() -> None:
         "mbedtls_signatures": 46,
         "wincrypto_signatures": 30,
         "findcrypt_constants": 126,
+        # v1.13 Wave 1: yeni kategori — minimum esik (ekleme yapildikca buyuyebilir).
+        "modern_crypto_signatures": 138,
     }
     for key, expected in expected_counts.items():
         actual = len(crypto.SIGNATURES[key])
@@ -67,8 +75,10 @@ def test_get_category_crypto_returns_data() -> None:
 
     sigs = get_category("crypto")
     assert isinstance(sigs, dict)
-    assert len(sigs) == 6
+    # v1.13 Wave 1: 7. anahtar "modern_crypto_signatures" eklendi.
+    assert len(sigs) == 7
     assert "openssl_signatures" in sigs
+    assert "modern_crypto_signatures" in sigs
 
 
 # ---------------------------------------------------------------------------

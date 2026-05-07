@@ -277,7 +277,8 @@ def test_previous_migrations_still_intact() -> None:
     from karadul.analyzers.sigdb_builtin.crypto import SIGNATURES as cry
     from karadul.analyzers.sigdb_builtin.network import SIGNATURES as net
 
-    assert len(cry) == 6   # openssl, boringssl, libsodium, mbedtls, wincrypto, findcrypt
+    # v1.13 Wave 1: 7. anahtar "modern_crypto_signatures" eklendi.
+    assert len(cry) == 7   # openssl, boringssl, libsodium, mbedtls, wincrypto, findcrypt, modern_crypto
     assert len(comp) == 5  # zlib, bzip2, lz4, zstd, compression_ext
     assert len(net) == 7   # libcurl, posix_net, nghttp2, websocket, macos_net, apple_nw, net_ext
 

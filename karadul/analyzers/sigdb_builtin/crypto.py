@@ -738,9 +738,213 @@ _FINDCRYPT_CONSTANTS_DATA: list[tuple[str, str, str, str]] = [
 
 
 # ---------------------------------------------------------------------------
+# Modern stream cipher / hash imzalari — v1.13 Wave 1 ekleme (signature_db.py
+# override blokunu etkilemez; ayri dict olarak tutulur, get_category("crypto")
+# uzerinden erisilebilir.) Kapsam:
+#   - libsodium ChaCha20/XChaCha20/Salsa20/XSalsa20 stream API'leri
+#   - libsodium Poly1305 onetimeauth
+#   - OpenSSL/BoringSSL EVP ChaCha20 + Blake2 + Poly1305 internalleri
+#   - Standalone Blake2b / Blake2s / Blake3 referans implementasyon isimleri
+#   - Bare ChaCha20 / Salsa20 / Poly1305 referans implementasyon isimleri
+# Mevcut entry'lerle cakismalar elenmis (ornek: _EVP_chacha20_poly1305 zaten
+# OpenSSL dict'inde, tekrar yazilmadi).
+# ---------------------------------------------------------------------------
+_MODERN_CRYPTO_SIGNATURES_DATA: dict[str, dict[str, str]] = {
+    # -----------------------------------------------------------------
+    # libsodium — ChaCha20 stream cipher (RFC 7539 IETF + original)
+    # -----------------------------------------------------------------
+    "_crypto_stream_chacha20": {"lib": "libsodium", "purpose": "ChaCha20 stream cipher (original 8-byte nonce)", "category": "crypto"},
+    "_crypto_stream_chacha20_xor": {"lib": "libsodium", "purpose": "ChaCha20 XOR encrypt (original nonce)", "category": "crypto"},
+    "_crypto_stream_chacha20_xor_ic": {"lib": "libsodium", "purpose": "ChaCha20 XOR with initial counter", "category": "crypto"},
+    "_crypto_stream_chacha20_keygen": {"lib": "libsodium", "purpose": "ChaCha20 keygen (32-byte key)", "category": "crypto"},
+    "_crypto_stream_chacha20_ietf": {"lib": "libsodium", "purpose": "ChaCha20-IETF stream (12-byte nonce, RFC 7539)", "category": "crypto"},
+    "_crypto_stream_chacha20_ietf_xor": {"lib": "libsodium", "purpose": "ChaCha20-IETF XOR encrypt", "category": "crypto"},
+    "_crypto_stream_chacha20_ietf_xor_ic": {"lib": "libsodium", "purpose": "ChaCha20-IETF XOR with initial counter", "category": "crypto"},
+    "_crypto_stream_chacha20_ietf_keygen": {"lib": "libsodium", "purpose": "ChaCha20-IETF keygen", "category": "crypto"},
+
+    # -----------------------------------------------------------------
+    # libsodium — XChaCha20 (extended 24-byte nonce)
+    # -----------------------------------------------------------------
+    "_crypto_stream_xchacha20": {"lib": "libsodium", "purpose": "XChaCha20 stream cipher (24-byte nonce)", "category": "crypto"},
+    "_crypto_stream_xchacha20_xor": {"lib": "libsodium", "purpose": "XChaCha20 XOR encrypt", "category": "crypto"},
+    "_crypto_stream_xchacha20_xor_ic": {"lib": "libsodium", "purpose": "XChaCha20 XOR with initial counter", "category": "crypto"},
+    "_crypto_stream_xchacha20_keygen": {"lib": "libsodium", "purpose": "XChaCha20 keygen", "category": "crypto"},
+    "_crypto_core_hchacha20": {"lib": "libsodium", "purpose": "HChaCha20 core (XChaCha20 subkey derivation)", "category": "crypto"},
+
+    # -----------------------------------------------------------------
+    # libsodium — Salsa20 / XSalsa20 (Bernstein original)
+    # -----------------------------------------------------------------
+    "_crypto_stream_salsa20": {"lib": "libsodium", "purpose": "Salsa20 stream cipher (8-byte nonce)", "category": "crypto"},
+    "_crypto_stream_salsa20_xor": {"lib": "libsodium", "purpose": "Salsa20 XOR encrypt", "category": "crypto"},
+    "_crypto_stream_salsa20_xor_ic": {"lib": "libsodium", "purpose": "Salsa20 XOR with initial counter", "category": "crypto"},
+    "_crypto_stream_salsa20_keygen": {"lib": "libsodium", "purpose": "Salsa20 keygen", "category": "crypto"},
+    "_crypto_stream_xsalsa20": {"lib": "libsodium", "purpose": "XSalsa20 stream cipher (24-byte nonce)", "category": "crypto"},
+    "_crypto_stream_xsalsa20_xor": {"lib": "libsodium", "purpose": "XSalsa20 XOR encrypt", "category": "crypto"},
+    "_crypto_stream_xsalsa20_xor_ic": {"lib": "libsodium", "purpose": "XSalsa20 XOR with initial counter", "category": "crypto"},
+    "_crypto_stream_xsalsa20_keygen": {"lib": "libsodium", "purpose": "XSalsa20 keygen", "category": "crypto"},
+    "_crypto_core_salsa20": {"lib": "libsodium", "purpose": "Salsa20 core hash function", "category": "crypto"},
+    "_crypto_core_hsalsa20": {"lib": "libsodium", "purpose": "HSalsa20 core (XSalsa20 subkey derivation)", "category": "crypto"},
+    "_crypto_core_salsa2012": {"lib": "libsodium", "purpose": "Salsa20/12 reduced-round core", "category": "crypto"},
+    "_crypto_core_salsa208": {"lib": "libsodium", "purpose": "Salsa20/8 reduced-round core", "category": "crypto"},
+
+    # -----------------------------------------------------------------
+    # libsodium — Poly1305 (one-time authenticator)
+    # -----------------------------------------------------------------
+    "_crypto_onetimeauth": {"lib": "libsodium", "purpose": "Poly1305 one-time MAC", "category": "crypto"},
+    "_crypto_onetimeauth_verify": {"lib": "libsodium", "purpose": "Poly1305 MAC verify", "category": "crypto"},
+    "_crypto_onetimeauth_init": {"lib": "libsodium", "purpose": "Poly1305 multi-part init", "category": "crypto"},
+    "_crypto_onetimeauth_update": {"lib": "libsodium", "purpose": "Poly1305 multi-part update", "category": "crypto"},
+    "_crypto_onetimeauth_final": {"lib": "libsodium", "purpose": "Poly1305 multi-part finalize", "category": "crypto"},
+    "_crypto_onetimeauth_keygen": {"lib": "libsodium", "purpose": "Poly1305 keygen (32-byte key)", "category": "crypto"},
+    "_crypto_onetimeauth_poly1305": {"lib": "libsodium", "purpose": "Poly1305 one-time MAC (named primitive)", "category": "crypto"},
+    "_crypto_onetimeauth_poly1305_verify": {"lib": "libsodium", "purpose": "Poly1305 verify (named primitive)", "category": "crypto"},
+
+    # -----------------------------------------------------------------
+    # libsodium — Blake2b multi-part / streaming variants beyond _crypto_generichash
+    # -----------------------------------------------------------------
+    "_crypto_generichash_keygen": {"lib": "libsodium", "purpose": "Blake2b key generation", "category": "crypto"},
+    "_crypto_generichash_blake2b": {"lib": "libsodium", "purpose": "Blake2b hash (named primitive)", "category": "crypto"},
+    "_crypto_generichash_blake2b_init": {"lib": "libsodium", "purpose": "Blake2b multi-part init (named)", "category": "crypto"},
+    "_crypto_generichash_blake2b_update": {"lib": "libsodium", "purpose": "Blake2b multi-part update (named)", "category": "crypto"},
+    "_crypto_generichash_blake2b_final": {"lib": "libsodium", "purpose": "Blake2b multi-part finalize (named)", "category": "crypto"},
+    "_crypto_generichash_blake2b_salt_personal": {"lib": "libsodium", "purpose": "Blake2b with salt+personalization", "category": "crypto"},
+    "_crypto_generichash_blake2b_init_salt_personal": {"lib": "libsodium", "purpose": "Blake2b init with salt+personal", "category": "crypto"},
+
+    # -----------------------------------------------------------------
+    # libsodium — AEAD ChaCha20-Poly1305 helpers (state init / detached) —
+    # ana _encrypt/_decrypt zaten libsodium dict'inde; eksik yardimcilar:
+    # -----------------------------------------------------------------
+    "_crypto_aead_chacha20poly1305_keygen": {"lib": "libsodium", "purpose": "ChaCha20-Poly1305 key generation", "category": "crypto"},
+    "_crypto_aead_chacha20poly1305_ietf_keygen": {"lib": "libsodium", "purpose": "ChaCha20-Poly1305 IETF keygen", "category": "crypto"},
+    "_crypto_aead_chacha20poly1305_encrypt_detached": {"lib": "libsodium", "purpose": "ChaCha20-Poly1305 detached encrypt", "category": "crypto"},
+    "_crypto_aead_chacha20poly1305_decrypt_detached": {"lib": "libsodium", "purpose": "ChaCha20-Poly1305 detached decrypt", "category": "crypto"},
+    "_crypto_aead_chacha20poly1305_ietf_encrypt_detached": {"lib": "libsodium", "purpose": "ChaCha20-Poly1305 IETF detached encrypt", "category": "crypto"},
+    "_crypto_aead_chacha20poly1305_ietf_decrypt_detached": {"lib": "libsodium", "purpose": "ChaCha20-Poly1305 IETF detached decrypt", "category": "crypto"},
+    "_crypto_aead_xchacha20poly1305_ietf_keygen": {"lib": "libsodium", "purpose": "XChaCha20-Poly1305 IETF keygen", "category": "crypto"},
+    "_crypto_aead_xchacha20poly1305_ietf_encrypt_detached": {"lib": "libsodium", "purpose": "XChaCha20-Poly1305 detached encrypt", "category": "crypto"},
+    "_crypto_aead_xchacha20poly1305_ietf_decrypt_detached": {"lib": "libsodium", "purpose": "XChaCha20-Poly1305 detached decrypt", "category": "crypto"},
+    "_crypto_secretstream_xchacha20poly1305_init_push": {"lib": "libsodium", "purpose": "XChaCha20-Poly1305 secretstream init push", "category": "crypto"},
+    "_crypto_secretstream_xchacha20poly1305_init_pull": {"lib": "libsodium", "purpose": "XChaCha20-Poly1305 secretstream init pull", "category": "crypto"},
+    "_crypto_secretstream_xchacha20poly1305_push": {"lib": "libsodium", "purpose": "XChaCha20-Poly1305 secretstream push", "category": "crypto"},
+    "_crypto_secretstream_xchacha20poly1305_pull": {"lib": "libsodium", "purpose": "XChaCha20-Poly1305 secretstream pull", "category": "crypto"},
+    "_crypto_secretstream_xchacha20poly1305_keygen": {"lib": "libsodium", "purpose": "XChaCha20-Poly1305 secretstream keygen", "category": "crypto"},
+    "_crypto_secretstream_xchacha20poly1305_rekey": {"lib": "libsodium", "purpose": "XChaCha20-Poly1305 secretstream rekey", "category": "crypto"},
+
+    # -----------------------------------------------------------------
+    # OpenSSL / BoringSSL — EVP fetch + low-level ChaCha20 internals
+    # _EVP_chacha20_poly1305 zaten OpenSSL dict'inde, eklenmedi.
+    # -----------------------------------------------------------------
+    "_EVP_chacha20": {"lib": "openssl", "purpose": "ChaCha20 EVP cipher (no Poly1305)", "category": "crypto"},
+    "_ChaCha20_ctr32": {"lib": "openssl", "purpose": "ChaCha20 CTR32 low-level loop", "category": "crypto"},
+    "_ChaCha20_ctr32_avx512": {"lib": "openssl", "purpose": "ChaCha20 AVX-512 CTR32", "category": "crypto"},
+    "_ChaCha20_ctr32_neon": {"lib": "openssl", "purpose": "ChaCha20 ARM NEON CTR32", "category": "crypto"},
+    "_chacha20_poly1305_init_key": {"lib": "openssl", "purpose": "ChaCha20-Poly1305 internal init key", "category": "crypto"},
+    "_chacha20_poly1305_cipher": {"lib": "openssl", "purpose": "ChaCha20-Poly1305 internal cipher", "category": "crypto"},
+    "_Poly1305_Init": {"lib": "openssl", "purpose": "Poly1305 init (low-level)", "category": "crypto"},
+    "_Poly1305_Update": {"lib": "openssl", "purpose": "Poly1305 update (low-level)", "category": "crypto"},
+    "_Poly1305_Final": {"lib": "openssl", "purpose": "Poly1305 finalize (low-level)", "category": "crypto"},
+    "_poly1305_blocks": {"lib": "openssl", "purpose": "Poly1305 block processing inner loop", "category": "crypto"},
+    "_poly1305_emit": {"lib": "openssl", "purpose": "Poly1305 tag emit", "category": "crypto"},
+    "_poly1305_init_base2_44": {"lib": "openssl", "purpose": "Poly1305 base 2^44 init (vectorized)", "category": "crypto"},
+    "_poly1305_blocks_avx": {"lib": "openssl", "purpose": "Poly1305 AVX block loop", "category": "crypto"},
+    "_poly1305_blocks_avx2": {"lib": "openssl", "purpose": "Poly1305 AVX2 block loop", "category": "crypto"},
+    "_poly1305_blocks_avx512": {"lib": "openssl", "purpose": "Poly1305 AVX-512 block loop", "category": "crypto"},
+
+    # -----------------------------------------------------------------
+    # OpenSSL — Blake2 internal helpers (EVP_blake2b512/s256 zaten mevcut)
+    # -----------------------------------------------------------------
+    "_blake2b_init": {"lib": "openssl", "purpose": "Blake2b init (low-level OpenSSL)", "category": "crypto"},
+    "_blake2b_init_key": {"lib": "openssl", "purpose": "Blake2b keyed init", "category": "crypto"},
+    "_blake2b_init_param": {"lib": "openssl", "purpose": "Blake2b parameterized init", "category": "crypto"},
+    "_blake2b_update": {"lib": "openssl", "purpose": "Blake2b update (low-level)", "category": "crypto"},
+    "_blake2b_final": {"lib": "openssl", "purpose": "Blake2b finalize (low-level)", "category": "crypto"},
+    "_blake2b_compress": {"lib": "openssl", "purpose": "Blake2b compression function F", "category": "crypto"},
+    "_blake2s_init": {"lib": "openssl", "purpose": "Blake2s init (low-level OpenSSL)", "category": "crypto"},
+    "_blake2s_init_key": {"lib": "openssl", "purpose": "Blake2s keyed init", "category": "crypto"},
+    "_blake2s_init_param": {"lib": "openssl", "purpose": "Blake2s parameterized init", "category": "crypto"},
+    "_blake2s_update": {"lib": "openssl", "purpose": "Blake2s update (low-level)", "category": "crypto"},
+    "_blake2s_final": {"lib": "openssl", "purpose": "Blake2s finalize (low-level)", "category": "crypto"},
+    "_blake2s_compress": {"lib": "openssl", "purpose": "Blake2s compression function F", "category": "crypto"},
+
+    # -----------------------------------------------------------------
+    # Blake3 — official C reference + BLAKE3 team libblake3
+    # -----------------------------------------------------------------
+    "_blake3_hasher_init": {"lib": "blake3", "purpose": "BLAKE3 hasher init (default)", "category": "crypto"},
+    "_blake3_hasher_init_keyed": {"lib": "blake3", "purpose": "BLAKE3 keyed hasher init (32-byte key)", "category": "crypto"},
+    "_blake3_hasher_init_derive_key": {"lib": "blake3", "purpose": "BLAKE3 KDF mode init", "category": "crypto"},
+    "_blake3_hasher_init_derive_key_raw": {"lib": "blake3", "purpose": "BLAKE3 KDF init (raw context)", "category": "crypto"},
+    "_blake3_hasher_update": {"lib": "blake3", "purpose": "BLAKE3 hasher update", "category": "crypto"},
+    "_blake3_hasher_finalize": {"lib": "blake3", "purpose": "BLAKE3 hasher finalize", "category": "crypto"},
+    "_blake3_hasher_finalize_seek": {"lib": "blake3", "purpose": "BLAKE3 finalize at offset (XOF)", "category": "crypto"},
+    "_blake3_hasher_reset": {"lib": "blake3", "purpose": "BLAKE3 hasher reset", "category": "crypto"},
+    "_blake3_compress_in_place": {"lib": "blake3", "purpose": "BLAKE3 compression in-place", "category": "crypto"},
+    "_blake3_compress_xof": {"lib": "blake3", "purpose": "BLAKE3 compression XOF mode", "category": "crypto"},
+    "_blake3_hash_many": {"lib": "blake3", "purpose": "BLAKE3 SIMD batch hash", "category": "crypto"},
+    "_blake3_hash_many_sse2": {"lib": "blake3", "purpose": "BLAKE3 SSE2 batch hash", "category": "crypto"},
+    "_blake3_hash_many_sse41": {"lib": "blake3", "purpose": "BLAKE3 SSE4.1 batch hash", "category": "crypto"},
+    "_blake3_hash_many_avx2": {"lib": "blake3", "purpose": "BLAKE3 AVX2 batch hash", "category": "crypto"},
+    "_blake3_hash_many_avx512": {"lib": "blake3", "purpose": "BLAKE3 AVX-512 batch hash", "category": "crypto"},
+    "_blake3_hash_many_neon": {"lib": "blake3", "purpose": "BLAKE3 ARM NEON batch hash", "category": "crypto"},
+
+    # -----------------------------------------------------------------
+    # Bare reference implementations — RFC 7539 / Bernstein papers / tweetnacl
+    # Bu isimler genelde lib parlatma yapilmamis ufak C projelerinde gorulur
+    # ve isim kurtarma icin kritiktir. lib alani implementasyonu belirtmek
+    # icin "reference" olarak isaretlendi.
+    # -----------------------------------------------------------------
+    "_chacha20_block": {"lib": "reference", "purpose": "ChaCha20 block function (RFC 7539 Sec 2.3)", "category": "crypto"},
+    "_chacha20_quarter_round": {"lib": "reference", "purpose": "ChaCha20 quarter round (RFC 7539 Sec 2.1)", "category": "crypto"},
+    "_chacha20_serialize": {"lib": "reference", "purpose": "ChaCha20 state serialize", "category": "crypto"},
+    "_chacha20_init_state": {"lib": "reference", "purpose": "ChaCha20 state initialization", "category": "crypto"},
+    "_chacha20_encrypt": {"lib": "reference", "purpose": "ChaCha20 encrypt (reference)", "category": "crypto"},
+    "_chacha20_xor": {"lib": "reference", "purpose": "ChaCha20 keystream XOR", "category": "crypto"},
+    "_chacha_block": {"lib": "reference", "purpose": "ChaCha block function (Bernstein original)", "category": "crypto"},
+    "_chacha_keystream": {"lib": "reference", "purpose": "ChaCha keystream generator", "category": "crypto"},
+    "_hchacha20": {"lib": "reference", "purpose": "HChaCha20 subkey derivation (XChaCha20 helper)", "category": "crypto"},
+    "_xchacha20_block": {"lib": "reference", "purpose": "XChaCha20 block function", "category": "crypto"},
+    "_xchacha20_encrypt": {"lib": "reference", "purpose": "XChaCha20 encrypt (reference)", "category": "crypto"},
+
+    "_salsa20_block": {"lib": "reference", "purpose": "Salsa20 block function (Bernstein)", "category": "crypto"},
+    "_salsa20_word_specification": {"lib": "reference", "purpose": "Salsa20 word specification (Bernstein paper)", "category": "crypto"},
+    "_s20_quarterround": {"lib": "reference", "purpose": "Salsa20 quarter round", "category": "crypto"},
+    "_s20_rowround": {"lib": "reference", "purpose": "Salsa20 row round", "category": "crypto"},
+    "_s20_columnround": {"lib": "reference", "purpose": "Salsa20 column round", "category": "crypto"},
+    "_s20_doubleround": {"lib": "reference", "purpose": "Salsa20 double round", "category": "crypto"},
+    "_s20_hash": {"lib": "reference", "purpose": "Salsa20 core hash", "category": "crypto"},
+    "_s20_expand16": {"lib": "reference", "purpose": "Salsa20 expand for 16-byte key", "category": "crypto"},
+    "_s20_expand32": {"lib": "reference", "purpose": "Salsa20 expand for 32-byte key", "category": "crypto"},
+    "_salsa20_encrypt": {"lib": "reference", "purpose": "Salsa20 encrypt (reference)", "category": "crypto"},
+    "_xsalsa20_encrypt": {"lib": "reference", "purpose": "XSalsa20 encrypt (reference)", "category": "crypto"},
+    "_hsalsa20": {"lib": "reference", "purpose": "HSalsa20 subkey derivation (XSalsa20 helper)", "category": "crypto"},
+
+    "_poly1305_init": {"lib": "reference", "purpose": "Poly1305 init (RFC 7539 Sec 2.5 reference)", "category": "crypto"},
+    "_poly1305_update": {"lib": "reference", "purpose": "Poly1305 update (reference)", "category": "crypto"},
+    "_poly1305_finish": {"lib": "reference", "purpose": "Poly1305 finalize (reference)", "category": "crypto"},
+    "_poly1305_mac": {"lib": "reference", "purpose": "Poly1305 one-shot MAC (reference)", "category": "crypto"},
+    "_poly1305_auth": {"lib": "reference", "purpose": "Poly1305 auth one-shot (NaCl/tweetnacl naming)", "category": "crypto"},
+    "_poly1305_verify": {"lib": "reference", "purpose": "Poly1305 MAC verify (reference)", "category": "crypto"},
+    "_poly1305_aead_seal": {"lib": "reference", "purpose": "ChaCha20-Poly1305 AEAD seal (reference)", "category": "crypto"},
+    "_poly1305_aead_open": {"lib": "reference", "purpose": "ChaCha20-Poly1305 AEAD open (reference)", "category": "crypto"},
+    "_poly1305_pad": {"lib": "reference", "purpose": "Poly1305 16-byte padding helper", "category": "crypto"},
+
+    # Bare Blake2/Blake3 reference variants (RFC 7693 / BLAKE3 spec)
+    "_blake2b": {"lib": "reference", "purpose": "Blake2b one-shot (RFC 7693 reference)", "category": "crypto"},
+    "_blake2s": {"lib": "reference", "purpose": "Blake2s one-shot (RFC 7693 reference)", "category": "crypto"},
+    "_blake2bp": {"lib": "reference", "purpose": "Blake2bp parallel variant", "category": "crypto"},
+    "_blake2sp": {"lib": "reference", "purpose": "Blake2sp parallel variant", "category": "crypto"},
+    "_blake2b_final_keyed": {"lib": "reference", "purpose": "Blake2b keyed finalize (reference)", "category": "crypto"},
+    "_blake3": {"lib": "reference", "purpose": "Blake3 one-shot hash (reference)", "category": "crypto"},
+    "_blake3_keyed": {"lib": "reference", "purpose": "Blake3 keyed hash (reference)", "category": "crypto"},
+    "_blake3_derive_key": {"lib": "reference", "purpose": "Blake3 KDF (reference)", "category": "crypto"},
+}
+
+
+# ---------------------------------------------------------------------------
 # Dispatcher hook — sigdb_builtin.get_category("crypto") bu dict'i alir.
 # Anahtar isimleri signature_db.py'deki orijinal dict adlariyla uyumludur
-# (ornek: "openssl_signatures" <-> _OPENSSL_SIGNATURES).
+# (ornek: "openssl_signatures" <-> _OPENSSL_SIGNATURES). "modern_crypto_signatures"
+# v1.13 Wave 1 ekleme; signature_db override blokunu degistirmedigimiz icin
+# legacy yola dahil olmaz, ama get_category("crypto") uzerinden erisilebilir.
 # ---------------------------------------------------------------------------
 SIGNATURES: dict[str, Any] = {
     "openssl_signatures": _OPENSSL_SIGNATURES_DATA,
@@ -749,6 +953,7 @@ SIGNATURES: dict[str, Any] = {
     "mbedtls_signatures": _MBEDTLS_SIGNATURES_DATA,
     "wincrypto_signatures": _WINCRYPTO_SIGNATURES_DATA,
     "findcrypt_constants": _FINDCRYPT_CONSTANTS_DATA,
+    "modern_crypto_signatures": _MODERN_CRYPTO_SIGNATURES_DATA,
 }
 
 
