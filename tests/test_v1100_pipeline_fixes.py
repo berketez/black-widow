@@ -568,8 +568,10 @@ class TestFinalizeConvergenceReasonInStats:
         from karadul.pipeline.steps.finalize import FinalizeStep
 
         pc = MagicMock()
-        pc.metadata = {"artifacts_pending": {"x": "p"}}
+        pc.metadata = {}
         ctx = StepContext(pipeline_context=pc)
+        # v1.14.0 Dalga 0: produce_artifact ile yeni kanala yaz
+        ctx.produce_artifact("x", "p")
         ctx._write_artifacts({
             "deep_tracing_result": {},
             "engineering_analysis_result": None,
@@ -587,8 +589,9 @@ class TestFinalizeConvergenceReasonInStats:
         """convergence_reason artifact'i yoksa 'unknown' olarak kaydedilir."""
         from karadul.pipeline.steps.finalize import FinalizeStep
 
+        # v1.14.0 Dalga 0: artifacts_pending mirror'i kaldirildi
         pc = MagicMock()
-        pc.metadata = {"artifacts_pending": {}}
+        pc.metadata = {}
         ctx = StepContext(pipeline_context=pc)
         ctx._write_artifacts({
             "deep_tracing_result": {},

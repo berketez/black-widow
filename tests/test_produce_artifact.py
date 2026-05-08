@@ -1,6 +1,9 @@
-"""v1.11.0 Phase 1C — StepContext.produce_artifact() testleri.
+"""StepContext.produce_artifact() testleri.
 
-artifacts_pending shim'inden produce_artifact API'sine gecis.
+v1.11.0 Phase 1C: produce_artifact API tanitildi (artifacts_pending shim
+ile birlikte).
+v1.14.0 Dalga 0: artifacts_pending mirror'i tamamen kaldirildi; bu
+testler yalnizca yeni kanal (`ctx.stage_artifacts`) davranisini dogrular.
 """
 
 from __future__ import annotations
@@ -44,18 +47,20 @@ class TestBasicProduce:
         ctx.produce_artifact("foo", "value_foo")
         assert ctx.stage_artifacts["foo"] == "value_foo"
 
-    def test_mirrors_to_metadata(self, ctx, fake_pc) -> None:
-        """Geriye uyumluluk: pc.metadata['artifacts_pending']'e de yazar."""
+    def test_does_not_touch_pc_metadata(self, ctx, fake_pc) -> None:
+        """v1.14.0 Dalga 0: produce_artifact pc.metadata'ya YAZMAZ."""
         ctx.produce_artifact("bar", Path("/tmp/bar.json"))
-        assert "artifacts_pending" in fake_pc.metadata
-        assert fake_pc.metadata["artifacts_pending"]["bar"] == Path("/tmp/bar.json")
+        # Eski mirror artik yok — metadata bos kalmali
+        assert "artifacts_pending" not in fake_pc.metadata
 
-    def test_none_metadata_initialized(self) -> None:
+    def test_works_with_none_metadata(self) -> None:
+        """pc.metadata None olsa bile produce_artifact patlamamali."""
         pc = MagicMock()
         pc.metadata = None
         ctx = StepContext(pipeline_context=pc)
         ctx.produce_artifact("x", 42)
-        assert pc.metadata["artifacts_pending"]["x"] == 42
+        # Yalnizca stage_artifacts'a yazilmali
+        assert ctx.stage_artifacts["x"] == 42
 
     def test_multiple_artifacts(self, ctx) -> None:
         ctx.produce_artifact("a", 1)
@@ -141,8 +146,9 @@ class TestFinalizeReadsStageArtifacts:
         assert sr.success is True
         assert sr.artifacts["my_output"] == Path("/tmp/output.json")
 
-    def test_finalize_legacy_fallback_still_works(self, fake_pc) -> None:
-        """Eski shim: sadece pc.metadata'dan gelse bile finalize okur."""
+    def test_finalize_ignores_legacy_metadata_pending(self, fake_pc) -> None:
+        """v1.14.0 Dalga 0: pc.metadata['artifacts_pending'] artik OKUNMAZ."""
+        # Eski mirror ile yazilmis bir key — artik yok sayilmali
         fake_pc.metadata = {"artifacts_pending": {"legacy_key": "legacy_val"}}
         ctx = StepContext(pipeline_context=fake_pc)
         ctx._write_artifacts({
@@ -154,13 +160,14 @@ class TestFinalizeReadsStageArtifacts:
         })
 
         out = FinalizeStep().run(ctx)
-        assert out["stage_result"].artifacts["legacy_key"] == "legacy_val"
+        # Legacy key StageResult'a sizmamali
+        assert "legacy_key" not in out["stage_result"].artifacts
 
-    def test_finalize_new_channel_wins_on_conflict(self, fake_pc) -> None:
-        """Ayni key hem stage_artifacts hem legacy'de varsa yeni kanal kazanir."""
-        fake_pc.metadata = {"artifacts_pending": {"k": "old_value"}}
+    def test_finalize_only_uses_stage_artifacts(self, fake_pc) -> None:
+        """v1.14.0 Dalga 0: yalnizca produce_artifact ile yazilan kanal kullanilir."""
+        # Legacy metadata'da farkli bir deger olsa bile yok sayilmali
+        fake_pc.metadata = {"artifacts_pending": {"k": "legacy_value"}}
         ctx = StepContext(pipeline_context=fake_pc)
-        # produce_artifact mirror yazdigi icin "old_value" uzerine "new_value" yazar
         ctx.produce_artifact("k", "new_value")
         ctx._write_artifacts({
             "deep_tracing_result": {},

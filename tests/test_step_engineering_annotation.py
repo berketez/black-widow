@@ -73,4 +73,4 @@ class TestAnnotatorSuccess:
         expected = fake_pc.workspace.get_stage_dir.return_value / "annotated"
         assert out["engineering_annotation_decompiled_dir"] == expected
         assert base_ctx.stats["block_annotations"] == 5
-        assert "annotated_sources" in fake_pc.metadata["artifacts_pending"]
+        assert "annotated_sources" in base_ctx.stage_artifacts

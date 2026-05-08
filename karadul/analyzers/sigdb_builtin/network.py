@@ -436,9 +436,94 @@ _NETWORKING_EXT_SIGNATURES_DATA: dict[str, dict[str, str]] = {
 
 
 # ---------------------------------------------------------------------------
+# c-ares (26 entry) — async DNS resolver (Mach-O leading-underscore semboller)
+# Kaynak: signature_db.py legacy ``_CARES_SIGNATURES`` (v1.14 Dalga 0 tasindi)
+# ---------------------------------------------------------------------------
+_CARES_SIGNATURES_DATA: dict[str, dict[str, str]] = {
+    "_ares_init": {"lib": "c-ares", "purpose": "init resolver channel", "category": "network"},
+    "_ares_init_options": {"lib": "c-ares", "purpose": "init resolver with options", "category": "network"},
+    "_ares_destroy": {"lib": "c-ares", "purpose": "destroy resolver channel", "category": "network"},
+    "_ares_gethostbyname": {"lib": "c-ares", "purpose": "async DNS lookup", "category": "network"},
+    "_ares_gethostbyaddr": {"lib": "c-ares", "purpose": "async reverse DNS", "category": "network"},
+    "_ares_getaddrinfo": {"lib": "c-ares", "purpose": "async getaddrinfo", "category": "network"},
+    "_ares_freeaddrinfo": {"lib": "c-ares", "purpose": "free ares addrinfo", "category": "network"},
+    "_ares_process": {"lib": "c-ares", "purpose": "process pending queries", "category": "network"},
+    "_ares_process_fd": {"lib": "c-ares", "purpose": "process queries on fd", "category": "network"},
+    "_ares_send": {"lib": "c-ares", "purpose": "send raw DNS query", "category": "network"},
+    "_ares_query": {"lib": "c-ares", "purpose": "send DNS query by type", "category": "network"},
+    "_ares_search": {"lib": "c-ares", "purpose": "DNS search with domain list", "category": "network"},
+    "_ares_cancel": {"lib": "c-ares", "purpose": "cancel pending queries", "category": "network"},
+    "_ares_strerror": {"lib": "c-ares", "purpose": "error string lookup", "category": "network"},
+    "_ares_free_string": {"lib": "c-ares", "purpose": "free ares string", "category": "network"},
+    "_ares_set_socket_callback": {"lib": "c-ares", "purpose": "set socket creation callback", "category": "network"},
+    "_ares_set_socket_configure_callback": {"lib": "c-ares", "purpose": "set socket config callback", "category": "network"},
+    "_ares_getsock": {"lib": "c-ares", "purpose": "get active socket fds", "category": "network"},
+    "_ares_timeout": {"lib": "c-ares", "purpose": "get query timeout value", "category": "network"},
+    "_ares_expand_name": {"lib": "c-ares", "purpose": "expand compressed DNS name", "category": "network"},
+    "_ares_parse_a_reply": {"lib": "c-ares", "purpose": "parse A record reply", "category": "network"},
+    "_ares_parse_aaaa_reply": {"lib": "c-ares", "purpose": "parse AAAA record reply", "category": "network"},
+    "_ares_parse_ptr_reply": {"lib": "c-ares", "purpose": "parse PTR record reply", "category": "network"},
+    "_ares_parse_mx_reply": {"lib": "c-ares", "purpose": "parse MX record reply", "category": "network"},
+    "_ares_parse_txt_reply": {"lib": "c-ares", "purpose": "parse TXT record reply", "category": "network"},
+    "_ares_parse_srv_reply": {"lib": "c-ares", "purpose": "parse SRV record reply", "category": "network"},
+}
+
+
+# ---------------------------------------------------------------------------
+# gRPC C core (39 entry) — channel/call/server/completion-queue/byte-buffer/
+#   metadata/credentials.
+# Kaynak: signature_db.py legacy ``_GRPC_SIGNATURES`` (v1.14 Dalga 0 tasindi)
+# ---------------------------------------------------------------------------
+_GRPC_SIGNATURES_DATA: dict[str, dict[str, str]] = {
+    "_grpc_init": {"lib": "grpc", "purpose": "gRPC library init", "category": "network"},
+    "_grpc_shutdown": {"lib": "grpc", "purpose": "gRPC library shutdown", "category": "network"},
+    "_grpc_channel_create": {"lib": "grpc", "purpose": "create gRPC channel", "category": "network"},
+    "_grpc_channel_destroy": {"lib": "grpc", "purpose": "destroy gRPC channel", "category": "network"},
+    "_grpc_channel_check_connectivity_state": {"lib": "grpc", "purpose": "check channel connectivity", "category": "network"},
+    "_grpc_channel_watch_connectivity_state": {"lib": "grpc", "purpose": "watch connectivity changes", "category": "network"},
+    "_grpc_insecure_channel_create": {"lib": "grpc", "purpose": "create insecure channel", "category": "network"},
+    "_grpc_ssl_channel_create": {"lib": "grpc", "purpose": "create SSL channel", "category": "network"},
+    "_grpc_call_start_batch": {"lib": "grpc", "purpose": "start RPC operation batch", "category": "network"},
+    "_grpc_call_cancel": {"lib": "grpc", "purpose": "cancel RPC call", "category": "network"},
+    "_grpc_call_cancel_with_status": {"lib": "grpc", "purpose": "cancel RPC with status", "category": "network"},
+    "_grpc_call_unref": {"lib": "grpc", "purpose": "release RPC call ref", "category": "network"},
+    "_grpc_call_ref": {"lib": "grpc", "purpose": "retain RPC call ref", "category": "network"},
+    "_grpc_call_get_peer": {"lib": "grpc", "purpose": "get RPC peer address", "category": "network"},
+    "_grpc_completion_queue_create_for_next": {"lib": "grpc", "purpose": "create completion queue (next)", "category": "network"},
+    "_grpc_completion_queue_create_for_pluck": {"lib": "grpc", "purpose": "create completion queue (pluck)", "category": "network"},
+    "_grpc_completion_queue_next": {"lib": "grpc", "purpose": "poll completion queue", "category": "network"},
+    "_grpc_completion_queue_pluck": {"lib": "grpc", "purpose": "pluck completion event", "category": "network"},
+    "_grpc_completion_queue_shutdown": {"lib": "grpc", "purpose": "shutdown completion queue", "category": "network"},
+    "_grpc_completion_queue_destroy": {"lib": "grpc", "purpose": "destroy completion queue", "category": "network"},
+    "_grpc_server_create": {"lib": "grpc", "purpose": "create gRPC server", "category": "network"},
+    "_grpc_server_add_insecure_http2_port": {"lib": "grpc", "purpose": "add insecure server port", "category": "network"},
+    "_grpc_server_add_secure_http2_port": {"lib": "grpc", "purpose": "add secure server port", "category": "network"},
+    "_grpc_server_start": {"lib": "grpc", "purpose": "start gRPC server", "category": "network"},
+    "_grpc_server_shutdown_and_notify": {"lib": "grpc", "purpose": "shutdown gRPC server", "category": "network"},
+    "_grpc_server_cancel_all_calls": {"lib": "grpc", "purpose": "cancel all server calls", "category": "network"},
+    "_grpc_server_destroy": {"lib": "grpc", "purpose": "destroy gRPC server", "category": "network"},
+    "_grpc_server_request_call": {"lib": "grpc", "purpose": "request incoming RPC", "category": "network"},
+    "_grpc_byte_buffer_reader_init": {"lib": "grpc", "purpose": "init byte buffer reader", "category": "network"},
+    "_grpc_byte_buffer_reader_next": {"lib": "grpc", "purpose": "read next byte buffer slice", "category": "network"},
+    "_grpc_byte_buffer_reader_destroy": {"lib": "grpc", "purpose": "destroy byte buffer reader", "category": "network"},
+    "_grpc_byte_buffer_destroy": {"lib": "grpc", "purpose": "destroy byte buffer", "category": "network"},
+    "_grpc_byte_buffer_length": {"lib": "grpc", "purpose": "byte buffer length", "category": "network"},
+    "_grpc_raw_byte_buffer_create": {"lib": "grpc", "purpose": "create raw byte buffer", "category": "network"},
+    "_grpc_metadata_array_init": {"lib": "grpc", "purpose": "init metadata array", "category": "network"},
+    "_grpc_metadata_array_destroy": {"lib": "grpc", "purpose": "destroy metadata array", "category": "network"},
+    "_grpc_ssl_credentials_create": {"lib": "grpc", "purpose": "create SSL credentials", "category": "network"},
+    "_grpc_composite_channel_credentials_create": {"lib": "grpc", "purpose": "create composite credentials", "category": "network"},
+    "_grpc_google_default_credentials_create": {"lib": "grpc", "purpose": "Google default credentials", "category": "network"},
+}
+
+
+# ---------------------------------------------------------------------------
 # Dispatcher hook — sigdb_builtin.get_category("network") bu dict'i alir.
 # Anahtar isimleri signature_db.py'deki orijinal dict adlariyla uyumludur
 # (ornek: "libcurl_signatures" <-> _LIBCURL_SIGNATURES).
+#
+# v1.14 Dalga 0: ``cares`` + ``grpc`` alt-anahtarlari eklendi (legacy
+# ``_CARES_SIGNATURES`` ve ``_GRPC_SIGNATURES`` tek kaynaga tasindi).
 # ---------------------------------------------------------------------------
 SIGNATURES: dict[str, Any] = {
     "libcurl_signatures": _LIBCURL_SIGNATURES_DATA,
@@ -448,6 +533,8 @@ SIGNATURES: dict[str, Any] = {
     "macos_networking_signatures": _MACOS_NETWORKING_SIGNATURES_DATA,
     "apple_network_framework_signatures": _APPLE_NETWORK_FRAMEWORK_SIGNATURES_DATA,
     "networking_ext_signatures": _NETWORKING_EXT_SIGNATURES_DATA,
+    "cares": _CARES_SIGNATURES_DATA,
+    "grpc": _GRPC_SIGNATURES_DATA,
 }
 
 

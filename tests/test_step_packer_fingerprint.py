@@ -159,8 +159,8 @@ class TestUPXMock:
         cats = base_ctx.stats["packer_categories"]
         assert cats["compressor"] == 1
         assert cats["vm-protector"] == 1
-        # produce_artifact mirror
-        assert "packer_fingerprints" in fake_pc.metadata["artifacts_pending"]
+        # produce_artifact stage_artifacts kanali
+        assert "packer_fingerprints" in base_ctx.stage_artifacts
 
 
 class TestImportError:

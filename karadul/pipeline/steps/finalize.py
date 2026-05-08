@@ -13,7 +13,7 @@ import time
 from typing import Any
 
 from karadul.core.pipeline import StageResult
-from karadul.pipeline.context import StepContext, _warn_legacy_artifacts_pending
+from karadul.pipeline.context import StepContext
 from karadul.pipeline.registry import Step, register_step
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,6 @@ class FinalizeStep(Step):
     """Pipeline sonu: stats ozetle, StageResult olustur."""
 
     def run(self, ctx: StepContext) -> dict[str, Any]:
-        pc = ctx.pipeline_context
         stage_name = ctx.artifacts.get(
             "__stage_name", "binary_reconstruction",
         )
@@ -48,20 +47,10 @@ class FinalizeStep(Step):
             if pipeline_start is not None else 0.0
         )
 
-        # v1.11.0 Phase 1C: Artifact'lar iki kanaldan gelebilir:
-        #   1. ctx.stage_artifacts — produce_artifact() ile yayilan (yeni yol)
-        #   2. pc.metadata["artifacts_pending"] — eski shim (stages.py +
-        #      geriye uyumluluk mirror'i)
-        # Yeni yol one cikarilir; eski yol fallback. v1.13.0'da (2) kalkacak.
-        # v1.12.0: legacy_pending kullanildiginda DeprecationWarning verilir.
+        # v1.14.0 Dalga 0: artifacts_pending mirror'i tamamen kaldirildi.
+        # Stage artifact'lari yalnizca ctx.stage_artifacts'tan okunur
+        # (produce_artifact() ile yazilan yeni kanal).
         artifacts: dict = dict(ctx.stage_artifacts)
-        legacy_pending = (pc.metadata or {}).get("artifacts_pending", {})
-        if legacy_pending:
-            _warn_legacy_artifacts_pending(
-                "finalize.py legacy mirror fallback (v1.13'te kalkacak)",
-            )
-            for key, value in legacy_pending.items():
-                artifacts.setdefault(key, value)
 
         errors = list(ctx.errors)
         stats = dict(ctx.stats)

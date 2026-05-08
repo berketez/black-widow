@@ -674,20 +674,40 @@ _GDI32_SIGNATURES_DATA: dict[str, dict[str, str]] = {
 
 
 # ---------------------------------------------------------------------------
+# Turev anahtar — user32 + gdi32 birlesik dict (legacy alias muadili).
+# v1.14 Dalga 0 cleanup: signature_db.py icindeki
+# ``_WIN32_USER32_GDI32_SIGNATURES = {**_WIN32_USER32_SIGNATURES,
+# **_WIN32_GDI32_SIGNATURES}`` legacy turevi tek kaynaga tasindi. Boylece
+# A-DELETE sonrasi 3 legacy dict'in sonuncusu (user32_gdi32 alias'i) da
+# silindi; signature_db.py registry'si dogrudan
+# _BUILTIN_WINDOWS_GUI_SIGNATURES["win32_user32_gdi32"] kullanir.
+#
+# Cakisma yok (user32 ve gdi32 anahtar kumeleri ayrik); merge boyutu
+# tam olarak len(user32) + len(gdi32) olur. dict.update SIRASI yine de
+# sabit (user32 once, gdi32 sonra) — entry icerigi her iki halde de ayni
+# (lib/category disjoint).
+# ---------------------------------------------------------------------------
+_WIN32_USER32_GDI32_SIGNATURES_DATA: dict[str, dict[str, str]] = {
+    **_USER32_SIGNATURES_DATA,
+    **_GDI32_SIGNATURES_DATA,
+}
+
+
+# ---------------------------------------------------------------------------
 # Dispatcher hook — signature_db.py uc alt dict'i isme gore import eder.
 # Ayni kalip pe_runtime.SIGNATURES ile ozdes (dict-of-dicts yapisi).
 # Anahtar isimleri:
-#   "user32_signatures"    <-> _USER32_SIGNATURES   (legacy'de muadil ufak parca
-#                               _WIN32_USER32_GDI32_SIGNATURES icinde)
-#   "advapi32_signatures"  <-> _ADVAPI32_SIGNATURES (legacy'de muadil ufak parca
-#                               _WIN32_ADVAPI32_SIGNATURES icinde)
-#   "gdi32_signatures"     <-> _GDI32_SIGNATURES    (legacy'de muadil ufak parca
-#                               _WIN32_USER32_GDI32_SIGNATURES icinde)
+#   "user32_signatures"      <-> _USER32_SIGNATURES_DATA
+#   "advapi32_signatures"    <-> _ADVAPI32_SIGNATURES_DATA
+#   "gdi32_signatures"       <-> _GDI32_SIGNATURES_DATA
+#   "win32_user32_gdi32"     <-> _WIN32_USER32_GDI32_SIGNATURES_DATA
+#                                (user32 + gdi32 birlesik turev, legacy alias)
 # ---------------------------------------------------------------------------
 SIGNATURES: dict[str, Any] = {
     "user32_signatures": _USER32_SIGNATURES_DATA,
     "advapi32_signatures": _ADVAPI32_SIGNATURES_DATA,
     "gdi32_signatures": _GDI32_SIGNATURES_DATA,
+    "win32_user32_gdi32": _WIN32_USER32_GDI32_SIGNATURES_DATA,
 }
 
 

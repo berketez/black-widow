@@ -107,9 +107,8 @@ class ParallelAlgoEngStep(Step):
     def _absorb_artifacts(ctx: StepContext, artifacts: dict[str, Any]) -> None:
         """Worker dict'inden gelen artifact'lari StageResult'a yay.
 
-        v1.11.0 Phase 1C: `pc.metadata['artifacts_pending']` yerine
-        `ctx.produce_artifact`. Her worker (binary_name, engineering)
-        kendi dict'inde artifact dondurur; burada birlesir.
+        Her worker (binary_name, engineering) kendi dict'inde artifact
+        dondurur; burada `ctx.produce_artifact()` araciligiyla birlesir.
         """
         if not artifacts:
             return

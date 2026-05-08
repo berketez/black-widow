@@ -9,7 +9,7 @@ Kapsam:
 - Smoke (temiz binary): findings=[] + JSON artifact yazilir
 - Mock detector findings -> stats + artifact
 - target.path fallback (binary_for_byte_match yoksa)
-- produce_artifact -> pc.metadata['artifacts_pending'] mirror
+- produce_artifact -> ctx.stage_artifacts (yeni kanal)
 """
 
 from __future__ import annotations
@@ -162,8 +162,8 @@ class TestDetectionResults:
         cats = base_ctx.stats["anti_debug_categories"]
         assert cats["windows_api"] == 1
         assert cats["ptrace"] == 1
-        # produce_artifact mirror'i pc.metadata'ya yazmali
-        assert "anti_debug_findings" in fake_pc.metadata["artifacts_pending"]
+        # produce_artifact stage_artifacts kanalina yazmali
+        assert "anti_debug_findings" in base_ctx.stage_artifacts
 
 
 class TestImportError:

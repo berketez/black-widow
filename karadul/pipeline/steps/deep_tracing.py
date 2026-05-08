@@ -166,9 +166,8 @@ class DeepTracingStep(Step):
     def _make_publish_artifact(ctx: StepContext) -> Any:
         """Artifact yayinlayici closure — produce_artifact proxy.
 
-        v1.11.0 Phase 1C: `pc.metadata['artifacts_pending']` yerine
-        `ctx.produce_artifact`. Helper fonksiyonlara (deep_tracing_helpers)
-        geriye dogru uyumlu `publish(key, value)` signature'i sunulur.
+        Helper fonksiyonlara (deep_tracing_helpers) `publish(key, value)`
+        signature'i sunulur; altta `ctx.produce_artifact()` cagrilir.
         """
         def _publish(key: str, value: Any) -> None:
             ctx.produce_artifact(key, value)

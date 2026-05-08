@@ -80,7 +80,7 @@ class TestHappyPath:
 
         assert out["algo_result"] is fake_res
         assert base_ctx.stats["algorithms_detected"] == 1
-        assert "algorithms" in fake_pc.metadata["artifacts_pending"]
+        assert "algorithms" in base_ctx.stage_artifacts
 
     def test_unsuccessful_result_not_saved(self, base_ctx, fake_pc) -> None:
         """success=False ise artifact yazilmaz."""
@@ -97,8 +97,7 @@ class TestHappyPath:
             out = AlgorithmIdStep().run(base_ctx)
 
         assert out["algo_result"] is fake_res
-        assert "artifacts_pending" not in fake_pc.metadata or \
-            "algorithms" not in fake_pc.metadata.get("artifacts_pending", {})
+        assert "algorithms" not in base_ctx.stage_artifacts
 
 
 class TestErrors:

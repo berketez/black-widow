@@ -31,6 +31,9 @@ _EXPECTED_KEYS = {
     "macos_networking_signatures",
     "apple_network_framework_signatures",
     "networking_ext_signatures",
+    # v1.14 Dalga 0 cleanup: _CARES_SIGNATURES + _GRPC_SIGNATURES tasindi
+    "cares",
+    "grpc",
 }
 
 _EXPECTED_COUNTS = {
@@ -41,6 +44,8 @@ _EXPECTED_COUNTS = {
     "macos_networking_signatures": 50,
     "apple_network_framework_signatures": 35,
     "networking_ext_signatures": 99,
+    "cares": 26,
+    "grpc": 39,
 }
 
 
@@ -54,7 +59,8 @@ def test_sigdb_builtin_network_importable() -> None:
 
     assert hasattr(network, "SIGNATURES")
     assert isinstance(network.SIGNATURES, dict)
-    assert len(network.SIGNATURES) == 7
+    # v1.14 Dalga 0: cares + grpc eklendi (7 -> 9)
+    assert len(network.SIGNATURES) == 9
 
 
 def test_sigdb_builtin_network_has_expected_keys() -> None:
@@ -73,7 +79,8 @@ def test_sigdb_builtin_network_entry_counts() -> None:
         assert actual == expected, f"{key}: expected {expected}, got {actual}"
 
     total = sum(len(v) for v in network.SIGNATURES.values())
-    assert total == 340, f"Total network entry count: expected 340, got {total}"
+    # v1.14 Dalga 0: 340 + 26 (cares) + 39 (grpc) = 405
+    assert total == 405, f"Total network entry count: expected 405, got {total}"
 
 
 # ---------------------------------------------------------------------------
@@ -86,9 +93,12 @@ def test_get_category_network_returns_data() -> None:
 
     sigs = get_category("network")
     assert isinstance(sigs, dict)
-    assert len(sigs) == 7
+    # v1.14 Dalga 0: cares + grpc eklendi (7 -> 9)
+    assert len(sigs) == 9
     assert "libcurl_signatures" in sigs
     assert "networking_ext_signatures" in sigs
+    assert "cares" in sigs
+    assert "grpc" in sigs
 
 
 # ---------------------------------------------------------------------------
@@ -110,6 +120,9 @@ def test_override_network_identity() -> None:
         "apple_network_framework_signatures"
     ]
     assert sdb._NETWORKING_EXT_SIGNATURES is builtin["networking_ext_signatures"]
+    # v1.14 Dalga 0 cleanup: cares + grpc identity
+    assert sdb._CARES_SIGNATURES is builtin["cares"]
+    assert sdb._GRPC_SIGNATURES is builtin["grpc"]
 
 
 def test_legacy_network_attributes_still_accessible() -> None:
@@ -124,6 +137,9 @@ def test_legacy_network_attributes_still_accessible() -> None:
         "_MACOS_NETWORKING_SIGNATURES",
         "_APPLE_NETWORK_FRAMEWORK_SIGNATURES",
         "_NETWORKING_EXT_SIGNATURES",
+        # v1.14 Dalga 0 cleanup
+        "_CARES_SIGNATURES",
+        "_GRPC_SIGNATURES",
     ):
         assert hasattr(sdb, attr), f"{attr} backward-compat erisimi kayboldu"
         assert len(getattr(sdb, attr)) > 0, f"{attr} bos"
@@ -141,6 +157,9 @@ _LEGACY_NETWORK_NAMES = (
     "_MACOS_NETWORKING_SIGNATURES",
     "_APPLE_NETWORK_FRAMEWORK_SIGNATURES",
     "_NETWORKING_EXT_SIGNATURES",
+    # v1.14 Dalga 0 cleanup: legacy inline literal silindi
+    "_CARES_SIGNATURES",
+    "_GRPC_SIGNATURES",
 )
 
 
@@ -162,7 +181,16 @@ def test_post_a_delete_no_inline_literal() -> None:
         '_NETWORKING_EXT_SIGNATURES: dict[str, dict[str, str]] = '
         '_BUILTIN_NETWORK_SIGNATURES["networking_ext_signatures"]'
     ) in text
-    # Inline literal blok baslangici YOK (7 hepsi icin)
+    # v1.14 Dalga 0 cleanup: cares + grpc da reference assignment
+    assert (
+        '_CARES_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_NETWORK_SIGNATURES["cares"]'
+    ) in text
+    assert (
+        '_GRPC_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_NETWORK_SIGNATURES["grpc"]'
+    ) in text
+    # Inline literal blok baslangici YOK (9 hepsi icin)
     for name in _LEGACY_NETWORK_NAMES:
         assert (
             f"{name}: dict[str, dict[str, str]] = " "{"
@@ -228,6 +256,77 @@ def test_apple_network_framework_symbol_present() -> None:
     assert any(k.startswith("_nw_") or k.startswith("nw_") for k in symbols), (
         "Apple Network.framework nw_* prefix'li bir sembol beklenir"
     )
+
+
+# ---------------------------------------------------------------------------
+# 6. v1.14 Dalga 0 cleanup — CARES + GRPC kapsama testleri
+# ---------------------------------------------------------------------------
+
+def test_cares_known_symbols_present() -> None:
+    """c-ares async DNS resolver kritik sembolleri migrate olmus."""
+    from karadul.analyzers import signature_db as sdb
+
+    cares = sdb._CARES_SIGNATURES
+    assert len(cares) == 26, f"_CARES_SIGNATURES boyutu 26 bekleniyor; {len(cares)}"
+
+    must_have = {
+        "_ares_init", "_ares_init_options", "_ares_destroy",
+        "_ares_gethostbyname", "_ares_getaddrinfo",
+        "_ares_query", "_ares_search", "_ares_strerror",
+    }
+    missing = must_have - set(cares)
+    assert not missing, f"c-ares eksik kritik semboller: {missing}"
+
+    # Lib + category etiketleri tutarli
+    entry = cares["_ares_init"]
+    assert entry["lib"] == "c-ares"
+    assert entry["category"] == "network"
+
+
+def test_grpc_known_symbols_present() -> None:
+    """gRPC C core kritik sembolleri migrate olmus."""
+    from karadul.analyzers import signature_db as sdb
+
+    grpc = sdb._GRPC_SIGNATURES
+    assert len(grpc) == 39, f"_GRPC_SIGNATURES boyutu 39 bekleniyor; {len(grpc)}"
+
+    must_have = {
+        "_grpc_init", "_grpc_shutdown",
+        "_grpc_channel_create", "_grpc_channel_destroy",
+        "_grpc_call_start_batch", "_grpc_call_cancel",
+        "_grpc_server_create", "_grpc_server_start",
+        "_grpc_completion_queue_next",
+    }
+    missing = must_have - set(grpc)
+    assert not missing, f"gRPC eksik kritik semboller: {missing}"
+
+    # Lib + category etiketleri tutarli
+    entry = grpc["_grpc_init"]
+    assert entry["lib"] == "grpc"
+    assert entry["category"] == "network"
+
+
+def test_cares_grpc_lib_labels_consistent() -> None:
+    """CARES + GRPC her entry'si dogru ``lib`` etiketi tasir."""
+    from karadul.analyzers.sigdb_builtin.network import SIGNATURES as N
+
+    bad_cares = {n: e["lib"] for n, e in N["cares"].items() if e["lib"] != "c-ares"}
+    bad_grpc = {n: e["lib"] for n, e in N["grpc"].items() if e["lib"] != "grpc"}
+    assert not bad_cares, f"cares yanlis lib etiketli entry'ler: {bad_cares}"
+    assert not bad_grpc, f"grpc yanlis lib etiketli entry'ler: {bad_grpc}"
+
+
+def test_cares_grpc_schema_fields() -> None:
+    """CARES + GRPC her entry'si lib/purpose/category alanlarina sahip."""
+    from karadul.analyzers.sigdb_builtin.network import SIGNATURES as N
+
+    required = {"lib", "purpose", "category"}
+    for bucket in ("cares", "grpc"):
+        for name, info in N[bucket].items():
+            assert isinstance(info, dict), f"{bucket}/{name}: dict degil"
+            assert required.issubset(info.keys()), (
+                f"{bucket}/{name}: eksik alan(lar) {required - info.keys()}"
+            )
 
 
 if __name__ == "__main__":

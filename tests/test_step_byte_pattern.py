@@ -108,8 +108,8 @@ class TestSuccessfulMatch:
         }
         assert base_ctx.stats["byte_pattern_matched"] == 3
         assert base_ctx.stats["byte_pattern_total_unknown"] == 5
-        # pending artifact pc.metadata'ya yazilmali
-        assert "byte_pattern_matches" in fake_pc.metadata["artifacts_pending"]
+        # produce_artifact stage_artifacts kanali
+        assert "byte_pattern_matches" in base_ctx.stage_artifacts
 
     def test_bp_errors_propagated_to_ctx(self, base_ctx) -> None:
         fake_bp_result = MagicMock()

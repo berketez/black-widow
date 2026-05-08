@@ -16,13 +16,15 @@ from karadul.pipeline.steps.finalize import FinalizeStep
 @pytest.fixture
 def fake_pc():
     pc = MagicMock()
-    pc.metadata = {"artifacts_pending": {"x": "path_x"}}
+    pc.metadata = {}
     return pc
 
 
 @pytest.fixture
 def base_ctx(fake_pc):
     ctx = StepContext(pipeline_context=fake_pc)
+    # v1.14.0 Dalga 0: artifact'lar produce_artifact ile yeni kanala yazilir
+    ctx.produce_artifact("x", "path_x")
     ctx._write_artifacts({
         "deep_tracing_result": {},
         "engineering_analysis_result": None,
@@ -54,7 +56,7 @@ class TestBasicRun:
 
 class TestEmptyArtifacts:
     def test_no_artifacts_success_false(self, fake_pc) -> None:
-        fake_pc.metadata["artifacts_pending"] = {}
+        # v1.14.0 Dalga 0: stage_artifacts bos olmali; legacy mirror yok
         ctx = StepContext(pipeline_context=fake_pc)
         ctx._write_artifacts({
             "deep_tracing_result": {},

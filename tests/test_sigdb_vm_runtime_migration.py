@@ -442,9 +442,10 @@ def test_previous_migrations_still_intact() -> None:
     # v1.13 Wave 1: 7. anahtar "modern_crypto_signatures" eklendi.
     assert len(cry) == 7
     assert len(comp) == 5
-    assert len(net) == 7
+    # v1.14 Dalga 0: net cares+grpc (7->9), gui win32_user32_gdi32 (3->4)
+    assert len(net) == 9
     assert len(pe) == 3
-    assert len(gui) == 3
+    assert len(gui) == 4
 
 
 def test_pe_runtime_override_still_active() -> None:

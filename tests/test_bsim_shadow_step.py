@@ -87,9 +87,8 @@ class TestBSimShadowDisabled:
         assert base_ctx.stats["bsim_shadow_status"] == "disabled"
         # Hicbir JSON yazilmadi (workspace.save_json cagrilmadi)
         assert not fake_pc.workspace._saved
-        # NameMerger'a sinyal gitmedi
-        assert "artifacts_pending" not in fake_pc.metadata or \
-            "bsim" not in (fake_pc.metadata.get("artifacts_pending") or {})
+        # NameMerger'a sinyal gitmedi (v1.14.0 Dalga 0: stage_artifacts'tan kontrol)
+        assert "bsim" not in base_ctx.stage_artifacts
 
 
 # --- No raw JSON --------------------------------------------------------
@@ -218,8 +217,8 @@ class TestBSimShadowWithRawMatches:
             "bsim_evidence",
             "naming_candidates_bsim",
         }
-        pending = (fake_pc.metadata or {}).get("artifacts_pending", {})
-        leaked = forbidden_keys.intersection(pending.keys())
+        # v1.14.0 Dalga 0: produce_artifact stage_artifacts'a yazar
+        leaked = forbidden_keys.intersection(base_ctx.stage_artifacts.keys())
         assert not leaked, f"Shadow mode fusion sizintisi: {leaked}"
         # Ve step artifact'larinin da NameMerger key'i yok
         assert set(base_ctx.artifacts.keys()) & forbidden_keys == set()

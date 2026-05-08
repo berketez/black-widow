@@ -36,17 +36,20 @@ def test_sigdb_builtin_windows_gui_importable() -> None:
 
     assert hasattr(windows_gui, "SIGNATURES")
     assert isinstance(windows_gui.SIGNATURES, dict)
-    assert len(windows_gui.SIGNATURES) == 3
+    # v1.14 Dalga 0: win32_user32_gdi32 turev anahtar eklendi (3 -> 4)
+    assert len(windows_gui.SIGNATURES) == 4
 
 
 def test_sigdb_builtin_windows_gui_has_expected_keys() -> None:
-    """SIGNATURES uc top-level anahtar icerir: user32/advapi32/gdi32."""
+    """SIGNATURES uc top-level anahtar + bir turev (user32+gdi32) icerir."""
     from karadul.analyzers.sigdb_builtin import windows_gui
 
     expected = {
         "user32_signatures",
         "advapi32_signatures",
         "gdi32_signatures",
+        # v1.14 Dalga 0 cleanup: legacy alias turev kaynak
+        "win32_user32_gdi32",
     }
     assert set(windows_gui.SIGNATURES.keys()) == expected
 
@@ -110,12 +113,16 @@ def test_override_windows_gui_identity() -> None:
 
 def test_override_legacy_dicts_extended() -> None:
     """Legacy `_WIN32_USER32_GDI32_SIGNATURES` + `_WIN32_ADVAPI32_SIGNATURES`
-    override sonrasi genisler (eski 25 + 20 entry'den cok daha fazla)."""
+    override sonrasi genisler.
+
+    v1.14 Dalga 0 cleanup: user32_gdi32 alias da builtin'e tasindi —
+    artik tam (user32 + gdi32) merge boyutu (404+ entry).
+    """
     from karadul.analyzers import signature_db as sdb
 
-    # Legacy _WIN32_USER32_GDI32_SIGNATURES: eski 25 entry, override sonra >200
-    assert len(sdb._WIN32_USER32_GDI32_SIGNATURES) >= 200, (
-        f"user32+gdi32 override sonrasi min 200 entry olmali; "
+    # v1.14 Dalga 0: artik full builtin user32+gdi32 (>=404)
+    assert len(sdb._WIN32_USER32_GDI32_SIGNATURES) >= 400, (
+        f"user32+gdi32 cleanup sonrasi min 400 entry olmali; "
         f"bulundu {len(sdb._WIN32_USER32_GDI32_SIGNATURES)}"
     )
     # Legacy _WIN32_ADVAPI32_SIGNATURES: eski 20 entry, override sonra >80
@@ -123,6 +130,31 @@ def test_override_legacy_dicts_extended() -> None:
         f"advapi32 override sonrasi min 80 entry olmali; "
         f"bulundu {len(sdb._WIN32_ADVAPI32_SIGNATURES)}"
     )
+
+
+def test_user32_gdi32_alias_full_coverage() -> None:
+    """v1.14 Dalga 0 cleanup: legacy alias artik tam user32+gdi32 birlesimi.
+
+    builtin'deki 4. anahtar (``win32_user32_gdi32``) ile bire bir ayni obje
+    (identity); user32 + gdi32 toplam entry sayisi (404) eslesir.
+    """
+    from karadul.analyzers import signature_db as sdb
+    from karadul.analyzers.sigdb_builtin.windows_gui import SIGNATURES
+
+    alias = sdb._WIN32_USER32_GDI32_SIGNATURES
+    builtin_alias = SIGNATURES["win32_user32_gdi32"]
+    assert alias is builtin_alias, "alias dict identity beklenir"
+
+    user32 = SIGNATURES["user32_signatures"]
+    gdi32 = SIGNATURES["gdi32_signatures"]
+    expected = len(user32) + len(gdi32)
+    assert len(alias) == expected, (
+        f"alias boyutu user32+gdi32 toplamiyla esit olmali; "
+        f"got {len(alias)} vs expected {expected}"
+    )
+    # Tum user32 ve gdi32 keyleri alias'ta
+    assert set(user32).issubset(alias)
+    assert set(gdi32).issubset(alias)
 
 
 def test_legacy_windows_gui_attributes_still_accessible() -> None:
@@ -202,33 +234,38 @@ def test_windows_gui_categories_are_valid() -> None:
 # overlap kontrolu yaparak idempotent olduklarini dogrulariz.
 
 def test_user32_gdi32_runtime_overlap_is_idempotent() -> None:
-    """Runtime `_WIN32_USER32_GDI32_SIGNATURES` (legacy small dict) yeni
-    user32/gdi32 builtin dict'leriyle ortusen entry'lerde ayni ``lib`` ve
-    ``category`` tasimali (idempotent merge garantisi)."""
+    """v1.14 Dalga 0 cleanup sonrasi alias %100 ortusur — conflict olmamali.
+
+    `_WIN32_USER32_GDI32_SIGNATURES` artik tek kaynaktan
+    (``sigdb_builtin.windows_gui["win32_user32_gdi32"]``) gelir; ayni
+    user32+gdi32 birlesik dict'i. Bu nedenle local merge ile birebir esit.
+    """
     from karadul.analyzers import signature_db as sdb
     from karadul.analyzers.sigdb_builtin.windows_gui import SIGNATURES
 
-    legacy = sdb._WIN32_USER32_GDI32_SIGNATURES
+    alias = sdb._WIN32_USER32_GDI32_SIGNATURES
     merged = {
         **SIGNATURES["user32_signatures"],
         **SIGNATURES["gdi32_signatures"],
     }
 
-    overlap = set(merged) & set(legacy)
-    assert len(overlap) >= 15, (
-        f"Legacy user32_gdi32 overlap beklenmeyen oranda az: {len(overlap)}"
+    overlap = set(merged) & set(alias)
+    # %100 overlap: alias zaten builtin user32+gdi32 birlesik referansi
+    assert len(overlap) == len(alias) == len(merged), (
+        f"Alias %100 overlap beklenir; alias={len(alias)} merged={len(merged)} "
+        f"overlap={len(overlap)}"
     )
 
     conflicts = []
     for k in overlap:
-        if merged[k]["lib"] != legacy[k]["lib"]:
-            conflicts.append((k, "lib", merged[k]["lib"], legacy[k]["lib"]))
-        if merged[k]["category"] != legacy[k]["category"]:
+        if merged[k]["lib"] != alias[k]["lib"]:
+            conflicts.append((k, "lib", merged[k]["lib"], alias[k]["lib"]))
+        if merged[k]["category"] != alias[k]["category"]:
             conflicts.append(
-                (k, "category", merged[k]["category"], legacy[k]["category"])
+                (k, "category", merged[k]["category"], alias[k]["category"])
             )
     assert not conflicts, (
-        f"Legacy ile lib/category farkli entry'ler: {conflicts[:5]}"
+        f"Alias ile lib/category farkli entry'ler: {conflicts[:5]}"
     )
 
 
@@ -285,10 +322,16 @@ def test_post_a_delete_no_inline_literal() -> None:
         '_WIN32_GDI32_SIGNATURES: dict[str, dict[str, str]] = '
         '_BUILTIN_WINDOWS_GUI_SIGNATURES["gdi32_signatures"]'
     ) in text
-    # Yeni 3 isim icin inline literal YOK
+    # v1.14 Dalga 0 cleanup: user32_gdi32 alias da reference assignment
+    assert (
+        '_WIN32_USER32_GDI32_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_WINDOWS_GUI_SIGNATURES["win32_user32_gdi32"]'
+    ) in text
+    # Hicbir isim icin inline literal YOK
     assert "_WIN32_USER32_SIGNATURES: dict[str, dict[str, str]] = {" not in text
     assert "_WIN32_ADVAPI32_FULL_SIGNATURES: dict[str, dict[str, str]] = {" not in text
     assert "_WIN32_GDI32_SIGNATURES: dict[str, dict[str, str]] = {" not in text
+    assert "_WIN32_USER32_GDI32_SIGNATURES: dict[str, dict[str, str]] = {" not in text
 
 
 def test_post_a_delete_direct_import() -> None:
@@ -430,7 +473,8 @@ def test_previous_migrations_still_intact() -> None:
     # v1.13 Wave 1: 7. anahtar "modern_crypto_signatures" eklendi.
     assert len(cry) == 7
     assert len(comp) == 5
-    assert len(net) == 7
+    # v1.14 Dalga 0: cares + grpc eklendi (7 -> 9)
+    assert len(net) == 9
     assert len(pe) == 3
 
 
@@ -442,6 +486,48 @@ def test_pe_runtime_override_still_active() -> None:
     assert sdb._WIN32_KERNEL32_SIGNATURES is pe["kernel32_signatures"]
     assert sdb._WIN32_NTDLL_SIGNATURES is pe["ntdll_signatures"]
     assert sdb._MSVC_CRT_SIGNATURES is pe["msvc_crt_signatures"]
+
+
+# ---------------------------------------------------------------------------
+# 8. v1.14 Dalga 0 cleanup — user32_gdi32 alias known-symbol smoke
+# ---------------------------------------------------------------------------
+
+def test_user32_gdi32_alias_known_symbols_user32() -> None:
+    """user32 critical semboller alias dict'inde mevcut (CreateWindowExW,
+    CallWindowProcW vb.)."""
+    from karadul.analyzers import signature_db as sdb
+
+    alias = sdb._WIN32_USER32_GDI32_SIGNATURES
+    must_have_user32 = {
+        "CreateWindowExW", "CreateWindowExA",
+        "CallWindowProcW", "CallWindowProcA",
+        "DefWindowProcW", "DefWindowProcA",
+        "RegisterClassExW", "DispatchMessageW",
+    }
+    missing = must_have_user32 - set(alias)
+    assert not missing, f"alias eksik kritik user32 sembolleri: {missing}"
+
+    # Lib etiketi user32 olmali
+    assert alias["CreateWindowExW"]["lib"] == "user32"
+    assert alias["CallWindowProcW"]["lib"] == "user32"
+
+
+def test_user32_gdi32_alias_known_symbols_gdi32() -> None:
+    """gdi32 critical semboller alias dict'inde mevcut (BitBlt, TextOutW vb.)."""
+    from karadul.analyzers import signature_db as sdb
+
+    alias = sdb._WIN32_USER32_GDI32_SIGNATURES
+    must_have_gdi32 = {
+        "BitBlt", "TextOutW",
+        "CreateDCW", "DeleteDC",
+        "SelectObject", "DeleteObject",
+    }
+    missing = must_have_gdi32 - set(alias)
+    assert not missing, f"alias eksik kritik gdi32 sembolleri: {missing}"
+
+    # Lib etiketi gdi32 olmali
+    assert alias["BitBlt"]["lib"] == "gdi32"
+    assert alias["TextOutW"]["lib"] == "gdi32"
 
 
 if __name__ == "__main__":

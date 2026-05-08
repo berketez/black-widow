@@ -166,8 +166,8 @@ class TestStepOrchestration:
         assert base_ctx.stats["binary_names_extracted"] == 1
         assert base_ctx.stats["engineering_algorithms_detected"] == 5
         assert "timing_name_eng_parallel" in base_ctx.stats
-        assert "binary_names" in fake_pc.metadata["artifacts_pending"]
-        assert "engineering_algorithms" in fake_pc.metadata["artifacts_pending"]
+        assert "binary_names" in base_ctx.stage_artifacts
+        assert "engineering_algorithms" in base_ctx.stage_artifacts
 
     def test_one_error_other_succeeds(self, base_ctx, fake_pc, tmp_path) -> None:
         """Biri hata verir, digeri basarili — error kaydedilir, digeri calisir."""

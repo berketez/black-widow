@@ -71,7 +71,7 @@ class TestHappyPath:
         expected_dir = fake_pc.workspace.get_stage_dir.return_value / "commented"
         assert out["comment_generation_decompiled_dir"] == expected_dir
         assert base_ctx.stats["comments_added"] == 10
-        assert "commented_sources" in fake_pc.metadata["artifacts_pending"]
+        assert "commented_sources" in base_ctx.stage_artifacts
 
 
 class TestFailurePath:

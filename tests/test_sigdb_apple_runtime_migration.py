@@ -472,9 +472,11 @@ def test_previous_migrations_still_intact() -> None:
     # v1.13 Wave 1: 7. anahtar "modern_crypto_signatures" eklendi (ChaCha/Salsa/Blake/Poly1305).
     assert len(cry) == 7   # openssl, boringssl, libsodium, mbedtls, wincrypto, findcrypt, modern_crypto
     assert len(comp) == 5  # zlib, bzip2, lz4, zstd, compression_ext
-    assert len(net) == 7   # libcurl, posix_net, nghttp2, websocket, macos_net, apple_nw, net_ext
+    # v1.14 Dalga 0: cares + grpc eklendi (7 -> 9)
+    assert len(net) == 9   # + cares, grpc
     assert len(pe) == 3    # kernel32, ntdll, msvc_crt
-    assert len(gui) == 3   # user32, advapi32, gdi32
+    # v1.14 Dalga 0: win32_user32_gdi32 turev anahtar eklendi (3 -> 4)
+    assert len(gui) == 4   # + win32_user32_gdi32 alias
 
 
 if __name__ == "__main__":

@@ -42,6 +42,22 @@ from __future__ import annotations
 
 from typing import Any
 
+# v1.14 D0 cleanup: ``python_capi_signatures`` ve ``java_jni_signatures``
+# anahtarlari artik fiziksel dict tutmak yerine ``vm_runtime`` modulundeki
+# kanonik (genisletilmis) dict'lere alias yapilir. Tek veri sahibi
+# ``sigdb_builtin.vm_runtime`` modulu; ``runtimes`` sadece public kategori
+# yuzeyi olarak ayni objelere isaret eder. Bu sayede:
+#   - signature_db.py legacy ``_PYTHON_CAPI_SIGNATURES`` / ``_JAVA_JNI_SIGNATURES``
+#     literal bloklari silinebilir (override layer redundant olur).
+#   - Identity zinciri korunur:
+#       sdb._PYTHON_CAPI_SIGNATURES is runtimes.SIGNATURES["python_capi_signatures"]
+#       is vm_runtime.SIGNATURES["python_c_api_signatures"]
+#   - Coverage 76 -> 259 (Python C API) ve 50 -> 158 (JNI) genisler.
+#   - Kanonik etiketleme: lib=python/libpython, category=python_c_api
+#                        lib=jvm/libjvm,        category=jni
+from karadul.analyzers.sigdb_builtin.vm_runtime import (
+    SIGNATURES as _VM_RUNTIME_SIGNATURES,
+)
 
 
 # -------------------------------------------------------------------------
@@ -631,164 +647,26 @@ _GO_EXT_SIGNATURES_DATA: dict[str, dict[str, str]] = {
 }
 
 # -------------------------------------------------------------------------
-# CPython embedded C API (76 entry) - Interpreter, Object protocol, Reference
-# counting, Module, Types (int/float/str/bytes), Container types, Error
-# handling, GIL, Arg parsing. Kaynak: signature_db.py satir 6126-6220.
+# CPython embedded C API (259 entry, kanonik) - Interpreter, Object protocol,
+# Reference counting, Module, Types, Container types, Error handling, GIL,
+# Arg parsing, Capsule, Buffer protocol, Iterators, Py2/Py3 birlikte.
+# v1.14 D0: vm_runtime modulundeki ``python_c_api_signatures`` dict'ine alias.
+# Kanonik etiketleme: lib in {"python", "libpython"}, category="python_c_api".
 # -------------------------------------------------------------------------
-_PYTHON_CAPI_SIGNATURES_DATA: dict[str, dict[str, str]] = {
-    # --- Interpreter ---
-    "Py_Initialize": {"lib": "python", "purpose": "initialize Python interpreter", "category": "python"},
-    "Py_InitializeEx": {"lib": "python", "purpose": "initialize with signal config", "category": "python"},
-    "Py_Finalize": {"lib": "python", "purpose": "finalize Python interpreter", "category": "python"},
-    "Py_FinalizeEx": {"lib": "python", "purpose": "finalize with status return", "category": "python"},
-    "Py_IsInitialized": {"lib": "python", "purpose": "check if interpreter initialized", "category": "python"},
-    "PyRun_SimpleString": {"lib": "python", "purpose": "execute Python string", "category": "python"},
-    "PyRun_SimpleFile": {"lib": "python", "purpose": "execute Python file", "category": "python"},
-    "PyRun_String": {"lib": "python", "purpose": "execute string and return result", "category": "python"},
-    "Py_CompileString": {"lib": "python", "purpose": "compile Python source to code object", "category": "python"},
-    "PyEval_EvalCode": {"lib": "python", "purpose": "evaluate compiled code object", "category": "python"},
-
-    # --- Object protocol ---
-    "PyObject_CallObject": {"lib": "python", "purpose": "call Python callable with args tuple", "category": "python"},
-    "PyObject_CallFunction": {"lib": "python", "purpose": "call Python callable with format args", "category": "python"},
-    "PyObject_CallMethod": {"lib": "python", "purpose": "call method on Python object", "category": "python"},
-    "PyObject_GetAttrString": {"lib": "python", "purpose": "get attribute by name", "category": "python"},
-    "PyObject_SetAttrString": {"lib": "python", "purpose": "set attribute by name", "category": "python"},
-    "PyObject_HasAttrString": {"lib": "python", "purpose": "check attribute exists", "category": "python"},
-    "PyObject_Str": {"lib": "python", "purpose": "str() on Python object", "category": "python"},
-    "PyObject_Repr": {"lib": "python", "purpose": "repr() on Python object", "category": "python"},
-    "PyObject_IsTrue": {"lib": "python", "purpose": "bool() on Python object", "category": "python"},
-    "PyObject_Length": {"lib": "python", "purpose": "len() on Python object", "category": "python"},
-    "PyObject_GetItem": {"lib": "python", "purpose": "subscript operator obj[key]", "category": "python"},
-    "PyObject_SetItem": {"lib": "python", "purpose": "subscript assignment obj[key]=val", "category": "python"},
-    "PyObject_RichCompare": {"lib": "python", "purpose": "rich comparison (==, <, > etc)", "category": "python"},
-
-    # --- Reference counting ---
-    "Py_IncRef": {"lib": "python", "purpose": "increment reference count", "category": "python"},
-    "Py_DecRef": {"lib": "python", "purpose": "decrement reference count", "category": "python"},
-    "Py_XINCREF": {"lib": "python", "purpose": "increment refcount (NULL-safe)", "category": "python"},
-    "Py_XDECREF": {"lib": "python", "purpose": "decrement refcount (NULL-safe)", "category": "python"},
-
-    # --- Module ---
-    "PyImport_ImportModule": {"lib": "python", "purpose": "import Python module", "category": "python"},
-    "PyImport_AddModule": {"lib": "python", "purpose": "get or create module", "category": "python"},
-    "PyModule_GetDict": {"lib": "python", "purpose": "get module's __dict__", "category": "python"},
-    "PyModule_Create2": {"lib": "python", "purpose": "create extension module", "category": "python"},
-
-    # --- Types: int, float, str, bytes ---
-    "PyLong_FromLong": {"lib": "python", "purpose": "create Python int from C long", "category": "python"},
-    "PyLong_AsLong": {"lib": "python", "purpose": "convert Python int to C long", "category": "python"},
-    "PyLong_FromLongLong": {"lib": "python", "purpose": "create Python int from C long long", "category": "python"},
-    "PyFloat_FromDouble": {"lib": "python", "purpose": "create Python float from C double", "category": "python"},
-    "PyFloat_AsDouble": {"lib": "python", "purpose": "convert Python float to C double", "category": "python"},
-    "PyUnicode_FromString": {"lib": "python", "purpose": "create Python str from C string", "category": "python"},
-    "PyUnicode_AsUTF8": {"lib": "python", "purpose": "get UTF-8 from Python str", "category": "python"},
-    "PyUnicode_FromFormat": {"lib": "python", "purpose": "create str from format string", "category": "python"},
-    "PyBytes_FromString": {"lib": "python", "purpose": "create bytes from C string", "category": "python"},
-    "PyBytes_FromStringAndSize": {"lib": "python", "purpose": "create bytes with size", "category": "python"},
-    "PyBytes_AsString": {"lib": "python", "purpose": "get C char* from bytes", "category": "python"},
-    "PyBool_FromLong": {"lib": "python", "purpose": "create Python bool from C long", "category": "python"},
-
-    # --- Container types ---
-    "PyList_New": {"lib": "python", "purpose": "create new Python list", "category": "python"},
-    "PyList_Append": {"lib": "python", "purpose": "append to Python list", "category": "python"},
-    "PyList_GetItem": {"lib": "python", "purpose": "get list item (borrowed ref)", "category": "python"},
-    "PyList_SetItem": {"lib": "python", "purpose": "set list item (steals ref)", "category": "python"},
-    "PyList_Size": {"lib": "python", "purpose": "get list length", "category": "python"},
-    "PyDict_New": {"lib": "python", "purpose": "create new Python dict", "category": "python"},
-    "PyDict_SetItemString": {"lib": "python", "purpose": "set dict item by string key", "category": "python"},
-    "PyDict_GetItemString": {"lib": "python", "purpose": "get dict item by string key", "category": "python"},
-    "PyDict_SetItem": {"lib": "python", "purpose": "set dict item", "category": "python"},
-    "PyDict_GetItem": {"lib": "python", "purpose": "get dict item (borrowed ref)", "category": "python"},
-    "PyDict_Keys": {"lib": "python", "purpose": "get dict keys list", "category": "python"},
-    "PyDict_Size": {"lib": "python", "purpose": "get dict size", "category": "python"},
-    "PyTuple_New": {"lib": "python", "purpose": "create new Python tuple", "category": "python"},
-    "PyTuple_SetItem": {"lib": "python", "purpose": "set tuple item (steals ref)", "category": "python"},
-    "PyTuple_GetItem": {"lib": "python", "purpose": "get tuple item (borrowed ref)", "category": "python"},
-    "PyTuple_Size": {"lib": "python", "purpose": "get tuple length", "category": "python"},
-    "PySet_New": {"lib": "python", "purpose": "create new Python set", "category": "python"},
-    "PySet_Add": {"lib": "python", "purpose": "add item to set", "category": "python"},
-
-    # --- Error handling ---
-    "PyErr_SetString": {"lib": "python", "purpose": "set exception with message", "category": "python"},
-    "PyErr_Occurred": {"lib": "python", "purpose": "check if exception is set", "category": "python"},
-    "PyErr_Clear": {"lib": "python", "purpose": "clear current exception", "category": "python"},
-    "PyErr_Print": {"lib": "python", "purpose": "print exception to stderr", "category": "python"},
-    "PyErr_Fetch": {"lib": "python", "purpose": "fetch current exception", "category": "python"},
-    "PyErr_Restore": {"lib": "python", "purpose": "restore exception state", "category": "python"},
-    "PyErr_Format": {"lib": "python", "purpose": "set exception with formatted message", "category": "python"},
-    "PyErr_NoMemory": {"lib": "python", "purpose": "set MemoryError exception", "category": "python"},
-
-    # --- GIL ---
-    "PyGILState_Ensure": {"lib": "python", "purpose": "acquire GIL and return state", "category": "python"},
-    "PyGILState_Release": {"lib": "python", "purpose": "release GIL", "category": "python"},
-    "PyEval_SaveThread": {"lib": "python", "purpose": "release GIL (Py_BEGIN_ALLOW_THREADS)", "category": "python"},
-    "PyEval_RestoreThread": {"lib": "python", "purpose": "acquire GIL (Py_END_ALLOW_THREADS)", "category": "python"},
-
-    # --- Arg parsing ---
-    "PyArg_ParseTuple": {"lib": "python", "purpose": "parse positional args tuple", "category": "python"},
-    "PyArg_ParseTupleAndKeywords": {"lib": "python", "purpose": "parse args and kwargs", "category": "python"},
-    "Py_BuildValue": {"lib": "python", "purpose": "build Python value from C values", "category": "python"},
-}
+_PYTHON_CAPI_SIGNATURES_DATA: dict[str, dict[str, str]] = (
+    _VM_RUNTIME_SIGNATURES["python_c_api_signatures"]
+)
 
 # -------------------------------------------------------------------------
-# Java JNI (50 entry) - JVM yonetimi, sinif/method/field id, method cagrilari,
-# string/array, global/local refs, exception handling, RegisterNatives, monitor
-# enter/exit, thread attach. Kaynak: signature_db.py satir 6228-6280.
+# Java JNI (158 entry, kanonik) - JVM library exports + JNIEnv/JavaVM function
+# pointer table + Class/Method/Field/Object/Array/String/Reference/Exception
+# /Monitor/RegisterNatives/Buffer protocols. v1.14 D0: vm_runtime modulundeki
+# ``jni_signatures`` dict'ine alias.
+# Kanonik etiketleme: lib in {"jvm", "libjvm"}, category="jni".
 # -------------------------------------------------------------------------
-_JAVA_JNI_SIGNATURES_DATA: dict[str, dict[str, str]] = {
-    "JNI_CreateJavaVM": {"lib": "jni", "purpose": "create Java Virtual Machine", "category": "java"},
-    "JNI_GetCreatedJavaVMs": {"lib": "jni", "purpose": "get list of created JVMs", "category": "java"},
-    "JNI_GetDefaultJavaVMInitArgs": {"lib": "jni", "purpose": "get default JVM init args", "category": "java"},
-    "JNI_OnLoad": {"lib": "jni", "purpose": "native library loaded by JVM", "category": "java"},
-    "JNI_OnUnload": {"lib": "jni", "purpose": "native library unloaded by JVM", "category": "java"},
-    # Env functions (commonly resolved via function pointer table)
-    "FindClass": {"lib": "jni", "purpose": "find Java class by name", "category": "java"},
-    "GetMethodID": {"lib": "jni", "purpose": "get Java method ID", "category": "java"},
-    "GetStaticMethodID": {"lib": "jni", "purpose": "get static Java method ID", "category": "java"},
-    "GetFieldID": {"lib": "jni", "purpose": "get Java field ID", "category": "java"},
-    "GetStaticFieldID": {"lib": "jni", "purpose": "get static Java field ID", "category": "java"},
-    "CallObjectMethod": {"lib": "jni", "purpose": "call Java object method", "category": "java"},
-    "CallVoidMethod": {"lib": "jni", "purpose": "call Java void method", "category": "java"},
-    "CallIntMethod": {"lib": "jni", "purpose": "call Java int method", "category": "java"},
-    "CallBooleanMethod": {"lib": "jni", "purpose": "call Java boolean method", "category": "java"},
-    "CallStaticObjectMethod": {"lib": "jni", "purpose": "call static Java method (Object)", "category": "java"},
-    "CallStaticVoidMethod": {"lib": "jni", "purpose": "call static Java void method", "category": "java"},
-    "NewObject": {"lib": "jni", "purpose": "create new Java object", "category": "java"},
-    "NewStringUTF": {"lib": "jni", "purpose": "create Java string from UTF-8", "category": "java"},
-    "GetStringUTFChars": {"lib": "jni", "purpose": "get UTF-8 chars from Java string", "category": "java"},
-    "ReleaseStringUTFChars": {"lib": "jni", "purpose": "release UTF-8 chars", "category": "java"},
-    "GetArrayLength": {"lib": "jni", "purpose": "get Java array length", "category": "java"},
-    "GetByteArrayElements": {"lib": "jni", "purpose": "get Java byte array elements", "category": "java"},
-    "ReleaseByteArrayElements": {"lib": "jni", "purpose": "release byte array elements", "category": "java"},
-    "NewByteArray": {"lib": "jni", "purpose": "create Java byte array", "category": "java"},
-    "SetByteArrayRegion": {"lib": "jni", "purpose": "copy bytes into Java array", "category": "java"},
-    "GetByteArrayRegion": {"lib": "jni", "purpose": "copy bytes from Java array", "category": "java"},
-    "NewGlobalRef": {"lib": "jni", "purpose": "create global JNI reference", "category": "java"},
-    "DeleteGlobalRef": {"lib": "jni", "purpose": "delete global JNI reference", "category": "java"},
-    "NewLocalRef": {"lib": "jni", "purpose": "create local JNI reference", "category": "java"},
-    "DeleteLocalRef": {"lib": "jni", "purpose": "delete local JNI reference", "category": "java"},
-    "ExceptionCheck": {"lib": "jni", "purpose": "check for pending Java exception", "category": "java"},
-    "ExceptionDescribe": {"lib": "jni", "purpose": "print Java exception to stderr", "category": "java"},
-    "ExceptionClear": {"lib": "jni", "purpose": "clear pending Java exception", "category": "java"},
-    "ThrowNew": {"lib": "jni", "purpose": "throw new Java exception", "category": "java"},
-    "RegisterNatives": {"lib": "jni", "purpose": "register native methods with class", "category": "java"},
-    "UnregisterNatives": {"lib": "jni", "purpose": "unregister native methods", "category": "java"},
-    "GetObjectClass": {"lib": "jni", "purpose": "get class of Java object", "category": "java"},
-    "IsInstanceOf": {"lib": "jni", "purpose": "check Java instanceof", "category": "java"},
-    "MonitorEnter": {"lib": "jni", "purpose": "enter Java synchronized block", "category": "java"},
-    "MonitorExit": {"lib": "jni", "purpose": "exit Java synchronized block", "category": "java"},
-    "GetJavaVM": {"lib": "jni", "purpose": "get JavaVM interface pointer", "category": "java"},
-    "AttachCurrentThread": {"lib": "jni", "purpose": "attach native thread to JVM", "category": "java"},
-    "DetachCurrentThread": {"lib": "jni", "purpose": "detach native thread from JVM", "category": "java"},
-    "GetEnv": {"lib": "jni", "purpose": "get JNI environment for current thread", "category": "java"},
-    "GetObjectField": {"lib": "jni", "purpose": "get Java object field value", "category": "java"},
-    "SetObjectField": {"lib": "jni", "purpose": "set Java object field value", "category": "java"},
-    "GetIntField": {"lib": "jni", "purpose": "get Java int field value", "category": "java"},
-    "SetIntField": {"lib": "jni", "purpose": "set Java int field value", "category": "java"},
-    "GetLongField": {"lib": "jni", "purpose": "get Java long field value", "category": "java"},
-    "SetLongField": {"lib": "jni", "purpose": "set Java long field value", "category": "java"},
-}
+_JAVA_JNI_SIGNATURES_DATA: dict[str, dict[str, str]] = (
+    _VM_RUNTIME_SIGNATURES["jni_signatures"]
+)
 
 # -------------------------------------------------------------------------
 # .NET CLR / Mono / hostfxr / IL2CPP (58 entry) - CoreCLR hosting, Mono

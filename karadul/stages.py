@@ -25,7 +25,6 @@ from karadul.analyzers import get_analyzer
 from karadul.core.pipeline import PipelineContext, Stage
 from karadul.core.result import StageResult
 from karadul.core.target import TargetDetector, TargetType, Language
-from karadul.pipeline.context import _warn_legacy_artifacts_pending
 from karadul.pipeline.reconstruction_context import ReconstructionContext
 
 # NameMerger opsiyonel -- import hatasi olursa None kalir
@@ -2491,14 +2490,14 @@ class ReconstructionStage(Stage):
             _capa_capabilities = _a["capa_capabilities"]
 
             # stats/errors/artifacts merge — step'lerin biriktirdigi.
+            # v1.14.0 Dalga 0: artifacts_pending mirror'i kaldirildi;
+            # produce_artifact() ile yazilan stage artifact'lar dogrudan
+            # step_ctx.stage_artifacts'tan okunuyor.
             stats.update(step_ctx.stats)
             errors.extend(step_ctx.errors)
-            _pending = (context.metadata or {}).get("artifacts_pending", {})
-            if _pending:
-                _warn_legacy_artifacts_pending(
-                    "stages.py Phase 1 mirror okumasi (v1.13'te kalkacak)",
-                )
-                artifacts.update(_pending)
+            _stage_pending = dict(step_ctx.stage_artifacts)
+            if _stage_pending:
+                artifacts.update(_stage_pending)
 
             # v1.9.2: naming_result init (dir() anti-pattern fix)
             naming_result = None
@@ -2545,14 +2544,14 @@ class ReconstructionStage(Stage):
             )
 
             # stats/errors/pending artifact merge
+            # v1.14.0 Dalga 0: artifacts_pending mirror'i kaldirildi;
+            # Phase 2 step'lerinin produce_artifact'i step_ctx2.stage_artifacts'a
+            # yaziliyor.
             stats.update(step_ctx2.stats)
             errors.extend(step_ctx2.errors)
-            _pending2 = (context.metadata or {}).get("artifacts_pending", {})
-            if _pending2:
-                _warn_legacy_artifacts_pending(
-                    "stages.py Phase 2 mirror okumasi (v1.13'te kalkacak)",
-                )
-                artifacts.update(_pending2)
+            _stage_pending2 = dict(step_ctx2.stage_artifacts)
+            if _stage_pending2:
+                artifacts.update(_stage_pending2)
         else:
             # --- ESKI YOL (M1 boyunca korunuyor, reviewer onayinda silinecek) ---
             # v1.12.0 Faz 2 split adim 1: Load bolumu _load_binary metoduna

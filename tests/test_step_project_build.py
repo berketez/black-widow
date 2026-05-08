@@ -51,7 +51,7 @@ class TestBuildSuccess:
             out = ProjectBuildStep().run(base_ctx)
         assert out["project_dir"] is not None
         assert base_ctx.stats["project_files"] == 42
-        assert "project_dir" in fake_pc.metadata["artifacts_pending"]
+        assert "project_dir" in base_ctx.stage_artifacts
 
 
 class TestBuildException:

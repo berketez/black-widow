@@ -50,9 +50,9 @@ class FeedbackLoopStep(Step):
         a = ctx.artifacts
         cfg = pc.config.binary_reconstruction
 
-        # v1.10.0 C1: defansif — downstream file_cache / artifacts_pending
-        # yazimlari pc.metadata None ise AttributeError atar. Test mock'larinda
-        # bu alan bos olabiliyor; baslamadan garantiye al.
+        # v1.10.0 C1: defansif — downstream file_cache yazimlari pc.metadata
+        # None ise AttributeError atar. Test mock'larinda bu alan bos
+        # olabiliyor; baslamadan garantiye al.
         if getattr(pc, "metadata", None) is None:
             pc.metadata = {}
 
