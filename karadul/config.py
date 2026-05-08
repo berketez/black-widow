@@ -341,6 +341,12 @@ class BinaryReconstructionConfig:
     # ile ileride env override eklenebilir.
     enable_anti_debug_detection: bool = True  # AntiDebugStep
     enable_packer_fingerprint: bool = True    # PackerFingerprintStep
+    # v1.14 D2: FLIRT trie matcher entegrasyonu (byte_pattern step).
+    # Imza sayisi flirt_trie_threshold'u astiginda klasik linear path yerine
+    # FlirtTrieMatcher kullanilir (prefix trie + sliding window O(n*d_avg)).
+    # flirt_use_trie=False -> her zaman eski (linear) path. Acil geri cikis.
+    flirt_use_trie: bool = True               # Genel switch (False ile linear yol)
+    flirt_trie_threshold: int = 50            # >threshold imza varsa trie path
 
 
 @dataclass

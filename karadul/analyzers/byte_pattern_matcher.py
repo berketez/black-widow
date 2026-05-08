@@ -339,6 +339,285 @@ class BytePatternMatcher:
 
         return result
 
+    # ------------------------------------------------------------------
+    # v1.14 D2: Trie tabanli eslestirme
+    # ------------------------------------------------------------------
+
+    def match_unknown_functions_trie(
+        self,
+        binary_path: str | Path,
+        functions_json: str | Path,
+        known_signatures: list[Any],
+        *,
+        verify_crc: bool = True,
+    ) -> ByteMatchResult:
+        """FlirtTrieMatcher ile FUN_xxx eslestirmesi (v1.14 D2).
+
+        ``match_unknown_functions`` ile ayni cikti formatini uretir
+        (ByteMatchResult). Fark: imza tarafi linear yerine prefix trie
+        ile kontrol edilir -- buyuk imza setlerinde (>50 imza) belirgin
+        hizlanma saglar.
+
+        Args:
+            binary_path: Analiz edilen binary dosyasi.
+            functions_json: Ghidra functions.json yolu.
+            known_signatures: FLIRTSignature listesi.
+            verify_crc: Trie matcher CRC16 sekonder dogrulamasini calistirsin mi.
+
+        Returns:
+            ByteMatchResult -- linear path ile ayni format.
+        """
+        from karadul.analyzers.flirt_parser import (
+            FlirtTrieMatcher,
+            FlirtPattern,
+        )
+
+        start = time.monotonic()
+        result = ByteMatchResult()
+        binary_path = Path(binary_path)
+        functions_json = Path(functions_json)
+
+        if not binary_path.exists():
+            result.errors.append(f"Binary bulunamadi: {binary_path}")
+            return result
+        if not functions_json.exists():
+            result.errors.append(f"Functions JSON bulunamadi: {functions_json}")
+            return result
+
+        # Byte pattern uzunlugu yeterli imzalari filtrele (linear ile ayni esik)
+        byte_sigs = [
+            s for s in known_signatures
+            if getattr(s, "byte_pattern", b"")
+            and len(getattr(s, "byte_pattern", b"")) >= self._min_pattern_length
+        ]
+        if not byte_sigs:
+            logger.debug(
+                "BytePatternMatcher.trie: yeterli uzunlukta byte pattern yok"
+            )
+            result.duration_seconds = time.monotonic() - start
+            return result
+
+        # FLIRTSignature -> FlirtPattern (trie IR'i). Pattern indeksiyle
+        # orijinal imzayi geri eslestirebilmek icin paralel liste tutulur.
+        patterns: list[FlirtPattern] = []
+        sig_for_pattern: list[Any] = []
+        for sig in byte_sigs:
+            try:
+                pat = FlirtPattern.from_signature(sig)
+            except Exception as exc:  # imza bozuksa atla
+                logger.debug("FlirtPattern.from_signature hatasi: %s", exc)
+                continue
+            if not pat.prefix_bytes:
+                continue
+            patterns.append(pat)
+            sig_for_pattern.append(sig)
+
+        if not patterns:
+            result.duration_seconds = time.monotonic() - start
+            return result
+
+        # Pattern -> indeks (id() kullanmak yerine deterministik konum)
+        # FlirtTrieMatcher.scan_binary FlirtMatch.pattern olarak ayni
+        # objeyi geri verecek; id() tabanli lookup guvenlidir.
+        pat_index: dict[int, int] = {id(p): i for i, p in enumerate(patterns)}
+
+        trie = FlirtTrieMatcher(patterns)
+        logger.info(
+            "BytePatternMatcher.trie: %d imza yuklendi (max prefix=%d)",
+            trie.pattern_count, trie.max_prefix_len,
+        )
+
+        # __TEXT segment + dosya boyutu
+        text_vmaddr, text_fileoff, fat_offset = self._get_text_segment_info(
+            binary_path
+        )
+        if text_vmaddr is None or text_fileoff is None:
+            result.errors.append("__TEXT segment bilgisi alinamadi")
+            result.duration_seconds = time.monotonic() - start
+            return result
+        try:
+            file_size = binary_path.stat().st_size
+        except OSError as e:
+            result.errors.append(f"Binary stat hatasi: {e}")
+            result.duration_seconds = time.monotonic() - start
+            return result
+
+        func_list = self._load_functions(functions_json)
+        if func_list is None:
+            result.errors.append("Functions JSON okunamadi veya parse edilemedi")
+            result.duration_seconds = time.monotonic() - start
+            return result
+        result.total_functions = len(func_list)
+
+        # FUN_xxx fonksiyonlari + bytes okuma (linear path ile birebir ayni)
+        unknown_funcs: list[dict[str, Any]] = [
+            f for f in func_list
+            if _GHIDRA_AUTO_NAME_RE.match(f.get("name", ""))
+        ]
+        result.total_unknown = len(unknown_funcs)
+        if not unknown_funcs:
+            result.duration_seconds = time.monotonic() - start
+            return result
+
+        func_names: list[str] = []
+        func_bytes_list: list[bytes] = []
+        func_sizes: list[int] = []
+        try:
+            with open(binary_path, "rb") as bf:
+                for fe in unknown_funcs:
+                    name = fe.get("name", "")
+                    addr_str = fe.get("address", fe.get("entry_point", ""))
+                    func_size = fe.get("size", 0)
+                    if not addr_str:
+                        continue
+                    try:
+                        addr = int(addr_str, 16) if isinstance(addr_str, str) else int(addr_str)
+                    except (ValueError, TypeError):
+                        continue
+                    file_offset = addr - text_vmaddr + text_fileoff + fat_offset
+                    if file_offset < 0 or file_offset >= file_size:
+                        continue
+                    fb = self._read_bytes(bf, file_offset, self._read_size)
+                    if not fb or len(fb) < self._min_pattern_length:
+                        continue
+                    func_names.append(name)
+                    func_bytes_list.append(fb)
+                    func_sizes.append(func_size)
+        except OSError as e:
+            result.errors.append(f"Binary okuma hatasi: {e}")
+            result.duration_seconds = time.monotonic() - start
+            return result
+
+        if not func_names:
+            result.duration_seconds = time.monotonic() - start
+            return result
+
+        # Pass 1: trie ile her fonksiyon icin en iyi adayi bul.
+        # scan_binary'yi `step=len(fb)` ile cagirinca yalnizca offset 0'da
+        # yurur (range(0, n, n) -> [0]). Boylece trie tabanli "match-at-zero"
+        # semantigi elde ederiz.
+        raw_matches: list[
+            tuple[int, int, tuple[str, str, float, str, str]]
+        ] = []
+        sig_usage: Counter = Counter()
+
+        for i, fb in enumerate(func_bytes_list):
+            func_size = func_sizes[i]
+            step = max(1, len(fb))  # tek nokta tarama (offset=0)
+            try:
+                trie_matches = trie.scan_binary(
+                    fb, verify_crc=verify_crc, min_score=0.0, step=step,
+                )
+            except Exception as exc:
+                logger.debug("Trie scan hatasi: %s", exc)
+                continue
+
+            best_idx = -1
+            best_conf = 0.0
+            best_tuple: Optional[tuple[str, str, float, str, str]] = None
+
+            for fm in trie_matches:
+                if fm.offset != 0:
+                    continue
+                p_idx = pat_index.get(id(fm.pattern), -1)
+                if p_idx < 0:
+                    continue
+                sig = sig_for_pattern[p_idx]
+                pattern = getattr(sig, "byte_pattern", b"")
+                mask = (
+                    getattr(sig, "mask", b"")
+                    or getattr(sig, "byte_mask", b"")
+                )
+                plen = len(pattern)
+                if plen < self._min_pattern_length:
+                    continue
+                if not mask or len(mask) != plen:
+                    mask = b"\xff" * plen
+
+                # size_range filtresi (linear path ile parity)
+                size_range = getattr(sig, "size_range", (0, 0))
+                if size_range != (0, 0) and func_size > 0:
+                    min_s, max_s = size_range
+                    if func_size < min_s or func_size > max_s:
+                        continue
+
+                # CRC15 fail durumunda penalty (linear yolda CRC yok ama
+                # trie var). verify_crc=False ise crc_ok=True kabul edilir.
+                if verify_crc and not fm.crc_ok:
+                    # CRC eslesmiyor -> kabul etme (linear path bunu kontrol
+                    # etmiyor, trie ek dogrulama yapiyor; daha sıkı=daha az
+                    # false positive).
+                    continue
+
+                # Linear path ile birebir ayni confidence formulu
+                fixed_bytes = mask.count(b"\xff")
+                fixed_ratio = fixed_bytes / plen if plen > 0 else 0
+                length_bonus = (
+                    min(0.10, (plen - 16) * 0.005) if plen > 16 else 0.0
+                )
+                conf = min(0.95, 0.60 + fixed_ratio * 0.30 + length_bonus)
+
+                if conf > best_conf and conf >= self._min_confidence:
+                    best_conf = conf
+                    best_idx = p_idx
+                    best_tuple = (
+                        getattr(sig, "name", "unknown"),
+                        getattr(sig, "library", "unknown"),
+                        conf,
+                        getattr(sig, "category", "")
+                        or getattr(sig, "library", ""),
+                        getattr(sig, "purpose", ""),
+                    )
+
+            if best_tuple is not None:
+                raw_matches.append((i, best_idx, best_tuple))
+                sig_usage[best_idx] += 1
+
+        # Pass 2: linear path ile birebir ayni selectivity filtresi
+        matched_count = 0
+        discarded_count = 0
+        penalized_count = 0
+        for func_i, best_sig_idx, match_tuple in raw_matches:
+            matched_name, library, confidence, category, purpose = match_tuple
+            usage_count = sig_usage[best_sig_idx]
+            if usage_count > self._max_suspicious:
+                discarded_count += 1
+                continue
+            if usage_count > self._max_selective:
+                confidence = confidence * 0.5
+                penalized_count += 1
+                if confidence < self._min_confidence:
+                    discarded_count += 1
+                    continue
+            name = func_names[func_i]
+            result.matches[name] = {
+                "matched_name": matched_name,
+                "library": library,
+                "confidence": round(confidence, 4),
+                "category": category,
+                "purpose": purpose,
+                "match_method": "byte_pattern_trie",
+            }
+            matched_count += 1
+
+        result.total_matched = matched_count
+        if discarded_count > 0 or penalized_count > 0:
+            logger.info(
+                "BytePatternMatcher.trie selectivity: %d discarded, %d penalized "
+                "(max_selective=%d, max_suspicious=%d)",
+                discarded_count, penalized_count,
+                self._max_selective, self._max_suspicious,
+            )
+        result.duration_seconds = time.monotonic() - start
+        logger.info(
+            "BytePatternMatcher.trie: %d/%d FUN_xxx tanindi (%.1f%%) -- %.2fs",
+            matched_count,
+            result.total_unknown,
+            result.match_rate * 100,
+            result.duration_seconds,
+        )
+        return result
+
     def extract_function_bytes(
         self,
         binary_path: str | Path,

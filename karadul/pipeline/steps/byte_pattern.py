@@ -5,6 +5,12 @@ stages.py `_execute_binary` L1361-1451'den tasindi. Davranis birebir korundu:
 - FLIRT signature'larini topla (homebrew + sigs/ + external + binary-embedded)
 - BytePatternMatcher.match_unknown_functions() ile FUN_/sub_/thunk_ match
 - to_naming_map() ile {original_name -> recovered_name} dict'i uret
+
+v1.14 D2:
+- ``flirt_use_trie`` ve ``flirt_trie_threshold`` flag'lerine gore imza
+  sayisi esiği astiginda ``match_unknown_functions_trie`` kullanilir
+  (FlirtTrieMatcher prefix trie). Linear path varsayilan fallback olarak
+  korunur, davranis bozulmaz.
 """
 
 from __future__ import annotations
@@ -68,11 +74,39 @@ class BytePatternStep(Step):
             )
 
             if all_byte_sigs:
-                bp_result = bpm.match_unknown_functions(
-                    binary_path=binary_for_byte_match,
-                    functions_json=functions_json,
-                    known_signatures=all_byte_sigs,
+                # v1.14 D2: trie path secimi (esik + global flag)
+                use_trie, threshold = self._trie_decision(
+                    pc=pc, sig_count=len(all_byte_sigs),
                 )
+                strategy = "trie" if use_trie else "linear"
+                ctx.stats["flirt_match_strategy"] = strategy
+                ctx.stats["flirt_signature_count"] = len(all_byte_sigs)
+                ctx.stats["flirt_trie_threshold"] = threshold
+
+                trie_start = time.monotonic()
+                if use_trie:
+                    bp_result = bpm.match_unknown_functions_trie(
+                        binary_path=binary_for_byte_match,
+                        functions_json=functions_json,
+                        known_signatures=all_byte_sigs,
+                    )
+                    logger.info(
+                        "FLIRT trie matcher: %d pattern, %.0fms scan",
+                        len(all_byte_sigs),
+                        (time.monotonic() - trie_start) * 1000.0,
+                    )
+                else:
+                    bp_result = bpm.match_unknown_functions(
+                        binary_path=binary_for_byte_match,
+                        functions_json=functions_json,
+                        known_signatures=all_byte_sigs,
+                    )
+                    logger.info(
+                        "FLIRT linear matcher: %d pattern, %.0fms scan",
+                        len(all_byte_sigs),
+                        (time.monotonic() - trie_start) * 1000.0,
+                    )
+
                 byte_pattern_names = self._process_bp_result(
                     bp_result=bp_result,
                     bpm=bpm,
@@ -94,6 +128,24 @@ class BytePatternStep(Step):
         }
 
     # --- internals -----------------------------------------------------
+
+    @staticmethod
+    def _trie_decision(*, pc: Any, sig_count: int) -> tuple[bool, int]:
+        """v1.14 D2: trie path kullanilsin mi karari.
+
+        Args:
+            pc: pipeline_context (config flag'leri).
+            sig_count: toplanan FLIRT imza sayisi.
+
+        Returns:
+            (use_trie, threshold) -- esik degerini de cikti olarak verir
+            ki workspace JSON / log'a yazilabilsin.
+        """
+        cfg = pc.config.binary_reconstruction
+        threshold = int(getattr(cfg, "flirt_trie_threshold", 50))
+        use_trie_flag = bool(getattr(cfg, "flirt_use_trie", True))
+        use_trie = use_trie_flag and sig_count > threshold
+        return use_trie, threshold
 
     @staticmethod
     def _collect_flirt_signatures(*, pc: Any, binary_for_byte_match: Path) -> list[Any]:
@@ -165,6 +217,13 @@ class BytePatternStep(Step):
                     "total_unknown": bp_result.total_unknown,
                     "match_rate": bp_result.match_rate,
                     "duration_seconds": bp_result.duration_seconds,
+                    # v1.14 D2: hangi yol kullanildigi (linear / trie)
+                    "flirt_match_strategy": ctx.stats.get(
+                        "flirt_match_strategy", "linear",
+                    ),
+                    "flirt_signature_count": ctx.stats.get(
+                        "flirt_signature_count", 0,
+                    ),
                     "matches": bp_result.matches,
                 },
             )
