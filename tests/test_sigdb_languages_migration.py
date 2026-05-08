@@ -1,18 +1,20 @@
-"""sig_db Faz 10 — languages migration parity testleri.
+"""sig_db languages migration testleri (Faz A-DELETE sonrasi).
 
-Amac: karadul/analyzers/sigdb_builtin/languages.py modulune tasinan veri,
-orijinal karadul/analyzers/signature_db.py dict'leriyle birebir ayni mi?
-Override mekanizmasi calisiyor mu? Legacy fallback hala erisilebilir mi?
+v1.13 Dalga 2 A-DELETE: legacy ``_V8_NODE_SIGNATURES``, ``_LUA_SIGNATURES``
+ve ``_RUBY_SIGNATURES`` inline literal bloklari silindi, signature_db.py
+artik ``from sigdb_builtin.languages import SIGNATURES`` referansi uzerinden
+dogrudan import yapiyor. AST parse parity testleri (eski
+``_load_original_ast_values`` + ``test_identity_parity_*``) tautolojik hale
+geldigi icin kaldirildi.
 
-Logging migration testlerinin (Faz 9 pilot) birebir pattern'ini takip eder
-(bkz: test_sigdb_logging_migration.py). Faz 10 kapsami (ADR 0007 A6):
-  - v8_node    (73 entry — V8 embedder API + Node.js N-API)
-  - lua        (52 entry — Lua C API embedding)
-  - ruby       (30 entry — Ruby C extension API)
-Toplam: 155 imza.
-
-Tip A override (legacy in-place dict gövdeleri korunur, rollback bandi
-1 surum). v1.13 Faz A-DELETE'te legacy bloklar silinecek.
+Korunan parity katmanlari:
+1. Runtime identity (``is`` check, v8_node/lua/ruby)
+2. Coverage count (73 + 52 + 30 = 155 imza)
+3. No duplicate keys (cross-dict)
+4. Bilinen sembol lookup (v8::Isolate::New, napi_*, luaL_newstate, ruby_init)
+5. SignatureDB instance entegrasyon
+6. Post-A-DELETE: signature_db.py'da inline literal YOK + dogrudan
+   ``_BUILTIN_LANG_SIGNATURES`` referansi VAR.
 """
 from __future__ import annotations
 
@@ -114,69 +116,46 @@ def test_legacy_languages_attributes_still_accessible() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 4. Data parity — orijinalden birebir kopya mi? (AST literal_eval)
+# 4. Post-A-DELETE: legacy literal silindi, dogrudan import kullaniliyor
 # ---------------------------------------------------------------------------
 
-def _load_original_ast_values() -> dict:
-    """signature_db.py'nin BIRINCI ham AST parse'indan orijinal dict'leri al.
+def test_post_a_delete_no_inline_literal() -> None:
+    """signature_db.py'da legacy ``_V8_NODE/_LUA/_RUBY_SIGNATURES = {...}``
+    literal'leri YOK.
 
-    Override'i bypass etmek icin kaynak kodu direkt AST'den okuyoruz. Boylece
-    override oncesi gercek (legacy in-place) degerlerle karsilastirabiliriz.
+    A-DELETE sonrasi signature_db.py languages dict'lerini sadece
+    ``_BUILTIN_LANG_SIGNATURES["..."]`` lookup'u uzerinden tutar.
     """
-    import ast
     from pathlib import Path
-    src_path = Path("karadul/analyzers/signature_db.py")
-    src = src_path.read_text()
-    tree = ast.parse(src)
 
-    targets = {
-        "_V8_NODE_SIGNATURES",
-        "_LUA_SIGNATURES",
-        "_RUBY_SIGNATURES",
-    }
-    result: dict = {}
-    for n in ast.walk(tree):
-        if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name):
-            if n.target.id in targets and n.target.id not in result:
-                result[n.target.id] = ast.literal_eval(n.value)
-    return result
-
-
-def test_identity_parity_v8_node() -> None:
-    """v8_node dict: builtin modul icerigi orijinal inline ile birebir ayni."""
-    from karadul.analyzers.sigdb_builtin.languages import SIGNATURES
-
-    original = _load_original_ast_values()
-    migrated = SIGNATURES["v8_node"]
-    assert migrated == original["_V8_NODE_SIGNATURES"]
-    assert len(migrated) == len(original["_V8_NODE_SIGNATURES"]) == 73
-    # Per-entry kontrol (yardimci nokta — sadece icerik degil tip de uyumlu)
-    for name, entry in migrated.items():
-        assert original["_V8_NODE_SIGNATURES"][name] == entry, f"v8_node mismatch: {name}"
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    # Reference assignment'lar olmali
+    assert (
+        '_V8_NODE_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_LANG_SIGNATURES["v8_node"]'
+    ) in text
+    assert (
+        '_LUA_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_LANG_SIGNATURES["lua"]'
+    ) in text
+    assert (
+        '_RUBY_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_LANG_SIGNATURES["ruby"]'
+    ) in text
+    # Inline literal blok baslangici YOK
+    assert "_V8_NODE_SIGNATURES: dict[str, dict[str, str]] = {" not in text
+    assert "_LUA_SIGNATURES: dict[str, dict[str, str]] = {" not in text
+    assert "_RUBY_SIGNATURES: dict[str, dict[str, str]] = {" not in text
 
 
-def test_identity_parity_lua() -> None:
-    """lua dict: builtin modul icerigi orijinal inline ile birebir ayni."""
-    from karadul.analyzers.sigdb_builtin.languages import SIGNATURES
+def test_post_a_delete_direct_import() -> None:
+    """signature_db.py languages SIGNATURES'i ``sigdb_builtin.languages``'tan
+    dogrudan alir."""
+    from pathlib import Path
 
-    original = _load_original_ast_values()
-    migrated = SIGNATURES["lua"]
-    assert migrated == original["_LUA_SIGNATURES"]
-    assert len(migrated) == len(original["_LUA_SIGNATURES"]) == 52
-    for name, entry in migrated.items():
-        assert original["_LUA_SIGNATURES"][name] == entry, f"lua mismatch: {name}"
-
-
-def test_identity_parity_ruby() -> None:
-    """ruby dict: builtin modul icerigi orijinal inline ile birebir ayni."""
-    from karadul.analyzers.sigdb_builtin.languages import SIGNATURES
-
-    original = _load_original_ast_values()
-    migrated = SIGNATURES["ruby"]
-    assert migrated == original["_RUBY_SIGNATURES"]
-    assert len(migrated) == len(original["_RUBY_SIGNATURES"]) == 30
-    for name, entry in migrated.items():
-        assert original["_RUBY_SIGNATURES"][name] == entry, f"ruby mismatch: {name}"
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    assert "_BUILTIN_LANG_SIGNATURES" in text
+    assert "sigdb_builtin" in text and "languages" in text
 
 
 # ---------------------------------------------------------------------------

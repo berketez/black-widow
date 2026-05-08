@@ -1,19 +1,19 @@
-"""sig_db Faz 3 — network migration parity testleri.
+"""sig_db network migration testleri (Faz A-DELETE sonrasi).
 
-Amac: karadul/analyzers/sigdb_builtin/network.py modulune tasinan veri,
-orijinal karadul/analyzers/signature_db.py dict'leriyle birebir ayni mi?
-Override mekanizmasi calisiyor mu? Legacy fallback hala erisilebilir mi?
+v1.13 Dalga 2 A-DELETE: legacy ``_*_SIGNATURES`` inline literal bloklari
+silindi, signature_db.py artik
+``from sigdb_builtin.network import SIGNATURES`` referansi uzerinden dogrudan
+import yapiyor. AST parse parity testleri (eski ``_load_original_ast_values``
++ ``test_data_parity_per_dict[...]`` parametrize) tautolojik hale geldigi
+icin kaldirildi.
 
-Crypto/compression migration testlerinin pattern'ini takip eder. Faz 3'te
-taşınan 7 dict parity'si:
-  - libcurl_signatures                  (67 entry)
-  - posix_networking_signatures         (43 entry)
-  - nghttp2_signatures                  (28 entry)
-  - websocket_signatures                (18 entry)
-  - macos_networking_signatures         (50 entry)
-  - apple_network_framework_signatures  (35 entry)
-  - networking_ext_signatures           (99 entry — c-ares, libevent, libuv, ...)
-Toplam: 340 imza.
+Korunan parity katmanlari:
+1. Runtime identity (``is`` check, 7/7)
+2. Coverage count (7 dict, toplam 340 imza)
+3. Bilinen sembol lookup (libcurl, POSIX, websocket, Apple nw_*)
+4. SignatureDB instance entegrasyon
+5. Post-A-DELETE: signature_db.py'da inline literal YOK + dogrudan
+   ``_BUILTIN_NETWORK_SIGNATURES`` referansi VAR.
 
 NOT: SSL/TLS (OpenSSL, BoringSSL, mbedTLS) crypto kategorisine aittir;
 bu migration sadece network-layer (HTTP, TCP/UDP, WebSocket, DNS) icerir.
@@ -130,56 +130,53 @@ def test_legacy_network_attributes_still_accessible() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 4. Data parity — orijinalden birebir kopya mi?
+# 4. Post-A-DELETE: legacy literal silindi, dogrudan import kullaniliyor
 # ---------------------------------------------------------------------------
 
-def _load_original_ast_values() -> dict:
-    """signature_db.py'nin ham AST parse'indan orijinal dict'leri al."""
-    import ast
+_LEGACY_NETWORK_NAMES = (
+    "_LIBCURL_SIGNATURES",
+    "_POSIX_NETWORKING_SIGNATURES",
+    "_NGHTTP2_SIGNATURES",
+    "_WEBSOCKET_SIGNATURES",
+    "_MACOS_NETWORKING_SIGNATURES",
+    "_APPLE_NETWORK_FRAMEWORK_SIGNATURES",
+    "_NETWORKING_EXT_SIGNATURES",
+)
+
+
+def test_post_a_delete_no_inline_literal() -> None:
+    """signature_db.py'da legacy ``_<KAT>_SIGNATURES = {...}`` literal'leri YOK.
+
+    A-DELETE sonrasi signature_db.py network dict'lerini sadece
+    ``_BUILTIN_NETWORK_SIGNATURES["..."]`` lookup'u uzerinden tutar (7/7).
+    """
     from pathlib import Path
-    src_path = Path("karadul/analyzers/signature_db.py")
-    src = src_path.read_text()
-    tree = ast.parse(src)
 
-    targets = {
-        "_LIBCURL_SIGNATURES",
-        "_POSIX_NETWORKING_SIGNATURES",
-        "_NGHTTP2_SIGNATURES",
-        "_WEBSOCKET_SIGNATURES",
-        "_MACOS_NETWORKING_SIGNATURES",
-        "_APPLE_NETWORK_FRAMEWORK_SIGNATURES",
-        "_NETWORKING_EXT_SIGNATURES",
-    }
-    result: dict = {}
-    for n in ast.walk(tree):
-        if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name):
-            if n.target.id in targets and n.target.id not in result:
-                result[n.target.id] = ast.literal_eval(n.value)
-    return result
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    # Reference assignment'lar olmali (spot-check)
+    assert (
+        '_LIBCURL_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_NETWORK_SIGNATURES["libcurl_signatures"]'
+    ) in text
+    assert (
+        '_NETWORKING_EXT_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_NETWORK_SIGNATURES["networking_ext_signatures"]'
+    ) in text
+    # Inline literal blok baslangici YOK (7 hepsi icin)
+    for name in _LEGACY_NETWORK_NAMES:
+        assert (
+            f"{name}: dict[str, dict[str, str]] = " "{"
+        ) not in text, f"{name} hala inline literal olarak duruyor"
 
 
-_PARITY_MAP = {
-    "libcurl_signatures": "_LIBCURL_SIGNATURES",
-    "posix_networking_signatures": "_POSIX_NETWORKING_SIGNATURES",
-    "nghttp2_signatures": "_NGHTTP2_SIGNATURES",
-    "websocket_signatures": "_WEBSOCKET_SIGNATURES",
-    "macos_networking_signatures": "_MACOS_NETWORKING_SIGNATURES",
-    "apple_network_framework_signatures": "_APPLE_NETWORK_FRAMEWORK_SIGNATURES",
-    "networking_ext_signatures": "_NETWORKING_EXT_SIGNATURES",
-}
+def test_post_a_delete_direct_import() -> None:
+    """signature_db.py network SIGNATURES'i ``sigdb_builtin.network``'tan
+    dogrudan alir."""
+    from pathlib import Path
 
-
-@pytest.mark.parametrize("migrated_key,original_name", list(_PARITY_MAP.items()))
-def test_data_parity_per_dict(migrated_key: str, original_name: str) -> None:
-    """Her dict icin birebir key-by-key parity."""
-    from karadul.analyzers.sigdb_builtin.network import SIGNATURES
-
-    original = _load_original_ast_values()
-    migrated = SIGNATURES[migrated_key]
-    assert migrated == original[original_name], (
-        f"{migrated_key} icerik farki: migration kirik"
-    )
-    assert len(migrated) == len(original[original_name])
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    assert "_BUILTIN_NETWORK_SIGNATURES" in text
+    assert "sigdb_builtin" in text and "network" in text
 
 
 # ---------------------------------------------------------------------------

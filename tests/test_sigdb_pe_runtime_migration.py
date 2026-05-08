@@ -1,25 +1,22 @@
-"""sig_db Faz 6C — PE/MSVC runtime migration parity + coverage testleri.
+"""sig_db PE/MSVC runtime migration testleri (Faz A-DELETE sonrasi).
 
-Amac: ``karadul/analyzers/sigdb_builtin/pe_runtime.py`` modulune tasinan /
-eklenen veri, orijinal ``karadul/analyzers/signature_db.py`` dict'leriyle
-ne olcude uyumlu?
+v1.13 Dalga 2 A-DELETE: legacy ``_WIN32_KERNEL32_SIGNATURES`` ve
+``_WIN32_NTDLL_SIGNATURES`` inline literal bloklari silindi, signature_db.py
+artik ``from sigdb_builtin.pe_runtime import SIGNATURES`` referansi uzerinden
+dogrudan import yapiyor. AST parse parity testleri (eski
+``_load_original_ast_values`` + ``test_data_parity_kernel32/ntdll``)
+tautolojik hale geldigi icin kaldirildi.
 
-  1. ``kernel32_signatures`` — legacy ``_WIN32_KERNEL32_SIGNATURES`` ile
-     birebir identity parity (60 entry).
-  2. ``ntdll_signatures``    — legacy ``_WIN32_NTDLL_SIGNATURES`` ile birebir
-     identity parity (14 entry).
-  3. ``msvc_crt_signatures`` — YENI dict, legacy karsiligi YOK. Coverage
-     dogrulanir: 200+ entry (MSVCRT / UCRT / VCRUNTIME140). Altkumesi legacy
-     ``_MEGA_BATCH_1_SIGNATURES`` icindeki CRT sembolleriyle ortustugunde
-     ayni ``lib``/``purpose`` degerini tasimalidir (idempotent).
-
-Crypto / compression / network migration testlerinin pattern'ini takip eder
-(bkz: test_sigdb_compression_migration.py).
+Korunan parity katmanlari:
+1. Runtime identity (``is`` check, kernel32/ntdll/msvc_crt)
+2. Coverage count (kernel32=60, ntdll=14, msvc_crt>=200)
+3. MSVC CRT yeni dict: schema + lib labels + idempotent overlap
+4. Bilinen sembol lookup (CreateFileW, NtCreateFile, __CxxFrameHandler3)
+5. SignatureDB instance entegrasyon (_full_cache temizli)
+6. Post-A-DELETE: signature_db.py'da inline literal YOK + dogrudan
+   ``_BUILTIN_PE_RUNTIME_SIGNATURES`` referansi VAR.
 """
 from __future__ import annotations
-
-import ast
-from pathlib import Path
 
 import pytest
 
@@ -95,49 +92,49 @@ def test_legacy_pe_runtime_attributes_still_accessible() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 3. Data parity — orijinal inline ile birebir kopya mi? (kernel32 / ntdll)
+# 3. Post-A-DELETE: legacy literal silindi, dogrudan import kullaniliyor
 # ---------------------------------------------------------------------------
 
-def _load_original_ast_values() -> dict:
-    """signature_db.py'nin BIRINCI ham AST parse'indan orijinal dict'leri al.
+def test_post_a_delete_no_inline_literal() -> None:
+    """signature_db.py'da legacy ``_WIN32_KERNEL32/NTDLL_SIGNATURES = {...}``
+    literal'leri YOK.
 
-    Override'i bypass etmek icin kaynak kodu direkt AST'den okuyoruz.
-    ``ast.AnnAssign`` sadece orijinal ``_X: dict[...] = {...}`` tanimini yakalar;
-    override bloklarindaki ``_X = _BUILTIN_X.get(...)`` yok sayilir (bu bir
-    ``ast.Assign``, annotation yok).
+    A-DELETE sonrasi signature_db.py kernel32/ntdll/msvc_crt dict'lerini sadece
+    ``_BUILTIN_PE_RUNTIME_SIGNATURES["..."]`` lookup'u uzerinden tutar.
     """
-    src_path = Path("karadul/analyzers/signature_db.py")
-    src = src_path.read_text(encoding="utf-8")
-    tree = ast.parse(src)
+    from pathlib import Path
 
-    targets = {
-        "_WIN32_KERNEL32_SIGNATURES",
-        "_WIN32_NTDLL_SIGNATURES",
-    }
-    result: dict = {}
-    for n in ast.walk(tree):
-        if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name):
-            if n.target.id in targets and n.target.id not in result:
-                result[n.target.id] = ast.literal_eval(n.value)
-    return result
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    # Reference assignment'lar olmali
+    assert (
+        '_WIN32_KERNEL32_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_PE_RUNTIME_SIGNATURES["kernel32_signatures"]'
+    ) in text
+    assert (
+        '_WIN32_NTDLL_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_PE_RUNTIME_SIGNATURES["ntdll_signatures"]'
+    ) in text
+    assert (
+        '_MSVC_CRT_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_PE_RUNTIME_SIGNATURES["msvc_crt_signatures"]'
+    ) in text
+    # Inline literal blok baslangici YOK
+    assert (
+        "_WIN32_KERNEL32_SIGNATURES: dict[str, dict[str, str]] = {"
+    ) not in text
+    assert (
+        "_WIN32_NTDLL_SIGNATURES: dict[str, dict[str, str]] = {"
+    ) not in text
 
 
-def test_data_parity_kernel32() -> None:
-    """kernel32 dict: override sonrasi icerik orijinal inline ile birebir ayni."""
-    from karadul.analyzers.sigdb_builtin.pe_runtime import SIGNATURES
+def test_post_a_delete_direct_import() -> None:
+    """signature_db.py pe_runtime SIGNATURES'i ``sigdb_builtin.pe_runtime``'dan
+    dogrudan alir."""
+    from pathlib import Path
 
-    original = _load_original_ast_values()
-    migrated = SIGNATURES["kernel32_signatures"]
-    assert migrated == original["_WIN32_KERNEL32_SIGNATURES"]
-    assert len(migrated) == len(original["_WIN32_KERNEL32_SIGNATURES"])
-
-
-def test_data_parity_ntdll() -> None:
-    """ntdll dict: override sonrasi icerik orijinal inline ile birebir ayni."""
-    from karadul.analyzers.sigdb_builtin.pe_runtime import SIGNATURES
-
-    original = _load_original_ast_values()
-    assert SIGNATURES["ntdll_signatures"] == original["_WIN32_NTDLL_SIGNATURES"]
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    assert "_BUILTIN_PE_RUNTIME_SIGNATURES" in text
+    assert "sigdb_builtin" in text and "pe_runtime" in text
 
 
 # ---------------------------------------------------------------------------

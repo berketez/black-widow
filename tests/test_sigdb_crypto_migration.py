@@ -1,11 +1,19 @@
-"""sig_db Faz 2 pilot — crypto migration parity testleri.
+"""sig_db crypto migration testleri (Faz A-DELETE sonrasi).
 
-Amac: karadul/analyzers/sigdb_builtin/crypto.py modulune tasinan veri,
-orijinal karadul/analyzers/signature_db.py dict'leriyle birebir ayni mi?
-Override mekanizmasi calisiyor mu? Legacy fallback hala erisilebilir mi?
+v1.13 Dalga 2 A-DELETE: legacy ``_*_SIGNATURES`` inline literal bloklari
+silindi, signature_db.py artik
+``from sigdb_builtin.crypto import SIGNATURES`` referansi uzerinden dogrudan
+import yapiyor. AST parse parity testleri (eski ``_load_original_ast_values``)
+tautolojik hale geldigi icin kaldirildi.
 
-Bu testler "data degisikligi yok" garantisini saglar — migration sadece
-referans yonu degistirir, icerigi asla degistirmez.
+Korunan parity katmanlari:
+1. Runtime identity (``is`` check)
+2. Coverage count
+3. No duplicate keys (kategori-bazli)
+4. Bilinen sembol lookup
+5. SignatureDB instance entegrasyon
+6. Post-A-DELETE: signature_db.py'da inline literal YOK + dogrudan
+   ``_BUILTIN_CRYPTO_SIGNATURES`` referansi VAR.
 """
 from __future__ import annotations
 
@@ -116,85 +124,44 @@ def test_legacy_attributes_still_accessible() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 4. Data parity — orijinalden birebir kopya mi?
+# 4. Post-A-DELETE: legacy literal silindi, dogrudan import kullaniliyor
 # ---------------------------------------------------------------------------
 
-def _load_original_ast_values() -> dict:
-    """signature_db.py'nin BIRINCI ham AST parse'indan orijinal dict'leri al.
+def test_post_a_delete_no_inline_literal() -> None:
+    """signature_db.py'da legacy ``_<KAT>_SIGNATURES = {...}`` literal'leri YOK.
 
-    Override'i bypass etmek icin kaynak kodu direkt AST'den okuyoruz.
-    Boylece override oncesi gercek degerlerle karsilastirabiliriz.
+    A-DELETE sonrasi signature_db.py crypto dict'lerini sadece
+    ``_BUILTIN_CRYPTO_SIGNATURES["..."]`` lookup'u uzerinden tutar.
     """
-    import ast
     from pathlib import Path
-    src_path = Path("karadul/analyzers/signature_db.py")
-    src = src_path.read_text()
-    tree = ast.parse(src)
 
-    targets = {
-        "_OPENSSL_SIGNATURES",
-        "_BORINGSSL_SIGNATURES",
-        "_LIBSODIUM_SIGNATURES",
-        "_MBEDTLS_SIGNATURES",
-        "_WINCRYPTO_SIGNATURES",
-        "_FINDCRYPT_CONSTANTS",
-    }
-    result: dict = {}
-    for n in ast.walk(tree):
-        if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name):
-            if n.target.id in targets and n.target.id not in result:
-                # AnnAssign.value literal_eval edilebilir olmali
-                result[n.target.id] = ast.literal_eval(n.value)
-    return result
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    # Reference assignment'lar olmali
+    assert (
+        '_OPENSSL_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_CRYPTO_SIGNATURES["openssl_signatures"]'
+    ) in text
+    assert (
+        '_BORINGSSL_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_CRYPTO_SIGNATURES["boringssl_signatures"]'
+    ) in text
+    # Inline literal blok baslangici YOK
+    assert '_OPENSSL_SIGNATURES: dict[str, dict[str, str]] = {' not in text
+    assert '_BORINGSSL_SIGNATURES: dict[str, dict[str, str]] = {' not in text
+    assert '_LIBSODIUM_SIGNATURES: dict[str, dict[str, str]] = {' not in text
+    assert '_MBEDTLS_SIGNATURES: dict[str, dict[str, str]] = {' not in text
+    assert '_WINCRYPTO_SIGNATURES: dict[str, dict[str, str]] = {' not in text
 
 
-def test_data_parity_openssl() -> None:
-    """OpenSSL dict: override sonrasi icerik orijinal inline ile birebir ayni."""
-    from karadul.analyzers.sigdb_builtin.crypto import SIGNATURES
+def test_post_a_delete_direct_import() -> None:
+    """signature_db.py crypto SIGNATURES'i ``sigdb_builtin.crypto``'dan dogrudan alir."""
+    from pathlib import Path
 
-    original = _load_original_ast_values()
-    migrated = SIGNATURES["openssl_signatures"]
-    assert migrated == original["_OPENSSL_SIGNATURES"]
-    assert len(migrated) == len(original["_OPENSSL_SIGNATURES"])
-
-
-def test_data_parity_boringssl() -> None:
-    from karadul.analyzers.sigdb_builtin.crypto import SIGNATURES
-
-    original = _load_original_ast_values()
-    assert SIGNATURES["boringssl_signatures"] == original["_BORINGSSL_SIGNATURES"]
-
-
-def test_data_parity_libsodium() -> None:
-    from karadul.analyzers.sigdb_builtin.crypto import SIGNATURES
-
-    original = _load_original_ast_values()
-    assert SIGNATURES["libsodium_signatures"] == original["_LIBSODIUM_SIGNATURES"]
-
-
-def test_data_parity_mbedtls() -> None:
-    from karadul.analyzers.sigdb_builtin.crypto import SIGNATURES
-
-    original = _load_original_ast_values()
-    assert SIGNATURES["mbedtls_signatures"] == original["_MBEDTLS_SIGNATURES"]
-
-
-def test_data_parity_wincrypto() -> None:
-    from karadul.analyzers.sigdb_builtin.crypto import SIGNATURES
-
-    original = _load_original_ast_values()
-    assert SIGNATURES["wincrypto_signatures"] == original["_WINCRYPTO_SIGNATURES"]
-
-
-def test_data_parity_findcrypt() -> None:
-    from karadul.analyzers.sigdb_builtin.crypto import SIGNATURES
-
-    original = _load_original_ast_values()
-    assert SIGNATURES["findcrypt_constants"] == original["_FINDCRYPT_CONSTANTS"]
-    # Liste siralamasi da korunmalidir (deterministik iteration icin)
-    assert list(SIGNATURES["findcrypt_constants"]) == list(
-        original["_FINDCRYPT_CONSTANTS"]
-    )
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    # A-DELETE sonrasi import / referans pattern'i mevcut olmali
+    assert "_BUILTIN_CRYPTO_SIGNATURES" in text
+    # Sigdb_builtin crypto modulunden geldigi belli olmali
+    assert "sigdb_builtin" in text and "crypto" in text
 
 
 # ---------------------------------------------------------------------------

@@ -1,17 +1,20 @@
-"""sig_db Faz 9 (pilot) — logging migration parity testleri.
+"""sig_db logging migration testleri (Faz A-DELETE sonrasi).
 
-Amac: karadul/analyzers/sigdb_builtin/logging.py modulune tasinan veri,
-orijinal karadul/analyzers/signature_db.py dict'leriyle birebir ayni mi?
-Override mekanizmasi calisiyor mu? Legacy fallback hala erisilebilir mi?
+v1.13 Dalga 2 A-DELETE: legacy ``_LOGGING_SIGNATURES`` ve
+``_LOGGING_EXT_SIGNATURES`` inline literal bloklari silindi, signature_db.py
+artik ``from sigdb_builtin.logging import SIGNATURES`` referansi uzerinden
+dogrudan import yapiyor. AST parse parity testleri (eski
+``_load_original_ast_values`` + ``test_data_parity_logging[_ext]``)
+tautolojik hale geldigi icin kaldirildi.
 
-Compression/crypto migration testlerinin birebir pattern'ini takip eder
-(bkz: test_sigdb_compression_migration.py). Faz 9 pilot kapsami:
-  - logging_signatures        (45 entry — spdlog/log4cxx/glog/glib/android/os_log/asl)
-  - logging_ext_signatures    (38 entry — syslog/journald/dbus/ETW/PDH)
-Toplam: 83 imza.
-
-ADR 0008 Grup 10 referansi: 2 dict, 83 entry, ~103 LOC. Tip A override
-(legacy in-place dict gövdeleri korunur, rollback bandi 1 surum).
+Korunan parity katmanlari:
+1. Runtime identity (``is`` check, logging + logging_ext)
+2. Coverage count (45 + 38 = 83 imza)
+3. Anahtar kesismez (cross-dict)
+4. Bilinen sembol lookup (spdlog, glog, oslog, syslog, ETW, journald)
+5. SignatureDB instance entegrasyon
+6. Post-A-DELETE: signature_db.py'da inline literal YOK + dogrudan
+   ``_BUILTIN_LOGGING_SIGNATURES`` referansi VAR.
 """
 from __future__ import annotations
 
@@ -109,51 +112,40 @@ def test_legacy_logging_attributes_still_accessible() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 4. Data parity — orijinalden birebir kopya mi?
+# 4. Post-A-DELETE: legacy literal silindi, dogrudan import kullaniliyor
 # ---------------------------------------------------------------------------
 
-def _load_original_ast_values() -> dict:
-    """signature_db.py'nin BIRINCI ham AST parse'indan orijinal dict'leri al.
+def test_post_a_delete_no_inline_literal() -> None:
+    """signature_db.py'da legacy ``_LOGGING[_EXT]_SIGNATURES = {...}`` literal'i YOK.
 
-    Override'i bypass etmek icin kaynak kodu direkt AST'den okuyoruz. Boylece
-    override oncesi gercek (legacy in-place) degerlerle karsilastirabiliriz.
+    A-DELETE sonrasi signature_db.py logging dict'lerini sadece
+    ``_BUILTIN_LOGGING_SIGNATURES["..."]`` lookup'u uzerinden tutar.
     """
-    import ast
     from pathlib import Path
-    src_path = Path("karadul/analyzers/signature_db.py")
-    src = src_path.read_text()
-    tree = ast.parse(src)
 
-    targets = {
-        "_LOGGING_SIGNATURES",
-        "_LOGGING_EXT_SIGNATURES",
-    }
-    result: dict = {}
-    for n in ast.walk(tree):
-        if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name):
-            if n.target.id in targets and n.target.id not in result:
-                result[n.target.id] = ast.literal_eval(n.value)
-    return result
-
-
-def test_data_parity_logging() -> None:
-    """logging dict: builtin modul icerigi orijinal inline ile birebir ayni."""
-    from karadul.analyzers.sigdb_builtin.logging import SIGNATURES
-
-    original = _load_original_ast_values()
-    migrated = SIGNATURES["logging_signatures"]
-    assert migrated == original["_LOGGING_SIGNATURES"]
-    assert len(migrated) == len(original["_LOGGING_SIGNATURES"]) == 45
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    # Reference assignment'lar olmali
+    assert (
+        '_LOGGING_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_LOGGING_SIGNATURES["logging_signatures"]'
+    ) in text
+    assert (
+        '_LOGGING_EXT_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_LOGGING_SIGNATURES["logging_ext_signatures"]'
+    ) in text
+    # Inline literal blok baslangici YOK
+    assert "_LOGGING_SIGNATURES: dict[str, dict[str, str]] = {" not in text
+    assert "_LOGGING_EXT_SIGNATURES: dict[str, dict[str, str]] = {" not in text
 
 
-def test_data_parity_logging_ext() -> None:
-    """logging_ext dict: builtin modul icerigi orijinal inline ile birebir ayni."""
-    from karadul.analyzers.sigdb_builtin.logging import SIGNATURES
+def test_post_a_delete_direct_import() -> None:
+    """signature_db.py logging SIGNATURES'i ``sigdb_builtin.logging``'tan
+    dogrudan alir."""
+    from pathlib import Path
 
-    original = _load_original_ast_values()
-    migrated = SIGNATURES["logging_ext_signatures"]
-    assert migrated == original["_LOGGING_EXT_SIGNATURES"]
-    assert len(migrated) == len(original["_LOGGING_EXT_SIGNATURES"]) == 38
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    assert "_BUILTIN_LOGGING_SIGNATURES" in text
+    assert "sigdb_builtin" in text and "logging" in text
 
 
 # ---------------------------------------------------------------------------

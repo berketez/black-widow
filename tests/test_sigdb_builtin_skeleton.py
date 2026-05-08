@@ -4,6 +4,12 @@ v1.12.0 ``karadul/analyzers/sigdb_builtin/`` dizini 17 kategori placeholder
 modulu + dispatcher icerir. v1.13 Dalga 1 Wave 3'te 18. kategori olarak
 ``malware_tier1`` (Tier-1 malware content pack) eklenmistir.
 
+v1.13 Dalga 2 SON ADIM (2026-05-08): 11 yeni kategori migrasyonu
+tamamlandı (posix_system, linux_system, macos_apple, windows_api,
+runtimes, database, graphics_media, event_utils, game_ml,
+strings_module, calls). signature_db.py'daki inline legacy literal'ler
+silindi (8830 → ~2976 LOC).
+
 Bu testler:
 
 1. Tum kategori modulleri import edilebiliyor mu?
@@ -57,12 +63,28 @@ class TestSigdbBuiltinImports:
     # Faz 9 pilot (ADR 0008 Grup 10): `logging` dolduruldu.
     # Faz 10 (ADR 0007 A6): `languages` (V8/Lua/Ruby 155 entry) dolduruldu.
     # v1.13 Dalga 1 Wave 3: `malware_tier1` content pack (Sliver+CS, 86 entry)
-    # NOT: pe_runtime/windows_gui/apple_runtime/modern_runtime/vm_runtime de
-    # v1.11 dalgalarinda dolduruldu; bu listenin geriye donuk genisletilmesi
-    # ayri bir cleanup PR'inda yapilacaktir (mevcut testlerde regresyon yok).
+    # v1.13 Dalga 2 (ADR 0007 A1): `posix_system` (8 dict, 247 entry)
+    # v1.13 Dalga 2 (ADR 0007 A2): `linux_system` (3 dict, 399 entry)
+    # v1.13 Dalga 2 (ADR 0007 A3): `macos_apple` paralel migrasyon
+    # v1.13 Dalga 2 (ADR 0007 A4): `windows_api` (6 dict, 509 entry)
+    # v1.13 Dalga 2 (ADR 0007 A5): `runtimes` (Rust/Go/Py/JNI/.NET, 7 dict, 568 entry)
+    # v1.13 Dalga 2 (ADR 0007 A6): `database` (sqlite/json/xml/protobuf/serialization, 6 dict, 579 entry)
+    # v1.13 Dalga 2 (ADR 0007 A7): `graphics_media` (OpenGL/Metal/CG/Image/Audio/FFmpeg/SDL2, 8 dict, 362 entry)
+    # v1.13 Dalga 2 (ADR 0007 A8): `event_utils` (libuv/libevent/regex/ICU/math/Qt/test/misc, 9 dict)
+    # v1.13 Dalga 2 (ADR 0007 A9): `game_ml` (ML compute + game engine + anti-analysis + mega batches)
+    # v1.13 Dalga 2 (ADR 0007 A10): `strings_module` (C++ STL + Boost + Abseil + Folly, 4 dict, 193 entry)
+    # v1.13 Dalga 2 (ADR 0007 A11): `calls` (string_reference 246 + call_pattern 98)
+    # v1.13 Dalga 2 SON ADIM: signature_db.py'da 11 yeni kategori için A-DELETE Tip B
+    # uygulandı (8830 → ~2976 LOC).
+    # NOT: pe_runtime/windows_gui/apple_runtime/modern_runtime/vm_runtime/serialization
+    # placeholder kalmaya devam ediyor (içerik başka modüllere taşındı veya henüz boş).
     _MIGRATED: frozenset[str] = frozenset({
         "crypto", "compression", "network", "logging", "languages",
         "malware_tier1",
+        # v1.13 D2: 11 yeni kategori
+        "posix_system", "linux_system", "macos_apple", "windows_api",
+        "runtimes", "database", "graphics_media", "event_utils",
+        "game_ml", "strings_module", "calls",
     })
 
     @pytest.mark.parametrize("name", _EXPECTED_CATEGORIES)

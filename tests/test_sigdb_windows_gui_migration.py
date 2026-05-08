@@ -1,20 +1,25 @@
-"""sig_db Faz 7D — Windows GUI / advapi32 / gdi32 migration + coverage testleri.
+"""sig_db Windows GUI / advapi32 / gdi32 migration testleri (Faz A-DELETE sonrasi).
 
-Amac: ``karadul/analyzers/sigdb_builtin/windows_gui.py`` modulune eklenen YENI
-kapsama, orijinal ``karadul/analyzers/signature_db.py`` dict'leriyle ne
-olcude uyumlu? Coverage hedefleri tutuyor mu?
+v1.13 Dalga 2 A-DELETE: legacy ``_*_SIGNATURES`` inline literal bloklari
+(crypto/compression/network/pe_runtime/logging/languages + ``_WIN32_ADVAPI32``
+alias) silindi/yeniden baglandi. ``_WIN32_USER32_SIGNATURES``,
+``_WIN32_ADVAPI32_FULL_SIGNATURES``, ``_WIN32_GDI32_SIGNATURES`` artik
+``_BUILTIN_WINDOWS_GUI_SIGNATURES`` referansi uzerinden geliyor.
 
-  1. ``user32_signatures``    — YENI dict (~270 entry). Legacy
-     ``_WIN32_USER32_GDI32_SIGNATURES`` icindeki user32 entry'leri ile
-     overlap'te ayni ``lib`` degerini tasir (idempotent).
-  2. ``advapi32_signatures``  — YENI dict (~160 entry). Legacy
-     ``_WIN32_ADVAPI32_SIGNATURES`` (20 entry) subset'idir ve genisletir.
-  3. ``gdi32_signatures``     — YENI dict (~125 entry). Legacy
-     ``_WIN32_USER32_GDI32_SIGNATURES`` icindeki gdi32 entry'leri ile
-     overlap'te ayni ``lib`` degerini tasir (idempotent).
+AST parse parity (eski legacy ``_WIN32_USER32_GDI32_SIGNATURES`` ve
+``_WIN32_ADVAPI32_SIGNATURES`` icin ``ast.literal_eval`` overlap testleri)
+artik tautolojik veya patolojik (advapi32 alias bir ``Name``,
+literal_eval edilemez) hale geldi ve kaldirildi. Yerine runtime sembol
+overlap testleri ve post-A-DELETE referans dogrulamasi konuldu.
 
-pe_runtime + compression + network migration testlerinin pattern'ini takip
-eder (bkz: test_sigdb_pe_runtime_migration.py).
+Korunan parity katmanlari:
+1. Runtime identity (``is`` check, user32/advapi32/gdi32)
+2. Coverage count (>=120 / >=80 / >=50, toplam >=250)
+3. Schema + lib + category dogrulamasi
+4. Bilinen sembol kapsamasi (CreateWindowExW, RegOpenKeyExW, BitBlt, ...)
+5. SignatureDB instance entegrasyon (_full_cache temizli)
+6. Post-A-DELETE: signature_db.py'da inline literal YOK + dogrudan
+   ``_BUILTIN_WINDOWS_GUI_SIGNATURES`` referansi VAR.
 """
 from __future__ import annotations
 
@@ -186,76 +191,114 @@ def test_windows_gui_categories_are_valid() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 4. Legacy idempotent overlap
+# 4. Runtime idempotent overlap (Faz A-DELETE sonrasi)
 # ---------------------------------------------------------------------------
+#
+# A-DELETE sonrasi `_WIN32_ADVAPI32_SIGNATURES` artik
+# `_WIN32_ADVAPI32_FULL_SIGNATURES` (= builtin advapi32) alias'i; AST
+# literal_eval edilemez. `_WIN32_USER32_GDI32_SIGNATURES` ise legacy 23
+# entry'lik kucuk bir literal olarak `signature_db.py` icinde duruyor (Faz
+# A-DELETE kapsami disinda; v1.14+ icin bekliyor). Yine de runtime degeriyle
+# overlap kontrolu yaparak idempotent olduklarini dogrulariz.
 
-def test_user32_gdi32_legacy_overlap_is_idempotent() -> None:
-    """Legacy `_WIN32_USER32_GDI32_SIGNATURES` icindeki entry'ler yeni
-    dict'lerle ayni ``lib`` ve ``category`` degerini tasimali."""
-    # Legacy inline dict'i AST yolu ile oku — override bypass.
-    import ast
-    from pathlib import Path
-
-    src = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
-    tree = ast.parse(src)
-    legacy = None
-    for n in ast.walk(tree):
-        if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name):
-            if n.target.id == "_WIN32_USER32_GDI32_SIGNATURES":
-                legacy = ast.literal_eval(n.value)
-                break
-    assert legacy is not None
-
+def test_user32_gdi32_runtime_overlap_is_idempotent() -> None:
+    """Runtime `_WIN32_USER32_GDI32_SIGNATURES` (legacy small dict) yeni
+    user32/gdi32 builtin dict'leriyle ortusen entry'lerde ayni ``lib`` ve
+    ``category`` tasimali (idempotent merge garantisi)."""
+    from karadul.analyzers import signature_db as sdb
     from karadul.analyzers.sigdb_builtin.windows_gui import SIGNATURES
+
+    legacy = sdb._WIN32_USER32_GDI32_SIGNATURES
     merged = {
         **SIGNATURES["user32_signatures"],
         **SIGNATURES["gdi32_signatures"],
     }
 
     overlap = set(merged) & set(legacy)
-    # En az yarisi overlap (legacy'nin buyuk kismi yeni kapsamda yer alir).
-    assert len(overlap) >= 15, f"Legacy overlap beklenmeyen oranda az: {len(overlap)}"
+    assert len(overlap) >= 15, (
+        f"Legacy user32_gdi32 overlap beklenmeyen oranda az: {len(overlap)}"
+    )
 
-    # Overlap entry'leri ayni `lib` ve `category` tasimali (idempotent).
     conflicts = []
     for k in overlap:
         if merged[k]["lib"] != legacy[k]["lib"]:
             conflicts.append((k, "lib", merged[k]["lib"], legacy[k]["lib"]))
         if merged[k]["category"] != legacy[k]["category"]:
-            conflicts.append((k, "category", merged[k]["category"], legacy[k]["category"]))
-    assert not conflicts, f"Legacy ile lib/category farkli entry'ler: {conflicts[:5]}"
+            conflicts.append(
+                (k, "category", merged[k]["category"], legacy[k]["category"])
+            )
+    assert not conflicts, (
+        f"Legacy ile lib/category farkli entry'ler: {conflicts[:5]}"
+    )
 
 
-def test_advapi32_legacy_overlap_is_idempotent() -> None:
-    """Legacy `_WIN32_ADVAPI32_SIGNATURES` icindeki entry'ler yeni dict ile
-    ayni ``lib`` ve ``category`` degerini tasimali."""
-    import ast
+def test_advapi32_runtime_full_alias_is_idempotent() -> None:
+    """A-DELETE sonrasi `_WIN32_ADVAPI32_SIGNATURES` artik full alias.
+
+    `_WIN32_ADVAPI32_SIGNATURES is _WIN32_ADVAPI32_FULL_SIGNATURES is
+    builtin["advapi32_signatures"]` olmali; bu nedenle overlap %100, conflict
+    olmamali (trivially idempotent)."""
+    from karadul.analyzers import signature_db as sdb
+    from karadul.analyzers.sigdb_builtin.windows_gui import SIGNATURES
+
+    new_adv = SIGNATURES["advapi32_signatures"]
+    legacy_alias = sdb._WIN32_ADVAPI32_SIGNATURES
+
+    # Tam alias: ayni obje
+    assert legacy_alias is new_adv or legacy_alias is sdb._WIN32_ADVAPI32_FULL_SIGNATURES
+    # Cakisan tum keyler ayni icerige sahip
+    overlap = set(new_adv) & set(legacy_alias)
+    assert len(overlap) == len(legacy_alias), (
+        "Alias uzerinden overlap %100 olmali"
+    )
+    conflicts = [
+        k for k in overlap
+        if new_adv[k]["lib"] != legacy_alias[k]["lib"]
+        or new_adv[k]["category"] != legacy_alias[k]["category"]
+    ]
+    assert not conflicts, f"Alias ile conflict olmamali: {conflicts[:5]}"
+
+
+# ---------------------------------------------------------------------------
+# 4b. Post-A-DELETE: legacy literal silindi, dogrudan import kullaniliyor
+# ---------------------------------------------------------------------------
+
+def test_post_a_delete_no_inline_literal() -> None:
+    """signature_db.py'da yeni windows_gui dict'lerinin inline literal'i YOK.
+
+    A-DELETE sonrasi user32/advapi32_full/gdi32 sadece
+    ``_BUILTIN_WINDOWS_GUI_SIGNATURES["..."]`` lookup'u uzerinden tutulur.
+    """
     from pathlib import Path
 
-    src = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
-    tree = ast.parse(src)
-    legacy = None
-    for n in ast.walk(tree):
-        if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name):
-            if n.target.id == "_WIN32_ADVAPI32_SIGNATURES":
-                legacy = ast.literal_eval(n.value)
-                break
-    assert legacy is not None
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    # Reference assignment'lar olmali
+    assert (
+        '_WIN32_USER32_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_WINDOWS_GUI_SIGNATURES["user32_signatures"]'
+    ) in text
+    assert (
+        '_WIN32_ADVAPI32_FULL_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_WINDOWS_GUI_SIGNATURES["advapi32_signatures"]'
+    ) in text
+    assert (
+        '_WIN32_GDI32_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_WINDOWS_GUI_SIGNATURES["gdi32_signatures"]'
+    ) in text
+    # Yeni 3 isim icin inline literal YOK
+    assert "_WIN32_USER32_SIGNATURES: dict[str, dict[str, str]] = {" not in text
+    assert "_WIN32_ADVAPI32_FULL_SIGNATURES: dict[str, dict[str, str]] = {" not in text
+    assert "_WIN32_GDI32_SIGNATURES: dict[str, dict[str, str]] = {" not in text
 
-    from karadul.analyzers.sigdb_builtin.windows_gui import SIGNATURES
-    new_adv = SIGNATURES["advapi32_signatures"]
 
-    overlap = set(new_adv) & set(legacy)
-    # Legacy'nin tamamini kapsamalidir (20 entry hepsi yenide var).
-    assert len(overlap) >= 15, f"Legacy advapi32 overlap cok dusuk: {len(overlap)}"
+def test_post_a_delete_direct_import() -> None:
+    """signature_db.py windows_gui SIGNATURES'i ``sigdb_builtin.windows_gui``'dan
+    dogrudan alir."""
+    from pathlib import Path
 
-    conflicts = []
-    for k in overlap:
-        if new_adv[k]["lib"] != legacy[k]["lib"]:
-            conflicts.append((k, "lib", new_adv[k]["lib"], legacy[k]["lib"]))
-        if new_adv[k]["category"] != legacy[k]["category"]:
-            conflicts.append((k, "category", new_adv[k]["category"], legacy[k]["category"]))
-    assert not conflicts, f"Legacy advapi32 ile farkli entry'ler: {conflicts[:5]}"
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    assert "_BUILTIN_WINDOWS_GUI_SIGNATURES" in text
+    assert "sigdb_builtin" in text and "windows_gui" in text
 
 
 # ---------------------------------------------------------------------------

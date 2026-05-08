@@ -1,17 +1,18 @@
-"""sig_db Faz 3 — compression migration parity testleri.
+"""sig_db compression migration testleri (Faz A-DELETE sonrasi).
 
-Amac: karadul/analyzers/sigdb_builtin/compression.py modulune tasinan veri,
-orijinal karadul/analyzers/signature_db.py dict'leriyle birebir ayni mi?
-Override mekanizmasi calisiyor mu? Legacy fallback hala erisilebilir mi?
+v1.13 Dalga 2 A-DELETE: legacy ``_*_SIGNATURES`` inline literal bloklari
+silindi, signature_db.py artik
+``from sigdb_builtin.compression import SIGNATURES`` referansi uzerinden
+dogrudan import yapiyor. AST parse parity testleri (eski
+``_load_original_ast_values``) tautolojik hale geldigi icin kaldirildi.
 
-Crypto migration testlerinin birebir pattern'ini takip eder (bkz:
-test_sigdb_crypto_migration.py). Faz 3'te taşınan 5 dict parity'si:
-  - zlib_signatures          (58 entry)
-  - bzip2_signatures         (17 entry)
-  - lz4_signatures           (25 entry)
-  - zstd_signatures          (42 entry)
-  - compression_ext_signatures (72 entry — xz/lzma, snappy, lzo, brotli, ...)
-Toplam: 214 imza.
+Korunan parity katmanlari:
+1. Runtime identity (``is`` check)
+2. Coverage count (5 dict, toplam 214 imza)
+3. Bilinen sembol lookup
+4. SignatureDB instance entegrasyon
+5. Post-A-DELETE: signature_db.py'da inline literal YOK + dogrudan
+   ``_BUILTIN_COMPRESSION_SIGNATURES`` referansi VAR.
 """
 from __future__ import annotations
 
@@ -111,74 +112,48 @@ def test_legacy_compression_attributes_still_accessible() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 4. Data parity — orijinalden birebir kopya mi?
+# 4. Post-A-DELETE: legacy literal silindi, dogrudan import kullaniliyor
 # ---------------------------------------------------------------------------
 
-def _load_original_ast_values() -> dict:
-    """signature_db.py'nin BIRINCI ham AST parse'indan orijinal dict'leri al.
+def test_post_a_delete_no_inline_literal() -> None:
+    """signature_db.py'da legacy ``_<KAT>_SIGNATURES = {...}`` literal'leri YOK.
 
-    Override'i bypass etmek icin kaynak kodu direkt AST'den okuyoruz.
-    Boylece override oncesi gercek degerlerle karsilastirabiliriz.
+    A-DELETE sonrasi signature_db.py compression dict'lerini sadece
+    ``_BUILTIN_COMPRESSION_SIGNATURES["..."]`` lookup'u uzerinden tutar.
     """
-    import ast
     from pathlib import Path
-    src_path = Path("karadul/analyzers/signature_db.py")
-    src = src_path.read_text()
-    tree = ast.parse(src)
 
-    targets = {
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    # Reference assignment'lar olmali
+    assert (
+        '_ZLIB_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_COMPRESSION_SIGNATURES["zlib_signatures"]'
+    ) in text
+    assert (
+        '_COMPRESSION_EXT_SIGNATURES: dict[str, dict[str, str]] = '
+        '_BUILTIN_COMPRESSION_SIGNATURES["compression_ext_signatures"]'
+    ) in text
+    # Inline literal blok baslangici YOK (5 hepsi icin)
+    for name in (
         "_ZLIB_SIGNATURES",
         "_BZIP2_SIGNATURES",
         "_LZ4_SIGNATURES",
         "_ZSTD_SIGNATURES",
         "_COMPRESSION_EXT_SIGNATURES",
-    }
-    result: dict = {}
-    for n in ast.walk(tree):
-        if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name):
-            if n.target.id in targets and n.target.id not in result:
-                result[n.target.id] = ast.literal_eval(n.value)
-    return result
+    ):
+        assert (
+            f"{name}: dict[str, dict[str, str]] = " "{"
+        ) not in text, f"{name} hala inline literal olarak duruyor"
 
 
-def test_data_parity_zlib() -> None:
-    """zlib dict: override sonrasi icerik orijinal inline ile birebir ayni."""
-    from karadul.analyzers.sigdb_builtin.compression import SIGNATURES
+def test_post_a_delete_direct_import() -> None:
+    """signature_db.py compression SIGNATURES'i ``sigdb_builtin.compression``'dan
+    dogrudan alir."""
+    from pathlib import Path
 
-    original = _load_original_ast_values()
-    migrated = SIGNATURES["zlib_signatures"]
-    assert migrated == original["_ZLIB_SIGNATURES"]
-    assert len(migrated) == len(original["_ZLIB_SIGNATURES"])
-
-
-def test_data_parity_bzip2() -> None:
-    from karadul.analyzers.sigdb_builtin.compression import SIGNATURES
-
-    original = _load_original_ast_values()
-    assert SIGNATURES["bzip2_signatures"] == original["_BZIP2_SIGNATURES"]
-
-
-def test_data_parity_lz4() -> None:
-    from karadul.analyzers.sigdb_builtin.compression import SIGNATURES
-
-    original = _load_original_ast_values()
-    assert SIGNATURES["lz4_signatures"] == original["_LZ4_SIGNATURES"]
-
-
-def test_data_parity_zstd() -> None:
-    from karadul.analyzers.sigdb_builtin.compression import SIGNATURES
-
-    original = _load_original_ast_values()
-    assert SIGNATURES["zstd_signatures"] == original["_ZSTD_SIGNATURES"]
-
-
-def test_data_parity_compression_ext() -> None:
-    from karadul.analyzers.sigdb_builtin.compression import SIGNATURES
-
-    original = _load_original_ast_values()
-    assert SIGNATURES["compression_ext_signatures"] == original[
-        "_COMPRESSION_EXT_SIGNATURES"
-    ]
+    text = Path("karadul/analyzers/signature_db.py").read_text(encoding="utf-8")
+    assert "_BUILTIN_COMPRESSION_SIGNATURES" in text
+    assert "sigdb_builtin" in text and "compression" in text
 
 
 # ---------------------------------------------------------------------------
