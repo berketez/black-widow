@@ -1508,6 +1508,60 @@ def bsim_list(config_path: Optional[str]) -> None:
     db.close()
 
 
+@bsim.command("probe")
+@click.option("--json", "json_output", is_flag=True, default=False,
+              help="Sonucu JSON olarak stdout'a yaz.")
+def bsim_probe(json_output: bool) -> None:
+    """BSim native runtime'in kullanilabilir olup olmadigini tara.
+
+    PyGhidra/JVM disinda calistirildiginda 'bsim native YOK (lite mod)' raporu
+    doner; PyGhidra ortaminda gercek modul ve DB testleri yapar.
+    """
+    from karadul.ghidra.bsim_native_probe import probe
+
+    result = probe()
+
+    if json_output:
+        import json as _json
+        click.echo(_json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+        return
+
+    # Human-readable ozet
+    color = "green" if result.available else (
+        "yellow" if result.pyghidra_active else "red"
+    )
+    console.print(f"[bold]BSim Native Probe[/bold]")
+    console.print(f"[{color}]{result.summary()}[/{color}]")
+    console.print()
+
+    flag_table = Table(title="Kontrol Sonuclari", border_style="cyan")
+    flag_table.add_column("Adim", style="bold")
+    flag_table.add_column("Durum", justify="center")
+
+    flags = [
+        ("JVM/PyGhidra aktif", result.pyghidra_active),
+        ("BSim modulu (BSimServerInfo)", result.bsim_module_found),
+        ("FunctionDatabase", result.function_database_found),
+        ("GenSignatures", result.gen_signatures_found),
+        ("BSimServerInfo new()", result.test_db_creation),
+        ("scanFunction metodu", result.test_function_scan),
+    ]
+    for label, val in flags:
+        mark = "[green]OK[/green]" if val else "[red]FAIL[/red]"
+        flag_table.add_row(label, mark)
+    console.print(flag_table)
+
+    if result.diagnostic_log:
+        console.print()
+        console.print("[bold]Diagnostic log:[/bold]")
+        for line in result.diagnostic_log:
+            console.print(f"  [dim]·[/dim] {line}")
+
+    if result.error:
+        console.print()
+        err_console.print(f"[bold red]HATA:[/bold red] {result.error}")
+
+
 # ---------------------------------------------------------------
 # karadul score <reconstructed_dir>
 # ---------------------------------------------------------------
