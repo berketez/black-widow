@@ -6,11 +6,19 @@ FLIRT (Fast Library Identification and Recognition Technology):
 - %100 dogruluk (bilinen kutuphane fonksiyonlari)
 
 Desteklenen formatlar:
-1. .pat (text pattern) -- IDA FLIRT pattern dosyalari
+1. .pat (text pattern) -- IDA FLIRT pattern dosyalari (genisletilmis,
+   public + reference + tail bytes destekli)
 2. .json (Karadul native) -- build-signature-db.py ciktisi
 3. nm export -- Dogrudan binary'den symbol extraction
 
-Kullanim:
+v1.14 D1 genislemesi:
+- ``FlirtPattern`` normalize internal IR (public symbols, references,
+  wildcards, CRC16, tail bytes)
+- ``FlirtTrieMatcher`` -- prefix byte trie + sliding window binary
+  taramasi, O(n*alpha) lookup, CRC16 sekonder dogrulama
+- ``parse_pat_file_full()`` -- yeni IR formatinda donus
+
+Kullanim (eski API, backward compat):
     from karadul.analyzers.flirt_parser import FLIRTParser
 
     parser = FLIRTParser()
@@ -26,6 +34,16 @@ Kullanim:
 
     # Tumunu SignatureDB'ye ekle
     parser.inject_into_signature_db(signature_db_instance, sigs)
+
+Kullanim (v1.14 yeni IR + trie matcher):
+    from karadul.analyzers.flirt_parser import (
+        FLIRTParser, FlirtTrieMatcher, parse_pat_file_full,
+    )
+
+    patterns = parse_pat_file_full("libc.pat")  # list[FlirtPattern]
+    matcher = FlirtTrieMatcher(patterns)
+    matches = matcher.scan_binary(binary_bytes)
+    # matches: list[FlirtMatch] (offset, pattern, crc_ok, score)
 """
 
 from __future__ import annotations
@@ -79,6 +97,24 @@ _PAT_LINE_RE = re.compile(
     r"$"
 )
 
+# v1.14 D1: Public symbol token (ilkinden sonrakiler):  ":NNNN [@]name"
+# IDA .pat formatinda ek public ve local sembol tokenleri:
+#   :0000 main :0010 helper :0020 @local
+# '@' on eki: local (non-exported) sembolu isaret eder.
+_PUBLIC_TOKEN_RE = re.compile(
+    r":(?P<offset>[0-9A-Fa-f]+)\s+(?P<at>@?)(?P<name>[A-Za-z_$][A-Za-z0-9_$.@?]*)"
+)
+
+# v1.14 D1: Reference token: "^NNNN name"  (offset NNNN'de fonksiyon "name"e
+# referans). Ornek: ^0010 _malloc
+_REFERENCE_TOKEN_RE = re.compile(
+    r"\^(?P<offset>[0-9A-Fa-f]+)\s+(?P<name>[A-Za-z_$][A-Za-z0-9_$.@?]*)"
+)
+
+# v1.14 D1: Tail bytes blok: rest icinde son '...' ile baslayan ek hex/wildcard
+# zinciri olabilir. (Cok seyrek, IDA "more bytes" devami)
+_TAIL_BYTES_RE = re.compile(r"(?<!\S)(?P<tail>[0-9A-Fa-f.]{4,})$")
+
 # nm cikti satiri: "0000000100001234 T _function_name"
 _NM_LINE_RE = re.compile(
     r"^(?P<addr>[0-9a-fA-F]+)\s+(?P<type>[TtDdBbSs])\s+(?P<name>\S+)$"
@@ -87,7 +123,14 @@ _NM_LINE_RE = re.compile(
 
 @dataclass
 class FLIRTSignature:
-    """FLIRT formatinda tek bir fonksiyon imzasi."""
+    """FLIRT formatinda tek bir fonksiyon imzasi.
+
+    v1.14 D1 ekleri (geri uyumlu, default bos):
+        public_symbols: ek public/local sembol listesi  [(offset, name), ...]
+        references:     ``^OFFSET NAME`` referanslari   [(offset, name), ...]
+        tail_bytes:     CRC sonrasi ek bayt zinciri (varsa)
+        tail_mask:      tail icin maske
+    """
 
     name: str
     library: str
@@ -99,6 +142,11 @@ class FLIRTSignature:
     confidence: float = 0.95        # FLIRT eslestirmeleri cok guvenilir
     category: str = ""              # "crypto", "compression", "network", ...
     purpose: str = ""               # "AES encryption initialization"
+    # v1.14 D1 ekleri
+    public_symbols: list[tuple[int, str]] = field(default_factory=list)
+    references: list[tuple[int, str]] = field(default_factory=list)
+    tail_bytes: bytes = b""
+    tail_mask: bytes = b""
 
     def to_dict(self) -> dict[str, Any]:
         """JSON serialization icin dict'e cevir."""
@@ -241,12 +289,16 @@ class FLIRTParser:
         size = int(m.group("size"), 16)
         offset = int(m.group("offset"), 16)
         name = m.group("name")
+        rest = m.group("rest") or ""
 
         # Isim filtreleme: bos veya internal IDA isimler
         if not name or name.startswith("?"):
             return None
 
         byte_pattern, mask = self._hex_to_bytes_with_mask(hex_str)
+
+        # v1.14 D1: rest icinden public + reference + tail bytes parse et
+        publics, refs, tail_b, tail_m = _parse_pat_rest(rest)
 
         return FLIRTSignature(
             name=name,
@@ -257,6 +309,10 @@ class FLIRTParser:
             offset=offset,
             crc16=crc16,
             confidence=0.95,
+            public_symbols=publics,
+            references=refs,
+            tail_bytes=tail_b,
+            tail_mask=tail_m,
         )
 
     def _hex_to_bytes_with_mask(self, hex_str: str) -> tuple[bytes, bytes]:
@@ -904,3 +960,449 @@ class FLIRTParser:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
         logger.info("JSON export: %s -> %d imza", output_path, len(signatures))
+
+
+# ===========================================================================
+# v1.14 Dalga 1 -- Genisletilmis FLIRT destegi
+# ===========================================================================
+#
+# Bu blok eski FLIRTParser API'sini DEGISTIRMEZ. Yalnizca yeni veri yapilari
+# ve ek fonksiyonlar ekler:
+#   - _parse_pat_rest      : .pat satir 'rest' kismi -> publics + refs + tail
+#   - compute_flirt_crc16  : IDA FLIRT CRC16 hesabi (CCITT-False)
+#   - FlirtPattern         : Normalize internal IR (dataclass)
+#   - parse_pat_file_full  : .pat -> list[FlirtPattern]
+#   - FlirtMatch           : trie matcher cikti dataclass
+#   - FlirtTrieMatcher     : prefix byte trie + sliding window scan
+# ===========================================================================
+
+
+def _parse_pat_rest(
+    rest: str,
+) -> tuple[list[tuple[int, str]], list[tuple[int, str]], bytes, bytes]:
+    """``.pat`` satirinin 'rest' kismindan public + reference + tail bytes
+    parse et.
+
+    .pat satiri formati (rest):
+        [:OFFSET NAME ...] [^OFFSET NAME ...] [TAILHEX]
+
+    Args:
+        rest: ana sembolden sonra kalan ham metin.
+
+    Returns:
+        ``(public_symbols, references, tail_bytes, tail_mask)`` tuple'i.
+    """
+    if not rest:
+        return [], [], b"", b""
+
+    publics: list[tuple[int, str]] = []
+    references: list[tuple[int, str]] = []
+
+    # Public ek sembol token'lari
+    for pm in _PUBLIC_TOKEN_RE.finditer(rest):
+        try:
+            off = int(pm.group("offset"), 16)
+        except ValueError:
+            continue
+        name = pm.group("name")
+        if not name:
+            continue
+        publics.append((off, name))
+
+    # Reference token'lari
+    for rm in _REFERENCE_TOKEN_RE.finditer(rest):
+        try:
+            off = int(rm.group("offset"), 16)
+        except ValueError:
+            continue
+        name = rm.group("name")
+        if not name:
+            continue
+        references.append((off, name))
+
+    # Tail bytes: rest'in sonunda 'AABB..CC' gibi bagimsiz hex grubu varsa.
+    # Public/reference token'lari `:NAME` veya `^NAME` icerdigi icin
+    # tail_bytes_re yalnizca SAF hex grubunu yakalar.
+    tail_bytes = b""
+    tail_mask = b""
+    # rest'in sonunda public/reference TOKEN'inden sonra GELMIS hex grubu
+    # arariz. Strateji: rest'i son public/reference end'inden itibaren al,
+    # son token bitti ise oradan sonrasini tail kabul et.
+    last_end = 0
+    for pm in _PUBLIC_TOKEN_RE.finditer(rest):
+        last_end = max(last_end, pm.end())
+    for rm in _REFERENCE_TOKEN_RE.finditer(rest):
+        last_end = max(last_end, rm.end())
+    suffix = rest[last_end:].strip()
+    if suffix:
+        tm = _TAIL_BYTES_RE.search(suffix)
+        if tm:
+            tail_hex = tm.group("tail")
+            # _hex_to_bytes_with_mask icin local kopya
+            tail_bytes, tail_mask = _hex_to_bytes_with_mask_local(tail_hex)
+
+    return publics, references, tail_bytes, tail_mask
+
+
+def _hex_to_bytes_with_mask_local(hex_str: str) -> tuple[bytes, bytes]:
+    """``FLIRTParser._hex_to_bytes_with_mask`` modul-duzeyi ikiz; saf
+    fonksiyon olarak ihtiyac olan yerden cagirilabilir.
+    """
+    pattern_bytes = bytearray()
+    mask_bytes = bytearray()
+    i = 0
+    n = len(hex_str)
+    while i < n:
+        if i + 1 < n and hex_str[i] == "." and hex_str[i + 1] == ".":
+            pattern_bytes.append(0x00)
+            mask_bytes.append(0x00)
+            i += 2
+        elif i + 1 < n:
+            try:
+                byte_val = int(hex_str[i:i + 2], 16)
+                pattern_bytes.append(byte_val)
+                mask_bytes.append(0xFF)
+                i += 2
+            except ValueError:
+                pattern_bytes.append(0x00)
+                mask_bytes.append(0x00)
+                i += 2
+        else:
+            i += 1
+    return bytes(pattern_bytes), bytes(mask_bytes)
+
+
+# ---------------------------------------------------------------------------
+# CRC16 (CCITT-False, IDA FLIRT konvansiyonu)
+# ---------------------------------------------------------------------------
+# Polinom 0x1021, baslangic 0xFFFF, refleksiyon yok, son XOR 0x0000.
+# IDA FLIRT'in kullandigi varyant budur. Wildcard byte iceren bir bolge
+# CRC'ye dahil edilemez -- caller wildcard'siz blok vermelidir.
+
+def compute_flirt_crc16(data: bytes) -> int:
+    """IDA FLIRT CRC16 (CCITT-False, poly 0x1021, init 0xFFFF).
+
+    Args:
+        data: Ham bayt blogu (wildcard YOK).
+
+    Returns:
+        16-bit CRC degeri (int).
+    """
+    crc = 0xFFFF
+    for byte in data:
+        crc ^= byte << 8
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = ((crc << 1) ^ 0x1021) & 0xFFFF
+            else:
+                crc = (crc << 1) & 0xFFFF
+    return crc
+
+
+# ---------------------------------------------------------------------------
+# Normalize internal IR
+# ---------------------------------------------------------------------------
+
+@dataclass
+class FlirtPattern:
+    """Normalize edilmis FLIRT pattern (v1.14 D1).
+
+    Tek bir .pat satirina karsilik gelen, trie matcher icin uygun temiz
+    veri yapisi.
+
+    Alanlar:
+        prefix_bytes:    ilk 32 bayt (tipik FLIRT "leading" bolge)
+        prefix_mask:     prefix maskesi (0xFF=kesin, 0x00=wildcard)
+        crc16_length:    CRC16'nin hesaplanacagi byte sayisi (.pat 2.alani)
+        crc16:           beklenen CRC16 degeri
+        tail_length:     toplam fonksiyon (TOTAL alani, .pat 4.alani)
+        module_length:   bagimsiz modul uzunlugu (.pat 3.alani, SIZE)
+        public_symbols:  ana + ek public/local sembol listesi
+                         [(offset, name), ...]
+        references:      ``^OFFSET NAME`` referanslar [(offset, name), ...]
+        wildcards:       prefix icindeki wildcard araliklari
+                         [(start, end), ...]  (yarim acik [start, end))
+        tail_bytes:      varsa CRC sonrasi ek hex blogu
+        tail_mask:       tail icin maske
+        library:         imza kutuphanesi (kaynak .pat dosya adi)
+    """
+
+    prefix_bytes: bytes
+    prefix_mask: bytes
+    crc16_length: int
+    crc16: int
+    tail_length: int
+    module_length: int
+    public_symbols: list[tuple[int, str]] = field(default_factory=list)
+    references: list[tuple[int, str]] = field(default_factory=list)
+    wildcards: list[tuple[int, int]] = field(default_factory=list)
+    tail_bytes: bytes = b""
+    tail_mask: bytes = b""
+    library: str = ""
+
+    @property
+    def primary_name(self) -> str:
+        """Ana fonksiyon adi (offset 0'da olan public, yoksa ilk public)."""
+        if not self.public_symbols:
+            return ""
+        for off, name in self.public_symbols:
+            if off == 0:
+                return name
+        return self.public_symbols[0][1]
+
+    @classmethod
+    def from_signature(cls, sig: FLIRTSignature) -> "FlirtPattern":
+        """Eski ``FLIRTSignature`` objesinden yeni IR olustur."""
+        # Wildcard araliklari mask'tan tureyen [start, end) listesi
+        wildcards: list[tuple[int, int]] = []
+        in_wild = False
+        wstart = 0
+        for i, mb in enumerate(sig.mask):
+            if mb == 0x00 and not in_wild:
+                in_wild = True
+                wstart = i
+            elif mb != 0x00 and in_wild:
+                in_wild = False
+                wildcards.append((wstart, i))
+        if in_wild:
+            wildcards.append((wstart, len(sig.mask)))
+
+        publics: list[tuple[int, str]] = [(sig.offset, sig.name)]
+        # Eski parser ek public'leri sig.public_symbols'a koyar
+        for off, nm in sig.public_symbols:
+            if (off, nm) not in publics:
+                publics.append((off, nm))
+
+        return cls(
+            prefix_bytes=sig.byte_pattern,
+            prefix_mask=sig.mask,
+            crc16_length=sig.size if sig.size else 0,
+            crc16=sig.crc16,
+            tail_length=sig.size,
+            module_length=sig.size,
+            public_symbols=publics,
+            references=list(sig.references),
+            wildcards=wildcards,
+            tail_bytes=sig.tail_bytes,
+            tail_mask=sig.tail_mask,
+            library=sig.library,
+        )
+
+
+def parse_pat_file_full(pat_path: str | Path) -> list[FlirtPattern]:
+    """``.pat`` dosyasini parse et ve normalize ``FlirtPattern`` listesi don.
+
+    Bu fonksiyon ``FLIRTParser.load_pat_file`` ustunde ince bir adapter'dir;
+    her ``FLIRTSignature`` ``FlirtPattern.from_signature`` ile cevrilir.
+
+    Args:
+        pat_path: .pat dosya yolu.
+
+    Returns:
+        Normalize edilmis pattern listesi (parse hatasi olanlar atlanir).
+    """
+    parser = FLIRTParser()
+    sigs = parser.load_pat_file(pat_path)
+    return [FlirtPattern.from_signature(s) for s in sigs]
+
+
+# ---------------------------------------------------------------------------
+# Trie matcher
+# ---------------------------------------------------------------------------
+
+@dataclass
+class FlirtMatch:
+    """Trie matcher cikti kaydi (v1.14 D1)."""
+
+    offset: int                # Binary icindeki match baslangic offset'i
+    pattern: FlirtPattern      # Eslesen pattern
+    crc_ok: bool               # CRC16 dogrulama gectiyse True
+    score: float               # 0..1, sabit byte orani * (crc_ok ? 1 : 0.5)
+
+
+class _TrieNode:
+    """Internal trie dugumu.
+
+    children: byte -> _TrieNode
+    wildcard_child: tek dugum (wildcard pozisyonu icin)
+    terminal: bu dugumde biten pattern listesi (cogu terminal tek ama
+              prefix paylasimi olabilir)
+    """
+
+    __slots__ = ("children", "wildcard_child", "terminal")
+
+    def __init__(self) -> None:
+        self.children: dict[int, _TrieNode] = {}
+        self.wildcard_child: Optional[_TrieNode] = None
+        self.terminal: list[FlirtPattern] = []
+
+
+class FlirtTrieMatcher:
+    """Prefix byte trie + sliding-window binary tarayici.
+
+    Kullanim:
+        matcher = FlirtTrieMatcher(patterns)
+        matches = matcher.scan_binary(binary_bytes)
+
+    Karmaşıklık:
+        - Insa: O(toplam_prefix_uzunlugu)
+        - Tarama: O(N * d_avg)  N = binary boyu, d_avg = wildcard
+          dali genisligi (cogu prefix'te wildcard nadir oldugu icin
+          d_avg ~ 1).
+        - CRC16 dogrulama: yalnizca prefix eslesirse calisir, O(crc_len).
+
+    Notlar:
+        - Wildcard byte (mask=0x00) trie'de ayri "wildcard_child" dali
+          olarak temsil edilir; tarama sirasinda butun byte degerlerini
+          kabul eder.
+        - Skor: prefix sabit-byte orani * (crc_ok ? 1.0 : 0.5).
+        - score >= ``min_score`` filtresi caller'a sunulur (varsayilan
+          0.0 -> hepsi).
+    """
+
+    def __init__(self, patterns: list[FlirtPattern]) -> None:
+        self._root = _TrieNode()
+        self._patterns: list[FlirtPattern] = []
+        self._max_prefix_len = 0
+        for pat in patterns:
+            self._insert(pat)
+
+    # -- insa --------------------------------------------------------------
+
+    def _insert(self, pat: FlirtPattern) -> None:
+        prefix = pat.prefix_bytes
+        mask = pat.prefix_mask
+        if not prefix or len(prefix) != len(mask):
+            # Bos veya bozuk pattern -- atla
+            return
+        node = self._root
+        for b, m in zip(prefix, mask, strict=False):
+            if m == 0xFF:
+                child = node.children.get(b)
+                if child is None:
+                    child = _TrieNode()
+                    node.children[b] = child
+                node = child
+            else:
+                if node.wildcard_child is None:
+                    node.wildcard_child = _TrieNode()
+                node = node.wildcard_child
+        node.terminal.append(pat)
+        self._patterns.append(pat)
+        if len(prefix) > self._max_prefix_len:
+            self._max_prefix_len = len(prefix)
+
+    # -- tarama ------------------------------------------------------------
+
+    def scan_binary(
+        self,
+        data: bytes,
+        *,
+        verify_crc: bool = True,
+        min_score: float = 0.0,
+        step: int = 1,
+    ) -> list[FlirtMatch]:
+        """Binary (bayt blogu) uzerinde sliding window tarama.
+
+        Args:
+            data: Taranacak binary icerik.
+            verify_crc: CRC16 sekonder dogrulama yapilacak mi.
+            min_score: bu eşiğin altindaki match'ler atilir.
+            step: tarama adimi (varsayilan 1; bayt-bayt).
+
+        Returns:
+            Eslesme listesi (offset'e gore artan).
+        """
+        out: list[FlirtMatch] = []
+        if not data or self._max_prefix_len == 0:
+            return out
+
+        n = len(data)
+        # Her offset icin trie'de hosting
+        # Trie wildcard cocuk varligi nedeniyle BFS frontier kullaniriz.
+        for off in range(0, n, step):
+            terminals = self._walk_at(data, off)
+            if not terminals:
+                continue
+            for pat in terminals:
+                score, crc_ok = self._verify_match(data, off, pat, verify_crc)
+                if score < min_score:
+                    continue
+                out.append(FlirtMatch(
+                    offset=off, pattern=pat, crc_ok=crc_ok, score=score,
+                ))
+        return out
+
+    def _walk_at(self, data: bytes, start: int) -> list[FlirtPattern]:
+        """``start`` offset'inden trie'yi yur, terminal pattern'lari topla.
+
+        Wildcard cocuklar varsa frontier dallanir (BFS).
+        """
+        # Frontier: aktif (node, depth) tuple listesi
+        frontier: list[tuple[_TrieNode, int]] = [(self._root, 0)]
+        terminals: list[FlirtPattern] = []
+        while frontier:
+            new_frontier: list[tuple[_TrieNode, int]] = []
+            for node, depth in frontier:
+                # Eger bu dugum terminal ise topla (depth==prefix_len)
+                if node.terminal:
+                    # Yalniz pattern.prefix_len == depth olanlari al
+                    for pat in node.terminal:
+                        if len(pat.prefix_bytes) == depth:
+                            terminals.append(pat)
+                pos = start + depth
+                if pos >= len(data):
+                    continue
+                b = data[pos]
+                # Sabit byte cocuk
+                child = node.children.get(b)
+                if child is not None:
+                    new_frontier.append((child, depth + 1))
+                # Wildcard cocuk (her zaman gecerli)
+                if node.wildcard_child is not None:
+                    new_frontier.append((node.wildcard_child, depth + 1))
+            frontier = new_frontier
+        return terminals
+
+    def _verify_match(
+        self,
+        data: bytes,
+        off: int,
+        pat: FlirtPattern,
+        verify_crc: bool,
+    ) -> tuple[float, bool]:
+        """Eslesen pattern icin skor + CRC16 dogrulama.
+
+        Skor: prefix icindeki sabit byte orani.
+        CRC16: pat.crc16_length > 0 ise data[off+plen : off+plen+crc_len]
+        bloku uzerinde hesapla, pat.crc16 ile karsilastir.
+        """
+        plen = len(pat.prefix_bytes)
+        fixed = sum(1 for m in pat.prefix_mask if m == 0xFF)
+        score = (fixed / plen) if plen else 0.0
+
+        crc_ok = True
+        if verify_crc and pat.crc16_length > 0:
+            crc_start = off + plen
+            crc_end = crc_start + pat.crc16_length
+            if crc_end <= len(data):
+                actual = compute_flirt_crc16(data[crc_start:crc_end])
+                crc_ok = (actual == pat.crc16)
+            else:
+                crc_ok = False
+            if not crc_ok:
+                score *= 0.5
+
+        return score, crc_ok
+
+    # -- enviromental yardimcilar ----------------------------------------
+
+    @property
+    def max_prefix_len(self) -> int:
+        """En uzun pattern prefix uzunlugu."""
+        return self._max_prefix_len
+
+    @property
+    def pattern_count(self) -> int:
+        """Trie'ye yuklenmis toplam pattern sayisi."""
+        return len(self._patterns)
