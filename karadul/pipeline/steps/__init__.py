@@ -41,6 +41,8 @@ from karadul.pipeline.steps import (  # noqa: F401
     trex_struct_recovery,
     # v1.15 Dalga 1: PDB symbol/type kurtarma (PE only, llvm-pdbutil)
     pdb_symbol_recovery,
+    # v1.15 Dalga 1: Binary Ninja experimental (lisanssiz graceful skip)
+    binaryninja_analysis,
 )
 
 __all__ = [
@@ -68,6 +70,7 @@ __all__ = [
     "parallel_algo_eng",
     "pcode_cfg_analysis",
     "project_build",
+    "binaryninja_analysis",
     "pdb_symbol_recovery",
     "semantic_naming",
     "struct_recovery",
