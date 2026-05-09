@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.14.5] - 2026-05-09 (test debt patch)
+
+`macho.py` (926 LOC) ve `packed_binary.py` (1438 LOC) sıfırdan test edildi.
+v1.13/v1.14 dalgalarından sonra biriken iki büyük testsiz dosyanın kapatılması.
+
+### Eklenenler
+- `tests/test_macho.py` — 47 test, ~1100 LOC, **%83 coverage** (11 test grubu).
+- `tests/test_packed_binary.py` — 72 test, ~1100 LOC, **%85-90 coverage** (13 grup
+  + serialization round-trip + 3 güvenlik grubu: zip bomb, path traversal,
+  Windows reserved name).
+
+### Düzeltilenler
+- **`packed_binary.py:828-833` PyInstaller TOC parser** — `_parse_toc()`
+  içindeki `struct.unpack("!IIIBB", ...)` 5 değer döndürdüğü halde 6
+  değişkene unpack ediliyordu. `ValueError` `try/except struct.error` ile
+  yakalanmadığı için TOC parser fonksiyonel değildi; gerçek PyInstaller
+  binary'sinde `extract()` patlardı. Test debt sprint'inde tespit edildi
+  ve giderildi (fazla `entry_len` değişkeni kaldırıldı; `raw_entry_len`
+  zaten doğru pozisyondan ayrı çekiliyor).
+
+### Test
+- 4773 → **4892 PASS** (+119 test), 6 skip, 0 fail, 0 xfail.
+- mypy default: 0 hata (304 dosya).
+
+
 ## [1.12.0] - TBD (kod kalite sürümü)
 
 Bu sürüm yeni özellik üretmiyor; v1.11.0'da biriken teknik borcun kapatılmasına
