@@ -826,10 +826,17 @@ class PyInstallerExtractor:
                 break
 
             try:
-                entry_len, entry_off, data_len, uncomp_len, cflag, tflag = struct.unpack(
-                    "!IIIBB", data[pos + 4:pos + 18],  # ilk 4 byte entry_len'in kendisi
+                # PyInstaller TOC entry header (18 byte):
+                #   [0:4]  entry_len (raw_entry_len, kendisini de iceren toplam uzunluk)
+                #   [4:8]  entry_offset
+                #   [8:12] data_length
+                #   [12:16] uncompressed_length
+                #   [16]   compress_flag (B)
+                #   [17]   type_flag (B)
+                # Format "!IIIBB" = 4+4+4+1+1 = 14 byte, 5 deger dondurur.
+                entry_off, data_len, uncomp_len, cflag, tflag = struct.unpack(
+                    "!IIIBB", data[pos + 4:pos + 18],
                 )
-                # entry_len includes itself
                 raw_entry_len = struct.unpack("!I", data[pos:pos + 4])[0]
 
                 # Name: 18. byte'tan entry sonuna kadar, null-terminated
