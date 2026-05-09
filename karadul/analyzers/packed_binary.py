@@ -679,6 +679,23 @@ class PyInstallerExtractor:
         ord("o"): "OPTION",        # Runtime option
     }
 
+    # v1.14.5 GUVENLIK: TOC DoS koruma sabitleri.
+    #
+    # Saldiri vektoru 1 (CPU DoS):
+    #   raw_entry_len < 18 olursa header tamamlanmis ama loop sadece 1 byte
+    #   ilerleyebilir (hatta 0 da olabilir). 100MB binary'de ~100M iterasyon
+    #   = saatlerce CPU + bellekte milyarlarca dict. Eski kod sadece
+    #   `raw_entry_len == 0` icin break yapiyordu; <18 ile sonsuz dongu.
+    #   FIX: header sigmayan boyut = malformed -> break.
+    #
+    # Saldiri vektoru 2 (Memory DoS):
+    #   Saldirgan TOC alanini milyonlarca kucuk gecerli entry ile
+    #   doldurabilir. Her entry 18+isim byte = ~24 byte; 100MB TOC ~4M entry
+    #   uretir; her entry icin Python dict ~300+ byte = 1.2GB+ RAM.
+    #   FIX: hard cap 100k entry; asilirsa warning + break.
+    MAX_TOC_ENTRIES = 100_000
+    MIN_TOC_ENTRY_HEADER_BYTES = 18
+
     def __init__(self, config: Config) -> None:
         self.config = config
 
@@ -816,13 +833,29 @@ class PyInstallerExtractor:
         Returns:
             list: TOC entry listesi.
         """
-        entries = []
+        entries: list[dict[str, Any]] = []
         pos = toc_start
         end = toc_start + toc_length
 
+        # v1.14.5 GUVENLIK: lokal alias (her iterasyonda attribute lookup'i
+        # gereksiz; ayrica future override icin sinif uzerinden okuma).
+        max_entries = PyInstallerExtractor.MAX_TOC_ENTRIES
+        min_header = PyInstallerExtractor.MIN_TOC_ENTRY_HEADER_BYTES
+
         while pos < end and pos < len(data):
             # En az 18 byte header gerekli
-            if pos + 18 > len(data):
+            if pos + min_header > len(data):
+                break
+
+            # v1.14.5 GUVENLIK: entry sayisi cap. Saldirgan kucuk entry'lerle
+            # bellek tuketmesin diye hard limit; gercek PyInstaller binary'leri
+            # tipik 1k-10k entry, 100k cok cok ustunde.
+            if len(entries) >= max_entries:
+                logger.warning(
+                    "PyInstaller TOC entry sayisi %d limitini asti, "
+                    "parser durduruldu (DoS koruma)",
+                    max_entries,
+                )
                 break
 
             try:
@@ -838,6 +871,19 @@ class PyInstallerExtractor:
                     "!IIIBB", data[pos + 4:pos + 18],
                 )
                 raw_entry_len = struct.unpack("!I", data[pos:pos + 4])[0]
+
+                # v1.14.5 GUVENLIK: raw_entry_len < 18 (header sigmayan
+                # boyut) -> malformed TOC. Eski kod sadece raw_entry_len==0
+                # icin break atiyordu; raw_entry_len=1 durumunda 1 byte
+                # ilerleyip bir sonraki "header"i 17 byte yanlis hizalanmis
+                # olarak okuyordu. 100MB binary'de 100M iterasyon CPU DoS.
+                if raw_entry_len < min_header:
+                    logger.warning(
+                        "PyInstaller TOC entry uzunlugu (%d) minimum "
+                        "header'dan kucuk, parser durduruldu (malformed)",
+                        raw_entry_len,
+                    )
+                    break
 
                 # Name: 18. byte'tan entry sonuna kadar, null-terminated
                 name_start = pos + 18
@@ -866,8 +912,6 @@ class PyInstallerExtractor:
                 })
 
                 pos += raw_entry_len
-                if raw_entry_len == 0:
-                    break  # sonsuz dongu korumasi
 
             except struct.error:
                 break
@@ -956,8 +1000,54 @@ class PyInstallerExtractor:
             logger.warning("Path traversal engellendi: %s", name)
             return None
 
+        # v1.14.5 GUVENLIK: symlink escape koruma (TOCTOU benzeri).
+        # Senaryo: output_dir icinde onceden yerlestirilmis bir symlink
+        # `foo -> /tmp/escape` varsa, `Path.write_bytes` symlink'i takip
+        # ederek output_dir DISINA yazar. Path.resolve() symlink'i cozer
+        # ama eger zaten cozulmus hedef output_dir disindaysa relative_to
+        # zaten engeller; ANCAK aym extract calistirmasinin ilk
+        # entry'si "foo" symlink'ini olusturur ve sonraki entry "foo"
+        # uzerinden yazma yaparsa relative_to gecerse de write_bytes
+        # symlink'i izler. En guvenli yol: hedef path symlink'se reddet.
+        # Ust dizinleri (parent.parent...) de tarayip symlink varsa engelle.
+        try:
+            # parents iter: out_path.parent, parent.parent, ..., root.
+            # output_dir'a kadar yukari git.
+            output_root = output_dir.resolve()
+            cursor = out_path
+            for _ in range(64):  # path derinligi sonsuz olmasin
+                if cursor.is_symlink():
+                    logger.warning(
+                        "Symlink escape engellendi (path bileseni symlink): %s",
+                        name,
+                    )
+                    return None
+                if cursor == output_root or cursor.parent == cursor:
+                    break
+                cursor = cursor.parent
+        except OSError:
+            logger.warning("Symlink kontrol hatasi, entry reddedildi: %s", name)
+            return None
+
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_bytes(raw)
+        # v1.14.5 GUVENLIK: O_NOFOLLOW ile yazim. Hedef bir symlink ise
+        # OSError (ELOOP) firlatilir. write_bytes Python 3 default'unda
+        # symlink takip eder; bu yuzden manuel low-level open kullaniyoruz.
+        try:
+            fd = os.open(
+                str(out_path),
+                os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0),
+                0o644,
+            )
+        except OSError as exc:
+            logger.warning(
+                "Symlink/dosya yazma engellendi (%s): %s", name, exc,
+            )
+            return None
+        try:
+            os.write(fd, raw)
+        finally:
+            os.close(fd)
 
         # Dosya tipini belirle
         file_type = "data"

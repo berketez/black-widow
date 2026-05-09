@@ -25,6 +25,7 @@ mypy --strict uyumlu, pytest -x calistirilabilir.
 
 from __future__ import annotations
 
+import logging
 import os
 import struct
 import subprocess
@@ -545,6 +546,8 @@ class TestPyInstallerExtractor:
     def test_parse_toc_single_entry(self) -> None:
         # v1.14.5 fix: _parse_toc struct.unpack format/degisken sayisi uyumsuzlugu
         # giderildi (packed_binary.py:828-831). 5 deger -> 5 degisken.
+        # v1.14.5 review: alan-bazli sikilastirma -- isim yeterli degil,
+        # tum alanlarin dogru parse edildigini dogrula (regresyon koruma).
         entry = _make_toc_entry(
             "myscript.py", entry_off=0, data_len=5, uncomp_len=5, tflag=ord("s"),
         )
@@ -552,6 +555,12 @@ class TestPyInstallerExtractor:
         entries = PyInstallerExtractor._parse_toc(data, 0, len(entry))
         assert len(entries) == 1
         assert entries[0]["name"] == "myscript.py"
+        assert entries[0]["entry_offset"] == 0
+        assert entries[0]["data_length"] == 5
+        assert entries[0]["uncompressed_length"] == 5
+        assert entries[0]["is_compressed"] is False
+        assert entries[0]["type_flag"] == ord("s")
+        assert entries[0]["type_name"] == "SCRIPT"
 
     def test_parse_toc_multiple_entries(self) -> None:
         e1 = _make_toc_entry("a.py", 0, 10, 10, tflag=ord("s"))
@@ -1073,3 +1082,445 @@ class TestSerialization:
         )
         d = res.to_dict()
         assert d["output_dir"] is None
+
+
+# ---------------------------------------------------------------------------
+# 16. v1.14.5 -- TOC DoS koruma (security-expert HIGH)
+# ---------------------------------------------------------------------------
+
+
+class TestParseTocDosProtection:
+    """TOC parser'in malformed entry karsisinda CPU/memory DoS'a kapali
+    olmasini dogrular.
+
+    Eski kod: raw_entry_len < 18 ise loop 1 byte ilerleyip 17 byte yanlis
+    hizalanmis okuyordu -> 100MB binary'de 100M iterasyon.
+    Yeni kod: raw_entry_len < MIN_TOC_ENTRY_HEADER_BYTES -> break.
+    """
+
+    def test_parse_toc_dos_protection_short_entry_breaks(self) -> None:
+        """raw_entry_len=1 (gercek dunyada sahte) -> bounded iteration."""
+        # 18 byte gecerli header ama raw_entry_len alanini 1 yap.
+        body = struct.pack(
+            "!IIIIBB",
+            1,        # raw_entry_len = 1 (header'dan kucuk; saldirgan sahte)
+            0, 5, 5,  # entry_off, data_len, uncomp_len
+            0,        # cflag
+            ord("s"),
+        )
+        # Hemen ardindan 1MB sentetik veri -- loop 1 byte ilerlemeyi
+        # SECMEMELI, ilk iterasyonda break atmali.
+        payload = body + b"\x00" * (1 * 1024 * 1024)
+        entries = PyInstallerExtractor._parse_toc(payload, 0, len(payload))
+        # Eski kod milyonlarca entry uretirdi; yeni kod 0 entry + bounded.
+        assert entries == [], (
+            "raw_entry_len < 18 durumunda parser break atmali, "
+            "(uretti: %d entry)" % len(entries)
+        )
+
+    def test_parse_toc_dos_protection_zero_length_breaks(self) -> None:
+        """raw_entry_len=0 -> immediate break (regresyon kontrolu)."""
+        body = struct.pack("!IIIIBB", 0, 0, 0, 0, 0, ord("s"))
+        payload = body + b"\x00" * 4096
+        entries = PyInstallerExtractor._parse_toc(payload, 0, len(payload))
+        assert entries == []
+
+    def test_parse_toc_max_entries_cap(self, caplog: pytest.LogCaptureFixture) -> None:
+        """100k+1 entry'lik TOC -> hard cap (MAX_TOC_ENTRIES) asilirsa
+        logger.warning + break. Bellek tuketim DoS koruma.
+        """
+        # MAX_TOC_ENTRIES + 1 minimal valid entry uretmek 100k+1 iterasyon
+        # ile gercek allocation'a yol acar; bu yuzden cap'i monkeypatch
+        # ile dusurup mantigi dogruluyoruz.
+        cap = 5
+        original_cap = PyInstallerExtractor.MAX_TOC_ENTRIES
+        try:
+            PyInstallerExtractor.MAX_TOC_ENTRIES = cap
+            # 10 minimal entry uret (her biri "x" + null = 20 byte total)
+            entries_blob = b"".join(
+                _make_toc_entry(
+                    "x%d" % i, entry_off=0, data_len=0, uncomp_len=0,
+                    tflag=ord("s"),
+                )
+                for i in range(10)
+            )
+            with caplog.at_level(logging.WARNING):
+                result = PyInstallerExtractor._parse_toc(
+                    entries_blob, 0, len(entries_blob),
+                )
+            assert len(result) == cap, (
+                "Cap=%d olmali; %d entry uretti" % (cap, len(result))
+            )
+            # Warning log'da cap mesaji bekleniyor
+            assert any(
+                "DoS koruma" in rec.message or "limitini asti" in rec.message
+                for rec in caplog.records
+            ), "MAX_TOC_ENTRIES asildiginda warning loglanmali"
+        finally:
+            PyInstallerExtractor.MAX_TOC_ENTRIES = original_cap
+
+    def test_parse_toc_class_constants_defined(self) -> None:
+        """Sinif-level sabitler tanimli ve makul olmali (regresyon)."""
+        assert PyInstallerExtractor.MAX_TOC_ENTRIES == 100_000
+        assert PyInstallerExtractor.MIN_TOC_ENTRY_HEADER_BYTES == 18
+
+
+# ---------------------------------------------------------------------------
+# 17. v1.14.5 -- _try_decompile_pyc_files kapsami (tester ajan #6, #7, #8)
+# ---------------------------------------------------------------------------
+
+
+class TestPyInstallerDecompilePipeline:
+    """`_try_decompile_pyc_files` (packed_binary.py:1009-1054) kapsami.
+
+    safe_run mock + resolve_tool mock + ExtractedFile fixture'lari ile
+    success/error/timeout dallarini dogrular. Gercek uncompyle6 cagrisi
+    YAPILMAZ.
+    """
+
+    @staticmethod
+    def _make_pyc_file(tmp_path: Path, name: str = "myscript.pyc") -> ExtractedFile:
+        """ExtractedFile (file_type='pyc') sahte fixture."""
+        pyc_path = tmp_path / name
+        pyc_path.write_bytes(b"\x00" * 64)  # icerik onemsiz
+        return ExtractedFile(
+            path=pyc_path,
+            original_name=name,
+            file_type="pyc",
+            size=64,
+            metadata={},
+        )
+
+    def test_pyinstaller_decompile_pipeline_uncompyle6_success(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        pyc_files = [self._make_pyc_file(tmp_path)]
+        out_dir = tmp_path / "out"
+        out_dir.mkdir()
+
+        # resolve_tool: uncompyle6 path dondur
+        def _fake_resolve_tool(name: str) -> str | None:
+            if name == "uncompyle6":
+                return "/usr/local/bin/uncompyle6"
+            return None
+
+        monkeypatch.setattr(
+            "karadul.analyzers.packed_binary.resolve_tool",
+            _fake_resolve_tool,
+            raising=True,
+        )
+
+        # safe_run: returncode=0 + .py dosyasini fiilen yaz (uncompyle6 simulasyon)
+        def _fake_safe_run(
+            cmd: Sequence[str], **kwargs: Any,
+        ) -> "subprocess.CompletedProcess[str]":
+            # cmd: [uncompyle6, -o, <out_path>, <pyc_path>]
+            out_path = Path(cmd[2])
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_text("def main():\n    pass\n", encoding="utf-8")
+            return subprocess.CompletedProcess(
+                args=list(cmd), returncode=0,
+                stdout="def main(): pass", stderr="",
+            )
+
+        monkeypatch.setattr(
+            "karadul.analyzers.packed_binary.safe_run",
+            _fake_safe_run,
+            raising=True,
+        )
+
+        result = PyInstallerExtractor._try_decompile_pyc_files(pyc_files, out_dir)
+        assert len(result) == 1
+        assert result[0].file_type == "python_source"
+        assert result[0].path.exists()
+        assert result[0].path.read_text(encoding="utf-8").startswith("def main")
+
+    def test_pyinstaller_decompile_pipeline_returncode_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """returncode=1 -> decompile edilmez ama extraction devam (boş liste)."""
+        pyc_files = [self._make_pyc_file(tmp_path)]
+        out_dir = tmp_path / "out"
+        out_dir.mkdir()
+
+        monkeypatch.setattr(
+            "karadul.analyzers.packed_binary.resolve_tool",
+            lambda name: "/usr/local/bin/uncompyle6" if name == "uncompyle6" else None,
+            raising=True,
+        )
+
+        def _fake_safe_run_fail(
+            cmd: Sequence[str], **kwargs: Any,
+        ) -> "subprocess.CompletedProcess[str]":
+            return subprocess.CompletedProcess(
+                args=list(cmd), returncode=1,
+                stdout="", stderr="syntax error",
+            )
+
+        monkeypatch.setattr(
+            "karadul.analyzers.packed_binary.safe_run",
+            _fake_safe_run_fail,
+            raising=True,
+        )
+
+        with caplog.at_level(logging.DEBUG, logger="karadul.analyzers.packed_binary"):
+            result = PyInstallerExtractor._try_decompile_pyc_files(
+                pyc_files, out_dir,
+            )
+        # Hicbir basarili decompile yok
+        assert result == []
+
+    def test_pyinstaller_decompile_pipeline_timeout(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """TimeoutExpired -> graceful (exception swallow + bos liste)."""
+        pyc_files = [self._make_pyc_file(tmp_path)]
+        out_dir = tmp_path / "out"
+        out_dir.mkdir()
+
+        monkeypatch.setattr(
+            "karadul.analyzers.packed_binary.resolve_tool",
+            lambda name: "/usr/local/bin/uncompyle6" if name == "uncompyle6" else None,
+            raising=True,
+        )
+
+        def _fake_safe_run_timeout(
+            cmd: Sequence[str], **kwargs: Any,
+        ) -> "subprocess.CompletedProcess[str]":
+            raise subprocess.TimeoutExpired(cmd=list(cmd), timeout=30)
+
+        monkeypatch.setattr(
+            "karadul.analyzers.packed_binary.safe_run",
+            _fake_safe_run_timeout,
+            raising=True,
+        )
+
+        result = PyInstallerExtractor._try_decompile_pyc_files(pyc_files, out_dir)
+        # Crash etmeden bos liste donmeli
+        assert result == []
+
+    def test_pyinstaller_decompile_pipeline_no_decompiler(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """resolve_tool ikisini de None dondurur -> early return [] (regresyon)."""
+        pyc_files = [self._make_pyc_file(tmp_path)]
+        out_dir = tmp_path / "out"
+        out_dir.mkdir()
+
+        monkeypatch.setattr(
+            "karadul.analyzers.packed_binary.resolve_tool",
+            lambda name: None,
+            raising=True,
+        )
+        result = PyInstallerExtractor._try_decompile_pyc_files(pyc_files, out_dir)
+        assert result == []
+
+
+# ---------------------------------------------------------------------------
+# 18. v1.14.5 -- lief section iteration (tester ajan #9)
+# ---------------------------------------------------------------------------
+
+
+class TestPackedBinaryLiefSectionPath:
+    """`_analyze_section_entropies` lief dali (packed_binary.py:586-607).
+
+    Fake `lief` modulu ile gercek section iterasyonu test edilir:
+    - section.name str veya bytes olabilir
+    - section.content -> bytes
+    - section.offset attribute opsiyonel
+    """
+
+    def test_lief_section_str_name_iteration(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """section.name str ise direkt kullanilir."""
+
+        class _FakeSection:
+            def __init__(self, name: object, content: bytes, offset: int) -> None:
+                self.name = name
+                self.content = content
+                self.offset = offset
+
+        class _FakeBinary:
+            sections = [
+                _FakeSection(".text", b"\x90" * 4096, 0x1000),
+                _FakeSection(".data", b"\x00" * 1024, 0x2000),
+            ]
+
+        class _FakeLief:
+            @staticmethod
+            def parse(_data: bytes) -> _FakeBinary:
+                return _FakeBinary()
+
+        monkeypatch.setitem(__import__("sys").modules, "lief", _FakeLief)
+
+        detector = PackingDetector(Config())
+        # 2KB veri -> lief yolu calisir
+        result = detector._analyze_section_entropies(b"X" * 2048, "test.bin")
+        assert len(result) == 2
+        names = [s.name for s in result]
+        assert ".text" in names
+        assert ".data" in names
+
+    def test_lief_section_bytes_name_decoded(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """section.name bytes ise UTF-8 decode (errors='replace')."""
+
+        class _FakeSection:
+            def __init__(self, name: object, content: bytes, offset: int) -> None:
+                self.name = name
+                self.content = content
+                self.offset = offset
+
+        class _FakeBinary:
+            sections = [
+                _FakeSection(b".rodata", b"A" * 512, 0x3000),
+            ]
+
+        class _FakeLief:
+            @staticmethod
+            def parse(_data: bytes) -> _FakeBinary:
+                return _FakeBinary()
+
+        monkeypatch.setitem(__import__("sys").modules, "lief", _FakeLief)
+        detector = PackingDetector(Config())
+        result = detector._analyze_section_entropies(b"X" * 2048, "test.bin")
+        assert len(result) == 1
+        assert result[0].name == ".rodata"  # bytes -> str decode
+
+    def test_lief_parse_returns_none_falls_back_to_blocks(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """lief.parse() None -> fallback (64KB block) yolu calisir."""
+
+        class _FakeLief:
+            @staticmethod
+            def parse(_data: bytes) -> None:
+                return None
+
+        monkeypatch.setitem(__import__("sys").modules, "lief", _FakeLief)
+        detector = PackingDetector(Config())
+        # 128KB -> 2 block bekleniyor
+        result = detector._analyze_section_entropies(b"\x41" * (128 * 1024), "test.bin")
+        # Block isimleri "block_NNNN" pattern'inde
+        assert all(s.name.startswith("block_") for s in result)
+        assert len(result) >= 2
+
+
+# ---------------------------------------------------------------------------
+# 19. v1.14.5 -- compressed extract pipeline (reviewer #4 / tester #10)
+# ---------------------------------------------------------------------------
+
+
+class TestExtractFullPipelineCompressed:
+    """`test_extract_full_pipeline_uncompressed` kardesi -- compressed
+    payload yolunu test eder. zlib decompress + safe_zlib_decompress
+    bombing koruma kapsami artar.
+    """
+
+    def test_extract_full_pipeline_compressed(
+        self, tmp_path: Path, config: Config,
+    ) -> None:
+        files: list[tuple[str, bytes, int]] = [
+            ("hello.pyc", b"PYC_HEADER" + b"\x00" * 50, ord("s")),
+            ("data.bin", b"DATA_PAYLOAD" * 8, ord("d")),
+        ]
+        blob, _ = _build_pyinstaller_blob(files, compressed=True)
+        bin_path = tmp_path / "pyinst_compressed.bin"
+        bin_path.write_bytes(blob)
+        out = tmp_path / "out"
+        ext = PyInstallerExtractor(config)
+        result = ext.extract(bin_path, out)
+        assert isinstance(result, UnpackResult)
+        assert result.packing_type == PackingType.PYINSTALLER
+        # Compressed branch: en az bir dosya extract edildi
+        names = {ef.original_name for ef in result.extracted_files}
+        assert "hello.pyc" in names or "data.bin" in names
+
+
+# ---------------------------------------------------------------------------
+# 20. v1.14.5 -- Symlink escape koruma (security-expert release-blocker)
+# ---------------------------------------------------------------------------
+
+
+class TestExtractEntrySymlinkEscape:
+    """`_extract_entry` icin symlink TOCTOU koruma testi.
+
+    Senaryo: output_dir'de onceden bir symlink `foo -> /tmp/escape` var.
+    PyInstaller TOC entry name="foo" + payload yazimi `Path.write_bytes`
+    sembolik linki TAKIP EDER ve output_dir disina yazardi.
+    Yeni kod O_NOFOLLOW + path-bilesen symlink kontrolu ile engeller.
+    """
+
+    def test_extract_entry_blocks_symlink_escape(self, tmp_path: Path) -> None:
+        # Saldirgan hedefi (output_dir disinda)
+        attack_target = tmp_path / "outside_escape.txt"
+        attack_target.write_bytes(b"ORIGINAL_CONTENT")
+
+        # Output dizini ve onceden yerlestirilmis symlink
+        output_dir = tmp_path / "extracted"
+        output_dir.mkdir()
+        evil_link = output_dir / "foo"
+        try:
+            evil_link.symlink_to(attack_target)
+        except (OSError, NotImplementedError):
+            pytest.skip("Platform symlink desteklemiyor")
+
+        # PyInstaller TOC entry: name = "foo"
+        # Payload: 20 byte gecerli veri
+        data = b"X" * 1024 + b"PWNED" * 4 + b"X" * 1024
+        entry: dict[str, Any] = {
+            "name": "foo",
+            "entry_offset": 1024,
+            "data_length": 20,
+            "uncompressed_length": 20,
+            "is_compressed": False,
+            "type_flag": ord("d"),
+            "type_name": "DATA",
+        }
+        result = PyInstallerExtractor._extract_entry(
+            data=data, pkg_start=0, entry=entry, output_dir=output_dir,
+        )
+        # Symlink hedefi degismemeli
+        assert attack_target.read_bytes() == b"ORIGINAL_CONTENT", (
+            "Symlink escape! attack_target uzerine yazilmis."
+        )
+        # _extract_entry None donmeli (entry reddedildi)
+        assert result is None
+
+    def test_extract_entry_blocks_parent_symlink(self, tmp_path: Path) -> None:
+        """Parent dizini symlink olan path da reddedilmeli."""
+        # tmp_path/extracted/foo/bar.bin yazimi
+        # Ama foo dizini DISARIDAN olusmus bir symlink
+        outside_dir = tmp_path / "outside"
+        outside_dir.mkdir()
+
+        output_dir = tmp_path / "extracted"
+        output_dir.mkdir()
+        evil_subdir = output_dir / "subdir"
+        try:
+            evil_subdir.symlink_to(outside_dir)
+        except (OSError, NotImplementedError):
+            pytest.skip("Platform symlink desteklemiyor")
+
+        data = b"Y" * 256
+        entry: dict[str, Any] = {
+            "name": "subdir/bar.bin",
+            "entry_offset": 0,
+            "data_length": 32,
+            "uncompressed_length": 32,
+            "is_compressed": False,
+            "type_flag": ord("d"),
+            "type_name": "DATA",
+        }
+        # NOT: out_path.resolve() symlink'i cozecegi icin relative_to ile
+        # disariya kacis zaten reddedilebilir; hem o yol hem de explicit
+        # symlink kontrolu olmali.
+        result = PyInstallerExtractor._extract_entry(
+            data=data, pkg_start=0, entry=entry, output_dir=output_dir,
+        )
+        # Outside dizinine yazma OLMAMALI
+        assert not (outside_dir / "bar.bin").exists()
+        assert result is None

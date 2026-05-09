@@ -1314,3 +1314,420 @@ class TestDeobfuscate:
         result = analyzer.deobfuscate(target, ws)
         assert result.success is True
         assert "decompiled_json" in result.artifacts
+
+
+# ---------------------------------------------------------------------------
+# 12. v1.14.5 -- Universal binary lipo dispatch (tester ajan #1, #2)
+# ---------------------------------------------------------------------------
+
+
+class TestUniversalBinaryLipo:
+    """`analyze_static` icindeki lipo thin dispatch dali (macho.py:127-151).
+
+    Senaryolar:
+        - lipo arm64 basarisiz -> x86_64 fallback basarili
+        - lipo timeout -> errors listesinde + orijinal binary kullanilir
+    """
+
+    def _make_universal_target(
+        self, path: Path,
+    ) -> TargetInfo:
+        return TargetInfo(
+            path=path,
+            name=path.name,
+            target_type=TargetType.UNIVERSAL_BINARY,
+            language=Language.C,
+            file_size=path.stat().st_size,
+            file_hash="0" * 64,
+            metadata={},
+        )
+
+    def _patch_basic_pipeline(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """analyze_static yan etkilerini sustur (sadece lipo dali test edilir)."""
+        monkeypatch.setattr(
+            MachOAnalyzer, "_run_otool_libs",
+            lambda self, p: None, raising=True,
+        )
+        monkeypatch.setattr(
+            MachOAnalyzer, "_run_otool_load_commands",
+            lambda self, p: None, raising=True,
+        )
+        monkeypatch.setattr(
+            MachOAnalyzer, "_run_nm",
+            lambda self, p: None, raising=True,
+        )
+        monkeypatch.setattr(
+            MachOAnalyzer, "_run_lief",
+            lambda self, p: None, raising=True,
+        )
+        from karadul.core.subprocess_runner import SubprocessRunner
+        monkeypatch.setattr(
+            SubprocessRunner, "run_strings",
+            lambda self, p, min_length=None: [], raising=True,
+        )
+        monkeypatch.setattr(
+            MachOAnalyzer, "_run_ghidra",
+            lambda self, p, ws: None, raising=True,
+        )
+
+        # Binary intelligence: stub
+        class _BIFake:
+            def __init__(self, *a: Any, **kw: Any) -> None:
+                pass
+
+            def analyze(self, **kw: Any) -> Any:
+                class _Report:
+                    class architecture:
+                        app_type = "cli"
+                        subsystems: list[Any] = []
+                        algorithms: list[Any] = []
+                        security: list[Any] = []
+                        protocols: list[Any] = []
+                        function_analyses: list[Any] = []
+
+                    def to_dict(self) -> dict[str, Any]:
+                        return {"summary": "test"}
+
+                return _Report()
+
+            def analyze_decompiled(self, _d: Path) -> list[Any]:
+                return []
+
+        monkeypatch.setattr(
+            "karadul.analyzers.binary_intelligence.BinaryIntelligence",
+            _BIFake, raising=True,
+        )
+
+    def test_macho_universal_lipo_arm64_then_x86_64_fallback(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        sample_macho_file: Path,
+        tmp_path: Path,
+        config: Config,
+    ) -> None:
+        """Arm64 lipo basarisiz, x86_64 basarili."""
+        self._patch_basic_pipeline(monkeypatch)
+
+        # subprocess.run: ilk cagri (arm64) returncode=1, ikinci (x86_64) =0
+        call_count = {"n": 0}
+
+        def _fake_run(cmd: Any, **kwargs: Any) -> Any:
+            call_count["n"] += 1
+            # cmd: ["lipo", binary, "-thin", arch, "-output", thin_path]
+            arch = cmd[3] if len(cmd) > 3 else ""
+            if arch == "arm64":
+                return _FakeRunResult(
+                    returncode=1, stdout="",
+                    stderr="lipo: arm64 slice not found",
+                )
+            if arch == "x86_64":
+                # Sahte slice dosyasini fiilen olustur
+                thin_out = Path(cmd[5])
+                thin_out.parent.mkdir(parents=True, exist_ok=True)
+                thin_out.write_bytes(b"x86_64-thin")
+                return _FakeRunResult(returncode=0, stdout="", stderr="")
+            return _FakeRunResult(returncode=2)
+
+        import subprocess as _subprocess
+        monkeypatch.setattr(_subprocess, "run", _fake_run, raising=True)
+
+        analyzer = MachOAnalyzer(config)
+        ws = _make_workspace(tmp_path)
+        target = self._make_universal_target(sample_macho_file)
+        result = analyzer.analyze_static(target, ws)
+
+        assert call_count["n"] == 2, "Hem arm64 hem x86_64 denenmeli"
+        # x86_64 basarili oldugu icin stats'a yazilmali
+        assert result.stats.get("lipo_thin") == "x86_64"
+
+    def test_macho_universal_lipo_timeout_recorded(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        sample_macho_file: Path,
+        tmp_path: Path,
+        config: Config,
+    ) -> None:
+        """lipo TimeoutExpired -> errors listesi + pipeline devam."""
+        self._patch_basic_pipeline(monkeypatch)
+
+        import subprocess as _subprocess
+
+        def _fake_run_timeout(cmd: Any, **kwargs: Any) -> Any:
+            raise _subprocess.TimeoutExpired(cmd=list(cmd), timeout=30)
+
+        monkeypatch.setattr(_subprocess, "run", _fake_run_timeout, raising=True)
+
+        analyzer = MachOAnalyzer(config)
+        ws = _make_workspace(tmp_path)
+        target = self._make_universal_target(sample_macho_file)
+        result = analyzer.analyze_static(target, ws)
+
+        # Errors listesinde lipo mesaji var
+        assert any("lipo thin hatasi" in e for e in result.errors)
+        # Orijinal binary yine raw kopyalandi
+        assert "raw_binary" in result.artifacts
+
+
+# ---------------------------------------------------------------------------
+# 13. v1.14.5 -- Non-Ghidra backend dispatch (tester ajan #3)
+# ---------------------------------------------------------------------------
+
+
+class TestNonGhidraBackendFactory:
+    """`_run_ghidra` non-ghidra dali (macho.py:846-892).
+
+    primary_backend != ghidra (veya ghidra yok) iken
+    `create_backend_with_fallback` non-ghidra backend dondurur.
+    `pipeline_adapter.write_ghidra_shape_artifacts` cagrilmali.
+    """
+
+    def test_macho_backend_factory_non_ghidra_path(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        sample_macho_file: Path,
+        tmp_path: Path,
+        config: Config,
+    ) -> None:
+        # primary_backend = "angr" yapma (config'e bakmaksizin self.ghidra
+        # is_available() -> False olsun ki fast path'e girilmesin).
+        from karadul.decompilers.base import (
+            DecompiledFunction,
+            DecompileResult,
+        )
+
+        # Ghidra'yi devre disi birakan analyzer
+        analyzer = MachOAnalyzer(config)
+
+        # self.ghidra.is_available() -> False
+        monkeypatch.setattr(
+            analyzer.ghidra, "is_available",
+            lambda: False, raising=False,
+        )
+
+        # Fake angr-benzeri backend
+        class _FakeAngrBackend:
+            name = "angr"
+
+            def is_available(self) -> bool:
+                return True
+
+            def decompile(
+                self,
+                binary: Path,
+                output_dir: Path,
+                timeout: float = 3600.0,
+            ) -> DecompileResult:
+                # Tek fonksiyon decompile etmis gibi
+                return DecompileResult(
+                    functions=[
+                        DecompiledFunction(
+                            address="0x100003abc",
+                            name="main",
+                            pseudocode="int main() { return 0; }",
+                            calls=[],
+                        ),
+                    ],
+                    call_graph={"0x100003abc": []},
+                    strings=[{"addr": "0x200", "value": "hello"}],
+                    errors=[],
+                    backend_name="angr",
+                    duration_seconds=0.5,
+                )
+
+        def _fake_factory(_cfg: Any) -> tuple[Any, list[str]]:
+            return _FakeAngrBackend(), ["ghidra", "angr"]
+
+        monkeypatch.setattr(
+            "karadul.decompilers.create_backend_with_fallback",
+            _fake_factory, raising=True,
+        )
+
+        # write_ghidra_shape_artifacts cagrildi mi spy
+        called = {"flag": False, "result": None, "out_dir": None}
+
+        original_writer = None
+        try:
+            from karadul.decompilers import pipeline_adapter
+            original_writer = pipeline_adapter.write_ghidra_shape_artifacts
+        except ImportError:
+            pytest.skip("pipeline_adapter import edilemiyor")
+
+        def _spy_writer(result: Any, output_dir: Any) -> dict[str, Any]:
+            called["flag"] = True
+            called["result"] = result
+            called["out_dir"] = output_dir
+            return {
+                "success": True,
+                "duration_seconds": 0.5,
+                "ghidra_log": "",
+                "mode": "angr_adapter",
+                "scripts_output": {
+                    "functions": {"total": 1, "functions": []},
+                },
+                "returncode": 0,
+            }
+
+        monkeypatch.setattr(
+            "karadul.decompilers.pipeline_adapter.write_ghidra_shape_artifacts",
+            _spy_writer, raising=True,
+        )
+
+        ws = _make_workspace(tmp_path)
+        ghidra_result = analyzer._run_ghidra(sample_macho_file, ws)
+
+        assert called["flag"] is True, "write_ghidra_shape_artifacts cagrilmali"
+        assert ghidra_result is not None
+        assert ghidra_result.get("mode") == "angr_adapter"
+        # DecompileResult spy'a gecmis olmali
+        captured: Any = called["result"]
+        assert captured is not None
+        assert captured.backend_name == "angr"
+
+
+# ---------------------------------------------------------------------------
+# 14. v1.14.5 -- raw_copy edge cases (tester ajan #4, #5)
+# ---------------------------------------------------------------------------
+
+
+class TestRawBinaryCopyEdgeCases:
+    """`analyze_static` icindeki raw_copy adimi (macho.py:165-198).
+
+    - same_file: raw_copy.resolve() == binary_path.resolve() -> kopyalama
+      atlanir, artifacts["raw_binary"] direkt set.
+    - FIFO/device: _stat_is_regular=False -> errors'a "duzgun dosya degil".
+    """
+
+    def _patch_basic_pipeline(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """analyze_static'in yan etkilerini sustur."""
+        monkeypatch.setattr(
+            MachOAnalyzer, "_run_otool_libs",
+            lambda self, p: None, raising=True,
+        )
+        monkeypatch.setattr(
+            MachOAnalyzer, "_run_otool_load_commands",
+            lambda self, p: None, raising=True,
+        )
+        monkeypatch.setattr(
+            MachOAnalyzer, "_run_nm",
+            lambda self, p: None, raising=True,
+        )
+        monkeypatch.setattr(
+            MachOAnalyzer, "_run_lief",
+            lambda self, p: None, raising=True,
+        )
+        from karadul.core.subprocess_runner import SubprocessRunner
+        monkeypatch.setattr(
+            SubprocessRunner, "run_strings",
+            lambda self, p, min_length=None: [], raising=True,
+        )
+        monkeypatch.setattr(
+            MachOAnalyzer, "_run_ghidra",
+            lambda self, p, ws: None, raising=True,
+        )
+
+        class _BIFake:
+            def __init__(self, *a: Any, **kw: Any) -> None:
+                pass
+
+            def analyze(self, **kw: Any) -> Any:
+                class _Report:
+                    class architecture:
+                        app_type = "cli"
+                        subsystems: list[Any] = []
+                        algorithms: list[Any] = []
+                        security: list[Any] = []
+                        protocols: list[Any] = []
+                        function_analyses: list[Any] = []
+
+                    def to_dict(self) -> dict[str, Any]:
+                        return {}
+
+                return _Report()
+
+            def analyze_decompiled(self, _d: Path) -> list[Any]:
+                return []
+
+        monkeypatch.setattr(
+            "karadul.analyzers.binary_intelligence.BinaryIntelligence",
+            _BIFake, raising=True,
+        )
+
+    def test_macho_raw_copy_same_file_branch(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        config: Config,
+    ) -> None:
+        """raw_copy.resolve() == binary_path.resolve() -> direct artifact."""
+        self._patch_basic_pipeline(monkeypatch)
+
+        # Workspace olustur ve raw stage dizinini bul
+        ws = _make_workspace(tmp_path)
+        raw_dir = ws.get_stage_dir("raw")
+        # Binary'i workspace'in raw klasorunde olustur -- target.path == raw_copy
+        binary_in_raw = raw_dir / "circular_binary"
+        binary_in_raw.write_bytes(b"\x7fELF" + b"\x00" * 1024)
+
+        target = TargetInfo(
+            path=binary_in_raw,
+            name="circular_binary",
+            target_type=TargetType.MACHO_BINARY,
+            language=Language.C,
+            file_size=binary_in_raw.stat().st_size,
+            file_hash="0" * 64,
+            metadata={},
+        )
+        analyzer = MachOAnalyzer(config)
+        result = analyzer.analyze_static(target, ws)
+
+        # Same-file dali: artifact set, kopyalama yapilmadi
+        # (raw_copy ile binary_in_raw ayni inode)
+        assert "raw_binary" in result.artifacts
+        # Dosya silinmemis olmali (zaten ayni dosya)
+        assert binary_in_raw.exists()
+
+    def test_macho_raw_copy_rejects_fifo(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        sample_macho_file: Path,
+        config: Config,
+    ) -> None:
+        """Non-regular dosya (FIFO/device) -> errors'a 'duzgun dosya' mesaji.
+
+        Gercek FIFO yaratmiyoruz cunku `open(fifo, 'rb')` syscall'i writer
+        bekler ve test sonsuz bloklar. Yerine `_stat_is_regular` kontrolunu
+        False'a zorlayarak ayni kod yolunu (line 182-186) tetikliyoruz.
+        FIFO mode'unun gercekten False uretmesi `TestStatIsRegular::
+        test_fake_stat_with_fifo_mode` ile birim duzeyinde kanitlanmis.
+        """
+        self._patch_basic_pipeline(monkeypatch)
+        # _stat_is_regular her cagrisinda False -> "duzgun dosya degil" branchi
+        monkeypatch.setattr(
+            "karadul.analyzers.macho._stat_is_regular",
+            lambda _st: False,
+        )
+
+        target = TargetInfo(
+            path=sample_macho_file,  # Gercek regular dosya, ama stat False mock'lu
+            name="weird_fifo",
+            target_type=TargetType.MACHO_BINARY,
+            language=Language.C,
+            file_size=64,
+            file_hash="0" * 64,
+            metadata={},
+        )
+        analyzer = MachOAnalyzer(config)
+        ws = _make_workspace(tmp_path)
+        result = analyzer.analyze_static(target, ws)
+
+        # Non-regular dosya kopyasi reddedildi
+        assert any(
+            "duzgun dosya degil" in e or "duzgun dosya" in e
+            for e in result.errors
+        ), "Non-regular icin 'duzgun dosya' hatasi bekleniyor (errors: %r)" % result.errors
