@@ -1,28 +1,44 @@
 # Changelog
 
-## [1.14.5] - 2026-05-09 (test debt patch)
+## [1.14.5] - 2026-05-09/10 (test debt + güvenlik hardening)
 
 `macho.py` (926 LOC) ve `packed_binary.py` (1438 LOC) sıfırdan test edildi.
-v1.13/v1.14 dalgalarından sonra biriken iki büyük testsiz dosyanın kapatılması.
+v1.13/v1.14 dalgalarından sonra biriken iki büyük testsiz dosyanın
+kapatılması + 3 ajan review (tester + reviewer + security-expert)
+sonrası 3 real bug fix.
 
 ### Eklenenler
-- `tests/test_macho.py` — 47 test, ~1100 LOC, **%83 coverage** (11 test grubu).
-- `tests/test_packed_binary.py` — 72 test, ~1100 LOC, **%85-90 coverage** (13 grup
-  + serialization round-trip + 3 güvenlik grubu: zip bomb, path traversal,
-  Windows reserved name).
+- `tests/test_macho.py` — **52 test**, ~1500 LOC, **%89 coverage** (14 test sınıfı).
+- `tests/test_packed_binary.py` — **90 test**, ~1550 LOC, **%87 coverage** (16 sınıf:
+  entropy + detection + extraction + serialization + 4 güvenlik sınıfı:
+  zip bomb, path traversal, Windows reserved name, symlink TOCTOU + TOC DoS).
 
-### Düzeltilenler
-- **`packed_binary.py:828-833` PyInstaller TOC parser** — `_parse_toc()`
-  içindeki `struct.unpack("!IIIBB", ...)` 5 değer döndürdüğü halde 6
-  değişkene unpack ediliyordu. `ValueError` `try/except struct.error` ile
-  yakalanmadığı için TOC parser fonksiyonel değildi; gerçek PyInstaller
-  binary'sinde `extract()` patlardı. Test debt sprint'inde tespit edildi
-  ve giderildi (fazla `entry_len` değişkeni kaldırıldı; `raw_entry_len`
-  zaten doğru pozisyondan ayrı çekiliyor).
+### Düzeltilenler (3 real bug)
+- **PyInstaller TOC parser struct unpack (`packed_binary.py:828-833`)** —
+  `struct.unpack("!IIIBB", ...)` 5 değer döndürürken 6 değişkene unpack
+  ediliyordu. ValueError, `try/except struct.error` ile yakalanmıyordu;
+  gerçek PyInstaller binary'sinde `extract()` patlardı. Fix: fazla
+  `entry_len` değişkeni kaldırıldı.
+- **PyInstaller TOC parser DoS koruma (`packed_binary.py:680-695, 836-855`)** —
+  `raw_entry_len < 18` durumunda parser sonsuz döngüye girip CPU'yu
+  tüketebilirdi; ayrıca milyonlarca küçük entry ile RAM exhaustion
+  mümkündü. Fix: `MIN_TOC_ENTRY_HEADER_BYTES=18` early break +
+  `MAX_TOC_ENTRIES=100_000` cap (security-expert HIGH).
+- **UPX false-positive hardening (`packed_binary.py:456-486`)** —
+  `_check_upx` sadece 4-byte `UPX!` sentinel'i arıyor, rastgele veride
+  false positive üretiyordu. Fix: gerçek UPX paketli dosyada bulunması
+  gereken `UPX0` + `UPX1` section adları da kontrol edilir.
+
+### Güvenlik
+- Symlink TOCTOU yazma escape (PyInstaller TOC entry → output dir dışı)
+  test edildi ve koruma doğrulandı (security-expert HIGH).
+- Path traversal, zip bomb (gerçek 200MB→100MB limit), Windows reserved
+  name (CON/PRN/COM* multi-component) — 17 güvenlik testi.
 
 ### Test
-- 4773 → **4892 PASS** (+119 test), 6 skip, 0 fail, 0 xfail.
+- 4773 → **4915 PASS** (+142 yeni test), 6 skip, 0 fail, 0 xfail.
 - mypy default: 0 hata (304 dosya).
+- Coverage: macho.py %83 → **%89**, packed_binary.py 0 → **%87**.
 
 
 ## [1.12.0] - TBD (kod kalite sürümü)
