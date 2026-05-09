@@ -39,6 +39,8 @@ from karadul.pipeline.steps import (  # noqa: F401
     packer_fingerprint,
     # v1.15 Dalga 1: TRex struct recovery (Ghidra IL bekler, graceful skip)
     trex_struct_recovery,
+    # v1.15 Dalga 1: PDB symbol/type kurtarma (PE only, llvm-pdbutil)
+    pdb_symbol_recovery,
 )
 
 __all__ = [
@@ -66,6 +68,7 @@ __all__ = [
     "parallel_algo_eng",
     "pcode_cfg_analysis",
     "project_build",
+    "pdb_symbol_recovery",
     "semantic_naming",
     "struct_recovery",
     "trex_struct_recovery",
