@@ -454,18 +454,30 @@ class PackingDetector:
 
     @staticmethod
     def _check_upx(data: bytes) -> Optional[int]:
-        """UPX magic bytes ara.
+        """UPX paketleyici imzasi ara.
+
+        v1.14.5 GUVENLIK FIX: Eski versiyon sadece 4-byte ``b"UPX!"`` sentinel'i
+        ariyordu; bu rastgele/kullanici verisinde false positive uretiyordu
+        (orn. herhangi bir binary'de "UPX!" alt-stringi). Gercek UPX paketli
+        bir dosyada PE/ELF section header'larinda ``UPX0`` ve ``UPX1`` adli
+        section'lar bulunur. Her uc isaretin de varligini sart kosarak false
+        positive orani ciddi sekilde dusurulur (security-expert review,
+        v1.14.5 P5).
 
         Args:
             data: Binary verisi.
 
         Returns:
-            int veya None: UPX magic offset'i, bulunamazsa None.
+            int veya None: UPX magic (``UPX!``) offset'i. UPX0 veya UPX1
+            isaretlerinden biri eksikse ``None`` (false positive guard).
         """
         offset = data.find(UPX_MAGIC)
-        if offset >= 0:
-            return offset
-        return None
+        if offset < 0:
+            return None
+        # Section name'lerin ikisi de bulunmali (gercek UPX layout'u).
+        if data.find(b"UPX0") < 0 or data.find(b"UPX1") < 0:
+            return None
+        return offset
 
     @staticmethod
     def _check_pyinstaller(data: bytes) -> Optional[dict[str, Any]]:

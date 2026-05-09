@@ -310,8 +310,11 @@ class TestPackingDetectorDetect:
         assert any("cok buyuk" in e for e in info.evidence)
 
     def test_upx_short_circuits_pipeline(self, tmp_path: Path, config: Config) -> None:
-        # UPX magic varsa diger kontroller atlanir
-        data = b"\x00" * 256 + UPX_MAGIC + b"\x00" * 256
+        # UPX magic + UPX0 + UPX1 layout (v1.14.5 P5 hardening sonrasi gerekli).
+        data = (
+            b"\x00" * 200 + b"UPX0" + b"\x00" * 16
+            + b"UPX1" + b"\x00" * 16 + UPX_MAGIC + b"\x00" * 200
+        )
         bin_path = tmp_path / "upx.bin"
         bin_path.write_bytes(data)
         det = PackingDetector(config)
@@ -319,7 +322,8 @@ class TestPackingDetectorDetect:
         assert info.is_packed is True
         assert info.packing_type == PackingType.UPX
         assert info.confidence == pytest.approx(0.95)
-        assert info.metadata["upx_offset"] == 256
+        # UPX! sentinel offset = 200 prefix + 4(UPX0) + 16(pad) + 4(UPX1) + 16(pad) = 240
+        assert info.metadata["upx_offset"] == 240
 
     def test_pyinstaller_detection(self, tmp_path: Path, config: Config) -> None:
         # PyInstaller MEI magic
@@ -373,12 +377,24 @@ class TestPackingDetectorDetect:
 # ---------------------------------------------------------------------------
 
 class TestCheckUpx:
-    def test_upx_magic_found(self) -> None:
-        data = b"AAAA" + UPX_MAGIC + b"BBBB"
-        assert PackingDetector._check_upx(data) == 4
+    """v1.14.5 P5: UPX hardening — UPX! sentinel + UPX0 + UPX1 section adlari."""
 
-    def test_upx_magic_at_start(self) -> None:
-        assert PackingDetector._check_upx(UPX_MAGIC + b"rest") == 0
+    def _real_upx_layout(self, prefix: bytes = b"AAAA", suffix: bytes = b"BBBB") -> bytes:
+        """Gercek UPX paketli dosya yapisinin minimal taklidi.
+
+        UPX paketler PE/ELF section header'larinda UPX0 ve UPX1 adli section'lar
+        olusturur, payload icinde de UPX! sentinel'i bulunur.
+        """
+        return prefix + b"UPX0" + b"\x00" * 16 + b"UPX1" + b"\x00" * 16 + UPX_MAGIC + suffix
+
+    def test_upx_magic_found_with_section_names(self) -> None:
+        data = self._real_upx_layout()
+        # offset = UPX! konumu (prefix + UPX0+pad + UPX1+pad = 4+20+20 = 44)
+        assert PackingDetector._check_upx(data) == 44
+
+    def test_upx_magic_at_start_with_section_names(self) -> None:
+        data = UPX_MAGIC + b"\x00" * 32 + b"UPX0" + b"\x00" * 16 + b"UPX1"
+        assert PackingDetector._check_upx(data) == 0
 
     def test_no_upx_returns_none(self) -> None:
         assert PackingDetector._check_upx(b"plain ELF data no magic") is None
@@ -386,6 +402,27 @@ class TestCheckUpx:
     def test_upx_magic_in_random_data(self) -> None:
         # Magic 4 byte oldugu icin random'da rastlama riski cok dusuk
         data = b"\x00" * 4096
+        assert PackingDetector._check_upx(data) is None
+
+    # v1.14.5 P5: false-positive guard testleri
+    def test_upx_sentinel_alone_rejected(self) -> None:
+        """UPX! sentinel var ama UPX0/UPX1 section adlari yok -> false positive."""
+        data = b"AAAA" + UPX_MAGIC + b"BBBB"
+        assert PackingDetector._check_upx(data) is None
+
+    def test_upx_only_upx0_present_rejected(self) -> None:
+        """Sadece UPX0 + UPX! var ama UPX1 yok -> reddedilir."""
+        data = b"UPX0" + b"\x00" * 16 + UPX_MAGIC + b"data"
+        assert PackingDetector._check_upx(data) is None
+
+    def test_upx_only_upx1_present_rejected(self) -> None:
+        """Sadece UPX1 + UPX! var ama UPX0 yok -> reddedilir."""
+        data = b"UPX1" + b"\x00" * 16 + UPX_MAGIC + b"data"
+        assert PackingDetector._check_upx(data) is None
+
+    def test_upx_section_names_without_sentinel_rejected(self) -> None:
+        """UPX0 + UPX1 var ama UPX! sentinel yok -> reddedilir (bozuk veya farkli)."""
+        data = b"UPX0" + b"\x00" * 16 + b"UPX1" + b"\x00" * 16
         assert PackingDetector._check_upx(data) is None
 
 
@@ -781,7 +818,11 @@ class TestAnalyzePackedBinary:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         bin_path = tmp_path / "upx.bin"
-        bin_path.write_bytes(b"\x00" * 256 + UPX_MAGIC + b"\x00" * 1024)
+        # v1.14.5 P5: gercek UPX layout (UPX0 + UPX1 + UPX! sentinel)
+        bin_path.write_bytes(
+            b"\x00" * 200 + b"UPX0" + b"\x00" * 16
+            + b"UPX1" + b"\x00" * 16 + UPX_MAGIC + b"\x00" * 1024
+        )
 
         monkeypatch.setattr(
             "karadul.analyzers.packed_binary.resolve_tool",
