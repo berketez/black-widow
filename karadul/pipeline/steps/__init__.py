@@ -37,6 +37,8 @@ from karadul.pipeline.steps import (  # noqa: F401
     # v1.13 Dalga 1: anti-debug + packer fingerprint
     anti_debug,
     packer_fingerprint,
+    # v1.15 Dalga 1: TRex struct recovery (Ghidra IL bekler, graceful skip)
+    trex_struct_recovery,
 )
 
 __all__ = [
@@ -66,4 +68,5 @@ __all__ = [
     "project_build",
     "semantic_naming",
     "struct_recovery",
+    "trex_struct_recovery",
 ]
