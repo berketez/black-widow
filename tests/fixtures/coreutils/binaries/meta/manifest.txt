@@ -1,0 +1,101 @@
+=== stripped ELF binaries (real-world Ubuntu 24.04 apt) ===
+total 2632
+drwxr-xr-x 2 root root   4096 May  9 22:44 .
+drwxr-xr-x 1 root root   4096 May  9 22:44 ..
+-rwxr-xr-x 1 root root  67944 May  9 22:44 basename
+-rwxr-xr-x 1 root root  67928 May  9 22:44 cat
+-rwxr-xr-x 1 root root  67760 May  9 22:44 cmp
+-rwxr-xr-x 1 root root 133496 May  9 22:44 cp
+-rwxr-xr-x 1 root root  67952 May  9 22:44 cut
+-rwxr-xr-x 1 root root 133480 May  9 22:44 date
+-rwxr-xr-x 1 root root  67864 May  9 22:44 dirname
+-rwxr-xr-x 1 root root  67792 May  9 22:44 echo
+-rwxr-xr-x 1 root root  68368 May  9 22:44 env
+-rwxr-xr-x 1 root root  67888 May  9 22:44 expr
+-rwxr-xr-x 1 root root  67792 May  9 22:44 false
+-rwxr-xr-x 1 root root  67952 May  9 22:44 head
+-rwxr-xr-x 1 root root 199464 May  9 22:44 ls
+-rwxr-xr-x 1 root root  67944 May  9 22:44 mkdir
+-rwxr-xr-x 1 root root 133496 May  9 22:44 mv
+-rwxr-xr-x 1 root root  67944 May  9 22:44 pwd
+-rwxr-xr-x 1 root root  67888 May  9 22:44 readlink
+-rwxr-xr-x 1 root root  67944 May  9 22:44 rm
+-rwxr-xr-x 1 root root  67888 May  9 22:44 rmdir
+-rwxr-xr-x 1 root root  67944 May  9 22:44 seq
+-rwxr-xr-x 1 root root  67944 May  9 22:44 sleep
+-rwxr-xr-x 1 root root 133736 May  9 22:44 sort
+-rwxr-xr-x 1 root root 133488 May  9 22:44 stat
+-rwxr-xr-x 1 root root  67968 May  9 22:44 tail
+-rwxr-xr-x 1 root root  67944 May  9 22:44 tee
+-rwxr-xr-x 1 root root  67760 May  9 22:44 test
+-rwxr-xr-x 1 root root 133480 May  9 22:44 touch
+-rwxr-xr-x 1 root root  67944 May  9 22:44 tr
+-rwxr-xr-x 1 root root  67792 May  9 22:44 true
+-rwxr-xr-x 1 root root  67944 May  9 22:44 uniq
+-rwxr-xr-x 1 root root  67960 May  9 22:44 wc
+
+=== sha256 ===
+6f59798300ab8020d300226e74f6600e11f3ccc19501e834fdb8c7e494087037  stripped/basename
+604ff8110ab37748594c3e61d6ba52140788c7c29500fb0edc314e08db155f2a  stripped/cat
+e7a3863a965c20d9b4beaad4736ff4406108bb88ba2d09a122c931ca246a0db4  stripped/cmp
+3ec1dff780dc05085e68c636879751629e2972ad05e4c02a1e57ac67ad16f2fc  stripped/cp
+e2cdff490904b029d89ea8e0f39b709d4674e2f828637fad324bd8985381a1d2  stripped/cut
+90b4b67c4de251db8c845731670d78ec3fe40ae9f60477a975f83d6dc42efc59  stripped/date
+0aed6960221e6ec4f6dc82c1009aee99fb26ddbc1dd5634c2be697e2e03782c6  stripped/dirname
+263080dc70c33401517a7f465e15bb6c1cf7e6d7b673399de264396cc09cc2a3  stripped/echo
+dde57443115af498aa981159ba6517b156547173342af36487ed58631d9e47c3  stripped/env
+0a83825e4bb9d11c2997f8fa355c0f01a9ddb1d6e558b21373ae8ec6c85d92b0  stripped/expr
+9b2b3f201c1350102f909a3c17e547229e038591c4cc24881b5c140c97763df5  stripped/false
+612ef32edfefd3fc4ca1af14fb1bdfd6a48d8318a7901ffb38ffc2a604347f3c  stripped/head
+87337ebe81d2853af9f16915ad394344b287d0c99df48162fe15cc96c3fe6edf  stripped/ls
+e0308b807656f115c844f785865ca009e6df2f5789ebfa3efb49c4b01640344e  stripped/mkdir
+8d17f81426c154381c58d5e9d957473b66a828589d4adf20f461b476137ae469  stripped/mv
+e5d415b20c643d99f6268254045f006ddd6609d71b065d490a1501f716da4fd2  stripped/pwd
+068bf5e7b3cfa43ae02ccf7b854f13863adb05d75d011a2de9e89adafd1a524b  stripped/readlink
+acc9c5cb7387a25725bb504bf60fc35fbd487e902dd6b4a725f444d3188e95a6  stripped/rm
+e0ccd8e45e85e1b1e3b4c3ca571354937632a2b651d24299c1910c388d4509cc  stripped/rmdir
+55c96307f0875b1a9205ff228cab8afa1af66835e2c472039ecc2b340481e754  stripped/seq
+a3202123ba517a3c4f08ca25429e3f48eb9dffae9b888a9d353c21451f807f6a  stripped/sleep
+585d23713156762b18afcebc553fee6d46fe2d5848c27f3f46ab13d877341d79  stripped/sort
+86b89355842f54a49698069b345eabb94c2f26d2f33b5734ec91c68de8fe6f7a  stripped/stat
+bda3fdb8d345067d09204aa35301fd6b5d4f4de3b3b7f15e0dcdb92e9451992f  stripped/tail
+5b6aa05ad8c4294197cdf38cc5b18693b387be9ab4838f8cba71bf0f78544d94  stripped/tee
+38ea770724b003a328beee7a859c8755c46a40a0342ea7dd55c3b51591f66037  stripped/test
+6d99d27b87a756a755a0904238579ccc2d88ab35e529935bbf67ecc2696abb27  stripped/touch
+98805355098cc9a3c6efb8c766d8ccbb01226070bdd13f386655d2713d9b1f6c  stripped/tr
+69851c424c4519cd11af710b69d52ddf44b929b74470a02e62e0aab227c07543  stripped/true
+0f883fac36de9b1b40debd103e98613bb308c1b914586fadab3c2ecec0f67bbc  stripped/uniq
+4bab599a0dbd6d87e5bcedaa021b727d9306777741850fdb5a4b8a1804e486fe  stripped/wc
+
+=== nm -D dynamic symbol counts ===
+basename: 56 dyn symbols
+cat: 69 dyn symbols
+cmp: 81 dyn symbols
+cp: 157 dyn symbols
+cut: 73 dyn symbols
+date: 86 dyn symbols
+dirname: 51 dyn symbols
+echo: 49 dyn symbols
+env: 81 dyn symbols
+expr: 77 dyn symbols
+false: 47 dyn symbols
+head: 68 dyn symbols
+ls: 127 dyn symbols
+mkdir: 101 dyn symbols
+mv: 157 dyn symbols
+pwd: 68 dyn symbols
+readlink: 63 dyn symbols
+rm: 82 dyn symbols
+rmdir: 67 dyn symbols
+seq: 73 dyn symbols
+sleep: 59 dyn symbols
+sort: 142 dyn symbols
+stat: 106 dyn symbols
+tail: 90 dyn symbols
+tee: 73 dyn symbols
+test: 59 dyn symbols
+touch: 87 dyn symbols
+tr: 69 dyn symbols
+true: 47 dyn symbols
+uniq: 71 dyn symbols
+wc: 87 dyn symbols
