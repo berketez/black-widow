@@ -34,6 +34,11 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from karadul.exceptions import AnalysisError
+# B21: cikplak subprocess.run yerine safe_run (LD_PRELOAD/DYLD koruma).
+# _binary_path adapter init'inde absolute path; env temizligi yeterli.
+from karadul.core.safe_subprocess import safe_run
+
 logger = logging.getLogger(__name__)
 
 
@@ -184,11 +189,12 @@ class TRexAdapter:
         if self._binary_path is None:
             return None
         try:
-            proc = subprocess.run(
+            # B21: safe_run -- LD_PRELOAD/DYLD env temizligi.
+            proc = safe_run(
                 [self._binary_path, "--version"],
                 capture_output=True,
                 text=True,
-                timeout=10,
+                timeout=10.0,
                 check=False,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
@@ -215,7 +221,7 @@ class TRexAdapter:
             RuntimeError: Binary kurulu degilse veya .lifted dosyasi yoksa.
         """
         if self._binary_path is None:
-            raise RuntimeError(
+            raise AnalysisError(
                 "trex binary not available -- "
                 "vendor/trex/BUILD_INSTRUCTIONS.md ile kurun "
                 "veya KARADUL_TREX_PATH env var'i tanimlayin.",
@@ -223,7 +229,7 @@ class TRexAdapter:
 
         lifted = Path(lifted_path)
         if not lifted.exists():
-            raise RuntimeError(f"trex .lifted dosyasi yok: {lifted}")
+            raise AnalysisError(f"trex .lifted dosyasi yok: {lifted}")
 
         cmd: list[str] = [self._binary_path, "from-ghidra", str(lifted)]
         if vars_path is not None:
@@ -370,7 +376,8 @@ class TRexAdapter:
 
     def _run_subprocess(self, cmd: list[str]) -> subprocess.CompletedProcess[str]:
         """TRex'i calistir; CompletedProcess (stdout/stderr/returncode) don."""
-        return subprocess.run(
+        # B21: safe_run -- LD_PRELOAD/DYLD env temizligi.
+        return safe_run(
             cmd,
             capture_output=True,
             text=True,

@@ -1248,17 +1248,7 @@ class CVariableNamer:
             processed - failed, failed,
         )
 
-        # --- LLM4Decompile stratejisi SEQUENTIAL (GPU singleton) ---
-        if self._config.ml.enable_llm4decompile:
-            ml_processed = 0
-            for func_info in func_list:
-                self._strategy_llm4decompile(func_info)
-                ml_processed += 1
-                if ml_processed % 100 == 0:
-                    logger.info(
-                        "  LLM4Decompile ilerleme: %d/%d fonksiyon",
-                        ml_processed, total_funcs,
-                    )
+        # NOT (2026-05-13): LLM4Decompile blogu kaldirildi (B11, feedback_no_llm.md).
 
         # 4. En yuksek confidence'li ismi sec
         naming_map: dict[str, str] = {}
@@ -1808,7 +1798,7 @@ class CVariableNamer:
         Bu metot harici kullanim veya test icin korundu.
         """
         self._run_heuristic_strategies(func_info)
-        self._strategy_llm4decompile(func_info)
+        # NOT (2026-05-13): _strategy_llm4decompile kaldirildi (B11)
 
     def _run_heuristic_strategies(self, func_info: _FunctionInfo) -> None:
         """Heuristik stratejileri calistir (ML haric, thread-safe)."""
@@ -2869,82 +2859,9 @@ class CVariableNamer:
                 ), func_name=func_info.name)
 
     # ------------------------------------------------------------------
-    # Strateji 10: LLM4Decompile (confidence: 0.4-0.7)
+    # NOT (2026-05-13): Strateji 10 _strategy_llm4decompile kaldirildi
+    # Berke kalici karari: feedback_no_llm.md — deterministic, CPU-only.
     # ------------------------------------------------------------------
-
-    def _strategy_llm4decompile(self, func_info: _FunctionInfo) -> None:
-        """LLM4Decompile 6.7B ile kod iyilestirme ve isim cikarma.
-
-        Model, Ghidra'nin ciktisini alip daha okunabilir C koduna ceviriyor.
-        Uretilen koddaki anlamli degisken/fonksiyon isimlerini kurtarir.
-        Sadece heuristik stratejilerin bulamadigi isimler icin calisir.
-        """
-        if not self._config.ml.enable_llm4decompile:
-            return
-
-        # Fonksiyon body'si yoksa atla
-        body = self._func_bodies.get(func_info.name, "")
-        if not body:
-            return
-
-        # Cok kisa fonksiyonlari atla
-        line_count = body.count("\n") + 1
-        if line_count < self._config.ml.ml_min_function_size:
-            return
-
-        # Bu fonksiyon icin zaten yuksek confidence isim varsa atla
-        # NOT: FUN_ prefix _GLOBAL_PREFIXES'de oldugundan key her zaman
-        # scope-independent: key = func_info.name (FUN_xxx)
-        existing = self._candidates.get(func_info.name, [])
-        if any(c.confidence >= 0.7 for c in existing):
-            return
-
-        # Singleton model — bir kez yuklenir, bellekte kalir
-        if not hasattr(self, '_llm4decompile'):
-            try:
-                from karadul.reconstruction.ml.llm4decompile import get_model
-                self._llm4decompile = get_model(
-                    model_path=self._config.ml.llm4decompile_model_path,
-                    device=self._config.ml.ml_device if self._config.ml.ml_device != "auto" else None,
-                    max_new_tokens=self._config.ml.max_new_tokens,
-                    temperature=self._config.ml.ml_temperature,
-                    dtype=self._config.ml.ml_dtype,
-                )
-            except Exception as exc:
-                logger.warning("LLM4Decompile yuklenemedi, strateji devre disi: %s", exc)
-                self._config.ml.enable_llm4decompile = False
-                return
-
-        try:
-            predictions = self._llm4decompile.predict_names(body, func_info.name)
-            for pred in predictions:
-                if pred.confidence < self._min_confidence:
-                    continue
-                sanitized = _sanitize_c_name(pred.name)
-                if sanitized and sanitized != "unnamed":
-                    self._add_candidate(_NamingCandidate(
-                        old_name=pred.original_name,
-                        new_name=sanitized,
-                        confidence=pred.confidence,
-                        strategy="llm4decompile",
-                        reason="LLM4Decompile 6.7B code refinement",
-                    ), func_name=func_info.name)
-
-            # Fonksiyon ismi tahmini
-            if _is_ghidra_auto_name(func_info.name):
-                func_pred = self._llm4decompile.predict_function_name(body)
-                if func_pred.name and func_pred.confidence >= self._min_confidence:
-                    sanitized = _sanitize_c_name(func_pred.name)
-                    if sanitized and sanitized != "unnamed":
-                        self._add_candidate(_NamingCandidate(
-                            old_name=func_info.name,
-                            new_name=sanitized,
-                            confidence=func_pred.confidence,
-                            strategy="llm4decompile",
-                            reason="LLM4Decompile function name prediction",
-                        ), func_name=func_info.name)
-        except Exception as exc:
-            logger.debug("LLM4Decompile strateji hatasi (%s): %s", func_info.name, exc)
 
     # ------------------------------------------------------------------
     # Naming map'i C koduna uygulama

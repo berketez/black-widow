@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 
 from .npm_fingerprinter import NpmFingerprinter
 from .structural_analyzer import StructuralAnalyzer
-from .llm_namer import LLMNamer
+# NOT (2026-05-13): LLMNamer kaldirildi (B11, feedback_no_llm.md)
 from .result import NamingManifest, NamingResult
 
 if TYPE_CHECKING:
@@ -62,8 +62,8 @@ class NamingPipeline:
         self.config = config
         self.fingerprinter = NpmFingerprinter()
         self.structural = StructuralAnalyzer()
-        self.llm = LLMNamer(use_codex=use_codex, timeout=llm_timeout)
-        self.skip_llm = skip_llm
+        # NOT (2026-05-13): LLM Layer kaldirildi (B11)
+        self.skip_llm = True
 
         # Source matching ayarlari
         self._source_match_enabled = True

@@ -320,17 +320,19 @@ class TestBinaryPrepStep:
 
 
 class TestPipelineConfig:
-    def test_default_is_false(self) -> None:
+    def test_default_is_true(self) -> None:
+        """B2 (2026-05-13): use_step_registry artik default True
+        (eski monolithic Phase 3 yolu obsolete)."""
         from karadul.config import Config
         cfg = Config()
-        assert cfg.pipeline.use_step_registry is False
+        assert cfg.pipeline.use_step_registry is True
 
     def test_yaml_override(self, tmp_path: Path) -> None:
-        """YAML ile True override edilebilmeli."""
+        """YAML ile False override edilebilmeli (legacy yola dusurmek icin)."""
         import yaml
         from karadul.config import Config
 
         p = tmp_path / "karadul.yaml"
-        p.write_text(yaml.safe_dump({"pipeline": {"use_step_registry": True}}))
+        p.write_text(yaml.safe_dump({"pipeline": {"use_step_registry": False}}))
         cfg = Config.load(p)
-        assert cfg.pipeline.use_step_registry is True
+        assert cfg.pipeline.use_step_registry is False

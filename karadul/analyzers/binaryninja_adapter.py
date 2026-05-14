@@ -45,6 +45,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
+from karadul.exceptions import AnalysisError
+
 logger = logging.getLogger(__name__)
 
 
@@ -190,11 +192,13 @@ class BinaryNinjaAdapter:
         """BinaryView ile fonksiyon listesini cikar.
 
         Raises:
-            RuntimeError: ``binaryninja`` modulu yoksa.
+            AnalysisError: ``binaryninja`` modulu yoksa. ``AnalysisError``
+                aynı zamanda ``RuntimeError`` subclass'i oldugu icin
+                eski ``except RuntimeError`` yakalama bozulmaz.
         """
         bn = self._bn()
         if bn is None:
-            raise RuntimeError(_BN_MISSING_MSG)
+            raise AnalysisError(_BN_MISSING_MSG)
         bv = self._load_binary_view(bn)
         try:
             return self._iter_functions(bv)
@@ -205,11 +209,11 @@ class BinaryNinjaAdapter:
         """BinaryView types (TypeContainer) listesini cikar.
 
         Raises:
-            RuntimeError: ``binaryninja`` modulu yoksa.
+            AnalysisError: ``binaryninja`` modulu yoksa.
         """
         bn = self._bn()
         if bn is None:
-            raise RuntimeError(_BN_MISSING_MSG)
+            raise AnalysisError(_BN_MISSING_MSG)
         bv = self._load_binary_view(bn)
         try:
             return self._iter_types(bv)
@@ -220,14 +224,14 @@ class BinaryNinjaAdapter:
         """Fonksiyon + tip + meta ozetli tam analiz.
 
         Raises:
-            RuntimeError: ``binaryninja`` modulu yoksa veya
+            AnalysisError: ``binaryninja`` modulu yoksa veya
                 BinaryView olusturulamazsa.
         """
         bn = self._bn()
         if bn is None:
-            raise RuntimeError(_BN_MISSING_MSG)
+            raise AnalysisError(_BN_MISSING_MSG)
         if not self.binary_path.exists():
-            raise RuntimeError(
+            raise AnalysisError(
                 f"binary path yok: {self.binary_path}",
             )
 
@@ -290,7 +294,7 @@ class BinaryNinjaAdapter:
                     f"binaryninja.load basarisiz: {exc}",
                 ) from exc
             if bv is None:
-                raise RuntimeError(
+                raise AnalysisError(
                     f"binaryninja.load None dondu: {path_str}",
                 )
             return bv
@@ -321,7 +325,7 @@ class BinaryNinjaAdapter:
                         )
                 return bv
 
-        raise RuntimeError(
+        raise AnalysisError(
             "binaryninja API uyumsuz: load() / "
             "BinaryViewType.get_view_of_file() bulunamadi",
         )

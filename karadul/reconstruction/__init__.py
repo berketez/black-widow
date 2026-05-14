@@ -23,8 +23,6 @@ from karadul.reconstruction.dependency_resolver import DependencyResolver
 from karadul.reconstruction.gap_filler import GapFillResult, GapFiller
 from karadul.reconstruction.module_splitter import ModuleSplitter, SplitResult
 from karadul.reconstruction.naming import (
-    ClaudeLLMNamer,
-    LLMNamingResult,
     NamingManifest,
     NamingPipeline,
     NamingResult,
@@ -121,8 +119,6 @@ __all__ = [
     "NamingResult",
     "ParamRecovery",
     "ParamRecoveryResult",
-    "ClaudeLLMNamer",
-    "LLMNamingResult",
     "InlineExtractor",
     "InlineExtractionResult",
     "ASTFingerprinter",

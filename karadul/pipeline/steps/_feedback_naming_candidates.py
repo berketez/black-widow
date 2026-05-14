@@ -34,6 +34,11 @@ def collect_candidates(
     bsim_shadow: dict[str, Any] | None = None,
     bsim_fusion_min_similarity: float = 0.7,
     bsim_fusion_max_candidates: int = 3,
+    # 2026-05-13: Yeni naming kanallari (B8 DWARF, B7 PDB/BN/TRex, B18 Rust/Go)
+    binary_path: Path | None = None,
+    pdb_symbols: list[dict[str, Any]] | None = None,
+    bn_functions: list[dict[str, Any]] | None = None,
+    trex_structs: list[dict[str, Any]] | None = None,
 ) -> dict[str, list[Any]]:
     """Tum kaynaklardan candidates_by_symbol sozlugu olustur.
 
@@ -67,7 +72,280 @@ def collect_candidates(
             stats=stats,
         )
 
+    # 2026-05-13: Yeni naming kanallari
+    if binary_path is not None and binary_path.exists():
+        _add_dwarf(binary_path, candidates_by_symbol, stats)
+        _add_rust_demangler(binary_path, candidates_by_symbol, stats)
+        _add_go_demangler(binary_path, candidates_by_symbol, stats)
+
+    if pdb_symbols:
+        _add_pdb_symbols(pdb_symbols, candidates_by_symbol, stats)
+    if bn_functions:
+        _add_bn_symbols(bn_functions, candidates_by_symbol, stats)
+    if trex_structs:
+        _add_trex_structs(trex_structs, candidates_by_symbol, stats)
+
     return candidates_by_symbol
+
+
+def _addr_to_fun_key(addr: int | str) -> str:
+    """Adres → FUN_<lowercase hex> (Ghidra/BSim ile ayni format)."""
+    if isinstance(addr, str):
+        try:
+            addr_int = int(addr, 16) if addr.startswith("0x") else int(addr)
+        except ValueError:
+            return ""
+    else:
+        addr_int = int(addr)
+    return f"FUN_{addr_int:x}"
+
+
+def _make_candidate(name: str, source: str, confidence: float, reason: str) -> Any:
+    """NamingCandidate wrapper. NamingCandidate yoksa dict dondur (test mock)."""
+    if NamingCandidate is None:
+        return {"name": name, "source": source, "confidence": confidence, "reason": reason}
+    return NamingCandidate(
+        name=name, source=source, confidence=confidence, reason=reason,
+    )
+
+
+def _add_dwarf(
+    binary_path: Path,
+    candidates: dict[str, list[Any]],
+    stats: dict[str, Any],
+) -> None:
+    """B8: DWARF .debug_info'dan fonksiyon isimlerini cek (debug build only)."""
+    try:
+        from karadul.analyzers.dwarf_extractor import DwarfExtractor
+    except ImportError:
+        stats["dwarf_naming_status"] = "no-extractor"
+        return
+    try:
+        extractor = DwarfExtractor()
+        result = extractor.extract(binary_path)
+    except Exception as exc:
+        logger.debug("DWARF extract basarisiz: %s", exc, exc_info=True)
+        stats["dwarf_naming_status"] = "extract-error"
+        return
+    funcs = getattr(result, "functions", None) or []
+    if not funcs:
+        stats["dwarf_naming_status"] = "no-debug-info"
+        return
+    added = 0
+    for fn in funcs:
+        name = getattr(fn, "name", None)
+        addr = getattr(fn, "address", None)
+        if not name or addr is None:
+            continue
+        key = _addr_to_fun_key(addr)
+        if not key:
+            continue
+        cand = _make_candidate(
+            name=name, source="dwarf", confidence=0.95,
+            reason=f"DWARF .debug_info ({getattr(fn,'file','?')}:{getattr(fn,'line','?')})",
+        )
+        candidates.setdefault(key, []).append(cand)
+        added += 1
+    stats["dwarf_naming_status"] = "active" if added else "no-candidates"
+    stats["dwarf_candidates_added"] = added
+
+
+def _extract_binary_symbols(binary_path: Path) -> list[tuple[str, int]]:
+    """nm -P ile (name, addr) sembol cifti listesi cek. macOS+Linux uyumlu."""
+    try:
+        from karadul.core.safe_subprocess import resolve_tool, safe_run
+    except ImportError:
+        try:
+            from karadul.core.safe_subprocess import safe_run  # type: ignore[no-redef]
+            resolve_tool = None  # type: ignore[assignment]
+        except ImportError:
+            return []
+    nm_path = resolve_tool("nm") if resolve_tool else "nm"
+    if nm_path is None:
+        return []
+    try:
+        result = safe_run([str(nm_path), "-P", str(binary_path)], timeout=30.0, capture_output=True)
+    except Exception:
+        return []
+    if result.returncode != 0:
+        return []
+    syms: list[tuple[str, int]] = []
+    for line in result.stdout.splitlines():
+        parts = line.split()
+        if len(parts) < 3:
+            continue
+        name = parts[0]
+        try:
+            addr = int(parts[2], 16)
+        except (ValueError, IndexError):
+            continue
+        if addr == 0:
+            continue
+        syms.append((name, addr))
+    return syms
+
+
+def _add_rust_demangler(
+    binary_path: Path,
+    candidates: dict[str, list[Any]],
+    stats: dict[str, Any],
+) -> None:
+    """B18: Rust mangled isimleri demangle et."""
+    try:
+        from karadul.analyzers.rust_demangler import RustDemangler
+    except ImportError:
+        stats["rust_demangler_status"] = "no-module"
+        return
+    syms = _extract_binary_symbols(binary_path)
+    if not syms:
+        stats["rust_demangler_status"] = "no-symbols"
+        return
+    demangler = RustDemangler()
+    added = 0
+    for name, addr in syms:
+        if not (name.startswith("_ZN") or name.startswith("_R") or name.startswith("__ZN")):
+            continue
+        try:
+            demangled = demangler.demangle(name)
+        except Exception:
+            continue
+        if not demangled or demangled == name:
+            continue
+        key = _addr_to_fun_key(addr)
+        cand = _make_candidate(
+            name=demangled, source="rust_demangler", confidence=0.95,
+            reason="Rust ABI demangle",
+        )
+        candidates.setdefault(key, []).append(cand)
+        candidates.setdefault(name, []).append(cand)
+        added += 1
+    stats["rust_demangler_status"] = "active" if added else "no-rust-symbols"
+    stats["rust_candidates_added"] = added
+
+
+def _add_go_demangler(
+    binary_path: Path,
+    candidates: dict[str, list[Any]],
+    stats: dict[str, Any],
+) -> None:
+    """B18: Go mangled isimleri demangle et."""
+    try:
+        from karadul.analyzers.go_demangler import GoDemangler
+    except ImportError:
+        stats["go_demangler_status"] = "no-module"
+        return
+    syms = _extract_binary_symbols(binary_path)
+    if not syms:
+        stats["go_demangler_status"] = "no-symbols"
+        return
+    demangler = GoDemangler()
+    added = 0
+    for name, addr in syms:
+        try:
+            if not demangler.is_go_symbol(name):
+                continue
+            demangled = demangler.demangle(name)
+        except Exception:
+            continue
+        if not demangled or demangled == name:
+            continue
+        key = _addr_to_fun_key(addr)
+        cand = _make_candidate(
+            name=demangled, source="go_demangler", confidence=0.90,
+            reason="Go runtime demangle",
+        )
+        candidates.setdefault(key, []).append(cand)
+        candidates.setdefault(name, []).append(cand)
+        added += 1
+    stats["go_demangler_status"] = "active" if added else "no-go-symbols"
+    stats["go_candidates_added"] = added
+
+
+def _add_pdb_symbols(
+    pdb_symbols: list[dict[str, Any]],
+    candidates: dict[str, list[Any]],
+    stats: dict[str, Any],
+) -> None:
+    """B7: PDB symbol recovery — PE binary'ler icin compiler-emitted isim."""
+    added = 0
+    for sym in pdb_symbols:
+        name = sym.get("name")
+        addr = sym.get("address")
+        if not name or addr is None:
+            continue
+        key = _addr_to_fun_key(addr)
+        if not key:
+            continue
+        cand = _make_candidate(
+            name=name, source="pdb", confidence=0.95,
+            reason=f"PDB symbol ({sym.get('module','?')})",
+        )
+        candidates.setdefault(key, []).append(cand)
+        added += 1
+    stats["pdb_naming_status"] = "active" if added else "no-pdb-symbols"
+    stats["pdb_candidates_added"] = added
+
+
+def _add_bn_symbols(
+    bn_functions: list[dict[str, Any]],
+    candidates: dict[str, list[Any]],
+    stats: dict[str, Any],
+) -> None:
+    """B7: BinaryNinja symbol extraction — heuristic + lisansli."""
+    added = 0
+    for fn in bn_functions:
+        name = fn.get("name")
+        addr = fn.get("address")
+        if not name or addr is None:
+            continue
+        # FUN_xxx / sub_xxx / thunk_ pattern'lari atla — BN'in default isimleri
+        if name.startswith(("sub_", "FUN_", "thunk_")):
+            continue
+        key = _addr_to_fun_key(addr)
+        if not key:
+            continue
+        cand = _make_candidate(
+            name=name, source="bn_symbol", confidence=0.85,
+            reason="BinaryNinja symbol",
+        )
+        candidates.setdefault(key, []).append(cand)
+        added += 1
+    stats["bn_naming_status"] = "active" if added else "no-bn-symbols"
+    stats["bn_candidates_added"] = added
+
+
+def _struct_name_to_func_hint(struct_name: str) -> str:
+    """CamelCase struct → snake_case fonksiyon ipucu."""
+    import re as _re
+    s = _re.sub(r"(?<!^)([A-Z])", r"_\1", struct_name).lower()
+    return s
+
+
+def _add_trex_structs(
+    trex_structs: list[dict[str, Any]],
+    candidates: dict[str, list[Any]],
+    stats: dict[str, Any],
+) -> None:
+    """B7: TRex IL struct inference — yapilan struct'tan func isim ipucu."""
+    added = 0
+    for st in trex_structs:
+        struct_name = st.get("name")
+        related_funcs = st.get("related_functions") or []
+        if not struct_name or not related_funcs:
+            continue
+        hint = _struct_name_to_func_hint(struct_name)
+        for addr in related_funcs:
+            key = _addr_to_fun_key(addr)
+            if not key:
+                continue
+            cand = _make_candidate(
+                name=hint, source="trex_struct", confidence=0.75,
+                reason=f"TRex struct: {struct_name}",
+            )
+            candidates.setdefault(key, []).append(cand)
+            added += 1
+    stats["trex_naming_status"] = "active" if added else "no-trex-structs"
+    stats["trex_candidates_added"] = added
 
 
 # ---------------------------------------------------------------------------

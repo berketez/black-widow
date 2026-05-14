@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from karadul.core.target import TargetType
+from karadul.exceptions import PipelineStageError
 from karadul.pipeline.context import StepContext
 from karadul.pipeline.registry import Step, register_step
 
@@ -63,7 +64,7 @@ class BinaryPrepStep(Step):
             else []
         )
         if not c_files:
-            raise RuntimeError(
+            raise PipelineStageError(
                 "Decompile edilmis C dosyasi bulunamadi "
                 f"(decompiled_dir={decompiled_dir})",
             )

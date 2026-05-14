@@ -44,6 +44,9 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
+# B21: cikplak subprocess.run yerine safe_run + resolve_tool (LD_PRELOAD/DYLD koruma).
+from karadul.core.safe_subprocess import resolve_tool, safe_run
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -821,15 +824,21 @@ class AntiDebugDetector:
         results: list[str] = []
         # `nm -D` ELF dynamic syms; macOS'ta `nm -gU`; Windows .exe icin
         # mingw `nm` sembolleri import descriptor'dan goremeyebilir.
-        candidates = [
-            ["nm", "-D", "--defined-only", str(self.binary_path)],
-            ["nm", str(self.binary_path)],
-        ]
+        # B21: resolve_tool whitelist + safe_run (LD_PRELOAD koruma).
+        nm_path = resolve_tool("nm")
+        if nm_path is None:
+            logger.debug("nm whitelist path'te bulunamadi; import fallback atlandi")
+            candidates = []
+        else:
+            candidates = [
+                [nm_path, "-D", "--defined-only", str(self.binary_path)],
+                [nm_path, str(self.binary_path)],
+            ]
         for cmd in candidates:
             try:
-                proc = subprocess.run(
+                proc = safe_run(
                     cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                    timeout=15, check=False,
+                    timeout=15.0, check=False, text=False,
                 )
                 if proc.returncode != 0:
                     continue

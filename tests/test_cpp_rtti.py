@@ -102,7 +102,8 @@ def test_demangle_itanium_fallback_subprocess():
     args = mock_run.call_args[0][0]
     # v1.10.0 Fix Sprint HIGH-4: argv injection onleme icin '--'
     # end-of-options marker eklendi; mangled symbol argv[2] oldu.
-    assert args[0] == "c++filt"
+    # B21 (2026-05-13): resolve_tool absolute path dondurur (/usr/bin/c++filt)
+    assert args[0].endswith("c++filt")
     assert args[1] == "--"
     assert args[2] == "_ZN7MyClass3fooEv"
 

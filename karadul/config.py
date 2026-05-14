@@ -23,13 +23,16 @@ def _detect_cpu_cores() -> int:
     # Genel heuristik: performance core ~ total * 0.7, min 2
     try:
         # macOS: sysctl ile gercek P-core sayisi
-        import subprocess
-        result = subprocess.run(
-            ["sysctl", "-n", "hw.perflevel0.logicalcpu"],
-            capture_output=True, text=True, timeout=5,
-        )
-        if result.returncode == 0 and result.stdout.strip().isdigit():
-            return int(result.stdout.strip())
+        # B21: safe_run + resolve_tool ile LD_PRELOAD/DYLD koruma.
+        from karadul.core.safe_subprocess import resolve_tool, safe_run
+        sysctl_path = resolve_tool("sysctl")
+        if sysctl_path is not None:
+            result = safe_run(
+                [sysctl_path, "-n", "hw.perflevel0.logicalcpu"],
+                capture_output=True, text=True, timeout=5.0,
+            )
+            if result.returncode == 0 and result.stdout.strip().isdigit():
+                return int(result.stdout.strip())
     except Exception:
         logger.debug("sysctl P-core sayisi okunamadi, fallback kullaniliyor", exc_info=True)
     return max(2, int(total * 0.7))
@@ -43,13 +46,16 @@ def _detect_available_memory_mb() -> int:
     except (ValueError, OSError, AttributeError):
         pass
     try:
-        import subprocess
-        result = subprocess.run(
-            ["sysctl", "-n", "hw.memsize"],
-            capture_output=True, text=True, timeout=5,
-        )
-        if result.returncode == 0:
-            return int(result.stdout.strip()) // (1024 * 1024)
+        # B21: safe_run + resolve_tool ile LD_PRELOAD/DYLD koruma.
+        from karadul.core.safe_subprocess import resolve_tool, safe_run
+        sysctl_path = resolve_tool("sysctl")
+        if sysctl_path is not None:
+            result = safe_run(
+                [sysctl_path, "-n", "hw.memsize"],
+                capture_output=True, text=True, timeout=5.0,
+            )
+            if result.returncode == 0:
+                return int(result.stdout.strip()) // (1024 * 1024)
     except Exception:
         logger.debug("sysctl memsize okunamadi, fallback 8GB kullaniliyor", exc_info=True)
     return 8192  # fallback: 8GB
@@ -119,9 +125,8 @@ class AnalysisConfig:
         default_factory=lambda: ["beautify", "synchrony", "babel_transforms"]
     )
     use_deep_deobfuscation: bool = True
-    # LLM-assisted variable naming (Claude CLI)
-    use_llm_naming: bool = False
-    llm_model: str = "sonnet"
+    # NOT (2026-05-13): LLM-Assisted Variable Naming kaldirildi.
+    # Berke kalici karari: feedback_no_llm.md — deterministic, CPU-only.
 
 
 @dataclass
@@ -131,7 +136,7 @@ class SourceMatchConfig:
     NpmFingerprinter eslestirmesinden sonra, eslesen paketlerin orijinal
     kaynak kodunu cekip fonksiyon bazli eslestirme yapar.
     """
-    enabled: bool = True                   # Source matching aktif mi
+    enabled: bool = False                  # Source matching default OFF (B12: network kapali)
     min_similarity: float = 0.65           # Minimum fonksiyon benzerlik skoru (0.0-1.0)
     consistency_ratio: float = 0.3         # Toplu tutarlilik esigi
     unpkg_timeout: int = 10                # Tek HTTP istek timeout (saniye)
@@ -141,20 +146,26 @@ class SourceMatchConfig:
     fingerprint_cache: bool = True         # Fingerprint sonuclarini cache'le
 
 
+# NOT (2026-05-13): MLConfig kaldirildi (Berke karari feedback_no_llm.md).
+# Eski alanlar: enable_llm4decompile, llm4decompile_model_path, ml_device,
+# ml_dtype, max_new_tokens, ml_temperature, ml_batch_size, ml_min/max_function_size.
+
+
 @dataclass
-class MLConfig:
-    """ML model ayarlari."""
-    enable_llm4decompile: bool = False  # Kapali: fonksiyon basi ~30s, buyuk binary'lerde saatler alir
-    llm4decompile_model_path: Path = field(
-        default_factory=lambda: Path.home() / ".cache" / "karadul" / "models" / "llm4decompile-6.7b-v1.5"
-    )
-    ml_device: str = "auto"  # "auto", "mps", "cuda", "cpu"
-    ml_dtype: str = "auto"  # "auto", "float16", "bfloat16", "float32"
-    max_new_tokens: int = 512
-    ml_temperature: float = 0.0  # 0 = greedy (deterministic)
-    ml_batch_size: int = 1  # Sirali islem (bellek tasarrufu)
-    ml_min_function_size: int = 3  # Bu satirdan kisa fonksiyonlari atlama
-    ml_max_function_size: int = 200  # Bu satirdan uzun fonksiyonlari kirpma
+class NetworkConfig:
+    """Tum network erisimleri default OFF (deterministic / offline kalmak icin).
+
+    Berke karari (2026-05-13): karadul varsayilan olarak hicbir HTTP/urllib cagrisi
+    yapmamali. `--enable-network` veya `--online` CLI flag'i ile veya YAML'da
+    `network.enabled: true` ile acilir.
+
+    Alt-konfigler `SourceMatchConfig.enabled` ve reference_populator/dts_namer
+    kendi `allow_network` parametrelerini bu master switch'ten alir.
+    """
+    enabled: bool = False
+    allow_dts_fetch: bool = False
+    allow_reference_download: bool = False
+    allow_source_match: bool = False
 
 
 @dataclass
@@ -175,8 +186,15 @@ class NameMergerConfig:
         "swift_demangle": 1.0,      # Tamamen bagimsiz
         "pcode_dataflow": 0.9,      # P-Code def-use chain analizi
         "source_matcher": 0.85,     # Bagimsiz kaynak, yuksek kesinlik
-        "llm4decompile": 0.5,       # Tum kaynaklarla korelasyonlu
+        # B11 (2026-05-13): llm4decompile kaldirildi (feedback_no_llm.md)
         "byte_pattern": 1.0,        # Tamamen bagimsiz
+        # B8/B7/B18 (2026-05-13): yeni naming kanallari
+        "dwarf": 0.95,              # DWARF .debug_info — compiler-emitted ground truth
+        "pdb": 0.95,                # PDB symbol recovery (PE-only)
+        "bn_symbol": 0.85,          # BinaryNinja symbol extraction
+        "trex_struct": 0.75,        # TRex lifted IL struct inference
+        "rust_demangler": 0.95,     # Rust ABI deterministic demangle
+        "go_demangler": 0.90,       # Go heuristic demangle
         "function_id": 0.95,        # Ghidra FunctionID -- yuksek guvenilirlik (hash-based)
         "bsim": 0.85,              # BSim fonksiyon benzerligi
         "computation_recovery": 0.9, # Computation pipeline (cfg match, constant analysis)
@@ -486,8 +504,18 @@ class PipelineConfig:
 
     use_step_registry=False default — eski stages.py monolith'i kullanilir.
     True ise yeni karadul.pipeline paketinden step'ler calisir.
+
+    v1.15-B16 (paralel runner):
+        parallel_steps=True default -- topological order'da ayni level'daki
+            (birbirine baglilik yok) step'ler ThreadPoolExecutor ile paralel
+            calisir. Subprocess agirlikli step'ler (Ghidra/TRex/BN/PDB) GIL'i
+            tutmadigi icin ThreadPool yeterli. ProcessPool gerekmiyor.
+        parallel_max_workers: paralel calisacak max step sayisi. Berke kurali:
+            max 7 (paralel ajan limitiyle ayni felsefe). None ise hard cap 7.
     """
-    use_step_registry: bool = False
+    use_step_registry: bool = True  # B2 (2026-05-13): default True, eski monolith yolu obsolete
+    parallel_steps: bool = True
+    parallel_max_workers: Optional[int] = None
 
 
 @dataclass
@@ -607,6 +635,43 @@ class SecurityConfig:
 
 
 @dataclass
+class MinConfidencePresets:
+    """B22 (2026-05-13): Merkezi min_confidence esikleri (CLAUDE.md Kural 11).
+
+    Onceden 11 ayri modulde hardcoded'di (0.01 - 0.85 arasinda 10 farkli
+    sayi). Magic number drift'ini onlemek icin TUM `min_confidence` esikleri
+    burada tanimlanir, tuketiciler `Config.min_confidence.X` uzerinden okur.
+
+    Default'lar onceki hardcoded davranisi BIREBIR korur — bu refactor
+    davranis degisikligi DEGILDIR, tek-kaynak-of-truth saglar.
+    """
+    bindiff_match: float = 0.7
+    cfg_iso_matcher: float = 0.7
+    reference_differ_detect: float = 0.5
+    reference_differ_transfer: float = 0.80
+    signature_db_filter: float = 0.5
+    byte_pattern_match: float = 0.60
+    context_namer: float = 0.1
+    c_namer_apply: float = 0.15
+    name_merger_legacy_param: float = 0.3
+    param_recovery_apply: float = 0.6
+    struct_recovery_rewrite: float = 0.6
+    callee_profile: float = 0.30
+    signature_fusion: float = 0.40
+    binary_intel_subsystem: float = 0.3
+    dispatch_resolver: float = 0.3
+    calibrator_floor: float = 0.01
+
+    def __post_init__(self) -> None:
+        for fld in self.__dataclass_fields__:
+            val = getattr(self, fld)
+            if not (0.0 <= float(val) <= 1.0):
+                raise ValueError(
+                    f"MinConfidencePresets.{fld} [0,1] disinda: {val}",
+                )
+
+
+@dataclass
 class DecompilersConfig:
     """v1.10.0 M2 T10: Decompiler backend secimi (Ghidra lock-in kirma).
 
@@ -643,7 +708,8 @@ class Config:
     binary_reconstruction: BinaryReconstructionConfig = field(
         default_factory=BinaryReconstructionConfig,
     )
-    ml: MLConfig = field(default_factory=MLConfig)
+    network: NetworkConfig = field(default_factory=NetworkConfig)
+    min_confidence: MinConfidencePresets = field(default_factory=MinConfidencePresets)
     name_merger: NameMergerConfig = field(default_factory=NameMergerConfig)
     deep_trace: DeepTraceConfig = field(default_factory=DeepTraceConfig)
     bsim: BSimConfig = field(default_factory=BSimConfig)

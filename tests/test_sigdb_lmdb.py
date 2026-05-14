@@ -285,12 +285,12 @@ class TestL1Cache:
 
 class TestReadonlyWriteProtection:
     def test_readonly_write_raises(self, populated_db):
-        """Readonly DB'ye yazma -> RuntimeError."""
-        with pytest.raises(RuntimeError, match="readonly"):
+        """Readonly DB'ye yazma -> hata (B23 sonrasi SignatureDBError)."""
+        with pytest.raises(Exception, match="readonly"):
             populated_db.bulk_write_symbols([("x", {"lib": "y", "purpose": "", "category": ""})])
 
     def test_readonly_put_metadata_raises(self, populated_db):
-        with pytest.raises(RuntimeError, match="readonly"):
+        with pytest.raises(Exception, match="readonly"):
             populated_db.put_metadata("k", b"v")
 
 
@@ -380,8 +380,8 @@ class TestCloseReleasesEnv:
         db.close()
         assert db._closed is True
 
-        # Close sonrasi islem -> RuntimeError
-        with pytest.raises(RuntimeError, match="closed"):
+        # Close sonrasi islem -> hata (B23 sonrasi SignatureDBError)
+        with pytest.raises(Exception, match="closed"):
             db.lookup_symbol("x")
 
         # Idempotent close

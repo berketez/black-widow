@@ -29,6 +29,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from karadul.exceptions import AnalysisError
+# B21: cikplak subprocess.run yerine safe_run (LD_PRELOAD/DYLD/JAVA_TOOL_OPTIONS Log4Shell koruma).
+from karadul.core.safe_subprocess import safe_run
+
 logger = logging.getLogger(__name__)
 
 
@@ -211,8 +215,9 @@ class TypeForgeAdapter:
             result.errors.append(f"TypeForge cagrisi basarisiz: {exc}")
             result.duration_seconds = time.perf_counter() - start
             return result
-        except ValueError as exc:
-            # _run_subprocess JSON parse hatasinda ValueError firlatir.
+        except (ValueError, AnalysisError) as exc:
+            # _run_subprocess malformed JSON / dict-degil icin AnalysisError
+            # firlatir (v1.16 B23 oncesi ValueError'di -- backward compat).
             result.errors.append(f"TypeForge stdout JSON parse hatasi: {exc}")
             result.duration_seconds = time.perf_counter() - start
             return result
@@ -238,7 +243,8 @@ class TypeForgeAdapter:
 
     def _run_subprocess(self, cmd: list[str]) -> dict[str, Any]:
         """TypeForge CLI'yi calistir, stdout JSON'u dict olarak don."""
-        proc = subprocess.run(
+        # B21: safe_run -- LD_PRELOAD/DYLD/JAVA_TOOL_OPTIONS Log4Shell koruma.
+        proc = safe_run(
             cmd,
             capture_output=True,
             text=True,
@@ -251,9 +257,9 @@ class TypeForgeAdapter:
         try:
             data = json.loads(stdout)
         except json.JSONDecodeError as exc:
-            raise ValueError(f"stdout JSON degil: {exc}") from exc
+            raise AnalysisError(f"stdout JSON degil: {exc}") from exc
         if not isinstance(data, dict):
-            raise ValueError(
+            raise AnalysisError(
                 f"TypeForge JSON dict bekleniyor, {type(data).__name__} geldi",
             )
         return data

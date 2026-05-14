@@ -33,6 +33,8 @@ from typing import Any
 from karadul.analyzers.base import BaseAnalyzer
 from karadul.config import Config
 from karadul.core.result import StageResult
+# B21: cikplak subprocess.Popen yerine resolve_tool + safe_env (LD_PRELOAD/DYLD koruma).
+from karadul.core.safe_subprocess import resolve_tool, safe_env
 from karadul.core.subprocess_runner import SubprocessRunner
 from karadul.core.target import Language, TargetInfo, TargetType
 from karadul.core.workspace import Workspace
@@ -472,13 +474,19 @@ class SwiftBinaryAnalyzer(BaseAnalyzer):
 
             # v1.10.0 Fix Sprint HIGH-5: Popen context manager + timeout
             # kill/wait ile kaynak sizintisi onleme.
+            # B21: resolve_tool whitelist + safe_env (LD_PRELOAD koruma).
+            xcrun_path = resolve_tool("xcrun")
             try:
+                if xcrun_path is None:
+                    raise OSError("xcrun whitelist path'te bulunamadi")
                 with subprocess.Popen(
-                    ["xcrun", "swift-demangle"],
+                    [xcrun_path, "swift-demangle"],
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
+                    env=safe_env(),
+                    shell=False,
                 ) as proc:
                     try:
                         stdout, _ = proc.communicate(input_text, timeout=60)
@@ -665,13 +673,19 @@ class SwiftBinaryAnalyzer(BaseAnalyzer):
             if swift_syms:
                 syms_batch = swift_syms[:3000]  # limit
                 input_text = "\n".join(syms_batch) + "\n"
+                # B21: resolve_tool whitelist + safe_env (LD_PRELOAD koruma).
+                xcrun_path = resolve_tool("xcrun")
                 try:
+                    if xcrun_path is None:
+                        raise OSError("xcrun whitelist path'te bulunamadi")
                     with subprocess.Popen(
-                        ["xcrun", "swift-demangle"],
+                        [xcrun_path, "swift-demangle"],
                         stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         text=True,
+                        env=safe_env(),
+                        shell=False,
                     ) as proc:
                         try:
                             stdout, _ = proc.communicate(input_text, timeout=60)
@@ -779,13 +793,19 @@ class SwiftBinaryAnalyzer(BaseAnalyzer):
                 if metadata_syms:
                     sym_names = [s[0] for s in metadata_syms]
                     input_text = "\n".join(sym_names) + "\n"
+                    # B21: resolve_tool whitelist + safe_env (LD_PRELOAD koruma).
+                    xcrun_path = resolve_tool("xcrun")
                     try:
+                        if xcrun_path is None:
+                            raise OSError("xcrun whitelist path'te bulunamadi")
                         with subprocess.Popen(
-                            ["xcrun", "swift-demangle"],
+                            [xcrun_path, "swift-demangle"],
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
                             text=True,
+                            env=safe_env(),
+                            shell=False,
                         ) as proc:
                             try:
                                 stdout, _ = proc.communicate(input_text, timeout=60)

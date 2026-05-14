@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import Any
 
 from karadul.core.target import TargetType
+from karadul.exceptions import ConfigError
 
 _ANALYZERS: dict[TargetType, type] = {}
 
@@ -30,7 +31,7 @@ def get_analyzer(target_type: TargetType) -> type:
     """TargetType icin kayitli analyzer class'ini dondur."""
     analyzer_cls = _ANALYZERS.get(target_type)
     if analyzer_cls is None:
-        raise ValueError(f"No analyzer registered for {target_type}")
+        raise ConfigError(f"No analyzer registered for {target_type}")
     return analyzer_cls
 
 

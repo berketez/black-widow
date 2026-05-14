@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -26,6 +27,11 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+# B21: cikplak subprocess.run yerine safe_run (LD_PRELOAD/DYLD koruma).
+# debugger_cmd[0] caller tarafinda lldb/gdb absolute yolu olarak verilmistir;
+# burada env temizligi yeterli.
+from karadul.core.safe_subprocess import safe_run
 
 if TYPE_CHECKING:
     from karadul.config import Config
@@ -222,8 +228,66 @@ def _types_compatible(ghidra_type: str, inferred_type: str) -> tuple[bool, float
 
 
 # ---------------------------------------------------------------------------
+# v1.15-E B5: CWE-94 (Python kod enjeksiyonu) savunma katmani
+# ---------------------------------------------------------------------------
+#
+# Eski LLDB/GDB script sablonlari kullanici-kontrollu degerleri (register
+# isimleri, fonksiyon adlari, breakpoint adresleri) ``{...!r}`` ile dogrudan
+# Python source koduna gomuyordu. ``repr()`` newline'lari escape eder ama
+# defense-in-depth icin uc kati savunma uyguluyoruz:
+#
+#   1. **Whitelist:** ``_is_safe_identifier`` + ``_is_safe_address`` ile
+#      gecersiz girdiler script uretiminden once reddedilir (``ValueError``).
+#   2. **Veri-kod ayrimi:** Dinamik veri tek bir JSON string olarak
+#      ``_CONFIG_JSON`` icine gomulur ve runtime'da ``json.loads`` ile
+#      parse edilir. JSON spesifikasyonu yurutulebilir kod tasimaz.
+#   3. **Python literal escape:** ``_CONFIG_JSON = {config_json!r}``
+#      ``repr()`` JSON string'i Python str literal olarak guvenli sekilde
+#      escape eder (newline, quote vb. kacik karakter satira tasamaz).
+
+# Whitelist regex'leri — kati Python identifier ve hex/identifier adres.
+# Uzunluk siniri: 128 karakter (DoS koruma + makul ust sinir).
+_IDENT_RE = re.compile(r"\A[A-Za-z_][A-Za-z0-9_]{0,127}\Z")
+# Adres: ya 0x-hex (max 32 hex digit = 128-bit, gercekte 64-bit yeterli)
+# ya da identifier benzeri (C++ namespace ``::``, ``.`` mangled icin mubah).
+_ADDR_RE = re.compile(
+    r"\A(0x[0-9a-fA-F]{1,32}|[A-Za-z_][A-Za-z0-9_:.]{0,127})\Z",
+)
+
+
+def _is_safe_identifier(name: object) -> bool:
+    """Strict whitelist: ``[A-Za-z_][A-Za-z0-9_]*`` (max 128 char).
+
+    Register adlari, fonksiyon isimleri ve script icinde Python identifier
+    olarak kullanilacak diger isimler icin. Bos string, sayi/punctuation
+    ile baslayanlar, herhangi bir kacis karakteri iceren string'ler
+    reddedilir.
+    """
+    if not isinstance(name, str):
+        return False
+    return _IDENT_RE.match(name) is not None
+
+
+def _is_safe_address(addr: object) -> bool:
+    """Whitelist: ``0xHEX`` veya identifier (``::``/``.`` mubah).
+
+    Breakpoint adresleri ya hex literal (``0x...``) ya da fonksiyon adi
+    (mubah: C++ namespace ayraci ``::``, mangled isimde ``.``) olabilir.
+    Kacis karakterleri (``'``, ``"``, ``\\n`` vb.) reddedilir.
+    """
+    if not isinstance(addr, str):
+        return False
+    return _ADDR_RE.match(addr) is not None
+
+
+# ---------------------------------------------------------------------------
 # LLDB script sablonu
 # ---------------------------------------------------------------------------
+#
+# Tek format parametresi: ``config_json`` (JSON string).
+# Runtime'da ``json.loads`` ile parse edilir; saldirgan payload (kacis
+# karakterleri vs.) JSON string seviyesinde kalir, Python kod katmanina
+# yukselemez.
 
 _LLDB_SCRIPT_TEMPLATE = '''\
 """Karadul LLDB capture script -- otomatik uretilmis, elle degistirmeyin."""
@@ -231,8 +295,15 @@ import lldb
 import json
 import time
 
-OUTPUT_PATH = {output_path!r}
-MAX_CAPTURES_PER_BP = {max_captures}
+# v1.15-E B5: Tum dinamik veri TEK JSON string olarak gomulur. repr() ile
+# Python str literal'i icinde escape edilir; runtime'da json.loads ile
+# parse edilir. Bu sayede saldirgan payload Python kodu olarak DEGIL,
+# JSON string verisi olarak yorumlanir.
+_CONFIG_JSON = {config_json!r}
+_CONFIG = json.loads(_CONFIG_JSON)
+
+OUTPUT_PATH = _CONFIG["output_path"]
+MAX_CAPTURES_PER_BP = _CONFIG["max_captures"]
 
 results = []
 hit_counts = {{}}
@@ -260,7 +331,7 @@ def breakpoint_callback(frame, bp_loc, extra_args, internal_dict):
     }}
 
     # Register degerlerini oku
-    registers_to_read = {registers!r}
+    registers_to_read = _CONFIG["registers"]
     for reg_set in frame.GetRegisters():
         for reg in reg_set:
             if reg.GetName() in registers_to_read:
@@ -268,7 +339,7 @@ def breakpoint_callback(frame, bp_loc, extra_args, internal_dict):
                 entry["register_values"][reg.GetName()] = val if val else "N/A"
 
     # Stack frame bilgisi
-    stack_depth = {stack_depth}
+    stack_depth = _CONFIG["stack_depth"]
     for i in range(min(stack_depth + 1, thread.GetNumFrames())):
         sf = thread.GetFrameAtIndex(i)
         entry["stack_values"]["frame_" + str(i)] = {{
@@ -287,7 +358,7 @@ def __lldb_init_module(debugger, internal_dict):
         print("[karadul] HATA: Hedef bulunamadi")
         return
 
-    breakpoints = {breakpoints!r}
+    breakpoints = _CONFIG["breakpoints"]
     for bp_spec in breakpoints:
         addr = bp_spec["address"]
         if addr.startswith("0x"):
@@ -332,8 +403,12 @@ import gdb
 import json
 import time
 
-OUTPUT_PATH = {output_path!r}
-MAX_CAPTURES_PER_BP = {max_captures}
+# v1.15-E B5: Tek JSON string, runtime json.loads. CWE-94 savunmasi.
+_CONFIG_JSON = {config_json!r}
+_CONFIG = json.loads(_CONFIG_JSON)
+
+CAPTURE_OUT = _CONFIG["output_path"]
+MAX_CAPTURES_PER_BP = _CONFIG["max_captures"]
 
 results = []
 hit_counts = {{}}
@@ -392,9 +467,9 @@ class KaradulBreakpoint(gdb.Breakpoint):
         return False  # Devam et
 
 
-breakpoints_spec = {breakpoints!r}
-registers_list = {registers!r}
-stack_depth_val = {stack_depth}
+breakpoints_spec = _CONFIG["breakpoints"]
+registers_list = _CONFIG["registers"]
+stack_depth_val = _CONFIG["stack_depth"]
 
 for bp_spec in breakpoints_spec:
     addr = bp_spec["address"]
@@ -408,9 +483,9 @@ for bp_spec in breakpoints_spec:
 def save_results():
     """Sonuclari dosyaya yaz."""
     try:
-        with open(OUTPUT_PATH, "w") as f:
+        with open(CAPTURE_OUT, "w") as f:
             json.dump(results, f, indent=2, default=str)
-        print(f"[karadul] {{len(results)}} yakalama {{OUTPUT_PATH}} dosyasina yazildi")
+        print(f"[karadul] {{len(results)}} yakalama {{CAPTURE_OUT}} dosyasina yazildi")
     except Exception as e:
         print(f"[karadul] Yazma hatasi: {{e}}")
 
@@ -629,26 +704,21 @@ class DebuggerBridge:
         Returns:
             Uretilen script dosyasi yolu.
         """
-        # Breakpoint'leri seri hale getir
-        bp_list = []
-        all_registers: set[str] = set()
-        max_stack_depth = 0
+        # v1.15-E B5: Whitelist validasyonu -- CWE-94 birinci savunma katmani.
+        # Tum register/fonksiyon/adres degerleri Python kod uretiminden
+        # ONCE strict regex ile kontrol edilir; gecersiz ise ValueError.
+        bp_list, all_registers, max_stack_depth = self._validate_and_collect(breakpoints)
 
-        for bp in breakpoints:
-            bp_list.append({
-                "address": bp.address,
-                "function_name": bp.function_name or "",
-            })
-            all_registers.update(bp.capture.registers)
-            max_stack_depth = max(max_stack_depth, bp.capture.stack_depth)
+        # JSON serileme: ikinci savunma katmani (veri-kod ayrimi).
+        config_json = json.dumps({
+            "output_path": str(output_path),
+            "max_captures": self._debugger_cfg.max_captures_per_bp,
+            "registers": sorted(all_registers),
+            "stack_depth": max_stack_depth,
+            "breakpoints": bp_list,
+        })
 
-        script_content = _LLDB_SCRIPT_TEMPLATE.format(
-            output_path=str(output_path),
-            max_captures=self._debugger_cfg.max_captures_per_bp,
-            registers=sorted(all_registers),
-            stack_depth=max_stack_depth,
-            breakpoints=bp_list,
-        )
+        script_content = _LLDB_SCRIPT_TEMPLATE.format(config_json=config_json)
 
         fd, script_path_str = tempfile.mkstemp(
             suffix="_karadul_lldb.py", prefix="karadul_",
@@ -673,25 +743,18 @@ class DebuggerBridge:
         Returns:
             Uretilen script dosyasi yolu.
         """
-        bp_list = []
-        all_registers: set[str] = set()
-        max_stack_depth = 0
+        # v1.15-E B5: LLDB ile ayni validasyon (kod tekrar tek metotta).
+        bp_list, all_registers, max_stack_depth = self._validate_and_collect(breakpoints)
 
-        for bp in breakpoints:
-            bp_list.append({
-                "address": bp.address,
-                "function_name": bp.function_name or "",
-            })
-            all_registers.update(bp.capture.registers)
-            max_stack_depth = max(max_stack_depth, bp.capture.stack_depth)
+        config_json = json.dumps({
+            "output_path": str(output_path),
+            "max_captures": self._debugger_cfg.max_captures_per_bp,
+            "registers": sorted(all_registers),
+            "stack_depth": max_stack_depth,
+            "breakpoints": bp_list,
+        })
 
-        script_content = _GDB_SCRIPT_TEMPLATE.format(
-            output_path=str(output_path),
-            max_captures=self._debugger_cfg.max_captures_per_bp,
-            registers=sorted(all_registers),
-            stack_depth=max_stack_depth,
-            breakpoints=bp_list,
-        )
+        script_content = _GDB_SCRIPT_TEMPLATE.format(config_json=config_json)
 
         fd, script_path_str = tempfile.mkstemp(
             suffix="_karadul_gdb.py", prefix="karadul_",
@@ -699,6 +762,55 @@ class DebuggerBridge:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(script_content)
         return Path(script_path_str)
+
+    # -----------------------------------------------------------------------
+    # v1.15-E B5: Breakpoint/register whitelist validasyonu
+    # -----------------------------------------------------------------------
+
+    @staticmethod
+    def _validate_and_collect(
+        breakpoints: list[BreakpointSpec],
+    ) -> tuple[list[dict], set[str], int]:
+        """Tum breakpoint spec'lerini whitelist ile dogrula ve topla.
+
+        Returns:
+            ``(bp_list, all_registers, max_stack_depth)``.
+
+        Raises:
+            ValueError: gecersiz adres / fonksiyon adi / register adi.
+        """
+        bp_list: list[dict] = []
+        all_registers: set[str] = set()
+        max_stack_depth = 0
+
+        for bp in breakpoints:
+            # 1) breakpoint adresi
+            if not _is_safe_address(bp.address):
+                raise ValueError(
+                    f"Gecersiz breakpoint adresi (whitelist disi): {bp.address!r}"
+                )
+            # 2) function_name (opsiyonel; None/"" mubah)
+            if bp.function_name:
+                if not _is_safe_identifier(bp.function_name):
+                    raise ValueError(
+                        f"Gecersiz fonksiyon adi (whitelist disi): "
+                        f"{bp.function_name!r}"
+                    )
+            # 3) registers
+            for reg in bp.capture.registers:
+                if not _is_safe_identifier(reg):
+                    raise ValueError(
+                        f"Gecersiz register adi (whitelist disi): {reg!r}"
+                    )
+
+            bp_list.append({
+                "address": bp.address,
+                "function_name": bp.function_name or "",
+            })
+            all_registers.update(bp.capture.registers)
+            max_stack_depth = max(max_stack_depth, bp.capture.stack_depth)
+
+        return bp_list, all_registers, max_stack_depth
 
     # -----------------------------------------------------------------------
     # Debugger calistirma
@@ -721,7 +833,10 @@ class DebuggerBridge:
         """
         logger.debug("Debugger komutu: %s", " ".join(debugger_cmd))
 
-        result = subprocess.run(
+        # B21: safe_run -- LD_PRELOAD/DYLD env temizligi (CWE-114).
+        # Debugger (lldb/gdb) binary'leri yukler; LD_PRELOAD ile attacker
+        # debugger session'ina dylib enjekte edebilir, safe_env ile engellenir.
+        result = safe_run(
             debugger_cmd,
             capture_output=True,
             text=True,

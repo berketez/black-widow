@@ -28,6 +28,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
+# B21: cikplak subprocess.run yerine safe_run + resolve_tool (LD_PRELOAD/DYLD koruma).
+from karadul.core.safe_subprocess import resolve_tool, safe_run
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -145,9 +148,14 @@ def demangle_itanium(mangled: str) -> str:
     except ImportError:
         logger.debug("cxxfilt yok, c++filt fallback")
     try:
+        # B21: resolve_tool whitelist + safe_run (LD_PRELOAD koruma).
+        cxxfilt_path = resolve_tool("c++filt")
+        if cxxfilt_path is None:
+            logger.debug("c++filt whitelist path'te bulunamadi")
+            return mangled
         # '--' separator: candidate "--" ile baslarsa bile flag olarak yorumlanmaz
-        result = subprocess.run(
-            ["c++filt", "--", candidate],
+        result = safe_run(
+            [cxxfilt_path, "--", candidate],
             capture_output=True, text=True, timeout=5.0,
         )
         if result.returncode == 0:
@@ -189,13 +197,17 @@ def batch_demangle(names: list[str]) -> dict[str, str]:
 
     try:
         input_text = "\n".join(_sanitize(cand) for _, cand in candidates) + "\n"
-        result = subprocess.run(
-            ["c++filt"],
+        # B21: resolve_tool whitelist + safe_run (LD_PRELOAD koruma).
+        cxxfilt_path = resolve_tool("c++filt")
+        if cxxfilt_path is None:
+            logger.debug("c++filt whitelist path'te bulunamadi (batch)")
+            return {orig: orig for orig, _ in candidates}
+        result = safe_run(
+            [cxxfilt_path],
             input=input_text,
             capture_output=True,
             text=True,
             timeout=30.0,
-            shell=False,
         )
         if result.returncode == 0:
             lines = result.stdout.splitlines()
@@ -660,7 +672,11 @@ class RTTIParser:
             return None
         try:
             section = binary.section_from_virtual_address(addr)
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "RTTI Itanium: section_from_virtual_address(0x%x) basarisiz: %s",
+                addr, exc,
+            )
             return None
         if section is None:
             return None
@@ -671,7 +687,11 @@ class RTTIParser:
             except TypeError:
                 view = memoryview(bytes(raw))
             section_va = int(section.virtual_address)
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "RTTI Itanium: section icerigi okunamadi (VA=0x%x): %s",
+                addr, exc,
+            )
             return None
         offset = addr - section_va
         if offset < 0 or offset + count > len(view):
@@ -1096,14 +1116,22 @@ class MSVCRTTIParser:
     ) -> Optional[bytes]:
         try:
             sec = binary.section_from_virtual_address(va)
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "RTTI MSVC: section_from_virtual_address(0x%x) basarisiz: %s",
+                va, exc,
+            )
             return None
         if sec is None:
             return None
         try:
             data = bytes(sec.content)
             sec_va = int(sec.virtual_address)
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "RTTI MSVC: section icerigi okunamadi (VA=0x%x): %s",
+                va, exc,
+            )
             return None
         off = va - sec_va
         if off < 0 or off + count > len(data):

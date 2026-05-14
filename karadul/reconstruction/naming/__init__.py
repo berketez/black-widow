@@ -1,10 +1,11 @@
-"""4 Katmanli Hybrid Naming Pipeline -- deobfuscate edilmis webpack modullerini isimlendirir.
+"""3 Katmanli Hybrid Naming Pipeline -- deobfuscate edilmis webpack modullerini isimlendirir.
 
 Katmanlar:
 1. NpmFingerprinter  -- bilinen npm paketlerini string imzalariyla eslestirir
 2. StructuralAnalyzer -- export/class/function isimlerini cikarir
-3. LLMNamer          -- Codex CLI veya heuristic ile kalan modulleri isimlendirir
-4. Conflict Resolution -- dosya adi cakismalarini cozer
+3. Conflict Resolution -- dosya adi cakismalarini cozer
+
+NOT (2026-05-13): LLMNamer/ClaudeLLMNamer kaldirildi (B11, feedback_no_llm.md).
 
 Kullanim:
     from karadul.reconstruction.naming import NamingPipeline
@@ -13,8 +14,6 @@ Kullanim:
     pipeline.apply(modules_dir, output_dir, manifest)
 """
 
-from .llm_namer import LLMNamer
-from .llm_naming import ClaudeLLMNamer, LLMNamingResult
 from .npm_fingerprinter import NpmFingerprinter
 from .pipeline import NamingPipeline
 from .result import NamingManifest, NamingResult
@@ -26,7 +25,4 @@ __all__ = [
     "NamingResult",
     "NpmFingerprinter",
     "StructuralAnalyzer",
-    "LLMNamer",
-    "ClaudeLLMNamer",
-    "LLMNamingResult",
 ]

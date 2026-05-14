@@ -1996,10 +1996,13 @@ class TestPackedBinary:
         assert entropies[1] > 7.0  # yuksek entropy
 
     def test_upx_magic_detection(self, config, tmp_path):
-        """UPX magic iceren binary 'packed' olarak tespit edilmeli."""
+        """v1.14.5 hardening: UPX! + UPX0 + UPX1 ucusu birlikte 'packed' tespit."""
         fake_binary = tmp_path / "packed"
-        # UPX magic'i binary'nin icerisine gom
-        data = b"\x00" * 512 + UPX_MAGIC + b"\x00" * 512
+        # UPX! magic + UPX0 + UPX1 section isimleri (v1.14.5 false-positive hardening)
+        data = (
+            b"\x00" * 256 + UPX_MAGIC + b"\x00" * 256
+            + b"UPX0" + b"\x00" * 256 + b"UPX1" + b"\x00" * 256
+        )
         fake_binary.write_bytes(data)
         detector = PackingDetector(config)
         result = detector.detect(fake_binary)

@@ -34,6 +34,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
+# B21: cikplak subprocess.run yerine safe_run + resolve_tool (LD_PRELOAD/DYLD koruma).
+# `strings` whitelist'ten cozulur; ilspy/monodis yolu adapter init'inde gelir.
+from karadul.core.safe_subprocess import resolve_tool, safe_run
+
 from karadul.analyzers.base import BaseAnalyzer
 from karadul.analyzers import register_analyzer
 from karadul.config import Config
@@ -718,9 +722,14 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
         }
 
         try:
-            proc = subprocess.run(
-                ["strings", str(path)],
-                capture_output=True, text=True, timeout=60,
+            # B21: resolve_tool whitelist + safe_run (LD_PRELOAD koruma).
+            strings_path = resolve_tool("strings")
+            if strings_path is None:
+                logger.debug("strings whitelist path'te bulunamadi (.NET metadata)")
+                return metadata
+            proc = safe_run(
+                [strings_path, str(path)],
+                capture_output=True, text=True, timeout=60.0,
             )
             if proc.returncode == 0:
                 lines = proc.stdout.split("\n")
@@ -803,7 +812,9 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
                 "--project",
                 "--outputdir", str(output_dir),
             ]
-            proc = subprocess.run(
+            # B21: safe_run -- LD_PRELOAD/DYLD env temizligi.
+            # _ilspy_path adapter init'inde resolve edilmis absolute yol.
+            proc = safe_run(
                 cmd,
                 capture_output=True, text=True,
                 timeout=self.config.timeouts.subprocess,
@@ -831,9 +842,10 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
             return result
         try:
             output_path = workspace.get_stage_dir("static") / "il_disassembly.il"
-            proc = subprocess.run(
+            # B21: safe_run -- LD_PRELOAD/DYLD env temizligi.
+            proc = safe_run(
                 [self._monodis_path, "--output=" + str(output_path), str(path)],
-                capture_output=True, text=True, timeout=120,
+                capture_output=True, text=True, timeout=120.0,
             )
             result["success"] = proc.returncode == 0
             result["output"] = str(output_path)
@@ -845,9 +857,14 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
         """Fallback: strings ile bilgi cikar."""
         result: dict[str, list[str]] = {"classes": [], "methods": []}
         try:
-            proc = subprocess.run(
-                ["strings", str(path)],
-                capture_output=True, text=True, timeout=60,
+            # B21: resolve_tool whitelist + safe_run (LD_PRELOAD koruma).
+            strings_path = resolve_tool("strings")
+            if strings_path is None:
+                logger.debug("strings whitelist path'te bulunamadi (.NET fallback)")
+                return result
+            proc = safe_run(
+                [strings_path, str(path)],
+                capture_output=True, text=True, timeout=60.0,
             )
             if proc.returncode == 0:
                 for line in proc.stdout.split("\n"):

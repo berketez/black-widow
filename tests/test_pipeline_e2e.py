@@ -314,10 +314,10 @@ class TestRunnerErrorPropagation:
 
 
 class TestPipelineConfigDefault:
-    def test_use_step_registry_default_false(self):
-        """use_step_registry default KAPALI olmali (opt-in)."""
+    def test_use_step_registry_default_true(self):
+        """B2 (2026-05-13): use_step_registry default AKIK (eski monolith obsolete)."""
         cfg = Config()
-        assert cfg.pipeline.use_step_registry is False
+        assert cfg.pipeline.use_step_registry is True
 
     def test_use_step_registry_overridable(self):
         """Alan elle True yapilabilmeli."""

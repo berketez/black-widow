@@ -273,25 +273,29 @@ class TestCppFiltArgvInjection:
     """
 
     def test_cpp_rtti_uses_double_dash(self):
-        """karadul.analyzers.cpp_rtti modulu c++filt cagirir -- separator ile."""
+        """karadul.analyzers.cpp_rtti modulu c++filt cagirir -- separator ile.
+
+        v1.15-B21: cpp_rtti artik `safe_run` + `resolve_tool` kullaniyor.
+        Mock noktasi `mod.safe_run` (B21 ile import edilen sembol).
+        """
         import karadul.analyzers.cpp_rtti as mod
-        # Mock subprocess.run, arg'lari kontrol et
+        # Mock safe_run, arg'lari kontrol et
         calls = []
 
-        def fake_run(*args, **kwargs):
-            calls.append(args[0])
-            # cxxfilt import'u fallback'e dusurmek icin
+        def fake_safe_run(cmd, **kwargs):
+            calls.append(list(cmd))
             class R:
                 returncode = 0
                 stdout = "demangled_name"
                 stderr = ""
             return R()
 
+        def fake_resolve(name, **kwargs):
+            return f"/opt/homebrew/bin/{name}"
+
         # cxxfilt'i devre disi birak ki c++filt fallback calissin
-        with mock.patch.object(mod, "subprocess") as m_sub:
-            m_sub.run = fake_run
-            m_sub.TimeoutExpired = type("T", (Exception,), {})
-            # cxxfilt import'unu kir ki fallback'e dussun
+        with mock.patch.object(mod, "safe_run", fake_safe_run), \
+             mock.patch.object(mod, "resolve_tool", fake_resolve):
             with mock.patch.dict(
                 "sys.modules", {"cxxfilt": None},
             ):
@@ -501,22 +505,18 @@ class TestGhidraTempfileRandom:
 
 
 class TestStagesLlmCtxCleanup:
-    """stages.py LLM naming context tempfile cleanup."""
+    """B11 (2026-05-13): LLM kod yolu tamamen silindi — bu test obsolete.
+    Yerine LLM izinin kalmadigini dogrulayan invariant testi."""
 
-    def test_ctx_path_defined_outside_try(self):
-        """llm_ctx_path try blogu disinda None olarak tanimli olmali."""
+    def test_no_llm_ctx_in_stages(self):
+        """stages.py icinde LLM naming izi (llm_ctx_path, ClaudeLLMNamer) yok."""
         stages_path = (
             Path(__file__).parent.parent / "karadul" / "stages.py"
         )
         src = stages_path.read_text()
-        # Fix pattern'i: "llm_ctx_path = None" yazmali
-        assert "llm_ctx_path = None" in src, (
-            "stages.py: llm_ctx_path = None try disinda tanimli degil"
-        )
-        # Finally'de kontrol olmali
-        assert "if llm_ctx_path is not None" in src, (
-            "stages.py: finally blogunda llm_ctx_path None kontrolu yok"
-        )
+        assert "llm_ctx_path" not in src
+        assert "ClaudeLLMNamer" not in src
+        assert "from karadul.reconstruction.naming.llm_naming" not in src
 
 
 # ---------------------------------------------------------------------------

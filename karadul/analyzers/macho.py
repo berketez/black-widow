@@ -125,10 +125,14 @@ class MachOAnalyzer(BaseAnalyzer):
         # 0. Universal binary icin lipo thin -- arm64 slice'i cikar
         if target.target_type == TargetType.UNIVERSAL_BINARY:
             thin_path = workspace.get_stage_dir("raw") / f"{target.name}_arm64"
+            # B21: resolve_tool whitelist + safe_run (LD_PRELOAD koruma).
+            lipo_path = resolve_tool("lipo")
             try:
-                proc = subprocess.run(
-                    ["lipo", str(binary_path), "-thin", "arm64", "-output", str(thin_path)],
-                    capture_output=True, text=True, timeout=30,
+                if lipo_path is None:
+                    raise FileNotFoundError("lipo whitelist path'te bulunamadi")
+                proc = safe_run(
+                    [lipo_path, str(binary_path), "-thin", "arm64", "-output", str(thin_path)],
+                    capture_output=True, text=True, timeout=30.0,
                 )
                 if proc.returncode == 0 and thin_path.exists():
                     logger.info("Universal binary: arm64 slice cikarildi -> %s", thin_path)
@@ -136,9 +140,9 @@ class MachOAnalyzer(BaseAnalyzer):
                     stats["lipo_thin"] = "arm64"
                 else:
                     # arm64 yoksa x86_64 dene
-                    proc = subprocess.run(
-                        ["lipo", str(target.path), "-thin", "x86_64", "-output", str(thin_path)],
-                        capture_output=True, text=True, timeout=30,
+                    proc = safe_run(
+                        [lipo_path, str(target.path), "-thin", "x86_64", "-output", str(thin_path)],
+                        capture_output=True, text=True, timeout=30.0,
                     )
                     if proc.returncode == 0 and thin_path.exists():
                         logger.info("Universal binary: x86_64 slice cikarildi -> %s", thin_path)

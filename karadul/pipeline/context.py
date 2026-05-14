@@ -7,6 +7,7 @@ artifacts dict'i immutable view olarak sunulur (runner disinda yazim yasak).
 from __future__ import annotations
 
 import logging
+import threading
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -41,9 +42,17 @@ class StepContext:
     # v1.11.0 Phase 1C: produce_artifact() ile yazilan side artifact'lar.
     # Finalize step sonunda StageResult.artifacts'a kopyalanir.
     _stage_artifacts: dict[str, Any] = field(default_factory=dict, repr=False)
-    # Mevcut step'in spec'i (runner enjekte eder). produce_artifact icin
-    # opsiyonel registry validation; None ise sessizce gec.
-    _current_step_meta: Any = field(default=None, repr=False)
+    # v1.15-B16 (paralel runner): _current_step_meta artik thread-local
+    # (asagidaki property uzerinden). Paralel step'ler farkli thread'lerden
+    # produce_artifact() cagirinca dogru step spec'ini gorur.
+    _step_meta_local: threading.local = field(
+        default_factory=threading.local, repr=False, compare=False,
+    )
+    # Stage artifacts dict'ine thread-safe yazim icin lock (paralel
+    # produce_artifact cagrilarinda overwrite warning ile birlikte).
+    _stage_artifacts_lock: Any = field(
+        default_factory=threading.Lock, repr=False, compare=False,
+    )
 
     @property
     def artifacts(self) -> Mapping[str, Any]:
@@ -58,6 +67,20 @@ class StepContext:
     def stage_artifacts(self) -> Mapping[str, Any]:
         """StageResult'a gidecek side artifact'larin read-only view'i."""
         return MappingProxyType(self._stage_artifacts)
+
+    @property
+    def _current_step_meta(self) -> Any:
+        """Thread-local mevcut step spec'i.
+
+        v1.15-B16: paralel runner her worker thread'i icin ayri step_meta
+        kullanir; produce_artifact dogru spec'i gorur. Sequential modda da
+        geriye uyumlu (tek ana thread, tek deger).
+        """
+        return getattr(self._step_meta_local, "value", None)
+
+    @_current_step_meta.setter
+    def _current_step_meta(self, value: Any) -> None:
+        self._step_meta_local.value = value
 
     def produce_artifact(self, key: str, value: Any) -> None:
         """Step ciktisini StageResult.artifacts'a yayar.
@@ -91,13 +114,14 @@ class StepContext:
                     key, getattr(step_meta, "name", "?"),
                 )
 
-        # Overwrite check
-        if key in self._stage_artifacts:
-            logger.warning(
-                "produce_artifact: %r zaten yazilmis, uzerine yaziliyor", key,
-            )
-
-        self._stage_artifacts[key] = value
+        # Overwrite check + thread-safe yazim (paralel produce_artifact).
+        with self._stage_artifacts_lock:
+            if key in self._stage_artifacts:
+                logger.warning(
+                    "produce_artifact: %r zaten yazilmis, uzerine yaziliyor",
+                    key,
+                )
+            self._stage_artifacts[key] = value
 
     def _write_artifacts(self, new_artifacts: dict[str, Any]) -> None:
         """Sadece runner tarafindan cagrilmasi gerekir (private).

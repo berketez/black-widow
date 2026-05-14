@@ -28,6 +28,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterator
 
+# B21: cikplak subprocess yerine safe_run + resolve_tool (LD_PRELOAD/DYLD koruma).
+# Popen streaming icin safe_env() ile env temizligi.
+from karadul.core.safe_subprocess import resolve_tool, safe_env, safe_run
+
 logger = logging.getLogger(__name__)
 
 # dwarfdump ciktisindaki indentation seviyesini baz alan regex'ler.
@@ -138,12 +142,17 @@ class DwarfExtractor:
         if self._dwarf_target is None:
             return False
 
+        # B21: resolve_tool whitelist + safe_run (LD_PRELOAD koruma).
+        dwarfdump_path = resolve_tool("dwarfdump")
+        if dwarfdump_path is None:
+            logger.warning("dwarfdump whitelist path'te bulunamadi (macOS CLT kurulu mu?)")
+            return False
         try:
-            proc = subprocess.run(
-                ["dwarfdump", "--debug-info", str(self._dwarf_target)],
+            proc = safe_run(
+                [dwarfdump_path, "--debug-info", str(self._dwarf_target)],
                 capture_output=True,
                 text=True,
-                timeout=10,
+                timeout=10.0,
             )
         except FileNotFoundError:
             logger.warning("dwarfdump bulunamadi (macOS CLT kurulu mu?)")
@@ -308,12 +317,21 @@ class DwarfExtractor:
         Yields:
             DwarfFunction nesneleri (her DW_TAG_subprogram icin bir tane).
         """
+        # B21: resolve_tool whitelist + safe_env (LD_PRELOAD koruma).
+        # Popen streaming icin safe_run sarmalayicisina sigmaz; env=safe_env()
+        # ile elle korunur, shell=False zorunlu.
+        dwarfdump_path = resolve_tool("dwarfdump")
+        if dwarfdump_path is None:
+            logger.warning("dwarfdump whitelist path'te bulunamadi (stream parser)")
+            return
         with subprocess.Popen(
-            ["dwarfdump", "--debug-info", str(self._dwarf_target)],
+            [dwarfdump_path, "--debug-info", str(self._dwarf_target)],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
             bufsize=1,  # Satir buffered
+            env=safe_env(),
+            shell=False,
         ) as proc:
             try:
                 yield from self._parse_lines(proc.stdout)

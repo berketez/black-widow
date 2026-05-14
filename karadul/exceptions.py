@@ -30,28 +30,54 @@ class KaradulError(Exception):
     """
 
 
-class AnalysisError(KaradulError):
-    """Binary analizi sirasinda olusan hata."""
+# v1.16 B23: Geriye donuk uyumluluk icin coklu kalitim.
+# Eski kod ``except ValueError`` / ``except RuntimeError`` yakalamaya
+# devam edebilir; yeni kod ``except KaradulError`` ile butun Karadul
+# hatalarini tek noktada yakalar. Karadul sinifi MRO'da once gelir
+# ki ``isinstance(exc, KaradulError)`` her zaman True olsun.
+
+
+class AnalysisError(KaradulError, RuntimeError):
+    """Binary analizi sirasinda olusan hata.
+
+    Adapter (BinaryNinja/TRex/PDB/TypeForge) subprocess fail,
+    parse hatasi veya tool bulunamadi gibi runtime durumlarini kapsar.
+    Backward-compat: ``except RuntimeError`` hala yakalar.
+    """
 
 
 class DecompilationError(AnalysisError):
     """Decompile asamasi basarisiz oldugunda."""
 
 
-class ReconstructionError(KaradulError):
+class ReconstructionError(KaradulError, RuntimeError):
     """Isim/tip/struct kurtarma basarisiz oldugunda."""
 
 
-class SignatureDBError(KaradulError):
-    """SignatureDB yukleme, yazma veya sorgulama hatasi."""
+class SignatureDBError(KaradulError, ValueError):
+    """SignatureDB yukleme, yazma veya sorgulama hatasi.
+
+    Backward-compat: ``except ValueError`` hala yakalar (eski
+    ``add_byte_signature`` testleri kirilmaz).
+    """
 
 
-class PipelineStageError(KaradulError):
+class PipelineStageError(KaradulError, RuntimeError):
     """Pipeline stage yurutmesi sirasinda olusan hata."""
 
 
-class ConfigError(KaradulError):
-    """Config parse veya dogrulama hatasi."""
+class ConfigError(KaradulError, ValueError):
+    """Config parse veya dogrulama hatasi.
+
+    Backward-compat: ``except ValueError`` hala yakalar.
+    """
+
+
+class WorkspaceError(KaradulError, OSError):
+    """Workspace I/O hatasi (permission, disk full, path geçersiz).
+
+    Backward-compat: ``except OSError`` hala yakalar.
+    """
 
 
 class SecurityError(KaradulError):
@@ -75,6 +101,7 @@ __all__ = [
     "SignatureDBError",
     "PipelineStageError",
     "ConfigError",
+    "WorkspaceError",
     "SecurityError",
     "CircuitBreakerOpenError",
 ]

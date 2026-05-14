@@ -2436,6 +2436,13 @@ class ReconstructionStage(Stage):
                     # packer_fingerprints) ureterek static/ altinda yazarlar.
                     "anti_debug",
                     "packer_fingerprint",
+                    # v1.15-B/C/D (2026-05-10): graceful-skip step'ler
+                    # (PE-only PDB, Linux ELF TRex, lisansli BinaryNinja)
+                    "pdb_symbol_recovery",
+                    "trex_struct_recovery",
+                    "binaryninja_analysis",
+                    # B7 (2026-05-13): type recovery JSON tüketici
+                    "type_recovery_consumer",
                     "pcode_cfg_analysis",
                     "cfg_iso_match",
                     "algorithm_id",
@@ -2638,8 +2645,12 @@ class ReconstructionStage(Stage):
                             _asm_func_data = json.loads(
                                 functions_json.read_text(encoding="utf-8", errors="replace"),
                             )
-                        except Exception:
-                            logger.debug("Assembly functions JSON parse basarisiz", exc_info=True)
+                        except Exception as exc:
+                            logger.warning(
+                                "Assembly functions JSON parse basarisiz: %s",
+                                exc, exc_info=True,
+                            )
+                            errors.append(f"Assembly functions JSON parse: {exc}")
                             _asm_func_data = {}
                     if target.target_type == TargetType.MACHO_BINARY:
                         meta = _asm_func_data.get("metadata", {}) if isinstance(_asm_func_data, dict) else {}
@@ -2688,8 +2699,12 @@ class ReconstructionStage(Stage):
                                 "reconstructed", "assembly_analysis", asm_data,
                             )
                             artifacts["assembly_analysis"] = asm_path
-                        except Exception:
-                            logger.debug("Assembly analysis artifact kaydi basarisiz", exc_info=True)
+                        except Exception as exc:
+                            logger.warning(
+                                "Assembly analysis artifact kaydi basarisiz: %s",
+                                exc, exc_info=True,
+                            )
+                            errors.append(f"Assembly analysis artifact: {exc}")
 
                         logger.info(
                             "Assembly Analysis: %d fonksiyon (%d crypto, %d SIMD)",
@@ -2927,8 +2942,12 @@ class ReconstructionStage(Stage):
                                 _computation_result.to_dict(),
                             )
                             artifacts["computation_recovery"] = comp_path
-                        except Exception:
-                            logger.debug("Computation recovery artifact kaydi basarisiz", exc_info=True)
+                        except Exception as exc:
+                            logger.warning(
+                                "Computation recovery artifact kaydi basarisiz: %s",
+                                exc, exc_info=True,
+                            )
+                            errors.append(f"Computation recovery artifact: {exc}")
 
                         logger.info(
                             "Computation Recovery: %d struct, %d array, %d cfg match, "
@@ -3125,8 +3144,14 @@ class ReconstructionStage(Stage):
                                                 encoding="utf-8", errors="replace"
                                             )
                                         )
-                                    except Exception:
-                                        logger.debug("Call graph JSON parse basarisiz (refdb)", exc_info=True)
+                                    except Exception as exc:
+                                        logger.warning(
+                                            "Call graph JSON parse basarisiz (refdb): %s",
+                                            exc, exc_info=True,
+                                        )
+                                        errors.append(
+                                            f"Call graph JSON parse (refdb): {exc}",
+                                        )
 
                                 _refdb_total = 0
                                 for _rdb_entry in _ref_db_entries:
@@ -3254,16 +3279,28 @@ class ReconstructionStage(Stage):
                                         _cfg_data_for_refdiff = json.loads(
                                             cfg_json.read_text(encoding="utf-8", errors="replace")
                                         )
-                                    except Exception:
-                                        logger.debug("CFG JSON parse basarisiz (refdiff)", exc_info=True)
+                                    except Exception as exc:
+                                        logger.warning(
+                                            "CFG JSON parse basarisiz (refdiff): %s",
+                                            exc, exc_info=True,
+                                        )
+                                        errors.append(
+                                            f"CFG JSON parse (refdiff): {exc}",
+                                        )
                                 _cg_data_for_refdiff = None
                                 if call_graph_json.exists():
                                     try:
                                         _cg_data_for_refdiff = json.loads(
                                             call_graph_json.read_text(encoding="utf-8", errors="replace")
                                         )
-                                    except Exception:
-                                        logger.debug("Call graph JSON parse basarisiz (refdiff)", exc_info=True)
+                                    except Exception as exc:
+                                        logger.warning(
+                                            "Call graph JSON parse basarisiz (refdiff): %s",
+                                            exc, exc_info=True,
+                                        )
+                                        errors.append(
+                                            f"Call graph JSON parse (refdiff): {exc}",
+                                        )
 
                                 for det in detections:
                                     rd_result = ref_differ.match(
@@ -3727,8 +3764,14 @@ class ReconstructionStage(Stage):
                                         _xtride_improved += 1
                                 if _xchanged:
                                     _xf.write_text(_xnew_code, encoding="utf-8")
-                        except Exception:
-                            logger.debug("Xtride type inference dosya islemi basarisiz, atlaniyor", exc_info=True)
+                        except Exception as exc:
+                            logger.warning(
+                                "Xtride type inference dosya islemi basarisiz: %s",
+                                exc, exc_info=True,
+                            )
+                            errors.append(
+                                f"Xtride type inference dosya islemi: {exc}",
+                            )
 
                     stats["xtride_total_inferences"] = _xtride_total
                     stats["xtride_type_improvements"] = _xtride_improved
@@ -3789,8 +3832,14 @@ class ReconstructionStage(Stage):
                                                 _dyn_applied += 1
                                         if _dchanged:
                                             _df.write_text(_dcode, encoding="utf-8")
-                                except Exception:
-                                    logger.debug("Dynamic rename dosya islemi basarisiz, atlaniyor", exc_info=True)
+                                except Exception as exc:
+                                    logger.warning(
+                                        "Dynamic rename dosya islemi basarisiz: %s",
+                                        exc, exc_info=True,
+                                    )
+                                    errors.append(
+                                        f"Dynamic rename dosya islemi: {exc}",
+                                    )
 
                             stats["dynamic_total_suggestions"] = _dyn_total
                             stats["dynamic_names_applied"] = _dyn_applied
@@ -3849,8 +3898,14 @@ class ReconstructionStage(Stage):
                                             _ngram_applied += 1
                                     if _nchanged:
                                         _nf.write_text(_ncode, encoding="utf-8")
-                            except Exception:
-                                logger.debug("N-gram prediction dosya islemi basarisiz, atlaniyor", exc_info=True)
+                            except Exception as exc:
+                                logger.warning(
+                                    "N-gram prediction dosya islemi basarisiz: %s",
+                                    exc, exc_info=True,
+                                )
+                                errors.append(
+                                    f"N-gram prediction dosya islemi: {exc}",
+                                )
 
                         stats["ngram_total_predictions"] = _ngram_total
                         stats["ngram_names_applied"] = _ngram_applied
@@ -4976,81 +5031,19 @@ class ReconstructionStage(Stage):
                         stats["variables_renamed"] = fallback_result.variables_renamed
                         stats["rename_mappings"] = len(fallback_result.mappings)
                         current_file = fallback_result.output_file
-                except Exception:
-                    logger.debug("Context naming fallback basarisiz, atlaniyor", exc_info=True)
+                except Exception as exc:
+                    logger.warning(
+                        "Context naming fallback basarisiz: %s",
+                        exc, exc_info=True,
+                    )
+                    errors.append(f"Context naming fallback: {exc}")
         except Exception as exc:
             logger.warning("Context naming hatasi: %s", exc)
             errors.append(f"Context naming hatasi: {exc}")
             current_file = main_source
 
-        # 1.5. LLM-Assisted Variable Naming (opsiyonel -- --use-llm flag ile)
-        context.report_progress("Step 2/7: LLM-Assisted Naming", 0.15)
-        #      ContextNamer'in dusuk-confidence biraktigi degiskenleri Claude CLI ile
-        #      isimlendirir. context_json bilgisi varsa onu kullanir.
-        if context.config.analysis.use_llm_naming:
-            from karadul.reconstruction.naming.llm_naming import ClaudeLLMNamer
-            llm_namer = ClaudeLLMNamer(
-                context.config,
-                model=context.config.analysis.llm_model,
-            )
-            if llm_namer.is_available:
-                try:
-                    # ContextNamer'in context_json'unu kullan
-                    context_json_data = None
-                    if naming_result is not None and hasattr(naming_result, 'context_json'):
-                        context_json_data = naming_result.context_json
-
-                    if context_json_data:
-                        # Context JSON'u gecici dosyaya yaz.
-                        # v1.10.0 Fix Sprint MED-5: llm_ctx_path'i try dışında
-                        # tanımla, json.dump exception atarsa finally'de
-                        # NameError vermemesi icin.
-                        import tempfile
-                        llm_ctx_path = None
-                        try:
-                            with tempfile.NamedTemporaryFile(
-                                suffix=".json", prefix="bw_llm_ctx_",
-                                delete=False, mode="w",
-                            ) as tmp:
-                                json.dump(context_json_data, tmp, ensure_ascii=False)
-                                llm_ctx_path = Path(tmp.name)
-
-                            llm_result = llm_namer.name_variables(
-                                llm_ctx_path, current_file,
-                            )
-                            if llm_result.success and llm_result.total_named > 0:
-                                stats["llm_variables_named"] = llm_result.total_named
-                                stats["llm_model"] = llm_result.model_used
-                                stats["llm_batches"] = llm_result.total_batches
-                                stats["llm_failed_batches"] = llm_result.failed_batches
-                                logger.info(
-                                    "LLM naming: %d degisken isimlendirildi (%s)",
-                                    llm_result.total_named, llm_result.model_used,
-                                )
-                                # LLM mappings'i context_json'a merge et
-                                # (sonraki apply adiminda kullanilmak uzere)
-                                for scope_id, scope_mappings in llm_result.mappings.items():
-                                    for old_name, new_name in scope_mappings.items():
-                                        logger.info(
-                                            "  LLM: %s::%s -> %s",
-                                            scope_id, old_name, new_name,
-                                        )
-                            else:
-                                errors.extend(llm_result.errors)
-                        finally:
-                            if llm_ctx_path is not None:
-                                llm_ctx_path.unlink(missing_ok=True)
-                    else:
-                        logger.info(
-                            "LLM naming: context_json mevcut degil, atlaniyor"
-                        )
-                except Exception as exc:
-                    logger.warning("LLM naming hatasi: %s", exc)
-                    errors.append(f"LLM naming hatasi: {exc}")
-            else:
-                logger.warning(
-                    "LLM naming istendi ama Claude CLI bulunamadi"
-                )
+        # NOT (2026-05-13): LLM-Assisted Variable Naming kaldirildi.
+        # Berke kalici karari: feedback_no_llm.md — deterministic, CPU-only.
 
         context.report_progress("Step 3/7: Parameter Recovery", 0.25)
         # 1.8. Param Recovery (this.X=param, call-site, destructuring)

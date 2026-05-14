@@ -47,12 +47,15 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import threading
 from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
 import msgpack
+
+from karadul.exceptions import SignatureDBError
 
 # blake3 opsiyonel (hızlı), yoksa hashlib.blake2b fallback
 try:
@@ -189,49 +192,58 @@ def byte_prefix_key(pattern: bytes) -> bytes:
 
 
 class _LRUCache:
-    """Basit thread-unsafe LRU cache.
+    """Thread-safe LRU cache.
+
+    v1.15-E B3 oncesi thread-unsafe idi. ``OrderedDict.move_to_end``
+    paralel cagrilarda ``KeyError`` veya state bozulmasi uretebiliyor.
+    Lock ile koruma getirildi; hit+misses sayilari da atomic.
 
     ``functools.lru_cache`` decorator'unun class-method'larda
     memory leak'lere yol acmasi nedeniyle explicit kullaniyoruz.
     Miss durumunda None donulur; caller LMDB'ye gitmek zorunda.
     """
 
-    __slots__ = ("_cache", "_maxsize", "hits", "misses")
+    __slots__ = ("_cache", "_maxsize", "_lock", "hits", "misses")
 
     def __init__(self, maxsize: int = 8192) -> None:
         if maxsize < 0:
             raise ValueError("maxsize negatif olamaz")
         self._cache: OrderedDict[Any, Any] = OrderedDict()
         self._maxsize = maxsize
+        self._lock = threading.Lock()
         self.hits = 0
         self.misses = 0
 
     def get(self, key: Any) -> Any:
-        if key in self._cache:
-            self._cache.move_to_end(key)
-            self.hits += 1
-            return self._cache[key]
-        self.misses += 1
-        return None
+        with self._lock:
+            if key in self._cache:
+                self._cache.move_to_end(key)
+                self.hits += 1
+                return self._cache[key]
+            self.misses += 1
+            return None
 
     def put(self, key: Any, value: Any) -> None:
         if self._maxsize == 0:
             return
-        if key in self._cache:
-            self._cache.move_to_end(key)
+        with self._lock:
+            if key in self._cache:
+                self._cache.move_to_end(key)
+                self._cache[key] = value
+                return
             self._cache[key] = value
-            return
-        self._cache[key] = value
-        if len(self._cache) > self._maxsize:
-            self._cache.popitem(last=False)
+            if len(self._cache) > self._maxsize:
+                self._cache.popitem(last=False)
 
     def clear(self) -> None:
-        self._cache.clear()
-        self.hits = 0
-        self.misses = 0
+        with self._lock:
+            self._cache.clear()
+            self.hits = 0
+            self.misses = 0
 
     def __len__(self) -> int:
-        return len(self._cache)
+        with self._lock:
+            return len(self._cache)
 
 
 # ---------------------------------------------------------------------------
@@ -310,6 +322,7 @@ class LMDBSignatureDB:
         "_db_meta",
         "_cache",
         "_closed",
+        "_close_lock",
     )
 
     def __init__(
@@ -328,6 +341,9 @@ class LMDBSignatureDB:
         self._path = Path(lmdb_path).expanduser().resolve()
         self._readonly = readonly
         self._closed = False
+        # v1.15-E B3: paralel close() cagrilarinda cifte ``env.close()``
+        # LMDB C binding'inde segfault'a yol acabilir. Mutex ile guard.
+        self._close_lock = threading.Lock()
         self._cache = _LRUCache(maxsize=l1_cache_size)
 
         # Readonly modda path MEVCUT olmali.
@@ -392,13 +408,19 @@ class LMDBSignatureDB:
             pass
 
     def close(self) -> None:
-        """LMDB environment'i kapat, mmap'i serbest birak."""
-        if self._closed:
-            return
-        try:
-            self._env.close()
-        finally:
-            self._closed = True
+        """LMDB environment'i kapat, mmap'i serbest birak.
+
+        v1.15-E B3: idempotent + thread-safe. ``self._close_lock`` ile
+        cifte ``env.close()`` cagrisini engelliyoruz; LMDB binding'inde
+        double-free => SIGSEGV potansiyeli.
+        """
+        with self._close_lock:
+            if self._closed:
+                return
+            try:
+                self._env.close()
+            finally:
+                self._closed = True
 
     # ------------------------------------------------------------------
     # Readonly lookup API
@@ -769,12 +791,12 @@ class LMDBSignatureDB:
 
     def _ensure_open(self) -> None:
         if self._closed:
-            raise RuntimeError("LMDBSignatureDB closed")
+            raise SignatureDBError("LMDBSignatureDB closed")
 
     def _ensure_writable(self) -> None:
         self._ensure_open()
         if self._readonly:
-            raise RuntimeError(
+            raise SignatureDBError(
                 "LMDBSignatureDB readonly modda. readonly=False ile yeniden acin."
             )
 

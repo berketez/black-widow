@@ -54,6 +54,8 @@ import shutil
 import subprocess
 from typing import Literal
 
+from karadul.core.safe_subprocess import resolve_tool, safe_run
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -210,13 +212,17 @@ def demangle_batch(symbols: list[str]) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 def _resolve_rustfilt() -> str | None:
-    """rustfilt CLI yolunu bul. Cache'le. Yoksa None doner."""
+    """rustfilt CLI yolunu bul. Cache'le. Yoksa None doner.
+
+    B21: resolve_tool whitelist (PATH hijack koruma). $PATH icindeki
+    attacker-controlled dizinleri reddeder.
+    """
     global _RUSTFILT_PATH
     if _RUSTFILT_PATH is False:
-        path = shutil.which("rustfilt")
+        path = resolve_tool("rustfilt")
         _RUSTFILT_PATH = path  # str veya None
         if path:
-            logger.debug("rustfilt bulundu: %s", path)
+            logger.debug("rustfilt bulundu (whitelist): %s", path)
         else:
             logger.debug("rustfilt mevcut degil, native parser kullaniliyor")
     return _RUSTFILT_PATH if _RUSTFILT_PATH else None
@@ -225,7 +231,9 @@ def _resolve_rustfilt() -> str | None:
 def _demangle_via_rustfilt(rustfilt: str, symbol: str) -> str | None:
     """rustfilt'i tek sembol icin cagir."""
     try:
-        proc = subprocess.run(  # noqa: S603 -- rustfilt yolu shutil.which'ten
+        # B21: safe_run -- LD_PRELOAD/DYLD env temizligi. rustfilt yolu
+        # _resolve_rustfilt icinde whitelist'ten alindi.
+        proc = safe_run(
             [rustfilt],
             input=symbol,
             capture_output=True,
@@ -253,7 +261,8 @@ def _demangle_batch_via_rustfilt(
     if not symbols:
         return {}
     try:
-        proc = subprocess.run(  # noqa: S603
+        # B21: safe_run -- LD_PRELOAD/DYLD env temizligi.
+        proc = safe_run(
             [rustfilt],
             input="\n".join(symbols),
             capture_output=True,

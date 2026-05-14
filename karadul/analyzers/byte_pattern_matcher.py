@@ -34,6 +34,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
+# B21: cikplak subprocess.run yerine safe_run (LD_PRELOAD/DYLD koruma).
+# _otool_path adapter cagrisinda absolute yol olarak verilmistir; burada
+# env temizligi yeterli.
+from karadul.core.safe_subprocess import safe_run
+
 logger = logging.getLogger(__name__)
 
 # Ghidra auto-generated isimler: FUN_xxxxx, thunk_FUN_xxxxx, switch_FUN_xxxxx
@@ -825,11 +830,12 @@ class BytePatternMatcher:
         if not self._otool_path:
             return None, None
         try:
-            result = subprocess.run(
+            # B21: safe_run -- LD_PRELOAD/DYLD env temizligi.
+            result = safe_run(
                 [self._otool_path, "-l", str(binary_path)],
                 capture_output=True,
                 text=True,
-                timeout=60,
+                timeout=60.0,
             )
         except (subprocess.TimeoutExpired, OSError) as e:
             logger.warning("otool -l basarisiz: %s -- %s", binary_path, e)

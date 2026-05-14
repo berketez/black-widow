@@ -38,6 +38,12 @@ from rich.table import Table
 from rich.text import Text
 
 from karadul import __codename__, __version__
+from karadul.cli_common import (
+    DEFAULT_STAGE_ORDER,
+    build_pipeline,
+    filter_stages,
+    format_size,
+)
 from karadul.config import Config
 
 logger = logging.getLogger("karadul")
@@ -46,15 +52,10 @@ from karadul.core.target import Language, TargetDetector, TargetInfo, TargetType
 console = Console()
 err_console = Console(stderr=True)
 
-# Stage isimleri -- pipeline sirasina gore
-STAGES: list[str] = [
-    "identify",
-    "static",
-    "dynamic",
-    "deobfuscate",
-    "reconstruct",
-    "report",
-]
+# Stage isimleri -- pipeline sirasina gore.
+# B17 (2026-05-14): Tek kaynak `karadul.cli_common.DEFAULT_STAGE_ORDER`;
+# burasi Click choice ve geriye uyum icin liste olarak yeniden tanimlanir.
+STAGES: list[str] = list(DEFAULT_STAGE_ORDER)
 
 STAGE_LABELS: dict[str, str] = {
     "identify": "Identification",
@@ -150,16 +151,10 @@ def _graceful_interrupt(func):
     return wrapper
 
 
-def _format_size(size: int) -> str:
-    """Byte degerini okunabilir formata cevir."""
-    if size < 1024:
-        return f"{size} B"
-    elif size < 1024 * 1024:
-        return f"{size / 1024:.1f} KB"
-    elif size < 1024 * 1024 * 1024:
-        return f"{size / (1024 * 1024):.1f} MB"
-    else:
-        return f"{size / (1024 * 1024 * 1024):.2f} GB"
+# B17 refactor (2026-05-14): `_format_size` -> `karadul.cli_common.format_size`.
+# Geriye uyum icin `_format_size` adi modul namespace'inde alias olarak korunur
+# (modulu disindan import eden test/script kirilmasin diye).
+_format_size = format_size
 
 
 def _print_target_info(info: TargetInfo) -> None:
@@ -171,7 +166,7 @@ def _print_target_info(info: TargetInfo) -> None:
     table.add_row("Dosya", str(info.path))
     table.add_row("Tur", info.target_type.value if isinstance(info.target_type, TargetType) else str(info.target_type))
     table.add_row("Dil", info.language.value if isinstance(info.language, Language) else str(info.language))
-    table.add_row("Boyut", _format_size(info.file_size))
+    table.add_row("Boyut", format_size(info.file_size))
     table.add_row("SHA-256", info.file_hash or "N/A")
 
     if info.metadata:
@@ -193,56 +188,27 @@ def _print_banner() -> None:
     console.print(Panel(banner, border_style="red", padding=(1, 4)))
 
 
+# B17 refactor (2026-05-14): Stage filtreleme + sinif resolve mantigi
+# `karadul.cli_common`'a tasindi. Burada sadece geriye uyum wrapper'lari
+# birakildi; eski modul-disi cagrilar (test / monkeypatch) kirilmasin.
 def _get_active_stages(
     stop_after: Optional[str], skip_dynamic: bool,
 ) -> list[str]:
-    """Calistirilacak stage listesini dondur."""
-    stages = list(STAGES)
+    """Calistirilacak stage listesini dondur.
 
-    if skip_dynamic and "dynamic" in stages:
-        stages.remove("dynamic")
-
-    if stop_after:
-        try:
-            idx = stages.index(stop_after)
-            stages = stages[: idx + 1]
-        except ValueError:
-            pass
-
-    return stages
+    DEPRECATED (B17): `karadul.cli_common.filter_stages` kullanin.
+    """
+    return filter_stages(stop_after=stop_after, skip_dynamic=skip_dynamic)
 
 
 def _get_available_stages(requested: list[str]) -> list:
-    """Istenen stage'lerin somut siniflarini dondur. Import hatasi olursa atla."""
-    from karadul.stages import (
-        IdentifyStage,
-        StaticAnalysisStage,
-        DeobfuscationStage,
-        DynamicAnalysisStage,
-        ReportStage,
-    )
+    """Istenen stage'lerin somut sinif instance'larini dondur.
 
-    stage_map: dict[str, type] = {
-        "identify": IdentifyStage,
-        "static": StaticAnalysisStage,
-        "dynamic": DynamicAnalysisStage,
-        "deobfuscate": DeobfuscationStage,
-        "report": ReportStage,
-    }
-
-    # ReconstructionStage opsiyonel
-    try:
-        from karadul.stages import ReconstructionStage
-        stage_map["reconstruct"] = ReconstructionStage
-    except ImportError as exc:
-        logger.warning("ReconstructionStage yuklenemedi, atlaniyor: %s", exc)
-
-    instances = []
-    for name in requested:
-        cls = stage_map.get(name)
-        if cls is not None:
-            instances.append(cls())
-    return instances
+    DEPRECATED (B17): Pipeline kurmak icin `cli_common.build_pipeline`
+    tercih edin. Sadece geriye uyum icin korundu.
+    """
+    from karadul.cli_common import _resolve_stage_classes
+    return _resolve_stage_classes(requested)
 
 
 # ---------------------------------------------------------------
@@ -337,12 +303,10 @@ def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
 @click.option("--config", "config_path", type=click.Path(), default=None,
               help="Config YAML dosyasi.")
 @click.option("--verbose", is_flag=True, help="Debug log.")
-@click.option("--use-llm/--no-llm", default=False,
-              help="LLM-assisted variable naming (Claude CLI).")
-@click.option("--llm-model", default="sonnet",
-              help="LLM model alias (varsayilan: sonnet, alternatif: opus).")
-@click.option("--use-ml", is_flag=True, default=False,
-              help="LLM4Decompile 6.7B ile kod iyilestirme.")
+@click.option("--enable-network/--online", "enable_network", is_flag=True, default=False,
+              help="B12 (2026-05-13): Network erisimi ac (default offline, deterministic).")
+# NOT (2026-05-13): --use-llm/--no-llm/--llm-model/--use-ml flag'leri kaldirildi
+# (B11, feedback_no_llm.md). LLM kullanilmiyor, deterministic CPU-only.
 @click.option("--compute-recovery/--no-compute-recovery", default=None,
               help="Hesaplama bazli kurtarma (yavas ama daha dogru tip cikarimi).")
 @click.option("--compute", "compute_mode", type=click.Choice(["full", "standard", "off"],  # v1.6.5
@@ -385,9 +349,7 @@ def analyze(
     output_dir: Optional[str],
     config_path: Optional[str],
     verbose: bool,
-    use_llm: bool,
-    llm_model: str,
-    use_ml: bool,
+    enable_network: bool,
     compute_recovery: Optional[bool],
     compute_mode: Optional[str],           # v1.6.5
     deep: Optional[bool],                  # v1.6.5
@@ -404,7 +366,8 @@ def analyze(
     bsim_shadow_dump: bool,                # v1.12 BSim shadow dump tetikleyici
 ) -> None:
     """Hedef uzerinde tam analiz pipeline calistir."""
-    from karadul.core.pipeline import Pipeline
+    # B17: Pipeline kurulumu `karadul.cli_common.build_pipeline` ile yapilir;
+    # ayrica Pipeline import etmeye gerek yok.
     from karadul.core.target_resolver import resolve_target
 
     cfg = _load_config(config_path)
@@ -419,13 +382,12 @@ def analyze(
     if output_dir:
         cfg.project_root = Path(output_dir).resolve()
 
-    # LLM naming ayarlari
-    cfg.analysis.use_llm_naming = use_llm
-    cfg.analysis.llm_model = llm_model
+    # NOT (2026-05-13): use_llm_naming + enable_llm4decompile kaldirildi (B11)
 
-    # ML model ayarlari (LLM4Decompile)
-    if use_ml:
-        cfg.ml.enable_llm4decompile = True
+    # B12: Network master switch
+    if enable_network:
+        cfg.network.enabled = True
+        cfg.source_match.enabled = True
 
     # v1.10.0 M4 flag'leri -> config'e aktar
     if experimental_step_registry:
@@ -541,7 +503,7 @@ def analyze(
     console.print()
     console.print(f"[bold]Target:[/bold] {target_info.name}")
     console.print(f"[bold]Type:[/bold]   {target_info.target_type.value} ({target_info.language.value})")
-    console.print(f"[bold]Size:[/bold]   {_format_size(target_info.file_size)}")
+    console.print(f"[bold]Size:[/bold]   {format_size(target_info.file_size)}")
     # v1.6.5: compute/deep mode gostergesi
     if deep:
         console.print("[bold]Mode:[/bold]   [bold magenta]DEEP[/bold magenta] (all layers + deep trace)")
@@ -550,19 +512,13 @@ def analyze(
         console.print(f"[bold]Compute:[/bold] [cyan]{_mode_label}[/cyan]")
     console.print()
 
-    # Pipeline olustur
-    pipeline = Pipeline(cfg)
+    # Pipeline olustur (B17: cli_common.build_pipeline tek merkezden kurulum).
+    # stage / skip_dynamic flag'leri DEFAULT_STAGE_ORDER uzerinde filtrelenir.
+    pipeline = build_pipeline(cfg, stop_after=stage, skip_dynamic=skip_dynamic)
 
-    # Stage'leri belirle ve kaydet
-    active_stage_names = _get_active_stages(stage, skip_dynamic)
-    stage_instances = _get_available_stages(active_stage_names)
-
-    if not stage_instances:
+    if not pipeline.registered_stages:
         err_console.print("[bold red]HATA:[/bold red] Calistirilacak stage yok.")
         sys.exit(1)
-
-    for st in stage_instances:
-        pipeline.register_stage(st)
 
     # Pipeline calistir
     console.print(Rule("Pipeline", style="cyan"))
@@ -841,7 +797,7 @@ def list_targets(output_dir: str) -> None:
         # Dizin boyutu hesapla
         total_size = sum(f.stat().st_size for f in d.rglob("*") if f.is_file())
         mtime = time.strftime("%Y-%m-%d %H:%M", time.localtime(d.stat().st_mtime))
-        table.add_row(str(i), d.name, _format_size(total_size), mtime)
+        table.add_row(str(i), d.name, format_size(total_size), mtime)
 
     console.print(table)
 

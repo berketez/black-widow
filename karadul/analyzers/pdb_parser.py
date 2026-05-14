@@ -63,6 +63,11 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from karadul.exceptions import AnalysisError
+# B21: cikplak subprocess.run yerine safe_run (LD_PRELOAD/DYLD koruma).
+# _binary_path adapter init'inde absolute path; env temizligi yeterli.
+from karadul.core.safe_subprocess import safe_run
+
 logger = logging.getLogger(__name__)
 
 
@@ -302,11 +307,12 @@ class PDBAdapter:
         if self._binary_path is None:
             return None
         try:
-            proc = subprocess.run(
+            # B21: safe_run -- LD_PRELOAD/DYLD env temizligi.
+            proc = safe_run(
                 [self._binary_path, "--version"],
                 capture_output=True,
                 text=True,
-                timeout=10,
+                timeout=10.0,
                 check=False,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
@@ -370,12 +376,12 @@ class PDBAdapter:
     ) -> subprocess.CompletedProcess[str]:
         """``llvm-pdbutil dump`` cagir; flags symbols/types arg'larina gore."""
         if self._binary_path is None:
-            raise RuntimeError(
+            raise AnalysisError(
                 "llvm-pdbutil not available -- "
                 "brew install llvm or apt-get install llvm",
             )
         if not self.pdb_path.exists():
-            raise RuntimeError(f"PDB dosyasi yok: {self.pdb_path}")
+            raise AnalysisError(f"PDB dosyasi yok: {self.pdb_path}")
 
         cmd: list[str] = [self._binary_path, "dump"]
         if symbols:
@@ -583,7 +589,8 @@ class PDBAdapter:
 
     def _run_subprocess(self, cmd: list[str]) -> subprocess.CompletedProcess[str]:
         """``llvm-pdbutil``'i calistir; CompletedProcess don."""
-        return subprocess.run(
+        # B21: safe_run -- LD_PRELOAD/DYLD env temizligi.
+        return safe_run(
             cmd,
             capture_output=True,
             text=True,

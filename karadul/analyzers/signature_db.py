@@ -107,6 +107,7 @@ from __future__ import annotations
 
 import logging
 import re
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
@@ -138,6 +139,7 @@ from karadul.analyzers.sigdb_builtin.game_ml import SIGNATURES as _BUILTIN_GAME_
 from karadul.analyzers.sigdb_builtin.strings_module import SIGNATURES as _BUILTIN_STRINGS_MODULE_SIGS
 from karadul.analyzers.sigdb_builtin.calls import SIGNATURES as _BUILTIN_CALLS_SIGS
 
+from karadul.exceptions import SignatureDBError
 
 
 # ---------------------------------------------------------------------------
@@ -1361,6 +1363,12 @@ class SignatureDB:
         self._config = config or Config()
         self._target_platform = target_platform
 
+        # v1.15-E B3: Thread safety — paralel add_*/lookup_*/match_function
+        # cagrilari altinda dict/list state'ini korur. RLock cunku
+        # match_function -> _match_by_symbol -> _symbol_db.get gibi reentrant
+        # cagrilarda deadlock olmasin (ayni thread, ic ice with bloklari).
+        self._lock = threading.RLock()
+
         # Katman 1: Byte pattern imzalari (kullanici ekler, builtin bos)
         self._byte_signatures: list[FunctionSignature] = []
 
@@ -1766,6 +1774,56 @@ class SignatureDB:
     # Kullanici API: byte pattern ekleme
     # ------------------------------------------------------------------
 
+    def add_symbol(self, name: str, info: dict[str, Any]) -> None:
+        """Symbol tablosuna yeni isim/metadata ekle (thread-safe).
+
+        v1.15-E B3: ``_feedback_naming_merger`` ve ``parallel_algo_eng``
+        ThreadPoolExecutor altinda paralel cagriliyor. ``self._symbol_db``
+        ham ``dict`` oldugu icin paralel atama race condition uretir.
+        ``self._lock`` (RLock) ile koruyoruz.
+
+        Args:
+            name: Sembol adi (bos olamaz).
+            info: ``{lib, purpose, category, ...}`` metadata.
+        """
+        if not name or not name.strip():
+            raise SignatureDBError(
+                "SignatureDB.add_symbol: name bos olamaz"
+            )
+        if not isinstance(info, dict):
+            raise SignatureDBError(
+                "SignatureDB.add_symbol: info dict olmali"
+            )
+        with self._lock:
+            self._symbol_db[name] = info
+
+    def lookup_symbol(self, name: str) -> Optional[dict[str, Any]]:
+        """Symbol tablosundan metadata sorgula (thread-safe).
+
+        ``dict.get`` CPython'da atomic GIL ile korunur ama
+        ``dict_size_during_iteration`` race'ini engellemek icin yine de
+        lock altinda yapiyoruz. LMDB backend de geriye duser.
+
+        Args:
+            name: Sembol adi.
+
+        Returns:
+            ``info`` dict veya bulunamazsa None.
+        """
+        if not name:
+            return None
+        with self._lock:
+            info = self._symbol_db.get(name)
+        if info is not None:
+            return info
+        # LMDB fallback (varsa)
+        if self._lmdb_backend is not None:
+            try:
+                return self._lmdb_backend.lookup_symbol(name)
+            except Exception:  # noqa: BLE001 — LMDB graceful
+                return None
+        return None
+
     def add_byte_signature(self, sig: FunctionSignature) -> None:
         """Kullanici tanimli byte pattern imzasi ekle.
 
@@ -1773,19 +1831,20 @@ class SignatureDB:
         bos sig.name ve bos byte_pattern reject edilir.
         """
         if not sig.name or not sig.name.strip():
-            raise ValueError(
+            raise SignatureDBError(
                 "SignatureDB.add_byte_signature: sig.name bos olamaz"
             )
         if not sig.byte_pattern:
-            raise ValueError(
+            raise SignatureDBError(
                 "SignatureDB.add_byte_signature: sig.byte_pattern bos olamaz"
             )
         if len(sig.byte_pattern) != len(sig.byte_mask):
-            raise ValueError(
+            raise SignatureDBError(
                 f"byte_pattern ({len(sig.byte_pattern)}) ve byte_mask ({len(sig.byte_mask)}) "
                 "uzunluklari esit olmali"
             )
-        self._byte_signatures.append(sig)
+        with self._lock:
+            self._byte_signatures.append(sig)
 
     def add_string_signature(
         self,
@@ -1799,14 +1858,15 @@ class SignatureDB:
         v1.10.0 Batch 3D MED: bos matched_name veya bos keywords reject edilir.
         """
         if not matched_name or not matched_name.strip():
-            raise ValueError(
+            raise SignatureDBError(
                 "SignatureDB.add_string_signature: matched_name bos olamaz"
             )
         if not keywords:
-            raise ValueError(
+            raise SignatureDBError(
                 "SignatureDB.add_string_signature: keywords bos olamaz"
             )
-        self._string_sigs[keywords] = (matched_name, library, purpose)
+        with self._lock:
+            self._string_sigs[keywords] = (matched_name, library, purpose)
 
     def add_call_pattern(
         self,
@@ -1821,14 +1881,15 @@ class SignatureDB:
         v1.10.0 Batch 3D MED: bos matched_name veya bos callees reject edilir.
         """
         if not matched_name or not matched_name.strip():
-            raise ValueError(
+            raise SignatureDBError(
                 "SignatureDB.add_call_pattern: matched_name bos olamaz"
             )
         if not callees:
-            raise ValueError(
+            raise SignatureDBError(
                 "SignatureDB.add_call_pattern: callees bos olamaz"
             )
-        self._call_sigs.append((callees, matched_name, library, purpose, confidence))
+        with self._lock:
+            self._call_sigs.append((callees, matched_name, library, purpose, confidence))
 
     # ------------------------------------------------------------------
     # Katman 0: Symbol-based matching
@@ -2270,48 +2331,52 @@ class SignatureDB:
         Returns:
             SignatureMatch veya None.
         """
-        candidates: list[SignatureMatch] = []
+        # v1.15-E B3: Bulk-read iter — paralel add_* race'ini engellemek
+        # icin tum match_by_* iterasyonlarini lock altinda yap. RLock,
+        # alt cagrilarda yeni lock alimi yapilirsa deadlock olmaz.
+        with self._lock:
+            candidates: list[SignatureMatch] = []
 
-        # 0. Symbol-based (en hizli, en yuksek confidence)
-        sym_match = self._match_by_symbol(func_name, target_platform=target_platform)
-        if sym_match:
-            candidates.append(sym_match)
+            # 0. Symbol-based (en hizli, en yuksek confidence)
+            sym_match = self._match_by_symbol(func_name, target_platform=target_platform)
+            if sym_match:
+                candidates.append(sym_match)
 
-        # 1. Byte pattern (eger func_bytes varsa)
-        if func_bytes:
-            byte_match = self._match_by_bytes(func_bytes, func_size)
-            if byte_match:
-                byte_match.original_name = func_name
-                candidates.append(byte_match)
+            # 1. Byte pattern (eger func_bytes varsa)
+            if func_bytes:
+                byte_match = self._match_by_bytes(func_bytes, func_size)
+                if byte_match:
+                    byte_match.original_name = func_name
+                    candidates.append(byte_match)
 
-        # 2. String reference
-        # func_body'den string cikart (eger strings_used verilmemisse)
-        effective_strings = strings_used or []
-        if not effective_strings and func_body:
-            effective_strings = self._extract_strings_from_body(func_body)
+            # 2. String reference
+            # func_body'den string cikart (eger strings_used verilmemisse)
+            effective_strings = strings_used or []
+            if not effective_strings and func_body:
+                effective_strings = self._extract_strings_from_body(func_body)
 
-        if effective_strings:
-            str_match = self._match_by_strings(effective_strings)
-            if str_match:
-                str_match.original_name = func_name
-                candidates.append(str_match)
+            if effective_strings:
+                str_match = self._match_by_strings(effective_strings)
+                if str_match:
+                    str_match.original_name = func_name
+                    candidates.append(str_match)
 
-        # 3. Call pattern
-        effective_callees = callees or []
-        if not effective_callees and func_body:
-            effective_callees = self._extract_callees_from_body(func_body)
+            # 3. Call pattern
+            effective_callees = callees or []
+            if not effective_callees and func_body:
+                effective_callees = self._extract_callees_from_body(func_body)
 
-        if effective_callees:
-            call_match = self._match_by_calls(effective_callees)
-            if call_match:
-                call_match.original_name = func_name
-                candidates.append(call_match)
+            if effective_callees:
+                call_match = self._match_by_calls(effective_callees)
+                if call_match:
+                    call_match.original_name = func_name
+                    candidates.append(call_match)
 
-        if not candidates:
-            return None
+            if not candidates:
+                return None
 
-        # En yuksek confidence'li sonucu dondur
-        return max(candidates, key=lambda m: m.confidence)
+            # En yuksek confidence'li sonucu dondur
+            return max(candidates, key=lambda m: m.confidence)
 
     # ------------------------------------------------------------------
     # Toplu eslestirme (public)
@@ -2456,25 +2521,35 @@ class SignatureDB:
     # ------------------------------------------------------------------
 
     def stats(self) -> dict[str, Any]:
-        """Veritabani istatistiklerini dondur."""
-        return {
-            "total_symbol_signatures": len(self._symbol_db),
-            "total_byte_signatures": len(self._byte_signatures),
-            "total_string_signatures": len(self._string_sigs),
-            "total_call_patterns": len(self._call_sigs),
-            "libraries": self._unique_libraries(),
-        }
+        """Veritabani istatistiklerini dondur (thread-safe snapshot)."""
+        # v1.15-E B3: stats() bulk-read iter (libs iter eder). Paralel
+        # yazma altinda RuntimeError (dict changed size during iteration)
+        # cikabilir. Lock altinda atomic snapshot al.
+        with self._lock:
+            return {
+                "total_symbol_signatures": len(self._symbol_db),
+                "total_byte_signatures": len(self._byte_signatures),
+                "total_string_signatures": len(self._string_sigs),
+                "total_call_patterns": len(self._call_sigs),
+                "libraries": self._unique_libraries(),
+            }
 
     def _unique_libraries(self) -> list[str]:
-        """Tum imzalardaki benzersiz kutuphane isimlerini dondur."""
-        libs: set[str] = set()
-        for info in self._symbol_db.values():
-            libs.add(info["lib"])
-        for _, lib, _ in self._string_sigs.values():
-            libs.add(lib)
-        for _, _, lib, _, _ in self._call_sigs:
-            libs.add(lib)
-        return sorted(libs)
+        """Tum imzalardaki benzersiz kutuphane isimlerini dondur.
+
+        Not: Caller (``stats()``) zaten ``self._lock`` tutuyor. RLock
+        oldugu icin yeniden alma deadlock yapmaz. Bagimsiz cagrilirsa
+        kendi lock'unu alir.
+        """
+        with self._lock:
+            libs: set[str] = set()
+            for info in self._symbol_db.values():
+                libs.add(info["lib"])
+            for _, lib, _ in self._string_sigs.values():
+                libs.add(lib)
+            for _, _, lib, _, _ in self._call_sigs:
+                libs.add(lib)
+            return sorted(libs)
 
     @staticmethod
     def _count_by_method(matches: list[SignatureMatch]) -> dict[str, int]:

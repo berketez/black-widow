@@ -69,9 +69,14 @@ class TestBayesianMerge:
         assert abs(result - 0.90) < 0.01
 
     def test_single_source_low_weight(self):
-        """Tek kaynak, w<1 -> confidence dusurulur."""
+        """Tek kaynak, w<1 -> confidence dusurulur.
+
+        B11 (2026-05-13): "llm4decompile" weight kaldirildi (LLM yok karari).
+        Yerine acik w=0.5 ile test edilen sentetik source kullaniyoruz.
+        """
         cfg = NameMergerConfig()
-        result = bayesian_merge([0.90], ["llm4decompile"], cfg)
+        cfg.source_weights["_test_w05"] = 0.5
+        result = bayesian_merge([0.90], ["_test_w05"], cfg)
         # w=0.5: log_odds = 0 + 0.5 * log(9) ~ 1.099
         # sigmoid(1.099) ~ 0.75
         assert result < 0.90

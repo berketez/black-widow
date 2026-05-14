@@ -38,6 +38,7 @@ from rich.text import Text
 from rich.theme import Theme
 
 from karadul import __version__
+from karadul.cli_common import build_pipeline, format_size
 
 logger = logging.getLogger("karadul")
 
@@ -122,16 +123,9 @@ def _ts() -> str:
     return time.strftime("%H:%M:%S")
 
 
-def _format_size(size: int) -> str:
-    """Byte degerini okunabilir formata cevir."""
-    if size < 1024:
-        return f"{size} B"
-    elif size < 1024 * 1024:
-        return f"{size / 1024:.1f} KB"
-    elif size < 1024 * 1024 * 1024:
-        return f"{size / (1024 * 1024):.1f} MB"
-    else:
-        return f"{size / (1024 * 1024 * 1024):.2f} GB"
+# B17 refactor (2026-05-14): `_format_size` -> `karadul.cli_common.format_size`.
+# Modul-disi monkeypatch / test'lerde kullaniliyor olabilir; alias bırakildi.
+_format_size = format_size
 
 
 def _suppress_console():
@@ -174,13 +168,14 @@ def _restore_console():
 # Banner
 # ---------------------------------------------------------------
 def show_banner() -> None:
-    """Buyuk ASCII art KARADUL logosunu goster."""
+    """KARADUL logosu — Panel kutusu yok, kompakt tagline ile."""
     console.print()
-    console.print(Panel(
-        _build_logo(),
-        border_style="purple",
-        padding=(1, 2),
-    ))
+    console.print(_build_logo())
+    console.print(
+        f"  [bright_magenta]karadul[/] [dim]v{__version__}[/]  "
+        f"[purple4]·[/]  [stat.val]deterministic reverse engineering[/]  "
+        f"[purple4]·[/]  [dim]9.22M signatures[/]"
+    )
     console.print()
 
 
@@ -196,7 +191,7 @@ def _show_target_box(info) -> None:
     body = (
         f"[stat.key]Type:[/]     {info.target_type.value}\n"
         f"[stat.key]Language:[/] {info.language.value}\n"
-        f"[stat.key]Size:[/]     {_format_size(info.file_size)}"
+        f"[stat.key]Size:[/]     {format_size(info.file_size)}"
         f"{arch_line}\n"
         f"[stat.key]Hash:[/]     {info.file_hash[:16]}..."
     )
@@ -1039,14 +1034,7 @@ def analyze_with_live_output(target_path: str) -> None:
     Arka plan thread'i ile sayaclar simule edilir.
     """
     from karadul.config import Config
-    from karadul.core.pipeline import Pipeline
     from karadul.core.target import TargetDetector, TargetType
-    from karadul.stages import (
-        IdentifyStage,
-        StaticAnalysisStage,
-        DeobfuscationStage,
-        ReportStage,
-    )
 
     config = Config.load()  # karadul.yaml varsa yukler, yoksa default
     # project_root'u karadul paket kokune set et -- CWD'ye bagli olmamasi icin
@@ -1086,20 +1074,11 @@ def analyze_with_live_output(target_path: str) -> None:
         f"[#008800]({info.file_size / (1024*1024):.1f} MB)[/]\n"
     )
 
-    # 2. Pipeline kur (quiet mode: pipeline kendi output'unu kapatir)
-    pipeline = Pipeline(config)
-    pipeline.register_stage(IdentifyStage())
-    pipeline.register_stage(StaticAnalysisStage())
-
-    # Deobfuscate + reconstruct her hedef tipi icin
-    pipeline.register_stage(DeobfuscationStage())
-    try:
-        from karadul.stages import ReconstructionStage
-        pipeline.register_stage(ReconstructionStage())
-    except ImportError as exc:
-        logger.warning("ReconstructionStage yuklenemedi, atlaniyor: %s", exc)
-
-    pipeline.register_stage(ReportStage())
+    # 2. Pipeline kur (quiet mode: pipeline kendi output'unu kapatir).
+    # B17 (2026-05-14): cli_common.build_pipeline tek merkezden kurulum.
+    # Hacker dashboard "dynamic" stage'i atlar (canli ekranda anlamsiz);
+    # reconstruct opsiyonel olarak otomatik eklenir (ImportError tolere).
+    pipeline = build_pipeline(config, skip_dynamic=True)
 
     total_stages = len(pipeline.registered_stages)
 

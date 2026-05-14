@@ -43,6 +43,8 @@ from karadul.pipeline.steps import (  # noqa: F401
     pdb_symbol_recovery,
     # v1.15 Dalga 1: Binary Ninja experimental (lisanssiz graceful skip)
     binaryninja_analysis,
+    # B7 (2026-05-13): TRex/PDB/BN JSON tuketici
+    type_recovery_consumer,
 )
 
 __all__ = [
