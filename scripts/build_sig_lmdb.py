@@ -170,6 +170,137 @@ def discover_sources(project_root: Path) -> list[Path]:
 # ---------------------------------------------------------------------------
 
 
+def iter_byte_sigs_from_json(path: Path) -> Iterator[dict]:
+    """v1.20.5 B9: JSON dosyasindan byte signature dict'leri yield et.
+
+    Beklenen format (signatures_homebrew_bytes.json ornegi):
+
+        {
+            "signatures": [
+                {
+                    "name": "_BIO_f_ssl",
+                    "library": "openssl",
+                    "category": "openssl",
+                    "purpose": "",
+                    "confidence": 0.9,
+                    "size": 0,
+                    "byte_pattern": "<hex string>",
+                    "byte_mask": "<hex string>" (opsiyonel)
+                },
+                ...
+            ]
+        }
+
+    Sadece ``byte_pattern`` alani bulunan entry'ler dikkate alinir. Mask
+    yoksa otomatik tum-FF mask uretilir (downstream match exact byte
+    karsilastirir).
+    """
+    try:
+        with open(path, "rb") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning("Byte sig JSON okunamadi %s: %s", path, exc)
+        return
+
+    if not isinstance(data, dict):
+        return
+
+    signatures_value = data.get("signatures")
+    if not isinstance(signatures_value, list):
+        return
+
+    for entry in signatures_value:
+        if not isinstance(entry, dict):
+            continue
+        name = entry.get("name", "")
+        pattern_hex = entry.get("byte_pattern") or entry.get("byte_pattern_hex")
+        if not name or not pattern_hex:
+            continue
+        # Hex validation
+        try:
+            plen = len(bytes.fromhex(pattern_hex))
+        except ValueError:
+            continue
+        if plen == 0:
+            continue
+        mask_hex = entry.get("byte_mask") or entry.get("byte_mask_hex") or ("ff" * plen)
+        yield {
+            "name": name,
+            "library": entry.get("library", "unknown"),
+            "category": entry.get("category", entry.get("library", "unknown")),
+            "purpose": entry.get("purpose", ""),
+            "byte_pattern_hex": pattern_hex,
+            "byte_mask_hex": mask_hex,
+            "confidence": entry.get("confidence", 0.9),
+            "size": entry.get("size", 0),
+        }
+
+
+def iter_call_sigs_from_json(path: Path) -> Iterator[tuple[frozenset[str], tuple[str, str, str, float]]]:
+    """v1.20.5 B9: JSON dosyasindan call pattern signature'lari yield et.
+
+    Beklenen format (esnek; iki varyant kabul edilir):
+
+        {
+            "call_signatures": [
+                {
+                    "callees": ["malloc", "memcpy", "free"],
+                    "name": "copy_buf",
+                    "library": "libc",
+                    "purpose": "buffer copy",
+                    "confidence": 0.85
+                },
+                ...
+            ]
+        }
+
+    Veya top-level ``call_patterns`` ya da ``signatures`` listesi icinde
+    ``type: "call_pattern"`` etiketli entry'ler.
+    """
+    try:
+        with open(path, "rb") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning("Call sig JSON okunamadi %s: %s", path, exc)
+        return
+
+    if not isinstance(data, dict):
+        return
+
+    candidates: list[dict] = []
+    for key in ("call_signatures", "call_patterns", "calls"):
+        value = data.get(key)
+        if isinstance(value, list):
+            candidates.extend(v for v in value if isinstance(v, dict))
+
+    # signatures listesinde type:call_pattern olanlar
+    sigs = data.get("signatures")
+    if isinstance(sigs, list):
+        for v in sigs:
+            if not isinstance(v, dict):
+                continue
+            if v.get("type") == "call_pattern" and "callees" in v:
+                candidates.append(v)
+
+    for entry in candidates:
+        callees = entry.get("callees")
+        name = entry.get("name") or entry.get("matched_name")
+        if not isinstance(callees, list) or not callees or not name:
+            continue
+        callee_set = frozenset(c for c in callees if isinstance(c, str) and c)
+        if not callee_set:
+            continue
+        yield (
+            callee_set,
+            (
+                name,
+                entry.get("library", "unknown"),
+                entry.get("purpose", ""),
+                float(entry.get("confidence", 0.8)),
+            ),
+        )
+
+
 def iter_symbols_from_json(path: Path) -> Iterator[tuple[str, dict]]:
     """JSON dosyasindan ``(name, info_dict)`` yield et.
 
@@ -389,6 +520,16 @@ def build(
         # LMDB mode'da sorgulanamiyordu.
         str_written, call_written, byte_written = _write_builtin_secondary_sigs(db)
 
+        # v1.20.5 B9: JSON kaynaklarindan byte_sigs ve call_sigs yazimi.
+        # Builtin uzerine yaziyor (son yazan kazanir); JSON kaynaklarinda
+        # binlerce ek pattern bulunabilir (signatures_homebrew_bytes.json
+        # 22K entry).
+        json_byte_written, json_call_written = _write_external_secondary_sigs(
+            db, sources,
+        )
+        byte_written += json_byte_written
+        call_written += json_call_written
+
         # Version metadata yaz
         db.put_metadata("source_hash", source_hash.encode("utf-8"))
         db.put_metadata("build_time", str(int(time.time())).encode("ascii"))
@@ -398,6 +539,12 @@ def build(
         db.put_metadata("call_sig_count", str(call_written).encode("ascii"))
         db.put_metadata("byte_sig_count", str(byte_written).encode("ascii"))
         db.sync()
+
+        # v1.20.5 B20: Integrity manifest. sync() sonrasi data.mdb sabit.
+        try:
+            db.write_integrity_manifest()
+        except Exception as exc:
+            logger.warning("Integrity manifest yazimi basarisiz: %s", exc)
     finally:
         db.close()
 
@@ -505,6 +652,72 @@ def _write_builtin_secondary_sigs(db: LMDBSignatureDB) -> tuple[int, int, int]:
         str_written, call_written, byte_written,
     )
     return str_written, call_written, byte_written
+
+
+def _write_external_secondary_sigs(
+    db: LMDBSignatureDB,
+    sources: list[Path],
+) -> tuple[int, int]:
+    """v1.20.5 B9: JSON dosyalarindan byte/call signature LMDB'ye yaz.
+
+    Sirayla:
+      1. signatures_homebrew_bytes.json + signatures_*_bytes*.json -> byte_sigs
+      2. sigs/**/*.json icinde byte_pattern bulunan entry'ler -> byte_sigs
+      3. signatures_*.json + sigs/**/*.json icinde call_signatures/
+         call_patterns alanlari -> call_sigs
+
+    Returns
+    -------
+    ``(byte_sig_count, call_sig_count)`` -- yazilan toplam entry sayisi.
+
+    Notlar
+    ------
+    LMDB ``dupsort=False`` oldugu icin ayni (pattern+name_hash) key'ine
+    yazan ikinci entry birinciyi ezer. Bu pratikte sorun yaratmaz cunku
+    ayni isim ayni pattern'i tasir. Builtin'lerin uzerine yazma riski:
+    sadece ayni name+pattern olursa, payload neredeyse aynidir.
+    """
+    byte_entries: list[dict] = []
+    call_entries: list[tuple[frozenset[str], tuple[str, str, str, float]]] = []
+    seen_byte_keys: set[tuple[str, str]] = set()  # (name, pattern_hex)
+
+    for src in sources:
+        if src.suffix != ".json":
+            continue
+        # Byte sig'ler
+        try:
+            for entry in iter_byte_sigs_from_json(src):
+                key = (entry["name"], entry["byte_pattern_hex"])
+                if key in seen_byte_keys:
+                    continue
+                seen_byte_keys.add(key)
+                byte_entries.append(entry)
+        except Exception as exc:
+            logger.debug("Byte sig iter hata %s: %s", src.name, exc)
+        # Call sig'ler
+        try:
+            for callee_set, payload in iter_call_sigs_from_json(src):
+                call_entries.append((callee_set, payload))
+        except Exception as exc:
+            logger.debug("Call sig iter hata %s: %s", src.name, exc)
+
+    byte_count = 0
+    if byte_entries:
+        try:
+            byte_count = db.bulk_write_byte_sigs(byte_entries)
+            logger.info("Harici byte_sigs yazildi: %d", byte_count)
+        except Exception as exc:
+            logger.warning("Harici byte_sigs yazimi basarisiz: %s", exc)
+
+    call_count = 0
+    if call_entries:
+        try:
+            call_count = db.bulk_write_call_sigs(call_entries)
+            logger.info("Harici call_sigs yazildi: %d", call_count)
+        except Exception as exc:
+            logger.warning("Harici call_sigs yazimi basarisiz: %s", exc)
+
+    return byte_count, call_count
 
 
 def _dir_size(path: Path) -> int:

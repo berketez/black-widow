@@ -121,6 +121,18 @@ except ImportError:
 
 from karadul.config import Config
 
+# v1.15-E B14+B15: Aho-Corasick automaton ile string/byte matching hizlandirma.
+# pyahocorasick yoksa graceful fallback — eski O(F*M*K) Python loop yolu kullanilir.
+_AHOCORASICK_AVAILABLE: bool
+ahocorasick: Any
+try:
+    import ahocorasick as _ahocorasick_mod  # pyahocorasick paketi (perf extra)
+    ahocorasick = _ahocorasick_mod
+    _AHOCORASICK_AVAILABLE = True
+except ImportError:  # pragma: no cover - ahocorasick yoksa fallback yol calisir
+    ahocorasick = None
+    _AHOCORASICK_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -1382,6 +1394,22 @@ class SignatureDB:
         # Katman 3: Call pattern imzalari
         self._call_sigs: list[tuple[frozenset[str], str, str, str, float]] = []
 
+        # v1.15-E B14+B15: Aho-Corasick automaton'lari + invalidation.
+        # Lazy build: ilk match call'da insa edilir; sonraki call'larda reuse.
+        # _string_sigs_version / _byte_sigs_version her mutasyonda artar;
+        # _string_aho_built_version / _byte_aho_built_version son build'i tutar.
+        # Bayatsa build sirasinda yeniden insa edilir.
+        self._string_aho: Any = None  # ahocorasick.Automaton or None
+        self._keyword_to_sig_keys: dict[str, list[frozenset[str]]] = {}
+        self._string_sigs_version: int = 0
+        self._string_aho_built_version: int = -1
+
+        self._byte_aho: Any = None  # ahocorasick.Automaton or None
+        self._byte_aho_sig_ids: list[int] = []  # AC payload index -> _byte_signatures index
+        self._byte_aho_wildcard_sigs: list[FunctionSignature] = []  # wildcard'lilar (ayri yol)
+        self._byte_sigs_version: int = 0
+        self._byte_aho_built_version: int = -1
+
         # v1.10.0: LMDB backend (opsiyonel, feature flag ile)
         self._lmdb_backend: Any = None  # Optional[LMDBSignatureDB]
 
@@ -1845,6 +1873,8 @@ class SignatureDB:
             )
         with self._lock:
             self._byte_signatures.append(sig)
+            # v1.15-E B15: AC automaton bayatladi, lazy yeniden build edilecek
+            self._byte_sigs_version += 1
 
     def add_string_signature(
         self,
@@ -1867,6 +1897,8 @@ class SignatureDB:
             )
         with self._lock:
             self._string_sigs[keywords] = (matched_name, library, purpose)
+            # v1.15-E B14: AC automaton bayatladi, lazy yeniden build edilecek
+            self._string_sigs_version += 1
 
     def add_call_pattern(
         self,
@@ -2033,6 +2065,106 @@ class SignatureDB:
         return None
 
     # ------------------------------------------------------------------
+    # v1.15-E B14+B15: Aho-Corasick automaton build helpers (lazy, thread-safe)
+    # ------------------------------------------------------------------
+
+    def _ensure_string_aho(self) -> None:
+        """String matching icin AC automaton'u (gerekirse) insa et.
+
+        Lazy build: ilk _match_by_strings call'da insa edilir.
+        Mutasyon (add_string_signature) version'u artirir; sonraki match
+        call'da yeniden insa edilir. Thread-safe (double-check + RLock).
+        """
+        if not _AHOCORASICK_AVAILABLE:
+            return  # fallback yolda eski Python loop kullanilir
+        # Double-check pattern: kilit almadan once hizli kontrol
+        if self._string_aho_built_version == self._string_sigs_version and self._string_aho is not None:
+            return
+        with self._lock:
+            # Kilit altinda yeniden kontrol (baska thread build etmis olabilir)
+            if self._string_aho_built_version == self._string_sigs_version and self._string_aho is not None:
+                return
+            automaton = ahocorasick.Automaton()
+            keyword_to_sig_keys: dict[str, list[frozenset[str]]] = {}
+            for sig_key in self._string_sigs.keys():
+                for kw in sig_key:
+                    if not kw:
+                        continue
+                    kw_lower = kw.lower()
+                    bucket = keyword_to_sig_keys.get(kw_lower)
+                    if bucket is None:
+                        bucket = []
+                        keyword_to_sig_keys[kw_lower] = bucket
+                        # Yeni keyword — AC'ya ekle (payload = kw_lower)
+                        automaton.add_word(kw_lower, kw_lower)
+                    bucket.append(sig_key)
+            try:
+                automaton.make_automaton()
+            except Exception as exc:  # noqa: BLE001 — empty automaton vs.
+                logger.debug("AC string automaton make_automaton hatasi: %s", exc)
+                self._string_aho = None
+                self._keyword_to_sig_keys = {}
+                self._string_aho_built_version = self._string_sigs_version
+                return
+            self._string_aho = automaton
+            self._keyword_to_sig_keys = keyword_to_sig_keys
+            self._string_aho_built_version = self._string_sigs_version
+
+    def _ensure_byte_aho(self) -> None:
+        """Byte matching icin AC automaton'u (gerekirse) insa et.
+
+        Hibrit: wildcard-free sig'ler (mask hepsi 0xFF) AC'ya; wildcard'lilar
+        ayri listede tutulur, eski masked compare yolundan gecirilir.
+        """
+        if not _AHOCORASICK_AVAILABLE:
+            return
+        if self._byte_aho_built_version == self._byte_sigs_version and self._byte_aho is not None:
+            return
+        with self._lock:
+            if self._byte_aho_built_version == self._byte_sigs_version and self._byte_aho is not None:
+                return
+            automaton = ahocorasick.Automaton()
+            sig_ids: list[int] = []  # AC payload -> _byte_signatures index
+            wildcard_sigs: list[FunctionSignature] = []
+            added = 0
+            for idx, sig in enumerate(self._byte_signatures):
+                if not sig.byte_pattern:
+                    continue
+                mask = sig.byte_mask
+                plen = len(sig.byte_pattern)
+                # Wildcard-free testi: mask bos olabilir veya tam 0xFF * plen olabilir
+                is_wildcard_free = (
+                    not mask
+                    or (len(mask) == plen and all(b == 0xFF for b in mask))
+                )
+                if is_wildcard_free:
+                    # pyahocorasick KEY_STRING default — bytes'i latin-1 ile
+                    # 1:1 string'e map ediyoruz (0-255 her byte tek char).
+                    # Payload = (ac_position, plen) -> sig_ids[ac_position] = sig idx
+                    try:
+                        pat_str = bytes(sig.byte_pattern).decode("latin-1")
+                    except (UnicodeDecodeError, ValueError):
+                        continue
+                    automaton.add_word(pat_str, (added, plen))
+                    sig_ids.append(idx)
+                    added += 1
+                else:
+                    wildcard_sigs.append(sig)
+            try:
+                if added > 0:
+                    automaton.make_automaton()
+                else:
+                    # Bos automaton make_automaton hata atabilir — None tutariz
+                    automaton = None
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("AC byte automaton make_automaton hatasi: %s", exc)
+                automaton = None
+            self._byte_aho = automaton
+            self._byte_aho_sig_ids = sig_ids
+            self._byte_aho_wildcard_sigs = wildcard_sigs
+            self._byte_aho_built_version = self._byte_sigs_version
+
+    # ------------------------------------------------------------------
     # Katman 1: Byte pattern matching
     # ------------------------------------------------------------------
 
@@ -2053,7 +2185,61 @@ class SignatureDB:
         best_match: Optional[SignatureMatch] = None
         best_conf = 0.0
 
-        for sig in self._byte_signatures:
+        # v1.15-E B15: Aho-Corasick hizli yol. Wildcard-free sig'ler tek
+        # AC pass ile fonksiyon byte'larinda taranir. Wildcard'lilar ayri
+        # listede tutulur, eski masked compare ile islenir (azinlik).
+        use_aho = _AHOCORASICK_AVAILABLE and self._byte_signatures
+        if use_aho:
+            self._ensure_byte_aho()
+
+        if use_aho and self._byte_aho is not None:
+            # AC otomaton wildcard-free sig'lerde calistir.
+            # iter() pattern bitis pozisyonunu donduyor — match basi = end - plen + 1.
+            # Pattern fonksiyonun ILK N byte'inda olmali (mevcut davranisi koru):
+            # _match_by_bytes "ilk N byte"da arama yapiyor. AC ise haystack'in
+            # her yerini tarar; biz ofset == 0'i (yani pattern[0] == func_bytes[0])
+            # zorunlu kilarak orijinal davranisi koruyoruz.
+            # latin-1 dec: bytes 1:1 string map (KEY_STRING mode).
+            try:
+                hay_str = bytes(func_bytes).decode("latin-1")
+            except (UnicodeDecodeError, ValueError):
+                hay_str = ""
+            try:
+                for end_pos, payload in self._byte_aho.iter(hay_str) if hay_str else ():
+                    _ac_idx, plen = payload
+                    start_pos = end_pos - plen + 1
+                    if start_pos != 0:
+                        # Mevcut davranis: pattern fonksiyonun ilk byte'larindan baslar
+                        continue
+                    sig_idx = self._byte_aho_sig_ids[_ac_idx]
+                    sig = self._byte_signatures[sig_idx]
+                    # Size range kontrolu
+                    if sig.size_range != (0, 0) and func_size > 0:
+                        min_s, max_s = sig.size_range
+                        if func_size < min_s or func_size > max_s:
+                            continue
+                    # Wildcard-free oldugu icin tum byte'lar sabit -> mask=0xFF*plen
+                    # Confidence: tum byte'lar sabit -> conf = 0.95
+                    conf = min(0.95, 0.60 + 1.0 * 0.35)  # = 0.95
+                    if conf > best_conf:
+                        best_conf = conf
+                        best_match = SignatureMatch(
+                            original_name="",
+                            matched_name=sig.name,
+                            library=sig.library,
+                            confidence=conf,
+                            match_method="byte_pattern",
+                            purpose=sig.purpose,
+                            category=sig.category,
+                            version=sig.version,
+                        )
+            except Exception as exc:  # noqa: BLE001 — AC runtime hatasi, fallback'e dus
+                logger.debug("AC byte iter hatasi: %s — fallback Python loop", exc)
+                use_aho = False  # asagidaki tam tarama yine calissin
+
+        # Wildcard'li sig'ler (ve AC kapaliysa tum sig'ler) eski yol
+        iter_sigs = self._byte_aho_wildcard_sigs if (use_aho and self._byte_aho is not None) else self._byte_signatures
+        for sig in iter_sigs:
             if not sig.byte_pattern:
                 continue
 
@@ -2174,7 +2360,56 @@ class SignatureDB:
         best_match: Optional[SignatureMatch] = None
         best_score = 0.0
 
-        for keywords, (matched_name, library, purpose) in self._string_sigs.items():
+        # v1.15-E B14: Aho-Corasick aday daraltma. Tum string_sigs'i scan etmek
+        # yerine, func string'lerinde bulunan keyword'lerden hareket ederek
+        # sadece o keyword'lere sahip imza kume'lerini kontrol et.
+        if _AHOCORASICK_AVAILABLE and self._string_sigs:
+            self._ensure_string_aho()
+
+        candidate_sig_keys: Optional[list[frozenset[str]]] = None
+        matched_keywords_set: set[str] = set()
+        if _AHOCORASICK_AVAILABLE and self._string_aho is not None and self._keyword_to_sig_keys:
+            # Func string'lerini concat — AC tek pass tarama. Ayraci olarak \x00
+            # (null byte) — keyword'ler bunu icermez, bu sayede iki ayri string
+            # birlesimi sahte match uretemez (B14 davranis paritesi).
+            try:
+                haystack = "\x00".join(s.lower() for s in strings_used)
+            except (TypeError, AttributeError):
+                haystack = ""
+            if haystack:
+                try:
+                    for _, kw_lower in self._string_aho.iter(haystack):
+                        matched_keywords_set.add(kw_lower)
+                except Exception as exc:  # noqa: BLE001 — fallback
+                    logger.debug("AC string iter hatasi: %s — fallback", exc)
+                    matched_keywords_set = set()
+            if matched_keywords_set:
+                # Aday sig_key kume'sini topla (dedupe). Bir sig_key birden fazla
+                # keyword'la eslesirse bircok kez gelir — id() ile dedupe.
+                seen: set[int] = set()
+                cand: list[frozenset[str]] = []
+                for kw in matched_keywords_set:
+                    for sk in self._keyword_to_sig_keys.get(kw, ()):
+                        oid = id(sk)
+                        if oid not in seen:
+                            seen.add(oid)
+                            cand.append(sk)
+                candidate_sig_keys = cand
+            else:
+                # AC sonucu bos -> hicbir keyword eslesmiyor -> hicbir sig match etmez
+                candidate_sig_keys = []
+
+        # Iterasyon kaynagi: aday liste (AC ile daralmis) veya tum sig'ler (fallback)
+        from typing import Iterable as _Iterable
+        iter_items: _Iterable[tuple[frozenset[str], tuple[str, str, str]]]
+        if candidate_sig_keys is not None:
+            iter_items = (
+                (k, self._string_sigs[k]) for k in candidate_sig_keys if k in self._string_sigs
+            )
+        else:
+            iter_items = self._string_sigs.items()
+
+        for keywords, (matched_name, library, purpose) in iter_items:
             # Her keyword fonksiyonun string'leri icinde var mi kontrol et
             # Case-insensitive partial matching: keyword, herhangi bir string'in
             # icinde geciyorsa (substring match)
@@ -2188,7 +2423,11 @@ class SignatureDB:
                 elif kw_lower in func_strings_lower:
                     match_count += 1
                 # Oncelik 3: substring
-                elif any(kw_lower in s.lower() for s in strings_used):
+                # v1.15-E B14: AC bulgusu varsa O(1) lookup; aksi halde eski tarama
+                elif kw_lower in matched_keywords_set:
+                    match_count += 1
+                elif candidate_sig_keys is None and any(kw_lower in s.lower() for s in strings_used):
+                    # Fallback yol (AC yok) — eski substring tarama
                     match_count += 1
 
             if match_count == len(keywords):

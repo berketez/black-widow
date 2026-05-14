@@ -45,13 +45,15 @@ Notlar
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import os
+import stat
 import threading
 from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Iterator, Optional
 
 import msgpack
 
@@ -116,6 +118,16 @@ BYTE_KEY_LEN = 8
 # Canonical hash uzunlugu (bayt). 16 byte = 128 bit -> çakisma olasiligi
 # 8M entry icin ~2^-89, pratik olarak sifir.
 CANONICAL_HASH_LEN = 16
+
+# v1.20.5 B20: msgpack unpack icin bounded buffer. Saldirgan-kontrollu
+# data corruption (manipulate edilmis LMDB) durumunda 100+ MB tek payload
+# DoS uretebilir. 64 MiB ust sinir gercek entry'leri kapsar (en buyuk
+# string sig ~10 KB), bu sinirin ustu kategori olarak zararli sayilir.
+MSGPACK_MAX_BUFFER = 64 * 1024 * 1024  # 64 MiB
+
+# v1.20.5 B20: Integrity manifest dosya adi. LMDB dizinin yaninda durur.
+# blake3 varsa onunla, yoksa sha256 ile data.mdb hash'i tutulur.
+INTEGRITY_MANIFEST_NAME = "manifest.json"
 
 
 # ---------------------------------------------------------------------------
@@ -257,8 +269,43 @@ def pack(obj: Any) -> bytes:
 
 
 def unpack(data: bytes) -> Any:
-    """msgpack decode — ``raw=False``, string'ler utf-8 cozulur."""
+    """msgpack decode — ``raw=False``, string'ler utf-8 cozulur.
+
+    v1.20.5 B20: Bounded buffer ile DoS koruması. ``msgpack.unpackb``
+    ``max_buffer_size`` parametresini Unpacker'a iletirken bazı sürümler
+    çakışma uretiyor (fallback path), bu nedenle UZUNLUK kontrolu
+    explicit yapilir; saldirgan-kontrollu corrupted entry buyukse erken
+    reject ederiz.
+    """
+    if len(data) > MSGPACK_MAX_BUFFER:
+        raise ValueError(
+            f"msgpack payload too large: {len(data)} > {MSGPACK_MAX_BUFFER}"
+        )
     return msgpack.unpackb(data, raw=False)
+
+
+def _integrity_hash(data: bytes) -> tuple[str, str]:
+    """Bytes icin (algo_adi, hex_hash) dondur.
+
+    blake3 yuklu ise onunla (hizli), yoksa hashlib.sha256 (stdlib).
+    """
+    if _blake3 is not None:
+        return "blake3", _blake3.blake3(data).hexdigest()
+    return "sha256", hashlib.sha256(data).hexdigest()
+
+
+def _hash_file(path: Path) -> tuple[str, str]:
+    """Dosya icerigi icin (algo, hex_hash). ``mmap`` yerine streaming
+    okuma (buyuk LMDB'lerde memory spike olmamalı)."""
+    if _blake3 is not None:
+        h = _blake3.blake3()
+    else:
+        h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    algo = "blake3" if _blake3 is not None else "sha256"
+    return algo, h.hexdigest()
 
 
 # ---------------------------------------------------------------------------
@@ -356,6 +403,15 @@ class LMDBSignatureDB:
 
         if not readonly:
             self._path.mkdir(parents=True, exist_ok=True)
+
+        # v1.20.5 B20: Security pre-flight.
+        # 1) Permission check (multi-user host poison korumasi).
+        # 2) Integrity manifest dogrulama (varsa).
+        # Yazma modunda dosya yeni olusturulabilir; sadece readonly modda
+        # ya da mevcut yapida kontrol yapilir.
+        self._check_permissions()
+        if readonly:
+            self._verify_integrity()
 
         # Environment ac
         # subdir=True: LMDB dizin olarak tutulur (data.mdb + lock.mdb)
@@ -505,6 +561,109 @@ class LMDBSignatureDB:
         if isinstance(payload, list) and len(payload) == 4:
             return tuple(payload)
         return None
+
+    def lookup_byte_sig(
+        self,
+        pattern_hex: str,
+        name: str,
+    ) -> Optional[dict]:
+        """Tek bir byte signature'i (pattern + name) ile noktasal sorgula.
+
+        Build sirasinda key = ``byte_prefix_key(pattern_bytes) + blake2b(name)[:4]``
+        olarak yazilir; bu fonksiyon ayni key'i yeniden uretip dogrudan
+        ``txn.get`` ile getirir (O(1), cursor scan yok).
+
+        Args
+        ----
+        pattern_hex:
+            Hex string formatinda byte pattern (bos olmamali).
+        name:
+            Symbol/imza adi (bos olmamali). Key'in ikinci yarisi.
+
+        Returns
+        -------
+        Payload dict (bulk_write_byte_sigs ile yazilan entry) veya None.
+        """
+        self._ensure_open()
+        if not pattern_hex or not name:
+            return None
+        try:
+            pattern_bytes = bytes.fromhex(pattern_hex)
+        except ValueError:
+            return None
+        if not pattern_bytes:
+            return None
+        name_hash = _fast_hash(name.encode("utf-8"), digest_size=4)
+        key = byte_prefix_key(pattern_bytes) + name_hash
+        with self._env.begin(db=self._db_byte_sigs, buffers=True) as txn:
+            raw = txn.get(key)
+            if raw is None:
+                return None
+            try:
+                payload = unpack(bytes(raw))
+            except (ValueError, msgpack.exceptions.UnpackException):
+                logger.warning("Byte sig decode failed for %s", name)
+                return None
+        if isinstance(payload, dict):
+            return payload
+        return None
+
+    def iter_byte_sigs(self) -> Iterator[dict]:
+        """Tum byte signature payload'lari uzerinden iterator.
+
+        Cursor tabanli, RAM'e tek seferde yuklemez. Bozuk entry'ler
+        sessizce skip edilir (warning log).
+        """
+        self._ensure_open()
+        with self._env.begin(db=self._db_byte_sigs, buffers=True) as txn:
+            with txn.cursor() as cur:
+                for _key, value in cur:
+                    try:
+                        payload = unpack(bytes(value))
+                    except (ValueError, msgpack.exceptions.UnpackException) as exc:
+                        logger.warning("iter_byte_sigs decode skip: %s", exc)
+                        continue
+                    if isinstance(payload, dict):
+                        yield payload
+
+    def iter_call_sigs(self) -> Iterator[tuple]:
+        """Tum call signature payload'lari uzerinden iterator.
+
+        Yields
+        ------
+        ``(matched_name, library, purpose, confidence)`` 4-tuple.
+        Bozuk/eksik entry'ler skip edilir.
+        """
+        self._ensure_open()
+        with self._env.begin(db=self._db_call_sigs, buffers=True) as txn:
+            with txn.cursor() as cur:
+                for _key, value in cur:
+                    try:
+                        payload = unpack(bytes(value))
+                    except (ValueError, msgpack.exceptions.UnpackException) as exc:
+                        logger.warning("iter_call_sigs decode skip: %s", exc)
+                        continue
+                    if isinstance(payload, list) and len(payload) == 4:
+                        yield tuple(payload)
+
+    def iter_string_sigs(self) -> Iterator[tuple]:
+        """Tum string signature payload'lari uzerinden iterator.
+
+        Yields
+        ------
+        ``(matched_name, library, purpose)`` 3-tuple.
+        """
+        self._ensure_open()
+        with self._env.begin(db=self._db_string_sigs, buffers=True) as txn:
+            with txn.cursor() as cur:
+                for _key, value in cur:
+                    try:
+                        payload = unpack(bytes(value))
+                    except (ValueError, msgpack.exceptions.UnpackException) as exc:
+                        logger.warning("iter_string_sigs decode skip: %s", exc)
+                        continue
+                    if isinstance(payload, list) and len(payload) == 3:
+                        yield tuple(payload)
 
     def match_byte_prefix(self, prefix: bytes, max_results: int = 32) -> list[dict]:
         """Byte pattern prefix'inden eslesen FunctionSignature payload'larini dondur.
@@ -800,6 +959,155 @@ class LMDBSignatureDB:
                 "LMDBSignatureDB readonly modda. readonly=False ile yeniden acin."
             )
 
+    # ------------------------------------------------------------------
+    # v1.20.5 B20: Security helpers
+    # ------------------------------------------------------------------
+
+    def _check_permissions(self) -> None:
+        """LMDB dizini ve data dosyasinda permission denetimi.
+
+        Windows'ta ``os.stat`` farkli semantige sahip (mod bit'leri POSIX
+        gibi degil); Windows'ta sadece owner check log seviyesinde uyari
+        verir, raise etmez. POSIX (linux/macos) sistemlerde:
+
+        * Group/world WRITABLE -> ``SignatureDBError`` raise edilir
+          (saldirgan icerigi degistirebilir, kritik tehlike).
+        * Owner mismatch -> warning log (multi-user host'ta sysadmin
+          tarafindan kurulmus olabilir; raise etmek normal kullanim
+          akisini bozar).
+
+        Yeni olusturulmus LMDB'lerde (yazma modunda) dizin yeni olduğu
+        icin world/group writable olmaz; ancak umask cok permisif ise
+        yine de tetiklenebilir.
+        """
+        if not self._path.exists():
+            return  # Yeni olusturuluyor; kontrol edilecek dosya yok.
+
+        # Windows'ta stat mod bit'leri POSIX gibi degil; sessiz kal.
+        if os.name == "nt":
+            return
+
+        try:
+            st = self._path.stat()
+        except OSError as exc:
+            logger.warning("LMDB stat basarisiz (%s): %s", self._path, exc)
+            return
+
+        # Owner kontrolu (raise YOK -- multi-user host'ta normal olabilir)
+        try:
+            my_uid = os.getuid()
+            if st.st_uid != my_uid:
+                logger.warning(
+                    "LMDB owner mismatch (uid=%d, expected=%d, path=%s). "
+                    "Multi-user host poison riski; admin dogrulamasi yapin.",
+                    st.st_uid, my_uid, self._path,
+                )
+        except AttributeError:
+            # os.getuid() Windows'ta yok; defansif.
+            pass
+
+        # World/group writable kontrolu (HARD FAIL)
+        if st.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+            raise SignatureDBError(
+                f"LMDB world/group writable: mode={oct(st.st_mode & 0o777)} "
+                f"path={self._path}. Saldirgan poison riski; "
+                f"`chmod go-w {self._path}` ile duzeltin."
+            )
+
+    def _verify_integrity(self) -> None:
+        """Manifest dosyasi varsa data.mdb hash'i dogrula.
+
+        Manifest yoksa sessizce gecer (eski LMDB'lerle uyumluluk).
+        Mismatch durumunda warning log'lar ve raise ETMEZ -- build
+        zamani ile readonly acilis arasinda LMDB legitim olarak guncellenmis
+        olabilir. Saldirgan kontrolu manifest IMZASI degil HASH'i ile
+        sinirli; integrity uyarı + opsiyonel sertlestirme.
+        """
+        manifest_path = self._path / INTEGRITY_MANIFEST_NAME
+        if not manifest_path.exists():
+            return
+        data_mdb = self._path / "data.mdb"
+        if not data_mdb.exists():
+            logger.warning("Manifest var ama data.mdb yok: %s", self._path)
+            return
+        try:
+            manifest = json.loads(manifest_path.read_text("utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.warning("Manifest okunamadi: %s -- %s", manifest_path, exc)
+            return
+
+        expected_algo = manifest.get("algo")
+        expected_hash = manifest.get("data_mdb_hash")
+        if not expected_algo or not expected_hash:
+            logger.warning("Manifest eksik alan: %s", manifest_path)
+            return
+
+        # Mevcut algo ile yeniden hash'le. Manifest farkli algo kullanmissa
+        # (ornegin sha256 manifest + blake3 runtime), uygun yontemle hesapla.
+        if expected_algo == "blake3":
+            if _blake3 is None:
+                logger.warning(
+                    "Manifest blake3 ister ama blake3 yok; integrity check skip."
+                )
+                return
+            h = _blake3.blake3()
+        elif expected_algo == "sha256":
+            h = hashlib.sha256()
+        else:
+            logger.warning("Bilinmeyen manifest algo: %s", expected_algo)
+            return
+
+        try:
+            with open(data_mdb, "rb") as f:
+                for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                    h.update(chunk)
+        except OSError as exc:
+            logger.warning("data.mdb okunamadi: %s", exc)
+            return
+
+        actual = h.hexdigest()
+        if actual != expected_hash:
+            logger.warning(
+                "LMDB integrity MISMATCH (%s): expected=%s... actual=%s... path=%s. "
+                "Build sonrasi LMDB degisti veya tampering soz konusu.",
+                expected_algo, expected_hash[:16], actual[:16], self._path,
+            )
+        else:
+            logger.debug(
+                "LMDB integrity OK (%s): %s...", expected_algo, actual[:16],
+            )
+
+    def write_integrity_manifest(self) -> dict[str, Any]:
+        """Mevcut data.mdb icin manifest yaz (build sonu).
+
+        Yazma modunda cagrilmali; ``sync()`` sonrasi en doğrudur.
+        ``manifest.json`` LMDB dizinine yazilir (data.mdb ile ayni klasor).
+
+        Returns
+        -------
+        Yazilan manifest dict (algo, data_mdb_hash, data_mdb_size).
+        """
+        self._ensure_writable()
+        data_mdb = self._path / "data.mdb"
+        if not data_mdb.exists():
+            raise SignatureDBError(
+                f"data.mdb yok, manifest yazilamiyor: {self._path}"
+            )
+        algo, h = _hash_file(data_mdb)
+        manifest = {
+            "algo": algo,
+            "data_mdb_hash": h,
+            "data_mdb_size": data_mdb.stat().st_size,
+            "version": 1,
+        }
+        manifest_path = self._path / INTEGRITY_MANIFEST_NAME
+        # Atomic yazma: tmp dosya + rename
+        tmp = manifest_path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        tmp.replace(manifest_path)
+        logger.info("Integrity manifest yazildi: %s (%s)", manifest_path, algo)
+        return manifest
+
 
 # ---------------------------------------------------------------------------
 # Convenience fabrikalari
@@ -843,4 +1151,6 @@ __all__ = [
     "DEFAULT_MAP_SIZE",
     "BYTE_KEY_LEN",
     "CANONICAL_HASH_LEN",
+    "MSGPACK_MAX_BUFFER",
+    "INTEGRITY_MANIFEST_NAME",
 ]
