@@ -217,6 +217,11 @@ class NameMergerConfig:
         "cfg_iso_template": 0.85,            # CFG hibrit iso template eslemesi
         "computation_fusion": 0.90,          # Log-odds ensemble fusion (byte+CFG+proto)
         "computation_struct_recovery": 0.80, # MaxSMT struct layout kurtarma
+        # v1.21 (2026-05-14): Engineering algorithm fusion -- karadul/reconstruction/engineering
+        # paketi pipeline'a fuse edildi. Constant/API/Formula tabanli 3 ayri kanal.
+        "engineering_constant": 0.85,        # IEEE-754 sabit eslesmesi (Gauss, k-eps, FEA)
+        "engineering_api": 0.90,             # BLAS/LAPACK/FFTW/PETSc cagri imzalari (yuksek precision)
+        "engineering_formula": 0.88,         # FormulaReconstructor template eslesmesi (algoritma sabit + yapi)
     })
     default_weight: float = 0.7     # Bilinmeyen kaynak icin fallback
     unk_threshold: float = 0.30     # Altinda isim atanmaz (UNK)

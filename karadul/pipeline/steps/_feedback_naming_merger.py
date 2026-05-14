@@ -46,6 +46,7 @@ def run_name_merger(
     stats: dict[str, Any],
     errors: list[str],
     artifacts: dict[str, Any],
+    functions_json: Path | None = None,
 ) -> tuple[dict[str, str] | None, set[str], Path]:
     """NameMerger ve Aho-Corasick replacement.
 
@@ -93,6 +94,11 @@ def run_name_merger(
             bsim_shadow=bsim_shadow_payload,
             bsim_fusion_min_similarity=bsim_fusion_min_sim,
             bsim_fusion_max_candidates=bsim_fusion_max_n,
+            # v1.21 engineering fusion: decompiled C dizini + functions_json
+            # mevcutsa EngineeringAlgorithmAnalyzer + FormulaReconstructor
+            # uzerinden constant/api/formula naming kanallari uretilir.
+            decompiled_dir=decompiled_dir,
+            functions_json=functions_json,
         )
         if not candidates_by_symbol:
             return final_naming_map, current_named_set, decompiled_dir

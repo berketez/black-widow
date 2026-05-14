@@ -166,6 +166,7 @@ def run_naming_phase(
         computation_result=computation_result,
         pcode_naming_candidates=pcode_naming_candidates,
         stats=stats, errors=errors, artifacts=artifacts,
+        functions_json=functions_json,
     )
     stats[f"timing_name_merger_iter{iter_index}"] = round(
         time.monotonic() - step_start, 1,

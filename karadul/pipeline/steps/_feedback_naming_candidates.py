@@ -39,6 +39,11 @@ def collect_candidates(
     pdb_symbols: list[dict[str, Any]] | None = None,
     bn_functions: list[dict[str, Any]] | None = None,
     trex_structs: list[dict[str, Any]] | None = None,
+    # 2026-05-14 v1.21: Engineering algorithm fusion -- constant/API/formula
+    # tabanli naming kanallari. Decompiled C dizini + functions_json varsa
+    # EngineeringAlgorithmAnalyzer + FormulaReconstructor calistirilir.
+    decompiled_dir: Path | None = None,
+    functions_json: Path | None = None,
 ) -> dict[str, list[Any]]:
     """Tum kaynaklardan candidates_by_symbol sozlugu olustur.
 
@@ -84,6 +89,23 @@ def collect_candidates(
         _add_bn_symbols(bn_functions, candidates_by_symbol, stats)
     if trex_structs:
         _add_trex_structs(trex_structs, candidates_by_symbol, stats)
+
+    # 2026-05-14 v1.21: Engineering fusion -- constant/API/formula naming.
+    # Tek bir EngineeringAlgorithmAnalyzer.identify() cagrisi ile 3 sinyal
+    # ayni AlgorithmMatch listesinden uretilir. Cache fonksiyon disinda
+    # tutulmaz; her iter feedback dongusunde yeniden cagrilir (idempotent).
+    if (
+        decompiled_dir is not None
+        and decompiled_dir.exists()
+        and functions_json is not None
+        and functions_json.exists()
+    ):
+        _add_engineering_naming(
+            decompiled_dir=decompiled_dir,
+            functions_json=functions_json,
+            candidates=candidates_by_symbol,
+            stats=stats,
+        )
 
     return candidates_by_symbol
 
@@ -641,3 +663,282 @@ def _is_unnamed(name: str, *, include_unnamed: bool = True) -> bool:
     if include_unnamed and name.startswith("_unnamed_"):
         return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# v1.21 Engineering Fusion helpers (2026-05-14)
+#
+# karadul/reconstruction/engineering paketinin pipeline'a entegrasyonu.
+# Tek dispatcher _add_engineering_naming() ucu da uretir:
+#   * engineering_constant  -- IEEE-754 sabit eslestirmesi (Gauss, k-eps vb.)
+#   * engineering_api       -- BLAS/LAPACK/FFTW/PETSc cagrilari
+#   * engineering_formula   -- FormulaReconstructor template match
+#
+# Hepsi tek EngineeringAlgorithmAnalyzer.identify() ciktisindan turetilir,
+# ekstra decompile gerektirmez. Modul yoksa veya hata olursa GRACEFUL SKIP.
+# ---------------------------------------------------------------------------
+
+
+_ALGO_NAME_TO_FUNC_HINT_OVERRIDES: dict[str, str] = {
+    # Sik gecen algoritma adi -> daha okunabilir fonksiyon ipucu.
+    # Yoksa _sanitize_algo_to_func_name fallback yapilir.
+    "matrix_multiply": "matrix_multiply",
+    "dot_product": "vector_dot",
+    "axpy": "vector_axpy",
+    "lu_factorization": "lu_factorize",
+    "cholesky_factorization": "cholesky_factorize",
+    "qr_factorization": "qr_factorize",
+    "svd": "svd_decompose",
+    "eigenvalue_decomposition": "eigen_decompose",
+    "fft": "fft_transform",
+    "ifft": "ifft_transform",
+    "gauss_quadrature_1pt": "gauss_quad_1pt",
+    "gauss_quadrature_2pt": "gauss_quad_2pt",
+    "gauss_quadrature_3pt": "gauss_quad_3pt",
+    "k_epsilon_turbulence": "turb_k_epsilon",
+    "black_scholes": "black_scholes_price",
+    "monte_carlo": "monte_carlo_simulate",
+}
+
+
+def _sanitize_algo_to_func_name(algo_name: str) -> str:
+    """Algoritma adini valid C fonksiyon adina cevir.
+
+    "AES-256-CBC" -> "aes_256_cbc"
+    "Gauss Legendre 3pt" -> "gauss_legendre_3pt"
+    "matrix_multiply" -> "matrix_multiply" (degisim yok)
+    """
+    import re as _re
+    s = algo_name.strip().lower()
+    s = _re.sub(r"[^a-z0-9_]+", "_", s)
+    s = _re.sub(r"_+", "_", s).strip("_")
+    if not s or s[0].isdigit():
+        s = f"algo_{s}" if s else "algo_unknown"
+    return s
+
+
+def _algo_name_to_func_hint(algo_name: str) -> str:
+    """Algoritma adi -> fonksiyon adi ipucu (override + sanitize)."""
+    key = algo_name.strip().lower()
+    if key in _ALGO_NAME_TO_FUNC_HINT_OVERRIDES:
+        return _ALGO_NAME_TO_FUNC_HINT_OVERRIDES[key]
+    return _sanitize_algo_to_func_name(algo_name)
+
+
+def _add_engineering_naming(
+    *,
+    decompiled_dir: Path,
+    functions_json: Path,
+    candidates: dict[str, list[Any]],
+    stats: dict[str, Any],
+) -> None:
+    """v1.21: Engineering analyzer ciktisindan 3 naming kanali.
+
+    EngineeringAlgorithmAnalyzer.identify() tek seferde calistirilir;
+    sonuc detection_method'a gore 3 alt-helper'a dagitilir:
+      * constant -> engineering_constant
+      * api      -> engineering_api
+      * structural / yapisal -> engineering_constant (constant grubuna sayilir)
+
+    Ek olarak FormulaReconstructor calistirilarak formula template match'leri
+    ayni AlgorithmMatch listesinden uretilir (engineering_formula).
+    """
+    try:
+        from karadul.reconstruction.engineering import (
+            EngineeringAlgorithmAnalyzer,
+            FormulaReconstructor,
+        )
+    except ImportError as exc:
+        logger.debug("Engineering analyzer import basarisiz: %s", exc)
+        stats["engineering_naming_status"] = "no-module"
+        return
+
+    try:
+        analyzer = EngineeringAlgorithmAnalyzer()
+        result = analyzer.identify(decompiled_dir, functions_json)
+    except Exception as exc:
+        logger.debug("Engineering identify hata: %s", exc, exc_info=True)
+        stats["engineering_naming_status"] = "identify-error"
+        return
+
+    if not result.success or not result.algorithms:
+        stats["engineering_naming_status"] = "no-matches"
+        stats["engineering_candidates_added"] = 0
+        return
+
+    const_added = _add_engineering_constant_naming(
+        algorithms=result.algorithms, candidates=candidates,
+    )
+    api_added = _add_engineering_api_naming(
+        algorithms=result.algorithms, candidates=candidates,
+    )
+
+    formula_added = 0
+    try:
+        reconstructor = FormulaReconstructor()
+        formulas = reconstructor.reconstruct(result.algorithms)
+        formula_added = _add_engineering_formula_naming(
+            algorithms=result.algorithms,
+            formulas=formulas,
+            candidates=candidates,
+        )
+    except Exception as exc:
+        logger.debug("FormulaReconstructor hata: %s", exc, exc_info=True)
+        stats["engineering_formula_status"] = "reconstruct-error"
+
+    total = const_added + api_added + formula_added
+    stats["engineering_naming_status"] = "active" if total else "no-candidates"
+    stats["engineering_const_candidates"] = const_added
+    stats["engineering_api_candidates"] = api_added
+    stats["engineering_formula_candidates"] = formula_added
+    stats["engineering_candidates_added"] = total
+
+    if total:
+        logger.info(
+            "Engineering naming: %d candidate eklendi (const=%d, api=%d, "
+            "formula=%d)",
+            total, const_added, api_added, formula_added,
+        )
+
+
+def _add_engineering_constant_naming(
+    *,
+    algorithms: list[Any],
+    candidates: dict[str, list[Any]],
+) -> int:
+    """IEEE-754 sabit ve yapisal pattern tabanli naming.
+
+    AlgorithmMatch.detection_method in {"constant", "structural"} olanlari
+    engineering_constant source ile candidate'a cevirir. function_name FUN_xxx
+    veya benzeri 'unnamed' formdaysa eklenir; aksi halde atlanir (zaten
+    ismi olan fonksiyona zayif evidence basmayalim).
+    """
+    added = 0
+    for m in algorithms:
+        method = getattr(m, "detection_method", "")
+        if method not in ("constant", "structural", "yapisal"):
+            continue
+        fname = getattr(m, "function_name", "") or ""
+        algo = getattr(m, "name", "") or ""
+        conf = float(getattr(m, "confidence", 0.0) or 0.0)
+        if not fname or not algo:
+            continue
+        # Sadece adlandirilmamis fonksiyonlara oneri (mevcut adlari ezme).
+        if not _is_unnamed(fname):
+            continue
+        hint = _algo_name_to_func_hint(algo)
+        if not hint or len(hint) < 2:
+            continue
+        # Confidence floor: structural-only bulgular zaten 0.50 capped
+        # (bkz analyzer._STRUCTURAL_ONLY_CAP); biz de min 0.40 alalim.
+        if conf < 0.40:
+            continue
+        cand = _make_candidate(
+            name=hint,
+            source="engineering_constant",
+            confidence=min(conf, 0.95),
+            reason=f"{method}: {algo}",
+        )
+        candidates.setdefault(fname, []).append(cand)
+        added += 1
+    return added
+
+
+def _add_engineering_api_naming(
+    *,
+    algorithms: list[Any],
+    candidates: dict[str, list[Any]],
+) -> int:
+    """BLAS/LAPACK/FFTW/PETSc API cagrisi tabanli naming.
+
+    AlgorithmMatch.detection_method == "api" olanlari engineering_api source ile
+    candidate'a cevirir. API match'leri yuksek-precision oldugu icin confidence
+    floor 0.50.
+    """
+    added = 0
+    for m in algorithms:
+        if getattr(m, "detection_method", "") != "api":
+            continue
+        fname = getattr(m, "function_name", "") or ""
+        algo = getattr(m, "name", "") or ""
+        conf = float(getattr(m, "confidence", 0.0) or 0.0)
+        if not fname or not algo:
+            continue
+        if not _is_unnamed(fname):
+            continue
+        if conf < 0.50:
+            continue
+        hint = _algo_name_to_func_hint(algo)
+        if not hint or len(hint) < 2:
+            continue
+        # API kaynaklarinda evidence listesinde kutuphane bilgisi olabilir.
+        evidence = getattr(m, "evidence", None) or []
+        ev_summary = (
+            ", ".join(str(e) for e in evidence[:3]) if evidence else algo
+        )
+        cand = _make_candidate(
+            name=hint,
+            source="engineering_api",
+            confidence=min(conf, 0.95),
+            reason=f"api call: {ev_summary}",
+        )
+        candidates.setdefault(fname, []).append(cand)
+        added += 1
+    return added
+
+
+def _add_engineering_formula_naming(
+    *,
+    algorithms: list[Any],
+    formulas: list[Any],
+    candidates: dict[str, list[Any]],
+) -> int:
+    """FormulaReconstructor template match tabanli naming.
+
+    FormulaReconstructor.reconstruct() dedup'lu FormulaInfo listesi doner;
+    bu liste algorithms uzerinden uretildigi icin algoritma -> fonksiyon
+    eslemesini AlgorithmMatch'lerden alip formula template eslesmesi olanlara
+    engineering_formula source verir.
+    """
+    if not formulas:
+        return 0
+    # Hangi algoritma adlari formula match yapti? (lowercase normalize)
+    formula_algos: set[str] = set()
+    for f in formulas:
+        algo_name = getattr(f, "algorithm", "") or ""
+        if algo_name:
+            formula_algos.add(algo_name.strip().lower())
+    if not formula_algos:
+        return 0
+
+    added = 0
+    for m in algorithms:
+        algo = (getattr(m, "name", "") or "").strip().lower()
+        fname = getattr(m, "function_name", "") or ""
+        conf = float(getattr(m, "confidence", 0.0) or 0.0)
+        if not algo or not fname:
+            continue
+        # Formula listesi exact match OR substring match (Reconstructor da
+        # boyle yapar).
+        matched = (
+            algo in formula_algos
+            or any(fa in algo or algo in fa for fa in formula_algos)
+        )
+        if not matched:
+            continue
+        if not _is_unnamed(fname):
+            continue
+        if conf < 0.45:
+            continue
+        hint = _algo_name_to_func_hint(algo)
+        if not hint or len(hint) < 2:
+            continue
+        cand = _make_candidate(
+            name=hint,
+            source="engineering_formula",
+            confidence=min(conf + 0.05, 0.95),  # template match boost
+            reason=f"formula template: {algo}",
+        )
+        candidates.setdefault(fname, []).append(cand)
+        added += 1
+    return added
