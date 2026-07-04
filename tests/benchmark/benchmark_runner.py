@@ -220,6 +220,8 @@ class BenchmarkResult:
             "timestamp": self.timestamp or datetime.now().isoformat(timespec="seconds"),
             "config": self.config_info,
             "ground_truth_source": self.ground_truth_source,
+            # v1.15.5: GT kaynak dağılımı top-level olarak da görünür.
+            "ground_truth_breakdown": dict(self.metrics.ground_truth_breakdown),
             "metrics": self.metrics.to_dict(),
             "per_symbol": [
                 {
@@ -318,12 +320,20 @@ class BenchmarkRunner:
                 symbols dosyalarından adres↔sembol cross-ref için kullanılır.
         """
         sym_map = find_symbol_mapping(workspace_dir) if workspace_dir else {}
-        comparisons = self._compare_maps(ground_truth, naming_map, sym_map)
+        unresolved = self.collect_unresolved_funs(workspace_dir)
+        comparisons = self._compare_maps(
+            ground_truth, naming_map, sym_map, unresolved_funs=unresolved
+        )
         metrics = self.calculator.calculate_metrics(comparisons)
 
         # Bug 3: FUN_ residue oranı raporla.
         flat_nm = self._flatten_naming_map(naming_map)
         metrics.fun_residue_pct = self.calculator.calculate_fun_residue(flat_nm)
+
+        # v1.15.5: GT kaynak dağılımı.
+        metrics.ground_truth_breakdown = self._build_gt_breakdown(
+            ground_truth, unresolved
+        )
 
         result = BenchmarkResult(
             metrics=metrics,
@@ -369,11 +379,17 @@ class BenchmarkRunner:
 
         naming_map = self._load_naming_map(naming_map_json)
         sym_map = find_symbol_mapping(workspace_dir) if workspace_dir else {}
+        unresolved = self.collect_unresolved_funs(workspace_dir)
 
-        comparisons = self._compare_maps(ground_truth, naming_map, sym_map)
+        comparisons = self._compare_maps(
+            ground_truth, naming_map, sym_map, unresolved_funs=unresolved
+        )
         metrics = self.calculator.calculate_metrics(comparisons)
         metrics.fun_residue_pct = self.calculator.calculate_fun_residue(
             self._flatten_naming_map(naming_map)
+        )
+        metrics.ground_truth_breakdown = self._build_gt_breakdown(
+            ground_truth, unresolved
         )
 
         result = BenchmarkResult(
@@ -402,6 +418,7 @@ class BenchmarkRunner:
         debug_binary: Path,
         naming_map_json: Path,
         config_info: Optional[dict] = None,
+        workspace_dir: Optional[Path] = None,
     ) -> BenchmarkResult:
         """Run benchmark by extracting ground truth from a debug binary with nm.
 
@@ -409,6 +426,8 @@ class BenchmarkRunner:
             debug_binary: Binary compiled with debug symbols (not stripped).
             naming_map_json: Karadul's naming_map.json output.
             config_info: Optional metadata.
+            workspace_dir: Varsa Ghidra'nın FUN_xxx bıraktığı fonksiyonları
+                (asıl challenge) GT'ye katmak için kullanılır.
 
         The binary must have been compiled with -g (debug symbols).
         We use `nm` to extract symbol names and map them to Ghidra-style
@@ -422,11 +441,17 @@ class BenchmarkRunner:
             )
 
         naming_map = self._load_naming_map(naming_map_json)
+        unresolved = self.collect_unresolved_funs(workspace_dir)
 
-        comparisons = self._compare_maps(ground_truth, naming_map)
+        comparisons = self._compare_maps(
+            ground_truth, naming_map, unresolved_funs=unresolved
+        )
         metrics = self.calculator.calculate_metrics(comparisons)
         metrics.fun_residue_pct = self.calculator.calculate_fun_residue(
             self._flatten_naming_map(naming_map)
+        )
+        metrics.ground_truth_breakdown = self._build_gt_breakdown(
+            ground_truth, unresolved
         )
 
         result = BenchmarkResult(
@@ -454,11 +479,34 @@ class BenchmarkRunner:
     # Internals
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _build_gt_breakdown(
+        ground_truth: dict[str, str],
+        unresolved_funs: Optional[set[str]],
+    ) -> dict[str, int]:
+        """v1.15.5: GT kaynak dağılımını hesapla.
+
+        from_nm     = GT anahtar sayısı (nm export'ları).
+        from_fun_xxx = GT'de OLMAYAN unresolved FUN_xxx sayısı (çift sayma yok).
+        total       = from_nm + from_fun_xxx.
+        """
+        from_nm = len(ground_truth)
+        gt_keys = set(ground_truth.keys())
+        from_fun_xxx = 0
+        if unresolved_funs:
+            from_fun_xxx = sum(1 for f in unresolved_funs if f not in gt_keys)
+        return {
+            "from_nm": from_nm,
+            "from_fun_xxx": from_fun_xxx,
+            "total": from_nm + from_fun_xxx,
+        }
+
     def _compare_maps(
         self,
         ground_truth: dict[str, str],
         naming_map: dict,
         symbol_mapping: Optional[dict[str, str]] = None,
+        unresolved_funs: Optional[set[str]] = None,
     ) -> list[NamingResult]:
         """Compare ground truth against naming map, symbol by symbol.
 
@@ -476,6 +524,15 @@ class BenchmarkRunner:
           3. Ground truth değeri (sembol adı) naming_map anahtarı olabilir mi
              diye kontrol et.
           4. Hiçbiri yoksa → missing.
+
+        v1.15.5 SAHTE F1 FIX: `unresolved_funs` — Ghidra'nın FUN_xxx olarak
+        bıraktığı (isimlendiremediği) fonksiyonlar. Asıl challenge bunlar.
+        nm GT döngüsünden sonra her FUN_xxx için:
+          - GT'de zaten varsa ATLA (çift sayma yok).
+          - Aksi halde flat_nm'den karadul'un verdiği ismi al:
+              * isim yok veya hâlâ placeholder → "missing" (rename başarısız)
+              * anlamlı isim → "partial" (score 0.5; GT bilinmiyor, exact
+                diyemeyiz ama karadul bir şey üretti).
         """
         comparisons: list[NamingResult] = []
         flat_nm = self._flatten_naming_map(naming_map)
@@ -528,7 +585,66 @@ class BenchmarkRunner:
             result = self.calculator.compare_name(original_name, recovered)
             comparisons.append(result)
 
+        # v1.15.5: Ghidra'nın FUN_xxx bıraktığı asıl challenge fonksiyonları.
+        if unresolved_funs:
+            gt_keys = set(ground_truth.keys())
+            for fun in sorted(unresolved_funs):
+                # GT'de zaten ölçüldüyse çift sayma.
+                if fun in gt_keys:
+                    continue
+                recovered = flat_nm.get(fun)
+                if recovered is None or self.calculator._is_unnamed(recovered):
+                    # Karadul rename etmedi ya da yine placeholder verdi.
+                    comparisons.append(NamingResult(
+                        original=fun,
+                        recovered=recovered if recovered is not None else fun,
+                        score=0.0,
+                        match_type="missing",
+                        source="",
+                    ))
+                else:
+                    # Karadul anlamlı isim verdi; GT bilinmiyor → partial.
+                    comparisons.append(NamingResult(
+                        original=fun,
+                        recovered=recovered,
+                        score=0.5,
+                        match_type="partial",
+                        source="",
+                    ))
+
         return comparisons
+
+    @staticmethod
+    def collect_unresolved_funs(workspace_dir: Optional[Path]) -> set[str]:
+        """v1.15.5: Workspace'den Ghidra'nın FUN_xxx bıraktığı isimleri topla.
+
+        `<ws>/static/ghidra_functions.json` içindeki `functions[].name`
+        alanlarından SADECE `FUN_` ile başlayanları (yani Ghidra'nın
+        isimlendiremediği asıl challenge fonksiyonlarını) döndürür.
+
+        Args:
+            workspace_dir: Karadul workspace kökü. None ise boş set.
+
+        Returns:
+            `{"FUN_100000460", "FUN_100000600", ...}` — ham FUN_xxx isim seti.
+            Dosya yoksa / okunamazsa boş set.
+        """
+        if not workspace_dir:
+            return set()
+        gf_path = Path(workspace_dir) / "static" / "ghidra_functions.json"
+        if not gf_path.is_file():
+            return set()
+        try:
+            data = json.loads(gf_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            logger.warning("ghidra_functions.json okunamadı: %s", exc)
+            return set()
+        funs: set[str] = set()
+        for fn in data.get("functions", []):
+            name = fn.get("name") or ""
+            if name.startswith("FUN_"):
+                funs.add(name)
+        return funs
 
     @staticmethod
     def _extract_symbols_nm(binary_path: Path) -> dict[str, str]:
@@ -568,7 +684,15 @@ class BenchmarkRunner:
         nm_pattern = re.compile(r"^([0-9a-fA-F]+)\s+[TtDdBb]\s+_?(\w+)$", re.MULTILINE)
 
         for match in nm_pattern.finditer(result.stdout):
-            addr = match.group(1).lower().zfill(8)
+            # v1.21 Mach-O fix: macOS `nm` adresleri 16-hane zero-padded döner
+            # (örn. arm64 base 0x100000000 → "0000000100000540"). Ghidra ise
+            # leading-zero'suz kısa hex kullanır ("100000540"). İki taraf aynı
+            # FUN_<hex> anahtarına normalize edilmeli; aksi halde nm GT anahtarı
+            # `FUN_0000000100000540`, naming_map ise `FUN_100000540` üretir ve
+            # KESİŞİM BOŞ kalır → F1=0 (sahte sıfır-recovery). `_addr_to_fun_key`
+            # ve ground_truth_generator zaten `lstrip("0").zfill(8)` kullanıyor;
+            # burada da aynı kuralı uyguluyoruz.
+            addr = match.group(1).lower().lstrip("0").zfill(8) or "0".zfill(8)
             name = match.group(2)
 
             # Skip compiler/runtime internals

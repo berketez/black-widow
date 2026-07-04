@@ -426,7 +426,10 @@ class LMDBSignatureDB:
             readahead=False,
             # sync ve metasync readonly'da anlamsiz; yazma sirasinda
             # build script'te True bırakiyoruz (crash durumunda fsync guvenli).
-            lock=True,
+            # readonly modda lock=False: lock.mdb'ye yazma yok -> LMDB'nin
+            # salt-okunur (:ro) mount edilmesine izin verir (Docker olcum
+            # container'i, v1.20.5). Yazma modunda lock zorunlu.
+            lock=not readonly,
         )
 
         # Named DB handle'lari

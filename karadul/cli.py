@@ -220,6 +220,18 @@ def _get_available_stages(requested: list[str]) -> list:
 @click.pass_context
 def main(ctx: click.Context, verbose: bool) -> None:
     """Black Widow (Karadul) v3 -- Reverse Engineering Suite"""
+    # v1.20.5: multiprocessing varsayilanini 'spawn' yap (force=True). Linux
+    # varsayilani 'fork'; PyGhidra JVM (cok-thread'li) ayaktayken fork() child
+    # process'e kilitli mutex'leri (JVM/LMDB/logging) kopyalayip futex deadlock'a
+    # yol aciyor. macOS zaten 'spawn' kullandigi icin bu hic gorulmedi -> kod
+    # spawn-uyumlu (Mac'te kanitli). Bu tek satir tum ProcessPool'lari (c_namer,
+    # c_type_recoverer, engineering/*, comment generator...) Linux'ta da guvenli kilar.
+    import multiprocessing
+    try:
+        multiprocessing.set_start_method("spawn", force=True)
+    except RuntimeError:
+        pass  # context zaten baslamis -> sorun degil
+
     # v1.7.4: SIGUSR1 graceful handling -- status dump instead of termination
     def _sigusr1_handler(signum: int, frame) -> None:  # noqa: ANN001
         """SIGUSR1 geldiginde pipeline durumunu logla (process olmesin)."""
@@ -246,8 +258,15 @@ def main(ctx: click.Context, verbose: bool) -> None:
     ctx.obj["verbose"] = verbose
 
     if ctx.invoked_subcommand is None:
-        from karadul.hacker_cli import main as hacker_main
-        hacker_main()
+        # Interaktif hacker konsolu yalnızca gerçek bir terminalde açılır.
+        # Non-tty (pipe, CI, test runner) ortamında konsol stdin bekleyip
+        # asılı kalır / nonzero exit verir → banner + yardım göster, exit 0.
+        if sys.stdin.isatty():
+            from karadul.hacker_cli import main as hacker_main
+            hacker_main()
+        else:
+            _print_banner()
+            click.echo(ctx.get_help())
 
 
 # ---------------------------------------------------------------

@@ -27,11 +27,61 @@ import logging
 import re
 import shutil
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+try:
+    # v1.15.5: PATH hijack korumalı tool resolution (varsa).
+    from karadul.core.safe_subprocess import resolve_tool as _resolve_tool
+except Exception:  # pragma: no cover - karadul paketsiz test ortamı
+    _resolve_tool = None  # type: ignore[assignment]
+
 logger = logging.getLogger(__name__)
+
+
+def _find_nm_tool(nm_path: Optional[str] = None) -> tuple[Optional[str], bool]:
+    """Platform-aware nm aracı bul.
+
+    v1.15.5: macOS sistem ``nm`` ``-D`` bayrağını DESTEKLEMEZ
+    ("invalid argument -D"). Coreutils ground truth Linux ELF dynamic
+    sembol seti içindir, dolayısıyla ``-D`` destekleyen bir araç gerekir.
+
+    Arama sırası (mümkünse PATH hijack korumalı resolve_tool ile):
+      - Linux: nm (binutils, -D destekler)
+      - macOS: llvm-nm → gnm (GNU binutils) → objdump
+      - nm_path override edildiyse onu kullan.
+
+    Returns:
+        (tool_path, supports_dash_D). Bulunamazsa (None, False).
+    """
+    def _which(name: str) -> Optional[str]:
+        if _resolve_tool is not None:
+            found = _resolve_tool(name)
+            if found:
+                return found
+        return shutil.which(name)
+
+    if nm_path:
+        # Kullanıcı override etti: -D varsayımı platforma göre.
+        return nm_path, (sys.platform != "darwin")
+
+    if sys.platform == "darwin":
+        # macOS sistem nm -D'yi desteklemez; -D destekleyen alternatifler.
+        for cand in ("llvm-nm", "gnm"):
+            found = _which(cand)
+            if found:
+                return found, True
+        # objdump fallback (-T ile dynamic sembol); -D desteği farklı yolla.
+        objdump = _which("objdump")
+        if objdump:
+            return objdump, False
+        # Son çare: sistem nm (-D olmadan, defined-only).
+        return _which("nm"), False
+
+    # Linux ve diğerleri: binutils nm -D destekler.
+    return _which("nm") or _which("gnm"), True
 
 
 # ---------------------------------------------------------------------------
@@ -275,14 +325,29 @@ def extract_ground_truth(
         FileNotFoundError: nm bulunamazsa.
         RuntimeError: nm cagrisi basarisiz olursa.
     """
-    nm_bin = nm_path or shutil.which("nm") or shutil.which("gnm")
+    # v1.15.5: Platform-aware araç seçimi. macOS sistem nm -D'yi desteklemez;
+    # llvm-nm/gnm/objdump'a düşülür. Linux'ta binutils nm -D kullanılır.
+    nm_bin, supports_dash_d = _find_nm_tool(nm_path)
     if nm_bin is None:
         raise FileNotFoundError(
-            "nm (binutils) bulunamadi. Mac'te 'brew install binutils' "
-            "ile kurun veya nm_path argumani saglayin.",
+            "nm/llvm-nm/objdump (dynamic symbol araci) bulunamadi. Mac'te "
+            "'brew install binutils' ya da Xcode CLT (llvm-nm) gerekir; "
+            "veya nm_path argumani saglayin.",
         )
+
+    tool_name = Path(nm_bin).name
+    if "objdump" in tool_name:
+        # objdump -T: dynamic symbol table (nm -D karsiligi).
+        cmd = [nm_bin, "-T", str(entry.path)]
+    elif supports_dash_d:
+        cmd = [nm_bin, "-D", "--no-demangle", str(entry.path)]
+    else:
+        # -D desteklenmiyor: defined-only (Mach-O / fallback). nm -D yerine
+        # en azindan defined sembolleri al; --no-demangle olmayabilir.
+        cmd = [nm_bin, str(entry.path)]
+
     proc = subprocess.run(
-        [nm_bin, "-D", "--no-demangle", str(entry.path)],
+        cmd,
         capture_output=True,
         text=True,
         check=False,
@@ -290,7 +355,7 @@ def extract_ground_truth(
     )
     if proc.returncode != 0:
         raise RuntimeError(
-            f"nm cagrisi basarisiz ({entry.name}): "
+            f"nm cagrisi basarisiz ({entry.name}, arac={tool_name}): "
             f"rc={proc.returncode}, stderr={proc.stderr.strip()}",
         )
     symbols = parse_nm_dynamic_output(proc.stdout)

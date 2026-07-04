@@ -1,0 +1,18 @@
+# Karadul ölçüm container'ı config override.
+# Mac'teki default path'ler (ghidra_12.0_DEV, /opt/homebrew, otool...) container'da
+# geçersiz. Burada yalnızca ELF ölçümü için kritik path'ler ezilir.
+
+tools:
+  # PyGhidra install dizini bundan türetilir: analyze_headless.parent.parent
+  # => /opt/ghidra (headless.py:187). Container'daki Ghidra 12.1.2 (ARM64 native).
+  ghidra_headless: /opt/ghidra/support/analyzeHeadless
+  ghidra_run: /opt/ghidra/ghidraRun
+
+perf:
+  use_lmdb_sigdb: true
+  # LMDB host'tan :ro mount edilir (readonly => lock=False, lock.mdb yazılmaz).
+  sig_lmdb_path: /root/.karadul/signatures.lmdb
+  # parallel_naming KAPALI: multiprocessing fork + LMDB/lock deadlock yapıyordu
+  # (tüm worker'lar futex_wait'te kilitlendi). Seri naming güvenli; fork/spawn
+  # deadlock'u ayrı bir iş olarak düzeltilecek.
+  parallel_naming: false

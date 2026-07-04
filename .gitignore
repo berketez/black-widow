@@ -56,3 +56,9 @@ vendor/
 .mypy_cache/
 benchmark_mock_*.json
 benchmark_report.json
+
+# Docker ölçüm sprint'i (2026-06-22): sadece altyapı commit edilir
+# Ölçüm çıktıları (1.6 GB reconstructed/ghidra) ve geçici ground-truth binary'leri
+# repo'ya girmez — yeniden üretilebilir, kod güncellenemez.
+docker/measurement/out/
+docker/measurement/calculix/

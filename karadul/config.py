@@ -38,26 +38,71 @@ def _detect_cpu_cores() -> int:
     return max(2, int(total * 0.7))
 
 
+def _read_cgroup_memory_limit_mb() -> Optional[int]:
+    """Container (cgroup) bellek limitini MB olarak oku; yoksa None.
+
+    cgroup v2: ``/sys/fs/cgroup/memory.max``
+    cgroup v1: ``/sys/fs/cgroup/memory/memory.limit_in_bytes``
+
+    ``"max"`` veya cok buyuk deger (limitsiz sentinel) -> None dondurur.
+    """
+    candidates = (
+        "/sys/fs/cgroup/memory.max",                    # cgroup v2
+        "/sys/fs/cgroup/memory/memory.limit_in_bytes",  # cgroup v1
+    )
+    for path in candidates:
+        try:
+            raw = Path(path).read_text().strip()
+        except OSError:
+            continue
+        if raw == "max":
+            return None
+        try:
+            limit_bytes = int(raw)
+        except ValueError:
+            continue
+        # cgroup v1 "limitsiz" cok buyuk bir sentinel deger olarak gelir.
+        if limit_bytes <= 0 or limit_bytes >= (1 << 62):
+            return None
+        return int(limit_bytes / (1024 * 1024))
+    return None
+
+
 def _detect_available_memory_mb() -> int:
-    """Kullanilabilir RAM miktarini MB olarak dondur."""
+    """Kullanilabilir RAM miktarini MB olarak dondur.
+
+    Container icinde cgroup bellek limiti varsa host RAM ile min'i alinir.
+    Aksi halde Ghidra heap (RAM*0.4, config.py) cgroup limitini asip
+    cgroup OOM-kill'e yol acar (Docker olcum container'i, v1.20.5).
+    """
+    host_mb: Optional[int] = None
     try:
         total = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
-        return int(total / (1024 * 1024))
+        host_mb = int(total / (1024 * 1024))
     except (ValueError, OSError, AttributeError):
         pass
-    try:
-        # B21: safe_run + resolve_tool ile LD_PRELOAD/DYLD koruma.
-        from karadul.core.safe_subprocess import resolve_tool, safe_run
-        sysctl_path = resolve_tool("sysctl")
-        if sysctl_path is not None:
-            result = safe_run(
-                [sysctl_path, "-n", "hw.memsize"],
-                capture_output=True, text=True, timeout=5.0,
-            )
-            if result.returncode == 0:
-                return int(result.stdout.strip()) // (1024 * 1024)
-    except Exception:
-        logger.debug("sysctl memsize okunamadi, fallback 8GB kullaniliyor", exc_info=True)
+    if host_mb is None:
+        try:
+            # B21: safe_run + resolve_tool ile LD_PRELOAD/DYLD koruma.
+            from karadul.core.safe_subprocess import resolve_tool, safe_run
+            sysctl_path = resolve_tool("sysctl")
+            if sysctl_path is not None:
+                result = safe_run(
+                    [sysctl_path, "-n", "hw.memsize"],
+                    capture_output=True, text=True, timeout=5.0,
+                )
+                if result.returncode == 0:
+                    host_mb = int(result.stdout.strip()) // (1024 * 1024)
+        except Exception:
+            logger.debug("sysctl memsize okunamadi, fallback kullaniliyor", exc_info=True)
+
+    cgroup_mb = _read_cgroup_memory_limit_mb()
+    if host_mb is not None and cgroup_mb is not None:
+        return min(host_mb, cgroup_mb)
+    if cgroup_mb is not None:
+        return cgroup_mb
+    if host_mb is not None:
+        return host_mb
     return 8192  # fallback: 8GB
 
 
@@ -774,13 +819,10 @@ class Config:
             for k, v in data["binary_reconstruction"].items():
                 if hasattr(cfg.binary_reconstruction, k):
                     setattr(cfg.binary_reconstruction, k, v)
-        if "ml" in data:
-            for k, v in data["ml"].items():
-                if hasattr(cfg.ml, k):
-                    if k == "llm4decompile_model_path":
-                        setattr(cfg.ml, k, Path(v))
-                    else:
-                        setattr(cfg.ml, k, v)
+        # v1.15.5: ölü `ml`/LLM4Decompile YAML bloğu kaldırıldı. Config.ml field'ı
+        # B11'de (LLM-free vizyon, feedback_no_llm.md) silinmişti ama bu yükleyici
+        # bloğu kalmıştı → mypy "Config has no attribute ml" + YAML'da "ml" anahtarı
+        # gelirse AttributeError. Karadul LLM kullanmaz, bu blok artık yok.
         if "name_merger" in data:
             for k, v in data["name_merger"].items():
                 if hasattr(cfg.name_merger, k):

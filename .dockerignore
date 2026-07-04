@@ -1,0 +1,15 @@
+# Whitelist: proje kökü 8.1 GB (workspaces/ vb.). Sadece imaj için gerekli olanı gönder.
+*
+!karadul
+!tests
+!pyproject.toml
+!README.md
+!docker
+
+# Dahil edilenlerin içindeki gereksizler
+**/__pycache__
+**/*.pyc
+**/.mypy_cache
+**/.pytest_cache
+**/*.egg-info
+**/*.mdb

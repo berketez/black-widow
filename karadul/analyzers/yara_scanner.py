@@ -497,7 +497,10 @@ def _builtin_rules() -> list[BuiltinRule]:
 
     rules.append(BuiltinRule(
         name="String_Encryption_XOR",
-        tags=["obfuscation", "xor"],
+        # NOT: 'xor' YARA reserved keyword'u oldugu icin tag olarak
+        # kullanilamaz (compile 377. satirda "unexpected <xor>" patliyordu).
+        # 'xorobf' (XOR obfuscation) ile degistirildi -- v1.21 bug fix.
+        tags=["obfuscation", "xorobf"],
         meta={"description": "XOR-based string encryption pattern", "severity": "medium"},
         byte_patterns=[
             # xor byte ptr [ecx+edx], al ; inc edx ; cmp edx, SIZE ; jl loop
@@ -620,6 +623,21 @@ def _builtin_rules() -> list[BuiltinRule]:
 # YARA identifier syntax: [A-Za-z_][A-Za-z0-9_]* (en fazla 128 karakter)
 _YARA_IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,127}$")
 
+# YARA dilinde ayrilmis kelimeler (libyara grammar). Bunlar rule adi VEYA
+# tag olarak kullanilamaz; karakter setine uysalar bile compiler
+# "unexpected <keyword>" syntax hatasi verir. v1.21 bug fix: 'xor' tag'i
+# String_Encryption_XOR kuralinda compile'i 377. satirda patlatiyordu.
+_YARA_RESERVED_KEYWORDS = frozenset({
+    "all", "and", "any", "ascii", "at", "base64", "base64wide", "condition",
+    "contains", "defined", "endswith", "entrypoint", "filesize", "for",
+    "fullword", "global", "icontains", "iendswith", "iequals", "import", "in",
+    "include", "int16", "int16be", "int32", "int32be", "int8", "int8be",
+    "istartswith", "matches", "meta", "nocase", "none", "not", "of", "or",
+    "private", "rule", "startswith", "strings", "them", "true", "false",
+    "uint16", "uint16be", "uint32", "uint32be", "uint8", "uint8be", "wide",
+    "xor",
+})
+
 
 def _validate_yara_identifier(name: str, kind: str = "identifier") -> str:
     """v1.10.0 Fix Sprint MED-2: YARA rule name / tag identifier dogrulama.
@@ -628,11 +646,22 @@ def _validate_yara_identifier(name: str, kind: str = "identifier") -> str:
     onlemek icin ValueError atar. _rule_to_yara_source icinde cagrildigi
     yer: rule.name ve rule.tags. add_rule kullanan kodun bu kisiti bilmesi
     gerekir.
+
+    v1.21 bug fix: Karakter seti regex'ine ek olarak YARA reserved keyword
+    kontrolu eklendi. 'xor', 'all', 'and' gibi kelimeler regex'ten gecer ama
+    YARA compiler bunlari rule adi/tag olarak reddeder (syntax error). Boyle
+    bir kelime tespit edilirse ValueError atilir -- arayan kod isim/tag'i
+    duzeltmelidir (ornegin 'xor' -> 'xorobf').
     """
     if not isinstance(name, str) or not _YARA_IDENT_RE.match(name):
         raise ValueError(
             f"Gecersiz YARA {kind}: {name!r} "
             f"(izinli: ^[A-Za-z_][A-Za-z0-9_]{{0,127}}$)"
+        )
+    if name.lower() in _YARA_RESERVED_KEYWORDS:
+        raise ValueError(
+            f"Gecersiz YARA {kind}: {name!r} YARA reserved keyword "
+            f"(rule adi/tag olarak kullanilamaz)"
         )
     return name
 

@@ -16,6 +16,17 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
+def _nan_or_round(value: Optional[float], ndigits: int) -> object:
+    """v1.15.5: None ise 'NaN' string'i, değilse yuvarlanmış sayı döndür.
+
+    JSON çıktısında ölçülemeyen (challenge'ı olmayan) metrikleri sahte 0.0
+    yerine açıkça 'NaN' olarak işaretler. None üzerinde round() çağırmaz.
+    """
+    if value is None:
+        return "NaN"
+    return round(value, ndigits)
+
+
 @dataclass
 class NamingResult:
     """Result of comparing recovered name vs original."""
@@ -68,11 +79,17 @@ class BenchmarkMetrics:
 
     # v1.11.0 Dalga 5: "renamed_*" — challenge'a maruz kalan sembollerin
     # (preserved hariç) F1/accuracy skoru. Asıl başarı kriteri bu.
+    #
+    # v1.15.5 SAHTE F1 FIX: renamed_total=0 olduğunda (yani challenge hiç yok,
+    # hepsi preserved) eski kod global F1'i buraya KOPYALIYORDU — bu YALAN
+    # ÖLÇÜMDÜ. Artık renamed_total=0 ise dördü de None (NaN). JSON'da "NaN"
+    # string'i yazılır, summary'de "NaN" görünür. None = "ölçülemez", 0.0 =
+    # "ölçüldü ve sıfır" (gerçek başarısızlık) ayrımı korunur.
     renamed_total: int = 0
-    renamed_precision: float = 0.0
-    renamed_recall: float = 0.0
-    renamed_f1: float = 0.0
-    renamed_accuracy: float = 0.0
+    renamed_precision: Optional[float] = None
+    renamed_recall: Optional[float] = None
+    renamed_f1: Optional[float] = None
+    renamed_accuracy: Optional[float] = None
 
     # v1.10.0: Kaynak bazli kirilim -- source -> metric
     per_source_precision: dict[str, float] = field(default_factory=dict)
@@ -94,6 +111,14 @@ class BenchmarkMetrics:
     # tip tahminlerinin DWARF ground truth'a karşı P/R değerleri.
     type_precision: float = 0.0
     type_recall: float = 0.0
+
+    # v1.15.5: Ground truth'un kaynak dağılımı. Asıl challenge olan FUN_xxx
+    # fonksiyonlarının (Ghidra'nın isimlendiremediği) ölçüme girdiğini
+    # şeffaf gösterir.
+    #   from_nm     — nm export'larından gelen GT anahtarı sayısı
+    #   from_fun_xxx — GT'de OLMAYAN ama Ghidra'da FUN_xxx kalan fonksiyon sayısı
+    #   total       — toplam (from_nm + from_fun_xxx)
+    ground_truth_breakdown: dict = field(default_factory=dict)
 
     @property
     def accuracy(self) -> float:
@@ -162,12 +187,16 @@ class BenchmarkMetrics:
             "type_precision": round(self.type_precision, 4),
             "type_recall": round(self.type_recall, 4),
             # v1.11.0 Dalga 5: preserved/renamed ayrımı
+            # v1.15.5: renamed_* None ise "NaN" string'i (round çağırma).
+            # None = ölçülemez (challenge yok), sayı = gerçek ölçüm.
             "preserved_names": self.preserved_names,
             "renamed_total": self.renamed_total,
-            "renamed_precision": round(self.renamed_precision, 4),
-            "renamed_recall": round(self.renamed_recall, 4),
-            "renamed_f1": round(self.renamed_f1, 4),
-            "renamed_accuracy": round(self.renamed_accuracy, 2),
+            "renamed_precision": _nan_or_round(self.renamed_precision, 4),
+            "renamed_recall": _nan_or_round(self.renamed_recall, 4),
+            "renamed_f1": _nan_or_round(self.renamed_f1, 4),
+            "renamed_accuracy": _nan_or_round(self.renamed_accuracy, 2),
+            # v1.15.5: GT kaynak dağılımı
+            "ground_truth_breakdown": dict(self.ground_truth_breakdown),
         }
 
     def summary(self) -> str:
@@ -175,10 +204,17 @@ class BenchmarkMetrics:
 
         v1.11.0 Dalga 5: preserved sayısı ayrı alanda görünür; accuracy ve
         recovery preserved hariç hesaplandığı için yanıltıcı değil.
+
+        v1.15.5: renamed_f1 (asıl başarı kriteri) eklendi. None ise "NaN"
+        görünür — challenge'ı olmayan (hepsi preserved) koşu için sahte F1
+        gösterilmez.
         """
+        renamed_f1_str = (
+            "NaN" if self.renamed_f1 is None else f"{self.renamed_f1:.3f}"
+        )
         return (
             f"accuracy={self.accuracy:.1f}% recovery={self.recovery_rate:.1f}% "
-            f"f1={self.f1:.3f} "
+            f"f1={self.f1:.3f} renamed_f1={renamed_f1_str} "
             f"(exact={self.exact_matches} semantic={self.semantic_matches} "
             f"partial={self.partial_matches} wrong={self.wrong_names} "
             f"missing={self.missing_names} preserved={self.preserved_names} "
@@ -356,16 +392,22 @@ class AccuracyCalculator:
             fn=metrics.missing_names,
         )
 
-        # v1.11.0 Dalga 5: renamed_* — challenge'a maruz kalan (preserved hariç)
-        # sembollerin F1/accuracy'si. Mevcut exact/semantic/partial/wrong/missing
-        # sayaçları zaten preserved hariç olduğu için P/R/F1 global ile birebir
-        # aynıdır. Ayrımın asıl değeri renamed_accuracy'de: denominator olarak
-        # renamed_total kullanır, gerçek rename başarısını gösterir.
+        # v1.11.0 Dalga 5 + v1.15.5 SAHTE F1 FIX:
+        # renamed_* — challenge'a maruz kalan (preserved hariç) sembollerin
+        # F1/accuracy'si. Mevcut exact/semantic/partial/wrong/missing sayaçları
+        # zaten preserved hariç olduğu için, renamed_total>0 iken P/R/F1 global
+        # ile birebir aynıdır.
+        #
+        # KRİTİK: renamed_total == 0 ise (yani HER sembol preserved, hiç
+        # challenge yok) eski kod global F1'i buraya kopyalıyordu. Bu YALAN
+        # ÖLÇÜMDÜ — "challenge yok" durumunda F1=1.0 (preserved'ler exact
+        # sanılınca) gibi sahte değerler üretiyordu. Artık dördü de None:
+        # "ölçülemez" anlamına gelir, JSON'da "NaN" yazılır.
         metrics.renamed_total = metrics.total_symbols - metrics.preserved_names
-        metrics.renamed_precision = metrics.precision
-        metrics.renamed_recall = metrics.recall
-        metrics.renamed_f1 = metrics.f1
         if metrics.renamed_total > 0:
+            metrics.renamed_precision = metrics.precision
+            metrics.renamed_recall = metrics.recall
+            metrics.renamed_f1 = metrics.f1
             score = (
                 metrics.exact_matches * 1.0
                 + metrics.semantic_matches * 0.8
@@ -373,7 +415,11 @@ class AccuracyCalculator:
             )
             metrics.renamed_accuracy = (score / metrics.renamed_total) * 100
         else:
-            metrics.renamed_accuracy = 0.0
+            # Challenge yok → ölçüm yapılamaz. Global kopyalama YASAK.
+            metrics.renamed_precision = None
+            metrics.renamed_recall = None
+            metrics.renamed_f1 = None
+            metrics.renamed_accuracy = None
 
         # Per-source kirilim
         per_src = self.compute_per_source(comparisons)
@@ -427,6 +473,40 @@ class AccuracyCalculator:
             if self._is_unnamed(new_name):
                 residue += 1
         return (residue / total) * 100.0 if total else 0.0
+
+    def calculate_fun_residue_from_ghidra(
+        self,
+        ghidra_names: list[str],
+        naming_map: dict[str, str],
+    ) -> float:
+        """v1.15.5: Ghidra fonksiyon LİSTESİ üzerinden FUN_xxx artığını ölç.
+
+        Eski `calculate_fun_residue` yalnız naming_map'in DEĞERLERİNE bakıyordu;
+        karadul'un hiç dokunmadığı (naming_map'te key bile olmayan) FUN_xxx
+        fonksiyonları sayılmıyordu — asıl challenge buradaydı. Bu metot
+        Ghidra'nın listelediği TÜM fonksiyon isimleri üzerinden hesaplar:
+
+        Her ghidra ismi `g` için karadul'un son verdiği isim:
+            final = naming_map.get(g, g)   # rename yoksa g'nin kendisi kalır
+        `final` hâlâ placeholder (FUN_/sub_/DAT_/...) ise residue sayılır.
+
+        Args:
+            ghidra_names: Ghidra'nın fonksiyon isimleri (ör: ["_main", "FUN_460"]).
+                Zaten anlamlı (_main gibi) isimler residue DEĞİL ama
+                denominator'da kalır.
+            naming_map: Düz `{ghidra_isim: yeni_isim}` haritası.
+
+        Returns:
+            0.0 - 100.0 aralığında yüzde. Boş liste → 0.0. Düşük = iyi.
+        """
+        if not ghidra_names:
+            return 0.0
+        residue = 0
+        for g in ghidra_names:
+            final = naming_map.get(g, g)
+            if self._is_unnamed(final):
+                residue += 1
+        return (residue / len(ghidra_names)) * 100.0
 
     def calculate_type_precision_recall(
         self,

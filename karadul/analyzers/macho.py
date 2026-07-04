@@ -206,6 +206,13 @@ class MachOAnalyzer(BaseAnalyzer):
             TargetType.BUN_BINARY,
         )
 
+        # v1.21 bug fix: dylibs ELF/PE icin (is_macho == False) hic atanmadan
+        # asagidaki Binary Intelligence blogunda (satir ~319) kullaniliyordu ->
+        # UnboundLocalError ("cannot access local variable 'dylibs'"). Her yolda
+        # tanimli olmasi icin bastan None'a init et. Mach-O yolunda gercek deger
+        # _run_otool_libs ile uzerine yazilir (mevcut davranis korunur).
+        dylibs: dict[str, Any] | None = None
+
         # 2. otool -L: dynamic libraries (Mach-O only)
         if is_macho:
             dylibs = self._run_otool_libs(binary_path)

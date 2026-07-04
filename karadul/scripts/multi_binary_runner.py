@@ -123,9 +123,15 @@ def run_one(binary: Path, workspace_dir: Path, timeout: int = 600) -> BinaryResu
                     result.precision = bench_result.metrics.precision
                     result.recall = bench_result.metrics.recall
             except Exception as exc:
-                # F1 ölçümü opsiyonel, fail olsun karadul çalıştı sayalım
-                logger_local = None
-                pass
+                # v1.15.5: F1 ölçümü başarısızsa SESSİZCE yutup "başarılı"
+                # raporlamak YASAK. Hatayı result.error'a yaz + stderr'e uyar.
+                # karadul'un kendisi çalıştı (result.success=True) ama F1
+                # ölçülemedi — bu durum şeffaf raporlanmalı.
+                result.error = f"F1 ölçülemedi: {exc}"
+                print(
+                    f"    UYARI: {binary.name} F1 ölçülemedi: {exc}",
+                    flush=True, file=sys.stderr,
+                )
 
         # Workspace bulup artifact'leri say
         binary_ws = workspace_dir / "workspaces" / binary.name

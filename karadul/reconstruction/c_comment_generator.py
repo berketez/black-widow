@@ -1057,56 +1057,35 @@ class CCommentGenerator:
                 errors=errors or ["No C files found in decompiled directory"],
             )
 
-        from concurrent.futures import (
-            BrokenExecutor,
-            ProcessPoolExecutor,
-            as_completed,
-        )
-
-        num_workers = CPU_PERF_CORES
         file_paths = [str(f) for f in c_files]
         logger.info(
-            "C comment generation: %d files (%d processes)",
-            len(file_paths), num_workers,
+            "C comment generation: %d files (seri)",
+            len(file_paths),
         )
 
+        # v1.20.5: Eskiden ProcessPoolExecutor (fork) kullaniliyordu. PyGhidra JVM
+        # (cok-thread'li) ayaktayken Linux'ta fork() diger thread'lerin tuttugu
+        # kilitleri (JVM/LMDB/logging) child'a "ebediyen kilitli" kopyaliyor ->
+        # futex deadlock. macOS varsayilani 'spawn' oldugu icin orada hic gorulmedi.
+        # Comment generation performans-kritik degil ve naming F1'ini ETKILEMEZ;
+        # ayni process'te seri calistirmak fork'u tamamen kaldirir. initializer
+        # paylasilan read-only state'i bir kez kurar (worker fonksiyonu aynen).
         results: list[tuple[str | None, dict[str, int] | None, str | None]] = []
-        with ProcessPoolExecutor(
-            max_workers=num_workers,
-            initializer=_init_comment_worker,
-            initargs=(
-                self,
-                func_meta,
-                string_refs,
-                call_graph,
-                algo_index,
-                cfg_index,
-                formula_index,
-                str(output_dir),
-            ),
-        ) as pool:
-            futs = {
-                pool.submit(_annotate_file_worker, fp): fp
-                for fp in file_paths
-            }
+        _init_comment_worker(
+            self,
+            func_meta,
+            string_refs,
+            call_graph,
+            algo_index,
+            cfg_index,
+            formula_index,
+            str(output_dir),
+        )
+        for fp in file_paths:
             try:
-                for fut in as_completed(futs, timeout=1200):
-                    try:
-                        result = fut.result(timeout=300)
-                    except TimeoutError:
-                        errors.append(f"Comment worker timeout: {futs[fut]}")
-                        continue
-                    except Exception as exc:
-                        errors.append(f"Comment worker error ({futs[fut]}): {exc}")
-                        continue
-                    results.append(result)
-            except TimeoutError:
-                errors.append(
-                    "Comment generation total timeout (1200s) exceeded, "
-                    "some files may not have been processed"
-                )
-            except BrokenExecutor as exc:
-                errors.append(f"ProcessPool crash: {exc}")
+                results.append(_annotate_file_worker(fp))
+            except Exception as exc:
+                errors.append(f"Comment worker error ({fp}): {exc}")
 
         for out_path, file_counters, err in results:
             if err:

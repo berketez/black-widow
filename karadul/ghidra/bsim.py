@@ -320,7 +320,9 @@ class _BSimNativeWrapper:
         from ghidra.features.bsim.query import FunctionDatabase
 
         db_file = self.db_path / f"{name}.mv.db"
-        db_url = f"file:{self.db_path / name}"
+        # BSimServerInfo duz mutlak posix yol bekler; "file:" prefix'i
+        # "Invalid absolute file path: file:/..." hatasina yol acar.
+        db_url = (self.db_path / name).resolve().as_posix()
 
         try:
             server_info = BSimServerInfo(db_url)
@@ -338,7 +340,8 @@ class _BSimNativeWrapper:
         from ghidra.features.bsim.query import BSimServerInfo, FunctionDatabase
         from ghidra.features.bsim.query import GenSignatures
 
-        db_url = f"file:{self.db_path / db_name}"
+        # BSimServerInfo duz mutlak posix yol bekler (file: prefix YOK).
+        db_url = (self.db_path / db_name).resolve().as_posix()
         server_info = BSimServerInfo(db_url)
         database = FunctionDatabase.openDatabase(server_info, False)
 
@@ -377,7 +380,8 @@ class _BSimNativeWrapper:
         """Tek fonksiyon icin benzer fonksiyonlari sorgula."""
         from ghidra.features.bsim.query import BSimServerInfo, FunctionDatabase
 
-        db_url = f"file:{self.db_path / db_name}"
+        # BSimServerInfo duz mutlak posix yol bekler (file: prefix YOK).
+        db_url = (self.db_path / db_name).resolve().as_posix()
         server_info = BSimServerInfo(db_url)
         database = FunctionDatabase.openDatabase(server_info, False)
 

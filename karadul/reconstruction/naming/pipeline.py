@@ -259,28 +259,19 @@ class NamingPipeline:
             len(st_results), time.monotonic() - t2,
         )
 
-        # ---- Layer 3: LLM / Heuristic (kalan moduller) ----
+        # ---- Layer 3: (KALDIRILDI) LLM-tabanli isimlendirme ----
+        # NOT (2026-06-12): LLMNamer B11'de kaldirildi (feedback_no_llm.md).
+        # Karadul deterministik/LLM-siz vizyon geregi LLM kullanmaz; eski
+        # self.llm.name_modules(...) cagrisi olu koddu (self.llm hic set
+        # edilmiyordu, self.skip_llm her zaman True). Kalan moduller bilerek
+        # isimsiz birakilir (Layer 4 conflict resolution + apply() "unnamed/"
+        # altina kopyalar).
         remaining_ids = all_modules - named
-        if remaining_ids and not self.skip_llm:
-            t3 = time.monotonic()
-            remaining = []
-            for mid in sorted(remaining_ids):
-                js_file = modules_dir / f"{mid}.js"
-                if js_file.exists():
-                    try:
-                        content = js_file.read_text(errors="replace")
-                        remaining.append((mid, content))
-                    except Exception:
-                        logger.debug("Dosya okuma basarisiz, atlaniyor", exc_info=True)
-
-            if remaining:
-                llm_results = self.llm.name_modules(remaining)
-                manifest.add_results(llm_results, "llm_assisted")
-                named.update(r.module_id for r in llm_results)
-                logger.info(
-                    "Layer 3 (llm/heuristic): %d isimlendirildi (%.1fs)",
-                    len(llm_results), time.monotonic() - t3,
-                )
+        if remaining_ids:
+            logger.info(
+                "Layer 3 atlandi (LLM devre disi): %d modul isimsiz birakildi",
+                len(remaining_ids),
+            )
 
         # ---- Layer 4: Conflict Resolution ----
         conflicts = manifest.resolve_conflicts()

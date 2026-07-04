@@ -270,7 +270,9 @@ def _step_test_db_creation(result: BSimNativeProbeResult) -> bool:
     try:
         with tempfile.TemporaryDirectory(prefix="karadul_bsim_probe_") as tmp:
             db_file = Path(tmp) / "probe.h2.db"
-            url = f"file:{db_file.with_suffix('').as_posix()}"
+            # BSimServerInfo duz mutlak posix yol bekler; "file:" prefix'i
+            # "Invalid absolute file path: file:/..." hatasina yol acar.
+            url = db_file.with_suffix("").resolve().as_posix()
             try:
                 _ = BSimServerInfo(url)
                 result.test_db_creation = True

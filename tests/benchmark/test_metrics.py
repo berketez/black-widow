@@ -379,6 +379,8 @@ class TestBenchmarkMetrics:
             "preserved_names", "renamed_total",
             "renamed_precision", "renamed_recall", "renamed_f1",
             "renamed_accuracy",
+            # v1.15.5: ground-truth kaynak dağılımı (from_nm / from_fun_xxx)
+            "ground_truth_breakdown",
         }
         assert set(d.keys()) == expected_keys
 
@@ -815,7 +817,9 @@ class TestPreservedCategory:
         assert m.preserved_names == 2
         assert m.accuracy == 0.0
         assert m.renamed_total == 0
-        assert m.renamed_accuracy == 0.0
+        # v1.15.5: renamed_total=0 iken renamed_* = None (global kopyalama yasak,
+        # sahte ölçüm engeli). Eski "== 0.0" davranışı YALAN ÖLÇÜMÜN parçasıydı.
+        assert m.renamed_accuracy is None
         assert m.f1 == 0.0
 
     def test_backward_compat_no_preserved(self):

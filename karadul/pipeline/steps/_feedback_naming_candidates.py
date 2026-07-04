@@ -143,28 +143,33 @@ def _add_dwarf(
         stats["dwarf_naming_status"] = "no-extractor"
         return
     try:
-        extractor = DwarfExtractor()
-        result = extractor.extract(binary_path)
+        # DwarfExtractor.__init__(binary_path, timeout=...) — constructor
+        # binary_path ister; cikarma extract_functions() ile yapilir.
+        extractor = DwarfExtractor(binary_path)
+        funcs = extractor.extract_functions()
     except Exception as exc:
         logger.debug("DWARF extract basarisiz: %s", exc, exc_info=True)
         stats["dwarf_naming_status"] = "extract-error"
         return
-    funcs = getattr(result, "functions", None) or []
     if not funcs:
         stats["dwarf_naming_status"] = "no-debug-info"
         return
     added = 0
     for fn in funcs:
+        # DwarfFunction alanlari: name, address (int), source_file, line_number.
         name = getattr(fn, "name", None)
         addr = getattr(fn, "address", None)
-        if not name or addr is None:
+        if not name or not addr:
             continue
         key = _addr_to_fun_key(addr)
         if not key:
             continue
         cand = _make_candidate(
             name=name, source="dwarf", confidence=0.95,
-            reason=f"DWARF .debug_info ({getattr(fn,'file','?')}:{getattr(fn,'line','?')})",
+            reason=(
+                f"DWARF .debug_info "
+                f"({getattr(fn, 'source_file', '?')}:{getattr(fn, 'line_number', '?')})"
+            ),
         )
         candidates.setdefault(key, []).append(cand)
         added += 1
@@ -178,11 +183,11 @@ def _extract_binary_symbols(binary_path: Path) -> list[tuple[str, int]]:
         from karadul.core.safe_subprocess import resolve_tool, safe_run
     except ImportError:
         try:
-            from karadul.core.safe_subprocess import safe_run  # type: ignore[no-redef]
+            from karadul.core.safe_subprocess import safe_run
             resolve_tool = None  # type: ignore[assignment]
         except ImportError:
             return []
-    nm_path = resolve_tool("nm") if resolve_tool else "nm"
+    nm_path = resolve_tool("nm") if resolve_tool is not None else "nm"
     if nm_path is None:
         return []
     try:
@@ -214,7 +219,9 @@ def _add_rust_demangler(
 ) -> None:
     """B18: Rust mangled isimleri demangle et."""
     try:
-        from karadul.analyzers.rust_demangler import RustDemangler
+        # rust_demangler modul-seviye demangle(symbol) -> str | None sunar;
+        # RustDemangler sinifi YOK.
+        from karadul.analyzers.rust_demangler import demangle as rust_demangle
     except ImportError:
         stats["rust_demangler_status"] = "no-module"
         return
@@ -222,13 +229,12 @@ def _add_rust_demangler(
     if not syms:
         stats["rust_demangler_status"] = "no-symbols"
         return
-    demangler = RustDemangler()
     added = 0
     for name, addr in syms:
         if not (name.startswith("_ZN") or name.startswith("_R") or name.startswith("__ZN")):
             continue
         try:
-            demangled = demangler.demangle(name)
+            demangled = rust_demangle(name)
         except Exception:
             continue
         if not demangled or demangled == name:
@@ -252,7 +258,12 @@ def _add_go_demangler(
 ) -> None:
     """B18: Go mangled isimleri demangle et."""
     try:
-        from karadul.analyzers.go_demangler import GoDemangler
+        # go_demangler modul-seviye is_go_symbol(s) -> bool ve
+        # demangle(s) -> str | None sunar; GoDemangler sinifi YOK.
+        from karadul.analyzers.go_demangler import (
+            demangle as go_demangle,
+            is_go_symbol,
+        )
     except ImportError:
         stats["go_demangler_status"] = "no-module"
         return
@@ -260,13 +271,12 @@ def _add_go_demangler(
     if not syms:
         stats["go_demangler_status"] = "no-symbols"
         return
-    demangler = GoDemangler()
     added = 0
     for name, addr in syms:
         try:
-            if not demangler.is_go_symbol(name):
+            if not is_go_symbol(name):
                 continue
-            demangled = demangler.demangle(name)
+            demangled = go_demangle(name)
         except Exception:
             continue
         if not demangled or demangled == name:
