@@ -4332,6 +4332,14 @@ class ReconstructionStage(Stage):
             # aktar. Phase 3 runner'i bunlarin uzerine ek artifact yazar.
             _seed: dict[str, Any] = {
                 "decompiled_dir": decompiled_dir,
+                # inline_detection feedback_loop/struct_recovery sonrasi nihai
+                # decompiled dizini "final_decompiled_dir" key'i altinda bekler
+                # (inline_detection.py:31, v1.10.0 H5+H6). Buradaki local
+                # `decompiled_dir` zaten struct_recovery_decompiled_dir'e (yoksa
+                # final_decompiled_dir'e) cozumlenmis nihai dizin; ayni degeri
+                # bu key altinda da sunmazsak Phase 3 runner'i eksik-girdi ile
+                # patlar (use_step_registry=True regresyonu).
+                "final_decompiled_dir": decompiled_dir,
                 # semantic_naming -> flow_simplify -> comment_generation zinciri
                 # decompiled_dir'i yeniden turev eder, ama baslangic kaynagini
                 # struct_recovery ciktisindan alir. Dolayi ile bu key adi
