@@ -65,6 +65,12 @@ class BenchmarkMetrics:
     # karadul için challenge değildir — binary'den isim doğrudan okundu.
     # F1/accuracy hesabında TP sayılmaz, ayrı raporlanır.
     preserved_names: int = 0
+    # BUG #4: "unverified" = Ghidra'nın FUN_xxx bıraktığı (ground truth'u OLMAYAN)
+    # bir fonksiyona karadul anlamlı isim verdi ama doğru mu yanlış mı olduğu
+    # DOĞRULANAMIYOR. TP de FP de FN de değildir; precision/recall/accuracy'den
+    # tamamen hariç tutulur (ayrı "isimlendirildi ama doğrulanamadı" sayacı).
+    # confusion_matrix'te "unverified" olarak görünür.
+    unverified_names: int = 0
 
     # v1.10.0: F1 / precision / recall — v1.11.0 Dalga 5'te preserved hariç.
     # Tanimlar:
@@ -132,7 +138,7 @@ class BenchmarkMetrics:
         strip gibi durumlarda F1=1.0 yanıltıcısını engellemek.
         preserved_names=0 iken davranış eski sürümle birebir aynıdır.
         """
-        denom = self.total_symbols - self.preserved_names
+        denom = self.total_symbols - self.preserved_names - self.unverified_names
         if denom <= 0:
             return 0.0
         score = (
@@ -150,7 +156,7 @@ class BenchmarkMetrics:
         gerçek kurtarma başarısını ölçmek için challenge'a maruz kalan
         (stripped) semboller üzerinden yüzde hesaplanır.
         """
-        denom = self.total_symbols - self.preserved_names
+        denom = self.total_symbols - self.preserved_names - self.unverified_names
         if denom <= 0:
             return 0.0
         named = denom - self.missing_names
@@ -373,6 +379,11 @@ class AccuracyCalculator:
             # v1.11.0 Dalga 5: preserved ayrı sayılır, TP/FP/FN'e dahil değil.
             if c.match_type == "preserved":
                 metrics.preserved_names += 1
+            # BUG #4: unverified de ayrı sayılır — GT'si olmadığı için TP/FP/FN
+            # hiçbirine düşmez (aksi halde `else` → wrong sayılıp precision'ı
+            # haksız yere bozardı).
+            elif c.match_type == "unverified":
+                metrics.unverified_names += 1
             elif c.match_type == "exact":
                 metrics.exact_matches += 1
             elif c.match_type == "semantic":
@@ -403,7 +414,11 @@ class AccuracyCalculator:
         # ÖLÇÜMDÜ — "challenge yok" durumunda F1=1.0 (preserved'ler exact
         # sanılınca) gibi sahte değerler üretiyordu. Artık dördü de None:
         # "ölçülemez" anlamına gelir, JSON'da "NaN" yazılır.
-        metrics.renamed_total = metrics.total_symbols - metrics.preserved_names
+        metrics.renamed_total = (
+            metrics.total_symbols
+            - metrics.preserved_names
+            - metrics.unverified_names
+        )
         if metrics.renamed_total > 0:
             metrics.renamed_precision = metrics.precision
             metrics.renamed_recall = metrics.recall
@@ -553,9 +568,9 @@ class AccuracyCalculator:
         for key, ptype in predicted_types.items():
             gt = ground_truth_types.get(key)
             if gt is None:
-                # Ground truth'ta yoksa hatalı tahmin sayılmaz, atla
-                # (type recall hesabını bozmasın diye).
-                fp += 1
+                # BUG #17: Ground truth'ta (DWARF) karşılığı olmayan tahmin
+                # DOĞRULANAMAZ — yorumla uyumlu ol: FP sayma, atla. Eski kod
+                # `fp += 1` yapıp type precision'ı haksız yere düşürüyordu.
                 continue
             if _norm_type(ptype) == _norm_type(gt):
                 tp += 1
@@ -594,6 +609,9 @@ class AccuracyCalculator:
                 b["tp"] += 1
             elif c.match_type == "missing":
                 b["fn"] += 1
+            elif c.match_type == "unverified":
+                # BUG #4: GT yok → doğrulanamaz, per-source P/R'a da girmez.
+                continue
             else:  # wrong
                 b["fp"] += 1
 

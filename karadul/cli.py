@@ -903,10 +903,13 @@ def benchmark(
 
         if "symbols" in gt_data:
             # New format: {"symbols": [{"address": ..., "name": ..., "type": ...}]}
-            gt_map = {
-                s["address"].replace("0x", "FUN_").replace("FUN_", "FUN_"): s["name"]
-                for s in gt_data["symbols"]
-            }
+            # Ghidra naming_map anahtari FUN_<hex> (leading-zero YOK, zfill(8)).
+            # nm-direct yolu (asagida) ile AYNI normalize edilmeli -- aksi halde
+            # kesisim bos kalir ve sahte F1=0 olusur.
+            gt_map = {}
+            for s in gt_data["symbols"]:
+                hex_part = str(s["address"]).replace("0x", "").lstrip("0") or "0"
+                gt_map[f"FUN_{hex_part.zfill(8)}"] = s["name"]
         else:
             # Simple format: {"FUN_xxx": "name"}
             gt_map = gt_data

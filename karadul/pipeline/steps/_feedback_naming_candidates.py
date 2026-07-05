@@ -119,7 +119,12 @@ def _addr_to_fun_key(addr: int | str) -> str:
             return ""
     else:
         addr_int = int(addr)
-    return f"FUN_{addr_int:x}"
+    # KANONIK: 8-hane zero-padded (Ghidra FUN_00101234). :x paddingsizdi ->
+    # DWARF/Rust/Go/PDB/BN/TRex kanallari FUN_101234 uretip Ghidra'nin
+    # FUN_00101234'uyle eslesemiyor, sessizce dusuyordu. :08x cli.py:938 /
+    # quick_f1_eval.py:121 / benchmark_runner ile hizali (yuksek adres >8 hane
+    # oldugu gibi korunur).
+    return f"FUN_{addr_int:08x}"
 
 
 def _make_candidate(name: str, source: str, confidence: float, reason: str) -> Any:
@@ -457,7 +462,13 @@ def _add_fid(fid_json: Path, candidates: dict[str, list[Any]]) -> None:
             fid_addr = m.get("address", "")
             if not fid_name or not fid_addr:
                 continue
-            fun_key = "FUN_%s" % fid_addr.lstrip("0x").lstrip("0")
+            # KANONIK key: int(hex) -> FUN_00101234. Eski lstrip("0x") bir
+            # KARAKTER-SETI ("0" ve "x") stripliyor + padding yok -> FID library
+            # candidate'lari Ghidra sembolleriyle eslesemiyordu.
+            try:
+                fun_key = f"FUN_{int(str(fid_addr), 16):08x}"
+            except (ValueError, TypeError):
+                continue
             if len(fun_key) >= 2:
                 candidates.setdefault(fun_key, []).append(
                     NamingCandidate(fid_name, 0.95, "function_id"),
@@ -600,10 +611,13 @@ def _add_bsim(
         # yoksa function_addr'den FUN_XXX uret.
         old_key = func_name.strip()
         if not old_key and func_addr:
-            # "0x004012a0" -> "FUN_004012a0"
-            addr_clean = func_addr.lower().lstrip("0x").lstrip("0")
-            if addr_clean:
-                old_key = f"FUN_{addr_clean}"
+            # "0x004012a0" -> "FUN_004012a0" (kanonik 8-hane). Eski
+            # lstrip("0x") karakter-seti stripliyor + padding yoktu ->
+            # BSim adres-fallback candidate'lari eslesemiyordu.
+            try:
+                old_key = f"FUN_{int(func_addr, 16):08x}"
+            except (ValueError, TypeError):
+                old_key = ""
         if not old_key or len(old_key) < 2:
             skipped_no_key += 1
             continue

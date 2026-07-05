@@ -700,6 +700,18 @@ class BytePatternMatcher:
             (vmaddr, fileoff, fat_offset) tuple.
             vmaddr/fileoff None ise bulunamadi.
         """
+        # BUG #6 (v1.21): ELF once ele alinir. otool ELF'i TANIMAZ (__TEXT
+        # segment yok) -> otool yolu (None, None) donerdi; otool olmayan
+        # ortamda (Linux/Docker) `_parse_text_segment_header` (0, 0) donerdi
+        # ve file_offset = vaddr olurdu (yanlis). Boylece byte/FLIRT kanali
+        # ELF'te tamamen oluydu. Simdi program header'dan gercek
+        # p_vaddr/p_offset eslemesi kurulur; genel formul
+        # `file_offset = addr - vmaddr + fileoff` ELF'te dogru offset'i verir.
+        # ELF fat degildir -> fat_offset = 0. Mach-O yolu asagida DEGISMEDI.
+        if self._is_elf(binary_path):
+            vmaddr, fileoff = self._parse_elf_text_segment(binary_path)
+            return vmaddr, fileoff, 0
+
         # Fat offset'i bul (universal binary mi?)
         fat_offset = self._get_fat_offset(binary_path)
 
@@ -898,12 +910,141 @@ class BytePatternMatcher:
         except OSError:
             return None, None
 
+        # NOT (BUG #6): ELF artik `_get_text_segment_info` icinde
+        # `_parse_elf_text_segment` ile ele aliniyor; buraya ELF ile
+        # ulasilmaz. Bu (0, 0) dali yalnizca geriye-donuk fallback icin
+        # kaliyor (otool yoksa + Mach-O disi eski davranis).
         if magic[:4] == b"\x7fELF":
             return 0, 0
         if magic[:2] == b"MZ":
             return 0, 0
 
         return None, None
+
+    # ------------------------------------------------------------------
+    # Internal: ELF program header parse (BUG #6)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _is_elf(binary_path: Path) -> bool:
+        """Dosya ELF mi? (magic 0x7f 'E' 'L' 'F')."""
+        try:
+            with open(binary_path, "rb") as f:
+                return f.read(4) == b"\x7fELF"
+        except OSError:
+            return False
+
+    def _parse_elf_text_segment(
+        self, binary_path: Path
+    ) -> tuple[Optional[int], Optional[int]]:
+        """ELF program header'larindan yurutulebilir PT_LOAD'in (p_vaddr, p_offset).
+
+        BUG #6 fix: byte pattern eslestirme icin vaddr -> file_offset eslemesi
+        gerekir. Genel formul ``file_offset = addr - vmaddr + fileoff``
+        oldugundan (vmaddr=p_vaddr, fileoff=p_offset) dondururuz; boylece
+        ``file_offset = addr - p_vaddr + p_offset`` (dogru dosya offset'i) cikar.
+
+        .text daima yurutulebilir (PF_X) PT_LOAD segment'inin icindedir; onu
+        seceriz (yoksa ilk PT_LOAD'a duseriz). Section tablosu parse etmeye
+        gerek yok.
+
+        struct tabanli minimal parse -- yeni bagimlilik yok, modulun mevcut
+        Mach-O fat header parse'i (`_get_fat_offset`) ile ayni stil; lief
+        crash riski / subprocess maliyeti yok. Elf32/Elf64 + little/big
+        endian desteklenir.
+
+        NOT (PIE/ET_DYN sinirlamasi): p_vaddr dosyanin kendi link-uzayindadir.
+        Ghidra ET_EXEC binary'yi kendi vaddr'inde yukler (delta 0, dogru).
+        ET_DYN/PIE'de Ghidra image base uygular; o durumda functions.json
+        adresleri image base kadar kayabilir. Bu ayri bir konudur (bkz. rapor).
+
+        Returns:
+            (p_vaddr, p_offset) veya parse edilemezse (None, None).
+        """
+        import struct
+
+        PT_LOAD = 1
+        PF_X = 0x1
+
+        try:
+            with open(binary_path, "rb") as f:
+                ident = f.read(16)
+                if len(ident) < 16 or ident[:4] != b"\x7fELF":
+                    return None, None
+                ei_class = ident[4]   # 1 = ELF32, 2 = ELF64
+                ei_data = ident[5]    # 1 = little, 2 = big endian
+                endian = ">" if ei_data == 2 else "<"
+                is64 = ei_class == 2
+
+                if is64:
+                    rest = f.read(48)  # Elf64_Ehdr byte 16..63
+                    if len(rest) < 48:
+                        return None, None
+                    e_phoff = struct.unpack_from(endian + "Q", rest, 16)[0]
+                    e_phentsize = struct.unpack_from(endian + "H", rest, 38)[0]
+                    e_phnum = struct.unpack_from(endian + "H", rest, 40)[0]
+                    ph_expected = 56
+                else:
+                    rest = f.read(36)  # Elf32_Ehdr byte 16..51
+                    if len(rest) < 36:
+                        return None, None
+                    e_phoff = struct.unpack_from(endian + "I", rest, 12)[0]
+                    e_phentsize = struct.unpack_from(endian + "H", rest, 26)[0]
+                    e_phnum = struct.unpack_from(endian + "H", rest, 28)[0]
+                    ph_expected = 32
+
+                if e_phoff == 0 or e_phnum == 0:
+                    return None, None
+                # Bozuk dosya korumasi (Mach-O fat parse'taki nfat cap stili)
+                if e_phnum > 256:
+                    e_phnum = 256
+                if e_phentsize < ph_expected:
+                    e_phentsize = ph_expected
+
+                f.seek(e_phoff)
+                first_load: Optional[tuple[int, int]] = None
+                exec_load: Optional[tuple[int, int]] = None
+
+                for _ in range(e_phnum):
+                    phdr = f.read(e_phentsize)
+                    if len(phdr) < ph_expected:
+                        break
+                    if is64:
+                        p_type = struct.unpack_from(endian + "I", phdr, 0)[0]
+                        p_flags = struct.unpack_from(endian + "I", phdr, 4)[0]
+                        p_offset = struct.unpack_from(endian + "Q", phdr, 8)[0]
+                        p_vaddr = struct.unpack_from(endian + "Q", phdr, 16)[0]
+                    else:
+                        p_type = struct.unpack_from(endian + "I", phdr, 0)[0]
+                        p_offset = struct.unpack_from(endian + "I", phdr, 4)[0]
+                        p_vaddr = struct.unpack_from(endian + "I", phdr, 8)[0]
+                        p_flags = struct.unpack_from(endian + "I", phdr, 24)[0]
+
+                    if p_type != PT_LOAD:
+                        continue
+                    if first_load is None:
+                        first_load = (p_vaddr, p_offset)
+                    if (p_flags & PF_X) and exec_load is None:
+                        exec_load = (p_vaddr, p_offset)
+
+                chosen = exec_load if exec_load is not None else first_load
+                if chosen is None:
+                    return None, None
+
+                vaddr, off = chosen
+                logger.debug(
+                    "BytePatternMatcher: ELF exec PT_LOAD vaddr=0x%x offset=0x%x "
+                    "(ELF%d, %s-endian)",
+                    vaddr, off, 64 if is64 else 32,
+                    "big" if endian == ">" else "little",
+                )
+                return vaddr, off
+
+        except (OSError, struct.error) as e:
+            logger.debug(
+                "BytePatternMatcher: ELF program header parse hatasi: %s", e,
+            )
+            return None, None
 
     # ------------------------------------------------------------------
     # Internal: JSON loading

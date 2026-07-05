@@ -593,6 +593,63 @@ class OutputFormatter:
             except (json.JSONDecodeError, OSError):
                 pass
 
+        # 6. C namer global renames (FUN_/DAT_ -> birlestirilmis final isim)
+        # c_namer, reconstructed/src[/_iterN]/naming_map.json'a
+        #   {"global": {"FUN_00101149": "quotearg", ...}, "per_function": {...}}
+        # formatinda yazar (c_namer.py:1385-1396). Stripped ELF'te fonksiyon
+        # isimlerinin ASIL kaynagi budur; onceki adimlar sadece import/kutuphane
+        # isim-anahtarli girisleri doldurur. c_namer'in birlestirilmis (merged)
+        # final ismi asildir -> mevcut FUN_/DAT_ girislerini ezer.
+        # per_function bolumu lokal degisken adlaridir (fonksiyon-ici, cakisan
+        # anahtarlar); duz sembol haritasina uymadigi icin dahil edilmez.
+        placeholder_prefixes = ("FUN_", "DAT_", "sub_", "thunk_")
+        c_namer_maps: list[Path] = []
+        base_src_map = reconstructed / "src" / "naming_map.json"
+        if base_src_map.exists():
+            c_namer_maps.append(base_src_map)
+        # src_iterN artan sirada islenir -> en son iterasyon kazanir
+        iter_dirs = sorted(
+            reconstructed.glob("src_iter*"),
+            key=lambda p: (
+                int(p.name[len("src_iter"):])
+                if p.name[len("src_iter"):].isdigit()
+                else -1
+            ),
+        )
+        for iter_dir in iter_dirs:
+            iter_map = iter_dir / "naming_map.json"
+            if iter_map.exists():
+                c_namer_maps.append(iter_map)
+
+        c_namer_added = 0
+        for map_path in c_namer_maps:
+            try:
+                c_data = json.loads(map_path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+            if not isinstance(c_data, dict):
+                continue
+            global_renames = c_data.get("global", {})
+            if not isinstance(global_renames, dict):
+                continue
+            for orig, new_name in global_renames.items():
+                if not isinstance(orig, str) or not isinstance(new_name, str):
+                    continue
+                if not new_name or new_name == orig:
+                    continue
+                if not orig.startswith(placeholder_prefixes):
+                    continue
+                naming_map["mappings"][orig] = {
+                    # Duz map per-giris confidence tutmaz; uygulanan final
+                    # isim oldugu icin 1.0.
+                    "new_name": new_name,
+                    "source": "c_namer",
+                    "confidence": 1.0,
+                }
+                c_namer_added += 1
+        if c_namer_added:
+            naming_map["sources"].append("c_namer")
+
         naming_map["total_mappings"] = len(naming_map["mappings"])
         return naming_map
 

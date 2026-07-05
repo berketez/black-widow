@@ -39,6 +39,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from karadul.quality.patterns import RE_GHIDRA_FUNC_NAME
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -738,8 +740,10 @@ class DeepCallChainTracer:
         for prefix in _SKIP_PREFIXES:
             if func_name.startswith(prefix):
                 return True
-        # Skip unnamed Ghidra functions (FUN_XXXXXXXX pattern)
-        if func_name.startswith("FUN_") and len(func_name) == 12:
+        # Skip unnamed Ghidra functions (FUN_<hex> pattern, herhangi bir hex
+        # uzunlugu). Sabit uzunluk 12 kontrolu macOS/64-bit yuksek-adresli
+        # (>8 hex) FUN_ fonksiyonlarini kaciriyordu -- kanonik regex kullan.
+        if RE_GHIDRA_FUNC_NAME.match(func_name):
             return True
         return False
 

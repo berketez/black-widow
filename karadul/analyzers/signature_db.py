@@ -194,6 +194,9 @@ class SignatureMatch:
     # Format: [{"name": str, "type": str, "index": int}, ...]
     # None = sig DB'de params bilgisi yok (fallback'e API_PARAM_DB yolu kullanilir).
     params: list[dict] | None = None
+    # v1.21 Bug #18: fonksiyon adresi. Downstream join'lerin isim string'ine ek
+    # olarak adres-bazli baglanti kurabilmesi icin match_all doldurur.
+    address: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -206,6 +209,7 @@ class SignatureMatch:
             "category": self.category,
             "version": self.version,
             "params": self.params,
+            "address": self.address,
         }
 
 
@@ -2368,6 +2372,7 @@ class SignatureDB:
 
         candidate_sig_keys: Optional[list[frozenset[str]]] = None
         matched_keywords_set: set[str] = set()
+        ac_iter_failed = False
         if _AHOCORASICK_AVAILABLE and self._string_aho is not None and self._keyword_to_sig_keys:
             # Func string'lerini concat — AC tek pass tarama. Ayraci olarak \x00
             # (null byte) — keyword'ler bunu icermez, bu sayede iki ayri string
@@ -2380,10 +2385,17 @@ class SignatureDB:
                 try:
                     for _, kw_lower in self._string_aho.iter(haystack):
                         matched_keywords_set.add(kw_lower)
-                except Exception as exc:  # noqa: BLE001 — fallback
-                    logger.debug("AC string iter hatasi: %s — fallback", exc)
+                except Exception as exc:  # noqa: BLE001 — full-scan fallback
+                    logger.debug("AC string iter hatasi: %s — full-scan fallback", exc)
                     matched_keywords_set = set()
-            if matched_keywords_set:
+                    ac_iter_failed = True
+            if ac_iter_failed:
+                # Bug #13: AC taramasi patladi -> gercek full-scan fallback.
+                # candidate_sig_keys=None birakilinca alttaki iter_items tum
+                # self._string_sigs'i tarar; [] birakmak string matching'i sessizce
+                # kapatirdi (bos aday listesi).
+                candidate_sig_keys = None
+            elif matched_keywords_set:
                 # Aday sig_key kume'sini topla (dedupe). Bir sig_key birden fazla
                 # keyword'la eslesirse bircok kez gelir — id() ile dedupe.
                 seen: set[int] = set()
@@ -2725,6 +2737,8 @@ class SignatureDB:
             )
 
             if match:
+                # Bug #18: adresi sonuca yaz — downstream adres-bazli join icin.
+                match.address = faddr
                 matched_count += 1
                 matches.append(match)
 

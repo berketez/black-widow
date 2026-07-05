@@ -42,15 +42,19 @@ class TestUnresolvedFunsInGT:
         assert all(r.match_type == "missing" for r in results)
 
     def test_unresolved_fun_partial_when_renamed_meaningfully(self) -> None:
-        """Karadul anlamli isim verdiyse partial (ground truth bilinmiyor)."""
+        """BUG #4: Karadul anlamli isim verdi ama GT YOK -> unverified (TP degil).
+
+        Dogrulanamayan isim precision/recall'a girmez (score 0.0, ayri kategori).
+        Eskiden partial=0.5 TP sayilip challenge setinde F1'i yapay sisiriyordu.
+        """
         runner = self._runner()
         gt: dict[str, str] = {}
         naming_map = {"FUN_100000460": "process_packet"}
         unresolved = {"FUN_100000460", "FUN_100000500"}
         results = runner._compare_maps(gt, naming_map, {}, unresolved_funs=unresolved)
         types = sorted(r.match_type for r in results)
-        assert types == ["missing", "partial"]
-        # process_packet anlamli, partial olarak isaretlenmeli
+        assert types == ["missing", "unverified"]
+        # process_packet anlamli ama GT'si yok -> unverified (dogrulanamaz)
         recovered_names = {r.recovered for r in results}
         assert "process_packet" in recovered_names
 
