@@ -277,6 +277,22 @@ class BenchmarkRunner:
         """
         if not isinstance(naming_map, dict):
             return {}
+        # BUG #9: output_formatter'ın ürettiği "mappings" şeması:
+        #   {"mappings": {orig: {"new_name": <ad>, "source": ..., ...}}, ...}
+        # Bu şemada "global"/"per_function" yok; eski kod naive flat branch'e
+        # düşüp yalnızca skalar top-level string'leri alıyor, her sembol
+        # "missing" skorluyordu. Gerçek şemaya göre {orig: new_name} indir.
+        mappings = naming_map.get("mappings")
+        if isinstance(mappings, dict):
+            flat_m: dict[str, str] = {}
+            for k, v in mappings.items():
+                if isinstance(v, dict):
+                    nn = v.get("new_name")
+                    if isinstance(nn, str):
+                        flat_m[k] = nn
+                elif isinstance(v, str):
+                    flat_m[k] = v
+            return flat_m
         if "global" not in naming_map and "per_function" not in naming_map:
             # Düz harita: değerlerin string olduğunu varsay.
             return {k: v for k, v in naming_map.items() if isinstance(v, str)}
@@ -541,33 +557,24 @@ class BenchmarkRunner:
         for placeholder, original_name in ground_truth.items():
             recovered: Optional[str] = None
 
-            # 1) Direkt anahtar
+            # 1) Direkt anahtar — gerçek challenge: Ghidra FUN_xxx bıraktı,
+            #    karadul bu placeholder'ı rename etti. Bunu skorlarız.
             if placeholder in flat_nm:
                 recovered = flat_nm[placeholder]
 
-            # 2) Sembol-eşlemesi: FUN_xxx -> <symbol_name> -> flat_nm
-            if recovered is None and placeholder in sym_map:
-                alt_key = sym_map[placeholder]
-                if alt_key in flat_nm:
-                    recovered = flat_nm[alt_key]
-
-            # 3) Orijinal isim naming_map anahtarı olmuş olabilir
-            #    (karadul bazı fonksiyonlar için orijinal adı koruyor)
-            if recovered is None and original_name in flat_nm:
-                recovered = flat_nm[original_name]
-
-            # 4) Sembol haritasında bu isim korunmuş mu? Karadul
-            #    export sembollerini (ör: _add) genelde rename etmez.
-            #    v1.11.0 Dalga 5 KRİTİK FİX: BU BİR CHALLENGE DEĞİL —
-            #    sembol stripped olmadı, binary'den isim doğrudan okundu.
-            #    Daha önce `recovered = preserved` yapıp "exact" sayıyorduk;
-            #    bu, macOS'ta exports (dyld için) strip edilmediğinden
-            #    benchmark'ı şişiriyordu. Artık "preserved" kategorisinde
-            #    işaretlenir ve F1/accuracy hesabından hariç tutulur.
+            # 2) v1.11.0 Dalga 5 preserved-detection — BUG #5 FİX: step 2/3'ün
+            #    ÜSTÜNE taşındı. sym_map[placeholder] gerçek (FUN_ ile başlamayan)
+            #    bir isimse, Ghidra bu sembolü ZATEN biliyordu (stripped olmadı,
+            #    binary'den doğrudan okundu) → CHALLENGE DEĞİL. Eskiden bu kontrol
+            #    step 4'teydi; step 2/3 önce sym_map/orijinal-isim üzerinden çözüp
+            #    "exact/semantic" puanladığı için preserved-exclusion boşa çıkıyor,
+            #    non-challenge sembollerle F1 şişiyordu. Artık burada, skorlamadan
+            #    önce yakalanır. (Step 1 doğrudan FUN_ anahtarı gerçek bir
+            #    rename'dir — ona dokunmuyoruz.)
             if recovered is None and placeholder in sym_map:
                 preserved = sym_map[placeholder]
-                # sym_map FUN_xxx -> name ve name -> FUN_xxx her iki yönü
-                # tutuyor; biz burada FUN_xxx yönünü kullanıyoruz.
+                # sym_map FUN_xxx -> name ve name -> FUN_xxx her iki yönü tutuyor;
+                # biz burada FUN_xxx yönünü kullanıyoruz.
                 if preserved and not preserved.startswith("FUN_"):
                     comparisons.append(NamingResult(
                         original=original_name,
@@ -577,6 +584,19 @@ class BenchmarkRunner:
                         source="",
                     ))
                     continue
+
+            # 3) Sembol-eşlemesi: FUN_xxx -> <symbol_name> -> flat_nm
+            #    (preserved DEĞİL — Ghidra placeholder bıraktı ama karadul sembol
+            #    adı anahtarı altında rename etmiş olabilir).
+            if recovered is None and placeholder in sym_map:
+                alt_key = sym_map[placeholder]
+                if alt_key in flat_nm:
+                    recovered = flat_nm[alt_key]
+
+            # 4) Orijinal isim naming_map anahtarı olmuş olabilir
+            #    (karadul bazı fonksiyonlar için orijinal adı koruyor)
+            if recovered is None and original_name in flat_nm:
+                recovered = flat_nm[original_name]
 
             # 5) Yine de bulamadık → placeholder kalmış kabul et
             if recovered is None:
@@ -594,7 +614,9 @@ class BenchmarkRunner:
                     continue
                 recovered = flat_nm.get(fun)
                 if recovered is None or self.calculator._is_unnamed(recovered):
-                    # Karadul rename etmedi ya da yine placeholder verdi.
+                    # Karadul hiç isim üretemedi (rename yok ya da yine
+                    # placeholder) → gerçek, doğrulanabilir bir başarısızlık:
+                    # missing (FN). Ne üretildiğini biliyoruz, "yok".
                     comparisons.append(NamingResult(
                         original=fun,
                         recovered=recovered if recovered is not None else fun,
@@ -603,12 +625,20 @@ class BenchmarkRunner:
                         source="",
                     ))
                 else:
-                    # Karadul anlamlı isim verdi; GT bilinmiyor → partial.
+                    # BUG #4 FİX: Karadul anlamlı bir isim verdi AMA bu
+                    # fonksiyonun ground truth'u YOK (nm export'u değil, Ghidra
+                    # da isimlendiremedi). İsmin doğru mu yanlış mı olduğunu
+                    # DOĞRULAYAMAYIZ → TP de FP de diyemeyiz. Eskiden partial=0.5
+                    # (TP) veriliyordu; bu, çekirdek challenge setinde precision'ın
+                    # ASLA cezalanamamasına ve F1'in yapay şişmesine yol açıyordu
+                    # (isimlendirilen her unresolved FUN_xxx otomatik TP). Artık
+                    # "unverified": precision/recall/accuracy'den TAMAMEN hariç,
+                    # ayrı raporlanır (per_symbol + confusion_matrix'te görünür).
                     comparisons.append(NamingResult(
                         original=fun,
                         recovered=recovered,
-                        score=0.5,
-                        match_type="partial",
+                        score=0.0,
+                        match_type="unverified",
                         source="",
                     ))
 
@@ -681,7 +711,12 @@ class BenchmarkRunner:
 
         ground_truth: dict[str, str] = {}
         # nm output format: "00000000004011a0 T function_name"
-        nm_pattern = re.compile(r"^([0-9a-fA-F]+)\s+[TtDdBb]\s+_?(\w+)$", re.MULTILINE)
+        # BUG #10: Yalnızca text/code sembolleri ([Tt]). Eski [TtDdBb] data (D/d)
+        # ve bss (B/b) sembollerini de yakalıyordu; bunlar FUN_<addr> GT anahtarına
+        # dönüşüp asla eşleşemiyor, F1'i haksız düşürüyordu. Docstring "text-only"
+        # diyor ve GroundTruthGenerator da fonksiyonları symbol_type in (T,t) ile
+        # tanımlıyor — buraya da aynı kısıt uygulanır.
+        nm_pattern = re.compile(r"^([0-9a-fA-F]+)\s+[Tt]\s+_?(\w+)$", re.MULTILINE)
 
         for match in nm_pattern.finditer(result.stdout):
             # v1.21 Mach-O fix: macOS `nm` adresleri 16-hane zero-padded döner

@@ -435,7 +435,10 @@ class SignatureFusion:
             if mass > 0.0:
                 evidence.append(EvidenceMass(
                     source="signature_db",
-                    hypothesis=sig_data.get("name", sig_data.get("matched_name", "")),
+                    hypothesis=sig_data.get(
+                        "matched",
+                        sig_data.get("name", sig_data.get("matched_name", "")),
+                    ),
                     mass=mass,
                     category=sig_data.get("library", ""),
                 ))

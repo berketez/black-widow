@@ -174,6 +174,14 @@ _NOISY_OR_CAP = 0.98
 # Yuksek guven esigi: en az constant + API gerek.
 _HIGH_CONFIDENCE_THRESHOLD = 0.70
 
+# BUG #14: Tek-kanit "constant" tespiti (capraz kanit + ikinci sabit YOK)
+# naming candidate uretimine gidecek kadar guvenilir degil (FP riski).
+# Bu tavan, naming floor'un (bkz pipeline/steps/_feedback_naming_candidates.py,
+# engineering_constant floor = 0.40) ALTINDA tutulur; boylece izole tek sabit
+# naming'e sizmaz ama match istatistik/annotation icin gorunur kalir.
+# Cok-kanitli (2+ sabit veya cross-method) tespitler bundan ETKILENMEZ.
+_CONSTANT_ONLY_SINGLE_CAP = 0.39
+
 
 class EngineeringAlgorithmAnalyzer:
     """Multi-domain engineering algorithm detector.
@@ -675,7 +683,21 @@ class EngineeringAlgorithmAnalyzer:
 
         for (fn, algo_key), group in groups.items():
             if len(group) == 1:
-                combined.append(group[0])
+                single = group[0]
+                # BUG #14: Corroboration sarti -- tek-kanit "constant" tespiti
+                # (bu match icin baska katman ve ikinci bir sabit YOK) capraz
+                # kanit olmadan naming'e gidecek kadar guvenilir degil.
+                # len(evidence) < 2 => tek izole sabit => guveni naming
+                # floor'un altina cek (FP kes). 2+ sabitli veya cok-katmanli
+                # match'ler bu daldan gecmez / etkilenmez.
+                if (
+                    single.detection_method == "constant"
+                    and len(single.evidence) < 2
+                ):
+                    single.confidence = min(
+                        single.confidence, _CONSTANT_ONLY_SINGLE_CAP,
+                    )
+                combined.append(single)
                 continue
 
             # Collect detection methods

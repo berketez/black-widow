@@ -310,7 +310,9 @@ class TestBSimFilters:
             bsim_fusion_min_similarity=0.7,
             bsim_fusion_max_candidates=3,
         )
-        assert "FUN_401a20" in result
+        # Kanonik 8-hane padded key (Ghidra FUN_00401a20 ile eslesir).
+        # Eski paddingsiz "FUN_401a20" Ghidra sembolleriyle eslesemiyordu.
+        assert "FUN_00401a20" in result
 
     def test_malformed_entries_tolerated(self, empty_kwargs) -> None:
         """Bozuk girdiler (non-dict, bos similarity, bos name) patlatmaz."""
