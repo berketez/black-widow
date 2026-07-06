@@ -11,10 +11,13 @@ dizinini otomatik seçer. Ölçülecek binary'ler argümanla verilebilir:
     python3 scripts/mac_f1_eval.py cat sort ls
 Argüman yoksa GT seti içindeki tüm binary'ler denenir.
 """
-import sys, re, glob
+import sys, re, glob, os
 from pathlib import Path
 
-sys.path.insert(0, "/Users/apple/Desktop/black-widow")
+# Script hangi tree'deyse o tree'nin harness'ini kullan: ana tree = baseline
+# (fix öncesi), worktree = fix'li. Böylece aynı script iki ölçümü de yapar.
+_TREE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _TREE)
 from tests.benchmark.benchmark_runner import BenchmarkRunner  # noqa: E402
 
 HOME = str(Path.home())
