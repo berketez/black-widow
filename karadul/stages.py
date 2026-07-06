@@ -2372,6 +2372,73 @@ class ReconstructionStage(Stage):
         rc.extracted_names = extracted_names
         rc.capa_capabilities = _capa_capabilities
 
+    # ------------------------------------------------------------------
+    # FIX-1 (2026-07-06): main'i __libc_start_main ilk argumanindan kurtar
+    # ------------------------------------------------------------------
+
+    _LIBC_START_MAIN_RE = re.compile(r"__libc_start_main\s*\(\s*(FUN_[0-9a-fA-F]+)")
+
+    def _recover_main_from_entry(
+        self, extracted_names: dict, static_dir: "Path | None", stats: dict
+    ) -> None:
+        """``main``'i entry/_start icindeki ``__libc_start_main`` cagrisindan kurtar.
+
+        Stripped ELF'te program giris noktasi (``entry``/``_start``)
+        ``__libc_start_main(main, argc, argv, ...)`` cagirir; ilk arguman
+        main'in adresidir (glibc x86-64 + ARM64 ayni ABI). Ghidra bunu
+        ``__libc_start_main(FUN_xxxx, ...)`` olarak decompile eder -> FUN_xxxx = main.
+        Bu, loader'in main'i buldugu yontemin ta kendisi; pratikte kesin,
+        deterministik, arch-bagimsiz (ham decompile C'sinden okunur, LLM yok).
+
+        Davranissal namer main'i sistematik olarak yanlis isimlendiriyordu
+        (ol. ``version_output_version``, ``argv_passed_through``). Isim ``pre_names``
+        kanalina (``extracted_names``) yazilir; c_namer guard'i
+        (``if old_name in naming_map: continue``) davranissalin ezmesini engeller.
+
+        NOT: Cagri her iki reconstruct yolunun (step-registry + legacy) BIRLESME
+        noktasinda yapilir; ``extracted_names`` local dict'i dogrudan mutasyona
+        ugratilir. Ham FUN_ adresleri icin ``static_dir/ghidra_output/decompiled``
+        (Ghidra ciktisinin isim-degismemis hali) kullanilir.
+        """
+        try:
+            if not isinstance(extracted_names, dict) or static_dir is None:
+                return
+            decompiled_dir = static_dir / "ghidra_output" / "decompiled"
+            if not decompiled_dir.exists():
+                return
+
+            main_addr: str | None = None
+            # entry/_start genelde kucuk; ismi entry/start iceren dosyalari
+            # oncelikle tara, yoksa tum .c dosyalarina bak.
+            c_files = list(decompiled_dir.rglob("*.c"))
+            c_files.sort(key=lambda p: (0 if ("entry" in p.stem.lower()
+                                              or "start" in p.stem.lower()) else 1))
+            for c in c_files:
+                try:
+                    txt = c.read_text(errors="ignore")
+                except Exception:
+                    continue
+                m = self._LIBC_START_MAIN_RE.search(txt)
+                if m:
+                    main_addr = m.group(1)
+                    break
+            if not main_addr:
+                return
+
+            prev = extracted_names.get(main_addr)
+            if prev == "main":
+                return
+            # main-from-libc_start_main loader-kesinligindedir -> onceki
+            # (davranissal/CAPA) ismi EZER.
+            extracted_names[main_addr] = "main"
+            stats["main_recovered"] = main_addr
+            logger.info(
+                "main kurtarildi: %s -> main (__libc_start_main arg0)%s",
+                main_addr, f" [onceki: {prev}]" if prev else "",
+            )
+        except Exception as exc:  # pragma: no cover -- savunmaci
+            logger.debug("main kurtarma (entry) hatasi: %s", exc)
+
     def _execute_binary(self, context: PipelineContext, start: float) -> StageResult:
         """Binary reconstruction — decompile edilmis C'yi okunabilir yap.
 
@@ -2617,6 +2684,14 @@ class ReconstructionStage(Stage):
             extracted_names = rc.extracted_names
             calibrated_matches = rc.calibrated_matches
             _capa_capabilities = rc.capa_capabilities
+
+        # FIX-1 (2026-07-06): main'i __libc_start_main ilk argumanindan kurtar.
+        # Step-registry ve legacy yolunun BIRLESME noktasi -- extracted_names iki
+        # branch'te de baglanmis. analyze_and_rename'e pre_names olarak gitmeden
+        # once main enjekte edilir (davranissal namer main'i yanlis isimliyordu).
+        if not isinstance(extracted_names, dict):
+            extracted_names = {}
+        self._recover_main_from_entry(extracted_names, static_dir, stats)
 
         # 1.9. Assembly Analysis -- Ghidra decompiler fallback
         # v1.10.0 M1 T3.5: Step registry modunda bu is asm_analysis step'i

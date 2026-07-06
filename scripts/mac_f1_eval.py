@@ -21,8 +21,13 @@ HOME = str(Path.home())
 MEAS = f"{HOME}/karadul_meas"
 GT_DIR = f"{HOME}/coreutils_gt"
 SKIP = ("__", "GCC_", "GLIBC_", "atexit", "frame_dummy",
-        "register_tm", "deregister_tm", "_start")
-NM_PAT = re.compile(r"^([0-9a-fA-F]+)\s+[TtDdBb]\s+_?(\w+)$", re.MULTILINE)
+        "register_tm", "deregister_tm", "_start", "_init", "_fini")
+# FIX-3 (2026-07-06): Linux ELF nm sentetik '_' oneki EKLEMEZ (o Mach-O
+# davranisi). Eski `_?` grubu _start/_init/_fini'nin GERCEK bastaki '_'ini
+# yiyor -> "start"/"init"/"fini" hicbir SKIP prefiksine uymuyor -> CRT/linker
+# fonksiyonlari GT'de kaliyor -> karadul onlari isimlendirmedigi icin haksiz
+# 'missing' -> F1 deflation. `_?` kaldirildi; SKIP ham isim uzerinde calisiyor.
+NM_PAT = re.compile(r"^([0-9a-fA-F]+)\s+[TtDdBb]\s+(\w+)$", re.MULTILINE)
 # Ghidra ELF PIE'yi 0x100000 image-base'e yükler; nm .debug adresleri 0-based.
 # GT anahtarlarını Ghidra namespace'ine hizalamak için offset ekle
 # (yoksa FUN_00002cf4 vs FUN_00102cf4 -> kesişim boş -> sahte F1=0).
