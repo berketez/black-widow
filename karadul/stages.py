@@ -2378,6 +2378,35 @@ class ReconstructionStage(Stage):
 
     _LIBC_START_MAIN_RE = re.compile(r"__libc_start_main\s*\(\s*(FUN_[0-9a-fA-F]+)")
 
+    @staticmethod
+    def _find_decompiled_dir(static_dir: "Path | None") -> "Path | None":
+        """Ham FUN_*.c decompiled dizinini esnek bul.
+
+        Reconstruct yolu (step-registry vs legacy vs deobfuscation) workspace
+        yapisini degistiriyor: bazen ``static/ghidra_output/decompiled``, bazen
+        ``deobfuscated/decompiled``. Sabit yol varsayimi bazi binary'lerde
+        (ornegin cache'ten reuse edilen eski workspace) decompiled'i bulamayip
+        FIX-1/FIX-2'yi sessizce devre disi birakiyordu. Bu yardimci
+        ``static_dir`` ve ebeveyninde bilinen alt yollari, sonra FUN_*.c iceren
+        ilk ``decompiled`` dizinini arar.
+        """
+        if static_dir is None:
+            return None
+        roots = [static_dir]
+        if static_dir.parent and static_dir.parent != static_dir:
+            roots.append(static_dir.parent)
+        known = ("ghidra_output/decompiled", "deobfuscated/decompiled", "decompiled")
+        for root in roots:
+            for sub in known:
+                d = root / sub
+                if d.is_dir() and next(d.glob("FUN_*.c"), None) is not None:
+                    return d
+        for root in roots:
+            for d in root.rglob("decompiled"):
+                if d.is_dir() and next(d.glob("FUN_*.c"), None) is not None:
+                    return d
+        return None
+
     def _recover_main_from_entry(
         self, extracted_names: dict, static_dir: "Path | None", stats: dict
     ) -> None:
@@ -2403,8 +2432,8 @@ class ReconstructionStage(Stage):
         try:
             if not isinstance(extracted_names, dict) or static_dir is None:
                 return
-            decompiled_dir = static_dir / "ghidra_output" / "decompiled"
-            if not decompiled_dir.exists():
+            decompiled_dir = self._find_decompiled_dir(static_dir)
+            if decompiled_dir is None:
                 return
 
             main_addr: str | None = None
@@ -2438,6 +2467,131 @@ class ReconstructionStage(Stage):
             )
         except Exception as exc:  # pragma: no cover -- savunmaci
             logger.debug("main kurtarma (entry) hatasi: %s", exc)
+
+    def _recover_gnulib_from_fingerprints(
+        self, extracted_names: dict, static_dir: "Path | None", stats: dict
+    ) -> None:
+        """gnulib kutuphane fonksiyonlarini string-anchor fingerprint ile kurtar.
+
+        FIX-2 (2026-07-08). coreutils stripped-ELF'te gnulib fonksiyonlari
+        (``xalloc_die``, ``version_etc``, ``close_stdout`` ...) ``.constprop``/
+        ``.isra`` ile inline+specialize edildigi icin byte-imza backbone'u OLU.
+        Tek ayirt-edici sinyal, referansladiklari sabit string mesajlaridir
+        (``"memory exhausted"`` -> ``xalloc_die`` vb.). Fingerprint DB
+        (``karadul.analyzers.gnulib_fingerprints``) isim eslemesini gnulib
+        UPSTREAM kaynagindan turetir, test binary'sinden DEGIL (GT-leakage yok).
+
+        Precision icin **unique-in-binary** kisiti: bir gnulib adi yalniz TEK
+        ``FUN_`` ile eslesirse atanir; birden fazla aday varsa belirsiz kabul
+        edilip call-shape katmanina (FIX-2b) birakilir.
+
+        Isim ``pre_names`` kanalina (``extracted_names``) yazilir; c_namer guard'i
+        davranissal namer'in ezmesini engeller (``_recover_main_from_entry`` ile
+        ayni mekanizma). Onceden atanmis pre_name'ler (FIX-1 ``main`` dahil) EZILMEZ.
+        """
+        try:
+            if not isinstance(extracted_names, dict) or static_dir is None:
+                return
+            decompiled_dir = self._find_decompiled_dir(static_dir)
+            if decompiled_dir is None:
+                return
+            from karadul.analyzers.gnulib_fingerprints import (
+                extract_string_literals,
+                match_call_shape,
+                match_function,
+            )
+
+            # name -> [fun_key, ...]  (unique-in-binary degerlendirmesi icin)
+            candidates: dict[str, list[str]] = {}
+            for c in decompiled_dir.rglob("*.c"):
+                fun_key = c.stem  # dosya adi = kanonik FUN_00xxxxxx
+                if not fun_key.startswith("FUN_"):
+                    continue
+                try:
+                    txt = c.read_text(errors="ignore")
+                except Exception:
+                    continue
+                name = match_function(extract_string_literals(txt))
+                if name:
+                    candidates.setdefault(name, []).append(fun_key)
+
+            assigned = 0
+            ambiguous: list[str] = []
+            for name, keys in candidates.items():
+                if len(keys) != 1:
+                    ambiguous.append(name)  # belirsiz -> call-shape'e (FIX-2b) birak
+                    continue
+                fun_key = keys[0]
+                if extracted_names.get(fun_key) is not None:
+                    continue  # onceki pre_name (FIX-1 main / binary_extractor) korunur
+                extracted_names[fun_key] = name
+                assigned += 1
+            if assigned:
+                stats["gnulib_recovered"] = assigned
+            if ambiguous:
+                stats["gnulib_ambiguous"] = ambiguous
+            if assigned:
+                logger.info(
+                    "gnulib fingerprint: %d fonksiyon kurtarildi%s",
+                    assigned,
+                    f" (belirsiz atlandi: {ambiguous})" if ambiguous else "",
+                )
+
+            # --- FIX-2b (2026-07-09): CALL-SHAPE katmani ---
+            # String sabiti olmayan/paylasan gnulib fonksiyonlari icin ikinci
+            # kanal: cagirdiklari ayirt-edici libc callee'leri (close_stream ->
+            # __fpending, gettext_quote -> nl_langinfo). String-fp'den SONRA
+            # calisir; zaten isimlenmis (main/string) fonksiyonlar aday sayilmaz.
+            cg_path = None
+            _roots = [static_dir]
+            if static_dir.parent and static_dir.parent != static_dir:
+                _roots.append(static_dir.parent)
+            for _root in _roots:
+                found = next(_root.rglob("call_graph.json"), None)
+                if found is not None:
+                    cg_path = found
+                    break
+            if cg_path is not None:
+                import json as _json
+
+                try:
+                    nodes = _json.loads(cg_path.read_text()).get("nodes", {})
+                except Exception:
+                    nodes = {}
+                cs_candidates: dict[str, list[str]] = {}
+                for addr_key, node in nodes.items():
+                    if not isinstance(node, dict):
+                        continue
+                    try:
+                        fun_key = f"FUN_{int(str(addr_key), 16):08x}"
+                    except (ValueError, TypeError):
+                        continue
+                    if extracted_names.get(fun_key) is not None:
+                        continue  # zaten isimli (main/string-fp) -> aday degil
+                    callees = {
+                        c.get("name", "")
+                        for c in node.get("callees", [])
+                        if isinstance(c, dict)
+                    }
+                    nm = match_call_shape(callees, int(node.get("callee_count", 0)))
+                    if nm:
+                        cs_candidates.setdefault(nm, []).append(fun_key)
+                cs_assigned = 0
+                for nm, keys in cs_candidates.items():
+                    if len(keys) != 1:
+                        continue  # unique-in-binary
+                    fk = keys[0]
+                    if extracted_names.get(fk) is not None:
+                        continue
+                    extracted_names[fk] = nm
+                    cs_assigned += 1
+                if cs_assigned:
+                    stats["gnulib_callshape_recovered"] = cs_assigned
+                    logger.info(
+                        "gnulib call-shape: %d fonksiyon kurtarildi", cs_assigned
+                    )
+        except Exception as exc:  # pragma: no cover -- savunmaci
+            logger.debug("gnulib fingerprint kurtarma hatasi: %s", exc)
 
     def _execute_binary(self, context: PipelineContext, start: float) -> StageResult:
         """Binary reconstruction — decompile edilmis C'yi okunabilir yap.
@@ -2692,6 +2846,10 @@ class ReconstructionStage(Stage):
         if not isinstance(extracted_names, dict):
             extracted_names = {}
         self._recover_main_from_entry(extracted_names, static_dir, stats)
+        # FIX-2 (2026-07-08): gnulib kutuphane fonksiyonlarini string-anchor
+        # fingerprint ile kurtar (byte-imza backbone coreutils'te olu). Ayni
+        # merge seam, ayni pre_names mekanizmasi; main'den SONRA (main korunur).
+        self._recover_gnulib_from_fingerprints(extracted_names, static_dir, stats)
 
         # 1.9. Assembly Analysis -- Ghidra decompiler fallback
         # v1.10.0 M1 T3.5: Step registry modunda bu is asm_analysis step'i

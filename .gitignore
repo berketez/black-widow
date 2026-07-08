@@ -62,3 +62,6 @@ benchmark_report.json
 # repo'ya girmez — yeniden üretilebilir, kod güncellenemez.
 docker/measurement/out/
 docker/measurement/calculix/
+
+# gnulib upstream referans (fingerprint kaynağı, repo dışı)
+vendor/gnulib-ref/

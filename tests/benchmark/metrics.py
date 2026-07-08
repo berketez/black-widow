@@ -663,6 +663,13 @@ class AccuracyCalculator:
         # Convert camelCase to snake_case
         name = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name)
         name = name.lower().strip("_")
+        # FIX-4 (2026-07-08): GCC-specialize sufikslerini soy. GT'de
+        # `full_write.constprop.0`, `gettext_quote.part.0`, zincirli
+        # `force_symlinkat.part.0.constprop.0` gibi isimler var; karadul cikti
+        # tarafinda sufiks yok. _normalize HEM GT HEM karadul'a simetrik
+        # uygulandigi icin karadul tarafinda idempotent, GT tarafinda soyar ->
+        # exact eslesme mumkun olur. .cold numarasiz da olabilir.
+        name = re.sub(r"\.(?:constprop|isra|part|cold|lto_priv|clone)(?:\.\d+)*", "", name)
         # Remove trailing numeric dedup suffixes (e.g. _2, _03)
         name = re.sub(r"_\d+$", "", name)
         return name

@@ -716,7 +716,11 @@ class BenchmarkRunner:
         # dönüşüp asla eşleşemiyor, F1'i haksız düşürüyordu. Docstring "text-only"
         # diyor ve GroundTruthGenerator da fonksiyonları symbol_type in (T,t) ile
         # tanımlıyor — buraya da aynı kısıt uygulanır.
-        nm_pattern = re.compile(r"^([0-9a-fA-F]+)\s+[Tt]\s+_?(\w+)$", re.MULTILINE)
+        # FIX-4 (2026-07-08): `(\w+)` GCC-specialize sufikslerini (.constprop.0,
+        # .part.0, .isra.0, .lto_priv.0) icermez -> bu semboller GT'den duser.
+        # `([\w.]+)` noktayi kabul eder; sufiks NamingComparator._normalize'da
+        # soyulur, iki taraf ayni forma iner.
+        nm_pattern = re.compile(r"^([0-9a-fA-F]+)\s+[Tt]\s+_?([\w.]+)$", re.MULTILINE)
 
         for match in nm_pattern.finditer(result.stdout):
             # v1.21 Mach-O fix: macOS `nm` adresleri 16-hane zero-padded döner

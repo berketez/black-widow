@@ -27,7 +27,12 @@ SKIP = ("__", "GCC_", "GLIBC_", "atexit", "frame_dummy",
 # yiyor -> "start"/"init"/"fini" hicbir SKIP prefiksine uymuyor -> CRT/linker
 # fonksiyonlari GT'de kaliyor -> karadul onlari isimlendirmedigi icin haksiz
 # 'missing' -> F1 deflation. `_?` kaldirildi; SKIP ham isim uzerinde calisiyor.
-NM_PAT = re.compile(r"^([0-9a-fA-F]+)\s+[TtDdBb]\s+(\w+)$", re.MULTILINE)
+# FIX-4 (2026-07-08): `(\w+)` nokta icermez -> `full_write.constprop.0`,
+# `gettext_quote.part.0` gibi GCC-specialize sembolleri satir sonuna kadar
+# eslesemez -> GT'den TAMAMEN duser (ne TP ne FN). cat GT'sinin ~%30'u boyle
+# gorunmez oluyordu. `([\w.]+)` noktayi kabul eder; sufiks metrics._normalize'da
+# soyulur (Katman B), boylece GT `full_write.constprop.0` -> karadul `full_write`.
+NM_PAT = re.compile(r"^([0-9a-fA-F]+)\s+[TtDdBb]\s+([\w.]+)$", re.MULTILINE)
 # Ghidra ELF PIE'yi 0x100000 image-base'e yükler; nm .debug adresleri 0-based.
 # GT anahtarlarını Ghidra namespace'ine hizalamak için offset ekle
 # (yoksa FUN_00002cf4 vs FUN_00102cf4 -> kesişim boş -> sahte F1=0).
