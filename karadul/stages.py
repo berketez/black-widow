@@ -2512,6 +2512,15 @@ class ReconstructionStage(Stage):
                 except Exception:
                     continue
                 name = match_function(extract_string_literals(txt))
+                if name == "version_etc" and "getopt_long" in txt:
+                    # FIX-4 (2026-07-12): "Written by" string'i normalde version_etc'e
+                    # aittir; ama parse_long_options, --version isini .constprop ile
+                    # inline ettiginde o string parse_long_options govdesine tasinir.
+                    # Ayirt-edici: parse_long_options getopt_long cagirir, version_etc
+                    # CAGIRMAZ -> getopt_long varsa bu FUN parse_long_options'tir.
+                    # version_etc atamasini iptal et (call-shape katmani, getopt_long
+                    # fingerprint'i ile parse_long_options'i dogru atar).
+                    name = None
                 if name:
                     candidates.setdefault(name, []).append(fun_key)
 
@@ -2592,6 +2601,77 @@ class ReconstructionStage(Stage):
                     )
         except Exception as exc:  # pragma: no cover -- savunmaci
             logger.debug("gnulib fingerprint kurtarma hatasi: %s", exc)
+
+    def _recover_elf_boilerplate(
+        self, extracted_names: dict, static_dir: "Path | None", stats: dict
+    ) -> None:
+        """ELF/CRT boilerplate fonksiyonlarini call-shape ile kurtar.
+
+        FIX-3 (2026-07-12). Her ELF'te linker/CRT'nin urettigi sabit stub'lar
+        (``register_tm_clones``, ``deregister_tm_clones``,
+        ``__do_global_dtors_aux``, ``_start`` ...) stripped binary'de isimsiz
+        ``FUN_`` olur ama davranislari -- cagirdiklari ayirt-edici runtime
+        sembolleri (``_ITM_*``, ``__cxa_finalize``, ``__libc_start_main``) --
+        evrenseldir ve kaynak-bagimsizdir -> deterministik hesaplanabilir.
+        gnulib call-shape (FIX-2b) ile ayni mekanizma + unique-in-binary;
+        onceki pre_name'ler (main/gnulib) EZILMEZ.
+        """
+        try:
+            if not isinstance(extracted_names, dict) or static_dir is None:
+                return
+            from karadul.analyzers.elf_boilerplate import match_boilerplate
+
+            cg_path = None
+            _roots = [static_dir]
+            if static_dir.parent and static_dir.parent != static_dir:
+                _roots.append(static_dir.parent)
+            for _root in _roots:
+                found = next(_root.rglob("call_graph.json"), None)
+                if found is not None:
+                    cg_path = found
+                    break
+            if cg_path is None:
+                return
+            import json as _json
+
+            try:
+                nodes = _json.loads(cg_path.read_text()).get("nodes", {})
+            except Exception:
+                return
+            bp_candidates: dict[str, list[str]] = {}
+            for addr_key, node in nodes.items():
+                if not isinstance(node, dict):
+                    continue
+                try:
+                    fun_key = f"FUN_{int(str(addr_key), 16):08x}"
+                except (ValueError, TypeError):
+                    continue
+                if extracted_names.get(fun_key) is not None:
+                    continue  # zaten isimli (main/gnulib) -> aday degil
+                callees = {
+                    c.get("name", "")
+                    for c in node.get("callees", [])
+                    if isinstance(c, dict)
+                }
+                nm = match_boilerplate(callees, int(node.get("callee_count", 0)))
+                if nm:
+                    bp_candidates.setdefault(nm, []).append(fun_key)
+            bp_assigned = 0
+            for nm, keys in bp_candidates.items():
+                if len(keys) != 1:
+                    continue  # unique-in-binary -> precision sozlesmesi
+                fk = keys[0]
+                if extracted_names.get(fk) is not None:
+                    continue
+                extracted_names[fk] = nm
+                bp_assigned += 1
+            if bp_assigned:
+                stats["elf_boilerplate_recovered"] = bp_assigned
+                logger.info(
+                    "ELF boilerplate: %d fonksiyon kurtarildi", bp_assigned
+                )
+        except Exception as exc:  # pragma: no cover -- savunmaci
+            logger.debug("ELF boilerplate kurtarma hatasi: %s", exc)
 
     def _execute_binary(self, context: PipelineContext, start: float) -> StageResult:
         """Binary reconstruction — decompile edilmis C'yi okunabilir yap.
@@ -2850,6 +2930,10 @@ class ReconstructionStage(Stage):
         # fingerprint ile kurtar (byte-imza backbone coreutils'te olu). Ayni
         # merge seam, ayni pre_names mekanizmasi; main'den SONRA (main korunur).
         self._recover_gnulib_from_fingerprints(extracted_names, static_dir, stats)
+        # FIX-3 (2026-07-12): ELF/CRT boilerplate stub'larini call-shape ile
+        # kurtar (register_tm_clones, _start, __do_global_dtors_aux ...). Ayni
+        # unique-in-binary + pre_names mekanizmasi; onceki isimler korunur.
+        self._recover_elf_boilerplate(extracted_names, static_dir, stats)
 
         # 1.9. Assembly Analysis -- Ghidra decompiler fallback
         # v1.10.0 M1 T3.5: Step registry modunda bu is asm_analysis step'i

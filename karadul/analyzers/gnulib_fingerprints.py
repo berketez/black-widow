@@ -80,6 +80,10 @@ GNULIB_FINGERPRINTS: tuple[GnulibFingerprint, ...] = (
         "xstrtol_error", ("invalid suffix in",), "xstrtol-error.c",
         "sayisal (--lines vb.) arg ayristirma hatasi",
     ),
+    GnulibFingerprint(
+        "close_stdin", ("error closing file",), "closein.c",
+        "stdin kapatma hata handler'i -- close_stdout 'write error' ile cakismaz",
+    ),
 )
 
 # Decompiled C string literal cikarici: "..." icini yakalar, kacislar ham kalir.
@@ -164,8 +168,9 @@ GNULIB_CALL_SHAPES: tuple[GnulibCallShape, ...] = (
     ),
     GnulibCallShape(
         "hard_locale", ("setlocale",), "hard-locale.c",
-        min_fanout=2, max_fanout=10,
-        note="aktif locale 'C'/'POSIX' disinda mi",
+        min_fanout=2, max_fanout=6,
+        note="aktif locale 'C'/'POSIX' disinda mi -- KUCUK fonksiyon (cc<=6); "
+             "usage() de setlocale cagirir ama cc>=8, max_fanout ile ayrilir",
     ),
     GnulibCallShape(
         "full_write", ("write",), "full-write.c",
@@ -173,15 +178,35 @@ GNULIB_CALL_SHAPES: tuple[GnulibCallShape, ...] = (
         note="kismi yazmalari toparlayan write wrapper'i",
     ),
     GnulibCallShape(
-        "quotearg_buffer_restyled", ("__ctype_get_mb_cur_max",), "quotearg.c",
+        "quotearg_buffer_restyled", ("__ctype_get_mb_cur_max", "iswprint"), "quotearg.c",
         min_fanout=2, max_fanout=None,
-        note="cok-baytli tirnak isleme (ctype)",
+        note="cok-baytli tirnak isleme -- ctype + iswprint; iswprint mbslen'i "
+             "eler (mbslen de __ctype_get_mb_cur_max cagirir ama iswprint cagirmaz)",
     ),
     GnulibCallShape(
         "rpl_fclose", ("fclose", "__freading"), "fclose.c",
         min_fanout=3, max_fanout=10,
         note="gnulib fclose replacement -- __freading ile buffer durum denetimi",
     ),
+    GnulibCallShape(
+        "parse_long_options", ("getopt_long",), "long-options.c",
+        min_fanout=2, max_fanout=12,
+        note="--help/--version isleyen long-opt parser -- getopt_long yalniz burada",
+    ),
+    GnulibCallShape(
+        "rpl_mbrtoc32", ("mbrtoc32",), "mbrtoc32.c",
+        min_fanout=2, max_fanout=4,
+        note="gnulib mbrtoc32 replacement -- sistem mbrtoc32'yi cagirir",
+    ),
+    GnulibCallShape(
+        "mbslen", ("mbsinit",), "mbswidth.c",
+        min_fanout=2, max_fanout=10,
+        note="cok-baytli string uzunlugu -- mbsinit ile mbstate sifirlama denetimi",
+    ),
+    # NOT: proper_name_lite (nl_langinfo+dcgettext) call-shape'i expr'de UNIQUE ve
+    # dogru eslesir, AMA gnulib kaynagi (proper-name.c) vendor/gnulib-ref'te
+    # bulunmadigi icin leakage denetimi yapilamadi -> precision sozlesmesi geregi
+    # DISARIDA birakildi. vendor'a proper-name.c eklenirse geri konabilir.
 )
 
 
