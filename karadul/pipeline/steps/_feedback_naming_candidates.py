@@ -407,12 +407,29 @@ def _add_c_namer(
 ) -> None:
     if naming_result is None or not hasattr(naming_result, "naming_map"):
         return
+    # FIX (2026-07-12): sabit 0.70 yerine c_namer'in gercek per-isim
+    # confidence'ini kullan. Zayif yapisal stratejileri (call_graph/callee_based
+    # -> helper_<adr>, dispatcher_<adr> gibi adres-gomulu uydurmalar) ayri
+    # dusuk-agirlik source'a (c_namer_structural, weight 0.35) etiketle ki
+    # tek-kaynak olduklarinda NameMerger'in UNK esigi altinda kalip FUN_xxx
+    # olarak birakilsinlar. Korroborasyon (byte-sig/cfg_iso) varsa isim verilir.
+    conf_map = getattr(naming_result, "confidence_map", None) or {}
+    strat_map = getattr(naming_result, "strategy_map", None) or {}
     for old_name, new_name in naming_result.naming_map.items():
         if not old_name or len(old_name) < 2 or not new_name:
             continue
-        candidates.setdefault(old_name, []).append(
-            NamingCandidate(new_name, 0.70, "c_namer"),
-        )
+        strat = strat_map.get(old_name, "")
+        if strat in ("call_graph", "callee_based"):
+            # Adres-gomulu yapisal uydurma (helper_<adr>, dispatcher_<adr>) --
+            # gercek bilgi ~0. Confidence'i UNK esigi (0.30) altina sabitle ki
+            # tek-kaynak oldugunda merger FUN_xxx biraksin; korroborasyon varsa gecer.
+            candidates.setdefault(old_name, []).append(
+                NamingCandidate(new_name, 0.25, "c_namer_structural"),
+            )
+        else:
+            candidates.setdefault(old_name, []).append(
+                NamingCandidate(new_name, conf_map.get(old_name, 0.70), "c_namer"),
+            )
 
 
 def _add_bindiff(

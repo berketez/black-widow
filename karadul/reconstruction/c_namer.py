@@ -96,6 +96,12 @@ class CNamingResult:
     medium_confidence: int = 0
     low_confidence: int = 0
     errors: list[str] = field(default_factory=list)
+    # FIX (2026-07-12): per-isim gercek confidence + strateji. NameMerger'in
+    # flat 0.70 ile duzlemesini onler -> zayif yapisal isimler (helper_<adr>,
+    # dispatcher_<adr>) gercek dusuk guveniyle merger'a girer, UNK esigi altinda
+    # kalip FUN_xxx olarak birakilir (korroborasyon yoksa). old_name -> deger.
+    confidence_map: dict[str, float] = field(default_factory=dict)
+    strategy_map: dict[str, str] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -1253,6 +1259,8 @@ class CVariableNamer:
         # 4. En yuksek confidence'li ismi sec
         naming_map: dict[str, str] = {}
         by_strategy: dict[str, int] = {}
+        confidence_map: dict[str, float] = {}  # old_name -> best.confidence
+        strategy_map: dict[str, str] = {}      # old_name -> best.strategy
         high_conf = 0
         medium_conf = 0
         low_conf = 0
@@ -1270,6 +1278,10 @@ class CVariableNamer:
                     naming_map[old_name] = sanitized
                     used_new_names.add(sanitized)
                     by_strategy["binary_extract"] = by_strategy.get("binary_extract", 0) + 1
+                    # pre_names = FIX-1 main / gnulib fingerprint / boilerplate /
+                    # binary_extractor -> yuksek guven (deterministik kurtarma).
+                    confidence_map[old_name] = 0.95
+                    strategy_map[old_name] = "binary_extract"
                     high_conf += 1
             logger.info("Pre-names: %d isim binary extractor'dan eklendi", len(pre_names))
 
@@ -1296,6 +1308,20 @@ class CVariableNamer:
                 func_name = ""
                 old_name = key
 
+            # FIX (2026-07-12): GLOBAL fonksiyon adlarinda adres-gomulu/jenerik
+            # heuristik stratejileri (call_graph -> helper_<adr>/dispatcher_<adr>,
+            # callee_based -> <prefix>_<adr>, api_call -> manage_memory/calls_X)
+            # naming_map'e KOYMA. Bunlar GT ile eslesmez (precision katili) ve
+            # semantik bilgi degeri ~0 (adres = anlam degil). Yuksek-guven kaynaklar
+            # (symbol/string_context/pre_names/api_param) gecer. Berke precision
+            # sozlesmesi (150/160): dogru koyamayacaksan FUN_xxx birak. Bu isimler
+            # ileride korroborasyon (byte-sig/cfg_iso/BSim) veya Claude katmaninda
+            # yeniden degerlendirilir. (per_func degisken isimleri etkilenmez.)
+            if not func_name and best.strategy in (
+                "call_graph", "callee_based", "api_call",
+            ):
+                continue
+
             # Extractor zaten isimlendirdiyse atla (global map)
             if old_name in naming_map:
                 continue
@@ -1311,6 +1337,12 @@ class CVariableNamer:
 
             used_new_names.add(new_name)
             by_strategy[best.strategy] = by_strategy.get(best.strategy, 0) + 1
+            # Gercek confidence + strateji'yi disa aktar (NameMerger'in flat 0.70
+            # duzlemesini onlemek icin). Zayif yapisal stratejiler (call_graph,
+            # callee_based) burada gercek 0.5-0.65 tasir; merger'da c_namer_structural
+            # dusuk-agirlik source'una etiketlenip UNK esigi altinda elenir.
+            confidence_map[old_name] = best.confidence
+            strategy_map[old_name] = best.strategy
 
             if best.confidence >= 0.7:
                 high_conf += 1
@@ -1424,6 +1456,8 @@ class CVariableNamer:
             medium_confidence=medium_conf,
             low_confidence=low_conf,
             errors=errors,
+            confidence_map=confidence_map,
+            strategy_map=strategy_map,
         )
 
     # ------------------------------------------------------------------

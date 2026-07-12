@@ -3674,13 +3674,27 @@ class ReconstructionStage(Stage):
                         )
 
                     # c_namer sonuclarini candidate olarak ekle
+                    # FIX (2026-07-12): flat 0.70 yerine gercek per-isim confidence;
+                    # zayif yapisal stratejiler (call_graph/callee_based) dusuk-agirlik
+                    # source'a (c_namer_structural) ayrilir -> tek-kaynak uydurmalar
+                    # UNK esigi altinda FUN_xxx birakilir. (_add_c_namer ile ayni mantik.)
                     if naming_result is not None and hasattr(naming_result, "naming_map"):
+                        _cn_conf = getattr(naming_result, "confidence_map", None) or {}
+                        _cn_strat = getattr(naming_result, "strategy_map", None) or {}
                         for old_name, new_name in naming_result.naming_map.items():
                             if not old_name or len(old_name) < 2 or not new_name:
                                 continue
-                            candidates_by_symbol.setdefault(old_name, []).append(
-                                NamingCandidate(new_name, 0.70, "c_namer")
-                            )
+                            _strat = _cn_strat.get(old_name, "")
+                            if _strat in ("call_graph", "callee_based"):
+                                # Adres-gomulu yapisal uydurma -> conf 0.25 (UNK alti);
+                                # tek-kaynak FUN_xxx, korrobore isim. (_add_c_namer ile ayni.)
+                                candidates_by_symbol.setdefault(old_name, []).append(
+                                    NamingCandidate(new_name, 0.25, "c_namer_structural")
+                                )
+                            else:
+                                candidates_by_symbol.setdefault(old_name, []).append(
+                                    NamingCandidate(new_name, _cn_conf.get(old_name, 0.70), "c_namer")
+                                )
 
                     # v1.7.6: BinDiff sonuclarini per-match confidence ile ekle
                     # (binary_extractor'un sabit 0.85'i yerine gercek match confidence)

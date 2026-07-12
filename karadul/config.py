@@ -226,6 +226,15 @@ class NameMergerConfig:
     source_weights: dict[str, float] = field(default_factory=lambda: {
         "binary_extractor": 1.0,    # Bagimsiz (debug strings, RTTI)
         "c_namer": 1.0,             # Zaten min_confidence ile filtrelenmis, cift zayiflatma gereksiz
+        # FIX (2026-07-12): c_namer'in zayif yapisal stratejileri (call_graph/
+        # callee_based -> helper_<adr>, dispatcher_<adr> adres-gomulu uydurmalar).
+        # weight NORMAL (1.0), ama bu isimlerin confidence'i _add_c_namer'da 0.25'e
+        # SABITLENIR (adres-gomulu isim = sahte 0.55-0.65 guveni, gercek bilgi ~0).
+        # Tek-kaynak: sigmoid(logit(0.25))=0.25 < UNK(0.30) -> FUN_xxx birakilir.
+        # Byte-sig/cfg_iso korrobore olursa posterior yukselir -> isim verilir.
+        # (weight dusurmek posterior'i 0.5'e YAKLASTIRIR, UNK'a degil -- bu yuzden
+        #  cozum weight degil confidence sabitleme.)
+        "c_namer_structural": 1.0,
         "string_intel": 0.8,        # Kismen bagimsiz
         "signature_db": 1.0,        # Tamamen bagimsiz (FLIRT)
         "swift_demangle": 1.0,      # Tamamen bagimsiz
