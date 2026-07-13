@@ -543,6 +543,13 @@ def analyze(
     console.print(Rule("Pipeline", style="cyan"))
     console.print()
 
+    if verbose:
+        # --verbose: naming/fingerprint INFO loglarini stderr'e akit. Rich console
+        # stdout kullandigi icin cakismaz; UI (ui/server.py) bu satirlardan canli
+        # substage ("gnulib fingerprint: N fonksiyon kurtarildi") cikarir.
+        from karadul.core.logging_config import setup_logging
+        setup_logging(level="INFO")
+
     result = pipeline.run(target_path, stages=None)  # Tum kayitli stage'leri calistir
 
     # Sonuc tablosu

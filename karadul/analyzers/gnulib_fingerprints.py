@@ -84,6 +84,15 @@ GNULIB_FINGERPRINTS: tuple[GnulibFingerprint, ...] = (
         "close_stdin", ("error closing file",), "closein.c",
         "stdin kapatma hata handler'i -- close_stdout 'write error' ile cakismaz",
     ),
+    GnulibFingerprint(
+        "usage", ("Usage: %s",), "argmatch.c",
+        "coreutils usage() ekrani. Teknik olarak program-ozgu (src/<prog>.c) bir "
+        "fonksiyondur, gnulib degil; ama 'Usage: %s' string prefiksi TUM coreutils "
+        "binary'lerinde evrenseldir ve argmatch.c'de bagimsiz gecer (leakage-safe "
+        "anchor). unique-in-binary korur; 'Written by' (version_etc) icermez -> "
+        "cakismaz. Karadul aksi halde --version/--help satirlarindan yaniltilip "
+        "'version_*' atiyordu (FP).",
+    ),
 )
 
 # Decompiled C string literal cikarici: "..." icini yakalar, kacislar ham kalir.
