@@ -11,7 +11,7 @@ dizinini otomatik seçer. Ölçülecek binary'ler argümanla verilebilir:
     python3 scripts/mac_f1_eval.py cat sort ls
 Argüman yoksa GT seti içindeki tüm binary'ler denenir.
 """
-import sys, re, glob
+import sys, re, glob, datetime
 from pathlib import Path
 
 sys.path.insert(0, "/Users/apple/Desktop/black-widow")
@@ -65,25 +65,26 @@ def latest(pattern: str, leaf: str):
     return sorted(dirs, key=lambda p: Path(p).stat().st_mtime)[-1]
 
 
-def find_naming_map(b: str):
-    # DOĞRU kaynak: workspace reconstructed/src/naming_map.json — FUN_<addr>→isim
-    # eşlemesini {global, per_function} scoped formatında taşır. Clean output'un
-    # naming_map.json'u sadece kütüphane import'larını (isim-anahtarlı) içerir.
-    ws_hits = glob.glob(
+def select_run(b: str):
+    """Bir binary için naming_map + workspace'i AYNI run dizininden seç.
+
+    TB-3 fix (2026-07-13, test denetimi): Eskiden naming_map (find_naming_map) ve
+    ghidra_functions (find_workspace) BAĞIMSIZ mtime ile seçiliyordu → ikisi farklı
+    koşulardan gelip adres/fonksiyon-kümesi uyuşmazlığı → sessiz YANLIŞ F1. Artık
+    tek run dizini seçilir, ikisi de ondan türer.
+    Döner: (naming_map_path | None, workspace_dir | None).
+    """
+    nm_hits = glob.glob(
         f"{MEAS}/{b}_ws*/workspaces/{b}/*/reconstructed/src/naming_map.json"
     )
-    if ws_hits:
-        return Path(sorted(ws_hits, key=lambda p: Path(p).stat().st_mtime)[-1])
+    if nm_hits:
+        nm = Path(sorted(nm_hits, key=lambda p: Path(p).stat().st_mtime)[-1])
+        run_dir = nm.parents[2]  # .../workspaces/<b>/<ts>
+        ws = str(run_dir) if (run_dir / "static/ghidra_functions.json").is_file() else None
+        return nm, ws
+    # clean fallback (workspace yok, sadece naming_map)
     d = latest(f"{MEAS}/{b}_clean*", "naming_map.json")
-    return Path(d) / "naming_map.json" if d else None
-
-
-def find_workspace(b: str):
-    hits = glob.glob(f"{MEAS}/{b}_ws*/workspaces/{b}/*/static/ghidra_functions.json")
-    if not hits:
-        return None
-    hits.sort(key=lambda p: Path(p).stat().st_mtime)
-    return str(Path(hits[-1]).parent.parent)
+    return (Path(d) / "naming_map.json" if d else None), None
 
 
 def dump(name, result):
@@ -110,12 +111,14 @@ def main():
         bins = sorted(Path(p).name[:-7] for p in glob.glob(f"{GT_DIR}/*.gt.txt"))
     measured = {}
     for b in bins:
-        nm_map = find_naming_map(b)
+        nm_map, ws = select_run(b)
         gt_txt = f"{GT_DIR}/{b}.gt.txt"
         if not nm_map or not Path(gt_txt).is_file():
             print(f"\n{b}: naming_map veya GT yok → atlanıyor")
             continue
-        ws = find_workspace(b)
+        # Şeffaflık (TB-3): hangi run ölçüldü + ne zaman (bayat/uyumsuz workspace teşhisi)
+        _mt = datetime.datetime.fromtimestamp(nm_map.stat().st_mtime).strftime("%m-%d %H:%M")
+        print(f"  [{b}] run: …{str(nm_map.parents[2])[-44:]}  (naming_map mtime {_mt})")
         runner = BenchmarkRunner(output_dir=Path(f"{MEAS}/f1_results"))
         runner._extract_symbols_nm = make_gt_extractor(gt_txt)
         try:

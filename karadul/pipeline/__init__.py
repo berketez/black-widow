@@ -1,7 +1,7 @@
 """Karadul pipeline paketi — step-based pipeline (v1.10.0 M1).
 
-Feature flag: `config.pipeline.use_step_registry` default False.
-Default davranis eski stages.py monolith'i; True ise bu paket kullanilir.
+Feature flag: `config.pipeline.use_step_registry` default True (B2, 2026-05-13).
+Bu paket (step-DAG) canli yoldur; False ise eski stages.py monolith'i (obsolete).
 """
 
 from __future__ import annotations

@@ -1639,8 +1639,13 @@ class SignatureDB:
         total = len(self._symbol_db)
         logger.info("SignatureDB: %d symbol imzasi yuklendi", total)
 
-        # Otomatik external signature yukleme (platform filtresi ile)
-        self._load_external_auto(target_platform=self._target_platform)
+        # Otomatik external signature yukleme (platform filtresi ile).
+        # LMDB aktifse ATLA: 9.2M sembol memory-mapped LMDB'de zaten var ve match
+        # kodu (_match_by_symbol vb.) _lmdb_backend fallback'i kullaniyor. External
+        # dict'i ayrica RAM'e yuklemek ~9s + ~3.9 GB bosa harcar. L1429 yorumu bunu
+        # zaten vaad ediyordu ama gate eksikti (perf denetimi 2026-07-13).
+        if self._lmdb_backend is None:
+            self._load_external_auto(target_platform=self._target_platform)
 
         # Full DB'yi (builtin + external) class-level cache'e kaydet
         SignatureDB._full_cache[cache_key] = (

@@ -213,9 +213,14 @@ GNULIB_CALL_SHAPES: tuple[GnulibCallShape, ...] = (
         note="cok-baytli string uzunlugu -- mbsinit ile mbstate sifirlama denetimi",
     ),
     # NOT: proper_name_lite (nl_langinfo+dcgettext) call-shape'i expr'de UNIQUE ve
-    # dogru eslesir, AMA gnulib kaynagi (proper-name.c) vendor/gnulib-ref'te
-    # bulunmadigi icin leakage denetimi yapilamadi -> precision sozlesmesi geregi
-    # DISARIDA birakildi. vendor'a proper-name.c eklenirse geri konabilir.
+    # dogru eslesir, AMA leakage-safe eklenemiyor -- SURUM UYUSMAZLIGI (naming
+    # denetimi 2026-07-13). Kaynak vendor'da VAR ama gnulib yeniden adlandirmis:
+    # proper-name.c -> propername-lite.c. Sorun dosya yoklugu DEGIL: guncel gnulib
+    # (2026) proper_name_lite'i mbrtoc32 ile yaziyor, test binary'leri (coreutils
+    # 9.4, ~2023 gnulib) ise nl_langinfo kullaniyor. nl_langinfo call-shape'i
+    # guncel kaynakta gecmedigi icin leakage testi reddeder. Ayni locale-churn
+    # gettext_quote'u da vuruyor. Cozum: vendor/gnulib-ref'i coreutils-9.4 gnulib
+    # snapshot'ina pin'le -> nl_langinfo call-shape'i leakage-safe olur.
 )
 
 

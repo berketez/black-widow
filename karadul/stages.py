@@ -1401,7 +1401,6 @@ class ReconstructionStage(Stage):
             except Exception as exc:
                 logger.warning("call_graph_json parse hatasi: %s -- %s", call_graph_json, exc)
                 errors.append(f"call_graph_json parse hatasi: {exc}")
-                pass
 
         # rc uzerine mirror yaz (parity test icin).
         rc.file_cache = _file_cache

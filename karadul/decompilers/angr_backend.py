@@ -191,8 +191,8 @@ class AngrBackend:
                 except Exception:
                     # Indirect call — hedef bilinmiyor
                     call_sites.append(hex(site))
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("call site cikarimi kismi basarisiz: %s (kismi liste donduruluyor)", exc)
         return call_sites
 
     @staticmethod

@@ -561,8 +561,9 @@ class ComputationRecoveryConfig:
 class PipelineConfig:
     """v1.10.0: Step registry pipeline konfigurasyonu.
 
-    use_step_registry=False default — eski stages.py monolith'i kullanilir.
-    True ise yeni karadul.pipeline paketinden step'ler calisir.
+    use_step_registry=True default (B2, 2026-05-13) — yeni karadul.pipeline
+    paketinden step'ler calisir (canli yol). False ise eski stages.py monolith'i
+    (obsolete; monolith->step migrasyonu henuz tamamen silinmedi).
 
     v1.15-B16 (paralel runner):
         parallel_steps=True default -- topological order'da ayni level'daki

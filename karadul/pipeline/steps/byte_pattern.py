@@ -165,14 +165,15 @@ class BytePatternStep(Step):
             if homebrew_bytes_sigs.exists():
                 all_byte_sigs.extend(fp.load_json_signatures(homebrew_bytes_sigs))
 
-            # Genel homebrew sigs (isim-based, byte pattern olmayabilir)
-            homebrew_sigs = project_root / "signatures_homebrew.json"
-            if homebrew_sigs.exists():
-                all_byte_sigs.extend(fp.load_json_signatures(homebrew_sigs))
-
+            # NOT (perf denetimi 2026-07-13): signatures_homebrew.json (158K imza)
+            # ve sigs/ .json'lari ISIM-tabanli, byte-pattern'leri YOK -> trie matcher
+            # (byte_pattern>=16 filtresi) hepsini atiyordu (~8s + bellek bosa). Byte
+            # matcher'a yalniz gercek byte-pattern'li kaynaklar girmeli: yukaridaki
+            # homebrew_bytes.json + sigs/ altindaki .pat dosyalari.
             sigs_dir = project_root / "sigs"
             if sigs_dir.is_dir():
-                all_byte_sigs.extend(fp.load_directory(sigs_dir))
+                for pat_file in sigs_dir.rglob("*.pat"):
+                    all_byte_sigs.extend(fp.load_pat_file(pat_file))
 
             ext_paths = pc.config.binary_reconstruction.external_signature_paths
             for ext_path in ext_paths:
