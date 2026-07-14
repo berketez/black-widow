@@ -249,6 +249,9 @@ pip install -e ".[ml]"        # torch + transformers
 # With deobfuscation extras
 pip install -e ".[deobf]"     # z3-solver
 
+# With the desktop app (native macOS window)
+pip install -e ".[app]"       # pywebview / WKWebView
+
 # Everything
 pip install -e ".[all]"
 ```
@@ -279,6 +282,33 @@ karadul list
 # Run reconstructed project (JS targets)
 karadul run <target-name>
 ```
+
+The CLI is `rich`-powered: `karadul analyze` shows a live pipeline progress bar, `--json`
+emits machine-readable output, `-q/--quiet` suppresses chrome, and `karadul config
+show/path/validate` inspects the active `karadul.yaml`.
+
+## Desktop App (macOS)
+
+Black Widow ships a dark, mission-control GUI -- the **Black Widow console** -- a native
+macOS window (WKWebView) with a guided flow: pick a binary, watch the pipeline run, explore
+the radial call graph, and work in **Analyst mode** -- inline rename with persistent
+per-binary overrides, a "why is this unnamed?" diagnosis, a bidirectional call map, an
+evidence panel, and a settings panel that writes `karadul.yaml`. The app mark is the red
+Black Widow hourglass.
+
+```bash
+# Run the console directly (opens http://127.0.0.1:8000)
+python ui/server.py
+
+# Build the native .app (red hourglass icon, opens in its own window)
+bash packaging/macos/build_app.sh            # lightweight (uses your environment)
+bash packaging/macos/build_app.sh --full     # self-contained: bundled Python + Ghidra + JDK + sig DB
+bash packaging/macos/build_dmg.sh            # -> dist/BlackWidow-*.dmg
+```
+
+The `--full` bundle is offline and double-clickable (everything lives inside the `.app`); it
+is large (~GB) because it bundles Ghidra, a JDK, and the signature database. Unsigned builds
+need a one-time right-click **Open** (Gatekeeper).
 
 ## Output
 
