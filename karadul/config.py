@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import glob
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -117,14 +119,50 @@ def _resolve_path(p: str) -> Path:
     return Path(os.path.expanduser(p)).resolve()
 
 
+# Berke'nin bilinen Ghidra install dizini (geriye uyum + bilinen-iyi aday)
+_GHIDRA_KNOWN_DIR = "~/Desktop/dosyalar/uygulamalar/ghidra/build/dist/ghidra_12.0_DEV"
+
+
+def _find_ghidra_tool(rel: str, fallback: str) -> Path:
+    """Ghidra alt-aracını esnek bul (``rel`` = install-dir'e göreli, ör
+    ``support/analyzeHeadless``).
+
+    Öncelik: env (``GHIDRA_INSTALL_DIR``/``GHIDRA_HOME``) -> Berke'nin bilinen
+    yolu -> yaygın konum glob'ları -> PATH -> eski hardcoded fallback. Böylece
+    .app/launcher ``GHIDRA_INSTALL_DIR`` ile taşınabilir; env yoksa mevcut
+    davranış korunur (bilinen yol bulunur). Ghidra yolu ``karadul.yaml``'a
+    KONULMAZ (ayar paneli whitelist'i onu silerdi) -> env tek güvenli override.
+    """
+    bases: list[Path] = []
+    for ev in ("GHIDRA_INSTALL_DIR", "GHIDRA_HOME"):
+        v = os.environ.get(ev)
+        if v:
+            bases.append(Path(os.path.expanduser(v)))
+    bases.append(_resolve_path(_GHIDRA_KNOWN_DIR))
+    for pat in ("~/ghidra*", "~/Ghidra*", "/Applications/ghidra*",
+                "/opt/homebrew/Caskroom/ghidra/*/ghidra_*", "/opt/ghidra*",
+                "~/Desktop/*/ghidra*"):
+        bases += [Path(p) for p in sorted(glob.glob(os.path.expanduser(pat)), reverse=True)]
+    for base in bases:
+        cand = base / rel
+        if cand.exists():
+            return cand.resolve()
+    which = shutil.which(os.path.basename(rel))
+    if which:
+        return Path(which)
+    return _resolve_path(fallback)
+
+
 @dataclass
 class ToolPaths:
     """Dış araç konumları."""
-    ghidra_headless: Path = field(default_factory=lambda: _resolve_path(
-        "~/Desktop/dosyalar/uygulamalar/ghidra/build/dist/ghidra_12.0_DEV/support/analyzeHeadless"
+    ghidra_headless: Path = field(default_factory=lambda: _find_ghidra_tool(
+        "support/analyzeHeadless",
+        "~/Desktop/dosyalar/uygulamalar/ghidra/build/dist/ghidra_12.0_DEV/support/analyzeHeadless",
     ))
-    ghidra_run: Path = field(default_factory=lambda: _resolve_path(
-        "~/Desktop/dosyalar/uygulamalar/ghidra/build/dist/ghidra_12.0_DEV/ghidraRun"
+    ghidra_run: Path = field(default_factory=lambda: _find_ghidra_tool(
+        "ghidraRun",
+        "~/Desktop/dosyalar/uygulamalar/ghidra/build/dist/ghidra_12.0_DEV/ghidraRun",
     ))
     synchrony: Path = field(default_factory=lambda: Path("/opt/homebrew/bin/synchrony"))
     radare2: Path = field(default_factory=lambda: Path("/opt/homebrew/bin/r2"))
