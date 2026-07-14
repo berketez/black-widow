@@ -1,19 +1,16 @@
 #!/bin/bash
 # Black Widow (Karadul) launcher -- .app Contents/MacOS/karadul-launch
+# UI'ı TARAYICI yerine NATIVE PENCEREDE (pywebview/WKWebView, ui/app_window.py) açar.
 # İki mod: BUNDLE (Resources'ta python+ghidra+jdk varsa self-contained) veya
-# DEV (bundle asset yoksa mevcut repo + anaconda python'a düşer). UI'ı başlatır
-# (ui/server.py, port 8000) ve tarayıcıyı açar.
+# DEV (yoksa mevcut repo + anaconda python'a düşer).
 set -e
 
 HERE="$(cd "$(dirname "$0")" && pwd)"                 # .../Contents/MacOS
 RES="$(cd "$HERE/../Resources" 2>/dev/null && pwd || echo "$HERE/../Resources")"
-PORT=8000
-URL="http://127.0.0.1:$PORT"
 
 # Yazılabilir veri dizini (bundle Resources READ-ONLY olabilir) -> server.py bunu okur
 export KARADUL_DATA_DIR="${KARADUL_DATA_DIR:-$HOME/Library/Application Support/BlackWidow}"
 mkdir -p "$KARADUL_DATA_DIR"
-LOG="$KARADUL_DATA_DIR/ui.log"
 
 if [ -x "$RES/python/bin/python3" ]; then
   # ---- BUNDLE modu: her şey içeride ----
@@ -26,21 +23,15 @@ if [ -x "$RES/python/bin/python3" ]; then
     mkdir -p "$HOME/.karadul"
     ln -sf "$RES/signatures.lmdb" "$HOME/.karadul/signatures.lmdb"
   fi
-  UI="$RES/ui/server.py"
+  UIWIN="$RES/ui/app_window.py"
 else
   # ---- DEV modu: bundle asset yok, mevcut ortama düş ----
   REPO="${KARADUL_REPO:-/Users/apple/Desktop/black-widow}"
   PY="/opt/anaconda3/bin/python3"; [ -x "$PY" ] || PY="$(command -v python3)"
-  UI="$REPO/ui/server.py"
+  UIWIN="$REPO/ui/app_window.py"
   # Ghidra/Java env verilmezse config kendi bulur (Berke'nin yolu / globlar)
 fi
 
-# Zaten çalışıyorsa yeni başlatma, sadece tarayıcıyı aç
-if ! /usr/bin/curl -s -o /dev/null --max-time 2 "$URL"; then
-  "$PY" "$UI" >"$LOG" 2>&1 &
-  for _ in $(seq 1 80); do
-    /usr/bin/curl -s -o /dev/null --max-time 1 "$URL" && break
-    sleep 0.3
-  done
-fi
-open "$URL"
+# Native pencereyi aç: exec ile python .app'in ana süreci olur (pencere sunucusu erişimi).
+# app_window.py server'ı başlatır + WKWebView penceresini açar; pencere kapanınca app kapanır.
+exec "$PY" "$UIWIN"

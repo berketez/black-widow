@@ -48,7 +48,7 @@ mkdir -p "$RES/python"; tar xzf "$DIST/py.tar.gz" -C "$RES/python" --strip-compo
 rm -f "$DIST/py.tar.gz"
 
 # 2) karadul + tüm runtime deps (arm64 wheel'ler)
-"$RES/python/bin/python3" -m pip install --no-input "$REPO"[ghidra,perf,computation]
+"$RES/python/bin/python3" -m pip install --no-input "$REPO"[ghidra,perf,computation,app]
 
 # 3) Ghidra (taşınabilir, Apache 2.0) — GHIDRA_INSTALL_DIR'den kopyala
 GH="${GHIDRA_INSTALL_DIR:-$HOME/Desktop/dosyalar/uygulamalar/ghidra/build/dist/ghidra_12.0_DEV}"
