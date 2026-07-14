@@ -43,6 +43,7 @@ from karadul.cli_common import (
     build_pipeline,
     filter_stages,
     format_size,
+    make_progress_callbacks,
 )
 from karadul.config import Config
 
@@ -101,7 +102,9 @@ def _graceful_interrupt(func):
 
     - Yarim yazilan workspace (pipeline tamamlanmadan olusmus) temizlenir.
     - Kullaniciya sade bir mesaj gosterilir, traceback basilmaz.
-    - Click'in standart abort mekanizmasi ile exit kodu 130 doner.
+    - Exit kodu: @pass_context'li komutlar ctx.abort() ile Click'in standart
+      "Aborted!" cikisini (kod 1) verir; ctx'siz komutlar dogrudan sys.exit(130)
+      (SIGINT konvansiyonu) ile cikar. (Iki yol da temiz, non-zero cikis.)
 
     Kullanim::
 
@@ -188,6 +191,71 @@ def _print_banner() -> None:
     console.print(Panel(banner, border_style="red", padding=(1, 4)))
 
 
+def _emit_analyze_json(target_info: TargetInfo, result, cfg: Config) -> None:
+    """P3: `analyze --json` icin makine-okunur sonuc payload'ini stdout'a yaz.
+
+    F1 gibi *olcum* metrikleri BURADA URETILMEZ (dogruluk skoru `score` /
+    `benchmark` komutlarinin isi; analyze onlari hesaplamaz). Payload yalnizca
+    pipeline'in gercekten urettigi sayilari (fonksiyon/string sayilari, naming/
+    reconstruct istatistikleri, stage sureleri) tasir -- uydurma yok.
+    """
+    import json as _json
+
+    summary: dict = {}
+    if "static" in result.stages:
+        st = result.stages["static"].stats or {}
+        summary["functions"] = st.get(
+            "functions_found",
+            st.get("ghidra_function_count", st.get("functions")),
+        )
+        summary["strings"] = st.get(
+            "strings_found",
+            st.get("ghidra_string_count", st.get("string_count", st.get("strings"))),
+        )
+    if "reconstruct" in result.stages:
+        st = result.stages["reconstruct"].stats or {}
+        for key in (
+            "modules_extracted", "variables_renamed", "coverage_percent",
+            "runnable_project", "computation_structs_refined",
+            "computation_arrays_detected", "computation_cfg_matches",
+            "computation_fusion_ids",
+        ):
+            if st.get(key) is not None:
+                summary[key] = st.get(key)
+
+    payload: dict = {
+        "target": {
+            "name": target_info.name,
+            "type": target_info.target_type.value
+            if isinstance(target_info.target_type, TargetType)
+            else str(target_info.target_type),
+            "language": target_info.language.value
+            if isinstance(target_info.language, Language)
+            else str(target_info.language),
+            "size": target_info.file_size,
+        },
+        "success": bool(result.success),
+        "workspace": str(result.workspace_path),
+        "computation_recovery_enabled": bool(cfg.computation_recovery.enabled),
+        "summary": summary,
+        "stages": {
+            name: {
+                "success": bool(sr.success),
+                "duration_seconds": round(float(sr.duration_seconds), 3),
+                "stats": dict(sr.stats) if sr.stats else {},
+            }
+            for name, sr in result.stages.items()
+        },
+    }
+    if "report" in result.stages:
+        artifacts = result.stages["report"].artifacts or {}
+        payload["reports"] = {k: str(v) for k, v in artifacts.items()}
+
+    # default=str -> Path/enum/set gibi JSON-disi degerler string'e dusurulur
+    # (stats icerigi heterojen; sessiz cokme yerine dis-avize).
+    click.echo(_json.dumps(payload, indent=2, ensure_ascii=False, default=str))
+
+
 # B17 refactor (2026-05-14): Stage filtreleme + sinif resolve mantigi
 # `karadul.cli_common`'a tasindi. Burada sadece geriye uyum wrapper'lari
 # birakildi; eski modul-disi cagrilar (test / monkeypatch) kirilmasin.
@@ -214,11 +282,19 @@ def _get_available_stages(requested: list[str]) -> list:
 # ---------------------------------------------------------------
 # Ana CLI grubu
 # ---------------------------------------------------------------
-@click.group(invoke_without_command=True)
+@click.group(
+    invoke_without_command=True,
+    # P4: auto_envvar_prefix -> her flag KARADUL_<OPT> ortam degiskeninden
+    # okunabilir ( or. KARADUL_VERBOSE=1). Ayrica click shell completion'i
+    # (`_KARADUL_COMPLETE=zsh_source karadul`) bedavaya calisir.
+    context_settings=dict(auto_envvar_prefix="KARADUL"),
+)
 @click.version_option(version=__version__, prog_name="karadul")
 @click.option("--verbose", is_flag=True, help="Debug log seviyesini ac.")
+@click.option("--quiet", "-q", is_flag=True,
+              help="Sessiz mod: banner/ara ciktilar bastirilir, sadece final sonuc gosterilir.")
 @click.pass_context
-def main(ctx: click.Context, verbose: bool) -> None:
+def main(ctx: click.Context, verbose: bool, quiet: bool) -> None:
     """Black Widow (Karadul) v3 -- Reverse Engineering Suite"""
     # v1.20.5: multiprocessing varsayilanini 'spawn' yap (force=True). Linux
     # varsayilani 'fork'; PyGhidra JVM (cok-thread'li) ayaktayken fork() child
@@ -256,6 +332,7 @@ def main(ctx: click.Context, verbose: bool) -> None:
 
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
+    ctx.obj["quiet"] = quiet
 
     if ctx.invoked_subcommand is None:
         # Interaktif hacker konsolu yalnızca gerçek bir terminalde açılır.
@@ -361,6 +438,9 @@ def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
 @click.option("--overrides", "overrides_path", type=click.Path(exists=True), default=None,
               help="Manuel override JSON dosyasi (varsayilan: ~/.karadul/overrides/<hash>.json "
                    "otomatik kesfedilir; bu flag SADECE default-olmayan yol icin).")
+@click.option("--json", "json_output", is_flag=True, default=False,
+              help="Sonucu (fonksiyon/string/naming sayilari + stage istatistikleri) "
+                   "makine-okunur JSON olarak stdout'a yaz (tablo yerine).")
 @click.pass_context
 @_graceful_interrupt
 def analyze(
@@ -387,11 +467,16 @@ def analyze(
     decompiler_backend: Optional[str],     # v1.10.0 M4
     bsim_shadow_dump: bool,                # v1.12 BSim shadow dump tetikleyici
     overrides_path: Optional[str],         # Faz 2: manuel override JSON (acik yol)
+    json_output: bool,                     # P3: makine-okunur JSON cikti
 ) -> None:
     """Hedef uzerinde tam analiz pipeline calistir."""
     # B17: Pipeline kurulumu `karadul.cli_common.build_pipeline` ile yapilir;
     # ayrica Pipeline import etmeye gerek yok.
     from karadul.core.target_resolver import resolve_target
+
+    # P2/P3: sessiz mod. --json de stdout'u temiz tutmak icin quiet gibi davranir
+    # (yalnizca JSON payload'i basilir). Global --quiet ctx.obj'ten okunur.
+    quiet = bool(ctx.obj and ctx.obj.get("quiet")) or json_output
 
     cfg = _load_config(config_path)
 
@@ -504,7 +589,8 @@ def analyze(
         # Hicbir flag verilmedi ve hedef binary gibi gorunuyor -- interaktif sor.
         # v1.10.0 Batch 3D HIGH: CI / non-TTY ortamda hang olmasin diye
         # _is_noninteractive() guard. Heavy feature oldugundan safe default = OFF.
-        if _is_noninteractive():
+        # P2/P3: quiet/json modunda da prompt gostermeyiz (stdout temiz kalsin).
+        if _is_noninteractive() or quiet:
             cfg.computation_recovery.enabled = False
             logger.debug(
                 "Non-interactive ortam tespit edildi, computation_recovery=False "
@@ -518,8 +604,9 @@ def analyze(
             choice = click.prompt("", type=click.IntRange(0, 1), default=0)
             cfg.computation_recovery.enabled = bool(choice)
 
-    # Banner
-    _print_banner()
+    # Banner (quiet/json'da bastirilir)
+    if not quiet:
+        _print_banner()
 
     # Hedef tani
     try:
@@ -529,18 +616,19 @@ def analyze(
         err_console.print(f"[bold red]HATA:[/bold red] Hedef taninamadi: {exc}")
         sys.exit(1)
 
-    # Target bilgileri
-    console.print()
-    console.print(f"[bold]Target:[/bold] {target_info.name}")
-    console.print(f"[bold]Type:[/bold]   {target_info.target_type.value} ({target_info.language.value})")
-    console.print(f"[bold]Size:[/bold]   {format_size(target_info.file_size)}")
-    # v1.6.5: compute/deep mode gostergesi
-    if deep:
-        console.print("[bold]Mode:[/bold]   [bold magenta]DEEP[/bold magenta] (all layers + deep trace)")
-    elif cfg.computation_recovery.enabled:
-        _mode_label = compute_mode or ("full" if compute_recovery else "enabled")
-        console.print(f"[bold]Compute:[/bold] [cyan]{_mode_label}[/cyan]")
-    console.print()
+    # Target bilgileri (quiet/json'da bastirilir)
+    if not quiet:
+        console.print()
+        console.print(f"[bold]Target:[/bold] {target_info.name}")
+        console.print(f"[bold]Type:[/bold]   {target_info.target_type.value} ({target_info.language.value})")
+        console.print(f"[bold]Size:[/bold]   {format_size(target_info.file_size)}")
+        # v1.6.5: compute/deep mode gostergesi
+        if deep:
+            console.print("[bold]Mode:[/bold]   [bold magenta]DEEP[/bold magenta] (all layers + deep trace)")
+        elif cfg.computation_recovery.enabled:
+            _mode_label = compute_mode or ("full" if compute_recovery else "enabled")
+            console.print(f"[bold]Compute:[/bold] [cyan]{_mode_label}[/cyan]")
+        console.print()
 
     # Pipeline olustur (B17: cli_common.build_pipeline tek merkezden kurulum).
     # stage / skip_dynamic flag'leri DEFAULT_STAGE_ORDER uzerinde filtrelenir.
@@ -550,10 +638,6 @@ def analyze(
         err_console.print("[bold red]HATA:[/bold red] Calistirilacak stage yok.")
         sys.exit(1)
 
-    # Pipeline calistir
-    console.print(Rule("Pipeline", style="cyan"))
-    console.print()
-
     if verbose:
         # --verbose: naming/fingerprint INFO loglarini stderr'e akit. Rich console
         # stdout kullandigi icin cakismaz; UI (ui/server.py) bu satirlardan canli
@@ -561,7 +645,47 @@ def analyze(
         from karadul.core.logging_config import setup_logging
         setup_logging(level="INFO")
 
-    result = pipeline.run(target_path, stages=None)  # Tum kayitli stage'leri calistir
+    # P1: Pipeline calistir -- canli ilerleme cubugu ile.
+    # Onceden `pipeline.run(target_path, stages=None)` callback'SIZ cagriliyordu:
+    # uzun Ghidra decompile boyunca ekran sessiz kaliyordu (Progress import edilip
+    # kullanilmiyordu). Simdi tek satirlik Progress bar'a pipeline callback'leri
+    # baglanir (cli_common.make_progress_callbacks). quiet/json modunda progress
+    # gosterilmez; pipeline'in kendi ciktisi da no-op callback ile susturulur.
+    if quiet:
+        _noop = lambda *a, **k: None  # noqa: E731 -- pipeline'i sessiz kilar
+        result = pipeline.run(
+            target_path, stages=None,
+            on_stage_start=_noop, on_stage_complete=_noop, on_progress=_noop,
+        )
+    else:
+        console.print(Rule("Pipeline", style="cyan"))
+        console.print()
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TimeElapsedColumn(),
+            console=console,
+            transient=True,
+        ) as progress:
+            task_id = progress.add_task(
+                "[cyan]Pipeline baslatiliyor...[/cyan]",
+                total=len(pipeline.registered_stages),
+            )
+            _on_start, _on_complete, _on_progress = make_progress_callbacks(
+                progress, task_id, STAGE_LABELS,
+            )
+            result = pipeline.run(
+                target_path, stages=None,
+                on_stage_start=_on_start,
+                on_stage_complete=_on_complete,
+                on_progress=_on_progress,
+            )
+
+    # P3: --json -> makine-okunur payload (tablo yerine).
+    if json_output:
+        _emit_analyze_json(target_info, result, cfg)
+        return
 
     # Sonuc tablosu
     console.print()
@@ -673,6 +797,7 @@ def analyze(
 @click.option("--workspace-dir", type=click.Path(), default="./workspaces/",
               help="Workspace ust dizini.")
 @click.option("--yes", "-y", is_flag=True, help="Guvenlik uyarisini atla.")
+@_graceful_interrupt
 def run(target: str, workspace_dir: str, yes: bool) -> None:
     """Reconstructed projeyi calistir.
 
@@ -885,6 +1010,7 @@ def clean(target: str, output_dir: str) -> None:
               help="Karadul naming_map.json dosyasi. Yoksa workspace'ten aranir.")
 @click.option("--generate-gt-only", is_flag=True, default=False,
               help="Sadece ground truth uret, benchmark calistirma.")
+@_graceful_interrupt
 def benchmark(
     binary_path: str,
     ground_truth: Optional[str],
@@ -1175,9 +1301,11 @@ def batch_analyze(ctx: click.Context, targets: str, output_dir: Optional[str], s
 @click.argument("binary2", type=click.Path(exists=True))
 @click.option("--output", "-o", type=click.Path(), help="Cikti dizini.")
 @click.option("--json-mode", is_flag=True,
-              help="Onceden uretilmis JSON'lari karsilastir (Ghidra gerektirmez).")
+              help="GIRDI modu (cikti formati DEGIL): onceden uretilmis iki JSON "
+                   "dosyasini karsilastir (Ghidra gerektirmez).")
 @click.option("--config", "config_path", type=click.Path(exists=True),
               help="Config dosyasi.")
+@_graceful_interrupt
 def diff(
     binary1: str,
     binary2: str,
@@ -1353,6 +1481,7 @@ def bsim_create(name: str, config_path: Optional[str]) -> None:
               help="Hedef veritabani adi (varsayilan: karadul_bsim).")
 @click.option("--config", "config_path", type=click.Path(), default=None,
               help="Config YAML dosyasi.")
+@_graceful_interrupt
 def bsim_ingest(binary: str, db_name: str, config_path: Optional[str]) -> None:
     """Binary'yi BSim veritabanina ekle.
 
@@ -1755,3 +1884,145 @@ def rtti(ctx: click.Context, binary: str, json_output: bool, abi: str) -> None:
             str(len(c.methods)),
         )
     console.print(table)
+
+
+# ---------------------------------------------------------------
+# karadul config -- karadul.yaml yonetimi (UI ayar paneliyle ayni dosya)
+# ---------------------------------------------------------------
+def _discover_config_path(config_path: Optional[str]) -> tuple[Path, bool]:
+    """Aktif karadul.yaml yolunu ve var olup olmadigini dondur.
+
+    `Config.load` (config.py:796) davranisiyla AYNI kesif kurali: explicit
+    `--config` verilirse o; yoksa `Path.cwd() / "karadul.yaml"`. UI ayar paneli
+    de (ui/server.py) PROJECT_ROOT/karadul.yaml kullanir -- repo kokunden
+    calistirildiginda cwd == PROJECT_ROOT oldugu icin ayni dosyaya isaret eder.
+
+    Returns:
+        (path, exists) ciftini dondur.
+    """
+    if config_path:
+        p = Path(config_path).resolve()
+        return p, p.exists()
+    p = (Path.cwd() / "karadul.yaml").resolve()
+    return p, p.exists()
+
+
+@main.group()
+def config() -> None:
+    """karadul.yaml konfigurasyon yonetimi (UI ayar paneliyle ayni dosya)."""
+    pass
+
+
+@config.command("path")
+@click.option("--config", "config_path", type=click.Path(), default=None,
+              help="Belirli bir YAML yolu (varsayilan: cwd/karadul.yaml).")
+def config_path_cmd(config_path: Optional[str]) -> None:
+    """Aktif karadul.yaml yolunu ve durumunu goster."""
+    p, exists = _discover_config_path(config_path)
+    console.print(f"[bold]karadul.yaml:[/bold] {p}")
+    console.print(
+        "[bold]Durum:[/bold]      "
+        + ("[green]var[/green]" if exists
+           else "[yellow]yok (varsayilan konfigurasyon kullanilir)[/yellow]")
+    )
+
+
+def _active_config_knobs(cfg: Config) -> dict:
+    """UI ayar paneliyle AYNI 7 knob'u cfg'den cikar (tutarlilik).
+
+    Bkz. ui/server.py `_read_settings` -- ayni alanlar, ayni anlam.
+    """
+    br = cfg.binary_reconstruction
+    cr = cfg.computation_recovery
+    nm = cfg.name_merger
+    sig_paths = [str(x) for x in br.external_signature_paths] + \
+                [str(x) for x in br.ghidra_data_type_archives]
+    return {
+        "min_naming_confidence": round(float(br.min_naming_confidence), 4),
+        "unk_threshold": round(float(nm.unk_threshold), 4),
+        "pipeline_iterations": int(br.pipeline_iterations),
+        "max_functions_to_process": int(br.max_functions_to_process),
+        "computation_recovery_enabled": bool(cr.enabled),
+        "network_enabled": bool(cfg.network.enabled),
+        "signature_paths": sig_paths,
+    }
+
+
+@config.command("show")
+@click.option("--config", "config_path", type=click.Path(), default=None,
+              help="Belirli bir YAML yolu (varsayilan: cwd/karadul.yaml).")
+@click.option("--json", "json_output", is_flag=True,
+              help="Knob'lari JSON olarak stdout'a yaz.")
+def config_show(config_path: Optional[str], json_output: bool) -> None:
+    """Aktif konfigurasyonu (UI paneliyle ayni knob'lar) goster.
+
+    karadul.yaml varsa yuklenir; yoksa dahili varsayilanlar gosterilir.
+    """
+    p, exists = _discover_config_path(config_path)
+    cfg = Config.load(p if exists else None)
+    knobs = _active_config_knobs(cfg)
+
+    if json_output:
+        import json as _json
+        click.echo(_json.dumps(
+            {"path": str(p), "exists": exists, "knobs": knobs},
+            indent=2, ensure_ascii=False,
+        ))
+        return
+
+    src = "karadul.yaml" if exists else "varsayilan (dosya yok)"
+    console.print(Panel(
+        f"[bold]Aktif Konfigurasyon[/bold]\n"
+        f"Kaynak: [cyan]{src}[/cyan]\n"
+        f"Yol: [dim]{p}[/dim]",
+        border_style="cyan",
+    ))
+    table = Table(title="Ayarlar", border_style="cyan")
+    table.add_column("Knob", style="bold")
+    table.add_column("Deger")
+    for key in (
+        "min_naming_confidence", "unk_threshold", "pipeline_iterations",
+        "max_functions_to_process", "computation_recovery_enabled",
+        "network_enabled",
+    ):
+        table.add_row(key, str(knobs[key]))
+    sig = knobs["signature_paths"]
+    table.add_row("signature_paths", "\n".join(sig) if sig else "[dim](yok)[/dim]")
+    console.print(table)
+
+
+@config.command("validate")
+@click.option("--config", "config_path", type=click.Path(), default=None,
+              help="Belirli bir YAML yolu (varsayilan: cwd/karadul.yaml).")
+def config_validate(config_path: Optional[str]) -> None:
+    """karadul.yaml'i yukle + dogrula (arac varligi + tutarlilik uyarilari)."""
+    p, exists = _discover_config_path(config_path)
+
+    # 1) Explicit --config verilmis ama dosya yoksa: net hata.
+    if config_path and not exists:
+        err_console.print(f"[bold red]HATA:[/bold red] Config dosyasi yok: {p}")
+        sys.exit(1)
+
+    # 2) Yukleme (YAML parse hatasi vb. fail-loud).
+    try:
+        cfg = Config.load(p if exists else None)
+    except Exception as exc:
+        err_console.print(f"[bold red]HATA:[/bold red] Config yuklenemedi: {exc}")
+        sys.exit(1)
+
+    console.print(f"[bold]Yol:[/bold]   {p}"
+                  + ("" if exists else "  [yellow](dosya yok -> varsayilan)[/yellow]"))
+    console.print("[green]OK[/green] YAML yuklendi ve ayristirildi.")
+
+    # 3) Semantik dogrulama (Config.validate: arac varligi + double-counting).
+    warns = cfg.validate()
+    if warns:
+        console.print(Rule("Uyarilar", style="yellow"))
+        for w in warns:
+            console.print(f"  [yellow]-[/yellow] {w}")
+        console.print(
+            f"\n[yellow]{len(warns)} uyari[/yellow] "
+            "(bunlar bir kismi araclarin kurulu olmamasindan kaynaklanabilir)."
+        )
+    else:
+        console.print("[green]OK[/green] Dogrulama uyarisi yok.")

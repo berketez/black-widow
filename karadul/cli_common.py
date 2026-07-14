@@ -27,11 +27,12 @@ B17 sprint, 2026-05-14.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional
 
 if TYPE_CHECKING:
     from karadul.config import Config
     from karadul.core.pipeline import Pipeline
+    from rich.progress import Progress, TaskID
 
 logger = logging.getLogger("karadul")
 
@@ -211,9 +212,73 @@ def build_pipeline(
     return pipeline
 
 
+def make_progress_callbacks(
+    progress: "Progress",
+    task_id: "TaskID",
+    stage_labels: Optional[dict[str, str]] = None,
+) -> tuple[
+    Callable[[str, int, int], None],
+    Callable[[str, Any, int, int], None],
+    Callable[[str, str, float], None],
+]:
+    """Tek satirlik `rich.progress.Progress` bar icin pipeline callback'leri uret.
+
+    `karadul.core.pipeline.Pipeline.run` uc opsiyonel callback kabul eder
+    (`on_stage_start`, `on_stage_complete`, `on_progress`). Bu helper onlari
+    verilen `progress` bar / `task_id` uzerine baglar. `hacker_cli.py`'nin tam
+    Live dashboard'i DEGIL -- sade tek satir ilerleme cubugu (cli.py analyze).
+
+    Bar'in `total`'i pipeline stage sayisina esit olmalidir; her stage bitince
+    `advance=1` ile ilerler. Alt-ilerleme (`on_progress`) sadece aciklama
+    metnini gunceller (bar konumunu degil), boylece uzun Ghidra decompile
+    sirasinda ekran sessiz kalmaz.
+
+    Args:
+        progress: Aktif (context icinde acilmis) Rich Progress instance'i.
+        task_id: `progress.add_task(...)` ile olusturulmus task kimligi.
+        stage_labels: Stage adi -> insanca etiket eslemesi (opsiyonel). Yoksa
+                      stage adi Title Case yapilir.
+
+    Returns:
+        `(on_stage_start, on_stage_complete, on_progress)` uclusu. Dogrudan
+        `pipeline.run(..., on_stage_start=..., ...)` icine gecirilebilir.
+    """
+    labels = stage_labels or {}
+
+    def _label(name: str) -> str:
+        return labels.get(name, name.replace("_", " ").title())
+
+    def on_stage_start(stage_name: str, index: int, total: int) -> None:
+        progress.update(
+            task_id,
+            description=f"[cyan]{_label(stage_name)}[/cyan]",
+        )
+
+    def on_stage_complete(
+        stage_name: str, result: Any, index: int, total: int,
+    ) -> None:
+        # result.success yoksa (savunmaci) yine de ilerlet.
+        ok = getattr(result, "success", True)
+        marker = "[green]OK[/green]" if ok else "[yellow]![/yellow]"
+        progress.update(
+            task_id,
+            advance=1,
+            description=f"{marker} [dim]{_label(stage_name)}[/dim]",
+        )
+
+    def on_progress(stage_name: str, message: str, fraction: float) -> None:
+        desc = f"[cyan]{_label(stage_name)}[/cyan]"
+        if message:
+            desc += f" [dim]{message}[/dim]"
+        progress.update(task_id, description=desc)
+
+    return on_stage_start, on_stage_complete, on_progress
+
+
 __all__ = [
     "DEFAULT_STAGE_ORDER",
     "format_size",
     "filter_stages",
     "build_pipeline",
+    "make_progress_callbacks",
 ]
