@@ -424,6 +424,11 @@ class BinaryReconstructionConfig:
     # flirt_use_trie=False -> her zaman eski (linear) path. Acil geri cikis.
     flirt_use_trie: bool = True               # Genel switch (False ile linear yol)
     flirt_trie_threshold: int = 50            # >threshold imza varsa trie path
+    # Faz 2 (2026-07-14): Analist manuel override JSON dosyasi (acik yol).
+    # Bos/None -> ~/.karadul/overrides/<binary_hash>.json otomatik kesfedilir
+    # (stages._apply_manual_overrides hash'ten bulur). Bu alan SADECE
+    # default-olmayan bir yol icin -- auto-discover'a EK ikinci kaynaktir.
+    overrides_path: Optional[str] = None
 
 
 @dataclass

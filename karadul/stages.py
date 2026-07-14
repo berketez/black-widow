@@ -2672,6 +2672,104 @@ class ReconstructionStage(Stage):
         except Exception as exc:  # pragma: no cover -- savunmaci
             logger.debug("ELF boilerplate kurtarma hatasi: %s", exc)
 
+    def _apply_manual_overrides(
+        self, extracted_names: dict, context: "PipelineContext", stats: dict
+    ) -> dict:
+        """Analistin elle verdigi isimleri (kalici override deposu) uygula.
+
+        FIX-5 (2026-07-14). ``~/.karadul/overrides/<binary_hash>.json`` deposunda
+        tutulan manuel fonksiyon isimleri MUTLAK oncelige sahiptir. Anahtar = ham
+        ``FUN_xxxx`` Ghidra adresi; depo anahtari = ``context.target.file_hash``.
+
+        IKI ASAMALI uygulama (reviewer MAJOR-1, 2026-07-14):
+          1. ``extracted_names`` tohumlanir -> c_namer/merge'e guclu aday olur.
+          2. Dondurulen dogrulanmis ``{addr: name}`` map, cagiran tarafta merge
+             SONRASI ``final_naming_map``'e KOSULSUZ zorlanir. Tek basina (1)
+             yeterli DEGIL: sonraki bindiff/refdiff ``.update()``'leri ve Bayesian
+             merge manuel'i ezebilir; asama (2) bu yarisi bypass eder. Bu yuzden
+             metot uyguladigi map'i DONDURUR (cagiran zorlamada kullanir).
+
+        Diger FIX metotlarindan farki: ``static_dir`` yerine ``context`` alir --
+        decompiled dizine muhtac degil, yalnizca binary hash'e ihtiyac var.
+        Opsiyonel ikinci kaynak: config'te ``overrides_path`` set edilmisse o
+        JSON dosyasi da yuklenip uygulanir (auto-discover bozulmaz).
+        """
+        manual_map: dict[str, str] = {}
+        try:
+            if not isinstance(extracted_names, dict):
+                return manual_map
+            bh = getattr(getattr(context, "target", None), "file_hash", "") or ""
+            from karadul.core import overrides
+
+            # GUVENLIK (reviewer 2026-07-14): all_names() ve acik --overrides
+            # yolu READ tarafinda dogrulama YAPMIYOR (dogrulama yalnizca set_name
+            # WRITE'inda). El-editli/bozuk/dis kaynakli bir JSON'daki addr/name
+            # dogrudan extracted_names -> naming_map -> AhoReplacer (kaynak yeniden
+            # yazma) ve model.names'e sizabilir. Her giriseyi WRITE ile ayni
+            # kanonik dogrulayicidan gecir; gecmeyeni SESSIZCE atla (ana hatti
+            # dusurme). Gecerli override'lari asla reddetmez -- yalnizca kirli veriyi.
+            def _valid_override(_addr: object, _name: object) -> bool:
+                try:
+                    overrides._validate_addr(_addr)   # FUN_/DAT_<hex> veya sembol
+                    overrides._validate_name(_name)   # C tanimlayicisi
+                    return True
+                except Exception:
+                    return False
+
+            applied = 0
+            rejected = 0
+
+            # 1) Auto-discover: hash'ten ~/.karadul/overrides/<hash>.json
+            if bh:
+                for addr, name in overrides.all_names(bh).items():
+                    if name and _valid_override(addr, name):
+                        extracted_names[addr] = name  # tohum -- asama 1
+                        manual_map[addr] = name        # merge sonrasi zorlama -- asama 2
+                        applied += 1
+                    elif name:
+                        rejected += 1
+
+            # 2) Opsiyonel acik yol (CLI --overrides / config.overrides_path).
+            #    Auto-discover'a EK bir kaynak; ayni addr icin bu da ezebilir.
+            ov_path = None
+            try:
+                ov_path = getattr(
+                    getattr(getattr(context, "config", None), "binary_reconstruction", None),
+                    "overrides_path",
+                    None,
+                )
+            except Exception:
+                ov_path = None
+            if ov_path:
+                try:
+                    _data = json.loads(Path(ov_path).read_text(encoding="utf-8"))
+                    _ov = _data.get("overrides", {}) if isinstance(_data, dict) else {}
+                    for addr, rec in _ov.items():
+                        nm = rec.get("name") if isinstance(rec, dict) else rec
+                        if nm and _valid_override(addr, nm):
+                            extracted_names[addr] = nm  # tohum -- asama 1
+                            manual_map[addr] = nm        # merge sonrasi zorlama -- asama 2
+                            applied += 1
+                        elif nm:
+                            rejected += 1
+                except Exception as exc:
+                    # bozuk/eksik acik dosya ana hatti dusurmesin -- ama sessiz kalma
+                    logger.debug("Acik override dosyasi okunamadi (%s): %s", ov_path, exc)
+
+            if rejected:
+                logger.warning(
+                    "Manuel override: %d gecersiz giris atlandi (addr/name dogrulamasi)",
+                    rejected,
+                )
+            if applied:
+                stats["manual_overrides_applied"] = applied
+                logger.info("Manuel override: %d isim uygulandi", applied)
+        except Exception as exc:
+            # override deposu sorunlari asla ana hatti dusurmesin -- ama iz birak;
+            # yoksa YENI ozellik sessizce no-op olur (import/API kirilirsa fark edilmez).
+            logger.debug("Manuel override uygulanamadi: %s", exc)
+        return manual_map
+
     def _execute_binary(self, context: PipelineContext, start: float) -> StageResult:
         """Binary reconstruction — decompile edilmis C'yi okunabilir yap.
 
@@ -2933,6 +3031,12 @@ class ReconstructionStage(Stage):
         # kurtar (register_tm_clones, _start, __do_global_dtors_aux ...). Ayni
         # unique-in-binary + pre_names mekanizmasi; onceki isimler korunur.
         self._recover_elf_boilerplate(extracted_names, static_dir, stats)
+        # FIX-5 (2026-07-14): Analistin elle verdigi isimler (kalici override
+        # deposu) -- MUTLAK oncelik. Iki asama: (1) burada extracted_names tohumlanir;
+        # (2) dondurulen map merge SONRASI final_naming_map'e kosulsuz zorlanir
+        # (bindiff/refdiff clobber + Bayesian merge'i bypass -- reviewer MAJOR-1).
+        # Hash'ten auto-discover; static_dir'e muhtac degil, context'ten file_hash yeter.
+        _manual_overrides_map = self._apply_manual_overrides(extracted_names, context, stats)
 
         # 1.9. Assembly Analysis -- Ghidra decompiler fallback
         # v1.10.0 M1 T3.5: Step registry modunda bu is asm_analysis step'i
@@ -3878,6 +3982,12 @@ class ReconstructionStage(Stage):
                             k: v for k, v in final_naming_map.items()
                             if k and len(k) >= 2 and v
                         }
+                        # MAJOR-1 (reviewer 2026-07-14): manuel override MUTLAK oncelik.
+                        # bindiff/refdiff clobber + Bayesian merge manuel'i eritebilir;
+                        # merge SONRASI burada kosulsuz zorla (her iterasyonda calisir).
+                        for _m_addr, _m_name in (_manual_overrides_map or {}).items():
+                            if _m_addr and len(_m_addr) >= 2 and _m_name:
+                                final_naming_map[_m_addr] = _m_name
                         if final_naming_map:
                             from karadul.reconstruction.aho_replacer import AhoReplacer
                             _aho_merger = AhoReplacer(final_naming_map)

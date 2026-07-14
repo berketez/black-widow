@@ -358,6 +358,9 @@ def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
               help="[v1.10.0] Decompiler backend secimi (varsayilan: ghidra).")
 @click.option("--bsim-shadow-dump", is_flag=True, default=False,
               help="[v1.12] BSim shadow dump JSON uret (shadow_mode opt-out, dump-only mod).")
+@click.option("--overrides", "overrides_path", type=click.Path(exists=True), default=None,
+              help="Manuel override JSON dosyasi (varsayilan: ~/.karadul/overrides/<hash>.json "
+                   "otomatik kesfedilir; bu flag SADECE default-olmayan yol icin).")
 @click.pass_context
 @_graceful_interrupt
 def analyze(
@@ -383,6 +386,7 @@ def analyze(
     maxsmt_struct: bool,                   # v1.10.0 Batch 6C opt-in
     decompiler_backend: Optional[str],     # v1.10.0 M4
     bsim_shadow_dump: bool,                # v1.12 BSim shadow dump tetikleyici
+    overrides_path: Optional[str],         # Faz 2: manuel override JSON (acik yol)
 ) -> None:
     """Hedef uzerinde tam analiz pipeline calistir."""
     # B17: Pipeline kurulumu `karadul.cli_common.build_pipeline` ile yapilir;
@@ -433,6 +437,13 @@ def analyze(
         cfg.bsim.enabled = True
         cfg.bsim.shadow_mode = True
         cfg.bsim.auto_query = True
+
+    # Faz 2 (2026-07-14): --overrides -> analist manuel override JSON (acik yol).
+    # Auto-discover (~/.karadul/overrides/<hash>.json) her zaman aktif; bu flag
+    # yalnizca default-olmayan bir dosya belirtmek icin. stages._apply_manual_overrides
+    # bu yolu EK ikinci kaynak olarak yukler (auto-discover bozulmaz).
+    if overrides_path:
+        cfg.binary_reconstruction.overrides_path = overrides_path
 
     # Computation recovery ayarlari  # v1.6.5: --deep > --compute > --compute-recovery
     _compute_resolved = False
