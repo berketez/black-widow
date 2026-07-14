@@ -17,8 +17,10 @@ import pytest
 from karadul.analyzers.gnulib_fingerprints import (
     EXPECTED_COREUTILS,
     GNULIB_CALL_SHAPES,
+    GNULIB_DISAMBIGUATORS,
     GNULIB_FINGERPRINTS,
     GNULIB_REF_COMMIT,
+    disambiguate,
     extract_string_literals,
     match_call_shape,
     match_function,
@@ -190,5 +192,91 @@ class TestNoGroundTruthLeakage:
                     failures.append(
                         f"{fp.name}: anchor '{anchor}' {fp.source}'da YOK "
                         "(GT-leakage suphesi!)"
+                    )
+        assert not failures, "\n".join(failures)
+
+
+class TestDisambiguate:
+    """Belirsiz string-fp adlarini (close_stdout vs write_error) call-shape'le
+    ayirt eden disambiguate() davranisi. Callee-set'ler cat'in call_graph'indan
+    dogrulandi: close_stdout `_exit` cagirir/__fpurge cagirmaz; write_error
+    __fpurge/clearerr_unlocked cagirir/_exit cagirmaz (leakage-safe: kaynak
+    closeout.c)."""
+
+    def test_close_stdout_picks_exit_owner(self):
+        # cat: iki aday da "write error" tasir -> string-fp atlar; call-shape secer
+        cands = {
+            "FUN_00004f70": {"_exit", "close_stream", "fwrite_unlocked"},  # close_stdout
+            "FUN_00002e84": {"__fpurge", "clearerr_unlocked", "error"},    # write_error
+        }
+        assert disambiguate("close_stdout", cands) == "FUN_00004f70"
+
+    def test_ambiguous_both_lack_require_returns_none(self):
+        # iki aday da _exit tasimaz -> hayatta kalan 0 -> belirsiz (None)
+        cands = {
+            "FUN_1": {"__fpurge", "error"},
+            "FUN_2": {"clearerr_unlocked", "error"},
+        }
+        assert disambiguate("close_stdout", cands) is None
+
+    def test_ambiguous_both_qualify_returns_none(self):
+        # iki aday da _exit tasir, ikisi de purge/clearerr tasimaz -> >1 survivor
+        cands = {
+            "FUN_1": {"_exit", "close_stream"},
+            "FUN_2": {"_exit", "abort"},
+        }
+        assert disambiguate("close_stdout", cands) is None
+
+    def test_exclude_nor_beats_require(self):
+        # write_error adayi _exit DE tasisa bile __fpurge NOR ile elenir
+        cands = {
+            "FUN_1": {"_exit", "close_stream"},                    # close_stdout
+            "FUN_2": {"_exit", "__fpurge", "clearerr_unlocked"},   # yine de elenir
+        }
+        assert disambiguate("close_stdout", cands) == "FUN_1"
+
+    def test_unknown_name_returns_none(self):
+        assert disambiguate("no_such_fn", {"FUN_1": {"_exit"}}) is None
+
+    def test_empty_candidates_returns_none(self):
+        assert disambiguate("close_stdout", {}) is None
+
+
+@pytest.mark.skipif(
+    not GNULIB_LIB.exists(),
+    reason="vendor/gnulib-ref yok (upstream kaynak clone edilmemis)",
+)
+class TestDisambiguatorNoLeakage:
+    """Disambiguator kurallari gnulib kaynagindan turemeli (GT'den degil):
+    require callee davranisi kaynakta GECMELI, exclude callee davranisi
+    GECMEMELI. Ikincisi kritik -- close_stdout'u yanlislikla elememeyi garanti
+    eder (closeout.c'de fpurge/clearerr YOK)."""
+
+    _BEHAVIOR_KEY = {
+        "_exit": "_exit",
+        "__fpurge": "fpurge",
+        "clearerr_unlocked": "clearerr",
+    }
+
+    def test_require_present_exclude_absent(self):
+        failures: list[str] = []
+        for d in GNULIB_DISAMBIGUATORS:
+            src = GNULIB_LIB / d.source
+            if not src.exists():
+                failures.append(f"{d.name}: kaynak {d.source} yok")
+                continue
+            text = src.read_text(errors="ignore")
+            for callee in d.require_callees:
+                key = self._BEHAVIOR_KEY.get(callee, callee)
+                if key not in text:
+                    failures.append(
+                        f"{d.name}: require '{key}' {d.source}'da YOK"
+                    )
+            for callee in d.exclude_callees:
+                key = self._BEHAVIOR_KEY.get(callee, callee)
+                if key in text:
+                    failures.append(
+                        f"{d.name}: exclude '{key}' {d.source}'da VAR "
+                        "(yanlis eleme / leakage riski!)"
                     )
         assert not failures, "\n".join(failures)

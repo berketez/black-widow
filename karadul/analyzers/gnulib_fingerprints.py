@@ -258,3 +258,75 @@ def match_call_shape(callee_names: set[str], fanout: int) -> str | None:
         if all(c in callee_names for c in cs.required_callees):
             return cs.name
     return None
+
+
+# ---------------------------------------------------------------------------
+# DISAMBIGUATION (2026-07-14): string-anchor paylasan gnulib adlari
+# ---------------------------------------------------------------------------
+# Bir string anchor birden fazla fonksiyonda gecince (ornegin ``"write error"``
+# hem ``close_stdout`` hem ``write_error``'de) match_function unique-in-binary
+# kisitiyla ismi ATLAR (belirsiz). Bu katman, dogru adayi fonksiyonlarin
+# ayirt-edici callee davranisindan secer -- call-shape (FIX-2b) ile ayni ilke,
+# ama sadece belirsiz string-fp adaylari uzerinde calisir.
+
+
+@dataclass(frozen=True)
+class GnulibDisambiguator:
+    """String-anchor'i paylasan (belirsiz) bir gnulib adini call-shape'le ayikla.
+
+    Args:
+        name: ayirt edilecek gnulib fonksiyon adi (belirsiz string-fp adi).
+        require_callees: dogru adayin cagirmasi GEREKEN callee'ler (AND).
+        exclude_callees: dogru adayin cagirMAMASI gereken callee'ler (NOR).
+        source: davranisi dogrulayan gnulib ``lib/`` kaynak dosyasi.
+            ``require_callees`` davranislari BURADA gecer, ``exclude_callees``
+            davranislari GECMEZ -> leakage-safe (GT'den degil, kaynaktan turer;
+            tests/test_gnulib_fingerprints.py denetler).
+    """
+
+    name: str
+    require_callees: tuple[str, ...]
+    exclude_callees: tuple[str, ...]
+    source: str
+
+
+# Curated disambiguator set. Her kural leakage-safe (asagidaki kaynak
+# dogrulamasiyla). Simdilik tek gercek belirsiz vaka mevcut.
+GNULIB_DISAMBIGUATORS: tuple[GnulibDisambiguator, ...] = (
+    # close_stdout vs write_error: ikisi de "write error" string'ini tasir
+    # (closeout.c:121 -- `char const *write_error = _("write error");`), bu yuzden
+    # match_function ikisini de "close_stdout" adayi gorup ATLIYOR. Ayirt-edici:
+    # close_stdout `_exit` cagirir (closeout.c:128,134) ve buffer'i asla
+    # __fpurge/clearerr_unlocked ile ELLEMEZ; write_error tersine davranir
+    # (__fpurge/clearerr_unlocked VAR, _exit YOK). cat/cut/paste/split/tail/tr'de
+    # gozlemlendi. Leakage-safe: closeout.c'de _exit VAR, fpurge/clearerr YOK.
+    GnulibDisambiguator(
+        "close_stdout",
+        require_callees=("_exit",),
+        exclude_callees=("__fpurge", "clearerr_unlocked"),
+        source="closeout.c",
+    ),
+)
+
+
+def disambiguate(name: str, candidates: dict[str, set[str]]) -> str | None:
+    """Belirsiz bir gnulib adi icin dogru ``FUN_`` adayini call-shape'le sec.
+
+    Args:
+        name: string-fp'nin birden fazla ``FUN_``'a esledigi belirsiz ad.
+        candidates: ``{fun_key: callee_set}`` -- adaylarin callee kumeleri.
+
+    Returns:
+        require (AND) + exclude (NOR) filtresinden GECEN TEK ``fun_key``; 0 veya
+        >1 hayatta kalan varsa ``None`` (belirsizlik korunur, yanlis atama yok).
+    """
+    rule = next((d for d in GNULIB_DISAMBIGUATORS if d.name == name), None)
+    if rule is None or not candidates:
+        return None
+    survivors = [
+        fk
+        for fk, callees in candidates.items()
+        if all(r in callees for r in rule.require_callees)
+        and not any(x in callees for x in rule.exclude_callees)
+    ]
+    return survivors[0] if len(survivors) == 1 else None

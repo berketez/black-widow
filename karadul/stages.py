@@ -2495,6 +2495,7 @@ class ReconstructionStage(Stage):
             if decompiled_dir is None:
                 return
             from karadul.analyzers.gnulib_fingerprints import (
+                disambiguate,
                 extract_string_literals,
                 match_call_shape,
                 match_function,
@@ -2598,6 +2599,48 @@ class ReconstructionStage(Stage):
                     logger.info(
                         "gnulib call-shape: %d fonksiyon kurtarildi", cs_assigned
                     )
+
+                # --- DISAMBIGUATION (2026-07-14): belirsiz string-fp adlari ---
+                # Yukaridaki string-fp dongusu bir isim >1 FUN_'a eslesince
+                # "ambiguous"a atip ATLIYOR (unique-in-binary). Tek gercek
+                # belirsiz vaka: close_stdout vs write_error (ikisi de "write
+                # error" tasir; 6 binary'de -- cat/cut/paste/split/tail/tr). Bu
+                # post-pass ayirt-edici callee davranisiyla (close_stdout: _exit
+                # VAR, __fpurge/clearerr_unlocked YOK) dogru adayi kurtarir.
+                # Savunmaci: yalniz TEK aday hayatta kalirsa VE hedef hala
+                # isimsizse atar -> wrong->correct duzeltmesi, dusus-risksiz.
+                if ambiguous:
+                    fk_callees: dict[str, set[str]] = {}
+                    for addr_key, node in nodes.items():
+                        if not isinstance(node, dict):
+                            continue
+                        try:
+                            fk = f"FUN_{int(str(addr_key), 16):08x}"
+                        except (ValueError, TypeError):
+                            continue
+                        fk_callees[fk] = {
+                            c.get("name", "")
+                            for c in node.get("callees", [])
+                            if isinstance(c, dict)
+                        }
+                    disamb_assigned = 0
+                    for amb_name in ambiguous:
+                        cand_fks = candidates.get(amb_name, [])
+                        if len(cand_fks) < 2:
+                            continue
+                        cands = {
+                            fk: fk_callees.get(fk, set()) for fk in cand_fks
+                        }
+                        winner = disambiguate(amb_name, cands)
+                        if winner and extracted_names.get(winner) is None:
+                            extracted_names[winner] = amb_name
+                            disamb_assigned += 1
+                    if disamb_assigned:
+                        stats["gnulib_disambiguated"] = disamb_assigned
+                        logger.info(
+                            "gnulib disambiguation: %d fonksiyon kurtarildi",
+                            disamb_assigned,
+                        )
         except Exception as exc:  # pragma: no cover -- savunmaci
             logger.debug("gnulib fingerprint kurtarma hatasi: %s", exc)
 
