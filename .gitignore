@@ -70,3 +70,8 @@ ui/_runs/
 bw-*.jpeg
 blackhat-*.jpeg
 karadul-ui-*.png
+
+# Doğrulama ekran görüntüleri (playwright/analist)
+*.png
+# Proje-yerel Claude yapılandırması
+.claude/

@@ -208,6 +208,110 @@
   .nlbl{font-size:10px; fill:var(--dim)} .node:hover .nlbl{fill:var(--text)}
   .node:hover .ndot{filter:drop-shadow(0 0 5px currentColor)}
   .corelbl{font-size:12px; fill:var(--text); text-anchor:middle} .coreaddr{font-size:9px; fill:var(--dim); text-anchor:middle}
+  .corerole{font-size:10px; fill:var(--cyan); text-anchor:middle; opacity:.9}
+  .dirhint{font-size:9px; fill:var(--dim); letter-spacing:1.5px; opacity:.75}
+
+  /* ===================== ANALİST · İNCELE & DÜZELT (additive, iv- namespace) ===================== */
+  /* sol liste — filtre chip'leri + ince ilerleme satırı */
+  .iv-filters{display:flex; gap:6px; padding:8px 12px 6px; flex-wrap:wrap; border-bottom:1px solid var(--border)}
+  .iv-fchip{padding:3px 9px; border:1px solid var(--border); border-radius:11px; font-size:10px; letter-spacing:.5px;
+    color:var(--dim); cursor:pointer; background:rgba(6,10,18,.5); user-select:none; white-space:nowrap}
+  .iv-fchip:hover{color:var(--text)}
+  .iv-fchip b{color:inherit; font-weight:700}
+  .iv-fchip.on{color:var(--cyan); border-color:var(--cyan); background:rgba(56,216,240,.08)}
+  .iv-fchip.on.u{color:var(--unnamed); border-color:rgba(230,58,84,.5); background:rgba(230,58,84,.08)}
+  .iv-fchip.on.w{color:var(--weak); border-color:rgba(230,169,46,.5); background:rgba(230,169,46,.08)}
+  .iv-fchip.on.m{color:var(--named); border-color:rgba(56,224,138,.5); background:rgba(56,224,138,.08)}
+  .iv-qbar{padding:7px 12px 8px; border-bottom:1px solid var(--border)}
+  .iv-ql{display:flex; justify-content:space-between; font-size:9px; letter-spacing:1px; color:var(--dim); margin-bottom:4px}
+  .iv-qt{height:4px; border-radius:3px; background:var(--faint); overflow:hidden}
+  .iv-qt i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--named),var(--cyan)); transition:width .6s ease}
+  .iv-mtag{font-size:8px; letter-spacing:1px; color:var(--named); border:1px solid rgba(56,224,138,.4); border-radius:7px; padding:0 5px; flex-shrink:0}
+
+  /* kod paneli — başlık "yeniden adlandır" düğmesi */
+  .chead .iv-edit{cursor:pointer; color:var(--dim); border:1px solid var(--border); border-radius:2px; padding:1px 6px; font-size:11px; flex-shrink:0}
+  .chead .iv-edit:hover{color:var(--named); border-color:var(--named)}
+
+  /* kod paneli — İNCELE (kanıt) bandı */
+  .iv-inspect{flex-shrink:0; border-bottom:1px solid var(--border); background:var(--panel); display:flex; flex-direction:column; min-height:0}
+  .iv-ihdr{display:flex; align-items:center; gap:8px; padding:7px 14px; font-size:9.5px; letter-spacing:2px; color:var(--dim);
+    cursor:pointer; background:var(--bg2); user-select:none}
+  .iv-ihdr::before{content:"▸"; color:var(--widow); font-size:9px}
+  .iv-ihdr .r{margin-left:auto; color:var(--faint); font-size:9px; letter-spacing:1px}
+  .iv-ihdr .chev{margin-left:10px; color:var(--faint); font-size:9px; transition:transform .2s}
+  .iv-inspect.open .iv-ihdr .chev{transform:rotate(90deg)}
+  .iv-ibody{display:none; overflow-y:auto; max-height:44vh; padding:11px 13px; flex-direction:column; gap:11px;
+    scrollbar-width:thin; scrollbar-color:var(--faint) transparent}
+  .iv-ibody::-webkit-scrollbar{width:8px} .iv-ibody::-webkit-scrollbar-thumb{background:var(--faint); border-radius:4px}
+  .iv-inspect.open .iv-ibody{display:flex}
+
+  /* rename kutusu */
+  .iv-rename{background:linear-gradient(120deg,rgba(56,224,138,.07),rgba(56,216,240,.04)); border:1px solid rgba(56,224,138,.3);
+    border-radius:4px; padding:11px}
+  .iv-rh{font-size:9px; letter-spacing:1.5px; color:var(--named); margin-bottom:8px}
+  .iv-rin{display:flex; gap:7px}
+  .iv-rin input{flex:1; padding:8px 10px; background:var(--bg); border:1px solid rgba(56,224,138,.4); border-radius:3px;
+    color:var(--named); font-size:13px; font-family:inherit; outline:none; letter-spacing:.5px; min-width:0}
+  .iv-rin input:focus{border-color:var(--named); box-shadow:0 0 9px rgba(56,224,138,.18)}
+  .iv-ok{padding:8px 12px; background:var(--named); color:#04140b; border:none; border-radius:3px; font-weight:700;
+    cursor:pointer; font-family:inherit; font-size:12px}
+  .iv-ok:hover{filter:brightness(1.1)} .iv-ok:disabled{opacity:.5; cursor:default}
+  .iv-cx{padding:8px 11px; background:transparent; color:var(--dim); border:1px solid var(--border); border-radius:3px;
+    cursor:pointer; font-family:inherit; font-size:12px}
+  .iv-cx:hover{color:var(--cyan); border-color:var(--cyan)}
+  .iv-err{font-size:10px; color:var(--unnamed); margin-top:7px; letter-spacing:.3px; display:none}
+  .iv-err.on{display:block}
+
+  /* kanıt kartları */
+  .iv-ev{background:var(--panel2); border:1px solid var(--border); border-radius:4px; overflow:hidden}
+  .iv-evh{font-size:9px; letter-spacing:1.5px; color:var(--dim); padding:7px 11px; background:var(--panel);
+    border-bottom:1px solid var(--border); display:flex; align-items:center; gap:7px}
+  .iv-evh .c{margin-left:auto; color:var(--faint); font-size:8.5px; letter-spacing:1px}
+  .iv-eb{padding:8px 11px; display:flex; flex-direction:column; gap:6px}
+  .iv-load{font-size:10px; color:var(--dim); font-style:italic; padding:2px}
+
+  /* aday / mevcut isim */
+  .iv-cand{display:flex; align-items:center; gap:9px; padding:6px 8px; background:var(--panel); border:1px solid var(--border);
+    border-radius:3px}
+  .iv-cand.pick{cursor:pointer}
+  .iv-cand.pick:hover{border-color:var(--named); background:rgba(56,224,138,.06)}
+  .iv-cn{font-size:12px; color:var(--named); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .iv-csrc{font-size:9px; color:var(--dim); flex-shrink:0}
+  .iv-cconf{font-size:10px; color:var(--weak); width:32px; text-align:right; flex-shrink:0}
+  .iv-carrow{color:var(--faint); font-size:11px; flex-shrink:0} .iv-cand.pick:hover .iv-carrow{color:var(--named)}
+
+  /* string chip'leri */
+  .iv-strs{display:flex; flex-wrap:wrap; gap:5px}
+  .iv-s{font-size:10.5px; color:var(--named); background:rgba(56,224,138,.06); border:1px solid rgba(56,224,138,.18);
+    padding:2px 7px; border-radius:3px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+  /* çağrı bağlamı */
+  .iv-refs{display:flex; flex-direction:column; gap:3px}
+  .iv-refln{display:flex; align-items:center; gap:8px; font-size:11px; color:var(--dim); padding:3px 0}
+  .iv-refln.link{cursor:pointer} .iv-refln.link:hover{color:var(--cyan)}
+  .iv-refln .rd{width:6px; height:6px; border-radius:50%; flex-shrink:0; background:var(--faint)}
+  .iv-refln.callers .rd{background:var(--weak)} .iv-refln.callees .rd{background:var(--cyan)}
+  .iv-refln .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .iv-refln.named .nm{color:var(--named)} .iv-refln.weak .nm{color:var(--weak)} .iv-refln.unnamed .nm{color:var(--dim)}
+  .iv-refln .rx{margin-left:auto; color:var(--faint); font-size:9px; flex-shrink:0; letter-spacing:.5px}
+
+  /* ipuçları */
+  .iv-hints{display:flex; flex-direction:column; gap:5px}
+  .iv-hint{display:flex; gap:8px; font-size:11px; color:var(--dim); padding:6px 9px; background:var(--panel);
+    border:1px solid var(--border); border-radius:3px; line-height:1.5}
+  .iv-hint .ht{color:var(--cyan); flex-shrink:0}
+
+  /* neden isimsiz? (teşhis) */
+  .iv-diag{border-color:rgba(230,169,46,.3)!important;
+    background:linear-gradient(120deg,rgba(230,169,46,.06),rgba(230,58,84,.03))}
+  .iv-diag>.iv-evh{color:var(--weak); background:rgba(230,169,46,.06)}
+  .iv-diag.bsim_shadow{border-color:rgba(56,216,240,.32)!important;
+    background:linear-gradient(120deg,rgba(56,216,240,.07),transparent)}
+  .iv-diag.bsim_shadow>.iv-evh{color:var(--cyan); background:rgba(56,216,240,.06)}
+  .iv-dreason{font-size:11.5px; color:var(--text); line-height:1.55; padding:3px 0 9px}
+  .iv-dsig{display:flex; gap:8px; font-size:10.5px; color:var(--dim); padding:3px 0; line-height:1.45}
+  .iv-dsig .di{color:var(--faint); flex-shrink:0}
+  .iv-dsig b{color:var(--weak)}
 </style>
 </head>
 <body>
@@ -266,6 +370,8 @@
   <div class="rmain">
     <aside class="console">
       <div class="chdr">D: [SYMBOL.MAP] <span class="r" id="cnt">0</span></div>
+      <div class="iv-filters" id="ivFilters"></div>
+      <div class="iv-qbar"><div class="iv-ql"><span>İSİMSİZ İŞ KUYRUĞU</span><span id="ivQTxt">0 / 0 çözüldü</span></div><div class="iv-qt"><i id="ivQFill"></i></div></div>
       <div class="search"><input id="search" placeholder="fonksiyon / adres ara…" spellcheck="false"></div>
       <div class="fnlist" id="fnlist"></div>
     </aside>
@@ -280,8 +386,23 @@
       <div class="crumbs" id="crumbs"></div>
     </section>
     <section class="code" id="codePanel">
-      <div class="chead"><span class="t" id="cTitle">—</span><span class="badge" id="cBadge"></span>
+      <div class="chead"><span class="t" id="cTitle">—</span><span class="iv-edit" id="cEdit" title="yeniden adlandır (başlığa çift-tıkla)">✎</span><span class="badge" id="cBadge"></span>
         <span class="ad" id="cAddr"></span><span class="x" id="cClose">KAPAT ✕</span></div>
+      <div class="iv-inspect open" id="cInspect">
+        <div class="iv-ihdr" id="cInspToggle">İNCELE · KANIT<span class="r" id="cInspSub"></span><span class="chev">▸</span></div>
+        <div class="iv-ibody" id="cInspBody">
+          <div class="iv-rename">
+            <div class="iv-rh">✎ İSİM VER / DÜZELT</div>
+            <div class="iv-rin">
+              <input id="renameInput" spellcheck="false" autocomplete="off" placeholder="yeni isim…">
+              <button class="iv-ok" id="renameOk" title="kaydet (Enter)">✓</button>
+              <button class="iv-cx" id="renameCancel" title="mevcut isme dön">↺</button>
+            </div>
+            <div class="iv-err" id="renameErr"></div>
+          </div>
+          <div id="evBox"></div>
+        </div>
+      </div>
       <pre id="cBody"></pre>
     </section>
   </div>
@@ -298,6 +419,8 @@ const $=id=>document.getElementById(id);
 const SVGNS="http://www.w3.org/2000/svg";
 let MODEL=null, BYADDR={}, CENTER=null, HIST=[], SELBIN=null, POLL=null;
 const TRLABEL={named:"İSİMLİ",weak:"ZAYIF",unnamed:"İSİMSİZ"};
+/* analist katmanı: aktif filtre + manuel düzeltilen adresler + evidence yarış koruması */
+let FILTER='all'; const MANUAL=new Set(); let EVSEQ=0;
 
 function showView(n){ document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id===n)); }
 
@@ -397,7 +520,8 @@ function enterResult(j){
   if(!j || !j.functions || !j.functions.length){
     showView('analyze'); analyzeFail('model boş — fonksiyon çıkarılamadı'); return;
   }
-  MODEL=j; BYADDR={}; HIST=[]; CENTER=null;
+  MODEL=j; BYADDR={}; HIST=[]; CENTER=null; MAP_ROLE={};
+  FILTER='all'; MANUAL.clear();
   MODEL.functions.forEach(f=>BYADDR[f.addr]=f);
   $('binName').textContent=j.binary;
   $('binPath').textContent=j.workspace;
@@ -408,6 +532,7 @@ function enterResult(j){
   $('cnt').textContent=j.total;
   showView('result');
   buildList(MODEL.functions);
+  buildFilters(); updateProgress(); loadOverrides();
   if(!enterResult._ro){
     enterResult._ro=true; let rot;
     new ResizeObserver(()=>{ clearTimeout(rot); rot=setTimeout(()=>{ if(CENTER) drawRadial(CENTER); },90); })
@@ -421,14 +546,15 @@ $('newBtn').onclick=newAnalysis; $('brandHome').onclick=newAnalysis;
 function buildList(list){
   const q=$('search').value.toLowerCase();
   const box=$('fnlist'); box.innerHTML='';
-  const rows=list.filter(f=>!q||f.name.toLowerCase().includes(q)||f.addr.toLowerCase().includes(q))
+  const rows=list.filter(f=>passFilter(f) && (!q||f.name.toLowerCase().includes(q)||f.addr.toLowerCase().includes(q)))
     .sort((a,b)=> b.out-a.out || b.in-a.in).slice(0,600);
   const frag=document.createDocumentFragment();
   for(const f of rows){
     const d=document.createElement('div');
     d.className='fn '+f.cls+(f.addr===CENTER?' active':''); d.dataset.addr=f.addr;
     const shown=f.cls==='unnamed'?('FUN_'+f.addr.slice(-6)):f.name;
-    d.innerHTML=`<span class="dot"></span><span class="nm">${esc(shown)}</span><span class="deg"><b>${f.out}</b>↗ ${f.in}↘</span>`;
+    const mtag=MANUAL.has(f.addr)?'<span class="iv-mtag">manuel</span>':'';
+    d.innerHTML=`<span class="dot"></span><span class="nm">${esc(shown)}</span>${mtag}<span class="deg"><b>${f.out}</b>↗ ${f.in}↘</span>`;
     d.onclick=()=>focus(f.addr);
     frag.appendChild(d);
   }
@@ -445,65 +571,95 @@ function focus(addr,noHist){
   drawRadial(addr); loadCode(addr); crumbs();
 }
 
+/* ne iş yapıyor? — kanıttan türetilmiş kısa, GERÇEK betimleme (uydurma yok) */
+let MAP_ROLE={};
+function deriveRole(j){
+  const ext=(Array.isArray(j.hints)?j.hints:[]).map(h=>String(h).replace(' çağrılıyor','')).filter(Boolean);
+  const strs=Array.isArray(j.strings)?j.strings.filter(Boolean):[];
+  const prov=j.provenance, dg=j.diagnosis;
+  if(prov && prov.library) return 'kütüphane · '+prov.library;
+  if(ext.length) return '→ '+ext.slice(0,2).join(', ');
+  if(strs.length) return '"'+trunc(strs[0],24)+'"';
+  if(dg && dg.verdict) return ({bsim_shadow:'BSim adayı var (kapalı)',app_wrapper:'kütüphane sarmalayıcı',app_specific:'uygulamaya özgü'})[dg.verdict]||'';
+  return '';
+}
+function setMapRole(addr,text){ MAP_ROLE[addr]=text||''; if(addr===CENTER){ const e=document.getElementById('mapRole'); if(e) e.textContent=text||''; } }
+
 function drawRadial(addr){
   const f=BYADDR[addr];
   const svg=$('svg'); const st=svg.parentElement.getBoundingClientRect();
   const W=st.width, H=st.height; if(!W||!H) return;
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML='';
+  // ters-komşuluk (çağıranlar) bir kez hesapla, MODEL üstünde cache'le
+  if(!MODEL._rev){ const rev={}; for(const a in MODEL.calls){ for(const c of (MODEL.calls[a]||[])){ (rev[c]=rev[c]||[]).push(a); } } MODEL._rev=rev; }
   const callees=(MODEL.calls[addr]||[]).map(a=>BYADDR[a]).filter(Boolean);
-  callees.sort((a,b)=> (b.out+b.in)-(a.out+a.in));
-  const MAX=90, extra=Math.max(0,callees.length-MAX), shown=callees.slice(0,MAX);
-  const cx=W*0.66, cy=H*0.5, R=Math.min(W*0.5,H*0.46), n=shown.length;
-  const spread=Math.min(300, 46 + n*3.4) * Math.PI/180, base=Math.PI;
-  const a0=base-spread/2, a1=base+spread/2;
+  const callers=(MODEL._rev[addr]||[]).filter(a=>a!==addr).map(a=>BYADDR[a]).filter(Boolean);
+  callees.sort((a,b)=>(b.out+b.in)-(a.out+a.in));
+  callers.sort((a,b)=>(b.out+b.in)-(a.out+a.in));
+  const cx=W*0.46, cy=H*0.5, R=Math.min(W*0.38,H*0.44);
   const defs=el('defs');
   defs.innerHTML=`<filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
   svg.appendChild(defs);
   const gRays=el('g'), gNodes=el('g'); svg.appendChild(gRays); svg.appendChild(gNodes);
-  shown.forEach((c,i)=>{
-    const ang = n<=1 ? base : a0 + (a1-a0)*i/(n-1);
-    const rr = R*(0.62 + 0.34*Math.min(1,(c.out+c.in)/16)) * (0.9+0.1*((i*37)%10)/10);
-    const x=cx+rr*Math.cos(ang), y=cy+rr*Math.sin(ang);
-    const mx=cx+(x-cx)*0.5, my=cy+(y-cy)*0.5 - (i%2?8:-8);
-    const ray=el('path');
-    ray.setAttribute('d',`M${cx.toFixed(1)},${cy.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}`);
-    ray.setAttribute('class','ray '+c.cls);
-    const len=Math.hypot(x-cx,y-cy)+40; ray.style.strokeDasharray=len; ray.style.strokeDashoffset=len;
-    ray.style.animation=`draw .5s ease forwards ${i*0.012+0.05}s`; gRays.appendChild(ray);
-    const left=x<cx;
-    const g=el('g'); g.setAttribute('class','node'); g.style.cursor='pointer';
-    const hit=el('circle'); hit.setAttribute('cx',x); hit.setAttribute('cy',y); hit.setAttribute('r',13); hit.setAttribute('class','hit');
-    const dot=el('circle'); dot.setAttribute('cx',x); dot.setAttribute('cy',y); dot.setAttribute('r',3.2);
-    dot.setAttribute('class','ndot '+c.cls); dot.setAttribute('filter','url(#glow)'); dot.style.color=cssvar(c.cls);
-    const t=el('text'); t.setAttribute('x', x+(left?-8:8)); t.setAttribute('y', y+3.5);
-    t.setAttribute('text-anchor', left?'end':'start'); t.setAttribute('class','nlbl');
-    t.textContent=c.cls==='unnamed'?('·'+c.addr.slice(-5)):trunc(c.name,22);
-    g.appendChild(hit); g.appendChild(dot); g.appendChild(t);
-    g.style.opacity=0; g.style.animation=`fade .4s ease forwards ${i*0.012+0.25}s`;
-    g.onclick=()=>focus(c.addr); gNodes.appendChild(g);
-  });
-  if(extra>0){
-    const t=el('text'); t.setAttribute('x',cx-R*0.62); t.setAttribute('y',cy+R*0.6);
-    t.setAttribute('class','nlbl'); t.setAttribute('text-anchor','middle'); t.setAttribute('fill','#54617a');
-    t.textContent=`+${extra} daha (fan-out ${callees.length})`; gNodes.appendChild(t);
-  }
-  const pr=el('circle'); pr.setAttribute('cx',cx); pr.setAttribute('cy',cy); pr.setAttribute('r',7);
-  pr.setAttribute('fill','none'); pr.setAttribute('stroke',cssvar(f.cls)); pr.setAttribute('stroke-width','1');
+  const MAX=42, t0={left:0.05, right:0.09};
+  // bir tarafı çiz: isLeft=true çağırdıkları (sol), false çağıranları (sağ)
+  const drawSide=(list,isLeft)=>{
+    const extra=Math.max(0,list.length-MAX), shown=list.slice(0,MAX), n=shown.length;
+    const base=isLeft?Math.PI:0, spread=Math.min(228,28+n*4.4)*Math.PI/180;
+    const a0=base-spread/2, a1=base+spread/2, seed=isLeft?t0.left:t0.right;
+    shown.forEach((c,i)=>{
+      const ang=n<=1?base:a0+(a1-a0)*i/(n-1);
+      const rr=R*(0.6+0.36*Math.min(1,(c.out+c.in)/16))*(0.9+0.1*((i*37)%10)/10);
+      const x=cx+rr*Math.cos(ang), y=cy+rr*Math.sin(ang);
+      const mx=cx+(x-cx)*0.5, my=cy+(y-cy)*0.5-(i%2?8:-8);
+      const ray=el('path');
+      ray.setAttribute('d',`M${cx.toFixed(1)},${cy.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}`);
+      ray.setAttribute('class','ray '+c.cls);
+      const len=Math.hypot(x-cx,y-cy)+40; ray.style.strokeDasharray=len; ray.style.strokeDashoffset=len;
+      ray.style.animation=`draw .5s ease forwards ${i*0.012+seed}s`; gRays.appendChild(ray);
+      const g=el('g'); g.setAttribute('class','node'); g.style.cursor='pointer';
+      const hit=el('circle'); hit.setAttribute('cx',x); hit.setAttribute('cy',y); hit.setAttribute('r',13); hit.setAttribute('class','hit');
+      const dot=el('circle'); dot.setAttribute('cx',x); dot.setAttribute('cy',y); dot.setAttribute('r',3.2);
+      dot.setAttribute('class','ndot '+c.cls); dot.setAttribute('filter','url(#glow)'); dot.style.color=cssvar(c.cls);
+      const t=el('text'); t.setAttribute('x',x+(isLeft?-8:8)); t.setAttribute('y',y+3.5);
+      t.setAttribute('text-anchor',isLeft?'end':'start'); t.setAttribute('class','nlbl');
+      t.textContent=c.cls==='unnamed'?('·'+c.addr.slice(-5)):trunc(c.name,18);
+      g.appendChild(hit); g.appendChild(dot); g.appendChild(t);
+      g.style.opacity=0; g.style.animation=`fade .4s ease forwards ${i*0.012+seed+0.2}s`;
+      g.onclick=()=>focus(c.addr); gNodes.appendChild(g);
+    });
+    if(extra>0){
+      const t=el('text'); t.setAttribute('x',cx+(isLeft?-R*0.52:R*0.52)); t.setAttribute('y',cy+R*0.64);
+      t.setAttribute('class','nlbl'); t.setAttribute('text-anchor','middle'); t.setAttribute('fill','#54617a');
+      t.textContent=`+${extra} daha`; gNodes.appendChild(t);
+    }
+  };
+  drawSide(callees,true);    // çağırdıkları → sol (neye bağlı)
+  drawSide(callers,false);   // çağıranları → sağ (nerede kullanılıyor)
+  // merkez: nabız + kum saati + etiketler
+  const pr=el('circle'); pr.setAttribute('cx',cx); pr.setAttribute('cy',cy); pr.setAttribute('r',9);
+  pr.setAttribute('fill','none'); pr.setAttribute('stroke',cssvar('widow')); pr.setAttribute('stroke-width','1');
   pr.style.animation='ping 2.4s ease-out infinite'; svg.appendChild(pr);
   const core=el('g');
   const ring=el('circle'); ring.setAttribute('cx',cx); ring.setAttribute('cy',cy); ring.setAttribute('r',22);
-  ring.setAttribute('fill','none'); ring.setAttribute('stroke',cssvar(f.cls)); ring.setAttribute('stroke-width','1.2'); ring.setAttribute('opacity','.5');
-  const ring2=el('circle'); ring2.setAttribute('cx',cx); ring2.setAttribute('cy',cy); ring2.setAttribute('r',7);
-  ring2.setAttribute('fill',cssvar(f.cls)); ring2.setAttribute('filter','url(#glow)');
-  const lbl=el('text'); lbl.setAttribute('x',cx); lbl.setAttribute('y',cy-32); lbl.setAttribute('class','corelbl');
+  ring.setAttribute('fill','none'); ring.setAttribute('stroke',cssvar(f.cls)); ring.setAttribute('stroke-width','1.2'); ring.setAttribute('opacity','.45');
+  // Black Widow merkez isareti: kirmizi kum saati
+  const hw=8, hh=11, ring2=el('polygon');
+  ring2.setAttribute('points',`${cx-hw},${cy-hh} ${cx+hw},${cy-hh} ${cx},${cy} ${cx+hw},${cy+hh} ${cx-hw},${cy+hh} ${cx},${cy}`);
+  ring2.setAttribute('fill',cssvar('widow')); ring2.setAttribute('stroke','#2a0510'); ring2.setAttribute('stroke-width','0.6');
+  ring2.setAttribute('filter','url(#glow)'); ring2.style.filter='drop-shadow(0 0 6px var(--widow-glow))';
+  const lbl=el('text'); lbl.setAttribute('x',cx); lbl.setAttribute('y',cy-34); lbl.setAttribute('class','corelbl');
   lbl.textContent=f.cls==='unnamed'?('FUN_'+f.addr.slice(-6)):trunc(f.name,30);
   const ad=el('text'); ad.setAttribute('x',cx); ad.setAttribute('y',cy+38); ad.setAttribute('class','coreaddr');
-  ad.textContent=f.addr+'  ·  '+f.out+' çağrı';
-  core.appendChild(ring); core.appendChild(ring2); core.appendChild(lbl); core.appendChild(ad);
+  ad.textContent='◀ '+(f.out||0)+' çağırdığı  ·  '+(f.in||0)+' çağıran ▶';
+  // ne iş yapıyor? — evidence gelince dolar (setMapRole), redraw'da cache'ten
+  const role=el('text'); role.setAttribute('id','mapRole'); role.setAttribute('x',cx); role.setAttribute('y',cy+53); role.setAttribute('class','corerole');
+  role.textContent=MAP_ROLE[addr]||'';
+  core.appendChild(ring); core.appendChild(ring2); core.appendChild(lbl); core.appendChild(ad); core.appendChild(role);
   core.style.cursor='pointer'; core.onclick=()=>loadCode(addr,true); svg.appendChild(core);
-  $('tgCount').textContent=shown.length;
+  $('tgCount').textContent=callees.length+callers.length;
   $('fCenter').textContent=f.cls==='unnamed'?f.addr:f.name;
-  $('fEdges').textContent=callees.length; $('fStatus').textContent='İZLENİYOR';
+  $('fEdges').textContent=callees.length+callers.length; $('fStatus').textContent='İZLENİYOR';
 }
 
 function crumbs(){
@@ -524,7 +680,8 @@ async function loadCode(addr){
   $('cTitle').textContent=f.cls==='unnamed'?('FUN_'+f.addr.slice(-6)):f.name;
   $('cTitle').className='t '+f.cls;
   const b=$('cBadge'); b.className='badge '+f.cls; b.textContent=TRLABEL[f.cls];
-  $('cAddr').textContent=f.addr; $('cBody').innerHTML='<span class="cm">// decompiled çekiliyor…</span>';
+  $('cAddr').textContent=f.addr; $('cInspSub').textContent=f.addr; setRename(f); loadEvidence(addr);
+  $('cBody').innerHTML='<span class="cm">// decompiled çekiliyor…</span>';
   try{ const j=await (await fetch('/api/decompiled/'+addr)).json();
     $('cBody').innerHTML=highlight(j.code||''); wireRefs();
   }catch(e){ $('cBody').innerHTML='<span class="un">// decompiled yok</span>'; }
@@ -570,6 +727,225 @@ document.addEventListener('keydown',e=>{
 const kf=document.createElement('style');
 kf.textContent=`@keyframes draw{to{stroke-dashoffset:0}}@keyframes fade{to{opacity:1}}@keyframes ping{0%{r:7;opacity:.6}100%{r:30;opacity:0}}`;
 document.head.appendChild(kf);
+
+/* ========================================================================
+   ANALİST KATMANI · İncele & Düzelt  (additive — mevcut davranışa dokunmaz)
+   ======================================================================== */
+
+/* server.py _classify aynası: FUN_ → unnamed, _<3+hex> son eki → weak, aksi named */
+function classify(name){
+  if(String(name).startsWith('FUN_')) return 'unnamed';
+  if(/_[0-9a-f]{3,}$/.test(name)) return 'weak';
+  return 'named';
+}
+function passFilter(f){
+  if(FILTER==='unnamed') return f.cls==='unnamed';
+  if(FILTER==='weak')    return f.cls==='weak';
+  if(FILTER==='manual')  return MANUAL.has(f.addr);
+  return true;
+}
+
+/* ---- sol liste: filtre chip'leri + ilerleme ---- */
+function buildFilters(){
+  const box=$('ivFilters'); if(!box||!MODEL) return; box.innerHTML='';
+  const defs=[
+    ['all','Tümü',     null,          ''],
+    ['unnamed','İsimsiz', MODEL.unnamed, 'u'],
+    ['weak','Zayıf',    MODEL.weak,    'w'],
+    ['manual','Düzeltilen', MANUAL.size, 'm'],
+  ];
+  for(const [key,label,n,cc] of defs){
+    const c=document.createElement('span');
+    c.className='iv-fchip'+(FILTER===key?(' on'+(cc?' '+cc:'')):'');
+    c.innerHTML=esc(label)+(n!=null?` <b>${n}</b>`:'');
+    c.onclick=()=>{ FILTER=key; buildFilters(); buildList(MODEL.functions); };
+    box.appendChild(c);
+  }
+}
+function updateProgress(){
+  if(!MODEL) return;
+  const total=MODEL.total||0, resolved=(MODEL.named||0)+(MODEL.weak||0);
+  $('ivQTxt').textContent=resolved+' / '+total+' çözüldü';
+  $('ivQFill').style.width=(total?Math.round(100*resolved/total):0)+'%';
+}
+/* rename sonrası sınıf sayaçlarını + üst-bar istatistiklerini tazele */
+function recount(){
+  if(!MODEL) return;
+  let n=0,w=0,u=0;
+  for(const f of MODEL.functions){ if(f.cls==='named')n++; else if(f.cls==='weak')w++; else u++; }
+  MODEL.named=n; MODEL.weak=w; MODEL.unnamed=u; MODEL.recovered=n+w;
+  $('sNamed').textContent=n; $('sWeak').textContent=w; $('sUnk').textContent=u;
+  const pct=Math.round(100*MODEL.recovered/Math.max(1,MODEL.total));
+  $('recovPct').textContent=pct+'%'; $('recovBar').style.width=pct+'%';
+}
+/* önceki oturumlardan gelen override'ları işaretle (best-effort, endpoint yoksa sessiz) */
+async function loadOverrides(){
+  try{
+    const r=await fetch('/api/overrides'); if(!r.ok) return;
+    const j=await r.json(); const ov=j&&j.overrides;
+    if(ov && typeof ov==='object'){
+      let any=false;
+      Object.keys(ov).forEach(a=>{ if(BYADDR[a]){ MANUAL.add(a); any=true; } });
+      if(any){ buildFilters(); if(FILTER==='manual') buildList(MODEL.functions); }
+    }
+  }catch(e){}
+}
+
+/* ---- rename (düzelt) ---- */
+function setRename(f){
+  const inp=$('renameInput'); if(!inp||!f) return;
+  inp.value = f.cls==='unnamed' ? ('FUN_'+f.addr.slice(-6)) : f.name;
+  clearRenameErr();
+}
+function showRenameErr(m){ const e=$('renameErr'); e.textContent='⚠ '+m; e.classList.add('on'); }
+function clearRenameErr(){ const e=$('renameErr'); e.textContent=''; e.classList.remove('on'); }
+function openRename(){
+  $('cInspect').classList.add('open');
+  const inp=$('renameInput'); if(inp){ inp.focus(); inp.select(); }
+}
+async function doRename(){
+  const addr=CENTER, f=BYADDR[addr]; if(!f) return;
+  const name=$('renameInput').value.trim();
+  if(!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)){
+    showRenameErr('geçersiz isim — yalnız harf/rakam/alt çizgi, rakamla başlayamaz'); return;
+  }
+  if(name===f.name){ clearRenameErr(); return; }
+  const ok=$('renameOk'), prev=ok.textContent; ok.textContent='…'; ok.disabled=true;
+  try{
+    const r=await fetch('/api/rename',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({addr,name})});
+    let j={}; try{ j=await r.json(); }catch(e){}
+    if(!r.ok || (j&&j.error)){ showRenameErr((j&&j.error)||('sunucu reddetti ('+r.status+')')); return; }
+    applyRename(addr,name);
+  }catch(e){ showRenameErr('sunucuya ulaşılamadı'); }
+  finally{ ok.textContent=prev; ok.disabled=false; }
+}
+function applyRename(addr,name){
+  const f=BYADDR[addr]; if(!f) return;
+  MODEL.names[addr]=name;                 // decompiled highlight'ın okuduğu harita
+  f.name=name; f.cls=classify(name);      // FUN_ → named/weak
+  MANUAL.add(addr);
+  clearRenameErr();
+  recount(); buildFilters(); updateProgress();
+  buildList(MODEL.functions);
+  if(CENTER) drawRadial(CENTER);           // merkez etiket + node sınıfları tazelensin
+  loadCode(addr);                          // başlık/badge/kod overlay + evidence tazele
+}
+
+/* ---- İNCELE (kanıt) ---- */
+async function loadEvidence(addr){
+  const box=$('evBox'); if(!box) return;
+  const seq=++EVSEQ;
+  box.innerHTML='<div class="iv-load">kanıt çekiliyor…</div>';
+  let j;
+  try{
+    const r=await fetch('/api/evidence?addr='+encodeURIComponent(addr));
+    if(!r.ok) throw 0; j=await r.json();
+  }catch(e){ if(seq===EVSEQ) box.innerHTML=''; return; }   // endpoint yok/hata → sessiz gizle
+  if(seq!==EVSEQ) return;                                    // bu arada başka fonksiyona geçildi
+  renderEvidence(j);
+}
+function _evCard(title,count){
+  const card=document.createElement('div'); card.className='iv-ev';
+  const h=document.createElement('div'); h.className='iv-evh';
+  h.innerHTML=esc(title)+(count!=null?`<span class="c">${esc(String(count))}</span>`:'');
+  const b=document.createElement('div'); b.className='iv-eb';
+  card.appendChild(h); card.appendChild(b);
+  return {card,b};
+}
+function _fmtConf(c){ const n=Number(c); return isFinite(n)&&n<=1?n.toFixed(2):esc(String(c)); }
+function renderEvidence(j){
+  const box=$('evBox'); box.innerHTML=''; j=j||{};
+
+  // 0) NEDEN İSİMSİZ? — teşhis (backend yalnızca isimli-olmayanlar için gönderir)
+  const dg=j.diagnosis;
+  if(dg && dg.reason){
+    const card=document.createElement('div'); card.className='iv-ev iv-diag '+(dg.verdict||'');
+    const h=document.createElement('div'); h.className='iv-evh';
+    const VL={bsim_shadow:'BSim kapalı',app_wrapper:'uygulama sarmalayıcı',app_specific:'uygulamaya özgü',ambiguous:'belirsiz'};
+    h.innerHTML='◇ NEDEN İSİMSİZ?'+(VL[dg.verdict]?`<span class="c">${esc(VL[dg.verdict])}</span>`:'');
+    const b=document.createElement('div'); b.className='iv-eb';
+    const r=document.createElement('div'); r.className='iv-dreason'; r.textContent=dg.reason; b.appendChild(r);
+    (Array.isArray(dg.signals)?dg.signals:[]).forEach(s=>{
+      if(s==null||!String(s).trim().length) return;
+      const d=document.createElement('div'); d.className='iv-dsig';
+      d.innerHTML=`<span class="di">•</span><span>${esc(s)}</span>`; b.appendChild(d);
+    });
+    card.appendChild(h); card.appendChild(b); box.appendChild(card);
+  }
+
+  // 1) aday / mevcut isim + provenance  (tıkla → rename input'una doldur)
+  const cur=j.current_name, prov=j.provenance;
+  if((cur && String(cur).length) || prov){
+    const {card,b}=_evCard('◈ ADAY / MEVCUT İSİM', null);
+    const row=document.createElement('div'); row.className='iv-cand';
+    const bits=[];
+    if(prov){ if(prov.source)bits.push(prov.source); if(prov.library)bits.push(prov.library); }
+    const nm = cur && String(cur).length ? cur : '—';
+    row.innerHTML=`<span class="iv-cn">${esc(nm)}</span>`+
+      (bits.length?`<span class="iv-csrc">${esc(bits.join(' · '))}</span>`:'')+
+      (prov&&prov.confidence!=null?`<span class="iv-cconf">${_fmtConf(prov.confidence)}</span>`:'')+
+      `<span class="iv-carrow">▸</span>`;
+    if(cur && !String(cur).startsWith('FUN_')){
+      row.classList.add('pick');
+      row.onclick=()=>{ $('cInspect').classList.add('open'); const i=$('renameInput'); i.value=cur; i.focus(); i.select(); clearRenameErr(); };
+    }
+    b.appendChild(row); box.appendChild(card);
+  }
+
+  // 2) referans string'ler → chip'ler
+  const strs=Array.isArray(j.strings)?j.strings.filter(s=>s!=null&&String(s).length):[];
+  if(strs.length){
+    const {card,b}=_evCard('" REFERANS STRING\'LER', strs.length);
+    const wrap=document.createElement('div'); wrap.className='iv-strs';
+    strs.slice(0,40).forEach(s=>{ const c=document.createElement('span'); c.className='iv-s'; c.textContent='"'+s+'"'; c.title=s; wrap.appendChild(c); });
+    b.appendChild(wrap); box.appendChild(card);
+  }
+
+  // 3) çağrı bağlamı → tıkla focus() (mevcut navigasyon)
+  const callers=Array.isArray(j.callers)?j.callers:[];
+  const callees=Array.isArray(j.callees)?j.callees:[];
+  if(callers.length||callees.length){
+    const {card,b}=_evCard('⇄ ÇAĞRI BAĞLAMI', null);
+    const refs=document.createElement('div'); refs.className='iv-refs';
+    const addRef=(rf,kind)=>{
+      const cls=rf.cls||'unnamed';
+      const nm=(rf.name&&String(rf.name).length)?rf.name:(rf.addr||'—');
+      const clickable=rf.addr && BYADDR[rf.addr];
+      const ln=document.createElement('div');
+      ln.className='iv-refln '+kind+' '+cls+(clickable?' link':'');
+      ln.innerHTML=`<span class="rd"></span><span class="nm">${esc(kind==='callers'?'çağıran: ':'')}${esc(nm)}</span><span class="rx">${esc(TRLABEL[cls]||cls)}</span>`;
+      if(clickable) ln.onclick=()=>focus(rf.addr);
+      refs.appendChild(ln);
+    };
+    callers.slice(0,30).forEach(rf=>addRef(rf,'callers'));
+    callees.slice(0,30).forEach(rf=>addRef(rf,'callees'));
+    b.appendChild(refs); box.appendChild(card);
+  }
+
+  // 4) ipuçları → satırlar (boşsa bölüm hiç eklenmez, uydurma yok)
+  const hints=Array.isArray(j.hints)?j.hints.filter(h=>h!=null&&String(h).trim().length):[];
+  if(hints.length){
+    const {card,b}=_evCard('⚗ İPUÇLARI', 'karadul analizi');
+    const wrap=document.createElement('div'); wrap.className='iv-hints';
+    hints.forEach(h=>{ const d=document.createElement('div'); d.className='iv-hint'; d.innerHTML=`<span class="ht">▸</span><span>${esc(h)}</span>`; wrap.appendChild(d); });
+    b.appendChild(wrap); box.appendChild(card);
+  }
+
+  // haritaya "ne iş yapıyor?" özetini ver (yalnız aktif merkez fonksiyon için)
+  if(j.addr && j.addr===CENTER) setMapRole(j.addr, deriveRole(j));
+}
+
+/* ---- kablolar (statik elemanlar, DOM hazır) ---- */
+$('renameOk').onclick=doRename;
+$('renameCancel').onclick=()=>{ const f=BYADDR[CENTER]; if(f) setRename(f); };
+$('renameInput').onkeydown=e=>{
+  if(e.key==='Enter'){ e.preventDefault(); doRename(); }
+  else if(e.key==='Escape'){ e.stopPropagation(); const f=BYADDR[CENTER]; if(f) setRename(f); e.target.blur(); }
+};
+$('cEdit').onclick=openRename;
+$('cTitle').ondblclick=openRename;
+$('cInspToggle').onclick=()=>$('cInspect').classList.toggle('open');
 
 init();
 </script>

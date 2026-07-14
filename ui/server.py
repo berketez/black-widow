@@ -22,6 +22,7 @@ Tarayici:   http://127.0.0.1:8000
 from __future__ import annotations
 
 import glob
+import hashlib
 import json
 import os
 import re
@@ -34,6 +35,10 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+# karadul içi -- kalıcı manuel-override deposu (Analist İncele & Düzelt)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from karadul.core import overrides  # noqa: E402
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 HOME = Path.home()
 WS: str | None = None
@@ -44,6 +49,7 @@ _CACHE: dict = {}
 _CACHE_LOCK = threading.Lock()
 _JOBS: dict = {}
 _JOBS_LOCK = threading.Lock()
+_RENAME_LOCK = threading.Lock()  # naming_map oku-değiştir-yaz serileştirme
 _MAX_RUNS = 6  # ui/_runs altinda tutulacak analiz sayisi (disk sinirlama)
 
 STAGE_ORDER = ["identify", "static", "deobfuscate", "reconstruct", "report"]
@@ -117,7 +123,11 @@ def build_model() -> dict | None:
     nm_path, dec = find_ws(ws)
     if not nm_path or not dec:
         return None
-    names = json.load(open(nm_path)).get("global", {})
+    try:
+        with open(nm_path) as _fh:
+            names = json.load(_fh).get("global", {})
+    except (json.JSONDecodeError, OSError, AttributeError):
+        names = {}
     files = sorted(glob.glob(f"{dec}/FUN_*.c"))
     addrs = [os.path.basename(f)[:-2] for f in files]
     addr_set = set(addrs)
@@ -163,6 +173,358 @@ def activate_workspace(ws: str) -> None:
         WS = ws
         _CACHE.pop("model", None)
         _CACHE.pop("ws", None)
+
+
+# ---------------------------------------------------------------------------
+# Analist İncele & Düzelt -- kanıt sunumu + kalıcı yeniden-adlandırma (Faz 1)
+# ---------------------------------------------------------------------------
+_STR_LIT_RE = re.compile(r'"((?:[^"\\]|\\.)*)"')     # C string sabiti
+_CALL_ID_RE = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*\(")  # cagri sembolu
+_DAT_RE = re.compile(r"DAT_[0-9a-fA-F]+")
+_HASH_HEX_RE = re.compile(r"[0-9a-f]+")
+
+
+def _atomic_write_json(path: Path, obj) -> None:
+    """obj'i path'e atomik yaz (tmp + os.replace) -> yarim/bozuk JSON olmaz."""
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(obj, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    finally:
+        try:
+            if tmp.exists():
+                tmp.unlink()
+        except OSError:
+            pass
+
+
+def _active_run_dir(ws: str | None) -> Path | None:
+    """WS'ten yukari yuruyerek clean/report.json iceren run dizinini bul."""
+    if not ws:
+        return None
+    p = Path(ws)
+    for anc in [p, *p.parents]:
+        if (anc / "clean" / "report.json").is_file():
+            return anc
+        if anc.name == "_runs":  # ui/_runs sinirini gecme
+            break
+    return None
+
+
+def _active_binary_hash(ws: str | None = None) -> str | None:
+    """Aktif binary'nin STABIL anahtari: report.json target.hash, yoksa sha256.
+
+    Ayni WS icin cache'lenir (ayni binary -> ayni hash, rename'de degismez).
+    """
+    ws = ws or WS
+    if not ws:
+        return None
+    with _CACHE_LOCK:
+        if _CACHE.get("bhash_ws") == ws and _CACHE.get("bhash"):
+            return _CACHE["bhash"]
+    h: str | None = None
+    rd = _active_run_dir(ws)
+    if rd:
+        try:
+            h = json.loads((rd / "clean" / "report.json").read_text())["target"]["hash"]
+        except (json.JSONDecodeError, KeyError, OSError, TypeError):
+            h = None
+    if not h:  # fallback: cozumlenen binary'nin sha256'si
+        bin_path = resolve_binary(_ws_binary_name(ws))
+        if bin_path:
+            try:
+                hh = hashlib.sha256()
+                with open(bin_path, "rb") as f:
+                    for chunk in iter(lambda: f.read(1 << 20), b""):
+                        hh.update(chunk)
+                h = hh.hexdigest()
+            except OSError:
+                h = None
+    if h:
+        h = h.lower()
+        if not _HASH_HEX_RE.fullmatch(h):  # overrides path guvenligi
+            h = None
+    if h:
+        with _CACHE_LOCK:
+            _CACHE["bhash_ws"] = ws
+            _CACHE["bhash"] = h
+    return h
+
+
+def _clean_mappings(ws: str | None = None) -> dict:
+    """Aktif run'in clean/naming_map.json 'mappings' bloku (provenance/hint icin)."""
+    ws = ws or WS
+    if not ws:
+        return {}
+    with _CACHE_LOCK:
+        if _CACHE.get("cmap_ws") == ws and "cmap" in _CACHE:
+            return _CACHE["cmap"]
+    m: dict = {}
+    rd = _active_run_dir(ws)
+    if rd:
+        try:
+            m = json.loads((rd / "clean" / "naming_map.json").read_text()).get("mappings", {})
+        except (json.JSONDecodeError, OSError, TypeError):
+            m = {}
+    if not isinstance(m, dict):
+        m = {}
+    with _CACHE_LOCK:
+        _CACHE["cmap_ws"] = ws
+        _CACHE["cmap"] = m
+    return m
+
+
+def _decompiled_text(addr: str) -> str:
+    """addr icin decompiled FUN_x.c metnini oku (yoksa bos)."""
+    _, dec = find_ws(WS) if WS else (None, None)
+    if not dec:
+        return ""
+    p = Path(dec) / f"{addr}.c"
+    if not p.is_file():
+        return ""
+    try:
+        return p.read_text(errors="ignore")
+    except OSError:
+        return ""
+
+
+def _extract_strings(text: str, cap: int = 20) -> list[str]:
+    """Decompiled koddan string sabitlerini cikar (dedup, sirali, cap'li)."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for s in _STR_LIT_RE.findall(text):
+        if not s or s in seen:
+            continue
+        seen.add(s)
+        out.append(s if len(s) <= 160 else s[:157] + "...")
+        if len(out) >= cap:
+            break
+    return out
+
+
+# Cok yaygin / ayirt-edici-olmayan cagrilar: gosterilebilir ama sona atilir.
+_NOISE_CALLS = {
+    "free", "malloc", "calloc", "realloc", "memcpy", "memmove", "memset",
+    "strlen", "strcmp", "strcpy", "strchr", "abort", "exit",
+    "__stack_chk_fail", "__errno_location", "__assert_fail",
+    "__ctype_get_mb_cur_max", "__mempcpy_chk", "__memcpy_chk", "__memset_chk",
+}
+
+
+def _external_call_hints(text: str, cmap: dict, cap: int = 6) -> list[str]:
+    """Cagrilan harici/kutuphane sembollerini ADIYLA surface et (yorumsuz).
+
+    DURUSTLUK: imza-DB'nin `library` etiketi GURULTULU (or. __assert_fail->cffi
+    yanlis), o yuzden kutuphane ADINI GOSTERMIYORUZ -- sadece "bu recognized bir
+    harici cagri" filtresi olarak kullaniyoruz. Gosterilen sembol adi decompiled
+    metinden GERCEK. Ayirt-edici cagrilar (or. __gmpz_*) one, jenerikler sona.
+    """
+    called = set(_CALL_ID_RE.findall(text))
+    distinctive: list[str] = []
+    common: list[str] = []
+    for name in sorted(called):
+        rec = cmap.get(name)
+        if not isinstance(rec, dict) or not rec.get("library"):
+            continue  # yalnizca imza-DB'nin tanidigi harici semboller
+        (common if name in _NOISE_CALLS else distinctive).append(f"{name} çağrılıyor")
+    return (distinctive + common)[:cap]
+
+
+def _bsim_shadow() -> dict:
+    """bsim_shadow.json: bare-hex adres -> en iyi aday {name, similarity}."""
+    ws = WS
+    if not ws:
+        return {}
+    with _CACHE_LOCK:
+        if _CACHE.get("bsim_ws") == ws and "bsim" in _CACHE:
+            return _CACHE["bsim"]
+    out: dict = {}
+    p = next(iter(Path(ws).rglob("reconstructed/bsim_shadow.json")), None)
+    if p:
+        try:
+            for m in json.loads(p.read_text()).get("matches", []):
+                # placeholder adaylari (FUN_/DAT_/adres-sonekli) ELE -- bunlar
+                # golge-DB'nin isimsiz kendi eslesmeleri; "aday" olarak degeri yok.
+                cands = [c for c in (m.get("bsim_candidates") or [])
+                         if (nm := str(c.get("name") or ""))
+                         and not nm.startswith(("FUN_", "DAT_"))
+                         and not _ADDR_RE.search(nm)]
+                if cands:
+                    best = max(cands, key=lambda c: c.get("similarity", 0) or 0)
+                    out[str(m.get("function_addr"))] = {
+                        "name": best.get("name"), "similarity": best.get("similarity")}
+        except (json.JSONDecodeError, OSError, TypeError, ValueError):
+            out = {}
+    with _CACHE_LOCK:
+        _CACHE["bsim_ws"] = ws
+        _CACHE["bsim"] = out
+    return out
+
+
+def _recon_stats() -> dict:
+    """Aktif run'in report.json reconstruct.stats bloku (teshis baglami)."""
+    ws = WS
+    if not ws:
+        return {}
+    with _CACHE_LOCK:
+        if _CACHE.get("rstats_ws") == ws and "rstats" in _CACHE:
+            return _CACHE["rstats"]
+    st: dict = {}
+    p = next(iter(Path(ws).rglob("reports/report.json")), None)
+    if p:
+        try:
+            st = json.loads(p.read_text())["pipeline"]["stages"]["reconstruct"]["stats"]
+        except (json.JSONDecodeError, OSError, KeyError, TypeError):
+            st = {}
+    if not isinstance(st, dict):
+        st = {}
+    with _CACHE_LOCK:
+        _CACHE["rstats_ws"] = ws
+        _CACHE["rstats"] = st
+    return st
+
+
+def _naming_diagnosis(addr: str, text: str, cmap: dict, cls: str) -> dict:
+    """Neden isimsiz/zayif kaldi? YALNIZCA gercek sinyallerden teshis (uydurma yok).
+
+    verdict: bsim_shadow | app_wrapper | app_specific | ambiguous
+    """
+    hexa = addr[4:] if addr.startswith("FUN_") else addr
+    signals: list[str] = []
+
+    # 1) imza durumu (isimsiz => uygulanabilir imza tutmamis)
+    if cls == "weak":
+        signals.append("Yalnızca zayıf/adres-sonekli isim — kesin imza eşleşmesi yok")
+    else:
+        signals.append("Uygulanabilir imza/parmak izi eşleşmesi yok")
+
+    # 2) BSim gölge (bare-hex, sifir-dolgulu da dene)
+    bs = _bsim_shadow()
+    bsim = bs.get(hexa) or bs.get(hexa.lstrip("0"))
+    sim = (bsim or {}).get("similarity") or 0
+    strong_bsim = bool(bsim and sim >= 0.80)
+    if bsim:
+        signals.append(
+            f"BSim: '{bsim['name']}' %{round(sim * 100)} benzer — GÖLGE modunda "
+            "(isimlendirmeye beslenmiyor)")
+
+    # 3) ayirt edici kutuphane cagrilari (anlamli sinyal)
+    ext = _external_call_hints(text, cmap, cap=4)
+    if ext:
+        signals.append("Çağırdığı bilinen fonksiyonlar: "
+                       + ", ".join(h.replace(" çağrılıyor", "") for h in ext))
+
+    # 4) hesaplama motoru -- BINARY GENELI baglam (per-function iddia DEGIL).
+    # Yalnizca hesaplama füzyonu HICBIR fonksiyonu isimlendiremediyse (cfa==0)
+    # goster; sayisal esik hardcode edilmez (config drift'e karsi).
+    rs = _recon_stats()
+    cfm = rs.get("computation_fusion_matches")
+    cfa = rs.get("computation_fusion_accepted") or 0
+    if cfm and not cfa:
+        signals.append(f"Bu binary genelinde hesaplama füzyonu hiçbir fonksiyona isim "
+                       f"veremedi ({cfm} aday üretildi, hiçbiri güven eşiğini geçemedi)")
+
+    # verdict + insan-okunur neden
+    if strong_bsim:
+        verdict = "bsim_shadow"
+        reason = (f"BSim güçlü benzer buldu ('{bsim['name']}', %{round(sim * 100)}) ama gölge "
+                  "modunda kapalı. İmzalar → BSim'i füzyona açarsan otomatik isimlenebilir.")
+    elif ext:
+        verdict = "app_wrapper"
+        reason = ("Uygulamaya özgü sarmalayıcı: bilinen kütüphane fonksiyonları çağırıyor ama "
+                  "kendisi standart bir fonksiyon değil — eşleşecek imza yok. Çağrılarından ne "
+                  "yaptığını çıkarıp elle isimlendir.")
+    else:
+        verdict = "app_specific"
+        reason = ("Uygulamaya özgü fonksiyon (programın kendi kodu). Deterministik motor yalnızca "
+                  "bilinen kütüphane/derleyici fonksiyonlarını isimlendirir; buna imza/parmak izi "
+                  "yok — isim insan analizinden gelmeli.")
+    return {"verdict": verdict, "reason": reason, "signals": signals}
+
+
+def _evidence(addr: str) -> dict:
+    """addr icin kanit paketi (yalnizca gercek veri)."""
+    model = build_model()
+    if not model:
+        return {"__code": 404, "error": "workspace yok"}
+    names = model["names"]
+    calls = model["calls"]
+    current = names.get(addr, addr)
+
+    def node(a: str) -> dict:
+        nm = names.get(a, a)
+        return {"addr": a, "name": nm, "cls": _classify(nm)}
+
+    callees = [node(c) for c in calls.get(addr, [])]
+    callers = [node(a) for a in sorted(a for a, cl in calls.items() if addr in cl)]
+
+    text = _decompiled_text(addr)
+    cmap = _clean_mappings()
+    prov = None
+    rec = cmap.get(addr)
+    if isinstance(rec, dict):
+        prov = {"source": rec.get("source"), "confidence": rec.get("confidence")}
+        if rec.get("library"):
+            prov["library"] = rec["library"]
+
+    cls = _classify(current)
+    return {
+        "addr": addr,
+        "current_name": current,
+        "cls": cls,
+        "callers": callers,
+        "callees": callees,
+        "strings": _extract_strings(text),
+        "provenance": prov,
+        "hints": _external_call_hints(text, cmap),
+        # neden isimsiz/zayif kaldi? (yalnizca isimli olmayanlar icin)
+        "diagnosis": _naming_diagnosis(addr, text, cmap, cls) if cls != "named" else None,
+    }
+
+
+def _do_rename(addr: str, name: str) -> dict:
+    """addr'i name olarak yeniden adlandir: naming_map global patch + kalici override.
+
+    Basarida {"ok":True,"addr","name"}; hata durumunda {"__code":N,"error":..}.
+    """
+    if not (_FUN_RE.fullmatch(addr) or _DAT_RE.fullmatch(addr)):
+        return {"__code": 400, "error": "geçersiz adres (FUN_/DAT_<hex>)"}
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name or ""):
+        return {"__code": 400, "error": "geçersiz isim (C tanımlayıcısı olmalı)"}
+    ws = WS
+    if not ws:
+        return {"__code": 404, "error": "workspace yok"}
+    nm_path, _ = find_ws(ws)
+    if not nm_path:
+        return {"__code": 404, "error": "naming_map yok"}
+    # oku-değiştir-yaz'ı serileştir (ThreadingHTTPServer -> eşzamanlı rename yarışı)
+    with _RENAME_LOCK:
+        try:
+            data = json.loads(Path(nm_path).read_text())
+        except (json.JSONDecodeError, OSError):
+            return {"__code": 500, "error": "naming_map okunamadı"}
+        if not isinstance(data, dict):
+            data = {}
+        data.setdefault("global", {})[addr] = name
+        try:
+            _atomic_write_json(Path(nm_path), data)
+        except OSError as e:
+            return {"__code": 500, "error": f"naming_map yazılamadı: {e}"}
+
+    # kalici override deposu (binary_hash bazli) -- naming_map yeniden
+    # uretilse bile isim geri gelsin diye
+    bh = _active_binary_hash(ws)
+    if bh:
+        try:
+            overrides.set_name(bh, addr, name, binary=_ws_binary_name(ws))
+        except ValueError:
+            pass  # naming_map zaten guncellendi; override best-effort
+
+    activate_workspace(ws)  # model cache temizle -> sonraki /api/model taze
+    return {"ok": True, "addr": addr, "name": name}
 
 
 # ---------------------------------------------------------------------------
@@ -424,6 +786,19 @@ class Handler(BaseHTTPRequestHandler):
         elif path in ("/api/model", "/api/functions"):
             d = build_model()
             self._json(d) if d else self._json({"error": "workspace yok"}, 404)
+        elif path == "/api/evidence":
+            qs = self.path.split("?", 1)[1] if "?" in self.path else ""
+            q = dict(x.split("=", 1) for x in qs.split("&") if "=" in x)
+            addr = q.get("addr", "")
+            if not _FUN_RE.fullmatch(addr):
+                self._json({"error": "geçersiz adres"}, 400)
+                return
+            ev = _evidence(addr)
+            self._json(ev, ev.pop("__code", 200))
+        elif path == "/api/overrides":
+            bh = _active_binary_hash()
+            names = overrides.all_names(bh) if bh else {}
+            self._json({"overrides": names, "count": len(names)})
         elif path.startswith("/api/decompiled/"):
             addr = path.split("/api/decompiled/", 1)[1]
             if not re.fullmatch(r"FUN_[0-9a-fA-F]+", addr):
@@ -450,6 +825,16 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"error": "binary belirtilmedi"}, 400)
                 return
             self._json(start_analysis(binary))
+        elif self.path.split("?", 1)[0] == "/api/rename":
+            n = int(self.headers.get("Content-Length", 0) or 0)
+            try:
+                body = json.loads(self.rfile.read(n) or b"{}")
+            except json.JSONDecodeError:
+                body = {}
+            addr = str(body.get("addr", ""))
+            name = str(body.get("name", ""))
+            result = _do_rename(addr, name)
+            self._json(result, result.pop("__code", 200))
         else:
             self._json({"error": "not found"}, 404)
 
