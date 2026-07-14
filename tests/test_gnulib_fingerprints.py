@@ -15,14 +15,43 @@ from pathlib import Path
 import pytest
 
 from karadul.analyzers.gnulib_fingerprints import (
+    EXPECTED_COREUTILS,
     GNULIB_CALL_SHAPES,
     GNULIB_FINGERPRINTS,
+    GNULIB_REF_COMMIT,
     extract_string_literals,
     match_call_shape,
     match_function,
 )
 
 GNULIB_LIB = Path(__file__).resolve().parents[1] / "vendor" / "gnulib-ref" / "lib"
+GNULIB_ROOT = GNULIB_LIB.parent  # vendor/gnulib-ref
+
+
+@pytest.mark.skipif(
+    not (GNULIB_ROOT / ".git").exists(),
+    reason="vendor/gnulib-ref git checkout'u yok (upstream clone edilmemis)",
+)
+class TestVendorPin:
+    """Drift-guard: vendor/gnulib-ref, olcum hedefi coreutils 9.4'un gnulib
+    commit'ine pin'li olmali. Yanlislikla master'a fetch edilirse leakage-oracle
+    olcum binary'lerinden ayrilir -> anchor'lar sessizce gecersizlesir (07-14
+    quotearg_buffer_restyled bunu yasadi)."""
+
+    def test_vendor_head_matches_pin(self):
+        import subprocess
+        try:
+            head = subprocess.run(
+                ["git", "-C", str(GNULIB_ROOT), "rev-parse", "HEAD"],
+                capture_output=True, text=True, timeout=15,
+            ).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            pytest.skip("git calistirilamadi")
+        assert head == GNULIB_REF_COMMIT, (
+            f"vendor/gnulib-ref HEAD ({head[:12]}) beklenen pin "
+            f"({GNULIB_REF_COMMIT[:12]}, coreutils {EXPECTED_COREUTILS}) ile "
+            f"eslesmiyor. scripts/fetch_gnulib_ref.sh ile yeniden pin'le."
+        )
 
 
 class TestStringExtraction:

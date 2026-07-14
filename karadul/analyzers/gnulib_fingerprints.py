@@ -30,6 +30,19 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+# ---------------------------------------------------------------------------
+# VENDOR PIN -- leakage-oracle surum sabitlemesi (olcum hijyeni, 2026-07-14)
+# ---------------------------------------------------------------------------
+# String-anchor / call-shape'lerin "leakage-safe" iddiasi, oracle kaynaginin
+# (vendor/gnulib-ref) OLCUM BINARY'lerinin (coreutils 9.4) gnulib surumuyle AYNI
+# cagda olmasina baglidir. Asagidaki commit, coreutils v9.4 tag'inin gnulib
+# submodule pointer'idir (2023-08). vendor .gitignore'da; yeniden getirme:
+#     scripts/fetch_gnulib_ref.sh
+# Drift-guard: tests/test_gnulib_fingerprints.py bu commit'i vendor HEAD ile
+# karsilastirir -> yanlislikla master'a fetch edilirse test kirilir.
+GNULIB_REF_COMMIT = "bb5bb43a1ebb9f502b5ce38c0b8c8778d13b9f6e"
+EXPECTED_COREUTILS = "9.4"
+
 
 @dataclass(frozen=True)
 class GnulibFingerprint:
@@ -186,12 +199,15 @@ GNULIB_CALL_SHAPES: tuple[GnulibCallShape, ...] = (
         min_fanout=2, max_fanout=4,
         note="kismi yazmalari toparlayan write wrapper'i",
     ),
-    GnulibCallShape(
-        "quotearg_buffer_restyled", ("__ctype_get_mb_cur_max", "iswprint"), "quotearg.c",
-        min_fanout=2, max_fanout=None,
-        note="cok-baytli tirnak isleme -- ctype + iswprint; iswprint mbslen'i "
-             "eler (mbslen de __ctype_get_mb_cur_max cagirir ama iswprint cagirmaz)",
-    ),
+    # KALDIRILDI: quotearg_buffer_restyled call-shape'i (eski anchor: iswprint).
+    # 2026-07-14 vendor pin sonrasi drift-guard yakaladi: 2026 kaynaginda bu fonksiyon
+    # iswprint cagiriyordu, ama OLCUM HEDEFI (coreutils 9.4 / 2023 gnulib) quotearg.c'de
+    # iswprint YOK -> isprint + mbrtoc32 + mbsinit kullaniyor. 2023'te
+    # quotearg_buffer_restyled ile mbslen call-shape acisindan AYIRT EDILEMEZ (ikisi de
+    # isprint/mbrtoc32/mbsinit/MB_CUR_MAX cagirir); tek fark c32isprint, o da gnulib-ic
+    # (stripped binary'de isimsiz FUN_, anchor olamaz). Yani iswprint anchor'i olculen
+    # 2023 binary'lerinde HIC eslesmiyordu (~0 gercek TP); 2026-oracle bu hatayi
+    # maskeliyordu. Durust olcum icin kaldirildi (naming denetimi 2026-07-13 / pin 07-14).
     GnulibCallShape(
         "rpl_fclose", ("fclose", "__freading"), "fclose.c",
         min_fanout=3, max_fanout=10,
@@ -212,15 +228,15 @@ GNULIB_CALL_SHAPES: tuple[GnulibCallShape, ...] = (
         min_fanout=2, max_fanout=10,
         note="cok-baytli string uzunlugu -- mbsinit ile mbstate sifirlama denetimi",
     ),
-    # NOT: proper_name_lite (nl_langinfo+dcgettext) call-shape'i expr'de UNIQUE ve
-    # dogru eslesir, AMA leakage-safe eklenemiyor -- SURUM UYUSMAZLIGI (naming
-    # denetimi 2026-07-13). Kaynak vendor'da VAR ama gnulib yeniden adlandirmis:
-    # proper-name.c -> propername-lite.c. Sorun dosya yoklugu DEGIL: guncel gnulib
-    # (2026) proper_name_lite'i mbrtoc32 ile yaziyor, test binary'leri (coreutils
-    # 9.4, ~2023 gnulib) ise nl_langinfo kullaniyor. nl_langinfo call-shape'i
-    # guncel kaynakta gecmedigi icin leakage testi reddeder. Ayni locale-churn
-    # gettext_quote'u da vuruyor. Cozum: vendor/gnulib-ref'i coreutils-9.4 gnulib
-    # snapshot'ina pin'le -> nl_langinfo call-shape'i leakage-safe olur.
+    # NOT: proper_name_lite call-shape ILE KURTARILAMIYOR (2023'e pin sonrasi da).
+    # 2023 propername-lite.c dogrudan c_strcasecmp + locale_charset + gettext cagiriyor.
+    # nl_langinfo, proper_name_lite'in DOGRUDAN callee'si DEGIL -- locale_charset'in
+    # (localcharset.c) callee'si, yani iki kademe asagida. proper_name_lite'in dogrudan
+    # ayirt-edici callee'leri (c_strcasecmp, locale_charset) gnulib-ic fonksiyonlar ->
+    # stripped binary'de isimsiz FUN_ -> call-shape anchor'i OLAMAZ. Bu yuzden vendor'i
+    # 2023'e pin'lemek oracle'i olcum hedefiyle hizalar (olcum durustlugu + drift-guard)
+    # AMA proper_name_lite'i kurtarmaz. Beklenen F1 kazanci ~0; pin'in degeri saf
+    # olcum hijyeni (naming denetimi 2026-07-13, pin 2026-07-14).
 )
 
 
