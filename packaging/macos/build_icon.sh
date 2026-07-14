@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# build_icon.sh -- karadul.svg'den macOS Karadul.icns uret (kirmizi kum saati).
+# Gereksinim: rsvg-convert (brew install librsvg) + iconutil (macOS built-in).
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SVG="$HERE/icon/karadul.svg"
+SET="$HERE/icon/Karadul.iconset"
+ICNS="$HERE/icon/Karadul.icns"
+
+command -v rsvg-convert >/dev/null || { echo "rsvg-convert yok: brew install librsvg" >&2; exit 1; }
+command -v iconutil >/dev/null || { echo "iconutil yok (macOS gerekli)" >&2; exit 1; }
+
+rm -rf "$SET"; mkdir -p "$SET"
+
+# iconset ad -> piksel boyutu
+render() { rsvg-convert -w "$2" -h "$2" "$SVG" -o "$SET/$1"; }
+render icon_16x16.png        16
+render icon_16x16@2x.png     32
+render icon_32x32.png        32
+render icon_32x32@2x.png     64
+render icon_128x128.png     128
+render icon_128x128@2x.png  256
+render icon_256x256.png     256
+render icon_256x256@2x.png  512
+render icon_512x512.png     512
+render icon_512x512@2x.png 1024
+
+iconutil -c icns "$SET" -o "$ICNS"
+echo "[build_icon] uretildi: $ICNS"
+ls -la "$ICNS"

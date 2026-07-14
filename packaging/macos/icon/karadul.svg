@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Koyu mission-control arka plan (Black Widow teması) -->
+    <radialGradient id="bg" cx="50%" cy="42%" r="75%">
+      <stop offset="0%"  stop-color="#1c0d14"/>
+      <stop offset="55%" stop-color="#0d070a"/>
+      <stop offset="100%" stop-color="#050406"/>
+    </radialGradient>
+    <!-- Kum saati kırmızı dikey parlaklık -->
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ff2947"/>
+      <stop offset="50%"  stop-color="#e51334"/>
+      <stop offset="100%" stop-color="#b60d28"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="26" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="60"/>
+    </filter>
+  </defs>
+
+  <!-- Yuvarlatilmis kare govde (macOS squircle yaklasimi) -->
+  <rect x="0" y="0" width="1024" height="1024" rx="228" ry="228" fill="url(#bg)"/>
+  <!-- ince kirmizi kenar cizgisi -->
+  <rect x="6" y="6" width="1012" height="1012" rx="222" ry="222"
+        fill="none" stroke="#e51334" stroke-opacity="0.22" stroke-width="4"/>
+
+  <!-- merkez radyal parlama (kum saatinin arkasi) -->
+  <circle cx="512" cy="512" r="300" fill="#e51334" opacity="0.16" filter="url(#softglow)"/>
+
+  <!-- radyal-graf motifi: ince nisan halkasi -->
+  <circle cx="512" cy="512" r="360" fill="none" stroke="#e51334" stroke-opacity="0.18" stroke-width="3"/>
+  <circle cx="512" cy="512" r="360" fill="none" stroke="#e51334" stroke-opacity="0.12" stroke-width="1"
+          stroke-dasharray="2 26"/>
+
+  <!-- Black Widow kum saati mark'i (UI ile birebir sekil: M4 2.5H20L12 12L20 21.5H4L12 12Z) -->
+  <g transform="translate(512,512) scale(30) translate(-12,-12)" filter="url(#glow)">
+    <path d="M4 2.5H20L12 12L20 21.5H4L12 12Z" fill="url(#glass)"/>
+    <!-- ince ust parlak kenar -->
+    <path d="M4 2.5H20L12 12L20 21.5H4L12 12Z" fill="none" stroke="#ff5068"
+          stroke-opacity="0.5" stroke-width="0.35" stroke-linejoin="round"/>
+  </g>
+</svg>
