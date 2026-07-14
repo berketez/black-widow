@@ -44,9 +44,17 @@ from karadul.core import overrides  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 HOME = Path.home()
-# Ayar paneli: knob'lar bu YAML'a atomik yazılır; analiz subprocess'i (cwd=PROJECT_ROOT)
+# Yazılabilir veri kökü: .app bundle'ında PROJECT_ROOT (Resources) READ-ONLY olabilir.
+# KARADUL_DATA_DIR set ise yazmalar (karadul.yaml, _runs) oraya gider; yoksa PROJECT_ROOT
+# (dev davranışı birebir korunur). Bundle launcher'ı bunu ~/Library/.../BlackWidow'a set eder.
+_DATA_ROOT = Path(os.environ.get("KARADUL_DATA_DIR") or PROJECT_ROOT).expanduser().resolve()
+try:
+    _DATA_ROOT.mkdir(parents=True, exist_ok=True)
+except OSError:
+    _DATA_ROOT = PROJECT_ROOT  # son çare: yazılamıyorsa dev köküne düş
+# Ayar paneli: knob'lar bu YAML'a atomik yazılır; analiz subprocess'i (cwd=_DATA_ROOT)
 # --config ile yükler. Repo kökünde normalde YOK -> sıfırdan doğar, hiçbir şeyi ezmez.
-_SETTINGS_YAML = PROJECT_ROOT / "karadul.yaml"
+_SETTINGS_YAML = _DATA_ROOT / "karadul.yaml"
 WS: str | None = None
 _ADDR_RE = re.compile(r"_[0-9a-f]{3,}$")
 _FUN_RE = re.compile(r"FUN_[0-9a-fA-F]+")
@@ -774,7 +782,7 @@ def resolve_binary(spec: str) -> str | None:
 
 def _cleanup_runs(keep: int = _MAX_RUNS) -> None:
     """Eski ui/_runs/<job> dizinlerini buda (mtime'a gore son `keep` tut)."""
-    base = PROJECT_ROOT / "ui" / "_runs"
+    base = _DATA_ROOT / "ui" / "_runs"
     if not base.is_dir():
         return
     dirs = sorted((d for d in base.iterdir() if d.is_dir()),
@@ -805,7 +813,7 @@ def start_analysis(binary: str) -> dict:
     _cleanup_runs()
 
     job = uuid.uuid4().hex[:10]
-    run_dir = PROJECT_ROOT / "ui" / "_runs" / job
+    run_dir = _DATA_ROOT / "ui" / "_runs" / job
     run_dir.mkdir(parents=True, exist_ok=True)
     log_path = run_dir / "analyze.log"
     ws_out = run_dir / "ws"
@@ -828,7 +836,7 @@ def start_analysis(binary: str) -> dict:
     lf = None
     try:
         lf = open(log_path, "w")
-        proc = subprocess.Popen(cmd, cwd=str(PROJECT_ROOT), stdout=lf,
+        proc = subprocess.Popen(cmd, cwd=str(_DATA_ROOT), stdout=lf,
                                 stderr=subprocess.STDOUT)
     except OSError as e:
         if lf:
