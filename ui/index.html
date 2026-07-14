@@ -312,6 +312,60 @@
   .iv-dsig{display:flex; gap:8px; font-size:10.5px; color:var(--dim); padding:3px 0; line-height:1.45}
   .iv-dsig .di{color:var(--faint); flex-shrink:0}
   .iv-dsig b{color:var(--weak)}
+
+  /* ===================== AYARLAR (modal · SADE, mevcut tema/renkler) ===================== */
+  .setmodal{position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center;
+    background:rgba(2,4,8,.78)}
+  .setmodal.on{display:flex}
+  .setbox{width:min(560px,94vw); max-height:88vh; overflow-y:auto; background:var(--panel);
+    border:1px solid var(--border); border-radius:5px; box-shadow:0 0 40px rgba(0,0,0,.6);
+    scrollbar-width:thin; scrollbar-color:var(--faint) transparent}
+  .setbox::-webkit-scrollbar{width:8px} .setbox::-webkit-scrollbar-thumb{background:var(--faint); border-radius:4px}
+  .sethdr{display:flex; align-items:center; gap:10px; padding:13px 17px; border-bottom:1px solid var(--border);
+    background:var(--bg2); position:sticky; top:0; z-index:2}
+  .sethdr .ti{font-size:13px; letter-spacing:3px; color:var(--text)} .sethdr .ti b{color:var(--widow)}
+  .sethdr .sub{font-size:9px; letter-spacing:1.5px; color:var(--dim); margin-top:3px}
+  .sethdr .x{margin-left:auto; cursor:pointer; color:var(--dim); border:1px solid var(--border); border-radius:2px; padding:2px 9px; font-size:11px}
+  .sethdr .x:hover{color:var(--unnamed); border-color:var(--unnamed)}
+  .setbody{padding:15px 17px; display:flex; flex-direction:column; gap:15px}
+  .setprofiles{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .setprofiles .pl{font-size:9px; letter-spacing:1.5px; color:var(--faint); margin-right:2px}
+  .setprof{padding:6px 16px; border:1px solid var(--border); border-radius:14px; color:var(--dim); cursor:pointer;
+    font-size:12px; background:rgba(6,10,18,.5); letter-spacing:.5px}
+  .setprof:hover{border-color:var(--cyan); color:var(--cyan)}
+  .setrow{display:flex; align-items:center; gap:14px}
+  .setrow .lab{flex:1; min-width:0}
+  .setrow .lab .n{font-size:12px; color:var(--text); letter-spacing:.5px}
+  .setrow .lab .d{font-size:10px; color:var(--dim); margin-top:2px; line-height:1.4}
+  .setrow .ctl{flex-shrink:0; display:flex; align-items:center; gap:9px}
+  .setrow input[type=range]{width:132px; accent-color:var(--named)}
+  .setrow .val{font-size:12px; color:var(--named); width:36px; text-align:right}
+  .setnum{width:74px; padding:7px 9px; background:var(--bg); color:var(--text); border:1px solid var(--border);
+    border-radius:3px; font-family:inherit; font-size:12px; outline:none; text-align:right}
+  .setnum:focus{border-color:var(--cyan)}
+  .settog{width:42px; height:22px; border-radius:12px; background:var(--faint); position:relative; cursor:pointer; transition:background .2s; flex-shrink:0}
+  .settog::after{content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--dim); transition:.2s}
+  .settog.on{background:rgba(56,224,138,.35)} .settog.on::after{left:22px; background:var(--named)}
+  .setsep{height:1px; background:var(--border)}
+  .sethead{font-size:9px; letter-spacing:2px; color:var(--dim)}
+  .sethead::before{content:"▸ "; color:var(--widow)}
+  .setpaths{width:100%; min-height:72px; padding:9px 11px; background:var(--bg); color:var(--text);
+    border:1px solid var(--border); border-radius:3px; font-family:inherit; font-size:11.5px; outline:none; resize:vertical; line-height:1.6}
+  .setpaths:focus{border-color:var(--cyan)}
+  .setpath-hint{font-size:9.5px; color:var(--dim); line-height:1.55} .setpath-hint b{color:var(--weak)}
+  .setwarn{font-size:10.5px; color:var(--weak); line-height:1.5; display:none; border:1px solid rgba(230,169,46,.3);
+    background:rgba(230,169,46,.05); border-radius:3px; padding:8px 10px}
+  .setwarn.on{display:block}
+  .setfoot{display:flex; align-items:center; gap:11px; padding:13px 17px; border-top:1px solid var(--border);
+    background:var(--bg2); position:sticky; bottom:0}
+  .setfoot .msg{flex:1; font-size:10.5px; color:var(--dim); letter-spacing:.5px} .setfoot .msg.ok{color:var(--named)}
+  .setsave{padding:9px 22px; background:var(--named); color:#04140b; border:none; border-radius:3px; font-weight:700;
+    cursor:pointer; font-family:inherit; font-size:12px; letter-spacing:1px}
+  .setsave:hover{filter:brightness(1.1)} .setsave:disabled{opacity:.5; cursor:default}
+  .gearbtn{cursor:pointer; color:var(--dim); border:1px solid var(--border); border-radius:3px; padding:6px 10px; font-size:12px; letter-spacing:1px}
+  .gearbtn:hover{border-color:var(--cyan); color:var(--cyan)}
+  .entrygear{margin-top:14px; color:var(--dim); font-size:11px; cursor:pointer; letter-spacing:1.5px; display:inline-block}
+  .entrygear:hover{color:var(--cyan)}
 </style>
 </head>
 <body>
@@ -331,6 +385,7 @@
     </div>
     <div class="chips" id="chips"></div>
     <div class="warn" id="entryWarn"></div>
+    <div class="entrygear" id="entryGear">⚙ AYARLAR</div>
   </div>
 </section>
 
@@ -364,6 +419,7 @@
       <div class="stat n"><b id="sNamed">0</b><span>NAMED</span></div>
       <div class="stat w"><b id="sWeak">0</b><span>WEAK</span></div>
       <div class="stat u"><b id="sUnk">0</b><span>UNKNOWN</span></div>
+      <div class="gearbtn" id="hdrGear" title="ayarlar">⚙</div>
       <div class="newbtn" id="newBtn">+ YENİ</div>
     </div>
   </header>
@@ -413,6 +469,59 @@
     <span class="rt">BLACK WIDOW <span class="k">◆</span> deterministik motor · LLM'siz çekirdek</span>
   </footer>
 </section>
+
+<!-- ===================== AYARLAR (modal) ===================== -->
+<div id="settings" class="setmodal">
+  <div class="setbox">
+    <div class="sethdr">
+      <div><div class="ti">⚙ AYAR<b>LAR</b></div><div class="sub">KARADUL MOTORU · SADE</div></div>
+      <span class="x" id="setClose">KAPAT ✕</span>
+    </div>
+    <div class="setbody">
+      <div class="setprofiles">
+        <span class="pl">PROFİL:</span>
+        <span class="setprof" data-prof="fast">Hızlı</span>
+        <span class="setprof" data-prof="balanced">Dengeli</span>
+        <span class="setprof" data-prof="deep">Derin</span>
+      </div>
+      <div class="setsep"></div>
+      <div class="setrow">
+        <div class="lab"><div class="n">İsim güven eşiği</div><div class="d">Emin değilsen isim verme — yüksek = daha az ama daha doğru isim</div></div>
+        <div class="ctl"><input type="range" id="cfgConf" min="0" max="1" step="0.05"><span class="val" id="cfgConfV">—</span></div>
+      </div>
+      <div class="setrow">
+        <div class="lab"><div class="n">İsim atama alt sınırı</div><div class="d">Bu güvenin altında fonksiyon isimsiz (FUN_) bırakılır</div></div>
+        <div class="ctl"><input type="range" id="cfgUnk" min="0" max="1" step="0.05"><span class="val" id="cfgUnkV">—</span></div>
+      </div>
+      <div class="setrow">
+        <div class="lab"><div class="n">İterasyon sayısı</div><div class="d">İsim ↔ tip çıkarım döngüsü kaç tur (1 = tek geçiş)</div></div>
+        <div class="ctl"><input type="number" class="setnum" id="cfgIter" min="1" step="1"></div>
+      </div>
+      <div class="setrow">
+        <div class="lab"><div class="n">Maks. fonksiyon</div><div class="d">İşlenecek en fazla fonksiyon (0 = limitsiz)</div></div>
+        <div class="ctl"><input type="number" class="setnum" id="cfgMaxF" min="0" step="1"></div>
+      </div>
+      <div class="setsep"></div>
+      <div class="setrow">
+        <div class="lab"><div class="n">Hesaplama-bazlı kurtarma</div><div class="d">Sabit / CFG analiziyle daha doğru tip çıkarımı — yavaşlatır</div></div>
+        <div class="ctl"><div class="settog" id="cfgComp"></div></div>
+      </div>
+      <div class="setrow">
+        <div class="lab"><div class="n">Çevrimiçi kaynak eşleştirme</div><div class="d">İnternetten kaynak/paket indirip eşleştir (varsayılan çevrimdışı)</div></div>
+        <div class="ctl"><div class="settog" id="cfgNet"></div></div>
+      </div>
+      <div class="setsep"></div>
+      <div class="sethead">KENDİ İMZA DOSYALARIN</div>
+      <textarea class="setpaths" id="cfgPaths" spellcheck="false" placeholder="/yol/imzalar.json&#10;/yol/flirt-dizini&#10;/yol/tipler.gdt"></textarea>
+      <div class="setpath-hint">Her satıra bir yol: <b>.json</b> imza dosyası · <b>dizin</b> (FLIRT .pat için) · <b>.gdt</b> Ghidra tip arşivi. Tekil .pat yerine dizin ver. .fidb / .sig desteklenmiyor.</div>
+      <div class="setwarn" id="setWarn"></div>
+    </div>
+    <div class="setfoot">
+      <span class="msg" id="setMsg"></span>
+      <button class="setsave" id="setSave">KAYDET</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -946,6 +1055,78 @@ $('renameInput').onkeydown=e=>{
 $('cEdit').onclick=openRename;
 $('cTitle').ondblclick=openRename;
 $('cInspToggle').onclick=()=>$('cInspect').classList.toggle('open');
+
+/* ========================================================================
+   AYARLAR · modal (Faz 3 knob paneli + Faz 4 imza yolları)
+   ======================================================================== */
+const SET_DEFAULT={min_naming_confidence:0.7,unk_threshold:0.30,pipeline_iterations:3,
+  max_functions_to_process:0,computation_recovery_enabled:false,network_enabled:false,signature_paths:[]};
+/* profiller formu doldurur (preset) — sadece çekirdek alanlar, gerisi olduğu gibi kalır */
+const SET_PROFILES={
+  fast:{pipeline_iterations:1,computation_recovery_enabled:false},
+  balanced:{min_naming_confidence:0.7,unk_threshold:0.30,pipeline_iterations:3,
+            max_functions_to_process:0,computation_recovery_enabled:false},
+  deep:{pipeline_iterations:3,computation_recovery_enabled:true},
+};
+function setTog(id,on){ $(id).classList.toggle('on',!!on); }
+function fillSettings(k){
+  k=Object.assign({},SET_DEFAULT,k||{});
+  $('cfgConf').value=k.min_naming_confidence; $('cfgConfV').textContent=Number(k.min_naming_confidence).toFixed(2);
+  $('cfgUnk').value=k.unk_threshold; $('cfgUnkV').textContent=Number(k.unk_threshold).toFixed(2);
+  $('cfgIter').value=k.pipeline_iterations;
+  $('cfgMaxF').value=k.max_functions_to_process;
+  setTog('cfgComp',k.computation_recovery_enabled);
+  setTog('cfgNet',k.network_enabled);
+  $('cfgPaths').value=(Array.isArray(k.signature_paths)?k.signature_paths:[]).join('\n');
+}
+function gatherSettings(){
+  return {
+    min_naming_confidence:parseFloat($('cfgConf').value),
+    unk_threshold:parseFloat($('cfgUnk').value),
+    pipeline_iterations:parseInt($('cfgIter').value,10),
+    max_functions_to_process:parseInt($('cfgMaxF').value,10),
+    computation_recovery_enabled:$('cfgComp').classList.contains('on'),
+    network_enabled:$('cfgNet').classList.contains('on'),
+    signature_paths:$('cfgPaths').value.split('\n').map(s=>s.trim()).filter(Boolean),
+  };
+}
+async function openSettings(){
+  $('setMsg').textContent=''; $('setMsg').className='msg'; $('setWarn').className='setwarn'; $('setWarn').innerHTML='';
+  try{ const j=await (await fetch('/api/settings')).json(); fillSettings(j&&j.knobs); }
+  catch(e){ fillSettings(SET_DEFAULT); }
+  $('settings').classList.add('on');
+}
+function closeSettings(){ $('settings').classList.remove('on'); }
+function applyProfile(name){ fillSettings(Object.assign({}, gatherSettings(), SET_PROFILES[name]||{})); }
+async function saveSettings(){
+  const btn=$('setSave'), prev=btn.textContent; btn.textContent='…'; btn.disabled=true;
+  $('setMsg').className='msg'; $('setMsg').textContent='';
+  try{
+    const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({knobs:gatherSettings()})});
+    let j={}; try{ j=await r.json(); }catch(e){}
+    if(!r.ok||(j&&j.error)){ $('setMsg').textContent='⚠ '+((j&&j.error)||('reddedildi ('+r.status+')')); }
+    else{
+      fillSettings(j.knobs);                       // clamp/normalize edilmiş değerleri geri yansıt
+      const w=Array.isArray(j.warnings)?j.warnings:[];
+      if(w.length){ $('setWarn').innerHTML='⚠ '+w.map(esc).join('<br>⚠ '); $('setWarn').classList.add('on'); }
+      else $('setWarn').classList.remove('on');
+      $('setMsg').className='msg ok'; $('setMsg').textContent='✓ kaydedildi — sıradaki analizde geçerli';
+    }
+  }catch(e){ $('setMsg').textContent='⚠ sunucuya ulaşılamadı'; }
+  finally{ btn.textContent=prev; btn.disabled=false; }
+}
+$('cfgConf').oninput=e=>$('cfgConfV').textContent=Number(e.target.value).toFixed(2);
+$('cfgUnk').oninput=e=>$('cfgUnkV').textContent=Number(e.target.value).toFixed(2);
+$('cfgComp').onclick=()=>$('cfgComp').classList.toggle('on');
+$('cfgNet').onclick=()=>$('cfgNet').classList.toggle('on');
+document.querySelectorAll('.setprof').forEach(el=>el.onclick=()=>applyProfile(el.dataset.prof));
+$('setSave').onclick=saveSettings;
+$('setClose').onclick=closeSettings;
+$('entryGear').onclick=openSettings;
+$('hdrGear').onclick=openSettings;
+$('settings').onclick=e=>{ if(e.target===$('settings')) closeSettings(); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('settings').classList.contains('on')){ e.stopPropagation(); closeSettings(); } });
 
 init();
 </script>

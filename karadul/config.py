@@ -858,6 +858,13 @@ class Config:
             for k, v in data["computation_recovery"].items():
                 if hasattr(cfg.computation_recovery, k):
                     setattr(cfg.computation_recovery, k, v)
+        if "network" in data:
+            # NetworkConfig docstring'i "YAML'da network.enabled ile acilir" diyor
+            # ama bu wiring onceden eksikti (UI ayar paneli network toggle'i icin
+            # gerekli; reviewer 2026-07-14). hasattr guard'i sifir-risk kilar.
+            for k, v in data["network"].items():
+                if hasattr(cfg.network, k):
+                    setattr(cfg.network, k, v)
         if "computation" in data:
             for k, v in data["computation"].items():
                 if hasattr(cfg.computation, k):

@@ -35,12 +35,18 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-# karadul içi -- kalıcı manuel-override deposu (Analist İncele & Düzelt)
+# karadul içi -- kalıcı manuel-override deposu (Analist İncele & Düzelt) +
+# ayar paneli için Config yükleyici (Faz 3). yaml çekirdek bağımlılık (config.py:10).
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import yaml  # noqa: E402  (config.py hard-import eder -> her zaman kurulu)
+from karadul.config import Config  # noqa: E402
 from karadul.core import overrides  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 HOME = Path.home()
+# Ayar paneli: knob'lar bu YAML'a atomik yazılır; analiz subprocess'i (cwd=PROJECT_ROOT)
+# --config ile yükler. Repo kökünde normalde YOK -> sıfırdan doğar, hiçbir şeyi ezmez.
+_SETTINGS_YAML = PROJECT_ROOT / "karadul.yaml"
 WS: str | None = None
 _ADDR_RE = re.compile(r"_[0-9a-f]{3,}$")
 _FUN_RE = re.compile(r"FUN_[0-9a-fA-F]+")
@@ -528,6 +534,175 @@ def _do_rename(addr: str, name: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Ayar paneli (Faz 3) + kendi imza yollari (Faz 4) -- SADE, tek YAML dosyasi
+#
+# 7 knob karadul.yaml'a BOLUMLU (sectioned) yazilir. Cogu Config._from_dict ile
+# yuklenir; iki istisna DURUSTCE ele alinir:
+#   * computation_recovery.enabled  -> YAML yuklenir AMA suffix'siz hedeflerde
+#     cli.py:507 non-interactive guard False'a zorlar. Bu yuzden analiz'e ayrica
+#     --compute-recovery / --no-compute-recovery CLI flag'i gecilir (deterministik).
+#   * network.enabled               -> Config._from_dict "network" bolumunu HIC
+#     islemiyor (loader boslugu, config.py'ye dokunamiyoruz). YAML'a yalnizca UI
+#     durumu icin yazilir; gercek etki --enable-network CLI flag'iyle saglanir.
+# ---------------------------------------------------------------------------
+def _as_float01(v, default: float) -> float:
+    """v'yi [0,1] float'a getir; sayisal degilse/NaN ise default."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return default
+    if f != f:  # NaN
+        return default
+    return max(0.0, min(1.0, f))
+
+
+def _as_int(v, lo: int, default: int) -> int:
+    """v'yi tamsayiya getir, alt sinir lo; gecersizse default."""
+    try:
+        i = int(v)
+    except (TypeError, ValueError):
+        return default
+    return max(lo, i)
+
+
+def _as_bool(v) -> bool:
+    if isinstance(v, bool):
+        return v
+    return str(v).strip().lower() in ("1", "true", "yes", "on")
+
+
+def _atomic_write_yaml(path: Path, obj) -> None:
+    """obj'i path'e atomik YAML yaz (tmp + os.replace) -> yarim/bozuk dosya olmaz."""
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            yaml.safe_dump(obj, f, default_flow_style=False,
+                           allow_unicode=True, sort_keys=True)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    finally:
+        try:
+            if tmp.exists():
+                tmp.unlink()
+        except OSError:
+            pass
+
+
+def _settings_raw_yaml() -> dict:
+    """karadul.yaml'i HAM oku (network.enabled gibi loader'in atladigi alanlar icin)."""
+    p = _SETTINGS_YAML
+    if not p.is_file():
+        return {}
+    try:
+        d = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        return {}
+    return d if isinstance(d, dict) else {}
+
+
+def _read_settings() -> dict:
+    """Aktif 7 knob'u dondur. Config-yuklu 6 knob Config.load'dan (gercek etkin
+    deger), network ham YAML'dan (loader boslugu)."""
+    cfg = Config.load(_SETTINGS_YAML)   # dosya yoksa saf default
+    br = cfg.binary_reconstruction
+    cr = cfg.computation_recovery
+    nm = cfg.name_merger
+    raw = _settings_raw_yaml()
+    net = raw.get("network")
+    net_enabled = bool(net.get("enabled")) if isinstance(net, dict) else False
+    # tek UI alani: external + gdt yollarini birlestir (POST tekrar ayirir)
+    sig_paths = [str(p) for p in br.external_signature_paths] + \
+                [str(p) for p in br.ghidra_data_type_archives]
+    return {
+        "knobs": {
+            "min_naming_confidence": round(float(br.min_naming_confidence), 4),
+            "unk_threshold": round(float(nm.unk_threshold), 4),
+            "pipeline_iterations": int(br.pipeline_iterations),
+            "max_functions_to_process": int(br.max_functions_to_process),
+            "computation_recovery_enabled": bool(cr.enabled),
+            "network_enabled": net_enabled,
+            "signature_paths": sig_paths,
+        },
+        "path": str(_SETTINGS_YAML),
+        "exists": _SETTINGS_YAML.is_file(),
+    }
+
+
+_SIG_REJECT_EXT = (".fidb", ".sig")   # parser yok -> kapsam disi
+
+
+def _classify_sig_paths(raw) -> tuple[list, list, list]:
+    """Kullanicinin imza yollarini uzantiya gore ayir + uyari uret.
+
+    Donen: (external_signature_paths, ghidra_data_type_archives, warnings).
+      .json / dizin / diger  -> external (_load_external_auto tuketir)
+      .gdt                    -> ghidra_data_type_archives
+      .fidb / .sig            -> reddet (desteklenmiyor)
+      tekil .pat              -> external'a ekle + "dizin ver" uyarisi
+    """
+    ext: list[str] = []
+    gdt: list[str] = []
+    warns: list[str] = []
+    if not isinstance(raw, list):
+        return ext, gdt, warns
+    seen: set[str] = set()
+    for item in raw[:64]:   # makul ust sinir
+        s = str(item or "").strip()
+        if not s or len(s) > 4096 or s in seen:
+            continue
+        seen.add(s)
+        low = s.lower()
+        if low.endswith(_SIG_REJECT_EXT):
+            warns.append(f"{s} — .fidb/.sig desteklenmiyor (atlandı)")
+            continue
+        if low.endswith(".gdt"):
+            gdt.append(s)
+        else:
+            ext.append(s)
+            if low.endswith(".pat"):
+                warns.append(f"{s} — tekil .pat yüklenmeyebilir; .pat'leri bir DİZİN içinde ver")
+    return ext, gdt, warns
+
+
+def _write_settings(knobs) -> dict:
+    """7 knob'u WHITELIST + tip/aralik dogrulamayla karadul.yaml'a atomik yaz.
+
+    SADECE bilinen anahtarlar bolumlu dict'e girer (keyfi/kotu anahtar asla yazilmaz).
+    """
+    if not isinstance(knobs, dict):
+        return {"__code": 400, "error": "knobs sözlük değil"}
+    ext_paths, gdt_paths, warns = _classify_sig_paths(knobs.get("signature_paths"))
+    # WHITELIST: cikti dict'i SADECE bu sabit iskeletten kurulur (injection guard).
+    data = {
+        "binary_reconstruction": {
+            "min_naming_confidence": _as_float01(knobs.get("min_naming_confidence"), 0.7),
+            "pipeline_iterations": _as_int(knobs.get("pipeline_iterations"), 1, 3),
+            "max_functions_to_process": _as_int(knobs.get("max_functions_to_process"), 0, 0),
+            "external_signature_paths": ext_paths,
+            "ghidra_data_type_archives": gdt_paths,
+        },
+        "computation_recovery": {
+            "enabled": _as_bool(knobs.get("computation_recovery_enabled")),
+        },
+        "network": {
+            "enabled": _as_bool(knobs.get("network_enabled")),
+        },
+        "name_merger": {
+            "unk_threshold": _as_float01(knobs.get("unk_threshold"), 0.30),
+        },
+    }
+    try:
+        _atomic_write_yaml(_SETTINGS_YAML, data)
+    except OSError as e:
+        return {"__code": 500, "error": f"karadul.yaml yazılamadı: {e}"}
+    out = _read_settings()   # geri-oku (round-trip dogrulanmis deger)
+    out["ok"] = True
+    out["warnings"] = warns
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Analiz edilebilir binary listesi (chip onerisi)
 # ---------------------------------------------------------------------------
 def list_binaries() -> list[dict]:
@@ -638,6 +813,18 @@ def start_analysis(binary: str) -> dict:
     cmd = [sys.executable, "-m", "karadul", "analyze", str(rp),
            "--skip-dynamic", "--lmdb-sigdb", "--verbose",
            "--output-dir", str(ws_out), "--output", str(clean_out)]
+    # Ayar paneli (Faz 3): karadul.yaml varsa yukle. computation_recovery ve
+    # network CLI flag'iyle deterministik gecilir (bkz. _read_settings notu).
+    if _SETTINGS_YAML.is_file():
+        cmd += ["--config", str(_SETTINGS_YAML)]
+        try:
+            _k = _read_settings()["knobs"]
+            cmd += (["--compute-recovery"] if _k["computation_recovery_enabled"]
+                    else ["--no-compute-recovery"])
+            if _k["network_enabled"]:
+                cmd += ["--enable-network"]
+        except Exception:
+            pass   # ayar okunamazsa --config yeter, best-effort flag'ler
     lf = None
     try:
         lf = open(log_path, "w")
@@ -799,6 +986,8 @@ class Handler(BaseHTTPRequestHandler):
             bh = _active_binary_hash()
             names = overrides.all_names(bh) if bh else {}
             self._json({"overrides": names, "count": len(names)})
+        elif path == "/api/settings":
+            self._json(_read_settings())
         elif path.startswith("/api/decompiled/"):
             addr = path.split("/api/decompiled/", 1)[1]
             if not re.fullmatch(r"FUN_[0-9a-fA-F]+", addr):
@@ -834,6 +1023,19 @@ class Handler(BaseHTTPRequestHandler):
             addr = str(body.get("addr", ""))
             name = str(body.get("name", ""))
             result = _do_rename(addr, name)
+            self._json(result, result.pop("__code", 200))
+        elif self.path.split("?", 1)[0] == "/api/settings":
+            n = int(self.headers.get("Content-Length", 0) or 0)
+            try:
+                body = json.loads(self.rfile.read(n) or b"{}")
+            except json.JSONDecodeError:
+                self._json({"error": "geçersiz JSON"}, 400)
+                return
+            if not isinstance(body, dict):
+                # bozuk/non-object gövde ayarları sessizce default'a sıfırlamasın
+                self._json({"error": "gövde bir nesne olmalı"}, 400)
+                return
+            result = _write_settings(body.get("knobs", {}))
             self._json(result, result.pop("__code", 200))
         else:
             self._json({"error": "not found"}, 404)
