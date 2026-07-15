@@ -301,14 +301,20 @@ Black Widow hourglass.
 python ui/server.py
 
 # Build the native .app (red hourglass icon, opens in its own window)
-bash packaging/macos/build_app.sh            # lightweight (uses your environment)
-bash packaging/macos/build_app.sh --full     # self-contained: bundled Python + Ghidra + JDK + sig DB
-bash packaging/macos/build_dmg.sh            # -> dist/BlackWidow-*.dmg
+bash packaging/macos/build_mac_app.sh          # core: bundled Python + karadul + UI (opens, no analysis)
+bash packaging/macos/build_mac_app.sh --full   # self-contained: + Ghidra + JDK + signature DB
+bash packaging/macos/build_dmg.sh              # -> dist/BlackWidow-*.dmg
 ```
 
-The `--full` bundle is offline and double-clickable (everything lives inside the `.app`); it
-is large (~GB) because it bundles Ghidra, a JDK, and the signature database. Unsigned builds
-need a one-time right-click **Open** (Gatekeeper).
+The `--full` bundle is offline and double-clickable (everything lives inside the `.app`, so
+macOS privacy protection never blocks it); it is large (~3.5 GB) because it bundles Ghidra,
+a JDK, and the signature database. The core build is ~200 MB: the window opens, but analysis
+needs `--full` (or an external Ghidra via `GHIDRA_INSTALL_DIR`).
+
+Builds are ad-hoc signed, not notarized. On another machine the first launch is blocked:
+open **System Settings > Privacy & Security > "Open Anyway"** (macOS 15+ removed the old
+right-click **Open** shortcut), or run
+`xattr -dr com.apple.quarantine "/Applications/Black Widow.app"`.
 
 ## Output
 

@@ -27,6 +27,7 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -58,7 +59,12 @@ _SETTINGS_YAML = _DATA_ROOT / "karadul.yaml"
 WS: str | None = None
 _ADDR_RE = re.compile(r"_[0-9a-f]{3,}$")
 _FUN_RE = re.compile(r"FUN_[0-9a-fA-F]+")
-_PORT = 8000
+# Port env'den: app_window.py boş bir port seçip burayı öyle başlatır. Sabit 8000
+# hem çakışıyor hem de app_window'un KARADUL_PORT'u burada okunmadığı için o
+# kaçış yolu fiilen kırıktı. _TOKEN: /api/ping ile "bu gerçekten bizim server"
+# doğrulaması (yabancı veya öksüz servise bağlanmayı önler).
+_PORT = int(os.environ.get("KARADUL_PORT", "8000"))
+_TOKEN = os.environ.get("KARADUL_TOKEN", "")
 _CACHE: dict = {}
 _CACHE_LOCK = threading.Lock()
 _JOBS: dict = {}
@@ -836,8 +842,13 @@ def start_analysis(binary: str) -> dict:
     lf = None
     try:
         lf = open(log_path, "w")
+        # Kendi süreç grubu: kapanışta killpg ile analizi VE altındaki Ghidra
+        # JVM'ini tek hamlede götürebilelim (server'ın grubunu vurmadan).
+        # process_group=0 kullan, start_new_session DEĞİL: setsid'i posix_spawn
+        # desteklemediği için Python fork_exec'e düşüyor ve çok thread'li süreçte
+        # macOS'ta fork deadlock oluyordu (Popen asılı kalıp çocuk hiç doğmuyordu).
         proc = subprocess.Popen(cmd, cwd=str(_DATA_ROOT), stdout=lf,
-                                stderr=subprocess.STDOUT)
+                                stderr=subprocess.STDOUT, process_group=0)
     except OSError as e:
         if lf:
             try:
@@ -969,6 +980,9 @@ class Handler(BaseHTTPRequestHandler):
             # kucuk seffaf favicon (404 gurultusunu onle)
             self._send(200, "image/svg+xml",
                        b'<svg xmlns="http://www.w3.org/2000/svg"/>')
+        elif path == "/api/ping":
+            # app_window bununla "bu server benim" der; kimlik jetonu.
+            self._json({"token": _TOKEN, "ok": True})
         elif path == "/api/binaries":
             self._json({"binaries": list_binaries()})
         elif path == "/api/progress":
@@ -1049,8 +1063,47 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": "not found"}, 404)
 
 
+def _kill_jobs():
+    """Çalışan analizleri (ve altlarındaki Ghidra JVM'i) sonlandır."""
+    with _JOBS_LOCK:
+        for j in _JOBS.values():
+            proc = j.get("proc")
+            if proc is None or proc.poll() is not None:
+                continue
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+            except Exception:
+                try:
+                    proc.terminate()
+                except Exception:
+                    pass
+
+
+def _terminate_jobs(signum=None, frame=None):  # noqa: ANN001, ARG001
+    """SIGTERM/SIGINT: analizleri götür, sonra çık (handler ana thread'de çalışır)."""
+    _kill_jobs()
+    sys.exit(0)
+
+
+def _parent_watchdog():
+    """Ebeveyn (app_window) öldüyse kendini kapat — öksüz server kalmasın.
+
+    DİKKAT: burası bir thread. ``sys.exit()`` yalnızca thread'i bitirir, süreci
+    DEĞİL (test edildi: server ayakta kalıyordu) -> os._exit ile süreci bitir.
+    """
+    while True:
+        if os.getppid() == 1:
+            _kill_jobs()
+            sys.stderr.flush()
+            os._exit(0)
+        time.sleep(2)
+
+
 if __name__ == "__main__":
     WS = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("KARADUL_WS")
     where = WS or "(giriş ekranı — UI'den binary seç)"
+    signal.signal(signal.SIGTERM, _terminate_jobs)
+    signal.signal(signal.SIGINT, _terminate_jobs)
+    threading.Thread(target=_parent_watchdog, daemon=True).start()
     print(f"Black Widow konsolu  ->  http://127.0.0.1:{_PORT}   {where}")
     ThreadingHTTPServer(("127.0.0.1", _PORT), Handler).serve_forever()

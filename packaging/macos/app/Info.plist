@@ -5,12 +5,15 @@
   <key>CFBundleName</key><string>Black Widow</string>
   <key>CFBundleDisplayName</key><string>Black Widow</string>
   <key>CFBundleIdentifier</key><string>com.berketezgocen.karadul</string>
-  <key>CFBundleExecutable</key><string>karadul-launch</string>
+  <key>CFBundleExecutable</key><string>BlackWidow</string>
   <key>CFBundleIconFile</key><string>Karadul</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleVersion</key><string>1.20.0</string>
   <key>CFBundleShortVersionString</key><string>1.20.0</string>
   <key>LSMinimumSystemVersion</key><string>12.0</string>
   <key>NSHighResolutionCapable</key><true/>
+  <!-- WKWebView'in http://127.0.0.1 (yerel UI server) yüklemesine izin ver -->
+  <key>NSAppTransportSecurity</key>
+  <dict><key>NSAllowsLocalNetworking</key><true/></dict>
 </dict>
 </plist>

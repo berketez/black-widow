@@ -21,7 +21,7 @@ import sys
 import time
 import warnings
 from pathlib import Path
-from typing import Optional
+from typing import Any, Callable, Optional
 
 import click
 from rich.console import Console
@@ -66,6 +66,27 @@ STAGE_LABELS: dict[str, str] = {
     "reconstruct": "Reconstruction",
     "report": "Reporting",
 }
+
+
+def _log_stage_complete(inner: Callable[[str, Any, int, int], None]) -> Callable[
+    [str, Any, int, int], None
+]:
+    """`on_stage_complete`'i sarmalayip asama sonucunu LOG'a da yazar.
+
+    Neden: `rich.progress` yalnizca TTY'ye cizer ve `transient=True` ile iz
+    birakmaz. Analiz bir alt-surec olarak kosarken (Black Widow .app ->
+    ui/server.py -> `karadul analyze ... --verbose > analyze.log`) ilerleme
+    log dosyasina hic dusmuyordu; UI de asamalari log'dan okudugu icin canli
+    ilerleme hep ilk asamada takili gorunuyordu. Bu satir makine-okunur ve
+    sabit: `OK <stage>: <sn>s` / `FAIL <stage>: <sn>s`.
+    """
+    def _wrapped(stage_name: str, result: Any, index: int, total: int) -> None:
+        inner(stage_name, result, index, total)
+        ok = getattr(result, "success", True)
+        dur = float(getattr(result, "duration_seconds", 0.0) or 0.0)
+        logger.info("%s %s: %.2fs", "OK" if ok else "FAIL", stage_name, dur)
+
+    return _wrapped
 
 
 def _is_noninteractive() -> bool:
@@ -678,7 +699,7 @@ def analyze(
             result = pipeline.run(
                 target_path, stages=None,
                 on_stage_start=_on_start,
-                on_stage_complete=_on_complete,
+                on_stage_complete=_log_stage_complete(_on_complete),
                 on_progress=_on_progress,
             )
 
