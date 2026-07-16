@@ -983,6 +983,98 @@ def _param_fixed_offsets(body: str, esc: str) -> set[str]:
     return offsets
 
 
+# Cephe 1b — yön (WRITE/READ) tespiti. `_param_fixed_offsets` bir offset'e
+# ERİŞİLDİĞİNİ sayar ama STORE (lvalue) mü LOAD (rvalue) mu ayırmaz. Bir çıktı-
+# tamponuna (`*(T*)(param+off) = digest`) baskın YAZMA yapılıyorsa bile "≥3 offset
+# → ctx" kuralına takılır (belgelenmiş resbuf→ctx / output→ctx FP kök sebebi).
+# Aşağıdaki iki helper offset erişimini yönüne göre ayırır: bir deref'in hemen
+# sağında (boşlukları atlayarak) `=` var ve `==` DEĞİLSE STORE (write), aksi
+# halde LOAD (read). Cephe 1c (disambiguation) için de yön metadata'sı üretir.
+_PTR_CAST_RE = r"\*\s*\([^()]*\)\s*"  # *(T *)  — cast, iç içe parantez yok
+
+
+def _param_offset_directions(body: str, esc: str) -> tuple[set[str], set[str]]:
+    """param'ın sabit-offset erişimlerini (writes, reads) offset kümesi olarak ayır.
+
+    WRITE = deref/index/arrow'un hemen sağında düz atama (`=`, `==` değil).
+    READ  = diğer tüm bağlamlar (koşul, RHS, alt-ifade, fonksiyon argümanı).
+    `memcpy(param, ..)` (dst=arg0) → yazma; `memcpy(dst, param, ..)` (src=arg1)
+    → okuma sinyali de dahildir (offset yerine sentetik "mem" etiketiyle).
+
+    Yalnız yön kararına yardımcı; isim üretmez. `_param_fixed_offsets` ile aynı
+    offset alfabesini (0 / sayı / arrow) kullanır ki iki sayım karşılaştırılabilsin.
+    """
+    writes: set[str] = set()
+    reads: set[str] = set()
+    # (regex, offset-kaynağı) — 0: offset "0", "arrow": ok erişimi, 1: grup(1)
+    access_res: list[tuple[re.Pattern[str], object]] = [
+        # *(T *)(param + off)  — cast'li offset deref
+        (re.compile(_PTR_CAST_RE + r"\(\s*" + esc + r"\s*\+\s*(0x[0-9a-fA-F]+|\d+)\s*\)"), 1),
+        # *(T *)param  — cast'li offset 0
+        (re.compile(_PTR_CAST_RE + esc + r"\b"), 0),
+        # param[idx]  — sabit indeks
+        (re.compile(esc + r"\s*\[\s*(0x[0-9a-fA-F]+|\d+)\s*\]"), 1),
+        # *param  — çıplak offset 0
+        (re.compile(r"\*\s*" + esc + r"\b"), 0),
+        # param->field  — ok erişimi
+        (re.compile(esc + r"\s*->\s*[A-Za-z_]\w*"), "arrow"),
+    ]
+    for rx, grp in access_res:
+        for m in rx.finditer(body):
+            if grp == 0:
+                off = "0"
+            elif grp == "arrow":
+                off = "arrow"
+            else:
+                off = m.group(1)
+            tail = body[m.end():m.end() + 3].lstrip()
+            if tail.startswith("=") and not tail.startswith("=="):
+                writes.add(off)
+            else:
+                reads.add(off)
+    # mem-kopya: param dst (arg0) → yazma, param src (arg1) → okuma
+    if re.search(_MEMFUNC + r"\s*\(\s*" + esc + r"\b", body) or \
+            re.search(_MEMFUNC + r"\s*\(\s*" + esc + r"\s*\+", body):
+        writes.add("mem")
+    if re.search(_MEMFUNC + r"\s*\([^,;]*,\s*" + esc + r"\b", body):
+        reads.add("mem")
+    return writes, reads
+
+
+def _param_has_computed_write(body: str, esc: str) -> bool:
+    """param'a yapılan store'lardan en az biri SABİT-OLMAYAN (hesaplanmış) değer mi?
+
+    Ayırt edici (kök gözlem): `*_init_ctx` bir struct'a SABİT başlangıç değerleri
+    yazar (`*param_1 = 0x67452301`) — bu bir CTX başlatmadır, çıktı tamponu değil
+    (GT = ctx). Gerçek çıktı tamponu HESAPLANMIŞ değer yazar (`*(uint*)(buf+4) =
+    uVar2`). Bu ayrım, saf-yazma init-ctx'i yanlışlıkla output sanıp silmeyi
+    (regresyon) önler: 2a yalnız hesaplanmış-yazma varsa ateşlenir.
+    """
+    store_res = [
+        _PTR_CAST_RE + r"\(\s*" + esc + r"\s*\+\s*(?:0x[0-9a-fA-F]+|\d+)\s*\)\s*=(?!=)\s*([^;]+);",
+        _PTR_CAST_RE + esc + r"\s*=(?!=)\s*([^;]+);",
+        esc + r"\s*\[\s*(?:0x[0-9a-fA-F]+|\d+)\s*\]\s*=(?!=)\s*([^;]+);",
+        r"\*\s*" + esc + r"\s*=(?!=)\s*([^;]+);",
+        esc + r"\s*->\s*\w+\s*=(?!=)\s*([^;]+);",
+    ]
+    for pat in store_res:
+        for m in re.finditer(pat, body):
+            rhs = m.group(1).strip()
+            if not re.fullmatch(r"0x[0-9a-fA-F]+|\d+", rhs):
+                return True  # değişken/ifade = hesaplanmış çıktı
+    return False
+
+
+def _param_write_offsets(body: str, esc: str) -> set[str]:
+    """param'a YAZILAN (lvalue store) ayrık offset kümesi (çıktı-tamponu sinyali)."""
+    return _param_offset_directions(body, esc)[0]
+
+
+def _param_read_offsets(body: str, esc: str) -> set[str]:
+    """param'dan OKUNAN (rvalue load) ayrık offset kümesi (girdi/state sinyali)."""
+    return _param_offset_directions(body, esc)[1]
+
+
 def _split_top_level_commas(blob: str) -> list[str]:
     """Virgülle böl AMA parantez/köşeli/süslü içindeki virgülleri sayma
     (fonksiyon-pointer parametreleri `void (*)(int,int)` bölünmesin)."""
@@ -1076,6 +1168,23 @@ def _classify_body_param(body: str, pname: str, is_ptr: bool
     iterated = _param_is_iterated(body, esc)
     if is_ptr:
         if len(offsets) >= 3:
+            # Cephe 1b — Katman 2a (yön kapısı, YALNIZ pointer param):
+            # ≥3 offset "ctx" demek için gerekli ama YETERLİ DEĞİL. Offset'e
+            # baskın YAZMA yapılıyorsa (writes>=2 AND reads<=1) bu bir ÇIKTI
+            # tamponudur, state ctx'i DEĞİL → yanlış "ctx" üretmektense param_N
+            # bırak (None). Belgelenmiş output→ctx FP'lerini siler; precision'ı
+            # korur (missing < wrong). `out` ETİKETİ ÜRETMEZ (o Katman 2b, kapsam
+            # dışı). Karışık kullanım (hem yaz hem oku = inout state) → eski ctx
+            # davranışı (güvenli varsayılan). Scalar'da output çıkarımı YAPILMAZ
+            # (çok gürültülü — bu dal yalnız is_ptr).
+            writes = _param_write_offsets(body, esc)
+            reads = _param_read_offsets(body, esc)
+            # Baskın yazma + HESAPLANMIŞ değer = çıktı tamponu → ctx DEME.
+            # Sabit-init (`*_init_ctx` struct başlatma) baskın-yazma AMA sabit
+            # değer → GERÇEK ctx (GT), silme (regresyon koruması).
+            if (len(writes) >= 2 and len(reads) <= 1
+                    and _param_has_computed_write(body, esc)):
+                return None  # baskın hesaplanmış yazma → çıktı tamponu
             return ("ctx", 0.42, f"pointer struct erişimi ({len(offsets)} ayrık offset)")
         if iterated or len(offsets) >= 1:
             return ("buf", 0.38, "pointer veri tamponu (iterasyon/deref)")
@@ -1090,6 +1199,78 @@ def _classify_body_param(body: str, pname: str, is_ptr: bool
     if _param_is_buffer_scalar(body, esc):
         return ("buf", 0.35, "scalar veri-pointer (deref/mem-kopya)")
     return None
+
+
+# ---------------------------------------------------------------------------
+# Cephe 1b — Alg 1 (pass-through miras) yardımcıları — module-level
+# ---------------------------------------------------------------------------
+
+# Miras için minimum KAYNAK (callee param) güveni. 0.40 altı sinyaller gürültülü
+# (scalar buf 0.35 vb.) → zayıf kaynak zayıf miras = hata yayılımı. Tasarım §6.2.
+_PASSTHROUGH_MIN_SOURCE_CONF = 0.40
+# Miras sönümlemesi: her hop conf × bu (uzak komşu = daha az güven; min_confidence
+# tabanı 4-5 hop'ta doğal ölüm sağlar → sonsuz zincir precision katili olamaz).
+_PASSTHROUGH_DAMPING = 0.85
+# Transitif zincir için fixed-point üst sınırı (fixture'da en derin zincir 3 hop).
+_PASSTHROUGH_MAX_ROUNDS = 5
+
+
+def _extract_sig_params(body: str, fname: str) -> list[tuple[str, bool]] | None:
+    """Fonksiyon gövdesindeki imzadan (pozisyon sırasıyla) [(param_adı, is_ptr)]
+    çıkar. Variadic (`...`) veya ayrıştırılamaz imza → None (pozisyon güvensiz).
+
+    `_strategy_body_param_naming`'in imza-çıkarma mantığıyla aynı çıpayı kullanır
+    (fonksiyon adına bağlı, docstring/@param yorumlarını atlar).
+    """
+    if not body or fname not in body:
+        return None
+    esc_fn = re.escape(fname)
+    sig_re = re.compile(
+        r"(?m)^(?!\s*[/*#])\s*[A-Za-z_][\w\s\*]*?\b" + esc_fn + r"\s*\(([^;{]*)\)"
+    )
+    sm = sig_re.search(body)
+    if not sm:
+        return None
+    blob = sm.group(1).strip()
+    if not blob or blob == "void":
+        return []
+    if "..." in blob:
+        return None  # variadic → pozisyon kayması riski, propagasyona kapalı
+    params: list[tuple[str, bool]] = []
+    for part in _split_top_level_commas(blob):
+        part = part.strip()
+        if not part:
+            continue
+        toks = re.findall(r"[A-Za-z_]\w*", part.replace("*", " "))
+        if not toks:
+            return None  # ayrıştırılamayan parça → tüm imzaya güvenme
+        params.append((toks[-1], "*" in part))
+    return params
+
+
+def _build_param_alias(body: str) -> dict[str, str]:
+    """Caller gövdesinde `local_X = param_N;` copy-propagation alias'ı kur.
+
+    O0 codegen her param'ı stack'e döküp reload eder (`local_18 = param_1;`),
+    çağrı argümanı doğrudan param_N değil local kopyasıdır. Bu harita argümanı
+    param'a geri çözer. GUARD: local_X birden fazla kez atanıyorsa (yeniden-
+    kullanılan slot) alias'a GÜVENME (tasarım §6.2 #4).
+    """
+    alias: dict[str, str] = {}
+    # RHS TAM olarak param_N olmalı (deyim `;` ile bitmeli). `local = param + 4`,
+    # `local = param->f`, `local = param == 0` SAF KOPYA DEĞİLDİR — local param'ın
+    # kendisi değil türevidir; bunları alias sayarsak yanlış miras yayılır
+    # (precision katili). Cast'li kopya (`local = (ulong)param`) zaten `=` sonrası
+    # `(` geldiği için eşleşmez → alias kurulmaz (güvenli-atla).
+    for m in re.finditer(r"\b([A-Za-z_]\w*)\s*=\s*(param_\d+)\s*;", body):
+        lhs, rhs = m.group(1), m.group(2)
+        if lhs == rhs or _GHIDRA_AUTO_PARAM.match(lhs):
+            continue
+        # lhs kaç kez atanıyor? (tek düz atama = güvenilir alias)
+        n = len(re.findall(r"\b" + re.escape(lhs) + r"\s*=(?!=)", body))
+        if n == 1:
+            alias[lhs] = rhs
+    return alias
 
 
 # ---------------------------------------------------------------------------
@@ -1402,6 +1583,16 @@ class CVariableNamer:
         )
 
         # NOT (2026-05-13): LLM4Decompile blogu kaldirildi (B11, feedback_no_llm.md).
+
+        # Cephe 1b — Alg 1: cross-function pass-through param miras (sıralı post-pass).
+        # Worker'lar per-fonksiyon izole (bir worker komşu fonksiyonun adayını
+        # göremez), bu yüzden gather'dan SONRA, çözümlemeden ÖNCE main-process'te
+        # çalışır. Yalnız BOŞ param_N'lere miras verir (mevcut adayı EZMEZ).
+        try:
+            self._propagate_passthrough_params()
+        except Exception as exc:  # savunmacı: propagasyon hatası pipeline'ı düşürmesin
+            errors.append(f"pass-through propagasyon hatasi: {exc}")
+            logger.warning("pass-through propagasyon atlandi: %s", exc, exc_info=True)
 
         # 4. En yuksek confidence'li ismi sec
         naming_map: dict[str, str] = {}
@@ -2013,6 +2204,163 @@ class CVariableNamer:
             if key not in self._candidates:
                 self._candidates[key] = []
             self._candidates[key].append(candidate)
+
+    # ------------------------------------------------------------------
+    # Cephe 1b — Alg 1: cross-function pass-through param miras
+    # ------------------------------------------------------------------
+
+    def _build_resolved_param_map(self) -> dict[str, dict[int, tuple[str, float]]]:
+        """func -> {pozisyon: (en-iyi-aday-adı, conf)} çözülmüş param haritası.
+
+        Kaynak = mevcut self._candidates (body_param/dataflow/type_based/api_param
+        + önceki propagasyon turları). Pozisyon imza sırasından (`_extract_sig_
+        params`) gelir — param_N indeksine değil imza pozisyonuna bağlıdır, böylece
+        karışık (kısmen adlandırılmış) imzalarda da hizalama doğru kalır.
+        """
+        resolved: dict[str, dict[int, tuple[str, float]]] = {}
+        for fname, body in self._func_bodies.items():
+            params = _extract_sig_params(body, fname)
+            if not params:
+                continue
+            posmap: dict[int, tuple[str, float]] = {}
+            for i, (pname, _is_ptr) in enumerate(params):
+                cands = self._candidates.get("%s::%s" % (fname, pname))
+                if not cands:
+                    continue
+                best = max(cands, key=lambda c: c.confidence)
+                posmap[i] = (best.new_name, best.confidence)
+            if posmap:
+                resolved[fname] = posmap
+        return resolved
+
+    def _propagate_passthrough_params(self) -> None:
+        """Caller'ın BOŞ param_N'lerine, çağrılan iç fonksiyonun çözülmüş param
+        adını miras ettir (cross-function pass-through, sıralı post-pass).
+
+        call-graph.json argüman POZİSYONU içermez → pozisyon yalnız decompiled
+        `.c` gövdesindeki çağrı-site ifadesinde var. Bu metod caller gövdesini
+        parse eder (`_split_args_balanced` reuse), copy-propagation alias'ıyla
+        (`local_X=param_N`) argümanı caller param'ına çözer, callee'nin o pozisyon-
+        daki çözülmüş adını yukarı taşır. Fixed-point (transitif zincir) + 7 guard
+        (tasarım §6.2). Miras conf = kaynak × sönümleme; çözümleme en yüksek conf'u
+        seçtiğinden fonksiyonun KENDİ doğrudan-kullanım sinyali mirası yener.
+        """
+        from karadul.reconstruction.api_param_db import APIParamDB
+        split_args = APIParamDB._split_args_balanced
+        extract_args = APIParamDB._extract_balanced_args
+
+        # callee imza param'ları (variadic → None) — bir kez çıkar, cache'le.
+        callee_param_cache: dict[str, list[tuple[str, bool]] | None] = {}
+
+        def _callee_params(name: str) -> list[tuple[str, bool]] | None:
+            if name not in callee_param_cache:
+                callee_param_cache[name] = _extract_sig_params(
+                    self._func_bodies.get(name, ""), name)
+            return callee_param_cache[name]
+
+        def _call_arg_lists(body: str, callee: str) -> list[list[str]]:
+            """callee(args) çağrılarının argüman-listelerini döndür."""
+            out: list[list[str]] = []
+            for m in re.finditer(r"(?<![\w])" + re.escape(callee) + r"\s*\(", body):
+                paren = m.end() - 1
+                args_str = extract_args(body, paren)
+                if args_str is None:
+                    continue
+                out.append(split_args(args_str))
+            return out
+
+        propagated: set[tuple[str, int]] = set()  # (caller, pos) — çift-miras önleme
+        added_total = 0
+        callers = list(self._func_bodies.keys())
+
+        for _round in range(_PASSTHROUGH_MAX_ROUNDS):
+            resolved = self._build_resolved_param_map()
+            if not resolved:
+                break
+            new_this_round = 0
+            for caller in callers:
+                body = self._func_bodies.get(caller, "")
+                if not body or "param_" not in body:
+                    continue
+                cparams = _extract_sig_params(body, caller)
+                if not cparams:
+                    continue
+                # caller param adı -> imza pozisyonu
+                cpos = {pname: i for i, (pname, _ip) in enumerate(cparams)}
+                alias = _build_param_alias(body)
+
+                for callee, cres in resolved.items():
+                    if callee == caller:
+                        continue  # self-recursion (self-edge) atla
+                    # Ucuz ön-eleme: callee adı caller gövdesinde HİÇ geçmiyorsa
+                    # çağrı-site yok → imza çıkarma + regex taramasını atla. Bu
+                    # O(F×R×|gövde|) iç döngüyü büyük binary'lerde (binlerce fn)
+                    # pratik hale getirir; substring yoksa çağrı da yok →
+                    # davranış birebir korunur.
+                    if callee not in body:
+                        continue
+                    callee_params = _callee_params(callee)
+                    if callee_params is None:
+                        continue  # variadic/ayrıştırılamaz → pozisyon güvensiz
+                    n_params = len(callee_params)
+                    for args in _call_arg_lists(body, callee):
+                        # Guard #3: arg sayısı == callee param sayısı (variadic/
+                        # kısmi-inline → pozisyon kayması → yanlış miras).
+                        if len(args) != n_params:
+                            continue
+                        for k, arg in enumerate(args):
+                            src = cres.get(k)
+                            if src is None:
+                                continue  # callee bu pozisyonu adlandırmamış
+                            src_name, src_conf = src
+                            # Guard #1: kaynak güveni eşiği.
+                            if src_conf < _PASSTHROUGH_MIN_SOURCE_CONF:
+                                continue
+                            # Argümanı caller param'ına çöz (düz param_N veya
+                            # tek-atamalı local_X alias'ı; aritmetik/adres-alma
+                            # → karmaşık ifade, atla — tasarım §6.3).
+                            arg = arg.strip()
+                            if _GHIDRA_AUTO_PARAM.match(arg):
+                                pname = arg
+                            elif arg in alias:
+                                pname = alias[arg]
+                            else:
+                                continue
+                            pos = cpos.get(pname)
+                            if pos is None:
+                                continue
+                            # Guard #2: yalnız BOŞ param_N hedefi.
+                            tgt_name, tgt_is_ptr = cparams[pos]
+                            if not _GHIDRA_AUTO_PARAM.match(tgt_name):
+                                continue
+                            if (caller, pos) in propagated:
+                                continue
+                            if self._candidates.get("%s::%s" % (caller, tgt_name)):
+                                continue  # zaten adayı var → EZME
+                            # Guard #5: tip uyumu (açık ptr↔scalar çelişkisi atla).
+                            if tgt_is_ptr != callee_params[k][1]:
+                                continue
+                            # Guard #6: sönümleme + min_confidence tabanı.
+                            new_conf = src_conf * _PASSTHROUGH_DAMPING
+                            if new_conf < self._min_confidence:
+                                continue
+                            self._add_candidate(_NamingCandidate(
+                                old_name=tgt_name,
+                                new_name=src_name,
+                                confidence=new_conf,
+                                strategy="passthrough",
+                                reason=(f"pass-through: {callee} pos{k} "
+                                        f"'{src_name}' (conf {src_conf:.2f}×"
+                                        f"{_PASSTHROUGH_DAMPING})"),
+                            ), func_name=caller)
+                            propagated.add((caller, pos))
+                            new_this_round += 1
+            added_total += new_this_round
+            if new_this_round == 0:
+                break  # fixed-point: yeni miras yok
+        if added_total:
+            logger.info("Pass-through miras: %d param komşudan adlandırıldı",
+                        added_total)
 
     # ------------------------------------------------------------------
     # Strateji 1: Symbol-Based (confidence: 0.95)

@@ -47,14 +47,18 @@ def _run(namer: CVariableNamer, fname: str, body: str) -> dict[str, str]:
 # 1. Çekirdek kullanım sınıflandırması
 # ---------------------------------------------------------------------------
 def test_pointer_multi_offset_is_ctx():
-    """>=3 ayrık sabit-offset deref -> struct/context pointer'ı => ctx."""
-    body = "*param_1 = 1; param_1[1] = 2; param_1[2] = 3; param_1[3] = 4;"
+    """>=3 ayrık sabit-offset (OKUMA-baskın) deref -> struct/context pointer'ı => ctx.
+
+    Cephe 1b (2a): gerçek ctx state OKUNUR (rvalue). Saf-YAZMA aynı desen artık
+    çıktı-tamponu sayılır (aşağıdaki 2a testlerine bak); bu test okuma-baskın
+    gövdeyle ctx dalını doğrular."""
+    body = "a = *param_1; b = param_1[1]; c = param_1[2]; d = param_1[3];"
     assert _classify_body_param(body, "param_1", is_ptr=True)[0] == "ctx"
 
 
 def test_pointer_offset_cast_deref_is_ctx():
-    """*(T *)(param + 0xNN) deseninde çok offset -> ctx."""
-    body = ("*(uint *)(param_1 + 0x14) = 0; *(int *)(param_1 + 0x18) = 1; "
+    """*(T *)(param + 0xNN) OKUMA deseninde çok offset -> ctx (state load)."""
+    body = ("a = *(uint *)(param_1 + 0x14); b = *(int *)(param_1 + 0x18); "
             "x = *(uint *)(param_1 + 0x1c);")
     assert _classify_body_param(body, "param_1", is_ptr=True)[0] == "ctx"
 
@@ -175,8 +179,8 @@ def test_injection_dataflow_empty_params_produces_nothing(namer):
     body = textwrap.dedent("""\
         void _proc(uint *param_1,ulong param_2)
         {
-          param_1[0] = 1; param_1[1] = 2; param_1[2] = 3; param_1[3] = 4;
-          x = param_2 / 4;
+          x = param_1[0] + param_1[1] + param_1[2] + param_1[3];
+          y = param_2 / 4;
         }
     """)
     namer._func_bodies = {"_proc": body}
@@ -203,3 +207,93 @@ def test_split_top_level_commas_nested():
     parts = _split_top_level_commas(blob)
     assert len(parts) == 3
     assert parts[1].strip() == "void (*cb)(int, char)"
+
+
+# ---------------------------------------------------------------------------
+# 5. Cephe 1b — Katman 2a: WRITE/READ yön kapısı (output-tampon FP fix)
+# ---------------------------------------------------------------------------
+from karadul.reconstruction.c_namer import (  # noqa: E402
+    _param_read_offsets,
+    _param_write_offsets,
+)
+
+
+def test_write_read_offset_helpers_classify_store_vs_load():
+    """Helper'lar store (lvalue) ile load (rvalue) offset'lerini ayırır."""
+    body = ("*(uint *)(param_1 + 0x14) = x; y = *(uint *)(param_1 + 0x18); "
+            "param_1[2] = z;")
+    w = _param_write_offsets(body, "param_1")
+    r = _param_read_offsets(body, "param_1")
+    assert "0x14" in w and "2" in w      # iki store
+    assert "0x18" in r and "0x18" not in w  # tek load, store değil
+
+
+def test_write_detector_ignores_comparison():
+    """`==` karşılaştırması YAZMA sayılmaz (yalnız düz `=` atama = store)."""
+    body = "if (*(int *)(param_1 + 0x1c) == 0) { return; }"
+    assert "0x1c" not in _param_write_offsets(body, "param_1")
+    assert "0x1c" in _param_read_offsets(body, "param_1")
+
+
+def test_write_dominant_ptr_is_none_2a():
+    """2a: pointer'a baskın YAZMA (writes>=2, reads<=1) -> çıktı tamponu ->
+    'ctx' DEME, None (param_N bırak). Belgelenmiş output->ctx FP'yi siler."""
+    body = ("*(uint *)(param_1 + 0) = a; *(uint *)(param_1 + 4) = b; "
+            "*(uint *)(param_1 + 8) = c;")
+    assert _classify_body_param(body, "param_1", is_ptr=True) is None
+
+
+def test_mixed_inout_ptr_is_ctx_safe_default():
+    """2a: karışık kullanım (hem yaz hem oku = inout state) -> eski ctx
+    davranışı (güvenli varsayılan; baskınlık yok)."""
+    body = ("*(uint *)(param_1 + 0x14) = *(int *)(param_1 + 0x14) + 1; "
+            "y = *(uint *)(param_1 + 0x18); z = *(uint *)(param_1 + 0x1c);")
+    v = _classify_body_param(body, "param_1", is_ptr=True)
+    assert v is not None and v[0] == "ctx"
+
+
+def test_scalar_write_dominant_stays_ctx_pointer_only_guard():
+    """GUARD (2a yalnız-pointer): scalar param'da output-yön çıkarımı YAPILMAZ
+    (çok gürültülü). Baskın-yazma scalar bile ≥3 offset -> ctx kalır."""
+    body = ("*(uint *)(param_1 + 4) = a; *(uint *)(param_1 + 8) = b; "
+            "*(uint *)(param_1 + 0xc) = c;")
+    v = _classify_body_param(body, "param_1", is_ptr=False)
+    assert v is not None and v[0] == "ctx"
+
+
+def test_constant_init_ptr_stays_ctx_not_suppressed():
+    """REGRESYON KORUMASI: *_init_ctx tarzı SABİT-değer yazma (struct başlatma)
+    baskın-yazma AMA çıktı tamponu DEĞİL -> ctx KALIR. Gerçek ctx (GT) kaybını
+    önler; naif 2a bu 4 init_ctx TP'sini yanlışlıkla siliyordu."""
+    body = ("*param_1 = 0x67452301; param_1[1] = 0xefcdab89; "
+            "param_1[2] = 0x98badcfe; param_1[3] = 0x10325476;")
+    v = _classify_body_param(body, "param_1", is_ptr=True)
+    assert v is not None and v[0] == "ctx"
+
+
+def test_injection_computed_vs_constant_write_flips_2a():
+    """DİFERANSİYEL: AYNI yazma-baskın desende RHS SABİT -> ctx (init state),
+    RHS HESAPLANMIŞ -> None (çıktı tamponu). Hesaplanmış-yazma diskriminatörü
+    load-bearing (init-ctx regresyonunu önleyen tam bu ayrım)."""
+    const_body = "*param_1 = 0x1; param_1[1] = 0x2; param_1[2] = 0x3;"
+    comp_body = "*param_1 = uVar1; param_1[1] = uVar2; param_1[2] = uVar3;"
+    assert _classify_body_param(const_body, "param_1", is_ptr=True)[0] == "ctx"
+    assert _classify_body_param(comp_body, "param_1", is_ptr=True) is None
+
+
+def test_injection_2a_gate_disabled_reintroduces_ctx_fp(monkeypatch):
+    """MUTASYON KANITI: yön kapısının write-tespitini boşaltırsak (mutant),
+    saf-yazma output pointer YİNE 'ctx' (FP) olur. Kapı gerçekten FP'yi siliyor.
+    'Yeşil test kanıt değil' — kapıyı sabote et, FP'nin geri geldiğini gör."""
+    import karadul.reconstruction.c_namer as cn
+    body = ("*(uint *)(param_1 + 0) = a; *(uint *)(param_1 + 4) = b; "
+            "*(uint *)(param_1 + 8) = c;")
+    # Normal (kapı aktif): baskın yazma -> None (FP silinir).
+    assert cn._classify_body_param(body, "param_1", is_ptr=True) is None
+    # Ön-koşul: offset sinyali ≥3 (yani eski kural yolu GİRİLİYOR, None sinyalsizlikten
+    # değil KAPIDAN geliyor).
+    assert len(cn._param_fixed_offsets(body, "param_1")) >= 3
+    # Mutant: write-offset tespitini boşalt -> gate ateşlenemez -> ESKİ ctx FP döner.
+    monkeypatch.setattr(cn, "_param_write_offsets", lambda b, e: set())
+    v = cn._classify_body_param(body, "param_1", is_ptr=True)
+    assert v is not None and v[0] == "ctx"
