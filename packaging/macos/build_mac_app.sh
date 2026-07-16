@@ -143,11 +143,22 @@ json.dump({
 PYEOF
 echo "    $(tr -d '\n ' < "$RES/build-info.json")"
 
-echo "[9/9] bytecode + ad-hoc codesign"
+echo "[9/10] bytecode (imza mührünün ön koşulu)"
 # stdlib DAHİL derle: eksik .pyc kalırsa Python onları ÇALIŞMA ZAMANINDA bundle'a
 # yazar -> imza mührü kırılır -> macOS "damaged" der. (bw_launch.sh ayrıca
 # PYTHONDONTWRITEBYTECODE=1 ile ikinci emniyet kemerini takar.)
-"$PY" -m compileall -q -j 0 "$RES/python/lib/python3.12" "$SP" "$RES/ui" >/dev/null 2>&1 || true
+#
+# --invalidation-mode unchecked-hash: varsayılan .pyc başlığı KAYNAK MTIME'ı gömer;
+# mtime kayarsa (rsync/cp/checkout) Python .pyc'yi bayat sayıp YENİDEN YAZAR ve mührü
+# kırar. unchecked-hash mtime'a hiç bakmaz -> bayatlama diye bir şey kalmaz.
+#
+# `|| true` KALDIRILDI (2026-07-16): hata yutuluyordu. compileall yarım kalırsa eksik
+# .pyc'ler runtime'da yazılır ve app kendi mührünü kırar; ölçüldü -> ~/Applications'daki
+# kurulu kopyada build sonrası 1328 .pyc yazılmış ve codesign "a sealed resource is
+# missing or invalid" veriyordu. Sessiz yutma = imzasız app ship etmek.
+"$PY" -m compileall -q -j 0 --invalidation-mode unchecked-hash \
+      "$RES/python/lib/python3.12" "$SP" "$RES/ui" \
+  || { echo "!! compileall BAŞARISIZ -> eksik .pyc runtime'da yazılıp mührü kırar"; exit 1; }
 # Homebrew JDK / Ghidra kopyaları salt-okunur gelir; codesign yazamaz -> u+w şart.
 chmod -R u+w "$APP"
 # codesign "resource fork, Finder information, or similar detritus" ile reddeder:
@@ -156,8 +167,47 @@ xattr -cr "$APP" 2>/dev/null || true
 find "$APP" \( -name '._*' -o -name '.DS_Store' \) -delete 2>/dev/null || true
 # --deep: bundle içinde nested Mach-O var (python, Ghidra native, JDK).
 # arm64'te imzasız bundle Gatekeeper'a "damaged" görünür -> ad-hoc imza şart.
-codesign --force --deep -s - "$APP" || { echo "!! codesign BAŞARISIZ"; exit 1; }
+# Kimlik: Developer ID varsa onunla imzala (Gatekeeper sessizce açar), yoksa ad-hoc.
+# KARADUL_CODESIGN_ID ile zorlanabilir; boşsa makinedeki ilk Developer ID aranır.
+SIGN_ID="${KARADUL_CODESIGN_ID:-}"
+if [ -z "$SIGN_ID" ]; then
+  SIGN_ID="$(security find-identity -v -p codesigning 2>/dev/null \
+             | grep -m1 'Developer ID Application' | sed -n 's/.*"\(.*\)".*/\1/p' || true)"
+fi
+if [ -n "$SIGN_ID" ]; then
+  # --options runtime: notarization Hardened Runtime ZORUNLU kılar.
+  codesign --force --deep --timestamp --options runtime -s "$SIGN_ID" "$APP" \
+    || { echo "!! codesign BAŞARISIZ ($SIGN_ID)"; exit 1; }
+  echo "    imza: Developer ID -> $SIGN_ID"
+else
+  codesign --force --deep -s - "$APP" || { echo "!! codesign BAŞARISIZ"; exit 1; }
+  echo "    imza: ad-hoc (Developer ID yok -> Gatekeeper başka makinede 'Yine de Aç' ister)"
+fi
 codesign --verify --deep --strict "$APP" || { echo "!! imza doğrulanamadı"; exit 1; }
-echo "    imza OK (adhoc, --strict doğrulandı)"
+
+echo "[10/10] ÇALIŞTIRMA SONRASI mühür testi (imza ancak bunu geçerse imzadır)"
+# NEDEN: "build sonunda codesign --verify geçti" YETMEZ. App çalışırken bundle'a
+# yazarsa (stdlib .pyc, Ghidra/JVM artığı) mühür ÇALIŞTIKTAN SONRA kırılır ve
+# kullanıcının makinesinde "damaged" olur -- build makinesinde asla görülmez.
+# 2026-07-16'da elle ölçüldü: temiz build 25 sn koşturuldu -> 0 dosya değişti,
+# imza sağlam kaldı. Bu adım o testin otomatik hâli; regresyon sessizce geri gelmesin.
+_SEAL_TMP="$(mktemp -d)"; trap 'rm -rf "$_SEAL_TMP"' EXIT
+(
+  KARADUL_DATA_DIR="$_SEAL_TMP/data"; export KARADUL_DATA_DIR; mkdir -p "$KARADUL_DATA_DIR"
+  # Pencere AÇMA (Cocoa event loop build'i bloklar): server tek başına da stdlib'in
+  # büyük kısmını import eder -- .pyc yazımı olacaksa burada olur.
+  KARADUL_PORT=0 "$PY" "$RES/ui/server.py" >"$_SEAL_TMP/seal.log" 2>&1 &
+  _sp=$!
+  sleep 8
+  kill -TERM $_sp 2>/dev/null || true; wait $_sp 2>/dev/null || true
+) || true
+if codesign --verify --deep --strict "$APP" 2>"$_SEAL_TMP/verify.err"; then
+  echo "    mühür çalıştırma sonrası da SAĞLAM"
+else
+  echo "!! MÜHÜR ÇALIŞTIRINCA KIRILDI -- bu app başka makinede 'damaged' der:"
+  sed -n '1,15p' "$_SEAL_TMP/verify.err"
+  echo "   (bundle'a yazan bir şey var; en olası sebep eksik .pyc)"
+  exit 1
+fi
 
 echo "DONE ($([ $FULL = 1 ] && echo FULL || echo CORE)): $(du -sh "$APP" 2>/dev/null | cut -f1) -> $APP"
