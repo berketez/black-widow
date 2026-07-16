@@ -69,7 +69,12 @@ class BSimMatch:
     matched_function: str     # Eslesen fonksiyon adi
     matched_program: str      # Eslesen program/binary adi
     similarity: float         # Benzerlik skoru [0.0, 1.0]
-    significance: float       # Anlam/onem skoru (BSim native'de feature weight)
+    # KISIT: significance [0,1] DEGILDIR -- 0.0'dan baslar, UST SINIRI YOK
+    # (olculdu: /bin/zsh'de 8.23..6262.77). Fonksiyon boyutuyla olceklenir.
+    # Iki modun degerleri AYNI OLCEKTE DEGIL: native gercek BSim skoru
+    # (sinirsiz), lite ise elle atanmis 0.5/0.8/1.0 sabitleri. Iki modun
+    # significance'ini KARSILASTIRMA / esikleme.
+    significance: float
 
 
 @dataclass
@@ -300,6 +305,36 @@ class _BSimLiteIndex:
 # BSim Native: Ghidra BSim API wrapper
 # ---------------------------------------------------------------------------
 
+# Ghidra 12.1.2 BSim ayar sablonu. Ghidra/Features/BSim/data/ altindaki
+# medium_*.xml dosyalarindan biri olmali; isim degil DOSYA ADI (uzantisiz)
+# beklenir. "nosize" varyanti fonksiyon boyutunu feature'a katmaz -> ayni
+# algoritmanin farkli optimizasyon seviyelerindeki halleri eslesebilir.
+_BSIM_CONFIG_TEMPLATE = "medium_nosize"
+
+# significance ESIGI -- DIKKAT, OLCEK SEZGISEL DEGIL.
+#
+# Ghidra javadoc'u (SimilarityNote.getSignificance): deger 0.0'dan baslar ve
+# UST SINIRI YOKTUR. similarity [0,1] arasidir, significance DEGILDIR.
+# Kucuk fonksiyonlar dusuk significance alir cunku cok sayida kucuk fonksiyonun
+# tesaduefen benzer vektor uretme ihtimali yuksektir. Filtrenin amaci bu
+# tesadueffi eslesmeleri elemektir.
+#
+# OLCUM (2026-07-16, /bin/zsh, 1073 fonksiyon, self-match significance):
+#   min/maks        : 8.23 / 6262.77
+#   <32 byte fonks. : en fazla 45.06
+#   esik 0.5        -> 1073/1073 kalir  (yani 0.5 HICBIR SEY elemez!)
+#   esik 20.0       ->  883/1073 kalir
+#   esik 40.0       ->  657/1073 kalir
+#
+# Bu yuzden varsayilan Ghidra'nin kendi degeri olan 0.0'da BIRAKILDI: uydurma
+# bir sayi koymaktansa Ghidra ile ayni davranmak durust. Anlamli bir esik
+# secmek icin cross-binary ground-truth (precision/recall) deneyi gerekir --
+# yukaridaki olcum SELF-match'tir, yani her fonksiyonun alabilecegi EN YUKSEK
+# significance'tir; cop eslesmelerin dagilimini GOSTERMEZ.
+# Cagiran taraf query_similar(significance_threshold=...) ile yukseltebilir.
+_DEFAULT_SIGNIFICANCE_THRESHOLD = 0.0
+
+
 class _BSimNativeWrapper:
     """Ghidra BSim API'si uzerinde wrapper.
 
@@ -308,66 +343,203 @@ class _BSimNativeWrapper:
 
     NOT: Bu sinif sadece PyGhidra JVM icinde import edilebilir.
     Dogrudan Python'dan calistirilirsa ImportError verir.
+
+    KISIT (Ghidra 12.1.2, javap ile dogrulandi): `FunctionDatabase` bir
+    INTERFACE'tir ve `openDatabase(...)` diye bir static metodu YOKTUR.
+    Istemci `BSimClientFactory.buildClient(BSimServerInfo, boolean)` ile
+    kurulur. Ayni sekilde `GenSignatures`'ta `setProgram`/`openDatabase`/
+    `flush` YOKTUR; dogrusu `openProgram(...)` + `scanFunction(...)` +
+    `getDescriptionManager()`, ve yazma `InsertRequest.execute(db)` ile olur.
     """
 
     def __init__(self, db_path: Path) -> None:
         self.db_path = db_path
         self._database = None
 
+    # -- yardimcilar --------------------------------------------------
+
+    def _server_info(self, name: str) -> Any:
+        """H2 dosya-tabanli BSimServerInfo uret.
+
+        KISIT: tek-String ctor DBType.file secer ve cleanupFilename() ile
+        yolu dogrular. Yol MUTLAK olmali ("/" ile baslamali), "/" ile
+        BITMEMELI ve "file:" prefix'i ICERMEMELI -> aksi halde
+        "Invalid absolute file path". ".mv.db" uzantisini Ghidra KENDI
+        ekler, biz eklemiyoruz (iki kez eklenmesin).
+        """
+        from ghidra.features.bsim.query import BSimServerInfo
+
+        return BSimServerInfo((self.db_path / name).resolve().as_posix())
+
+    def _last_error(self, database: Any) -> str:
+        """FunctionDatabase.getLastError()'dan okunabilir mesaj cikar."""
+        try:
+            err = database.getLastError()
+            if err is not None:
+                return str(err.message)
+        except Exception:  # noqa: BLE001
+            pass
+        return "bilinmeyen BSim hatasi"
+
+    def _build_client(self, name: str, initialize: bool = True) -> Any:
+        """BSimClientFactory ile istemci kur (openDatabase DEGIL).
+
+        initialize=False sadece CreateDatabase icin: DB dosyasi henuz yokken
+        initialize() basarisiz olur, once CreateDatabase.execute() calismali.
+        """
+        from ghidra.features.bsim.query import BSimClientFactory
+
+        # async=False -> sorgular cagiran thread'de calisir. PyGhidra tek
+        # JVM thread'inde ilerledigi icin async kuyruk gereksiz.
+        database = BSimClientFactory.buildClient(self._server_info(name), False)
+        if initialize and not database.initialize():
+            msg = self._last_error(database)
+            try:
+                database.close()
+            except Exception:  # noqa: BLE001
+                pass
+            raise RuntimeError(f"BSim DB initialize basarisiz ({name}): {msg}")
+        return database
+
+    def _gen_signatures(self, database: Any, program: Any) -> Any:
+        """Program icin GenSignatures kur.
+
+        KISIT: setVectorFactory() DB'nin LSHVectorFactory'si ile cagrilmali,
+        yoksa uretilen vektorler DB'nin ayarlariyla uyusmaz ve insert/query
+        "settings" hatasi verir.
+        """
+        from ghidra.features.bsim.query import GenSignatures
+
+        gen = GenSignatures(True)
+        gen.setVectorFactory(database.getLSHVectorFactory())
+        # Kanonik cagri (SimilarFunctionQueryService ile birebir ayni):
+        # openProgram(prog, nmover, archover, compover, repo, path)
+        # nmover/archover/compover None -> Ghidra degerleri program'dan okur
+        # (override etmiyoruz). repo/path None -> yerel dosya, repo yok.
+        gen.openProgram(program, None, None, None, None, None)
+        return gen
+
+    @staticmethod
+    def _iter_real_functions(program: Any) -> list[Any]:
+        """Thunk/external olmayan fonksiyonlari topla."""
+        funcs = []
+        func_iter = program.getFunctionManager().getFunctions(True)
+        while func_iter.hasNext():
+            func = func_iter.next()
+            if func.isThunk() or func.isExternal():
+                continue
+            funcs.append(func)
+        return funcs
+
+    # -- public -------------------------------------------------------
+
     def create_database(self, name: str) -> Path:
         """H2 file-based BSim veritabani olustur."""
-        from ghidra.features.bsim.query import BSimServerInfo  # noqa: F811
-        from ghidra.features.bsim.query import FunctionDatabase
+        from ghidra.features.bsim.query.description import DatabaseInformation
+        from ghidra.features.bsim.query.protocol import CreateDatabase
 
         db_file = self.db_path / f"{name}.mv.db"
-        # BSimServerInfo duz mutlak posix yol bekler; "file:" prefix'i
-        # "Invalid absolute file path: file:/..." hatasina yol acar.
-        db_url = (self.db_path / name).resolve().as_posix()
-
+        # DB dosyasi henuz yok -> initialize() etme, CreateDatabase halleder.
+        database = self._build_client(name, initialize=False)
         try:
-            server_info = BSimServerInfo(db_url)
-            database = FunctionDatabase.openDatabase(server_info, True)
-            database.close()
+            cmd = CreateDatabase()
+            cmd.info = DatabaseInformation()
+            # None birakilan alanlari config template dolduruyor.
+            cmd.info.databasename = name
+            cmd.info.owner = "karadul"
+            cmd.info.description = "Karadul BSim fonksiyon benzerlik veritabani"
+            cmd.info.trackcallgraph = True
+            cmd.config_template = _BSIM_CONFIG_TEMPLATE
+
+            # KISIT: execute() hata halinde exception ATMAZ, None doner.
+            # Gercek sebep getLastError()'dadir.
+            if cmd.execute(database) is None:
+                raise RuntimeError(
+                    f"BSim CreateDatabase basarisiz ({name}): {self._last_error(database)}"
+                )
             logger.info("BSim native DB olusturuldu: %s", db_file)
         except Exception as exc:
             logger.warning("BSim native DB olusturulamadi: %s, lite moda dusecek", exc)
             raise
+        finally:
+            try:
+                database.close()
+            except Exception:  # noqa: BLE001
+                logger.debug("BSim DB close basarisiz", exc_info=True)
 
         return db_file
 
     def ingest_program(self, program: Any, db_name: str) -> int:
         """Programdaki fonksiyonlari BSim veritabanina ekle."""
-        from ghidra.features.bsim.query import BSimServerInfo, FunctionDatabase
-        from ghidra.features.bsim.query import GenSignatures
+        from ghidra.features.bsim.query.protocol import InsertRequest
 
-        # BSimServerInfo duz mutlak posix yol bekler (file: prefix YOK).
-        db_url = (self.db_path / db_name).resolve().as_posix()
-        server_info = BSimServerInfo(db_url)
-        database = FunctionDatabase.openDatabase(server_info, False)
+        # TUZAK: headless.py (asil app yolu) create_database'i HIC cagirmaz,
+        # dogrudan ingest_program'a girer -- create_database yalnizca
+        # `karadul bsim create` CLI komutundan cagriliyor. DB dosyasi yoksa
+        # initialize() basarisiz olur, BSimDatabase.ingest_program exception'i
+        # yutup lite moda duser ve native yol SESSIZCE hic calismaz.
+        # Bu yuzden eksikse burada kendimiz olusturuyoruz (idempotent).
+        if not (self.db_path / f"{db_name}.mv.db").exists():
+            logger.info("BSim DB yok, olusturuluyor: %s", db_name)
+            self.create_database(db_name)
 
+        database = self._build_client(db_name)
+        gen = None
         try:
-            gen = GenSignatures(True)
-            gen.setProgram(program)
-            gen.openDatabase(database)
+            gen = self._gen_signatures(database, program)
 
             func_count = 0
-            func_manager = program.getFunctionManager()
-            func_iter = func_manager.getFunctions(True)
-
-            while func_iter.hasNext():
-                func = func_iter.next()
-                if func.isThunk() or func.isExternal():
-                    continue
+            for func in self._iter_real_functions(program):
                 try:
                     gen.scanFunction(func)
                     func_count += 1
                 except Exception:
-                    logger.debug("BSim fonksiyon taramasi basarisiz, atlaniyor", exc_info=True)
+                    logger.debug(
+                        "BSim fonksiyon taramasi basarisiz, atlaniyor", exc_info=True
+                    )
 
-            gen.flush()
+            if func_count == 0:
+                logger.warning("BSim ingest: taranabilen fonksiyon yok (%s)", db_name)
+                return 0
+
+            manager = gen.getDescriptionManager()
+
+            # TUZAK (canli testte yakalandi, Ghidra 12.1.2):
+            # callgraphtable'da (src,dest) PRIMARY KEY'dir. Bir fonksiyon ayni
+            # hedefi birden fazla kez cagiriyorsa GenSignatures AYNI kenari
+            # tekrar tekrar kaydeder ve insert
+            #   "Unique index or primary key violation: PRIMARY_KEY_50
+            #    ON public.callgraphtable(src, dest)"
+            # ile patlar.
+            # Bu kenarlari tekillestiren tek yer FunctionDescription.
+            # sortCallgraph()'tir ve Ghidra onu SADECE DescriptionManager.
+            # saveXml() icinden cagirir. Ghidra'nin kanonik ingest yolu
+            # (BulkSignatures) imzalari once XML'e yazip geri okudugu icin
+            # dedup'i "bedava" alir; biz DescriptionManager'i dogrudan
+            # InsertRequest'e verdigimiz icin XML round-trip'i yok ->
+            # dedup'i ELIMIZLE yapmak ZORUNDAYIZ.
+            for fdesc in manager.listAllFunctions():
+                fdesc.sortCallgraph()
+
+            # Uretilen imzalar GenSignatures'in DescriptionManager'inda birikir;
+            # DB'ye yazan sey InsertRequest.
+            req = InsertRequest()
+            req.manage = manager
+            if req.execute(database) is None:
+                raise RuntimeError(
+                    f"BSim InsertRequest basarisiz ({db_name}): {self._last_error(database)}"
+                )
             return func_count
         finally:
-            database.close()
+            if gen is not None:
+                try:
+                    gen.dispose()
+                except Exception:  # noqa: BLE001
+                    logger.debug("GenSignatures dispose basarisiz", exc_info=True)
+            try:
+                database.close()
+            except Exception:  # noqa: BLE001
+                logger.debug("BSim DB close basarisiz", exc_info=True)
 
     def query_similar(
         self,
@@ -376,49 +548,73 @@ class _BSimNativeWrapper:
         db_name: str,
         min_similarity: float = 0.7,
         max_results: int = 5,
+        significance_threshold: float = _DEFAULT_SIGNIFICANCE_THRESHOLD,
     ) -> list[BSimMatch]:
         """Tek fonksiyon icin benzer fonksiyonlari sorgula."""
-        from ghidra.features.bsim.query import BSimServerInfo, FunctionDatabase
+        from ghidra.features.bsim.query.protocol import QueryNearest
 
-        # BSimServerInfo duz mutlak posix yol bekler (file: prefix YOK).
-        db_url = (self.db_path / db_name).resolve().as_posix()
-        server_info = BSimServerInfo(db_url)
-        database = FunctionDatabase.openDatabase(server_info, False)
-
+        database = self._build_client(db_name)
+        gen = None
         try:
-            func_manager = program.getFunctionManager()
-            # Fonksiyonu bul
             target_func = None
-            func_iter = func_manager.getFunctions(True)
-            while func_iter.hasNext():
-                func = func_iter.next()
+            for func in self._iter_real_functions(program):
                 if func.getName() == function_name:
                     target_func = func
                     break
-
             if target_func is None:
                 return []
 
-            # BSim sorgusu
-            query = database.createQuery(program.getName(), target_func)
-            query.setMaximumResults(max_results)
-            query.setSimilarityThreshold(min_similarity)
-            response = database.query(query)
+            # Sorgu vektoru de GenSignatures ile uretilir; sorgulanan
+            # fonksiyon(lar) QueryNearest.manage icinde tasinir.
+            gen = self._gen_signatures(database, program)
+            try:
+                gen.scanFunction(target_func)
+            except Exception:
+                logger.debug("BSim sorgu fonksiyonu taranamadi", exc_info=True)
+                return []
 
-            matches = []
-            if response is not None:
-                for result in response.getResults():
+            query = QueryNearest()
+            query.manage = gen.getDescriptionManager()
+            query.thresh = float(min_similarity)
+            query.signifthresh = float(significance_threshold)
+            query.max = int(max_results)
+
+            response = query.execute(database)
+            if response is None:
+                logger.warning(
+                    "BSim QueryNearest basarisiz (%s): %s",
+                    db_name,
+                    self._last_error(database),
+                )
+                return []
+
+            query_addr = str(target_func.getEntryPoint())
+            matches: list[BSimMatch] = []
+            # ResponseNearest.result -> List<SimilarityResult>
+            # SimilarityResult iterable -> SimilarityNote (similarity+significance)
+            for sim_result in response.result:
+                for note in sim_result:
+                    fdesc = note.getFunctionDescription()
+                    exe = fdesc.getExecutableRecord()
                     matches.append(BSimMatch(
                         query_function=function_name,
-                        query_address=str(target_func.getEntryPoint()),
-                        matched_function=result.getFunctionName(),
-                        matched_program=result.getProgramName(),
-                        similarity=result.getSimilarity(),
-                        significance=result.getSignificance(),
+                        query_address=query_addr,
+                        matched_function=str(fdesc.getFunctionName()),
+                        matched_program=str(exe.getNameExec()) if exe else "",
+                        similarity=float(note.getSimilarity()),
+                        significance=float(note.getSignificance()),
                     ))
             return matches
         finally:
-            database.close()
+            if gen is not None:
+                try:
+                    gen.dispose()
+                except Exception:  # noqa: BLE001
+                    logger.debug("GenSignatures dispose basarisiz", exc_info=True)
+            try:
+                database.close()
+            except Exception:  # noqa: BLE001
+                logger.debug("BSim DB close basarisiz", exc_info=True)
 
     def close(self) -> None:
         """Acik veritabani baglantisini kapat."""
@@ -619,9 +815,16 @@ class BSimDatabase:
         db_name = bsim_cfg.default_database if bsim_cfg else "karadul_bsim"
 
         if self.mode == "native" and self._native is not None:
+            # KISIT: BSimConfig'de henuz min_significance alani YOK (config.py
+            # bu ajanin yetkisi disinda). getattr ile okuyoruz: alan sonradan
+            # eklenirse kod degismeden devreye girer, yoksa modul varsayilani.
+            signif = getattr(bsim_cfg, "min_significance", None)
+            if signif is None:
+                signif = _DEFAULT_SIGNIFICANCE_THRESHOLD
             try:
                 return self._native.query_similar(
                     program, function_name, db_name, min_similarity, max_results,
+                    significance_threshold=float(signif),
                 )
             except Exception as exc:
                 logger.warning("BSim native sorgu basarisiz: %s", exc)

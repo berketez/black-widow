@@ -82,13 +82,34 @@ blackwidow = "karadul.cli:main"
 [tool.setuptools.packages.find]
 include = ["karadul*"]
 
+# KISIT: package-data anahtarlari PAKET adidir, glob'lar O PAKETIN dizinine
+# GORE cozulur. Bu yuzden "templates/*.json" gibi bir desen `karadul` anahtari
+# altina yazilirsa `karadul/templates/` aranir, HICBIR SEY eslesmez ve pip
+# sessizce bos gecer (hata vermez) -- known_algorithms.json tam olarak boyle
+# kaybolmustu. Veri dosyasi bir alt-dizindeyse, o dizini iceren EN YAKIN
+# paketin adi anahtar olmalidir.
+#
+# TUZAK: `templates/`, `hooks/` ve `scripts/trex/` birer Python paketi DEGIL
+# (__init__.py yok) -> packages.find bunlari bulamaz, iceriklerinin gelmesinin
+# TEK yolu asagidaki package-data girdileridir.
+#
+# TUZAK: MANIFEST.in'deki `recursive-include karadul *.py *.js` + setuptools'un
+# include-package-data=True varsayilani, .js dosyalarini ZATEN ortuyordu; yani
+# frida hook'lari buraya yazilmadan da geliyordu. Bu ORTUK bir bagimlilik --
+# MANIFEST.in degisirse sessizce kirilir. Asagida acikca tekrar belirtildiler.
 [tool.setuptools.package-data]
 karadul = [
     "ghidra/*.py",
-    "frida/*.js",
-    "resources/*.json",
     "py.typed",
 ]
+"karadul.resources" = ["*.json"]
+"karadul.frida" = ["hooks/*.js"]
+# TRex Ghidra headless script'leri: Java kaynagi olarak subprocess'e verilir,
+# import edilmez -> paketten duserse TRex asamasi sessizce calismaz.
+"karadul.ghidra" = ["scripts/trex/*.java"]
+# CFG parmak izi sablonlari (known_algorithms.json) -- cfg_fingerprint.py
+# bunu Path(__file__).parent/"templates" ile ACAR, yoksa 0 sablonla calisir.
+"karadul.reconstruction.recovery_layers" = ["templates/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
