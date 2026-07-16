@@ -145,6 +145,27 @@
   .stat b{font-size:17px; display:block; line-height:1; letter-spacing:.5px}
   .stat span{font-size:8.5px; letter-spacing:1.5px; color:var(--dim)}
   .stat.n b{color:var(--named)} .stat.w b{color:var(--weak)} .stat.u b{color:var(--unnamed)}
+  /* Güvenlik uyarı banner'ı (paketli binary) — mevcut widow/kırmızı dille uyumlu,
+     header ile rmain arasında tam-genişlik uyarı çubuğu. Temiz binary'de render EDİLMEZ. */
+  .secbanner{display:none; padding:12px 18px; gap:14px; align-items:flex-start;
+    background:linear-gradient(180deg,rgba(229,19,52,.15),rgba(229,19,52,.04));
+    border-bottom:1px solid var(--widow); border-top:1px solid rgba(229,19,52,.4);
+    box-shadow:inset 0 0 34px rgba(229,19,52,.12); position:relative; z-index:4}
+  .secbanner.on{display:flex}
+  .secbanner .ic{font-size:21px; line-height:1.1; color:var(--widow); flex-shrink:0;
+    filter:drop-shadow(0 0 8px var(--widow-glow))}
+  .secbanner .bd{flex:1; min-width:0}
+  .secbanner .ttl{font-size:12px; font-weight:700; letter-spacing:1.2px; color:var(--widow); margin-bottom:5px}
+  .secbanner .msg{font-size:11.5px; line-height:1.6; color:var(--text)}
+  .secbanner .msg b{color:#fff}
+  .secbanner .hint{margin-top:8px; font-size:11px; color:var(--weak); letter-spacing:.3px}
+  .secbanner .hint code{background:var(--bg); border:1px solid var(--border); border-radius:3px;
+    padding:1px 6px; color:var(--cyan); font-family:inherit}
+  .secbanner .ad2{margin-top:7px; font-size:10.8px; color:var(--dim); letter-spacing:.3px}
+  .secbanner .ad2 b{color:var(--weak)}
+  .secbanner .cx{flex-shrink:0; align-self:flex-start; cursor:pointer; color:var(--dim);
+    font-size:10px; letter-spacing:1px; border:1px solid var(--border); border-radius:3px; padding:5px 10px}
+  .secbanner .cx:hover{border-color:var(--widow); color:var(--widow)}
   .rmain{flex:1; display:flex; min-height:0; position:relative}
   .console{width:300px; min-width:250px; background:var(--panel); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:4}
   .chdr{padding:7px 12px; font-size:9.5px; letter-spacing:2px; color:var(--dim); display:flex; align-items:center; gap:7px; background:var(--bg2); border-bottom:1px solid var(--border)}
@@ -458,6 +479,7 @@
       <div class="newbtn" id="newBtn">+ YENİ</div>
     </div>
   </header>
+  <div id="secBanner" class="secbanner"></div>
   <div class="rmain">
     <aside class="console">
       <div class="chdr">D: [SYMBOL.MAP] <span class="r" id="cnt">0</span></div>
@@ -726,6 +748,7 @@ function enterResult(j){
   const pct=Math.round(100*j.recovered/Math.max(1,j.total));
   $('recovPct').textContent=pct+'%'; setTimeout(()=>$('recovBar').style.width=pct+'%',300);
   $('cnt').textContent=j.total;
+  renderSecurityBanner(j);
   showView('result');
   buildList(MODEL.functions);
   buildFilters(); updateProgress(); loadOverrides();
@@ -735,6 +758,39 @@ function enterResult(j){
       .observe(document.querySelector('.stage'));
   }
   focus(j.entry||MODEL.functions[0].addr,true);
+}
+/* Güvenlik uyarı banner'ı: security.packer VARSA "neden bu kadar az fonksiyon?"
+   sorusunu doğrudan cevaplar (sessiz başarısızlık YOK). Temiz binary'de gizli kalır. */
+function renderSecurityBanner(j){
+  const el=$('secBanner'); if(!el) return;
+  const sec=j&&j.security, pk=sec&&sec.packer;
+  if(!pk){ el.classList.remove('on'); el.innerHTML=''; return; }
+  const name=String(pk.name||pk.packer_name||'paketleyici');
+  const ver=pk.version?(' '+pk.version):'';
+  const conf=(typeof pk.confidence==='number')?(' (güven %'+Math.round(pk.confidence*100)+')'):'';
+  const n=j.total||0;
+  const bin=String(j.binary||'dosya');
+  const isUPX=/upx/i.test(name);
+  const openHint=isUPX
+    ? 'Gerçek program kodu için: <code>upx -d '+esc(bin)+'</code> ile açıp yeniden analiz edin.'
+    : 'Gerçek program kodu için paketi açın (uygun açıcı/unpacker ile) ve yeniden analiz edin.';
+  const ad=sec.anti_debug;
+  const adNote=(ad&&ad.count)
+    ? '<div class="ad2">Ayrıca <b>'+ad.count+'</b> anti-debug göstergesi bulundu — binary analiz/hata-ayıklama ortamını tespit etmeye çalışıyor olabilir.</div>'
+    : '';
+  el.innerHTML=
+    '<div class="ic">⚠</div>'+
+    '<div class="bd">'+
+      '<div class="ttl">PAKETLİ BINARY — GÖRÜLEN KOD AÇICI (UNPACKER) STUB’IDIR</div>'+
+      '<div class="msg">Bu binary <b>'+esc(name+ver)+'</b> ile <b>PAKETLİ</b>'+conf+'. '+
+        'Görülen <b>'+n+'</b> fonksiyon açıcının stub’ıdır — gerçek program kodu <b>DEĞİL</b>, '+
+        'sıkıştırılmış/şifreli halde saklanıyor.'+
+        '<div class="hint">'+openHint+'</div>'+adNote+
+      '</div>'+
+    '</div>'+
+    '<div class="cx" id="secBannerCx" title="uyarıyı gizle">GİZLE ✕</div>';
+  el.classList.add('on');
+  const cx=$('secBannerCx'); if(cx) cx.onclick=()=>el.classList.remove('on');
 }
 function newAnalysis(){ if(POLL){clearInterval(POLL);POLL=null;} SELBIN=null; $('pathIn').value=''; $('goBtn').disabled=true; loadSuggestions(); showView('entry'); setTimeout(()=>$('pathIn').focus(),50); }
 $('newBtn').onclick=newAnalysis; $('brandHome').onclick=newAnalysis;

@@ -135,6 +135,70 @@ def _ws_binary_name(ws: str) -> str:
     return Path(ws).name
 
 
+def _read_static_json(root: Path, name: str):
+    """workspace static/<name>.json oku (once dogrudan yol, sonra rglob).
+
+    KISIT: bu artifact'lar static asamanin CIKTISI; yoksa/bozuksa None (uydurma yok).
+    """
+    direct = root / "static" / f"{name}.json"
+    p = direct if direct.is_file() else next(iter(root.rglob(f"static/{name}.json")), None)
+    if not p:
+        return None
+    try:
+        return json.loads(p.read_text())
+    except (json.JSONDecodeError, OSError, ValueError):
+        return None
+
+
+def _security_info(ws: str | None = None) -> dict:
+    """Paketleyici (packer) + anti-debug ozeti -- YALNIZCA workspace static/ artifact'larindan.
+
+    KISIT: build_model'i ASLA bozmaz. Artifact yok/okunamaz/bos ise ilgili alan None
+    doner (exception yayilmaz). ``packer`` ANCAK en az bir fingerprint varsa dolar
+    -> temiz (paketsiz) binary'de None -> UI banner render EDILMEZ. ``packer_name``
+    hem UI icin (name) hem curl/kanit icin (packer_name) ikili anahtarla verilir.
+    """
+    ws = ws or WS
+    out: dict = {"packer": None, "anti_debug": None}
+    if not ws:
+        return out
+    root = Path(ws)
+    try:
+        pf = _read_static_json(root, "packer_fingerprints")
+        if isinstance(pf, dict):
+            fps = pf.get("fingerprints") or []
+            if isinstance(fps, list) and fps and isinstance(fps[0], dict):
+                top = fps[0]  # detect() confidence DESC -> ilk = en yuksek guven
+                nm = top.get("packer_name") or top.get("name")
+                out["packer"] = {
+                    "name": nm,
+                    "packer_name": nm,  # kanit/curl: security.packer.packer_name
+                    "version": top.get("version"),
+                    "confidence": top.get("confidence"),
+                    "layers": top.get("layers_matched"),
+                    "category": top.get("category"),
+                    "evidence": [str(e) for e in (top.get("evidence") or [])][:8],
+                }
+    except Exception:  # noqa: BLE001 -- security bloku build_model'i cokertemez
+        out["packer"] = None
+    try:
+        ad = _read_static_json(root, "anti_debug_findings")
+        if isinstance(ad, dict):
+            summ = ad.get("summary") if isinstance(ad.get("summary"), dict) else {}
+            count = ad.get("total_findings")
+            if count is None:
+                count = summ.get("total")
+            score = summ.get("anti_debug_score")
+            if count:  # yalnizca gercek bulgu varsa
+                out["anti_debug"] = {
+                    "count": int(count),
+                    "score": (float(score) if isinstance(score, (int, float)) else None),
+                }
+    except Exception:  # noqa: BLE001
+        out["anti_debug"] = None
+    return out
+
+
 def build_model() -> dict | None:
     ws = WS  # global degisebilir -> yerel kopya
     if not ws:
@@ -177,11 +241,18 @@ def build_model() -> dict | None:
     n_weak = sum(1 for x in funcs if x["cls"] == "weak")
     n_unnamed = sum(1 for x in funcs if x["cls"] == "unnamed")
     entry = max(funcs, key=lambda x: x["out"])["addr"] if funcs else None
+    # Guvenlik ozeti (packer/anti-debug): DEFANSIF -- patlarsa model bozulmaz,
+    # security alanlari None kalir (mevcut alanlar aynen doner).
+    try:
+        security = _security_info(ws)
+    except Exception:  # noqa: BLE001
+        security = {"packer": None, "anti_debug": None}
     model = {
         "functions": funcs, "calls": calls, "names": names,
         "total": len(funcs), "named": n_named, "weak": n_weak,
         "unnamed": n_unnamed, "recovered": n_named + n_weak,
         "entry": entry, "workspace": str(ws), "binary": _ws_binary_name(ws),
+        "security": security,
     }
     with _CACHE_LOCK:
         _CACHE["ws"] = ws
