@@ -1202,6 +1202,18 @@ class CCommentGenerator:
 
         # Satirlik yorumlar: syscall, vuln, logic, control flow
         # Her satirda en fazla BIR yorum eklenir (oncelik: vuln > syscall > logic > control)
+        #
+        # KISIT: asagidaki dongude satir basina content offset'i gerekiyor. Dongu icinde
+        # sum(len(lines[j]) + 1 for j in range(i)) ile hesaplamak O(N^2) -> 235k satirlik
+        # girdide ~16 dakika. Dongude "continue" oldugu icin akumulator KAYAR (atlanan
+        # satirlarda offset ilerlemez); bu yuzden prefix dizisi ONCEDEN hesaplanir.
+        # +1 = split("\n") ile kaybolan satir sonu karakteri.
+        line_offsets: list[int] = []
+        _acc = 0
+        for _l in lines:
+            line_offsets.append(_acc)
+            _acc += len(_l) + 1
+
         for i, line in enumerate(lines):
             stripped = line.strip()
 
@@ -1227,7 +1239,7 @@ class CCommentGenerator:
 
             # Logic comment -- blok seviyesi mantik yorumu
             # Surrounding context: satirdan sonraki 300 karakteri ver
-            line_offset = sum(len(lines[j]) + 1 for j in range(i))
+            line_offset = line_offsets[i]
             ctx_after = content[line_offset:line_offset + 500]
             logic_comment = self._check_logic_pattern(stripped, ctx_after)
             if logic_comment:

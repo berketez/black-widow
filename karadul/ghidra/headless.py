@@ -713,12 +713,27 @@ class GhidraHeadless:
                 "mnemonic": mnemonic,
             }
 
-            num_operands = cu.getNumOperands()
+            # KISIT: getDefaultOperandRepresentation YALNIZCA Instruction'da var. PLT/thunk
+            # bolgesinde (ornegin gnu_ifunc GOT slotlari) Ghidra code unit'i Data (DataDB)
+            # olarak siniflandirir -> AttributeError. Duck-typing tercih edildi: kod tabaninda
+            # Ghidra tipleri icin isinstance konvansiyonu YOK (headless.py:2010 zaten hasattr
+            # kullaniyor) ve JPype/Jython koprusunde Java arayuz isinstance'i koprue bagimli;
+            # getattr her iki koprude de ayni davranir ve kendisi exception atamaz.
+            op_repr = getattr(cu, "getDefaultOperandRepresentation", None)
             operands = []
-            for i in range(num_operands):
-                op_str = cu.getDefaultOperandRepresentation(i)
-                if op_str:
-                    operands.append(op_str)
+            if op_repr is not None:
+                for i in range(cu.getNumOperands()):
+                    op_str = op_repr(i)
+                    if op_str:
+                        operands.append(op_str)
+            else:
+                # Data code unit: operand yok ama SESSIZCE ATMA -- degeri kaydet.
+                instr_entry["is_data"] = True
+                val_repr = getattr(cu, "getDefaultValueRepresentation", None)
+                if val_repr is not None:
+                    val = val_repr()
+                    if val:
+                        operands.append(str(val))
             instr_entry["operands"] = operands
             instr_entry["text"] = str(cu)
 
@@ -1017,9 +1032,43 @@ class GhidraHeadless:
             if decomp_func:
                 c_code = decomp_func.getC()
                 if c_code:
-                    disasm = GhidraHeadless._extract_disassembly(program, func)
-                    xrefs = GhidraHeadless._extract_func_xrefs(program, func)
-                    stack_frame = GhidraHeadless._extract_stack_frame(func)
+                    # KISIT: decompile BASARILI oldugu halde metadata cikarimindaki bir hata
+                    # disaridaki genis "except Exception"a dusup fonksiyonun TAMAMINI
+                    # success=False isaretliyordu -> saglam C kodu cope gidiyordu (61/146).
+                    # Metadata artik ayri ayri korunuyor: hata olursa fallback + SESLI kayit,
+                    # C kodu her zaman yazilir. Fallback sekilleri asagida kullanilan
+                    # anahtarlarla (caller_count/callees...) birebir uyumlu olmak ZORUNDA.
+                    metadata_errors: dict[str, str] = {}
+
+                    try:
+                        disasm = GhidraHeadless._extract_disassembly(program, func)
+                    except Exception as md_exc:
+                        disasm = []
+                        metadata_errors["disassembly"] = str(md_exc)
+                        logger.warning(
+                            "Disassembly cikarimi basarisiz (%s @ %s): %s -- C kodu yine de yazilyor",
+                            func_name, func_addr, md_exc, exc_info=True,
+                        )
+
+                    try:
+                        xrefs = GhidraHeadless._extract_func_xrefs(program, func)
+                    except Exception as md_exc:
+                        xrefs = {"caller_count": 0, "callee_count": 0, "callers": [], "callees": []}
+                        metadata_errors["xrefs"] = str(md_exc)
+                        logger.warning(
+                            "Xref cikarimi basarisiz (%s @ %s): %s -- C kodu yine de yazilyor",
+                            func_name, func_addr, md_exc, exc_info=True,
+                        )
+
+                    try:
+                        stack_frame = GhidraHeadless._extract_stack_frame(func)
+                    except Exception as md_exc:
+                        stack_frame = None
+                        metadata_errors["stack_frame"] = str(md_exc)
+                        logger.warning(
+                            "Stack frame cikarimi basarisiz (%s @ %s): %s -- C kodu yine de yazilyor",
+                            func_name, func_addr, md_exc, exc_info=True,
+                        )
 
                     safe_name = re.sub(r'[^\w\-.]', '_', func_name)[:200] or "unnamed"
                     # Adres suffix'i ile cakismayi onle (C++ overload, thunk vb.)
@@ -1075,6 +1124,9 @@ class GhidraHeadless:
                         "size": func_size, "success": True,
                         "instruction_count": len(disasm), "xrefs": xrefs,
                     }
+                    # Kismi basari sessiz kalmasin: C kodu var ama metadata eksikse raporla.
+                    if metadata_errors:
+                        result_entry["metadata_errors"] = metadata_errors
                     if stack_frame is not None:
                         result_entry["stack_frame"] = {
                             "frame_size": stack_frame["frame_size"],

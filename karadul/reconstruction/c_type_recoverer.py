@@ -362,6 +362,14 @@ def _apply_types_worker(
     return output_path
 
 
+# C kontrol anahtar kelimeleri -- fonksiyon tanimi ISMI olamazlar.
+# "else if (x)" satirinda fname='if' olarak eslesir; tanim sanilmamali.
+_C_CONTROL_KEYWORDS = frozenset({
+    "if", "while", "for", "switch", "return",
+    "sizeof", "do", "else", "case",
+})
+
+
 def _apply_per_func_replacements(
     content: str,
     per_func: dict[str, dict[str, str]],
@@ -377,10 +385,13 @@ def _apply_per_func_replacements(
     if not per_func:
         return content
 
+    # KISIT: rtype sutun-0'da harf/altcizgi ile BASLAMAK zorunda ve newline
+    # iceremez.  Eski desen (`[\w\s\*]+?`) bosluk-yalniz rtype'a izin verdigi
+    # icin girintili her CAGRI satirini ("  setlocale(6,\"\");") tanim saniyordu.
     _func_def = re.compile(
-        r"^(?P<rtype>[\w\s\*]+?)\s+"
+        r"^(?P<rtype>[A-Za-z_][A-Za-z0-9_ \t\*]*?)[ \t\*]+"
         r"(?P<fname>FUN_[0-9a-fA-F]+|_\w+|[a-z_]\w*)"
-        r"\s*\((?P<params>[^)]*)\)",
+        r"[ \t]*\((?P<params>[^)]*)\)",
         re.MULTILINE,
     )
 
@@ -389,6 +400,9 @@ def _apply_per_func_replacements(
 
     for m in _func_def.finditer(content):
         fname = m.group("fname")
+        # TUZAK: "else if (...)" satiri tanim degil -- fname='if' olur.
+        if fname in _C_CONTROL_KEYWORDS:
+            continue
         if fname not in per_func:
             continue
 
@@ -398,6 +412,12 @@ def _apply_per_func_replacements(
 
         # Fonksiyon basini kaydet
         func_start = m.start()
+
+        # KISIT: zaten yazilmis bolgeye dusen ic-ice eslesme atlanmazsa ayni
+        # metin result_parts'a ikinci kez girer -- 160x sismenin kaynagi.
+        # Ayni koruma: aho_replacer._resolve_overlaps (start >= last_end).
+        if func_start < last_end:
+            continue
 
         # Fonksiyon body sonu: opening brace'den kapanan brace'e
         body_start = content.find("{", m.end())
@@ -427,7 +447,9 @@ def _apply_per_func_replacements(
             func_text = func_text.replace(old_str, new_str, 1)
 
         result_parts.append(func_text)
-        last_end = body_end
+        # KISIT: last_end ASLA geri gitmemeli -- brace matching hatali bir
+        # body_end verirse sonraki dilim zaten yazilmis metni tekrar yazar.
+        last_end = max(last_end, body_end)
 
     result_parts.append(content[last_end:])
     return "".join(result_parts)
