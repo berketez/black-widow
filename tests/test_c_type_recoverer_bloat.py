@@ -150,6 +150,60 @@ def test_empty_per_func_is_noop() -> None:
     assert _apply_per_func_replacements(GHIDRA_C, {}) == GHIDRA_C
 
 
+# ---------------------------------------------------------------------------
+# Brace-matching GOVDE SONU siniri (line ~428-439) -- mutasyon deligi (2026-07-16).
+#
+# Mevcut bloat testleri yalniz TOPLAM ratio'ya / benzersizlige bakiyordu; body_end'i
+# HESAPLAYAN brace-matching'in SINIR davranisi (depth==0 kosulu, for-else dali)
+# test edilmiyordu. Bu testler body_end'in dogru yeri buldugunu, replace'in
+# KAPSAMINI belirledigi icin, davranisla kanitlar.
+# ---------------------------------------------------------------------------
+
+def test_brace_matching_nested_block_boundary() -> None:
+    """Ic-ice `{}` blok SONRASINDAKI degisken replace edilmeli.
+
+    Hedef `target2` ic bloktan SONRA gelir. Dogru brace-matching body_end'i
+    fonksiyonun DIS `}`'ine goturur -> target2 govde icindedir -> replace olur.
+    Mutant `if depth == 0` -> `!= 0`: ilk (ic) `}`'te erken durur, body_end ic
+    bloga duser, target2 govde DISINDA kalir -> replace OLMAZ -> assert kirmizi.
+    """
+    src = (
+        "void FUN_00001000(undefined8 param_1)\n\n{\n"
+        "  if (param_1 != 0) {\n"
+        "    undefined8 inner_v;\n"
+        "    use(inner_v);\n"
+        "  }\n"
+        "  undefined8 target2;\n"
+        "  outer(target2);\n"
+        "  return;\n"
+        "}\n"
+    )
+    out = _apply_per_func_replacements(
+        src, {"FUN_00001000": {"undefined8 target2": "long target2"}}
+    )
+    assert "long target2" in out, "ic-ice `}` sonrasi degisken replace edilmedi"
+    assert "undefined8 target2" not in out
+
+
+def test_brace_matching_unterminated_body_takes_rest() -> None:
+    """Kapanis `}` YOKSA for-else body_end=len(content) ile kalan govdeyi alir.
+
+    Truncated Ghidra ciktisi savunmasi. Mutant for-else dalini (body_end=len)
+    body_start'a cevirirse func_text yalniz IMZA olur -> govdedeki target replace
+    EDILMEZ -> assert kirmizi.
+    """
+    src = (
+        "void FUN_00002000(undefined8 param_1)\n\n{\n"
+        "  undefined8 target_t;\n"
+        "  use(target_t);\n"
+        # KAPANIS BRACE YOK -- truncated
+    )
+    out = _apply_per_func_replacements(
+        src, {"FUN_00002000": {"undefined8 target_t": "long target_t"}}
+    )
+    assert "long target_t" in out, "kapanmayan govdede for-else dali replace uygulamadi"
+
+
 def test_multiple_real_definitions_all_processed() -> None:
     """Birden fazla GERCEK tanimda hepsi islenmeli (kalkan asiri kisitlamasin)."""
     src = (

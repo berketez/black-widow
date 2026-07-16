@@ -129,5 +129,119 @@ class TestSeedRecoveryMain:
         assert result == {}
 
 
+# ---------------------------------------------------------------------------
+# gnulib fingerprint recovery -- mutasyon deligi (2026-07-16).
+#
+# "gerçek kurtarma 0->8" (commit 7c83288) fix'inin regresyona EN ACIK noktasi:
+# _recover_gnulib_from_fingerprints HIC test edilmiyordu. Bu testler string-fp
+# kurtarma yolunu, unique-in-binary kisitini ve pre_name guard'ini GERCEK
+# metotla (fixture .c anchor'lari) kilitler. Anchor'lar gnulib UPSTREAM'den
+# (GT-leakage yok) -- karadul/analyzers/gnulib_fingerprints.py.
+# ---------------------------------------------------------------------------
+
+def _write_c(decompiled: Path, fun_key: str, body: str) -> None:
+    (decompiled / f"{fun_key}.c").write_text(
+        f"void {fun_key}(void)\n{{\n{body}\n}}\n", encoding="utf-8"
+    )
+
+
+class TestSeedRecoveryGnulib:
+    def _gnulib_static_dir(self, tmp_path: Path) -> Path:
+        """Unique-in-binary gnulib anchor'li minimal decompiled workspace."""
+        static_dir = tmp_path / "static"
+        decompiled = static_dir / "decompiled"
+        decompiled.mkdir(parents=True)
+        # Her anchor gnulib upstream lib/<src>'da birebir gecer (dogrulandi):
+        _write_c(decompiled, "FUN_00201000", '  error(1,0,"memory exhausted");')      # xalloc_die
+        _write_c(decompiled, "FUN_00202000", '  printf("Usage: %s [OPTION]...");')     # usage
+        _write_c(decompiled, "FUN_00203000", '  error(0,0,"invalid suffix in %s");')   # xstrtol_error
+        return static_dir
+
+    def test_string_fp_recovers_unique_names(self, tmp_path: Path) -> None:
+        """String-anchor fingerprint 3 gnulib adini extracted_names'e YAZAR.
+
+        KANIT: recovery gercekten isim uretiyor (0 degil). Mutant `if name:`
+        veya atama satirini bozarsa bu assert kirmizi olur -> "makine dogru
+        cevabi hesaplayip cope atiyor" regresyonu yakalanir.
+        """
+        stage = ReconstructionStage()
+        static_dir = self._gnulib_static_dir(tmp_path)
+        extracted: dict[str, str] = {}
+        stats: dict = {}
+
+        stage._recover_gnulib_from_fingerprints(extracted, static_dir, stats)
+
+        assert extracted.get("FUN_00201000") == "xalloc_die"
+        assert extracted.get("FUN_00202000") == "usage"
+        assert extracted.get("FUN_00203000") == "xstrtol_error"
+        assert stats.get("gnulib_recovered") == 3
+
+    def test_does_not_overwrite_existing_prename(self, tmp_path: Path) -> None:
+        """unique-in-binary atamasi ONCEDEN isimli FUN'u EZMEZ (guard).
+
+        main (FIX-1) ve binary_extractor gnulib'den ONCE pre_name yazar; guard
+        `if extracted_names.get(fun_key) is not None: continue` bunlari korur.
+        Mutant guard'i tersine cevirirse (is None) mevcut isim ezilir -> kirmizi.
+        """
+        stage = ReconstructionStage()
+        static_dir = self._gnulib_static_dir(tmp_path)
+        # FUN_00201000 (xalloc_die adayi) onceden 'main' olarak isimli olsun:
+        extracted: dict[str, str] = {"FUN_00201000": "main"}
+
+        stage._recover_gnulib_from_fingerprints(extracted, static_dir, {})
+
+        assert extracted["FUN_00201000"] == "main", "gnulib mevcut pre_name'i ezdi"
+        # Diger unique adaylar yine kurtarilir (guard tekil calisir):
+        assert extracted.get("FUN_00202000") == "usage"
+
+    def test_ambiguous_name_not_assigned_by_unique_path(self, tmp_path: Path) -> None:
+        """Ayni anchor IKI FUN'da -> unique-in-binary kisiti atamayi BLOKLAR.
+
+        Mutant `if len(keys) != 1` -> `== 1`: belirsiz ad atanir (FP). Bu test
+        kisitin dogru yonde calistigini (belirsizi ATLA) kilitler.
+        """
+        stage = ReconstructionStage()
+        static_dir = tmp_path / "static"
+        decompiled = static_dir / "decompiled"
+        decompiled.mkdir(parents=True)
+        # IKI dosya da "memory exhausted" -> xalloc_die adayi (belirsiz):
+        _write_c(decompiled, "FUN_00301000", '  error(1,0,"memory exhausted");')
+        _write_c(decompiled, "FUN_00302000", '  error(1,0,"memory exhausted");')
+
+        extracted: dict[str, str] = {}
+        stats: dict = {}
+        stage._recover_gnulib_from_fingerprints(extracted, static_dir, stats)
+
+        # Belirsiz -> unique-path atamaz (call_graph yoksa disambiguation da yok):
+        assert extracted.get("FUN_00301000") != "xalloc_die"
+        assert extracted.get("FUN_00302000") != "xalloc_die"
+        assert "xalloc_die" not in extracted.values()
+        assert "xalloc_die" in stats.get("gnulib_ambiguous", [])
+
+    def test_seed_helper_calls_both_main_and_gnulib(self, tmp_path: Path) -> None:
+        """_seed_recovery_pre_names main VE gnulib recovery'i BIRLIKTE cagirir.
+
+        Mutant line 2436'daki gnulib cagrisini kaldirirsa gnulib adlari
+        tohumlanmaz -> assert kirmizi. main + gnulib ayni dikiste kurtarilir.
+        """
+        stage = ReconstructionStage()
+        static_dir = tmp_path / "static"
+        decompiled = static_dir / "decompiled"
+        decompiled.mkdir(parents=True)
+        # _start -> __libc_start_main(FUN_00101b00) -> main sinyali
+        (decompiled / "FUN_00102cc0.c").write_text(_START_C, encoding="utf-8")
+        # main govdesi (version string)
+        (decompiled / "FUN_00101b00.c").write_text(_MAIN_C, encoding="utf-8")
+        # gnulib anchor
+        _write_c(decompiled, "FUN_00201000", '  error(1,0,"memory exhausted");')
+
+        extracted: dict[str, str] = {}
+        stats: dict = {}
+        stage._seed_recovery_pre_names(extracted, static_dir, _fake_context(), stats)
+
+        assert extracted.get("FUN_00101b00") == "main", "main tohumlanmadi"
+        assert extracted.get("FUN_00201000") == "xalloc_die", "gnulib tohumlanmadi"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

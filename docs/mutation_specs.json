@@ -1,0 +1,176 @@
+{
+  "_comment": "mutation_probe.py mutant tanimlari. Her mutant: killed = testimiz onu yakaliyor. Kosum: python scripts/mutation_probe.py --spec docs/mutation_specs.json",
+  "mutants": [
+    {
+      "id": "t1_comment_offset_window_zero",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_comment_offset_and_data_codeunit.py::test_offset_window_feeds_logic_error_consumer",
+      "find": "content[line_offset:line_offset + 500]",
+      "replace": "content[line_offset:line_offset + 0]",
+      "expect": "killed",
+      "desc": "T1: offset penceresi +500 -> +0 (pencere bosalir, tuketici return -1'i kaciriр)"
+    },
+    {
+      "id": "t1_comment_offset_window_50",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_comment_offset_and_data_codeunit.py::test_offset_window_feeds_logic_error_consumer",
+      "find": "content[line_offset:line_offset + 500]",
+      "replace": "content[line_offset:line_offset + 50]",
+      "expect": "killed",
+      "desc": "T1: offset penceresi +500 -> +50 (kisalir, return kacar)"
+    },
+    {
+      "id": "t1_logic_error_return_branch",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_comment_offset_and_data_codeunit.py::test_offset_window_feeds_logic_error_consumer",
+      "find": "        return f\"error check: return on {m.group(1)} failure\"\n    return f\"check {m.group(1)} for negative value\"",
+      "replace": "        pass\n    return f\"check {m.group(1)} for negative value\"",
+      "expect": "killed",
+      "desc": "T1: _logic_error_return zengin dali kaldirilinca fallback'e duser"
+    },
+    {
+      "id": "t1_null_check_goto_branch",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_comment_offset_and_data_codeunit.py::test_offset_window_null_check_consumer_branch",
+      "find": "    if re.search(r\"goto\\s+\\w+\", rest[:150]):\n        return f\"null check: {var} -- jump to cleanup\"",
+      "replace": "    if re.search(r\"goto\\s+\\w+\", rest[:150]):\n        return f\"null check on {var}\"",
+      "expect": "killed",
+      "desc": "T1: _logic_null_check goto dali jenerige donerse pencere-tuketimi gorunmez olur"
+    },
+    {
+      "id": "t1_control_flow_forinf_comment",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_comment_offset_and_data_codeunit.py::test_control_flow_branch_reached_and_emitted",
+      "find": "\"comment\": \"Infinite loop (for(;;)) - likely event/main loop\",",
+      "replace": "\"comment\": \"\",",
+      "expect": "killed",
+      "desc": "T1: control-flow yorum bosalinca cf_comment dali emit etmez"
+    },
+    {
+      "id": "t3_depth_eq_zero_to_ne",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_c_type_recoverer_bloat.py::test_brace_matching_nested_block_boundary",
+      "find": "                if depth == 0:\n                    body_end = i + 1",
+      "replace": "                if depth != 0:\n                    body_end = i + 1",
+      "expect": "killed",
+      "desc": "T3: brace-matching depth==0 -> !=0 ilk ic-`}`'te erken durur, body_end yanlis"
+    },
+    {
+      "id": "t3_for_else_body_end",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_c_type_recoverer_bloat.py::test_brace_matching_unterminated_body_takes_rest",
+      "find": "        else:\n            body_end = len(content)",
+      "replace": "        else:\n            body_end = body_start",
+      "expect": "killed",
+      "desc": "T3: kapanmayan govde for-else dali len(content) -> body_start (govde kaybolur)"
+    },
+    {
+      "id": "t3_depth_dec_to_inc",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_c_type_recoverer_bloat.py::test_multiple_real_definitions_all_processed",
+      "find": "            elif content[i] == \"}\":\n                depth -= 1",
+      "replace": "            elif content[i] == \"}\":\n                depth += 1",
+      "expect": "killed",
+      "desc": "T3: depth -= 1 -> += 1 depth hic 0 olmaz, body_end=len -> 2. fonksiyon overlap-guard ile atlanir"
+    },
+    {
+      "id": "t2_gnulib_name_guard",
+      "module": "karadul/stages.py",
+      "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedRecoveryGnulib::test_string_fp_recovers_unique_names",
+      "find": "                if name:\n                    candidates.setdefault(name, []).append(fun_key)",
+      "replace": "                if not name:\n                    candidates.setdefault(name, []).append(fun_key)",
+      "expect": "killed",
+      "desc": "T2: `if name:` -> `if not name:` gnulib adaylari toplanmaz, hicbir isim kurtarilmaz"
+    },
+    {
+      "id": "t2_gnulib_unique_constraint",
+      "module": "karadul/stages.py",
+      "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedRecoveryGnulib::test_ambiguous_name_not_assigned_by_unique_path",
+      "find": "                if len(keys) != 1:\n                    ambiguous.append(name)",
+      "replace": "                if len(keys) == 1:\n                    ambiguous.append(name)",
+      "expect": "killed",
+      "desc": "T2: unique-in-binary `!= 1` -> `== 1` belirsiz ad atanir (FP)"
+    },
+    {
+      "id": "t2_gnulib_prename_guard",
+      "module": "karadul/stages.py",
+      "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedRecoveryGnulib::test_does_not_overwrite_existing_prename",
+      "find": "                if extracted_names.get(fun_key) is not None:\n                    continue  # onceki pre_name",
+      "replace": "                if extracted_names.get(fun_key) is None:\n                    continue  # onceki pre_name",
+      "expect": "killed",
+      "desc": "T2: pre_name guard `is not None` -> `is None` mevcut main/binary_extract ismi ezilir"
+    },
+    {
+      "id": "t2_gnulib_call_removed_from_seed",
+      "module": "karadul/stages.py",
+      "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedRecoveryGnulib::test_seed_helper_calls_both_main_and_gnulib",
+      "find": "        self._recover_gnulib_from_fingerprints(extracted_names, static_dir, stats)",
+      "replace": "        pass  # MUTANT: gnulib recovery cagrisi kaldirildi",
+      "expect": "killed",
+      "desc": "T2: _seed_recovery_pre_names gnulib cagrisi kaldirilinca gnulib adlari tohumlanmaz"
+    },
+    {
+      "id": "t5_packer_score_max_to_min",
+      "module": "karadul/reporting/markdown_report.py",
+      "test": "tests/test_report_packer_real_schema.py::test_markdown_packer_score_is_max_of_confidences",
+      "find": "        return max(confidences) if confidences else 0.0",
+      "replace": "        return min(confidences) if confidences else 0.0",
+      "expect": "killed",
+      "desc": "T5: _resolve_score max(confidences) -> min: cok-fingerprint'te severity coker (HIGH->INFO)"
+    },
+    {
+      "id": "t5_high_threshold_lowered",
+      "module": "karadul/reporting/markdown_report.py",
+      "test": "tests/test_report_packer_real_schema.py::test_markdown_packer_medium_when_max_below_high",
+      "find": "        if score >= 0.7:\n            return (\"[HIGH]\", \"high\")",
+      "replace": "        if score >= 0.4:\n            return (\"[HIGH]\", \"high\")",
+      "expect": "killed",
+      "desc": "T5: severity esigi >=0.7 -> >=0.4 (0.55 yanlislikla HIGH olur)"
+    },
+    {
+      "id": "t5_med_threshold_raised",
+      "module": "karadul/reporting/markdown_report.py",
+      "test": "tests/test_report_packer_real_schema.py::test_markdown_packer_medium_when_max_below_high",
+      "find": "        if score >= 0.4:\n            return (\"[MED]\", \"medium\")",
+      "replace": "        if score >= 0.7:\n            return (\"[MED]\", \"medium\")",
+      "expect": "killed",
+      "desc": "T5: orta esik >=0.4 -> >=0.7 (0.55 MED olmaz, INFO'ya duser)"
+    },
+    {
+      "id": "t4_aggressive_max_gt_to_lt",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_c_namer_candidate_selection.py::test_aggressive_max_selection_picks_highest_confidence",
+      "find": "                if best_aggressive is None or conf > best_aggressive[1]:",
+      "replace": "                if best_aggressive is None or conf < best_aggressive[1]:",
+      "expect": "killed",
+      "desc": "T4: agresif max-secim `conf > best` -> `conf < best` dusuk guvenli aday kazanir"
+    },
+    {
+      "id": "t4_aggressive_max_gt_to_ge",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_c_namer_candidate_selection.py::test_aggressive_tie_keeps_first_seen",
+      "find": "                if best_aggressive is None or conf > best_aggressive[1]:",
+      "replace": "                if best_aggressive is None or conf >= best_aggressive[1]:",
+      "expect": "killed",
+      "desc": "T4: `>` -> `>=` esitlikte ILK yerine SON adayi secer (deterministik secim bozulur)"
+    },
+    {
+      "id": "t4_aggressive_075_ge_to_gt",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_c_namer_candidate_selection.py::test_aggressive_075_threshold_blocks_classic",
+      "find": "            if conf >= 0.75:",
+      "replace": "            if conf > 0.75:",
+      "expect": "killed",
+      "desc": "T4: erken-donus esigi `>= 0.75` -> `> 0.75`: 0.75 gecemez, klasik fazladan aday ekler"
+    },
+    {
+      "id": "t4_classic_sort_reverse",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_c_namer_candidate_selection.py::test_classic_scored_sort_picks_highest_score",
+      "find": "        scored.sort(key=lambda x: x[0], reverse=True)",
+      "replace": "        scored.sort(key=lambda x: x[0], reverse=False)",
+      "expect": "killed",
+      "desc": "T4: klasik `scored.sort(reverse=True)` -> `False` en dusuk skorlu string secilir"
+    }
+  ]
+}

@@ -180,6 +180,82 @@ def test_markdown_packer_non_upx_generic_unpack_hint(
 
 
 # ---------------------------------------------------------------------------
+# Skor TURETIMI: max(confidence) -- COK fingerprint mutasyon deligi (2026-07-16).
+#
+# Onceki testler TEK fingerprint kullaniyordu (max==min) -> `_resolve_score`'un
+# max(confidences) mutanti (max -> min) HAYATTA kaliyordu. Iki farkli-guven
+# fingerprint ile severity'nin en YUKSEK guvenden turedigini kilitler.
+# ---------------------------------------------------------------------------
+
+def test_markdown_packer_score_is_max_of_confidences(
+    result: PipelineResult, workspace: Workspace
+) -> None:
+    """Iki fingerprint (0.99 + 0.30) -> severity HIGH (max=0.99), INFO (min) DEGIL.
+
+    Mutant `max(confidences)` -> `min(confidences)`: score 0.30 -> [INFO] ->
+    bu assert kirmizi olur.
+    """
+    artifact = {
+        "total_fingerprints": 2,
+        "fingerprints": [
+            {
+                "packer_name": "UPX", "version": "5.20", "confidence": 0.99,
+                "evidence": ["string: UPX!"], "category": "compressor",
+                "platform": "elf", "layers_matched": 3,
+            },
+            {
+                "packer_name": "GenericHint", "version": None, "confidence": 0.30,
+                "evidence": ["weak: entropy"], "category": "protector",
+                "platform": "elf", "layers_matched": 1,
+            },
+        ],
+    }
+    _write_json(workspace, "static", "packer_fingerprints", artifact)
+    md = MarkdownReporter().generate(result, workspace).read_text(encoding="utf-8")
+    seg = md.split("## Detected Packer")[1].split("\n## ")[0]
+
+    assert "[HIGH]" in seg                 # max=0.99 -> high
+    assert "score: 0.99" in seg
+    assert "[INFO]" not in seg             # min=0.30 (mutant) KAZANMAMALI
+    assert "[MED]" not in seg
+    # Her iki packer da tabloda gorunur (kapsama):
+    assert "UPX" in seg and "GenericHint" in seg
+
+
+def test_markdown_packer_medium_when_max_below_high(
+    result: PipelineResult, workspace: Workspace
+) -> None:
+    """max(conf)=0.55 -> [MED] (>=0.4, <0.7). Esik yonu (>=0.7) kenar kilidi.
+
+    Mutant `score >= 0.7` -> `score > 0.4` gibi esik kaymasi bu orta-bant
+    davranisini bozar.
+    """
+    artifact = {
+        "total_fingerprints": 2,
+        "fingerprints": [
+            {
+                "packer_name": "SoftHint", "version": None, "confidence": 0.55,
+                "evidence": ["section: .packed"], "category": "protector",
+                "platform": "pe", "layers_matched": 1,
+            },
+            {
+                "packer_name": "WeakHint", "version": None, "confidence": 0.20,
+                "evidence": ["weak"], "category": "protector",
+                "platform": "pe", "layers_matched": 1,
+            },
+        ],
+    }
+    _write_json(workspace, "static", "packer_fingerprints", artifact)
+    md = MarkdownReporter().generate(result, workspace).read_text(encoding="utf-8")
+    seg = md.split("## Detected Packer")[1].split("\n## ")[0]
+
+    assert "[MED]" in seg                  # 0.55 -> medium
+    assert "score: 0.55" in seg
+    assert "[HIGH]" not in seg
+    assert "[INFO]" not in seg
+
+
+# ---------------------------------------------------------------------------
 # Anti-debug — skor summary.anti_debug_score altinda (regresyon)
 # ---------------------------------------------------------------------------
 

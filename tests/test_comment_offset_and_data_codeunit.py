@@ -130,6 +130,98 @@ def test_gercek_annotate_file_calisiyor_ve_offset_kullaniyor():
 
 
 # ----------------------------------------------------------------------
+# FIX 1b: offset PENCERESI (+500) ve TUKETEN dallar (_check_logic_pattern /
+#         _check_control_flow) -- mutasyon deligi (2026-07-16).
+#
+# Onceki testler yalniz offset DEGERLERINI (kopya _yeni_offsets uzerinden)
+# ve "_annotate_file cokmiyor"u dogruluyordu; content[line_offset:line_offset+500]
+# penceresinin GENISLIGININ ve onu tuketen logic/control-flow dallarinin
+# DAVRANISI test EDILMIYORDU. mutation_probe: `+ 500` -> `+ 0`/`+ 50` HAYATTA.
+# Bu testler gercek _annotate_file'i cagirir ve pencere-bagimli ciktiyi kilitler.
+# ----------------------------------------------------------------------
+
+def _annotate(content: str) -> str:
+    from karadul.reconstruction.c_comment_generator import CCommentGenerator
+
+    annotated, _ = CCommentGenerator()._annotate_file(
+        content=content, func_meta={}, string_refs={}, call_graph={},
+        algo_index={}, filename="t.c",
+    )
+    return annotated
+
+
+def test_offset_window_feeds_logic_error_consumer():
+    """`if (fd < 0)` -> _logic_error_return, penceredeki `return -1`'i GORMELI.
+
+    _logic_error_return ctx=content[line_offset:line_offset+500] icinde `return -1`
+    ararsa 'error check: return on X failure', bulamazsa 'check X for negative
+    value' der. `return -1;` if satirindan ~40 char sonra (500 icinde, kucuk
+    pencerede DISINDA). Mutant `+500 -> +0/+50`: pencere kisalir, return kacar,
+    yorum fallback'e doner -> bu assert KIRMIZI (mutant OLUR).
+    """
+    content = (
+        "int FUN_00101000(int fd)\n\n{\n"
+        "  int rc;\n"
+        "  if (fd < 0) {\n"
+        "    log_message(\"the file descriptor is invalid here\");\n"
+        "    do_cleanup(fd);\n"
+        "    return -1;\n"
+        "  }\n"
+        "  rc = read_all(fd);\n"
+        "  return rc;\n"
+        "}\n"
+    )
+    annotated = _annotate(content)
+    # Pencere `return -1`'i kapsadigi icin ZENGIN yorum uretilmeli. `return -1`
+    # if satirindan ~80 char sonra: dolu pencere (+500) gorur, kisa pencere
+    # (+0/+50) goremez -> fallback'e duser (mutant OLUR).
+    assert "error check: return on fd failure" in annotated
+    assert "check fd for negative value" not in annotated
+
+
+def test_offset_window_null_check_consumer_branch():
+    """`if (p == NULL)` -> _logic_null_check penceredeki `goto`'yu gorurse
+    'null check: p -- jump to cleanup' der (return dali kapali: cleanup
+    standart-disi deger dondurur). Pencere/goto tuketici dal mutant kilidi.
+
+    Mutant goto dalini jenerige (`null check on p`) cevirirse VEYA pencere
+    +0'a duserse (goto kacar) bu assert KIRMIZI olur.
+    """
+    content = (
+        "int FUN_00101100(void *p)\n\n{\n"
+        "  if (p == NULL) {\n"
+        "    goto cleanup;\n"
+        "  }\n"
+        "  work(p);\n"
+        "cleanup:\n"
+        "  return err_code;\n"   # -1|0|NULL|false DEGIL -> return dali fire etmez
+        "}\n"
+    )
+    annotated = _annotate(content)
+    # _logic_null_check'in goto dalinin OZGU ciktisi (goto-satirinin kendi
+    # 'jump to cleanup' yorumundan farkli):
+    assert "null check: p -- jump to cleanup" in annotated
+    assert "null check on p" not in annotated
+
+
+def test_control_flow_branch_reached_and_emitted():
+    """`for(;;)` -> _check_control_flow (line 1251) sonsuz-dongu yorumu URETMELI.
+
+    Logic katmani for(;;)'yi golgelemyor; control dali calismali. Mutant
+    cf_comment append'ini (line 1252-1254) kaldirirsa bu assert KIRMIZI olur.
+    """
+    content = (
+        "void FUN_00101200(void)\n\n{\n"
+        "  for (;;) {\n"
+        "    tick();\n"
+        "  }\n"
+        "}\n"
+    )
+    annotated = _annotate(content)
+    assert "Infinite loop (for(;;))" in annotated
+
+
+# ----------------------------------------------------------------------
 # FIX 2: Data (DataDB) code unit -> AttributeError -> C kodu cope gidiyordu
 # ----------------------------------------------------------------------
 
