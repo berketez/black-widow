@@ -93,8 +93,11 @@ echo "    kurulan kopyanın mührü GEÇERLİ"
 if xcrun stapler validate "$_I/Black Widow.app" >/dev/null 2>&1; then
   echo "    notarization bileti app'e staple'lı -> Gatekeeper sessizce açar"
 else
-  _SPCTL="$(spctl -a -t exec -vv "$_I/Black Widow.app" 2>&1 | head -1)"
-  echo "    Gatekeeper: ${_SPCTL#*: }"
+  # spctl ad-hoc/notarize-siz app'i REDDEDER ve exit 3 döner; set -e + pipefail
+  # bunu ölümcül sanıp script'i düşürüyordu (mühür zaten yukarıda GEÇERLİ doğrulandı).
+  # Bu satır yalnız BİLGİ amaçlı -> hatası yutulur.
+  _SPCTL="$(spctl -a -t exec -vv "$_I/Black Widow.app" 2>&1 | head -1 || true)"
+  echo "    Gatekeeper: ${_SPCTL#*: } (ad-hoc: başka makinede 'Yine de Aç' beklenir)"
 fi
 
 echo "[build_dmg] hazır -> $DMG"
