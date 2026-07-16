@@ -9,6 +9,168 @@
 
 ---
 
+## 0. GÜNCEL DURUM (2026-07-16) — bu bölüm §1–§10'un ÜSTÜNDEDİR
+
+> **Son güncelleme: 2026-07-16 (Cephe 3, developer).**
+> Aşağıdaki §1–§10 **2026-04-22 (v1.12.0) anlık görüntüsüdür ve BAYATTIR** — satır
+> aralıkları, dosya boyutu ve "18 metot önerisi" o günün planıdır. Tarihsel değer
+> için korunuyor ama **gerçek durum bu bölümdür.** Çelişkide bu bölüm geçerlidir.
+
+### Doğrulanmış güncel gerçek (filesystem + AST ile)
+
+| Öğe | BAYAT değer (§1–§2) | GERÇEK (2026-07-16) |
+|---|---|---|
+| `karadul/stages.py` boyutu | 4906 satır | **6024 satır** |
+| Canavar: `ReconstructionStage._execute_binary` | 1147–4319 (3173 s) | **2847–5494 (2648 satır)** |
+| `DeobfuscationStage._execute_binary` (küçük kopya, kapsam dışı) | 753–834 | 797–821 |
+| `use_step_registry` default | (o gün False'du) | **True** (config.py:619, cli.py:523) |
+
+### Bugünkü split durumu (üç faz)
+
+1. **Phase 1 (statik metadata) — TAŞINDI.** İki yol da temiz:
+   - `use_step_registry=True`: `PipelineRunner` ile 15 step (binary_prep … assembly_analysis),
+     `_execute_binary` satir 2886–2926.
+   - `use_step_registry=False`: `_run_*` **yardımcı metotlarına** çıkarıldı
+     (`_load_binary` [1232–1445], `_run_signature_matching` [1456–1510],
+     `_run_byte_pattern_matching` [1512–1616], `_run_anti_debug_and_packer` [1618–1730],
+     `_run_pcode_analysis` [1732–1824], `_run_cfg_analysis` [1826–1862],
+     `_run_algorithm_engineering` [1864–1887]). Bu metotlar SADECE else-dalında
+     (satir 3052–3104) çağrılır. Parity: `tests/test_stages_split_parity.py` (25 test).
+
+2. **Phase 2 (feedback loop + struct recovery) — YARIM/ÇELİŞKİLİ (⚠️ DÜRÜSTLÜK NOTU).**
+   - Bir `feedback_loop` **step'i VAR** (`steps/feedback_loop.py`, `_feedback_loop_iter`
+     + `_feedback_helpers` + `_feedback_computation/_naming/_typing`) ve
+     `use_step_registry=True` yolunda `runner_phase2` ile çalışır (satir 3005–3046).
+   - AMA `_execute_binary` içindeki **monolith feedback loop `for _pipeline_iter …`
+     (satir 3317–4563, ~1247 satır) `_use_step_registry` ile GUARD'LI DEĞİL** →
+     yapısal olarak **HER İKİ modda** çalışır. Yani step-registry modunda feedback loop
+     hem step olarak (runner_phase2) hem monolith olarak (3317) koşuyor gibi görünüyor
+     (görünen **çift-çalışma / artık iş**). `pipeline_iterations` default = 3.
+   - Header yorumu (satir 2879 "Phase 2 … eski yolda kalir") **BAYAT** — kod
+     runner_phase2'yi step-registry dalında çalıştırdığı için yorumla çelişiyor.
+   - **Bu cephede DOKUNULMADI** (Phase 2 taşıma ertelendi). Ayrı bir architect kararı
+     gerekir: ya monolith loop `else`'e alınır ya feedback_loop step'i geri çekilir.
+     Runtime maliyeti ÖLÇÜLMEDİ (2. geçiş convergence'ta erken `break` yapabilir).
+   - `computation_fusion`/`cfg_iso`/`struct_recovery` monolith blokları (satir 4574–4836)
+     **kasıtlı olarak her iki modda** desteklenir (satir 4575 "HEM step registry HEM
+     monolith … Berke karari"); feature flag'ler kapalıyken no-op.
+
+3. **Phase 3 (post-feedback, 10 adım) — TAŞINDI; inline monolith = ÖLÜ FALLBACK.**
+   - `use_step_registry=True`: `runner_phase3` (10 step, satir 4897–4908) çalışır ve
+     satir 4927'de **erken `return`** yapar.
+   - `use_step_registry=False`: satir **4929–5494 (566 satır)** inline monolith çalışır.
+   - Flag default True olduğundan **bu 566 satır prod'da ULAŞILMAZ = ÖLÜ.** stages.py'ye
+     bu durumu açıklayan yorum bloğu eklendi (satir 4929 öncesi, 2026-07-16).
+
+### Phase 3 monolith → step eşlemesi (10/10 DOĞRULANDI, eksik step YOK)
+
+| Monolith alt-adım (4929–5494) | Step karşılığı | Sınıf/fonksiyon (birebir doğrulandı) |
+|---|---|---|
+| 3.5 Inline Detection | `steps/inline_detection.py` | `InlineDetector` |
+| 3.7 Semantic Param Naming | `steps/semantic_naming.py` | `SemanticParameterNamer` |
+| 3.6 Flow Simplify | `steps/flow_simplify.py` | `CFlowSimplifier` |
+| 4 Comment Generation | `steps/comment_generation.py` | `CCommentGenerator` |
+| 4.2 CAPA Annotation | `steps/capa_annotation.py` | `_inject_capa_comments` |
+| 4.5 Engineering Block Annotation | `steps/engineering_annotation.py` | `CodeBlockAnnotator` |
+| 5 Project Build | `steps/project_build.py` | `CProjectBuilder` |
+| 6 Engineering Analysis | `steps/engineering_analysis.py` | `DomainClassifier` / `FormulaReconstructor` |
+| 7 Deep Tracing | `steps/deep_tracing.py` | `_deep_tracing_helpers`: `VirtualDispatchResolver`, `InterProceduralDataFlow`, `AlgorithmCompositionAnalyzer`, `DeepCallChainTracer` |
+| timing + return | `steps/finalize.py` | `StageResult` |
+
+### `use_step_registry=False`'u egzersiz eden AKTİF test var mı? — HAYIR
+
+| Test | Ne yapıyor | Durum |
+|---|---|---|
+| `test_pipeline_e2e.py:223` `test_step_registry_vs_monolith_equivalence` | flag=False set ediyor AMA satir 246 `pytest.skip` | **YER TUTUCU (skip)** |
+| `test_step_registry.py:330` `test_yaml_override` | YAML'dan flag=False **yüklenişini** doğrular | Pipeline KOŞMUYOR (sadece config) |
+| `test_stages_split_parity.py` (25 test) | `_run_*` Phase 1 metotlarını **izole** çağırır | Phase 3 monolith'e DOKUNMAZ |
+
+Sonuç: flag=False monolith pipeline'ını uçtan uca koşan tek test yer tutucudur →
+**Phase 3 monolith fiilen ölüdür.**
+
+---
+
+## Phase 3 ölü-kod silme önerisi
+
+> **Durum: ÖNERİ — Berke onayı bekliyor. Bu cephede UYGULANMADI (büyük silme, geri
+> dönüşü zor).** Onaylanırsa ayrı bir sprint'te tek-developer/tek-branch ile yapılır.
+
+### Ne güvenle silinebilir?
+
+`use_step_registry` flag'i **tamamen emekliye ayrılırsa** (step-registry TEK yol olur),
+aşağıdaki **flag=False'a özgü** kod silinebilir. Toplam ~**1350 satır**:
+
+| Blok | Satir aralığı | ~Satır | Açıklama |
+|---|---|---|---|
+| Phase 3 inline monolith | 4929–5494 | 566 | Ölü fallback (step'ler var) |
+| Assembly analysis else-dalı | 3130–3215 | 86 | Phase 1 asm; step: `assembly_analysis` |
+| Phase 1 else-dalı gövdesi (`_load_binary` + `_run_*` çağrıları) | 3047–3104 | 58 | Runner Phase 1 zaten yapıyor |
+| `_load_binary` metodu | 1232–1445 | 214 | else-only |
+| `_run_signature_matching` | 1456–1510 | 55 | else-only; step: `ghidra_metadata` sig |
+| `_run_byte_pattern_matching` | 1512–1616 | 105 | else-only; step: `byte_pattern` |
+| `_run_anti_debug_and_packer` | 1618–1730 | 113 | else-only; step: `anti_debug`+`packer_fingerprint` |
+| `_run_pcode_analysis` | 1732–1824 | 93 | else-only; step: `pcode_cfg_analysis` |
+| `_run_cfg_analysis` | 1826–1862 | 37 | else-only; step: `cfg_iso_match`/cfg |
+| `_run_algorithm_engineering` | 1864–1887 | 24 | else-only; step: `algorithm_id`+`parallel_algo_eng`+`confidence_filter` |
+| `_use_step_registry` dal ayrımı basitleşir | 2882–3128, 4844–4927 | ~(net kazanç) | `if/else` → tek yol |
+| Flag tanımı + wiring | config.py:619, cli.py:523 | ~2 | `use_step_registry` alanı + CLI flag |
+
+**NOT — `_prepare_workspace` [1197–1230] SİLİNMEZ** (her iki yolda `_execute_binary:2860`
+çağrılır).
+
+### Ne SİLİNMEZ (kritik)?
+
+- **Monolith feedback loop [3317–4563]** — `_use_step_registry` guard'ı yok, her iki
+  modda çalışıyor. Önce §0.2'deki çift-çalışma çelişkisi architect tarafından çözülmeli
+  (loop `else`'e mi alınacak, step mi geri çekilecek). Silme DEĞİL, önce netleştirme.
+- **computation_fusion / cfg_iso / struct_recovery monolith [4574–4836]** — kasıtlı
+  olarak her iki modda destekleniyor (Berke kararı, satir 4575). Flag kapalıyken no-op.
+
+### Minimal (flag korunarak) alternatif
+
+Flag'i korumak istenirse: Phase 3 inline monolith [4929–5494] tek başına silinemez
+(flag=False Phase 3'ü tamamen kaybeder). Bu durumda 4929–5494 yerine
+`raise NotImplementedError("use_step_registry=False Phase 3 kaldirildi; True kullan")`
+konur (566 satır → ~2 satır) ve flag=False yolu resmen deprecate edilir. Tercih:
+**tam emeklilik daha temiz.**
+
+### Etkilenen testler
+
+| Test | Etki | Aksiyon |
+|---|---|---|
+| `test_pipeline_e2e.py:223` (placeholder, skip) | flag=False kavramı kalkar | **Sil veya güncelle** (artık karşılaştıracak monolith yok) |
+| `test_step_registry.py:330` `test_yaml_override` | flag artık yoksa geçersiz | Flag tümden kalkarsa **sil**; kalırsa dokunma |
+| `test_pipeline_e2e.py:317/322`, `test_step_registry.py:323` (default=True) | Flag kalkarsa anlamsız | Flag kalkarsa sil |
+| `tests/test_stages_split_parity.py` (25 test) | **`_run_*` metotlarını doğrudan test ediyor** → o metotlar silinirse **KIRILIR** | Tam emeklilikte bu 25 testin ~11'i (`test_run_*`, `test_load_binary_*`) güncellenmeli/silinmeli. **Phase 3-only silmede ETKİLENMEZ** (parity Phase 1'i test ediyor, Phase 3'ü değil) |
+| Golden SHA256 parity (`test_execute_binary_artifact_parity_golden`, @skip) | Zaten skip | Emeklilikte alakasız |
+
+### Golden-parity etkisi
+
+`test_stages_split_parity.py` içindeki gerçek golden testi (satir 292) **zaten
+`@pytest.mark.skip`** ve golden fixture SHA256 karşılaştırması aktif değil. Dolayısıyla
+silme bu testin durumunu değiştirmez. Aktif parity koruması `test_run_*_parity` (Phase 1
+metotları) üzerindedir → yalnızca **tam flag emekliliğinde** güncelleme gerekir.
+
+### Risk değerlendirmesi
+
+| Risk | Seviye | Not |
+|---|---|---|
+| Phase 3-only silme (flag korunur, NotImplementedError) | **DÜŞÜK** | 566 satır ölü kod; aktif test etkilenmez; davranış aynen |
+| Tam flag emekliliği (~1350 satır) | **ORTA** | 11 parity testi güncellenir; Phase 1 else-metotları gider; feedback-loop çelişkisi ÖNCE çözülmeli |
+| Feedback-loop çelişkisine dokunmak | **YÜKSEK** | Kapsam dışı; ayrı ölçüm + architect kararı gerekir |
+
+### Önerilen sıra (Berke "onaylıyorum" derse)
+
+1. Önce Phase 2 feedback-loop çift-çalışma çelişkisini architect + ölçümle netleştir
+   (bu silmeden bağımsız ama emeklilikten önce gelmeli).
+2. `test_pipeline_e2e.py:223` placeholder'ını gerçek flag-parity testine dönüştür VEYA sil.
+3. Flag'i emekliye ayır: else-dalları + `_run_*` metotları + Phase 3 monolith sil,
+   config.py/cli.py flag'ini kaldır, `if _use_step_registry` dallarını tek yola indir.
+4. 25 parity testini güncelle (Phase 1 metotları artık yok → runner-tabanlı teste geç).
+5. Tam suite yeşil + `stages.py` ~6024 → ~4650 satır.
+
+---
+
 ## 1. Durum Analizi (Audit)
 
 | Metrik | Değer | Not |

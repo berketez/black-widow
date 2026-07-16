@@ -4926,6 +4926,37 @@ class ReconstructionStage(Stage):
             _stage_result.success = len(_stage_result.artifacts) > 0
             return _stage_result
 
+        # =====================================================================
+        # DURUM NOTU (2026-07-16, Cephe 3 — SADECE belgeleme, kod DEGISMEDI)
+        # ---------------------------------------------------------------------
+        # Buradan fonksiyon sonuna kadarki blok (~satir 4933-5494) Phase 3'un
+        # INLINE MONOLITH FALLBACK'idir ve YALNIZCA use_step_registry=False
+        # yolunda calisir. Hemen yukaridaki `if _use_step_registry:` bloku
+        # (satir 4844-4927) flag True iken erken `return` yaptigi icin bu koda
+        # ULASILMAZ. Flag DEFAULT = True (config.py:619, cli.py:523) oldugundan
+        # bu blok PROD'DA OLU koddur. use_step_registry=False'u uctan uca kosan
+        # tek test (test_pipeline_e2e.py:223) `pytest.skip` ile YER TUTUCUDUR;
+        # test_step_registry.py:330 yalnizca YAML flag yuklemesini dogrular,
+        # pipeline'i kosmaz. Yani flag=False Phase 3 monolith'i fiilen olu.
+        #
+        # Her alt-adimin step karsiligi VAR (runner_phase3, satir 4897-4908):
+        #   inline_detection       -> steps/inline_detection.py   (InlineDetector)
+        #   semantic_naming        -> steps/semantic_naming.py    (SemanticParameterNamer)
+        #   flow_simplify          -> steps/flow_simplify.py      (CFlowSimplifier)
+        #   comment_generation     -> steps/comment_generation.py (CCommentGenerator)
+        #   capa_annotation        -> steps/capa_annotation.py    (_inject_capa_comments)
+        #   engineering_annotation -> steps/engineering_annotation.py (CodeBlockAnnotator)
+        #   project_build          -> steps/project_build.py      (CProjectBuilder)
+        #   engineering_analysis   -> steps/engineering_analysis.py
+        #   deep_tracing           -> steps/deep_tracing.py (_deep_tracing_helpers: 4 sinif)
+        #   finalize               -> steps/finalize.py
+        #
+        # SILME KARARI Berke onayina baglidir. Somut plan + risk + satir araligi:
+        #   docs/migrations/stages_split_plan.md -> "Phase 3 olu-kod silme onerisi"
+        # UYARI: Bu blok TEK BASINA silinirse flag=False modu Phase 3'u tamamen
+        # kaybeder; guvenli silme, use_step_registry flag'inin TAMAMEN emekliye
+        # ayrilmasini (else-dallari + _run_* Phase 1 metotlari dahil) gerektirir.
+        # =====================================================================
         # 3.5. Inline Function Detection -- compiler inline pattern'lerini tespit et
         #       abs(), strlen(), memcpy() vb. compiler tarafindan inline edilen
         #       fonksiyonlari regex ile bulup yorum olarak ekler.
