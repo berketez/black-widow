@@ -415,6 +415,22 @@ def _fmt_prf(label: str, prf: PRF) -> str:
             f"F1={prf.f1:.3f}  (TP={prf.tp} FP={prf.fp} FN={prf.fn})")
 
 
+def _prf_json(prf: PRF) -> dict:
+    """PRF'yi JSON-serileştirilebilir sözlüğe çevir (metrik + ham sayımlar).
+
+    Ham TP/FP/FN sayımları baseline karşılaştırması/regresyon testi için
+    metriklerden daha sağlamdır (yuvarlama gürültüsü yok, tekrar-türetilebilir).
+    """
+    return {
+        "precision": prf.precision,
+        "recall": prf.recall,
+        "f1": prf.f1,
+        "tp": prf.tp,
+        "fp": prf.fp,
+        "fn": prf.fn,
+    }
+
+
 def print_report(res: dict, n_examples: int = 15) -> None:
     print("\n" + "=" * 66)
     print("DEĞİŞKEN-ADI F1 BASELINE (DWARF ground truth)")
@@ -478,16 +494,11 @@ def main() -> int:
             "matched_funcs": res["matched_funcs"],
             "total_gt_funcs": res["total_gt_funcs"],
             "placeholder_locals": res["placeholder_locals"],
-            "function": {"precision": res["func_prf"].precision,
-                         "recall": res["func_prf"].recall,
-                         "f1": res["func_prf"].f1,
+            "function": {**_prf_json(res["func_prf"]),
                          "note": "gnulib sigdb leakage — inflated"},
-            "param": {"precision": res["param_prf"].precision,
-                      "recall": res["param_prf"].recall, "f1": res["param_prf"].f1},
-            "local": {"precision": res["local_prf"].precision,
-                      "recall": res["local_prf"].recall, "f1": res["local_prf"].f1},
-            "variable": {"precision": res["var_prf"].precision,
-                         "recall": res["var_prf"].recall, "f1": res["var_prf"].f1},
+            "param": _prf_json(res["param_prf"]),
+            "local": _prf_json(res["local_prf"]),
+            "variable": _prf_json(res["var_prf"]),
         }
         args.json_out.write_text(json.dumps(payload, indent=2, ensure_ascii=False),
                                  encoding="utf-8")

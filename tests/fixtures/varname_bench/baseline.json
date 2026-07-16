@@ -1,0 +1,94 @@
+{
+  "_meta": {
+    "description": "varname_bench değişken-adı F1 baseline'ı (DWARF ground truth). Fonksiyon F1 gnulib imza sızıntısı nedeniyle ŞİŞİRİLMİŞ ve GÜVENİLMEZ — asıl metrik param/lokal/değişken F1'idir.",
+    "measured_date": "2026-07-16",
+    "commit": "15f83f13285583c1bee05f96020140401c6e2ad9",
+    "commit_short": "15f83f1",
+    "karadul_version": "1.20.0-pre",
+    "fixture": "tests/fixtures/varname_bench (hashbench_O0/O2, gnulib kripto)",
+    "harness": "scripts/varname_f1_eval.py",
+    "ghidra": "bundle 12.1.2 (Black Widow.app)",
+    "method": "TAZE pipeline koşumu (karadul analyze --skip-dynamic --lmdb-sigdb) + varname_f1_eval.py; O0 ve O2 için ayrı reconstruction. Cache DEĞİL — her iki binary de mevcut kodla (15f83f1) yeniden üretildi.",
+    "function_f1_note": "gnulib sigdb leakage — inflated, NOT trustworthy",
+    "primary_metric": "param.recall ve variable.f1 (sızıntısız, DWARF-only) — regresyon testi bunları izler (tests/test_varname_f1_baseline.py).",
+    "regression_epsilon": 0.02
+  },
+  "O0": {
+    "matched_funcs": 33,
+    "total_gt_funcs": 33,
+    "placeholder_locals": 7,
+    "function": {
+      "precision": 0.8709677419354839,
+      "recall": 0.8181818181818182,
+      "f1": 0.84375,
+      "tp": 27,
+      "fp": 4,
+      "fn": 6,
+      "note": "gnulib sigdb leakage — inflated",
+      "function_f1_note": "gnulib sigdb leakage — inflated, NOT trustworthy"
+    },
+    "param": {
+      "precision": 0.6904761904761905,
+      "recall": 0.3972602739726027,
+      "f1": 0.5043478260869564,
+      "tp": 29,
+      "fp": 13,
+      "fn": 44
+    },
+    "local": {
+      "precision": 0.025157232704402517,
+      "recall": 0.05263157894736842,
+      "f1": 0.03404255319148937,
+      "tp": 4,
+      "fp": 155,
+      "fn": 72
+    },
+    "variable": {
+      "precision": 0.16417910447761194,
+      "recall": 0.2214765100671141,
+      "f1": 0.18857142857142856,
+      "tp": 33,
+      "fp": 168,
+      "fn": 116
+    }
+  },
+  "O2": {
+    "matched_funcs": 17,
+    "total_gt_funcs": 17,
+    "placeholder_locals": 12,
+    "function": {
+      "precision": 0.9411764705882353,
+      "recall": 0.9411764705882353,
+      "f1": 0.9411764705882353,
+      "tp": 16,
+      "fp": 1,
+      "fn": 1,
+      "note": "gnulib sigdb leakage — inflated",
+      "function_f1_note": "gnulib sigdb leakage — inflated, NOT trustworthy"
+    },
+    "param": {
+      "precision": 0.5483870967741935,
+      "recall": 0.38636363636363635,
+      "f1": 0.4533333333333333,
+      "tp": 17,
+      "fp": 14,
+      "fn": 27
+    },
+    "local": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "tp": 0,
+      "fp": 183,
+      "fn": 61
+    },
+    "variable": {
+      "precision": 0.0794392523364486,
+      "recall": 0.1619047619047619,
+      "f1": 0.10658307210031348,
+      "tp": 17,
+      "fp": 197,
+      "fn": 88
+    }
+  }
+}

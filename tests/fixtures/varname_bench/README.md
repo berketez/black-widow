@@ -60,14 +60,28 @@ python3 scripts/varname_f1_eval.py --debug tests/fixtures/varname_bench/build/ha
     --recon-src /tmp/hb_clean/src
 ```
 
-## BASELINE (2026-07-16, main + gnulib fix'li pipeline)
+## BASELINE (Son güncelleme: 2026-07-16, commit `15f83f1`, karadul 1.20.0-pre)
 
-| Metrik            | -O0 (33 fn) | -O2 (17 fn) | Not |
-|-------------------|-------------|-------------|-----|
-| Fonksiyon F1      | 0.844       | 0.941       | ⚠️ SIZINTILI (aşağı bak) |
-| Parametre F1 / recall | 0.000   | 0.000       | tümü `param_N` placeholder |
-| Lokal F1 / recall | 0.034 / 0.053 | 0.000 / 0.000 | O0'da 4 kurtarma (`i↔i_3`, `length↔len`) |
-| Değişken (P+L) F1 | 0.026       | 0.000       | task #9 baseline'ı |
+Aşağıdaki sayılar **taze pipeline koşumundan** ölçüldü (cache değil): O0 ve O2
+`.stripped` binary'leri bundle Ghidra 12.1.2 ile yeniden analiz edildi, sonra
+`scripts/varname_f1_eval.py` ile DWARF GT'ye karşı karşılaştırıldı. Makine-okunur
+kopya: **`baseline.json`** (bu dizinde). Regresyon guard'ı:
+`tests/test_varname_f1_baseline.py`.
+
+| Metrik                 | -O0 (33 fn)      | -O2 (17 fn)      | Not |
+|------------------------|------------------|------------------|-----|
+| Fonksiyon F1           | 0.844            | 0.941            | ⚠️ SIZINTILI (aşağı bak) |
+| Parametre precision    | 0.690            | 0.548            | kullanım-bazlı çıkarım (commit `17bf5f2`) |
+| Parametre recall       | **0.397** (29/73) | **0.386** (17/44) | eski `0.000`'dı — param gövdeden çıkarılıyor |
+| Parametre F1           | 0.504            | 0.453            | |
+| Lokal F1 / recall      | 0.034 / 0.053    | 0.000 / 0.000    | O0'da 4 kurtarma (`i↔i_3`, `length↔len`) |
+| Değişken (P+L) F1      | **0.189**        | **0.107**        | eski O0 `0.026` — param fix'iyle yükseldi |
+
+> **NOT (ölçüm hijyeni):** Bu tablo daha önce param recall `0.000` gösteriyordu;
+> gerçek değer `17bf5f2`'den beri `0.397` idi ama hiçbir dosyaya kaydedilmemiş,
+> yalnızca commit mesajında yaşıyordu. Artık `baseline.json` + regresyon testi
+> bu değeri kilitliyor. Sonraki iyileştirme (cross-function propagasyon) bunu
+> referans alacak.
 
 ### ⚠️ İki dürüstlük uyarısı
 
@@ -80,4 +94,6 @@ python3 scripts/varname_f1_eval.py --debug tests/fixtures/varname_bench/build/ha
    (`accumulator_N`, `val_N`, `raw_value_N`) + decompiler SSA-geçici değişkenleri
    kaynak değişkeni olmayan çok sayıda lokal yaratır. Bunlar hiçbir GT'ye
    eşleşemez → FP patlar, precision çöker. **Güvenilir metrik RECALL'dır** (GT
-   değişkeninin kaçı kurtarıldı): ~%0-5. precision'ı bu bağlamda oku.
+   değişkeninin kaçı kurtarıldı): param recall %40 (O0) / %39 (O2), değişken
+   (P+L) recall %22 (O0) / %16 (O2). Param precision 0.69/0.55 makul; lokal
+   precision hâlâ SSA-geçicileriyle seyreltik. precision'ı bu bağlamda oku.
