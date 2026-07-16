@@ -152,6 +152,44 @@ def _act_issues() -> None:
     _open_url(PROJECT_ISSUES_URL)
 
 
+class _JsApi:
+    """Sayfadan (WKWebView) Python'a köprü: pencerede açılan güncelleme
+    bildirimindeki "İndir" düğmesi bunu çağırır.
+
+    NEDEN köprü: WKWebView içinden ``<a target=_blank>`` harici bağlantısı
+    güvenilmez açılıyor (bkz. _open_url notu) -> tıklama Python'a gelir,
+    tarayıcı sistem tarafında açılır. Güvenlik: JS'ten KEYFİ URL almaz;
+    yalnızca sabit releases sayfasını açar (enjeksiyon yüzeyi yok).
+    """
+
+    def bw_open_releases(self) -> bool:      # window.pywebview.api.bw_open_releases()
+        _open_url(f"{PROJECT_REPO_URL}/releases")
+        return True
+
+
+def _check_update_async() -> None:
+    """Arka planda (daemon) yeni sürüm var mı bak; varsa sayfada banner göster.
+
+    ASLA UI'ı bloklamaz, ASLA istisna yaymaz. Kendi server'ımızın
+    ``/api/update-check`` ucunu çağırır (semver mantığı orada, tek yerde).
+    Güncelleme yoksa/ağ yoksa sessizce döner -- kullanıcı hiçbir şey görmez.
+    """
+    try:
+        with urllib.request.urlopen(f"{URL}/api/update-check", timeout=8) as r:
+            info = json.load(r)
+    except Exception:
+        return
+    if not isinstance(info, dict) or info.get("status") != "update_available":
+        return
+    payload = {
+        "latest": info.get("latest"),
+        "current": info.get("current"),
+        "url": info.get("url") or f"{PROJECT_REPO_URL}/releases",
+    }
+    # _js sayfa hazır olana kadar bekler (evaluate_js); daemon thread'te güvenli.
+    _js("window.bwShowUpdate && window.bwShowUpdate(%s)" % json.dumps(payload))
+
+
 def _credits_file() -> Path | None:
     """Bileşen/lisans özeti. Bundle: Resources/Credits.html (HERE=Resources/ui).
 
@@ -385,11 +423,18 @@ def main() -> int:
         height=840,
         min_size=(960, 640),
         background_color="#06080d",   # Black Widow koyu tema (beyaz flash olmasın)
+        js_api=_JsApi(),              # güncelleme banner'ındaki "İndir" köprüsü
     )
     # Menü yama döngüsü pencere kapanınca beklemeyi bıraksın (bkz. _patch_app_menu).
     # Guardlı: bu event olmasa da işleyiş aynı, sadece kapanış 6 sn'ye kadar gecikir.
     try:
         _window.events.closed += _closed.set
+    except Exception:
+        pass
+    # Güncelleme kontrolü: pencere açıldıktan sonra BİR KEZ, arka planda (daemon ->
+    # pencere erken kapanırsa ölür), bloklamadan. Sonucu sayfada banner gösterir.
+    try:
+        threading.Thread(target=_check_update_async, daemon=True).start()
     except Exception:
         pass
     # menü/localization kurulamazsa pencere yine de açılsın (menüsüz > açılmayan).

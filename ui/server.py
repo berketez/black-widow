@@ -34,6 +34,8 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
+import urllib.request
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -902,6 +904,112 @@ def _build_info() -> dict:
     return out
 
 
+# ---------------------------------------------------------------------------
+# Guncelleme kontrolu (bildirim-temelli; YERINDE-DEGISTIRMESIZ)
+#
+# GitHub'daki son release'i mevcut surumle kiyaslar. ASLA binary'yi indirip
+# degistirmez (DMG codesign/ad-hoc muhurunu kirardi) -- yalnizca HABER VERIR.
+# Ag/ayrisma hatasi UI'yi BLOKLAMAZ; status "unknown" doner, istisna yayilmaz.
+# ---------------------------------------------------------------------------
+_GITHUB_LATEST_URL = "https://api.github.com/repos/berketez/black-widow/releases/latest"
+_RELEASES_URL = "https://github.com/berketez/black-widow/releases"
+
+
+def _version_key(v):
+    """Semver benzeri karsilastirma anahtari (Python tuple'lariyla siralanir).
+
+    'v'/'V' onu ve bosluk atilir; '+build' metadata yoksayilir; '-pre' gibi
+    on-surum ekleri semver kuralina gore surumlu-surumden DUSUK sayilir
+    (1.20.0-pre < 1.20.0). Surumsuz/ayristirilamaz girdi -> None.
+
+    Donus: (core_nums, release_flag, prerelease_ids)
+      - release_flag: on-surum YOKSA 1 (release), VARSA 0 -> release > pre.
+      - prerelease_ids: her tanimlayici (0,int,'') numerik / (1,0,str) alnum
+        (semver: numerik tanimlayici alnum'dan dusuk oncelikli).
+    """
+    if not isinstance(v, str):
+        return None
+    s = v.strip()
+    if s[:1] in ("v", "V"):
+        s = s[1:]
+    s = s.strip().split("+", 1)[0]   # build metadata karsilastirmayi etkilemez
+    if not s:
+        return None
+    core, _sep, pre = s.partition("-")
+    nums = []
+    for part in core.split("."):
+        m = re.match(r"^(\d+)", part.strip())
+        if not m:
+            return None
+        nums.append(int(m.group(1)))
+    if not nums:
+        return None
+    while len(nums) < 3:
+        nums.append(0)
+    core_key = tuple(nums[:3])
+    if not pre:
+        return (core_key, 1, ())
+    ids = []
+    for idt in pre.split("."):
+        idt = idt.strip()
+        if idt.isdigit():
+            ids.append((0, int(idt), ""))     # numerik < alnum
+        else:
+            ids.append((1, 0, idt))
+    return (core_key, 0, tuple(ids))
+
+
+def _current_version() -> str | None:
+    """Calisan surum: build-info.json (bundle) -> karadul.__version__ (dev)."""
+    bi = _safe(_build_info, {})
+    v = bi.get("version") if isinstance(bi, dict) else None
+    if isinstance(v, str) and v.strip():
+        return v.strip()
+    return _safe(_dev_version, None)
+
+
+def _update_check(timeout: float = 4.0) -> dict:
+    """GitHub'daki son release ile mevcut surumu kiyasla.
+
+    Donus (sozlesme): {"status", "current", "latest", "url", "error"}
+      status: "update_available" | "up_to_date" | "unknown"
+    ASLA exception yaymaz -- ag/parse hatasinda status="unknown".
+    """
+    current = _current_version()
+    result: dict = {"status": "unknown", "current": current,
+                    "latest": None, "url": _RELEASES_URL, "error": None}
+    try:
+        req = urllib.request.Request(
+            _GITHUB_LATEST_URL,
+            headers={"Accept": "application/vnd.github+json",
+                     "User-Agent": "black-widow-update-check"},
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = json.loads(r.read().decode("utf-8", errors="replace"))
+    except Exception as e:  # noqa: BLE001 -- ag/parse; UI bloklanmamali
+        result["error"] = type(e).__name__
+        return result
+    if not isinstance(data, dict):
+        result["error"] = "beklenmeyen yanit"
+        return result
+    # sadece guvenli bir github.com URL'sini kabul et (yonlendirme enjeksiyonu olmasin)
+    html_url = data.get("html_url")
+    if isinstance(html_url, str) and html_url.startswith("https://github.com/"):
+        result["url"] = html_url
+    latest = data.get("tag_name") or data.get("name")
+    if not isinstance(latest, str) or not latest.strip():
+        result["error"] = "release bulunamadi"
+        return result
+    latest = latest.strip()
+    result["latest"] = latest
+    kc, kl = _version_key(current), _version_key(latest)
+    if kc is None or kl is None:
+        result["error"] = "surum ayristirilamadi"
+        return result
+    result["status"] = "update_available" if kl > kc else "up_to_date"
+    return result
+
+
 def _ghidra_dir() -> Path | None:
     """Ghidra kurulum dizini: env -> Config cozumleyicisi. Yoksa None."""
     for ev in ("GHIDRA_INSTALL_DIR", "GHIDRA_HOME"):   # bundle launcher'i bunu set eder
@@ -1410,6 +1518,12 @@ class Handler(BaseHTTPRequestHandler):
             self._json(_safe(_disk_access, {"full_disk_access": False,
                        "protected_folders": {}, "is_macos": _IS_MAC,
                        "probe": str(_TCC_PROBE)}))
+        elif path == "/api/update-check":
+            # GitHub'daki son release ile kiyas (bildirim; yerinde-degistirmesiz).
+            # ASLA 500 / bloklama: ag hatasi -> status "unknown".
+            self._json(_safe(_update_check, {"status": "unknown",
+                       "current": _safe(_current_version, None), "latest": None,
+                       "url": _RELEASES_URL, "error": "ic hata"}))
         elif path.startswith("/api/decompiled/"):
             addr = path.split("/api/decompiled/", 1)[1]
             if not re.fullmatch(r"FUN_[0-9a-fA-F]+", addr):

@@ -45,9 +45,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/berketezgocen/karadul"
-Documentation = "https://github.com/berketezgocen/karadul/tree/main/docs"
-Issues = "https://github.com/berketezgocen/karadul/issues"
+Homepage = "https://github.com/berketez/black-widow"
+Documentation = "https://github.com/berketez/black-widow/tree/main/docs"
+Issues = "https://github.com/berketez/black-widow/issues"
 
 [project.optional-dependencies]
 binary = ["capstone>=5.0", "lief>=0.14"]

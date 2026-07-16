@@ -311,10 +311,35 @@ macOS privacy protection never blocks it); it is large (~3.5 GB) because it bund
 a JDK, and the signature database. The core build is ~200 MB: the window opens, but analysis
 needs `--full` (or an external Ghidra via `GHIDRA_INSTALL_DIR`).
 
-Builds are ad-hoc signed, not notarized. On another machine the first launch is blocked:
-open **System Settings > Privacy & Security > "Open Anyway"** (macOS 15+ removed the old
-right-click **Open** shortcut), or run
-`xattr -dr com.apple.quarantine "/Applications/Black Widow.app"`.
+Builds are ad-hoc signed, not notarized, so the first launch on another Mac is blocked by
+Gatekeeper -- see [Installing the DMG](#installing-the-dmg-macos) below to allow it.
+
+## Installing the DMG (macOS)
+
+Grab `BlackWidow-*.dmg` from the
+[Releases](https://github.com/berketez/black-widow/releases) page, then:
+
+1. Open the DMG and drag **Black Widow.app** into **Applications**.
+2. On first launch macOS may say the app *"is damaged"* or *"cannot be verified"* and refuse
+   to open. This is Gatekeeper reacting to an **ad-hoc signed, non-notarized** build -- expected
+   for an open-source, non-commercial tool (no paid Apple Developer account is used).
+3. Allow it once: open **System Settings > Privacy & Security**, scroll to the bottom, and
+   click **"Open Anyway"** next to the Black Widow notice. Confirm, and the app opens normally
+   from then on. (macOS 15+ removed the old right-click **Open** shortcut, so use this panel.)
+
+Prefer the terminal? Clear the quarantine flag instead:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Black Widow.app"
+```
+
+Nothing is downloaded or replaced in the background: the app only queries the Releases page
+for a newer version and shows a dismissible banner -- you download and swap the DMG yourself.
+Self-updating in place would break the ad-hoc signature and re-trigger Gatekeeper.
+
+> **Maintainer note (release drafts):** attach the built `BlackWidow-*.dmg` as a release
+> asset, tag the release `vMAJOR.MINOR.PATCH` (the in-app update check compares this tag against
+> the running version), and paste the three install steps above into the release notes.
 
 ## Output
 
