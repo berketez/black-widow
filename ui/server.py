@@ -15,6 +15,7 @@ Endpoint'ler:
     GET  /api/progress?job=ID   -> {stages, substages, finished, workspace, ...}
     GET  /api/model             -> aktif workspace'in fonksiyon+callgraph modeli
     GET  /api/decompiled/FUN_x  -> {addr, code}
+    GET  /api/about             -> surum/Ghidra/JDK/imza DB/yollar (Hakkinda modali)
 
 Calistirma: python3 ui/server.py [baslangic_workspace_dir]
 Tarayici:   http://127.0.0.1:8000
@@ -25,6 +26,7 @@ import glob
 import hashlib
 import json
 import os
+import platform
 import re
 import shutil
 import signal
@@ -717,6 +719,235 @@ def _write_settings(knobs) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Hakkinda paneli (/api/about) -- SADECE OKUNAN GERCEK
+#
+# Kural: okunamayan alan null/false doner, UYDURULMAZ. Endpoint ASLA 500 atmaz.
+# Pahali isler (java -version subprocess'i, git, Ghidra properties okuma) SUREC
+# BASINA BIR KEZ yapilir -> _ABOUT_STATIC; modal her acilista beklemez.
+# ---------------------------------------------------------------------------
+_ABOUT_STATIC: dict | None = None
+_ABOUT_LOCK = threading.Lock()
+
+# Durustluk notlari (Berke'nin cercevesi, PAZARLIKSIZ): abartma yok, olculen
+# deger yazilir. F1 bandi = durust deterministik isimlendirme olcumu (per-binary
+# ortalama ~0.45-0.49; LLM'siz, CPU-only).
+_ABOUT_NOTES = [
+    "Araştırma prototipi — üretim ya da adli kullanım için doğrulanmadı.",
+    "Dürüst deterministik isimlendirme F1'i ~0.45-0.49 bandında ölçüldü "
+    "(LLM'siz, CPU-only). İsimlerin bir kısmı yanlış ya da eksiktir.",
+]
+# LMDB imza DB varsayilan konumu. TEK GERCEK KAYNAK:
+# karadul/analyzers/sigdb_lmdb.py::default_lmdb_path(). Burada BILEREK
+# tekrarlanir: o modulu import etmek lmdb+bagimliliklarini cekip ~2.7 sn suruyor
+# ve Hakkinda paneli icin DB ACILMIYOR (sadece dosya boyutu okunuyor).
+_SIG_LMDB_DEFAULT = HOME / ".karadul" / "signatures.lmdb"
+
+
+def _safe(fn, default):
+    """fn() -> deger; her turlu patlamada default. Hakkinda hicbir sey icin cokmez."""
+    try:
+        return fn()
+    except Exception:  # noqa: BLE001 -- panel bilgi amacli, hata yayilmamali
+        return default
+
+
+def _run_capture(cmd: list[str], timeout: float = 4.0) -> str | None:
+    """Kisa komut calistir, stdout+stderr birlesik dondur; patlarsa None.
+
+    DIKKAT: ``java -version`` ciktisini STDOUT'a DEGIL STDERR'e yazar ->
+    stderr=STDOUT sart. start_new_session KULLANILMAZ (bkz. start_analysis:847
+    fork deadlock notu); subprocess.run varsayilani posix_spawn ile guvenli.
+    """
+    try:
+        p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                           timeout=timeout, text=True, errors="replace", check=False)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    out = (p.stdout or "").strip()
+    return out or None
+
+
+def _dev_version() -> str | None:
+    """Bundle disinda (build-info.json yokken) surum.
+
+    Sira: karadul.__version__ -> importlib.metadata -> pyproject.toml.
+    __version__ ONCE gelir cunku importlib.metadata PEP 440'a normalize eder
+    ('1.20.0-pre' -> '1.20.0rc0') ve pyproject/Info.plist ile uyusmaz.
+    """
+    v = _safe(lambda: __import__("karadul").__version__, None)
+    if isinstance(v, str) and v.strip():
+        return v.strip()
+    v = _safe(lambda: __import__("importlib.metadata", fromlist=["version"]).version("karadul"), None)
+    if isinstance(v, str) and v.strip():
+        return v.strip()
+
+    def _from_pyproject():
+        txt = (PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        m = re.search(r'^\s*version\s*=\s*"([^"]+)"', txt, re.M)
+        return m.group(1) if m else None
+
+    return _safe(_from_pyproject, None)
+
+
+def _git_commit() -> str | None:
+    """Dev fallback: repo commit'i. Bundle'da .git YOK -> None (uydurma yok)."""
+    if not (PROJECT_ROOT / ".git").exists():
+        return None
+    out = _run_capture(["git", "-C", str(PROJECT_ROOT), "rev-parse", "--short", "HEAD"], 3.0)
+    if not out:
+        return None
+    line = out.splitlines()[0].strip()
+    return line if re.fullmatch(r"[0-9a-f]{6,40}", line) else None
+
+
+def _build_info() -> dict:
+    """build_mac_app.sh'in yazdigi Resources/build-info.json; yoksa dev fallback.
+
+    PROJECT_ROOT bundle icinde Contents/Resources demektir (server.py:46).
+    """
+    out = {"version": None, "commit": None, "built_at": None, "flavor": None,
+           "ghidra_version": None}
+
+    def _read():
+        p = PROJECT_ROOT / "build-info.json"
+        if not p.is_file():
+            return None
+        d = json.loads(p.read_text(encoding="utf-8"))
+        return d if isinstance(d, dict) else None
+
+    d = _safe(_read, None)
+    if d is not None:
+        for k in out:
+            v = d.get(k)
+            if isinstance(v, (str, int, float)) and str(v).strip():
+                out[k] = str(v).strip()
+        if out["flavor"] not in ("full", "core", "dev"):
+            out["flavor"] = None       # bilinmeyen etiketi uydurma
+        return out
+    # dev fallback: build-info.json yok (repo'dan calistiriliyor)
+    out["flavor"] = "dev"
+    out["version"] = _dev_version()
+    out["commit"] = _git_commit()
+    return out
+
+
+def _ghidra_dir() -> Path | None:
+    """Ghidra kurulum dizini: env -> Config cozumleyicisi. Yoksa None."""
+    for ev in ("GHIDRA_INSTALL_DIR", "GHIDRA_HOME"):   # bundle launcher'i bunu set eder
+        v = os.environ.get(ev)
+        if v:
+            p = Path(os.path.expanduser(v))
+            if p.is_dir():
+                return p
+    # dev: config.py::_find_ghidra_tool zaten bilinen yollari tariyor
+    hl = _safe(lambda: Path(Config.load(_SETTINGS_YAML).tools.ghidra_headless), None)
+    if hl and hl.is_file() and hl.parent.name == "support" and hl.parent.parent.is_dir():
+        return hl.parent.parent
+    return None
+
+
+def _ghidra_info(bi: dict) -> dict:
+    d = _safe(_ghidra_dir, None)
+    if d is None:
+        return {"present": False, "version": None, "path": None}
+
+    def _ver():
+        txt = (d / "Ghidra" / "application.properties").read_text(encoding="utf-8", errors="replace")
+        m = re.search(r"^application\.version\s*=\s*(.+)$", txt, re.M)
+        return m.group(1).strip() if m else None
+
+    ver = _safe(_ver, None) or bi.get("ghidra_version")   # son care: build-info
+    return {"present": True, "version": ver or None, "path": str(d)}
+
+
+def _jdk_info() -> dict:
+    jh = os.environ.get("JAVA_HOME")
+    exe = None
+    if jh:
+        c = Path(os.path.expanduser(jh)) / "bin" / "java"
+        if c.is_file():
+            exe = str(c)
+    if exe is None:
+        exe = shutil.which("java")
+    if not exe:
+        return {"present": False, "version": None}
+    out = _run_capture([exe, "-version"], 5.0)
+    if not out:
+        return {"present": True, "version": None}   # java var ama konusmadi
+    m = re.search(r'version "([^"]+)"', out)
+    return {"present": True, "version": (m.group(1) if m else out.splitlines()[0].strip()[:120])}
+
+
+def _signatures_info() -> dict:
+    """Imza DB: SADECE data.mdb boyutu. LMDB ACILMAZ (2 GB mmap etmeye gerek yok)."""
+    env = os.environ.get("KARADUL_SIG_LMDB_PATH")
+    p = Path(os.path.expanduser(env)) if env else _SIG_LMDB_DEFAULT
+    data = p / "data.mdb"
+    size = _safe(lambda: data.stat().st_size if data.is_file() else None, None)
+    return {"present": bool(size), "path": str(p), "size_bytes": size}
+
+
+def _runs_count(runs: Path) -> int | None:
+    """Saklanan analiz sayisi (ust sinir _MAX_RUNS -> 'toplam gecmis' DEGIL)."""
+    def _n():
+        if not runs.is_dir():
+            return 0
+        return sum(1 for x in runs.iterdir() if x.is_dir())   # .DS_Store sayilmasin
+    return _safe(_n, None)
+
+
+def _about_static() -> dict:
+    """Surec basina BIR kez: pahali/degismeyen alanlar."""
+    bi = _safe(_build_info, {"version": None, "commit": None, "built_at": None,
+                             "flavor": None, "ghidra_version": None})
+
+    def _plat():
+        mac = platform.mac_ver()[0]
+        return f"macOS {mac} ({platform.machine()})" if mac else platform.platform()
+
+    return {
+        "app": "Black Widow",
+        "engine": "karadul",
+        "version": bi.get("version") or _safe(_dev_version, None),
+        "build": {"commit": bi.get("commit"), "built_at": bi.get("built_at"),
+                  "flavor": bi.get("flavor")},
+        "runtime": {"python": _safe(platform.python_version, None), "platform": _safe(_plat, None)},
+        "ghidra": _safe(lambda: _ghidra_info(bi), {"present": False, "version": None, "path": None}),
+        "jdk": _safe(_jdk_info, {"present": False, "version": None}),
+        "signatures": _safe(_signatures_info, {"present": False, "path": None, "size_bytes": None}),
+        "notes": list(_ABOUT_NOTES),
+    }
+
+
+def _about_payload() -> dict:
+    global _ABOUT_STATIC
+    with _ABOUT_LOCK:
+        if _ABOUT_STATIC is None:
+            _ABOUT_STATIC = _about_static()
+        d = json.loads(json.dumps(_ABOUT_STATIC))   # derin kopya: cache mutasyona ugramasin
+    runs = _DATA_ROOT / "ui" / "_runs"
+    log = _safe(lambda: (_DATA_ROOT / "app.log") if (_DATA_ROOT / "app.log").is_file() else None, None)
+    d["paths"] = {"data_dir": str(_DATA_ROOT), "runs": str(runs), "log": str(log) if log else None}
+    d["stats"] = {"runs": _runs_count(runs)}
+    return d
+
+
+def _about_fallback() -> dict:
+    """Son savunma: _about_payload bile patlarsa sozlesme sekli + null'lar."""
+    return {
+        "app": "Black Widow", "engine": "karadul", "version": None,
+        "build": {"commit": None, "built_at": None, "flavor": None},
+        "runtime": {"python": None, "platform": None},
+        "ghidra": {"present": False, "version": None, "path": None},
+        "jdk": {"present": False, "version": None},
+        "signatures": {"present": False, "path": None, "size_bytes": None},
+        "paths": {"data_dir": str(_DATA_ROOT), "runs": None, "log": None},
+        "stats": {"runs": None},
+        "notes": list(_ABOUT_NOTES) + ["Sistem bilgileri okunamadı."],
+    }
+
+
+# ---------------------------------------------------------------------------
 # Analiz edilebilir binary listesi (chip onerisi)
 # ---------------------------------------------------------------------------
 def list_binaries() -> list[dict]:
@@ -1010,6 +1241,10 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"overrides": names, "count": len(names)})
         elif path == "/api/settings":
             self._json(_read_settings())
+        elif path == "/api/about":
+            # ASLA 500: panel bilgi amacli, tek bir okunamayan alan yuzunden
+            # modal bos kalmasin (icerideki her alan zaten _safe ile sarili).
+            self._json(_safe(_about_payload, None) or _about_fallback())
         elif path.startswith("/api/decompiled/"):
             addr = path.split("/api/decompiled/", 1)[1]
             if not re.fullmatch(r"FUN_[0-9a-fA-F]+", addr):

@@ -366,6 +366,29 @@
   .gearbtn:hover{border-color:var(--cyan); color:var(--cyan)}
   .entrygear{margin-top:14px; color:var(--dim); font-size:11px; cursor:pointer; letter-spacing:1.5px; display:inline-block}
   .entrygear:hover{color:var(--cyan)}
+
+  /* ============ HAKKINDA (modal · AYAR modalinin dili: .setmodal/.setbox/.sethdr/.setbody/.setfoot yeniden kullanilir) ============ */
+  .sethdr .abtlink{margin-left:auto; cursor:pointer; color:var(--dim); border:1px solid var(--border);
+    border-radius:2px; padding:2px 9px; font-size:10.5px; letter-spacing:1.5px}
+  .sethdr .abtlink:hover{color:var(--cyan); border-color:var(--cyan)}
+  .sethdr .abtlink+.x{margin-left:0}
+  .abthero{display:flex; align-items:center; gap:13px}
+  .abthero .mk{width:38px; height:38px; flex-shrink:0; filter:drop-shadow(0 0 14px var(--widow-glow))}
+  .abthero .an{font-size:19px; letter-spacing:4px; color:var(--text)} .abthero .an b{color:var(--widow)}
+  .abthero .av{font-size:10px; letter-spacing:1.5px; color:var(--dim); margin-top:4px}
+  .abthero .av b{color:var(--cyan); letter-spacing:1px; font-weight:400}
+  .abtgrid{display:flex; flex-direction:column; gap:7px}
+  .abtr{display:flex; align-items:baseline; gap:12px; line-height:1.45}
+  .abtr .k{width:116px; flex-shrink:0; font-size:10px; letter-spacing:.5px; color:var(--dim)}
+  .abtr .v{flex:1; min-width:0; font-size:11.5px; color:var(--text); word-break:break-all}
+  .abtr .v.no{color:var(--unnamed)}            /* yok/eksik: gizlenmez, KIRMIZI gosterilir */
+  .abtr .v.mut{color:var(--dim)}
+  .abtr .v.cp{cursor:pointer}
+  .abtr .v.cp::after{content:" ⧉"; color:var(--faint); font-size:10px}
+  .abtr .v.cp:hover, .abtr .v.cp:hover::after{color:var(--cyan)}
+  .abtnotes{font-size:10px; color:var(--dim); line-height:1.65}
+  .abtnotes div{padding-left:11px; text-indent:-11px}
+  .abtnotes div::before{content:"• "; color:var(--weak)}
 </style>
 </head>
 <body>
@@ -475,6 +498,7 @@
   <div class="setbox">
     <div class="sethdr">
       <div><div class="ti">⚙ AYAR<b>LAR</b></div><div class="sub">KARADUL MOTORU · SADE</div></div>
+      <span class="abtlink" id="setAbout" title="sürüm ve sistem bilgisi">◆ HAKKINDA</span>
       <span class="x" id="setClose">KAPAT ✕</span>
     </div>
     <div class="setbody">
@@ -519,6 +543,43 @@
     <div class="setfoot">
       <span class="msg" id="setMsg"></span>
       <button class="setsave" id="setSave">KAYDET</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== HAKKINDA (modal) =====================
+     DOM'da AYARLAR'dan SONRA durur: ayni z-index'te (200) sonraki eleman ustte
+     cizilir -> ayar modali acikken Hakkinda onun ustune biner. -->
+<div id="about" class="setmodal">
+  <div class="setbox">
+    <div class="sethdr">
+      <div><div class="ti">◆ HAK<b>KINDA</b></div><div class="sub">SÜRÜM · SİSTEM · DÜRÜSTLÜK NOTLARI</div></div>
+      <span class="x" id="abtClose">KAPAT ✕</span>
+    </div>
+    <div class="setbody">
+      <div class="abthero">
+        <svg class="mk" viewBox="0 0 24 24"><path d="M4 2.5H20L12 12L20 21.5H4L12 12Z" fill="#e51334"/></svg>
+        <div><div class="an">BLACK<b>WIDOW</b></div><div class="av" id="abtVer">—</div></div>
+      </div>
+      <div class="setsep"></div>
+      <div class="sethead">MOTOR</div>
+      <div class="abtgrid" id="abtEngine"></div>
+      <div class="setsep"></div>
+      <div class="sethead">ÇALIŞMA ZAMANI</div>
+      <div class="abtgrid" id="abtRun"></div>
+      <div class="setsep"></div>
+      <div class="sethead">ANALİZ ARAÇLARI</div>
+      <div class="abtgrid" id="abtTools"></div>
+      <div class="setsep"></div>
+      <div class="sethead">YOLLAR <span style="color:var(--faint); letter-spacing:.5px">(tıkla → kopyala)</span></div>
+      <div class="abtgrid" id="abtPaths"></div>
+      <div class="setsep"></div>
+      <div class="sethead">NOTLAR</div>
+      <div class="abtnotes" id="abtNotes"></div>
+    </div>
+    <div class="setfoot">
+      <span class="msg" id="abtMsg"></span>
+      <span class="abtlink" id="abtGear" style="margin-left:0" title="ayarlar">⚙ AYARLAR</span>
     </div>
   </div>
 </div>
@@ -1126,7 +1187,100 @@ $('setClose').onclick=closeSettings;
 $('entryGear').onclick=openSettings;
 $('hdrGear').onclick=openSettings;
 $('settings').onclick=e=>{ if(e.target===$('settings')) closeSettings(); };
-document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('settings').classList.contains('on')){ e.stopPropagation(); closeSettings(); } });
+
+/* ===================== HAKKINDA =====================
+   Kural: /api/about ne diyorsa O gosterilir. present=false olan sey GIZLENMEZ,
+   "yok" olarak kirmizi yazilir (kullanici neyin calismadigini bilsin). */
+const escA=s=>esc(s).replace(/"/g,'&quot;');
+function hsz(n){
+  if(typeof n!=='number'||!isFinite(n)) return null;
+  const u=['B','KB','MB','GB','TB']; let i=0,x=n;
+  while(x>=1024&&i<u.length-1){ x/=1024; i++; }
+  return (i?x.toFixed(1):x.toFixed(0))+' '+u[i];
+}
+function abtR(k,v,cls,copy){
+  const c='v'+(cls?' '+cls:'')+(copy?' cp':'');
+  return '<div class="abtr"><div class="k">'+esc(k)+'</div><div class="'+c+'"'+
+         (copy?' data-copy="'+escA(copy)+'"':'')+'>'+esc(v)+'</div></div>';
+}
+const ABT_FLAVOR={full:'full — Ghidra + imza DB gömülü', core:'core — harici Ghidra gerekir', dev:'dev — repodan çalışıyor'};
+function fillAbout(a){
+  const G=['abtEngine','abtRun','abtTools','abtPaths'];
+  if(!a){
+    $('abtVer').innerHTML='SÜRÜM <b>bilinmiyor</b>';
+    G.forEach(id=>$(id).innerHTML='');
+    $('abtEngine').innerHTML=abtR('Durum','sunucudan bilgi alınamadı','no');
+    $('abtNotes').innerHTML=''; return;
+  }
+  const b=a.build||{}, r=a.runtime||{}, g=a.ghidra||{}, j=a.jdk||{}, s=a.signatures||{},
+        p=a.paths||{}, st=a.stats||{};
+  $('abtVer').innerHTML='SÜRÜM <b>'+esc(a.version||'bilinmiyor')+'</b>'+
+    (b.commit?' · YAPI <b>'+esc(b.commit)+'</b>':'');
+  $('abtEngine').innerHTML=
+    abtR('Motor',(a.engine||'karadul')+' — deterministik, LLM\'siz çekirdek')+
+    abtR('Sürüm',a.version||'okunamadı',a.version?'':'no')+
+    abtR('Yapı (commit)',b.commit||'yok — pakete gömülmemiş',b.commit?'':'mut',b.commit||'')+
+    abtR('Yapı tarihi',b.built_at||'yok',b.built_at?'':'mut')+
+    abtR('Paket türü',ABT_FLAVOR[b.flavor]||b.flavor||'bilinmiyor',b.flavor?'':'mut');
+  $('abtRun').innerHTML=
+    abtR('Python',r.python||'okunamadı',r.python?'':'no')+
+    abtR('Platform',r.platform||'okunamadı',r.platform?'':'no');
+  $('abtTools').innerHTML=
+    abtR('Ghidra',g.present?('sürüm '+(g.version||'bilinmiyor')):'yok — analiz çalışmaz',
+         g.present?(g.version?'':'mut'):'no')+
+    (g.path?abtR('Ghidra yolu',g.path,'mut',g.path):'')+
+    abtR('JDK (Java)',j.present?(j.version||'sürüm okunamadı'):'yok — Ghidra başlamaz',
+         j.present?(j.version?'':'mut'):'no')+
+    abtR('İmza veritabanı',s.present?(hsz(s.size_bytes)||'boyut okunamadı'):'yok — imza eşleştirme devre dışı',
+         s.present?'':'no')+
+    (s.path?abtR('İmza DB yolu',s.path,'mut',s.path):'');
+  $('abtPaths').innerHTML=
+    abtR('Veri dizini',p.data_dir||'—',p.data_dir?'':'mut',p.data_dir||'')+
+    abtR('Analiz dizini',p.runs||'—',p.runs?'':'mut',p.runs||'')+
+    abtR('Günlük',p.log||'yok — henüz yazılmadı',p.log?'':'mut',p.log||'')+
+    abtR('Saklanan analiz',(typeof st.runs==='number')?(st.runs+' — en yenileri saklanır, eskiler silinir')
+         :'okunamadı',(typeof st.runs==='number')?'mut':'no');
+  $('abtNotes').innerHTML=(Array.isArray(a.notes)?a.notes:[]).map(n=>'<div>'+esc(n)+'</div>').join('');
+}
+function abtFallbackCopy(t){
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=t; ta.style.position='fixed'; ta.style.top='-999px'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    const ok=document.execCommand('copy'); ta.remove(); return ok;
+  }catch(e){ return false; }
+}
+function abtMsg(txt,ok){ $('abtMsg').className='msg'+(ok?' ok':''); $('abtMsg').textContent=txt; }
+function abtCopy(t){
+  const done=()=>abtMsg('✓ kopyalandı: '+t,true), fail=()=>abtMsg('⚠ kopyalanamadı: '+t,false);
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(t).then(done,()=>abtFallbackCopy(t)?done():fail());
+  else abtFallbackCopy(t)?done():fail();
+}
+async function openAbout(){
+  abtMsg('',false);
+  $('about').classList.add('on');                    // once ac (istek beklerken bos kalmasin)
+  let j=null;
+  try{ const r=await fetch('/api/about'); j=await r.json(); }catch(e){ j=null; }
+  fillAbout(j);
+}
+function closeAbout(){ $('about').classList.remove('on'); }
+$('about').onclick=e=>{ if(e.target===$('about')) closeAbout(); };
+$('about').addEventListener('click',e=>{
+  const el=e.target.closest('.v.cp'); if(el) abtCopy(el.dataset.copy||el.textContent.trim());
+});
+$('abtClose').onclick=closeAbout;
+$('setAbout').onclick=openAbout;                     // ayar başlığından ulaşım
+$('abtGear').onclick=()=>{ closeAbout(); openSettings(); };
+// TEK Escape kapisi: Hakkinda ustte -> once o kapanir, sonra Ayarlar.
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape') return;
+  if($('about').classList.contains('on')){ e.stopPropagation(); closeAbout(); return; }
+  if($('settings').classList.contains('on')){ e.stopPropagation(); closeSettings(); }
+});
+// SOZLESME m.3: native menu (app_window.py) SADECE bu iki globali cagirir.
+window.bwOpenAbout=openAbout;
+window.bwOpenSettings=openSettings;
 
 init();
 </script>

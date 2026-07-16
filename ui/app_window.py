@@ -15,12 +15,21 @@ import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
+import webbrowser
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SERVER = HERE / "server.py"
+
+# `git remote get-url origin` -> git@github.com:berketez/black-widow.git.
+# Sabit: paketlenmiş .app'te git yok, remote çalışma anında sorulamaz.
+# Ad "REPO_URL" değil: scripts/gen_mingw_headers_sigs.py'deki REPO_URL
+# mingw-w64 upstream klon adresi -- farklı kavram, karışmasın.
+PROJECT_REPO_URL = "https://github.com/berketez/black-widow"
+PROJECT_ISSUES_URL = f"{PROJECT_REPO_URL}/issues"
 
 
 def _free_port() -> int:
@@ -48,10 +57,281 @@ def _up() -> bool:
         return False
 
 
+def _data_dir() -> Path:
+    """server.py'nin _DATA_ROOT'u ile aynı kural (env yoksa repo kökü).
+
+    expanduser().resolve() ZORUNLU, süs değil: server.py:53 aynısını yapıyor.
+    Olmazsa KARADUL_DATA_DIR="~/x" verildiğinde server /Users/.../x'e yazarken
+    burası "~" adında GERÇEK bir klasör açardı (mkdir literal '~' oluşturur) ->
+    "Veri Klasörünü Göster" boş bir klasör, "Günlüğü Göster" hiçbir şey açardı.
+    TEK fark: server yazılamayan dizinde PROJECT_ROOT'a düşer (server.py:54-57);
+    o durumda launcher'ın mkdir'i zaten patlamış olur, buraya gelinmez.
+    """
+    return Path(os.environ.get("KARADUL_DATA_DIR") or HERE.parent).expanduser().resolve()
+
+
+# create_window dönüşü: menü eylemleri sayfaya JS'i bunun üzerinden gönderir.
+_window = None
+# Pencere kapandı: _patch_app_menu'nun bekleme döngüsü buna bakıp erken çıkar.
+_closed = threading.Event()
+
+
+def _js(call: str) -> None:
+    """Sayfaya JS gönder; başarısızlığı yut.
+
+    evaluate_js sayfa hazır olana kadar 20 sn bekler, sonra istisna atar
+    (window.py:_pywebview_ready_call). Menü eylemleri pywebview tarafından ayrı
+    bir thread'de çalıştırıldığı için (cocoa.py:MenuHandler) burada bloklamak
+    pencereyi dondurmaz; ama istisna thread'i çökertmesin.
+    """
+    try:
+        if _window is not None:
+            _window.evaluate_js(call)
+    except Exception:
+        pass
+
+
+def _open_path(path: Path) -> None:
+    """Finder/varsayılan uygulamada aç. `open` yoksa/başarısızsa sessiz geç."""
+    try:
+        subprocess.run(["open", str(path)], check=False)
+    except Exception:
+        pass
+
+
+def _act_about() -> None:
+    _js("window.bwOpenAbout && window.bwOpenAbout()")
+
+
+def _act_settings() -> None:
+    _js("window.bwOpenSettings && window.bwOpenSettings()")
+
+
+def _act_data_dir() -> None:
+    d = _data_dir()
+    try:
+        d.mkdir(parents=True, exist_ok=True)   # ilk açılışta henüz olmayabilir
+    except OSError:
+        pass
+    _open_path(d)
+
+
+def _act_log() -> None:
+    """ui.log (bu süreç yazar) yoksa app.log (.app launcher yazar), o da yoksa klasör.
+
+    Tıklandığında hiçbir şey yapmayan madde bırakmamak için zincir sonda
+    veri klasörüne düşer.
+    """
+    d = _data_dir()
+    for name in ("ui.log", "app.log"):
+        p = d / name
+        if p.exists():
+            _open_path(p)
+            return
+    _act_data_dir()
+
+
+def _open_url(url: str) -> None:
+    """Tarayıcıda aç; başarısızlığı yut.
+
+    Guard şart: menü eylemleri pywebview'in ayrı thread'inde koşuyor
+    (cocoa.py:MenuHandler) -> buradan sızan istisna sessizce app.log'a traceback
+    basar, kullanıcı tıklamanın neden bir şey yapmadığını anlamaz.
+    """
+    try:
+        webbrowser.open(url)
+    except Exception:
+        pass
+
+
+def _act_readme() -> None:
+    _open_url(PROJECT_REPO_URL)
+
+
+def _act_issues() -> None:
+    _open_url(PROJECT_ISSUES_URL)
+
+
+def _credits_file() -> Path | None:
+    """Bileşen/lisans özeti. Bundle: Resources/Credits.html (HERE=Resources/ui).
+
+    Dev: repo'daki paketleme kaynağı. Yoksa None -> menü maddesi hiç eklenmez
+    (tıklanınca hiçbir şey yapmayan madde bırakmayız).
+    """
+    for p in (HERE.parent / "Credits.html",                          # bundle
+              HERE.parent / "packaging" / "macos" / "app" / "Credits.html"):  # dev
+        if p.is_file():
+            return p
+    return None
+
+
+def _act_credits() -> None:
+    """Credits.html'i tarayıcıda aç.
+
+    NEDEN standart Cocoa "Hakkında" paneli DEĞİL: About maddesi zaten web
+    modalına bağlandı (_act_about), standart panel hiç açılmıyor. Ayrıca
+    NSBundle.mainBundle() = Resources/python/bin olduğundan Cocoa Credits'i
+    kendiliğinden bulamıyor (build_mac_app.sh'teki nota bak).
+    """
+    p = _credits_file()
+    if p is not None:
+        _open_url(p.resolve().as_uri())
+
+
+# Menü çubuğu Türkçeleştirme. Anahtarlar webview/localization.py'den (13 cocoa.menu.*).
+# KISIT: cocoa.py:_append_app_name about/hide/quit sonuna CFBundleName ekler ->
+# "Gizle Black Widow" gibi bozuk Türkçe üretirdi. Süreç .app olarak değil düz
+# script olarak başladığından mainBundle.infoDictionary() boş, o yüzden ek yapılmıyor.
+# KISIT: cocoa.menu.fullscreen etkisiz (cocoa.py:1141'de upstream TODO).
+LOCALIZATION = {
+    "cocoa.menu.about": "Hakkında",
+    "cocoa.menu.services": "Servisler",
+    "cocoa.menu.view": "Görünüm",
+    "cocoa.menu.edit": "Düzen",
+    "cocoa.menu.hide": "Gizle",
+    "cocoa.menu.hideOthers": "Diğerlerini Gizle",
+    "cocoa.menu.showAll": "Tümünü Göster",
+    "cocoa.menu.quit": "Çık",
+    "cocoa.menu.fullscreen": "Tam Ekran",
+    "cocoa.menu.cut": "Kes",
+    "cocoa.menu.copy": "Kopyala",
+    "cocoa.menu.paste": "Yapıştır",
+    "cocoa.menu.selectAll": "Tümünü Seç",
+    "global.quitConfirmation": "Çıkmak istediğinize emin misiniz?",
+    "global.ok": "Tamam",
+    "global.quit": "Çık",
+    "global.cancel": "Vazgeç",
+    "global.saveFile": "Dosyayı kaydet",
+}
+
+_APP_TITLE = "Black Widow"
+_ABOUT_TITLE = "Black Widow Hakkında"
+_SETTINGS_TITLE = "Ayarlar…"
+_ABOUT_ACTION_ID = "bw_about.menu"   # menu_handler.representedObject anahtarı
+
+
+def _build_menu() -> list:
+    """Menü ağacını kur (pencere açmadan çağrılabilir -- test edilebilirlik).
+
+    "__app__" başlıklı Menu, cocoa.py:_add_app_menu tarafından ayrıştırılıp
+    uygulama menüsüne About ile Services ARASINA yerleştirilir.
+    KISIT: MenuAction kısayol desteklemiyor (menu.py'de upstream TODO);
+    ⌘, _patch_app_menu içinde setKeyEquivalent_ ile ekleniyor.
+    """
+    from webview.menu import Menu, MenuAction, MenuSeparator
+
+    help_items = [
+        MenuAction("README (GitHub)", _act_readme),
+        MenuAction("Sorun Bildir (GitHub)", _act_issues),
+    ]
+    # Sadece dosya GERÇEKTEN varsa ekle: core build'de de kopyalanıyor ama
+    # olmayan bir dosya için ölü menü maddesi bırakmayalım.
+    if _credits_file() is not None:
+        help_items.append(MenuAction("Bileşenler ve Lisanslar…", _act_credits))
+    help_items += [
+        MenuSeparator(),
+        # About yaması tutmazsa modale ulaşan tek yol bu madde kalır.
+        MenuAction("Sürüm ve Bileşenler…", _act_about),
+    ]
+
+    return [
+        Menu("__app__", [
+            MenuAction(_SETTINGS_TITLE, _act_settings),
+            MenuSeparator(),
+            MenuAction("Veri Klasörünü Göster", _act_data_dir),
+            MenuAction("Günlüğü Göster", _act_log),
+        ]),
+        Menu("Yardım", help_items),
+    ]
+
+
+def _patch_app_menu() -> None:
+    """İki maddeyi yamala: standart About -> bizim modal, Ayarlar -> ⌘,.
+
+    Baştan sona guardlı: yama tutmazsa standart About paneli kalır ve uygulama
+    çökmez.
+
+    İki zamanlama tuzağı var:
+    1) start(func=...) thread'i menü HENÜZ kurulmadan başlar (menü
+       cocoa.py:first_show'da, app.run()'dan hemen önce kurulur).
+    2) İlk windowDidBecomeKey_ olayında current_menu (başlangıçta None) bizim
+       menümüzden farklı olduğu için menü BİR KEZ yeniden kurulur ve yama
+       silinir (cocoa.py:82-86).
+    İkisi de aşağıdaki "bir süre boyunca idempotent tekrar uygula" döngüsüyle
+    karşılanıyor. AppKit ana thread dışından güvenli olmadığından yama
+    callAfter ile ana thread'e gönderilir.
+    """
+    try:
+        import AppKit
+        from PyObjCTools import AppHelper
+        from webview.platforms import cocoa
+    except Exception:
+        return
+
+    def _apply() -> None:
+        """Yamayı uygula. Ana thread'de (callAfter) çalışır, idempotenttir."""
+        try:
+            main_menu = AppKit.NSApplication.sharedApplication().mainMenu()
+            if main_menu is None or main_menu.numberOfItems() == 0:
+                return          # menü henüz kurulmadı; sonraki turda yeniden dene
+
+            # Menü çubuğunda kalın uygulama adı: yamasız "python3.12" yazıyor.
+            # Sebep: bw_launch.sh .app'i değil doğrudan python'u exec ediyor ->
+            # mainBundle Resources/python/bin'i gösteriyor, CFBundleName okunmuyor.
+            # NSProcessInfo.setProcessName_ ETKİSİZ (ölçüldü); menü maddesinin
+            # başlığını yazmak çalışıyor.
+            main_menu.itemAtIndex_(0).setTitle_(_APP_TITLE)
+
+            app_menu = main_menu.itemAtIndex_(0).submenu()
+            if app_menu is None or app_menu.numberOfItems() == 0:
+                return
+
+            about = app_menu.itemAtIndex_(0)   # _add_app_menu About'u ilk ekler
+            if about.representedObject() != _ABOUT_ACTION_ID:
+                cocoa.menu_handler.register_action(_ABOUT_ACTION_ID, _act_about)
+                about.setTitle_(_ABOUT_TITLE)
+                about.setTarget_(cocoa.menu_handler)
+                about.setAction_("handleMenuAction:")
+                about.setRepresentedObject_(_ABOUT_ACTION_ID)
+
+            # NOT: keyEquivalent sonradan "," okunmayabilir -- AppKit menüdeki
+            # kısayolu aktif klavye düzenine göre yeniden eşler
+            # (allowsAutomaticKeyEquivalentLocalization, varsayılan açık).
+            # Türkçe-Q düzeninde ⌘, -> ⌘ö görünür; sistem uygulamalarıyla aynı
+            # davranış, hata değil. Guard bu yüzden "boş mu" diye bakıyor.
+            item = app_menu.itemWithTitle_(_SETTINGS_TITLE)
+            if item is not None and not item.keyEquivalent():
+                item.setKeyEquivalent_(",")
+                item.setKeyEquivalentModifierMask_(AppKit.NSCommandKeyMask)
+        except Exception:
+            pass            # yama tutmadı -> standart About paneli kalır
+
+    # _apply idempotent; erken çıkma YOK. Yeniden kurulum ile bizim ilk
+    # yamamızın sırası belirsiz (ikisi de app.run() sonrası aynı event loop'ta
+    # işlenir) -> "3 kez tuttu" görüp bırakırsak geç gelen kurulum yamayı
+    # silebilir. Sabit bir pencere boyunca tekrar uygulamak hem daha basit hem
+    # daha sağlam; kontrol ucuz ve arka planda.
+    # _closed.wait() KULLAN, time.sleep() DEĞİL: pywebview bu fonksiyonu
+    # daemon OLMAYAN bir thread'de koşturuyor (webview/__init__.py:294-301) ->
+    # CPython önce non-daemon thread'leri join eder, atexit'i SONRA çalıştırır
+    # (ölçüldü). sleep ile: pencere 1. saniyede kapatılırsa server+Ghidra'yı
+    # öldüren atexit 6. saniyeye kadar beklerdi; kullanıcı kapattığı uygulamanın
+    # Dock'ta takılı kaldığını görürdü. wait() pencere kapanınca hemen döner.
+    deadline = time.time() + 6
+    while time.time() < deadline:
+        try:
+            AppHelper.callAfter(_apply)
+        except Exception:
+            return
+        if _closed.wait(0.3):
+            return
+
+
 def main() -> int:
+    global _window
     proc: subprocess.Popen | None = None
     if not _up():
-        data_dir = Path(os.environ.get("KARADUL_DATA_DIR") or HERE.parent)
+        data_dir = _data_dir()
         try:
             data_dir.mkdir(parents=True, exist_ok=True)
             log = open(data_dir / "ui.log", "w")
@@ -98,7 +378,7 @@ def main() -> int:
 
     import webview  # pywebview -> macOS'ta WKWebView (pyobjc)
 
-    webview.create_window(
+    _window = webview.create_window(
         "Black Widow",
         URL,
         width=1280,
@@ -106,7 +386,22 @@ def main() -> int:
         min_size=(960, 640),
         background_color="#06080d",   # Black Widow koyu tema (beyaz flash olmasın)
     )
-    webview.start()                   # Cocoa event loop -- pencere kapanana kadar bloklar
+    # Menü yama döngüsü pencere kapanınca beklemeyi bıraksın (bkz. _patch_app_menu).
+    # Guardlı: bu event olmasa da işleyiş aynı, sadece kapanış 6 sn'ye kadar gecikir.
+    try:
+        _window.events.closed += _closed.set
+    except Exception:
+        pass
+    # menü/localization kurulamazsa pencere yine de açılsın (menüsüz > açılmayan).
+    try:
+        menu = _build_menu()
+    except Exception:
+        menu = []
+    webview.start(                    # Cocoa event loop -- pencere kapanana kadar bloklar
+        func=_patch_app_menu,
+        menu=menu,
+        localization=LOCALIZATION,
+    )
     return 0                          # temizlik atexit ile (finally atlanabiliyor)
 
 

@@ -8,8 +8,23 @@
   <key>CFBundleExecutable</key><string>BlackWidow</string>
   <key>CFBundleIconFile</key><string>Karadul</string>
   <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <!-- Arayüz Türkçe: bundle'ın varsayılan dili de Türkçe olmalı. -->
+  <key>CFBundleDevelopmentRegion</key><string>tr</string>
+  <!-- DİKKAT: aşağıdaki üç sürüm/telif alanını build_mac_app.sh PlistBuddy ile
+       pyproject.toml'dan EZER (tek kaynak = pyproject). Buradaki değerler yalnızca
+       betik çalıştırılmadan plist tek başına okunursa geçerli olan yedeklerdir. -->
   <key>CFBundleVersion</key><string>1.20.0</string>
   <key>CFBundleShortVersionString</key><string>1.20.0</string>
+  <!-- Eski (legacy) Get Info dizesi: modern Finder bunun yerine
+       CFBundleShortVersionString + NSHumanReadableCopyright gösterir. Yine de
+       geçerli bir anahtar ve bazı araçlar (ör. dosya denetçileri) hâlâ okur. -->
+  <key>CFBundleGetInfoString</key><string>1.20.0, © 2026 Berke Tezgöçen</string>
+  <!-- Finder "Bilgi Al" panelinde ve standart Hakkında panelinde görünür.
+       Bu anahtar YOKTU: Hakkında panelinin telifsiz görünmesinin sebebi buydu. -->
+  <key>NSHumanReadableCopyright</key><string>© 2026 Berke Tezgöçen · MIT Lisansı</string>
+  <!-- Launchpad/mağaza sınıflandırması; geliştirici aracı. -->
+  <key>LSApplicationCategoryType</key><string>public.app-category.developer-tools</string>
   <key>LSMinimumSystemVersion</key><string>12.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <!-- WKWebView'in http://127.0.0.1 (yerel UI server) yüklemesine izin ver -->

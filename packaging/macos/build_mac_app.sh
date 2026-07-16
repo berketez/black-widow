@@ -42,28 +42,43 @@ LMDB="$HOME/.karadul/signatures.lmdb"
 FULL=0; [ "${1:-}" = "--full" ] && FULL=1
 mkdir -p "$DIST"
 
-echo "[1/8] iskelet + arm64 stub (bash değil -> mimari/çift-tık sorunu yok)"
+echo "[1/9] iskelet + arm64 stub (bash değil -> mimari/çift-tık sorunu yok)"
 rm -rf "$APP"; mkdir -p "$MACOS" "$RES"
 cp "$HERE/app/Info.plist" "$APP/Contents/Info.plist"
 # Sürüm tek kaynaktan (pyproject.toml); plist elle tutulunca kayıyordu.
 # CFBundleVersion sayısal olmak zorunda -> "1.20.0-pre" -> "1.20.0".
-VER="$(python3 -c "import tomllib;print(tomllib.load(open('$REPO/pyproject.toml','rb'))['project']['version'])" 2>/dev/null || echo "")"
+# tomllib 3.11+ ister; PATH'teki python3 daha eskiyse SESSİZCE boş dönüyordu
+# (sürüm yazılmaz, kimse fark etmez) -> tomllib yoksa grep'e düş.
+VER="$(python3 -c "import tomllib;print(tomllib.load(open('$REPO/pyproject.toml','rb'))['project']['version'])" 2>/dev/null || true)"
+[ -n "$VER" ] || VER="$(grep -m1 '^version *= *"' "$REPO/pyproject.toml" 2>/dev/null | cut -d'"' -f2 || true)"
 if [ -n "$VER" ]; then
   /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${VER%%-*}" \
-                          -c "Set :CFBundleShortVersionString $VER" "$APP/Contents/Info.plist" >/dev/null
+                          -c "Set :CFBundleShortVersionString $VER" \
+                          -c "Set :CFBundleGetInfoString $VER, © 2026 Berke Tezgöçen" \
+                          "$APP/Contents/Info.plist" >/dev/null
   echo "    sürüm: $VER"
+else
+  echo "    !! UYARI: pyproject sürümü okunamadı -> plist'teki yedek sürüm kalıyor"
 fi
 cp "$HERE/app/bw_launch.sh" "$MACOS/bw_launch.sh"; chmod +x "$MACOS/bw_launch.sh"
 clang -arch arm64 -O2 -o "$MACOS/BlackWidow" "$HERE/app/bw_stub.c"
 cp "$HERE/icon/Karadul.icns" "$RES/Karadul.icns"
+# Bileşen/lisans özeti. Cocoa bunu KENDİLİĞİNDEN bulamaz: süreç .app olarak
+# değil, bw_launch.sh içinde düz script olarak başladığı için
+# NSBundle.mainBundle() = .../Resources/python/bin -> pathForResource("Credits")
+# None döner (ölçüldü). Standart Cocoa "Hakkında" paneli zaten hiç açılmıyor:
+# app_window.py o menü maddesini web modalına bağlıyor. Bu yüzden dosyayı
+# app_window.py:_act_credits "Yardım > Bileşenler ve Lisanslar…" maddesinden
+# YOLDAN (Resources/Credits.html) açar. Buradaki kopya onun beklediği yerdir.
+cp "$HERE/app/Credits.html" "$RES/Credits.html"
 
-echo "[2/8] relocatable Python (pbs cache, indirme yok)"
+echo "[2/9] relocatable Python (pbs cache, indirme yok)"
 [ -f "$PBS" ] || { echo "!! pbs yok: $PBS (KARADUL_PBS ile ver)"; exit 1; }
 tar xzf "$PBS" -C "$RES"                 # 'python/' kökünü açar
 PY="$RES/python/bin/python3.12"
 echo "    $("$PY" --version)"
 
-echo "[3/8] karadul + deps (pip -> bundle python site-packages)"
+echo "[3/9] karadul + deps (pip -> bundle python site-packages)"
 # Yavaş/kesintili ağa dayanıklılık: uzun timeout + çok deneme, ilerleme çubuğu kapalı (log şişmesin).
 PIP_NET=(--retries 10 --timeout 120 --progress-bar off)
 "$PY" -m pip install --no-input --disable-pip-version-check -q "${PIP_NET[@]}" --upgrade pip 2>/dev/null || true
@@ -74,18 +89,18 @@ PIP_NET=(--retries 10 --timeout 120 --progress-bar off)
 SP="$RES/python/lib/python3.12/site-packages"
 [ -d "$SP/webview/js" ] || { echo "!! webview/js eksik (pencere çöker)"; exit 1; }
 
-echo "[4/8] ui/"
+echo "[4/9] ui/"
 rm -rf "$RES/ui"; /usr/bin/rsync -a --exclude='__pycache__' "$REPO/ui/" "$RES/ui/"
 
 if [ $FULL = 1 ]; then
-  echo "[5/8] Ghidra (yerel kopya)"
+  echo "[5/9] Ghidra (yerel kopya)"
   [ -d "$GH" ] || { echo "!! Ghidra yok: $GH (GHIDRA_INSTALL_DIR ile ver)"; exit 1; }
   echo "    kaynak: $GH"
   echo "    sürüm : $(grep -m1 '^application.version=' "$GH/Ghidra/application.properties" 2>/dev/null | cut -d= -f2)"
   cp -R "$GH" "$RES/ghidra"
-  echo "[6/8] JDK 21 (yerel Homebrew, indirme yok)"
+  echo "[6/9] JDK 21 (yerel Homebrew, indirme yok)"
   [ -d "$RES/jdk" ] || cp -R "$JDK_SRC" "$RES/jdk"
-  echo "[7/8] signatures.lmdb (~2GB)"
+  echo "[7/9] signatures.lmdb (~2GB)"
   # Sessiz yutma YOK: yarım kopyalanmış DB ile "DONE" demek, app'i kötü
   # isimlendirmeyle ship etmek demek. Kaynak yoksa app yine kurulur ama uyarır.
   if [ -e "$LMDB" ]; then
@@ -95,10 +110,40 @@ if [ $FULL = 1 ]; then
     echo "    !! UYARI: $LMDB yok -> app imza DB'siz gidiyor (isimlendirme zayıflar)"
   fi
 else
-  echo "[5-7/8] ATLANDI (CORE build; analiz için: build_mac_app.sh --full)"
+  echo "[5-7/9] ATLANDI (CORE build; analiz için: build_mac_app.sh --full)"
 fi
 
-echo "[8/8] bytecode + ad-hoc codesign"
+echo "[8/9] build-info.json (Hakkında paneli / GET /api/about bunu okur)"
+# codesign'DAN ÖNCE yazılmalı: imzadan SONRA Resources'a dosya eklemek mührü kırar
+# -> macOS "damaged" der. (Aynı tuzağın .pyc hâli için [9/9] notuna bak.)
+# server.py bunu PROJECT_ROOT/build-info.json yolundan okur; bundle'da
+# PROJECT_ROOT = Contents/Resources. Dosya yoksa server dev fallback'ine düşer.
+BI_COMMIT="$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || true)"
+[ -n "$BI_COMMIT" ] || echo "    !! UYARI: git commit okunamadı (repo git değil?) -> commit: null"
+BI_GHIDRA=""
+if [ $FULL = 1 ]; then
+  # Kaynak ağaçtan ($GH) değil, GERÇEKTEN PAKETLENEN kopyadan oku: ikisi ayrışırsa
+  # build-info yalan söylemesin.
+  BI_GHIDRA="$(grep -m1 '^application.version=' "$RES/ghidra/Ghidra/application.properties" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]' || true)"
+  [ -n "$BI_GHIDRA" ] || echo "    !! UYARI: Ghidra sürümü okunamadı -> ghidra_version: null"
+fi
+# Bundle python'ı kullan (3.12 garanti); ortamdaki python3'ün sürümüne bağlanma.
+"$PY" - "$RES/build-info.json" "$VER" "$BI_COMMIT" \
+        "$([ $FULL = 1 ] && echo full || echo core)" "$BI_GHIDRA" <<'PYEOF'
+import datetime, json, sys
+out, ver, commit, flavor, ghidra = sys.argv[1:6]
+# Okunamayan alan UYDURULMAZ -> null. (Sözleşme: /api/about alanları null olabilir.)
+json.dump({
+    "version": ver or None,
+    "commit": commit or None,
+    "built_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "flavor": flavor,
+    "ghidra_version": ghidra or None,
+}, open(out, "w"), indent=2, ensure_ascii=False)
+PYEOF
+echo "    $(tr -d '\n ' < "$RES/build-info.json")"
+
+echo "[9/9] bytecode + ad-hoc codesign"
 # stdlib DAHİL derle: eksik .pyc kalırsa Python onları ÇALIŞMA ZAMANINDA bundle'a
 # yazar -> imza mührü kırılır -> macOS "damaged" der. (bw_launch.sh ayrıca
 # PYTHONDONTWRITEBYTECODE=1 ile ikinci emniyet kemerini takar.)
