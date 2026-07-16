@@ -2406,6 +2406,37 @@ class ReconstructionStage(Stage):
                     return d
         return None
 
+    def _seed_recovery_pre_names(
+        self,
+        extracted_names: dict,
+        static_dir: "Path | None",
+        context: "PipelineContext",
+        stats: dict,
+    ) -> dict:
+        """Deterministik kurtarma isimlerini pre_names kanalina (extracted_names)
+        enjekte eder ve manuel-override haritasini dondurur.
+
+        Oncelik sirasi (TEK tanim -- CLAUDE.md §11, dagitik if yok):
+          analist override > main (loader-kesin) > gnulib fingerprint (upstream,
+          GT-leakage yok) > ELF/CRT boilerplate. Her kurtarma "onceki isim varsa
+          EZME" guard'i tasir; bu yuzden sira = oncelik ve iki kez cagri idempotent.
+
+        STEP REGISTRY TUZAGI (kok sebep, 2026-07-16): Bu tohum, Phase-2
+        ``feedback_loop`` naming step'inden ONCE calismali. Aksi halde c_namer
+        FUN_xxx'i davranissal sablonla (ol. ``version_output_version``,
+        ``memory_exhausted``) yeniden adlandirir; recovery main'i sonradan
+        extracted_names'e yazsa da AhoReplacer dosyada artik ``FUN_xxx`` literalini
+        BULAMAZ -> main/gnulib cikti dosyasina ULASMAZ. Bu metot iki noktada
+        cagrilir (Phase-2 oncesi + ortak birlesme noktasi); guard'lar sayesinde
+        ikinci cagri no-op olur.
+        """
+        if not isinstance(extracted_names, dict):
+            return {}
+        self._recover_main_from_entry(extracted_names, static_dir, stats)
+        self._recover_gnulib_from_fingerprints(extracted_names, static_dir, stats)
+        self._recover_elf_boilerplate(extracted_names, static_dir, stats)
+        return self._apply_manual_overrides(extracted_names, context, stats)
+
     def _recover_main_from_entry(
         self, extracted_names: dict, static_dir: "Path | None", stats: dict
     ) -> None:
@@ -2950,6 +2981,19 @@ class ReconstructionStage(Stage):
             # v1.9.2: naming_result init (dir() anti-pattern fix)
             naming_result = None
 
+            # KOK SEBEP FIX (2026-07-16): main/gnulib/boilerplate/override
+            # tohumunu Phase-2 feedback_loop naming step'inden ONCE extracted_names'e
+            # enjekte et. feedback_loop step'i pre_names'i buradan (seed_artifacts ->
+            # a["extracted_names"]) okur; tohum eksikse c_namer FUN_xxx'i davranissal
+            # sablonla (version_output_version, memory_exhausted) yeniden adlandirir
+            # ve main/gnulib bir daha kurtarilamaz (AhoReplacer FUN_xxx literalini
+            # kaybeder). extracted_names, _a["extracted_names"] ile ayni dict objesi;
+            # yerinde mutasyon seed'e yansir. Idempotent -> ortak koddaki tekrar no-op.
+            if isinstance(extracted_names, dict):
+                self._seed_recovery_pre_names(
+                    extracted_names, static_dir, context, stats,
+                )
+
             # v1.10.0 M1 T3.4: Phase 2 — feedback_loop + struct_recovery
             # Phase 1 artifact'larini seed olarak gecir (naming_result dahil
             # degil cunku feedback_loop uretir). feedback_loop step'inin
@@ -3059,27 +3103,17 @@ class ReconstructionStage(Stage):
             calibrated_matches = rc.calibrated_matches
             _capa_capabilities = rc.capa_capabilities
 
-        # FIX-1 (2026-07-06): main'i __libc_start_main ilk argumanindan kurtar.
-        # Step-registry ve legacy yolunun BIRLESME noktasi -- extracted_names iki
-        # branch'te de baglanmis. analyze_and_rename'e pre_names olarak gitmeden
-        # once main enjekte edilir (davranissal namer main'i yanlis isimliyordu).
+        # FIX-1/2/3/5 (2026-07-06 .. 2026-07-16): main + gnulib + ELF boilerplate
+        # + analist override'lari pre_names kanalina enjekte et. Oncelik sirasi ve
+        # step-registry tuzagi _seed_recovery_pre_names icinde TEK yerde. Step
+        # registry yolunda bu ayni tohum Phase-2 ONCESI de calisti (main/gnulib'in
+        # feedback_loop naming step'inde kaybolmamasi icin); guard'lar sayesinde bu
+        # ikinci cagri no-op'tur. Legacy yolda ilk ve tek cagridir.
         if not isinstance(extracted_names, dict):
             extracted_names = {}
-        self._recover_main_from_entry(extracted_names, static_dir, stats)
-        # FIX-2 (2026-07-08): gnulib kutuphane fonksiyonlarini string-anchor
-        # fingerprint ile kurtar (byte-imza backbone coreutils'te olu). Ayni
-        # merge seam, ayni pre_names mekanizmasi; main'den SONRA (main korunur).
-        self._recover_gnulib_from_fingerprints(extracted_names, static_dir, stats)
-        # FIX-3 (2026-07-12): ELF/CRT boilerplate stub'larini call-shape ile
-        # kurtar (register_tm_clones, _start, __do_global_dtors_aux ...). Ayni
-        # unique-in-binary + pre_names mekanizmasi; onceki isimler korunur.
-        self._recover_elf_boilerplate(extracted_names, static_dir, stats)
-        # FIX-5 (2026-07-14): Analistin elle verdigi isimler (kalici override
-        # deposu) -- MUTLAK oncelik. Iki asama: (1) burada extracted_names tohumlanir;
-        # (2) dondurulen map merge SONRASI final_naming_map'e kosulsuz zorlanir
-        # (bindiff/refdiff clobber + Bayesian merge'i bypass -- reviewer MAJOR-1).
-        # Hash'ten auto-discover; static_dir'e muhtac degil, context'ten file_hash yeter.
-        _manual_overrides_map = self._apply_manual_overrides(extracted_names, context, stats)
+        _manual_overrides_map = self._seed_recovery_pre_names(
+            extracted_names, static_dir, context, stats,
+        )
 
         # 1.9. Assembly Analysis -- Ghidra decompiler fallback
         # v1.10.0 M1 T3.5: Step registry modunda bu is asm_analysis step'i
