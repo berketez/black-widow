@@ -120,7 +120,7 @@ class SARIFReporter:
         Returns:
             Kaydedilen SARIF dosyasinin yolu.
         """
-        sarif = self._build_sarif(result)
+        sarif = self._build_sarif(result, workspace)
         content = json.dumps(sarif, indent=2, ensure_ascii=False, default=str)
         return workspace.save_artifact("reports", "report.sarif.json", content)
 
@@ -128,17 +128,20 @@ class SARIFReporter:
     # Ana SARIF yapisi
     # ------------------------------------------------------------------
 
-    def _build_sarif(self, result: PipelineResult) -> dict[str, Any]:
+    def _build_sarif(
+        self, result: PipelineResult, workspace: Workspace
+    ) -> dict[str, Any]:
         """Tam SARIF 2.1.0 yapisini olustur.
 
         Args:
             result: Pipeline calisma sonucu.
+            workspace: static/*.json artifact'larini okumak icin.
 
         Returns:
             SARIF 2.1.0 uyumlu dict.
         """
         now = datetime.now(tz=timezone.utc).isoformat()
-        results = self._build_results(result)
+        results = self._build_results(result, workspace)
         artifacts = [self._build_artifact(result)]
 
         return {
@@ -212,16 +215,20 @@ class SARIFReporter:
     # Sonuclar (results)
     # ------------------------------------------------------------------
 
-    def _build_results(self, result: PipelineResult) -> list[dict[str, Any]]:
+    def _build_results(
+        self, result: PipelineResult, workspace: Workspace
+    ) -> list[dict[str, Any]]:
         """Pipeline sonuclarindan SARIF result listesi olustur.
 
-        Uc kaynaktan result toplanir:
+        Kaynaklar:
         1. Algorithms (crypto tespit) -> KRDL001
-        2. YARA matches -> KRDL003/KRDL004/KRDL005
+        2. YARA matches / detected_tech -> KRDL003/KRDL004/KRDL005
         3. Naming stats (dusuk guvenilirlik) -> KRDL002
+        4. packer_fingerprints.json (asil UPX/protector tespiti) -> KRDL004
 
         Args:
             result: Pipeline calisma sonucu.
+            workspace: static/*.json artifact'larini okumak icin.
 
         Returns:
             SARIF result dict listesi.
@@ -237,6 +244,15 @@ class SARIFReporter:
 
         # 3. Naming confidence uyarilari (KRDL002)
         results.extend(self._extract_naming_results(result, target_name))
+
+        # 4. Packer fingerprint artifact'i (KRDL004) — asil UPX tespiti.
+        #    KISIT: eskiden SARIF sadece detected_tech yolundan besleniyordu;
+        #    packer_fingerprints.json (gercek detector ciktisi) hic gorulmuyordu.
+        results.extend(
+            self._extract_packer_fingerprint_results(
+                workspace, target_name
+            )
+        )
 
         return results
 
@@ -425,6 +441,94 @@ class SARIFReporter:
                         "low_confidence_count": low_confidence_count,
                     },
                 ))
+
+        return results
+
+    def _extract_packer_fingerprint_results(
+        self, workspace: Workspace, target_name: str
+    ) -> list[dict[str, Any]]:
+        """packer_fingerprints.json -> KRDL004 result'lari.
+
+        KISIT: Bu, karadul'un ASIL packer tespitidir (packer_fingerprint step).
+        Eski SARIF kodu bu artifact'i hic okumuyordu; sadece stats'taki
+        detected_tech'ten besleniyordu -> gercek UPX tespiti SARIF'e ulasmiyordu.
+
+        Sema: {"fingerprints": [{packer_name, version, confidence,
+               evidence(list[str]), category, layers_matched}]}.
+        Eski sentetik "packers"/"technique" da okunur (geriye donuk uyum).
+        confidence -> SARIF level: >=0.7 error, >=0.4 warning, else note.
+        """
+        results: list[dict[str, Any]] = []
+
+        data = workspace.load_json("static", "packer_fingerprints")
+        if not data:
+            return results
+
+        fingerprints = (
+            data.get("fingerprints")
+            or data.get("packers")
+            or data.get("findings")
+            or []
+        )
+        if not isinstance(fingerprints, list):
+            return results
+
+        for fp in fingerprints:
+            if not isinstance(fp, dict):
+                continue
+            name = str(
+                fp.get("packer_name")
+                or fp.get("technique")
+                or fp.get("name")
+                or "unknown"
+            )
+            version = fp.get("version")
+            try:
+                conf = float(fp.get("confidence", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                conf = 0.0
+            category = fp.get("category", "packer")
+            layers = fp.get("layers_matched", 0)
+
+            ev_raw = fp.get("evidence", "")
+            if isinstance(ev_raw, (list, tuple)):
+                ev_text = "; ".join(str(e) for e in ev_raw)
+            else:
+                ev_text = str(ev_raw)
+
+            # confidence -> level (note/warning/error)
+            if conf >= 0.7:
+                level = "error"
+            elif conf >= 0.4:
+                level = "warning"
+            else:
+                level = "note"
+
+            ver_txt = f" {version}" if version else ""
+            msg = (
+                f"Paketlenmis binary tespit edildi: {name}{ver_txt} "
+                f"(guven {conf:.2f}, {layers} katman). Decompile yalnizca "
+                "acici stub'i gosterir; gercek kod sikistirilmis. Once paketi "
+                "acin (orn. 'upx -d'), sonra yeniden analiz edin."
+            )
+            if ev_text:
+                msg += f" Kanit: {ev_text[:200]}"
+
+            results.append(self._make_result(
+                rule_id="KRDL004",
+                level=level,
+                message=msg,
+                target_name=target_name,
+                properties={
+                    "packer_name": name,
+                    "version": version,
+                    "confidence": conf,
+                    "category": category,
+                    "layers_matched": layers,
+                    "evidence": ev_raw,
+                    "source": "packer_fingerprints",
+                },
+            ))
 
         return results
 

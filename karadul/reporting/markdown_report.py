@@ -79,7 +79,7 @@ class MarkdownReporter:
         lines.extend(self._section_anti_debug(workspace))
 
         # v1.13 Dalga 1: Detected Packer (workspace static/packer_fingerprints.json)
-        lines.extend(self._section_packer(workspace))
+        lines.extend(self._section_packer(result, workspace))
 
         # v1.13 Dalga 1: Malware IOC (Sliver / Cobalt Strike sembol match)
         lines.extend(self._section_malware_ioc(result, workspace))
@@ -401,16 +401,22 @@ class MarkdownReporter:
     def _section_anti_debug(self, workspace: Workspace) -> list[str]:
         """Anti-Debug findings bolumu (static/anti_debug_findings.json).
 
-        JSON formati (anti_debug.py step uretir):
+        KISIT: anti_debug.py step'in yazdigi GERCEK sema top-level "score"
+        ICERMEZ; skor ``summary.anti_debug_score`` altindadir. Eskiden burada
+        ``data.get("score")`` okunuyordu -> her zaman 0.0 -> severity yanlis
+        (hep INFO). Findings anahtari dogru oldugu icin tablo cikiyordu ama
+        severity yaniltiyordu.
+
+        Gercek sema:
           {
-            "score": float (0..1),
-            "findings": [
-              {"technique": str, "category": str, "confidence": float,
-               "evidence": str},
-              ...
-            ]
+            "total_findings": int,
+            "findings": [{technique, category, confidence, evidence(str),
+                          platform, description}],
+            "summary": {"anti_debug_score": float, "max_confidence": float, ...}
           }
-        Dosya yoksa veya parse edilemezse bolum atlanir (hata atilmaz).
+        Eski sentetik testler top-level "score" kullanir; geriye donuk uyum
+        icin oncelik: top-level score -> summary.anti_debug_score ->
+        summary.max_confidence -> findings max(confidence).
         """
         data = workspace.load_json("static", "anti_debug_findings")
         if not data:
@@ -420,7 +426,11 @@ class MarkdownReporter:
         if not findings:
             return []
 
-        score = float(data.get("score", 0.0) or 0.0)
+        score = self._resolve_score(
+            data,
+            findings,
+            summary_key="anti_debug_score",
+        )
         icon, severity = self._severity_icon(score)
 
         lines = [
@@ -449,30 +459,144 @@ class MarkdownReporter:
         lines.append("")
         return lines
 
-    def _section_packer(self, workspace: Workspace) -> list[str]:
+    @staticmethod
+    def _resolve_score(
+        data: dict,
+        items: list[dict],
+        summary_key: str,
+    ) -> float:
+        """Severity skorunu coz.
+
+        KISIT: detector step'lerinin yazdigi artifact'ta top-level "score"
+        genelde YOK. Oncelik sirasi:
+          1. top-level "score" (eski sentetik test semasi)
+          2. summary[summary_key] (anti_debug_score gibi)
+          3. summary.max_confidence
+          4. items icindeki en yuksek confidence
+        """
+        raw = data.get("score")
+        if raw is not None:
+            try:
+                return float(raw)
+            except (TypeError, ValueError):
+                pass
+        summary = data.get("summary")
+        if isinstance(summary, dict):
+            for key in (summary_key, "max_confidence"):
+                val = summary.get(key)
+                if val is not None:
+                    try:
+                        return float(val)
+                    except (TypeError, ValueError):
+                        pass
+        confidences: list[float] = []
+        for it in items:
+            try:
+                confidences.append(float(it.get("confidence", 0.0)))
+            except (TypeError, ValueError):
+                pass
+        return max(confidences) if confidences else 0.0
+
+    @staticmethod
+    def _packer_warning(
+        result: PipelineResult,
+        top_name: str,
+        top_version: Any,
+        score: float,
+    ) -> list[str]:
+        """Dürüst uyari blogu — paketli binary'de decompile yaniltir.
+
+        Berke'nin sessiz-basarisizlik yasagi: paketli binary tespit edilince
+        kullanici, decompile'in YALNIZCA acici (unpacker) stub'ini gosterdigini
+        acikca gormeli. Aksi halde "neden 7 fonksiyon / 0 isim" gorup karadul'u
+        bozuk sanir. Sürüm + güven + acma komutu gorunur.
+        """
+        name_l = top_name.lower()
+        if "upx" in name_l:
+            unpack_cmd = "upx -d <dosya>"
+        else:
+            unpack_cmd = "ilgili acma araci ile paketi acin (unpack)"
+        ver = f" {top_version}" if top_version else ""
+
+        # Fonksiyon sayisi — "neden bu kadar az fonksiyon" baglamini ver
+        func_count = None
+        if "static" in result.stages:
+            st = result.stages["static"].stats
+            func_count = st.get(
+                "functions_found",
+                st.get("ghidra_function_count", st.get("functions")),
+            )
+
+        lines = [
+            f"> ⚠️ **Bu binary paketlenmiş — {top_name}{ver} "
+            f"(güven {score:.2f}).**",
+            ">",
+        ]
+        if func_count is not None:
+            lines.append(
+                f"> Decompile YALNIZCA açıcı (unpacker) stub'ını gösterir. Bu "
+                f"koşuda görülen **{func_count} fonksiyon** açıcı stub'a aittir "
+                f"— gerçek program kodu DEĞİL. Gerçek kod sıkıştırılmış/şifreli "
+                f"halde; çalışma anında bellekte açılıyor."
+            )
+        else:
+            lines.append(
+                "> Decompile YALNIZCA açıcı (unpacker) stub'ını gösterir; "
+                "gerçek program kodu sıkıştırılmış/şifreli halde. Statik "
+                "analiz sınırlıdır."
+            )
+        lines.append(">")
+        lines.append(
+            f"> Gerçek analiz için önce paketi açın: `{unpack_cmd}`, sonra "
+            f"açılmış binary'i yeniden analiz edin."
+        )
+        lines.append("")
+        return lines
+
+    def _section_packer(
+        self, result: PipelineResult, workspace: Workspace
+    ) -> list[str]:
         """Detected Packer bolumu (static/packer_fingerprints.json).
 
-        JSON formati (packer_fingerprint.py step uretir):
+        KISIT: packer_fingerprint.py step'in yazdigi GERCEK sema:
           {
-            "score": float (0..1),
-            "packers": [
-              {"technique": str, "category": str, "confidence": float,
-               "evidence": str},
+            "total_fingerprints": N,
+            "fingerprints": [
+              {packer_name, version, confidence, evidence(list[str]),
+               category, platform, layers_matched},
               ...
             ]
           }
-        Dosya yoksa veya bos packers ise bolum atlanir.
+        Top-level "score" YOK -> max(confidence)'tan turetilir. Eski sentetik
+        testler "packers"/"technique"/"score" kullanir; geriye donuk uyum icin
+        her iki anahtar da okunur. Bu uyusmazlik yuzunden gercek UPX tespiti
+        rapora hic ulasmiyordu (bolum bostu).
         """
         data = workspace.load_json("static", "packer_fingerprints")
         if not data:
             return []
 
-        packers = data.get("packers") or data.get("findings") or []
+        packers = (
+            data.get("fingerprints")
+            or data.get("packers")
+            or data.get("findings")
+            or []
+        )
         if not packers:
             return []
 
-        score = float(data.get("score", 0.0) or 0.0)
+        score = self._resolve_score(data, packers, summary_key="score")
         icon, severity = self._severity_icon(score)
+
+        # detect() confidence DESC sort -> ilk eleman en yuksek guven
+        top = packers[0] if packers else {}
+        top_name = str(
+            top.get("packer_name")
+            or top.get("technique")
+            or top.get("name")
+            or "?"
+        )
+        top_version = top.get("version")
 
         lines = [
             f"## Detected Packer {icon}",
@@ -480,21 +604,44 @@ class MarkdownReporter:
             f"- **Severity:** {severity} (score: {score:.2f})",
             f"- **Packers detected:** {len(packers)}",
             "",
-            "| Technique | Category | Confidence | Evidence |",
-            "|-----------|----------|------------|----------|",
         ]
 
+        # Dürüst uyari — paketli binary decompile'i yaniltir
+        lines.extend(
+            self._packer_warning(result, top_name, top_version, score)
+        )
+
+        lines.extend([
+            "| Packer | Version | Category | Confidence | Layers | Evidence |",
+            "|--------|---------|----------|------------|--------|----------|",
+        ])
+
         for p in packers:
-            tech = str(p.get("technique", p.get("name", "?")))
+            name = str(
+                p.get("packer_name")
+                or p.get("technique")
+                or p.get("name")
+                or "?"
+            )
+            version = p.get("version")
+            version_str = str(version) if version else "-"
             cat = str(p.get("category", "packer"))
             conf = p.get("confidence", 0.0)
             try:
                 conf_str = f"{float(conf):.2f}"
             except (TypeError, ValueError):
                 conf_str = str(conf)
-            ev = str(p.get("evidence", ""))
+            layers = p.get("layers_matched", "")
+            ev_raw = p.get("evidence", "")
+            if isinstance(ev_raw, (list, tuple)):
+                ev = "; ".join(str(e) for e in ev_raw)
+            else:
+                ev = str(ev_raw)
             ev = ev.replace("|", "\\|").replace("\n", " ")[:120]
-            lines.append(f"| {tech} | {cat} | {conf_str} | {ev} |")
+            lines.append(
+                f"| {name} | {version_str} | {cat} | {conf_str} "
+                f"| {layers} | {ev} |"
+            )
 
         lines.append("")
         return lines

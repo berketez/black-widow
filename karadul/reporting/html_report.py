@@ -158,7 +158,7 @@ class HTMLReporter:
 
         # v1.13 Dalga 1: Anti-Debug + Packer + Malware IOC sections
         parts.append(self._anti_debug_section(workspace))
-        parts.append(self._packer_section(workspace))
+        parts.append(self._packer_section(result, workspace))
         parts.append(self._malware_ioc_section(result, workspace))
 
         # Architecture section (Binary Intelligence)
@@ -308,6 +308,41 @@ class HTMLReporter:
             return ("medium", "MEDIUM", "#d29922")
         return ("low", "INFO", "#8b949e")
 
+    @staticmethod
+    def _resolve_score(
+        data: dict, items: list[dict], summary_key: str
+    ) -> float:
+        """Severity skorunu coz (markdown_report ile ayni oncelik).
+
+        KISIT: detector artifact'lari top-level "score" ICERMEZ. Oncelik:
+          1. top-level "score" (eski sentetik test semasi)
+          2. summary[summary_key] (anti_debug_score / score)
+          3. summary.max_confidence
+          4. items icindeki en yuksek confidence
+        """
+        raw = data.get("score")
+        if raw is not None:
+            try:
+                return float(raw)
+            except (TypeError, ValueError):
+                pass
+        summary = data.get("summary")
+        if isinstance(summary, dict):
+            for key in (summary_key, "max_confidence"):
+                val = summary.get(key)
+                if val is not None:
+                    try:
+                        return float(val)
+                    except (TypeError, ValueError):
+                        pass
+        confidences: list[float] = []
+        for it in items:
+            try:
+                confidences.append(float(it.get("confidence", 0.0)))
+            except (TypeError, ValueError):
+                pass
+        return max(confidences) if confidences else 0.0
+
     def _anti_debug_section(self, workspace: Workspace) -> str:
         """Anti-Debug findings HTML bolumu (static/anti_debug_findings.json)."""
         data = workspace.load_json("static", "anti_debug_findings")
@@ -318,7 +353,10 @@ class HTMLReporter:
         if not findings:
             return ""
 
-        score = float(data.get("score", 0.0) or 0.0)
+        # KISIT: skor summary.anti_debug_score altinda; top-level "score" yok
+        score = self._resolve_score(
+            data, findings, summary_key="anti_debug_score"
+        )
         sev_class, sev_label, sev_color = self._severity_class(score)
 
         rows: list[str] = [
@@ -352,37 +390,126 @@ class HTMLReporter:
             f"<table>{''.join(rows)}</table>"
         )
 
-    def _packer_section(self, workspace: Workspace) -> str:
-        """Detected Packer HTML bolumu (static/packer_fingerprints.json)."""
+    @staticmethod
+    def _packer_warning_html(
+        result: PipelineResult,
+        top_name: str,
+        top_version: Any,
+        score: float,
+    ) -> str:
+        """Dürüst uyari banner'i — paketli binary decompile'i yaniltir.
+
+        Berke'nin sessiz-basarisizlik yasagi: kullanici decompile'in yalnizca
+        acici stub'i gosterdigini gormeli (aksi halde az fonksiyon gorup
+        karadul'u bozuk sanir).
+        """
+        name_l = top_name.lower()
+        if "upx" in name_l:
+            unpack_cmd = "upx -d &lt;dosya&gt;"
+        else:
+            unpack_cmd = "ilgili açma aracı ile paketi açın (unpack)"
+        ver = f" {top_version}" if top_version else ""
+
+        func_count = None
+        if "static" in result.stages:
+            st = result.stages["static"].stats
+            func_count = st.get(
+                "functions_found",
+                st.get("ghidra_function_count", st.get("functions")),
+            )
+
+        if func_count is not None:
+            body = (
+                f"Decompile YALNIZCA açıcı (unpacker) stub'ını gösterir. Bu "
+                f"koşuda görülen <strong>{_esc(func_count)} fonksiyon</strong> "
+                f"açıcı stub'a aittir — gerçek program kodu DEĞİL. Gerçek kod "
+                f"sıkıştırılmış/şifreli halde; çalışma anında bellekte açılıyor."
+            )
+        else:
+            body = (
+                "Decompile YALNIZCA açıcı (unpacker) stub'ını gösterir; gerçek "
+                "program kodu sıkıştırılmış/şifreli halde. Statik analiz "
+                "sınırlıdır."
+            )
+
+        return (
+            "<div style=\"background:#3d1417;border:1px solid #f85149;"
+            "border-radius:8px;padding:14px 16px;margin:12px 0;"
+            "color:#ffd7d5;\">"
+            f"<strong style=\"color:#f85149;\">⚠️ Bu binary paketlenmiş — "
+            f"{_esc(top_name)}{_esc(ver)} (güven {score:.2f}).</strong><br>"
+            f"{body}<br>"
+            f"Gerçek analiz için önce paketi açın: <code>{unpack_cmd}</code>, "
+            f"sonra açılmış binary'i yeniden analiz edin."
+            "</div>"
+        )
+
+    def _packer_section(
+        self, result: PipelineResult, workspace: Workspace
+    ) -> str:
+        """Detected Packer HTML bolumu (static/packer_fingerprints.json).
+
+        KISIT: gercek sema "fingerprints"/"packer_name" kullanir; eski sentetik
+        testler "packers"/"technique". Ikisi de okunur. Skor top-level'da yok
+        -> max(confidence). Bu uyusmazlik yuzunden gercek UPX tespiti rapora
+        hic ulasmiyordu.
+        """
         data = workspace.load_json("static", "packer_fingerprints")
         if not data:
             return ""
 
-        packers = data.get("packers") or data.get("findings") or []
+        packers = (
+            data.get("fingerprints")
+            or data.get("packers")
+            or data.get("findings")
+            or []
+        )
         if not packers:
             return ""
 
-        score = float(data.get("score", 0.0) or 0.0)
+        score = self._resolve_score(data, packers, summary_key="score")
         sev_class, sev_label, sev_color = self._severity_class(score)
+
+        top = packers[0] if packers else {}
+        top_name = str(
+            top.get("packer_name")
+            or top.get("technique")
+            or top.get("name")
+            or "?"
+        )
+        top_version = top.get("version")
 
         rows: list[str] = [
             "<tr>"
-            "<th>Technique</th><th>Category</th>"
-            "<th>Confidence</th><th>Evidence</th>"
+            "<th>Packer</th><th>Version</th><th>Category</th>"
+            "<th>Confidence</th><th>Layers</th><th>Evidence</th>"
             "</tr>"
         ]
         for p in packers:
-            tech = _esc(p.get("technique", p.get("name", "?")))
+            name = _esc(
+                p.get("packer_name")
+                or p.get("technique")
+                or p.get("name")
+                or "?"
+            )
+            version = p.get("version")
+            version_str = _esc(version) if version else "-"
             cat = _esc(p.get("category", "packer"))
             conf = p.get("confidence", 0.0)
             try:
                 conf_str = f"{float(conf):.2f}"
             except (TypeError, ValueError):
                 conf_str = _esc(conf)
-            ev = _esc(str(p.get("evidence", ""))[:200])
+            layers = _esc(p.get("layers_matched", ""))
+            ev_raw = p.get("evidence", "")
+            if isinstance(ev_raw, (list, tuple)):
+                ev_text = "; ".join(str(e) for e in ev_raw)
+            else:
+                ev_text = str(ev_raw)
+            ev = _esc(ev_text[:200])
             rows.append(
-                f"<tr><td>{tech}</td><td>{cat}</td>"
-                f"<td>{conf_str}</td><td>{ev}</td></tr>"
+                f"<tr><td>{name}</td><td>{version_str}</td><td>{cat}</td>"
+                f"<td>{conf_str}</td><td>{layers}</td><td>{ev}</td></tr>"
             )
 
         return (
@@ -393,7 +520,8 @@ class HTMLReporter:
             f"<div class=\"subsystem-meta\">Score: {score:.2f} | "
             f"{len(packers)} packers detected</div>"
             "</div>"
-            f"<table>{''.join(rows)}</table>"
+            + self._packer_warning_html(result, top_name, top_version, score)
+            + f"<table>{''.join(rows)}</table>"
         )
 
     def _malware_ioc_section(
