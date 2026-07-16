@@ -366,6 +366,18 @@
   .gearbtn:hover{border-color:var(--cyan); color:var(--cyan)}
   .entrygear{margin-top:14px; color:var(--dim); font-size:11px; cursor:pointer; letter-spacing:1.5px; display:inline-block}
   .entrygear:hover{color:var(--cyan)}
+  /* Disk erişimi (FDA) bölümü — mevcut ayar diline uyumlu, yeni renk yok */
+  .fdastate{font-size:11px; letter-spacing:1px; font-weight:700; color:var(--dim)}
+  .fdastate.ok{color:var(--named)} .fdastate.no{color:var(--unnamed)}
+  .fdafolders{display:flex; gap:7px; flex-wrap:wrap; margin-top:2px}
+  .fdachip{padding:3px 10px; border:1px solid var(--border); border-radius:12px; color:var(--dim);
+    font-size:10px; letter-spacing:.5px}
+  .fdachip.ok{border-color:rgba(56,224,138,.4); color:var(--named)}
+  .fdachip.no{border-color:rgba(229,58,84,.4); color:var(--unnamed)}
+  .fdagrant{padding:8px 16px; background:transparent; color:var(--cyan); border:1px solid var(--cyan);
+    border-radius:3px; cursor:pointer; font-family:inherit; font-size:11px; letter-spacing:1px; white-space:nowrap}
+  .fdagrant:hover{background:rgba(56,216,240,.08)} .fdagrant:disabled{opacity:.5; cursor:default}
+  .fdahint{font-size:9.5px; color:var(--dim); line-height:1.55; margin-top:2px} .fdahint b{color:var(--weak)}
 
   /* ============ HAKKINDA (modal · AYAR modalinin dili: .setmodal/.setbox/.sethdr/.setbody/.setfoot yeniden kullanilir) ============ */
   .sethdr .abtlink{margin-left:auto; cursor:pointer; color:var(--dim); border:1px solid var(--border);
@@ -539,6 +551,20 @@
       <textarea class="setpaths" id="cfgPaths" spellcheck="false" placeholder="/yol/imzalar.json&#10;/yol/flirt-dizini&#10;/yol/tipler.gdt"></textarea>
       <div class="setpath-hint">Her satıra bir yol: <b>.json</b> imza dosyası · <b>dizin</b> (FLIRT .pat için) · <b>.gdt</b> Ghidra tip arşivi. Tekil .pat yerine dizin ver. .fidb / .sig desteklenmiyor.</div>
       <div class="setwarn" id="setWarn"></div>
+      <div class="setsep"></div>
+      <div class="sethead">DİSK ERİŞİMİ</div>
+      <div class="setrow">
+        <div class="lab"><div class="n">Tam Disk Erişimi</div><div class="d">Sistem yazılımlarını ve korumalı klasörleri analiz edebilmek için gerekir</div></div>
+        <div class="ctl"><span class="fdastate" id="fdaState">kontrol ediliyor…</span></div>
+      </div>
+      <div class="setrow">
+        <div class="lab"><div class="n" style="font-size:11px; color:var(--dim)">Korumalı klasörler</div>
+          <div class="fdafolders" id="fdaFolders"></div></div>
+      </div>
+      <div class="setrow" id="fdaGrantRow" style="display:none">
+        <div class="lab"><div class="fdahint">Sistem Ayarları açılır → listeden <b>Black Widow</b>'u işaretleyin → uygulamayı <b>yeniden başlatın</b> (FDA değişikliği yeniden başlatma ister).</div></div>
+        <div class="ctl"><button class="fdagrant" id="fdaGrant">ERİŞİM VER ▸</button></div>
+      </div>
     </div>
     <div class="setfoot">
       <span class="msg" id="setMsg"></span>
@@ -1155,8 +1181,40 @@ async function openSettings(){
   $('setMsg').textContent=''; $('setMsg').className='msg'; $('setWarn').className='setwarn'; $('setWarn').innerHTML='';
   try{ const j=await (await fetch('/api/settings')).json(); fillSettings(j&&j.knobs); }
   catch(e){ fillSettings(SET_DEFAULT); }
+  loadDiskAccess();          // FDA durumu (asenkron; modal beklemez)
   $('settings').classList.add('on');
 }
+/* ---- Disk erişimi (FDA) · antivirüs deseni: tespit + Sistem Ayarları'na yönlendir ---- */
+const FDA_FOLDER_LABEL={desktop:'Masaüstü',documents:'Belgeler',downloads:'İndirilenler'};
+async function loadDiskAccess(){
+  const st=$('fdaState'), fol=$('fdaFolders'), row=$('fdaGrantRow');
+  st.className='fdastate'; st.textContent='kontrol ediliyor…'; fol.innerHTML='';
+  let d=null;
+  try{ d=await (await fetch('/api/disk-access')).json(); }catch(e){ d=null; }
+  if(!d){ st.className='fdastate no'; st.textContent='durum okunamadı'; row.style.display='none'; return; }
+  if(d.is_macos===false){ st.className='fdastate ok'; st.textContent='geçerli değil (macOS dışı)'; fol.innerHTML=''; row.style.display='none'; return; }
+  const fda=!!d.full_disk_access;
+  st.className='fdastate '+(fda?'ok':'no');
+  st.textContent=fda?'VAR ✓':'YOK — sistem dosyalarını analiz edemezsiniz';
+  const pf=d.protected_folders||{};
+  fol.innerHTML=Object.keys(FDA_FOLDER_LABEL).map(k=>{
+    const ok=!!pf[k]; return '<span class="fdachip '+(ok?'ok':'no')+'">'+FDA_FOLDER_LABEL[k]+' '+(ok?'✓':'✕')+'</span>';
+  }).join('');
+  row.style.display=fda?'none':'flex';   // erişim varsa yönlendirme butonu gereksiz
+}
+async function grantDiskAccess(){
+  const btn=$('fdaGrant'), prev=btn.textContent; btn.textContent='…'; btn.disabled=true;
+  $('setMsg').className='msg'; $('setMsg').textContent='';
+  try{
+    const r=await fetch('/api/open-fda-settings',{method:'POST'});
+    let j={}; try{ j=await r.json(); }catch(e){}
+    if(r.ok&&j&&j.ok){ $('setMsg').className='msg ok';
+      $('setMsg').textContent='✓ Sistem Ayarları açıldı — Black Widow\'u işaretleyip uygulamayı yeniden başlatın'; }
+    else{ $('setMsg').textContent='⚠ '+((j&&j.error)||('açılamadı ('+r.status+')')); }
+  }catch(e){ $('setMsg').textContent='⚠ sunucuya ulaşılamadı'; }
+  finally{ btn.textContent=prev; btn.disabled=false; }
+}
+$('fdaGrant').onclick=grantDiskAccess;
 function closeSettings(){ $('settings').classList.remove('on'); }
 function applyProfile(name){ fillSettings(Object.assign({}, gatherSettings(), SET_PROFILES[name]||{})); }
 async function saveSettings(){

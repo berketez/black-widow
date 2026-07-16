@@ -929,6 +929,11 @@ def _about_payload() -> dict:
     log = _safe(lambda: (_DATA_ROOT / "app.log") if (_DATA_ROOT / "app.log").is_file() else None, None)
     d["paths"] = {"data_dir": str(_DATA_ROOT), "runs": str(runs), "log": str(log) if log else None}
     d["stats"] = {"runs": _runs_count(runs)}
+    # Disk erişimi CANLI okunur (cache'lenmez): FDA durumu app yeniden başlayınca
+    # değişebilir, _ABOUT_STATIC'e gömülmemeli.
+    d["disk_access"] = _safe(_disk_access, {"full_disk_access": False,
+                             "protected_folders": {}, "is_macos": _IS_MAC,
+                             "probe": str(_TCC_PROBE)})
     return d
 
 
@@ -943,8 +948,92 @@ def _about_fallback() -> dict:
         "signatures": {"present": False, "path": None, "size_bytes": None},
         "paths": {"data_dir": str(_DATA_ROOT), "runs": None, "log": None},
         "stats": {"runs": None},
+        "disk_access": {"full_disk_access": False, "protected_folders": {},
+                        "is_macos": _IS_MAC, "probe": str(_TCC_PROBE)},
         "notes": list(_ABOUT_NOTES) + ["Sistem bilgileri okunamadı."],
     }
+
+
+# ---------------------------------------------------------------------------
+# Disk erişimi (antivirüs deseni) -- TCC durumu tespiti + Sistem Ayarları yönlendirme
+#
+# macOS TCC: Desktop/Documents/Downloads + harici/ağ diski + sistem konumları
+# izin olmadan okunamaz. App, Tam Disk Erişimi'ni (FDA) PROGRAMATİK İSTEYEMEZ;
+# yalnızca DURUMU tespit edip kullanıcıyı Sistem Ayarları'na yönlendirebilir.
+#
+# GÜVENİLİR FDA tespiti: FDA-korumalı bir dosyayı (sistem TCC.db) okumayı DENE ->
+# FDA yoksa PermissionError, varsa okunur. Bu bölümdeki hiçbir fonksiyon exception
+# YAYMAZ (endpoint 500 atmamalı).
+# ---------------------------------------------------------------------------
+_IS_MAC = sys.platform == "darwin"
+# FDA panelini açan derin link. DİKKAT (macOS sürüm riski): "Ayarlar" penceresi
+# Ventura'dan beri yeniden yazıldı; pane anahtarı sürüme göre değişebilir.
+# Privacy_AllFiles = Gizlilik ve Güvenlik > Tam Disk Erişimi bölmesi. Hangi
+# bölmenin gerçekten açıldığı DENEYEREK doğrulanır (bkz. test raporu).
+_FDA_PANE_URL = "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+# FDA'nın kanıtı: bu sistem dosyası SADECE Tam Disk Erişimi ile okunabilir.
+_TCC_PROBE = Path("/Library/Application Support/com.apple.TCC/TCC.db")
+
+
+def _full_disk_access() -> bool:
+    """Tam Disk Erişimi var mı? FDA-korumalı TCC.db'yi okumayı DENE.
+
+    open() başarılı -> FDA var; PermissionError -> FDA yok. mac dışında TCC
+    kavramı yok -> True (kısıtlama yok). Hiçbir durumda exception yaymaz.
+    UYARI: Terminal'den çalışan dev python, Terminal'in FDA'sını MİRAS alabilir
+    (yanıltıcı True); bundle'da app'in kendi TCC kimliği geçerli olur.
+    """
+    if not _IS_MAC:
+        return True
+    try:
+        with open(_TCC_PROBE, "rb") as f:
+            f.read(1)
+        return True
+    except PermissionError:
+        return False
+    except OSError:
+        return False   # dosya yok/başka hata -> FDA doğrulanamadı, yok say
+
+
+def _folder_readable(path: Path) -> bool:
+    """path listelenebiliyor mu? TCC reddi opendir'de PermissionError verir."""
+    try:
+        with os.scandir(path) as it:
+            next(it, None)     # boş klasörde bile opendir başarısı yeterli
+        return True
+    except PermissionError:
+        return False
+    except OSError:
+        return False
+
+
+def _disk_access() -> dict:
+    """FDA durumu + korumalı klasör erişilebilirliği (antivirüs deseni)."""
+    folders = {}
+    for key, name in (("desktop", "Desktop"), ("documents", "Documents"),
+                      ("downloads", "Downloads")):
+        folders[key] = _safe(lambda p=HOME / name: _folder_readable(p), False)
+    return {
+        "full_disk_access": _safe(_full_disk_access, False),
+        "protected_folders": folders,
+        "is_macos": _IS_MAC,
+        "probe": str(_TCC_PROBE),
+    }
+
+
+def _open_fda_settings() -> dict:
+    """FDA panelini `open` ile aç. WKWebView içinden x-apple: linki çalışmaz;
+    bu yüzden yönlendirme SERVER üzerinden `open` ile yapılır."""
+    if not _IS_MAC:
+        return {"__code": 400, "error": "yalnızca macOS"}
+    try:
+        p = subprocess.run(["open", _FDA_PANE_URL], stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT, timeout=8, text=True,
+                           errors="replace", check=False)
+    except (OSError, ValueError, subprocess.SubprocessError) as e:
+        return {"__code": 500, "error": f"Sistem Ayarları açılamadı: {e}"}
+    return {"ok": p.returncode == 0, "returncode": p.returncode,
+            "pane": _FDA_PANE_URL, "message": (p.stdout or "").strip() or None}
 
 
 # ---------------------------------------------------------------------------
@@ -1245,6 +1334,11 @@ class Handler(BaseHTTPRequestHandler):
             # ASLA 500: panel bilgi amacli, tek bir okunamayan alan yuzunden
             # modal bos kalmasin (icerideki her alan zaten _safe ile sarili).
             self._json(_safe(_about_payload, None) or _about_fallback())
+        elif path == "/api/disk-access":
+            # FDA + korumali klasor durumu (antivirus deseni). ASLA 500.
+            self._json(_safe(_disk_access, {"full_disk_access": False,
+                       "protected_folders": {}, "is_macos": _IS_MAC,
+                       "probe": str(_TCC_PROBE)}))
         elif path.startswith("/api/decompiled/"):
             addr = path.split("/api/decompiled/", 1)[1]
             if not re.fullmatch(r"FUN_[0-9a-fA-F]+", addr):
@@ -1293,6 +1387,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"error": "gövde bir nesne olmalı"}, 400)
                 return
             result = _write_settings(body.get("knobs", {}))
+            self._json(result, result.pop("__code", 200))
+        elif self.path.split("?", 1)[0] == "/api/open-fda-settings":
+            # Sistem Ayarları FDA bölmesini aç (gövde OKUNMAZ; sadece tetikleyici).
+            result = _open_fda_settings()
             self._json(result, result.pop("__code", 200))
         else:
             self._json({"error": "not found"}, 404)

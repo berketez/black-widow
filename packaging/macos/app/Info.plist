@@ -30,5 +30,21 @@
   <!-- WKWebView'in http://127.0.0.1 (yerel UI server) yüklemesine izin ver -->
   <key>NSAppTransportSecurity</key>
   <dict><key>NSAllowsLocalNetworking</key><true/></dict>
+  <!-- KLASÖR-İZNİ AÇIKLAMALARI (TCC purpose string'leri).
+       TUZAK: bu anahtarlar OLMADAN macOS, Desktop/Documents/Downloads ve
+       harici/ağ diski erişimini SESSİZCE reddeder veya app'i çökertir. VARLIKLARI
+       ilk erişimde izin penceresini tetikler; string kullanıcıya orada gösterilir.
+       DİKKAT: build_mac_app.sh yalnızca 3 sürüm alanını PlistBuddy "Set" ile EZER
+       (Set var olan anahtarı değiştirir, yenileri SİLMEZ) -> bu 5 anahtar korunur. -->
+  <key>NSDesktopFolderUsageDescription</key>
+  <string>Black Widow, analiz için Masaüstü'nden seçtiğiniz çalıştırılabilir dosyaları okur.</string>
+  <key>NSDocumentsFolderUsageDescription</key>
+  <string>Black Widow, analiz için Belgeler klasöründen seçtiğiniz çalıştırılabilir dosyaları okur.</string>
+  <key>NSDownloadsFolderUsageDescription</key>
+  <string>Black Widow, analiz için İndirilenler klasöründen seçtiğiniz çalıştırılabilir dosyaları okur.</string>
+  <key>NSRemovableVolumesUsageDescription</key>
+  <string>Black Widow, analiz için harici disklerden seçtiğiniz çalıştırılabilir dosyaları okur.</string>
+  <key>NSNetworkVolumesUsageDescription</key>
+  <string>Black Widow, analiz için ağ disklerinden seçtiğiniz çalıştırılabilir dosyaları okur.</string>
 </dict>
 </plist>
