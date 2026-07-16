@@ -947,6 +947,152 @@ _LOCAL_DECL_RE = re.compile(
 
 
 # ---------------------------------------------------------------------------
+# Gövde-tabanlı parametre isimlendirme (Strateji 11)
+# ---------------------------------------------------------------------------
+# KISIT / KÖK SEBEP (2026-07-16): Bu binary'lerde (ARM64 stripped Mach-O)
+# Ghidra `ghidra_functions.json`'a params=[] yazıyor — parametre metadata'sı
+# üretmiyor. Sonuç: `func_info.params` BOŞ → _strategy_dataflow ve
+# _strategy_type_based'in parametre döngüsü HİÇ ateşlenmiyor (boş liste üstünde
+# döner). `param_N` isimleri yalnızca decompiled C GÖVDESİNDE (imza satırı +
+# kullanım) yaşıyor. Bu strateji param_N'i GÖVDEDEN okuyup KULLANIM ŞEKLİNDEN
+# isim çıkarır. Domain'den bağımsızdır (kripto/CFD/hangi alan olursa).
+# LEAKAGE YOK: kural kaynak (DWARF) adından değil, makine kodundaki kullanım
+# desenlerinden türer.
+
+# İmzadan parametre bloğunu çıkarmak için: "<ret> <fname>(<params>)"
+# (fname regex'e dışarıdan escape edilip gömülür).
+
+# param_N'in sabit-offset struct alanı erişimi (ctx/state sinyali):
+#   *param            -> offset 0
+#   param[0x10]       -> sabit indeks
+#   param + 0x18      -> sabit offset (parantezli veya değil)
+#   param->field      -> ok erişimi
+def _param_fixed_offsets(body: str, esc: str) -> set[str]:
+    """param'ın eriştiği AYRIK sabit-offset kümesi. >=3 ayrık offset = struct/
+    context pointer'ı güçlü kanıtı (tek/iki alan tesadüfi olabilir)."""
+    offsets: set[str] = set()
+    if re.search(r"\*\s*" + esc + r"\b", body):
+        offsets.add("0")
+    for m in re.finditer(esc + r"\s*\[\s*(0x[0-9a-fA-F]+|\d+)\s*\]", body):
+        offsets.add(m.group(1))
+    # `param + 0xNN` (memcpy(param+0x1c,..) veya *(T*)(param+0x18) — ikisini de yakalar)
+    for m in re.finditer(esc + r"\s*\+\s*(0x[0-9a-fA-F]+|\d+)\b", body):
+        offsets.add(m.group(1))
+    if re.search(esc + r"\s*->", body):
+        offsets.add("arrow")
+    return offsets
+
+
+def _split_top_level_commas(blob: str) -> list[str]:
+    """Virgülle böl AMA parantez/köşeli/süslü içindeki virgülleri sayma
+    (fonksiyon-pointer parametreleri `void (*)(int,int)` bölünmesin)."""
+    parts: list[str] = []
+    depth = 0
+    cur: list[str] = []
+    for ch in blob:
+        if ch in "([{":
+            depth += 1
+            cur.append(ch)
+        elif ch in ")]}":
+            depth -= 1
+            cur.append(ch)
+        elif ch == "," and depth == 0:
+            parts.append("".join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+    if cur:
+        parts.append("".join(cur))
+    return parts
+
+
+def _param_is_iterated(body: str, esc: str) -> bool:
+    """param DEĞİŞKEN indeks/offset ile geziliyor mu (veri tamponu sinyali):
+    param[i] veya param + i (i sabit değil)."""
+    return bool(
+        re.search(esc + r"\s*\[\s*[A-Za-z_]", body)
+        or re.search(esc + r"\s*\+\s*[A-Za-z_]", body)
+    )
+
+
+_MEMFUNC = (r"(?:memcpy|memmove|memset|memcmp|strcpy|strncpy|strcat"
+            r"|memcpy_chk|memmove_chk|memset_chk)")
+
+
+def _param_is_buffer_scalar(body: str, esc: str) -> bool:
+    """Scalar (ulong/long) param aslında veri-pointer'ı mı: GERÇEK deref
+    (*(T*)param / *param) VEYA bir mem/str kopya fonksiyonunda POINTER
+    pozisyonunda (arg0/arg1 = dst/src) geçiyor.
+
+    KISIT/OVERFIT KORUMASI (2026-07-16):
+      - `a + b` düz aritmetiğini KAPSAMAZ (add(a,b)'nin 'a'sını buf sanma tuzağı).
+      - mem-fonksiyonun BOYUT arg'ını (arg2+) KAPSAMAZ (len'i buf sanma tuzağı) —
+        yalnız ilk iki argümanı (dst/src) pointer sayarız. Boyut param'ı zaten
+        _param_has_size_usage ile len'e gider (bu fonksiyondan ÖNCE denenir)."""
+    if re.search(r"\*\s*\([^)]*\)\s*\(?\s*" + esc + r"\b", body):  # *(T *)param / *(T*)(param+..)
+        return True
+    if re.search(r"\*\s*" + esc + r"\b", body):                    # *param
+        return True
+    if re.search(_MEMFUNC + r"\s*\(\s*" + esc + r"\b", body):      # memfunc(param, ...) = dst
+        return True
+    if re.search(_MEMFUNC + r"\s*\([^,;]*,\s*" + esc + r"\b", body):  # memfunc(x, param, ...) = src
+        return True
+    return False
+
+
+def _param_has_size_usage(body: str, esc: str) -> bool:
+    """param bir uzunluk/sayaç gibi kullanılıyor mu (scalar için):
+    döngü sınırı (< param / param <), boyut aritmetiği (param/4, (uint)param,
+    param>>0x20 — 64-bit boyutun üst yarısı), azaltma (param--), blok maskesi
+    (param & 0x..c0). Klasik `n--` / `for i<n` sezgisi."""
+    return bool(
+        re.search(r"[<>]=?\s*" + esc + r"\b", body)          # X <= param
+        or re.search(r"\b" + esc + r"\s*[<>]=?", body)        # param < X
+        or re.search(r"\b" + esc + r"\s*/\s*\d", body)        # param / 4
+        or re.search(r"\(\s*uint\s*\)\s*" + esc + r"\b", body)  # (uint)param (64->32 boyut)
+        or re.search(r"\b" + esc + r"\s*>>\s*0x", body)       # param >> 0x20
+        or re.search(r"\b" + esc + r"\s*--", body)            # param--
+        or re.search(r"--\s*" + esc + r"\b", body)            # --param
+        or re.search(r"\b" + esc + r"\s*&\s*0x[0-9a-fA-F]*c0\b", body)  # param & 0x..c0 (blok)
+    )
+
+
+def _classify_body_param(body: str, pname: str, is_ptr: bool
+                         ) -> tuple[str, float, str] | None:
+    """param_N'in KULLANIMINDAN (name, confidence, reason) çıkar. None = sinyal yok.
+
+    Öncelik (domain-bağımsız, savunulabilir):
+      pointer + >=3 ayrık sabit offset  -> ctx  (struct/context state pointer'ı)
+      pointer + iterasyon / >=1 offset   -> buf  (veri tamponu)
+      scalar  + >=3 ayrık sabit offset   -> ctx  (long/ulong struct tabanı)
+      scalar  + boyut/döngü kullanımı     -> len  (uzunluk/sayaç)
+      scalar  + iterasyon                 -> buf
+    Ölçüm eşleşmesi: ctx≡{context,state}, buf≡{buffer,data,bytes}, len≡{length,
+    size,count,num} (tests/benchmark/metrics.py SEMANTIC_EQUIV) — jenerik ad
+    yeterli, tam kaynak adı gerekmez.
+    """
+    esc = re.escape(pname)
+    offsets = _param_fixed_offsets(body, esc)
+    iterated = _param_is_iterated(body, esc)
+    if is_ptr:
+        if len(offsets) >= 3:
+            return ("ctx", 0.42, f"pointer struct erişimi ({len(offsets)} ayrık offset)")
+        if iterated or len(offsets) >= 1:
+            return ("buf", 0.38, "pointer veri tamponu (iterasyon/deref)")
+        return None
+    # scalar: boyut (len) önce — mem-fonksiyon boyut arg'ı buf'a kaçmasın.
+    # NOT: scalar için `param + var` (düz aritmetik, ör. add(a,b)) buf SAYILMAZ;
+    # yalnız gerçek deref / mem-kopya arg'ı buf olur (overfit koruması).
+    if len(offsets) >= 3:
+        return ("ctx", 0.40, f"scalar struct tabanı ({len(offsets)} ayrık offset)")
+    if _param_has_size_usage(body, esc):
+        return ("len", 0.42, "boyut/döngü aritmetiği")
+    if _param_is_buffer_scalar(body, esc):
+        return ("buf", 0.35, "scalar veri-pointer (deref/mem-kopya)")
+    return None
+
+
+# ---------------------------------------------------------------------------
 # ProcessPoolExecutor worker fonksiyonlari -- module-level (pickle edilebilir)
 # ---------------------------------------------------------------------------
 
@@ -1017,6 +1163,7 @@ def _run_heuristics_worker(
         namer._strategy_dataflow(func_info)
         namer._strategy_type_based(func_info)
         namer._strategy_api_param_propagation(func_info)
+        namer._strategy_body_param_naming(func_info)
         namer._strategy_fortran_in_stack(func_info)
         namer._strategy_local_var_naming(func_info)
         # candidates'i kopyala ve dondur (clear oncesi)
@@ -1843,6 +1990,7 @@ class CVariableNamer:
         self._strategy_dataflow(func_info)
         self._strategy_type_based(func_info)
         self._strategy_api_param_propagation(func_info)
+        self._strategy_body_param_naming(func_info)
         self._strategy_fortran_in_stack(func_info)
         self._strategy_local_var_naming(func_info)
 
@@ -2582,6 +2730,71 @@ class CVariableNamer:
                 confidence=0.75,
                 strategy="api_param_reverse",
                 reason="API callback reverse propagation",
+            ), func_name=func_info.name)
+
+    # ------------------------------------------------------------------
+    # Strateji 11: Gövde-tabanlı Parametre İsimlendirme (confidence: 0.35-0.42)
+    # ------------------------------------------------------------------
+
+    def _strategy_body_param_naming(self, func_info: _FunctionInfo) -> None:
+        """param_N'i decompiled C GÖVDESİNDEN çıkarıp kullanım-şekliyle isimlendir.
+
+        KÖK SEBEP (2026-07-16): ARM64 stripped Mach-O'da Ghidra
+        ghidra_functions.json'a params=[] yazıyor → func_info.params BOŞ →
+        _strategy_dataflow/_strategy_type_based'in parametre döngüleri hiç
+        ateşlenmiyor. param_N yalnızca gövde imzasında + kullanımında var. Bu
+        strateji onu oradan okur (domain-bağımsız, leakage-siz — kural kaynak
+        adından değil, makine-kodu kullanımından türer).
+
+        Not: param sayısı çok az binary'de metadata'dan gelebilir; o durumda
+        _strategy_dataflow zaten çalışır ve buradaki adaylar onunla yarışır
+        (confidence'a göre en yüksek kazanır). İki yol çakışmaz.
+        """
+        body = self._func_bodies.get(func_info.name, "")
+        if not body or "param_" not in body:
+            return
+
+        # İmzadaki parametre bloğunu fonksiyon adıyla çıpala:
+        #   "<ret> <fname>(<params>)"  (docstring/@param yorumlarını atla)
+        esc_fn = re.escape(func_info.name)
+        sig_re = re.compile(
+            r"(?m)^(?!\s*[/*#])\s*[A-Za-z_][\w\s\*]*?\b" + esc_fn + r"\s*\(([^;{]*)\)"
+        )
+        sm = sig_re.search(body)
+        if not sm:
+            return
+        params_blob = sm.group(1).strip()
+        if not params_blob or params_blob == "void":
+            return
+
+        # Kullanım taraması için imza satırının kendisini (tip bildirimi gürültüsü)
+        # gövdeden çıkarmaya gerek yok: tüm regex'ler param_N'e çıpalı ve
+        # DISASSEMBLY bloğu _func_bodies'te YOK (kapanış '}'sinden önce biter).
+        for part in _split_top_level_commas(params_blob):
+            part = part.strip()
+            if not part:
+                continue
+            toks = re.findall(r"[A-Za-z_]\w*", part.replace("*", " "))
+            if not toks:
+                continue
+            pname = toks[-1]
+            if not _GHIDRA_AUTO_PARAM.match(pname):
+                continue  # zaten anlamlı adı var (ör. library-sig'den crc/buf/len)
+            if pname not in body:
+                continue
+            is_ptr = "*" in part
+            verdict = _classify_body_param(body, pname, is_ptr)
+            if verdict is None:
+                continue
+            new_name, conf, reason = verdict
+            if conf < self._min_confidence:
+                continue
+            self._add_candidate(_NamingCandidate(
+                old_name=pname,
+                new_name=new_name,
+                confidence=conf,
+                strategy="body_param",
+                reason=reason,
             ), func_name=func_info.name)
 
     # ------------------------------------------------------------------
