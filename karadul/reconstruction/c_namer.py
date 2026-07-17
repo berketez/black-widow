@@ -2209,17 +2209,32 @@ class CVariableNamer:
     # Cephe 1b — Alg 1: cross-function pass-through param miras
     # ------------------------------------------------------------------
 
-    def _build_resolved_param_map(self) -> dict[str, dict[int, tuple[str, float]]]:
+    def _build_resolved_param_map(
+        self,
+        _sig_cache: dict[str, list[tuple[str, bool]] | None] | None = None,
+    ) -> dict[str, dict[int, tuple[str, float]]]:
         """func -> {pozisyon: (en-iyi-aday-adı, conf)} çözülmüş param haritası.
 
         Kaynak = mevcut self._candidates (body_param/dataflow/type_based/api_param
         + önceki propagasyon turları). Pozisyon imza sırasından (`_extract_sig_
         params`) gelir — param_N indeksine değil imza pozisyonuna bağlıdır, böylece
         karışık (kısmen adlandırılmış) imzalarda da hizalama doğru kalır.
+
+        İŞ 2 (2026-07-17): ``_sig_cache`` verilirse imza-param çıkarımı memoize
+        edilir. ``_extract_sig_params`` gövdenin SAF fonksiyonu ve _func_bodies
+        propagasyon boyunca değişmez → fixed-point turları arasında (5×'e kadar)
+        yeniden hesaplamak boşunadır. Davranış-nötr: sonuç birebir aynı, yalnız
+        tekrar hesap önlenir. Cache yoksa (None) eski davranış korunur.
         """
         resolved: dict[str, dict[int, tuple[str, float]]] = {}
         for fname, body in self._func_bodies.items():
-            params = _extract_sig_params(body, fname)
+            if _sig_cache is None:
+                params = _extract_sig_params(body, fname)
+            elif fname in _sig_cache:
+                params = _sig_cache[fname]
+            else:
+                params = _extract_sig_params(body, fname)
+                _sig_cache[fname] = params
             if not params:
                 continue
             posmap: dict[int, tuple[str, float]] = {}
@@ -2249,19 +2264,49 @@ class CVariableNamer:
         split_args = APIParamDB._split_args_balanced
         extract_args = APIParamDB._extract_balanced_args
 
-        # callee imza param'ları (variadic → None) — bir kez çıkar, cache'le.
-        callee_param_cache: dict[str, list[tuple[str, bool]] | None] = {}
+        # İŞ 2 (2026-07-17, davranış-nötr memoization) — imza-param çıkarımı ve
+        # copy-propagation alias'ı gövdenin SAF fonksiyonudur; _func_bodies
+        # propagasyon boyunca DEĞİŞMEZ → fixed-point turları arasında (5×'e kadar)
+        # yeniden hesaplamak boşunadır. Bir kez hesapla, hem caller döngüsünde
+        # hem _build_resolved_param_map'te (aynı cache dict) reuse et. Sonuç
+        # birebir aynı; yalnız tekrar hesap önlenir.
+        # NOT: `_sig_params` hem callee (aşağıdaki n_params) hem caller (cparams)
+        # imzasını verir — eski ayrı callee_param_cache ile birleştirildi.
+        _sig_params_cache: dict[str, list[tuple[str, bool]] | None] = {}
 
-        def _callee_params(name: str) -> list[tuple[str, bool]] | None:
-            if name not in callee_param_cache:
-                callee_param_cache[name] = _extract_sig_params(
+        def _sig_params(name: str) -> list[tuple[str, bool]] | None:
+            if name not in _sig_params_cache:
+                _sig_params_cache[name] = _extract_sig_params(
                     self._func_bodies.get(name, ""), name)
-            return callee_param_cache[name]
+            return _sig_params_cache[name]
+
+        _alias_cache: dict[str, dict[str, str]] = {}
+
+        def _param_alias(name: str) -> dict[str, str]:
+            a = _alias_cache.get(name)
+            if a is None:
+                a = _build_param_alias(self._func_bodies.get(name, ""))
+                _alias_cache[name] = a
+            return a
+
+        # İŞ 2 — regex-derleme cache. `_call_arg_lists` her callee için taze
+        # `re.compile(re.escape(callee)+...)` derliyordu; binlerce distinct callee
+        # Python'un 512-kapasiteli `re._cache`'ini thrash eder (aynı callee her
+        # tur + her caller için yeniden derlenir). Derlenen deseni callee başına
+        # bir kez cache'le — desen callee'nin saf fonksiyonu, davranış birebir.
+        _pat_cache: dict[str, "re.Pattern[str]"] = {}
+
+        def _callee_call_pattern(callee: str) -> "re.Pattern[str]":
+            pat = _pat_cache.get(callee)
+            if pat is None:
+                pat = re.compile(r"(?<![\w])" + re.escape(callee) + r"\s*\(")
+                _pat_cache[callee] = pat
+            return pat
 
         def _call_arg_lists(body: str, callee: str) -> list[list[str]]:
             """callee(args) çağrılarının argüman-listelerini döndür."""
             out: list[list[str]] = []
-            for m in re.finditer(r"(?<![\w])" + re.escape(callee) + r"\s*\(", body):
+            for m in _callee_call_pattern(callee).finditer(body):
                 paren = m.end() - 1
                 args_str = extract_args(body, paren)
                 if args_str is None:
@@ -2274,7 +2319,9 @@ class CVariableNamer:
         callers = list(self._func_bodies.keys())
 
         for _round in range(_PASSTHROUGH_MAX_ROUNDS):
-            resolved = self._build_resolved_param_map()
+            # İŞ 2: sig-cache'i paylaş — resolved map imza çıkarımını memoize eder,
+            # sonraki caller döngüsü ve turlar aynı cache'ten okur.
+            resolved = self._build_resolved_param_map(_sig_cache=_sig_params_cache)
             if not resolved:
                 break
             new_this_round = 0
@@ -2282,12 +2329,12 @@ class CVariableNamer:
                 body = self._func_bodies.get(caller, "")
                 if not body or "param_" not in body:
                     continue
-                cparams = _extract_sig_params(body, caller)
+                cparams = _sig_params(caller)  # İŞ 2: memoize (statik)
                 if not cparams:
                     continue
                 # caller param adı -> imza pozisyonu
                 cpos = {pname: i for i, (pname, _ip) in enumerate(cparams)}
-                alias = _build_param_alias(body)
+                alias = _param_alias(caller)  # İŞ 2: memoize (statik)
 
                 for callee, cres in resolved.items():
                     if callee == caller:
@@ -2299,7 +2346,7 @@ class CVariableNamer:
                     # davranış birebir korunur.
                     if callee not in body:
                         continue
-                    callee_params = _callee_params(callee)
+                    callee_params = _sig_params(callee)  # İŞ 2: birleşik cache
                     if callee_params is None:
                         continue  # variadic/ayrıştırılamaz → pozisyon güvensiz
                     n_params = len(callee_params)
