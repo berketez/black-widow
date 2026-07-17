@@ -3314,7 +3314,16 @@ class ReconstructionStage(Stage):
             except ImportError:
                 pass
 
-        for _pipeline_iter in range(_max_iterations):
+        # ÇİFT-LOOP FIX (2026-07-17): step-registry modunda (default, config.py:619)
+        # Phase 2 feedback loop ZATEN step olarak koşuyor (stages.py:3005 civarı ->
+        # steps/feedback_loop.py). Bu monolith loop ise AYNI naming'i 2. kez
+        # koşuyordu -> F1'e katkısız saf israf (~25-30s büyük binary'de). 3 binary
+        # A/B ile bit-birebir F1-nötr doğrulandı (hashbench_O0/O2 + cat coreutils:
+        # fonksiyon/param/local/variable hepsi guard OFF==ON). Flag açıkken loop'u
+        # atla; step-registry naming sonucu korunur. Legacy monolith yol (flag=False)
+        # eski davranışı sürdürür.
+        _loop_iterations = 0 if _use_step_registry else _max_iterations
+        for _pipeline_iter in range(_loop_iterations):
             _iter_start = time.monotonic()
             _iter_new_names = 0  # bu turda eklenen yeni isimler
             _current_named_set: set[str] = set()  # bu turda isimlendirilenler
