@@ -39,7 +39,13 @@ _ghidra_default() {
 GH="$(_ghidra_default)"
 JDK_SRC="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk"
 LMDB="$HOME/.karadul/signatures.lmdb"
-FULL=0; [ "${1:-}" = "--full" ] && FULL=1
+NUITKA_VENV="$DIST/nuitka-venv"   # motor koruma derleyicisi (bundle DIŞI, ship edilmez)
+FULL=0; PROTECT=0
+for _a in "$@"; do case "$_a" in
+  --full) FULL=1;;
+  --protect) PROTECT=1;;   # motoru RE'ye karşı sertleştir (Nuitka .so + kaynak sıyırma)
+esac; done
+[ "${KARADUL_PROTECT:-}" = "1" ] && PROTECT=1
 mkdir -p "$DIST"
 
 echo "[1/9] iskelet + arm64 stub (bash değil -> mimari/çift-tık sorunu yok)"
@@ -143,6 +149,31 @@ json.dump({
 PYEOF
 echo "    $(tr -d '\n ' < "$RES/build-info.json")"
 
+if [ $PROTECT = 1 ]; then
+  echo "[koruma-1] motor sertleştirme: Nuitka .so derleme (RE'ye karşı)"
+  # karadul mantık modüllerini native arm64 .so'ya derle -> decompile için Ghidra +
+  # ciddi RE emeği gerekir (aracın kendi zorluk seviyesi). --python-flag=no_docstrings
+  # algoritma-anlatan docstring/yorumları siler. Derlenen modülün .py'si silinir.
+  # ABI: .so 'undefined dynamic_lookup' ile derlenir, belirli libpython'a hard-link
+  # ETMEZ -> bundle'ın 3.12'sine yüklenir (POC 2026-07-18 ölçümle kanıtlı).
+  # Derleyici bundle'a GİRMEZ: ayrı venv ($DIST altında), ship edilmez.
+  # Bu adım compileall'DAN ÖNCE: compileall yalnız KALAN .py'yi .pyc'ler.
+  # m6: venv'i yeniden kullan AMA gerçekten çalışıyorsa. Bundle python yükseltilirse
+  # (base değişir) venv bayatlar/kırılır -> nuitka --version ile fiilen doğrula, aksi
+  # halde sıfırdan kur. (Salt 'bin/python var mı' kontrolü kırık venv'i yakalamaz.)
+  if ! { [ -x "$NUITKA_VENV/bin/python" ] && "$NUITKA_VENV/bin/python" -m nuitka --version >/dev/null 2>&1; }; then
+    echo "    nuitka venv (yeniden) kuruluyor (bundle python'dan -> birebir ABI eşleşmesi)"
+    rm -rf "$NUITKA_VENV"
+    "$PY" -m venv "$NUITKA_VENV"
+    "$NUITKA_VENV/bin/pip" install --no-input --disable-pip-version-check -q \
+        "${PIP_NET[@]}" nuitka || { echo "!! nuitka kurulamadı"; exit 1; }
+  fi
+  "$NUITKA_VENV/bin/python" "$HERE/protect_modules.py" \
+      --package "$SP/karadul" --phase compile \
+      --nuitka-python "$NUITKA_VENV/bin/python" \
+    || { echo "!! koruma derlemesi başarısız"; exit 1; }
+fi
+
 echo "[9/10] bytecode (imza mührünün ön koşulu)"
 # stdlib DAHİL derle: eksik .pyc kalırsa Python onları ÇALIŞMA ZAMANINDA bundle'a
 # yazar -> imza mührü kırılır -> macOS "damaged" der. (bw_launch.sh ayrıca
@@ -159,6 +190,22 @@ echo "[9/10] bytecode (imza mührünün ön koşulu)"
 "$PY" -m compileall -q -j 0 --invalidation-mode unchecked-hash \
       "$RES/python/lib/python3.12" "$SP" "$RES/ui" \
   || { echo "!! compileall BAŞARISIZ -> eksik .pyc runtime'da yazılıp mührü kırar"; exit 1; }
+
+if [ $PROTECT = 1 ]; then
+  echo "[koruma-2] kaynak sıyırma: kalan karadul .py -> sourceless .pyc (yan yana)"
+  # compileall'DAN SONRA olmalı: her .py'nin .pyc'si artık var. Strip fazı
+  # __pycache__/X.cpython-VER.pyc'yi yan-yana X.pyc'ye TAŞIR, sonra .py'yi siler.
+  # Taşıma ŞART: Python __pycache__'teki .pyc'yi ancak yanında .py varsa kullanır;
+  # .py silinip .pyc __pycache__'te kalırsa paket NAMESPACE'e düşer, __init__ kodu
+  # hiç çalışmaz (ölçüldü: karadul.__version__/Config kaybolur). Sourceless yan-yana
+  # .pyc doğrudan yüklenir + runtime'da yeniden yazılmaz -> mühür sağlam. __init__'ler
+  # (düşük IP re-export tutkalı) .pyc-only olur: kaynak "metin editörü" -> "3.12
+  # decompiler" (olgunlaşmamış) bariyerine çıkar. .so modüller ne .py ne .pyc bırakır.
+  "$NUITKA_VENV/bin/python" "$HERE/protect_modules.py" \
+      --package "$SP/karadul" --phase strip \
+    || { echo "!! kaynak sıyırma başarısız"; exit 1; }
+fi
+
 # Homebrew JDK / Ghidra kopyaları salt-okunur gelir; codesign yazamaz -> u+w şart.
 chmod -R u+w "$APP"
 # codesign "resource fork, Finder information, or similar detritus" ile reddeder:
