@@ -96,6 +96,7 @@ _ENCRYPT_PATHS = (
     "pipeline/steps/computation_struct_recovery.py",
     "pipeline/steps/semantic_naming.py",
     "reconstruction/naming",
+    "core/hardening.py",   # Faz C: anti-debug markerları (frida/.app/banner) gizli kalsın
 )
 
 

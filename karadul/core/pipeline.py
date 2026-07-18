@@ -215,6 +215,15 @@ class Pipeline:
         Returns:
             PipelineResult: Tum sonuclarin ozeti.
         """
+        # Motor koruma (Faz C): paketlenmis .app icinde debugger/frida/enjeksiyon
+        # tespit edilirse analizi reddeder. Dev/repo/test baglaminda TAMAMEN inert
+        # (bkz hardening._is_hardened_context) -> normal calisma etkilenmez.
+        from karadul.core.hardening import check_anti_tamper, warmup_native_modules
+        check_anti_tamper()
+        # Paralel step executor worker thread'de Nuitka .so INIT ederse SIGSEGV verir
+        # -> tum modulleri ANA THREAD'de onceden init et (yalniz bundle'da; dev inert).
+        warmup_native_modules()
+
         pipeline_start = time.monotonic()
 
         # Quiet mode: callback verilmisse kendi console output'unu kapat

@@ -491,6 +491,11 @@ def analyze(
     json_output: bool,                     # P3: makine-okunur JSON cikti
 ) -> None:
     """Hedef uzerinde tam analiz pipeline calistir."""
+    # Motor koruma (Faz C): paketlenmis .app'te debugger/frida tespit -> ERKEN reddet
+    # (BSim/hedef okuma dahil hicbir sey calismadan). Dev/repo/test'te inert.
+    from karadul.core.hardening import check_anti_tamper
+    check_anti_tamper()
+
     # B17: Pipeline kurulumu `karadul.cli_common.build_pipeline` ile yapilir;
     # ayrica Pipeline import etmeye gerek yok.
     from karadul.core.target_resolver import resolve_target
