@@ -621,22 +621,29 @@ class PcodeAnalyzer:
         """
         candidates = []
 
-        # 1. Fonksiyon siniflandirma
+        # 1. Fonksiyon siniflandirma -> ROL METADATA (fonksiyon adi DEGIL)
+        # 2026-07-18: Eskiden `dispatch_handler_<addr6>` gibi bir fonksiyon-adi
+        # candidate'i uretilir ve `_add_pcode` bunu unnamed fonksiyonlara
+        # UYGULARDI. Uc sorun:
+        #   (a) Spekulatif ROL tahmini (conf 0.35-0.60), gercek isim DEGIL —
+        #       GT ile tutmaz, fonksiyon F1'de FP; okunabilirlikte de `FUN_xxx`'ten
+        #       (durust "bilinmeyen") daha kotu (olmayan bilgi ima eder).
+        #   (b) `<addr>.lstrip[:6]` suffix'i CAKISIYOR: 0x100000xx fonksiyonlarin
+        #       hepsi `dispatch_handler_100000` olur -> NON-UNIQUE, kafa karistirici.
+        #   (c) `FUN_1000005c8` benzersiz+durust; spekulatif+cakisan isim degistokusu.
+        # Codex GPT-5.6 prensibi: kanit yoksa abstain, rolu ISIM degil METADATA sun.
+        # Cozum: candidate_name="" (metadata-only) -> `_add_pcode` bos ismi atlar,
+        # rename YOK. `role`+`reason` alanlari gelecek yorum-uretimi icin korunur.
+        # `naming_confidence_boost` (asagidaki variable boost) ETKILENMEZ.
         classification, conf = self.classify_function(func)
         if classification != "generic" and conf > 0.0:
-            # Fonksiyon isim onerisi
-            candidate_name = classification
-            # Eger fonksiyon adresi varsa suffix ekle (cakisma onleme)
-            if func.address and func.address != "0x0":
-                addr_short = func.address.lstrip("0x").lstrip("0")[:6]
-                candidate_name = "%s_%s" % (classification, addr_short)
-
             candidates.append({
                 "function_name": func.name,
-                "candidate_name": candidate_name,
+                "candidate_name": "",  # ROL metadata; fonksiyon adi DEGIL (rename yok)
                 "confidence": conf,
-                "source": "pcode_dataflow",
-                "reason": "classify=%s" % classification,
+                "source": "pcode_role",
+                "role": classification,
+                "reason": "classify=%s (rol ipucu, isim degil)" % classification,
             })
 
         # 2. Variable confidence boost bilgisi
