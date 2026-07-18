@@ -44,6 +44,13 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
+# Faz B (string şifreleme) — aynı dizindeki modül. protect_modules script olarak
+# çalıştığından dizini sys.path[0]'da; doğrudan import edilir.
+try:
+    import encrypt_strings
+except ImportError:  # pragma: no cover - script dışı kullanım
+    encrypt_strings = None  # type: ignore
+
 # --------------------------------------------------------------------------
 # Politika: hangi modüller .so'ya derlenMEZ (kaynak sıyırma yine uygulanır)
 # --------------------------------------------------------------------------
@@ -71,6 +78,32 @@ _KEEP_SOURCE_DIRS = ("ghidra/scripts",)
 def _keep_as_source(py: Path, package_dir: Path) -> bool:
     rel = py.relative_to(package_dir).as_posix()
     return any(rel == d or rel.startswith(d + "/") for d in _KEEP_SOURCE_DIRS)
+
+
+# --------------------------------------------------------------------------
+# Faz B: string literal ŞİFRELENECEK modüller (CERRAHİ — hepsi değil).
+# --------------------------------------------------------------------------
+# ``ast.unparse`` tüm modülü yeniden yazar (Tier A'dan riskli); bu yüzden yalnız
+# ALGORİTMA-ELE-VEREN string taşıyan crown-jewel modüller/dizinler seçilir.
+# Yol prefix'i (dosya veya dizin), karadul paketine göreli. A/B analizi bu
+# yolları (naming/gnulib/computation) tetikler -> davranış korunması doğrulanır.
+_ENCRYPT_PATHS = (
+    "analyzers/gnulib_fingerprints.py",   # anchor string'ler (Berke özellikle istedi)
+    "analyzers/packer_fingerprint.py",
+    "naming",
+    "computation",
+    "pipeline/steps/computation_fusion.py",
+    "pipeline/steps/computation_struct_recovery.py",
+    "pipeline/steps/semantic_naming.py",
+    "reconstruction/naming",
+)
+
+
+def _should_encrypt(py: Path, package_dir: Path) -> bool:
+    if encrypt_strings is None:
+        return False
+    rel = py.relative_to(package_dir).as_posix()
+    return any(rel == p or rel.startswith(p + "/") for p in _ENCRYPT_PATHS)
 
 
 def _iter_py(package_dir: Path):
@@ -154,8 +187,26 @@ def _clean_artifacts(out_dir: Path, base: str, *, remove_so: bool = False) -> No
             so.unlink(missing_ok=True)
 
 
-def phase_compile(package_dir: Path, nuitka_python: str, jobs: int) -> int:
+def phase_compile(package_dir: Path, nuitka_python: str, jobs: int,
+                  encrypt: bool = True) -> int:
     targets = [p for p in _iter_py(package_dir) if _should_compile(p, package_dir)]
+    # Faz B: seçili crown-jewel modüllerin string literal'lerini derlemeden ÖNCE
+    # şifrele (yerinde .py; nasılsa compile sonrası silinecek). rotating-XOR +
+    # inline çözücü -> derlenince strings/.so düz metni GÖRMEZ. Şifreleme kimlik
+    # dönüşümü (encrypt->decrypt = orijinal) -> davranış korunur (A/B ile teyit).
+    if encrypt and encrypt_strings is not None:
+        enc_mods = enc_str = 0
+        for py in targets:
+            if _should_encrypt(py, package_dir):
+                try:
+                    n = encrypt_strings.transform_file(py)
+                except Exception as e:  # noqa - bir modül şifrelenemezse compile'ı düşürme
+                    print(f"[compile] !! string şifreleme atlandı ({py.name}): {e}")
+                    continue
+                if n:
+                    enc_mods += 1
+                    enc_str += n
+        print(f"[compile] Faz B string şifreleme: {enc_mods} modül, {enc_str} string")
     print(f"[compile] {len(targets)} modül .so'ya derlenecek ({jobs} paralel)")
     t0 = time.time()
     ok = fail = 0
@@ -254,6 +305,8 @@ def main() -> int:
     ap.add_argument("--nuitka-python", default=sys.executable,
                     help="nuitka kurulu python (varsayılan: bu python)")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 2))
+    ap.add_argument("--no-encrypt", action="store_true",
+                    help="Faz B string şifrelemeyi atla (debug/karşılaştırma)")
     args = ap.parse_args()
 
     package_dir = Path(args.package).resolve()
@@ -264,7 +317,8 @@ def main() -> int:
     print(f"ABI: {sysconfig.get_config_var('SOABI')}  python={sys.version.split()[0]}")
     rc = 0
     if args.phase in ("compile", "both"):
-        rc |= phase_compile(package_dir, args.nuitka_python, args.jobs)
+        rc |= phase_compile(package_dir, args.nuitka_python, args.jobs,
+                            encrypt=not args.no_encrypt)
     if args.phase in ("strip", "both"):
         rc |= phase_strip(package_dir)
     return rc
