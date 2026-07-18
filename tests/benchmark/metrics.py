@@ -240,6 +240,18 @@ class AccuracyCalculator:
 
     # Common semantic equivalences grouped by domain.
     # Each key is a "canonical" word, values are synonyms.
+    #
+    # KASITLI KATILIK / DONDURMA (2026-07-18) — DIKKAT, "eksik" gibi gorunen
+    # kisaltmalar bilerek eklenmemistir. Ornek: `out` -> output/result gercek bir
+    # kisaltma (buf/msg/idx sinifinda) ve teknik olarak eklenebilirdi; bu tablo
+    # skoru YUKSELTIRDI. Ama bu tablo OLCUM harness'idir: motorun uretimini GT ile
+    # kiyaslar. Skoru gordukten SONRA metrige eslesme grubu eklemek = teaching-to-
+    # the-test / instrument ayarlama. Metrik bilinctli olarak SIKI tutulur → rapor
+    # edilen F1 bir ALT SINIRDIR (gercek semantik-esdeger F1 daha yuksek olabilir).
+    # Bu, sayiyi curutulemez tutmak icin secilmis bir tasarim karari; bug DEGIL.
+    # Yeni grup eklemek isteyen: (1) skordan BAGIMSIZ, blind bir standarttan turet,
+    # (2) tek binary degil COK binary'de olc, (3) eski+yeni metrik iki sayiyi da
+    # raporla. Aksi halde eklemeyin. (Gerekce: memory karadul-2026-07-16-sprint 2b)
     SEMANTIC_EQUIV: dict[str, set[str]] = {
         # --- I/O & Networking ---
         "send": {"transmit", "write", "emit", "dispatch", "post", "push", "output"},
