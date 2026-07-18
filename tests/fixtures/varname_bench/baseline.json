@@ -1,23 +1,24 @@
 {
   "_meta": {
     "description": "varname_bench değişken-adı F1 baseline'ı (DWARF ground truth). Fonksiyon F1 gnulib imza sızıntısı nedeniyle ŞİŞİRİLMİŞ ve GÜVENİLMEZ — asıl metrik param/lokal/değişken F1'idir.",
-    "measured_date": "2026-07-16",
-    "commit": "43f30c3 (+ Cephe 1b: Alg2 yön kapısı + Alg1 pass-through param miras)",
-    "commit_short": "43f30c3+cephe1b",
+    "measured_date": "2026-07-18",
+    "commit": "965d907 + lokal-isim suppression (KARADUL_LOCAL_MIN_CONF=0.35)",
+    "commit_short": "965d907+localsupp035",
     "karadul_version": "1.20.0-pre",
     "fixture": "tests/fixtures/varname_bench (hashbench_O0/O2, gnulib kripto)",
     "harness": "scripts/varname_f1_eval.py",
-    "ghidra": "bundle 12.1.2 (Black Widow.app)",
-    "method": "TAZE pipeline koşumu (karadul analyze --skip-dynamic --lmdb-sigdb) + varname_f1_eval.py; O0 ve O2 için ayrı reconstruction. Cache DEĞİL — her iki binary de Cephe 1b kodu (43f30c3 üstü) ile yeniden üretildi. Cephe 1b öncesi (43f30c3) taze baseline O0 ve O2 için birebir eski değerleri (O0 param P0.690/R0.397/F1.504, O2 P0.548/R0.386/F1.453) yeniden üretti (Ghidra deterministik) → iyileşme gerçek.",
+    "ghidra": "ghidra_12.0_DEV (known-dir); param sayıları baseline 12.1.2 ile BİREBİR (deterministik)",
+    "method": "TAZE pipeline (karadul analyze --skip-dynamic --lmdb-sigdb) + varname_f1_eval.py; O0/O2 ayrı. Lokal-isim suppression: c_namer _LOCAL_MIN_CONF=0.35 → Layer 3/4 tip/prefix fallback lokal isimleri (val_XX, qword_XX, ptr_XX, generic ret 0.30) emit edilmez, Ghidra placeholder kalır = FP değil (codex GPT-5.6 onaylı: 'kanıt yoksa abstain'). Layer 1/2 domain/usage isimleri (log_val, buf, len, counter, ratio >=0.35) KORUNUR (okunabilir + güvenilir). Param/fonksiyon ETKİLENMEZ (param F1 birebir sabit).",
     "function_f1_note": "gnulib sigdb leakage — inflated, NOT trustworthy",
     "primary_metric": "param.recall ve variable.f1 (sızıntısız, DWARF-only) — regresyon testi bunları izler (tests/test_varname_f1_baseline.py).",
     "regression_epsilon": 0.02,
-    "cephe1b_note": "Alg1 (cross-function pass-through miras) param recall/F1'i O0'da 0.397/0.504 → 0.507/0.592, O2'de 0.386/0.453 → 0.477/0.560 yükseltti (precision da arttı). Alg2-2a (pointer yön kapısı): O0'da precision-nötr (0 verdict değişti — is_ptr hesaplanmış-yazma output param yok; init_ctx sabit-init doğru ctx kalır); O2'de ise 4 output-tampon ctx-FP'sini sildi (FP 14→10, emitted-count sabit) → 2a O2'de precision-pozitif. Reviewer düzeltmesi (2026-07-16): önceki not '2a her yerde nötr' diyordu, O2 gerçeği farklı."
+    "cephe1b_note": "Alg1 (cross-function pass-through miras) param recall/F1'i O0'da 0.397/0.504 → 0.507/0.592, O2'de 0.386/0.453 → 0.477/0.560 yükseltti (precision da arttı). Alg2-2a (pointer yön kapısı): O0'da precision-nötr (0 verdict değişti — is_ptr hesaplanmış-yazma output param yok; init_ctx sabit-init doğru ctx kalır); O2'de ise 4 output-tampon ctx-FP'sini sildi (FP 14→10, emitted-count sabit) → 2a O2'de precision-pozitif. Reviewer düzeltmesi (2026-07-16): önceki not '2a her yerde nötr' diyordu, O2 gerçeği farklı.",
+    "local_suppression_note": "2026-07-18: lokal isim bastırma. Eşik süpürmesi (0.15/0.35/0.40/0.45/0.50/0.55/0.60) → variable F1 O0 0.228→0.294 (@0.35), O2 0.126→0.226. 0.50-0.55 metrikte biraz daha iyi (0.315/0.349) AMA kasıtlı domain-naming özelliğini öldürür (33 test) + tek-binary overfit. 0.35 = tip-fallback gürültüsünü kes, okunabilir domain isimlerini koru (Berke vizyonu: F1 + okunabilirlik). Lokal recall zaten ~0 (stripped binary'de lokal geliştirici adı sinyal taşımaz) — asıl kazanç PRECISION + variable F1 + okunabilirlik. GELECEK LEVER (codex): dışarıdan-içeri isim taşıma (x=strlen(name)→name_len, API param adı) = gerçek recall."
   },
   "O0": {
     "matched_funcs": 33,
     "total_gt_funcs": 33,
-    "placeholder_locals": 7,
+    "placeholder_locals": 88,
     "function": {
       "precision": 0.8709677419354839,
       "recall": 0.8181818181818182,
@@ -37,26 +38,26 @@
       "fn": 36
     },
     "local": {
-      "precision": 0.025157232704402517,
+      "precision": 0.05128205128205128,
       "recall": 0.05263157894736842,
-      "f1": 0.03404255319148937,
+      "f1": 0.05194805194805195,
       "tp": 4,
-      "fp": 155,
+      "fp": 74,
       "fn": 72
     },
     "variable": {
-      "precision": 0.1943127962085308,
+      "precision": 0.3153846153846154,
       "recall": 0.2751677852348993,
-      "f1": 0.2277777777777778,
+      "f1": 0.2939068100358423,
       "tp": 41,
-      "fp": 170,
+      "fp": 89,
       "fn": 108
     }
   },
   "O2": {
     "matched_funcs": 17,
     "total_gt_funcs": 17,
-    "placeholder_locals": 12,
+    "placeholder_locals": 160,
     "function": {
       "precision": 0.9411764705882353,
       "recall": 0.9411764705882353,
@@ -80,15 +81,15 @@
       "recall": 0.0,
       "f1": 0.0,
       "tp": 0,
-      "fp": 183,
+      "fp": 50,
       "fn": 61
     },
     "variable": {
-      "precision": 0.09813084112149532,
+      "precision": 0.25925925925925924,
       "recall": 0.2,
-      "f1": 0.13166144200626959,
+      "f1": 0.22580645161290322,
       "tp": 21,
-      "fp": 193,
+      "fp": 60,
       "fn": 84
     }
   }

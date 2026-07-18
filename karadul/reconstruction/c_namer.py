@@ -667,6 +667,34 @@ _TYPE_NAMING: list[tuple[re.Pattern[str], str, float]] = [
 
 
 # ---------------------------------------------------------------------------
+# Lokal-değişken isimlendirme minimum confidence eşiği (2026-07-18)
+# ---------------------------------------------------------------------------
+# Strateji 9'un düşük-conf (0.20-0.30) tip/prefix fallback isimleri (val_XX,
+# qword_XX, ptr_XX, uVar->val ...) GT geliştirici adlarıyla ASLA tutmaz ve
+# okunabilirliğe katkısı yok (`val_38` ~ `local_38`, üstelik olmayan anlam ima
+# eder). Ölçüm (2026-07-18, hashbench_O0/O2, DWARF GT): bunlar lokal precision'ı
+# ~0 yapıyor ve variable F1'i dövüyor. Bu eşik SADECE lokal isimlere uygulanır
+# (param/fonksiyon ETKİLENMEZ, ayrı stratejiler); altındaki öneri emit EDİLMEZ ->
+# Ghidra placeholder (iVar1/local_38) korunur = FP değil.
+#
+# EŞİK SEÇİMİ 0.35 (principled: "gürültüyü kes, sinyali koru"):
+#   - Layer 3 (prefix fallback: uVar->val 0.20, pcVar->str 0.30, *_ptr 0.25) ve
+#     Layer 4 (typed local: local_XX->val_XX/qword_XX/ptr_XX 0.25-0.30) SAF
+#     TİP-TAHMİNİ üretir (hiçbir usage pattern tutmayınca). Bunlar hem metrik-FP
+#     hem okunabilirlik-faydasız (`val_38` ~ `local_38`) -> eşik ALTINDA, atılır.
+#   - Layer 1/1.5/2 usage + domain pattern'leri (loop->i, malloc->buf, strlen->len,
+#     log->log_val, a/b->ratio, x%y->remainder, counter... conf >=0.35) SOMUT
+#     işleme dayalı, GÜVENİLİR ve okunabilirlik-POZİTİF -> KORUNUR.
+# Eşik süpürmesi (hashbench O0/O2, DWARF GT): variable F1 O0 0.228->~0.28, O2
+# 0.126->~0.22 (param SABİT 0.592/0.560, fix lokal-only). 0.50-0.55 metrikte biraz
+# daha iyi (0.315/0.349) AMA kasıtlı domain-naming özelliğini öldürür (33 test) ve
+# tek-binary'ye overfit. 0.35 = tip-fallback'i kesip okunabilir domain isimlerini
+# korur (Berke vizyonu: F1 + okunabilirlik). Daha çok binary gelince env ile
+# yeniden ayarlanabilir (KARADUL_LOCAL_MIN_CONF).
+_LOCAL_MIN_CONF: float = float(os.environ.get("KARADUL_LOCAL_MIN_CONF", "0.35"))
+
+
+# ---------------------------------------------------------------------------
 # Local variable usage patterns (Strateji 9)
 # ---------------------------------------------------------------------------
 # Pattern, suggested_name, confidence
@@ -3491,7 +3519,10 @@ class CVariableNamer:
                         best_conf = 0.25
                         best_reason = f"Typed local: {decl_type}"
 
-            if best_name and best_conf >= self._min_confidence:
+            # Lokal-özel eşik: düşük-conf tip/prefix fallback isimleri (val_XX,
+            # qword_XX, ptr_XX...) emit edilmez -> Ghidra placeholder kalır (FP değil).
+            # Param/fonksiyon isimleri bu eşikten ETKİLENMEZ (ayrı stratejiler).
+            if best_name and best_conf >= max(self._min_confidence, _LOCAL_MIN_CONF):
                 self._add_candidate(_NamingCandidate(
                     old_name=var_name,
                     new_name=best_name,

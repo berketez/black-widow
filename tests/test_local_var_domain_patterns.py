@@ -567,9 +567,12 @@ void FUN_test(void) {
         assert name == "buf"
 
     def test_ghidra_auto_name_not_used(self):
-        """FUN_XXXXX should NOT produce 'FUN_XXXXX_ret' -- Ghidra auto names
-        are excluded from semantic naming. Result may be 'ret' or 'result'
-        depending on type declaration, but never FUN_xxx_ret."""
+        """FUN_XXXXX callee -> asla 'FUN_XXXXX_ret' üretme.
+
+        _LOCAL_MIN_CONF (2026-07-18): bilinmeyen callee'nin generic 'ret'i
+        (conf 0.30 < 0.35 eşik) BASTIRILIR -> iVar1 abstain (unnamed) kalır.
+        Eskiden zayıf bir 'ret' verirdi; artık kanıt yoksa isim vermiyoruz.
+        Niyet KORUNUR: hiçbir durumda FUN_xxx ismi (ne çıplak ne _ret'li) sızmaz."""
         body = """\
 void FUN_test(void) {
   int iVar1;
@@ -578,8 +581,8 @@ void FUN_test(void) {
 }"""
         cands = _run_strategy(body)
         name = _get_best_name(cands, "FUN_test", "iVar1")
-        assert name in ("ret", "result")
-        assert "FUN_" not in name
+        # abstention (None) veya geçerli bir isim olabilir; ASLA FUN_xxx sızmaz
+        assert name is None or "FUN_" not in name
 
     def test_underscore_stripped(self):
         """_initModule -> initModule_ret."""
@@ -594,8 +597,10 @@ void FUN_test(void) {
         assert name == "initModule_ret"
 
     def test_short_func_name_ignored(self):
-        """2-char function names like 'ab' are too short -> no semantic ret.
-        Result will be 'ret' or 'result' (from type fallback), never 'ab_ret'."""
+        """2-karakter callee ('ab') çok kısa -> semantic ret üretme.
+
+        _LOCAL_MIN_CONF (2026-07-18): generic 'ret' (conf 0.30 < 0.35) bastırılır
+        -> iVar1 abstain kalır. Niyet: asla 'ab_ret' üretme."""
         body = """\
 void FUN_test(void) {
   int iVar1;
@@ -604,8 +609,8 @@ void FUN_test(void) {
 }"""
         cands = _run_strategy(body)
         name = _get_best_name(cands, "FUN_test", "iVar1")
-        assert name in ("ret", "result")
-        assert "ab_" not in name
+        # abstention (None) veya geçerli isim; ASLA 'ab_' prefix sızmaz
+        assert name is None or "ab_" not in name
 
 
 # ---------------------------------------------------------------------------
