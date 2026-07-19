@@ -581,8 +581,11 @@ void FUN_test(void) {
 }"""
         cands = _run_strategy(body)
         name = _get_best_name(cands, "FUN_test", "iVar1")
-        # abstention (None) veya geçerli bir isim olabilir; ASLA FUN_xxx sızmaz
-        assert name is None or "FUN_" not in name
+        # KESINLESTIRILDI (mutasyon locku): bilinmeyen callee'nin generic 'ret'i
+        # (conf 0.30 < _LOCAL_MIN_CONF 0.35) HIC emit edilmemeli -> abstain (None).
+        # Zayif "FUN_ not in name" iddiasi c_namer floor'u silen mutanti kacirir
+        # ("ret" FUN_ icermez); `is None` floor'u kilitler.
+        assert name is None
 
     def test_underscore_stripped(self):
         """_initModule -> initModule_ret."""
@@ -609,8 +612,11 @@ void FUN_test(void) {
 }"""
         cands = _run_strategy(body)
         name = _get_best_name(cands, "FUN_test", "iVar1")
-        # abstention (None) veya geçerli isim; ASLA 'ab_' prefix sızmaz
-        assert name is None or "ab_" not in name
+        # KESINLESTIRILDI (mutasyon locku): 2-karakter callee'nin generic 'ret'i
+        # (conf 0.30 < _LOCAL_MIN_CONF 0.35) HIC emit edilmemeli -> abstain (None).
+        # Zayif "ab_ not in name" iddiasi c_namer floor'u silen mutanti kacirir
+        # ("ret" 'ab_' icermez); `is None` floor'u kilitler.
+        assert name is None
 
 
 # ---------------------------------------------------------------------------

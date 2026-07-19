@@ -171,6 +171,105 @@
       "replace": "        scored.sort(key=lambda x: x[0], reverse=False)",
       "expect": "killed",
       "desc": "T4: klasik `scored.sort(reverse=True)` -> `False` en dusuk skorlu string secilir"
+    },
+    {
+      "id": "a1_default_merge_source_ge2",
+      "module": "karadul/computation/struct_recovery/field_namer.py",
+      "test": "tests/test_mutation_kill_field_namer_merge.py::test_default_merge_cross_source_sum_beats_single_strong",
+      "find": "if len(name_sources[name]) >= 2:",
+      "replace": "if len(name_sources[name]) >= 3:",
+      "expect": "killed",
+      "desc": "A1: cross-source bonus esigi >=2 -> >=3; 2-kaynakli isim bonusu alamaz -> secim tek-kaynakli guclu adaya kayar"
+    },
+    {
+      "id": "a2_default_merge_cross_bonus",
+      "module": "karadul/computation/struct_recovery/field_namer.py",
+      "test": "tests/test_mutation_kill_field_namer_merge.py::test_default_merge_cross_source_sum_beats_single_strong",
+      "find": "name_scores[name] *= 1.2",
+      "replace": "name_scores[name] *= 1.0",
+      "expect": "killed",
+      "desc": "A2: capraz-kaynak bonusu *1.2 -> *1.0 (etkisiz); 0.8 < 0.9 -> yanlis secim"
+    },
+    {
+      "id": "a3_default_merge_sum_to_max",
+      "module": "karadul/computation/struct_recovery/field_namer.py",
+      "test": "tests/test_mutation_kill_field_namer_merge.py::test_default_merge_cross_source_sum_beats_single_strong",
+      "find": "name_scores.get(c.name, 0.0) + c.confidence",
+      "replace": "max(name_scores.get(c.name, 0.0), c.confidence)",
+      "expect": "killed",
+      "desc": "A3: kaynak-skor toplama -> max; cok-kaynakli isim skoru sismez (0.4 kalir) -> yanlis secim"
+    },
+    {
+      "id": "b1_match_function_max_to_min",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_mutation_kill_signature_db_confidence.py::test_match_function_returns_highest_confidence_candidate",
+      "find": "return max(candidates, key=lambda m: m.confidence)",
+      "replace": "return min(candidates, key=lambda m: m.confidence)",
+      "expect": "killed",
+      "desc": "B1: match_function final secim max -> min; dusuk guvenli katman kazanir"
+    },
+    {
+      "id": "b2_match_strings_keyword_bonus",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_mutation_kill_signature_db_confidence.py::test_match_by_strings_confidence_scales_with_keyword_count",
+      "find": "conf = min(0.92, 0.65 + len(keywords) * 0.07)",
+      "replace": "conf = min(0.92, 0.65)",
+      "expect": "killed",
+      "desc": "B2: _match_by_strings keyword-sayisi bonusu silinir (0.86 -> 0.65)"
+    },
+    {
+      "id": "b3_match_calls_coverage_factor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_mutation_kill_signature_db_confidence.py::test_match_by_calls_confidence_scaled_by_coverage",
+      "find": "conf = base_conf * (0.7 + 0.3 * coverage)",
+      "replace": "conf = base_conf",
+      "expect": "killed",
+      "desc": "B3: _match_by_calls coverage carpani silinir; strict-subset (coverage<1) icin conf base'e sisirir"
+    },
+    {
+      "id": "c_solver_oversized_confidence",
+      "module": "karadul/computation/struct_recovery/solver.py",
+      "test": "tests/test_mutation_kill_struct_solver_confidence.py::test_oversized_recursion_confidence_is_explained_over_total",
+      "find": "(explained / total_accesses) if total_accesses else 0.0",
+      "replace": "(1.0 if total_accesses else 0.0)",
+      "expect": "killed",
+      "desc": "C: oversized-cap recursion confidence explained/total -> sabit 1.0 (3/4=0.75 yerine 1.0)"
+    },
+    {
+      "id": "d_signature_fusion_conf_gate",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_mutation_kill_feedback_computation_gate.py::test_signature_fusion_low_confidence_gate",
+      "find": "if cand_src == \"signature_fusion\" and cand_conf < 0.40:",
+      "replace": "if cand_src == \"signature_fusion\" and cand_conf < 0.0:",
+      "expect": "killed",
+      "desc": "D: signature_fusion conf esigi <0.40 -> <0.0; zayif (0.35) fusion adayi FP olarak eklenir"
+    },
+    {
+      "id": "d_callee_profile_conf_gate",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_mutation_kill_feedback_computation_gate.py::test_callee_profile_low_confidence_gate",
+      "find": "if cand_src == \"callee_profile\" and cand_conf < 0.30:",
+      "replace": "if cand_src == \"callee_profile\" and cand_conf < 0.0:",
+      "expect": "killed",
+      "desc": "D' (ikiz): callee_profile conf esigi <0.30 -> <0.0; zayif (0.25) profile adayi FP olarak eklenir"
+    },
+    {
+      "id": "ek_c_namer_local_floor_ghidra",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_local_var_domain_patterns.py::TestReturnValueSemanticNaming::test_ghidra_auto_name_not_used",
+      "find": "if best_name and best_conf >= max(self._min_confidence, _LOCAL_MIN_CONF):",
+      "replace": "if best_name and best_conf >= self._min_confidence:",
+      "expect": "killed",
+      "desc": "EK: lokal-var floor'dan _LOCAL_MIN_CONF (0.35) kaldirilir; bilinmeyen callee 'ret'i (0.30) sizar"
+    },
+    {
+      "id": "ek_c_namer_local_floor_short",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_local_var_domain_patterns.py::TestReturnValueSemanticNaming::test_short_func_name_ignored",
+      "find": "if best_name and best_conf >= max(self._min_confidence, _LOCAL_MIN_CONF):",
+      "replace": "if best_name and best_conf >= self._min_confidence:",
+      "expect": "killed",
+      "desc": "EK (ikiz): ayni floor mutanti; 2-karakter callee 'ret'i (0.30) sizar -> kesinlestirilmis `is None` yakalar"
     }
   ]
 }
