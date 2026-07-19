@@ -270,6 +270,69 @@
       "replace": "if best_name and best_conf >= self._min_confidence:",
       "expect": "killed",
       "desc": "EK (ikiz): ayni floor mutanti; 2-karakter callee 'ret'i (0.30) sizar -> kesinlestirilmis `is None` yakalar"
+    },
+    {
+      "id": "f3_decision_equal_thresholds_invariant",
+      "module": "karadul/computation/fusion/fuser.py",
+      "test": "tests/test_mutation_kill_fusion_decision.py::test_decision_config_allows_equal_thresholds",
+      "find": "if not (0.0 <= self.reject_threshold <= self.accept_threshold <= 1.0):",
+      "replace": "if not (0.0 <= self.reject_threshold < self.accept_threshold <= 1.0):",
+      "expect": "killed",
+      "desc": "F3 (TAM-SUITE delik): DecisionConfig invariant `reject <= accept` -> `<`; reject==accept degenere-gecerli config'i ValueError ile reddeder (esit-esik testi yoktu)"
+    },
+    {
+      "id": "c4_platt_yminus_smoothing",
+      "module": "karadul/computation/fusion/calibration.py",
+      "test": "tests/test_mutation_kill_fusion_decision.py::test_platt_yminus_smoothing_keeps_negative_target_above_zero",
+      "find": "        y_minus = 1.0 / (n_minus + 2.0)",
+      "replace": "        y_minus = 0.0 / (n_minus + 2.0)",
+      "expect": "killed",
+      "desc": "C4 (TAM-SUITE delik): Platt negatif-hedef smoothing 1/(n_minus+2) -> 0.0; simetrik 2-nokta fit calibrate(-4) 1/3 yerine ~0.006 (asiri-guven bastirma kaybolur; eski fit testi sadece A>0.5 denetliyordu)"
+    },
+    {
+      "id": "ra_manifest_add_result_tie_strict",
+      "module": "karadul/reconstruction/naming/result.py",
+      "test": "tests/test_mutation_kill_naming_result.py::test_add_result_equal_confidence_keeps_first",
+      "find": "if existing is None or result.confidence > existing.confidence:",
+      "replace": "if existing is None or result.confidence >= existing.confidence:",
+      "expect": "killed",
+      "desc": "RA (TAM-SUITE delik): add_result esitlik-kirilimi `>` -> `>=`; esit guvende ILK-kazanir yerine SON-kazanir (deterministik olmayan; esit-guven testi yoktu)"
+    },
+    {
+      "id": "n1_npm_min_match_gate_strict",
+      "module": "karadul/reconstruction/naming/npm_fingerprinter.py",
+      "test": "tests/test_mutation_kill_naming_result.py::test_min_match_boundary_is_inclusive",
+      "find": "            if matched < min_match:",
+      "replace": "            if matched <= min_match:",
+      "expect": "killed",
+      "desc": "N1 (TAM-SUITE delik): _match_module esik kapisi `matched < min_match` -> `<=`; matched==min_match (tam esik) modulu eslesmeden eler (npm scoring yalniz mock'lu testte, gecit olcumsuzdu)"
+    },
+    {
+      "id": "fn_flirt_source_confidence",
+      "module": "karadul/computation/struct_recovery/field_namer.py",
+      "test": "tests/test_mutation_kill_field_namer_source_conf.py::test_flirt_confidence_outranks_algorithm_template",
+      "find": "                confidence=0.85,",
+      "replace": "                confidence=0.5,",
+      "expect": "killed",
+      "desc": "FN (TAM-SUITE delik): FLIRT kaynak guveni 0.85 -> 0.5; flirt artik algorithm_template(0.80)'i yenmez (kaynak-oncelik siralamasi 0.85 hicbir testte belirleyici degildi)"
+    },
+    {
+      "id": "cs4_func_len_penalty_linear_region",
+      "module": "karadul/quality/metrics/code_structure.py",
+      "test": "tests/test_mutation_kill_code_structure.py::test_func_len_penalty_linear_region_is_nonzero",
+      "find": "    fraction = (avg_len - soft) / (hard - soft)",
+      "replace": "    fraction = (avg_len - soft) / (hard - soft) * 0",
+      "expect": "killed",
+      "desc": "CS4 (TAM-SUITE delik): func_len_penalty LINEAR interpolasyon (soft<avg<hard) fraction*0; bu bolgede ceza 0 (tek uzunluk testi 202-satir ile >=hard tam-ceza dalina dusuyordu, linear bolge olcumsuzdu)"
+    },
+    {
+      "id": "cs1_max_nesting_function_level_offset",
+      "module": "karadul/quality/metrics/code_structure.py",
+      "test": "tests/test_mutation_kill_code_structure.py::test_max_nesting_excludes_function_level_brace",
+      "find": "return max(0, max_depth - 1)",
+      "replace": "return max(0, max_depth - 0)",
+      "expect": "killed",
+      "desc": "CS1 (TAM-SUITE delik): _max_nesting_depth fonksiyon-seviyesi ofseti -1 -> -0; her fonksiyonun nesting'i 1 sisirilir (tam deger hicbir testte pinlenmemis, gevsek >=3 esikleri kaciriyordu)"
     }
   ]
 }
