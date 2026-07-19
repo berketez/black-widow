@@ -23,6 +23,11 @@ class StageResult:
         artifacts: Uretilen dosyalarin ad->path eslesmesi.
         stats: Istatistikler (fonksiyon sayisi, string sayisi vb.).
         errors: Hata mesajlari listesi (basarisiz ise).
+        skipped: Asama BASARISIZ degil, uygulanabilir olmadigi icin ATLANDI.
+            Ornek: dinamik analiz Frida yokken ya da yabanci-mimarili/cross-arch
+            binary spawn edilemedigi icin atlanir. skipped=True olan asamalar
+            pipeline'i "FAILED" yapmaz (bkz PipelineResult.add_stage_result) ve
+            get_failed_stages()'e girmez, get_skipped_stages()'te listelenir.
     """
 
     stage_name: str
@@ -31,12 +36,14 @@ class StageResult:
     artifacts: dict[str, Path] = field(default_factory=dict)
     stats: dict[str, Any] = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)
+    skipped: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         """JSON-serializable dict'e donustur."""
         return {
             "stage_name": self.stage_name,
             "success": self.success,
+            "skipped": self.skipped,
             "duration_seconds": round(self.duration_seconds, 3),
             "artifacts": {k: str(v) for k, v in self.artifacts.items()},
             "stats": self.stats,
@@ -53,11 +60,13 @@ class StageResult:
             artifacts={k: Path(v) for k, v in data.get("artifacts", {}).items()},
             stats=data.get("stats", {}),
             errors=data.get("errors", []),
+            # Geriye uyum: eski raporlarda "skipped" alani yok -> False.
+            skipped=bool(data.get("skipped", False)),
         )
 
     def summary(self) -> str:
         """Tek satirlik ozet."""
-        status = "OK" if self.success else "FAIL"
+        status = "SKIP" if self.skipped else ("OK" if self.success else "FAIL")
         artifact_count = len(self.artifacts)
         error_count = len(self.errors)
         return (
@@ -91,12 +100,29 @@ class PipelineResult:
     def add_stage_result(self, result: StageResult) -> None:
         """Stage sonucunu ekle ve genel basariyi guncelle."""
         self.stages[result.stage_name] = result
-        # Tum stage'ler basarili ise pipeline basarili
-        self.success = all(sr.success for sr in self.stages.values())
+        # Tum stage'ler basarili VEYA atlanmis (skipped) ise pipeline basarili.
+        # skipped bir HATA degildir (orn: dinamik analiz Frida yokken/yabanci
+        # mimaride atlanir) -> mukemmel bir statik reconstruction'i "FAILED"
+        # yapmamali. Sadece gercek basarisizliklar (success=False, skipped=False)
+        # pipeline'i FAILED yapar.
+        self.success = all(
+            sr.success or sr.skipped for sr in self.stages.values()
+        )
 
     def get_failed_stages(self) -> list[str]:
-        """Basarisiz stage isimlerini dondur."""
-        return [name for name, sr in self.stages.items() if not sr.success]
+        """Gercekten BASARISIZ stage isimlerini dondur (atlananlar haric)."""
+        return [
+            name for name, sr in self.stages.items()
+            if not sr.success and not sr.skipped
+        ]
+
+    def get_skipped_stages(self) -> list[str]:
+        """Atlanan (skipped=True) stage isimlerini dondur.
+
+        Atlanan asamalar hata degildir; uygulanabilir olmadigi icin (orn.
+        Frida yok / cross-arch spawn edilemez) calistirilamamistir.
+        """
+        return [name for name, sr in self.stages.items() if sr.skipped]
 
     def get_all_artifacts(self) -> dict[str, Path]:
         """Tum stage'lerdeki artifact'leri birlestir."""
@@ -147,6 +173,10 @@ class PipelineResult:
         ]
         for sr in self.stages.values():
             lines.append(f"    {sr.summary()}")
+
+        skipped = self.get_skipped_stages()
+        if skipped:
+            lines.append(f"  Skipped: {', '.join(skipped)}")
 
         failed = self.get_failed_stages()
         if failed:

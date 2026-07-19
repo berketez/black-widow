@@ -431,6 +431,49 @@ class _BSimNativeWrapper:
             funcs.append(func)
         return funcs
 
+    def _exe_already_ingested(self, database: Any, program: Any) -> bool:
+        """Bu programin md5'i BSim DB'sinde ZATEN kayitli mi? (idempotent guard)
+
+        R2: ayni exe her koşumda kör kör yeniden ingest edilince Ghidra
+        InsertRequest, ayni md5'i (workspace yolu degistigi icin) farkli program
+        adiyla ikinci kez eklemeye calisir ve ``already ingested with a
+        different name`` FATAL hatasi verir -> native yol coker, lite moda
+        duser (feature vector kaybi). Ingest'ten ONCE md5'i sorgulayip zaten
+        varsa taramayi/insert'i atlariz; sorgu dogrudan mevcut DB'den calisir.
+
+        QueryExeInfo.filterMd5 ile executable tablosu sorgulanir. Sorgu API'si
+        yok/hata verirse ``False`` doner (guvenli: eski kor-ingest davranisi
+        korunur, en fazla eski hata yolu tekrarlanir).
+        """
+        try:
+            from ghidra.features.bsim.query.protocol import QueryExeInfo
+        except Exception:  # noqa: BLE001
+            logger.debug("QueryExeInfo import edilemedi, idempotent kontrol atlaniyor", exc_info=True)
+            return False
+        try:
+            md5 = program.getExecutableMD5()
+        except Exception:  # noqa: BLE001
+            logger.debug("program.getExecutableMD5() basarisiz, idempotent kontrol atlaniyor", exc_info=True)
+            return False
+        if not md5:
+            return False
+        try:
+            query = QueryExeInfo()
+            query.filterMd5 = str(md5)
+            query.limit = 1
+            response = query.execute(database)
+            if response is None:
+                logger.debug(
+                    "BSim QueryExeInfo None dondu (%s), ingest'e devam ediliyor",
+                    self._last_error(database),
+                )
+                return False
+            records = response.records
+            return bool(records) and len(records) > 0
+        except Exception:  # noqa: BLE001
+            logger.debug("BSim exe md5 kontrolu basarisiz, ingest'e devam ediliyor", exc_info=True)
+            return False
+
     # -- public -------------------------------------------------------
 
     def create_database(self, name: str) -> Path:
@@ -486,6 +529,18 @@ class _BSimNativeWrapper:
         database = self._build_client(db_name)
         gen = None
         try:
+            # R2 (idempotent ingest): bu exe (md5) DB'de zaten varsa YENIDEN
+            # ekleme -> "already ingested with a different name" fatal hatasini
+            # ve lite'a dusmeyi onler. Sorgu zaten mevcut kayittan calisir.
+            if self._exe_already_ingested(database, program):
+                existing = len(self._iter_real_functions(program))
+                logger.info(
+                    "BSim: exe zaten ingest edilmis (md5 eslesme), yeniden "
+                    "eklenmiyor; sorguya geciliyor (%s, %d fonksiyon)",
+                    db_name, existing,
+                )
+                return existing
+
             gen = self._gen_signatures(database, program)
 
             func_count = 0
@@ -654,7 +709,12 @@ class BSimDatabase:
         if bsim_cfg and bsim_cfg.db_path:
             self.db_path = Path(bsim_cfg.db_path)
         else:
-            self.db_path = Path.home() / ".cache" / "karadul" / "bsim"
+            # R3: sabit ~/.cache/karadul yerine merkezi cache-root (env
+            # override: KARADUL_CACHE_DIR / KARADUL_DATA_DIR). Izole kosumlar
+            # (test/benchmark/farkli kullanici) ayni BSim DB'yi paylasip
+            # birbirini bozmasin.
+            from karadul.config import resolve_cache_root
+            self.db_path = resolve_cache_root() / "bsim"
         self.db_path.mkdir(parents=True, exist_ok=True)
 
         self.config = config

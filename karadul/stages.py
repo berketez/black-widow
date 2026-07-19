@@ -529,6 +529,22 @@ class DynamicAnalysisStage(Stage):
     name = "dynamic"
     requires: tuple[str, ...] = ("identify",)  # static'ten bagimsiz calisabilir
 
+    def _skipped(self, start: float, reason: str) -> StageResult:
+        """Dinamik analiz ATLANDI sonucu (hata DEGIL).
+
+        Frida yoksa ya da hedef bu ortamda spawn edilemiyorsa (yabanci mimari /
+        cross-arch, ornegin macOS'ta Linux ELF) dinamik analiz *uygulanamaz* --
+        bu bir basarisizlik degildir. skipped=True doner; PipelineResult bunu
+        FAILED saymaz (bkz result.add_stage_result / get_failed_stages).
+        """
+        return StageResult(
+            stage_name=self.name,
+            success=False,
+            skipped=True,
+            duration_seconds=time.monotonic() - start,
+            stats={"skip_reason": reason},
+        )
+
     def execute(self, context: PipelineContext) -> StageResult:
         """Frida ile dinamik analiz calistir."""
         start = time.monotonic()
@@ -541,23 +557,15 @@ class DynamicAnalysisStage(Stage):
             from karadul.frida.session import FridaSession, FridaNotAvailableError, FridaAttachError
             from karadul.frida.collectors.function_tracer import FunctionTracer
         except ImportError as exc:
-            return StageResult(
-                stage_name=self.name,
-                success=False,
-                duration_seconds=time.monotonic() - start,
-                errors=[f"Frida modulleri yuklenemedi: {exc}"],
-            )
+            logger.debug("Frida modulleri yuklenemedi, dinamik analiz atlaniyor", exc_info=True)
+            return self._skipped(start, f"Frida modulleri yuklenemedi: {exc}")
 
         # FridaSession olustur
         try:
             session = FridaSession(context.config)
         except FridaNotAvailableError as exc:
-            return StageResult(
-                stage_name=self.name,
-                success=False,
-                duration_seconds=time.monotonic() - start,
-                errors=[str(exc)],
-            )
+            logger.debug("Frida kurulu degil, dinamik analiz atlaniyor", exc_info=True)
+            return self._skipped(start, str(exc))
 
         target = context.target
         hooks_dir = Path(__file__).parent / "frida" / "hooks"
@@ -567,6 +575,8 @@ class DynamicAnalysisStage(Stage):
         if hook_script and not hook_script.exists():
             errors.append(f"Hook script bulunamadi: {hook_script}")
             hook_script = None
+
+        skipped = False
 
         try:
             # Spawn veya attach karari
@@ -656,8 +666,14 @@ class DynamicAnalysisStage(Stage):
             success = True
 
         except FridaAttachError as exc:
-            errors.append(f"Frida attach/spawn hatasi: {exc}")
+            # Spawn/attach basarisiz -- en yaygin sebep hedefin bu ortamda
+            # calistirilamamasi (yabanci mimari / cross-arch: macOS'ta Linux
+            # ELF, ya da SIP). Bu bir ANALIZ HATASI degil, dinamik analizin
+            # UYGULANAMAMASIdir -> ATLA (skipped), pipeline'i FAILED yapma.
+            logger.debug("Frida spawn/attach basarisiz, dinamik analiz atlaniyor: %s", exc, exc_info=True)
+            stats["skip_reason"] = f"Frida attach/spawn yapilamadi: {exc}"
             success = False
+            skipped = True
 
         except Exception as exc:
             errors.append(f"Dinamik analiz hatasi: {type(exc).__name__}: {exc}")
@@ -692,6 +708,7 @@ class DynamicAnalysisStage(Stage):
         return StageResult(
             stage_name=self.name,
             success=success,
+            skipped=skipped,
             duration_seconds=time.monotonic() - start,
             artifacts=artifacts,
             stats=stats,
@@ -3314,19 +3331,28 @@ class ReconstructionStage(Stage):
                 from karadul.reconstruction.recovery_layers import ComputationRecoveryEngine
                 _pre_comp_engine = ComputationRecoveryEngine(context.config)
             except ImportError:
-                pass
+                logger.debug(
+                    "ComputationRecoveryEngine import edilemedi, pre-instantiation atlaniyor",
+                    exc_info=True,
+                )
         if context.config.binary_reconstruction.enable_c_naming:
             try:
                 from karadul.reconstruction.c_namer import CVariableNamer
                 _pre_c_namer = CVariableNamer(context.config)
             except ImportError:
-                pass
+                logger.debug(
+                    "CVariableNamer import edilemedi, pre-instantiation atlaniyor",
+                    exc_info=True,
+                )
         if context.config.binary_reconstruction.enable_type_recovery:
             try:
                 from karadul.reconstruction.c_type_recoverer import CTypeRecoverer
                 _pre_type_rec = CTypeRecoverer(context.config)
             except ImportError:
-                pass
+                logger.debug(
+                    "CTypeRecoverer import edilemedi, pre-instantiation atlaniyor",
+                    exc_info=True,
+                )
 
         # ÇİFT-LOOP FIX (2026-07-17): step-registry modunda (default, config.py:619)
         # Phase 2 feedback loop ZATEN step olarak koşuyor (stages.py:3005 civarı ->
@@ -3490,7 +3516,10 @@ class ReconstructionStage(Stage):
                         if _incr_comp_dir and _incr_comp_dir.exists():
                             shutil.rmtree(_incr_comp_dir, ignore_errors=True)
                     except NameError:
-                        pass
+                        logger.debug(
+                            "_incr_comp_dir tanimli degil, temizlik atlaniyor",
+                            exc_info=True,
+                        )
             stats[f"timing_computation_recovery_iter{_pipeline_iter}"] = round(time.monotonic() - _step_start, 1)
             logger.info("  Computation recovery (iter %d) done: %.1fs", _pipeline_iter + 1, stats[f"timing_computation_recovery_iter{_pipeline_iter}"])
 

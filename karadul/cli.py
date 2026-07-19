@@ -439,7 +439,11 @@ def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
 @click.option("--experimental-step-registry", is_flag=True, default=False,
               help="[v1.10.0] Yeni step registry pipeline'ini kullan (eski monolith yerine).")
 @click.option("--lmdb-sigdb", is_flag=True, default=False,
-              help="[v1.10.0] LMDB-backed signature DB'yi kullan (~3GB -> ~250MB RAM).")
+              help="[v1.10.0] LMDB-backed signature DB'yi ZORLA AC (default: zaten aktif; "
+                   "LMDB dosyasi varsa ~250MB RAM, yoksa dict fallback). Config'de kapatilmissa override eder.")
+@click.option("--no-lmdb-sigdb", "no_lmdb_sigdb", is_flag=True, default=False,
+              help="[v1.10.0] LMDB signature DB'yi KAPAT -> eski dict-based DB (~3GB RAM). "
+                   "Default LMDB aktif oldugundan asil anlamli bayrak budur; --lmdb-sigdb ile birlikte verilirse bu kazanir.")
 @click.option("--parallel-naming", is_flag=True, default=False,
               help="[v1.10.0] ThreadPool tabanli paralel naming (3-5x hiz).")
 @click.option("--no-cfg-iso", is_flag=True, default=False,
@@ -480,6 +484,7 @@ def analyze(
     output_format: str,
     experimental_step_registry: bool,      # v1.10.0 M4
     lmdb_sigdb: bool,                      # v1.10.0 M4
+    no_lmdb_sigdb: bool,                   # R4: LMDB'yi kapat (default aktif)
     parallel_naming: bool,                 # v1.10.0 M4
     no_cfg_iso: bool,                      # v1.10.0 M4
     no_computation_fusion: bool,           # v1.10.0 M4
@@ -528,6 +533,10 @@ def analyze(
         cfg.pipeline.use_step_registry = True
     if lmdb_sigdb:
         cfg.perf.use_lmdb_sigdb = True
+    # R4: --no-lmdb-sigdb explicit KAPATMA. Default use_lmdb_sigdb=True oldugu
+    # icin asil anlamli override budur. Ikisi birden verilirse --no kazanir.
+    if no_lmdb_sigdb:
+        cfg.perf.use_lmdb_sigdb = False
     if parallel_naming:
         cfg.perf.parallel_naming = True
     if no_cfg_iso:

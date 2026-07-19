@@ -17,6 +17,39 @@ from karadul.computation.config import ComputationConfig
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Merkezi cache-root cozumu (R3: cache izolasyonu)
+# ---------------------------------------------------------------------------
+
+# Tarihce: cache dizinleri (BSim DB, capa-rules, ref_db, cfg_cache vb.) kod
+# icinde ~/.cache/karadul'a SABIT kodlanmisti; hicbir env override okunmuyordu.
+# Bu, paralel/izole kosumlarin (test, benchmark, farkli kullanici) ayni DB'yi
+# paylasip birbirini bozmasina yol aciyordu (orn. BSim "already ingested"
+# fiyaskosu). resolve_cache_root() tek merkezden env override saglar.
+_DEFAULT_CACHE_SUBDIR = ("karadul",)
+
+
+def resolve_cache_root() -> Path:
+    """Merkezi cache kok dizinini dondur (env override destekli).
+
+    Oncelik sirasi:
+      1. ``KARADUL_CACHE_DIR``  -- birincil, acik cache override.
+      2. ``KARADUL_DATA_DIR``   -- ikincil (izolasyon konvansiyonu; CLI/test
+         cagrilari bunu kullaniyordu ama kod okumuyordu -> artik onurlandirilir).
+      3. ``~/.cache/karadul``   -- varsayilan.
+
+    Doner: mutlak, kullanici-genisletilmis (``~`` cozulmus) Path. Dizin BURADA
+    OLUSTURULMAZ (cagiran alt-dizinini mkdir eder); sadece kok yol cozulur.
+    """
+    for env_name in ("KARADUL_CACHE_DIR", "KARADUL_DATA_DIR"):
+        raw = os.environ.get(env_name)
+        if raw and raw.strip():
+            return Path(raw).expanduser()
+    return Path.home() / ".cache" / Path(*_DEFAULT_CACHE_SUBDIR)
+
+
 def _detect_cpu_cores() -> int:
     """Performans cekirdek sayisini tespit et (E-core haric)."""
     total = os.cpu_count() or 4
@@ -626,8 +659,10 @@ class PerfConfig:
     """v1.10.0: Performans / bellek optimizasyonu ayarlari.
 
     LMDB-backed SignatureDB:
-      use_lmdb_sigdb=False default -- eski dict-based SignatureDB kullanilir (~3GB RAM).
-      True ise karadul.analyzers.sigdb_lmdb.LMDBSignatureDB kullanilir (~250MB RAM).
+      use_lmdb_sigdb=True default (v1.12.0 sig_db Faz 1: auto-detect). LMDB
+      dosyasi (~/.karadul/signatures.lmdb) VARSA LMDBSignatureDB kullanilir
+      (~250MB RAM); YOKSA eski dict-based SignatureDB'ye (~3GB RAM) graceful
+      fallback olur (bkz. asagidaki ayrintili not + SignatureDB._init_lmdb_backend).
       Gecis icin: scripts/build_sig_lmdb.py ile LMDB olusturulmali.
 
     lmdb_l1_cache_size: Sicak sembol lookup icin in-process LRU cache boyutu.

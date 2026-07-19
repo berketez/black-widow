@@ -51,6 +51,7 @@ class JSONReporter:
         for name, sr in result.stages.items():
             stages_data[name] = {
                 "success": sr.success,
+                "skipped": sr.skipped,
                 "duration": round(sr.duration_seconds, 3),
                 "stats": sr.stats,
                 "errors": sr.errors,
@@ -111,9 +112,14 @@ class JSONReporter:
 
     def _build_summary(self, result: PipelineResult) -> dict[str, Any]:
         """Ozet istatistikleri hesapla."""
+        # skipped (atlanan) asamalar failed'den AYRI raporlanir: bir asama
+        # uygulanamadigi icin atlandiginda (orn. dinamik analiz Frida yok /
+        # cross-arch) bu bir basarisizlik degildir. get_failed_stages() zaten
+        # atlananlari haric tutar; skipped_stages onlari acikca listeler.
         summary: dict[str, Any] = {
             "total_stages": len(result.stages),
             "successful_stages": sum(1 for sr in result.stages.values() if sr.success),
+            "skipped_stages": result.get_skipped_stages(),
             "failed_stages": result.get_failed_stages(),
         }
 
