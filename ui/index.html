@@ -437,6 +437,13 @@
   .updget{padding:7px 16px; background:transparent; color:var(--cyan); border:1px solid var(--cyan);
     border-radius:3px; cursor:pointer; font-family:inherit; font-size:11px; letter-spacing:1px; white-space:nowrap}
   .updget:hover{background:rgba(56,216,240,.08)}
+  /* indirme ilerleme cubugu (varsayilan gizli; bwStartDownload gosterir) */
+  .updprog{display:none; width:180px; height:6px; background:var(--bg); border:1px solid var(--border);
+    border-radius:4px; overflow:hidden}
+  .updprogbar{width:0%; height:100%; background:linear-gradient(90deg,var(--cyan),var(--named)); transition:width .3s ease}
+  .updpct{color:var(--dim); font-size:11px; letter-spacing:.5px; white-space:nowrap; min-width:34px}
+  .updnotes{color:var(--dim); font-size:10.5px; letter-spacing:1px; text-decoration:none;
+    border-bottom:1px dashed var(--border); white-space:nowrap} .updnotes:hover{color:var(--cyan)}
   .updx{cursor:pointer; color:var(--dim); border:1px solid var(--border); border-radius:3px;
     padding:5px 10px; font-size:12px; line-height:1} .updx:hover{border-color:var(--unnamed); color:var(--unnamed)}
 </style>
@@ -447,7 +454,10 @@
 <div id="updbar" class="updbar">
   <span class="updico">▲ GÜNCELLEME</span>
   <span id="updtxt" class="updtxt"></span>
-  <button id="updget" class="updget">İndir</button>
+  <div id="updprog" class="updprog"><div id="updprogbar" class="updprogbar"></div></div>
+  <span id="updpct" class="updpct"></span>
+  <button id="updget" class="updget">İndir ve Aç</button>
+  <a id="updnotes" class="updnotes" href="#">Releases</a>
   <span id="updx" class="updx" title="Kapat">✕</span>
 </div>
 
@@ -1419,26 +1429,81 @@ document.addEventListener('keydown',e=>{
 });
 /* ===================== GÜNCELLEME BANNER'I =====================
    app_window.py arka planda /api/update-check yapar; güncelleme varsa
-   window.bwShowUpdate(info) çağırır. "İndir" WKWebView'den harici bağlantı
-   sorunlu olduğundan Python köprüsü (pywebview.api) ile sistem tarayıcısında
-   açılır; köprü yoksa window.open'a düşer (dev/tarayıcı). Bloklamaz. */
+   window.bwShowUpdate(info) çağırır. "İndir ve Aç" Python köprüsünü
+   (pywebview.api.bw_download_update) tetikler -> server DMG'yi indirir,
+   sha256 doğrular ve MOUNT eder (YERİNDE DEĞİŞTİRMEZ; kullanıcı sürükler).
+   İlerleme /api/update-download-status'tan pollanır. Köprü yoksa (dev/tarayıcı)
+   Releases sayfasına düşülür. Hiçbir aşama UI'ı bloklamaz. */
+function bwOpenReleases(url){
+  try{
+    if(window.pywebview&&window.pywebview.api&&window.pywebview.api.bw_open_releases)
+      window.pywebview.api.bw_open_releases();
+    else window.open(url||'https://github.com/berketez/black-widow/releases','_blank');
+  }catch(e){}
+}
 function bwShowUpdate(info){
   try{
     info=info||{};
+    window.__bwUpd=info;
     const bar=$('updbar'); if(!bar) return;
     const latest=esc(info.latest||''), cur=esc(info.current||'');
     $('updtxt').innerHTML='Yeni sürüm <b>'+latest+'</b> yayınlandı'+
-      (cur?' · yüklü <code>'+cur+'</code>':'')+'. Uygulama kendini güncellemez; indirip değiştirin.';
-    $('updget').onclick=()=>{
-      try{
-        if(window.pywebview&&window.pywebview.api&&window.pywebview.api.bw_open_releases)
-          window.pywebview.api.bw_open_releases();
-        else window.open(info.url||'https://github.com/berketez/black-widow/releases','_blank');
-      }catch(e){}
-    };
+      (cur?' · yüklü <code>'+cur+'</code>':'')+
+      '. <b>İndir ve Aç</b>: DMG indirilir, sha256 doğrulanır ve açılır — '+
+      'uygulamayı Applications klasörüne sürükleyin (kendini yerinde değiştirmez).';
+    $('updget').style.display='';
+    $('updget').textContent='İndir ve Aç';
+    $('updget').onclick=bwStartDownload;
+    $('updprog').style.display='none';
+    $('updprogbar').style.width='0%';
+    $('updpct').textContent='';
+    $('updnotes').onclick=(e)=>{e.preventDefault(); bwOpenReleases(info.url);};
     $('updx').onclick=()=>bar.classList.remove('on');
     bar.classList.add('on');
   }catch(e){}
+}
+function bwStartDownload(){
+  try{
+    // Köprü varsa arka plan indirmeyi tetikle; yoksa (dev/tarayıcı) Releases aç.
+    if(window.pywebview&&window.pywebview.api&&window.pywebview.api.bw_download_update){
+      window.pywebview.api.bw_download_update();
+      $('updget').style.display='none';
+      $('updprog').style.display='';
+      $('updpct').textContent='0%';
+      bwPollDownload();
+    } else {
+      bwOpenReleases((window.__bwUpd||{}).url);
+    }
+  }catch(e){}
+}
+function bwPollDownload(){
+  fetch('/api/update-download-status').then(r=>r.json()).then(s=>{
+    try{
+      s=s||{};
+      const total=s.total||0, got=s.downloaded||0;
+      const pct=total>0?Math.min(100,Math.floor(got*100/total)):0;
+      if(s.status==='downloading'){
+        $('updprogbar').style.width=pct+'%'; $('updpct').textContent=pct+'%';
+        setTimeout(bwPollDownload,900);
+      } else if(s.status==='verifying'){
+        $('updpct').textContent='Doğrulanıyor…'; setTimeout(bwPollDownload,900);
+      } else if(s.status==='mounting'){
+        $('updprogbar').style.width='100%'; $('updpct').textContent='Açılıyor…';
+        setTimeout(bwPollDownload,900);
+      } else if(s.status==='done'){
+        $('updprogbar').style.width='100%'; $('updpct').textContent='✓';
+        $('updtxt').innerHTML='İndirildi ve açıldı. <b>Black Widow.app</b>\'ı '+
+          'Applications klasörüne sürükleyip eskisinin üzerine yazın.';
+      } else if(s.status==='error'){
+        $('updpct').textContent='✕';
+        $('updtxt').innerHTML='İndirme başarısız: <code>'+esc(s.error||'bilinmeyen')+
+          '</code>. Releases bağlantısından elle indirin.';
+        $('updget').style.display=''; $('updget').textContent='Tekrar Dene';
+      } else {   // idle / bilinmeyen -> kısa süre sonra yeniden yokla
+        setTimeout(bwPollDownload,1200);
+      }
+    }catch(e){}
+  }).catch(()=>{ setTimeout(bwPollDownload,1500); });
 }
 // SOZLESME m.3: native menu (app_window.py) SADECE bu globalleri cagirir.
 window.bwOpenAbout=openAbout;

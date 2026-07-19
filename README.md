@@ -333,13 +333,31 @@ Prefer the terminal? Clear the quarantine flag instead:
 xattr -dr com.apple.quarantine "/Applications/Black Widow.app"
 ```
 
-Nothing is downloaded or replaced in the background: the app only queries the Releases page
-for a newer version and shows a dismissible banner -- you download and swap the DMG yourself.
-Self-updating in place would break the ad-hoc signature and re-trigger Gatekeeper.
+4. **Easiest:** after dragging the app to Applications, double-click **İlk Açılış (karantinayı
+   kaldır).command** inside the mounted DMG. It finds the installed app (`/Applications` or
+   `~/Applications`), clears the quarantine flag automatically and opens it -- no Terminal, no
+   System Settings trip. (It is a plain shell script, so on its own first run macOS may ask you
+   to confirm once; click **Open**.)
 
-> **Maintainer note (release drafts):** attach the built `BlackWidow-*.dmg` as a release
-> asset, tag the release `vMAJOR.MINOR.PATCH` (the in-app update check compares this tag against
-> the running version), and paste the three install steps above into the release notes.
+The app checks a **self-hosted update manifest** (`appcast.json`) for a newer version and shows
+a dismissible banner. If you click **İndir ve Aç**, it downloads the new DMG, verifies its
+**SHA-256** against the manifest (rejecting the file on any mismatch), and mounts it for you --
+but it **never replaces itself in place** (that would break the ad-hoc signature and re-trigger
+Gatekeeper). You still drag the new app over the old one. The **Help > Güncellemeleri Kontrol Et**
+menu forces an immediate check (bypassing the 24-hour throttle).
+
+> **Maintainer note (publishing updates):** the update feed is a single JSON manifest you host
+> yourself, so no paid Apple account or GitHub release is required.
+> 1. Run `bash packaging/macos/build_dmg.sh`; it writes `dist/BlackWidow-*.dmg.sha256` and prints
+>    a ready-to-edit `appcast.json` fragment (version, sha256, size, timestamp).
+> 2. Upload the DMG to your host, fill `dmg_url`/`notes_url` with URLs **on that same host**, and
+>    publish the manifest JSON.
+> 3. Point the app at it with `KARADUL_UPDATE_MANIFEST_URL=https://your-host/karadul/appcast.json`
+>    (extra hosts via `KARADUL_UPDATE_ALLOWED_HOSTS`, comma-separated). `dmg_url`/`notes_url` must
+>    resolve to an allowed host over `https` or the built-in SSRF guard rejects them.
+>
+> The manifest schema is `{version, dmg_url, sha256, size_bytes, notes_url, published_at, min_os}`;
+> the in-app check compares `version` against the running version with the same semver logic.
 
 ## Output
 

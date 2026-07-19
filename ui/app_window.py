@@ -166,6 +166,22 @@ class _JsApi:
         _open_url(f"{PROJECT_REPO_URL}/releases")
         return True
 
+    def bw_download_update(self) -> bool:    # window.pywebview.api.bw_download_update()
+        """Sayfadaki 'İndir ve Aç' -> yerel server'da arka plan indirmeyi tetikler.
+
+        JS'ten URL ALMAZ (sabit endpoint). Server manifest'teki dmg_url'i (SSRF
+        guard'li) indirir, sha256 dogrular, mount eder -- YERINDE DEGISTIRMEZ.
+        Ilerleme sayfadan /api/update-download-status ile pollanir.
+        """
+        try:
+            req = urllib.request.Request(
+                f"{URL}/api/update-download", data=b"{}", method="POST")
+            with urllib.request.urlopen(req, timeout=5) as r:
+                json.load(r)
+            return True
+        except Exception:
+            return False
+
 
 def _check_update_async() -> None:
     """Arka planda (daemon) yeni sürüm var mı bak; varsa sayfada banner göster.
@@ -188,6 +204,57 @@ def _check_update_async() -> None:
     }
     # _js sayfa hazır olana kadar bekler (evaluate_js); daemon thread'te güvenli.
     _js("window.bwShowUpdate && window.bwShowUpdate(%s)" % json.dumps(payload))
+
+
+def _notify(text: str, title: str = "Black Widow") -> None:
+    """Küçük bilgi diyaloğu (osascript). Menü-tetikli geri bildirim; hatayı yutar.
+
+    ensure_ascii=False ZORUNLU: aksi halde Türkçe karakterler '\\uXXXX' olarak
+    kaçışlanır ve AppleScript bunu literal gösterir (osascript \\u anlamaz).
+    """
+    try:
+        subprocess.run(
+            ["osascript", "-e",
+             'display dialog %s buttons {"Tamam"} default button "Tamam" '
+             'with title %s'
+             % (json.dumps(text, ensure_ascii=False),
+                json.dumps(title, ensure_ascii=False))],
+            check=False, timeout=30,
+        )
+    except Exception:
+        pass
+
+
+def _act_check_update() -> None:
+    """Menü: 'Güncellemeleri Kontrol Et' -> FORCE kontrol; sonucu kullanıcıya bildir.
+
+    Arka planda (daemon): throttle cache atlanır (?force=1). Güncelleme varsa
+    banner gösterilir; yoksa/kontrol edilemezse küçük bir diyalog. Menü eylemi
+    pywebview'in ayrı thread'inde koştuğu için burada bloklamak pencereyi dondurmaz,
+    ama işi yine de kendi daemon thread'ine alıyoruz (osascript diyaloğu bloklar).
+    """
+    def _run() -> None:
+        try:
+            with urllib.request.urlopen(f"{URL}/api/update-check?force=1", timeout=12) as r:
+                info = json.load(r)
+        except Exception:
+            info = None
+        if isinstance(info, dict) and info.get("status") == "update_available":
+            payload = {
+                "latest": info.get("latest"),
+                "current": info.get("current"),
+                "url": info.get("url") or f"{PROJECT_REPO_URL}/releases",
+            }
+            _js("window.bwShowUpdate && window.bwShowUpdate(%s)" % json.dumps(payload))
+        elif isinstance(info, dict) and info.get("status") == "up_to_date":
+            _notify("En güncel sürümü kullanıyorsunuz (%s)." % (info.get("current") or "?"))
+        else:
+            _notify("Güncelleme kontrol edilemedi. İnternet bağlantısını kontrol edin.")
+
+    try:
+        threading.Thread(target=_run, daemon=True).start()
+    except Exception:
+        pass
 
 
 def _credits_file() -> Path | None:
@@ -259,6 +326,8 @@ def _build_menu() -> list:
     from webview.menu import Menu, MenuAction, MenuSeparator
 
     help_items = [
+        MenuAction("Güncellemeleri Kontrol Et", _act_check_update),
+        MenuSeparator(),
         MenuAction("README (GitHub)", _act_readme),
         MenuAction("Sorun Bildir (GitHub)", _act_issues),
     ]

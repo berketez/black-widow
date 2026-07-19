@@ -35,6 +35,7 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -905,14 +906,32 @@ def _build_info() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Guncelleme kontrolu (bildirim-temelli; YERINDE-DEGISTIRMESIZ)
+# Guncelleme kontrolu + indirme (bildirim + indir-mount; YERINDE-DEGISTIRMESIZ)
 #
-# GitHub'daki son release'i mevcut surumle kiyaslar. ASLA binary'yi indirip
-# degistirmez (DMG codesign/ad-hoc muhurunu kirardi) -- yalnizca HABER VERIR.
-# Ag/ayrisma hatasi UI'yi BLOKLAMAZ; status "unknown" doner, istisna yayilmaz.
+# Uzak bir MANIFEST'ten (appcast.json) son surumu okur, mevcut surumle kiyaslar.
+# Guncelleme varsa DMG indirilip sha256 DOGRULANIR ve MOUNT edilir -- kullanici
+# uygulamayi kendisi surukler. ASLA yerinde degistirmez (DMG ad-hoc/imza muhurunu
+# korur). Ag/ayrisma hatasi UI'yi BLOKLAMAZ; status "unknown" doner, istisna yayilmaz.
+#
+# Manifest semasi (appcast.json):
+#   {version, dmg_url, sha256, size_bytes, notes_url, published_at, min_os}
+#
+# SSRF: dmg_url/notes_url yalnizca IZINLI host'lardan kabul edilir (manifest'in
+# kendi host'u + KARADUL_UPDATE_ALLOWED_HOSTS). Keyfi domain reddedilir.
 # ---------------------------------------------------------------------------
-_GITHUB_LATEST_URL = "https://api.github.com/repos/berketez/black-widow/releases/latest"
-_RELEASES_URL = "https://github.com/berketez/black-widow/releases"
+# Berke TEK yerden degistirir ya da env verir. Placeholder .invalid TLD (RFC 6761):
+# istemeden gercek bir sunucuya cikmaz -- cozumlenmez, aninda URLError doner.
+_UPDATE_MANIFEST_URL = (
+    os.environ.get("KARADUL_UPDATE_MANIFEST_URL")
+    or "https://updates.example.invalid/karadul/appcast.json"
+)
+_RELEASES_URL = os.environ.get(
+    "KARADUL_RELEASES_URL", "https://github.com/berketez/black-widow/releases"
+)
+# Uzak boyut ne olursa olsun bu ustsinir asilmaz (kotu-niyetli manifest diski
+# doldurmasin). 8 GiB: bundle ~3.5 GB, genis emniyet payi.
+_UPDATE_MAX_BYTES = 8 * 1024 * 1024 * 1024
+_UPDATE_THROTTLE_SEC = 24 * 3600
 
 
 def _version_key(v):
@@ -968,20 +987,122 @@ def _current_version() -> str | None:
     return _safe(_dev_version, None)
 
 
-def _update_check(timeout: float = 4.0) -> dict:
-    """GitHub'daki son release ile mevcut surumu kiyasla.
+def _update_allowed_hosts() -> set[str]:
+    """dmg_url/notes_url icin izinli host kumesi (SSRF guard).
 
-    Donus (sozlesme): {"status", "current", "latest", "url", "error"}
+    Daima manifest URL'sinin KENDI host'unu icerir ("manifest nereden geliyorsa
+    DMG de oradan gelsin") + KARADUL_UPDATE_ALLOWED_HOSTS (virgullu ek host'lar).
+    Boylece Berke tek env verince (manifest URL) dmg/notes ayni host'a kilitlenir;
+    keyfi domain otomatik reddedilir.
+    """
+    hosts: set[str] = set()
+    mh = _safe(lambda: urllib.parse.urlparse(_UPDATE_MANIFEST_URL).hostname, None)
+    if mh:
+        hosts.add(mh.lower())
+    for h in os.environ.get("KARADUL_UPDATE_ALLOWED_HOSTS", "").split(","):
+        h = h.strip().lower()
+        if h:
+            hosts.add(h)
+    return hosts
+
+
+def _is_allowed_update_url(url) -> bool:
+    """url 'https://' + host'u izinli kumede mi? (SSRF / yonlendirme enjeksiyonu).
+
+    urlparse.hostname userinfo ('github.com@evil') ve port'u ayikladigi icin
+    'github.com.evil.com' ve 'github.com@evil' TAM-eslesme ile reddedilir.
+    http/file/ftp gibi https-disi semalar da reddedilir.
+    """
+    if not isinstance(url, str) or not url:
+        return False
+    p = _safe(lambda: urllib.parse.urlparse(url), None)
+    if p is None or p.scheme != "https":
+        return False
+    host = (p.hostname or "").lower()
+    if not host:
+        return False
+    return host in _update_allowed_hosts()
+
+
+def _update_cache_path() -> Path:
+    """Throttle cache dosyasi (_DATA_ROOT altinda; bundle'da yazilabilir kok)."""
+    return _DATA_ROOT / "update_check_cache.json"
+
+
+def _read_update_cache(cache_path: Path):
+    """{last_checked, result} oku; bozuk/yoksa None. ASLA raise etmez."""
+    def _r():
+        d = json.loads(cache_path.read_text(encoding="utf-8"))
+        if isinstance(d, dict) and isinstance(d.get("result"), dict):
+            return d
+        return None
+    return _safe(_r, None)
+
+
+def _write_update_cache(cache_path: Path, result: dict) -> None:
+    """{last_checked, result} atomik yaz. ASLA raise etmez."""
+    def _w():
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = cache_path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps({"last_checked": time.time(), "result": result}),
+                       encoding="utf-8")
+        os.replace(tmp, cache_path)
+    _safe(_w, None)
+
+
+def _recompute_status(result: dict, current) -> dict:
+    """latest vs current -> status. Ayristirilamazsa unknown (result'i mutasyona ugratir)."""
+    kc, kl = _version_key(current), _version_key(result.get("latest"))
+    if kc is None or kl is None:
+        result["status"] = "unknown"
+        if not result.get("error"):
+            result["error"] = "surum ayristirilamadi"
+        return result
+    result["status"] = "update_available" if kl > kc else "up_to_date"
+    result["error"] = None
+    return result
+
+
+def _update_check(timeout: float = 4.0, *, force: bool = False,
+                  cache_path: Path | None = None) -> dict:
+    """Uzak manifest'ten son surumu al, mevcut surumle kiyasla.
+
+    Donus (sozlesme):
+      {status, current, latest, url, error,
+       dmg_url, sha256, size_bytes, notes_url, published_at, min_os,
+       checked_at, from_cache}
       status: "update_available" | "up_to_date" | "unknown"
-    ASLA exception yaymaz -- ag/parse hatasinda status="unknown".
+
+    Throttle: cache 24 saatten yeni ve force=False ise ag ATLANIR (cache doner).
+    ?force=1 -> cache atlanir, taze cekilir. ASLA exception yaymaz -- ag/parse
+    hatasinda status="unknown". dmg_url/notes_url SSRF guard'dan gecmezse None.
     """
     current = _current_version()
-    result: dict = {"status": "unknown", "current": current,
-                    "latest": None, "url": _RELEASES_URL, "error": None}
+    result: dict = {
+        "status": "unknown", "current": current, "latest": None,
+        "url": _RELEASES_URL, "error": None,
+        "dmg_url": None, "sha256": None, "size_bytes": None,
+        "notes_url": None, "published_at": None, "min_os": None,
+        "checked_at": None, "from_cache": False,
+    }
+    cp = cache_path or _update_cache_path()
+
+    # --- Throttle: taze cache varsa AG'A HIC CIKMA ---
+    if not force:
+        cached = _read_update_cache(cp)
+        if cached is not None:
+            age = _safe(lambda: time.time() - float(cached.get("last_checked", 0)), None)
+            if age is not None and 0 <= age < _UPDATE_THROTTLE_SEC:
+                out = dict(cached["result"])
+                out["current"] = current        # calisan surume gore taze
+                out["from_cache"] = True
+                return _recompute_status(out, current)
+
+    # --- Ag'dan manifest cek ---
     try:
         req = urllib.request.Request(
-            _GITHUB_LATEST_URL,
-            headers={"Accept": "application/vnd.github+json",
+            _UPDATE_MANIFEST_URL,
+            headers={"Accept": "application/json",
                      "User-Agent": "black-widow-update-check"},
         )
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -990,24 +1111,156 @@ def _update_check(timeout: float = 4.0) -> dict:
         result["error"] = type(e).__name__
         return result
     if not isinstance(data, dict):
-        result["error"] = "beklenmeyen yanit"
+        result["error"] = "beklenmeyen manifest"
         return result
-    # sadece guvenli bir github.com URL'sini kabul et (yonlendirme enjeksiyonu olmasin)
-    html_url = data.get("html_url")
-    if isinstance(html_url, str) and html_url.startswith("https://github.com/"):
-        result["url"] = html_url
-    latest = data.get("tag_name") or data.get("name")
+
+    latest = data.get("version")
     if not isinstance(latest, str) or not latest.strip():
-        result["error"] = "release bulunamadi"
+        result["error"] = "manifestte surum yok"
         return result
-    latest = latest.strip()
-    result["latest"] = latest
-    kc, kl = _version_key(current), _version_key(latest)
-    if kc is None or kl is None:
-        result["error"] = "surum ayristirilamadi"
-        return result
-    result["status"] = "update_available" if kl > kc else "up_to_date"
+    result["latest"] = latest.strip()
+
+    # SSRF guard: dmg_url/notes_url YALNIZ izinli host'tan alinir
+    if _is_allowed_update_url(data.get("dmg_url")):
+        result["dmg_url"] = data["dmg_url"]
+    if _is_allowed_update_url(data.get("notes_url")):
+        result["notes_url"] = data["notes_url"]
+        result["url"] = data["notes_url"]        # banner "notlar" baglantisi
+
+    sha = data.get("sha256")
+    if isinstance(sha, str) and re.fullmatch(r"[0-9a-fA-F]{64}", sha.strip()):
+        result["sha256"] = sha.strip().lower()
+    sz = data.get("size_bytes")
+    if isinstance(sz, int) and not isinstance(sz, bool) and 0 < sz <= _UPDATE_MAX_BYTES:
+        result["size_bytes"] = sz
+    for k in ("published_at", "min_os"):
+        v = data.get(k)
+        if isinstance(v, str) and v.strip():
+            result[k] = v.strip()
+
+    result["checked_at"] = time.time()
+    result = _recompute_status(result, current)
+    # Yalniz BASARILI kontrolu cache'le -> gecici hatalar 24 saat retry'i bloklamasin.
+    if result["status"] != "unknown":
+        _write_update_cache(cp, result)
     return result
+
+
+# ---------------------------------------------------------------------------
+# Guncelleme INDIRME (arka plan; sha256 dogrulama; MOUNT, YERINDE-DEGISTIRMESIZ)
+#
+# Manifest'teki dmg_url'i (SSRF-guard'li) indirir, sha256'yi manifest'le karsilastirir,
+# ~/Downloads'a yazar ve `open` ile MOUNT eder. App'i KENDISI DEGISTIRMEZ -- kullanici
+# yeni surumu Applications'a surukler (ad-hoc muhur korunur). Worker ASLA raise etmez:
+# tum durum _UPDATE_DL'e yazilir, UI bunu /api/update-download-status'tan okur.
+# ---------------------------------------------------------------------------
+_UPDATE_DL_LOCK = threading.Lock()
+_UPDATE_DL: dict = {
+    "status": "idle",       # idle|downloading|verifying|verified|mounting|done|error
+    "downloaded": 0, "total": 0, "path": None, "error": None,
+    "version": None, "started_at": None,
+}
+
+
+def _update_dl_snapshot() -> dict:
+    with _UPDATE_DL_LOCK:
+        return dict(_UPDATE_DL)
+
+
+def _update_dl_set(**kw) -> None:
+    with _UPDATE_DL_LOCK:
+        _UPDATE_DL.update(kw)
+
+
+def _downloads_dir() -> Path:
+    """Indirme hedefi: ~/Downloads; yoksa yazilabilir veri kokune dus."""
+    d = HOME / "Downloads"
+    return d if d.is_dir() else _DATA_ROOT
+
+
+def _download_update_worker(dmg_url: str, sha256: str, size_bytes, version) -> None:
+    """DMG'yi indir -> sha256 dogrula -> ~/Downloads'a yaz -> MOUNT. ASLA raise etmez."""
+    tmp = None
+    try:
+        dl_dir = _downloads_dir()
+        dl_dir.mkdir(parents=True, exist_ok=True)
+        name = os.path.basename(urllib.parse.urlparse(dmg_url).path)
+        if not name.lower().endswith(".dmg"):
+            name = f"BlackWidow-{version or 'update'}.dmg"
+        final = dl_dir / name
+        tmp = dl_dir / (name + ".part")
+
+        h = hashlib.sha256()
+        req = urllib.request.Request(
+            dmg_url, headers={"User-Agent": "black-widow-update-download"})
+        with urllib.request.urlopen(req, timeout=30) as r, open(tmp, "wb") as fh:
+            total = _safe(lambda: int(r.headers.get("Content-Length") or 0), 0) \
+                or int(size_bytes or 0)
+            _update_dl_set(total=total)
+            got = 0
+            while True:
+                chunk = r.read(256 * 1024)
+                if not chunk:
+                    break
+                got += len(chunk)
+                if got > _UPDATE_MAX_BYTES:
+                    raise ValueError("indirme ustsinir asildi")
+                fh.write(chunk)
+                h.update(chunk)
+                _update_dl_set(downloaded=got)
+
+        # --- sha256 DOGRULA (uyusmazsa MOUNT ETME, dosyayi sil) ---
+        _update_dl_set(status="verifying")
+        if h.hexdigest().lower() != (sha256 or "").lower():
+            _safe(lambda: tmp.unlink(), None)
+            _update_dl_set(status="error",
+                           error="sha256 uyusmadi -- indirilen dosya reddedildi")
+            return
+        os.replace(tmp, final)
+        tmp = None
+        _update_dl_set(status="verified", path=str(final))
+
+        # MOUNT (yerinde-degistirmesiz): kullanici Applications'a KENDISI surukler.
+        _update_dl_set(status="mounting")
+        _safe(lambda: subprocess.run(["open", str(final)], check=False, timeout=20), None)
+        _update_dl_set(status="done", path=str(final))
+    except Exception as e:  # noqa: BLE001 -- UI status alanina yazilir, raise YOK
+        if tmp is not None:
+            _safe(lambda: tmp.unlink(), None)
+        _update_dl_set(status="error", error=type(e).__name__)
+
+
+def _start_update_download() -> dict:
+    """Guncelleme indirmesini baslat (manifest'i cache'ten okur). Non-blocking.
+
+    Once SSRF + sha256 dogrulanabilirlik guard'lari: dmg_url izinli degilse ya da
+    sha256 yoksa INDIRME BASLATMAZ (butunluk dogrulanamayacaksa hic inme).
+    """
+    info = _safe(_update_check, {}) or {}
+    if info.get("status") != "update_available":
+        return {"status": "error", "error": "guncelleme yok",
+                "downloaded": 0, "total": 0}
+    dmg_url = info.get("dmg_url")
+    sha = info.get("sha256")
+    if not _is_allowed_update_url(dmg_url):
+        return {"status": "error", "error": "dmg_url izinli degil (SSRF guard)",
+                "downloaded": 0, "total": 0}
+    if not (isinstance(sha, str) and re.fullmatch(r"[0-9a-f]{64}", sha)):
+        return {"status": "error", "error": "sha256 yok -- indirme reddedildi",
+                "downloaded": 0, "total": 0}
+    with _UPDATE_DL_LOCK:
+        if _UPDATE_DL["status"] in ("downloading", "verifying", "mounting"):
+            return dict(_UPDATE_DL)          # zaten calisiyor; ikinci kez baslatma
+        _UPDATE_DL.update(status="downloading", downloaded=0,
+                          total=int(info.get("size_bytes") or 0), error=None,
+                          version=info.get("latest"), path=None,
+                          started_at=time.time())
+    threading.Thread(
+        target=_download_update_worker,
+        args=(dmg_url, sha, info.get("size_bytes"), info.get("latest")),
+        daemon=True,
+    ).start()
+    return _update_dl_snapshot()
 
 
 def _ghidra_dir() -> Path | None:
@@ -1519,11 +1772,19 @@ class Handler(BaseHTTPRequestHandler):
                        "protected_folders": {}, "is_macos": _IS_MAC,
                        "probe": str(_TCC_PROBE)}))
         elif path == "/api/update-check":
-            # GitHub'daki son release ile kiyas (bildirim; yerinde-degistirmesiz).
+            # Uzak manifest ile kiyas (bildirim; yerinde-degistirmesiz).
+            # ?force=1 -> 24 saatlik throttle cache'ini atla, taze cek.
             # ASLA 500 / bloklama: ag hatasi -> status "unknown".
-            self._json(_safe(_update_check, {"status": "unknown",
+            qs = self.path.split("?", 1)[1] if "?" in self.path else ""
+            q = dict(x.split("=", 1) for x in qs.split("&") if "=" in x)
+            force = q.get("force") in ("1", "true", "yes")
+            self._json(_safe(lambda: _update_check(force=force), {"status": "unknown",
                        "current": _safe(_current_version, None), "latest": None,
                        "url": _RELEASES_URL, "error": "ic hata"}))
+        elif path == "/api/update-download-status":
+            # Arka plan indirme ilerlemesi (bytes/total + status). ASLA 500.
+            self._json(_safe(_update_dl_snapshot, {"status": "idle",
+                       "downloaded": 0, "total": 0, "error": None}))
         elif path.startswith("/api/decompiled/"):
             addr = path.split("/api/decompiled/", 1)[1]
             if not re.fullmatch(r"FUN_[0-9a-fA-F]+", addr):
@@ -1577,6 +1838,14 @@ class Handler(BaseHTTPRequestHandler):
             # Sistem Ayarları FDA bölmesini aç (gövde OKUNMAZ; sadece tetikleyici).
             result = _open_fda_settings()
             self._json(result, result.pop("__code", 200))
+        elif self.path.split("?", 1)[0] == "/api/update-download":
+            # DMG'yi indir -> sha256 dogrula -> mount (arka planda; YERINDE-DEGISTIRMESIZ).
+            # Govde OKUNMAZ (JS'ten URL ALINMAZ) -- sadece tetikleyici; yine de drain et.
+            n = int(self.headers.get("Content-Length", 0) or 0)
+            if n:
+                _safe(lambda: self.rfile.read(n), None)
+            self._json(_safe(_start_update_download, {"status": "error",
+                       "error": "ic hata", "downloaded": 0, "total": 0}))
         else:
             self._json({"error": "not found"}, 404)
 

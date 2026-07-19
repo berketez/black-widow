@@ -31,6 +31,17 @@ trap 'rm -rf "$STAGE" "$TMP_DMG"' EXIT
 # -c = APFS clonefile: 3.5GB anında, ek disk yemez (düz kopya dakikalar sürüyordu).
 cp -Rc "$APP" "$STAGE/" 2>/dev/null || cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"      # sürükle-bırak kurulum kısayolu
+# İlk Açılış yardımcısı: app + Applications kısayolunun yanına. Kullanıcı çift
+# tıklarsa /Applications'taki app'in karantinasını otomatik temizler (imza
+# gerekmez; düz shell). Self-hosted dağıtımda "doğrulanamıyor" uyarısını tek
+# adımda aşmanın kolay yolu (notarization KAPSAM DIŞI -- aşağıya bak).
+FLC="$HERE/app/first_launch.command"
+if [ -f "$FLC" ]; then
+  cp "$FLC" "$STAGE/İlk Açılış (karantinayı kaldır).command"
+  chmod +x "$STAGE/İlk Açılış (karantinayı kaldır).command"
+else
+  echo "!! uyarı: $FLC yok -- İlk Açılış yardımcısı DMG'ye eklenmedi" >&2
+fi
 rm -f "$DMG" "$TMP_DMG"
 
 # ULMO (LZMA) = en iyi sıkıştırma; bundle GB'larca olduğu için kazanç büyük.
@@ -55,6 +66,14 @@ else
   echo "[build_dmg] DMG ad-hoc imzalandı (Developer ID yok)"
 fi
 
+# ---------------------------------------------------------------------------
+# KAPSAM DIŞI (self-hosted karar 2026-07-19): Berke uygulamayı Apple'a
+# YAYIMLAMIYOR, kendi sitesinden dağıtacak -> notarization/staple GEREKMİYOR.
+# Bu blok bilinçli olarak SİLİNMEDİ: ileride Developer ID + notary profili
+# alınırsa KARADUL_NOTARY_PROFILE set edilince kendiliğinden devreye girsin diye
+# korundu. Self-hosted akışta karantinayı DMG içindeki "İlk Açılış.command"
+# (veya kullanıcı elle xattr) temizler; auto-update sha256 ile bütünlük sağlar.
+# ---------------------------------------------------------------------------
 # Notarization: profil VARSA otomatik, yoksa sessizce atla. Sertifika alındığı gün
 # tek komut devreye girer -- o güne kadar akış bozulmasın.
 #   xcrun notarytool store-credentials "$KARADUL_NOTARY_PROFILE" --apple-id ... --team-id ... --password ...
@@ -90,6 +109,8 @@ hdiutil detach "$_V" >/dev/null 2>&1 || true
 codesign --verify --deep --strict "$_I/Black Widow.app" \
   || { echo "!! KURULUMDAN SONRA MÜHÜR GEÇERSİZ -- bu DMG dağıtılamaz" >&2; exit 1; }
 echo "    kurulan kopyanın mührü GEÇERLİ"
+# KAPSAM DIŞI (self-hosted karar 2026-07-19): staple bileti beklenmez; bu kontrol
+# yalnız BİLGİ amaçlı. Notary profili olmadan ad-hoc app her zaman bu else dalına düşer.
 if xcrun stapler validate "$_I/Black Widow.app" >/dev/null 2>&1; then
   echo "    notarization bileti app'e staple'lı -> Gatekeeper sessizce açar"
 else
@@ -102,6 +123,34 @@ fi
 
 echo "[build_dmg] hazır -> $DMG"
 ls -lah "$DMG"
+
+# --- Auto-update yayıncı yardımcıları --------------------------------------
+# sha256: uygulama içi indirme, manifest'teki sha256 ile bu değeri karşılaştırır
+# (uyuşmazsa DMG reddedilir, mount edilmez). Manifest fragmanını terminale basar;
+# dmg_url/notes_url host'unu KENDİ barındırma adresinle değiştir (SSRF guard: host,
+# KARADUL_UPDATE_MANIFEST_URL host'uyla ya da KARADUL_UPDATE_ALLOWED_HOSTS ile aynı olmalı).
+SHA_FILE="$DIST/BlackWidow-$VER.dmg.sha256"
+shasum -a 256 "$DMG" | awk '{print $1}' > "$SHA_FILE"
+DMG_SHA="$(cat "$SHA_FILE")"
+DMG_SIZE="$(stat -f%z "$DMG" 2>/dev/null || wc -c < "$DMG" | tr -d ' ')"
+NOW_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo "[build_dmg] sha256 -> $SHA_FILE ($DMG_SHA)"
+cat <<EOF
+--- appcast.json manifest fragmanı (REPLACE-WITH-YOUR-HOST'u kendi adresinle değiştir) ---
+{
+  "version": "$VER",
+  "dmg_url": "https://REPLACE-WITH-YOUR-HOST/karadul/BlackWidow-$VER.dmg",
+  "sha256": "$DMG_SHA",
+  "size_bytes": $DMG_SIZE,
+  "notes_url": "https://REPLACE-WITH-YOUR-HOST/karadul/notes-$VER.html",
+  "published_at": "$NOW_UTC",
+  "min_os": "12.0"
+}
+NOT: app'i KARADUL_UPDATE_MANIFEST_URL=https://REPLACE-WITH-YOUR-HOST/karadul/appcast.json
+ile derle/çalıştır; dmg_url ve notes_url AYNI host'ta olmalı (yoksa SSRF guard reddeder).
+------------------------------------------------------------------------------------------
+EOF
+
 if [ -n "$SIGN_ID" ] && [ -n "$NOTARY_PROFILE" ]; then
 cat <<'EOT'
 DAĞITIMA HAZIR: imza + notarization bileti imajın içinde. Kullanıcı DMG'yi açar,
