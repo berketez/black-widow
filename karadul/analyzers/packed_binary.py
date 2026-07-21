@@ -739,8 +739,10 @@ class PyInstallerExtractor:
                 output_dir=output_dir,
             )
 
-        # Cookie'yi bul
-        cookie_offset = data.find(PYINSTALLER_MAGIC)
+        # Cookie'yi bul. rfind: cookie paketin SONUNDADIR; bazi bootloader'lar MEI
+        # magic string'ini referanslayabilir (hata mesaji vb.) -> find ilk (yanlis)
+        # eslesmeyi alir. rfind son (gercek cookie) eslesmeyi garanti eder.
+        cookie_offset = data.rfind(PYINSTALLER_MAGIC)
         if cookie_offset < 0:
             return UnpackResult(
                 success=False,
@@ -762,8 +764,14 @@ class PyInstallerExtractor:
                 output_dir=output_dir,
             )
 
-        # Package offset hesapla
-        pkg_start = cookie_offset - toc_info["package_length"]
+        # Package offset hesapla. Cookie, paket icinde TOC'un HEMEN ARDINDADIR:
+        #   cookie_abs = pkg_start + toc_off + toc_len  ->  pkg_start = cookie_off - toc_off - toc_len.
+        # Bu hesap cookie-boyutundan BAGIMSIZ (eski 24-byte + yeni 88-byte cookie'de dogru)
+        # ve cookie-anchorli oldugundan macOS imzali onefile'da da dogru (trailing code
+        # signature offset'i kaydirmaz — `fileSize - pkg_len` yaklasimi imza kadar kayardi).
+        # Eski kod (cookie_offset - pkg_len) cookie boyutunu atlayip TOC'u erken hizaliyor,
+        # cop entry uretiyordu.
+        pkg_start = cookie_offset - toc_info["toc_offset"] - toc_info["toc_length"]
         if pkg_start < 0:
             pkg_start = 0
 

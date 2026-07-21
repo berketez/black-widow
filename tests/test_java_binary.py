@@ -585,6 +585,19 @@ class TestAnalyzeStatic:
         assert result.stats["total_classes"] == 2
         assert result.stats["total_packages"] >= 1
 
+    def test_jar_stats_report_recovered_methods_as_functions(
+        self, analyzer: JavaBinaryAnalyzer, mock_target: TargetInfo, workspace: Workspace,
+    ):
+        """JAR: static stats 'functions' = metot sayisi (cli 'Functions recovered' bunu okur).
+
+        REGRESYON: eskiden 'functions' set EDILMIYORDU -> jar analizi "0 fonksiyon"
+        gorunup kapsam matrisinde EMPTY sayiliyor + reconstruct JS iskeletine sapiyordu.
+        mock_jar = MyClass(<init>, main, getUser = 3 metot) + Helper(0 metot) = 3.
+        """
+        result = analyzer.analyze_static(mock_target, workspace)
+        assert result.stats["functions"] == 3
+        assert result.stats["functions_found"] == 3
+
     def test_class_file_analysis(
         self, analyzer: JavaBinaryAnalyzer, mock_class_target: TargetInfo, workspace: Workspace,
     ):

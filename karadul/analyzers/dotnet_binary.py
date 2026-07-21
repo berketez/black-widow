@@ -659,6 +659,14 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
             stats={
                 "total_types": metadata.get("type_count", 0),
                 "total_methods": metadata.get("method_count", 0),
+                # "Functions recovered" (cli.py) static stats'tan `functions_found`/
+                # `functions` okur; .NET'te "fonksiyon" = CIL metodu. metadata
+                # tablosundan cikarilan method_count = isimli-kurtarilmis metotlar.
+                # Eskiden set edilmiyordu -> .NET analizi "0 fonksiyon" gorunup
+                # reconstruction'da JS-iskelet misroute'una dusuyordu (kapsam bug'i,
+                # JVM ile ayni desen).
+                "functions": metadata.get("method_count", 0),
+                "functions_found": metadata.get("method_count", 0),
                 "obfuscated": obf.get("detected", False),
                 "decompiled": bool(result_data.get("decompiled", {}).get("success")),
                 "has_cli_header": cli_info.get("has_cli", False),

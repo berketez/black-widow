@@ -222,3 +222,90 @@ class TestHash:
         # Dosya iceriginden bagimsiz dogrulama
         expected = hashlib.sha256(sample_js_file.read_bytes()).hexdigest()
         assert info.file_hash == expected
+
+
+# ─────────────────────────────────────────────────────────
+# PyInstaller onefile tespiti (kapsam genisligi)
+# ─────────────────────────────────────────────────────────
+class TestPyInstallerDetection:
+    """PyInstaller onefile (native bootloader + gomulu Python) -> PYTHON_PACKED.
+
+    Kapsam bug'i: PyInstaller onefile GECERLI bir native binary'dir (Mach-O/ELF/PE
+    bootloader). Eskiden detection'da _MEIPASS/MEI kontrolu yoktu -> MACHO/ELF/PE
+    olarak tespit edilip gomulu Python katmani tamamen kayboluyordu (ustune Ghidra
+    bootloader'i bosuna decompile ediyordu). PYTHON_PACKED enum'u vardi ama HIC
+    atanmiyordu (olu enum). Simdi _is_pyinstaller ile atanir.
+
+    Mutant-dogrulandi: _is_pyinstaller kontrolu ilgili native daldan cikarilinca
+    ilgili test FAIL eder (MACHO/ELF doner).
+    """
+
+    def test_macho_pyinstaller_detected_as_python_packed(self, tmp_path: Path) -> None:
+        """MEI cookie magic'li Mach-O -> PYTHON_PACKED (macho_binary DEGIL)."""
+        exe = tmp_path / "app_macho"
+        # Mach-O 64 (CIGAM) magic + MEI cookie magic (bootloader rodata, ilk 2MB)
+        exe.write_bytes(
+            b"\xcf\xfa\xed\xfe" + b"\x00" * 256 + b"MEI\x0c\x0b\x0a\x0b\x0e" + b"\x00" * 256
+        )
+        info = TargetDetector().detect(exe)
+        assert info.target_type == TargetType.PYTHON_PACKED
+        assert info.language == Language.PYTHON
+        assert info.metadata.get("native_format") == "macho"
+
+    def test_meipass_string_alone_not_python_packed(self, tmp_path: Path) -> None:
+        """Bare `_MEIPASS` string'i (MEI cookie YOK) PYTHON_PACKED tetiklememeli.
+
+        MAJOR-1 regresyon guard'i: Nuitka'nin `getattr(sys,"_MEIPASS",...)` uyumluluk
+        shim'i veya `_MEIPASS` literali iceren native binary'ler yanlis PYTHON_PACKED
+        olmamali. Karar sinyali MEI cookie magic; bare string yeterli DEGIL.
+        """
+        exe = tmp_path / "meipass_shim"
+        exe.write_bytes(
+            b"\xcf\xfa\xed\xfe" + b"\x00" * 256 + b'getattr(sys, "_MEIPASS", base)' + b"\x00" * 256
+        )
+        info = TargetDetector().detect(exe)
+        assert info.target_type != TargetType.PYTHON_PACKED
+
+    def test_pe_pyinstaller_detected_as_python_packed(self, tmp_path: Path) -> None:
+        """MEI cookie magic'li PE -> PYTHON_PACKED (pe_binary DEGIL).
+
+        MINOR-2: PE dali da _is_pyinstaller'i cagiriyor; bu test PE dalindan
+        kontrolu cikaran mutant'i yakalar.
+        """
+        exe = tmp_path / "app_pe.exe"
+        # PE magic (MZ) + MEI cookie magic
+        exe.write_bytes(
+            b"MZ" + b"\x00" * 256 + b"MEI\x0c\x0b\x0a\x0b\x0e" + b"\x00" * 256
+        )
+        info = TargetDetector().detect(exe)
+        assert info.target_type == TargetType.PYTHON_PACKED
+        assert info.metadata.get("native_format") == "pe"
+
+    def test_elf_pyinstaller_cookie_detected_as_python_packed(self, tmp_path: Path) -> None:
+        """MEI cookie magic'li ELF -> PYTHON_PACKED."""
+        exe = tmp_path / "app_elf"
+        exe.write_bytes(
+            b"\x7fELF" + b"\x00" * 512 + b"MEI\x0c\x0b\x0a\x0b\x0e" + b"\x00" * 24
+        )
+        info = TargetDetector().detect(exe)
+        assert info.target_type == TargetType.PYTHON_PACKED
+        assert info.metadata.get("native_format") == "elf"
+
+    def test_plain_macho_not_python_packed(self, tmp_path: Path) -> None:
+        """_MEIPASS/MEI olmayan siradan Mach-O PYTHON_PACKED OLMAMALI (false-positive yok)."""
+        exe = tmp_path / "plain_macho"
+        exe.write_bytes(b"\xcf\xfa\xed\xfe" + b"\x00" * 512)
+        info = TargetDetector().detect(exe)
+        assert info.target_type != TargetType.PYTHON_PACKED
+
+    def test_nuitka_marker_not_python_packed(self, tmp_path: Path) -> None:
+        """Nuitka (derlenmis C, gomulu .pyc yok) native kalmali -> PYTHON_PACKED DEGIL.
+
+        _is_pyinstaller yalnizca _MEIPASS/MEI arar; nuitka marker'i tetiklememeli.
+        """
+        exe = tmp_path / "nuitka_app"
+        exe.write_bytes(
+            b"\x7fELF" + b"\x00" * 128 + b"nuitka-version: 1.8.0\x00" + b"\x00" * 128
+        )
+        info = TargetDetector().detect(exe)
+        assert info.target_type != TargetType.PYTHON_PACKED

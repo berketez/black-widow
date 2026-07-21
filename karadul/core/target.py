@@ -472,6 +472,18 @@ class TargetDetector:
                     file_size=file_size, file_hash=file_hash,
                     metadata=metadata,
                 )
+            # PyInstaller onefile: Mach-O bootloader + gomulu Python (CArchive/.pyc).
+            # Native Ghidra bootloader'i cozer ama Python katmanini kacirir -> PYTHON_PACKED.
+            if self._is_pyinstaller(path):
+                metadata["native_format"] = "macho"
+                metadata["packer"] = "pyinstaller"
+                return TargetInfo(
+                    path=path, name=path.stem,
+                    target_type=TargetType.PYTHON_PACKED,
+                    language=Language.PYTHON,
+                    file_size=file_size, file_hash=file_hash,
+                    metadata=metadata,
+                )
             return TargetInfo(
                 path=path, name=path.stem, target_type=TargetType.MACHO_BINARY,
                 language=language, file_size=file_size, file_hash=file_hash,
@@ -490,6 +502,17 @@ class TargetDetector:
                     path=path, name=path.stem,
                     target_type=TargetType.GO_BINARY,
                     language=Language.GO,
+                    file_size=file_size, file_hash=file_hash,
+                    metadata=metadata,
+                )
+            # PyInstaller onefile (ELF bootloader + gomulu Python) -> PYTHON_PACKED
+            if self._is_pyinstaller(path):
+                metadata["native_format"] = "elf"
+                metadata["packer"] = "pyinstaller"
+                return TargetInfo(
+                    path=path, name=path.stem,
+                    target_type=TargetType.PYTHON_PACKED,
+                    language=Language.PYTHON,
                     file_size=file_size, file_hash=file_hash,
                     metadata=metadata,
                 )
@@ -529,6 +552,17 @@ class TargetDetector:
                     path=path, name=path.stem,
                     target_type=TargetType.GO_BINARY,
                     language=Language.GO,
+                    file_size=file_size, file_hash=file_hash,
+                    metadata=metadata,
+                )
+            # PyInstaller onefile (PE bootloader + gomulu Python) -> PYTHON_PACKED
+            if self._is_pyinstaller(path):
+                metadata["native_format"] = "pe"
+                metadata["packer"] = "pyinstaller"
+                return TargetInfo(
+                    path=path, name=path.stem,
+                    target_type=TargetType.PYTHON_PACKED,
+                    language=Language.PYTHON,
                     file_size=file_size, file_hash=file_hash,
                     metadata=metadata,
                 )
@@ -658,6 +692,40 @@ class TargetDetector:
             return b"__BUN" in data or b"__bun" in data
         except OSError:
             return False
+
+    @staticmethod
+    def _is_pyinstaller(path: Path) -> bool:
+        """PyInstaller onefile binary mi kontrol et.
+
+        PyInstaller onefile GECERLI bir native binary'dir (Mach-O/ELF/PE bootloader)
+        + dosya sonuna gomulu CArchive. Tespit MEI cookie magic ile yapilir; magic
+        hem bootloader rodata'sinda (head) hem arsiv cookie'sinde (tail) bulunur, o
+        yuzden head 2MB + tail 256KB taranir (buyuk binary'de cookie sonda -> tail sart).
+
+        Nuitka DAHIL DEGIL: Nuitka standalone derlenmis C'dir, MEI cookie'si yoktur ->
+        native binary olarak kalir. (Nuitka'nin `_MEIPASS` uyumluluk shim'i bare string
+        oldugundan tetiklemez — asagida karar sinyali neden MEI magic'e daraltildi.)
+        """
+        # KARAR SINYALI = MEI cookie magic (9 non-printable byte, ~2^-72 cakisma).
+        # Bare `_MEIPASS` ASCII string'i TEK BASINA sinyal DEGIL: Nuitka'nin
+        # PyInstaller-uyumluluk shim'i (getattr(sys,"_MEIPASS",...)) veya bu analizor
+        # kaynagini gomulu iceren native binary'ler false-positive uretirdi. MEI magic
+        # gercek PyInstaller'da (bootloader rodata + arsiv cookie) hep vardir -> recall
+        # kaybi yok, false-positive yuzeyi kapanir.
+        mei_magic = b"MEI\x0c\x0b\x0a\x0b\x0e"
+        try:
+            with open(path, "rb") as f:
+                head = f.read(2_097_152)  # 2 MB
+                if mei_magic in head:
+                    return True
+                # MEI cookie dosya sonunda: son 256 KB'yi tara
+                f.seek(0, 2)
+                size = f.tell()
+                f.seek(max(0, size - 262_144))
+                tail = f.read()
+        except OSError:
+            return False
+        return mei_magic in tail
 
     @staticmethod
     def _is_dotnet(path: Path) -> bool:

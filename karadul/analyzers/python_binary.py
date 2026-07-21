@@ -16,6 +16,7 @@ Strateji:
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import struct
@@ -242,6 +243,13 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             stats["stdlib_modules"] = modules.get("stdlib_count", 0)
             stats["user_modules"] = modules.get("user_count", 0)
 
+        # "Functions recovered" (cli.py) proxy'si: kurtarilan Python modul sayisi.
+        # JVM'de metot, .NET'te CIL metodu; Python'da modul = kurtarilan kod birimi.
+        # Set edilmezse packed binary "0 fonksiyon" gorunur (kapsam bug'i, misroute deseni).
+        _recovered_modules = stats.get("module_count", 0)
+        stats["functions"] = _recovered_modules
+        stats["functions_found"] = _recovered_modules
+
         # 4. PyInstaller TOC (varsa)
         if packer_info["packer"] == "pyinstaller":
             toc = self._parse_pyinstaller_toc(binary_data)
@@ -309,6 +317,76 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             duration_seconds=time.monotonic() - start,
             artifacts=artifacts,
             errors=errors,
+        )
+
+    def reconstruct(self, target: TargetInfo, workspace: Workspace) -> StageResult | None:
+        """Python paketinden proje iskeleti olustur.
+
+        Native binary DEGIL: Ghidra/JS yerine paketleyiciye ozel kurtarma. PyInstaller
+        icin `packed_binary.PyInstallerExtractor` ile GERCEK CArchive extraction yapilir
+        (pipeline'a bagli olmayan gercek unpacker'i burada wire eder) -> cikarilmis
+        .pyc/.py dosyalari + manifest. Static analiz kosmadiysa (packer/modul JSON'u yok)
+        None doner -> ReconstructionStage bunu graceful fail'e cevirir.
+
+        Ciktı: reconstructed/python_project/ (extracted/ + manifest.json).
+        """
+        start = time.monotonic()
+
+        # Static analiz kosmus olmali (packer + modul bilgisi icin)
+        packer_info = workspace.load_json("static", "python_packer")
+        modules = workspace.load_json("static", "python_modules")
+        if not packer_info and not modules:
+            return None
+
+        output_dir = workspace.get_stage_dir("reconstructed") / "python_project"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        packer = (packer_info or {}).get("packer", "unknown")
+        extracted_count = 0
+        extract_errors: list[str] = []
+
+        # PyInstaller: gercek CArchive extraction (packed_binary unpacker'i wire et)
+        if packer == "pyinstaller":
+            try:
+                from karadul.analyzers.packed_binary import PyInstallerExtractor
+                unpack = PyInstallerExtractor(self.config).extract(
+                    target.path, output_dir / "extracted",
+                )
+                extracted_count = len(unpack.extracted_files)
+                extract_errors = list(unpack.errors)
+            except Exception as exc:
+                logger.debug("PyInstaller extraction basarisiz: %s", exc, exc_info=True)
+                extract_errors.append(f"{type(exc).__name__}: {exc}")
+
+        # Manifest: kurtarilan yapinin ozeti (extraction basarisiz olsa da yazilir)
+        manifest = {
+            "packer": packer,
+            "native_format": target.metadata.get("native_format"),
+            "module_summary": {
+                "total": (modules or {}).get("total", 0),
+                "user": (modules or {}).get("user_count", 0),
+                "stdlib": (modules or {}).get("stdlib_count", 0),
+            },
+            "extracted_count": extracted_count,
+            "extraction_errors": extract_errors,
+            "note": (
+                "PyInstaller CArchive acildi; kullanici .pyc'leri extracted/ altinda. "
+                "Kaynak icin ayrica decompile (uncompyle6/decompyle3) gerekir."
+                if packer == "pyinstaller" else
+                f"Paketleyici '{packer}': tam extraction yalnizca PyInstaller icin destekli."
+            ),
+        }
+        (output_dir / "manifest.json").write_text(
+            json.dumps(manifest, indent=2, default=str)
+        )
+
+        return StageResult(
+            stage_name="reconstruct",
+            success=True,
+            duration_seconds=time.monotonic() - start,
+            artifacts={"python_project": output_dir},
+            stats={"reconstructed": True, "extracted_count": extracted_count},
+            errors=extract_errors,
         )
 
     # ------------------------------------------------------------------

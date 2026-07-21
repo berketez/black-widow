@@ -333,9 +333,23 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
         output_path.write_text(json.dumps(result_data, indent=2, default=str))
 
         artifacts: dict[str, Path] = {"java_analysis": output_path}
+        # "Functions recovered" (cli.py) static stats'tan `functions_found`/`functions`
+        # okur; JVM'de "fonksiyon" = metot. Class bytecode isimleri saklar (obf yoksa)
+        # -> bunlar GERCEKTEN isimli-kurtarilmis metotlar. class_details (JAR) ya da
+        # class_info (tek .class) uzerinden say. Eskiden set edilmiyordu -> jar analizi
+        # "0 fonksiyon" gorunup EMPTY sayiliyordu (kapsam bug'i).
+        total_methods = sum(
+            len(c.get("methods", []))
+            for c in result_data.get("class_details", [])
+            if isinstance(c, dict)
+        )
+        if not total_methods and isinstance(result_data.get("class_info"), dict):
+            total_methods = len(result_data["class_info"].get("methods", []))
         stats: dict[str, Any] = {
             "total_classes": jar_info.get("class_count", 0),
             "total_packages": len(jar_info.get("packages", [])),
+            "functions": total_methods,
+            "functions_found": total_methods,
             "obfuscated": obf_info.get("detected", False),
             "decompiled": bool(result_data.get("decompiled", {}).get("success")),
             "kotlin_detected": jar_info.get("kotlin_detected", False),

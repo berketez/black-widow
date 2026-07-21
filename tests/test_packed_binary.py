@@ -166,11 +166,14 @@ def _build_pyinstaller_blob(
             _make_toc_entry(name, off, dlen, ulen, cflag=cflag, tflag=tflag)
         )
 
-    # Package = payloads + TOC
-    package = bytes(payloads) + bytes(toc_bytes)
-    pkg_len = len(package)
+    # GERCEK PyInstaller layout: cookie paketin SON 88 byte'idir; pkg_len cookie'yi
+    # DE icerir (pkg_len = toc_off + toc_len + COOKIE_SIZE). Eski fixture cookie'yi
+    # paket DISINDA sayiyordu (pkg_len cookie'siz) -> gercek binary'lerle uyusmayan
+    # yanlis konvansiyon; hem kodun offset hesabi hem fixture bu yanlisi paylasiyordu.
+    payload_and_toc = bytes(payloads) + bytes(toc_bytes)
     toc_off_in_pkg = len(payloads)
     toc_len = len(toc_bytes)
+    pkg_len = len(payload_and_toc) + PYINSTALLER_COOKIE_SIZE_NEW  # cookie dahil
 
     cookie = _make_pyinstaller_cookie(
         pkg_len=pkg_len,
@@ -179,8 +182,10 @@ def _build_pyinstaller_blob(
         py_ver=39,
     )
 
-    blob = stub + package + cookie
-    cookie_offset = len(stub) + len(package)
+    # Cookie paketin sonunda: blob = stub + [payloads + TOC + cookie]
+    package = payload_and_toc + cookie
+    blob = stub + package
+    cookie_offset = len(stub) + len(payload_and_toc)  # cookie paketin son 88 byte'i
     return blob, cookie_offset
 
 

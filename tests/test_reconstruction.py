@@ -995,3 +995,147 @@ class TestReconstructionPipeline:
         assert ok.success is True and ok.data == {"x": 1}
         fail = ChunkResult(chunk=info, success=False, data=None, error="boom")
         assert fail.success is False and fail.error == "boom"
+
+
+# ---------------------------------------------------------------
+# ReconstructionStage — managed/bytecode format routing regresyonu
+# ---------------------------------------------------------------
+
+class TestManagedFormatReconstructionRouting:
+    """Managed/bytecode formatlarin (.NET/APK/JVM) reconstruction routing'i.
+
+    Kapsam bug'i (JVM/JAR ile ayni desen): DOTNET_ASSEMBLY ve ANDROID_APK
+    ReconstructionStage.execute'te else->_execute_js tuzagina dusup "JS iskeleti +
+    0 fonksiyon" uretiyordu. Bu native binary DEGIL; her tipin kayitli analizoru
+    (JavaBinaryAnalyzer / DotNetBinaryAnalyzer) kendi reconstruct'ini calistirmali.
+
+    Bu testler her managed tipin _execute_analyzer_reconstruct'a route edildigini,
+    _execute_js VEYA _execute_binary'ye DEGIL, dogrular. Mutant-dogrulandi: routing
+    kosulundan (stages.py) ilgili tip cikarilinca ilgili test FAIL eder (handler
+    "js" olur).
+    """
+
+    def _which_handler(self, target_type, tmp_path):
+        """target_type'i ReconstructionStage.execute'ten gecirip hangi handler'in
+        cagrildigini dondur. Handler'lar sentinel'le degistirilir (gercek
+        reconstruction calismaz — sadece routing karari olculur)."""
+        from karadul.stages import ReconstructionStage
+        from karadul.core.pipeline import PipelineContext
+        from karadul.core.workspace import Workspace
+        from karadul.config import Config
+        from karadul.core.target import TargetInfo, Language
+
+        stage = ReconstructionStage()
+        seen: dict[str, str] = {}
+        stage._execute_analyzer_reconstruct = (  # type: ignore[method-assign]
+            lambda ctx, start: seen.setdefault("handler", "analyzer")
+        )
+        stage._execute_js = (  # type: ignore[method-assign]
+            lambda ctx, start: seen.setdefault("handler", "js")
+        )
+        stage._execute_binary = (  # type: ignore[method-assign]
+            lambda ctx, start: seen.setdefault("handler", "binary")
+        )
+
+        bin_file = tmp_path / "sample.bin"
+        bin_file.write_bytes(b"\x00" * 16)
+        ws = Workspace(base_dir=tmp_path / "ws", target_name="sample")
+        ws.create()
+        target = TargetInfo(
+            path=bin_file,
+            name="sample",
+            target_type=target_type,
+            language=Language.UNKNOWN,
+            file_size=16,
+            file_hash="0" * 64,
+        )
+        ctx = PipelineContext(target=target, workspace=ws, config=Config())
+        stage.execute(ctx)
+        return seen.get("handler")
+
+    def test_dotnet_routes_to_analyzer_not_js(self, tmp_path: Path):
+        """DOTNET_ASSEMBLY -> _execute_analyzer_reconstruct (misroute regresyonu)."""
+        assert self._which_handler(TargetType.DOTNET_ASSEMBLY, tmp_path) == "analyzer"
+
+    def test_apk_routes_to_analyzer_not_js(self, tmp_path: Path):
+        """ANDROID_APK -> _execute_analyzer_reconstruct (misroute regresyonu)."""
+        assert self._which_handler(TargetType.ANDROID_APK, tmp_path) == "analyzer"
+
+    def test_jar_routes_to_analyzer_not_js(self, tmp_path: Path):
+        """JAVA_JAR -> _execute_analyzer_reconstruct (07-20 fix'i korunuyor mu)."""
+        assert self._which_handler(TargetType.JAVA_JAR, tmp_path) == "analyzer"
+
+    def test_python_packed_routes_to_analyzer_not_js(self, tmp_path: Path):
+        """PYTHON_PACKED -> _execute_analyzer_reconstruct (PyInstaller misroute regresyonu)."""
+        assert self._which_handler(TargetType.PYTHON_PACKED, tmp_path) == "analyzer"
+
+    def test_js_bundle_still_routes_to_js(self, tmp_path: Path):
+        """JS_BUNDLE hala _execute_js'e gitmeli (else dali dogru davranmali)."""
+        assert self._which_handler(TargetType.JS_BUNDLE, tmp_path) == "js"
+
+    def test_macho_still_routes_to_binary(self, tmp_path: Path):
+        """MACHO_BINARY hala _execute_binary'ye gitmeli (native yol bozulmadi)."""
+        assert self._which_handler(TargetType.MACHO_BINARY, tmp_path) == "binary"
+
+    # --- _execute_analyzer_reconstruct gövde (hata) dallari ---
+    # Yukaridaki routing testleri metodu sentinel'le degistirdiginden gercek govde
+    # (reconstruct -> None / reconstruct -> raise) kosulmuyordu. Bu iki test o dallari
+    # dogrudan cagirip StageResult(success=False) uretildigini dogrular.
+
+    def _make_dotnet_ctx(self, tmp_path: Path):
+        from karadul.core.pipeline import PipelineContext
+        from karadul.core.workspace import Workspace
+        from karadul.config import Config
+        from karadul.core.target import TargetInfo, Language
+
+        bin_file = tmp_path / "sample.exe"
+        bin_file.write_bytes(b"\x00" * 16)
+        ws = Workspace(base_dir=tmp_path / "ws", target_name="sample")
+        ws.create()
+        target = TargetInfo(
+            path=bin_file, name="sample", target_type=TargetType.DOTNET_ASSEMBLY,
+            language=Language.UNKNOWN, file_size=16, file_hash="0" * 64,
+        )
+        return PipelineContext(target=target, workspace=ws, config=Config())
+
+    def test_analyzer_reconstruct_none_result_is_failure(self, tmp_path: Path, monkeypatch):
+        """reconstruct() None donerse StageResult success=False + 'JSON yok mu' mesaji.
+
+        Analiz JSON'u eksikse analizor None doner (java/dotnet reconstruct deseni).
+        None-guard olmasa `result.stage_name = ...` AttributeError firlatirdi -> bu test
+        o dali pinler.
+        """
+        import time as _time
+        import karadul.stages as stages_mod
+        from karadul.stages import ReconstructionStage
+
+        class _NoneAnalyzer:
+            def __init__(self, config): pass
+            def reconstruct(self, target, workspace): return None
+
+        monkeypatch.setattr(stages_mod, "get_analyzer", lambda tt: _NoneAnalyzer)
+        ctx = self._make_dotnet_ctx(tmp_path)
+        result = ReconstructionStage()._execute_analyzer_reconstruct(ctx, _time.monotonic())
+        assert result.success is False
+        assert any("JSON" in e or "dondurmedi" in e for e in result.errors)
+
+    def test_analyzer_reconstruct_exception_is_failure(self, tmp_path: Path, monkeypatch):
+        """reconstruct() exception firlatirsa StageResult success=False + hata tipi/mesaji.
+
+        try/except govdesi analizor cokmesini yutup pipeline'i oldurmemeli (kapsam:
+        bir formatin analizoru patlasa bile stage graceful fail eder).
+        """
+        import time as _time
+        import karadul.stages as stages_mod
+        from karadul.stages import ReconstructionStage
+
+        class _RaisingAnalyzer:
+            def __init__(self, config): pass
+            def reconstruct(self, target, workspace):
+                raise RuntimeError("boom")
+
+        monkeypatch.setattr(stages_mod, "get_analyzer", lambda tt: _RaisingAnalyzer)
+        ctx = self._make_dotnet_ctx(tmp_path)
+        result = ReconstructionStage()._execute_analyzer_reconstruct(ctx, _time.monotonic())
+        assert result.success is False
+        assert any("RuntimeError" in e and "boom" in e for e in result.errors)

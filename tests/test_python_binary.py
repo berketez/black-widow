@@ -703,3 +703,81 @@ class TestConstants:
     def test_nuitka_markers_not_empty(self):
         """Nuitka marker listesi bos olmamali."""
         assert len(_NUITKA_MARKERS) > 0
+
+
+# --------------------------------------------------------------------------
+# Reconstruct + functions stat (kapsam genisligi: PyInstaller pipeline wiring)
+# --------------------------------------------------------------------------
+
+class TestPythonReconstruct:
+    """PYTHON_PACKED functions stat + reconstruct.
+
+    Kapsam bug'i: PYTHON_PACKED olu enum + PythonBinaryAnalyzer'da reconstruct/
+    functions stat yoktu; packed_binary'nin gercek unpacker'i pipeline'a bagli
+    degildi. Simdi analyze_static functions stat set eder, reconstruct PyInstaller
+    CArchive'i (packed_binary.PyInstallerExtractor) acip python_project uretir.
+    """
+
+    def test_functions_stat_mirrors_module_count(
+        self, python_analyzer, mock_pyinstaller_target, mock_workspace,
+    ):
+        """analyze_static functions/functions_found = module_count set etmeli.
+
+        cli.py "Functions recovered" bunu okur; eskiden set edilmiyordu -> packed
+        binary "0 fonksiyon" gorunurdu (misroute deseni). Mutant-dogrulandi: functions
+        satiri silinince KeyError -> FAIL.
+        """
+        result = python_analyzer.analyze_static(mock_pyinstaller_target, mock_workspace)
+        assert "functions" in result.stats
+        assert "functions_found" in result.stats
+        assert result.stats["functions"] == result.stats.get("module_count", 0)
+        assert result.stats["functions"] > 0  # mock 4 .pyc referansi iceriyor
+
+    def test_reconstruct_produces_python_project(
+        self, python_analyzer, mock_pyinstaller_target, mock_workspace,
+    ):
+        """reconstruct static sonrasi python_project + manifest.json uretmeli."""
+        python_analyzer.analyze_static(mock_pyinstaller_target, mock_workspace)
+        result = python_analyzer.reconstruct(mock_pyinstaller_target, mock_workspace)
+        assert result is not None
+        assert result.success
+        assert "python_project" in result.artifacts
+        assert (result.artifacts["python_project"] / "manifest.json").exists()
+
+    def test_reconstruct_none_without_static(
+        self, python_analyzer, mock_pyinstaller_target, mock_workspace,
+    ):
+        """Static analiz kosmadiysa reconstruct None doner (graceful).
+
+        None -> ReconstructionStage bunu success=False'a cevirir; analiz JSON'u
+        olmadan proje uretmeye calismaz.
+        """
+        result = python_analyzer.reconstruct(mock_pyinstaller_target, mock_workspace)
+        assert result is None
+
+    def test_reconstruct_survives_extractor_exception(
+        self, python_analyzer, mock_pyinstaller_target, mock_workspace, monkeypatch,
+    ):
+        """PyInstallerExtractor.extract() RAISE ederse reconstruct graceful kalmali.
+
+        MINOR-2: bir formatin unpacker'i patlasa bile stage olmemeli — python_project
+        yine uretilir, hata yutulup errors'a yazilir. try/except (reconstruct) dalini pinler.
+        """
+        python_analyzer.analyze_static(mock_pyinstaller_target, mock_workspace)
+
+        import karadul.analyzers.packed_binary as pb
+
+        class _RaisingExtractor:
+            def __init__(self, config):
+                pass
+
+            def extract(self, path, out):
+                raise RuntimeError("boom-extract")
+
+        monkeypatch.setattr(pb, "PyInstallerExtractor", _RaisingExtractor)
+
+        result = python_analyzer.reconstruct(mock_pyinstaller_target, mock_workspace)
+        assert result is not None
+        assert result.success  # graceful: extraction hatasi pipeline'i oldurmez
+        assert "python_project" in result.artifacts
+        assert any("boom-extract" in e for e in result.errors)

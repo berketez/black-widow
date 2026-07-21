@@ -493,6 +493,25 @@ class TestAnalyzeStatic:
         # Runtime version parse edilmis olmali
         assert "runtime_version" in result.stats
 
+    def test_functions_stat_mirrors_method_count(
+        self, analyzer: DotNetBinaryAnalyzer, mock_target: TargetInfo, workspace: Workspace,
+    ):
+        """analyze_static `functions`/`functions_found` = method_count set etmeli.
+
+        Kapsam bug fix (JVM/JAR ile ayni desen): cli.py "Functions recovered" bu stat'i
+        okur (st.get('functions_found', st.get('functions', 0))). Eskiden set
+        edilmiyordu -> .NET analizi "0 fonksiyon" gorunup ReconstructionStage'de
+        else->_execute_js (JS-iskelet) misroute'una dusuyordu. Mutant-dogrulandi:
+        stats blogundan `functions` satiri cikarilinca bu test KeyError ile FAIL eder.
+        """
+        result = analyzer.analyze_static(mock_target, workspace)
+        assert "functions" in result.stats
+        assert "functions_found" in result.stats
+        # Yeni anahtarlar, bagimsiz hesaplanan total_methods (= method_count) ile ayni
+        # deger olmali — tautoloji degil, gercek metot sayimina baglaniyor.
+        assert result.stats["functions"] == result.stats["total_methods"]
+        assert result.stats["functions_found"] == result.stats["total_methods"]
+
 
 # --------------------------------------------------------------------------
 # Test: Obfuscation detection

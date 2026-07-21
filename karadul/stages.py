@@ -1038,6 +1038,21 @@ class ReconstructionStage(Stage):
         ):
             return self._execute_binary(context, start)
 
+        # Native-olmayan / analizor-reconstruct formatlar (JVM/.NET/Dalvik/Python-packed):
+        # Ghidra veya JS deobfuscation yoluna dusmemeli. Eskiden hepsi _execute_js'e dusup
+        # JS iskeleti + "0 fonksiyon" uretiyordu (kapsam bug'i). Her birinin kayitli
+        # analizoru kendi reconstruct'ini calistirir:
+        #   JAVA_JAR + ANDROID_APK -> JavaBinaryAnalyzer (class/metot; jadx varsa kaynak)
+        #   DOTNET_ASSEMBLY        -> DotNetBinaryAnalyzer (CIL metot; ILSpy varsa kaynak)
+        #   PYTHON_PACKED          -> PythonBinaryAnalyzer (PyInstaller CArchive -> .pyc)
+        if target.target_type in (
+            TargetType.JAVA_JAR,
+            TargetType.ANDROID_APK,
+            TargetType.DOTNET_ASSEMBLY,
+            TargetType.PYTHON_PACKED,
+        ):
+            return self._execute_analyzer_reconstruct(context, start)
+
         return self._execute_js(context, start)
 
     def _execute_app_bundle(self, context: PipelineContext, start: float) -> StageResult:
@@ -1201,6 +1216,42 @@ class ReconstructionStage(Stage):
                 success=False,
                 duration_seconds=time.monotonic() - start,
                 errors=["Go reconstruction sonuc dondurmedi"],
+            )
+        result.stage_name = self.name
+        return result
+
+    def _execute_analyzer_reconstruct(self, context: PipelineContext, start: float) -> StageResult:
+        """Managed/bytecode format reconstruction — kayitli analizorun reconstruct() ile.
+
+        JVM (JAR), Dalvik (APK) ve .NET (CIL) native binary DEGIL: Ghidra/JS yolu
+        yerine registry'deki analizorun kendi reconstruct'i calisir (JavaBinaryAnalyzer:
+        build.gradle + jadx varsa kaynak; DotNetBinaryAnalyzer: .csproj + ILSpy varsa
+        kaynak). Fonksiyon sayisi static stage'in `functions` stat'inda (metot sayisi)
+        tasinir -> "0 fonksiyon" + JS-iskelet misroute'u giderilir.
+
+        get_analyzer(target_type) ile calistigindan tipe ozel degil: target_type ->
+        analizor eslesmesi analyzers/__init__.py registry'sinde (JAVA_JAR/ANDROID_APK ->
+        JavaBinaryAnalyzer, DOTNET_ASSEMBLY -> DotNetBinaryAnalyzer).
+        """
+        target_kind = context.target.target_type.value
+        try:
+            analyzer_cls = get_analyzer(context.target.target_type)
+            analyzer = analyzer_cls(context.config)
+            result = analyzer.reconstruct(context.target, context.workspace)
+        except Exception as exc:
+            logger.exception("%s reconstruction hatasi: %s", target_kind, exc)
+            return StageResult(
+                stage_name=self.name,
+                success=False,
+                duration_seconds=time.monotonic() - start,
+                errors=[f"{type(exc).__name__}: {exc}"],
+            )
+        if result is None:
+            return StageResult(
+                stage_name=self.name,
+                success=False,
+                duration_seconds=time.monotonic() - start,
+                errors=[f"{target_kind} reconstruction sonuc dondurmedi (analiz JSON'u yok mu?)"],
             )
         result.stage_name = self.name
         return result
