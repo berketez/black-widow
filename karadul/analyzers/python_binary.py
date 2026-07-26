@@ -106,8 +106,8 @@ def _pyinstaller_note(summary: dict[str, Any]) -> str:
     """
     if not summary or summary.get("total_pyc", 0) == 0:
         return (
-            "PyInstaller CArchive acildi; extracted/ altinda dosyalar var ama "
-            ".pyc bulunamadi (native .so veya sifreli olabilir)."
+            "Paket acildi ama islenecek .pyc bulunamadi "
+            "(native .so/derlenmis, sifreli, veya dagitim dizini eksik olabilir)."
         )
     total = summary.get("total_pyc", 0)
     dec = summary.get("decompiled", 0)
@@ -345,6 +345,10 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         extract_errors: list[str] = []
         decompile_summary: dict[str, Any] = {}
 
+        # Surum static asamada tespit edildi (paketleyiciler .pyc header'ini siyirabilir).
+        pv_info = workspace.load_json("static", "python_version")
+        detected_version = (pv_info or {}).get("version")
+
         # PyInstaller: gercek CArchive extraction (packed_binary unpacker'i wire et)
         if packer == "pyinstaller":
             try:
@@ -355,14 +359,28 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 extracted_count = len(unpack.extracted_files)
                 extract_errors = list(unpack.errors)
                 # .pyc -> .py: header onar + deterministik decompile (LLM'siz zincir).
-                # Surum static asamada tespit edildi (PyInstaller header'lari siyrilmis olur).
-                pv_info = workspace.load_json("static", "python_version")
-                detected_version = (pv_info or {}).get("version")
                 decompile_summary = self._decompile_pyc_files(
                     unpack.extracted_files, output_dir, py_version=detected_version,
                 )
             except Exception as exc:
                 logger.debug("PyInstaller extraction basarisiz: %s", exc, exc_info=True)
+                extract_errors.append(f"{type(exc).__name__}: {exc}")
+
+        # cx_Freeze: lib/library.zip (standart ZIP) + lib/ altindaki serbest .pyc'ler
+        elif packer == "cx_freeze":
+            try:
+                extracted = self._extract_cxfreeze(target.path, output_dir / "extracted")
+                extracted_count = len(extracted)
+                if not extracted:
+                    extract_errors.append(
+                        "cx_Freeze: library.zip / lib/ bulunamadi "
+                        "(binary tek basina verildi, dagitim dizini eksik olabilir)"
+                    )
+                decompile_summary = self._decompile_pyc_files(
+                    extracted, output_dir, py_version=detected_version,
+                )
+            except Exception as exc:
+                logger.debug("cx_Freeze extraction basarisiz: %s", exc, exc_info=True)
                 extract_errors.append(f"{type(exc).__name__}: {exc}")
 
         # Manifest: kurtarilan yapinin ozeti (extraction basarisiz olsa da yazilir)
@@ -379,8 +397,9 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             "extraction_errors": extract_errors,
             "note": (
                 _pyinstaller_note(decompile_summary)
-                if packer == "pyinstaller" else
-                f"Paketleyici '{packer}': tam extraction yalnizca PyInstaller icin destekli."
+                if packer in ("pyinstaller", "cx_freeze") else
+                f"Paketleyici '{packer}': .pyc extraction yalnizca PyInstaller ve cx_Freeze "
+                "icin destekli (Nuitka native derler -> .pyc yok, decompile edilemez)."
             ),
         }
         (output_dir / "manifest.json").write_text(
@@ -400,6 +419,65 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             },
             errors=extract_errors,
         )
+
+    def _extract_cxfreeze(self, binary_path: Path, output_dir: Path) -> list:
+        """cx_Freeze dagitimindan .pyc'leri topla.
+
+        cx_Freeze tek dosya DEGIL dizin dagitimi yapar: executable + ``lib/library.zip``
+        (standart ZIP) + ``lib/`` altinda paket .pyc'leri. library.zip acilir, lib/
+        altindaki serbest .pyc'ler toplanir. Cikti: ExtractedFile listesi
+        (_decompile_pyc_files ile uyumlu). Dagitim dizini yoksa bos liste (graceful).
+        """
+        import zipfile
+        from karadul.analyzers.packed_binary import ExtractedFile
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        results: list = []
+        base = binary_path.parent
+
+        # library.zip aday konumlari (surumler/platformlar arasi farklar)
+        zip_candidates = [
+            base / "lib" / "library.zip",
+            base / "library.zip",
+            binary_path.with_suffix("") / "lib" / "library.zip",
+        ]
+        for zpath in zip_candidates:
+            if not zpath.is_file():
+                continue
+            try:
+                with zipfile.ZipFile(zpath) as zf:
+                    for name in zf.namelist():
+                        if not name.endswith(".pyc"):
+                            continue
+                        # Zip-slip koruma: path'i tek guvenli dosya adina duzlestir.
+                        safe_name = name.replace("/", "_").replace("\\", "_").lstrip(".")
+                        out = output_dir / safe_name
+                        try:
+                            data = zf.read(name)
+                        except Exception:
+                            continue
+                        out.write_bytes(data)
+                        results.append(ExtractedFile(
+                            path=out, original_name=name, file_type="pyc", size=len(data),
+                        ))
+            except zipfile.BadZipFile:
+                logger.debug("cx_Freeze library.zip bozuk: %s", zpath)
+            break  # ilk gecerli library.zip yeterli
+
+        # lib/ altindaki serbest .pyc dosyalari (library.zip disindaki paketler).
+        # Bunlar zaten diskte -- path dogrudan kullanilir (extract gerekmez).
+        lib_dir = base / "lib"
+        if lib_dir.is_dir():
+            for pyc in lib_dir.rglob("*.pyc"):
+                try:
+                    size = pyc.stat().st_size
+                except OSError:
+                    continue
+                results.append(ExtractedFile(
+                    path=pyc, original_name=pyc.name, file_type="pyc", size=size,
+                ))
+
+        return results
 
     def _decompile_pyc_files(
         self, extracted_files: list, output_dir: Path,

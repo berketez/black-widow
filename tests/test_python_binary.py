@@ -887,3 +887,72 @@ class TestDecompilePycFiles:
         s_yes = python_analyzer._decompile_pyc_files(files, tmp_path / "b", py_version=running)
         assert s_yes["disasm"] == 1
         assert s_yes["failed"] == 0
+
+
+class TestCxFreezeExtraction:
+    """_extract_cxfreeze: cx_Freeze library.zip + lib/ .pyc toplama."""
+
+    @staticmethod
+    def _real_pyc(src: str) -> bytes:
+        import importlib.util
+        import marshal
+        import struct
+        return importlib.util.MAGIC_NUMBER + struct.pack("<I", 0) * 3 + marshal.dumps(
+            compile(src, "x.py", "exec"))
+
+    def test_library_zip_ve_lib_serbest(
+        self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path, monkeypatch
+    ):
+        """library.zip icindeki + lib/ altindaki serbest .pyc'ler toplanir + decompile."""
+        import sys
+        import zipfile
+        from karadul.analyzers import pyc_decompiler as pd
+        monkeypatch.setattr(pd, "resolve_tool", lambda name, **k: None)  # pycdc yok
+        running = f"{sys.version_info.major}.{sys.version_info.minor}"
+
+        app = tmp_path / "app"
+        app.write_bytes(b"cx_Freeze\x00")
+        lib = tmp_path / "lib"
+        lib.mkdir()
+        with zipfile.ZipFile(lib / "library.zip", "w") as zf:
+            zf.writestr("app__main__.pyc", self._real_pyc("def m():\n    return 1\n"))
+            zf.writestr("mymod/core.pyc", self._real_pyc("def c():\n    return 2\n"))
+        (lib / "pkg").mkdir()
+        (lib / "pkg" / "u.pyc").write_bytes(self._real_pyc("def u():\n    return 3\n"))
+
+        extracted = python_analyzer._extract_cxfreeze(app, tmp_path / "ext")
+        # 2 (library.zip) + 1 (lib/ serbest) = 3 (mutant: .pyc filtre / lib tarama)
+        assert len(extracted) == 3
+        assert all(ef.file_type == "pyc" for ef in extracted)
+
+        summary = python_analyzer._decompile_pyc_files(
+            extracted, tmp_path / "proj", py_version=running)
+        assert summary["total_pyc"] == 3
+        assert summary["disasm"] == 3
+
+    def test_dagitim_dizini_yoksa_bos(
+        self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path
+    ):
+        """Tek basina binary (lib/ yok) -> bos liste (graceful, patlamaz)."""
+        app = tmp_path / "solo"
+        app.write_bytes(b"cx_Freeze\x00")
+        assert python_analyzer._extract_cxfreeze(app, tmp_path / "ext") == []
+
+    def test_zip_slip_korumasi(
+        self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path
+    ):
+        """library.zip'te ../ path -> output_dir DISINA yazilmaz (duzlestirme koruma)."""
+        import zipfile
+        app = tmp_path / "app"
+        app.write_bytes(b"cx_Freeze\x00")
+        lib = tmp_path / "lib"
+        lib.mkdir()
+        with zipfile.ZipFile(lib / "library.zip", "w") as zf:
+            zf.writestr("../../evil.pyc", self._real_pyc("x = 1\n"))
+        ext_dir = tmp_path / "ext"
+        extracted = python_analyzer._extract_cxfreeze(app, ext_dir)
+        assert len(extracted) == 1
+        # Cikan dosya ext_dir ALTINDA olmali, disari kacmamali
+        assert ext_dir in extracted[0].path.parents
+        assert not (tmp_path.parent / "evil.pyc").exists()
+        assert not (tmp_path / "evil.pyc").exists()
