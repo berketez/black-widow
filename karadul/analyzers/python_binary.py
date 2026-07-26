@@ -31,6 +31,12 @@ from karadul.core.result import StageResult
 from karadul.core.subprocess_runner import SubprocessRunner
 from karadul.core.target import TargetInfo, TargetType
 from karadul.core.workspace import Workspace
+from karadul.analyzers.pyc_decompiler import (
+    _PYC_MAGIC_TO_VERSION,
+    decompile_pyc,
+    repair_pyc_header,
+    version_from_pyc_bytes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,48 +80,9 @@ _NUITKA_MARKERS = [
 ]
 
 # --------------------------------------------------------------------------
-# .pyc magic number -> Python versiyon eslesmesi
-# Her Python surumu kendi magic number'ina sahiptir.
-# Bu tablo CPython'un importlib/_bootstrap_external.py'sindeki
-# MAGIC_NUMBER tablosundan turetilmistir.
-# --------------------------------------------------------------------------
-
-_PYC_MAGIC_TO_VERSION: dict[int, str] = {
-    # Python 3.7
-    3390: "3.7", 3391: "3.7", 3392: "3.7", 3393: "3.7", 3394: "3.7",
-    # Python 3.8
-    3400: "3.8", 3401: "3.8", 3410: "3.8", 3411: "3.8", 3412: "3.8", 3413: "3.8",
-    # Python 3.9
-    3420: "3.9", 3421: "3.9", 3422: "3.9", 3423: "3.9", 3424: "3.9", 3425: "3.9",
-    # Python 3.10
-    3430: "3.10", 3431: "3.10", 3432: "3.10", 3433: "3.10", 3434: "3.10",
-    3435: "3.10", 3436: "3.10", 3437: "3.10", 3438: "3.10", 3439: "3.10",
-    # Python 3.11
-    3450: "3.11", 3451: "3.11", 3452: "3.11", 3453: "3.11", 3454: "3.11",
-    3455: "3.11", 3456: "3.11", 3457: "3.11", 3458: "3.11", 3459: "3.11",
-    3460: "3.11", 3461: "3.11", 3462: "3.11", 3463: "3.11", 3464: "3.11",
-    3465: "3.11", 3466: "3.11", 3467: "3.11", 3468: "3.11", 3469: "3.11",
-    3470: "3.11", 3471: "3.11", 3472: "3.11", 3473: "3.11", 3474: "3.11",
-    3475: "3.11", 3476: "3.11", 3477: "3.11", 3478: "3.11", 3479: "3.11",
-    3480: "3.11", 3481: "3.11", 3482: "3.11", 3483: "3.11", 3484: "3.11",
-    3485: "3.11", 3486: "3.11", 3487: "3.11", 3488: "3.11", 3489: "3.11",
-    3490: "3.11", 3491: "3.11", 3492: "3.11", 3493: "3.11", 3494: "3.11",
-    3495: "3.11",
-    # Python 3.12
-    3500: "3.12", 3501: "3.12", 3502: "3.12", 3503: "3.12", 3504: "3.12",
-    3505: "3.12", 3506: "3.12", 3507: "3.12", 3508: "3.12", 3509: "3.12",
-    3510: "3.12", 3511: "3.12", 3512: "3.12", 3513: "3.12", 3514: "3.12",
-    3515: "3.12", 3516: "3.12", 3517: "3.12", 3518: "3.12", 3519: "3.12",
-    3520: "3.12", 3521: "3.12", 3522: "3.12", 3523: "3.12", 3524: "3.12",
-    3525: "3.12", 3526: "3.12", 3527: "3.12", 3528: "3.12", 3529: "3.12",
-    3530: "3.12", 3531: "3.12",
-    # Python 3.13
-    3550: "3.13", 3551: "3.13", 3552: "3.13", 3553: "3.13", 3554: "3.13",
-    3555: "3.13", 3556: "3.13", 3557: "3.13", 3558: "3.13", 3559: "3.13",
-    3560: "3.13", 3561: "3.13", 3562: "3.13", 3563: "3.13", 3564: "3.13",
-    3565: "3.13", 3566: "3.13", 3567: "3.13", 3568: "3.13", 3569: "3.13",
-    3570: "3.13", 3571: "3.13", 3572: "3.13",
-}
+# .pyc magic number -> Python versiyon tablosu artik pyc_decompiler.py'de
+# TEK KAYNAK (CLAUDE.md #11). Yukarida import edildi; re-export burada tutulur
+# (geriye donuk: bu modulden import eden kod calismaya devam eder).
 
 # Python versiyon string pattern'leri (binary string'lerde)
 _PYTHON_VERSION_PATTERN = re.compile(
@@ -129,6 +96,34 @@ _PYTHON_VERSION_SHORT_PATTERN = re.compile(
 _PYC_MODULE_PATTERN = re.compile(
     r"([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\.pyc?"
 )
+
+
+def _pyinstaller_note(summary: dict[str, Any]) -> str:
+    """PyInstaller manifest notu -- decompile sonucuna gore dinamik ve DURUST.
+
+    "Python %100" iddia edilmez; ne decompile edildi, ne disassembly'de kaldi
+    acikca yazilir (bkz. pyc_decompiler bilgisel tavan notu).
+    """
+    if not summary or summary.get("total_pyc", 0) == 0:
+        return (
+            "PyInstaller CArchive acildi; extracted/ altinda dosyalar var ama "
+            ".pyc bulunamadi (native .so veya sifreli olabilir)."
+        )
+    total = summary.get("total_pyc", 0)
+    dec = summary.get("decompiled", 0)
+    dis = summary.get("disasm", 0)
+    failed = summary.get("failed", 0)
+    parts = [f"{total} .pyc islendi"]
+    if dec:
+        parts.append(f"{dec} tanesi kaynak (.py) olarak decompile edildi")
+    if dis:
+        parts.append(
+            f"{dis} tanesi yalniz bytecode disassembly olarak kurtarildi "
+            "(daha iyi sonuc icin pycdc kurun: scripts/setup_pycdc.sh)"
+        )
+    if failed:
+        parts.append(f"{failed} tanesi cozulemedi")
+    return "; ".join(parts) + "."
 
 
 @register_analyzer(TargetType.PYTHON_PACKED)
@@ -233,6 +228,10 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         # 2. Python versiyon tespiti
         python_version = self._detect_python_version(binary_data)
         stats["python_version"] = python_version or "unknown"
+        # reconstruct icin sakla: PyInstaller .pyc header'lari genelde SIYRILMIS oldugundan
+        # decompile asamasi surumu buradan ogrenir (header'dan okuyamaz).
+        if python_version:
+            workspace.save_json("static", "python_version", {"version": python_version})
 
         # 3. Embedded .pyc modulleri
         modules = self._extract_embedded_modules(binary_data)
@@ -344,6 +343,7 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         packer = (packer_info or {}).get("packer", "unknown")
         extracted_count = 0
         extract_errors: list[str] = []
+        decompile_summary: dict[str, Any] = {}
 
         # PyInstaller: gercek CArchive extraction (packed_binary unpacker'i wire et)
         if packer == "pyinstaller":
@@ -354,6 +354,13 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 )
                 extracted_count = len(unpack.extracted_files)
                 extract_errors = list(unpack.errors)
+                # .pyc -> .py: header onar + deterministik decompile (LLM'siz zincir).
+                # Surum static asamada tespit edildi (PyInstaller header'lari siyrilmis olur).
+                pv_info = workspace.load_json("static", "python_version")
+                detected_version = (pv_info or {}).get("version")
+                decompile_summary = self._decompile_pyc_files(
+                    unpack.extracted_files, output_dir, py_version=detected_version,
+                )
             except Exception as exc:
                 logger.debug("PyInstaller extraction basarisiz: %s", exc, exc_info=True)
                 extract_errors.append(f"{type(exc).__name__}: {exc}")
@@ -368,10 +375,10 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 "stdlib": (modules or {}).get("stdlib_count", 0),
             },
             "extracted_count": extracted_count,
+            "decompile": decompile_summary,
             "extraction_errors": extract_errors,
             "note": (
-                "PyInstaller CArchive acildi; kullanici .pyc'leri extracted/ altinda. "
-                "Kaynak icin ayrica decompile (uncompyle6/decompyle3) gerekir."
+                _pyinstaller_note(decompile_summary)
                 if packer == "pyinstaller" else
                 f"Paketleyici '{packer}': tam extraction yalnizca PyInstaller icin destekli."
             ),
@@ -385,9 +392,103 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             success=True,
             duration_seconds=time.monotonic() - start,
             artifacts={"python_project": output_dir},
-            stats={"reconstructed": True, "extracted_count": extracted_count},
+            stats={
+                "reconstructed": True,
+                "extracted_count": extracted_count,
+                "decompiled_count": decompile_summary.get("decompiled", 0),
+                "disasm_count": decompile_summary.get("disasm", 0),
+            },
             errors=extract_errors,
         )
+
+    def _decompile_pyc_files(
+        self, extracted_files: list, output_dir: Path,
+        py_version: str | None = None,
+    ) -> dict[str, Any]:
+        """Extract edilmis .pyc'leri header-onar + deterministik decompile.
+
+        Cikti: ``output_dir/source/`` altina ``.py`` (basari) veya
+        ``.disasm.txt`` (kismi kurtarma). Zincir: pycdc -> decompyle3/uncompyle6
+        -> disassembly (bkz. pyc_decompiler). LLM/ML KULLANILMAZ.
+
+        Args:
+            extracted_files: PyInstallerExtractor ciktisi (ExtractedFile listesi).
+            output_dir: reconstructed/python_project dizini.
+            py_version: Static asamada tespit edilen Python surumu. PyInstaller
+                .pyc header'larini siyirdigi icin surum genelde .pyc'den okunamaz;
+                header onarimi bu degere dayanir.
+
+        Returns:
+            Ozet dict: total_pyc, decompiled, disasm, failed, methods{}.
+        """
+        pyc_files = [
+            ef for ef in extracted_files
+            if getattr(ef, "file_type", "") == "pyc" and ef.path.exists()
+        ]
+        summary: dict[str, Any] = {
+            "total_pyc": len(pyc_files),
+            "decompiled": 0,
+            "disasm": 0,
+            "failed": 0,
+            "methods": {},
+        }
+        if not pyc_files:
+            return summary
+
+        source_dir = output_dir / "source"
+        source_dir.mkdir(parents=True, exist_ok=True)
+
+        # Global surum: once header tasiyan bir .pyc'den oku; hicbiri header tasimiyorsa
+        # (PyInstaller tipik olarak siyirir) static asamada tespit edilen surume dus.
+        global_version: str | None = None
+        for ef in pyc_files:
+            try:
+                v = version_from_pyc_bytes(ef.path.read_bytes())
+            except OSError:
+                v = None
+            if v:
+                global_version = v
+                break
+        if global_version is None:
+            global_version = py_version
+
+        # pycdc icin vendor/pycdc dizinini extra_paths olarak ekle (setup_pycdc.sh buraya kurar).
+        vendor_pycdc = Path(__file__).resolve().parents[2] / "vendor" / "pycdc"
+        extra = [str(vendor_pycdc)] if vendor_pycdc.is_dir() else None
+        timeout = float(getattr(self.config.timeouts, "subprocess", 120.0))
+
+        for ef in pyc_files:
+            try:
+                body = ef.path.read_bytes()
+            except OSError:
+                summary["failed"] += 1
+                continue
+
+            repaired = repair_pyc_header(body, global_version)
+            if repaired is not None and repaired != body:
+                # Header onarildi -> onarilmis kopyayi diske yaz, onu decompile et.
+                fixed = ef.path.with_suffix(".fixed.pyc")
+                try:
+                    fixed.write_bytes(repaired)
+                    target_pyc = fixed
+                except OSError:
+                    target_pyc = ef.path
+            else:
+                target_pyc = ef.path
+
+            res = decompile_pyc(
+                target_pyc, source_dir,
+                py_version=global_version, timeout=timeout, extra_paths=extra,
+            )
+            summary["methods"][res.method] = summary["methods"].get(res.method, 0) + 1
+            if res.success:
+                summary["decompiled"] += 1
+            elif res.is_disassembly:
+                summary["disasm"] += 1
+            else:
+                summary["failed"] += 1
+
+        return summary
 
     # ------------------------------------------------------------------
     # Packer detection

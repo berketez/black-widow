@@ -781,3 +781,109 @@ class TestPythonReconstruct:
         assert result.success  # graceful: extraction hatasi pipeline'i oldurmez
         assert "python_project" in result.artifacts
         assert any("boom-extract" in e for e in result.errors)
+
+
+class TestDecompilePycFiles:
+    """_decompile_pyc_files: header onar + deterministik decompile (LLM/ML YOK)."""
+
+    @staticmethod
+    def _make_pyc(tmp_path: Path, name: str, src: str) -> Path:
+        import marshal
+        import sys
+        from karadul.analyzers.pyc_decompiler import repair_pyc_header
+        running = f"{sys.version_info.major}.{sys.version_info.minor}"
+        body = marshal.dumps(compile(src, name, "exec"))
+        p = tmp_path / name
+        # Stripped govdeyi header'la onar -> gecerli .pyc (calisan surum)
+        p.write_bytes(repair_pyc_header(body, running))
+        return p
+
+    def test_sadece_pyc_islenir_disasm_fallback(
+        self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path, monkeypatch
+    ):
+        """Sadece file_type=='pyc' islenir; pycdc yoksa disasm fallback (ayni surum)."""
+        from karadul.analyzers import pyc_decompiler as pd
+        from karadul.analyzers.packed_binary import ExtractedFile
+        monkeypatch.setattr(pd, "resolve_tool", lambda name, **k: None)  # hicbir arac yok
+
+        pyc1 = self._make_pyc(tmp_path, "a.pyc", "def a():\n    return 1\n")
+        pyc2 = self._make_pyc(tmp_path, "b.pyc", "def b():\n    return 2\n")
+        so = tmp_path / "native.so"
+        so.write_bytes(b"\x00" * 10)
+
+        files = [
+            ExtractedFile(path=pyc1, original_name="a.pyc", file_type="pyc", size=pyc1.stat().st_size),
+            ExtractedFile(path=pyc2, original_name="b.pyc", file_type="pyc", size=pyc2.stat().st_size),
+            ExtractedFile(path=so, original_name="native.so", file_type="so", size=10),
+        ]
+        out = tmp_path / "python_project"
+        summary = python_analyzer._decompile_pyc_files(files, out)
+
+        assert summary["total_pyc"] == 2       # .so DAHIL DEGIL (mutant: file_type filtre)
+        assert summary["disasm"] == 2          # ayni surum -> stdlib dis calisir
+        assert summary["decompiled"] == 0      # pycdc yok, gercek kaynak yok
+        assert (out / "source").is_dir()
+
+    def test_pycdc_ile_gercek_kaynak(
+        self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path, monkeypatch
+    ):
+        """pycdc mevcutsa .py kaynagi uretilir (decompiled sayacini pinler)."""
+        import subprocess
+        from karadul.analyzers import pyc_decompiler as pd
+        from karadul.analyzers.packed_binary import ExtractedFile
+        monkeypatch.setattr(
+            pd, "resolve_tool",
+            lambda name, **k: "/fake/pycdc" if name == "pycdc" else None,
+        )
+        monkeypatch.setattr(
+            pd, "safe_run",
+            lambda *a, **k: subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="def a():\n    return 1\n", stderr=""),
+        )
+        pyc1 = self._make_pyc(tmp_path, "a.pyc", "def a():\n    return 1\n")
+        files = [ExtractedFile(path=pyc1, original_name="a.pyc", file_type="pyc", size=pyc1.stat().st_size)]
+        out = tmp_path / "python_project"
+        summary = python_analyzer._decompile_pyc_files(files, out)
+
+        assert summary["decompiled"] == 1
+        assert summary["methods"].get("pycdc") == 1
+        assert (out / "source" / "a.py").exists()
+        assert "return 1" in (out / "source" / "a.py").read_text()
+
+    def test_bos_liste(self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path):
+        summary = python_analyzer._decompile_pyc_files([], tmp_path / "p")
+        assert summary["total_pyc"] == 0
+        assert summary["decompiled"] == 0
+
+    def test_stripped_pyc_surum_parametresiyle(
+        self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path, monkeypatch
+    ):
+        """Header'i SIYRILMIS .pyc (PyInstaller davranisi) + py_version -> disasm calisir.
+
+        Uctan uca fix regresyon korumasi: PyInstaller .pyc header'larini siyirir,
+        surum header'dan okunamaz -> static asamada tespit edilen py_version'a duser.
+        py_version VERILMEZSE onarim olmaz (failed); VERILINCE disasm calisir.
+        Bu, `if global_version is None: global_version = py_version` fallback'ini pinler.
+        """
+        import marshal
+        import sys
+        from karadul.analyzers import pyc_decompiler as pd
+        from karadul.analyzers.packed_binary import ExtractedFile
+        monkeypatch.setattr(pd, "resolve_tool", lambda name, **k: None)  # pycdc yok
+        running = f"{sys.version_info.major}.{sys.version_info.minor}"
+
+        # HEADER YOK -- ham marshal govdesi (repair uygulanmadan yazilir)
+        body = marshal.dumps(compile("def z():\n    return 9\n", "z.py", "exec"))
+        pyc = tmp_path / "z.pyc"
+        pyc.write_bytes(body)
+        files = [ExtractedFile(path=pyc, original_name="z.pyc", file_type="pyc", size=len(body))]
+
+        # py_version YOK -> header onarilamaz -> cozulemez
+        s_no = python_analyzer._decompile_pyc_files(files, tmp_path / "a")
+        assert s_no["disasm"] == 0
+        assert s_no["failed"] == 1
+
+        # py_version VAR -> header onarilir -> disasm (ayni surum)
+        s_yes = python_analyzer._decompile_pyc_files(files, tmp_path / "b", py_version=running)
+        assert s_yes["disasm"] == 1
+        assert s_yes["failed"] == 0
