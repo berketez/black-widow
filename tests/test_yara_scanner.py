@@ -238,11 +238,36 @@ class TestCompilerDetection:
         assert "GCC_Compiler" in result.matched_rules
 
     def test_msvc_detection(self, scanner):
-        """MSVC string tespit edilmeli."""
-        data = b"Microsoft (R) Optimizing Compiler Version 19.29.30148\x00"
+        """MSVC string tespit edilmeli -- PE hedefte (MSVC yalnizca Windows).
+
+        MSVC_Compiler kurali `formats=["pe"]`; PE magic (MZ) olmadan eslesme
+        elenir. Gercek MSVC binary'si zaten PE oldugu icin bu kisit dogru
+        pozitifleri etkilemez, yalnizca ELF/Mach-O yanlis pozitiflerini keser.
+        """
+        data = b"MZ\x90\x00" + b"\x00" * 60 + \
+            b"Microsoft (R) Optimizing Compiler Version 19.29.30148\x00"
         result = scanner.scan_bytes(data)
 
         assert "MSVC_Compiler" in result.matched_rules
+
+    def test_msvc_not_detected_in_elf(self, scanner):
+        """ELF icindeki MSVC-benzeri string yanlis pozitif URETMEMELI.
+
+        Regresyon: coreutils `cat` icindeki "Richard M. Stallman" krediisi
+        `b"Rich"` byte pattern'ine eslesip ELF'i "MSVC compiled" gosteriyordu.
+        """
+        data = b"\x7fELF" + b"\x00" * 60 + \
+            b"jorn Granlund\x00Richard M. Stallman\x00Visual C++ lookalike\x00"
+        result = scanner.scan_bytes(data)
+
+        assert "MSVC_Compiler" not in result.matched_rules
+
+    def test_rich_substring_alone_is_not_msvc(self, scanner):
+        """Format-agnostik ham veride ciplak 'Rich' MSVC tespiti vermemeli."""
+        data = b"some log: Rich content here, no PE header\x00"
+        result = scanner.scan_bytes(data)
+
+        assert "MSVC_Compiler" not in result.matched_rules
 
     def test_clang_detection(self, scanner):
         """Clang version string tespit edilmeli."""

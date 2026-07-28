@@ -101,6 +101,13 @@ class BuiltinRule:
     byte_patterns: list[bytes] = field(default_factory=list)
     string_patterns: list[str] = field(default_factory=list)
     condition: str = "any"  # "any" = herhangi biri, "all" = hepsi
+    # Bu kuralin yalnizca gecerli oldugu binary formatlari ("pe", "elf",
+    # "macho"). Bos = format-agnostik (her yerde gecerli). PE-only imzalar
+    # (Rich header, MSVC string'leri) ELF/Mach-O'da yanlis eslesir; bu alan
+    # scan_bytes'ta magic-byte ile filtrelenir. Ornek: coreutils `cat`
+    # icindeki "Richard M. Stallman" krediisi `b"Rich"` byte pattern'ine
+    # eslesip ELF'i "MSVC compiled" gosteriyordu.
+    formats: list[str] = field(default_factory=list)
 
 
 def _hex(s: str) -> bytes:
@@ -318,9 +325,15 @@ def _builtin_rules() -> list[BuiltinRule]:
             r"_MSC_VER",
         ],
         byte_patterns=[
-            # Rich header signature: "Rich"
+            # Rich header signature: "Rich". PE'nin DOS stub'i ile NT header'i
+            # arasinda bulunur; ELF/Mach-O'da olmaz. Tek basina "Rich" 4 byte'i
+            # cok yaygin bir alt-dizi ( or. "Richard") -- format kisiti olmadan
+            # yanlis pozitif uretir. `formats=["pe"]` ile korunuyor.
             b"Rich",
         ],
+        # MSVC + Rich header yalnizca Windows PE'de anlamli. ELF/Mach-O
+        # hedeflerinde bu kural taranmaz (yanlis "MSVC compiled" tespitini onler).
+        formats=["pe"],
     ))
 
     rules.append(BuiltinRule(
@@ -925,6 +938,8 @@ class YaraScanner:
             matches, errors = self._scan_with_fallback(data)
             backend = "regex-fallback"
 
+        matches = self._filter_by_format(matches, data)
+
         elapsed_ms = (time.perf_counter() - start) * 1000.0
 
         return ScanResult(
@@ -934,6 +949,55 @@ class YaraScanner:
             errors=errors,
             backend=backend,
         )
+
+    @staticmethod
+    def _detect_format(data: bytes) -> str:
+        """Magic byte'tan binary formatini tespit et: pe | elf | macho | ''.
+
+        Bos string = bilinmeyen/format-agnostik (ham veri, arsiv vb.).
+        """
+        if data[:2] == b"MZ":
+            return "pe"
+        if data[:4] == b"\x7fELF":
+            return "elf"
+        # Mach-O (thin: 32/64 LE+BE) ve fat/universal (0xCAFEBABE)
+        if data[:4] in (
+            b"\xfe\xed\xfa\xce", b"\xfe\xed\xfa\xcf",   # 32/64-bit BE magic
+            b"\xce\xfa\xed\xfe", b"\xcf\xfa\xed\xfe",   # 32/64-bit LE magic
+            b"\xca\xfe\xba\xbe",                          # fat/universal
+        ):
+            return "macho"
+        return ""
+
+    def _filter_by_format(
+        self, matches: list[YaraMatch], data: bytes,
+    ) -> list[YaraMatch]:
+        """Format-kisitli kurallarin yanlis-format eslesmelerini ele.
+
+        `formats` alani dolu olan kurallar yalnizca o formatlarda gecerlidir
+        (or. MSVC/Rich header -> yalnizca PE). Hedefin gercek formati farkliysa
+        (veya tespit edilemiyorsa) bu eslesmeler yanlis pozitiftir ve atilir.
+        Format-agnostik kurallar (formats bos) her zaman gecer.
+        """
+        target_fmt = self._detect_format(data)
+        # Rule adi -> formats kisiti (yalnizca kisitli olanlar).
+        restricted = {
+            r.name: r.formats for r in self._builtin_rules if r.formats
+        }
+        if not restricted:
+            return matches
+
+        kept: list[YaraMatch] = []
+        for m in matches:
+            allowed = restricted.get(m.rule)
+            if allowed and target_fmt not in allowed:
+                logger.debug(
+                    "YARA: '%s' eslesmesi elendi (kural formatlari=%s, hedef=%s)",
+                    m.rule, allowed, target_fmt or "bilinmiyor",
+                )
+                continue
+            kept.append(m)
+        return kept
 
     # ------------------------------------------------------------------
     # Native YARA backend
