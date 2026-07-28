@@ -96,7 +96,10 @@ SP="$RES/python/lib/python3.12/site-packages"
 [ -d "$SP/webview/js" ] || { echo "!! webview/js eksik (pencere çöker)"; exit 1; }
 
 echo "[4/9] ui/"
-rm -rf "$RES/ui"; /usr/bin/rsync -a --exclude='__pycache__' "$REPO/ui/" "$RES/ui/"
+# _runs = runtime analiz çıktısı (UI oturumları), .DS_Store = Finder artığı: ikisi de
+# BUNDLE'A GİRMEMELİ. _runs iCloud'da cloud-only olunca rsync mmap timeout ile ölüyordu
+# (build [4/9]'da patlıyordu). Kaynak değiller -> hariç tut.
+rm -rf "$RES/ui"; /usr/bin/rsync -a --exclude='__pycache__' --exclude='_runs' --exclude='.DS_Store' "$REPO/ui/" "$RES/ui/"
 
 if [ $FULL = 1 ]; then
   echo "[5/9] Ghidra (yerel kopya)"

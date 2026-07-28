@@ -135,19 +135,34 @@ DMG_SHA="$(cat "$SHA_FILE")"
 DMG_SIZE="$(stat -f%z "$DMG" 2>/dev/null || wc -c < "$DMG" | tr -d ' ')"
 NOW_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo "[build_dmg] sha256 -> $SHA_FILE ($DMG_SHA)"
-cat <<EOF
---- appcast.json manifest fragmanı (REPLACE-WITH-YOUR-HOST'u kendi adresinle değiştir) ---
+# appcast.json'ı DOSYAYA yaz (release'e asset olarak yüklemeye hazır). URL'ler
+# repo'nun GitHub Releases adresine sabitlenir -- app'e gömülü varsayılan manifest
+# URL'i (ui/server.py) ile aynı host (github.com), SSRF guard uyumlu.
+APPCAST="$DIST/appcast.json"
+GH="https://github.com/berketez/black-widow"
+TAG="v$VER"
+cat > "$APPCAST" <<EOF
 {
   "version": "$VER",
-  "dmg_url": "https://REPLACE-WITH-YOUR-HOST/karadul/BlackWidow-$VER.dmg",
+  "dmg_url": "$GH/releases/download/$TAG/BlackWidow-$VER.dmg",
   "sha256": "$DMG_SHA",
   "size_bytes": $DMG_SIZE,
-  "notes_url": "https://REPLACE-WITH-YOUR-HOST/karadul/notes-$VER.html",
+  "notes_url": "$GH/releases/tag/$TAG",
   "published_at": "$NOW_UTC",
   "min_os": "12.0"
 }
-NOT: app'i KARADUL_UPDATE_MANIFEST_URL=https://REPLACE-WITH-YOUR-HOST/karadul/appcast.json
-ile derle/çalıştır; dmg_url ve notes_url AYNI host'ta olmalı (yoksa SSRF guard reddeder).
+EOF
+echo "[build_dmg] appcast -> $APPCAST"
+cat <<EOF
+--- GitHub Releases ile yayınla (auto-update kanalı) ---
+1) Yeni release oluştur, etiket:  $TAG
+   (pre-release İŞARETLEME — GitHub 'latest' pre-release'leri atlar, manifest onları görmez)
+2) Şu iki dosyayı release'e asset olarak yükle (adları AYNEN):
+     $DMG
+     $APPCAST
+3) App'e gömülü manifest URL'i:  $GH/releases/latest/download/appcast.json
+   -> her zaman en yeni (pre-release olmayan) release'in appcast.json'ına çözülür.
+Kurulu sürüm $VER'den DÜŞÜKSE, app açılışta güncelleme banner'ı gösterir.
 ------------------------------------------------------------------------------------------
 EOF
 

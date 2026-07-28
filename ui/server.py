@@ -919,11 +919,13 @@ def _build_info() -> dict:
 # SSRF: dmg_url/notes_url yalnizca IZINLI host'lardan kabul edilir (manifest'in
 # kendi host'u + KARADUL_UPDATE_ALLOWED_HOSTS). Keyfi domain reddedilir.
 # ---------------------------------------------------------------------------
-# Berke TEK yerden degistirir ya da env verir. Placeholder .invalid TLD (RFC 6761):
-# istemeden gercek bir sunucuya cikmaz -- cozumlenmez, aninda URLError doner.
+# Varsayilan: repo'nun GitHub "latest release" kalici baglantisi -- her yeni
+# (pre-release OLMAYAN) release'te otomatik en yeni appcast.json asset'ine cozulur;
+# host github.com SABIT kalir. Env (KARADUL_UPDATE_MANIFEST_URL) test/self-host'ta ezer.
+# dmg_url/notes_url de github.com host'unda olmali (SSRF guard: manifest host == dmg host).
 _UPDATE_MANIFEST_URL = (
     os.environ.get("KARADUL_UPDATE_MANIFEST_URL")
-    or "https://updates.example.invalid/karadul/appcast.json"
+    or "https://github.com/berketez/black-widow/releases/latest/download/appcast.json"
 )
 _RELEASES_URL = os.environ.get(
     "KARADUL_RELEASES_URL", "https://github.com/berketez/black-widow/releases"
