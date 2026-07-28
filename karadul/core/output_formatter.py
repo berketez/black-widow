@@ -221,7 +221,16 @@ class OutputFormatter:
         """Pipeline sonucundan dil tespit et."""
         if "identify" in self._result.stages:
             lang = self._result.stages["identify"].stats.get("language", "")
-            if lang:
+            # identify stage stripped binary'lerde kaynak dili cikaramaz ve
+            # LITERAL "unknown" yazar. Bu gecerli bir dil DEGIL; oyle kabul
+            # edilirse _format_clean C dalina hic giremez, generic dala duser
+            # ve reconstructed/ altindaki TUM ara asamalar (annotated, merged,
+            # typed, commented, struct_recovered...) src/ altina DUZ kopyalanir.
+            # Ayni isimli dosyalar birbirini ezer, alfabetik son gelen kazanir
+            # (typed_iter1) -> kullanicinin en olgun ciktisi (commented yorumlar
+            # + subsystem'lere ayrilmis project/ agaci) sessizce kaybolur, ustelik
+            # ~1600 gereksiz dosya kopyalanir. "unknown" -> fallback tahminine dus.
+            if lang and lang.lower() != "unknown":
                 return lang.lower()
 
         # Fallback: workspace dosyalarindan tahmin

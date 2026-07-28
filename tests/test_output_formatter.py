@@ -936,3 +936,138 @@ class TestIntegration:
         # ama her ikisi de dosya yazmalii
         assert raw_result.files_written > 0
         assert clean_result.files_written > 0
+
+
+# ------------------------------------------------------------------
+# Regresyon: identify "unknown" dil -> en olgun cikti kaybi (2026-07-28)
+# ------------------------------------------------------------------
+
+class TestUnknownLanguageRegression:
+    """identify stage stripped binary'de `language: "unknown"` yazar.
+
+    Bu LITERAL deger gecerli bir dil sanilirsa `_format_clean` C dalina
+    (`_format_binary_sources`) hic giremez, generic dala duser ve
+    `reconstructed/` altindaki TUM ara asamalar src/ altina DUZ kopyalanir.
+    Ayni isimli dosyalar birbirini ezer, alfabetik son gelen kazanir --
+    kullanicinin en olgun ciktisi (commented yorumlar + subsystem'lere
+    ayrilmis project/ agaci) sessizce kaybolur.
+    """
+
+    @staticmethod
+    def _populate_staged_reconstruction(workspace: Workspace) -> None:
+        """Gercek pipeline gibi coklu ara asama + nihai project/ agaci kur."""
+        recon = workspace.get_stage_dir("reconstructed")
+
+        # Ara asamalar -- ayni dosya adi, gitgide olgunlasan icerik.
+        # "typed_iter1" alfabetik olarak sona dustugu icin generic dalda
+        # KAZANAN o olur; dogru davranista hicbiri kullanilmamalii.
+        for stage, body in (
+            ("annotated", "// annotated\nint parse(void) { return 0; }\n"),
+            ("merged", "// merged\nint parse(void) { return 0; }\n"),
+            ("typed", "// typed\nint parse(void) { return 0; }\n"),
+            ("typed_iter1", "// typed_iter1\nint parse(void) { return 0; }\n"),
+            ("commented", "/** @brief Parse input. */\nint parse(void) { return 0; }\n"),
+        ):
+            d = recon / stage
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "parse.c").write_text(body, encoding="utf-8")
+
+        # Nihai CProjectBuilder ciktisi: subsystem'lere ayrilmis, commented icerik
+        proj_src = recon / "project" / "src" / "subsystem_io"
+        proj_src.mkdir(parents=True, exist_ok=True)
+        (proj_src / "parse.c").write_text(
+            "/** @brief Parse input. */\nint parse(void) { return 0; }\n",
+            encoding="utf-8",
+        )
+        inc = recon / "project" / "include"
+        inc.mkdir(parents=True, exist_ok=True)
+        (inc / "types.h").write_text("typedef int undefined4;\n", encoding="utf-8")
+
+    @staticmethod
+    def _result_with_language(workspace: Workspace, language: str) -> PipelineResult:
+        result = PipelineResult(
+            target_name="stripped_elf",
+            target_hash="deadbeef",
+            workspace_path=workspace.path,
+        )
+        result.add_stage_result(StageResult(
+            stage_name="identify",
+            success=True,
+            duration_seconds=0.0,
+            stats={
+                "target_type": "elf_binary",
+                "language": language,
+                "file_size": 67928,
+            },
+        ))
+        result.total_duration = 1.0
+        return result
+
+    def test_unknown_language_is_not_treated_as_a_real_language(
+        self, workspace: Workspace,
+    ) -> None:
+        """`language: "unknown"` + reconstructed'da .c varsa dil "c" cozulmeli."""
+        self._populate_staged_reconstruction(workspace)
+        result = self._result_with_language(workspace, "unknown")
+
+        formatter = OutputFormatter(workspace, result)
+
+        assert formatter._detect_language() == "c"
+
+    def test_unknown_language_still_delivers_project_tree(
+        self, tmp_path: Path, workspace: Workspace,
+    ) -> None:
+        """Dil "unknown" olsa da kullanici project/ agacini ve yorumlari almali."""
+        self._populate_staged_reconstruction(workspace)
+        result = self._result_with_language(workspace, "unknown")
+
+        formatter = OutputFormatter(workspace, result)
+        out = tmp_path / "clean"
+        fmt_result = formatter.format_output(out, fmt="clean")
+
+        assert fmt_result.success
+
+        # project/ agaci korunmali (duz yigin DEGIL)
+        delivered = out / "src" / "src" / "subsystem_io" / "parse.c"
+        assert delivered.exists(), (
+            "project/ agaci kullaniciya ulasmadi -- generic dala dusulmus olabilir"
+        )
+
+        # Teslim edilen icerik en olgun (commented) surum olmali,
+        # alfabetik son gelen typed_iter1 DEGIL.
+        body = delivered.read_text(encoding="utf-8")
+        assert "@brief" in body
+        assert "typed_iter1" not in body
+
+        # include/ de tasinmalii
+        assert (out / "src" / "include" / "types.h").exists()
+
+    def test_unknown_language_does_not_inflate_file_count(
+        self, tmp_path: Path, workspace: Workspace,
+    ) -> None:
+        """files_written gercekte yazilan dosya sayisiyla tutarli olmali.
+
+        Generic dal ayni adli dosyalari ust uste yazip her yazmayi sayiyordu;
+        rapor edilen sayi diskteki gercekten kat kat buyuk cikiyordu.
+        """
+        self._populate_staged_reconstruction(workspace)
+        result = self._result_with_language(workspace, "unknown")
+
+        formatter = OutputFormatter(workspace, result)
+        out = tmp_path / "clean"
+        fmt_result = formatter.format_output(out, fmt="clean")
+
+        on_disk = sum(1 for p in out.rglob("*") if p.is_file())
+        assert fmt_result.files_written <= on_disk, (
+            f"sayac sisik: {fmt_result.files_written} raporlandi, "
+            f"diskte {on_disk} dosya var"
+        )
+
+    def test_explicit_language_still_wins(self, workspace: Workspace) -> None:
+        """Gercek bir dil bildirildiyse fallback tahminine dusulmemeli."""
+        self._populate_staged_reconstruction(workspace)
+        result = self._result_with_language(workspace, "javascript")
+
+        formatter = OutputFormatter(workspace, result)
+
+        assert formatter._detect_language() == "javascript"
