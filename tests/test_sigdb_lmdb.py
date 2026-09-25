@@ -7,6 +7,8 @@ dosyalara bagimli degil, hizli calisir.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 # LMDB opsiyonel bagimlilik -- yoksa tum test dosyasi skip
@@ -322,7 +324,7 @@ class TestBuildScriptIdempotent:
         import sys as _sys
         spec = importlib.util.spec_from_file_location(
             "build_sig_lmdb",
-            "/Users/apple/Desktop/black-widow/scripts/build_sig_lmdb.py",
+            str(Path(__file__).resolve().parent.parent / "scripts" / "build_sig_lmdb.py"),
         )
         mod = importlib.util.module_from_spec(spec)
         _sys.modules["build_sig_lmdb"] = mod
