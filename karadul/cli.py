@@ -758,7 +758,11 @@ def analyze(
         st = result.stages["reconstruct"].stats
         results_table.add_row("Modules extracted", str(st.get("modules_extracted", "N/A")))
         results_table.add_row("Variables renamed", str(st.get("variables_renamed", "N/A")))
-        results_table.add_row("Coverage", f"{st.get('coverage_percent', 'N/A')}%")
+        coverage = st.get("coverage_percent")
+        results_table.add_row(
+            "Coverage",
+            f"{coverage}%" if isinstance(coverage, (int, float)) else "N/A",
+        )
         results_table.add_row(
             "Runnable project",
             "YES" if st.get("runnable_project") else "NO",
