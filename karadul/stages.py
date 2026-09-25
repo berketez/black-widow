@@ -672,11 +672,16 @@ class DynamicAnalysisStage(Stage):
 
 
 class DeobfuscationStage(Stage):
-    """Deobfuscation stage'i.
+    """Deobfuscation stage'i -- hedef türüne göre yönlendirilir.
 
-    Iki mod:
-    1. use_deep=True (default): DeepDeobfuscationPipeline -- 9 phase Babel transform + akilli modul cikarma
-    2. use_deep=False: Analyzer'in deobfuscate() -- beautify + synchrony + babel + webpack unpack
+    - GO_BINARY: Go deobfuscation + binary deobfuscation (hibrit).
+    - Native (MACHO/UNIVERSAL/ELF/PE/BUN/DELPHI): BinaryDeobfuscator (Ghidra çıktısı temizliği).
+    - JS ailesi (JS_BUNDLE, ELECTRON_APP) -- iki mod:
+      1. use_deep=True (default): DeepDeobfuscationPipeline -- 9 phase Babel transform + akilli modul cikarma
+      2. use_deep=False: Analyzer'in deobfuscate() -- beautify + synchrony + babel + webpack unpack
+    - JAVA_JAR, ANDROID_APK: kayıtlı analizcinin deobfuscate()'i (ProGuard/R8).
+    - Geri kalan her şey (DOTNET_ASSEMBLY, PYTHON_PACKED, APP_BUNDLE, UNKNOWN ve
+      tablolarda olmayan her yeni tür): ATLANDI (skipped=True + skip_reason).
 
     Not: ``requires`` listesi kasitli olarak ["identify"] yapildi (eskiden ["static"]).
     Static analiz basarisiz olsa bile (orn. Babel parse hatasi) deobfuscation
@@ -686,6 +691,59 @@ class DeobfuscationStage(Stage):
 
     name = "deobfuscate"
     requires: tuple[str, ...] = ("identify",)
+
+    # Yönlendirme bug'ı (2026-09-25): eskiden native olmayan HER tür, türüne
+    # bakılmadan JS derin hattına (beautify.mjs, Babel, webpack unpack) düşüyordu.
+    # İkili dosyada beautify'ın "başarılı" adımı (ya da hata sonrası kopyası) aşamayı
+    # sahte başarıya çeviriyordu. Ölçüm (CLI, --stage deobfuscate): PyInstaller 7,8 MB
+    # -> deobfuscated/ altında 29,85 MB çöp; .NET 251 KB -> 58,97 MB; JAR/APK/.pyc da
+    # aynı desen, hepsi success=True. ReconstructionStage'deki aynı tuzak 61f6bba'da
+    # (JVM/.NET/APK/Python) düzeltilmişti; bu tablolar onun deobfuscation karşılığı.
+
+    # JS derin / legacy JS hattı yalnız JS kaynağı üstünde anlamlı.
+    _JS_FAMILY: frozenset[TargetType] = frozenset({
+        TargetType.JS_BUNDLE,
+        TargetType.ELECTRON_APP,
+    })
+
+    # Kendi analizcisinde formata özgü deobfuscation mantığı olan türler.
+    # JavaBinaryAnalyzer.deobfuscate: static'teki ProGuard/R8 tespitini okur,
+    # mapping.txt varsa yükler.
+    _ANALYZER_DEOB_TYPES: frozenset[TargetType] = frozenset({
+        TargetType.JAVA_JAR,
+        TargetType.ANDROID_APK,
+    })
+
+    # Anlamlı deobfuscation'ı olmayan türler -> ATLANDI (ne sahte başarı ne hata).
+    # Bir analizcinin deobfuscate()'i gerçek iş yapar hâle gelirse türü buradan
+    # _ANALYZER_DEOB_TYPES'a taşı.
+    #   DOTNET_ASSEMBLY: DotNetBinaryAnalyzer.deobfuscate boş sonuç döndüren bir taslak.
+    #   PYTHON_PACKED:   PythonBinaryAnalyzer.deobfuscate yalnız static JSON'unu
+    #                    deobfuscated/'a kopyalıyor, okuyan yok; asıl kurtarma
+    #                    (CArchive/PYZ çıkarma + decompile) reconstruct'ta.
+    #   APP_BUNDLE:      AppBundleAnalyzer'da deobfuscate yok; JS derin hattı .app
+    #                    dizinini dosya sanıp IsADirectoryError veriyordu.
+    #   UNKNOWN:         kayıtlı analizci yok. Uzantısız JS de buraya düşer; bu
+    #                    türde gerçekte görülen hedefler .py kaynaklarıydı (JS derin
+    #                    hattı Python'u "beautify" edip başarı diyordu).
+    _SKIP_REASONS: dict[TargetType, str] = {
+        TargetType.DOTNET_ASSEMBLY: (
+            ".NET assembly için deobfuscation uygulanmıyor (ConfuserEx vb. "
+            "çözücü yok); JS hattı bu türe uygulanmaz."
+        ),
+        TargetType.PYTHON_PACKED: (
+            "Python paketi için ayrı bir deobfuscation adımı yok; .pyc çıkarma "
+            "ve decompile reconstruct aşamasında yapılır."
+        ),
+        TargetType.APP_BUNDLE: (
+            ".app bundle için bileşen bazlı deobfuscation tanımlı değil; "
+            "bileşenler static aşamasında ayrı ayrı analiz edilir."
+        ),
+        TargetType.UNKNOWN: (
+            "Hedef türü tanınmadı; deobfuscation uygulanmadı. Uzantısız bir "
+            "JS dosyasıysa .js uzantısıyla verin."
+        ),
+    }
 
     def __init__(self, *, use_deep: bool = True) -> None:
         self._use_deep = use_deep
@@ -723,10 +781,71 @@ class DeobfuscationStage(Stage):
         ):
             return self._execute_binary(context, start)
 
-        if self._use_deep:
-            return self._execute_deep(context, start)
-        else:
+        # JS ailesi: derin / legacy JS hattı yalnız burada çalışır.
+        if target.target_type in self._JS_FAMILY:
+            if self._use_deep:
+                return self._execute_deep(context, start)
             return self._execute_legacy(context, start)
+
+        # JVM/Dalvik: formatın kendi analizcisi (use_deep'ten bağımsız).
+        if target.target_type in self._ANALYZER_DEOB_TYPES:
+            return self._execute_analyzer_deobfuscate(context, start)
+
+        # Geri kalan her şey ATLANDI -- asla JS hattına düşmez (yeni türler dahil).
+        reason = self._SKIP_REASONS.get(
+            target.target_type,
+            f"{target.target_type.value}: bu hedef türü için deobfuscation yolu "
+            "tanımlı değil.",
+        )
+        return self._skipped(start, reason)
+
+    def _skipped(self, start: float, reason: str) -> StageResult:
+        """Deobfuscation ATLANDI sonucu (hata DEĞİL).
+
+        DynamicAnalysisStage._skipped ile aynı sözleşme: success=False +
+        skipped=True; PipelineResult bunu FAILED saymaz (get_skipped_stages'te
+        listelenir), gerekçe stats["skip_reason"]'da.
+        """
+        logger.info("Deobfuscation atlandı: %s", reason)
+        return StageResult(
+            stage_name=self.name,
+            success=False,
+            skipped=True,
+            duration_seconds=time.monotonic() - start,
+            stats={"skip_reason": reason},
+        )
+
+    def _execute_analyzer_deobfuscate(
+        self, context: PipelineContext, start: float,
+    ) -> StageResult:
+        """Kayıtlı analizcinin kendi deobfuscate()'i (JAR/APK -> JavaBinaryAnalyzer).
+
+        ReconstructionStage._execute_analyzer_reconstruct'ın deobfuscation
+        karşılığı: analizci patlarsa ya da None dönerse aşama başarısız olur,
+        pipeline ölmez.
+        """
+        target_kind = context.target.target_type.value
+        try:
+            analyzer_cls = get_analyzer(context.target.target_type)
+            analyzer = analyzer_cls(context.config)
+            result = analyzer.deobfuscate(context.target, context.workspace)
+        except Exception as exc:
+            logger.exception("%s deobfuscation hatası: %s", target_kind, exc)
+            return StageResult(
+                stage_name=self.name,
+                success=False,
+                duration_seconds=time.monotonic() - start,
+                errors=[f"{type(exc).__name__}: {exc}"],
+            )
+        if result is None:
+            return StageResult(
+                stage_name=self.name,
+                success=False,
+                duration_seconds=time.monotonic() - start,
+                errors=[f"{target_kind} deobfuscation sonuç döndürmedi"],
+            )
+        result.stage_name = self.name
+        return result
 
     def _execute_go_binary(self, context: PipelineContext, start: float) -> StageResult:
         """Go binary deobfuscation — GOPCLNTAB zaten orijinal isimleri iceriyor."""
