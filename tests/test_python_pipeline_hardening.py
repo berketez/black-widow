@@ -355,3 +355,106 @@ class TestMadde4TekStdlibTanimi:
         assert {m["name"]: m["type"] for m in mods["modules"]} == {
             "distutils": "stdlib", "myapp": "user"}
         assert st.stats["stdlib_modules"] == 1 and st.stats["user_modules"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Madde 5: decompile zincirine üst sınır + dürüst raporlama
+# ---------------------------------------------------------------------------
+
+def _efs(tmp_path: Path, names: list[str]) -> list:  # type: ignore[type-arg]
+    from karadul.analyzers.packed_binary import ExtractedFile
+    out = []
+    for n in names:
+        p = tmp_path / (n + ".pyc")
+        p.write_bytes(b"x")
+        out.append(ExtractedFile(path=p, original_name=n, file_type="pyc", size=1,
+                                 metadata={"pyz_module": True, "pyz_category": "user"}))
+    return out
+
+
+class TestMadde5ZincirUstSiniri:
+    def test_secim_kucuk_paketler_once_sira_korunur(self, tmp_path: Path) -> None:
+        from karadul.analyzers.packed_binary import select_decompile_chain
+        names = ["big.a", "big.b", "app", "big.c", "myapp.x", "myapp.y", "big.d"]
+        keep, skipped = select_decompile_chain(_efs(tmp_path, names), 4)
+        assert [e.original_name for e in keep] == ["big.a", "app", "myapp.x", "myapp.y"]
+        assert [e.original_name for e in skipped] == ["big.b", "big.c", "big.d"]
+        keep, skipped = select_decompile_chain(_efs(tmp_path, names), 7)
+        assert len(keep) == 7 and skipped == []
+        keep, skipped = select_decompile_chain(_efs(tmp_path, names), 0)
+        assert keep == [] and len(skipped) == 7
+
+    def test_config_varsayilan_ve_yaml(self) -> None:
+        from karadul.config import Config
+        assert Config().security.max_python_decompile_modules == 2000
+        cfg = Config._from_dict({"security": {"max_python_decompile_modules": 7}})
+        assert cfg.security.max_python_decompile_modules == 7
+
+    def test_zincir_siniri_uygular_ve_raporlar(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import json
+        import karadul.analyzers.python_binary as pbin
+        from karadul.analyzers.pyc_decompiler import DecompileResult
+        calls: list[str] = []
+        monkeypatch.setattr(pbin, "decompile_pyc", lambda pyc, out, **k: calls.append(
+            k["out_stem"]) or DecompileResult(source_path=pyc, method="disasm", is_disassembly=True))
+        an = _analyzer()
+        an.config.security.max_python_decompile_modules = 3
+        files = _efs(tmp_path, ["big.a", "big.b", "big.c", "app", "big.d"])
+        s = an._decompile_pyc_files(files, tmp_path / "proj")
+        assert calls == ["big.a", "big.b", "app"]
+        assert (s["total_pyc"], s["limit"], s["skipped_by_limit"]) == (3, 3, 2)
+        assert s["disasm"] + s["decompiled"] + s["partial"] + s["failed"] == s["total_pyc"]
+        listing = json.loads((tmp_path / "proj" / s["skipped_list"]).read_text())
+        assert [e["name"] for e in listing["skipped"]] == ["big.c", "big.d"]
+        note = pbin._pyinstaller_note(s)
+        assert "2 .pyc decompile üst sınırı (3)" in note
+
+    def test_hepsi_atlanirsa_not_bos_paket_demez(self) -> None:
+        from karadul.analyzers.python_binary import _pyinstaller_note
+        note = _pyinstaller_note({"total_pyc": 0, "skipped_by_limit": 5, "limit": 0,
+                                  "skipped_list": "decompile_skipped.json"})
+        assert "bulunamadi" not in note and "5 .pyc" in note
+
+    def test_cikarici_eski_decompiler_yoluna_da_siniri_uygular(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from karadul.analyzers.packed_binary import PyInstallerExtractor
+        from karadul.config import Config
+        seen: list[str] = []
+        monkeypatch.setattr(PyInstallerExtractor, "_try_decompile_pyc_files", staticmethod(
+            lambda files, out: seen.extend(ef.original_name for ef in files) or []))
+        cfg = Config()
+        cfg.security.max_python_decompile_modules = 2
+        PyInstallerExtractor(cfg).extract(_pyi_binary_with_pyz(tmp_path), tmp_path / "out")
+        # adaylar: CArchive app, pyiboot01_bootstrap, struct + PYZ helper (hepsi tek modüllü
+        # grup -> arşiv sırası); sınır 2 -> ilk ikisi
+        assert seen == ["app", "pyiboot01_bootstrap"]
+        cfg.security.max_python_decompile_modules = 1
+        seen.clear()
+        PyInstallerExtractor(cfg).extract(_pyi_binary_with_pyz(tmp_path), tmp_path / "out2")
+        assert seen == ["app"]
+
+    def test_uctan_uca_manifest(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        import json
+        from karadul.core.target import Language, TargetInfo, TargetType
+        from karadul.core.workspace import Workspace
+        monkeypatch.setattr(pd, "resolve_tool", lambda name, **k: None)
+        an = _analyzer()
+        an.config.security.max_python_decompile_modules = 1
+        monkeypatch.setattr(an.runner, "run_strings", lambda *a, **k: [])
+        binp = _pyi_binary_with_pyz(tmp_path)
+        target = TargetInfo(path=binp, name="app", target_type=TargetType.PYTHON_PACKED,
+                            language=Language.PYTHON, file_size=binp.stat().st_size, file_hash="x")
+        ws = Workspace(tmp_path / "ws", "lim")
+        ws.create()
+        an.analyze_static(target, ws)
+        rec = an.reconstruct(target, ws)
+        proj = rec.artifacts["python_project"]
+        manifest = json.loads((proj / "manifest.json").read_text())
+        # zincir adayları: CArchive 3 .pyc (app, pyiboot01_bootstrap, struct) + PYZ helper
+        assert manifest["decompile"]["total_pyc"] == 1
+        assert manifest["decompile"]["skipped_by_limit"] == 3
+        assert "3 .pyc decompile üst sınırı (1)" in manifest["note"]
+        assert (proj / "decompile_skipped.json").is_file()

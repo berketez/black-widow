@@ -750,6 +750,12 @@ class SecurityConfig:
     pyinstaller_reserved_names: Windows reserved dosya isimleri; extraction
         esnasinda bu isimlere denk gelen entry'ler reddedilir (Windows
         host uzerinde device acilmasini onler).
+
+    max_python_decompile_modules: Python paketinden (PyInstaller/cx_Freeze)
+        decompile zincirine giren .pyc üst sınırı. Her .pyc ayrı pycdc + pycdas
+        alt süreci demek (2026-09-25 ölçümü: medyan 16 ms, p90 30 ms/modül; ama
+        her çağrının zaman aşımı timeouts.subprocess). Aşılırsa küçük üst düzey
+        paketler önce işlenir, kalanlar manifest'te sayılır ve listelenir.
     """
     max_archive_extract_size: int = 2 * 1024 ** 3         # 2GB
     max_download_size: int = 500 * 1024 ** 2              # 500MB
@@ -764,6 +770,7 @@ class SecurityConfig:
     max_flirt_hex_length: int = 512
     max_otool_output_bytes: int = 64 * 1024 * 1024        # 64MB
     max_capa_stderr_bytes: int = 1 * 1024 * 1024          # 1MB
+    max_python_decompile_modules: int = 2000
     # Windows reserved names (extraction reject) -- CVE COM1.txt vs.
     pyinstaller_reserved_names: tuple[str, ...] = (
         "CON", "PRN", "AUX", "NUL",

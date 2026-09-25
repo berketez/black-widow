@@ -47,6 +47,7 @@ from karadul.analyzers.packed_binary import (
     locate_pyinstaller_archive,
     parse_pyz,
     pyinstaller_python_version,
+    select_decompile_chain,
     unique_casefold_name,
 )
 from karadul.core.safe_subprocess import safe_zlib_decompress
@@ -111,13 +112,24 @@ _PYC_MODULE_PATTERN = re.compile(
 )
 
 
+# Decompile üst sınırı aşıldığında atlanan .pyc'lerin listesi (manifest'le aynı dizinde).
+_DECOMPILE_SKIPPED_FILE = "decompile_skipped.json"
+_DECOMPILE_LIMIT_POLICY = (
+    "Zincirdeki .pyc sayısı security.max_python_decompile_modules'u aşarsa üst düzey "
+    "paketi az modüllü olanlar önce işlenir (uygulama betikleri/kendi modülleri önce, "
+    "büyük üçüncü parti paketler sona); eşitlikte arşiv sırası. Atlananlar çıkarılmış "
+    ".pyc olarak durur, yalnız decompile edilmez."
+)
+
+
 def _pyinstaller_note(summary: dict[str, Any]) -> str:
     """PyInstaller manifest notu -- decompile sonucuna gore dinamik ve DURUST.
 
     "Python %100" iddia edilmez; ne decompile edildi, ne disassembly'de kaldi
     acikca yazilir (bkz. pyc_decompiler bilgisel tavan notu).
     """
-    if not summary or summary.get("total_pyc", 0) == 0:
+    skipped = (summary or {}).get("skipped_by_limit", 0)
+    if not summary or (summary.get("total_pyc", 0) == 0 and not skipped):
         return (
             "Paket acildi ama islenecek .pyc bulunamadi "
             "(native .so/derlenmis, sifreli, veya dagitim dizini eksik olabilir)."
@@ -128,6 +140,12 @@ def _pyinstaller_note(summary: dict[str, Any]) -> str:
     dis = summary.get("disasm", 0)
     failed = summary.get("failed", 0)
     parts = [f"{total} .pyc işlendi"]
+    if skipped:
+        parts.append(
+            f"{skipped} .pyc decompile üst sınırı ({summary.get('limit')}) nedeniyle "
+            f"İŞLENMEDİ (liste: {summary.get('skipped_list', _DECOMPILE_SKIPPED_FILE)}; "
+            "sınır: security.max_python_decompile_modules)"
+        )
     if dec:
         parts.append(f"{dec} tanesi doğrulanmış kaynak (.py) olarak decompile edildi")
     if part:
@@ -152,7 +170,8 @@ _PYZ_POLICY = (
     "PYZ modülleri hedef Python sürümüne göre sınıflanır: stdlib "
     "(sys.stdlib_module_names + sürüm farkı tablosu) ve PyInstaller iç modülleri "
     "(pyimod*/pyiboot*/pyi_*/_pyi_*) yalnız çıkarılır ve listelenir; geri kalan "
-    "her modül (uygulama + üçüncü parti) decompile zincirine girer."
+    "her modül (uygulama + üçüncü parti) decompile zincirine girer "
+    "(üst sınır: security.max_python_decompile_modules)."
 )
 _PYZ_MODULES_FILE = "pyz_modules.json"
 
@@ -670,14 +689,19 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
 
         Returns:
             Ozet dict: total_pyc, decompiled, partial, disasm, failed, methods{},
-            pycdc_available. Sınıflar ayrıktır (toplamları total_pyc):
+            pycdc_available, limit, skipped_by_limit (+ skipped_list dosya adı;
+            atlananlar total_pyc'ye dahil DEĞİL). Sınıflar ayrıktır (toplamları total_pyc):
             decompiled = doğrulanmış kaynak; partial = pycdc kısmi .partial.py
             (+ varsa disasm); disasm = yalnız disassembly; failed = hiçbiri.
         """
-        pyc_files = [
+        candidates = [
             ef for ef in extracted_files
             if getattr(ef, "file_type", "") == "pyc" and ef.path.exists()
         ]
+        # Üst sınır (SecurityConfig.max_python_decompile_modules): aşılırsa küçük üst
+        # düzey paketler önce; atlananlar sayılır ve dosyaya listelenir.
+        limit = int(self.config.security.max_python_decompile_modules)
+        pyc_files, skipped = select_decompile_chain(candidates, limit)
         summary: dict[str, Any] = {
             "total_pyc": len(pyc_files),
             "decompiled": 0,
@@ -685,7 +709,23 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             "disasm": 0,
             "failed": 0,
             "methods": {},
+            "limit": limit,
+            "skipped_by_limit": len(skipped),
         }
+        if skipped:
+            logger.warning(
+                "Python decompile: %d .pyc üst sınır (%d) nedeniyle atlandı (%s)",
+                len(skipped), limit, _DECOMPILE_SKIPPED_FILE,
+            )
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / _DECOMPILE_SKIPPED_FILE).write_text(json.dumps({
+                "limit": limit,
+                "policy": _DECOMPILE_LIMIT_POLICY,
+                "skipped": [
+                    {"name": ef.original_name, "size": ef.size} for ef in skipped
+                ],
+            }, indent=2, ensure_ascii=False), encoding="utf-8")
+            summary["skipped_list"] = _DECOMPILE_SKIPPED_FILE
         if not pyc_files:
             return summary
 

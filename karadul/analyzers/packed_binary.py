@@ -1143,6 +1143,39 @@ def classify_pyz_module(name: str, python_version: Optional[str] = None) -> str:
     return "user"
 
 
+def select_decompile_chain(
+    files: list[ExtractedFile], limit: int,
+) -> tuple[list[ExtractedFile], list[ExtractedFile]]:
+    """Decompile zincirini ``limit`` ile sınırla: (işlenecek, atlanan), ikisi de özgün sırada.
+
+    Sınır (``SecurityConfig.max_python_decompile_modules``) aşılmazsa hepsi işlenir.
+    Aşılırsa öncelik: üst düzey paketi az modüllü olanlar önce (uygulama betikleri
+    ve kendi modülleri genelde tek/az modüllüdür; yüzlerce modüllü üçüncü parti
+    kütüphaneler sona kalır), eşitlikte özgün sıra. Ada dayalı bir sezgidir;
+    atlananları çağıran raporlar.
+    """
+    limit = max(0, limit)
+    if len(files) <= limit:
+        return list(files), []
+
+    def top_level(ef: ExtractedFile) -> str:
+        name = ef.original_name
+        if name.endswith(".pyc"):
+            name = name[:-4]
+        return name.replace("\\", "/").replace("/", ".").split(".", 1)[0]
+
+    tops = [top_level(ef) for ef in files]
+    group_size: dict[str, int] = {}
+    for t in tops:
+        group_size[t] = group_size.get(t, 0) + 1
+    order = sorted(range(len(files)), key=lambda i: (group_size[tops[i]], i))
+    keep = set(order[:limit])
+    return (
+        [ef for i, ef in enumerate(files) if i in keep],
+        [ef for i, ef in enumerate(files) if i not in keep],
+    )
+
+
 def unique_casefold_name(stem: str, used: set[str]) -> str:
     """``stem``'i ``used`` içinde tekil yap: çakışırsa ``stem~N`` (N >= 2).
 
@@ -1449,6 +1482,16 @@ class PyInstallerExtractor:
             if ef.file_type == "pyc" and ef.metadata.get("pyz_category", "user") == "user"
         ]
         if pyc_files:
+            # Aynı üst sınır (python_binary zinciriyle ortak): binlerce modüllü
+            # uygulamada dosya başına bir decompiler süreci açılmasın.
+            pyc_files, skipped = select_decompile_chain(
+                pyc_files, self.config.security.max_python_decompile_modules,
+            )
+            if skipped:
+                logger.warning(
+                    "PyInstaller: %d .pyc decompile üst sınırı (%d) nedeniyle atlandı",
+                    len(skipped), self.config.security.max_python_decompile_modules,
+                )
             decompiled = self._try_decompile_pyc_files(pyc_files, output_dir)
             extracted.extend(decompiled)
 
