@@ -75,8 +75,17 @@ try {
 // KURAL KATEGORILERi (A-G) -- 615+ kural
 // =====================================================================
 
+// Kural tabloları kaynak koddan gelen adlarla (property, modül, callee adı)
+// indekslenir. Düz nesnede `hasOwnProperty`, `constructor`, `toString`,
+// `__proto__` gibi anahtarlar Object.prototype'tan değer döndürür: güven NaN
+// olur, önerilen ad bir fonksiyon nesnesine dönüşür. Prototipsiz nesnede
+// yalnız tablonun kendi anahtarları bulunur.
+function ownTable(table) {
+  return Object.setPrototypeOf(table, null);
+}
+
 // A. require/import kaynaagindan
-const REQUIRE_NAMES = {
+const REQUIRE_NAMES = ownTable({
   // Node.js built-in
   fs: "fileSystem",
   path: "pathUtils",
@@ -299,7 +308,7 @@ const REQUIRE_NAMES = {
   "ink-text-input": "inkTextInput",
   "ink-select-input": "inkSelectInput",
   "ink-spinner": "inkSpinner",
-};
+});
 
 // B. Fonksiyon parametre pozisyonundan
 const PARAM_POSITION_RULES = {
@@ -332,7 +341,7 @@ const PARAM_POSITION_RULES = {
 };
 
 // C. Property erisimleri -> tip hint + isim suffix
-const PROPERTY_HINTS = {
+const PROPERTY_HINTS = ownTable({
   // Array
   length: { type: "array_or_string", suffix: "", confidence: 0.1 },
   map: { type: "array", suffix: "List", confidence: 0.25 },
@@ -492,10 +501,10 @@ const PROPERTY_HINTS = {
   next: { type: "iterator", suffix: "Iterator", confidence: 0.2 },
   done: { type: "iterator_result", suffix: "", confidence: 0.15 },
   [Symbol.iterator]: { type: "iterable", suffix: "Iterable", confidence: 0.2 },
-};
+});
 
 // D. Operatorler ve kontrol akisindan tip cikarimi
-const TYPE_CHECKS = {
+const TYPE_CHECKS = ownTable({
   string: { suffix: "Str", confidence: 0.2 },
   number: { suffix: "Num", confidence: 0.2 },
   boolean: { suffix: "Flag", confidence: 0.2 },
@@ -504,9 +513,9 @@ const TYPE_CHECKS = {
   undefined: { suffix: "Optional", confidence: 0.1 },
   symbol: { suffix: "Sym", confidence: 0.2 },
   bigint: { suffix: "BigInt", confidence: 0.2 },
-};
+});
 
-const INSTANCEOF_NAMES = {
+const INSTANCEOF_NAMES = ownTable({
   Error: { name: "error", confidence: 0.3 },
   TypeError: { name: "typeError", confidence: 0.3 },
   RangeError: { name: "rangeError", confidence: 0.3 },
@@ -539,10 +548,10 @@ const INSTANCEOF_NAMES = {
   Uint8Array: { name: "uint8Data", confidence: 0.25 },
   Int32Array: { name: "int32Data", confidence: 0.25 },
   Float64Array: { name: "float64Data", confidence: 0.25 },
-};
+});
 
 // E. Atama kaynagindan isim cikarimi
-const CONSTRUCTOR_NAMES = {
+const CONSTRUCTOR_NAMES = ownTable({
   Map: "mapInstance",
   Set: "setInstance",
   WeakMap: "weakMapRef",
@@ -595,9 +604,9 @@ const CONSTRUCTOR_NAMES = {
   MutationObserver: "mutationObserver",
   ResizeObserver: "resizeObserver",
   PerformanceObserver: "perfObserver",
-};
+});
 
-const GLOBAL_FUNCTION_RETURNS = {
+const GLOBAL_FUNCTION_RETURNS = ownTable({
   // JSON
   "JSON.parse": "parsedData",
   "JSON.stringify": "jsonString",
@@ -662,10 +671,10 @@ const GLOBAL_FUNCTION_RETURNS = {
   requestAnimationFrame: "animFrameId",
   fetch: "fetchResponse",
   require: null, // ozel olarak ele alinir
-};
+});
 
 // F. Fonksiyon isimlerinden parametre isimleri
-const FUNCTION_PARAM_NAMES = {
+const FUNCTION_PARAM_NAMES = ownTable({
   // DOM
   addEventListener: ["eventName", "eventHandler", "listenerOptions"],
   removeEventListener: ["eventName", "eventHandler", "listenerOptions"],
@@ -743,10 +752,10 @@ const FUNCTION_PARAM_NAMES = {
   debug: null,
   // JSON
   stringify: ["sourceValue", "replacer", "indentation"],
-};
+});
 
 // G. React/Ink specifik
-const REACT_HOOKS = {
+const REACT_HOOKS = ownTable({
   useState: { returns: ["stateValue", "setStateValue"], confidence: 0.3 },
   useEffect: { params: ["effectCallback", "dependencies"], confidence: 0.25 },
   useCallback: { params: ["memoizedCallback", "dependencies"], confidence: 0.25 },
@@ -766,7 +775,7 @@ const REACT_HOOKS = {
     confidence: 0.2,
   },
   useInsertionEffect: { params: ["insertionEffect", "dependencies"], confidence: 0.15 },
-};
+});
 
 const REACT_ELEMENT_PARAMS = {
   createElement: ["componentType", "componentProps", "childElements"],
@@ -844,12 +853,15 @@ try {
       const declarations = path.node.declarations;
       const kind = path.node.kind;
 
-      let scopeBlock;
-      if (kind === "var") {
-        scopeBlock = findFunctionScope(path);
-      } else {
-        scopeBlock = findBlockScope(path);
-      }
+      // `var` tekrarı geçerli JS'tir; Babel onu hata vermeden aynı binding'in
+      // yeniden bildirimi (constant violation) olarak kaydeder. Dönüştürmek
+      // anlamı bozuyordu: for-init'teki tekrarın başlangıç ataması siliniyordu
+      // (`for (var t = X, n = 0; ...)` -> `for (var t = X; ...)`) ve sınıf/nesne
+      // metodları fonksiyon scope'u sayılmadığı için iki metoddaki `var a`
+      // birleştirilip ikincisi bildirimsiz atamaya dönüyordu. Yalnız let/const.
+      if (kind === "var") return;
+
+      let scopeBlock = findBlockScope(path);
 
       if (!scopeBlock) scopeBlock = ast;
 
@@ -914,7 +926,11 @@ try {
         return;
       }
 
-      // Sadece bazi declarator'lar duplicate
+      // Sadece bazı declarator'lar duplicate.
+      // For-init'te atamayı öne alacak yer yok; declarator'u silmek başlangıç
+      // değerini kaybettirir. Olduğu gibi bırakılır (Scope yaması tolere eder).
+      if (path.parent?.type === "ForStatement" && path.parent.init === path.node) return;
+
       const assignmentExprs = [];
       for (const { index, decl } of toConvert.reverse()) {
         declarations.splice(index, 1);
@@ -926,9 +942,6 @@ try {
       }
 
       if (assignmentExprs.length > 0) {
-        const isForInit = path.parent?.type === "ForStatement" && path.parent.init === path.node;
-        if (isForInit) return; // For init'te insertBefore calismaz, declarator'lari zaten cikardik
-
         try {
           const stmts = assignmentExprs.map(a => t.expressionStatement(a));
           for (const stmt of stmts.reverse()) {
@@ -947,23 +960,6 @@ try {
   errors.push(`Duplicate fix pass hatasi: ${err.message}`);
 }
 
-function findFunctionScope(path) {
-  let current = path.parentPath;
-  while (current) {
-    const type = current.node?.type;
-    if (
-      type === "FunctionDeclaration" ||
-      type === "FunctionExpression" ||
-      type === "ArrowFunctionExpression" ||
-      type === "Program"
-    ) {
-      return current.node;
-    }
-    current = current.parentPath;
-  }
-  return null;
-}
-
 function findBlockScope(path) {
   let current = path.parentPath;
   while (current) {
@@ -977,7 +973,8 @@ function findBlockScope(path) {
       type === "ForStatement" ||
       type === "ForInStatement" ||
       type === "ForOfStatement" ||
-      type === "SwitchStatement"
+      type === "SwitchStatement" ||
+      type === "StaticBlock"
     ) {
       return current.node;
     }
@@ -1190,8 +1187,35 @@ function getScopeId(path) {
   return "global";
 }
 
+// Scope kimliği (apply-names.mjs'deki getScopeId ile aynı biçim)
+function scopeIdOf(scope) {
+  const block = scope.block;
+  if (block?.loc?.start) {
+    const funcName = block.id?.name || (block.type === "Program" ? "program" : block.type);
+    return `${funcName}@${block.loc.start.line}:${block.loc.start.column}`;
+  }
+  return scope.uid !== undefined ? `scope_${scope.uid}` : "global";
+}
+
+// Kanıt, adın BAĞLI OLDUĞU binding'in scope'una yazılır; kullanımın
+// bulunduğu scope'a değil. Yoksa iç bloktaki/iç fonksiyondaki kullanım
+// binding'i olmayan bir anahtara düşer ve asıl binding'e hiç ulaşmaz.
+// Hiçbir binding'e çözülmeyen ad (global) "global" anahtarına gider;
+// apply-names orada binding bulamayacağı için onu yeniden adlandırmaz.
+// noScope yedek traverse'ünde path.scope yoktur: eski davranış.
+function bindingScopeId(name, path) {
+  if (!path.scope) return getScopeId(path);
+  let binding;
+  try {
+    binding = path.scope.getBinding(name);
+  } catch (_) {
+    return getScopeId(path);
+  }
+  return binding ? scopeIdOf(binding.scope) : "global";
+}
+
 function getOrCreate(name, path) {
-  const scopeId = getScopeId(path);
+  const scopeId = bindingScopeId(name, path);
   const key = `${scopeId}::${name}`;
   if (!variables.has(key)) {
     variables.set(key, new VariableInfo(name, scopeId));
@@ -1351,7 +1375,7 @@ try {
         if (parent.type === "CallExpression" && parent.callee?.type === "MemberExpression") {
           const methodName =
             parent.callee.property?.name || parent.callee.property?.value || "";
-          const arrayMethods = {
+          const arrayMethods = ownTable({
             map: "array_map",
             filter: "array_filter",
             reduce: "array_reduce",
@@ -1362,7 +1386,7 @@ try {
             every: "array_filter",
             flatMap: "array_map",
             sort: "array_sort",
-          };
+          });
           if (arrayMethods[methodName]) {
             const key = `${arrayMethods[methodName]}_${params.length}`;
             const names = PARAM_POSITION_RULES[key];
@@ -1899,7 +1923,7 @@ function analyzeAssignment(info, initNode, path, depth = 0) {
         info.assignedFrom = `*.${methodName}()`;
         info.assignedFromChain.push(`*.${methodName}()`);
 
-        const allMethodReturns = {
+        const allMethodReturns = ownTable({
           readFileSync: "fileContent", readFile: "fileContent",
           readdir: "directoryEntries", readdirSync: "directoryEntries",
           stat: "fileStats", statSync: "fileStats",
@@ -1925,7 +1949,7 @@ function analyzeAssignment(info, initNode, path, depth = 0) {
           reverse: "reversedItems", splice: "splicedItems",
           entries: "entryIterator", keys: "keyIterator",
           values: "valueIterator", from: "convertedArray",
-        };
+        });
 
         if (allMethodReturns[methodName]) {
           info.addEvidence("method_return", methodName, 0.2);

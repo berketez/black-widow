@@ -45,7 +45,10 @@ class NamingResult:
         low_confidence: Dusuk guvenle (< 0.2) isimlendirilen sayisi.
         unnamed: Isimlendirilemeyen kisa degisken sayisi.
         total_variables: Toplam degisken sayisi.
-        mappings: Eski isim -> yeni isim eslesmesi.
+        mappings: apply-names.mjs'nin uyguladığı eşleşmeler. Scope-aware
+            kipte ``{"<scopeId>::<eski ad>": {"from": <eski ad>, "to": <yeni ad>}}``;
+            flat kipte (scope bilgisi yoksa ya da scope-aware yol çökerse)
+            ``{"<eski ad>": "<yeni ad>"}``.
         context_json: Tam analiz sonucu (context-analyzer ciktisi).
         output_file: Cikti dosyasi yolu.
         errors: Hata mesajlari.
@@ -58,7 +61,7 @@ class NamingResult:
     low_confidence: int = 0
     unnamed: int = 0
     total_variables: int = 0
-    mappings: dict[str, str] = field(default_factory=dict)
+    mappings: dict[str, dict[str, str] | str] = field(default_factory=dict)
     context_json: dict[str, Any] | None = None
     output_file: Path | None = None
     errors: list[str] = field(default_factory=list)
@@ -74,7 +77,8 @@ class ContextNamer:
     Args:
         config: Merkezi konfigurasyon.
         min_confidence: Minimum confidence esigi (bu degerin altindaki
-            oneriler uygulanmaz). Varsayilan 0.1.
+            oneriler uygulanmaz). None ise
+            ``config.min_confidence.context_namer`` kullanılır.
         max_old_space_size: Node.js heap limiti (MB). 9MB dosyalar icin
             8192 oneriliyor. Varsayilan 8192.
     """
@@ -82,12 +86,16 @@ class ContextNamer:
     def __init__(
         self,
         config: Config,
-        min_confidence: float = 0.1,
+        min_confidence: float | None = None,
         max_old_space_size: int = 8192,
     ) -> None:
         self.config = config
         self.runner = SubprocessRunner(config)
-        self.min_confidence = min_confidence
+        self.min_confidence = (
+            config.min_confidence.context_namer
+            if min_confidence is None
+            else min_confidence
+        )
         self.max_old_space_size = max_old_space_size
         self._analyzer_script = config.scripts_dir / "context-analyzer.mjs"
         self._applier_script = config.scripts_dir / "apply-names.mjs"

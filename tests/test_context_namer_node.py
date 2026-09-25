@@ -16,11 +16,16 @@ Kapsam:
     (d) iç içe scope'larda aynı kısa ad: her binding kendi bağlamından ad alır,
         referans çözümü (hangi ad hangi binding'e bağlı) korunur
     (e) Scope yedek dalı (lib/scope/index.js doğrudan import): hem blok düzeyinde
-        hem de ana dal devre dışıyken script'lerin kendisiyle
+        hem de ana dal devre dışıyken script'lerin kendisiyle; scope-aware yol
+        çöküp flat yedeğe düşünce tek rapor satırı
     (f) Babel'in "Duplicate declaration" verdiği girdilerde hattın çökmemesi
+    (g) Anlam korunumu: yeniden bildirim, destructuring atama, for-init tekrarı,
+        metod/static blok scope'ları, ayrılmış sözcük önerileri, export edilen
+        bildirimler (node --check + alfa-denklik + çalıştırma sonucu)
 
-xfail(strict=True) testleri hatta bulunan ve DÜZELTİLMEMİŞ kusurları belgeler.
-Kusur düzeltilince test XPASS(strict) ile kırmızıya döner; işaret kaldırılmalıdır.
+Eskiden xfail(strict=True) ile belgelenen kusurlar (ad yakalama, blok scope'ları,
+kanıtın binding'e ulaşmaması, prototip anahtarları) düzeltildi; testleri artık
+normal regresyon testidir.
 """
 
 from __future__ import annotations
@@ -48,8 +53,9 @@ _REQUIRE_BASE = str(_SCRIPTS_DIR / "noop.js")
 _NODE = shutil.which(str(_CONFIG.tools.node))
 _BABEL_PACKAGES = ("parser", "traverse", "generator", "types")
 _NODE_TIMEOUT_S = 60
-# Script'lerin yaydığı ve ContextNamer'ın varsayılanı olan eşik; testler bunu açıkça verir.
-_MIN_CONFIDENCE = 0.1
+# ContextNamer'ın varsayılan eşiği (Config.min_confidence.context_namer, 0.1);
+# testler bunu açıkça verir.
+_MIN_CONFIDENCE = _CONFIG.min_confidence.context_namer
 _WEBPACK_FIXTURE = Path(__file__).parent / "fixtures" / "sample_minified.js"
 
 if _NODE is None:
@@ -115,7 +121,7 @@ def _webpack_source() -> str:
 # ---------------------------------------------------------------------------
 
 def _precondition(ok: bool, message: str) -> None:
-    """Senaryo kurulamazsa pytest.fail: xfail(raises=AssertionError) bunu yutmaz."""
+    """Senaryo kurulamazsa pytest.fail (AssertionError değil): kurulamayan senaryo kusurla karışmaz."""
     if not ok:
         pytest.fail(message)
 
@@ -173,6 +179,10 @@ function signature(file) {
   traverse(ast, { Identifier(p) { index.set(p.node, paths.length); paths.push(p); } });
   return paths.map((p) => {
     const name = p.node.name;
+    // `export { a as b }`: b modülün dış adıdır, binding değil (Babel onu binding kimliği sayar)
+    if (p.parentPath.isExportSpecifier() && p.key === "exported") return { sig: "export:" + name, name };
+    // `t: for (...)`: etiket ayrı bir ad alanıdır (Babel onu da binding kimliği sayar)
+    if (p.parentPath.isLabeledStatement() && p.key === "label") return { sig: "label:" + name, name };
     if (!(p.isReferencedIdentifier() || p.isBindingIdentifier())) return { sig: "name:" + name, name };
     let binding = null;
     if (p.isBindingIdentifier()) {
@@ -398,22 +408,26 @@ def test_webpack_bundle_shadowing_preserved(run_pipeline) -> None:
     assert after.stdout == before.stdout != ""
 
 
-# (kaynak, dış binding anahtarı, iç binding anahtarı). İç fonksiyon dış binding'e başvuruyor.
+# (kaynak, dış binding anahtarı, iç binding anahtarı, önce adlandırılan).
+# İç fonksiyon dış binding'e başvuruyor; analizör ikisine de AYNI adı öneriyor.
 _CAPTURE_CASES = {
-    # iç d (0.6) önce adlandırılır, sonra dış a (0.4) aynı adı alır
+    # iç d (0.75) önce adlandırılır; dış a (0.6) aynı adı isteyince iç fonksiyondaki
+    # a.set referansı iç binding'e bağlanırdı (ad tablosu: iç scope'ta yeni ad var)
     "inner-renamed-first": (
         "var a = new Map();\n"
         "function b(c) {\n"
         "  var d = new Map();\n"
         "  d.set(c, 1);\n"
         "  a.set(c, 2);\n"
-        "  return d.get(c);\n"
+        "  return d.get(c) + d.size;\n"
         "}\n"
         "module.exports = function (k) { return [b(k), a.get(k)]; };\n",
         "program@1:0::a",
         "b@2:0::d",
+        "b@2:0::d",
     ),
-    # güvenler eşit (0.5); önce Program scope'u (dış a) adlandırılır
+    # güvenler eşit (0.5); önce Program scope'u (dış a) adlandırılır; iç d aynı adı
+    # alsaydı iç fonksiyondaki `a === d` referansını yakalardı (dış yakalama)
     "outer-renamed-first": (
         'var a = require("fs");\n'
         "function b(c) {\n"
@@ -423,37 +437,47 @@ _CAPTURE_CASES = {
         "module.exports = b;\n",
         "program@1:0::a",
         "b@2:0::d",
+        "program@1:0::a",
     ),
 }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "KUSUR (apply-names.mjs): wouldShadow alt scope'lara bakmıyor (madde 2 yalnız yorumda) "
-        "ve manualBindingRename scope kaydını güncellemediği için sonraki getOwnBinding "
-        "kontrolleri eski adları görüyor. İç ve dış binding aynı yeni adı alınca iç "
-        "fonksiyondaki dış referans iç binding'e bağlanıyor; node --check geçiyor ama "
-        "davranış değişiyor (inner-renamed-first: [1, 2] -> [2, null])."
-    ),
-)
 @pytest.mark.parametrize("case", sorted(_CAPTURE_CASES))
 def test_rename_does_not_capture_outer_reference(run_pipeline, case: str) -> None:
-    source, outer_key, inner_key = _CAPTURE_CASES[case]
+    """İki binding aynı adı isteyince ikincisi çakışmasız sonek alır ya da atlanır.
+
+    Hiçbir referans başka binding'e bağlanmamalı (alfa-denklik) ve davranış
+    korunmalı. Eski kusur: iç fonksiyondaki dış referans iç binding'e bağlanıyordu
+    (inner-renamed-first: [2, 2] -> [3, null]); node --check yine de geçiyordu.
+    """
+    source, outer_key, inner_key, first_key = _CAPTURE_CASES[case]
     res, inp, out = run_pipeline(f"capture_{case}", source)
     _precondition(res.success and res.errors == [], f"hat başarısız: {res.errors}")
-    applied = _applied(res.mappings)
+    suggested = {f"{r['scopeId']}::{r['originalName']}": r for r in res.context_json["scope_renames"]}
+    second_key = inner_key if first_key == outer_key else outer_key
+    first, second = suggested.get(first_key), suggested.get(second_key)
     _precondition(
-        outer_key in applied and applied.get(outer_key) == applied.get(inner_key),
-        f"senaryo kurulamadı (dış ve iç binding aynı adı almalı): {applied}",
+        first is not None and second is not None
+        and first["newName"] == second["newName"]
+        and first["confidence"] >= second["confidence"] >= _MIN_CONFIDENCE,
+        f"senaryo kurulamadı (iki binding'e aynı ad, bu sırayla önerilmeli): {first}, {second}",
     )
+    name = first["newName"]
+
+    applied = _applied(res.mappings)
+    assert applied.get(first_key) == name, applied
+    # ikinci rename ya sonek aldı ya atlandı (shadow_suffixed / shadow_skipped)
+    assert applied.get(second_key) in {None, *(f"{name}_{i}" for i in range(1, 6))}, applied
 
     eq = _alpha_equivalence(inp, out)
-    assert eq["equal"], f"dış referans başka binding'e bağlandı: {eq['diffs']}"
+    assert eq["equal"], f"referans başka binding'e bağlandı: {eq['diffs']}"
+    assert _call_export(out, "k") == _call_export(inp, "k")
 
 
-_BLOCK_SCOPE_JS = """\
+_BLOCK_SCOPE_CASES = {
+    # if bloğundaki const, for-let sayacı, catch parametresi
+    "statements": (
+        """\
 function g(x) {
   try {
     if (x) {
@@ -467,39 +491,51 @@ function g(x) {
   return x;
 }
 module.exports = g;
-"""
-# (scope türü, ad): if bloğundaki const, for-let sayacı, catch parametresi
-_BLOCK_BINDINGS = {("BlockStatement", "a"), ("ForStatement", "i"), ("CatchClause", "e")}
-
-
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "KUSUR (apply-names.mjs PASS 1): yalnız Function/Program/ClassMethod/ObjectMethod "
-        "scope'ları geziliyor; blok scope'lu binding'ler (iç blokta let/const, for-let, "
-        "for-of, catch parametresi, ClassPrivateMethod) analizör önerse de (burada 0.4-0.7 "
-        "güven) hiç yeniden adlandırılmıyor. lru-cache min.js ölçümü: 112 gerçek-binding "
-        "önerisinin 40'ı bu yüzden düşüyor."
+""",
+        {("BlockStatement", "a"), ("ForStatement", "i"), ("CatchClause", "e")},
     ),
-)
-def test_block_scoped_bindings_are_renamed(run_pipeline) -> None:
-    res, inp, out = run_pipeline("block_scope", _BLOCK_SCOPE_JS)
+    # sınıfın özel metodunun parametresi, for-of değişkeni
+    "private-method-for-of": (
+        """\
+class K {
+  #m(a) { return a.length; }
+  run(v) { let r = 0; for (const e of v) { r += this.#m(e); } return r; }
+}
+module.exports = (v) => new K().run(v);
+""",
+        {("ClassPrivateMethod", "a"), ("ForOfStatement", "e")},
+    ),
+}
+
+
+@pytest.mark.parametrize("case", sorted(_BLOCK_SCOPE_CASES))
+def test_block_scoped_bindings_are_renamed(run_pipeline, case: str) -> None:
+    """Blok scope'lu binding'ler de yeniden adlandırılır.
+
+    Eski kusur: apply-names PASS 1 yalnız Function/Program/ClassMethod/ObjectMethod
+    scope'larını geziyordu; iç blokta let/const, for-let, for-of, catch parametresi,
+    ClassPrivateMethod binding'leri analizör önerse de hiç uygulanmıyordu.
+    """
+    source, bindings = _BLOCK_SCOPE_CASES[case]
+    res, inp, out = run_pipeline(f"block_scope_{case}", source)
     _precondition(res.success and res.errors == [], f"hat başarısız: {res.errors}")
     suggested = {
         f"{r['scopeId']}::{r['originalName']}": r["newName"]
         for r in res.context_json["scope_renames"]
-        if (r["scopeId"].split("@")[0], r["originalName"]) in _BLOCK_BINDINGS
+        if (r["scopeId"].split("@")[0], r["originalName"]) in bindings
         and r["confidence"] >= _MIN_CONFIDENCE
     }
     _precondition(
-        len(suggested) == len(_BLOCK_BINDINGS),
+        len(suggested) == len(bindings),
         f"analizör blok binding'lerinin hepsine öneri üretmedi: {suggested}",
     )
 
     applied = _applied(res.mappings)
     missing = {k: v for k, v in suggested.items() if applied.get(k) != v}
     assert not missing, f"uygulanmayan blok scope önerileri: {missing}"
+
+    assert _alpha_equivalence(inp, out)["equal"]
+    assert _call_export(out, "abc") == _call_export(inp, "abc")
 
 
 _NESTED_USE_JS = (
@@ -509,19 +545,14 @@ _NESTED_USE_JS = (
 )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "KUSUR (context-analyzer.mjs): kanıt binding'in scope'una değil referansın "
-        "bulunduğu scope'a yazılıyor (getOrCreate -> getScopeId(path)). c'nin if "
-        "bloğundaki kullanımı binding'i olmayan 'BlockStatement@2:23::c' anahtarına "
-        "düşüyor (filePath, 0.2); apply-names onu hiç uygulamıyor, asıl binding "
-        "tek harf yedeğiyle 'count' oluyor. Aynı kullanım blok dışındayken filePath "
-        "veriliyor (örnek girdi)."
-    ),
-)
 def test_evidence_from_nested_use_reaches_declaring_binding(run_pipeline) -> None:
+    """İç bloktaki kullanımın kanıtı binding'in kendisine yazılır.
+
+    Eski kusur: kanıt referansın bulunduğu scope'a yazılıyordu (getOrCreate ->
+    getScopeId(path)); c'nin if bloğundaki kullanımı binding'i olmayan
+    'BlockStatement@2:23::c' anahtarına düşüyor, asıl binding tek harf yedeğiyle
+    'count' oluyordu.
+    """
     res, inp, out = run_pipeline("nested_use", _NESTED_USE_JS)
     _precondition(res.success and res.errors == [], f"hat başarısız: {res.errors}")
 
@@ -529,33 +560,54 @@ def test_evidence_from_nested_use_reaches_declaring_binding(run_pipeline) -> Non
     assert applied.get("b@2:0::c") == "filePath", applied
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "KUSUR (context-analyzer.mjs): PROPERTY_HINTS düz nesne; Object.prototype'tan "
-        "gelen anahtarlar (hasOwnProperty, isPrototypeOf, propertyIsEnumerable, "
-        "toLocaleString, __proto__) ipucu sanılıyor, hint.confidence undefined -> "
-        "değişkenin güveni NaN (JSON'da null); öneri hiçbir pozitif eşikte uygulanmıyor."
+_PROTOTYPE_CASES = {
+    # özellik ipucu tablosu (PROPERTY_HINTS)
+    "property-hint": (
+        'function f(e) { return e.hasOwnProperty("then") ? e : null; }\n'
+        "module.exports = f;\n"
     ),
-)
-def test_prototype_property_name_does_not_poison_confidence(tmp_path: Path) -> None:
+    # metod dönüşü tablosu: önerilen ad Object.prototype.hasOwnProperty fonksiyonunun
+    # kendisi oluyordu; aynı scope'taki ikincisi koda
+    # "function hasOwnProperty() { [native code] }2" adıyla yazılıyordu
+    "method-return": (
+        "function f(e, t) { var r = e.hasOwnProperty(t), n = t.hasOwnProperty(e); return r && n; }\n"
+        "module.exports = f;\n"
+    ),
+    # modül adı, typeof karşılaştırması ve çağrılan fonksiyon adı tabloları
+    "require-typeof-call": (
+        'var o = require("constructor");\n'
+        'function g(e) { var x = toString(); return typeof e === "toString" ? e : x; }\n'
+        "module.exports = g;\n"
+    ),
+}
+_IDENTIFIER_RE = re.compile(r"[A-Za-z_$][\w$]*")
+
+
+@pytest.mark.parametrize("case", sorted(_PROTOTYPE_CASES))
+def test_prototype_property_name_does_not_poison_confidence(tmp_path: Path, case: str) -> None:
+    """Object.prototype anahtarları kural tablolarında eşleşmez.
+
+    Eski kusur: kural tabloları düz nesneydi; hasOwnProperty, constructor, toString
+    gibi adlar Object.prototype'tan değer çekiyordu: güven NaN (JSON'da null),
+    önerilen ad bir fonksiyon nesnesi (JSON'da kayıp) ya da fonksiyonun kaynak metni.
+    """
     inp = tmp_path / "proto.js"
-    inp.write_text(
-        'function f(e) { return e.hasOwnProperty("then") ? e : null; }\nmodule.exports = f;\n',
-        encoding="utf-8",
-    )
+    inp.write_text(_PROTOTYPE_CASES[case], encoding="utf-8")
     ctx = ContextNamer(_CONFIG).analyze(inp)
-    _precondition(
-        any(r["originalName"] == "e" for r in ctx["scope_renames"]),
-        f"e için öneri yok: {ctx['scope_renames']}",
-    )
+    _precondition(bool(ctx["scope_renames"]), f"öneri yok: {ctx}")
 
     bad = [
         r for r in ctx["scope_renames"]
         if not isinstance(r["confidence"], (int, float)) or not math.isfinite(r["confidence"])
+        or not isinstance(r.get("newName"), str) or not _IDENTIFIER_RE.fullmatch(r["newName"])
     ]
     assert not bad, bad
+
+    out = tmp_path / "proto.named.js"
+    result = ContextNamer(_CONFIG, min_confidence=_MIN_CONFIDENCE).apply(inp, ctx, out)
+    assert result["success"] is True and result["errors"] == [], result
+    check = _run_node("--check", str(out))
+    assert check.returncode == 0, check.stderr
 
 
 # ---------------------------------------------------------------------------
@@ -618,11 +670,15 @@ def test_scope_fallback_block_patches_real_scope_class(script: Path) -> None:
     assert got["error"] is None, got["error"]
 
 
-def _write_force_fallback_hook(directory: Path) -> Path:
+def _write_force_fallback_hook(directory: Path, *, block_direct_scope: bool = False) -> Path:
     """`--import` ile yüklenecek hook: script'lerin `@babel/traverse` import'u Scope'u
     dışa vermeyen bir shim'e yönlenir (yalnız default = traverse). Ana dal Scope'u
     bulamaz; yedek dal lib/scope/index.js'i göreli URL ile import ettiği için hook'a
     takılmadan gerçek sınıfa ulaşır.
+
+    block_direct_scope=True: yedek dalın lib/scope/index.js import'u da boş bir
+    modüle yönlenir; registerBinding hiç yamalanmaz ve "Duplicate declaration"
+    scope'lu traverse'ü düşürür.
     """
     shim = "\n".join([
         'import { createRequire } from "node:module";',
@@ -634,16 +690,22 @@ def _write_force_fallback_hook(directory: Path) -> Path:
         'import { registerHooks } from "node:module";',
         f"const SHIM = {json.dumps('data:text/javascript,' + urllib.parse.quote(shim))};",
         "const TARGET = /\\/(context-analyzer|apply-names)\\.mjs$/;",
+        f"const BLOCK_DIRECT = {json.dumps(block_direct_scope)};",
         "registerHooks({",
         "  resolve(specifier, context, nextResolve) {",
-        '    if (specifier === "@babel/traverse" && TARGET.test(context.parentURL ?? "")) {',
+        '    if (!TARGET.test(context.parentURL ?? "")) return nextResolve(specifier, context);',
+        '    if (specifier === "@babel/traverse") {',
         '      return { url: SHIM, format: "module", shortCircuit: true };',
+        "    }",
+        '    if (BLOCK_DIRECT && specifier.endsWith("/@babel/traverse/lib/scope/index.js")) {',
+        '      return { url: "data:text/javascript,export%20default%20%7B%7D", format: "module", shortCircuit: true };',
         "    }",
         "    return nextResolve(specifier, context);",
         "  },",
         "});",
     ])
-    path = directory / "force_scope_fallback.mjs"
+    name = "force_no_scope_patch.mjs" if block_direct_scope else "force_scope_fallback.mjs"
+    path = directory / name
     path.write_text(hook, encoding="utf-8")
     return path
 
@@ -683,6 +745,56 @@ def test_scope_fallback_branch_keeps_real_scripts_scope_aware(tmp_path: Path) ->
     assert emitted[0]["renamed"] >= 1
 
 
+def test_flat_fallback_emits_single_accurate_report(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Scope-aware yol çöküp flat yedeğe düşünce tek JSON satırı ve doğru rapor.
+
+    Eski kusur: yedek flatRename kendi raporunu bastıktan sonra scope-aware dal da
+    ikinci satırı basıyordu; stdout'un SON satırını okuyan SubprocessRunner
+    Python'a "scope_aware: true, renamed: 0, mappings: {}" veriyordu (flat rename
+    yapılmış, çıktı dosyası değişmiş olsa bile).
+    """
+    has_hooks = _run_node(
+        "-e", 'process.exit(typeof require("node:module").registerHooks === "function" ? 0 : 3)'
+    )
+    if has_hooks.returncode != 0:
+        pytest.skip("bu node sürümünde module.registerHooks yok")
+    source = _DUP_CASES["param-let"]
+    inp = tmp_path / "dup.js"
+    inp.write_text(source, encoding="utf-8")
+    ctx = ContextNamer(_CONFIG).analyze(inp)  # hook yok: analizör scope-aware
+    _precondition(ctx["scope_aware"] and bool(ctx["scope_renames"]), f"analiz: {ctx['errors']}")
+    ctx_path, out = tmp_path / "ctx.json", tmp_path / "out.js"
+    ctx_path.write_text(json.dumps(ctx), encoding="utf-8")
+    hook = _write_force_fallback_hook(tmp_path, block_direct_scope=True)
+
+    applier = _run_node(
+        "--import", hook.as_uri(), str(_APPLIER), str(inp), str(ctx_path), str(out),
+        "--min-confidence", str(_MIN_CONFIDENCE),
+    )
+    assert applier.returncode == 0, applier.stderr
+    _precondition("[test-hook]" in applier.stderr, f"hook yüklenmedi: {applier.stderr}")
+    _precondition("patched" not in applier.stderr, f"Scope yaması yine uygulandı: {applier.stderr}")
+    emitted = _json_lines(applier.stdout)
+    assert len(emitted) == 1, applier.stdout
+    report = emitted[0]
+    assert report["scope_aware"] is False, report
+    assert any("Scope-aware rename hatasi" in e for e in report["errors"]), report["errors"]
+    assert report["mappings"] == {"a": "fileSystem"}, report
+    assert report["renamed"] == 3  # flat kip: param, let ve return'deki üç `a`
+    assert re.search(r"\bfunction f\(fileSystem\)", out.read_text(encoding="utf-8"))
+
+    # Python yolu (SubprocessRunner son JSON satırını okur) aynı raporu görmeli
+    monkeypatch.setenv("NODE_OPTIONS", f"--import={hook.as_uri()}")
+    result = ContextNamer(_CONFIG, min_confidence=_MIN_CONFIDENCE).apply(
+        inp, ctx, tmp_path / "out_py.js"
+    )
+    assert (result["scope_aware"], result["renamed"], result["mappings"]) == (
+        False, report["renamed"], report["mappings"]
+    )
+
+
 # ---------------------------------------------------------------------------
 # (f) Duplicate declaration toleransı
 # ---------------------------------------------------------------------------
@@ -703,3 +815,147 @@ def test_duplicate_declaration_does_not_break_pipeline(run_pipeline, case: str) 
     assert res.context_json["scope_aware"] is True
     assert res.output_file == out and out.is_file()
     assert res.variables_renamed >= 1
+
+
+# ---------------------------------------------------------------------------
+# (g) Anlam korunumu
+# ---------------------------------------------------------------------------
+
+# (kaynak, yeniden adlandırılması gereken binding anahtarı ya da None).
+# Hepsi eski hatta node --check'ten geçen ama farklı çalışan (ya da hiç
+# derlenmeyen) çıktı veriyordu.
+_SEMANTIC_CASES = {
+    # for-init'teki `var` tekrarının başlangıç ataması siliniyordu:
+    # `for (var t = X, n = 0, r = t.length; ...)` -> `for (var t = X; ...)`
+    "for-init-var-redeclared": (
+        "module.exports = function (o) {\n"
+        "  var s = 0;\n"
+        "  for (var n = 0, r = 3; n < r; n++) s += n;\n"
+        "  for (var t = Object.keys(o), n = 0, r = t.length; n < r; n++) s += o[t[n]];\n"
+        "  return s;\n"
+        "};\n",
+        None,
+    ),
+    # sınıf metodları fonksiyon scope'u sayılmıyordu: ikinci metodun `var a`'sı
+    # bildirimsiz atamaya dönüyordu (sınıf gövdesi strict: ReferenceError)
+    "method-var": (
+        "class K {\n"
+        "  m(x) { var a = x + 1; return a; }\n"
+        '  n(y) { var a = y + "!"; return a; }\n'
+        "}\n"
+        "module.exports = (v) => [new K().m(v), new K().n(v)];\n",
+        None,
+    ),
+    # static blok scope sayılmıyordu: içteki `const a` dıştaki const'a atamaya dönüyordu
+    "static-block-const": (
+        'const a = "outer";\n'
+        'class K { static { const a = "inner"; K.v = a; } }\n'
+        "module.exports = (v) => [a, K.v, v];\n",
+        None,
+    ),
+    # parametrenin `var` ile yeniden bildirimi (constant violation) yeniden adlandırılmıyordu
+    "param-redeclared-by-var": (
+        "function f(a) { var a = 1; return a; }\n"
+        "module.exports = (v) => f(v);\n",
+        "f@1:0::a",
+    ),
+    # destructuring atama hedefleri yeniden adlandırılmıyordu ([b] = ... örtük global'e yazıyordu)
+    "destructuring-assignment": (
+        "function g(b) { var c; ({ c } = b); [b] = [c]; return b; }\n"
+        "module.exports = (v) => g({ c: v });\n",
+        "g@1:0::b",
+    ),
+    # ayrılmış sözcük önerileri (`{ default: a }` -> "default") geçersiz JS üretiyordu
+    "reserved-word-suggestion": (
+        "const { default: a, delete: b } = { default: 1, delete: 2 };\n"
+        "module.exports = (v) => [a, b, v];\n",
+        "program@1:0::a",
+    ),
+}
+
+
+@pytest.mark.parametrize("case", sorted(_SEMANTIC_CASES))
+def test_rename_preserves_behavior(run_pipeline, case: str) -> None:
+    source, key = _SEMANTIC_CASES[case]
+    res, inp, out = run_pipeline(f"semantic_{case}", source)
+    _precondition(res.success and res.errors == [], f"hat başarısız: {res.errors}")
+    applied = _applied(res.mappings)
+    if key is not None:
+        _precondition(key in applied, f"{key} yeniden adlandırılmadı: {applied}")
+        assert isinstance(applied[key], str) and _IDENTIFIER_RE.fullmatch(applied[key])
+    else:
+        _precondition(res.variables_renamed > 0, "hiç rename yok")
+
+    check = _run_node("--check", str(out))
+    assert check.returncode == 0, check.stderr
+    eq = _alpha_equivalence(inp, out)
+    assert eq["equal"], eq["diffs"]
+    assert _call_export(out, "abc") == _call_export(inp, "abc")
+
+
+_EXPORT_JS = (
+    'import e from "node:fs";\n'
+    'const t = require("node:path");\n'
+    "export var a = new Map();\n"
+    "export function b(c) { return a.get(c) + e.sep + t.sep; }\n"
+    "export { t };\n"
+)
+
+
+def test_exported_declarations_keep_their_names(run_pipeline) -> None:
+    """`export var/function` ile dışa verilen binding'in adı değişirse modülün
+    arayüzü değişir; atlanmalı. `export { t }` ise `export { yeni as t }` olur."""
+    res, inp, out = run_pipeline("exports", _EXPORT_JS)
+    _precondition(res.success and res.errors == [], f"hat başarısız: {res.errors}")
+    suggested = {
+        f"{r['scopeId']}::{r['originalName']}"
+        for r in res.context_json["scope_renames"]
+        if r["confidence"] >= _MIN_CONFIDENCE
+    }
+    _precondition("program@1:0::a" in suggested, f"a için öneri yok: {suggested}")
+
+    applied = _applied(res.mappings)
+    assert "program@1:0::a" not in applied, applied
+    text = out.read_text(encoding="utf-8")
+    assert re.search(r"\bexport var a = new Map\(\)", text), text
+    assert re.search(r"\bexport function b\(", text), text
+    assert applied.get("program@1:0::t") == "pathUtils", applied
+    assert re.search(r"\bexport \{ pathUtils as t \}", text), text
+    assert _alpha_equivalence(inp, out)["equal"]
+
+
+def test_min_confidence_default_comes_from_config() -> None:
+    """ContextNamer eşiği Config.min_confidence.context_namer'dan okur (0.1 sabiti değil)."""
+    config = Config()
+    assert ContextNamer(config).min_confidence == config.min_confidence.context_namer == 0.1
+    config.min_confidence.context_namer = 0.35
+    assert ContextNamer(config).min_confidence == 0.35
+    assert ContextNamer(config, min_confidence=0.2).min_confidence == 0.2
+
+
+def test_rename_never_takes_an_implicit_global_name(tmp_path: Path) -> None:
+    """Bildirimsiz global (burada yalnız `typeof foo`) adına yeniden adlandırma yapılmaz.
+
+    `a -> foo` uygulansaydı `typeof foo` yerel değişkeni görür, sonuç 1'den 2'ye
+    değişirdi. isSafeRename program.globals'ı denetliyor; öneri sonek alır.
+    """
+    src = (
+        "function f(){ var a = 1; return a + (typeof foo === 'undefined' ? 0 : 1); }\n"
+        "console.log(f());\n"
+    )
+    inp = tmp_path / "global.js"
+    inp.write_text(src, encoding="utf-8")
+    names = tmp_path / "names.json"
+    names.write_text(json.dumps({
+        "scope_renames": [
+            {"scopeId": "f@1:0", "originalName": "a", "newName": "foo", "confidence": 0.9},
+        ],
+        "variables": {},
+    }), encoding="utf-8")
+    out = tmp_path / "global.named.js"
+
+    rep = _node_json(str(_APPLIER), str(inp), str(names), str(out), "--min-confidence", "0.1")
+
+    assert rep["success"], rep
+    assert _applied(rep["mappings"]) == {"f@1:0::a": "foo_1"}
+    assert _run_node(str(inp)).stdout == _run_node(str(out)).stdout == "1\n"

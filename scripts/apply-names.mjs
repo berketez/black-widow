@@ -15,15 +15,17 @@
  *     [--min-confidence 0.4]
  *     [--dry-run]
  *
- * Cikti (stdout JSON):
+ * Çıktı (stdout, TEK JSON satırı):
  *   {
  *     "success": true,
  *     "renamed": 142,
  *     "skipped": 23,
  *     "scope_aware": true,
- *     "mappings": {"scope1::e": "request", "scope2::e": "error"},
+ *     "mappings": {"f@3:0::e": {"from": "e", "to": "request"}},
  *     "output": "/path/to/output.js"
  *   }
+ *   Flat kipte (scope_renames yok ya da scope-aware yol çökerse)
+ *   "scope_aware": false ve "mappings": {"e": "request"}.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -130,19 +132,6 @@ try {
 }
 
 // Duplicate fix pre-process
-function findFunctionScope(path) {
-  let current = path.parentPath;
-  while (current) {
-    const type = current.node?.type;
-    if (type === "FunctionDeclaration" || type === "FunctionExpression" ||
-        type === "ArrowFunctionExpression" || type === "Program") {
-      return current.node;
-    }
-    current = current.parentPath;
-  }
-  return null;
-}
-
 function findBlockScope(path) {
   let current = path.parentPath;
   while (current) {
@@ -151,7 +140,7 @@ function findBlockScope(path) {
         type === "ArrowFunctionExpression" || type === "Program" ||
         type === "BlockStatement" || type === "ForStatement" ||
         type === "ForInStatement" || type === "ForOfStatement" ||
-        type === "SwitchStatement") {
+        type === "SwitchStatement" || type === "StaticBlock") {
       return current.node;
     }
     current = current.parentPath;
@@ -166,7 +155,16 @@ try {
       const declarations = path.node.declarations;
       const kind = path.node.kind;
 
-      let scopeBlock = kind === "var" ? findFunctionScope(path) : findBlockScope(path);
+      // `var` tekrarı geçerli JS'tir; Babel onu aynı binding'in yeniden
+      // bildirimi (constant violation) olarak kaydeder ve rename bildirimi de
+      // değiştirir. Dönüştürmek çıktının anlamını bozuyordu: for-init'teki
+      // tekrarın başlangıç ataması siliniyordu (`for (var t = X, n = 0; ...)`
+      // -> `for (var t = X; ...)`) ve sınıf/nesne metodları fonksiyon scope'u
+      // sayılmadığı için iki metoddaki `var a` birleştirilip ikincisi
+      // bildirimsiz atamaya dönüyordu. Yalnız let/const ele alınır.
+      if (kind === "var") return;
+
+      let scopeBlock = findBlockScope(path);
       if (!scopeBlock) scopeBlock = ast;
       if (!scopeBlock._seenVarNames) scopeBlock._seenVarNames = new Map();
       const seen = scopeBlock._seenVarNames;
@@ -219,6 +217,11 @@ try {
         return;
       }
 
+      // Sadece bazı declarator'lar duplicate. For-init'te atamayı öne alacak
+      // yer yok; declarator'u silmek başlangıç değerini kaybettirir. Olduğu gibi
+      // bırakılır (Scope yaması tekrarı tolere eder).
+      if (path.parent?.type === "ForStatement" && path.parent.init === path.node) return;
+
       const assignmentExprs = [];
       for (const { index, decl } of toConvert.reverse()) {
         declarations.splice(index, 1);
@@ -227,8 +230,6 @@ try {
         }
       }
       if (assignmentExprs.length > 0) {
-        const isForInit = path.parent?.type === "ForStatement" && path.parent.init === path.node;
-        if (isForInit) return;
         try {
           const stmts = assignmentExprs.map(a => t.expressionStatement(a));
           for (const stmt of stmts.reverse()) path.insertBefore(stmt);
@@ -351,21 +352,127 @@ try {
 }
 
 // =====================================================================
-// SCOPE-AWARE RENAME (v1.0 -- Shadow Detection + Binding-Level Rename)
+// SCOPE-AWARE RENAME (binding düzeyinde, ad yakalama kontrollü)
 // =====================================================================
 //
-// BUG FIX'LER:
-//   1. SHADOW DETECTION: Rename yapmadan once yeni ismin ayni scope'ta
-//      baska bir binding'i shadow'layip shadow'lamayacagi kontrol edilir.
-//      Shadow olacaksa suffix eklenir veya rename atlanir.
+// PASS 1 bütün scope'ları gezer (fonksiyon, program, blok, for, catch,
+// switch, sınıf, static blok, metod) ve her binding'i "<scopeId>::<ad>"
+// anahtarıyla scope_renames'e eşler. AST'ye dokunmaz; çökerse flat yedeğe
+// düşülür ve TEK JSON satırı (scope_aware: false) basılır.
 //
-//   2. BINDING-LEVEL RENAME: Babel'in scope.rename() API'si kullanilir.
-//      Bu API bir binding'in declaration'ini VE tum referanslarini
-//      atomik olarak degistirir. Kismi rename (cross-scope leakage) olmaz.
+// PASS 2 önerileri güven sırasıyla uygular. Yeni ad N yalnız şu koşullarda
+// verilir; yoksa N_1..N_5 denenir (shadow_suffixed), hiçbiri uymazsa rename
+// atlanır (shadow_skipped):
+//   1. N geçerli bir binding adı (ayrılmış sözcük, eval, arguments değil) ve
+//      programda global (hiçbir binding'e çözülmeyen) ad olarak geçmiyor.
+//   2. Binding'in kendi scope'unda N adlı başka binding yok.
+//   3. İç yakalama yok: binding'in her kullanım yeri (bildirim, referans,
+//      yeniden atama/bildirim) ile binding'in scope'u arasındaki scope'ların
+//      hiçbirinde N adlı başka binding yok. Varsa o kullanım ona bağlanırdı.
+//   4. Dış yakalama yok: binding'in scope'undan görünen N adlı dış binding'in
+//      bu scope'un alt ağacında kullanımı yok. Varsa o kullanım bu binding'e
+//      bağlanırdı.
+// Kontroller Babel'in scope kaydına değil, her rename'den sonra güncellenen
+// kendi ad tablomuza bakar; önceki rename'lerin verdiği adlar da görülür.
 //
-//   3. VAR DECLARATION KORUMA: init'siz duplicate declaration'lar
-//      artik silinmiyor (yukaridaki Phase 0'da duzeltildi).
-//
+// scope.rename() KULLANILMAZ: Duplicate declaration yaması altında aynı adlı
+// FARKLI binding'leri de değiştirebilir. Yalnız bu binding'in bildirim,
+// referans ve yeniden atama/bildirim kimlikleri değiştirilir (destructuring
+// atama hedefleri ve `var` yeniden bildirimleri dahil).
+// `export var/let/const/function/class` ile dışa verilen binding'ler
+// yeniden adlandırılmaz: modülün dışa verdiği ad değişirdi (export_skipped).
+
+function isValidBindingName(name) {
+  return typeof name === "string" && t.isValidIdentifier(name) &&
+    name !== "eval" && name !== "arguments";
+}
+
+// context-analyzer ile aynı biçim
+function getScopeId(scope) {
+  try {
+    if (scope && scope.block) {
+      const block = scope.block;
+      if (block.loc && block.loc.start) {
+        const funcName =
+          block.id?.name ||
+          (block.type === "Program" ? "program" : block.type);
+        return `${funcName}@${block.loc.start.line}:${block.loc.start.column}`;
+      }
+      if (scope.uid !== undefined) return `scope_${scope.uid}`;
+    }
+  } catch (_) {}
+  return "global";
+}
+
+function buildScopeModel(root) {
+  const scopes = [];
+  const seen = new Set();
+  traverse(root, {
+    enter(path) {
+      const s = path.scope;
+      if (s && !seen.has(s)) {
+        seen.add(s);
+        scopes.push(s);
+      }
+    },
+  });
+  if (scopes.length === 0) throw new Error("scope bulunamadı");
+
+  const parentOf = new Map();
+  const children = new Map();
+  const names = new Map(); // scope -> Map(güncel ad -> binding)
+  const homes = new Map(); // binding -> kayıtlı olduğu scope'lar (sınıf adı iki scope'ta)
+  for (const s of scopes) {
+    const parent = s.parent;
+    if (parent && !seen.has(parent)) throw new Error(`üst scope modelde yok: ${getScopeId(s)}`);
+    parentOf.set(s, parent || null);
+    if (parent) {
+      if (!children.has(parent)) children.set(parent, []);
+      children.get(parent).push(s);
+    }
+    const table = new Map();
+    for (const name of Object.keys(s.bindings)) {
+      const binding = s.bindings[name];
+      table.set(name, binding);
+      if (!homes.has(binding)) homes.set(binding, []);
+      homes.get(binding).push(s);
+    }
+    names.set(s, table);
+  }
+
+  // Alt ağaç testi: s, r'nin alt ağacında <=> tin[r] <= tin[s] <= tout[r]
+  const program = scopes[0].getProgramParent();
+  const tin = new Map();
+  const tout = new Map();
+  let clock = 0;
+  const stack = [[program, false]];
+  while (stack.length > 0) {
+    const [s, exiting] = stack.pop();
+    if (exiting) {
+      tout.set(s, clock - 1);
+      continue;
+    }
+    tin.set(s, clock++);
+    stack.push([s, true]);
+    for (const c of children.get(s) || []) stack.push([c, false]);
+  }
+
+  return {
+    scopes, parentOf, names, homes, tin, tout,
+    globals: new Set(Object.keys(program.globals || {})),
+  };
+}
+
+function isExportedDeclaration(binding) {
+  const p = binding.path;
+  if (p.isFunctionDeclaration() || p.isClassDeclaration()) {
+    return !!p.parentPath?.isExportNamedDeclaration();
+  }
+  if (p.isVariableDeclarator()) {
+    return !!p.parentPath?.parentPath?.isExportNamedDeclaration();
+  }
+  return false;
+}
 
 if (isScopeAware) {
   // scope_renames listesinden bir lookup map olustur
@@ -396,311 +503,222 @@ if (isScopeAware) {
   console.error(`[apply-names] ${scopeRenameMap.size} scope-aware rename mapping, ${skipped} skipped`);
 
   // ------------------------------------------------------------------
-  // SHADOW DETECTION HELPER
+  // PASS 1: scope modeli + rename planı (AST değişmez)
   // ------------------------------------------------------------------
-  // Bir scope'ta newName kullanilirsa mevcut bir binding'i shadow'lar mi?
-  function wouldShadow(scope, newName, originalName) {
-    try {
-      // 1. Ayni scope'ta bu isimde FARKLI bir binding var mi?
-      const ownBinding = scope.getOwnBinding(newName);
-      if (ownBinding) return true;
-
-      // 2. Child scope'larda bu isimde binding var mi?
-      //    (eger parent scope'tan rename yaparsak child'daki
-      //     ayni isimli degisken yanlis referans alir)
-      //    Babel scope API ile child scope'lari kontrol et
-      //    NOT: scope.bindings sadece kendi scope'undakileri gosterir
-
-      // 3. Parent scope'ta bu isimde binding var mi?
-      //    (shadow olusturur)
-      let parentScope = scope.parent;
-      while (parentScope) {
-        const parentBinding = parentScope.getOwnBinding(newName);
-        if (parentBinding) {
-          // Parent'ta newName var -- ama eger o da rename edilecekse sorun yok
-          // Guvenli yol: her durumda shadow say
-          return true;
-        }
-        parentScope = parentScope.parent;
-      }
-
-      // 4. Ayni scope'ta newName ile ayni isimli parametre var mi?
-      //    (fonksiyon parametresi items, for-loop da items tanimlayinca shadow)
-      const block = scope.block;
-      if (block && (block.params || block.type === "CatchClause")) {
-        const params = block.params || (block.param ? [block.param] : []);
-        for (const param of params) {
-          if (param.type === "Identifier" && param.name === newName) return true;
-          // Destructuring pattern'lerini de kontrol et
-          if (param.type === "ObjectPattern" || param.type === "ArrayPattern") {
-            const names = [];
-            collectPatternNames(param, names);
-            if (names.includes(newName)) return true;
-          }
-        }
-      }
-    } catch (_) {
-      // Scope API hatasi -- guvenli tarafta kal
-      return false;
-    }
-
-    return false;
-  }
-
-  function collectPatternNames(pattern, names) {
-    if (!pattern) return;
-    if (pattern.type === "Identifier") {
-      names.push(pattern.name);
-    } else if (pattern.type === "ObjectPattern") {
-      for (const prop of (pattern.properties || [])) {
-        collectPatternNames(prop.value || prop.argument, names);
-      }
-    } else if (pattern.type === "ArrayPattern") {
-      for (const elem of (pattern.elements || [])) {
-        collectPatternNames(elem, names);
-      }
-    } else if (pattern.type === "AssignmentPattern") {
-      collectPatternNames(pattern.left, names);
-    } else if (pattern.type === "RestElement") {
-      collectPatternNames(pattern.argument, names);
-    }
-  }
-
-  // ------------------------------------------------------------------
-  // SCOPE ID HELPER (context-analyzer ile ayni format)
-  // ------------------------------------------------------------------
-  function getScopeId(scope) {
-    try {
-      if (scope && scope.block) {
-        const block = scope.block;
-        if (block.loc && block.loc.start) {
-          const funcName =
-            block.id?.name ||
-            (block.type === "Program" ? "program" : block.type);
-          return `${funcName}@${block.loc.start.line}:${block.loc.start.column}`;
-        }
-        if (scope.uid !== undefined) return `scope_${scope.uid}`;
-      }
-    } catch (_) {}
-    return "global";
-  }
-
-  // ------------------------------------------------------------------
-  // BINDING-LEVEL RENAME
-  // ------------------------------------------------------------------
-  // Babel'in scope.rename(oldName, newName) kullanarak
-  // tum referanslari atomik olarak degistirir.
-  //
-  // scope.rename() su isleri yapar:
-  //   - binding.identifier.name = newName
-  //   - Tum referencePaths'deki node.name = newName
-  //   - Tum constantViolations'deki node.name = newName
-  //   - Shorthand property'leri duzeltir
-  //   - Scope binding registry'sini gunceller
-  //
-  // Eger scope.rename() basarisiz olursa fallback olarak
-  // manuel binding-level rename yapariz.
-
-  const appliedMappings = {};
-  let renameCount = 0;
-  let shadowSkipped = 0;
-  let shadowSuffixed = 0;
-
-  // Rename'leri topla: once tum binding'leri bul, sonra rename et
-  // (traverse sirasinda rename yapmak iterator'u bozabilir)
+  let model = null;
   const pendingRenames = [];
-
   try {
-    // PASS 1: Tum binding declaration'lari bul ve rename planla
-    traverse(ast, {
-      // Binding declaration'larini yakala
-      "FunctionDeclaration|FunctionExpression|ArrowFunctionExpression|Program|ClassMethod|ObjectMethod"(path) {
-        const scope = path.scope;
-        if (!scope) return;
+    model = buildScopeModel(ast);
+    for (const scope of model.scopes) {
+      let scopeId = null;
+      for (const oldName of Object.keys(scope.bindings)) {
+        const binding = scope.bindings[oldName];
+        // Sınıf bildiriminin adı sınıf scope'unda da kayıtlı (aynı binding):
+        // yalnız asıl scope'unda planlanır.
+        if (binding.scope !== scope || oldName.length > 3) continue;
+        scopeId ??= getScopeId(scope);
+        const key = `${scopeId}::${oldName}`;
+        const mapping = scopeRenameMap.get(key);
+        if (!mapping) continue;
+        pendingRenames.push({
+          binding, scopeId, key, oldName,
+          newName: mapping.newName,
+          confidence: mapping.confidence,
+        });
+      }
+    }
+  } catch (err) {
+    model = null;
+    errors.push(`Scope-aware rename hatasi: ${err.message}`);
+    console.error(`[apply-names] Scope-aware rename basarisiz, flat fallback'a donuluyor: ${err.message}`);
+  }
 
-        const scopeId = getScopeId(scope);
-
-        // Bu scope'taki tum binding'leri kontrol et
-        for (const [bindingName, binding] of Object.entries(scope.bindings || {})) {
-          if (bindingName.length > 3) continue;
-
-          const key = `${scopeId}::${bindingName}`;
-          const mapping = scopeRenameMap.get(key);
-          if (!mapping) continue;
-
-          pendingRenames.push({
-            scope,
-            scopeId,
-            oldName: bindingName,
-            newName: mapping.newName,
-            confidence: mapping.confidence,
-            binding,
-          });
-        }
-      },
-    });
-
+  if (!model) {
+    // AST'ye henüz dokunulmadı; raporu (tek JSON satırı) flatRename basar.
+    flatRename(namesData.variables || {});
+  } else {
+    const { parentOf, names, homes, tin, tout, globals } = model;
     console.error(`[apply-names] ${pendingRenames.length} binding-level rename planlandi`);
 
-    // PASS 2: Rename'leri uygula (en yuksek confidence'tan baslayarak)
-    // Ayni scope'ta birden fazla rename olabilir -- oncelik sirasi onemli
+    // Kullanım yerleri: {scope, nodes (yeniden adlandırılacak kimlikler), ref}
+    const siteCache = new Map();
+    const declaresInParent = (p) => p.isFunctionDeclaration() || p.isClassDeclaration();
+
+    function siteInfo(binding) {
+      let info = siteCache.get(binding);
+      if (info) return info;
+      const name = binding.identifier.name;
+      const sites = [];
+      // function/class bildiriminin adı kendi scope'unda değil, binding'in scope'unda
+      sites.push({
+        scope: declaresInParent(binding.path) ? binding.scope : binding.path.scope,
+        nodes: [binding.identifier],
+      });
+      for (const ref of binding.referencePaths) {
+        sites.push({ scope: ref.scope, nodes: [ref.node], ref });
+      }
+      for (const violation of binding.constantViolations) {
+        // a = .., a++, [a] = .., ({a} = ..), for (a in ..), var a (yeniden), function a() {}
+        const ids = t.getBindingIdentifiers(violation.node, true, true)[name];
+        if (!ids) continue;
+        sites.push({
+          scope: declaresInParent(violation) ? parentOf.get(violation.scope) : violation.scope,
+          nodes: [].concat(ids),
+        });
+      }
+      const inner = new Set(); // kullanım yeri ile binding.scope arasındaki scope'lar
+      let outside = false;
+      for (const site of sites) {
+        let s = site.scope;
+        while (s && s !== binding.scope && !inner.has(s)) {
+          inner.add(s);
+          s = parentOf.get(s);
+        }
+        if (!s) outside = true; // binding'in scope'u dışında kullanım: güvenli tarafta kal
+      }
+      const tins = [];
+      for (const site of sites) {
+        const at = tin.get(site.scope);
+        if (at !== undefined) tins.push(at);
+      }
+      tins.sort((x, y) => x - y);
+      info = { sites, inner, outside, tins };
+      siteCache.set(binding, info);
+      return info;
+    }
+
+    function resolveFrom(scope, name) {
+      for (let s = scope; s; s = parentOf.get(s)) {
+        const binding = names.get(s)?.get(name);
+        if (binding) return binding;
+      }
+      return null;
+    }
+
+    function anyInRange(sorted, lo, hi) {
+      let l = 0;
+      let h = sorted.length;
+      while (l < h) {
+        const m = (l + h) >> 1;
+        if (sorted[m] < lo) l = m + 1;
+        else h = m;
+      }
+      return l < sorted.length && sorted[l] <= hi;
+    }
+
+    function isSafeRename(binding, newName) {
+      if (!isValidBindingName(newName) || globals.has(newName)) return false;
+      const info = siteInfo(binding);
+      if (info.outside) return false;
+      for (const home of homes.get(binding) || [binding.scope]) {
+        const other = names.get(home)?.get(newName);
+        if (other && other !== binding) return false;
+      }
+      for (const s of info.inner) {
+        const other = names.get(s)?.get(newName);
+        if (other && other !== binding) return false;
+      }
+      const outer = resolveFrom(parentOf.get(binding.scope), newName);
+      if (outer && outer !== binding) {
+        const lo = tin.get(binding.scope);
+        const hi = tout.get(binding.scope);
+        if (lo === undefined || anyInRange(siteInfo(outer).tins, lo, hi)) return false;
+      }
+      return true;
+    }
+
+    function applyRename(binding, oldName, newName) {
+      const info = siteInfo(binding);
+      for (const site of info.sites) {
+        for (const node of site.nodes) {
+          if (node && node.name === oldName) node.name = newName;
+        }
+        const ref = site.ref;
+        if (ref && ref.parent?.type === "ObjectProperty" && ref.parent.shorthand &&
+            ref.parent.value === ref.node) {
+          ref.parent.shorthand = false;
+        }
+      }
+      for (const home of homes.get(binding) || [binding.scope]) {
+        const table = names.get(home);
+        if (!table) continue;
+        if (table.get(oldName) === binding) table.delete(oldName);
+        table.set(newName, binding);
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // PASS 2: en yüksek güvenden başlayarak uygula (eşit güvende PASS 1 sırası)
+    // ------------------------------------------------------------------
     pendingRenames.sort((a, b) => b.confidence - a.confidence);
 
-    // Zaten rename edilmis binding'leri izle
-    const renamedBindings = new Set();
-    // Bir scope'ta kullanilan yeni isimleri izle (shadow onleme icin)
-    const usedNamesInScope = new Map(); // scopeId -> Set<newName>
+    const appliedMappings = {};
+    const renamedKeys = new Set();
+    let renameCount = 0;
+    let shadowSkipped = 0;
+    let shadowSuffixed = 0;
+    let exportSkipped = 0;
 
     for (const rename of pendingRenames) {
-      const { scope, scopeId, oldName, binding } = rename;
-      let { newName } = rename;
-
-      // Zaten rename edilmis mi?
-      const bindingKey = `${scopeId}::${oldName}`;
-      if (renamedBindings.has(bindingKey)) continue;
-
-      // Shadow kontrolu
-      if (wouldShadow(scope, newName, oldName)) {
-        // Suffix ekleyerek shadow'u onlemeye calis
-        let resolved = false;
-        for (let suffix = 1; suffix <= 5; suffix++) {
-          const suffixedName = `${newName}_${suffix}`;
-          if (!wouldShadow(scope, suffixedName, oldName)) {
-            newName = suffixedName;
-            resolved = true;
-            shadowSuffixed++;
-            break;
-          }
-        }
-        if (!resolved) {
-          shadowSkipped++;
-          console.error(`[apply-names] SHADOW SKIP: ${oldName} -> ${rename.newName} in ${scopeId}`);
-          continue;
-        }
-      }
-
-      // Ayni scope'ta bu yeni isim zaten kullanildi mi?
-      if (!usedNamesInScope.has(scopeId)) {
-        usedNamesInScope.set(scopeId, new Set());
-      }
-      const usedNames = usedNamesInScope.get(scopeId);
-      if (usedNames.has(newName)) {
-        // Baska bir binding zaten bu ismi aldi
-        let resolved = false;
-        for (let suffix = 1; suffix <= 5; suffix++) {
-          const suffixedName = `${newName}_${suffix}`;
-          if (!usedNames.has(suffixedName) && !wouldShadow(scope, suffixedName, oldName)) {
-            newName = suffixedName;
-            resolved = true;
-            shadowSuffixed++;
-            break;
-          }
-        }
-        if (!resolved) {
-          shadowSkipped++;
-          continue;
-        }
-      }
-      usedNames.add(newName);
-
-      // ----- RENAME UYGULA -----
-      // NOT: scope.rename() KULLANMIYORUZ!
-      // scope.rename() duplicate declaration durumunda ayni isimli
-      // FARKLI binding'leri de degistirebilir (cross-contamination).
-      // Bunun yerine manualBindingRename kullaniyoruz -- sadece
-      // bu binding'in identifier'ini ve referencePaths'ini degistirir.
+      if (renamedKeys.has(rename.key)) continue;
       try {
-        manualBindingRename(binding, oldName, newName);
-        renamedBindings.add(bindingKey);
+        if (isExportedDeclaration(rename.binding)) {
+          exportSkipped++;
+          continue;
+        }
+        let chosen = null;
+        for (let suffix = 0; suffix <= 5 && chosen === null; suffix++) {
+          const candidate = suffix === 0 ? rename.newName : `${rename.newName}_${suffix}`;
+          if (isSafeRename(rename.binding, candidate)) chosen = candidate;
+        }
+        if (chosen === null) {
+          shadowSkipped++;
+          console.error(`[apply-names] SHADOW SKIP: ${rename.oldName} -> ${rename.newName} in ${rename.scopeId}`);
+          continue;
+        }
+        if (chosen !== rename.newName) shadowSuffixed++;
+        applyRename(rename.binding, rename.oldName, chosen);
+        renamedKeys.add(rename.key);
         renameCount++;
-        appliedMappings[bindingKey] = { from: oldName, to: newName };
-      } catch (manualErr) {
-        errors.push(`Rename basarisiz ${oldName}->${newName} in ${scopeId}: ${manualErr.message}`);
+        appliedMappings[rename.key] = { from: rename.oldName, to: chosen };
+      } catch (err) {
+        errors.push(`Rename basarisiz ${rename.oldName}->${rename.newName} in ${rename.scopeId}: ${err.message}`);
       }
     }
 
-    console.error(`[apply-names] Rename sonuc: ${renameCount} basarili, ${shadowSkipped} shadow-skip, ${shadowSuffixed} shadow-suffix`);
+    console.error(`[apply-names] Rename sonuc: ${renameCount} basarili, ${shadowSkipped} shadow-skip, ${shadowSuffixed} shadow-suffix, ${exportSkipped} export-skip`);
 
-  } catch (err) {
-    errors.push(`Scope-aware rename hatasi: ${err.message}`);
-
-    // Fallback: flat rename
-    console.error(`[apply-names] Scope-aware rename basarisiz, flat fallback'a donuluyor: ${err.message}`);
-    flatRename(namesData.variables || {});
-  }
-
-  // ------------------------------------------------------------------
-  // MANUAL BINDING RENAME FALLBACK
-  // ------------------------------------------------------------------
-  // scope.rename() calismazsa binding'in tum referanslarini elle degistirir
-  function manualBindingRename(binding, oldName, newName) {
-    // Declaration
-    if (binding.identifier) {
-      binding.identifier.name = newName;
-    }
-
-    // Tum referanslar
-    if (binding.referencePaths) {
-      for (const refPath of binding.referencePaths) {
-        if (refPath.node && refPath.node.name === oldName) {
-          // Shorthand object property kontrolu
-          if (refPath.parent?.type === "ObjectProperty" &&
-              refPath.parent.shorthand &&
-              refPath.parent.value === refPath.node) {
-            refPath.parent.shorthand = false;
-          }
-          refPath.node.name = newName;
-        }
+    // Cikti
+    if (!DRY_RUN) {
+      try {
+        const { code } = generate(ast, { comments: true, compact: false, concise: false, retainLines: true });
+        writeFileSync(outputPath, code, "utf-8");
+      } catch (err) {
+        emit({
+          success: false, renamed: renameCount, skipped,
+          scope_aware: true, mappings: appliedMappings,
+          errors: [...errors, `Code generation hatasi: ${err.message}`],
+        });
+        process.exit(0);
       }
     }
 
-    // Constant violations (reassignment)
-    if (binding.constantViolations) {
-      for (const violationPath of binding.constantViolations) {
-        // AssignmentExpression: violationPath.node.left
-        if (violationPath.node?.left?.type === "Identifier" &&
-            violationPath.node.left.name === oldName) {
-          violationPath.node.left.name = newName;
-        }
-        // UpdateExpression: violationPath.node.argument
-        if (violationPath.node?.argument?.type === "Identifier" &&
-            violationPath.node.argument.name === oldName) {
-          violationPath.node.argument.name = newName;
-        }
-      }
-    }
+    emit({
+      success: true,
+      renamed: renameCount,
+      skipped,
+      scope_aware: true,
+      duplicates_fixed: duplicatesFixed,
+      shadow_skipped: shadowSkipped,
+      shadow_suffixed: shadowSuffixed,
+      export_skipped: exportSkipped,
+      mappings: appliedMappings,
+      output: DRY_RUN ? null : outputPath,
+      dry_run: DRY_RUN,
+      min_confidence: MIN_CONFIDENCE,
+      errors,
+    });
   }
-
-  // Cikti
-  if (!DRY_RUN) {
-    try {
-      const { code } = generate(ast, { comments: true, compact: false, concise: false, retainLines: true });
-      writeFileSync(outputPath, code, "utf-8");
-    } catch (err) {
-      emit({
-        success: false, renamed: renameCount, skipped,
-        scope_aware: true, mappings: appliedMappings,
-        errors: [...errors, `Code generation hatasi: ${err.message}`],
-      });
-      process.exit(0);
-    }
-  }
-
-  emit({
-    success: true,
-    renamed: renameCount,
-    skipped,
-    scope_aware: true,
-    duplicates_fixed: duplicatesFixed,
-    shadow_skipped: shadowSkipped,
-    shadow_suffixed: shadowSuffixed,
-    mappings: appliedMappings,
-    output: DRY_RUN ? null : outputPath,
-    dry_run: DRY_RUN,
-    min_confidence: MIN_CONFIDENCE,
-    errors,
-  });
-
 } else {
   // =====================================================================
   // FLAT RENAME (eski noScope davranisi -- geriye uyumluluk)
