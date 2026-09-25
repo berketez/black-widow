@@ -389,7 +389,7 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         if packer_info["packer"] == "pyinstaller":
             modules = self._pyinstaller_module_inventory(binary_data, python_version)
         if not modules or modules["total"] == 0:
-            modules = self._extract_embedded_modules(binary_data)
+            modules = self._extract_embedded_modules(binary_data, python_version)
         if modules:
             mod_path = workspace.save_json("static", "python_modules", modules)
             artifacts["python_modules"] = mod_path
@@ -924,10 +924,14 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
     # Embedded module extraction
     # ------------------------------------------------------------------
 
-    def _extract_embedded_modules(self, data: bytes) -> dict[str, Any] | None:
-        """Binary icindeki embedded Python modullerini cikar.
+    def _extract_embedded_modules(
+        self, data: bytes, python_version: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Binary icindeki embedded Python modullerini cikar (string taraması; sezgi).
 
-        .pyc dosya referanslarini ve modul isimlerini bulur.
+        .pyc dosya referanslarini ve modul isimlerini bulur. Sınıflandırma tek
+        kaynaktan: ``classify_pyz_module`` (PYZ/CArchive envanteriyle aynı; hedef
+        sürüm ``python_version``).
         """
         text = data.decode("ascii", errors="replace")
 
@@ -952,26 +956,15 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             if not module_name[0].isalpha() and module_name[0] != "_":
                 continue
 
-            is_stdlib = self._is_python_stdlib(module_name)
-
             modules.append({
                 "name": module_name,
-                "type": "stdlib" if is_stdlib else "user",
+                "type": classify_pyz_module(module_name, python_version),
             })
 
         if not modules:
             return None
 
-        stdlib_count = sum(1 for m in modules if m["type"] == "stdlib")
-        user_count = len(modules) - stdlib_count
-
-        return {
-            "source": "string_scan",  # sezgi: binary'deki "ad.py[c]" dizgeleri
-            "total": len(modules),
-            "stdlib_count": stdlib_count,
-            "user_count": user_count,
-            "modules": modules[:5000],  # max 5000 modul
-        }
+        return _module_inventory(modules, source="string_scan", python_version=python_version)
 
     # ------------------------------------------------------------------
     # PyInstaller TOC parsing
@@ -1081,61 +1074,6 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
     # ------------------------------------------------------------------
     # Utility
     # ------------------------------------------------------------------
-
-    @staticmethod
-    def _is_python_stdlib(module_name: str) -> bool:
-        """Python standart kutuphane modulu mu?"""
-        top_level = module_name.split(".")[0]
-        # Python 3.x stdlib top-level modulleri (kisaltilmis liste)
-        stdlib_modules = {
-            "abc", "aifc", "argparse", "array", "ast", "asynchat",
-            "asyncio", "asyncore", "atexit", "audioop", "base64",
-            "bdb", "binascii", "binhex", "bisect", "builtins",
-            "bz2", "calendar", "cgi", "cgitb", "chunk", "cmath",
-            "cmd", "code", "codecs", "codeop", "collections",
-            "colorsys", "compileall", "concurrent", "configparser",
-            "contextlib", "contextvars", "copy", "copyreg", "cProfile",
-            "crypt", "csv", "ctypes", "curses", "dataclasses",
-            "datetime", "dbm", "decimal", "difflib", "dis",
-            "distutils", "doctest", "email", "encodings",
-            "enum", "errno", "faulthandler", "fcntl", "filecmp",
-            "fileinput", "fnmatch", "formatter", "fractions",
-            "ftplib", "functools", "gc", "getopt", "getpass",
-            "gettext", "glob", "grp", "gzip", "hashlib",
-            "heapq", "hmac", "html", "http", "idlelib",
-            "imaplib", "imghdr", "imp", "importlib", "inspect",
-            "io", "ipaddress", "itertools", "json", "keyword",
-            "lib2to3", "linecache", "locale", "logging", "lzma",
-            "mailbox", "mailcap", "marshal", "math", "mimetypes",
-            "mmap", "modulefinder", "multiprocessing", "netrc",
-            "nis", "nntplib", "numbers", "operator", "optparse",
-            "os", "ossaudiodev", "parser", "pathlib", "pdb",
-            "pickle", "pickletools", "pipes", "pkgutil", "platform",
-            "plistlib", "poplib", "posix", "posixpath", "pprint",
-            "profile", "pstats", "pty", "pwd", "py_compile",
-            "pyclbr", "pydoc", "queue", "quopri", "random",
-            "re", "readline", "reprlib", "resource", "rlcompleter",
-            "runpy", "sched", "secrets", "select", "selectors",
-            "shelve", "shlex", "shutil", "signal", "site",
-            "smtpd", "smtplib", "sndhdr", "socket", "socketserver",
-            "sqlite3", "ssl", "stat", "statistics", "string",
-            "stringprep", "struct", "subprocess", "sunau", "symtable",
-            "sys", "sysconfig", "syslog", "tabnanny", "tarfile",
-            "telnetlib", "tempfile", "termios", "test", "textwrap",
-            "threading", "time", "timeit", "tkinter", "token",
-            "tokenize", "tomllib", "trace", "traceback", "tracemalloc",
-            "tty", "turtle", "turtledemo", "types", "typing",
-            "unicodedata", "unittest", "urllib", "uu", "uuid",
-            "venv", "warnings", "wave", "weakref", "webbrowser",
-            "winreg", "winsound", "wsgiref", "xdrlib", "xml",
-            "xmlrpc", "zipapp", "zipfile", "zipimport", "zlib",
-            # Python internal modulleri
-            "_thread", "_io", "_abc", "_codecs", "_collections",
-            "_functools", "_operator", "_signal", "_sre", "_stat",
-            "_string", "_struct", "_warnings", "_weakref",
-            "__future__", "_frozen_importlib",
-        }
-        return top_level in stdlib_modules
 
     @staticmethod
     def _filter_python_strings(strings: list[str]) -> list[str]:

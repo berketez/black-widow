@@ -1123,7 +1123,10 @@ def _is_stdlib_top_level(top: str, version: Optional[tuple[int, int]]) -> bool:
 
 
 def classify_pyz_module(name: str, python_version: Optional[str] = None) -> str:
-    """PYZ modülünün decompile politikası kategorisi.
+    """Python modül adının kategorisi -- projedeki TEK stdlib/PyInstaller sınıflandırıcısı.
+
+    PYZ üyeleri, CArchive girdileri ve python_binary'nin string taraması bununla
+    sınıflanır (eski ayrı sabit liste ``_is_python_stdlib`` kaldırıldı).
 
     - ``"pyinstaller"``: PyInstaller'ın kendi modülleri (pyimod*, pyiboot*, pyi_*, _pyi_*)
     - ``"stdlib"``: hedef sürümün standart kütüphanesi (bkz. ``_is_stdlib_top_level``)

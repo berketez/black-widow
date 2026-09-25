@@ -306,3 +306,52 @@ class TestMadde3EnvanterTekKaynak:
         assert (inv["total"], inv["user_count"], inv["stdlib_count"],
                 inv["pyinstaller_count"]) == (109, 1, 103, 5)
         assert [m["name"] for m in inv["modules"] if m["type"] == "user"] == ["hello"]
+
+
+# ---------------------------------------------------------------------------
+# Madde 4: tek stdlib tanımı (classify_pyz_module) -- string taraması dahil
+# ---------------------------------------------------------------------------
+
+class TestMadde4TekStdlibTanimi:
+    NAMES = ["os", "zoneinfo", "_ssl", "distutils.core", "imp", "test.support",
+             "tomllib", "pyimod01_archive", "myapp", "requests"]
+
+    def _scan(self, version: str | None) -> dict[str, str]:
+        data = b"\x00".join(n.encode() + b".pyc" for n in self.NAMES)
+        res = _analyzer()._extract_embedded_modules(data, version)
+        return {m["name"]: m["type"] for m in res["modules"]}
+
+    def test_string_taramasi_siniflandiriciyi_kullanir(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        import karadul.analyzers.python_binary as pbin
+        monkeypatch.setattr(pbin, "classify_pyz_module", lambda name, version=None: "SINAMA")
+        assert set(self._scan("3.12").values()) == {"SINAMA"}
+
+    def test_kararlar_pyz_envanteriyle_ayni(self) -> None:
+        from karadul.analyzers.packed_binary import classify_pyz_module
+        for version in ("3.11", "3.12", "3.13"):
+            got = self._scan(version)
+            assert got == {n: classify_pyz_module(n, version) for n in self.NAMES}
+
+    def test_hedef_surume_gore(self) -> None:
+        v311, v312 = self._scan("3.11"), self._scan("3.12")
+        assert v311["distutils.core"] == "stdlib" and v312["distutils.core"] == "user"
+        assert v312["zoneinfo"] == v312["_ssl"] == "stdlib"   # eski sabit listede yoktu
+        assert v312["pyimod01_archive"] == "pyinstaller"
+
+    def test_static_asama_surumu_iletir(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        from karadul.core.target import Language, TargetInfo, TargetType
+        from karadul.core.workspace import Workspace
+        binp = tmp_path / "cxf"
+        binp.write_bytes(b"cx_Freeze\x00Python 3.11.9\x00distutils.pyc\x00myapp.pyc\x00")
+        an = _analyzer()
+        monkeypatch.setattr(an.runner, "run_strings", lambda *a, **k: [])
+        ws = Workspace(tmp_path / "ws", "cxf")
+        ws.create()
+        st = an.analyze_static(TargetInfo(
+            path=binp, name="cxf", target_type=TargetType.PYTHON_PACKED,
+            language=Language.PYTHON, file_size=binp.stat().st_size, file_hash="x"), ws)
+        mods = ws.load_json("static", "python_modules")
+        assert mods["source"] == "string_scan" and mods["python_version"] == "3.11.9"
+        assert {m["name"]: m["type"] for m in mods["modules"]} == {
+            "distutils": "stdlib", "myapp": "user"}
+        assert st.stats["stdlib_modules"] == 1 and st.stats["user_modules"] == 1

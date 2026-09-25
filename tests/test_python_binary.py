@@ -395,21 +395,15 @@ class TestModuleExtraction:
         result = python_analyzer._extract_embedded_modules(data)
         assert result is None
 
-    def test_is_python_stdlib(self):
-        """Stdlib tespiti dogru calismali."""
-        assert PythonBinaryAnalyzer._is_python_stdlib("os") is True
-        assert PythonBinaryAnalyzer._is_python_stdlib("sys") is True
-        assert PythonBinaryAnalyzer._is_python_stdlib("json") is True
-        assert PythonBinaryAnalyzer._is_python_stdlib("pathlib") is True
-        assert PythonBinaryAnalyzer._is_python_stdlib("collections") is True
-        assert PythonBinaryAnalyzer._is_python_stdlib("collections.abc") is True
-        assert PythonBinaryAnalyzer._is_python_stdlib("urllib.request") is True
-        assert PythonBinaryAnalyzer._is_python_stdlib("asyncio") is True
-
-        assert PythonBinaryAnalyzer._is_python_stdlib("myapp") is False
-        assert PythonBinaryAnalyzer._is_python_stdlib("requests") is False
-        assert PythonBinaryAnalyzer._is_python_stdlib("flask") is False
-        assert PythonBinaryAnalyzer._is_python_stdlib("click") is False
+    def test_is_python_stdlib(self, python_analyzer: PythonBinaryAnalyzer):
+        """String taraması stdlib'i tek sınıflandırıcıyla (classify_pyz_module) ayırır."""
+        names = ["os", "sys", "json", "pathlib", "collections", "collections.abc",
+                 "urllib.request", "asyncio", "myapp", "requests", "flask", "click"]
+        data = b"\x00".join(n.encode() + b".pyc" for n in names)
+        result = python_analyzer._extract_embedded_modules(data, "3.12")
+        types = {m["name"]: m["type"] for m in result["modules"]}
+        assert all(types[n] == "stdlib" for n in names[:8])
+        assert all(types[n] == "user" for n in names[8:])
 
 
 # --------------------------------------------------------------------------
