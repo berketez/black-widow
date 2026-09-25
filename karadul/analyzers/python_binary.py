@@ -40,6 +40,10 @@ from karadul.analyzers.pyc_decompiler import (
 )
 from karadul.analyzers.packed_binary import (
     _MAX_PYINSTALLER_DECOMPRESS,
+    _PYZ_MAX_NAME_BYTES,
+    _is_safe_pyz_module_name,
+    _is_windows_reserved,
+    _write_pyz_member,
     PYZ_MAGIC,
     PyInstallerExtractor,
     PyzFormatError,
@@ -282,6 +286,32 @@ def _module_inventory(
         "pyinstaller_count": counts.get("pyinstaller", 0),
         "modules": modules[:5000],  # max 5000 modul
     }
+
+
+def _cxfreeze_module_name(rel_path: str) -> tuple[str, bool]:
+    """cx_Freeze içindeki .pyc yolu -> (noktalı modül adı, paket mi).
+
+    ``pkg/__init__.pyc`` -> (``pkg``, True); ``a/b_c.pyc`` -> ``a.b_c``;
+    ``pkg/__pycache__/m.cpython-312.pyc`` -> ``pkg.m``. Bileşenleri Python
+    tanımlayıcısı olmayan (``..``, ``-`` vb.) ad tek bileşene düzleştirilir; güvenlik
+    ölçütü PYZ üyeleriyle aynıdır (``_is_safe_pyz_module_name``).
+    """
+    parts = [p for p in rel_path.replace("\\", "/").split("/") if p]
+    if parts and parts[-1].endswith(".pyc"):
+        parts[-1] = parts[-1][:-4]
+    if len(parts) >= 2 and parts[-2] == "__pycache__":
+        parts = parts[:-2] + [parts[-1].split(".", 1)[0]]
+    is_package = len(parts) > 1 and parts[-1] == "__init__"
+    if is_package:
+        parts = parts[:-1]
+    name = ".".join(parts)
+    if _is_safe_pyz_module_name(name):
+        return name, is_package
+    flat = re.sub(r"[^0-9A-Za-z_]+", "_", "_".join(parts)).strip("_") or "unnamed"
+    flat = flat[:_PYZ_MAX_NAME_BYTES - 16]
+    if _is_windows_reserved(flat + ".pyc"):
+        flat = "_" + flat
+    return flat, is_package
 
 
 def _vendor_tool_paths() -> list[str] | None:
@@ -612,19 +642,42 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         )
 
     def _extract_cxfreeze(self, binary_path: Path, output_dir: Path) -> list:
-        """cx_Freeze dagitimindan .pyc'leri topla.
+        """cx_Freeze dagitimindan .pyc'leri topla (çıktı dizinine kopyalayarak).
 
         cx_Freeze tek dosya DEGIL dizin dagitimi yapar: executable + ``lib/library.zip``
-        (standart ZIP) + ``lib/`` altinda paket .pyc'leri. library.zip acilir, lib/
-        altindaki serbest .pyc'ler toplanir. Cikti: ExtractedFile listesi
-        (_decompile_pyc_files ile uyumlu). Dagitim dizini yoksa bos liste (graceful).
+        (standart ZIP) + ``lib/`` altinda paket .pyc'leri. İkisindeki her .pyc noktalı
+        modül adıyla (``pkg/__init__.pyc`` -> ``pkg``) ``output_dir``'e TEK düzlemde
+        yazılır; çakışan ad (harf duyarsız dahil) ``~N`` eki alır. Hedefin dizinine
+        hiçbir şey yazılmaz (onarım kopyaları da çıktıda oluşur); lib/ dışına çıkan
+        symlink izlenmez. Cikti: ExtractedFile listesi (original_name = modül adı).
+        Dagitim dizini yoksa bos liste (graceful).
+
+        Eskiden zip yolu "/" -> "_" ile düzleştiriliyordu: ``a/b_c.pyc`` ile
+        ``a_b/c.pyc`` (ve ``Foo``/``foo``) aynı dosyaya yazılıp biri kayboluyordu;
+        lib/'deki ``__init__.pyc``'ler paket adını kaybediyordu.
         """
         import zipfile
         from karadul.analyzers.packed_binary import ExtractedFile
 
         output_dir.mkdir(parents=True, exist_ok=True)
         results: list = []
+        used: set[str] = set()
         base = binary_path.parent
+
+        def add(rel_path: str, data: bytes, origin: str) -> None:
+            module, is_package = _cxfreeze_module_name(rel_path)
+            filename = unique_casefold_name(module, used) + ".pyc"
+            out = _write_pyz_member(output_dir, filename, data)
+            if out is None:
+                return
+            results.append(ExtractedFile(
+                path=out, original_name=module, file_type="pyc", size=len(data),
+                metadata={
+                    "cxfreeze_origin": origin,
+                    "archive_path": rel_path,
+                    "is_package": is_package,
+                },
+            ))
 
         # library.zip aday konumlari (surumler/platformlar arasi farklar)
         zip_candidates = [
@@ -640,33 +693,29 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                     for name in zf.namelist():
                         if not name.endswith(".pyc"):
                             continue
-                        # Zip-slip koruma: path'i tek guvenli dosya adina duzlestir.
-                        safe_name = name.replace("/", "_").replace("\\", "_").lstrip(".")
-                        out = output_dir / safe_name
                         try:
                             data = zf.read(name)
                         except Exception:
                             continue
-                        out.write_bytes(data)
-                        results.append(ExtractedFile(
-                            path=out, original_name=name, file_type="pyc", size=len(data),
-                        ))
+                        add(name, data, "library.zip")
             except zipfile.BadZipFile:
                 logger.debug("cx_Freeze library.zip bozuk: %s", zpath)
             break  # ilk gecerli library.zip yeterli
 
-        # lib/ altindaki serbest .pyc dosyalari (library.zip disindaki paketler).
-        # Bunlar zaten diskte -- path dogrudan kullanilir (extract gerekmez).
+        # lib/ altindaki serbest .pyc dosyalari (library.zip disindaki paketler):
+        # yerinde işlenmez, çıktıya kopyalanır.
         lib_dir = base / "lib"
         if lib_dir.is_dir():
-            for pyc in lib_dir.rglob("*.pyc"):
+            lib_root = lib_dir.resolve()
+            for pyc in sorted(lib_dir.rglob("*.pyc")):
                 try:
-                    size = pyc.stat().st_size
+                    if not pyc.resolve().is_relative_to(lib_root) or not pyc.is_file():
+                        logger.debug("cx_Freeze lib/ disina cikan yol atlandi: %s", pyc)
+                        continue
+                    data = pyc.read_bytes()
                 except OSError:
                     continue
-                results.append(ExtractedFile(
-                    path=pyc, original_name=pyc.name, file_type="pyc", size=size,
-                ))
+                add(pyc.relative_to(lib_dir).as_posix(), data, "lib")
 
         return results
 

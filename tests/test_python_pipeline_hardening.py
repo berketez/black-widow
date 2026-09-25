@@ -572,3 +572,97 @@ class TestMadde6CliDogrulama:
     def test_gecerli_cikti_kaynak(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         out = self._run(tmp_path, monkeypatch, "def main():\n    pass\n", "")
         assert [(e.file_type, e.path.name) for e in out] == [("python_source", "m.py")]
+
+
+# ---------------------------------------------------------------------------
+# Madde 7: cx_Freeze -- aynı adlı .pyc'ler çakışmaz, hedef dizine yazılmaz
+# ---------------------------------------------------------------------------
+
+def _real_pyc(src: str) -> bytes:
+    import importlib.util
+    import struct
+    return importlib.util.MAGIC_NUMBER + struct.pack("<III", 0, 0, 0) + marshal.dumps(
+        compile(src, "m.py", "exec"))
+
+
+def _cxfreeze_dist(tmp_path: Path) -> tuple[Path, dict[str, bytes]]:
+    """library.zip + lib/ düzeni; dönen sözlük: arşiv yolu -> özgün .pyc baytları."""
+    import zipfile
+    dist = tmp_path / "dist"
+    lib = dist / "lib"
+    lib.mkdir(parents=True)
+    (dist / "app").write_bytes(b"cx_Freeze\x00")
+    zipped = {n: _real_pyc(src) for n, src in [
+        ("pkg_a/__init__.pyc", "A = 1"), ("pkg_b/__init__.pyc", "B = 2"),
+        ("a/b_c.pyc", "ABC = 1"), ("a_b/c.pyc", "ABC = 2"),
+        ("Foo.pyc", "FOO = 1"), ("foo.pyc", "foo = 2"), ("dup/__init__.pyc", "D = 1"),
+    ]}
+    with zipfile.ZipFile(lib / "library.zip", "w") as zf:
+        for n, data in zipped.items():
+            zf.writestr(n, data)
+    loose = {n: _real_pyc(src) for n, src in [
+        ("pkg_x/__init__.pyc", "X = 1"), ("pkg_y/__init__.pyc", "Y = 2"),
+        ("dup/__init__.pyc", "D = 2"),
+    ]}
+    for n, data in loose.items():
+        (lib / n).parent.mkdir(parents=True, exist_ok=True)
+        (lib / n).write_bytes(data)
+    return dist, {**{"zip:" + k: v for k, v in zipped.items()},
+                  **{"lib:" + k: v for k, v in loose.items()}}
+
+
+class TestMadde7CxFreezeAdCakismasi:
+    @pytest.mark.parametrize("yol,beklenen", [
+        ("pkg/__init__.pyc", ("pkg", True)),
+        ("a/b_c.pyc", ("a.b_c", False)),
+        ("pkg\\sub\\__init__.pyc", ("pkg.sub", True)),
+        ("pkg/__pycache__/m.cpython-312.pyc", ("pkg.m", False)),
+        ("__init__.pyc", ("__init__", False)),
+        ("../../evil.pyc", ("evil", False)),
+        ("CON.pyc", ("_CON", False)),
+    ])
+    def test_modul_adi(self, yol: str, beklenen: tuple[str, bool]) -> None:
+        from karadul.analyzers.python_binary import _cxfreeze_module_name
+        assert _cxfreeze_module_name(yol) == beklenen
+
+    def test_her_pyc_ayri_dosya_icerik_korunur(self, tmp_path: Path) -> None:
+        dist, originals = _cxfreeze_dist(tmp_path)
+        ext = _analyzer()._extract_cxfreeze(dist / "app", tmp_path / "out" / "extracted")
+        assert len(ext) == len(originals) == 10
+        assert len({e.path.name.casefold() for e in ext}) == 10      # harf duyarsız FS'de de ayrı
+        for e in ext:
+            key = ("zip:" if e.metadata["cxfreeze_origin"] == "library.zip" else "lib:") \
+                + e.metadata["archive_path"]
+            assert e.path.read_bytes() == originals[key], key
+        names = {e.original_name for e in ext}
+        assert {"pkg_a", "pkg_b", "pkg_x", "pkg_y", "a.b_c", "a_b.c", "Foo", "foo", "dup"} <= names
+        dups = sorted(e.path.name for e in ext if e.original_name == "dup")
+        assert dups == ["dup.pyc", "dup~2.pyc"]
+
+    def test_hedef_dagitim_dizinine_yazilmaz(self, tmp_path: Path) -> None:
+        dist, _ = _cxfreeze_dist(tmp_path)
+        (dist / "lib" / "pkg_z").mkdir()
+        (dist / "lib" / "pkg_z" / "mod.pyc").write_bytes(      # başlıksız -> onarım gerekir
+            marshal.dumps(compile("Z = 1", "z", "exec")))
+        before = sorted(p for p in dist.rglob("*"))
+        an = _analyzer()
+        ext = an._extract_cxfreeze(dist / "app", tmp_path / "proj" / "extracted")
+        s = an._decompile_pyc_files(ext, tmp_path / "proj", py_version=RUNNING)
+        assert sorted(p for p in dist.rglob("*")) == before
+        assert all(tmp_path / "proj" in e.path.parents for e in ext)
+        out = sorted(p.name for p in (tmp_path / "proj" / "source").iterdir())
+        for stem in ("pkg_x.", "pkg_y.", "pkg_z.mod."):   # uzantı araca göre (.py/.disasm.txt)
+            assert any(n.startswith(stem) for n in out), (stem, out)
+        assert not any(n.startswith("__init__") for n in out)
+        assert s["total_pyc"] == 11
+
+    def test_lib_disina_cikan_symlink_izlenmez(self, tmp_path: Path) -> None:
+        dist, _ = _cxfreeze_dist(tmp_path)
+        outside = tmp_path / "disarida"
+        outside.mkdir()
+        (outside / "gizli.pyc").write_bytes(b"GIZLI")
+        (dist / "lib" / "kacak.pyc").symlink_to(outside / "gizli.pyc")
+        (dist / "lib" / "kacakdizin").symlink_to(outside, target_is_directory=True)
+        ext = _analyzer()._extract_cxfreeze(dist / "app", tmp_path / "out")
+        assert not any(e.path.read_bytes() == b"GIZLI" for e in ext)
+        assert not any("kacak" in e.original_name for e in ext)
