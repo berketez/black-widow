@@ -20,7 +20,7 @@ from pathlib import Path
 # --- Konfigürasyon ---
 SEARCH_DIRS = ["/opt/homebrew/lib", "/opt/homebrew/Cellar"]
 EXTENSIONS = {".dylib", ".a", ".so"}
-OUTPUT_PATH = "/Users/apple/Desktop/black-widow/sigs/homebrew_deep.json"
+OUTPUT_PATH = str(Path(__file__).resolve().parent.parent / "sigs" / "homebrew_deep.json")
 
 
 def find_library_files():

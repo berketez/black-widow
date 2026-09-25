@@ -27,7 +27,7 @@ from datetime import datetime
 # ============================================================
 # YAPILANDIRMA
 # ============================================================
-WORKSPACE = "/Users/apple/Desktop/black-widow/workspaces/2.1/20260405_163831"
+WORKSPACE = str(Path(__file__).resolve().parent.parent / "workspaces/2.1/20260405_163831")
 TS_SOURCE_DIR = "/Users/apple/Desktop/claudeopen"
 STRINGS_RAW = f"{WORKSPACE}/static/strings_raw.json"
 GHIDRA_STRINGS = f"{WORKSPACE}/static/ghidra_output/strings.json"

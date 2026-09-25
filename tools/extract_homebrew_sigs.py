@@ -17,11 +17,12 @@ import re
 import sys
 from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 
 # ── Config ──────────────────────────────────────────────────────────────────
 CELLAR = "/opt/homebrew/Cellar"
-OUTPUT = "/Users/apple/Desktop/black-widow/sigs/homebrew_symbols.json"
-COMBINED = "/Users/apple/Desktop/black-widow/sigs/combined_1M.json"
+OUTPUT = str(Path(__file__).resolve().parent.parent / "sigs" / "homebrew_symbols.json")
+COMBINED = str(Path(__file__).resolve().parent.parent / "sigs" / "combined_1M.json")
 
 # ── Category mapping: prefix → (category, purpose_template) ────────────────
 PREFIX_MAP = [
@@ -367,9 +368,9 @@ def main():
 
     # Also load other sig files for dedup
     other_files = [
-        '/Users/apple/Desktop/black-widow/sigs/generated_signatures.json',
-        '/Users/apple/Desktop/black-widow/sigs/macos_frameworks.json',
-        '/Users/apple/Desktop/black-widow/sigs/macos_frameworks_full.json',
+        str(Path(__file__).resolve().parent.parent / 'sigs' / 'generated_signatures.json'),
+        str(Path(__file__).resolve().parent.parent / 'sigs' / 'macos_frameworks.json'),
+        str(Path(__file__).resolve().parent.parent / 'sigs' / 'macos_frameworks_full.json'),
     ]
     for fpath in other_files:
         if os.path.exists(fpath):

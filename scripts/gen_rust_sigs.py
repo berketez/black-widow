@@ -19,6 +19,7 @@ import subprocess
 import sys
 from collections import OrderedDict
 from datetime import datetime
+from pathlib import Path
 
 
 # ============================================================================
@@ -2409,7 +2410,7 @@ def main():
     print("Karadul Rust Signature Generator")
     print("=" * 60)
 
-    output_path = "/Users/apple/Desktop/black-widow/sigs/rust_expanded.json"
+    output_path = str(Path(__file__).resolve().parent.parent / "sigs" / "rust_expanded.json")
 
     # Adim 1: Kapsamli pattern-based signature'lar uret
     print("\n[1/3] Kapsamli stdlib + crate signature'lar uretiliyor...")

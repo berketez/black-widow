@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 # Load phase 1 signatures
-sig_path = Path("/Users/apple/Desktop/black-widow/sigs/go_stdlib_signatures.json")
+sig_path = Path(__file__).resolve().parent.parent / "sigs" / "go_stdlib_signatures.json"
 with open(sig_path) as f:
     sigs = json.load(f)
 

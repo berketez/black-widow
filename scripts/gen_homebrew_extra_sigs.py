@@ -19,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 
 # --- Konfigürasyon ---
-BASE_DIR = "/Users/apple/Desktop/black-widow"
+BASE_DIR = str(Path(__file__).resolve().parent.parent)
 OUTPUT_PATH = os.path.join(BASE_DIR, "sigs", "homebrew_extra.json")
 EXISTING_SIGS = [
     os.path.join(BASE_DIR, "sigs", "homebrew_deep.json"),

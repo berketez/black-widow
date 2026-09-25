@@ -207,8 +207,9 @@ def benchmark_structural(
 
 
 def main():
-    workspace = Path(
-        "/Users/apple/Desktop/black-widow/workspaces/libQuantLib.0/20260329_200933"
+    workspace = (
+        Path(__file__).resolve().parent.parent
+        / "workspaces/libQuantLib.0/20260329_200933"
     )
     decompiled_dir = workspace / "static/ghidra_output/decompiled"
     naming_map_path = workspace / "reconstructed/src/naming_map.json"

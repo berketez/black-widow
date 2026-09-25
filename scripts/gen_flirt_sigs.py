@@ -28,10 +28,10 @@ from pathlib import Path
 
 FLIRTDB_DIR = "/tmp/FLIRTDB"
 SIGDB_DIR = "/tmp/sig-database"
-OUTPUT_PATH = "/Users/apple/Desktop/black-widow/sigs/flirt_github.json"
+OUTPUT_PATH = str(Path(__file__).resolve().parent.parent / "sigs" / "flirt_github.json")
 
 # Mevcut DB - dedup icin
-EXISTING_DB_PATH = "/Users/apple/Desktop/black-widow/sigs/combined_1M.json"
+EXISTING_DB_PATH = str(Path(__file__).resolve().parent.parent / "sigs" / "combined_1M.json")
 
 MIN_NAME_LEN = 3
 MAX_NAME_LEN = 500
@@ -399,7 +399,7 @@ def load_existing_names(db_path: str) -> set[str]:
 
 def load_all_existing_names() -> set[str]:
     """sigs/ dizinindeki tum JSON DB'lerden isimleri topla."""
-    sigs_dir = Path("/Users/apple/Desktop/black-widow/sigs")
+    sigs_dir = Path(__file__).resolve().parent.parent / "sigs"
     all_names: set[str] = set()
 
     json_files = list(sigs_dir.glob("*.json"))

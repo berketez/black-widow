@@ -29,7 +29,7 @@ from typing import Any
 # ============================================================
 
 ORIGINAL_DIR = Path("/Users/apple/Desktop/claudeopen/")
-WORKSPACE_DIR = Path("/Users/apple/Desktop/black-widow/workspaces/2.1/20260405_163831")
+WORKSPACE_DIR = Path(__file__).resolve().parent.parent / "workspaces/2.1/20260405_163831"
 RECONSTRUCTED_DIR = WORKSPACE_DIR / "reconstructed"
 STATIC_DIR = WORKSPACE_DIR / "static"
 DEFAULT_OUTPUT = WORKSPACE_DIR / "benchmark_results.json"

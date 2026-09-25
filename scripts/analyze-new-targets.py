@@ -11,7 +11,7 @@ Her hedef icin:
 3. Ozet rapor olusturur
 
 Kullanim:
-    cd /Users/apple/Desktop/black-widow
+    cd <depo-kökü>
     python scripts/analyze-new-targets.py
     python scripts/analyze-new-targets.py --target element
     python scripts/analyze-new-targets.py --target codex

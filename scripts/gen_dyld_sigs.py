@@ -20,7 +20,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Paths
-PROJECT_DIR = Path("/Users/apple/Desktop/black-widow")
+PROJECT_DIR = Path(__file__).resolve().parent.parent
 SIGS_DIR = PROJECT_DIR / "sigs"
 OUTPUT_FILE = SIGS_DIR / "dyld_cache_exports.json"
 DYLD_CACHE_MAP = Path("/System/Volumes/Preboot/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_arm64e.map")

@@ -52,7 +52,7 @@ except ImportError:
 # Konfiguerasyon
 # ============================================================================
 
-SIGS_DIR = Path("/Users/apple/Desktop/black-widow/sigs")
+SIGS_DIR = Path(__file__).resolve().parent.parent / "sigs"
 OUTPUT_PATH = SIGS_DIR / "pypi_native_symbols.json"
 
 # Hedef paketler: C extension iceren en populer paketler

@@ -27,7 +27,7 @@ HEADERS_DIR = CLONE_DIR / "mingw-w64-headers" / "include"
 # Bazı deklarasyonlar crt/ altında da olabiliyor
 CRT_DIR = CLONE_DIR / "mingw-w64-headers" / "crt"
 
-PROJECT_ROOT = Path("/Users/apple/Desktop/black-widow")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_FILE = PROJECT_ROOT / "sigs" / "mingw_headers.json"
 
 # Mevcut DB dosyaları — dedup için

@@ -24,7 +24,7 @@ from datetime import datetime
 from collections import defaultdict
 
 # --- Config ---
-SIGS_DIR = Path("/Users/apple/Desktop/black-widow/sigs")
+SIGS_DIR = Path(__file__).resolve().parent.parent / "sigs"
 EXISTING_FILE = SIGS_DIR / "go_stdlib_signatures.json"
 OUTPUT_FILE = SIGS_DIR / "go_expanded.json"
 

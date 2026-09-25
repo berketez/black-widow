@@ -11,8 +11,9 @@ import subprocess
 import sys
 import re
 from collections import defaultdict
+from pathlib import Path
 
-INPUT = "/Users/apple/Desktop/black-widow/sigs/homebrew_symbols.json"
+INPUT = str(Path(__file__).resolve().parent.parent / "sigs" / "homebrew_symbols.json")
 OUTPUT = INPUT  # Overwrite in place
 
 # ── Package → category/purpose mapping ──────────────────────────────────────

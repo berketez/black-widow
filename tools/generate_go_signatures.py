@@ -4518,7 +4518,7 @@ for cat, count in sorted(cats.items(), key=lambda x: -x[1]):
     print(f"  {cat}: {count}")
 
 # Write JSON
-out_path = Path("/Users/apple/Desktop/black-widow/sigs/go_stdlib_signatures.json")
+out_path = Path(__file__).resolve().parent.parent / "sigs" / "go_stdlib_signatures.json"
 out_path.parent.mkdir(parents=True, exist_ok=True)
 
 with open(out_path, "w") as f:

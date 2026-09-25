@@ -28,7 +28,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 ANACONDA_ROOT = Path("/opt/anaconda3")
-SIGS_DIR = Path("/Users/apple/Desktop/black-widow/sigs")
+SIGS_DIR = Path(__file__).resolve().parent.parent / "sigs"
 OUTPUT_PATH = SIGS_DIR / "anaconda_symbols.json"
 
 # pkgs/ altinda duplicate versiyonlar var, atla

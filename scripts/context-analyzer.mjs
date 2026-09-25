@@ -1086,7 +1086,7 @@ try {
   } else {
     // Scope class bulunamadi -- dogrudan node_modules'tan import et
     try {
-      const { Scope: S2 } = await import("/Users/apple/Desktop/black-widow/scripts/node_modules/@babel/traverse/lib/scope/index.js");
+      const { Scope: S2 } = await import(new URL("./node_modules/@babel/traverse/lib/scope/index.js", import.meta.url).href);
       if (S2?.prototype?.registerBinding) {
         const orig = S2.prototype.registerBinding;
         S2.prototype.registerBinding = function(kind, path, bindingPath) {

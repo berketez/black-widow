@@ -1723,7 +1723,7 @@ def build_purpose(demangled: str) -> str:
 
 
 def main():
-    output_path = "/Users/apple/Desktop/black-widow/sigs/cpp_stl_mangled.json"
+    output_path = str(Path(__file__).resolve().parent.parent / "sigs" / "cpp_stl_mangled.json")
     script_name = "gen_cpp_stl_sigs.py"
 
     print(f"=== C++ STL Mangled Name Signature Generator ===")

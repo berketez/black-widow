@@ -12,7 +12,7 @@ uzerinde tam reconstruction pipeline uygulanir:
 6. Comment Generation (header, syscall, vuln, algorithm, control flow)
 
 Kullanim:
-    cd /Users/apple/Desktop/black-widow
+    cd <depo-kökü>
     python scripts/steam_reconstruct.py
 """
 

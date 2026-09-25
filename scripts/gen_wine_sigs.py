@@ -9,7 +9,7 @@ Kaynak:
   - Wine: https://gitlab.winehq.org/wine/wine.git (shallow clone)
   - ReactOS: https://github.com/nicedoc/reactos.git (shallow clone)
 
-Cikti: /Users/apple/Desktop/black-widow/sigs/wine_dll_exports.json
+Cikti: sigs/wine_dll_exports.json
 """
 
 import json
@@ -27,8 +27,8 @@ REACTOS_REPO = "https://github.com/nicedoc/reactos.git"  # Fallback: https://git
 REACTOS_REPO_ALT = "https://github.com/nicedoc/reactos.git"
 WINE_DIR = Path("/tmp/wine-source")
 REACTOS_DIR = Path("/tmp/reactos-source")
-OUTPUT = Path("/Users/apple/Desktop/black-widow/sigs/wine_dll_exports.json")
-COMBINED_DB = Path("/Users/apple/Desktop/black-widow/sigs/combined_1M.json")
+OUTPUT = Path(__file__).resolve().parent.parent / "sigs" / "wine_dll_exports.json"
+COMBINED_DB = Path(__file__).resolve().parent.parent / "sigs" / "combined_1M.json"
 
 # ===== Kategori Mapping: DLL adi -> kategori =====
 # Tam eslesme ve prefix eslesmesi ayri tutulur

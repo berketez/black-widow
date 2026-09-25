@@ -11,7 +11,7 @@ Bundle'lar:
   3. cursor-cli (206KB) - CLI yardimci modulu
 
 Kullanim:
-    cd /Users/apple/Desktop/black-widow
+    cd <depo-kökü>
     python scripts/cursor_3bundle_analysis.py
 """
 

@@ -47,7 +47,7 @@ except ImportError:
     print("[WARN] zstandard yok, pip install zstandard ile kur. zst sikistirmali .deb'ler atlanacak.")
 
 # --- Konfigurasyon ---
-PROJECT_ROOT = Path("/Users/apple/Desktop/black-widow")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_PATH = PROJECT_ROOT / "sigs" / "ubuntu_elf_signatures.json"
 COMBINED_PATH = PROJECT_ROOT / "sigs" / "combined_1M.json"
 TEMP_DIR = Path(tempfile.mkdtemp(prefix="karadul-ubuntu-"))
