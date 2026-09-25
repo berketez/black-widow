@@ -1,0 +1,149 @@
+{
+  "_comment": "Seçici (v2) FLIRT korumalarının mutation kanıtı. Her mutant bir korumayı kaldırır; ilgili test KIRMIZI olmalı (killed). Koşum: python scripts/mutation_probe.py --spec scripts/flirt/mutation_specs_flirt_selective.json",
+  "mutants": [
+    {
+      "id": "sel_size_check_off",
+      "desc": "hedef uzunluğu imza uzunluğundan farklıysa reddetme kaldırıldı",
+      "module": "karadul/analyzers/byte_pattern_matcher.py",
+      "test": "tests/test_flirt_selective.py::TestSelectiveMatch::test_size_mismatch_rejected",
+      "find": "                if sig_size > 0 and func_size > 0 and func_size != sig_size:",
+      "replace": "                if False:"
+    },
+    {
+      "id": "sel_crc_check_off",
+      "desc": "ön ek ötesi maskeli CRC16 karşılaştırması kaldırıldı",
+      "module": "karadul/analyzers/byte_pattern_matcher.py",
+      "test": "tests/test_flirt_selective.py::TestSelectiveMatch::test_crc_mismatch_rejected",
+      "find": "                    ) != getattr(sig, \"crc16\", -1):",
+      "replace": "                    ) != getattr(sig, \"crc16\", -1) and False:"
+    },
+    {
+      "id": "sel_ambiguity_off",
+      "desc": "doğrulanmış adaylar birden fazla isme gidince isim verilmemesi kaldırıldı",
+      "module": "karadul/analyzers/byte_pattern_matcher.py",
+      "test": "tests/test_flirt_selective.py::TestSelectiveMatch::test_indistinguishable_multi_name_not_named",
+      "find": "                    if len({s.name for s in kept}) > 1:",
+      "replace": "                    if False:"
+    },
+    {
+      "id": "sel_duplicate_name_off",
+      "desc": "aynı isim birden fazla fonksiyona çıkınca hiçbirini isimlendirmeme kaldırıldı",
+      "module": "karadul/analyzers/byte_pattern_matcher.py",
+      "test": "tests/test_flirt_selective.py::TestSelectiveMatch::test_same_name_on_two_functions_not_named",
+      "find": "            if name_count[sig.name] > 1 or any(n.lstrip(\"_\") in taken for n in names):",
+      "replace": "            if any(n.lstrip(\"_\") in taken for n in names):"
+    },
+    {
+      "id": "sel_taken_name_off",
+      "desc": "Ghidra'nın başka fonksiyona verdiği isim FUN_'a da veriliyor",
+      "module": "karadul/analyzers/byte_pattern_matcher.py",
+      "test": "tests/test_flirt_selective.py::TestSelectiveMatch::test_name_already_in_binary_not_given_to_fun",
+      "find": "            if name_count[sig.name] > 1 or any(n.lstrip(\"_\") in taken for n in names):",
+      "replace": "            if name_count[sig.name] > 1:"
+    },
+    {
+      "id": "sel_taken_alias_off",
+      "desc": "alınmış isim kontrolü takma adlara bakmıyor",
+      "module": "karadul/analyzers/byte_pattern_matcher.py",
+      "test": "tests/test_flirt_selective.py::TestSelectiveMatch::test_alias_already_in_binary_not_given_to_fun",
+      "find": "            names = [sig.name, *(n for _off, n in getattr(sig, \"public_symbols\", []))]",
+      "replace": "            names = [sig.name]"
+    },
+    {
+      "id": "sel_refs_off",
+      "desc": "çağrı referansı doğrulaması atlanıyor",
+      "module": "karadul/analyzers/byte_pattern_matcher.py",
+      "test": "tests/test_flirt_selective.py::TestCallReferences::test_ref_to_other_function_rejected",
+      "find": "        if not refs:\n            return True",
+      "replace": "        if True:\n            return True"
+    },
+    {
+      "id": "sel_routed_to_legacy",
+      "desc": "v2 imzaları ayrılmıyor, eski (yalnız ön ek) yola gidiyor",
+      "module": "karadul/analyzers/byte_pattern_matcher.py",
+      "test": "tests/test_flirt_selective.py::TestSelectiveMatch::test_relocated_copy_is_named",
+      "find": "    selective = [s for s in signatures if is_selective_signature(s)]",
+      "replace": "    selective = []"
+    },
+    {
+      "id": "sel_merge_override_off",
+      "desc": "v2'nin karar verdiği fonksiyonda eski imzanın ismi de kabul ediliyor",
+      "module": "karadul/analyzers/byte_pattern_matcher.py",
+      "test": "tests/test_flirt_selective.py::TestLegacyCompat::test_selective_decision_overrides_legacy",
+      "find": "    out.matches = {k: v for k, v in leg.matches.items() if k not in decided}",
+      "replace": "    out.matches = dict(leg.matches)"
+    },
+    {
+      "id": "mask_adrp_off",
+      "desc": "ADR/ADRP anlık değeri maskelenmiyor",
+      "module": "karadul/analyzers/flirt_parser.py",
+      "test": "tests/test_flirt_selective.py::TestSelectiveMatch::test_relocated_copy_is_named",
+      "find": "            m = 0x9F00001F",
+      "replace": "            m = 0xFFFFFFFF"
+    },
+    {
+      "id": "mask_branch_off",
+      "desc": "B/BL hedefi maskelenmiyor",
+      "module": "karadul/analyzers/flirt_parser.py",
+      "test": "tests/test_flirt_selective.py::TestSelectiveMatch::test_relocated_copy_is_named",
+      "find": "            m = 0xFC000000",
+      "replace": "            m = 0xFFFFFFFF"
+    },
+    {
+      "id": "mask_lo12_off",
+      "desc": "ADRP'ye bağlı :lo12: ADD/LDR anlık değeri maskelenmiyor",
+      "module": "karadul/analyzers/flirt_parser.py",
+      "test": "tests/test_flirt_selective.py::TestSelectiveMatch::test_relocated_copy_is_named",
+      "find": "            m = 0xFFC003FF",
+      "replace": "            m = 0xFFFFFFFF"
+    },
+    {
+      "id": "weak_filter_off",
+      "desc": "referanssız + az içerikli fonksiyon da imzalanıyor",
+      "module": "karadul/analyzers/flirt_parser.py",
+      "test": "tests/test_flirt_selective.py::TestSignatureBuilding::test_weak_function_without_refs_not_signed",
+      "find": "    return not has_refs and arm64_content_words(body) < min_content_words",
+      "replace": "    return False"
+    },
+    {
+      "id": "content_frame_filter_off",
+      "desc": "çerçeve/yazmaç taşıma kelimeleri de içerik sayılıyor",
+      "module": "karadul/analyzers/flirt_parser.py",
+      "test": "tests/test_flirt_selective.py::TestSignatureBuilding::test_weak_function_without_refs_not_signed",
+      "find": "        if m == 0xFFFFFFFF and not _arm64_is_frame_or_move(w):",
+      "replace": "        if m == 0xFFFFFFFF:"
+    },
+    {
+      "id": "short_function_signed",
+      "desc": "ön ekten kısa fonksiyon da imzalanıyor (ön ek fonksiyon dışına taşar)",
+      "module": "karadul/analyzers/flirt_parser.py",
+      "test": "tests/test_flirt_selective.py::TestSignatureBuilding::test_short_function_not_signed",
+      "find": "    if size < SELECTIVE_PREFIX_LEN:\n        return None\n    if is_weak",
+      "replace": "    if False:\n        return None\n    if is_weak"
+    },
+    {
+      "id": "loader_consistency_off",
+      "desc": "yükleyici desen/maske tutarlılığını denetlemiyor",
+      "module": "karadul/analyzers/flirt_parser.py",
+      "test": "tests/test_flirt_selective.py::TestLoader::test_mask_not_derivable_from_pattern_dropped",
+      "find": "    if apply_mask(pattern, mask) != pattern or rule(pattern) != mask:\n        return None",
+      "replace": "    if False:\n        return None"
+    },
+    {
+      "id": "loader_v2_routing_off",
+      "desc": "v2 girdisi eski (yalnız ön ek) imza olarak yükleniyor",
+      "module": "karadul/analyzers/flirt_parser.py",
+      "test": "tests/test_flirt_selective.py::TestLoader::test_v2_roundtrip",
+      "find": "            if SELECTIVE_ENTRY_KEY in entry:",
+      "replace": "            if False:"
+    },
+    {
+      "id": "builder_single_pass",
+      "desc": "üretici zayıf callee elenince referansları yeniden hesaplamıyor (tek geçiş)",
+      "module": "scripts/flirt/build_selective_signatures.py",
+      "test": "tests/test_flirt_selective.py::TestSignatureBuilding::test_builder_fixpoint_drops_refs_to_weak_callee",
+      "find": "        if not weak:\n            return signed, refs_of, weak_total",
+      "replace": "        if True:\n            for a in weak:\n                del signed[a]\n            return signed, refs_of, len(weak)"
+    }
+  ]
+}

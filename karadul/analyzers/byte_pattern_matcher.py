@@ -34,6 +34,18 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
+from karadul.analyzers.flirt_parser import (
+    MASK_RULE_ARM64,
+    MASK_RULES,
+    SELECTIVE_MAX_CRC_LEN,
+    SELECTIVE_PREFIX_LEN,
+    SELECTIVE_SIG_FORMAT,
+    apply_mask,
+    arm64_branch_target,
+    is_selective_signature,
+    masked_crc16,
+)
+
 # B21: cikplak subprocess.run yerine safe_run (LD_PRELOAD/DYLD koruma).
 # _otool_path adapter cagrisinda absolute yol olarak verilmistir; burada
 # env temizligi yeterli.
@@ -62,6 +74,14 @@ class ByteMatchResult:
     # dosya dışına düştüğü için taranan fonksiyon 0'dı ve bunu gösteren sayaç yoktu.
     signatures_considered: int = 0  # Uzunluk filtresinden geçip eşleştirmeye giren imza
     functions_scanned: int = 0      # Baytı okunup imzalarla karşılaştırılan FUN_xxx
+    # v2 seçici imza sayaçları (2026-09-25). Yalnız v2 imzası varken dolar;
+    # eski (v1) imzalarla hepsi 0 kalır.
+    selective_prefix_hits: int = 0      # maskeli ön eki en az bir v2 imzasına uyan fonksiyon
+    selective_rejected_size: int = 0    # ön ek uydu, uzunluk tutmadı (imza sayısı)
+    selective_rejected_crc: int = 0     # ön ek + uzunluk uydu, CRC16 tutmadı (imza sayısı)
+    selective_rejected_ref: int = 0     # bayt doğrulaması geçti, çağrı referansı tutmadı (imza sayısı)
+    selective_ambiguous: int = 0        # doğrulanmış adaylar birden fazla isme gidiyor -> isimsiz
+    selective_duplicate_name: int = 0   # aynı isim birden fazla fonksiyona çıktı -> hiçbiri isimlenmez
     matches: dict[str, dict[str, Any]] = field(default_factory=dict)
     # matches: {original_name: {matched_name, library, confidence, category, purpose}}
     errors: list[str] = field(default_factory=list)
@@ -151,6 +171,10 @@ class BytePatternMatcher:
     ) -> ByteMatchResult:
         """FUN_xxx fonksiyonlarinin byte'larini bilinen signature'larla karsilastir.
 
+        v2 (seçici) imzalar ayrı yoldan doğrulanır (bkz. ``_match_selective``);
+        listede v2 imzası yoksa davranış eskisiyle birebir aynıdır (liste
+        değiştirilmeden eski gövdeye verilir).
+
         Args:
             binary_path: Analiz edilen binary dosya yolu.
             functions_json: Ghidra functions.json dosya yolu.
@@ -162,6 +186,31 @@ class BytePatternMatcher:
         Returns:
             ByteMatchResult -- eslestirme sonuclari.
         """
+        selective, legacy = _split_selective(known_signatures)
+        if not selective:
+            return self._match_unknown_functions_legacy(
+                binary_path, functions_json, known_signatures, load_base=load_base,
+            )
+        sel_result, decided = self._match_selective(
+            binary_path, functions_json, selective, load_base=load_base,
+        )
+        leg_result = (
+            self._match_unknown_functions_legacy(
+                binary_path, functions_json, legacy, load_base=load_base,
+            )
+            if legacy else None
+        )
+        return _merge_selective(sel_result, decided, leg_result)
+
+    def _match_unknown_functions_legacy(
+        self,
+        binary_path: str | Path,
+        functions_json: str | Path,
+        known_signatures: list[Any],
+        *,
+        load_base: Optional[int] = None,
+    ) -> ByteMatchResult:
+        """Eski (v1) linear eşleştirme gövdesi -- 2026-09-25 öncesiyle aynı."""
         start = time.monotonic()
         result = ByteMatchResult()
         binary_path = Path(binary_path)
@@ -378,6 +427,9 @@ class BytePatternMatcher:
         ile kontrol edilir -- buyuk imza setlerinde (>50 imza) belirgin
         hizlanma saglar.
 
+        v2 (seçici) imzalar ``match_unknown_functions``'daki gibi ayrı yoldan
+        doğrulanır; listede v2 imzası yoksa davranış eskisiyle birebir aynıdır.
+
         Args:
             binary_path: Analiz edilen binary dosyasi.
             functions_json: Ghidra functions.json yolu.
@@ -388,6 +440,34 @@ class BytePatternMatcher:
         Returns:
             ByteMatchResult -- linear path ile ayni format.
         """
+        selective, legacy = _split_selective(known_signatures)
+        if not selective:
+            return self._match_unknown_functions_trie_legacy(
+                binary_path, functions_json, known_signatures,
+                verify_crc=verify_crc, load_base=load_base,
+            )
+        sel_result, decided = self._match_selective(
+            binary_path, functions_json, selective, load_base=load_base,
+        )
+        leg_result = (
+            self._match_unknown_functions_trie_legacy(
+                binary_path, functions_json, legacy,
+                verify_crc=verify_crc, load_base=load_base,
+            )
+            if legacy else None
+        )
+        return _merge_selective(sel_result, decided, leg_result)
+
+    def _match_unknown_functions_trie_legacy(
+        self,
+        binary_path: str | Path,
+        functions_json: str | Path,
+        known_signatures: list[Any],
+        *,
+        verify_crc: bool = True,
+        load_base: Optional[int] = None,
+    ) -> ByteMatchResult:
+        """Eski (v1) trie eşleştirme gövdesi -- 2026-09-25 öncesiyle aynı."""
         from karadul.analyzers.flirt_parser import (
             FlirtTrieMatcher,
             FlirtPattern,
@@ -640,6 +720,271 @@ class BytePatternMatcher:
             result.duration_seconds,
         )
         return result
+
+    # ------------------------------------------------------------------
+    # v2 seçici imza yolu (2026-09-25)
+    # ------------------------------------------------------------------
+
+    def _match_selective(
+        self,
+        binary_path: str | Path,
+        functions_json: str | Path,
+        signatures: list[Any],
+        *,
+        load_base: Optional[int] = None,
+    ) -> tuple[ByteMatchResult, set[str]]:
+        """v2 imzalarla eşleştirme: maskeli ön ek + uzunluk + maskeli CRC16.
+
+        Karar kuralları (IDA FLIRT mantığı):
+          1. Hedef fonksiyonun ilk 32 baytı imzanın kuralıyla maskelenir ve
+             imza deseniyle birebir aynı olmalıdır (sözlük araması).
+          2. Hedef uzunluğu biliniyorsa (functions.json ``size`` > 0) imzanın
+             ``size``'ına EŞİT olmalıdır. (Homebrew arm64 Mach-O ``tree``'de
+             Ghidra boyutu 118/118 fonksiyonda LC_FUNCTION_STARTS aralığına eşit.)
+          3. Ön ekten sonraki ``crc16_length`` bayt hedefte aynı kuralla
+             maskelenir; CRC16'sı imzanınkiyle aynı olmalıdır.
+          3b. Çağrı referansları (``references``: ofset, isim): hedefte o
+             ofsetteki B/BL, 1-3'ten o isimle geçmiş (ya da Ghidra'nın o isimle
+             bildiği) bir fonksiyona gitmelidir. Maskelenen çağrı hedefi
+             yüzünden bayt olarak ikiz olan sarmalayıcıları ayırır.
+          4. Doğrulanan adaylar birden fazla isme gidiyorsa isim VERİLMEZ.
+          5. Aynı isim birden fazla fonksiyona çıkarsa ya da Ghidra o ismi
+             (veya takma adını) zaten başka bir fonksiyona vermişse FUN_'a
+             verilmez (bir kütüphane fonksiyonu binary'de bir kez bulunur;
+             ölçüldü: stripped libzstd'de statik ``ZSTD_optLdm_skipRawSeqStoreBytes``
+             ihraç edilen ``ZSTD_ldm_skipRawSeqStoreBytes`` ile maskeli olarak aynı).
+
+        Returns:
+            (sonuç, karar verilen FUN_ adları). Karar = en az bir aday ön ek +
+            uzunluk + CRC'den geçti (sonra isimlendi, referansı tutmadı,
+            belirsiz kaldı ya da isim tekrarı çıktı). Bu fonksiyonlarda eski
+            (v1) imzaların sonucu kullanılmaz.
+        """
+        start = time.monotonic()
+        result = ByteMatchResult()
+        decided: set[str] = set()
+        binary_path = Path(binary_path)
+        functions_json = Path(functions_json)
+
+        if not binary_path.exists():
+            result.errors.append(f"Binary bulunamadi: {binary_path}")
+            return result, decided
+        if not functions_json.exists():
+            result.errors.append(f"Functions JSON bulunamadi: {functions_json}")
+            return result, decided
+
+        # maske kuralı -> {maskeli ön ek: [imza, ...]}
+        index: dict[str, dict[bytes, list[Any]]] = {}
+        for sig in signatures:
+            rule_name = getattr(sig, "mask_rule", "")
+            pattern = getattr(sig, "byte_pattern", b"")
+            if (
+                getattr(sig, "sig_format", 1) != SELECTIVE_SIG_FORMAT
+                or rule_name not in MASK_RULES
+                or len(pattern) != SELECTIVE_PREFIX_LEN
+            ):
+                continue
+            index.setdefault(rule_name, {}).setdefault(bytes(pattern), []).append(sig)
+            result.signatures_considered += 1
+        if not result.signatures_considered:
+            result.duration_seconds = time.monotonic() - start
+            return result, decided
+
+        text_vmaddr, text_fileoff, fat_offset = self._get_text_segment_info(
+            binary_path, load_base=load_base,
+        )
+        if text_vmaddr is None or text_fileoff is None:
+            result.errors.append("__TEXT segment bilgisi alinamadi")
+            result.duration_seconds = time.monotonic() - start
+            return result, decided
+        try:
+            file_size = binary_path.stat().st_size
+        except OSError as e:
+            result.errors.append(f"Binary stat hatasi: {e}")
+            result.duration_seconds = time.monotonic() - start
+            return result, decided
+        func_list = self._load_functions(functions_json)
+        if func_list is None:
+            result.errors.append("Functions JSON okunamadi veya parse edilemedi")
+            result.duration_seconds = time.monotonic() - start
+            return result, decided
+        result.total_functions = len(func_list)
+        unknown_funcs = [
+            f for f in func_list if _GHIDRA_AUTO_NAME_RE.match(f.get("name", ""))
+        ]
+        result.total_unknown = len(unknown_funcs)
+
+        # Ghidra'nın isim verdiği (FUN_ olmayan) fonksiyonlar: referans hedefi
+        # olarak isimleriyle kabul edilir (sembollü binary, import thunk'ı) ve
+        # isimleri "alınmış" sayılır (bkz. 5. kural).
+        named_at: dict[int, str] = {}
+        taken: set[str] = set()
+        for fe in func_list:
+            fname = fe.get("name", "")
+            if not fname or _GHIDRA_AUTO_NAME_RE.match(fname):
+                continue
+            taken.add(fname.lstrip("_"))
+            faddr = _parse_address(fe.get("address", fe.get("entry_point", "")))
+            if faddr is not None:
+                named_at.setdefault(faddr, fname)
+
+        read_size = SELECTIVE_PREFIX_LEN + SELECTIVE_MAX_CRC_LEN
+        # adres -> (FUN_ adı, dosya ofseti, ön ek + uzunluk + CRC'den geçen imzalar)
+        verified_at: dict[int, tuple[str, int, list[Any]]] = {}
+        chosen: dict[str, Any] = {}
+        try:
+            with open(binary_path, "rb") as bf:
+                # 1. geçiş: ön ek + uzunluk + CRC16
+                for fe in unknown_funcs:
+                    name = fe.get("name", "")
+                    addr = _parse_address(fe.get("address", fe.get("entry_point", "")))
+                    if addr is None:
+                        continue
+                    file_offset = addr - text_vmaddr + text_fileoff + fat_offset
+                    if file_offset < 0 or file_offset >= file_size:
+                        continue
+                    data = self._read_bytes(bf, file_offset, read_size)
+                    if len(data) < SELECTIVE_PREFIX_LEN:
+                        continue
+                    result.functions_scanned += 1
+                    try:
+                        func_size = int(fe.get("size", 0) or 0)
+                    except (TypeError, ValueError):
+                        func_size = 0
+
+                    verified = self._verify_selective(data, func_size, index, result)
+                    if verified:
+                        verified_at[addr] = (name, file_offset, verified)
+
+                # 2. geçiş: referanslar -- ofsetteki B/BL, 1. geçişte o isimle
+                # doğrulanmış (ya da Ghidra'nın o isimle bildiği) fonksiyona gitmeli.
+                names_at = {a: {s.name for s in v[2]} for a, v in verified_at.items()}
+                for addr, (name, file_offset, verified) in verified_at.items():
+                    decided.add(name)
+                    kept = [
+                        s for s in verified
+                        if self._refs_ok(bf, file_offset, addr, s, names_at, named_at, result)
+                    ]
+                    if not kept:
+                        continue
+                    if len({s.name for s in kept}) > 1:
+                        result.selective_ambiguous += 1
+                        continue
+                    chosen[name] = max(kept, key=lambda s: getattr(s, "confidence", 0.0))
+        except OSError as e:
+            result.errors.append(f"Binary okuma hatasi: {e}")
+            result.duration_seconds = time.monotonic() - start
+            return result, decided
+
+        # Bir kütüphane fonksiyonu binary'de bir kez bulunur: isim iki FUN_'a
+        # çıktıysa ya da Ghidra onu zaten başka bir fonksiyona vermişse (ör.
+        # ihraç edilen kopyası isimli, statik ikizi FUN_) hiçbir FUN_'a verilmez.
+        name_count = Counter(sig.name for sig in chosen.values())
+        for func_name, sig in chosen.items():
+            names = [sig.name, *(n for _off, n in getattr(sig, "public_symbols", []))]
+            if name_count[sig.name] > 1 or any(n.lstrip("_") in taken for n in names):
+                result.selective_duplicate_name += 1
+                continue
+            conf = min(0.95, float(getattr(sig, "confidence", 0.0)))
+            if conf < self._min_confidence:
+                continue
+            result.matches[func_name] = {
+                "matched_name": sig.name,
+                "library": getattr(sig, "library", "unknown"),
+                "confidence": round(conf, 4),
+                "category": getattr(sig, "category", "") or getattr(sig, "library", ""),
+                "purpose": getattr(sig, "purpose", ""),
+                "match_method": "byte_pattern_selective",
+                "aliases": [n for _off, n in getattr(sig, "public_symbols", [])],
+            }
+        result.total_matched = len(result.matches)
+        result.duration_seconds = time.monotonic() - start
+        logger.info(
+            "BytePatternMatcher.selective: %d/%d FUN_xxx tanindi -- on ek isabeti %d, "
+            "red (uzunluk %d, crc %d, referans %d), belirsiz %d, isim tekrari %d -- %.2fs",
+            result.total_matched, result.total_unknown, result.selective_prefix_hits,
+            result.selective_rejected_size, result.selective_rejected_crc,
+            result.selective_rejected_ref, result.selective_ambiguous,
+            result.selective_duplicate_name, result.duration_seconds,
+        )
+        return result, decided
+
+    def _refs_ok(
+        self,
+        bf: Any,
+        file_offset: int,
+        addr: int,
+        sig: Any,
+        names_at: dict[int, set[str]],
+        named_at: dict[int, str],
+        result: ByteMatchResult,
+    ) -> bool:
+        """İmzanın her referansı hedefte doğrulanıyor mu? (referans yoksa True)
+
+        Referans (ofset, isim): hedef fonksiyonun o ofsetindeki kelime B/BL
+        olmalı ve dallandığı adres ya 1. geçişte ``isim`` adayıyla doğrulanmış
+        bir fonksiyon ya da Ghidra'nın ``isim`` dediği fonksiyon olmalı.
+        """
+        refs = getattr(sig, "references", None) or ()
+        if not refs:
+            return True
+        if getattr(sig, "mask_rule", "") != MASK_RULE_ARM64:
+            result.selective_rejected_ref += 1  # referans çözücü yalnız arm64
+            return False
+        for off, callee in refs:
+            raw = self._read_bytes(bf, file_offset + off, 4)
+            target = (
+                arm64_branch_target(int.from_bytes(raw, "little"), addr + off)
+                if len(raw) == 4 else None
+            )
+            if target is not None and callee in names_at.get(target, ()):
+                continue
+            ghidra_name = named_at.get(target) if target is not None else None
+            if ghidra_name is not None and ghidra_name.lstrip("_") == callee.lstrip("_"):
+                continue
+            result.selective_rejected_ref += 1
+            return False
+        return True
+
+    @staticmethod
+    def _verify_selective(
+        data: bytes,
+        func_size: int,
+        index: dict[str, dict[bytes, list[Any]]],
+        result: ByteMatchResult,
+    ) -> list[Any]:
+        """Fonksiyon baytları (başlangıçtan itibaren) için tüm doğrulamaları geçen v2 imzaları.
+
+        ``func_size`` <= 0 ise (hedef uzunluğu bilinmiyor) uzunluk kontrolü
+        atlanır; ön ek + CRC yine uygulanır. Red sayaçları ``result``'a yazılır.
+        """
+        verified: list[Any] = []
+        head = data[:SELECTIVE_PREFIX_LEN]
+        hit = False
+        for rule_name, by_prefix in index.items():
+            rule = MASK_RULES[rule_name]
+            candidates = by_prefix.get(apply_mask(head, rule(head)))
+            if not candidates:
+                continue
+            hit = True
+            full_mask = rule(data)
+            for sig in candidates:
+                sig_size = getattr(sig, "size", 0)
+                if sig_size > 0 and func_size > 0 and func_size != sig_size:
+                    result.selective_rejected_size += 1
+                    continue
+                crc_len = getattr(sig, "crc16_length", 0)
+                if crc_len > 0:
+                    end = SELECTIVE_PREFIX_LEN + crc_len
+                    if len(data) < end or masked_crc16(
+                        data[SELECTIVE_PREFIX_LEN:end], full_mask[SELECTIVE_PREFIX_LEN:end],
+                    ) != getattr(sig, "crc16", -1):
+                        result.selective_rejected_crc += 1
+                        continue
+                verified.append(sig)
+        if hit:
+            result.selective_prefix_hits += 1
+        return verified
 
     def extract_function_bytes(
         self,
@@ -1317,3 +1662,61 @@ class BytePatternMatcher:
                 if clean_name:
                     naming_map[original_name] = clean_name
         return naming_map
+
+
+# ----------------------------------------------------------------------
+# v2 seçici imza: eski/yeni imzaları ayırma ve sonuç birleştirme
+# ----------------------------------------------------------------------
+
+def _split_selective(signatures: list[Any]) -> tuple[list[Any], list[Any]]:
+    """(v2 imzalar, eski imzalar). v2 yoksa ikinci eleman GİRDİ LİSTESİNİN KENDİSİDİR.
+
+    Böylece eski DB ile eski gövdeye birebir aynı liste gider (davranış aynı).
+    """
+    selective = [s for s in signatures if is_selective_signature(s)]
+    if not selective:
+        return [], signatures
+    return selective, [s for s in signatures if not is_selective_signature(s)]
+
+
+def _merge_selective(
+    sel: ByteMatchResult,
+    decided: set[str],
+    leg: Optional[ByteMatchResult],
+) -> ByteMatchResult:
+    """v2 sonucunu eski imza sonucuyla birleştir.
+
+    v2'nin karar verdiği fonksiyonlarda (isim, belirsiz, isim tekrarı) eski
+    imzaların önerisi ATILIR: v2 "belirsiz" diyorsa gevşek bir ön ek eşleşmesi
+    o kararı ezmemeli. Diğer fonksiyonlarda eski sonuç aynen kalır.
+    """
+    if leg is None:
+        return sel
+    out = ByteMatchResult(
+        total_functions=max(sel.total_functions, leg.total_functions),
+        total_unknown=max(sel.total_unknown, leg.total_unknown),
+        signatures_considered=sel.signatures_considered + leg.signatures_considered,
+        functions_scanned=max(sel.functions_scanned, leg.functions_scanned),
+        selective_prefix_hits=sel.selective_prefix_hits,
+        selective_rejected_size=sel.selective_rejected_size,
+        selective_rejected_crc=sel.selective_rejected_crc,
+        selective_rejected_ref=sel.selective_rejected_ref,
+        selective_ambiguous=sel.selective_ambiguous,
+        selective_duplicate_name=sel.selective_duplicate_name,
+    )
+    out.matches = {k: v for k, v in leg.matches.items() if k not in decided}
+    out.matches.update(sel.matches)
+    out.total_matched = len(out.matches)
+    out.errors = list(dict.fromkeys(sel.errors + leg.errors))
+    out.duration_seconds = sel.duration_seconds + leg.duration_seconds
+    return out
+
+
+def _parse_address(value: Any) -> Optional[int]:
+    """functions.json adresi (hex string ya da int) -> int; geçersizse None."""
+    if value is None or value == "":
+        return None
+    try:
+        return int(value, 16) if isinstance(value, str) else int(value)
+    except (ValueError, TypeError):
+        return None

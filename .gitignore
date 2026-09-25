@@ -21,6 +21,7 @@ sigs/
 # Buyuk signature dosyalari (repo'ya eklenmemeli)
 signatures_homebrew.json
 signatures_homebrew_bytes.json
+signatures_homebrew_bytes_v2.json
 sigs_macos_system.json
 
 # Ghidra proje dosyalari

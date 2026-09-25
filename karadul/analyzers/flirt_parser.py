@@ -9,6 +9,10 @@ Desteklenen formatlar:
 1. .pat (text pattern) -- IDA FLIRT pattern dosyalari (genisletilmis,
    public + reference + tail bytes destekli)
 2. .json (Karadul native) -- build-signature-db.py ciktisi
+   v2 girdisi (``"sig_format": 2``, 2026-09-25): seçici imza -- maskeli ön ek +
+   fonksiyon uzunluğu + maskeli CRC16 + çağrı referansları. Üretici
+   ``scripts/flirt/build_selective_signatures.py``; doğrulama
+   ``selective_signature_from_entry``, eşleştirme ``BytePatternMatcher``.
 3. nm export -- Dogrudan binary'den symbol extraction
 
 v1.14 D1 genislemesi:
@@ -48,11 +52,14 @@ Kullanim (v1.14 yeni IR + trie matcher):
 
 from __future__ import annotations
 
+import binascii
 import json
 import logging
 import re
 import shutil
+import struct
 import subprocess
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
@@ -147,6 +154,16 @@ class FLIRTSignature:
     references: list[tuple[int, str]] = field(default_factory=list)
     tail_bytes: bytes = b""
     tail_mask: bytes = b""
+    # v2 seçici imza (2026-09-25). Varsayılanlar eski (v1) davranışı korur:
+    # sig_format=1 olan imza eşleştiricide eskisi gibi işlenir.
+    #   sig_format=2 -> ``size`` fonksiyon uzunluğu, ``crc16`` CRC DEĞERİ,
+    #   ``crc16_length`` ön ekten sonra CRC'ye giren bayt sayısı, ``mask_rule``
+    #   hedef baytlardan maskeyi yeniden türeten kural ("arm64").
+    #   (.pat yolunda ``crc16`` alanı tarihsel olarak CRC uzunluğunu taşır;
+    #   o yol değişmedi.)
+    sig_format: int = 1
+    crc16_length: int = 0
+    mask_rule: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         """JSON serialization icin dict'e cevir."""
@@ -673,12 +690,23 @@ class FLIRTParser:
             return []
 
         signatures: list[FLIRTSignature] = []
+        rejected_selective = 0
         for entry in entries:
             if not isinstance(entry, dict):
                 continue
 
             name = entry.get("name", "")
             if not name:
+                continue
+
+            # v2 seçici imza: alanları doğrulanamazsa imza ATILIR; asla eski
+            # (yalnız ön ek) imzaya düşürülmez -- düşerse seçicilik sessizce kaybolur.
+            if SELECTIVE_ENTRY_KEY in entry:
+                sel = selective_signature_from_entry(entry)
+                if sel is None:
+                    rejected_selective += 1
+                else:
+                    signatures.append(sel)
                 continue
 
             lib = entry.get("library", "unknown")
@@ -708,6 +736,11 @@ class FLIRTParser:
                 purpose=purpose,
             ))
 
+        if rejected_selective:
+            logger.warning(
+                "JSON signatures: %s -> %d secici (v2) imza gecersiz, atlandi",
+                json_path.name, rejected_selective,
+            )
         logger.info("JSON signatures yuklendi: %s -> %d imza", json_path.name, len(signatures))
         return signatures
 
@@ -1406,3 +1439,288 @@ class FlirtTrieMatcher:
     def pattern_count(self) -> int:
         """Trie'ye yuklenmis toplam pattern sayisi."""
         return len(self._patterns)
+
+
+# ===========================================================================
+# v2 seçici imza (2026-09-25) -- IDA FLIRT mantığı: ön ek + uzunluk + CRC16
+# ===========================================================================
+#
+# Ölçülen sorun: v1 imzası yalnız fonksiyonun ilk 32 baytı (maskesiz). Tipik
+# arm64 prologları bu 32 baytı paylaşıyor; imzaların kaynağında olmayan
+# redis-server'da 162 isim / 0 doğru, jxl_from_tree'de 104 / 0.
+# v2 imzası IDA FLIRT'ün ayırt edicilerini ekler:
+#   * ön ek (32 bayt) -- bağlama adresine bağlı bitler maskeli,
+#   * fonksiyon uzunluğu (``size``),
+#   * ön ekten sonraki en fazla 255 baytın maskeli CRC16'sı.
+# CRC bölgesinin maskesi imzada saklanmaz: hedef baytlardan AYNI kuralla
+# yeniden türetilir. Kural yalnız maskelenmeyen (opcode/yazmaç) bitlere
+# baktığı için aynı kod farklı adrese bağlansa da aynı maskeyi verir.
+
+SELECTIVE_ENTRY_KEY = "sig_format"   # JSON'da v2 girdisini işaretleyen alan
+SELECTIVE_SIG_FORMAT = 2
+SELECTIVE_PREFIX_LEN = 32
+SELECTIVE_MAX_CRC_LEN = 255          # IDA FLIRT: CRC uzunluğu tek bayt
+MASK_RULE_ARM64 = "arm64"
+# Çağrı referansı olmayan imza için en az "içerik kelimesi" (bkz.
+# ``arm64_content_words``). Ölçüm (2026-09-25, ayar kümesi: imzaların kaynağında
+# olmayan 17 Homebrew binary'si): referans kontrolünden sonra kalan 12 yanlış
+# eşleşmenin hepsi referanssız ve içeriği 1-4 kelime; doğru eşleşmelerin
+# (libzstd, statik bağlı zstd, cmake, elan-init; 743) 10'u <= 4. Bir kelime pay.
+SELECTIVE_MIN_CONTENT_WORDS = 6
+
+
+def arm64_reloc_mask(code: bytes) -> bytes:
+    """arm64 kodunda bağlama/yükleme adresine bağlı bitleri sıfırlayan maske.
+
+    Kelime (4 bayt, little-endian) bazında; 1 bit = karşılaştırılır:
+      ADR / ADRP                   -> immlo + immhi maskeli (op + Rd kalır)
+      B / BL (imm26)               -> hedef maskeli (yalnız opcode kalır)
+      LDR / PRFM (literal, imm19)  -> ofset maskeli
+      ADD (imm, 64-bit) ve LDR/STR (işaretsiz imm): taban yazmacı daha önce
+          bir ADRP'nin hedefiyse imm12 maskeli (``:lo12:`` sayfa içi ofset)
+    Diğer kelimeler maskelenmez (B.cond/CBZ/TBZ fonksiyon içidir, konumdan
+    bağımsızdır). Kural yalnız maskelenmeyen bitlere baktığından
+    ``arm64_reloc_mask(apply_mask(code, m)) == m`` (m = bu fonksiyonun çıktısı).
+    Sonda 4'e tamamlanmayan baytlar maskelenmez.
+
+    Doğrulama (2026-09-25): libzstd.1.5.7.dylib ile aynı sürümün libzstd.a'sını
+    statik bağlayan program arasında 850 ortak fonksiyonun 610'u bayt-bayt aynı,
+    240'ı yalnız bu kuralın maskelediği bitlerde farklı; kalan fark 0.
+    """
+    n_words = len(code) // 4
+    masks: list[int] = []
+    page_regs = 0  # ADRP hedefi olmuş yazmaçlar (bit i = x_i)
+    for (w,) in struct.iter_unpack("<I", code[: 4 * n_words]):
+        if (w & 0x1F000000) == 0x10000000:            # ADR / ADRP
+            m = 0x9F00001F
+            if w & 0x80000000:                         # ADRP: Rd sayfa adresi
+                page_regs |= 1 << (w & 0x1F)
+        elif (w & 0x7C000000) == 0x14000000:          # B / BL
+            m = 0xFC000000
+        elif (w & 0x3B000000) == 0x18000000:          # LDR / PRFM (literal)
+            m = 0xFF00001F
+        elif (
+            (w & 0xFFC00000) == 0x91000000             # ADD Xd, Xn, #imm12
+            or (w & 0x3B000000) == 0x39000000          # LDR/STR [Xn, #uimm12]
+        ) and (page_regs >> ((w >> 5) & 0x1F)) & 1:
+            m = 0xFFC003FF
+        else:
+            m = 0xFFFFFFFF
+        masks.append(m)
+    return struct.pack(f"<{n_words}I", *masks) + b"\xff" * (len(code) - 4 * n_words)
+
+
+MASK_RULES: dict[str, Callable[[bytes], bytes]] = {
+    MASK_RULE_ARM64: arm64_reloc_mask,
+}
+
+
+def _arm64_is_frame_or_move(word: int) -> bool:
+    """Her fonksiyonda geçen kalıp kelimeler: bilgi taşımaz.
+
+    SP tabanlı çift yükle/sakla (STP/LDP, GPR ve SIMD), SP'den/SP'ye ADD/SUB
+    (``mov x29, sp``, ``sub sp, sp, #n``), yazmaçtan yazmaca MOV, RET, NOP.
+    """
+    if (word & 0x3A000000) == 0x28000000 and ((word >> 5) & 0x1F) == 31:
+        return True                                     # STP/LDP ... [sp]
+    if (word & 0xBF000000) == 0x91000000 and ((word >> 5) & 0x1F) == 31 and (word & 0x1F) in (29, 31):
+        return True                                     # ADD/SUB x29|sp, sp, #imm
+    if (word & 0x7FE0FFE0) == 0x2A0003E0:
+        return True                                     # MOV Rd, Rm (ORR Rd, ZR, Rm)
+    return word in (0xD65F03C0, 0xD503201F)             # RET, NOP
+
+
+def arm64_content_words(code: bytes) -> int:
+    """İmzanın bilgi miktarı: maskelenmeyen ve kalıp olmayan kelime sayısı.
+
+    Relokasyonlu kelimeler (``arm64_reloc_mask``) ve ``_arm64_is_frame_or_move``
+    kalıpları sayılmaz. Örnek: yalnız çerçeve kurup bir fonksiyonu çağırıp
+    dönen sarmalayıcıların içeriği 0-1; bir enum->metin tablo fonksiyonu 3.
+    """
+    n_words = len(code) // 4
+    mask = arm64_reloc_mask(code[: 4 * n_words])
+    count = 0
+    for (w,), (m,) in zip(
+        struct.iter_unpack("<I", code[: 4 * n_words]), struct.iter_unpack("<I", mask),
+    ):
+        if m == 0xFFFFFFFF and not _arm64_is_frame_or_move(w):
+            count += 1
+    return count
+
+
+def arm64_branch_target(word: int, pc: int) -> Optional[int]:
+    """B/BL kelimesinin hedef adresi (``pc`` = kelimenin adresi); B/BL değilse None."""
+    if (word & 0x7C000000) != 0x14000000:
+        return None
+    imm = word & 0x03FFFFFF
+    if imm & 0x02000000:
+        imm -= 1 << 26
+    return pc + imm * 4
+
+
+def arm64_call_refs(body: bytes, address: int) -> list[tuple[int, int]]:
+    """Fonksiyon DIŞINA giden B/BL'ler: [(fonksiyon içi ofset, hedef adres), ...].
+
+    ``body`` fonksiyonun tam gövdesi, ``address`` başlangıç adresi. Fonksiyon
+    içine dallanan B'ler (döngü/atlama) referans değildir.
+    """
+    refs: list[tuple[int, int]] = []
+    end = address + len(body)
+    for i, (w,) in enumerate(struct.iter_unpack("<I", body[: len(body) // 4 * 4])):
+        target = arm64_branch_target(w, address + 4 * i)
+        if target is not None and not address <= target < end:
+            refs.append((4 * i, target))
+    return refs
+
+
+def apply_mask(data: bytes, mask: bytes) -> bytes:
+    """``data & mask`` (bayt bayt). Uzunluklar farklıysa kısa olana göre kesilir."""
+    n = min(len(data), len(mask))
+    if n == 0:
+        return b""
+    return (
+        int.from_bytes(data[:n], "little") & int.from_bytes(mask[:n], "little")
+    ).to_bytes(n, "little")
+
+
+def masked_crc16(data: bytes, mask: bytes) -> int:
+    """Maskeli bayt bloğunun IDA FLIRT CRC16'sı (CCITT-False, poly 0x1021, init 0xFFFF).
+
+    ``binascii.crc_hqx(x, 0xFFFF)`` ``compute_flirt_crc16(x)`` ile aynı sonucu
+    verir (C hızında; test ile kilitli).
+    """
+    return binascii.crc_hqx(apply_mask(data, mask), 0xFFFF)
+
+
+def is_selective_signature(sig: Any) -> bool:
+    """İmza v2 (seçici) biçiminde mi? Eski imzalarda alan yok -> False."""
+    return getattr(sig, "sig_format", 1) >= SELECTIVE_SIG_FORMAT
+
+
+def is_weak_selective(
+    body: bytes,
+    has_refs: bool,
+    min_content_words: int = SELECTIVE_MIN_CONTENT_WORDS,
+) -> bool:
+    """Çağrı referansı yok ve içerik az -> bayt imzası fonksiyonu tanımlayamaz.
+
+    Böyle fonksiyonlar (sarmalayıcı, yıkıcı thunk'ı, erişimci, enum->metin
+    tablosu) başka programlarda maskeli olarak birebir tekrar ediyor; ölçümde
+    imzaların kaynağında olmayan binary'lerdeki kalan yanlışların tamamı bu sınıf.
+    """
+    return not has_refs and arm64_content_words(body) < min_content_words
+
+
+def build_selective_entry(
+    name: str,
+    library: str,
+    body: bytes,
+    *,
+    category: str = "",
+    purpose: str = "",
+    confidence: float = 0.9,
+    aliases: Iterable[str] = (),
+    refs: Iterable[tuple[int, str]] = (),
+    mask_rule: str = MASK_RULE_ARM64,
+    min_content_words: int = SELECTIVE_MIN_CONTENT_WORDS,
+) -> Optional[dict[str, Any]]:
+    """Fonksiyonun TAM gövdesinden (``body`` = [başlangıç, bitiş)) v2 JSON girdisi.
+
+    None döner:
+      * gövde ön ekten kısaysa -- ön ek fonksiyonun dışına taşar (v1'in hatası:
+        12 baytlık bir fonksiyonun 32 baytlık imzası sonraki fonksiyonu da içeriyordu);
+      * imza zayıfsa (``is_weak_selective``: referans yok + içerik az).
+    ``refs``: (ofset, isim) -- ofsetteki B/BL'nin hedefi, DB'de imzası olan bu
+    isimli fonksiyon olmalı (IDA ``^OFFSET name``). Maskelenen çağrı hedefi
+    yüzünden bayt olarak ikiz olan küçük sarmalayıcıları ayırır.
+    Üretici (scripts/flirt) ve testler bu tek fonksiyonu kullanır; eşleştirici
+    aynı ``MASK_RULES`` + ``masked_crc16`` ile doğrular.
+    """
+    rule = MASK_RULES[mask_rule]
+    size = len(body)
+    refs = list(refs)
+    if size < SELECTIVE_PREFIX_LEN:
+        return None
+    if is_weak_selective(body, bool(refs), min_content_words):
+        return None
+    crc_len = min(size - SELECTIVE_PREFIX_LEN, SELECTIVE_MAX_CRC_LEN)
+    region = body[: SELECTIVE_PREFIX_LEN + crc_len]
+    mask = rule(region)
+    return {
+        "name": name,
+        "library": library,
+        "category": category or library,
+        "purpose": purpose,
+        "confidence": confidence,
+        SELECTIVE_ENTRY_KEY: SELECTIVE_SIG_FORMAT,
+        "mask_rule": mask_rule,
+        "size": size,
+        "byte_pattern": apply_mask(
+            region[:SELECTIVE_PREFIX_LEN], mask[:SELECTIVE_PREFIX_LEN],
+        ).hex(),
+        "mask": mask[:SELECTIVE_PREFIX_LEN].hex(),
+        "crc_len": crc_len,
+        "crc16": masked_crc16(
+            region[SELECTIVE_PREFIX_LEN:], mask[SELECTIVE_PREFIX_LEN:],
+        ),
+        "aliases": sorted(set(aliases) - {name}),
+        "refs": [[int(off), str(ref)] for off, ref in sorted(set(refs))],
+    }
+
+
+def selective_signature_from_entry(entry: dict[str, Any]) -> Optional[FLIRTSignature]:
+    """v2 JSON girdisini doğrulayıp ``FLIRTSignature``'a çevir; geçersizse None.
+
+    Geçersiz sayılanlar: bilinmeyen biçim/maske kuralı, 32 bayt olmayan ön ek,
+    desen-maske uzunluk farkı, fonksiyonun dışına taşan CRC bölgesi, 255'ten
+    uzun CRC, maskesi kuraldan yeniden türetilemeyen ya da maskelenmiş bitleri
+    sıfır olmayan desen (bozuk/elle düzenlenmiş DB).
+    """
+    try:
+        if int(entry.get(SELECTIVE_ENTRY_KEY, 0)) != SELECTIVE_SIG_FORMAT:
+            return None
+        name = str(entry["name"])
+        pattern = bytes.fromhex(entry["byte_pattern"])
+        mask = bytes.fromhex(entry["mask"])
+        size = int(entry["size"])
+        crc_len = int(entry["crc_len"])
+        crc = int(entry["crc16"])
+        rule_name = str(entry["mask_rule"])
+        confidence = float(entry.get("confidence", 0.9))
+        aliases = [str(a) for a in (entry.get("aliases") or []) if a]
+        refs = [(int(off), str(ref)) for off, ref in (entry.get("refs") or [])]
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return None
+    # Referans ofseti fonksiyon içinde, 4 hizalı bir kelime ve isim boş olmamalı.
+    if any(off < 0 or off % 4 or off + 4 > size or not ref for off, ref in refs):
+        return None
+    rule = MASK_RULES.get(rule_name)
+    if (
+        not name
+        or rule is None
+        or len(pattern) != SELECTIVE_PREFIX_LEN
+        or len(mask) != len(pattern)
+        or not 0 <= crc_len <= SELECTIVE_MAX_CRC_LEN
+        or size < len(pattern) + crc_len
+        or not 0 <= crc <= 0xFFFF
+    ):
+        return None
+    if apply_mask(pattern, mask) != pattern or rule(pattern) != mask:
+        return None
+    lib = entry.get("library", "unknown")
+    return FLIRTSignature(
+        name=name,
+        library=lib,
+        byte_pattern=pattern,
+        mask=mask,
+        size=size,
+        crc16=crc,
+        confidence=confidence,
+        category=entry.get("category", lib),
+        purpose=entry.get("purpose", ""),
+        public_symbols=[(0, a) for a in aliases],
+        references=refs,
+        sig_format=SELECTIVE_SIG_FORMAT,
+        crc16_length=crc_len,
+        mask_rule=rule_name,
+    )

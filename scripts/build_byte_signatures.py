@@ -11,6 +11,12 @@ Cikti:
     signatures_homebrew_bytes.json  -- byte pattern'li signature DB
 
 Bu dosya daha sonra BytePatternMatcher tarafindan FUN_xxx eslestirmesinde kullanilir.
+
+UYARI (2026-09-25): bu v1 DB SECICI DEGIL (yalniz ilk 32 bayt, maskesiz, uzunluk 0);
+imzalarin kaynaginda olmayan binary'lerde isimlerin tamami yanlis cikti (redis-server
+162/0). Secici v2 DB: scripts/flirt/build_selective_signatures.py (kutuphane listesini
+buradan alir) -> signatures_homebrew_bytes_v2.json; olcum:
+scripts/measurement/flirt_precision.py.
 """
 
 from __future__ import annotations
