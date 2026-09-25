@@ -1,0 +1,1813 @@
+{
+ "schema": "karadul-function-f1-report/1",
+ "label": "baseline-2304560",
+ "scored_at": "2026-09-25T14:27:52+03:00",
+ "karadul": {
+  "commit": "2304560784fd705234364534e396502774fc89d1",
+  "tree": "~/karadul_olcum/baseline-2304560",
+  "dirty_files": [],
+  "version": "1.20.0-pre"
+ },
+ "environment": {
+  "ghidra": {
+   "install_dir": "~/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC",
+   "version": "12.1.2",
+   "release": "PUBLIC"
+  },
+  "python": "3.12.7",
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "jobs": 2,
+  "timeout_s": 900
+ },
+ "harness": {
+  "scripts/measurement/function_f1.py": "edc782981f98abc6",
+  "tests/benchmark/metrics.py": "114456c29af17fb9",
+  "tests/benchmark/benchmark_runner.py": "b406273170ce84cc"
+ },
+ "corpus_manifest": "scripts/measurement/corpus.json",
+ "definitions": {
+  "gt": "debug ELF .symtab STT_FUNC (T+t), yürütülebilir bölüm, adres başına bir kayıt; CRT/linker fonksiyonları puanlanmaz",
+  "detected_code": "Ghidra fonksiyonlarından yürütülebilir ve PLT olmayan bölüme düşenler (PLT + EXTERNAL thunk hariç)",
+  "coverage": "|GT ∩ detected_code| / |detected_code|",
+  "prediction": "puanlanan GT fonksiyonuna karadul naming_map'inin verdiği jenerik olmayan isim (FUN_/sub_/adres etiketli isimler jeneriktir)",
+  "strict": "TP = normalize(tahmin)==normalize(GT) [metrics.AccuracyCalculator._normalize, FIX-4 sufiks]; FP = yanlış tahmin; FN = puanlanan GT - TP; P=TP/(TP+FP), R=TP/|puanlanan GT|",
+  "lenient": "aynı popülasyon, TP = AccuracyCalculator.compare_name exact/semantic/partial",
+  "legacy": "eski benchmark_runner Mode 3 tanımı (yalnız tarihsel köprü)",
+  "micro": "korpus içi TP/FP/GT toplanıp hesaplanır",
+  "macro": "binary F1'lerinin aritmetik ortalaması"
+ },
+ "reproduce": [
+  "python scripts/measurement/measure.py prepare",
+  "python scripts/measurement/measure.py analyze --tree ~/karadul_olcum/baseline-2304560 --label baseline-2304560 --jobs 2",
+  "python scripts/measurement/measure.py score --label baseline-2304560 --out <json>"
+ ],
+ "aggregate": {
+  "debian-9.4-3": {
+   "binaries": 5,
+   "strict": {
+    "micro": {
+     "tp": 35,
+     "fp": 51,
+     "fn": 449,
+     "precision": 0.407,
+     "recall": 0.0723,
+     "f1": 0.1228
+    },
+    "macro": {
+     "precision": 0.4104,
+     "recall": 0.0729,
+     "f1": 0.1236
+    }
+   },
+   "lenient": {
+    "micro": {
+     "tp": 44,
+     "fp": 42,
+     "fn": 440,
+     "precision": 0.5116,
+     "recall": 0.0909,
+     "f1": 0.1544
+    },
+    "macro": {
+     "precision": 0.5192,
+     "recall": 0.0918,
+     "f1": 0.1559
+    }
+   },
+   "coverage": {
+    "gt_in_detected": 535,
+    "detected_code": 540,
+    "ratio": 0.9907
+   },
+   "gt_scored": 484
+  },
+  "ubuntu-9.4-3ubuntu6": {
+   "binaries": 5,
+   "strict": {
+    "micro": {
+     "tp": 41,
+     "fp": 16,
+     "fn": 73,
+     "precision": 0.7193,
+     "recall": 0.3596,
+     "f1": 0.4795
+    },
+    "macro": {
+     "precision": 0.7317,
+     "recall": 0.3702,
+     "f1": 0.4903
+    }
+   },
+   "lenient": {
+    "micro": {
+     "tp": 43,
+     "fp": 14,
+     "fn": 71,
+     "precision": 0.7544,
+     "recall": 0.3772,
+     "f1": 0.5029
+    },
+    "macro": {
+     "precision": 0.774,
+     "recall": 0.3918,
+     "f1": 0.5188
+    }
+   },
+   "coverage": {
+    "gt_in_detected": 165,
+    "detected_code": 170,
+    "ratio": 0.9706
+   },
+   "gt_scored": 114
+  }
+ },
+ "warnings": [],
+ "per_binary": [
+  {
+   "corpus": "ubuntu-9.4-3ubuntu6",
+   "binary": "cat",
+   "run": {
+    "status": "ok",
+    "exit_code": 0,
+    "duration_s": 34.9,
+    "command": "/opt/anaconda3/bin/python3 -m karadul analyze ~/karadul_olcum/corpus/ubuntu-9.4-3ubuntu6/bin/cat --skip-dynamic --output-dir ~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/cat/ws --output ~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/cat/out",
+    "cwd": "~/karadul_olcum/baseline-2304560",
+    "started_at": "2026-09-25T14:02:07+03:00",
+    "target_sha256": "26b759d8838d10b0ad5bd0142f004f8b1ae94b32664834f9fa0cc4f21bc815b7"
+   },
+   "schema": "karadul-function-f1/1",
+   "build_id": "3592cdb04252a792fddabf525ccd415ab19e4848",
+   "image_offset": "0x100000",
+   "image_offset_source": "ghidra_entry",
+   "detected": {
+    "ghidra_total": 147,
+    "code": 26,
+    "plt": 60,
+    "external": 61,
+    "thunk_flagged": 121
+   },
+   "gt": {
+    "functions": 25,
+    "scored": 16,
+    "crt": 9,
+    "exported": 0
+   },
+   "coverage": {
+    "gt_in_detected": 25,
+    "detected_code": 26,
+    "ratio": 0.9615,
+    "gt_detection_ratio": 1.0
+   },
+   "strict": {
+    "tp": 8,
+    "fp": 1,
+    "fn": 8,
+    "precision": 0.8889,
+    "recall": 0.5,
+    "f1": 0.64
+   },
+   "lenient": {
+    "tp": 9,
+    "fp": 0,
+    "fn": 7,
+    "precision": 1.0,
+    "recall": 0.5625,
+    "f1": 0.72
+   },
+   "breakdown": {
+    "tp": 8,
+    "wrong": 1,
+    "unnamed": 7,
+    "undetected": 0
+   },
+   "outside_gt": {
+    "detected_code_not_in_gt": 1,
+    "named_non_generic": 0
+   },
+   "crt_named": 4,
+   "exported_named": 0,
+   "ghidra_named_scored": [],
+   "ghidra_thunk_named": [],
+   "per_function": [
+    {"addr": "0x1b00", "gt": "main", "ghidra": "FUN_00101b00", "predicted": "main", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2de0", "gt": "next_line_num", "ghidra": "FUN_00102de0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2e84", "gt": "write_error", "ghidra": "FUN_00102e84", "predicted": "write", "status": "wrong", "lenient_tp": true},
+    {"addr": "0x2ee0", "gt": "proper_name_lite", "ghidra": "FUN_00102ee0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2ff0", "gt": "gettext_quote.part.0", "ghidra": "FUN_00102ff0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3144", "gt": "safe_read", "ghidra": "FUN_00103144", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x31c4", "gt": "xalloc_die", "ghidra": "FUN_001031c4", "predicted": "xalloc_die", "status": "tp", "lenient_tp": true},
+    {"addr": "0x3210", "gt": "rpl_fclose", "ghidra": "FUN_00103210", "predicted": "rpl_fclose", "status": "tp", "lenient_tp": true},
+    {"addr": "0x3320", "gt": "close_stream", "ghidra": "FUN_00103320", "predicted": "close_stream", "status": "tp", "lenient_tp": true},
+    {"addr": "0x3390", "gt": "version_etc.constprop.0", "ghidra": "FUN_00103390", "predicted": "version_etc", "status": "tp", "lenient_tp": true},
+    {"addr": "0x3810", "gt": "hard_locale.constprop.0", "ghidra": "FUN_00103810", "predicted": "hard_locale", "status": "tp", "lenient_tp": true},
+    {"addr": "0x38f0", "gt": "quotearg_buffer_restyled.constprop.0", "ghidra": "FUN_001038f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4d70", "gt": "quotearg_n_options.constprop.0", "ghidra": "FUN_00104d70", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4f70", "gt": "close_stdout", "ghidra": "FUN_00104f70", "predicted": "close_stdout", "status": "tp", "lenient_tp": true},
+    {"addr": "0x5014", "gt": "quotearg_n_style_colon.constprop.0", "ghidra": "FUN_00105014", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x50b4", "gt": "full_write.constprop.0", "ghidra": "FUN_001050b4", "predicted": "full_write", "status": "tp", "lenient_tp": true}
+   ],
+   "checks": {
+    "ambiguous_workspace": false,
+    "analyzed_sha256_matches_gt": true,
+    "ghidra_named_scored": 0
+   },
+   "inputs": {
+    "gt": "~/karadul_olcum/corpus/ubuntu-9.4-3ubuntu6/gt/cat.gt.json",
+    "ghidra_functions": "~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/cat/ws/workspaces/cat/20260925_110208/static/ghidra_functions.json",
+    "naming_map": "~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/cat/ws/workspaces/cat/20260925_110208/reconstructed/src/naming_map.json",
+    "naming_map_sha256": "1361518e30ab9f8d719c557b6e65ae0fb0c9cacb7da9e0e199e9cbaf5e65098b"
+   },
+   "legacy": {
+    "definition": "legacy benchmark_runner (TP=exact+semantic+partial, FN=missing only)",
+    "gt_symbols": 17,
+    "precision": 1.0,
+    "recall": 0.45,
+    "f1": 0.6207,
+    "exact": 8,
+    "semantic": 1,
+    "partial": 0,
+    "wrong": 0,
+    "missing": 11,
+    "unverified": 2
+   },
+   "karadul_report": {
+    "ghidra_function_count": 147,
+    "statistics_functions": 147,
+    "cross_binary_candidates": null,
+    "stages_ok": {
+     "identify": true,
+     "static": true,
+     "deobfuscate": true,
+     "reconstruct": true,
+     "report": true
+    }
+   },
+   "cfg_cache_before": {
+    "26b759d8838d10b0.json": "4d8112b27c6c695d",
+    "6d1b9657727dce81.json": "ff3978558064233a"
+   }
+  },
+  {
+   "corpus": "ubuntu-9.4-3ubuntu6",
+   "binary": "cut",
+   "run": {
+    "status": "ok",
+    "exit_code": 0,
+    "duration_s": 31.4,
+    "command": "/opt/anaconda3/bin/python3 -m karadul analyze ~/karadul_olcum/corpus/ubuntu-9.4-3ubuntu6/bin/cut --skip-dynamic --output-dir ~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/cut/ws --output ~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/cut/out",
+    "cwd": "~/karadul_olcum/baseline-2304560",
+    "started_at": "2026-09-25T14:06:54+03:00",
+    "target_sha256": "fbe5ce94e6b3ec092182e30954c1f25e3c938d8aaf50537d30d9ef41fd47b8ad"
+   },
+   "schema": "karadul-function-f1/1",
+   "build_id": "d988087f0c273aafb9d1267319dd345540611a03",
+   "image_offset": "0x100000",
+   "image_offset_source": "ghidra_entry",
+   "detected": {
+    "ghidra_total": 157,
+    "code": 32,
+    "plt": 62,
+    "external": 63,
+    "thunk_flagged": 125
+   },
+   "gt": {
+    "functions": 31,
+    "scored": 22,
+    "crt": 9,
+    "exported": 0
+   },
+   "coverage": {
+    "gt_in_detected": 31,
+    "detected_code": 32,
+    "ratio": 0.9688,
+    "gt_detection_ratio": 1.0
+   },
+   "strict": {
+    "tp": 8,
+    "fp": 2,
+    "fn": 14,
+    "precision": 0.8,
+    "recall": 0.3636,
+    "f1": 0.5
+   },
+   "lenient": {
+    "tp": 9,
+    "fp": 1,
+    "fn": 13,
+    "precision": 0.9,
+    "recall": 0.4091,
+    "f1": 0.5625
+   },
+   "breakdown": {
+    "tp": 8,
+    "wrong": 2,
+    "unnamed": 12,
+    "undetected": 0
+   },
+   "outside_gt": {
+    "detected_code_not_in_gt": 1,
+    "named_non_generic": 0
+   },
+   "crt_named": 4,
+   "exported_named": 0,
+   "ghidra_named_scored": [],
+   "ghidra_thunk_named": [],
+   "per_function": [
+    {"addr": "0x1bc0", "gt": "main", "ghidra": "FUN_00101bc0", "predicted": "main", "status": "tp", "lenient_tp": true},
+    {"addr": "0x26e0", "gt": "compare_ranges", "ghidra": "FUN_001026e0", "predicted": "compare_func", "status": "wrong", "lenient_tp": true},
+    {"addr": "0x2710", "gt": "write_error", "ghidra": "FUN_00102710", "predicted": "version_output_version", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x2770", "gt": "usage", "ghidra": "FUN_00102770", "predicted": "usage", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2b40", "gt": "cut_bytes", "ghidra": "FUN_00102b40", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2d00", "gt": "hard_locale.constprop.0", "ghidra": "FUN_00102d00", "predicted": "hard_locale", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2de0", "gt": "xalloc_die", "ghidra": "FUN_00102de0", "predicted": "xalloc_die", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2e30", "gt": "add_range_pair", "ghidra": "FUN_00102e30", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2f00", "gt": "proper_name_lite", "ghidra": "FUN_00102f00", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3010", "gt": "gettext_quote.part.0", "ghidra": "FUN_00103010", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3164", "gt": "version_etc.constprop.0", "ghidra": "FUN_00103164", "predicted": "version_etc", "status": "tp", "lenient_tp": true},
+    {"addr": "0x35f0", "gt": "rpl_fopen.constprop.0", "ghidra": "FUN_001035f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3610", "gt": "quotearg_buffer_restyled.constprop.0", "ghidra": "FUN_00103610", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4a90", "gt": "quotearg_n_options.constprop.0", "ghidra": "FUN_00104a90", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4c94", "gt": "quotearg_n_style_colon.constprop.0", "ghidra": "FUN_00104c94", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4d34", "gt": "rpl_fseeko.constprop.0", "ghidra": "FUN_00104d34", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4dc4", "gt": "rpl_fclose", "ghidra": "FUN_00104dc4", "predicted": "rpl_fclose", "status": "tp", "lenient_tp": true},
+    {"addr": "0x4e84", "gt": "cut_file", "ghidra": "FUN_00104e84", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4fb0", "gt": "close_stream", "ghidra": "FUN_00104fb0", "predicted": "close_stream", "status": "tp", "lenient_tp": true},
+    {"addr": "0x5020", "gt": "close_stdout", "ghidra": "FUN_00105020", "predicted": "close_stdout", "status": "tp", "lenient_tp": true},
+    {"addr": "0x50c4", "gt": "freadseek", "ghidra": "FUN_001050c4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x52e0", "gt": "cut_fields", "ghidra": "FUN_001052e0", "predicted": null, "status": "unnamed", "lenient_tp": false}
+   ],
+   "checks": {
+    "ambiguous_workspace": false,
+    "analyzed_sha256_matches_gt": true,
+    "ghidra_named_scored": 0
+   },
+   "inputs": {
+    "gt": "~/karadul_olcum/corpus/ubuntu-9.4-3ubuntu6/gt/cut.gt.json",
+    "ghidra_functions": "~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/cut/ws/workspaces/cut/20260925_110655/static/ghidra_functions.json",
+    "naming_map": "~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/cut/ws/workspaces/cut/20260925_110655/reconstructed/src/naming_map.json",
+    "naming_map_sha256": "0707b430754b7b97bd4bd681f8556c2123f2c5e26f371ea4a8275a4c8f39046d"
+   },
+   "legacy": {
+    "definition": "legacy benchmark_runner (TP=exact+semantic+partial, FN=missing only)",
+    "gt_symbols": 23,
+    "precision": 0.9,
+    "recall": 0.36,
+    "f1": 0.5143,
+    "exact": 8,
+    "semantic": 0,
+    "partial": 1,
+    "wrong": 1,
+    "missing": 16,
+    "unverified": 2
+   },
+   "karadul_report": {
+    "ghidra_function_count": 157,
+    "statistics_functions": 157,
+    "cross_binary_candidates": null,
+    "stages_ok": {
+     "identify": true,
+     "static": true,
+     "deobfuscate": true,
+     "reconstruct": true,
+     "report": true
+    }
+   },
+   "cfg_cache_before": {
+    "26b759d8838d10b0.json": "4d8112b27c6c695d",
+    "6d1b9657727dce81.json": "ff3978558064233a"
+   }
+  },
+  {
+   "corpus": "ubuntu-9.4-3ubuntu6",
+   "binary": "wc",
+   "run": {
+    "status": "ok",
+    "exit_code": 0,
+    "duration_s": 33.4,
+    "command": "/opt/anaconda3/bin/python3 -m karadul analyze ~/karadul_olcum/corpus/ubuntu-9.4-3ubuntu6/bin/wc --skip-dynamic --output-dir ~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/wc/ws --output ~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/wc/out",
+    "cwd": "~/karadul_olcum/baseline-2304560",
+    "started_at": "2026-09-25T14:06:54+03:00",
+    "target_sha256": "31914bd93c191e2d6d81d3aac3ce4cfec21d83679708babc760c42d20e7c4f94"
+   },
+   "schema": "karadul-function-f1/1",
+   "build_id": "d5dba8d80dacb1df3192827f5b7bd2c1637251da",
+   "image_offset": "0x100000",
+   "image_offset_source": "ghidra_entry",
+   "detected": {
+    "ghidra_total": 181,
+    "code": 42,
+    "plt": 69,
+    "external": 70,
+    "thunk_flagged": 139
+   },
+   "gt": {
+    "functions": 41,
+    "scored": 26,
+    "crt": 9,
+    "exported": 6
+   },
+   "coverage": {
+    "gt_in_detected": 41,
+    "detected_code": 42,
+    "ratio": 0.9762,
+    "gt_detection_ratio": 1.0
+   },
+   "strict": {
+    "tp": 7,
+    "fp": 4,
+    "fn": 19,
+    "precision": 0.6364,
+    "recall": 0.2692,
+    "f1": 0.3784
+   },
+   "lenient": {
+    "tp": 7,
+    "fp": 4,
+    "fn": 19,
+    "precision": 0.6364,
+    "recall": 0.2692,
+    "f1": 0.3784
+   },
+   "breakdown": {
+    "tp": 7,
+    "wrong": 4,
+    "unnamed": 15,
+    "undetected": 0
+   },
+   "outside_gt": {
+    "detected_code_not_in_gt": 1,
+    "named_non_generic": 0
+   },
+   "crt_named": 4,
+   "exported_named": 0,
+   "ghidra_named_scored": [],
+   "ghidra_thunk_named": [],
+   "per_function": [
+    {"addr": "0x1fc0", "gt": "main", "ghidra": "FUN_00101fc0", "predicted": "main", "status": "tp", "lenient_tp": true},
+    {"addr": "0x3260", "gt": "argv_iter_init_argv", "ghidra": "FUN_00103260", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x32a0", "gt": "argv_iter_init_stream", "ghidra": "FUN_001032a0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x32e0", "gt": "argv_iter_free", "ghidra": "FUN_001032e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3320", "gt": "_obstack_begin_worker", "ghidra": "FUN_00103320", "predicted": "memory_exhausted_2", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x3410", "gt": "print_and_abort", "ghidra": "FUN_00103410", "predicted": "memory_exhausted", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x3470", "gt": "usage", "ghidra": "FUN_00103470", "predicted": "usage", "status": "tp", "lenient_tp": true},
+    {"addr": "0x37e0", "gt": "__argmatch_die", "ghidra": "FUN_001037e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x37f4", "gt": "rpl_fclose", "ghidra": "FUN_001037f4", "predicted": "rpl_fclose", "status": "tp", "lenient_tp": true},
+    {"addr": "0x3904", "gt": "physmem_available", "ghidra": "FUN_00103904", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3a50", "gt": "proper_name_lite", "ghidra": "FUN_00103a50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3b60", "gt": "gettext_quote.part.0", "ghidra": "FUN_00103b60", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3cb4", "gt": "hard_locale.constprop.0", "ghidra": "FUN_00103cb4", "predicted": "hard_locale", "status": "tp", "lenient_tp": true},
+    {"addr": "0x3d90", "gt": "safe_read", "ghidra": "FUN_00103d90", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3e10", "gt": "xalloc_die", "ghidra": "FUN_00103e10", "predicted": "memory_exhausted_3", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x3e60", "gt": "close_stream", "ghidra": "FUN_00103e60", "predicted": "close_stream", "status": "tp", "lenient_tp": true},
+    {"addr": "0x3ed0", "gt": "version_etc.constprop.0", "ghidra": "FUN_00103ed0", "predicted": "version_etc", "status": "tp", "lenient_tp": true},
+    {"addr": "0x4350", "gt": "rpl_fopen.constprop.0", "ghidra": "FUN_00104350", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4370", "gt": "quotearg_buffer_restyled.constprop.0", "ghidra": "FUN_00104370", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x57f0", "gt": "quotearg_n_options.constprop.0", "ghidra": "FUN_001057f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5a10", "gt": "close_stdout", "ghidra": "FUN_00105a10", "predicted": "close_stdout", "status": "tp", "lenient_tp": true},
+    {"addr": "0x5ab0", "gt": "quotearg_style.constprop.0", "ghidra": "FUN_00105ab0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5b50", "gt": "quotearg_n_style_colon.constprop.0", "ghidra": "FUN_00105b50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5c00", "gt": "write_counts", "ghidra": "FUN_00105c00", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5ed0", "gt": "wc", "ghidra": "FUN_00105ed0", "predicted": "standard_input", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x6b10", "gt": "save_token", "ghidra": "FUN_00106b10", "predicted": null, "status": "unnamed", "lenient_tp": false}
+   ],
+   "checks": {
+    "ambiguous_workspace": false,
+    "analyzed_sha256_matches_gt": true,
+    "ghidra_named_scored": 0
+   },
+   "inputs": {
+    "gt": "~/karadul_olcum/corpus/ubuntu-9.4-3ubuntu6/gt/wc.gt.json",
+    "ghidra_functions": "~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/wc/ws/workspaces/wc/20260925_110655/static/ghidra_functions.json",
+    "naming_map": "~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/wc/ws/workspaces/wc/20260925_110655/reconstructed/src/naming_map.json",
+    "naming_map_sha256": "9d62e609ef63bed8f25ee1d5c0c7128ee8c8bfd97abf5ad2cf8f8102a5c9683b"
+   },
+   "legacy": {
+    "definition": "legacy benchmark_runner (TP=exact+semantic+partial, FN=missing only)",
+    "gt_symbols": 32,
+    "precision": 0.6364,
+    "recall": 0.2188,
+    "f1": 0.3256,
+    "exact": 7,
+    "semantic": 0,
+    "partial": 0,
+    "wrong": 4,
+    "missing": 25,
+    "unverified": 2
+   },
+   "karadul_report": {
+    "ghidra_function_count": 181,
+    "statistics_functions": 181,
+    "cross_binary_candidates": null,
+    "stages_ok": {
+     "identify": true,
+     "static": true,
+     "deobfuscate": true,
+     "reconstruct": true,
+     "report": true
+    }
+   },
+   "cfg_cache_before": {
+    "26b759d8838d10b0.json": "4d8112b27c6c695d",
+    "6d1b9657727dce81.json": "ff3978558064233a"
+   }
+  },
+  {
+   "corpus": "ubuntu-9.4-3ubuntu6",
+   "binary": "expr",
+   "run": {
+    "status": "ok",
+    "exit_code": 0,
+    "duration_s": 41.4,
+    "command": "/opt/anaconda3/bin/python3 -m karadul analyze ~/karadul_olcum/corpus/ubuntu-9.4-3ubuntu6/bin/expr --skip-dynamic --output-dir ~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/expr/ws --output ~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/expr/out",
+    "cwd": "~/karadul_olcum/baseline-2304560",
+    "started_at": "2026-09-25T14:07:26+03:00",
+    "target_sha256": "58e31084826705d13758bd5f19bd23a626e58fac8274d00bb23d2b756c210795"
+   },
+   "schema": "karadul-function-f1/1",
+   "build_id": "ba914ad66f607689892bdefb3929988058243e93",
+   "image_offset": "0x100000",
+   "image_offset_source": "ghidra_entry",
+   "detected": {
+    "ghidra_total": 165,
+    "code": 37,
+    "plt": 61,
+    "external": 67,
+    "thunk_flagged": 128
+   },
+   "gt": {
+    "functions": 36,
+    "scored": 27,
+    "crt": 9,
+    "exported": 0
+   },
+   "coverage": {
+    "gt_in_detected": 36,
+    "detected_code": 37,
+    "ratio": 0.973,
+    "gt_detection_ratio": 1.0
+   },
+   "strict": {
+    "tp": 10,
+    "fp": 5,
+    "fn": 17,
+    "precision": 0.6667,
+    "recall": 0.3704,
+    "f1": 0.4762
+   },
+   "lenient": {
+    "tp": 10,
+    "fp": 5,
+    "fn": 17,
+    "precision": 0.6667,
+    "recall": 0.3704,
+    "f1": 0.4762
+   },
+   "breakdown": {
+    "tp": 10,
+    "wrong": 5,
+    "unnamed": 12,
+    "undetected": 0
+   },
+   "outside_gt": {
+    "detected_code_not_in_gt": 1,
+    "named_non_generic": 0
+   },
+   "crt_named": 4,
+   "exported_named": 0,
+   "ghidra_named_scored": [],
+   "ghidra_thunk_named": [],
+   "per_function": [
+    {"addr": "0x1c40", "gt": "main", "ghidra": "FUN_00101c40", "predicted": "main", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2060", "gt": "usage", "ghidra": "FUN_00102060", "predicted": "usage", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2424", "gt": "null", "ghidra": "FUN_00102424", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x24a0", "gt": "hard_locale.constprop.0", "ghidra": "FUN_001024a0", "predicted": "hard_locale", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2580", "gt": "toarith", "ghidra": "FUN_00102580", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2630", "gt": "rpl_mbrtoc32", "ghidra": "FUN_00102630", "predicted": "rpl_mbrtoc32", "status": "tp", "lenient_tp": true},
+    {"addr": "0x26c0", "gt": "mbslen.part.0", "ghidra": "FUN_001026c0", "predicted": "mbslen", "status": "tp", "lenient_tp": true},
+    {"addr": "0x28a4", "gt": "proper_name_lite", "ghidra": "FUN_001028a4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x29b0", "gt": "gettext_quote.part.0", "ghidra": "FUN_001029b0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2b04", "gt": "xalloc_die", "ghidra": "FUN_00102b04", "predicted": "xalloc_die", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2b50", "gt": "str_value", "ghidra": "FUN_00102b50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2bd0", "gt": "docolon", "ghidra": "FUN_00102bd0", "predicted": "regular_expression_matcher", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x3074", "gt": "rpl_fclose", "ghidra": "FUN_00103074", "predicted": "rpl_fclose", "status": "tp", "lenient_tp": true},
+    {"addr": "0x3184", "gt": "close_stream", "ghidra": "FUN_00103184", "predicted": "close_stream", "status": "tp", "lenient_tp": true},
+    {"addr": "0x31f0", "gt": "parse_long_options.constprop.0", "ghidra": "FUN_001031f0", "predicted": "parse_long_options", "status": "tp", "lenient_tp": true},
+    {"addr": "0x36e0", "gt": "quotearg_buffer_restyled.constprop.0", "ghidra": "FUN_001036e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4ab0", "gt": "quotearg_n_options.constprop.0", "ghidra": "FUN_00104ab0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4cb4", "gt": "quotearg_n_style.constprop.0", "ghidra": "FUN_00104cb4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4d50", "gt": "require_more_args.part.0", "ghidra": "FUN_00104d50", "predicted": "syntax_missing_argument", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x4df0", "gt": "eval6", "ghidra": "FUN_00104df0", "predicted": "syntax_expecting_instead", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x5d20", "gt": "eval5", "ghidra": "FUN_00105d20", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5e40", "gt": "eval4", "ghidra": "FUN_00105e40", "predicted": "non_integer_argument", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x6000", "gt": "eval3", "ghidra": "FUN_00106000", "predicted": "non_integer_argument_2", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x6160", "gt": "eval2", "ghidra": "FUN_00106160", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6770", "gt": "eval1", "ghidra": "FUN_00106770", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x68d0", "gt": "eval", "ghidra": "FUN_001068d0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6a54", "gt": "close_stdout", "ghidra": "FUN_00106a54", "predicted": "close_stdout", "status": "tp", "lenient_tp": true}
+   ],
+   "checks": {
+    "ambiguous_workspace": false,
+    "analyzed_sha256_matches_gt": true,
+    "ghidra_named_scored": 0
+   },
+   "inputs": {
+    "gt": "~/karadul_olcum/corpus/ubuntu-9.4-3ubuntu6/gt/expr.gt.json",
+    "ghidra_functions": "~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/expr/ws/workspaces/expr/20260925_110727/static/ghidra_functions.json",
+    "naming_map": "~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/expr/ws/workspaces/expr/20260925_110727/reconstructed/src/naming_map.json",
+    "naming_map_sha256": "a19fd16763c64ea779bca7864b850a22947666f11afc5a4f94d820495ca68626"
+   },
+   "legacy": {
+    "definition": "legacy benchmark_runner (TP=exact+semantic+partial, FN=missing only)",
+    "gt_symbols": 28,
+    "precision": 0.6667,
+    "recall": 0.3846,
+    "f1": 0.4878,
+    "exact": 10,
+    "semantic": 0,
+    "partial": 0,
+    "wrong": 5,
+    "missing": 16,
+    "unverified": 2
+   },
+   "karadul_report": {
+    "ghidra_function_count": 165,
+    "statistics_functions": 165,
+    "cross_binary_candidates": null,
+    "stages_ok": {
+     "identify": true,
+     "static": true,
+     "deobfuscate": true,
+     "reconstruct": true,
+     "report": true
+    }
+   },
+   "cfg_cache_before": {
+    "26b759d8838d10b0.json": "4d8112b27c6c695d",
+    "6d1b9657727dce81.json": "ff3978558064233a"
+   }
+  },
+  {
+   "corpus": "ubuntu-9.4-3ubuntu6",
+   "binary": "comm",
+   "run": {
+    "status": "ok",
+    "exit_code": 0,
+    "duration_s": 38.0,
+    "command": "/opt/anaconda3/bin/python3 -m karadul analyze ~/karadul_olcum/corpus/ubuntu-9.4-3ubuntu6/bin/comm --skip-dynamic --output-dir ~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/comm/ws --output ~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/comm/out",
+    "cwd": "~/karadul_olcum/baseline-2304560",
+    "started_at": "2026-09-25T14:07:28+03:00",
+    "target_sha256": "be157842ee112705b22fff823f5781c82b5ec9a9319c6bbb3c24731366f7ee34"
+   },
+   "schema": "karadul-function-f1/1",
+   "build_id": "3d598b11740f6ddb1ca162f2690476484e5f36a2",
+   "image_offset": "0x100000",
+   "image_offset_source": "ghidra_entry",
+   "detected": {
+    "ghidra_total": 144,
+    "code": 33,
+    "plt": 55,
+    "external": 56,
+    "thunk_flagged": 111
+   },
+   "gt": {
+    "functions": 32,
+    "scored": 23,
+    "crt": 9,
+    "exported": 0
+   },
+   "coverage": {
+    "gt_in_detected": 32,
+    "detected_code": 33,
+    "ratio": 0.9697,
+    "gt_detection_ratio": 1.0
+   },
+   "strict": {
+    "tp": 8,
+    "fp": 4,
+    "fn": 15,
+    "precision": 0.6667,
+    "recall": 0.3478,
+    "f1": 0.4571
+   },
+   "lenient": {
+    "tp": 8,
+    "fp": 4,
+    "fn": 15,
+    "precision": 0.6667,
+    "recall": 0.3478,
+    "f1": 0.4571
+   },
+   "breakdown": {
+    "tp": 8,
+    "wrong": 4,
+    "unnamed": 11,
+    "undetected": 0
+   },
+   "outside_gt": {
+    "detected_code_not_in_gt": 1,
+    "named_non_generic": 0
+   },
+   "crt_named": 4,
+   "exported_named": 0,
+   "ghidra_named_scored": [],
+   "ghidra_thunk_named": [],
+   "per_function": [
+    {"addr": "0x1980", "gt": "main", "ghidra": "FUN_00101980", "predicted": "main", "status": "tp", "lenient_tp": true},
+    {"addr": "0x1ee0", "gt": "umaxtostr", "ghidra": "FUN_00101ee0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x1f34", "gt": "usage", "ghidra": "FUN_00101f34", "predicted": "usage", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2310", "gt": "writeline", "ghidra": "FUN_00102310", "predicted": "write", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x2490", "gt": "xalloc_die", "ghidra": "FUN_00102490", "predicted": "xalloc_die", "status": "tp", "lenient_tp": true},
+    {"addr": "0x24e0", "gt": "rpl_fclose", "ghidra": "FUN_001024e0", "predicted": "rpl_fclose", "status": "tp", "lenient_tp": true},
+    {"addr": "0x25f0", "gt": "hard_locale", "ghidra": "FUN_001025f0", "predicted": "hard_locale", "status": "tp", "lenient_tp": true},
+    {"addr": "0x26c4", "gt": "proper_name_lite", "ghidra": "FUN_001026c4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x27d0", "gt": "gettext_quote.part.0", "ghidra": "FUN_001027d0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2924", "gt": "quotearg_buffer_restyled", "ghidra": "FUN_00102924", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3e74", "gt": "xpalloc", "ghidra": "FUN_00103e74", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3f80", "gt": "readlinebuffer_delim", "ghidra": "FUN_00103f80", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x40c0", "gt": "quotearg_n_options", "ghidra": "FUN_001040c0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x42c0", "gt": "quotearg_n_style_colon.constprop.0", "ghidra": "FUN_001042c0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4370", "gt": "xmemcoll", "ghidra": "FUN_00104370", "predicted": "strings_compared_were", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x4640", "gt": "check_order.part.0", "ghidra": "FUN_00104640", "predicted": "file_sorted_order", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x4740", "gt": "close_stream", "ghidra": "FUN_00104740", "predicted": "close_stream", "status": "tp", "lenient_tp": true},
+    {"addr": "0x47b0", "gt": "close_stdout", "ghidra": "FUN_001047b0", "predicted": "close_stdout", "status": "tp", "lenient_tp": true},
+    {"addr": "0x4854", "gt": "version_etc.constprop.0", "ghidra": "FUN_00104854", "predicted": "version_etc", "status": "tp", "lenient_tp": true},
+    {"addr": "0x4ce0", "gt": "rpl_fopen.constprop.0", "ghidra": "FUN_00104ce0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4d00", "gt": "rpl_fcntl.constprop.0", "ghidra": "FUN_00104d00", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4d80", "gt": "fopen_safer.constprop.0", "ghidra": "FUN_00104d80", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4e60", "gt": "compare_files", "ghidra": "FUN_00104e60", "predicted": "input_sorted_order", "status": "wrong", "lenient_tp": false}
+   ],
+   "checks": {
+    "ambiguous_workspace": false,
+    "analyzed_sha256_matches_gt": true,
+    "ghidra_named_scored": 0
+   },
+   "inputs": {
+    "gt": "~/karadul_olcum/corpus/ubuntu-9.4-3ubuntu6/gt/comm.gt.json",
+    "ghidra_functions": "~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/comm/ws/workspaces/comm/20260925_110728/static/ghidra_functions.json",
+    "naming_map": "~/karadul_olcum/runs/baseline-2304560/ubuntu-9.4-3ubuntu6/comm/ws/workspaces/comm/20260925_110728/reconstructed/src/naming_map.json",
+    "naming_map_sha256": "c3bbcb52b9582db18cb397de92b04e8930d2d32ecc838ec4782fef0402b872d8"
+   },
+   "legacy": {
+    "definition": "legacy benchmark_runner (TP=exact+semantic+partial, FN=missing only)",
+    "gt_symbols": 24,
+    "precision": 0.6667,
+    "recall": 0.3478,
+    "f1": 0.4571,
+    "exact": 8,
+    "semantic": 0,
+    "partial": 0,
+    "wrong": 4,
+    "missing": 15,
+    "unverified": 2
+   },
+   "karadul_report": {
+    "ghidra_function_count": 144,
+    "statistics_functions": 144,
+    "cross_binary_candidates": null,
+    "stages_ok": {
+     "identify": true,
+     "static": true,
+     "deobfuscate": true,
+     "reconstruct": true,
+     "report": true
+    }
+   },
+   "cfg_cache_before": {
+    "26b759d8838d10b0.json": "4d8112b27c6c695d",
+    "6d1b9657727dce81.json": "ff3978558064233a"
+   }
+  },
+  {
+   "corpus": "debian-9.4-3",
+   "binary": "cat",
+   "run": {
+    "status": "ok",
+    "exit_code": 0,
+    "duration_s": 47.4,
+    "command": "/opt/anaconda3/bin/python3 -m karadul analyze ~/karadul_olcum/corpus/debian-9.4-3/bin/cat --skip-dynamic --output-dir ~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/cat/ws --output ~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/cat/out",
+    "cwd": "~/karadul_olcum/baseline-2304560",
+    "started_at": "2026-09-25T14:08:06+03:00",
+    "target_sha256": "33c25579bbfc9e46a339fc993b4ab5d55bebca2fb71f9d0c9fcd514b2c1f06ff"
+   },
+   "schema": "karadul-function-f1/1",
+   "build_id": "f43ed4045027eb8cbaa541f27ca243e6bb2e0371",
+   "image_offset": "0x100000",
+   "image_offset_source": "ghidra_entry",
+   "detected": {
+    "ghidra_total": 223,
+    "code": 98,
+    "plt": 62,
+    "external": 63,
+    "thunk_flagged": 126
+   },
+   "gt": {
+    "functions": 97,
+    "scored": 88,
+    "crt": 9,
+    "exported": 0
+   },
+   "coverage": {
+    "gt_in_detected": 97,
+    "detected_code": 98,
+    "ratio": 0.9898,
+    "gt_detection_ratio": 1.0
+   },
+   "strict": {
+    "tp": 7,
+    "fp": 8,
+    "fn": 81,
+    "precision": 0.4667,
+    "recall": 0.0795,
+    "f1": 0.1359
+   },
+   "lenient": {
+    "tp": 10,
+    "fp": 5,
+    "fn": 78,
+    "precision": 0.6667,
+    "recall": 0.1136,
+    "f1": 0.1942
+   },
+   "breakdown": {
+    "tp": 7,
+    "wrong": 8,
+    "unnamed": 73,
+    "undetected": 0
+   },
+   "outside_gt": {
+    "detected_code_not_in_gt": 1,
+    "named_non_generic": 0
+   },
+   "crt_named": 4,
+   "exported_named": 0,
+   "ghidra_named_scored": [],
+   "ghidra_thunk_named": [
+    "fdadvise"
+   ],
+   "per_function": [
+    {"addr": "0x1d00", "gt": "main", "ghidra": "FUN_00101d00", "predicted": "main", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2b20", "gt": "write_error", "ghidra": "FUN_00102b20", "predicted": "write", "status": "wrong", "lenient_tp": true},
+    {"addr": "0x2b80", "gt": "next_line_num", "ghidra": "FUN_00102b80", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2c10", "gt": "usage", "ghidra": "FUN_00102c10", "predicted": "usage", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2f70", "gt": "close_stdout_set_file_name", "ghidra": "FUN_00102f70", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2f80", "gt": "close_stdout_set_ignore_EPIPE", "ghidra": "FUN_00102f80", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2f90", "gt": "close_stdout", "ghidra": "FUN_00102f90", "predicted": "close_stdout", "status": "tp", "lenient_tp": true},
+    {"addr": "0x3090", "gt": "rpl_copy_file_range", "ghidra": "FUN_00103090", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x31c0", "gt": "fdadvise", "ghidra": "posix_fadvise", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x31d0", "gt": "fadvise", "ghidra": "FUN_001031d0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3210", "gt": "fpurge", "ghidra": "FUN_00103210", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3230", "gt": "full_write", "ghidra": "FUN_00103230", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x32d0", "gt": "set_program_name", "ghidra": "FUN_001032d0", "predicted": "argv_passed_through", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x33c0", "gt": "proper_name_lite", "ghidra": "FUN_001033c0", "predicted": "utf", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x3440", "gt": "gettext_quote.part.0", "ghidra": "FUN_00103440", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3590", "gt": "quotearg_buffer_restyled", "ghidra": "FUN_00103590", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4994", "gt": "quotearg_n_options", "ghidra": "FUN_00104994", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4b90", "gt": "clone_quoting_options", "ghidra": "FUN_00104b90", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4be0", "gt": "get_quoting_style", "ghidra": "FUN_00104be0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4c00", "gt": "set_quoting_style", "ghidra": "FUN_00104c00", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4c20", "gt": "set_char_quoting", "ghidra": "FUN_00104c20", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4c70", "gt": "set_quoting_flags", "ghidra": "FUN_00104c70", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4c94", "gt": "set_custom_quoting", "ghidra": "FUN_00104c94", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4ce0", "gt": "quotearg_buffer", "ghidra": "FUN_00104ce0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4d74", "gt": "quotearg_alloc_mem", "ghidra": "FUN_00104d74", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4e70", "gt": "quotearg_alloc", "ghidra": "FUN_00104e70", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4e80", "gt": "quotearg_free", "ghidra": "FUN_00104e80", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4f30", "gt": "quotearg_n", "ghidra": "FUN_00104f30", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4f50", "gt": "quotearg_n_mem", "ghidra": "FUN_00104f50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4f64", "gt": "quotearg", "ghidra": "FUN_00104f64", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4f84", "gt": "quotearg_mem", "ghidra": "FUN_00104f84", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4fa4", "gt": "quotearg_n_style", "ghidra": "FUN_00104fa4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5050", "gt": "quotearg_n_style_mem", "ghidra": "FUN_00105050", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5100", "gt": "quotearg_style", "ghidra": "FUN_00105100", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x51a4", "gt": "quotearg_style_mem", "ghidra": "FUN_001051a4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5244", "gt": "quotearg_char_mem", "ghidra": "FUN_00105244", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5300", "gt": "quotearg_char", "ghidra": "FUN_00105300", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x53b4", "gt": "quotearg_colon", "ghidra": "FUN_001053b4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5454", "gt": "quotearg_colon_mem", "ghidra": "FUN_00105454", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x54f4", "gt": "quotearg_n_style_colon", "ghidra": "FUN_001054f4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x55a4", "gt": "quotearg_n_custom", "ghidra": "FUN_001055a4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5654", "gt": "quotearg_n_custom_mem", "ghidra": "FUN_00105654", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5704", "gt": "quotearg_custom", "ghidra": "FUN_00105704", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x57b4", "gt": "quotearg_custom_mem", "ghidra": "FUN_001057b4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5870", "gt": "quote_n_mem", "ghidra": "FUN_00105870", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5884", "gt": "quote_mem", "ghidra": "FUN_00105884", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x58a4", "gt": "quote_n", "ghidra": "FUN_001058a4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x58c0", "gt": "quote", "ghidra": "FUN_001058c0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x58e0", "gt": "safe_read", "ghidra": "FUN_001058e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5960", "gt": "safe_write", "ghidra": "FUN_00105960", "predicted": "full_write", "status": "wrong", "lenient_tp": true},
+    {"addr": "0x59e0", "gt": "version_etc_arn", "ghidra": "FUN_001059e0", "predicted": "version_etc", "status": "wrong", "lenient_tp": true},
+    {"addr": "0x5d80", "gt": "version_etc_ar", "ghidra": "FUN_00105d80", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5db0", "gt": "version_etc_va", "ghidra": "FUN_00105db0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5e74", "gt": "version_etc", "ghidra": "FUN_00105e74", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5f70", "gt": "emit_bug_reporting_address", "ghidra": "FUN_00105f70", "predicted": "general_help_using", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x6020", "gt": "xalignalloc", "ghidra": "FUN_00106020", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6050", "gt": "xnrealloc", "ghidra": "FUN_00106050", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x60a0", "gt": "xmalloc", "ghidra": "FUN_001060a0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x60c4", "gt": "ximalloc", "ghidra": "FUN_001060c4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x60f0", "gt": "xcharalloc", "ghidra": "FUN_001060f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6114", "gt": "xrealloc", "ghidra": "FUN_00106114", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6154", "gt": "xirealloc", "ghidra": "FUN_00106154", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6190", "gt": "xreallocarray", "ghidra": "FUN_00106190", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x61e0", "gt": "xireallocarray", "ghidra": "FUN_001061e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6220", "gt": "xnmalloc", "ghidra": "FUN_00106220", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6250", "gt": "xinmalloc", "ghidra": "FUN_00106250", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x62a0", "gt": "x2realloc", "ghidra": "FUN_001062a0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6330", "gt": "x2nrealloc", "ghidra": "FUN_00106330", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x63e0", "gt": "xpalloc", "ghidra": "FUN_001063e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x64d0", "gt": "xzalloc", "ghidra": "FUN_001064d0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6500", "gt": "xizalloc", "ghidra": "FUN_00106500", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6530", "gt": "xcalloc", "ghidra": "FUN_00106530", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6554", "gt": "xicalloc", "ghidra": "FUN_00106554", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6580", "gt": "xmemdup", "ghidra": "FUN_00106580", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x65c0", "gt": "ximemdup", "ghidra": "FUN_001065c0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6600", "gt": "ximemdup0", "ghidra": "FUN_00106600", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6644", "gt": "xstrdup", "ghidra": "FUN_00106644", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6690", "gt": "xalloc_die", "ghidra": "FUN_00106690", "predicted": "xalloc_die", "status": "tp", "lenient_tp": true},
+    {"addr": "0x66e0", "gt": "c_strcasecmp", "ghidra": "FUN_001066e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6760", "gt": "close_stream", "ghidra": "FUN_00106760", "predicted": "close_stream", "status": "tp", "lenient_tp": true},
+    {"addr": "0x67d0", "gt": "rpl_fclose", "ghidra": "FUN_001067d0", "predicted": "rpl_fclose", "status": "tp", "lenient_tp": true},
+    {"addr": "0x6870", "gt": "rpl_fflush", "ghidra": "FUN_00106870", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x68d0", "gt": "rpl_fseeko", "ghidra": "FUN_001068d0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6960", "gt": "locale_charset", "ghidra": "FUN_00106960", "predicted": "ascii", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x69b0", "gt": "rpl_mbrtoc32", "ghidra": "FUN_001069b0", "predicted": "rpl_mbrtoc32", "status": "tp", "lenient_tp": true},
+    {"addr": "0x6a60", "gt": "hard_locale", "ghidra": "FUN_00106a60", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6b10", "gt": "setlocale_null_r", "ghidra": "FUN_00106b10", "predicted": "hard_locale", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x6bc0", "gt": "setlocale_null", "ghidra": "FUN_00106bc0", "predicted": null, "status": "unnamed", "lenient_tp": false}
+   ],
+   "checks": {
+    "ambiguous_workspace": false,
+    "analyzed_sha256_matches_gt": true,
+    "ghidra_named_scored": 0
+   },
+   "inputs": {
+    "gt": "~/karadul_olcum/corpus/debian-9.4-3/gt/cat.gt.json",
+    "ghidra_functions": "~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/cat/ws/workspaces/cat/20260925_110806/static/ghidra_functions.json",
+    "naming_map": "~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/cat/ws/workspaces/cat/20260925_110806/reconstructed/src/naming_map.json",
+    "naming_map_sha256": "a32b8a101efc29fa9dbd0574bf45dc5729dfba30d93a957a349d90b9c19e1a73"
+   },
+   "legacy": {
+    "definition": "legacy benchmark_runner (TP=exact+semantic+partial, FN=missing only)",
+    "gt_symbols": 89,
+    "precision": 0.6667,
+    "recall": 0.1149,
+    "f1": 0.1961,
+    "exact": 7,
+    "semantic": 3,
+    "partial": 0,
+    "wrong": 5,
+    "missing": 77,
+    "unverified": 2
+   },
+   "karadul_report": {
+    "ghidra_function_count": 223,
+    "statistics_functions": 223,
+    "cross_binary_candidates": null,
+    "stages_ok": {
+     "identify": true,
+     "static": true,
+     "deobfuscate": true,
+     "reconstruct": true,
+     "report": true
+    }
+   },
+   "cfg_cache_before": {
+    "26b759d8838d10b0.json": "4d8112b27c6c695d",
+    "6d1b9657727dce81.json": "ff3978558064233a"
+   }
+  },
+  {
+   "corpus": "debian-9.4-3",
+   "binary": "cut",
+   "run": {
+    "status": "ok",
+    "exit_code": 0,
+    "duration_s": 47.0,
+    "command": "/opt/anaconda3/bin/python3 -m karadul analyze ~/karadul_olcum/corpus/debian-9.4-3/bin/cut --skip-dynamic --output-dir ~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/cut/ws --output ~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/cut/out",
+    "cwd": "~/karadul_olcum/baseline-2304560",
+    "started_at": "2026-09-25T14:08:07+03:00",
+    "target_sha256": "587e53aec3dbed39118a8e49935abccb46bea70a6f5747e6d16a0f145644442c"
+   },
+   "schema": "karadul-function-f1/1",
+   "build_id": "207239d7b205f2d9e4252cea18dffcbac4a54a8f",
+   "image_offset": "0x100000",
+   "image_offset_source": "ghidra_entry",
+   "detected": {
+    "ghidra_total": 239,
+    "code": 104,
+    "plt": 67,
+    "external": 68,
+    "thunk_flagged": 136
+   },
+   "gt": {
+    "functions": 103,
+    "scored": 94,
+    "crt": 9,
+    "exported": 0
+   },
+   "coverage": {
+    "gt_in_detected": 103,
+    "detected_code": 104,
+    "ratio": 0.9904,
+    "gt_detection_ratio": 1.0
+   },
+   "strict": {
+    "tp": 8,
+    "fp": 9,
+    "fn": 86,
+    "precision": 0.4706,
+    "recall": 0.0851,
+    "f1": 0.1441
+   },
+   "lenient": {
+    "tp": 10,
+    "fp": 7,
+    "fn": 84,
+    "precision": 0.5882,
+    "recall": 0.1064,
+    "f1": 0.1802
+   },
+   "breakdown": {
+    "tp": 8,
+    "wrong": 9,
+    "unnamed": 77,
+    "undetected": 0
+   },
+   "outside_gt": {
+    "detected_code_not_in_gt": 1,
+    "named_non_generic": 0
+   },
+   "crt_named": 4,
+   "exported_named": 0,
+   "ghidra_named_scored": [],
+   "ghidra_thunk_named": [
+    "fdadvise"
+   ],
+   "per_function": [
+    {"addr": "0x1ec0", "gt": "main", "ghidra": "FUN_00101ec0", "predicted": "main", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2420", "gt": "write_error", "ghidra": "FUN_00102420", "predicted": "cut_fields_2", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x2480", "gt": "cut_fields", "ghidra": "FUN_00102480", "predicted": "cut_fields", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2ab0", "gt": "cut_bytes", "ghidra": "FUN_00102ab0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2c80", "gt": "cut_file", "ghidra": "FUN_00102c80", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2dc4", "gt": "usage", "ghidra": "FUN_00102dc4", "predicted": "usage", "status": "tp", "lenient_tp": true},
+    {"addr": "0x31a0", "gt": "compare_ranges", "ghidra": "FUN_001031a0", "predicted": "compare_func", "status": "wrong", "lenient_tp": true},
+    {"addr": "0x31c0", "gt": "add_range_pair", "ghidra": "FUN_001031c0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3240", "gt": "set_fields", "ghidra": "FUN_00103240", "predicted": "byte_character_positions", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x37e0", "gt": "close_stdout_set_file_name", "ghidra": "FUN_001037e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x37f0", "gt": "close_stdout_set_ignore_EPIPE", "ghidra": "FUN_001037f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3800", "gt": "close_stdout", "ghidra": "FUN_00103800", "predicted": "close_stdout", "status": "tp", "lenient_tp": true},
+    {"addr": "0x3900", "gt": "fdadvise", "ghidra": "posix_fadvise", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3910", "gt": "fadvise", "ghidra": "FUN_00103910", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3950", "gt": "rpl_fclose", "ghidra": "FUN_00103950", "predicted": "rpl_fclose", "status": "tp", "lenient_tp": true},
+    {"addr": "0x39f0", "gt": "rpl_fflush", "ghidra": "FUN_001039f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3a50", "gt": "fpurge", "ghidra": "FUN_00103a50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3a70", "gt": "rpl_fseeko", "ghidra": "FUN_00103a70", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3b00", "gt": "getndelim2", "ghidra": "FUN_00103b00", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3e20", "gt": "memchr2", "ghidra": "FUN_00103e20", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3f30", "gt": "set_program_name", "ghidra": "FUN_00103f30", "predicted": "argv_passed_through", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x4020", "gt": "proper_name_lite", "ghidra": "FUN_00104020", "predicted": "utf", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x40a0", "gt": "gettext_quote.part.0", "ghidra": "FUN_001040a0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x41f0", "gt": "quotearg_buffer_restyled", "ghidra": "FUN_001041f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x55f4", "gt": "quotearg_n_options", "ghidra": "FUN_001055f4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x57f0", "gt": "clone_quoting_options", "ghidra": "FUN_001057f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5840", "gt": "get_quoting_style", "ghidra": "FUN_00105840", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5860", "gt": "set_quoting_style", "ghidra": "FUN_00105860", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5880", "gt": "set_char_quoting", "ghidra": "FUN_00105880", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x58d0", "gt": "set_quoting_flags", "ghidra": "FUN_001058d0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x58f4", "gt": "set_custom_quoting", "ghidra": "FUN_001058f4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5940", "gt": "quotearg_buffer", "ghidra": "FUN_00105940", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x59d4", "gt": "quotearg_alloc_mem", "ghidra": "FUN_001059d4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5ad0", "gt": "quotearg_alloc", "ghidra": "FUN_00105ad0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5ae0", "gt": "quotearg_free", "ghidra": "FUN_00105ae0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5b90", "gt": "quotearg_n", "ghidra": "FUN_00105b90", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5bb0", "gt": "quotearg_n_mem", "ghidra": "FUN_00105bb0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5bc4", "gt": "quotearg", "ghidra": "FUN_00105bc4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5be4", "gt": "quotearg_mem", "ghidra": "FUN_00105be4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5c04", "gt": "quotearg_n_style", "ghidra": "FUN_00105c04", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5cb0", "gt": "quotearg_n_style_mem", "ghidra": "FUN_00105cb0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5d60", "gt": "quotearg_style", "ghidra": "FUN_00105d60", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5e04", "gt": "quotearg_style_mem", "ghidra": "FUN_00105e04", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5ea4", "gt": "quotearg_char_mem", "ghidra": "FUN_00105ea4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5f60", "gt": "quotearg_char", "ghidra": "FUN_00105f60", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6014", "gt": "quotearg_colon", "ghidra": "FUN_00106014", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x60b4", "gt": "quotearg_colon_mem", "ghidra": "FUN_001060b4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6154", "gt": "quotearg_n_style_colon", "ghidra": "FUN_00106154", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6204", "gt": "quotearg_n_custom", "ghidra": "FUN_00106204", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x62b4", "gt": "quotearg_n_custom_mem", "ghidra": "FUN_001062b4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6364", "gt": "quotearg_custom", "ghidra": "FUN_00106364", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6414", "gt": "quotearg_custom_mem", "ghidra": "FUN_00106414", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x64d0", "gt": "quote_n_mem", "ghidra": "FUN_001064d0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x64e4", "gt": "quote_mem", "ghidra": "FUN_001064e4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6504", "gt": "quote_n", "ghidra": "FUN_00106504", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6520", "gt": "quote", "ghidra": "FUN_00106520", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6540", "gt": "version_etc_arn", "ghidra": "FUN_00106540", "predicted": "version_etc", "status": "wrong", "lenient_tp": true},
+    {"addr": "0x68e0", "gt": "version_etc_ar", "ghidra": "FUN_001068e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6910", "gt": "version_etc_va", "ghidra": "FUN_00106910", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x69d4", "gt": "version_etc", "ghidra": "FUN_001069d4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6ad0", "gt": "emit_bug_reporting_address", "ghidra": "FUN_00106ad0", "predicted": "general_help_using", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x6b80", "gt": "xnrealloc", "ghidra": "FUN_00106b80", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6bd0", "gt": "xmalloc", "ghidra": "FUN_00106bd0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6bf4", "gt": "ximalloc", "ghidra": "FUN_00106bf4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6c20", "gt": "xcharalloc", "ghidra": "FUN_00106c20", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6c44", "gt": "xrealloc", "ghidra": "FUN_00106c44", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6c84", "gt": "xirealloc", "ghidra": "FUN_00106c84", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6cc0", "gt": "xreallocarray", "ghidra": "FUN_00106cc0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6d10", "gt": "xireallocarray", "ghidra": "FUN_00106d10", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6d50", "gt": "xnmalloc", "ghidra": "FUN_00106d50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6d80", "gt": "xinmalloc", "ghidra": "FUN_00106d80", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6dd0", "gt": "x2realloc", "ghidra": "FUN_00106dd0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6e60", "gt": "x2nrealloc", "ghidra": "FUN_00106e60", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6f10", "gt": "xpalloc", "ghidra": "FUN_00106f10", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7000", "gt": "xzalloc", "ghidra": "FUN_00107000", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7030", "gt": "xizalloc", "ghidra": "FUN_00107030", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7060", "gt": "xcalloc", "ghidra": "FUN_00107060", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7084", "gt": "xicalloc", "ghidra": "FUN_00107084", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x70b0", "gt": "xmemdup", "ghidra": "FUN_001070b0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x70f0", "gt": "ximemdup", "ghidra": "FUN_001070f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7130", "gt": "ximemdup0", "ghidra": "FUN_00107130", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7174", "gt": "xstrdup", "ghidra": "FUN_00107174", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x71c0", "gt": "xalloc_die", "ghidra": "FUN_001071c0", "predicted": "xalloc_die", "status": "tp", "lenient_tp": true},
+    {"addr": "0x7210", "gt": "rpl_fopen", "ghidra": "FUN_00107210", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7450", "gt": "c_strcasecmp", "ghidra": "FUN_00107450", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x74d0", "gt": "close_stream", "ghidra": "FUN_001074d0", "predicted": "close_stream", "status": "tp", "lenient_tp": true},
+    {"addr": "0x7540", "gt": "freadptr", "ghidra": "FUN_00107540", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7570", "gt": "freadseek", "ghidra": "FUN_00107570", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7750", "gt": "locale_charset", "ghidra": "FUN_00107750", "predicted": "ascii", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x77a0", "gt": "rpl_mbrtoc32", "ghidra": "FUN_001077a0", "predicted": "rpl_mbrtoc32", "status": "tp", "lenient_tp": true},
+    {"addr": "0x7850", "gt": "freadahead", "ghidra": "FUN_00107850", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7890", "gt": "hard_locale", "ghidra": "FUN_00107890", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7940", "gt": "setlocale_null_r", "ghidra": "FUN_00107940", "predicted": "hard_locale", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x79f0", "gt": "setlocale_null", "ghidra": "FUN_001079f0", "predicted": null, "status": "unnamed", "lenient_tp": false}
+   ],
+   "checks": {
+    "ambiguous_workspace": false,
+    "analyzed_sha256_matches_gt": true,
+    "ghidra_named_scored": 0
+   },
+   "inputs": {
+    "gt": "~/karadul_olcum/corpus/debian-9.4-3/gt/cut.gt.json",
+    "ghidra_functions": "~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/cut/ws/workspaces/cut/20260925_110808/static/ghidra_functions.json",
+    "naming_map": "~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/cut/ws/workspaces/cut/20260925_110808/reconstructed/src/naming_map.json",
+    "naming_map_sha256": "75b1ba393fd588fcecd61f123915ba7ad1643ed6b0ff9e13c080e7ef52e2be2b"
+   },
+   "legacy": {
+    "definition": "legacy benchmark_runner (TP=exact+semantic+partial, FN=missing only)",
+    "gt_symbols": 95,
+    "precision": 0.5882,
+    "recall": 0.1099,
+    "f1": 0.1852,
+    "exact": 8,
+    "semantic": 1,
+    "partial": 1,
+    "wrong": 7,
+    "missing": 81,
+    "unverified": 2
+   },
+   "karadul_report": {
+    "ghidra_function_count": 239,
+    "statistics_functions": 239,
+    "cross_binary_candidates": null,
+    "stages_ok": {
+     "identify": true,
+     "static": true,
+     "deobfuscate": true,
+     "reconstruct": true,
+     "report": true
+    }
+   },
+   "cfg_cache_before": {
+    "26b759d8838d10b0.json": "4d8112b27c6c695d",
+    "6d1b9657727dce81.json": "ff3978558064233a"
+   }
+  },
+  {
+   "corpus": "debian-9.4-3",
+   "binary": "wc",
+   "run": {
+    "status": "ok",
+    "exit_code": 0,
+    "duration_s": 51.4,
+    "command": "/opt/anaconda3/bin/python3 -m karadul analyze ~/karadul_olcum/corpus/debian-9.4-3/bin/wc --skip-dynamic --output-dir ~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/wc/ws --output ~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/wc/out",
+    "cwd": "~/karadul_olcum/baseline-2304560",
+    "started_at": "2026-09-25T14:08:53+03:00",
+    "target_sha256": "aacbba2a170817114611ee5337fef140a970962faaa42a652c0e6934c2d4f0d4"
+   },
+   "schema": "karadul-function-f1/1",
+   "build_id": "4a0ae477f81fc834290e93c56bce8608b68a3bee",
+   "image_offset": "0x100000",
+   "image_offset_source": "ghidra_entry",
+   "detected": {
+    "ghidra_total": 268,
+    "code": 123,
+    "plt": 72,
+    "external": 73,
+    "thunk_flagged": 146
+   },
+   "gt": {
+    "functions": 122,
+    "scored": 107,
+    "crt": 9,
+    "exported": 6
+   },
+   "coverage": {
+    "gt_in_detected": 122,
+    "detected_code": 123,
+    "ratio": 0.9919,
+    "gt_detection_ratio": 1.0
+   },
+   "strict": {
+    "tp": 6,
+    "fp": 11,
+    "fn": 101,
+    "precision": 0.3529,
+    "recall": 0.0561,
+    "f1": 0.0968
+   },
+   "lenient": {
+    "tp": 8,
+    "fp": 9,
+    "fn": 99,
+    "precision": 0.4706,
+    "recall": 0.0748,
+    "f1": 0.129
+   },
+   "breakdown": {
+    "tp": 6,
+    "wrong": 11,
+    "unnamed": 90,
+    "undetected": 0
+   },
+   "outside_gt": {
+    "detected_code_not_in_gt": 1,
+    "named_non_generic": 0
+   },
+   "crt_named": 4,
+   "exported_named": 0,
+   "ghidra_named_scored": [],
+   "ghidra_thunk_named": [
+    "fdadvise"
+   ],
+   "per_function": [
+    {"addr": "0x2240", "gt": "main", "ghidra": "FUN_00102240", "predicted": "main", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2fe0", "gt": "write_counts", "ghidra": "FUN_00102fe0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3210", "gt": "wc", "ghidra": "FUN_00103210", "predicted": "standard_input", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x3c54", "gt": "usage", "ghidra": "FUN_00103c54", "predicted": "usage", "status": "tp", "lenient_tp": true},
+    {"addr": "0x3fc0", "gt": "__argmatch_die", "ghidra": "FUN_00103fc0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3fd0", "gt": "argmatch", "ghidra": "FUN_00103fd0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4100", "gt": "argmatch_exact", "ghidra": "FUN_00104100", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4180", "gt": "argmatch_invalid", "ghidra": "FUN_00104180", "predicted": "ambiguous_argument", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x4220", "gt": "argmatch_valid", "ghidra": "FUN_00104220", "predicted": "valid_arguments", "status": "wrong", "lenient_tp": true},
+    {"addr": "0x4380", "gt": "__xargmatch_internal", "ghidra": "FUN_00104380", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4464", "gt": "argmatch_to_argument", "ghidra": "FUN_00104464", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x44e0", "gt": "argv_iter_init_argv", "ghidra": "FUN_001044e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4520", "gt": "argv_iter_init_stream", "ghidra": "FUN_00104520", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4560", "gt": "argv_iter", "ghidra": "FUN_00104560", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4620", "gt": "argv_iter_n_args", "ghidra": "FUN_00104620", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4644", "gt": "argv_iter_free", "ghidra": "FUN_00104644", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4680", "gt": "rpl_btowc", "ghidra": "FUN_00104680", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4710", "gt": "close_stdout_set_file_name", "ghidra": "FUN_00104710", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4720", "gt": "close_stdout_set_ignore_EPIPE", "ghidra": "FUN_00104720", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4730", "gt": "close_stdout", "ghidra": "FUN_00104730", "predicted": "close_stdout", "status": "tp", "lenient_tp": true},
+    {"addr": "0x4830", "gt": "fdadvise", "ghidra": "posix_fadvise", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4840", "gt": "fadvise", "ghidra": "FUN_00104840", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4880", "gt": "rpl_fclose", "ghidra": "FUN_00104880", "predicted": "rpl_fclose", "status": "tp", "lenient_tp": true},
+    {"addr": "0x4920", "gt": "rpl_fflush", "ghidra": "FUN_00104920", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4980", "gt": "rpl_fseeko", "ghidra": "FUN_00104980", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4a10", "gt": "umaxtostr", "ghidra": "FUN_00104a10", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4a60", "gt": "rpl_mbrtowc", "ghidra": "FUN_00104a60", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4b10", "gt": "physmem_total", "ghidra": "FUN_00104b10", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4bf0", "gt": "physmem_available", "ghidra": "FUN_00104bf0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4cd0", "gt": "set_program_name", "ghidra": "FUN_00104cd0", "predicted": "argv_passed_through", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x4dc0", "gt": "proper_name_lite", "ghidra": "FUN_00104dc0", "predicted": "utf", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x4e40", "gt": "gettext_quote.part.0", "ghidra": "FUN_00104e40", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4f90", "gt": "quotearg_buffer_restyled", "ghidra": "FUN_00104f90", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6394", "gt": "quotearg_n_options", "ghidra": "FUN_00106394", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6590", "gt": "clone_quoting_options", "ghidra": "FUN_00106590", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x65e0", "gt": "get_quoting_style", "ghidra": "FUN_001065e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6600", "gt": "set_quoting_style", "ghidra": "FUN_00106600", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6620", "gt": "set_char_quoting", "ghidra": "FUN_00106620", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6670", "gt": "set_quoting_flags", "ghidra": "FUN_00106670", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6694", "gt": "set_custom_quoting", "ghidra": "FUN_00106694", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x66e0", "gt": "quotearg_buffer", "ghidra": "FUN_001066e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6774", "gt": "quotearg_alloc_mem", "ghidra": "FUN_00106774", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6870", "gt": "quotearg_alloc", "ghidra": "FUN_00106870", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6880", "gt": "quotearg_free", "ghidra": "FUN_00106880", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6930", "gt": "quotearg_n", "ghidra": "FUN_00106930", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6950", "gt": "quotearg_n_mem", "ghidra": "FUN_00106950", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6964", "gt": "quotearg", "ghidra": "FUN_00106964", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6984", "gt": "quotearg_mem", "ghidra": "FUN_00106984", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x69a4", "gt": "quotearg_n_style", "ghidra": "FUN_001069a4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6a50", "gt": "quotearg_n_style_mem", "ghidra": "FUN_00106a50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6b00", "gt": "quotearg_style", "ghidra": "FUN_00106b00", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6ba4", "gt": "quotearg_style_mem", "ghidra": "FUN_00106ba4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6c44", "gt": "quotearg_char_mem", "ghidra": "FUN_00106c44", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6d00", "gt": "quotearg_char", "ghidra": "FUN_00106d00", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6db4", "gt": "quotearg_colon", "ghidra": "FUN_00106db4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6e54", "gt": "quotearg_colon_mem", "ghidra": "FUN_00106e54", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6ef4", "gt": "quotearg_n_style_colon", "ghidra": "FUN_00106ef4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6fa4", "gt": "quotearg_n_custom", "ghidra": "FUN_00106fa4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7054", "gt": "quotearg_n_custom_mem", "ghidra": "FUN_00107054", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7104", "gt": "quotearg_custom", "ghidra": "FUN_00107104", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x71b4", "gt": "quotearg_custom_mem", "ghidra": "FUN_001071b4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7270", "gt": "quote_n_mem", "ghidra": "FUN_00107270", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7284", "gt": "quote_mem", "ghidra": "FUN_00107284", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x72a4", "gt": "quote_n", "ghidra": "FUN_001072a4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x72c0", "gt": "quote", "ghidra": "FUN_001072c0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x72e0", "gt": "save_token", "ghidra": "FUN_001072e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x73e0", "gt": "readtokens0_init", "ghidra": "FUN_001073e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7470", "gt": "readtokens0_free", "ghidra": "FUN_00107470", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x74b4", "gt": "readtokens0", "ghidra": "FUN_001074b4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7690", "gt": "safe_read", "ghidra": "FUN_00107690", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7710", "gt": "version_etc_arn", "ghidra": "FUN_00107710", "predicted": "version_etc", "status": "wrong", "lenient_tp": true},
+    {"addr": "0x7ab0", "gt": "version_etc_ar", "ghidra": "FUN_00107ab0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7ae0", "gt": "version_etc_va", "ghidra": "FUN_00107ae0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7ba4", "gt": "version_etc", "ghidra": "FUN_00107ba4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7ca0", "gt": "emit_bug_reporting_address", "ghidra": "FUN_00107ca0", "predicted": "general_help_using", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x7d50", "gt": "xnrealloc", "ghidra": "FUN_00107d50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7da0", "gt": "xmalloc", "ghidra": "FUN_00107da0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7dc4", "gt": "ximalloc", "ghidra": "FUN_00107dc4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7df0", "gt": "xcharalloc", "ghidra": "FUN_00107df0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7e14", "gt": "xrealloc", "ghidra": "FUN_00107e14", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7e54", "gt": "xirealloc", "ghidra": "FUN_00107e54", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7e90", "gt": "xreallocarray", "ghidra": "FUN_00107e90", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7ee0", "gt": "xireallocarray", "ghidra": "FUN_00107ee0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7f20", "gt": "xnmalloc", "ghidra": "FUN_00107f20", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7f50", "gt": "xinmalloc", "ghidra": "FUN_00107f50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7fa0", "gt": "x2realloc", "ghidra": "FUN_00107fa0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8030", "gt": "x2nrealloc", "ghidra": "FUN_00108030", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x80e0", "gt": "xpalloc", "ghidra": "FUN_001080e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x81d0", "gt": "xzalloc", "ghidra": "FUN_001081d0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8200", "gt": "xizalloc", "ghidra": "FUN_00108200", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8230", "gt": "xcalloc", "ghidra": "FUN_00108230", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8254", "gt": "xicalloc", "ghidra": "FUN_00108254", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8280", "gt": "xmemdup", "ghidra": "FUN_00108280", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x82c0", "gt": "ximemdup", "ghidra": "FUN_001082c0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8300", "gt": "ximemdup0", "ghidra": "FUN_00108300", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8344", "gt": "xstrdup", "ghidra": "FUN_00108344", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8390", "gt": "xalloc_die", "ghidra": "FUN_00108390", "predicted": "memory_exhausted", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x83e0", "gt": "rpl_fopen", "ghidra": "FUN_001083e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8620", "gt": "c_strcasecmp", "ghidra": "FUN_00108620", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x86a0", "gt": "close_stream", "ghidra": "FUN_001086a0", "predicted": "close_stream", "status": "tp", "lenient_tp": true},
+    {"addr": "0x8710", "gt": "hard_locale", "ghidra": "FUN_00108710", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x87c0", "gt": "locale_charset", "ghidra": "FUN_001087c0", "predicted": "ascii", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x8810", "gt": "rpl_mbrtoc32", "ghidra": "FUN_00108810", "predicted": "rpl_mbrtoc32", "status": "tp", "lenient_tp": true},
+    {"addr": "0x88c0", "gt": "print_and_abort", "ghidra": "FUN_001088c0", "predicted": "memory_exhausted_2", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x8920", "gt": "_obstack_begin_worker", "ghidra": "FUN_00108920", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8cc0", "gt": "setlocale_null_r", "ghidra": "FUN_00108cc0", "predicted": "hard_locale", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x8d70", "gt": "setlocale_null", "ghidra": "FUN_00108d70", "predicted": null, "status": "unnamed", "lenient_tp": false}
+   ],
+   "checks": {
+    "ambiguous_workspace": false,
+    "analyzed_sha256_matches_gt": true,
+    "ghidra_named_scored": 0
+   },
+   "inputs": {
+    "gt": "~/karadul_olcum/corpus/debian-9.4-3/gt/wc.gt.json",
+    "ghidra_functions": "~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/wc/ws/workspaces/wc/20260925_110854/static/ghidra_functions.json",
+    "naming_map": "~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/wc/ws/workspaces/wc/20260925_110854/reconstructed/src/naming_map.json",
+    "naming_map_sha256": "89dd2dda1020289b3d3c100f931abf9334353bccc34a7dd272dc6cba677ad4f5"
+   },
+   "legacy": {
+    "definition": "legacy benchmark_runner (TP=exact+semantic+partial, FN=missing only)",
+    "gt_symbols": 112,
+    "precision": 0.4706,
+    "recall": 0.0741,
+    "f1": 0.128,
+    "exact": 6,
+    "semantic": 1,
+    "partial": 1,
+    "wrong": 9,
+    "missing": 100,
+    "unverified": 2
+   },
+   "karadul_report": {
+    "ghidra_function_count": 268,
+    "statistics_functions": 268,
+    "cross_binary_candidates": null,
+    "stages_ok": {
+     "identify": true,
+     "static": true,
+     "deobfuscate": true,
+     "reconstruct": true,
+     "report": true
+    }
+   },
+   "cfg_cache_before": {
+    "26b759d8838d10b0.json": "4d8112b27c6c695d",
+    "6d1b9657727dce81.json": "ff3978558064233a"
+   }
+  },
+  {
+   "corpus": "debian-9.4-3",
+   "binary": "expr",
+   "run": {
+    "status": "ok",
+    "exit_code": 0,
+    "duration_s": 48.6,
+    "command": "/opt/anaconda3/bin/python3 -m karadul analyze ~/karadul_olcum/corpus/debian-9.4-3/bin/expr --skip-dynamic --output-dir ~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/expr/ws --output ~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/expr/out",
+    "cwd": "~/karadul_olcum/baseline-2304560",
+    "started_at": "2026-09-25T14:08:54+03:00",
+    "target_sha256": "ba6b8f07eeb9aa797d2e4d700338b01ad984533c187593bbe4417aff9b4d30c9"
+   },
+   "schema": "karadul-function-f1/1",
+   "build_id": "b563a1f9c25529a6f4a3868ee665015af77a1c8a",
+   "image_offset": "0x100000",
+   "image_offset_source": "ghidra_entry",
+   "detected": {
+    "ghidra_total": 233,
+    "code": 105,
+    "plt": 61,
+    "external": 67,
+    "thunk_flagged": 128
+   },
+   "gt": {
+    "functions": 104,
+    "scored": 95,
+    "crt": 9,
+    "exported": 0
+   },
+   "coverage": {
+    "gt_in_detected": 104,
+    "detected_code": 105,
+    "ratio": 0.9905,
+    "gt_detection_ratio": 1.0
+   },
+   "strict": {
+    "tp": 7,
+    "fp": 13,
+    "fn": 88,
+    "precision": 0.35,
+    "recall": 0.0737,
+    "f1": 0.1217
+   },
+   "lenient": {
+    "tp": 8,
+    "fp": 12,
+    "fn": 87,
+    "precision": 0.4,
+    "recall": 0.0842,
+    "f1": 0.1391
+   },
+   "breakdown": {
+    "tp": 7,
+    "wrong": 13,
+    "unnamed": 75,
+    "undetected": 0
+   },
+   "outside_gt": {
+    "detected_code_not_in_gt": 1,
+    "named_non_generic": 0
+   },
+   "crt_named": 4,
+   "exported_named": 0,
+   "ghidra_named_scored": [],
+   "ghidra_thunk_named": [],
+   "per_function": [
+    {"addr": "0x1d80", "gt": "main", "ghidra": "FUN_00101d80", "predicted": "main", "status": "tp", "lenient_tp": true},
+    {"addr": "0x20e0", "gt": "toarith", "ghidra": "FUN_001020e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2190", "gt": "require_more_args.part.0", "ghidra": "FUN_00102190", "predicted": "syntax_missing_argument", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x21e4", "gt": "usage", "ghidra": "FUN_001021e4", "predicted": "usage", "status": "tp", "lenient_tp": true},
+    {"addr": "0x25b0", "gt": "null", "ghidra": "FUN_001025b0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2610", "gt": "docolon", "ghidra": "FUN_00102610", "predicted": "regular_expression_matcher", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x2aa0", "gt": "eval6", "ghidra": "FUN_00102aa0", "predicted": "syntax_expecting_instead", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x3774", "gt": "eval5", "ghidra": "FUN_00103774", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3890", "gt": "eval4", "ghidra": "FUN_00103890", "predicted": "non_integer_argument", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x3a44", "gt": "eval3", "ghidra": "FUN_00103a44", "predicted": "non_integer_argument_2", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x3ba0", "gt": "eval2", "ghidra": "FUN_00103ba0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3f60", "gt": "eval1", "ghidra": "FUN_00103f60", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x40c0", "gt": "eval", "ghidra": "FUN_001040c0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4240", "gt": "close_stdout_set_file_name", "ghidra": "FUN_00104240", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4250", "gt": "close_stdout_set_ignore_EPIPE", "ghidra": "FUN_00104250", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4260", "gt": "close_stdout", "ghidra": "FUN_00104260", "predicted": "close_stdout", "status": "tp", "lenient_tp": true},
+    {"addr": "0x4360", "gt": "parse_long_options", "ghidra": "FUN_00104360", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x44c0", "gt": "parse_gnu_standard_options_only", "ghidra": "FUN_001044c0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4620", "gt": "rpl_mbrtoc32", "ghidra": "FUN_00104620", "predicted": "rpl_mbrtoc32", "status": "tp", "lenient_tp": true},
+    {"addr": "0x46d0", "gt": "mbschr", "ghidra": "FUN_001046d0", "predicted": "mbuiterf_next", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x4910", "gt": "mbslen", "ghidra": "FUN_00104910", "predicted": "mbuiterf_next_2", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x4b40", "gt": "set_program_name", "ghidra": "FUN_00104b40", "predicted": "argv_passed_through", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x4c30", "gt": "proper_name_lite", "ghidra": "FUN_00104c30", "predicted": "utf", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x4cb0", "gt": "gettext_quote.part.0", "ghidra": "FUN_00104cb0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4e00", "gt": "quotearg_buffer_restyled", "ghidra": "FUN_00104e00", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6204", "gt": "quotearg_n_options", "ghidra": "FUN_00106204", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6400", "gt": "clone_quoting_options", "ghidra": "FUN_00106400", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6450", "gt": "get_quoting_style", "ghidra": "FUN_00106450", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6470", "gt": "set_quoting_style", "ghidra": "FUN_00106470", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6490", "gt": "set_char_quoting", "ghidra": "FUN_00106490", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x64e0", "gt": "set_quoting_flags", "ghidra": "FUN_001064e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6504", "gt": "set_custom_quoting", "ghidra": "FUN_00106504", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6550", "gt": "quotearg_buffer", "ghidra": "FUN_00106550", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x65e4", "gt": "quotearg_alloc_mem", "ghidra": "FUN_001065e4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x66e0", "gt": "quotearg_alloc", "ghidra": "FUN_001066e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x66f0", "gt": "quotearg_free", "ghidra": "FUN_001066f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x67a0", "gt": "quotearg_n", "ghidra": "FUN_001067a0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x67c0", "gt": "quotearg_n_mem", "ghidra": "FUN_001067c0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x67d4", "gt": "quotearg", "ghidra": "FUN_001067d4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x67f4", "gt": "quotearg_mem", "ghidra": "FUN_001067f4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6814", "gt": "quotearg_n_style", "ghidra": "FUN_00106814", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x68c0", "gt": "quotearg_n_style_mem", "ghidra": "FUN_001068c0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6970", "gt": "quotearg_style", "ghidra": "FUN_00106970", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6a14", "gt": "quotearg_style_mem", "ghidra": "FUN_00106a14", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6ab4", "gt": "quotearg_char_mem", "ghidra": "FUN_00106ab4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6b70", "gt": "quotearg_char", "ghidra": "FUN_00106b70", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6c24", "gt": "quotearg_colon", "ghidra": "FUN_00106c24", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6cc4", "gt": "quotearg_colon_mem", "ghidra": "FUN_00106cc4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6d64", "gt": "quotearg_n_style_colon", "ghidra": "FUN_00106d64", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6e14", "gt": "quotearg_n_custom", "ghidra": "FUN_00106e14", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6ec4", "gt": "quotearg_n_custom_mem", "ghidra": "FUN_00106ec4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6f74", "gt": "quotearg_custom", "ghidra": "FUN_00106f74", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7024", "gt": "quotearg_custom_mem", "ghidra": "FUN_00107024", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x70e0", "gt": "quote_n_mem", "ghidra": "FUN_001070e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x70f4", "gt": "quote_mem", "ghidra": "FUN_001070f4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7114", "gt": "quote_n", "ghidra": "FUN_00107114", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7130", "gt": "quote", "ghidra": "FUN_00107130", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7150", "gt": "strnlen1", "ghidra": "FUN_00107150", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7190", "gt": "strintcmp", "ghidra": "FUN_00107190", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7410", "gt": "version_etc_arn", "ghidra": "FUN_00107410", "predicted": "version_etc", "status": "wrong", "lenient_tp": true},
+    {"addr": "0x77b0", "gt": "version_etc_ar", "ghidra": "FUN_001077b0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x77e0", "gt": "version_etc_va", "ghidra": "FUN_001077e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x78a4", "gt": "version_etc", "ghidra": "FUN_001078a4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x79a0", "gt": "emit_bug_reporting_address", "ghidra": "FUN_001079a0", "predicted": "general_help_using", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x7a50", "gt": "xnrealloc", "ghidra": "FUN_00107a50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7aa0", "gt": "xmalloc", "ghidra": "FUN_00107aa0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7ac4", "gt": "ximalloc", "ghidra": "FUN_00107ac4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7af0", "gt": "xcharalloc", "ghidra": "FUN_00107af0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7b14", "gt": "xrealloc", "ghidra": "FUN_00107b14", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7b54", "gt": "xirealloc", "ghidra": "FUN_00107b54", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7b90", "gt": "xreallocarray", "ghidra": "FUN_00107b90", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7be0", "gt": "xireallocarray", "ghidra": "FUN_00107be0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7c20", "gt": "xnmalloc", "ghidra": "FUN_00107c20", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7c50", "gt": "xinmalloc", "ghidra": "FUN_00107c50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7ca0", "gt": "x2realloc", "ghidra": "FUN_00107ca0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7d30", "gt": "x2nrealloc", "ghidra": "FUN_00107d30", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7de0", "gt": "xpalloc", "ghidra": "FUN_00107de0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7ed0", "gt": "xzalloc", "ghidra": "FUN_00107ed0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7f00", "gt": "xizalloc", "ghidra": "FUN_00107f00", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7f30", "gt": "xcalloc", "ghidra": "FUN_00107f30", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7f54", "gt": "xicalloc", "ghidra": "FUN_00107f54", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7f80", "gt": "xmemdup", "ghidra": "FUN_00107f80", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7fc0", "gt": "ximemdup", "ghidra": "FUN_00107fc0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8000", "gt": "ximemdup0", "ghidra": "FUN_00108000", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8044", "gt": "xstrdup", "ghidra": "FUN_00108044", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8090", "gt": "xalloc_die", "ghidra": "FUN_00108090", "predicted": "xalloc_die", "status": "tp", "lenient_tp": true},
+    {"addr": "0x80e0", "gt": "c_strcasecmp", "ghidra": "FUN_001080e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8160", "gt": "close_stream", "ghidra": "FUN_00108160", "predicted": "close_stream", "status": "tp", "lenient_tp": true},
+    {"addr": "0x81d0", "gt": "rpl_fclose", "ghidra": "FUN_001081d0", "predicted": "rpl_fclose", "status": "tp", "lenient_tp": true},
+    {"addr": "0x8270", "gt": "rpl_fflush", "ghidra": "FUN_00108270", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x82d0", "gt": "rpl_fseeko", "ghidra": "FUN_001082d0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8360", "gt": "hard_locale", "ghidra": "FUN_00108360", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x8410", "gt": "locale_charset", "ghidra": "FUN_00108410", "predicted": "ascii", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x8460", "gt": "setlocale_null_r", "ghidra": "FUN_00108460", "predicted": "hard_locale", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x8510", "gt": "setlocale_null", "ghidra": "FUN_00108510", "predicted": null, "status": "unnamed", "lenient_tp": false}
+   ],
+   "checks": {
+    "ambiguous_workspace": false,
+    "analyzed_sha256_matches_gt": true,
+    "ghidra_named_scored": 0
+   },
+   "inputs": {
+    "gt": "~/karadul_olcum/corpus/debian-9.4-3/gt/expr.gt.json",
+    "ghidra_functions": "~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/expr/ws/workspaces/expr/20260925_110855/static/ghidra_functions.json",
+    "naming_map": "~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/expr/ws/workspaces/expr/20260925_110855/reconstructed/src/naming_map.json",
+    "naming_map_sha256": "10588bc656d8fa3860a21446e35536bb1bb15e370c8fbb862545cf41c87d5c71"
+   },
+   "legacy": {
+    "definition": "legacy benchmark_runner (TP=exact+semantic+partial, FN=missing only)",
+    "gt_symbols": 96,
+    "precision": 0.4,
+    "recall": 0.092,
+    "f1": 0.1495,
+    "exact": 7,
+    "semantic": 1,
+    "partial": 0,
+    "wrong": 12,
+    "missing": 79,
+    "unverified": 2
+   },
+   "karadul_report": {
+    "ghidra_function_count": 233,
+    "statistics_functions": 233,
+    "cross_binary_candidates": null,
+    "stages_ok": {
+     "identify": true,
+     "static": true,
+     "deobfuscate": true,
+     "reconstruct": true,
+     "report": true
+    }
+   },
+   "cfg_cache_before": {
+    "26b759d8838d10b0.json": "4d8112b27c6c695d",
+    "6d1b9657727dce81.json": "ff3978558064233a"
+   }
+  },
+  {
+   "corpus": "debian-9.4-3",
+   "binary": "comm",
+   "run": {
+    "status": "ok",
+    "exit_code": 0,
+    "duration_s": 45.0,
+    "command": "/opt/anaconda3/bin/python3 -m karadul analyze ~/karadul_olcum/corpus/debian-9.4-3/bin/comm --skip-dynamic --output-dir ~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/comm/ws --output ~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/comm/out",
+    "cwd": "~/karadul_olcum/baseline-2304560",
+    "started_at": "2026-09-25T14:09:43+03:00",
+    "target_sha256": "a968402145068e44c6dfd1e614ecc69d8c6f164677687ae7548beb905749e1bc"
+   },
+   "schema": "karadul-function-f1/1",
+   "build_id": "09a6cafe59107dc7622cf3c1faa22b29e3bbeecf",
+   "image_offset": "0x100000",
+   "image_offset_source": "ghidra_entry",
+   "detected": {
+    "ghidra_total": 229,
+    "code": 110,
+    "plt": 59,
+    "external": 60,
+    "thunk_flagged": 120
+   },
+   "gt": {
+    "functions": 109,
+    "scored": 100,
+    "crt": 9,
+    "exported": 0
+   },
+   "coverage": {
+    "gt_in_detected": 109,
+    "detected_code": 110,
+    "ratio": 0.9909,
+    "gt_detection_ratio": 1.0
+   },
+   "strict": {
+    "tp": 7,
+    "fp": 10,
+    "fn": 93,
+    "precision": 0.4118,
+    "recall": 0.07,
+    "f1": 0.1197
+   },
+   "lenient": {
+    "tp": 8,
+    "fp": 9,
+    "fn": 92,
+    "precision": 0.4706,
+    "recall": 0.08,
+    "f1": 0.1368
+   },
+   "breakdown": {
+    "tp": 7,
+    "wrong": 10,
+    "unnamed": 83,
+    "undetected": 0
+   },
+   "outside_gt": {
+    "detected_code_not_in_gt": 1,
+    "named_non_generic": 0
+   },
+   "crt_named": 4,
+   "exported_named": 0,
+   "ghidra_named_scored": [],
+   "ghidra_thunk_named": [
+    "fdadvise"
+   ],
+   "per_function": [
+    {"addr": "0x1c40", "gt": "main", "ghidra": "FUN_00101c40", "predicted": "main", "status": "tp", "lenient_tp": true},
+    {"addr": "0x20e0", "gt": "writeline", "ghidra": "FUN_001020e0", "predicted": "write", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x2260", "gt": "check_order.part.0", "ghidra": "FUN_00102260", "predicted": "file_sorted_order", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x2330", "gt": "compare_files", "ghidra": "FUN_00102330", "predicted": "input_sorted_order", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x28b0", "gt": "usage", "ghidra": "FUN_001028b0", "predicted": "usage", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2c90", "gt": "close_stdout_set_file_name", "ghidra": "FUN_00102c90", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2ca0", "gt": "close_stdout_set_ignore_EPIPE", "ghidra": "FUN_00102ca0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2cb0", "gt": "close_stdout", "ghidra": "FUN_00102cb0", "predicted": "close_stdout", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2db0", "gt": "fdadvise", "ghidra": "posix_fadvise", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2dc0", "gt": "fadvise", "ghidra": "FUN_00102dc0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2e00", "gt": "rpl_fclose", "ghidra": "FUN_00102e00", "predicted": "rpl_fclose", "status": "tp", "lenient_tp": true},
+    {"addr": "0x2ea0", "gt": "rpl_fflush", "ghidra": "FUN_00102ea0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2f00", "gt": "fopen_safer", "ghidra": "FUN_00102f00", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2fd0", "gt": "fpurge", "ghidra": "FUN_00102fd0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x2ff0", "gt": "rpl_fseeko", "ghidra": "FUN_00102ff0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3080", "gt": "hard_locale", "ghidra": "FUN_00103080", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3130", "gt": "umaxtostr", "ghidra": "FUN_00103130", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3180", "gt": "initbuffer", "ghidra": "FUN_00103180", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3190", "gt": "readlinebuffer_delim", "ghidra": "FUN_00103190", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x32d0", "gt": "readlinebuffer", "ghidra": "FUN_001032d0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x32e0", "gt": "freebuffer", "ghidra": "FUN_001032e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x32f0", "gt": "memcmp2", "ghidra": "FUN_001032f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3340", "gt": "set_program_name", "ghidra": "FUN_00103340", "predicted": "argv_passed_through", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x3430", "gt": "proper_name_lite", "ghidra": "FUN_00103430", "predicted": "utf", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x34b0", "gt": "gettext_quote.part.0", "ghidra": "FUN_001034b0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x3600", "gt": "quotearg_buffer_restyled", "ghidra": "FUN_00103600", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4a04", "gt": "quotearg_n_options", "ghidra": "FUN_00104a04", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4c00", "gt": "clone_quoting_options", "ghidra": "FUN_00104c00", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4c50", "gt": "get_quoting_style", "ghidra": "FUN_00104c50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4c70", "gt": "set_quoting_style", "ghidra": "FUN_00104c70", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4c90", "gt": "set_char_quoting", "ghidra": "FUN_00104c90", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4ce0", "gt": "set_quoting_flags", "ghidra": "FUN_00104ce0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4d04", "gt": "set_custom_quoting", "ghidra": "FUN_00104d04", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4d50", "gt": "quotearg_buffer", "ghidra": "FUN_00104d50", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4de4", "gt": "quotearg_alloc_mem", "ghidra": "FUN_00104de4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4ee0", "gt": "quotearg_alloc", "ghidra": "FUN_00104ee0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4ef0", "gt": "quotearg_free", "ghidra": "FUN_00104ef0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4fa0", "gt": "quotearg_n", "ghidra": "FUN_00104fa0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4fc0", "gt": "quotearg_n_mem", "ghidra": "FUN_00104fc0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4fd4", "gt": "quotearg", "ghidra": "FUN_00104fd4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x4ff4", "gt": "quotearg_mem", "ghidra": "FUN_00104ff4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5014", "gt": "quotearg_n_style", "ghidra": "FUN_00105014", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x50c0", "gt": "quotearg_n_style_mem", "ghidra": "FUN_001050c0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5170", "gt": "quotearg_style", "ghidra": "FUN_00105170", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5214", "gt": "quotearg_style_mem", "ghidra": "FUN_00105214", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x52b4", "gt": "quotearg_char_mem", "ghidra": "FUN_001052b4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5370", "gt": "quotearg_char", "ghidra": "FUN_00105370", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5424", "gt": "quotearg_colon", "ghidra": "FUN_00105424", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x54c4", "gt": "quotearg_colon_mem", "ghidra": "FUN_001054c4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5564", "gt": "quotearg_n_style_colon", "ghidra": "FUN_00105564", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5614", "gt": "quotearg_n_custom", "ghidra": "FUN_00105614", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x56c4", "gt": "quotearg_n_custom_mem", "ghidra": "FUN_001056c4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5774", "gt": "quotearg_custom", "ghidra": "FUN_00105774", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5824", "gt": "quotearg_custom_mem", "ghidra": "FUN_00105824", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x58e0", "gt": "quote_n_mem", "ghidra": "FUN_001058e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x58f4", "gt": "quote_mem", "ghidra": "FUN_001058f4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5914", "gt": "quote_n", "ghidra": "FUN_00105914", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5930", "gt": "quote", "ghidra": "FUN_00105930", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5950", "gt": "setlocale_null_r", "ghidra": "FUN_00105950", "predicted": "hard_locale", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x5a00", "gt": "setlocale_null", "ghidra": "FUN_00105a00", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5a10", "gt": "dup_safer", "ghidra": "FUN_00105a10", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5a20", "gt": "version_etc_arn", "ghidra": "FUN_00105a20", "predicted": "version_etc", "status": "wrong", "lenient_tp": true},
+    {"addr": "0x5dc0", "gt": "version_etc_ar", "ghidra": "FUN_00105dc0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5df0", "gt": "version_etc_va", "ghidra": "FUN_00105df0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5eb4", "gt": "version_etc", "ghidra": "FUN_00105eb4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x5fb0", "gt": "emit_bug_reporting_address", "ghidra": "FUN_00105fb0", "predicted": "general_help_using", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x6060", "gt": "xnrealloc", "ghidra": "FUN_00106060", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x60b0", "gt": "xmalloc", "ghidra": "FUN_001060b0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x60d4", "gt": "ximalloc", "ghidra": "FUN_001060d4", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6100", "gt": "xcharalloc", "ghidra": "FUN_00106100", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6124", "gt": "xrealloc", "ghidra": "FUN_00106124", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6164", "gt": "xirealloc", "ghidra": "FUN_00106164", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x61a0", "gt": "xreallocarray", "ghidra": "FUN_001061a0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x61f0", "gt": "xireallocarray", "ghidra": "FUN_001061f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6230", "gt": "xnmalloc", "ghidra": "FUN_00106230", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6260", "gt": "xinmalloc", "ghidra": "FUN_00106260", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x62b0", "gt": "x2realloc", "ghidra": "FUN_001062b0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6340", "gt": "x2nrealloc", "ghidra": "FUN_00106340", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x63f0", "gt": "xpalloc", "ghidra": "FUN_001063f0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x64e0", "gt": "xzalloc", "ghidra": "FUN_001064e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6510", "gt": "xizalloc", "ghidra": "FUN_00106510", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6540", "gt": "xcalloc", "ghidra": "FUN_00106540", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6564", "gt": "xicalloc", "ghidra": "FUN_00106564", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6590", "gt": "xmemdup", "ghidra": "FUN_00106590", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x65d0", "gt": "ximemdup", "ghidra": "FUN_001065d0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6610", "gt": "ximemdup0", "ghidra": "FUN_00106610", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6654", "gt": "xstrdup", "ghidra": "FUN_00106654", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x66a0", "gt": "xalloc_die", "ghidra": "FUN_001066a0", "predicted": "xalloc_die", "status": "tp", "lenient_tp": true},
+    {"addr": "0x66f0", "gt": "collate_error", "ghidra": "FUN_001066f0", "predicted": "strings_compared_were", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x67e0", "gt": "xmemcoll", "ghidra": "FUN_001067e0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6870", "gt": "xmemcoll0", "ghidra": "FUN_00106870", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6900", "gt": "rpl_fopen", "ghidra": "FUN_00106900", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6b40", "gt": "c_strcasecmp", "ghidra": "FUN_00106b40", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6bc0", "gt": "close_stream", "ghidra": "FUN_00106bc0", "predicted": "close_stream", "status": "tp", "lenient_tp": true},
+    {"addr": "0x6c30", "gt": "rpl_fcntl", "ghidra": "FUN_00106c30", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x6ea0", "gt": "locale_charset", "ghidra": "FUN_00106ea0", "predicted": "ascii", "status": "wrong", "lenient_tp": false},
+    {"addr": "0x6ef0", "gt": "rpl_mbrtoc32", "ghidra": "FUN_00106ef0", "predicted": "rpl_mbrtoc32", "status": "tp", "lenient_tp": true},
+    {"addr": "0x6fa0", "gt": "strcoll_loop", "ghidra": "FUN_00106fa0", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7080", "gt": "memcoll", "ghidra": "FUN_00107080", "predicted": null, "status": "unnamed", "lenient_tp": false},
+    {"addr": "0x7140", "gt": "memcoll0", "ghidra": "FUN_00107140", "predicted": null, "status": "unnamed", "lenient_tp": false}
+   ],
+   "checks": {
+    "ambiguous_workspace": false,
+    "analyzed_sha256_matches_gt": true,
+    "ghidra_named_scored": 0
+   },
+   "inputs": {
+    "gt": "~/karadul_olcum/corpus/debian-9.4-3/gt/comm.gt.json",
+    "ghidra_functions": "~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/comm/ws/workspaces/comm/20260925_110943/static/ghidra_functions.json",
+    "naming_map": "~/karadul_olcum/runs/baseline-2304560/debian-9.4-3/comm/ws/workspaces/comm/20260925_110943/reconstructed/src/naming_map.json",
+    "naming_map_sha256": "2cab37f636ff4acd8884244d9ca4032ead7c0f53de235d77915ce50f9a7c27b9"
+   },
+   "legacy": {
+    "definition": "legacy benchmark_runner (TP=exact+semantic+partial, FN=missing only)",
+    "gt_symbols": 101,
+    "precision": 0.4706,
+    "recall": 0.0842,
+    "f1": 0.1429,
+    "exact": 7,
+    "semantic": 1,
+    "partial": 0,
+    "wrong": 9,
+    "missing": 87,
+    "unverified": 2
+   },
+   "karadul_report": {
+    "ghidra_function_count": 229,
+    "statistics_functions": 229,
+    "cross_binary_candidates": null,
+    "stages_ok": {
+     "identify": true,
+     "static": true,
+     "deobfuscate": true,
+     "reconstruct": true,
+     "report": true
+    }
+   },
+   "cfg_cache_before": {
+    "26b759d8838d10b0.json": "4d8112b27c6c695d",
+    "6d1b9657727dce81.json": "ff3978558064233a"
+   }
+  }
+ ]
+}

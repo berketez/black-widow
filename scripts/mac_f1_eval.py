@@ -10,11 +10,17 @@ Her binary için en yeni `<bin>_clean*` (naming_map) ve `<bin>_ws*` (workspace)
 dizinini otomatik seçer. Ölçülecek binary'ler argümanla verilebilir:
     python3 scripts/mac_f1_eval.py cat sort ls
 Argüman yoksa GT seti içindeki tüm binary'ler denenir.
+
+NOT (2026-09-25): Yeni ölçüm zemini ``scripts/measurement/`` (function_f1.py +
+measure.py). Bu script eski ``~/coreutils_gt`` + ``~/karadul_meas`` düzeni için
+korunuyor; yeni taban/A-B ölçümleri oradan yapılmalı.
 """
 import sys, re, glob, datetime
 from pathlib import Path
 
-sys.path.insert(0, "/Users/apple/Desktop/black-widow")
+# Depo kökü = bu dosyanın (scripts/) bir üstü: hangi ağaçta (ana depo veya
+# worktree) çalıştırılırsa o ağacın harness'i kullanılır.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tests.benchmark.benchmark_runner import BenchmarkRunner  # noqa: E402
 
 HOME = str(Path.home())

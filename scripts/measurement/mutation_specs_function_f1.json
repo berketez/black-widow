@@ -1,0 +1,149 @@
+{
+  "_comment": "function_f1.py sahte-F1 kurallarının mutation koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Koşum: python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_function_f1.json",
+  "mutants": [
+    {
+      "id": "f1_suffix_normalize_off",
+      "desc": "FIX-4 GCC sufiks normalizasyonu devre dışı (yalnız küçük harf)",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_suffix_normalization_matches_gcc_clones",
+      "find": "    return _CALC._normalize(name)",
+      "replace": "    return name.lower()"
+    },
+    {
+      "id": "f1_generic_address_off",
+      "desc": "kendi adresini taşıyan isim (leaf_2de0, read_fd_3144) tahmin sayılır",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_generic_names_are_not_predictions",
+      "find": "    return _embeds_own_address(name, addresses)",
+      "replace": "    return False"
+    },
+    {
+      "id": "f1_generic_placeholder_off",
+      "desc": "metrics._is_unnamed yer tutucu kontrolü atlanır (uVar3, DAT_...)",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_is_generic_name",
+      "find": "    if _CALC._is_unnamed(name):\n        return True",
+      "replace": "    if False:\n        return True"
+    },
+    {
+      "id": "f1_outside_gt_counted_tp",
+      "desc": "GT'de olmayan isimli fonksiyon TP sayılır (eski partial=TP hatası)",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_outside_gt_named_function_is_not_tp",
+      "find": "            outside_named += 1",
+      "replace": "            outside_named += 1\n            strict_status[\"tp\"] += 1"
+    },
+    {
+      "id": "f1_plt_thunk_counted_as_code",
+      "desc": "PLT thunk'ları tespit paydasına girer",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_thunks_excluded_from_detected_and_coverage",
+      "find": "kind = \"plt\" if name in PLT_SECTION_NAMES else \"code\"",
+      "replace": "kind = \"code\""
+    },
+    {
+      "id": "f1_external_thunk_counted_as_code",
+      "desc": "Ghidra EXTERNAL bloğundaki sahte fonksiyonlar tespit paydasına girer",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_thunks_excluded_from_detected_and_coverage",
+      "find": "        kind = \"external\"\n",
+      "replace": "        kind = \"code\"\n"
+    },
+    {
+      "id": "f1_crt_flag_lost_in_gt",
+      "desc": "GT çıkarımında CRT bayrağı hiç konmaz",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_build_gt_functions_filters_and_groups",
+      "find": "            \"crt\": all(is_crt_name(n) for n in names),",
+      "replace": "            \"crt\": False,"
+    },
+    {
+      "id": "f1_recall_ignores_wrong",
+      "desc": "yanlış isim FN sayılmaz (recall = TP/(GT-FP) şişmesi)",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_strict_prf_and_breakdown",
+      "find": "    recall = tp / n_gt if n_gt else 0.0",
+      "replace": "    recall = tp / (n_gt - fp) if n_gt else 0.0"
+    },
+    {
+      "id": "f1_image_offset_zero",
+      "desc": "Ghidra image-base ofseti yok sayılır (adresler kayar, kesişim boşalır)",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_image_offset_derived_from_entry",
+      "find": "            return fn[\"addr\"] - entry, \"ghidra_entry\"",
+      "replace": "            return 0, \"ghidra_entry\""
+    },
+    {
+      "id": "f1_fun_key_lookup_off",
+      "desc": "naming_map'te FUN_<adres> anahtarı denenmez (entry/_FINI_0 isimleri kaybolur)",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_crt_functions_not_scored",
+      "find": "    for key in (fn[\"name\"], f\"FUN_{fn['addr']:08x}\"):",
+      "replace": "    for key in (fn[\"name\"],):"
+    },
+    {
+      "id": "f1_buildid_guard_off",
+      "desc": "BuildID eşleşmesi kontrol edilmez (yanlış build'in sembolleri GT olur)",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_extract_gt_rejects_mismatched_or_unstripped",
+      "find": "    if not dbg[\"build_id\"] or dbg[\"build_id\"] != stp[\"build_id\"]:",
+      "replace": "    if False:"
+    },
+    {
+      "id": "f1_strip_guard_off",
+      "desc": "analiz edilecek binary'nin stripped olduğu kontrol edilmez (sızıntı)",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_extract_gt_rejects_mismatched_or_unstripped",
+      "find": "    if stp[\"has_symtab\"] or stp[\"debug_sections\"]:",
+      "replace": "    if False:"
+    },
+    {
+      "id": "f1_lenient_exact_only",
+      "desc": "lenient eşleşme compare_name'in semantic/partial sınıflarını kullanmaz",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_lenient_uses_compare_name",
+      "find": "match_type in (\"exact\", \"semantic\", \"partial\"):",
+      "replace": "match_type in (\"exact\",):"
+    },
+    {
+      "id": "f1_crt_scored",
+      "desc": "CRT/linker fonksiyonları puanlanır",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_crt_functions_not_scored",
+      "find": "        skip = \"crt\" if g[\"crt\"] else (\"exported\" if g.get(\"exported\") else None)",
+      "replace": "        skip = \"exported\" if g.get(\"exported\") else None"
+    },
+    {
+      "id": "f1_exported_scored",
+      "desc": ".dynsym'den ihraç edilen (ismi binary'de duran) fonksiyonlar puanlanır",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_exported_functions_not_scored",
+      "find": "        skip = \"crt\" if g[\"crt\"] else (\"exported\" if g.get(\"exported\") else None)",
+      "replace": "        skip = \"crt\" if g[\"crt\"] else None"
+    },
+    {
+      "id": "f1_exported_flag_lost_in_gt",
+      "desc": "GT çıkarımında .dynsym ihraç bayrağı konmaz",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_extract_gt_rejects_mismatched_or_unstripped",
+      "find": "        fn[\"exported\"] = _hex(fn[\"addr\"]) in exported",
+      "replace": "        fn[\"exported\"] = False"
+    },
+    {
+      "id": "f1_ghidra_name_counted_as_prediction",
+      "desc": "Ghidra'nın kendi koyduğu isim (thunk hedef adı) karadul tahmini sayılır",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_ghidra_thunk_autoname_is_not_prediction",
+      "find": "        predicted = lookup_prediction(naming_map, fn) if fn is not None else None",
+      "replace": "        predicted = (lookup_prediction(naming_map, fn) or ghidra_name) if fn is not None else None"
+    },
+    {
+      "id": "f1_ghidra_leak_flag_off",
+      "desc": "thunk olmayan Ghidra-isimli GT fonksiyonu sızıntı uyarısına düşmez",
+      "module": "scripts/measurement/function_f1.py",
+      "test": "tests/test_function_f1.py::test_ghidra_self_named_function_is_flagged_not_predicted",
+      "find": "(ghidra_thunk_named if fn[\"is_thunk\"] else ghidra_named_scored).append(names[0])",
+      "replace": "ghidra_thunk_named.append(names[0])"
+    }
+  ]
+}

@@ -1,8 +1,11 @@
 #!/bin/bash
 # Mac-native tam F1 ölçümü — fix'li kod (stages.py final_decompiled_dir seed).
 # Küçükten büyüğe sıralı, 3 paralel. cat zaten ölçüldü (cat_ws2), buraya dahil değil.
+# NOT (2026-09-25): yeni ölçüm zemini scripts/measurement/measure.py (sabit korpus,
+# worktree'den koşu, en çok 2 paralel). Bu script eski ~/karadul_meas düzeni içindir.
 set -u
-cd /Users/apple/Desktop/black-widow
+# Depo kökü = bu script'in (scripts/) bir üstü; karadul o ağaçtan koşar.
+cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || exit 1
 MEAS="$HOME/karadul_meas"
 PROG="$MEAS/batch_progress.log"
 

@@ -1,0 +1,35 @@
+{
+  "schema": "karadul-measurement-corpus/1",
+  "description": "Fonksiyon-ismi ölçüm korpusu. Aynı upstream kaynak (GNU coreutils 9.4, arm64), iki farklı dağıtım build'i. Stripped binary ve debug sembolleri resmi paketlerden, sha256 ile sabitlenmiş; eşleşme BuildID ile kanıtlanır.",
+  "binaries": ["cat", "cut", "wc", "expr", "comm"],
+  "corpora": {
+    "ubuntu-9.4-3ubuntu6": {
+      "distro": "Ubuntu 24.04 (noble), coreutils 9.4-3ubuntu6, arm64",
+      "build_notes": "LTO açık (-flto=auto): DWARF'ta '<artificial>' LTRANS CU var; fonksiyonların çoğu main'e/çağırana inline edilir -> binary başına yalnız 25-41 fonksiyon sembolü. ~/coreutils_gt/*.stripped ile bayt-bayt aynı (tarihsel ölçümlerin binary'leri).",
+      "packages": {
+        "binary": {
+          "url": "http://ports.ubuntu.com/ubuntu-ports/pool/main/c/coreutils/coreutils_9.4-3ubuntu6_arm64.deb",
+          "sha256": "6a49cb31be2c0d5403da0c675a5b3af9e7b2461b2d4c6a0e243f1627bed9cc81"
+        },
+        "dbgsym": {
+          "url": "http://ddebs.ubuntu.com/pool/main/c/coreutils/coreutils-dbgsym_9.4-3ubuntu6_arm64.ddeb",
+          "sha256": "a258a09942eeb64df5abaa020c46dbb3623840ef3644c37fbb0da00de45f0ee6"
+        }
+      }
+    },
+    "debian-9.4-3": {
+      "distro": "Debian (trixie/sid dönemi) coreutils 9.4-3, arm64 — snapshot.debian.org",
+      "build_notes": "LTO kapalı: gnulib fonksiyonları ayrı kalır -> binary başına 97-122 fonksiyon sembolü (zengin GT). Ubuntu paketi bu Debian sürümünden (9.4-3) türetilmiştir.",
+      "packages": {
+        "binary": {
+          "url": "https://snapshot.debian.org/file/ee1cbe57b783df62b0323b74e4026e40abdffeaf/coreutils_9.4-3_arm64.deb",
+          "sha256": "678054ad022760bd1e86c0a3df59c6465bc0be9295daa55627be22e1a4314853"
+        },
+        "dbgsym": {
+          "url": "https://snapshot.debian.org/file/f85a3afeb7300649836604402140c67a39721b30/coreutils-dbgsym_9.4-3_arm64.deb",
+          "sha256": "2a733a1bad31fcb1f7b0e0f424756964d22a6733286a6a01c82fe0f9cd09697b"
+        }
+      }
+    }
+  }
+}
