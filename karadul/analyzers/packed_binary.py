@@ -236,6 +236,64 @@ PYINSTALLER_MAGIC = b"MEI\014\013\012\013\016"
 PYINSTALLER_COOKIE_SIZE_NEW = 88
 PYINSTALLER_COOKIE_SIZE_OLD = 64
 
+# Cookie'nin sabit başı (PyInstaller archive/writers.py, CArchive cookie): magic(8) +
+# paket uzunluğu + TOC ofseti + TOC uzunluğu + Python sürümü, hepsi BIG-endian.
+# Cookie okuma TEK KAYNAK: PackingDetector, PyInstallerExtractor ve python_binary'nin
+# static TOC'si buradan okur (static kopya little-endian okuyup gerçek binary'lerde
+# python_version="9395896.32" ve 0 TOC girdisi üretiyordu).
+_PYINSTALLER_COOKIE_HEAD = struct.Struct("!8sIIII")
+
+
+def parse_pyinstaller_cookie(data: bytes, offset: int) -> dict[str, Any]:
+    """``offset``'teki PyInstaller cookie başını oku. Veri kısaysa ``struct.error``."""
+    magic, pkg_len, toc_off, toc_len, pyver = _PYINSTALLER_COOKIE_HEAD.unpack_from(data, offset)
+    return {
+        "magic": magic,
+        "package_length": pkg_len,
+        "toc_offset": toc_off,
+        "toc_length": toc_len,
+        "python_version": pyver,
+    }
+
+
+def pyinstaller_python_version(pyver: int) -> Optional[str]:
+    """Cookie'deki sürüm tamsayısı -> ``"3.12"``; makul değilse None.
+
+    PyInstaller >= 3 ``major * 100 + minor`` yazar (312); eski sürümler
+    ``major * 10 + minor`` (27). Yanlış okunmuş/bozuk değer sürüm diye raporlanmaz.
+    """
+    if pyver <= 0:
+        return None
+    major, minor = divmod(pyver, 100) if pyver >= 100 else divmod(pyver, 10)
+    if major not in (2, 3):
+        return None
+    return "%d.%d" % (major, minor)
+
+
+def locate_pyinstaller_archive(data: bytes) -> Optional[dict[str, Any]]:
+    """Gerçek cookie'yi bul; paket başlangıcını ve TOC konumunu hesapla.
+
+    Cookie paketin SONUNDADIR; bootloader MEI magic'ini başka yerde de
+    referanslayabilir, bu yüzden son eşleşme (``rfind``) alınır. Cookie, paket
+    içinde TOC'nin hemen ardındadır: ``pkg_start = cookie - toc_offset - toc_length``.
+    Bu hesap cookie boyutundan bağımsızdır (24/88 bayt) ve macOS imzalı onefile'da
+    da doğrudur (sondaki imza ofseti kaydırmaz).
+
+    Returns:
+        None (magic yok) ya da ``parse_pyinstaller_cookie`` alanları + ``cookie_offset``,
+        ``pkg_start``, ``toc_start``. Cookie kısa ise ``struct.error`` yükselir.
+    """
+    cookie_offset = data.rfind(PYINSTALLER_MAGIC)
+    if cookie_offset < 0:
+        return None
+    info = parse_pyinstaller_cookie(data, cookie_offset)
+    pkg_start = max(0, cookie_offset - info["toc_offset"] - info["toc_length"])
+    info["cookie_offset"] = cookie_offset
+    info["pkg_start"] = pkg_start
+    info["toc_start"] = pkg_start + info["toc_offset"]
+    return info
+
+
 # Nuitka tanimlayici stringler
 NUITKA_SIGNATURES = [
     b"__nuitka_",
@@ -512,38 +570,20 @@ class PackingDetector:
             "magic_found": True,
         }
 
-        # Cookie struct'ini parse etmeye calis
-        # Format (Py3.9+, 88 byte):
-        #   magic (8) + len_of_package (4) + toc_offset (4) + toc_len (4)
-        #   + python_version (4) + python_dll (64)
+        # Cookie başı (tek kaynak: parse_pyinstaller_cookie). Yeni biçim 88 bayt
+        # (+ python_dll 64), eski 64 bayt; ilk 24 bayt ikisinde de aynı.
         remaining = len(data) - offset
-        if remaining >= PYINSTALLER_COOKIE_SIZE_NEW:
+        if remaining >= PYINSTALLER_COOKIE_SIZE_OLD:
             try:
-                cookie_data = data[offset:offset + PYINSTALLER_COOKIE_SIZE_NEW]
-                # magic (8) + package_len (I) + toc_offset (I) + toc_len (I) + py_version (I)
-                magic, pkg_len, toc_off, toc_len, py_ver = struct.unpack(
-                    "!8sIIII", cookie_data[:24],
-                )
-                result["package_length"] = pkg_len
-                result["toc_offset"] = toc_off
-                result["toc_length"] = toc_len
-                result["python_version"] = py_ver
-                result["cookie_format"] = "new"
+                cookie = parse_pyinstaller_cookie(data, offset)
             except struct.error:
                 result["cookie_format"] = "parse_error"
-        elif remaining >= PYINSTALLER_COOKIE_SIZE_OLD:
-            try:
-                cookie_data = data[offset:offset + PYINSTALLER_COOKIE_SIZE_OLD]
-                magic, pkg_len, toc_off, toc_len, py_ver = struct.unpack(
-                    "!8sIIII", cookie_data[:24],
+            else:
+                for key in ("package_length", "toc_offset", "toc_length", "python_version"):
+                    result[key] = cookie[key]
+                result["cookie_format"] = (
+                    "new" if remaining >= PYINSTALLER_COOKIE_SIZE_NEW else "old"
                 )
-                result["package_length"] = pkg_len
-                result["toc_offset"] = toc_off
-                result["toc_length"] = toc_len
-                result["python_version"] = py_ver
-                result["cookie_format"] = "old"
-            except struct.error:
-                result["cookie_format"] = "parse_error"
 
         return result
 
@@ -1345,22 +1385,10 @@ class PyInstallerExtractor:
                 output_dir=output_dir,
             )
 
-        # Cookie'yi bul. rfind: cookie paketin SONUNDADIR; bazi bootloader'lar MEI
-        # magic string'ini referanslayabilir (hata mesaji vb.) -> find ilk (yanlis)
-        # eslesmeyi alir. rfind son (gercek cookie) eslesmeyi garanti eder.
-        cookie_offset = data.rfind(PYINSTALLER_MAGIC)
-        if cookie_offset < 0:
-            return UnpackResult(
-                success=False,
-                packing_type=PackingType.PYINSTALLER,
-                errors=["PyInstaller cookie bulunamadi"],
-                duration_seconds=time.monotonic() - start,
-                output_dir=output_dir,
-            )
-
-        # Cookie'den TOC bilgisini oku
+        # Cookie + paket başlangıcı: tek kaynak locate_pyinstaller_archive (son MEI
+        # magic'i; pkg_start = cookie - toc_offset - toc_length, cookie boyutundan bağımsız).
         try:
-            toc_info = self._parse_cookie(data, cookie_offset)
+            toc_info = locate_pyinstaller_archive(data)
         except Exception as exc:
             return UnpackResult(
                 success=False,
@@ -1369,24 +1397,18 @@ class PyInstallerExtractor:
                 duration_seconds=time.monotonic() - start,
                 output_dir=output_dir,
             )
-
-        # Package offset hesapla. Cookie, paket icinde TOC'un HEMEN ARDINDADIR:
-        #   cookie_abs = pkg_start + toc_off + toc_len  ->  pkg_start = cookie_off - toc_off - toc_len.
-        # Bu hesap cookie-boyutundan BAGIMSIZ (eski 24-byte + yeni 88-byte cookie'de dogru)
-        # ve cookie-anchorli oldugundan macOS imzali onefile'da da dogru (trailing code
-        # signature offset'i kaydirmaz — `fileSize - pkg_len` yaklasimi imza kadar kayardi).
-        # Eski kod (cookie_offset - pkg_len) cookie boyutunu atlayip TOC'u erken hizaliyor,
-        # cop entry uretiyordu.
-        pkg_start = cookie_offset - toc_info["toc_offset"] - toc_info["toc_length"]
-        if pkg_start < 0:
-            pkg_start = 0
+        if toc_info is None:
+            return UnpackResult(
+                success=False,
+                packing_type=PackingType.PYINSTALLER,
+                errors=["PyInstaller cookie bulunamadi"],
+                duration_seconds=time.monotonic() - start,
+                output_dir=output_dir,
+            )
+        pkg_start = toc_info["pkg_start"]
 
         # TOC'u parse et
-        toc_entries = self._parse_toc(
-            data,
-            pkg_start + toc_info["toc_offset"],
-            toc_info["toc_length"],
-        )
+        toc_entries = self._parse_toc(data, toc_info["toc_start"], toc_info["toc_length"])
 
         logger.info(
             "PyInstaller TOC: %d entry, package @ %d, toc @ %d",
@@ -1502,15 +1524,7 @@ class PyInstallerExtractor:
         Returns:
             dict: Cookie bilgileri.
         """
-        # 8s: magic, I: pkg_len, I: toc_off, I: toc_len, I: py_ver
-        cookie = struct.unpack("!8sIIII", data[offset:offset + 24])
-        return {
-            "magic": cookie[0],
-            "package_length": cookie[1],
-            "toc_offset": cookie[2],
-            "toc_length": cookie[3],
-            "python_version": cookie[4],
-        }
+        return parse_pyinstaller_cookie(data, offset)
 
     @staticmethod
     def _parse_toc(data: bytes, toc_start: int, toc_length: int) -> list[dict[str, Any]]:

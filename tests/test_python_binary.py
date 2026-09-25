@@ -66,10 +66,10 @@ def mock_pyinstaller_binary(tmp_path: Path) -> Path:
     content += b"site-packages/click\x00"
     content += b"Traceback (most recent call last)\x00"
     content += b"\x00" * 64  # padding
-    # PyInstaller archive cookie (simplified)
+    # PyInstaller archive cookie (simplified) -- gerçek biçim BIG-endian
     content += _PYINSTALLER_MAGIC
     # pkg_length (4 bytes), toc_offset (4 bytes), toc_length (4 bytes), pyver (4 bytes)
-    content += struct.pack("<IIII", 0, 0, 0, 311)  # pyver = 311 -> Python 3.11
+    content += struct.pack("!IIII", 0, 0, 0, 311)  # pyver = 311 -> Python 3.11
 
     binary_path.write_bytes(content)
     return binary_path
@@ -426,54 +426,39 @@ class TestPyInstallerTOC:
         assert result is None
 
     def test_toc_with_magic_and_version(self, python_analyzer: PythonBinaryAnalyzer, mock_pyinstaller_binary: Path):
-        """MEI magic ve versiyon bilgisi parse edilmeli."""
+        """MEI magic ve cookie'deki sürüm (311 -> "3.11") okunmalı."""
         data = mock_pyinstaller_binary.read_bytes()
         result = python_analyzer._parse_pyinstaller_toc(data)
 
-        # Cookie'den en azindan version bilgisi cikmali
-        if result is not None:
-            if "python_version" in result:
-                assert "3.11" in result["python_version"]
+        assert result is not None
+        assert result["python_version"] == "3.11"
+        assert result["total"] == 0
 
     def test_toc_synthetic_entries(self, python_analyzer: PythonBinaryAnalyzer):
-        """Sentetik TOC entry'leri parse edilmeli."""
-        # TOC entry olustur:
-        # entry_len (4) + offset (4) + comp_len (4) + uncomp_len (4)
+        """Sentetik TOC entry'leri parse edilmeli (gerçek biçim: big-endian)."""
+        # TOC entry: entry_len (4) + offset (4) + comp_len (4) + uncomp_len (4)
         # + compress_flag (1) + type_flag (1) + name (null-terminated)
         name = b"__main__\x00"
-        entry_data = struct.pack("<IIII", 18 + len(name), 0, 100, 200)
+        entry_data = struct.pack("!IIII", 18 + len(name), 0, 100, 200)
         entry_data += bytes([0])  # compress_flag = 0
         entry_data += bytes([ord("s")])  # type_flag = 's' (script)
         entry_data += name
 
         toc_length = len(entry_data)
 
-        # Cookie: magic + pkg_length + toc_offset + toc_length + pyver
+        # Cookie TOC'nin hemen ardında: pkg_start = cookie - toc_offset - toc_length = 0.
         cookie = _PYINSTALLER_MAGIC
-        # pkg_length: cookie_start'dan (=TOC baslangici) archive basina mesafe
-        # Archive baslangici = 0, cookie_start = toc_length
-        # Dolayisiyla pkg_length = toc_length + 24 (cookie boyutu)
-        # toc_offset = 0 (package baslangicina gore)
-        # toc_abs = cookie_start - pkg_length + toc_offset
-        #         = toc_length - (toc_length + 24) + 0 = -24 -> YANLIS
-        #
-        # Dogrusu: pkg_length = cookie_start (archive bas = 0)
-        # toc_offset: cookie_start'a gore degil, archive basina gore
-        # toc_abs = cookie_start - pkg_length + toc_offset
-        # Eger pkg_length = toc_length, toc_offset = 0:
-        #   toc_abs = toc_length - toc_length + 0 = 0 -> DOGRU!
-        pkg_length = toc_length  # archive = dosya basi
-        toc_offset = 0
-        cookie += struct.pack("<IIII", pkg_length, toc_offset, toc_length, 311)
+        cookie += struct.pack("!IIII", toc_length + 24, 0, toc_length, 311)
 
         data = entry_data + cookie
 
         result = python_analyzer._parse_pyinstaller_toc(data)
 
         assert result is not None
-        assert result["total"] >= 1
+        assert result["total"] == 1
         assert result["entries"][0]["name"] == "__main__"
         assert result["entries"][0]["type"] == "s"
+        assert result["python_version"] == "3.11"
 
 
 # --------------------------------------------------------------------------

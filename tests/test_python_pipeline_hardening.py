@@ -149,3 +149,69 @@ class TestMadde1StdlibDisAyriSurecte:
         other = "3.8" if RUNNING != "3.8" else "3.9"
         assert pd._disassemble(_pyc(tmp_path / "m.pyc"), other, timeout=30) is None
         assert spawned == []
+
+
+# ---------------------------------------------------------------------------
+# Madde 2: static TOC cookie'yi çıkarıcıyla aynı kaynaktan (big-endian) okuyor
+# ---------------------------------------------------------------------------
+
+REAL_HELLO = Path("/private/tmp/pycdc_e2e/py312/dist/hello")
+REAL_APP = Path("/private/tmp/pycdc_e2e/py312_mod/dist/app")
+
+
+def _analyzer():  # type: ignore[no-untyped-def]
+    from karadul.analyzers.python_binary import PythonBinaryAnalyzer
+    from karadul.config import Config
+    return PythonBinaryAnalyzer(Config())
+
+
+def _pyi_blob(files: list[tuple[str, bytes, int]], py_ver: int = 312) -> bytes:
+    """Gerçek CArchive düzeni (tests.test_packed_binary kurucusu) + seçilen cookie sürümü."""
+    import struct
+    from karadul.analyzers.packed_binary import PYINSTALLER_MAGIC
+    from tests.test_packed_binary import _build_pyinstaller_blob
+    blob, cookie_offset = _build_pyinstaller_blob(files)
+    ver_at = cookie_offset + len(PYINSTALLER_MAGIC) + 12
+    return blob[:ver_at] + struct.pack("!I", py_ver) + blob[ver_at + 4:]
+
+
+class TestMadde2CookieTekKaynak:
+    def test_static_toc_cikariciyla_ayni(self) -> None:
+        from karadul.analyzers.packed_binary import PyInstallerExtractor, locate_pyinstaller_archive
+        blob = _pyi_blob([
+            ("app", marshal.dumps(compile("x = 1\n", "app", "exec")), ord("s")),
+            ("pyimod01_archive", b"\x00" * 8, ord("m")),
+            ("PYZ.pyz", b"PYZ\x00" + b"\x00" * 20, ord("z")),
+        ])
+        res = _analyzer()._parse_pyinstaller_toc(blob)
+        assert res is not None
+        assert res["python_version"] == "3.12"
+        assert [(e["name"], e["type"]) for e in res["entries"]] == [
+            ("app", "s"), ("pyimod01_archive", "m"), ("PYZ.pyz", "z"),
+        ]
+        info = locate_pyinstaller_archive(blob)
+        toc = PyInstallerExtractor._parse_toc(blob, info["toc_start"], info["toc_length"])
+        assert [e["name"] for e in toc] == [e["name"] for e in res["entries"]]
+        assert res["package_length"] == info["package_length"]
+
+    @pytest.mark.parametrize("pyver,beklenen", [
+        (312, "3.12"), (309, "3.9"), (27, "2.7"), (39, "3.9"),
+        # little-endian okunmuş 312 (eski hata) ve anlamsız değerler sürüm sayılmaz
+        (939589632, None), (0, None), (150, None), (7, None),
+    ])
+    def test_cookie_surumu_makul_degilse_raporlanmaz(self, pyver: int, beklenen: object) -> None:
+        from karadul.analyzers.packed_binary import pyinstaller_python_version
+        assert pyinstaller_python_version(pyver) == beklenen
+
+    def test_kisa_cookie_none(self) -> None:
+        from karadul.analyzers.packed_binary import PYINSTALLER_MAGIC
+        assert _analyzer()._parse_pyinstaller_toc(b"\x00" * 64 + PYINSTALLER_MAGIC + b"\x01") is None
+
+    @pytest.mark.skipif(not REAL_HELLO.is_file(), reason=f"gerçek binary yok: {REAL_HELLO}")
+    def test_gercek_binary_surum_ve_girdiler(self) -> None:
+        res = _analyzer()._parse_pyinstaller_toc(REAL_HELLO.read_bytes())
+        assert res is not None
+        assert res["python_version"] == "3.12"       # eskiden "9395896.32"
+        assert res["total"] == 52                      # eskiden 0
+        names = {e["name"] for e in res["entries"]}
+        assert {"hello", "PYZ.pyz", "struct", "pyiboot01_bootstrap"} <= names

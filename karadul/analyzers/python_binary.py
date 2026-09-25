@@ -38,7 +38,13 @@ from karadul.analyzers.pyc_decompiler import (
     repair_pyc_header,
     version_from_pyc_bytes,
 )
-from karadul.analyzers.packed_binary import PYZ_MAGIC, unique_casefold_name
+from karadul.analyzers.packed_binary import (
+    PYZ_MAGIC,
+    PyInstallerExtractor,
+    locate_pyinstaller_archive,
+    pyinstaller_python_version,
+    unique_casefold_name,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -932,92 +938,43 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
     # PyInstaller TOC parsing
     # ------------------------------------------------------------------
 
-    def _parse_pyinstaller_toc(self, data: bytes) -> dict[str, Any] | None:
-        """PyInstaller archive TOC (Table of Contents) parse.
+    @staticmethod
+    def _read_pyinstaller_archive(
+        data: bytes,
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]] | None:
+        """Cookie + CArchive TOC: reconstruct'taki çıkarıcıyla AYNI kod (tek kaynak).
 
-        PyInstaller archive sonunda bir cookie (magic) bulunur.
-        Cookie'den geriye dogru TOC offset'i okunur.
-
-        Cookie format (son 24+ byte):
-        - 8 byte: MEI magic
-        - 4 byte: archive baslangic ofseti (length)
-        - 4 byte: TOC offset
-        - 4 byte: TOC length
-        - 4 byte: Python versiyon (major * 100 + minor)
+        ``packed_binary.locate_pyinstaller_archive`` (big-endian cookie, son MEI
+        magic'i) + ``PyInstallerExtractor._parse_toc`` (DoS sınırlı TOC okuyucu).
+        Dosya çıkarmaz. Magic yoksa ya da cookie kısaysa None.
         """
-        # MEI magic'i binary sonundan bul
-        magic_pos = data.rfind(_PYINSTALLER_MAGIC)
-        if magic_pos < 0:
-            return None
-
-        # Cookie'nin geri kalanini oku (magic'den sonra 16 byte)
-        cookie_start = magic_pos
-        if cookie_start + 24 > len(data):
-            return None
-
         try:
-            # Magic'den sonraki 16 byte'i parse et
-            (pkg_length, toc_offset, toc_length, pyver) = struct.unpack(
-                "<IIII", data[cookie_start + 8:cookie_start + 24]
-            )
+            info = locate_pyinstaller_archive(data)
         except struct.error:
             return None
+        if info is None:
+            return None
+        return info, PyInstallerExtractor._parse_toc(data, info["toc_start"], info["toc_length"])
 
-        # Versiyon decode: 311 -> "3.11"
-        py_major = pyver // 100
-        py_minor = pyver % 100
-        py_version = f"{py_major}.{py_minor}" if pyver > 0 else None
+    def _parse_pyinstaller_toc(self, data: bytes) -> dict[str, Any] | None:
+        """PyInstaller CArchive TOC'sinin özeti (static aşama; dosya çıkarmaz).
 
-        entries: list[dict[str, Any]] = []
-
-        # TOC'u parse et
-        # TOC entry format:
-        # 4 byte: entry length (dahil)
-        # 4 byte: compressed data offset
-        # 4 byte: compressed data length
-        # 4 byte: uncompressed data length
-        # 1 byte: compress flag
-        # 1 byte: type flag (s=script, m=module, M=package, z=PYZ, etc.)
-        # variable: name (null-terminated)
-        toc_abs_offset = cookie_start - pkg_length + toc_offset
-
-        if 0 <= toc_abs_offset < len(data):
-            pos = toc_abs_offset
-            end = toc_abs_offset + toc_length
-
-            while pos + 18 <= end and pos < len(data):
-                try:
-                    entry_len = struct.unpack("<I", data[pos:pos + 4])[0]
-                except struct.error:
-                    break
-
-                if entry_len < 18 or entry_len > 65536:
-                    break
-
-                if pos + entry_len > len(data):
-                    break
-
-                try:
-                    compress_flag = data[pos + 16]
-                    type_flag = data[pos + 17]
-                    # Isim: 18. byte'dan entry sonuna kadar, null-terminated
-                    name_bytes = data[pos + 18:pos + entry_len]
-                    null_idx = name_bytes.find(b"\x00")
-                    if null_idx >= 0:
-                        name_bytes = name_bytes[:null_idx]
-                    name = name_bytes.decode("utf-8", errors="replace")
-                except (IndexError, struct.error):
-                    break
-
-                type_char = chr(type_flag) if 32 <= type_flag < 127 else "?"
-                entries.append({
-                    "name": name,
-                    "type": type_char,
-                    "compressed": bool(compress_flag),
-                })
-
-                pos += entry_len
-
+        Eski kopya cookie'yi little-endian okuyordu: gerçek binary'lerde
+        python_version "9395896.32" ve 0 girdi. Artık okuma ``_read_pyinstaller_archive``.
+        """
+        archive = self._read_pyinstaller_archive(data)
+        if archive is None:
+            return None
+        info, toc = archive
+        entries = [
+            {
+                "name": e["name"],
+                "type": chr(e["type_flag"]) if 32 <= e["type_flag"] < 127 else "?",
+                "compressed": e["is_compressed"],
+            }
+            for e in toc
+        ]
+        py_version = pyinstaller_python_version(info["python_version"])
         if not entries and py_version is None:
             return None
 
@@ -1027,8 +984,8 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         }
         if py_version:
             result["python_version"] = py_version
-        if pkg_length:
-            result["package_length"] = pkg_length
+        if info["package_length"]:
+            result["package_length"] = info["package_length"]
 
         return result
 
