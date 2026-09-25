@@ -24,10 +24,12 @@ from __future__ import annotations
 
 import glob
 import hashlib
+import hmac
 import json
 import os
 import platform
 import re
+import secrets
 import shutil
 import signal
 import subprocess
@@ -67,9 +69,14 @@ _FUN_RE = re.compile(r"FUN_[0-9a-fA-F]+")
 # Port env'den: app_window.py boş bir port seçip burayı öyle başlatır. Sabit 8000
 # hem çakışıyor hem de app_window'un KARADUL_PORT'u burada okunmadığı için o
 # kaçış yolu fiilen kırıktı. _TOKEN: /api/ping ile "bu gerçekten bizim server"
-# doğrulaması (yabancı veya öksüz servise bağlanmayı önler).
+# doğrulaması (yabancı veya öksüz servise bağlanmayı önler) VE istek jetonu:
+# /api/ping dışındaki her /api/* isteği X-Karadul-Token başlığıyla bu jetonu
+# taşımalı (Handler._guard). Env'de yoksa (tek başına dev koşusu) rastgele üretilir;
+# boş jeton kabul edilmez.
 _PORT = int(os.environ.get("KARADUL_PORT", "8000"))
-_TOKEN = os.environ.get("KARADUL_TOKEN", "")
+_TOKEN = os.environ.get("KARADUL_TOKEN") or secrets.token_hex(16)
+# POST gövdeleri küçük JSON (analiz hedefi, yeniden adlandırma, ayar knob'ları).
+_MAX_BODY = 64 * 1024
 _CACHE: dict = {}
 _CACHE_LOCK = threading.Lock()
 _JOBS: dict = {}
@@ -1711,25 +1718,83 @@ def _job_progress(job: str) -> dict:
 # ---------------------------------------------------------------------------
 # HTTP
 # ---------------------------------------------------------------------------
+def _json_object(raw: bytes) -> dict:
+    """POST gövdesini JSON nesnesi olarak çöz; bozuk ya da nesne olmayan gövde -> {}."""
+    try:
+        body = json.loads(raw or b"{}")
+    except ValueError:  # JSONDecodeError + geçersiz UTF-8
+        return {}
+    return body if isinstance(body, dict) else {}
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args) -> None:
         pass
 
-    def _send(self, code, ctype, body: bytes):
+    def _send(self, code, ctype, body: bytes, extra_headers: dict | None = None):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        for key, value in (extra_headers or {}).items():
+            self.send_header(key, value)
         self.end_headers()
         self.wfile.write(body)
 
     def _json(self, obj, code=200):
         self._send(code, "application/json", json.dumps(obj).encode("utf-8"))
 
+    def _guard(self, *, needs_token: bool) -> bool:
+        """Yerel sunucu koruması; izin yoksa 403 gönderir ve False döner.
+
+        127.0.0.1'e bağlanmak tek başına yetmez: tarayıcıda açık herhangi bir sayfa
+        bu porta istek atabilir (CSRF) ve DNS rebinding ile yanıtları okuyabilir.
+        - Host yalnız 127.0.0.1:<port> / localhost:<port> (rebinding'de Host,
+          saldırganın alan adıdır).
+        - Origin varsa aynı köken olmalı (tarayıcı çapraz köken POST'ta gönderir).
+        - /api/ping dışındaki /api/* istekleri X-Karadul-Token taşımalı: özel başlık
+          çapraz kökende CORS ön-uçuşunu zorlar, bu sunucu ön-uçuşa izin vermez.
+        """
+        hosts = {f"127.0.0.1:{_PORT}", f"localhost:{_PORT}"}
+        if self.headers.get("Host", "") not in hosts:
+            self._json({"error": "izin verilmeyen Host"}, 403)
+            return False
+        origin = self.headers.get("Origin")
+        if origin is not None and origin not in {f"http://{h}" for h in hosts}:
+            self._json({"error": "izin verilmeyen köken"}, 403)
+            return False
+        # bayt karşılaştırması: ASCII dışı başlık compare_digest'te TypeError fırlatmasın
+        if needs_token and not hmac.compare_digest(
+            self.headers.get("X-Karadul-Token", "").encode("utf-8"), _TOKEN.encode("utf-8"),
+        ):
+            self._json({"error": "geçersiz jeton"}, 403)
+            return False
+        return True
+
+    def _read_body(self) -> bytes | None:
+        """POST gövdesini sınırlı oku; geçersiz/aşırı uzunlukta hata gönderip None döner."""
+        try:
+            n = int(self.headers.get("Content-Length", 0) or 0)
+        except ValueError:
+            n = -1
+        if n < 0:
+            self._json({"error": "geçersiz Content-Length"}, 400)
+            return None
+        if n > _MAX_BODY:
+            self._json({"error": "gövde çok büyük"}, 413)
+            return None
+        return self.rfile.read(n) if n else b""
+
     def do_GET(self):  # noqa: N802
         path = self.path.split("?", 1)[0]
+        if not self._guard(needs_token=path.startswith("/api/") and path != "/api/ping"):
+            return
         if path in ("/", "/index.html"):
             html = (Path(__file__).parent / "index.html").read_text(encoding="utf-8")
-            self._send(200, "text/html; charset=utf-8", html.encode("utf-8"))
+            # Sayfa kendi istek jetonunu taşır; Host koruması yüzünden yabancı köken
+            # bu yanıtı okuyamaz. no-store: yeniden başlatmada eski jetonlu sayfa kalmasın.
+            html = html.replace("__KARADUL_TOKEN__", _TOKEN)
+            self._send(200, "text/html; charset=utf-8", html.encode("utf-8"),
+                       {"Cache-Control": "no-store"})
         elif path == "/favicon.ico":
             # kucuk seffaf favicon (404 gurultusunu onle)
             self._send(200, "image/svg+xml",
@@ -1802,32 +1867,30 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": "not found"}, 404)
 
     def do_POST(self):  # noqa: N802
-        if self.path.split("?", 1)[0] == "/api/analyze":
-            n = int(self.headers.get("Content-Length", 0) or 0)
-            try:
-                body = json.loads(self.rfile.read(n) or b"{}")
-            except json.JSONDecodeError:
-                body = {}
+        if not self._guard(needs_token=True):
+            return
+        # Gövde her uçta sınırlı okunur (tetikleyici uçlarda da drain edilir).
+        raw = self._read_body()
+        if raw is None:
+            return
+        path = self.path.split("?", 1)[0]
+        if path == "/api/analyze":
+            body = _json_object(raw)
             binary = body.get("binary", "")
             if not binary:
                 self._json({"error": "binary belirtilmedi"}, 400)
                 return
             self._json(start_analysis(binary))
-        elif self.path.split("?", 1)[0] == "/api/rename":
-            n = int(self.headers.get("Content-Length", 0) or 0)
-            try:
-                body = json.loads(self.rfile.read(n) or b"{}")
-            except json.JSONDecodeError:
-                body = {}
+        elif path == "/api/rename":
+            body = _json_object(raw)
             addr = str(body.get("addr", ""))
             name = str(body.get("name", ""))
             result = _do_rename(addr, name)
             self._json(result, result.pop("__code", 200))
-        elif self.path.split("?", 1)[0] == "/api/settings":
-            n = int(self.headers.get("Content-Length", 0) or 0)
+        elif path == "/api/settings":
             try:
-                body = json.loads(self.rfile.read(n) or b"{}")
-            except json.JSONDecodeError:
+                body = json.loads(raw or b"{}")
+            except ValueError:  # JSONDecodeError + geçersiz UTF-8
                 self._json({"error": "geçersiz JSON"}, 400)
                 return
             if not isinstance(body, dict):
@@ -1836,16 +1899,13 @@ class Handler(BaseHTTPRequestHandler):
                 return
             result = _write_settings(body.get("knobs", {}))
             self._json(result, result.pop("__code", 200))
-        elif self.path.split("?", 1)[0] == "/api/open-fda-settings":
-            # Sistem Ayarları FDA bölmesini aç (gövde OKUNMAZ; sadece tetikleyici).
+        elif path == "/api/open-fda-settings":
+            # Sistem Ayarları FDA bölmesini aç (gövde kullanılmaz; sadece tetikleyici).
             result = _open_fda_settings()
             self._json(result, result.pop("__code", 200))
-        elif self.path.split("?", 1)[0] == "/api/update-download":
+        elif path == "/api/update-download":
             # DMG'yi indir -> sha256 dogrula -> mount (arka planda; YERINDE-DEGISTIRMESIZ).
-            # Govde OKUNMAZ (JS'ten URL ALINMAZ) -- sadece tetikleyici; yine de drain et.
-            n = int(self.headers.get("Content-Length", 0) or 0)
-            if n:
-                _safe(lambda: self.rfile.read(n), None)
+            # Gövde kullanılmaz (JS'ten URL ALINMAZ) -- sadece tetikleyici.
             self._json(_safe(_start_update_download, {"status": "error",
                        "error": "ic hata", "downloaded": 0, "total": 0}))
         else:

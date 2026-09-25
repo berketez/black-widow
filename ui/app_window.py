@@ -46,6 +46,8 @@ TOKEN = os.environ.get("KARADUL_TOKEN") or secrets.token_hex(16)
 os.environ["KARADUL_PORT"] = str(PORT)
 os.environ["KARADUL_TOKEN"] = TOKEN
 URL = f"http://127.0.0.1:{PORT}"
+# Server /api/ping dışındaki her /api/* isteğinde bu jetonu ister (ui/server.py Handler._guard).
+_API_HEADERS = {"X-Karadul-Token": TOKEN}
 
 
 def _up() -> bool:
@@ -175,7 +177,8 @@ class _JsApi:
         """
         try:
             req = urllib.request.Request(
-                f"{URL}/api/update-download", data=b"{}", method="POST")
+                f"{URL}/api/update-download", data=b"{}", method="POST",
+                headers=_API_HEADERS)
             with urllib.request.urlopen(req, timeout=5) as r:
                 json.load(r)
             return True
@@ -191,7 +194,8 @@ def _check_update_async() -> None:
     Güncelleme yoksa/ağ yoksa sessizce döner -- kullanıcı hiçbir şey görmez.
     """
     try:
-        with urllib.request.urlopen(f"{URL}/api/update-check", timeout=8) as r:
+        req = urllib.request.Request(f"{URL}/api/update-check", headers=_API_HEADERS)
+        with urllib.request.urlopen(req, timeout=8) as r:
             info = json.load(r)
     except Exception:
         return
@@ -235,7 +239,9 @@ def _act_check_update() -> None:
     """
     def _run() -> None:
         try:
-            with urllib.request.urlopen(f"{URL}/api/update-check?force=1", timeout=12) as r:
+            req = urllib.request.Request(f"{URL}/api/update-check?force=1",
+                                         headers=_API_HEADERS)
+            with urllib.request.urlopen(req, timeout=12) as r:
                 info = json.load(r)
         except Exception:
             info = None

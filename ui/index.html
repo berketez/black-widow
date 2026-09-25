@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="karadul-token" content="__KARADUL_TOKEN__">
 <title>BLACK WIDOW — Karadul</title>
 <style>
   :root{
@@ -668,6 +669,17 @@
 </div>
 
 <script>
+/* Yerel API koruması: her /api/ isteği, sunucunun bu sayfayı servis ederken gömdüğü
+   jetonu X-Karadul-Token başlığıyla taşır (ui/server.py Handler._guard). Tek sarmalayıcı,
+   tüm fetch çağrılarını kapsar. */
+const KARADUL_TOKEN=(document.querySelector('meta[name="karadul-token"]')||{}).content||'';
+const _rawFetch=window.fetch.bind(window);
+window.fetch=(url,opts={})=>{
+  if(typeof url==='string'&&url.startsWith('/api/')){
+    opts=Object.assign({},opts,{headers:Object.assign({},opts.headers||{},{'X-Karadul-Token':KARADUL_TOKEN})});
+  }
+  return _rawFetch(url,opts);
+};
 const $=id=>document.getElementById(id);
 const SVGNS="http://www.w3.org/2000/svg";
 let MODEL=null, BYADDR={}, CENTER=null, HIST=[], SELBIN=null, POLL=null;
