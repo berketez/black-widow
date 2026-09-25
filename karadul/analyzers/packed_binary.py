@@ -27,7 +27,12 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional
 
-from karadul.analyzers.pyc_decompiler import repair_pyc_header, version_from_pyc_bytes
+from karadul.analyzers.pyc_decompiler import (
+    _partial_banner,
+    _source_problems,
+    repair_pyc_header,
+    version_from_pyc_bytes,
+)
 from karadul.config import Config
 from karadul.core.safe_subprocess import resolve_tool, safe_run, safe_zlib_decompress
 
@@ -123,7 +128,7 @@ class ExtractedFile:
     """Acilan dosya bilgisi."""
     path: Path
     original_name: str
-    file_type: str              # "pyc", "so", "dll", "data", "python_source"
+    file_type: str              # "pyc", "so", "dll", "data", "python_source", "python_partial"
     size: int
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -1883,12 +1888,40 @@ class PyInstallerExtractor:
                     timeout=30,
                 )
                 if result.returncode == 0 and out_path.exists():
+                    # uncompyle6/decompyle3 CLI çözemediği dosyada da 0 ile çıkar ve
+                    # kısmi -o dosyasını bırakır: pycdc ile aynı doğrulama.
+                    src = out_path.read_text(encoding="utf-8", errors="replace")
+                    problems = _source_problems(
+                        src, tool=decompiler, returncode=result.returncode,
+                        stderr=result.stderr or "",
+                    )
+                    meta = {"decompiler": decompiler, "source_pyc": str(pyc_file.path)}
+                    if problems:
+                        reason = "; ".join(problems)
+                        partial_path = out_path.with_name(out_name + ".partial.py")
+                        partial_path.write_text(
+                            _partial_banner(reason, decompiler) + src,
+                            encoding="utf-8", errors="replace",
+                        )
+                        out_path.unlink()
+                        logger.debug(
+                            "%s ciktisi dogrulanamadi (%s): %s",
+                            decompiler, pyc_file.original_name, reason,
+                        )
+                        decompiled.append(ExtractedFile(
+                            path=partial_path,
+                            original_name=pyc_file.original_name,
+                            file_type="python_partial",
+                            size=partial_path.stat().st_size,
+                            metadata={**meta, "problems": problems},
+                        ))
+                        continue
                     decompiled.append(ExtractedFile(
                         path=out_path,
                         original_name=pyc_file.original_name,
                         file_type="python_source",
                         size=out_path.stat().st_size,
-                        metadata={"decompiler": decompiler, "source_pyc": str(pyc_file.path)},
+                        metadata=meta,
                     ))
                 else:
                     logger.debug(

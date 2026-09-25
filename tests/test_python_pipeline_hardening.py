@@ -458,3 +458,117 @@ class TestMadde5ZincirUstSiniri:
         assert manifest["decompile"]["skipped_by_limit"] == 3
         assert "3 .pyc decompile üst sınırı (1)" in manifest["note"]
         assert (proj / "decompile_skipped.json").is_file()
+
+
+# ---------------------------------------------------------------------------
+# Madde 6: decompyle3/uncompyle6 çıktısı pycdc'yle aynı doğrulamadan geçer
+# ---------------------------------------------------------------------------
+
+# uncompyle6/decompyle3 3.9.3'ün çözemediği bölüm için yazdığı biçim (parser_error.py)
+_FAILED_SECTION = ("def f(x):\n--- This code section failed: ---\n\n"
+                   " L.   2         0  LOAD_FAST                'x'\n\n"
+                   "Parse error at or near `RETURN_VALUE' instruction at offset 4\n")
+
+
+def _fake_pylib(monkeypatch: pytest.MonkeyPatch, outputs: dict[str, str]) -> None:
+    import types
+    for name in ("decompyle3", "uncompyle6"):
+        monkeypatch.delitem(sys.modules, name, raising=False)
+    for name, text in outputs.items():
+        mod = types.ModuleType(name)
+        mod.decompile_file = lambda path, out, _t=text: out.write(_t)  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, name, mod)
+
+
+def _pyc38(tmp_path: Path) -> Path:
+    p = tmp_path / "m.pyc"
+    p.write_bytes(repair_pyc_header(marshal.dumps(compile("x = 1\n", "m", "exec")), "3.8"))
+    return p
+
+
+class TestMadde6PylibDogrulama:
+    @pytest.fixture(autouse=True)
+    def _arac_yok(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(pd, "resolve_tool", lambda name, **k: None)   # pycdc/pycdas yok
+
+    @pytest.mark.parametrize("cikti,beklenen", [
+        (_FAILED_SECTION, "This code section failed"),
+        # yalnız işaret: derlenebilir (yorum) ama araç hata bildirdi
+        ("x = 1\n# NOTE: have internal decompilation grammar errors.\n", "grammar errors"),
+        # yalnız compile: işaret yok, sözdizimi bozuk
+        ("def f(:\n    return 1\n", "SyntaxError"),
+    ], ids=["bolum", "isaret", "compile"])
+    def test_dogrulanamayan_cikti_kaynak_sayilmaz(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cikti: str, beklenen: str,
+    ) -> None:
+        _fake_pylib(monkeypatch, {"decompyle3": cikti})
+        res = pd.decompile_pyc(_pyc38(tmp_path), tmp_path / "out", py_version="3.8")
+        assert res.success is False and res.method == "decompyle3_partial"
+        assert not (tmp_path / "out" / "m.py").exists()
+        assert beklenen in (res.partial_reason or "")
+        text = res.partial_path.read_text(encoding="utf-8")
+        assert text.startswith("# KARADUL: decompyle3 çıktısı DOĞRULANAMADI")
+        assert cikti in text
+
+    def test_gecerli_cikti_kaynak(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        _fake_pylib(monkeypatch, {"decompyle3": "# decompyle3 version 3.9.3\nx = 1\n"})
+        res = pd.decompile_pyc(_pyc38(tmp_path), tmp_path / "out", py_version="3.8")
+        assert res.success is True and res.method == "decompyle3"
+        assert (tmp_path / "out" / "m.py").read_text().endswith("x = 1\n")
+
+    def test_ilk_kutuphane_kismiysa_ikincisi_denenir(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _fake_pylib(monkeypatch, {"decompyle3": _FAILED_SECTION, "uncompyle6": "x = 1\n"})
+        res = pd.decompile_pyc(_pyc38(tmp_path), tmp_path / "out", py_version="3.8")
+        assert res.success is True and res.method == "uncompyle6"
+
+    def test_pycdc_kismi_varsa_o_saklanir(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        import subprocess
+        monkeypatch.setattr(pd, "resolve_tool",
+                            lambda name, **k: "/fake/pycdc" if name == "pycdc" else None)
+        monkeypatch.setattr(pd, "safe_run", lambda *a, **k: subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=b"y = 2\n" + pd._PYCDC_INCOMPLETE_MARKER.encode() + b"\n",
+            stderr=b""))
+        _fake_pylib(monkeypatch, {"decompyle3": _FAILED_SECTION})
+        res = pd.decompile_pyc(_pyc38(tmp_path), tmp_path / "out", py_version="3.8")
+        assert res.method == "pycdc_partial"
+        assert res.partial_path.read_text(encoding="utf-8").startswith("# KARADUL: pycdc")
+
+
+class TestMadde6CliDogrulama:
+    """PyInstallerExtractor._try_decompile_pyc_files: CLI hata verse de 0 ile çıkar."""
+
+    def _run(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, text: str, stderr: str):  # type: ignore[no-untyped-def]
+        import subprocess
+        import karadul.analyzers.packed_binary as pb
+        from karadul.analyzers.packed_binary import ExtractedFile, PyInstallerExtractor
+        monkeypatch.setattr(pb, "resolve_tool",
+                            lambda name, **k: "/fake/uncompyle6" if name == "uncompyle6" else None)
+
+        def fake_run(cmd, **k):  # type: ignore[no-untyped-def]
+            Path(cmd[2]).write_text(text)
+            return subprocess.CompletedProcess(cmd, 0, stdout="", stderr=stderr)
+
+        monkeypatch.setattr(pb, "safe_run", fake_run)
+        pyc = tmp_path / "m.pyc"
+        pyc.write_bytes(b"x")
+        return PyInstallerExtractor._try_decompile_pyc_files(
+            [ExtractedFile(path=pyc, original_name="m", file_type="pyc", size=1)], tmp_path / "o")
+
+    def test_isaretli_cikti_partial(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        out = self._run(tmp_path, monkeypatch, _FAILED_SECTION, "")
+        assert [(e.file_type, e.path.name) for e in out] == [("python_partial", "m.partial.py")]
+        assert not (tmp_path / "o" / "decompiled_python" / "m.py").exists()
+        assert out[0].path.read_text(encoding="utf-8").startswith(
+            "# KARADUL: uncompyle6 çıktısı DOĞRULANAMADI")
+
+    def test_yalniz_stderr_hatasi_partial(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        out = self._run(tmp_path, monkeypatch, "x = 1\n",
+                        "\n# file m.pyc\n# Deparsing stopped due to parse error\n")
+        assert out[0].file_type == "python_partial"
+        assert any("stderr" in p for p in out[0].metadata["problems"])
+
+    def test_gecerli_cikti_kaynak(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        out = self._run(tmp_path, monkeypatch, "def main():\n    pass\n", "")
+        assert [(e.file_type, e.path.name) for e in out] == [("python_source", "m.py")]

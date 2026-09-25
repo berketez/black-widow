@@ -13,7 +13,7 @@ Zincir (ilk basarili kazanir):
 KRITIK: PyInstaller ``.pyc`` header'ini (magic + timestamp) siyirir. Decompiler'lar
 header olmadan "Bad MAGIC" verip patlar. ``repair_pyc_header`` bunu onarir.
 
-pycdc çıktısı yalnız doğrulanırsa "kaynak" sayılır (bkz. ``_pycdc_problems``):
+pycdc çıktısı yalnız doğrulanırsa "kaynak" sayılır (bkz. ``_source_problems``):
 pycdc desteklemediği opcode'da bile çıkış kodu 0 döner, çözemediği gövdeyi
 ``pass`` + "Decompyle incomplete" yorumuyla yazar. Doğrulanamayan çıktı atılmaz;
 ``<ad>.partial.py`` olarak saklanır ve zincir disassembly'ye devam eder.
@@ -184,11 +184,11 @@ class DecompileResult:
 
     source_path: Path              # girdi .pyc
     success: bool = False          # doğrulanmış gerçek kaynak (.py) üretildi mi
-    method: str = "none"           # pycdc | decompyle3 | uncompyle6 | disasm | pycdc_partial | none
+    method: str = "none"           # pycdc | decompyle3 | uncompyle6 | disasm | <araç>_partial | none
     output_path: Optional[Path] = None
     error: Optional[str] = None
     is_disassembly: bool = False   # True ise cikti kaynak degil, bytecode disasm
-    # pycdc çıktı verdi ama doğrulanamadı (eksik/geçersiz): kaynak DEĞİL, kısmi kurtarma.
+    # Decompiler çıktı verdi ama doğrulanamadı (eksik/geçersiz): kaynak DEĞİL, kısmi kurtarma.
     partial_path: Optional[Path] = None    # <ad>.partial.py
     partial_reason: Optional[str] = None   # neden doğrulanamadı ("; " ile birleşik)
 
@@ -196,6 +196,18 @@ class DecompileResult:
 # pycdc bir kod bloğunu çözemediğinde çıktıya (girintili) bu yorumu yazar; çıkış
 # kodu yine 0'dır. Bu satırı taşıyan çıktı gerçek kaynak DEĞİLDİR.
 _PYCDC_INCOMPLETE_MARKER = "# WARNING: Decompyle incomplete"
+
+# uncompyle6/decompyle3 (3.9.3 kaynaklarından doğrulandı): çözemediği bölümün yerine
+# bu satırları çıktıya yazar; CLI'ları ayrıca stderr'e "# file ..." yazıp çıkış
+# kodu 0 ile biter ve kısmi -o dosyasını silmez. Satırı bunlardan biriyle başlayan
+# çıktı gerçek kaynak DEĞİLDİR.
+_PYLIB_FAILURE_MARKERS = (
+    "--- This code section failed: ---",
+    "Parse error at or near",
+    "# NOTE: have internal decompilation grammar errors",
+    "# NOTE: have decompilation errors",
+    "Deparsing stopped due to parse error",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -223,10 +235,10 @@ def _decode_tool_output(data: object) -> tuple[str, Optional[str]]:
         )
 
 
-def _partial_banner(reason: str) -> str:
-    """Kısmi pycdc çıktısının başına yazılan uyarı (dosya tek başına açılsa da dürüst)."""
+def _partial_banner(reason: str, tool: str = "pycdc") -> str:
+    """Kısmi decompiler çıktısının başına yazılan uyarı (dosya tek başına açılsa da dürüst)."""
     return (
-        "# KARADUL: pycdc çıktısı DOĞRULANAMADI -- gerçek kaynak DEĞİL (kısmi kurtarma).\n"
+        f"# KARADUL: {tool} çıktısı DOĞRULANAMADI -- gerçek kaynak DEĞİL (kısmi kurtarma).\n"
         f"# Neden: {reason.replace(chr(10), ' ')}\n"
         "# Tam bytecode için (varsa) aynı adlı .disasm.txt dosyasına bakın.\n\n"
     )
@@ -236,18 +248,23 @@ def _partial_banner(reason: str) -> str:
 _PARTIAL_BANNER_LINES = _partial_banner("").count("\n")
 
 
-def _pycdc_problems(src: str, returncode: int, stderr: str) -> list[str]:
-    """pycdc çıktısını gerçek kaynak saymaya engel durumlar (boş liste = doğrulandı).
+def _source_problems(
+    src: str, *, tool: str, returncode: int = 0, stderr: str = "",
+) -> list[str]:
+    """Decompiler çıktısını gerçek kaynak saymaya engel durumlar (boş liste = doğrulandı).
 
+    pycdc, decompyle3 ve uncompyle6 (kütüphane ya da CLI) için TEK doğrulayıcı.
     pycdc desteklemediği opcode'da bile çoğunlukla rc=0 döner; çözemediği gövdeyi
     ``pass`` + "Decompyle incomplete" yorumuyla, bozuk ifadeyi geçersiz sözdizimiyle
-    yazar. Ölçütler:
+    yazar. uncompyle6/decompyle3 çözemediği bölüme "--- This code section failed"
+    bloğu yazar (``_PYLIB_FAILURE_MARKERS``). Ölçütler:
 
     1. rc == 0 (negatif rc = sinyalle çöküş; çıktı yarıda kesilmiştir).
-    2. "Decompyle incomplete" işareti yok.
+    2. Aracın "çözülemedi" işareti yok.
     3. stderr boş. pycdc stderr'e yalnız sorun olunca yazar; "Warning: block stack
        is not empty!" bile ölçülen örnekte yanlış girintili ``return`` üretti
-       (3.11, derlenebilir ama anlamca yanlış kod).
+       (3.11, derlenebilir ama anlamca yanlış kod). uncompyle6/decompyle3 CLI'ı
+       hatayı yalnız stderr'e yazıp 0 ile çıkar.
     4. Çıktı çalışan Python'da ``compile()`` ediliyor. Kod ÇALIŞTIRILMAZ. ast.parse
        yetmez: modül düzeyinde ``return`` (pycdc 3.10-3.12'de sık) yalnız derleyici
        aşamasında yakalanır.
@@ -262,19 +279,26 @@ def _pycdc_problems(src: str, returncode: int, stderr: str) -> list[str]:
                 sig_name = signal.Signals(-returncode).name
             except ValueError:
                 sig_name = f"sinyal {-returncode}"
-            problems.append(f"pycdc çöktü ({sig_name})")
+            problems.append(f"{tool} çöktü ({sig_name})")
         else:
-            problems.append(f"pycdc rc={returncode}")
-    if any(ln.strip() == _PYCDC_INCOMPLETE_MARKER for ln in src.splitlines()):
-        problems.append("'Decompyle incomplete' işareti (en az bir blok çözülemedi)")
+            problems.append(f"{tool} rc={returncode}")
+    lines = [ln.strip() for ln in src.splitlines()]
+    if tool == "pycdc":
+        if _PYCDC_INCOMPLETE_MARKER in lines:
+            problems.append("'Decompyle incomplete' işareti (en az bir blok çözülemedi)")
+    else:
+        hit = next((m for m in _PYLIB_FAILURE_MARKERS
+                    if any(ln.startswith(m) for ln in lines)), None)
+        if hit:
+            problems.append(f"'{hit}' işareti ({tool} en az bir bölümü çözemedi)")
     err_lines = [ln.strip() for ln in stderr.splitlines() if ln.strip()]
     if err_lines:
         more = f" (+{len(err_lines) - 1} satır)" if len(err_lines) > 1 else ""
-        problems.append(f"pycdc stderr: {err_lines[0]}{more}")
+        problems.append(f"{tool} stderr: {err_lines[0]}{more}")
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")  # SyntaxWarning (geçersiz kaçış vb.) gürültüsü
-            compile(src, "<pycdc>", "exec", dont_inherit=True)
+            compile(src, f"<{tool}>", "exec", dont_inherit=True)
     except SyntaxError as exc:
         # Sorunlu çıktı .partial.py olarak başlıkla yazılır; satırı o dosyaya göre ver.
         line = (exc.lineno or 0) + _PARTIAL_BANNER_LINES
@@ -322,7 +346,7 @@ def _decompile_with_pycdc(
             pyc_path.name, proc.returncode, stderr,
         )
         return None
-    problems = _pycdc_problems(src, proc.returncode, stderr)
+    problems = _source_problems(src, tool="pycdc", returncode=proc.returncode, stderr=stderr)
     if decode_problem:
         problems.append(decode_problem)
     return src, problems
@@ -330,11 +354,15 @@ def _decompile_with_pycdc(
 
 def _decompile_with_pylib(
     pyc_path: Path, py_version: Optional[str],
-) -> Optional[tuple[str, str]]:
+) -> Optional[tuple[str, str, list[str]]]:
     """decompyle3/uncompyle6 (opsiyonel pip) ile decompile. Yalniz Python < 3.10.
 
     Bu kutuphaneler 3.10+ desteklemez; guvenli tarafta kalmak icin surum bilinip
     < 3.10 oldugunda denenir. Kurulu degilse None.
+
+    Çıktı pycdc'ninkiyle aynı doğrulamadan geçer (``_source_problems``): eskiden
+    boş olmayan her çıktı kaynak sayılıyordu. Returns: (kaynak, araç, sorunlar) --
+    ilk doğrulanan çıktı; hiçbiri doğrulanmadıysa ilk kısmi çıktı (sorunlar dolu).
     """
     if py_version:
         parts = py_version.split(".")
@@ -345,6 +373,7 @@ def _decompile_with_pylib(
         if (major, minor) >= (3, 10):
             return None  # bu araclar 3.10+ decompile edemez
     import io
+    first_partial: Optional[tuple[str, str, list[str]]] = None
     for mod_name in ("decompyle3", "uncompyle6"):
         try:
             mod = __import__(mod_name)
@@ -355,12 +384,18 @@ def _decompile_with_pylib(
             # Her iki kutuphane de decompile_file(path, out) API'sini saglar.
             mod.decompile_file(str(pyc_path), buf)
             src = buf.getvalue()
-            if src.strip():
-                return src, mod_name
         except Exception as exc:
             logger.debug("%s decompile hatasi (%s): %s", mod_name, pyc_path.name, exc)
             continue
-    return None
+        if not src.strip():
+            continue
+        problems = _source_problems(src, tool=mod_name)
+        if not problems:
+            return src, mod_name, []
+        logger.debug("%s ciktisi kismi (%s): %s", mod_name, pyc_path.name, "; ".join(problems))
+        if first_partial is None:
+            first_partial = (src, mod_name, problems)
+    return first_partial
 
 
 # ---------------------------------------------------------------------------
@@ -641,8 +676,9 @@ def decompile_pyc(
     stem = out_stem or pyc_path.stem
     py_out = out_dir / f"{stem}.py"
 
-    # 1. pycdc -- yalnız doğrulanmış çıktı kaynak sayılır (bkz. _pycdc_problems)
-    partial: Optional[tuple[str, list[str]]] = None
+    # 1. pycdc -- yalnız doğrulanmış çıktı kaynak sayılır (bkz. _source_problems)
+    partial: Optional[tuple[str, list[str], str]] = None   # (kaynak, sorunlar, araç)
+    partial_tool = ""
     pycdc_out = _decompile_with_pycdc(pyc_path, timeout=timeout, extra_paths=extra_paths)
     if pycdc_out is not None:
         src, problems = pycdc_out
@@ -652,28 +688,34 @@ def decompile_pyc(
             result.method = "pycdc"
             result.output_path = py_out
             return result
-        partial = pycdc_out
+        partial = (src, problems, "pycdc")
         logger.debug("pycdc ciktisi kismi (%s): %s", pyc_path.name, "; ".join(problems))
 
-    # 2. decompyle3 / uncompyle6 (opsiyonel, < 3.10)
+    # 2. decompyle3 / uncompyle6 (opsiyonel, < 3.10) -- aynı doğrulama
     pylib = _decompile_with_pylib(pyc_path, py_version)
     if pylib is not None:
-        src, method = pylib
-        py_out.write_text(src, encoding="utf-8", errors="replace")
-        result.success = True
-        result.method = method
-        result.output_path = py_out
-        return result
+        src, method, problems = pylib
+        if not problems:
+            py_out.write_text(src, encoding="utf-8", errors="replace")
+            result.success = True
+            result.method = method
+            result.output_path = py_out
+            return result
+        if partial is None:
+            partial = (src, problems, method)
 
-    # Doğrulanamayan pycdc çıktısı atılmaz: okunabilir parçalar (imzalar, sabitler)
-    # taşır. .partial.py + uyarı başlığı; sayımda "decompiled" DEĞİL.
+    # Doğrulanamayan çıktı atılmaz: okunabilir parçalar (imzalar, sabitler) taşır.
+    # .partial.py + uyarı başlığı; sayımda "decompiled" DEĞİL.
     if partial is not None:
-        src, problems = partial
+        src, problems, tool = partial
         reason = "; ".join(problems)
         partial_out = out_dir / f"{stem}.partial.py"
-        partial_out.write_text(_partial_banner(reason) + src, encoding="utf-8", errors="replace")
+        partial_out.write_text(
+            _partial_banner(reason, tool) + src, encoding="utf-8", errors="replace",
+        )
         result.partial_path = partial_out
         result.partial_reason = reason
+        partial_tool = tool
 
     # 3. disassembly fallback
     disasm = _disassemble(pyc_path, py_version, timeout=timeout, extra_paths=extra_paths)
@@ -687,11 +729,11 @@ def decompile_pyc(
         result.is_disassembly = True
         return result
 
-    # 4. yalnız kısmi pycdc çıktısı ya da hiçbiri
+    # 4. yalnız kısmi decompiler çıktısı ya da hiçbiri
     if result.partial_path is not None:
-        result.method = "pycdc_partial"
+        result.method = f"{partial_tool}_partial"
         result.output_path = result.partial_path
-        result.error = "disassembly yok; yalniz kismi pycdc ciktisi"
+        result.error = f"disassembly yok; yalniz kismi {partial_tool} ciktisi"
         return result
     result.method = "none"
     result.error = "hicbir decompiler/disassembler basarili olmadi"
