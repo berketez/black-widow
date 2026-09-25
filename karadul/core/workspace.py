@@ -24,6 +24,10 @@ _STAGE_DIRS = (
     "reports",        # Nihai raporlar (JSON, HTML, Markdown)
 )
 
+# Çok bileşenli hedeflerde (.app paketi) bileşen alt-workspace'lerinin üst dizini:
+# <workspace>/components/<bileşen>/{raw,static,...}
+SUB_WORKSPACE_DIR = "components"
+
 
 class Workspace:
     """Analiz calisma dizini yoneticisi.
@@ -35,15 +39,27 @@ class Workspace:
     Args:
         base_dir: Tum workspace'lerin saklanacagi ust dizin.
         target_name: Hedef adi (dizin ismi olarak kullanilir).
+        workspace_dir: Verilirse workspace tam olarak bu dizindir (tarih
+            damgalı ``base_dir/target_name/<zaman>`` yerine). Yalnız
+            ``create_sub_workspace`` kullanır.
     """
 
-    def __init__(self, base_dir: Path, target_name: str) -> None:
+    def __init__(
+        self,
+        base_dir: Path,
+        target_name: str,
+        *,
+        workspace_dir: Path | None = None,
+    ) -> None:
         self._base_dir = Path(base_dir).resolve()
         self._target_name = self._sanitize_name(target_name)
         self._timestamp = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
-        self._workspace_dir = (
-            self._base_dir / self._target_name / self._timestamp
-        )
+        if workspace_dir is not None:
+            self._workspace_dir = Path(workspace_dir).resolve()
+        else:
+            self._workspace_dir = (
+                self._base_dir / self._target_name / self._timestamp
+            )
         self._created = False
 
     @property
@@ -73,6 +89,40 @@ class Workspace:
         self._created = True
         logger.info("Workspace olusturuldu: %s", self._workspace_dir)
         return self._workspace_dir
+
+    def create_sub_workspace(self, name: str) -> Workspace:
+        """Bu workspace'in altında izole bir alt-workspace oluştur.
+
+        Çok bileşenli hedeflerde (.app paketi) her bileşen kendi stage
+        dizinlerine yazar: ``<workspace>/components/<güvenli_ad>/``. Bu metot
+        yokken AppBundleAnalyzer bütün bileşenleri aynı workspace'e yazıyordu
+        (2026-09-25, 3 bileşenli paket ölçümü): ``static/ghidra_functions.json``
+        yalnız SON analiz edilen bileşene aitti, ``ghidra_output/decompiled/``
+        ise üç binary'nin C dosyalarını karışık taşıyordu.
+
+        Her çağrı YENİ bir dizin döndürür: ad çakışırsa (farklı klasörlerde
+        aynı adlı iki dylib) ``_2``, ``_3`` eki verilir. ``mkdir`` (exist_ok
+        yok) atomik olduğu için iki bileşen aynı dizini asla paylaşmaz.
+        """
+        self.create()
+        parent = self._workspace_dir / SUB_WORKSPACE_DIR
+        parent.mkdir(parents=True, exist_ok=True)
+        # "." / ".." gibi adlar üst dizine taşmasın.
+        safe = self._sanitize_name(name).strip(".") or "unnamed"
+        candidate = safe
+        suffix = 1
+        while True:
+            try:
+                (parent / candidate).mkdir()
+                break
+            except FileExistsError:
+                suffix += 1
+                candidate = f"{safe}_{suffix}"
+        sub = Workspace(
+            self._base_dir, candidate, workspace_dir=parent / candidate,
+        )
+        sub.create()
+        return sub
 
     def get_stage_dir(self, stage: str) -> Path:
         """Belirli bir stage'in dizin yolunu dondur.

@@ -398,14 +398,20 @@ class StaticAnalysisStage(Stage):
     ) -> StageResult:
         """APP_BUNDLE icin ozel statik analiz akisi.
 
-        AppBundleAnalyzer ile tum bilesenleri (binary, JAR, framework, Electron)
-        paralel analiz eder. En cok fonksiyonu olan basarili bileseni
-        'ana hedef' olarak isaretler (downstream stage'ler icin).
+        AppBundleAnalyzer tüm bileşenleri (binary, JAR, framework, Electron)
+        sırayla, her birini kendi alt-workspace'inde analiz eder. En çok
+        fonksiyonu olan başarılı bileşeni 'ana bileşen' olarak işaretler ve
+        çıktılarını üst workspace'e taşır (reconstruct, raporlar ve arayüz üst
+        workspace'in static/ dizinini okur).
         """
-        from karadul.analyzers.app_bundle import AppBundleAnalyzer
+        from karadul.analyzers.app_bundle import (
+            AppBundleAnalyzer,
+            promote_component_outputs,
+        )
 
         target = context.target
         stats: dict = {}
+        errors: list[str] = []
 
         try:
             analyzer = AppBundleAnalyzer(context.config)
@@ -425,16 +431,40 @@ class StaticAnalysisStage(Stage):
         stats["bundle_failed"] = bundle_result.failed_components
         stats["bundle_functions"] = bundle_result.total_functions
         stats["bundle_strings"] = bundle_result.total_strings
+        # CLI sonuç tablosu, JSON/MD/HTML raporları ve batch özeti statik
+        # sayacı "functions_found"/"strings_found" anahtarından okur; bundle
+        # dalında bu anahtarlar yoktu -> "Functions recovered 0".
+        stats["functions_found"] = bundle_result.total_functions
+        stats["strings_found"] = bundle_result.total_strings
         stats["target_type"] = "app_bundle"
 
-        # En buyuk binary'yi "ana hedef" olarak isaretle (downstream icin)
-        successful = [r for r in bundle_result.component_results if r.success]
-        if successful:
-            main_comp = max(successful, key=lambda r: r.functions_found)
+        # En çok fonksiyonu olan başarılı bileşen = ana bileşen (downstream için)
+        main_comp = bundle_result.main_component
+        if main_comp is not None:
             context.metadata["main_component"] = main_comp.path
             context.metadata["main_component_type"] = main_comp.component_type
+            context.metadata["main_component_name"] = main_comp.name
+            context.metadata["main_component_workspace"] = main_comp.workspace
             stats["main_component"] = main_comp.name
             stats["main_component_functions"] = main_comp.functions_found
+            stats["main_component_workspace"] = main_comp.workspace
+            if main_comp.workspace:
+                try:
+                    promoted = promote_component_outputs(
+                        context.workspace, main_comp.workspace,
+                    )
+                    stats["main_component_promoted"] = len(promoted)
+                except Exception as exc:
+                    logger.warning(
+                        "Ana bileşen çıktıları üst workspace'e taşınamadı: %s", exc,
+                    )
+                    errors.append(f"Ana bileşen çıktıları taşınamadı: {exc}")
+
+        errors.extend(
+            f"{r.name}: {r.error}"
+            for r in bundle_result.component_results
+            if not r.success and r.error
+        )
 
         return StageResult(
             stage_name=self.name,
@@ -442,11 +472,7 @@ class StaticAnalysisStage(Stage):
             duration_seconds=time.monotonic() - start,
             artifacts={},
             stats=stats,
-            errors=[
-                f"{r.name}: {r.error}"
-                for r in bundle_result.component_results
-                if not r.success and r.error
-            ],
+            errors=errors,
         )
 
 
@@ -1109,19 +1135,29 @@ class ReconstructionStage(Stage):
         return self._execute_js(context, start)
 
     def _execute_app_bundle(self, context: PipelineContext, start: float) -> StageResult:
-        """APP_BUNDLE reconstruction — her bilesen icin uygun reconstruction calistir.
+        """APP_BUNDLE reconstruction — ana bileşen için tam reconstruction.
 
-        StaticAnalysisStage'deki bundle_analysis sonucunu okur,
-        basarili her bilesen icin bilesen tipine gore reconstruction yapar.
-        Ana bilesen (en cok fonksiyonu olan) icin tam reconstruction,
-        digerleri icin ozet reconstruction uygular.
+        StaticAnalysisStage'in bundle_analysis sonucunu okur; ana bileşeni
+        (static stage'in seçtiği = en çok fonksiyonu olan başarılı bileşen)
+        bileşen tipine göre reconstruct eder.
+
+        Adımlar ana bileşene DARALTILMIŞ bir context ile koşar: pc.target.path
+        paketin .app dizini değil bileşenin gerçek binary'sidir; target_type,
+        name ve file_hash da bileşenin. Eskiden bundle context'i aynen
+        geçirildiği için binary_prep/byte_pattern/anti_debug/packer_fingerprint
+        .app DİZİNİNİ dosya sanıyordu ("Hedef dosya bulunamadi", "Is a
+        directory"). Workspace üst workspace'tir: static stage ana bileşenin
+        çıktılarını oraya taşır, reconstructed/ çıktıları da oraya yazılır
+        (raporlar ve arayüz orayı okur).
         """
-        from karadul.analyzers.app_bundle import AppBundleAnalyzer
+        from karadul.analyzers.app_bundle import (
+            build_component_target,
+            component_context,
+        )
 
         errors: list[str] = []
         stats: dict = {}
         artifacts: dict[str, Path] = {}
-        target = context.target
 
         # Static stage'deki bundle analiz sonucunu oku
         try:
@@ -1149,92 +1185,93 @@ class ReconstructionStage(Stage):
                 errors=["Basarili bilesen yok, reconstruction yapilamaz"],
             )
 
-        # Ana bilesen: en cok fonksiyonu olan
-        main_comp = max(successful_components, key=lambda c: c.get("functions", 0))
-        main_comp_path = context.metadata.get("main_component", main_comp.get("path", ""))
+        # Ana bileşen: static stage'in seçtiği (metadata ya da bundle_analysis
+        # .json); bulunamazsa en çok fonksiyonu olan.
+        main_path = (
+            context.metadata.get("main_component")
+            or bundle_data.get("main_component_path")
+            or ""
+        )
+        main_comp = next(
+            (c for c in successful_components if c.get("path") == main_path),
+            None,
+        )
+        if main_comp is None:
+            main_comp = max(successful_components, key=lambda c: c.get("functions", 0))
+        main_type = main_comp.get("type", "macho_binary")
 
         stats["bundle_name"] = bundle_data.get("bundle_name", "")
         stats["total_components"] = len(component_results)
         stats["reconstructed_components"] = 0
         stats["main_component"] = main_comp.get("name", "")
+        stats["main_component_path"] = main_comp.get("path", "")
 
-        # Ana bilesen icin tam reconstruction: uygun _execute_* metoduna yonlendir
-        if main_comp_path:
-            main_type = context.metadata.get(
-                "main_component_type",
-                main_comp.get("type", "macho_binary"),
+        try:
+            comp_target = build_component_target(
+                main_comp, bundle_data.get("bundle_name", "") or context.target.name,
+            )
+            comp_context = component_context(context, comp_target)
+        except Exception as exc:
+            return StageResult(
+                stage_name=self.name,
+                success=False,
+                duration_seconds=time.monotonic() - start,
+                stats=stats,
+                errors=[f"Ana bileşen hedefi kurulamadı: {type(exc).__name__}: {exc}"],
             )
 
-            # Ana bilesen tipine gore reconstruction metodu sec
-            if main_type in ("macho_binary", "universal_binary", "elf_binary", "pe_binary"):
+        main_ok = False
+
+        def _merge(res: StageResult) -> None:
+            nonlocal main_ok
+            stats.update({k: v for k, v in res.stats.items() if k not in stats})
+            errors.extend(res.errors)
+            artifacts.update(res.artifacts)
+            main_ok = main_ok or bool(res.success)
+
+        # Ana bilesen tipine gore reconstruction metodu sec
+        if main_type in ("macho_binary", "universal_binary", "elf_binary", "pe_binary"):
+            try:
+                stats["main_reconstruction"] = "binary"
+                _merge(self._execute_binary(comp_context, start))
+            except Exception as exc:
+                errors.append(f"Ana bilesen reconstruction hatasi: {exc}")
+        elif main_type == "go_binary":
+            # v1.6.5: Go binary hybrid pipeline — bundle icinde de
+            # Go + binary reconstruction birlikte calistir
+            try:
+                stats["main_reconstruction"] = "go_hybrid"
+                _merge(self._execute_go_binary(comp_context, start))
                 try:
-                    result = self._execute_binary(context, start)
-                    stats["reconstructed_components"] += 1
-                    stats["main_reconstruction"] = "binary"
-                    # Binary reconstruction sonuclarini merge et
-                    stats.update({
-                        k: v for k, v in result.stats.items()
-                        if k not in stats
-                    })
-                    errors.extend(result.errors)
-                    artifacts.update(result.artifacts)
+                    _merge(self._execute_binary(comp_context, start))
                 except Exception as exc:
-                    errors.append(f"Ana bilesen reconstruction hatasi: {exc}")
-            elif main_type == "go_binary":
-                # v1.6.5: Go binary hybrid pipeline — bundle icinde de
-                # Go + binary reconstruction birlikte calistir
-                try:
-                    go_result = self._execute_go_binary(context, start)
-                    stats["reconstructed_components"] += 1
-                    stats["main_reconstruction"] = "go_hybrid"
-                    stats.update({
-                        k: v for k, v in go_result.stats.items()
-                        if k not in stats
-                    })
-                    errors.extend(go_result.errors)
-                    artifacts.update(go_result.artifacts)
-                    # Binary reconstruction da calistir
-                    try:
-                        bin_result = self._execute_binary(context, start)
-                        stats.update({
-                            k: v for k, v in bin_result.stats.items()
-                            if k not in stats
-                        })
-                        errors.extend(bin_result.errors)
-                        artifacts.update(bin_result.artifacts)
-                        stats["reconstructed_components"] += 1
-                    except Exception as exc:
-                        logger.warning(
-                            "Go hybrid bundle: binary recon basarisiz: %s", exc,
-                        )
-                except Exception as exc:
-                    errors.append(f"Go bilesen reconstruction hatasi: {exc}")
-            elif main_type in ("electron_app", "js_bundle"):
-                try:
-                    result = self._execute_js(context, start)
-                    stats["reconstructed_components"] += 1
-                    stats["main_reconstruction"] = "js"
-                    stats.update({
-                        k: v for k, v in result.stats.items()
-                        if k not in stats
-                    })
-                    errors.extend(result.errors)
-                    artifacts.update(result.artifacts)
-                except Exception as exc:
-                    errors.append(f"JS bilesen reconstruction hatasi: {exc}")
-            else:
-                errors.append(f"Bilinmeyen bilesen tipi: {main_type}")
+                    logger.warning(
+                        "Go hybrid bundle: binary recon basarisiz: %s", exc,
+                    )
+            except Exception as exc:
+                errors.append(f"Go bilesen reconstruction hatasi: {exc}")
+        elif main_type in ("electron_app", "js_bundle"):
+            try:
+                stats["main_reconstruction"] = "js"
+                _merge(self._execute_js(comp_context, start))
+            except Exception as exc:
+                errors.append(f"JS bilesen reconstruction hatasi: {exc}")
+        else:
+            errors.append(f"Bilinmeyen bilesen tipi: {main_type}")
+
+        # Yalnız ana bileşen reconstruct edilir; başarısızsa 0.
+        stats["reconstructed_components"] = 1 if main_ok else 0
 
         logger.info(
             "Bundle reconstruction: %d/%d bilesen, ana=%s",
-            stats.get("reconstructed_components", 0),
+            stats["reconstructed_components"],
             len(successful_components),
             stats.get("main_component", "?"),
         )
 
         return StageResult(
             stage_name=self.name,
-            success=stats.get("reconstructed_components", 0) > 0,
+            success=main_ok,
             duration_seconds=time.monotonic() - start,
             artifacts=artifacts,
             stats=stats,

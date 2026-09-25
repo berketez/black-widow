@@ -89,7 +89,50 @@ def _ensure_pyghidra_started(ghidra_install: Path) -> None:
             f"Karadul'u yeniden calistirin (JVM ayni process'te tekrar baslatilamaz)."
         ) from exc
     _PYGHIDRA_STARTED = True
+    _release_jvm_creator_thread()
     logger.info("PyGhidra JVM baslatildi (Ghidra: %s)", ghidra_install)
+
+
+def _release_jvm_creator_thread() -> None:
+    """JVM'i ana olmayan bir thread başlattıysa o thread'i JVM'den ayır.
+
+    JNI_CreateJavaVM'i çağıran thread JVM'de daemon OLMAYAN "main" Java
+    thread'i olarak kayıtlı kalır. Bu bir Python işçi thread'iyse
+    (ThreadPoolExecutor) thread bittiğinde JVM'den ayrılmaz — JPype otomatik
+    ayırmaz. Çıkışta ana thread'deki JPype atexit kancası DestroyJavaVM'i
+    çağırır; o da daemon olmayan thread sayısının 1'e inmesini bekler ve ölü
+    "main" yüzünden SONSUZA kadar bekler.
+
+    Ölçüm (2026-09-25, .app analizi): analiz bitip sonuç tablosu basıldıktan
+    sonra süreç asılı kaldı (timeout 300 -> rc=124). jstack: daemon olmayan
+    yalnız iki Java thread'i vardı — "main" #1 (OS thread'i ölü, cpu=-0.00ms)
+    ve Monitor::wait'te bekleyen "DestroyJavaVM". H2/MVStore/GTimer
+    thread'leri daemon'dı, çıkışı engellemiyordu. İzole deney (yalnız JPype):
+    JVM ana thread'de başlarsa rc=0; işçi thread'de başlarsa asılı (rc=124);
+    işçi thread başlattıktan sonra detach ederse rc=0.
+
+    Ayrılan thread sonraki Java çağrısında JPype tarafından DAEMON olarak
+    yeniden bağlanır (JPype'ın otomatik bağlama davranışı), çıkışı bloke
+    etmez. Ana thread'e dokunulmaz: DestroyJavaVM'i zaten o çağırır.
+    """
+    import threading
+
+    if threading.current_thread() is threading.main_thread():
+        return
+    try:
+        import jpype
+
+        jpype.JClass("java.lang.Thread").detach()
+        logger.debug(
+            "JVM ana olmayan thread'de başlatıldı (%s); thread JVM'den ayrıldı",
+            threading.current_thread().name,
+        )
+    except Exception:
+        logger.warning(
+            "JVM'i başlatan thread JVM'den ayrılamadı; süreç çıkışta "
+            "DestroyJavaVM'de asılı kalabilir",
+            exc_info=True,
+        )
 
 
 class GhidraHeadless:
