@@ -366,44 +366,103 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
         )
 
     def deobfuscate(self, target: TargetInfo, workspace: Workspace) -> StageResult:
-        """ProGuard/R8 obfuscation geri alma."""
+        """ProGuard/R8 durumu -- dürüst sonuç; isimler GERİ ALINMAZ.
+
+        Bu analizcide mapping.txt'yi uygulayan bir adım yok: jadx static
+        aşamasında mapping'siz koşar, reconstruct yalnız static'teki jadx
+        kaynaklarını kopyalar, mapping'i hiçbir yer okumaz. Eskiden her durumda
+        success=True dönülüyordu: static çıktısı yokken boş sonuçla; mapping
+        bulununca parse edilip sonuç atılarak ve girdi mapping.txt "artifact"
+        diye raporlanarak (sahte başarı).
+
+        Sonuçlar:
+        - java_analysis.json yok / okunamıyor / obfuscation bilgisi yok ->
+          BAŞARISIZ (success=False, errors): tespit yapılamadı.
+        - obfuscation tespit edilmedi -> success=True, stats={"obfuscated": False}
+          (kontrol edildi, yapılacak iş yok).
+        - obfuscation tespit edildi -> ATLANDI (success=False, skipped=True,
+          stats["skip_reason"]; DeobfuscationStage._skipped sözleşmesi).
+          mapping.txt bulunduysa yolu ve sınıf eşleme sayısı raporlanır;
+          mapping_applied her zaman False.
+        """
         start = time.monotonic()
-        errors: list[str] = []
-        artifacts: dict[str, Path] = {}
+
+        def _cannot(msg: str) -> StageResult:
+            return StageResult(
+                stage_name="deobfuscate", success=False,
+                duration_seconds=time.monotonic() - start, errors=[msg],
+            )
 
         # Onceki asamadan analiz sonucunu oku
         analysis_path = workspace.get_stage_dir("static") / "java_analysis.json"
         if not analysis_path.exists():
-            return StageResult(
-                stage_name="deobfuscate", success=True,
-                duration_seconds=time.monotonic() - start,
-                artifacts={}, stats={}, errors=[],
+            return _cannot(
+                "java_analysis.json yok (static aşaması çalışmadı ya da başarısız "
+                "oldu); ProGuard/R8 tespiti yapılamadığı için deobfuscation yapılamadı."
+            )
+        try:
+            analysis = json.loads(analysis_path.read_text())
+        except (OSError, ValueError) as exc:
+            return _cannot(
+                f"java_analysis.json okunamadı ({type(exc).__name__}: {exc}); "
+                "deobfuscation yapılamadı."
+            )
+        obf = analysis.get("obfuscation") if isinstance(analysis, dict) else None
+        if not isinstance(obf, dict):
+            # Bilgi yokken "obfuscated değil" demek sahte olur.
+            return _cannot(
+                "java_analysis.json'da obfuscation tespiti yok; deobfuscation yapılamadı."
             )
 
-        analysis = json.loads(analysis_path.read_text())
-        obf = analysis.get("obfuscation", {})
-
         if not obf.get("detected"):
-            logger.info("Java obfuscation tespit edilmedi, deobfuscation atlaniyor")
+            logger.info("Java obfuscation tespit edilmedi, deobfuscation gerekmiyor")
             return StageResult(
                 stage_name="deobfuscate", success=True,
                 duration_seconds=time.monotonic() - start,
                 artifacts={}, stats={"obfuscated": False}, errors=[],
             )
 
-        # mapping.txt varsa ProGuard mapping uygula
+        stats: dict[str, Any] = {
+            "obfuscated": True,
+            "obfuscation_type": obf.get("type"),
+            "mapping_found": False,
+            "mapping_applied": False,
+        }
         mapping_file = obf.get("mapping_file")
-        if mapping_file and Path(mapping_file).exists():
-            mapping = self._parse_proguard_mapping(Path(mapping_file))
-            artifacts["proguard_mapping"] = Path(mapping_file)
-            logger.info("ProGuard mapping yuklendi: %d sinif eslesmesi", len(mapping))
+        mapping_path = Path(mapping_file) if mapping_file else None
+        if mapping_path is not None and mapping_path.is_file():
+            stats["mapping_found"] = True
+            stats["mapping_file"] = str(mapping_path)
+            # ProGuard sınıf satırı girintisiz "orijinal.Sinif -> a.b:"; üye
+            # satırları girintili. (_parse_proguard_mapping üyeleri de kısa
+            # obfuscated adla anahtarlayıp çakıştırdığı için sayım için kullanılmaz.)
+            try:
+                lines = mapping_path.read_text(encoding="utf-8", errors="replace").splitlines()
+                stats["mapping_class_count"] = sum(
+                    1 for ln in lines
+                    if ln and not ln[0].isspace() and not ln.startswith("#")
+                    and " -> " in ln and ln.rstrip().endswith(":")
+                )
+            except OSError as exc:
+                stats["mapping_read_error"] = f"{type(exc).__name__}: {exc}"
+            reason = (
+                f"ProGuard/R8 obfuscation tespit edildi ve mapping.txt bulundu "
+                f"({mapping_path}) ama UYGULANMADI: mapping'i jadx kaynaklarına "
+                "uygulayan bir adım yok, reconstruct da kullanmıyor; isimler "
+                "obfuscated kaldı."
+            )
         else:
-            logger.info("ProGuard mapping dosyasi bulunamadi")
-
+            reason = (
+                "ProGuard/R8 obfuscation tespit edildi ama mapping.txt yok; özgün "
+                "isimler geri alınamaz, deobfuscation uygulanmadı."
+            )
+            if mapping_path is not None:
+                reason += f" (Kayıtlı mapping yolu artık yok: {mapping_path})"
+        stats["skip_reason"] = reason
+        logger.warning("Java deobfuscation atlandı: %s", reason)
         return StageResult(
-            stage_name="deobfuscate", success=True,
-            duration_seconds=time.monotonic() - start,
-            artifacts=artifacts, stats={"obfuscated": True}, errors=errors,
+            stage_name="deobfuscate", success=False, skipped=True,
+            duration_seconds=time.monotonic() - start, stats=stats,
         )
 
     def reconstruct(self, target: TargetInfo, workspace: Workspace) -> StageResult | None:

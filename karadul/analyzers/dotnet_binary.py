@@ -676,10 +676,23 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
         )
 
     def deobfuscate(self, target: TargetInfo, workspace: Workspace) -> StageResult:
-        """.NET deobfuscation (ConfuserEx vb. icin)."""
+        """.NET deobfuscation DESTEKLENMİYOR (ConfuserEx vb. çözücü yok).
+
+        Eskiden hiçbir şey yapmayan taslak success=True dönüyordu (sahte
+        başarı). Artık DeobfuscationStage._skipped ile aynı "atlandı"
+        sözleşmesi: success=False, skipped=True, gerekçe stats["skip_reason"]'da;
+        hata değil. Aşama DOTNET_ASSEMBLY'yi bu metoda zaten yollamıyor;
+        doğrudan API çağrısı da aynı dürüst sonucu alır.
+        """
         return StageResult(
-            stage_name="deobfuscate", success=True, duration_seconds=0.0,
-            artifacts={}, stats={}, errors=[],
+            stage_name="deobfuscate", success=False, skipped=True,
+            duration_seconds=0.0,
+            stats={
+                "skip_reason": (
+                    ".NET assembly için deobfuscation desteklenmiyor (ConfuserEx "
+                    "vb. çözücü yok); hiçbir dönüşüm uygulanmadı."
+                ),
+            },
         )
 
     def reconstruct(self, target: TargetInfo, workspace: Workspace) -> StageResult | None:

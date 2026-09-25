@@ -634,12 +634,19 @@ class TestReconstruct:
 # --------------------------------------------------------------------------
 
 class TestDeobfuscate:
-    """Deobfuscation placeholder testleri."""
+    """.NET deobfuscation desteklenmiyor: dürüst "atlandı" sonucu.
 
-    def test_deobfuscate_returns_success(
+    Eskiden hiçbir şey yapmayan taslak success=True dönüyordu ve bu test onu
+    kilitliyordu ("her zaman success donmeli") -- sahte başarı.
+    """
+
+    def test_deobfuscate_is_skipped_not_success(
         self, analyzer: DotNetBinaryAnalyzer, mock_target: TargetInfo, workspace: Workspace,
     ):
-        """Deobfuscate her zaman success donmeli."""
         result = analyzer.deobfuscate(mock_target, workspace)
-        assert result.success is True
         assert result.stage_name == "deobfuscate"
+        assert result.success is False
+        assert result.skipped is True
+        assert result.errors == []
+        assert result.artifacts == {}
+        assert "desteklenmiyor" in result.stats["skip_reason"]

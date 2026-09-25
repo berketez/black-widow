@@ -9,6 +9,16 @@ Zincir:
   2.5. cursor-enhanced-rename.mjs (25 ek context-aware rename kurali, LLM gerektirmez)
   3. smart-webpack-unpack.mjs (modul ayirma)
   4. Her modul uzerinde tekrar deep-deobfuscate (variable renaming)
+
+Sonuç sözleşmesi (dürüst başarı, 2026-09-25):
+  ``success`` yalnız hattın ASIL çıktısı -- deep-deobfuscate dönüşümü (chunked
+  modda: en az bir bloğu dönüştürülmüş birleşik dosya) -- gerçekten üretildiğinde
+  True olur. Eskiden ``any(adım başarılı)`` idi: beautify'ın (ya da hata sonrası
+  yaptığı kopyanın) "başarısı" tüm hattı başarılı sayıyordu.
+  ``stats["status"]``: "ok" | "partial" | "failed"; ``stats["warnings"]``: kullanıcıya
+  gösterilecek kısa açıklamalar. İkisi de stats'ta çünkü DeobfuscationStage
+  StageResult'a yalnız stats'ı aktarır. Adım bazında durum ``steps[ad]["success"]``;
+  uygulanamayan adım ``"skipped": True`` (hata değil, durumu bozmaz).
 """
 
 from __future__ import annotations
@@ -26,19 +36,31 @@ from ..core.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 
+# Genel durum (stats["status"]).
+STATUS_OK = "ok"            # asıl çıktı üretildi, başarısız/eksik adım yok
+STATUS_PARTIAL = "partial"  # asıl çıktı üretildi ama en az bir adım başarısız/eksik
+STATUS_FAILED = "failed"    # asıl çıktı üretilmedi
+
 
 @dataclass
 class DeepDeobfuscationResult:
     """Deep deobfuscation sonucu.
 
     Attributes:
-        success: En az bir adim basarili oldu mu.
-        steps: Her adimin durumu.
-        output_file: Son deobfuscated dosya.
+        success: Hattın asıl çıktısı (deep-deobfuscate dönüşümü) gerçekten
+            üretildi mi. Yardımcı bir adımın (beautify, enhanced rename, modül
+            ayırma) başarısı tek başına yetmez.
+        steps: Her adımın durumu: ``{"success": bool, "skipped"?: bool,
+            "partial"?: bool, "error"?: str, ...}``. ``skipped`` = adım
+            uygulanamadı/istenmedi (hata değil); ``partial`` = adım çıktı üretti
+            ama işin bir kısmı başarısız (ör. bazı modüller/bloklar).
+        output_file: Başarılı bir adımın ürettiği en son dosya; hiçbir adım
+            dosya üretmediyse None. Girdinin kopyaları (00_original, script'in
+            fallback kopyası) asla output_file sayılmaz.
         modules_dir: Ayrilmis modullerin dizini.
         total_modules: Cikarilan modul sayisi.
         bundle_format: Tespit edilen bundle formati.
-        stats: Detayli istatistikler.
+        stats: Detayli istatistikler; ``status`` ve ``warnings`` burada.
         duration_seconds: Toplam sure.
     """
     success: bool = False
@@ -50,12 +72,26 @@ class DeepDeobfuscationResult:
     stats: dict[str, Any] = field(default_factory=dict)
     duration_seconds: float = 0.0
 
+    @property
+    def status(self) -> str:
+        """"ok" | "partial" | "failed" (tek kaynak: stats["status"])."""
+        return self.stats.get("status", STATUS_OK if self.success else STATUS_FAILED)
+
+    @property
+    def warnings(self) -> list[str]:
+        """Kullanıcıya gösterilecek uyarılar (tek kaynak: stats["warnings"])."""
+        return list(self.stats.get("warnings", []))
+
     def summary(self) -> str:
         completed = sum(1 for s in self.steps.values() if s.get("success"))
-        failed = sum(1 for s in self.steps.values() if not s.get("success"))
+        skipped = sum(
+            1 for s in self.steps.values() if not s.get("success") and s.get("skipped")
+        )
+        failed = len(self.steps) - completed - skipped
+        label = {STATUS_OK: "OK", STATUS_PARTIAL: "PARTIAL"}.get(self.status, "FAIL")
         return (
-            f"[{'OK' if self.success else 'FAIL'}] Deep deob: "
-            f"{completed} done, {failed} fail, "
+            f"[{label}] Deep deob: "
+            f"{completed} done, {failed} fail, {skipped} skipped, "
             f"{self.total_modules} modules, "
             f"{self.duration_seconds:.1f}s"
         )
@@ -80,6 +116,10 @@ class DeepDeobfuscationPipeline:
 
     # Buyuk dosya esik degeri (MB) -- bu degerden buyuk dosyalar chunk'lanir
     LARGE_FILE_THRESHOLD_MB = 100
+    # İkinci geçiş (modül bazlı rename) bundan büyük modülleri atlar.
+    MODULE_RENAME_MAX_BYTES = 500_000
+    # Chunked modda bundan küçük bloklar deobfuscate edilmez, olduğu gibi korunur.
+    CHUNK_MIN_BYTES = 100
 
     def run(
         self,
@@ -108,8 +148,7 @@ class DeepDeobfuscationPipeline:
 
         if not input_file.exists():
             result.steps["init"] = {"success": False, "error": f"Dosya yok: {input_file}"}
-            result.duration_seconds = time.monotonic() - start
-            return result
+            return self._finalize(result, main_output=None, start=start)
 
         # Buyuk dosya kontrolu -- 100MB+ ise stream-parse ile chunk'la
         file_size_mb = input_file.stat().st_size / (1024 * 1024)
@@ -126,7 +165,9 @@ class DeepDeobfuscationPipeline:
         original = deob_dir / f"00_original{input_file.suffix}"
         shutil.copy2(input_file, original)
         result.stats["original_size"] = input_file.stat().st_size
-        current = original
+        current = original  # zincirin sıradaki adımının girdisi
+        produced: Path | None = None  # başarılı bir adımın ürettiği son dosya
+        main_output: Path | None = None  # asıl çıktı (deep-deobfuscate dönüşümü)
 
         # --- Adim 1: Beautify ---
         if not skip_beautify:
@@ -134,22 +175,28 @@ class DeepDeobfuscationPipeline:
             step_result = self._step_beautify(current, beautified)
             result.steps["beautify"] = step_result
             if step_result["success"] and beautified.exists():
-                current = beautified
+                current = produced = beautified
                 result.stats["beautified_size"] = beautified.stat().st_size
+            # Başarısızsa orijinalle devam edilir. Eskiden girdi "01_beautified.js"
+            # adıyla kopyalanıp adım başarılı sayılıyordu (sahte başarı).
         else:
-            result.steps["beautify"] = {"success": True, "skipped": True}
+            result.steps["beautify"] = {
+                "success": False, "skipped": True,
+                "reason": "skip_beautify=True: çağıran beautify'ı atladı",
+            }
 
         # --- Adim 2: Deep Deobfuscate (10 phase) ---
         deep_output = deob_dir / "02_deep_deobfuscated.js"
         step_result = self._step_deep_deobfuscate(current, deep_output, phases)
         result.steps["deep_deobfuscate"] = step_result
         if step_result["success"] and deep_output.exists():
-            current = deep_output
+            current = produced = main_output = deep_output
             result.stats["deep_deob_size"] = deep_output.stat().st_size
             result.stats["phases_completed"] = step_result.get("phases_completed", [])
         elif deep_output.exists() and deep_output.stat().st_size > 0:
-            # Parse basarisiz olsa bile script kaynak dosyayi kopyalamis olabilir (fallback_copy).
-            # Bu durumda webpack unpack adimi devam edebilsin diye current'i guncelle.
+            # Parse basarisiz: script kaynagi DONUSTURMEDEN 02_...'e kopyaladi
+            # (fallback_copy). Zincir bu kopyayla surer (icerik girdiyle ayni),
+            # ama bu dosya asla asil cikti / output_file sayilmaz.
             current = deep_output
             result.stats["deep_deob_fallback_copy"] = True
             logger.info("Deep deob basarisiz ama output dosyasi mevcut (fallback), devam ediliyor")
@@ -161,7 +208,7 @@ class DeepDeobfuscationPipeline:
             step_result = self._step_enhanced_rename(current, enhanced_output)
             result.steps["enhanced_rename"] = step_result
             if step_result.get("success") and enhanced_output.exists():
-                current = enhanced_output
+                current = produced = enhanced_output
                 result.stats["enhanced_renamed"] = step_result.get("renamed", 0)
         else:
             logger.debug("Enhanced rename script bulunamadi, atlaniyor")
@@ -182,38 +229,124 @@ class DeepDeobfuscationPipeline:
             result.steps["module_rename"] = rename_result
             result.stats["modules_renamed"] = rename_result.get("renamed_count", 0)
 
-        # Sonuc
-        result.output_file = current
-        result.success = any(s.get("success") for s in result.steps.values())
+        # Sonuc -- basari yalniz asil cikti uretildiyse (eskiden any(adim basarili))
+        result.output_file = produced
+        return self._finalize(result, main_output=main_output, start=start)
+
+    def _finalize(
+        self,
+        result: DeepDeobfuscationResult,
+        *,
+        main_output: Path | None,
+        start: float,
+    ) -> DeepDeobfuscationResult:
+        """Genel başarıyı, durumu ve uyarıları adımlardan dürüstçe hesapla.
+
+        - success: yalnız asıl çıktı (``main_output``) üretildiyse True.
+        - status: asıl çıktı yoksa "failed"; varken başarısız ya da kısmi
+          (``partial``) bir adım varsa "partial"; yoksa "ok". ``skipped`` adımlar
+          (uygulanamadı/istenmedi) durumu bozmaz.
+        - warnings: her başarısız/kısmi adım için bir satır + asıl çıktı yoksa
+          bunu açıkça söyleyen satır.
+        """
+        warnings: list[str] = []
+        if main_output is None:
+            warnings.append(
+                "Asıl çıktı üretilmedi: deep-deobfuscate dönüşümü başarısız. "
+                "Başarılı görünen yardımcı adımlar (beautify vb.) deobfuscation sayılmaz."
+            )
+        degraded = False
+        for name, info in result.steps.items():
+            if info.get("success"):
+                if info.get("partial"):
+                    degraded = True
+                    warnings.append(f"{name} kısmi: {self._step_reason(info)}")
+                continue
+            if info.get("skipped"):
+                continue
+            degraded = True
+            warnings.append(f"{name} başarısız: {self._step_reason(info)}")
+
+        if main_output is None:
+            status = STATUS_FAILED
+        elif degraded:
+            status = STATUS_PARTIAL
+        else:
+            status = STATUS_OK
+        result.success = main_output is not None
+        result.stats["status"] = status
+        result.stats["warnings"] = warnings
         result.duration_seconds = time.monotonic() - start
 
-        logger.info("Deep deobfuscation: %s", result.summary())
+        if status == STATUS_OK:
+            logger.info("Deep deobfuscation: %s", result.summary())
+        else:
+            logger.warning(
+                "Deep deobfuscation %s: %s -- %s",
+                "KISMİ" if status == STATUS_PARTIAL else "BAŞARISIZ",
+                result.summary(), " | ".join(warnings),
+            )
         return result
 
+    @staticmethod
+    def _step_reason(info: dict) -> str:
+        """Adım sözlüğünden kısa gerekçe: önce ``error``, yoksa ilk ``errors`` öğesi."""
+        if info.get("error"):
+            return str(info["error"])
+        errs = info.get("errors")
+        if isinstance(errs, list) and errs:
+            return str(errs[0])
+        return "ayrıntı yok"
+
     def _step_beautify(self, input_file: Path, output_file: Path) -> dict:
-        """js-beautify ile format."""
+        """js-beautify ile format.
+
+        Başarısızlıkta girdi KOPYALANMAZ ve adım başarılı sayılmaz (eskiden
+        girdi 01_beautified.js adıyla kopyalanıp success=True dönülüyordu).
+        run_node_script yerine run_command: beautify.mjs hata nedenini stdout
+        JSON'unda verir, stderr boştur; gerekçe kaybolmasın.
+        """
         script = self._scripts_dir / "beautify.mjs"
         if not script.exists():
-            shutil.copy2(input_file, output_file)
-            return {"success": True, "fallback": True}
+            return {"success": False, "error": f"Script yok: {script}"}
 
         start = time.monotonic()
         try:
-            json_result = self._runner.run_node_script(
-                script,
-                args=[str(input_file), str(output_file)],
+            sub_result = self._runner.run_command(
+                [str(self._config.tools.node), str(script),
+                 str(input_file), str(output_file)],
                 timeout=self._config.timeouts.subprocess,
             )
-            success = output_file.exists() and output_file.stat().st_size > 0
+        except Exception as exc:
+            logger.warning("Beautify hata: %s", exc)
             return {
-                "success": success,
+                "success": False,
+                "error": f"{type(exc).__name__}: {exc}",
+                "duration": time.monotonic() - start,
+            }
+
+        json_result = sub_result.parsed_json or {}
+        produced = output_file.exists() and output_file.stat().st_size > 0
+        if sub_result.success and json_result.get("success") and produced:
+            return {
+                "success": True,
                 "duration": time.monotonic() - start,
                 "stats": json_result.get("stats", {}),
             }
-        except Exception as exc:
-            logger.warning("Beautify hata: %s, fallback kopyalama", exc)
-            shutil.copy2(input_file, output_file)
-            return {"success": True, "fallback": True, "error": str(exc)}
+
+        script_errors = json_result.get("errors")
+        if isinstance(script_errors, list) and script_errors:
+            reason = "; ".join(str(e) for e in script_errors)
+        elif json_result.get("success"):
+            reason = "başarı bildirdi ama çıktı dosyası yok/boş"
+        else:
+            reason = (sub_result.stderr or "").strip()[:300] or f"code={sub_result.returncode}"
+        logger.warning("Beautify basarisiz, orijinalle devam: %s", reason)
+        return {
+            "success": False,
+            "error": f"beautify.mjs başarısız: {reason}",
+            "duration": time.monotonic() - start,
+        }
 
     def _step_deep_deobfuscate(
         self, input_file: Path, output_file: Path, phases: str,
@@ -259,14 +392,34 @@ class DeepDeobfuscationPipeline:
                     "duration": time.monotonic() - start,
                 }
 
-            success = json_result.get("success", False)
-            return {
+            # Başarı = script dönüşümü tamamladı VE çıktı gerçekten var. Script
+            # ayrıştıramadığı girdide 0 ile çıkıp girdiyi kopyalar (fallback_copy,
+            # success=false); bu asla başarı sayılmaz.
+            reported = bool(json_result.get("success", False))
+            success = (
+                reported and output_file.exists() and output_file.stat().st_size > 0
+            )
+            step = {
                 "success": success,
                 "duration": time.monotonic() - start,
                 "phases_completed": json_result.get("phases_completed", []),
                 "stats": json_result.get("stats", {}),
                 "errors": json_result.get("errors", []),
             }
+            if not success:
+                if reported:
+                    step["error"] = (
+                        "deep-deobfuscate.mjs başarı bildirdi ama çıktı dosyası yok/boş"
+                    )
+                elif json_result.get("fallback_copy"):
+                    step["fallback_copy"] = True
+                    step["error"] = (
+                        "deep-deobfuscate.mjs girdiyi ayrıştıramadı; dönüşüm yapılmadı "
+                        f"({output_file.name} girdinin dönüştürülmemiş kopyası)"
+                    )
+                else:
+                    step["error"] = "deep-deobfuscate.mjs dönüşümü tamamlayamadı"
+            return step
         except Exception as exc:
             return {
                 "success": False,
@@ -307,13 +460,23 @@ class DeepDeobfuscationPipeline:
 
             if sub_result.parsed_json:
                 json_result = sub_result.parsed_json
-                return {
-                    "success": json_result.get("success", False),
+                reported = bool(json_result.get("success", False))
+                success = (
+                    reported and output_file.exists() and output_file.stat().st_size > 0
+                )
+                step = {
+                    "success": success,
                     "duration": time.monotonic() - start,
                     "renamed": json_result.get("renamed", 0),
                     "stats": json_result.get("stats", {}),
                     "errors": json_result.get("errors", []),
                 }
+                if not success:
+                    step["error"] = (
+                        "cursor-enhanced-rename.mjs başarı bildirdi ama çıktı dosyası yok/boş"
+                        if reported else "cursor-enhanced-rename.mjs başarısız"
+                    )
+                return step
             return {
                 "success": False,
                 "error": "JSON parse edilemedi",
@@ -360,14 +523,26 @@ class DeepDeobfuscationPipeline:
                     "duration": time.monotonic() - start,
                 }
 
-            return {
-                "success": json_result.get("success", False),
+            step = {
+                "success": bool(json_result.get("success", False)),
                 "duration": time.monotonic() - start,
                 "total_modules": json_result.get("total_modules", 0),
                 "bundle_format": json_result.get("bundle_format", "unknown"),
                 "helpers": json_result.get("helpers_detected", {}),
                 "errors": json_result.get("errors", []),
             }
+            if not step["success"]:
+                if not step["total_modules"] and not step["errors"]:
+                    # Script sorunsuz çalıştı, hata bildirmedi, modül bulamadı:
+                    # girdi paket (bundle) değil. Hata değil, uygulanamaz.
+                    step["skipped"] = True
+                    step["reason"] = (
+                        "Modül yapısı bulunamadı (webpack/esbuild paketi değil); "
+                        "modül ayırma uygulanamaz"
+                    )
+                else:
+                    step["error"] = "smart-webpack-unpack.mjs modül çıkaramadı"
+            return step
         except Exception as exc:
             return {
                 "success": False,
@@ -376,7 +551,14 @@ class DeepDeobfuscationPipeline:
             }
 
     def _step_rename_modules(self, modules_dir: Path) -> dict:
-        """Her modul dosyasi uzerinde variable renaming yap."""
+        """Her modul dosyasi uzerinde variable renaming yap.
+
+        Bir modül yalnız script dönüşümü başarıyla bitirdiyse (JSON success)
+        yeniden adlandırılmış sayılır. deep-deobfuscate.mjs ayrıştıramadığı
+        dosyada da 0 ile çıkıp girdiyi kopyalar; eskiden çıkış koduna bakıldığı
+        için bu modüller "renamed" sayılıyor, adım da her koşulda success=True
+        dönüyordu.
+        """
         script = self._scripts_dir / "deep-deobfuscate.mjs"
         if not script.exists():
             return {"success": False, "error": f"Script yok: {script}"}
@@ -388,14 +570,23 @@ class DeepDeobfuscationPipeline:
 
         module_files = sorted(actual_modules_dir.glob("*.js"))
         if not module_files:
-            return {"success": True, "renamed_count": 0, "note": "Modul dosyasi yok"}
+            # Çağrı yalnız unpack modül bildirdiğinde yapılır; dosya yoksa tutarsızlık.
+            return {
+                "success": False,
+                "renamed_count": 0,
+                "error": f"Unpack modül bildirdi ama modül dosyası yok: {actual_modules_dir}",
+            }
 
         renamed_count = 0
         errors = []
+        failed: list[str] = []
+        first_failure = ""
+        skipped_large = 0
 
         for mf in module_files:
-            # Buyuk dosyalari atla (>500KB)
-            if mf.stat().st_size > 500_000:
+            # Buyuk dosyalari atla
+            if mf.stat().st_size > self.MODULE_RENAME_MAX_BYTES:
+                skipped_large += 1
                 continue
 
             try:
@@ -415,6 +606,7 @@ class DeepDeobfuscationPipeline:
 
                 if (
                     sub_result.success
+                    and (sub_result.parsed_json or {}).get("success")
                     and tmp_output.exists()
                     and tmp_output.stat().st_size > 0
                 ):
@@ -422,11 +614,22 @@ class DeepDeobfuscationPipeline:
                     shutil.move(str(tmp_output), str(mf))
                     renamed_count += 1
                 else:
+                    failed.append(mf.name)
+                    if not first_failure:
+                        script_errors = (sub_result.parsed_json or {}).get("errors") or []
+                        first_failure = f"{mf.name}: " + (
+                            str(script_errors[0]) if script_errors
+                            else (sub_result.stderr or "").strip()[:200]
+                            or f"code={sub_result.returncode}"
+                        )
                     # Gecici dosyayi temizle
                     if tmp_output.exists():
                         tmp_output.unlink()
             except Exception as exc:
                 errors.append(f"{mf.name}: {exc}")
+                failed.append(mf.name)
+                if not first_failure:
+                    first_failure = f"{mf.name}: {type(exc).__name__}: {exc}"
                 # Gecici dosya kaldiysa temizle
                 tmp_out = mf.with_suffix(".renamed.js")
                 if tmp_out.exists():
@@ -435,12 +638,38 @@ class DeepDeobfuscationPipeline:
                     except OSError:
                         pass
 
-        return {
-            "success": True,
+        attempted = len(module_files) - skipped_large
+        if attempted == 0:
+            return {
+                "success": False,
+                "skipped": True,
+                "reason": (
+                    f"Tüm modüller boyut sınırını ({self.MODULE_RENAME_MAX_BYTES} bayt) "
+                    "aşıyor; ikinci geçiş uygulanmadı"
+                ),
+                "renamed_count": 0,
+                "total_files": len(module_files),
+                "skipped_large": skipped_large,
+            }
+
+        step: dict[str, Any] = {
+            "success": renamed_count > 0,
             "renamed_count": renamed_count,
             "total_files": len(module_files),
             "errors": errors,
         }
+        if skipped_large:
+            step["skipped_large"] = skipped_large
+        if failed:
+            step["failed_count"] = len(failed)
+            step["failed_modules"] = failed[:20]
+            step["error"] = (
+                f"{len(failed)}/{attempted} modül yeniden adlandırılamadı "
+                f"(ilk hata: {first_failure})"
+            )
+            if renamed_count:
+                step["partial"] = True
+        return step
 
     def _run_chunked(
         self,
@@ -491,8 +720,7 @@ class DeepDeobfuscationPipeline:
                     "error": "ChunkedProcessor da basarisiz",
                     "errors": split_result.errors,
                 }
-                result.duration_seconds = time.monotonic() - start
-                return result
+                return self._finalize(result, main_output=None, start=start)
             block_files = sorted(chunks_dir.glob("chunk_*.js"))
             result.steps["stream_parse"] = {
                 "success": True,
@@ -528,22 +756,21 @@ class DeepDeobfuscationPipeline:
                         "success": False,
                         "error": sub_result.stderr[:300] if sub_result.stderr else "unknown",
                     }
-                    result.duration_seconds = time.monotonic() - start
-                    return result
+                    return self._finalize(result, main_output=None, start=start)
             except Exception as exc:
                 result.steps["stream_parse"] = {
                     "success": False,
                     "error": str(exc),
                 }
-                result.duration_seconds = time.monotonic() - start
-                return result
+                return self._finalize(result, main_output=None, start=start)
 
             block_files = sorted(chunks_dir.glob("block_*.js"))
 
         if not block_files:
+            # Blok yoksa bölme adımı işini yapmamıştır (eskiden success=True kalıyordu).
+            result.steps["stream_parse"]["success"] = False
             result.steps["stream_parse"]["error"] = "Block dosyasi olusturulamadi"
-            result.duration_seconds = time.monotonic() - start
-            return result
+            return self._finalize(result, main_output=None, start=start)
 
         logger.info("Stream parse: %d block olusturuldu", len(block_files))
 
@@ -554,13 +781,20 @@ class DeepDeobfuscationPipeline:
         deep_script = self._scripts_dir / "deep-deobfuscate.mjs"
         deob_success = 0
         deob_errors = []
+        attempted = 0
+        skipped_small = 0
 
         for block_file in block_files:
-            # Kucuk block'lari atla (anlamli icerik yok)
-            if block_file.stat().st_size < 100:
+            output_file = deep_chunks_dir / block_file.name
+            # Kucuk block'lar deobfuscate edilmez ama birlesik ciktidan DUSURULMEZ:
+            # eskiden atlaniyor, deep_chunks'a hic yazilmadigi icin birlesik
+            # dosyada kayboluyordu (python_src olcumu: birlesik cikti 0 bayt).
+            if block_file.stat().st_size < self.CHUNK_MIN_BYTES:
+                shutil.copy2(block_file, output_file)
+                skipped_small += 1
                 continue
 
-            output_file = deep_chunks_dir / block_file.name
+            attempted += 1
             try:
                 node_args = [
                     "--max-old-space-size=8192",
@@ -573,7 +807,13 @@ class DeepDeobfuscationPipeline:
                     [str(self._config.tools.node)] + node_args,
                     timeout=120,  # Her block icin 2 dakika
                 )
-                if sub.success and output_file.exists():
+                # Script ayristiramadigi blokta da 0 ile cikip kopya yazar;
+                # basari cikis kodundan degil JSON'dan okunur.
+                if (
+                    sub.success
+                    and (sub.parsed_json or {}).get("success")
+                    and output_file.exists()
+                ):
                     deob_success += 1
                 else:
                     # Orijinal block'u kopyala (deobfuscation basarisiz)
@@ -582,23 +822,44 @@ class DeepDeobfuscationPipeline:
                 deob_errors.append(f"{block_file.name}: {exc}")
                 shutil.copy2(block_file, output_file)
 
-        result.steps["deep_deobfuscate_chunks"] = {
+        chunks_step: dict[str, Any] = {
             "success": deob_success > 0,
             "total_chunks": len(block_files),
             "deob_success": deob_success,
             "errors": deob_errors[:10],
         }
+        if skipped_small:
+            chunks_step["skipped_small"] = skipped_small
+        failed_chunks = attempted - deob_success
+        if failed_chunks:
+            chunks_step["failed_chunks"] = failed_chunks
+            chunks_step["error"] = (
+                f"{failed_chunks}/{attempted} blok deobfuscate edilemedi; "
+                "bu bloklar birleşik çıktıda dönüştürülmemiş duruyor"
+            )
+            if deob_success:
+                chunks_step["partial"] = True
+        elif not attempted:
+            chunks_step["error"] = (
+                f"Deobfuscate edilecek boyutta blok yok (hepsi < {self.CHUNK_MIN_BYTES} bayt)"
+            )
+        result.steps["deep_deobfuscate_chunks"] = chunks_step
 
         # Adim 3: Birlestirilmis dosya olustur
         combined = deob_dir / "02_deep_deobfuscated.js"
+        main_output: Path | None = None
         try:
             with open(combined, "w", encoding="utf-8") as out:
                 for chunk_file in sorted(deep_chunks_dir.glob("*.js")):
                     content = chunk_file.read_text(encoding="utf-8", errors="replace")
                     out.write(content)
                     out.write("\n\n")
-            result.output_file = combined
             result.stats["deep_deob_size"] = combined.stat().st_size
+            # Hiçbir blok dönüştürülmediyse birleşik dosya yalnız orijinal
+            # blokların toplamıdır: asıl çıktı / output_file sayılmaz.
+            if deob_success:
+                main_output = combined
+                result.output_file = combined
         except OSError as exc:
             result.steps["combine"] = {"success": False, "error": str(exc)}
 
@@ -618,11 +879,5 @@ class DeepDeobfuscationPipeline:
             result.steps["module_rename"] = rename_result
             result.stats["modules_renamed"] = rename_result.get("renamed_count", 0)
 
-        result.success = any(s.get("success") for s in result.steps.values())
-        result.duration_seconds = time.monotonic() - start
-
-        logger.info(
-            "Chunked deep deobfuscation: %s (%d blocks)",
-            result.summary(), len(block_files),
-        )
-        return result
+        logger.info("Chunked deep deobfuscation: %d blocks", len(block_files))
+        return self._finalize(result, main_output=main_output, start=start)
