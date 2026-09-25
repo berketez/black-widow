@@ -39,12 +39,17 @@ from karadul.analyzers.pyc_decompiler import (
     version_from_pyc_bytes,
 )
 from karadul.analyzers.packed_binary import (
+    _MAX_PYINSTALLER_DECOMPRESS,
     PYZ_MAGIC,
     PyInstallerExtractor,
+    PyzFormatError,
+    classify_pyz_module,
     locate_pyinstaller_archive,
+    parse_pyz,
     pyinstaller_python_version,
     unique_casefold_name,
 )
+from karadul.core.safe_subprocess import safe_zlib_decompress
 
 logger = logging.getLogger(__name__)
 
@@ -238,6 +243,28 @@ def _pyz_note(pyz: dict[str, Any]) -> str:
     return msg
 
 
+def _module_inventory(
+    modules: list[dict[str, Any]], *, source: str, python_version: str | None,
+) -> dict[str, Any]:
+    """python_modules.json biçimi: kategori sayıları + (ilk 5000) modül listesi.
+
+    ``source``: ``"pyinstaller_toc"`` (CArchive + PYZ TOC'leri; gerçek envanter) ya da
+    ``"string_scan"`` (binary'deki ``ad.py[c]`` dizgeleri; yalnız sezgi).
+    """
+    counts: dict[str, int] = {}
+    for m in modules:
+        counts[m["type"]] = counts.get(m["type"], 0) + 1
+    return {
+        "source": source,
+        "python_version": python_version,
+        "total": len(modules),
+        "user_count": counts.get("user", 0),
+        "stdlib_count": counts.get("stdlib", 0),
+        "pyinstaller_count": counts.get("pyinstaller", 0),
+        "modules": modules[:5000],  # max 5000 modul
+    }
+
+
 def _vendor_tool_paths() -> list[str] | None:
     """setup_pycdc.sh'ın pycdc VE pycdas kurduğu vendor/pycdc dizini (yoksa None).
 
@@ -355,14 +382,22 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         if python_version:
             workspace.save_json("static", "python_version", {"version": python_version})
 
-        # 3. Embedded .pyc modulleri
-        modules = self._extract_embedded_modules(binary_data)
+        # 3. Modül envanteri. PyInstaller: CArchive + PYZ TOC'leri (reconstruct'taki
+        #    çıkarıcıyla aynı veri, tek sınıflandırıcı). TOC okunamaz/boşsa ya da başka
+        #    paketleyicide yalnız string taraması kalır (source="string_scan").
+        modules = None
+        if packer_info["packer"] == "pyinstaller":
+            modules = self._pyinstaller_module_inventory(binary_data, python_version)
+        if not modules or modules["total"] == 0:
+            modules = self._extract_embedded_modules(binary_data)
         if modules:
             mod_path = workspace.save_json("static", "python_modules", modules)
             artifacts["python_modules"] = mod_path
             stats["module_count"] = modules["total"]
             stats["stdlib_modules"] = modules.get("stdlib_count", 0)
             stats["user_modules"] = modules.get("user_count", 0)
+            stats["pyinstaller_modules"] = modules.get("pyinstaller_count", 0)
+            stats["module_source"] = modules.get("source", "string_scan")
 
         # "Functions recovered" (cli.py) proxy'si: kurtarilan Python modul sayisi.
         # JVM'de metot, .NET'te CIL metodu; Python'da modul = kurtarilan kod birimi.
@@ -519,10 +554,13 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         manifest = {
             "packer": packer,
             "native_format": target.metadata.get("native_format"),
+            # Static envanter (PyInstaller'da iki TOC; bkz. _pyinstaller_module_inventory).
             "module_summary": {
+                "source": (modules or {}).get("source", "string_scan"),
                 "total": (modules or {}).get("total", 0),
                 "user": (modules or {}).get("user_count", 0),
                 "stdlib": (modules or {}).get("stdlib_count", 0),
+                "pyinstaller": (modules or {}).get("pyinstaller_count", 0),
             },
             "extracted_count": extracted_count,
             "decompile": decompile_summary,
@@ -928,6 +966,7 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         user_count = len(modules) - stdlib_count
 
         return {
+            "source": "string_scan",  # sezgi: binary'deki "ad.py[c]" dizgeleri
             "total": len(modules),
             "stdlib_count": stdlib_count,
             "user_count": user_count,
@@ -955,6 +994,56 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         if info is None:
             return None
         return info, PyInstallerExtractor._parse_toc(data, info["toc_start"], info["toc_length"])
+
+    def _pyinstaller_module_inventory(
+        self, data: bytes, fallback_version: str | None,
+    ) -> dict[str, Any] | None:
+        """PyInstaller modül envanteri: CArchive'deki code girdileri + PYZ TOC'si.
+
+        Tek doğru kaynak: reconstruct'taki çıkarıcının okuduğu iki TOC ve tek
+        sınıflandırıcı (``classify_pyz_module``). Dosya çıkarılmaz, PYZ gövdeleri
+        açılmaz (yalnız TOC; kısıtlı ayrıştırıcı). Eskiden sayı string taramasından
+        geliyordu: TOC'deki tip baytı + ad ("z" + "PYZ.pyz") "zPYZ" modülü sayılıyordu.
+        Cookie okunamıyorsa None.
+        """
+        archive = self._read_pyinstaller_archive(data)
+        if archive is None:
+            return None
+        info, toc = archive
+        carchive = [e for e in toc if e["type_name"] in PyInstallerExtractor.CODE_TYPE_NAMES]
+        pyz_names: list[str] = []
+        pyz_version: str | None = None
+        for e in toc:
+            if e["type_name"] != "ZIPFILE":
+                continue
+            start = info["pkg_start"] + e["entry_offset"]
+            end = start + e["data_length"]
+            if e["data_length"] <= 0 or end > len(data):
+                continue
+            blob: bytes | None = data[start:end]
+            if e["is_compressed"]:
+                blob = safe_zlib_decompress(blob, max_size=_MAX_PYINSTALLER_DECOMPRESS)
+            if not blob or not blob.startswith(PYZ_MAGIC):
+                continue
+            try:
+                pyz = parse_pyz(blob)
+            except PyzFormatError as exc:
+                logger.debug("static: PYZ TOC okunamadi (%s): %s", e["name"], exc)
+                continue
+            pyz_version = pyz_version or pyz.python_version
+            pyz_names.extend(entry.name for entry in pyz.entries)
+        version = (
+            pyz_version or pyinstaller_python_version(info["python_version"]) or fallback_version
+        )
+        modules = [
+            {"name": e["name"], "type": classify_pyz_module(e["name"], version),
+             "origin": "carchive"}
+            for e in carchive
+        ] + [
+            {"name": n, "type": classify_pyz_module(n, version), "origin": "pyz"}
+            for n in pyz_names
+        ]
+        return _module_inventory(modules, source="pyinstaller_toc", python_version=version)
 
     def _parse_pyinstaller_toc(self, data: bytes) -> dict[str, Any] | None:
         """PyInstaller CArchive TOC'sinin özeti (static aşama; dosya çıkarmaz).

@@ -215,3 +215,94 @@ class TestMadde2CookieTekKaynak:
         assert res["total"] == 52                      # eskiden 0
         names = {e["name"] for e in res["entries"]}
         assert {"hello", "PYZ.pyz", "struct", "pyiboot01_bootstrap"} <= names
+
+
+# ---------------------------------------------------------------------------
+# Madde 3: modül envanteri string taramasından değil, iki TOC'den
+# ---------------------------------------------------------------------------
+
+def _pyi_binary_with_pyz(tmp_path: Path) -> Path:
+    """CArchive: app(s) + pyiboot01_bootstrap(s) + struct(m) + PYZ(z: helper/json/_pyi_rth_utils)."""
+    import importlib.util
+    from karadul.analyzers.packed_binary import PYZ_ITEM_MODULE, PYZ_ITEM_PKG
+    from tests.test_packed_binary import _build_pyinstaller_blob
+    from tests.test_pyz_archive import _build_pyz, _code, _z
+    pyz = _build_pyz([
+        ("helper", PYZ_ITEM_MODULE, _z(_code("def yardim(x):\n    return x * 2\n", "helper"))),
+        ("json", PYZ_ITEM_PKG, _z(_code("", "json"))),
+        ("_pyi_rth_utils", PYZ_ITEM_PKG, _z(_code("", "_pyi_rth_utils"))),
+    ], pymagic=importlib.util.MAGIC_NUMBER)
+    blob, _ = _build_pyinstaller_blob([
+        ("app", _code("import helper\n", "app"), ord("s")),
+        ("pyiboot01_bootstrap", _code("", "pyiboot01_bootstrap"), ord("s")),
+        ("struct", _code("", "struct"), ord("m")),
+        ("PYZ.pyz", pyz, ord("z")),
+    ])
+    binp = tmp_path / "app"
+    binp.write_bytes(b"_MEIPASS\x00" + blob)
+    return binp
+
+
+def _static_and_reconstruct(tmp_path: Path, binp: Path, monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
+    import json
+    from karadul.core.target import Language, TargetInfo, TargetType
+    from karadul.core.workspace import Workspace
+    monkeypatch.setattr(pd, "resolve_tool", lambda name, **k: None)
+    an = _analyzer()
+    monkeypatch.setattr(an.runner, "run_strings", lambda *a, **k: [])
+    target = TargetInfo(path=binp, name=binp.name, target_type=TargetType.PYTHON_PACKED,
+                        language=Language.PYTHON, file_size=binp.stat().st_size, file_hash="x")
+    ws = Workspace(tmp_path / "ws", binp.name)
+    ws.create()
+    st = an.analyze_static(target, ws)
+    rec = an.reconstruct(target, ws)
+    manifest = json.loads((rec.artifacts["python_project"] / "manifest.json").read_text())
+    return st, ws.load_json("static", "python_modules"), manifest
+
+
+class TestMadde3EnvanterTekKaynak:
+    def test_static_envanter_toclardan(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        st, mods, _ = _static_and_reconstruct(tmp_path, _pyi_binary_with_pyz(tmp_path), monkeypatch)
+        assert mods["source"] == "pyinstaller_toc"
+        cats = {m["name"]: (m["type"], m["origin"]) for m in mods["modules"]}
+        assert cats == {
+            "app": ("user", "carchive"), "pyiboot01_bootstrap": ("pyinstaller", "carchive"),
+            "struct": ("stdlib", "carchive"), "helper": ("user", "pyz"),
+            "json": ("stdlib", "pyz"), "_pyi_rth_utils": ("pyinstaller", "pyz"),
+        }
+        assert (mods["total"], mods["user_count"], mods["stdlib_count"],
+                mods["pyinstaller_count"]) == (6, 2, 2, 2)
+        assert not any(n.startswith("zPYZ") for n in cats)
+        assert st.stats["functions"] == st.stats["module_count"] == 6
+        assert st.stats["module_source"] == "pyinstaller_toc"
+
+    def test_manifest_module_summary_pyz_bolumuyle_tutarli(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _, mods, manifest = _static_and_reconstruct(
+            tmp_path, _pyi_binary_with_pyz(tmp_path), monkeypatch)
+        ms, pyz = manifest["module_summary"], manifest["pyz"]
+        assert ms == {"source": "pyinstaller_toc", "total": 6, "user": 2, "stdlib": 2,
+                      "pyinstaller": 2}
+        from_pyz = [m for m in mods["modules"] if m["origin"] == "pyz"]
+        assert pyz["modules_extracted"] == len(from_pyz)
+        assert pyz["decompile_chain"] == sum(m["type"] == "user" for m in from_pyz)
+        assert pyz["skipped_stdlib"] == sum(m["type"] == "stdlib" for m in from_pyz)
+        assert pyz["skipped_pyinstaller"] == sum(m["type"] == "pyinstaller" for m in from_pyz)
+
+    def test_toc_bossa_string_taramasi_etiketli(self, tmp_path: Path) -> None:
+        import struct
+        from karadul.analyzers.packed_binary import PYINSTALLER_MAGIC
+        data = b"_MEIPASS\x00myapp.pyc\x00" + PYINSTALLER_MAGIC + struct.pack("!IIII", 0, 0, 0, 312)
+        an = _analyzer()
+        inv = an._pyinstaller_module_inventory(data, None)
+        assert inv is not None and inv["total"] == 0
+        scan = an._extract_embedded_modules(data)
+        assert scan["source"] == "string_scan"
+
+    @pytest.mark.skipif(not REAL_HELLO.is_file(), reason=f"gerçek binary yok: {REAL_HELLO}")
+    def test_gercek_binary_envanteri(self) -> None:
+        inv = _analyzer()._pyinstaller_module_inventory(REAL_HELLO.read_bytes(), None)
+        assert (inv["total"], inv["user_count"], inv["stdlib_count"],
+                inv["pyinstaller_count"]) == (109, 1, 103, 5)
+        assert [m["name"] for m in inv["modules"] if m["type"] == "user"] == ["hello"]

@@ -1337,6 +1337,10 @@ class PyInstallerExtractor:
         ord("o"): "OPTION",        # Runtime option
     }
 
+    # Bytecode taşıyan CArchive girdileri (.pyc olarak çıkarılır). python_binary'nin
+    # static modül envanteri de bunu kullanır (tek kaynak).
+    CODE_TYPE_NAMES = frozenset({"SCRIPT", "MODULE", "MODULE_PACKAGE"})
+
     # v1.14.5 GUVENLIK: TOC DoS koruma sabitleri.
     #
     # Saldiri vektoru 1 (CPU DoS):
@@ -1762,7 +1766,7 @@ class PyInstallerExtractor:
         # Dosya tipini belirle
         file_type = "data"
         type_name = entry.get("type_name", "")
-        if type_name in ("SCRIPT", "MODULE", "MODULE_PACKAGE"):
+        if type_name in PyInstallerExtractor.CODE_TYPE_NAMES:
             file_type = "pyc"
         elif type_name == "BINARY":
             file_type = "binary_extension"
