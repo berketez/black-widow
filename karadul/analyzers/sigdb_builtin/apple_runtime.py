@@ -111,7 +111,6 @@ _OBJC_RUNTIME_SIGNATURES_DATA: dict[str, dict[str, str]] = {
     "objc_allocWithZone": {"lib": "libobjc", "purpose": "ObjC +allocWithZone: fast path", "category": "objc_runtime"},
     "objc_opt_new": {"lib": "libobjc", "purpose": "ObjC +new fast path", "category": "objc_runtime"},
     "objc_opt_self": {"lib": "libobjc", "purpose": "ObjC -self fast path", "category": "objc_runtime"},
-    "objc_opt_class": {"lib": "libobjc", "purpose": "ObjC -class fast path", "category": "objc_runtime"},
     "objc_opt_isKindOfClass": {"lib": "libobjc", "purpose": "ObjC isKindOfClass fast path", "category": "objc_runtime"},
     "objc_opt_respondsToSelector": {"lib": "libobjc", "purpose": "ObjC respondsToSelector fast path", "category": "objc_runtime"},
     "_objc_rootAlloc": {"lib": "libobjc", "purpose": "ObjC NSObject root alloc impl", "category": "objc_runtime"},

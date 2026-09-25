@@ -115,7 +115,7 @@ from typing import Any, Optional
 # Prefer ujson for faster JSON parsing (~2x on large files), fallback to stdlib.
 # ujson icin tip stub'i mevcut degil -> import-untyped sustur.
 try:
-    import ujson as json  # type: ignore[import-untyped]
+    import ujson as json  # type: ignore[import-untyped,unused-ignore]  # stub'lı ortamda gereksiz
 except ImportError:
     import json
 
