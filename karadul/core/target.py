@@ -239,7 +239,9 @@ class TargetDetector:
             for f in sorted(macos_dir.iterdir()):
                 if f.is_file() and not f.name.startswith('.'):
                     magic = self._read_magic(f)
-                    if magic in _MACHO_MAGICS or magic == _UNIVERSAL_MAGIC:
+                    if magic in _MACHO_MAGICS or (
+                        magic == _UNIVERSAL_MAGIC and not self._is_java_class(f)
+                    ):
                         components.append({
                             "path": str(f),
                             "type": "macho_binary",
@@ -431,6 +433,16 @@ class TargetDetector:
                 magic4 = f.read(4)
         except OSError:
             magic4 = b""
+
+        # --- Java class (Mach-O fat ile aynı 0xCAFEBABE magic'i) ---
+        if magic == _UNIVERSAL_MAGIC and self._is_java_class(path):
+            return TargetInfo(
+                path=path, name=path.stem,
+                target_type=TargetType.JAVA_JAR,
+                language=Language.JAVA,
+                file_size=file_size, file_hash=file_hash,
+                metadata={"format": "class"},
+            )
 
         # --- Mach-O ---
         if magic == _UNIVERSAL_MAGIC:
@@ -824,6 +836,23 @@ class TargetDetector:
             return struct.unpack(">I", data)[0]
         except OSError:
             return None
+
+    @staticmethod
+    def _is_java_class(path: Path) -> bool:
+        """0xCAFEBABE bir Java class mı (Mach-O fat/universal değil)?
+
+        İkisi de aynı magic ile başlar. Fat header'da ofset 4 mimari sayısıdır
+        (küçük), Java class'ta minor+major sürümdür (major >= 45). Eşik libmagic
+        ile aynı: > 30 ise Java class.
+        """
+        try:
+            with open(path, "rb") as f:
+                head = f.read(8)
+        except OSError:
+            return False
+        if len(head) < 8 or struct.unpack(">I", head[:4])[0] != _UNIVERSAL_MAGIC:
+            return False
+        return struct.unpack(">I", head[4:8])[0] > 30
 
     @staticmethod
     def _compute_sha256(path: Path) -> str:

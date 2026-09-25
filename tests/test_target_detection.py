@@ -309,3 +309,60 @@ class TestPyInstallerDetection:
         )
         info = TargetDetector().detect(exe)
         assert info.target_type != TargetType.PYTHON_PACKED
+
+
+# ─────────────────────────────────────────────────────────
+# 0xCAFEBABE: Java class mı, Mach-O fat (universal) mı?
+# ─────────────────────────────────────────────────────────
+_JAVA_CLASS_HEAD = b"\xca\xfe\xba\xbe" + b"\x00\x00\x00\x41"  # minor 0, major 65 (Java 21)
+_FAT_MACHO_HEAD = b"\xca\xfe\xba\xbe" + b"\x00\x00\x00\x02"   # nfat_arch = 2
+
+
+class TestCafebabeDisambiguation:
+    """İkisi de 0xCAFEBABE ile başlar; ofset 4 fat'te mimari sayısı, Java'da sürüm.
+
+    Önceden her 0xCAFEBABE koşulsuz UNIVERSAL_BINARY sayılıyordu: çıplak bir
+    Hello.class Mach-O olarak analiz ediliyordu.
+    """
+
+    def test_java_class_with_extension_is_java(self, tmp_path: Path) -> None:
+        f = tmp_path / "Hello.class"
+        f.write_bytes(_JAVA_CLASS_HEAD + b"\x00" * 32)
+        info = TargetDetector().detect(f)
+        assert info.target_type == TargetType.JAVA_JAR
+        assert info.language == Language.JAVA
+        assert info.metadata.get("format") == "class"
+
+    def test_extensionless_java_class_is_java(self, tmp_path: Path) -> None:
+        f = tmp_path / "Hello"
+        f.write_bytes(_JAVA_CLASS_HEAD + b"\x00" * 32)
+        assert TargetDetector().detect(f).target_type == TargetType.JAVA_JAR
+
+    def test_java_class_with_nonzero_minor_is_java(self, tmp_path: Path) -> None:
+        """Önizleme özellikli class'larda minor 0xFFFF: değer çok büyük, yine Java."""
+        f = tmp_path / "Preview.class"
+        f.write_bytes(b"\xca\xfe\xba\xbe\xff\xff\x00\x41" + b"\x00" * 32)
+        assert TargetDetector().detect(f).target_type == TargetType.JAVA_JAR
+
+    def test_fat_header_is_universal(self, tmp_path: Path) -> None:
+        f = tmp_path / "fat_bin"
+        f.write_bytes(_FAT_MACHO_HEAD + b"\x00" * 64)
+        assert TargetDetector().detect(f).target_type == TargetType.UNIVERSAL_BINARY
+
+    def test_real_universal_binary_stays_universal(self) -> None:
+        ls = Path("/bin/ls")
+        if not ls.exists() or ls.read_bytes()[:4] != b"\xca\xfe\xba\xbe":
+            pytest.skip("sistemde universal /bin/ls yok")
+        assert TargetDetector().detect(ls).target_type == TargetType.UNIVERSAL_BINARY
+
+    def test_java_class_in_bundle_is_not_macho_component(self, tmp_path: Path) -> None:
+        macos = tmp_path / "Mixed.app" / "Contents" / "MacOS"
+        macos.mkdir(parents=True)
+        (macos / "Mixed").write_bytes(b"\xcf\xfa\xed\xfe" + b"\x00" * 60)
+        (macos / "Helper.class").write_bytes(_JAVA_CLASS_HEAD + b"\x00" * 32)
+        info = TargetDetector().detect(tmp_path / "Mixed.app")
+        macho_names = {
+            c["name"] for c in info.metadata.get("components", [])
+            if c.get("type") == "macho_binary"
+        }
+        assert macho_names == {"Mixed"}
