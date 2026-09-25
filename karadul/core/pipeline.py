@@ -399,7 +399,11 @@ class Pipeline:
                     pipeline_result.add_stage_result(result)
                     progress.update(pipeline_task, advance=1)
 
-                    status_icon = "[green]OK[/]" if result.success else "[red]FAIL[/]"
+                    # Atlanan asama (skipped) HATA degil; success=False tasir.
+                    if result.skipped:
+                        status_icon = "[dim]SKIP[/]"
+                    else:
+                        status_icon = "[green]OK[/]" if result.success else "[red]FAIL[/]"
                     console.print(
                         f"  {status_icon} {stage_name}: "
                         f"{result.duration_seconds:.1f}s, "

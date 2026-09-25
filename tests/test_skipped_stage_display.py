@@ -429,3 +429,128 @@ def test_render_stages_skipped_row(srv, render_js):
 def test_esc_escapes_quotes_for_attribute_context(render_js):
     out = render_js({"elapsed": 0, "stages": [], "substages": []})
     assert out["esc"] == "&lt;a href=&quot;x&quot; title=&#39;y&#39;&gt;&amp;&lt;/a&gt;"
+
+
+# ---------------------------------------------------------------------------
+# 9) --output temiz dizini (core/output_formatter + core/report_generator)
+#    Arayüz koşuları bu dizini üretir; README.md / report.json / report.html
+#    atlanan aşamayı FAIL yazıyordu (skipped alanı da yoktu).
+# ---------------------------------------------------------------------------
+def test_stage_result_skip_reason_property():
+    assert _skipped("deobfuscate", "satır1\n  satır2").skip_reason == "satır1 satır2"
+    assert _skipped("deobfuscate", None).skip_reason is None
+    # atlanmamış aşamada stats'ta gerekçe olsa bile None
+    assert _ok("static", skip_reason="x").skip_reason is None
+
+
+@pytest.fixture
+def clean_output(tmp_path: Path):
+    from karadul.core.output_formatter import OutputFormatter
+
+    ws = Workspace(base_dir=tmp_path / "workspaces", target_name="hello")
+    ws.create()
+    result = _pipeline(_ok("identify"), _ok("static"),
+                       _skipped("deobfuscate", "a|b <gerekçe>"),
+                       _ok("reconstruct"))
+    out = tmp_path / "clean"
+    OutputFormatter(ws, result).format_output(out, fmt="clean")
+    return out
+
+
+def test_clean_readme_marks_skipped_not_fail(clean_output):
+    readme = (clean_output / "README.md").read_text(encoding="utf-8")
+    row = next(l for l in readme.splitlines() if l.startswith("| deobfuscate |"))
+    assert "| SKIPPED |" in row and "FAIL" not in row
+    assert "a\\|b <gerekçe>" in row  # '|' tabloyu bölmüyor
+
+
+def test_clean_report_json_carries_skipped(clean_output):
+    data = json.loads((clean_output / "report.json").read_text(encoding="utf-8"))
+    st = data["pipeline"]["stages"]["deobfuscate"]
+    assert st["success"] is False and st["skipped"] is True
+    assert st["skip_reason"] == "a|b <gerekçe>"
+    assert data["pipeline"]["stages"]["static"]["skipped"] is False
+    assert data["pipeline"]["skipped_stages"] == ["deobfuscate"]
+    assert data["pipeline"]["failed_stages"] == []
+
+
+def test_clean_report_html_shows_skipped(clean_output):
+    html_text = (clean_output / "report.html").read_text(encoding="utf-8")
+    assert '<div class="timeline-item skip">' in html_text
+    assert '<span class="skip">SKIPPED</span>' in html_text
+    assert "skipped (not a failure): a|b &lt;gerekçe&gt;" in html_text
+    assert "(1 skipped)" in html_text
+    assert '<div class="value">1</div><div class="label">Skipped Stages</div>' in html_text
+    assert '<span class="fail">FAIL</span>' not in html_text
+
+
+def test_clean_report_html_error_escaped_once(tmp_path: Path):
+    from karadul.core.report_generator import ReportGenerator
+
+    ws = Workspace(base_dir=tmp_path / "workspaces", target_name="hello")
+    ws.create()
+    result = _pipeline(_ok("identify"), _failed("static", "bad <tag> & more"))
+    html_text = ReportGenerator(result, ws).generate_html()
+    assert "bad &lt;tag&gt; &amp; more" in html_text
+    assert "&amp;lt;" not in html_text
+    assert "Skipped Stages" not in html_text and "skipped)" not in html_text
+
+
+# ---------------------------------------------------------------------------
+# 10) TTY ilerleme çubuğu (cli_common) ve callback'siz pipeline konsolu
+# ---------------------------------------------------------------------------
+def test_tty_progress_marker_skip_is_not_warning():
+    from karadul.cli_common import make_progress_callbacks
+
+    class _FakeProgress:
+        def __init__(self):
+            self.descriptions: list[str] = []
+
+        def update(self, task_id, **kw):
+            if "description" in kw:
+                self.descriptions.append(kw["description"])
+
+    prog = _FakeProgress()
+    _, on_complete, _ = make_progress_callbacks(prog, 1)
+    on_complete("deobfuscate", _skipped("deobfuscate"), 0, 3)
+    on_complete("static", _failed("static"), 1, 3)
+    on_complete("identify", _ok("identify"), 2, 3)
+    skip_desc, fail_desc, ok_desc = prog.descriptions
+    assert "SKIP" in skip_desc and "!" not in skip_desc
+    assert "[yellow]![/yellow]" in fail_desc
+    assert "OK" in ok_desc
+
+
+def test_pipeline_console_prints_skip_not_fail(tmp_path: Path, monkeypatch):
+    import io
+
+    from rich.console import Console
+
+    import karadul.core.pipeline as pipeline_mod
+    from karadul.config import Config
+    from karadul.core.pipeline import Pipeline, Stage
+    from karadul.stages import IdentifyStage
+
+    class _SkippingStage(Stage):
+        name = "deobfuscate"
+        requires = ("identify",)
+
+        def execute(self, context):
+            return _skipped("deobfuscate")
+
+    buf = io.StringIO()
+    monkeypatch.setattr(pipeline_mod, "console",
+                        Console(file=buf, force_terminal=False, width=200))
+    cfg = Config()
+    cfg.project_root = tmp_path
+    cfg.retry.max_retries = 0
+    cfg.retry.base_delay = 0.0
+    pipe = Pipeline(cfg)
+    pipe.register_stage(IdentifyStage())
+    pipe.register_stage(_SkippingStage())
+    js = Path(__file__).parent / "fixtures" / "sample_minified.js"
+    result = pipe.run(js)  # callback YOK -> rich Progress yolu
+    assert result.stages["deobfuscate"].skipped
+    out = buf.getvalue()
+    assert "SKIP deobfuscate" in out
+    assert "FAIL deobfuscate" not in out

@@ -752,11 +752,16 @@ class OutputFormatter:
         for name, sr in self._result.stages.items():
             report["pipeline"]["stages"][name] = {
                 "success": sr.success,
+                # Atlanan asama HATA degil (success=False tasir ama skipped=True).
+                "skipped": sr.skipped,
+                "skip_reason": sr.skip_reason,
                 "duration": round(sr.duration_seconds, 3),
                 "stats": sr.stats,
                 "errors": sr.errors,
                 "artifact_count": len(sr.artifacts),
             }
+        report["pipeline"]["skipped_stages"] = self._result.get_skipped_stages()
+        report["pipeline"]["failed_stages"] = self._result.get_failed_stages()
 
         # Ozet istatistikler
         if "static" in self._result.stages:
@@ -855,11 +860,17 @@ class OutputFormatter:
         lines.append("|-------|--------|----------|---------|")
 
         for name, sr in self._result.stages.items():
-            status_icon = "PASS" if sr.success else "FAIL"
-            details_parts = []
-            for k, v in list(sr.stats.items())[:3]:
-                details_parts.append(f"{k}={v}")
-            details = ", ".join(details_parts) if details_parts else "-"
+            if sr.skipped:
+                # Atlanan asama HATA degil; eskiden success=False yuzunden FAIL.
+                status_icon = "SKIPPED"
+                reason = sr.skip_reason or "no reason recorded"
+                details = reason.replace("|", "\\|")  # tablo hucresini bolmesin
+            else:
+                status_icon = "PASS" if sr.success else "FAIL"
+                details_parts = []
+                for k, v in list(sr.stats.items())[:3]:
+                    details_parts.append(f"{k}={v}")
+                details = ", ".join(details_parts) if details_parts else "-"
             lines.append(
                 f"| {name} | {status_icon} | {sr.duration_seconds:.1f}s | {details} |"
             )

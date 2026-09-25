@@ -64,6 +64,19 @@ class StageResult:
             skipped=bool(data.get("skipped", False)),
         )
 
+    @property
+    def skip_reason(self) -> str | None:
+        """Atlanan asamanin gerekcesi (``stats["skip_reason"]``), tek satir.
+
+        Asama atlanmadiysa ya da gerekce kaydedilmemisse None.
+        """
+        if not self.skipped or not isinstance(self.stats, dict):
+            return None
+        reason = self.stats.get("skip_reason")
+        if reason is None:
+            return None
+        return " ".join(str(reason).split()) or None
+
     def summary(self) -> str:
         """Tek satirlik ozet."""
         status = "SKIP" if self.skipped else ("OK" if self.success else "FAIL")

@@ -257,9 +257,13 @@ def make_progress_callbacks(
     def on_stage_complete(
         stage_name: str, result: Any, index: int, total: int,
     ) -> None:
-        # result.success yoksa (savunmaci) yine de ilerlet.
-        ok = getattr(result, "success", True)
-        marker = "[green]OK[/green]" if ok else "[yellow]![/yellow]"
+        # result.success yoksa (savunmaci) yine de ilerlet. Atlanan asama
+        # (skipped) HATA degil; success=False tasidigi icin "!" gorunuyordu.
+        if getattr(result, "skipped", False):
+            marker = "[dim]SKIP[/dim]"
+        else:
+            ok = getattr(result, "success", True)
+            marker = "[green]OK[/green]" if ok else "[yellow]![/yellow]"
         progress.update(
             task_id,
             advance=1,

@@ -69,6 +69,7 @@ td { padding: 8px 12px; border: 1px solid #30363d; }
 tr:hover { background: #1c2128; }
 .pass { color: #3fb950; font-weight: bold; }
 .fail { color: #f85149; font-weight: bold; }
+.skip { color: #8b949e; font-weight: bold; }
 .na { color: #8b949e; }
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 12px 0; }
 .stat-box { background: #21262d; border-radius: 6px; padding: 16px; text-align: center; }
@@ -78,6 +79,7 @@ tr:hover { background: #1c2128; }
 .timeline-item { position: relative; margin-bottom: 12px; padding: 10px 14px; background: #21262d; border-radius: 6px; border-left: 3px solid #30363d; }
 .timeline-item.ok { border-left-color: #3fb950; }
 .timeline-item.err { border-left-color: #f85149; }
+.timeline-item.skip { border-left-color: #8b949e; border-left-style: dashed; }
 .timeline-item .stage-name { font-weight: bold; color: #f0f6fc; }
 .timeline-item .stage-meta { font-size: 0.85em; color: #8b949e; }
 pre { background: #21262d; padding: 14px; border-radius: 6px; overflow-x: auto; font-size: 0.85em; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
@@ -213,13 +215,15 @@ class ReportGenerator:
         status_text = "SUCCESS" if self._result.success else "PARTIAL"
         stages_ok = sum(1 for s in self._result.stages.values() if s.success)
         stages_total = len(self._result.stages)
+        n_skipped = len(self._result.get_skipped_stages())
+        skipped_note = f" ({n_skipped} skipped)" if n_skipped else ""
         return (
             '<div class="header">'
             "<h1>BLACK WIDOW -- Analysis Report</h1>"
             f'<div class="subtitle">Target: <strong>{_esc(self._result.target_name)}</strong></div>'
             f'<div class="subtitle">'
             f'Status: <span class="{status_class}">{status_text}</span> | '
-            f"Stages: {stages_ok}/{stages_total} | "
+            f"Stages: {stages_ok}/{stages_total}{skipped_note} | "
             f"Duration: {self._result.total_duration:.1f}s | "
             f'<span class="version">v{_esc(__version__)}</span>'
             f"</div>"
@@ -262,6 +266,10 @@ class ReportGenerator:
             ("Stages", f"{sum(1 for s in self._result.stages.values() if s.success)}/{len(self._result.stages)}"),
             ("Duration", f"{self._result.total_duration:.1f}s"),
         ]
+        # "Stages" basarili/toplam; atlanan asama o farka dahil ama HATA degil.
+        n_skipped = len(self._result.get_skipped_stages())
+        if n_skipped:
+            stats.append(("Skipped Stages", str(n_skipped)))
 
         if "static" in self._result.stages:
             st = self._result.stages["static"].stats
@@ -284,8 +292,12 @@ class ReportGenerator:
                 stats.append(("Sig Matches", str(st["signature_matches"])))
 
         if "deobfuscate" in self._result.stages:
-            st = self._result.stages["deobfuscate"].stats
-            stats.append(("Deobf Steps", str(st.get("steps_completed", "N/A"))))
+            sr_deob = self._result.stages["deobfuscate"]
+            if sr_deob.skipped:
+                stats.append(("Deobf Steps", "skipped"))
+            else:
+                st = sr_deob.stats
+                stats.append(("Deobf Steps", str(st.get("steps_completed", "N/A"))))
 
         boxes = "".join(
             f'<div class="stat-box"><div class="value">{_esc(v)}</div><div class="label">{_esc(k)}</div></div>'
@@ -302,15 +314,27 @@ class ReportGenerator:
     def _pipeline_timeline(self) -> str:
         items: list[str] = []
         for i, (name, sr) in enumerate(self._result.stages.items(), 1):
-            cls = "ok" if sr.success else "err"
-            status = '<span class="pass">PASS</span>' if sr.success else '<span class="fail">FAIL</span>'
+            if sr.skipped:
+                cls = "skip"
+                status = '<span class="skip">SKIPPED</span>'
+            elif sr.success:
+                cls = "ok"
+                status = '<span class="pass">PASS</span>'
+            else:
+                cls = "err"
+                status = '<span class="fail">FAIL</span>'
 
+            # details HAM metin; asagida tek kez _esc'lenir (eskiden hata metni
+            # iki kez kacisliyordu: '<' -> '&amp;lt;').
             details = ""
-            if sr.stats:
-                stat_parts = [f"{k}={v}" for k, v in list(sr.stats.items())[:4]]
-                details = ", ".join(stat_parts)
-            if sr.errors:
-                details = _esc(sr.errors[0][:100])
+            if sr.skipped:
+                details = f"skipped (not a failure): {sr.skip_reason or 'no reason recorded'}"
+            else:
+                if sr.stats:
+                    stat_parts = [f"{k}={v}" for k, v in list(sr.stats.items())[:4]]
+                    details = ", ".join(stat_parts)
+                if sr.errors:
+                    details = sr.errors[0][:100]
 
             items.append(
                 f'<div class="timeline-item {cls}">'
