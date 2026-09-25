@@ -697,20 +697,29 @@ class TestPythonReconstruct:
     CArchive'i (packed_binary.PyInstallerExtractor) acip python_project uretir.
     """
 
-    def test_functions_stat_mirrors_module_count(
+    def test_functions_stat_durust_na(
         self, python_analyzer, mock_pyinstaller_target, mock_workspace,
     ):
-        """analyze_static functions/functions_found = module_count set etmeli.
+        """functions_found = "N/A": Python paketinde statik aşama fonksiyon saymaz.
 
-        cli.py "Functions recovered" bunu okur; eskiden set edilmiyordu -> packed
-        binary "0 fonksiyon" gorunurdu (misroute deseni). Mutant-dogrulandi: functions
-        satiri silinince KeyError -> FAIL.
+        cli.py "Functions recovered" functions_found'u okur. Eskiden buraya arşivdeki
+        TOPLAM modül sayısı yazılıyordu (gerçek hello: 109, 103'ü stdlib) -> yanıltıcı.
+        Anahtar hiç yazılmasa cli.py "0" gösterirdi; "N/A" int olmadığı için "N/A"
+        görünür. "functions" anahtarı yazılmaz: hacker_cli onu ":," ile biçimliyor.
         """
         result = python_analyzer.analyze_static(mock_pyinstaller_target, mock_workspace)
-        assert "functions" in result.stats
-        assert "functions_found" in result.stats
-        assert result.stats["functions"] == result.stats.get("module_count", 0)
-        assert result.stats["functions"] > 0  # mock 4 .pyc referansi iceriyor
+        st = result.stats
+        assert st["functions_found"] == "N/A"
+        assert "functions" not in st
+        assert st["python_modules_total"] > 0  # mock 4 .pyc referansi iceriyor
+        assert st["python_modules_total"] == (
+            st["python_modules_user"] + st["python_modules_stdlib"]
+            + st["python_modules_pyinstaller"])
+        # cli.py sonuç tablosu kuralı: int değilse "N/A" (anahtar yoksa 0 derdi)
+        shown = st.get("functions_found", st.get("ghidra_function_count", st.get("functions", 0)))
+        assert not isinstance(shown, int)
+        from karadul.hacker_cli import _stage_one_liner
+        assert "functions" not in _stage_one_liner("static", st)   # ValueError da yok
 
     def test_reconstruct_produces_python_project(
         self, python_analyzer, mock_pyinstaller_target, mock_workspace,
@@ -807,7 +816,6 @@ class TestDecompilePycFiles:
         self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path, monkeypatch
     ):
         """pycdc mevcutsa .py kaynagi uretilir (decompiled sayacini pinler)."""
-        import subprocess
         from karadul.analyzers import pyc_decompiler as pd
         from karadul.analyzers.packed_binary import ExtractedFile
         monkeypatch.setattr(
@@ -815,9 +823,8 @@ class TestDecompilePycFiles:
             lambda name, **k: "/fake/pycdc" if name == "pycdc" else None,
         )
         monkeypatch.setattr(
-            pd, "safe_run",
-            lambda *a, **k: subprocess.CompletedProcess(
-                args=[], returncode=0, stdout="def a():\n    return 1\n", stderr=""),
+            pd, "_run_tool",
+            lambda *a, **k: pd._ChildRun(0, b"def a():\n    return 1\n", b""),
         )
         pyc1 = self._make_pyc(tmp_path, "a.pyc", "def a():\n    return 1\n")
         files = [ExtractedFile(path=pyc1, original_name="a.pyc", file_type="pyc", size=pyc1.stat().st_size)]
@@ -899,7 +906,7 @@ class TestCxFreezeExtraction:
         (lib / "pkg").mkdir()
         (lib / "pkg" / "u.pyc").write_bytes(self._real_pyc("def u():\n    return 3\n"))
 
-        extracted = python_analyzer._extract_cxfreeze(app, tmp_path / "ext")
+        extracted, _ = python_analyzer._extract_cxfreeze(app, tmp_path / "ext")
         # 2 (library.zip) + 1 (lib/ serbest) = 3 (mutant: .pyc filtre / lib tarama)
         assert len(extracted) == 3
         assert all(ef.file_type == "pyc" for ef in extracted)
@@ -915,7 +922,7 @@ class TestCxFreezeExtraction:
         """Tek basina binary (lib/ yok) -> bos liste (graceful, patlamaz)."""
         app = tmp_path / "solo"
         app.write_bytes(b"cx_Freeze\x00")
-        assert python_analyzer._extract_cxfreeze(app, tmp_path / "ext") == []
+        assert python_analyzer._extract_cxfreeze(app, tmp_path / "ext")[0] == []
 
     def test_zip_slip_korumasi(
         self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path
@@ -929,7 +936,7 @@ class TestCxFreezeExtraction:
         with zipfile.ZipFile(lib / "library.zip", "w") as zf:
             zf.writestr("../../evil.pyc", self._real_pyc("x = 1\n"))
         ext_dir = tmp_path / "ext"
-        extracted = python_analyzer._extract_cxfreeze(app, ext_dir)
+        extracted, _ = python_analyzer._extract_cxfreeze(app, ext_dir)
         assert len(extracted) == 1
         # Cikan dosya ext_dir ALTINDA olmali, disari kacmamali
         assert ext_dir in extracted[0].path.parents
@@ -952,7 +959,6 @@ class TestPycdcEntegrasyonu:
         self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path, monkeypatch
     ):
         """pycdc rc=0 + 'Decompyle incomplete' -> partial (decompiled DEĞİL) + dürüst not."""
-        import subprocess
         import sys
         from karadul.analyzers import pyc_decompiler as pd
         from karadul.analyzers.packed_binary import ExtractedFile
@@ -963,11 +969,10 @@ class TestPycdcEntegrasyonu:
             lambda name, **k: "/fake/pycdc" if name == "pycdc" else None,
         )
         monkeypatch.setattr(
-            pd, "safe_run",
-            lambda *a, **k: subprocess.CompletedProcess(
-                args=[], returncode=0,
-                stdout="def a():\n    pass\n# WARNING: Decompyle incomplete\n",
-                stderr="Unsupported opcode: MAKE_CELL (225)\n"),
+            pd, "_run_tool",
+            lambda *a, **k: pd._ChildRun(
+                0, b"def a():\n    pass\n# WARNING: Decompyle incomplete\n",
+                b"Unsupported opcode: MAKE_CELL (225)\n"),
         )
         pyc = self._stripped(tmp_path, "hello", "def a():\n    return 1\n")
         files = [ExtractedFile(path=pyc, original_name="hello", file_type="pyc",

@@ -18,9 +18,11 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import struct
 import time
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +49,7 @@ from karadul.analyzers.packed_binary import (
     PYZ_MAGIC,
     PyInstallerExtractor,
     PyzFormatError,
+    classify_carchive_module,
     classify_pyz_module,
     locate_pyinstaller_archive,
     parse_pyz,
@@ -165,6 +168,12 @@ def _pyinstaller_note(summary: dict[str, Any]) -> str:
         parts.append(msg)
     if failed:
         parts.append(f"{failed} tanesi çözülemedi")
+    truncated = summary.get("output_truncated", 0)
+    if truncated:
+        parts.append(
+            f"{truncated} tanesinde araç çıktısı alt süreç çıktı tavanında kesildi "
+            "(dosya sonunda '# KARADUL: ... kesildi' satırı)"
+        )
     return "; ".join(parts) + "."
 
 
@@ -184,7 +193,7 @@ def _pyz_summary(extracted_files: list, output_dir: Path) -> dict[str, Any]:
     """PYZ açma sonucunu manifest için özetle; tam modül listesini dosyaya yaz.
 
     Raporlar ``PyInstallerExtractor`` tarafından PYZ blobunun ExtractedFile
-    metadata'sına (``"pyz"``) konur; modüllerin kategorisi ``pyz_category``'dedir.
+    metadata'sına (``"pyz"``) konur; modüllerin kategorisi ``module_category``'dedir.
     PYZ yoksa boş dict.
     """
     archives = [
@@ -200,7 +209,7 @@ def _pyz_summary(extracted_files: list, output_dir: Path) -> dict[str, Any]:
     by_category: dict[str, int] = {}
     listing: list[dict[str, Any]] = []
     for ef in members:
-        cat = ef.metadata.get("pyz_category", "user")
+        cat = ef.metadata.get("module_category", "user")
         by_category[cat] = by_category.get(cat, 0) + 1
         try:
             rel = str(ef.path.relative_to(output_dir))
@@ -266,6 +275,108 @@ def _pyz_note(pyz: dict[str, Any]) -> str:
     return msg
 
 
+# Çıkarılan TÜM Python code modüllerinin politikası (manifest "extracted_modules").
+_MODULE_POLICY = (
+    "Çıkarılan her Python code modülü (PyInstaller: CArchive + PYZ; cx_Freeze: "
+    "library.zip + lib/) hedef Python sürümüne göre tek sınıflandırıcıyla sınıflanır "
+    "(classify_pyz_module; CArchive betikleri stdlib sayılmaz): stdlib ve PyInstaller "
+    "iç modülleri yalnız çıkarılır ve listelenir; geri kalanı (uygulama + üçüncü "
+    "parti) decompile zincirine girer (üst sınır: security.max_python_decompile_modules)."
+)
+_MODULES_FILE = "extracted_modules.json"
+_ORIGIN_LABELS = {"carchive": "CArchive", "pyz": "PYZ", "library.zip": "library.zip", "lib": "lib/"}
+
+
+def _module_origin(ef: Any) -> str:
+    """Modülün geldiği yer: carchive | pyz | library.zip | lib."""
+    md = getattr(ef, "metadata", None) or {}
+    if md.get("pyz_module"):
+        return "pyz"
+    return str(md.get("cxfreeze_origin") or "carchive")
+
+
+def _chain_key(category: str) -> str:
+    """Kategori -> manifest sayacı: user -> decompile_chain, diğerleri skipped_<kategori>."""
+    return "decompile_chain" if category == "user" else f"skipped_{category}"
+
+
+def _extracted_modules_summary(
+    extracted_files: list, output_dir: Path, python_version: str | None,
+) -> dict[str, Any]:
+    """Çıkarılan her .pyc'nin politika kararı: toplam + kaynak başına sayılar + liste dosyası.
+
+    ``modules_extracted`` = ``decompile_chain`` + ``skipped_*`` (her kaynak için de).
+    ``decompile_chain`` üst sınırdan ÖNCEDİR; sınır sonrası işlenen/atlanan sayısı
+    manifest ``decompile`` bölümündedir (total_pyc / skipped_by_limit). Kategori
+    ``module_category`` metadata'sından okunur (yoksa ``user``: ``_decompile_pyc_files``
+    ile aynı varsayılan). .pyc yoksa boş dict.
+    """
+    code = [ef for ef in extracted_files if getattr(ef, "file_type", "") == "pyc"]
+    if not code:
+        return {}
+    totals: dict[str, int] = {
+        "modules_extracted": 0, "decompile_chain": 0,
+        "skipped_stdlib": 0, "skipped_pyinstaller": 0,
+    }
+    by_origin: dict[str, dict[str, int]] = {}
+    listing: list[dict[str, Any]] = []
+    for ef in code:
+        category = (ef.metadata or {}).get("module_category", "user")
+        key = _chain_key(category)
+        origin = _module_origin(ef)
+        per_origin = by_origin.setdefault(origin, dict.fromkeys(totals, 0))
+        for counter in (totals, per_origin):
+            counter["modules_extracted"] += 1
+            counter[key] = counter.get(key, 0) + 1
+        try:
+            rel = str(ef.path.relative_to(output_dir))
+        except ValueError:
+            rel = str(ef.path)
+        listing.append({
+            "name": ef.original_name,
+            "origin": origin,
+            "category": category,
+            "decompile_chain": key == "decompile_chain",
+            "path": rel,
+            "size": ef.size,
+        })
+    (output_dir / _MODULES_FILE).write_text(
+        json.dumps({"policy": _MODULE_POLICY, "python_version": python_version,
+                    "modules": listing}, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return {
+        "policy": _MODULE_POLICY,
+        "python_version": python_version,
+        **totals,
+        "by_origin": by_origin,
+        "modules_list": _MODULES_FILE,
+    }
+
+
+def _modules_note(mods: dict[str, Any]) -> str:
+    """Manifest notuna birleşik modül cümlesi (modül yoksa boş)."""
+    if not mods:
+        return ""
+    origins = ", ".join(
+        f"{_ORIGIN_LABELS.get(o, o)} {v['modules_extracted']}"
+        for o, v in mods.get("by_origin", {}).items()
+    )
+    skipped = [
+        f"{mods[k]} {label}" for k, label in (
+            ("skipped_stdlib", "stdlib"), ("skipped_pyinstaller", "PyInstaller iç modülü"),
+        ) if mods.get(k)
+    ]
+    tail = (
+        f"{' ve '.join(skipped)} yalnız listelendi ({_MODULES_FILE})"
+        if skipped else f"liste: {_MODULES_FILE}"
+    )
+    return (
+        f"Python modülleri: {mods['modules_extracted']} çıkarıldı ({origins}); "
+        f"{mods['decompile_chain']} tanesi decompile zincirine girdi; {tail}."
+    )
+
+
 def _module_inventory(
     modules: list[dict[str, Any]], *, source: str, python_version: str | None,
 ) -> dict[str, Any]:
@@ -312,6 +423,101 @@ def _cxfreeze_module_name(rel_path: str) -> tuple[str, bool]:
     if _is_windows_reserved(flat + ".pyc"):
         flat = "_" + flat
     return flat, is_package
+
+
+# ---------------------------------------------------------------------------
+# cx_Freeze library.zip: sınırlı, akışlı okuma (zip bombası koruması)
+# ---------------------------------------------------------------------------
+# library.zip güvenilmeyen veridir. Eskiden her .pyc üyesi zf.read ile boyut
+# denetimsiz açılıyordu: küçük bir arşiv GB'larca açılıp belleği tüketebilirdi.
+# Sınırlar PyInstaller çıkarıcısıyla ORTAK (tek kaynak): tek üye
+# _MAX_PYINSTALLER_DECOMPRESS, toplam security.max_archive_extract_size (lib/
+# altındaki serbest .pyc'ler dahil), girdi sayısı PyInstallerExtractor.MAX_TOC_ENTRIES.
+_ZIP_READ_CHUNK = 64 * 1024
+# zipfile bzip2/lzma üyelerini max_length vermeden açar: tek okuma çağrısı bile
+# sınırsız büyüyebilir. cx_Freeze yalnız stored/deflated yazar; diğerleri reddedilir.
+_ZIP_ALLOWED_METHODS = frozenset({zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED})
+# zipfile.ZipFile açılışta merkezi dizinin TAMAMINI okuyup her girdiye ZipInfo kurar;
+# EOCD'deki girdi sayısına değil dizin boyutuna bakar (sayı yalan olabilir). Dizin
+# boyutu açmadan önce denetlenir: girdi başına 128 bayt pay (46 bayt sabit alan + ad).
+_ZIP_CD_BYTES_PER_ENTRY = 128
+_ZIP_EOCD_SIG = b"PK\x05\x06"
+_ZIP_EOCD_SIZE = 22
+_ZIP64_LOCATOR_SIG = b"PK\x06\x07"
+_ZIP64_LOCATOR_SIZE = 20
+# Manifest'te adıyla listelenen atlanan üye sayısı (sayaçlar her zaman tam).
+_CXF_SKIPPED_SAMPLE = 100
+
+
+def _zip_directory_bounds(path: Path) -> tuple[int, int] | None:
+    """EOCD kaydından (bildirilen girdi sayısı, merkezi dizin boyutu); okunamazsa None.
+
+    ``zipfile._EndRecData`` ile aynı kaydı bulur: önce yorumsuz son 22 bayt, yoksa
+    yorum alanında son imza. ZIP64 yer belirleyicisi varsa zipfile ZIP64 kaydındaki
+    değerleri kullanır; cx_Freeze ZIP64 yazmaz, bu durumda da None (açılmaz).
+    """
+    try:
+        with open(path, "rb") as fh:
+            size = fh.seek(0, os.SEEK_END)
+            tail_len = min(size, _ZIP64_LOCATOR_SIZE + _ZIP_EOCD_SIZE + 0xFFFF)
+            fh.seek(size - tail_len)
+            tail = fh.read(tail_len)
+    except OSError:
+        return None
+    if len(tail) < _ZIP_EOCD_SIZE:
+        return None
+    end = len(tail) - _ZIP_EOCD_SIZE
+    if tail[end:end + 4] == _ZIP_EOCD_SIG and tail[-2:] == b"\x00\x00":
+        pos = end
+    else:
+        pos = tail.rfind(_ZIP_EOCD_SIG, max(0, len(tail) - _ZIP_EOCD_SIZE - 0xFFFF))
+        if pos < 0 or pos + _ZIP_EOCD_SIZE > len(tail):
+            return None
+    loc = pos - _ZIP64_LOCATOR_SIZE
+    if loc >= 0 and tail[loc:loc + 4] == _ZIP64_LOCATOR_SIG:
+        return None
+    entries, cd_size = struct.unpack_from("<HI", tail, pos + 10)
+    return entries, cd_size
+
+
+def _read_zip_member_bounded(
+    zf: zipfile.ZipFile, info: zipfile.ZipInfo, limit: int,
+) -> tuple[bytes | None, str, int]:
+    """Üyeyi en fazla ``limit`` bayt açarak oku: (veri | None, ret nedeni, üretilen bayt).
+
+    Dilim dilim okunur (deflate ``max_length`` ile açılır); ``limit`` aşıldığı anda
+    bırakılır. CRC/bozuk akış dahil her hata ``corrupt``.
+    """
+    buf = bytearray()
+    try:
+        with zf.open(info) as fh:
+            while True:
+                chunk = fh.read(min(_ZIP_READ_CHUNK, limit + 1 - len(buf)))
+                if not chunk:
+                    break
+                buf += chunk
+                if len(buf) > limit:
+                    return None, "too_large", len(buf)
+    except Exception:  # BadZipFile (CRC), zlib.error, EOFError, OSError ...
+        return None, "corrupt", len(buf)
+    return bytes(buf), "", len(buf)
+
+
+def _cxfreeze_note(report: dict[str, Any]) -> str:
+    """Manifest notuna cx_Freeze okuma cümlesi (yalnız atlanan/okunamayan varsa)."""
+    if not report:
+        return ""
+    parts = []
+    if report.get("error"):
+        parts.append(f"cx_Freeze library.zip okunamadı: {report['error']}.")
+    skipped = report.get("skipped") or {}
+    if skipped:
+        detail = ", ".join(f"{k}: {v}" for k, v in sorted(skipped.items()))
+        parts.append(
+            f"cx_Freeze: {sum(skipped.values())} .pyc sınır/biçim nedeniyle okunmadı "
+            f"({detail}; ayrıntı manifest cxfreeze.skipped_members)."
+        )
+    return " ".join(parts)
 
 
 def _vendor_tool_paths() -> list[str] | None:
@@ -442,18 +648,27 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         if modules:
             mod_path = workspace.save_json("static", "python_modules", modules)
             artifacts["python_modules"] = mod_path
-            stats["module_count"] = modules["total"]
-            stats["stdlib_modules"] = modules.get("stdlib_count", 0)
-            stats["user_modules"] = modules.get("user_count", 0)
-            stats["pyinstaller_modules"] = modules.get("pyinstaller_count", 0)
-            stats["module_source"] = modules.get("source", "string_scan")
+            # Açık, Python'a özgü modül sayaçları; kullanıcı kodu ayrı sayılır.
+            # python_modules_source: "pyinstaller_toc" (CArchive + PYZ TOC'leri, gerçek
+            # envanter) ya da "string_scan" (binary'deki ad.py[c] dizgeleri, yalnız sezgi).
+            stats["python_modules_total"] = modules["total"]
+            stats["python_modules_user"] = modules.get("user_count", 0)
+            stats["python_modules_stdlib"] = modules.get("stdlib_count", 0)
+            stats["python_modules_pyinstaller"] = modules.get("pyinstaller_count", 0)
+            stats["python_modules_source"] = modules.get("source", "string_scan")
 
-        # "Functions recovered" (cli.py) proxy'si: kurtarilan Python modul sayisi.
-        # JVM'de metot, .NET'te CIL metodu; Python'da modul = kurtarilan kod birimi.
-        # Set edilmezse packed binary "0 fonksiyon" gorunur (kapsam bug'i, misroute deseni).
-        _recovered_modules = stats.get("module_count", 0)
-        stats["functions"] = _recovered_modules
-        stats["functions_found"] = _recovered_modules
+        # "Functions recovered" (cli.py, raporlar: functions_found). Python paketinde
+        # statik aşama fonksiyon SAYMAZ: .pyc gövdeleri güvenlik gereği ana süreçte
+        # açılmaz. Eskiden buraya arşivdeki TOPLAM modül sayısı yazılıyordu (hello: 109,
+        # 103'ü stdlib, 5'i PyInstaller; kullanıcının 3 fonksiyonu vardı) -> yanıltıcı.
+        # Sayı uydurulmaz: "N/A" (cli.py ve raporlar int olmayan değeri "N/A" gösterir).
+        # "functions" anahtarı bilerek yazılmaz: hacker_cli onu ":," ile biçimliyor.
+        stats["functions_found"] = "N/A"
+        stats["functions_note"] = (
+            "Python paketi: statik aşama fonksiyon saymaz; kullanıcı kodu için "
+            "python_modules_user, decompile sonucu için reconstruct aşamasının "
+            "python_modules_* / decompiled_count sayaçları."
+        )
 
         # 4. PyInstaller TOC (varsa)
         if packer_info["packer"] == "pyinstaller":
@@ -551,6 +766,8 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         extract_errors: list[str] = []
         decompile_summary: dict[str, Any] = {}
         pyz: dict[str, Any] = {}
+        cxfreeze: dict[str, Any] = {}
+        modules_summary: dict[str, Any] = {}
 
         # Surum static asamada tespit edildi (paketleyiciler .pyc header'ini siyirabilir).
         pv_info = workspace.load_json("static", "python_version")
@@ -569,14 +786,14 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 # PYZ başlığındaki bytecode magic derleyen yorumlayıcının kendisidir;
                 # static aşamanın sezgisel tespitinden önce gelir.
                 py_version = pyz.get("python_version") or detected_version
-                # Politika: PYZ'nin stdlib/PyInstaller modülleri zincire girmez.
-                chain = [
-                    ef for ef in unpack.extracted_files
-                    if (getattr(ef, "metadata", None) or {}).get("pyz_category", "user") == "user"
-                ]
+                # Politika (CArchive + PYZ): stdlib/PyInstaller modülleri zincire girmez;
+                # kategori çıkarıcıda konur (module_category), süzgeç _decompile_pyc_files'ta.
+                modules_summary = _extracted_modules_summary(
+                    unpack.extracted_files, output_dir, py_version,
+                )
                 # .pyc -> .py: header onar + deterministik decompile (LLM'siz zincir).
                 decompile_summary = self._decompile_pyc_files(
-                    chain, output_dir, py_version=py_version,
+                    unpack.extracted_files, output_dir, py_version=py_version,
                 )
             except Exception as exc:
                 logger.debug("PyInstaller extraction basarisiz: %s", exc, exc_info=True)
@@ -585,13 +802,26 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         # cx_Freeze: lib/library.zip (standart ZIP) + lib/ altindaki serbest .pyc'ler
         elif packer == "cx_freeze":
             try:
-                extracted = self._extract_cxfreeze(target.path, output_dir / "extracted")
+                extracted, cxfreeze = self._extract_cxfreeze(
+                    target.path, output_dir / "extracted", python_version=detected_version,
+                )
                 extracted_count = len(extracted)
-                if not extracted:
+                if cxfreeze.get("error"):
+                    extract_errors.append(f"cx_Freeze library.zip: {cxfreeze['error']}")
+                if cxfreeze.get("skipped"):
+                    extract_errors.append(
+                        f"cx_Freeze: {sum(cxfreeze['skipped'].values())} .pyc sınır/biçim "
+                        f"nedeniyle okunmadı {cxfreeze['skipped']}"
+                    )
+                if not extracted and not cxfreeze.get("skipped") and not cxfreeze.get("error"):
                     extract_errors.append(
                         "cx_Freeze: library.zip / lib/ bulunamadi "
                         "(binary tek basina verildi, dagitim dizini eksik olabilir)"
                     )
+                # Aynı politika: library.zip + lib/ modülleri de sınıflanır (stdlib zincire girmez).
+                modules_summary = _extracted_modules_summary(
+                    extracted, output_dir, cxfreeze.get("python_version"),
+                )
                 decompile_summary = self._decompile_pyc_files(
                     extracted, output_dir, py_version=detected_version,
                 )
@@ -612,11 +842,17 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 "pyinstaller": (modules or {}).get("pyinstaller_count", 0),
             },
             "extracted_count": extracted_count,
+            # Çıkarılan modüllerin politika kararı: çıkarılan = zincire giren + atlanan.
+            "extracted_modules": modules_summary,
             "decompile": decompile_summary,
             "pyz": pyz,
+            "cxfreeze": cxfreeze,
             "extraction_errors": extract_errors,
             "note": (
-                " ".join(filter(None, (_pyinstaller_note(decompile_summary), _pyz_note(pyz))))
+                " ".join(filter(None, (
+                    _modules_note(modules_summary), _pyinstaller_note(decompile_summary),
+                    _pyz_note(pyz), _cxfreeze_note(cxfreeze),
+                )))
                 if packer in ("pyinstaller", "cx_freeze") else
                 f"Paketleyici '{packer}': .pyc extraction yalnizca PyInstaller ve cx_Freeze "
                 "icin destekli (Nuitka native derler -> .pyc yok, decompile edilemez)."
@@ -637,11 +873,19 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 "decompiled_count": decompile_summary.get("decompiled", 0),
                 "partial_count": decompile_summary.get("partial", 0),
                 "disasm_count": decompile_summary.get("disasm", 0),
+                # Manifest "extracted_modules" ile aynı sayılar (CLI/rapor için).
+                "python_modules_extracted": modules_summary.get("modules_extracted", 0),
+                "python_modules_decompile_chain": modules_summary.get("decompile_chain", 0),
+                "python_modules_skipped_stdlib": modules_summary.get("skipped_stdlib", 0),
+                "python_modules_skipped_pyinstaller": modules_summary.get("skipped_pyinstaller", 0),
+                "python_decompile_skipped_by_limit": decompile_summary.get("skipped_by_limit", 0),
             },
             errors=extract_errors,
         )
 
-    def _extract_cxfreeze(self, binary_path: Path, output_dir: Path) -> list:
+    def _extract_cxfreeze(
+        self, binary_path: Path, output_dir: Path, python_version: str | None = None,
+    ) -> tuple[list, dict[str, Any]]:
         """cx_Freeze dagitimindan .pyc'leri topla (çıktı dizinine kopyalayarak).
 
         cx_Freeze tek dosya DEGIL dizin dagitimi yapar: executable + ``lib/library.zip``
@@ -649,26 +893,69 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         modül adıyla (``pkg/__init__.pyc`` -> ``pkg``) ``output_dir``'e TEK düzlemde
         yazılır; çakışan ad (harf duyarsız dahil) ``~N`` eki alır. Hedefin dizinine
         hiçbir şey yazılmaz (onarım kopyaları da çıktıda oluşur); lib/ dışına çıkan
-        symlink izlenmez. Cikti: ExtractedFile listesi (original_name = modül adı).
-        Dagitim dizini yoksa bos liste (graceful).
+        symlink izlenmez. Dagitim dizini yoksa bos liste (graceful).
+
+        Okuma sınırlıdır (zip bombası): merkezi dizin açmadan önce EOCD'den, her üye
+        akışlı ve üye/toplam bayt sınırıyla okunur (bkz. modül başındaki sınırlar).
+        Sınırı aşan ya da okunamayan üye atlanır ve rapora sayılır.
+
+        Her modül PYZ ile aynı politikayla sınıflanır (``module_category``; stdlib
+        zincire girmez). Hedef sürüm: ilk geçerli .pyc başlığı, yoksa ``python_version``
+        (static tespit), o da yoksa çalışan yorumlayıcı.
+
+        Returns:
+            (ExtractedFile listesi (original_name = modül adı), rapor). Rapor
+            manifest'in ``cxfreeze`` bölümüdür: okunan/atlanan sayıları, atlama
+            nedenleri (``skipped``) ve ilk atlananların adları (``skipped_members``).
 
         Eskiden zip yolu "/" -> "_" ile düzleştiriliyordu: ``a/b_c.pyc`` ile
         ``a_b/c.pyc`` (ve ``Foo``/``foo``) aynı dosyaya yazılıp biri kayboluyordu;
         lib/'deki ``__init__.pyc``'ler paket adını kaybediyordu.
         """
-        import zipfile
         from karadul.analyzers.packed_binary import ExtractedFile
 
         output_dir.mkdir(parents=True, exist_ok=True)
         results: list = []
         used: set[str] = set()
         base = binary_path.parent
+        max_member = _MAX_PYINSTALLER_DECOMPRESS
+        max_entries = PyInstallerExtractor.MAX_TOC_ENTRIES
+        budget = int(self.config.security.max_archive_extract_size)
+        report: dict[str, Any] = {
+            "library_zip": None,
+            "library_zip_entries": 0,
+            "library_zip_pyc": 0,
+            "lib_pyc": 0,
+            "extracted": 0,
+            "bytes_read": 0,          # reddedilen üyede harcanan açma işi dahil
+            "limits": {
+                "max_member_bytes": max_member,
+                "max_total_bytes": budget,
+                "max_entries": max_entries,
+            },
+            "skipped": {},
+            "skipped_members": [],
+            "error": None,
+            "python_version": None,
+            "python_version_source": None,
+        }
+        header_version: str | None = None
+
+        def skip(origin: str, rel_path: str, reason: str, size: int) -> None:
+            report["skipped"][reason] = report["skipped"].get(reason, 0) + 1
+            if len(report["skipped_members"]) < _CXF_SKIPPED_SAMPLE:
+                report["skipped_members"].append(
+                    {"origin": origin, "path": rel_path, "reason": reason, "size": size})
 
         def add(rel_path: str, data: bytes, origin: str) -> None:
+            nonlocal header_version
+            if header_version is None:
+                header_version = version_from_pyc_bytes(data[:4])
             module, is_package = _cxfreeze_module_name(rel_path)
             filename = unique_casefold_name(module, used) + ".pyc"
             out = _write_pyz_member(output_dir, filename, data)
             if out is None:
+                skip(origin, rel_path, "write_failed", len(data))
                 return
             results.append(ExtractedFile(
                 path=out, original_name=module, file_type="pyc", size=len(data),
@@ -689,35 +976,105 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             if not zpath.is_file():
                 continue
             try:
+                report["library_zip"] = zpath.relative_to(base).as_posix()
+            except ValueError:
+                report["library_zip"] = str(zpath)
+            bounds = _zip_directory_bounds(zpath)
+            if bounds is None:
+                report["error"] = "merkezi dizin kaydı bulunamadı ya da ZIP64 (açılmadı)"
+                break
+            n_declared, cd_size = bounds
+            if n_declared > max_entries or cd_size > max_entries * _ZIP_CD_BYTES_PER_ENTRY:
+                report["error"] = (
+                    f"merkezi dizin sınırı aşıyor ({n_declared} girdi, {cd_size} bayt; "
+                    f"sınır {max_entries} girdi) -- açılmadı"
+                )
+                break
+            try:
                 with zipfile.ZipFile(zpath) as zf:
-                    for name in zf.namelist():
-                        if not name.endswith(".pyc"):
+                    infos = zf.infolist()
+                    report["library_zip_entries"] = len(infos)
+                    for index, info in enumerate(infos):
+                        name = info.filename
+                        if info.is_dir() or not name.endswith(".pyc"):
                             continue
-                        try:
-                            data = zf.read(name)
-                        except Exception:
-                            continue
-                        add(name, data, "library.zip")
-            except zipfile.BadZipFile:
-                logger.debug("cx_Freeze library.zip bozuk: %s", zpath)
-            break  # ilk gecerli library.zip yeterli
+                        report["library_zip_pyc"] += 1
+                        remaining = budget - report["bytes_read"]
+                        if index >= max_entries:      # EOCD sayısı yalan söylediyse
+                            skip("library.zip", name, "entry_limit", info.file_size)
+                        elif info.flag_bits & 0x1:
+                            skip("library.zip", name, "encrypted", info.file_size)
+                        elif info.compress_type not in _ZIP_ALLOWED_METHODS:
+                            skip("library.zip", name, "unsupported_compression", info.file_size)
+                        elif info.file_size > max_member:
+                            skip("library.zip", name, "too_large", info.file_size)
+                        elif info.file_size > remaining:
+                            skip("library.zip", name, "total_limit", info.file_size)
+                        else:
+                            data, reason, produced = _read_zip_member_bounded(
+                                zf, info, min(max_member, remaining))
+                            report["bytes_read"] += produced
+                            if data is None:
+                                if reason == "too_large" and remaining < max_member:
+                                    reason = "total_limit"
+                                skip("library.zip", name, reason, info.file_size)
+                            else:
+                                add(name, data, "library.zip")
+            except zipfile.BadZipFile as exc:
+                logger.debug("cx_Freeze library.zip bozuk: %s (%s)", zpath, exc)
+                report["error"] = f"bozuk ZIP ({exc})"
+            break  # ilk bulunan library.zip yeterli
 
         # lib/ altindaki serbest .pyc dosyalari (library.zip disindaki paketler):
-        # yerinde işlenmez, çıktıya kopyalanır.
+        # yerinde işlenmez, çıktıya kopyalanır. Aynı üye/toplam/sayı sınırları.
         lib_dir = base / "lib"
         if lib_dir.is_dir():
             lib_root = lib_dir.resolve()
             for pyc in sorted(lib_dir.rglob("*.pyc")):
+                rel = pyc.relative_to(lib_dir).as_posix()
                 try:
-                    if not pyc.resolve().is_relative_to(lib_root) or not pyc.is_file():
+                    if not pyc.resolve().is_relative_to(lib_root):
                         logger.debug("cx_Freeze lib/ disina cikan yol atlandi: %s", pyc)
+                        skip("lib", rel, "outside_lib", 0)
                         continue
-                    data = pyc.read_bytes()
+                    if not pyc.is_file():
+                        continue
+                    report["lib_pyc"] += 1
+                    size = pyc.stat().st_size
+                    remaining = budget - report["bytes_read"]
+                    if report["lib_pyc"] > max_entries:
+                        skip("lib", rel, "entry_limit", size)
+                        continue
+                    if size > max_member:
+                        skip("lib", rel, "too_large", size)
+                        continue
+                    if size > remaining:
+                        skip("lib", rel, "total_limit", size)
+                        continue
+                    cap = min(max_member, remaining)
+                    with open(pyc, "rb") as fh:
+                        data = fh.read(cap + 1)       # stat'tan sonra büyüse de sınırlı
                 except OSError:
                     continue
-                add(pyc.relative_to(lib_dir).as_posix(), data, "lib")
+                report["bytes_read"] += len(data)
+                if len(data) > cap:
+                    skip("lib", rel, "too_large" if cap == max_member else "total_limit", len(data))
+                    continue
+                add(rel, data, "lib")
 
-        return results
+        report["extracted"] = len(results)
+        version = header_version or python_version
+        report["python_version"] = version
+        report["python_version_source"] = (
+            "pyc_header" if header_version else ("static" if python_version else None))
+        for ef in results:
+            ef.metadata["module_category"] = classify_pyz_module(ef.original_name, version)
+        if report["skipped"]:
+            logger.warning(
+                "cx_Freeze: %d .pyc sınır/biçim nedeniyle okunmadı: %s",
+                sum(report["skipped"].values()), report["skipped"],
+            )
+        return results, report
 
     def _decompile_pyc_files(
         self, extracted_files: list, output_dir: Path,
@@ -728,6 +1085,10 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         Cikti: ``output_dir/source/`` altina ``.py`` (basari) veya
         ``.disasm.txt`` (kismi kurtarma). Zincir: pycdc -> decompyle3/uncompyle6
         -> disassembly (bkz. pyc_decompiler). LLM/ML KULLANILMAZ.
+
+        Politika: ``module_category`` "user" olmayan .pyc (stdlib, PyInstaller iç
+        modülü) zincire girmez -- PyInstaller (CArchive + PYZ) ve cx_Freeze için tek
+        süzgeç burası; kategorisiz dosya "user" sayılır.
 
         Args:
             extracted_files: PyInstallerExtractor ciktisi (ExtractedFile listesi).
@@ -742,10 +1103,14 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             atlananlar total_pyc'ye dahil DEĞİL). Sınıflar ayrıktır (toplamları total_pyc):
             decompiled = doğrulanmış kaynak; partial = pycdc kısmi .partial.py
             (+ varsa disasm); disasm = yalnız disassembly; failed = hiçbiri.
+            output_truncated sınıflardan bağımsızdır: çıktısı alt süreç tavanında
+            kesilen dosya sayısı.
         """
         candidates = [
             ef for ef in extracted_files
-            if getattr(ef, "file_type", "") == "pyc" and ef.path.exists()
+            if getattr(ef, "file_type", "") == "pyc"
+            and (getattr(ef, "metadata", None) or {}).get("module_category", "user") == "user"
+            and ef.path.exists()
         ]
         # Üst sınır (SecurityConfig.max_python_decompile_modules): aşılırsa küçük üst
         # düzey paketler önce; atlananlar sayılır ve dosyaya listelenir.
@@ -757,6 +1122,7 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             "partial": 0,
             "disasm": 0,
             "failed": 0,
+            "output_truncated": 0,
             "methods": {},
             "limit": limit,
             "skipped_by_limit": len(skipped),
@@ -842,6 +1208,8 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 summary["failed"] += 1
                 continue
             summary["methods"][res.method] = summary["methods"].get(res.method, 0) + 1
+            if res.truncated:
+                summary["output_truncated"] += 1
             if res.success:
                 summary["decompiled"] += 1
             elif res.partial_path is not None:
@@ -1120,7 +1488,7 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             pyz_version or pyinstaller_python_version(info["python_version"]) or fallback_version
         )
         modules = [
-            {"name": e["name"], "type": classify_pyz_module(e["name"], version),
+            {"name": e["name"], "type": classify_carchive_module(e["name"], e["type_name"], version),
              "origin": "carchive"}
             for e in carchive
         ] + [

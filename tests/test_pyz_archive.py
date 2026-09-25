@@ -488,9 +488,9 @@ class TestPycOutput:
         ])
         files, _ = _extract(data, tmp_path / "o")
         meta = {f.original_name: f.metadata for f in files}
-        assert meta["helper"]["pyz_category"] == "user"
-        assert meta["email.utils"]["pyz_category"] == "stdlib"
-        assert meta["_pyi_rth_utils"]["pyz_category"] == "pyinstaller"
+        assert meta["helper"]["module_category"] == "user"
+        assert meta["email.utils"]["module_category"] == "stdlib"
+        assert meta["_pyi_rth_utils"]["module_category"] == "pyinstaller"
         assert meta["_pyi_rth_utils"]["is_package"] is True
         assert all(f.file_type == "pyc" for f in files)
 
@@ -680,9 +680,9 @@ def test_gercek_pyinstaller_612_helper_pyz_icinden_cikar(tmp_path: Path, config:
                if ef.metadata.get("pyz_module")}
     assert "helper" in members
     helper = members["helper"]
-    assert helper.metadata["pyz_category"] == "user"
+    assert helper.metadata["module_category"] == "user"
     assert version_from_pyc_bytes(helper.path.read_bytes()) == "3.12"
-    users = [n for n, ef in members.items() if ef.metadata["pyz_category"] == "user"]
+    users = [n for n, ef in members.items() if ef.metadata["module_category"] == "user"]
     assert users == ["helper"]
     pyz_ef = next(ef for ef in res.extracted_files if ef.original_name == "PYZ.pyz")
     assert pyz_ef.metadata["pyz"]["rejected"] == {}

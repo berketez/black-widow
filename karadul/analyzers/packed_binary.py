@@ -1148,6 +1148,25 @@ def classify_pyz_module(name: str, python_version: Optional[str] = None) -> str:
     return "user"
 
 
+def classify_carchive_module(
+    name: str, type_name: str, python_version: Optional[str] = None,
+) -> str:
+    """CArchive code girdisinin kategorisi: PYZ ile aynı sınıflandırıcı + betik kuralı.
+
+    MODULE/MODULE_PACKAGE ('m'/'M') girdileri PYZ üyeleri gibi ``classify_pyz_module``
+    ile sınıflanır (ör. struct -> stdlib, pyimod01_archive -> pyinstaller). SCRIPT ('s')
+    girdileri açılışta çalışan betiklerdir: PyInstaller'ın bootstrap'ı ve runtime
+    hook'ları (pyiboot01_bootstrap, pyi_rth_* -> pyinstaller) ya da uygulamanın giriş
+    betiği. Betik stdlib modülü değildir; stdlib adı taşıyan giriş betiği
+    ("calendar.py") ``user`` kalır, yoksa uygulamanın kendi kodu zincirden düşerdi.
+    Static envanter (python_binary) ve çıkarıcı aynı fonksiyonu kullanır.
+    """
+    category = classify_pyz_module(name, python_version)
+    if type_name == "SCRIPT" and category == "stdlib":
+        return "user"
+    return category
+
+
 def select_decompile_chain(
     files: list[ExtractedFile], limit: int,
 ) -> tuple[list[ExtractedFile], list[ExtractedFile]]:
@@ -1239,7 +1258,8 @@ def extract_pyz_modules(
 
     Returns:
         (ExtractedFile listesi, rapor). Her dosyanın metadata'sında
-        ``pyz_category`` (user/stdlib/pyinstaller) decompile politikasını taşır.
+        ``module_category`` (user/stdlib/pyinstaller) decompile politikasını taşır
+        (CArchive ve cx_Freeze modülleriyle aynı anahtar).
     """
     runtime = "%d.%d" % (sys.version_info.major, sys.version_info.minor)
     report: dict[str, Any] = {
@@ -1338,7 +1358,7 @@ def extract_pyz_modules(
                 "pyz_archive": archive_name,
                 "pyz_typecode": entry.typecode,
                 "is_package": entry.typecode in (PYZ_ITEM_PKG, PYZ_ITEM_NSPKG),
-                "pyz_category": classify_pyz_module(entry.name, version),
+                "module_category": classify_pyz_module(entry.name, version),
                 "pyc_header": "pyz_magic" if repaired is not None else "none",
             },
         ))
@@ -1480,11 +1500,24 @@ class PyInstallerExtractor:
             self._extract_pyz_archives(extracted, output_dir, crypto_key_present, errors)
         )
 
-        # .pyc dosyalarini decompile etmeye calis. PYZ'nin stdlib/PyInstaller
-        # modülleri politika gereği yalnız çıkarılır (bkz. classify_pyz_module).
+        # Politika PYZ ile aynı: CArchive code girdileri de sınıflanır (sürüm: PYZ
+        # başlığı, yoksa cookie; static envanterle aynı sıra). Kategori yalnız
+        # ``module_category``'dedir; stdlib/PyInstaller iç modülleri yalnız çıkarılır.
+        version = next(
+            (ef.metadata["pyz"]["python_version"] for ef in extracted
+             if isinstance(ef.metadata.get("pyz"), dict) and ef.metadata["pyz"].get("python_version")),
+            None,
+        ) or pyinstaller_python_version(toc_info["python_version"])
+        for ef in extracted:
+            if ef.file_type == "pyc" and not ef.metadata.get("pyz_module"):
+                ef.metadata["module_category"] = classify_carchive_module(
+                    ef.original_name, ef.metadata.get("type_name", ""), version,
+                )
+
+        # .pyc dosyalarini decompile etmeye calis: yalnız kullanıcı/üçüncü parti modüller.
         pyc_files = [
             ef for ef in extracted
-            if ef.file_type == "pyc" and ef.metadata.get("pyz_category", "user") == "user"
+            if ef.file_type == "pyc" and ef.metadata.get("module_category", "user") == "user"
         ]
         if pyc_files:
             # Aynı üst sınır (python_binary zinciriyle ortak): binlerce modüllü

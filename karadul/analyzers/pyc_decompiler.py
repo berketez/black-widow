@@ -6,7 +6,7 @@ yalnizca deterministik, harici arac tabanli katmanli zincir.
 
 Zincir (ilk basarili kazanir):
     1. pycdc (Decompyle++)  -- en genis deterministik decompiler, versiyon-bagimsiz
-    2. decompyle3/uncompyle6 -- opsiyonel pip, yalniz Python < 3.10 icin
+    2. decompyle3/uncompyle6 -- opsiyonel pip, yalniz Python < 3.10 icin (ayrı süreçte)
     3. disassembly fallback  -- pycdas (varsa) veya stdlib ``dis`` (ayni surumde)
     4. hicbiri yoksa         -- header onarilmis ``.pyc`` + acik not
 
@@ -27,7 +27,9 @@ dosya kısmi (MAKE_FUNCTION desteklenmiyor), 3.14 hiç desteklenmiyor.
 from __future__ import annotations
 
 import functools
+import importlib.util
 import logging
+import os
 import signal
 import struct
 import subprocess
@@ -39,7 +41,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Sequence
 
-from karadul.core.safe_subprocess import resolve_tool, safe_env, safe_run
+from karadul.core.safe_subprocess import resolve_tool, safe_env
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +193,8 @@ class DecompileResult:
     # Decompiler çıktı verdi ama doğrulanamadı (eksik/geçersiz): kaynak DEĞİL, kısmi kurtarma.
     partial_path: Optional[Path] = None    # <ad>.partial.py
     partial_reason: Optional[str] = None   # neden doğrulanamadı ("; " ile birleşik)
+    # Bir aracın çıktısı alt süreç çıktı tavanında kesildi (dosyada işaret satırı var).
+    truncated: bool = False
 
 
 # pycdc bir kod bloğunu çözemediğinde çıktıya (girintili) bu yorumu yazar; çıkış
@@ -308,32 +312,35 @@ def _source_problems(
     return problems
 
 
+def _truncated_problem(tool: str) -> str:
+    """Çıktısı alt süreç tavanında kesilen aracın sorun metni (.partial.py'de de yazılır)."""
+    return f"{tool} çıktısı {_CHILD_MAX_OUTPUT_BYTES} bayt sınırında kesildi (eksik)"
+
+
 def _decompile_with_pycdc(
     pyc_path: Path,
     *,
     timeout: float,
     extra_paths: Optional[Sequence[str]] = None,
-) -> Optional[tuple[str, list[str]]]:
+) -> Optional[tuple[str, list[str], bool]]:
     """pycdc (Decompyle++) ile decompile.
 
     Returns:
-        None: pycdc yok, çalıştırılamadı ya da yorum dışı hiçbir satır üretmedi.
-        (kaynak, sorunlar): ``sorunlar`` boşsa çıktı doğrulanmış kaynaktır; doluysa
-        eksik/geçersizdir (çağıran kısmi çıktı olarak saklar, sonraki katmana geçer).
+        None: pycdc yok, çalıştırılamadı/durduruldu ya da yorum dışı hiçbir satır
+        üretmedi. (kaynak, sorunlar, kesildi): ``sorunlar`` boşsa çıktı doğrulanmış
+        kaynaktır; doluysa eksik/geçersizdir (çağıran kısmi çıktı olarak saklar,
+        sonraki katmana geçer). Çıktı tavanında kesilen kaynak (``_run_capped``) her
+        zaman kısmidir (``kesildi`` True, sorunlarda nedeni yazılı).
     """
     pycdc = resolve_tool("pycdc", extra_paths=extra_paths)
     if pycdc is None:
         return None
-    try:
-        proc = safe_run(
-            [pycdc, str(pyc_path)],
-            capture_output=True, text=False, timeout=timeout,
-        )
-    except Exception as exc:  # TimeoutExpired dahil
-        logger.debug("pycdc calistirma hatasi (%s): %s", pyc_path.name, exc)
+    run = _run_tool([pycdc, str(pyc_path)], timeout=timeout)
+    if run.status not in ("ok", "truncated"):
+        logger.debug("pycdc calistirilamadi/durduruldu (%s): %s", pyc_path.name, run.status)
         return None
-    src, decode_problem = _decode_tool_output(proc.stdout)
-    stderr, _ = _decode_tool_output(proc.stderr)
+    src, decode_problem = _decode_tool_output(run.stdout)
+    stderr, _ = _decode_tool_output(run.stderr)
     # Yorumdan ibaret çıktı (yalnız "# Source Generated with Decompyle++" başlığı)
     # kısmi kurtarma bile değildir.
     meaningful = [
@@ -343,26 +350,84 @@ def _decompile_with_pycdc(
     if not meaningful:
         logger.debug(
             "pycdc anlamli kaynak uretemedi (%s): rc=%s stderr=%.200s",
-            pyc_path.name, proc.returncode, stderr,
+            pyc_path.name, run.returncode, stderr,
         )
         return None
-    problems = _source_problems(src, tool="pycdc", returncode=proc.returncode, stderr=stderr)
+    problems = _source_problems(
+        src, tool="pycdc",
+        # Bekçinin öldürdüğü sürecin rc'si yoktur; kesilme ayrıca sorun olarak yazılır.
+        returncode=run.returncode if run.returncode is not None else 0,
+        stderr=stderr,
+    )
+    truncated = run.status == "truncated"
+    if truncated:
+        problems.insert(0, _truncated_problem("pycdc"))
     if decode_problem:
         problems.append(decode_problem)
-    return src, problems
+    return src, problems, truncated
+
+
+# decompyle3/uncompyle6 (opsiyonel pip): AYRI SÜREÇTE. Eskiden kütüphane analiz
+# sürecinin İÇİNDE ve zaman aşımsız çağrılıyordu: decompile_file güvenilmeyen
+# .pyc'yi açar (xdis; sürüm aynıysa marshal) ve ayrıştırıcısı kötü girdide
+# takılabilir -> tüm analiz asılı kalırdı. Artık dis yedeğiyle aynı kalıp
+# (``_run_capped``: zaman aşımı + bellek bekçisi + çıktı tavanı). Ana süreç
+# kütüphaneyi import bile etmez: yeri ``importlib.util.find_spec`` ile bulunur
+# (modül kodu çalışmaz) ve bulunduğu sys.path kökü alt sürece verilir.
+_PYLIB_MODULES = ("decompyle3", "uncompyle6")
+_PYLIB_RC_NO_MODULE = 5
+_PYLIB_RC_ERROR = 6
+_PYLIB_CHILD_SCRIPT = f"""
+import io, sys
+path, mod_name, root, max_mem = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
+try:
+    import resource
+    resource.setrlimit(resource.RLIMIT_AS, (max_mem, max_mem))
+except Exception:
+    pass
+if root not in sys.path:
+    sys.path.append(root)
+try:
+    mod = __import__(mod_name)
+except ImportError:
+    sys.exit({_PYLIB_RC_NO_MODULE})
+out = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="backslashreplace")
+try:
+    mod.decompile_file(path, out)
+    out.flush()
+except Exception:
+    sys.exit({_PYLIB_RC_ERROR})
+"""
+
+
+def _pylib_search_root(mod_name: str) -> Optional[str]:
+    """Kütüphanenin bulunduğu sys.path kökü; kurulu değilse None. Modülü import ETMEZ."""
+    try:
+        spec = importlib.util.find_spec(mod_name)
+    except (ImportError, ValueError):   # ValueError: sys.modules'ta __spec__'siz nesne
+        return None
+    if spec is None:
+        return None
+    locations = list(spec.submodule_search_locations or [])
+    if locations:
+        return str(Path(locations[0]).parent)
+    if spec.origin and spec.has_location:
+        return str(Path(spec.origin).parent)
+    return None
 
 
 def _decompile_with_pylib(
-    pyc_path: Path, py_version: Optional[str],
-) -> Optional[tuple[str, str, list[str]]]:
-    """decompyle3/uncompyle6 (opsiyonel pip) ile decompile. Yalniz Python < 3.10.
+    pyc_path: Path, py_version: Optional[str], *, timeout: float,
+) -> Optional[tuple[str, str, list[str], bool]]:
+    """decompyle3/uncompyle6 (opsiyonel pip) ile, AYRI SÜREÇTE decompile. Yalniz Python < 3.10.
 
     Bu kutuphaneler 3.10+ desteklemez; guvenli tarafta kalmak icin surum bilinip
-    < 3.10 oldugunda denenir. Kurulu degilse None.
+    < 3.10 oldugunda denenir. Kurulu degilse alt süreç açılmaz, None.
 
-    Çıktı pycdc'ninkiyle aynı doğrulamadan geçer (``_source_problems``): eskiden
-    boş olmayan her çıktı kaynak sayılıyordu. Returns: (kaynak, araç, sorunlar) --
-    ilk doğrulanan çıktı; hiçbiri doğrulanmadıysa ilk kısmi çıktı (sorunlar dolu).
+    Çıktı pycdc'ninkiyle aynı doğrulamadan geçer (``_source_problems``). Kütüphane
+    hata verirse (rc != 0), süre/bellek sınırına takılırsa çıktısı kullanılmaz;
+    çıktı tavanında kesilirse kısmi sayılır. Returns: (kaynak, araç, sorunlar,
+    kesildi) -- ilk doğrulanan çıktı; hiçbiri doğrulanmadıysa ilk kısmi çıktı.
     """
     if py_version:
         parts = py_version.split(".")
@@ -372,46 +437,64 @@ def _decompile_with_pylib(
             major, minor = 0, 0
         if (major, minor) >= (3, 10):
             return None  # bu araclar 3.10+ decompile edemez
-    import io
-    first_partial: Optional[tuple[str, str, list[str]]] = None
-    for mod_name in ("decompyle3", "uncompyle6"):
-        try:
-            mod = __import__(mod_name)
-        except ImportError:
+    first_partial: Optional[tuple[str, str, list[str], bool]] = None
+    for mod_name in _PYLIB_MODULES:
+        root = _pylib_search_root(mod_name)
+        if root is None:
             continue
-        try:
-            buf = io.StringIO()
-            # Her iki kutuphane de decompile_file(path, out) API'sini saglar.
-            mod.decompile_file(str(pyc_path), buf)
-            src = buf.getvalue()
-        except Exception as exc:
-            logger.debug("%s decompile hatasi (%s): %s", mod_name, pyc_path.name, exc)
+        if getattr(sys, "frozen", False) or not sys.executable:
+            break   # donmuş uygulama: yorumlayıcı yok, süreç içine geri dönülmez
+        # -I: kullanıcı site'ı, PYTHON* ortamı ve cwd sys.path'e girmez; kütüphane kökü
+        # argümanla eklenir (kullanıcı site'ına kurulmuşsa da bulunur).
+        run = _run_capped(
+            [sys.executable, "-I", "-c", _PYLIB_CHILD_SCRIPT,
+             str(pyc_path), mod_name, root, str(_CHILD_MAX_MEMORY_BYTES)],
+            timeout=timeout,
+        )
+        if run.status not in ("ok", "truncated") or (run.status == "ok" and run.returncode != 0):
+            logger.debug("%s alt sureci basarisiz (%s): durum=%s rc=%s",
+                         mod_name, pyc_path.name, run.status, run.returncode)
             continue
+        src, decode_problem = _decode_tool_output(run.stdout)
         if not src.strip():
             continue
         problems = _source_problems(src, tool=mod_name)
+        truncated = run.status == "truncated"
+        if truncated:
+            problems.insert(0, _truncated_problem(mod_name))
+        if decode_problem:
+            problems.append(decode_problem)
         if not problems:
-            return src, mod_name, []
+            return src, mod_name, [], False
         logger.debug("%s ciktisi kismi (%s): %s", mod_name, pyc_path.name, "; ".join(problems))
         if first_partial is None:
-            first_partial = (src, mod_name, problems)
+            first_partial = (src, mod_name, problems, truncated)
     return first_partial
 
 
 # ---------------------------------------------------------------------------
-# stdlib dis yedeği: AYRI SÜREÇTE
+# Sınırlı alt süreç: pycdc/pycdas + stdlib dis yedeği (AYRI SÜREÇTE)
 # ---------------------------------------------------------------------------
-# Yedek, .pyc gövdesini marshal.loads ile açmak zorunda. CPython belgesi marshal için
-# "hatalı ya da kötü niyetle kurulmuş veriye karşı güvenli değildir" der; eskiden bu
-# çağrı analiz sürecinin İÇİNDEYDİ. Artık ayrı bir yorumlayıcı (-I -S, safe_env)
-# çalıştırılır: zaman aşımı, bellek tavanı ve çıktı tavanı ebeveynde uygulanır, ana
-# süreç gövdeyi hiç unmarshal etmez. Kod yine ÇALIŞTIRILMAZ (yalnız dis).
-# Sınırlar 2026-09-25 ölçümüne dayanır (yerel 3.12 stdlib, 776 .pyc): en büyük dis
-# çıktısı 0,79 MB, en uzun süre 0,03 sn, tüm korpus tek süreçte 50 MB RSS.
-_DIS_CHILD_TIMEOUT = 60.0               # sn; çağıranın zaman aşımı daha kısaysa o geçerli
-_DIS_MAX_MEMORY_BYTES = 1024 ** 3       # alt süreç bellek tavanı (1 GiB)
-_DIS_MAX_OUTPUT_BYTES = 64 * 1024 ** 2  # disassembly metni tavanı; aşılırsa kesilir
-_DIS_POLL_INTERVAL = 0.05               # sn; zaman aşımı/bellek bekçisinin örnekleme aralığı
+# Güvenilmeyen .pyc'yi işleyen her alt süreç aynı kalıptan geçer (``_run_capped``):
+# zaman aşımı, bellek bekçisi ve çıktı tavanı ebeveynde uygulanır. Çıktı ebeveyn
+# belleğinde toplanmaz; geçici dosyaya yazılır, bekçi dosya boyutuna da bakar ve tavan
+# aşılınca süreci öldürür (disk de sınırlı), okunan kısım tavanla sınırlıdır. Eskiden
+# pycdc/pycdas çıktısı safe_run(capture_output=True) ile sınırsız toplanıyordu.
+#
+# stdlib dis yedeği .pyc gövdesini marshal.loads ile açmak zorunda. CPython belgesi
+# marshal için "hatalı ya da kötü niyetle kurulmuş veriye karşı güvenli değildir" der;
+# eskiden bu çağrı analiz sürecinin İÇİNDEYDİ. Artık ayrı bir yorumlayıcı (-s -S -P,
+# safe_env) çalıştırılır, ana süreç gövdeyi hiç unmarshal etmez. Kod ÇALIŞTIRILMAZ.
+#
+# Sınırlar 2026-09-25 ölçümlerine dayanır (yerel 3.12 stdlib, 776 .pyc): dis en büyük
+# çıktı 0,79 MB, en uzun 0,03 sn, tüm korpus tek süreçte 50 MB RSS; vendor pycdc/pycdas
+# (b428976) en büyük stdout 83 KB / 1,53 MB (pycdas, tkinter/__init__: .pyc'nin 10
+# katı), en büyük RSS 2,9 MB, en uzun 0,18 sn.
+_CHILD_TIMEOUT = 60.0                     # sn; çağıranın zaman aşımı daha kısaysa o geçerli
+_CHILD_MAX_MEMORY_BYTES = 1024 ** 3       # alt süreç bellek tavanı (1 GiB)
+_CHILD_MAX_OUTPUT_BYTES = 64 * 1024 ** 2  # stdout tavanı; aşılırsa kesilir ve işaretlenir
+_CHILD_MAX_STDERR_BYTES = 1024 ** 2       # okunan stderr (yalnız ilk satır + satır sayısı)
+_CHILD_POLL_INTERVAL = 0.05               # sn; bekçinin örnekleme aralığı
 
 # Alt süreç çıkış kodları (0 = tam çıktı).
 _DIS_RC_NOT_CODE = 3
@@ -515,10 +598,97 @@ def _process_memory_bytes(pid: int) -> Optional[int]:
     return None
 
 
+@dataclass
+class _ChildRun:
+    """Sınırlı alt süreç sonucu (``_run_capped``)."""
+
+    returncode: Optional[int]      # None: bekçi öldürdü ya da süreç başlatılamadı
+    stdout: bytes = b""            # en fazla tavan kadar; "truncated"da son satır sonuna kırpılmış
+    stderr: bytes = b""            # en fazla _CHILD_MAX_STDERR_BYTES
+    status: str = "ok"             # ok | truncated | timeout | memory | spawn:<Hata>
+
+
+def _run_capped(
+    cmd: Sequence[str],
+    *,
+    timeout: float,
+    max_output: Optional[int] = None,
+    env: Optional[dict[str, str]] = None,
+) -> _ChildRun:
+    """Alt süreci zaman aşımı + bellek bekçisi + çıktı tavanıyla çalıştır.
+
+    stdout/stderr geçici dosyalara yazılır. Bekçi her ``_CHILD_POLL_INTERVAL``'da
+    süreyi (``min(timeout, _CHILD_TIMEOUT)``), belleği (``_process_memory_bytes``)
+    ve dosya boyutlarını (stdout > ``max_output``, stderr > ``_CHILD_MAX_OUTPUT_BYTES``)
+    denetler; aşımda süreci öldürür. ``timeout``/``memory``: çıktı dönmez (yarım ve
+    güvenilmez). ``truncated``: tavanda kesilmiş çıktı döner (son tam satıra kadar).
+    ``env`` verilmezse ``safe_env()``.
+    """
+    limit = _CHILD_MAX_OUTPUT_BYTES if max_output is None else max_output
+    deadline = time.monotonic() + min(timeout, _CHILD_TIMEOUT)
+    with tempfile.TemporaryFile() as out_f, tempfile.TemporaryFile() as err_f:
+        try:
+            proc = subprocess.Popen(
+                [str(c) for c in cmd], stdin=subprocess.DEVNULL, stdout=out_f, stderr=err_f,
+                env=safe_env() if env is None else env, close_fds=True, shell=False,
+            )
+        except OSError as exc:
+            return _ChildRun(None, status=f"spawn:{type(exc).__name__}")
+        status = "ok"
+        try:
+            while True:
+                try:
+                    proc.wait(timeout=_CHILD_POLL_INTERVAL)
+                    break
+                except subprocess.TimeoutExpired:
+                    pass
+                if time.monotonic() > deadline:
+                    status = "timeout"
+                    break
+                if (os.fstat(out_f.fileno()).st_size > limit
+                        or os.fstat(err_f.fileno()).st_size > _CHILD_MAX_OUTPUT_BYTES):
+                    status = "truncated"
+                    break
+                used = _process_memory_bytes(proc.pid)
+                if used is not None and used > _CHILD_MAX_MEMORY_BYTES:
+                    status = "memory"
+                    break
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait()
+        if status in ("timeout", "memory"):
+            return _ChildRun(None, status=status)
+        out_f.seek(0)
+        stdout = out_f.read(limit + 1)
+        err_f.seek(0)
+        stderr = err_f.read(_CHILD_MAX_STDERR_BYTES)
+    returncode: Optional[int] = None if status == "truncated" else proc.returncode
+    if len(stdout) > limit:
+        status = "truncated"
+    if status == "truncated":
+        stdout = stdout[:limit]
+        cut = stdout.rfind(b"\n")
+        if cut >= 0:
+            stdout = stdout[:cut + 1]      # yarım satır / yarım UTF-8 dizisi kalmasın
+    return _ChildRun(returncode, stdout, stderr, status)
+
+
+def _run_tool(cmd: Sequence[str], *, timeout: float) -> _ChildRun:
+    """Harici araç (pycdc/pycdas) çağrısı: ``_run_capped`` + ``safe_env``.
+
+    Testlerin sahtelediği tek nokta; stdlib dis yedeği bunu KULLANMAZ (doğrudan
+    ``_run_capped``), böylece araç sahtesi dis yedeğini etkilemez.
+    """
+    return _run_capped(cmd, timeout=timeout)
+
+
 def _stdlib_dis_isolated(pyc_path: Path, *, timeout: float) -> tuple[Optional[str], str]:
     """``dis.dis(marshal.loads(...))``'i ayrı yorumlayıcıda çalıştır: (metin | None, durum).
 
     Çıktı çalıştırmadan çalıştırmaya aynıdır (sabit hash tohumu, adressiz code repr).
+    Çıktı tavanını çocuk kendisi uygular (işaret satırı + rc=4); ebeveyn bekçisi
+    ``_run_capped`` aynı tavanın biraz üstünde yedek olarak durur.
 
     Durum: ``ok`` | ``truncated`` (çıktı tavanında kesildi, sonunda işaret satırı var)
     | ``not_code`` | ``timeout`` | ``memory`` | ``rc=N`` | ``no_interpreter`` | ``spawn:<hata>``.
@@ -531,45 +701,24 @@ def _stdlib_dis_isolated(pyc_path: Path, *, timeout: float) -> tuple[Optional[st
     # bu üçü: safe_env zaten PYTHON* taşımaz, PYTHONHASHSEED'in okunması gerekir.
     cmd = [
         sys.executable, "-s", "-S", "-P", "-c", _DIS_CHILD_SCRIPT,
-        str(pyc_path), str(_DIS_MAX_OUTPUT_BYTES), str(_DIS_MAX_MEMORY_BYTES),
+        str(pyc_path), str(_CHILD_MAX_OUTPUT_BYTES), str(_CHILD_MAX_MEMORY_BYTES),
     ]
-    deadline = time.monotonic() + min(timeout, _DIS_CHILD_TIMEOUT)
-    with tempfile.TemporaryFile() as out_f:
-        try:
-            proc = subprocess.Popen(
-                cmd, stdin=subprocess.DEVNULL, stdout=out_f, stderr=subprocess.DEVNULL,
-                env=safe_env({"PYTHONHASHSEED": "0"}), close_fds=True, shell=False,
-            )
-        except OSError as exc:
-            return None, f"spawn:{type(exc).__name__}"
-        status = ""
-        try:
-            while True:
-                try:
-                    rc = proc.wait(timeout=_DIS_POLL_INTERVAL)
-                    break
-                except subprocess.TimeoutExpired:
-                    pass
-                if time.monotonic() > deadline:
-                    status = "timeout"
-                    break
-                used = _process_memory_bytes(proc.pid)
-                if used is not None and used > _DIS_MAX_MEMORY_BYTES:
-                    status = "memory"
-                    break
-        finally:
-            if proc.poll() is None:
-                proc.kill()
-                proc.wait()
-        if status:
-            return None, status
-        if rc == _DIS_RC_NOT_CODE:
-            return None, "not_code"
-        if rc not in (0, _DIS_RC_TRUNCATED):
-            return None, f"rc={rc}"
-        out_f.seek(0)
-        raw = out_f.read(_DIS_MAX_OUTPUT_BYTES + 4096)
-    text, _ = _decode_tool_output(raw)
+    run = _run_capped(
+        cmd, timeout=timeout, max_output=_CHILD_MAX_OUTPUT_BYTES + 4096,
+        env=safe_env({"PYTHONHASHSEED": "0"}),
+    )
+    if run.status == "truncated":
+        # Çocuğun kendi sınırı devre dışıysa ebeveyn kesti: yine işaretli teslim.
+        text, _ = _decode_tool_output(run.stdout)
+        return text + "\n" + _DIS_TRUNCATED_MARKER + "\n", "truncated"
+    if run.status != "ok":
+        return None, run.status
+    rc = run.returncode
+    if rc == _DIS_RC_NOT_CODE:
+        return None, "not_code"
+    if rc not in (0, _DIS_RC_TRUNCATED):
+        return None, f"rc={rc}"
+    text, _ = _decode_tool_output(run.stdout)
     if not text.strip():
         return None, "empty"
     return text, "truncated" if rc == _DIS_RC_TRUNCATED else "ok"
@@ -581,8 +730,10 @@ def _disassemble(
     *,
     timeout: float,
     extra_paths: Optional[Sequence[str]] = None,
-) -> Optional[tuple[str, str]]:
-    """Son care: bytecode disassembly. (metin, yontem) dondur veya None.
+) -> Optional[tuple[str, str, bool]]:
+    """Son care: bytecode disassembly. (metin, yontem, kesildi_mi) dondur veya None.
+
+    Kesilen metin (alt süreç çıktı tavanı) sonunda ``_DIS_TRUNCATED_MARKER`` taşır.
 
     1. pycdas (Decompyle++ disassembler) -- versiyon-bagimsiz, tercih edilir.
        ``extra_paths`` pycdc ile AYNI olmalı: setup_pycdc.sh ikisini de
@@ -597,23 +748,24 @@ def _disassemble(
     # 1. pycdas
     pycdas = resolve_tool("pycdas", extra_paths=extra_paths)
     if pycdas is not None:
-        try:
-            proc = safe_run(
-                [pycdas, str(pyc_path)],
-                capture_output=True, text=False, timeout=timeout,
+        run = _run_tool([pycdas, str(pyc_path)], timeout=timeout)
+        text, _ = _decode_tool_output(run.stdout)
+        # pycdas tanımadığı magic'te de rc=0 döner ("Bad MAGIC!" stderr'de,
+        # stdout: "<ad> (Python -1.-1)" + "<NULL>"). En az bir kod nesnesi
+        # dökümü ("[Code]") yoksa disassembly sayılmaz.
+        has_code = any(ln.strip() == "[Code]" for ln in text.splitlines())
+        if run.status == "truncated" and has_code:
+            logger.warning(
+                "pycdas ciktisi %d bayt sinirinda kesildi: %s",
+                _CHILD_MAX_OUTPUT_BYTES, pyc_path.name,
             )
-            text, _ = _decode_tool_output(proc.stdout)
-            # pycdas tanımadığı magic'te de rc=0 döner ("Bad MAGIC!" stderr'de,
-            # stdout: "<ad> (Python -1.-1)" + "<NULL>"). En az bir kod nesnesi
-            # dökümü ("[Code]") yoksa disassembly sayılmaz.
-            has_code = any(ln.strip() == "[Code]" for ln in text.splitlines())
-            if proc.returncode == 0 and has_code:
-                return text, "disasm"
-            logger.debug(
-                "pycdas kod nesnesi dokemedi (%s): rc=%s", pyc_path.name, proc.returncode,
-            )
-        except Exception as exc:
-            logger.debug("pycdas hatasi (%s): %s", pyc_path.name, exc)
+            return text + _DIS_TRUNCATED_MARKER + "\n", "disasm", True
+        if run.status == "ok" and run.returncode == 0 and has_code:
+            return text, "disasm", False
+        logger.debug(
+            "pycdas kod nesnesi dokemedi (%s): durum=%s rc=%s",
+            pyc_path.name, run.status, run.returncode,
+        )
 
     # 2. stdlib dis (yalniz .pyc surumu CALISAN Python ile ayni major.minor ise),
     #    ayrı süreçte. Ana süreç yalnız 4 baytlık magic'e bakar.
@@ -638,9 +790,9 @@ def _disassemble(
     if status == "truncated":
         logger.warning(
             "stdlib dis ciktisi %d bayt sinirinda kesildi: %s",
-            _DIS_MAX_OUTPUT_BYTES, pyc_path.name,
+            _CHILD_MAX_OUTPUT_BYTES, pyc_path.name,
         )
-    return dis_text, "disasm"
+    return dis_text, "disasm", status == "truncated"
 
 
 def pycdc_available(extra_paths: Optional[Sequence[str]] = None) -> bool:
@@ -677,24 +829,25 @@ def decompile_pyc(
     py_out = out_dir / f"{stem}.py"
 
     # 1. pycdc -- yalnız doğrulanmış çıktı kaynak sayılır (bkz. _source_problems)
-    partial: Optional[tuple[str, list[str], str]] = None   # (kaynak, sorunlar, araç)
+    # (kaynak, sorunlar, araç, çıktı tavanında kesildi mi)
+    partial: Optional[tuple[str, list[str], str, bool]] = None
     partial_tool = ""
     pycdc_out = _decompile_with_pycdc(pyc_path, timeout=timeout, extra_paths=extra_paths)
     if pycdc_out is not None:
-        src, problems = pycdc_out
+        src, problems, cut = pycdc_out
         if not problems:
             py_out.write_text(src, encoding="utf-8", errors="replace")
             result.success = True
             result.method = "pycdc"
             result.output_path = py_out
             return result
-        partial = (src, problems, "pycdc")
+        partial = (src, problems, "pycdc", cut)
         logger.debug("pycdc ciktisi kismi (%s): %s", pyc_path.name, "; ".join(problems))
 
-    # 2. decompyle3 / uncompyle6 (opsiyonel, < 3.10) -- aynı doğrulama
-    pylib = _decompile_with_pylib(pyc_path, py_version)
+    # 2. decompyle3 / uncompyle6 (opsiyonel, < 3.10) -- ayrı süreçte, aynı doğrulama
+    pylib = _decompile_with_pylib(pyc_path, py_version, timeout=timeout)
     if pylib is not None:
-        src, method, problems = pylib
+        src, method, problems, cut = pylib
         if not problems:
             py_out.write_text(src, encoding="utf-8", errors="replace")
             result.success = True
@@ -702,25 +855,29 @@ def decompile_pyc(
             result.output_path = py_out
             return result
         if partial is None:
-            partial = (src, problems, method)
+            partial = (src, problems, method, cut)
 
     # Doğrulanamayan çıktı atılmaz: okunabilir parçalar (imzalar, sabitler) taşır.
     # .partial.py + uyarı başlığı; sayımda "decompiled" DEĞİL.
     if partial is not None:
-        src, problems, tool = partial
+        src, problems, tool, cut = partial
         reason = "; ".join(problems)
         partial_out = out_dir / f"{stem}.partial.py"
         partial_out.write_text(
-            _partial_banner(reason, tool) + src, encoding="utf-8", errors="replace",
+            _partial_banner(reason, tool) + src
+            + (f"\n# KARADUL: {_truncated_problem(tool)}\n" if cut else ""),
+            encoding="utf-8", errors="replace",
         )
         result.partial_path = partial_out
         result.partial_reason = reason
+        result.truncated = cut
         partial_tool = tool
 
     # 3. disassembly fallback
     disasm = _disassemble(pyc_path, py_version, timeout=timeout, extra_paths=extra_paths)
     if disasm is not None:
-        text, method = disasm
+        text, method, cut_disasm = disasm
+        result.truncated = result.truncated or cut_disasm
         disasm_out = out_dir / f"{stem}.disasm.txt"
         disasm_out.write_text(text, encoding="utf-8", errors="replace")
         result.success = False       # kaynak degil; kismi kurtarma
