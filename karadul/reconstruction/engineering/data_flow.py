@@ -62,98 +62,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _batch_struct_confidence(
-    w_callers_mat: list[list[int]],
-    r_callers_mat: list[list[int]],
-    w_callees_mat: list[list[int]],
-    r_callees_mat: list[list[int]],
-    pair_w_idx: list[int],
-    pair_r_idx: list[int],
-) -> list[float]:
-    """Writer-reader ciftleri icin struct-field confidence hesapla.
-
-    Mantik: Ortak caller var mi (matmul > 0 -> 0.15 bonus),
-    writer callee'leri arasinda reader var mi (0.20 bonus),
-    reader callee'leri arasinda writer var mi (0.10 bonus).
-    Base confidence: 0.45.
-    """
-    base = 0.45
-    result: list[float] = []
-    for wi, ri in zip(pair_w_idx, pair_r_idx):
-        conf = base
-        # Ortak caller kontrolu: w_callers_mat[wi] . r_callers_mat[ri]^T
-        w_row = w_callers_mat[wi]
-        r_row = r_callers_mat[ri]
-        dot = sum(a * b for a, b in zip(w_row, r_row))
-        if dot > 0:
-            conf += 0.15
-        # Writer -> reader cagiriyor mu?
-        if w_callees_mat[wi][ri]:
-            conf += 0.20
-        # Reader -> writer cagiriyor mu?
-        if r_callees_mat[ri][wi]:
-            conf += 0.10
-        result.append(min(conf, 1.0))
-    return result
-
-
-def _pipeline_longest_path(
-    adj: dict[str, set[str]],
-    relevant_nodes: set[str],
-) -> tuple[dict[str, int], dict[str, str | None]]:
-    """DAG uzerinde en uzun yol hesapla (topolojik siralama + DP).
-
-    Returns:
-        (dist, pred) -- her node icin en uzun mesafe ve predecessor.
-    """
-    # In-degree hesapla
-    in_deg: dict[str, int] = {n: 0 for n in relevant_nodes}
-    for u in relevant_nodes:
-        for v in adj.get(u, set()):
-            if v in relevant_nodes:
-                in_deg[v] = in_deg.get(v, 0) + 1
-
-    # Topolojik siralama (Kahn)
-    queue = deque(n for n in relevant_nodes if in_deg.get(n, 0) == 0)
-    topo_order: list[str] = []
-    while queue:
-        u = queue.popleft()
-        topo_order.append(u)
-        for v in adj.get(u, set()):
-            if v not in relevant_nodes:
-                continue
-            in_deg[v] -= 1
-            if in_deg[v] == 0:
-                queue.append(v)
-
-    # Cycle varsa kalan node'lari da ekle (deterministik siralama)
-    if len(topo_order) < len(relevant_nodes):
-        remaining = sorted(relevant_nodes - set(topo_order))
-        topo_order.extend(remaining)
-
-    # DP: en uzun yol
-    dist: dict[str, int] = {n: 0 for n in relevant_nodes}
-    pred: dict[str, str | None] = {n: None for n in relevant_nodes}
-
-    for u in topo_order:
-        for v in adj.get(u, set()):
-            if v not in relevant_nodes:
-                continue
-            if dist[u] + 1 > dist[v]:
-                dist[v] = dist[u] + 1
-                pred[v] = u
-
-    return dist, pred
-
-
-def _batch_confidence_update(
-    old_confidences: list[float],
-    bonuses: list[float],
-) -> list[float]:
-    """Confidence degerlerini bonus ile guncelle, [0, 1] araliginda tut."""
-    return [min(max(o + b, 0.0), 1.0) for o, b in zip(old_confidences, bonuses)]
-
-
 def _batch_dedup_edges(
     edge_keys: list[tuple[str, str, str, str]],
     confidences: list[float],
@@ -653,7 +561,7 @@ def _normalize_func_name(
 # ---------------------------------------------------------------------------
 
 
-def _batch_confidence_update(  # type: ignore[no-redef]  # v1.4.3 yeni imza eski 149'u override eder
+def _batch_confidence_update(
     confidences: list[float],
     bonuses: list[float],
     max_val: float = 1.0,
@@ -673,7 +581,7 @@ def _batch_confidence_update(  # type: ignore[no-redef]  # v1.4.3 yeni imza eski
     return [min(c + b, max_val) for c, b in zip(confidences, bonuses)]
 
 
-def _batch_struct_confidence(  # type: ignore[no-redef]  # v1.4.3 yeni imza eski 65'i override eder
+def _batch_struct_confidence(
     writer_callers_matrix: list[list[int]],
     reader_callers_matrix: list[list[int]],
     writer_callees_matrix: list[list[int]],
@@ -746,7 +654,7 @@ def _dedup_edges(
     return sorted(idx for idx, _ in best.values())
 
 
-def _pipeline_longest_path(  # type: ignore[no-redef]  # v1.4.3 yeni imza eski 100'u override eder
+def _pipeline_longest_path(
     adj: dict[str, set[str]],
     relevant_nodes: set[str],
 ) -> tuple[dict[str, int], dict[str, str | None]]:
