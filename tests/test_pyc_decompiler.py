@@ -22,6 +22,7 @@ from karadul.analyzers import pyc_decompiler as pd
 from karadul.analyzers.pyc_decompiler import (
     _PYC_MAGIC_TO_VERSION,
     _PYC_HEADER_SIZE_37,
+    _PYCDC_INCOMPLETE_MARKER,
     _VERSION_TO_MAGIC,
     DecompileResult,
     decompile_pyc,
@@ -32,6 +33,12 @@ from karadul.analyzers.pyc_decompiler import (
 )
 
 RUNNING = f"{sys.version_info.major}.{sys.version_info.minor}"
+# Çalışan sürümden FARKLI bir sürüm: stdlib dis bu .pyc için kullanılamaz.
+OTHER = "3.8" if RUNNING != "3.8" else "3.9"
+
+# setup_pycdc.sh çıktısı (git-ignored). Yoksa gerçek-ikili testleri atlanır.
+_VENDOR_PYCDC = Path(__file__).resolve().parents[1] / "vendor" / "pycdc"
+_HAS_VENDOR_PYCDC = (_VENDOR_PYCDC / "pycdc").is_file() and (_VENDOR_PYCDC / "pycdas").is_file()
 
 
 # ---------------------------------------------------------------------------
@@ -260,3 +267,181 @@ class TestDecompilePycdc:
         # timeout -> pycdc None doner -> disasm fallback (ayni surum), patlamaz
         res = decompile_pyc(pyc, tmp_path / "out", py_version=RUNNING)
         assert res.method in ("disasm", "none")
+
+
+# ---------------------------------------------------------------------------
+# pycdc çıktı doğrulaması -- 2026-09-25 regresyonu: pycdc desteklemediği opcode'da
+# da rc=0 döner; eksik/geçersiz çıktı "decompiled" sayılıyordu (gerçek 3.12
+# PyInstaller binary'si: 7/7 iddia, 0/7 derlenebilir + eksiksiz).
+# ---------------------------------------------------------------------------
+
+def _pycdc_only(monkeypatch, stdout, returncode: int = 0, stderr: str = "") -> None:
+    """Yalnız pycdc 'kurulu' (pycdas yok); safe_run sabit pycdc sonucu döner."""
+    monkeypatch.setattr(pd, "resolve_tool",
+                        lambda name, **k: "/fake/pycdc" if name == "pycdc" else None)
+    monkeypatch.setattr(pd, "safe_run",
+                        lambda *a, **k: _fake_completed(stdout, returncode=returncode, stderr=stderr))
+
+
+class TestPycdcCiktiDogrulama:
+    """Her sinyal TEK BAŞINA kısmi saydırmalı -> her kontrol ayrı mutation'la korunur."""
+
+    @pytest.mark.parametrize("stdout,rc,stderr,beklenen", [
+        # yalnız işaret (rc=0, stderr boş, derlenebilir) -- pycdc 3.12 struct.pyc deseni
+        ("x = 1\n" + _PYCDC_INCOMPLETE_MARKER + "\n", 0, "", "Decompyle incomplete"),
+        # yalnız stderr: derlenebilir ama anlamca YANLIŞ (pycdc 3.11: return döngü içine kaydı)
+        ("def t(vs):\n    for v in vs:\n        return v\n", 0,
+         "Warning: block stack is not empty!\n", "pycdc stderr"),
+        # yalnız compile: modül düzeyi return -- ast.parse GEÇER, compile() geçmez
+        ("if __name__ == '__main__':\n    print(1)\n    return None\n", 0, "", "SyntaxError"),
+        # yalnız rc: sinyalle çöküş; çıktı derlenebilir ama yarıda kesik
+        ("def greet(n):\n    return n\n", -11, "", "SIGSEGV"),
+    ], ids=["isaret", "stderr", "compile", "rc"])
+    def test_tek_sinyal_kismi_sayilir(self, tmp_path, monkeypatch, stdout, rc, stderr, beklenen):
+        _pycdc_only(monkeypatch, stdout, rc, stderr)
+        pyc = tmp_path / "m.pyc"
+        pyc.write_bytes(repair_pyc_header(_marshal_body(), RUNNING))
+        res = decompile_pyc(pyc, tmp_path / "out", py_version=RUNNING)
+
+        assert res.success is False                    # BUG: eskiden True
+        assert res.method != "pycdc"
+        assert not (tmp_path / "out" / "m.py").exists()  # sahte "kaynak" yazılmadı
+        assert res.partial_path is not None and res.partial_path.name == "m.partial.py"
+        assert beklenen in res.partial_reason
+        text = res.partial_path.read_text(encoding="utf-8")
+        assert text.startswith("# KARADUL: pycdc çıktısı DOĞRULANAMADI")
+        assert stdout in text                          # pycdc çıktısı kaybolmadı
+        assert res.is_disassembly is True              # zincir disasm'a devam etti
+
+    def test_syntaxerror_satiri_partial_dosyasina_denk(self, tmp_path, monkeypatch):
+        """Nedendeki satır numarası uyarı başlığı eklenmiş .partial.py'ye göredir."""
+        import re
+        _pycdc_only(monkeypatch, "if __name__ == '__main__':\n    print(1)\n    return None\n")
+        pyc = tmp_path / "m.pyc"
+        pyc.write_bytes(repair_pyc_header(_marshal_body(), RUNNING))
+        res = decompile_pyc(pyc, tmp_path / "out", py_version=RUNNING)
+        m = re.search(r"\.partial\.py satır (\d+)", res.partial_reason)
+        assert m, res.partial_reason
+        lines = res.partial_path.read_text(encoding="utf-8").splitlines()
+        assert lines[int(m.group(1)) - 1].strip() == "return None"
+
+    def test_disasm_yoksa_kismi_cikti_yine_teslim(self, tmp_path, monkeypatch):
+        """Farklı sürüm + pycdas yok -> disasm yok; kısmi pycdc çıktısı tek sonuç olur."""
+        _pycdc_only(monkeypatch, "x = 1\n" + _PYCDC_INCOMPLETE_MARKER + "\n")
+        pyc = tmp_path / "m.pyc"
+        pyc.write_bytes(repair_pyc_header(_marshal_body(), OTHER))
+        res = decompile_pyc(pyc, tmp_path / "out", py_version=OTHER)
+        assert res.success is False
+        assert res.is_disassembly is False
+        assert res.method == "pycdc_partial"
+        assert res.output_path == res.partial_path and res.partial_path.exists()
+
+
+class TestPycdcCiktiKodlama:
+    def test_gecersiz_utf8_cikti_kaybolmaz(self, tmp_path, monkeypatch):
+        """pycdc yalnız vekil karakteri ham bayt basar (ölçülen: '\\udcff' -> ed b3 bf).
+
+        Regresyon: text=True ile UnicodeDecodeError -> pycdc çıktısının TAMAMI atılıyordu.
+        Sahte safe_run gerçek subprocess gibi davranır: metin istenirse çözerken patlar.
+        """
+        raw = "A = 'dünya'\nB = '".encode("utf-8") + b"\xed\xb3\xbf" + b"'\n"
+
+        def fake_run(cmd, **k):
+            if k.get("text", True):
+                raw.decode("utf-8")  # subprocess(text=True) davranışı: UnicodeDecodeError
+            return subprocess.CompletedProcess(args=cmd, returncode=0, stdout=raw, stderr=b"")
+
+        monkeypatch.setattr(pd, "resolve_tool",
+                            lambda name, **k: "/fake/pycdc" if name == "pycdc" else None)
+        monkeypatch.setattr(pd, "safe_run", fake_run)
+        pyc = tmp_path / "enc.pyc"
+        pyc.write_bytes(repair_pyc_header(_marshal_body(), RUNNING))
+        res = decompile_pyc(pyc, tmp_path / "out", py_version=RUNNING)
+
+        assert res.partial_path is not None           # çıktı korunur...
+        assert "geçersiz UTF-8" in res.partial_reason  # ...ama sabit bozulduğu için kısmi
+        text = res.partial_path.read_text(encoding="utf-8")
+        assert "A = 'dünya'" in text and "\ufffd" in text
+
+
+class TestPycdasAracYolu:
+    def test_pycdas_extra_paths_ile_bulunur(self, tmp_path, monkeypatch):
+        """pycdas yalnız extra_paths'te (vendor/pycdc) -> farklı sürümlü .pyc disasm olmalı.
+
+        Regresyon: _disassemble resolve_tool("pycdas")'ı extra_paths'siz çağırıyordu;
+        vendor'daki pycdas hiç bulunmuyordu (ölçülen: 3.9 korpusunda 2/7, 3.11 ve 3.13'te
+        1/7 dosya "none"a düştü).
+        """
+        vendor = str(tmp_path / "vendor")
+
+        def fake_resolve(name, extra_paths=None):
+            if name == "pycdas" and extra_paths and vendor in extra_paths:
+                return "/fake/pycdas"
+            return None
+
+        monkeypatch.setattr(pd, "resolve_tool", fake_resolve)
+        monkeypatch.setattr(pd, "safe_run", lambda cmd, **k: _fake_completed(
+            "m.pyc (Python 3.8)\n[Code]\n    File Name: m.py\n"))
+        pyc = tmp_path / "m.pyc"
+        pyc.write_bytes(repair_pyc_header(_marshal_body(), OTHER))
+        res = decompile_pyc(pyc, tmp_path / "out", py_version=OTHER, extra_paths=[vendor])
+        assert res.method == "disasm"
+        assert res.is_disassembly is True
+        assert "[Code]" in res.output_path.read_text()
+
+    def test_pycdas_bad_magic_disasm_sayilmaz(self, tmp_path, monkeypatch):
+        """pycdas tanımadığı magic'te de rc=0 döner ('<NULL>'); disassembly sayılmamalı."""
+        monkeypatch.setattr(pd, "resolve_tool",
+                            lambda name, **k: "/fake/pycdas" if name == "pycdas" else None)
+        monkeypatch.setattr(pd, "safe_run", lambda cmd, **k: _fake_completed(
+            "m (Python -1.-1)\n<NULL>", stderr="Bad MAGIC!\n"))
+        pyc = tmp_path / "m.pyc"
+        pyc.write_bytes(repair_pyc_header(_marshal_body(), OTHER))
+        res = decompile_pyc(pyc, tmp_path / "out", py_version=OTHER)
+        assert res.is_disassembly is False
+        assert res.method == "none"
+
+
+@pytest.mark.skipif(not _HAS_VENDOR_PYCDC, reason="vendor/pycdc yok (scripts/setup_pycdc.sh)")
+class TestGercekPycdc:
+    """Gerçek pycdc/pycdas ikilileriyle DEĞİŞMEZ: "decompiled" denen her çıktı derlenir ve
+    'Decompyle incomplete' taşımaz. pycdc yeteneğinden bağımsızdır (pycdc gelişse de geçer);
+    pycdc b428976 ile 3.11/3.12/3.13'te closure ve 3.12+'da star-import eksik çıkar -> eski
+    kod bu testte düşer."""
+
+    KORPUS = {
+        "add": "def f(a, b):\n    return a + b\n",
+        "closure": "def outer(x):\n    def inner(y):\n        return x + y\n    return inner\n",
+        "star": "from os.path import *\n",
+        "tryexc": ("def g(a, b):\n    try:\n        return a / b\n"
+                   "    except ZeroDivisionError:\n        return None\n"),
+        "main": "import sys\nif __name__ == '__main__':\n    print(sys.argv)\n",
+    }
+
+    def test_decompiled_denen_her_cikti_gecerli(self, tmp_path):
+        import warnings
+        for ad, src in self.KORPUS.items():
+            pyc = tmp_path / f"{ad}.pyc"
+            pyc.write_bytes(_real_pyc(src))
+            res = decompile_pyc(pyc, tmp_path / "out", py_version=RUNNING,
+                                extra_paths=[str(_VENDOR_PYCDC)])
+            if res.success:
+                text = res.output_path.read_text(encoding="utf-8")
+                assert _PYCDC_INCOMPLETE_MARKER not in text, ad
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    compile(text, ad, "exec", dont_inherit=True)  # SyntaxError -> FAIL
+            else:
+                assert res.partial_path is not None or res.is_disassembly, ad
+            if res.is_disassembly:
+                # "[Code]" yalnız pycdas'ta var (stdlib dis basmaz) -> vendor pycdas kullanıldı
+                assert "[Code]" in res.output_path.read_text(encoding="utf-8"), ad
+
+    def test_vekil_karakterli_sabit_ciktiyi_dusurmez(self, tmp_path):
+        pyc = tmp_path / "enc.pyc"
+        pyc.write_bytes(_real_pyc("A = 'dünya'\nB = '\\udcff'\n"))
+        res = decompile_pyc(pyc, tmp_path / "out", py_version=RUNNING,
+                            extra_paths=[str(_VENDOR_PYCDC)])
+        kaynak = res.output_path if res.success else res.partial_path
+        assert kaynak is not None, "pycdc çıktısı kayboldu (UnicodeDecodeError regresyonu)"
+        assert "dünya" in kaynak.read_text(encoding="utf-8")

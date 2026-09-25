@@ -956,3 +956,105 @@ class TestCxFreezeExtraction:
         assert ext_dir in extracted[0].path.parents
         assert not (tmp_path.parent / "evil.pyc").exists()
         assert not (tmp_path / "evil.pyc").exists()
+
+
+class TestPycdcEntegrasyonu:
+    """_decompile_pyc_files + pycdc (2026-09-25): kısmi çıktı sayımı, araç yolu, çıktı adı."""
+
+    @staticmethod
+    def _stripped(tmp_path: Path, name: str, src: str) -> Path:
+        """PyInstaller TOC girdisi gibi: uzantısız ad + header'SIZ marshal gövdesi."""
+        import marshal
+        p = tmp_path / name
+        p.write_bytes(marshal.dumps(compile(src, name, "exec")))
+        return p
+
+    def test_kismi_pycdc_decompiled_sayilmaz(
+        self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path, monkeypatch
+    ):
+        """pycdc rc=0 + 'Decompyle incomplete' -> partial (decompiled DEĞİL) + dürüst not."""
+        import subprocess
+        import sys
+        from karadul.analyzers import pyc_decompiler as pd
+        from karadul.analyzers.packed_binary import ExtractedFile
+        from karadul.analyzers.python_binary import _pyinstaller_note
+        running = f"{sys.version_info.major}.{sys.version_info.minor}"
+        monkeypatch.setattr(
+            pd, "resolve_tool",
+            lambda name, **k: "/fake/pycdc" if name == "pycdc" else None,
+        )
+        monkeypatch.setattr(
+            pd, "safe_run",
+            lambda *a, **k: subprocess.CompletedProcess(
+                args=[], returncode=0,
+                stdout="def a():\n    pass\n# WARNING: Decompyle incomplete\n",
+                stderr="Unsupported opcode: MAKE_CELL (225)\n"),
+        )
+        pyc = self._stripped(tmp_path, "hello", "def a():\n    return 1\n")
+        files = [ExtractedFile(path=pyc, original_name="hello", file_type="pyc",
+                               size=pyc.stat().st_size)]
+        summary = python_analyzer._decompile_pyc_files(files, tmp_path / "proj", py_version=running)
+
+        assert summary["decompiled"] == 0      # BUG: eskiden 1 (pycdc rc=0 başarı sanılıyordu)
+        assert summary["partial"] == 1
+        assert summary["disasm"] == 0 and summary["failed"] == 0  # sınıflar ayrık
+        assert summary["pycdc_available"] is True
+        assert (tmp_path / "proj" / "source" / "hello.partial.py").exists()
+        note = _pyinstaller_note(summary)
+        assert "kısmi" in note
+        assert "decompile edildi" not in note
+
+    def test_cikti_adi_fixed_sizmaz_noktali_adlar_carpismaz(
+        self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path, monkeypatch
+    ):
+        """'hello' -> hello.disasm.txt (hello.fixed.* DEĞİL); 'pkg.a' ile 'pkg.b' çakışmaz.
+
+        Eski kod Path.with_suffix/stem kullanıyordu: çıktı 'hello.fixed.py' oluyor,
+        'pkg.a'/'pkg.b' ikisi de 'pkg.fixed.*' adına yazılıp birbirini eziyordu.
+        """
+        import sys
+        from karadul.analyzers import pyc_decompiler as pd
+        from karadul.analyzers.packed_binary import ExtractedFile
+        running = f"{sys.version_info.major}.{sys.version_info.minor}"
+        monkeypatch.setattr(pd, "resolve_tool", lambda name, **k: None)  # stdlib dis
+        files = []
+        for name, src in (("hello", "x = 1\n"), ("pkg.a", "A = 1\n"), ("pkg.b", "B = 2\n")):
+            p = self._stripped(tmp_path, name, src)
+            files.append(ExtractedFile(path=p, original_name=name, file_type="pyc",
+                                       size=p.stat().st_size))
+        summary = python_analyzer._decompile_pyc_files(files, tmp_path / "proj", py_version=running)
+
+        out = sorted(p.name for p in (tmp_path / "proj" / "source").iterdir())
+        assert out == ["hello.disasm.txt", "pkg.a.disasm.txt", "pkg.b.disasm.txt"]
+        assert summary["disasm"] == 3
+
+    def test_vendor_dizini_pycdas_aramasina_da_gider(
+        self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path, monkeypatch
+    ):
+        """vendor/pycdc hem pycdc hem pycdas çözümlemesine verilmeli (setup_pycdc.sh ikisini kurar)."""
+        import sys
+        import karadul.analyzers.python_binary as pb
+        from karadul.analyzers import pyc_decompiler as pd
+        from karadul.analyzers.packed_binary import ExtractedFile
+        running = f"{sys.version_info.major}.{sys.version_info.minor}"
+        vendor = str(tmp_path / "vendor")
+        monkeypatch.setattr(pb, "_vendor_tool_paths", lambda: [vendor])
+        calls: list = []
+
+        def fake_resolve(name, extra_paths=None):
+            calls.append((name, list(extra_paths or [])))
+            return None
+
+        monkeypatch.setattr(pd, "resolve_tool", fake_resolve)
+        pyc = self._stripped(tmp_path, "m", "x = 1\n")
+        files = [ExtractedFile(path=pyc, original_name="m", file_type="pyc", size=pyc.stat().st_size)]
+        python_analyzer._decompile_pyc_files(files, tmp_path / "proj", py_version=running)
+
+        assert ("pycdc", [vendor]) in calls
+        assert ("pycdas", [vendor]) in calls
+
+    def test_not_pycdc_kurulu_iken_kurun_demez(self):
+        from karadul.analyzers.python_binary import _pyinstaller_note
+        base = {"total_pyc": 2, "decompiled": 0, "partial": 0, "disasm": 2, "failed": 0}
+        assert "pycdc kurun" in _pyinstaller_note({**base, "pycdc_available": False})
+        assert "pycdc kurun" not in _pyinstaller_note({**base, "pycdc_available": True})

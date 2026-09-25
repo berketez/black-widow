@@ -34,6 +34,7 @@ from karadul.core.workspace import Workspace
 from karadul.analyzers.pyc_decompiler import (
     _PYC_MAGIC_TO_VERSION,
     decompile_pyc,
+    pycdc_available,
     repair_pyc_header,
     version_from_pyc_bytes,
 )
@@ -111,19 +112,36 @@ def _pyinstaller_note(summary: dict[str, Any]) -> str:
         )
     total = summary.get("total_pyc", 0)
     dec = summary.get("decompiled", 0)
+    part = summary.get("partial", 0)
     dis = summary.get("disasm", 0)
     failed = summary.get("failed", 0)
-    parts = [f"{total} .pyc islendi"]
+    parts = [f"{total} .pyc işlendi"]
     if dec:
-        parts.append(f"{dec} tanesi kaynak (.py) olarak decompile edildi")
-    if dis:
+        parts.append(f"{dec} tanesi doğrulanmış kaynak (.py) olarak decompile edildi")
+    if part:
         parts.append(
-            f"{dis} tanesi yalniz bytecode disassembly olarak kurtarildi "
-            "(daha iyi sonuc icin pycdc kurun: scripts/setup_pycdc.sh)"
+            f"{part} tanesinde pycdc yalnız kısmi/geçersiz kaynak verdi "
+            "(.partial.py, nedeni dosya başında; varsa yanında .disasm.txt)"
         )
+    if dis:
+        msg = f"{dis} tanesi yalnız bytecode disassembly olarak kurtarıldı"
+        # pycdc zaten kuruluysa "kurun" demek yanıltıcı (3.12+ tavanı araç eksikliği değil).
+        if not summary.get("pycdc_available", False):
+            msg += " (daha iyi sonuç için pycdc kurun: scripts/setup_pycdc.sh)"
+        parts.append(msg)
     if failed:
-        parts.append(f"{failed} tanesi cozulemedi")
+        parts.append(f"{failed} tanesi çözülemedi")
     return "; ".join(parts) + "."
+
+
+def _vendor_tool_paths() -> list[str] | None:
+    """setup_pycdc.sh'ın pycdc VE pycdas kurduğu vendor/pycdc dizini (yoksa None).
+
+    python_binary.py -> parents[0]=analyzers, [1]=karadul, [2]=depo kökü; editable
+    kurulumda cwd'den bağımsızdır. Testler için ayrı fonksiyon (monkeypatch).
+    """
+    vendor_pycdc = Path(__file__).resolve().parents[2] / "vendor" / "pycdc"
+    return [str(vendor_pycdc)] if vendor_pycdc.is_dir() else None
 
 
 @register_analyzer(TargetType.PYTHON_PACKED)
@@ -415,6 +433,7 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 "reconstructed": True,
                 "extracted_count": extracted_count,
                 "decompiled_count": decompile_summary.get("decompiled", 0),
+                "partial_count": decompile_summary.get("partial", 0),
                 "disasm_count": decompile_summary.get("disasm", 0),
             },
             errors=extract_errors,
@@ -497,7 +516,10 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 header onarimi bu degere dayanir.
 
         Returns:
-            Ozet dict: total_pyc, decompiled, disasm, failed, methods{}.
+            Ozet dict: total_pyc, decompiled, partial, disasm, failed, methods{},
+            pycdc_available. Sınıflar ayrıktır (toplamları total_pyc):
+            decompiled = doğrulanmış kaynak; partial = pycdc kısmi .partial.py
+            (+ varsa disasm); disasm = yalnız disassembly; failed = hiçbiri.
         """
         pyc_files = [
             ef for ef in extracted_files
@@ -506,6 +528,7 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         summary: dict[str, Any] = {
             "total_pyc": len(pyc_files),
             "decompiled": 0,
+            "partial": 0,
             "disasm": 0,
             "failed": 0,
             "methods": {},
@@ -530,9 +553,9 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         if global_version is None:
             global_version = py_version
 
-        # pycdc icin vendor/pycdc dizinini extra_paths olarak ekle (setup_pycdc.sh buraya kurar).
-        vendor_pycdc = Path(__file__).resolve().parents[2] / "vendor" / "pycdc"
-        extra = [str(vendor_pycdc)] if vendor_pycdc.is_dir() else None
+        # pycdc VE pycdas icin vendor/pycdc dizini (setup_pycdc.sh ikisini de buraya kurar).
+        extra = _vendor_tool_paths()
+        summary["pycdc_available"] = pycdc_available(extra)
         timeout = float(getattr(self.config.timeouts, "subprocess", 120.0))
 
         for ef in pyc_files:
@@ -542,10 +565,17 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 summary["failed"] += 1
                 continue
 
+            # Çıktı adı kökü: PyInstaller TOC girdileri uzantısız ("hello"; noktalı
+            # modül adı da olabilir), cx_Freeze'inkiler ".pyc". Path.stem/with_suffix
+            # "pkg.a"yı "pkg"ye indirir -> iki modül aynı dosyaya yazılır ve ".fixed"
+            # çıktı adına sızar. Yalnız ".pyc" soyulur.
+            name = ef.path.name
+            out_stem = name[:-4] if name.endswith(".pyc") and len(name) > 4 else name
+
             repaired = repair_pyc_header(body, global_version)
             if repaired is not None and repaired != body:
                 # Header onarildi -> onarilmis kopyayi diske yaz, onu decompile et.
-                fixed = ef.path.with_suffix(".fixed.pyc")
+                fixed = ef.path.with_name(out_stem + ".fixed.pyc")
                 try:
                     fixed.write_bytes(repaired)
                     target_pyc = fixed
@@ -557,10 +587,13 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             res = decompile_pyc(
                 target_pyc, source_dir,
                 py_version=global_version, timeout=timeout, extra_paths=extra,
+                out_stem=out_stem,
             )
             summary["methods"][res.method] = summary["methods"].get(res.method, 0) + 1
             if res.success:
                 summary["decompiled"] += 1
+            elif res.partial_path is not None:
+                summary["partial"] += 1
             elif res.is_disassembly:
                 summary["disasm"] += 1
             else:

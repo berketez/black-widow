@@ -13,15 +13,24 @@ Zincir (ilk basarili kazanir):
 KRITIK: PyInstaller ``.pyc`` header'ini (magic + timestamp) siyirir. Decompiler'lar
 header olmadan "Bad MAGIC" verip patlar. ``repair_pyc_header`` bunu onarir.
 
+pycdc çıktısı yalnız doğrulanırsa "kaynak" sayılır (bkz. ``_pycdc_problems``):
+pycdc desteklemediği opcode'da bile çıkış kodu 0 döner, çözemediği gövdeyi
+``pass`` + "Decompyle incomplete" yorumuyla yazar. Doğrulanamayan çıktı atılmaz;
+``<ad>.partial.py`` olarak saklanır ve zincir disassembly'ye devam eder.
+
 Not: Modern Python bir bilgisel tavandir -- hicbir deterministik arac 3.11/3.12/3.13'u
-tam cozmez. Gercekci: 3.8-3.9 tam, 3.10-3.11 kismi, 3.12+ disassembly fallback.
+tam cozmez. Ölçülen (pycdc b428976, 2026-09-25, PyInstaller bootstrap + küçük
+script korpusu): 3.9-3.12'de dosyaların çoğu kısmi, 3.13'te fonksiyon içeren her
+dosya kısmi (MAKE_FUNCTION desteklenmiyor), 3.14 hiç desteklenmiyor.
 """
 
 from __future__ import annotations
 
 import logging
 import marshal
+import signal
 import struct
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Sequence
@@ -170,26 +179,119 @@ class DecompileResult:
     """Tek bir .pyc icin decompile sonucu."""
 
     source_path: Path              # girdi .pyc
-    success: bool = False          # gercek kaynak (.py) uretildi mi
-    method: str = "none"           # pycdc | decompyle3 | uncompyle6 | disasm | none
+    success: bool = False          # doğrulanmış gerçek kaynak (.py) üretildi mi
+    method: str = "none"           # pycdc | decompyle3 | uncompyle6 | disasm | pycdc_partial | none
     output_path: Optional[Path] = None
     error: Optional[str] = None
     is_disassembly: bool = False   # True ise cikti kaynak degil, bytecode disasm
+    # pycdc çıktı verdi ama doğrulanamadı (eksik/geçersiz): kaynak DEĞİL, kısmi kurtarma.
+    partial_path: Optional[Path] = None    # <ad>.partial.py
+    partial_reason: Optional[str] = None   # neden doğrulanamadı ("; " ile birleşik)
+
+
+# pycdc bir kod bloğunu çözemediğinde çıktıya (girintili) bu yorumu yazar; çıkış
+# kodu yine 0'dır. Bu satırı taşıyan çıktı gerçek kaynak DEĞİLDİR.
+_PYCDC_INCOMPLETE_MARKER = "# WARNING: Decompyle incomplete"
 
 
 # ---------------------------------------------------------------------------
 # Decompile katmanlari
 # ---------------------------------------------------------------------------
 
+def _decode_tool_output(data: object) -> tuple[str, Optional[str]]:
+    """Harici araç çıktısını UTF-8 çöz: (metin, sorun). Geçersiz bayt U+FFFD olur.
+
+    pycdc/pycdas string sabitlerini ham bayt olarak basar; yalnız vekil karakter
+    (ör. ``'\\udcff'``) geçersiz UTF-8 üretir. Katı çözüm (``text=True``)
+    UnicodeDecodeError fırlatıp çıktının TAMAMINI kaybettiriyordu.
+    """
+    if data is None:
+        return "", None
+    if isinstance(data, str):
+        return data, None
+    raw = bytes(data)  # type: ignore[arg-type]
+    try:
+        return raw.decode("utf-8"), None
+    except UnicodeDecodeError as exc:
+        return (
+            raw.decode("utf-8", errors="replace"),
+            f"geçersiz UTF-8 bayt (konum {exc.start}); ilgili sabitler U+FFFD ile değiştirildi",
+        )
+
+
+def _partial_banner(reason: str) -> str:
+    """Kısmi pycdc çıktısının başına yazılan uyarı (dosya tek başına açılsa da dürüst)."""
+    return (
+        "# KARADUL: pycdc çıktısı DOĞRULANAMADI -- gerçek kaynak DEĞİL (kısmi kurtarma).\n"
+        f"# Neden: {reason.replace(chr(10), ' ')}\n"
+        "# Tam bytecode için (varsa) aynı adlı .disasm.txt dosyasına bakın.\n\n"
+    )
+
+
+# Başlık satır sayısı: SyntaxError satır numarası .partial.py'deki satıra denk gelsin.
+_PARTIAL_BANNER_LINES = _partial_banner("").count("\n")
+
+
+def _pycdc_problems(src: str, returncode: int, stderr: str) -> list[str]:
+    """pycdc çıktısını gerçek kaynak saymaya engel durumlar (boş liste = doğrulandı).
+
+    pycdc desteklemediği opcode'da bile çoğunlukla rc=0 döner; çözemediği gövdeyi
+    ``pass`` + "Decompyle incomplete" yorumuyla, bozuk ifadeyi geçersiz sözdizimiyle
+    yazar. Ölçütler:
+
+    1. rc == 0 (negatif rc = sinyalle çöküş; çıktı yarıda kesilmiştir).
+    2. "Decompyle incomplete" işareti yok.
+    3. stderr boş. pycdc stderr'e yalnız sorun olunca yazar; "Warning: block stack
+       is not empty!" bile ölçülen örnekte yanlış girintili ``return`` üretti
+       (3.11, derlenebilir ama anlamca yanlış kod).
+    4. Çıktı çalışan Python'da ``compile()`` ediliyor. Kod ÇALIŞTIRILMAZ. ast.parse
+       yetmez: modül düzeyinde ``return`` (pycdc 3.10-3.12'de sık) yalnız derleyici
+       aşamasında yakalanır.
+
+    Sınır: compile() anlamı doğrulamaz. Çalışan Python .pyc sürümünden eskiyse yeni
+    sözdizimi yanlış alarm verebilir; bu güvenli yöndür (kısmi sayılır, çıktı kaybolmaz).
+    """
+    problems: list[str] = []
+    if returncode != 0:
+        if returncode < 0:
+            try:
+                sig_name = signal.Signals(-returncode).name
+            except ValueError:
+                sig_name = f"sinyal {-returncode}"
+            problems.append(f"pycdc çöktü ({sig_name})")
+        else:
+            problems.append(f"pycdc rc={returncode}")
+    if any(ln.strip() == _PYCDC_INCOMPLETE_MARKER for ln in src.splitlines()):
+        problems.append("'Decompyle incomplete' işareti (en az bir blok çözülemedi)")
+    err_lines = [ln.strip() for ln in stderr.splitlines() if ln.strip()]
+    if err_lines:
+        more = f" (+{len(err_lines) - 1} satır)" if len(err_lines) > 1 else ""
+        problems.append(f"pycdc stderr: {err_lines[0]}{more}")
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")  # SyntaxWarning (geçersiz kaçış vb.) gürültüsü
+            compile(src, "<pycdc>", "exec", dont_inherit=True)
+    except SyntaxError as exc:
+        # Sorunlu çıktı .partial.py olarak başlıkla yazılır; satırı o dosyaya göre ver.
+        line = (exc.lineno or 0) + _PARTIAL_BANNER_LINES
+        problems.append(f"SyntaxError: {exc.msg} (.partial.py satır {line})")
+    except Exception as exc:  # ValueError (NUL bayt), RecursionError, MemoryError
+        problems.append(f"derlenemedi: {type(exc).__name__}")
+    return problems
+
+
 def _decompile_with_pycdc(
     pyc_path: Path,
     *,
     timeout: float,
     extra_paths: Optional[Sequence[str]] = None,
-) -> Optional[str]:
-    """pycdc (Decompyle++) ile decompile. Basarili ise uretilen kaynagi dondur.
+) -> Optional[tuple[str, list[str]]]:
+    """pycdc (Decompyle++) ile decompile.
 
-    pycdc bulunamazsa veya bos/hatali cikti verirse None doner (caller fallback'e gecer).
+    Returns:
+        None: pycdc yok, çalıştırılamadı ya da yorum dışı hiçbir satır üretmedi.
+        (kaynak, sorunlar): ``sorunlar`` boşsa çıktı doğrulanmış kaynaktır; doluysa
+        eksik/geçersizdir (çağıran kısmi çıktı olarak saklar, sonraki katmana geçer).
     """
     pycdc = resolve_tool("pycdc", extra_paths=extra_paths)
     if pycdc is None:
@@ -197,25 +299,29 @@ def _decompile_with_pycdc(
     try:
         proc = safe_run(
             [pycdc, str(pyc_path)],
-            capture_output=True, text=True, timeout=timeout,
+            capture_output=True, text=False, timeout=timeout,
         )
     except Exception as exc:  # TimeoutExpired dahil
         logger.debug("pycdc calistirma hatasi (%s): %s", pyc_path.name, exc)
         return None
-    src = proc.stdout or ""
-    # pycdc basarisizlikta stderr'e "Unsupported opcode" yazar ve/veya bos/eksik kaynak uretir.
-    # Yalniz anlamli govde varsa basarili say (yorumdan ibaret cikti reddedilir).
+    src, decode_problem = _decode_tool_output(proc.stdout)
+    stderr, _ = _decode_tool_output(proc.stderr)
+    # Yorumdan ibaret çıktı (yalnız "# Source Generated with Decompyle++" başlığı)
+    # kısmi kurtarma bile değildir.
     meaningful = [
         ln for ln in src.splitlines()
         if ln.strip() and not ln.lstrip().startswith("#")
     ]
-    if proc.returncode == 0 and meaningful:
-        return src
-    logger.debug(
-        "pycdc anlamli kaynak uretemedi (%s): rc=%s stderr=%.200s",
-        pyc_path.name, proc.returncode, proc.stderr or "",
-    )
-    return None
+    if not meaningful:
+        logger.debug(
+            "pycdc anlamli kaynak uretemedi (%s): rc=%s stderr=%.200s",
+            pyc_path.name, proc.returncode, stderr,
+        )
+        return None
+    problems = _pycdc_problems(src, proc.returncode, stderr)
+    if decode_problem:
+        problems.append(decode_problem)
+    return src, problems
 
 
 def _decompile_with_pylib(
@@ -253,23 +359,40 @@ def _decompile_with_pylib(
     return None
 
 
-def _disassemble(pyc_path: Path, py_version: Optional[str], *, timeout: float) -> Optional[tuple[str, str]]:
+def _disassemble(
+    pyc_path: Path,
+    py_version: Optional[str],
+    *,
+    timeout: float,
+    extra_paths: Optional[Sequence[str]] = None,
+) -> Optional[tuple[str, str]]:
     """Son care: bytecode disassembly. (metin, yontem) dondur veya None.
 
     1. pycdas (Decompyle++ disassembler) -- versiyon-bagimsiz, tercih edilir.
+       ``extra_paths`` pycdc ile AYNI olmalı: setup_pycdc.sh ikisini de
+       vendor/pycdc'ye kurar; verilmezse pycdas hiç bulunmaz ve farklı sürümlü
+       .pyc'ler (stdlib dis kullanılamaz) "none"a düşer.
     2. stdlib ``dis`` -- yalniz .pyc surumu CALISAN Python ile uyumluysa
        (marshal.loads farkli bytecode surumunde patlar).
     """
     # 1. pycdas
-    pycdas = resolve_tool("pycdas")
+    pycdas = resolve_tool("pycdas", extra_paths=extra_paths)
     if pycdas is not None:
         try:
             proc = safe_run(
                 [pycdas, str(pyc_path)],
-                capture_output=True, text=True, timeout=timeout,
+                capture_output=True, text=False, timeout=timeout,
             )
-            if proc.returncode == 0 and (proc.stdout or "").strip():
-                return proc.stdout, "disasm"
+            text, _ = _decode_tool_output(proc.stdout)
+            # pycdas tanımadığı magic'te de rc=0 döner ("Bad MAGIC!" stderr'de,
+            # stdout: "<ad> (Python -1.-1)" + "<NULL>"). En az bir kod nesnesi
+            # dökümü ("[Code]") yoksa disassembly sayılmaz.
+            has_code = any(ln.strip() == "[Code]" for ln in text.splitlines())
+            if proc.returncode == 0 and has_code:
+                return text, "disasm"
+            logger.debug(
+                "pycdas kod nesnesi dokemedi (%s): rc=%s", pyc_path.name, proc.returncode,
+            )
         except Exception as exc:
             logger.debug("pycdas hatasi (%s): %s", pyc_path.name, exc)
 
@@ -298,6 +421,11 @@ def _disassemble(pyc_path: Path, py_version: Optional[str], *, timeout: float) -
     return None
 
 
+def pycdc_available(extra_paths: Optional[Sequence[str]] = None) -> bool:
+    """pycdc çözümlenebiliyor mu (rapor notu için; "pycdc kurun" önerisi yalnız yoksa)."""
+    return resolve_tool("pycdc", extra_paths=extra_paths) is not None
+
+
 def decompile_pyc(
     pyc_path: Path,
     out_dir: Path,
@@ -305,13 +433,16 @@ def decompile_pyc(
     py_version: Optional[str] = None,
     timeout: float = 120.0,
     extra_paths: Optional[Sequence[str]] = None,
+    out_stem: Optional[str] = None,
 ) -> DecompileResult:
     """Tek bir (header'i gecerli) .pyc'yi decompile et.
 
     pyc_path'in header'i onarilmis olmali (bkz. repair_pyc_header). py_version
-    verilmezse header'daki magic'ten okunur.
+    verilmezse header'daki magic'ten okunur. ``out_stem`` çıktı dosya adı kökü
+    (verilmezse ``pyc_path.stem``; onarılmış ``x.fixed.pyc`` için çağıran "x" verir).
 
-    Katmanli: pycdc -> decompyle3/uncompyle6 -> disassembly -> none.
+    Katmanli: pycdc -> decompyle3/uncompyle6 -> disassembly -> none. pycdc çıktısı
+    doğrulanamazsa ``<kök>.partial.py`` olarak saklanır ve zincir devam eder.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     result = DecompileResult(source_path=pyc_path)
@@ -320,17 +451,22 @@ def decompile_pyc(
     if py_version is None:
         py_version = version_from_pyc_bytes(body)
 
-    stem = pyc_path.stem
+    stem = out_stem or pyc_path.stem
     py_out = out_dir / f"{stem}.py"
 
-    # 1. pycdc
-    src = _decompile_with_pycdc(pyc_path, timeout=timeout, extra_paths=extra_paths)
-    if src is not None:
-        py_out.write_text(src, encoding="utf-8", errors="replace")
-        result.success = True
-        result.method = "pycdc"
-        result.output_path = py_out
-        return result
+    # 1. pycdc -- yalnız doğrulanmış çıktı kaynak sayılır (bkz. _pycdc_problems)
+    partial: Optional[tuple[str, list[str]]] = None
+    pycdc_out = _decompile_with_pycdc(pyc_path, timeout=timeout, extra_paths=extra_paths)
+    if pycdc_out is not None:
+        src, problems = pycdc_out
+        if not problems:
+            py_out.write_text(src, encoding="utf-8", errors="replace")
+            result.success = True
+            result.method = "pycdc"
+            result.output_path = py_out
+            return result
+        partial = pycdc_out
+        logger.debug("pycdc ciktisi kismi (%s): %s", pyc_path.name, "; ".join(problems))
 
     # 2. decompyle3 / uncompyle6 (opsiyonel, < 3.10)
     pylib = _decompile_with_pylib(pyc_path, py_version)
@@ -342,8 +478,18 @@ def decompile_pyc(
         result.output_path = py_out
         return result
 
+    # Doğrulanamayan pycdc çıktısı atılmaz: okunabilir parçalar (imzalar, sabitler)
+    # taşır. .partial.py + uyarı başlığı; sayımda "decompiled" DEĞİL.
+    if partial is not None:
+        src, problems = partial
+        reason = "; ".join(problems)
+        partial_out = out_dir / f"{stem}.partial.py"
+        partial_out.write_text(_partial_banner(reason) + src, encoding="utf-8", errors="replace")
+        result.partial_path = partial_out
+        result.partial_reason = reason
+
     # 3. disassembly fallback
-    disasm = _disassemble(pyc_path, py_version, timeout=timeout)
+    disasm = _disassemble(pyc_path, py_version, timeout=timeout, extra_paths=extra_paths)
     if disasm is not None:
         text, method = disasm
         disasm_out = out_dir / f"{stem}.disasm.txt"
@@ -354,7 +500,12 @@ def decompile_pyc(
         result.is_disassembly = True
         return result
 
-    # 4. hicbiri
+    # 4. yalnız kısmi pycdc çıktısı ya da hiçbiri
+    if result.partial_path is not None:
+        result.method = "pycdc_partial"
+        result.output_path = result.partial_path
+        result.error = "disassembly yok; yalniz kismi pycdc ciktisi"
+        return result
     result.method = "none"
     result.error = "hicbir decompiler/disassembler basarili olmadi"
     return result
