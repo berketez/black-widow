@@ -25,6 +25,20 @@ def _esc(text: Any) -> str:
     return html.escape(str(text))
 
 
+def _is_skipped(sr: Any) -> bool:
+    """Asama atlandi mi (StageResult.skipped)? Atlanan asama HATA degildir;
+    `success=False` tasidigi icin eskiden kirmizi "FAIL" gosteriliyordu."""
+    return bool(getattr(sr, "skipped", False))
+
+
+def _skip_reason(sr: Any) -> str:
+    """Atlanan asamanin gerekcesi (stats["skip_reason"]), tek satir."""
+    stats = sr.stats if isinstance(sr.stats, dict) else {}
+    reason = stats.get("skip_reason")
+    text = " ".join(str(reason).split()) if reason is not None else ""
+    return text or "no reason recorded"
+
+
 def _format_size(size: int | float) -> str:
     """Byte degerini okunabilir formata cevir."""
     if not isinstance(size, (int, float)) or size == 0:
@@ -64,6 +78,7 @@ td { padding: 8px 12px; border: 1px solid #30363d; }
 tr:hover { background: #1c2128; }
 .pass { color: #3fb950; font-weight: bold; }
 .fail { color: #f85149; font-weight: bold; }
+.skip { color: #8b949e; font-weight: bold; }
 .na { color: #8b949e; }
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 12px 0; }
 .stat-box { background: #21262d; border-radius: 6px; padding: 16px; text-align: center; }
@@ -73,6 +88,7 @@ tr:hover { background: #1c2128; }
 .timeline-item { position: relative; margin-bottom: 12px; padding: 10px 14px; background: #21262d; border-radius: 6px; border-left: 3px solid #30363d; }
 .timeline-item.ok { border-left-color: #3fb950; }
 .timeline-item.err { border-left-color: #f85149; }
+.timeline-item.skip { border-left-color: #8b949e; border-left-style: dashed; }
 .timeline-item .stage-name { font-weight: bold; color: #f0f6fc; }
 .timeline-item .stage-meta { font-size: 0.85em; color: #8b949e; }
 pre { background: #21262d; padding: 14px; border-radius: 6px; overflow-x: auto; font-size: 0.9em; margin: 8px 0; }
@@ -230,17 +246,29 @@ class HTMLReporter:
         items: list[str] = []
 
         for i, (name, sr) in enumerate(result.stages.items(), 1):
-            cls = "ok" if sr.success else "err"
-            status = "<span class=\"pass\">PASS</span>" if sr.success else "<span class=\"fail\">FAIL</span>"
+            if _is_skipped(sr):
+                cls = "skip"
+                status = "<span class=\"skip\">SKIPPED</span>"
+            elif sr.success:
+                cls = "ok"
+                status = "<span class=\"pass\">PASS</span>"
+            else:
+                cls = "err"
+                status = "<span class=\"fail\">FAIL</span>"
 
+            # details HAM metin; asagida tek kez _esc'lenir (eskiden hata metni
+            # iki kez kacisliyordu: '<' -> '&amp;lt;').
             details = ""
-            if sr.stats:
-                stat_parts = []
-                for k, v in list(sr.stats.items())[:3]:
-                    stat_parts.append(f"{k}={v}")
-                details = ", ".join(stat_parts)
-            if sr.errors:
-                details = _esc(sr.errors[0][:80])
+            if _is_skipped(sr):
+                details = f"skipped (not a failure): {_skip_reason(sr)}"
+            else:
+                if sr.stats:
+                    stat_parts = []
+                    for k, v in list(sr.stats.items())[:3]:
+                        stat_parts.append(f"{k}={v}")
+                    details = ", ".join(stat_parts)
+                if sr.errors:
+                    details = sr.errors[0][:80]
 
             items.append(
                 f"<div class=\"timeline-item {cls}\">"
@@ -262,6 +290,11 @@ class HTMLReporter:
             ("Stages", f"{sum(1 for s in result.stages.values() if s.success)}/{len(result.stages)}"),
             ("Duration", f"{result.total_duration:.1f}s"),
         ]
+        # "Stages" basarili/toplam; atlanan asama o farka dahil ama HATA degil ->
+        # ayri kutu (varsa), okuyucu farki basarisizlik sanmasin.
+        n_skipped = sum(1 for s in result.stages.values() if _is_skipped(s))
+        if n_skipped:
+            stats.append(("Skipped Stages", str(n_skipped)))
 
         if "static" in result.stages:
             st = result.stages["static"].stats
@@ -273,8 +306,12 @@ class HTMLReporter:
                 stats.append(("App Type", str(st.get("intel_app_type", "N/A"))))
 
         if "deobfuscate" in result.stages:
-            st = result.stages["deobfuscate"].stats
-            stats.append(("Deobf Steps", str(st.get("steps_completed", "N/A"))))
+            sr_deob = result.stages["deobfuscate"]
+            if _is_skipped(sr_deob):
+                stats.append(("Deobf Steps", "skipped"))
+            else:
+                st = sr_deob.stats
+                stats.append(("Deobf Steps", str(st.get("steps_completed", "N/A"))))
 
         if "reconstruct" in result.stages:
             st = result.stages["reconstruct"].stats

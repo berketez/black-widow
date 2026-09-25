@@ -144,6 +144,14 @@ class SARIFReporter:
         results = self._build_results(result, workspace)
         artifacts = [self._build_artifact(result)]
 
+        invocation: dict[str, Any] = {
+            "executionSuccessful": result.success,
+            "startTimeUtc": now,
+        }
+        skip_notes = self._build_skip_notifications(result)
+        if skip_notes:
+            invocation["toolExecutionNotifications"] = skip_notes
+
         return {
             "$schema": _SARIF_SCHEMA,
             "version": _SARIF_VERSION,
@@ -154,20 +162,48 @@ class SARIFReporter:
                     },
                     "results": results,
                     "artifacts": artifacts,
-                    "invocations": [
-                        {
-                            "executionSuccessful": result.success,
-                            "startTimeUtc": now,
-                        }
-                    ],
+                    "invocations": [invocation],
                     "properties": {
                         "karadul_version": __version__,
                         "total_duration_seconds": round(result.total_duration, 3),
                         "pipeline_success": result.success,
+                        # report.json summary'deki ayrimla ayni: atlanan != basarisiz
+                        "skipped_stages": [
+                            name for name, sr in result.stages.items()
+                            if getattr(sr, "skipped", False)
+                        ],
                     },
                 }
             ],
         }
+
+    # ------------------------------------------------------------------
+    # Atlanan asamalar (toolExecutionNotifications)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _build_skip_notifications(result: PipelineResult) -> list[dict[str, Any]]:
+        """Atlanan (skipped=True) her asama icin SARIF 'note' bildirimi.
+
+        Atlanan asama bir HATA degildir (executionSuccessful etkilenmez); SARIF
+        2.1.0 notification nesnesi (message zorunlu, level "note") ile arac
+        yurutmesi hakkinda bilgi olarak raporlanir. Gerekce stats["skip_reason"].
+        """
+        notes: list[dict[str, Any]] = []
+        for name, sr in result.stages.items():
+            if not getattr(sr, "skipped", False):
+                continue
+            stats = sr.stats if isinstance(sr.stats, dict) else {}
+            raw = stats.get("skip_reason")
+            reason = " ".join(str(raw).split()) if raw is not None else ""
+            text = f"Stage '{name}' skipped (not a failure)"
+            text += f": {reason}" if reason else ": no reason recorded"
+            notes.append({
+                "level": "note",
+                "message": {"text": text},
+                "properties": {"stage": name, "skip_reason": reason or None},
+            })
+        return notes
 
     # ------------------------------------------------------------------
     # Tool driver

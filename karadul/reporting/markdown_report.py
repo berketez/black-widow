@@ -40,6 +40,33 @@ def _safe_get(stats: dict, key: str, default: str = "N/A") -> str:
     return str(val)
 
 
+def _is_skipped(sr: Any) -> bool:
+    """Asama atlandi mi (StageResult.skipped)?
+
+    Atlanan asama (skipped=True) bir HATA degildir -- uygulanamadigi icin
+    calismamistir; `success=False` tasidigi icin eskiden "FAIL" /
+    "... failed: unknown" yaziliyordu.
+    """
+    return bool(getattr(sr, "skipped", False))
+
+
+def _skip_reason(sr: Any) -> str:
+    """Atlanan asamanin gerekcesi (stats["skip_reason"]), tek satir.
+
+    Gerekce kaydedilmemisse bunu acikca soyler (uydurma gerekce yazilmaz).
+    """
+    stats = sr.stats if isinstance(sr.stats, dict) else {}
+    reason = stats.get("skip_reason")
+    text = " ".join(str(reason).split()) if reason is not None else ""
+    return text or "no reason recorded"
+
+
+def _skipped_line(label: str, sr: Any) -> list[str]:
+    """Bolum icin 'atlandi' satiri (hata satiri yerine)."""
+    reason = _skip_reason(sr).replace("*", "\\*")  # italik vurguyu bolmesin
+    return [f"*{label} skipped (not a failure): {reason}*", ""]
+
+
 class MarkdownReporter:
     """GitHub-uyumlu Markdown rapor uretici."""
 
@@ -146,9 +173,16 @@ class MarkdownReporter:
         lines.append("|---|-------|--------|----------|---------|")
 
         for i, (name, sr) in enumerate(result.stages.items(), 1):
-            icon = "PASS" if sr.success else "FAIL"
+            skipped = _is_skipped(sr)
+            if skipped:
+                icon = "SKIPPED"
+            else:
+                icon = "PASS" if sr.success else "FAIL"
             details = ""
-            if sr.errors:
+            if skipped:
+                # Tablo hucresi: '|' tabloyu bolmesin.
+                details = _skip_reason(sr).replace("|", "\\|")
+            elif sr.errors:
                 details = sr.errors[0][:60]
             elif sr.stats:
                 # Bir kac onemli stat goster
@@ -173,6 +207,8 @@ class MarkdownReporter:
         stats = sr.stats
         lines = ["## Static Analysis", ""]
 
+        if _is_skipped(sr):
+            return lines + _skipped_line("Static analysis", sr)
         if not sr.success:
             lines.append(f"*Static analysis failed: {sr.errors[0] if sr.errors else 'unknown'}*")
             lines.append("")
@@ -199,6 +235,8 @@ class MarkdownReporter:
         stats = sr.stats
         lines = ["## Dynamic Analysis", ""]
 
+        if _is_skipped(sr):
+            return lines + _skipped_line("Dynamic analysis", sr)
         if not sr.success:
             lines.append(f"*Dynamic analysis failed: {sr.errors[0] if sr.errors else 'unknown'}*")
             lines.append("")
@@ -221,6 +259,8 @@ class MarkdownReporter:
         stats = sr.stats
         lines = ["## Deobfuscation", ""]
 
+        if _is_skipped(sr):
+            return lines + _skipped_line("Deobfuscation", sr)
         if not sr.success:
             lines.append(f"*Deobfuscation failed: {sr.errors[0] if sr.errors else 'unknown'}*")
             lines.append("")
@@ -252,6 +292,8 @@ class MarkdownReporter:
         stats = sr.stats
         lines = ["## Reconstruction", ""]
 
+        if _is_skipped(sr):
+            return lines + _skipped_line("Reconstruction", sr)
         if not sr.success:
             lines.append(f"*Reconstruction failed: {sr.errors[0] if sr.errors else 'unknown'}*")
             lines.append("")

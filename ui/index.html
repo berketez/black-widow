@@ -110,6 +110,12 @@
   .stagerow.running .lab, .stagerow.done .lab{color:var(--text)}
   .stagerow .tm{color:var(--faint); font-size:10px}
   .stagerow.done .tm{color:var(--named)}
+  /* atlandı (skipped): hata değil, uygulanamadığı için çalışmadı -> gri, kesikli, animasyonsuz */
+  .stagerow.skipped{border-style:dashed}
+  .stagerow.skipped .box{border-style:dashed; color:var(--dim)}
+  .stagerow .skiptag{display:inline-block; margin-left:8px; padding:0 5px; border:1px solid var(--dim);
+    border-radius:2px; font-size:9px; letter-spacing:1.5px; color:var(--dim); vertical-align:1px}
+  .stagerow .why{margin-top:4px; font-size:10px; letter-spacing:0; line-height:1.4; color:var(--dim)}
   .substages{margin:2px 0 12px 34px; border-left:1px solid var(--border); padding-left:14px}
   .substage{display:flex; align-items:center; gap:8px; padding:3px 0; font-size:11px; color:var(--dim);
     animation:slidein .3s ease}
@@ -756,8 +762,14 @@ function renderStages(p){
   (p.stages||[]).forEach(s=>{
     const row=document.createElement('div');
     row.className='stagerow '+s.status;
-    const mark=s.status==='done'?'✓':s.status==='failed'?'✕':'';
-    row.innerHTML=`<div class="box">${mark}</div><div class="lab">${s.label}</div>`+
+    const skipped=s.status==='skipped';
+    const mark=s.status==='done'?'✓':s.status==='failed'?'✕':skipped?'–':'';
+    // atlandı: gerekçe (skip_reason) analiz log'undan gelir; hem metin hem tooltip
+    const why=skipped&&s.skip_reason?s.skip_reason:'';
+    if(why) row.title='Atlandı: '+why;
+    row.innerHTML=`<div class="box">${mark}</div><div class="lab">${esc(s.label)}`+
+      (skipped?'<span class="skiptag">ATLANDI</span>':'')+
+      (why?`<div class="why">${esc(why)}</div>`:'')+`</div>`+
       `<div class="tm">${s.time!=null?s.time.toFixed(1)+'s':s.status==='running'?'çalışıyor…':''}</div>`;
     box.appendChild(row);
     // reconstruct altına deterministik naming kanalları
@@ -766,7 +778,7 @@ function renderStages(p){
       p.substages.forEach(ss=>{
         const r=document.createElement('div'); r.className='substage';
         r.innerHTML=`<span class="d"></span><span class="lbl">${esc(ss.label)}</span>`+
-          (ss.count?` · <b>${ss.count}</b> fonksiyon kurtarıldı`:'');
+          (ss.count?` · <b>${esc(ss.count)}</b> fonksiyon kurtarıldı`:'');
         sub.appendChild(r);
       });
       box.appendChild(sub);
@@ -1012,7 +1024,8 @@ function wireRefs(){
 }
 
 function el(t){return document.createElementNS(SVGNS,t)}
-function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+// " ve ' de kaçar: nitelik (attr="...") bağlamında da güvenli; metin görünümü aynı kalır
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function trunc(s,n){s=String(s);return s.length>n?s.slice(0,n-1)+'…':s}
 function cssvar(cls){return getComputedStyle(document.documentElement).getPropertyValue('--'+cls).trim()}
 

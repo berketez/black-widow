@@ -1651,6 +1651,45 @@ def _report_substages(run_dir: str) -> list[dict]:
     return out
 
 
+# Asama bitis satiri -- karadul/cli.py::_log_stage_complete'in yazdigi bicim:
+#   OK <stage>: <sn>s | FAIL <stage>: <sn>s | SKIP <stage>: <sn>s -- <gerekce>
+_STAGE_LINE_RE = re.compile(
+    r"\b(OK|FAIL|SKIP) (\w+): (\d+(?:\.\d+)?)s(?: -- ([^\n]*))?")
+_STAGE_LINE_STATUS = {"OK": "done", "FAIL": "failed", "SKIP": "skipped"}
+# Eski ayristiricinin kabul ettigi sure-siz "FAIL|ERROR <stage>:" bicimi hala
+# basarisiz sayilir (yalniz yukaridaki satirla bitmemis asamalar icin).
+_STAGE_ERROR_RE = re.compile(r"\b(?:FAIL|ERROR) (\w+):")
+
+
+def _parse_stage_log(log: str) -> list[dict]:
+    """Analiz log'undan asama durumlarini cikar (done/failed/skipped/running/pending).
+
+    skipped: asama HATA degil, uygulanamadigi icin atlandi (StageResult
+    skipped=True); gerekce `skip_reason`'da. Eskiden SKIP satiri olmadigindan
+    atlanan asama "FAIL" satirina dusup kirmizi "failed" gorunuyordu.
+    running: terminal durumu (done/failed/skipped) olmayan ILK asama.
+    """
+    ended: dict[str, tuple[str, float | None, str | None]] = {}
+    for m in _STAGE_LINE_RE.finditer(log):
+        stage = m.group(2)
+        if stage in STAGE_ORDER:
+            reason = (m.group(4) or "").strip() or None
+            ended[stage] = (_STAGE_LINE_STATUS[m.group(1)], float(m.group(3)), reason)
+    for m in _STAGE_ERROR_RE.finditer(log):
+        stage = m.group(1)
+        if stage in STAGE_ORDER and stage not in ended:
+            ended[stage] = ("failed", None, None)
+    running = next((s for s in STAGE_ORDER if s not in ended), None)
+    stages = []
+    for s in STAGE_ORDER:
+        status, t, reason = ended.get(s, (None, None, None))
+        if status is None:
+            status = "running" if s == running else "pending"
+        stages.append({"key": s, "label": STAGE_LABEL[s], "status": status,
+                       "time": t, "skip_reason": reason})
+    return stages
+
+
 def _job_progress(job: str) -> dict:
     with _JOBS_LOCK:
         j = _JOBS.get(job)
@@ -1661,20 +1700,7 @@ def _job_progress(job: str) -> dict:
     except OSError:
         log = ""
 
-    done, times = set(), {}
-    for m in re.finditer(r"OK (\w+): ([\d.]+)s", log):
-        if m.group(1) in STAGE_ORDER:
-            done.add(m.group(1))
-            times[m.group(1)] = float(m.group(2))
-    failed_stage = None
-    mf = re.search(r"(?:FAIL|ERROR) (\w+):", log)
-    if mf and mf.group(1) in STAGE_ORDER:
-        failed_stage = mf.group(1)
-    running = next((s for s in STAGE_ORDER if s not in done and s != failed_stage), None)
-    stages = [{"key": s, "label": STAGE_LABEL[s],
-               "status": ("done" if s in done else "failed" if s == failed_stage
-                          else "running" if s == running else "pending"),
-               "time": times.get(s)} for s in STAGE_ORDER]
+    stages = _parse_stage_log(log)
 
     # alt-asamalar: canli log parse (setup_logging aktifse)
     substages = []

@@ -68,6 +68,34 @@ STAGE_LABELS: dict[str, str] = {
 }
 
 
+def _stage_status(result: Any) -> str:
+    """Asama sonucunu uc durumdan birine indir: ``OK`` / ``SKIP`` / ``FAIL``.
+
+    Oncelik `StageResult.summary()` ile ayni: skipped once gelir. Atlanan
+    asama `success=False` tasir (sozlesme: stages.py `_skipped`), ama bir HATA
+    degildir; yalniz `success`'e bakmak onu FAIL diye gosteriyordu.
+    """
+    if getattr(result, "skipped", False):
+        return "SKIP"
+    return "OK" if getattr(result, "success", True) else "FAIL"
+
+
+def _skip_reason(result: Any) -> Optional[str]:
+    """Atlanan asamanin gerekcesi (``stats["skip_reason"]``), tek satira indirilmis.
+
+    Gerekce yoksa None. Satir sonlari/bosluk kumeleri tek bosluga iner ki log
+    satiri makine-okunur (tek satir) kalsin.
+    """
+    stats = getattr(result, "stats", None)
+    if not isinstance(stats, dict):
+        return None
+    reason = stats.get("skip_reason")
+    if reason is None:
+        return None
+    text = " ".join(str(reason).split())
+    return text or None
+
+
 def _log_stage_complete(inner: Callable[[str, Any, int, int], None]) -> Callable[
     [str, Any, int, int], None
 ]:
@@ -78,13 +106,23 @@ def _log_stage_complete(inner: Callable[[str, Any, int, int], None]) -> Callable
     ui/server.py -> `karadul analyze ... --verbose > analyze.log`) ilerleme
     log dosyasina hic dusmuyordu; UI de asamalari log'dan okudugu icin canli
     ilerleme hep ilk asamada takili gorunuyordu. Bu satir makine-okunur ve
-    sabit: `OK <stage>: <sn>s` / `FAIL <stage>: <sn>s`.
+    sabit (ui/server.py `_STAGE_LINE_RE` bunu ayristirir):
+
+        OK <stage>: <sn>s
+        FAIL <stage>: <sn>s
+        SKIP <stage>: <sn>s -- <gerekce>     (gerekce yoksa ' -- ...' kismi yok)
+
+    Atlanan asama (skipped=True) eskiden `FAIL` yaziliyordu; bir hata degil.
     """
     def _wrapped(stage_name: str, result: Any, index: int, total: int) -> None:
         inner(stage_name, result, index, total)
-        ok = getattr(result, "success", True)
+        status = _stage_status(result)
         dur = float(getattr(result, "duration_seconds", 0.0) or 0.0)
-        logger.info("%s %s: %.2fs", "OK" if ok else "FAIL", stage_name, dur)
+        reason = _skip_reason(result) if status == "SKIP" else None
+        if reason:
+            logger.info("%s %s: %.2fs -- %s", status, stage_name, dur, reason)
+        else:
+            logger.info("%s %s: %.2fs", status, stage_name, dur)
 
     return _wrapped
 
@@ -244,6 +282,21 @@ def _emit_analyze_json(target_info: TargetInfo, result, cfg: Config) -> None:
             if st.get(key) is not None:
                 summary[key] = st.get(key)
 
+    # Atlanan asama (skipped) bir HATA degildir: `success` StageResult'taki gibi
+    # False kalir (veri sozlesmesi), ama `skipped` + `skip_reason` ayrica tasinir;
+    # ust duzeyde de report.json'daki gibi skipped_stages / failed_stages ayrimi.
+    stages: dict = {}
+    for name, sr in result.stages.items():
+        entry: dict = {
+            "success": bool(sr.success),
+            "skipped": _stage_status(sr) == "SKIP",
+            "duration_seconds": round(float(sr.duration_seconds), 3),
+            "stats": dict(sr.stats) if sr.stats else {},
+        }
+        if entry["skipped"]:
+            entry["skip_reason"] = _skip_reason(sr)
+        stages[name] = entry
+
     payload: dict = {
         "target": {
             "name": target_info.name,
@@ -259,14 +312,11 @@ def _emit_analyze_json(target_info: TargetInfo, result, cfg: Config) -> None:
         "workspace": str(result.workspace_path),
         "computation_recovery_enabled": bool(cfg.computation_recovery.enabled),
         "summary": summary,
-        "stages": {
-            name: {
-                "success": bool(sr.success),
-                "duration_seconds": round(float(sr.duration_seconds), 3),
-                "stats": dict(sr.stats) if sr.stats else {},
-            }
-            for name, sr in result.stages.items()
-        },
+        "stages": stages,
+        "skipped_stages": [n for n, e in stages.items() if e["skipped"]],
+        "failed_stages": [
+            n for n, e in stages.items() if not e["success"] and not e["skipped"]
+        ],
     }
     if "report" in result.stages:
         artifacts = result.stages["report"].artifacts or {}
