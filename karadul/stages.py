@@ -377,83 +377,17 @@ class StaticAnalysisStage(Stage):
             except Exception as exc:
                 logger.warning("CAPA scan hatasi (atlaniyor): %s", exc)
 
-        # FLIRT byte pattern matching -- binary hedefler icin kutuphane fonksiyon tanima
-        if target.target_type in (
-            TargetType.MACHO_BINARY, TargetType.UNIVERSAL_BINARY,
-            TargetType.ELF_BINARY, TargetType.PE_BINARY, TargetType.GO_BINARY,
-            TargetType.BUN_BINARY,
-        ):
-            try:
-                from karadul.analyzers.flirt_parser import FLIRTParser
-
-                fp = FLIRTParser()
-                all_flirt_sigs = []
-
-                # 1. Homebrew signature'larini yukle (proje kokunde)
-                project_root = context.config.project_root
-                homebrew_sigs = project_root / "signatures_homebrew.json"
-                if homebrew_sigs.exists():
-                    sigs = fp.load_json_signatures(homebrew_sigs)
-                    all_flirt_sigs.extend(sigs)
-                    logger.debug("FLIRT: Homebrew sigs: %d", len(sigs))
-
-                # 2. macOS framework signature'larini yukle (sigs/ dizini)
-                sigs_dir = project_root / "sigs"
-                if sigs_dir.is_dir():
-                    sigs = fp.load_directory(sigs_dir)
-                    all_flirt_sigs.extend(sigs)
-                    logger.debug("FLIRT: sigs/ dizini: %d", len(sigs))
-
-                # 3. Config'teki external signature path'leri
-                ext_paths = context.config.binary_reconstruction.external_signature_paths
-                if ext_paths:
-                    for ext_path in ext_paths:
-                        p = Path(ext_path)
-                        if p.is_file() and p.suffix == ".json":
-                            sigs = fp.load_json_signatures(p)
-                            all_flirt_sigs.extend(sigs)
-                        elif p.is_file() and p.suffix == ".pat":
-                            sigs = fp.load_pat_file(p)
-                            all_flirt_sigs.extend(sigs)
-                        elif p.is_dir():
-                            sigs = fp.load_directory(p)
-                            all_flirt_sigs.extend(sigs)
-
-                # 4. Binary'den dogrudan symbol extraction
-                binary_sigs = fp.extract_from_binary(target.path)
-                all_flirt_sigs.extend(binary_sigs)
-
-                # FLIRT sonuclarini stats'a kaydet
-                result.stats["flirt_signatures_loaded"] = len(all_flirt_sigs)
-                result.stats["flirt_binary_symbols"] = len(binary_sigs)
-
-                if all_flirt_sigs:
-                    # Byte pattern'li signature'larin sayisini logla
-                    byte_pattern_count = sum(
-                        1 for s in all_flirt_sigs if s.byte_pattern
-                    )
-                    result.stats["flirt_byte_patterns"] = byte_pattern_count
-                    logger.info(
-                        "FLIRT: %d signature yuklendi (%d byte pattern, %d binary symbol)",
-                        len(all_flirt_sigs), byte_pattern_count, len(binary_sigs),
-                    )
-
-                    # Signature'lari workspace'e kaydet (ReconstructionStage kullanabilir)
-                    try:
-                        flirt_data = {
-                            "total": len(all_flirt_sigs),
-                            "byte_patterns": byte_pattern_count,
-                            "binary_symbols": len(binary_sigs),
-                            "signatures": [s.to_dict() for s in all_flirt_sigs[:5000]],
-                        }
-                        context.workspace.save_json("static", "flirt_signatures", flirt_data)
-                    except Exception:
-                        logger.debug("FLIRT signature kaydi basarisiz, atlaniyor", exc_info=True)
-
-            except ImportError:
-                logger.debug("FLIRTParser bulunamadi, atlaniyor")
-            except Exception as exc:
-                logger.warning("FLIRT matching hatasi (atlaniyor): %s", exc)
+        # FLIRT (FLIRT yükleme bug'ı, 2026-09-25): bu aşama artık FLIRT imzası
+        # YÜKLEMEZ ve SAYMAZ. İmzalar yalnız reconstruct'taki byte_pattern
+        # adımında yüklenir, eşleştirilir ve sayılır (tek kaynak):
+        #   reconstruct.stats.flirt_signatures_loaded / flirt_signature_sources /
+        #   flirt_signatures_matchable / flirt_functions_scanned / flirt_functions_named
+        # Eski blok burada signatures_homebrew.json + sigs/*.json yüklüyordu:
+        # 2,46M İSİM imzası, hiçbirinde bayt deseni yok, hiçbir eşleştirmeye
+        # girmiyordu (çıktısı static/flirt_signatures.json'u okuyan kod yoktu).
+        # Ölçüm (coreutils cat, imzalar erişilebilirken): +10,9 sn, RSS
+        # 0,86 GB -> 3,9 GB. Sayaç da eşleşmeye giren imzaları değil bu
+        # listeyi raporluyordu; --output-dir ile kök kaydığında ise 0.
 
         # Stage name'i zorla ayarla (analyzer farkli isim vermis olabilir)
         result.stage_name = self.name

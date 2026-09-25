@@ -11,19 +11,34 @@ v1.14 D2:
   sayisi esiği astiginda ``match_unknown_functions_trie`` kullanilir
   (FlirtTrieMatcher prefix trie). Linear path varsayilan fallback olarak
   korunur, davranis bozulmaz.
+
+FLIRT yükleme bug'ı (2026-09-25):
+- FLIRT imzaları YALNIZ burada yüklenir ve sayılır; sayaçlar
+  (``flirt_signatures_loaded`` vb.) 0 dahil her zaman yazılır. Eski
+  StaticAnalysisStage sayacı eşleşmeye hiç girmeyen, bayt deseni olmayan
+  2,46M isim imzasını sayıyordu.
+- PIE ELF: Ghidra image base'i matcher'a verilir (``load_base``).
+- Bilinen, bilinçli bekletilen: imza kökü yalnız ``config.project_root``;
+  ``--output-dir`` ile imzalar bulunmaz (bkz. ``_collect_flirt_signatures``).
 """
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from karadul.pipeline.context import StepContext
 from karadul.pipeline.registry import Step, register_step
 
 logger = logging.getLogger(__name__)
+
+# Bayt desenli FLIRT kaynakları (config.project_root'a göre göreli).
+_FLIRT_BYTES_FILE = "signatures_homebrew_bytes.json"
+_FLIRT_SIGS_DIR = "sigs"
 
 
 @register_step(
@@ -68,12 +83,24 @@ class BytePatternStep(Step):
                 min_confidence=pc.config.binary_reconstruction.min_naming_confidence,
             )
 
-            all_byte_sigs = self._collect_flirt_signatures(
+            load_start = time.monotonic()
+            all_byte_sigs, sources = self._collect_flirt_signatures(
                 pc=pc,
                 binary_for_byte_match=binary_for_byte_match,
             )
+            # Sayaçlar HER ZAMAN yazılır (0 dahil) ve eşleştiriciye verilen
+            # listenin kendisinden hesaplanır (tek kaynak). Eşleştirici koşmazsa
+            # eşleşme sayaçları 0 kalır; "koşmadı" bilgisi flirt_match_strategy
+            # anahtarının yokluğundan okunur.
+            ctx.stats["flirt_signatures_loaded"] = len(all_byte_sigs)
+            ctx.stats["flirt_signature_sources"] = sources
+            ctx.stats["flirt_load_seconds"] = round(time.monotonic() - load_start, 3)
+            ctx.stats["flirt_signatures_matchable"] = 0
+            ctx.stats["flirt_functions_scanned"] = 0
+            ctx.stats["flirt_functions_named"] = 0
 
             if all_byte_sigs:
+                load_base = self._ghidra_load_base(pc=pc, functions_json=functions_json)
                 # v1.14 D2: trie path secimi (esik + global flag)
                 use_trie, threshold = self._trie_decision(
                     pc=pc, sig_count=len(all_byte_sigs),
@@ -89,6 +116,7 @@ class BytePatternStep(Step):
                         binary_path=binary_for_byte_match,
                         functions_json=functions_json,
                         known_signatures=all_byte_sigs,
+                        load_base=load_base,
                     )
                     logger.info(
                         "FLIRT trie matcher: %d pattern, %.0fms scan",
@@ -100,12 +128,18 @@ class BytePatternStep(Step):
                         binary_path=binary_for_byte_match,
                         functions_json=functions_json,
                         known_signatures=all_byte_sigs,
+                        load_base=load_base,
                     )
                     logger.info(
                         "FLIRT linear matcher: %d pattern, %.0fms scan",
                         len(all_byte_sigs),
                         (time.monotonic() - trie_start) * 1000.0,
                     )
+
+                # Eşleşme aşamasının gerçek sayaçları.
+                ctx.stats["flirt_signatures_matchable"] = bp_result.signatures_considered
+                ctx.stats["flirt_functions_scanned"] = bp_result.functions_scanned
+                ctx.stats["flirt_functions_named"] = bp_result.total_matched
 
                 byte_pattern_names = self._process_bp_result(
                     bp_result=bp_result,
@@ -148,51 +182,108 @@ class BytePatternStep(Step):
         return use_trie, threshold
 
     @staticmethod
-    def _collect_flirt_signatures(*, pc: Any, binary_for_byte_match: Path) -> list[Any]:
-        """FLIRT signature'larini homebrew + sigs/ + external + binary'den topla.
+    def _collect_flirt_signatures(
+        *, pc: Any, binary_for_byte_match: Path,
+    ) -> tuple[list[Any], dict[str, int]]:
+        """FLIRT imzalarını homebrew_bytes + sigs/*.pat + harici yollar + binary'den topla.
 
-        stages.py L1373-1411 ile birebir ayni.
+        Returns:
+            (imza listesi, {kaynak dosya: imza sayısı}). Kaynak sözlüğü
+            report.json'a yazılır; "hangi dosyadan kaç imza" sorusunun cevabı.
         """
         all_byte_sigs: list[Any] = []
+        sources: dict[str, int] = {}
+
+        def _add(source: Any, sigs: Any) -> None:
+            sig_list = list(sigs)
+            all_byte_sigs.extend(sig_list)
+            sources[str(source)] = sources.get(str(source), 0) + len(sig_list)
+
+        project_root = pc.config.project_root
         try:
             from karadul.analyzers.flirt_parser import FLIRTParser
             fp = FLIRTParser()
 
-            project_root = pc.config.project_root
+            # İmza kökü yalnız config.project_root (HEAD davranışı).
+            # --output-dir project_root'u ezdiği için imzalar bulunmuyor (bilinen,
+            # bilinçli bekletiliyor: imza DB'si seçici değil, redis-server 162/0
+            # yanlış isim; veri kökü ayrıştırması ölçüm zemininde FLIRT +
+            # ngram_name_db birlikte ele alınacak).
 
             # Byte pattern'li signature'lar (build_byte_signatures.py ciktisi)
-            homebrew_bytes_sigs = project_root / "signatures_homebrew_bytes.json"
+            homebrew_bytes_sigs = project_root / _FLIRT_BYTES_FILE
             if homebrew_bytes_sigs.exists():
-                all_byte_sigs.extend(fp.load_json_signatures(homebrew_bytes_sigs))
+                _add(homebrew_bytes_sigs, fp.load_json_signatures(homebrew_bytes_sigs))
 
             # NOT (perf denetimi 2026-07-13): signatures_homebrew.json (158K imza)
             # ve sigs/ .json'lari ISIM-tabanli, byte-pattern'leri YOK -> trie matcher
             # (byte_pattern>=16 filtresi) hepsini atiyordu (~8s + bellek bosa). Byte
             # matcher'a yalniz gercek byte-pattern'li kaynaklar girmeli: yukaridaki
             # homebrew_bytes.json + sigs/ altindaki .pat dosyalari.
-            sigs_dir = project_root / "sigs"
+            sigs_dir = project_root / _FLIRT_SIGS_DIR
             if sigs_dir.is_dir():
-                for pat_file in sigs_dir.rglob("*.pat"):
-                    all_byte_sigs.extend(fp.load_pat_file(pat_file))
+                for pat_file in sorted(sigs_dir.rglob("*.pat")):
+                    _add(pat_file, fp.load_pat_file(pat_file))
 
             ext_paths = pc.config.binary_reconstruction.external_signature_paths
             for ext_path in ext_paths:
                 p = Path(ext_path)
                 if p.is_file() and p.suffix == ".json":
-                    all_byte_sigs.extend(fp.load_json_signatures(p))
+                    _add(p, fp.load_json_signatures(p))
                 elif p.is_file() and p.suffix == ".pat":
-                    all_byte_sigs.extend(fp.load_pat_file(p))
+                    _add(p, fp.load_pat_file(p))
                 elif p.is_dir():
-                    all_byte_sigs.extend(fp.load_directory(p))
+                    _add(p, fp.load_directory(p))
 
             # Binary'den dogrudan symbol extraction (byte pattern'li).
             # Universal binary ise thin slice kullan (arch uyumu icin).
-            binary_sigs = fp.extract_from_binary(binary_for_byte_match)
-            all_byte_sigs.extend(binary_sigs)
+            _add(binary_for_byte_match, fp.extract_from_binary(binary_for_byte_match))
         except Exception as exc:
             logger.debug("FLIRT signature toplama hatasi: %s", exc)
 
-        return all_byte_sigs
+        logger.info(
+            "FLIRT: %d imza yüklendi (project_root=%s; %s)",
+            len(all_byte_sigs),
+            project_root,
+            ", ".join(f"{Path(k).name}={v}" for k, v in sources.items()) or "kaynak yok",
+        )
+        return all_byte_sigs, sources
+
+    @staticmethod
+    def _ghidra_load_base(*, pc: Any, functions_json: Any) -> Optional[int]:
+        """Ghidra program image base'ini oku (``program_info.image_base``).
+
+        Ghidra export'u bunu ``static/ghidra_combined_results.json`` içine
+        yazar. PIE ELF'te matcher'ın dosya ofsetini doğru hesaplaması için
+        gerekir (bkz. BytePatternMatcher._get_text_segment_info). Bulunamazsa
+        None: matcher eski davranışla (kayma 0) devam eder.
+        """
+        candidates: list[Path] = []
+        try:
+            static_dir = pc.workspace.get_stage_dir("static")
+            if isinstance(static_dir, (str, os.PathLike)):
+                candidates.append(Path(static_dir) / "ghidra_combined_results.json")
+                candidates.append(
+                    Path(static_dir) / "ghidra_output" / "combined_results.json",
+                )
+        except Exception:
+            logger.debug("FLIRT: static dizini alınamadı", exc_info=True)
+        if isinstance(functions_json, (str, os.PathLike)):
+            candidates.append(Path(functions_json).parent / "ghidra_combined_results.json")
+
+        for path in candidates:
+            try:
+                if not path.is_file():
+                    continue
+                with open(path, encoding="utf-8") as fh:
+                    data = json.load(fh)
+                info = data.get("program_info") or (data.get("summary") or {}).get("program") or {}
+                raw = info.get("image_base")
+                if raw:
+                    return int(str(raw), 16)
+            except (OSError, ValueError, TypeError, AttributeError):
+                continue
+        return None
 
     @staticmethod
     def _process_bp_result(*, bp_result: Any, bpm: Any, ctx: StepContext) -> dict[str, str]:

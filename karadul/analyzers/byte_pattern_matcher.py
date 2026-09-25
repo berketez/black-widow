@@ -57,6 +57,11 @@ class ByteMatchResult:
     total_functions: int = 0
     total_unknown: int = 0       # FUN_xxx sayisi
     total_matched: int = 0       # Byte pattern ile tanınan FUN_xxx sayisi
+    # FLIRT yükleme bug'ı (2026-09-25): "imza yüklendi ama hiçbir fonksiyonla
+    # karşılaştırılmadı" durumu dışarıdan görünmüyordu. PIE ELF'te tüm FUN_xxx
+    # dosya dışına düştüğü için taranan fonksiyon 0'dı ve bunu gösteren sayaç yoktu.
+    signatures_considered: int = 0  # Uzunluk filtresinden geçip eşleştirmeye giren imza
+    functions_scanned: int = 0      # Baytı okunup imzalarla karşılaştırılan FUN_xxx
     matches: dict[str, dict[str, Any]] = field(default_factory=dict)
     # matches: {original_name: {matched_name, library, confidence, category, purpose}}
     errors: list[str] = field(default_factory=list)
@@ -141,6 +146,8 @@ class BytePatternMatcher:
         binary_path: str | Path,
         functions_json: str | Path,
         known_signatures: list[Any],
+        *,
+        load_base: Optional[int] = None,
     ) -> ByteMatchResult:
         """FUN_xxx fonksiyonlarinin byte'larini bilinen signature'larla karsilastir.
 
@@ -148,6 +155,9 @@ class BytePatternMatcher:
             binary_path: Analiz edilen binary dosya yolu.
             functions_json: Ghidra functions.json dosya yolu.
             known_signatures: FLIRTSignature listesi (byte_pattern ve mask field'lari olan).
+            load_base: Ghidra program image base'i (``program_info.image_base``).
+                ELF'te Ghidra'nın PIE/ET_DYN için uyguladığı yükleme kaymasını
+                geri almak için kullanılır; None ise kayma yok sayılır.
 
         Returns:
             ByteMatchResult -- eslestirme sonuclari.
@@ -175,6 +185,7 @@ class BytePatternMatcher:
             logger.debug("BytePatternMatcher: Yeterli uzunlukta byte pattern yok, atlaniyor")
             result.duration_seconds = time.monotonic() - start
             return result
+        result.signatures_considered = len(byte_sigs)
 
         logger.info(
             "BytePatternMatcher: %d signature (>=%d byte pattern) ile eslestirme basliyor",
@@ -182,7 +193,9 @@ class BytePatternMatcher:
         )
 
         # 2. __TEXT segment offset bilgisini al (fat_offset dahil)
-        text_vmaddr, text_fileoff, fat_offset = self._get_text_segment_info(binary_path)
+        text_vmaddr, text_fileoff, fat_offset = self._get_text_segment_info(
+            binary_path, load_base=load_base,
+        )
         if text_vmaddr is None or text_fileoff is None:
             result.errors.append("__TEXT segment bilgisi alinamadi")
             result.duration_seconds = time.monotonic() - start
@@ -258,6 +271,7 @@ class BytePatternMatcher:
             result.duration_seconds = time.monotonic() - start
             return result
 
+        result.functions_scanned = len(func_names)
         if not func_names:
             result.duration_seconds = time.monotonic() - start
             return result
@@ -355,6 +369,7 @@ class BytePatternMatcher:
         known_signatures: list[Any],
         *,
         verify_crc: bool = True,
+        load_base: Optional[int] = None,
     ) -> ByteMatchResult:
         """FlirtTrieMatcher ile FUN_xxx eslestirmesi (v1.14 D2).
 
@@ -368,6 +383,7 @@ class BytePatternMatcher:
             functions_json: Ghidra functions.json yolu.
             known_signatures: FLIRTSignature listesi.
             verify_crc: Trie matcher CRC16 sekonder dogrulamasini calistirsin mi.
+            load_base: Ghidra program image base'i; bkz. ``match_unknown_functions``.
 
         Returns:
             ByteMatchResult -- linear path ile ayni format.
@@ -420,6 +436,7 @@ class BytePatternMatcher:
         if not patterns:
             result.duration_seconds = time.monotonic() - start
             return result
+        result.signatures_considered = len(patterns)
 
         # Pattern -> indeks (id() kullanmak yerine deterministik konum)
         # FlirtTrieMatcher.scan_binary FlirtMatch.pattern olarak ayni
@@ -434,7 +451,7 @@ class BytePatternMatcher:
 
         # __TEXT segment + dosya boyutu
         text_vmaddr, text_fileoff, fat_offset = self._get_text_segment_info(
-            binary_path
+            binary_path, load_base=load_base,
         )
         if text_vmaddr is None or text_fileoff is None:
             result.errors.append("__TEXT segment bilgisi alinamadi")
@@ -493,6 +510,7 @@ class BytePatternMatcher:
             result.duration_seconds = time.monotonic() - start
             return result
 
+        result.functions_scanned = len(func_names)
         if not func_names:
             result.duration_seconds = time.monotonic() - start
             return result
@@ -689,12 +707,18 @@ class BytePatternMatcher:
     # ------------------------------------------------------------------
 
     def _get_text_segment_info(
-        self, binary_path: Path
+        self, binary_path: Path, load_base: Optional[int] = None,
     ) -> tuple[Optional[int], Optional[int], int]:
         """__TEXT segment vmaddr, fileoff ve fat offset degerlerini bul.
 
         Universal (fat) binary ise ilk architecture'un slice offset'ini
         fat_offset olarak dondurur. Normal binary'ler icin fat_offset=0.
+
+        Args:
+            binary_path: Binary yolu.
+            load_base: Ghidra program image base'i. Yalnız ELF'te kullanılır:
+                vmaddr, functions.json adreslerinin bulunduğu Ghidra adres
+                uzayına taşınır (vmaddr += load_base - link image base).
 
         Returns:
             (vmaddr, fileoff, fat_offset) tuple.
@@ -709,7 +733,14 @@ class BytePatternMatcher:
         # `file_offset = addr - vmaddr + fileoff` ELF'te dogru offset'i verir.
         # ELF fat degildir -> fat_offset = 0. Mach-O yolu asagida DEGISMEDI.
         if self._is_elf(binary_path):
-            vmaddr, fileoff = self._parse_elf_text_segment(binary_path)
+            vmaddr, fileoff, link_base = self._parse_elf_load_segments(binary_path)
+            # FLIRT yükleme bug'ı (2026-09-25): PIE/ET_DYN'de Ghidra en düşük
+            # PT_LOAD'u image base'e (aarch64/x86-64'te 0x100000) koyar; örnek
+            # coreutils cat: FUN_00101700 -> dosya ofseti 0x1700, eski formül
+            # 0x101700 (dosya dışı) veriyordu ve HİÇBİR FUN_xxx taranmıyordu.
+            # ET_EXEC'te image base == link base -> kayma 0, davranış aynı.
+            if vmaddr is not None and load_base is not None and link_base is not None:
+                vmaddr += load_base - link_base
             return vmaddr, fileoff, 0
 
         # Fat offset'i bul (universal binary mi?)
@@ -953,13 +984,33 @@ class BytePatternMatcher:
         crash riski / subprocess maliyeti yok. Elf32/Elf64 + little/big
         endian desteklenir.
 
-        NOT (PIE/ET_DYN sinirlamasi): p_vaddr dosyanin kendi link-uzayindadir.
-        Ghidra ET_EXEC binary'yi kendi vaddr'inde yukler (delta 0, dogru).
-        ET_DYN/PIE'de Ghidra image base uygular; o durumda functions.json
-        adresleri image base kadar kayabilir. Bu ayri bir konudur (bkz. rapor).
+        NOT (PIE/ET_DYN): p_vaddr dosyanın kendi link uzayındadır. Ghidra
+        ET_EXEC binary'yi kendi vaddr'inde yükler (kayma 0). ET_DYN/PIE'de
+        image base uygular (örn. 0x100000); bu kayma
+        ``_get_text_segment_info(load_base=...)`` ile geri alınır.
 
         Returns:
             (p_vaddr, p_offset) veya parse edilemezse (None, None).
+        """
+        vaddr, off, _ = self._parse_elf_load_segments(binary_path)
+        return vaddr, off
+
+    # Ghidra ElfHeader.MAX_HEADERS_TO_CHECK_FOR_IMAGEBASE ile aynı sınır:
+    # link image base yalnız ilk 20 program header'daki PT_LOAD'lardan hesaplanır.
+    _ELF_IMAGEBASE_HEADER_LIMIT = 20
+
+    def _parse_elf_load_segments(
+        self, binary_path: Path
+    ) -> tuple[Optional[int], Optional[int], Optional[int]]:
+        """ELF program header'larından (exec p_vaddr, exec p_offset, link image base).
+
+        ``link image base`` = ilk 20 program header'daki PT_LOAD'ların en küçük
+        p_vaddr'ı. Ghidra'nın ``ElfHeader.getImageBase()``'i ile aynıdır (prelink
+        dışı). Ghidra bütün adresleri ``program image base - link image base``
+        kadar kaydırır (``ElfProgramBuilder.getImageBaseWordAdjustmentOffset``).
+
+        Returns:
+            Üç değer; parse edilemezse (None, None, None).
         """
         import struct
 
@@ -970,7 +1021,7 @@ class BytePatternMatcher:
             with open(binary_path, "rb") as f:
                 ident = f.read(16)
                 if len(ident) < 16 or ident[:4] != b"\x7fELF":
-                    return None, None
+                    return None, None, None
                 ei_class = ident[4]   # 1 = ELF32, 2 = ELF64
                 ei_data = ident[5]    # 1 = little, 2 = big endian
                 endian = ">" if ei_data == 2 else "<"
@@ -979,7 +1030,7 @@ class BytePatternMatcher:
                 if is64:
                     rest = f.read(48)  # Elf64_Ehdr byte 16..63
                     if len(rest) < 48:
-                        return None, None
+                        return None, None, None
                     e_phoff = struct.unpack_from(endian + "Q", rest, 16)[0]
                     e_phentsize = struct.unpack_from(endian + "H", rest, 38)[0]
                     e_phnum = struct.unpack_from(endian + "H", rest, 40)[0]
@@ -987,14 +1038,14 @@ class BytePatternMatcher:
                 else:
                     rest = f.read(36)  # Elf32_Ehdr byte 16..51
                     if len(rest) < 36:
-                        return None, None
+                        return None, None, None
                     e_phoff = struct.unpack_from(endian + "I", rest, 12)[0]
                     e_phentsize = struct.unpack_from(endian + "H", rest, 26)[0]
                     e_phnum = struct.unpack_from(endian + "H", rest, 28)[0]
                     ph_expected = 32
 
                 if e_phoff == 0 or e_phnum == 0:
-                    return None, None
+                    return None, None, None
                 # Bozuk dosya korumasi (Mach-O fat parse'taki nfat cap stili)
                 if e_phnum > 256:
                     e_phnum = 256
@@ -1004,8 +1055,9 @@ class BytePatternMatcher:
                 f.seek(e_phoff)
                 first_load: Optional[tuple[int, int]] = None
                 exec_load: Optional[tuple[int, int]] = None
+                link_base: Optional[int] = None
 
-                for _ in range(e_phnum):
+                for ph_index in range(e_phnum):
                     phdr = f.read(e_phentsize)
                     if len(phdr) < ph_expected:
                         break
@@ -1022,6 +1074,10 @@ class BytePatternMatcher:
 
                     if p_type != PT_LOAD:
                         continue
+                    if ph_index < self._ELF_IMAGEBASE_HEADER_LIMIT and (
+                        link_base is None or p_vaddr < link_base
+                    ):
+                        link_base = p_vaddr
                     if first_load is None:
                         first_load = (p_vaddr, p_offset)
                     if (p_flags & PF_X) and exec_load is None:
@@ -1029,22 +1085,23 @@ class BytePatternMatcher:
 
                 chosen = exec_load if exec_load is not None else first_load
                 if chosen is None:
-                    return None, None
+                    return None, None, None
 
                 vaddr, off = chosen
                 logger.debug(
                     "BytePatternMatcher: ELF exec PT_LOAD vaddr=0x%x offset=0x%x "
-                    "(ELF%d, %s-endian)",
-                    vaddr, off, 64 if is64 else 32,
+                    "link_base=0x%x (ELF%d, %s-endian)",
+                    vaddr, off, link_base if link_base is not None else 0,
+                    64 if is64 else 32,
                     "big" if endian == ">" else "little",
                 )
-                return vaddr, off
+                return vaddr, off, link_base
 
         except (OSError, struct.error) as e:
             logger.debug(
                 "BytePatternMatcher: ELF program header parse hatasi: %s", e,
             )
-            return None, None
+            return None, None, None
 
     # ------------------------------------------------------------------
     # Internal: JSON loading
