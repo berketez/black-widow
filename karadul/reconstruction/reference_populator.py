@@ -888,9 +888,9 @@ class ReferencePopulator:
                     logger.warning("Ghidra install dizini bulunamadi")
                     return None
 
-                from pyghidra.launcher import HeadlessPyGhidraLauncher
-                launcher = HeadlessPyGhidraLauncher(install_dir=ghidra_install)
-                launcher.start()
+                # Tek başlatıcı: headless VM argümanları (java.awt.headless dahil) orada.
+                from karadul.ghidra.headless import _ensure_pyghidra_started
+                _ensure_pyghidra_started(ghidra_install)
 
             with pyghidra.open_program(
                 binary_path=str(binary_path),

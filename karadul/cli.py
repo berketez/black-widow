@@ -1533,7 +1533,9 @@ def bsim_ingest(binary: str, db_name: str, config_path: Optional[str]) -> None:
 
     try:
         import pyghidra
-        pyghidra.start()
+
+        from karadul.ghidra.headless import _ensure_pyghidra_started
+        _ensure_pyghidra_started(Path(cfg.tools.ghidra_headless).parent.parent)
 
         with pyghidra.open_program(str(binary_path)) as flat_api:
             program = flat_api.getCurrentProgram()
@@ -1582,7 +1584,9 @@ def bsim_query(
 
     try:
         import pyghidra
-        pyghidra.start()
+
+        from karadul.ghidra.headless import _ensure_pyghidra_started
+        _ensure_pyghidra_started(Path(cfg.tools.ghidra_headless).parent.parent)
 
         with pyghidra.open_program(str(binary_path)) as flat_api:
             program = flat_api.getCurrentProgram()

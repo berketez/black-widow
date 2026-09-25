@@ -61,6 +61,12 @@ def _ensure_pyghidra_started(ghidra_install: Path) -> None:
     gc_threads = max(2, CPU_PERF_CORES)
     conc_threads = max(1, CPU_PERF_CORES // 2)
     launcher.add_vmargs(
+        # HeadlessPyGhidraLauncher bunu KENDİSİ vermiyor (VM argümanlarını yalnız
+        # launch.properties'ten okur, orada da yok). Olmazsa AWT'ye dokunan herhangi
+        # bir Java kodu macOS'ta LWCToolkit.initAppkit ile AppKit'in ana thread'de
+        # başlamasını bekler; ana thread Python'da bir kilitte beklediği için süreç
+        # kalıcı olarak kilitlenir (2026-09-25, .app hedefinde ölçüldü).
+        "-Djava.awt.headless=true",
         "-XX:+UseG1GC",
         f"-XX:ParallelGCThreads={gc_threads}",
         f"-XX:ConcGCThreads={conc_threads}",
