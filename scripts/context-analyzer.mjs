@@ -1086,7 +1086,9 @@ try {
   } else {
     // Scope class bulunamadi -- dogrudan node_modules'tan import et
     try {
-      const { Scope: S2 } = await import(new URL("./node_modules/@babel/traverse/lib/scope/index.js", import.meta.url).href);
+      // lib/scope/index.js CommonJS (`exports.default = Scope`): ESM import'ta sınıf `default.default` altında
+      const scopeMod = await import(new URL("./node_modules/@babel/traverse/lib/scope/index.js", import.meta.url).href);
+      const S2 = scopeMod.Scope ?? scopeMod.default?.default;
       if (S2?.prototype?.registerBinding) {
         const orig = S2.prototype.registerBinding;
         S2.prototype.registerBinding = function(kind, path, bindingPath) {
