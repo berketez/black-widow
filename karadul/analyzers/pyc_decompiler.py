@@ -26,16 +26,20 @@ dosya kısmi (MAKE_FUNCTION desteklenmiyor), 3.14 hiç desteklenmiyor.
 
 from __future__ import annotations
 
+import functools
 import logging
-import marshal
 import signal
 import struct
+import subprocess
+import sys
+import tempfile
+import time
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Sequence
 
-from karadul.core.safe_subprocess import resolve_tool, safe_run
+from karadul.core.safe_subprocess import resolve_tool, safe_env, safe_run
 
 logger = logging.getLogger(__name__)
 
@@ -359,6 +363,183 @@ def _decompile_with_pylib(
     return None
 
 
+# ---------------------------------------------------------------------------
+# stdlib dis yedeği: AYRI SÜREÇTE
+# ---------------------------------------------------------------------------
+# Yedek, .pyc gövdesini marshal.loads ile açmak zorunda. CPython belgesi marshal için
+# "hatalı ya da kötü niyetle kurulmuş veriye karşı güvenli değildir" der; eskiden bu
+# çağrı analiz sürecinin İÇİNDEYDİ. Artık ayrı bir yorumlayıcı (-I -S, safe_env)
+# çalıştırılır: zaman aşımı, bellek tavanı ve çıktı tavanı ebeveynde uygulanır, ana
+# süreç gövdeyi hiç unmarshal etmez. Kod yine ÇALIŞTIRILMAZ (yalnız dis).
+# Sınırlar 2026-09-25 ölçümüne dayanır (yerel 3.12 stdlib, 776 .pyc): en büyük dis
+# çıktısı 0,79 MB, en uzun süre 0,03 sn, tüm korpus tek süreçte 50 MB RSS.
+_DIS_CHILD_TIMEOUT = 60.0               # sn; çağıranın zaman aşımı daha kısaysa o geçerli
+_DIS_MAX_MEMORY_BYTES = 1024 ** 3       # alt süreç bellek tavanı (1 GiB)
+_DIS_MAX_OUTPUT_BYTES = 64 * 1024 ** 2  # disassembly metni tavanı; aşılırsa kesilir
+_DIS_POLL_INTERVAL = 0.05               # sn; zaman aşımı/bellek bekçisinin örnekleme aralığı
+
+# Alt süreç çıkış kodları (0 = tam çıktı).
+_DIS_RC_NOT_CODE = 3
+_DIS_RC_TRUNCATED = 4
+_DIS_TRUNCATED_MARKER = "# KARADUL: disassembly çıktı sınırında kesildi"
+
+# Alt süreçte çalışan betik (güvenilir kod, güvenilmeyen veri). Linux'ta bellek tavanı
+# RLIMIT_AS ile çocukta konur; macOS'ta setrlimit(RLIMIT_AS/RLIMIT_DATA) EINVAL döner
+# (bu makinede ölçüldü), orada ebeveyndeki bekçi (_process_memory_bytes) uygular.
+# Çıktı tekrarlanabilir: sabit hash tohumu (frozenset sırası) + iç içe code
+# nesnelerinin bellek adresleri (" at 0x...") silinir.
+_DIS_CHILD_SCRIPT = f"""
+import re, sys
+path, max_out, max_mem = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+try:
+    import resource
+    resource.setrlimit(resource.RLIMIT_AS, (max_mem, max_mem))
+except Exception:
+    pass
+import dis, marshal, types
+with open(path, "rb") as fh:
+    data = fh.read()
+code = marshal.loads(data[{_PYC_HEADER_SIZE_37}:])
+if not isinstance(code, types.CodeType):
+    sys.exit({_DIS_RC_NOT_CODE})
+out = sys.stdout.buffer
+
+_addr = re.compile(r" at 0x[0-9a-fA-F]+")
+
+class _Capped:
+    n = 0
+    def write(self, s):
+        b = _addr.sub("", s).encode("utf-8", "backslashreplace")
+        if self.n + len(b) > max_out:
+            raise OverflowError
+        self.n += len(b)
+        out.write(b)
+        return len(s)
+    def flush(self):
+        pass
+
+try:
+    dis.dis(code, file=_Capped())
+except OverflowError:
+    out.write(("\\n" + {_DIS_TRUNCATED_MARKER!r} + "\\n").encode("utf-8"))
+    out.flush()
+    sys.exit({_DIS_RC_TRUNCATED})
+out.flush()
+"""
+
+
+@functools.lru_cache(maxsize=1)
+def _libproc_rusage():
+    """macOS ``proc_pid_rusage`` + ``rusage_info_v0`` yapısı (yoksa None)."""
+    import ctypes
+
+    class _RusageInfoV0(ctypes.Structure):
+        _fields_ = [("ri_uuid", ctypes.c_uint8 * 16)] + [
+            (name, ctypes.c_uint64) for name in (
+                "ri_user_time", "ri_system_time", "ri_pkg_idle_wkups",
+                "ri_interrupt_wkups", "ri_pageins", "ri_wired_size",
+                "ri_resident_size", "ri_phys_footprint",
+                "ri_proc_start_abstime", "ri_proc_exit_abstime",
+            )
+        ]
+
+    try:
+        lib = ctypes.CDLL("/usr/lib/libSystem.B.dylib")
+        fn = lib.proc_pid_rusage
+    except (OSError, AttributeError):
+        return None
+    fn.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
+    fn.restype = ctypes.c_int
+    return fn, _RusageInfoV0
+
+
+def _process_memory_bytes(pid: int) -> Optional[int]:
+    """Çalışan alt sürecin fiziksel bellek kullanımı (bayt); ölçülemiyorsa None.
+
+    macOS: proc_pid_rusage (resident ile phys_footprint'in büyüğü); Linux:
+    /proc/<pid>/status VmRSS. Başka platformda yalnız zaman aşımı korur.
+    """
+    if sys.platform == "darwin":
+        api = _libproc_rusage()
+        if api is None:
+            return None
+        fn, info_cls = api
+        import ctypes
+        info = info_cls()
+        if fn(pid, 0, ctypes.byref(info)) != 0:  # 0 = RUSAGE_INFO_V0
+            return None
+        return int(max(info.ri_resident_size, info.ri_phys_footprint))
+    if sys.platform.startswith("linux"):
+        try:
+            with open(f"/proc/{pid}/status", "rb") as fh:
+                for line in fh:
+                    if line.startswith(b"VmRSS:"):
+                        return int(line.split()[1]) * 1024
+        except (OSError, ValueError, IndexError):
+            return None
+    return None
+
+
+def _stdlib_dis_isolated(pyc_path: Path, *, timeout: float) -> tuple[Optional[str], str]:
+    """``dis.dis(marshal.loads(...))``'i ayrı yorumlayıcıda çalıştır: (metin | None, durum).
+
+    Çıktı çalıştırmadan çalıştırmaya aynıdır (sabit hash tohumu, adressiz code repr).
+
+    Durum: ``ok`` | ``truncated`` (çıktı tavanında kesildi, sonunda işaret satırı var)
+    | ``not_code`` | ``timeout`` | ``memory`` | ``rc=N`` | ``no_interpreter`` | ``spawn:<hata>``.
+    """
+    if getattr(sys, "frozen", False) or not sys.executable:
+        # Donmuş uygulamada sys.executable bir yorumlayıcı değildir; süreç içi
+        # marshal.loads'a geri dönülmez.
+        return None, "no_interpreter"
+    # -s -S -P: kullanıcı site-packages'ı, site ve cwd sys.path'e girmez. -I (-E) yerine
+    # bu üçü: safe_env zaten PYTHON* taşımaz, PYTHONHASHSEED'in okunması gerekir.
+    cmd = [
+        sys.executable, "-s", "-S", "-P", "-c", _DIS_CHILD_SCRIPT,
+        str(pyc_path), str(_DIS_MAX_OUTPUT_BYTES), str(_DIS_MAX_MEMORY_BYTES),
+    ]
+    deadline = time.monotonic() + min(timeout, _DIS_CHILD_TIMEOUT)
+    with tempfile.TemporaryFile() as out_f:
+        try:
+            proc = subprocess.Popen(
+                cmd, stdin=subprocess.DEVNULL, stdout=out_f, stderr=subprocess.DEVNULL,
+                env=safe_env({"PYTHONHASHSEED": "0"}), close_fds=True, shell=False,
+            )
+        except OSError as exc:
+            return None, f"spawn:{type(exc).__name__}"
+        status = ""
+        try:
+            while True:
+                try:
+                    rc = proc.wait(timeout=_DIS_POLL_INTERVAL)
+                    break
+                except subprocess.TimeoutExpired:
+                    pass
+                if time.monotonic() > deadline:
+                    status = "timeout"
+                    break
+                used = _process_memory_bytes(proc.pid)
+                if used is not None and used > _DIS_MAX_MEMORY_BYTES:
+                    status = "memory"
+                    break
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait()
+        if status:
+            return None, status
+        if rc == _DIS_RC_NOT_CODE:
+            return None, "not_code"
+        if rc not in (0, _DIS_RC_TRUNCATED):
+            return None, f"rc={rc}"
+        out_f.seek(0)
+        raw = out_f.read(_DIS_MAX_OUTPUT_BYTES + 4096)
+    text, _ = _decode_tool_output(raw)
+    if not text.strip():
+        return None, "empty"
+    return text, "truncated" if rc == _DIS_RC_TRUNCATED else "ok"
+
+
 def _disassemble(
     pyc_path: Path,
     py_version: Optional[str],
@@ -373,7 +554,10 @@ def _disassemble(
        vendor/pycdc'ye kurar; verilmezse pycdas hiç bulunmaz ve farklı sürümlü
        .pyc'ler (stdlib dis kullanılamaz) "none"a düşer.
     2. stdlib ``dis`` -- yalniz .pyc surumu CALISAN Python ile uyumluysa
-       (marshal.loads farkli bytecode surumunde patlar).
+       (marshal biçimi sürüme bağlı). AYRI SÜREÇTE çalışır (bkz.
+       ``_stdlib_dis_isolated``). pycdas kuruluyken meşru .pyc'de bu yedeğe
+       düşülmüyor (ölçüm: 995/995 .pyc'de pycdas yetti); yedeğe düşüren, pycdas'ın
+       dökemediği içeriktir -- yani tam da güvenilmeyen veri.
     """
     # 1. pycdas
     pycdas = resolve_tool("pycdas", extra_paths=extra_paths)
@@ -396,29 +580,32 @@ def _disassemble(
         except Exception as exc:
             logger.debug("pycdas hatasi (%s): %s", pyc_path.name, exc)
 
-    # 2. stdlib dis (yalniz .pyc surumu CALISAN Python ile ayni major.minor ise)
+    # 2. stdlib dis (yalniz .pyc surumu CALISAN Python ile ayni major.minor ise),
+    #    ayrı süreçte. Ana süreç yalnız 4 baytlık magic'e bakar.
+    running = f"{sys.version_info.major}.{sys.version_info.minor}"
+    if py_version:
+        pv_parts = py_version.split(".")
+        pv_mm = ".".join(pv_parts[:2]) if len(pv_parts) >= 2 else py_version
+        if pv_mm != running:
+            return None  # surum uyusmuyor -> marshal bicimi farkli
     try:
-        import dis
-        import io
-        import sys
-        running = f"{sys.version_info.major}.{sys.version_info.minor}"
-        if py_version:
-            pv_parts = py_version.split(".")
-            pv_mm = ".".join(pv_parts[:2]) if len(pv_parts) >= 2 else py_version
-            if pv_mm != running:
-                return None  # surum uyusmuyor -> marshal.loads guvenilmez
-        body = pyc_path.read_bytes()
-        if not has_valid_pyc_header(body):
-            return None
-        code = marshal.loads(body[_PYC_HEADER_SIZE_37:])
-        buf = io.StringIO()
-        dis.dis(code, file=buf)
-        text = buf.getvalue()
-        if text.strip():
-            return text, "disasm"
-    except Exception as exc:
-        logger.debug("stdlib dis hatasi (%s): %s", pyc_path.name, exc)
-    return None
+        with open(pyc_path, "rb") as fh:
+            head = fh.read(4)
+    except OSError as exc:
+        logger.debug("stdlib dis: .pyc okunamadi (%s): %s", pyc_path.name, exc)
+        return None
+    if not has_valid_pyc_header(head):
+        return None
+    text, status = _stdlib_dis_isolated(pyc_path, timeout=timeout)
+    if text is None:
+        logger.debug("stdlib dis (alt surec) basarisiz (%s): %s", pyc_path.name, status)
+        return None
+    if status == "truncated":
+        logger.warning(
+            "stdlib dis ciktisi %d bayt sinirinda kesildi: %s",
+            _DIS_MAX_OUTPUT_BYTES, pyc_path.name,
+        )
+    return text, "disasm"
 
 
 def pycdc_available(extra_paths: Optional[Sequence[str]] = None) -> bool:
