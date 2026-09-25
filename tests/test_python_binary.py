@@ -1058,3 +1058,57 @@ class TestPycdcEntegrasyonu:
         base = {"total_pyc": 2, "decompiled": 0, "partial": 0, "disasm": 2, "failed": 0}
         assert "pycdc kurun" in _pyinstaller_note({**base, "pycdc_available": False})
         assert "pycdc kurun" not in _pyinstaller_note({**base, "pycdc_available": True})
+
+
+class TestDecompileZinciriPyzGuvenceleri:
+    """PYZ entegrasyonuyla _decompile_pyc_files'a eklenen iki güvence (2026-09-25)."""
+
+    @staticmethod
+    def _pyc(path: Path, src: str) -> Path:
+        import marshal
+        import sys
+        from karadul.analyzers.pyc_decompiler import repair_pyc_header
+        running = f"{sys.version_info.major}.{sys.version_info.minor}"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(repair_pyc_header(marshal.dumps(compile(src, "x.py", "exec")), running))
+        return path
+
+    def test_ayni_kok_adli_pycler_birbirini_ezmez(
+        self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path, monkeypatch
+    ):
+        """CArchive betiği 'app' ile PYZ modülü 'app' (ve harf farkı) ayrı çıktılara yazılır."""
+        from karadul.analyzers import pyc_decompiler as pd
+        from karadul.analyzers.packed_binary import ExtractedFile
+        monkeypatch.setattr(pd, "resolve_tool", lambda name, **k: None)  # stdlib dis
+        a = self._pyc(tmp_path / "extracted" / "app", "A = 1\n")
+        b = self._pyc(tmp_path / "extracted" / "PYZ.pyz_extracted" / "app.pyc", "B = 2\n")
+        c = self._pyc(tmp_path / "extracted" / "PYZ.pyz_extracted" / "App.pyc", "C = 3\n")
+        files = [ExtractedFile(path=p, original_name=p.name, file_type="pyc", size=1) for p in (a, b, c)]
+        summary = python_analyzer._decompile_pyc_files(files, tmp_path / "proj")
+        out = sorted(p.name for p in (tmp_path / "proj" / "source").iterdir())
+        assert out == ["App~3.disasm.txt", "app.disasm.txt", "app~2.disasm.txt"]
+        assert summary["disasm"] == 3
+
+    def test_tek_dosya_yazma_hatasi_zinciri_durdurmaz(
+        self, python_analyzer: PythonBinaryAnalyzer, tmp_path: Path, monkeypatch
+    ):
+        import karadul.analyzers.python_binary as pbin
+        from karadul.analyzers.packed_binary import ExtractedFile
+        from karadul.analyzers.pyc_decompiler import DecompileResult
+        calls: list[str] = []
+
+        def fake_decompile(pyc_path, out_dir, **kw):
+            calls.append(kw["out_stem"])
+            if kw["out_stem"] == "kotu":
+                raise OSError(63, "File name too long")
+            return DecompileResult(source_path=pyc_path, method="disasm", is_disassembly=True)
+
+        monkeypatch.setattr(pbin, "decompile_pyc", fake_decompile)
+        files = [
+            ExtractedFile(path=self._pyc(tmp_path / n, "x = 1\n"), original_name=n,
+                          file_type="pyc", size=1)
+            for n in ("kotu.pyc", "iyi.pyc")
+        ]
+        summary = python_analyzer._decompile_pyc_files(files, tmp_path / "proj")
+        assert calls == ["kotu", "iyi"]
+        assert summary["failed"] == 1 and summary["disasm"] == 1

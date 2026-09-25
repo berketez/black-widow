@@ -20,12 +20,14 @@ import subprocess
 import sys
 import tempfile
 import time
+import unicodedata
 import zlib
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any, Optional
 
+from karadul.analyzers.pyc_decompiler import repair_pyc_header, version_from_pyc_bytes
 from karadul.config import Config
 from karadul.core.safe_subprocess import resolve_tool, safe_run, safe_zlib_decompress
 
@@ -667,6 +669,610 @@ class PackingDetector:
 
 
 # ---------------------------------------------------------------------------
+# PyInstaller PYZ (ZlibArchive) okuyucu
+# ---------------------------------------------------------------------------
+#
+# Biçim PyInstaller kaynağından doğrulandı (2026-09-25): 6.15.0
+# archive/writers.py (ZlibArchiveWriter) + loader/pyimod01_archive.py
+# (ZlibArchiveReader); 5.13.2 ve 4.10 wheel'leri; 3.6 sdist.
+#
+#   [0:4]   b"PYZ\0"
+#   [4:8]   Python bytecode magic (paketi derleyen yorumlayıcının MAGIC_NUMBER'ı)
+#   [8:12]  TOC ofseti, struct "!i" (big-endian, işaretli), PYZ başına göre
+#   [12]    3.6-5.13: şifreleme bayrağı, struct "!B" (cipher is not None).
+#           6.x bu baytı yazmaz; yazıcı 17 baytı sıfırla ayırdığı için 0 kalır.
+#   girdi:  zlib.compress(marshal.dumps(code), 6). Şifreliyse IV(16) + AES
+#           (3.x PyCrypto CFB, 4.x-5.x tinyaes CTR). Şifreleme 6.0'da kaldırıldı.
+#   TOC:    marshal.dumps([(ad, (typecode, ofset, uzunluk)), ...]). Okuyucular
+#           dict(...) ile açar; burada liste de dict de kabul edilir.
+#
+# Güvenlik: TOC ``marshal.loads`` ile AÇILMAZ (CPython belgesi: güvenilmeyen
+# veride marshal kullanılmaz; TOC'ye konan bir code nesnesi süreç içinde
+# yaratılırdı). Yalnız TOC'nin kullandığı tipleri okuyan kısıtlı ayrıştırıcı
+# kullanılır. Girdi gövdeleri (code nesneleri) hiç unmarshal edilmez: yalnız
+# ilk baytın TYPE_CODE olduğuna bakılır, gövde .pyc olarak diske yazılır ve
+# pycdc/pycdas alt süreçte ayrıştırır. Kod hiçbir aşamada çalıştırılmaz.
+
+PYZ_MAGIC = b"PYZ\x00"
+_PYZ_HEADER_SIZE = 12          # magic(4) + python magic(4) + TOC ofseti(4)
+_PYZ_CRYPT_FLAG_OFFSET = 12    # 3.6-5.13 şifreleme bayrağı
+# 4.x-5.x: şifreleme anahtarı bu bootstrap modülüyle CArchive'e konur
+# (building/api.py PYZ.__init__, "Bundle the crypto key").
+_PYI_CRYPTO_KEY_MODULE = "pyimod00_crypto_key"
+
+# TOC typecode'ları (PyInstaller loader/pyimod01_archive.py)
+PYZ_ITEM_MODULE = 0
+PYZ_ITEM_PKG = 1
+PYZ_ITEM_DATA = 2              # <= 5.x; pkg_resources verisi, code değil
+PYZ_ITEM_NSPKG = 3             # PEP 420 namespace paketi
+_PYZ_CODE_TYPECODES = frozenset({PYZ_ITEM_MODULE, PYZ_ITEM_PKG, PYZ_ITEM_NSPKG})
+
+# Kısıtlı marshal ayrıştırıcı sınırları. Meşru TOC: liste > (ad, (tip, ofset,
+# uzunluk)) > int = 4 seviye; iç demetler 2 ve 3 öğeli; ofsetler 32 bit.
+_MARSHAL_FLAG_REF = 0x80
+_MARSHAL_TYPE_CODE = ord("c")
+_PYZ_TOC_MAX_DEPTH = 8
+_PYZ_TOC_MAX_INNER_ITEMS = 8
+_PYZ_TOC_MAX_LONG_DIGITS = 5   # 15 bitlik basamak -> 75 bit
+
+# zlib gövdesi bu dilimlerle beslenir; bozuk akışta hataya kadar üretilen
+# çıktı bütçeye yazılabilir. En kötü oran ~1032:1 -> sayılmayan iş <= ~16 MiB/girdi.
+_PYZ_INFLATE_CHUNK = 16 * 1024
+
+# Modül adı -> tek dosya adı. NAME_MAX 255 bayt; aşağı akışta eklenen en uzun
+# ek ".partial.py"/".disasm.txt" (11) + çakışma eki "~N". Pay bırakılmış sınır.
+_PYZ_MAX_NAME_BYTES = 200
+
+# PyInstaller'ın kendi modülleri (bootstrap/loader/runtime hook yardımcıları).
+_PYINSTALLER_MODULE_PREFIXES = ("pyimod", "pyiboot", "pyi_", "_pyi_")
+
+# sys.stdlib_module_names yalnız ÇALIŞAN yorumlayıcının listesidir; .pyc başka
+# sürümden olabilir. Sürümler arası farklar aşağıda (ilk var olduğu / ilk
+# olmadığı sürüm). Kaynak, 2026-09-25 ölçümü: 3.10.16, 3.11.16, 3.12.7, 3.14.7
+# yorumlayıcılarının sys.stdlib_module_names'i; 3.13 için CPython v3.13.7
+# Python/stdlib_module_names.h; 3.10'da kalkanlar yerel 3.9.6 stdlib dizini ile
+# 3.10 listesinin farkı. Tabloda olmayan ad için çalışan yorumlayıcının listesi
+# kullanılır.
+_STDLIB_ADDED_IN: dict[str, tuple[int, int]] = {
+    "_tokenize": (3, 11), "_typing": (3, 11), "tomllib": (3, 11),
+    "_pydatetime": (3, 12), "_pylong": (3, 12), "_sha2": (3, 12), "_wmi": (3, 12),
+    "_android_support": (3, 13), "_apple_support": (3, 13), "_colorize": (3, 13),
+    "_interpchannels": (3, 13), "_interpqueues": (3, 13), "_interpreters": (3, 13),
+    "_ios_support": (3, 13), "_opcode_metadata": (3, 13), "_pyrepl": (3, 13),
+    "_suggestions": (3, 13), "_sysconfig": (3, 13),
+    "_ast_unparse": (3, 14), "_hmac": (3, 14), "_py_warnings": (3, 14),
+    "_remote_debugging": (3, 14), "_types": (3, 14), "_zstd": (3, 14),
+    "annotationlib": (3, 14), "compression": (3, 14),
+}
+_STDLIB_REMOVED_IN: dict[str, tuple[int, int]] = {
+    "_bootlocale": (3, 10), "_peg_parser": (3, 10), "formatter": (3, 10),
+    "parser": (3, 10), "symbol": (3, 10),
+    "binhex": (3, 11),
+    "_bootsubprocess": (3, 12), "_sha256": (3, 12), "_sha512": (3, 12),
+    "asynchat": (3, 12), "asyncore": (3, 12), "distutils": (3, 12),
+    "imp": (3, 12), "smtpd": (3, 12),
+    "_crypt": (3, 13), "_msi": (3, 13), "aifc": (3, 13), "audioop": (3, 13),
+    "cgi": (3, 13), "cgitb": (3, 13), "chunk": (3, 13), "crypt": (3, 13),
+    "imghdr": (3, 13), "lib2to3": (3, 13), "mailcap": (3, 13), "msilib": (3, 13),
+    "nis": (3, 13), "nntplib": (3, 13), "ossaudiodev": (3, 13), "pipes": (3, 13),
+    "sndhdr": (3, 13), "spwd": (3, 13), "sunau": (3, 13), "telnetlib": (3, 13),
+    "uu": (3, 13), "xdrlib": (3, 13),
+    "_compression": (3, 14),
+}
+
+_TOC_PENDING = object()   # FLAG_REF ile ayrılmış ama henüz tamamlanmamış konteyner
+_TOC_NULL = object()      # marshal TYPE_NULL (yalnız dict sonu)
+
+
+class PyzFormatError(ValueError):
+    """PYZ başlığı ya da TOC'si çözülemedi; arşiv bütünüyle reddedilir."""
+
+
+class _TocMarshalReader:
+    """PYZ TOC'sinin kullandığı marshal alt kümesini okuyan kısıtlı ayrıştırıcı.
+
+    İzinli tipler: list, tuple, dict (yalnız en üstte), str, bytes, int, bool,
+    None ve FLAG_REF/TYPE_REF. code, float, set gibi başka her tip PyzFormatError verir;
+    hiçbir Python nesnesi yaratılmadan önce boyutlar kalan veriyle sınanır.
+    Referans sırası CPython marshal ile aynıdır: konteyner, çocuklarından önce
+    kaydedilir; kendine dönen (döngüsel) referans reddedilir.
+    """
+
+    def __init__(self, data: bytes, pos: int, max_top_items: int) -> None:
+        self._data = data
+        self._pos = pos
+        self._refs: list[Any] = []
+        self._max_top_items = max_top_items
+        self.truncated = False
+
+    def _take(self, n: int) -> bytes:
+        end = self._pos + n
+        if n < 0 or end > len(self._data):
+            raise PyzFormatError("TOC marshal verisi erken bitti")
+        chunk = self._data[self._pos:end]
+        self._pos = end
+        return chunk
+
+    def _i32(self) -> int:
+        return struct.unpack("<i", self._take(4))[0]
+
+    def _size(self, n: int) -> int:
+        # Her öğe ve karakter en az 1 bayt: kalan veriden büyük boyut sahtedir.
+        if n < 0 or n > len(self._data) - self._pos:
+            raise PyzFormatError("TOC marshal boyutu geçersiz: %d" % n)
+        return n
+
+    def _reserve(self, flag: int) -> Optional[int]:
+        if not flag:
+            return None
+        self._refs.append(_TOC_PENDING)
+        return len(self._refs) - 1
+
+    def _fill(self, slot: Optional[int], value: Any) -> None:
+        if slot is not None:
+            self._refs[slot] = value
+
+    def read(self, depth: int = 0) -> Any:
+        if depth > _PYZ_TOC_MAX_DEPTH:
+            raise PyzFormatError("TOC iç içe derinlik sınırı aşıldı")
+        code = self._take(1)[0]
+        flag = code & _MARSHAL_FLAG_REF
+        kind = chr(code & ~_MARSHAL_FLAG_REF)
+
+        if kind == "r":
+            idx = self._i32()
+            if not 0 <= idx < len(self._refs) or self._refs[idx] is _TOC_PENDING:
+                raise PyzFormatError("TOC marshal referansı geçersiz: %d" % idx)
+            return self._refs[idx]
+        if kind == "0":
+            return _TOC_NULL
+        if kind in "([)":
+            return self._read_sequence(kind, flag, depth)
+        if kind == "{":
+            return self._read_dict(flag, depth)
+
+        try:
+            if kind == "N":
+                value: Any = None
+            elif kind in "TF":
+                value = kind == "T"
+            elif kind == "i":
+                value = self._i32()
+            elif kind == "l":
+                value = self._read_long()
+            elif kind in "ut":
+                value = self._take(self._size(self._i32())).decode("utf-8", "surrogatepass")
+            elif kind in "aA":
+                value = self._take(self._size(self._i32())).decode("latin-1")
+            elif kind in "zZ":
+                value = self._take(self._take(1)[0]).decode("latin-1")
+            elif kind == "s":
+                value = self._take(self._size(self._i32()))
+            else:
+                raise PyzFormatError("TOC'de izin verilmeyen marshal tipi: %r" % kind)
+        except UnicodeDecodeError as exc:
+            raise PyzFormatError("TOC dizgesi çözülemedi: %s" % exc) from None
+        if flag:
+            self._refs.append(value)
+        return value
+
+    def _read_sequence(self, kind: str, flag: int, depth: int) -> Any:
+        n = self._size(self._take(1)[0] if kind == ")" else self._i32())
+        if depth > 0 and n > _PYZ_TOC_MAX_INNER_ITEMS:
+            raise PyzFormatError("TOC iç öğesi beklenenden büyük: %d" % n)
+        count = n
+        if depth == 0 and n > self._max_top_items:
+            self.truncated = True
+            count = self._max_top_items
+        slot = self._reserve(flag)
+        items = []
+        for _ in range(count):
+            item = self.read(depth + 1)
+            if item is _TOC_NULL:
+                raise PyzFormatError("TOC dizisinde beklenmeyen NULL")
+            items.append(item)
+        value: Any = items if kind == "[" else tuple(items)
+        self._fill(slot, value)
+        return value
+
+    def _read_dict(self, flag: int, depth: int) -> list[tuple[Any, Any]]:
+        # Eski TOC'ler dict olabilir; yalnız en üst düzeyde kabul edilir ve
+        # (anahtar, değer) çiftleri listesi olarak döner (liste TOC ile aynı biçim).
+        if depth != 0:
+            raise PyzFormatError("TOC'de iç içe dict beklenmiyor")
+        slot = self._reserve(flag)
+        pairs: list[tuple[Any, Any]] = []
+        while True:
+            key = self.read(depth + 1)
+            if key is _TOC_NULL:
+                break
+            if len(pairs) >= self._max_top_items:
+                self.truncated = True
+                break
+            value = self.read(depth + 1)
+            if value is _TOC_NULL:
+                raise PyzFormatError("TOC dict değeri NULL")
+            pairs.append((key, value))
+        self._fill(slot, pairs)
+        return pairs
+
+    def _read_long(self) -> int:
+        n = self._i32()
+        if abs(n) > _PYZ_TOC_MAX_LONG_DIGITS:
+            raise PyzFormatError("TOC tamsayısı çok büyük (%d basamak)" % n)
+        value = 0
+        for i in range(abs(n)):
+            digit = struct.unpack("<H", self._take(2))[0]
+            if digit >= 1 << 15:
+                raise PyzFormatError("TOC tamsayı basamağı aralık dışı")
+            value |= digit << (15 * i)
+        return -value if n < 0 else value
+
+
+@dataclass
+class PyzEntry:
+    """Doğrulanmış PYZ TOC girdisi (gövde henüz açılmadı)."""
+    name: str
+    typecode: int
+    offset: int
+    length: int
+
+
+@dataclass
+class PyzArchive:
+    """PYZ başlığı + TOC ayrıştırma sonucu."""
+    python_magic: bytes
+    python_version: Optional[str]      # magic bilinen bir sürüme karşılık geliyorsa
+    crypt_flag: int                    # başlığın 12. baytı (3.6-5.13'te 1 = şifreli)
+    entries: list[PyzEntry] = field(default_factory=list)
+    rejected: dict[str, int] = field(default_factory=dict)   # neden -> sayı
+    toc_truncated: bool = False
+
+    @property
+    def encrypted(self) -> bool:
+        return self.crypt_flag == 1
+
+
+def _bump(counter: dict[str, int], reason: str, n: int = 1) -> None:
+    counter[reason] = counter.get(reason, 0) + n
+
+
+def _is_safe_pyz_module_name(name: str) -> bool:
+    """Modül adı güvenle tek bir dosya adına (``<ad>.pyc``) çevrilebilir mi?
+
+    Her noktalı bileşen Python tanımlayıcısı olmalı. Tanımlayıcı '/', '\\',
+    NUL, boşluk içeremez ve boş olamaz; böylece '..', mutlak yol ve ayırıcı
+    içeren adlar dışarıda kalır. Windows ayrılmış adları mevcut CArchive
+    politikasıyla aynı şekilde reddedilir.
+    """
+    if not name:
+        return False
+    if len((name + ".pyc").encode("utf-8", "surrogatepass")) > _PYZ_MAX_NAME_BYTES:
+        return False
+    if not all(part.isidentifier() for part in name.split(".")):
+        return False
+    return not _is_windows_reserved(name + ".pyc")
+
+
+def _validate_pyz_toc_item(item: Any, data_len: int) -> tuple[Optional[PyzEntry], str]:
+    """TOC öğesini doğrula: (girdi, "") ya da (None, ret nedeni)."""
+    if not (isinstance(item, (tuple, list)) and len(item) == 2):
+        return None, "bad_toc_item"
+    name, meta = item
+    if not (isinstance(name, str) and isinstance(meta, (tuple, list)) and len(meta) == 3):
+        return None, "bad_toc_item"
+    # bool int'in alt sınıfı; tip tam olarak int olmalı.
+    if not all(type(v) is int for v in meta):
+        return None, "bad_toc_item"
+    typecode, offset, length = meta
+    if typecode == PYZ_ITEM_DATA:
+        return None, "data_entry"
+    if typecode not in _PYZ_CODE_TYPECODES:
+        return None, "unknown_typecode"
+    if not _is_safe_pyz_module_name(name):
+        return None, "unsafe_name"
+    if offset < 0 or length < 0 or offset + length > data_len:
+        return None, "bad_range"
+    return PyzEntry(name=name, typecode=typecode, offset=offset, length=length), ""
+
+
+def parse_pyz(data: bytes, *, max_entries: Optional[int] = None) -> PyzArchive:
+    """PYZ başlığını ve TOC'sini oku; gövdeleri AÇMAZ.
+
+    Args:
+        data: PYZ arşivinin tamamı.
+        max_entries: TOC girdi üst sınırı (varsayılan
+            ``PyInstallerExtractor.MAX_TOC_ENTRIES``); aşılırsa ilk ``max_entries``
+            girdi alınır ve ``toc_truncated`` işaretlenir.
+
+    Raises:
+        PyzFormatError: magic yok, TOC ofseti dosya dışında ya da TOC çözülemedi.
+    """
+    if max_entries is None:
+        max_entries = PyInstallerExtractor.MAX_TOC_ENTRIES
+    if len(data) < _PYZ_HEADER_SIZE or data[:4] != PYZ_MAGIC:
+        raise PyzFormatError("PYZ magic bulunamadı")
+    python_magic = bytes(data[4:8])
+    toc_offset = struct.unpack("!i", data[8:12])[0]
+    if not _PYZ_HEADER_SIZE <= toc_offset < len(data):
+        raise PyzFormatError("TOC ofseti dosya dışında: %d" % toc_offset)
+    # Bayrak baytı ancak TOC başlıktan sonra başlıyorsa başlığa aittir.
+    crypt_flag = data[_PYZ_CRYPT_FLAG_OFFSET] if toc_offset > _PYZ_CRYPT_FLAG_OFFSET else 0
+
+    reader = _TocMarshalReader(data, toc_offset, max_entries)
+    toc = reader.read()
+    if not isinstance(toc, (list, tuple)):
+        raise PyzFormatError("TOC liste ya da dict değil")
+
+    archive = PyzArchive(
+        python_magic=python_magic,
+        python_version=version_from_pyc_bytes(python_magic),
+        crypt_flag=crypt_flag,
+        toc_truncated=reader.truncated,
+    )
+    if reader.truncated:
+        logger.warning(
+            "PYZ TOC girdi sayısı %d sınırını aştı; ilk %d girdi alındı (DoS koruma)",
+            max_entries, max_entries,
+        )
+    index_by_name: dict[str, int] = {}
+    for item in toc:
+        entry, reason = _validate_pyz_toc_item(item, len(data))
+        if entry is None:
+            _bump(archive.rejected, reason)
+            continue
+        # PyInstaller TOC'yi dict(...) ile açar: aynı ad tekrar ederse sonraki kazanır.
+        if entry.name in index_by_name:
+            archive.entries[index_by_name[entry.name]] = entry
+            _bump(archive.rejected, "duplicate_name")
+            continue
+        index_by_name[entry.name] = len(archive.entries)
+        archive.entries.append(entry)
+    return archive
+
+
+def _inflate_pyz_entry(raw: bytes, limit: int) -> tuple[Optional[bytes], str, int]:
+    """zlib gövdesini en fazla ``limit`` bayta aç: (veri | None, ret nedeni, üretilen bayt).
+
+    ``safe_zlib_decompress`` ile aynı akışlı yöntem: ``max_length`` ile çıktı
+    ``limit + 1`` baytta kesilir, bomba belleği şişiremez. Farkı: bozuk akış ile
+    sınır aşımını ayrı raporlar ve reddedilen girdide harcanan açma işini de
+    döndürür (çağıran toplam bütçeden düşer). Gövde ``_PYZ_INFLATE_CHUNK``
+    dilimlerle beslenir; hata veren dilimin çıktısı sayılamaz.
+    """
+    decomp = zlib.decompressobj()
+    out = bytearray()
+    view = memoryview(raw)
+    try:
+        for start in range(0, len(view), _PYZ_INFLATE_CHUNK):
+            out += decomp.decompress(
+                view[start:start + _PYZ_INFLATE_CHUNK], limit + 1 - len(out),
+            )
+            if len(out) > limit or decomp.unconsumed_tail:
+                return None, "too_large", len(out)
+            if decomp.eof:
+                break  # akış sonrası artık bayt yok sayılır (zlib.decompress gibi)
+        out += decomp.flush()
+    except zlib.error:
+        return None, "corrupt_zlib", len(out)
+    if len(out) > limit:
+        return None, "too_large", len(out)
+    if not decomp.eof:
+        return None, "corrupt_zlib", len(out)   # kesik akış
+    return bytes(out), "", len(out)
+
+
+def _version_tuple(version: Optional[str]) -> Optional[tuple[int, int]]:
+    if not version:
+        return None
+    parts = version.split(".")
+    try:
+        return int(parts[0]), int(parts[1])
+    except (ValueError, IndexError):
+        return None
+
+
+def _is_stdlib_top_level(top: str, version: Optional[tuple[int, int]]) -> bool:
+    """``top`` hedef Python sürümünde stdlib üst düzey modülü mü?"""
+    target = version or (sys.version_info.major, sys.version_info.minor)
+    added = _STDLIB_ADDED_IN.get(top)
+    removed = _STDLIB_REMOVED_IN.get(top)
+    if added is not None or removed is not None:
+        return (added is None or target >= added) and (removed is None or target < removed)
+    return top in sys.stdlib_module_names
+
+
+def classify_pyz_module(name: str, python_version: Optional[str] = None) -> str:
+    """PYZ modülünün decompile politikası kategorisi.
+
+    - ``"pyinstaller"``: PyInstaller'ın kendi modülleri (pyimod*, pyiboot*, pyi_*, _pyi_*)
+    - ``"stdlib"``: hedef sürümün standart kütüphanesi (bkz. ``_is_stdlib_top_level``)
+    - ``"user"``: geri kalan her şey (uygulama + üçüncü parti) -> decompile zinciri
+
+    Yalnız ada bakar: stdlib ile aynı adı taşıyan bir kullanıcı modülü "stdlib"
+    sayılır (çıkarılır ve listelenir ama decompile edilmez).
+    """
+    top = name.split(".", 1)[0]
+    if top.startswith(_PYINSTALLER_MODULE_PREFIXES):
+        return "pyinstaller"
+    if _is_stdlib_top_level(top, _version_tuple(python_version)):
+        return "stdlib"
+    return "user"
+
+
+def unique_casefold_name(stem: str, used: set[str]) -> str:
+    """``stem``'i ``used`` içinde tekil yap: çakışırsa ``stem~N`` (N >= 2).
+
+    Karşılaştırma NFC + casefold ile yapılır: macOS/Windows dosya sistemleri
+    harf duyarsız, macOS ayrıca Unicode biçimini eşitler; "Foo" ile "foo" aynı
+    dosyaya yazılıp biri sessizce kaybolurdu. '~' tanımlayıcıda geçemediği için
+    ek, gerçek bir modül adıyla çakışmaz.
+    """
+    key = unicodedata.normalize("NFC", stem).casefold()
+    if key not in used:
+        used.add(key)
+        return stem
+    k = 2
+    while "%s~%d" % (key, k) in used:
+        k += 1
+    used.add("%s~%d" % (key, k))
+    return "%s~%d" % (stem, k)
+
+
+def _write_pyz_member(members_dir: Path, filename: str, payload: bytes) -> Optional[Path]:
+    """Tek bileşenli, doğrulanmış dosya adını ``members_dir`` altına yaz (symlink izlemez)."""
+    path = members_dir / filename
+    try:
+        fd = os.open(
+            str(path),
+            os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0),
+            0o644,
+        )
+    except OSError as exc:
+        logger.warning("PYZ modülü yazılamadı (%s): %s", filename, exc)
+        return None
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(payload)
+    except OSError as exc:
+        logger.warning("PYZ modülü yazılamadı (%s): %s", filename, exc)
+        return None
+    return path
+
+
+def extract_pyz_modules(
+    pyz_data: bytes,
+    members_dir: Path,
+    *,
+    archive_name: str,
+    max_total_size: int,
+    max_entries: Optional[int] = None,
+    max_entry_size: int = _MAX_PYINSTALLER_DECOMPRESS,
+    crypto_key_present: bool = False,
+) -> tuple[list[ExtractedFile], dict[str, Any]]:
+    """PYZ'deki code girdilerini başlığı onarılmış ``.pyc`` olarak ``members_dir``'e yaz.
+
+    Güvenilmeyen veri: TOC kısıtlı ayrıştırıcıyla okunur; girdi sayısı, tek girdi
+    ve toplam açılmış boyut sınırlanır; bozuk zlib/marshal girdisi atlanır ve
+    sayılır. Şifreli PYZ açılmaz, raporlanır.
+
+    Returns:
+        (ExtractedFile listesi, rapor). Her dosyanın metadata'sında
+        ``pyz_category`` (user/stdlib/pyinstaller) decompile politikasını taşır.
+    """
+    runtime = "%d.%d" % (sys.version_info.major, sys.version_info.minor)
+    report: dict[str, Any] = {
+        "archive": archive_name,
+        "python_magic": None,
+        "python_version": None,
+        "encrypted": False,
+        "encryption_evidence": [],
+        "toc_entries": 0,
+        "toc_truncated": False,
+        "modules_extracted": 0,
+        "bytes_inflated": 0,          # reddedilenlerde harcanan açma işi dahil
+        "rejected": {},
+        "stdlib_basis": {"runtime_python": runtime, "target_python": None},
+        "error": None,
+    }
+    try:
+        archive = parse_pyz(pyz_data, max_entries=max_entries)
+    except PyzFormatError as exc:
+        report["error"] = "PYZ okunamadı: %s" % exc
+        logger.warning("PYZ okunamadı (%s): %s", archive_name, exc)
+        return [], report
+
+    report["python_magic"] = archive.python_magic.hex()
+    report["python_version"] = archive.python_version
+    report["stdlib_basis"]["target_python"] = archive.python_version
+    report["toc_entries"] = len(archive.entries)
+    report["toc_truncated"] = archive.toc_truncated
+    rejected: dict[str, int] = dict(archive.rejected)
+    report["rejected"] = rejected
+    evidence: list[str] = report["encryption_evidence"]
+    if archive.crypt_flag not in (0, 1):
+        report["crypt_flag"] = archive.crypt_flag
+    if crypto_key_present:
+        evidence.append("CArchive'de pyimod00_crypto_key modülü var")
+
+    if archive.encrypted:
+        # TOC şifresiz (yalnız gövdeler şifreli): adlar yine de listelenir.
+        evidence.append("PYZ başlığında şifreleme bayrağı = 1")
+        report["encrypted"] = True
+        report["encrypted_module_names"] = [e.name for e in archive.entries]
+        _bump(rejected, "encrypted", len(archive.entries))
+        return [], report
+
+    if members_dir.is_symlink():
+        report["error"] = "PYZ çıktı dizini symlink, yazılmadı: %s" % members_dir
+        return [], report
+    members_dir.mkdir(parents=True, exist_ok=True)
+
+    version = archive.python_version
+    extracted: list[ExtractedFile] = []
+    used_names: set[str] = set()
+    # Toplam bütçe açılan HER baytı sayar (reddedilen girdide harcanan iş dahil):
+    # aksi halde binlerce "sınırı aşan" girdi, her biri limit kadar açılıp CPU'yu
+    # tüketebilirdi.
+    total = 0
+    for entry in archive.entries:
+        remaining = max_total_size - total
+        if remaining <= 0:
+            _bump(rejected, "total_limit")
+            continue
+        limit = min(max_entry_size, remaining)
+        raw = pyz_data[entry.offset:entry.offset + entry.length]
+        body, reason, produced = _inflate_pyz_entry(raw, limit)
+        total += produced
+        if body is None:
+            if reason == "too_large" and limit < max_entry_size:
+                # Bağlayıcı olan toplam bütçe (zip-bomb): bütçe bitti, kalanlar atlanır.
+                reason = "total_limit"
+                logger.warning(
+                    "PYZ toplam açılmış boyut sınırı (%d bayt) aşıldı; kalan girdiler atlanıyor",
+                    max_total_size,
+                )
+            _bump(rejected, reason)
+            continue
+        # Gövde bir code nesnesinin marshal'ı olmalı (FLAG_REF'li ya da değil).
+        # Unmarshal EDİLMEZ; tam ayrıştırma pycdc/pycdas alt sürecinde.
+        if not body or (body[0] & ~_MARSHAL_FLAG_REF) != _MARSHAL_TYPE_CODE:
+            _bump(rejected, "bad_marshal")
+            continue
+        repaired = repair_pyc_header(body, version)
+        payload = repaired if repaired is not None else body
+        path = _write_pyz_member(
+            members_dir, unique_casefold_name(entry.name, used_names) + ".pyc", payload,
+        )
+        if path is None:
+            _bump(rejected, "write_failed")
+            continue
+        extracted.append(ExtractedFile(
+            path=path,
+            original_name=entry.name,
+            file_type="pyc",
+            size=len(payload),
+            metadata={
+                "pyz_module": True,
+                "pyz_archive": archive_name,
+                "pyz_typecode": entry.typecode,
+                "is_package": entry.typecode in (PYZ_ITEM_PKG, PYZ_ITEM_NSPKG),
+                "pyz_category": classify_pyz_module(entry.name, version),
+                "pyc_header": "pyz_magic" if repaired is not None else "none",
+            },
+        ))
+
+    report["bytes_inflated"] = total
+    report["modules_extracted"] = len(extracted)
+    # Anahtar modülü var ama hiçbir gövde zlib olarak açılmadıysa: bayrağı
+    # silinmiş şifreli arşiv (başlık bayrağı olmadan çıkarım).
+    if crypto_key_present and not extracted and rejected.get("corrupt_zlib"):
+        evidence.append("hiçbir girdi zlib olarak açılmadı")
+        report["encrypted"] = True
+    return extracted, report
+
+
+# ---------------------------------------------------------------------------
 # PyInstallerExtractor
 # ---------------------------------------------------------------------------
 
@@ -798,8 +1404,21 @@ class PyInstallerExtractor:
             except Exception as exc:
                 errors.append("Entry cikartma hatasi (%s): %s" % (entry.get("name", "?"), exc))
 
-        # .pyc dosyalarini decompile etmeye calis
-        pyc_files = [ef for ef in extracted if ef.file_type == "pyc"]
+        # PYZ (ZlibArchive): kullanıcı modüllerinin çoğu buradadır; CArchive
+        # yalnız ham blobu verir, içindeki modüller ayrıca açılır.
+        crypto_key_present = any(
+            e.get("name") == _PYI_CRYPTO_KEY_MODULE for e in toc_entries
+        )
+        extracted.extend(
+            self._extract_pyz_archives(extracted, output_dir, crypto_key_present, errors)
+        )
+
+        # .pyc dosyalarini decompile etmeye calis. PYZ'nin stdlib/PyInstaller
+        # modülleri politika gereği yalnız çıkarılır (bkz. classify_pyz_module).
+        pyc_files = [
+            ef for ef in extracted
+            if ef.file_type == "pyc" and ef.metadata.get("pyz_category", "user") == "user"
+        ]
         if pyc_files:
             decompiled = self._try_decompile_pyc_files(pyc_files, output_dir)
             extracted.extend(decompiled)
@@ -814,6 +1433,63 @@ class PyInstallerExtractor:
             duration_seconds=duration,
             output_dir=output_dir,
         )
+
+    def _extract_pyz_archives(
+        self,
+        extracted: list[ExtractedFile],
+        output_dir: Path,
+        crypto_key_present: bool,
+        errors: list[str],
+    ) -> list[ExtractedFile]:
+        """CArchive'den çıkan PYZ bloblarını aç (``<ad>_extracted/`` altına).
+
+        Her PYZ'nin raporu kendi ExtractedFile'ının ``metadata["pyz"]`` alanına
+        yazılır. Toplam açılmış boyut bütçesi (``SecurityConfig.
+        max_archive_extract_size``) tüm PYZ arşivleri arasında paylaşılır.
+        """
+        members: list[ExtractedFile] = []
+        budget = self.config.security.max_archive_extract_size
+        output_root = output_dir.resolve()
+        for ef in list(extracted):
+            # CArchive 'z' girdisi (TOC_TYPES'ta "ZIPFILE"); içerik magic ile doğrulanır.
+            if ef.metadata.get("type_name") != "ZIPFILE":
+                continue
+            try:
+                pyz_data = ef.path.read_bytes()
+            except OSError as exc:
+                errors.append("PYZ okunamadı (%s): %s" % (ef.original_name, exc))
+                continue
+            if not pyz_data.startswith(PYZ_MAGIC):
+                continue
+            members_dir = ef.path.with_name(ef.path.name + "_extracted")
+            try:
+                members_dir.resolve().relative_to(output_root)
+            except ValueError:
+                errors.append("PYZ çıktı dizini çıktı kökü dışında: %s" % members_dir)
+                continue
+            try:
+                files, report = extract_pyz_modules(
+                    pyz_data, members_dir,
+                    archive_name=ef.original_name,
+                    max_total_size=budget,
+                    crypto_key_present=crypto_key_present,
+                )
+            except Exception as exc:  # beklenmeyen hata CArchive sonuçlarını düşürmesin
+                logger.debug("PYZ açma hatası (%s)", ef.original_name, exc_info=True)
+                errors.append("PYZ açma hatası (%s): %s" % (ef.original_name, exc))
+                continue
+            budget -= report["bytes_inflated"]
+            ef.metadata["pyz"] = report
+            if report["error"]:
+                errors.append(report["error"])
+            if report["encrypted"]:
+                errors.append(
+                    "PYZ şifreli (PyInstaller <6.0 bytecode şifrelemesi): "
+                    "%d modülün adı listelendi, içeriği çözülmedi (%s)"
+                    % (report["toc_entries"], ef.original_name)
+                )
+            members.extend(files)
+        return members
 
     @staticmethod
     def _parse_cookie(data: bytes, offset: int) -> dict[str, Any]:

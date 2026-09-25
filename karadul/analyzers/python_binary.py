@@ -38,6 +38,7 @@ from karadul.analyzers.pyc_decompiler import (
     repair_pyc_header,
     version_from_pyc_bytes,
 )
+from karadul.analyzers.packed_binary import PYZ_MAGIC, unique_casefold_name
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +54,8 @@ _PYINSTALLER_MAGIC = b"MEI\x0c\x0b\x0a\x0b\x0e"
 _MEIPASS_MARKER = b"_MEIPASS"
 
 # PYZ archive magic bytes (used inside PyInstaller archives)
-# "PYZ\0" header
-_PYZ_MAGIC = b"PYZ\x00"
+# "PYZ\0" header -- tek kaynak packed_binary.PYZ_MAGIC (PYZ okuyucusu orada).
+_PYZ_MAGIC = PYZ_MAGIC
 
 # --------------------------------------------------------------------------
 # cx_Freeze markers
@@ -132,6 +133,103 @@ def _pyinstaller_note(summary: dict[str, Any]) -> str:
     if failed:
         parts.append(f"{failed} tanesi çözülemedi")
     return "; ".join(parts) + "."
+
+
+# PYZ decompile politikası (manifest'te aynen görünür). Sınıflandırma:
+# packed_binary.classify_pyz_module.
+_PYZ_POLICY = (
+    "PYZ modülleri hedef Python sürümüne göre sınıflanır: stdlib "
+    "(sys.stdlib_module_names + sürüm farkı tablosu) ve PyInstaller iç modülleri "
+    "(pyimod*/pyiboot*/pyi_*/_pyi_*) yalnız çıkarılır ve listelenir; geri kalan "
+    "her modül (uygulama + üçüncü parti) decompile zincirine girer."
+)
+_PYZ_MODULES_FILE = "pyz_modules.json"
+
+
+def _pyz_summary(extracted_files: list, output_dir: Path) -> dict[str, Any]:
+    """PYZ açma sonucunu manifest için özetle; tam modül listesini dosyaya yaz.
+
+    Raporlar ``PyInstallerExtractor`` tarafından PYZ blobunun ExtractedFile
+    metadata'sına (``"pyz"``) konur; modüllerin kategorisi ``pyz_category``'dedir.
+    PYZ yoksa boş dict.
+    """
+    archives = [
+        ef.metadata["pyz"] for ef in extracted_files
+        if isinstance((getattr(ef, "metadata", None) or {}).get("pyz"), dict)
+    ]
+    if not archives:
+        return {}
+    members = [
+        ef for ef in extracted_files
+        if (getattr(ef, "metadata", None) or {}).get("pyz_module")
+    ]
+    by_category: dict[str, int] = {}
+    listing: list[dict[str, Any]] = []
+    for ef in members:
+        cat = ef.metadata.get("pyz_category", "user")
+        by_category[cat] = by_category.get(cat, 0) + 1
+        try:
+            rel = str(ef.path.relative_to(output_dir))
+        except ValueError:
+            rel = str(ef.path)
+        listing.append({
+            "name": ef.original_name,
+            "category": cat,
+            "archive": ef.metadata.get("pyz_archive"),
+            "typecode": ef.metadata.get("pyz_typecode"),
+            "is_package": ef.metadata.get("is_package", False),
+            "path": rel,
+            "size": ef.size,
+        })
+    (output_dir / _PYZ_MODULES_FILE).write_text(
+        json.dumps({"archives": archives, "modules": listing}, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    rejected: dict[str, int] = {}
+    for rep in archives:
+        for reason, n in (rep.get("rejected") or {}).items():
+            rejected[reason] = rejected.get(reason, 0) + n
+    versions = {rep.get("python_version") for rep in archives if rep.get("python_version")}
+    return {
+        "policy": _PYZ_POLICY,
+        "python_version": versions.pop() if len(versions) == 1 else None,
+        "modules_extracted": len(members),
+        "decompile_chain": by_category.get("user", 0),
+        "skipped_stdlib": by_category.get("stdlib", 0),
+        "skipped_pyinstaller": by_category.get("pyinstaller", 0),
+        "rejected": rejected,
+        "encrypted": any(rep.get("encrypted") for rep in archives),
+        # Şifreli arşivin ad listesi manifest'i şişirmesin: yalnız dosyada.
+        "archives": [
+            {k: v for k, v in rep.items() if k != "encrypted_module_names"}
+            for rep in archives
+        ],
+        "modules_list": _PYZ_MODULES_FILE,
+    }
+
+
+def _pyz_note(pyz: dict[str, Any]) -> str:
+    """Manifest notuna PYZ cümlesi (PYZ yoksa boş)."""
+    if not pyz:
+        return ""
+    if pyz.get("encrypted"):
+        return (
+            "PYZ şifreli (PyInstaller <6.0 bytecode şifrelemesi): modül adları "
+            f"{_PYZ_MODULES_FILE} içinde, içerik çözülmedi."
+        )
+    if all(rep.get("error") for rep in pyz.get("archives", [])):
+        return "PYZ okunamadı (ayrıntı extraction_errors içinde)."
+    msg = (
+        f"PYZ: {pyz['modules_extracted']} modül çıkarıldı; "
+        f"{pyz['decompile_chain']} tanesi decompile zincirine girdi, "
+        f"{pyz['skipped_stdlib']} stdlib ve {pyz['skipped_pyinstaller']} PyInstaller "
+        f"iç modülü yalnız listelendi ({_PYZ_MODULES_FILE})."
+    )
+    n_rejected = sum(pyz.get("rejected", {}).values())
+    if n_rejected:
+        msg += f" {n_rejected} PYZ girdisi reddedildi (nedenleri manifest'te)."
+    return msg
 
 
 def _vendor_tool_paths() -> list[str] | None:
@@ -362,6 +460,7 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         extracted_count = 0
         extract_errors: list[str] = []
         decompile_summary: dict[str, Any] = {}
+        pyz: dict[str, Any] = {}
 
         # Surum static asamada tespit edildi (paketleyiciler .pyc header'ini siyirabilir).
         pv_info = workspace.load_json("static", "python_version")
@@ -376,9 +475,18 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 )
                 extracted_count = len(unpack.extracted_files)
                 extract_errors = list(unpack.errors)
+                pyz = _pyz_summary(unpack.extracted_files, output_dir)
+                # PYZ başlığındaki bytecode magic derleyen yorumlayıcının kendisidir;
+                # static aşamanın sezgisel tespitinden önce gelir.
+                py_version = pyz.get("python_version") or detected_version
+                # Politika: PYZ'nin stdlib/PyInstaller modülleri zincire girmez.
+                chain = [
+                    ef for ef in unpack.extracted_files
+                    if (getattr(ef, "metadata", None) or {}).get("pyz_category", "user") == "user"
+                ]
                 # .pyc -> .py: header onar + deterministik decompile (LLM'siz zincir).
                 decompile_summary = self._decompile_pyc_files(
-                    unpack.extracted_files, output_dir, py_version=detected_version,
+                    chain, output_dir, py_version=py_version,
                 )
             except Exception as exc:
                 logger.debug("PyInstaller extraction basarisiz: %s", exc, exc_info=True)
@@ -412,9 +520,10 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             },
             "extracted_count": extracted_count,
             "decompile": decompile_summary,
+            "pyz": pyz,
             "extraction_errors": extract_errors,
             "note": (
-                _pyinstaller_note(decompile_summary)
+                " ".join(filter(None, (_pyinstaller_note(decompile_summary), _pyz_note(pyz))))
                 if packer in ("pyinstaller", "cx_freeze") else
                 f"Paketleyici '{packer}': .pyc extraction yalnizca PyInstaller ve cx_Freeze "
                 "icin destekli (Nuitka native derler -> .pyc yok, decompile edilemez)."
@@ -558,6 +667,9 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
         summary["pycdc_available"] = pycdc_available(extra)
         timeout = float(getattr(self.config.timeouts, "subprocess", 120.0))
 
+        # Farklı dizinlerden gelen aynı adlı .pyc'ler (CArchive betiği "app" ile PYZ
+        # modülü "app"; harf duyarsız FS'de "Foo"/"foo") source/ altında birbirini ezmesin.
+        used_stems: set[str] = set()
         for ef in pyc_files:
             try:
                 body = ef.path.read_bytes()
@@ -571,6 +683,7 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             # çıktı adına sızar. Yalnız ".pyc" soyulur.
             name = ef.path.name
             out_stem = name[:-4] if name.endswith(".pyc") and len(name) > 4 else name
+            out_stem = unique_casefold_name(out_stem, used_stems)
 
             repaired = repair_pyc_header(body, global_version)
             if repaired is not None and repaired != body:
@@ -584,11 +697,17 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             else:
                 target_pyc = ef.path
 
-            res = decompile_pyc(
-                target_pyc, source_dir,
-                py_version=global_version, timeout=timeout, extra_paths=extra,
-                out_stem=out_stem,
-            )
+            try:
+                res = decompile_pyc(
+                    target_pyc, source_dir,
+                    py_version=global_version, timeout=timeout, extra_paths=extra,
+                    out_stem=out_stem,
+                )
+            except OSError as exc:
+                # Tek dosyanın yazma hatası (ör. ad uzunluğu) kalan .pyc'leri düşürmesin.
+                logger.debug("decompile yazma hatasi (%s): %s", ef.path.name, exc)
+                summary["failed"] += 1
+                continue
             summary["methods"][res.method] = summary["methods"].get(res.method, 0) + 1
             if res.success:
                 summary["decompiled"] += 1
