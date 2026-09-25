@@ -1102,9 +1102,11 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             end = start + e["data_length"]
             if e["data_length"] <= 0 or end > len(data):
                 continue
-            blob: bytes | None = data[start:end]
-            if e["is_compressed"]:
-                blob = safe_zlib_decompress(blob, max_size=_MAX_PYINSTALLER_DECOMPRESS)
+            raw_entry = data[start:end]
+            blob = (
+                safe_zlib_decompress(raw_entry, max_size=_MAX_PYINSTALLER_DECOMPRESS)
+                if e["is_compressed"] else raw_entry
+            )
             if not blob or not blob.startswith(PYZ_MAGIC):
                 continue
             try:

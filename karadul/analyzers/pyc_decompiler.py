@@ -214,7 +214,7 @@ _PYLIB_FAILURE_MARKERS = (
 # Decompile katmanlari
 # ---------------------------------------------------------------------------
 
-def _decode_tool_output(data: object) -> tuple[str, Optional[str]]:
+def _decode_tool_output(data: bytes | bytearray | str | None) -> tuple[str, Optional[str]]:
     """Harici araç çıktısını UTF-8 çöz: (metin, sorun). Geçersiz bayt U+FFFD olur.
 
     pycdc/pycdas string sabitlerini ham bayt olarak basar; yalnız vekil karakter
@@ -225,7 +225,7 @@ def _decode_tool_output(data: object) -> tuple[str, Optional[str]]:
         return "", None
     if isinstance(data, str):
         return data, None
-    raw = bytes(data)  # type: ignore[arg-type]
+    raw = bytes(data)
     try:
         return raw.decode("utf-8"), None
     except UnicodeDecodeError as exc:
@@ -631,8 +631,8 @@ def _disassemble(
         return None
     if not has_valid_pyc_header(head):
         return None
-    text, status = _stdlib_dis_isolated(pyc_path, timeout=timeout)
-    if text is None:
+    dis_text, status = _stdlib_dis_isolated(pyc_path, timeout=timeout)
+    if dis_text is None:
         logger.debug("stdlib dis (alt surec) basarisiz (%s): %s", pyc_path.name, status)
         return None
     if status == "truncated":
@@ -640,7 +640,7 @@ def _disassemble(
             "stdlib dis ciktisi %d bayt sinirinda kesildi: %s",
             _DIS_MAX_OUTPUT_BYTES, pyc_path.name,
         )
-    return text, "disasm"
+    return dis_text, "disasm"
 
 
 def pycdc_available(extra_paths: Optional[Sequence[str]] = None) -> bool:
