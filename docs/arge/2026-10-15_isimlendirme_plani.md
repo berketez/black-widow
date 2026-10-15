@@ -10,7 +10,7 @@
 
 | Ölçü | Hedef |
 |---|---|
-| Yakın isim (amacı doğru anlatan) | Model katmanı dahil **≥ %70**; LLM'siz **≥ %35** |
+| Yakın isim (amacı doğru anlatan) | Model katmanı dahil **≥ %70**; LLM'siz hedef **%50**, alt sınır (kapı) **%35** |
 | Tam isim (özgün adın kendisi) | **≥ %15** |
 | Yanlış isim (gevşek ölçütle de yanlış) | Verilen isimlerin **≤ %10**'u |
 
@@ -93,7 +93,7 @@ Ek bulgular:
 | G17 | **Tip ipuçları:** FORTIFY boyutundan `char[N]`. Zaman kalırsa ters güç azaltmayla `T a[N]`. | Örnekler |
 | G18 | **Entegrasyon:** `c_namer`'a sıralı bağlama. İsim türü etiketi (kesin / tarif / ipucu / model) çıktıya ve arayüze taşınır; güven değeri ölçülmüş kesinlikten gelir. `output_formatter`'ın her isme 1.0 güven yazma hatası düzeltilir. | Uçtan uca koşu |
 | G19 | **Bilinen hatalar:** kripto sahte pozitifi (değer kümesi + veri bölümü), boş çıktıda sahte başarı, elle verilen isimlerin uygulanmaması (MAJOR-1), ölü değişken adı koruması. | Hata başına test |
-| G20 | **Kapı 2:** LLM'siz **≥ %35 yakın**, **≥ %10 tam**. | Karar |
+| G20 | **Kapı 2:** LLM'siz **≥ %35 yakın** (hedef %50), **≥ %10 tam**. | Karar |
 
 ### Hafta 5: model katmanı (çekirdek)
 
@@ -136,8 +136,18 @@ Ek bulgular:
 | Kapı | Ölçüt | Tutmazsa |
 |---|---|---|
 | G10 | LLM'siz ≥ %25 yakın, < %10 yanlış | En çok kaybettiren kural sınıfı bulunur; Hafta 3 bir hafta kayar |
-| G20 | LLM'siz ≥ %35 yakın, ≥ %10 tam | LLM'siz hedef makalede ölçülen değere çekilir; model katmanına ağırlık verilir |
+| G20 | LLM'siz ≥ %35 yakın, ≥ %10 tam (hedef %50) | %35 altıysa LLM'siz hedef makalede ölçülen değere çekilir ve model katmanına ağırlık verilir. %35-50 arasıysa §4.1'deki iki kaldıraçta bir hafta daha çalışılır |
 | G30 | Model dahil %60-70 yakın | Model, istem ya da kanıt paketi gözden geçirilir; hedef yeniden konuşulur |
+
+### 4.1 LLM'siz %50 için ne gerekiyor (Berke'nin hedefi, 2026-10-15)
+
+| Kaldıraç | Bugün | Gereken |
+|---|---|---|
+| Alan → doğru tarif dönüşümü (nesne kaynakları: sabit argüman, modül öneki, veri tablosundaki sınıf, çağıranın nesnesi) | Tarif isimlerinin ~%40'ı yalnız alan | Yarıya inmesi: doğru tarif oranı ~%55'ten ~%75'e |
+| Kapsam (yayılım v2, M4 veri tabloları, log kuralı) | İsim bekleyenlerin %10-20'si isimli | %65-70 |
+| Program türü | tmux türü: log'unda kendi adı var; htop türü: fonksiyonlar tablolardan çağrılıyor | htop türünde M4 tutmazsa %50 zor |
+
+Bu iki kaldıraç birlikte tutarsa %50'ye ulaşılır. Hangisinin ne kadar katkı verdiği her ölçüm turunda ayrı raporlanır.
 
 ## 5. Riskler
 
