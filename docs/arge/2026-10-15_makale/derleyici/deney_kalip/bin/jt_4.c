@@ -1,0 +1,7 @@
+extern int h0(int); extern int h1(int); extern int h2(int); extern int h3(int);
+int d(int op,int v){switch(op){
+case 0: return h0(v);
+case 1: return h1(v);
+case 2: return h2(v);
+case 3: return h3(v);
+default: return -1;}}
