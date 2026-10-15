@@ -172,4 +172,6 @@ Bu iki kaldıraç birlikte tutarsa %50'ye ulaşılır. Hangisinin ne kadar katk�
 
 | Gün | Durum | Not |
 |---|---|---|
-| — | Plan v1 yazıldı | 2026-10-15 |
+| — | Plan v1 yazıldı; LLM'siz hedef %50 (kapı %35) | 2026-10-15 |
+| G1 | Test seti kurası çekildi ve kilitlendi (337c4d5 → 1bc05ec); etiket rehberi depoda. İkili sabitleme ajanı çalışıyor | 2026-10-15 |
+| G2 | Tarif paketi depoda (ff8abc6), 10 test, 4 mutant yakalandı; hatta bağlı değil. tmux: 386 isim + 487 ipucu; htop: 47 isim | 2026-10-15 |
