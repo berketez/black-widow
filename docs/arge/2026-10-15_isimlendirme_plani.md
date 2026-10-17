@@ -1,5 +1,7 @@
 # Karadul isimlendirme planı: gevşek mod, 8 hafta
 
+> **Not (2026-10-17):** Bu plan v2 ile değişti: `2026-10-17_plan_v2.md`. G1 ve G2 tamamlandı; v1'in htop taban sayıları geçersiz (htop Go programı sanılıyordu, v2 §2).
+
 - **Tarih:** 2026-10-15
 - **Durum:** Plan v1. Derleyici sentez belgesi (`2026-10-15_makale/derleyici_sentez.md`) gelince v2'ye güncellenecek.
 - **Karar sahibi:** Berke. Plandaki her eşik ölçümle sınanır. Tutmayan eşikte zorlamak yerine plan yeniden kurulur.
