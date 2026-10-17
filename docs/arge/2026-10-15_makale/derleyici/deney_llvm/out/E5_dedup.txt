@@ -1,0 +1,34 @@
+== dedup -O0
+0000000100000000 T __mh_execute_header
+00000001000004f8 T _same1
+0000000100000518 T _same2
+0000000100000538 T _main
+0000000100000620 t _ssame1
+0000000100000640 t _ssame2
+0000000100008000 D _fp1
+0000000100008008 D _fp2
+== dedup -O2
+0000000100000000 T __mh_execute_header
+00000001000004f8 T _same1
+0000000100000508 T _same2
+0000000100000518 T _main
+00000001000005bc t _ssame1
+00000001000005bc t _ssame2
+0000000100008000 D _fp1
+0000000100008008 D _fp2
+== -O2 -Wl,-no_deduplicate
+0000000100000000 T __mh_execute_header
+00000001000004f8 T _same1
+0000000100000508 T _same2
+0000000100000518 T _main
+00000001000005bc t _ssame1
+00000001000005cc t _ssame2
+0000000100008000 D _fp1
+0000000100008008 D _fp2
+-O0 link satırı: "-lto_library" "-no_deduplicate" "-platform_version" "-O0" 
+-O1 link satırı: "-lto_library" "-no_deduplicate" "-platform_version" "-O1" 
+-O2 link satırı: "-lto_library" "-platform_version" "-O2" 
+-Os link satırı: "-lto_library" "-platform_version" "-Os" 
+-Oz link satırı: "-lto_library" "-platform_version" "-Oz" 
+-O2 sadece link (.o'dan): 0
+argümansız (derle+bağla): 1

@@ -1,0 +1,19 @@
+== debian-9.4-3/cat
+  Type:                              DYN (Shared object file)
+.plt .text .eh_frame_hdr .eh_frame .got .gnu_debuglink 
+  0x000000006ffffffb (FLAGS_1)      PIE 
+GNU_RELRO 
+  GNU                  0x00000014	NT_GNU_BUILD_ID (unique build ID bitstring)
+    Build ID: f43ed4045027eb8cbaa541f27ca243e6bb2e0371
+  dynsym FUNC:       60
+  _chk importlari: __printf_chk@GLIBC_2.17 __stack_chk_fail@GLIBC_2.17 __fprintf_chk@GLIBC_2.17 
+== ubuntu-9.4-3ubuntu6/cat
+  Type:                              DYN (Shared object file)
+.plt .text .eh_frame_hdr .eh_frame .got .gnu_debuglink 
+  0x000000000000001e (FLAGS)        BIND_NOW 
+  0x000000006ffffffb (FLAGS_1)      NOW PIE 
+GNU_RELRO 
+  GNU                  0x00000014	NT_GNU_BUILD_ID (unique build ID bitstring)
+    Build ID: 3592cdb04252a792fddabf525ccd415ab19e4848
+  dynsym FUNC:       58
+  _chk importlari: __printf_chk@GLIBC_2.17 __stack_chk_fail@GLIBC_2.17 __memset_chk@GLIBC_2.17 __fprintf_chk@GLIBC_2.17 __memmove_chk@GLIBC_2.17 

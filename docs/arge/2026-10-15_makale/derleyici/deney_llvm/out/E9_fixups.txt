@@ -1,0 +1,67 @@
+   1             cmd LC_DYSYMTAB
+   1           cmd LC_LOAD_DYLIB
+   1           cmd LC_LOAD_DYLINKER
+   1        cmd LC_MAIN
+   1       cmd LC_BUILD_VERSION
+   1       cmd LC_CODE_SIGNATURE
+   1       cmd LC_DATA_IN_CODE
+   1       cmd LC_DYLD_CHAINED_FIXUPS
+   1       cmd LC_DYLD_EXPORTS_TRIE
+   1       cmd LC_FUNCTION_STARTS
+   4       cmd LC_SEGMENT_64
+   1       cmd LC_SOURCE_VERSION
+   1      cmd LC_SYMTAB
+   1      cmd LC_UUID
+== fixups
+out/abi_O2 [arm64]:
+    -fixups:
+        segment         section          address             type   target
+        __DATA_CONST    __got            0x100004000           bind  libSystem/___stack_chk_fail
+        __DATA_CONST    __got            0x100004008           bind  libSystem/___stack_chk_guard
+        __DATA_CONST    __got            0x100004010           bind  libSystem/___strcpy_chk
+        __DATA_CONST    __got            0x100004018           bind  libSystem/_printf
+        __DATA_CONST    __got            0x100004020           bind  libSystem/_strlen
+== fixup_chains
+out/abi_O2 [arm64]:
+    -fixup_chains:
+      fixups_version:   0x00000000
+      starts_offset:    0x00000020
+      imports_offset:   0x00000050
+      symbols_offset:   0x00000064
+      imports_count:    5
+      imports_format:   1 (DYLD_CHAINED_IMPORT)
+      symbols_format:   0
+        seg[2]:
+          page_size:       0x4000
+          pointer_format:  6 (DYLD_CHAINED_PTR_64_OFFSET)(generic 64-bit, 4-byte stride, target vmoffset)
+          segment_offset:  0x00004000
+          max_pointer:     0x00000000
+          pages:         1
+             start[ 0]:  0x0000
+== stubs
+out/abi_O2:
+Contents of (__TEXT,__stubs) section
+0000000100000680	adrp	x16, 4 ; 0x100004000
+0000000100000684	ldr	x16, [x16]
+0000000100000688	br	x16
+000000010000068c	adrp	x16, 4 ; 0x100004000
+0000000100000690	ldr	x16, [x16, #0x10]
+0000000100000694	br	x16
+0000000100000698	adrp	x16, 4 ; 0x100004000
+000000010000069c	ldr	x16, [x16, #0x18]
+00000001000006a0	br	x16
+00000001000006a4	adrp	x16, 4 ; 0x100004000
+00000001000006a8	ldr	x16, [x16, #0x20]
+00000001000006ac	br	x16
+100000680: 90000030    	adrp	x16, 0x100004000 <_strlen+0x100004000>
+100000684: f9400210    	ldr	x16, [x16]
+100000688: d61f0200    	br	x16
+10000068c: 90000030    	adrp	x16, 0x100004000 <_strlen+0x100004000>
+100000690: f9400a10    	ldr	x16, [x16, #0x10]
+100000694: d61f0200    	br	x16
+100000698: 90000030    	adrp	x16, 0x100004000 <_strlen+0x100004000>
+10000069c: f9400e10    	ldr	x16, [x16, #0x18]
+1000006a0: d61f0200    	br	x16
+1000006a4: 90000030    	adrp	x16, 0x100004000 <_strlen+0x100004000>
+1000006a8: f9401210    	ldr	x16, [x16, #0x20]
+1000006ac: d61f0200    	br	x16

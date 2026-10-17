@@ -1,0 +1,54 @@
+== s_plain  boyut=33528
+  nm: T:__mh_execute_header T:_g_api T:_g_unused T:_main t:_ni U:_printf 
+  stab(N_OSO/N_FUN vs.): 0
+  exports: symbol __mh_execute_header _g_api _g_unused _main 
+  function_starts: 4
+  codesign: 
+== s_g  boyut=34064
+  nm: T:__mh_execute_header T:_g_api T:_g_unused T:_main t:_ni U:_printf 
+  stab(N_OSO/N_FUN vs.): 21
+  exports: symbol __mh_execute_header _g_api _g_unused _main 
+  function_starts: 4
+  codesign: 
+== s_Wlx  boyut=33512
+  nm: T:__mh_execute_header T:_g_api T:_g_unused T:_main U:_printf 
+  stab(N_OSO/N_FUN vs.): 0
+  exports: symbol __mh_execute_header _g_api _g_unused _main 
+  function_starts: 4
+  codesign: 
+== s_WlS  boyut=33528
+  nm: T:__mh_execute_header T:_g_api T:_g_unused T:_main t:_ni U:_printf 
+  stab(N_OSO/N_FUN vs.): 0
+  exports: symbol __mh_execute_header _g_api _g_unused _main 
+  function_starts: 4
+  codesign: 
+== s_deadstrip  boyut=33448
+  nm: T:__mh_execute_header T:_main t:_ni U:_printf 
+  stab(N_OSO/N_FUN vs.): 0
+  exports: symbol __mh_execute_header _main 
+  function_starts: 2
+  codesign: 
+== s_strip  boyut=33464
+  nm: T:__mh_execute_header U:_printf 
+  stab(N_OSO/N_FUN vs.): 1
+  exports: symbol __mh_execute_header 
+  function_starts: 4
+  codesign: 
+== s_stripx  boyut=33544
+  nm: T:__mh_execute_header T:_g_api T:_g_unused T:_main U:_printf 
+  stab(N_OSO/N_FUN vs.): 1
+  exports: symbol __mh_execute_header _g_api _g_unused _main 
+  function_starts: 4
+  codesign: 
+== s_stripS  boyut=33528
+  nm: T:__mh_execute_header T:_g_api T:_g_unused T:_main t:_ni U:_printf 
+  stab(N_OSO/N_FUN vs.): 0
+  exports: symbol __mh_execute_header _g_api _g_unused _main 
+  function_starts: 4
+  codesign: 
+out/s_strip [arm64]:
+    -function_starts:
+        0x100000460  __TEXT,__text
+        0x100000468  __TEXT,__text+8
+        0x100000474  __TEXT,__text+20
+        0x100000678  __TEXT,__text+536

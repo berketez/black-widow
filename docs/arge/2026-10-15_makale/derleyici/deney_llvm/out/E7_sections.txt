@@ -1,0 +1,18 @@
+  sectname __auth_stubs
+   segname __TEXT
+      addr 0x00000001000006dc
+--
+  sectname __auth_got
+   segname __DATA_CONST
+      addr 0x0000000100004000
+--
+  sectname __got
+   segname __DATA_CONST
+      addr 0x0000000100004020
+  sectname __stubs
+   segname __TEXT
+      addr 0x0000000100000680
+--
+  sectname __got
+   segname __DATA_CONST
+      addr 0x0000000100004000

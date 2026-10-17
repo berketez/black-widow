@@ -1,0 +1,49 @@
+gecis                     O0    O1    O2    O3    Os    
+tree-einline              ON    ON    ON    ON    ON    
+ipa-inline                ON    ON    ON    ON    ON    
+ipa-cp                    OFF   OFF   ON    ON    ON    
+ipa-sra                   OFF   OFF   ON    ON    ON    
+ipa-icf                   OFF   OFF   ON    ON    ON    
+ipa-pure-const            OFF   ON    ON    ON    ON    
+tree-local-pure-const1    OFF   ON    ON    ON    ON    
+ipa-modref                ON    ON    ON    ON    ON    
+tree-fnsplit              OFF   OFF   ON    ON    ON    
+tree-esra                 OFF   ON    ON    ON    ON    
+tree-sra                  OFF   ON    ON    ON    ON    
+tree-fre1                 OFF   ON    ON    ON    ON    
+tree-fre3                 OFF   ON    ON    ON    ON    
+tree-pre                  OFF   OFF   ON    ON    ON    
+tree-evrp                 OFF   OFF   ON    ON    ON    
+tree-vrp1                 OFF   OFF   ON    ON    ON    
+tree-vrp2                 OFF   OFF   ON    ON    ON    
+tree-ccp1                 OFF   ON    ON    ON    ON    
+tree-ch1                  OFF   ON    ON    ON    ON    
+tree-ldist                OFF   OFF   ON    ON    ON    
+tree-vect                 OFF   OFF   ON    ON    OFF   
+tree-slp1                 OFF   OFF   ON    ON    OFF   
+tree-slp2                 OFF   OFF   ON    ON    OFF   
+tree-tailr1               OFF   OFF   ON    ON    ON    
+tree-tailc                OFF   OFF   ON    ON    ON    
+tree-switchconv           OFF   OFF   ON    ON    ON    
+tree-switchlower1         ON    ON    ON    ON    ON    
+tree-strlen1              OFF   ON    ON    ON    ON    
+tree-unswitch             OFF   OFF   OFF   ON    OFF   
+tree-cunroll              ON    ON    ON    ON    ON    
+tree-ivopts               ON    ON    ON    ON    ON    
+tree-stdarg               ON    ON    ON    ON    ON    
+rtl-bbro                  OFF   ON    ON    ON    ON    
+rtl-bbpart                OFF   OFF   OFF   OFF   OFF   
+rtl-cse1                  OFF   ON    ON    ON    ON    
+rtl-gcse2                 OFF   OFF   OFF   ON    OFF   
+rtl-combine               OFF   ON    ON    ON    ON    
+rtl-ira                   ON    ON    ON    ON    ON    
+rtl-sched2                OFF   OFF   ON    ON    ON    
+rtl-peephole2             OFF   OFF   ON    ON    ON    
+rtl-stv                    (yok)
+rtl-vzeroupper             (yok)
+ipa-whole-program         ON    ON    ON    ON    ON    
+ipa-visibility            ON    ON    ON    ON    ON    
+ipa-single-use            ON    ON    ON    ON    ON    
+ipa-static-var            OFF   ON    ON    ON    ON    
+
+ON sayisi: {'O0': 139, 'O1': 228, 'O2': 280, 'O3': 288, 'Os': 274}

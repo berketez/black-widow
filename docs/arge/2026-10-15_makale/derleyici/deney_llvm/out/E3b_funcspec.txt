@@ -1,0 +1,16 @@
+== -O3 print-after=ipsccp
+define i64 @run(ptr noundef %0, i32 noundef %1) #0 {
+define internal i64 @apply(ptr noundef %0, ptr noundef %1, i32 noundef %2) #0 {
+define internal i64 @sq(i64 noundef %0) #0 {
+define internal range(i64 -9223372036854775807, -9223372036854775808) i64 @inc(i64 noundef %0) #0 {
+== -O3 -fno-inline print-after=ipsccp
+define i64 @run(ptr noundef %0, i32 noundef %1) #0 {
+define internal i64 @apply(ptr noundef %0, ptr noundef %1, i32 noundef %2) #0 {
+define internal i64 @sq(i64 noundef %0) #0 {
+define internal range(i64 -9223372036854775807, -9223372036854775808) i64 @inc(i64 noundef %0) #0 {
+== -O3 funcspec-min-function-size=1 print-after=ipsccp
+define i64 @run(ptr noundef %0, i32 noundef %1) #0 {
+define internal i64 @sq(i64 noundef %0) #0 {
+define internal range(i64 -9223372036854775807, -9223372036854775808) i64 @inc(i64 noundef %0) #0 {
+define internal i64 @apply.specialized.1(ptr noundef %0, ptr noundef %1, i32 noundef %2) #0 {
+define internal i64 @apply.specialized.2(ptr noundef %0, ptr noundef %1, i32 noundef %2) #0 {

@@ -1,0 +1,146 @@
+O0: toplam 9 geçiş örneği, 9 farklı
+O1: toplam 92 geçiş örneği, 65 farklı
+O2: toplam 110 geçiş örneği, 77 farklı
+O3: toplam 115 geçiş örneği, 81 farklı
+Os: toplam 108 geçiş örneği, 75 farklı
+Oz: toplam 107 geçiş örneği, 74 farklı
+
+| geçiş | O0 | O1 | O2 | O3 | Os | Oz |
+|---|---|---|---|---|---|---|
+| `always-inline` | 1 | 1 | 1 | 1 | 1 | 1 |
+| `inline` | – | 1 | 1 | 1 | 1 | 1 |
+| `sroa` | – | 4 | 4 | 4 | 4 | 4 |
+| `mem2reg` | – | 1 | 1 | 1 | 1 | 1 |
+| `gvn` | – | – | 1 | 1 | 1 | 1 |
+| `licm` | – | 3 | 4 | 4 | 4 | 4 |
+| `loop-unroll` | – | 1 | 1 | 1 | 1 | 1 |
+| `loop-unroll-full` | – | 1 | 1 | 1 | 1 | 1 |
+| `loop-vectorize` | – | 1 | 1 | 1 | 1 | 1 |
+| `slp-vectorizer` | – | – | 1 | 1 | 1 | 1 |
+| `tailcallelim` | – | 1 | 2 | 2 | 2 | 2 |
+| `ipsccp` | – | 1 | 1 | 1 | 1 | 1 |
+| `deadargelim` | – | 1 | 1 | 1 | 1 | 1 |
+| `argpromotion` | – | – | – | 1 | – | – |
+| `globalopt` | – | 2 | 2 | 2 | 2 | 2 |
+| `globaldce` | 1 | 2 | 2 | 2 | 2 | 2 |
+| `called-value-propagation` | – | 1 | 1 | 1 | 1 | 1 |
+| `jump-threading` | – | – | 2 | 2 | 2 | 2 |
+| `instcombine` | – | 8 | 8 | 8 | 8 | 8 |
+| `simplifycfg` | – | 8 | 8 | 8 | 8 | 8 |
+| `early-cse` | – | 3 | 3 | 4 | 3 | 3 |
+| `loop-rotate` | – | 2 | 2 | 2 | 2 | 2 |
+| `indvars` | – | 1 | 1 | 1 | 1 | 1 |
+| `loop-idiom` | – | 1 | 1 | 1 | 1 | 1 |
+| `loop-deletion` | – | 2 | 2 | 2 | 2 | 2 |
+| `memcpyopt` | – | 1 | 1 | 1 | 1 | 1 |
+| `dse` | – | – | 1 | 1 | 1 | 1 |
+| `adce` | – | 1 | 1 | 1 | 1 | 1 |
+| `bdce` | – | 1 | 1 | 1 | 1 | 1 |
+| `sccp` | – | 1 | 1 | 1 | 1 | 1 |
+| `correlated-propagation` | – | – | 2 | 2 | 2 | 2 |
+| `constraint-elimination` | – | – | 2 | 2 | 2 | 2 |
+| `elim-avail-extern` | – | 1 | 1 | 1 | 1 | 1 |
+| `hotcoldsplit` | – | 1 | 1 | 1 | 1 | – |
+| `function-attrs` | – | 2 | 2 | 2 | 2 | 2 |
+| `rpo-function-attrs` | – | 1 | 1 | 1 | 1 | 1 |
+| `openmp-opt` | – | 1 | 1 | 1 | 1 | 1 |
+| `speculative-execution` | – | – | 1 | 1 | 1 | 1 |
+| `aggressive-instcombine` | – | – | 1 | 1 | 1 | 1 |
+| `loop-distribute` | – | 1 | 1 | 1 | 1 | 1 |
+| `loop-load-elim` | – | 1 | 1 | 1 | 1 | 1 |
+| `vector-combine` | – | 1 | 2 | 2 | 2 | 2 |
+| `div-rem-pairs` | – | 1 | 1 | 1 | 1 | 1 |
+| `loop-sink` | – | 1 | 1 | 1 | 1 | 1 |
+| `instsimplify` | – | 1 | 1 | 1 | 1 | 1 |
+| `constmerge` | – | 1 | 1 | 1 | 1 | 1 |
+| `rel-lookup-table-converter` | – | 1 | 1 | 1 | 1 | 1 |
+| `cg-profile` | – | 1 | 1 | 1 | 1 | 1 |
+| `annotation-remarks` | 1 | 1 | 1 | 1 | 1 | 1 |
+| `globaldce` | 1 | 2 | 2 | 2 | 2 | 2 |
+| `mldst-motion` | – | – | 1 | 1 | 1 | 1 |
+| `lower-constant-intrinsics` | – | 1 | 1 | 1 | 1 | 1 |
+| `chr` | – | – | – | 1 | – | – |
+| `infer-alignment` | – | 2 | 2 | 2 | 2 | 2 |
+| `alignment-from-assumptions` | – | 1 | 1 | 1 | 1 | 1 |
+| `float2int` | – | 1 | 1 | 1 | 1 | 1 |
+| `lower-expect` | – | 1 | 1 | 1 | 1 | 1 |
+| `loop-instsimplify` | – | 1 | 1 | 1 | 1 | 1 |
+| `loop-simplifycfg` | – | 1 | 1 | 1 | 1 | 1 |
+| `simple-loop-unswitch` | – | 1 | 1 | 1 | 1 | 1 |
+| `move-auto-init` | – | – | 1 | 1 | 1 | 1 |
+| `coro-split` | 1 | 1 | 1 | 1 | 1 | 1 |
+| `inject-tli-mappings` | – | 1 | 1 | 1 | 1 | 1 |
+
+Sadece bazı seviyelerde olanlar:
+adce -> O1,O2,O3,Os,Oz
+aggressive-instcombine -> O2,O3,Os,Oz
+alignment-from-assumptions -> O1,O2,O3,Os,Oz
+annotation2metadata -> O1,O2,O3,Os,Oz
+argpromotion -> O3
+bdce -> O1,O2,O3,Os,Oz
+called-value-propagation -> O1,O2,O3,Os,Oz
+callsite-splitting -> O3
+cg-profile -> O1,O2,O3,Os,Oz
+chr -> O3
+constmerge -> O1,O2,O3,Os,Oz
+constraint-elimination -> O2,O3,Os,Oz
+coro-annotation-elide -> O1,O2,O3,Os,Oz
+coro-elide -> O1,O2,O3,Os,Oz
+correlated-propagation -> O2,O3,Os,Oz
+cpa-optimizer -> O1,O2,O3,Os,Oz
+deadargelim -> O1,O2,O3,Os,Oz
+div-rem-pairs -> O1,O2,O3,Os,Oz
+dse -> O2,O3,Os,Oz
+early-cse -> O1,O2,O3,Os,Oz
+elim-avail-extern -> O1,O2,O3,Os,Oz
+extra-simple-loop-unswitch-passes -> O2,O3,Os,Oz
+extra-vector-passes -> O3
+float2int -> O1,O2,O3,Os,Oz
+forceattrs -> O1,O2,O3,Os,Oz
+function-attrs -> O1,O2,O3,Os,Oz
+globalopt -> O1,O2,O3,Os,Oz
+gvn -> O2,O3,Os,Oz
+hotcoldsplit -> O1,O2,O3,Os
+indvars -> O1,O2,O3,Os,Oz
+infer-alignment -> O1,O2,O3,Os,Oz
+inferattrs -> O1,O2,O3,Os,Oz
+inject-tli-mappings -> O1,O2,O3,Os,Oz
+inline -> O1,O2,O3,Os,Oz
+instcombine -> O1,O2,O3,Os,Oz
+instsimplify -> O1,O2,O3,Os,Oz
+ipsccp -> O1,O2,O3,Os,Oz
+jump-threading -> O2,O3,Os,Oz
+libcalls-shrinkwrap -> O1,O2,O3
+licm -> O1,O2,O3,Os,Oz
+loop-deletion -> O1,O2,O3,Os,Oz
+loop-distribute -> O1,O2,O3,Os,Oz
+loop-idiom -> O1,O2,O3,Os,Oz
+loop-instsimplify -> O1,O2,O3,Os,Oz
+loop-load-elim -> O1,O2,O3,Os,Oz
+loop-rotate -> O1,O2,O3,Os,Oz
+loop-simplifycfg -> O1,O2,O3,Os,Oz
+loop-sink -> O1,O2,O3,Os,Oz
+loop-unroll -> O1,O2,O3,Os,Oz
+loop-unroll-full -> O1,O2,O3,Os,Oz
+loop-vectorize -> O1,O2,O3,Os,Oz
+lower-constant-intrinsics -> O1,O2,O3,Os,Oz
+lower-expect -> O1,O2,O3,Os,Oz
+mem2reg -> O1,O2,O3,Os,Oz
+memcpyopt -> O1,O2,O3,Os,Oz
+mldst-motion -> O2,O3,Os,Oz
+move-auto-init -> O2,O3,Os,Oz
+openmp-opt -> O1,O2,O3,Os,Oz
+openmp-opt-cgscc -> O2,O3
+reassociate -> O1,O2,O3,Os,Oz
+recompute-globalsaa -> O1,O2,O3,Os,Oz
+rel-lookup-table-converter -> O1,O2,O3,Os,Oz
+rpo-function-attrs -> O1,O2,O3,Os,Oz
+sccp -> O1,O2,O3,Os,Oz
+simple-loop-unswitch -> O1,O2,O3,Os,Oz
+simplifycfg -> O1,O2,O3,Os,Oz
+slp-vectorizer -> O2,O3,Os,Oz
+speculative-execution -> O2,O3,Os,Oz
+sroa -> O1,O2,O3,Os,Oz
+tailcallelim -> O1,O2,O3,Os,Oz
+transform-warning -> O1,O2,O3,Os,Oz
+vector-combine -> O1,O2,O3,Os,Oz

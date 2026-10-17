@@ -1,0 +1,258 @@
+Dump after hash based groups
+Congruence classes: 7 with total: 9 items (in a non-singular class: 4)
+Class size histogram [number of members]: number of classes
+     1:      5
+     2:      2
+Dump after WPA based types groups
+Congruence classes: 7 with total: 9 items (in a non-singular class: 4)
+Class size histogram [number of members]: number of classes
+     1:      5
+     2:      2
+Worklist has been filled with: 5
+Address reference subdivision created: 0 new classes.
+Dump after callgraph-based congruence reduction
+Congruence classes: 7 with total: 9 items (in a non-singular class: 4)
+Class size histogram [number of members]: number of classes
+     1:      5
+     2:      2
+Init called for 4 items (44.44%).
+Dump after full equality comparison of groups
+Congruence classes: 7 with total: 9 items (in a non-singular class: 4)
+Class size histogram [number of members]: number of classes
+     1:      5
+     2:      2
+Worklist has been filled with: 5
+Address reference subdivision created: 0 new classes.
+Congruence classes: 7 with total: 9 items (in a non-singular class: 4)
+Class size histogram [number of members]: number of classes
+     1:      5
+     2:      2
+
+Item count: 9
+Congruent classes before: 7, after: 7
+Average class size before: 1.29, after: 1.29
+Average non-singular class size: 2.00, count: 2
+Equal symbols: 2
+Totally needed symbols: 4, fraction of loaded symbols: 100.00%
+
+
+Reclaiming functions: ikiz_d/11
+Reclaiming variables:
+Clearing address taken flags:
+void bol.part.0 (const char * s)
+{
+  long int D.6272;
+  long int t;
+  int i;
+  struct FILE * __stderrp.0_1;
+
+  <bb 3> [local count: 1073741824]:
+
+  <bb 2> [local count: 1073741824]:
+  __stderrp.0_1 = __stderrp;
+  fprintf (__stderrp.0_1, "hata %s\n", s_2(D));
+  abort ();
+
+}
+
+
+long int kullan (long int v, const char * s, struct cift * p)
+{
+  long int _1;
+  long int _2;
+  long int _3;
+  long int _4;
+  long int _5;
+  long int _6;
+  long int _7;
+  long int _8;
+  const char * _9;
+  long int _10;
+  long int _11;
+  long int _12;
+  long int _13;
+  long int _14;
+  long int _15;
+  long int _22;
+
+  <bb 2> [local count: 1073741824]:
+  _1 = olcekle (v_17(D), 3);
+  _2 = v_17(D) + 1;
+  _3 = olcekle (_2, 3);
+  _4 = _1 + _3;
+  _5 = alan_oku (p_18(D), 0);
+  _6 = _4 + _5;
+  _7 = bol (s_19(D));
+  _8 = _6 + _7;
+  _9 = s_19(D) + 1;
+  _10 = bol (_9);
+  _11 = _8 + _10;
+  _12 = ikiz_c (v_17(D));
+  _13 = _11 + _12;
+  _14 = v_17(D) + 2;
+  _15 = ikiz_d (_14);
+  _22 = _13 + _15;
+  return _22;
+
+}
+
+
+__attribute__((noinline))
+long int ikiz_c (long int x)
+{
+  long int _1;
+  long int _3;
+
+  <bb 2> [local count: 1073741824]:
+  _1 = x_2(D) * 5;
+  _3 = _1 + 11;
+  return _3;
+
+}
+
+
+__attribute__((noinline))
+long int ikiz_b (long int x)
+{
+  long int _1;
+  long int _3;
+
+  <bb 2> [local count: 1073741824]:
+  _1 = x_2(D) * 7;
+  _3 = _1 + 13;
+  return _3;
+
+}
+
+
+__attribute__((noinline))
+long int ikiz_a (long int x)
+{
+  long int _1;
+  long int _3;
+
+  <bb 2> [local count: 1073741824]:
+  _1 = x_2(D) * 7;
+  _3 = _1 + 13;
+  return _3;
+
+}
+
+
+long int bol (const char * s)
+{
+  int i;
+  long int t;
+  long int _1;
+  long int _4;
+  long int _5;
+  sizetype _6;
+  const char * _7;
+  char _8;
+  long int _11;
+
+  <bb 2> [local count: 144196801]:
+  if (s_14(D) == 0B)
+    goto <bb 9>; [18.09%]
+  else
+    goto <bb 10>; [81.91%]
+
+  <bb 10> [local count: 118111600]:
+  goto <bb 6>; [100.00%]
+
+  <bb 3> [local count: 955630224]:
+  _1 = t_9 * 31;
+  _4 = (long int) _8;
+  t_16 = _1 + _4;
+  _5 = t_16 % 97;
+  if (_5 == 3)
+    goto <bb 4>; [20.24%]
+  else
+    goto <bb 5>; [79.76%]
+
+  <bb 4> [local count: 193419556]:
+  dis_cagri (_7);
+
+  <bb 5> [local count: 955630224]:
+  i_18 = i_10 + 1;
+
+  <bb 6> [local count: 1073741824]:
+  # t_9 = PHI <0(10), t_16(5)>
+  # i_10 = PHI <0(10), i_18(5)>
+  _6 = (sizetype) i_10;
+  _7 = s_14(D) + _6;
+  _8 = *_7;
+  if (_8 != 0)
+    goto <bb 3>; [89.00%]
+  else
+    goto <bb 7>; [11.00%]
+
+  <bb 7> [local count: 118111600]:
+  if (t_9 == 42)
+    goto <bb 8>; [0.04%]
+  else
+    goto <bb 9>; [99.96%]
+
+  <bb 8> [local count: 47245]:
+  bol.part.0 (s_14(D));
+
+  <bb 9> [local count: 144149557]:
+  # _11 = PHI <0(2), t_9(7)>
+  return _11;
+
+}
+
+
+__attribute__((noinline))
+long int alan_oku (struct cift * p, int kullanilmayan)
+{
+  long int _1;
+  long int _2;
+  long int _3;
+  long int _6;
+
+  <bb 2> [local count: 1073741824]:
+  _1 = p_5(D)->b;
+  _2 = _1 * 3;
+  _3 = _1 / 7;
+  _6 = _2 + _3;
+  return _6;
+
+}
+
+
+__attribute__((noinline))
+long int olcekle (long int x, int mode)
+{
+  int i;
+  long int r;
+  long int _1;
+  long int _2;
+  long int _3;
+  long int _4;
+
+  <bb 2> [local count: 118111600]:
+  goto <bb 4>; [100.00%]
+
+  <bb 3> [local count: 955630224]:
+  _1 = (long int) i_6;
+  _2 = _1 * x_9(D);
+  _3 = x_9(D) >> i_6;
+  _4 = _2 + _3;
+  r_10 = _4 + r_5;
+  i_11 = i_6 + 1;
+
+  <bb 4> [local count: 1073741824]:
+  # r_5 = PHI <0(2), r_10(3)>
+  # i_6 = PHI <0(2), i_11(3)>
+  if (i_6 < mode_7(D))
+    goto <bb 3>; [89.00%]
+  else
+    goto <bb 5>; [11.00%]
+
+  <bb 5> [local count: 118111600]:
+  return r_5;
+
+}
+
+

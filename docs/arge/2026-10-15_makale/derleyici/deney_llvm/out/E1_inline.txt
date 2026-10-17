@@ -1,0 +1,6 @@
+inline.c -O0 .o sembolleri: T:_g_api T:_g_unused T:_main t:_ni t:_once U:_printf t:_twice s:l_.str 
+inline.c -O1 .o sembolleri: T:_g_api T:_g_unused T:_main t:_ni U:_printf s:l_.str 
+inline.c -O2 .o sembolleri: T:_g_api T:_g_unused T:_main t:_ni U:_printf s:l_.str 
+inline.c -O3 .o sembolleri: T:_g_api T:_g_unused T:_main t:_ni U:_printf s:l_.str 
+inline.c -Os .o sembolleri: T:_g_api T:_g_unused T:_main t:_ni U:_printf s:l_.str 
+inline.c -Oz .o sembolleri: T:_g_api T:_g_unused T:_main t:_ni U:_printf t:_twice s:l_.str 

@@ -1,0 +1,12 @@
+debian-9.4-3           cat   FUNC=  97 LOCAL=  11 GLOBAL= 86 ayni_adres_coklu= 0 part=1
+debian-9.4-3           cut   FUNC= 103 LOCAL=  15 GLOBAL= 88 ayni_adres_coklu= 0 part=1
+debian-9.4-3           wc    FUNC= 122 LOCAL=  15 GLOBAL=107 ayni_adres_coklu= 0 part=1
+debian-9.4-3           expr  FUNC= 104 LOCAL=  20 GLOBAL= 84 ayni_adres_coklu= 0 part=2
+debian-9.4-3           comm  FUNC= 109 LOCAL=  14 GLOBAL= 95 ayni_adres_coklu= 0 part=2
+
+ubuntu-9.4-3ubuntu6    cat   FUNC=  25 LOCAL=  21 GLOBAL=  4 ayni_adres_coklu= 0 constprop=6 part=1
+ubuntu-9.4-3ubuntu6    cut   FUNC=  31 LOCAL=  27 GLOBAL=  4 ayni_adres_coklu= 0 constprop=7 part=1
+ubuntu-9.4-3ubuntu6    wc    FUNC=  41 LOCAL=  31 GLOBAL= 10 ayni_adres_coklu= 0 constprop=7 part=1
+ubuntu-9.4-3ubuntu6    expr  FUNC=  36 LOCAL=  32 GLOBAL=  4 ayni_adres_coklu= 0 constprop=5 part=3
+ubuntu-9.4-3ubuntu6    comm  FUNC=  32 LOCAL=  28 GLOBAL=  4 ayni_adres_coklu= 0 constprop=5 part=2
+

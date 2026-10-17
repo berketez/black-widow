@@ -1,0 +1,324 @@
+
+;; Function olcekle (olcekle, funcdef_no=4, decl_uid=6187, cgraph_uid=5, symbol_order=4)
+
+Not splitting: not inlinable.
+__attribute__((noinline))
+long int olcekle (long int x, int mode)
+{
+  int i;
+  long int r;
+  long int _1;
+  long int _2;
+  long int _3;
+  long int _4;
+
+  <bb 2> [local count: 118111600]:
+  goto <bb 4>; [100.00%]
+
+  <bb 3> [local count: 955630224]:
+  _1 = (long int) i_6;
+  _2 = _1 * x_12(D);
+  _3 = x_12(D) >> i_6;
+  _4 = _2 + _3;
+  r_13 = _4 + r_5;
+  i_14 = i_6 + 1;
+
+  <bb 4> [local count: 1073741824]:
+  # r_5 = PHI <0(2), r_13(3)>
+  # i_6 = PHI <0(2), i_14(3)>
+  if (i_6 < mode_9(D))
+    goto <bb 3>; [89.00%]
+  else
+    goto <bb 5>; [11.00%]
+
+  <bb 5> [local count: 118111600]:
+  return r_5;
+
+}
+
+
+
+;; Function alan_oku (alan_oku, funcdef_no=5, decl_uid=6197, cgraph_uid=6, symbol_order=5)
+
+Not splitting: not inlinable.
+__attribute__((noinline))
+long int alan_oku (struct cift * p, int kullanilmayan)
+{
+  long int _1;
+  long int _2;
+  long int _4;
+  long int _7;
+
+  <bb 2> [local count: 1073741824]:
+  _1 = p_6(D)->b;
+  _2 = _1 * 3;
+  _4 = _1 / 7;
+  _7 = _2 + _4;
+  return _7;
+
+}
+
+
+
+;; Function ikiz_a (ikiz_a, funcdef_no=7, decl_uid=6209, cgraph_uid=8, symbol_order=7)
+
+Not splitting: not inlinable.
+__attribute__((noinline))
+long int ikiz_a (long int x)
+{
+  long int _1;
+  long int _3;
+
+  <bb 2> [local count: 1073741824]:
+  _1 = x_2(D) * 7;
+  _3 = _1 + 13;
+  return _3;
+
+}
+
+
+
+;; Function ikiz_b (ikiz_b, funcdef_no=8, decl_uid=6212, cgraph_uid=9, symbol_order=8)
+
+Not splitting: not inlinable.
+__attribute__((noinline))
+long int ikiz_b (long int x)
+{
+  long int _1;
+  long int _3;
+
+  <bb 2> [local count: 1073741824]:
+  _1 = x_2(D) * 7;
+  _3 = _1 + 13;
+  return _3;
+
+}
+
+
+
+;; Function ikiz_c (ikiz_c, funcdef_no=9, decl_uid=6215, cgraph_uid=10, symbol_order=9)
+
+Not splitting: not inlinable.
+__attribute__((noinline))
+long int ikiz_c (long int x)
+{
+  long int _1;
+  long int _3;
+
+  <bb 2> [local count: 1073741824]:
+  _1 = x_2(D) * 5;
+  _3 = _1 + 11;
+  return _3;
+
+}
+
+
+
+;; Function ikiz_d (ikiz_d, funcdef_no=10, decl_uid=6218, cgraph_uid=11, symbol_order=10)
+
+Not splitting: not inlinable.
+__attribute__((noinline))
+long int ikiz_d (long int x)
+{
+  long int _1;
+  long int _3;
+
+  <bb 2> [local count: 1073741824]:
+  _1 = x_2(D) * 5;
+  _3 = _1 + 11;
+  return _3;
+
+}
+
+
+
+;; Function bol (bol, funcdef_no=6, decl_uid=6200, cgraph_uid=7, symbol_order=6)
+
+
+
+Splitting function at:
+Split point at BB 9
+  header time: 89.941522 header size: 17
+  split time: 0.007863 split size: 6
+  bbs: 9
+  SSA names to pass: 19
+;; 1 loops found
+;;
+;; Loop 0
+;;  header 0, latch 1
+;;  depth 0, outer -1
+;;  nodes: 0 1
+
+Symbols to be put in SSA form
+{ D.6268 }
+Incremental SSA update started at block: 0
+Number of blocks in CFG: 4
+Number of blocks to update: 3 ( 75%)
+
+
+BB 1 has invalid sum of incomming counts
+;; 1 loops found
+;;
+;; Loop 0
+;;  header 0, latch 1
+;;  depth 0, outer -1
+;;  nodes: 0 1 3 2
+;; 3 succs { 2 }
+;; 2 succs { }
+Rebuilt basic block counts
+void bol.part.0 (const char * s)
+{
+  long int D.6272;
+  long int t;
+  int i;
+  struct FILE * __stderrp.0_1;
+
+  <bb 3> [local count: 1073741824]:
+
+  <bb 2> [local count: 1073741824]:
+  __stderrp.0_1 = __stderrp;
+  fprintf (__stderrp.0_1, "hata %s\n", s_2(D));
+  abort ();
+
+}
+
+
+
+Analyzing function body size: bol.part.0/19
+
+IPA function summary for bol.part.0/19 inlinable
+  global time:     24.000000
+  self size:       8
+  global size:     0
+  min size:       0
+  self stack:      0
+  global stack:    0
+    size:1.000000, time:1.000000
+    size:2.000000, time:0.000000,  executed if:(not inlined)
+  calls:
+    fprintf/17 function body not available
+      freq:1.00 loop depth: 0 size: 4 time: 13
+       op1 is compile time invariant
+    abort/18 function body not available
+      freq:1.00 loop depth: 0 size: 1 time: 10
+
+Removing basic block 12
+
+Symbols to be put in SSA form
+{ D.6258 }
+Incremental SSA update started at block: 0
+Number of blocks in CFG: 13
+Number of blocks to update: 11 ( 85%)
+
+
+Removing basic block 11
+long int bol (const char * s)
+{
+  int i;
+  long int t;
+  long int _1;
+  long int _5;
+  long int _6;
+  sizetype _9;
+  const char * _10;
+  char _11;
+  long int _15;
+
+  <bb 2> [local count: 144196801]:
+  if (s_19(D) == 0B)
+    goto <bb 3>; [18.09%]
+  else
+    goto <bb 7>; [81.91%]
+
+  <bb 3> [local count: 26085201]:
+  // predicted unlikely by early return (on trees) predictor.
+  goto <bb 10>; [100.00%]
+
+  <bb 4> [local count: 955630224]:
+  _1 = t_13 * 31;
+  _5 = (long int) _11;
+  t_26 = _1 + _5;
+  _6 = t_26 % 97;
+  if (_6 == 3)
+    goto <bb 5>; [20.24%]
+  else
+    goto <bb 6>; [79.76%]
+
+  <bb 5> [local count: 193419556]:
+  dis_cagri (_10);
+
+  <bb 6> [local count: 955630224]:
+  i_28 = i_14 + 1;
+
+  <bb 7> [local count: 1073741824]:
+  # t_13 = PHI <0(2), t_26(6)>
+  # i_14 = PHI <0(2), i_28(6)>
+  _9 = (sizetype) i_14;
+  _10 = s_19(D) + _9;
+  _11 = *_10;
+  if (_11 != 0)
+    goto <bb 4>; [89.00%]
+  else
+    goto <bb 8>; [11.00%]
+
+  <bb 8> [local count: 118111600]:
+  if (t_13 == 42)
+    goto <bb 9>; [0.04%]
+  else
+    goto <bb 10>; [99.96%]
+
+  <bb 9> [local count: 47245]:
+  bol.part.0 (s_19(D));
+
+  <bb 10> [local count: 144149557]:
+  # _15 = PHI <0(3), t_13(8)>
+  return _15;
+
+}
+
+
+
+;; Function kullan (kullan, funcdef_no=11, decl_uid=6227, cgraph_uid=14, symbol_order=13)
+
+Not splitting: not called directly or called once.
+long int kullan (long int v, const char * s, struct cift * p)
+{
+  long int _1;
+  long int _2;
+  long int _3;
+  long int _4;
+  long int _5;
+  long int _6;
+  long int _7;
+  long int _8;
+  const char * _9;
+  long int _10;
+  long int _11;
+  long int _12;
+  long int _13;
+  long int _14;
+  long int _15;
+  long int _27;
+
+  <bb 2> [local count: 1073741824]:
+  _1 = olcekle (v_17(D), 3);
+  _2 = v_17(D) + 1;
+  _3 = olcekle (_2, 3);
+  _4 = _1 + _3;
+  _5 = alan_oku (p_20(D), 0);
+  _6 = _4 + _5;
+  _7 = bol (s_22(D));
+  _8 = _6 + _7;
+  _9 = s_22(D) + 1;
+  _10 = bol (_9);
+  _11 = _8 + _10;
+  _12 = ikiz_c (v_17(D));
+  _13 = _11 + _12;
+  _14 = v_17(D) + 2;
+  _15 = ikiz_d (_14);
+  _27 = _13 + _15;
+  return _27;
+
+}
+
+

@@ -1,0 +1,19 @@
+== thin LTO: nm: T:__mh_execute_header T:_main t:_helper t:_helper 
+   exports: symbol __mh_execute_header _main 
+   -export_dynamic nm: T:__mh_execute_header T:_api T:_api_unused T:_main t:_helper t:_helper 
+== full LTO: nm: T:__mh_execute_header T:_main t:_helper t:_helper.1 
+   exports: symbol __mh_execute_header _main 
+   -export_dynamic nm: T:__mh_execute_header T:_api T:_api_unused T:_main t:_helper t:_helper.1 
+== LTO yok: nm: T:__mh_execute_header T:_api t:_helper T:_api_unused T:_main t:_helper 
+   exports: symbol __mh_execute_header _api _api_unused _main 
+== thin LTO -save-temps ile ara IR adları:
+0.arm64.thinlto.o
+1.arm64.thinlto.o
+0000000000000000 T _api
+0000000000000018 T _helper.llvm.14500278487775878913
+0000000000000000 t ltmp0
+0000000000000028 s ltmp1
+0000000000000034 t _helper
+0000000000000000 T _main
+0000000000000000 t ltmp0
+0000000000000048 s ltmp1

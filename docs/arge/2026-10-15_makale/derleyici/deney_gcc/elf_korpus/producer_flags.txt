@@ -1,0 +1,4 @@
+=== 9.4-3
+   1 "GNU C17 13.2.0 -mbranch-protection=standard -mlittle-endian -mabi=lp64 -g -O2 -fstack-protector-strong -fstack-clash-protection -fasynchronous-unwind-tables"
+=== 9.4-3ubuntu6
+   1 "GNU C17 13.2.0 -mno-omit-leaf-frame-pointer -mbranch-protection=standard -mlittle-endian -mabi=lp64 -g -O2 -fno-omit-frame-pointer -flto -ffat-lto-objects -fstack-protector-strong -fasynchronous-unwind-tables -fstack-protector-strong -fstack-clash-protection"

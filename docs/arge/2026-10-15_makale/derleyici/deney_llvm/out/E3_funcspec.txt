@@ -1,0 +1,9 @@
+== funcspec.c -O2
+define i64 @run(ptr noundef readonly captures(none) %0, i32 noundef %1) local_unnamed_addr #0 {
+0000000000000000 T _run
+== funcspec.c -O3
+define i64 @run(ptr noundef readonly captures(none) %0, i32 noundef %1) local_unnamed_addr #0 {
+0000000000000000 T _run
+== funcspec.c -Os
+define i64 @run(ptr noundef readonly captures(none) %0, i32 noundef %1) local_unnamed_addr #0 {
+0000000000000000 T _run
