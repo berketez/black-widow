@@ -252,6 +252,9 @@ class TestAnalyzeFlags:
     def test_skip_dynamic_flag(self, analyze_help_output: str) -> None:
         assert "--skip-dynamic" in analyze_help_output
 
+    def test_dynamic_flag(self, analyze_help_output: str) -> None:
+        assert "--dynamic" in analyze_help_output
+
     def test_verbose_flag(self, analyze_help_output: str) -> None:
         assert "--verbose" in analyze_help_output
 
@@ -330,3 +333,46 @@ class TestAnalyzeIntegration:
             f"Exception: {result.exception}\n"
             f"Output:\n{result.output[-2000:]}"
         )
+
+
+class TestDynamicFlagWiring:
+    """`--dynamic` hedefi çalıştırma iznini config'e geçirir; bayraksız koşu izin vermez.
+
+    Pipeline kurulmadan önce `build_pipeline` yakalanıp config okunur, koşu durdurulur.
+    """
+
+    @staticmethod
+    def _captured_config(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, extra: list[str]):
+        import karadul.cli as cli_mod
+
+        captured: dict = {}
+
+        class _Stop(Exception):
+            pass
+
+        def _fake_build_pipeline(cfg, **kwargs):
+            captured["cfg"] = cfg
+            raise _Stop()
+
+        monkeypatch.setattr(cli_mod, "build_pipeline", _fake_build_pipeline)
+        exe = tmp_path / "tiny_macho"
+        exe.write_bytes(b"\xcf\xfa\xed\xfe" + b"\x00" * 64)
+        runner = CliRunner(env={"KARADUL_NONINTERACTIVE": "1"})
+        result = runner.invoke(
+            karadul_main,
+            ["analyze", str(exe), "--output-dir", str(tmp_path / "ws"), *extra],
+        )
+        assert "cfg" in captured, f"build_pipeline'a ulaşılmadı: {result.output}"
+        return captured["cfg"]
+
+    def test_dynamic_flag_allows_target_execution(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        cfg = self._captured_config(monkeypatch, tmp_path, ["--dynamic"])
+        assert cfg.security.allow_target_execution is True
+
+    def test_without_flag_target_execution_stays_off(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        cfg = self._captured_config(monkeypatch, tmp_path, [])
+        assert cfg.security.allow_target_execution is False

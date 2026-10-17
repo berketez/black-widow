@@ -173,6 +173,8 @@ class TestDynamicStageSkip:
 
         cfg = Config()
         cfg.project_root = tmp_path
+        # İzin açık: aşama izin kapısını geçip Frida yokluğu yüzünden atlanmalı.
+        cfg.security.allow_target_execution = True
         tinfo = TargetDetector().detect(_CAT_FIXTURE)
         ws = Workspace(base_dir=tmp_path / "ws", target_name=tinfo.name)
         ws.create()
@@ -182,6 +184,64 @@ class TestDynamicStageSkip:
         assert sr.skipped is True
         assert sr.success is False
         assert "skip_reason" in sr.stats
+        assert "--dynamic" not in sr.stats["skip_reason"]
+
+
+# ---------------------------------------------------------------------------
+# Dinamik analiz hedef programı yalnız açık istekle çalıştırır (plan v2 §2, madde 3)
+# ---------------------------------------------------------------------------
+
+class TestDynamicRequiresPermission:
+    """Dinamik aşama hedefi Frida ile çalıştırıyor (native spawn, JS için node,
+    Electron ana ikilisi). Eskiden Frida kuruluysa `karadul analyze` bunu
+    varsayılan olarak yapıyordu; zararlı bir ikilinin analizi onu çalıştırmak
+    demekti. Artık `security.allow_target_execution` açık değilse aşama, Frida
+    oturumu açılmadan atlanır."""
+
+    def _context(self, tmp_path: Path, allow: bool) -> PipelineContext:
+        cfg = Config()
+        cfg.project_root = tmp_path
+        cfg.security.allow_target_execution = allow
+        tinfo = TargetDetector().detect(_CAT_FIXTURE)
+        ws = Workspace(base_dir=tmp_path / "ws", target_name=tinfo.name)
+        ws.create()
+        return PipelineContext(target=tinfo, workspace=ws, config=cfg)
+
+    @staticmethod
+    def _record_sessions(monkeypatch: pytest.MonkeyPatch) -> list:
+        import karadul.frida.session as fsession
+
+        created: list = []
+
+        class _RecordingSession:
+            def __init__(self, *args, **kwargs) -> None:
+                created.append(args)
+                raise fsession.FridaNotAvailableError("test: sahte oturum")
+
+        monkeypatch.setattr(fsession, "FridaSession", _RecordingSession)
+        return created
+
+    @pytest.mark.skipif(not _CAT_FIXTURE.exists(), reason="cat fixture yok")
+    def test_default_never_opens_frida_session(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        created = self._record_sessions(monkeypatch)
+        sr = DynamicAnalysisStage().execute(self._context(tmp_path, allow=False))
+        assert created == []
+        assert sr.skipped is True
+        assert "--dynamic" in sr.stats["skip_reason"]
+
+    @pytest.mark.skipif(not _CAT_FIXTURE.exists(), reason="cat fixture yok")
+    def test_permission_reaches_frida_session(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        created = self._record_sessions(monkeypatch)
+        sr = DynamicAnalysisStage().execute(self._context(tmp_path, allow=True))
+        assert len(created) == 1
+        assert sr.skipped is True
+
+    def test_default_config_disallows_target_execution(self) -> None:
+        assert Config().security.allow_target_execution is False
 
 
 # ---------------------------------------------------------------------------

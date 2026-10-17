@@ -756,6 +756,13 @@ class SecurityConfig:
         alt süreci demek (2026-09-25 ölçümü: medyan 16 ms, p90 30 ms/modül; ama
         her çağrının zaman aşımı timeouts.subprocess). Aşılırsa küçük üst düzey
         paketler önce işlenir, kalanlar manifest'te sayılır ve listelenir.
+
+    allow_target_execution: Dinamik analiz (Frida) hedef programı gerçekten
+        çalıştırır: native ikiliyi spawn eder, JS paketini node ile, Electron
+        uygulamasını ana ikilisiyle başlatır. Bilinmeyen ya da zararlı bir ikili
+        analiz edilirken bu varsayılan olmamalı. Varsayılan False; yalnız açık
+        istekle açılır: CLI `--dynamic` ya da YAML'da
+        `security.allow_target_execution: true` (plan v2 §2, madde 3).
     """
     max_archive_extract_size: int = 2 * 1024 ** 3         # 2GB
     max_download_size: int = 500 * 1024 ** 2              # 500MB
@@ -771,6 +778,7 @@ class SecurityConfig:
     max_otool_output_bytes: int = 64 * 1024 * 1024        # 64MB
     max_capa_stderr_bytes: int = 1 * 1024 * 1024          # 1MB
     max_python_decompile_modules: int = 2000
+    allow_target_execution: bool = False
     # Windows reserved names (extraction reject) -- CVE COM1.txt vs.
     pyinstaller_reserved_names: tuple[str, ...] = (
         "CON", "PRN", "AUX", "NUL",

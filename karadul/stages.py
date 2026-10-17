@@ -512,6 +512,13 @@ class DynamicAnalysisStage(Stage):
         artifacts: dict[str, Path] = {}
         stats: dict = {}
 
+        # Hedef program yalnız açık istekle çalıştırılır (CLI --dynamic). Bilinmeyen
+        # ya da zararlı bir ikili analiz edilirken varsayılan olarak çalışmamalı.
+        if not context.config.security.allow_target_execution:
+            return self._skipped(
+                start, "hedef programı çalıştırmak için açık izin yok (--dynamic)",
+            )
+
         # Frida import kontrolu
         try:
             from karadul.frida.session import FridaSession, FridaNotAvailableError, FridaAttachError

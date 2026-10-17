@@ -464,7 +464,10 @@ def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
 @click.option("--stage", type=click.Choice(STAGES, case_sensitive=False),
               default=None, help="Belirli stage'de dur.")
 @click.option("--skip-dynamic", is_flag=True,
-              help="Dinamik analizi atla.")
+              help="Dinamik aşamayı listeden çıkar (varsayılan zaten hedefi çalıştırmaz; bkz. --dynamic).")
+@click.option("--dynamic", is_flag=True, default=False,
+              help="Dinamik analizi aç: hedef program Frida ile ÇALIŞTIRILIR. "
+                   "Yalnız güvendiğin ikililerde kullan (varsayılan: kapalı).")
 @click.option("--output-dir", type=click.Path(), default=None,
               help="Workspace cikti dizini (varsayilan: proje_root/workspaces).")
 @click.option("--config", "config_path", type=click.Path(), default=None,
@@ -523,6 +526,7 @@ def analyze(
     target: str,
     stage: Optional[str],
     skip_dynamic: bool,
+    dynamic: bool,
     output_dir: Optional[str],
     config_path: Optional[str],
     verbose: bool,
@@ -577,6 +581,12 @@ def analyze(
     if enable_network:
         cfg.network.enabled = True
         cfg.source_match.enabled = True
+
+    # Dinamik analiz hedef programı çalıştırır; yalnız açık istekle (plan v2 §2, madde 3).
+    if dynamic:
+        cfg.security.allow_target_execution = True
+        if not quiet:
+            console.print("[yellow]Uyarı:[/yellow] --dynamic: hedef program Frida ile çalıştırılacak.")
 
     # v1.10.0 M4 flag'leri -> config'e aktar
     if experimental_step_registry:
