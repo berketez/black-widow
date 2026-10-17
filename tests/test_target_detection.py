@@ -366,3 +366,54 @@ class TestCafebabeDisambiguation:
             if c.get("type") == "macho_binary"
         }
         assert macho_names == {"Mixed"}
+
+
+# ─────────────────────────────────────────────────────────
+# Go tespiti: yalnız 6 baytlık pclntab benzeri dizi Go demek değil
+# ─────────────────────────────────────────────────────────
+_MACHO64_HEAD = b"\xcf\xfa\xed\xfe"
+
+
+class TestGoFalsePositive:
+    """`_is_go_binary` eskiden 6 baytlık `FB FF FF FF 00 00` dizisini tek başına
+    Go kanıtı sayıyordu. Bu dizi C programlarının sabit tablolarında da geçiyor:
+    htop'ta `__TEXT,__const` içinde 0x26588'de (`fb ff ff ff 00 00 00 00 f7 ff ff ff`,
+    int32 dizisi). htop GO_BINARY sanılıyor, Mach-O adımları hiç koşmuyordu
+    (plan v2 §2, madde 1).
+
+    Gerçek Go ikililerinde (gh, kubectl) güçlü işaretler ilk birkaç KB'ta:
+    `\\xff Go build ID:` metnin başında, `__gopclntab` ve `__go_buildinfo` bölüm
+    adları yükleme komutlarında. pclntab başlığı ise 2 MB'ın çok ötesinde ve
+    Go 1.16'dan beri sihirli sayısı `FB` değil.
+    """
+
+    def test_htop_constant_table_bytes_not_go(self, tmp_path: Path) -> None:
+        exe = tmp_path / "htop_like"
+        exe.write_bytes(
+            _MACHO64_HEAD + b"\x00" * 256
+            + b"\xfb\xff\xff\xff\x00\x00\x00\x00\xf7\xff\xff\xff"
+            + b"\x00" * 256
+        )
+        info = TargetDetector().detect(exe)
+        assert info.target_type == TargetType.MACHO_BINARY
+        assert info.language != Language.GO
+
+    def test_go_build_id_is_go(self, tmp_path: Path) -> None:
+        exe = tmp_path / "go_build_id"
+        exe.write_bytes(
+            _MACHO64_HEAD + b"\x00" * 256
+            + b'\xff Go build ID: "abc/def"\n \xff' + b"\x00" * 256
+        )
+        assert TargetDetector().detect(exe).target_type == TargetType.GO_BINARY
+
+    def test_macho_go_section_names_are_go(self, tmp_path: Path) -> None:
+        for section in (b"__gopclntab", b"__go_buildinfo"):
+            exe = tmp_path / section.decode()
+            exe.write_bytes(_MACHO64_HEAD + b"\x00" * 64 + section + b"\x00" * 64)
+            info = TargetDetector().detect(exe)
+            assert info.target_type == TargetType.GO_BINARY, section
+
+    def test_elf_go_section_name_is_go(self, tmp_path: Path) -> None:
+        exe = tmp_path / "go_elf"
+        exe.write_bytes(b"\x7fELF" + b"\x00" * 128 + b".gopclntab\x00" + b"\x00" * 64)
+        assert TargetDetector().detect(exe).target_type == TargetType.GO_BINARY

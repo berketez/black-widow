@@ -646,9 +646,9 @@ class TargetDetector:
         return max(scores, key=lambda k: scores[k])
 
     def _is_go_binary(self, path: Path) -> bool:
-        """ELF binary'nin Go ile derlenmis olup olmadigini kontrol et.
+        """Mach-O, ELF ya da PE ikilisinin Go ile derlenip derlenmediğini kontrol et.
 
-        GOPCLNTAB section, go runtime string'leri ve .go.buildid aranir.
+        Go'ya özgü bölüm adları, build ID metni ve runtime string'leri aranır.
         """
         try:
             with open(path, "rb") as f:
@@ -657,8 +657,14 @@ class TargetDetector:
         except OSError:
             return False
 
-        # GOPCLNTAB: Go pclntab section marker
-        if b"GOPCLNTAB" in data or b"\xFB\xFF\xFF\xFF\x00\x00" in data:
+        # Go bölüm adları. Mach-O'da `__gopclntab`/`__go_buildinfo` yükleme
+        # komutlarında, dosyanın ilk birkaç KB'ında durur; ELF'te `.gopclntab`
+        # bölüm adı tablosu küçük ikililerde ilk 2 MB'a düşer.
+        # Yalnız pclntab sihirli sayısına (FB FF FF FF 00 00) bakılmaz: bu dizi C
+        # programlarının sabit tablolarında da geçiyor (htop, 0x26588). Gerçek Go
+        # ikililerinde başlık 2 MB'ın ötesinde, Go 1.16'dan beri de sayı FB değil.
+        go_sections = (b"__gopclntab", b"__go_buildinfo", b".gopclntab", b".go.buildinfo", b"GOPCLNTAB")
+        if any(section in data for section in go_sections):
             return True
         # go.buildid: Go binary'lerde build ID section'i
         if b"go.buildid" in data or b"Go build" in data:
