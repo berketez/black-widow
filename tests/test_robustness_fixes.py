@@ -244,6 +244,15 @@ class TestDynamicRequiresPermission:
         assert Config().security.allow_target_execution is False
 
 
+class TestDynamicNamingDefaultOff:
+    """DynamicNamer süreç genelindeki API listesini her statik çağrı yerine
+    uyguluyor ve kanıta "called at runtime" yazıyordu; o çağrı yeri hiç çalışmamış
+    olsa bile. Fonksiyona bağlı dinamik kanıt gelene kadar varsayılan kapalı."""
+
+    def test_dynamic_naming_off_by_default(self) -> None:
+        assert Config().binary_reconstruction.enable_dynamic_naming is False
+
+
 # ---------------------------------------------------------------------------
 # R2: BSim idempotent ingest guard guvenli degradasyon
 # ---------------------------------------------------------------------------

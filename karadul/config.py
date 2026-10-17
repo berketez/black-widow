@@ -412,7 +412,12 @@ class BinaryReconstructionConfig:
     enable_xtride_typing: bool = True         # v1.8.6: XTRIDE n-gram tabanli degisken tip cikarimi
     enable_ngram_naming: bool = True          # v1.8.7: N-gram degisken isim tahmini (STRIDE/XTRIDE)
     ngram_confidence_threshold: float = 0.55  # v1.8.7: Minimum confidence (0.0-1.0)
-    enable_dynamic_naming: bool = True        # v1.9.0: Frida trace -> degisken isimlendirme
+    # Varsayılan kapalı (2026-10-17): DynamicNamer süreç genelinde gözlenen API
+    # listesini C metnindeki her çağrı yerine regex'le uyguluyor; o çağrı yeri hiç
+    # çalışmamış olsa da kanıta "called at runtime" yazıp 0,88 güven veriyor. Aynı
+    # statik ad c_namer._strategy_api_param_propagation'da zaten var. Fonksiyona
+    # bağlı dinamik kanıt (çağıran çerçevesi, plan v2 DN-1) gelene kadar kapalı.
+    enable_dynamic_naming: bool = False       # v1.9.0: Frida trace -> degisken isimlendirme
     enable_flow_simplification: bool = True   # Goto elimination / label renaming (v1.5.5)
     goto_max_inline_lines: int = 15           # Tek-hedefli goto inline icin max block satir sayisi
     max_algo_matches: int = 0                   # Algorithm match budget (0 = unlimited)
