@@ -170,3 +170,13 @@
    - Her .deb için `*_ar/` klasöründe ara dosyalar duruyor: `control.tar.xz`, `data.tar.xz`, `debian-binary`. Silinmedi.
    - Debian dbgsym sürümleri binNMU ekiyle birebir: gpg `+b5`, zsh `+b24`, lua5.4 `+b2`, pigz `+b1`.
 
+### 4.4 Kararlar (2026-10-17)
+
+1. **Sembolsüz Mac ikilileri (unzip, ssh, vim) ve yerel sembolü olmayan zsh** (Berke kararı). Bu dört programın Mac kopyası kaynaktan, sembolleri koruyarak yeniden derlenir. Liste değişmez; değişen, Mac'te gerçek isimlerin alındığı ikilidir. Yöntem:
+   - Kaynak, §4.1'deki şişeyle aynı Homebrew formül sürümünden alınır. Derleme seçenekleri formülle aynıdır; tek fark, kurulumda strip yapılmaması.
+   - Derleme yalıtılmış bir önekte yapılır; sistemdeki Homebrew kurulumu değişmez.
+   - Gerçek isimler bu derlemenin `nm` çıktısından alınır. Analiz girdisi, aynı dosyanın `/usr/bin/strip` ile soyulmuş kopyasıdır. Export trie'nin boşaldığı `xcrun dyld_info -exports` ile doğrulanır.
+   - Derleme sırasında kaynak koda ve derleme çıktısına bakılmaz; yalnız derlemenin başarısı denetlenir (kural 2). Bu ikililer G31'den önce Karadul ile analiz edilmez (kural 1).
+   - Yeni dosyaların sha256 ve UUID değerleri ilk analizden önce bu belgeye eklenir (kural 5). §4.1'deki şişe satırları kayıt olarak kalır; Mac ölçümünde kullanılmaz.
+2. **lua (Mac)** (ana oturum kararı). Ölçülecek dosya `liblua.5.5.1.dylib`'dir, çünkü kod orada. 53 KB'lık `bin/lua` sürücüsü ayrı satırda raporlanır. Mac'te 5.5.1, Debian'da 5.4.7 var; program başına platformlar arası kıyas yapılmaz.
+3. **Stres kümesinin Debian sürümleri** §4.2'de yazılı; §4.3 madde 4 kapandı.

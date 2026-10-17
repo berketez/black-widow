@@ -18,6 +18,10 @@ Her isim için fonksiyonun kaynak kodunu oku. Önce ana işini bir cümleyle bel
 4. Fonksiyon bir işin hazırlık ya da yardımcı adımıysa ama isim işin kendisini söylüyorsa (ör. bir şeyi hazırlayan fonksiyona "yap" denmesi): `yalniz_alan`.
 5. Kütüphane fonksiyonu adıyla çakışan isim (ör. sinyal yöneticisine `sigaction`) okuyanı yanıltır: `yanlis`.
 6. Tek, genel bir kelime (ör. `missing`, `small`, `line`) neredeyse her zaman `yanlis` olur.
+7. **Modül + rol isimleri** (ör. veri tablosu yuvasından gelen `Modul_rol`; Berke kararı, 2026-10-17):
+   - Rol, fonksiyonun asıl işiyse `dogru_tarif` olur. Örnek: yuvası "çiz" ve fonksiyon gerçekten çiziyor.
+   - Rol genel bir fiilse `yalniz_alan` olur: `handle`, `helper`, `process`, `do`, `run`.
+   - Modül yanlışsa isim `yanlis` olur.
 
 ## Örnekler (değerlendirme kümesinden değildir)
 | Gerçek ad | Verilen isim | Etiket | Neden |
@@ -30,3 +34,5 @@ Her isim için fonksiyonun kaynak kodunu oku. Önce ana işini bir cümleyle bel
 | `config_load_file` | `parse_error` | `yanlis` | yalnız hata mesajından |
 | `session_destroy` | `session_create` | `yanlis` | ters eylem |
 | `list_sort` | `qsort` | `yanlis` | kütüphane adı, yanıltır |
+| `List_draw` | `List_display` | `dogru_tarif` | modül doğru, rol asıl işi anlatıyor (kural 7) |
+| `Widget_onKey` | `Widget_handle` | `yalniz_alan` | modül doğru, rol genel fiil (kural 7) |
