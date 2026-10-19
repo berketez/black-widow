@@ -125,7 +125,13 @@ superenv_ortami_kur() {
 
 # Koruma: derleme ve kurulum /opt/homebrew altına YAZAMAZ (sistem Homebrew'u değişmez);
 # gizli dizinler okunamaz. Kurallar sandbox-exec ile çekirdek düzeyinde uygulanır.
+# (2026-10-19, nagios) sandbox-exec, "(allow default)" altında bile setuid/setgid bitini
+# (ör. "chmod g+s") reddediyor. Homebrew'un kendi derleme sandbox'ı yazılabilir yollarda
+# file-write-setugid ve file-write-mode'a açıkça izin veriyor (Library/Homebrew/sandbox.rb,
+# allow_write); aynısı yalnız kendi derleme ağacımız ($KOK) için verildi.
 SANDBOX_PROFIL="(version 1)(allow default)
+(allow file-write-setugid (subpath \"$KOK\"))
+(allow file-write-mode (subpath \"$KOK\"))
 (deny file-write* (subpath \"/opt/homebrew\"))
 (deny file-read* (subpath \"$HOME/.ssh\") (subpath \"$HOME/.aws\") (subpath \"$HOME/.config/gh\"))"
 

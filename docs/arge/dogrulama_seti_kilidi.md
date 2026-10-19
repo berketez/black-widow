@@ -178,21 +178,21 @@ Yok (2026-10-19). Kura sonucu ile sabitlenen küme aynı.
 
 ### 4.5 Kaynaktan derlenen Mac ikilileri (2026-10-19)
 
-K3 olan iki programın (§4.3 madde 1) Mac ikilisi ön kayıt §4.4'e göre kaynaktan derlenir. Yöntem `test_seti_kilidi.md` §4.5'tekinin aynısı. newlisp derlendi. nagios bekliyor: `gd` bağımlılığı kurulu değil ve kurulum Berke'nin onayına bağlı.
+K3 olan iki programın (§4.3 madde 1) Mac ikilisi ön kayıt §4.4'e göre kaynaktan derlenir. Yöntem `test_seti_kilidi.md` §4.5'tekinin aynısı. İkisi de derlendi. nagios, `gd` bağımlılığı Berke'nin onayıyla kurulduktan sonra derlendi (bkz. "Açık sorunlar" madde 1). İkisinde de K3 koşulu kalktı; K6 yok.
 
 - **Konum:** `targets/dogrulama_seti/mac_kaynaktan/<program>/` (depo ve Spotlight dışında). Alt dizinler: `indirilen/` (kaynak ve şişedeki formül), `src/`, `prefix/`, `gt/<ikili>` ve `gt/<ikili>.dSYM`, `analiz/<ikili>`, `log/`.
 - **Betikler:** `targets/dogrulama_seti/mac_kaynaktan/betikler/`. Test setindeki betiklerin kopyası:
-  - `ortam.sh`: yalnız kök dizin değişti;
+  - `ortam.sh`: kök dizin değişti. nagios için sandbox profiline yalnız kendi derleme ağacımızda `file-write-setugid` ve `file-write-mode` izni eklendi (bkz. "Yöntem — nagios").
   - `dogrula.sh`, `bayrak_ozeti.py`, `bolum_ozeti.py`, `bolum_kiyas.py`: değişmedi;
-  - `newlisp.sh`: yeni.
+  - `newlisp.sh`, `nagios.sh`: yeni.
 - **Ölçümde kullanım:** Gerçek isimler `gt/<ikili>`'nin `nm` çıktısından (ya da dSYM'den) alınır. Analiz girdisi `analiz/<ikili>`'dir; aynı dosyanın `/usr/bin/strip` ile soyulmuş kopyası.
 
 | Program | Formül sürümü, yama | Derleme bayrakları | sha256 (analiz girdisi) | sha256 (GT) | UUID | nm -U t/T (GT) | dSYM UUID eşleşmesi | Export trie boş mu | Minimum macOS |
 |---|---|---|---|---|---|---|---|---|---|
 | newlisp (`newlisp`) | `newlisp` 10.7.5 (şişe rebuild 0); yama yok | `-w -Os -g -DNEWCONFIG -c` (formülün `CFLAGS`'ı); bağlama `-lm -Wl,-headerpad_max_install_names`; readline ve ffi kapalı (configure-alt, şişedeki gibi); `STRIP=true` | `6f7d33c013d26cd912717fe7ac7383da8645dc6837e70184265edabc4660f4a1` | `02f019ae1b4b1d4623f87f7c8bc598c1613008c03f2fa9621de695ac66032581` | `46C0622D-643A-34F2-9B30-58A19B317BF7` | t=25, T=794 (nm -U 1014 satır) | evet | evet (yalnız `__mh_execute_header`) | 26.0 (SDK 26.5) |
-| nagios (`nagios`) | `nagios` 4.5.14 | bekliyor: gd onayı | — | — | — | — | — | — | — |
+| nagios (`nagios`) | `nagios` 4.5.14 (şişe rebuild 0); yama yok | `-w -Os -g` ve configure tanımları; bağlama `-lssl -lcrypto` (openssl@4), `-Wl,-headerpad_max_install_names`; `install-unstripped` (`install -s` kapalı) | `cefd2b434ef1c17950c5655ea573c9761ee0e7dbc46e8fbc3ecf3a2f9dc43925` | `a3a379f411e5af77be33d96bac88e91a4d20c92ed51ae60eca5b0559324a33b0` | `7B35CE2D-A94D-3033-ACCC-234D65136F4A` | t=128, T=864 (nm -U 1322 satır) | evet | evet (yalnız `__mh_execute_header`) | 26.0 (SDK 26.5) |
 
-**Yöntem**
+**Yöntem — newlisp**
 - **Formül:** Şişenin içindeki `.brew/newlisp.rb` kullanıldı. homebrew-core `bf7ada6` ile derleme adımları aynı. Fark: adresler `https`'e geçmiş, bottle bloğu, test yazımı ve yeni bir `mirror` (Debian orig).
   - API'deki güncel sürüm 10.7.5, rebuild 0. arm64_tahoe sha256'sı sabitlenen şişeninki (`cd0b1afe…`).
   - Şişe tab'ı: Homebrew 4.6.10, CLT 26.0 (Xcode 26.0), macOS 26; çalışma bağımlılığı readline 8.3.1.
@@ -218,31 +218,64 @@ K3 olan iki programın (§4.3 madde 1) Mac ikilisi ön kayıt §4.4'e göre kayn
 - **Derleme günlüğü** (`bayrak_ozeti.py`, `-D` değerleri maskeli): 15 derleme çağrısının hepsinde `-Os -g -w` var. `-O1`/`-O2`/`-O3`, `-Wl,-x`, `-Wl,-S` ve `-s` hiçbirinde yok.
 - **Süre:** derleme (configure-alt + make + kurulum + dSYM + soyma) 4 sn. Ön kayıttaki 30 dakika sınırının çok altında.
 
+**Yöntem — nagios**
+- **Formül:** Şişenin içindeki `.brew/nagios.rb` kullanıldı.
+  - homebrew-core `cc475e638cb4`'teki ("nagios: update 4.5.14 bottle.", 2026-08-05) formülle bottle bloğu dışında aynı. O commit'teki arm64_tahoe sha256'sı sabitlenen şişeninki (`ba4c8b09…`).
+  - O dönemki formül `depends_on xcode: :build` içeriyordu. homebrew-core bu şartı 2026-08-11'de kaldırdı (`4a038c5d4952`). Bugünkü formül (`bf7ada6`) derleme adımlarında aynı.
+  - Şişe tab'ı: Homebrew 6.0.15, Xcode 26.6 / CLT 26.6, macOS 26.
+- **Kaynak:** `brew fetch --build-from-source` ile indirildi; sha256 formülle eşleşti (`dce59f30…`).
+- **Ortam:** newlisp ile aynı (`HOMEBREW_CCCFG=fD`, `SOURCE_DATE_EPOCH=1785941675`, SDK `MacOSX26.sdk`, `make -j6`).
+  - Bağımlılık listesi, şişe tab'ındaki 20 çalışma bağımlılığı (tab sırasıyla). Hiçbiri keg-only değil; yollar `opt/<bağımlılık>` dizinlerinden.
+- **Sandbox düzeltmesi:**
+  - İlk deneme kurulumda durdu (53 sn): `install-basic` adımındaki `chmod g+s`, `sandbox-exec` altında reddedildi. sandbox-exec, `(allow default)` olsa da setuid/setgid bitine izin vermiyor.
+  - Homebrew'un kendi derleme sandbox'ı yazılabilir yollarda `file-write-setugid` ve `file-write-mode`'a açıkça izin veriyor (`Library/Homebrew/sandbox.rb`). Aynı izin yalnız kendi derleme ağacımız için `ortam.sh`'ye eklendi. `/opt/homebrew` yasağı aynen duruyor.
+  - İkinci deneme temiz kaynakla baştan çalıştı ve başarılı oldu. İlk denemenin dizinleri `nagios/deneme1/`'de.
+- **Formül adımları:**
+  - `./configure` `std_configure_args` ve formülün argümanlarıyla: `--sbindir`, `--sysconfdir=/opt/homebrew/etc/nagios`, `--localstatedir=/opt/homebrew/var/lib/nagios`, `--datadir`, `--libexecdir=/opt/homebrew/sbin`, URL'ler, `--with-httpd-conf`, `--with-ssl=/opt/homebrew/opt/openssl@4`, `--disable-libtool`, `--with-command-group=_www`.
+  - Kullanıcı ve grup: `--with-nagios-user` ile `--with-command-user` `id -un`'dan, `--with-nagios-group` `id -gn`'den geliyor; grup değeri formüldeki gibi tırnaklı. configure bunları ikiliye varsayılan değer olarak gömüyor (sapma 4).
+  - `make all`.
+  - `make install` yerine `make install-unstripped`: nagios'un kendi hedefi; aynı adımlar, yalnız `base/`'deki `install -s` yok.
+  - `make install-config` ve `make install-webconf`: yalnız dosya kopyalıyor.
+  - Hiçbir adım nagios'u çalıştırmıyor. Hizmet adımları (`install-init`, `install-daemoninit`) formülde yok.
+  - Yetkisiz kullanıcının `install -g _www` sahiplik değişikliği uyarı verip geçiyor; CI'da da aynı.
+- **configure özeti** (yalnız özet satırları okundu): Event Broker evet, IOBroker poll, kullanıcı/grup yukarıdaki gibi.
+  - pkg-config bulundu (superenv kabuğu). SSL için önce pkg-config deneniyor (sapma 8).
+  - CGI'lar için gd bulundu.
+- **Strip'in kapatılması:** `install-unstripped`. Bağlamada `-s` ya da `-Wl,-x` yok.
+- **Derleme günlüğü** (`bayrak_ozeti.py`, configure denemeleri hariç): 55 derleme çağrısının hepsinde `-Os -g -w` var. `-O1`/`-O2`/`-O3`, `-Wl,-x`, `-Wl,-S` ve `-s` hiçbirinde yok.
+- **Süre:** iki deneme toplamı 109 sn. Duvar saati 14:00:41 – 14:04:16, yani yaklaşık 3,5 dakika; 30 dakika sınırının çok altında.
+
 **Doğrulamalar (yalnız sayılar; iki değer varsa bizim / şişe)**
 
-| Ölçüt | newlisp |
-|---|---|
-| Mimari | arm64 / arm64 |
-| nm -U (GT / şişe) | 1014 (t=25, T=794) / 1 (t=0, T=1) |
-| nm -U (analiz kopyası) | 1 (yalnız `__mh_execute_header`) |
-| nm -u (dışarıdan alınan semboller) | 161 / 161 |
-| Fonksiyon başlangıcı (`dyld_info -function_starts`) | 817 / 811 |
-| `__TEXT,__text` (bayt) | 223 064 / 224 124 |
-| Bağlı kütüphaneler | aynı: yalnız libSystem |
-| LC_RPATH | yok / yok |
-| LC_BUILD_VERSION minos / SDK / ld | 26.0 / 26.5 / 27037.1 — şişe: 26.0 / 26.0 / 1221.4 |
-| dSYM: derleme birimi, `DW_TAG_subprogram` | 15, 1620 |
-| dSYM DWARF sha256 | `f075ca091916fd096ec33168fd111b66d5b4c4b61ac95c1c9ef9afe34a3335d3` |
-| Export trie (GT → analiz) | 948 → 1 |
-| Kod imzası (GT ve analiz) | geçerli (ad-hoc, linker-signed) |
-| Ön kayıt §4.4 K3 koşulu (GT'de yerel sembol) | sağlandı: t=25 > 0 (Debian `.symtab` yerel FUNC 42) |
+| Ölçüt | newlisp | nagios |
+|---|---|---|
+| Mimari | arm64 / arm64 | arm64 / arm64 |
+| nm -U (GT / şişe) | 1014 (t=25, T=794) / 1 (t=0, T=1) | 1322 (t=128, T=864) / 1 (t=0, T=1) |
+| nm -U (analiz kopyası) | 1 (yalnız `__mh_execute_header`) | 1 (yalnız `__mh_execute_header`) |
+| nm -u (dışarıdan alınan semboller) | 161 / 161 | 182 / 182 |
+| Fonksiyon başlangıcı (`dyld_info -function_starts`) | 817 / 811 | 990 / 990 |
+| `__TEXT,__text` (bayt) | 223 064 / 224 124 | 356 396 / 356 408 |
+| Bağlı kütüphaneler | aynı: yalnız libSystem | aynı: libssl.4 ve libcrypto.4 (openssl@4), libSystem |
+| LC_RPATH | yok / yok | yok / yok |
+| LC_BUILD_VERSION minos / SDK / ld | 26.0 / 26.5 / 27037.1 — şişe: 26.0 / 26.0 / 1221.4 | 26.0 / 26.5 / 27037.1 — şişe: 26.0 / 26.5 / 1267.0 |
+| dSYM: derleme birimi, `DW_TAG_subprogram` | 15, 1620 | 42, 2370 |
+| dSYM DWARF sha256 | `f075ca091916fd096ec33168fd111b66d5b4c4b61ac95c1c9ef9afe34a3335d3` | `d59014db14d6cd53333da88723383f53ebf20923c53c3a337b2b2a2b2000990a` |
+| Export trie (GT → analiz) | 948 → 1 | 1115 → 1 |
+| Kod imzası (GT ve analiz) | geçerli (ad-hoc, linker-signed) | geçerli (ad-hoc, linker-signed) |
+| Ön kayıt §4.4 K3 koşulu (GT'de yerel sembol) | sağlandı: t=25 > 0 (Debian `.symtab` yerel FUNC 42) | sağlandı: t=128 > 0 (Debian `.symtab` yerel FUNC 113) |
 
-- **Şişe kipinde kıyas derlemesi:** `.tekrar/newlisp-sisekipi/` altında `HOMEBREW_CCCFG=f` ile yapıldı; şişenin bayraklarının birebir aynısı.
+- **Şişe kipinde kıyas derlemesi (newlisp):** `.tekrar/newlisp-sisekipi/` altında `HOMEBREW_CCCFG=f` ile yapıldı; şişenin bayraklarının birebir aynısı.
   - Sonuç GT kipiyle bütün bölümlerde bayt bayt aynı; fonksiyon adres listesi de aynı. Yani `D` kipinin newlisp'e hiçbir etkisi yok.
   - UUID şişeninkinden farklı (`2FB2E4EF-5C82-35F7-BA4C-A7F3179AB2BB`, şişede `75905649-…`), çünkü şişe başka CLT ile derlenmiş (sapma 2). Test setindeki ssh'te olduğu gibi şişenin kendisini analiz girdisi yapma seçeneği burada yok.
   - Kıyas dosyaları: GT sha256 `5c0a0c555f4398742ff8a40e57b4a2b07a21e422ed393135882d920a08be365f`, soyulmuş kopya `bdfad97fea65baf4b126364955899fb3521888c9d125ddb25b7b3c7220070b13`. Ölçümde kullanılmaz.
+- **Şişe kipinde kıyas derlemesi (nagios):** `.tekrar/nagios-sisekipi/` altında, aynı yöntemle.
+  - GT kipiyle bütün bölümlerde bayt bayt aynı; fonksiyon adres listesi de aynı. `D` kipinin nagios'a etkisi yok.
+  - Şişeye göre fonksiyon sayısı aynı (990), ama adres listesi farklı. `__text` 12 bayt küçük, `__cstring` 1 bayt büyük, `__unwind_info` 8 bayt büyük.
+  - UUID farklı (`F29A208E-4478-311B-A5E9-303607129CDE`, şişede `38A81700-…`). Sebep: araç zinciri (Xcode 26.6 ↔ CLT 27.0), bağımlılıklar ve gömülü kullanıcı adı (sapmalar 2–4).
+  - Adresler örtüşmediği için şişenin kendisini analiz girdisi yapma seçeneği burada da yok.
+  - Kıyas dosyaları: GT sha256 `a3cb33889b0542d2815811b51c08ece811cf37b2f47c4ba8b96e72b287f3761f`, soyulmuş kopya `94c7b4cf537531af9582a6adda67210727a4b1ed470b0f29783c3c9d2a792e85`. Ölçümde kullanılmaz.
 
-**Şişeden sapmalar**
+**Şişeden sapmalar — newlisp**
 1. **Amaçlananlar:** `-g` (debug map ve dSYM) ve `makefile_build`'deki `strip` adımının kapatılması.
 2. **Derleyici:** CLT 27.0 (Apple clang 21.0.0, ld 27037.1); şişe CLT 26.0 ile derlenmiş.
    - Fonksiyon başlangıcı 817 / 811, `__text` 1060 bayt (%0,47) küçük, `__TEXT,__const` 232 bayt büyük, `__unwind_info` 16 bayt büyük.
@@ -257,6 +290,47 @@ K3 olan iki programın (§4.3 madde 1) Mac ikilisi ön kayıt §4.4'e göre kayn
    - Strip, kurulum ve readline mekanizmasını bulmak için `configure-alt` ile `Makefile`'ın ilgili satırları okundu. Bu satırlarda configure-alt'ın kendi deneme programlarından birkaç satır vardı (readline kütüphanesinin API adları; newlisp'in kendi fonksiyonları değil).
    - Derlenen newlisp çalıştırılmadı.
 
+**Şişeden sapmalar — nagios**
+1. **Amaçlananlar:** `-g` (debug map ve dSYM) ve `install -s`'nin kapatılması (`install-unstripped`).
+2. **Araç zinciri:** Şişe, formülün o dönemki `depends_on xcode: :build` şartıyla Xcode 26.6 / CLT 26.6 araçlarıyla (ld 1267.0) derlenmiş. Bu makinede Xcode yok; CLT 27.0 (Apple clang 21.0.0, ld 27037.1) kullanıldı. homebrew-core bu şartı 2026-08-11'de kaldırdı.
+   - SDK ikisinde de 26.5, minimum macOS 26.0.
+   - Etkisi: fonksiyon sayısı aynı (990), `__text` 12 bayt küçük, `__unwind_info` 8 bayt büyük, fonksiyon adresleri kayıyor.
+3. **Bağımlılık sürümleri** (şişe tab'ı ↔ 2026-10-19 kurulu):
+
+    | Bağımlılık | Şişe derlemesinde | 2026-10-19 kurulu |
+    |---|---|---|
+    | openssl@4 (nagios'un bağlandığı tek Homebrew kütüphanesi) | 4.0.1, şişe rebuild 1 | 4.0.3 |
+    | gd | 2.3.3_6, rebuild 0 | 2.3.3_6, rebuild 0 (bugün kuruldu) |
+    | libavif | 1.4.2 | 1.4.2 (bugün kuruldu) |
+    | libpng | 1.6.58 | 1.6.59 |
+    | freetype | 2.14.3 | 2.15.0 (yeni bağımlılık brotli ile) |
+    | fontconfig | 2.18.2 | 2.18.3 |
+    | aom / libvmaf | 3.14.1 / 3.2.0 | 3.15.2 / 3.2.1 |
+    | xz | 5.8.3 | 5.8.4 |
+    | ca-certificates | 2026-07-16 | 2026-09-25 |
+    | jpeg-turbo, dav1d, giflib, webp, libtiff, lz4, zstd, json-c, libunistring, gettext | 3.2.0, 1.5.4, 6.1.3, 1.6.0, 4.7.2, 1.10.0, 1.5.7_1, 0.19, 1.4.2, 1.0 | aynı sürümler |
+
+    - `bin/nagios` yalnız openssl@4'e bağlanıyor; öteki bağımlılıklar CGI'lar içindir ve ölçülen ikiliye girmiyor.
+    - Bağlı kütüphane kümesi ve dışarıdan alınan semboller (182) şişeyle aynı.
+4. **Gömülü kullanıcı ve makine bilgisi:** formül `--with-nagios-user`, `--with-command-user` ve `--with-nagios-group` değerlerini derleyen makinenin `id -un` / `id -gn` çıktısından alıyor; configure bunları ikiliye gömüyor.
+   - Bizde derleyen kullanıcının adı var, şişede CI kullanıcısınınki. CI kullanıcısının adı bilinmiyor; şişe içeriğine bakılmadı.
+   - `__cstring`'deki +1 baytlık fark buradan gelebilir; doğrulanmadı.
+5. **Kurulum hedefi:** `install` yerine `install-unstripped`; fark yalnız `install -s`.
+6. **Sandbox izni:** `file-write-setugid` izni yalnız kurulum dosyalarının kipini etkiliyor (`chmod g+s`); ikiliyi etkilemez.
+7. **Yol eşlemesi (`D` kipi):** kıyas derlemesine göre nagios'ta ölçülebilir etkisi yok.
+8. **pkg-config:**
+   - Bu makinede pkgconf kurulu; superenv kabuğu üzerinden çalışıyor. nagios'un configure'u SSL için önce pkg-config'i deniyor.
+   - Şişe derlemesinde pkgconf'un kurulu olup olmadığı bilinmiyor; formülün bağımlılığı değil.
+   - İki yol da openssl@4'e bağlıyor; bağlı kütüphaneler ve dışarıdan alınan semboller şişeyle aynı.
+9. **Yalıtım (kural 1 ve 8) kaydı:**
+   - .c/.h dosyalarına, ikili içeriğine ve şişedeki yapılandırma dosyalarına bakılmadı.
+   - Strip, kurulum, kullanıcı/grup, pkg-config ve SSL mekanizması için `Makefile.in`, `base/Makefile.in` ve `configure`'un ilgili satırları okundu.
+   - configure çıktısında gd kütüphanesinin iki API adı görüldü; nagios'un kendi fonksiyonları değil. Bu belgeye yazılmadı.
+   - `nm` yalnız sayım için çalıştı. Derlenen nagios ve CGI'lar çalıştırılmadı.
+
 **Açık sorunlar (karar ana oturumun)**
-1. **nagios:** bekliyor; `gd` bağımlılığı kurulu değil, Berke'nin onayı gerekiyor. Onay bekleme süresi ön kayıt §4.4'e göre 30 dakikaya sayılmaz.
-2. **`.tekrar/newlisp-sisekipi/`** (yaklaşık 9 MB) yalnız kıyas için; silinebilir (onay gerekiyor).
+1. **KAPANDI — nagios'un `gd` bağımlılığı (2026-10-19):** ana oturum, Berke'nin onayıyla, `HOMEBREW_NO_INSTALL_UPGRADE=1` ile gd 2.3.3_6 ve libavif 1.4.2'yi kurdu; mevcut hiçbir paket yükseltilmedi. Sonra nagios derlendi (tablo). Onay bekleme süresi ön kayıt §4.4'e göre 30 dakikaya sayılmadı.
+2. **Silinebilecek dizinler (onay gerekiyor):** yalnız kıyas ya da kayıt içindir.
+   - `.tekrar/newlisp-sisekipi/` (yaklaşık 9 MB);
+   - `.tekrar/nagios-sisekipi/` (32 MB);
+   - `nagios/deneme1/` (41 MB, kurulumda duran ilk deneme).
