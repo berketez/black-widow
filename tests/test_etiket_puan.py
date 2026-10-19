@@ -340,3 +340,210 @@ def test_reads_key_written_by_etiket_paketi(tmp_path):
     n_tp = sum(1 for v in key["ogeler"].values() if v["status"] == "tp")
     assert res["n"] == 4 and res["yem"]["n"] == 1
     assert res["oranlar"]["tam"]["k"] == n_tp
+
+
+# =============================================================================================
+# Çok adaylı kip (G6/G7)
+# =============================================================================================
+
+def _cand(aday, *, tam=False, yem=False, sistemler=()):
+    return {"aday": aday, "tam": tam, "yem": yem, "sistemler": list(sistemler), "ozgun": {}, "yem_kaynagi": None}
+
+
+def _sys(aid=None, guven=None, neden=None):
+    if aid is None:
+        return {"durum": "cekimser", "aday_id": None, "ozgun": None, "guven": guven, "neden": neden or "bos"}
+    return {"durum": "aday", "aday_id": aid, "ozgun": "x", "guven": guven, "neden": None}
+
+
+def _func(n, adaylar, sistemler, capraz=0):
+    return {"addr": f"0x{0x4000 + n:x}", "gt": [f"_fn_{n}"], "satir_durumu": "wrong", "capraz_atif": capraz,
+            "adaylar": adaylar, "sistemler": sistemler}
+
+
+def _mkey(program, ogeler):
+    return {"kunye": {"sema": epk.PAKET_SEMASI_COK, "kip": epk.KIP_COK, "program": program,
+                      "sistemler": ["A", "B"]}, "ogeler": ogeler}
+
+
+# Elle hesaplanan senaryo (program p ve q). Sonuçlar:
+#   A: p-000 tam (otomatik; etiket yanlis), p-001 dogru_tarif (B ile birleşik), p-002 yalniz_alan,
+#      p-003 çekimser, p-004 dogru_tarif (etiket 'tam', otomatik değil), p-005 yanlis
+#   B: p-000 yanlis, p-001 dogru_tarif, p-002 çekimser (ret), p-003 dogru_tarif, p-004 yanlis,
+#      p-005 yalniz_alan;  yemler: p-004.3 kabul, p-005.3 ret
+P_FUNCS = {
+    "p-000": _func(0, {"p-000.1": _cand("x0", tam=True, sistemler=["A"]), "p-000.2": _cand("y0", sistemler=["B"])},
+                   {"A": _sys("p-000.1"), "B": _sys("p-000.2", -0.1)}),
+    "p-001": _func(1, {"p-001.1": _cand("x1", sistemler=["A", "B"])},
+                   {"A": _sys("p-001.1"), "B": _sys("p-001.1", -0.2)}),
+    "p-002": _func(2, {"p-002.1": _cand("x2", sistemler=["A"])}, {"A": _sys("p-002.1"), "B": _sys(neden="ret")}),
+    "p-003": _func(3, {"p-003.1": _cand("y3", sistemler=["B"])}, {"A": _sys(), "B": _sys("p-003.1", -0.3)}),
+    "p-004": _func(4, {"p-004.1": _cand("x4", sistemler=["A"]), "p-004.2": _cand("y4", sistemler=["B"]),
+                       "p-004.3": _cand("d4", yem=True)},
+                   {"A": _sys("p-004.1"), "B": _sys("p-004.2", -0.5)}),
+    "p-005": _func(5, {"p-005.1": _cand("x5", sistemler=["A"]), "p-005.2": _cand("y5", sistemler=["B"]),
+                       "p-005.3": _cand("d5", yem=True)},
+                   {"A": _sys("p-005.1"), "B": _sys("p-005.2", -0.5)}, capraz=1),
+}
+P_LABELS = {"p-000.1": "yanlis", "p-000.2": "yanlis", "p-001.1": "dogru_tarif", "p-002.1": "yalniz_alan",
+            "p-003.1": "dogru_tarif", "p-004.1": "tam", "p-004.2": "yanlis", "p-004.3": "dogru_tarif",
+            "p-005.1": "yanlis", "p-005.2": "yalniz_alan", "p-005.3": "yanlis"}
+Q_FUNCS = {
+    "q-000": _func(10, {"q-000.1": _cand("a", sistemler=["A"]), "q-000.2": _cand("b", sistemler=["B"])},
+                   {"A": _sys("q-000.1"), "B": _sys("q-000.2", -0.4)}),
+    "q-001": _func(11, {"q-001.1": _cand("c", sistemler=["A"]), "q-001.2": _cand("d", sistemler=["B"])},
+                   {"A": _sys("q-001.1"), "B": _sys("q-001.2", -0.6)}),
+}
+Q_LABELS = {"q-000.1": "dogru_tarif", "q-000.2": "yanlis", "q-001.1": "yanlis", "q-001.2": "dogru_tarif"}
+
+
+def _mlabels(labels: dict, amac_of=lambda fid: f"{fid} amacı") -> list[dict]:
+    return [{"id": aid.split(".")[0], "aday_id": aid, "amac": amac_of(aid.split(".")[0]), "etiket": e, "gerekce": "g"}
+            for aid, e in labels.items()]
+
+
+def _multi_inputs(tmp_path, with_q=False):
+    paths = [_write_json(tmp_path / "kp.json", _mkey("p", P_FUNCS))]
+    labels = dict(P_LABELS)
+    if with_q:
+        paths.append(_write_json(tmp_path / "kq.json", _mkey("q", Q_FUNCS)))
+        labels.update(Q_LABELS)
+    funcs, cands = ept.load_multi_keys(paths)
+    lab = ept.load_multi_labels([_write_jsonl(tmp_path / "e.jsonl", _mlabels(labels))])
+    return lab, funcs, cands
+
+
+def test_mcnemar_known_values():
+    assert ept.mcnemar_kesin(0, 5) == pytest.approx(0.0625)
+    assert ept.mcnemar_kesin(1, 9) == pytest.approx(0.021484375)
+    assert ept.mcnemar_kesin(2, 1) == 1.0 and ept.mcnemar_kesin(0, 0) == 1.0
+
+
+def test_bootstrap_katmanli_matches_single_stratum():
+    d = [(1, 0, -1, 0, 1, 1, 0)[i % 7] for i in range(150)]
+    assert ept.bootstrap_fark_katmanli([d], tohum=7, tekrar=500) == ept.bootstrap_fark(d, tohum=7, tekrar=500)
+    lo, hi = ept.bootstrap_fark_katmanli([d[:90], d[90:]], tohum=7, tekrar=500)
+    assert lo < sum(d) / len(d) < hi
+
+
+def test_score_multi_rates_per_system(tmp_path):
+    lab, funcs, cands = _multi_inputs(tmp_path)
+    res = ept.score_multi(lab, funcs, cands, tohum=3, tekrar=300)
+    a, b = res["sistemler"]["A"]["toplam"], res["sistemler"]["B"]["toplam"]
+    assert (a["n"], a["verilen"], a["cekimser"], a["cekimser_nedenleri"]) == (6, 5, 1, {"bos": 1})
+    assert (b["n"], b["verilen"], b["cekimser"], b["cekimser_nedenleri"]) == (6, 5, 1, {"ret": 1})
+    fa, va = a["fonksiyon_paydasi"], a["verilen_paydasi"]
+    assert (fa["tam"]["k"], fa["yakin"]["k"], fa["kapsam"]["k"], fa["cekimser"]["k"]) == (1, 3, 5, 1)
+    assert fa["yakin"]["n"] == 6 and va["yanlis"]["n"] == 5
+    assert (va["tam"]["k"], va["yakin"]["k"], va["yalniz_alan"]["k"], va["yanlis"]["k"]) == (1, 3, 1, 1)
+    fb, vb = b["fonksiyon_paydasi"], b["verilen_paydasi"]
+    assert (fb["tam"]["k"], fb["yakin"]["k"], vb["yanlis"]["k"], vb["yalniz_alan"]["k"]) == (0, 2, 2, 1)
+    lo, hi = ept.wilson(3, 6)
+    assert (fa["yakin"]["alt"], fa["yakin"]["ust"]) == (round(lo, 6), round(hi, 6))
+    assert res["yem"]["toplam"]["n"] == 2 and res["yem"]["toplam"]["kabul_edilen"] == ["p-004.3"]
+    assert res["tutarlilik"] == {"tam_yakin_disi": ["p-000.1"], "tam_ama_otomatik_degil": ["p-004.1"]}
+
+
+def test_score_multi_pairs_and_strata(tmp_path):
+    lab, funcs, cands = _multi_inputs(tmp_path, with_q=True)
+    res = ept.score_multi(lab, funcs, cands, tohum=3, tekrar=400)
+    (pair,) = res["ciftler"]
+    assert (pair["a"], pair["b"]) == ("A", "B")
+    p = pair["programlar"]["p"]
+    assert p["n"] == 6 and p["fark"] == round(1 / 6, 6)
+    assert p["ciftler"] == {"ikisi_yakin": 1, "yalniz_a_yakin": 2, "yalniz_b_yakin": 1, "ikisi_yakin_degil": 2}
+    assert p["mcnemar_p"] == 1.0
+    assert pair["programlar"]["q"]["fark"] == 0.0
+    t = pair["toplam"]
+    assert t["n"] == 8 and t["fark"] == 0.125 and (t["yakin_a"]["k"], t["yakin_b"]["k"]) == (4, 3)
+    assert t["fark_alt"] <= 0.125 <= t["fark_ust"]
+    again = ept.score_multi(lab, funcs, cands, tohum=3, tekrar=400)
+    assert again == res
+
+
+def test_risk_coverage_table(tmp_path):
+    lab, funcs, cands = _multi_inputs(tmp_path)
+    res = ept.score_multi(lab, funcs, cands, tohum=1, tekrar=100)
+    assert res["risk_kapsam"]["A"]["toplam"] == {"durum": "yok", "esikler": []}
+    rows = res["risk_kapsam"]["B"]["toplam"]
+    assert rows["durum"] == "tamam"
+    assert [(r["esik"], r["verilen"], r["yanlis_orani"], r["yakin_kapsam"]) for r in rows["esikler"]] == [
+        (-0.1, 1, 1.0, 0.0), (-0.2, 2, 0.5, round(1 / 6, 6)), (-0.3, 3, round(1 / 3, 6), round(2 / 6, 6)),
+        (-0.5, 5, 0.4, round(2 / 6, 6))]
+    assert rows["esikler"][-1]["kapsam"] == round(5 / 6, 6)
+    partial = {"f1": ("dogru_tarif", -0.1, None), "f2": ("yanlis", None, None), "f3": ("cekimser", None, "bos")}
+    assert ept.risk_coverage(partial) == {"durum": "eksik", "guvensiz_ad": 1, "esikler": []}
+
+
+def test_score_multi_capraz_atifsiz(tmp_path):
+    lab, funcs, cands = _multi_inputs(tmp_path)
+    res = ept.score_multi(lab, funcs, cands, tohum=1, tekrar=100, capraz_atifsiz=True)
+    assert res["dislanan_capraz_atifli"] == 1
+    assert res["sistemler"]["A"]["toplam"]["n"] == 5 and res["yem"]["toplam"]["n"] == 1
+
+
+@pytest.mark.parametrize("mutate, message", [
+    (lambda labs: labs.pop(), "eksik 1 id"),
+    (lambda labs: labs.append({**labs[0], "aday_id": "p-009.1"}), "fazla 1 id"),
+    (lambda labs: labs[0].update(id="p-001"), "id uyuşmuyor"),
+    (lambda labs: labs[1].update(amac="başka"), "farklı amaç"),
+    (lambda labs: labs.append(dict(labs[0])), "iki kez"),
+    (lambda labs: labs[0].update(etiket="belki"), "geçersiz etiket"),
+])
+def test_multi_label_errors(tmp_path, mutate, message):
+    labs = _mlabels(P_LABELS)
+    labs.sort(key=lambda r: r["aday_id"])  # p-000.1, p-000.2, ...
+    mutate(labs)
+    funcs, cands = ept.load_multi_keys([_write_json(tmp_path / "k.json", _mkey("p", P_FUNCS))])
+    with pytest.raises(ept.PuanHatasi, match=message):
+        ept.check_multi_labels(ept.load_multi_labels([_write_jsonl(tmp_path / "e.jsonl", labs)]), cands)
+
+
+def test_multi_stage_one_amac_check(tmp_path):
+    lab, _funcs, cands = _multi_inputs(tmp_path)
+    stage1 = {f"p-00{i}": f"p-00{i} amacı" for i in range(6)}
+    ept.check_multi_labels(lab, cands, stage1)
+    stage1["p-003"] = "değişti"
+    with pytest.raises(ept.PuanHatasi, match="değişmiş: p-003"):
+        ept.check_multi_labels(lab, cands, stage1)
+
+
+def test_single_and_multi_keys_are_not_interchangeable(tmp_path):
+    multi = _write_json(tmp_path / "km.json", _mkey("p", P_FUNCS))
+    single = _write_json(tmp_path / "ks.json", _key_doc("prog", {"p-000": _item("wrong", n=0)}))
+    with pytest.raises(ept.PuanHatasi, match="şema"):
+        ept.load_keys([multi])
+    with pytest.raises(ept.PuanHatasi, match="çok adaylı anahtar değil"):
+        ept.load_multi_keys([single])
+
+
+def test_cli_puan_cok_end_to_end(tmp_path, capsys):
+    root = tmp_path / "src"
+    root.mkdir()
+    names = ["alpha_open_door", "beta_close_gate", "gamma_read_book", "delta_write_note",
+             "eps_sort_list", "zeta_hash_word", "eta_fill_cup", "theta_fold_map"]
+    rows, cand = [], []
+    for i, name in enumerate(names):
+        (root / f"m{i}.c").write_text(f"int\n{name}(void)\n{{\n\treturn {i};\n}}\n", encoding="utf-8")
+        addr = f"0x{0x2000 + 16 * i:x}"
+        rows.append({"addr": addr, "gt": [f"_{name}"], "pred": None, "status": "unnamed"})
+        if i < 5:
+            cand.append({"addr": addr, "sistem": "A", "aday": name if i < 2 else f"guess_a{i}", "guven": -0.1 * i})
+            cand.append({"addr": addr, "sistem": "B", "aday": None if i == 4 else f"guess_b{i}", "guven": -0.2 * i})
+    cands, _ = epk.parse_candidates(cand)
+    amac, aday, key = epk.build_multi_package(rows, epk.index_tree(root), root, cands, binary="mini", seed=9)
+    epk.write_package(tmp_path / "pkg", amac, aday, key)
+    stage1 = _write_jsonl(tmp_path / "amac.jsonl", [{"id": r["id"], "amac": "bir iş yapar"} for r in amac])
+    labs = _write_jsonl(tmp_path / "e.jsonl", [{"id": r["id"], "aday_id": r["aday_id"], "amac": "bir iş yapar",
+                                                "etiket": "yanlis", "gerekce": "g"} for r in aday])
+    out = tmp_path / "puan.json"
+    rc = ept.main(["puan-cok", "--anahtar", str(tmp_path / "pkg" / epk.ANAHTAR_DOSYASI), "--etiket", str(labs),
+                   "--amac", str(stage1), "--tekrar", "200", "--cikti", str(out)])
+    assert rc == 0
+    res = json.loads(out.read_text(encoding="utf-8"))
+    assert set(res["sistemler"]) == {"A", "B"}
+    a = res["sistemler"]["A"]["toplam"]
+    assert (a["n"], a["verilen"], a["fonksiyon_paydasi"]["tam"]["k"]) == (5, 5, 2)
+    assert res["sistemler"]["B"]["toplam"]["cekimser"] == 1
+    assert res["risk_kapsam"]["A"]["toplam"]["durum"] == "tamam"
+    assert "A − B" in capsys.readouterr().out

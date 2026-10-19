@@ -333,3 +333,163 @@ Hesaplar %95 düzeyindedir (z = 1,96).
 **Bekleyenler (karar verildi, ana oturum, 2026-10-19):**
 1. **Yemin değerlendiriciye söylenip söylenmeyeceği:** söylenmez; söylenirse doğal hoşgörü ölçülemez.
 2. **Gövde kırpma sınırı:** 120 satır (`--azami-satir 120`). 60 satırlık sınır uzun fonksiyonlarda amaç yargısını bozuyordu; v2 sayıları v1'le birleştirilmediği için eşdeğerlik gerekmiyor.
+
+## 13. Çok adaylı kip (G6 LLM pilotu, G7 kanıt tavanı)
+
+- **Tarih:** 2026-10-19.
+- **Ne zaman kullanılır:** aynı fonksiyona birden çok sistemin verdiği ad etiketlenecekse. Sistem kimliği değerlendiriciden gizlenir. Amaç cümlesi fonksiyon başına bir kez yazılır.
+- **Tek adaylı kip değişmedi.** Dört G4 paketi ve üç G4 puan dosyası bu sürümle yeniden üretildi:
+  - paketlerin `amac_paketi.jsonl` ve `aday_paketi.jsonl` dosyaları bayt bayt aynı;
+  - anahtarlar, satır dosyasının yolu dışında aynı;
+  - `tmux_taban_v2.json`, `htop_taban_v2.json` ve `comertlik.json` bayt bayt aynı.
+
+### 13.1 Girdi
+
+```bash
+python scripts/measurement/etiket_paketi.py uret-cok \
+    --satirlar <koşu>/macho_score.json --kaynak <kaynak kökü> --ikili tmux \
+    --adaylar adaylar.jsonl --adresler orneklem_tmux.txt \
+    --tohum <tohum> [--sira-tohumu <tohum>] [--yem-tohumu <tohum>] \
+    [--guven-alani guven_ort_logprob] --azami-satir 120 --cikti <paket>/tmux_cok
+```
+
+**Aday dosyası** (jsonl). Her satır bir (fonksiyon, sistem) çiftidir.
+
+| Alan | Anlam | G6 harness'ındaki karşılığı |
+|---|---|---|
+| `addr` | hex adres | `adres` |
+| `sistem` | sistemin adı | yoksa `model` + "/" + `kosul` (ör. `qwen38/B`) |
+| `aday` | ad; çekimserse null | aynı |
+| `guven` | isteğe bağlı sayı | `--guven-alani guven_ort_logprob` ile seçilir |
+| `program` | varsa yalnız `--ikili` ile aynı olan satırlar okunur | aynı |
+| `durum` | çekimserlik nedeni (varsa) | aynı |
+
+Şu durumlar açık hatadır: aynı (adres, sistem) çiftinin iki kez gelmesi; dolu `aday` ile `cekimser: true`'nun birlikte gelmesi; eksik adres ya da sistem alanı.
+
+**Örneklem:**
+- `--adresler`: satır başına bir hex adres ya da JSON liste. Puanlama satırı, tek anlamlı gövdesi ya da aday satırı olmayan bir adres açık hatadır.
+- `--orneklem N`: aday dosyasındaki ve gövdesi tek anlamlı bulunan fonksiyonlardan tohumlu N; 0 hepsi demektir. Dışarıda kalanlar künyede sayılır.
+- Adres listelerinde `program-adres` biçimi de kabul edilir (G6 `orneklem.json` yem listesi). Bu biçimdeki girdilerden yalnız `--ikili` ile eşleşenler alınır.
+
+**Ön kayıtlı yem hedefleri:** `--yem-adresleri` verilirse yem bu fonksiyonlara konur. Liste örneklemin alt kümesi olmalıdır, değilse açık hata verilir. Verilmezse hedefler tohumla seçilen %10'dur. Yem adaylarının seçimi her iki durumda da `--yem-tohumu` ile yapılır. Künyede `yem_hedefi_kaynagi` alanı `liste` ya da `tohumlu` yazar.
+
+**Tohumlar:** `--tohum` örneklem içindir. `--sira-tohumu` sırayı, `--yem-tohumu` yemi belirler; verilmezlerse `--tohum` kullanılır. G6 ön kaydının sıra ve yem tohumları doğrudan verilebilir.
+
+### 13.2 Paket
+
+**`amac_paketi.jsonl`:** fonksiyon başına bir kayıt (`id`, `dosya`, `govde`). Karartma tek adaylı kör kipteki gibidir (§5).
+
+**`aday_paketi.jsonl`:** her satır bir adaydır: `id` (fonksiyon), `aday_id`, `aday`. Sistem adı yoktur.
+- **Gösterim:** adaylar `function_f1.normalize_name` biçiminde gösterilir: küçük harf, snake_case; `_2` eki ve `m_`/`s_` gibi önekler atılır. Böylece sistemlerin üslubu görünmez. Özgün dize anahtarda kalır.
+- **Birleştirme:** aynı fonksiyonda normalize biçimi aynı olan adaylar tek `aday_id` altında birleşir. Hangi sistemlerden geldiğini anahtar tutar.
+- **Pakete girmeyenler.** Anahtarda çekimser sayılır ve nedeni yazılır:
+  - `aday` null: girdide `durum` varsa neden odur, yoksa `bos`;
+  - tanımlayıcı olmayan ad: `gecersiz`;
+  - jenerik ad, yani `FUN_…` ya da kendi adresini taşıyan ad (`function_f1.is_generic_name`): `jenerik`.
+- **Sıra:**
+  - Fonksiyon id'leri karışık sırayla verilir.
+  - Bir fonksiyonun adayları karışık sırayla numaralanır (`<id>.<j>`).
+  - Aday satırları fonksiyonlar arasında karışık sıradadır.
+
+**Yem:**
+- Fonksiyonların tohumla seçilen %10'una ek bir yem aday konur (yukarı yuvarlanır).
+- Kurallar §6'dakilerle aynı: farklı dosya, boş token kesişimi, hiçbir gövdede tanımlayıcı olarak geçmeme, paketteki bir fonksiyonun gerçek adı olmama. Ek kural: yem, hiçbir adayla (normalize) aynı olamaz.
+- **v2'den sapma:** yem ayrı bir öğe değil, var olan bir fonksiyonun fazladan adayıdır. Bu yüzden yeni bir amaç cümlesi gerekmez.
+
+**Anahtar (`karadul-etiket-paketi-cok/1`).** Fonksiyon başına:
+- gerçek ad;
+- satır durumu (Karadul'un `tp`/`wrong`/`unnamed`'i);
+- karartma ve çapraz atıf bilgisi;
+- `adaylar`: aday_id → gösterilen ad, sistemler, özgün dizeler, otomatik `tam`, yem bilgisi;
+- `sistemler`: sistem → aday_id ya da çekimser, özgün dize, güven, neden.
+
+Künyede tohumlar, aday dosyasının sha256'sı ve sistem başına satır, aday ve çekimser sayıları bulunur.
+
+**Sızıntı denetimi:** `sizinti-denetimi` anahtardaki kipe bakarak bu kipi tanır. Tek adaylı kör kipin kurallarına ek olarak şunlar denetlenir:
+- aday satırında yalnız `id`, `aday_id`, `aday` var;
+- her `aday_id` doğru fonksiyona bağlı ve metni anahtarla aynı;
+- sistem adları kimliklerde geçmiyor.
+
+### 13.3 Değerlendirici yönergesi
+
+- **Aşama 1** aynıdır (§8, aşama 1 metni): fonksiyon başına bir amaç cümlesi.
+- **Aşama 2** metni:
+
+```text
+Aşama 2. Amaç cümlelerin (<klasör>/amac.jsonl) teslim alındı; artık değiştirilmez.
+
+Okuyabileceğin dosyalar: <klasör>/etiket_rehberi.md, <klasör>/amac_paketi.jsonl,
+<klasör>/amac.jsonl ve yeni dosya <klasör>/aday_paketi.jsonl (her satır: id, aday_id, aday).
+Bir fonksiyonun (id) birden çok adayı vardır; satırlar karışık sıradadır.
+
+Her satır (aday_id) için:
+1. O fonksiyonun amac.jsonl'deki cümlesini al, değiştirme.
+2. Adayı amaç cümlesine göre etiketle: dogru_tarif, yalniz_alan ya da yanlis.
+   Özgün adı bilmediğin için tam kullanma.
+3. Her adayı ayrı ayrı etiketle; adayları birbiriyle kıyaslama. Bir fonksiyonun birden
+   çok adayı doğru olabilir, hepsi yanlış da olabilir.
+4. Kısa bir gerekçe yaz ve dayandığın kuralı belirt.
+
+Aşama 1'deki 1., 2. ve 3. kurallar geçerli.
+
+Çıktı: <klasör>/etiket.jsonl. aday_paketi.jsonl'deki her satır için bir satır:
+{"id": "...", "aday_id": "...", "amac": "<amac.jsonl'deki cümlenin aynısı>", "etiket": "...", "gerekce": "..."}
+Bitince yalnız "AŞAMA 2 TAMAM, <satır sayısı> satır" yaz.
+```
+
+### 13.4 Puanlama
+
+```bash
+python scripts/measurement/etiket_puan.py puan-cok \
+    --anahtar <paket>/htop_cok/anahtar.json --anahtar <paket>/tmux_cok/anahtar.json \
+    --etiket etiket_htop.jsonl --etiket etiket_tmux.jsonl --amac amac_htop.jsonl --amac amac_tmux.jsonl \
+    --tohum 20261019 --cikti puan_cok.json [--capraz-atifsiz]
+```
+
+**Etiket satırı:** `id`, `aday_id`, `amac`, `etiket`, `gerekce`. Şunlar açık hatadır:
+- bir `aday_id`'nin hiç ya da iki kez etiketlenmesi;
+- `id`'nin adayın fonksiyonundan farklı olması;
+- aynı fonksiyonun adaylarında farklı amaç cümlesi;
+- `--amac` verildiyse aşama 1'dekinden farklı amaç cümlesi.
+
+**Nihai etiket:** §3.3'teki kuralın karşılığıdır.
+- `tam` anahtardaki otomatik eşleşmeden gelir: normalize aday, normalize gerçek adla aynı.
+- Değerlendiricinin otomatik eşleşmesi olmayan bir adaya verdiği `tam`, `dogru_tarif` sayılır.
+
+**Sistem başına** (program başına ve birleşik) çıktı. Bir sistemin n'i, o sistemin satırı olan fonksiyonlardır (çekimser dahil). Bütün oranlar Wilson %95 aralığıyla verilir.
+- n, verilen ad sayısı, çekimser sayısı ve nedenleri;
+- fonksiyon paydasıyla: tam, yakın, kapsam, çekimser;
+- verilen ad paydasıyla: tam, yakın, yalnız alan, yanlış.
+
+**Sistem çiftleri.** İki sistemin de satırı olan fonksiyonlarda yakın farkı hesaplanır; çekimser "yakın değil" sayılır. Verilenler:
+- eşli bootstrap %95 aralığı. Yeniden örnekleme program içinde katmanlıdır; tek programda `bootstrap_fark` ile aynı sonucu verir;
+- uyuşmazlık çiftleri;
+- kesin McNemar p.
+
+**Risk-kapsam.**
+- Güven verilmiş sistemler için eşik tablosu üretilir. Her güven değeri bir eşiktir; güveni eşikten küçük olmayan adlar verilmiş sayılır.
+- Her eşikte: verilen ad sayısı, kapsam, yanlış oranı (verilenler içinde) ve yakın kapsamı.
+- Güven hiç yoksa `durum: yok`, bazı adlarda eksikse `durum: eksik` yazılır.
+
+**Ayrıca:**
+- yem kabulü (birleşik ve program başına) ve tutarlılık listeleri;
+- `--capraz-atifsiz` ile, gerçek adı başka bir gövdede geçen fonksiyonlar dışarıda bırakılarak oranların yeniden hesaplanması.
+
+### 13.5 Sınırlamalar
+
+1. **Birleştirme aday sayısını azaltır.** Bir fonksiyonda az aday görmek, sistemlerin anlaştığını ele verir; bu gizlenemez.
+2. **Normalize gösterim bazı ayrıntıları atar:** büyük/küçük harf, önekler, `_2` eki. Rubrik bu farkları zaten yok sayar (kural 2).
+3. **Yem taşıyan fonksiyonlarda bir aday fazladır.** Yemler karışık sıradadır, ama her yem bir fonksiyonun fazladan adayıdır.
+4. **Çekimserlik değerlendiriciye görünmez.** Sistemin çekimser kaldığı fonksiyonlar yalnız anahtardan sayılır.
+5. **Jenerik ve geçersiz adlar çekimser sayılır.** Karadul'un `FUN_` bıraktıkları ve geçersiz çıktılar "isim yok" olur (G6 protokolü §10.1 ile aynı).
+
+### 13.6 Sentetik kuru koşu (2026-10-19)
+
+Gerçek değerlendirme değildir; araçların uçtan uca çalıştığını gösterir.
+
+- **Girdiler:**
+  - test fikstürünün C ağacı;
+  - G6 biçiminde 36 aday satırı (3 sistem × 12 fonksiyon). Başka programa ait 1 satır süzüldü;
+  - adres listesi ve G6 ön kaydının sıra ve yem tohumları.
+- **Paket:** 12 fonksiyon, 26 aday (4 satır birleşti), 2 yem, 6 çekimser. Sızıntı denetimi 0 hata verdi.
+- **Puanlama:** kurala dayalı sentetik etiketlerle `puan-cok` çalıştı. Sistem başına oranları, 3 sistem çiftini ve güveni olan iki sistemin risk-kapsam tablolarını üretti.

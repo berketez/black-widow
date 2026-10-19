@@ -12,6 +12,13 @@ Kullanım
         --anahtar paket/tmux_kor/anahtar.json --etiket etiket_tmux.jsonl \
         [--amac amac_tmux.jsonl] [--capraz-atifsiz] [--cikti puan.json]
 
+    # Çok adaylı kip (G6/G7): sistem başına oranlar, sistem çiftleri arasında eşli
+    # yakın farkı (program içinde katmanlı bootstrap, kesin McNemar), yem kabulü,
+    # güven varsa risk-kapsam eşik tablosu (protokol §13)
+    python scripts/measurement/etiket_puan.py puan-cok \
+        --anahtar paket/tmux_cok/anahtar.json --etiket etiket_cok.jsonl \
+        [--amac amac_cok.jsonl] [--capraz-atifsiz] [--tohum N] [--cikti puan_cok.json]
+
     # Cömertlik deneyi: aynı id'ler, gt'li ve gt'siz iki etiket dosyası
     python scripts/measurement/etiket_puan.py comertlik \
         --anahtar-gtli paket/tmux_gt/anahtar.json --etiket-gtli etiket_gt.jsonl \
@@ -59,7 +66,9 @@ _HERE = Path(__file__).resolve().parent
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
-from etiket_paketi import KIP_GT, KIP_KOR, PAKET_SEMASI  # noqa: E402
+from etiket_paketi import (  # noqa: E402
+    KIP_COK, KIP_GT, KIP_KOR, LISTE_SINIRI, PAKET_SEMASI, PAKET_SEMASI_COK,
+)
 
 PUAN_SEMASI = "karadul-etiket-puan/1"
 GECERLI_ETIKETLER = ("tam", "dogru_tarif", "yalniz_alan", "yanlis")
@@ -67,12 +76,15 @@ YAKIN_ETIKETLER = frozenset({"tam", "dogru_tarif"})
 RAPOR_ORANLARI = ("tam", "yakin", "yalniz_alan", "yanlis")
 ETIKET_ALANLARI = ("id", "amac", "etiket", "gerekce")
 OTOMATIK_TAM_DURUMU = "tp"
+# Çok adaylı kip
+PUAN_SEMASI_COK = "karadul-etiket-puan-cok/1"
+COK_ETIKET_ALANLARI = ("id", "aday_id", "amac", "etiket", "gerekce")
+CEKIMSER = "cekimser"
 
 GUVEN_DUZEYI = 0.95
 BOOTSTRAP_TEKRAR = 10_000
 BOOTSTRAP_TOHUM = 20261019
 ONDALIK = 6
-LISTE_SINIRI = 10  # hata iletisinde gösterilen en çok id
 
 
 class PuanHatasi(ValueError):
@@ -400,6 +412,273 @@ def comertlik(lab_gt: dict[str, Any], lab_kor: dict[str, Any], keys_gt: dict[str
 
 
 # ---------------------------------------------------------------------------
+# Çok adaylı kip (G6 LLM pilotu, G7 kanıt tavanı)
+# ---------------------------------------------------------------------------
+
+def bootstrap_fark_katmanli(katmanlar: list[list[int]], tohum: int, tekrar: int = BOOTSTRAP_TEKRAR,
+                            guven: float = GUVEN_DUZEYI) -> tuple[float, float]:
+    """Katmanlı eşli bootstrap: öğeler her katmanın (programın) içinde yeniden örneklenir.
+
+    Tek katmanda ``bootstrap_fark`` ile aynı rastgele adımları izler, sonucu aynıdır.
+    """
+    katmanlar = [k for k in katmanlar if k]
+    if not katmanlar:
+        raise PuanHatasi("bootstrap: öğe yok")
+    if tekrar <= 0:
+        raise PuanHatasi("bootstrap: tekrar sayısı pozitif olmalı")
+    rng = random.Random(tohum)
+    n = sum(len(k) for k in katmanlar)
+    ornek = sorted(sum(sum(rng.choices(katman, k=len(katman))) for katman in katmanlar) / n
+                   for _ in range(tekrar))
+    alfa = (1 - guven) / 2
+    return _yuzdelik(ornek, alfa), _yuzdelik(ornek, 1 - alfa)
+
+
+def mcnemar_kesin(b: int, c: int) -> float:
+    """Kesin (binom) McNemar testi; uyuşmazlık çiftleri b ve c, iki yönlü p."""
+    n = b + c
+    if n == 0:
+        return 1.0
+    return min(1.0, 2 * sum(math.comb(n, i) for i in range(min(b, c) + 1)) / 2 ** n)
+
+
+def load_multi_keys(paths: Iterable[Path]) -> tuple[dict[str, dict[str, Any]], dict[str, tuple[str, dict[str, Any]]]]:
+    """Çok adaylı anahtarlar -> (fonksiyon id -> öğe (+``_program``), aday_id -> (fonksiyon id, aday))."""
+    funcs: dict[str, dict[str, Any]] = {}
+    cands: dict[str, tuple[str, dict[str, Any]]] = {}
+    for path in paths:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        kunye = data.get("kunye") if isinstance(data, dict) else None
+        ogeler = data.get("ogeler") if isinstance(data, dict) else None
+        if not isinstance(kunye, dict) or not isinstance(ogeler, dict):
+            raise PuanHatasi(f"{path}: anahtar dosyası değil (kunye/ogeler yok)")
+        if kunye.get("sema") != PAKET_SEMASI_COK or kunye.get("kip") != KIP_COK:
+            raise PuanHatasi(f"{path}: çok adaylı anahtar değil (şema {kunye.get('sema')!r}, kip {kunye.get('kip')!r})")
+        for fid, item in ogeler.items():
+            if fid in funcs:
+                raise PuanHatasi(f"{path}: fonksiyon id başka bir anahtarda da var: {fid}")
+            for k in ("gt", "adaylar", "sistemler", "capraz_atif"):
+                if k not in item:
+                    raise PuanHatasi(f"{path} ({fid}): anahtar öğesinde '{k}' yok")
+            for aid, a in item["adaylar"].items():
+                if aid in cands:
+                    raise PuanHatasi(f"{path}: aday_id iki kez: {aid}")
+                for k in ("aday", "tam", "yem", "sistemler"):
+                    if k not in a:
+                        raise PuanHatasi(f"{path} ({aid}): adayda '{k}' yok")
+                cands[aid] = (fid, a)
+            for system, entry in item["sistemler"].items():
+                if entry.get("durum") == "aday" and entry.get("aday_id") not in item["adaylar"]:
+                    raise PuanHatasi(f"{path} ({fid}): {system} adayı anahtarda yok")
+            funcs[fid] = {**item, "_program": kunye.get("program")}
+    return funcs, cands
+
+
+def load_multi_labels(paths: Iterable[Path]) -> dict[str, dict[str, Any]]:
+    """Çok adaylı etiketler -> aday_id -> kayıt (``id``, ``aday_id``, ``amac``, ``etiket``, ``gerekce``)."""
+    labels: dict[str, dict[str, Any]] = {}
+    for path in paths:
+        for n, rec in _read_jsonl(path):
+            where = f"{path}:{n}"
+            if not isinstance(rec, dict):
+                raise PuanHatasi(f"{where}: kayıt nesne değil")
+            lacking = [k for k in COK_ETIKET_ALANLARI if k not in rec]
+            if lacking:
+                raise PuanHatasi(f"{where}: eksik alan {lacking}")
+            aid = rec["aday_id"]
+            if not isinstance(aid, str) or not aid:
+                raise PuanHatasi(f"{where}: aday_id geçersiz: {aid!r}")
+            if rec["etiket"] not in GECERLI_ETIKETLER:
+                raise PuanHatasi(f"{where} ({aid}): geçersiz etiket {rec['etiket']!r}; "
+                                 f"geçerli: {', '.join(GECERLI_ETIKETLER)}")
+            if not isinstance(rec["amac"], str) or not rec["amac"].strip():
+                raise PuanHatasi(f"{where} ({aid}): amaç cümlesi boş")
+            if not isinstance(rec["gerekce"], str):
+                raise PuanHatasi(f"{where} ({aid}): gerekçe metin olmalı")
+            if aid in labels:
+                raise PuanHatasi(f"{where}: aday iki kez etiketlenmiş: {aid}")
+            labels[aid] = rec
+    return labels
+
+
+def check_multi_labels(labels: dict[str, dict[str, Any]], cands: dict[str, tuple[str, dict[str, Any]]],
+                       stage1: Optional[dict[str, str]] = None) -> None:
+    """Her aday bir kez etiketlenmiş, doğru fonksiyona bağlı; bir fonksiyonun bütün adaylarında
+    aynı amaç cümlesi (verilmişse aşama 1 dosyasındakiyle aynı)."""
+    check_ids(labels, cands, "çok adaylı etiket")
+    wrong_owner = sorted(a for a in labels if labels[a]["id"] != cands[a][0])
+    if wrong_owner:
+        raise PuanHatasi(f"aday_id ile id uyuşmuyor: {_short(wrong_owner)}")
+    amac_of: dict[str, set[str]] = defaultdict(set)
+    for aid, rec in labels.items():
+        amac_of[cands[aid][0]].add(rec["amac"].strip())
+    split = sorted(f for f, s in amac_of.items() if len(s) > 1)
+    if split:
+        raise PuanHatasi(f"aynı fonksiyonun adaylarında farklı amaç cümlesi: {_short(split)}")
+    if stage1 is not None:
+        missing = sorted(set(amac_of) - set(stage1))
+        if missing:
+            raise PuanHatasi(f"aşama 1 dosyasında amaç cümlesi yok: {_short(missing)}")
+        changed = sorted(f for f, s in amac_of.items() if s != {stage1[f].strip()})
+        if changed:
+            raise PuanHatasi(f"amaç cümlesi aday görüldükten sonra değişmiş: {_short(changed)}")
+
+
+def final_multi_label(cand: dict[str, Any], etiket: str) -> str:
+    """Tek adaylı ``final_label``'ın karşılığı: ``tam`` anahtardaki otomatik eşleşmeden gelir."""
+    if cand["yem"]:
+        return etiket
+    if cand["tam"]:
+        return "tam"
+    if etiket == "tam":
+        return "dogru_tarif"
+    return etiket
+
+
+def _system_outcomes(funcs: dict[str, dict[str, Any]], cands: dict[str, tuple[str, dict[str, Any]]],
+                     labels: dict[str, dict[str, Any]], fids: list[str]) -> dict[str, dict[str, tuple]]:
+    """sistem -> fonksiyon -> (sonuç, güven, çekimser nedeni); sonuç nihai etiket ya da ``cekimser``."""
+    out: dict[str, dict[str, tuple]] = defaultdict(dict)
+    for fid in fids:
+        for system, entry in sorted(funcs[fid]["sistemler"].items()):
+            aid = entry.get("aday_id")
+            if entry.get("durum") != "aday" or aid is None:
+                out[system][fid] = (CEKIMSER, entry.get("guven"), entry.get("neden") or "bos")
+            else:
+                out[system][fid] = (final_multi_label(cands[aid][1], labels[aid]["etiket"]), entry.get("guven"), None)
+    return dict(sorted(out.items()))
+
+
+def _system_stats(outcomes: dict[str, tuple], guven: float) -> dict[str, Any]:
+    n = len(outcomes)
+    named = Counter(o for o, _g, _r in outcomes.values() if o != CEKIMSER)
+    v = sum(named.values())
+    k_yakin = sum(named[e] for e in YAKIN_ETIKETLER)
+    reasons = Counter(r for o, _g, r in outcomes.values() if o == CEKIMSER)
+    return {
+        "n": n,
+        "verilen": v,
+        "cekimser": n - v,
+        "cekimser_nedenleri": dict(sorted(reasons.items())),
+        "fonksiyon_paydasi": {"tam": oran_ozeti(named["tam"], n, guven), "yakin": oran_ozeti(k_yakin, n, guven),
+                              "kapsam": oran_ozeti(v, n, guven), "cekimser": oran_ozeti(n - v, n, guven)},
+        "verilen_paydasi": {"tam": oran_ozeti(named["tam"], v, guven), "yakin": oran_ozeti(k_yakin, v, guven),
+                            "yalniz_alan": oran_ozeti(named["yalniz_alan"], v, guven),
+                            "yanlis": oran_ozeti(named["yanlis"], v, guven)},
+    }
+
+
+def risk_coverage(outcomes: dict[str, tuple]) -> dict[str, Any]:
+    """Güven eşiği tablosu: her eşikte verilen ad sayısı, kapsam, yanlış oranı ve yakın kapsamı.
+
+    Eşikler adların güven değerleridir (azalan); güveni eşikten küçük olmayan adlar verilir.
+    Güven hiç yoksa ``durum: yok``; bazı adlarda eksikse ``durum: eksik`` (tablo yok).
+    """
+    n = len(outcomes)
+    named = [(g, o) for o, g, _r in outcomes.values() if o != CEKIMSER]
+    with_conf = [x for x in named if x[0] is not None]
+    if not with_conf:
+        return {"durum": "yok", "esikler": []}
+    if len(with_conf) != len(named):
+        return {"durum": "eksik", "guvensiz_ad": len(named) - len(with_conf), "esikler": []}
+    rows = []
+    for t in sorted({g for g, _o in named}, reverse=True):
+        acc = [o for g, o in named if g >= t]
+        k = len(acc)
+        rows.append({"esik": t, "verilen": k, "kapsam": round(k / n, ONDALIK),
+                     "yanlis_orani": round(sum(o == "yanlis" for o in acc) / k, ONDALIK),
+                     "yakin_kapsam": round(sum(o in YAKIN_ETIKETLER for o in acc) / n, ONDALIK)})
+    return {"durum": "tamam", "esikler": rows}
+
+
+def _pair_stats(ids_by_prog: dict[str, list[str]], oa: dict[str, tuple], ob: dict[str, tuple],
+                tohum: int, tekrar: int, guven: float) -> dict[str, Any]:
+    ids = [f for p in sorted(ids_by_prog) for f in ids_by_prog[p]]
+    a = {f: int(oa[f][0] in YAKIN_ETIKETLER) for f in ids}
+    b = {f: int(ob[f][0] in YAKIN_ETIKETLER) for f in ids}
+    n = len(ids)
+    lo, hi = bootstrap_fark_katmanli([[a[f] - b[f] for f in ids_by_prog[p]] for p in sorted(ids_by_prog)],
+                                     tohum, tekrar, guven)
+    n10 = sum(1 for f in ids if a[f] and not b[f])
+    n01 = sum(1 for f in ids if b[f] and not a[f])
+    return {
+        "n": n,
+        "yakin_a": oran_ozeti(sum(a.values()), n, guven),
+        "yakin_b": oran_ozeti(sum(b.values()), n, guven),
+        "fark": round((sum(a.values()) - sum(b.values())) / n, ONDALIK),
+        "fark_alt": round(lo, ONDALIK),
+        "fark_ust": round(hi, ONDALIK),
+        "ciftler": {"ikisi_yakin": sum(1 for f in ids if a[f] and b[f]), "yalniz_a_yakin": n10,
+                    "yalniz_b_yakin": n01, "ikisi_yakin_degil": sum(1 for f in ids if not a[f] and not b[f])},
+        "mcnemar_p": round(mcnemar_kesin(n10, n01), ONDALIK),
+    }
+
+
+def score_multi(labels: dict[str, dict[str, Any]], funcs: dict[str, dict[str, Any]],
+                cands: dict[str, tuple[str, dict[str, Any]]], *, tohum: int = BOOTSTRAP_TOHUM,
+                tekrar: int = BOOTSTRAP_TEKRAR, guven: float = GUVEN_DUZEYI,
+                capraz_atifsiz: bool = False) -> dict[str, Any]:
+    """Sistem başına oranlar, sistem çiftleri arasında eşli yakın farkı, yem kabulü, risk-kapsam.
+
+    Bir sistemin n'i, o sistemin satırı olan fonksiyonlardır (çekimser dahil). Çiftlerde iki
+    sistemin de satırı olan fonksiyonlar kullanılır; bootstrap program içinde katmanlıdır.
+    """
+    check_multi_labels(labels, cands)
+    fids = sorted(funcs)
+    dropped = 0
+    if capraz_atifsiz:
+        kept = [f for f in fids if not has_cross_reference(funcs[f])]
+        dropped, fids = len(fids) - len(kept), kept
+    if not fids:
+        raise PuanHatasi("puanlanacak fonksiyon yok")
+    progs = _programs({f: funcs[f] for f in fids})
+    outcomes = _system_outcomes(funcs, cands, labels, fids)
+    out: dict[str, Any] = {
+        "sema": PUAN_SEMASI_COK, "guven_duzeyi": guven, "capraz_atifsiz": capraz_atifsiz,
+        "dislanan_capraz_atifli": dropped, "bootstrap": {"tohum": tohum, "tekrar": tekrar},
+        "sistemler": {}, "ciftler": [], "risk_kapsam": {},
+    }
+    for system, o in outcomes.items():
+        by_prog = {p: {f: o[f] for f in ids if f in o} for p, ids in progs.items()}
+        by_prog = {p: v for p, v in by_prog.items() if v}
+        out["sistemler"][system] = {"toplam": _system_stats(o, guven),
+                                    "programlar": {p: _system_stats(v, guven) for p, v in by_prog.items()}}
+        out["risk_kapsam"][system] = {"toplam": risk_coverage(o),
+                                      "programlar": {p: risk_coverage(v) for p, v in by_prog.items()}}
+    systems = list(outcomes)
+    for i, sa in enumerate(systems):
+        for sb in systems[i + 1:]:
+            common = {p: [f for f in ids if f in outcomes[sa] and f in outcomes[sb]] for p, ids in progs.items()}
+            common = {p: ids for p, ids in common.items() if ids}
+            if not common:
+                continue
+            out["ciftler"].append({
+                "a": sa, "b": sb,
+                "toplam": _pair_stats(common, outcomes[sa], outcomes[sb], tohum, tekrar, guven),
+                "programlar": {p: _pair_stats({p: ids}, outcomes[sa], outcomes[sb], tohum, tekrar, guven)
+                               for p, ids in common.items()},
+            })
+    kept = set(fids)
+    decoys = sorted(a for a, (f, c) in cands.items() if c["yem"] and f in kept)
+    accepted = [a for a in decoys if labels[a]["etiket"] in YAKIN_ETIKETLER]
+    decoys_by_prog: dict[str, Any] = {}
+    for p, ids in progs.items():
+        idset = set(ids)
+        d = [a for a in decoys if cands[a][0] in idset]
+        if d:
+            decoys_by_prog[p] = {"n": len(d), "kabul": oran_ozeti(sum(a in accepted for a in d), len(d), guven)}
+    out["yem"] = {"toplam": {"n": len(decoys), "kabul": oran_ozeti(len(accepted), len(decoys), guven),
+                             "kabul_edilen": accepted},
+                  "programlar": decoys_by_prog}
+    real = sorted(a for a, (f, c) in cands.items() if not c["yem"] and f in kept)
+    out["tutarlilik"] = {
+        "tam_yakin_disi": [a for a in real if cands[a][1]["tam"] and labels[a]["etiket"] not in YAKIN_ETIKETLER],
+        "tam_ama_otomatik_degil": [a for a in real if not cands[a][1]["tam"] and labels[a]["etiket"] == "tam"],
+    }
+    return out
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -452,6 +731,34 @@ def _print_comertlik(res: dict[str, Any]) -> None:
     print(f"bootstrap: {b['tekrar']} tekrar, tohum {b['tohum']}")
 
 
+def _print_multi(res: dict[str, Any]) -> None:
+    if res["capraz_atifsiz"]:
+        print(f"çapraz atıflı fonksiyonlar dışarıda: {res['dislanan_capraz_atifli']}")
+    for system, r in res["sistemler"].items():
+        t = r["toplam"]
+        f, v = t["fonksiyon_paydasi"], t["verilen_paydasi"]
+        print(f"{system} (n={t['n']}, verilen={t['verilen']}, çekimser={t['cekimser']})")
+        print(f"  kapsam       {_fmt(f['kapsam'])}")
+        print(f"  tam          {_fmt(f['tam'])}")
+        print(f"  yakın        {_fmt(f['yakin'])}")
+        print(f"  yalnız alan  {_fmt(v['yalniz_alan'])}  (verilen adlar)")
+        print(f"  yanlış       {_fmt(v['yanlis'])}  (verilen adlar)")
+        rk = res["risk_kapsam"][system]["toplam"]
+        if rk["durum"] == "tamam":
+            print(f"  risk-kapsam: {len(rk['esikler'])} eşik")
+    for c in res["ciftler"]:
+        t = c["toplam"]
+        fark = f"{100 * t['fark']:+.1f}".replace(".", ",")
+        print(f"{c['a']} − {c['b']} (n={t['n']}): yakın farkı {fark} puan, bootstrap %"
+              f"{round(100 * res['guven_duzeyi'])} [{100 * t['fark_alt']:+.1f} – {100 * t['fark_ust']:+.1f}]".replace(".", ",")
+              + f"; McNemar p={t['mcnemar_p']:.4f}".replace(".", ","))
+    y = res["yem"]["toplam"]
+    print(f"yem kabul: {_fmt(y['kabul'])}")
+    t = res["tutarlilik"]
+    print(f"tutarlılık: otomatik tam adaya yakın dışı etiket {len(t['tam_yakin_disi'])}; "
+          f"otomatik tam olmayan adaya 'tam' {len(t['tam_ama_otomatik_degil'])} (dogru_tarif sayıldı)")
+
+
 def _write(path: Optional[Path], res: dict[str, Any]) -> None:
     if path is not None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -478,6 +785,15 @@ def main(argv: Optional[list[str]] = None) -> int:
     c.add_argument("--capraz-atifsiz", action="store_true",
                    help="gerçek adı başka bir öğenin gövdesinde geçen öğeleri dışarıda bırak (duyarlılık)")
     c.add_argument("--cikti", type=Path)
+    m = sub.add_parser("puan-cok", help="çok adaylı kip: sistem başına oranlar, eşli farklar, risk-kapsam")
+    m.add_argument("--anahtar", type=Path, action="append", required=True, help="çok adaylı anahtar (tekrarlanabilir)")
+    m.add_argument("--etiket", type=Path, action="append", required=True, help="etiket jsonl (tekrarlanabilir)")
+    m.add_argument("--amac", type=Path, action="append", help="aşama 1 amaç dosyası (tekrarlanabilir)")
+    m.add_argument("--tohum", type=int, default=BOOTSTRAP_TOHUM)
+    m.add_argument("--tekrar", type=int, default=BOOTSTRAP_TEKRAR)
+    m.add_argument("--capraz-atifsiz", action="store_true",
+                   help="gerçek adı başka bir öğenin gövdesinde geçen fonksiyonları dışarıda bırak (duyarlılık)")
+    m.add_argument("--cikti", type=Path)
     a = ap.parse_args(argv)
     try:
         if a.komut == "puan":
@@ -487,6 +803,13 @@ def main(argv: Optional[list[str]] = None) -> int:
                 check_amac_unchanged(labels, load_stage1(a.amac))
             res = score(labels, keys, capraz_atifsiz=a.capraz_atifsiz)
             _print_score(res)
+        elif a.komut == "puan-cok":
+            labels = load_multi_labels(a.etiket)
+            funcs, cands = load_multi_keys(a.anahtar)
+            check_multi_labels(labels, cands, load_stage1(a.amac) if a.amac else None)
+            res = score_multi(labels, funcs, cands, tohum=a.tohum, tekrar=a.tekrar,
+                              capraz_atifsiz=a.capraz_atifsiz)
+            _print_multi(res)
         else:
             res = comertlik(load_labels(a.etiket_gtli), load_labels(a.etiket_gtsiz),
                             load_keys(a.anahtar_gtli), load_keys(a.anahtar_gtsiz),

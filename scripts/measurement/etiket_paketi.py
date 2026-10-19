@@ -17,6 +17,13 @@ Kullanım
     # Değerlendiriciye vermeden önce
     python scripts/measurement/etiket_paketi.py sizinti-denetimi --paket paket/tmux_kor
 
+    # Çok adaylı kip (G6/G7): fonksiyon başına bir amaç öğesi, sistemlerin adayları
+    # kimliksiz ve karışık; yem fonksiyonların %10'una ek aday (protokol §13)
+    python scripts/measurement/etiket_paketi.py uret-cok \
+        --satirlar runs/tmux/macho_score.json --kaynak src/tmux-3.8 --ikili tmux \
+        --adaylar adaylar.jsonl --adresler orneklem_tmux.txt --tohum 20261019 \
+        [--sira-tohumu N] [--yem-tohumu N] [--guven-alani guven_ort_logprob] --cikti paket/tmux_cok
+
 Girdi
 -----
 Puanlayıcının ``rows`` listesi (``{"rows": [...]}`` ya da düz liste). Okunan
@@ -72,6 +79,7 @@ import platform
 import random
 import re
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable, Optional
@@ -81,7 +89,7 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
 from csrc_index import index_tree  # noqa: E402
-from function_f1 import normalize_name  # noqa: E402
+from function_f1 import is_generic_name, normalize_name  # noqa: E402
 
 PAKET_SEMASI = "karadul-etiket-paketi/2"
 RUBRIK_SURUMU = 2
@@ -97,6 +105,7 @@ GOVDE_AZAMI_SATIR = 60
 KIRPMA_IZI = "/* ... */"
 KENDI_ADI_MASKESI = "FONKSIYON"
 ID_AZ_HANE = 3
+LISTE_SINIRI = 10  # hata iletisinde gösterilen en çok öğe
 
 AMAC_DOSYASI = "amac_paketi.jsonl"
 ADAY_DOSYASI = "aday_paketi.jsonl"
@@ -116,6 +125,29 @@ _DOSYA_ALANI = "dosya"
 
 _IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 _WS_RE = re.compile(r"\s+")
+
+# --- Çok adaylı kip (G6 LLM pilotu, G7 kanıt tavanı) -----------------------------
+# Tek adaylı kip ve şeması bu bölümden etkilenmez.
+PAKET_SEMASI_COK = "karadul-etiket-paketi-cok/1"
+KIP_COK = "cok_adayli"
+COK_AMAC_ALANLARI = ("id", "dosya", "govde")
+COK_ADAY_ALANLARI = ("id", "aday_id", "aday")
+# Aday dosyası (jsonl) alanları. Parantez içindekiler G6 harness'ının eş adlarıdır
+# (``llm_pilot.py adaylar``): addr (adres), sistem (yoksa "model/kosul"), aday,
+# guven (``--guven-alani`` ile seçilir), program (varsa --ikili ile süzülür),
+# durum (çekimser nedeni, varsa).
+ADAY_ADRES_ALANLARI = ("addr", "adres")
+ADAY_SISTEM_ALANI = "sistem"
+ADAY_SISTEM_PARCALARI = ("model", "kosul")
+ADAY_AD_ALANI = "aday"
+ADAY_GUVEN_ALANI = "guven"
+ADAY_PROGRAM_ALANI = "program"
+ADAY_NEDEN_ALANI = "durum"
+ADAY_CEKIMSER_ALANI = "cekimser"
+# Çekimser nedenleri (girdide ``durum`` yoksa)
+NEDEN_BOS = "bos"
+NEDEN_JENERIK = "jenerik"
+NEDEN_GECERSIZ = "gecersiz"
 
 
 class PaketHatasi(ValueError):
@@ -490,6 +522,361 @@ def write_package(out_dir: Path, amac: list[dict[str, Any]], aday: list[dict[str
 
 
 # ---------------------------------------------------------------------------
+# Çok adaylı kip: paket (G6, G7)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class Candidate:
+    addr: int
+    system: str
+    name: Optional[str]          # ham ad; None = çekimser
+    confidence: Optional[float]
+    reason: Optional[str]        # girdideki çekimser nedeni (``durum``)
+
+
+def _hex_addr(value: Any, where: str) -> int:
+    if not isinstance(value, str):
+        raise PaketHatasi(f"{where}: adres hex metin olmalı: {value!r}")
+    try:
+        return int(value, 16)
+    except ValueError:
+        raise PaketHatasi(f"{where}: adres hex değil: {value!r}") from None
+
+
+def parse_candidates(records: Iterable[Any], *, program: Optional[str] = None,
+                     confidence_field: str = ADAY_GUVEN_ALANI) -> tuple[list[Candidate], int]:
+    """Aday satırları -> (adaylar, başka programa ait olduğu için atlanan satır sayısı).
+
+    Eksik ya da çelişkili alan ve aynı (adres, sistem) çiftinin iki kez gelmesi açık hatadır.
+    """
+    out: list[Candidate] = []
+    seen: set[tuple[int, str]] = set()
+    skipped = 0
+    for n, rec in enumerate(records, 1):
+        where = f"aday satırı {n}"
+        if not isinstance(rec, dict):
+            raise PaketHatasi(f"{where}: nesne değil")
+        if program is not None and ADAY_PROGRAM_ALANI in rec and rec[ADAY_PROGRAM_ALANI] != program:
+            skipped += 1
+            continue
+        addr_field = next((f for f in ADAY_ADRES_ALANLARI if f in rec), None)
+        if addr_field is None:
+            raise PaketHatasi(f"{where}: adres alanı yok ({' ya da '.join(ADAY_ADRES_ALANLARI)})")
+        addr = _hex_addr(rec[addr_field], where)
+        if ADAY_SISTEM_ALANI in rec:
+            system = rec[ADAY_SISTEM_ALANI]
+        elif all(f in rec for f in ADAY_SISTEM_PARCALARI):
+            system = "/".join(str(rec[f]) for f in ADAY_SISTEM_PARCALARI)
+        else:
+            raise PaketHatasi(f"{where}: sistem alanı yok ('{ADAY_SISTEM_ALANI}' ya da "
+                              f"{' + '.join(ADAY_SISTEM_PARCALARI)})")
+        if not isinstance(system, str) or not system.strip():
+            raise PaketHatasi(f"{where}: sistem adı boş")
+        if ADAY_AD_ALANI not in rec:
+            raise PaketHatasi(f"{where}: '{ADAY_AD_ALANI}' alanı yok (çekimser için null)")
+        name = rec[ADAY_AD_ALANI]
+        if name is not None and not isinstance(name, str):
+            raise PaketHatasi(f"{where}: aday metin ya da null olmalı: {name!r}")
+        if isinstance(name, str) and not name.strip():
+            name = None
+        if name is not None and rec.get(ADAY_CEKIMSER_ALANI) is True:
+            raise PaketHatasi(f"{where}: hem aday hem çekimser")
+        conf = rec.get(confidence_field)
+        if conf is not None and (isinstance(conf, bool) or not isinstance(conf, (int, float)) or conf != conf):
+            raise PaketHatasi(f"{where}: güven sayı ya da null olmalı: {conf!r}")
+        if (addr, system) in seen:
+            raise PaketHatasi(f"{where}: aynı adres ve sistem iki kez: {rec[addr_field]} {system}")
+        seen.add((addr, system))
+        reason = rec.get(ADAY_NEDEN_ALANI) if name is None else None
+        out.append(Candidate(addr, system, name, None if conf is None else float(conf),
+                             reason if isinstance(reason, str) else None))
+    return out, skipped
+
+
+def load_candidates(path: Path, **kw: Any) -> tuple[list[Candidate], int]:
+    return parse_candidates(_read_jsonl(path), **kw)
+
+
+def classify_candidate(c: Candidate) -> tuple[Optional[str], Optional[str]]:
+    """-> (gösterilecek ad, çekimser nedeni); biri her zaman None.
+
+    Gösterim ``function_f1.normalize_name`` biçimidir: sistemlerin üslubu (``Modul_rol``,
+    camelCase, ``_2`` eki) kimliklerini ele vermesin ve aynı ad tek adayda birleşsin.
+    Tanımlayıcı olmayan ve jenerik adlar (``FUN_…``, kendi adresini taşıyan ad) pakete
+    girmez; çekimser sayılır.
+    """
+    if c.name is None:
+        return None, c.reason or NEDEN_BOS
+    if not _IDENT_RE.fullmatch(c.name):
+        return None, NEDEN_GECERSIZ
+    if is_generic_name(c.name, [c.addr]):
+        return None, NEDEN_JENERIK
+    shown = normalize_name(c.name)
+    if not shown:
+        return None, NEDEN_GECERSIZ
+    return shown, None
+
+
+def load_addresses(path: Path, program: Optional[str] = None) -> list[int]:
+    """Adres listesi: JSON liste ya da satır başına bir hex adres (``#`` yorum).
+
+    ``program-adres`` biçimindeki girdilerden (G6 ``orneklem.json`` yem listesi) yalnız
+    ``program`` ile eşleşenler alınır.
+    """
+    text = path.read_text(encoding="utf-8")
+    if text.lstrip().startswith("["):
+        items = json.loads(text)
+        if not isinstance(items, list):
+            raise PaketHatasi(f"{path.name}: liste değil")
+    else:
+        items = [ln.split("#", 1)[0].strip() for ln in text.splitlines()]
+        items = [x for x in items if x]
+    addrs = []
+    for x in items:
+        if isinstance(x, str) and "-" in x:
+            prefix, x = x.rsplit("-", 1)
+            if program is not None and prefix != program:
+                continue
+        addrs.append(_hex_addr(x, path.name))
+    dup = sorted(a for a, c in Counter(addrs).items() if c > 1)
+    if dup:
+        raise PaketHatasi(f"{path.name}: yinelenen adres: {', '.join(f'0x{a:x}' for a in dup[:LISTE_SINIRI])}")
+    return addrs
+
+
+def build_multi_package(
+    rows: list[dict[str, Any]],
+    idx: dict[str, list[dict]],
+    root: Path,
+    candidates: list[Candidate],
+    *,
+    binary: str,
+    seed: int,
+    addresses: Optional[list[int]] = None,
+    sample_size: int = 0,
+    order_seed: Optional[int] = None,
+    decoy_seed: Optional[int] = None,
+    decoy_targets: Optional[list[int]] = None,
+    max_lines: int = GOVDE_AZAMI_SATIR,
+    provenance: Optional[dict[str, Any]] = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    """Çok adaylı paketi bellekte kurar -> (amaç kayıtları, aday satırları, anahtar).
+
+    Amaç paketi fonksiyon başınadır (tek adaylı kör kiple aynı biçim ve karartma). Aday
+    paketinde her satır bir adaydır; sistem adı yoktur. Aynı fonksiyonda normalize biçimi
+    aynı adaylar tek ``aday_id``'de birleşir. Satırlar fonksiyonlar arasında karışık sıradadır.
+    """
+    if sample_size < 0:
+        raise PaketHatasi("örneklem sayısı negatif olamaz")
+    rows = sorted(validate_rows(rows), key=_addr_key)
+    by_addr = {_addr_key(r): r for r in rows}
+    res = {k: resolve_body(r["gt"], idx, root) for k, r in by_addr.items()}
+    bodies: dict[int, Body] = {k: b for k, (b, _st, _f) in res.items() if b is not None}
+    cands: dict[int, dict[str, Candidate]] = {}
+    for c in candidates:
+        cands.setdefault(c.addr, {})[c.system] = c
+    systems = sorted({c.system for c in candidates})
+    if not systems:
+        raise PaketHatasi("aday dosyasında bu programa ait satır yok")
+
+    # 1) örneklem
+    excluded: Counter[str] = Counter()
+    if addresses is not None:
+        problems = []
+        for a in addresses:
+            if a not in by_addr:
+                problems.append(f"0x{a:x}: puanlama satırlarında yok")
+            elif a not in bodies:
+                problems.append(f"0x{a:x}: gövde {res[a][1]}")
+            elif a not in cands:
+                problems.append(f"0x{a:x}: aday satırı yok")
+        if problems:
+            more = f" ... (+{len(problems) - LISTE_SINIRI})" if len(problems) > LISTE_SINIRI else ""
+            raise PaketHatasi("örneklem adreslerinde sorun: " + "; ".join(problems[:LISTE_SINIRI]) + more)
+        sample = sorted(addresses)
+        sample_source = "adres_listesi"
+    else:
+        population = []
+        for a in sorted(cands):
+            if a not in by_addr:
+                excluded["satirlarda_yok"] += 1
+            elif a not in bodies:
+                excluded["govdesi_bulunamayan" if res[a][1] == "yok" else "govdesi_belirsiz"] += 1
+            else:
+                population.append(a)
+        if sample_size == 0 or sample_size >= len(population):
+            sample = population
+        else:
+            sample = sorted(random.Random(seed).sample(population, sample_size))
+        sample_source = "tohumlu"
+    if not sample:
+        raise PaketHatasi("örneklem boş")
+    sample_set = set(sample)
+
+    # 2) gövde, karartma girdileri ve çapraz atıf (tek adaylı kiple aynı yardımcılar)
+    forms_of = {k: name_forms(by_addr[k]["gt"]) for k in sample}
+    package_forms: set[str] = set().union(*forms_of.values())
+    shown = {k: truncate(bodies[k].text, max_lines) for k in sample}
+    idents_in_bodies: set[str] = set()
+    for text, _cut in shown.values():
+        idents_in_bodies.update(_IDENT_RE.findall(text))
+    seen_in, other_occ = cross_references({k: t for k, (t, _cut) in shown.items()}, forms_of)
+    file_seen_in, _file_occ = cross_references({k: bodies[k].file for k in sample}, forms_of)
+
+    # 3) adaylar: sınıflandır, normalize biçimde birleştir
+    groups: dict[int, dict[str, dict[str, Any]]] = {k: {} for k in sample}
+    per_system: dict[int, dict[str, dict[str, Any]]] = {k: {} for k in sample}
+    reasons: Counter[str] = Counter()
+    sys_counts: dict[str, Counter[str]] = {s: Counter() for s in systems}
+    for k in sample:
+        for system, c in sorted(cands[k].items()):
+            shown_name, reason = classify_candidate(c)
+            per_system[k][system] = {"durum": "aday" if shown_name else "cekimser", "aday_id": None,
+                                     "ozgun": c.name, "guven": c.confidence, "neden": reason}
+            sys_counts[system]["satir"] += 1
+            if shown_name is None:
+                reasons[reason] += 1
+                sys_counts[system]["cekimser"] += 1
+                continue
+            sys_counts[system]["aday"] += 1
+            g = groups[k].setdefault(shown_name, {"sistemler": [], "ozgun": {}})
+            g["sistemler"].append(system)
+            g["ozgun"][system] = c.name
+    used_norm = {name for k in sample for name in groups[k]}
+
+    # 4) yem: fonksiyonların %10'u (yukarı yuvarlanır) ek bir yem aday alır; hedefler
+    # ön kayıtla verilmişse (``decoy_targets``) onlar kullanılır
+    rng_decoy = random.Random(seed if decoy_seed is None else decoy_seed)
+    if decoy_targets is not None:
+        outside = sorted(set(decoy_targets) - sample_set)
+        if outside:
+            raise PaketHatasi("yem hedefi örneklemde yok: " + ", ".join(f"0x{a:x}" for a in outside[:LISTE_SINIRI]))
+        targets = sorted(set(decoy_targets))
+    else:
+        n_decoy = (len(sample) * YEM_YUZDE + 99) // 100
+        targets = sorted(rng_decoy.sample(sample, n_decoy))
+    cand_pool = []
+    for r in rows:
+        k = _addr_key(r)
+        cb = bodies.get(k)
+        if cb is None or k in sample_set:
+            continue
+        toks = name_tokens(cb.name)
+        if toks and cb.name not in idents_in_bodies and cb.name not in package_forms:
+            cand_pool.append((r, cb, toks, normalize_name(cb.name)))
+    decoy_of: dict[int, tuple[dict[str, Any], Body, str]] = {}
+    for t in targets:
+        t_file = bodies[t].file
+        t_tokens: frozenset[str] = frozenset().union(*(name_tokens(g) for g in by_addr[t]["gt"]))
+        options = [(r, cb, norm) for r, cb, toks, norm in cand_pool
+                   if cb.file != t_file and not (toks & t_tokens) and norm not in used_norm]
+        if not options:
+            raise PaketHatasi(f"yem adayı bulunamadı: {by_addr[t]['addr']} {by_addr[t]['gt']}")
+        r, cb, norm = rng_decoy.choice(options)
+        used_norm.add(norm)
+        decoy_of[t] = (r, cb, norm)
+
+    # 5) sıra ve kimlikler: fonksiyonlar karışık; her fonksiyonun adayları karışık
+    # numaralanır; aday satırları da fonksiyonlar arasında karıştırılır.
+    rng_order = random.Random(seed if order_seed is None else order_seed)
+    order = list(sample)
+    rng_order.shuffle(order)
+    width = max(ID_AZ_HANE, len(str(len(order) - 1)))
+    amac_recs: list[dict[str, Any]] = []
+    aday_recs: list[dict[str, Any]] = []
+    ogeler: dict[str, Any] = {}
+    tot_own = n_cut = n_file_masked = 0
+    for i, k in enumerate(order):
+        fid = f"{binary}-{i:0{width}d}"
+        r = by_addr[k]
+        body = bodies[k]
+        text, cut = shown[k]
+        govde, n_own = mask_own(text, forms_of[k])
+        dosya, file_masked = mask_file(body.file, forms_of[k])
+        tot_own += n_own
+        n_cut += cut
+        n_file_masked += file_masked
+        amac_recs.append({"id": fid, "dosya": dosya, "govde": govde})
+        gt_norm = {normalize_name(g) for g in r["gt"]}
+        entries = [("aday", name) for name in sorted(groups[k])]
+        if k in decoy_of:
+            entries.append(("yem", decoy_of[k][2]))
+        rng_order.shuffle(entries)
+        adaylar: dict[str, Any] = {}
+        for j, (kind, name) in enumerate(entries, 1):
+            aid = f"{fid}.{j}"
+            if kind == "aday":
+                g = groups[k][name]
+                for system in g["sistemler"]:
+                    per_system[k][system]["aday_id"] = aid
+                adaylar[aid] = {"aday": name, "sistemler": sorted(g["sistemler"]), "ozgun": g["ozgun"],
+                                "tam": name in gt_norm, "yem": False, "yem_kaynagi": None}
+            else:
+                dr, dcb, _norm = decoy_of[k]
+                adaylar[aid] = {"aday": name, "sistemler": [], "ozgun": {}, "tam": False, "yem": True,
+                                "yem_kaynagi": {"aday_addr": dr["addr"], "aday_gt": dr["gt"],
+                                                "aday_ad": dcb.name, "aday_dosya": dcb.file}}
+            aday_recs.append({"id": fid, "aday_id": aid, "aday": name})
+        ogeler[fid] = {
+            "addr": r["addr"],
+            "gt": r["gt"],
+            "satir_durumu": r["status"],
+            "dosya": body.file,
+            "satir": body.line,
+            "tanim_sayisi": body.n_defs,
+            "kirpildi": cut,
+            "karartilan_kendi": n_own,
+            "dosya_karartildi": file_masked,
+            "capraz_atif": len(seen_in[k]),
+            "adaylar": adaylar,
+            "sistemler": per_system[k],
+        }
+    rng_order.shuffle(aday_recs)
+
+    n_groups = sum(len(groups[k]) for k in sample)
+    n_named_rows = sum(sys_counts[s]["aday"] for s in systems)
+    kunye: dict[str, Any] = {
+        "sema": PAKET_SEMASI_COK,
+        "rubrik_surumu": RUBRIK_SURUMU,
+        "program": binary,
+        "kip": KIP_COK,
+        "tohum": seed,
+        "sira_tohumu": seed if order_seed is None else order_seed,
+        "yem_tohumu": seed if decoy_seed is None else decoy_seed,
+        "orneklem_kaynagi": sample_source,
+        "yem_hedefi_kaynagi": "liste" if decoy_targets is not None else "tohumlu",
+        "orneklem_istenen": None if addresses is not None else sample_size,
+        "govde_azami_satir": max_lines,
+        "yem_yuzde": YEM_YUZDE,
+        "sistemler": systems,
+        "python_surumu": platform.python_version(),
+        "sayilar": {
+            "fonksiyon": len(sample),
+            "aday_satiri": sum(sys_counts[s]["satir"] for s in systems),
+            "isimli_aday_satiri": n_named_rows,
+            "aday": n_groups,
+            "birlesen_satir": n_named_rows - n_groups,
+            "yem": len(decoy_of),
+            "cekimser": sum(reasons.values()),
+            "cekimser_nedenleri": dict(sorted(reasons.items())),
+            "orneklem_disi_aday_satiri": sum(len(v) for a, v in cands.items() if a not in sample_set),
+            "dislanan": dict(sorted(excluded.items())),
+            "kirpilan": n_cut,
+            "karartilan_kendi": tot_own,
+            "dosya_karartilan": n_file_masked,
+            "capraz_atifli_oge": sum(1 for k in seen_in if seen_in[k]),
+            "baska_ad_gecen_govde": sum(1 for k in other_occ if other_occ[k]),
+            "baska_ad_gecis": sum(other_occ.values()),
+            "dosya_adi_capraz_atifli_oge": sum(1 for k in file_seen_in if file_seen_in[k]),
+        },
+        "sistem_sayilari": {s: dict(sorted(sys_counts[s].items())) for s in systems},
+    }
+    if provenance:
+        kunye["girdi"] = provenance
+    return amac_recs, aday_recs, {"kunye": kunye, "ogeler": ogeler}
+
+
+# ---------------------------------------------------------------------------
 # Sızıntı denetimi
 # ---------------------------------------------------------------------------
 
@@ -582,6 +969,108 @@ def leak_check(amac: list[Any], aday: list[Any], key: dict[str, Any]) -> tuple[l
     return errors, warnings
 
 
+def leak_check_cok(amac: list[Any], aday: list[Any], key: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """Çok adaylı paketin değerlendirici dosyalarını denetler -> (hatalar, uyarılar).
+
+    Tek adaylı kör kipin kurallarına ek olarak: aday satırı yalnız ``id``, ``aday_id``,
+    ``aday`` taşır; her ``aday_id`` anahtardaki fonksiyonuna bağlı ve metni anahtarla aynı;
+    sistem adları kimliklerde geçmez.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+    kunye = key.get("kunye") or {}
+    ogeler = key.get("ogeler")
+    if kunye.get("kip") != KIP_COK or not isinstance(ogeler, dict):
+        return [f"anahtar çok adaylı kipte değil: kip={kunye.get('kip')!r}"], warnings
+    owner = {aid: fid for fid, item in ogeler.items() for aid in (item.get("adaylar") or {})}
+
+    for fname, recs, allowed, id_field, expected in (
+            (AMAC_DOSYASI, amac, COK_AMAC_ALANLARI, "id", set(ogeler)),
+            (ADAY_DOSYASI, aday, COK_ADAY_ALANLARI, "aday_id", set(owner))):
+        seen: set[Any] = set()
+        for n, rec in enumerate(recs, 1):
+            if not isinstance(rec, dict):
+                errors.append(f"{fname}:{n}: kayıt nesne değil")
+                continue
+            extra = sorted(set(rec) - set(allowed))
+            lacking = sorted(set(allowed) - set(rec))
+            if extra:
+                errors.append(f"{fname}:{n}: yasak alan {extra}")
+            if lacking:
+                errors.append(f"{fname}:{n}: eksik alan {lacking}")
+            ident = rec.get(id_field)
+            if ident in seen:
+                errors.append(f"{fname}:{n}: {id_field} iki kez: {ident}")
+            seen.add(ident)
+        if seen != expected:
+            errors.append(f"{fname}: {id_field} kümesi anahtarla aynı değil "
+                          f"(eksik {len(expected - seen)}, fazla {len(seen - expected)})")
+    for n, rec in enumerate(aday, 1):
+        if not isinstance(rec, dict) or rec.get("aday_id") not in owner:
+            continue
+        fid = owner[rec["aday_id"]]
+        if rec.get("id") != fid:
+            errors.append(f"{ADAY_DOSYASI}:{n}: {rec['aday_id']} başka fonksiyona bağlı ({rec.get('id')} != {fid})")
+        elif rec.get(_ADAY_ALANI) != ogeler[fid]["adaylar"][rec["aday_id"]].get("aday"):
+            errors.append(f"{ADAY_DOSYASI}:{n}: {rec['aday_id']} aday metni anahtarla uyuşmuyor")
+
+    # sistem adları kimliklerde geçmez
+    spat = word_pattern(s for s in kunye.get("sistemler") or [] if isinstance(s, str))
+    if spat is not None:
+        for fname, recs, fields in ((AMAC_DOSYASI, amac, ("id",)), (ADAY_DOSYASI, aday, ("id", "aday_id"))):
+            for n, rec in enumerate(recs, 1):
+                if isinstance(rec, dict):
+                    for f in fields:
+                        hits = sorted(set(spat.findall(_as_text(rec.get(f, "")))))
+                        if hits:
+                            errors.append(f"sistem adı sızıyor: {fname}:{n} '{f}': {', '.join(hits)}")
+
+    # kendi adı kendi kaydında -> hata (aday alanı serbest)
+    forms_of = {fid: name_forms(item.get("gt") or []) for fid, item in ogeler.items()}
+    for fname, recs in ((AMAC_DOSYASI, amac), (ADAY_DOSYASI, aday)):
+        for n, rec in enumerate(recs, 1):
+            if not isinstance(rec, dict) or rec.get("id") not in forms_of:
+                continue
+            own = word_pattern(forms_of[rec["id"]])
+            if own is None:
+                continue
+            for field, value in rec.items():
+                if field == _ADAY_ALANI:
+                    continue
+                hits = sorted(set(own.findall(_as_text(value))))
+                if hits:
+                    errors.append(f"öğenin kendi adı sızıyor: {fname}:{n} ({rec['id']}) '{field}': {', '.join(hits)}")
+    # başka fonksiyonların adları -> uyarı
+    for field, where in ((_GOVDE_ALANI, "gövdelerde"), (_DOSYA_ALANI, "dosya adlarında")):
+        texts = {rec["id"]: _as_text(rec.get(field, "")) for rec in amac
+                 if isinstance(rec, dict) and rec.get("id") in forms_of}
+        seen_in, occ = cross_references(texts, forms_of)
+        n_items = sum(1 for i in occ if occ[i])
+        if n_items:
+            warnings.append(f"başka öğenin gerçek adı {where} geçiyor: {n_items} öğede {sum(occ.values())} geçiş; "
+                            f"adı başka kayıtta görünen öğe {sum(1 for i in seen_in if seen_in[i])}")
+
+    # yem kuralları
+    gt_norm = {normalize_name(g) for item in ogeler.values() for g in item.get("gt") or []}
+    all_forms: set[str] = set().union(*forms_of.values()) if forms_of else set()
+    decoys = [(aid, a) for item in ogeler.values() for aid, a in (item.get("adaylar") or {}).items() if a.get("yem")]
+    decoy_words = set()
+    for aid, a in decoys:
+        raw = (a.get("yem_kaynagi") or {}).get("aday_ad")
+        if a.get("aday") in gt_norm or raw in all_forms:
+            errors.append(f"yem adayı paketteki bir fonksiyonun gerçek adı: {aid}")
+        decoy_words.update(w for w in (a.get("aday"), raw) if isinstance(w, str))
+    dpat = word_pattern(decoy_words)
+    if dpat is not None:
+        for n, rec in enumerate(amac, 1):
+            if isinstance(rec, dict):
+                hits = sorted(set(dpat.findall(_as_text(rec.get(_GOVDE_ALANI, "")))))
+                if hits:
+                    errors.append(f"yem adayı bir gövdede tanımlayıcı olarak geçiyor: "
+                                  f"{AMAC_DOSYASI}:{n} ({rec.get('id')}): {', '.join(hits)}")
+    return errors, warnings
+
+
 def _read_jsonl(path: Path) -> list[Any]:
     out = []
     for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -599,7 +1088,8 @@ def check_package_dir(pkg: Path) -> tuple[list[str], list[str]]:
         if not (pkg / n).is_file():
             raise PaketHatasi(f"{pkg / n} yok")
     key = json.loads((pkg / ANAHTAR_DOSYASI).read_text(encoding="utf-8"))
-    return leak_check(_read_jsonl(pkg / AMAC_DOSYASI), _read_jsonl(pkg / ADAY_DOSYASI), key)
+    check = leak_check_cok if (key.get("kunye") or {}).get("kip") == KIP_COK else leak_check
+    return check(_read_jsonl(pkg / AMAC_DOSYASI), _read_jsonl(pkg / ADAY_DOSYASI), key)
 
 
 # ---------------------------------------------------------------------------
@@ -639,6 +1129,39 @@ def _cmd_uret(a: argparse.Namespace) -> int:
     return _report_check(*leak_check(amac, aday, key))
 
 
+def _cmd_uret_cok(a: argparse.Namespace) -> int:
+    rows = load_rows(a.satirlar)
+    idx = index_tree(a.kaynak)
+    candidates, skipped = load_candidates(a.adaylar, program=a.ikili, confidence_field=a.guven_alani)
+    addresses = load_addresses(a.adresler, a.ikili) if a.adresler is not None else None
+    decoy_targets = load_addresses(a.yem_adresleri, a.ikili) if a.yem_adresleri is not None else None
+    provenance = {
+        "satirlar": str(a.satirlar),
+        "satirlar_sha256": hashlib.sha256(a.satirlar.read_bytes()).hexdigest(),
+        "kaynak": str(a.kaynak),
+        "kaynak_ozeti": tree_digest(a.kaynak),
+        "adaylar": str(a.adaylar),
+        "adaylar_sha256": hashlib.sha256(a.adaylar.read_bytes()).hexdigest(),
+        "baska_program_satiri": skipped,
+        "guven_alani": a.guven_alani,
+    }
+    for name, path in (("adresler", a.adresler), ("yem_adresleri", a.yem_adresleri)):
+        if path is not None:
+            provenance[name] = str(path)
+            provenance[name + "_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    amac, aday, key = build_multi_package(
+        rows, idx, a.kaynak, candidates, binary=a.ikili, seed=a.tohum, addresses=addresses,
+        sample_size=a.orneklem or 0, order_seed=a.sira_tohumu, decoy_seed=a.yem_tohumu,
+        decoy_targets=decoy_targets, max_lines=a.azami_satir, provenance=provenance)
+    write_package(a.cikti, amac, aday, key, overwrite=a.uzerine_yaz)
+    s = key["kunye"]["sayilar"]
+    print(f"{a.cikti}: kip={KIP_COK} fonksiyon={s['fonksiyon']} sistem={len(key['kunye']['sistemler'])} "
+          f"aday={s['aday']} (birleşen satır {s['birlesen_satir']}) yem={s['yem']} çekimser={s['cekimser']}")
+    print(f"  karartılan: kendi adı={s['karartilan_kendi']} geçiş, dosya adı={s['dosya_karartilan']} öğe; "
+          f"kırpılan={s['kirpilan']}; çapraz atıflı öğe={s['capraz_atifli_oge']}")
+    return _report_check(*leak_check_cok(amac, aday, key))
+
+
 def _cmd_sizinti(a: argparse.Namespace) -> int:
     return _report_check(*check_package_dir(a.paket))
 
@@ -657,11 +1180,31 @@ def main(argv: Optional[list[str]] = None) -> int:
                    help="cömertlik deneyi: gövde karartılmaz, gerçek ad görünür (aynı id'ler)")
     u.add_argument("--azami-satir", type=int, default=GOVDE_AZAMI_SATIR, help="gövde satır sınırı (0 = yok)")
     u.add_argument("--uzerine-yaz", action="store_true", help="var olan paket dosyalarının üzerine yaz")
+    c = sub.add_parser("uret-cok", help="çok adaylı paket üret (G6 LLM pilotu, G7 kanıt tavanı)")
+    c.add_argument("--satirlar", type=Path, required=True, help="puanlama dosyası (rows)")
+    c.add_argument("--kaynak", type=Path, required=True, help="C kaynak kökü")
+    c.add_argument("--ikili", required=True,
+                   help="program adı (id öneki; aday satırında 'program' varsa süzgeç)")
+    c.add_argument("--adaylar", type=Path, required=True,
+                   help="aday dosyası (jsonl: addr|adres, sistem|model+kosul, aday ya da null, güven)")
+    grp = c.add_mutually_exclusive_group(required=True)
+    grp.add_argument("--adresler", type=Path, help="örneklem adresleri (satır başına hex ya da JSON liste)")
+    grp.add_argument("--orneklem", type=int, help="aday dosyasındaki fonksiyonlardan tohumlu N (0 = hepsi)")
+    c.add_argument("--tohum", type=int, required=True)
+    c.add_argument("--sira-tohumu", type=int, help="sıra karıştırma tohumu (verilmezse --tohum)")
+    c.add_argument("--yem-tohumu", type=int, help="yem seçimi tohumu (verilmezse --tohum)")
+    c.add_argument("--yem-adresleri", type=Path,
+                   help="ön kayıtlı yem hedefleri (örneklemin alt kümesi; verilmezse tohumlu %%10)")
+    c.add_argument("--guven-alani", default=ADAY_GUVEN_ALANI,
+                   help="güven alanının adı (G6: guven_ort_logprob)")
+    c.add_argument("--cikti", type=Path, required=True, help="paket dizini")
+    c.add_argument("--azami-satir", type=int, default=GOVDE_AZAMI_SATIR, help="gövde satır sınırı (0 = yok)")
+    c.add_argument("--uzerine-yaz", action="store_true", help="var olan paket dosyalarının üzerine yaz")
     s = sub.add_parser("sizinti-denetimi", help="değerlendirici dosyalarını denetle")
     s.add_argument("--paket", type=Path, required=True, help="paket dizini")
     a = ap.parse_args(argv)
     try:
-        return _cmd_uret(a) if a.komut == "uret" else _cmd_sizinti(a)
+        return {"uret": _cmd_uret, "uret-cok": _cmd_uret_cok, "sizinti-denetimi": _cmd_sizinti}[a.komut](a)
     except (PaketHatasi, OSError, json.JSONDecodeError) as e:
         print(f"HATA: {e}", file=sys.stderr)
         return 2

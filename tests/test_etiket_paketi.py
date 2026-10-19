@@ -613,3 +613,323 @@ def test_leak_check_cli_exit_codes(tree, tmp_path, capsys):
     assert ep.main(["sizinti-denetimi", "--paket", str(out)]) == 1
     assert ep.main(["sizinti-denetimi", "--paket", str(tmp_path / "yok")]) == 2
     capsys.readouterr()
+
+
+# =============================================================================================
+# Çok adaylı kip (G6/G7)
+# =============================================================================================
+
+SYSTEMS = ("sys_karadul", "sys_qwen", "sys_gemma")
+# gerçek ad -> {sistem: (aday ya da None, güven, durum)}
+MULTI = {
+    "net_open_socket": {"sys_karadul": ("net_open_socket", None, None), "sys_qwen": ("openSocket", -0.2, None),
+                        "sys_gemma": ("NetOpenSocket", -0.1, None)},
+    "net_send_packet": {"sys_karadul": ("send_data", None, None), "sys_qwen": ("send_packet", -0.3, None),
+                        "sys_gemma": (None, None, "cekimser")},
+    "cfg_load_file": {"sys_karadul": ("read_config", None, None), "sys_qwen": ("read_config_2", -0.5, None),
+                      "sys_gemma": ("load_config_file", -0.4, None)},
+    "cfg_lookup_key": {"sys_karadul": ("FUN_100001100", None, None), "sys_qwen": ("lookup_key", -0.6, None),
+                       "sys_gemma": ("lookupKey", -0.9, None)},
+    "ui_draw_window": {"sys_karadul": ("draw", None, None), "sys_qwen": ("draw_window", -0.2, None),
+                       "sys_gemma": ("render window", -1.0, None)},
+    "ui_resize_window": {"sys_karadul": ("window_size", None, None), "sys_qwen": ("resize_window", -0.1, None),
+                         "sys_gemma": ("resize_window", -0.3, None)},
+    "mem_alloc_block": {"sys_karadul": ("block_new", None, None), "sys_qwen": (None, None, "ret"),
+                        "sys_gemma": ("alloc_block", -0.7, None)},
+    "mem_free_block": {"sys_karadul": ("mem_free_block", None, None), "sys_qwen": ("free_block", -0.2, None),
+                       "sys_gemma": ("release_block", -1.1, None)},
+    "str_hash_text": {"sys_karadul": ("hash", None, None), "sys_qwen": ("hash_string", -0.4, None),
+                      "sys_gemma": ("compute_hash", -0.8, None)},
+    "str_compare_text": {"sys_karadul": ("compare_strings", None, None), "sys_qwen": ("compare_text", -0.3, None),
+                         "sys_gemma": ("str_compare_text", -0.2, None)},
+    "str_trim_space": {"sys_karadul": (None, None, None), "sys_qwen": ("trim_spaces", -0.5, None),
+                       "sys_gemma": ("skip_whitespace", -0.6, None)},
+    "ui_beep": {"sys_karadul": (None, None, None), "sys_qwen": ("beep", -0.9, None),
+                "sys_gemma": ("ring_bell", -1.2, None)},
+}
+
+
+def _addr_of(gt: str) -> str:
+    return next(r["addr"] for r in _rows() if r["gt"] == [f"_{gt}"])
+
+
+def _cand_records(multi: dict = MULTI) -> list[dict]:
+    out = []
+    for gt, per in multi.items():
+        for system, (name, conf, durum) in per.items():
+            rec = {"addr": _addr_of(gt), "sistem": system, "aday": name, "guven": conf}
+            if durum:
+                rec["durum"] = durum
+            out.append(rec)
+    return out
+
+
+def _build_multi(tree, **kw):
+    root, _score, idx = tree
+    cands, _skipped = ep.parse_candidates(kw.pop("records", _cand_records()))
+    kw.setdefault("binary", "oyun")
+    kw.setdefault("seed", 5)
+    return ep.build_multi_package(_rows(), idx, root, cands, **kw)
+
+
+def _fn_by_gt(key: dict, gt: str) -> tuple[str, dict]:
+    return next((fid, v) for fid, v in key["ogeler"].items() if v["gt"] == [f"_{gt}"])
+
+
+def _shown_by_system(item: dict) -> dict:
+    return {s: (item["adaylar"][e["aday_id"]]["aday"] if e["aday_id"] else None) for s, e in item["sistemler"].items()}
+
+
+def test_cok_merges_same_normalized_names_and_keeps_systems_in_key(tree):
+    _amac, aday, key = _build_multi(tree)
+    _fid, item = _fn_by_gt(key, "net_open_socket")
+    shown = _shown_by_system(item)
+    assert shown == {"sys_karadul": "net_open_socket", "sys_qwen": "open_socket", "sys_gemma": "net_open_socket"}
+    merged = item["adaylar"][item["sistemler"]["sys_karadul"]["aday_id"]]
+    assert merged["sistemler"] == ["sys_gemma", "sys_karadul"]
+    assert merged["ozgun"] == {"sys_gemma": "NetOpenSocket", "sys_karadul": "net_open_socket"}
+    assert item["sistemler"]["sys_gemma"]["aday_id"] == item["sistemler"]["sys_karadul"]["aday_id"]
+    _fid, item = _fn_by_gt(key, "cfg_load_file")
+    assert item["adaylar"][item["sistemler"]["sys_qwen"]["aday_id"]]["sistemler"] == ["sys_karadul", "sys_qwen"]
+    # birleşen satır: net_open_socket, cfg_load_file, cfg_lookup_key, ui_resize_window
+    s = key["kunye"]["sayilar"]
+    assert s["birlesen_satir"] == 4
+    assert s["aday"] == len(aday) - s["yem"]
+
+
+def test_cok_auto_tam_from_normalized_gt(tree):
+    _amac, _aday, key = _build_multi(tree)
+    tam = {(v["gt"][0][1:], a["aday"]) for v in key["ogeler"].values() for a in v["adaylar"].values() if a["tam"]}
+    assert tam == {("net_open_socket", "net_open_socket"), ("mem_free_block", "mem_free_block"),
+                   ("str_compare_text", "str_compare_text")}
+
+
+def test_cok_package_files_hide_systems(tree):
+    amac, aday, key = _build_multi(tree)
+    assert all(set(r) == {"id", "dosya", "govde"} for r in amac)
+    assert all(set(r) == {"id", "aday_id", "aday"} for r in aday)
+    text = json.dumps(amac, ensure_ascii=False) + json.dumps(aday, ensure_ascii=False)
+    assert "sys_" not in text and not any(s in text for s in SYSTEMS)
+    # gösterim normalize: sistem üslubu (büyük harf, _2 eki) görünmez
+    assert all(r["aday"] == ep.normalize_name(r["aday"]) for r in aday)
+    assert "read_config_2" not in text and "NetOpenSocket" not in text and "openSocket" not in text
+
+
+def test_cok_abstentions_counted_not_packaged(tree):
+    _amac, aday, key = _build_multi(tree)
+    reasons = {}
+    for v in key["ogeler"].values():
+        for system, e in v["sistemler"].items():
+            if e["durum"] == "cekimser":
+                reasons[(v["gt"][0][1:], system)] = e["neden"]
+                assert e["aday_id"] is None
+    assert reasons == {
+        ("net_send_packet", "sys_gemma"): "cekimser",
+        ("cfg_lookup_key", "sys_karadul"): "jenerik",
+        ("ui_draw_window", "sys_gemma"): "gecersiz",
+        ("mem_alloc_block", "sys_qwen"): "ret",
+        ("str_trim_space", "sys_karadul"): "bos",
+        ("ui_beep", "sys_karadul"): "bos",
+    }
+    s = key["kunye"]["sayilar"]
+    assert s["cekimser"] == 6 and s["cekimser_nedenleri"] == {"bos": 2, "cekimser": 1, "gecersiz": 1, "jenerik": 1, "ret": 1}
+    assert key["kunye"]["sistem_sayilari"]["sys_karadul"] == {"aday": 9, "cekimser": 3, "satir": 12}
+    shown = {r["aday"] for r in aday}
+    assert not ({"fun_100001100", "render window", "render_window"} & shown)
+
+
+def test_cok_order_is_seeded_and_mixed_across_functions(tree):
+    a1, d1, k1 = _build_multi(tree, seed=5)
+    a2, d2, k2 = _build_multi(tree, seed=5)
+    assert (a1, d1, k1) == (a2, d2, k2)
+    a3, d3, k3 = _build_multi(tree, seed=5, order_seed=99)
+    pairs = lambda amac, aday, key: sorted((key["ogeler"][r["id"]]["addr"], r["aday"]) for r in aday)  # noqa: E731
+    assert pairs(a1, d1, k1) == pairs(a3, d3, k3)
+    assert [r["aday"] for r in d1] != [r["aday"] for r in d3]
+    ids = [r["id"] for r in d1]
+    assert ids != sorted(ids)  # satırlar fonksiyona göre gruplanmamış
+    # fonksiyon id sırası adres sırası değil
+    addrs = [int(k1["ogeler"][f]["addr"], 16) for f in sorted(k1["ogeler"])]
+    assert addrs != sorted(addrs)
+
+
+def test_cok_decoys(tree):
+    amac, aday, key = _build_multi(tree)
+    rows = {r["addr"]: r for r in _rows()}
+    bodies = "\n".join(r["govde"] for r in amac)
+    decoys = [(fid, a) for fid, v in key["ogeler"].items() for a in v["adaylar"].values() if a["yem"]]
+    assert len(decoys) == 2  # 12 fonksiyonun %10'u, yukarı yuvarlanır
+    others = {a["aday"] for v in key["ogeler"].values() for a in v["adaylar"].values() if not a["yem"]}
+    for fid, a in decoys:
+        item = key["ogeler"][fid]
+        src = a["yem_kaynagi"]
+        assert a["sistemler"] == [] and not a["tam"]
+        assert a["aday"] == ep.normalize_name(src["aday_ad"])
+        assert src["aday_dosya"] != item["dosya"]
+        assert not (ep.name_tokens(src["aday_ad"]) & ep.name_tokens(item["gt"][0]))
+        assert rows[src["aday_addr"]]["gt"] == [f"_{src['aday_ad']}"]
+        assert src["aday_addr"] not in {v["addr"] for v in key["ogeler"].values()}
+        assert not _word(src["aday_ad"], bodies) and a["aday"] not in others
+    assert len({a["aday"] for _f, a in decoys}) == 2
+
+
+def test_cok_decoy_seed_controls_targets(tree):
+    seen = set()
+    for ys in range(6):
+        _a, _d, key = _build_multi(tree, decoy_seed=ys)
+        seen.add(tuple(sorted(fid for fid, v in key["ogeler"].items() if any(a["yem"] for a in v["adaylar"].values()))))
+    assert len(seen) > 1
+
+
+def test_cok_address_list_validation(tree):
+    root, _score, idx = tree
+    cands, _ = ep.parse_candidates(_cand_records())
+    ok = [int(_addr_of(g), 16) for g in MULTI]
+    amac, _d, key = ep.build_multi_package(_rows(), idx, root, cands, binary="oyun", seed=1, addresses=ok[:5])
+    assert len(amac) == 5 and key["kunye"]["orneklem_kaynagi"] == "adres_listesi"
+    for bad, msg in ((0xdead, "puanlama satırlarında yok"),
+                     (int(_addr_of("shared_helper"), 16), "gövde belirsiz"),
+                     (int(_addr_of("tree_RB_NEXT"), 16), "gövde yok"),
+                     (int(_addr_of("net_close_socket"), 16), "aday satırı yok")):
+        with pytest.raises(ep.PaketHatasi, match=msg):
+            ep.build_multi_package(_rows(), idx, root, cands, binary="oyun", seed=1, addresses=ok[:3] + [bad])
+
+
+def test_cok_load_addresses_formats(tmp_path):
+    p = tmp_path / "a.txt"
+    p.write_text("# örneklem\n0x100001000\n100001040  # yorum\n\n", encoding="utf-8")
+    assert ep.load_addresses(p) == [0x100001000, 0x100001040]
+    p.write_text(json.dumps(["0x10", "0x20"]), encoding="utf-8")
+    assert ep.load_addresses(p) == [0x10, 0x20]
+    p.write_text("0x10\n0x10\n", encoding="utf-8")
+    with pytest.raises(ep.PaketHatasi, match="yinelenen"):
+        ep.load_addresses(p)
+    # G6 yem listesi biçimi: "program-adres"; yalnız eşleşen program alınır
+    p.write_text(json.dumps(["oyun-10", "baska-20", "0x30"]), encoding="utf-8")
+    assert ep.load_addresses(p, "oyun") == [0x10, 0x30]
+    assert ep.load_addresses(p) == [0x10, 0x20, 0x30]
+
+
+def test_cok_seeded_sample_from_candidate_file(tree):
+    recs = _cand_records() + [{"addr": _addr_of("tree_RB_NEXT"), "sistem": "sys_qwen", "aday": "rb_next"},
+                              {"addr": _addr_of("shared_helper"), "sistem": "sys_qwen", "aday": "helper_one"},
+                              {"addr": "0xdead", "sistem": "sys_qwen", "aday": "ghost"}]
+    _a, _d, key = _build_multi(tree, records=recs, sample_size=4)
+    s = key["kunye"]
+    assert s["sayilar"]["fonksiyon"] == 4 and s["orneklem_kaynagi"] == "tohumlu"
+    assert s["sayilar"]["dislanan"] == {"govdesi_belirsiz": 1, "govdesi_bulunamayan": 1, "satirlarda_yok": 1}
+    _a, _d, key0 = _build_multi(tree, records=recs, sample_size=0)
+    assert key0["kunye"]["sayilar"]["fonksiyon"] == len(MULTI)
+
+
+def test_cok_g6_aliases_and_program_filter():
+    recs = [
+        {"program": "tmux", "adres": "0x10", "kosul": "B", "model": "qwen38", "aday": "foo_bar",
+         "cekimser": False, "durum": "gecerli", "guven_ort_logprob": -0.25},
+        {"program": "tmux", "adres": "0x10", "kosul": "A0", "model": "karadul", "aday": None,
+         "cekimser": False, "durum": "isimsiz", "guven_ort_logprob": None},
+        {"program": "htop", "adres": "0x10", "kosul": "B", "model": "qwen38", "aday": "x"},
+    ]
+    cands, skipped = ep.parse_candidates(recs, program="tmux", confidence_field="guven_ort_logprob")
+    assert skipped == 1
+    assert [(c.addr, c.system, c.name, c.confidence, c.reason) for c in cands] == [
+        (0x10, "qwen38/B", "foo_bar", -0.25, None), (0x10, "karadul/A0", None, None, "isimsiz")]
+
+
+@pytest.mark.parametrize("rec, message", [
+    ({"sistem": "s", "aday": "a"}, "adres alanı yok"),
+    ({"addr": "0x1", "aday": "a"}, "sistem alanı yok"),
+    ({"addr": "0x1", "sistem": "s"}, "'aday' alanı yok"),
+    ({"addr": "0x1", "sistem": "s", "aday": 3}, "metin ya da null"),
+    ({"addr": "0x1", "sistem": "s", "aday": "a", "cekimser": True}, "hem aday hem çekimser"),
+    ({"addr": "0x1", "sistem": "s", "aday": "a", "guven": "yüksek"}, "güven sayı"),
+    ({"addr": 16, "sistem": "s", "aday": "a"}, "hex metin"),
+])
+def test_cok_candidate_row_errors(rec, message):
+    with pytest.raises(ep.PaketHatasi, match=message):
+        ep.parse_candidates([rec])
+
+
+def test_cok_duplicate_address_system_is_error():
+    rec = {"addr": "0x1", "sistem": "s", "aday": "a"}
+    with pytest.raises(ep.PaketHatasi, match="iki kez"):
+        ep.parse_candidates([rec, dict(rec)])
+
+
+def test_cok_leak_check_clean_and_tampered(tree):
+    amac, aday, key = _build_multi(tree)
+    errors, warnings = ep.leak_check_cok(amac, aday, key)
+    assert errors == []
+    def copy(x):
+        return json.loads(json.dumps(x))
+
+    other = next(r["id"] for r in aday if r["id"] != aday[0]["id"])
+    fid, _item = _fn_by_gt(key, "cfg_load_file")
+    cases = []
+    t = copy(aday)
+    t[0]["sistem"] = "sys_qwen"
+    cases.append((amac, t, "yasak alan"))
+    t = copy(aday)
+    t[0]["aday"] = "baska_ad"
+    cases.append((amac, t, "anahtarla uyuşmuyor"))
+    t = copy(aday)
+    t[0]["id"] = other
+    cases.append((amac, t, "başka fonksiyona bağlı"))
+    a = copy(amac)
+    a[0]["id"] = a[0]["id"] + "-sys_qwen"
+    cases.append((a, aday, "sistem adı sızıyor"))
+    a = copy(amac)
+    rec = next(r for r in a if r["id"] == fid)
+    rec["govde"] = rec["govde"].replace("FONKSIYON", "cfg_load_file", 1)
+    cases.append((a, aday, "kendi adı sızıyor"))
+    for am, ad, msg in cases:
+        errs, _w = ep.leak_check_cok(am, ad, key)
+        assert any(msg in e for e in errs), (msg, errs)
+
+
+def test_cok_cli_deterministic_and_sizinti_dispatch(tree, tmp_path, capsys):
+    root, score, _idx = tree
+    cand = tmp_path / "adaylar.jsonl"
+    cand.write_text("".join(json.dumps(r) + "\n" for r in _cand_records()), encoding="utf-8")
+    addrs = tmp_path / "adresler.txt"
+    addrs.write_text("\n".join(_addr_of(g) for g in MULTI) + "\n", encoding="utf-8")
+    outs = []
+    for name in ("p1", "p2"):
+        out = tmp_path / name
+        rc = ep.main(["uret-cok", "--satirlar", str(score), "--kaynak", str(root), "--ikili", "oyun",
+                      "--adaylar", str(cand), "--adresler", str(addrs), "--tohum", "3", "--cikti", str(out)])
+        assert rc == 0
+        outs.append(out)
+    for n in ep.PAKET_DOSYALARI:
+        assert (outs[0] / n).read_bytes() == (outs[1] / n).read_bytes()
+    assert ep.main(["sizinti-denetimi", "--paket", str(outs[0])]) == 0
+    lines = (outs[0] / ep.ADAY_DOSYASI).read_text(encoding="utf-8").splitlines()
+    first = json.loads(lines[0])
+    first["sistem"] = "sys_qwen"
+    lines[0] = json.dumps(first)
+    (outs[0] / ep.ADAY_DOSYASI).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    assert ep.main(["sizinti-denetimi", "--paket", str(outs[0])]) == 1
+    capsys.readouterr()
+
+
+def test_cok_decoy_candidate_must_not_appear_in_any_body(tmp_path):
+    root = tmp_path
+    defs = [("red_apple_pick", "x.c", "void\nred_apple_pick(void)\n{\n\tgreen_leaf_fold();\n}"),
+            ("green_leaf_fold", "y.c", "void\ngreen_leaf_fold(void)\n{\n}"),
+            ("stone_wall_build", "z.c", "void\nstone_wall_build(void)\n{\n}")]
+    rows = _mem_rows([("red_apple_pick", "wrong", "pick"), ("green_leaf_fold", "unnamed", None),
+                      ("stone_wall_build", "unnamed", None)])
+    cands, _ = ep.parse_candidates([{"addr": rows[0]["addr"], "sistem": "s1", "aday": "pick_fruit"}])
+    for seed in range(20):
+        _a, _d, key = ep.build_multi_package(rows, _mem_idx(root, defs), root, cands, binary="t", seed=seed)
+        (decoy,) = [a for v in key["ogeler"].values() for a in v["adaylar"].values() if a["yem"]]
+        assert decoy["aday"] == "stone_wall_build"
+
+
+def test_cok_explicit_decoy_targets(tree):
+    targets = [int(_addr_of("ui_beep"), 16), int(_addr_of("cfg_load_file"), 16), int(_addr_of("str_hash_text"), 16)]
+    _a, _d, key = _build_multi(tree, decoy_targets=targets)
+    got = sorted(int(v["addr"], 16) for v in key["ogeler"].values() if any(a["yem"] for a in v["adaylar"].values()))
+    assert got == sorted(targets) and key["kunye"]["yem_hedefi_kaynagi"] == "liste"
+    with pytest.raises(ep.PaketHatasi, match="yem hedefi örneklemde yok"):
+        _build_multi(tree, decoy_targets=[int(_addr_of("net_close_socket"), 16)])
