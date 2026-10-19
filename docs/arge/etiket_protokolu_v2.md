@@ -330,6 +330,6 @@ Hesaplar %95 düzeyindedir (z = 1,96).
 5. Yem oranı %10. Kabul oranı değerlendirici başına, dalga birleşik hesaplanır; hedef nokta tahmine uygulanır, Wilson aralığı her zaman verilir.
 6. G8 cömertlik kuralı nokta tahmine bakar; aralık da raporlanır.
 
-**Bekleyenler:**
-1. **Yemin değerlendiriciye söylenip söylenmeyeceği.** Öneri: söylenmez.
-2. **Gövde kırpma sınırı.** 60 satır v1'den kaldı.
+**Bekleyenler (karar verildi, ana oturum, 2026-10-19):**
+1. **Yemin değerlendiriciye söylenip söylenmeyeceği:** söylenmez; söylenirse doğal hoşgörü ölçülemez.
+2. **Gövde kırpma sınırı:** 120 satır (`--azami-satir 120`). 60 satırlık sınır uzun fonksiyonlarda amaç yargısını bozuyordu; v2 sayıları v1'le birleştirilmediği için eşdeğerlik gerekmiyor.
