@@ -176,8 +176,9 @@ def corpus_items(data_dir: Path, only: Optional[list[str]] = None) -> list[tuple
 # ---------------------------------------------------------------------------
 
 def _git(tree: Path, *args: str) -> str:
+    # Yalnız sondaki boşluk atılır: `status --porcelain` satırı boşlukla başlayabilir (" M yol").
     return subprocess.run(["git", "-C", str(tree), *args], capture_output=True,
-                          text=True, check=True).stdout.strip()
+                          text=True, check=True).stdout.rstrip()
 
 
 def tree_info(tree: Path) -> dict[str, Any]:
