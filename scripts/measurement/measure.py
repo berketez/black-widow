@@ -45,10 +45,12 @@ sys.path.insert(0, str(HERE))
 
 import function_f1 as f1  # noqa: E402
 
+sys.path.insert(0, str(REPO_ROOT))
+from karadul.config import GHIDRA_PINNED_DIR, GHIDRA_PINNED_VERSION, ghidra_install_info  # noqa: E402
+
 MANIFEST_PATH = HERE / "corpus.json"
 DEFAULT_DATA_DIR = Path(os.environ.get("KARADUL_OLCUM_DIR", "~/karadul_olcum")).expanduser()
-DEFAULT_GHIDRA = Path(os.environ.get(
-    "KARADUL_MEAS_GHIDRA", "~/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC")).expanduser()
+DEFAULT_GHIDRA = Path(os.environ.get("KARADUL_MEAS_GHIDRA", GHIDRA_PINNED_DIR)).expanduser()
 DEFAULT_TIMEOUT_S = 900  # bir binary 15 dk'yı geçerse atlanır
 DEFAULT_JOBS = 2
 # karadul'un proje köküne (cwd) göre aradığı, git'e girmeyen çalışma zamanı verisi.
@@ -199,13 +201,19 @@ def tree_info(tree: Path) -> dict[str, Any]:
 
 
 def ghidra_info(ghidra: Path) -> dict[str, Any]:
-    props = ghidra / "Ghidra" / "application.properties"
-    if not (ghidra / "support" / "analyzeHeadless").is_file() or not props.is_file():
+    info = ghidra_install_info(ghidra)
+    if not (ghidra / "support" / "analyzeHeadless").is_file() or info["version"] is None:
         raise FileNotFoundError(f"Ghidra kurulumu bulunamadı: {ghidra}")
-    kv = dict(line.split("=", 1) for line in props.read_text().splitlines()
-              if "=" in line and not line.startswith("#"))
-    return {"install_dir": _tilde(ghidra), "version": kv.get("application.version"),
-            "release": kv.get("application.release.name")}
+    return {"install_dir": _tilde(ghidra), "version": info["version"], "release": info["release"]}
+
+
+def require_pinned_ghidra(gi: dict[str, Any], allow_other: bool) -> None:
+    """Ölçüm yalnız sabitlenen Ghidra sürümüyle yapılır (plan v2 §3 madde 3)."""
+    if gi["version"] != GHIDRA_PINNED_VERSION and not allow_other:
+        raise SystemExit(
+            f"Ghidra {gi['version']} ({gi['install_dir']}) sabitlenen sürüm "
+            f"{GHIDRA_PINNED_VERSION} değil; ölçüm durduruldu. Bilerek farklı sürümle "
+            "ölçmek için --farkli-ghidra-izinli verin.")
 
 
 def cfg_cache_snapshot() -> dict[str, str]:
@@ -278,13 +286,15 @@ def _run_one(tree: Path, ghidra: Path, data_dir: Path, label: str, corpus: str,
 
 
 def analyze(tree: Path, label: str, data_dir: Path, ghidra: Path, jobs: int,
-            timeout: int, only: Optional[list[str]], force: bool) -> dict[str, Any]:
+            timeout: int, only: Optional[list[str]], force: bool,
+            allow_other_ghidra: bool = False) -> dict[str, Any]:
     tree = tree.expanduser().resolve()
+    gi = ghidra_info(ghidra)
+    require_pinned_ghidra(gi, allow_other_ghidra)
     info = tree_info(tree)
     if info["runtime_data_missing"]:
         print(f"UYARI: ağaçta çalışma zamanı verisi yok: {info['runtime_data_missing']} "
               "(ana depodakilere symlink verin; bkz. README)")
-    gi = ghidra_info(ghidra)
     label_dir = data_dir / "runs" / label
     label_dir.mkdir(parents=True, exist_ok=True)
     session = {"label": label, "tree": info, "ghidra": gi, "python": sys.version.split()[0],
@@ -372,6 +382,9 @@ def score_label(label: str, data_dir: Path, only: Optional[list[str]] = None) ->
     for r in per_binary:
         if "error" in r:
             warnings.append(f"{r['corpus']}/{r['binary']}: ÖLÇÜLEMEDİ — {r['error']}")
+    if session["ghidra"].get("version") != GHIDRA_PINNED_VERSION:
+        warnings.append(f"koşular Ghidra {session['ghidra'].get('version')} ile alındı; "
+                        f"sabitlenen sürüm {GHIDRA_PINNED_VERSION}")
     return {
         "schema": "karadul-function-f1-report/1",
         "label": label,
@@ -537,6 +550,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         p.add_argument("--only", nargs="*", default=None,
                        help="yalnız bunlar: 'cat', 'debian-9.4-3', 'debian-9.4-3/cat'")
         p.add_argument("--force", action="store_true", help="ok koşuları da yeniden koş")
+        p.add_argument("--farkli-ghidra-izinli", action="store_true",
+                       help=f"sabitlenen Ghidra {GHIDRA_PINNED_VERSION} dışındaki bir sürümle koşmaya izin ver")
 
     _run_args(sub.add_parser("analyze", help="karadul'u ağaçtan koş"))
     sp = sub.add_parser("score", help="koşuları puanla")
@@ -559,7 +574,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         prepare(data_dir)
     if args.cmd in ("analyze", "all"):
         analyze(args.tree, args.label, data_dir, args.ghidra.expanduser(), args.jobs,
-                args.timeout, args.only, args.force)
+                args.timeout, args.only, args.force, args.farkli_ghidra_izinli)
     if args.cmd in ("score", "all"):
         report = score_label(args.label, data_dir, args.only)
         out = args.out or (data_dir / "results" / f"{args.label}.json")

@@ -152,19 +152,26 @@ def _resolve_path(p: str) -> Path:
     return Path(os.path.expanduser(p)).resolve()
 
 
-# Berke'nin bilinen Ghidra install dizini (geriye uyum + bilinen-iyi aday)
-_GHIDRA_KNOWN_DIR = "~/Desktop/dosyalar/uygulamalar/ghidra/build/dist/ghidra_12.0_DEV"
+# Sabitlenen Ghidra sürümü (plan v2 G3c, 2026-10-19). Geliştirme CLI'ı, uygulama
+# paketi ve ölçüm hattı aynı kurulumu kullanır: aynı ikili farklı Ghidra
+# sürümlerinde farklı C üretir, sayılar karşılaştırılamaz olur. Başka bir kurulum
+# yalnız GHIDRA_INSTALL_DIR/GHIDRA_HOME ile seçilir ve uyarı verir.
+GHIDRA_PINNED_VERSION = "12.1.2"
+GHIDRA_PINNED_DIR = "~/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC"
+
+# Env yoksa ilk bakılan kurulum.
+_GHIDRA_KNOWN_DIR = GHIDRA_PINNED_DIR
 
 
 def _find_ghidra_tool(rel: str, fallback: str) -> Path:
     """Ghidra alt-aracını esnek bul (``rel`` = install-dir'e göreli, ör
     ``support/analyzeHeadless``).
 
-    Öncelik: env (``GHIDRA_INSTALL_DIR``/``GHIDRA_HOME``) -> Berke'nin bilinen
-    yolu -> yaygın konum glob'ları -> PATH -> eski hardcoded fallback. Böylece
-    .app/launcher ``GHIDRA_INSTALL_DIR`` ile taşınabilir; env yoksa mevcut
-    davranış korunur (bilinen yol bulunur). Ghidra yolu ``karadul.yaml``'a
-    KONULMAZ (ayar paneli whitelist'i onu silerdi) -> env tek güvenli override.
+    Öncelik: env (``GHIDRA_INSTALL_DIR``/``GHIDRA_HOME``) -> sabitlenen kurulum
+    (``GHIDRA_PINNED_DIR``) -> yaygın konum glob'ları -> PATH -> fallback.
+    Böylece .app/launcher ``GHIDRA_INSTALL_DIR`` ile taşınabilir; env yoksa
+    sabitlenen sürüm bulunur. Ghidra yolu ``karadul.yaml``'a KONULMAZ (ayar
+    paneli whitelist'i onu silerdi) -> env tek güvenli override.
     """
     bases: list[Path] = []
     for ev in ("GHIDRA_INSTALL_DIR", "GHIDRA_HOME"):
@@ -186,16 +193,53 @@ def _find_ghidra_tool(rel: str, fallback: str) -> Path:
     return _resolve_path(fallback)
 
 
+def ghidra_install_info(install_dir: Path | str) -> dict[str, Optional[str]]:
+    """Ghidra kurulumunun sürümünü ``Ghidra/application.properties``'ten oku.
+
+    Dosya yoksa ya da okunamazsa sürüm ``None`` döner, hata fırlatılmaz: rapor
+    yazımı Ghidra bulunamadı diye düşmemeli.
+    """
+    root = Path(os.path.expanduser(str(install_dir)))
+    props: dict[str, str] = {}
+    try:
+        text = (root / "Ghidra" / "application.properties").read_text(encoding="utf-8")
+    except OSError:
+        text = ""
+    for line in text.splitlines():
+        key, sep, value = line.partition("=")
+        if sep and not key.lstrip().startswith("#"):
+            props[key.strip()] = value.strip()
+    return {
+        "install_dir": str(root),
+        "version": props.get("application.version"),
+        "release": props.get("application.release.name"),
+    }
+
+
+_UNPINNED_GHIDRA_WARNED: set[str] = set()
+
+
+def warn_if_ghidra_unpinned(install_dir: Path | str) -> dict[str, Optional[str]]:
+    """Sabitlenen sürümden farklı bir Ghidra kullanılıyorsa kurulum başına bir kez uyar."""
+    info = ghidra_install_info(install_dir)
+    if info["version"] != GHIDRA_PINNED_VERSION and info["install_dir"] not in _UNPINNED_GHIDRA_WARNED:
+        _UNPINNED_GHIDRA_WARNED.add(str(info["install_dir"]))
+        logger.warning(
+            "Ghidra %s kullanılıyor (%s); sabitlenen sürüm %s. Aynı ikili farklı "
+            "sürümde farklı C üretir, sonuçlar karşılaştırılamaz.",
+            info["version"] or "bilinmeyen sürüm", info["install_dir"], GHIDRA_PINNED_VERSION,
+        )
+    return info
+
+
 @dataclass
 class ToolPaths:
     """Dış araç konumları."""
     ghidra_headless: Path = field(default_factory=lambda: _find_ghidra_tool(
-        "support/analyzeHeadless",
-        "~/Desktop/dosyalar/uygulamalar/ghidra/build/dist/ghidra_12.0_DEV/support/analyzeHeadless",
+        "support/analyzeHeadless", f"{GHIDRA_PINNED_DIR}/support/analyzeHeadless",
     ))
     ghidra_run: Path = field(default_factory=lambda: _find_ghidra_tool(
-        "ghidraRun",
-        "~/Desktop/dosyalar/uygulamalar/ghidra/build/dist/ghidra_12.0_DEV/ghidraRun",
+        "ghidraRun", f"{GHIDRA_PINNED_DIR}/ghidraRun",
     ))
     synchrony: Path = field(default_factory=lambda: Path("/opt/homebrew/bin/synchrony"))
     radare2: Path = field(default_factory=lambda: Path("/opt/homebrew/bin/r2"))

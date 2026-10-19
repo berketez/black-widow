@@ -5501,7 +5501,7 @@ class ReportStage(Stage):
         logger.info("Report: JSON rapor olusturuluyor...")
         try:
             from karadul.reporting.json_report import JSONReporter
-            json_path = JSONReporter().generate(pipeline_result, context.workspace)
+            json_path = JSONReporter(config=context.config).generate(pipeline_result, context.workspace)
             artifacts["report_json"] = json_path
         except Exception as exc:
             logger.exception("JSON rapor olusturulamadi: %s", exc)

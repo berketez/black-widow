@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from karadul import __version__
+from karadul.config import Config, GHIDRA_PINNED_VERSION, ToolPaths, ghidra_install_info
 from karadul.core.result import PipelineResult
 from karadul.core.workspace import Workspace
 
@@ -24,6 +25,9 @@ class JSONReporter:
 
     Pipeline sonuclarini detayli JSON formatinda workspace/reports/ altina yazar.
     """
+
+    def __init__(self, config: Config | None = None) -> None:
+        self._config = config
 
     def generate(self, result: PipelineResult, workspace: Workspace) -> Path:
         """JSON rapor uret ve kaydet.
@@ -38,6 +42,14 @@ class JSONReporter:
         report = self._build_report(result, workspace)
         content = json.dumps(report, indent=2, ensure_ascii=False, default=str)
         return workspace.save_artifact("reports", "report.json", content)
+
+    def _ghidra_environment(self) -> dict[str, Any]:
+        """Raporu ureten Ghidra kurulumu: farkli surum ayni ikiliden farkli C uretir."""
+        tools = self._config.tools if self._config is not None else ToolPaths()
+        info: dict[str, Any] = ghidra_install_info(Path(tools.ghidra_headless).parent.parent)
+        info["pinned_version"] = GHIDRA_PINNED_VERSION
+        info["matches_pinned"] = info["version"] == GHIDRA_PINNED_VERSION
+        return info
 
     def _build_report(self, result: PipelineResult, workspace: Workspace) -> dict[str, Any]:
         """Rapor dict'ini olustur."""
@@ -69,6 +81,7 @@ class JSONReporter:
         return {
             "karadul_version": __version__,
             "generated_at": now,
+            "environment": {"ghidra": self._ghidra_environment()},
             "target": target_info,
             "pipeline": {
                 "total_duration": round(result.total_duration, 3),

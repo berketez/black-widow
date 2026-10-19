@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from karadul.config import Config, CPU_PERF_CORES
+from karadul.config import Config, CPU_PERF_CORES, warn_if_ghidra_unpinned
 from karadul.core.subprocess_runner import SubprocessRunner
 
 logger = logging.getLogger(__name__)
@@ -57,6 +57,7 @@ def _ensure_pyghidra_started(ghidra_install: Path) -> None:
 
     from pyghidra.launcher import HeadlessPyGhidraLauncher
     from karadul.config import CPU_PERF_CORES, GHIDRA_HEAP_MB
+    warn_if_ghidra_unpinned(ghidra_install)
     launcher = HeadlessPyGhidraLauncher(install_dir=ghidra_install)
     gc_threads = max(2, CPU_PERF_CORES)
     conc_threads = max(1, CPU_PERF_CORES // 2)
@@ -152,6 +153,7 @@ class GhidraHeadless:
         self.config = config
         self.runner = SubprocessRunner(config)
         self.analyze_headless = config.tools.ghidra_headless
+        warn_if_ghidra_unpinned(Path(self.analyze_headless).parent.parent)
 
     def analyze(
         self,
