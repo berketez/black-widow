@@ -587,6 +587,23 @@ Adresler, sorgu tarihleri ve indirilen dizin dosyalarının sha256'ları `dogrul
 5. **Kayıt.** Sonucu bu belgeye "§13 Kura sonucu ve sabitleme" olarak ekle. Ek A'nın karşılığı `test_seti_kilidi.md` §4 biçimindedir.
 6. **Bakış kaydı.** Bakış kaydını başlat.
 
+## 13. Kura sonucu ve sabitleme (2026-10-19)
+
+- **Kura:** 2026-10-19 10:08:45 UTC'de çekildi. Commit `be19227`'deki betik ve bu belge kullanıldı; betiğin commit denetimi geçti. Künye, yedek sıraları ve sabitleme tabloları: `docs/arge/dogrulama_seti_kilidi.md`.
+- **Ana küme (10):**
+  - küçük: mosquitto, newlisp, pspg, kalign;
+  - orta: timidity, nagios, joe, gnugo;
+  - büyük: alpine, gnome-builder.
+  - 10 ayrı alan, 10 ayrı aile. Alan kısıtı gevşetilmedi, komşu tabakaya geçilmedi.
+- **Stres alt kümesi (5/13):** datamash, bison, tar, sed, diffutils; hepsi gnulib.
+  - Stres yedek sırası: findutils, unbound, inetutils-telnet, m4, patch, hatari, make, cpio.
+- **Sabitleme:** 15 programın Homebrew şişesi, Debian paketi ve aynı sürüm dbgsym'i indirildi (80,8 MB). Doğrulamalar:
+  - şişe sha256: 15/15;
+  - paket ve dbgsym sha256: 30/30;
+  - dbgsym BuildID: 15/15.
+- **K3 (Mac şişesinde ikili tamamen soyulmuş):** nagios, newlisp. Program değişmez; Mac ikilileri kaynaktan derlenecek (§4.4). Bu ayrı bir iş.
+- **K1, K2, K4, K5, K6:** yok. Değişim yapılmadı.
+
 ## Ek A. Şişe özetleri ve Debian ikili yolları
 
 | Program | Homebrew şişesi `arm64_tahoe` sha256 | Mac kurulu boyut (B) | Debian dbgsym paketi | Debian ikili yolu |
