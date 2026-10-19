@@ -168,6 +168,110 @@
       "find": "        parts = ln.strip().split(None, 1)",
       "replace": "        parts = [ln[:2], ln[3:]]",
       "test": "tests/test_macho_measure.py"
+    },
+    {
+      "id": "O1_access_precedence",
+      "module": "scripts/measurement/macho_f1.py",
+      "desc": "tablo, doğrudan çağrıdan önce denetlenir",
+      "find": "    if callers.get(addr, set()) - {addr}:\n        return ACCESS_DIRECT\n    if addr in pointers:\n        return ACCESS_TABLE\n",
+      "replace": "    if addr in pointers:\n        return ACCESS_TABLE\n    if callers.get(addr, set()) - {addr}:\n        return ACCESS_DIRECT  # sıra değişti\n",
+      "test": "tests/test_macho_f1.py"
+    },
+    {
+      "id": "O2_self_edge_counts",
+      "module": "scripts/measurement/macho_f1.py",
+      "desc": "kendini çağırma doğrudan çağıran sayılır",
+      "find": "    if callers.get(addr, set()) - {addr}:",
+      "replace": "    if callers.get(addr, set()):",
+      "test": "tests/test_macho_f1.py"
+    },
+    {
+      "id": "O3_bind_counted_as_pointer",
+      "module": "scripts/measurement/macho_f1.py",
+      "desc": "bind (dış sembol) fixup'ları da işaretçi sayılır",
+      "find": "    return Counter(f[\"target\"] for f in fixups if f[\"kind\"] == FIXUP_REBASE)",
+      "replace": "    return Counter(f[\"target\"] for f in fixups)",
+      "test": "tests/test_macho_f1.py"
+    },
+    {
+      "id": "O4_size_not_divided",
+      "module": "scripts/measurement/macho_f1.py",
+      "desc": "talimat = bayt (4'e bölünmüyor)",
+      "find": "\"talimat\": gfn[\"size\"] // insn_bytes if insn_bytes else None})",
+      "replace": "\"talimat\": gfn[\"size\"] if insn_bytes else None})",
+      "test": "tests/test_macho_f1.py"
+    },
+    {
+      "id": "O5_erisim_key_renamed",
+      "module": "scripts/measurement/macho_f1.py",
+      "desc": "satır şemasında erisim anahtarı değişti",
+      "find": "\"erisim\": access_class(addr, callers, pointers) if access_known else None,",
+      "replace": "\"erisim_sinifi\": access_class(addr, callers, pointers) if access_known else None,",
+      "test": "tests/test_macho_f1.py"
+    },
+    {
+      "id": "O6_adrp_window_ignored",
+      "module": "scripts/measurement/macho_f1.py",
+      "desc": "adrp+add eşleşmesinde pencere yok (bayat sayfa)",
+      "find": "n - at <= ADRP_PAIR_WINDOW",
+      "replace": "n - at <= 10 ** 9",
+      "test": "tests/test_macho_f1.py"
+    },
+    {
+      "id": "O7_register_kill_off",
+      "module": "scripts/measurement/macho_f1.py",
+      "desc": "yazılan yazmacın sayfa bilgisi silinmiyor",
+      "find": "            pages.pop(f\"x{dest.group(1)}\", None)",
+      "replace": "            pass",
+      "test": "tests/test_macho_f1.py"
+    },
+    {
+      "id": "O8_own_branch_is_tail",
+      "module": "scripts/measurement/macho_f1.py",
+      "desc": "fonksiyonun kendi başına dönen b kuyruk çağrısı sayılır",
+      "find": "if dest_fn in start_set and (i < 0 or start_list[i] != dest_fn):",
+      "replace": "if dest_fn in start_set:",
+      "test": "tests/test_macho_f1.py"
+    },
+    {
+      "id": "O9_result_label_ignored",
+      "module": "scripts/measurement/macho_measure.py",
+      "desc": "yeni sonuç etiketinde de koşu dizinindeki puan dosyası ezilir",
+      "find": "        score_out = (data_dir / \"results\" / result_label / name / mf.SCORE_FILE_NAME\n                     if result_label else rdir / mf.SCORE_FILE_NAME)",
+      "replace": "        score_out = rdir / mf.SCORE_FILE_NAME",
+      "test": "tests/test_macho_measure.py"
+    },
+    {
+      "id": "O10_stripped_sha_gate_off",
+      "module": "scripts/measurement/macho_measure.py",
+      "desc": "GT'nin strip'li kopyası olmayan dosyadan erişim okunur",
+      "find": "        stripped = bpath if bpath.is_file() and f1.sha256_file(bpath) == gt_doc[\"stripped_sha256\"] else None",
+      "replace": "        stripped = bpath if bpath.is_file() else None",
+      "test": "tests/test_macho_measure.py"
+    },
+    {
+      "id": "O11_aggregate_access_off",
+      "module": "scripts/measurement/macho_measure.py",
+      "desc": "erişim sınıfları toplanmıyor",
+      "find": "    if valid and all(acc):",
+      "replace": "    if False:",
+      "test": "tests/test_macho_measure.py"
+    },
+    {
+      "id": "O12_weighted_precision_wrong_base",
+      "module": "scripts/measurement/macho_f1.py",
+      "desc": "talimat doğruluğu popülasyona bölünüyor",
+      "find": "                            \"precision\": _ratio(t[\"tp\"], t[\"named\"]),",
+      "replace": "                            \"precision\": _ratio(t[\"tp\"], t[\"population\"]),",
+      "test": "tests/test_macho_f1.py"
+    },
+    {
+      "id": "O13_rebase_target_not_parsed",
+      "module": "scripts/measurement/macho_f1.py",
+      "desc": "rebase hedefi sayıya çevrilmiyor",
+      "find": "        target: Any = int(parts[4], 16) if kind == FIXUP_REBASE else \" \".join(parts[4:])",
+      "replace": "        target: Any = parts[4]",
+      "test": "tests/test_macho_f1.py"
     }
   ]
 }

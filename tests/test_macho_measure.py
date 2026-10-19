@@ -38,6 +38,16 @@ def _load(name: str):
 
 mm = _load("macho_measure_under_test")
 
+EMPTY_FIXUPS = "/x [arm64]:\n    -fixups:\n        segment section address type target\n"
+
+
+@pytest.fixture(autouse=True)
+def _no_real_access_tools(monkeypatch):
+    """Hiçbir test gerçek dyld_info/objdump çağırmasın (gerekirse test kendi metnini verir)."""
+    monkeypatch.setattr(mm.mf, "read_fixups", lambda p: EMPTY_FIXUPS)
+    monkeypatch.setattr(mm.mf, "read_disassembly", lambda p: "")
+
+
 PINNED = mm.GHIDRA_PINNED_VERSION
 APPLE_EXPORTS = ("x [arm64]:\n    -exports:\n        offset      symbol\n"
                  "        0x00000000  __mh_execute_header\n")
@@ -304,6 +314,8 @@ def _fake_run(root: Path, ttype: str, file_hash: str, ghidra_version: str = PINN
         (ts / sub).mkdir(parents=True, exist_ok=True)
     (run / "out").mkdir(parents=True, exist_ok=True)
     (ts / "static" / "ghidra_functions.json").write_text(json.dumps({"functions": ghidra or []}))
+    (ts / "static" / "ghidra_call_graph.json").write_text(json.dumps({"nodes": {
+        g["address"]: {"callers": []} for g in (ghidra or [])}}))
     (ts / "reconstructed" / "src" / "naming_map.json").write_text(json.dumps({"global": naming or {}}))
     (ts / "raw" / "target_info.json").write_text(json.dumps({"target_type": ttype, "file_hash": file_hash}))
     (ts / "reports" / "report.json").write_text(json.dumps({
@@ -398,7 +410,7 @@ def test_score_label_end_to_end_synthetic(tmp_path, capsys):
     e = rep["per_binary"][0]
     assert e["valid"] and e["summary"]["siniflar"]["program"]["tp"] == 1
     assert e["summary"]["siniflar"]["cold"]["tp"] == 1
-    assert (rdir / mm.SCORE_FILE_NAME).is_file()
+    assert (rdir / mm.mf.SCORE_FILE_NAME).is_file()
     assert rep["aggregate"]["gelistirme"]["binaries"] == 1
     assert set(rep["harness"]) >= {"scripts/measurement/macho_f1.py",
                                    "scripts/measurement/function_f1.py"}
@@ -413,10 +425,11 @@ def test_score_label_end_to_end_synthetic(tmp_path, capsys):
 
 def test_describe_tree_change_separates_engine_paths(monkeypatch, tmp_path):
     start = {"commit": "a" * 40, "dirty_files": []}
-    # measure.tree_info'nun gerçek çıktısı: ilk satırın baştaki boşluğu strip() ile düşüyor
-    end = {"commit": "b" * 40, "dirty_files": ["M docs/arge/etiket_rehberi.md",
-                                                " M scripts/measurement/README.md",
-                                                "R  karadul/old.py -> docs/new.md"]}
+    # İlk satır 6373908'den önceki measure._git biçiminde (baştaki boşluk strip()'le düşmüş);
+    # ayrıştırıcı iki biçimi de okumalı.
+    end = {"commit": "b" * 40,
+           "dirty_files": ["M docs/arge/etiket_rehberi.md", " M scripts/measurement/README.md",
+                           "R  karadul/old.py -> docs/new.md"]}
     monkeypatch.setattr(mm.meas, "_git", lambda tree, *a: "docs/arge/x.md\nscripts/measurement/y.py")
     ch = mm.describe_tree_change(tmp_path, start, end, {})
     assert ch["changed"] and ch["engine_paths"] == []
@@ -448,3 +461,62 @@ def test_engine_change_during_run_invalidates(tmp_path):
     rep2 = mm.score_label("lbl", data2, corpus2, ["demo"])
     assert rep2["per_binary"][0]["valid"]
     assert any("motor dosyaları (karadul/" in w for w in rep2["warnings"])
+
+
+# ---------------------------------------------------------------------------
+# ÖL-3: erişim sınıfları, talimat, yeni sonuç etiketi
+# ---------------------------------------------------------------------------
+
+def _fixups_pointing_to(*targets: str) -> str:
+    return EMPTY_FIXUPS + "".join(
+        f"        __DATA_CONST    __const          0x1000286{i:02x}         rebase  {t}\n"
+        for i, t in enumerate(targets))
+
+
+def test_score_label_access_classes_and_result_label(tmp_path, monkeypatch):
+    monkeypatch.setattr(mm.mf, "read_fixups", lambda p: _fixups_pointing_to("0x100001040"))
+    data, corpus, rdir = _synthetic_label(tmp_path)
+    corpus["binaries"]["demo"]["arch"] = "arm64"
+    (rdir / mm.mf.SCORE_FILE_NAME).write_text('{"eski": true}')
+    rep = mm.score_label("lbl", data, corpus, ["demo"], result_label="lbl-ol3")
+    assert (rdir / mm.mf.SCORE_FILE_NAME).read_text() == '{"eski": true}'   # eski puan dosyası kaldı
+    new = data / "results" / "lbl-ol3" / "demo" / mm.mf.SCORE_FILE_NAME
+    rows = json.loads(new.read_text(encoding="utf-8"))["rows"]
+    assert {r["addr"]: (r["erisim"], r["talimat"]) for r in rows} == {
+        "0x100001000": ("referanssiz", 1), "0x100001040": ("tablo", 1)}
+    assert rep["result_label"] == "lbl-ol3" and rep["label"] == "lbl"
+    assert rep["per_binary"][0]["score_file"].endswith("results/lbl-ol3/demo/macho_score.json")
+    acc = rep["aggregate"]["gelistirme"]["erisim_siniflari"]
+    assert {k: acc[k]["micro"]["population"] for k in mm.mf.ACCESS_ORDER} == {
+        "dogrudan": 0, "tablo": 0, "referanssiz": 1}                    # yalnız program sınıfı
+    assert rep["aggregate"]["gelistirme"]["program"]["micro"]["talimat"]["population"] == 1
+
+
+def test_access_needs_the_analyzed_stripped_copy(tmp_path):
+    data, corpus, _ = _synthetic_label(tmp_path)
+    mm.bin_path(data, "demo").write_bytes(b"conda-strip kopyasi")       # GT'nin strip'li kopyası değil
+    rep = mm.score_label("lbl", data, corpus, ["demo"])
+    assert rep["per_binary"][0]["summary"]["erisim_siniflari"] is None
+    assert any("erişim sınıfları hesaplanmadı" in w for w in rep["warnings"])
+    assert any("talimat genişliği tanımlı değil" in w for w in rep["warnings"])   # arch yok
+
+
+def test_aggregate_sums_access_classes():
+    def blk(statuses, **extra):
+        rows = [{"status": st, "lenient": st == "tp", "talimat": 10} for st in statuses]
+        return dict(mm.mf.class_block(rows), **extra)
+
+    def with_access(entry, taken):
+        entry["summary"]["erisim_siniflari"] = {
+            "dogrudan": blk(["tp", "wrong"]), "tablo": blk(["unnamed"]),
+            "referanssiz": blk(["unnamed"], kod_referansi={"adresi_alinan": taken,
+                                                           "kuyruk_cagrisi": 0, "hicbiri": 1 - taken})}
+        return entry
+
+    e1, e2 = with_access(_entry("a", True, 1, 1, 4), 1), with_access(_entry("b", True, 1, 1, 4), 0)
+    agg = mm.aggregate([e1, e2])["erisim_siniflari"]
+    assert agg["dogrudan"]["micro"]["population"] == 4 and agg["dogrudan"]["micro"]["tp"] == 2
+    assert agg["dogrudan"]["micro"]["talimat"]["coverage"] == 1.0
+    assert agg["referanssiz"]["micro"]["kod_referansi"] == {
+        "adresi_alinan": 1, "kuyruk_cagrisi": 0, "hicbiri": 1}
+    assert mm.aggregate([e1, _entry("c", True, 0, 0, 1)])["erisim_siniflari"] is None

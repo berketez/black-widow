@@ -18,7 +18,9 @@ analyze   ``python -m karadul analyze <strip'li> --skip-dynamic --output-dir <ko
           ağaç, GHIDRA_INSTALL_DIR = sabitlenen kurulum). Sabitlenen sürüm değilse
           durur (``--farkli-ghidra-izinli`` hariç). Varsayılan ``--jobs 1``.
 score     Koşuları puanla (her koşu dizinine ``macho_score.json``), künyeli tek sonuç
-          JSON'u + terminal tablosu. Hedef türü Mach-O değilse ya da analiz edilen
+          JSON'u + terminal tablosu. ``--sonuc-etiketi`` ile yeniden puanlama koşu dizinine
+          dokunmadan ``results/<etiket>/`` altına yazılır. Erişim sınıfları (ÖL-3) ve talimat
+          ağırlığı GT'nin strip'li kopyasından (sha256 denetimiyle) okunur. Hedef türü Mach-O değilse ya da analiz edilen
           dosya GT'nin strip'li kopyası değilse koşu GEÇERSİZ sayılır, toplamlara girmez.
 compare   İki sonuç JSON'unu (taban / aday) ikili ve fonksiyon bazında kıyasla.
 all       prepare + analyze + score.
@@ -40,7 +42,6 @@ import signal
 import subprocess
 import sys
 import time
-from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Optional
@@ -69,10 +70,8 @@ DEFAULT_DATA_DIR = Path(os.environ.get(DATA_DIR_ENV, str(REPO_ROOT / "workspaces
 # PATH'te /opt/anaconda3/bin/strip önde ve export trie'yi BIRAKIYOR (2026-10-15
 # ölçümü); Apple strip'i yalnız mutlak yoldan çağrılır.
 STRIP_PATH = "/usr/bin/strip"
-XCRUN_PATH = "/usr/bin/xcrun"
 PKGUTIL_PATH = "/usr/sbin/pkgutil"
 CLT_PACKAGE_ID = "com.apple.pkg.CLTools_Executables"
-TOOL_TIMEOUT_S = 120
 # Apple strip'ten sonra export trie'de kalmasına izin verilen tek ad.
 ALLOWED_EXPORTS = frozenset({mf.MACH_HEADER_SYMBOL})
 # Karadul'un Mac'e özgü statik adımlarını koştuğu hedef türleri (core/target.py).
@@ -84,7 +83,8 @@ LOCKED_TEST_PROGRAMS = frozenset(TEST_SET_POOL) | frozenset(TEST_SET_STRESS)
 MAC_TIMEOUT_S = 2400  # ikili başına; tmux 15 Ekim'de ~16 dk sürdü (ELF: measure.DEFAULT_TIMEOUT_S)
 MAC_JOBS = 1          # makine paylaşılıyor; ikililer sırayla (ELF: measure.DEFAULT_JOBS)
 KILL_GRACE_S = 30
-SCORE_FILE_NAME = mf.SCORE_FILE_NAME
+# Talimat ağırlığı (ÖL-3) yalnız sabit genişlikli mimaride: korpustaki "arch" -> bayt/komut.
+ARCH_INSN_BYTES = {"arm64": mf.ARM64_INSN_BYTES}
 
 
 class MeasurementError(RuntimeError):
@@ -164,7 +164,7 @@ def strip_binary(src: Path, dst: Path, strip_path: str = STRIP_PATH) -> None:
     tmp = dst.with_name(dst.name + ".tmp")
     tmp.unlink(missing_ok=True)
     proc = subprocess.run([strip_path, "-o", str(tmp), str(src)], capture_output=True,
-                          text=True, timeout=TOOL_TIMEOUT_S)
+                          text=True, timeout=mf.TOOL_TIMEOUT_S)
     if proc.returncode != 0 or not tmp.is_file():
         tmp.unlink(missing_ok=True)
         raise MeasurementError(f"strip başarısız ({proc.returncode}): {proc.stderr.strip()[-300:]}")
@@ -185,8 +185,8 @@ def parse_dyld_exports(text: str) -> list[str]:
 
 
 def read_exports(path: Path) -> list[str]:
-    proc = subprocess.run([XCRUN_PATH, "dyld_info", "-exports", str(path)], capture_output=True,
-                          text=True, timeout=TOOL_TIMEOUT_S)
+    proc = subprocess.run([mf.XCRUN_PATH, "dyld_info", "-exports", str(path)], capture_output=True,
+                          text=True, timeout=mf.TOOL_TIMEOUT_S)
     if proc.returncode != 0:
         raise MeasurementError(f"dyld_info başarısız ({proc.returncode}): {proc.stderr.strip()[-300:]}")
     return parse_dyld_exports(proc.stdout)
@@ -202,8 +202,8 @@ def verify_exports(names: list[str]) -> None:
 
 
 def _xcrun_find(tool: str) -> Optional[str]:
-    proc = subprocess.run([XCRUN_PATH, "--find", tool], capture_output=True, text=True,
-                          timeout=TOOL_TIMEOUT_S)
+    proc = subprocess.run([mf.XCRUN_PATH, "--find", tool], capture_output=True, text=True,
+                          timeout=mf.TOOL_TIMEOUT_S)
     if proc.returncode != 0:
         return None
     return proc.stdout.strip() or None
@@ -215,12 +215,12 @@ def tool_info() -> dict[str, Any]:
         sha = f1.sha256_file(Path(resolved)) if resolved and Path(resolved).is_file() else None
         return {"path": path, "resolved": resolved, "sha256": sha}
     clt = subprocess.run([PKGUTIL_PATH, f"--pkg-info={CLT_PACKAGE_ID}"], capture_output=True,
-                         text=True, timeout=TOOL_TIMEOUT_S)
+                         text=True, timeout=mf.TOOL_TIMEOUT_S)
     clt_version = next((ln.split(":", 1)[1].strip() for ln in clt.stdout.splitlines()
                         if ln.startswith("version:")), None)
     return {
         "strip": _tool(STRIP_PATH, _xcrun_find("strip")),
-        "dyld_info": _tool(f"{XCRUN_PATH} dyld_info", _xcrun_find("dyld_info")),
+        "dyld_info": _tool(f"{mf.XCRUN_PATH} dyld_info", _xcrun_find("dyld_info")),
         "nm": {**_tool(mf.NM_PATH, _xcrun_find("nm")), "version": mf.nm_version()},
         "clt_version": clt_version,
     }
@@ -346,7 +346,7 @@ def run_one(tree: Path, ghidra: Path, data_dir: Path, label: str, name: str,
     for sub in ("ws", "out"):
         if (rdir / sub).exists():
             shutil.rmtree(rdir / sub)
-    (rdir / SCORE_FILE_NAME).unlink(missing_ok=True)
+    (rdir / mf.SCORE_FILE_NAME).unlink(missing_ok=True)
     rdir.mkdir(parents=True, exist_ok=True)
     cmd = build_command(target, rdir)
     env = dict(os.environ, PYTHONPATH=str(tree), GHIDRA_INSTALL_DIR=str(ghidra))
@@ -378,8 +378,9 @@ def run_one(tree: Path, ghidra: Path, data_dir: Path, label: str, name: str,
 def _porcelain_paths(lines: list[str]) -> set[str]:
     """``git status --porcelain`` satırlarından yol (yeniden adlandırmada yeni ad).
 
-    Sabit ``ln[3:]`` kullanılmaz: ``measure._git`` çıktıyı ``strip()``'lediği için ilk
-    satırın baştaki boşluğu düşüyor (`` M a`` -> ``M a``).
+    Sabit ``ln[3:]`` kullanılmaz: 6373908'den önce ``measure._git`` çıktıyı ``strip()``'liyordu
+    ve ilk satırın baştaki boşluğu düşüyordu (`` M a`` -> ``M a``); eski oturum dosyalarında
+    bu biçim duruyor.
     """
     out = set()
     for ln in lines:
@@ -551,21 +552,21 @@ def aggregate(entries: list[dict[str, Any]]) -> dict[str, Any]:
     out: dict[str, Any] = {"binaries": len(valid),
                            "excluded": [e["binary"] for e in entries if not e.get("valid")]}
     for cls in mf.CLASS_ORDER:
-        tot: Counter[str] = Counter()
-        for e in valid:
-            b = e["summary"]["siniflar"][cls]
-            for k in ("population", "named", "tp", "wrong", "unnamed", "lenient_tp"):
-                tot[k] += b[k]
-        prf = f1._prf(tot["tp"], tot["wrong"], tot["population"])
-        counts = {k: tot[k] for k in ("population", "named", "tp", "wrong", "unnamed", "lenient_tp")}
-        out[cls] = {"micro": {**counts,
-                              "precision": prf["precision"], "recall": prf["recall"], "f1": prf["f1"],
-                              "precision_ci95": mf.wilson_interval(tot["tp"], tot["named"]),
-                              "recall_ci95": mf.wilson_interval(tot["tp"], tot["population"])}}
+        out[cls] = {"micro": mf.combine_blocks([e["summary"]["siniflar"][cls] for e in valid])}
     if valid:
         out[mf.CLASS_PROGRAM]["macro"] = {
             m: round(sum(e["summary"]["siniflar"][mf.CLASS_PROGRAM][m] for e in valid) / len(valid), 4)
             for m in ("precision", "recall", "f1")}
+    # ÖL-3: erişim sınıfları (program sınıfı içinde); bir ikilide yoksa toplam verilmez.
+    acc = [e["summary"].get("erisim_siniflari") for e in valid]
+    out["erisim_siniflari"] = None
+    if valid and all(acc):
+        blocks = {a: {"micro": mf.combine_blocks([x[a] for x in acc])} for a in mf.ACCESS_ORDER}
+        diags = [x[mf.ACCESS_NONE].get("kod_referansi") for x in acc]
+        if all(diags):
+            blocks[mf.ACCESS_NONE]["micro"]["kod_referansi"] = {
+                k: sum(d[k] for d in diags) for k in diags[0]}
+        out["erisim_siniflari"] = blocks
     return out
 
 
@@ -581,13 +582,19 @@ DEFINITIONS = {
     "lenient": "tp ya da compare_name exact/semantic/partial tutan yanlış",
     "legacy_summary": "macho_score.json özetindeki eski anahtarlar (tp, wrong, precision ...) 15 Ekim tanımıyla bütün sınıfları birlikte sayar",
     "valid": "hedef türü Mach-O, analiz edilen dosya GT'nin strip'li kopyası, Ghidra raporu oturumla aynı, tek çalışma alanı",
+    "erisim": "ÖL-3, program sınıfı içinde: dogrudan = ghidra_call_graph'ta çağıranı var (öz-kenar hariç); tablo = çağıranı yok, strip'li ikilide bir rebase fixup'ı (xcrun dyld_info -fixups, chained dahil) tam fonksiyon başını gösteriyor; referanssiz = ikisi de yok",
+    "kod_referansi": "referanssiz tanısı (objdump): adresi_alinan = adrp+add (16 komut içinde) ya da adr ile adresi hesaplanan; kuyruk_cagrisi = başka fonksiyondan b/b.cond ile gidilen; hicbiri = ikisi de değil",
+    "talimat": "Ghidra fonksiyon gövdesi baytı / 4 (arm64); talimat kapsamı = isim verilenlerin talimatı / popülasyonun talimatı, talimat doğruluğu = TP talimatı / isim verilenlerin talimatı",
+    "coverage": "isim verilen / popülasyon (%95 Wilson); ağırlıklı oranlara Wilson verilmez (binom değil)",
     "micro": "küme içi sayılar toplanıp hesaplanır",
     "macro": "ikili F1/P/R'lerinin aritmetik ortalaması (program sınıfı)",
 }
 
 
 def score_label(label: str, data_dir: Path, corpus: dict[str, Any], names: list[str],
-                with_reach: bool = False) -> dict[str, Any]:
+                with_reach: bool = False, result_label: Optional[str] = None) -> dict[str, Any]:
+    """Koşuları puanla. ``result_label`` verilirse puan dosyaları koşu dizinine değil
+    ``results/<result_label>/<ad>/macho_score.json``'a yazılır (eski puan dosyası kalır)."""
     label_dir = data_dir / "runs" / label
     session = json.loads((label_dir / "session.json").read_text(encoding="utf-8"))
     manifest = _read_json(data_dir / "corpus" / "manifest.json") or {}
@@ -617,10 +624,26 @@ def score_label(label: str, data_dir: Path, corpus: dict[str, Any], names: list[
             continue
         gpath = gt_path(data_dir, name)
         gt_doc = json.loads(gpath.read_text(encoding="utf-8"))
-        res = mf.score_run(rdir, gt_path=gpath)
+        score_out = (data_dir / "results" / result_label / name / mf.SCORE_FILE_NAME
+                     if result_label else rdir / mf.SCORE_FILE_NAME)
+        # Erişim sınıfları yalnız karadul'un analiz ettiği dosyanın kendisinden okunur.
+        bpath = bin_path(data_dir, name)
+        stripped = bpath if bpath.is_file() and f1.sha256_file(bpath) == gt_doc["stripped_sha256"] else None
+        arch = corpus["binaries"][name].get("arch")
+        insn = ARCH_INSN_BYTES.get(arch) if arch else None
+        res = mf.score_run(rdir, gt_path=gpath, out=score_out, stripped=stripped, insn_bytes=insn)
         summary = res["summary"]
         summary["inputs"] = {k: (_tilde(v) if isinstance(v, str) else v)
                              for k, v in summary["inputs"].items()}
+        if summary.get("erisim_kaynaklari"):
+            summary["erisim_kaynaklari"] = {k: (_tilde(v) if isinstance(v, str) else v)
+                                            for k, v in summary["erisim_kaynaklari"].items()}
+        if stripped is None:
+            warnings.append(f"{name}: strip'li kopya yok ya da GT'nin strip'li kopyası değil; "
+                            "erişim sınıfları hesaplanmadı")
+        if insn is None:
+            warnings.append(f"{name}: mimari {arch!r} için talimat genişliği tanımlı değil; "
+                            "talimat ağırlığı yok")
         checks = run_checks(rdir, gt_doc, meta, session)
         if engine_changed:
             checks["invalid_reasons"].append(
@@ -629,6 +652,7 @@ def score_label(label: str, data_dir: Path, corpus: dict[str, Any], names: list[
         entry.update({
             "orig_sha256": gt_doc["orig_sha256"], "stripped_sha256": gt_doc["stripped_sha256"],
             "valid": checks["valid"], "checks": checks, "summary": summary,
+            "score_file": _tilde(score_out),
             "karadul_report": meas._report_stats(rdir),
             "cfg_cache_before": meta.get("cfg_cache_before", {}),
             "cfg_cache_after": meta.get("cfg_cache_after", {}),
@@ -658,6 +682,7 @@ def score_label(label: str, data_dir: Path, corpus: dict[str, Any], names: list[
     return {
         "schema": REPORT_SCHEMA,
         "label": label,
+        "result_label": result_label or label,
         "scored_at": _now(),
         "karadul": {"commit": session["tree"]["commit"], "tree": session["tree"]["tree"],
                     "dirty_files": session["tree"]["dirty_files"],
@@ -678,7 +703,8 @@ def score_label(label: str, data_dir: Path, corpus: dict[str, Any], names: list[
             "python scripts/measurement/macho_measure.py prepare",
             f"python scripts/measurement/macho_measure.py analyze --tree {session['tree']['tree']} "
             f"--label {label} --jobs {session['jobs']}",
-            f"python scripts/measurement/macho_measure.py score --label {label}",
+            f"python scripts/measurement/macho_measure.py score --label {label}"
+            + (f" --sonuc-etiketi {result_label}" if result_label else ""),
         ],
         "aggregate": {s: aggregate([e for e in per_binary if e["set"] == s]) for s in sets},
         "warnings": warnings,
@@ -711,13 +737,19 @@ def _ci(ci: Optional[list[float]]) -> str:
     return f"[{ci[0]:.3f}–{ci[1]:.3f}]" if ci else "[—]"
 
 
+def _tw(block: dict[str, Any], key: str) -> str:
+    t = block.get("talimat")
+    return f"{t[key]:.3f}" if t else "—"
+
+
 def print_table(report: dict[str, Any]) -> None:
     env = report["environment"]["ghidra"]
-    print(f"\n### {report['label']} — karadul {report['karadul']['commit'][:10]} — "
+    print(f"\n### {report['result_label']} (koşu {report['label']}) — karadul {report['karadul']['commit'][:10]} — "
           f"Ghidra {env.get('version')} — puanlandı {report['scored_at']}")
     print("| ikili | küme | GT | thunk | yok | Ghidra biliyor | popülasyon | isim verilen | TP | yanlış "
-          "| isimsiz | P [%95] | R [%95] | F1 | lenient P | cold pop/isim/TP | outlined pop/isim/TP | geçerli |")
-    print("|" + "---|" * 18)
+          "| isimsiz | kapsam [%95] | P [%95] | R [%95] | F1 | talimat kapsamı | talimat doğruluğu "
+          "| lenient P | cold pop/isim/TP | outlined pop/isim/TP | geçerli |")
+    print("|" + "---|" * 21)
     for e in report["per_binary"]:
         if "summary" not in e:
             print(f"| {e['binary']} | {e['set']} | ÖLÇÜLEMEDİ: {e.get('error')} |")
@@ -728,8 +760,9 @@ def print_table(report: dict[str, Any]) -> None:
         print(f"| {e['binary']} | {e['set']} | {s['gt_functions']} | {s['undetected_thunk']} | "
               f"{s['undetected_missing']} | {s['ghidra_known_from_exports']} | {p['population']} | "
               f"{p['named']} | {p['tp']} | {p['wrong']} | {p['unnamed']} | "
+              f"{p['coverage']:.3f} {_ci(p['coverage_ci95'])} | "
               f"{p['precision']:.3f} {_ci(p['precision_ci95'])} | {p['recall']:.3f} {_ci(p['recall_ci95'])} | "
-              f"{p['f1']:.3f} | {p['lenient_precision']:.3f} | "
+              f"{p['f1']:.3f} | {_tw(p, 'coverage')} | {_tw(p, 'precision')} | {p['lenient_precision']:.3f} | "
               f"{c['population']}/{c['named']}/{c['tp']} | {o['population']}/{o['named']}/{o['tp']} | {valid} |")
     for set_name, a in report["aggregate"].items():
         if not a.get("binaries"):
@@ -738,12 +771,38 @@ def print_table(report: dict[str, Any]) -> None:
         m = a[mf.CLASS_PROGRAM]["micro"]
         mac = a[mf.CLASS_PROGRAM].get("macro", {})
         print(f"| **{set_name}** | {a['binaries']} ikili | | | | | {m['population']} | {m['named']} | "
-              f"{m['tp']} | {m['wrong']} | {m['unnamed']} | {m['precision']:.3f} {_ci(m['precision_ci95'])} | "
+              f"{m['tp']} | {m['wrong']} | {m['unnamed']} | {m['coverage']:.3f} {_ci(m['coverage_ci95'])} | "
+              f"{m['precision']:.3f} {_ci(m['precision_ci95'])} | "
               f"{m['recall']:.3f} {_ci(m['recall_ci95'])} | mikro {m['f1']:.3f} / makro {mac.get('f1', 0):.3f} | "
-              f"{(m['lenient_tp'] / m['named']) if m['named'] else 0:.3f} | | | |")
+              f"{_tw(m, 'coverage')} | {_tw(m, 'precision')} | {m['lenient_precision']:.3f} | | | |")
+    # ÖL-3: erişim sınıfları (program sınıfı içinde)
+    lines = []
+    for e in report["per_binary"]:
+        acc = e.get("summary", {}).get("erisim_siniflari")
+        if acc:
+            lines.append((e["binary"], acc))
+    for set_name, a in report["aggregate"].items():
+        if a.get("erisim_siniflari"):
+            lines.append((f"**{set_name}**", {k: v["micro"] for k, v in a["erisim_siniflari"].items()}))
+    if lines:
+        print("\n| ikili | erişim | popülasyon | isim verilen | TP | yanlış | kapsam [%95] | P [%95] "
+              "| talimat | talimat kapsamı | talimat doğruluğu |")
+        print("|" + "---|" * 11)
+        for name, acc in lines:
+            for k in mf.ACCESS_ORDER:
+                b = acc[k]
+                t = b.get("talimat") or {}
+                print(f"| {name} | {k} | {b['population']} | {b['named']} | {b['tp']} | {b['wrong']} | "
+                      f"{b['coverage']:.3f} {_ci(b['coverage_ci95'])} | "
+                      f"{b['precision']:.3f} {_ci(b['precision_ci95'])} | {t.get('population', '—')} | "
+                      f"{_tw(b, 'coverage')} | {_tw(b, 'precision')} |")
+            kr = acc[mf.ACCESS_NONE].get("kod_referansi")
+            if kr:
+                print(f"| {name} | referanssız tanısı | kodda adresi alınan {kr['adresi_alinan']}, "
+                      f"kuyruk çağrısı {kr['kuyruk_cagrisi']}, hiçbiri {kr['hicbiri']} | | | | | | | | |")
     for e in report["per_binary"]:
         if "reach" in e:
-            print(f"{e['binary']} erişim: {mr.format_line(e['reach'])}")
+            print(f"{e['binary']} erişim (reach): {mr.format_line(e['reach'])}")
     for w in report["warnings"]:
         print(f"UYARI: {w}")
 
@@ -841,7 +900,11 @@ def main(argv: Optional[list[str]] = None) -> int:
                        help=f"sabitlenen Ghidra {GHIDRA_PINNED_VERSION} dışındaki bir sürümle koşmaya izin ver")
 
     def _score_args(p: argparse.ArgumentParser) -> None:
-        p.add_argument("--out", type=Path, default=None, help="sonuç JSON'u (varsayılan results/<etiket>.json)")
+        p.add_argument("--out", type=Path, default=None,
+                       help="sonuç JSON'u (varsayılan results/<sonuç etiketi>.json)")
+        p.add_argument("--sonuc-etiketi", default=None,
+                       help="yeniden puanlamayı yeni etiketle yaz: results/<etiket>.json ve "
+                            "results/<etiket>/<ad>/macho_score.json; koşu dizinindeki puan dosyası kalır")
         p.add_argument("--reach", action="store_true", help="erişim (macho_reach) bölümünü ekle")
 
     _sel(sub.add_parser("prepare", help="özgünü doğrula, Apple strip ile soy, export trie denetle, GT çıkar"))
@@ -872,8 +935,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         analyze(args.tree, args.label, data_dir, args.ghidra.expanduser(), names, args.jobs,
                 args.timeout, args.force, args.farkli_ghidra_izinli)
     if args.cmd in ("score", "all"):
-        report = score_label(args.label, data_dir, corpus, names, with_reach=args.reach)
-        out = args.out or (data_dir / "results" / f"{args.label}.json")
+        report = score_label(args.label, data_dir, corpus, names, with_reach=args.reach,
+                             result_label=args.sonuc_etiketi)
+        out = args.out or (data_dir / "results" / f"{report['result_label']}.json")
         write_report(report, out)
         print_table(report)
         print(f"\nsonuç: {_tilde(out)}")

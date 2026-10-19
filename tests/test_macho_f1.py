@@ -344,3 +344,182 @@ def test_score_run_writes_two_key_file(tmp_path, scenario):
     assert other.is_file() and not (run / mf.SCORE_FILE_NAME).exists()
     with pytest.raises(ValueError):
         mf.score_run(run)
+
+
+# ---------------------------------------------------------------------------
+# ÖL-3: erişim sınıfları, fixup ayrıştırma, kod taraması, talimat ağırlığı
+# ---------------------------------------------------------------------------
+
+FIXUPS_TEXT = """\
+/x/demo [arm64]:
+    -fixups:
+        segment         section          address             type   target
+        __DATA_CONST    __got            0x100028000           bind  libSystem/_free
+        __DATA_CONST    __const          0x100028648         rebase  0x100001040
+        __DATA_CONST    __const          0x100028650         rebase  0x100001040
+        __DATA          __data           0x10002C000         rebase  0x100008000
+        __DATA_CONST    __const          0x100028658         rebase  0x1000010C0
+"""
+
+DISASM = """\
+/x/demo:\tfile format mach-o arm64
+
+Disassembly of section __TEXT,__text:
+
+0000000100001000 <__text>:
+100001000:     \tadrp\tx1, 0x100001000 <__text>
+100001004:     \tadd\tx1, x1, #0x80
+100001008:     \tbl\t0x100001100 <__text+0x100>
+10000100c:     \tadrp\tx2, 0x100001000 <__text>
+100001010:     \tmov\tx2, #0x0               ; =0
+100001014:     \tadd\tx0, x2, #0x40
+100001018:     \tadr\tx3, 0x1000011c0 <__text+0x1c0>
+10000101c:     \tb\t0x100001180 <__text+0x180>
+100001020:     \tadrp\tx8, 0x100001000 <__text>
+100001024:     \tldr\tx8, [x8, #0x40]
+100001028:     \tb\t0x100001000 <__text>
+10000102c:     \tadrp\tx5, 0x100001000 <__text>
+100001030:     \tmov\tw5, #0x1               ; =1
+100001034:     \tadd\tx0, x5, #0x40
+"""
+STARTS = {0x100001000, 0x100001040, 0x100001080, 0x100001100, 0x100001180, 0x1000011c0}
+
+
+def test_parse_dyld_fixups_rebase_and_bind():
+    fx = mf.parse_dyld_fixups(FIXUPS_TEXT)
+    assert len(fx) == 5
+    assert fx[0]["kind"] == "bind" and fx[0]["target"] == "libSystem/_free"
+    assert fx[1] == {"segment": "__DATA_CONST", "section": "__const", "slot": 0x100028648,
+                     "kind": "rebase", "target": 0x100001040}
+    assert mf.pointer_targets(fx) == {0x100001040: 2, 0x100008000: 1, 0x1000010C0: 1}
+    with pytest.raises(ValueError, match="-fixups"):
+        mf.parse_dyld_fixups("dyld_info: unknown option\n")
+    with pytest.raises(ValueError, match="çok mimarili"):
+        mf.parse_dyld_fixups(FIXUPS_TEXT + "/x/demo [x86_64]:\n    -fixups:\n")
+
+
+def test_scan_code_refs_address_taken_and_tail_calls():
+    refs = mf.scan_code_refs(DISASM, STARTS)
+    # adrp+add -> 0x...080; adr -> 0x...1c0. mov x2 / mov w5 sayfayı siler; ldr adres değil.
+    assert refs["address_taken"] == {0x100001080, 0x1000011c0}
+    # başka fonksiyona b -> kuyruk çağrısı; kendi başına dönen b sayılmaz; bl çağrıdır
+    assert refs["tail_called"] == {0x100001180}
+
+
+@pytest.mark.parametrize("gap, taken", [(mf.ADRP_PAIR_WINDOW - 1, True), (mf.ADRP_PAIR_WINDOW + 1, False)])
+def test_adrp_pair_window(gap, taken):
+    lines = ["100002000:     \tadrp\tx9, 0x100001000 <__text>"]
+    lines += [f"{0x100002004 + 4 * i:x}:     \tnop" for i in range(gap)]
+    lines.append(f"{0x100002004 + 4 * gap:x}:     \tadd\tx0, x9, #0x40")
+    refs = mf.scan_code_refs("\n".join(lines), STARTS)
+    assert (0x100001040 in refs["address_taken"]) is taken
+
+
+def test_access_class_precedence_and_self_edges():
+    a, b, c, d, e = (0x100001000 + 0x40 * i for i in range(5))
+    callers = {a: {b}, b: set(), c: set(), d: {d}, e: {a}}
+    pointers = {c, d, e}
+    assert mf.access_class(a, callers, pointers) == "dogrudan"
+    assert mf.access_class(b, callers, pointers) == "referanssiz"
+    assert mf.access_class(c, callers, pointers) == "tablo"
+    assert mf.access_class(d, callers, pointers) == "tablo"        # yalnız kendini çağırıyor
+    assert mf.access_class(e, callers, pointers) == "dogrudan"     # çağıran + işaretçi: doğrudan önce
+    assert mf.access_class(0x1, callers, pointers) == "referanssiz"
+
+
+def test_load_call_graph_drops_self_edges(tmp_path):
+    p = tmp_path / "cg.json"
+    p.write_text(json.dumps({"nodes": {
+        "100001000": {"callers": [{"name": "FUN_100001000", "address": "100001000"},
+                                  {"name": "FUN_100002000", "address": "100002000"}]},
+        "100002000": {"callers": []}}}))
+    assert mf.load_call_graph(p) == {0x100001000: {0x100002000}, 0x100002000: set()}
+
+
+def _weighted_case():
+    a, b, c = 0x100001000, 0x100001200, 0x100001300
+    gt = {a: ["_big"], b: ["_mid"], c: ["_tiny"]}
+    ghidra = [dict(_gh(a), size=400), dict(_gh(b), size=40), dict(_gh(c), size=4)]
+    naming = {f"FUN_{a:x}": "big", f"FUN_{b:x}": "wrong_name"}
+    return gt, ghidra, naming
+
+
+def test_instruction_weighting():
+    gt, ghidra, naming = _weighted_case()
+    res = mf.score(gt, ghidra, naming, binary="w")
+    assert [r["talimat"] for r in res["rows"]] == [100, 10, 1]
+    p = res["summary"]["siniflar"]["program"]
+    assert (p["coverage"], p["precision"]) == (round(2 / 3, 4), 0.5)
+    assert p["talimat"] == {"population": 111, "named": 110, "tp": 100,
+                            "coverage": round(110 / 111, 4), "precision": round(100 / 110, 4),
+                            "recall": round(100 / 111, 4)}
+    none = mf.score(gt, ghidra, naming, binary="w", insn_bytes=None)
+    assert none["rows"][0]["talimat"] is None and none["summary"]["siniflar"]["program"]["talimat"] is None
+
+
+def test_rows_schema_appends_erisim_and_talimat(scenario):
+    gt, ghidra, naming = scenario
+    callers = {g["addr"]: set() for g in ghidra}
+    res = mf.score(gt, ghidra, naming, binary="x", callers=callers, pointers=set())
+    for r in res["rows"]:
+        assert list(r) == OLD_ROW_KEYS + ["sinif", "erisim", "talimat"]
+        assert r["erisim"] in mf.ACCESS_ORDER and r["talimat"] == 4
+    plain = mf.score(gt, ghidra, naming, binary="x")
+    assert all(r["erisim"] is None for r in plain["rows"])
+    assert plain["summary"]["erisim_siniflari"] is None
+
+
+def test_access_blocks_and_diagnostics(scenario):
+    gt, ghidra, naming = scenario
+    callers = {g["addr"]: set() for g in ghidra}
+    callers[0x100001000] = {0x100001010}                       # main çağrılıyor
+    pointers = {0x100001180}                                     # server_client_lost tablodan
+    code_refs = {"address_taken": {0x1000011c0}, "tail_called": set()}
+    s = mf.score(gt, ghidra, naming, binary="x", callers=callers, pointers=pointers,
+                 code_refs=code_refs)["summary"]
+    acc = s["erisim_siniflari"]
+    assert {k: acc[k]["population"] for k in mf.ACCESS_ORDER} == {
+        "dogrudan": 1, "tablo": 1, "referanssiz": 3}             # yalnız program sınıfı (5)
+    assert acc["dogrudan"]["tp"] == 1 and acc["tablo"]["wrong"] == 1
+    assert acc["referanssiz"]["kod_referansi"] == {"adresi_alinan": 1, "kuyruk_cagrisi": 0, "hicbiri": 2}
+
+
+def test_combine_blocks_sums_counts_and_weights():
+    gt, ghidra, naming = _weighted_case()
+    b1 = mf.score(gt, ghidra, naming, binary="w")["summary"]["siniflar"]["program"]
+    both = mf.combine_blocks([b1, b1])
+    assert (both["population"], both["named"], both["tp"]) == (6, 4, 2)
+    assert both["talimat"]["population"] == 222 and both["talimat"]["precision"] == b1["talimat"]["precision"]
+    assert mf.combine_blocks([b1, dict(b1, talimat=None)])["talimat"] is None
+
+
+def test_score_run_with_stripped_binary(tmp_path, scenario, monkeypatch):
+    gt, ghidra, naming = scenario
+    run = _make_run(tmp_path, ghidra, naming)
+    static = next(run.glob("ws/workspaces/*/*/static"))
+    (static / mf.CALL_GRAPH_FILE).write_text(json.dumps({"nodes": {
+        f"{g['addr']:x}": {"callers": [{"address": "100001010"}] if g["addr"] == 0x100001000 else []}
+        for g in ghidra}}))
+    gpath = tmp_path / "x.gt.json"
+    gpath.write_text(json.dumps({"binary": "x", "functions": [{"addr": hex(a), "names": n}
+                                                              for a, n in gt.items()]}))
+    stripped = tmp_path / "x.bin"
+    stripped.write_bytes(b"bin")
+    monkeypatch.setattr(mf, "read_fixups", lambda p: FIXUPS_TEXT.replace("0x1000010C0", "0x100001180"))
+    monkeypatch.setattr(mf, "read_disassembly", lambda p: "")
+    res = mf.score_run(run, gt_path=gpath, stripped=stripped, write=False)
+    st = {r["addr"]: r["erisim"] for r in res["rows"]}
+    assert st[hex(0x100001000)] == "dogrudan" and st[hex(0x100001180)] == "tablo"
+    assert st[hex(0x1000011c0)] == "referanssiz"
+    info = res["summary"]["erisim_kaynaklari"]
+    assert info["fixups"]["rebase"] == 4 and info["fixups"]["bind"] == 1
+    assert info["fixups"]["functions_pointed"] == 2               # 0x100001040 ve 0x100001180
+    assert info["fixups"]["rebase_to_function_start"] == 3        # 0x...040 iki yuvadan
+
+    def boom(p):
+        raise subprocess.CalledProcessError(1, ["dyld_info"])
+
+    monkeypatch.setattr(mf, "read_fixups", boom)
+    res = mf.score_run(run, gt_path=gpath, stripped=stripped, write=False)
+    assert all(r["erisim"] is None for r in res["rows"]) and res["summary"]["tp"] == 3
+    assert any("erişim sınıfları hesaplanamadı" in w for w in res["summary"]["warnings"])

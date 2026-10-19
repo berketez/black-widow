@@ -32,8 +32,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from function_f1 import find_run_artifacts  # noqa: E402
-
-SCORE_FILE_NAME = "macho_score.json"
+from macho_f1 import SCORE_FILE_NAME  # noqa: E402
 
 
 def _key(addr: str) -> str:

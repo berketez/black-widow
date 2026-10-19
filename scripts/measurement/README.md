@@ -216,7 +216,7 @@ popülasyon, derleyici parçası sınıfları ve sonek kurallarıdır.
 
 | Dosya | Görev |
 |---|---|
-| `macho_f1.py` | Puanlayıcı: GT (`nm`), popülasyon, sınıflar, sonek kuralları, P/R/F1 + %95 Wilson aralığı |
+| `macho_f1.py` | Puanlayıcı: GT (`nm`), popülasyon, sınıflar, sonek kuralları, P/R/F1 + %95 Wilson aralığı; ÖL-3 erişim sınıfları ve talimat ağırlığı (§8.6) |
 | `macho_measure.py` | Orkestratör: `prepare` · `analyze` · `score` · `compare` · `all` |
 | `macho_reach.py` | İsteğe bağlı erişim bölümü (`--reach`): isim bekleyenlerden kaçı çağrı zinciriyle kütüphaneye ulaşıyor. 15 Ekim `tarif/reach.py`'nin taşınmış hâli, sayıları aynı |
 | `macho_corpus.json` | Korpus: özgün ikilinin yerel yolu + sha256, beklenen strip sha256'sı, Homebrew şişe kaydı, küme (`gelistirme` / `dogrulama`) |
@@ -359,3 +359,101 @@ Okuma notları:
   sanılmıştı; bu koşuda Mac statik adımları koştu (`dylib_count`, `intel_*` istatistikleri var)
   ama hiçbir fonksiyonun adı değişmedi.
 - htop'ta karadul'un verdiği 101 adın hiçbiri strict ölçütle doğru değil; 7'si lenient tutuyor.
+
+### 8.6 ÖL-3: erişim sınıfları ve talimat ağırlığı
+
+```bash
+# Karadul'u yeniden koşmadan yeniden puanla; koşu dizinindeki macho_score.json ve eski sonuç kalır
+python scripts/measurement/macho_measure.py score --label taban-v2-62ad154 --sonuc-etiketi taban-v2-62ad154-ol3
+# Elle: tek koşu
+python scripts/measurement/macho_f1.py score --gt <gt.json> --run-dir <koşu> --stripped <strip'li> --out <json>
+```
+
+Satırlara yalnız iki anahtar eklenir: `erisim` ve `talimat`. Erişim tablosu `summary.erisim_siniflari`'nda
+ve yalnız program sınıfı içinde verilir. Parçalar (cold/outlined) ebeveynden dallanmayla girdiği için
+tabloya alınmaz; satırlarında `erisim` yine yazılır.
+
+**Yöntem**
+- **`dogrudan`**: Fonksiyonun, koşunun `static/ghidra_call_graph.json`'ında en az bir çağıranı var;
+  öz-kenar sayılmaz. Kenarlar, Ghidra'da fonksiyon girişine giden `isCall()` referanslarıdır
+  (`karadul/ghidra/headless.py`, `_extract_call_graph`). `b` ile yapılan kuyruk çağrısı ve gövdenin
+  ortasına giden çağrı kenar sayılmaz.
+- **`tablo`**: Doğrudan çağıranı yok, ama strip'li ikilideki bir rebase fixup'ının hedefi tam olarak
+  fonksiyon başı. Fixup'lar `xcrun dyld_info -fixups <strip'li>` ile okunur. Bu araç
+  `LC_DYLD_CHAINED_FIXUPS` zincirlerini (ve klasik `LC_DYLD_INFO` rebase komutlarını) çözer; her yuvayı
+  segment, bölüm, adres, tür ve hedef olarak yazar. Rebase hedefi mutlak sanal adrestir. Bind'ler dış
+  semboldür, sayılmaz. Ghidra yeniden açılmaz.
+- **`referanssiz`**: İkisi de yok.
+- **Bağımsız kıyas (2026-10-19)**: Her rebase yuvasının 8 baytı dosyadan okundu ve
+  `DYLD_CHAINED_PTR_64_OFFSET` biçimiyle (pointer_format 6; hedef = `__TEXT` + düşük 36 bit) çözüldü.
+  dyld_info'nun hedefleriyle htop'ta 1250/1250, tmux'ta 5993/5993 yuva aynı çıktı. Bind yuvalarının
+  hepsinde bind biti açıktı (220/220, 232/232).
+- **`referanssiz` tanısı** (yalnız tanı, sınıfı değiştirmez; `/usr/bin/objdump -d` taraması):
+  - *Kodda adresi alınan*: `adrp xN`'den sonra en çok 16 komut içinde `add xD, xN, #imm` ile, ya da
+    `adr` ile adresi hesaplanan fonksiyon başları (geri çağırmalar). Yazmacı (`xN`/`wN`) yazan başka bir
+    komut sayfa bilgisini siler.
+  - *Kuyruk çağrısı*: Başka bir fonksiyonun içinden `b` ya da `b.cond` ile gidilen fonksiyon başları.
+  - Pencere ölçümle seçildi. Sınırsız eşleştirme htop'ta `add x20, x20, #0x8` döngü artışını 2219 komut
+    önceki `adrp` ile eşleyip yanlış pozitif üretiyordu; 4, 8 ve 16 komutluk pencereler aynı sonucu verdi.
+- **Talimat (`talimat`)**: Ghidra fonksiyon gövdesi baytı (`getBody().getNumAddresses()`) / 4; yalnız
+  korpusta `arch: arm64` olan ikililerde. Sınıf bloklarına sayıyla kapsam eklendi
+  (isim verilen / popülasyon, Wilson aralığıyla). Yanına talimatla ağırlıklı üç oran geldi:
+  kapsam (isim verilenlerin talimatı / popülasyonun talimatı), doğruluk (TP talimatı / isim
+  verilenlerin talimatı) ve R.
+
+**Taban v2 (karadul 62ad154; sonuç `results/taban-v2-62ad154-ol3.json`)**
+
+| ikili | kapsam (sayı) [%95] | talimat kapsamı | P (sayı) [%95] | talimat doğruluğu |
+|---|---|---|---|---|
+| htop | 0,169 [0,141–0,201] | 0,454 | 0,000 [0,000–0,037] | 0,000 |
+| tmux | 0,337 [0,319–0,355] | 0,598 | 0,121 [0,101–0,145] | 0,102 |
+| geliştirme (mikro) | 0,305 [0,289–0,321] | 0,575 | 0,109 [0,090–0,130] | 0,089 |
+
+| ikili | erişim | popülasyon | isim verilen | TP | yanlış | kapsam [%95] | P [%95] | talimat | talimat kapsamı | talimat doğruluğu |
+|---|---|---|---|---|---|---|---|---|---|---|
+| htop | dogrudan | 381 | 53 | 0 | 53 | 0,139 [0,108–0,177] | 0,000 [0,000–0,068] | 20813 | 0,415 | 0,000 |
+| htop | tablo | 133 | 33 | 0 | 33 | 0,248 [0,182–0,328] | 0,000 [0,000–0,104] | 7628 | 0,472 | 0,000 |
+| htop | referanssiz | 83 | 15 | 0 | 15 | 0,181 [0,113–0,277] | 0,000 [0,000–0,204] | 3899 | 0,628 | 0,000 |
+| tmux | dogrudan | 1784 | 623 | 89 | 534 | 0,349 [0,327–0,372] | 0,143 [0,118–0,172] | 125283 | 0,577 | 0,106 |
+| tmux | tablo | 450 | 153 | 9 | 144 | 0,340 [0,298–0,385] | 0,059 [0,031–0,108] | 26542 | 0,752 | 0,074 |
+| tmux | referanssiz | 311 | 81 | 6 | 75 | 0,261 [0,215–0,312] | 0,074 [0,034–0,152] | 16853 | 0,517 | 0,127 |
+| geliştirme | dogrudan | 2165 | 676 | 89 | 587 | 0,312 [0,293–0,332] | 0,132 [0,108–0,159] | 146096 | 0,553 | 0,095 |
+| geliştirme | tablo | 583 | 186 | 9 | 177 | 0,319 [0,282–0,358] | 0,048 [0,026–0,089] | 34170 | 0,690 | 0,063 |
+| geliştirme | referanssiz | 394 | 96 | 6 | 90 | 0,244 [0,204–0,288] | 0,062 [0,029–0,130] | 20752 | 0,537 | 0,099 |
+
+`referanssiz` tanısı:
+
+| ikili | referanssiz | kodda adresi alınan | kuyruk çağrısı | hiçbiri |
+|---|---|---|---|---|
+| htop | 83 | 55 | 2 | 26 |
+| tmux | 311 | 201 | 0 | 110 |
+
+Fixup sayımı:
+
+| ikili | rebase | bind | hedefi fonksiyon başı olan rebase yuvası | gösterilen farklı fonksiyon |
+|---|---|---|---|---|
+| htop | 1250 | 220 | 268 | 150 |
+| tmux | 5993 | 232 | 595 | 464 |
+
+Okuma notları:
+- Talimat kapsamı sayıyla kapsamdan yüksek (htop 2,7, tmux 1,8 katı): karadul büyük fonksiyonlara
+  daha sık ad veriyor. Doğruluk ise talimatla ağırlıklandırınca düşüyor (tmux 0,121 → 0,102).
+- tmux'ta tablodan çağrılanların strict P'si 0,059 [0,031–0,108], doğrudan çağrılanlarınki
+  0,143 [0,118–0,172]; aralıklar örtüşmüyor.
+
+**Sınırlar**
+- **Çağrı grafı yalnız `isCall` kenarlarından oluşuyor.** Bu yüzden `referanssiz`'in çoğu gerçekte
+  kodda adresi alınan geri çağırmalar: htop'ta 83'ün 55'i, tmux'ta 311'in 201'i. Sınıf, Ghidra'nın
+  grafına bağlı bir ölçüdür. G9-G10'daki çağrı grafı onarımı (KS-2, TR-1) sınıfları değiştirir; eski ve
+  yeni taban aynı tanımla kıyaslanmalı.
+- **`tablo` yalnız tam fonksiyon başını gösteren rebase'leri sayar.** Ofsetli işaretçiler, göreli ofset
+  tabloları (switch tabloları), ObjC/Swift meta verisi ve PAC'li (arm64e) işaretçiler denenmedi.
+- **Kod taraması sezgiseldir.** Dallanmalar arası veri akışı izlenmez. Kuyruk çağrısında içeren
+  fonksiyon, "başlangıcı komut adresinden küçük-eşit en büyük fonksiyon" kabulüyle bulunur; bitişik
+  olmayan gövdede yanılabilir. Tanı sayıları sınıfları değiştirmez.
+- **Talimat ağırlığı Ghidra'nın fonksiyon sınırlarına bağlıdır.** Gövde bitişik olmayan aralıkları
+  içerebilir. `.cold` parçaları ayrı fonksiyon olduğu için ebeveynin talimatına girmez.
+- **Ağırlıklı oranlar binom değildir;** Wilson aralığı yalnız sayıyla oranlarda verilir. Ağırlıklı
+  oranlar için aralık gerekirse fonksiyon düzeyinde bootstrap yazılmalı (henüz yok).
+- **İnsan etiketi yok:** strict P otomatik puandır. Plan v2 §4'teki "yakın/yanlış" oranları G4
+  etiketlerinden gelir, bu tablodan değil.
