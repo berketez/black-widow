@@ -412,3 +412,209 @@ $P $D/deney.py C0 C1 C2 C3 C4 && $P $D/ozet.py
 ```
 
 `taban.py analiz` ve `deney.py`, var olan proje klasörünün üstüne yazmaz; yeniden koşmadan önce o klasör elle kaldırılmalıdır.
+
+## 10. Ek koşullar: Karadul bugün, `void *`, `struct client`
+
+- **Ön kayıt:** `onkayit_ek.md`, mühür 2026-10-19 12:53:43, SHA-256 `ab5e1bf8…f03dd6d`. Sapmalar `onkayit_ek_notlari.md`'de.
+- **Sıra:** İlk yeni Ghidra koşusu (K3 seçimi) 12:54:32'de, bütün koşullar 13:00'te koşuldu.
+- **Değişmeyenler:** ölçütler (`olcut.py`), eşli analiz (`ozet.py`), eşikler, Ghidra 12.1.2, taban projesi ve decompile ayarları.
+- **Karadul çıktısı:** `workspaces/olcum_mac/runs/taban-v2-62ad154/tmux/` (Karadul 62ad154, aynı strip'li ikili).
+- **Ayrıntılı sonuçlar:** `sonuc_ek.json`.
+
+### 10.1 Koşullar ve Karadul'un kapsamı
+
+| Koşul | Yazılan |
+|---|---|
+| K0 | C0'ın tekrarı (belirlenimcilik ve süre tabanı). 69 metnin 69'u G8'in C0'ıyla birebir aynı |
+| K1 "Karadul bugün" | Karadul'un açık çıktısı: `naming_map` adı ve son çıktıdaki imza (parametre adları ve tipleri). Yapı yok, çünkü Karadul hiçbir yapıyı bir fonksiyona bağlamıyor |
+| K1y "bağlansaydı" | K1 + Karadul'un ilk parametre değişkeni için ürettiği yapı. Bağ, Karadul'un kendi işlevleriyle yeniden üretildi; `types.h`'deki 1398 yapının 1391'i birebir tuttu |
+| K2 "`void *`" | C2 ile aynı, ama yapı işaretçileri `void` işaretçisi. 25 parametre ve 4 dönüş tipi değişti; programa tmux yapısı yazılmadı |
+| K3-C0 / K3-C3 | `struct client` ile C0 ve C3'ün eşdeğeri. Seçim kuralı ve tohum aynı; 170 adaydan sıradaki ilk 20 seçildi (1'i thunk olduğu için elendi); 37 çağıran |
+
+**Karadul'un 20 hedefe verdiği bilgi:**
+- **Ad:** 10/20.
+- **Prototip:** 20/20 yazıldı.
+  - 20'sinde parametre adı değişiyor.
+  - 5'inde tip yazımı değişiyor: `undefined8` → `uint64_t`, `undefined4 *` → `int32_t *`.
+  - Parametre tipleri başka bakımdan Ghidra'nınkiyle aynı.
+- **Yapı:** Karadul'un çıktısında 0 bağlı yapı var. `types.h`'deki 1398 `recovered_struct` yapısının hiçbiri hiçbir `.c` dosyasında geçmiyor.
+- **K1y bağları:** 5 hedefe bağ çıktı. Her biri yalnız o fonksiyonun kendi erişimlerinden üretilmiş 2-3 alanlık bir parça. c_namer değişken adlarına sayı eki koyduğu (`ctx_610`, `buf_1750`) için Karadul'un "değişken adıyla birleştirme" anahtarı pratikte tek fonksiyona iniyor.
+
+| Gerçek ad | Karadul adı | Karadul imzası | K1y yapısı |
+|---|---|---|---|
+| `layout_resize_floating_pane_to` | `pane_floating` | `uint64_t pane_floating(long buf_796,int param_2,uint len_153,uint64_t *buf_797)` | — |
+| `layout_resize_floating_pane` | `change_big_small` | `uint64_t change_big_small(long buf_798,int param_2,int param_3,int param_4,uint64_t *buf_799)` | — |
+| `window_pane_set_event` | `out_memory_11` | `void out_memory_11(long ctx_610)` | recovered_struct_1330 |
+| `window_pane_send_resize` | `window_pane_send` | `void window_pane_send(long buf_1750)` | — |
+| `window_copy_get_word` | — | `void FUN_100087768(long buf_1423,uint64_t param_2,int enabled)` | — |
+| `window_pane_cmp` | — | `uint FUN_10009c80c(uint *buf_1707,uint *buf_1708)` | — |
+| `cmd_swap_pane_prev_tiled_pane` | — | `long FUN_10001cc8c(long buf_179)` | — |
+| `window_pane_floating_overlaps` | — | `bool FUN_10009d984(long buf_1764,uint64_t ctx_697)` | — |
+| `layout_spread_out` | — | `void FUN_10004be58(long buf_803)` | — |
+| `window_pane_find_up` | `pane_border_status_4` | `long pane_border_status_4(long buf_1810)` | — |
+| `window_pane_index` | `pane_base_index_2` | `uint64_t pane_base_index(long buf_1772,int *buf_1773)` | — |
+| `layout_close_pane` | `window_layout_changed_11` | `void window_layout_changed_11(long buf_801)` | recovered_struct_564 |
+| `window_pane_scrollbar_show` | — | `void FUN_1000a14e0(long ctx_619,int count)` | recovered_struct_1356 |
+| `window_pane_set_prompt` | `pane_prompt_opened` | `void pane_prompt_opened(int32_t *param_1,long struct_ptr ,uint64_t param_3, …, uint64_t param_9)` | — |
+| `window_pane_get_bg_control_client` | — | `int FUN_1000a167c(long buf_1813)` | — |
+| `window_pane_find_down` | `pane_border_status_5` | `long pane_border_status_5(long ctx_623)` | recovered_struct_1351 |
+| `screen_write_clear_dirty` | — | `void FUN_100062c94(long buf_1020)` | recovered_struct_735 |
+| `cmd_mouse_at` | `cmd_mouse` | `uint64_t cmd_mouse(long ctx_53,long ctx_54,int *buf_231,int *buf_232,int param_5)` | — |
+| `window_pane_status_get_range` | — | `uint64_t FUN_1000a19c8(long ctx_626,int param_2,int param_3)` | — |
+| `window_copy_get_line` | — | `void FUN_10008778c(long buf_1422,int enabled)` | — |
+
+### 10.2 Sonuçlar
+
+**Hedefler: havuzlanmış 100 satır oranının göreli değişimi** (anlamlı kazanç kalın; A için önce → sonra)
+
+| Karşılaştırma | n | U | P1 | C | A | D | Anlamlı (5'te) |
+|---|---|---|---|---|---|---|---|
+| (G8) C3 ↔ C0 | 20 | **−52%** | **−50%** | −8% | **0,0 → 11,0** | −24% | 3 |
+| K1 ↔ C0 | 20 | **−41%** | +0% | +0% | 0,0 → 0,0 | −18% | 1 |
+| K1y ↔ C0 | 20 | **−49%** | −21% | −7% | **0,0 → 3,7** | −18% | 2 |
+| K2 ↔ C0 | 20 | −24% | +1% | +70% | 0,0 → 0,0 | −24% | 0 |
+| K2 ↔ C2 | 20 | +0% | −3% | +34% | 0,0 → 0,0 | +1% | 0 |
+| K3-C3 ↔ K3-C0 (client) | 20 | −22% | −19% | −2% | **0,0 → 6,6** | −14% | 1 |
+
+**Doğrudan çağıranlar**
+
+| Karşılaştırma | n | U | P1 | C | A | D | Anlamlı (5'te) |
+|---|---|---|---|---|---|---|---|
+| K1 ↔ C0 | 49 | −6% | −1% | +2% | 0,0 → 0,0 | −2% | 0 |
+| K1y ↔ C0 | 49 | −3% | −10% | +2% | **0,0 → 1,1** | −4% | 1 |
+| K2 ↔ C0 | 49 | −1% | −0% | +18% | 0,0 → 0,0 | −4% | 0 |
+| K2 ↔ C2 | 49 | +0% | −2% | +13% | 0,0 → 0,0 | +0% | 0 |
+| K3-C3 ↔ K3-C0 (client) | 37 | −18% | −21% | −11% | **0,0 → 7,5** | −7% | 1 |
+
+**K1 ↔ C0, hedefler**
+
+| Ölçüt | Ort. önce | Ort. sonra | Eşli fark [%95 GA] | Havuz önce → sonra (göreli) | İyi / kötü / aynı | Anlamlı kazanç |
+|---|---|---|---|---|---|---|
+| U/100 | 10,1 | 6,8 | −3,3 [−5,7; −1,3] | 12,5 → 7,4 (−41%) | 8/0/12 | **evet** |
+| P1/100 | 27,1 | 27,1 | +0,0 [+0,0; +0,0] | 19,0 → 19,0 (+0%) | 0/0/20 | hayır |
+| C/100 | 31,0 | 31,0 | +0,0 [+0,0; +0,0] | 24,6 → 24,6 (+0%) | 0/0/20 | hayır |
+| A/100 | 0,0 | 0,0 | +0,0 [+0,0; +0,0] | 0,0 → 0,0 (+0%) | 0/0/20 | hayır |
+| D/100 | 107,1 | 73,3 | −33,8 [−43,3; −24,6] | 115,8 → 94,7 (−18%) | 20/0/0 | hayır |
+
+**K1y ↔ C0, hedefler**
+
+| Ölçüt | Ort. önce | Ort. sonra | Eşli fark [%95 GA] | Havuz önce → sonra (göreli) | İyi / kötü / aynı | Anlamlı kazanç |
+|---|---|---|---|---|---|---|
+| U/100 | 10,1 | 4,5 | −5,6 [−8,6; −3,0] | 12,5 → 6,4 (−49%) | 13/0/7 | **evet** |
+| P1/100 | 27,1 | 20,4 | −6,7 [−13,2; −1,7] | 19,0 → 15,1 (−21%) | 5/0/15 | hayır |
+| C/100 | 31,0 | 27,6 | −3,4 [−6,8; −0,6] | 24,6 → 22,8 (−7%) | 4/1/15 | hayır |
+| A/100 | 0,0 | 6,5 | +6,5 [+1,6; +12,9] | 0,0 → 3,7 (taban 0) | 5/0/15 | **evet** |
+| D/100 | 107,1 | 73,1 | −34,0 [−43,5; −24,7] | 115,8 → 94,6 (−18%) | 20/0/0 | hayır |
+
+**K2 ↔ C0, hedefler**
+
+| Ölçüt | Ort. önce | Ort. sonra | Eşli fark [%95 GA] | Havuz önce → sonra (göreli) | İyi / kötü / aynı | Anlamlı kazanç |
+|---|---|---|---|---|---|---|
+| U/100 | 10,1 | 7,4 | −2,7 [−4,8; −0,7] | 12,5 → 9,6 (−24%) | 9/2/9 | hayır |
+| P1/100 | 27,1 | 26,4 | −0,8 [−1,8; +0,1] | 19,0 → 19,2 (+1%) | 6/4/10 | hayır |
+| C/100 | 31,0 | 53,2 | +22,2 [+16,4; +28,6] | 24,6 → 41,9 (+70%) | 0/20/0 | hayır |
+| A/100 | 0,0 | 0,0 | +0,0 [+0,0; +0,0] | 0,0 → 0,0 (+0%) | 0/0/20 | hayır |
+| D/100 | 107,1 | 70,1 | −36,9 [−46,0; −28,3] | 115,8 → 88,2 (−24%) | 20/0/0 | hayır |
+
+**K3-C3 ↔ K3-C0 (`struct client`), hedefler**
+
+| Ölçüt | Ort. önce | Ort. sonra | Eşli fark [%95 GA] | Havuz önce → sonra (göreli) | İyi / kötü / aynı | Anlamlı kazanç |
+|---|---|---|---|---|---|---|
+| U/100 | 12,3 | 6,3 | −6,1 [−12,0; −1,3] | 6,2 → 4,9 (−22%) | 13/3/4 | hayır |
+| P1/100 | 20,1 | 12,5 | −7,6 [−14,5; −2,1] | 17,8 → 14,4 (−19%) | 14/2/4 | hayır |
+| C/100 | 26,6 | 24,5 | −2,2 [−9,6; +5,2] | 32,3 → 31,8 (−2%) | 8/8/4 | hayır |
+| A/100 | 0,0 | 10,0 | +10,0 [+4,5; +17,0] | 0,0 → 6,6 (taban 0) | 15/0/5 | **evet** |
+| D/100 | 108,3 | 74,6 | −33,7 [−43,2; −24,9] | 128,1 → 109,6 (−14%) | 20/0/0 | hayır |
+
+**K1'in C3 tavanındaki payı** (havuz oranı, (K1 − C0) / (C3 − C0), tanımlayıcı):
+- Hedeflerde U %80, D %75, P1 %0, C %0, A %0.
+- Çağıranlarda U %34, D %48, P1 %3.
+
+### 10.3 Karadul yerleşiminin doğruluğu (DWARF'la doğrulanmış `window_pane`'e karşı)
+
+| Yapı | Boyut (gerçek 1760) | Kaynak | Doğru | Ofset doğru, boyut yanlış | Yanlış |
+|---|---|---|---|---|---|
+| recovered_struct_1330 | 688 | out_memory_11 | 2 | 0 | 0 |
+| recovered_struct_564 | 40 | window_layout_changed_11 | 2 | 0 | 0 |
+| recovered_struct_1356 | 96 | FUN_1000a14e0 | 2 | 0 | 0 |
+| recovered_struct_1351 | 64 | pane_border_status_5 | 3 | 0 | 0 |
+| recovered_struct_735 | 88 | FUN_100062c94 | 2 | 0 | 0 |
+
+**Bağlanan 5 yapının 11 alanının 11'i doğru** (ofset ve boyut gerçek bir alana denk). Ama:
+- **Kapsam küçük.** 11 alan 10 ayrı gerçek alana denk geliyor (`window` (0x10) iki ayrı yapıda tekrarlanıyor); bu, `window_pane`'in 566 yaprak alanının 10'u. Bu 5 fonksiyonun gövdesindeki öbür erişimler yapıya girmemiş; örneğin `window_pane_set_event`'teki `fd` (0x17c) yok.
+- **Boyutlar yanlış.** 40-688 bayt; gerçek 1760. Yalnız görülen en büyük ofsete göre hesaplanıyor.
+- **Tek tip yok.** Aynı `struct window_pane`, 5 hedefte 5 ayrı tip olarak çıkıyor.
+- **Alan adları anlamsız.** `field_0x10`, `window` değil.
+
+Hedefleri kaynak listesinde taşıyan bütün 11 yapı sayılırsa sonuç 17 doğru, 6 ofset doğru boyut yanlış, 9 yanlış. Bu yapıların bir kısmı başka değişkenlerden (ör. `struct window` işaretçisi) üretildiği için bu sayı yalnız bağlam verir.
+
+### 10.4 `struct client` yerleşim doğrulaması (K3'ün ön koşulu, tuttu)
+
+- `client` 3240 bayt ve 76 alan. Kapanıştaki 28 bileşik tipin 18 adlısının hepsi DWARF'la eşit; 10'u adsız TAILQ/RB/libevent parçası.
+- Şişedeki `server_client_create` içinde `mov w1, #0xca8` (3240) + `bl _xcalloc` var.
+- 20 hedefin ofset kümeleri şişe ile kendi derlememizde aynı (Jaccard 1,0). Komut sayıları da birebir aynı.
+- Ayrıntı: `k3_yerlesim_dogrulama.json`.
+
+### 10.5 Ön kayıtlı karar okuması
+
+| Koşul | Sonuç | Ön kayıttaki okuma |
+|---|---|---|
+| K1 | 1/5 | **Kazanç bugün erişilebilir değil.** Önce tip ve yapı kurtarma gelir (G16-G17, G19); geri yazma hattı öne alınmaz. Tek anlamlı ölçüt U ve o da yalnız yazım değişikliğinden geliyor (§10.6 madde 1) |
+| K1y | 2/5 (U, A); bağlı yapı alan doğruluğu 11/11 | Ön kayıtlı uyarı koşulu (anlamlı kazanç ve doğruluk < %50) oluşmadı. Ama doğruluk küçük kapsamın doğruluğudur (§10.3) |
+| K2 | C/100 24,6 → 41,9 (C2'de 31,3) | **Artışın kaynağı opak yapı işaretçisi değil.** `void *` dönüşümü daha da artırıyor. Kural yeniden düşünülmeli (§10.6 madde 2) |
+| K3 | 1/5 (A) | **Tek yapı bulgusu `client`'ta tekrarlanmadı**; genellenmez. Etkiler aynı yönde ama eşiğin altında (§10.6 madde 3) |
+
+### 10.6 Gözlemler
+
+1. **U ölçütü yazımla oynanabiliyor.** K1'deki −%41 tamamen `undefined8` → `uint64_t` gibi tip adı değişikliğinden geliyor. P1, C ve A hiç değişmiyor. G8'deki C3 sonucunda U'nun düşüşü gerçek tiplerden geliyordu; bu ayrım ölçütte görünmüyor. Bundan sonraki kararlarda U tek başına kanıt sayılmamalı, P1 ve A ile birlikte okunmalı.
+2. **Yerleşimsiz işaretçi tipi her durumda dönüşüm ekliyor.**
+   - C2'de eklenenler yapı tipine dönüşümler: `(window_pane *)` +21, `(window_pane **)` +6.
+   - K2'de eklenenler aritmetik dönüşümleri: `(long)` +72, `(void *)` +24. Örnek: `*(long *)(wp + 0x20)` (C2) → `*(long *)((long)wp + 0x20)` (K2).
+   - Sonuç: yerleşim bilinmiyorsa en az dönüşümü Ghidra'nın kendi tamsayı tipi veriyor. Ürün kuralı önerisi "`void *`" değil, **"parametre tipini değiştirme, yalnız adı yaz"** olmalı. Bu öneri ölçülmedi (C1'e parametre adı eklenmiş bir koşul); ölçülmeden kural yapılmamalı.
+3. **`client` tekrarında etkiyi tek bir büyük fonksiyon bastırıyor.**
+   - Hedef satırlarının %55'i `redraw_draw`'dan (1071/1961) geliyor. Bu fonksiyondaki ham erişimler çoğunlukla `client` dışı yapılarda (P1 195 → 188).
+   - Fonksiyon başına eşli farkların güven aralıkları U, P1, D ve A'da sıfırı dışlıyor. Göreli eşik ise havuz oranıyla ölçüldüğü için bu fonksiyonun ağırlığı altında kalıyor.
+   - Ön kayıt dışı duyarlılık bakışı (karar değişmez): `redraw_draw` çıkarılınca U −%33, P1 −%36, D −%27.
+   - Sonuç: tek yapının kazancı, fonksiyonların o yapıya ne kadar dokunduğuna bağlı. "Tek yapı + 20 prototip yeter" genellemesi yapılamaz.
+4. **Karadul'un yapı kurtarma aşaması fiilen yerel.** Parçalar doğru ama küçük, adsız ve birleştirilmemiş. Ürüne geri yazılacak bir tip için en az şunlar gerekiyor: aynı alıcı tipteki fonksiyonların parçalarını birleştirme (G7/G16-G17'nin alıcı tip kümeleri), boyut kestirimi ve alan adı.
+5. **Karadul adları.** 10 addan çoğu gerçek adla ilgisiz ya da amaçtan uzak (`out_memory_11` → `window_pane_set_event`, `change_big_small` → `layout_resize_floating_pane`). Ad yalnız `FUN_` yoğunluğunu etkiliyor; okunurluk ölçütlerine katkısı yok.
+
+### 10.7 Sınırlamalar
+
+- K1, Karadul'un tek bir koşusu (62ad154).
+- K1y'deki bağ Karadul'un yapmadığı bir işlemdir, yeniden üretilmiştir.
+- K3 de tek program ve tek derleme; iki yapı genelleme için az.
+- "Aynı süreç" süre karşılaştırmalarında süreçteki ilk koşul (K0) ısınma yüzünden yavaş (`onkayit_ek_notlari.md` #5). Maliyet için G8'in sırası dengelenmiş ölçümü esas.
+- K3'teki `redraw_draw` bakışı ve dönüşüm kaynağı dökümü ön kayıt dışı, tanımlayıcıdır.
+
+### 10.8 Ana oturumun vermesi gereken kararlar
+
+1. **G14-G15 öne alınmasın.** K1'in ön kayıtlı okuması bunu söylüyor; K3 de tek yapı genellemesini desteklemiyor. Önce tip ve yapı kurtarma gelir:
+   - parçaları alıcı tipe göre birleştirme (G16-G17)
+   - ofset düzeltmesi (G19)
+   - boyut ve alan adı
+   
+   Geri yazma mekaniği hazır ve ucuz; tip bilgisi gelince aynı cetvelle yeniden ölçülür.
+2. **U ölçütü.** Kapılarda U tek başına sayılmasın; P1 ve A ile birlikte okunsun. Gerekirse U için "tip adı değişikliği" ayıklayan bir sürüm yazılsın. Bu, ölçüm aleti kararıdır.
+3. **Ürün kuralı adayı.** "Yerleşim yoksa parametre tipini değiştirme." Ölçmek için yeni bir koşul gerekir: C1 + kaynaktan parametre adları, tipler Ghidra'nınki. Ucuz, aynı altyapıyla yarım saatten az sürer.
+4. **"Tek yapı" sorusu.** Kapı ölçütü havuz oranı mı kalsın, yoksa büyük fonksiyonların ağırlığını sınırlayan bir ölçü mü eklensin (ör. fonksiyon başına ortalamanın göreli değişimi)? Bu yalnız gelecek ön kayıtlar için bir yöntem kararıdır, bugünkü sonucu değiştirmez.
+
+### 10.9 Yeni dosyalar
+
+Bu klasör:
+
+| Dosya | İçerik |
+|---|---|
+| `onkayit_ek.md`, `onkayit_ek_notlari.md` | ek ön kayıt ve notlar |
+| `ek_kaynak.py`, `ek_secim.py` | K3 aday havuzu ve seçim |
+| `ek_yerlesim.py` → `k3_yerlesim_dogrulama.json` | `client` yerleşim doğrulaması |
+| `ek_karadul.py` | Karadul adı, imzası ve yapı bağı |
+| `ek_deney.py` | K0, K1, K1y, K2, K3_C0, K3_C3 koşulları; `yerlesim` komutuyla Karadul alan doğruluğu |
+| `ozet_ek.py` → `sonuc_ek.json` | karşılaştırmalar, karar okuması, fonksiyon başına ham sayılar |
+| `tablolar_ek.py` | bu bölümdeki tablolar |
+
+Depo dışı (`workspaces/2026-10-19_g8/`):
+- `projeler/{K0,K1,K1y,K2,K3_C0,K3_C3}`
+- `ciktilar/{K0,K1,K1y,K2,K3_C0,K3_C3}`
+- `veri/{k1_karadul,k1_ayristirma,k1_yerlesim_dogrulugu,k3_kaynak_adaylar,k3_secim,olcum_K*}.json`
+- `veri/onkayit_ek_muhur.txt`

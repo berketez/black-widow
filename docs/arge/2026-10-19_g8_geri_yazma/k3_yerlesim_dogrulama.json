@@ -1,0 +1,839 @@
+{
+ "kunye": {
+  "zaman": "2026-10-19T12:55:03+0300",
+  "depo_commit": "4325a608a95b3dcef68cde053c5d7d2174ab3706",
+  "ghidra": {
+   "application.version": "12.1.2",
+   "application.release.name": "PUBLIC",
+   "application.revision.ghidra": "c0f584bf229fffba61b36431f3ce30c0c3e4e682",
+   "kurulum": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC"
+  },
+  "pyghidra": "3.0.0",
+  "python": "3.12.7",
+  "makine": "macOS-26.7.1-arm64-arm-64bit",
+  "girdi_strip_sha256": "10fa041195a823953e2b207faeb4e34478048ba2c39d7f8fe6e7b9fc0c9997b7",
+  "girdi_orig_sha256": "dfbb8c547d6df2aafdf3d106bff3480b7e9a751753f9e77da0257897c629998b",
+  "jvm_heap_mb": 6144,
+  "decompile_zaman_asimi_sn": 30
+ },
+ "client": {
+  "ad": "client",
+  "yol": "/tmux.h/client",
+  "boyut": 3240,
+  "hizalama": 8,
+  "bilesenler": [
+   {
+    "ofset": 0,
+    "ad": "name",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 8,
+    "ad": "peer",
+    "tip": "tmuxpeer *",
+    "boyut": 8
+   },
+   {
+    "ofset": 16,
+    "ad": "user",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 24,
+    "ad": "queue",
+    "tip": "cmdq_list *",
+    "boyut": 8
+   },
+   {
+    "ofset": 32,
+    "ad": "control_state",
+    "tip": "control_state *",
+    "boyut": 8
+   },
+   {
+    "ofset": 40,
+    "ad": "pause_age",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 44,
+    "ad": "pid",
+    "tip": "pid_t",
+    "boyut": 4
+   },
+   {
+    "ofset": 48,
+    "ad": "fd",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 52,
+    "ad": "out_fd",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 56,
+    "ad": "event",
+    "tip": "event",
+    "boyut": 128
+   },
+   {
+    "ofset": 184,
+    "ad": "retval",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 192,
+    "ad": "creation_time",
+    "tip": "timeval",
+    "boyut": 16
+   },
+   {
+    "ofset": 208,
+    "ad": "activity_time",
+    "tip": "timeval",
+    "boyut": 16
+   },
+   {
+    "ofset": 224,
+    "ad": "last_activity_time",
+    "tip": "timeval",
+    "boyut": 16
+   },
+   {
+    "ofset": 240,
+    "ad": "environ",
+    "tip": "environ *",
+    "boyut": 8
+   },
+   {
+    "ofset": 248,
+    "ad": "jobs",
+    "tip": "format_job_tree *",
+    "boyut": 8
+   },
+   {
+    "ofset": 256,
+    "ad": "title",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 264,
+    "ad": "path",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 272,
+    "ad": "cwd",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 280,
+    "ad": "progress_bar",
+    "tip": "progress_bar",
+    "boyut": 8
+   },
+   {
+    "ofset": 288,
+    "ad": "term_name",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 296,
+    "ad": "term_features",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 300,
+    "ad": "term_nofeatures",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 304,
+    "ad": "term_type",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 312,
+    "ad": "term_caps",
+    "tip": "char * *",
+    "boyut": 8
+   },
+   {
+    "ofset": 320,
+    "ad": "term_ncaps",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 328,
+    "ad": "ttyname",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 336,
+    "ad": "tty",
+    "tip": "tty",
+    "boyut": 1168
+   },
+   {
+    "ofset": 1504,
+    "ad": "written",
+    "tip": "size_t",
+    "boyut": 8
+   },
+   {
+    "ofset": 1512,
+    "ad": "discarded",
+    "tip": "size_t",
+    "boyut": 8
+   },
+   {
+    "ofset": 1520,
+    "ad": "redraw",
+    "tip": "size_t",
+    "boyut": 8
+   },
+   {
+    "ofset": 1528,
+    "ad": "redraw_scene",
+    "tip": "redraw_scene *",
+    "boyut": 8
+   },
+   {
+    "ofset": 1536,
+    "ad": "repeat_timer",
+    "tip": "event",
+    "boyut": 128
+   },
+   {
+    "ofset": 1664,
+    "ad": "click_timer",
+    "tip": "event",
+    "boyut": 128
+   },
+   {
+    "ofset": 1792,
+    "ad": "click_loc",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 1796,
+    "ad": "click_wp",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 1800,
+    "ad": "exit_timer",
+    "tip": "event",
+    "boyut": 128
+   },
+   {
+    "ofset": 1928,
+    "ad": "click_button",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 1936,
+    "ad": "click_event",
+    "tip": "mouse_event",
+    "boyut": 80
+   },
+   {
+    "ofset": 2016,
+    "ad": "status",
+    "tip": "status_line",
+    "boyut": 552
+   },
+   {
+    "ofset": 2568,
+    "ad": "cycle_timer",
+    "tip": "event",
+    "boyut": 128
+   },
+   {
+    "ofset": 2696,
+    "ad": "theme",
+    "tip": "client_theme",
+    "boyut": 4
+   },
+   {
+    "ofset": 2704,
+    "ad": "input_requests",
+    "tip": "input_requests",
+    "boyut": 16
+   },
+   {
+    "ofset": 2720,
+    "ad": "flags",
+    "tip": "uint64_t",
+    "boyut": 8
+   },
+   {
+    "ofset": 2728,
+    "ad": "exit_type",
+    "tip": "enum_1309",
+    "boyut": 4
+   },
+   {
+    "ofset": 2732,
+    "ad": "exit_msgtype",
+    "tip": "msgtype",
+    "boyut": 4
+   },
+   {
+    "ofset": 2736,
+    "ad": "exit_session",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 2744,
+    "ad": "exit_message",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 2752,
+    "ad": "keytable",
+    "tip": "key_table *",
+    "boyut": 8
+   },
+   {
+    "ofset": 2760,
+    "ad": "last_key",
+    "tip": "key_code",
+    "boyut": 8
+   },
+   {
+    "ofset": 2768,
+    "ad": "paste_time",
+    "tip": "time_t",
+    "boyut": 8
+   },
+   {
+    "ofset": 2776,
+    "ad": "message_ignore_keys",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 2780,
+    "ad": "message_ignore_styles",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 2784,
+    "ad": "message_string",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 2792,
+    "ad": "message_timer",
+    "tip": "event",
+    "boyut": 128
+   },
+   {
+    "ofset": 2920,
+    "ad": "prompt",
+    "tip": "prompt *",
+    "boyut": 8
+   },
+   {
+    "ofset": 2928,
+    "ad": "session",
+    "tip": "session *",
+    "boyut": 8
+   },
+   {
+    "ofset": 2936,
+    "ad": "last_session",
+    "tip": "session *",
+    "boyut": 8
+   },
+   {
+    "ofset": 2944,
+    "ad": "references",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 2948,
+    "ad": "theme_colours",
+    "tip": "int[10]",
+    "boyut": 40
+   },
+   {
+    "ofset": 2992,
+    "ad": "pan_window",
+    "tip": "void *",
+    "boyut": 8
+   },
+   {
+    "ofset": 3000,
+    "ad": "pan_ox",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 3004,
+    "ad": "pan_oy",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 3008,
+    "ad": "overlay_check",
+    "tip": "overlay_check_cb",
+    "boyut": 8
+   },
+   {
+    "ofset": 3016,
+    "ad": "overlay_mode",
+    "tip": "overlay_mode_cb",
+    "boyut": 8
+   },
+   {
+    "ofset": 3024,
+    "ad": "overlay_draw",
+    "tip": "overlay_draw_cb",
+    "boyut": 8
+   },
+   {
+    "ofset": 3032,
+    "ad": "overlay_key",
+    "tip": "overlay_key_cb",
+    "boyut": 8
+   },
+   {
+    "ofset": 3040,
+    "ad": "overlay_free",
+    "tip": "overlay_free_cb",
+    "boyut": 8
+   },
+   {
+    "ofset": 3048,
+    "ad": "overlay_resize",
+    "tip": "overlay_resize_cb",
+    "boyut": 8
+   },
+   {
+    "ofset": 3056,
+    "ad": "overlay_data",
+    "tip": "void *",
+    "boyut": 8
+   },
+   {
+    "ofset": 3064,
+    "ad": "overlay_timer",
+    "tip": "event",
+    "boyut": 128
+   },
+   {
+    "ofset": 3192,
+    "ad": "files",
+    "tip": "client_files",
+    "boyut": 8
+   },
+   {
+    "ofset": 3200,
+    "ad": "source_file_depth",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 3208,
+    "ad": "clipboard_panes",
+    "tip": "u_int *",
+    "boyut": 8
+   },
+   {
+    "ofset": 3216,
+    "ad": "clipboard_npanes",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 3224,
+    "ad": "entry",
+    "tip": "_struct_1317",
+    "boyut": 16
+   }
+  ]
+ },
+ "kapanis": {
+  "yapi_sayisi": 28,
+  "ozet": {
+   "eşit": 18,
+   "farklı": 0,
+   "dwarf'ta yok": 10,
+   "yalnız ileri bildirim": 0
+  },
+  "bit_alanli_yapilar": [],
+  "ayrinti": [
+   {
+    "ad": "client",
+    "durum": "eşit",
+    "boyut": 3240,
+    "alan_sayisi_dwarf": 76,
+    "farklar": []
+   },
+   {
+    "ad": "event",
+    "durum": "eşit",
+    "boyut": 128,
+    "alan_sayisi_dwarf": 8,
+    "farklar": []
+   },
+   {
+    "ad": "event_callback",
+    "durum": "eşit",
+    "boyut": 40,
+    "alan_sayisi_dwarf": 6,
+    "farklar": []
+   },
+   {
+    "ad": "_struct_379",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "_union_382",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 8
+   },
+   {
+    "ad": "_union_389",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "_struct_390",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "_union_394",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 32
+   },
+   {
+    "ad": "_struct_395",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 32
+   },
+   {
+    "ad": "_struct_396",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "timeval",
+    "durum": "eşit",
+    "boyut": 16,
+    "alan_sayisi_dwarf": 2,
+    "farklar": []
+   },
+   {
+    "ad": "_struct_400",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 32
+   },
+   {
+    "ad": "_struct_401",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "progress_bar",
+    "durum": "eşit",
+    "boyut": 8,
+    "alan_sayisi_dwarf": 2,
+    "farklar": []
+   },
+   {
+    "ad": "tty",
+    "durum": "eşit",
+    "boyut": 1168,
+    "alan_sayisi_dwarf": 50,
+    "farklar": []
+   },
+   {
+    "ad": "termios",
+    "durum": "eşit",
+    "boyut": 72,
+    "alan_sayisi_dwarf": 7,
+    "farklar": []
+   },
+   {
+    "ad": "visible_ranges",
+    "durum": "eşit",
+    "boyut": 16,
+    "alan_sayisi_dwarf": 3,
+    "farklar": []
+   },
+   {
+    "ad": "grid_cell",
+    "durum": "eşit",
+    "boyut": 56,
+    "alan_sayisi_dwarf": 7,
+    "farklar": []
+   },
+   {
+    "ad": "utf8_data",
+    "durum": "eşit",
+    "boyut": 35,
+    "alan_sayisi_dwarf": 4,
+    "farklar": []
+   },
+   {
+    "ad": "mouse_event",
+    "durum": "eşit",
+    "boyut": 80,
+    "alan_sayisi_dwarf": 18,
+    "farklar": []
+   },
+   {
+    "ad": "status_line",
+    "durum": "eşit",
+    "boyut": 552,
+    "alan_sayisi_dwarf": 7,
+    "farklar": []
+   },
+   {
+    "ad": "screen",
+    "durum": "eşit",
+    "boyut": 232,
+    "alan_sayisi_dwarf": 27,
+    "farklar": []
+   },
+   {
+    "ad": "images",
+    "durum": "eşit",
+    "boyut": 16,
+    "alan_sayisi_dwarf": 2,
+    "farklar": []
+   },
+   {
+    "ad": "style_line_entry",
+    "durum": "eşit",
+    "boyut": 24,
+    "alan_sayisi_dwarf": 2,
+    "farklar": []
+   },
+   {
+    "ad": "style_ranges",
+    "durum": "eşit",
+    "boyut": 16,
+    "alan_sayisi_dwarf": 2,
+    "farklar": []
+   },
+   {
+    "ad": "input_requests",
+    "durum": "eşit",
+    "boyut": 16,
+    "alan_sayisi_dwarf": 2,
+    "farklar": []
+   },
+   {
+    "ad": "client_files",
+    "durum": "eşit",
+    "boyut": 8,
+    "alan_sayisi_dwarf": 1,
+    "farklar": []
+   },
+   {
+    "ad": "_struct_1317",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   }
+  ]
+ },
+ "ikili_sizeof_kaniti": [
+  {
+   "fonksiyon": "_server_client_create",
+   "komut": "mov w1, #0xca8              ; =3240"
+  }
+ ],
+ "hedef_ofset_karsilastirmasi": [
+  {
+   "ad": "status_message_area",
+   "komut_sise": 51,
+   "komut_bizim": 51,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "file_write",
+   "komut_sise": 125,
+   "komut_bizim": 125,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "redraw_draw",
+   "komut_sise": 1607,
+   "komut_bizim": 1607,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "server_lock_client",
+   "komut_sise": 59,
+   "komut_bizim": 59,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "control_discard",
+   "komut_sise": 26,
+   "komut_bizim": 26,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "cmd_join_pane_mouse_move",
+   "komut_sise": 64,
+   "komut_bizim": 64,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "control_pause_pane",
+   "komut_sise": 24,
+   "komut_bizim": 24,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "ignore_client_size",
+   "komut_sise": 29,
+   "komut_bizim": 29,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "window_customize_add_key_callback",
+   "komut_sise": 104,
+   "komut_bizim": 104,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "control_discard_all",
+   "komut_sise": 18,
+   "komut_bizim": 18,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "server_client_handle_key0",
+   "komut_sise": 189,
+   "komut_bizim": 189,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "default_window_size",
+   "komut_sise": 123,
+   "komut_bizim": 123,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "file_create_with_client",
+   "komut_sise": 45,
+   "komut_bizim": 45,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "status_prompt_screen_line",
+   "komut_sise": 27,
+   "komut_bizim": 27,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "server_acl_check",
+   "komut_sise": 47,
+   "komut_bizim": 47,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "status_message_clear",
+   "komut_sise": 25,
+   "komut_bizim": 25,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "file_print",
+   "komut_sise": 10,
+   "komut_bizim": 10,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "server_client_handle_key",
+   "komut_sise": 3,
+   "komut_bizim": 3,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "cmd_display_menu_get_popup_pos",
+   "komut_sise": 503,
+   "komut_bizim": 503,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  },
+  {
+   "ad": "window_customize_set_array_key",
+   "komut_sise": 59,
+   "komut_bizim": 59,
+   "yalniz_sise": [],
+   "yalniz_bizim": [],
+   "jaccard": 1.0
+  }
+ ]
+}
