@@ -175,3 +175,88 @@ Tanımlar `test_seti_kilidi.md` §3 ile aynı; yalnız Mac'teki gerçek isim kay
 ### 4.4 Değişimler
 
 Yok (2026-10-19). Kura sonucu ile sabitlenen küme aynı.
+
+### 4.5 Kaynaktan derlenen Mac ikilileri (2026-10-19)
+
+K3 olan iki programın (§4.3 madde 1) Mac ikilisi ön kayıt §4.4'e göre kaynaktan derlenir. Yöntem `test_seti_kilidi.md` §4.5'tekinin aynısı. newlisp derlendi. nagios bekliyor: `gd` bağımlılığı kurulu değil ve kurulum Berke'nin onayına bağlı.
+
+- **Konum:** `targets/dogrulama_seti/mac_kaynaktan/<program>/` (depo ve Spotlight dışında). Alt dizinler: `indirilen/` (kaynak ve şişedeki formül), `src/`, `prefix/`, `gt/<ikili>` ve `gt/<ikili>.dSYM`, `analiz/<ikili>`, `log/`.
+- **Betikler:** `targets/dogrulama_seti/mac_kaynaktan/betikler/`. Test setindeki betiklerin kopyası:
+  - `ortam.sh`: yalnız kök dizin değişti;
+  - `dogrula.sh`, `bayrak_ozeti.py`, `bolum_ozeti.py`, `bolum_kiyas.py`: değişmedi;
+  - `newlisp.sh`: yeni.
+- **Ölçümde kullanım:** Gerçek isimler `gt/<ikili>`'nin `nm` çıktısından (ya da dSYM'den) alınır. Analiz girdisi `analiz/<ikili>`'dir; aynı dosyanın `/usr/bin/strip` ile soyulmuş kopyası.
+
+| Program | Formül sürümü, yama | Derleme bayrakları | sha256 (analiz girdisi) | sha256 (GT) | UUID | nm -U t/T (GT) | dSYM UUID eşleşmesi | Export trie boş mu | Minimum macOS |
+|---|---|---|---|---|---|---|---|---|---|
+| newlisp (`newlisp`) | `newlisp` 10.7.5 (şişe rebuild 0); yama yok | `-w -Os -g -DNEWCONFIG -c` (formülün `CFLAGS`'ı); bağlama `-lm -Wl,-headerpad_max_install_names`; readline ve ffi kapalı (configure-alt, şişedeki gibi); `STRIP=true` | `6f7d33c013d26cd912717fe7ac7383da8645dc6837e70184265edabc4660f4a1` | `02f019ae1b4b1d4623f87f7c8bc598c1613008c03f2fa9621de695ac66032581` | `46C0622D-643A-34F2-9B30-58A19B317BF7` | t=25, T=794 (nm -U 1014 satır) | evet | evet (yalnız `__mh_execute_header`) | 26.0 (SDK 26.5) |
+| nagios (`nagios`) | `nagios` 4.5.14 | bekliyor: gd onayı | — | — | — | — | — | — | — |
+
+**Yöntem**
+- **Formül:** Şişenin içindeki `.brew/newlisp.rb` kullanıldı. homebrew-core `bf7ada6` ile derleme adımları aynı. Fark: adresler `https`'e geçmiş, bottle bloğu, test yazımı ve yeni bir `mirror` (Debian orig).
+  - API'deki güncel sürüm 10.7.5, rebuild 0. arm64_tahoe sha256'sı sabitlenen şişeninki (`cd0b1afe…`).
+  - Şişe tab'ı: Homebrew 4.6.10, CLT 26.0 (Xcode 26.0), macOS 26; çalışma bağımlılığı readline 8.3.1.
+- **Kaynak:** Formüldeki adres (`www.newlisp.org`) 2026-10-19'da DNS'te çözülmedi.
+  - Aynı dosya iki bağımsız yerden alındı: MacPorts distfiles ve Debian'ın `newlisp_10.7.5.orig.tar.gz`'si.
+  - İkisi bayt bayt aynı; sha256 formülle eşleşti (`dc2d0ff6…`).
+  - Güncel formül de Debian orig'i mirror olarak gösteriyor. Kayıt: `indirilen/KAYNAK.txt`.
+- **Derleyici ve ortam:** test seti §4.5 ile aynı.
+  - Superenv kabukları, `env -i`, `HOMEBREW_CCCFG=fD` (`-g`).
+  - Bağımlılık yolu yalnız `opt/readline` (keg-only).
+  - `LC_ALL=en_US.UTF-8`, `TZ=UTC0`, `ZERO_AR_DATE=1`, `SOURCE_DATE_EPOCH=1557679457` (şişe tab'ı), SDK `MacOSX26.sdk`, `make -j6`.
+  - `sandbox-exec` ile `/opt/homebrew` altına yazma engelli; `Cellar/` altında iz yok.
+- **Formül adımları:**
+  - `ENV.append_to_cflags "-DNEWCONFIG -c"`: ortamda `CFLAGS`, `CXXFLAGS`, `OBJCFLAGS`, `OBJCXXFLAGS`.
+  - `./configure-alt --prefix=/opt/homebrew/Cellar/newlisp/10.7.5 --mandir=…/share/man`.
+  - `make`.
+  - `make check`: ATLANDI, çünkü derlenen ikiliyi çalıştırıyor; ikiliyi etkilemez.
+  - `make install DESTDIR=…/prefix`. `makefile_install` DESTDIR'i destekliyor; komutlar hata yutan `-` ile çalıştığı için kurulan dosya ayrıca denetlendi.
+- **configure-alt sonuçları** (yalnız özet satırları okundu): MAC_OSX, LP64, 64 bit `time_t`, readline kapalı, ffi kapalı.
+  - readline denemesi dört bağlama biçiminde de başarısız; şişede de readline bağlı değil.
+  - Bağlı kütüphane yalnız libSystem; şişeyle aynı.
+- **Strip'in kapatılması:** `make STRIP=true`. configure-alt'ın ürettiği `makefile_build`, bağlamadan sonra `$(STRIP) $(TARG)` çalıştırıyor; şişenin tamamen soyulmuş olmasının sebebi bu. Kurulum `install -m 755` ile, `-s` yok.
+- **Derleme günlüğü** (`bayrak_ozeti.py`, `-D` değerleri maskeli): 15 derleme çağrısının hepsinde `-Os -g -w` var. `-O1`/`-O2`/`-O3`, `-Wl,-x`, `-Wl,-S` ve `-s` hiçbirinde yok.
+- **Süre:** derleme (configure-alt + make + kurulum + dSYM + soyma) 4 sn. Ön kayıttaki 30 dakika sınırının çok altında.
+
+**Doğrulamalar (yalnız sayılar; iki değer varsa bizim / şişe)**
+
+| Ölçüt | newlisp |
+|---|---|
+| Mimari | arm64 / arm64 |
+| nm -U (GT / şişe) | 1014 (t=25, T=794) / 1 (t=0, T=1) |
+| nm -U (analiz kopyası) | 1 (yalnız `__mh_execute_header`) |
+| nm -u (dışarıdan alınan semboller) | 161 / 161 |
+| Fonksiyon başlangıcı (`dyld_info -function_starts`) | 817 / 811 |
+| `__TEXT,__text` (bayt) | 223 064 / 224 124 |
+| Bağlı kütüphaneler | aynı: yalnız libSystem |
+| LC_RPATH | yok / yok |
+| LC_BUILD_VERSION minos / SDK / ld | 26.0 / 26.5 / 27037.1 — şişe: 26.0 / 26.0 / 1221.4 |
+| dSYM: derleme birimi, `DW_TAG_subprogram` | 15, 1620 |
+| dSYM DWARF sha256 | `f075ca091916fd096ec33168fd111b66d5b4c4b61ac95c1c9ef9afe34a3335d3` |
+| Export trie (GT → analiz) | 948 → 1 |
+| Kod imzası (GT ve analiz) | geçerli (ad-hoc, linker-signed) |
+| Ön kayıt §4.4 K3 koşulu (GT'de yerel sembol) | sağlandı: t=25 > 0 (Debian `.symtab` yerel FUNC 42) |
+
+- **Şişe kipinde kıyas derlemesi:** `.tekrar/newlisp-sisekipi/` altında `HOMEBREW_CCCFG=f` ile yapıldı; şişenin bayraklarının birebir aynısı.
+  - Sonuç GT kipiyle bütün bölümlerde bayt bayt aynı; fonksiyon adres listesi de aynı. Yani `D` kipinin newlisp'e hiçbir etkisi yok.
+  - UUID şişeninkinden farklı (`2FB2E4EF-5C82-35F7-BA4C-A7F3179AB2BB`, şişede `75905649-…`), çünkü şişe başka CLT ile derlenmiş (sapma 2). Test setindeki ssh'te olduğu gibi şişenin kendisini analiz girdisi yapma seçeneği burada yok.
+  - Kıyas dosyaları: GT sha256 `5c0a0c555f4398742ff8a40e57b4a2b07a21e422ed393135882d920a08be365f`, soyulmuş kopya `bdfad97fea65baf4b126364955899fb3521888c9d125ddb25b7b3c7220070b13`. Ölçümde kullanılmaz.
+
+**Şişeden sapmalar**
+1. **Amaçlananlar:** `-g` (debug map ve dSYM) ve `makefile_build`'deki `strip` adımının kapatılması.
+2. **Derleyici:** CLT 27.0 (Apple clang 21.0.0, ld 27037.1); şişe CLT 26.0 ile derlenmiş.
+   - Fonksiyon başlangıcı 817 / 811, `__text` 1060 bayt (%0,47) küçük, `__TEXT,__const` 232 bayt büyük, `__unwind_info` 16 bayt büyük.
+   - `__cstring` ve dışarıdan alınan semboller (161) şişeyle aynı. Yapılandırma aynı, fark kod üretiminde.
+3. **SDK:** 26.5 (şişe 26.0). Minimum macOS aynı (26.0).
+4. **readline:** bugün 8.3.6, şişe döneminde 8.3.1. İkisinde de configure-alt readline'ı kapatıyor ve ikili readline'a bağlanmıyor; etkisi yok.
+5. **`make check` atlandı:** ikiliyi etkilemez.
+6. **Kaynağın alındığı yer:** formüldeki adres yerine MacPorts ve Debian kopyası; sha256 aynı, yani dosya aynı.
+7. **Yol eşlemesi (`D` kipi):** `-ffile-prefix-map` ve `-Wl,-oso_prefix` yok. Kıyas derlemesine göre newlisp'te ölçülebilir etkisi yok. GT'nin debug map'i mutlak derleme yollarını içeriyor; analiz kopyasında debug map yok.
+8. **Yalıtım (kural 1 ve 8) kaydı:**
+   - .c/.h dosyalarına ve ikili içeriğine bakılmadı. `nm` yalnız sayım için çalıştı; `-D` değerleri maskeli basıldı.
+   - Strip, kurulum ve readline mekanizmasını bulmak için `configure-alt` ile `Makefile`'ın ilgili satırları okundu. Bu satırlarda configure-alt'ın kendi deneme programlarından birkaç satır vardı (readline kütüphanesinin API adları; newlisp'in kendi fonksiyonları değil).
+   - Derlenen newlisp çalıştırılmadı.
+
+**Açık sorunlar (karar ana oturumun)**
+1. **nagios:** bekliyor; `gd` bağımlılığı kurulu değil, Berke'nin onayı gerekiyor. Onay bekleme süresi ön kayıt §4.4'e göre 30 dakikaya sayılmaz.
+2. **`.tekrar/newlisp-sisekipi/`** (yaklaşık 9 MB) yalnız kıyas için; silinebilir (onay gerekiyor).
