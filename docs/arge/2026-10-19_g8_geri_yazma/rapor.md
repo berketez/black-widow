@@ -618,3 +618,93 @@ Depo dışı (`workspaces/2026-10-19_g8/`):
 - `ciktilar/{K0,K1,K1y,K2,K3_C0,K3_C3}`
 - `veri/{k1_karadul,k1_ayristirma,k1_yerlesim_dogrulugu,k3_kaynak_adaylar,k3_secim,olcum_K*}.json`
 - `veri/onkayit_ek_muhur.txt`
+
+## 11. Ürün kuralı adayı: "yerleşim yoksa yalnız ad"
+
+- **Ön kayıt:** `onkayit_ek2.md`, mühür 2026-10-19 13:12:30, SHA-256 `6a27a7c2…81815056`.
+- **Koşu saatleri:** K4 13:13:52, K4' 13:13:58.
+- **Notlar:** `onkayit_ek2_notlari.md`.
+- **Ayrıntılı sonuçlar:** `sonuc_ek2.json`.
+- **Değişmeyenler:** ölçütler, eşli analiz, eşikler ve 20 hedef + 49 çağıran.
+
+### 11.1 Koşullar
+
+| Koşul | Yazılan |
+|---|---|
+| K4 | Gerçek fonksiyon adı + kaynaktan gerçek parametre adları. Tiplere dokunulmaz. Parametre adları Ghidra arayüzündeki "yeniden adlandır" yoluyla yazıldı (`HighFunctionDBUtil.updateDBVariable`): parametreler decompiler'ın kendi tipleriyle kaydedilir, dönüş tipi kaydedilmez. Ghidra'nın gördüğü 48 parametrenin 48'i adlandırıldı (kaynakta 51) |
+| K4' | K4 + yalnız yerleşimi bilinen yapı için tip: kaynak tipi `struct window_pane *` olan 22 parametre ve 3 dönüş tipi `window_pane *` oldu. `window_pane` C3'teki gibi kuruldu. Öbür parametreler Ghidra'nın tipinde kaldı |
+
+### 11.2 Sonuçlar
+
+Her hücrede iki değer var: havuzlanmış oranın göreli değişimi / fonksiyon başına ortalama göreli değişim. Anlamlı kazanç kalın. A'da hücre: havuz oranı önce → sonra / fonksiyon başına ortalama oran.
+
+**20 hedef**
+
+| Karşılaştırma | U | P1 | C | A | D¹ | Anlamlı (5'te) |
+|---|---|---|---|---|---|---|
+| C2 ad + prototip, opak yapı ↔ C0 | −23,6% / +9% | +4,4% / +4% | +27,3% / +45% | 0,0 → 0,0 / 0,0 | −24,9% / −40% | 0 |
+| K2 ad + prototip, `void *` ↔ C0 | −23,6% / +9% | +1,0% / −0% | +70,1% / +92% | 0,0 → 0,0 / 0,0 | −23,8% / −38% | 0 |
+| **K4 yalnız ad, Ghidra tipleri ↔ C0** | +0,0% / +0% | +0,0% / +0% | **+0,0% / +0%** | 0,0 → 0,0 / 0,0 | −24,7% / −39% | 0 |
+| C3 ad + prototip + yapı ↔ C0 | **−51,5% / −23%** | **−50,2% / −59%** | −8,3% / −16% | **0,0 → 11,0 / 17,1** | −24,1% / −38% | 3 |
+| **K4' yalnız ad + bilinen yerleşimde tip ↔ C0** | −18,1% / +11% | **−50,1% / −58%** | −15,2% / −24% | **0,0 → 11,1 / 17,2** | −25,0% / −39% | 2 |
+| K4 ↔ C2 | +30,8% / +50% | −4,2% / −3% | −21,4% / −20% | — | +0,3% / +2% | 0 |
+| K4 ↔ K2 | +30,8% / +49% | −1,0% / +1% | **−41,2% / −41%** | — | −1,2% / −1% | 1 |
+| K4' ↔ C3 | +69,0% / +27% | +0,3% / +1% | −7,5% / −6% | +0,3% / +1% | −1,1% / −2% | 0 |
+
+¹ D'nin havuz değişimleri eşiğin hemen altında. Kesin değerler: K4 −%24,72, K4' −%24,98, C2 −%24,93, C3 −%24,12. Eşik −%25 olduğu için hiçbiri anlamlı sayılmadı. Fonksiyon başına ortalama bütün bu koşullarda −%38 ile −%40 arasında.
+
+**49 doğrudan çağıran**
+
+| Karşılaştırma | U | P1 | C | A | D | Anlamlı (5'te) |
+|---|---|---|---|---|---|---|
+| C2 ↔ C0 | −1,7% / −10% | +1,9% / +4% | +4,6% / +16% | 0,0 → 0,0 / 0,0 | −4,4% / −9% | 0 |
+| K2 ↔ C0 | −1,5% / −10% | −0,3% / −0% | +17,9% / +30% | 0,0 → 0,0 / 0,0 | −4,0% / −8% | 0 |
+| **K4 ↔ C0** | −5,1% / −12% | −0,3% / −1% | +1,1% / +4% | 0,0 → 0,0 / 0,0 | −2,6% / −7% | 0 |
+| C3 ↔ C0 | −18,7% / −27% | −24,5% / −29% | −9,7% / −5% | **0,0 → 7,1 / 6,8** | −4,6% / −8% | 1 |
+| **K4' ↔ C0** | −18,2% / −24% | −24,7% / −29% | −10,2% / −7% | **0,0 → 7,1 / 6,7** | −4,6% / −8% | 1 |
+| K4 ↔ C2 | −3,4% / −4% | −2,2% / −2% | −3,4% / −8% | — | +1,9% / +2% | 0 |
+| K4 ↔ K2 | −3,6% / −4% | +0,0% / −0% | −14,3% / −15% | — | +1,4% / +1% | 0 |
+| K4' ↔ C3 | +0,6% / −0% | −0,3% / +0% | −0,6% / −0% | −0,3% / −1% | −0,0% / −0% | 0 |
+
+### 11.3 Ön kayıtlı okumalar
+
+| Okuma | Ölçülen | Sonuç |
+|---|---|---|
+| R1: K4 ↔ C0'da C/100 değişimi ≤ 0 | 0. Hedeflerin metni C0'dan yalnız adlarda ayrılıyor | **tuttu** |
+| R2a: K4'ün C/100'ü C2'den ve K2'den küçük | 24,6 < 31,3 (C2), 24,6 < 41,9 (K2) | **tuttu** |
+| R2b: K4'ün D/100'ü C2'den en çok 5,0 büyük | 87,1 − 86,9 = 0,2 | **tuttu** |
+| R3: K4' ↔ C0'da en az 2/5 anlamlı kazanç ve K4'ün C/100'ü ≤ C3'ün | 2/5 (P1, A); 20,9 ≤ 22,6 | **tuttu** |
+
+### 11.4 Ürün kuralı önerisi
+
+**Öneri:** "Yerleşim yoksa yalnız ad yaz, tipe dokunma. Yerleşimi doğrulanmış yapılar için tip de yaz."
+
+**Yerleşim bilinmiyorsa.**
+- Yalnız ad, tip dönüşümünü hiç artırmıyor (hedeflerde 0).
+- Yerleşimsiz tip yazmanın iki biçimi de artırıyor: opak yapı işaretçisi +%27, `void *` +%70.
+- Ad kazancı aynı: D, C2 ile K4'te aynı düzeyde (fonksiyon başına −%39-40).
+
+**Yerleşim biliniyorsa.**
+- Tip yalnız bilinen yapıya yazılınca, ana kazançlar C3 ile aynı: P1 −%50, A 0 → 11,1; çağıranlarda P1 −%25, A 0 → 7,1.
+- Tip dönüşümü C3'ten %7,5 daha az.
+- U'daki fark (K4' −%18, C3 −%52) yapı dışındaki parametrelerin Ghidra tipinde (`undefined8`) kalmasından geliyor. Ana oturumun kararıyla U tek başına kanıt sayılmıyor.
+
+**Uygulama ayrıntısı.**
+- Ad, Ghidra'nın "yeniden adlandır" yoluyla yazılmalı (`HighFunctionDBUtil.updateDBVariable(sembol, ad, null, USER_DEFINED)`). Bu yol parametreleri decompiler'ın tipleriyle kaydeder, dönüş tipine dokunmaz ve çağrı kuralı uyarısı üretmez.
+- Bilinen yapının tipi aynı çağrıyla, adla birlikte yazılır.
+
+**Bilinen yan etki.** Parametreleri kaydetmek, çağıranlarda decompiler'ın prototip çıkarımını sabitliyor. Çağıranlarda tip dönüşümü %1,1 arttı: `(long)` +15, `(int *)` +15, `(undefined8 *)` −8. Küçük ama sıfır değil.
+
+**Kural için ön koşul.** "Doğrulanmış yerleşim" bugün Karadul'da yok (§10): yapılar tek fonksiyonluk, adsız, boyutları yanlış parçalar. Kuralın ikinci yarısı tip kurtarma işi (G16-G17, G19) bitince devreye girer. Birinci yarısı ("yalnız ad") bugün uygulanabilir: Karadul'un parametre adı ve fonksiyon adı çıktısı var. Ama bu deneyde adlar kaynaktan geldi; Karadul'un adlarının doğruluğu ayrı bir konudur (G4 etiketleme).
+
+### 11.5 Sınırlamalar
+
+- Aynı tek program, tek yapı ve n = 20.
+- Adlar ve tipler kaynaktan geliyor; bu bir üst sınırdır.
+- D'deki kazanç bütün koşullarda %25 eşiğinin hemen altında. Karar kuralı bu ölçütü hiçbir koşulda "anlamlı" saymıyor; fonksiyon başına ortalama −%39.
+- **Süre bu turda ölçülemedi.** Makinenin yük ortalaması 31-35'ti; decompile süreleri yükten 2-3 kat şiştiği için yorumlanmadı (`onkayit_ek2_notlari.md` #6). Maliyet için §3.2'deki dengeli ölçüm geçerli.
+
+### 11.6 Yeni dosyalar
+
+- Bu klasör: `onkayit_ek2.md`, `onkayit_ek2_notlari.md`, `ek2_deney.py`, `ozet_ek2.py` → `sonuc_ek2.json`, `tablolar_ek2.py` (bu bölümdeki tablolar).
+- Depo dışı (`workspaces/2026-10-19_g8/`): `projeler/{K4,K4p}`, `ciktilar/{K4,K4p}`, `veri/olcum_K4.json`, `veri/olcum_K4p.json`, `veri/onkayit_ek2_muhur.txt`.
