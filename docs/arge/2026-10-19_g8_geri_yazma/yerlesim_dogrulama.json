@@ -1,0 +1,848 @@
+{
+ "kunye": {
+  "zaman": "2026-10-19T12:11:30+0300",
+  "depo_commit": "62ad154a93464970c7e6387ce4ff0e1a096fac4a",
+  "ghidra": {
+   "application.version": "12.1.2",
+   "application.release.name": "PUBLIC",
+   "application.revision.ghidra": "c0f584bf229fffba61b36431f3ce30c0c3e4e682",
+   "kurulum": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC"
+  },
+  "pyghidra": "3.0.0",
+  "python": "3.12.7",
+  "makine": "macOS-26.7.1-arm64-arm-64bit",
+  "girdi_strip_sha256": "10fa041195a823953e2b207faeb4e34478048ba2c39d7f8fe6e7b9fc0c9997b7",
+  "girdi_orig_sha256": "dfbb8c547d6df2aafdf3d106bff3480b7e9a751753f9e77da0257897c629998b",
+  "jvm_heap_mb": 6144,
+  "decompile_zaman_asimi_sn": 30
+ },
+ "yontem": "clang -E (gerçek derleme bayrakları) + Ghidra CParser; hedef veri düzeni AARCH64:LE:64:AppleSilicon/default; doğrulama: aynı seçeneklerle -g derlemenin DWARF'ı",
+ "ayristirma_raporu": {
+  "desenler": [
+   {
+    "desen": "\\b__builtin_va_list\\b",
+    "yerine": "char *",
+    "neden": "Darwin arm64 ABI'sinde va_list = char * (8 bayt); Ghidra yerleşik tipi tanımıyor",
+    "sayi": 3
+   },
+   {
+    "desen": "\\brestrict\\b",
+    "yerine": "",
+    "neden": "C99 'restrict' niteleyicisi yerleşimi etkilemez; Ghidra ayrıştırıcısı tanımıyor (Ghidra'nın kendi macOS profili de -Drestrict ile siler)",
+    "sayi": 194
+   }
+  ],
+  "silinen_oznitelik": 410,
+  "yerlesim_oznitelikleri": {
+   "__darwin_arm_sve_z_state": {
+    "aligned": 4
+   },
+   "__darwin_arm_sve_p_state": {
+    "aligned": 4
+   },
+   "__darwin_arm_sme_za_state": {
+    "aligned": 4
+   },
+   "__darwin_arm_sme2_state": {
+    "aligned": 4
+   },
+   "grid_extd_entry": {
+    "packed": true
+   },
+   "grid_cell_entry": {
+    "packed": true
+   }
+  },
+  "on_isleme_sn": 0.09,
+  "on_islenmis_satir": 9623,
+  "on_islenmis_sha256": "6dc4cc6a008a5a0b02b902d78d591519050dfbb3119893d2632b23a811638802",
+  "onceden_tanimlanan": [
+   "__uint128_t = uint16 (16 bayt)",
+   "__int128_t = int16 (16 bayt)"
+  ],
+  "ayristirma": "başarılı",
+  "ayristirma_sn": 0.56,
+  "ayristirma_iletileri": "",
+  "uygulanan_yerlesim_oznitelikleri": [
+   {
+    "ad": "__darwin_arm_sve_z_state",
+    "aligned": 4,
+    "boyut": 4096
+   },
+   {
+    "ad": "__darwin_arm_sve_p_state",
+    "aligned": 4,
+    "boyut": 512
+   },
+   {
+    "ad": "__darwin_arm_sme_za_state",
+    "aligned": 4,
+    "boyut": 4096
+   },
+   {
+    "ad": "__darwin_arm_sme2_state",
+    "aligned": 4,
+    "boyut": 64
+   },
+   {
+    "ad": "grid_extd_entry",
+    "packed": true,
+    "boyut": 23
+   },
+   {
+    "ad": "grid_cell_entry",
+    "packed": true,
+    "boyut": 5
+   }
+  ]
+ },
+ "window_pane": {
+  "ad": "window_pane",
+  "yol": "/tmux.h/window_pane",
+  "boyut": 1760,
+  "hizalama": 8,
+  "bilesenler": [
+   {
+    "ofset": 0,
+    "ad": "id",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 4,
+    "ad": "references",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 8,
+    "ad": "active_point",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 16,
+    "ad": "window",
+    "tip": "window *",
+    "boyut": 8
+   },
+   {
+    "ofset": 24,
+    "ad": "options",
+    "tip": "options *",
+    "boyut": 8
+   },
+   {
+    "ofset": 32,
+    "ad": "layout_cell",
+    "tip": "layout_cell *",
+    "boyut": 8
+   },
+   {
+    "ofset": 40,
+    "ad": "saved_layout_cell",
+    "tip": "layout_cell *",
+    "boyut": 8
+   },
+   {
+    "ofset": 48,
+    "ad": "sx",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 52,
+    "ad": "sy",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 56,
+    "ad": "xoff",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 60,
+    "ad": "yoff",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 64,
+    "ad": "flags",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 72,
+    "ad": "sync_dirty",
+    "tip": "bitstr_t *",
+    "boyut": 8
+   },
+   {
+    "ofset": 80,
+    "ad": "sync_dirty_size",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 84,
+    "ad": "sb_slider_y",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 88,
+    "ad": "sb_slider_h",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 92,
+    "ad": "sb_auto_visible",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 96,
+    "ad": "sb_auto_hover",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 104,
+    "ad": "sb_auto_timer",
+    "tip": "event",
+    "boyut": 128
+   },
+   {
+    "ofset": 232,
+    "ad": "argc",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 240,
+    "ad": "argv",
+    "tip": "char * *",
+    "boyut": 8
+   },
+   {
+    "ofset": 248,
+    "ad": "shell",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 256,
+    "ad": "cwd",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 264,
+    "ad": "pid",
+    "tip": "pid_t",
+    "boyut": 4
+   },
+   {
+    "ofset": 268,
+    "ad": "tty",
+    "tip": "char[32]",
+    "boyut": 32
+   },
+   {
+    "ofset": 300,
+    "ad": "status",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 304,
+    "ad": "dead_time",
+    "tip": "timeval",
+    "boyut": 16
+   },
+   {
+    "ofset": 320,
+    "ad": "wait_item",
+    "tip": "cmdq_item *",
+    "boyut": 8
+   },
+   {
+    "ofset": 328,
+    "ad": "editor",
+    "tip": "spawn_editor_state *",
+    "boyut": 8
+   },
+   {
+    "ofset": 336,
+    "ad": "output_generation",
+    "tip": "uint64_t",
+    "boyut": 8
+   },
+   {
+    "ofset": 344,
+    "ad": "last_output_time",
+    "tip": "time_t",
+    "boyut": 8
+   },
+   {
+    "ofset": 352,
+    "ad": "last_prompt_time",
+    "tip": "time_t",
+    "boyut": 8
+   },
+   {
+    "ofset": 360,
+    "ad": "cmd_start_time",
+    "tip": "time_t",
+    "boyut": 8
+   },
+   {
+    "ofset": 368,
+    "ad": "cmd_end_time",
+    "tip": "time_t",
+    "boyut": 8
+   },
+   {
+    "ofset": 376,
+    "ad": "cmd_status",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 380,
+    "ad": "fd",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 384,
+    "ad": "event",
+    "tip": "bufferevent *",
+    "boyut": 8
+   },
+   {
+    "ofset": 392,
+    "ad": "offset",
+    "tip": "window_pane_offset",
+    "boyut": 8
+   },
+   {
+    "ofset": 400,
+    "ad": "base_offset",
+    "tip": "size_t",
+    "boyut": 8
+   },
+   {
+    "ofset": 408,
+    "ad": "resize_queue",
+    "tip": "window_pane_resizes",
+    "boyut": 16
+   },
+   {
+    "ofset": 424,
+    "ad": "resize_timer",
+    "tip": "event",
+    "boyut": 128
+   },
+   {
+    "ofset": 552,
+    "ad": "sync_timer",
+    "tip": "event",
+    "boyut": 128
+   },
+   {
+    "ofset": 680,
+    "ad": "ictx",
+    "tip": "input_ctx *",
+    "boyut": 8
+   },
+   {
+    "ofset": 688,
+    "ad": "cached_gc",
+    "tip": "grid_cell",
+    "boyut": 56
+   },
+   {
+    "ofset": 744,
+    "ad": "cached_active_gc",
+    "tip": "grid_cell",
+    "boyut": 56
+   },
+   {
+    "ofset": 800,
+    "ad": "cached_dim",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 804,
+    "ad": "cached_active_dim",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 808,
+    "ad": "palette",
+    "tip": "colour_palette",
+    "boyut": 24
+   },
+   {
+    "ofset": 832,
+    "ad": "last_theme",
+    "tip": "client_theme",
+    "boyut": 4
+   },
+   {
+    "ofset": 840,
+    "ad": "border_status_line",
+    "tip": "style_line_entry",
+    "boyut": 24
+   },
+   {
+    "ofset": 864,
+    "ad": "pipe_fd",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 868,
+    "ad": "pipe_pid",
+    "tip": "pid_t",
+    "boyut": 4
+   },
+   {
+    "ofset": 872,
+    "ad": "pipe_event",
+    "tip": "bufferevent *",
+    "boyut": 8
+   },
+   {
+    "ofset": 880,
+    "ad": "pipe_offset",
+    "tip": "window_pane_offset",
+    "boyut": 8
+   },
+   {
+    "ofset": 888,
+    "ad": "screen",
+    "tip": "screen *",
+    "boyut": 8
+   },
+   {
+    "ofset": 896,
+    "ad": "base",
+    "tip": "screen",
+    "boyut": 232
+   },
+   {
+    "ofset": 1128,
+    "ad": "status_screen",
+    "tip": "screen",
+    "boyut": 232
+   },
+   {
+    "ofset": 1360,
+    "ad": "modes",
+    "tip": "_struct_1034",
+    "boyut": 16
+   },
+   {
+    "ofset": 1376,
+    "ad": "searchstr",
+    "tip": "char *",
+    "boyut": 8
+   },
+   {
+    "ofset": 1384,
+    "ad": "searchregex",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 1392,
+    "ad": "prompt",
+    "tip": "prompt *",
+    "boyut": 8
+   },
+   {
+    "ofset": 1400,
+    "ad": "prompt_data",
+    "tip": "window_pane_prompt *",
+    "boyut": 8
+   },
+   {
+    "ofset": 1408,
+    "ad": "prompt_cx",
+    "tip": "u_int",
+    "boyut": 4
+   },
+   {
+    "ofset": 1412,
+    "ad": "border_gc_set",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 1416,
+    "ad": "border_gc",
+    "tip": "grid_cell",
+    "boyut": 56
+   },
+   {
+    "ofset": 1472,
+    "ad": "active_border_gc_set",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 1476,
+    "ad": "active_border_gc",
+    "tip": "grid_cell",
+    "boyut": 56
+   },
+   {
+    "ofset": 1532,
+    "ad": "control_bg",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 1536,
+    "ad": "control_fg",
+    "tip": "int",
+    "boyut": 4
+   },
+   {
+    "ofset": 1540,
+    "ad": "scrollbar_style",
+    "tip": "style",
+    "boyut": 120
+   },
+   {
+    "ofset": 1664,
+    "ad": "r",
+    "tip": "visible_ranges",
+    "boyut": 16
+   },
+   {
+    "ofset": 1680,
+    "ad": "entry",
+    "tip": "_struct_1043",
+    "boyut": 16
+   },
+   {
+    "ofset": 1696,
+    "ad": "sentry",
+    "tip": "_struct_1046",
+    "boyut": 16
+   },
+   {
+    "ofset": 1712,
+    "ad": "zentry",
+    "tip": "_struct_1049",
+    "boyut": 16
+   },
+   {
+    "ofset": 1728,
+    "ad": "tree_entry",
+    "tip": "_struct_1052",
+    "boyut": 32
+   }
+  ]
+ },
+ "kapanis": {
+  "yapi_sayisi": 30,
+  "adli": 16,
+  "ozet": {
+   "eşit": 16,
+   "farklı": 0,
+   "dwarf'ta yok": 14,
+   "yalnız ileri bildirim": 0
+  },
+  "bit_alanli_yapilar": [],
+  "ayrinti": [
+   {
+    "ad": "window_pane",
+    "durum": "eşit",
+    "boyut": 1760,
+    "alan_sayisi_dwarf": 75,
+    "farklar": []
+   },
+   {
+    "ad": "event",
+    "durum": "eşit",
+    "boyut": 128,
+    "alan_sayisi_dwarf": 8,
+    "farklar": []
+   },
+   {
+    "ad": "event_callback",
+    "durum": "eşit",
+    "boyut": 40,
+    "alan_sayisi_dwarf": 6,
+    "farklar": []
+   },
+   {
+    "ad": "_struct_379",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "_union_382",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 8
+   },
+   {
+    "ad": "_union_389",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "_struct_390",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "_union_394",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 32
+   },
+   {
+    "ad": "_struct_395",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 32
+   },
+   {
+    "ad": "_struct_396",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "timeval",
+    "durum": "eşit",
+    "boyut": 16,
+    "alan_sayisi_dwarf": 2,
+    "farklar": []
+   },
+   {
+    "ad": "_struct_400",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 32
+   },
+   {
+    "ad": "_struct_401",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "window_pane_offset",
+    "durum": "eşit",
+    "boyut": 8,
+    "alan_sayisi_dwarf": 1,
+    "farklar": []
+   },
+   {
+    "ad": "window_pane_resizes",
+    "durum": "eşit",
+    "boyut": 16,
+    "alan_sayisi_dwarf": 2,
+    "farklar": []
+   },
+   {
+    "ad": "grid_cell",
+    "durum": "eşit",
+    "boyut": 56,
+    "alan_sayisi_dwarf": 7,
+    "farklar": []
+   },
+   {
+    "ad": "utf8_data",
+    "durum": "eşit",
+    "boyut": 35,
+    "alan_sayisi_dwarf": 4,
+    "farklar": []
+   },
+   {
+    "ad": "colour_palette",
+    "durum": "eşit",
+    "boyut": 24,
+    "alan_sayisi_dwarf": 4,
+    "farklar": []
+   },
+   {
+    "ad": "style_line_entry",
+    "durum": "eşit",
+    "boyut": 24,
+    "alan_sayisi_dwarf": 2,
+    "farklar": []
+   },
+   {
+    "ad": "style_ranges",
+    "durum": "eşit",
+    "boyut": 16,
+    "alan_sayisi_dwarf": 2,
+    "farklar": []
+   },
+   {
+    "ad": "screen",
+    "durum": "eşit",
+    "boyut": 232,
+    "alan_sayisi_dwarf": 27,
+    "farklar": []
+   },
+   {
+    "ad": "images",
+    "durum": "eşit",
+    "boyut": 16,
+    "alan_sayisi_dwarf": 2,
+    "farklar": []
+   },
+   {
+    "ad": "progress_bar",
+    "durum": "eşit",
+    "boyut": 8,
+    "alan_sayisi_dwarf": 2,
+    "farklar": []
+   },
+   {
+    "ad": "_struct_1034",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "style",
+    "durum": "eşit",
+    "boyut": 120,
+    "alan_sayisi_dwarf": 14,
+    "farklar": []
+   },
+   {
+    "ad": "visible_ranges",
+    "durum": "eşit",
+    "boyut": 16,
+    "alan_sayisi_dwarf": 3,
+    "farklar": []
+   },
+   {
+    "ad": "_struct_1043",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "_struct_1046",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "_struct_1049",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 16
+   },
+   {
+    "ad": "_struct_1052",
+    "durum": "dwarf'ta yok",
+    "boyut_ghidra": 32
+   }
+  ]
+ },
+ "tmux_h_yapilari": {
+  "sayi": 164,
+  "ozet": {
+   "eşit": 83,
+   "farklı": 0,
+   "dwarf'ta yok": 38,
+   "yalnız ileri bildirim": 43
+  },
+  "farkli": [],
+  "dwarfta_yok": [
+   "_struct_1001",
+   "_struct_1034",
+   "_struct_1043",
+   "_struct_1046",
+   "_struct_1049",
+   "_struct_1052",
+   "_struct_1083",
+   "_struct_1087",
+   "_struct_1090",
+   "_struct_1099",
+   "_struct_1103",
+   "_struct_1106",
+   "_struct_1124",
+   "_struct_1128",
+   "_struct_1133",
+   "_struct_1136",
+   "_struct_1154",
+   "_struct_1157",
+   "_struct_1170",
+   "_struct_1206",
+   "_struct_1207",
+   "_struct_1213",
+   "_struct_1222",
+   "_struct_1266",
+   "_struct_1317",
+   "_struct_1332",
+   "_struct_1342",
+   "_struct_1365",
+   "_struct_1369",
+   "_struct_901",
+   "_struct_912",
+   "_struct_926",
+   "_struct_929",
+   "_struct_991",
+   "_union_1205",
+   "_union_1220",
+   "_union_900",
+   "window_panes_zindex"
+  ],
+  "yalniz_ileri_bildirim": [
+   "args",
+   "args_command_state",
+   "args_entry",
+   "cmd",
+   "cmdq_item",
+   "cmdq_list",
+   "cmdq_state",
+   "cmds",
+   "control_state",
+   "environ",
+   "event_payload",
+   "event_payload_item",
+   "events_sink",
+   "format_job_tree",
+   "format_modifier",
+   "format_tree",
+   "hyperlinks",
+   "hyperlinks_uri",
+   "input_ctx",
+   "input_request",
+   "job",
+   "json_node",
+   "menu_data",
+   "mode_tree_data",
+   "mode_tree_item",
+   "monitor_set",
+   "options",
+   "options_array_item",
+   "options_entry",
+   "prompt",
+   "redraw_scene",
+   "redraw_span",
+   "screen_sel",
+   "screen_titles",
+   "screen_write_citem",
+   "screen_write_cline",
+   "sixel_image",
+   "spawn_editor_state",
+   "tmuxpeer",
+   "tmuxproc",
+   "tty_code",
+   "tty_key",
+   "window_pane_prompt"
+  ]
+ },
+ "dwarf_celiskisi": null
+}
