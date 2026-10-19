@@ -69,3 +69,12 @@ echo "otool -L şişe (@@HOMEBREW_PREFIX@@ -> /opt/homebrew):"
 kutuphaneler "$SISE" | /usr/bin/sed 's/^/    /'
 if diff <(kutuphaneler "$GT") <(kutuphaneler "$SISE") >/dev/null; then echo "kütüphane kümesi şişeyle aynı: evet"; else echo "kütüphane kümesi şişeyle aynı: HAYIR"; fi
 if kutuphaneler "$GT" | /usr/bin/grep -qiE 'anaconda|conda|/usr/local'; then echo "conda//usr/local yolu: VAR (GEÇERSİZ)"; else echo "conda//usr/local yolu: yok"; fi
+# LC_RPATH (2026-10-19 eki; vim formülü -Wl,-rpath veriyor). Yalnız dizin yolları basılır.
+rpathler() {
+  /usr/bin/otool -l "$1" | /usr/bin/awk '/cmd LC_RPATH/{f=1;next} f&&$1=="path"{print $2; f=0}' | /usr/bin/sed 's|@@HOMEBREW_PREFIX@@|/opt/homebrew|'
+}
+echo "LC_RPATH gt:   $(rpathler "$GT" | /usr/bin/tr '\n' ' ')"
+echo "LC_RPATH şişe: $(rpathler "$SISE" | /usr/bin/tr '\n' ' ')"
+if diff <(rpathler "$GT") <(rpathler "$SISE") >/dev/null; then echo "LC_RPATH şişeyle aynı: evet"; else echo "LC_RPATH şişeyle aynı: HAYIR"; fi
+echo "fonksiyon başlangıcı gt/analiz/şişe: $(/usr/bin/xcrun dyld_info -function_starts "$GT" 2>/dev/null | /usr/bin/grep -cE '^\s*0x' || true) / $(/usr/bin/xcrun dyld_info -function_starts "$AN" 2>/dev/null | /usr/bin/grep -cE '^\s*0x' || true) / $(/usr/bin/xcrun dyld_info -function_starts "$SISE" 2>/dev/null | /usr/bin/grep -cE '^\s*0x' || true)"
+echo "kod imzası gt/analiz: $(/usr/bin/codesign -v "$GT" >/dev/null 2>&1 && echo geçerli || echo GEÇERSİZ) / $(/usr/bin/codesign -v "$AN" >/dev/null 2>&1 && echo geçerli || echo GEÇERSİZ)"

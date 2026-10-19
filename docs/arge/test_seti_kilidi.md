@@ -183,80 +183,131 @@
 
 ### 4.5 Kaynaktan derlenen Mac ikilileri (2026-10-19)
 
-§4.4 madde 1'in uygulaması. Dört programdan ikisi derlendi: unzip ve zsh. openssh ile vim'in bağımlılıkları bu makinede kurulu değil. Görev kuralı gereği kurulmadılar, bu iki program derlenmedi (bkz. "Açık sorunlar").
+§4.4 madde 1'in uygulaması. Dört programın dördü de derlendi. unzip ve zsh ilk turda derlendi. openssh ile vim'in bağımlılıkları kurulu değildi; aynı gün Berke'nin onayıyla kuruldu (bkz. "Açık sorunlar" madde 1), sonra bu iki program da aynı yöntemle derlendi.
 
 - **Konum:** `targets/test_seti/mac_kaynaktan/<program>/` (depo ve Spotlight dışında). Alt dizinler: `indirilen/` (kaynak, yama, şişedeki formül), `src/`, `prefix/`, `gt/<ikili>` ve `gt/<ikili>.dSYM`, `analiz/<ikili>`, `log/`.
-- **Betikler:** `targets/test_seti/mac_kaynaktan/betikler/`: `ortam.sh` (superenv ortamı), `unzip.sh`, `zsh.sh`, `openssh.sh`, `vim.sh`, `dogrula.sh`, `bayrak_ozeti.py`, `bolum_ozeti.py`. Çalıştırıldıkları hâliyle depodaki kopyası: `scripts/measurement/test_seti_mac_derleme/` (betikler `targets/` altındaki mutlak yollarla çalışır).
+- **Betikler:** `targets/test_seti/mac_kaynaktan/betikler/`: `ortam.sh` (superenv ortamı), `unzip.sh`, `zsh.sh`, `openssh.sh`, `vim.sh`, `dogrula.sh`, `bayrak_ozeti.py`, `bolum_ozeti.py`, `bolum_kiyas.py`. Çalıştırıldıkları hâliyle depodaki kopyası: `scripts/measurement/test_seti_mac_derleme/` (betikler `targets/` altındaki mutlak yollarla çalışır).
 - **Ölçümde kullanım:** Gerçek isimler `gt/<ikili>`'nin `nm` çıktısından (ya da dSYM'den) alınır. Analiz girdisi `analiz/<ikili>`'dir; aynı dosyanın `/usr/bin/strip` ile soyulmuş kopyası.
 
 | Program | Formül sürümü, yama | Derleme bayrakları | sha256 (analiz girdisi) | sha256 (GT) | UUID | nm -U t/T (GT) | dSYM UUID eşleşmesi | Export trie boş mu | Minimum macOS |
 |---|---|---|---|---|---|---|---|---|---|
 | unzip (`unzip`) | `unzip` 6.0_8 (şişe rebuild 1); 29 Ubuntu yaması (`unzip_6.0-28ubuntu4.1`), 29/29 temiz uygulandı | `-w -Os -g -DBSD -DUNIX` ve formülün 5 `LOC` makrosu; bağlama `-liconv -lbz2 -Wl,-headerpad_max_install_names`; `strip` adımı kapalı | `84999ab7fa915ce4a17da1ddbaca57eaf4da04dd55ed08bdef556fa9f4b67773` | `3445a9133e429c122dafd328eed13e5f4986db81fa5516479ed9ad8f3034109e` | `9B2A146E-BA69-3939-8DEA-66ABAB3E2B22` | t=20, T=87 (nm -U 541 satır) | evet | evet (yalnız `__mh_execute_header`) | 26.0 (SDK 26.5) |
 | zsh (`zsh`) | `zsh` 5.9.2; yama yok (formüldeki `inreplace`, 2 Makefile) | `-w -Os -g -std=gnu23`; bağlama `-rdynamic -lpcre2-8 -liconv -ldl -lncursesw -lm -lc -Wl,-headerpad_max_install_names`; `-Wl,-x` yok | `6e14bd7aa782841e534c1025943283a21193ceb94da302dc8d0c93feb4807500` | `d9e50a0bcdf85b3ffaf12a89db7e95b19b7f113840b0f0716fdf371e6b9c2d72` | `8CB23E3B-1C51-3E0E-945D-306B3A28B220` | t=335, T=758 (nm -U 1641 satır) | evet | evet (yalnız `__mh_execute_header`) | 26.0 (SDK 26.5) |
-| openssh (`ssh`) | `openssh` 10.6p1_1; yama yok | derlenmedi (ldns, libfido2, libcbor kurulu değil) | — | — | — | — | — | — | — |
-| vim (`vim`) | `vim` 9.2.1150; yama yok | derlenmedi (lua, ruby kurulu değil) | — | — | — | — | — | — | — |
+| openssh (`ssh`) | `openssh` 10.6p1_1; yama yok | `-w -Os -g` ve configure'un sertleştirme bayrakları (`-fstack-protector-strong`, `-ftrivial-auto-var-init=zero`, `-fzero-call-used-regs=used` vb.); bağlama `-lcrypto -lldns -lresolv -lz`, Kerberos, `-pie`, `-Wl,-headerpad_max_install_names`; kurulumda `STRIP_OPT=` (`install -s` kapalı) | `29bb4682e486571e48f67d99274820b8ed65677578d99704570184e4957fca51` | `227c97953c5108a41f228e65aff5d518d8faef5967da4c14634ded62edeca925` | `9567F9D8-2995-3481-A988-F82ED9DB2E52` | t=460, T=890 (nm -U 1512 satır) | evet | evet (yalnız `__mh_execute_header`) | 26.0 (SDK 26.5) |
+| vim (`vim`) | `vim` 9.2.1150; yama yok | `-w -Os -g`, `-D_FORTIFY_SOURCE=1` ve configure tanımları; Lua, Python 3 ve Ruby dinamik, Perl bağlı; bağlama `-lncurses -lsodium -lintl -liconv -lperl`, AppKit, 3 `-Wl,-rpath` (formüldeki gibi); kurulumda `STRIP=true` | `3cfc4d9cfbc376645cf101ec95329a329ea9802864779dca30dc3b03ceaba5dd` | `765b4b2b7f297167d57361774f8c1fc33e3a2006eba55734960103f8c78fa0ff` | `082B0AB5-1FD9-3099-BAAC-A578902DDFAE` | t=3665, T=4728 (nm -U 12728 satır) | evet | evet (yalnız `__mh_execute_header`) | 26.0 (SDK 26.5) |
 
 **Yöntem**
 - **Formül:** Şişenin içindeki `.brew/<formül>.rb` kullanıldı, yani şişeyi üreten formül.
   - unzip, zsh ve openssh: homebrew-core `bf7ada6` ile derleme adımları aynı. Fark yalnız bottle bloğu ve meta veri.
+  - openssh: şişe homebrew-core `b194c2fc3de7`'de ("openssh: update 10.6p1_1 bottle.", 2026-10-08, openssl@4 geçişi) üretilmiş. O commit'teki formül şişedekiyle aynı; arm64_tahoe sha256'sı sabitlenen şişeninki.
   - vim: Homebrew 9.2.1200'e geçmiş. 9.2.1150 formülü homebrew-core `8bebb800c2da`'da ("vim: update 9.2.1150 bottle.", 2026-09-30) şişedekiyle aynı. O commit'teki arm64_tahoe sha256'sı sabitlenen şişeninkiyle aynı.
 - **Kaynaklar:** `brew fetch --build-from-source` ile indirildi. vim eski sürüm olduğu için formüldeki adresten `curl` ile alındı. Hepsinin sha256'sı formülle eşleşti.
 - **Derleyici sarmalayıcısı:** Homebrew'un kendi superenv kabukları kullanıldı (`shims/super/cc`, `shims/mac/super/bin/make` ve `xcrun`). Ortam `env -i` ile sıfırlandı, superenv'in koyduğu değişkenler elle verildi. Kabuk en sonda Apple clang'ı (`/usr/bin/clang`, 21.0.0) çağırıyor.
   - Gerekçe: superenv `make` altında bayrakları yeniden yazıyor. Derleme sisteminin `-O…` ve `-g…` bayraklarını ve uyarı bayraklarının çoğunu (`-W…`; `-Wl,`, `-Wno-…` gibileri kalır) siliyor, yerine `-w -Os` koyuyor; arm64 şişelerinde `HOMEBREW_OPTFLAGS` boş. Yani şişeler `-O2` ile değil `-Os` ile derlenmiş. Bu `CFLAGS` ile taklit edilemez; örneğin unzip'in `macosx` hedefi `-O3`'ü alt make'e kendisi veriyor.
-  - `-g` için `HOMEBREW_CCCFG`'ye `D` eklendi (Homebrew'un `--debug-symbols` kipi). Bu kip `-ffile-prefix-map` ve `-Wl,-oso_prefix` eklemiyor. İkisi yalnız gömülü yol dizgilerini ve debug map'i etkiler. Derleme göreli yollarla yapıldığından analiz kopyasında fark yaratmaz.
-  - Derleme günlüğünden sayıldı (`bayrak_ozeti.py`, configure denemeleri hariç): unzip'in 35, zsh'nin 86 derleme çağrısının hepsinde `-Os -g -w` var. `-O1`/`-O2`/`-O3`, `-Wl,-x`, `-Wl,-S` ve `-s` hiçbirinde yok.
+  - `-g` için `HOMEBREW_CCCFG`'ye `D` eklendi (Homebrew'un `--debug-symbols` kipi). Bu kip `-ffile-prefix-map` ve `-Wl,-oso_prefix` eklemiyor. İlk turda "analiz kopyasında fark yaratmaz" diye yazılmıştı; openssh ve vim'deki kıyas derlemesi bunu yanlışladı. Küçük bir fark var: birkaç bayt, fonksiyon sayısı aynı (sapma 7).
+  - Derleme günlüğünden sayıldı (`bayrak_ozeti.py`, configure denemeleri hariç): unzip'in 35, zsh'nin 86, openssh'ın 240, vim'in 152 derleme çağrısının hepsinde `-Os -g -w` var. `-O1`/`-O2`/`-O3`, `-Wl,-x`, `-Wl,-S` ve `-s` hiçbirinde yok.
 - **Ortam:**
   - PATH: superenv kabukları, bağımlılıkların `opt/bin`'i ve `/usr/bin:/bin:/usr/sbin:/sbin`. Bu superenv'in kendi PATH'i. `/opt/homebrew/bin` bilerek konmadı, çünkü orada bağımlılık olmayan formüllerin araçları da var. Conda yolu yok.
   - `LC_ALL=en_US.UTF-8`, `TZ=UTC0`, `ZERO_AR_DATE=1`, `am_cv_func_iconv_works=yes`, `make -j6`.
-  - `SOURCE_DATE_EPOCH`: şişe tab'ındaki `source_modified_time` (unzip 1240192822, zsh 1783881774).
+  - `SOURCE_DATE_EPOCH`: şişe tab'ındaki `source_modified_time` (unzip 1240192822, zsh 1783881774, openssh 1791276331, vim 1790706006).
+  - Bağımlılık listesi şişe dönemindeki kümedir. openssh'ta PATH'e şişe dönemindeki python@3.14 verildi; bugünkü ldns python@3.15'e bağlı. ssh derlemesi python kullanmıyor. vim'de formülün istediği gibi python@3.14'ün `libexec/bin`'i PATH'in başına kondu.
   - SDK: `MacOSX26.sdk` (26.5), Homebrew'un bu makinede seçeceği SDK. Minimum macOS 26.0, şişelerle aynı.
   - Başlık ve kütüphane yolları: yalnız bağımlılıkların `opt/` dizinleri (bkz. sapma 5).
 - **Koruma:** Derleme ve kurulum `sandbox-exec` altında çalıştı; `/opt/homebrew` altına yazma çekirdek düzeyinde engellendi. Sistem Homebrew'u değişmedi, `Cellar/` altında iz yok.
 - **Strip'in kapatılması:**
   - unzip: `STRIP=true`. `macosx` hedefi derlemeden sonra `$(STRIP) $(UNZIPS)` çalıştırıyor. Bağlamada `-s` zaten yok (`LF2=""`); kurulum `cp` ile.
   - zsh: `LDFLAGS` tanımlı ama boş verildi. configure, `LDFLAGS` tanımsızsa darwin'de `LDFLAGS=-Wl,-x` koyuyor. Şişedeki nlocalsym=0'ın sebebi bu (§4.3 madde 2). Kurulumdaki `STRIPFLAGS` zaten boş.
-- **Kurulum:** zsh, ikiliye gömülü yollar şişeyle aynı olsun diye `--prefix=/opt/homebrew/Cellar/zsh/5.9.2` ile yapılandırıldı ve `make install DESTDIR=…/prefix` ile kendi önekimize kuruldu. unzip'te önek ikiliye gömülmüyor; doğrudan `prefix/`'e kuruldu.
+  - openssh: `STRIP_OPT=`. Varsayılanı `-s`; kurulum `install -m 0755 -s` ile soyuyordu.
+  - vim: `STRIP=true`. Kurulum hedefi `$(STRIP)` ile ikiliyi soyuyordu.
+- **Kurulum:** İkiliye gömülen yollar şişeyle aynı olsun diye her program Homebrew'un önekleriyle yapılandırıldı, `DESTDIR=…/prefix` ile kendi önekimize kuruldu.
+  - zsh: `--prefix=/opt/homebrew/Cellar/zsh/5.9.2`, `make install`.
+  - openssh: `--prefix=/opt/homebrew/Cellar/openssh/10.6p1_1`, `--sysconfdir=/opt/homebrew/etc/ssh`. `make install` yerine `make install-nokeys` kullanıldı: `install` ayrıca host anahtarı üretiyor ve kurulan sshd ile yapılandırma denetimi çalıştırıyor. İkilileri etkilemez. Derlenen ssh ve sshd hiç çalıştırılmadı.
+  - vim: `--prefix=/opt/homebrew`, ardından `make install prefix=/opt/homebrew/Cellar/vim/9.2.1150` (formüldeki gibi). Kurulum, yardım etiketlerini üretmek için derlenen vim'i çalıştırıyor.
+  - unzip'te önek ikiliye gömülmüyor; doğrudan `prefix/`'e kuruldu.
 - **dSYM ve analiz kopyası:** dSYM `/usr/bin/dsymutil` ile üretildi, uyarı yok. Analiz kopyası `/usr/bin/strip` ile (mutlak yol) soyuldu.
 
 **Doğrulamalar (yalnız sayılar; iki değer varsa bizim / şişe)**
 
-| Ölçüt | unzip | zsh |
-|---|---|---|
-| Mimari | arm64 / arm64 | arm64 / arm64 |
-| nm -U (GT / şişe) | 541 (t=20, T=87) / 1 (t=0, T=1) | 1641 (t=335, T=758) / 1045 (t=0, T=758) |
-| nm -U (analiz kopyası) | 1 (yalnız `__mh_execute_header`) | 1 (yalnız `__mh_execute_header`) |
-| nm -u (dışarıdan alınan semboller) | 85 / 85 | 193 / 193 |
-| Fonksiyon başlangıcı (`dyld_info -function_starts`) | 106 / 105 | 1090 / 1090 |
-| `__TEXT,__text` (bayt) | 90 020 / 92 956 | 478 396 / 477 936 |
-| Bağlı kütüphaneler | aynı: libiconv, libbz2, libSystem | aynı: ncursesw 6, pcre2-8, libiconv, libSystem |
-| LC_BUILD_VERSION minos / SDK / ld | 26.0 / 26.5 / 27037.1 — şişe: 26.0 / 26.0 / 1221.4 | 26.0 / 26.5 / 27037.1 — şişe: 26.0 / 26.4 / 1266.8 |
-| dSYM: derleme birimi, `DW_TAG_subprogram` | 16, 404 | 32, 3128 |
-| dSYM DWARF sha256 | `40633ecb6b0e39eebc7647c2338d6b2d4c20b318931bee799f2104a0bebc8621` | `e78af5e7c85d6c18e175eacc6f5f33b75f648fc4158276bc29243f593869d031` |
-| Export trie (GT → analiz) | 113 → 1 | 1045 → 1 |
-| Kod imzası (GT ve analiz) | geçerli (ad-hoc, linker-signed) | geçerli (ad-hoc, linker-signed) |
+| Ölçüt | unzip | zsh | ssh | vim |
+|---|---|---|---|---|
+| Mimari | arm64 / arm64 | arm64 / arm64 | arm64 / arm64 | arm64 / arm64 |
+| nm -U (GT / şişe) | 541 (t=20, T=87) / 1 (t=0, T=1) | 1641 (t=335, T=758) / 1045 (t=0, T=758) | 1512 (t=460, T=890) / 1 (t=0, T=1) | 12728 (t=3665, T=4728) / 1 (t=0, T=1) |
+| nm -U (analiz kopyası) | 1 (yalnız `__mh_execute_header`) | 1 (yalnız `__mh_execute_header`) | 1 (yalnız `__mh_execute_header`) | 1 (yalnız `__mh_execute_header`) |
+| nm -u (dışarıdan alınan semboller) | 85 / 85 | 193 / 193 | 430 / 430 | 357 / 357 |
+| Fonksiyon başlangıcı (`dyld_info -function_starts`) | 106 / 105 | 1090 / 1090 | 1332 / 1332 | 8183 / 8183 |
+| `__TEXT,__text` (bayt) | 90 020 / 92 956 | 478 396 / 477 936 | 634 344 / 634 332 | 2 607 192 / 2 607 184 |
+| Bağlı kütüphaneler | aynı: libiconv, libbz2, libSystem | aynı: ncursesw 6, pcre2-8, libiconv, libSystem | aynı: libcrypto.4 (openssl@4), libldns.3, libresolv, libz, Kerberos, libSystem | aynı: ncursesw 6, libsodium.26, libintl.8, libiconv, libperl (sistem 5.34), AppKit, CoreFoundation, CoreServices, Foundation, libobjc, libSystem |
+| LC_RPATH | yok / yok | yok / yok | yok / yok | aynı: 3 kayıt (`@loader_path/../../../../opt/{lua,python@3.14,ruby}/lib`) |
+| LC_BUILD_VERSION minos / SDK / ld | 26.0 / 26.5 / 27037.1 — şişe: 26.0 / 26.0 / 1221.4 | 26.0 / 26.5 / 27037.1 — şişe: 26.0 / 26.4 / 1266.8 | 26.0 / 26.5 / 27037.1 — şişeyle aynı | 26.0 / 26.5 / 27037.1 — şişeyle aynı |
+| dSYM: derleme birimi, `DW_TAG_subprogram` | 16, 404 | 32, 3128 | 95, 5122 | 149, 23597 |
+| dSYM DWARF sha256 | `40633ecb6b0e39eebc7647c2338d6b2d4c20b318931bee799f2104a0bebc8621` | `e78af5e7c85d6c18e175eacc6f5f33b75f648fc4158276bc29243f593869d031` | `4a3942033b0783618d1d08a42346d887103d65a8136ab8caad977309e04eef78` | `db9b6c0584ce012e9b0cac5dccc556078b0ecab7b54c96e3f366fd9ef695f9f9` |
+| Export trie (GT → analiz) | 113 → 1 | 1045 → 1 | 941 → 1 | 7145 → 1 |
+| Kod imzası (GT ve analiz) | geçerli (ad-hoc, linker-signed) | geçerli (ad-hoc, linker-signed) | geçerli (ad-hoc, linker-signed) | geçerli (ad-hoc, linker-signed) |
+| Derleme süresi (configure + make + kurulum) | 2 sn (yama hariç) | 77 sn | 79 sn | 47 sn |
 
-- **Yeniden derleme denemesi:** Aynı betikler `.tekrar/<program>/` altında ikinci kez çalıştırıldı. İki derlemenin analiz kopyalarında bütün bölümler bayt bayt aynı çıktı (`bolum_ozeti.py`). Farklı olan yalnız LC_UUID; bu yüzden dosya sha256'sı ve imza da farklı. Sebep: ld, UUID'yi debug map'teki mutlak `.o` yollarını da katarak hesaplıyor. Aynı dizinde bit bit aynılık denenmedi.
+- **Yeniden derleme denemesi (unzip, zsh):** Aynı betikler `.tekrar/<program>/` altında ikinci kez çalıştırıldı. İki derlemenin analiz kopyalarında bütün bölümler bayt bayt aynı çıktı (`bolum_ozeti.py`). Farklı olan yalnız LC_UUID; bu yüzden dosya sha256'sı ve imza da farklı. Sebep: ld, UUID'yi debug map'teki mutlak `.o` yollarını da katarak hesaplıyor. Aynı dizinde bit bit aynılık denenmedi.
+- **Şişe kipinde kıyas derlemesi (openssh, vim):** Aynı betikler `.tekrar/<program>-sisekipi/` altında `HOMEBREW_CCCFG=f` ile çalıştırıldı. Bu, şişenin superenv bayraklarının birebir aynısı: `-g` yok, `-ffile-prefix-map` ve `-Wl,-oso_prefix` var. Bölümler `bolum_kiyas.py` ile kıyaslandı (yalnız boyut ve sha256 eşitliği):
+  - ssh: bütün bölümler şişeyle bayt bayt aynı; fonksiyon başlangıç adresleri de aynı. LC_UUID bile şişeninkiyle aynı: `526841B8-52EA-38DC-9C75-2938207732B0` (§4.1). Yani bağımlılık sürüm farkları (sapma 10) ssh'i hiç etkilemiyor. GT kipindeki fark (`__text` +12, `__cstring` +2 bayt) yalnız `D` kipinden geliyor.
+  - vim: fonksiyon başlangıç adresleri şişeyle aynı, `__text` boyutu aynı; ama `__cstring` 109 bayt büyük. Dizgi adreslerine dokunan bölümlerin içeriği de farklı (`__text` dahil). Bunun +109 baytın kaydırdığı adreslerden geldiği düşünülüyor; doğrulanmadı. Aynı +109 bayt GT kipinde de var; yani `D` kipinden değil, ortamdan ya da bağımlılıklardan geliyor (sapma 12). `D` kipinin vim'e eklediği fark: `__text` +8 bayt.
+  - Kıyas derlemelerinin dosyaları (`.tekrar/<program>-sisekipi/`):
+
+    | Program | sha256 (GT, sembollü) | sha256 (`/usr/bin/strip` kopyası) | UUID | nm -U t/T |
+    |---|---|---|---|---|
+    | ssh | `d9714e326cebd3b2e4da858fa078722d8dcd8376152051f596d07741c9f3e2c2` | `5c7c5f9b95bb30b7929a780fcce523773acddead118b9df32ad7388d0f826d7e` | `526841B8-52EA-38DC-9C75-2938207732B0` (şişeyle aynı) | t=460, T=890 |
+    | vim | `53b3fd1e749bcb9135d453d391d7109f545086da3a73ddb4c291fc38db84ec6a` | `7260630bec478107b93e1a262f3291b674be689099947d09fe6607404cce85aa` | `F7A7221B-D455-32EE-9436-D0EF893DC749` (şişede `1821A35C-…`) | t=3665, T=4728 |
+
+  - Şimdilik yalnız kıyas içindir, ölçümde kullanılmaz. Ölçüm için bir seçenek doğuruyorlar; bkz. "Açık sorunlar" madde 6.
 
 **Şişeden sapmalar**
-1. **Amaçlananlar:** `-g` (debug map ve dSYM) ve strip'in kapatılması (unzip'te `strip` adımı, zsh'de `-Wl,-x`).
-2. **Derleyici:** CLT 27.0 (Apple clang 21.0.0, ld 27037.1). Şişeler unzip'te CLT 26.0, zsh'de CLT 26.4 ile derlenmiş. Gözlenen fark: unzip'te fonksiyon başlangıcı 106 / 105 ve `__text` %3,2 küçük; zsh'de fonksiyon sayısı aynı, `__text` %0,1 büyük. Derleyici ve SDK sürümü dışında bilinen bir sebep yok. openssh ve vim şişeleri bu makinedekiyle aynı CLT ile (27.0.0.0.1788430756) derlenmiş.
-3. **SDK:** 26.5 (şişeler: unzip 26.0, zsh 26.4). Minimum macOS aynı (26.0).
+1. **Amaçlananlar:** `-g` (debug map ve dSYM) ve strip'in kapatılması: unzip'te `strip` adımı, zsh'de `-Wl,-x`, openssh'ta `install -s`, vim'de kurulumdaki `strip`.
+2. **Derleyici:** CLT 27.0 (Apple clang 21.0.0, ld 27037.1). Şişeler unzip'te CLT 26.0, zsh'de CLT 26.4 ile derlenmiş. Gözlenen fark: unzip'te fonksiyon başlangıcı 106 / 105 ve `__text` %3,2 küçük; zsh'de fonksiyon sayısı aynı, `__text` %0,1 büyük. Derleyici ve SDK sürümü dışında bilinen bir sebep yok. openssh ve vim şişeleri bu makinedekiyle aynı CLT ile (27.0.0.0.1788430756) derlenmiş; bu ikisinde derleyici farkı yok.
+3. **SDK:** 26.5. Şişeler: unzip 26.0, zsh 26.4, openssh ve vim 26.5 (aynı). Minimum macOS dördünde de aynı (26.0).
 4. **pcre2:** 10.49; zsh şişesi 10.47_1 ile derlenmiş. Ana ikili pcre2'ye yalnız bağlanıyor; pcre kodu `pcre.bundle` modülünde ve modüller ölçüm dışı. ncurses 6.6, şişedekiyle aynı.
 5. **Başlık ve kütüphane yolları:** Superenv `/opt/homebrew/include` ve `/opt/homebrew/lib`'i veriyor. Şişelerin derlendiği CI makinesinde orada yalnız bağımlılıklar var; bu makinede `/opt/homebrew/include` 859 girdi içeriyor. Bu yüzden yalnız bağımlılıkların `opt/` dizinleri verildi.
 6. **Atlanan belge adımları:** zsh'de `make install.info` (texinfo kurulu değil) ve htmldoc kaynağı. İkiliyi etkilemez.
-7. **Yol eşlemesi:** `-ffile-prefix-map` ve `-Wl,-oso_prefix` yok (bkz. Yöntem). GT'nin debug map'i mutlak derleme yollarını içeriyor; analiz kopyasında debug map yok.
+7. **Yol eşlemesi (`D` kipi):** `-ffile-prefix-map` ve `-Wl,-oso_prefix` yok (bkz. Yöntem). GT'nin debug map'i mutlak derleme yollarını içeriyor; analiz kopyasında debug map yok. Kıyas derlemesinde ölçülen etki (bkz. "Şişe kipinde kıyas derlemesi"): ssh'te `__text` +12, `__cstring` +2 bayt; vim'de `__text` +8 bayt. Fonksiyon sayısı değişmiyor; fonksiyon adresleri kayıyor.
 8. **Dosya kopyaları:** Şişede `bin/zsh` ile `bin/zsh-5.9.2`'nin boyutları farklıydı (§4.3 madde 2). Bizim kurulumda ikisi aynı dosya (sabit bağ).
 9. **Yalıtım (kural 2) kaydı:** .c/.h dosyalarına ve ikililerin içeriğine bakılmadı. Strip mekanizmasını bulmak için yalnız Makefile ve configure'un ilgili satırları okundu. Bir kez, unzip derleme günlüğünün son 3 satırı (bağlama komutları; yalnız nesne dosyası adları, bazıları genel kavram adı) ajan oturumuna düştü; belgeye girmedi.
+   - İkinci olay (vim): Derleme bayraklarının özeti alınırken, vim'in alt kütüphane derlemesindeki dört `-D…=…` makrosunun değeri oturum çıktısına düştü. Bu değerler vim'in kendi fonksiyon adlarıydı. Ne bu belgeye ne ana oturuma giden rapora yazıldı. `bayrak_ozeti.py` artık `-D` değerlerini maskeliyor.
+10. **Bağımlılık sürümleri (openssh, vim):** Şişe dönemi, şişe tab'ından (openssh) ya da homebrew-core geçmişinden (vim'in build bağımlılıkları) alındı; karşısında 2026-10-19'da kurulu olan.
+
+    | Bağımlılık | Şişe derlemesinde | 2026-10-19 kurulu |
+    |---|---|---|
+    | ldns (openssh) | 1.9.2_1, şişe rebuild 0, python@3.14'e bağlı | 1.9.2_1, şişe rebuild 1 (2026-10-13), python@3.15'e bağlı |
+    | libfido2 (openssh) | 1.17.0_1, rebuild 0 | aynı |
+    | libcbor (openssh) | 0.14.0, rebuild 0 | aynı |
+    | openssl@4 (openssh) | 4.0.3 | aynı |
+    | python (ldns'in bağımlılığı) | python@3.14 3.14.8_1 | python@3.15 3.15.0; derlemede PATH'te python@3.14 3.14.8_2 |
+    | lua (vim, build) | 5.5.1 | aynı |
+    | ruby (vim, build) | 4.0.7 (openssl@3 dönemi) | 4.0.7_1 (2026-10-08 openssl@4 revizyonu) |
+    | python@3.14 (vim, build) | 3.14.7 | 3.14.8_2 |
+    | gettext (vim) | 1.0, şişe rebuild 2 | 1.0; kurulu şişe 2026-01-30'da kurulmuş, rebuild 2'den eski |
+    | libsodium, ncurses (vim) | 1.0.22, 6.6 | aynı |
+
+    - İkiliye etkisi, şişeyle kıyasla: bağlı kütüphane kümesi ve vim'in LC_RPATH'leri şişeyle aynı. Kütüphane sürüm alanları da aynı (ör. libintl 13.0.0/13.6.0, libldns 13.0.0).
+    - Fonksiyon başlangıcı ssh'te 1332 / 1332, vim'de 8183 / 8183.
+    - `__text`, şişe kipindeki kıyas derlemesinde ssh'te bayt bayt aynı, vim'de boyutça aynı.
+11. **openssh kurulum hedefi:** `make install` yerine `make install-nokeys`. Fark host anahtarı üretimi ve sshd yapılandırma denetimi; ikilileri etkilemez.
+12. **vim `__cstring` +109 bayt:** Hem GT hem şişe kipinde var; `D` kipinden bağımsız. Sebebi belirlenmedi, çünkü ikili içeriğine ve üretilen kaynak dosyalara bakılmadı. Aday: configure'un bulduğu ve vim'in ikiliye gömdüğü yol ve sürüm dizgileri (ör. ruby 4.0.7_1 yolu, sistem perl yapılandırması). Fonksiyon kümesini ve kod yerleşimini etkilemiyor.
 
 **Açık sorunlar (karar ana oturumun)**
-1. **openssh (`ssh`):** ldns, libfido2 ve libcbor kurulu değil; görev kuralı gereği kurulmadı.
-   - `ssh` ikilisi ldns'e bağlanıyor. configure, `--with-security-key-builtin` için libfido2'yi arıyor.
-   - Şişe ldns 1.9.2_1, libfido2 1.17.0_1 ve libcbor 0.14.0 ile derlenmiş. Homebrew'daki güncel sürümler bunlarla aynı, ama ldns artık python@3.15'e bağlı (şişe döneminde python@3.14).
-   - Kaynak indirildi, sha256 eşleşti. `betikler/openssh.sh` hazır; bağımlılık denetiminde duruyor, ötesi denenmedi.
-2. **vim:** lua ve ruby kurulu değil. İkisi de build bağımlılığı. Formül `--enable-luainterp=dynamic` ve `--enable-rubyinterp=dynamic` veriyor; bunlar olmadan configure bu arayüzleri derlemez ve fonksiyon kümesi şişeden ayrılır. Kaynak (9.2.1150) indirildi, sha256 eşleşti. `betikler/vim.sh` hazır; denenmedi.
-3. **Seçenekler:**
-   - (a) Berke'nin onayıyla `brew install ldns libfido2 lua ruby`. Sistem değişir; ruby libyaml'ı, ldns python@3.15'i de getirir.
-   - (b) Bu formüllerin şişelerini `brew fetch` ile indirip yalıtılmış bir öneke açmak. Sistem değişmez, ama bağlanan kütüphanelerin kurulum adlarını şişedekiyle aynı tutmak ek iş ister.
-   - (c) Bu iki program için §4.3 madde 1'deki öteki seçeneklere dönmek.
+1. **KAPANDI — openssh ve vim bağımlılıkları (2026-10-19):** İlk turda ldns, libfido2, libcbor (openssh) ile lua ve ruby (vim) kurulu değildi.
+   - Seçenek (a) uygulandı: ana oturum, Berke'nin onayıyla, `HOMEBREW_NO_INSTALL_UPGRADE=1` ile kurdu; mevcut hiçbir paket yükseltilmedi.
+   - Kurulanlar: ldns 1.9.2_1, libfido2 1.17.0_1, libcbor 0.14.0, lua 5.5.1, ruby 4.0.7_1. Bağımlılık olarak python@3.15 3.15.0 ve libyaml 0.2.5 de geldi.
+   - Şişe dönemindeki sürümlerle kıyas ve ikiliye etkisi: sapma 10.
+   - Sonra iki program da derlendi (tablo).
+2. **vim `__cstring` farkı (sapma 12):** Sebebi istenirse configure'un ürettiği değişkenler şişe dönemi bağımlılıklarıyla kıyaslanarak bulunabilir. Bunun için üretilen yapı dosyalarına bakmak gerekir; karar ana oturumun.
+3. **Yalıtım olayları (sapma 9):** vim'in dört fonksiyon adı ajan oturumunun çıktısına düştü; rapora ve belgeye girmedi. Ana oturumun bağlamına girmediler. Kayıt dışında bir işlem gerekip gerekmediğine ana oturum karar verir.
 4. **vim şişesi güncel değil:** Sabitlenen şişe (9.2.1150, rebuild 0) artık homebrew-core'daki güncel şişe değil. 2026-10-14'te python@3.15 geçişiyle rebuild 1 çıktı (`67e7f9f31a30`), 2026-10-15'te de 9.2.1200 geldi. Kaynaktan derleme, sabitlenen şişenin formülünü (python@3.14) izler.
-5. **`.tekrar/`** (64 MB) yalnız yeniden derleme denemesi için; silinebilir.
+5. **`.tekrar/`** (237 MB) yalnız yeniden derleme ve şişe kipi kıyas derlemeleri için; şu an ölçümde kullanılmıyor. Silinebilir (onay gerekiyor). Madde 6'daki seçenek seçilirse `-sisekipi` dizinleri silinmemeli, taşınmalı.
+6. **Seçenek — analiz girdisi olarak şişenin kendisi:** Şişe kipindeki kıyas derlemesi sembol tablosunu koruyor (nm -U, GT kipiyle aynı t/T). Fonksiyon başlangıç adresleri de şişeyle aynı: ssh'te dosya düzeyinde (UUID aynı), vim'de adres listesi düzeyinde.
+   - Bu yüzden ssh ve vim için analiz girdisi §4.1'de sabitlenen şişe olabilir; gerçek isimler, adresleri birebir örtüşen kıyas derlemesinin `nm` çıktısından alınır. O zaman bu iki programda analiz girdisi şişenin ta kendisi olur, sapma kalmaz.
+   - Bedeli: bu derlemelerde `-g` yok, dolayısıyla dSYM/DWARF yok. İsimler var; yerel değişken ve tür bilgisi yok.
+   - unzip ve zsh'de bu yol yok, çünkü şişeleri başka CLT ile derlenmiş (sapma 2).
+   - Karar ana oturumun. Seçilirse kıyas dosyalarının sha256'ları yukarıdaki tabloda.
+
+**Kararlar (ana oturum, 2026-10-19)**
+- **Madde 6 — analiz girdisi:** dört programda da §4.4'teki yöntem kalır: analiz girdisi kendi `-g` derlememizin `/usr/bin/strip` ile soyulmuş kopyası, gerçek isimler aynı derlemenin `nm` çıktısı. Gerekçe: yöntem dört programda aynı kalır ve dSYM/DWARF korunur. ssh'te şişe kipi kıyas derlemesinin UUID'yi birebir tutturması, derleme ortamının şişeyi yeniden üretebildiğini gösteren kanıt olarak kayda geçer. `-g` kipinin getirdiği fark bayt düzeyinde (ssh `__text` +12, vim +8).
+- **Madde 2 — vim `__cstring` +109 bayt:** araştırılmıyor. Fark iki kipte de var, fonksiyon kodunu ve adreslerini değiştirmiyor. Olası kaynak, ikiliye gömülen derleme bilgisi dizgileridir; doğrulanmadı.
+- **Madde 3 — yalıtım olayı:** kayıt yeterli. Ajan oturumu kapandı, adlar ana oturumun bağlamına girmedi. Betiğin `-D` değerlerini maskelemesi kalıcı önlem.
+- **Madde 5 — `.tekrar/`:** şişe kipi kıyas derlemeleri yeniden üretim kanıtı olarak şimdilik kalır. Silmek Berke'nin onayına bağlı.

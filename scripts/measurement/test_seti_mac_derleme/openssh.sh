@@ -4,15 +4,17 @@
 # Formül: ../openssh/indirilen/formul-sise-openssh.rb (şişedeki .brew/openssh.rb;
 # homebrew-core bf7ada6 ile derleme adımları aynı).
 #
-# DURUM (2026-10-19): ÇALIŞTIRILMADI. ldns, libfido2 (ve libcbor) kurulu değil;
-# görev kuralı gereği kurulmadı. Bağımlılıklar kurulunca bu betik olduğu gibi çalışır.
+# DURUM (2026-10-19): ldns 1.9.2_1, libfido2 1.17.0_1, libcbor 0.14.0 ana oturum tarafından
+# (Berke onayıyla) kuruldu. Bağımlılık listesi şişe tab'ındaki (2026-10-08 derlemesi) kümedir;
+# python olarak şişe dönemindeki python@3.14 verilir (bugünkü ldns python@3.15'e bağlı; ssh
+# derlemesi python kullanmaz, yalnız PATH'i etkiler).
 # Derlenen ssh ÇALIŞTIRILMAZ; "make install" yerine "make install-nokeys" kullanılır
 # (install hedefi host anahtarı üretimi ve kurulu sshd ile config denetimi çalıştırıyor;
 # ikilileri etkilemez).
 set -euo pipefail
 source "$(dirname "$0")/ortam.sh"
 
-P=$KOK/openssh
+P=${P_OVERRIDE:-$KOK/openssh}   # P_OVERRIDE: kıyas denemesi için ayrı dizin
 # superenv sırası (DFS): build -> pkgconf; ldns -> openssl@4 (ca-certificates), python@3.x
 # (mpdecimal, readline, sqlite, xz, lz4, zstd); libfido2 -> libcbor
 BAGIMLILIKLAR="pkgconf ca-certificates openssl@4 mpdecimal readline sqlite xz lz4 zstd python@3.14 ldns libcbor libfido2"

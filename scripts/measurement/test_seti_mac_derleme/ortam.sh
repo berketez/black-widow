@@ -96,7 +96,7 @@ superenv_ortami_kur() {
     PKG_CONFIG_LIBDIR="/usr/lib/pkgconfig:$MAC_PKGCONFIG"
     HOMEBREW_ENV=super
     HOMEBREW_CC=clang
-    HOMEBREW_CCCFG=fD
+    HOMEBREW_CCCFG="${CCCFG_OVERRIDE:-fD}"   # CCCFG_OVERRIDE=f: şişe kipi (-g yok, yol eşlemesi var), yalnız kıyas denemesi için
     HOMEBREW_OPTIMIZATION_LEVEL=Os
     HOMEBREW_OPTFLAGS=
     HOMEBREW_MAKE_JOBS="$IS_SAYISI"

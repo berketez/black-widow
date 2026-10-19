@@ -24,6 +24,10 @@ def bayraklar(satir):
             continue
         if a.endswith(DOSYA_UZANTILARI) or (not a.startswith("-") and "/" not in a and "." in a):
             continue
+        # -DAD=DEĞER: değer, programın kendi fonksiyon adı olabilir (ör. vim'in libvterm
+        # derlemesi). Değer maskelenir; yalnız makro adı kalır (2026-10-19 düzeltmesi).
+        if a.startswith("-D") and "=" in a:
+            a = a.split("=", 1)[0] + "=<değer>"
         temiz.append(a)
     return arac, temiz
 

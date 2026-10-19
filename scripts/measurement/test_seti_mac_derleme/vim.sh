@@ -6,12 +6,13 @@
 # o commit'teki arm64_tahoe sha256'sı sabitlenen şişeninkiyle (4ec75a2d…) aynı.
 # Kaynak: indirilen/vim-9.2.1150.tar.gz (sha256 formülle eşleşti).
 #
-# DURUM (2026-10-19): ÇALIŞTIRILMADI. lua ve ruby (build bağımlılıkları; dinamik
-# arayüzler için configure bunları arıyor) kurulu değil; görev kuralı gereği kurulmadı.
+# DURUM (2026-10-19): lua 5.5.1 ve ruby 4.0.7_1 ana oturum tarafından (Berke onayıyla)
+# kuruldu. Şişe döneminde (2026-09-29/30) homebrew-core'da lua 5.5.1, ruby 4.0.7 (openssl@3),
+# python@3.14 3.14.7 vardı; bugün ruby 4.0.7_1 (openssl@4), python@3.14 3.14.8_2.
 set -euo pipefail
 source "$(dirname "$0")/ortam.sh"
 
-P=$KOK/vim
+P=${P_OVERRIDE:-$KOK/vim}   # P_OVERRIDE: kıyas denemesi için ayrı dizin
 BAGIMLILIKLAR="gettext lua python@3.14 ruby libsodium ncurses json-c libunistring"
 KEG_ONLY="ncurses"
 PY_BAGIMLILIK="python@3.14"
