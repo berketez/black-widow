@@ -1,0 +1,173 @@
+{
+  "_comment": "macho_f1.py / macho_measure.py ölçüm kurallarının mutation koruması (plan v2 G3d). Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı. Koşum: python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_macho.json",
+  "mutants": [
+    {
+      "id": "M1_cold_rule_off",
+      "desc": ".cold.N parçaları program sınıfına düşer",
+      "module": "scripts/measurement/macho_f1.py",
+      "test": "tests/test_macho_f1.py",
+      "find": "    (CLASS_COLD, re.compile(r\"\\.cold(?:\\.\\d+)?$\")),",
+      "replace": "    (CLASS_COLD, re.compile(r\"\\.cold_never$\")),"
+    },
+    {
+      "id": "M2_outlined_rule_no_underscore",
+      "desc": "Mach-O'nun baştaki _'si unutulur: _OUTLINED_FUNCTION_0 program sayılır",
+      "module": "scripts/measurement/macho_f1.py",
+      "test": "tests/test_macho_f1.py",
+      "find": "re.compile(r\"^_?OUTLINED_FUNCTION_\\d+$\")",
+      "replace": "re.compile(r\"^OUTLINED_FUNCTION_\\d+$\")"
+    },
+    {
+      "id": "M3_llvm_suffix_off",
+      "desc": ".llvm.<sayı> eki soyulmaz",
+      "module": "scripts/measurement/macho_f1.py",
+      "test": "tests/test_macho_f1.py",
+      "find": "    re.compile(r\"\\.llvm\\.\\d+$\"),",
+      "replace": "    re.compile(r\"\\.llvm\\.NEVER$\"),"
+    },
+    {
+      "id": "M4_darwin_variant_off",
+      "desc": "$INODE64 gibi Darwin varyant ekleri soyulmaz",
+      "module": "scripts/measurement/macho_f1.py",
+      "test": "tests/test_macho_f1.py",
+      "find": "re.compile(r\"(?<=[A-Za-z0-9])\\$[A-Za-z0-9_]+$\")",
+      "replace": "re.compile(r\"(?<=[A-Za-z0-9])\\$NEVER$\")"
+    },
+    {
+      "id": "M5_row_key_renamed",
+      "desc": "satır şemasında eski 'lenient' anahtarı yeniden adlandırılır",
+      "module": "scripts/measurement/macho_f1.py",
+      "test": "tests/test_macho_f1.py",
+      "find": "\"lenient\": lenient, \"sinif\"",
+      "replace": "\"lenient_ok\": lenient, \"sinif\""
+    },
+    {
+      "id": "M6_ghidra_known_in_population",
+      "desc": "Ghidra'nın kendisinin bildiği ad popülasyona girer",
+      "module": "scripts/measurement/macho_f1.py",
+      "test": "tests/test_macho_f1.py",
+      "find": "        if not is_generic_name(gfn[\"name\"], [addr]):",
+      "replace": "        if False and not is_generic_name(gfn[\"name\"], [addr]):"
+    },
+    {
+      "id": "M7_thunk_counted",
+      "desc": "Ghidra thunk'ı popülasyon fonksiyonu sayılır",
+      "module": "scripts/measurement/macho_f1.py",
+      "test": "tests/test_macho_f1.py",
+      "find": "            thunk_addrs.add(fn[\"addr\"])\n            continue\n",
+      "replace": "            thunk_addrs.add(fn[\"addr\"])\n"
+    },
+    {
+      "id": "M8_nm_relative",
+      "desc": "nm PATH'ten (conda nm) çağrılır",
+      "module": "scripts/measurement/macho_f1.py",
+      "test": "tests/test_macho_f1.py",
+      "find": "NM_PATH = \"/usr/bin/nm\"",
+      "replace": "NM_PATH = \"nm\""
+    },
+    {
+      "id": "M9_strip_relative",
+      "desc": "strip PATH'ten (conda strip) çağrılır",
+      "module": "scripts/measurement/macho_measure.py",
+      "test": "tests/test_macho_measure.py",
+      "find": "STRIP_PATH = \"/usr/bin/strip\"",
+      "replace": "STRIP_PATH = \"strip\""
+    },
+    {
+      "id": "M10_export_check_off",
+      "desc": "export trie'de kalan adlar yok sayılır",
+      "module": "scripts/measurement/macho_measure.py",
+      "test": "tests/test_macho_measure.py",
+      "find": "    extra = sorted(set(names) - ALLOWED_EXPORTS)\n    if extra:",
+      "replace": "    extra = sorted(set(names) - ALLOWED_EXPORTS)\n    if extra and False:"
+    },
+    {
+      "id": "M11_pinned_ghidra_off",
+      "desc": "analyze sabitlenen Ghidra denetimini atlar",
+      "module": "scripts/measurement/macho_measure.py",
+      "test": "tests/test_macho_measure.py",
+      "find": "    meas.require_pinned_ghidra(gi, allow_other_ghidra)\n",
+      "replace": "\n"
+    },
+    {
+      "id": "M12_orig_sha_off",
+      "desc": "özgün ikilinin sha256 uyuşmazlığı yok sayılır",
+      "module": "scripts/measurement/macho_measure.py",
+      "test": "tests/test_macho_measure.py",
+      "find": "        if got != spec[\"orig\"][\"sha256\"]:",
+      "replace": "        if False and got != spec[\"orig\"][\"sha256\"]:"
+    },
+    {
+      "id": "M13_target_type_off",
+      "desc": "hedef türü denetimi kapalı (go_binary geçerli sayılır)",
+      "module": "scripts/measurement/macho_measure.py",
+      "test": "tests/test_macho_measure.py",
+      "find": "\"target_type_ok\": bool(tt) and all(v in MACHO_TARGET_TYPES for v in tt.values()),",
+      "replace": "\"target_type_ok\": True,"
+    },
+    {
+      "id": "M14_test_set_guard_off",
+      "desc": "test seti kilidi korpusta denetlenmez",
+      "module": "scripts/measurement/macho_measure.py",
+      "test": "tests/test_macho_measure.py",
+      "find": "        hits = {name, stem} & LOCKED_TEST_PROGRAMS",
+      "replace": "        hits = set()"
+    },
+    {
+      "id": "M15_ghidra_env_dropped",
+      "desc": "karadul'a sabitlenen Ghidra env ile verilmez",
+      "module": "scripts/measurement/macho_measure.py",
+      "test": "tests/test_macho_measure.py",
+      "find": "    env = dict(os.environ, PYTHONPATH=str(tree), GHIDRA_INSTALL_DIR=str(ghidra))",
+      "replace": "    env = dict(os.environ, PYTHONPATH=str(tree))"
+    },
+    {
+      "id": "M16_data_dir_home",
+      "desc": "varsayılan veri dizini ~/karadul_olcum_mac (Spotlight'ta)",
+      "module": "scripts/measurement/macho_measure.py",
+      "test": "tests/test_macho_measure.py",
+      "find": "str(REPO_ROOT / \"workspaces\" / \"olcum_mac\")",
+      "replace": "\"~/karadul_olcum_mac\""
+    },
+    {
+      "id": "M17_unverified_strip_kept",
+      "desc": "doğrulanmayan strip'li kopya silinmez (analiz edilebilir kalır)",
+      "module": "scripts/measurement/macho_measure.py",
+      "test": "tests/test_macho_measure.py",
+      "find": "            dst_bin.unlink(missing_ok=True)  # doğrulanmamış kopya analiz edilmesin\n",
+      "replace": "            pass\n"
+    },
+    {
+      "id": "M18_invalid_in_aggregate",
+      "desc": "geçersiz koşu toplamlara girer",
+      "module": "scripts/measurement/macho_measure.py",
+      "test": "tests/test_macho_measure.py",
+      "find": "    valid = [e for e in entries if e.get(\"valid\")]",
+      "replace": "    valid = list(entries)"
+    },
+    {
+      "id": "M19_engine_change_not_invalid",
+      "module": "scripts/measurement/macho_measure.py",
+      "desc": "koşu sırasında motor dosyası değişse de koşu geçerli sayılır",
+      "find": "            checks[\"valid\"] = False\n",
+      "replace": "",
+      "test": "tests/test_macho_measure.py"
+    },
+    {
+      "id": "M20_engine_paths_ignored",
+      "module": "scripts/measurement/macho_measure.py",
+      "desc": "değişen yollar arasında motor dosyası aranmaz",
+      "find": "    engine = {p for p in paths if is_engine_path(p)}",
+      "replace": "    engine: set[str] = set()",
+      "test": "tests/test_macho_measure.py"
+    },
+    {
+      "id": "M21_porcelain_fixed_offset",
+      "module": "scripts/measurement/macho_measure.py",
+      "desc": "porcelain satırı sabit ofsetle kesilir (strip'lenmiş ilk satırda harf kaybı)",
+      "find": "        parts = ln.strip().split(None, 1)",
+      "replace": "        parts = [ln[:2], ln[3:]]",
+      "test": "tests/test_macho_measure.py"
+    }
+  ]
+}

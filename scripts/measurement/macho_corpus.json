@@ -1,0 +1,44 @@
+{
+  "schema": "karadul-macho-corpus/1",
+  "description": "Mac (Mach-O) fonksiyon-ismi ölçüm korpusu. Her ikilinin sembollü özgünü yerel dosya yolundan alınır ve sha256 ile sabitlenir; karadul yalnız /usr/bin/strip ile soyulmuş kopyayı görür. Kümeler: 'gelistirme' (kuralların yazıldığı yer) ve 'dogrulama' (kapıların ölçüldüğü yer, plan v2 §3 madde 2). Test seti programları (docs/arge/test_seti_kilidi.md) bu dosyaya GİRMEZ; macho_measure.py test_seti_kura.py listesindeki adları reddeder.",
+  "binaries": {
+    "htop": {
+      "set": "gelistirme",
+      "arch": "arm64",
+      "orig": {
+        "path": "workspaces/2026-10-15_oturum_scratchpad/macho/orig/htop",
+        "sha256": "29449bae0a5bfe5fbfc0d165d29ab360ea098fc4ee2a7274f191e2dbc46f1158"
+      },
+      "expected_strip_sha256": "50d172cee23cb6f5793969e7612fd29723c4a927ea4161a7e8f039cfca70f1c3",
+      "homebrew": {
+        "formula": "htop",
+        "version": "3.5.3",
+        "bottle_tag": "arm64_tahoe",
+        "poured_from_bottle": true,
+        "cellar_path": "/opt/homebrew/Cellar/htop/3.5.3/bin/htop",
+        "receipt_built_on": {"os_version": "macOS 26", "xcode": "26.6", "clt": "26.6.0.0.1781586589"},
+        "note": "Şişe etiketi INSTALL_RECEIPT.json'daki API önbelleği adından (packages.arm64_tahoe.jws.json). Cellar'daki ikili özgünle bayt bayt aynı (sha256, 2026-10-19)."
+      },
+      "notes": "15 Ekim koşusunda karadul htop'u go_binary sandı (core/target.py; 0c9649e'de düzeltildi); o günkü htop sayıları geçersiz."
+    },
+    "tmux": {
+      "set": "gelistirme",
+      "arch": "arm64",
+      "orig": {
+        "path": "workspaces/2026-10-15_oturum_scratchpad/macho/orig/tmux",
+        "sha256": "dfbb8c547d6df2aafdf3d106bff3480b7e9a751753f9e77da0257897c629998b"
+      },
+      "expected_strip_sha256": "10fa041195a823953e2b207faeb4e34478048ba2c39d7f8fe6e7b9fc0c9997b7",
+      "homebrew": {
+        "formula": "tmux",
+        "version": "3.8",
+        "bottle_tag": "arm64_tahoe",
+        "poured_from_bottle": true,
+        "cellar_path": "/opt/homebrew/Cellar/tmux/3.8/bin/tmux",
+        "receipt_built_on": {"os_version": "macOS 26.6", "xcode": "27.0", "clt": "27.0.0.0.1788430756"},
+        "note": "Şişe etiketi INSTALL_RECEIPT.json'daki API önbelleği adından (packages.arm64_tahoe.jws.json). Cellar'daki ikili özgünle bayt bayt aynı (sha256, 2026-10-19)."
+      },
+      "notes": "GT'de 15 .cold.N ve 1 OUTLINED_FUNCTION parçası var (ayrı sınıf)."
+    }
+  }
+}

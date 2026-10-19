@@ -207,3 +207,155 @@ iki tarafı yeniden puanlayıp iki sayıyı birlikte raporlayın.
   (arayüz her analizi `--output-dir` ile başlatır); yani taban "kullanıcının aldığını" ölçer. Depo
   kökünden `--output-dir`'siz CLI koşusu FLIRT'ü açar ve farklı sonuç verir. Veri kökü sorunu
   çözülünce taban yeniden koşulmalı; iki koşuyu karıştırma.
+
+## 8. Mac (Mach-O) ölçüm hattı (plan v2 G3d)
+
+ELF hattıyla aynı düzen, ayrı dosyalar. İsim kuralları (normalizasyon, jenerik isim,
+strict/lenient) tek kaynaktan gelir: `function_f1.py`. Mac'e özgü olan yalnız GT okuma,
+popülasyon, derleyici parçası sınıfları ve sonek kurallarıdır.
+
+| Dosya | Görev |
+|---|---|
+| `macho_f1.py` | Puanlayıcı: GT (`nm`), popülasyon, sınıflar, sonek kuralları, P/R/F1 + %95 Wilson aralığı |
+| `macho_measure.py` | Orkestratör: `prepare` · `analyze` · `score` · `compare` · `all` |
+| `macho_reach.py` | İsteğe bağlı erişim bölümü (`--reach`): isim bekleyenlerden kaçı çağrı zinciriyle kütüphaneye ulaşıyor. 15 Ekim `tarif/reach.py`'nin taşınmış hâli, sayıları aynı |
+| `macho_corpus.json` | Korpus: özgün ikilinin yerel yolu + sha256, beklenen strip sha256'sı, Homebrew şişe kaydı, küme (`gelistirme` / `dogrulama`) |
+| `tests/test_macho_f1.py`, `tests/test_macho_measure.py` | Birim testler (sentetik `nm` metni, Ghidra listesi, naming_map; strip/dyld_info/karadul sahte) |
+
+```bash
+# Tek komut: prepare + analyze + score; ikililer sırayla, ikili başına en çok 2400 sn
+python scripts/measurement/macho_measure.py all --tree . --label taban-v2-$(git rev-parse --short HEAD) --reach
+# Parça parça
+python scripts/measurement/macho_measure.py prepare                     # özgün sha256 → strip → export trie → GT
+python scripts/measurement/macho_measure.py analyze --tree . --label <etiket> [--only htop]
+python scripts/measurement/macho_measure.py score --label <etiket> [--reach]
+python scripts/measurement/macho_measure.py compare <A.json> <B.json>   # program sınıfı; kazanılan/kaybedilen TP, yeni/düzelen yanlış
+# Tek koşuyu elle puanla (macho_score.json koşu dizinine; --out ile başka yere)
+python scripts/measurement/macho_f1.py score --gt <gt.json> --run-dir <koşu>
+```
+
+Veri dizini depo içinde ama git dışı ve Spotlight dışı (`~/Black_Widow` Arama Gizliliği'nde);
+`KARADUL_OLCUM_MAC_DIR` ile değişir. `~/karadul_olcum` kullanılmaz: Spotlight orayı dizinliyor.
+
+```
+workspaces/olcum_mac/
+  corpus/<ad>/orig/<ad>        sembollü özgün (GT kaynağı; karadul'a hiç verilmez)
+  corpus/<ad>/bin/<ad>         /usr/bin/strip'li kopya: karadul'un gördüğü TEK dosya
+  corpus/<ad>/gt/<ad>.gt.json  GT + sınıflar + nm künyesi
+  corpus/manifest.json         hazırlık künyesi: sha256'lar, strip sonrası export listesi,
+                               araçların yolu/çözülen ikilisi/sha256'sı, CLT sürümü
+  runs/<etiket>/session.json   ağaç (commit, kirli dosyalar; koşu sonunda yeniden), Ghidra, Python
+  runs/<etiket>/<ad>/{ws,out,karadul.log,run.json,macho_score.json}
+  results/<etiket>.json        tek sonuç tablosu (bütün sayılar buradan)
+```
+
+Koşu komutu ELF'tekiyle aynı: `python -m karadul analyze <strip'li> --skip-dynamic --output-dir
+<koşu>/ws --output <koşu>/out`; cwd ve `PYTHONPATH` = `--tree`, `GHIDRA_INSTALL_DIR` = sabitlenen
+kurulum. Varsayılan `--jobs 1` (makine paylaşılıyor). Ghidra sürümü ve yolu `karadul.config`
+(`GHIDRA_PINNED_VERSION`, `GHIDRA_PINNED_DIR`) üzerinden `measure.py`'nin `ghidra_info` ve
+`require_pinned_ghidra` işlevlerinden gelir; sabitlenen sürüm değilse `analyze` durur
+(`--farkli-ghidra-izinli` ile bilerek açılır, raporda uyarı olarak kalır).
+
+### 8.1 Tanımlar
+
+- **GT**: `/usr/bin/nm -n -U <özgün>` çıktısındaki `T`/`t` sembolleri; `__mh_execute_header`
+  hariç. Aynı adresteki adlar tek fonksiyondur (tmux'ta 2583 ad, 2572 adres: ortak gövdeli
+  `*_RB_NEXT`/`*_RB_REMOVE` aileleri). Çok mimarili nm çıktısı reddedilir.
+- **Popülasyon (isim bekleyen)**: GT'de olup strip'li kopyada Ghidra'nın thunk OLMAYAN ve
+  jenerik adlı (kendisinin adlandıramadığı) fonksiyonları. Dışarıda kalanlar ayrı sayılır:
+  `undetected_thunk` (Ghidra o adreste thunk görüyor; tek `b` komutlu sarmalayıcılar),
+  `undetected_missing` (o adreste fonksiyon yok), `ghidra_known_from_exports` (adı Ghidra
+  kendisi biliyor; Apple strip'te 0 beklenir, GT'nin %1'ini aşarsa uyarı).
+- **Sınıf (`sinif`)**: `program` / `cold` (`.cold.N`, sıcak-soğuk bölme) / `outlined`
+  (`OUTLINED_FUNCTION_N`, LLVM makine dışlayıcısı); kurallar `macho_f1.FRAGMENT_CLASS_RULES`.
+  Başlık sayısı **program sınıfıdır** (plan v2 §4, "Payda"); parçalar ayrı satırda.
+- **Sonek kuralları** (`macho_f1.SUFFIX_RULES`): `.cold.N`, `.llvm.<sayı>`, `.__uniq.<sayı>`,
+  Darwin varyantı `$INODE64`/`$DARWIN_EXTSN`/`$NOCANCEL` eşleştirmede temel ada indirgenir;
+  GT'ye ve tahmine simetrik. GCC ekleri zaten `normalize_name` (metrics FIX-4) içinde.
+- **Durum**: `tp` / `wrong` / `unnamed`, strict kural ELF'le aynı; `lenient` = tp ya da
+  `compare_name` exact/semantic/partial tutan yanlış. P = TP/(TP+yanlış), R = TP/popülasyon.
+- **`macho_score.json`** = `{"summary", "rows"}`. `rows`'taki `addr, gt, pred, status, lenient`
+  15 Ekim biçimiyle aynıdır (etiket araçları okuyor); yeni anahtar yalnız `sinif`. Özetteki eski
+  anahtarlar (`tp`, `wrong`, `precision` …) 15 Ekim tanımıyla **bütün sınıfları birlikte** sayar;
+  sınıf ayrımı `summary.siniflar`'da.
+- **Geçerli koşu** (`score`): hedef türü Mach-O (`macho_binary`/`universal_binary`; üç kaynakta
+  da: `out/report.json` identify, çalışma alanı `reports/report.json`, `raw/target_info.json`),
+  analiz edilen dosyanın sha256'sı GT'nin strip'li kopyasıyla aynı, raporun `environment.ghidra`
+  sürümü oturumla aynı, tek çalışma alanı. Geçersiz koşu tabloda nedeniyle görünür, toplamlara girmez.
+
+### 8.2 Tuzaklar ve korumalar
+
+| Tuzak | Koruma | Mutant |
+|---|---|---|
+| PATH'te `/opt/anaconda3/bin/strip` önde; conda strip export trie'yi bırakıyor (htop'ta 476, tmux'ta 1533 export) ve Ghidra bu adları okuyor | `STRIP_PATH = "/usr/bin/strip"`; göreli yol reddedilir | strip göreli yoldan |
+| Strip sonrası export trie'nin boş olduğunu varsaymak | `xcrun dyld_info -exports`: `__mh_execute_header` dışında ad kalırsa ya da çıktı tanınmazsa hat durur, doğrulanmamış kopya silinir; ayrıca strip'li kopyada `nm -U` boş olmalı | denetim kapalı; kopya silinmiyor |
+| PATH'te conda `nm` de önde | `NM_PATH = "/usr/bin/nm"` | nm göreli yoldan |
+| Go yanlış tanıma: 15 Ekim'de htop `go_binary` sanıldı, Mac adımları koşmadı (0c9649e'de düzeltildi) | Hedef türü üç kaynaktan denetlenir; Mach-O değilse koşu geçersiz | denetim kapalı |
+| Ghidra sürüm kayması | `require_pinned_ghidra`; karadul'a `GHIDRA_INSTALL_DIR` verilir; rapordaki sürüm oturumla karşılaştırılır | denetim çağrısı silindi; env verilmiyor |
+| Yanlış özgün dosya | Korpustaki sha256 tutmazsa strip'e geçmeden durur; kaynak klasör silindiyse yalnız aynı sha256'lı önceki kopya kullanılır | sha256 denetimi kapalı |
+| Test seti sızıntısı | Korpus yükleyici `test_seti_kura.py`'deki 25 programı (ana küme, yedekler, stres) ve `gelistirme`/`dogrulama` dışındaki kümeleri reddeder | kilit kapalı |
+| Thunk ve Ghidra'nın bildiği ad paydada | Popülasyon dışı; ayrı sayaç | thunk sayılır; Ghidra adı popülasyonda |
+| `.cold`/`OUTLINED` parçaları ve ekler | Sınıf kuralları ve sonek kuralları | dört ayrı mutant |
+| Satır şemasının etiket araçlarını kırması | Eski anahtarlar sabit sırada | `lenient` yeniden adlandırıldı |
+| Paralel ajanlar ağacı koşu sırasında değiştirir | Ağaç künyesi koşu başında ve sonunda alınır; değişen yollar kayda geçer. `karadul/` ya da çalışma zamanı verisi değiştiyse (iki uçta da kirli dosyada sha256 kıyası) koşu geçersiz, başka dosyalar değiştiyse uyarı | geçersiz sayılmıyor; motor yolu aranmıyor; porcelain satırı sabit ofsetle kesiliyor |
+
+Mutation doğrulaması (2026-10-19): 21 mutantın 21'i yakalandı; her biri gerçek assertion
+hatasıyla, kendi modülünün test dosyasında. Mutantlar `PYTHONDONTWRITEBYTECODE=1` ile koşuldu,
+mutant uzunluğu özgünden farklıydı, geri yüklemede `touch` + `.pyc` silme (bayat bytecode tuzağı).
+
+### 8.3 Sınırlar
+
+- Popülasyon Ghidra'nın fonksiyon sınırlarına bağlıdır; Ghidra'nın thunk saydığı GT fonksiyonları
+  paydada yoktur (`undetected_thunk`).
+- `strict` kasıtlı olarak katıdır (eşanlamlı isim yanlış sayılır); P ve R alt sınırdır. Plan v2
+  §4'teki "yakın isim" ve "yanlış isim" ölçütleri insan etiketinden gelir (G4), bu tablodan değil.
+- Özgün ikililerin kaynağı yerel dosya: `workspaces/2026-10-15_oturum_scratchpad/macho/orig/`
+  (git dışı). Homebrew Cellar'daki ikililer bunlarla bayt bayt aynı (2026-10-19); korpusta
+  formül, sürüm ve şişe etiketi (`arm64_tahoe`) kayıtlı. `prepare`'in yaptığı kopya
+  (`corpus/<ad>/orig/`) da sha256 denetimiyle yedek kaynak olarak kullanılır.
+- Apple strip deterministik: 2026-10-19'da (CLT 27.0.0.0.1788430756) aynı özgünden iki kez
+  soyulan kopyalar birbirinin ve 15 Ekim'de soyulan kopyaların bayt bayt aynısı çıktı. Strip
+  sürümü değişip çıktı değişirse `prepare` uyarır (`expected_strip_sha256`); export trie
+  denetimi yine zorunludur.
+
+### 8.4 Eşdeğerlik: 15 Ekim puanlayıcısı
+
+`macho_f1.py`, 15 Ekim koşularına (`runs_apple/{htop,tmux}`, aynı özgün ikililer) uygulandı.
+Özetin 14 eski anahtarının hepsi ve satırların eski beş anahtarı **birebir aynı** (htop 597,
+tmux 2561 satır). `macho_reach.py` da aynı cümleyi aynı sayılarla verdi. Fark yalnız yeni sınıf
+ayrımında: tmux'ta 16 parça (15 `.cold.N`, 1 `OUTLINED_FUNCTION_0`) program sınıfından çıkıyor.
+
+| tmux (15 Ekim koşusu) | popülasyon | isim | TP | yanlış | isimsiz |
+|---|---|---|---|---|---|
+| tümü (eski tanım) | 2561 | 871 | 105 | 766 | 1690 |
+| program | 2545 | 857 | 104 | 753 | 1688 |
+| cold | 15 | 13 | 1 (`grid_create.cold.1` ← `grid_create`) | 12 | 2 |
+| outlined | 1 | 1 | 0 | 1 (`grid_check_clear`) | 0 |
+
+Parçalara verilen 12 yanlış adın tamamı: `celldata`, `cellused`, `cellsize`, `extddata`,
+`extdsize`, `flags`, `time`, `linedata`, `linedata_2`, `extdsize_extddata`, `cellsize_celldata`,
+`cellused_cellsize` (`grid_check_is_clear.cold.1-9` ve `grid_free_line.cold.1-3`).
+
+### 8.5 Taban v2 (makine kısmı): karadul 62ad154, Ghidra 12.1.2
+
+`macho_measure.py all --tree ~/Black_Widow --label taban-v2-62ad154 --reach`, 2026-10-19
+12:04–12:23, ikililer sırayla (htop 193 sn, tmux 924 sn). Sonuç: `workspaces/olcum_mac/results/taban-v2-62ad154.json`.
+
+| ikili | GT | thunk | Ghidra biliyor | popülasyon (program) | isim verilen | TP | yanlış | isimsiz | P [%95] | R [%95] | F1 | lenient P | cold pop/isim/TP | outlined pop/isim/TP |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| htop 3.5.3 | 605 | 8 | 0 | 597 | 101 | 0 | 101 | 496 | 0,000 [0,000–0,037] | 0,000 [0,000–0,006] | 0,000 | 0,069 | 0/0/0 | 0/0/0 |
+| tmux 3.8 | 2572 | 11 | 0 | 2545 | 857 | 104 | 753 | 1688 | 0,121 [0,101–0,145] | 0,041 [0,034–0,049] | 0,061 | 0,373 | 15/13/1 | 1/1/0 |
+| geliştirme (mikro) | | | | 3142 | 958 | 104 | 854 | 2184 | 0,109 [0,090–0,130] | 0,033 [0,027–0,040] | 0,051 (makro 0,031) | 0,341 | | |
+
+Künye: özgün sha256 htop `29449bae…f1158`, tmux `dfbb8c54…9998b`; analiz edilen (strip'li)
+htop `50d172ce…0f1c3`, tmux `10fa0411…997b7` (karadul'un `target_info.json`'ıyla aynı). Hedef
+türü iki ikilide de üç kaynakta `macho_binary`; çalışma alanı raporunda Ghidra 12.1.2
+(`matches_pinned: true`). Koşu sırasında ağaca iki commit girdi (f530685, 15425fe), ikisi de
+`karadul/` ve çalışma zamanı verisi dışında; uyarı olarak kayıtlı, koşu geçerli.
+
+Okuma notları:
+- Her iki ikilide de bütün satırların durumu 15 Ekim koşusuyla aynı; tahmin farkları (htop 2,
+  tmux 45) yalnız `_N` tekilleştirme ekinin yer değiştirmesi. htop 15 Ekim'de `go_binary`
+  sanılmıştı; bu koşuda Mac statik adımları koştu (`dylib_count`, `intel_*` istatistikleri var)
+  ama hiçbir fonksiyonun adı değişmedi.
+- htop'ta karadul'un verdiği 101 adın hiçbiri strict ölçütle doğru değil; 7'si lenient tutuyor.
