@@ -1,0 +1,59 @@
+{
+ "pcode": "workspaces/olcum_mac/runs/taban-v2-62ad154/tmux/.../static/ghidra_output/pcode.jsonl (sha256 aşağıda)",
+ "fonksiyon": 2821,
+ "load_store": 30839,
+ "cikarilan_erisim": 39555,
+ "farkli_ofset": 261,
+ "en_sik_ofsetler": [
+  [
+   433,
+   30840
+  ],
+  [
+   1,
+   1717
+  ],
+  [
+   2,
+   1036
+  ],
+  [
+   4,
+   706
+  ],
+  [
+   6,
+   539
+  ],
+  [
+   3,
+   524
+  ],
+  [
+   8,
+   522
+  ],
+  [
+   5,
+   425
+  ],
+  [
+   7,
+   260
+  ],
+  [
+   10,
+   212
+  ]
+ ],
+ "en_sik_ofset_payi": 0.7797,
+ "load_store_girdi0_sabit_degerleri": [
+  [
+   433,
+   30839
+  ]
+ ],
+ "ofsetin_girdi0_dan_alindigi_load_store": 30839,
+ "pcode_sha256": "c18f887a43b6e1ea2f05471e7eea0a4542a5e7a9f8935236af99847167e6dd5b",
+ "karadul_commit": "62ad154 (taban v2 koşusu); betik HEAD"
+}
