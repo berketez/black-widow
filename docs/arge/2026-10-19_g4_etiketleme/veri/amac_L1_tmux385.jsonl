@@ -1,0 +1,424 @@
+{"id": "tmux-000", "amac": "Verilen hedef dizgesini (sondaki tek iki nokta kırpılarak) istemcilerin adı ya da tty yoluyla karşılaştırıp eşleşen bağlı istemciyi bulur; hedef verilmemişse geçerli istemciyi döndürür, bulunamazsa hata bildirir."}
+{"id": "tmux-001", "amac": "Verilen bölmenin hemen altına bitişik olup yatayda onunla çakışan bölmeleri toplar (pencerenin alt kenarında başa sararak) ve aralarından en uygun komşu bölmeyi seçip döndürür."}
+{"id": "tmux-002", "amac": "Biçim ağacındaki oturuma bağlı bütün istemcilerin adlarını virgülle ayrılmış tek bir dizge olarak üretip döndürür."}
+{"id": "tmux-003", "amac": "Bir pencerenin etkin bölmesi değiştiğinde, bildirim alması gereken tüm denetim modu istemcilerine 'window-pane-changed' bildirimini yazar."}
+{"id": "tmux-004", "amac": "Sunucu erişim komutunu yürütür: belirtilen kullanıcı ya da grup için sunucu erişim listesini seçeneklere göre gösterir, girdi ekler, siler ya da yazma yetkisini verir veya kaldırır."}
+{"id": "tmux-005", "amac": "İstemci çıkış zamanlayıcısının geri çağrısıdır: çıkışı çok uzun süren istemciyi kayıp sayar, tamponunu boşaltamayan istemcinin çıkışını zorla denetler."}
+{"id": "tmux-006", "amac": "Ekranda imlecin bulunduğu satırdan başlayarak istenen sayıda satırı kaydırma bölgesini gözeterek ızgaradan siler ve terminale satır silme komutunu gönderir ya da bölmeyi yeniden çizer."}
+{"id": "tmux-007", "amac": "Boşluk ya da virgülle ayrılmış bir stil tanım dizgesini ayrıştırıp renk, öznitelik, liste ve aralık gibi ayarları verilen stil yapısına uygular, geçersiz öğede hata döner."}
+{"id": "tmux-008", "amac": "Bölmede tema değişikliği bekliyorsa ve uygulama tema güncellemesi istemişse bölmenin açık/koyu temasını belirler, tema değiştiyse uygulamaya tema bildirim kaçış dizisini gönderir."}
+{"id": "tmux-009", "amac": "Tuş bağını kaldırma komutunu yürütür: belirtilen tablodaki tek bir tuşun bağını ya da -a seçeneğiyle bir tablonun tamamını kaldırır."}
+{"id": "tmux-010", "amac": "Biçim ağacındaki pencere bağlantısı oturumun en küçük indeksli (ilk) penceresiyse '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-011", "amac": "Açılır pencere (popup) gösterme komutunu yürütür: argümanlardan boyut, konum, çalışma dizini, kabuk komutu, ortam, kenarlık, başlık ve kapanma bayraklarını belirleyerek istemcide popup açar ya da mevcut popup'ı değiştirir."}
+{"id": "tmux-012", "amac": "Boş bir bölmeye istemcinin standart girdisinden veri aktarmak için dosya okuma işlemini geri çağrıyla başlatır; bölme boş değilse hata verir."}
+{"id": "tmux-013", "amac": "Pencerenin mode-keys seçeneğine göre kopya modunda kullanılacak tuş tablosunun adını ('copy-mode-vi' ya da 'copy-mode') döndürür."}
+{"id": "tmux-014", "amac": "Terminalden gelen ikincil cihaz öznitelikleri (secondary DA) yanıtını ayrıştırır, terminal türüne göre varsayılan özellikleri ekleyip terminal özelliklerini günceller."}
+{"id": "tmux-015", "amac": "Oturumun geçerli penceresinin ve son kullanılan pencerelerin indekslerini virgülle ayrılmış bir dizge olarak üreten biçim değişkeni değerini oluşturur."}
+{"id": "tmux-016", "amac": "Komut kuyruğu listesini serbest bırakır; kuyruk boş değilse ölümcül hata verir."}
+{"id": "tmux-017", "amac": "Belirtilen terminal yeteneği dizgesini tek bir dizge parametresiyle tparm/tiparm üzerinden genişletip sonucu döndürür."}
+{"id": "tmux-018", "amac": "Terminal girişinin okuma olayı geri çağrısıdır: istemcinin dosya tanıtıcısından veriyi giriş tamponuna okur, bağlantı kapanmış ya da hata olmuşsa istemciyi kayıp sayar, aksi halde gelen tuşları işler."}
+{"id": "tmux-019", "amac": "İstemcinin salt okunur olduğunu bildiren hatayı komut kuyruğuna yazıp komutu hatayla sonlandıran geri çağrıdır."}
+{"id": "tmux-020", "amac": "Pencereyi bölerek ya da kayan/modal bölme olarak yeni bir bölme oluşturma komutunu yürütür: argümanlardan yön, konum, tam boy, ayrık, yakınlaştırma, boş bölme ve kenarlık çizgisi ayarlarını belirleyip yerleşimde yeni bölme için hücre ayırır ve başlatma bağlamını hazırlar."}
+{"id": "tmux-021", "amac": "Kopya modu görünümünü verilen satır sayısı kadar geçmişe doğru kaydırır (içerik aşağı iner): görünüm ofsetini artırır, arama işaretlerini ve seçimi günceller, üstte açılan satırları yazarak ekranı ve kaydırma çubuğunu yeniler."}
+{"id": "tmux-022", "amac": "Kopya modunda imleci bir satır aşağı taşır; imleç son satırdaysa ya da yalnız kaydırma istenmişse görünümü bir satır kaydırır, sütunu satır uzunluğuna ve satır seçimi kipine göre düzeltip seçimi günceller."}
+{"id": "tmux-023", "amac": "Bölmenin yerleşim hücresini pencerenin yerleşim ağacından kaldırır, kalan bölmelerin ofset ve boyutlarını düzeltir ve pencere yerleşimi değişti olayını tetikler."}
+{"id": "tmux-024", "amac": "Kopya modunda imleci, son aranan atlama karakterinin geriye doğru bir önceki geçişinin hemen sağına taşır (geriye doğru 'karaktere kadar' atlama)."}
+{"id": "tmux-025", "amac": "Bir bölmenin modu değiştiğinde bildirim alması gereken tüm denetim modu istemcilerine bölme kimliğiyle 'pane-mode-changed' bildirimini yazar."}
+{"id": "tmux-026", "amac": "Bağlı bir komut öğesi zincirindeki her öğeyi istemcinin komut kuyruğunun sonuna ekler (istemci referans sayısını artırarak) ve kuyruğa eklenen son öğeyi döndürür."}
+{"id": "tmux-027", "amac": "Bir geniş karakteri (wchar_t) UTF-8 bayt dizisine çevirip utf8_data yapısına yazar ve görüntüleme genişliğini hesaplar; dönüşüm başarısızsa hata durumu döner."}
+{"id": "tmux-028", "amac": "İstemci sürecine sunucudan gelen mesajların geri çağrısıdır: bağlantı koptuysa çıkış nedenini ayarlayıp süreci sonlandırır, aksi halde mesajı bağlı ya da bekleme durumuna göre ilgili işleyiciye yönlendirir."}
+{"id": "tmux-029", "amac": "Komut argümanlarına (-s, -p, -w, -g) ve bulunan hedefe göre kullanılacak seçenek kümesini (sunucu, bölme, pencere ya da oturum; global ya da yerel) belirleyip tablo türünü döndürür, hedef yoksa hata nedeni üretir."}
+{"id": "tmux-030", "amac": "Önceden bölünmüş argüman değerleri dizisini komutun ayrıştırma tanımına göre ayrıştırır: bayrakları işler, kalan konumsal argümanları tür denetimiyle kopyalar ve argüman sayısı sınırlarını doğrulayarak argüman yapısını oluşturur."}
+{"id": "tmux-031", "amac": "Bölmede açık bir istem (prompt) varsa onu kapatıp serbest bırakır, bölmeyi yeniden çizilecek olarak işaretler ve bölme yok edilmiyorsa 'pane-prompt-closed' olayını tetikler."}
+{"id": "tmux-032", "amac": "Biçim ağacındaki pencerenin bağlı olduğu tüm oturumların adlarını virgülle ayrılmış bir dizge olarak üreten biçim değişkeni değerini oluşturur."}
+{"id": "tmux-033", "amac": "JSON düğümünde verilen anahtarı arar, değerinin dizge olduğunu doğrulayıp dizgeyi çıkış parametresine yazar; anahtar yoksa ya da tür yanlışsa hata nedeni üretir."}
+{"id": "tmux-034", "amac": "Bir JSON düğümüne türüne göre değer atar ya da alt düğüm ekler: dizge, sayı ya da mantıksal değeri yazar, nesneye alan, diziye üye ekler."}
+{"id": "tmux-035", "amac": "Verilen bölmenin hemen üstüne bitişik olup yatayda onunla çakışan bölmeleri toplar (pencerenin üst kenarında alta sararak) ve aralarından en uygun komşu bölmeyi seçip döndürür."}
+{"id": "tmux-036", "amac": "İstemcinin terminal boyutu değiştiğinde istemci, oturum, pencere, bölme ile yeni ve eski genişlik/yükseklik bilgilerini taşıyan bir olay yükü oluşturup 'client-resized' olayını tetikler."}
+{"id": "tmux-037", "amac": "İstemci dosyası için gelen 'okuma bitti' mesajını işler: mesaj boyutunu doğrular, ilgili dosya akışını bulur, hata kodunu kaydeder ve tamamlanma geri çağrısını tetikler."}
+{"id": "tmux-038", "amac": "Ters indeks (reverse index) işlemini uygular: imleç kaydırma bölgesinin üst satırında değilse imleci bir satır yukarı taşır, üst satırdaysa bölgeyi bir satır aşağı kaydırıp terminale ters indeks komutunu gönderir ya da bölmeyi yeniden çizer."}
+{"id": "tmux-039", "amac": "Bir dizgenin en fazla verilen uzunluktaki kısmını strndup ile yeni belleğe kopyalar; bellek ayrılamazsa ölümcül hata verir."}
+{"id": "tmux-040", "amac": "Bölmede eşzamanlı güncelleme (sync) modu açıksa onu sonlandırır: zamanlayıcıyı siler, mod bayrağını temizler ve bekleyen kirli ekran içeriğini boşaltır."}
+{"id": "tmux-041", "amac": "Biçim ağacındaki bölme kendi penceresinin etkin bölmesiyse '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-042", "amac": "Oturumun geçerli penceresini verilen pencere bağlantısına geçirir: son kullanılan pencereler yığınını günceller, odak, etkinlik ve bayrakları yeniler ve pencere değişti olayını tetikler."}
+{"id": "tmux-043", "amac": "Adı verilen olay için kanca verisini hazırlayıp (olay yükünden biçim değişkenleri, hedef ve istemciyle) ilgili kanca komutlarını komut kuyruğuna ekler."}
+{"id": "tmux-044", "amac": "Sixel görüntü verisini öznitelik, renk, tekrar ve piksel komutlarıyla ayrıştırarak yeni bir sixel görüntü yapısı oluşturur; boş ya da geçersiz veride NULL döner."}
+{"id": "tmux-045", "amac": "Komut öğesi için biçimlendirilmiş bir hata mesajı üretip istemcinin durumuna göre yapılandırma hata listesine, sunucu mesaj günlüğüne, denetim ya da hata çıktısına veya durum satırına iletir."}
+{"id": "tmux-046", "amac": "Terminal giriş tamponundaki bir sonraki girdiyi tanıyıp işler: pano, eşzamanlama, cihaz öznitelikleri, renk ve palet yanıtlarını ya da fare ve tuş girdilerini ayırt eder; oturumu olmayan istemcinin girdisini atar."}
+{"id": "tmux-047", "amac": "Terminal tuş zamanlayıcısının geri çağrısıdır: zamanlayıcı bayrağı açıksa giriş tamponunda bekleyen bütün tuşları işler."}
+{"id": "tmux-048", "amac": "Biçim ağacındaki pencereyi o anda geçerli pencere olarak görüntüleyen istemcilerin adlarını virgülle ayrılmış dizge olarak üreten biçim değişkeni değerini oluşturur."}
+{"id": "tmux-049", "amac": "Verilen veriyi belirtilen adla bir yapıştırma tamponu olarak kaydeder (ad verilmezse otomatik tampon ekler), aynı adlı eski tamponu değiştirir ve tampon değişti olayını tetikler."}
+{"id": "tmux-050", "amac": "Ağaç modu için istemcide yeni bir giriş istemi (prompt) açar: varsa eski istemi temizler, geri çağrı verisini kurar, istemi oluşturur ve modu yeniden çizer."}
+{"id": "tmux-051", "amac": "Kopya modu için yeni bir mod verisi yapısı ayırır ve seçim, arama, atlama, ekran ve zamanlayıcı alanlarını başlangıç değerleriyle ilklendirip döndürür."}
+{"id": "tmux-052", "amac": "Biçimde çalıştırılan dış komut işi bittiğinde çıktısının ilk satırını okuyup biçim işinin sonucu olarak saklar ve gerekiyorsa istemcinin durum satırını yeniler."}
+{"id": "tmux-053", "amac": "Kopya modunda sürükleme sırasında tekrarlayan kaydırma zamanlayıcısının geri çağrısıdır: imleç ekranın üst ya da alt satırındaysa zamanlayıcıyı yeniden kurup imleci bir satır yukarı ya da aşağı taşır."}
+{"id": "tmux-054", "amac": "OSC 12 kaçış dizisini işler: '?' sorgusuna geçerli imleç rengini yanıt olarak gönderir, aksi halde verilen X11 rengini ayrıştırıp ekranın imleç rengini ayarlar."}
+{"id": "tmux-055", "amac": "Pencere seçme komutunu (sonraki, önceki ve son pencere varyantlarıyla birlikte) yürütür: oturumda ilgili pencereye geçer, oturumu yeniden çizer ve 'after-select-window' kancasını ekler."}
+{"id": "tmux-056", "amac": "Pencereleri listeleme komutunu yürütür: hedef oturumun ya da -a ile tüm oturumların pencerelerini sıralama ölçütüne göre alır, filtreye uyanları şablonla biçimlendirip yazdırır."}
+{"id": "tmux-057", "amac": "Verilen dosya tanıtıcısı için yeni bir eş (peer) bağlantı yapısı oluşturur: mesaj tamponunu ilklendirir, okuma olayını ve karşı tarafın kullanıcı kimliğini ayarlar ve sürecin eş listesine ekler."}
+{"id": "tmux-058", "amac": "Yapıştırma tamponunun adını içeren bir olay yükü oluşturup verilen adlı olayı tetikler."}
+{"id": "tmux-059", "amac": "Süreç sinyal olayının geri çağrısıdır: alınan sinyal numarasını sürecin kayıtlı sinyal işleyicisine iletir."}
+{"id": "tmux-060", "amac": "Ayrıştırılmış bir CSI kaçış dizisini tablodan bulup türüne göre uygular: imleç hareketleri, sekme, genişletilmiş tuş modu, pencere işlemleri, cihaz öznitelikleri yanıtı gibi işlemleri ekrana yazar."}
+{"id": "tmux-061", "amac": "Oturumdaki bütün pencerelerin bölmelerinde ızgara geçmiş sınırını oturumun history-limit seçeneğine göre günceller ve sınırı aşan geçmiş satırlarını toplar."}
+{"id": "tmux-062", "amac": "Biçim ağacındaki istemcinin temasına göre 'dark' ya da 'light' dizgesini döndüren biçim değişkeni değerini üretir; tema bilinmiyorsa NULL döner."}
+{"id": "tmux-063", "amac": "Bir pencere kapandığında denetim modu istemcilerine, pencere kendi oturumlarına bağlıysa 'window-close', değilse 'unlinked-window-close' bildirimini yazar."}
+{"id": "tmux-064", "amac": "Terminal imlecini verilen konuma taşır; bunun için terminalin desteklediği en uygun imleç hareket kodunu (home, CR/LF, tek adım, göreli, yatay/dikey mutlak ya da tam konum) seçip gönderir."}
+{"id": "tmux-065", "amac": "Verilen tampona va_list argümanlarıyla vsnprintf üzerinden biçimlendirilmiş dizge yazar; uzunluk sınırı aşılır ya da çıktı taşarsa ölümcül hata verir."}
+{"id": "tmux-066", "amac": "Bir biçim ifadesini genişletip doğruluk değerini hesaplar, istenirse tersine çevirir ve sonucu '1' ya da '0' dizgesi olarak döndürür."}
+{"id": "tmux-067", "amac": "Özelleştirme modu ağacına bir ortam değişkenleri bölümü ekler: verilen ortamdaki her değişken için biçim değişkenlerini ayarlar ve filtreye uyanları ağaca öğe olarak ekler."}
+{"id": "tmux-068", "amac": "Bölmenin kendi penceresindeki indeksini pane-base-index seçeneğinden başlayarak hesaplayıp çıkış parametresine yazar; bölme bulunamazsa -1 döner."}
+{"id": "tmux-069", "amac": "Verilen tampon içeriğini geçici bir dosyaya yazar ve bu dosyayı düzenlemek için yapılandırılmış düzenleyiciyi pencerenin ortasında kayan modal bir bölmede başlatıp düzenleyici durum yapısını döndürür."}
+{"id": "tmux-070", "amac": "Kopya modunda artımlı arama komutunu işler: arama başlangıç konumunu saklar ya da geri yükler, önek karakterine göre metni yukarı ya da aşağı doğru arar, eşleşme yoksa işaretleri temizler."}
+{"id": "tmux-071", "amac": "İstemci seçim modunda bir satırın kısayol tuşunu, tuş biçimini istemci bilgileri ve satır numarasıyla genişletip tuş koduna çevirerek belirler."}
+{"id": "tmux-072", "amac": "Pencerenin adını temizlenmiş yeni adla değiştirir ve eski adı vererek pencere yeniden adlandırıldı olayını tetikler."}
+{"id": "tmux-073", "amac": "Penceredeki verilen (x, y) konumunu içeren bölmeyi bulur: önce modal bölmeye, sonra kayan bölmelere, ardından kenarlık ve durum satırlarını gözeterek döşeli bölmelere bakar."}
+{"id": "tmux-074", "amac": "Giriş ayrıştırıcısında o anki dizenin BEL karakteriyle sonlandığını kaydeden durum geçiş işleyicisidir."}
+{"id": "tmux-075", "amac": "Olay yükündeki bütün öğeleri 'ad=değer' biçiminde birleştirip verilen biçimli önekle hata ayıklama günlüğüne yazar."}
+{"id": "tmux-076", "amac": "Pencere öldürme komutunu yürütür: bağlantı kesme varyantında pencereyi oturumdan ayırır, -a ile pencereleri filtreye göre toplu öldürür, aksi halde hedef pencereyi öldürür."}
+{"id": "tmux-077", "amac": "Tampon (buffer) modunun varsayılan biçim dizgesinin kopyasını döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-078", "amac": "İstemciden gelen komut mesajını işler: argümanları açıp komut olarak ayrıştırır, salt okunur istemci denetimini yapar ve komutları tamamlanma geri çağrısıyla birlikte istemcinin kuyruğuna ekler; hatada hata öğesi ekleyip istemciyi çıkışa işaretler."}
+{"id": "tmux-079", "amac": "Tuş bağının tekrarlanabilir olup olmadığına ve oturumun repeat-time ile initial-repeat-time seçeneklerine göre tuş tekrar süresini hesaplayıp döndürür."}
+{"id": "tmux-080", "amac": "Giriş ayrıştırıcısında gelen baytları bir UTF-8 karakterinde biriktirir; karakter tamamlanınca hücreye kopyalayıp ekrana yazılacak hücrelere ekler ve son karakter olarak saklar, geçersiz dizide UTF-8 işlemeyi durdurur."}
+{"id": "tmux-081", "amac": "UTF-8 karakter verisine bir bayt ekler; karakter tamamlanınca geçerliliğini denetleyip görüntüleme genişliğini hesaplar, eksikse devam, hatalıysa hata durumunu döndürür."}
+{"id": "tmux-082", "amac": "Oturum zaten bir gruba ait değilse onu verilen oturum grubunun sonuna ekler ve 'session-added-to-group' olayını tetikler."}
+{"id": "tmux-083", "amac": "Biçim ağacındaki bölmenin ekranında imleç 'çok görünür' modu açıksa '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-084", "amac": "Bir izleme (monitor) kancası seçeneğini hedef, biçim, tetiklenme sayısı ve zamanı gibi biçim değişkenleriyle şablona göre biçimlendirip komut çıktısına yazdırır."}
+{"id": "tmux-085", "amac": "Pencerenin otomatik yeniden adlandırması açık ve etkin bölmesi değişmişse, bekleme süresi dolmadıysa ad zamanlayıcısını kurar, dolduysa adı biçimden yeniden hesaplar ve değiştiyse pencere adını güncelleyip kenarlık ve durum satırını yeniden çizdirir."}
+{"id": "tmux-086", "amac": "Bölmenin okuma olayı geri çağrısıdır: yeni çıktıyı varsa boru (pipe) hedefine yazar, denetim modu istemcilerine bölme çıktısını iletir ve bölme verisini giriş ayrıştırıcısıyla işler."}
+{"id": "tmux-087", "amac": "Giriş ayrıştırıcısı yeni bir duruma girerken bağlamı temizler, temel duruma dönüş zamanlayıcısını başlatır ve son karakter bayrağını siler."}
+{"id": "tmux-088", "amac": "Bulma durumu yapısını temizleyip verilen pencere bağlantısı ve bölmeden oturum, pencere bağlantısı, indeks, pencere ve bölme alanlarıyla doldurur."}
+{"id": "tmux-089", "amac": "Günlük düzeyi açıksa önceki günlük dosyasını kapatıp verilen ad ve süreç kimliğiyle adlandırılmış yeni bir günlük dosyasını ekleme kipinde açar ve libevent günlük geri çağrısını ayarlar."}
+{"id": "tmux-090", "amac": "Adlandırılmış bir bekleme kanalını kilitler: kanal yoksa oluşturur, zaten kilitliyse komut öğesini bekleyen kilitleyiciler kuyruğuna ekleyip bekletir."}
+{"id": "tmux-091", "amac": "Yapıştırma tamponu ayarlama komutunu yürütür: silme varyantında tamponu siler, -n ile yeniden adlandırır, aksi halde verilen veriyi gerekirse eskisinin sonuna ekleyerek tampona yazar ve -w ile terminal panosuna da gönderir."}
+{"id": "tmux-092", "amac": "Komut öğesinin argümanlarını ve bayrak değerlerini içeren bir olay yükü oluşturup biçimlendirilmiş adla kanca olayını tetikler; öğede kancalar kapalıysa hiçbir şey yapmaz."}
+{"id": "tmux-093", "amac": "Biçim ağacındaki oturum bir oturum grubuna aitse '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-094", "amac": "İstemci sürecinin sinyal işleyicisidir: SIGCHLD'de çocuk süreçleri toplar, bağlı değilken SIGTERM ya da SIGHUP'ta süreci sonlandırır, bağlıyken sinyale göre sunucuya çıkış, yeniden boyutlandırma ya da uyanma mesajı gönderir."}
+{"id": "tmux-095", "amac": "JSON belirteç dizisinden bir nesneyi ayrıştırır: derinlik sınırını denetler, her anahtar-değer çiftini değer türüne göre (gerekirse özyinelemeli) ayrıştırıp yeni nesne düğümüne ekler, yinelenen anahtar ya da sözdizimi hatasında başarısız olur."}
+{"id": "tmux-096", "amac": "Yerleşim hücre ağacını her hücrenin türü, ebeveyni, bölmesi ve geometrisiyle birlikte girintili biçimde özyinelemeli olarak hata ayıklama günlüğüne döker."}
+{"id": "tmux-097", "amac": "Ağaç modu verisine yeni bir öğe ekler: öğeyi etiket, ad ve metinle oluşturur, kaydedilmiş durumdan işaretleme ve genişletme bilgisini geri yükler ve ebeveynin ya da kökün alt listesinin sonuna ekler."}
+{"id": "tmux-098", "amac": "Seçenek adını seçenek tablosunda arayıp kapsamını bulur ve argümanlarla hedefe göre kullanılacak seçenek kümesini (sunucu, oturum, pencere ya da bölme) belirleyip kapsamı döndürür; kullanıcı seçeneklerinde bayraklara göre karar verir."}
+{"id": "tmux-099", "amac": "'AD=DEĞER' biçimindeki bir dizgeyi ad ve değere ayırıp ortam yapısına verilen bayraklarla ekler."}
+{"id": "tmux-100", "amac": "Verilen seçenek kümesinden adı verilen sayısal seçeneğin değerini döndürür; seçenek yoksa ya da sayı değilse ölümcül hata verir."}
+{"id": "tmux-101", "amac": "Bir yapıştırma tamponu silindiğinde bildirim alması gereken tüm denetim modu istemcilerine tampon adıyla 'paste-buffer-deleted' bildirimini yazar."}
+{"id": "tmux-102", "amac": "Giriş ayrıştırıcısının durum zamanlayıcısı dolduğunda çağrılır ve yarım kalan diziyi bırakarak ayrıştırıcıyı sıfırlar."}
+{"id": "tmux-103", "amac": "Oturumun referans sayısını bir artırır ve çağıranı belirterek günlüğe yazar."}
+{"id": "tmux-104", "amac": "Verilen geri çağrı ve veriyle yeni bir izleme kümesi oluşturur, onu verilen oturuma bağlar ve oturumun referansını artırır."}
+{"id": "tmux-105", "amac": "İstemci seçim modunda tuş girişini işler: geçerli ya da işaretli istemcileri ayırma işlemlerini uygular, bilgi/önizleme görünümünü değiştirir ya da Enter ile seçilen istemci için komutu çalıştırır, ardından modu yeniden çizer ya da kapatır."}
+{"id": "tmux-106", "amac": "Mod sıfırlama (CSI ... l) dizisinin parametrelerini uygular: ekleme modunu (IRM) kapatır, 34 parametresinde imleci çok görünür moda alır, bilinmeyenleri günlüğe yazar."}
+{"id": "tmux-107", "amac": "Bölmenin kaydırma çubuğu gizleme zamanlayıcısı dolduğunda üzerine gelme durumunu sıfırlar ve kaydırma çubuğunu gizler."}
+{"id": "tmux-108", "amac": "İstemciyi yenileme komutunu yürütür: seçeneklere göre istemci görünümünü kaydırır, pano sorgular, istemci bayraklarını ayarlar, denetim istemcisi için ofset, abonelik ya da boyut ayarlar, aksi halde istemciyi ya da durum satırını yeniden çizer."}
+{"id": "tmux-109", "amac": "Izgarada verilen konumdaki hücreyi verilen hücre içeriğiyle ayarlar: satırı gerektiği kadar genişletir, kullanılan hücre sayısını günceller ve gerekirse hücreyi genişletilmiş biçimde saklar."}
+{"id": "tmux-110", "amac": "Komut ayrıştırıcısının sözcük çözümleyicisidir: girdiden sıradaki belirteci okur; boşluk ve yorumları atlar, satır sonu, ayırıcılar, koşul anahtar sözcükleri (%if, %else vb.), biçimler ve kelimeleri belirteç olarak döndürür."}
+{"id": "tmux-111", "amac": "İstemcinin çıkış nedenini okunabilir bir mesaj dizgesine çevirip döndürür."}
+{"id": "tmux-112", "amac": "Bir pencerenin istemcilere göre olması gereken boyutunu window-size ve aggressive-resize seçeneklerine göre yeniden hesaplar; boyut değiştiyse pencereyi hemen ya da ertelenmiş olarak yeniden boyutlandırır, değişmediyse yalnız ofseti günceller."}
+{"id": "tmux-113", "amac": "Programın kullanım bilgisini duruma göre standart çıktıya ya da hata çıktısına yazar ve verilen durum koduyla süreçten çıkar."}
+{"id": "tmux-114", "amac": "Terminalde verilen bölme alanını görünür bölgeye kırpar ve kırpılmış alanı verilen arka plan rengiyle temizler."}
+{"id": "tmux-115", "amac": "Izgarada verilen dikdörtgen alanı verilen arka plan rengiyle temizler; alan tam genişlikteyse satırları topluca temizler."}
+{"id": "tmux-116", "amac": "Bir tuşu, aynı pencerede synchronize-panes seçeneği açık, görünür ve girişi kapalı olmayan diğer bütün bölmelere de gönderir."}
+{"id": "tmux-117", "amac": "Değiştirici içeren bir tuşu genişletilmiş tuş biçiminde (CSI 27;m;k~ ya da CSI k;mu) kaçış dizisine çevirip bölmeye yazar."}
+{"id": "tmux-118", "amac": "İstemci tarafında sunucudan gelen 'okumak için dosya aç' mesajını işler: dosyayı ya da standart girdiyi açıp okuma olayını kurar; hata olursa sunucuya hata kodlu 'okuma bitti' yanıtı gönderir."}
+{"id": "tmux-119", "amac": "Pencere adı zamanlayıcısı dolduğunda çağrılan geri çağrıdır; yalnız zamanlayıcının dolduğunu günlüğe yazar, ad denetimi olay döngüsüne bırakılır."}
+{"id": "tmux-120", "amac": "Kopya modunda verilen satırda imlecin gidebileceği en büyük sütunu döndürür: bir fazlasına izin veriliyorsa ya da vi tuş kipi kullanılmıyorsa satır uzunluğunu, aksi halde ızgara satırının sınırını verir."}
+{"id": "tmux-121", "amac": "Pencerenin referans sayısını bir azaltır; bu son referanssa önce 'window-closed' olayını tetikler, sayı sıfıra inince pencereyi yok eder."}
+{"id": "tmux-122", "amac": "Sunucunun saatlik bakım zamanlayıcısının geri çağrısıdır: biçim işlerini temizler, mümkünse malloc_trim ile kullanılmayan belleği iade eder ve zamanlayıcıyı bir saat sonrasına yeniden kurar."}
+{"id": "tmux-123", "amac": "İstem oluşturma verisini oturumun (yoksa global) seçeneklerinden doldurur: mesaj ve komut stillerini, imleç stilleri ile renklerini, mesaj biçimini, tuş kipini ve kelime ayırıcılarını ayarlar."}
+{"id": "tmux-124", "amac": "Oturum/pencere/bölme ağacı seçim modunda tuş ve fare girişini işler: önizleme kaydırma, işaretleme, bilgi görünümü, seçili ya da işaretli öğeleri öldürme onayı, komut istemi ve Enter ile seçilen hedefte komut çalıştırma gibi eylemleri yapar."}
+{"id": "tmux-125", "amac": "Bölmede eşzamanlı güncelleme sırasında kirli olarak işaretlenmiş satırları yeniden çizer ve kirli işaretlerini temizler."}
+{"id": "tmux-126", "amac": "Oturumun referans sayısını bir azaltır; sayı sıfıra inerse oturumun serbest bırakılmasını olay döngüsüne zamanlar."}
+{"id": "tmux-127", "amac": "Biçim ağacındaki oturuma birden fazla istemci bağlıysa '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-128", "amac": "Terminal başlatılmışsa ve son istekten bu yana yeterli süre geçmişse (ya da zorlanmışsa) terminale ön plan ve arka plan rengi sorgularını yeniden gönderir ve başlatma zamanlayıcısını kurar."}
+{"id": "tmux-129", "amac": "Pencerenin karakter cinsinden boyutunu ve verilmişse piksel boyutlarını ayarlar, varsa menüyü yeniden boyutlandırır ve pencere sahnesini geçersiz kılar."}
+{"id": "tmux-130", "amac": "İstem geçmişi dosyasını bulup satır satır okur ve her satırı istem geçmişine yükler."}
+{"id": "tmux-131", "amac": "Ekranın kaydırma bölgesini verilen satır sayısı kadar (en az bir, en fazla bölge yüksekliği) yukarı kaydırır, arka plan rengini uygular ve kaydırılan satır sayısını yazma bağlamına ekler."}
+{"id": "tmux-132", "amac": "Pencereye ana bölmenin solda, diğer bölmelerin sağda üst üste dizildiği yerleşimi uygular: genişlikleri seçeneklerden hesaplar, yerleşim ağacını yeniden kurar, pencereyi yeniden boyutlandırıp yeniden çizer."}
+{"id": "tmux-133", "amac": "Bir stil yapısını (liste, aralık, hizalama, varsayılan türü, dolgu, renkler, öznitelikler, genişlik, bağlantı vb.) virgülle ayrılmış metinsel stil tanımına çevirip döndürür."}
+{"id": "tmux-134", "amac": "İstemcinin bağlı olduğu oturumu verilen oturumla değiştirir: önceki oturumu saklar, odak, boyut, etkinlik, tema ve uyarıları günceller, oturum değişti olayını tetikleyip istemciyi yeniden çizer ve sunucu soket durumunu günceller."}
+{"id": "tmux-135", "amac": "Denetim istemcisi için duraklatılmış bir bölmenin çıktısını sürdürür: duraklama bayrağını kaldırır, ofsetleri bölmenin güncel ofsetine eşitler ve '%continue' bildirimi gönderir."}
+{"id": "tmux-136", "amac": "Günlük dosyası açıksa biçimlendirilmiş mesajı görünmez karakterleri kaçışlayarak zaman damgası ve önekle günlük dosyasına yazar."}
+{"id": "tmux-137", "amac": "Kopya modunda kullanılacak satır numarası gösterim kipini mod verisindeki ayar ve copy-mode-line-numbers seçeneğine göre belirleyip döndürür."}
+{"id": "tmux-138", "amac": "Sıfırla ayrılmış dizgelerden oluşan bir tamponu argc sayıda argümana ayırıp yeni ayrılmış bir argv dizisine kopyalar; sayı ya da uzunluk tutarsızsa hata döner."}
+{"id": "tmux-139", "amac": "Verilen pencere için hedef ve pencere bilgisini içeren bir olay yükü oluşturup verilen adlı olayı tetikler."}
+{"id": "tmux-140", "amac": "Ekranın imleç konumuna yerleştirilecek bir sixel görüntüsü için yeni görüntü kaydı oluşturur, hücre boyutunu ve yedek gösterimini hesaplar, ekranın ve genel görüntü listelerine ekler; toplam sınır aşılınca en eski görüntüyü serbest bırakır."}
+{"id": "tmux-141", "amac": "Bir istem türü adını bilinen tür adlarıyla karşılaştırıp karşılık gelen istem türü değerini döndürür; bulunamazsa geçersiz tür döner."}
+{"id": "tmux-142", "amac": "Ağaç modunda seçili öğenin önizlemesini çizer: bilgi görünümündeyse bilgi ekranını, değilse öğe türüne göre oturum, pencere ya da bölme önizlemesini yazar."}
+{"id": "tmux-143", "amac": "Ekranı başlangıç durumuna sıfırlar: imleç, kaydırma bölgesi ve modları sıfırlar, alternatif ekrandan çıkar, sekmeleri, ızgarayı, seçimi, başlıkları, görüntüleri, ilerleme çubuğunu ve köprüleri temizler."}
+{"id": "tmux-144", "amac": "İstemcinin durum satırında biçimlendirilmiş bir mesaj gösterir: mesajı sunucu mesaj günlüğüne ekler, gösterim süresi için zamanlayıcı kurar, tuş ve stil yoksayma ayarlarını yapar ve durum satırının yeniden çizilmesini ister."}
+{"id": "tmux-145", "amac": "Bölmenin çıktısını ya da girdisini bir kabuk komutuna yönlendiren boru komutunu yürütür: varsa eski boruyu kapatır, yeni soket çifti açıp komutu çocuk süreçte çalıştırır ve bölmeyi bu boruya bağlar."}
+{"id": "tmux-146", "amac": "Biçim ağacındaki bölmede açık olan terminal modlarının (DEC özel mod numaraları) virgülle ayrılmış listesini üreten biçim değişkeni değerini oluşturur."}
+{"id": "tmux-147", "amac": "Denetim modu istemcisinin okuma geri çağrısıdır: girişten satır satır komut okuyup ayrıştırarak istemcinin komut kuyruğuna ekler; boş satırda istemciyi çıkışa işaretler, ayrıştırma hatasında hata geri çağrısı ekler."}
+{"id": "tmux-148", "amac": "Bölmenin odak durumunu, etkin bölme olup olmadığına ve onu gösteren odaklı bir istemci bulunup bulunmadığına göre günceller; durum değiştiyse uygulamaya odak giriş/çıkış dizisini gönderir ve odak olayını tetikler."}
+{"id": "tmux-149", "amac": "Bölme seçim modunda tek bir bölmeyi ölçeklenmiş geometrisine göre önizleme ekranına çizer (içeriği kopyalayarak ya da küçültülmüş önizlemeyle) ve bölme numarasını üzerine yazar."}
+{"id": "tmux-150", "amac": "Izgarada verilen konumdaki kelimeyi kelime ayırıcılarına göre, sarılmış satırları da izleyerek geriye ve ileriye tarayıp bulur ve dizge olarak döndürür."}
+{"id": "tmux-151", "amac": "İstemcinin temasını açık ya da koyu olarak ayarlayıp ilgili tema olayını tetikler; tema değiştiyse tema renklerini güncelleyip istemciyi yeniden çizer ve terminalden renkleri yeniden ister."}
+{"id": "tmux-152", "amac": "Terminalde bir satırın verilen aralığını görünür bölgeye kırpar ve kaplamaların örtmediği görünür parçalarını verilen arka plan rengiyle temizler."}
+{"id": "tmux-153", "amac": "Bölmenin sözde terminal tanıtıcısını engellemesiz yapıp okuma/yazma olay tamponu kurar, giriş ayrıştırıcısını ilklendirir ve olayları etkinleştirir."}
+{"id": "tmux-154", "amac": "Geçerli satırın verilen aralığını aynı arka plan rengine sahip ardışık parçalara ayırır ve her parça için kendi rengiyle temizleme kaydını toplanan yazma işlemlerine ekler."}
+{"id": "tmux-155", "amac": "Kopya modunda seçim birimini (karakter, kelime ya da satır) ayarlayan komutu işler; satır birimine geçişte mevcut seçimi tam satırları kapsayacak biçimde genişletip imlecin yönüne göre sürükleme durumunu ayarlar."}
+{"id": "tmux-156", "amac": "Verilen rengi RGB bileşenlerine ayırıp OSC renk sorgusuna 'rgb:rrrr/gggg/bbbb' biçiminde (gerekirse palet indeksiyle) yanıt gönderir; sonlandırıcıyı istekteki türe göre seçer."}
+{"id": "tmux-157", "amac": "Biçim ağacındaki bölme ekranının imleç stilini 'block', 'underline', 'bar' ya da 'default' olarak döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-158", "amac": "Bölmeyi verilen pencere moduna sokar: mod zaten yığındaysa başa alır, değilse yeni mod girdisi oluşturup ilklendirir, bölmenin ekranını modun ekranına çevirir, yeniden çizim ister ve mod girildi/değişti olaylarını tetikler."}
+{"id": "tmux-159", "amac": "DEC özel mod ayarlama (CSI ? ... h) dizisinin parametrelerini uygular: imleç tuşları, köken, satır sarma, imleç görünürlüğü ve yanıp sönmesi, fare izleme, odak bildirimi, alternatif ekran, köşeli yapıştırma, tema güncellemeleri ve eşzamanlı çıktı modlarını açar."}
+{"id": "tmux-160", "amac": "Biçim ağacındaki bölmede synchronize-panes seçeneği açıksa '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-161", "amac": "Bölme seçim modunun zamanlayıcısı dolduğunda bölmenin modunu sıfırlayarak modu kapatır."}
+{"id": "tmux-162", "amac": "Verilen hücre boyutundaki bir sixel görüntüsü için ilk satırında 'SIXEL IMAGE (GxY)' etiketi, kalan satırlarında '+' karakterleri bulunan metinsel yer tutucu (yedek gösterim) dizgesi oluşturur."}
+{"id": "tmux-163", "amac": "Pencerenin yakınlaştırmasını (zoom) kaldırır: kayan bölmelerin geometrisini saklar, kaydedilmiş yerleşimi geri yükler, bölmelerin yakınlaştırma bayraklarını temizler, kayan hedef bölmeyi z-sırasına geri koyar ve istenirse olayları tetikleyip sahneyi geçersiz kılar."}
+{"id": "tmux-164", "amac": "Bölmenin referans sayısını bir artırır ve çağıranı belirterek günlüğe yazar."}
+{"id": "tmux-165", "amac": "Verilen pencereyi oturuma belirtilen indeksle bağlar: yeni pencere bağlantısı oluşturup pencereyi atar, 'window-linked' olayını tetikler ve oturum grubunu eşitler; indeks kullanımdaysa hata verir."}
+{"id": "tmux-166", "amac": "Ekran mod bit maskesini, açık modların adlarını virgülle sıralayan okunabilir bir dizgeye çevirip döndürür."}
+{"id": "tmux-167", "amac": "Bölmenin sözde terminaline TIOCSWINSZ ioctl çağrısıyla yeni satır/sütun ve piksel boyutunu bildirir."}
+{"id": "tmux-168", "amac": "Tuş bağlarını listeleme komutunu yürütür: tablo, tuş, not ve sıralama seçeneklerine göre bağları seçip filtreler, her birini şablonla biçimlendirip yazdırır ya da tek sonuç istenmişse durum satırında gösterir."}
+{"id": "tmux-169", "amac": "Penceredeki bütün bölmeleri verilen yönde (yan yana ya da üst üste) eşit dağıtan yerleşimi uygular, yerleşimi düzeltir, pencereyi yeniden boyutlandırıp yeniden çizer."}
+{"id": "tmux-170", "amac": "Koşullu komut çalıştırma komutunu yürütür: -F ile biçim sonucunun doğruluğuna göre, aksi halde kabuk komutunu iş olarak çalıştırıp çıkış durumuna göre 'if' ya da 'else' komutlarını kuyruğa ekler."}
+{"id": "tmux-171", "amac": "Bağlantısı kopan bir istemciyi sunucudan kaldırır: istemciyi ölü işaretler, kaplama, istem ve mesajları temizler, açık dosyaları sonlandırır, ayrılma/kapanma olaylarını tetikler, tüm kaynak ve zamanlayıcılarını serbest bırakır, tanıtıcılarını kapatır ve sunucu durumunu günceller."}
+{"id": "tmux-172", "amac": "İstemcinin durum satırı ekranını status-format seçeneklerini biçim değişkenleriyle genişletip stilleri uygulayarak yeniden oluşturur; içerik değiştiyse doğru döner."}
+{"id": "tmux-173", "amac": "Bölmenin, etkin olup olmamasına göre önbelleğe alınmış varsayılan ön ve arka plan renklerini hücreye, soluklaştırma değerini çıkış parametresine yazar; stil değişmişse önbelleği yeniler."}
+{"id": "tmux-174", "amac": "Oturum listesi değiştiğinde bildirim alması gereken tüm denetim modu istemcilerine 'sessions-changed' bildirimini yazar."}
+{"id": "tmux-175", "amac": "Bölmenin etkin pencere modundan çıkar: mod girdisini yığından çıkarıp serbest bırakır, sonraki moda ya da temel ekrana döner, yeniden çizim ister, mod çıkıldı/değişti olaylarını tetikler ve istenmişse bölmeyi öldürür."}
+{"id": "tmux-176", "amac": "Ağaç modunda bir satırın kısayol tuşunu, tuş biçimini öğenin oturum, pencere ya da bölme bilgileri ve satır numarasıyla genişletip tuş koduna çevirerek belirler."}
+{"id": "tmux-177", "amac": "JSON düğümünde verilen anahtarı arar, değerinin sayı olduğunu doğrulayıp 64 bitlik tamsayıyı çıkış parametresine yazar; anahtar yoksa ya da tür yanlışsa hata nedeni üretir."}
+{"id": "tmux-178", "amac": "Ekrana yazma bağlamını bitirir: toplanan hücre yazımlarını sonlandırıp terminale boşaltır ve toplama öğesini serbest bırakır."}
+{"id": "tmux-179", "amac": "Bir biçim ağacına verilen önekle pencere bağlantısının indeksini, oturumda etkin olup olmadığını ve pencerenin kullanıcı ('@' ile başlayan) seçeneklerini biçim değişkenleri olarak ekler."}
+{"id": "tmux-180", "amac": "Komut verilmeden bağlanan istemci için default-client-command seçeneğindeki komutları komut kuyruğuna ekleyen geri çağrıdır; istemci salt okunursa ve komutlar salt okunur değilse yerine salt okunur hata geri çağrısını ekler."}
+{"id": "tmux-181", "amac": "İstemciye verilen komutu varsayılan kabukla çalıştırması için komut ve kabuk yolunu içeren bir exec mesajı gönderir."}
+{"id": "tmux-182", "amac": "Izgaranın verilen satırına, verilen sütundan başlayarak bir karakter dizisini aynı hücre öznitelikleriyle hücre hücre yazar; satırı genişletir ve gerektiğinde genişletilmiş hücre kullanır."}
+{"id": "tmux-183", "amac": "Verilen soket tanıtıcısı için yeni bir istemci yapısı oluşturur, eş bağlantısı, ortam, komut kuyruğu, terminal boyutu, tema, durum satırı, tuş tablosu ve zamanlayıcıları varsayılanlarla ilklendirip istemci listesine ekler."}
+{"id": "tmux-184", "amac": "Biçim ağacındaki istemcinin etkin tuş tablosu varsayılan tablodan farklıysa '1', aynıysa '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-185", "amac": "Pencerenin uyarı zamanlayıcısı dolduğunda pencereyi sessizlik uyarısı için kuyruğa ekler."}
+{"id": "tmux-186", "amac": "Bir tuşu bölmeye iletir: fare olayıysa ve bu bölmeye aitse fare girdisi olarak işler, değilse tuşu bölmenin uygulamasına yazar."}
+{"id": "tmux-187", "amac": "Hedefte yalnız bölme belirtildiğinde bulma durumunu çözer: '%' ile başlayan kimlikse bölmeyi kimlikle bulup en uygun pencere bağlantısını seçer, değilse geçerli pencerede bölmeyi arar."}
+{"id": "tmux-188", "amac": "Bulma durumu yapısını temizleyip verilen pencere bağlantısından oturum, pencere bağlantısı, pencere ve etkin bölmeyle doldurur."}
+{"id": "tmux-189", "amac": "İstemcinin ekranını verilen bayraklara göre yeniden çizer: durum satırını, bölme durum satırlarını, bölmeleri, kenarlıkları, bölme istemlerini ve menüyü sahneye göre terminale çizer."}
+{"id": "tmux-190", "amac": "Bir seçenek adını alternatif adlar eşleme tablosunda arayıp karşılık gelen asıl adı döndürür; eşleşme yoksa adı aynen döndürür."}
+{"id": "tmux-191", "amac": "Yazma bağlamının bölmesinde eşzamanlı güncelleme modu açıksa toplanan yazımları boşaltır ve eşzamanlı güncelleme modunu sonlandırır."}
+{"id": "tmux-192", "amac": "Ağaç (tree) modunun varsayılan biçim dizgesinin kopyasını döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-193", "amac": "Kilitli olmayan, bekleyeni kalmamış ve uyandırılmış bir bekleme kanalını kanal ağacından çıkarıp serbest bırakır."}
+{"id": "tmux-194", "amac": "Terminalde imleç rengini ayarlar: rengi tema eşlemesiyle RGB'ye çevirir, değiştiyse terminale imleç rengi ayarlama ya da sıfırlama kodunu gönderir ve rengi kaydeder."}
+{"id": "tmux-195", "amac": "Bir istemcinin bu bölmenin terminal çıktısını alıp almayacağını belirler; alacaksa terminal bağlamına pencere ofsetlerini ve bölme konumunu yazar, bölme yeniden çizilecekse çizimi ertelenmiş yeniden çizime bırakır."}
+{"id": "tmux-196", "amac": "Kopya modunda imleci önek sayısı kadar sağa taşıyan komutu işler."}
+{"id": "tmux-197", "amac": "Dosya okutma (source-file) işleminin tamamlanmasını işler: yapılandırma yüklemesi bitmemişse veriyi serbest bırakır, bitmişse hata durumunu istemciye yansıtıp tamamlanma geri çağrısını kuyruğa ekler."}
+{"id": "tmux-198", "amac": "Ekranın tamamını temizler: ızgarayı seçeneğe göre geçmişe kaydırarak ya da doğrudan temizler, terminale ekran temizleme komutu gönderir ya da bölme örtülüyse yalnız görünür aralıkları satır satır temizler."}
+{"id": "tmux-199", "amac": "İstemciyi geçerli penceresinin en son etkin istemcisi olarak işaretler; pencere boyutu 'latest' ise boyutu yeniden hesaplar ve 'client-active' olayını tetikler."}
+{"id": "tmux-200", "amac": "Bir tuşun klasik VT10x kodlamasıyla gönderilebilir olup olmadığına karar verir: yalnız Meta değiştiricili ya da belirli Ctrl birleşimli tuşları VT10x biçiminde yazar, diğerlerinde başarısızlık döner."}
+{"id": "tmux-201", "amac": "Sunucuda istemciden gelen mesajları türüne göre işleyen dağıtıcıdır: kimlik, komut, yeniden boyutlandırma, çıkış, uyanma, kabuk ve dosya okuma/yazma mesajlarını ilgili işleyicilere yönlendirir; bağlantı koptuysa istemciyi kayıp sayar, geçersiz mesajda eşi sonlandırır."}
+{"id": "tmux-202", "amac": "Verilen hata mesajını bildirecek bir hata geri çağrısı komut öğesi oluşturup döndürür."}
+{"id": "tmux-203", "amac": "Pencerenin referans sayısını bir artırır ve çağıranı belirterek günlüğe yazar."}
+{"id": "tmux-204", "amac": "Yerleşik varsayılan tuş bağı tanımlarını (önek tablosu, kayan bölme taşıma tablosu, menü tuşları vb.) komut dizgeleri olarak tanımlayıp tuş bağı tablolarına yükler."}
+{"id": "tmux-205", "amac": "Ortam değişkenlerini gösterme komutunu yürütür: global ortamdan ya da hedef oturumun ortamından adı verilen değişkeni ya da bütün değişkenleri yazdırır."}
+{"id": "tmux-206", "amac": "Yazma bağlamındaki ekranı sıfırlar: sekmeleri ve kaydırma bölgesini sıfırlar, modları varsayılana döndürür, ekranı temizleyip imleci sol üst köşeye taşır."}
+{"id": "tmux-207", "amac": "Dinamik bir tamponun sonuna verilen baytları ekler; boyut taşmasını denetleyerek tamponu büyütür ve uzunluğu günceller."}
+{"id": "tmux-208", "amac": "Bir argüman yapısının bayraklarını ve konumsal değerlerini, değerleri verilen argc/argv ile işleyerek yeni bir argüman yapısına kopyalar."}
+{"id": "tmux-209", "amac": "Verilen bayrağın son değerini yüzde ya da mutlak sayı olarak ayrıştırıp verilen sınırlar içinde sayıya çevirir; bayrak yoksa ya da değeri boşsa hata nedeni üretir."}
+{"id": "tmux-210", "amac": "Geçiş (switch) modu ekranını çizer: eşleşen öğeleri listeler, seçili öğeyi mod stiliyle, eşleşen karakterleri eşleşme stiliyle vurgular ve varsa alt satırdaki istemi çizer."}
+{"id": "tmux-211", "amac": "Giriş ayrıştırıcısı yeni bir duruma girerken bağlamı temizler, temel duruma dönüş zamanlayıcısını başlatır ve son karakter bayrağını siler."}
+{"id": "tmux-212", "amac": "Biçim ağacındaki istemcide pencere terminalden büyük olduğu için görünür bölge ofsetli gösteriliyorsa '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-213", "amac": "İstemciden gelen palet ya da pano yanıtını bekleyen giriş isteğiyle eşleştirir: uyuşmayan istekleri atar, bulunan isteğe yanıtı iletir ve ardından kuyrukta bekleyen yanıtları gönderir."}
+{"id": "tmux-214", "amac": "Izgaranın verilen satırı geçerliyse o satırın satır verisini salt okunur olarak döndürür."}
+{"id": "tmux-215", "amac": "Bölme, pencere ve istem türü bilgilerini içeren bir olay yükü oluşturup verilen adlı bölme istemi olayını tetikler."}
+{"id": "tmux-216", "amac": "Seçenek kümesinde adı verilen komut türündeki seçeneğin değerini verilen komut listesiyle değiştirir (gerekirse varsayılan girdiyi oluşturur); kullanıcı seçeneğinde ya da komut olmayan seçenekte ölümcül hata verir."}
+{"id": "tmux-217", "amac": "Biçimdeki pencere döngüsünü genişletir: oturumun pencerelerini sıralı gezer, her biri için döngü ve komşu pencere bilgileriyle yeni biçim ağacı kurup (etkin pencereye ayrı biçim uygulayarak) biçimi genişletir ve sonuçları birleştirir."}
+{"id": "tmux-218", "amac": "Penceredeki etkin bölme değiştiğinde yeni ve eski bölme bilgilerini içeren bir olay yükü oluşturup 'window-pane-changed' olayını tetikler."}
+{"id": "tmux-219", "amac": "Bir pencerenin yerleşimi değiştiğinde, o pencereyi içeren oturumlara bağlı denetim modu istemcilerine pencere kimliği ve yerleşim bilgilerini içeren 'layout-change' bildirimini yazar."}
+{"id": "tmux-220", "amac": "Terminal tuş ağacına verilen kaçış dizisi için tuş kodu eşlemesi ekler; dizi zaten varsa eşlenen tuş kodunu değiştirir."}
+{"id": "tmux-221", "amac": "Ekranın bir satırının verilen aralığını terminalde verilen konuma çizer: imleci ve bölge/kenar boşluklarını kapatır, baştaki geniş karakter dolgu hücrelerini temizler, önceki satırdan sarma durumunu belirler ve hücreleri öznitelikleriyle yazar."}
+{"id": "tmux-222", "amac": "Verilen oturum listesinden, liste yoksa tüm oturumlardan, geçerli olanlar arasında bayraklara göre en iyi oturumu seçip döndürür."}
+{"id": "tmux-223", "amac": "İstemcinin referans sayısını bir azaltır; sayı sıfıra inerse istemcinin serbest bırakılmasını olay döngüsüne zamanlar."}
+{"id": "tmux-224", "amac": "Bir X11 renk adını bilinen renk adları tablosunda arayıp karşılık gelen RGB renk değerini döndürür."}
+{"id": "tmux-225", "amac": "Bir pencere için zil, etkinlik ve sessizlik uyarılarını denetler ve oluşan uyarı bayraklarını birleştirerek döndürür."}
+{"id": "tmux-226", "amac": "Biçim ağacındaki bölmede çalışan ya da son çalışmış komutun geçen süresini saniye cinsinden döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-227", "amac": "Bölmeyi yeni boyuta getirir: eşzamanlı güncellemeyi durdurur, yeniden boyutlandırma kaydını kuyruğa ekler, bölme ve ekran boyutunu günceller, etkin modu bilgilendirir ve 'pane-resized' olayını tetikler."}
+{"id": "tmux-228", "amac": "Biçim ağacındaki bölmenin çıktısı bir boruya (pipe) yönlendirilmişse '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-229", "amac": "Bir görüntü kaydını genel ve ekran görüntü listelerinden çıkarıp sayacı düşürür, sixel verisini ve yedek gösterimini serbest bırakarak kaydı siler."}
+{"id": "tmux-230", "amac": "Süreci sona eren bir bölmeyi işler: pty ve boru tanıtıcılarını kapatır; remain-on-exit ayarına göre bölmeyi ölü durumda tutup durum mesajını çizer ya da bölmeyi yerleşimden ve pencereden kaldırır, son bölmeyse pencereyi öldürür."}
+{"id": "tmux-231", "amac": "Bölmeyi yeniden başlatma komutunu yürütür: argümanlar, ortam değişkenleri ve çalışma diziniyle başlatma bağlamını kurup bölmede komutu yeniden başlatır ve bölmeyi yeniden çizdirir."}
+{"id": "tmux-232", "amac": "Özelleştirme modunda seçili tuş bağının seçili alanını değiştirir: 'Repeat' alanında tekrar bayrağını tersine çevirir, 'Command' ya da 'Note' alanında yeni değeri almak için istem açar."}
+{"id": "tmux-233", "amac": "OSC 10 kaçış dizisini işler: '?' sorgusuna bölmenin geçerli ön plan rengini yanıt olarak gönderir, aksi halde verilen X11 rengini paletin ön plan rengi yapıp tam yeniden çizim ister."}
+{"id": "tmux-234", "amac": "Gelen 'yazma dosyasını kapat' mesajını işler: ilgili istemci dosyasını bulup kapalı işaretler, bekleyen çıktı yoksa yazmayı tamamlar."}
+{"id": "tmux-235", "amac": "Biçim ağacındaki pencerenin boyutu elle ayarlanıyorsa elle verilen yüksekliği, değilse boş dizge döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-236", "amac": "Özelleştirme modunu başlatır: mod verisini ayırıp biçim ve istem bayraklarını ayarlar, ağaç modunu geri çağrılarıyla kurar, ağacı oluşturup çizer ve mod ekranını döndürür."}
+{"id": "tmux-237", "amac": "İstemcinin tema renk tablosunu günceller: theme seçeneğine göre terminalin kendi renklerini kullanır ya da açık/koyu temaya karşılık gelen seçeneklerdeki renkleri genişletip ayrıştırarak tabloya yazar."}
+{"id": "tmux-238", "amac": "Bölme değiştirme komutunu yürütür: kaynak ve hedef bölmenin (ya da -U/-D ile komşu döşeli bölmenin) pencere listelerindeki, z-sırasındaki ve yerleşimdeki yerlerini, boyut ve konumlarını karşılıklı değiştirir ve etkin bölmeleri ayarlar."}
+{"id": "tmux-239", "amac": "Olay yüküne verilen adla bir oturum öğesi ekler ve oturumun referansını artırır."}
+{"id": "tmux-240", "amac": "İstemcinin kabuk isteğini karşılar: varsayılan kabuk yolunu belirleyip istemciye kabuk mesajı olarak gönderir ve eş bağlantısını sonlandırır."}
+{"id": "tmux-241", "amac": "Bir yerleşim hücresini ve alt hücrelerini özyinelemeli olarak tür, boyut, konum ve bölme bilgileriyle JSON biçiminde yerleşim dizgesine yazar; geçersiz hücrede hata döner."}
+{"id": "tmux-242", "amac": "Toplanan yazma listesinde kaydırma bölgesini bir satır yukarı kaydırır: üst satırın kayıtlarını temizleyip satır listelerini yukarı taşır ve en alt satıra tam genişlikte temizleme kaydı ekler."}
+{"id": "tmux-243", "amac": "Bir bölme için ekran yazma bağlamını başlatır: verilen ekranla ya da bölmenin geçerli ekranıyla bağlamı ilklendirir ve bölmeyi bağlama atar."}
+{"id": "tmux-244", "amac": "Genel giriş tamponu boyutu ayarını verilen değere ayarlar ve değişikliği günlüğe yazar."}
+{"id": "tmux-245", "amac": "Yapıştırma tamponlarını listeleme komutunu yürütür: tamponları sıralama ölçütüne göre alır, filtreye uyanları şablonla biçimlendirip yazdırır."}
+{"id": "tmux-246", "amac": "Mesajları gösterme komutunu yürütür: -T ile terminal bilgilerini, -J ile iş özetini, aksi halde sunucu mesaj günlüğündeki mesajları numara ve zamanlarıyla yazdırır."}
+{"id": "tmux-247", "amac": "Bölmedeki uygulamadan gelen pencere adı ayarlama dizisini işler: allow-rename açıksa ve ad geçerli UTF-8 ise pencere adını ayarlar (boş adda otomatik yeniden adlandırmayı geri getirir) ve kenarlık ile durum satırını yeniler."}
+{"id": "tmux-248", "amac": "Komut kuyruğu günlükleri için istemcinin adını (adı yoksa adresini, istemci yoksa '<global>') açılı ayraçlar içinde döndürür."}
+{"id": "tmux-249", "amac": "Terminalin özellik kümesini uygulayıp yeteneklerini günceller, kenar boşluğu, genişletilmiş tuş, odak olayı ve kaçış modu etkinleştirme kodlarını gönderir, istemciyi yeniden çizip terminal durumunu geçersiz kılar."}
+{"id": "tmux-250", "amac": "Bulma durumu yapısının oturum, pencere bağlantısı, pencere, bölme ve indeks alanlarını verilen önekle hata ayıklama günlüğüne yazar."}
+{"id": "tmux-251", "amac": "Pencerenin pane-border-lines seçeneğinden bölme kenarlık çizgisi türünü döndürür."}
+{"id": "tmux-252", "amac": "Bölmeleri listeleme komutunu yürütür: sıralama seçeneğini doğrulayıp -a ile sunucudaki, -s ile oturumdaki, aksi halde hedef penceredeki bölmeleri listeler."}
+{"id": "tmux-253", "amac": "İmleç konumundan başlayarak verilen sayıda karakteri satırdan siler ve terminale karakter silme komutunu gönderir ya da satırı yeniden çizer."}
+{"id": "tmux-254", "amac": "Denetim istemcisine komut çıktısı koruma satırını (begin/end/error, zaman, numara ve bayraklarla) yazar; koruma derinliğini izleyip en dıştaki blok kapanınca ertelenmiş çıktıyı boşaltır."}
+{"id": "tmux-255", "amac": "Hedef dizgesinden oturumu çözer: '$' kimliği, tam ad, istemci adı ve tam eşleşme zorunlu değilse tekil önek ya da desen eşleşmesiyle oturumu bulup bulma durumuna yazar."}
+{"id": "tmux-256", "amac": "Bir dizgeyi strdup ile yeni belleğe kopyalar; bellek ayrılamazsa ölümcül hata verir."}
+{"id": "tmux-257", "amac": "Dosya okutma (source-file) komutunu yürütür: iç içe okutma derinliğini denetler, yolları biçim ve glob ile genişleterek dosya listesini oluşturur ve ilk dosyayı okumaya başlar, dosya yoksa işlemi tamamlar."}
+{"id": "tmux-258", "amac": "Yapıştırma tamponunu bölmeye yapıştırma komutunu yürütür: seçilen tamponun içeriğini satır ayırıcılarını değiştirerek, istenirse köşeli yapıştırma kodlarıyla hedef bölmeye yazar ve istenirse tamponu siler."}
+{"id": "tmux-259", "amac": "Bulma durumunu verilen bölmenin penceresinden doldurup bölme alanını ayarlar; pencereden doldurma başarısızsa hata döner."}
+{"id": "tmux-260", "amac": "Verilen adla yeni bir süreç yapısı oluşturur: günlüğü açar, süreç başlığını ayarlar, sürüm, sistem ve kütüphane bilgilerini günlüğe yazar ve eş listesini ilklendirir."}
+{"id": "tmux-261", "amac": "Izgara satır bayraklarını (sarılmış, genişletilmiş, ölü, istem/komut/çıktı işaretleri, köprü) virgülle ayrılmış okunabilir bir dizgeye çevirip döndürür."}
+{"id": "tmux-262", "amac": "Bir yapılandırma dosyasını açıp komutlarını ayrıştırır ve yalnız ayrıştırma istenmemişse komutları uygun durumla komut kuyruğuna ekler; açma ya da ayrıştırma hatasını yapılandırma hata listesine kaydeder."}
+{"id": "tmux-263", "amac": "Kayan bir yerleşim hücresini döşeli düzene yerleştirir: komşu hücreyle alanı paylaştırarak (komşu yoksa ebeveyni de döşeyerek) hücrenin ve komşunun boyutlarını ayarlar; yer yoksa hata döner."}
+{"id": "tmux-264", "amac": "Bir pencereyi bağlı olduğu bütün oturumlardan ayırarak kapatır: yakınlaştırmayı kaldırır, her oturumdan pencere bağlantılarını çıkarır (oturum boşalırsa oturum grubunu yok eder), istenirse pencere numaralarını yeniden düzenler ve boyutları yeniden hesaplar."}
+{"id": "tmux-265", "amac": "İstemcileri listeleme komutunu yürütür: istemcileri sıralama ölçütüne göre alır, istenirse hedef oturuma bağlı olanlarla sınırlayıp filtreye uyanları şablonla biçimlendirerek yazdırır."}
+{"id": "tmux-266", "amac": "Verilen tuş tablosunun istemcinin varsayılan tuş tablosu olup olmadığını denetler."}
+{"id": "tmux-267", "amac": "Boşluk, virgül ya da dik çizgiyle ayrılmış öznitelik adları dizgesini (bold, dim, underscore vb.) ayrıştırıp öznitelik bit maskesine çevirir; geçersiz girdide -1 döner."}
+{"id": "tmux-268", "amac": "Onay isteyerek komut çalıştırma komutunu yürütür: çalıştırılacak komut listesini hazırlar, onay tuşunu ve istem metnini belirler ve istemcide tek tuşluk onay istemi açar."}
+{"id": "tmux-269", "amac": "Izgaranın bir satırında verilen hücre aralığını başka bir sütun konumuna taşır ve hedefle çakışmayan eski hücreleri arka plan rengiyle temizler."}
+{"id": "tmux-270", "amac": "Bulma durumunu verilen oturum ve pencereyle doldurur: pencere için en uygun pencere bağlantısını bulur ve etkin bölmeyi ayarlar; bulunamazsa durumu temizleyip hata döner."}
+{"id": "tmux-271", "amac": "Terminalde kaydırma bölgesini yeniden çizer: bölge büyükse ya da bölme örtülüyse yeniden çizim geri çağrısını kullanır, değilse bölgedeki satırları tek tek çizer."}
+{"id": "tmux-272", "amac": "Biçim ağacında bölme varken sunucuda işaretlenmiş bir bölme bulunuyorsa '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-273", "amac": "Ayrıştırılmış komutları kaynak satırlarına göre gruplanmış komut listelerine dönüştürerek ayrıştırma sonucunu oluşturur; bir komut kurulamazsa başarısız sonuç döner."}
+{"id": "tmux-274", "amac": "Bir terminal yeteneğini numarası, adı, türü ve değeriyle okunabilir bir açıklama dizgesine çevirip döndürür."}
+{"id": "tmux-275", "amac": "Kopya modunda imleci kelime ayırıcılarına göre önek sayısı kadar önceki kelimeye taşıyan komutu işler."}
+{"id": "tmux-276", "amac": "JSON düğümünde verilen anahtarı arar, değerinin mantıksal tür olduğunu doğrulayıp çıkış parametresine yazar; anahtar yoksa ya da tür yanlışsa hata nedeni üretir."}
+{"id": "tmux-277", "amac": "Olay yüküne verilen adla bir bölme öğesi ekler ve bölmenin referansını artırır."}
+{"id": "tmux-278", "amac": "Yapıştırma tamponunu kaydetme komutunu yürütür: seçilen tamponu gösterme varyantında komut çıktısına yazar, aksi halde verilen dosya yoluna ekleme ya da üzerine yazma kipinde yazar."}
+{"id": "tmux-279", "amac": "Terminalden gelen genişletilmiş tuş dizisini (CSI 27;m;k~ ya da CSI k;m u) ayrıştırır; tuş numarasını, Unicode dönüşümünü ve değiştiricileri çözerek iç tuş koduna çevirir."}
+{"id": "tmux-280", "amac": "Pencere değiştirme komutunu yürütür: kaynak ve hedef pencere bağlantılarının gösterdiği pencereleri karşılıklı değiştirir (aynı gruptaki farklı oturumlar arasında reddeder), istenirse pencere seçimini ayarlar, oturum gruplarını eşitleyip yeniden çizer."}
+{"id": "tmux-281", "amac": "Verilen karakter ve piksel boyutlarıyla yeni bir pencere yapısı oluşturur; bölme listelerini, seçeneklerini, kimliğini ve zaman bilgisini ilklendirip genel pencere ağacına ekler."}
+{"id": "tmux-282", "amac": "İstemcinin terminalini açar: terminal tanımını oluşturur, giriş/çıkış olaylarını, tamponlarını ve zamanlayıcıları kurar, terminali başlatır ve tuş tablosunu oluşturur; terminal tanımı kurulamazsa terminali kapatıp hata döner."}
+{"id": "tmux-283", "amac": "Bir seçenek değerini türüne göre (komut listesi, sayı, tuş, renk, bayrak, seçim ya da dizge) metinsel gösterimine çevirip döndürür."}
+{"id": "tmux-284", "amac": "İş (job) olay tamponunun yazma geri çağrısıdır: gönderilecek çıktı kalmadıysa ve yazma açık tutulmuyorsa soketin yazma yönünü kapatıp yazma olayını devre dışı bırakır."}
+{"id": "tmux-285", "amac": "Komut öğesinin komut adını ve öğe durumundaki biçim değişkenlerini verilen biçim ağacına ekler."}
+{"id": "tmux-286", "amac": "Sunucu soketine gelen bağlantıları kabul eden olay geri çağrısıdır: bağlantıyı kabul eder, tanıtıcı sınırı aşılmışsa kabulü erteler, sunucu kapanıyorsa bağlantıyı kapatır, aksi halde yeni istemci oluşturur ve erişim izni yoksa istemciyi çıkışa işaretler."}
+{"id": "tmux-287", "amac": "Başlatılacak bir süreç için ortam oluşturur: global ve oturum ortamlarını kopyalar, istenirse TERM ve ilgili terminal değişkenlerini ayarlar, systemd değişkenlerini temizler ve TMUX değişkenini soket yolu, süreç kimliği ve oturum kimliğiyle ayarlar."}
+{"id": "tmux-288", "amac": "Bütün işlerin (job) komut, tanıtıcı, süreç kimliği ve durum bilgilerini komut çıktısına satır satır yazdırır."}
+{"id": "tmux-289", "amac": "Bir pencere bağlantısını verilen pencereye bağlar: önceki pencereden ayırıp onun referansını düşürür, yeni pencerenin bağlantı listesine ekler ve referansını artırır."}
+{"id": "tmux-290", "amac": "Biçim işleri ağacındaki uzun süredir (bir saatten fazla) kullanılmayan işleri, zorlanmışsa tümünü ağaçtan çıkarıp serbest bırakır."}
+{"id": "tmux-291", "amac": "Bir bölmeyi yok eder: beklemeleri ve düzenleyiciyi sonlandırır, bölmeyi genel ağaçtan çıkarıp yok edildi işaretler, istemi, modları, tanıtıcıları, giriş ayrıştırıcısını, boruyu ve zamanlayıcıları temizler ve referansını düşürür."}
+{"id": "tmux-292", "amac": "Terminal özellik bit maskesini, açık özelliklerin adlarını virgülle sıralayan bir dizgeye çevirip döndürür."}
+{"id": "tmux-293", "amac": "Bir kancanın komutlarını komut kuyruğuna ekler: hedef durumunu belirler, kanca seçeneğini uygun seçenek kümesinde bulur, tetiklenme bilgisini günceller ve kanca değerlerini gerekirse ayrıştırarak komut öğeleri olarak sıraya koyar."}
+{"id": "tmux-294", "amac": "İstemci dosyasının yazma hatası geri çağrısıdır: hata kodunu kaydeder, olay tamponunu ve tanıtıcıyı kapatır; dosya kapatılmışsa yazmayı bitirir, değilse geri çağrıyı hata durumuyla çağırır."}
+{"id": "tmux-295", "amac": "Komut çıktısı verisini istemciye gösterir: istemci bir oturuma bağlı değilse ya da denetim modundaysa çıktıyı doğrudan (gerekirse temizleyerek) yazar, aksi halde etkin bölmeyi görüntüleme moduna alıp satırları orada gösterir."}
+{"id": "tmux-296", "amac": "Komut listesindeki her komut için bir komut kuyruğu öğesi oluşturup bunları birbirine bağlar ve zincirin ilk öğesini döndürür; liste boşsa boş komut geri çağrısı döndürür."}
+{"id": "tmux-297", "amac": "Yazma bağlamındaki ekranın moduna verilen mod bitlerini ekleyerek açar ve bunu günlüğe yazar."}
+{"id": "tmux-298", "amac": "İstemcinin durum satırında gösterilecek mesajı message-format ve message-style seçeneklerine göre biçimlendirip mesaj alanına çizer; ekran değiştiyse 1, değişmediyse 0 döner."}
+{"id": "tmux-299", "amac": "Kopya modunun yenileme zamanlayıcısı geri çağrısıdır: bölmede görülmemiş değişiklik varsa ve seçim yapılmıyorsa kopya görünümünü bölmenin güncel içeriğiyle yeniler (imleç alttaysa yeni çıktıyı izler) ve zamanlayıcıyı yeniden kurar."}
+{"id": "tmux-300", "amac": "Ekranın kaydırma bölgesini verilen satır sayısı kadar (en az bir, en fazla bölge yüksekliği) aşağı kaydırır ve terminale aşağı kaydırma komutunu gönderir ya da bölmeyi yeniden çizer."}
+{"id": "tmux-301", "amac": "Kabuk komutu çalıştırma verisini serbest bırakır: zamanlayıcıyı siler, oturum ve istemci referanslarını düşürür, komut durumunu, çalışma dizinini ve komut dizgesini serbest bırakır."}
+{"id": "tmux-302", "amac": "Bir istemci ayrıldığında bildirim alması gereken tüm denetim modu istemcilerine ayrılan istemcinin adıyla 'client-detached' bildirimini yazar."}
+{"id": "tmux-303", "amac": "Biçim ağacındaki bölmenin süreci sonlanmış ve çıkış durumu hazırsa '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-304", "amac": "Giriş bağlamının olay tamponu varsa verilen yanıt dizgesini bölmedeki uygulamaya geri yazar."}
+{"id": "tmux-305", "amac": "Verilen seçenek kümesinden adı verilen dizge seçeneğinin değerini döndürür; seçenek yoksa ya da dizge değilse ölümcül hata verir."}
+{"id": "tmux-306", "amac": "Saat modu ekranını çizer: geçerli saati seçilen stile (12/24 saat, saniyeli ya da saniyesiz) göre biçimlendirip ekran yeterince büyükse büyük blok rakamlarla, değilse düz metin olarak ortada gösterir."}
+{"id": "tmux-307", "amac": "Biçim eşleştirme değiştiricisini uygular: seçeneklere göre metni desene bulanık eşleşme, glob (isteğe bağlı büyük/küçük harf duyarsız) ya da düzenli ifadeyle eşleştirip sonucu '1' ya da '0' olarak döndürür."}
+{"id": "tmux-308", "amac": "Pencere için kurulan zamanlayıcının geri çağrısıdır; pencerenin terminal görünüm ofsetini günceller."}
+{"id": "tmux-309", "amac": "Bölmenin görünür ekran satırlarında verilen terimi glob ya da düzenli ifadeyle (isteğe bağlı büyük/küçük harf duyarsız) arar ve ilk eşleşen satırın 1 tabanlı numarasını, bulunamazsa 0 döndürür."}
+{"id": "tmux-310", "amac": "Bölme seçim modu ekranını çizer: pencerenin yerleşimini ölçekleyerek önce döşeli bölmeleri ve kenarlıkları, ardından z-sırasına göre kayan bölmeleri kenarlıklarıyla önizleme ekranına çizer."}
+{"id": "tmux-311", "amac": "Pencereye ızgara biçiminde döşeme yerleşimini uygular: bölme sayısına ve azami sütun seçeneğine göre satır ve sütun sayısını hesaplar, bölmeleri eşit boyutlu hücrelere dizer, artan alanı son sütun/satıra verir, yerleşimi düzeltip pencereyi yeniden boyutlandırır."}
+{"id": "tmux-312", "amac": "Bir yapıştırma tamponunu yeni adla yeniden adlandırır: adları doğrular, aynı adlı başka bir tampon varsa siler, tamponu ad ağacında yeniden konumlandırıp otomatik olmaktan çıkarır ve silindi/değişti olaylarını tetikler."}
+{"id": "tmux-313", "amac": "Biriken yapılandırma hatalarını komut çıktısına ya da denetim istemcisine 'config-error' bildirimi olarak yazdırır ve hata listesini temizler."}
+{"id": "tmux-314", "amac": "Bir tuş bağının komutlarını çalıştırılmak üzere komut kuyruğuna ekler: salt okunur istemcide izin verilmeyen komut varsa yerine salt okunur hata geri çağrısını koyar, tekrar bayrağını duruma taşır ve öğeyi verilen öğeden sonra ya da istemci kuyruğunun sonuna yerleştirir."}
+{"id": "tmux-315", "amac": "Bir eş bağlantısını sürecin eş listesinden çıkarır, olayını ve mesaj tamponunu temizler, tanıtıcısını kapatıp yapıyı serbest bırakır."}
+{"id": "tmux-316", "amac": "İstem tamponunda imlecin bulunduğu kelimeyi bulur ve onu verilen dizgeyle ya da dizge verilmemişse otomatik tamamlama sonucuyla değiştirip imleci yeni kelimenin sonuna taşır."}
+{"id": "tmux-317", "amac": "Bir sixel görüntüsünün boyutunu, renk tablosunu ve piksel satırlarını karakter haritası olarak hata ayıklama günlüğüne döker."}
+{"id": "tmux-318", "amac": "Biçim ağacındaki bölme sunucuda işaretlenmiş bölmeyse '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-319", "amac": "Verilen dosya tanıtıcısından boş bir satır gelene, bağlantı kapanana ya da hata oluşana kadar veriyi okuyup atarak bekler."}
+{"id": "tmux-320", "amac": "Bölme birleştirme komutunu yürütür: taşıma varyantında kayan bölmeyi yerleştirir ya da konumlandırır, aksi halde kaynak bölmeyi kendi penceresinden çıkarıp hedef penceredeki bölmenin yanına döşeli olarak ekler, etkin bölmeyi ayarlar ve boşalan kaynak pencereyi öldürür."}
+{"id": "tmux-321", "amac": "İstenen boyutta bellek ayırır; boyut sıfırsa ya da ayırma başarısız olursa ölümcül hata verir."}
+{"id": "tmux-322", "amac": "Gelen dosya yazma verisi mesajını işler: ilgili istemci dosya akışını bulup veriyi dosyanın olay tamponuna yazar."}
+{"id": "tmux-323", "amac": "Bir renk tanımını (rgb:RR/GG/BB, #RRGGBB, 16 bitlik biçimler, r,g,b, cmyk/cmy ya da renk adı) ayrıştırıp RGB renk değerine çevirir."}
+{"id": "tmux-324", "amac": "UTF-8 karakter genişliği önbelleğini yeniden kurar: mevcut girdileri siler, varsayılan genişlikleri ekler ve codepoint-widths seçeneğindeki özel genişlikleri önbelleğe ekler."}
+{"id": "tmux-325", "amac": "Bir pencere bağlantısını oturumdan ayırır: oturumun tek penceresiyse ayırmaz, geçerli pencereyse başka pencereye geçer, uyarı bayraklarını temizler, 'window-unlinked' olayını tetikler, bağlantıyı yığından ve pencere listesinden kaldırır ve oturum grubunu eşitler."}
+{"id": "tmux-326", "amac": "Bir menüyü pencere üzerinde açar: konumu pencere sınırlarına sığdırır, stil, kenarlık, olay, hedef, başlangıç seçimi ve geri çağrıyla menü verisini oluşturur, önceki menüyü kapatıp yenisini pencereye bağlar ve yeniden çizim ister."}
+{"id": "tmux-327", "amac": "Ekran yazma bağlamında toplanan hücre yazımlarını terminale boşaltır: kaydırmaları uygulayıp satır satır toplanan öğeleri yazar; bölme yeniden çizilecekse ya da eşzamanlı moddaysa toplananları (gerekirse kirli satırları işaretleyerek) atar."}
+{"id": "tmux-328", "amac": "Bölmeye gelen tuş ya da fare olayını işler: bölmede mod varsa olayı moda iletir, yoksa tuşu bölmenin uygulamasına yazar ve synchronize-panes açıksa diğer bölmelere de kopyalar."}
+{"id": "tmux-329", "amac": "Sunucunun Unix alan soketini oluşturur: soket yoluna izinleri umask ile ayarlayarak bağlar, dinlemeye başlar ve engellemesiz tanıtıcıyı döndürür; hata olursa neden üretir."}
+{"id": "tmux-330", "amac": "Biçim ağacının türü pencere ise '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-331", "amac": "Yapıştırma tamponunun verisini yeni veri ve boyutla değiştirir ve tampon değişti olayını tetikler."}
+{"id": "tmux-332", "amac": "Süreci arka plan hizmetine (daemon) dönüştürür: çatallayıp üst süreci sonlandırır, yeni oturum başlatır, istenirse kök dizine geçer ve standart akışları /dev/null'a yönlendirir."}
+{"id": "tmux-333", "amac": "Bulma durumundaki pencereyi içeren oturumları toplayıp aralarından en iyisini seçer ve o oturumda pencere için en uygun pencere bağlantısını bulur."}
+{"id": "tmux-334", "amac": "Bir pencere yeniden adlandırıldığında denetim modu istemcilerine, pencere kendi oturumlarındaysa 'window-renamed', değilse 'unlinked-window-renamed' bildirimini yeni adla yazar."}
+{"id": "tmux-335", "amac": "Ekrandaki bütün görüntüleri serbest bırakır ve ekranda görüntü bulunduysa yeniden çizim gerektiğini döndürür."}
+{"id": "tmux-336", "amac": "Denetim istemcisine ayrıştırma hatasını begin/error koruma satırları arasında 'parse error' mesajı olarak yazan komut kuyruğu geri çağrısıdır."}
+{"id": "tmux-337", "amac": "Başlatma bağlamının ad, bayrak, oturum, pencere bağlantısı, kaynak bölme ve indeks bilgilerini hata ayıklama günlüğüne yazar."}
+{"id": "tmux-338", "amac": "Bölmenin kenarlık çizgisi türünü, bölme kayansa kendi seçeneklerinden, değilse penceresinin seçeneklerinden (pane-border-lines) okuyup döndürür."}
+{"id": "tmux-339", "amac": "Hedef dizgesinden oturum içindeki pencereyi çözer: '@' kimliği, göreli ofset (+/-), özel karakterler (!, ^, $), indeks, tam ad ve tam eşleşme zorunlu değilse önek ya da desen eşleşmesiyle pencere bağlantısını bulup bulma durumuna yazar."}
+{"id": "tmux-340", "amac": "Bir tuşu standart (eski usul) terminal kodlamasıyla bölmeye yazar: Meta için ESC öneki ekler, Unicode tuşları doğrudan yazar, Ctrl birleşimlerini C0 denetim kodlarına ya da eşlenmiş ASCII karakterlere çevirir; çevrilemeyen tuşta başarısız olur."}
+{"id": "tmux-341", "amac": "Argüman değerleri dizisinden bir komut nesnesi oluşturur: komut adını komut tablosunda bulur, argümanları komutun tanımına göre ayrıştırır ve dosya/satır bilgisiyle komut yapısını döndürür; hatada kullanım ya da hata nedeni üretir."}
+{"id": "tmux-342", "amac": "Ekrana tek bir hücre (karakter) yazar: birleştirici karakterleri, ekleme kipini, satır sonu sarmasını, geniş karakter dolgusunu, UTF-8 üzerine yazmayı ve seçim bayrağını ele alarak ızgarayı günceller ve görünür kısmı terminale çizer."}
+{"id": "tmux-343", "amac": "İstemciyi denetim moduna başlatır: tanıtıcıları engellemesiz yapar, bölme/pencere ağaçları, bekleyen listeler ve abonelik izleyicisiyle denetim durumunu oluşturur, okuma/yazma olay tamponlarını kurar ve gerekirse başlangıç kaçış dizisini gönderir."}
+{"id": "tmux-344", "amac": "Bir kanca komut listesini verilen durumla komut öğesine çevirip verilen öğeden sonra ya da genel kuyruğun sonuna ekler ve eklenen öğeyi döndürür."}
+{"id": "tmux-345", "amac": "Hedef dizgesini bölme olarak çözer: '%' kimliğiyse bölmeyi kimlikle bulup en iyi oturumu seçer, değilse geçerli pencerede bölmeyi arar, o da olmazsa izin varsa dizgeyi pencere olarak deneyip etkin bölmeyi alır."}
+{"id": "tmux-346", "amac": "Bölmeye gönderilecek tuş kodları ağacını kurar: varsayılan tuş girdilerini ekler, değiştirici yer tutuculu girdiler için her değiştirici birleşimine ait kaçış dizisini üretip ağaca ekler ve sonucu günlüğe yazar."}
+{"id": "tmux-347", "amac": "Bir mesaj tamponunun sonuna satır sonu ekleyip denetim istemcisinin yazma olay tamponuna yazar ve mesajı serbest bırakır."}
+{"id": "tmux-348", "amac": "Bir pencere eklendiğinde denetim modu istemcilerine, pencere kendi oturumlarındaysa 'window-add', değilse 'unlinked-window-add' bildirimini yazar."}
+{"id": "tmux-349", "amac": "İstemcinin durum satırındaki istem/mesajın terminalde hangi satıra çizileceğini durum satırının konumuna (üst ya da alt) göre hesaplayıp döndürür."}
+{"id": "tmux-350", "amac": "Sunucu mesaj günlüğüne zaman ve numarayla biçimlendirilmiş yeni bir mesaj ekler ve message-limit sınırını aşan eski mesajları siler."}
+{"id": "tmux-351", "amac": "UTF-8 karakter verisini geniş karaktere (wchar_t) çevirir; dönüşüm başarısızsa hata durumu döner."}
+{"id": "tmux-352", "amac": "Bir diziyi recallocarray ile yeni eleman sayısına yeniden boyutlandırır (yeni alanı sıfırlayarak); boyut sıfırsa ya da ayırma başarısızsa ölümcül hata verir."}
+{"id": "tmux-353", "amac": "Bir yapıştırma tamponunu siler: silindi olayını tetikler, tamponu ad ve zaman ağaçlarından çıkarır, otomatik tampon sayacını düşürür ve belleğini serbest bırakır."}
+{"id": "tmux-354", "amac": "Bir bölme ya da istemci için yeni bir giriş ayrıştırıcı bağlamı oluşturur: tamponları, zamanlayıcıları ve istek listesini kurar, ayrıştırıcıyı sıfırlayıp döndürür."}
+{"id": "tmux-355", "amac": "Karşı taraftan gelen 'yazmak için dosya aç' mesajını işler: dosyayı ya da izin verilmişse standart çıktı/hata akışını yazma için açar, yazma olayını kurar ve sonucu hata koduyla 'yazmaya hazır' yanıtı olarak gönderir."}
+{"id": "tmux-356", "amac": "İstemci seçim modunun varsayılan biçim dizgesinin kopyasını döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-357", "amac": "Bulma durumunu temizleyip verilen oturumla ve onun geçerli pencere bağlantısı, penceresi ve etkin bölmesiyle doldurur."}
+{"id": "tmux-358", "amac": "Özelleştirme modu ağacını yeniden oluşturur: eski öğeleri temizler, sunucu, oturum ve pencere seçeneklerini, kancaları, global ve oturum ortamlarını ve tuş tablolarını filtreye göre ağaca ekler."}
+{"id": "tmux-359", "amac": "Bölmeden gelen ham çıktı verisini işler: etkinlik ve değişiklik bayraklarını günceller, gerekirse etkinlik olayını tetikler, ekran yazma bağlamını başlatıp veriyi giriş ayrıştırıcısıyla ayrıştırır."}
+{"id": "tmux-360", "amac": "Terminalden gelen fare olay dizisini (standart \\033[M ya da SGR \\033[< biçimi) ayrıştırarak düğme ve koordinatları çıkarır ve fare olayı yapısına yazar."}
+{"id": "tmux-361", "amac": "Satır besleme (line feed) uygular: istenirse geçerli satırı sarılmış işaretler; imleç kaydırma bölgesinin alt satırında değilse imleci bir satır aşağı taşır, alt satırdaysa bölgeyi bir satır yukarı kaydırır."}
+{"id": "tmux-362", "amac": "Biçimde çalışan dış komut işinin çıktısı geldiğinde son tam satırı biçim işinin sonucu olarak saklar, işi güncellendi işaretler ve gerekirse saniyede en fazla bir kez istemcinin durum satırını yeniler."}
+{"id": "tmux-363", "amac": "Bir biçim ağacına istemci, oturum, pencere bağlantısı ve bölme için varsayılan biçim değişkenlerini ekler: ağaç türünü belirler, eksik nesneleri istemciden ve oturumdan tamamlar ve en üstteki yapıştırma tamponunun değişkenlerini de ekler."}
+{"id": "tmux-364", "amac": "Kayan yeni bir bölmenin geometrisini argümanlardan (-x, -y, -X, -Y) hesaplar: boyutları yüzde ya da ifade olarak çözer, konum verilmemişse önceki kayan bölmeye göre kademeli konum seçer, sınırları doğrulayıp geometri yapısına yazar."}
+{"id": "tmux-365", "amac": "Kabuk çalıştırma komutunun zamanlayıcı geri çağrısıdır: kabuk komutu varsa onu iş olarak başlatır (başlatamazsa hata bildirir), tmux komutları verilmişse ayrıştırıp kuyruğa ekler ve bekleyen komut öğesini sürdürür."}
+{"id": "tmux-366", "amac": "Denetim istemcisinin bekleyen blok listesinin başındaki, yalnız satır içeren (boyutu sıfır) blokları sırayla yazma tamponuna satır olarak yazıp serbest bırakır."}
+{"id": "tmux-367", "amac": "Terminalden gelen genişletilmiş cihaz öznitelikleri (XDA) yanıtını ayrıştırır, terminal adına göre varsayılan özellikleri ekler, terminal türünü kaydeder ve terminal özelliklerini günceller."}
+{"id": "tmux-368", "amac": "Sunucu sürecini başlatır: gerekirse çatallayıp arka plana geçer, sinyalleri ve olay tabanını kurar, pencere, istemci, oturum, tuş bağı ve olay yapılarını ilklendirir, sunucu soketini oluşturup ilk istemciyi ekler ve ana olay döngüsünü çalıştırıp çıkışta işleri sonlandırır."}
+{"id": "tmux-369", "amac": "Biçim ağacındaki pencere bağlantısı işaretli bölmenin bulunduğu pencere bağlantısıysa '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-370", "amac": "Oturumda uyarı bayrağı taşıyan pencerelerin indekslerini uyarı türü işaretleriyle (# etkinlik, ! zil, ~ sessizlik) virgülle ayrılmış dizge olarak üreten biçim değişkeni değerini oluşturur."}
+{"id": "tmux-371", "amac": "Biçimdeki tek bir değişken ifadesini değiştiricileriyle (karşılaştırma, arama, yerine koyma, kırpma, dolgu, döngü, matematik, renk vb.) ayrıştırıp değerini hesaplayarak genişletir ve sonucu çıkış tamponuna ekler."}
+{"id": "tmux-372", "amac": "Tuş bağlama komutunu yürütür: tuşu ve tuş tablosunu belirler, verilen komutları komut bloğu, dizge ya da argüman listesi olarak ayrıştırıp not ve tekrar bayrağıyla tuşa bağlar."}
+{"id": "tmux-373", "amac": "Biçimdeki istemci döngüsünü genişletir: bütün istemcileri sıralı gezip her biri için döngü bilgileriyle yeni biçim ağacı kurar, biçimi genişletir ve sonuçları birleştirerek döndürür."}
+{"id": "tmux-374", "amac": "Biçim ağacındaki oturum bir oturum grubuna aitse grubun bağlı sayısı birden fazla olduğunda '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-375", "amac": "Özelleştirme modunda kullanıcı seçeneği ekleme isteminin geri çağrısıdır: '@ad değer' girdisini ayrıştırıp doğrular, kullanıcı seçeneğini ya da kancasını ayarlar, değişikliği yayar ve ağacı yeniden oluşturup çizer."}
+{"id": "tmux-376", "amac": "OSC 4 kaçış dizisini işler: her indeks;renk çifti için '?' sorgusuna palet rengini yanıtlar (renk yoksa istek ekler), aksi halde rengi ayrıştırıp paletteki girdiyi ayarlar ve gerekirse tam yeniden çizim ister."}
+{"id": "tmux-377", "amac": "Başlangıç yapılandırma dosyalarını yükler: ilk istemcinin komutunu yapılandırma bitene kadar bekletmek için kuyruğuna engelleyici geri çağrı ekler, bütün yapılandırma dosyalarını yükler ve sonunda yapılandırma tamamlandı geri çağrısını kuyruğa ekler."}
+{"id": "tmux-378", "amac": "Bir yerleşim tanım dizgesini ayrıştırıp pencereye uygular: hücre sayısını bölme sayısına indirir, boyutları denetleyip düzeltir, pencereyi yeniden boyutlandırır, eski yerleşimi yenisiyle değiştirip bölmeleri hücrelere atar."}
+{"id": "tmux-379", "amac": "Olay yükünün hedef durumundaki oturum, pencere ve bölme referanslarını bırakıp hedef durumunu temizler."}
+{"id": "tmux-380", "amac": "Tampon seçim modunda bir satırın kısayol tuşunu, tuş biçimini hedef durum, yapıştırma tamponu bilgileri ve satır numarasıyla genişletip tuş koduna çevirerek belirler; tampon yoksa tuş döndürmez."}
+{"id": "tmux-381", "amac": "Denetim istemcisi için bir bölmenin yeni çıktısını kuyruğa alır: bölme yok sayılıyor ya da duraklatılmışsa çıktıyı tüketilmiş sayar, aksi halde yeni veri için çıktı bloğu oluşturup bölmeyi bekleyenler listesine ekler ve yazma olayını etkinleştirir."}
+{"id": "tmux-382", "amac": "Bir argüman dizisini (argc/argv) sıfırla ayrılmış dizgeler olarak tek bir tampona paketler; tampon yetmezse hata döner."}
+{"id": "tmux-383", "amac": "Yerleşim hücre ağacındaki bölme hücrelerini, istenmedikçe kayan olanları hariç tutarak, özyinelemeli olarak sayar."}
+{"id": "tmux-384", "amac": "Kabuk yolundan kabuğun temel adını alır ve oturum açma kabuğuysa başına '-' ekleyerek argv[0] dizgesini oluşturur."}
+{"id": "tmux-385", "amac": "Kabuk komutu çalıştırma komutunu yürütür: gecikmeyi doğrular, kabuk komutunu biçimle genişletir ya da -C ile tmux komutlarını hazırlar, istemci, çalışma dizini ve oturum bilgileriyle çalıştırma verisini kurup işi gecikmeli ya da hemen zamanlayıcıyla başlatır."}
+{"id": "tmux-386", "amac": "Özelleştirme modunda yeni bir kullanıcı seçeneği ya da kancası eklemek için '@' ile başlayan bir giriş istemi açar."}
+{"id": "tmux-387", "amac": "Biçim ağacındaki pencere bağlantısı oturumunun geçerli penceresiyse '1', değilse '0' döndüren biçim değişkeni değerini üretir."}
+{"id": "tmux-388", "amac": "Özelleştirme modunda seçili öğenin önizlemesini türüne göre (tuş, ortam değişkeni ya da seçenek) çizer."}
+{"id": "tmux-389", "amac": "Kilitli ya da uyandırılmış olmayan, bekleyeni ve kilitleyicisi kalmamış boş bir bekleme kanalını kanal ağacından çıkarıp serbest bırakır."}
+{"id": "tmux-390", "amac": "Bölmenin kenarlık durum satırını oluşturur: pane-border-format biçimini genişletip kenarlık hücreleri ve stiliyle bölmenin durum ekranına çizer; içerik değiştiyse 1 döner."}
+{"id": "tmux-391", "amac": "Bir argüman dizisinin her elemanını biçimlendirilmiş bir önekle hata ayıklama günlüğüne yazar."}
+{"id": "tmux-392", "amac": "Bir JSON düğümünü (dizge, sayı, mantıksal, nesne ya da dizi) özyinelemeli olarak JSON metnine çevirip tampona yazar."}
+{"id": "tmux-393", "amac": "Bir izleme kümesini serbest bırakır: zamanlayıcısını siler, bütün izleme öğelerini serbest bırakır, oturum referansını düşürür ve yapıyı siler."}
+{"id": "tmux-394", "amac": "Kopya modundaki seçimi alır, set-clipboard açıksa panoya da gönderir ve seçimi en üstteki yapıştırma tamponunun sonuna ekleyerek tamponu günceller."}
+{"id": "tmux-395", "amac": "Kopya modunda satır numaralarının gösterilip gösterilmediğini (mutlak, göreli ya da karma kipteyse doğru) döndürür."}
+{"id": "tmux-396", "amac": "Bir çocuk sürecin durum değişikliğini ilgili işe uygular: durdurulmuşsa (TTIN/TTOU dışında) devam ettirir, sonlanmışsa durumu kaydeder; iş zaten kapanmışsa tamamlanma geri çağrısını çağırıp işi serbest bırakır, değilse ölü olarak işaretler."}
+{"id": "tmux-397", "amac": "Kaynak ekranın geçmiş dahil bir kopyasını oluşturur: istenirse sondaki boş satırları kırpar, imleci kopyalar ve kopyayı ipucu ekranın boyutuna, gerekirse imleç konumunu yeniden sararak, yeniden boyutlandırır."}
+{"id": "tmux-398", "amac": "Pencerenin etkin bölmesinin odak durumunu günceller."}
+{"id": "tmux-399", "amac": "Açılır pencerenin ekrandaki konumunu hesaplar: fare, önceki menü, pencerenin durum satırındaki yeri ve ortalanmış konum gibi biçim değişkenlerini kurup -x/-y argümanlarını bunlarla genişleterek x ve y konumunu belirler."}
+{"id": "tmux-400", "amac": "Kaynak oturumdaki bir pencereyi hedef oturuma belirtilen indeksle bağlar: aynı gruptaki oturumlar ve aynı indeks için hata verir, istenirse hedef indeksteki mevcut pencere bağlantısını kaldırır, pencereyi hedef oturuma ekler, işaretli bölmeyi günceller ve istenirse yeni pencereyi seçer."}
+{"id": "tmux-401", "amac": "Terminalin modunu verilen moda günceller: imleç görünürlüğü ve yanıp sönmesini ayarlar, fare modları değiştiyse fare izleme kaçış dizilerini temizleyip yeniden gönderir ve yeni modu kaydeder."}
+{"id": "tmux-402", "amac": "Bir renk değerini metinsel adına (none, tema rengi adı, #rrggbb, colourN ya da temel/parlak renk adı) çevirip döndürür."}
+{"id": "tmux-403", "amac": "Giriş ayrıştırıcısı yeni bir duruma girerken bağlamı temizler, temel duruma dönüş zamanlayıcısını başlatır ve son karakter bayrağını siler."}
+{"id": "tmux-404", "amac": "Bir yerleşim hücresinin verilen yönde iki bölmeye ayrılabilecek kadar alanı olup olmadığını kaydırma çubuğu ve kenarlık gereksinimlerini hesaba katarak denetler."}
+{"id": "tmux-405", "amac": "Yeni karakter yazılmadan önce üzerine yazılacak geniş UTF-8 karakterlerin dolgu hücrelerini ve başlangıç hücresini temizler; bir hücre temizlendiyse doğru döner."}
+{"id": "tmux-406", "amac": "Kopya modunda imleci kelime ayırıcılarına göre önceki kelimeye taşır (emacs kipinde satır sonunda durur) ve gerekirse görünümü yukarı kaydırır."}
+{"id": "tmux-407", "amac": "Kopya modunda bir komutu çalıştırır: komut adını komut tablosunda bulur, salt okunur istemci denetimini yapar, argümanları ayrıştırıp ilgili işleyiciyi çağırır, gerekirse arama işaretlerini temizler ve sonuca göre modu kapatır ya da ekranı yeniden çizer."}
+{"id": "tmux-408", "amac": "Terminal tanımında belirtilen yetenek varsa sayısal değerini döndürür; yetenek yoksa 0 döner, sayı değilse ölümcül hata verir."}
+{"id": "tmux-409", "amac": "İzlenen bir değer değiştiğinde hedef, yeni ve eski değer, istemci, oturum, pencere ve bölme bilgilerinden bir olay yükü oluşturup değişiklik adıyla olayı tetikler."}
+{"id": "tmux-410", "amac": "Hazırlanmış komut durumundan komut listesi üretir: komut listesi hazırsa (gerekirse argümanlarla kopyalayarak) döndürür, değilse komut şablonundaki yer tutucuları verilen argümanlarla değiştirip dizgeyi komut listesine ayrıştırır."}
+{"id": "tmux-411", "amac": "Bir yerleşim hücresinin yerine verilen türde (yan yana ya da üst üste) yeni bir ebeveyn düğüm hücresi koyar ve eski hücreyi bu düğümün ilk çocuğu yapar."}
+{"id": "tmux-412", "amac": "Verilen ad ve yetenek listesinden yeni bir terminal tanımı oluşturur: yetenek kodlarını doldurur, terminal-features seçeneğine ve COLORTERM değişkenine göre özellikleri uygular, geçersiz kılmaları işler ve zorunlu yetenekleri (clear, cup) denetler."}
+{"id": "tmux-413", "amac": "Yeni oturum oluşturma komutunu yürütür (has-session varyantında yalnız başarı döner): pencere ve oturum adlarını doğrular, -A ile varolan oturuma bağlanır, oturum grubunu, ayrık kipini ve çalışma dizinini belirleyerek yeni oturumu kurar."}
+{"id": "tmux-414", "amac": "Hiçbir istemcinin bağlı olmadığı ve destroy-unattached seçeneği grup koşullarına göre etkin olan oturumları yok eder."}
+{"id": "tmux-415", "amac": "Kopya modu ekranında tek bir satırı çizer: stil seçeneklerini uygular, satır numarasını kipine göre yazar, satır içeriğini eşleşme, işaret ve geçerli satır vurgularıyla yazar, ilk satıra konum göstergesini, imleç içerik dışındaysa '$' işaretini koyar."}
+{"id": "tmux-416", "amac": "Ayırıcıyla ayrılmış terminal özellik adları dizgesini ayrıştırıp her özelliği etkin özellik bit maskesine ekler ya da '@' sonekiyle çıkarır; çıkarılanları devre dışı maskesinde işaretler."}
+{"id": "tmux-417", "amac": "Bilinen bir terminal adına (ve sürümüne) göre o terminal için tanımlı varsayılan özellik kümesini istemcinin terminal özelliklerine ekler."}
+{"id": "tmux-418", "amac": "Bir kanca seçeneğinin kaç kez tetiklendiğini ve varsa son tetiklenme zamanını açıklayan metni özelleştirme önizleme ekranına yazar."}
+{"id": "tmux-419", "amac": "Ekranın kaydedilmiş başlıklar yığınının başındaki başlığı çıkarıp ekranın geçerli başlığı olarak geri yükler."}
+{"id": "tmux-420", "amac": "Bir köprü (hyperlink) URI'sini iç kimliğiyle köprü tablosuna kaydeder: aynı URI ve kimlik zaten varsa mevcut iç numarayı döndürür, yoksa dış kimlik üretip yeni kayıt ekler (genel sınır aşılırsa en eskisini siler) ve iç numarayı döndürür."}
+{"id": "tmux-421", "amac": "Biçimdeki oturum döngüsünü genişletir: bütün oturumları sıralı gezip her biri için döngü bilgileriyle yeni biçim ağacı kurar (istemcinin oturumuna ayrı biçim uygulayarak), biçimi genişletir ve sonuçları birleştirir."}
+{"id": "tmux-422", "amac": "Bir yerleşim hücresini verilen türde (yan yana ya da üst üste) düğüm hücresine dönüştürür: alt hücre listesini ilklendirir ve hücrenin bölmeyle bağlantısını keser."}
+{"id": "tmux-423", "amac": "Pencerenin pane-border-status seçeneğinden bölme durum satırı konumunu döndürür; kayan bölmelere özgü değerlerde kapalı döner."}

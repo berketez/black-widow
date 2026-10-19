@@ -1,0 +1,83 @@
+{
+  "bootstrap": {
+    "tekrar": 10000,
+    "tohum": 2026101905
+  },
+  "capraz_atifsiz": false,
+  "dislanan_capraz_atifli": {
+    "ana": 0,
+    "yem": 0
+  },
+  "guven_duzeyi": 0.95,
+  "programlar": {
+    "tmux": {
+      "ciftler": {
+        "ikisi_yakin": 30,
+        "ikisi_yakin_degil": 166,
+        "yalniz_gtli_yakin": 3,
+        "yalniz_gtsiz_yakin": 1
+      },
+      "fark": 0.01,
+      "fark_alt": -0.01,
+      "fark_ust": 0.03,
+      "n": 200,
+      "yakin_gtli": {
+        "alt": 0.119969,
+        "k": 33,
+        "n": 200,
+        "oran": 0.165,
+        "ust": 0.222658
+      },
+      "yakin_gtsiz": {
+        "alt": 0.111396,
+        "k": 31,
+        "n": 200,
+        "oran": 0.155,
+        "ust": 0.211607
+      }
+    }
+  },
+  "sema": "karadul-etiket-puan/1",
+  "toplam": {
+    "ciftler": {
+      "ikisi_yakin": 30,
+      "ikisi_yakin_degil": 166,
+      "yalniz_gtli_yakin": 3,
+      "yalniz_gtsiz_yakin": 1
+    },
+    "fark": 0.01,
+    "fark_alt": -0.01,
+    "fark_ust": 0.03,
+    "n": 200,
+    "yakin_gtli": {
+      "alt": 0.119969,
+      "k": 33,
+      "n": 200,
+      "oran": 0.165,
+      "ust": 0.222658
+    },
+    "yakin_gtsiz": {
+      "alt": 0.111396,
+      "k": 31,
+      "n": 200,
+      "oran": 0.155,
+      "ust": 0.211607
+    }
+  },
+  "yem": {
+    "gtli": {
+      "alt": 0.0,
+      "k": 0,
+      "n": 20,
+      "oran": 0.0,
+      "ust": 0.161125
+    },
+    "gtsiz": {
+      "alt": 0.0,
+      "k": 0,
+      "n": 20,
+      "oran": 0.0,
+      "ust": 0.161125
+    }
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "capraz_atifsiz": false,
+  "guven_duzeyi": 0.95,
+  "programlar": {
+    "tmux": {
+      "dislanan_capraz_atifli": {
+        "ana": 0,
+        "yem": 0
+      },
+      "ham_etiketler": {
+        "dogru_tarif": 74,
+        "tam": 0,
+        "yalniz_alan": 134,
+        "yanlis": 177
+      },
+      "kip": "kor",
+      "n": 385,
+      "oranlar": {
+        "tam": {
+          "alt": 0.090782,
+          "k": 46,
+          "n": 385,
+          "oran": 0.119481,
+          "ust": 0.155697
+        },
+        "yakin": {
+          "alt": 0.160716,
+          "k": 76,
+          "n": 385,
+          "oran": 0.197403,
+          "ust": 0.240068
+        },
+        "yalniz_alan": {
+          "alt": 0.302183,
+          "k": 134,
+          "n": 385,
+          "oran": 0.348052,
+          "ust": 0.396924
+        },
+        "yanlis": {
+          "alt": 0.405501,
+          "k": 175,
+          "n": 385,
+          "oran": 0.454545,
+          "ust": 0.504488
+        }
+      },
+      "tutarlilik": {
+        "tam_ama_tp_degil": [],
+        "tp_yakin_disi": [
+          "tmux-064",
+          "tmux-405"
+        ]
+      },
+      "yem": {
+        "kabul": {
+          "alt": 0.0,
+          "k": 0,
+          "n": 39,
+          "oran": 0.0,
+          "ust": 0.089667
+        },
+        "kabul_edilen": [],
+        "n": 39
+      }
+    }
+  },
+  "sema": "karadul-etiket-puan/1",
+  "yem_toplam": {
+    "kabul": {
+      "alt": 0.0,
+      "k": 0,
+      "n": 39,
+      "oran": 0.0,
+      "ust": 0.089667
+    },
+    "n": 39
+  }
+}

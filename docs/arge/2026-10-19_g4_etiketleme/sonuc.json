@@ -1,0 +1,52 @@
+{
+ "onkayit": "docs/arge/2026-10-19_g4_etiketleme/onkayit.md",
+ "uyum_L1_L3": {
+  "ortak_oge": 88,
+  "kappa_dort_etiket": 0.736,
+  "kappa_yakin_degil": 0.953,
+  "ham_uyum_dort_etiket": 0.841,
+  "ham_uyum_yakin_degil": 0.989,
+  "L1_yakin": 13,
+  "L3_yakin": 12
+ },
+ "bilesim_tmux_L1": {
+  "capraz": {
+   "n": 152,
+   "tam": 19,
+   "dogru_tarif": 18,
+   "yalniz_alan": 62,
+   "yanlis": 53,
+   "tam_payi": 0.125,
+   "dogru_tarif_payi": 0.1184
+  },
+  "atifsiz": {
+   "n": 233,
+   "tam": 27,
+   "dogru_tarif": 12,
+   "yalniz_alan": 72,
+   "yanlis": 122,
+   "tam_payi": 0.1159,
+   "dogru_tarif_payi": 0.0515
+  }
+ },
+ "bilesim_htop_L3": {
+  "capraz": {
+   "n": 24,
+   "tam": 0,
+   "dogru_tarif": 0,
+   "yalniz_alan": 4,
+   "yanlis": 20,
+   "tam_payi": 0.0,
+   "dogru_tarif_payi": 0.0
+  },
+  "atifsiz": {
+   "n": 73,
+   "tam": 0,
+   "dogru_tarif": 4,
+   "yalniz_alan": 10,
+   "yanlis": 59,
+   "tam_payi": 0.0,
+   "dogru_tarif_payi": 0.0548
+  }
+ }
+}

@@ -1,0 +1,2106 @@
+{
+  "kunye": {
+    "girdi": {
+      "kaynak": "workspaces/2026-10-15_oturum_scratchpad/src/htop-dl/htop-3.5.3",
+      "kaynak_ozeti": "1f5da5a300b97b3306724c45a2b7714b29715f888fdb8448c76d7cc31f171ce2",
+      "satirlar": "/private/tmp/claude-501/-Users-apple-Black-Widow/f2f335c2-2e3e-4dfb-a787-c348634b4ac3/scratchpad/g4/htop_program_rows.json",
+      "satirlar_sha256": "cce60433c5cb12a21845a8bb7a4da34a18198078be5329f242b498d4ed0759cd"
+    },
+    "govde_azami_satir": 120,
+    "govdesi_belirsiz": [
+      {
+        "addr": "0x10001e140",
+        "dosyalar": [
+          "darwin/Platform.c",
+          "dragonflybsd/Platform.c",
+          "freebsd/Platform.c",
+          "linux/Platform.c",
+          "netbsd/Platform.c",
+          "openbsd/Platform.c",
+          "pcp/Platform.c",
+          "solaris/Platform.c",
+          "unsupported/Platform.c"
+        ],
+        "gt": [
+          "_Platform_init"
+        ]
+      },
+      {
+        "addr": "0x10001e930",
+        "dosyalar": [
+          "darwin/Platform.c",
+          "dragonflybsd/Platform.c",
+          "freebsd/Platform.c",
+          "linux/Platform.c",
+          "netbsd/Platform.c",
+          "openbsd/Platform.c",
+          "pcp/Platform.c",
+          "solaris/Platform.c",
+          "unsupported/Platform.c"
+        ],
+        "gt": [
+          "_Platform_getDiskIO"
+        ]
+      },
+      {
+        "addr": "0x10001f488",
+        "dosyalar": [
+          "darwin/DarwinMachine.c",
+          "dragonflybsd/DragonFlyBSDMachine.c",
+          "freebsd/FreeBSDMachine.c",
+          "linux/LinuxMachine.c",
+          "netbsd/NetBSDMachine.c",
+          "openbsd/OpenBSDMachine.c",
+          "pcp/PCPMachine.c",
+          "solaris/SolarisMachine.c",
+          "unsupported/UnsupportedMachine.c"
+        ],
+        "gt": [
+          "_Machine_new"
+        ]
+      },
+      {
+        "addr": "0x10001ff68",
+        "dosyalar": [
+          "darwin/DarwinProcessTable.c",
+          "dragonflybsd/DragonFlyBSDProcessTable.c",
+          "freebsd/FreeBSDProcessTable.c",
+          "linux/LinuxProcessTable.c",
+          "netbsd/NetBSDProcessTable.c",
+          "openbsd/OpenBSDProcessTable.c",
+          "pcp/PCPProcessTable.c",
+          "solaris/SolarisProcessTable.c",
+          "unsupported/UnsupportedProcessTable.c"
+        ],
+        "gt": [
+          "_ProcessTable_goThroughEntries"
+        ]
+      }
+    ],
+    "govdesi_bulunamayan": [],
+    "kip": "kor",
+    "orneklem_istenen": 0,
+    "program": "htop",
+    "python_surumu": "3.12.7",
+    "rubrik_surumu": 2,
+    "sayilar": {
+      "ana": 97,
+      "baska_ad_gecen_govde": 28,
+      "baska_ad_gecis": 68,
+      "capraz_atifli_oge": 28,
+      "dosya_adi_capraz_atifli_oge": 0,
+      "dosya_karartilan": 0,
+      "govdesi_belirsiz": 4,
+      "govdesi_bulunamayan": 0,
+      "isimli": 101,
+      "karartilan_kendi": 109,
+      "kirpilan": 6,
+      "satir": 597,
+      "toplam": 107,
+      "uygun": 97,
+      "yem": 10
+    },
+    "sema": "karadul-etiket-paketi/2",
+    "tohum": 2026101904,
+    "yem_govde_havuzu": "isimli+isimsiz",
+    "yem_yuzde": 10
+  },
+  "ogeler": {
+    "htop-000": {
+      "aday": "could_read_process",
+      "addr": "0x100009248",
+      "capraz_atif": 0,
+      "dosya": "EnvScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_EnvScreen_scan"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "could_read_process",
+      "satir": 39,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-001": {
+      "aday": "trace_process",
+      "addr": "0x10001c544",
+      "capraz_atif": 0,
+      "dosya": "TraceScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_TraceScreen_draw"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "trace_process",
+      "satir": 63,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-002": {
+      "aday": "kthread",
+      "addr": "0x100013d2c",
+      "capraz_atif": 0,
+      "dosya": "Process.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Process_compareByKey_Base"
+      ],
+      "karartilan_kendi": 3,
+      "kirpildi": false,
+      "pred": "kthread",
+      "satir": 966,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-003": {
+      "aday": "monochrome_meters_display",
+      "addr": "0x100001fac",
+      "capraz_atif": 0,
+      "dosya": "Action.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_actionHelp"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "monochrome_meters_display",
+      "satir": 779,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-004": {
+      "aday": "CPUMeterCommonUpdateMode",
+      "addr": "0x10001adb8",
+      "capraz_atif": 1,
+      "dosya": "Settings.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Settings_isReadonly"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 1055,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100006c78",
+        "aday_dosya": "CPUMeter.c",
+        "aday_gt": [
+          "_CPUMeterCommonUpdateMode"
+        ],
+        "govde_status": "unnamed"
+      }
+    },
+    "htop-005": {
+      "aday": "unable_retrieve_statistics",
+      "addr": "0x10001f438",
+      "capraz_atif": 0,
+      "dosya": "darwin/DarwinMachine.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_DarwinMachine_getVMStats"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "unable_retrieve_statistics",
+      "satir": 67,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-006": {
+      "aday": "ivar_fun_austack_2",
+      "addr": "0x10000f458",
+      "capraz_atif": 0,
+      "dosya": "NetworkIOMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_NetworkIOMeter_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "ivar_fun_austack_2",
+      "satir": 132,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-007": {
+      "aday": "sending",
+      "addr": "0x100003110",
+      "capraz_atif": 0,
+      "dosya": "Action.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_actionKill"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "sending",
+      "satir": 540,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-008": {
+      "aday": "maximum_iteration_count",
+      "addr": "0x1000052f4",
+      "capraz_atif": 0,
+      "dosya": "CommandLine.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CommandLine_run"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "maximum_iteration_count",
+      "satir": 384,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-009": {
+      "aday": "days",
+      "addr": "0x10001c87c",
+      "capraz_atif": 0,
+      "dosya": "UptimeMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_UptimeMeter_updateValues"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "days",
+      "satir": 22,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-010": {
+      "aday": "hashtable_prime_found_2",
+      "addr": "0x100009d64",
+      "capraz_atif": 1,
+      "dosya": "Hashtable.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Hashtable_setSize"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "hashtable_prime_found_2",
+      "satir": 195,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-011": {
+      "aday": "start_tracer",
+      "addr": "0x1000032f8",
+      "capraz_atif": 0,
+      "dosya": "Action.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_actionStrace"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "start_tracer",
+      "satir": 667,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-012": {
+      "aday": "send_signal",
+      "addr": "0x10001b1ac",
+      "capraz_atif": 1,
+      "dosya": "SignalsPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_SignalsPanel_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "send_signal",
+      "satir": 23,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-013": {
+      "aday": "kstat_zfs_misc",
+      "addr": "0x1000203bc",
+      "capraz_atif": 0,
+      "dosya": "generic/openzfs_sysctl.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_openzfs_sysctl_init"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "kstat_zfs_misc",
+      "satir": 28,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-014": {
+      "aday": "filter_3",
+      "addr": "0x10000d2b8",
+      "capraz_atif": 0,
+      "dosya": "MainPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_MainPanel_eventHandler"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "filter_3",
+      "satir": 59,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-015": {
+      "aday": "pid_2",
+      "addr": "0x100014970",
+      "capraz_atif": 0,
+      "dosya": "Row.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Row_resetFieldWidths"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pid_2",
+      "satir": 108,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-016": {
+      "aday": "type_exclusion_read",
+      "addr": "0x1000143cc",
+      "capraz_atif": 0,
+      "dosya": "ProcessLocksScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_ProcessLocksScreen_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "type_exclusion_read",
+      "satir": 23,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-017": {
+      "aday": "unable_retrieve_cpu",
+      "addr": "0x10001f3e0",
+      "capraz_atif": 0,
+      "dosya": "darwin/DarwinMachine.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_DarwinMachine_allocateCPULoadInfo"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "unable_retrieve_cpu",
+      "satir": 55,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-018": {
+      "aday": "command_line_insert",
+      "addr": "0x100003ff0",
+      "capraz_atif": 1,
+      "dosya": "AvailableColumnsPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_AvailableColumnsPanel_fill"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "command_line_insert",
+      "satir": 120,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-019": {
+      "aday": "collapse_expand",
+      "addr": "0x100003c44",
+      "capraz_atif": 1,
+      "dosya": "AffinityPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_AffinityPanel_update"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "collapse_expand",
+      "satir": 177,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-020": {
+      "aday": "offline_2",
+      "addr": "0x1000060f4",
+      "capraz_atif": 0,
+      "dosya": "CPUMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CPUMeter_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "offline_2",
+      "satir": 147,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-021": {
+      "aday": "screens",
+      "addr": "0x100017a08",
+      "capraz_atif": 0,
+      "dosya": "ScreensPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_ScreensPanel_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screens",
+      "satir": 381,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-022": {
+      "aday": "homebrew_cellar_htop",
+      "addr": "0x10001972c",
+      "capraz_atif": 1,
+      "dosya": "Settings.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Settings_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "homebrew_cellar_htop",
+      "satir": 913,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-023": {
+      "aday": "hashtable_prime_found",
+      "addr": "0x100009c38",
+      "capraz_atif": 0,
+      "dosya": "Hashtable.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Hashtable_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "hashtable_prime_found",
+      "satir": 117,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-024": {
+      "aday": "dat_ivar_fun",
+      "addr": "0x10001db20",
+      "capraz_atif": 0,
+      "dosya": "GPUMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_GPUMeter_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "dat_ivar_fun",
+      "satir": 94,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-025": {
+      "aday": "mgtpezyrq",
+      "addr": "0x10000df34",
+      "capraz_atif": 5,
+      "dosya": "Meter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Meter_humanUnit"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "mgtpezyrq",
+      "satir": 474,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-026": {
+      "aday": "else_pcvar",
+      "addr": "0x100004174",
+      "capraz_atif": 0,
+      "dosya": "AvailableColumnsPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_AvailableColumnsPanel_addDynamicColumn"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "else_pcvar",
+      "satir": 83,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-027": {
+      "aday": "compression_unavailable",
+      "addr": "0x100020e78",
+      "capraz_atif": 0,
+      "dosya": "zfs/ZfsCompressedArcMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_ZfsCompressedArcMeter_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "compression_unavailable",
+      "satir": 52,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-028": {
+      "aday": "cpus",
+      "addr": "0x100003a2c",
+      "capraz_atif": 0,
+      "dosya": "AffinityPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_AffinityPanel_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cpus",
+      "satir": 379,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-029": {
+      "aday": "clock",
+      "addr": "0x10000a600",
+      "capraz_atif": 1,
+      "dosya": "Header.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Header_populateFromSettings"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "clock",
+      "satir": 120,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-030": {
+      "aday": "command_process",
+      "addr": "0x100006060",
+      "capraz_atif": 0,
+      "dosya": "CommandScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CommandScreen_draw"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "command_process",
+      "satir": 68,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-031": {
+      "aday": "Generic_gettime_monotonic",
+      "addr": "0x100009020",
+      "capraz_atif": 0,
+      "dosya": "DynamicMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_DynamicMeter_getCaption"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 92,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100020328",
+        "aday_dosya": "generic/gettime.c",
+        "aday_gt": [
+          "_Generic_gettime_monotonic"
+        ],
+        "govde_status": "unnamed"
+      }
+    },
+    "htop-032": {
+      "aday": "environment_process",
+      "addr": "0x100009318",
+      "capraz_atif": 0,
+      "dosya": "EnvScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_EnvScreen_draw"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "environment_process",
+      "satir": 35,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-033": {
+      "aday": "Table_buildTreeBranch",
+      "addr": "0x100010720",
+      "capraz_atif": 0,
+      "dosya": "OptionItem.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_NumberItem_startEditingFromValue"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 240,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10001be84",
+        "aday_dosya": "Table.c",
+        "aday_gt": [
+          "_Table_buildTreeBranch"
+        ],
+        "govde_status": "unnamed"
+      }
+    },
+    "htop-034": {
+      "aday": "filter_2",
+      "addr": "0x10000c034",
+      "capraz_atif": 1,
+      "dosya": "InfoScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_InfoScreen_run"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "filter_2",
+      "satir": 96,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-035": {
+      "aday": "monochromatic",
+      "addr": "0x100004d00",
+      "capraz_atif": 1,
+      "dosya": "ColorsPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_ColorsPanel_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "monochromatic",
+      "satir": 92,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-036": {
+      "aday": "proc_thread_self",
+      "addr": "0x100011a04",
+      "capraz_atif": 0,
+      "dosya": "Process.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Process_makeCommandStr"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "proc_thread_self",
+      "satir": 183,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-037": {
+      "aday": "llu",
+      "addr": "0x100014ee8",
+      "capraz_atif": 1,
+      "dosya": "Row.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Row_printCount"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "llu",
+      "satir": 302,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-038": {
+      "aday": "tracing_unavailable_supported",
+      "addr": "0x10001c3d4",
+      "capraz_atif": 1,
+      "dosya": "TraceScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_TraceScreen_forkTracer"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "tracing_unavailable_supported",
+      "satir": 67,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-039": {
+      "aday": "wired",
+      "addr": "0x10000d918",
+      "capraz_atif": 0,
+      "dosya": "MemoryMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_MemoryMeter_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "wired",
+      "satir": 73,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-040": {
+      "aday": "pid_command_2",
+      "addr": "0x1000174a8",
+      "capraz_atif": 0,
+      "dosya": "ScreensPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_ScreensPanel_eventHandler"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pid_command_2",
+      "satir": 363,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-041": {
+      "aday": "snapshot_files_open",
+      "addr": "0x10000fffc",
+      "capraz_atif": 0,
+      "dosya": "OpenFilesScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_OpenFilesScreen_draw"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "snapshot_files_open",
+      "satir": 95,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-042": {
+      "aday": "MetersPanel_eventHandler",
+      "addr": "0x100015f78",
+      "capraz_atif": 1,
+      "dosya": "RichString.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_RichString_appendChr"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 174,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10000efcc",
+        "aday_dosya": "MetersPanel.c",
+        "aday_gt": [
+          "_MetersPanel_eventHandler"
+        ],
+        "govde_status": "unnamed"
+      }
+    },
+    "htop-043": {
+      "aday": "screens_2",
+      "addr": "0x1000180cc",
+      "capraz_atif": 1,
+      "dosya": "ScreenTabsPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_ScreenNamesPanel_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screens_2",
+      "satir": 366,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-044": {
+      "aday": "could_execute_lsof",
+      "addr": "0x10000f9fc",
+      "capraz_atif": 0,
+      "dosya": "OpenFilesScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_OpenFilesScreen_scan"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "could_execute_lsof",
+      "satir": 264,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-045": {
+      "aday": "kern_osrelease",
+      "addr": "0x10001f06c",
+      "capraz_atif": 0,
+      "dosya": "darwin/PlatformHelpers.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Platform_GetKernelVersion"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "kern_osrelease",
+      "satir": 23,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-046": {
+      "aday": "Panel_remove",
+      "addr": "0x10000e1b8",
+      "capraz_atif": 0,
+      "dosya": "Meter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_BarMeterMode_draw"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 90,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100010e58",
+        "aday_dosya": "Panel.c",
+        "aday_gt": [
+          "_Panel_remove"
+        ],
+        "govde_status": "unnamed"
+      }
+    },
+    "htop-047": {
+      "aday": "actionToggleTreeView",
+      "addr": "0x1000079b4",
+      "capraz_atif": 2,
+      "dosya": "XUtils.h",
+      "dosya_karartildi": false,
+      "gt": [
+        "_full_write_str"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 133,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x1000033e8",
+        "aday_dosya": "Action.c",
+        "aday_gt": [
+          "_actionToggleTreeView"
+        ],
+        "govde_status": "unnamed"
+      }
+    },
+    "htop-048": {
+      "aday": "kern_maxfiles",
+      "addr": "0x1000201fc",
+      "capraz_atif": 0,
+      "dosya": "generic/fdstat_sysctl.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Generic_getFileDescriptors_sysctl"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "kern_maxfiles",
+      "satir": 64,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-049": {
+      "aday": "locks_found_selected",
+      "addr": "0x10001445c",
+      "capraz_atif": 0,
+      "dosya": "ProcessLocksScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_ProcessLocksScreen_scan"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "locks_found_selected",
+      "satir": 49,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-050": {
+      "aday": "sib_sib",
+      "addr": "0x100007be8",
+      "capraz_atif": 0,
+      "dosya": "DiskIOMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_DiskIORateMeter_updateValues"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "sib_sib",
+      "satir": 116,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-051": {
+      "aday": "cpu",
+      "addr": "0x10000a838",
+      "capraz_atif": 0,
+      "dosya": "Header.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Header_writeBackToSettings"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cpu",
+      "satir": 135,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-052": {
+      "aday": "else_pcvar_3",
+      "addr": "0x100007a48",
+      "capraz_atif": 0,
+      "dosya": "DateTimeMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_DateTimeMeter_updateValues"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "else_pcvar_3",
+      "satir": 32,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-053": {
+      "aday": "cancel",
+      "addr": "0x100001dcc",
+      "capraz_atif": 0,
+      "dosya": "Action.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_actionSetSortColumn"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cancel",
+      "satir": 193,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-054": {
+      "aday": "Meter_setMode",
+      "addr": "0x1000142b0",
+      "capraz_atif": 0,
+      "dosya": "Process.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Process_updateExe"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 1102,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10000de94",
+        "aday_dosya": "Meter.c",
+        "aday_gt": [
+          "_Meter_setMode"
+        ],
+        "govde_status": "unnamed"
+      }
+    },
+    "htop-055": {
+      "aday": "filter",
+      "addr": "0x10000d104",
+      "capraz_atif": 2,
+      "dosya": "MainPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_MainPanel_updateLabels"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "filter",
+      "satir": 32,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-056": {
+      "aday": "ivar_fun_austack_3",
+      "addr": "0x10001c024",
+      "capraz_atif": 0,
+      "dosya": "TasksMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_TasksMeter_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "ivar_fun_austack_3",
+      "satir": 41,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-057": {
+      "aday": "GPUMeter_done",
+      "addr": "0x1000106ac",
+      "capraz_atif": 0,
+      "dosya": "OptionItem.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_NumberItem_toggle"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 219,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10001ddf4",
+        "aday_dosya": "GPUMeter.c",
+        "aday_gt": [
+          "_GPUMeter_done"
+        ],
+        "govde_status": "unnamed"
+      }
+    },
+    "htop-058": {
+      "aday": "avg",
+      "addr": "0x1000065e0",
+      "capraz_atif": 0,
+      "dosya": "CPUMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CPUMeter_init"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "avg",
+      "satir": 51,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-059": {
+      "aday": "information",
+      "addr": "0x100020748",
+      "capraz_atif": 0,
+      "dosya": "generic/uname.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Generic_unameRelease"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "information",
+      "satir": 82,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-060": {
+      "aday": "pcvar_pcvar",
+      "addr": "0x10001012c",
+      "capraz_atif": 0,
+      "dosya": "OptionItem.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CheckItem_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pcvar_pcvar",
+      "satir": 38,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-061": {
+      "aday": "llu_lluus",
+      "addr": "0x10001de88",
+      "capraz_atif": 1,
+      "dosya": "GPUMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_humanTimeUnit"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "llu_lluus",
+      "satir": 38,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-062": {
+      "aday": "fun_param_undefined",
+      "addr": "0x100003d48",
+      "capraz_atif": 0,
+      "dosya": "AffinityPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_MaskItem_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "fun_param_undefined",
+      "satir": 62,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-063": {
+      "aday": "unable_free_old",
+      "addr": "0x10001f394",
+      "capraz_atif": 0,
+      "dosya": "darwin/DarwinMachine.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_DarwinMachine_freeCPULoadInfo"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "unable_free_old",
+      "satir": 41,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-064": {
+      "aday": "shadow_distribution_path",
+      "addr": "0x100018bdc",
+      "capraz_atif": 2,
+      "dosya": "Settings.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Settings_write"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "shadow_distribution_path",
+      "satir": 764,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-065": {
+      "aday": "ivar_fun_austack",
+      "addr": "0x100007cb0",
+      "capraz_atif": 0,
+      "dosya": "DiskIOMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_DiskIOTimeMeter_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "ivar_fun_austack",
+      "satir": 191,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-066": {
+      "aday": "display_options",
+      "addr": "0x1000048a8",
+      "capraz_atif": 0,
+      "dosya": "CategoriesPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CategoriesPanel_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "display_options",
+      "satir": 172,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-067": {
+      "aday": "setup",
+      "addr": "0x100002c34",
+      "capraz_atif": 0,
+      "dosya": "Action.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_actionSetup"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "setup",
+      "satir": 597,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-068": {
+      "aday": "snapshot_file_locks",
+      "addr": "0x100014624",
+      "capraz_atif": 0,
+      "dosya": "ProcessLocksScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_ProcessLocksScreen_draw"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "snapshot_file_locks",
+      "satir": 38,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-069": {
+      "aday": "paused",
+      "addr": "0x10000d6bc",
+      "capraz_atif": 0,
+      "dosya": "MainPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_MainPanel_drawFunctionBar"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "paused",
+      "satir": 206,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-070": {
+      "aday": "pid_command",
+      "addr": "0x1000184f8",
+      "capraz_atif": 0,
+      "dosya": "ScreenTabsPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_ScreenNamesPanel_eventHandlerNormal"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pid_command",
+      "satir": 306,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-071": {
+      "aday": "screen_tabs",
+      "addr": "0x100017fdc",
+      "capraz_atif": 0,
+      "dosya": "ScreenTabsPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_ScreenTabsPanel_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_tabs",
+      "satir": 138,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-072": {
+      "aday": "sysctl_proc_translated",
+      "addr": "0x10001f2a4",
+      "capraz_atif": 0,
+      "dosya": "darwin/PlatformHelpers.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Platform_isRunningTranslated"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "sysctl_proc_translated",
+      "satir": 72,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-073": {
+      "aday": "fun_param_uvar",
+      "addr": "0x100014b8c",
+      "capraz_atif": 1,
+      "dosya": "Row.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Row_printKBytes"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "fun_param_uvar",
+      "satir": 193,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-074": {
+      "aday": "Action_setBindings",
+      "addr": "0x100004bbc",
+      "capraz_atif": 0,
+      "dosya": "CategoriesPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CategoriesPanel_makeColorsPage"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 71,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100001ac4",
+        "aday_dosya": "Action.c",
+        "aday_gt": [
+          "_Action_setBindings"
+        ],
+        "govde_status": "unnamed"
+      }
+    },
+    "htop-075": {
+      "aday": "alacritty",
+      "addr": "0x100006ee8",
+      "capraz_atif": 1,
+      "dosya": "CRT.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CRT_init"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "alacritty",
+      "satir": 1179,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-076": {
+      "aday": "available_columns",
+      "addr": "0x1000040d0",
+      "capraz_atif": 1,
+      "dosya": "AvailableColumnsPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_AvailableColumnsPanel_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "available_columns",
+      "satir": 130,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-077": {
+      "aday": "unlimited",
+      "addr": "0x10000935c",
+      "capraz_atif": 0,
+      "dosya": "FileDescriptorMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_FileDescriptorMeter_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "unlimited",
+      "satir": 80,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-078": {
+      "aday": "actionToggleMergedCommand",
+      "addr": "0x100009620",
+      "capraz_atif": 3,
+      "dosya": "FunctionBar.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_FunctionBar_newEnterEsc"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 35,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x1000032a0",
+        "aday_dosya": "Action.c",
+        "aday_gt": [
+          "_actionToggleMergedCommand"
+        ],
+        "govde_status": "unnamed"
+      }
+    },
+    "htop-079": {
+      "aday": "signal_received_exiting",
+      "addr": "0x1000079e0",
+      "capraz_atif": 0,
+      "dosya": "CRT.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CRT_handleSIGTERM"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "signal_received_exiting",
+      "satir": 961,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-080": {
+      "aday": "udisks",
+      "addr": "0x100007ecc",
+      "capraz_atif": 0,
+      "dosya": "DiskIOMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_DiskIOTimeMeter_updateValues"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "udisks",
+      "satir": 163,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-081": {
+      "aday": "main_thread_terminated",
+      "addr": "0x100013154",
+      "capraz_atif": 0,
+      "dosya": "Process.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Process_writeField"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "main_thread_terminated",
+      "satir": 596,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-082": {
+      "aday": "available_meters",
+      "addr": "0x1000043cc",
+      "capraz_atif": 1,
+      "dosya": "AvailableMetersPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_AvailableMetersPanel_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "available_meters",
+      "satir": 147,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-083": {
+      "aday": "resume_tracing",
+      "addr": "0x10001c7b4",
+      "capraz_atif": 0,
+      "dosya": "TraceScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_TraceScreen_onKey"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "resume_tracing",
+      "satir": 191,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-084": {
+      "aday": "luns",
+      "addr": "0x100015580",
+      "capraz_atif": 0,
+      "dosya": "Row.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Row_printNanoseconds"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "luns",
+      "satir": 403,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-085": {
+      "aday": "sib_sib_upps",
+      "addr": "0x10000f6d0",
+      "capraz_atif": 0,
+      "dosya": "NetworkIOMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_NetworkIOMeter_updateValues"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "sib_sib_upps",
+      "satir": 38,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-086": {
+      "aday": "show_processes",
+      "addr": "0x100003438",
+      "capraz_atif": 0,
+      "dosya": "Action.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_actionFilterByUser"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "show_processes",
+      "satir": 564,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-087": {
+      "aday": "unavailable",
+      "addr": "0x100020b60",
+      "capraz_atif": 0,
+      "dosya": "zfs/ZfsArcMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_ZfsArcMeter_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "unavailable",
+      "satir": 55,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-088": {
+      "aday": "warn_unable_determine",
+      "addr": "0x10001f208",
+      "capraz_atif": 0,
+      "dosya": "darwin/PlatformHelpers.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Platform_getCPUBrandString"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "warn_unable_determine",
+      "satir": 61,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-089": {
+      "aday": "loadaverage",
+      "addr": "0x10001aa7c",
+      "capraz_atif": 1,
+      "dosya": "Settings.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Settings_defaultMeters"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "loadaverage",
+      "satir": 154,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-090": {
+      "aday": "else_pcvar_2",
+      "addr": "0x100006910",
+      "capraz_atif": 0,
+      "dosya": "CPUMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CPUMeter_getUiName"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "else_pcvar_2",
+      "satir": 78,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-091": {
+      "aday": "offline",
+      "addr": "0x100006744",
+      "capraz_atif": 0,
+      "dosya": "CPUMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CPUMeter_updateValues"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "offline",
+      "satir": 87,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-092": {
+      "aday": "frontswap",
+      "addr": "0x10001b29c",
+      "capraz_atif": 0,
+      "dosya": "SwapMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_SwapMeter_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "frontswap",
+      "satir": 45,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-093": {
+      "aday": "type_mode_device",
+      "addr": "0x10000f968",
+      "capraz_atif": 0,
+      "dosya": "OpenFilesScreen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_OpenFilesScreen_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "type_mode_device",
+      "satir": 80,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-094": {
+      "aday": "column_full_width",
+      "addr": "0x10000aed8",
+      "capraz_atif": 0,
+      "dosya": "HeaderOptionsPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_HeaderOptionsPanel_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "column_full_width",
+      "satir": 74,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-095": {
+      "aday": "hashtable_size_overflow",
+      "addr": "0x100009f0c",
+      "capraz_atif": 0,
+      "dosya": "Hashtable.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Hashtable_put"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "hashtable_size_overflow",
+      "satir": 226,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-096": {
+      "aday": "initializing",
+      "addr": "0x100007ad0",
+      "capraz_atif": 0,
+      "dosya": "DiskIOMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_DiskIORateMeter_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "initializing",
+      "satir": 139,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-097": {
+      "aday": "dynamic",
+      "addr": "0x100018950",
+      "capraz_atif": 1,
+      "dosya": "Settings.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_toFieldIndex"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "dynamic",
+      "satir": 232,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-098": {
+      "aday": "hide_processes_running",
+      "addr": "0x100008950",
+      "capraz_atif": 0,
+      "dosya": "DisplayOptionsPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_DisplayOptionsPanel_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "hide_processes_running",
+      "satir": 251,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-099": {
+      "aday": "backtrace_information_available",
+      "addr": "0x100007770",
+      "capraz_atif": 0,
+      "dosya": "CRT.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CRT_handleSIGSEGV"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "backtrace_information_available",
+      "satir": 1429,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-100": {
+      "aday": "column",
+      "addr": "0x100004a18",
+      "capraz_atif": 0,
+      "dosya": "CategoriesPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_CategoriesPanel_makeMetersPage"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "column",
+      "satir": 43,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-101": {
+      "aday": "active_columns",
+      "addr": "0x10000511c",
+      "capraz_atif": 1,
+      "dosya": "ColumnsPanel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_ColumnsPanel_new"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "active_columns",
+      "satir": 164,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-102": {
+      "aday": "classic",
+      "addr": "0x100005e10",
+      "capraz_atif": 0,
+      "dosya": "CommandLine.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_parseTreeStableMode"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "classic",
+      "satir": 104,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-103": {
+      "aday": "eternity",
+      "addr": "0x100015184",
+      "capraz_atif": 2,
+      "dosya": "Row.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Row_printTime"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "eternity",
+      "satir": 333,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-104": {
+      "aday": "unlimited_2",
+      "addr": "0x1000094d4",
+      "capraz_atif": 0,
+      "dosya": "FileDescriptorMeter.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_FileDescriptorMeter_updateValues"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "unlimited_2",
+      "satir": 30,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-105": {
+      "aday": "merged",
+      "addr": "0x10001baec",
+      "capraz_atif": 0,
+      "dosya": "Table.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Table_printHeader"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "merged",
+      "satir": 368,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "htop-106": {
+      "aday": "configuration_file_downgraded",
+      "addr": "0x100019a20",
+      "capraz_atif": 1,
+      "dosya": "Settings.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_Settings_read"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "configuration_file_downgraded",
+      "satir": 355,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    }
+  }
+}

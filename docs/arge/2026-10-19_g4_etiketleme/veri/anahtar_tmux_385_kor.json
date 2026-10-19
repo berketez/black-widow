@@ -1,0 +1,7984 @@
+{
+  "kunye": {
+    "girdi": {
+      "kaynak": "workspaces/2026-10-15_oturum_scratchpad/src/tmux-dl/tmux-3.8",
+      "kaynak_ozeti": "275e64d8549a080a9f7b58f1a28f311afc686c1b948e320116998fbbd50ef5bf",
+      "satirlar": "/private/tmp/claude-501/-Users-apple-Black-Widow/f2f335c2-2e3e-4dfb-a787-c348634b4ac3/scratchpad/g4/tmux_program_rows.json",
+      "satirlar_sha256": "c2240a131d7e3d1ecb29925217d7f25f6a4283f306b7445e863f528a4ac839a8"
+    },
+    "govde_azami_satir": 120,
+    "govdesi_belirsiz": [
+      {
+        "addr": "0x100034684",
+        "dosyalar": [
+          "format.c",
+          "names.c"
+        ],
+        "gt": [
+          "_format_window_name"
+        ]
+      },
+      {
+        "addr": "0x1000a3b64",
+        "dosyalar": [
+          "osdep-aix.c",
+          "osdep-cygwin.c",
+          "osdep-darwin.c",
+          "osdep-dragonfly.c",
+          "osdep-freebsd.c",
+          "osdep-haiku.c",
+          "osdep-hpux.c",
+          "osdep-linux.c",
+          "osdep-netbsd.c",
+          "osdep-openbsd.c",
+          "osdep-sunos.c",
+          "osdep-unknown.c"
+        ],
+        "gt": [
+          "_osdep_event_init"
+        ]
+      }
+    ],
+    "govdesi_bulunamayan": [
+      {
+        "addr": "0x1000a3f90",
+        "gt": [
+          "_BSDgetopt"
+        ]
+      }
+    ],
+    "kip": "kor",
+    "orneklem_istenen": 385,
+    "program": "tmux",
+    "python_surumu": "3.12.7",
+    "rubrik_surumu": 2,
+    "sayilar": {
+      "ana": 385,
+      "baska_ad_gecen_govde": 264,
+      "baska_ad_gecis": 697,
+      "capraz_atifli_oge": 168,
+      "dosya_adi_capraz_atifli_oge": 1,
+      "dosya_karartilan": 2,
+      "govdesi_belirsiz": 2,
+      "govdesi_bulunamayan": 1,
+      "isimli": 857,
+      "karartilan_kendi": 442,
+      "kirpilan": 25,
+      "satir": 2545,
+      "toplam": 424,
+      "uygun": 854,
+      "yem": 39
+    },
+    "sema": "karadul-etiket-paketi/2",
+    "tohum": 2026101901,
+    "yem_govde_havuzu": "isimli",
+    "yem_yuzde": 10
+  },
+  "ogeler": {
+    "tmux-000": {
+      "aday": "cmd_find_current",
+      "addr": "0x10000ceb8",
+      "capraz_atif": 1,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_client"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_find_current",
+      "satir": 1310,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-001": {
+      "aday": "pane_border_status_5",
+      "addr": "0x1000a0b10",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_find_down"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_border_status_5",
+      "satir": 2282,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-002": {
+      "aday": "evbuffer_add_printf_3",
+      "addr": "0x10002f790",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_session_attached_list"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "evbuffer_add_printf_3",
+      "satir": 572,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-003": {
+      "aday": "window_pane_changed",
+      "addr": "0x100020f44",
+      "capraz_atif": 0,
+      "dosya": "control-notify.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_window_pane_changed_cb"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_pane_changed",
+      "satir": 113,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-004": {
+      "aday": "missing_user_group",
+      "addr": "0x1000192b0",
+      "capraz_atif": 0,
+      "dosya": "cmd-server-access.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_server_access_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "missing_user_group",
+      "satir": 62,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-005": {
+      "aday": "took_long_flush",
+      "addr": "0x1000685bc",
+      "capraz_atif": 1,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_exit_timer"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "took_long_flush",
+      "satir": 2374,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-006": {
+      "aday": "screen_write_deleteline",
+      "addr": "0x100063814",
+      "capraz_atif": 0,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_deleteline"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_deleteline",
+      "satir": 1549,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-007": {
+      "aday": "absolute_centre_2",
+      "addr": "0x1000747f0",
+      "capraz_atif": 0,
+      "dosya": "style.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_style_parse"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "absolute_centre_2",
+      "satir": 70,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-008": {
+      "aday": "window_pane_send_2",
+      "addr": "0x1000a18b4",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_send_theme_update"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_pane_send_2",
+      "satir": 2839,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-009": {
+      "aday": "table_doesn_exist",
+      "addr": "0x10001d1f8",
+      "capraz_atif": 0,
+      "dosya": "cmd-unbind-key.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_unbind_key_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "table_doesn_exist",
+      "satir": 44,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-010": {
+      "aday": "job_error_callback",
+      "addr": "0x100030c60",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_window_start_flag"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 3397,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100043858",
+        "aday_dosya": "job.c",
+        "aday_gt": [
+          "_job_error_callback"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-011": {
+      "aday": "popup_border_lines",
+      "addr": "0x100009d5c",
+      "capraz_atif": 0,
+      "dosya": "cmd-display-menu.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_display_popup_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "popup_border_lines",
+      "satir": 570,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-012": {
+      "aday": "pane_empty",
+      "addr": "0x1000a10bc",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_start_input"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_empty",
+      "satir": 2540,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-013": {
+      "aday": "mode_keys",
+      "addr": "0x100086634",
+      "capraz_atif": 0,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_key_table"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "mode_keys",
+      "satir": 1247,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-014": {
+      "aday": "received_secondary",
+      "addr": "0x100078974",
+      "capraz_atif": 1,
+      "dosya": "tty-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_keys_device_attributes2"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "received_secondary",
+      "satir": 1601,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-015": {
+      "aday": "local_strlcat_chk_2",
+      "addr": "0x10002fde4",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_session_stack"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "local_strlcat_chk_2",
+      "satir": 665,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-016": {
+      "aday": "queue_empty",
+      "addr": "0x1000147a8",
+      "capraz_atif": 0,
+      "dosya": "cmd-queue.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmdq_free"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "queue_empty",
+      "satir": 137,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-017": {
+      "aday": "could_expand_3",
+      "addr": "0x10007ae5c",
+      "capraz_atif": 0,
+      "dosya": "tty-term.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_term_string_s"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "could_expand_3",
+      "satir": 890,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-018": {
+      "aday": "read_bytes_already",
+      "addr": "0x10007b50c",
+      "capraz_atif": 1,
+      "dosya": "tty.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_read_callback"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "read_bytes_already",
+      "satir": 174,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-019": {
+      "aday": "read_only_3",
+      "addr": "0x10006cd24",
+      "capraz_atif": 2,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_read_only"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "read_only_3",
+      "satir": 2798,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-020": {
+      "aday": "command_cannot_given_2",
+      "addr": "0x10001bc5c",
+      "capraz_atif": 0,
+      "dosya": "cmd-split-window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_split_window_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "command_cannot_given_2",
+      "satir": 77,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-021": {
+      "aday": "copy_mode_current_2",
+      "addr": "0x1000894d8",
+      "capraz_atif": 0,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_scroll_down"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "copy_mode_current_2",
+      "satir": 6979,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-022": {
+      "aday": "mode_keys_5",
+      "addr": "0x100089090",
+      "capraz_atif": 1,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_cursor_down"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "mode_keys_5",
+      "satir": 6570,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-023": {
+      "aday": "window_layout_changed_11",
+      "addr": "0x10004bc58",
+      "capraz_atif": 2,
+      "dosya": "layout.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_close_pane"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_layout_changed_11",
+      "satir": 1533,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-024": {
+      "aday": "mode_keys_7",
+      "addr": "0x10008f230",
+      "capraz_atif": 0,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_cursor_jump_to_back"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "mode_keys_7",
+      "satir": 6707,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-025": {
+      "aday": "pane_mode_changed",
+      "addr": "0x100020d10",
+      "capraz_atif": 0,
+      "dosya": "control-notify.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_pane_mode_changed_cb"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_mode_changed",
+      "satir": 37,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-026": {
+      "aday": "options_remove",
+      "addr": "0x100014a74",
+      "capraz_atif": 8,
+      "dosya": "cmd-queue.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmdq_append"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 309,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100052878",
+        "aday_dosya": "options.c",
+        "aday_gt": [
+          "_options_remove"
+        ],
+        "govde_status": "tp"
+      }
+    },
+    "tmux-027": {
+      "aday": "utf_wctomb",
+      "addr": "0x100082e48",
+      "capraz_atif": 1,
+      "dosya": "utf8.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_utf8_fromwc"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "utf_wctomb",
+      "satir": 680,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-028": {
+      "aday": "protocol_version_mismatch",
+      "addr": "0x100005f88",
+      "capraz_atif": 0,
+      "dosya": "client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_client_dispatch"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "protocol_version_mismatch",
+      "satir": 578,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-029": {
+      "aday": "current_session_3",
+      "addr": "0x100054e68",
+      "capraz_atif": 1,
+      "dosya": "options.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_options_scope_from_flags"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "current_session_3",
+      "satir": 1087,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-030": {
+      "aday": "few_arguments_need",
+      "addr": "0x10000273c",
+      "capraz_atif": 2,
+      "dosya": "arguments.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_args_parse"
+      ],
+      "karartilan_kendi": 2,
+      "kirpildi": false,
+      "pred": "few_arguments_need",
+      "satir": 258,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-031": {
+      "aday": "pane_prompt_closed",
+      "addr": "0x1000a0080",
+      "capraz_atif": 1,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_clear_prompt"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_prompt_closed",
+      "satir": 1922,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-032": {
+      "aday": "evbuffer_add_printf_8",
+      "addr": "0x1000307ec",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_window_linked_sessions_list"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "evbuffer_add_printf_8",
+      "satir": 712,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-033": {
+      "aday": "window_copy_cmd_copy_end_of_line",
+      "addr": "0x1000442c8",
+      "capraz_atif": 0,
+      "dosya": "json.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_json_find_string"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 265,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10008b6b0",
+        "aday_dosya": "window-copy.c",
+        "aday_gt": [
+          "_window_copy_cmd_copy_end_of_line"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-034": {
+      "aday": "events_add_sink",
+      "addr": "0x1000452ac",
+      "capraz_atif": 1,
+      "dosya": "json.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_json_assign_value"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 627,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100026074",
+        "aday_dosya": "events.c",
+        "aday_gt": [
+          "_events_add_sink"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-035": {
+      "aday": "pane_border_status_4",
+      "addr": "0x1000a0954",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_find_up"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_border_status_4",
+      "satir": 2221,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-036": {
+      "aday": "layout_set_even_h",
+      "addr": "0x10006cad0",
+      "capraz_atif": 1,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_fire_resized"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 424,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100048b5c",
+        "aday_dosya": "layout-set.c",
+        "aday_gt": [
+          "_layout_set_even_h"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-037": {
+      "aday": "file_read_done",
+      "addr": "0x1000285c0",
+      "capraz_atif": 1,
+      "dosya": "file.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_file_read_done"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "file_read_done",
+      "satir": 912,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-038": {
+      "aday": "screen_write_reverseindex",
+      "addr": "0x1000640cc",
+      "capraz_atif": 0,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_reverseindex"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_reverseindex",
+      "satir": 1740,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-039": {
+      "aday": "xstrndup",
+      "addr": "0x1000a1cf8",
+      "capraz_atif": 3,
+      "dosya": "xmalloc.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_xstrndup"
+      ],
+      "karartilan_kendi": 2,
+      "kirpildi": false,
+      "pred": "xstrndup",
+      "satir": 98,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-040": {
+      "aday": "screen_write_stop_2",
+      "addr": "0x100062924",
+      "capraz_atif": 3,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_stop_sync"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_stop_2",
+      "satir": 1051,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-041": {
+      "aday": "lvar_long_long",
+      "addr": "0x10002e0a4",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_pane_active"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "lvar_long_long",
+      "satir": 2211,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-042": {
+      "aday": "session_window_changed_2",
+      "addr": "0x100070814",
+      "capraz_atif": 0,
+      "dosya": "session.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_session_set_current"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "session_window_changed_2",
+      "satir": 505,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-043": {
+      "aday": "hooks_insert_event",
+      "addr": "0x10003bc84",
+      "capraz_atif": 0,
+      "dosya": "hooks.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_hooks_insert_event"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "hooks_insert_event",
+      "satir": 203,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-044": {
+      "aday": "sixel_parse_attributes",
+      "addr": "0x1000a25a0",
+      "capraz_atif": 0,
+      "dosya": "image-sixel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_sixel_parse"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "sixel_parse_attributes",
+      "satir": 295,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-045": {
+      "aday": "else_pcvar_2",
+      "addr": "0x100015888",
+      "capraz_atif": 32,
+      "dosya": "cmd-queue.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmdq_error"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "else_pcvar_2",
+      "satir": 840,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-046": {
+      "aday": "increasing_delay_partial",
+      "addr": "0x100077dc0",
+      "capraz_atif": 2,
+      "dosya": "tty-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_keys_next"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "increasing_delay_partial",
+      "satir": 746,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-047": {
+      "aday": "event_callback_5",
+      "addr": "0x100079b78",
+      "capraz_atif": 0,
+      "dosya": "tty-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_keys_callback"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "event_callback_5",
+      "satir": 1074,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-048": {
+      "aday": "evbuffer_add_printf_6",
+      "addr": "0x1000300cc",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_window_active_clients_list"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "evbuffer_add_printf_6",
+      "satir": 823,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-049": {
+      "aday": "paste_buffer_changed_3",
+      "addr": "0x10005708c",
+      "capraz_atif": 2,
+      "dosya": "paste.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_paste_set"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "paste_buffer_changed_3",
+      "satir": 278,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-050": {
+      "aday": "mode_tree_prompt",
+      "addr": "0x10004f590",
+      "capraz_atif": 3,
+      "dosya": "mode-tree.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_mode_tree_set_prompt"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "mode_tree_prompt",
+      "satir": 1133,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-051": {
+      "aday": "mode_keys_2",
+      "addr": "0x100088264",
+      "capraz_atif": 0,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_common_init"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "mode_keys_2",
+      "satir": 563,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-052": {
+      "aday": "format_job_complete",
+      "addr": "0x100032ec8",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_job_complete"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "format_job_complete",
+      "satir": 359,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-053": {
+      "aday": "event_callback_9",
+      "addr": "0x100088c14",
+      "capraz_atif": 1,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_scroll_timer"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "event_callback_9",
+      "satir": 369,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-054": {
+      "aday": "bad_osc_2",
+      "addr": "0x100042410",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_osc_12"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "bad_osc_2",
+      "satir": 3165,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-055": {
+      "aday": "after_select_window",
+      "addr": "0x100018aec",
+      "capraz_atif": 0,
+      "dosya": "cmd-select-window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_select_window_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "after_select_window",
+      "satir": 86,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-056": {
+      "aday": "sort_order_5",
+      "addr": "0x10000fcac",
+      "capraz_atif": 0,
+      "dosya": "cmd-list-windows.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_list_windows_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "sort_order_5",
+      "satir": 60,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-057": {
+      "aday": "imsgbuf_init",
+      "addr": "0x1000589f8",
+      "capraz_atif": 1,
+      "dosya": "proc.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_proc_add_peer"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "imsgbuf_init",
+      "satir": 317,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-058": {
+      "aday": "paste_buffer",
+      "addr": "0x1000563d8",
+      "capraz_atif": 4,
+      "dosya": "paste.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_paste_fire_event"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "paste_buffer",
+      "satir": 48,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-059": {
+      "aday": "event_callback_2",
+      "addr": "0x1000588c8",
+      "capraz_atif": 0,
+      "dosya": "proc.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_proc_signal_cb"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "event_callback_2",
+      "satir": 127,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-060": {
+      "aday": "input_csi_dispatch_6",
+      "addr": "0x10003fa80",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_csi_dispatch"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "input_csi_dispatch_6",
+      "satir": 1466,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-061": {
+      "aday": "session_update_history",
+      "addr": "0x100070ffc",
+      "capraz_atif": 0,
+      "dosya": "session.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_session_update_history"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "session_update_history",
+      "satir": 826,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-062": {
+      "aday": "light",
+      "addr": "0x10002d084",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_client_theme"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "light",
+      "satir": 1802,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-063": {
+      "aday": "server_client_check_mouse_in_pane",
+      "addr": "0x100020fe8",
+      "capraz_atif": 0,
+      "dosya": "control-notify.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_window_unlinked_cb"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 132,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10006c4b8",
+        "aday_dosya": "server-client.c",
+        "aday_gt": [
+          "_server_client_check_mouse_in_pane"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-064": {
+      "aday": "tty_cursor",
+      "addr": "0x10007ea60",
+      "capraz_atif": 0,
+      "dosya": "tty.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_cursor"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "tty_cursor",
+      "satir": 2453,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-065": {
+      "aday": "xsnprintf_len_int",
+      "addr": "0x1000a1df8",
+      "capraz_atif": 0,
+      "dosya": "xmalloc.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_xvsnprintf"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "xsnprintf_len_int",
+      "satir": 155,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-066": {
+      "aday": "ivar_param_pcvar",
+      "addr": "0x100034924",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_bool_op_1"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "ivar_param_pcvar",
+      "satir": 5161,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-067": {
+      "aday": "environment_removed",
+      "addr": "0x100092ecc",
+      "capraz_atif": 1,
+      "dosya": "window-customize.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_customize_build_environment"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "environment_removed",
+      "satir": 991,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-068": {
+      "aday": "pane_base_index",
+      "addr": "0x10009f0a4",
+      "capraz_atif": 3,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_index"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_base_index",
+      "satir": 1277,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-069": {
+      "aday": "tmux_xxxxxxxx",
+      "addr": "0x100073238",
+      "capraz_atif": 0,
+      "dosya": "spawn.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_spawn_editor"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "tmux_xxxxxxxx",
+      "satir": 705,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-070": {
+      "aday": "window_copy_cmd",
+      "addr": "0x10008d814",
+      "capraz_atif": 0,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_cmd_search_backward_incremental"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_copy_cmd",
+      "satir": 2937,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-071": {
+      "aday": "hyperlinks_init",
+      "addr": "0x100085af0",
+      "capraz_atif": 0,
+      "dosya": "window-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_client_get_key"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 374,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10003ce40",
+        "aday_dosya": "hyperlinks.c",
+        "aday_gt": [
+          "_hyperlinks_init"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-072": {
+      "aday": "window_renamed",
+      "addr": "0x10009d460",
+      "capraz_atif": 2,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_set_name"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_renamed",
+      "satir": 559,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-073": {
+      "aday": "pane_border_status_3",
+      "addr": "0x10009e1b4",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_get_active_at"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_border_status_3",
+      "satir": 850,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-074": {
+      "aday": "window_copy_cmd_append_selection",
+      "addr": "0x100043000",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_end_bel"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 2533,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10008b500",
+        "aday_dosya": "window-copy.c",
+        "aday_gt": [
+          "_window_copy_cmd_append_selection"
+        ],
+        "govde_status": "tp"
+      }
+    },
+    "tmux-075": {
+      "aday": "input_intermediate",
+      "addr": "0x100025b18",
+      "capraz_atif": 0,
+      "dosya": "events-payload.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_event_payload_log"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 549,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10003f004",
+        "aday_dosya": "input.c",
+        "aday_gt": [
+          "_input_intermediate"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-076": {
+      "aday": "window_only_linked",
+      "addr": "0x10000e980",
+      "capraz_atif": 0,
+      "dosya": "cmd-kill-window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_kill_window_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_only_linked",
+      "satir": 62,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-077": {
+      "aday": "buffer_created_buffer",
+      "addr": "0x10002cc10",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_buffer_mode_format"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "buffer_created_buffer",
+      "satir": 3530,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-078": {
+      "aday": "default_command_2",
+      "addr": "0x10006c904",
+      "capraz_atif": 1,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_dispatch_command"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "default_command_2",
+      "satir": 2840,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-079": {
+      "aday": "initial_repeat_time",
+      "addr": "0x10006c32c",
+      "capraz_atif": 0,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_repeat_time"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "initial_repeat_time",
+      "satir": 1394,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-080": {
+      "aday": "input_top_bit",
+      "addr": "0x10003eee8",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_top_bit_set"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "input_top_bit",
+      "satir": 2860,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-081": {
+      "aday": "utf_character_size",
+      "addr": "0x100083000",
+      "capraz_atif": 1,
+      "dosya": "utf8.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_utf8_append"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "utf_character_size",
+      "satir": 729,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-082": {
+      "aday": "session_added_group",
+      "addr": "0x100070a64",
+      "capraz_atif": 0,
+      "dosya": "session.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_session_group_add"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "session_added_group",
+      "satir": 593,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-083": {
+      "aday": "uint_lvar_pcvar_3",
+      "addr": "0x10002d4a4",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_cursor_very_visible"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "uint_lvar_pcvar_3",
+      "satir": 1870,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-084": {
+      "aday": "alerts_reset_all",
+      "addr": "0x10001ad20",
+      "capraz_atif": 0,
+      "dosya": "cmd-show-options.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_show_hooks_print_monitor"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 266,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x1000022c0",
+        "aday_dosya": "alerts.c",
+        "aday_gt": [
+          "_alerts_reset_all"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-085": {
+      "aday": "name_timer_already",
+      "addr": "0x10005234c",
+      "capraz_atif": 1,
+      "dosya": "names.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_check_window_name"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "name_timer_already",
+      "satir": 55,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-086": {
+      "aday": "bytes",
+      "addr": "0x10009f700",
+      "capraz_atif": 1,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_read_callback"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "bytes",
+      "satir": 1634,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-087": {
+      "aday": "input_enter_rename",
+      "addr": "0x10003f9e0",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_enter_rename"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "input_enter_rename",
+      "satir": 2815,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-088": {
+      "aday": "cmd_find_winlink_2",
+      "addr": "0x10000b778",
+      "capraz_atif": 1,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_from_winlink_pane"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_find_winlink_2",
+      "satir": 813,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-089": {
+      "aday": "tmux_log",
+      "addr": "0x10004c9d4",
+      "capraz_atif": 1,
+      "dosya": "log.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_log_open"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "tmux_log",
+      "satir": 56,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-090": {
+      "aday": "able_lock",
+      "addr": "0x10001dce8",
+      "capraz_atif": 0,
+      "dosya": "cmd-wait-for.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_wait_for_lock"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "able_lock",
+      "satir": 438,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-091": {
+      "aday": "data_specified",
+      "addr": "0x100019588",
+      "capraz_atif": 0,
+      "dosya": "cmd-set-buffer.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_set_buffer_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "data_specified",
+      "satir": 57,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-092": {
+      "aday": "arguments",
+      "addr": "0x100014cc4",
+      "capraz_atif": 1,
+      "dosya": "cmd-queue.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmdq_insert_hook"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "arguments",
+      "satir": 362,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-093": {
+      "aday": "lvar_pcvar",
+      "addr": "0x10002fc30",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_session_grouped"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "lvar_pcvar",
+      "satir": 2990,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-094": {
+      "aday": "sigaction",
+      "addr": "0x100005dd8",
+      "capraz_atif": 0,
+      "dosya": "client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_client_signal"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "sigaction",
+      "satir": 514,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-095": {
+      "aday": "unexpected_value_when",
+      "addr": "0x100044d0c",
+      "capraz_atif": 0,
+      "dosya": "json.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_json_parse_object"
+      ],
+      "karartilan_kendi": 2,
+      "kirpildi": false,
+      "pred": "unexpected_value_when",
+      "satir": 721,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-096": {
+      "aday": "type_parent",
+      "addr": "0x100049ebc",
+      "capraz_atif": 4,
+      "dosya": "layout.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_print_cell"
+      ],
+      "karartilan_kendi": 2,
+      "kirpildi": false,
+      "pred": "type_parent",
+      "satir": 122,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-097": {
+      "aday": "mode_tree_add",
+      "addr": "0x10004f360",
+      "capraz_atif": 1,
+      "dosya": "mode-tree.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_mode_tree_add"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "mode_tree_add",
+      "satir": 745,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-098": {
+      "aday": "current_session_2",
+      "addr": "0x100054c3c",
+      "capraz_atif": 0,
+      "dosya": "options.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_options_scope_from_name"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "current_session_2",
+      "satir": 1017,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-099": {
+      "aday": "pcvar_svar_fun",
+      "addr": "0x10002466c",
+      "capraz_atif": 2,
+      "dosya": "environ.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_environ_put"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pcvar_svar_fun",
+      "satir": 154,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-100": {
+      "aday": "missing_option",
+      "addr": "0x100054864",
+      "capraz_atif": 45,
+      "dosya": "options.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_options_get_number"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "missing_option",
+      "satir": 904,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-101": {
+      "aday": "paste_buffer_deleted",
+      "addr": "0x100021628",
+      "capraz_atif": 0,
+      "dosya": "control-notify.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_paste_buffer_deleted_cb"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "paste_buffer_deleted",
+      "satir": 340,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-102": {
+      "aday": "input_ground_timer",
+      "addr": "0x10003e180",
+      "capraz_atif": 1,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_ground_timer_callback"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "input_ground_timer",
+      "satir": 817,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-103": {
+      "aday": "format_cb_origin_flag",
+      "addr": "0x10006ff94",
+      "capraz_atif": 3,
+      "dosya": "session.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_session_add_ref"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 162,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10002e074",
+        "aday_dosya": "format.c",
+        "aday_gt": [
+          "_format_cb_origin_flag"
+        ],
+        "govde_status": "tp"
+      }
+    },
+    "tmux-104": {
+      "aday": "window_find_by_id",
+      "addr": "0x1000509f4",
+      "capraz_atif": 0,
+      "dosya": "monitor.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_monitor_create_session"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 562,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10009d0c0",
+        "aday_dosya": "window.c",
+        "aday_gt": [
+          "_window_find_by_id"
+        ],
+        "govde_status": "tp"
+      }
+    },
+    "tmux-105": {
+      "aday": "preview",
+      "addr": "0x10008544c",
+      "capraz_atif": 0,
+      "dosya": "window-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_client_key"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "preview",
+      "satir": 535,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-106": {
+      "aday": "input_csi_dispatch",
+      "addr": "0x100040be4",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_csi_dispatch_rm"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "input_csi_dispatch",
+      "satir": 1902,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-107": {
+      "aday": "event_callback_12",
+      "addr": "0x1000a1b44",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_scrollbar_timer"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "event_callback_12",
+      "satir": 1526,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-108": {
+      "aday": "adjustment",
+      "addr": "0x100015ac8",
+      "capraz_atif": 0,
+      "dosya": "cmd-refresh-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_refresh_client_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "adjustment",
+      "satir": 177,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-109": {
+      "aday": "layout_resize_pane",
+      "addr": "0x100038754",
+      "capraz_atif": 0,
+      "dosya": "grid.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_grid_set_cell"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 663,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10004ae60",
+        "aday_dosya": "layout.c",
+        "aday_gt": [
+          "_layout_resize_pane"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-110": {
+      "aday": "environment_variable_long",
+      "addr": "0x100012e34",
+      "capraz_atif": 0,
+      "dosya": "cmd-parse.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_yylex"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "environment_variable_long",
+      "satir": 1001,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-111": {
+      "aday": "detached_sighup_session",
+      "addr": "0x1000065ec",
+      "capraz_atif": 0,
+      "dosya": "client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_client_exit_message"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "detached_sighup_session",
+      "satir": 186,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-112": {
+      "aday": "aggressive_resize",
+      "addr": "0x10005ce28",
+      "capraz_atif": 1,
+      "dosya": "resize.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_recalculate_size"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "aggressive_resize",
+      "satir": 360,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-113": {
+      "aday": "usage_cdhlnuvv_shell",
+      "addr": "0x100076a64",
+      "capraz_atif": 1,
+      "dosya": "tmux.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_usage"
+      ],
+      "karartilan_kendi": 2,
+      "kirpildi": false,
+      "pred": "usage_cdhlnuvv_shell",
+      "satir": 72,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-114": {
+      "aday": "tty_clear_area",
+      "addr": "0x10007f360",
+      "capraz_atif": 0,
+      "dosya": "tty.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_clear_pane_area"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "tty_clear_area",
+      "satir": 1420,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-115": {
+      "aday": "grid_clear",
+      "addr": "0x100038bb4",
+      "capraz_atif": 0,
+      "dosya": "grid.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_grid_clear"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "grid_clear",
+      "satir": 726,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-116": {
+      "aday": "synchronize_panes_4",
+      "addr": "0x1000a06e4",
+      "capraz_atif": 1,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_copy_key"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "synchronize_panes_4",
+      "satir": 2038,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-117": {
+      "aday": "extended_keys_format",
+      "addr": "0x10003da7c",
+      "capraz_atif": 0,
+      "dosya": "input-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_key_extended"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "extended_keys_format",
+      "satir": 427,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-118": {
+      "aday": "bad_msg_read",
+      "addr": "0x100027f90",
+      "capraz_atif": 0,
+      "dosya": "file.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_file_read_open"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "bad_msg_read",
+      "satir": 762,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-119": {
+      "aday": "name_timer_expired",
+      "addr": "0x10005258c",
+      "capraz_atif": 1,
+      "dosya": "names.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_name_time_callback"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "name_timer_expired",
+      "satir": 35,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-120": {
+      "aday": "mode_tree_draw_help_line",
+      "addr": "0x1000897c4",
+      "capraz_atif": 2,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_cursor_limit"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 6317,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100050870",
+        "aday_dosya": "mode-tree.c",
+        "aday_gt": [
+          "_mode_tree_draw_help_line"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-121": {
+      "aday": "window_destroyed_references",
+      "addr": "0x10009cd08",
+      "capraz_atif": 3,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_remove_ref"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_destroyed_references",
+      "satir": 527,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-122": {
+      "aday": "took_llu_milliseconds",
+      "addr": "0x10006e690",
+      "capraz_atif": 1,
+      "dosya": "server.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_tidy_event"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "took_llu_milliseconds",
+      "satir": 160,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-123": {
+      "aday": "prompt_command_cursor",
+      "addr": "0x1000593d4",
+      "capraz_atif": 1,
+      "dosya": "prompt.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_prompt_set_options"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "prompt_command_cursor",
+      "satir": 132,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-124": {
+      "aday": "kill_session",
+      "addr": "0x100098904",
+      "capraz_atif": 0,
+      "dosya": "window-tree.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_tree_key"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "kill_session",
+      "satir": 1442,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-125": {
+      "aday": "screen_write_flush",
+      "addr": "0x100062998",
+      "capraz_atif": 1,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_flush_dirty"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_flush",
+      "satir": 1268,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-126": {
+      "aday": "session_remove_ref",
+      "addr": "0x10006ffd8",
+      "capraz_atif": 3,
+      "dosya": "session.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_session_remove_ref"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "session_remove_ref",
+      "satir": 170,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-127": {
+      "aday": "uint_long_param",
+      "addr": "0x10002fcb8",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_session_many_attached"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "uint_long_param",
+      "satir": 3011,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-128": {
+      "aday": "srepeating_requests_seconds",
+      "addr": "0x10007be8c",
+      "capraz_atif": 2,
+      "dosya": "tty.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_repeat_requests"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "srepeating_requests_seconds",
+      "satir": 429,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-129": {
+      "aday": "window_resize",
+      "addr": "0x10009d544",
+      "capraz_atif": 4,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_resize"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_resize",
+      "satir": 574,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-130": {
+      "aday": "loading_history",
+      "addr": "0x100058da0",
+      "capraz_atif": 0,
+      "dosya": "prompt-history.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_prompt_load_history"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "loading_history",
+      "satir": 80,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-131": {
+      "aday": "screen_write_scrollup",
+      "addr": "0x100064348",
+      "capraz_atif": 0,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_scrollup"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_scrollup",
+      "satir": 1843,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-132": {
+      "aday": "window_layout_changed_8",
+      "addr": "0x1000491d0",
+      "capraz_atif": 0,
+      "dosya": "layout-set.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_set_main_v"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_layout_changed_8",
+      "satir": 417,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-133": {
+      "aday": "absolute_centre",
+      "addr": "0x100075210",
+      "capraz_atif": 0,
+      "dosya": "style.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_style_tostring"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "absolute_centre",
+      "satir": 304,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-134": {
+      "aday": "window_buffer_key",
+      "addr": "0x1000688e0",
+      "capraz_atif": 1,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_set_session"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 452,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100084494",
+        "aday_dosya": "window-buffer.c",
+        "aday_gt": [
+          "_window_buffer_key"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-135": {
+      "aday": "continue",
+      "addr": "0x1000227e8",
+      "capraz_atif": 0,
+      "dosya": "control.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_continue_pane"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "continue",
+      "satir": 378,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-136": {
+      "aday": "lld_4",
+      "addr": "0x10004cb50",
+      "capraz_atif": 0,
+      "dosya": "log.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_log_vwrite"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "lld_4",
+      "satir": 102,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-137": {
+      "aday": "copy_mode_line_2",
+      "addr": "0x100089d94",
+      "capraz_atif": 3,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_line_number_mode"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "copy_mode_line_2",
+      "satir": 5249,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-138": {
+      "aday": "cmd_unpack_argv",
+      "addr": "0x10001e958",
+      "capraz_atif": 1,
+      "dosya": "cmd.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_unpack_argv"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_unpack_argv",
+      "satir": 304,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-139": {
+      "aday": "mode_tree_draw_as_parent",
+      "addr": "0x1000263e4",
+      "capraz_atif": 7,
+      "dosya": "events.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_events_fire_window"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 159,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10004f4ec",
+        "aday_dosya": "mode-tree.c",
+        "aday_gt": [
+          "_mode_tree_draw_as_parent"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-140": {
+      "aday": "image_store",
+      "addr": "0x1000a1f30",
+      "capraz_atif": 0,
+      "dosya": "image.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_image_store"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "image_store",
+      "satir": 129,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-141": {
+      "aday": "ibuf_reserve",
+      "addr": "0x10005bf84",
+      "capraz_atif": 3,
+      "dosya": "prompt.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_prompt_type"
+      ],
+      "karartilan_kendi": 2,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 1713,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x1000a4d98",
+        "aday_dosya": "compat/imsg-buffer.c",
+        "aday_gt": [
+          "_ibuf_reserve"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-142": {
+      "aday": "themelightgrey_title_tree",
+      "addr": "0x100099394",
+      "capraz_atif": 0,
+      "dosya": "window-tree.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_tree_draw"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "themelightgrey_title_tree",
+      "satir": 885,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-143": {
+      "aday": "extended_keys_2",
+      "addr": "0x1000658c4",
+      "capraz_atif": 0,
+      "dosya": "screen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_reinit"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "extended_keys_2",
+      "satir": 110,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-144": {
+      "aday": "status_message",
+      "addr": "0x100073bdc",
+      "capraz_atif": 5,
+      "dosya": "status.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_status_message_set"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "status_message",
+      "satir": 342,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-145": {
+      "aday": "target_pane_exited_2",
+      "addr": "0x100014214",
+      "capraz_atif": 0,
+      "dosya": "cmd-pipe-pane.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_pipe_pane_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "target_pane_exited_2",
+      "satir": 57,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-146": {
+      "aday": "else_fun_local",
+      "addr": "0x10002ebd8",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_pane_private_modes"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "else_fun_local",
+      "satir": 2157,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-147": {
+      "aday": "control_read_callback",
+      "addr": "0x1000232e4",
+      "capraz_atif": 1,
+      "dosya": "control.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_read_callback"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "control_read_callback",
+      "satir": 699,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-148": {
+      "aday": "window_pane_update",
+      "addr": "0x10009dab4",
+      "capraz_atif": 1,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_update_focus"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_pane_update",
+      "satir": 717,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-149": {
+      "aday": "display_panes_colour",
+      "addr": "0x100096a20",
+      "capraz_atif": 1,
+      "dosya": "window-panes.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_panes_draw_pane"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "display_panes_colour",
+      "satir": 800,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-150": {
+      "aday": "word_separators",
+      "addr": "0x10002c610",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_grid_word"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "word_separators",
+      "satir": 7103,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-151": {
+      "aday": "light_theme",
+      "addr": "0x10006ac48",
+      "capraz_atif": 0,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_report_theme"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "light_theme",
+      "satir": 3289,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-152": {
+      "aday": "tty_clear_pane",
+      "addr": "0x10007de3c",
+      "capraz_atif": 0,
+      "dosya": "tty.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_clear_pane_line"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "tty_clear_pane",
+      "satir": 1254,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-153": {
+      "aday": "out_memory_11",
+      "addr": "0x10009f684",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_set_event"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "out_memory_11",
+      "satir": 1675,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-154": {
+      "aday": "screen_write_insert",
+      "addr": "0x100064c8c",
+      "capraz_atif": 0,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_insert_clears"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_insert",
+      "satir": 2523,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-155": {
+      "aday": "ivar_uvar_fun",
+      "addr": "0x10008df8c",
+      "capraz_atif": 0,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_cmd_selection_mode"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "ivar_uvar_fun",
+      "satir": 2206,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-156": {
+      "aday": "tty_fake_bce",
+      "addr": "0x100042bd8",
+      "capraz_atif": 3,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_osc_colour_reply"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 2900,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10007cf28",
+        "aday_dosya": "tty.c",
+        "aday_gt": [
+          "_tty_fake_bce"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-157": {
+      "aday": "default_2",
+      "addr": "0x10002d460",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_cursor_shape"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "default_2",
+      "satir": 1851,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-158": {
+      "aday": "pane_mode_entered",
+      "addr": "0x10009fa58",
+      "capraz_atif": 1,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_set_mode"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_mode_entered",
+      "satir": 1747,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-159": {
+      "aday": "input_csi_dispatch_5",
+      "addr": "0x10004151c",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_csi_dispatch_sm_private"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "input_csi_dispatch_5",
+      "satir": 2023,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-160": {
+      "aday": "synchronize_panes",
+      "addr": "0x10002ee68",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_pane_synchronized"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "synchronize_panes",
+      "satir": 2668,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-161": {
+      "aday": "layout_set_next",
+      "addr": "0x100096350",
+      "capraz_atif": 0,
+      "dosya": "window-panes.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_panes_timer_callback"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 878,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100048ac8",
+        "aday_dosya": "layout-set.c",
+        "aday_gt": [
+          "_layout_set_next"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-162": {
+      "aday": "param_uvar_else",
+      "addr": "0x1000a2008",
+      "capraz_atif": 1,
+      "dosya": "image.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_image_fallback"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "param_uvar_else",
+      "satir": 83,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-163": {
+      "aday": "window_layout_changed_13",
+      "addr": "0x10009dd64",
+      "capraz_atif": 1,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_unzoom"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_layout_changed_13",
+      "satir": 1023,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-164": {
+      "aday": "window_pane_add",
+      "addr": "0x10009d348",
+      "capraz_atif": 1,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_add_ref"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_pane_add",
+      "satir": 540,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-165": {
+      "aday": "window_linked",
+      "addr": "0x1000703d4",
+      "capraz_atif": 1,
+      "dosya": "session.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_session_attach"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_linked",
+      "satir": 324,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-166": {
+      "aday": "cursor_very_visible",
+      "addr": "0x1000667e0",
+      "capraz_atif": 2,
+      "dosya": "screen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_mode_to_string"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cursor_very_visible",
+      "satir": 795,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-167": {
+      "aday": "window_pane_send",
+      "addr": "0x10009d618",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_send_resize"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_pane_send",
+      "satir": 598,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-168": {
+      "aday": "fun_plvar_local",
+      "addr": "0x10000f180",
+      "capraz_atif": 0,
+      "dosya": "cmd-list-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_list_keys_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "fun_plvar_local",
+      "satir": 168,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-169": {
+      "aday": "window_layout_changed_5",
+      "addr": "0x100049ba0",
+      "capraz_atif": 0,
+      "dosya": "layout-set.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_set_even"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_layout_changed_5",
+      "satir": 155,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-170": {
+      "aday": "run_command",
+      "addr": "0x10000d150",
+      "capraz_atif": 0,
+      "dosya": "cmd-if-shell.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_if_shell_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "run_command",
+      "satir": 74,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-171": {
+      "aday": "lost_attached",
+      "addr": "0x100068ac8",
+      "capraz_atif": 3,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_lost"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "lost_attached",
+      "satir": 486,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-172": {
+      "aday": "exit_force_changed",
+      "addr": "0x10007386c",
+      "capraz_atif": 1,
+      "dosya": "status.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_status_redraw"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "exit_force_changed",
+      "satir": 216,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-173": {
+      "aday": "window_active_style",
+      "addr": "0x100081028",
+      "capraz_atif": 1,
+      "dosya": "tty.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_default_colours"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_active_style",
+      "satir": 3165,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-174": {
+      "aday": "sessions_changed",
+      "addr": "0x100021420",
+      "capraz_atif": 0,
+      "dosya": "control-notify.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_session_created_cb"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "sessions_changed",
+      "satir": 271,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-175": {
+      "aday": "window_pane_reset",
+      "addr": "0x10009fc80",
+      "capraz_atif": 4,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_reset_mode"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_pane_reset",
+      "satir": 1799,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-176": {
+      "aday": "line_4",
+      "addr": "0x10009a2f0",
+      "capraz_atif": 0,
+      "dosya": "window-tree.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_tree_get_key"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "line_4",
+      "satir": 978,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-177": {
+      "aday": "key_expected_number",
+      "addr": "0x100044350",
+      "capraz_atif": 0,
+      "dosya": "json.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_json_find_number"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "key_expected_number",
+      "satir": 287,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-178": {
+      "aday": "screen_write_stop",
+      "addr": "0x10005f9ec",
+      "capraz_atif": 11,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_stop"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_stop",
+      "satir": 414,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-179": {
+      "aday": "cmd_lock_server_exec",
+      "addr": "0x1000357a0",
+      "capraz_atif": 1,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_add_window_neighbour"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 5321,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x1000100cc",
+        "aday_dosya": "cmd-lock-server.c",
+        "aday_gt": [
+          "_cmd_lock_server_exec"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-180": {
+      "aday": "default_command",
+      "addr": "0x10006cc8c",
+      "capraz_atif": 1,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_default_command"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "default_command",
+      "satir": 2806,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-181": {
+      "aday": "default_shell_2",
+      "addr": "0x100068f74",
+      "capraz_atif": 0,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "default_shell_2",
+      "satir": 631,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-182": {
+      "aday": "grid_cells",
+      "addr": "0x100038a8c",
+      "capraz_atif": 0,
+      "dosya": "grid.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_grid_set_cells"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "grid_cells",
+      "satir": 698,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-183": {
+      "aday": "gettimeofday",
+      "addr": "0x100067cb4",
+      "capraz_atif": 2,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_create"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "gettimeofday",
+      "satir": 277,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-184": {
+      "aday": "ivar_pcvar",
+      "addr": "0x10002cf68",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_client_prefix"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "ivar_pcvar",
+      "satir": 1664,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-185": {
+      "aday": "alerts_timer_expired",
+      "addr": "0x1000026dc",
+      "capraz_atif": 0,
+      "dosya": "alerts.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_alerts_timer"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "alerts_timer_expired",
+      "satir": 44,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-186": {
+      "aday": "writing_key_llx",
+      "addr": "0x10003d3b0",
+      "capraz_atif": 2,
+      "dosya": "input-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_key_pane"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "writing_key_llx",
+      "satir": 399,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-187": {
+      "aday": "style_set",
+      "addr": "0x10000ca5c",
+      "capraz_atif": 0,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_get_pane_with_session"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 556,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x1000758ec",
+        "aday_dosya": "style.c",
+        "aday_gt": [
+          "_style_set"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-188": {
+      "aday": "cmd_find_winlink",
+      "addr": "0x10000b450",
+      "capraz_atif": 1,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_from_winlink"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_find_winlink",
+      "satir": 758,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-189": {
+      "aday": "building_scene_generation",
+      "addr": "0x10005d33c",
+      "capraz_atif": 0,
+      "dosya": "screen-redraw.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_redraw_draw"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "building_scene_generation",
+      "satir": 1683,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-190": {
+      "aday": "display_panes_active",
+      "addr": "0x100052e0c",
+      "capraz_atif": 0,
+      "dosya": "options.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_options_map_name"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "display_panes_active",
+      "satir": 155,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-191": {
+      "aday": "screen_write_end",
+      "addr": "0x100062ab0",
+      "capraz_atif": 0,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_end_sync"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_end",
+      "satir": 1067,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-192": {
+      "aday": "pane_format_pane",
+      "addr": "0x10002ff70",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_tree_mode_format"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_format_pane",
+      "satir": 3544,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-193": {
+      "aday": "remove_wait_channel",
+      "addr": "0x10001dc74",
+      "capraz_atif": 0,
+      "dosya": "cmd-wait-for.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_wait_for_remove"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "remove_wait_channel",
+      "satir": 136,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-194": {
+      "aday": "rgb_hhx_hhx_2",
+      "addr": "0x10007bc70",
+      "capraz_atif": 0,
+      "dosya": "tty.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_force_cursor_colour"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "rgb_hhx_hhx_2",
+      "satir": 768,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-195": {
+      "aday": "adding_deferred_redraw",
+      "addr": "0x100065714",
+      "capraz_atif": 0,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_set_client_cb"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "adding_deferred_redraw",
+      "satir": 136,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-196": {
+      "aday": "mode_keys_6",
+      "addr": "0x10008bb04",
+      "capraz_atif": 0,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_cmd_cursor_right"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "mode_keys_6",
+      "satir": 1629,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-197": {
+      "aday": "cmd_source_file_3",
+      "addr": "0x10001bb04",
+      "capraz_atif": 1,
+      "dosya": "cmd-source-file.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_source_file_complete"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_source_file_3",
+      "satir": 98,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-198": {
+      "aday": "scroll_clear",
+      "addr": "0x100060370",
+      "capraz_atif": 5,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_clearscreen"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "scroll_clear",
+      "satir": 2074,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-199": {
+      "aday": "window_size",
+      "addr": "0x10006abd0",
+      "capraz_atif": 1,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_update_latest"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_size",
+      "satir": 1374,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-200": {
+      "aday": "input_key_mode",
+      "addr": "0x10003dbc8",
+      "capraz_atif": 0,
+      "dosya": "input-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_key_mode1"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "input_key_mode",
+      "satir": 546,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-201": {
+      "aday": "paste_time_limit",
+      "addr": "0x100067e58",
+      "capraz_atif": 1,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_dispatch"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "paste_time_limit",
+      "satir": 2677,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-202": {
+      "aday": "cmdq_callback",
+      "addr": "0x10001517c",
+      "capraz_atif": 1,
+      "dosya": "cmd-queue.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmdq_get_error"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmdq_callback",
+      "satir": 693,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-203": {
+      "aday": "cmd_capture_pane_exec",
+      "addr": "0x10009ce64",
+      "capraz_atif": 2,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_add_ref"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 520,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100007450",
+        "aday_dosya": "cmd-capture-pane.c",
+        "aday_gt": [
+          "_cmd_capture_pane_exec"
+        ],
+        "govde_status": "tp"
+      }
+    },
+    "tmux-204": {
+      "aday": "bind_rotate_through",
+      "addr": "0x10004651c",
+      "capraz_atif": 1,
+      "dosya": "key-bindings.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_key_bindings_init"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "bind_rotate_through",
+      "satir": 384,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-205": {
+      "aday": "window_buffer_update",
+      "addr": "0x10001a3dc",
+      "capraz_atif": 0,
+      "dosya": "cmd-show-environment.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_show_environment_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 99,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100084450",
+        "aday_dosya": "window-buffer.c",
+        "aday_gt": [
+          "_window_buffer_update"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-206": {
+      "aday": "extended_keys",
+      "addr": "0x100060274",
+      "capraz_atif": 0,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_reset"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "extended_keys",
+      "satir": 424,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-207": {
+      "aday": "format_cb_window_modal_pane",
+      "addr": "0x100013c40",
+      "capraz_atif": 0,
+      "dosya": "cmd-parse.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_yylex_append"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 907,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100030a18",
+        "aday_dosya": "format.c",
+        "aday_gt": [
+          "_format_cb_window_modal_pane"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-208": {
+      "aday": "args_copy",
+      "addr": "0x1000031f8",
+      "capraz_atif": 0,
+      "dosya": "arguments.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_args_copy"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "args_copy",
+      "satir": 378,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-209": {
+      "aday": "missing_3",
+      "addr": "0x100004504",
+      "capraz_atif": 1,
+      "dosya": "arguments.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_args_percentage"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "missing_3",
+      "satir": 979,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-210": {
+      "aday": "switch_mode_match",
+      "addr": "0x100098120",
+      "capraz_atif": 0,
+      "dosya": "window-switch.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_switch_draw_screen"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "switch_mode_match",
+      "satir": 271,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-211": {
+      "aday": "input_enter_dcs",
+      "addr": "0x10003f310",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_enter_dcs"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "input_enter_dcs",
+      "satir": 2544,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-212": {
+      "aday": "ivar_pcvar_6",
+      "addr": "0x1000303ac",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_window_bigger"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "ivar_pcvar_6",
+      "satir": 3145,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-213": {
+      "aday": "int_lvar_pcvar",
+      "addr": "0x10003e958",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_request_reply"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "int_lvar_pcvar",
+      "satir": 3669,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-214": {
+      "aday": "grid_peek_line",
+      "addr": "0x1000385e0",
+      "capraz_atif": 2,
+      "dosya": "grid.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_grid_peek_line"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "grid_peek_line",
+      "satir": 603,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-215": {
+      "aday": "prompt_type",
+      "addr": "0x1000a0190",
+      "capraz_atif": 1,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_fire_pane_prompt"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "prompt_type",
+      "satir": 183,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-216": {
+      "aday": "user_option_must_2",
+      "addr": "0x100054b80",
+      "capraz_atif": 0,
+      "dosya": "options.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_options_set_command"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "user_option_must_2",
+      "satir": 992,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-217": {
+      "aday": "window_before_active",
+      "addr": "0x10003341c",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_loop_windows"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_before_active",
+      "satir": 5351,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-218": {
+      "aday": "window_pane_changed_2",
+      "addr": "0x10009dfc0",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_fire_pane_changed"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_pane_changed_2",
+      "satir": 120,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-219": {
+      "aday": "layout_change_window",
+      "addr": "0x100020e24",
+      "capraz_atif": 0,
+      "dosya": "control-notify.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_window_layout_changed_cb"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "layout_change_window",
+      "satir": 68,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-220": {
+      "aday": "replacing_key_llx",
+      "addr": "0x100077c6c",
+      "capraz_atif": 0,
+      "dosya": "tty-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_keys_add"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "replacing_key_llx",
+      "satir": 436,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-221": {
+      "aday": "cell_empty_state",
+      "addr": "0x100076c40",
+      "capraz_atif": 0,
+      "dosya": "tty-draw.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_draw_line"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "cell_empty_state",
+      "satir": 122,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-222": {
+      "aday": "cmd_find_best_2",
+      "addr": "0x10000b8ac",
+      "capraz_atif": 1,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_best_session"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_find_best_2",
+      "satir": 165,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-223": {
+      "aday": "unref_references",
+      "addr": "0x100068dd4",
+      "capraz_atif": 2,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_unref"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "unref_references",
+      "satir": 572,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-224": {
+      "aday": "antiquewhite",
+      "addr": "0x1000206d8",
+      "capraz_atif": 1,
+      "dosya": "colour.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_colour_byname"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "antiquewhite",
+      "satir": 567,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-225": {
+      "aday": "monitor_activity",
+      "addr": "0x100001fdc",
+      "capraz_atif": 0,
+      "dosya": "alerts.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_alerts_check_all"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "monitor_activity",
+      "satir": 93,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-226": {
+      "aday": "lld_2",
+      "addr": "0x10002e2d8",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_pane_command_duration"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "lld_2",
+      "satir": 2401,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-227": {
+      "aday": "window_pane_resize",
+      "addr": "0x10009f8c0",
+      "capraz_atif": 1,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_resize"
+      ],
+      "karartilan_kendi": 2,
+      "kirpildi": false,
+      "pred": "window_pane_resize",
+      "satir": 1703,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-228": {
+      "aday": "int_long_param_2",
+      "addr": "0x10002eb54",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_pane_pipe"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "int_long_param_2",
+      "satir": 2590,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-229": {
+      "aday": "image_free_2",
+      "addr": "0x1000a1ea8",
+      "capraz_atif": 2,
+      "dosya": "image.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_image_free"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "image_free_2",
+      "satir": 55,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-230": {
+      "aday": "remain_exit_format",
+      "addr": "0x10006d6dc",
+      "capraz_atif": 1,
+      "dosya": "server-fn.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_destroy_pane"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "remain_exit_format",
+      "satir": 355,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-231": {
+      "aday": "window_customize_add_environment_callback",
+      "addr": "0x100017134",
+      "capraz_atif": 0,
+      "dosya": "cmd-respawn-pane.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_respawn_pane_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 49,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10009530c",
+        "aday_dosya": "window-customize.c",
+        "aday_gt": [
+          "_window_customize_add_environment_callback"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-232": {
+      "aday": "command_5",
+      "addr": "0x100094150",
+      "capraz_atif": 0,
+      "dosya": "window-customize.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_customize_set_key"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "command_5",
+      "satir": 2452,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-233": {
+      "aday": "bad_osc_5",
+      "addr": "0x1000421fc",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_osc_10"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "bad_osc_5",
+      "satir": 3071,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-234": {
+      "aday": "bad_msg_write_2",
+      "addr": "0x100027e24",
+      "capraz_atif": 0,
+      "dosya": "file.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_file_write_close"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "bad_msg_write_2",
+      "satir": 687,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-235": {
+      "aday": "return_uvar_uvar_2",
+      "addr": "0x1000308d0",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_window_manual_height"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "return_uvar_uvar_2",
+      "satir": 3216,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-236": {
+      "aday": "option_option_global",
+      "addr": "0x100090d7c",
+      "capraz_atif": 0,
+      "dosya": "window-customize.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_customize_init"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "option_option_global",
+      "satir": 1597,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-237": {
+      "aday": "theme",
+      "addr": "0x10006878c",
+      "capraz_atif": 2,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_update_theme_colours"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "theme",
+      "satir": 1275,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-238": {
+      "aday": "cannot_swap_down",
+      "addr": "0x10001c768",
+      "capraz_atif": 0,
+      "dosya": "cmd-swap-pane.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_swap_pane_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "cannot_swap_down",
+      "satir": 63,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-239": {
+      "aday": "event_payload_session",
+      "addr": "0x1000255c8",
+      "capraz_atif": 2,
+      "dosya": "events-payload.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_event_payload_set_session"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "event_payload_session",
+      "satir": 345,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-240": {
+      "aday": "default_shell_3",
+      "addr": "0x10006cc10",
+      "capraz_atif": 1,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_dispatch_shell"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "default_shell_3",
+      "satir": 3068,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-241": {
+      "aday": "lab_fun_param",
+      "addr": "0x100047c50",
+      "capraz_atif": 0,
+      "dosya": "layout-custom.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_append_v2"
+      ],
+      "karartilan_kendi": 2,
+      "kirpildi": false,
+      "pred": "lab_fun_param",
+      "satir": 344,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-242": {
+      "aday": "screen_write_collect_3",
+      "addr": "0x10006421c",
+      "capraz_atif": 2,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_collect_scroll"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_collect_3",
+      "satir": 2255,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-243": {
+      "aday": "screen_write_start",
+      "addr": "0x10005f858",
+      "capraz_atif": 5,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_start_pane"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_start",
+      "satir": 370,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-244": {
+      "aday": "window_copy_cursor_jump_to",
+      "addr": "0x10003e90c",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_set_buffer_size"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 3514,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10008f178",
+        "aday_dosya": "window-copy.c",
+        "aday_gt": [
+          "_window_copy_cursor_jump_to"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-245": {
+      "aday": "buffer_name_buffer",
+      "addr": "0x10000ec20",
+      "capraz_atif": 0,
+      "dosya": "cmd-list-buffers.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_list_buffers_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "buffer_name_buffer",
+      "satir": 48,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-246": {
+      "aday": "message_time_message",
+      "addr": "0x10001a66c",
+      "capraz_atif": 0,
+      "dosya": "cmd-show-messages.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_show_messages_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "message_time_message",
+      "satir": 75,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-247": {
+      "aday": "else_fun_adc",
+      "addr": "0x100043188",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_exit_rename"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "else_fun_adc",
+      "satir": 2826,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-248": {
+      "aday": "global",
+      "addr": "0x100014b78",
+      "capraz_atif": 1,
+      "dosya": "cmd-queue.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmdq_name"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "global",
+      "satir": 97,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-249": {
+      "aday": "extended_keys_3",
+      "addr": "0x10007c31c",
+      "capraz_atif": 2,
+      "dosya": "tty.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_update_features"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "extended_keys_3",
+      "satir": 553,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-250": {
+      "aday": "idx_2",
+      "addr": "0x10000b350",
+      "capraz_atif": 5,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_log_state"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "idx_2",
+      "satir": 721,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-251": {
+      "aday": "pane_border_lines_2",
+      "addr": "0x1000a1b00",
+      "capraz_atif": 1,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_get_pane_lines"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_border_lines_2",
+      "satir": 2898,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-252": {
+      "aday": "sort_order_2",
+      "addr": "0x10000f7d0",
+      "capraz_atif": 0,
+      "dosya": "cmd-list-panes.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_list_panes_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "sort_order_2",
+      "satir": 53,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-253": {
+      "aday": "screen_write_deletecharacter",
+      "addr": "0x10006337c",
+      "capraz_atif": 0,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_deletecharacter"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_deletecharacter",
+      "satir": 1399,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-254": {
+      "aday": "begin",
+      "addr": "0x100022bd8",
+      "capraz_atif": 0,
+      "dosya": "control.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_write_guard"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "begin",
+      "satir": 532,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-255": {
+      "aday": "cmd_find_session_3",
+      "addr": "0x10000c54c",
+      "capraz_atif": 0,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_get_session"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_find_session_3",
+      "satir": 265,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-256": {
+      "aday": "xstrdup",
+      "addr": "0x1000a1cd4",
+      "capraz_atif": 69,
+      "dosya": "xmalloc.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_xstrdup"
+      ],
+      "karartilan_kendi": 2,
+      "kirpildi": false,
+      "pred": "xstrdup",
+      "satir": 88,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-257": {
+      "aday": "window_copy_start_selection",
+      "addr": "0x10001b57c",
+      "capraz_atif": 0,
+      "dosya": "cmd-source-file.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_source_file_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 176,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10008821c",
+        "aday_dosya": "window-copy.c",
+        "aday_gt": [
+          "_window_copy_start_selection"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-258": {
+      "aday": "target_pane_exited",
+      "addr": "0x100013f70",
+      "capraz_atif": 0,
+      "dosya": "cmd-paste-buffer.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_paste_buffer_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "target_pane_exited",
+      "satir": 59,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-259": {
+      "aday": "utf8_is_zwj",
+      "addr": "0x10000b7b4",
+      "capraz_atif": 5,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_from_pane"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 828,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x1000815d0",
+        "aday_dosya": "utf8-combined.c",
+        "aday_gt": [
+          "_utf8_is_zwj"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-260": {
+      "aday": "started_version_socket",
+      "addr": "0x1000584c4",
+      "capraz_atif": 1,
+      "dosya": "proc.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_proc_start"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "started_version_socket",
+      "satir": 186,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-261": {
+      "aday": "second_prompt",
+      "addr": "0x10003a83c",
+      "capraz_atif": 0,
+      "dosya": "grid.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_grid_line_flags_string"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "second_prompt",
+      "satir": 1743,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-262": {
+      "aday": "current_file",
+      "addr": "0x100004c5c",
+      "capraz_atif": 1,
+      "dosya": "cfg.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_load_cfg"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "current_file",
+      "satir": 98,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-263": {
+      "aday": "layout_cell_cannot",
+      "addr": "0x10004c720",
+      "capraz_atif": 0,
+      "dosya": "layout.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_insert_tile"
+      ],
+      "karartilan_kendi": 2,
+      "kirpildi": false,
+      "pred": "layout_cell_cannot",
+      "satir": 2004,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-264": {
+      "aday": "kill_window",
+      "addr": "0x10006d2d0",
+      "capraz_atif": 3,
+      "dosya": "server-fn.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_kill_window"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "kill_window",
+      "satir": 240,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-265": {
+      "aday": "sort_order_3",
+      "addr": "0x10000ed9c",
+      "capraz_atif": 0,
+      "dosya": "cmd-list-clients.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_list_clients_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "sort_order_3",
+      "satir": 55,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-266": {
+      "aday": "key_table_2",
+      "addr": "0x10006c2d0",
+      "capraz_atif": 0,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_is_default_key_table"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "key_table_2",
+      "satir": 270,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-267": {
+      "aday": "default",
+      "addr": "0x100004a24",
+      "capraz_atif": 0,
+      "dosya": "attributes.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_attributes_fromstring"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "default",
+      "satir": 58,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-268": {
+      "aday": "confirm_key",
+      "addr": "0x100008b34",
+      "capraz_atif": 0,
+      "dosya": "cmd-confirm-before.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_confirm_before_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "confirm_key",
+      "satir": 68,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-269": {
+      "aday": "grid_move_cells",
+      "addr": "0x100039164",
+      "capraz_atif": 0,
+      "dosya": "grid.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_grid_move_cells"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "grid_move_cells",
+      "satir": 831,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-270": {
+      "aday": "cmd_find_session_2",
+      "addr": "0x10000b490",
+      "capraz_atif": 0,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_from_session_window"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_find_session_2",
+      "satir": 773,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-271": {
+      "aday": "cmd_wait_for_event_free",
+      "addr": "0x10007e114",
+      "capraz_atif": 0,
+      "dosya": "tty.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_redraw_region"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 1111,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10001da54",
+        "aday_dosya": "cmd-wait-for.c",
+        "aday_gt": [
+          "_cmd_wait_for_event_free"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-272": {
+      "aday": "ivar_pcvar_3",
+      "addr": "0x10002e9a0",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_pane_marked_set"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "ivar_pcvar_3",
+      "satir": 2542,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-273": {
+      "aday": "cmd_parse_expand",
+      "addr": "0x1000113e4",
+      "capraz_atif": 0,
+      "dosya": "cmd-parse.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_parse_build_commands"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_parse_expand",
+      "satir": 618,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-274": {
+      "aday": "missing_5",
+      "addr": "0x10007a7b0",
+      "capraz_atif": 0,
+      "dosya": "tty-term.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_term_describe"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "missing_5",
+      "satir": 949,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-275": {
+      "aday": "word_separators_4",
+      "addr": "0x10008d0ac",
+      "capraz_atif": 0,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_cmd_previous_word"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "word_separators_4",
+      "satir": 2345,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-276": {
+      "aday": "key_expected_boolean",
+      "addr": "0x1000443dc",
+      "capraz_atif": 0,
+      "dosya": "json.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_json_find_boolean"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "key_expected_boolean",
+      "satir": 308,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-277": {
+      "aday": "event_payload_pane",
+      "addr": "0x100025688",
+      "capraz_atif": 5,
+      "dosya": "events-payload.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_event_payload_set_pane"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "event_payload_pane",
+      "satir": 375,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-278": {
+      "aday": "out_memory_2",
+      "addr": "0x100017ecc",
+      "capraz_atif": 0,
+      "dosya": "cmd-save-buffer.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_save_buffer_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "out_memory_2",
+      "satir": 74,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-279": {
+      "aday": "extended_key_llx",
+      "addr": "0x100079484",
+      "capraz_atif": 0,
+      "dosya": "tty-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_keys_extended_key"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "extended_key_llx",
+      "satir": 1091,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-280": {
+      "aday": "move_window_sessions",
+      "addr": "0x10001cccc",
+      "capraz_atif": 0,
+      "dosya": "cmd-swap-window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_swap_window_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "move_window_sessions",
+      "satir": 47,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-281": {
+      "aday": "pane_scrollbars_position_2",
+      "addr": "0x10009d12c",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_create"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_scrollbars_position_2",
+      "satir": 411,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-282": {
+      "aday": "out_memory_10",
+      "addr": "0x10007b36c",
+      "capraz_atif": 0,
+      "dosya": "tty.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_open"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "out_memory_10",
+      "satir": 276,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-283": {
+      "aday": "lld_5",
+      "addr": "0x1000543c0",
+      "capraz_atif": 0,
+      "dosya": "options.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_options_value_to_string"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "lld_5",
+      "satir": 190,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-284": {
+      "aday": "job_write_pid",
+      "addr": "0x1000437d8",
+      "capraz_atif": 0,
+      "dosya": "job.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_job_write_callback"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "job_write_pid",
+      "satir": 324,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-285": {
+      "aday": "command",
+      "addr": "0x100014a00",
+      "capraz_atif": 0,
+      "dosya": "cmd-queue.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmdq_merge_formats"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "command",
+      "satir": 295,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-286": {
+      "aday": "access_allowed_2",
+      "addr": "0x10006e8c0",
+      "capraz_atif": 0,
+      "dosya": "server.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_accept"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "access_allowed_2",
+      "satir": 374,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-287": {
+      "aday": "term_program_version",
+      "addr": "0x100024974",
+      "capraz_atif": 0,
+      "dosya": "environ.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_environ_for_session"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "term_program_version",
+      "satir": 254,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-288": {
+      "aday": "job_pid_status",
+      "addr": "0x100043c30",
+      "capraz_atif": 1,
+      "dosya": "job.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_job_print_summary"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "job_pid_status",
+      "satir": 437,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-289": {
+      "aday": "winlink_window",
+      "addr": "0x10009cc5c",
+      "capraz_atif": 1,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_winlink_set_window"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "winlink_window",
+      "satir": 300,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-290": {
+      "aday": "format_job_tidy",
+      "addr": "0x10002a3e0",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_job_tidy"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "format_job_tidy",
+      "satir": 463,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-291": {
+      "aday": "grid_in_set",
+      "addr": "0x10009eea8",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_destroy"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 1569,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10003a6e4",
+        "aday_dosya": "grid.c",
+        "aday_gt": [
+          "_grid_in_set"
+        ],
+        "govde_status": "tp"
+      }
+    },
+    "tmux-292": {
+      "aday": "appesc",
+      "addr": "0x1000776f4",
+      "capraz_atif": 0,
+      "dosya": "tty-features.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_get_features"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "appesc",
+      "satir": 469,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-293": {
+      "aday": "inserting_hook",
+      "addr": "0x10003b400",
+      "capraz_atif": 1,
+      "dosya": "hooks.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_hooks_insert"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "inserting_hook",
+      "satir": 106,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-294": {
+      "aday": "close_stdout",
+      "addr": "0x100027cac",
+      "capraz_atif": 1,
+      "dosya": "file.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_file_write_error_callback"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "close_stdout",
+      "satir": 560,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-295": {
+      "aday": "print",
+      "addr": "0x10006a958",
+      "capraz_atif": 0,
+      "dosya": "server-client.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_client_print"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "print",
+      "satir": 3219,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-296": {
+      "aday": "cmdq_empty_command",
+      "addr": "0x100014f4c",
+      "capraz_atif": 7,
+      "dosya": "cmd-queue.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmdq_get_command"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmdq_empty_command",
+      "satir": 468,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-297": {
+      "aday": "screen_write_mode",
+      "addr": "0x10006276c",
+      "capraz_atif": 3,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_mode_set"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_mode",
+      "satir": 995,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-298": {
+      "aday": "uvar_fun_undefined",
+      "addr": "0x100073e84",
+      "capraz_atif": 1,
+      "dosya": "status.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_status_message_redraw"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "uvar_fun_undefined",
+      "satir": 463,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-299": {
+      "aday": "event_callback_10",
+      "addr": "0x100088cc0",
+      "capraz_atif": 1,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_refresh_timer"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "event_callback_10",
+      "satir": 3117,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-300": {
+      "aday": "screen_write_scrolldown",
+      "addr": "0x100064420",
+      "capraz_atif": 0,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_scrolldown"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_scrolldown",
+      "satir": 1873,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-301": {
+      "aday": "cmd_run_shell",
+      "addr": "0x100017bdc",
+      "capraz_atif": 1,
+      "dosya": "cmd-run-shell.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_run_shell_free"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_run_shell",
+      "satir": 301,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-302": {
+      "aday": "detached",
+      "addr": "0x1000212f8",
+      "capraz_atif": 0,
+      "dosya": "control-notify.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_client_detached_cb"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "detached",
+      "satir": 236,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-303": {
+      "aday": "return_uvar_uvar",
+      "addr": "0x10002e4ec",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_pane_dead"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "return_uvar_uvar",
+      "satir": 2258,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-304": {
+      "aday": "input_send_reply",
+      "addr": "0x10003eaf4",
+      "capraz_atif": 1,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_send_reply"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "input_send_reply",
+      "satir": 1167,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-305": {
+      "aday": "cmd_pipe_pane_error_callback",
+      "addr": "0x100054804",
+      "capraz_atif": 16,
+      "dosya": "options.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_options_get_string"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 891,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10001470c",
+        "aday_dosya": "cmd-pipe-pane.c",
+        "aday_gt": [
+          "_cmd_pipe_pane_error_callback"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-306": {
+      "aday": "clock_mode_colour",
+      "addr": "0x100085efc",
+      "capraz_atif": 0,
+      "dosya": "window-clock.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_clock_draw_screen"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "clock_mode_colour",
+      "satir": 225,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-307": {
+      "aday": "return_lab_pcvar",
+      "addr": "0x100034ad8",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_match"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "return_lab_pcvar",
+      "satir": 5094,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-308": {
+      "aday": "window_customize_reset_option",
+      "addr": "0x1000656f4",
+      "capraz_atif": 0,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_offset_timer"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 84,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100095c24",
+        "aday_dosya": "window-customize.c",
+        "aday_gt": [
+          "_window_customize_reset_option"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-309": {
+      "aday": "window_pane_search",
+      "addr": "0x1000a07a8",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_search"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_pane_search",
+      "satir": 2125,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-310": {
+      "aday": "display_panes_border",
+      "addr": "0x100096358",
+      "capraz_atif": 0,
+      "dosya": "window-panes.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_panes_draw_screen"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "display_panes_border",
+      "satir": 831,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-311": {
+      "aday": "tiled_layout_max",
+      "addr": "0x100049834",
+      "capraz_atif": 0,
+      "dosya": "layout-set.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_set_tiled"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "tiled_layout_max",
+      "satir": 616,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-312": {
+      "aday": "paste_buffer_deleted_2",
+      "addr": "0x100056f28",
+      "capraz_atif": 1,
+      "dosya": "paste.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_paste_rename"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "paste_buffer_deleted_2",
+      "satir": 214,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-313": {
+      "aday": "else_fun_lvar",
+      "addr": "0x10000504c",
+      "capraz_atif": 0,
+      "dosya": "cfg.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cfg_print_causes"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "else_fun_lvar",
+      "satir": 223,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-314": {
+      "aday": "key_bindings_read",
+      "addr": "0x1000466b0",
+      "capraz_atif": 0,
+      "dosya": "key-bindings.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_key_bindings_dispatch"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "key_bindings_read",
+      "satir": 761,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-315": {
+      "aday": "remove_peer",
+      "addr": "0x100058c2c",
+      "capraz_atif": 1,
+      "dosya": "proc.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_proc_remove_peer"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "remove_peer",
+      "satir": 345,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-316": {
+      "aday": "attach_session",
+      "addr": "0x10005b37c",
+      "capraz_atif": 0,
+      "dosya": "prompt.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_prompt_replace_complete"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "attach_session",
+      "satir": 997,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-317": {
+      "aday": "sixel_log",
+      "addr": "0x1000a2c5c",
+      "capraz_atif": 0,
+      "dosya": "image-sixel.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_sixel_log"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "sixel_log",
+      "satir": 373,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-318": {
+      "aday": "else_pcvar_3",
+      "addr": "0x10002e940",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_pane_marked"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "else_pcvar_3",
+      "satir": 2530,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-319": {
+      "aday": "out_memory_3",
+      "addr": "0x10002301c",
+      "capraz_atif": 0,
+      "dosya": "control.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_wait_exit"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "out_memory_3",
+      "satir": 746,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-320": {
+      "aday": "source_target_panes",
+      "addr": "0x10000d500",
+      "capraz_atif": 0,
+      "dosya": "cmd-join-pane.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_join_pane_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "source_target_panes",
+      "satir": 421,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-321": {
+      "aday": "xmalloc_allocating_bytes",
+      "addr": "0x1000a1b50",
+      "capraz_atif": 8,
+      "dosya": "xmalloc.c",
+      "dosya_karartildi": true,
+      "gt": [
+        "_xmalloc"
+      ],
+      "karartilan_kendi": 3,
+      "kirpildi": false,
+      "pred": "xmalloc_allocating_bytes",
+      "satir": 28,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-322": {
+      "aday": "bad_msg_write_3",
+      "addr": "0x100027d68",
+      "capraz_atif": 0,
+      "dosya": "file.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_file_write_data"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "bad_msg_write_3",
+      "satir": 667,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-323": {
+      "aday": "events_fire_session",
+      "addr": "0x1000207c8",
+      "capraz_atif": 3,
+      "dosya": "colour.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_colour_parseX11"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 1177,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100026364",
+        "aday_dosya": "events.c",
+        "aday_gt": [
+          "_events_fire_session"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-324": {
+      "aday": "codepoint_widths",
+      "addr": "0x100081a64",
+      "capraz_atif": 1,
+      "dosya": "utf8.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_utf8_update_width_cache"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "codepoint_widths",
+      "satir": 413,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-325": {
+      "aday": "window_unlinked",
+      "addr": "0x1000704b4",
+      "capraz_atif": 2,
+      "dosya": "session.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_session_detach"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_unlinked",
+      "satir": 345,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-326": {
+      "aday": "menu_border_lines",
+      "addr": "0x10004d9d4",
+      "capraz_atif": 0,
+      "dosya": "menu.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_menu_display"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "menu_border_lines",
+      "satir": 579,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-327": {
+      "aday": "screen_write_collect_2",
+      "addr": "0x10005fce4",
+      "capraz_atif": 9,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_collect_flush"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_collect_2",
+      "satir": 2412,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-328": {
+      "aday": "synchronize_panes_3",
+      "addr": "0x1000a05bc",
+      "capraz_atif": 0,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_key"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "synchronize_panes_3",
+      "satir": 2074,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-329": {
+      "aday": "creating",
+      "addr": "0x10006deb4",
+      "capraz_atif": 1,
+      "dosya": "server.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_create_socket"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "creating",
+      "satir": 108,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-330": {
+      "aday": "param_pcvar_2",
+      "addr": "0x1000304fc",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_window_format"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "param_pcvar_2",
+      "satir": 3198,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-331": {
+      "aday": "paste_buffer_changed_2",
+      "addr": "0x1000571b8",
+      "capraz_atif": 0,
+      "dosya": "paste.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_paste_replace"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "paste_buffer_changed_2",
+      "satir": 332,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-332": {
+      "aday": "param_ivar_open",
+      "addr": "0x1000a708c",
+      "capraz_atif": 0,
+      "dosya": "compat/daemon.c",
+      "dosya_karartildi": true,
+      "gt": [
+        "_daemon"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "param_ivar_open",
+      "satir": 45,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-333": {
+      "aday": "cmd_find_best_3",
+      "addr": "0x10000b674",
+      "capraz_atif": 1,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_best_session_with_window"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_find_best_3",
+      "satir": 193,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-334": {
+      "aday": "unlinked_window_renamed",
+      "addr": "0x100021160",
+      "capraz_atif": 0,
+      "dosya": "control-notify.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_window_renamed_cb"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "unlinked_window_renamed",
+      "satir": 182,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-335": {
+      "aday": "image_free",
+      "addr": "0x1000a1e44",
+      "capraz_atif": 4,
+      "dosya": "image.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_image_free_all"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "image_free",
+      "satir": 69,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-336": {
+      "aday": "begin_2",
+      "addr": "0x100023aec",
+      "capraz_atif": 1,
+      "dosya": "control.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_error"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "begin_2",
+      "satir": 674,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-337": {
+      "aday": "name_flags",
+      "addr": "0x1000724e8",
+      "capraz_atif": 0,
+      "dosya": "spawn.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_spawn_log"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "name_flags",
+      "satir": 55,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-338": {
+      "aday": "pane_border_lines",
+      "addr": "0x10009d944",
+      "capraz_atif": 2,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_pane_get_pane_lines"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_border_lines",
+      "satir": 2907,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-339": {
+      "aday": "cmd_find_window_3",
+      "addr": "0x10000c6e4",
+      "capraz_atif": 0,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_get_window_with_session"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "cmd_find_window_3",
+      "satir": 365,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-340": {
+      "aday": "key_out_llx",
+      "addr": "0x10003dc80",
+      "capraz_atif": 1,
+      "dosya": "input-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_key_vt10x"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "key_out_llx",
+      "satir": 483,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-341": {
+      "aday": "command_2",
+      "addr": "0x10001eef8",
+      "capraz_atif": 0,
+      "dosya": "cmd.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_parse"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "command_2",
+      "satir": 514,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-342": {
+      "aday": "variation_selector_always",
+      "addr": "0x1000606ec",
+      "capraz_atif": 2,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_cell"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "variation_selector_always",
+      "satir": 2667,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-343": {
+      "aday": "out_memory_4",
+      "addr": "0x1000230f0",
+      "capraz_atif": 0,
+      "dosya": "control.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_start"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "out_memory_4",
+      "satir": 991,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-344": {
+      "aday": "hooks_insert_one",
+      "addr": "0x10003be4c",
+      "capraz_atif": 1,
+      "dosya": "hooks.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_hooks_insert_one"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "hooks_insert_one",
+      "satir": 63,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-345": {
+      "aday": "cmd_find_pane_3",
+      "addr": "0x10000cdd8",
+      "capraz_atif": 0,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_get_pane"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_find_pane_3",
+      "satir": 519,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-346": {
+      "aday": "input_key",
+      "addr": "0x10003cfd0",
+      "capraz_atif": 1,
+      "dosya": "input-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_key_build"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "input_key",
+      "satir": 365,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-347": {
+      "aday": "control_write_data",
+      "addr": "0x100023c3c",
+      "capraz_atif": 0,
+      "dosya": "control.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_write_data"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "control_write_data",
+      "satir": 848,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-348": {
+      "aday": "unlinked_window_add",
+      "addr": "0x1000210a4",
+      "capraz_atif": 0,
+      "dosya": "control-notify.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_window_linked_cb"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "unlinked_window_add",
+      "satir": 157,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-349": {
+      "aday": "status_position_2",
+      "addr": "0x100074684",
+      "capraz_atif": 0,
+      "dosya": "status.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_status_prompt_screen_line"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "status_position_2",
+      "satir": 643,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-350": {
+      "aday": "message_limit",
+      "addr": "0x10006e9f4",
+      "capraz_atif": 2,
+      "dosya": "server.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_add_message"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "message_limit",
+      "satir": 541,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-351": {
+      "aday": "utf_mbtowc",
+      "addr": "0x100082bf8",
+      "capraz_atif": 1,
+      "dosya": "utf8.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_utf8_towc"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "utf_mbtowc",
+      "satir": 593,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-352": {
+      "aday": "xrecallocarray_allocating_bytes",
+      "addr": "0x1000a1c78",
+      "capraz_atif": 1,
+      "dosya": "xmalloc.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_xrecallocarray"
+      ],
+      "karartilan_kendi": 3,
+      "kirpildi": false,
+      "pred": "xrecallocarray_allocating_bytes",
+      "satir": 75,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-353": {
+      "aday": "paste_buffer_deleted_3",
+      "addr": "0x100055f60",
+      "capraz_atif": 4,
+      "dosya": "paste.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_paste_free"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "paste_buffer_deleted_3",
+      "satir": 149,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-354": {
+      "aday": "out_memory_8",
+      "addr": "0x10003e0b0",
+      "capraz_atif": 1,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_init"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "out_memory_8",
+      "satir": 878,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-355": {
+      "aday": "bad_msg_write",
+      "addr": "0x100027a44",
+      "capraz_atif": 0,
+      "dosya": "file.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_file_write_open"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "bad_msg_write",
+      "satir": 605,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-356": {
+      "aday": "themelightgrey_activity_session",
+      "addr": "0x10002cf00",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_client_mode_format"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "themelightgrey_activity_session",
+      "satir": 3537,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-357": {
+      "aday": "cmd_find_session",
+      "addr": "0x10000b30c",
+      "capraz_atif": 3,
+      "dosya": "cmd-find.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_find_from_session"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_find_session",
+      "satir": 744,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-358": {
+      "aday": "themelightgrey_ignore",
+      "addr": "0x1000916b8",
+      "capraz_atif": 1,
+      "dosya": "window-customize.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_customize_build"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "themelightgrey_ignore",
+      "satir": 1067,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-359": {
+      "aday": "format_add_cb",
+      "addr": "0x10003e524",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_parse_buffer"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 1045,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10002b4a0",
+        "aday_dosya": "format.c",
+        "aday_gt": [
+          "_format_add_cb"
+        ],
+        "govde_status": "tp"
+      }
+    },
+    "tmux-360": {
+      "aday": "mouse_input_sgr",
+      "addr": "0x1000791c8",
+      "capraz_atif": 1,
+      "dosya": "tty-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_keys_mouse"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "mouse_input_sgr",
+      "satir": 1212,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-361": {
+      "aday": "screen_write_linefeed",
+      "addr": "0x100061750",
+      "capraz_atif": 2,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_linefeed"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_linefeed",
+      "satir": 1799,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-362": {
+      "aday": "format_job_update",
+      "addr": "0x100032df8",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_job_update"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "format_job_update",
+      "satir": 329,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-363": {
+      "aday": "format_defaults",
+      "addr": "0x10002c390",
+      "capraz_atif": 14,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_defaults"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "format_defaults",
+      "satir": 6983,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-364": {
+      "aday": "position",
+      "addr": "0x10004c468",
+      "capraz_atif": 0,
+      "dosya": "layout.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_floating_args_parse"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "position",
+      "satir": 1730,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-365": {
+      "aday": "else_fun_param",
+      "addr": "0x100017a10",
+      "capraz_atif": 1,
+      "dosya": "cmd-run-shell.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_run_shell_timer"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "else_fun_param",
+      "satir": 194,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-366": {
+      "aday": "control_flush_blocks",
+      "addr": "0x100023b6c",
+      "capraz_atif": 0,
+      "dosya": "control.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_flush_all_blocks"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "control_flush_blocks",
+      "satir": 789,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-367": {
+      "aday": "received_extended",
+      "addr": "0x100078b64",
+      "capraz_atif": 1,
+      "dosya": "tty-keys.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_keys_extended_device_attributes"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "received_extended",
+      "satir": 1680,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-368": {
+      "aday": "event_reinit",
+      "addr": "0x10006e040",
+      "capraz_atif": 0,
+      "dosya": "server.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_start"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "event_reinit",
+      "satir": 179,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-369": {
+      "aday": "mode_tree_clear_tagged",
+      "addr": "0x1000309b8",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_window_marked_flag"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 3309,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10005040c",
+        "aday_dosya": "mode-tree.c",
+        "aday_gt": [
+          "_mode_tree_clear_tagged"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-370": {
+      "aday": "local_strlcat_chk",
+      "addr": "0x10002f5d0",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_session_alerts"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "local_strlcat_chk",
+      "satir": 635,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-371": {
+      "aday": "condition_matched_using",
+      "addr": "0x100030f70",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_replace"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "condition_matched_using",
+      "satir": 6021,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-372": {
+      "aday": "prefix",
+      "addr": "0x100006c4c",
+      "capraz_atif": 0,
+      "dosya": "cmd-bind-key.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_bind_key_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "prefix",
+      "satir": 56,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-373": {
+      "aday": "format_loop_clients",
+      "addr": "0x1000339f0",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_loop_clients"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "format_loop_clients",
+      "satir": 5763,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-374": {
+      "aday": "uvar_pcvar",
+      "addr": "0x10002fba4",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_session_group_many_attached"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "uvar_pcvar",
+      "satir": 2965,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-375": {
+      "aday": "user_option_must_3",
+      "addr": "0x100095154",
+      "capraz_atif": 1,
+      "dosya": "window-customize.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_customize_add_option_callback"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "user_option_must_3",
+      "satir": 1831,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-376": {
+      "aday": "bad_osc_4",
+      "addr": "0x100041e88",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_osc_4"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "bad_osc_4",
+      "satir": 2929,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-377": {
+      "aday": "cfg_done",
+      "addr": "0x100004b58",
+      "capraz_atif": 0,
+      "dosya": "cfg.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_start_cfg"
+      ],
+      "karartilan_kendi": 2,
+      "kirpildi": false,
+      "pred": "cfg_done",
+      "satir": 66,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-378": {
+      "aday": "size_mismatch_after",
+      "addr": "0x1000471e0",
+      "capraz_atif": 0,
+      "dosya": "layout-custom.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_parse"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "size_mismatch_after",
+      "satir": 601,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-379": {
+      "aday": "event_payload_free",
+      "addr": "0x100025070",
+      "capraz_atif": 0,
+      "dosya": "events-payload.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_event_payload_free_target"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "event_payload_free",
+      "satir": 81,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-380": {
+      "aday": "line_2",
+      "addr": "0x100084b88",
+      "capraz_atif": 0,
+      "dosya": "window-buffer.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_buffer_get_key"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "line_2",
+      "satir": 298,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-381": {
+      "aday": "window_copy_get_word",
+      "addr": "0x100022cd0",
+      "capraz_atif": 1,
+      "dosya": "control.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_control_write_output"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 620,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100087768",
+        "aday_dosya": "window-copy.c",
+        "aday_gt": [
+          "_window_copy_get_word"
+        ],
+        "govde_status": "tp"
+      }
+    },
+    "tmux-382": {
+      "aday": "cmd_pack_argv",
+      "addr": "0x10001e8b4",
+      "capraz_atif": 0,
+      "dosya": "cmd.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_pack_argv"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_pack_argv",
+      "satir": 281,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-383": {
+      "aday": "bad_layout_type_2",
+      "addr": "0x10004a4e0",
+      "capraz_atif": 1,
+      "dosya": "layout.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_count_cells"
+      ],
+      "karartilan_kendi": 2,
+      "kirpildi": false,
+      "pred": "bad_layout_type_2",
+      "satir": 490,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-384": {
+      "aday": "param_pcvar_3",
+      "addr": "0x100075bd4",
+      "capraz_atif": 0,
+      "dosya": "tmux.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_shell_argv0"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "param_pcvar_3",
+      "satir": 258,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-385": {
+      "aday": "cmd_run_shell_2",
+      "addr": "0x1000176b8",
+      "capraz_atif": 0,
+      "dosya": "cmd-run-shell.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_run_shell_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "cmd_run_shell_2",
+      "satir": 110,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-386": {
+      "aday": "new_user",
+      "addr": "0x100094f18",
+      "capraz_atif": 0,
+      "dosya": "window-customize.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_customize_add_option"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "new_user",
+      "satir": 1892,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-387": {
+      "aday": "lvar_long_long_4",
+      "addr": "0x100030018",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_cb_window_active"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "lvar_long_long_4",
+      "satir": 3109,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-388": {
+      "aday": "format_cb_session_bell_flag",
+      "addr": "0x100091dbc",
+      "capraz_atif": 1,
+      "dosya": "window-customize.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_customize_draw"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 1523,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10002f888",
+        "aday_dosya": "format.c",
+        "aday_gt": [
+          "_format_cb_session_bell_flag"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-389": {
+      "aday": "remove_empty_wait",
+      "addr": "0x10001dad8",
+      "capraz_atif": 0,
+      "dosya": "cmd-wait-for.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_wait_for_remove_empty"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "remove_empty_wait",
+      "satir": 152,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-390": {
+      "aday": "pane_border_format",
+      "addr": "0x100083fe4",
+      "capraz_atif": 1,
+      "dosya": "window-border.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_make_pane_status"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_border_format",
+      "satir": 183,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-391": {
+      "aday": "argv",
+      "addr": "0x10001e738",
+      "capraz_atif": 4,
+      "dosya": "cmd.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_log_argv"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "argv",
+      "satir": 239,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-392": {
+      "aday": "tty_keys_next1",
+      "addr": "0x100044ab8",
+      "capraz_atif": 0,
+      "dosya": "json.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_json_string_append"
+      ],
+      "karartilan_kendi": 3,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 942,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x100079978",
+        "aday_dosya": "tty-keys.c",
+        "aday_gt": [
+          "_tty_keys_next1"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-393": {
+      "aday": "monitor_destroy",
+      "addr": "0x100050a50",
+      "capraz_atif": 0,
+      "dosya": "monitor.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_monitor_destroy"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "monitor_destroy",
+      "satir": 575,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-394": {
+      "aday": "pvvar_local_fun",
+      "addr": "0x10008e318",
+      "capraz_atif": 0,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_append_selection"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pvvar_local_fun",
+      "satir": 6184,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-395": {
+      "aday": "bad_line_number",
+      "addr": "0x10008b278",
+      "capraz_atif": 0,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_line_number_is_absolute"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "bad_line_number",
+      "satir": 5265,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-396": {
+      "aday": "job_died_pid",
+      "addr": "0x100043ac4",
+      "capraz_atif": 0,
+      "dosya": "job.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_job_check_died"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "job_died_pid",
+      "satir": 359,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-397": {
+      "aday": "window_copy_clone",
+      "addr": "0x100088370",
+      "capraz_atif": 0,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_clone_screen"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_copy_clone",
+      "satir": 394,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-398": {
+      "aday": "window_update_focus",
+      "addr": "0x10009da68",
+      "capraz_atif": 3,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_update_focus"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "window_update_focus",
+      "satir": 708,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-399": {
+      "aday": "popup_window_status",
+      "addr": "0x10000a29c",
+      "capraz_atif": 1,
+      "dosya": "cmd-display-menu.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_display_menu_get_popup_pos"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "popup_window_status",
+      "satir": 97,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-400": {
+      "aday": "sessions_grouped",
+      "addr": "0x10006d520",
+      "capraz_atif": 0,
+      "dosya": "server-fn.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_link_window"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "sessions_grouped",
+      "satir": 292,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-401": {
+      "aday": "current_mode",
+      "addr": "0x10007c834",
+      "capraz_atif": 2,
+      "dosya": "tty.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_update_mode"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "current_mode",
+      "satir": 883,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-402": {
+      "aday": "brightmagenta",
+      "addr": "0x10001fcf0",
+      "capraz_atif": 3,
+      "dosya": "colour.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_colour_tostring"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "brightmagenta",
+      "satir": 227,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-403": {
+      "aday": "input_enter_apc",
+      "addr": "0x100043048",
+      "capraz_atif": 0,
+      "dosya": "input.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_input_enter_apc"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "input_enter_apc",
+      "satir": 2784,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-404": {
+      "aday": "floating_cells_cannot",
+      "addr": "0x10004b37c",
+      "capraz_atif": 1,
+      "dosya": "layout.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_split_check_space"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "floating_cells_cannot",
+      "satir": 1300,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-405": {
+      "aday": "screen_write_overwrite",
+      "addr": "0x100064fdc",
+      "capraz_atif": 1,
+      "dosya": "screen-write.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_write_overwrite"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_write_overwrite",
+      "satir": 3000,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-406": {
+      "aday": "mode_keys_8",
+      "addr": "0x10008f74c",
+      "capraz_atif": 1,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_cursor_previous_word"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "mode_keys_8",
+      "satir": 6837,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-407": {
+      "aday": "append_selection_cancel",
+      "addr": "0x100086674",
+      "capraz_atif": 0,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_command"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "append_selection_cancel",
+      "satir": 3896,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-408": {
+      "aday": "number",
+      "addr": "0x10007af9c",
+      "capraz_atif": 0,
+      "dosya": "tty-term.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_term_number"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "number",
+      "satir": 929,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-409": {
+      "aday": "hooks_monitor_3",
+      "addr": "0x10003b834",
+      "capraz_atif": 0,
+      "dosya": "hooks.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_hooks_monitor_cb"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "hooks_monitor_3",
+      "satir": 368,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-410": {
+      "aday": "args_make_commands_2",
+      "addr": "0x1000040f4",
+      "capraz_atif": 1,
+      "dosya": "arguments.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_args_make_commands"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "args_make_commands_2",
+      "satir": 822,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-411": {
+      "aday": "window_copy_cmd_previous_prompt",
+      "addr": "0x10004b27c",
+      "capraz_atif": 0,
+      "dosya": "layout.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_replace_with_node"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": null,
+      "satir": 1278,
+      "status": null,
+      "tanim_sayisi": 1,
+      "yem": true,
+      "yem_kaynagi": {
+        "aday_addr": "0x10008c590",
+        "aday_dosya": "window-copy.c",
+        "aday_gt": [
+          "_window_copy_cmd_previous_prompt"
+        ],
+        "govde_status": "wrong"
+      }
+    },
+    "tmux-412": {
+      "aday": "terminal_support_clear",
+      "addr": "0x10007a290",
+      "capraz_atif": 1,
+      "dosya": "tty-term.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_term_create"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "terminal_support_clear",
+      "satir": 555,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-413": {
+      "aday": "sessions_should_nested_2",
+      "addr": "0x100010350",
+      "capraz_atif": 0,
+      "dosya": "cmd-new-session.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_cmd_new_session_exec"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": true,
+      "pred": "sessions_should_nested_2",
+      "satir": 69,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-414": {
+      "aday": "destroy_unattached",
+      "addr": "0x10006dd38",
+      "capraz_atif": 2,
+      "dosya": "server-fn.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_server_check_unattached"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "destroy_unattached",
+      "satir": 531,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-415": {
+      "aday": "copy_mode_position",
+      "addr": "0x100088564",
+      "capraz_atif": 1,
+      "dosya": "window-copy.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_copy_write_line"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "copy_mode_position",
+      "satir": 5406,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-416": {
+      "aday": "removing_terminal_feature",
+      "addr": "0x100077560",
+      "capraz_atif": 0,
+      "dosya": "tty-features.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_parse_features"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "removing_terminal_feature",
+      "satir": 427,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-417": {
+      "aday": "rgb_bpaste_clipboard",
+      "addr": "0x100077a1c",
+      "capraz_atif": 2,
+      "dosya": "tty-features.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_tty_default_features"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "rgb_bpaste_clipboard",
+      "satir": 574,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-418": {
+      "aday": "hook_fired_times",
+      "addr": "0x100093d44",
+      "capraz_atif": 0,
+      "dosya": "window-customize.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_customize_write_hook_fire"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "hook_fired_times",
+      "satir": 282,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-419": {
+      "aday": "screen_pop_title",
+      "addr": "0x100066028",
+      "capraz_atif": 0,
+      "dosya": "screen.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_screen_pop_title"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "screen_pop_title",
+      "satir": 322,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-420": {
+      "aday": "tmux_llx",
+      "addr": "0x10003bf20",
+      "capraz_atif": 0,
+      "dosya": "hyperlinks.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_hyperlinks_put"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "tmux_llx",
+      "satir": 144,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-421": {
+      "aday": "format_loop_sessions",
+      "addr": "0x1000331c0",
+      "capraz_atif": 0,
+      "dosya": "format.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_format_loop_sessions"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "format_loop_sessions",
+      "satir": 5233,
+      "status": "tp",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-422": {
+      "aday": "bad_layout_type",
+      "addr": "0x10004a064",
+      "capraz_atif": 4,
+      "dosya": "layout.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_layout_make_node"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "bad_layout_type",
+      "satir": 224,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    },
+    "tmux-423": {
+      "aday": "pane_border_status",
+      "addr": "0x10009e40c",
+      "capraz_atif": 4,
+      "dosya": "window.c",
+      "dosya_karartildi": false,
+      "gt": [
+        "_window_get_pane_status"
+      ],
+      "karartilan_kendi": 1,
+      "kirpildi": false,
+      "pred": "pane_border_status",
+      "satir": 2919,
+      "status": "wrong",
+      "tanim_sayisi": 1,
+      "yem": false,
+      "yem_kaynagi": null
+    }
+  }
+}
