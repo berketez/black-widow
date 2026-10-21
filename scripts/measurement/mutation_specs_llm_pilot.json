@@ -1,0 +1,221 @@
+{
+  "_comment": "llm_pilot.py kurallarının mutasyon koruması (G6). Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_llm_pilot.json",
+  "mutants": [
+    {
+      "id": "g6_sizinti_maskesiz",
+      "desc": "sızıntı taraması dizgi ve yorumları maskelemez",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_sizinti_taramasi_tanimlayicida_yakalar_dizgide_yakalamaz",
+      "find": "    hedef = maskele(metin) if maskeli else metin",
+      "replace": "    hedef = metin"
+    },
+    {
+      "id": "g6_sizinti_alt_cizgi",
+      "desc": "Mach-O _ önekli biçim aranmaz",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_sizinti_taramasi_tanimlayicida_yakalar_dizgide_yakalamaz",
+      "find": "        for aday in (t, t.lstrip(\"_\")):\n            if aday in adlar:\n                bulunan.add(aday)\n    return sorted(bulunan)\n\n\ndef sabit_metin",
+      "replace": "        for aday in (t,):\n            if aday in adlar:\n                bulunan.add(aday)\n    return sorted(bulunan)\n\n\ndef sabit_metin"
+    },
+    {
+      "id": "g6_kirpma_siniri",
+      "desc": "baş kısmı KOD_BAS yerine KOD_SINIR'a kadar alınır",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_kirpma_bayt_sinirina_uyar_bas_ve_son_kalir",
+      "find": "        if n + b > bas:",
+      "replace": "        if n + b > sinir:"
+    },
+    {
+      "id": "g6_zorunlu_cekimser",
+      "desc": "zorunlu koşulda çekimserlik 'cekimser' sayılır",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_ayristirma_durum_siniflari",
+      "find": "            sonuc[\"durum\"] = \"zorunluyken_cekimser\"",
+      "replace": "            sonuc[\"durum\"] = \"cekimser\""
+    },
+    {
+      "id": "g6_hedef_adi_pakette",
+      "desc": "hedefin kendi Karadul adı kanıt paketine girer",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_kanit_paketi_hedefin_kendi_adini_tasimaz",
+      "find": "        if a == hedef:",
+      "replace": "        if False:"
+    },
+    {
+      "id": "g6_devam_yok",
+      "desc": "tamamlanmış çıktılar atlanmaz (kaldığı yerden devam bozulur)",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_kos_kaldigi_yerden_devam_eder",
+      "find": "            if ham_tamam_mi(yol):",
+      "replace": "            if False and ham_tamam_mi(yol):"
+    },
+    {
+      "id": "g6_belirsiz_govde",
+      "desc": "farklı metinli çoklu tanım (belirsiz) dışlanmaz",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_uygun_populasyon_dislar_ve_siralar",
+      "find": "        if durum == \"belirsiz\":",
+      "replace": "        if durum == \"belirsiz_x\":"
+    },
+    {
+      "id": "g6_jenerik_isim",
+      "desc": "jenerik ad (FUN_...) isim sayılır",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_ayristirma_durum_siniflari",
+      "find": "    sonuc[\"durum\"] = \"jenerik\" if is_generic_name(isim, [int(adres, 16)]) else \"gecerli\"",
+      "replace": "    sonuc[\"durum\"] = \"gecerli\""
+    },
+    {
+      "id": "g6_bellek_esigi",
+      "desc": "bellek eşiği denetimi kapalı",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_kos_bellek_esiginde_durur",
+      "find": "            if (bellek.get(bellek_alani) or 0.0) > bellek_esigi:",
+      "replace": "            if False:"
+    },
+    {
+      "id": "g6_siralama_yok",
+      "desc": "örneklem popülasyonu adrese göre sıralanmadan çekilir (girdi sırasına bağımlı)",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_cekim_belirlenimci_sirasiz_ve_ayrik",
+      "find": "        liste = sorted(uygun.get(p, []), key=lambda a: int(a, 16))",
+      "replace": "        liste = list(uygun.get(p, []))"
+    },
+    {
+      "id": "g6_sizintili_istem",
+      "desc": "sızıntı işaretli istem yine çalıştırılır",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_kos_sizintili_istemi_calistirmaz",
+      "find": "        if kayit.get(\"sizinti_kod_sayisi\") or kayit.get(\"sizinti_kanit_sayisi\"):",
+      "replace": "        if False:"
+    },
+    {
+      "id": "g6_hata_bosaltma",
+      "desc": "hata sonrası model boşaltılmaz (bellek serbest kalmaz)",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_pilot_adimlari_devam_ve_hata_sonrasi_bosaltma",
+      "find": "            istemci_bul(ad).bosalt(m)\n",
+      "replace": "            pass\n"
+    },
+    {
+      "id": "g6_dusunme_n",
+      "desc": "K-6 düşünme alt kümesi sınırı uygulanmaz",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_pilot_adimlari_devam_ve_hata_sonrasi_bosaltma",
+      "find": "ornek[\"dusunme\"][p][:dusunme_n]",
+      "replace": "ornek[\"dusunme\"][p]"
+    },
+    {
+      "id": "g6_belirlenimcilik_ayni_surec",
+      "desc": "belirlenimcilik koşusu yeni süreçte (yeniden yükleme) yapılmaz",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_pilot_adimlari_devam_ve_hata_sonrasi_bosaltma",
+      "find": "Adim(\"belirlenimcilik\", \"ana\", (\"B\", \"C\"), 2, True, True)",
+      "replace": "Adim(\"belirlenimcilik\", \"ana\", (\"B\", \"C\"), 2, True, False)"
+    },
+    {
+      "id": "g6_cache_ram",
+      "desc": "yalın sunucuda ana bellek istem önbelleği açık kalır",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_yalin_llama_sunucu_bayraklari_ve_govde",
+      "find": "\"--cache-ram\", \"0\"",
+      "replace": "\"--cache-ram\", \"8192\""
+    },
+    {
+      "id": "g6_enable_thinking",
+      "desc": "düşünme kapalı koşulda düşünme açılır",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_yalin_llama_sunucu_bayraklari_ve_govde",
+      "find": "g[\"chat_template_kwargs\"] = {\"enable_thinking\": False}",
+      "replace": "g[\"chat_template_kwargs\"] = {\"enable_thinking\": True}"
+    },
+    {
+      "id": "g6_bellek_ust_llama",
+      "desc": "llama.cpp bellek üst sınırı footprint'i saymaz",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_bellek_ust_siniri_llama_icin_toplam_mlx_icin_en_buyuk",
+      "find": "        return float(b.get(\"rss_gb\") or 0.0) + float(b.get(\"footprint_gb\") or 0.0)",
+      "replace": "        return float(b.get(\"rss_gb\") or 0.0)"
+    },
+    {
+      "id": "g6_adim_sirasi",
+      "desc": "pilot model öncelikli sıraya döner (ana koşular önce bitmez)",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_pilot_iki_model_adim_oncelikli_sira",
+      "find": "    for adim in pilot_adimlari(dusunme):\n        for model_adi in modeller:",
+      "replace": "    for model_adi in list(modeller):\n        for adim in pilot_adimlari(dusunme):"
+    },
+    {
+      "id": "g6_dusunme_acgozlu",
+      "desc": "düşünme kipinde üretici örneklemesi yerine açgözlü çözme",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_yalin_llama_sunucu_bayraklari_ve_govde",
+      "find": "    \"g6-qwen38\": {\"temperature\": 1.0, \"top_p\": 0.95, \"top_k\": 20, \"cabasi\": \"low\"},",
+      "replace": "    \"g6-qwen38\": {\"temperature\": 0, \"top_p\": 0.95, \"top_k\": 20, \"cabasi\": \"low\"},"
+    },
+    {
+      "id": "g6_k1_eksiksizlik",
+      "desc": "K-1 yarıda kalan kuru koşuyu geçirir (beklenen çağrı sayısı denetlenmez)",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_kapilar_k1_eksik_kuru_kosuyu_gecirmez",
+      "find": "bool(kuru) and len(kuru) == beklenen",
+      "replace": "bool(kuru)"
+    },
+    {
+      "id": "g6_beklenmeyen_hata",
+      "desc": "beklenmeyen hatada model boşaltılmaz (yalın llama-server yetim kalır)",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_pilot_beklenmeyen_hatada_da_modeli_bosaltir",
+      "find": "        durdur(e, \" (beklenmeyen)\")\n        raise",
+      "replace": "        raise"
+    },
+    {
+      "id": "g6_gemma_dusunme",
+      "desc": "Gemma 4 düşünme kanalı ayıklanmaz (taslak cevap isim sayılır)",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_ayristirma_dusunme_bloklari_ham_konumla",
+      "find": "|<\\|channel>.*?(?:<channel\\|>|\\Z)\"",
+      "replace": "\""
+    },
+    {
+      "id": "g6_kapanmamis_dusunme",
+      "desc": "kapanmamış <think> bloğu ayıklanmaz (bütçe aşımı geçerli isim olur)",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_ayristirma_dusunme_bloklari_ham_konumla",
+      "find": "<think>.*?(?:</think>|\\Z)|",
+      "replace": "<think>.*?</think>|"
+    },
+    {
+      "id": "g6_guven_ham_konum",
+      "desc": "JSON konumu düşünmesi ayıklanmış metinde (güven taslağın jetonlarından)",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_isim_guveni_dusunmeden_sonraki_cevabin_jetonlarindan",
+      "find": "    obj, bas, son = ilk_json(metin, cevap_bas)",
+      "replace": "    obj, bas, son = ilk_json(metin[cevap_bas:])"
+    },
+    {
+      "id": "g6_cozme_ayarlari",
+      "desc": "künyenin düşünme kipi ayarı düşünmesiz istekten yazılır",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_kunye_cozme_ayarlari_istemcinin_gonderdigiyle_ayni",
+      "find": "istemci.govde(model_kimlik, [], dusunme).items()",
+      "replace": "istemci.govde(model_kimlik, [], False).items()"
+    },
+    {
+      "id": "g6_k3_eksiksizlik",
+      "desc": "K-3 yarıda kalan reddetme sondasını geçirir",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_kapilar_k3_ve_k5_eksik_sonda_ve_bellek_denemesini_gecirmez",
+      "find": "bool(sonda) and len(sonda) == sonda_beklenen",
+      "replace": "bool(sonda)"
+    },
+    {
+      "id": "g6_k5_bellek_denemesi",
+      "desc": "K-5 bellek denemesi koşulmadan geçer",
+      "module": "scripts/measurement/llm_pilot.py",
+      "test": "tests/test_llm_pilot.py::test_kapilar_k3_ve_k5_eksik_sonda_ve_bellek_denemesini_gecirmez",
+      "find": " and bellek_say == bellek_beklenen",
+      "replace": ""
+    }
+  ]
+}
