@@ -1,0 +1,732 @@
+{
+ "sema": "karadul-dwarf-tip-ozet/1",
+ "arac": {
+  "betik": "scripts/measurement/dwarf_tip.py",
+  "betik_sha256": "c20bcb49fd0363bda19758e090c2207bcae4d477de2f036ee3fd170dbadd4ae3",
+  "git_head": "9a36142afcc9baf471660568f3802ccea898b726",
+  "pyelftools": "0.32",
+  "python": "3.12.7"
+ },
+ "girdi_betik_sha256": [
+  "c20bcb49fd0363bda19758e090c2207bcae4d477de2f036ee3fd170dbadd4ae3"
+ ],
+ "gruplar": {
+  "coreutils": {
+   "dosya": 106,
+   "fonksiyon": 13432,
+   "parametre": 31825,
+   "tip_cozulen": 31825,
+   "tipi_ek_dosyada": 25271,
+   "adsiz_parametre": 0,
+   "sira_belirsiz": 0,
+   "sira_farkli_fonksiyon": 50,
+   "eksik_parametreli_fonksiyon": 0,
+   "tekrarli_fonksiyon": 0,
+   "tekrar_parametre": 0,
+   "yalniz_ranges_govde": 0,
+   "tum_fp_toplam": 132277,
+   "tum_fp_cozulen": 132277,
+   "cozulemeyen_nedenleri": {},
+   "sinif": {
+    "yapi*": 4005,
+    "void*": 2523,
+    "char*": 9440,
+    "skaler": 13338,
+    "skaler*": 961,
+    "fonk*": 239,
+    "yapi_degerle": 471,
+    "ptr**": 848,
+    "diger": 0
+   },
+   "tip_basvuru_bicimi": {
+    "DW_FORM_GNU_ref_alt": 25271,
+    "DW_FORM_ref1": 18,
+    "DW_FORM_ref2": 151,
+    "DW_FORM_ref_addr": 1672,
+    "DW_FORM_ref_udata": 4713
+   },
+   "klon": {
+    "abstract_origin": 3236,
+    "abstract_origin_inline_kokenli": 3236,
+    "bayrak": 3236,
+    "sonekli": 240
+   },
+   "niteleyici": {
+    "const": 11837,
+    "restrict": 160
+   },
+   "yer": {
+    "const_value": 14,
+    "exprloc": 1261,
+    "loclist": 30550
+   },
+   "tum_fp_kendi_tip_bicimi": {
+    "DW_FORM_GNU_ref_alt": 46545,
+    "DW_FORM_ref1": 32,
+    "DW_FORM_ref2": 622,
+    "DW_FORM_ref_addr": 2955,
+    "DW_FORM_ref_udata": 7178
+   },
+   "ayni_adli_farkli_yerlesim": 0,
+   "ayni_adli_kopyalar": 126,
+   "ayni_yerlesimli_anonim_gruplar": 12,
+   "cozulen_payi": 1.0,
+   "ek_dosya_payi": 0.794061,
+   "tum_fp_cozulen_payi": 1.0,
+   "tum_fp_kendi_tipi_ref_alt_payi": 0.81185,
+   "sinif_payi": {
+    "yapi*": 0.125844,
+    "void*": 0.079277,
+    "char*": 0.296622,
+    "skaler": 0.419104,
+    "skaler*": 0.030196,
+    "fonk*": 0.00751,
+    "yapi_degerle": 0.0148,
+    "ptr**": 0.026646,
+    "diger": 0.0
+   },
+   "klon_payi": {
+    "abstract_origin": 0.240917,
+    "abstract_origin_inline_kokenli": 0.240917,
+    "bayrak": 0.240917,
+    "sonekli": 0.017868
+   }
+  },
+  "htop": {
+   "dosya": 1,
+   "fonksiyon": 608,
+   "parametre": 1112,
+   "tip_cozulen": 1112,
+   "tipi_ek_dosyada": 0,
+   "adsiz_parametre": 0,
+   "sira_belirsiz": 0,
+   "sira_farkli_fonksiyon": 4,
+   "eksik_parametreli_fonksiyon": 0,
+   "tekrarli_fonksiyon": 1,
+   "tekrar_parametre": 1,
+   "yalniz_ranges_govde": 0,
+   "tum_fp_toplam": 5549,
+   "tum_fp_cozulen": 5549,
+   "cozulemeyen_nedenleri": {},
+   "sinif": {
+    "yapi*": 600,
+    "void*": 44,
+    "char*": 90,
+    "skaler": 312,
+    "skaler*": 32,
+    "fonk*": 11,
+    "yapi_degerle": 8,
+    "ptr**": 15,
+    "diger": 0
+   },
+   "tip_basvuru_bicimi": {
+    "DW_FORM_ref2": 12,
+    "DW_FORM_ref_addr": 1006,
+    "DW_FORM_ref_udata": 94
+   },
+   "klon": {
+    "abstract_origin": 76,
+    "abstract_origin_inline_kokenli": 76,
+    "bayrak": 76,
+    "sonekli": 13
+   },
+   "niteleyici": {
+    "const": 199,
+    "restrict": 4
+   },
+   "yer": {
+    "None": 1,
+    "const_value": 3,
+    "exprloc": 55,
+    "loclist": 1053
+   },
+   "tum_fp_kendi_tip_bicimi": {
+    "DW_FORM_ref1": 11,
+    "DW_FORM_ref2": 51,
+    "DW_FORM_ref_addr": 2693,
+    "DW_FORM_ref_udata": 321
+   },
+   "ayni_adli_farkli_yerlesim": 0,
+   "ayni_adli_kopyalar": 27,
+   "ayni_yerlesimli_anonim_gruplar": 0,
+   "cozulen_payi": 1.0,
+   "ek_dosya_payi": 0.0,
+   "tum_fp_cozulen_payi": 1.0,
+   "tum_fp_kendi_tipi_ref_alt_payi": 0.0,
+   "sinif_payi": {
+    "yapi*": 0.539568,
+    "void*": 0.039568,
+    "char*": 0.080935,
+    "skaler": 0.280576,
+    "skaler*": 0.028777,
+    "fonk*": 0.009892,
+    "yapi_degerle": 0.007194,
+    "ptr**": 0.013489,
+    "diger": 0.0
+   },
+   "klon_payi": {
+    "abstract_origin": 0.125,
+    "abstract_origin_inline_kokenli": 0.125,
+    "bayrak": 0.125,
+    "sonekli": 0.021382
+   }
+  },
+  "openssl": {
+   "dosya": 1,
+   "fonksiyon": 596,
+   "parametre": 1522,
+   "tip_cozulen": 1522,
+   "tipi_ek_dosyada": 0,
+   "adsiz_parametre": 0,
+   "sira_belirsiz": 0,
+   "sira_farkli_fonksiyon": 10,
+   "eksik_parametreli_fonksiyon": 0,
+   "tekrarli_fonksiyon": 0,
+   "tekrar_parametre": 0,
+   "yalniz_ranges_govde": 0,
+   "tum_fp_toplam": 9129,
+   "tum_fp_cozulen": 9129,
+   "cozulemeyen_nedenleri": {},
+   "sinif": {
+    "yapi*": 438,
+    "void*": 122,
+    "char*": 378,
+    "skaler": 364,
+    "skaler*": 42,
+    "fonk*": 12,
+    "yapi_degerle": 0,
+    "ptr**": 166,
+    "diger": 0
+   },
+   "tip_basvuru_bicimi": {
+    "DW_FORM_ref2": 109,
+    "DW_FORM_ref_addr": 1388,
+    "DW_FORM_ref_udata": 25
+   },
+   "klon": {
+    "abstract_origin": 70,
+    "abstract_origin_inline_kokenli": 70,
+    "bayrak": 70,
+    "sonekli": 21
+   },
+   "niteleyici": {
+    "const": 478
+   },
+   "yer": {
+    "const_value": 5,
+    "exprloc": 10,
+    "loclist": 1507
+   },
+   "tum_fp_kendi_tip_bicimi": {
+    "DW_FORM_ref1": 24,
+    "DW_FORM_ref2": 698,
+    "DW_FORM_ref_addr": 5995,
+    "DW_FORM_ref_udata": 416
+   },
+   "ayni_adli_farkli_yerlesim": 0,
+   "ayni_adli_kopyalar": 2,
+   "ayni_yerlesimli_anonim_gruplar": 0,
+   "cozulen_payi": 1.0,
+   "ek_dosya_payi": 0.0,
+   "tum_fp_cozulen_payi": 1.0,
+   "tum_fp_kendi_tipi_ref_alt_payi": 0.0,
+   "sinif_payi": {
+    "yapi*": 0.287779,
+    "void*": 0.080158,
+    "char*": 0.248357,
+    "skaler": 0.239159,
+    "skaler*": 0.027595,
+    "fonk*": 0.007884,
+    "yapi_degerle": 0.0,
+    "ptr**": 0.109067,
+    "diger": 0.0
+   },
+   "klon_payi": {
+    "abstract_origin": 0.11745,
+    "abstract_origin_inline_kokenli": 0.11745,
+    "bayrak": 0.11745,
+    "sonekli": 0.035235
+   }
+  },
+  "redis-tools": {
+   "dosya": 3,
+   "fonksiyon": 5794,
+   "parametre": 11578,
+   "tip_cozulen": 11578,
+   "tipi_ek_dosyada": 5945,
+   "adsiz_parametre": 0,
+   "sira_belirsiz": 0,
+   "sira_farkli_fonksiyon": 22,
+   "eksik_parametreli_fonksiyon": 0,
+   "tekrarli_fonksiyon": 4,
+   "tekrar_parametre": 5,
+   "yalniz_ranges_govde": 0,
+   "tum_fp_toplam": 71867,
+   "tum_fp_cozulen": 71867,
+   "cozulemeyen_nedenleri": {},
+   "sinif": {
+    "yapi*": 4799,
+    "void*": 694,
+    "char*": 1593,
+    "skaler": 3228,
+    "skaler*": 490,
+    "fonk*": 200,
+    "yapi_degerle": 69,
+    "ptr**": 469,
+    "diger": 36
+   },
+   "tip_basvuru_bicimi": {
+    "DW_FORM_GNU_ref_alt": 5945,
+    "DW_FORM_ref1": 3,
+    "DW_FORM_ref2": 1020,
+    "DW_FORM_ref_addr": 3436,
+    "DW_FORM_ref_udata": 1174
+   },
+   "klon": {
+    "abstract_origin": 4735,
+    "abstract_origin_inline_kokenli": 157,
+    "bayrak": 4735,
+    "sonekli": 116
+   },
+   "niteleyici": {
+    "const": 1312
+   },
+   "yer": {
+    "None": 6,
+    "const_value": 18,
+    "exprloc": 508,
+    "loclist": 11046
+   },
+   "tum_fp_kendi_tip_bicimi": {
+    "DW_FORM_GNU_ref_alt": 10578,
+    "DW_FORM_ref1": 7,
+    "DW_FORM_ref2": 2235,
+    "DW_FORM_ref_addr": 6145,
+    "DW_FORM_ref_udata": 2386
+   },
+   "ayni_adli_farkli_yerlesim": 13,
+   "ayni_adli_kopyalar": 106,
+   "ayni_yerlesimli_anonim_gruplar": 4,
+   "cozulen_payi": 1.0,
+   "ek_dosya_payi": 0.513474,
+   "tum_fp_cozulen_payi": 1.0,
+   "tum_fp_kendi_tipi_ref_alt_payi": 0.495433,
+   "sinif_payi": {
+    "yapi*": 0.414493,
+    "void*": 0.059941,
+    "char*": 0.137589,
+    "skaler": 0.278805,
+    "skaler*": 0.042322,
+    "fonk*": 0.017274,
+    "yapi_degerle": 0.00596,
+    "ptr**": 0.040508,
+    "diger": 0.003109
+   },
+   "klon_payi": {
+    "abstract_origin": 0.817225,
+    "abstract_origin_inline_kokenli": 0.027097,
+    "bayrak": 0.817225,
+    "sonekli": 0.020021
+   }
+  },
+  "sqlite3": {
+   "dosya": 1,
+   "fonksiyon": 418,
+   "parametre": 993,
+   "tip_cozulen": 993,
+   "tipi_ek_dosyada": 0,
+   "adsiz_parametre": 0,
+   "sira_belirsiz": 0,
+   "sira_farkli_fonksiyon": 5,
+   "eksik_parametreli_fonksiyon": 0,
+   "tekrarli_fonksiyon": 0,
+   "tekrar_parametre": 0,
+   "yalniz_ranges_govde": 0,
+   "tum_fp_toplam": 5269,
+   "tum_fp_cozulen": 5269,
+   "cozulemeyen_nedenleri": {},
+   "sinif": {
+    "yapi*": 398,
+    "void*": 53,
+    "char*": 154,
+    "skaler": 224,
+    "skaler*": 31,
+    "fonk*": 4,
+    "yapi_degerle": 0,
+    "ptr**": 129,
+    "diger": 0
+   },
+   "tip_basvuru_bicimi": {
+    "DW_FORM_ref4": 993
+   },
+   "klon": {
+    "abstract_origin": 107,
+    "abstract_origin_inline_kokenli": 107,
+    "bayrak": 107,
+    "sonekli": 31
+   },
+   "niteleyici": {
+    "const": 169,
+    "volatile": 2
+   },
+   "yer": {
+    "const_value": 5,
+    "exprloc": 35,
+    "loclist": 953
+   },
+   "tum_fp_kendi_tip_bicimi": {
+    "DW_FORM_ref4": 2094
+   },
+   "ayni_adli_farkli_yerlesim": 0,
+   "ayni_adli_kopyalar": 0,
+   "ayni_yerlesimli_anonim_gruplar": 0,
+   "cozulen_payi": 1.0,
+   "ek_dosya_payi": 0.0,
+   "tum_fp_cozulen_payi": 1.0,
+   "tum_fp_kendi_tipi_ref_alt_payi": 0.0,
+   "sinif_payi": {
+    "yapi*": 0.400806,
+    "void*": 0.053374,
+    "char*": 0.155086,
+    "skaler": 0.225579,
+    "skaler*": 0.031219,
+    "fonk*": 0.004028,
+    "yapi_degerle": 0.0,
+    "ptr**": 0.129909,
+    "diger": 0.0
+   },
+   "klon_payi": {
+    "abstract_origin": 0.255981,
+    "abstract_origin_inline_kokenli": 0.255981,
+    "bayrak": 0.255981,
+    "sonekli": 0.074163
+   }
+  },
+  "tmux": {
+   "dosya": 1,
+   "fonksiyon": 1911,
+   "parametre": 4211,
+   "tip_cozulen": 4211,
+   "tipi_ek_dosyada": 0,
+   "adsiz_parametre": 0,
+   "sira_belirsiz": 0,
+   "sira_farkli_fonksiyon": 29,
+   "eksik_parametreli_fonksiyon": 0,
+   "tekrarli_fonksiyon": 0,
+   "tekrar_parametre": 0,
+   "yalniz_ranges_govde": 0,
+   "tum_fp_toplam": 18408,
+   "tum_fp_cozulen": 18408,
+   "cozulemeyen_nedenleri": {},
+   "sinif": {
+    "yapi*": 2220,
+    "void*": 198,
+    "char*": 373,
+    "skaler": 1123,
+    "skaler*": 139,
+    "fonk*": 38,
+    "yapi_degerle": 6,
+    "ptr**": 114,
+    "diger": 0
+   },
+   "tip_basvuru_bicimi": {
+    "DW_FORM_ref2": 654,
+    "DW_FORM_ref_addr": 3370,
+    "DW_FORM_ref_udata": 187
+   },
+   "klon": {
+    "abstract_origin": 356,
+    "abstract_origin_inline_kokenli": 356,
+    "bayrak": 356,
+    "sonekli": 61
+   },
+   "niteleyici": {
+    "const": 468
+   },
+   "yer": {
+    "const_value": 6,
+    "exprloc": 172,
+    "loclist": 4033
+   },
+   "tum_fp_kendi_tip_bicimi": {
+    "DW_FORM_ref1": 16,
+    "DW_FORM_ref2": 1402,
+    "DW_FORM_ref_addr": 8169,
+    "DW_FORM_ref_udata": 698
+   },
+   "ayni_adli_farkli_yerlesim": 0,
+   "ayni_adli_kopyalar": 46,
+   "ayni_yerlesimli_anonim_gruplar": 0,
+   "cozulen_payi": 1.0,
+   "ek_dosya_payi": 0.0,
+   "tum_fp_cozulen_payi": 1.0,
+   "tum_fp_kendi_tipi_ref_alt_payi": 0.0,
+   "sinif_payi": {
+    "yapi*": 0.527191,
+    "void*": 0.04702,
+    "char*": 0.088578,
+    "skaler": 0.266682,
+    "skaler*": 0.033009,
+    "fonk*": 0.009024,
+    "yapi_degerle": 0.001425,
+    "ptr**": 0.027072,
+    "diger": 0.0
+   },
+   "klon_payi": {
+    "abstract_origin": 0.18629,
+    "abstract_origin_inline_kokenli": 0.18629,
+    "bayrak": 0.18629,
+    "sonekli": 0.03192
+   }
+  },
+  "tree": {
+   "dosya": 1,
+   "fonksiyon": 110,
+   "parametre": 208,
+   "tip_cozulen": 208,
+   "tipi_ek_dosyada": 0,
+   "adsiz_parametre": 0,
+   "sira_belirsiz": 0,
+   "sira_farkli_fonksiyon": 1,
+   "eksik_parametreli_fonksiyon": 0,
+   "tekrarli_fonksiyon": 0,
+   "tekrar_parametre": 0,
+   "yalniz_ranges_govde": 0,
+   "tum_fp_toplam": 1274,
+   "tum_fp_cozulen": 1274,
+   "cozulemeyen_nedenleri": {},
+   "sinif": {
+    "yapi*": 30,
+    "void*": 2,
+    "char*": 57,
+    "skaler": 80,
+    "skaler*": 8,
+    "fonk*": 0,
+    "yapi_degerle": 4,
+    "ptr**": 27,
+    "diger": 0
+   },
+   "tip_basvuru_bicimi": {
+    "DW_FORM_ref_addr": 207,
+    "DW_FORM_ref_udata": 1
+   },
+   "klon": {
+    "abstract_origin": 19,
+    "abstract_origin_inline_kokenli": 19,
+    "bayrak": 19,
+    "sonekli": 1
+   },
+   "niteleyici": {
+    "const": 22
+   },
+   "yer": {
+    "exprloc": 9,
+    "loclist": 199
+   },
+   "tum_fp_kendi_tip_bicimi": {
+    "DW_FORM_ref1": 1,
+    "DW_FORM_ref2": 13,
+    "DW_FORM_ref_addr": 548,
+    "DW_FORM_ref_udata": 9
+   },
+   "ayni_adli_farkli_yerlesim": 0,
+   "ayni_adli_kopyalar": 0,
+   "ayni_yerlesimli_anonim_gruplar": 0,
+   "cozulen_payi": 1.0,
+   "ek_dosya_payi": 0.0,
+   "tum_fp_cozulen_payi": 1.0,
+   "tum_fp_kendi_tipi_ref_alt_payi": 0.0,
+   "sinif_payi": {
+    "yapi*": 0.144231,
+    "void*": 0.009615,
+    "char*": 0.274038,
+    "skaler": 0.384615,
+    "skaler*": 0.038462,
+    "fonk*": 0.0,
+    "yapi_degerle": 0.019231,
+    "ptr**": 0.129808,
+    "diger": 0.0
+   },
+   "klon_payi": {
+    "abstract_origin": 0.172727,
+    "abstract_origin_inline_kokenli": 0.172727,
+    "bayrak": 0.172727,
+    "sonekli": 0.009091
+   }
+  },
+  "zstd": {
+   "dosya": 2,
+   "fonksiyon": 1907,
+   "parametre": 6514,
+   "tip_cozulen": 6514,
+   "tipi_ek_dosyada": 3337,
+   "adsiz_parametre": 2,
+   "sira_belirsiz": 0,
+   "sira_farkli_fonksiyon": 44,
+   "eksik_parametreli_fonksiyon": 20,
+   "tekrarli_fonksiyon": 0,
+   "tekrar_parametre": 0,
+   "yalniz_ranges_govde": 0,
+   "tum_fp_toplam": 118536,
+   "tum_fp_cozulen": 118536,
+   "cozulemeyen_nedenleri": {},
+   "sinif": {
+    "yapi*": 1537,
+    "void*": 1124,
+    "char*": 661,
+    "skaler": 2260,
+    "skaler*": 749,
+    "fonk*": 7,
+    "yapi_degerle": 123,
+    "ptr**": 53,
+    "diger": 0
+   },
+   "tip_basvuru_bicimi": {
+    "DW_FORM_GNU_ref_alt": 3337,
+    "DW_FORM_ref2": 254,
+    "DW_FORM_ref_addr": 1955,
+    "DW_FORM_ref_udata": 968
+   },
+   "klon": {
+    "abstract_origin": 628,
+    "abstract_origin_inline_kokenli": 628,
+    "bayrak": 628,
+    "sonekli": 256
+   },
+   "niteleyici": {
+    "const": 2197
+   },
+   "yer": {
+    "None": 4,
+    "const_value": 18,
+    "exprloc": 341,
+    "loclist": 6151
+   },
+   "tum_fp_kendi_tip_bicimi": {
+    "DW_FORM_GNU_ref_alt": 7789,
+    "DW_FORM_ref2": 690,
+    "DW_FORM_ref_addr": 4941,
+    "DW_FORM_ref_udata": 11506
+   },
+   "ayni_adli_farkli_yerlesim": 0,
+   "ayni_adli_kopyalar": 23,
+   "ayni_yerlesimli_anonim_gruplar": 15,
+   "cozulen_payi": 1.0,
+   "ek_dosya_payi": 0.512281,
+   "tum_fp_cozulen_payi": 1.0,
+   "tum_fp_kendi_tipi_ref_alt_payi": 0.312485,
+   "sinif_payi": {
+    "yapi*": 0.235953,
+    "void*": 0.172551,
+    "char*": 0.101474,
+    "skaler": 0.346945,
+    "skaler*": 0.114983,
+    "fonk*": 0.001075,
+    "yapi_degerle": 0.018882,
+    "ptr**": 0.008136,
+    "diger": 0.0
+   },
+   "klon_payi": {
+    "abstract_origin": 0.329313,
+    "abstract_origin_inline_kokenli": 0.329313,
+    "bayrak": 0.329313,
+    "sonekli": 0.134242
+   }
+  }
+ },
+ "toplam": {
+  "dosya": 116,
+  "fonksiyon": 24776,
+  "parametre": 57963,
+  "tip_cozulen": 57963,
+  "tipi_ek_dosyada": 34553,
+  "adsiz_parametre": 2,
+  "sira_belirsiz": 0,
+  "sira_farkli_fonksiyon": 165,
+  "eksik_parametreli_fonksiyon": 20,
+  "tekrarli_fonksiyon": 5,
+  "tekrar_parametre": 6,
+  "yalniz_ranges_govde": 0,
+  "tum_fp_toplam": 362309,
+  "tum_fp_cozulen": 362309,
+  "cozulemeyen_nedenleri": {},
+  "sinif": {
+   "yapi*": 14027,
+   "void*": 4760,
+   "char*": 12746,
+   "skaler": 20929,
+   "skaler*": 2452,
+   "fonk*": 511,
+   "yapi_degerle": 681,
+   "ptr**": 1821,
+   "diger": 36
+  },
+  "tip_basvuru_bicimi": {
+   "DW_FORM_GNU_ref_alt": 34553,
+   "DW_FORM_ref1": 21,
+   "DW_FORM_ref2": 2200,
+   "DW_FORM_ref4": 993,
+   "DW_FORM_ref_addr": 13034,
+   "DW_FORM_ref_udata": 7162
+  },
+  "klon": {
+   "abstract_origin": 9227,
+   "abstract_origin_inline_kokenli": 4649,
+   "bayrak": 9227,
+   "sonekli": 739
+  },
+  "niteleyici": {
+   "const": 16682,
+   "restrict": 164,
+   "volatile": 2
+  },
+  "yer": {
+   "None": 11,
+   "const_value": 69,
+   "exprloc": 2391,
+   "loclist": 55492
+  },
+  "tum_fp_kendi_tip_bicimi": {
+   "DW_FORM_GNU_ref_alt": 64912,
+   "DW_FORM_ref1": 91,
+   "DW_FORM_ref2": 5711,
+   "DW_FORM_ref4": 2094,
+   "DW_FORM_ref_addr": 31446,
+   "DW_FORM_ref_udata": 22514
+  },
+  "ayni_adli_farkli_yerlesim": 13,
+  "ayni_adli_kopyalar": 330,
+  "ayni_yerlesimli_anonim_gruplar": 31,
+  "cozulen_payi": 1.0,
+  "ek_dosya_payi": 0.596122,
+  "tum_fp_cozulen_payi": 1.0,
+  "tum_fp_kendi_tipi_ref_alt_payi": 0.512054,
+  "sinif_payi": {
+   "yapi*": 0.241999,
+   "void*": 0.082121,
+   "char*": 0.219899,
+   "skaler": 0.361075,
+   "skaler*": 0.042303,
+   "fonk*": 0.008816,
+   "yapi_degerle": 0.011749,
+   "ptr**": 0.031417,
+   "diger": 0.000621
+  },
+  "klon_payi": {
+   "abstract_origin": 0.372417,
+   "abstract_origin_inline_kokenli": 0.187641,
+   "bayrak": 0.372417,
+   "sonekli": 0.029827
+  }
+ },
+ "girdiler": [
+  "tmux",
+  "htop",
+  "tree",
+  "zstd",
+  "sqlite3",
+  "openssl",
+  "redis-tools",
+  "coreutils"
+ ]
+}

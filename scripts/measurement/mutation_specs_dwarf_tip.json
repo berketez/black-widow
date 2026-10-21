@@ -1,0 +1,69 @@
+{
+  "_comment": "dwarf_tip.py (plan v2.2 T0a) kurallarının mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_dwarf_tip.json",
+  "mutants": [
+    {
+      "id": "t0a_ref_alt_yanlis_dosya",
+      "desc": "DW_FORM_GNU_ref_alt ek dosya yerine ana dosyada çözülür",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_ref_alt_ek_dosyasinda_cozulur",
+      "find": "        return EK, ham\n",
+      "replace": "        return rol, ham\n"
+    },
+    {
+      "id": "t0a_strp_alt_ana_tablosu",
+      "desc": "DW_FORM_GNU_strp_alt ek dosyanın değil ana dosyanın .debug_str'ından okunur",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_strp_alt_ek_dizgi_tablosundan",
+      "find": "            return dizgi_oku(ek.dizgi_tablosu, ham)",
+      "replace": "            return dizgi_oku(self.dosyalar[ANA].dizgi_tablosu, ham)"
+    },
+    {
+      "id": "t0a_typedef_soyulmaz",
+      "desc": "typedef soyulmaz: zincir typedef adında biter (kanonik 'foo_t *')",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_kanonik_typedef_soyulur",
+      "find": "            if e == T_TYPEDEF:\n                typedefler.append(ad)\n                r, d = self._tip_hedefi(r, d)\n                continue",
+      "replace": "            if e == T_TYPEDEF:\n                kok, taban = {\"tur\": \"typedef\", \"ad\": ad, \"kimlik\": ad}, ad\n                break"
+    },
+    {
+      "id": "t0a_const_atilmaz",
+      "desc": "const atılmaz: kanonik biçimde düzey olarak kalır ('char * const')",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_niteleyiciler_atilir_ve_kaydedilir",
+      "find": "                niteleyiciler.append(ATILAN_NITELEYICILER[e])",
+      "replace": "                (seviyeler.append(\" const\") if e == \"DW_TAG_const_type\" else niteleyiciler.append(ATILAN_NITELEYICILER[e]))"
+    },
+    {
+      "id": "t0a_klon_bayragi_sonek",
+      "desc": "klon bayrağı yalnız abstract_origin'den kurulur, .isra/.constprop/.part/.cold soneki düşer",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_klon_bayragi",
+      "find": "\"bayrak\": bool(sonekler) or ao}",
+      "replace": "\"bayrak\": ao}"
+    },
+    {
+      "id": "t0a_abstract_origin_izlenmez",
+      "desc": "köken zinciri DW_AT_abstract_origin'i izlemez (somut gövdenin adı ve parametre tipleri kaybolur)",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_abstract_origin_ad_ve_sira",
+      "find": "KOKEN_OZELLIKLERI = ((\"DW_AT_abstract_origin\", \"abstract_origin\"),\n                     (\"DW_AT_specification\", \"specification\"))",
+      "replace": "KOKEN_OZELLIKLERI = ((\"DW_AT_specification\", \"specification\"),)"
+    },
+    {
+      "id": "t0a_isaretci_derinligi",
+      "desc": "işaretçi derinliği tutulmaz (char ** -> char *)",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_isaretci_derinligi_ve_siniflar",
+      "find": "                seviyeler.append(\"*\")",
+      "replace": "                seviyeler[:] = [\"*\"]"
+    },
+    {
+      "id": "t0a_ithal_kapanisi_yok",
+      "desc": "imported_unit kapanışı yok sayılır: ek dosyanın bütün kısmi birimleri bu ikiliye ait sayılır",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_ithal_kapanisi_ve_tanimlar",
+      "find": "        erisilen = {(ANA, b) for b in ana.birimler}",
+      "replace": "        erisilen = {(r, b) for r, f in self.dosyalar.items() for b in f.birimler}"
+    }
+  ]
+}

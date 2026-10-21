@@ -1,0 +1,262 @@
+{
+ "sema": "karadul-dwarf-tip-ozet/1",
+ "arac": {
+  "betik": "scripts/measurement/dwarf_tip.py",
+  "betik_sha256": "c20bcb49fd0363bda19758e090c2207bcae4d477de2f036ee3fd170dbadd4ae3",
+  "git_head": "9a36142afcc9baf471660568f3802ccea898b726",
+  "pyelftools": "0.32",
+  "python": "3.12.7"
+ },
+ "girdi_betik_sha256": [
+  "c20bcb49fd0363bda19758e090c2207bcae4d477de2f036ee3fd170dbadd4ae3"
+ ],
+ "gruplar": {
+  "debian-9.4-3": {
+   "dosya": 106,
+   "fonksiyon": 12164,
+   "parametre": 28655,
+   "tip_cozulen": 28655,
+   "tipi_ek_dosyada": 22439,
+   "adsiz_parametre": 0,
+   "sira_belirsiz": 0,
+   "sira_farkli_fonksiyon": 47,
+   "eksik_parametreli_fonksiyon": 0,
+   "tekrarli_fonksiyon": 0,
+   "tekrar_parametre": 0,
+   "yalniz_ranges_govde": 0,
+   "tum_fp_toplam": 127574,
+   "tum_fp_cozulen": 127574,
+   "cozulemeyen_nedenleri": {},
+   "sinif": {
+    "yapi*": 4030,
+    "void*": 2420,
+    "char*": 8629,
+    "skaler": 11325,
+    "skaler*": 983,
+    "fonk*": 241,
+    "yapi_degerle": 206,
+    "ptr**": 821,
+    "diger": 0
+   },
+   "tip_basvuru_bicimi": {
+    "DW_FORM_GNU_ref_alt": 22439,
+    "DW_FORM_ref1": 13,
+    "DW_FORM_ref2": 552,
+    "DW_FORM_ref_addr": 1263,
+    "DW_FORM_ref_udata": 4388
+   },
+   "klon": {
+    "abstract_origin": 2973,
+    "abstract_origin_inline_kokenli": 2973,
+    "bayrak": 2973,
+    "sonekli": 225
+   },
+   "niteleyici": {
+    "const": 11106,
+    "restrict": 136
+   },
+   "yer": {
+    "const_value": 14,
+    "exprloc": 976,
+    "loclist": 27665
+   },
+   "tum_fp_kendi_tip_bicimi": {
+    "DW_FORM_GNU_ref_alt": 42939,
+    "DW_FORM_ref1": 31,
+    "DW_FORM_ref2": 1046,
+    "DW_FORM_ref_addr": 2205,
+    "DW_FORM_ref_udata": 6444
+   },
+   "ayni_adli_farkli_yerlesim": 0,
+   "ayni_adli_kopyalar": 125,
+   "ayni_yerlesimli_anonim_gruplar": 12,
+   "cozulen_payi": 1.0,
+   "ek_dosya_payi": 0.783075,
+   "tum_fp_cozulen_payi": 1.0,
+   "tum_fp_kendi_tipi_ref_alt_payi": 0.815323,
+   "sinif_payi": {
+    "yapi*": 0.140639,
+    "void*": 0.084453,
+    "char*": 0.301134,
+    "skaler": 0.395219,
+    "skaler*": 0.034305,
+    "fonk*": 0.00841,
+    "yapi_degerle": 0.007189,
+    "ptr**": 0.028651,
+    "diger": 0.0
+   },
+   "klon_payi": {
+    "abstract_origin": 0.24441,
+    "abstract_origin_inline_kokenli": 0.24441,
+    "bayrak": 0.24441,
+    "sonekli": 0.018497
+   }
+  },
+  "ubuntu-9.4-3ubuntu6": {
+   "dosya": 106,
+   "fonksiyon": 3527,
+   "parametre": 8780,
+   "tip_cozulen": 8780,
+   "tipi_ek_dosyada": 6811,
+   "adsiz_parametre": 0,
+   "sira_belirsiz": 0,
+   "sira_farkli_fonksiyon": 430,
+   "eksik_parametreli_fonksiyon": 0,
+   "tekrarli_fonksiyon": 228,
+   "tekrar_parametre": 382,
+   "yalniz_ranges_govde": 0,
+   "tum_fp_toplam": 119341,
+   "tum_fp_cozulen": 119341,
+   "cozulemeyen_nedenleri": {},
+   "sinif": {
+    "yapi*": 1389,
+    "void*": 869,
+    "char*": 2612,
+    "skaler": 3002,
+    "skaler*": 373,
+    "fonk*": 177,
+    "yapi_degerle": 49,
+    "ptr**": 309,
+    "diger": 0
+   },
+   "tip_basvuru_bicimi": {
+    "DW_FORM_GNU_ref_alt": 6797,
+    "DW_FORM_ref1": 1,
+    "DW_FORM_ref_addr": 634,
+    "DW_FORM_ref_udata": 1348
+   },
+   "klon": {
+    "abstract_origin": 3527,
+    "abstract_origin_inline_kokenli": 0,
+    "bayrak": 3527,
+    "sonekli": 1019
+   },
+   "niteleyici": {
+    "const": 3614,
+    "restrict": 66
+   },
+   "yer": {
+    "None": 50,
+    "const_value": 681,
+    "exprloc": 537,
+    "loclist": 7512
+   },
+   "tum_fp_kendi_tip_bicimi": {
+    "DW_FORM_GNU_ref_alt": 43168,
+    "DW_FORM_ref1": 120,
+    "DW_FORM_ref_addr": 4156,
+    "DW_FORM_ref_udata": 4782
+   },
+   "ayni_adli_farkli_yerlesim": 0,
+   "ayni_adli_kopyalar": 56,
+   "ayni_yerlesimli_anonim_gruplar": 2,
+   "cozulen_payi": 1.0,
+   "ek_dosya_payi": 0.77574,
+   "tum_fp_cozulen_payi": 1.0,
+   "tum_fp_kendi_tipi_ref_alt_payi": 0.826561,
+   "sinif_payi": {
+    "yapi*": 0.1582,
+    "void*": 0.098975,
+    "char*": 0.297494,
+    "skaler": 0.341913,
+    "skaler*": 0.042483,
+    "fonk*": 0.020159,
+    "yapi_degerle": 0.005581,
+    "ptr**": 0.035194,
+    "diger": 0.0
+   },
+   "klon_payi": {
+    "abstract_origin": 1.0,
+    "abstract_origin_inline_kokenli": 0.0,
+    "bayrak": 1.0,
+    "sonekli": 0.288914
+   }
+  }
+ },
+ "toplam": {
+  "dosya": 212,
+  "fonksiyon": 15691,
+  "parametre": 37435,
+  "tip_cozulen": 37435,
+  "tipi_ek_dosyada": 29250,
+  "adsiz_parametre": 0,
+  "sira_belirsiz": 0,
+  "sira_farkli_fonksiyon": 477,
+  "eksik_parametreli_fonksiyon": 0,
+  "tekrarli_fonksiyon": 228,
+  "tekrar_parametre": 382,
+  "yalniz_ranges_govde": 0,
+  "tum_fp_toplam": 246915,
+  "tum_fp_cozulen": 246915,
+  "cozulemeyen_nedenleri": {},
+  "sinif": {
+   "yapi*": 5419,
+   "void*": 3289,
+   "char*": 11241,
+   "skaler": 14327,
+   "skaler*": 1356,
+   "fonk*": 418,
+   "yapi_degerle": 255,
+   "ptr**": 1130,
+   "diger": 0
+  },
+  "tip_basvuru_bicimi": {
+   "DW_FORM_GNU_ref_alt": 29236,
+   "DW_FORM_ref1": 14,
+   "DW_FORM_ref2": 552,
+   "DW_FORM_ref_addr": 1897,
+   "DW_FORM_ref_udata": 5736
+  },
+  "klon": {
+   "abstract_origin": 6500,
+   "abstract_origin_inline_kokenli": 2973,
+   "bayrak": 6500,
+   "sonekli": 1244
+  },
+  "niteleyici": {
+   "const": 14720,
+   "restrict": 202
+  },
+  "yer": {
+   "None": 50,
+   "const_value": 695,
+   "exprloc": 1513,
+   "loclist": 35177
+  },
+  "tum_fp_kendi_tip_bicimi": {
+   "DW_FORM_GNU_ref_alt": 86107,
+   "DW_FORM_ref1": 151,
+   "DW_FORM_ref2": 1046,
+   "DW_FORM_ref_addr": 6361,
+   "DW_FORM_ref_udata": 11226
+  },
+  "ayni_adli_farkli_yerlesim": 0,
+  "ayni_adli_kopyalar": 181,
+  "ayni_yerlesimli_anonim_gruplar": 14,
+  "cozulen_payi": 1.0,
+  "ek_dosya_payi": 0.781354,
+  "tum_fp_cozulen_payi": 1.0,
+  "tum_fp_kendi_tipi_ref_alt_payi": 0.820919,
+  "sinif_payi": {
+   "yapi*": 0.144758,
+   "void*": 0.087859,
+   "char*": 0.30028,
+   "skaler": 0.382717,
+   "skaler*": 0.036223,
+   "fonk*": 0.011166,
+   "yapi_degerle": 0.006812,
+   "ptr**": 0.030186,
+   "diger": 0.0
+  },
+  "klon_payi": {
+   "abstract_origin": 0.41425,
+   "abstract_origin_inline_kokenli": 0.189472,
+   "bayrak": 0.41425,
+   "sonekli": 0.079281
+  }
+ },
+ "girdiler": [
+  "debian-9.4-3",
+  "ubuntu-9.4-3ubuntu6"
+ ]
+}

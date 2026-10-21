@@ -1,0 +1,212 @@
+{
+ "tarih_utc": "2026-10-21T06:32:24Z",
+ "kaynak": "deb.debian.org trixie main + trixie-debug (arm64)",
+ "imza": "InRelease imzası doğrulanmadı; HTTPS + Packages sha256",
+ "paketler": {
+  "tmux": {
+   "surum": "3.5a-3",
+   "url": "https://deb.debian.org/debian/pool/main/t/tmux/tmux_3.5a-3_arm64.deb",
+   "boyut": 454600,
+   "sha256": "835d23b320f5d0457f7a695d90d1c5cca5c2b4a6481fa28b06ad14b18dcabff2",
+   "sha256_eslesir": true,
+   "acilan": "x_tmux_3.5a-3_arm64",
+   "atlanan_uyeler": []
+  },
+  "tmux-dbgsym": {
+   "surum": "3.5a-3",
+   "url": "https://deb.debian.org/debian-debug/pool/main/t/tmux/tmux-dbgsym_3.5a-3_arm64.deb",
+   "boyut": 1135828,
+   "sha256": "84339afe41560788ab402f39898b31f46362109b7eb0dd984a23ee0baca63889",
+   "sha256_eslesir": true,
+   "acilan": "x_tmux-dbgsym_3.5a-3_arm64",
+   "atlanan_uyeler": []
+  },
+  "htop": {
+   "surum": "3.4.1-5",
+   "url": "https://deb.debian.org/debian/pool/main/h/htop/htop_3.4.1-5_arm64.deb",
+   "boyut": 163752,
+   "sha256": "2108c99bda1b236d8768e35f4b2b932fff30befb106832ae1a41fdbae69216d3",
+   "sha256_eslesir": true,
+   "acilan": "x_htop_3.4.1-5_arm64",
+   "atlanan_uyeler": []
+  },
+  "htop-dbgsym": {
+   "surum": "3.4.1-5",
+   "url": "https://deb.debian.org/debian-debug/pool/main/h/htop/htop-dbgsym_3.4.1-5_arm64.deb",
+   "boyut": 397244,
+   "sha256": "e74401cee83835210cad23f567b51615f449e07ef48caee3055745695957ff8c",
+   "sha256_eslesir": true,
+   "acilan": "x_htop-dbgsym_3.4.1-5_arm64",
+   "atlanan_uyeler": []
+  },
+  "tree": {
+   "surum": "2.2.1-1",
+   "url": "https://deb.debian.org/debian/pool/main/t/tree/tree_2.2.1-1_arm64.deb",
+   "boyut": 57900,
+   "sha256": "5cbe57d830e015571ee86d8b64177978371fca0c5c4ce555ba40c129ee9b87a0",
+   "sha256_eslesir": true,
+   "acilan": "x_tree_2.2.1-1_arm64",
+   "atlanan_uyeler": []
+  },
+  "tree-dbgsym": {
+   "surum": "2.2.1-1",
+   "url": "https://deb.debian.org/debian-debug/pool/main/t/tree/tree-dbgsym_2.2.1-1_arm64.deb",
+   "boyut": 84924,
+   "sha256": "210e7eaf12b2d2880b8b7bd70f7b9af6b3f23278de3be094101b45fbf4a1652d",
+   "sha256_eslesir": true,
+   "acilan": "x_tree-dbgsym_2.2.1-1_arm64",
+   "atlanan_uyeler": []
+  },
+  "zstd": {
+   "surum": "1.5.7+dfsg-1",
+   "url": "https://deb.debian.org/debian/pool/main/libz/libzstd/zstd_1.5.7+dfsg-1_arm64.deb",
+   "boyut": 635036,
+   "sha256": "715696637b45bf1c30230f1c97f9ffdc9af18ead053564d9349f92accccbe988",
+   "sha256_eslesir": true,
+   "acilan": "x_zstd_1.5.7+dfsg-1_arm64",
+   "atlanan_uyeler": []
+  },
+  "zstd-dbgsym": {
+   "surum": "1.5.7+dfsg-1",
+   "url": "https://deb.debian.org/debian-debug/pool/main/libz/libzstd/zstd-dbgsym_1.5.7+dfsg-1_arm64.deb",
+   "boyut": 4635236,
+   "sha256": "2f64db3e277622ffd4170eca7d1a75586b2071fd47341429a695ba379196e597",
+   "sha256_eslesir": true,
+   "acilan": "x_zstd-dbgsym_1.5.7+dfsg-1_arm64",
+   "atlanan_uyeler": []
+  },
+  "sqlite3": {
+   "surum": "3.46.1-7+deb13u2",
+   "url": "https://deb.debian.org/debian/pool/main/s/sqlite3/sqlite3_3.46.1-7+deb13u2_arm64.deb",
+   "boyut": 373184,
+   "sha256": "ee924a55337dcb0a017122ccee0f7587de355154455f774eff33f09b36cdd2c6",
+   "sha256_eslesir": true,
+   "acilan": "x_sqlite3_3.46.1-7+deb13u2_arm64",
+   "atlanan_uyeler": []
+  },
+  "sqlite3-dbgsym": {
+   "surum": "3.46.1-7+deb13u2",
+   "url": "https://deb.debian.org/debian-debug/pool/main/s/sqlite3/sqlite3-dbgsym_3.46.1-7+deb13u2_arm64.deb",
+   "boyut": 381628,
+   "sha256": "123543189490fb1e8dd082260ee8bd7ef38b86a32ad95bf987207e9bbe600bd6",
+   "sha256_eslesir": true,
+   "acilan": "x_sqlite3-dbgsym_3.46.1-7+deb13u2_arm64",
+   "atlanan_uyeler": []
+  },
+  "openssl": {
+   "surum": "3.5.7-1~deb13u2",
+   "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl_3.5.7-1~deb13u2_arm64.deb",
+   "boyut": 1472236,
+   "sha256": "ff38f9e4fdbfef72d9cb31088e5e42f58c83c2fb1d1bbb4e4b4c9adc53c17100",
+   "sha256_eslesir": true,
+   "acilan": "x_openssl_3.5.7-1~deb13u2_arm64",
+   "atlanan_uyeler": [
+    "./usr/lib/ssl/cert.pem",
+    "./usr/lib/ssl/certs",
+    "./usr/lib/ssl/openssl.cnf",
+    "./usr/lib/ssl/private"
+   ]
+  },
+  "openssl-dbgsym": {
+   "surum": "3.5.7-1~deb13u2",
+   "url": "https://deb.debian.org/debian-debug/pool/main/o/openssl/openssl-dbgsym_3.5.7-1~deb13u2_arm64.deb",
+   "boyut": 766796,
+   "sha256": "a3a06505471711aeb75f9d26ba95a49a6ec42d6aea060840681efd2bc90cb05c",
+   "sha256_eslesir": true,
+   "acilan": "x_openssl-dbgsym_3.5.7-1~deb13u2_arm64",
+   "atlanan_uyeler": []
+  },
+  "redis-tools": {
+   "surum": "5:8.0.2-3+deb13u2",
+   "url": "https://deb.debian.org/debian/pool/main/r/redis/redis-tools_8.0.2-3+deb13u2_arm64.deb",
+   "boyut": 1148348,
+   "sha256": "207fae4f71895f142c99f06a19bd4b26c4a7aabb8615e82128181c9cebe6a7b0",
+   "sha256_eslesir": true,
+   "acilan": "x_redis-tools_8.0.2-3+deb13u2_arm64",
+   "atlanan_uyeler": []
+  },
+  "redis-tools-dbgsym": {
+   "surum": "5:8.0.2-3+deb13u2",
+   "url": "https://deb.debian.org/debian-debug/pool/main/r/redis/redis-tools-dbgsym_8.0.2-3+deb13u2_arm64.deb",
+   "boyut": 4473768,
+   "sha256": "3778857677659a2d33a33f2c088983620e29e93a677a9708aa8143376e94b342",
+   "sha256_eslesir": true,
+   "acilan": "x_redis-tools-dbgsym_8.0.2-3+deb13u2_arm64",
+   "atlanan_uyeler": []
+  },
+  "coreutils": {
+   "surum": "9.7-3",
+   "url": "https://deb.debian.org/debian/pool/main/c/coreutils/coreutils_9.7-3_arm64.deb",
+   "boyut": 2948764,
+   "sha256": "99b2531e8d16e4f2d3f239ae3cb57913ec1f43764d2d6cd5c69154cbb1e57f3e",
+   "sha256_eslesir": true,
+   "acilan": "x_coreutils_9.7-3_arm64",
+   "atlanan_uyeler": []
+  },
+  "coreutils-dbgsym": {
+   "surum": "9.7-3",
+   "url": "https://deb.debian.org/debian-debug/pool/main/c/coreutils/coreutils-dbgsym_9.7-3_arm64.deb",
+   "boyut": 7117048,
+   "sha256": "7c9167236d9b94d0176338780152c2a31569ae9b21443a1985f0ddff4493d639",
+   "sha256_eslesir": true,
+   "acilan": "x_coreutils-dbgsym_9.7-3_arm64",
+   "atlanan_uyeler": []
+  }
+ },
+ "programlar": {
+  "tmux": {
+   "elf": 1,
+   "build_id_eslesen": 1,
+   "eslesmeyen": [],
+   "dwz_ek_dosyasi": []
+  },
+  "htop": {
+   "elf": 1,
+   "build_id_eslesen": 1,
+   "eslesmeyen": [],
+   "dwz_ek_dosyasi": []
+  },
+  "tree": {
+   "elf": 1,
+   "build_id_eslesen": 1,
+   "eslesmeyen": [],
+   "dwz_ek_dosyasi": []
+  },
+  "zstd": {
+   "elf": 2,
+   "build_id_eslesen": 2,
+   "eslesmeyen": [],
+   "dwz_ek_dosyasi": [
+    ".dwz/aarch64-linux-gnu/zstd.debug"
+   ]
+  },
+  "sqlite3": {
+   "elf": 1,
+   "build_id_eslesen": 1,
+   "eslesmeyen": [],
+   "dwz_ek_dosyasi": []
+  },
+  "openssl": {
+   "elf": 1,
+   "build_id_eslesen": 1,
+   "eslesmeyen": [],
+   "dwz_ek_dosyasi": []
+  },
+  "redis-tools": {
+   "elf": 4,
+   "build_id_eslesen": 4,
+   "eslesmeyen": [],
+   "dwz_ek_dosyasi": [
+    ".dwz/aarch64-linux-gnu/redis-tools.debug"
+   ]
+  },
+  "coreutils": {
+   "elf": 106,
+   "build_id_eslesen": 106,
+   "eslesmeyen": [],
+   "dwz_ek_dosyasi": [
+    ".dwz/aarch64-linux-gnu/coreutils.debug"
+   ]
+  }
+ }
+}
