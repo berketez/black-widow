@@ -1,6 +1,6 @@
 # G8 karar günü: taslak (G6 pilotu bekleniyor)
 
-- **Tarih:** 2026-10-19 (taslak). G6 LLM pilotu bitince tamamlanacak.
+- **Tarih:** 2026-10-19 (taslak). 2026-10-21'de kural 1 okunmadan kapandı; sapma kaydı §4'te.
 - **Dayanak:** plan v2 §5 "G8 karar kuralları (ön kayıt)". Kurallar deneylerden önce yazılmıştı; eşikler düşürülmez (§7).
 - **Karar sahibi:** Berke. Bu belge kuralların mekanik okumasını ve plan v2.1 için önerileri verir.
 
@@ -39,3 +39,17 @@ Ek ölçüm (G8 satırı): MaxSMT ofset hatası doğrulandı (c9f3e29). tmux'ta 
    - **Program sınıfı tanımı** (§3 madde 4 ve §7 sınıf başına ölçüyor, mekanik tanım yok). Öneri: GT'siz, ikiliden hesaplanan "dizgi zenginliği", yani snake_case tanımlayıcı biçimli dizgi sayısının fonksiyon sayısına oranı. Eşik geliştirme setinden (8 program) ön kayıtla seçilir. htop ve tmux bu ölçüde iki ayrı sınıfa düşmeli (doğrulanacak). Boyut tabakası ikincil sınıf olarak raporlanır.
    - **"Kapsamlı" eşiği** (alıcı tip kümeleri için).
 5. **Bekleyen:** G6 pilot sonucu (kural 1), G7 kanıt tavanı, ÖL-3 (sürüyor), ÖL-7 (pilot sonrası), nagios derlemesi (gd onayı).
+
+## 4. Sapma kaydı (2026-10-21)
+
+- **Ön kayıtta ne vardı:** G8'de dört kural okunacaktı. Kural 1 (LLM pilotu) G8'de geçici, görülmemiş dilimle kesin okunacaktı (`2026-10-19_g6_pilot/pilot_protokolu.md` §11.3).
+- **Ne oldu:**
+  - G6 pilotu 2026-10-19'da, kuru koşu aşamasındayken, Berke'nin kararıyla durduruldu ("koşmasına gerek yok şu an"). Kuru koşu da yarıda kaldı (`pilot_protokolu.md` §8.1).
+  - Plan v2.1, 2026-10-21'de kural 1 okunmadan onaylandı. Onuncu Adam bunu sapma olarak işaretledi (`2026-10-21_v2_1/onuncu_adam.md` İ8).
+- **Etkisi:**
+  - Ana sonucun yönü "tip ve yapı + sabit kesinlikte kapsam" olarak seçildi. Kural 1 tetiklenseydi seçilecek dal da buydu (plan v2 §5, V:134).
+  - Kural 1 okunduğunda tetiklenmezse "gevşek isim oranı" ana sonuçlardan biri olarak geri gelebilir. Karar o okumayla verilir.
+- **Telafi (Berke, 2026-10-21):**
+  - G6 pilotu Faz 2 bitmeden, plan v2.2'de en geç G39'da koşar. Önce iki modelin kuru koşusu tamamlanır.
+  - Kesin okuma görülmemiş dilimle yapılır (plan v2.2'de G43, v2'de G34).
+  - Makalede sapma ve gerekçesi raporlanır.
