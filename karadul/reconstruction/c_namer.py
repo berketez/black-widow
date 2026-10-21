@@ -1809,40 +1809,48 @@ class CVariableNamer:
             self._strings,
         )
 
+        # Belirlenimcilik (G9 / OL-7): isci sonuclari bitis (as_completed)
+        # sirasiyla DEGIL, gonderim (func_list) sirasiyla birlestirilir. Bitis
+        # sirasi zamanlamaya bagli; anahtar sirasini (cakisma son ekleri) ve
+        # farkli iscilerden gelen esit guvenli adaylarin sirasini belirliyordu.
+        # Aday kumesi ve karar kurallari degismez; yalniz sira sabitlenir.
+        done_by_index: dict[int, dict[str, list[_NamingCandidate]]] = {}
+        errors_by_index: dict[int, list[str]] = {}
+        pool_error = ""
+
         with ProcessPoolExecutor(
             max_workers=num_workers,
             initializer=_init_heuristic_worker,
             initargs=initargs,
         ) as proc_pool:
             futs = {
-                proc_pool.submit(_run_heuristics_worker, fi): fi
-                for fi in func_list
+                proc_pool.submit(_run_heuristics_worker, fi): idx
+                for idx, fi in enumerate(func_list)
             }
             try:
                 for future in as_completed(futs, timeout=1200):
                     processed += 1
+                    idx = futs[future]
                     try:
                         err_name, worker_candidates = future.result(timeout=300)
                     except TimeoutError:
                         failed += 1
-                        errors.append(f"Heuristik timeout: {futs[future].name}")
+                        errors_by_index.setdefault(idx, []).append(
+                            f"Heuristik timeout: {func_list[idx].name}")
                         continue
                     except Exception as exc:
                         failed += 1
-                        errors.append(
-                            f"Heuristik worker hatasi ({futs[future].name}): {exc}"
+                        errors_by_index.setdefault(idx, []).append(
+                            f"Heuristik worker hatasi ({func_list[idx].name}): {exc}"
                         )
                         continue
 
                     if err_name:
                         failed += 1
-                        errors.append(f"Heuristik strateji hatasi: {err_name}")
+                        errors_by_index.setdefault(idx, []).append(
+                            f"Heuristik strateji hatasi: {err_name}")
 
-                    # Worker'dan gelen candidates'i ana dict'e merge et
-                    for key, cands in worker_candidates.items():
-                        if key not in self._candidates:
-                            self._candidates[key] = []
-                        self._candidates[key].extend(cands)
+                    done_by_index[idx] = worker_candidates
 
                     if processed % 500 == 0:
                         logger.info(
@@ -1850,12 +1858,23 @@ class CVariableNamer:
                             processed, total_funcs, 100.0 * processed / total_funcs,
                         )
             except TimeoutError:
-                errors.append(
+                pool_error = (
                     "Heuristik asamasi toplam timeout (1200s) asildi, "
                     "bazi fonksiyonlar islenmemis olabilir"
                 )
             except BrokenExecutor as exc:
-                errors.append(f"Heuristik ProcessPool crash: {exc}")
+                pool_error = f"Heuristik ProcessPool crash: {exc}"
+
+        # Worker'lardan gelen candidates'i ana dict'e GONDERIM sirasiyla merge et
+        for idx in sorted(done_by_index):
+            for key, cands in done_by_index[idx].items():
+                if key not in self._candidates:
+                    self._candidates[key] = []
+                self._candidates[key].extend(cands)
+        for idx in sorted(errors_by_index):
+            errors.extend(errors_by_index[idx])
+        if pool_error:
+            errors.append(pool_error)
 
         logger.info(
             "Heuristik stratejiler tamamlandi: %d basarili, %d hatali",
@@ -2989,8 +3008,10 @@ class CVariableNamer:
 
         # Combo bulunamazsa, en belirgin tek API'den isim cikar
         # Single API hint'leri confidence'a gore sirala
+        # Belirlenimcilik (G9 / OL-7): set sirasi karma tohumuna bagli; esit
+        # guvenli ipuclarinda kazanan ad sirasina gore secilir.
         api_hits: list[tuple[str, str, float]] = []
-        for api_name in callee_names:
+        for api_name in sorted(callee_names):
             if api_name in _SINGLE_API_HINTS:
                 prefix, conf = _SINGLE_API_HINTS[api_name]
                 api_hits.append((api_name, prefix, conf))
@@ -3020,11 +3041,13 @@ class CVariableNamer:
             "memcmp", "bzero", "puts", "fputs", "sscanf", "qsort", "tolower", "toupper",
             "strerror", "perror", "getenv", "setenv",
         }
+        # Esit uzunlukta ad sirasi ikinci anahtar (set sirasi karma tohumuna
+        # bagliydi; G9 / OL-7)
         known_callees = sorted(
             (n for n in callee_names if not _is_ghidra_auto_name(n)
              and not n.startswith("thunk_") and len(n) > 3
              and n.lstrip("_") not in _COMMON_LIBC),
-            key=len,
+            key=lambda n: (len(n), n),
         )
         if known_callees:
             # En spesifik (en uzun isimli) callee'yi dominant callee olarak sec
@@ -3125,7 +3148,8 @@ class CVariableNamer:
                     return
 
                 # Combo bulunamazsa: SINGLE_API_HINTS'ten en belirgin callee
-                for api_name in known_callees:
+                # (ad sirasiyla; set sirasi karma tohumuna bagliydi, G9 / OL-7)
+                for api_name in sorted(known_callees):
                     if api_name in _SINGLE_API_HINTS:
                         prefix, conf = _SINGLE_API_HINTS[api_name]
                         adjusted_conf = conf * (0.85 if known_ratio >= 0.8 else 0.7)
@@ -3280,7 +3304,10 @@ class CVariableNamer:
                 ), func_name=func_info.name)
 
         # local_XX degiskenleri icin de analiz yap
-        local_vars = set(_C_LOCAL_USAGE.findall(body))
+        # Belirlenimcilik (G9 / OL-7): dict.fromkeys = govdede ilk gorulme
+        # sirasi. set sirasi karma tohumuna bagliydi ve aday ekleme sirasini,
+        # dolayisiyla cakisma son eklerini belirliyordu (local / DAT_ / auto).
+        local_vars = dict.fromkeys(_C_LOCAL_USAGE.findall(body))
         for local_name in local_vars:
             if not _is_ghidra_auto_name(local_name):
                 continue
@@ -3307,7 +3334,7 @@ class CVariableNamer:
                 ), func_name=func_info.name)
 
         # DAT_xxx global degiskenleri
-        dat_vars = set(_C_DAT_USAGE.findall(body))
+        dat_vars = dict.fromkeys(_C_DAT_USAGE.findall(body))
         for dat_name in dat_vars:
             if not _is_ghidra_auto_name(dat_name):
                 continue
@@ -3324,7 +3351,7 @@ class CVariableNamer:
             ), func_name=func_info.name)
 
         # Ghidra auto-var'lar: uVar1, iVar2 vb.
-        auto_vars = set(_C_AUTOVAR_USAGE.findall(body))
+        auto_vars = dict.fromkeys(_C_AUTOVAR_USAGE.findall(body))
         for var_name in auto_vars:
             if not _GHIDRA_AUTO_VAR.match(var_name):
                 continue

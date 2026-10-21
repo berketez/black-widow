@@ -378,6 +378,33 @@
       "replace": "NAMING_PROVENANCE_FILE = \"naming_map.json\"",
       "expect": "killed",
       "desc": "G9 N0a: koken kaydi naming_map.json'un ustune yazilirsa urun ciktisi degisir; acik/kapali bayt karsilastirmasi yakalamali"
+    },
+    {
+      "id": "g9_det_merge_completion_order",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_c_namer_determinism.py::test_output_independent_of_completion_order",
+      "find": "        for idx in sorted(done_by_index):",
+      "replace": "        for idx in done_by_index:",
+      "expect": "killed",
+      "desc": "G9 OL-7 A: isci sonuclari yine bitis (as_completed) sirasiyla birlestirilir; son ekler ve esit guvenli kazanan zamanlamaya baglanir"
+    },
+    {
+      "id": "g9_det_dataflow_local_set",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_c_namer_determinism.py::test_output_independent_of_hash_seed",
+      "find": "        local_vars = dict.fromkeys(_C_LOCAL_USAGE.findall(body))",
+      "replace": "        local_vars = set(_C_LOCAL_USAGE.findall(body))",
+      "expect": "killed",
+      "desc": "G9 OL-7 B: dataflow local_XX dolasimi yine set sirasiyla; yerel son ekler PYTHONHASHSEED'e baglanir"
+    },
+    {
+      "id": "g9_det_api_call_set_order",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_c_namer_determinism.py::test_output_independent_of_hash_seed",
+      "find": "        for api_name in sorted(callee_names):",
+      "replace": "        for api_name in callee_names:",
+      "expect": "killed",
+      "desc": "G9 OL-7 B: esit guvenli tek API ipuclari yine set sirasiyla; api_call adayi PYTHONHASHSEED'e baglanir"
     }
   ]
 }
