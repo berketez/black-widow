@@ -333,6 +333,51 @@
       "replace": "return max(0, max_depth - 0)",
       "expect": "killed",
       "desc": "CS1 (TAM-SUITE delik): _max_nesting_depth fonksiyon-seviyesi ofseti -1 -> -0; her fonksiyonun nesting'i 1 sisirilir (tam deger hicbir testte pinlenmemis, gevsek >=3 esikleri kaciriyordu)"
+    },
+    {
+      "id": "g9_prov_evidence_truncated",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_c_namer_provenance.py::test_string_context_evidence_is_full_string",
+      "find": "            evidence=best_string,",
+      "replace": "            evidence=best_string[:60],",
+      "expect": "killed",
+      "desc": "G9 N0a: klasik string_context kaniti reason gibi 60 karakterde kesilirse G10 alt kanal tanimi tam dizgiyi kaybeder"
+    },
+    {
+      "id": "g9_prov_origin_boundary",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_c_namer_provenance.py::test_evidence_origin_ref_vs_body_literal",
+      "find": "    return \"string_ref\" if index < n_refs else \"body_literal\"",
+      "replace": "    return \"string_ref\" if index <= n_refs else \"body_literal\"",
+      "expect": "killed",
+      "desc": "G9 N0a: kanit kaynagi siniri < -> <=; ilk govde literali string tablosundan gelmis gibi yazilir"
+    },
+    {
+      "id": "g9_prov_runners_up_limit",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_c_namer_provenance.py::test_recorder_keeps_at_most_three_runners_up_in_order",
+      "find": "                for c in candidates[1:1 + NAMING_PROVENANCE_MAX_RUNNERS_UP]",
+      "replace": "                for c in candidates[1:NAMING_PROVENANCE_MAX_RUNNERS_UP]",
+      "expect": "killed",
+      "desc": "G9 N0a: kazananin ardindaki aday dilimi bir eksik (3 yerine 2 ikincil aday)"
+    },
+    {
+      "id": "g9_prov_below_min_not_counted",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_c_namer_provenance.py::test_eliminated_counts_by_strategy",
+      "find": "                if prov is not None:\n                    prov.count_eliminated(\n                        \"below_min_confidence\", key, candidates,\n                        count_candidates=True,\n                    )",
+      "replace": "                if prov is not None:\n                    pass",
+      "expect": "killed",
+      "desc": "G9 N0a: esik altinda elenen anahtarlar sayilmaz (strateji basina eleme sayilari bos kalir)"
+    },
+    {
+      "id": "g9_prov_file_overwrites_naming_map",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_c_namer_provenance.py::test_outputs_identical_with_and_without_provenance",
+      "find": "NAMING_PROVENANCE_FILE = \"naming_provenance.json\"",
+      "replace": "NAMING_PROVENANCE_FILE = \"naming_map.json\"",
+      "expect": "killed",
+      "desc": "G9 N0a: koken kaydi naming_map.json'un ustune yazilirsa urun ciktisi degisir; acik/kapali bayt karsilastirmasi yakalamali"
     }
   ]
 }

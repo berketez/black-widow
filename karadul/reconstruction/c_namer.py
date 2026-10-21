@@ -117,6 +117,20 @@ class _NamingCandidate:
     confidence: float
     strategy: str
     reason: str = ""
+    # Koken kaydi alanlari (naming_provenance.json). Ad secimine KATILMAZ;
+    # yalniz kayda gecer. Bos = strateji bu bilgiyi doldurmuyor (bugun
+    # yalniz string_context dolduruyor).
+    #   evidence:        adayi doguran tam kanit (string_context: KIRPILMAMIS
+    #                    kaynak dizgi; reason dizgiyi 60 karakterde keser)
+    #   code_path:       strateji icindeki kod yolu ("aggressive" | "classic")
+    #   rule:            o yolun hangi kurali (bkz. STRING_CONTEXT_RULES)
+    #   evidence_origin: kanit nereden okundu ("string_ref": fonksiyonun
+    #                    referans verdigi string tablosu; "body_literal":
+    #                    decompile govdesindeki "..." literali)
+    evidence: str = ""
+    code_path: str = ""
+    rule: str = ""
+    evidence_origin: str = ""
 
 
 @dataclass
@@ -138,6 +152,221 @@ class _StringRef:
     value: str
     address: str
     refs: list[str] = field(default_factory=list)  # fonksiyon adresleri
+
+
+# ---------------------------------------------------------------------------
+# Isim kokeni kaydi (naming_provenance.json)
+# ---------------------------------------------------------------------------
+# Plan v2.2 N0 (b): her yeniden adlandirmanin hangi stratejiden, hangi kod
+# yolundan ve hangi kanitla geldigi kayda gecer. Kayit YALNIZ okur ve sayar:
+# aday listelerini siralamaz ya da degistirmez, naming_map / used_new_names
+# gibi karar yapilarina dokunmaz. naming_map.json, isimlendirilmis .c
+# dosyalari ve CNamingResult kayit acik da kapali da bayt bayt aynidir.
+
+NAMING_PROVENANCE_FILE = "naming_provenance.json"
+NAMING_PROVENANCE_SCHEMA = "karadul.naming_provenance"
+NAMING_PROVENANCE_SCHEMA_VERSION = 1
+
+# Kazananin ardindaki adaylardan kayda gecen en cok sayi. Bir isimlendirme
+# esigi DEGIL: ad secimini etkilemez, yalniz kayit boyutunu sinirlar
+# (G9 is tanimi: "en cok 3 aday").
+NAMING_PROVENANCE_MAX_RUNNERS_UP = 3
+
+# string_context kanit etiketleri. Her string_context adayi tek bir kod
+# yolundan (code_path) ve o yolun tek bir kuralindan (rule) gelir.
+STRING_CONTEXT_CODE_PATHS = ("aggressive", "classic")
+STRING_CONTEXT_RULES: dict[str, tuple[str, ...]] = {
+    # _match_string_aggressive kurallari, denenme sirasiyla
+    "aggressive": (
+        "class_method", "func_paren", "src_path_pair", "src_path_single",
+        "steam_keyword", "url_hint", "error_verb", "objc_selector",
+        "assert_expr",
+    ),
+    # klasik anahtar kelime cikarimi (_extract_keywords_from_string)
+    "classic": ("keywords",),
+}
+STRING_CONTEXT_EVIDENCE_ORIGINS = ("string_ref", "body_literal")
+
+# Adaydan kayda tasinan kanit alanlari (bos olanlar yazilmaz).
+_PROVENANCE_EVIDENCE_FIELDS = ("evidence", "code_path", "rule", "evidence_origin")
+
+
+def _string_evidence_origin(index: int, n_refs: int) -> str:
+    """all_strings = strings + inline_strings icindeki indeksten kanit kaynagi.
+
+    Ilk n_refs oge fonksiyonun referans verdigi string tablosundan
+    (_string_refs_by_func), kalanlar decompile govdesindeki literallerden gelir.
+    """
+    if index < 0:
+        return ""
+    return "string_ref" if index < n_refs else "body_literal"
+
+
+class _ProvenanceRecorder:
+    """analyze_and_rename'in ad secim kararlarini kayda gecirir.
+
+    Yalniz okur ve sayar. Kayit sirasinda beklenmedik bir hata olursa kayit
+    bozuk sayilir (failed) ve dosya yazilmaz; ad secimi hicbir kosulda
+    etkilenmez (her metot kendi hatasini yutar).
+    """
+
+    # Secim dongusunden ad almadan cikis nedenleri (kod sirasiyla)
+    ELIMINATION_REASONS = (
+        "below_min_confidence",      # en iyi aday bile min_confidence altinda
+        "global_structural_filter",  # global ad + call_graph/callee_based/api_call
+        "pre_named",                 # ad zaten pre_names'ten verildi
+    )
+
+    def __init__(self, min_confidence: float) -> None:
+        self.min_confidence = min_confidence
+        self.global_records: dict[str, dict[str, Any]] = {}
+        self.per_function: dict[str, dict[str, dict[str, Any]]] = {}
+        # neden -> kapsam ("global" | "local") -> kazanan adayin stratejisi -> anahtar adedi
+        self.eliminated_keys: dict[str, dict[str, dict[str, int]]] = {
+            reason: {} for reason in self.ELIMINATION_REASONS
+        }
+        # esik altinda elenen anahtarlarin TUM adaylari: kapsam -> strateji -> aday adedi
+        self.below_min_candidates: dict[str, dict[str, int]] = {}
+        self.candidate_keys = 0
+        self.pre_names_given = 0
+        self.pre_names_applied = 0
+        self.failed = False
+
+    def _fail(self) -> None:
+        if not self.failed:
+            logger.debug("Isim kokeni kaydi bozuldu", exc_info=True)
+        self.failed = True
+
+    @staticmethod
+    def _scope(key: str) -> str:
+        # analyze_and_rename'deki ayrimla ayni: "fonksiyon::eski_ad" lokal
+        return "local" if "::" in key else "global"
+
+    @staticmethod
+    def _candidate_entry(cand: Any) -> dict[str, Any]:
+        entry: dict[str, Any] = {
+            "new_name": str(cand.new_name),
+            "strategy": str(cand.strategy),
+            "confidence": float(cand.confidence),
+        }
+        for fld in _PROVENANCE_EVIDENCE_FIELDS:
+            val = getattr(cand, fld, "")
+            if val:
+                entry[fld] = str(val)
+        return entry
+
+    def add_pre_name(
+        self, old_name: str, raw_name: Any, new_name: str,
+        strategy: str, confidence: float,
+    ) -> None:
+        """pre_names'ten (BinaryNameExtractor / kurtarma tohumu) gelen ad."""
+        try:
+            rec: dict[str, Any] = {
+                "key": old_name,
+                "source": "pre_names",
+                "new_name": new_name,
+                "strategy": strategy,
+                "confidence": float(confidence),
+                "reason": "",
+                "n_candidates": 0,
+                "runners_up": [],
+            }
+            raw = str(raw_name)
+            if raw != new_name:
+                rec["proposed_name"] = raw
+            self.global_records[old_name] = rec
+            self.pre_names_applied += 1
+        except Exception:
+            self._fail()
+
+    def add_rename(
+        self, key: str, func_name: str, old_name: str, new_name: str,
+        candidates: list[Any],
+    ) -> None:
+        """Aday listesinden secilen ad. candidates guvene gore sirali olmali."""
+        try:
+            best = candidates[0]
+            rec = self._candidate_entry(best)
+            rec["new_name"] = new_name
+            if str(best.new_name) != new_name:
+                # cakisma onleme son eki eklendi (foo -> foo_2)
+                rec["proposed_name"] = str(best.new_name)
+            rec["key"] = key
+            rec["source"] = "candidate"
+            rec["reason"] = str(getattr(best, "reason", ""))
+            rec["n_candidates"] = len(candidates)
+            rec["runners_up"] = [
+                self._candidate_entry(c)
+                for c in candidates[1:1 + NAMING_PROVENANCE_MAX_RUNNERS_UP]
+            ]
+            if func_name:
+                self.per_function.setdefault(func_name, {})[old_name] = rec
+            else:
+                self.global_records[old_name] = rec
+        except Exception:
+            self._fail()
+
+    def count_eliminated(
+        self, reason: str, key: str, candidates: list[Any],
+        count_candidates: bool = False,
+    ) -> None:
+        """Ad almadan cikan anahtari say (adlari degil, sayilari)."""
+        try:
+            scope = self._scope(key)
+            by_scope = self.eliminated_keys.setdefault(reason, {}).setdefault(scope, {})
+            strategy = str(candidates[0].strategy)
+            by_scope[strategy] = by_scope.get(strategy, 0) + 1
+            if count_candidates:
+                cand_scope = self.below_min_candidates.setdefault(scope, {})
+                for cand in candidates:
+                    s = str(cand.strategy)
+                    cand_scope[s] = cand_scope.get(s, 0) + 1
+        except Exception:
+            self._fail()
+
+    def attach_pre_name_alternatives(
+        self, all_candidates: dict[str, list[Any]],
+    ) -> None:
+        """pre_names kayitlarina o anahtarin sezgisel adaylarini ekle.
+
+        Secim dongusunden sonra cagrilir; dongu her aday listesini yerinde
+        siraladigi icin listeler guvene gore siralidir. Ad pre_names'ten
+        geldiginden tum sezgisel adaylar kazananin ardindadir.
+        """
+        try:
+            for old_name, rec in self.global_records.items():
+                if rec.get("source") != "pre_names":
+                    continue
+                cands = all_candidates.get(old_name) or []
+                rec["n_candidates"] = len(cands)
+                rec["runners_up"] = [
+                    self._candidate_entry(c)
+                    for c in cands[:NAMING_PROVENANCE_MAX_RUNNERS_UP]
+                ]
+        except Exception:
+            self._fail()
+
+    def to_dict(self) -> dict[str, Any]:
+        renamed_global = sum(
+            1 for r in self.global_records.values() if r.get("source") == "candidate"
+        )
+        return {
+            "schema": NAMING_PROVENANCE_SCHEMA,
+            "schema_version": NAMING_PROVENANCE_SCHEMA_VERSION,
+            "min_confidence": float(self.min_confidence),
+            "max_runners_up": NAMING_PROVENANCE_MAX_RUNNERS_UP,
+            "summary": {
+                "candidate_keys": self.candidate_keys,
+                "renamed_global": renamed_global,
+                "renamed_local": sum(len(m) for m in self.per_function.values()),
+                "pre_names_given": self.pre_names_given,
+                "pre_names_applied": self.pre_names_applied,
+            },
+            "global": self.global_records,
+            "per_function": self.per_function,
+            "eliminated_keys": self.eliminated_keys,
+            "below_min_confidence_candidates": self.below_min_candidates,
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -314,6 +543,20 @@ def _extract_name_from_string_aggressive(s: str) -> tuple[str, float] | None:
     Returns:
         (suggested_name, confidence) tuple veya None
     """
+    match = _match_string_aggressive(s)
+    if match is None:
+        return None
+    return (match[0], match[1])
+
+
+def _match_string_aggressive(s: str) -> tuple[str, float, str] | None:
+    """_extract_name_from_string_aggressive'in kurallari; eslesen kuralin adini da dondurur.
+
+    Kural adlari STRING_CONTEXT_RULES["aggressive"] icindedir (koken kaydi).
+
+    Returns:
+        (suggested_name, confidence, rule) tuple veya None
+    """
     if not s or len(s) < 3:
         return None
 
@@ -325,14 +568,14 @@ def _extract_name_from_string_aggressive(s: str) -> tuple[str, float] | None:
         method = class_method.group(2)
         name = _sanitize_c_name(f"{cls_name}_{method}")
         if name and name != "unnamed":
-            return (name, 0.85)
+            return (name, 0.85, "class_method")
 
     # 2. FuncName() pattern  -- log mesajlarinda
     func_paren = re.match(r"^(\w{3,})\s*\(\)", s)
     if func_paren:
         name = _sanitize_c_name(func_paren.group(1))
         if name and name != "unnamed":
-            return (name, 0.80)
+            return (name, 0.80, "func_paren")
 
     # 3. Source path'i: .../src/xxx/yyy/zzz.cpp
     # Buildbot path'lerini de yakalayip son anlamli parcalarini cikar
@@ -347,11 +590,11 @@ def _extract_name_from_string_aggressive(s: str) -> tuple[str, float] | None:
             filename = parts[-1]
             name = _sanitize_c_name(f"{module}_{filename}")
             if name and name != "unnamed" and len(name) > 4:
-                return (name, 0.75)
+                return (name, 0.75, "src_path_pair")
         elif len(parts) == 1:
             name = _sanitize_c_name(parts[0])
             if name and name != "unnamed" and len(name) > 3:
-                return (name, 0.65)
+                return (name, 0.65, "src_path_single")
 
     # 4. Steam/Valve keyword'leri
     for keyword, hint in _STEAM_KEYWORDS.items():
@@ -369,7 +612,7 @@ def _extract_name_from_string_aggressive(s: str) -> tuple[str, float] | None:
             else:
                 name = hint
             if name and name != "unnamed":
-                return (name, 0.65)
+                return (name, 0.65, "steam_keyword")
 
     # 5. URL path component
     for url_re, prefix in _URL_HINTS:
@@ -378,7 +621,7 @@ def _extract_name_from_string_aggressive(s: str) -> tuple[str, float] | None:
             component = m.group(1) if m.lastindex else prefix
             name = _sanitize_c_name(f"{prefix}_{component}" if component != prefix else prefix)
             if name and name != "unnamed":
-                return (name, 0.60)
+                return (name, 0.60, "url_hint")
 
     # 6. Error message verb extraction: "Failed to initialize XXX"
     for err_re, _ in _ERROR_HINTS:
@@ -389,21 +632,21 @@ def _extract_name_from_string_aggressive(s: str) -> tuple[str, float] | None:
                 # "Failed to connect" -> handle_connect_error
                 name = _sanitize_c_name(f"handle_{verb}")
                 if name and name != "unnamed":
-                    return (name, 0.55)
+                    return (name, 0.55, "error_verb")
 
     # 7. ObjC selector pattern: "handleGetURLEvent:withReplyEvent:"
     objc_sel = re.match(r"^([a-z]\w{3,}):(?:\w+:)*$", s)
     if objc_sel:
         name = _sanitize_c_name(objc_sel.group(1))
         if name and name != "unnamed":
-            return (name, 0.70)
+            return (name, 0.70, "objc_selector")
 
     # 8. Assertion expression: "num > 0", "ptr != NULL"
     assert_match = re.match(r"^(\w+)\s*[!><=]+\s*\w+$", s)
     if assert_match:
         var_name = assert_match.group(1)
         if len(var_name) >= 3:
-            return (_sanitize_c_name(f"assert_{var_name}"), 0.45)
+            return (_sanitize_c_name(f"assert_{var_name}"), 0.45, "assert_expr")
 
     return None
 
@@ -1398,6 +1641,9 @@ class CVariableNamer:
     Args:
         config: Merkezi konfigurasyon (Config).
         min_confidence: Bu esik altindaki oneriler uygulanmaz. Varsayilan 0.15.
+        record_provenance: Isim kokeni kaydini (naming_provenance.json)
+            naming_map.json'un yanina yaz. Ad secimini etkilemez; kapatmak
+            yalniz bu dosyayi uretmemek demektir. Varsayilan acik.
     """
 
     # v1.5.5: Global prefix'ler -- bu prefix'li isimler TUM dosyalarda ayni
@@ -1405,9 +1651,15 @@ class CVariableNamer:
     # (param_N, local_XX, iVar1 vb.) ise fonksiyon bazli scope'lanir.
     _GLOBAL_PREFIXES = ("DAT_", "FUN_", "PTR_", "switchD_", "caseD_", "thunk_")
 
-    def __init__(self, config: Config, min_confidence: float = 0.15) -> None:
+    def __init__(
+        self,
+        config: Config,
+        min_confidence: float = 0.15,
+        record_provenance: bool = True,
+    ) -> None:
         self._config = config
         self._min_confidence = min_confidence
+        self._record_provenance = record_provenance
 
         # Dahili state -- analyze_and_rename sirasinda doldurulan
         self._functions: dict[str, _FunctionInfo] = {}     # address -> info
@@ -1632,6 +1884,14 @@ class CVariableNamer:
         low_conf = 0
         used_new_names: set[str] = set()  # Cakisma onleme
 
+        # Isim kokeni kaydi (plan v2.2 N0 b). Yalniz okur ve sayar; asagidaki
+        # kararlarin hicbirine girdi degildir.
+        prov: _ProvenanceRecorder | None = None
+        if getattr(self, "_record_provenance", True):
+            prov = _ProvenanceRecorder(self._min_confidence)
+            prov.candidate_keys = sum(1 for c in self._candidates.values() if c)
+            prov.pre_names_given = len(pre_names) if pre_names else 0
+
         # Pre-names: BinaryNameExtractor'dan gelen yuksek guvenirlikli isimler
         if pre_names:
             for old_name, new_name in pre_names.items():
@@ -1649,6 +1909,11 @@ class CVariableNamer:
                     confidence_map[old_name] = 0.95
                     strategy_map[old_name] = "binary_extract"
                     high_conf += 1
+                    if prov is not None:
+                        prov.add_pre_name(
+                            old_name, new_name, sanitized,
+                            strategy_map[old_name], confidence_map[old_name],
+                        )
             logger.info("Pre-names: %d isim binary extractor'dan eklendi", len(pre_names))
 
         # v1.5.5: Scope-aware naming map -- fonksiyon-lokal degiskenleri
@@ -1666,6 +1931,11 @@ class CVariableNamer:
             best = candidates[0]
 
             if best.confidence < self._min_confidence:
+                if prov is not None:
+                    prov.count_eliminated(
+                        "below_min_confidence", key, candidates,
+                        count_candidates=True,
+                    )
                 continue
 
             if "::" in key:
@@ -1686,10 +1956,14 @@ class CVariableNamer:
             if not func_name and best.strategy in (
                 "call_graph", "callee_based", "api_call",
             ):
+                if prov is not None:
+                    prov.count_eliminated("global_structural_filter", key, candidates)
                 continue
 
             # Extractor zaten isimlendirdiyse atla (global map)
             if old_name in naming_map:
+                if prov is not None:
+                    prov.count_eliminated("pre_named", key, candidates)
                 continue
 
             # Cakisma kontrolu: ayni yeni isim birden fazla eski isme verilmesin
@@ -1723,6 +1997,12 @@ class CVariableNamer:
             else:
                 # Global rename (DAT_, FUN_ vb.)
                 global_map[old_name] = new_name
+
+            if prov is not None:
+                prov.add_rename(key, func_name, old_name, new_name, candidates)
+
+        if prov is not None:
+            prov.attach_pre_name_alternatives(self._candidates)
 
         # naming_map = global_map + pre_names (flat map, backward compat)
         naming_map.update(global_map)
@@ -1794,6 +2074,33 @@ class CVariableNamer:
             )
         except OSError as e:
             logger.debug("naming_map.json yazilamadi (%s): %s", map_file, e, exc_info=True)
+
+        # Isim kokeni kaydini naming_map.json'un yanina yaz. naming_map.json
+        # gibi: yazilamazsa sessizce devam edilir (debug log). Kayit ad
+        # secimini hicbir kosulda bozmamali; bu yuzden JSON uretim hatalari
+        # da yutulur. ensure_ascii: ham kanit dizgilerinde tek basina kalmis
+        # surrogate olsa bile UTF-8 kodlama hatasi cikmaz.
+        if prov is not None:
+            prov_file = output_dir / NAMING_PROVENANCE_FILE
+            if prov.failed:
+                logger.warning(
+                    "%s yazilmadi: kayit sirasinda hata (ad secimi etkilenmedi)",
+                    NAMING_PROVENANCE_FILE,
+                )
+            else:
+                try:
+                    prov_file.write_text(
+                        json.dumps(
+                            prov.to_dict(), indent=1, ensure_ascii=True,
+                            sort_keys=True,
+                        ),
+                        encoding="utf-8",
+                    )
+                except (OSError, TypeError, ValueError) as e:
+                    logger.debug(
+                        "%s yazilamadi (%s): %s", NAMING_PROVENANCE_FILE,
+                        prov_file, e, exc_info=True,
+                    )
 
         total_renamed = len(naming_map) + total_local
         logger.info(
@@ -2543,12 +2850,17 @@ class CVariableNamer:
 
         # --- Asama 1: Agresif string pattern matching ---
         best_aggressive: tuple[str, float, str] | None = None
-        for s in all_strings:
-            result = _extract_name_from_string_aggressive(s)
+        # Koken kaydi: kazananin kurali ve all_strings indeksi (secime katilmaz)
+        best_aggressive_rule = ""
+        best_aggressive_idx = -1
+        for s_idx, s in enumerate(all_strings):
+            result = _match_string_aggressive(s)
             if result:
-                name, conf = result
+                name, conf, rule = result
                 if best_aggressive is None or conf > best_aggressive[1]:
                     best_aggressive = (name, conf, s)
+                    best_aggressive_rule = rule
+                    best_aggressive_idx = s_idx
 
         if best_aggressive:
             name, conf, src_string = best_aggressive
@@ -2558,6 +2870,11 @@ class CVariableNamer:
                 confidence=conf,
                 strategy="string_context",
                 reason=f'Aggressive: "{src_string[:60]}"',
+                evidence=src_string,
+                code_path="aggressive",
+                rule=best_aggressive_rule,
+                evidence_origin=_string_evidence_origin(
+                    best_aggressive_idx, len(strings)),
             ), func_name=func_info.name)
             # Agresif match bulduysa klasik'e de devam et (daha iyi isim olabilir)
             # Ama confidence zaten yuksekse atla
@@ -2565,9 +2882,11 @@ class CVariableNamer:
                 return
 
         # --- Asama 2: Klasik keyword extraction ---
-        scored: list[tuple[float, str, list[str]]] = []
+        # 4. oge all_strings indeksi: yalniz koken kaydi icin (siralama
+        # anahtari yalniz skor; esitlikte ilk gorulen kazanir, eskisi gibi).
+        scored: list[tuple[float, str, list[str], int]] = []
 
-        for s in all_strings:
+        for s_idx, s in enumerate(all_strings):
             keywords = _extract_keywords_from_string(s)
             if not keywords:
                 continue
@@ -2578,13 +2897,13 @@ class CVariableNamer:
             # Cok uzun string'leri cezalandir
             if len(s) > 100:
                 score *= 0.5
-            scored.append((score, s, keywords))
+            scored.append((score, s, keywords, s_idx))
 
         if not scored:
             return
 
         scored.sort(key=lambda x: x[0], reverse=True)
-        best_score, best_string, best_keywords = scored[0]
+        best_score, best_string, best_keywords, best_idx = scored[0]
 
         # Isim olustur: kelimeleri birlestir
         new_name = "_".join(best_keywords[:3])
@@ -2602,6 +2921,10 @@ class CVariableNamer:
             confidence=confidence,
             strategy="string_context",
             reason=f'String: "{best_string[:60]}"',
+            evidence=best_string,
+            code_path="classic",
+            rule="keywords",
+            evidence_origin=_string_evidence_origin(best_idx, len(strings)),
         ), func_name=func_info.name)
 
     # ------------------------------------------------------------------
