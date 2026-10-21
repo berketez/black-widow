@@ -1,0 +1,1238 @@
+{
+ "comparisons": {
+  "a_vs_b": {
+   "htop": {
+    "cfg_cache_same": [
+     true,
+     true,
+     true
+    ],
+    "duration_s": [
+     201.0,
+     190.9
+    ],
+    "inputs": {
+     "decompiled": {
+      "deobfuscated/decompiled": {
+       "differ": 0,
+       "n_x": 790,
+       "n_y": 790,
+       "only_x": 0,
+       "only_y": 0
+      },
+      "static/ghidra_output/decompiled": {
+       "differ": 0,
+       "n_x": 790,
+       "n_y": 790,
+       "only_x": 0,
+       "only_y": 0
+      }
+     },
+     "ghidra_json": {
+      "ghidra_call_graph.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_functions.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_strings.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_xrefs.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      }
+     }
+    },
+    "iters": {
+     "src_iter1": {
+      "global_DAT_differ": 0,
+      "global_FUN_differ": 2,
+      "global_FUN_differ_suffix_only": 2,
+      "local_differ": 1117,
+      "local_differ_suffix_only": 1117
+     }
+    },
+    "naming": {
+     "global": {
+      "DAT_": {
+       "differ": 0,
+       "differ_suffix_only": 0,
+       "n_x": 104,
+       "n_y": 104,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 104,
+       "suffix_groups": {
+        "base_groups": 0,
+        "different_name_set": 0,
+        "same_name_set": 0
+       }
+      },
+      "FUN_": {
+       "differ": 0,
+       "differ_suffix_only": 0,
+       "n_x": 101,
+       "n_y": 101,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 101,
+       "suffix_groups": {
+        "base_groups": 0,
+        "different_name_set": 0,
+        "same_name_set": 0
+       }
+      },
+      "diger": {
+       "differ": 0,
+       "differ_suffix_only": 0,
+       "n_x": 0,
+       "n_y": 0,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 0,
+       "suffix_groups": {
+        "base_groups": 0,
+        "different_name_set": 0,
+        "same_name_set": 0
+       }
+      }
+     },
+     "local": {
+      "differ": 1127,
+      "differ_suffix_only": 1127,
+      "functions_with_local_diff": 471,
+      "n_x": 2519,
+      "n_y": 2519,
+      "only_x": 0,
+      "only_y": 0,
+      "same": 1392,
+      "suffix_groups": {
+       "base_groups": 30,
+       "different_name_set": 0,
+       "same_name_set": 30
+      }
+     }
+    },
+    "naming_by_strategy": {
+     "delta_y_minus_x": {},
+     "equal": true,
+     "x": {
+      "api_param": 97,
+      "body_param": 668,
+      "dataflow": 219,
+      "local_var": 1562,
+      "passthrough": 11,
+      "string_context": 101,
+      "type_based": 62
+     },
+     "y": {
+      "api_param": 97,
+      "body_param": 668,
+      "dataflow": 219,
+      "local_var": 1562,
+      "passthrough": 11,
+      "string_context": 101,
+      "type_based": 62
+     }
+    },
+    "naming_map_src_bytes_equal": false,
+    "provenance": {
+     "global": {
+      "differ_by_category": {},
+      "differ_by_category_strategy": {},
+      "differ_with_different_evidence": 0,
+      "same_name_runners_up_differ": 1,
+      "tie_winner_vs_rival_strategy_x": {},
+      "winner_strategy_pairs_when_strategy_differs": {}
+     },
+     "load_x": {
+      "global_FUN_top_tie_pairs": {},
+      "global_suffixed": {
+       "FUN_": 12
+      },
+      "global_top_tie": {
+       "DAT_": 58
+      },
+      "local_suffixed": 2419,
+      "local_top_tie": 6,
+      "summary": {
+       "candidate_keys": 3097,
+       "pre_names_applied": 0,
+       "pre_names_given": 0,
+       "renamed_global": 205,
+       "renamed_local": 2519
+      }
+     },
+     "load_y": {
+      "global_FUN_top_tie_pairs": {},
+      "global_suffixed": {
+       "FUN_": 12
+      },
+      "global_top_tie": {
+       "DAT_": 58
+      },
+      "local_suffixed": 2419,
+      "local_top_tie": 6,
+      "summary": {
+       "candidate_keys": 3097,
+       "pre_names_applied": 0,
+       "pre_names_given": 0,
+       "renamed_global": 205,
+       "renamed_local": 2519
+      }
+     },
+     "local": {
+      "differ_by_category": {
+       "yerel:son_ek_sirasi": 1127
+      },
+      "differ_by_category_strategy": {
+       "yerel:son_ek_sirasi:api_param": 19,
+       "yerel:son_ek_sirasi:body_param": 393,
+       "yerel:son_ek_sirasi:dataflow": 30,
+       "yerel:son_ek_sirasi:local_var": 661,
+       "yerel:son_ek_sirasi:type_based": 24
+      },
+      "differ_with_different_evidence": 0,
+      "same_name_runners_up_differ": 0,
+      "tie_winner_vs_rival_strategy_x": {},
+      "winner_strategy_pairs_when_strategy_differs": {}
+     }
+    },
+    "score": {
+     "pred_changed": 0,
+     "pred_changed_same_status": 0,
+     "rows_common": 597,
+     "rows_x": 597,
+     "rows_y": 597,
+     "status_changed": 0,
+     "status_x": {
+      "unnamed": 496,
+      "wrong": 101
+     },
+     "status_y": {
+      "unnamed": 496,
+      "wrong": 101
+     },
+     "summary_x": {
+      "f1": 0.0,
+      "lenient_tp": 7,
+      "named_by_karadul": 101,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tp": 0,
+      "unnamed": 496,
+      "wrong": 101
+     },
+     "summary_y": {
+      "f1": 0.0,
+      "lenient_tp": 7,
+      "named_by_karadul": 101,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tp": 0,
+      "unnamed": 496,
+      "wrong": 101
+     },
+     "transitions": {}
+    },
+    "status": [
+     "ok",
+     "ok"
+    ],
+    "x": "ol7-a-9a36142",
+    "y": "ol7-b-9a36142"
+   },
+   "tmux": {
+    "cfg_cache_same": [
+     true,
+     true,
+     true
+    ],
+    "duration_s": [
+     912.6,
+     910.4
+    ],
+    "inputs": {
+     "decompiled": {
+      "deobfuscated/decompiled": {
+       "differ": 0,
+       "n_x": 2821,
+       "n_y": 2821,
+       "only_x": 0,
+       "only_y": 0
+      },
+      "static/ghidra_output/decompiled": {
+       "differ": 0,
+       "n_x": 2821,
+       "n_y": 2821,
+       "only_x": 0,
+       "only_y": 0
+      }
+     },
+     "ghidra_json": {
+      "ghidra_call_graph.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_functions.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_strings.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_xrefs.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      }
+     }
+    },
+    "iters": {
+     "src_iter1": {
+      "global_DAT_differ": 0,
+      "global_FUN_differ": 52,
+      "global_FUN_differ_suffix_only": 52,
+      "local_differ": 5456,
+      "local_differ_suffix_only": 5456
+     }
+    },
+    "naming": {
+     "global": {
+      "DAT_": {
+       "differ": 0,
+       "differ_suffix_only": 0,
+       "n_x": 269,
+       "n_y": 269,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 269,
+       "suffix_groups": {
+        "base_groups": 0,
+        "different_name_set": 0,
+        "same_name_set": 0
+       }
+      },
+      "FUN_": {
+       "differ": 46,
+       "differ_suffix_only": 46,
+       "n_x": 875,
+       "n_y": 875,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 829,
+       "suffix_groups": {
+        "base_groups": 21,
+        "different_name_set": 0,
+        "same_name_set": 21
+       }
+      },
+      "diger": {
+       "differ": 0,
+       "differ_suffix_only": 0,
+       "n_x": 0,
+       "n_y": 0,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 0,
+       "suffix_groups": {
+        "base_groups": 0,
+        "different_name_set": 0,
+        "same_name_set": 0
+       }
+      }
+     },
+     "local": {
+      "differ": 5593,
+      "differ_suffix_only": 5593,
+      "functions_with_local_diff": 1843,
+      "n_x": 10977,
+      "n_y": 10977,
+      "only_x": 0,
+      "only_y": 0,
+      "same": 5384,
+      "suffix_groups": {
+       "base_groups": 43,
+       "different_name_set": 0,
+       "same_name_set": 43
+      }
+     }
+    },
+    "naming_by_strategy": {
+     "delta_y_minus_x": {},
+     "equal": true,
+     "x": {
+      "api_param": 381,
+      "api_param_reverse": 12,
+      "binary_extract": 1,
+      "body_param": 2704,
+      "dataflow": 742,
+      "local_var": 7230,
+      "passthrough": 97,
+      "string_context": 863,
+      "type_based": 80
+     },
+     "y": {
+      "api_param": 381,
+      "api_param_reverse": 12,
+      "binary_extract": 1,
+      "body_param": 2704,
+      "dataflow": 742,
+      "local_var": 7230,
+      "passthrough": 97,
+      "string_context": 863,
+      "type_based": 80
+     }
+    },
+    "naming_map_src_bytes_equal": false,
+    "provenance": {
+     "global": {
+      "differ_by_category": {
+       "FUN_:son_ek_sirasi": 46
+      },
+      "differ_by_category_strategy": {
+       "FUN_:son_ek_sirasi:string_context": 46
+      },
+      "differ_with_different_evidence": 0,
+      "same_name_runners_up_differ": 28,
+      "tie_winner_vs_rival_strategy_x": {},
+      "winner_strategy_pairs_when_strategy_differs": {}
+     },
+     "load_x": {
+      "global_FUN_top_tie_pairs": {
+       "api_param_reverse|string_context": 1,
+       "string_context|api_call": 4
+      },
+      "global_suffixed": {
+       "FUN_": 239
+      },
+      "global_top_tie": {
+       "DAT_": 108,
+       "FUN_": 5
+      },
+      "local_suffixed": 10844,
+      "local_top_tie": 26,
+      "summary": {
+       "candidate_keys": 13385,
+       "pre_names_applied": 1,
+       "pre_names_given": 1,
+       "renamed_global": 1143,
+       "renamed_local": 10977
+      }
+     },
+     "load_y": {
+      "global_FUN_top_tie_pairs": {
+       "api_param_reverse|string_context": 1,
+       "string_context|api_call": 4
+      },
+      "global_suffixed": {
+       "FUN_": 239
+      },
+      "global_top_tie": {
+       "DAT_": 108,
+       "FUN_": 5
+      },
+      "local_suffixed": 10844,
+      "local_top_tie": 26,
+      "summary": {
+       "candidate_keys": 13385,
+       "pre_names_applied": 1,
+       "pre_names_given": 1,
+       "renamed_global": 1143,
+       "renamed_local": 10977
+      }
+     },
+     "local": {
+      "differ_by_category": {
+       "yerel:son_ek_sirasi": 5593
+      },
+      "differ_by_category_strategy": {
+       "yerel:son_ek_sirasi:api_param": 95,
+       "yerel:son_ek_sirasi:body_param": 1667,
+       "yerel:son_ek_sirasi:dataflow": 177,
+       "yerel:son_ek_sirasi:local_var": 3604,
+       "yerel:son_ek_sirasi:type_based": 50
+      },
+      "differ_with_different_evidence": 0,
+      "same_name_runners_up_differ": 0,
+      "tie_winner_vs_rival_strategy_x": {},
+      "winner_strategy_pairs_when_strategy_differs": {}
+     }
+    },
+    "score": {
+     "pred_changed": 44,
+     "pred_changed_same_status": 44,
+     "rows_common": 2561,
+     "rows_x": 2561,
+     "rows_y": 2561,
+     "status_changed": 0,
+     "status_x": {
+      "tp": 105,
+      "unnamed": 1690,
+      "wrong": 766
+     },
+     "status_y": {
+      "tp": 105,
+      "unnamed": 1690,
+      "wrong": 766
+     },
+     "summary_x": {
+      "f1": 0.0612,
+      "lenient_tp": 321,
+      "named_by_karadul": 871,
+      "precision": 0.1206,
+      "recall": 0.041,
+      "tp": 105,
+      "unnamed": 1690,
+      "wrong": 766
+     },
+     "summary_y": {
+      "f1": 0.0612,
+      "lenient_tp": 321,
+      "named_by_karadul": 871,
+      "precision": 0.1206,
+      "recall": 0.041,
+      "tp": 105,
+      "unnamed": 1690,
+      "wrong": 766
+     },
+     "transitions": {}
+    },
+    "status": [
+     "ok",
+     "ok"
+    ],
+    "x": "ol7-a-9a36142",
+    "y": "ol7-b-9a36142"
+   }
+  },
+  "a_vs_taban": {
+   "htop": {
+    "cfg_cache_same": [
+     true,
+     true,
+     true
+    ],
+    "duration_s": [
+     201.0,
+     193.3
+    ],
+    "inputs": {
+     "decompiled": {
+      "deobfuscated/decompiled": {
+       "differ": 0,
+       "n_x": 790,
+       "n_y": 790,
+       "only_x": 0,
+       "only_y": 0
+      },
+      "static/ghidra_output/decompiled": {
+       "differ": 0,
+       "n_x": 790,
+       "n_y": 790,
+       "only_x": 0,
+       "only_y": 0
+      }
+     },
+     "ghidra_json": {
+      "ghidra_call_graph.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_functions.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_strings.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_xrefs.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      }
+     }
+    },
+    "iters": {
+     "src_iter1": {
+      "global_DAT_differ": 0,
+      "global_FUN_differ": 2,
+      "global_FUN_differ_suffix_only": 2,
+      "local_differ": 1125,
+      "local_differ_suffix_only": 1125
+     }
+    },
+    "naming": {
+     "global": {
+      "DAT_": {
+       "differ": 0,
+       "differ_suffix_only": 0,
+       "n_x": 104,
+       "n_y": 104,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 104,
+       "suffix_groups": {
+        "base_groups": 0,
+        "different_name_set": 0,
+        "same_name_set": 0
+       }
+      },
+      "FUN_": {
+       "differ": 4,
+       "differ_suffix_only": 4,
+       "n_x": 101,
+       "n_y": 101,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 97,
+       "suffix_groups": {
+        "base_groups": 2,
+        "different_name_set": 0,
+        "same_name_set": 2
+       }
+      },
+      "diger": {
+       "differ": 0,
+       "differ_suffix_only": 0,
+       "n_x": 0,
+       "n_y": 0,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 0,
+       "suffix_groups": {
+        "base_groups": 0,
+        "different_name_set": 0,
+        "same_name_set": 0
+       }
+      }
+     },
+     "local": {
+      "differ": 1116,
+      "differ_suffix_only": 1116,
+      "functions_with_local_diff": 468,
+      "n_x": 2519,
+      "n_y": 2519,
+      "only_x": 0,
+      "only_y": 0,
+      "same": 1403,
+      "suffix_groups": {
+       "base_groups": 30,
+       "different_name_set": 0,
+       "same_name_set": 30
+      }
+     }
+    },
+    "naming_by_strategy": {
+     "delta_y_minus_x": {},
+     "equal": true,
+     "x": {
+      "api_param": 97,
+      "body_param": 668,
+      "dataflow": 219,
+      "local_var": 1562,
+      "passthrough": 11,
+      "string_context": 101,
+      "type_based": 62
+     },
+     "y": {
+      "api_param": 97,
+      "body_param": 668,
+      "dataflow": 219,
+      "local_var": 1562,
+      "passthrough": 11,
+      "string_context": 101,
+      "type_based": 62
+     }
+    },
+    "naming_map_src_bytes_equal": false,
+    "provenance_x_only_load": {
+     "global_FUN_top_tie_pairs": {},
+     "global_suffixed": {
+      "FUN_": 12
+     },
+     "global_top_tie": {
+      "DAT_": 58
+     },
+     "local_suffixed": 2419,
+     "local_top_tie": 6,
+     "summary": {
+      "candidate_keys": 3097,
+      "pre_names_applied": 0,
+      "pre_names_given": 0,
+      "renamed_global": 205,
+      "renamed_local": 2519
+     }
+    },
+    "score": {
+     "pred_changed": 4,
+     "pred_changed_same_status": 4,
+     "rows_common": 597,
+     "rows_x": 597,
+     "rows_y": 597,
+     "status_changed": 0,
+     "status_x": {
+      "unnamed": 496,
+      "wrong": 101
+     },
+     "status_y": {
+      "unnamed": 496,
+      "wrong": 101
+     },
+     "summary_x": {
+      "f1": 0.0,
+      "lenient_tp": 7,
+      "named_by_karadul": 101,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tp": 0,
+      "unnamed": 496,
+      "wrong": 101
+     },
+     "summary_y": {
+      "f1": 0.0,
+      "lenient_tp": 7,
+      "named_by_karadul": 101,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tp": 0,
+      "unnamed": 496,
+      "wrong": 101
+     },
+     "transitions": {}
+    },
+    "status": [
+     "ok",
+     "ok"
+    ],
+    "x": "ol7-a-9a36142",
+    "y": "taban-v2-62ad154"
+   },
+   "tmux": {
+    "cfg_cache_same": [
+     true,
+     true,
+     true
+    ],
+    "duration_s": [
+     912.6,
+     923.7
+    ],
+    "inputs": {
+     "decompiled": {
+      "deobfuscated/decompiled": {
+       "differ": 0,
+       "n_x": 2821,
+       "n_y": 2821,
+       "only_x": 0,
+       "only_y": 0
+      },
+      "static/ghidra_output/decompiled": {
+       "differ": 0,
+       "n_x": 2821,
+       "n_y": 2821,
+       "only_x": 0,
+       "only_y": 0
+      }
+     },
+     "ghidra_json": {
+      "ghidra_call_graph.json": {
+       "bytes_equal": false,
+       "content_equal": false,
+       "differing_leaves_by_top_key": {
+        "nodes:liste_sirasi": 1
+       }
+      },
+      "ghidra_functions.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_strings.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_xrefs.json": {
+       "bytes_equal": false,
+       "content_equal": false,
+       "differing_leaves_by_top_key": {
+        "function_xrefs:liste_sirasi": 1
+       }
+      }
+     }
+    },
+    "iters": {
+     "src_iter1": {
+      "global_DAT_differ": 0,
+      "global_FUN_differ": 49,
+      "global_FUN_differ_suffix_only": 49,
+      "local_differ": 5284,
+      "local_differ_suffix_only": 5284
+     }
+    },
+    "naming": {
+     "global": {
+      "DAT_": {
+       "differ": 0,
+       "differ_suffix_only": 0,
+       "n_x": 269,
+       "n_y": 269,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 269,
+       "suffix_groups": {
+        "base_groups": 0,
+        "different_name_set": 0,
+        "same_name_set": 0
+       }
+      },
+      "FUN_": {
+       "differ": 41,
+       "differ_suffix_only": 41,
+       "n_x": 875,
+       "n_y": 875,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 834,
+       "suffix_groups": {
+        "base_groups": 19,
+        "different_name_set": 0,
+        "same_name_set": 19
+       }
+      },
+      "diger": {
+       "differ": 0,
+       "differ_suffix_only": 0,
+       "n_x": 0,
+       "n_y": 0,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 0,
+       "suffix_groups": {
+        "base_groups": 0,
+        "different_name_set": 0,
+        "same_name_set": 0
+       }
+      }
+     },
+     "local": {
+      "differ": 5741,
+      "differ_suffix_only": 5741,
+      "functions_with_local_diff": 1900,
+      "n_x": 10977,
+      "n_y": 10977,
+      "only_x": 0,
+      "only_y": 0,
+      "same": 5236,
+      "suffix_groups": {
+       "base_groups": 42,
+       "different_name_set": 0,
+       "same_name_set": 42
+      }
+     }
+    },
+    "naming_by_strategy": {
+     "delta_y_minus_x": {},
+     "equal": true,
+     "x": {
+      "api_param": 381,
+      "api_param_reverse": 12,
+      "binary_extract": 1,
+      "body_param": 2704,
+      "dataflow": 742,
+      "local_var": 7230,
+      "passthrough": 97,
+      "string_context": 863,
+      "type_based": 80
+     },
+     "y": {
+      "api_param": 381,
+      "api_param_reverse": 12,
+      "binary_extract": 1,
+      "body_param": 2704,
+      "dataflow": 742,
+      "local_var": 7230,
+      "passthrough": 97,
+      "string_context": 863,
+      "type_based": 80
+     }
+    },
+    "naming_map_src_bytes_equal": false,
+    "provenance_x_only_load": {
+     "global_FUN_top_tie_pairs": {
+      "api_param_reverse|string_context": 1,
+      "string_context|api_call": 4
+     },
+     "global_suffixed": {
+      "FUN_": 239
+     },
+     "global_top_tie": {
+      "DAT_": 108,
+      "FUN_": 5
+     },
+     "local_suffixed": 10844,
+     "local_top_tie": 26,
+     "summary": {
+      "candidate_keys": 13385,
+      "pre_names_applied": 1,
+      "pre_names_given": 1,
+      "renamed_global": 1143,
+      "renamed_local": 10977
+     }
+    },
+    "score": {
+     "pred_changed": 39,
+     "pred_changed_same_status": 39,
+     "rows_common": 2561,
+     "rows_x": 2561,
+     "rows_y": 2561,
+     "status_changed": 0,
+     "status_x": {
+      "tp": 105,
+      "unnamed": 1690,
+      "wrong": 766
+     },
+     "status_y": {
+      "tp": 105,
+      "unnamed": 1690,
+      "wrong": 766
+     },
+     "summary_x": {
+      "f1": 0.0612,
+      "lenient_tp": 321,
+      "named_by_karadul": 871,
+      "precision": 0.1206,
+      "recall": 0.041,
+      "tp": 105,
+      "unnamed": 1690,
+      "wrong": 766
+     },
+     "summary_y": {
+      "f1": 0.0612,
+      "lenient_tp": 321,
+      "named_by_karadul": 871,
+      "precision": 0.1206,
+      "recall": 0.041,
+      "tp": 105,
+      "unnamed": 1690,
+      "wrong": 766
+     },
+     "transitions": {}
+    },
+    "status": [
+     "ok",
+     "ok"
+    ],
+    "x": "ol7-a-9a36142",
+    "y": "taban-v2-62ad154"
+   }
+  },
+  "s0a_vs_s0b": {
+   "htop": {
+    "cfg_cache_same": [
+     true,
+     true,
+     true
+    ],
+    "duration_s": [
+     194.8,
+     196.6
+    ],
+    "inputs": {
+     "decompiled": {
+      "deobfuscated/decompiled": {
+       "differ": 0,
+       "n_x": 790,
+       "n_y": 790,
+       "only_x": 0,
+       "only_y": 0
+      },
+      "static/ghidra_output/decompiled": {
+       "differ": 0,
+       "n_x": 790,
+       "n_y": 790,
+       "only_x": 0,
+       "only_y": 0
+      }
+     },
+     "ghidra_json": {
+      "ghidra_call_graph.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_functions.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_strings.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      },
+      "ghidra_xrefs.json": {
+       "bytes_equal": true,
+       "content_equal": true
+      }
+     }
+    },
+    "iters": {
+     "src_iter1": {
+      "global_DAT_differ": 0,
+      "global_FUN_differ": 0,
+      "global_FUN_differ_suffix_only": 0,
+      "local_differ": 1032,
+      "local_differ_suffix_only": 1032
+     }
+    },
+    "naming": {
+     "global": {
+      "DAT_": {
+       "differ": 0,
+       "differ_suffix_only": 0,
+       "n_x": 104,
+       "n_y": 104,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 104,
+       "suffix_groups": {
+        "base_groups": 0,
+        "different_name_set": 0,
+        "same_name_set": 0
+       }
+      },
+      "FUN_": {
+       "differ": 4,
+       "differ_suffix_only": 4,
+       "n_x": 101,
+       "n_y": 101,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 97,
+       "suffix_groups": {
+        "base_groups": 2,
+        "different_name_set": 0,
+        "same_name_set": 2
+       }
+      },
+      "diger": {
+       "differ": 0,
+       "differ_suffix_only": 0,
+       "n_x": 0,
+       "n_y": 0,
+       "only_x": 0,
+       "only_y": 0,
+       "same": 0,
+       "suffix_groups": {
+        "base_groups": 0,
+        "different_name_set": 0,
+        "same_name_set": 0
+       }
+      }
+     },
+     "local": {
+      "differ": 1111,
+      "differ_suffix_only": 1111,
+      "functions_with_local_diff": 452,
+      "n_x": 2519,
+      "n_y": 2519,
+      "only_x": 0,
+      "only_y": 0,
+      "same": 1408,
+      "suffix_groups": {
+       "base_groups": 26,
+       "different_name_set": 0,
+       "same_name_set": 26
+      }
+     }
+    },
+    "naming_by_strategy": {
+     "delta_y_minus_x": {},
+     "equal": true,
+     "x": {
+      "api_param": 97,
+      "body_param": 668,
+      "dataflow": 219,
+      "local_var": 1562,
+      "passthrough": 11,
+      "string_context": 101,
+      "type_based": 62
+     },
+     "y": {
+      "api_param": 97,
+      "body_param": 668,
+      "dataflow": 219,
+      "local_var": 1562,
+      "passthrough": 11,
+      "string_context": 101,
+      "type_based": 62
+     }
+    },
+    "naming_map_src_bytes_equal": false,
+    "provenance": {
+     "global": {
+      "differ_by_category": {
+       "FUN_:son_ek_sirasi": 4
+      },
+      "differ_by_category_strategy": {
+       "FUN_:son_ek_sirasi:string_context": 4
+      },
+      "differ_with_different_evidence": 0,
+      "same_name_runners_up_differ": 0,
+      "tie_winner_vs_rival_strategy_x": {},
+      "winner_strategy_pairs_when_strategy_differs": {}
+     },
+     "load_x": {
+      "global_FUN_top_tie_pairs": {},
+      "global_suffixed": {
+       "FUN_": 12
+      },
+      "global_top_tie": {
+       "DAT_": 58
+      },
+      "local_suffixed": 2419,
+      "local_top_tie": 6,
+      "summary": {
+       "candidate_keys": 3097,
+       "pre_names_applied": 0,
+       "pre_names_given": 0,
+       "renamed_global": 205,
+       "renamed_local": 2519
+      }
+     },
+     "load_y": {
+      "global_FUN_top_tie_pairs": {},
+      "global_suffixed": {
+       "FUN_": 12
+      },
+      "global_top_tie": {
+       "DAT_": 58
+      },
+      "local_suffixed": 2419,
+      "local_top_tie": 6,
+      "summary": {
+       "candidate_keys": 3097,
+       "pre_names_applied": 0,
+       "pre_names_given": 0,
+       "renamed_global": 205,
+       "renamed_local": 2519
+      }
+     },
+     "local": {
+      "differ_by_category": {
+       "yerel:son_ek_sirasi": 1111
+      },
+      "differ_by_category_strategy": {
+       "yerel:son_ek_sirasi:api_param": 15,
+       "yerel:son_ek_sirasi:body_param": 417,
+       "yerel:son_ek_sirasi:dataflow": 19,
+       "yerel:son_ek_sirasi:local_var": 641,
+       "yerel:son_ek_sirasi:type_based": 19
+      },
+      "differ_with_different_evidence": 0,
+      "same_name_runners_up_differ": 0,
+      "tie_winner_vs_rival_strategy_x": {},
+      "winner_strategy_pairs_when_strategy_differs": {}
+     }
+    },
+    "score": {
+     "pred_changed": 4,
+     "pred_changed_same_status": 4,
+     "rows_common": 597,
+     "rows_x": 597,
+     "rows_y": 597,
+     "status_changed": 0,
+     "status_x": {
+      "unnamed": 496,
+      "wrong": 101
+     },
+     "status_y": {
+      "unnamed": 496,
+      "wrong": 101
+     },
+     "summary_x": {
+      "f1": 0.0,
+      "lenient_tp": 7,
+      "named_by_karadul": 101,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tp": 0,
+      "unnamed": 496,
+      "wrong": 101
+     },
+     "summary_y": {
+      "f1": 0.0,
+      "lenient_tp": 7,
+      "named_by_karadul": 101,
+      "precision": 0.0,
+      "recall": 0.0,
+      "tp": 0,
+      "unnamed": 496,
+      "wrong": 101
+     },
+     "transitions": {}
+    },
+    "status": [
+     "ok",
+     "ok"
+    ],
+    "x": "ol7-s0a-9a36142",
+    "y": "ol7-s0b-9a36142"
+   }
+  }
+ },
+ "schema": "karadul.ol7/1",
+ "sessions": {
+  "ol7-a-9a36142": {
+   "commit": "9a36142afc",
+   "dirty_files": 0,
+   "engine_paths": [],
+   "finished_at": "2026-10-21T10:23:27+03:00",
+   "ghidra": "12.1.2",
+   "python": "3.12.7",
+   "started_at": "2026-10-21T10:04:53+03:00",
+   "tree_changed": true
+  },
+  "ol7-b-9a36142": {
+   "commit": "6cf0ae3bc1",
+   "dirty_files": 0,
+   "engine_paths": [],
+   "finished_at": "2026-10-21T10:41:50+03:00",
+   "ghidra": "12.1.2",
+   "python": "3.12.7",
+   "started_at": "2026-10-21T10:23:29+03:00",
+   "tree_changed": false
+  },
+  "ol7-s0a-9a36142": {
+   "commit": "6cf0ae3bc1",
+   "dirty_files": 0,
+   "engine_paths": [],
+   "finished_at": "2026-10-21T10:45:07+03:00",
+   "ghidra": "12.1.2",
+   "python": "3.12.7",
+   "started_at": "2026-10-21T10:41:52+03:00",
+   "tree_changed": false
+  },
+  "ol7-s0b-9a36142": {
+   "commit": "6cf0ae3bc1",
+   "dirty_files": 0,
+   "engine_paths": [],
+   "finished_at": "2026-10-21T10:48:25+03:00",
+   "ghidra": "12.1.2",
+   "python": "3.12.7",
+   "started_at": "2026-10-21T10:45:08+03:00",
+   "tree_changed": false
+  },
+  "taban-v2-62ad154": {
+   "commit": "62ad154a93",
+   "dirty_files": 0,
+   "engine_paths": null,
+   "finished_at": "2026-10-19T12:23:01+03:00",
+   "ghidra": "12.1.2",
+   "python": "3.12.7",
+   "started_at": "2026-10-19T12:04:23+03:00",
+   "tree_changed": true
+  }
+ }
+}
