@@ -1,0 +1,67 @@
+{
+ "sema": "karadul-alt-kanal-uretim/1",
+ "arac": {
+  "betik": "scripts/measurement/alt_kanal.py",
+  "betik_sha256": "d0e6f54431d77f2663f84afa6d5091e216b04b6bdf3d781005cd0c0a65c273eb",
+  "tanim_surumu": 1,
+  "git_head": "49efb28eb91a90675659a01a4f7cfeeab99024c6",
+  "kirli_dosyalar": [
+   "M scripts/measurement/dwarf_tip.py",
+   "?? docs/arge/2026-10-21_g10_n0b/",
+   "?? scripts/measurement/alt_kanal.py",
+   "?? scripts/measurement/ghidra_parametre.py",
+   "?? scripts/measurement/mutation_specs_alt_kanal.json",
+   "?? scripts/measurement/parametre_hizala.py",
+   "?? tests/test_alt_kanal.py"
+  ],
+  "python": "3.12.7"
+ },
+ "program": "htop",
+ "calisma": "workspaces/olcum_mac/runs/taban-v2-62ad154/htop/ws/workspaces/htop/20261019_090424",
+ "girdiler": {
+  "ghidra_functions.json": {
+   "yol": "workspaces/olcum_mac/runs/taban-v2-62ad154/htop/ws/workspaces/htop/20261019_090424/deobfuscated/ghidra_functions.json",
+   "sha256": "eb09a314f1d8d7e0fc860e2c5396b76e177dfeb4c661fb050a2cb6914435d8c8"
+  },
+  "ghidra_strings.json": {
+   "yol": "workspaces/olcum_mac/runs/taban-v2-62ad154/htop/ws/workspaces/htop/20261019_090424/deobfuscated/ghidra_strings.json",
+   "sha256": "52865f71a9d2ad07608672ca97bbd112bf7e1b13c494aa03932c49156bb0a729"
+  },
+  "ghidra_call_graph.json": {
+   "yol": "workspaces/olcum_mac/runs/taban-v2-62ad154/htop/ws/workspaces/htop/20261019_090424/deobfuscated/ghidra_call_graph.json",
+   "sha256": "dca5a1ddb8208188e853f27907ec875d64a924d00cdbab195fdc112c74c4a61d"
+  },
+  "ghidra_xrefs.json": {
+   "yol": "workspaces/olcum_mac/runs/taban-v2-62ad154/htop/ws/workspaces/htop/20261019_090424/static/ghidra_xrefs.json",
+   "sha256": "857311a5bcab0545d792e3090dd783a696394f41ce8a56a49f6ce5050b38aaa3"
+  }
+ },
+ "c_dizini": {
+  "yol": "workspaces/olcum_mac/runs/taban-v2-62ad154/htop/ws/workspaces/htop/20261019_090424/deobfuscated/decompiled",
+  "sha256": "e65e05f6102534cc5b1a4d94e9cc4f7c74c7bec13dc23d18a7067f3a613e592c",
+  "dosya": 790
+ },
+ "c_namer_sha256": "41e923e373a178c12fc0ac9b5dcb5395281e3c06f09c8da037181279f0384b02",
+ "min_confidence": 0.15,
+ "pre_names": {},
+ "tohum_sayimlari": {},
+ "gecersiz_kilma_dosyalari": [],
+ "pythonhashseed": "0",
+ "yurutucu": "seri (ProcessPoolExecutor yerine SeriYurutucu)",
+ "by_strategy": {
+  "local_var": 1565,
+  "body_param": 671,
+  "dataflow": 219,
+  "string_context": 101,
+  "api_param": 97,
+  "type_based": 60,
+  "passthrough": 11
+ },
+ "total_renamed": 2724,
+ "genel_ad": 205,
+ "sure_s": 18.6,
+ "ciktilar": {
+  "naming_provenance.json": "0797c15c8778b605fb89dbaee90d86a7b123576540c35587823e8fdfe5e6f436",
+  "naming_map.json": "be02055c3937c86254a501712bfed992a8cab6b2ab5607c9d4de2a28b7865d61"
+ }
+}

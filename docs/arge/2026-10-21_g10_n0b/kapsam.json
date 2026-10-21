@@ -1,0 +1,1138 @@
+{
+ "sema": "karadul-alt-kanal-kapsam/1",
+ "arac": {
+  "betik": "scripts/measurement/alt_kanal.py",
+  "betik_sha256": "d0e6f54431d77f2663f84afa6d5091e216b04b6bdf3d781005cd0c0a65c273eb",
+  "tanim_surumu": 1,
+  "git_head": "49efb28eb91a90675659a01a4f7cfeeab99024c6",
+  "kirli_dosyalar": [
+   "M scripts/measurement/dwarf_tip.py",
+   "?? docs/arge/2026-10-21_g10_n0b/",
+   "?? scripts/measurement/alt_kanal.py",
+   "?? scripts/measurement/ghidra_parametre.py",
+   "?? scripts/measurement/mutation_specs_alt_kanal.json",
+   "?? scripts/measurement/parametre_hizala.py",
+   "?? tests/test_alt_kanal.py"
+  ],
+  "python": "3.12.7"
+ },
+ "girdiler": [
+  {
+   "yol": "docs/arge/2026-10-21_g10_n0b/kayitlar_htop.jsonl",
+   "sha256": "8a3bb6eec444926fa40e4d02c413c819af50dcafd23f62bf7fefca4acada488e",
+   "satir": 101
+  },
+  {
+   "yol": "docs/arge/2026-10-21_g10_n0b/kayitlar_tmux.jsonl",
+   "sha256": "81c642aae2b84d494e578f6338935ba6f2a5fc45a11dc5297389365ccb96a837",
+   "satir": 875
+  }
+ ],
+ "alt_kanallar": [
+  {
+   "sira": 1,
+   "ad": "agresif",
+   "aciklama": "agresif kod yolu (kural rule alanında)"
+  },
+  {
+   "sira": 2,
+   "ad": "kod_parcasi",
+   "aciklama": "gövde literali gerçek literal değil: ham satır sonu ya da Ghidra kendiliğinden adı"
+  },
+  {
+   "sira": 3,
+   "ad": "bicim_parcasi",
+   "aciklama": "adı kuran anahtar sözcük printf dönüşüm belirtecine taşıyor (%lld → lld)"
+  },
+  {
+   "sira": 4,
+   "ad": "oz_ad",
+   "aciklama": "kendi adını yazan tanımlayıcı: dizgi tek tanımlayıcı, ad ona eşit"
+  },
+  {
+   "sira": 5,
+   "ad": "tek_sozcuk",
+   "aciklama": "ad tek anahtar sözcükten (k = 1)"
+  },
+  {
+   "sira": 6,
+   "ad": "tanimlayici",
+   "aciklama": "alt çizgili tanımlayıcı dizgi, ad dizgiden farklı ya da tümü büyük harf"
+  },
+  {
+   "sira": 7,
+   "ad": "kebap_ad",
+   "aciklama": "tireli küçük harf belirteç: seçenek, kanca, komut adı"
+  },
+  {
+   "sira": 8,
+   "ad": "hata_iletisi",
+   "aciklama": "hata ya da kullanım iletisi belirteci"
+  },
+  {
+   "sira": 9,
+   "ad": "bicim_dizgisi",
+   "aciklama": "printf belirteci ya da şablon yer tutucusu"
+  },
+  {
+   "sira": 10,
+   "ad": "duz_metin",
+   "aciklama": "boşluklu düz metin, C işleci yok"
+  },
+  {
+   "sira": 11,
+   "ad": "diger",
+   "aciklama": "kalanlar"
+  }
+ ],
+ "programlar": {
+  "htop": {
+   "genel_fonksiyon_adi": 101,
+   "strateji": {
+    "cnamer_esigi": {
+     "string_context": 101
+    },
+    "urun_esigi": {
+     "string_context": 101
+    }
+   },
+   "alt_kanal": {
+    "cnamer_esigi": {
+     "agresif": 0,
+     "kod_parcasi": 10,
+     "bicim_parcasi": 6,
+     "oz_ad": 0,
+     "tek_sozcuk": 35,
+     "tanimlayici": 0,
+     "kebap_ad": 0,
+     "hata_iletisi": 12,
+     "bicim_dizgisi": 8,
+     "duz_metin": 23,
+     "diger": 7
+    },
+    "urun_esigi": {
+     "agresif": 0,
+     "kod_parcasi": 10,
+     "bicim_parcasi": 6,
+     "oz_ad": 0,
+     "tek_sozcuk": 35,
+     "tanimlayici": 0,
+     "kebap_ad": 0,
+     "hata_iletisi": 12,
+     "bicim_dizgisi": 8,
+     "duz_metin": 23,
+     "diger": 7
+    },
+    "nihai_puanlanan": {
+     "agresif": 0,
+     "kod_parcasi": 10,
+     "bicim_parcasi": 6,
+     "oz_ad": 0,
+     "tek_sozcuk": 35,
+     "tanimlayici": 0,
+     "kebap_ad": 0,
+     "hata_iletisi": 12,
+     "bicim_dizgisi": 8,
+     "duz_metin": 23,
+     "diger": 7
+    }
+   },
+   "kanal_basina_urun": {
+    "agresif": {
+     "n": 0,
+     "kanit_kaynagi": {},
+     "k": {},
+     "halef_urun": {},
+     "halef_cnamer": {},
+     "ilk_rakip": {}
+    },
+    "kod_parcasi": {
+     "n": 10,
+     "kanit_kaynagi": {
+      "body_literal": 10
+     },
+     "k": {
+      "2": 4,
+      "3": 3,
+      "4": 3
+     },
+     "halef_urun": {
+      "yapisal_suzgec:api_call": 3,
+      "yapisal_suzgec:call_graph": 7
+     },
+     "halef_cnamer": {
+      "yapisal_suzgec:api_call": 3,
+      "yapisal_suzgec:call_graph": 7
+     },
+     "ilk_rakip": {
+      "api_call": 3,
+      "call_graph": 7
+     }
+    },
+    "bicim_parcasi": {
+     "n": 6,
+     "kanit_kaynagi": {
+      "string_ref": 6
+     },
+     "k": {
+      "1": 3,
+      "2": 2,
+      "3": 1
+     },
+     "halef_urun": {
+      "yapisal_suzgec:api_call": 1,
+      "yapisal_suzgec:call_graph": 4,
+      "yok": 1
+     },
+     "halef_cnamer": {
+      "yapisal_suzgec:api_call": 1,
+      "yapisal_suzgec:call_graph": 4,
+      "yok": 1
+     },
+     "ilk_rakip": {
+      "api_call": 1,
+      "call_graph": 4,
+      "yok": 1
+     }
+    },
+    "oz_ad": {
+     "n": 0,
+     "kanit_kaynagi": {},
+     "k": {},
+     "halef_urun": {},
+     "halef_cnamer": {},
+     "ilk_rakip": {}
+    },
+    "tek_sozcuk": {
+     "n": 35,
+     "kanit_kaynagi": {
+      "string_ref": 35
+     },
+     "k": {
+      "1": 35
+     },
+     "halef_urun": {
+      "yapisal_suzgec:api_call": 10,
+      "yapisal_suzgec:call_graph": 20,
+      "yok": 5
+     },
+     "halef_cnamer": {
+      "yapisal_suzgec:api_call": 10,
+      "yapisal_suzgec:call_graph": 20,
+      "yok": 5
+     },
+     "ilk_rakip": {
+      "api_call": 10,
+      "call_graph": 20,
+      "yok": 5
+     }
+    },
+    "tanimlayici": {
+     "n": 0,
+     "kanit_kaynagi": {},
+     "k": {},
+     "halef_urun": {},
+     "halef_cnamer": {},
+     "ilk_rakip": {}
+    },
+    "kebap_ad": {
+     "n": 0,
+     "kanit_kaynagi": {},
+     "k": {},
+     "halef_urun": {},
+     "halef_cnamer": {},
+     "ilk_rakip": {}
+    },
+    "hata_iletisi": {
+     "n": 12,
+     "kanit_kaynagi": {
+      "string_ref": 12
+     },
+     "k": {
+      "2": 1,
+      "3": 4,
+      "4": 7
+     },
+     "halef_urun": {
+      "esik_alti:string_context/agresif": 5,
+      "yapisal_suzgec:api_call": 5,
+      "yapisal_suzgec:call_graph": 1,
+      "yok": 1
+     },
+     "halef_cnamer": {
+      "ad:string_context/agresif": 5,
+      "yapisal_suzgec:api_call": 5,
+      "yapisal_suzgec:call_graph": 1,
+      "yok": 1
+     },
+     "ilk_rakip": {
+      "api_call": 5,
+      "call_graph": 1,
+      "string_context/agresif": 5,
+      "yok": 1
+     }
+    },
+    "bicim_dizgisi": {
+     "n": 8,
+     "kanit_kaynagi": {
+      "string_ref": 8
+     },
+     "k": {
+      "2": 3,
+      "4": 5
+     },
+     "halef_urun": {
+      "ad:string_context/agresif": 1,
+      "yapisal_suzgec:api_call": 2,
+      "yapisal_suzgec:call_graph": 5
+     },
+     "halef_cnamer": {
+      "ad:string_context/agresif": 1,
+      "yapisal_suzgec:api_call": 2,
+      "yapisal_suzgec:call_graph": 5
+     },
+     "ilk_rakip": {
+      "api_call": 2,
+      "call_graph": 5,
+      "string_context/agresif": 1
+     }
+    },
+    "duz_metin": {
+     "n": 23,
+     "kanit_kaynagi": {
+      "string_ref": 23
+     },
+     "k": {
+      "2": 11,
+      "3": 5,
+      "4": 7
+     },
+     "halef_urun": {
+      "esik_alti:string_context/agresif": 1,
+      "yapisal_suzgec:api_call": 6,
+      "yapisal_suzgec:call_graph": 10,
+      "yok": 6
+     },
+     "halef_cnamer": {
+      "ad:string_context/agresif": 1,
+      "yapisal_suzgec:api_call": 6,
+      "yapisal_suzgec:call_graph": 10,
+      "yok": 6
+     },
+     "ilk_rakip": {
+      "api_call": 6,
+      "call_graph": 10,
+      "string_context/agresif": 1,
+      "yok": 6
+     }
+    },
+    "diger": {
+     "n": 7,
+     "kanit_kaynagi": {
+      "string_ref": 7
+     },
+     "k": {
+      "2": 3,
+      "3": 1,
+      "4": 3
+     },
+     "halef_urun": {
+      "yapisal_suzgec:api_call": 5,
+      "yapisal_suzgec:call_graph": 1,
+      "yok": 1
+     },
+     "halef_cnamer": {
+      "yapisal_suzgec:api_call": 5,
+      "yapisal_suzgec:call_graph": 1,
+      "yok": 1
+     },
+     "ilk_rakip": {
+      "api_call": 5,
+      "call_graph": 1,
+      "yok": 1
+     }
+    }
+   },
+   "klasik_tutarsiz": 0,
+   "taban_eslesme_urun": {
+    "taban_ad": 6,
+    "tam": 95
+   },
+   "naming_map_eslesme_urun": {
+    "taban_ad": 4,
+    "tam": 97
+   }
+  },
+  "tmux": {
+   "genel_fonksiyon_adi": 875,
+   "strateji": {
+    "cnamer_esigi": {
+     "api_param_reverse": 12,
+     "binary_extract": 1,
+     "string_context": 862
+    },
+    "urun_esigi": {
+     "api_param_reverse": 12,
+     "binary_extract": 1,
+     "string_context": 862
+    }
+   },
+   "alt_kanal": {
+    "cnamer_esigi": {
+     "agresif": 0,
+     "kod_parcasi": 75,
+     "bicim_parcasi": 18,
+     "oz_ad": 126,
+     "tek_sozcuk": 95,
+     "tanimlayici": 114,
+     "kebap_ad": 148,
+     "hata_iletisi": 102,
+     "bicim_dizgisi": 139,
+     "duz_metin": 34,
+     "diger": 11
+    },
+    "urun_esigi": {
+     "agresif": 0,
+     "kod_parcasi": 75,
+     "bicim_parcasi": 18,
+     "oz_ad": 126,
+     "tek_sozcuk": 95,
+     "tanimlayici": 114,
+     "kebap_ad": 148,
+     "hata_iletisi": 102,
+     "bicim_dizgisi": 139,
+     "duz_metin": 34,
+     "diger": 11
+    },
+    "nihai_puanlanan": {
+     "agresif": 0,
+     "kod_parcasi": 72,
+     "bicim_parcasi": 18,
+     "oz_ad": 126,
+     "tek_sozcuk": 95,
+     "tanimlayici": 114,
+     "kebap_ad": 147,
+     "hata_iletisi": 102,
+     "bicim_dizgisi": 139,
+     "duz_metin": 34,
+     "diger": 11
+    }
+   },
+   "kanal_basina_urun": {
+    "agresif": {
+     "n": 0,
+     "kanit_kaynagi": {},
+     "k": {},
+     "halef_urun": {},
+     "halef_cnamer": {},
+     "ilk_rakip": {}
+    },
+    "kod_parcasi": {
+     "n": 75,
+     "kanit_kaynagi": {
+      "body_literal": 75
+     },
+     "k": {
+      "2": 22,
+      "3": 14,
+      "4": 39
+     },
+     "halef_urun": {
+      "ad:api_param_reverse": 1,
+      "esik_alti:string_context/agresif": 1,
+      "yapisal_suzgec:api_call": 18,
+      "yapisal_suzgec:call_graph": 50,
+      "yok": 5
+     },
+     "halef_cnamer": {
+      "ad:api_param_reverse": 1,
+      "ad:string_context/agresif": 1,
+      "yapisal_suzgec:api_call": 18,
+      "yapisal_suzgec:call_graph": 50,
+      "yok": 5
+     },
+     "ilk_rakip": {
+      "api_call": 18,
+      "api_param_reverse": 1,
+      "call_graph": 50,
+      "string_context/agresif": 1,
+      "yok": 5
+     }
+    },
+    "bicim_parcasi": {
+     "n": 18,
+     "kanit_kaynagi": {
+      "string_ref": 18
+     },
+     "k": {
+      "1": 6,
+      "2": 1,
+      "3": 7,
+      "4": 4
+     },
+     "halef_urun": {
+      "ad:api_param_reverse": 1,
+      "yapisal_suzgec:api_call": 11,
+      "yapisal_suzgec:call_graph": 6
+     },
+     "halef_cnamer": {
+      "ad:api_param_reverse": 1,
+      "yapisal_suzgec:api_call": 11,
+      "yapisal_suzgec:call_graph": 6
+     },
+     "ilk_rakip": {
+      "api_call": 11,
+      "api_param_reverse": 1,
+      "call_graph": 6
+     }
+    },
+    "oz_ad": {
+     "n": 126,
+     "kanit_kaynagi": {
+      "string_ref": 126
+     },
+     "k": {
+      "2": 28,
+      "3": 98
+     },
+     "halef_urun": {
+      "esik_alti:string_context/agresif": 15,
+      "yapisal_suzgec:api_call": 25,
+      "yapisal_suzgec:call_graph": 71,
+      "yok": 15
+     },
+     "halef_cnamer": {
+      "ad:string_context/agresif": 15,
+      "yapisal_suzgec:api_call": 25,
+      "yapisal_suzgec:call_graph": 71,
+      "yok": 15
+     },
+     "ilk_rakip": {
+      "api_call": 25,
+      "call_graph": 71,
+      "string_context/agresif": 15,
+      "yok": 15
+     }
+    },
+    "tek_sozcuk": {
+     "n": 95,
+     "kanit_kaynagi": {
+      "body_literal": 1,
+      "string_ref": 94
+     },
+     "k": {
+      "1": 95
+     },
+     "halef_urun": {
+      "esik_alti:string_context/agresif": 2,
+      "yapisal_suzgec:api_call": 52,
+      "yapisal_suzgec:call_graph": 32,
+      "yok": 9
+     },
+     "halef_cnamer": {
+      "ad:string_context/agresif": 2,
+      "yapisal_suzgec:api_call": 52,
+      "yapisal_suzgec:call_graph": 32,
+      "yok": 9
+     },
+     "ilk_rakip": {
+      "api_call": 52,
+      "call_graph": 32,
+      "string_context/agresif": 2,
+      "yok": 9
+     }
+    },
+    "tanimlayici": {
+     "n": 114,
+     "kanit_kaynagi": {
+      "string_ref": 114
+     },
+     "k": {
+      "2": 22,
+      "3": 29,
+      "4": 63
+     },
+     "halef_urun": {
+      "ad:api_param_reverse": 2,
+      "esik_alti:string_context/agresif": 13,
+      "yapisal_suzgec:api_call": 37,
+      "yapisal_suzgec:call_graph": 41,
+      "yok": 21
+     },
+     "halef_cnamer": {
+      "ad:api_param_reverse": 2,
+      "ad:string_context/agresif": 13,
+      "yapisal_suzgec:api_call": 37,
+      "yapisal_suzgec:call_graph": 41,
+      "yok": 21
+     },
+     "ilk_rakip": {
+      "api_call": 37,
+      "api_param_reverse": 2,
+      "call_graph": 41,
+      "string_context/agresif": 13,
+      "yok": 21
+     }
+    },
+    "kebap_ad": {
+     "n": 148,
+     "kanit_kaynagi": {
+      "body_literal": 2,
+      "string_ref": 146
+     },
+     "k": {
+      "2": 73,
+      "3": 61,
+      "4": 14
+     },
+     "halef_urun": {
+      "ad:api_param_reverse": 1,
+      "esik_alti:string_context/agresif": 5,
+      "yapisal_suzgec:api_call": 44,
+      "yapisal_suzgec:call_graph": 66,
+      "yok": 32
+     },
+     "halef_cnamer": {
+      "ad:api_param_reverse": 1,
+      "ad:string_context/agresif": 5,
+      "yapisal_suzgec:api_call": 44,
+      "yapisal_suzgec:call_graph": 66,
+      "yok": 32
+     },
+     "ilk_rakip": {
+      "api_call": 44,
+      "api_param_reverse": 1,
+      "call_graph": 66,
+      "string_context/agresif": 5,
+      "yok": 32
+     }
+    },
+    "hata_iletisi": {
+     "n": 102,
+     "kanit_kaynagi": {
+      "string_ref": 102
+     },
+     "k": {
+      "2": 50,
+      "3": 22,
+      "4": 30
+     },
+     "halef_urun": {
+      "ad:api_param_reverse": 3,
+      "esik_alti:string_context/agresif": 12,
+      "yapisal_suzgec:api_call": 36,
+      "yapisal_suzgec:call_graph": 34,
+      "yok": 17
+     },
+     "halef_cnamer": {
+      "ad:api_param_reverse": 3,
+      "ad:string_context/agresif": 12,
+      "yapisal_suzgec:api_call": 36,
+      "yapisal_suzgec:call_graph": 34,
+      "yok": 17
+     },
+     "ilk_rakip": {
+      "api_call": 36,
+      "api_param_reverse": 3,
+      "call_graph": 34,
+      "string_context/agresif": 12,
+      "yok": 17
+     }
+    },
+    "bicim_dizgisi": {
+     "n": 139,
+     "kanit_kaynagi": {
+      "body_literal": 2,
+      "string_ref": 137
+     },
+     "k": {
+      "2": 48,
+      "3": 55,
+      "4": 36
+     },
+     "halef_urun": {
+      "ad:api_param_reverse": 7,
+      "esik_alti:string_context/agresif": 17,
+      "yapisal_suzgec:api_call": 60,
+      "yapisal_suzgec:call_graph": 47,
+      "yok": 8
+     },
+     "halef_cnamer": {
+      "ad:api_param_reverse": 7,
+      "ad:string_context/agresif": 17,
+      "yapisal_suzgec:api_call": 60,
+      "yapisal_suzgec:call_graph": 47,
+      "yok": 8
+     },
+     "ilk_rakip": {
+      "api_call": 60,
+      "api_param_reverse": 7,
+      "call_graph": 47,
+      "string_context/agresif": 17,
+      "yok": 8
+     }
+    },
+    "duz_metin": {
+     "n": 34,
+     "kanit_kaynagi": {
+      "string_ref": 34
+     },
+     "k": {
+      "2": 15,
+      "3": 10,
+      "4": 9
+     },
+     "halef_urun": {
+      "ad:api_param_reverse": 2,
+      "esik_alti:string_context/agresif": 5,
+      "yapisal_suzgec:api_call": 17,
+      "yapisal_suzgec:call_graph": 5,
+      "yok": 5
+     },
+     "halef_cnamer": {
+      "ad:api_param_reverse": 2,
+      "ad:string_context/agresif": 5,
+      "yapisal_suzgec:api_call": 17,
+      "yapisal_suzgec:call_graph": 5,
+      "yok": 5
+     },
+     "ilk_rakip": {
+      "api_call": 17,
+      "api_param_reverse": 2,
+      "call_graph": 5,
+      "string_context/agresif": 5,
+      "yok": 5
+     }
+    },
+    "diger": {
+     "n": 11,
+     "kanit_kaynagi": {
+      "string_ref": 11
+     },
+     "k": {
+      "2": 9,
+      "3": 1,
+      "4": 1
+     },
+     "halef_urun": {
+      "esik_alti:string_context/agresif": 2,
+      "yapisal_suzgec:api_call": 8,
+      "yok": 1
+     },
+     "halef_cnamer": {
+      "ad:string_context/agresif": 2,
+      "yapisal_suzgec:api_call": 8,
+      "yok": 1
+     },
+     "ilk_rakip": {
+      "api_call": 8,
+      "string_context/agresif": 2,
+      "yok": 1
+     }
+    }
+   },
+   "klasik_tutarsiz": 0,
+   "taban_eslesme_urun": {
+    "satir_yok": 4,
+    "taban_ad": 90,
+    "tam": 781
+   },
+   "naming_map_eslesme_urun": {
+    "taban_ad": 89,
+    "tam": 786
+   }
+  }
+ },
+ "birlesik": {
+  "genel_fonksiyon_adi": 976,
+  "strateji": {
+   "cnamer_esigi": {
+    "api_param_reverse": 12,
+    "binary_extract": 1,
+    "string_context": 963
+   },
+   "urun_esigi": {
+    "api_param_reverse": 12,
+    "binary_extract": 1,
+    "string_context": 963
+   }
+  },
+  "alt_kanal": {
+   "cnamer_esigi": {
+    "agresif": 0,
+    "kod_parcasi": 85,
+    "bicim_parcasi": 24,
+    "oz_ad": 126,
+    "tek_sozcuk": 130,
+    "tanimlayici": 114,
+    "kebap_ad": 148,
+    "hata_iletisi": 114,
+    "bicim_dizgisi": 147,
+    "duz_metin": 57,
+    "diger": 18
+   },
+   "urun_esigi": {
+    "agresif": 0,
+    "kod_parcasi": 85,
+    "bicim_parcasi": 24,
+    "oz_ad": 126,
+    "tek_sozcuk": 130,
+    "tanimlayici": 114,
+    "kebap_ad": 148,
+    "hata_iletisi": 114,
+    "bicim_dizgisi": 147,
+    "duz_metin": 57,
+    "diger": 18
+   },
+   "nihai_puanlanan": {
+    "agresif": 0,
+    "kod_parcasi": 82,
+    "bicim_parcasi": 24,
+    "oz_ad": 126,
+    "tek_sozcuk": 130,
+    "tanimlayici": 114,
+    "kebap_ad": 147,
+    "hata_iletisi": 114,
+    "bicim_dizgisi": 147,
+    "duz_metin": 57,
+    "diger": 18
+   }
+  },
+  "kanal_basina_urun": {
+   "agresif": {
+    "n": 0,
+    "kanit_kaynagi": {},
+    "k": {},
+    "halef_urun": {},
+    "halef_cnamer": {},
+    "ilk_rakip": {}
+   },
+   "kod_parcasi": {
+    "n": 85,
+    "kanit_kaynagi": {
+     "body_literal": 85
+    },
+    "k": {
+     "2": 26,
+     "3": 17,
+     "4": 42
+    },
+    "halef_urun": {
+     "ad:api_param_reverse": 1,
+     "esik_alti:string_context/agresif": 1,
+     "yapisal_suzgec:api_call": 21,
+     "yapisal_suzgec:call_graph": 57,
+     "yok": 5
+    },
+    "halef_cnamer": {
+     "ad:api_param_reverse": 1,
+     "ad:string_context/agresif": 1,
+     "yapisal_suzgec:api_call": 21,
+     "yapisal_suzgec:call_graph": 57,
+     "yok": 5
+    },
+    "ilk_rakip": {
+     "api_call": 21,
+     "api_param_reverse": 1,
+     "call_graph": 57,
+     "string_context/agresif": 1,
+     "yok": 5
+    }
+   },
+   "bicim_parcasi": {
+    "n": 24,
+    "kanit_kaynagi": {
+     "string_ref": 24
+    },
+    "k": {
+     "1": 9,
+     "2": 3,
+     "3": 8,
+     "4": 4
+    },
+    "halef_urun": {
+     "ad:api_param_reverse": 1,
+     "yapisal_suzgec:api_call": 12,
+     "yapisal_suzgec:call_graph": 10,
+     "yok": 1
+    },
+    "halef_cnamer": {
+     "ad:api_param_reverse": 1,
+     "yapisal_suzgec:api_call": 12,
+     "yapisal_suzgec:call_graph": 10,
+     "yok": 1
+    },
+    "ilk_rakip": {
+     "api_call": 12,
+     "api_param_reverse": 1,
+     "call_graph": 10,
+     "yok": 1
+    }
+   },
+   "oz_ad": {
+    "n": 126,
+    "kanit_kaynagi": {
+     "string_ref": 126
+    },
+    "k": {
+     "2": 28,
+     "3": 98
+    },
+    "halef_urun": {
+     "esik_alti:string_context/agresif": 15,
+     "yapisal_suzgec:api_call": 25,
+     "yapisal_suzgec:call_graph": 71,
+     "yok": 15
+    },
+    "halef_cnamer": {
+     "ad:string_context/agresif": 15,
+     "yapisal_suzgec:api_call": 25,
+     "yapisal_suzgec:call_graph": 71,
+     "yok": 15
+    },
+    "ilk_rakip": {
+     "api_call": 25,
+     "call_graph": 71,
+     "string_context/agresif": 15,
+     "yok": 15
+    }
+   },
+   "tek_sozcuk": {
+    "n": 130,
+    "kanit_kaynagi": {
+     "body_literal": 1,
+     "string_ref": 129
+    },
+    "k": {
+     "1": 130
+    },
+    "halef_urun": {
+     "esik_alti:string_context/agresif": 2,
+     "yapisal_suzgec:api_call": 62,
+     "yapisal_suzgec:call_graph": 52,
+     "yok": 14
+    },
+    "halef_cnamer": {
+     "ad:string_context/agresif": 2,
+     "yapisal_suzgec:api_call": 62,
+     "yapisal_suzgec:call_graph": 52,
+     "yok": 14
+    },
+    "ilk_rakip": {
+     "api_call": 62,
+     "call_graph": 52,
+     "string_context/agresif": 2,
+     "yok": 14
+    }
+   },
+   "tanimlayici": {
+    "n": 114,
+    "kanit_kaynagi": {
+     "string_ref": 114
+    },
+    "k": {
+     "2": 22,
+     "3": 29,
+     "4": 63
+    },
+    "halef_urun": {
+     "ad:api_param_reverse": 2,
+     "esik_alti:string_context/agresif": 13,
+     "yapisal_suzgec:api_call": 37,
+     "yapisal_suzgec:call_graph": 41,
+     "yok": 21
+    },
+    "halef_cnamer": {
+     "ad:api_param_reverse": 2,
+     "ad:string_context/agresif": 13,
+     "yapisal_suzgec:api_call": 37,
+     "yapisal_suzgec:call_graph": 41,
+     "yok": 21
+    },
+    "ilk_rakip": {
+     "api_call": 37,
+     "api_param_reverse": 2,
+     "call_graph": 41,
+     "string_context/agresif": 13,
+     "yok": 21
+    }
+   },
+   "kebap_ad": {
+    "n": 148,
+    "kanit_kaynagi": {
+     "body_literal": 2,
+     "string_ref": 146
+    },
+    "k": {
+     "2": 73,
+     "3": 61,
+     "4": 14
+    },
+    "halef_urun": {
+     "ad:api_param_reverse": 1,
+     "esik_alti:string_context/agresif": 5,
+     "yapisal_suzgec:api_call": 44,
+     "yapisal_suzgec:call_graph": 66,
+     "yok": 32
+    },
+    "halef_cnamer": {
+     "ad:api_param_reverse": 1,
+     "ad:string_context/agresif": 5,
+     "yapisal_suzgec:api_call": 44,
+     "yapisal_suzgec:call_graph": 66,
+     "yok": 32
+    },
+    "ilk_rakip": {
+     "api_call": 44,
+     "api_param_reverse": 1,
+     "call_graph": 66,
+     "string_context/agresif": 5,
+     "yok": 32
+    }
+   },
+   "hata_iletisi": {
+    "n": 114,
+    "kanit_kaynagi": {
+     "string_ref": 114
+    },
+    "k": {
+     "2": 51,
+     "3": 26,
+     "4": 37
+    },
+    "halef_urun": {
+     "ad:api_param_reverse": 3,
+     "esik_alti:string_context/agresif": 17,
+     "yapisal_suzgec:api_call": 41,
+     "yapisal_suzgec:call_graph": 35,
+     "yok": 18
+    },
+    "halef_cnamer": {
+     "ad:api_param_reverse": 3,
+     "ad:string_context/agresif": 17,
+     "yapisal_suzgec:api_call": 41,
+     "yapisal_suzgec:call_graph": 35,
+     "yok": 18
+    },
+    "ilk_rakip": {
+     "api_call": 41,
+     "api_param_reverse": 3,
+     "call_graph": 35,
+     "string_context/agresif": 17,
+     "yok": 18
+    }
+   },
+   "bicim_dizgisi": {
+    "n": 147,
+    "kanit_kaynagi": {
+     "body_literal": 2,
+     "string_ref": 145
+    },
+    "k": {
+     "2": 51,
+     "3": 55,
+     "4": 41
+    },
+    "halef_urun": {
+     "ad:api_param_reverse": 7,
+     "ad:string_context/agresif": 1,
+     "esik_alti:string_context/agresif": 17,
+     "yapisal_suzgec:api_call": 62,
+     "yapisal_suzgec:call_graph": 52,
+     "yok": 8
+    },
+    "halef_cnamer": {
+     "ad:api_param_reverse": 7,
+     "ad:string_context/agresif": 18,
+     "yapisal_suzgec:api_call": 62,
+     "yapisal_suzgec:call_graph": 52,
+     "yok": 8
+    },
+    "ilk_rakip": {
+     "api_call": 62,
+     "api_param_reverse": 7,
+     "call_graph": 52,
+     "string_context/agresif": 18,
+     "yok": 8
+    }
+   },
+   "duz_metin": {
+    "n": 57,
+    "kanit_kaynagi": {
+     "string_ref": 57
+    },
+    "k": {
+     "2": 26,
+     "3": 15,
+     "4": 16
+    },
+    "halef_urun": {
+     "ad:api_param_reverse": 2,
+     "esik_alti:string_context/agresif": 6,
+     "yapisal_suzgec:api_call": 23,
+     "yapisal_suzgec:call_graph": 15,
+     "yok": 11
+    },
+    "halef_cnamer": {
+     "ad:api_param_reverse": 2,
+     "ad:string_context/agresif": 6,
+     "yapisal_suzgec:api_call": 23,
+     "yapisal_suzgec:call_graph": 15,
+     "yok": 11
+    },
+    "ilk_rakip": {
+     "api_call": 23,
+     "api_param_reverse": 2,
+     "call_graph": 15,
+     "string_context/agresif": 6,
+     "yok": 11
+    }
+   },
+   "diger": {
+    "n": 18,
+    "kanit_kaynagi": {
+     "string_ref": 18
+    },
+    "k": {
+     "2": 12,
+     "3": 2,
+     "4": 4
+    },
+    "halef_urun": {
+     "esik_alti:string_context/agresif": 2,
+     "yapisal_suzgec:api_call": 13,
+     "yapisal_suzgec:call_graph": 1,
+     "yok": 2
+    },
+    "halef_cnamer": {
+     "ad:string_context/agresif": 2,
+     "yapisal_suzgec:api_call": 13,
+     "yapisal_suzgec:call_graph": 1,
+     "yok": 2
+    },
+    "ilk_rakip": {
+     "api_call": 13,
+     "call_graph": 1,
+     "string_context/agresif": 2,
+     "yok": 2
+    }
+   }
+  },
+  "klasik_tutarsiz": 0,
+  "taban_eslesme_urun": {
+   "satir_yok": 4,
+   "taban_ad": 96,
+   "tam": 876
+  },
+  "naming_map_eslesme_urun": {
+   "taban_ad": 93,
+   "tam": 883
+  }
+ },
+ "ornekleme_siniri": {
+  "yanlis_hedefi": 0.1,
+  "en_az_n_yanlis_ust_sinir": 35,
+  "capa_kesinlik_hedefi": 0.95,
+  "en_az_n_kesinlik_alt_sinir": 73
+ }
+}

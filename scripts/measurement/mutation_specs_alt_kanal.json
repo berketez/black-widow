@@ -1,0 +1,53 @@
+{
+  "_comment": "alt_kanal.py (plan v2.2 N0b) yüklemlerinin, halefin ve karar kuralının ('yalnız zayıflar') mutasyon koruması. Her mutant bir tanımı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_alt_kanal.json",
+  "mutants": [
+    {
+      "id": "n0b_oz_ad_buyuk_harf_sabit",
+      "desc": "oz_ad tümü büyük harfli tanımlayıcıyı (sabit, ortam değişkeni) da kendi adı sayar",
+      "module": "scripts/measurement/alt_kanal.py",
+      "test": "tests/test_alt_kanal.py::test_oz_ad_ve_tanimlayici",
+      "find": "    return (_alt_cizgili_tanimlayici(g.e) and any(c.islower() for c in g.e)\n            and g.ad == g.e.lower())",
+      "replace": "    return _alt_cizgili_tanimlayici(g.e) and g.ad == g.e.lower()"
+    },
+    {
+      "id": "n0b_kod_parcasi_kaynak_denetimi",
+      "desc": "kod_parcasi kanıt kaynağına bakmaz: dizgi tablosundaki gerçek satır sonu da kod parçası olur",
+      "module": "scripts/measurement/alt_kanal.py",
+      "test": "tests/test_alt_kanal.py::test_kod_parcasi_yalniz_gercek_olmayan_govde_literali",
+      "find": "    return g.kaynak == \"body_literal\" and (\"\\n\" in g.kanit or bool(GHIDRA_OTO_AD_RE.search(g.kanit)))",
+      "replace": "    return (\"\\n\" in g.kanit or bool(GHIDRA_OTO_AD_RE.search(g.kanit)))"
+    },
+    {
+      "id": "n0b_karar_nokta_tahmini",
+      "desc": "karar Wilson üst sınırı yerine nokta tahmine bakar (1/20 doğrulanmış sayılır)",
+      "module": "scripts/measurement/alt_kanal.py",
+      "test": "tests/test_alt_kanal.py::test_karar_kurali",
+      "find": "        if ust <= esik:\n            sonuc = \"dogrulandi\"",
+      "replace": "        if yanlis / n <= esik:\n            sonuc = \"dogrulandi\""
+    },
+    {
+      "id": "n0b_belirsiz_susturulur",
+      "desc": "katı kural: belirsiz kanal da susturulur (yalnız doğrulanan kalır)",
+      "module": "scripts/measurement/alt_kanal.py",
+      "test": "tests/test_alt_kanal.py::test_karar_kurali",
+      "find": "URUNDE_KALAN_KARARLAR = frozenset({\"dogrulandi\", \"belirsiz\"})",
+      "replace": "URUNDE_KALAN_KARARLAR = frozenset({\"dogrulandi\"})"
+    },
+    {
+      "id": "n0b_olculemedi_ad_verir",
+      "desc": "hakkında hiç kanıt olmayan (n = 0) kanal ad vermeyi sürdürür",
+      "module": "scripts/measurement/alt_kanal.py",
+      "test": "tests/test_alt_kanal.py::test_hepsini_kapatir_yalniz_hepsi_zayif_ya_da_olculemediyse",
+      "find": "URUNDE_KALAN_KARARLAR = frozenset({\"dogrulandi\", \"belirsiz\"})",
+      "replace": "URUNDE_KALAN_KARARLAR = frozenset({\"dogrulandi\", \"belirsiz\", \"olculemedi\"})"
+    },
+    {
+      "id": "n0b_halef_yapisal_suzgec_yok",
+      "desc": "halef yapısal süzgeci uygulamaz: call_graph rakibi ad alır",
+      "module": "scripts/measurement/alt_kanal.py",
+      "test": "tests/test_alt_kanal.py::test_halef_yapisal_suzgec_yalniz_en_iyiye_bakar",
+      "find": "        if r.get(\"strategy\") in YAPISAL_SUZGEC:",
+      "replace": "        if r.get(\"strategy\") in ():"
+    }
+  ]
+}

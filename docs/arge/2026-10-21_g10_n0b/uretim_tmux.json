@@ -1,0 +1,73 @@
+{
+ "sema": "karadul-alt-kanal-uretim/1",
+ "arac": {
+  "betik": "scripts/measurement/alt_kanal.py",
+  "betik_sha256": "d0e6f54431d77f2663f84afa6d5091e216b04b6bdf3d781005cd0c0a65c273eb",
+  "tanim_surumu": 1,
+  "git_head": "49efb28eb91a90675659a01a4f7cfeeab99024c6",
+  "kirli_dosyalar": [
+   "M scripts/measurement/dwarf_tip.py",
+   "?? docs/arge/2026-10-21_g10_n0b/",
+   "?? scripts/measurement/alt_kanal.py",
+   "?? scripts/measurement/ghidra_parametre.py",
+   "?? scripts/measurement/mutation_specs_alt_kanal.json",
+   "?? scripts/measurement/parametre_hizala.py",
+   "?? tests/test_alt_kanal.py"
+  ],
+  "python": "3.12.7"
+ },
+ "program": "tmux",
+ "calisma": "workspaces/olcum_mac/runs/taban-v2-62ad154/tmux/ws/workspaces/tmux/20261019_090738",
+ "girdiler": {
+  "ghidra_functions.json": {
+   "yol": "workspaces/olcum_mac/runs/taban-v2-62ad154/tmux/ws/workspaces/tmux/20261019_090738/deobfuscated/ghidra_functions.json",
+   "sha256": "850acc8ef0f21a5975667e01d2b476b39409227d464377077c86d5bd5496dc67"
+  },
+  "ghidra_strings.json": {
+   "yol": "workspaces/olcum_mac/runs/taban-v2-62ad154/tmux/ws/workspaces/tmux/20261019_090738/deobfuscated/ghidra_strings.json",
+   "sha256": "ed74953a7a885257e86d3ed1e9b19fd0b466881ba6331ade90c8413cef6d5952"
+  },
+  "ghidra_call_graph.json": {
+   "yol": "workspaces/olcum_mac/runs/taban-v2-62ad154/tmux/ws/workspaces/tmux/20261019_090738/deobfuscated/ghidra_call_graph.json",
+   "sha256": "dbc67a43dff113087741860f9691abea16badb6b663fd9b9eb2d27921eef9ce7"
+  },
+  "ghidra_xrefs.json": {
+   "yol": "workspaces/olcum_mac/runs/taban-v2-62ad154/tmux/ws/workspaces/tmux/20261019_090738/static/ghidra_xrefs.json",
+   "sha256": "e854cefd0a680b076d5854b62ba9ce68814d37a978e63adeb45ad233bbe909da"
+  }
+ },
+ "c_dizini": {
+  "yol": "workspaces/olcum_mac/runs/taban-v2-62ad154/tmux/ws/workspaces/tmux/20261019_090738/deobfuscated/decompiled",
+  "sha256": "b0cafda75031058db4972005aee6b53ced0fbe05d368f7caa97fd73209764579",
+  "dosya": 2821
+ },
+ "c_namer_sha256": "41e923e373a178c12fc0ac9b5dcb5395281e3c06f09c8da037181279f0384b02",
+ "min_confidence": 0.15,
+ "pre_names": {
+  "FUN_100027cac": "close_stdout"
+ },
+ "tohum_sayimlari": {
+  "gnulib_recovered": 1
+ },
+ "gecersiz_kilma_dosyalari": [],
+ "pythonhashseed": "0",
+ "yurutucu": "seri (ProcessPoolExecutor yerine SeriYurutucu)",
+ "by_strategy": {
+  "binary_extract": 1,
+  "local_var": 7238,
+  "string_context": 862,
+  "body_param": 2705,
+  "dataflow": 743,
+  "api_param": 383,
+  "api_param_reverse": 12,
+  "type_based": 80,
+  "passthrough": 97
+ },
+ "total_renamed": 12121,
+ "genel_ad": 1144,
+ "sure_s": 89.1,
+ "ciktilar": {
+  "naming_provenance.json": "2b85f7502c046ec4e6650b3165c039e0035bf01d57f1698601f7e1ca6e98d6ca",
+  "naming_map.json": "4086df9a06a1b695d73a83926301726944c86054af2dd24e405f3a76e01b84c3"
+ }
+}
