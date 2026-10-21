@@ -604,6 +604,15 @@ Adresler, sorgu tarihleri ve indirilen dizin dosyalarının sha256'ları `dogrul
 - **K3 (Mac şişesinde ikili tamamen soyulmuş):** nagios, newlisp. Program değişmez; Mac ikilileri kaynaktan derlenecek (§4.4). Bu ayrı bir iş.
 - **K1, K2, K4, K5, K6:** yok. Değişim yapılmadı.
 
+## 14. Değişiklik kaydı
+
+**2026-10-21: kapı günleri değişti** (plan v2.2, `docs/arge/2026-10-21_plan_v2_2.md` §6; Berke'nin kararı).
+- §2 madde 1'deki kapı günleri (G13, G20, G28-G30) plan v2.2'de şöyle: Kapı 1 G15, K1 G19, K2 G23, Kapı 2 G29, Faz 2 sonu G37-G39.
+- Etiketleme günleri (G14 ve G28) ait oldukları kapının bakışına sayılır.
+- Bakış sayısı üçten beşe çıktı. Her bakış bakış kaydına yazılır; makalede sayısı raporlanır.
+- §2 madde 2-6 aynen geçerli. Kapı tutmazsa düzeltme geliştirme setinde yapılır. Tip kapılarında (K1, K2) doğrulamada tek okuma vardır; doğrulamaya bakarak kural ayarı yapılmaz.
+- Gerekçe: plan v2.1'den beri tip ve yapı izinin kendi kapıları var (Berke, 2026-10-21). Onuncu Adam bu değişikliğin ön kayda tarihli bir girişle yazılmasını istedi (`2026-10-21_v2_1/onuncu_adam.md` İ11).
+
 ## Ek A. Şişe özetleri ve Debian ikili yolları
 
 | Program | Homebrew şişesi `arm64_tahoe` sha256 | Mac kurulu boyut (B) | Debian dbgsym paketi | Debian ikili yolu |
