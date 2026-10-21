@@ -1,5 +1,5 @@
 {
-  "_comment": "dwarf_tip.py (plan v2.2 T0a) kurallarının mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_dwarf_tip.json",
+  "_comment": "dwarf_tip.py (plan v2.2 T0a; t0b_* mutantları T0b girişteki konum) kurallarının mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_dwarf_tip.json",
   "mutants": [
     {
       "id": "t0a_ref_alt_yanlis_dosya",
@@ -64,6 +64,62 @@
       "test": "tests/test_dwarf_tip.py::test_ithal_kapanisi_ve_tanimlar",
       "find": "        erisilen = {(ANA, b) for b in ana.birimler}",
       "replace": "        erisilen = {(r, b) for r, f in self.dosyalar.items() for b in f.birimler}"
+    },
+    {
+      "id": "t0b_v_yazmac_tabani",
+      "desc": "DWARF v0-v31 numarası 64 yerine 640'tan başlar: regx 64 (v0) tanınmaz",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_dwarf_yazmac_adlari",
+      "find": "DWARF_V_ILK = 64\n",
+      "replace": "DWARF_V_ILK = 640\n"
+    },
+    {
+      "id": "t0b_kapsama_kapali_uc",
+      "desc": "konum listesi girdisinin son ucu kapalı sayılır: low_pc'de biten girdi girişi kapsar",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_konum_listesi_mutlak_ve_kapsayan",
+      "find": "if g[0] != -1 and g[0] <= adres < g[1]:",
+      "replace": "if g[0] != -1 and g[0] <= adres <= g[1]:"
+    },
+    {
+      "id": "t0b_goreli_taban_eklenmez",
+      "desc": "göreli konum listesi girdilerine taban adresi eklenmez",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_konum_listesi_mutlak_ve_kapsayan",
+      "find": "sonuc.append((taban + bas, taban + son, list(ifade)))",
+      "replace": "sonuc.append((bas, son, list(ifade)))"
+    },
+    {
+      "id": "t0b_giris_degeri_yok",
+      "desc": "DW_OP_entry_value(<yazmaç>), DW_OP_stack_value girişteki yazmaç sayılmaz",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_ifade_konumu_turleri",
+      "find": "if len(govde) == 1 and govde[0][0] in _OP_GIRIS_DEGERI:",
+      "replace": "if len(govde) == 10 and govde[0][0] in _OP_GIRIS_DEGERI:"
+    },
+    {
+      "id": "t0b_cfa_alti_yigin",
+      "desc": "CFA'nın altındaki yuva (fbreg < 0) gelen yığın argümanı sayılır",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_ifade_konumu_turleri",
+      "find": "return {\"tur\": \"yigin\" if ofset >= 0 else \"yerel_yuva\", \"ofset\": ofset}",
+      "replace": "return {\"tur\": \"yigin\", \"ofset\": ofset}"
+    },
+    {
+      "id": "t0b_arguman_yazmac_kumesi",
+      "desc": "x8-x30 da argüman yazmacı sayılır (exprloc DW_OP_breg22 0 giriş konumu olur)",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_ifade_konumu_turleri",
+      "find": "[f\"x{i}\" for i in range(8)]",
+      "replace": "[f\"x{i}\" for i in range(31)]"
+    },
+    {
+      "id": "t0b_konum_listesi_girise_bakmaz",
+      "desc": "giriş adresini kapsayan girdi yerine listenin ilk girdisi alınır",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_giris_konumu_fonksiyonda",
+      "find": "g = kapsayan_girdi(liste, adres) if adres is not None else None",
+      "replace": "g = liste[0] if liste else None"
     }
   ]
 }

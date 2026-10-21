@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""dwz farkında DWARF tip okuyucu (plan v2.2 T0a): K1'in gerçek verisi, parametre tipleri.
+"""dwz farkında DWARF tip okuyucu (plan v2.2 T0a; girişteki konum T0b): K1'in gerçek verisi.
 
 Debian ve Ubuntu dbgsym paketlerinde dwz, birden çok ikilide ortak olan DIE'leri ek bir
 dosyaya taşır. Ana ``.debug`` dosyası ek dosyayı ``.gnu_debugaltlink`` ile gösterir (yol +
@@ -38,6 +38,29 @@ Parametre
     bildirim parametresi başına tek sayım için kullanılır; ABI yargısı DEĞİLDİR (redis
     ``incrRefCount``'ta konumsuz DIE önce, W0'daki gerçek parametre sonra gelir). ``yer``:
     DWARF konum bilgisinin biçimi (``exprloc``, ``loclist``, ``const_value`` ya da boş).
+Girişteki konum (``giris``, plan v2.2 T0b)
+    Parametrenin fonksiyonun giriş adresindeki (``DW_AT_low_pc``) yeri. Kaynak
+    ``DW_AT_location``: ``exprloc`` ise ifadenin kendisi, konum listesiyse ``low_pc``'yi kapsayan
+    (``bas <= low_pc < son``) girdi; hiçbiri kapsamıyorsa ``DW_LLE_default_location``. İfade
+    AArch64 DWARF yazmaç numaralarıyla çözülür (0-30 ``x0``-``x30``, 31 ``sp``, 64-95
+    ``v0``-``v31``). ``tur`` (``GIRIS_TURLERI``):
+    ``yazmac`` (``DW_OP_reg*``/``regx``; ``DW_OP_entry_value(<yazmaç>), DW_OP_stack_value`` da
+    girişteki yazmaçtır, ``giris_degeri`` bayrağıyla), ``yigin`` (gelen yığın argümanı: çerçeve
+    tabanı ``DW_OP_call_frame_cfa`` iken ``DW_OP_fbreg N``, ya da ``DW_OP_breg31 N``; AArch64'te
+    girişte CFA = SP; ``ofset`` CFA'ya göredir ve Ghidra'nın ``Stack[N]``'ine denk gelir),
+    ``yerel_yuva`` (CFA'nın altında, ``N < 0``: çağrılanın kendi yuvası, girişteki yer DEĞİL),
+    ``dolayli`` (``DW_OP_bregN`` N≤30: değer ``xN``'in gösterdiği bellekte; AAPCS64'te 16
+    bayttan büyük yapının kopyası böyle geçer), ``parcali`` (``DW_OP_piece``: her parça ayrı
+    çözülür), ``sabit`` (``DW_AT_const_value``, ``implicit_value`` ya da yalnız sabitli
+    ``stack_value``), ``deger`` (başka hesaplanmış değer; ``kaynak_yazmaclar`` dolu olabilir),
+    ``bellek`` (``DW_OP_addr``), ``konumsuz`` (konum yok ya da liste girişi kapsamıyor:
+    ``alt: giriste_kapsam_yok``), ``cozulemedi``. ``ifade`` çözülen işlem dizisinin metnidir;
+    ``kaynak`` ``exprloc`` | ``loclist`` | ``loclist_varsayilan`` | ``const_value``.
+    ``arguman``: yazmaç AAPCS64 argüman yazmacı mı (``x0``-``x7``, ``v0``-``v7``). Tüm fonksiyon
+    için yazılmış ``exprloc``'ta argüman dışı yazmaç (``DW_OP_breg22 0``) girişi anlatmaz; bu
+    yargıyı hizalama verir (``parametre_hizala.py``), okuyucu yalnız yazar. Fonksiyon kaydında
+    ``cerceve_tabani`` (``cfa`` ya da ifade) ve ``dil`` (birimin ``DW_AT_language`` kodu);
+    parametrede ``yapay`` (``DW_AT_artificial``: C++ ``this``).
 Tip
     ``ham``: typedef, niteleyici ve işaretçi adımlarıyla tam zincir; her adımda etiket, konum ve
     varsa ad. ``kanonik``: typedef soyulur; ``const``, ``volatile``, ``restrict`` ve ``_Atomic``
@@ -150,13 +173,74 @@ KULLANILAN_OZELLIKLER = frozenset({
     "DW_AT_prototyped", "DW_AT_inline", "DW_AT_byte_size", "DW_AT_encoding", "DW_AT_import",
     "DW_AT_data_member_location", "DW_AT_bit_size", "DW_AT_data_bit_offset", "DW_AT_bit_offset",
     "DW_AT_upper_bound", "DW_AT_count", "DW_AT_lower_bound", "DW_AT_language",
-    "DW_AT_location", "DW_AT_const_value",
+    "DW_AT_location", "DW_AT_const_value", "DW_AT_frame_base", "DW_AT_artificial",
 })
 # Parametrenin DWARF konum bilgisinin biçimi (``yer``): ifade, konum listesi ya da sabit değer.
 YER_IFADE_BICIMLERI = frozenset({"DW_FORM_exprloc", "DW_FORM_block1", "DW_FORM_block2",
                                  "DW_FORM_block4", "DW_FORM_block"})
 YER_LISTE_BICIMLERI = frozenset({"DW_FORM_sec_offset", "DW_FORM_loclistx", "DW_FORM_data4",
                                  "DW_FORM_data8"})
+
+# --- Girişteki konum (plan v2.2 T0b). AArch64 DWARF yazmaç numaraları ("DWARF for the Arm 64-bit
+# Architecture" §4.1): 0-30 x0-x30, 31 sp, 64-95 v0-v31.
+DWARF_SP = 31
+DWARF_V_ILK = 64
+DWARF_V_SON = 95
+GIRIS_TURLERI = ("yazmac", "yigin", "yerel_yuva", "dolayli", "parcali", "sabit", "deger",
+                 "bellek", "konumsuz", "cozulemedi")
+CFA_IFADESI = [0x9C]                 # DW_OP_call_frame_cfa (GCC'nin DW_AT_frame_base'i)
+# AAPCS64 argüman yazmaçları. Bunların dışındaki yazmaç (ör. x19-x28) girişte parametreyi
+# tutamaz: tüm fonksiyon için yazılmış ``exprloc`` (``DW_OP_breg22 0``) giriş konumu değildir.
+ARGUMAN_YAZMACLARI = frozenset([f"x{i}" for i in range(8)] + [f"v{i}" for i in range(8)])
+IFADE_SINIRI = 4                     # iç içe DW_OP_entry_value derinliği (bozuk veriye karşı)
+# İşlenen biçimleri: u ULEB128, s SLEB128, 1/2/4/8 imzasız sabit genişlik, 1s/2s/4s/8s imzalı,
+# a adres (8 bayt), b ULEB128 uzunluklu blok, t1 bir bayt uzunluklu blok (const_type).
+_OP_ISLENEN: dict[int, tuple[str, ...]] = {
+    0x03: ("a",), 0x06: (), 0x08: ("1",), 0x09: ("1s",), 0x0A: ("2",), 0x0B: ("2s",),
+    0x0C: ("4",), 0x0D: ("4s",), 0x0E: ("8",), 0x0F: ("8s",), 0x10: ("u",), 0x11: ("s",),
+    0x12: (), 0x13: (), 0x14: (), 0x15: ("1",), 0x16: (), 0x17: (), 0x19: (), 0x1A: (),
+    0x1B: (), 0x1C: (), 0x1D: (), 0x1E: (), 0x1F: (), 0x20: (), 0x21: (), 0x22: (),
+    0x23: ("u",), 0x24: (), 0x25: (), 0x26: (), 0x27: (), 0x28: ("2s",), 0x29: (), 0x2A: (),
+    0x2B: (), 0x2C: (), 0x2D: (), 0x2E: (), 0x2F: ("2s",),
+    0x90: ("u",), 0x91: ("s",), 0x92: ("u", "s"), 0x93: ("u",), 0x94: ("1",), 0x95: ("1",),
+    0x96: (), 0x97: (), 0x98: ("2",), 0x99: ("4",), 0x9A: ("4",), 0x9B: (), 0x9C: (),
+    0x9D: ("u", "u"), 0x9E: ("b",), 0x9F: (), 0xA0: ("4", "s"), 0xA1: ("u",), 0xA2: ("u",),
+    0xA3: ("b",), 0xA4: ("u", "t1"), 0xA5: ("u", "u"), 0xA6: ("1", "u"), 0xA7: ("1", "u"),
+    0xA8: ("u",), 0xA9: ("u",), 0xE0: (), 0xF0: (), 0xF2: ("4", "s"), 0xF3: ("b",),
+    0xF4: ("u", "t1"), 0xF5: ("u", "u"), 0xF6: ("1", "u"), 0xF7: ("u",), 0xF9: ("u",),
+    0xFA: ("4",), 0xFB: ("u",), 0xFC: ("u",), 0xFD: ("4",),
+}
+for _k in range(0x30, 0x70):          # DW_OP_lit0..31, DW_OP_reg0..31
+    _OP_ISLENEN[_k] = ()
+for _k in range(0x70, 0x90):          # DW_OP_breg0..31
+    _OP_ISLENEN[_k] = ("s",)
+_OP_ADLARI = {0x03: "addr", 0x06: "deref", 0x08: "const1u", 0x09: "const1s", 0x0A: "const2u",
+              0x0B: "const2s", 0x0C: "const4u", 0x0D: "const4s", 0x0E: "const8u",
+              0x0F: "const8s", 0x10: "constu", 0x11: "consts", 0x12: "dup", 0x13: "drop",
+              0x14: "over", 0x15: "pick", 0x16: "swap", 0x17: "rot", 0x19: "abs", 0x1A: "and",
+              0x1B: "div", 0x1C: "minus", 0x1D: "mod", 0x1E: "mul", 0x1F: "neg", 0x20: "not",
+              0x21: "or", 0x22: "plus", 0x23: "plus_uconst", 0x24: "shl", 0x25: "shr",
+              0x26: "shra", 0x27: "xor", 0x28: "bra", 0x29: "eq", 0x2A: "ge", 0x2B: "gt",
+              0x2C: "le", 0x2D: "lt", 0x2E: "ne", 0x2F: "skip", 0x90: "regx", 0x91: "fbreg",
+              0x92: "bregx", 0x93: "piece", 0x94: "deref_size", 0x95: "xderef_size", 0x96: "nop",
+              0x97: "push_object_address", 0x98: "call2", 0x99: "call4", 0x9A: "call_ref",
+              0x9B: "form_tls_address", 0x9C: "call_frame_cfa", 0x9D: "bit_piece",
+              0x9E: "implicit_value", 0x9F: "stack_value", 0xA0: "implicit_pointer",
+              0xA1: "addrx", 0xA2: "constx", 0xA3: "entry_value", 0xA4: "const_type",
+              0xA5: "regval_type", 0xA6: "deref_type", 0xA7: "xderef_type", 0xA8: "convert",
+              0xA9: "reinterpret", 0xE0: "GNU_push_tls_address", 0xF0: "GNU_uninit",
+              0xF2: "GNU_implicit_pointer", 0xF3: "GNU_entry_value", 0xF4: "GNU_const_type",
+              0xF5: "GNU_regval_type", 0xF6: "GNU_deref_type", 0xF7: "GNU_convert",
+              0xF9: "GNU_reinterpret", 0xFA: "GNU_parameter_ref", 0xFB: "GNU_addr_index",
+              0xFC: "GNU_const_index", 0xFD: "GNU_variable_value"}
+_OP_REG0, _OP_BREG0, _OP_REGX, _OP_FBREG, _OP_BREGX = 0x50, 0x70, 0x90, 0x91, 0x92
+_OP_PIECE, _OP_BIT_PIECE, _OP_IMPLICIT_VALUE, _OP_STACK_VALUE = 0x93, 0x9D, 0x9E, 0x9F
+_OP_GIRIS_DEGERI = frozenset({0xA3, 0xF3})            # DW_OP_entry_value, GNU_entry_value
+_OP_YAZMAC_DEGERI = frozenset({0xA5, 0xF5})           # DW_OP_regval_type, GNU_regval_type
+_OP_ORTUK_ISARETCI = frozenset({0xA0, 0xF2})          # DW_OP_implicit_pointer, GNU_
+_OP_SABITLER = frozenset({0x03, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11,
+                          0xA1, 0xA2, 0xA4, 0xF4, 0xFB, 0xFC} | set(range(0x30, 0x50)))
+_OP_NOTR = frozenset({0xA8, 0xA9, 0xF7, 0xF9})        # convert / reinterpret: değeri taşımaz
 
 # --- Sınıflar (plan v2.2 §5 K1: yalnız yapi* karar ölçüsüne girer)
 SINIF_YAPI_PTR = "yapi*"
@@ -228,7 +312,8 @@ class DwarfDosyasi:
     def __init__(self, rol: str, dieler: dict[int, Die], birimler: dict[int, dict[str, Any]],
                  dizgi_tablosu: bytes = b"", semboller: Optional[dict[int, list[str]]] = None,
                  *, yol: Optional[Path] = None, build_id: Optional[str] = None,
-                 altlink: Optional[tuple[str, str]] = None) -> None:
+                 altlink: Optional[tuple[str, str]] = None,
+                 konum_listeleri: Optional[dict[int, Any]] = None) -> None:
         if rol not in (ANA, EK):
             raise ValueError(f"rol {ANA!r} ya da {EK!r} olmalı: {rol!r}")
         self.rol = rol
@@ -239,6 +324,9 @@ class DwarfDosyasi:
         self.yol = yol
         self.build_id = build_id
         self.altlink = altlink        # (yol metni, ek dosyanın build-id'si) ya da None
+        # Somut gövdelerin formal_parameter DIE'leri: DIE ofseti -> mutlak [(bas, son, ifade)]
+        # ya da okunamadıysa {"hata": ...} (plan v2.2 T0b)
+        self.konum_listeleri = konum_listeleri if konum_listeleri is not None else {}
 
 
 # ---------------------------------------------------------------------------
@@ -425,6 +513,241 @@ def yer_bilgisi(d: Die) -> Optional[str]:
     return "const_value" if "DW_AT_const_value" in d.oz else None
 
 
+# --- Girişteki konum (plan v2.2 T0b)
+
+def dwarf_yazmac_adi(n: int) -> str:
+    """AArch64 DWARF yazmaç numarası -> ``x0``..``x30``, ``sp``, ``v0``..``v31``."""
+    if 0 <= n < DWARF_SP:
+        return f"x{n}"
+    if n == DWARF_SP:
+        return "sp"
+    if DWARF_V_ILK <= n <= DWARF_V_SON:
+        return f"v{n - DWARF_V_ILK}"
+    return f"dwarf{n}"
+
+
+def _sleb128(veri: list[int], i: int) -> tuple[int, int]:
+    sonuc = kayma = 0
+    while i < len(veri):
+        b = veri[i]
+        i += 1
+        sonuc |= (b & 0x7F) << kayma
+        kayma += 7
+        if not b & 0x80:
+            if b & 0x40:
+                sonuc -= 1 << kayma
+            return sonuc, i
+    raise ValueError("SLEB128 yarım")
+
+
+def ifade_ayristir(veri: list[int], ic: int = 0) -> list[tuple[int, list[Any]]]:
+    """DWARF ifade baytları -> ``[(işlem kodu, işlenenler)]``. ``DW_OP_entry_value`` bloğu iç
+    içe ayrıştırılır (işlenen listesi tek öğe: alt işlem listesi). Bilinmeyen işlem ya da yarım
+    işlenen ``ValueError``."""
+    if ic > IFADE_SINIRI:
+        raise ValueError("entry_value derinliği aşıldı")
+    sonuc: list[tuple[int, list[Any]]] = []
+    i = 0
+    while i < len(veri):
+        kod = veri[i]
+        i += 1
+        bicimler = _OP_ISLENEN.get(kod)
+        if bicimler is None:
+            raise ValueError(f"bilinmeyen DW_OP 0x{kod:02x}")
+        islenenler: list[Any] = []
+        for b in bicimler:
+            if b == "u":
+                v, i = _uleb128(veri, i)
+            elif b == "s":
+                v, i = _sleb128(veri, i)
+            elif b in ("b", "t1"):
+                if b == "b":
+                    n, i = _uleb128(veri, i)
+                else:
+                    if i >= len(veri):
+                        raise ValueError("yarım blok uzunluğu")
+                    n, i = veri[i], i + 1
+                if i + n > len(veri):
+                    raise ValueError("yarım blok")
+                blok = list(veri[i:i + n])
+                i += n
+                v = ifade_ayristir(blok, ic + 1) if kod in _OP_GIRIS_DEGERI else blok
+            else:
+                imzali = b.endswith("s")
+                n = 8 if b == "a" else int(b.rstrip("s"))
+                if i + n > len(veri):
+                    raise ValueError("yarım sabit işlenen")
+                v = int.from_bytes(bytes(veri[i:i + n]), "little", signed=imzali)
+                i += n
+            islenenler.append(v)
+        sonuc.append((kod, islenenler))
+    return sonuc
+
+
+def op_adi(kod: int) -> str:
+    if 0x30 <= kod < 0x50:
+        return f"DW_OP_lit{kod - 0x30}"
+    if _OP_REG0 <= kod < _OP_BREG0:
+        return f"DW_OP_reg{kod - _OP_REG0}"
+    if _OP_BREG0 <= kod < _OP_REGX:
+        return f"DW_OP_breg{kod - _OP_BREG0}"
+    return "DW_OP_" + _OP_ADLARI.get(kod, f"0x{kod:02x}")
+
+
+def ifade_metni(islemler: list[tuple[int, list[Any]]]) -> str:
+    """İnsan okur metin: ``DW_OP_entry_value(DW_OP_reg0), DW_OP_stack_value``."""
+    parcalar = []
+    for kod, isl in islemler:
+        ad = op_adi(kod)
+        if kod in _OP_GIRIS_DEGERI:
+            parcalar.append(f"{ad}({ifade_metni(isl[0])})")
+        elif isl:
+            parcalar.append(ad + " " + " ".join(
+                f"0x{v:x}" if kod == 0x03 else (str(v) if not isinstance(v, list) else
+                                                 "[" + " ".join(f"{b:02x}" for b in v) + "]")
+                for v in isl))
+        else:
+            parcalar.append(ad)
+    return ", ".join(parcalar)
+
+
+def _islem_yazmaci(kod: int, isl: list[Any]) -> Optional[int]:
+    """Yazmacın kendisini anlatan tek işlem (``reg*``, ``regx``, ``regval_type``) -> numara."""
+    if _OP_REG0 <= kod < _OP_BREG0:
+        return kod - _OP_REG0
+    if kod == _OP_REGX or kod in _OP_YAZMAC_DEGERI:
+        return isl[0]
+    return None
+
+
+def _kaynak_yazmaclar(islemler: list[tuple[int, list[Any]]]) -> list[str]:
+    bulunan: list[str] = []
+    for kod, isl in islemler:
+        n: Optional[int] = _islem_yazmaci(kod, isl)
+        if n is None and _OP_BREG0 <= kod < _OP_REGX:
+            n = kod - _OP_BREG0
+        if n is None and kod == _OP_BREGX:
+            n = isl[0]
+        if n is not None:
+            bulunan.append(dwarf_yazmac_adi(n))
+        if kod in _OP_GIRIS_DEGERI:
+            bulunan += _kaynak_yazmaclar(isl[0])
+    return sorted(set(bulunan))
+
+
+def _basit_konum(islemler: list[tuple[int, list[Any]]], cerceve_cfa: bool) -> dict[str, Any]:
+    """Parçasız ifadenin girişteki anlamı (``GIRIS_TURLERI``)."""
+    if not islemler:
+        return {"tur": "konumsuz"}
+    if len(islemler) == 1:
+        kod, isl = islemler[0]
+        n = _islem_yazmaci(kod, isl)
+        if n is not None and kod not in _OP_YAZMAC_DEGERI:
+            ad = dwarf_yazmac_adi(n)
+            return {"tur": "yazmac", "yazmac": ad, "arguman": ad in ARGUMAN_YAZMACLARI}
+        taban: Optional[int] = None
+        ofset = 0
+        if _OP_BREG0 <= kod < _OP_REGX:
+            taban, ofset = kod - _OP_BREG0, isl[0]
+        elif kod == _OP_BREGX:
+            taban, ofset = isl[0], isl[1]
+        if kod == _OP_FBREG:
+            if not cerceve_cfa:
+                return {"tur": "cozulemedi", "neden": "cerceve_tabani_cfa_degil", "ofset": isl[0]}
+            taban, ofset = DWARF_SP, isl[0]     # girişte CFA = SP (AArch64)
+        if taban == DWARF_SP:
+            return {"tur": "yigin" if ofset >= 0 else "yerel_yuva", "ofset": ofset}
+        if taban is not None:
+            ad = dwarf_yazmac_adi(taban)
+            return {"tur": "dolayli", "yazmac": ad, "ofset": ofset,
+                    "arguman": ad in ARGUMAN_YAZMACLARI}
+        if kod == 0x03:
+            return {"tur": "bellek", "adres": isl[0]}
+        if kod == _OP_IMPLICIT_VALUE:
+            return {"tur": "sabit"}
+        if kod in _OP_ORTUK_ISARETCI:
+            return {"tur": "deger", "alt": "ortuk_isaretci"}
+        if kod == 0xFA:
+            return {"tur": "deger", "alt": "cagri_yeri"}
+    son_kod = islemler[-1][0]
+    if son_kod == _OP_STACK_VALUE:
+        govde = [(k, a) for k, a in islemler[:-1] if k not in _OP_NOTR]
+        if len(govde) == 1 and govde[0][0] in _OP_GIRIS_DEGERI:
+            ic = [(k, a) for k, a in govde[0][1][0] if k not in _OP_NOTR]
+            if len(ic) == 1:
+                n = _islem_yazmaci(*ic[0])
+                if n is not None:
+                    ad = dwarf_yazmac_adi(n)
+                    return {"tur": "yazmac", "yazmac": ad, "arguman": ad in ARGUMAN_YAZMACLARI,
+                            "giris_degeri": True}
+        if govde and all(k in _OP_SABITLER for k, _ in govde):
+            return {"tur": "sabit"}
+        if govde and all(k == 0xFA for k, _ in govde):      # DW_OP_GNU_parameter_ref
+            return {"tur": "deger", "alt": "cagri_yeri"}
+        return {"tur": "deger", "kaynak_yazmaclar": _kaynak_yazmaclar(govde)}
+    return {"tur": "cozulemedi", "neden": "ifade"}
+
+
+def ifade_konumu(veri: list[int], cerceve_cfa: bool = True) -> dict[str, Any]:
+    """DWARF konum ifadesinin girişteki anlamı: ``tur`` + ayrıntı + ``ifade`` metni."""
+    try:
+        islemler = ifade_ayristir(list(veri))
+    except ValueError as h:
+        return {"tur": "cozulemedi", "neden": "ayristirma", "ayrinti": str(h),
+                "ifade": " ".join(f"{b:02x}" for b in veri)}
+    metin = ifade_metni(islemler)
+    if any(k in (_OP_PIECE, _OP_BIT_PIECE) for k, _ in islemler):
+        parcalar: list[dict[str, Any]] = []
+        bas = 0
+        for i, (kod, isl) in enumerate(islemler):
+            if kod not in (_OP_PIECE, _OP_BIT_PIECE):
+                continue
+            parca = _basit_konum(islemler[bas:i], cerceve_cfa)
+            if kod == _OP_PIECE:
+                parca["boyut"] = isl[0]
+            else:
+                parca["bit_boyutu"], parca["bit_ofseti"] = isl[0], isl[1]
+            parcalar.append(parca)
+            bas = i + 1
+        if bas != len(islemler):
+            return {"tur": "cozulemedi", "neden": "parca_sonrasi_islem", "ifade": metin}
+        return {"tur": "parcali", "parcalar": parcalar, "ifade": metin}
+    sonuc = _basit_konum(islemler, cerceve_cfa)
+    sonuc["ifade"] = metin
+    return sonuc
+
+
+def konum_listesi_mutlak(girdiler: Iterable[tuple], taban: int) -> list[tuple[int, int, list[int]]]:
+    """Konum listesi girdileri -> mutlak ``(bas, son, ifade)``. Girdiler:
+    ``("taban", adres)`` (DW_LLE_base_address*, DWARF 4 taban seçimi) ya da
+    ``("girdi", bas, son, ifade, mutlak_mi)``. Göreli girdiler son tabana (ilk başta birimin
+    ``DW_AT_low_pc``'si) eklenir. ``DW_LLE_default_location`` ``(-1, -1, ifade)`` olarak kalır."""
+    sonuc: list[tuple[int, int, list[int]]] = []
+    for g in girdiler:
+        if g[0] == "taban":
+            taban = g[1]
+            continue
+        _, bas, son, ifade, mutlak = g
+        if mutlak:
+            sonuc.append((bas, son, list(ifade)))
+        else:
+            sonuc.append((taban + bas, taban + son, list(ifade)))
+    return sonuc
+
+
+def kapsayan_girdi(liste: list[tuple[int, int, list[int]]], adres: int
+                   ) -> Optional[tuple[int, int, list[int]]]:
+    """``bas <= adres < son`` olan ilk girdi; yoksa varsayılan konum (``-1, -1``); yoksa None.
+    Sıfır uzunluklu girdiler (``bas == son``, konum görünümleri) kapsamaz."""
+    for g in liste:
+        if g[0] != -1 and g[0] <= adres < g[1]:
+            return g
+    for g in liste:
+        if g[0] == -1 and g[1] == -1:
+            return g
+    return None
+
+
 def hata_sonucu(neden: str, ayrinti: str = "") -> dict[str, Any]:
     return {"cozuldu": False, "neden": neden, "ayrinti": ayrinti or None}
 
@@ -455,14 +778,42 @@ def elf_build_id(yol: Path) -> Optional[str]:
     return None
 
 
+def _konum_listesi_oku(ayristirici: Any, a: Any, surum: int, die: Any, taban: int) -> Any:
+    """pyelftools konum listesi -> ``konum_listesi_mutlak`` girdileri; okunamazsa {"hata": ..}."""
+    from elftools.dwarf.locationlists import BaseAddressEntry, LocationEntry
+
+    if a.form == "DW_FORM_loclistx":
+        return {"hata": "loclistx_desteklenmiyor"}     # pyelftools 0.32 dizini ofset sanıyor
+    if ayristirici is None:
+        return {"hata": "konum_listesi_bolumu_yok"}
+    try:
+        ham = ayristirici.parse_from_attribute(a, surum, die)
+    except Exception as h:      # noqa: BLE001 - pyelftools bozuk listede çeşitli hatalar atar
+        return {"hata": f"{type(h).__name__}: {h}"}
+    if not isinstance(ham, list):
+        return {"hata": "liste_degil"}
+    girdiler: list[tuple] = []
+    for g in ham:
+        if isinstance(g, BaseAddressEntry):
+            girdiler.append(("taban", g.base_address))
+        elif isinstance(g, LocationEntry):
+            girdiler.append(("girdi", g.begin_offset, g.end_offset, g.loc_expr, g.is_absolute))
+    return konum_listesi_mutlak(girdiler, taban)
+
+
 def dosya_yukle(yol: Path, rol: str) -> DwarfDosyasi:
-    """ELF dosyasını aç; DIE ağacını, .debug_str'ı, .symtab'ı ve .gnu_debugaltlink'i oku."""
+    """ELF dosyasını aç; DIE ağacını, .debug_str'ı, .symtab'ı ve .gnu_debugaltlink'i oku.
+
+    Somut gövdelerin (``DW_AT_low_pc``'li subprogram) parametrelerinde konum listesi de okunur
+    (``konum_listeleri``; plan v2.2 T0b)."""
+    from elftools.dwarf.locationlists import LocationParser
     from elftools.elf.elffile import ELFFile
     from elftools.elf.sections import NoteSection, SymbolTableSection
 
     dieler: dict[int, Die] = {}
     birimler: dict[int, dict[str, Any]] = {}
     semboller: dict[int, list[str]] = defaultdict(list)
+    konum_listeleri: dict[int, Any] = {}
     build_id: Optional[str] = None
     altlink: Optional[tuple[str, str]] = None
     dizgi = b""
@@ -485,10 +836,14 @@ def dosya_yukle(yol: Path, rol: str) -> DwarfDosyasi:
         if not elf.has_dwarf_info():
             raise ValueError(f"{yol}: DWARF yok")
         dwarf = elf.get_dwarf_info(relocate_dwarf_sections=True, follow_links=False)
+        ll = dwarf.location_lists()
+        konum_ayristirici = LocationParser(ll) if ll is not None else None
         for cu in dwarf.iter_CUs():
             ust_die = cu.get_top_DIE()
             kayit: dict[str, Any] = {"ust": ust_die.offset, "etiket": ust_die.tag, "dieler": []}
             birimler[cu.cu_offset] = kayit
+            cu_low = ust_die.attributes.get("DW_AT_low_pc")
+            cu_tabani = cu_low.value if cu_low is not None and isinstance(cu_low.value, int) else 0
             yigin: list[int] = []
             for die in cu.iter_DIEs():
                 if die.tag is None:                 # kardeş listesinin sonu
@@ -503,6 +858,13 @@ def dosya_yukle(yol: Path, rol: str) -> DwarfDosyasi:
                         if isinstance(v, bytes):
                             v = v.decode("utf-8", "replace")
                         oz[ad] = (a.form, a.raw_value, v)
+                if (die.tag == "DW_TAG_formal_parameter" and ust is not None
+                        and dieler[ust].etiket == "DW_TAG_subprogram"
+                        and "DW_AT_low_pc" in dieler[ust].oz):
+                    yer = die.attributes.get("DW_AT_location")
+                    if yer is not None and yer.form in YER_LISTE_BICIMLERI:
+                        konum_listeleri[die.offset] = _konum_listesi_oku(
+                            konum_ayristirici, yer, cu.header.version, die, cu_tabani)
                 dieler[die.offset] = Die(die.offset, die.tag, oz, [], cu.cu_offset, ust)
                 kayit["dieler"].append(die.offset)
                 if ust is not None:
@@ -510,7 +872,7 @@ def dosya_yukle(yol: Path, rol: str) -> DwarfDosyasi:
                 if die.has_children:
                     yigin.append(die.offset)
     return DwarfDosyasi(rol, dieler, birimler, dizgi, dict(semboller), yol=yol,
-                        build_id=build_id, altlink=altlink)
+                        build_id=build_id, altlink=altlink, konum_listeleri=konum_listeleri)
 
 
 def ek_dosyasini_bul(ana_yol: Path, altlink: Optional[tuple[str, str]]
@@ -905,6 +1267,7 @@ class Cozucu:
             zincir = [(ANA, d, "kendi")]
             kayit["koken_hatasi"] = h.neden
         kayit["birim"] = self._fonksiyon_birimi(zincir)
+        kayit["dil"] = self._fonksiyon_dili(zincir)
         adlar = sorted(set(ana.semboller.get(adres, [])))
         kayit["semboller"] = adlar
         sonekler = klon_sonekleri(adlar)
@@ -919,7 +1282,16 @@ class Cozucu:
         kayit["prototipli"] = bool(self.koken_degeri(ANA, d, "DW_AT_prototyped"))
         kayit["degisken_arguman"] = any(self._cocuklar(r, k, "DW_TAG_unspecified_parameters")
                                         for r, k, _ in zincir)
-        kayit["parametreler"], kayit["parametre_kaynagi"] = self.parametreler(d, zincir)
+        cerceve = d.oz.get("DW_AT_frame_base")
+        cerceve_cfa = cerceve is not None and cerceve[2] == CFA_IFADESI
+        if cerceve is None or cerceve_cfa:
+            kayit["cerceve_tabani"] = "cfa" if cerceve_cfa else None
+        elif isinstance(cerceve[2], list):
+            kayit["cerceve_tabani"] = ifade_konumu(cerceve[2]).get("ifade")
+        else:
+            kayit["cerceve_tabani"] = cerceve[0]        # konum listesi: girişte çözülmez
+        kayit["parametreler"], kayit["parametre_kaynagi"] = self.parametreler(
+            d, zincir, adres=adres, cerceve_cfa=cerceve_cfa)
         kayit["soyut_parametre_sayisi"] = (
             len(self._cocuklar(zincir[1][0], zincir[1][1], "DW_TAG_formal_parameter"))
             if len(zincir) > 1 else None)
@@ -942,7 +1314,53 @@ class Cozucu:
             yedek = yedek or ad
         return yedek
 
-    def parametreler(self, d: Die, zincir: list[tuple[str, Die, str]]
+    def giris_konumu(self, rol: str, p: Die, adres: Optional[int],
+                     cerceve_cfa: bool = True) -> dict[str, Any]:
+        """Parametrenin giriş adresindeki yeri (``GIRIS_TURLERI``; plan v2.2 T0b)."""
+        oz = p.oz.get("DW_AT_location")
+        if oz is None:
+            if "DW_AT_const_value" in p.oz:
+                return {"tur": "sabit", "kaynak": "const_value"}
+            return {"tur": "konumsuz", "kaynak": None}
+        bicim = oz[0]
+        if bicim in YER_IFADE_BICIMLERI and isinstance(oz[2], list):
+            k = ifade_konumu(oz[2], cerceve_cfa)
+            k["kaynak"] = "exprloc"
+            return k
+        if bicim in YER_LISTE_BICIMLERI:
+            liste = self.dosyalar[rol].konum_listeleri.get(p.ofset)
+            if liste is None or isinstance(liste, dict):
+                return {"tur": "cozulemedi", "kaynak": "loclist",
+                        "neden": (liste or {}).get("hata", "liste_okunmadi")}
+            g = kapsayan_girdi(liste, adres) if adres is not None else None
+            if g is None:
+                k: dict[str, Any] = {"tur": "konumsuz", "kaynak": "loclist",
+                                     "alt": "giriste_kapsam_yok", "girdi_sayisi": len(liste)}
+                baslar = [b for b, _, _ in liste if b != -1]
+                if baslar and adres is not None:
+                    k["ilk_girdi_farki"] = min(baslar) - adres
+                return k
+            k = ifade_konumu(g[2], cerceve_cfa)
+            k["kaynak"] = "loclist" if g[0] != -1 else "loclist_varsayilan"
+            return k
+        return {"tur": "cozulemedi", "kaynak": bicim, "neden": "bicim"}
+
+    def _fonksiyon_dili(self, zincir: list[tuple[str, Die, str]]) -> Optional[int]:
+        """``_fonksiyon_birimi``'nin seçtiği derleme biriminin ``DW_AT_language`` kodu."""
+        yedek = None
+        for r, k, _ in reversed(zincir):
+            dosya = self.dosyalar[r]
+            b = dosya.birimler.get(k.birim)
+            if b is None or b["etiket"] != "DW_TAG_compile_unit":
+                continue
+            dil = deger(dosya.dieler[b["ust"]], "DW_AT_language")
+            if self.birim_adi(r, k.birim) not in (None, "<artificial>"):
+                return dil
+            yedek = yedek if yedek is not None else dil
+        return yedek
+
+    def parametreler(self, d: Die, zincir: list[tuple[str, Die, str]], *,
+                     adres: Optional[int] = None, cerceve_cfa: bool = True
                      ) -> tuple[list[dict[str, Any]], str]:
         somut = [(ANA, p) for p in self._cocuklar(ANA, d, "DW_TAG_formal_parameter")]
         soyut: list[tuple[str, Die]] = []
@@ -959,7 +1377,10 @@ class Cozucu:
         for i, (r, p) in enumerate(ogeler, 1):
             kayit: dict[str, Any] = {"sira": None, "somut_sira": i if kaynak == "somut" else None,
                                      "konum": konum(r, p.ofset), "tekrar": False,
-                                     "yer": yer_bilgisi(p)}
+                                     "yer": yer_bilgisi(p),
+                                     "giris": self.giris_konumu(r, p, adres, cerceve_cfa)}
+            if deger(p, "DW_AT_artificial"):
+                kayit["yapay"] = True               # C++ this, yıkıcının __in_chrg'si
             if kaynak == "soyut" or "DW_AT_abstract_origin" not in p.oz:
                 kayit["sira"] = i
             else:
@@ -1115,6 +1536,7 @@ def parametre_sayimlari(fonksiyonlar: list[dict[str, Any]]) -> dict[str, Any]:
     klon: Counter = Counter()
     niteleyici: Counter = Counter()
     yer: Counter = Counter()
+    giris: Counter = Counter()
     for f in fonksiyonlar:
         sayac["fonksiyon"] += 1
         asil = [p for p in f["parametreler"] if not p.get("tekrar")]
@@ -1135,6 +1557,7 @@ def parametre_sayimlari(fonksiyonlar: list[dict[str, Any]]) -> dict[str, Any]:
         for p in f["parametreler"]:
             sayac["parametre"] += 1
             yer[str(p.get("yer"))] += 1
+            giris[str((p.get("giris") or {}).get("tur"))] += 1
             if p.get("ad") is None:
                 sayac["adsiz_parametre"] += 1
             if p.get("sira") is None:
@@ -1159,6 +1582,7 @@ def parametre_sayimlari(fonksiyonlar: list[dict[str, Any]]) -> dict[str, Any]:
             "tekrar_parametre": sayac["tekrar_parametre"],
             "niteleyici": dict(sorted(niteleyici.items())),
             "yer": dict(sorted(yer.items())),
+            "giris_konumu": dict(sorted(giris.items())),
             "cozulemeyen_nedenleri": dict(sorted(nedenler.items())),
             "sinif": {s: siniflar.get(s, 0) for s in SINIFLAR},
             "tip_basvuru_bicimi": dict(sorted(bicimler.items())),
@@ -1360,7 +1784,7 @@ def _topla(satirlar: list[dict[str, Any]]) -> dict[str, Any]:
               "tum_fp_cozulen"):
         t[a] = sum(s[a] for s in satirlar)
     for a in ("cozulemeyen_nedenleri", "sinif", "tip_basvuru_bicimi", "klon", "niteleyici",
-              "yer", "tum_fp_kendi_tip_bicimi"):
+              "yer", "giris_konumu", "tum_fp_kendi_tip_bicimi"):
         c: Counter = Counter()
         for s in satirlar:
             c.update(s[a])
@@ -1397,7 +1821,7 @@ def ozetle(belgeler: list[tuple[str, Path, dict[str, Any]]]) -> dict[str, Any]:
             "eksik_parametreli_fonksiyon": s["eksik_parametreli_fonksiyon"],
             "tekrarli_fonksiyon": s["tekrarli_fonksiyon"], "tekrar_parametre": s["tekrar_parametre"],
             "yalniz_ranges_govde": s["yalniz_ranges_govde"], "niteleyici": s["niteleyici"],
-            "yer": s["yer"],
+            "yer": s["yer"], "giris_konumu": s.get("giris_konumu", {}),
             "tum_fp_kendi_tip_bicimi": tum["kendi_tip_bicimi"],
             "cozulemeyen_nedenleri": s["cozulemeyen_nedenleri"], "sinif": s["sinif"],
             "tip_basvuru_bicimi": s["tip_basvuru_bicimi"], "klon": s["klon"],
@@ -1442,6 +1866,7 @@ def ozet_yazdir(oz: dict[str, Any], *, dosya_satirlari: bool = False) -> None:
               f"| parametresi düşen fonksiyon={t['eksik_parametreli_fonksiyon']} "
               f"| tekrar parametre={t['tekrar_parametre']} ({t['tekrarli_fonksiyon']} fonksiyon) "
               f"| niteleyici={t['niteleyici']} | parametre konum bilgisi={t['yer']}")
+        print(f"    girişteki konum: {t['giris_konumu']}")
         print(f"    adsız parametre={t['adsiz_parametre']} sıra belirsiz={t['sira_belirsiz']} "
               f"aynı adlı farklı yerleşim={t['ayni_adli_farkli_yerlesim']} "
               f"aynı adlı kopya={t['ayni_adli_kopyalar']} "

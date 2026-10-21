@@ -11,7 +11,10 @@ dwz ek dosyası). Kilitlenen davranışlar:
       ``somut_sira`` somut DIE sırası; klon bayrağı sonekten ya da ``abstract_origin``'den,
   (d) ``DW_TAG_imported_unit`` kapanışı: bildirimden tanıma yalnız erişilen kısmi birimlerde
       gidilir; çözülemeyen tiplerin nedenleri,
-  (e) özet ve kimlik denetimi; dwarfdump çıktısının ayrıştırılması; ek dosyanın bulunması.
+  (e) özet ve kimlik denetimi; dwarfdump çıktısının ayrıştırılması; ek dosyanın bulunması,
+  (f) girişteki konum (plan v2.2 T0b): DW_OP ayrıştırma, AArch64 yazmaç numaraları (x, sp, v),
+      CFA'ya göre yığın, yerel yuva, dolaylı yapı kopyası, parçalar, giriş değeri, sabitler;
+      konum listesinin mutlak adrese çevrilmesi ve giriş adresini kapsayan girdinin seçimi.
 Yerel coreutils 9.4 dbgsym verisi varsa gerçek dosyada tümleşik testler de koşar (yoksa atlanır;
 depoya ikili fikstür konmaz).
 
@@ -618,3 +621,149 @@ def test_gercek_capraz_denetim(pinky, tmp_path):
     sonuc = dt.capraz(dt.belgeleri_topla([yol]), n=8)
     assert (sonuc["n"], sonuc["tutarli"]) == (8, 8), [o["farklar"] for o in sonuc["ornekler"]]
     assert json.loads(json.dumps(sonuc))["sema"] == dt.CAPRAZ_SEMA
+
+
+# --------------------------------------------------------------------------------------------
+# (f) girişteki konum (plan v2.2 T0b)
+
+
+def test_ifade_ayristir_islenenler():
+    assert dt.ifade_ayristir([0x50]) == [(0x50, [])]
+    assert dt.ifade_ayristir([0x90, 0x40]) == [(0x90, [64])]                  # regx 64
+    assert dt.ifade_ayristir([0x91, 0xC8, 0x7E]) == [(0x91, [-184])]         # fbreg -184
+    assert dt.ifade_ayristir([0x71, 0x10]) == [(0x71, [16])]                 # breg1 +16
+    assert dt.ifade_ayristir([0xA3, 0x01, 0x50, 0x9F]) == [(0xA3, [[(0x50, [])]]), (0x9F, [])]
+    assert dt.ifade_ayristir([0x52, 0x93, 0x08]) == [(0x52, []), (0x93, [8])]
+    assert dt.ifade_ayristir([0xFA, 0x77, 0x31, 0, 0, 0x9F]) == [(0xFA, [0x3177]), (0x9F, [])]
+    assert dt.ifade_ayristir([0x03] + [0x48, 0x85, 0x0C, 0, 0, 0, 0, 0] + [0x9F]) == [
+        (0x03, [0xC8548]), (0x9F, [])]
+    for bozuk in ([0xFF], [0x91], [0x03, 0x01], [0xA3, 0x05, 0x50]):
+        with pytest.raises(ValueError):
+            dt.ifade_ayristir(bozuk)
+    assert dt.ifade_metni(dt.ifade_ayristir([0xA3, 0x01, 0x50, 0x9F])) == (
+        "DW_OP_entry_value(DW_OP_reg0), DW_OP_stack_value")
+
+
+def test_dwarf_yazmac_adlari():
+    assert [dt.dwarf_yazmac_adi(n) for n in (0, 7, 30, 31, 64, 71, 95, 46)] == [
+        "x0", "x7", "x30", "sp", "v0", "v7", "v31", "dwarf46"]
+
+
+@pytest.mark.parametrize("ifade,beklenen", [
+    ([0x50], {"tur": "yazmac", "yazmac": "x0", "arguman": True}),
+    ([0x90, 0x41], {"tur": "yazmac", "yazmac": "v1", "arguman": True}),
+    ([0x63], {"tur": "yazmac", "yazmac": "x19", "arguman": False}),
+    ([0x91, 0x08], {"tur": "yigin", "ofset": 8}),                      # fbreg 8, çerçeve CFA
+    ([0x8F, 0x10], {"tur": "yigin", "ofset": 16}),                     # breg31 (sp) +16
+    ([0x91, 0x70], {"tur": "yerel_yuva", "ofset": -16}),
+    ([0x70, 0x00], {"tur": "dolayli", "yazmac": "x0", "ofset": 0, "arguman": True}),
+    ([0x86, 0x00], {"tur": "dolayli", "yazmac": "x22", "ofset": 0, "arguman": False}),
+    ([0xA3, 0x01, 0x51, 0x9F], {"tur": "yazmac", "yazmac": "x1", "arguman": True,
+                                "giris_degeri": True}),
+    ([0xF3, 0x03, 0xF5, 0x40, 0x30, 0x9F], {"tur": "yazmac", "yazmac": "v0", "arguman": True,
+                                            "giris_degeri": True}),   # GNU_entry_value(regval_type)
+    ([0x35, 0x9F], {"tur": "sabit"}),                                  # lit5, stack_value
+    ([0x9E, 0x02, 0x01, 0x00], {"tur": "sabit"}),                      # implicit_value
+    ([0xFA, 0x10, 0, 0, 0, 0x9F], {"tur": "deger", "alt": "cagri_yeri"}),
+    ([0x70, 0x08, 0x9F], {"tur": "deger", "kaynak_yazmaclar": ["x0"]}),
+    ([0xF2, 0x10, 0, 0, 0, 0x00], {"tur": "deger", "alt": "ortuk_isaretci"}),
+    ([], {"tur": "konumsuz"}),
+])
+def test_ifade_konumu_turleri(ifade, beklenen):
+    k = dt.ifade_konumu(ifade, True)
+    k.pop("ifade", None)
+    assert k == beklenen
+
+
+def test_ifade_konumu_parcali_ve_cerceve():
+    k = dt.ifade_konumu([0x52, 0x93, 0x08, 0x53, 0x93, 0x08])
+    assert k["tur"] == "parcali"
+    assert k["parcalar"] == [{"tur": "yazmac", "yazmac": "x2", "arguman": True, "boyut": 8},
+                             {"tur": "yazmac", "yazmac": "x3", "arguman": True, "boyut": 8}]
+    assert k["ifade"] == "DW_OP_reg2, DW_OP_piece 8, DW_OP_reg3, DW_OP_piece 8"
+    bos = dt.ifade_konumu([0x50, 0x93, 0x04, 0x93, 0x04])        # ikinci parça optimize edilmiş
+    assert [p["tur"] for p in bos["parcalar"]] == ["yazmac", "konumsuz"]
+    assert dt.ifade_konumu([0x91, 0x08], False)["tur"] == "cozulemedi"   # çerçeve CFA değil
+    assert dt.ifade_konumu([0xFF])["tur"] == "cozulemedi"
+
+
+def test_konum_listesi_mutlak_ve_kapsayan():
+    girdiler = [("girdi", 0x0, 0x8, [0x50], False),          # birim tabanına göre
+                ("taban", 0x4000),
+                ("girdi", 0x100, 0x140, [0x51], False),
+                ("girdi", 0x140, 0x140, [0x52], False),      # sıfır uzunluk (görünüm)
+                ("girdi", 0x5000, 0x5010, [0x53], True)]
+    liste = dt.konum_listesi_mutlak(girdiler, 0x1000)
+    assert liste == [(0x1000, 0x1008, [0x50]), (0x4100, 0x4140, [0x51]),
+                     (0x4140, 0x4140, [0x52]), (0x5000, 0x5010, [0x53])]
+    assert dt.kapsayan_girdi(liste, 0x4100)[2] == [0x51]
+    assert dt.kapsayan_girdi(liste, 0x413F)[2] == [0x51]
+    assert dt.kapsayan_girdi(liste, 0x4140) is None              # son açık uç, sıfır uzunluk
+    assert dt.kapsayan_girdi(liste + [(-1, -1, [0x54])], 0x4140)[2] == [0x54]   # varsayılan
+
+
+def _konumlu_dunya():
+    cfa = ("DW_FORM_exprloc", [0x9C], [0x9C])
+    dieler = ana_dieleri() + [
+        D(0x700, "subprogram", 0xB, name=ad("m"), low_pc=adres(0x7000), high_pc=veri(0x40),
+          frame_base=cfa),
+        D(0x710, "formal_parameter", 0x700, name=ad("a"), type=ref_alt(0x14),
+          location=("DW_FORM_sec_offset", 0x10, 0x10)),
+        D(0x718, "formal_parameter", 0x700, name=ad("b"), type=ref_alt(0x14),
+          location=("DW_FORM_sec_offset", 0x20, 0x20)),
+        D(0x720, "formal_parameter", 0x700, name=ad("c"), type=ref_alt(0x44),
+          location=("DW_FORM_exprloc", [0x91, 0x00], [0x91, 0x00])),
+        D(0x728, "formal_parameter", 0x700, name=ad("d"), type=ref_alt(0x14),
+          const_value=veri(3)),
+        D(0x730, "formal_parameter", 0x700, name=ad("e"), type=ref_alt(0x14)),
+    ]
+    listeler = {0x710: [(0x7000, 0x7008, [0x50]), (0x7008, 0x7040, [0x63])],
+                0x718: [(0x7004, 0x7040, [0x51])],        # girişi kapsamıyor
+                }
+    ana = dosya(dt.ANA, dieler, dizgi=b"\0yanlis_ana\0", semboller=ANA_SEMBOLLERI)
+    ana.konum_listeleri = listeler
+    return dt.Cozucu(ana, ek_dosya())
+
+
+def test_giris_konumu_fonksiyonda():
+    m = _fonk(_konumlu_dunya(), "m")
+    assert m["cerceve_tabani"] == "cfa"
+    g = {p["ad"]: p["giris"] for p in m["parametreler"]}
+    assert (g["a"]["tur"], g["a"]["yazmac"], g["a"]["kaynak"]) == ("yazmac", "x0", "loclist")
+    assert g["b"] == {"tur": "konumsuz", "kaynak": "loclist", "alt": "giriste_kapsam_yok",
+                      "girdi_sayisi": 1, "ilk_girdi_farki": 4}
+    assert (g["c"]["tur"], g["c"]["ofset"], g["c"]["kaynak"]) == ("yigin", 0, "exprloc")
+    assert g["d"] == {"tur": "sabit", "kaynak": "const_value"}
+    assert g["e"] == {"tur": "konumsuz", "kaynak": None}
+    s = dt.parametre_sayimlari([m])
+    assert s["giris_konumu"] == {"konumsuz": 2, "sabit": 1, "yazmac": 1, "yigin": 1}
+
+
+_TREE = (Path.home() / "karadul_olcum/downloads/debian13/x_tree-dbgsym_2.2.1-1_arm64/usr/lib/debug"
+         / ".build-id/d9/2a927b3c35989420228a9112c46d7c864a9aed.debug")
+_HTOP = (Path.home() / "karadul_olcum/downloads/debian13/x_htop-dbgsym_3.4.1-5_arm64/usr/lib/debug"
+         / ".build-id/74")
+
+
+@pytest.mark.skipif(not _TREE.is_file(), reason="yerel Debian 13 tree dbgsym yok")
+def test_gercek_tree_giris_konumlari():
+    b = dt.cikar(_TREE)
+    main = next(f for f in b["fonksiyonlar"] if f["ad"] == "main")
+    assert main["cerceve_tabani"] == "cfa" and main["dil"] == 0x1D        # DW_LANG_C11
+    assert [(p["ad"], p["giris"]["tur"], p["giris"]["yazmac"], p["giris"]["kaynak"])
+            for p in main["parametreler"]] == [("argc", "yazmac", "x0", "loclist"),
+                                               ("argv", "yazmac", "x1", "loclist")]
+    xml = next(f for f in b["fonksiyonlar"] if f["ad"] == "xml_report")
+    tot = xml["parametreler"][0]
+    assert (tot["tip"]["sinif"], tot["giris"]["tur"], tot["giris"]["arguman"]) == (
+        "yapi_degerle", "dolayli", False)
+    assert b["sayimlar"]["giris_konumu"] == {"deger": 2, "dolayli": 2, "konumsuz": 2,
+                                             "yazmac": 202}
+
+
+@pytest.mark.skipif(not _HTOP.is_dir(), reason="yerel Debian 13 htop dbgsym yok")
+def test_gercek_htop_kayan_nokta_v0():
+    b = dt.cikar(next(_HTOP.glob("*.debug")))
+    f = next(f for f in b["fonksiyonlar"] if f["ad"] == "Meter_humanUnit")
+    assert [(p["ad"], p["giris"]["yazmac"]) for p in f["parametreler"]] == [
+        ("buffer", "x0"), ("value", "v0"), ("size", "x1")]

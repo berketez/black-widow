@@ -1,0 +1,77 @@
+{
+ "1": {
+  "kimlik": "redis-check-aof|0x1ffc0c|ana:0x2c0409",
+  "karar": "dogru",
+  "not": "L ↔ param_2 (x0): mp_buf_append(param_2, param_3, …); param_1 = d (d0). Sırayla eşleme L'yi double'a bağlardı."
+ },
+ "2": {
+  "kimlik": "zstd|0x1be08|ana:0x5073e",
+  "karar": "dogru",
+  "not": "fparams (12 baytlık yapı, değerle) ↔ param_2 + param_3 (x1, w2): (int)param_2 ve param_2 >> 32 iki alan, param_3 üçüncü alan. DWARF yerel yuva (fbreg -16), ABI yedeği doğru; yapı bölünmesi."
+ },
+ "3": {
+  "kimlik": "redis-check-aof|0xfb6a8|ana:0xc7df3",
+  "karar": "dogru",
+  "not": "zl ↔ param_2 (x0): lpSeek(param_2, 0); param_1 = score (d0)."
+ },
+ "4": {
+  "kimlik": "redis-check-aof|0x1c5244|ana:0x1f9072",
+  "karar": "dogru",
+  "not": "qrange (s0) ↔ param_1: hnsw_prepare_insert_nolock(param_1 (qrange), param_2 (index), …, 0, param_7) çağrısı kaynakla aynı."
+ },
+ "5": {
+  "kimlik": "zstd|0x1d6ac|ana:0x1fef0",
+  "karar": "dogru",
+  "not": "compressionLevel ↔ param_2 (w0): param_1 x8 dönüş işaretçisi (ZSTD_parameters); sırayla eşleme x8'e bağlardı."
+ },
+ "6": {
+  "kimlik": "zstd|0x2ad80|ana:0x5b24d",
+  "karar": "dogru",
+  "not": "customMem (24 bayt, değerle → dolaylı) ↔ param_1 (x0): *param_1, param_1[1], param_1[2] üç alan. DWARF konumsuz, ABI yedeği doğru."
+ },
+ "7": {
+  "kimlik": "zstd|0x2b740|ana:0x31108",
+  "karar": "dogru",
+  "not": "customMem (24 bayt → dolaylı) ↔ param_6 (x5): *param_6, param_6[1], param_6[2] kopyalanıyor. DWARF exprloc DW_OP_breg20 (prolog sonrası), ABI yedeği doğru."
+ },
+ "8": {
+  "kimlik": "openssl|0x4eaa0|ana:0x18b07",
+  "karar": "dogru",
+  "not": "default_op (Stack[120]) ↔ param_24: constprop klonunda multirdn düşmüş; 8 yazmaç + Stack[0..120] → param_24. Sırayla (bildirim 25) yanlış olurdu."
+ },
+ "9": {
+  "kimlik": "pzstd|0x232f0|ana:0x9f4e7",
+  "karar": "dogru",
+  "not": "dictSize ↔ param_4 (x2): param_1 x8; param_3 == 0 → -1 (srcSizeHint), FUN(&local_70, param_2, param_3, param_4, 3, 0) ZSTD_getParams_internal çağrısı."
+ },
+ "10": {
+  "kimlik": "chgrp|0x7008|ana:0x8cf7",
+  "karar": "dogru",
+  "not": "candidate ↔ param_2 (x0): (float)param_2 / param_1; isra klonunda tuning yerine growth_threshold (s0) geçiyor."
+ },
+ "11": {
+  "kimlik": "tmux|0x9158c|ana:0xd001b",
+  "karar": "dogru",
+  "not": "ctx ↔ param_1 (x0): tty_ctx alan erişimleri; isra klonunda tty düşmüş, bildirim sırası 2 → sırayla param_2 yanlış."
+ },
+ "12": {
+  "kimlik": "pzstd|0x9600|ana:0x9ae97",
+  "karar": "dogru",
+  "not": "outBuffer ↔ param_3 (x1): param_3[2] pos, *param_3 dst, param_3[1] size güncellemesi; param_1 x8 (Buffer dönüşü)."
+ },
+ "13": {
+  "kimlik": "redis-check-aof|0x100a4c|ana:0xcfcd3",
+  "karar": "dogru",
+  "not": "value ↔ param_3 (x1): addReplyBulkCBuffer(handler->client, param_3, param_4); param_1 = score (d0)."
+ },
+ "14": {
+  "kimlik": "zstd|0xbb2b0|ana:0x18aab5",
+  "karar": "dogru",
+  "not": "nbSamples ↔ param_5 (w3): param_5 == 0, (double)param_5 * param_1 (splitPoint d0)."
+ },
+ "15": {
+  "kimlik": "redis-check-aof|0x1c3560|ana:0x1f68c4",
+  "karar": "dogru",
+  "not": "qvector ↔ param_4 (x2): hnsw_node_new(param_1 qrange, param_2 index, param_5 id, param_3 vector, param_4 qvector, …) kaynakla aynı."
+ }
+}

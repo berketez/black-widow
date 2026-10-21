@@ -1,0 +1,2795 @@
+{
+ "sema": "karadul-parametre-hizalama-denetim/1",
+ "arac": {
+  "betik": "scripts/measurement/parametre_hizala.py",
+  "betik_sha256": "b20c04f5945c046f69b3c9d2b991584dd831ea1d7ca57c361e569d60c2e9f3ef",
+  "git_head": "1f69b3536b3c715812bc1ffd7a32d3a6a383d222",
+  "python": "3.12.7"
+ },
+ "evren_turu": "zor",
+ "tohum_metni": "karadul-g10-t0b-zor-vaka-denetimi-2026-10-21",
+ "tohum": 11960481012498982550,
+ "evren": 656,
+ "n": 15,
+ "dwarfdump_tutarli": 15,
+ "ornekler": [
+  {
+   "no": 1,
+   "kimlik": "redis-check-aof|0x1ffc0c|ana:0x2c0409",
+   "ikili": "redis-check-aof",
+   "paket": "redis-tools",
+   "dwarf_fonksiyon": {
+    "ad": "mp_encode_double",
+    "adres": "0x1ffc0c",
+    "konum": "ana:0x2c03f8",
+    "semboller": [
+     "mp_encode_double"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "L",
+      "tip": "struct lua_State *",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "buf",
+      "tip": "struct mp_buf *",
+      "giris": "DW_OP_reg1",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 3,
+      "somut_sira": 3,
+      "ad": "d",
+      "tip": "double",
+      "giris": "DW_OP_regx 64",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "mp_encode_double",
+    "giris": "0x2ffc0c",
+    "imza": "void mp_encode_double(double param_1,undefined8 param_2,undefined8 param_3);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "double",
+      "boyut": 8,
+      "depolama": "d0:8"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x1:8"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "/* WARNING: Type propagation algorithm not settling */",
+     "/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */",
+     "",
+     "void mp_encode_double(double param_1,undefined8 param_2,undefined8 param_3)",
+     "",
+     "{",
+     "  undefined1 uVar1;",
+     "  undefined8 *puVar2;",
+     "  undefined8 *puVar3;",
+     "  float fVar4;",
+     "  undefined1 local_30;",
+     "  undefined1 local_2f [23];",
+     "  long local_18;",
+     "  ",
+     "  fVar4 = (float)param_1;"
+    ],
+    "c_ilgili_satirlar": [
+     "void mp_encode_double(double param_1,undefined8 param_2,undefined8 param_3)",
+     "fVar4 = (float)param_1;",
+     "if ((double)fVar4 == param_1) {",
+     "mp_buf_append(param_2,param_3,&local_30,5);",
+     "local_2f._0_8_ = param_1;",
+     "mp_buf_append(param_2,param_3,&local_30,9);"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": [
+     "x0"
+    ],
+    "abi_anahtar": [
+     "x0"
+    ],
+    "abi_dolayli": false,
+    "depolama_ortagi": 2,
+    "depolama_kaynagi": "dwarf",
+    "eslesme": "tam",
+    "sinif": null,
+    "abi_uyumu": true,
+    "sira_ortagi": 1,
+    "sira_durumu": "celiski",
+    "yazmac_sinifi_farki": true
+   },
+   "parametre": {
+    "sira": 1,
+    "somut_sira": 1,
+    "ad": "L",
+    "konum": "ana:0x2c0409",
+    "tekrar": false,
+    "tip": "struct lua_State *",
+    "sinif": "yapi*",
+    "giris_turu": "yazmac",
+    "giris": "DW_OP_reg0",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": "DW_OP_reg0 W0",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "redis-check-aof|0x1ffc0c|ana:0x2c0409",
+    "karar": "dogru",
+    "not": "L ↔ param_2 (x0): mp_buf_append(param_2, param_3, …); param_1 = d (d0). Sırayla eşleme L'yi double'a bağlardı."
+   }
+  },
+  {
+   "no": 2,
+   "kimlik": "zstd|0x1be08|ana:0x5073e",
+   "ikili": "zstd",
+   "paket": "zstd",
+   "dwarf_fonksiyon": {
+    "ad": "ZSTD_CCtx_setFParams",
+    "adres": "0x1be08",
+    "konum": "ana:0x50710",
+    "semboller": [
+     "ZSTD_CCtx_setFParams"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "cctx",
+      "tip": "struct ZSTD_CCtx_s *",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "fparams",
+      "tip": "struct <anon@ana:0x22ea>",
+      "giris": "DW_OP_fbreg -16",
+      "giris_turu": "yerel_yuva",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "FUN_0011be08",
+    "giris": "0x11be08",
+    "imza": "ulong FUN_0011be08(undefined8 param_1,undefined8 param_2,int param_3);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x1:8"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "int",
+      "boyut": 4,
+      "depolama": "w2:4"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */",
+     "",
+     "ulong FUN_0011be08(undefined8 param_1,undefined8 param_2,int param_3)",
+     "",
+     "{",
+     "  ulong uVar1;",
+     "  undefined8 uVar2;",
+     "  FILE *pFVar3;",
+     "  undefined8 uVar4;",
+     "  char *pcVar5;",
+     "  int local_10;",
+     "  int iStack_c;",
+     "  ",
+     "  if (3 < DAT_00250010) {",
+     "    fwrite(\"./lib//compress/zstd_compress.c:1211: ZSTD_CCtx_setFParams\",1,0x3a,_stderr);"
+    ],
+    "c_ilgili_satirlar": [
+     "ulong FUN_0011be08(undefined8 param_1,undefined8 param_2,int param_3)",
+     "local_10 = (int)param_2;",
+     "iStack_c = (int)((ulong)param_2 >> 0x20);"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": null,
+    "abi_anahtar": [
+     "x1",
+     "x2"
+    ],
+    "abi_dolayli": false,
+    "depolama_ortagi": 2,
+    "depolama_kaynagi": "abi",
+    "eslesme": "yapi_bolunmesi",
+    "sinif": null,
+    "ortak_parcalar": [
+     2,
+     3
+    ],
+    "sira_ortagi": 2,
+    "sira_durumu": "uyumlu"
+   },
+   "parametre": {
+    "sira": 2,
+    "somut_sira": 2,
+    "ad": "fparams",
+    "konum": "ana:0x5073e",
+    "tekrar": false,
+    "tip": "struct <anon@ana:0x22ea>",
+    "sinif": "yapi_degerle",
+    "giris_turu": "yerel_yuva",
+    "giris": "DW_OP_fbreg -16",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_exprloc",
+    "ifade": "DW_OP_fbreg -16",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "zstd|0x1be08|ana:0x5073e",
+    "karar": "dogru",
+    "not": "fparams (12 baytlık yapı, değerle) ↔ param_2 + param_3 (x1, w2): (int)param_2 ve param_2 >> 32 iki alan, param_3 üçüncü alan. DWARF yerel yuva (fbreg -16), ABI yedeği doğru; yapı bölünmesi."
+   }
+  },
+  {
+   "no": 3,
+   "kimlik": "redis-check-aof|0xfb6a8|ana:0xc7df3",
+   "ikili": "redis-check-aof",
+   "paket": "redis-tools",
+   "dwarf_fonksiyon": {
+    "ad": "zzlInsert",
+    "adres": "0xfb6a8",
+    "konum": "ana:0xc7de0",
+    "semboller": [
+     "zzlInsert"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "zl",
+      "tip": "unsigned char *",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "ele",
+      "tip": "char *",
+      "giris": "DW_OP_reg1",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 3,
+      "somut_sira": 3,
+      "ad": "score",
+      "tip": "double",
+      "giris": "DW_OP_regx 64",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "zzlInsert",
+    "giris": "0x1fb6a8",
+    "imza": "void zzlInsert(double param_1,undefined8 param_2,long param_3);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "double",
+      "boyut": 8,
+      "depolama": "d0:8"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "long",
+      "boyut": 8,
+      "depolama": "x1:8"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "void zzlInsert(double param_1,undefined8 param_2,long param_3)",
+     "",
+     "{",
+     "  byte bVar1;",
+     "  byte bVar2;",
+     "  int iVar3;",
+     "  long lVar4;",
+     "  long lVar5;",
+     "  uint uVar6;",
+     "  double dVar7;",
+     "  ",
+     "  lVar4 = lpSeek(param_2,0);",
+     "  while( true ) {",
+     "    if (lVar4 == 0) {",
+     "      zzlInsertAt(param_1,param_2,0,param_3);"
+    ],
+    "c_ilgili_satirlar": [
+     "void zzlInsert(double param_1,undefined8 param_2,long param_3)",
+     "lVar4 = lpSeek(param_2,0);",
+     "zzlInsertAt(param_1,param_2,0,param_3);",
+     "lVar5 = lpNext(param_2,lVar4);",
+     "if (param_1 < dVar7) break;",
+     "if (dVar7 == param_1) {",
+     "lVar4 = lpNext(param_2,lVar5);",
+     "zzlInsertAt(param_1,param_2,lVar4,param_3);"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": [
+     "x0"
+    ],
+    "abi_anahtar": [
+     "x0"
+    ],
+    "abi_dolayli": false,
+    "depolama_ortagi": 2,
+    "depolama_kaynagi": "dwarf",
+    "eslesme": "tam",
+    "sinif": null,
+    "abi_uyumu": true,
+    "sira_ortagi": 1,
+    "sira_durumu": "celiski",
+    "yazmac_sinifi_farki": true
+   },
+   "parametre": {
+    "sira": 1,
+    "somut_sira": 1,
+    "ad": "zl",
+    "konum": "ana:0xc7df3",
+    "tekrar": false,
+    "tip": "unsigned char *",
+    "sinif": "char*",
+    "giris_turu": "yazmac",
+    "giris": "DW_OP_reg0",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": "DW_OP_reg0 W0",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "redis-check-aof|0xfb6a8|ana:0xc7df3",
+    "karar": "dogru",
+    "not": "zl ↔ param_2 (x0): lpSeek(param_2, 0); param_1 = score (d0)."
+   }
+  },
+  {
+   "no": 4,
+   "kimlik": "redis-check-aof|0x1c5244|ana:0x1f9072",
+   "ikili": "redis-check-aof",
+   "paket": "redis-tools",
+   "dwarf_fonksiyon": {
+    "ad": "hnsw_insert",
+    "adres": "0x1c5244",
+    "konum": "ana:0x1f9037",
+    "semboller": [
+     "hnsw_insert"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "index",
+      "tip": "struct HNSW *",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "vector",
+      "tip": "float *",
+      "giris": "DW_OP_reg1",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 3,
+      "somut_sira": 3,
+      "ad": "qvector",
+      "tip": "signed char *",
+      "giris": "DW_OP_reg2",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 4,
+      "somut_sira": 4,
+      "ad": "qrange",
+      "tip": "float",
+      "giris": "DW_OP_regx 64",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 5,
+      "somut_sira": 5,
+      "ad": "id",
+      "tip": "long unsigned int",
+      "giris": "DW_OP_reg3",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 6,
+      "somut_sira": 6,
+      "ad": "value",
+      "tip": "void *",
+      "giris": "DW_OP_reg4",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 7,
+      "somut_sira": 7,
+      "ad": "ef",
+      "tip": "int",
+      "giris": "DW_OP_reg5",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "hnsw_insert",
+    "giris": "0x2c5244",
+    "imza": "undefined8 hnsw_insert(undefined4 param_1,long param_2,undefined8 param_3,undefined8 param_4,undefined8 param_5,undefined8 param_6,undefined4 param_7);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "s0:4"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "long",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x1:8"
+     },
+     {
+      "sira": 4,
+      "ad": "param_4",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x2:8"
+     },
+     {
+      "sira": 5,
+      "ad": "param_5",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x3:8"
+     },
+     {
+      "sira": 6,
+      "ad": "param_6",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x4:8"
+     },
+     {
+      "sira": 7,
+      "ad": "param_7",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "w5:4"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "undefined8",
+     "hnsw_insert(undefined4 param_1,long param_2,undefined8 param_3,undefined8 param_4,undefined8 param_5",
+     "           ,undefined8 param_6,undefined4 param_7)",
+     "",
+     "{",
+     "  pthread_rwlock_t *__rwlock;",
+     "  int iVar1;",
+     "  long lVar2;",
+     "  undefined8 uVar3;",
+     "  ",
+     "  __rwlock = (pthread_rwlock_t *)(param_2 + 0x130);",
+     "  iVar1 = pthread_rwlock_wrlock(__rwlock);",
+     "  if (iVar1 == 0) {",
+     "    lVar2 = hnsw_prepare_insert_nolock(param_1,param_2,param_3,param_4,param_5,0,param_7);",
+     "    if (lVar2 != 0) {"
+    ],
+    "c_ilgili_satirlar": [
+     "hnsw_insert(undefined4 param_1,long param_2,undefined8 param_3,undefined8 param_4,undefined8 param_5",
+     "lVar2 = hnsw_prepare_insert_nolock(param_1,param_2,param_3,param_4,param_5,0,param_7);"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": [
+     "v0"
+    ],
+    "abi_anahtar": [
+     "v0"
+    ],
+    "abi_dolayli": false,
+    "depolama_ortagi": 1,
+    "depolama_kaynagi": "dwarf",
+    "eslesme": "tam",
+    "sinif": null,
+    "abi_uyumu": true,
+    "sira_ortagi": 4,
+    "sira_durumu": "celiski",
+    "yazmac_sinifi_farki": true
+   },
+   "parametre": {
+    "sira": 4,
+    "somut_sira": 4,
+    "ad": "qrange",
+    "konum": "ana:0x1f9072",
+    "tekrar": false,
+    "tip": "float",
+    "sinif": "skaler",
+    "giris_turu": "yazmac",
+    "giris": "DW_OP_regx 64",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": "DW_OP_regx B0",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "redis-check-aof|0x1c5244|ana:0x1f9072",
+    "karar": "dogru",
+    "not": "qrange (s0) ↔ param_1: hnsw_prepare_insert_nolock(param_1 (qrange), param_2 (index), …, 0, param_7) çağrısı kaynakla aynı."
+   }
+  },
+  {
+   "no": 5,
+   "kimlik": "zstd|0x1d6ac|ana:0x1fef0",
+   "ikili": "zstd",
+   "paket": "zstd",
+   "dwarf_fonksiyon": {
+    "ad": "ZSTD_getParams_internal",
+    "adres": "0x1d6ac",
+    "konum": "ana:0x1fed7",
+    "semboller": [
+     "ZSTD_getParams_internal"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "compressionLevel",
+      "tip": "int",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "srcSizeHint",
+      "tip": "long long unsigned int",
+      "giris": "DW_OP_reg1",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 3,
+      "somut_sira": 3,
+      "ad": "dictSize",
+      "tip": "long unsigned int",
+      "giris": "DW_OP_reg2",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 4,
+      "somut_sira": 4,
+      "ad": "mode",
+      "tip": "enum <anon@ana:0x36c5>",
+      "giris": "DW_OP_reg3",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "FUN_0011d6ac",
+    "giris": "0x11d6ac",
+    "imza": "void FUN_0011d6ac(undefined8 *param_1,undefined4 param_2);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "undefined8 *",
+      "boyut": 8,
+      "depolama": "x8:8"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "w0:4"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */",
+     "",
+     "void FUN_0011d6ac(undefined8 *param_1,undefined4 param_2)",
+     "",
+     "{",
+     "  undefined8 local_80;",
+     "  undefined4 uStack_78;",
+     "  undefined4 uStack_74;",
+     "  undefined4 uStack_70;",
+     "  undefined8 uStack_6c;",
+     "  undefined8 local_60;",
+     "  undefined4 uStack_4c;",
+     "  undefined4 uStack_48;",
+     "  undefined4 local_44;",
+     "  undefined8 local_40;"
+    ],
+    "c_ilgili_satirlar": [
+     "void FUN_0011d6ac(undefined8 *param_1,undefined4 param_2)",
+     "param_2);",
+     "param_1[4] = 0;",
+     "*param_1 = local_80;",
+     "param_1[1] = CONCAT44(uStack_74,uStack_78);",
+     "param_1[3] = CONCAT44(1,uStack_48);",
+     "param_1[2] = CONCAT44(uStack_4c,uStack_70);"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": [
+     "x0"
+    ],
+    "abi_anahtar": [
+     "x0"
+    ],
+    "abi_dolayli": false,
+    "depolama_ortagi": 2,
+    "depolama_kaynagi": "dwarf",
+    "eslesme": "tam",
+    "sinif": null,
+    "abi_uyumu": true,
+    "sira_ortagi": 1,
+    "sira_durumu": "celiski",
+    "yazmac_sinifi_farki": false
+   },
+   "parametre": {
+    "sira": 1,
+    "somut_sira": 1,
+    "ad": "compressionLevel",
+    "konum": "ana:0x1fef0",
+    "tekrar": false,
+    "tip": "int",
+    "sinif": "skaler",
+    "giris_turu": "yazmac",
+    "giris": "DW_OP_reg0",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": "DW_OP_reg0 W0",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "zstd|0x1d6ac|ana:0x1fef0",
+    "karar": "dogru",
+    "not": "compressionLevel ↔ param_2 (w0): param_1 x8 dönüş işaretçisi (ZSTD_parameters); sırayla eşleme x8'e bağlardı."
+   }
+  },
+  {
+   "no": 6,
+   "kimlik": "zstd|0x2ad80|ana:0x5b24d",
+   "ikili": "zstd",
+   "paket": "zstd",
+   "dwarf_fonksiyon": {
+    "ad": "ZSTD_createCCtx_advanced",
+    "adres": "0x2ad80",
+    "konum": "ana:0x5b23a",
+    "semboller": [
+     "ZSTD_createCCtx_advanced"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "customMem",
+      "tip": "struct <anon@ana:0x1641>",
+      "giris": null,
+      "giris_turu": "konumsuz",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "FUN_0012ad80",
+    "giris": "0x12ad80",
+    "imza": "void * FUN_0012ad80(undefined8 *param_1);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "undefined8 *",
+      "boyut": 8,
+      "depolama": "x0:8"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "void * FUN_0012ad80(undefined8 *param_1)",
+     "",
+     "{",
+     "  code *pcVar1;",
+     "  long lVar2;",
+     "  void *__s;",
+     "  ulong uVar3;",
+     "  undefined8 uVar4;",
+     "  ",
+     "  pcVar1 = (code *)*param_1;",
+     "  lVar2 = param_1[1];",
+     "  if ((pcVar1 == (code *)0x0) == (lVar2 == 0)) {",
+     "    uVar4 = param_1[2];",
+     "    if (pcVar1 == (code *)0x0) {",
+     "      __s = malloc(0x14a8);"
+    ],
+    "c_ilgili_satirlar": [
+     "void * FUN_0012ad80(undefined8 *param_1)",
+     "pcVar1 = (code *)*param_1;",
+     "lVar2 = param_1[1];",
+     "uVar4 = param_1[2];"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": null,
+    "abi_anahtar": [
+     "x0"
+    ],
+    "abi_dolayli": true,
+    "depolama_ortagi": 1,
+    "depolama_kaynagi": "abi",
+    "eslesme": "tam",
+    "sinif": null,
+    "sira_ortagi": 1,
+    "sira_durumu": "uyumlu"
+   },
+   "parametre": {
+    "sira": 1,
+    "somut_sira": 1,
+    "ad": "customMem",
+    "konum": "ana:0x5b24d",
+    "tekrar": false,
+    "tip": "struct <anon@ana:0x1641>",
+    "sinif": "yapi_degerle",
+    "giris_turu": "konumsuz",
+    "giris": null,
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": null,
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "zstd|0x2ad80|ana:0x5b24d",
+    "karar": "dogru",
+    "not": "customMem (24 bayt, değerle → dolaylı) ↔ param_1 (x0): *param_1, param_1[1], param_1[2] üç alan. DWARF konumsuz, ABI yedeği doğru."
+   }
+  },
+  {
+   "no": 7,
+   "kimlik": "zstd|0x2b740|ana:0x31108",
+   "ikili": "zstd",
+   "paket": "zstd",
+   "dwarf_fonksiyon": {
+    "ad": "ZSTD_createCDict_advanced",
+    "adres": "0x2b740",
+    "konum": "ana:0x3108c",
+    "semboller": [
+     "ZSTD_createCDict_advanced"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "dictBuffer",
+      "tip": "void *",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "dictSize",
+      "tip": "long unsigned int",
+      "giris": "DW_OP_reg1",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 3,
+      "somut_sira": 3,
+      "ad": "dictLoadMethod",
+      "tip": "enum <anon@ana:0x35d8>",
+      "giris": "DW_OP_reg2",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 4,
+      "somut_sira": 4,
+      "ad": "dictContentType",
+      "tip": "enum <anon@ana:0x2326>",
+      "giris": "DW_OP_reg3",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 5,
+      "somut_sira": 5,
+      "ad": "cParams",
+      "tip": "struct <anon@ana:0x2a72>",
+      "giris": "DW_OP_breg21 0",
+      "giris_turu": "dolayli",
+      "tekrar": false
+     },
+     {
+      "sira": 6,
+      "somut_sira": 6,
+      "ad": "customMem",
+      "tip": "struct <anon@ana:0x1641>",
+      "giris": "DW_OP_breg20 0",
+      "giris_turu": "dolayli",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "FUN_0012b740",
+    "giris": "0x12b740",
+    "imza": "void FUN_0012b740(undefined8 param_1,ulong param_2,undefined4 param_3,undefined4 param_4,undefined8 *param_5,undefined8 *param_6);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "ulong",
+      "boyut": 8,
+      "depolama": "x1:8"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "w2:4"
+     },
+     {
+      "sira": 4,
+      "ad": "param_4",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "w3:4"
+     },
+     {
+      "sira": 5,
+      "ad": "param_5",
+      "tip": "undefined8 *",
+      "boyut": 8,
+      "depolama": "x4:8"
+     },
+     {
+      "sira": 6,
+      "ad": "param_6",
+      "tip": "undefined8 *",
+      "boyut": 8,
+      "depolama": "x5:8"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */",
+     "",
+     "void FUN_0012b740(undefined8 param_1,ulong param_2,undefined4 param_3,undefined4 param_4,",
+     "                 undefined8 *param_5,undefined8 *param_6)",
+     "",
+     "{",
+     "  undefined8 uVar1;",
+     "  undefined8 local_160;",
+     "  undefined8 uStack_158;",
+     "  undefined8 local_150;",
+     "  undefined4 local_138;",
+     "  undefined4 uStack_134;",
+     "  undefined4 uStack_130;",
+     "  undefined4 uStack_12c;",
+     "  undefined4 local_128;"
+    ],
+    "c_ilgili_satirlar": [
+     "undefined8 *param_5,undefined8 *param_6)",
+     "local_160 = *param_6;",
+     "uStack_158 = param_6[1];",
+     "local_150 = param_6[2];"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": null,
+    "abi_anahtar": [
+     "x5"
+    ],
+    "abi_dolayli": true,
+    "depolama_ortagi": 6,
+    "depolama_kaynagi": "abi",
+    "eslesme": "tam",
+    "sinif": null,
+    "sira_ortagi": 6,
+    "sira_durumu": "uyumlu"
+   },
+   "parametre": {
+    "sira": 6,
+    "somut_sira": 6,
+    "ad": "customMem",
+    "konum": "ana:0x31108",
+    "tekrar": false,
+    "tip": "struct <anon@ana:0x1641>",
+    "sinif": "yapi_degerle",
+    "giris_turu": "dolayli",
+    "giris": "DW_OP_breg20 0",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_exprloc",
+    "ifade": "DW_OP_breg20 W20+0",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "zstd|0x2b740|ana:0x31108",
+    "karar": "dogru",
+    "not": "customMem (24 bayt → dolaylı) ↔ param_6 (x5): *param_6, param_6[1], param_6[2] kopyalanıyor. DWARF exprloc DW_OP_breg20 (prolog sonrası), ABI yedeği doğru."
+   }
+  },
+  {
+   "no": 8,
+   "kimlik": "openssl|0x4eaa0|ana:0x18b07",
+   "ikili": "openssl",
+   "paket": "openssl",
+   "dwarf_fonksiyon": {
+    "ad": "certify",
+    "adres": "0x4eaa0",
+    "konum": "ana:0x189f9",
+    "semboller": [
+     "certify.constprop.0"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [
+     ".constprop",
+     "sira_degisik"
+    ],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "xret",
+      "tip": "struct x509_st **",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "infile",
+      "tip": "char *",
+      "giris": "DW_OP_reg1",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 3,
+      "somut_sira": 3,
+      "ad": "informat",
+      "tip": "int",
+      "giris": "DW_OP_reg2",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 4,
+      "somut_sira": 4,
+      "ad": "pkey",
+      "tip": "struct evp_pkey_st *",
+      "giris": "DW_OP_reg3",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 5,
+      "somut_sira": 5,
+      "ad": "x509",
+      "tip": "struct x509_st *",
+      "giris": "DW_OP_reg4",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 6,
+      "somut_sira": 6,
+      "ad": "dgst",
+      "tip": "char *",
+      "giris": "DW_OP_reg5",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 7,
+      "somut_sira": 7,
+      "ad": "sigopts",
+      "tip": "struct stack_st_OPENSSL_STRING *",
+      "giris": "DW_OP_reg6",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 8,
+      "somut_sira": 8,
+      "ad": "vfyopts",
+      "tip": "struct stack_st_OPENSSL_STRING *",
+      "giris": "DW_OP_reg7",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 9,
+      "somut_sira": 9,
+      "ad": "policy",
+      "tip": "struct stack_st_CONF_VALUE *",
+      "giris": "DW_OP_fbreg 0",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 10,
+      "somut_sira": 10,
+      "ad": "db",
+      "tip": "struct ca_db_st *",
+      "giris": "DW_OP_fbreg 8",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 11,
+      "somut_sira": 11,
+      "ad": "serial",
+      "tip": "struct bignum_st *",
+      "giris": "DW_OP_fbreg 16",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 12,
+      "somut_sira": 12,
+      "ad": "subj",
+      "tip": "char *",
+      "giris": "DW_OP_fbreg 24",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 13,
+      "somut_sira": 13,
+      "ad": "chtype",
+      "tip": "long unsigned int",
+      "giris": "DW_OP_fbreg 32",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 15,
+      "somut_sira": 14,
+      "ad": "email_dn",
+      "tip": "int",
+      "giris": "DW_OP_fbreg 40",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 16,
+      "somut_sira": 15,
+      "ad": "startdate",
+      "tip": "char *",
+      "giris": "DW_OP_fbreg 48",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 17,
+      "somut_sira": 16,
+      "ad": "enddate",
+      "tip": "char *",
+      "giris": "DW_OP_fbreg 56",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 18,
+      "somut_sira": 17,
+      "ad": "days",
+      "tip": "long int",
+      "giris": "DW_OP_fbreg 64",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 19,
+      "somut_sira": 18,
+      "ad": "batch",
+      "tip": "int",
+      "giris": "DW_OP_fbreg 72",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 20,
+      "somut_sira": 19,
+      "ad": "ext_sect",
+      "tip": "char *",
+      "giris": "DW_OP_fbreg 80",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 21,
+      "somut_sira": 20,
+      "ad": "lconf",
+      "tip": "struct conf_st *",
+      "giris": "DW_OP_fbreg 88",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 22,
+      "somut_sira": 21,
+      "ad": "verbose",
+      "tip": "int",
+      "giris": "DW_OP_fbreg 96",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 23,
+      "somut_sira": 22,
+      "ad": "certopt",
+      "tip": "long unsigned int",
+      "giris": "DW_OP_fbreg 104",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 24,
+      "somut_sira": 23,
+      "ad": "nameopt",
+      "tip": "long unsigned int",
+      "giris": "DW_OP_fbreg 112",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 25,
+      "somut_sira": 24,
+      "ad": "default_op",
+      "tip": "int",
+      "giris": "DW_OP_fbreg 120",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 26,
+      "somut_sira": 25,
+      "ad": "ext_copy",
+      "tip": "int",
+      "giris": "DW_OP_fbreg 128",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 27,
+      "somut_sira": 26,
+      "ad": "selfsign",
+      "tip": "int",
+      "giris": "DW_OP_fbreg 136",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 28,
+      "somut_sira": 27,
+      "ad": "dateopt",
+      "tip": "long unsigned int",
+      "giris": "DW_OP_fbreg 144",
+      "giris_turu": "yigin",
+      "tekrar": false
+     },
+     {
+      "sira": 14,
+      "somut_sira": 28,
+      "ad": "multirdn",
+      "tip": "int",
+      "giris": null,
+      "giris_turu": "sabit",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "FUN_0014eaa0",
+    "giris": "0x14eaa0",
+    "imza": "undefined4 FUN_0014eaa0(undefined8 param_1,undefined8 param_2,undefined4 param_3,EVP_PKEY *param_4,undefined8 param_5,undefined8 param_6,undefined8 param_7,undefined8 param_8,undefined8 param_9,undefined8 param_10,undefined8 param_11,undefined8 param_12,undefined8 param_13,undefined4 param_14,undefined8 param_15,undefined8 param_16,undefined8 param_17,undefined4 param_18,undefined8 param_19,undefined8 param_20,int param_21,undefined8 param_22,ulong param_23,undefined4 param_24,undefined4 param_25,int param_26,undefined8 param_27);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x1:8"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "w2:4"
+     },
+     {
+      "sira": 4,
+      "ad": "param_4",
+      "tip": "EVP_PKEY *",
+      "boyut": 8,
+      "depolama": "x3:8"
+     },
+     {
+      "sira": 5,
+      "ad": "param_5",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x4:8"
+     },
+     {
+      "sira": 6,
+      "ad": "param_6",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x5:8"
+     },
+     {
+      "sira": 7,
+      "ad": "param_7",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x6:8"
+     },
+     {
+      "sira": 8,
+      "ad": "param_8",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x7:8"
+     },
+     {
+      "sira": 9,
+      "ad": "param_9",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "Stack[0x0]:8"
+     },
+     {
+      "sira": 10,
+      "ad": "param_10",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "Stack[0x8]:8"
+     },
+     {
+      "sira": 11,
+      "ad": "param_11",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "Stack[0x10]:8"
+     },
+     {
+      "sira": 12,
+      "ad": "param_12",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "Stack[0x18]:8"
+     },
+     {
+      "sira": 13,
+      "ad": "param_13",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "Stack[0x20]:8"
+     },
+     {
+      "sira": 14,
+      "ad": "param_14",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "Stack[0x28]:4"
+     },
+     {
+      "sira": 15,
+      "ad": "param_15",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "Stack[0x30]:8"
+     },
+     {
+      "sira": 16,
+      "ad": "param_16",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "Stack[0x38]:8"
+     },
+     {
+      "sira": 17,
+      "ad": "param_17",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "Stack[0x40]:8"
+     },
+     {
+      "sira": 18,
+      "ad": "param_18",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "Stack[0x48]:4"
+     },
+     {
+      "sira": 19,
+      "ad": "param_19",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "Stack[0x50]:8"
+     },
+     {
+      "sira": 20,
+      "ad": "param_20",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "Stack[0x58]:8"
+     },
+     {
+      "sira": 21,
+      "ad": "param_21",
+      "tip": "int",
+      "boyut": 4,
+      "depolama": "Stack[0x60]:4"
+     },
+     {
+      "sira": 22,
+      "ad": "param_22",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "Stack[0x68]:8"
+     },
+     {
+      "sira": 23,
+      "ad": "param_23",
+      "tip": "ulong",
+      "boyut": 8,
+      "depolama": "Stack[0x70]:8"
+     },
+     {
+      "sira": 24,
+      "ad": "param_24",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "Stack[0x78]:4"
+     },
+     {
+      "sira": 25,
+      "ad": "param_25",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "Stack[0x80]:4"
+     },
+     {
+      "sira": 26,
+      "ad": "param_26",
+      "tip": "int",
+      "boyut": 4,
+      "depolama": "Stack[0x88]:4"
+     },
+     {
+      "sira": 27,
+      "ad": "param_27",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "Stack[0x90]:8"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "undefined4",
+     "FUN_0014eaa0(undefined8 param_1,undefined8 param_2,undefined4 param_3,EVP_PKEY *param_4,",
+     "            undefined8 param_5,undefined8 param_6,undefined8 param_7,undefined8 param_8,",
+     "            undefined8 param_9,undefined8 param_10,undefined8 param_11,undefined8 param_12,",
+     "            undefined8 param_13,undefined4 param_14,undefined8 param_15,undefined8 param_16,",
+     "            undefined8 param_17,undefined4 param_18,undefined8 param_19,undefined8 param_20,",
+     "            int param_21,undefined8 param_22,ulong param_23,undefined4 param_24,undefined4 param_25,",
+     "            int param_26,undefined8 param_27)",
+     "",
+     "{",
+     "  int iVar1;",
+     "  undefined4 uVar2;",
+     "  X509_REQ *x;",
+     "  long lVar3;",
+     "  "
+    ],
+    "c_ilgili_satirlar": [
+     "int param_21,undefined8 param_22,ulong param_23,undefined4 param_24,undefined4 param_25,",
+     "param_21,x,param_19,param_20,param_22,param_23,param_24,param_25,"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": [
+     "Stack[120]"
+    ],
+    "abi_anahtar": null,
+    "abi_dolayli": false,
+    "depolama_ortagi": 24,
+    "depolama_kaynagi": "dwarf",
+    "eslesme": "tam",
+    "sinif": null,
+    "sira_ortagi": 25,
+    "sira_durumu": "celiski",
+    "yazmac_sinifi_farki": false
+   },
+   "parametre": {
+    "sira": 25,
+    "somut_sira": 24,
+    "ad": "default_op",
+    "konum": "ana:0x18b07",
+    "tekrar": false,
+    "tip": "int",
+    "sinif": "skaler",
+    "giris_turu": "yigin",
+    "giris": "DW_OP_fbreg 120",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": "DW_OP_fbreg +120",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "openssl|0x4eaa0|ana:0x18b07",
+    "karar": "dogru",
+    "not": "default_op (Stack[120]) ↔ param_24: constprop klonunda multirdn düşmüş; 8 yazmaç + Stack[0..120] → param_24. Sırayla (bildirim 25) yanlış olurdu."
+   }
+  },
+  {
+   "no": 9,
+   "kimlik": "pzstd|0x232f0|ana:0x9f4e7",
+   "ikili": "pzstd",
+   "paket": "zstd",
+   "dwarf_fonksiyon": {
+    "ad": "ZSTD_getParams",
+    "adres": "0x232f0",
+    "konum": "ana:0x9f4a5",
+    "semboller": [
+     "ZSTD_getParams"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "compressionLevel",
+      "tip": "int",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "srcSizeHint",
+      "tip": "long long unsigned int",
+      "giris": "DW_OP_reg1",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 3,
+      "somut_sira": 3,
+      "ad": "dictSize",
+      "tip": "long unsigned int",
+      "giris": "DW_OP_reg2",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "FUN_001232f0",
+    "giris": "0x1232f0",
+    "imza": "void FUN_001232f0(undefined8 *param_1,undefined8 param_2,long param_3,undefined8 param_4);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "undefined8 *",
+      "boyut": 8,
+      "depolama": "x8:8"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "long",
+      "boyut": 8,
+      "depolama": "x1:8"
+     },
+     {
+      "sira": 4,
+      "ad": "param_4",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x2:8"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */",
+     "",
+     "void FUN_001232f0(undefined8 *param_1,undefined8 param_2,long param_3,undefined8 param_4)",
+     "",
+     "{",
+     "  undefined8 local_70;",
+     "  undefined4 uStack_68;",
+     "  undefined4 uStack_64;",
+     "  undefined4 uStack_60;",
+     "  undefined8 uStack_5c;",
+     "  undefined8 local_50;",
+     "  undefined4 uStack_3c;",
+     "  undefined4 uStack_38;",
+     "  undefined4 local_34;",
+     "  undefined8 local_30;"
+    ],
+    "c_ilgili_satirlar": [
+     "void FUN_001232f0(undefined8 *param_1,undefined8 param_2,long param_3,undefined8 param_4)",
+     "if (param_3 == 0) {",
+     "param_3 = -1;",
+     "FUN_00116010(&local_70,param_2,param_3,param_4,3,0);"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": [
+     "x2"
+    ],
+    "abi_anahtar": [
+     "x2"
+    ],
+    "abi_dolayli": false,
+    "depolama_ortagi": 4,
+    "depolama_kaynagi": "dwarf",
+    "eslesme": "tam",
+    "sinif": null,
+    "abi_uyumu": true,
+    "sira_ortagi": 3,
+    "sira_durumu": "celiski",
+    "yazmac_sinifi_farki": false
+   },
+   "parametre": {
+    "sira": 3,
+    "somut_sira": 3,
+    "ad": "dictSize",
+    "konum": "ana:0x9f4e7",
+    "tekrar": false,
+    "tip": "long unsigned int",
+    "sinif": "skaler",
+    "giris_turu": "yazmac",
+    "giris": "DW_OP_reg2",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": "DW_OP_reg2 W2",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "pzstd|0x232f0|ana:0x9f4e7",
+    "karar": "dogru",
+    "not": "dictSize ↔ param_4 (x2): param_1 x8; param_3 == 0 → -1 (srcSizeHint), FUN(&local_70, param_2, param_3, param_4, 3, 0) ZSTD_getParams_internal çağrısı."
+   }
+  },
+  {
+   "no": 10,
+   "kimlik": "chgrp|0x7008|ana:0x8cf7",
+   "ikili": "chgrp",
+   "paket": "coreutils",
+   "dwarf_fonksiyon": {
+    "ad": "compute_bucket_size",
+    "adres": "0x7008",
+    "konum": "ana:0x8ce6",
+    "semboller": [
+     "compute_bucket_size.isra.0"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [
+     ".isra"
+    ],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "candidate",
+      "tip": "long unsigned int",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "tuning",
+      "tip": "struct hash_tuning *",
+      "giris": "DW_OP_GNU_parameter_ref 3164, DW_OP_stack_value",
+      "giris_turu": "deger",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "FUN_00107008",
+    "giris": "0x107008",
+    "imza": "ulong FUN_00107008(float param_1,ulong param_2,ulong param_3);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "float",
+      "boyut": 4,
+      "depolama": "s0:4"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "ulong",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "ulong",
+      "boyut": 8,
+      "depolama": "x1:8"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "ulong FUN_00107008(float param_1,ulong param_2,ulong param_3)",
+     "",
+     "{",
+     "  ulong uVar1;",
+     "  int *piVar2;",
+     "  ulong uVar3;",
+     "  long lVar4;",
+     "  ulong uVar5;",
+     "  ",
+     "  if ((param_3 & 1) == 0) {",
+     "    if (1.8446744e+19 <= (float)param_2 / param_1) goto code_r0x00107088;",
+     "    param_2 = (ulong)((float)param_2 / param_1);",
+     "  }",
+     "  if (param_2 < 10) {",
+     "    param_2 = 10;"
+    ],
+    "c_ilgili_satirlar": [
+     "ulong FUN_00107008(float param_1,ulong param_2,ulong param_3)",
+     "if (1.8446744e+19 <= (float)param_2 / param_1) goto code_r0x00107088;",
+     "param_2 = (ulong)((float)param_2 / param_1);",
+     "if (param_2 < 10) {",
+     "param_2 = 10;",
+     "for (param_2 = param_2 | 1; param_2 != 0xffffffffffffffff; param_2 = param_2 + 2) {",
+     "uVar1 = param_2 / uVar3;",
+     "if (param_2 == uVar1) goto LAB_00107078;",
+     "} while (uVar5 < param_2);",
+     "uVar5 = param_2 / uVar3;",
+     "if (param_2 != uVar5 * uVar3) {",
+     "if (((param_2 >> 0x3c & 1) == 0) && (param_2 >> 0x3d == 0)) {",
+     "return param_2;"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": [
+     "x0"
+    ],
+    "abi_anahtar": null,
+    "abi_dolayli": false,
+    "depolama_ortagi": 2,
+    "depolama_kaynagi": "dwarf",
+    "eslesme": "tam",
+    "sinif": null,
+    "sira_ortagi": 1,
+    "sira_durumu": "celiski",
+    "yazmac_sinifi_farki": true
+   },
+   "parametre": {
+    "sira": 1,
+    "somut_sira": 1,
+    "ad": "candidate",
+    "konum": "ana:0x8cf7",
+    "tekrar": false,
+    "tip": "long unsigned int",
+    "sinif": "skaler",
+    "giris_turu": "yazmac",
+    "giris": "DW_OP_reg0",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": "DW_OP_reg0 W0",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "chgrp|0x7008|ana:0x8cf7",
+    "karar": "dogru",
+    "not": "candidate ↔ param_2 (x0): (float)param_2 / param_1; isra klonunda tuning yerine growth_threshold (s0) geçiyor."
+   }
+  },
+  {
+   "no": 11,
+   "kimlik": "tmux|0x9158c|ana:0xd001b",
+   "ikili": "tmux",
+   "paket": "tmux",
+   "dwarf_fonksiyon": {
+    "ad": "tty_clamp_line",
+    "adres": "0x9158c",
+    "konum": "ana:0xd000a",
+    "semboller": [
+     "tty_clamp_line.isra.0"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [
+     ".isra",
+     "sira_degisik"
+    ],
+    "parametreler": [
+     {
+      "sira": 2,
+      "somut_sira": 1,
+      "ad": "ctx",
+      "tip": "struct tty_ctx *",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 3,
+      "somut_sira": 2,
+      "ad": "px",
+      "tip": "unsigned int",
+      "giris": "DW_OP_reg1",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 4,
+      "somut_sira": 3,
+      "ad": "py",
+      "tip": "unsigned int",
+      "giris": "DW_OP_reg2",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 5,
+      "somut_sira": 4,
+      "ad": "nx",
+      "tip": "unsigned int",
+      "giris": "DW_OP_reg3",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 6,
+      "somut_sira": 5,
+      "ad": "i",
+      "tip": "unsigned int *",
+      "giris": "DW_OP_reg4",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 7,
+      "somut_sira": 6,
+      "ad": "x",
+      "tip": "unsigned int *",
+      "giris": "DW_OP_reg5",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 8,
+      "somut_sira": 7,
+      "ad": "rx",
+      "tip": "unsigned int *",
+      "giris": "DW_OP_reg6",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 9,
+      "somut_sira": 8,
+      "ad": "ry",
+      "tip": "unsigned int *",
+      "giris": "DW_OP_reg7",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 1,
+      "somut_sira": 9,
+      "ad": "tty",
+      "tip": "struct tty *",
+      "giris": "DW_OP_GNU_parameter_ref 36204, DW_OP_stack_value",
+      "giris_turu": "deger",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "FUN_0019158c",
+    "giris": "0x19158c",
+    "imza": "undefined8 FUN_0019158c(long param_1,int param_2,int param_3,uint param_4,uint *param_5,int *param_6,uint *param_7,int *param_8);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "long",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "int",
+      "boyut": 4,
+      "depolama": "w1:4"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "int",
+      "boyut": 4,
+      "depolama": "w2:4"
+     },
+     {
+      "sira": 4,
+      "ad": "param_4",
+      "tip": "uint",
+      "boyut": 4,
+      "depolama": "w3:4"
+     },
+     {
+      "sira": 5,
+      "ad": "param_5",
+      "tip": "uint *",
+      "boyut": 8,
+      "depolama": "x4:8"
+     },
+     {
+      "sira": 6,
+      "ad": "param_6",
+      "tip": "int *",
+      "boyut": 8,
+      "depolama": "x5:8"
+     },
+     {
+      "sira": 7,
+      "ad": "param_7",
+      "tip": "uint *",
+      "boyut": 8,
+      "depolama": "x6:8"
+     },
+     {
+      "sira": 8,
+      "ad": "param_8",
+      "tip": "int *",
+      "boyut": 8,
+      "depolama": "x7:8"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "undefined8",
+     "FUN_0019158c(long param_1,int param_2,int param_3,uint param_4,uint *param_5,int *param_6,",
+     "            uint *param_7,int *param_8)",
+     "",
+     "{",
+     "  uint uVar1;",
+     "  uint uVar2;",
+     "  int iVar3;",
+     "  uint uVar4;",
+     "  uint uVar5;",
+     "  ",
+     "  uVar4 = param_2 + *(int *)(param_1 + 0x5c);",
+     "  uVar1 = uVar4 + param_4;",
+     "  if (*(int *)(param_1 + 0xa8) != 0) {",
+     "    if ((*(uint *)(param_1 + 0xac) < uVar1) &&"
+    ],
+    "c_ilgili_satirlar": [
+     "FUN_0019158c(long param_1,int param_2,int param_3,uint param_4,uint *param_5,int *param_6,",
+     "uVar4 = param_2 + *(int *)(param_1 + 0x5c);",
+     "if (*(int *)(param_1 + 0xa8) != 0) {",
+     "if ((*(uint *)(param_1 + 0xac) < uVar1) &&",
+     "(uVar4 < *(uint *)(param_1 + 0xac) + *(int *)(param_1 + 0xb4))) {",
+     "uVar5 = *(uint *)(param_1 + 0xb0);",
+     "uVar2 = param_3 + *(int *)(param_1 + 0x60);",
+     "if ((uVar5 < uVar2 + 1) && (uVar2 < uVar5 + *(int *)(param_1 + 0xb8))) goto LAB_001915f0;",
+     "uVar5 = *(uint *)(param_1 + 0xb0);",
+     "*param_8 = (param_3 + *(int *)(param_1 + 0x58)) - uVar5;",
+     "uVar2 = *(uint *)(param_1 + 0xac);",
+     "uVar5 = uVar2 + *(int *)(param_1 + 0xb4);",
+     "uVar4 = *(uint *)(param_1 + 0xb4);",
+     "*param_5 = (uVar2 - param_2) - *(int *)(param_1 + 0x54);"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": [
+     "x0"
+    ],
+    "abi_anahtar": null,
+    "abi_dolayli": false,
+    "depolama_ortagi": 1,
+    "depolama_kaynagi": "dwarf",
+    "eslesme": "tam",
+    "sinif": null,
+    "sira_ortagi": 2,
+    "sira_durumu": "celiski",
+    "yazmac_sinifi_farki": false
+   },
+   "parametre": {
+    "sira": 2,
+    "somut_sira": 1,
+    "ad": "ctx",
+    "konum": "ana:0xd001b",
+    "tekrar": false,
+    "tip": "struct tty_ctx *",
+    "sinif": "yapi*",
+    "giris_turu": "yazmac",
+    "giris": "DW_OP_reg0",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": "DW_OP_reg0 W0",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "tmux|0x9158c|ana:0xd001b",
+    "karar": "dogru",
+    "not": "ctx ↔ param_1 (x0): tty_ctx alan erişimleri; isra klonunda tty düşmüş, bildirim sırası 2 → sırayla param_2 yanlış."
+   }
+  },
+  {
+   "no": 12,
+   "kimlik": "pzstd|0x9600|ana:0x9ae97",
+   "ikili": "pzstd",
+   "paket": "zstd",
+   "dwarf_fonksiyon": {
+    "ad": "split",
+    "adres": "0x9600",
+    "konum": "ana:0x9ae73",
+    "semboller": [
+     "_ZN5pzstd5splitERNS_6BufferER16ZSTD_outBuffer_s"
+    ],
+    "degisken_arguman": false,
+    "dil": "C++",
+    "parametre_kaynagi": "somut",
+    "klon": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "buffer",
+      "tip": "class Buffer &",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "outBuffer",
+      "tip": "struct ZSTD_outBuffer_s &",
+      "giris": "DW_OP_reg1",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "FUN_00109600",
+    "giris": "0x109600",
+    "imza": "undefined8 * FUN_00109600(undefined8 *param_1,undefined8 *param_2,long *param_3);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "undefined8 *",
+      "boyut": 8,
+      "depolama": "x8:8"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "undefined8 *",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "long *",
+      "boyut": 8,
+      "depolama": "x1:8"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "undefined8 * FUN_00109600(undefined8 *param_1,undefined8 *param_2,long *param_3)",
+     "",
+     "{",
+     "  long *plVar1;",
+     "  long lVar2;",
+     "  ulong uVar3;",
+     "  undefined8 uVar4;",
+     "  long *plVar5;",
+     "  long lVar6;",
+     "  char cVar7;",
+     "  int iVar8;",
+     "  out_of_range *this;",
+     "  ulong uVar9;",
+     "  long lVar10;",
+     "  ulong uVar11;"
+    ],
+    "c_ilgili_satirlar": [
+     "undefined8 * FUN_00109600(undefined8 *param_1,undefined8 *param_2,long *param_3)",
+     "uVar11 = param_3[2];",
+     "param_3[2] = 0;",
+     "*param_3 = *param_3 + uVar11;",
+     "param_3[1] = param_3[1] - uVar11;",
+     "lVar10 = param_2[2];",
+     "uVar9 = param_2[3] - lVar10;",
+     "uVar4 = *param_2;",
+     "plVar5 = (long *)param_2[1];",
+     "param_2[2] = lVar10 + uVar11;"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": [
+     "x1"
+    ],
+    "abi_anahtar": [
+     "x1"
+    ],
+    "abi_dolayli": false,
+    "depolama_ortagi": 3,
+    "depolama_kaynagi": "dwarf",
+    "eslesme": "tam",
+    "sinif": null,
+    "abi_uyumu": true,
+    "sira_ortagi": 2,
+    "sira_durumu": "celiski",
+    "yazmac_sinifi_farki": false
+   },
+   "parametre": {
+    "sira": 2,
+    "somut_sira": 2,
+    "ad": "outBuffer",
+    "konum": "ana:0x9ae97",
+    "tekrar": false,
+    "tip": "struct ZSTD_outBuffer_s &",
+    "sinif": "yapi*",
+    "giris_turu": "yazmac",
+    "giris": "DW_OP_reg1",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": "DW_OP_reg1 W1",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "pzstd|0x9600|ana:0x9ae97",
+    "karar": "dogru",
+    "not": "outBuffer ↔ param_3 (x1): param_3[2] pos, *param_3 dst, param_3[1] size güncellemesi; param_1 x8 (Buffer dönüşü)."
+   }
+  },
+  {
+   "no": 13,
+   "kimlik": "redis-check-aof|0x100a4c|ana:0xcfcd3",
+   "ikili": "redis-check-aof",
+   "paket": "redis-tools",
+   "dwarf_fonksiyon": {
+    "ad": "zrangeResultEmitCBufferToClient",
+    "adres": "0x100a4c",
+    "konum": "ana:0xcfcb3",
+    "semboller": [
+     "zrangeResultEmitCBufferToClient"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "handler",
+      "tip": "struct zrange_result_handler *",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "value",
+      "tip": "void *",
+      "giris": "DW_OP_reg1",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 3,
+      "somut_sira": 3,
+      "ad": "value_length_in_bytes",
+      "tip": "long unsigned int",
+      "giris": "DW_OP_reg2",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 4,
+      "somut_sira": 4,
+      "ad": "score",
+      "tip": "double",
+      "giris": "DW_OP_regx 64",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "FUN_00200a4c",
+    "giris": "0x200a4c",
+    "imza": "void FUN_00200a4c(undefined8 param_1,long param_2,undefined8 param_3,undefined8 param_4);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "d0:8"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "long",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x1:8"
+     },
+     {
+      "sira": 4,
+      "ad": "param_4",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x2:8"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "void FUN_00200a4c(undefined8 param_1,long param_2,undefined8 param_3,undefined8 param_4)",
+     "",
+     "{",
+     "  int iVar1;",
+     "  ",
+     "  if (*(int *)(param_2 + 0x2c) == 0) {",
+     "    addReplyBulkCBuffer(*(undefined8 *)(param_2 + 8),param_3);",
+     "    iVar1 = *(int *)(param_2 + 0x28);",
+     "  }",
+     "  else {",
+     "    addReplyArrayLen(*(undefined8 *)(param_2 + 8),2);",
+     "    addReplyBulkCBuffer(*(undefined8 *)(param_2 + 8),param_3,param_4);",
+     "    iVar1 = *(int *)(param_2 + 0x28);",
+     "  }",
+     "  if (iVar1 == 0) {"
+    ],
+    "c_ilgili_satirlar": [
+     "void FUN_00200a4c(undefined8 param_1,long param_2,undefined8 param_3,undefined8 param_4)",
+     "if (*(int *)(param_2 + 0x2c) == 0) {",
+     "addReplyBulkCBuffer(*(undefined8 *)(param_2 + 8),param_3);",
+     "iVar1 = *(int *)(param_2 + 0x28);",
+     "addReplyArrayLen(*(undefined8 *)(param_2 + 8),2);",
+     "addReplyBulkCBuffer(*(undefined8 *)(param_2 + 8),param_3,param_4);",
+     "iVar1 = *(int *)(param_2 + 0x28);",
+     "addReplyDouble(param_1,*(undefined8 *)(param_2 + 8));"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": [
+     "x1"
+    ],
+    "abi_anahtar": [
+     "x1"
+    ],
+    "abi_dolayli": false,
+    "depolama_ortagi": 3,
+    "depolama_kaynagi": "dwarf",
+    "eslesme": "tam",
+    "sinif": null,
+    "abi_uyumu": true,
+    "sira_ortagi": 2,
+    "sira_durumu": "celiski",
+    "yazmac_sinifi_farki": false
+   },
+   "parametre": {
+    "sira": 2,
+    "somut_sira": 2,
+    "ad": "value",
+    "konum": "ana:0xcfcd3",
+    "tekrar": false,
+    "tip": "void *",
+    "sinif": "void*",
+    "giris_turu": "yazmac",
+    "giris": "DW_OP_reg1",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": "DW_OP_reg1 W1",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "redis-check-aof|0x100a4c|ana:0xcfcd3",
+    "karar": "dogru",
+    "not": "value ↔ param_3 (x1): addReplyBulkCBuffer(handler->client, param_3, param_4); param_1 = score (d0)."
+   }
+  },
+  {
+   "no": 14,
+   "kimlik": "zstd|0xbb2b0|ana:0x18aab5",
+   "ikili": "zstd",
+   "paket": "zstd",
+   "dwarf_fonksiyon": {
+    "ad": "COVER_ctx_init",
+    "adres": "0xbb2b0",
+    "konum": "ana:0x18aa61",
+    "semboller": [
+     "COVER_ctx_init"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "ctx",
+      "tip": "struct <anon@ana:0x18863f> *",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "samplesBuffer",
+      "tip": "void *",
+      "giris": "DW_OP_reg1",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 3,
+      "somut_sira": 3,
+      "ad": "samplesSizes",
+      "tip": "long unsigned int *",
+      "giris": "DW_OP_reg2",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 4,
+      "somut_sira": 4,
+      "ad": "nbSamples",
+      "tip": "unsigned int",
+      "giris": "DW_OP_reg3",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 5,
+      "somut_sira": 5,
+      "ad": "d",
+      "tip": "unsigned int",
+      "giris": "DW_OP_reg4",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 6,
+      "somut_sira": 6,
+      "ad": "splitPoint",
+      "tip": "double",
+      "giris": "DW_OP_regx 64",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "FUN_001bb2b0",
+    "giris": "0x1bb2b0",
+    "imza": "undefined8 FUN_001bb2b0(double param_1,undefined8 *param_2,undefined8 param_3,long *param_4,uint param_5,uint param_6);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "double",
+      "boyut": 8,
+      "depolama": "d0:8"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "undefined8 *",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x1:8"
+     },
+     {
+      "sira": 4,
+      "ad": "param_4",
+      "tip": "long *",
+      "boyut": 8,
+      "depolama": "x2:8"
+     },
+     {
+      "sira": 5,
+      "ad": "param_5",
+      "tip": "uint",
+      "boyut": 4,
+      "depolama": "w3:4"
+     },
+     {
+      "sira": 6,
+      "ad": "param_6",
+      "tip": "uint",
+      "boyut": 4,
+      "depolama": "w4:4"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */",
+     "",
+     "undefined8",
+     "FUN_001bb2b0(double param_1,undefined8 *param_2,undefined8 param_3,long *param_4,uint param_5,",
+     "            uint param_6)",
+     "",
+     "{",
+     "  bool bVar1;",
+     "  ulong *puVar2;",
+     "  __compar_d_fn_t __compar;",
+     "  code *pcVar3;",
+     "  undefined1 auVar4 [16];",
+     "  undefined4 uVar5;",
+     "  int iVar6;",
+     "  long *plVar7;"
+    ],
+    "c_ilgili_satirlar": [
+     "FUN_001bb2b0(double param_1,undefined8 *param_2,undefined8 param_3,long *param_4,uint param_5,",
+     "if (param_5 == 0) {",
+     "plVar10 = param_4;",
+     "} while (param_4 + uVar11 != plVar7);",
+     "plVar10 = param_4 + uVar11;",
+     "} while (param_4 + uVar11 + uVar13 != plVar7);",
+     "plVar10 = param_4;",
+     "} while (param_4 + param_5 != plVar7);",
+     "uVar23 = (uint)((double)param_5 * param_1);",
+     "uVar13 = (ulong)(param_5 - uVar23);",
+     "uVar13 = (ulong)param_5;",
+     "uVar23 = param_5;",
+     "param_2[2] = param_4;",
+     "auVar4._0_4_ = param_5;"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": [
+     "x3"
+    ],
+    "abi_anahtar": [
+     "x3"
+    ],
+    "abi_dolayli": false,
+    "depolama_ortagi": 5,
+    "depolama_kaynagi": "dwarf",
+    "eslesme": "tam",
+    "sinif": null,
+    "abi_uyumu": true,
+    "sira_ortagi": 4,
+    "sira_durumu": "celiski",
+    "yazmac_sinifi_farki": false
+   },
+   "parametre": {
+    "sira": 4,
+    "somut_sira": 4,
+    "ad": "nbSamples",
+    "konum": "ana:0x18aab5",
+    "tekrar": false,
+    "tip": "unsigned int",
+    "sinif": "skaler",
+    "giris_turu": "yazmac",
+    "giris": "DW_OP_reg3",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": "DW_OP_reg3 W3",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "zstd|0xbb2b0|ana:0x18aab5",
+    "karar": "dogru",
+    "not": "nbSamples ↔ param_5 (w3): param_5 == 0, (double)param_5 * param_1 (splitPoint d0)."
+   }
+  },
+  {
+   "no": 15,
+   "kimlik": "redis-check-aof|0x1c3560|ana:0x1f68c4",
+   "ikili": "redis-check-aof",
+   "paket": "redis-tools",
+   "dwarf_fonksiyon": {
+    "ad": "hnsw_prepare_insert_nolock",
+    "adres": "0x1c3560",
+    "konum": "ana:0x1f6896",
+    "semboller": [
+     "hnsw_prepare_insert_nolock"
+    ],
+    "degisken_arguman": false,
+    "dil": "C",
+    "parametre_kaynagi": "somut",
+    "klon": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "somut_sira": 1,
+      "ad": "index",
+      "tip": "struct HNSW *",
+      "giris": "DW_OP_reg0",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 2,
+      "somut_sira": 2,
+      "ad": "vector",
+      "tip": "float *",
+      "giris": "DW_OP_reg1",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 3,
+      "somut_sira": 3,
+      "ad": "qvector",
+      "tip": "signed char *",
+      "giris": "DW_OP_reg2",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 4,
+      "somut_sira": 4,
+      "ad": "qrange",
+      "tip": "float",
+      "giris": "DW_OP_regx 64",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 5,
+      "somut_sira": 5,
+      "ad": "id",
+      "tip": "long unsigned int",
+      "giris": "DW_OP_reg3",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 6,
+      "somut_sira": 6,
+      "ad": "slot",
+      "tip": "int",
+      "giris": "DW_OP_reg4",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     },
+     {
+      "sira": 7,
+      "somut_sira": 7,
+      "ad": "ef",
+      "tip": "int",
+      "giris": "DW_OP_reg5",
+      "giris_turu": "yazmac",
+      "tekrar": false
+     }
+    ]
+   },
+   "ghidra_fonksiyon": {
+    "ad": "hnsw_prepare_insert_nolock",
+    "giris": "0x2c3560",
+    "imza": "undefined8 *hnsw_prepare_insert_nolock(undefined4 param_1,long *param_2,undefined8 param_3,undefined8 param_4,undefined8 param_5,undefined4 param_6,undefined4 param_7);",
+    "liste_imzasi": [],
+    "parametreler": [
+     {
+      "sira": 1,
+      "ad": "param_1",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "s0:4"
+     },
+     {
+      "sira": 2,
+      "ad": "param_2",
+      "tip": "long *",
+      "boyut": 8,
+      "depolama": "x0:8"
+     },
+     {
+      "sira": 3,
+      "ad": "param_3",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x1:8"
+     },
+     {
+      "sira": 4,
+      "ad": "param_4",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x2:8"
+     },
+     {
+      "sira": 5,
+      "ad": "param_5",
+      "tip": "undefined8",
+      "boyut": 8,
+      "depolama": "x3:8"
+     },
+     {
+      "sira": 6,
+      "ad": "param_6",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "w4:4"
+     },
+     {
+      "sira": 7,
+      "ad": "param_7",
+      "tip": "undefined4",
+      "boyut": 4,
+      "depolama": "w5:4"
+     }
+    ],
+    "c_ilk_satirlar": [
+     "undefined8 *",
+     "hnsw_prepare_insert_nolock",
+     "          (undefined4 param_1,long *param_2,undefined8 param_3,undefined8 param_4,undefined8 param_5",
+     "          ,undefined4 param_6,undefined4 param_7)",
+     "",
+     "{",
+     "  int iVar1;",
+     "  undefined8 *puVar2;",
+     "  long lVar3;",
+     "  long *plVar4;",
+     "  uint uVar5;",
+     "  ulong uVar6;",
+     "  long lVar7;",
+     "  uint uVar8;",
+     "  "
+    ],
+    "c_ilgili_satirlar": [
+     "(undefined4 param_1,long *param_2,undefined8 param_3,undefined8 param_4,undefined8 param_5",
+     "lVar3 = hnsw_node_new(param_1,param_2,param_5,param_3,param_4,uVar5,1);"
+    ]
+   },
+   "hizalama": {
+    "dwarf_anahtar": [
+     "x2"
+    ],
+    "abi_anahtar": [
+     "x2"
+    ],
+    "abi_dolayli": false,
+    "depolama_ortagi": 4,
+    "depolama_kaynagi": "dwarf",
+    "eslesme": "tam",
+    "sinif": null,
+    "abi_uyumu": true,
+    "sira_ortagi": 3,
+    "sira_durumu": "celiski",
+    "yazmac_sinifi_farki": false
+   },
+   "parametre": {
+    "sira": 3,
+    "somut_sira": 3,
+    "ad": "qvector",
+    "konum": "ana:0x1f68c4",
+    "tekrar": false,
+    "tip": "signed char *",
+    "sinif": "char*",
+    "giris_turu": "yazmac",
+    "giris": "DW_OP_reg2",
+    "yapay": false
+   },
+   "dwarfdump": {
+    "bicim": "DW_FORM_sec_offset",
+    "ifade": "DW_OP_reg2 W2",
+    "tutarli": true
+   },
+   "karar": {
+    "kimlik": "redis-check-aof|0x1c3560|ana:0x1f68c4",
+    "karar": "dogru",
+    "not": "qvector ↔ param_4 (x2): hnsw_node_new(param_1 qrange, param_2 index, param_5 id, param_3 vector, param_4 qvector, …) kaynakla aynı."
+   }
+  }
+ ],
+ "karar_sayimi": {
+  "dogru": 15
+ }
+}

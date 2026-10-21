@@ -1,0 +1,38 @@
+{
+ "tarih": "2026-10-21",
+ "git_head": "görev başında 1acba60; koşular sırasında 49efb28 → b7faeac → 1f69b35 (künyelerdeki git_head dosyaya göre farklı); 1acba60..1f69b35 arasında karadul/ farkı yalnız reconstruction/c_namer.py (Ghidra yolunu etkilemiyor); betikler commit'siz, sha256 aşağıda",
+ "betikler": {
+  "scripts/measurement/ghidra_parametre.py": "116fc648c55902812725441f89c1e91c0d9f3be748bc94baf5bc130f5f867dcc",
+  "scripts/measurement/dwarf_tip.py": "fc1e28e420f274735604833c498c92d03d45b38a51acf4ccb88b72a8d4eb9bb0",
+  "scripts/measurement/parametre_hizala.py": "b20c04f5945c046f69b3c9d2b991584dd831ea1d7ca57c361e569d60c2e9f3ef"
+ },
+ "veri": {
+  "kosu_dizini": "~/karadul_olcum/runs/t0b-1acba60",
+  "dwarf": "~/karadul_olcum/runs/t0b-1acba60/dwarf",
+  "ghidra_ilk": "~/karadul_olcum/runs/t0b-1acba60/ghidra",
+  "ghidra_son": "~/karadul_olcum/runs/t0b-1acba60/ghidra_2",
+  "hizalama": "~/karadul_olcum/runs/t0b-1acba60/hizalama"
+ },
+ "ghidra_kosulari": {
+  "ilk": {
+   "betik_sha256": "54c2e4b1c0179de5da18e983231bda22d529cb5f3d21738a86d9fb4961ebcfab",
+   "ikili": 22,
+   "toplam_sure_s": 348.1
+  },
+  "son": {
+   "betik_sha256": "116fc648c55902812725441f89c1e91c0d9f3be748bc94baf5bc130f5f867dcc",
+   "ikili": 22,
+   "toplam_sure_s": 360.7
+  },
+  "fark": "yalnız belge dizgisi (docstring); iki koşu 22/22 ikilide fonksiyon kümesi, 25 380/25 380 fonksiyonda liste imzası, decompiler parametreleri ve C metni aynı"
+ },
+ "karadul_esdegerligi": {
+  "ikili": "tree 2.2.1-1",
+  "yontem": "karadul.ghidra.headless.GhidraHeadless(Config()).analyze(...) çıktısı (functions.json, decompiled/*.c) ile ghidra_parametre.py çıktısı",
+  "fonksiyon": 250,
+  "ad_ayni": 250,
+  "liste_imzasi_ayni": 250,
+  "c_metni_ayni": 250,
+  "yan_etki": "Karadul'un analyze'ı varsayılan BSim ayarıyla (enabled, shadow_mode) ~/.cache/karadul/bsim/karadul_bsim veritabanına tree'nin 119 fonksiyonunu ekledi (2026-10-21 11:48); ghidra_parametre.py BSim çalıştırmaz"
+ }
+}

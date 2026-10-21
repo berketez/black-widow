@@ -1,0 +1,132 @@
+{
+ "tohum_metni": "karadul-g10-t0b-coreutils-secimi-2026-10-21",
+ "tohum": 1617656031144111583,
+ "n": 12,
+ "coreutils_evreni": 106,
+ "coreutils_secilen": [
+  "arch",
+  "chgrp",
+  "dir",
+  "du",
+  "env",
+  "ln",
+  "logname",
+  "md5sum",
+  "nproc",
+  "sha224sum",
+  "tr",
+  "unlink"
+ ],
+ "ikililer": [
+  {
+   "paket": "tmux",
+   "surum": "3.5a-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_tmux_3.5a-3_arm64/usr/bin/tmux"
+  },
+  {
+   "paket": "htop",
+   "surum": "3.4.1-5",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_htop_3.4.1-5_arm64/usr/bin/htop"
+  },
+  {
+   "paket": "tree",
+   "surum": "2.2.1-1",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_tree_2.2.1-1_arm64/usr/bin/tree"
+  },
+  {
+   "paket": "zstd",
+   "surum": "1.5.7+dfsg-1",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_zstd_1.5.7+dfsg-1_arm64/usr/bin/zstd"
+  },
+  {
+   "paket": "zstd",
+   "surum": "1.5.7+dfsg-1",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_zstd_1.5.7+dfsg-1_arm64/usr/bin/pzstd"
+  },
+  {
+   "paket": "sqlite3",
+   "surum": "3.46.1-7+deb13u2",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_sqlite3_3.46.1-7+deb13u2_arm64/usr/bin/sqlite3"
+  },
+  {
+   "paket": "openssl",
+   "surum": "3.5.7-1~deb13u2",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_openssl_3.5.7-1~deb13u2_arm64/usr/bin/openssl"
+  },
+  {
+   "paket": "redis-tools",
+   "surum": "5:8.0.2-3+deb13u2",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_redis-tools_8.0.2-3+deb13u2_arm64/usr/bin/redis-cli"
+  },
+  {
+   "paket": "redis-tools",
+   "surum": "5:8.0.2-3+deb13u2",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_redis-tools_8.0.2-3+deb13u2_arm64/usr/bin/redis-benchmark"
+  },
+  {
+   "paket": "redis-tools",
+   "surum": "5:8.0.2-3+deb13u2",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_redis-tools_8.0.2-3+deb13u2_arm64/usr/bin/redis-check-aof"
+  },
+  {
+   "paket": "coreutils",
+   "surum": "9.7-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_coreutils_9.7-3_arm64/usr/bin/arch"
+  },
+  {
+   "paket": "coreutils",
+   "surum": "9.7-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_coreutils_9.7-3_arm64/usr/bin/chgrp"
+  },
+  {
+   "paket": "coreutils",
+   "surum": "9.7-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_coreutils_9.7-3_arm64/usr/bin/dir"
+  },
+  {
+   "paket": "coreutils",
+   "surum": "9.7-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_coreutils_9.7-3_arm64/usr/bin/du"
+  },
+  {
+   "paket": "coreutils",
+   "surum": "9.7-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_coreutils_9.7-3_arm64/usr/bin/env"
+  },
+  {
+   "paket": "coreutils",
+   "surum": "9.7-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_coreutils_9.7-3_arm64/usr/bin/ln"
+  },
+  {
+   "paket": "coreutils",
+   "surum": "9.7-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_coreutils_9.7-3_arm64/usr/bin/logname"
+  },
+  {
+   "paket": "coreutils",
+   "surum": "9.7-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_coreutils_9.7-3_arm64/usr/bin/md5sum"
+  },
+  {
+   "paket": "coreutils",
+   "surum": "9.7-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_coreutils_9.7-3_arm64/usr/bin/nproc"
+  },
+  {
+   "paket": "coreutils",
+   "surum": "9.7-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_coreutils_9.7-3_arm64/usr/bin/sha224sum"
+  },
+  {
+   "paket": "coreutils",
+   "surum": "9.7-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_coreutils_9.7-3_arm64/usr/bin/tr"
+  },
+  {
+   "paket": "coreutils",
+   "surum": "9.7-3",
+   "ikili": "~/karadul_olcum/downloads/debian13/x_coreutils_9.7-3_arm64/usr/bin/unlink"
+  }
+ ]
+}

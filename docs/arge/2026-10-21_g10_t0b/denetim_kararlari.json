@@ -1,0 +1,252 @@
+{
+ "1": {
+  "kimlik": "redis-check-aof|0x13e960|ana:0x12dd6c",
+  "karar": "dogru",
+  "not": "link ↔ param_1 (x0): *(param_1+0x40) link->node, clusterSendMessage(param_1, …) — link kullanımı."
+ },
+ "2": {
+  "kimlik": "redis-benchmark|0x1f840|ana:0x25fae",
+  "karar": "dogru",
+  "not": "len ↔ param_3 (x2): param_2 + param_3 döngü sınırı (p + len)."
+ },
+ "3": {
+  "kimlik": "redis-check-aof|0xaa1e8|ana:0x53a29",
+  "karar": "dogru",
+  "not": "entry ↔ param_1 (x0): string2ll(param_1, param_2, &v) çağrısı."
+ },
+ "4": {
+  "kimlik": "openssl|0xa9d48|ana:0x9af63",
+  "karar": "dogru",
+  "not": "cp ↔ param_1 (x0): *param_1 == '/' denetimi (parse_name)."
+ },
+ "5": {
+  "kimlik": "zstd|0x5938c|ana:0xeba16",
+  "karar": "dogru",
+  "not": "iLimit ↔ param_3 (x2): param_2 < param_3 - 7 (ip < iLimit - 7). constprop klonu, giriş konumu loclist'te kesin."
+ },
+ "6": {
+  "kimlik": "zstd|0xdfbe0|ana:0x1d0aae",
+  "karar": "dogru",
+  "not": "displayLevel ↔ param_10 (Stack[8]): param_10 == 1 && adv->… (param_12+0x20) koşulu kaynakla birebir."
+ },
+ "7": {
+  "kimlik": "redis-check-aof|0x104aa0|ana:0xd467c",
+  "karar": "dogru",
+  "not": "c ↔ param_1 (x0): addReplyError(param_1, …)."
+ },
+ "8": {
+  "kimlik": "sqlite3|0x130c0|ana:0x1f406",
+  "karar": "dogru",
+  "not": "pSession ↔ param_1 (x0): param_1[3] = p (sqlite3session_delete), *param_1 = zName, param_1+1 = nFilter."
+ },
+ "9": {
+  "kimlik": "redis-check-aof|0x1c26a8|ana:0x1f5948",
+  "karar": "dogru",
+  "not": "node ↔ param_3 (x1): param_3 + layer*0x18 düğüm katman dizisi; param_1 = distance (s0). Sırayla eşleme param_2'yi (index) verirdi: yanlış."
+ },
+ "10": {
+  "kimlik": "sqlite3|0x1d230|ana:0x32eae",
+  "karar": "dogru",
+  "not": "argv (x4) Ghidra'da yok: expertFilter argv'yi (void) ile atıyor; kullanılmayan parametre. 'ghidra_az' kararı doğru."
+ },
+ "11": {
+  "kimlik": "redis-check-aof|0x108e40|ana:0xdae2f",
+  "karar": "dogru",
+  "not": "db (x0) Ghidra'da yok: hashTypeExists argümanları hashTypeGetValue'ya geçiriyor; çağrılanın prototipi bilinmediği için okumalar görünmüyor. Karar doğru."
+ },
+ "12": {
+  "kimlik": "redis-check-aof|0xf7b00|ana:0xc386e",
+  "karar": "dogru",
+  "not": "zsl ↔ param_1 (x0): *param_1 header, *(uint*)(param_1+3) level (ofset 24), zslDeleteNode(param_1, …)."
+ },
+ "13": {
+  "kimlik": "tmux|0x3338c|ana:0x36690",
+  "karar": "dogru",
+  "not": "after ↔ param_1 (x0): log_debug(\"%s %s: %s after %s\", __func__, …, *param_1) after->name."
+ },
+ "14": {
+  "kimlik": "redis-check-aof|0x17cec0|ana:0x18c7d0",
+  "karar": "dogru",
+  "not": "flags ↔ param_3 (w2): param_3 & 0xffffff0f bayrak denetimi."
+ },
+ "15": {
+  "kimlik": "redis-check-aof|0x1a78b0|ana:0x1ce113",
+  "karar": "dogru",
+  "not": "lp ↔ param_1 (x0): *param_1 toplam bayt, zrealloc_usable(param_1, …)."
+ },
+ "16": {
+  "kimlik": "redis-check-aof|0x9f828|ana:0x46ef8",
+  "karar": "dogru",
+  "not": "cmd ↔ param_2 (x1): cmd alanları (+8, +0x18 …), addReplyBulkCString(param_1, cmd->summary)."
+ },
+ "17": {
+  "kimlik": "redis-check-aof|0x1f7aa0|ana:0x2b35b0",
+  "karar": "dogru",
+  "not": "L ↔ param_1 (x0): lua_pushlightuserdata(param_1, …) dizisi."
+ },
+ "18": {
+  "kimlik": "redis-cli|0x55200|ana:0x577ca",
+  "karar": "dogru",
+  "not": "ht ↔ param_1 (x0): tip geri çağrıları (param_1[1]+0x20)(param_1[5], …) ve alan sıfırlama."
+ },
+ "19": {
+  "kimlik": "zstd|0x66aa4|ana:0x10e801",
+  "karar": "dogru",
+  "not": "offsetPtr ↔ param_4 (x3): *param_4 = … (OFFSET_TO_OFFBASE). constprop klonu."
+ },
+ "20": {
+  "kimlik": "redis-check-aof|0x195360|ana:0x1b2dac",
+  "karar": "dogru",
+  "not": "id ↔ param_2 (x1): *param_2 ve param_2[1] (ms, seq) yazılıyor."
+ },
+ "21": {
+  "kimlik": "tmux|0x6ae2c|ana:0x8ede1",
+  "karar": "dogru",
+  "not": "o ↔ param_1 (x0): *(param_1+0x10) tableentry, bayrak & 1 (dizi mi)."
+ },
+ "22": {
+  "kimlik": "redis-check-aof|0xcebe0|ana:0x88552",
+  "karar": "dogru",
+  "not": "try_expand ↔ param_3 (x2): kvstoreExpand(*param_1, param_2, param_3, 0)."
+ },
+ "23": {
+  "kimlik": "redis-check-aof|0x1f09b0|ana:0x2a5898",
+  "karar": "dogru",
+  "not": "key ↔ param_3 (x2): *(uint*)(param_3+0xc) hash, param_3 == düğüm anahtarı karşılaştırması."
+ },
+ "24": {
+  "kimlik": "arch|0x4bd0|ana:0x3436",
+  "karar": "dogru",
+  "not": "o ↔ param_5 (x4): param_5 != NULL ? param_5 : varsayılan seçenekler."
+ },
+ "25": {
+  "kimlik": "zstd|0x31300|ana:0x228de",
+  "karar": "dogru",
+  "not": "inSeqs ↔ param_2 (x1): param_2[nbSequences*4 - 2] (ZSTD_Sequence 4 × uint), param_2 += 4."
+ },
+ "26": {
+  "kimlik": "redis-check-aof|0xc9288|ana:0x7ec6e",
+  "karar": "dogru",
+  "not": "db ↔ param_1 (x0): dbSetValue(param_1, param_2, &o, 0, 0) benzeri çağrı."
+ },
+ "27": {
+  "kimlik": "zstd|0x4a480|ana:0x96d2d",
+  "karar": "dogru",
+  "not": "mls ↔ param_6 (w5): param_6 == 5/6/7 dallanması (switch(mls)). constprop klonu."
+ },
+ "28": {
+  "kimlik": "redis-check-aof|0xb982c|ana:0x693fc",
+  "karar": "dogru",
+  "not": "errstr ↔ param_1 (x0): _serverLog(…, \"Protocol error (%s) …\", param_1, …)."
+ },
+ "29": {
+  "kimlik": "tmux|0x3c320|ana:0x47439",
+  "karar": "dogru",
+  "not": "argc ↔ param_1 (w0): (int)param_1 == 0, cmd_log_argv(param_1, param_2, \"%s\", __func__)."
+ },
+ "30": {
+  "kimlik": "pzstd|0x3da0|ana:0xc58a",
+  "karar": "dogru",
+  "not": "dir1 ↔ param_1 (x0): strlen(param_1), memcpy(…, param_1, …)."
+ },
+ "31": {
+  "kimlik": "redis-check-aof|0x142408|ana:0x1334d8",
+  "karar": "dogru",
+  "not": "c ↔ param_1 (x0): setDeferredAggregateLen(param_1, …)."
+ },
+ "32": {
+  "kimlik": "redis-check-aof|0x167720|ana:0x16bf28",
+  "karar": "dogru",
+  "not": "type ↔ param_1 (w0): (int)param_1 < 4 (EL_DURATION_TYPE_NUM) ve dizi indeksi."
+ },
+ "33": {
+  "kimlik": "redis-check-aof|0x1e056c|ana:0x28e802",
+  "karar": "dogru",
+  "not": "start ↔ param_2 (x1): -1 < (long)param_2 ve negatifse len eklenmesi."
+ },
+ "34": {
+  "kimlik": "env|0x6b64|ana:0x5b00",
+  "karar": "dogru",
+  "not": "size ↔ param_3 (x2): if (param_3) *param_3 = …"
+ },
+ "35": {
+  "kimlik": "redis-check-aof|0x1e6584|ana:0x292903",
+  "karar": "dogru",
+  "not": "L ↔ param_1 (x0): lua_State alan erişimleri (+0x10 top, +0x28 ci …)."
+ },
+ "36": {
+  "kimlik": "redis-check-aof|0x1fffe0|ana:0x2c05f9",
+  "karar": "dogru",
+  "not": "L ↔ param_1 (x0): lua_tolstring(param_1, -1, &len), mp_encode_bytes(param_1, param_2, …)."
+ },
+ "37": {
+  "kimlik": "redis-check-aof|0x188370|ana:0x19c7f2",
+  "karar": "dogru",
+  "not": "key ↔ param_1 (x0): free_effort(param_1, mv->value) ve ctx.from_key = param_1."
+ },
+ "38": {
+  "kimlik": "zstd|0x984c0|ana:0x1387a0",
+  "karar": "dogru",
+  "not": "lengthToBeat ↔ param_8 (w7): param_8 - 1 (bestLength = lengthToBeat - 1)."
+ },
+ "39": {
+  "kimlik": "redis-check-aof|0x17b390|ana:0x18a217",
+  "karar": "dogru",
+  "not": "min (v0) Ghidra'da yok: RM_ZsetLastInScoreRange bütün argümanları zsetInitScoreRange'e kuyruk çağrısıyla geçiriyor; C imzası (void). Karar doğru."
+ },
+ "40": {
+  "kimlik": "redis-check-aof|0x878a0|ana:0x20ba8",
+  "karar": "dogru",
+  "not": "after ↔ param_3 (w2): param_3 == 0 dalı."
+ },
+ "41": {
+  "kimlik": "redis-check-aof|0xb6b8c|ana:0x650a1",
+  "karar": "dogru",
+  "not": "err ↔ param_2 (x1): param_2[-1] sds başlık baytı, *param_2 == '-', addReplyProto(param_1, param_2, len)."
+ },
+ "42": {
+  "kimlik": "tmux|0x1fa68|ana:0x17c8b",
+  "karar": "dogru",
+  "not": "args ↔ param_1 (x0): alanların serbest bırakılması ve sonda free(param_1)."
+ },
+ "43": {
+  "kimlik": "openssl|0xab248|ana:0x98cfd",
+  "karar": "dogru",
+  "not": "stop ↔ param_1 (w0): param_1 == 0 (TM_START)."
+ },
+ "44": {
+  "kimlik": "openssl|0x92fb0|ana:0x85a92",
+  "karar": "dogru",
+  "not": "args ↔ param_1 (x0): *param_1 (loopargs_t *)."
+ },
+ "45": {
+  "kimlik": "redis-check-aof|0x132ee0|ana:0x11bf9e",
+  "karar": "dogru",
+  "not": "port ↔ param_3 (x2): strtol(*(param_3+8), 0, 10) port->ptr."
+ },
+ "46": {
+  "kimlik": "redis-check-aof|0x169924|ana:0x16f20a",
+  "karar": "dogru",
+  "not": "c ↔ param_1 (x0): bstate alanlarına timeout/offset/numreplicas yazımı, addClientToTimeoutTable(param_1)."
+ },
+ "47": {
+  "kimlik": "logname|0x558c|ana:0x4c1f",
+  "karar": "dogru",
+  "not": "argsize (x2) Ghidra'da yok: quote_n_mem argümanları quotearg_n_style_mem'e kuyruk çağrısıyla aktarıyor; C imzası (void). Karar doğru."
+ },
+ "48": {
+  "kimlik": "tmux|0xabc88|ana:0xeec7e",
+  "karar": "dogru",
+  "not": "py ↔ param_3 (w2): screen_write_cursormove(param_1, param_2 - 1 + ox, param_3 - 1 + oy, 0)."
+ },
+ "49": {
+  "kimlik": "openssl|0x73940|ana:0x4c8f5",
+  "karar": "dogru",
+  "not": "doall ↔ 2. parametre (x1): C'de adı param_2 değil UNRECOVERED_JUMPTABLE; (*doall)(node) dolaylı kuyruk çağrısı. Eşleme doğru, ad notu K1 için."
+ },
+ "50": {
+  "kimlik": "dir|0x1916c|ana:0x21f1b",
+  "karar": "dogru",
+  "not": "n ↔ param_1 (x0): malloc(param_1)."
+ }
+}

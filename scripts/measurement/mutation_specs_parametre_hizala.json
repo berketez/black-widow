@@ -1,0 +1,69 @@
+{
+  "_comment": "parametre_hizala.py (plan v2.2 T0b) kurallarının mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_parametre_hizala.json",
+  "mutants": [
+    {
+      "id": "t0b_pie_farki_sifir",
+      "desc": "yükleme tabanı farkı ölçülmez, 0 alınır (DWARF adresi Ghidra adresi sanılır)",
+      "module": "scripts/measurement/parametre_hizala.py",
+      "test": "tests/test_parametre_hizala.py::test_hizala_ikili_ve_ozet",
+      "find": "\"secilen\": aday_taban}",
+      "replace": "\"secilen\": 0}"
+    },
+    {
+      "id": "t0b_w_yazmaci_simd",
+      "desc": "w0-w30 GPR sayılmaz (32 bitlik tamsayı parametresi SIMD sınıfına düşer)",
+      "module": "scripts/measurement/parametre_hizala.py",
+      "test": "tests/test_parametre_hizala.py::test_yazmac_anahtari",
+      "find": "if m.group(1) in \"xw\":",
+      "replace": "if m.group(1) in \"x\":"
+    },
+    {
+      "id": "t0b_ilk_parametreye_esle",
+      "desc": "depolama anahtarı her zaman param_1'e bağlanır (depolamayla eşleme bozulur)",
+      "module": "scripts/measurement/parametre_hizala.py",
+      "test": "tests/test_parametre_hizala.py::test_karisik_imza_depolamayla_dogru_sirayla_yanlis",
+      "find": "tek.setdefault(ks[0], i)",
+      "replace": "tek.setdefault(ks[0], 0 * i)"
+    },
+    {
+      "id": "t0b_abi_kayan_gpr",
+      "desc": "AAPCS64'te kayan noktalı parametre GPR'den geçiyor sayılır",
+      "module": "scripts/measurement/parametre_hizala.py",
+      "test": "tests/test_parametre_hizala.py::test_aapcs64_ayri_sayaclar_ve_kumeler",
+      "find": "return (\"v\", b, b, 1) if b in (2, 4, 8, 16) else None",
+      "replace": "return (\"x\", b, b, 1) if b in (2, 4, 8, 16, 32) else None"
+    },
+    {
+      "id": "t0b_degisken_arguman_yok",
+      "desc": "değişken argümanlı fonksiyonun fazla Ghidra parametreleri 'fazla' sayılır",
+      "module": "scripts/measurement/parametre_hizala.py",
+      "test": "tests/test_parametre_hizala.py::test_degisken_arguman_fazlasi",
+      "find": "if df.get(\"degisken_arguman\") and k0",
+      "replace": "if False and df.get(\"degisken_arguman\") and k0"
+    },
+    {
+      "id": "t0b_arguman_disi_anahtar",
+      "desc": "argüman yazmacı olmayan DWARF konumu (exprloc DW_OP_breg22 0) giriş anahtarı sayılır",
+      "module": "scripts/measurement/parametre_hizala.py",
+      "test": "tests/test_parametre_hizala.py::test_ghidra_ve_dwarf_anahtarlari",
+      "find": "        if not giris.get(\"arguman\"):\n            return None\n",
+      "replace": "        if giris.get(\"arguman\") is None:\n            return None\n"
+    },
+    {
+      "id": "t0b_klon_sira_degisik_yok",
+      "desc": "somut DIE'de sırası değişen parametre klon belirtisi sayılmaz",
+      "module": "scripts/measurement/parametre_hizala.py",
+      "test": "tests/test_parametre_hizala.py::test_klon_nedenleri",
+      "find": "p.get(\"sira\") != p.get(\"somut_sira\")",
+      "replace": "p.get(\"sira\") != p.get(\"sira\")"
+    },
+    {
+      "id": "t0b_dolayli_exprloc_anahtar",
+      "desc": "exprloc ile yazılmış dolaylı konum (prolog sonrası yazmaç, ör. error_tail'in va_list'i DW_OP_breg4 0) giriş anahtarı sayılır",
+      "module": "scripts/measurement/parametre_hizala.py",
+      "test": "tests/test_parametre_hizala.py::test_ghidra_ve_dwarf_anahtarlari",
+      "find": "    if tur == \"dolayli\" and giris.get(\"kaynak\") == \"exprloc\":\n",
+      "replace": "    if tur == \"dolayli\" and giris.get(\"kaynak\") == \"exprloc\" and False:\n"
+    }
+  ]
+}
