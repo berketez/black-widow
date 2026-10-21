@@ -1,5 +1,5 @@
 {
-  "_comment": "dwarf_tip.py (plan v2.2 T0a; t0b_* mutantları T0b girişteki konum) kurallarının mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_dwarf_tip.json",
+  "_comment": "dwarf_tip.py (plan v2.2 T0a; t0b_* mutantları T0b girişteki konum; t0c_* mutantları T0c yerleşim imzası, takma ad, köken ve K1 kimliği) kurallarının mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_dwarf_tip.json",
   "mutants": [
     {
       "id": "t0a_ref_alt_yanlis_dosya",
@@ -120,6 +120,174 @@
       "test": "tests/test_dwarf_tip.py::test_giris_konumu_fonksiyonda",
       "find": "g = kapsayan_girdi(liste, adres) if adres is not None else None",
       "replace": "g = liste[0] if liste else None"
+    },
+    {
+      "id": "t0c_ic_yapi_kaydirilmaz",
+      "desc": "iç içe yapının öğeleri üst yapıdaki ofsete kaydırılmaz",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_yerlesim_imzasi",
+      "find": "            return [_oge_kaydir(oge, ofset) for oge in ogeler]",
+      "replace": "            return list(ogeler)"
+    },
+    {
+      "id": "t0c_isaretci_skaler",
+      "desc": "işaretçi yaprak skaler sınıfa yazılır",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_yerlesim_imzasi",
+      "find": "            return [(\"y\", ofset, self._isaretci_boyutu(tip), \"p\")]",
+      "replace": "            return [(\"y\", ofset, self._isaretci_boyutu(tip), \"s \"[0])]"
+    },
+    {
+      "id": "t0c_dizi_sayisi_carpilmaz",
+      "desc": "çok boyutlu dizide yalnız son boyut sayılır",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_yerlesim_imzasi",
+      "find": "            sayi = None if n is None or sayi is None else sayi * n",
+      "replace": "            sayi = n"
+    },
+    {
+      "id": "t0c_birlik_tekillestirilmez",
+      "desc": "birlik seçenekleri tekilleştirilmez (aynı yerleşimli iki üye iki seçenek)",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_yerlesim_imzasi",
+      "find": "                secenekler = {oge_listesi_metni(self._uye_ogeleri(r, c, tur, ic)) for c in uyeler}",
+      "replace": "                secenekler = list(oge_listesi_metni(self._uye_ogeleri(r, c, tur, ic)) for c in uyeler)"
+    },
+    {
+      "id": "t0c_bit_alani_bayt",
+      "desc": "bit alanı bayt yaprağına yuvarlanır",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_yerlesim_imzasi",
+      "find": "            return [(\"b\", yer, bit)]",
+      "replace": "            return [(\"y\", yer // 8, 1, \"s\")]"
+    },
+    {
+      "id": "t0c_statik_uye_sayilir",
+      "desc": "statik üye (DW_AT_declaration/external) yerleşime katılır",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_yerlesim_imzasi",
+      "find": "        return bool(deger(c, \"DW_AT_declaration\") or deger(c, \"DW_AT_external\"))",
+      "replace": "        return False"
+    },
+    {
+      "id": "t0c_bildirim_tanima_gidilmez",
+      "desc": "değerle üyenin bildirim tipi tanımına çözülmez",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_yerlesim_imzasi",
+      "find": "        if not kok.get(\"bildirim\"):\n            return kok[\"konum\"]\n        tur, ad = kok[\"tur\"], kok.get(\"ad\")",
+      "replace": "        if True:\n            return kok[\"konum\"]\n        tur, ad = kok[\"tur\"], kok.get(\"ad\")"
+    },
+    {
+      "id": "t0c_takma_ad_isaretciden_gecer",
+      "desc": "işaretçi typedef'i (pinner_t) yapının takma adı sayılır",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_takma_adlar_isaretciden_gecmez",
+      "find": "            if d.etiket != T_TYPEDEF and d.etiket not in ATILAN_NITELEYICILER:",
+      "replace": "            if d.etiket not in (T_TYPEDEF, T_POINTER) and d.etiket not in ATILAN_NITELEYICILER:"
+    },
+    {
+      "id": "t0c_gnulib_esigi_bir",
+      "desc": "tek gnulib modülü dizini gnulib saymaya yeter",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_gnulib_dizinleri_esik_ve_genel_adlar",
+      "find": "GNULIB_ESIK = 2\n",
+      "replace": "GNULIB_ESIK = 1  # mutant\n"
+    },
+    {
+      "id": "t0c_built_in_sistem_degil",
+      "desc": "<built-in> (derleyicinin __va_list'i) sistem sayılmaz",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_koken_sinifi",
+      "find": "        return \"sistem\" if yol == DERLEYICI_DOSYASI else None",
+      "replace": "        return None"
+    },
+    {
+      "id": "t0c_ilk_uye_birlik",
+      "desc": "birliğin ilk üyesi de 0. ofset bağı kurar",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_ilk_uye_zinciri",
+      "find": "        if tur not in (\"struct\", \"class\") or deger(d, \"DW_AT_declaration\"):",
+      "replace": "        if tur not in (\"struct\", \"class\", \"union\") or deger(d, \"DW_AT_declaration\"):"
+    },
+    {
+      "id": "t0c_koken_farkli_yerlesimden",
+      "desc": "decl_file'sız tanım farklı yerleşimli aynı adlı tanımın yolunu alır",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_koken_kaynaklari",
+      "find": "                if t == k or (not bildirim and self.yerlesim(t)[\"ozet\"] != ozet):",
+      "replace": "                if t == k:"
+    },
+    {
+      "id": "t0c_kimlik_bildirim_cozulmez",
+      "desc": "tek yerleşimli tanımı olan bildirim tanıma çözülmez (opak kalır)",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_k1_kimligi_durumlari",
+      "find": "    if ozetler:\n        sonuc = k1_kimligi(next(iter(ozetler.values())), yapilar)",
+      "replace": "    if False:\n        sonuc = k1_kimligi(next(iter(ozetler.values())), yapilar)"
+    },
+    {
+      "id": "t0c_cok_tanimli_ilk_tanim",
+      "desc": "farklı yerleşimli iki tanımlı bildirim ilk tanıma çözülür (çok tanımlı düşmez)",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_k1_kimligi_durumlari",
+      "find": "    if len(ozetler) >= 2:",
+      "replace": "    if len(ozetler) >= 22:"
+    },
+    {
+      "id": "t0c_anonim_takma_ad_yok",
+      "desc": "anonim yapı kimliğine takma ad girmez",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_k1_kimligi_durumlari",
+      "find": "    return f\"{tur} <anon> #{ozet} ~{takma_ad or ''}\"",
+      "replace": "    return f\"{tur} <anon> #{ozet}\""
+    },
+    {
+      "id": "t0c_kimlik_yerlesimsiz",
+      "desc": "adlı yapı kimliği yerleşimi taşımaz (redis/hiredis dict birleşir)",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_k1_kimligi_durumlari",
+      "find": "        return f\"{tur} {ad} #{ozet}\"",
+      "replace": "        return f\"{tur} {ad} #\""
+    },
+    {
+      "id": "t0c_aile_bag_kurulmaz",
+      "desc": "0. ofset bağları aileyi birleştirmez",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_k1_aile_haritasi_bagli_bilesen",
+      "find": "            birlestir(onceki, simdiki)",
+      "replace": "            bul(simdiki)"
+    },
+    {
+      "id": "t0c_aile_temsilcisi_en_buyuk",
+      "desc": "aile temsilcisi sözlükçe en büyük kimlik olur",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_k1_aile_haritasi_bagli_bilesen",
+      "find": "            ebeveyn[max(ra, rb)] = min(ra, rb)",
+      "replace": "            ebeveyn[min(ra, rb)] = max(ra, rb)  # m"
+    },
+    {
+      "id": "t0c_tanimsiz_dis_yok",
+      "desc": "tanimsiz_dis kuralı uygulanmaz",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_k1_tabakasi_tanimsiz_dis",
+      "find": "    if tanimsiz_dis and kim[\"durum\"] == \"opak\":",
+      "replace": "    if False:"
+    },
+    {
+      "id": "t0c_tabaka_bildirimin_kendi_kokeni",
+      "desc": "tanıma çözülen bildirimde tabaka bildirimin kendi kökeninden",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_k1_tabakasi_tanimsiz_dis",
+      "find": "    kaynak = kim[\"konum\"] if kim[\"durum\"] == \"bildirim_cozuldu\" else k",
+      "replace": "    kaynak = k"
+    },
+    {
+      "id": "t0c_dwarf4_dosya_tabani",
+      "desc": "DWARF 2-4 satır tablosunda dosyalar 0 tabanlı sayılır",
+      "module": "scripts/measurement/dwarf_tip.py",
+      "test": "tests/test_dwarf_tip.py::test_dosya_yollari_dwarf5_ve_dwarf4",
+      "find": "        dirs, taban = [derleme_dizini or \"\"] + list(dizinler), 1",
+      "replace": "        dirs, taban = [derleme_dizini or \"\"] + list(dizinler), 1 - 1"
     }
   ]
 }

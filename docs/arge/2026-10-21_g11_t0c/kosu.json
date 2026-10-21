@@ -1,0 +1,40 @@
+{
+ "tarih": "2026-10-21",
+ "gorev": "plan v2.2 G11, tip izi T0c: çıplak Ghidra'nın tip tabanı; K1 ve K2 ön kayıt taslağının güncellenmesi",
+ "git_head": "görev başında a10fde3; görev sırasında HEAD 75fc455'e ilerledi (535c871, 92f6367, 75fc455: yalnız docs/ değişti; karadul/ ve scripts/ aynı); betikler commit'siz, sha256 aşağıda",
+ "betikler": {
+  "scripts/measurement/dwarf_tip.py": "b62d496be4ac8610668d9b87512e7dd56733942274b31dd8cc73447ea1e4065e",
+  "scripts/measurement/ghidra_tip_tabani.py": "929464bb0a73b0306f194a854c16e70c2a4a31f2b8146e09ce6088cc3c0aecf7",
+  "scripts/measurement/ghidra_parametre.py (T0b, değişmedi)": "116fc648c55902812725441f89c1e91c0d9f3be748bc94baf5bc130f5f867dcc",
+  "scripts/measurement/parametre_hizala.py (T0b, değişmedi)": "b20c04f5945c046f69b3c9d2b991584dd831ea1d7ca57c361e569d60c2e9f3ef"
+ },
+ "veri": {
+  "kosu_dizini": "~/karadul_olcum/runs/t0c-a10fde3",
+  "dwarf": "~/karadul_olcum/runs/t0c-a10fde3/dwarf (8 paket, 116 .debug; dwarf_tip.py toplu, yeni sürüm)",
+  "taban": "~/karadul_olcum/runs/t0c-a10fde3/taban (taban.json, parametreler.jsonl: 25 318 satır)",
+  "girdi_hizalama": "~/karadul_olcum/runs/t0b-1acba60/hizalama (T0b)",
+  "girdi_ghidra": "~/karadul_olcum/runs/t0b-1acba60/ghidra_2 (T0b son koşu)"
+ },
+ "dwarf_cikarimi": {
+  "komut": "python3 -I scripts/measurement/dwarf_tip.py toplu <dbgsym>/usr/lib/debug --ikili-kok <paket> -o ~/karadul_olcum/runs/t0c-a10fde3/dwarf/<paket>",
+  "sure_s": {"tmux": 2, "htop": 0, "tree": 0, "zstd": 5, "sqlite3": 0, "openssl": 2, "redis-tools": 6, "coreutils": 10},
+  "parametre": {"tmux": 4211, "htop": 1112, "tree": 208, "zstd": 6514, "sqlite3": 993, "openssl": 1522, "redis-tools": 11578, "coreutils": 31825},
+  "davranis_korunumu": "T0b dizinindeki 116 belgenin 116'sı, 'arac' künyesi ve yapı kayıtlarına eklenen dört alan (yerlesim, ilk_uye, takma_adlar, koken) atılınca yeni belgeyle aynı (json eşitliği)"
+ },
+ "taban_kosusu": {
+  "komut": "python3 -I scripts/measurement/ghidra_tip_tabani.py olc --hizalama ~/karadul_olcum/runs/t0b-1acba60/hizalama --ghidra ~/karadul_olcum/runs/t0b-1acba60/ghidra_2 --dwarf ~/karadul_olcum/runs/t0c-a10fde3/dwarf -o ~/karadul_olcum/runs/t0c-a10fde3/taban",
+  "karistirma": 1000,
+  "tohum_metni": "karadul-g11-t0c-negatif-kontrol-2026-10-21",
+  "sure_s": 17.8,
+  "tutarlilik": {"tip_uyusmazligi": 0, "parametre_bulunamadi": 0, "fonksiyon_bulunamadi": 0}
+ },
+ "denetimler": {
+  "bagimsiz_toplama": "bagimsiz_toplama.py (ghidra_tip_tabani.py kullanılmadan parametreler.jsonl'dan): (a) makro, (b) Ghidra katı/aile/tabakalar, (c) tek sınıf şans kesinliği taban_ozeti.json ile aynı; saf olmayan Ghidra kümesi yok",
+  "capraz_yerlesim": "capraz_yerlesim.py: dwz'siz beş programda (tree, tmux, htop, sqlite3, openssl) ana dosyadaki 704 tanımın yerleşim imzası pyelftools'un kendi DIE arayüzüyle (dwarf_tip.py'nin çözücüsü kullanılmadan) yeniden hesaplandı: 704/704 aynı (capraz_yerlesim_sonuc.json)"
+ },
+ "testler": "python -m pytest tests/test_dwarf_tip.py tests/test_ghidra_tip_tabani.py -q -p no:cacheprovider: 147 geçti (test_dwarf_tip 98 = 64 eski + 34 yeni; test_ghidra_tip_tabani 49)",
+ "mutantlar": {
+  "mutation_specs_dwarf_tip.json": "36/36 öldü (T0a 8 + T0b 7 + T0c 21)",
+  "mutation_specs_ghidra_tip_tabani.json": "22/22 öldü"
+ }
+}

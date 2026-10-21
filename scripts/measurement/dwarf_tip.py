@@ -85,7 +85,54 @@ Yapı tablosu (``yapilar``)
     Parametrelerin kökündeki yapı ve birlikler; ad taşıyanların erişilen birimlerdeki bütün tam
     tanımları (``tanimlar``) da tabloya girer. Tam tanımda üyeler: ad, ofset, kanonik tip, sınıf.
     Bit alanlarında ``bit_boyutu`` ve ``bit_ofseti`` (DWARF 5: ``DW_AT_data_bit_offset``) dolu,
-    ``ofset`` boştur. K1'in "kalıtım ailesi" kuralı ve K2 bunu okur.
+    ``ofset`` boştur. K1'in "kalıtım ailesi" kuralı ve K2 bunu okur. T0c ile her kayda dört alan
+    eklendi (aşağıda): ``yerlesim``, ``ilk_uye``, ``takma_adlar``, ``koken``.
+Yerleşim imzası (``yerlesim``, plan v2.2 T0c; K1 "aynı tip" kimliği ve K2 yaprakları)
+    Tam tanımın fiziksel yerleşimi, adsız: ``<tür>/<sizeof>/<öğeler>``. Öğeler ofsete göre
+    sıralanır, virgülle ayrılır, öğe yoksa ``-``:
+
+    - yaprak ``<ofset>:<genişlik><s|p>``: ``s`` skaler (temel tip, enum), ``p`` işaretçi (veri,
+      fonksiyon ya da C++ başvurusu; genişlik işaretçi DIE'sinin ``DW_AT_byte_size``'ı, yoksa
+      ``ISARETCI_BOYUTU``);
+    - bit alanı ``b<bit ofseti>:<bit genişliği>`` (ofset yapının başından, bit cinsinden);
+    - dizi ``<ofset>:[<sayı>x<eleman boyu>{<eleman öğeleri>}]``: tek öğe; eleman öğeleri elemanın
+      başına göre; çok boyutlu dizi ve dizi dizisi tek diziye katlanır (sayılar çarpılır); sınırı
+      olmayan (esnek) dizide sayı ``?``;
+    - birlik ``<ofset>:u<sizeof>{<seçenek>|<seçenek>…}``: tek öğe; her seçenek bir üyenin öğeleri
+      (birliğin başına göre); seçenekler sıralı ve tekil.
+
+    İç içe yapı (değerle üye; C++'ta taban sınıf) düzleştirilir: öğeleri üst yapıya ofset
+    eklenerek katılır. Statik üyeler (``DW_AT_declaration``/``DW_AT_external``'lı üye) atlanır.
+    Değerle üyenin tipi yalnız bildirimse adının erişilen birimlerdeki tanımına gidilir; tanım yoksa
+    ya da farklı yerleşimli birden çok tanım varsa imza çıkmaz (``durum: eksik``, ``neden``
+    ``YERLESIM_NEDENLERI``'nden). ``ozet``: imzanın SHA-256'sının ilk 16 hex basamağı. Bildirim
+    kayıtlarında ``yerlesim`` boştur.
+0. ofset bağı (``ilk_uye``, K1 kalıtım ailesi)
+    Yapının (birlik değil) ilk statik olmayan üyesi 0. ofsette ve tipi (typedef ve niteleyiciler
+    soyulduktan sonra) değerle bir ``struct Y`` ise X → Y bağı. Zincir Y'nin bağıyla sürer (en çok
+    ``IC_TIP_SINIRI`` adım, döngüde durur). Her adımda tür, ad, konum (bildirim tanıma çözülmüş),
+    ``ozet`` ve ``takma_ad`` yazılır. Dizi ya da birlik ilk üye bağ kurmaz.
+Takma adlar (``takma_adlar``)
+    Erişilen birimlerde, yalnız typedef ve niteleyici adımlarıyla (işaretçisiz) bu DIE'ye varan
+    typedef adları (``FILE`` → ``struct _IO_FILE``). Anonim yapı kimliğinde en küçüğü kullanılır.
+Köken (``koken``)
+    ``dosya``: ``DW_AT_decl_file``'ın birimin satır tablosundaki yolu. Kendisinde yoksa (GCC yalnız
+    bildirim DIE'lerine, dwz ek dosyasında birleştirilmiş kimi tanımlara yazmıyor) önce adın
+    tanımından (tanımda: aynı yerleşimli öbür tanımdan), sonra takma adın typedef DIE'sinden
+    alınır (``kaynak``: ``kendi`` | ``tanim`` | ``takma_ad``). ``tanimsiz``: bildirim ve adın
+    erişilen birimlerde hiç tanımı yok (opak). ``sinif`` (``koken_sinifi``): ``sistem``
+    (mutlak yol ``SISTEM_ONEKLERI`` altında ya da Apple SDK'sında; derleyicinin ``<built-in>``'i),
+    ``gnulib`` (yol, ikilinin gnulib
+    dizinlerinden birinin altında; gnulib dizini, içinde en az ``GNULIB_ESIK`` farklı
+    ``GNULIB_ISARETCILERI`` modülü derlenmiş birim adı taşıyan dizindir: coreutils'te ``lib``),
+    ``program`` (geri kalan), boş (yol bulunamadı). K1'de kütüphane kökenli = ``sistem`` ya da
+    ``gnulib``.
+K1 kimliği (``k1_kimligi``, ``k1_aile_haritasi``, ``k1_tabakasi``)
+    Ön kayıt §2.1'in uygulaması: tanımlı adlı yapı (tür, ad, ``ozet``); tanımlı anonim yapı (tür,
+    ``ozet``, en küçük takma ad); bildirim kökü, erişilen birimlerde tek yerleşimli tanımı varsa o
+    tanımın kimliği, hiç tanımı yoksa (tür, ad, "bildirim") (``opak``), farklı yerleşimli birden çok
+    tanımı varsa kimliksiz (``cok_tanimli``: karar ölçüsünden çıkar). Aile: 0. ofset bağlarının
+    bağlı bileşeni, temsilcisi sözlükçe en küçük kimlik.
 Sayımlar (``sayimlar``)
     Parametre ve sınıf sayıları; ``tipi_ek_dosyada`` (tipi tutan başvuru ek dosyaya gidiyor);
     ``sira_farkli_fonksiyon`` ve ``eksik_parametreli_fonksiyon`` (klon belirtileri);
@@ -117,6 +164,7 @@ import argparse
 import hashlib
 import json
 import platform
+import posixpath
 import random
 import re
 import subprocess
@@ -174,6 +222,7 @@ KULLANILAN_OZELLIKLER = frozenset({
     "DW_AT_data_member_location", "DW_AT_bit_size", "DW_AT_data_bit_offset", "DW_AT_bit_offset",
     "DW_AT_upper_bound", "DW_AT_count", "DW_AT_lower_bound", "DW_AT_language",
     "DW_AT_location", "DW_AT_const_value", "DW_AT_frame_base", "DW_AT_artificial",
+    "DW_AT_decl_file",
 })
 # Parametrenin DWARF konum bilgisinin biçimi (``yer``): ifade, konum listesi ya da sabit değer.
 YER_IFADE_BICIMLERI = frozenset({"DW_FORM_exprloc", "DW_FORM_block1", "DW_FORM_block2",
@@ -279,6 +328,36 @@ NEDENLER = {
     "dongu": "zincir döngüye giriyor",
     "derinlik_asimi": "iç içe tip ya da köken zinciri sınırı aşıldı",
 }
+
+# --- Yerleşim imzası, takma adlar ve köken (plan v2.2 T0c)
+ISARETCI_BOYUTU = 8          # LP64 (AArch64 Linux, Apple arm64); işaretçi DIE'sinde byte_size yoksa
+SISTEM_ONEKLERI = ("/usr/include/", "/usr/lib/gcc/", "/usr/local/include/", "/usr/lib/clang/",
+                   "/usr/lib/llvm")
+SDK_PARCASI = ".sdk/usr/include/"    # Apple SDK başlıkları (Mac dSYM; bu adımda sınanmadı)
+DERLEYICI_DOSYASI = "<built-in>"     # GCC'nin kendi bildirimleri (__va_list)
+# gnulib'e özgü modül kaynakları (``lib/<modül>.c``). Genel adlar (error, hash, fts, exclude) yok:
+# başka projelerde de var. Bir dizinin gnulib sayılması için en az GNULIB_ESIK farklı modül.
+GNULIB_ISARETCILERI = frozenset({
+    "argmatch", "basename-lgpl", "c-ctype", "c-strcasecmp", "close-stream", "closeout",
+    "dirname-lgpl", "dup-safer", "exitfail", "fadvise", "fd-safer", "filenamecat-lgpl",
+    "full-write", "getprogname", "hard-locale", "localcharset", "mbsalign", "open-safer",
+    "progname", "propername", "propername-lite", "quotearg", "safe-read", "setlocale_null",
+    "setlocale_null-unlocked", "stripslash", "unicodeio", "version-etc", "version-etc-fsf",
+    "xalloc-die", "xbinary-io", "xmalloc", "xnanosleep", "xprintf", "xreadlink", "xstriconv",
+    "xstrtoimax", "xstrtol", "xstrtol-error", "xstrtoumax",
+})
+GNULIB_ESIK = 2
+KOKEN_SINIFLARI = ("sistem", "gnulib", "program")
+KUTUPHANE_KOKENLERI = frozenset({"sistem", "gnulib"})
+YERLESIM_NEDENLERI = {
+    "yerlesim_bildirim_tanimsiz": "değerle üyenin tipi yalnız bildirim, erişilen birimlerde tanım yok",
+    "yerlesim_cok_tanimli": "değerle üyenin bildirim tipinin farklı yerleşimli birden çok tanımı var",
+    "yerlesim_boyut_yok": "temel tip, enum ya da yapının DW_AT_byte_size'ı yok",
+    "yerlesim_ofset_yok": "yapı üyesinin DW_AT_data_member_location'ı okunamadı",
+    "yerlesim_desteklenmeyen": "üye tipi yerleşime çevrilemiyor (fonksiyon tipi, void, belirsiz)",
+}
+# ``k1_kimligi`` durumları; yalnız ilk üçü kimlik taşır.
+K1_DURUMLARI = ("tanim", "bildirim_cozuldu", "opak", "cok_tanimli", "yerlesim_eksik", "hata")
 
 
 class CozumHatasi(Exception):
@@ -511,6 +590,103 @@ def yer_bilgisi(d: Die) -> Optional[str]:
             return "loclist"
         return oz[0]
     return "const_value" if "DW_AT_const_value" in d.oz else None
+
+
+# --- Yerleşim imzası, köken (plan v2.2 T0c)
+
+def dosya_yollari(surum: int, dizinler: list[str], dosyalar: list[tuple[str, int]],
+                  derleme_dizini: Optional[str] = None) -> dict[str, Any]:
+    """Satır tablosu başlığından ``DW_AT_decl_file`` dizini -> yol: ``{"taban", "yollar"}``.
+
+    DWARF 5'te dizin ve dosya tabloları 0 tabanlıdır (0. dizin derleme dizini, 0. dosya birimin
+    kaynak dosyası). DWARF 2-4'te dosyalar 1 tabanlıdır; 0. dizin ``DW_AT_comp_dir``'dir ve
+    tabloda yazılmaz. Yol ``posixpath.normpath`` ile sadeleşir (``./lib//compress/../common`` ->
+    ``lib/common``); göreli yol göreli kalır. Geçersiz dizin numarasında yol boştur."""
+    if surum >= 5:
+        dirs, taban = list(dizinler), 0
+    else:
+        dirs, taban = [derleme_dizini or ""] + list(dizinler), 1
+    yollar: list[Optional[str]] = []
+    for ad, di in dosyalar:
+        if not ad or not 0 <= di < len(dirs):
+            yollar.append(None)
+            continue
+        d = dirs[di]
+        yol = ad if posixpath.isabs(ad) or not d else posixpath.join(d, ad)
+        yollar.append(posixpath.normpath(yol))
+    return {"taban": taban, "yollar": yollar}
+
+
+def koken_sinifi(yol: Optional[str], gnulib_dizinleri: Iterable[str] = ()) -> Optional[str]:
+    """``sistem`` | ``gnulib`` | ``program`` | None (yol yok). Bkz. modül belgesi, "Köken".
+
+    Derleyicinin kendi bildirimi (``<built-in>``: ``__va_list``) ``sistem``dir; öbür açılı
+    ayraçlı adlar (dwz'nin ``<dwz>`` yer tutucusu) yol sayılmaz."""
+    if not yol:
+        return None
+    if yol.startswith("<") and yol.endswith(">"):
+        return "sistem" if yol == DERLEYICI_DOSYASI else None
+    if posixpath.isabs(yol) and (yol.startswith(SISTEM_ONEKLERI) or SDK_PARCASI in yol):
+        return "sistem"
+    for g in gnulib_dizinleri:
+        g = g.rstrip("/")
+        if g and (yol == g or yol.startswith(g + "/")):
+            return "gnulib"
+    return "program"
+
+
+def gnulib_dizinleri(birim_adlari: Iterable[Optional[str]], esik: int = GNULIB_ESIK) -> list[str]:
+    """Derleme birimi adlarından gnulib dizinleri: içinde en az ``esik`` farklı
+    ``GNULIB_ISARETCILERI`` modülü (``<dizin>/<modül>.c``) derlenmiş dizinler."""
+    moduller: dict[str, set[str]] = defaultdict(set)
+    for ad in birim_adlari:
+        if not ad:
+            continue
+        d, dosya_adi = posixpath.split(posixpath.normpath(ad))
+        kok, uzanti = posixpath.splitext(dosya_adi)
+        if uzanti == ".c" and kok in GNULIB_ISARETCILERI:
+            moduller[d].add(kok)
+    return sorted(d for d, s in moduller.items() if len(s) >= esik)
+
+
+def _oge_konumu(oge: tuple) -> int:
+    """Öğenin yapının başından bit cinsinden yeri (sıralama için)."""
+    return oge[1] if oge[0] == "b" else oge[1] * 8
+
+
+def _oge_kaydir(oge: tuple, delta: int) -> tuple:
+    """İç içe yapının öğesini üst yapıya taşı: ofsete ``delta`` bayt eklenir."""
+    if oge[0] == "b":
+        return ("b", oge[1] + 8 * delta, oge[2])
+    return (oge[0], oge[1] + delta) + tuple(oge[2:])
+
+
+def oge_metni(oge: tuple) -> str:
+    """Yerleşim öğesinin metni (modül belgesi, "Yerleşim imzası")."""
+    tur = oge[0]
+    if tur == "y":
+        return f"{oge[1]}:{oge[2]}{oge[3]}"
+    if tur == "b":
+        return f"b{oge[1]}:{oge[2]}"
+    if tur == "d":
+        return f"{oge[1]}:[{oge[2]}x{oge[3]}{{{oge[4]}}}]"
+    if tur == "u":
+        return f"{oge[1]}:u{oge[2]}{{{oge[3]}}}"
+    raise ValueError(f"bilinmeyen yerleşim öğesi: {oge!r}")
+
+
+def oge_listesi_metni(ogeler: Iterable[tuple]) -> str:
+    """Öğeler ofset sırasıyla, virgülle; boşsa ``-``."""
+    sirali = sorted(ogeler, key=lambda o: (_oge_konumu(o), oge_metni(o)))
+    return ",".join(oge_metni(o) for o in sirali) or "-"
+
+
+def yerlesim_metni(tur: str, boyut: Any, ogeler: Iterable[tuple]) -> str:
+    return f"{tur}/{boyut}/{oge_listesi_metni(ogeler)}"
+
+
+def yerlesim_ozeti(imza: str) -> str:
+    return hashlib.sha256(imza.encode("utf-8")).hexdigest()[:16]
 
 
 # --- Girişteki konum (plan v2.2 T0b)
@@ -801,11 +977,44 @@ def _konum_listesi_oku(ayristirici: Any, a: Any, surum: int, die: Any, taban: in
     return konum_listesi_mutlak(girdiler, taban)
 
 
+def _metin(v: Any) -> Optional[str]:
+    if v is None:
+        return None
+    return v.decode("utf-8", "replace") if isinstance(v, bytes) else str(v)
+
+
+def _dosya_tablosu(dwarf: Any, cu: Any, ust_die: Any, onbellek: dict[Any, Any]) -> Any:
+    """Birimin satır tablosundaki dosya yolları (``dosya_yollari``); satır tablosu yoksa None,
+    okunamazsa ``{"hata": ...}``. Aynı tabloyu paylaşan birimler (dwz) tek kez okunur."""
+    a = ust_die.attributes.get("DW_AT_stmt_list")
+    if a is None:
+        return None
+    cd = ust_die.attributes.get("DW_AT_comp_dir")
+    derleme_dizini = _metin(cd.value) if cd is not None else None
+    anahtar = (a.value, derleme_dizini)
+    if anahtar in onbellek:
+        return onbellek[anahtar]
+    try:
+        lp = dwarf.line_program_for_CU(cu)
+        if lp is None:
+            sonuc: Any = None
+        else:
+            h = lp.header
+            dizinler = [_metin(d) or "" for d in h.include_directory]
+            dosyalar = [(_metin(e.name) or "", int(e.dir_index)) for e in h.file_entry]
+            sonuc = dosya_yollari(int(h.version), dizinler, dosyalar, derleme_dizini)
+    except Exception as h:      # noqa: BLE001 - pyelftools bozuk tabloda çeşitli hatalar atar
+        sonuc = {"hata": f"{type(h).__name__}: {h}"}
+    onbellek[anahtar] = sonuc
+    return sonuc
+
+
 def dosya_yukle(yol: Path, rol: str) -> DwarfDosyasi:
     """ELF dosyasını aç; DIE ağacını, .debug_str'ı, .symtab'ı ve .gnu_debugaltlink'i oku.
 
     Somut gövdelerin (``DW_AT_low_pc``'li subprogram) parametrelerinde konum listesi de okunur
-    (``konum_listeleri``; plan v2.2 T0b)."""
+    (``konum_listeleri``; plan v2.2 T0b). Birim kaydında satır tablosunun dosya yolları da
+    tutulur (``dosya_tablosu``; ``DW_AT_decl_file`` için, plan v2.2 T0c)."""
     from elftools.dwarf.locationlists import LocationParser
     from elftools.elf.elffile import ELFFile
     from elftools.elf.sections import NoteSection, SymbolTableSection
@@ -838,9 +1047,12 @@ def dosya_yukle(yol: Path, rol: str) -> DwarfDosyasi:
         dwarf = elf.get_dwarf_info(relocate_dwarf_sections=True, follow_links=False)
         ll = dwarf.location_lists()
         konum_ayristirici = LocationParser(ll) if ll is not None else None
+        satir_onbellegi: dict[Any, Any] = {}
         for cu in dwarf.iter_CUs():
             ust_die = cu.get_top_DIE()
-            kayit: dict[str, Any] = {"ust": ust_die.offset, "etiket": ust_die.tag, "dieler": []}
+            kayit: dict[str, Any] = {"ust": ust_die.offset, "etiket": ust_die.tag, "dieler": [],
+                                     "dosya_tablosu": _dosya_tablosu(dwarf, cu, ust_die,
+                                                                     satir_onbellegi)}
             birimler[cu.cu_offset] = kayit
             cu_low = ust_die.attributes.get("DW_AT_low_pc")
             cu_tabani = cu_low.value if cu_low is not None and isinstance(cu_low.value, int) else 0
@@ -935,6 +1147,11 @@ class Cozucu:
         self._erisim: Optional[tuple[set[tuple[str, int]], Counter]] = None
         self._tanimlar: Optional[dict[tuple[str, str], list[str]]] = None
         self._birim_adlari: dict[tuple[str, int], Optional[str]] = {}
+        # plan v2.2 T0c: yerleşim imzası, takma adlar, gnulib dizinleri
+        self._yerlesim_onbellek: dict[str, tuple[str, Any, list[tuple]]] = {}
+        self._yerlesim_ziyaret: set[str] = set()
+        self._takma: Optional[dict[str, list[tuple[str, str]]]] = None
+        self._gnulib: Optional[list[str]] = None
 
     # --- temel erişim
     def die(self, rol: str, ofset: int) -> Die:
@@ -1442,6 +1659,305 @@ class Cozucu:
                 "nedenler": dict(sorted(nedenler.items())),
                 "kendi_tip_bicimi": dict(sorted(kendi_bicim.items()))}
 
+    # --- köken, takma adlar (plan v2.2 T0c)
+    def kaynak_dosyasi(self, rol: str, d: Die) -> Optional[str]:
+        """``DW_AT_decl_file``'ın birimin satır tablosundaki yolu; yoksa None."""
+        i = sabit(d, "DW_AT_decl_file")
+        if i is None:
+            return None
+        b = self.dosyalar[rol].birimler.get(d.birim) or {}
+        tablo = b.get("dosya_tablosu")
+        if not isinstance(tablo, dict) or "yollar" not in tablo:
+            return None
+        j = i - tablo["taban"]
+        return tablo["yollar"][j] if 0 <= j < len(tablo["yollar"]) else None
+
+    def gnulib_dizinleri(self) -> list[str]:
+        """Ana dosyanın derleme birimi adlarından gnulib dizinleri (``gnulib_dizinleri``)."""
+        if self._gnulib is None:
+            ana = self.dosyalar[ANA]
+            self._gnulib = gnulib_dizinleri(
+                self.birim_adi(ANA, b) for b, kayit in sorted(ana.birimler.items())
+                if kayit["etiket"] == "DW_TAG_compile_unit")
+        return self._gnulib
+
+    def _takma_hedefi(self, rol: str, d: Die) -> Optional[str]:
+        """typedef'in yalnız typedef ve niteleyici adımlarıyla vardığı yapı/birlik/enum konumu."""
+        r = rol
+        for _ in range(KOKEN_SINIRI):
+            if "DW_AT_type" not in d.oz:
+                return None
+            r, d = self.hedef(r, d, "DW_AT_type")
+            if d.etiket in KUME_TURLERI:
+                return konum(r, d.ofset)
+            if d.etiket != T_TYPEDEF and d.etiket not in ATILAN_NITELEYICILER:
+                return None
+        return None
+
+    def takma_ad_indeksi(self) -> dict[str, list[tuple[str, str]]]:
+        """Yapı/birlik/enum DIE konumu -> [(typedef adı, typedef konumu)], erişilen birimlerde."""
+        if self._takma is not None:
+            return self._takma
+        erisilen, _ = self.erisim()
+        indeks: dict[str, set[tuple[str, str]]] = defaultdict(set)
+        for r, b in sorted(erisilen):
+            dosya = self.dosyalar[r]
+            for o in dosya.birimler[b]["dieler"]:
+                d = dosya.dieler[o]
+                if d.etiket != T_TYPEDEF:
+                    continue
+                try:
+                    ad = self.dizgi(r, d, "DW_AT_name")
+                    hedef = self._takma_hedefi(r, d)
+                except CozumHatasi:
+                    continue
+                if ad and hedef is not None:
+                    indeks[hedef].add((ad, konum(r, o)))
+        self._takma = {k: sorted(v) for k, v in indeks.items()}
+        return self._takma
+
+    def koken(self, k: str, tur: str, ad: Optional[str], bildirim: bool,
+              ozet: Optional[str] = None) -> dict[str, Any]:
+        """Yapının kaynak dosyası ve köken sınıfı (modül belgesi, "Köken").
+
+        Kendi ``DW_AT_decl_file``'ı yoksa adın tanımlarına bakılır: bildirimde herhangi bir
+        tanım, tanımda aynı yerleşimli (``ozet``) öbür tanım (dwz ek dosyasındaki birleşik
+        tanımlar ``decl_file`` taşımayabiliyor). ``tanimsiz``: bildirim ve adın erişilen
+        birimlerde hiç tanımı yok (opak; yerleşimi ikilinin dışında)."""
+        r, o = konum_coz(k)
+        k = konum(r, o)
+        yol = self.kaynak_dosyasi(r, self.die(r, o))
+        kaynak = "kendi" if yol else None
+        tanimlar = self.tanim_indeksi().get((tur, ad), []) if ad else []
+        if yol is None:
+            for t in tanimlar:
+                if t == k or (not bildirim and self.yerlesim(t)["ozet"] != ozet):
+                    continue
+                tr, to = konum_coz(t)
+                yol = self.kaynak_dosyasi(tr, self.die(tr, to))
+                if yol:
+                    kaynak = "tanim"
+                    break
+        if yol is None:
+            for _, tk in self.takma_ad_indeksi().get(k, []):
+                tr, to = konum_coz(tk)
+                yol = self.kaynak_dosyasi(tr, self.die(tr, to))
+                if yol:
+                    kaynak = "takma_ad"
+                    break
+        return {"dosya": yol, "kaynak": kaynak, "sinif": koken_sinifi(yol, self.gnulib_dizinleri()),
+                "tanimsiz": bool(bildirim and not tanimlar)}
+
+    # --- yerleşim imzası (plan v2.2 T0c)
+    def _isaretci_boyutu(self, tip: dict[str, Any]) -> int:
+        for adim in tip.get("ham") or []:
+            if adim["etiket"] in ("pointer_type", "reference_type", "rvalue_reference_type"):
+                r, o = konum_coz(adim["konum"])
+                b = deger(self.die(r, o), "DW_AT_byte_size")
+                return b if isinstance(b, int) else ISARETCI_BOYUTU
+        return ISARETCI_BOYUTU
+
+    def _tanim_konumu(self, kok: dict[str, Any], ic: int) -> str:
+        """Değerle kullanılan yapı kökünün tanımı: bildirimse adın tek yerleşimli tanımı."""
+        if not kok.get("bildirim"):
+            return kok["konum"]
+        tur, ad = kok["tur"], kok.get("ad")
+        tanimlar = self.tanim_indeksi().get((tur, ad), []) if ad else []
+        if not tanimlar:
+            raise CozumHatasi("yerlesim_bildirim_tanimsiz", f"{tur} {ad} {kok.get('konum')}")
+        if len(tanimlar) > 1:
+            imzalar = {yerlesim_metni(*self._kume_ogeleri(t, ic + 1)) for t in tanimlar}
+            if len(imzalar) > 1:
+                raise CozumHatasi("yerlesim_cok_tanimli", f"{tur} {ad}")
+        return tanimlar[0]
+
+    def _tip_boyutu(self, tip: dict[str, Any], ic: int) -> Optional[int]:
+        if not tip.get("cozuldu"):
+            return None
+        if tip["derinlik"] >= 1:
+            return self._isaretci_boyutu(tip)
+        kok = tip["kok"]
+        if kok["tur"] in ("temel", "enum"):
+            return kok.get("boyut") if isinstance(kok.get("boyut"), int) else None
+        if kok["tur"] in YAPI_TURLERI:
+            try:
+                tur, boyut, _ = self._kume_ogeleri(self._tanim_konumu(kok, ic), ic + 1)
+            except CozumHatasi:
+                return None
+            return boyut
+        if kok["tur"] == "dizi":
+            try:
+                sayi, eboyut, _ = self._dizi_ogesi(kok["konum"], ic + 1)
+            except CozumHatasi:
+                return None
+            return sayi * eboyut if isinstance(sayi, int) and isinstance(eboyut, int) else None
+        return None
+
+    def _dizi_ogesi(self, k: str, ic: int) -> tuple[Any, Any, str]:
+        """Dizi DIE'si -> (eleman sayısı ya da "?", eleman boyu ya da "?", eleman öğeleri metni).
+        Çok boyutlu dizi ve dizi dizisi tek diziye katlanır."""
+        if ic > IC_TIP_SINIRI:
+            raise CozumHatasi("derinlik_asimi", f"yerleşim {k}")
+        r, o = konum_coz(k)
+        d = self.die(r, o)
+        araliklar = self._cocuklar(r, d, "DW_TAG_subrange_type")
+        sayi: Optional[int] = 1 if araliklar else None
+        for c in araliklar:
+            n = dizi_boyutu(c)
+            sayi = None if n is None or sayi is None else sayi * n
+        _, etip = self.parametre_tipi(r, d)
+        if not etip.get("cozuldu"):
+            raise CozumHatasi(etip.get("neden") or "tip_yok", f"dizi elemanı {k}")
+        if etip["derinlik"] == 0 and etip["kok"]["tur"] == "dizi":
+            isayi, eboyut, emetin = self._dizi_ogesi(etip["kok"]["konum"], ic + 1)
+            sayi = sayi * isayi if isinstance(sayi, int) and isinstance(isayi, int) else None
+            return (sayi if sayi is not None else "?"), eboyut, emetin
+        emetin = oge_listesi_metni(self._tip_ogeleri(etip, 0, ic + 1))
+        eboyut = self._tip_boyutu(etip, ic + 1)
+        return (sayi if sayi is not None else "?"), (eboyut if eboyut is not None else "?"), emetin
+
+    def _tip_ogeleri(self, tip: dict[str, Any], ofset: int, ic: int) -> list[tuple]:
+        """Bir tipin (üye, dizi elemanı, birlik seçeneği) ``ofset``'teki düzleştirilmiş öğeleri."""
+        if ic > IC_TIP_SINIRI:
+            raise CozumHatasi("derinlik_asimi", "yerleşim")
+        if not tip.get("cozuldu"):
+            raise CozumHatasi(tip.get("neden") or "tip_yok", tip.get("ayrinti") or "")
+        if tip["derinlik"] >= 1:
+            return [("y", ofset, self._isaretci_boyutu(tip), "p")]
+        kok = tip["kok"]
+        tur = kok["tur"]
+        if tur in ("temel", "enum"):
+            b = kok.get("boyut")
+            if not isinstance(b, int):
+                raise CozumHatasi("yerlesim_boyut_yok", str(kok.get("konum")))
+            return [("y", ofset, b, "s")]
+        if tur in YAPI_TURLERI:
+            _, _, ogeler = self._kume_ogeleri(self._tanim_konumu(kok, ic), ic + 1)
+            return [_oge_kaydir(oge, ofset) for oge in ogeler]
+        if tur == "dizi":
+            sayi, eboyut, emetin = self._dizi_ogesi(kok["konum"], ic + 1)
+            return [("d", ofset, sayi, eboyut, emetin)]
+        raise CozumHatasi("yerlesim_desteklenmeyen", f"{tur} {kok.get('konum')}")
+
+    @staticmethod
+    def _statik_uye(c: Die) -> bool:
+        return bool(deger(c, "DW_AT_declaration") or deger(c, "DW_AT_external"))
+
+    def _uye_ogeleri(self, r: str, c: Die, ust_tur: str, ic: int) -> list[tuple]:
+        bit = deger(c, "DW_AT_bit_size")
+        if bit is not None:
+            if "DW_AT_data_bit_offset" in c.oz:
+                yer = deger(c, "DW_AT_data_bit_offset")
+            else:                                       # DWARF 2-3: MSB'den, küçük sonlu çevrilir
+                ofs = uye_ofseti(c, ust_tur) or 0
+                eski = deger(c, "DW_AT_bit_offset")
+                birim = deger(c, "DW_AT_byte_size")
+                if eski is None or not isinstance(birim, int):
+                    yer = ofs * 8
+                else:
+                    yer = ofs * 8 + birim * 8 - eski - bit
+            if not isinstance(yer, int):
+                raise CozumHatasi("yerlesim_ofset_yok", konum(r, c.ofset))
+            return [("b", yer, bit)]
+        ofs = uye_ofseti(c, ust_tur)
+        if ofs is None:
+            raise CozumHatasi("yerlesim_ofset_yok", konum(r, c.ofset))
+        _, tip = self.parametre_tipi(r, c)
+        return self._tip_ogeleri(tip, ofs, ic + 1)
+
+    def _kume_ogeleri(self, k: str, ic: int) -> tuple[str, Any, list[tuple]]:
+        """Tanım DIE'si -> (tür, sizeof, öğeler); birlik tek ``u`` öğesidir."""
+        bellek = self._yerlesim_onbellek.get(k)
+        if bellek is not None:
+            return bellek
+        if ic > IC_TIP_SINIRI:
+            raise CozumHatasi("derinlik_asimi", f"yerleşim {k}")
+        if k in self._yerlesim_ziyaret:
+            raise CozumHatasi("dongu", f"yerleşim {k}")
+        r, o = konum_coz(k)
+        d = self.die(r, o)
+        tur = KUME_TURLERI.get(d.etiket)
+        if tur not in YAPI_TURLERI:
+            raise CozumHatasi("yerlesim_desteklenmeyen", f"{d.etiket} {k}")
+        boyut = deger(d, "DW_AT_byte_size")
+        if not isinstance(boyut, int):
+            raise CozumHatasi("yerlesim_boyut_yok", k)
+        self._yerlesim_ziyaret.add(k)
+        try:
+            uyeler = [self.die(r, c) for c in d.cocuklar]
+            uyeler = [c for c in uyeler if c.etiket in ("DW_TAG_member", "DW_TAG_inheritance")
+                      and not self._statik_uye(c)]
+            if tur == "union":
+                secenekler = {oge_listesi_metni(self._uye_ogeleri(r, c, tur, ic)) for c in uyeler}
+                ogeler: list[tuple] = [("u", 0, boyut, "|".join(sorted(secenekler)) or "-")]
+            else:
+                ogeler = []
+                for c in uyeler:
+                    ogeler.extend(self._uye_ogeleri(r, c, tur, ic))
+                ogeler.sort(key=lambda x: (_oge_konumu(x), oge_metni(x)))
+        finally:
+            self._yerlesim_ziyaret.discard(k)
+        sonuc = (tur, boyut, ogeler)
+        self._yerlesim_onbellek[k] = sonuc
+        return sonuc
+
+    def yerlesim(self, k: str) -> dict[str, Any]:
+        """Tanımın yerleşim imzası (modül belgesi, "Yerleşim imzası")."""
+        try:
+            tur, boyut, ogeler = self._kume_ogeleri(konum(*konum_coz(k)), 0)
+        except CozumHatasi as h:
+            return {"durum": "eksik", "neden": h.neden, "ayrinti": h.ayrinti or None,
+                    "imza": None, "ozet": None, "oge_sayisi": None}
+        imza = yerlesim_metni(tur, boyut, ogeler)
+        return {"durum": "tam", "neden": None, "imza": imza, "ozet": yerlesim_ozeti(imza),
+                "oge_sayisi": len(ogeler)}
+
+    def _ilk_uye_hedefi(self, k: str) -> Optional[str]:
+        """X'in ilk statik olmayan üyesi 0. ofsette değerle ``struct Y`` ise Y'nin tanım konumu."""
+        r, o = konum_coz(k)
+        d = self.die(r, o)
+        tur = KUME_TURLERI.get(d.etiket)
+        if tur not in ("struct", "class") or deger(d, "DW_AT_declaration"):
+            return None
+        for c_ofset in d.cocuklar:
+            c = self.die(r, c_ofset)
+            if c.etiket not in ("DW_TAG_member", "DW_TAG_inheritance") or self._statik_uye(c):
+                continue
+            if deger(c, "DW_AT_bit_size") is not None or uye_ofseti(c, tur) != 0:
+                return None
+            _, tip = self.parametre_tipi(r, c)
+            if not tip.get("cozuldu") or tip["derinlik"] != 0 or tip["kok"]["tur"] not in (
+                    "struct", "class"):
+                return None
+            try:
+                return self._tanim_konumu(tip["kok"], 0)
+            except CozumHatasi:
+                return None
+        return None
+
+    def ilk_uye_zinciri(self, k: str) -> list[dict[str, Any]]:
+        """0. ofset bağları zinciri X → Y → Z … (modül belgesi, "0. ofset bağı")."""
+        k = konum(*konum_coz(k))
+        zincir: list[dict[str, Any]] = []
+        gorulen = {k}
+        simdiki = k
+        for _ in range(IC_TIP_SINIRI):
+            try:
+                hedef = self._ilk_uye_hedefi(simdiki)
+            except CozumHatasi:
+                break
+            if hedef is None or hedef in gorulen:
+                break
+            r, o = konum_coz(hedef)
+            hd = self.die(r, o)
+            takma = [a for a, _ in self.takma_ad_indeksi().get(hedef, [])]
+            zincir.append({"tur": KUME_TURLERI[hd.etiket], "ad": self.dizgi(r, hd, "DW_AT_name"),
+                           "konum": hedef, "ozet": self.yerlesim(hedef)["ozet"],
+                           "takma_ad": min(takma) if takma else None})
+            gorulen.add(hedef)
+            simdiki = hedef
+        return zincir
+
     # --- yapı tablosu
     def yapi_kaydi(self, k: str) -> dict[str, Any]:
         r, o = konum_coz(k)
@@ -1471,6 +1987,12 @@ class Cozucu:
                     u["neden"] = tip["neden"]
                 uyeler.append(u)
             kayit["uyeler"] = uyeler
+        # plan v2.2 T0c: yerleşim imzası, 0. ofset bağı, takma adlar, köken
+        kayit["yerlesim"] = None if kayit["bildirim"] else self.yerlesim(k)
+        kayit["ilk_uye"] = [] if kayit["bildirim"] else self.ilk_uye_zinciri(k)
+        kayit["takma_adlar"] = sorted({a for a, _ in self.takma_ad_indeksi().get(k, [])})
+        kayit["koken"] = self.koken(k, tur, ad, kayit["bildirim"],
+                                    (kayit["yerlesim"] or {}).get("ozet"))
         return kayit
 
     def yapilar(self, fonksiyonlar: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -1770,6 +2292,111 @@ def kimlik_denetimi(yapilar: dict[str, dict[str, Any]]) -> dict[str, Any]:
                                          if any(len(v) > 1 for v in s.values())),
             "ayni_yerlesimli_anonim_gruplar": sorted(sorted(v) for v in anonim.values()
                                                      if len(v) > 1)}
+
+
+# ---------------------------------------------------------------------------
+# K1 kimliği (plan v2.2 T0c; ön kayıt §2.1): yapı tablosundan, saf fonksiyonlar
+# ---------------------------------------------------------------------------
+
+def k1_kimlik_metni(tur: str, ad: Optional[str], ozet: Optional[str],
+                    takma_ad: Optional[str] = None) -> str:
+    """Tanımlı yapının katı kimliği: adlıysa (tür, ad, özet); anonimse (tür, özet, takma ad)."""
+    if ad:
+        return f"{tur} {ad} #{ozet}"
+    return f"{tur} <anon> #{ozet} ~{takma_ad or ''}"
+
+
+def k1_kimligi(k: str, yapilar: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Yapı kökü ``k``'nin K1 kimliği: ``{"kimlik", "durum", "konum"}`` (``K1_DURUMLARI``).
+
+    - tanım (yerleşimi tam): ``k1_kimlik_metni``; durum ``tanim``;
+    - bildirim: erişilen birimlerdeki tanımları (``tanimlar``) tek yerleşimliyse o tanımın
+      kimliği (``bildirim_cozuldu``, ``konum`` tanımın konumu); hiç tanım yoksa
+      ``<tür> <ad> #bildirim`` (``opak``); farklı yerleşimli birden çok tanım varsa kimlik yok
+      (``cok_tanimli``); bir tanımın yerleşimi eksikse kimlik yok (``yerlesim_eksik``);
+    - kayıt yok ya da hatalı: ``hata``.
+    """
+    y = yapilar.get(k)
+    if y is None or y.get("hata"):
+        return {"kimlik": None, "durum": "hata", "konum": k}
+    if not y.get("bildirim"):
+        yer = y.get("yerlesim") or {}
+        if yer.get("durum") != "tam":
+            return {"kimlik": None, "durum": "yerlesim_eksik", "konum": k}
+        takma = min(y.get("takma_adlar") or [], default=None)
+        return {"kimlik": k1_kimlik_metni(y["tur"], y.get("ad"), yer["ozet"], takma),
+                "durum": "tanim", "konum": k}
+    if not y.get("ad"):
+        return {"kimlik": None, "durum": "hata", "konum": k}
+    ozetler: dict[str, str] = {}
+    eksik = False
+    for t in y.get("tanimlar") or []:
+        ty = yapilar.get(t) or {}
+        yer = ty.get("yerlesim") or {}
+        if ty.get("hata") or yer.get("durum") != "tam":
+            eksik = True
+            continue
+        ozetler.setdefault(yer["ozet"], t)
+    if len(ozetler) >= 2:
+        return {"kimlik": None, "durum": "cok_tanimli", "konum": k}
+    if eksik:
+        return {"kimlik": None, "durum": "yerlesim_eksik", "konum": k}
+    if ozetler:
+        sonuc = k1_kimligi(next(iter(ozetler.values())), yapilar)
+        sonuc["durum"] = "bildirim_cozuldu"
+        return sonuc
+    return {"kimlik": f"{y['tur']} {y['ad']} #bildirim", "durum": "opak", "konum": k}
+
+
+def k1_aile_haritasi(yapilar: dict[str, dict[str, Any]]) -> dict[str, str]:
+    """Kimlik -> aile temsilcisi. Aile: 0. ofset bağlarının (``ilk_uye``) bağlı bileşeni;
+    temsilci bileşenin sözlükçe en küçük kimliği. Haritada olmayan kimlik kendi ailesidir."""
+    ebeveyn: dict[str, str] = {}
+
+    def bul(x: str) -> str:
+        ebeveyn.setdefault(x, x)
+        kok = x
+        while ebeveyn[kok] != kok:
+            kok = ebeveyn[kok]
+        while ebeveyn[x] != kok:
+            ebeveyn[x], x = kok, ebeveyn[x]
+        return kok
+
+    def birlestir(a: str, b: str) -> None:
+        ra, rb = bul(a), bul(b)
+        if ra != rb:
+            ebeveyn[max(ra, rb)] = min(ra, rb)
+
+    for k, y in sorted(yapilar.items(), key=lambda kv: _konum_anahtari(kv[0])):
+        kim = k1_kimligi(k, yapilar)
+        if kim["durum"] != "tanim":
+            continue
+        onceki = kim["kimlik"]
+        bul(onceki)
+        for z in y.get("ilk_uye") or []:
+            if not z.get("ozet"):
+                break
+            simdiki = k1_kimlik_metni(z["tur"], z.get("ad"), z["ozet"], z.get("takma_ad"))
+            birlestir(onceki, simdiki)
+            onceki = simdiki
+    return {x: bul(x) for x in sorted(ebeveyn)}
+
+
+def k1_tabakasi(k: str, yapilar: dict[str, dict[str, Any]], *,
+                tanimsiz_dis: bool = False) -> Optional[str]:
+    """``kutuphane`` (köken ``sistem`` ya da ``gnulib``) | ``program`` | None (köken yok).
+
+    Tanıma çözülen bildirimde tanımın kökeni kullanılır. ``tanimsiz_dis``: opak tip (ikilide
+    hiç tanımı yok) ``decl_file``'dan bağımsız olarak kütüphane sayılır (duyarlılık kuralı;
+    ön kayıtta [seçim])."""
+    kim = k1_kimligi(k, yapilar)
+    if tanimsiz_dis and kim["durum"] == "opak":
+        return "kutuphane"
+    kaynak = kim["konum"] if kim["durum"] == "bildirim_cozuldu" else k
+    s = ((yapilar.get(kaynak) or {}).get("koken") or {}).get("sinif")
+    if s in KUTUPHANE_KOKENLERI:
+        return "kutuphane"
+    return "program" if s == "program" else None
 
 
 def _pay(k: int, n: int) -> Optional[float]:

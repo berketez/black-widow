@@ -767,3 +767,348 @@ def test_gercek_htop_kayan_nokta_v0():
     f = next(f for f in b["fonksiyonlar"] if f["ad"] == "Meter_humanUnit")
     assert [(p["ad"], p["giris"]["yazmac"]) for p in f["parametreler"]] == [
         ("buffer", "x0"), ("value", "v0"), ("size", "x1")]
+
+
+# --------------------------------------------------------------------------------------------
+# (g) yerleşim imzası, takma adlar, köken ve K1 kimliği (plan v2.2 T0c)
+
+
+def _yerlesim_dunyasi(gnulib=True):
+    """Tek ana dosya, üç derleme birimi. 1. birim (0x0): yapılar ve f(); satır tablosu DWARF 5,
+    dizinler '.', '/usr/include/x/bits', 'lib'. 2. birim (0x1000, 'lib/xmalloc.c'): ext ve iki
+    farklı 'dup' tanımı. 3. birim (0x2000): 'lib/quotearg.c' (gnulib=False ise 'src/b.c')."""
+    R = ref_addr
+    yer = veri
+    dieler = [
+        D(0xB, "compile_unit", name=ad("src/a.c")),
+        D(0x10, "base_type", 0xB, name=ad("int"), encoding=veri(5), byte_size=veri(4)),
+        D(0x14, "base_type", 0xB, name=ad("char"), encoding=veri(8), byte_size=veri(1)),
+        D(0x18, "pointer_type", 0xB, type=R(0x14), byte_size=veri(8)),            # char *
+        D(0x20, "structure_type", 0xB, name=ad("inner"), byte_size=veri(8), decl_file=veri(4)),
+        D(0x24, "member", 0x20, name=ad("a"), type=R(0x10), data_member_location=yer(0)),
+        D(0x28, "member", 0x20, name=ad("b"), type=R(0x10), data_member_location=yer(4)),
+        D(0x30, "structure_type", 0xB, name=ad("outer"), byte_size=veri(48), decl_file=veri(3)),
+        D(0x31, "member", 0x30, name=ad("m1"), type=R(0x20), data_member_location=yer(0)),
+        D(0x32, "member", 0x30, name=ad("m2"), type=R(0x18), data_member_location=yer(8)),
+        D(0x33, "member", 0x30, name=ad("m3"), type=R(0x60), data_member_location=yer(16)),
+        D(0x34, "member", 0x30, name=ad("m4"), type=R(0x70), data_member_location=yer(32)),
+        D(0x35, "member", 0x30, name=ad("m5"), type=R(0x10), bit_size=veri(3),
+          data_bit_offset=veri(320, "DW_FORM_data2")),
+        D(0x36, "member", 0x30, name=ad("m6"), type=R(0x10), bit_size=veri(5),
+          data_bit_offset=veri(323, "DW_FORM_data2")),
+        D(0x37, "member", 0x30, name=ad("statik"), type=R(0x10), declaration=BAYRAK,
+          external=BAYRAK),
+        D(0x60, "array_type", 0xB, type=R(0x14)),                                 # char[16]
+        D(0x61, "subrange_type", 0x60, upper_bound=veri(15)),
+        D(0x70, "union_type", 0xB, name=ad("u"), byte_size=veri(8), decl_file=veri(3)),
+        D(0x71, "member", 0x70, name=ad("i"), type=R(0x10)),
+        D(0x72, "member", 0x70, name=ad("p"), type=R(0x18)),
+        D(0x73, "member", 0x70, name=ad("j"), type=R(0x10)),                      # aynı seçenek
+        D(0x80, "array_type", 0xB, type=R(0x10)),                                 # int[3][4]
+        D(0x81, "subrange_type", 0x80, upper_bound=veri(2)),
+        D(0x82, "subrange_type", 0x80, upper_bound=veri(3)),
+        D(0x88, "typedef", 0xB, name=ad("row"), type=R(0x8C)),
+        D(0x8C, "array_type", 0xB, type=R(0x10)),                                 # int[4]
+        D(0x8D, "subrange_type", 0x8C, upper_bound=veri(3)),
+        D(0x90, "array_type", 0xB, type=R(0x88)),                                 # row[3]
+        D(0x91, "subrange_type", 0x90, upper_bound=veri(2)),
+        D(0x98, "array_type", 0xB, type=R(0x14)),                                 # char[]
+        D(0x99, "subrange_type", 0x98),
+        D(0xA0, "structure_type", 0xB, name=ad("matrix"), byte_size=veri(96)),
+        D(0xA1, "member", 0xA0, name=ad("a"), type=R(0x80), data_member_location=yer(0)),
+        D(0xA2, "member", 0xA0, name=ad("b"), type=R(0x90), data_member_location=yer(48)),
+        D(0xA8, "structure_type", 0xB, name=ad("flex"), byte_size=veri(8)),
+        D(0xA9, "member", 0xA8, name=ad("n"), type=R(0x10), data_member_location=yer(0)),
+        D(0xAA, "member", 0xA8, name=ad("data"), type=R(0x98), data_member_location=yer(4)),
+        D(0xB0, "typedef", 0xB, name=ad("inner_t"), type=R(0x20)),
+        D(0xB4, "const_type", 0xB, type=R(0x20)),
+        D(0xB5, "typedef", 0xB, name=ad("cinner_t"), type=R(0xB4)),
+        D(0xB8, "pointer_type", 0xB, type=R(0x20)),
+        D(0xB9, "typedef", 0xB, name=ad("pinner_t"), type=R(0xB8)),                # işaretçi: değil
+        D(0xBC, "typedef", 0xB, name=ad("inner2_t"), type=R(0xB0)),
+        D(0xC0, "structure_type", 0xB, name=ad("ext"), declaration=BAYRAK),
+        D(0xC4, "structure_type", 0xB, name=ad("uses_ext"), byte_size=veri(16)),
+        D(0xC5, "member", 0xC4, name=ad("e"), type=R(0xC0), data_member_location=yer(0)),
+        D(0xC6, "member", 0xC4, name=ad("z"), type=R(0x10), data_member_location=yer(8)),
+        D(0xC8, "structure_type", 0xB, name=ad("nodef"), declaration=BAYRAK),
+        D(0xC9, "typedef", 0xB, name=ad("nodef_t"), type=R(0xC8), decl_file=veri(2)),
+        D(0xCC, "structure_type", 0xB, name=ad("uses_nodef"), byte_size=veri(8)),
+        D(0xCD, "member", 0xCC, name=ad("q"), type=R(0xC8), data_member_location=yer(0)),
+        D(0xD0, "structure_type", 0xB, name=ad("dup"), declaration=BAYRAK),
+        D(0xD4, "structure_type", 0xB, name=ad("uses_dup"), byte_size=veri(8)),
+        D(0xD5, "member", 0xD4, name=ad("d"), type=R(0xD0), data_member_location=yer(0)),
+        D(0xD8, "union_type", 0xB, name=ad("u2"), byte_size=veri(8)),
+        D(0xD9, "member", 0xD8, name=ad("s"), type=R(0x20)),
+        D(0xE0, "structure_type", 0xB, name=ad("ptrfirst"), byte_size=veri(8)),
+        D(0xE1, "member", 0xE0, name=ad("p"), type=R(0xB8), data_member_location=yer(0)),
+        D(0xE4, "structure_type", 0xB, name=ad("arrfirst"), byte_size=veri(16)),
+        D(0xE5, "member", 0xE4, name=ad("a"), type=R(0xE8), data_member_location=yer(0)),
+        D(0xE8, "array_type", 0xB, type=R(0x20)),                                 # inner[2]
+        D(0xE9, "subrange_type", 0xE8, upper_bound=veri(1)),
+        D(0xF0, "pointer_type", 0xB, type=R(0x30)),                               # outer *
+        D(0xF4, "pointer_type", 0xB, type=R(0xC0)),                               # ext *
+        D(0xF8, "structure_type", 0xB, name=ad("pair2"), byte_size=veri(12)),
+        D(0xF9, "member", 0xF8, name=ad("x"), type=R(0x10), data_member_location=yer(0)),
+        D(0xFA, "member", 0xF8, name=ad("in"), type=R(0x20), data_member_location=yer(4)),
+        D(0x100, "subprogram", 0xB, name=ad("f"), low_pc=adres(0x1000), high_pc=veri(0x10)),
+        D(0x104, "formal_parameter", 0x100, name=ad("o"), type=R(0xF0)),
+        D(0x108, "formal_parameter", 0x100, name=ad("e"), type=R(0xF4)),
+        D(0x100B, "compile_unit", birim=0x1000, name=ad("lib/xmalloc.c")),
+        D(0x1010, "structure_type", 0x100B, 0x1000, name=ad("ext"), byte_size=veri(8),
+          decl_file=veri(2)),
+        D(0x1014, "member", 0x1010, 0x1000, name=ad("p"), type=R(0x18), data_member_location=yer(0)),
+        D(0x1020, "structure_type", 0x100B, 0x1000, name=ad("dup"), byte_size=veri(4),
+          decl_file=veri(2)),
+        D(0x1024, "member", 0x1020, 0x1000, name=ad("a"), type=R(0x10), data_member_location=yer(0)),
+        D(0x1030, "structure_type", 0x100B, 0x1000, name=ad("dup"), byte_size=veri(8)),
+        D(0x1034, "member", 0x1030, 0x1000, name=ad("a"), type=R(0x10), data_member_location=yer(0)),
+        D(0x1038, "member", 0x1030, 0x1000, name=ad("b"), type=R(0x10), data_member_location=yer(4)),
+        D(0x200B, "compile_unit", birim=0x2000,
+          name=ad("lib/quotearg.c" if gnulib else "src/b.c")),
+    ]
+    f = dosya(dt.ANA, dieler)
+    f.birimler[0x0]["dosya_tablosu"] = dt.dosya_yollari(
+        5, [".", "/usr/include/x/bits", "lib"],
+        [("a.c", 0), ("a.c", 0), ("t.h", 0), ("types.h", 1), ("hash.h", 2)])
+    f.birimler[0x1000]["dosya_tablosu"] = dt.dosya_yollari(
+        5, [".", "src"], [("x.c", 0), ("x.c", 0), ("ext.h", 1)])
+    f.birimler[0x2000]["dosya_tablosu"] = None
+    return dt.Cozucu(f)
+
+
+@pytest.fixture
+def ycoz():
+    return _yerlesim_dunyasi()
+
+
+@pytest.mark.parametrize("konum_,imza", [
+    ("ana:0x20", "struct/8/0:4s,4:4s"),
+    ("ana:0x30", "struct/48/0:4s,4:4s,8:8p,16:[16x1{0:1s}],32:u8{0:4s|0:8p},b320:3,b323:5"),
+    ("ana:0x70", "union/8/0:u8{0:4s|0:8p}"),
+    ("ana:0xA0", "struct/96/0:[12x4{0:4s}],48:[12x4{0:4s}]"),
+    ("ana:0xA8", "struct/8/0:4s,4:[?x1{0:1s}]"),
+    ("ana:0xC4", "struct/16/0:8p,8:4s"),
+    ("ana:0xD8", "union/8/0:u8{0:4s,4:4s}"),
+    ("ana:0xE0", "struct/8/0:8p"),
+    ("ana:0xE4", "struct/16/0:[2x8{0:4s,4:4s}]"),
+    ("ana:0xF8", "struct/12/0:4s,4:4s,8:4s"),
+])
+def test_yerlesim_imzasi(ycoz, konum_, imza):
+    """İç içe yapı düzleşir (ofset eklenir), dizi tek öğe (çok boyut ve dizi dizisi katlanır,
+    esnek dizi '?'), birlik seçenekleri sıralı ve tekil, bit alanı bit ofsetiyle, statik üye yok,
+    bildirim tipli üye tanımına gider."""
+    y = ycoz.yerlesim(konum_)
+    assert (y["durum"], y["imza"]) == ("tam", imza)
+    assert y["ozet"] == dt.yerlesim_ozeti(imza) and len(y["ozet"]) == 16
+
+
+def test_yerlesim_eksik_nedenleri(ycoz):
+    y = ycoz.yerlesim("ana:0xCC")
+    assert (y["durum"], y["neden"], y["imza"], y["ozet"]) == (
+        "eksik", "yerlesim_bildirim_tanimsiz", None, None)
+    assert ycoz.yerlesim("ana:0xD4")["neden"] == "yerlesim_cok_tanimli"
+    assert set(dt.YERLESIM_NEDENLERI) >= {"yerlesim_bildirim_tanimsiz", "yerlesim_cok_tanimli"}
+
+
+def test_oge_metni_ve_kaydirma():
+    assert dt.oge_metni(("y", 8, 8, "p")) == "8:8p"
+    assert dt.oge_metni(("b", 323, 5)) == "b323:5"
+    assert dt.oge_metni(("d", 4, "?", 1, "0:1s")) == "4:[?x1{0:1s}]"
+    assert dt.oge_metni(("u", 0, 8, "0:4s|0:8p")) == "0:u8{0:4s|0:8p}"
+    assert dt._oge_kaydir(("b", 3, 2), 4) == ("b", 35, 2)
+    assert dt._oge_kaydir(("d", 0, 2, 4, "0:4s"), 8) == ("d", 8, 2, 4, "0:4s")
+    assert dt.oge_listesi_metni([]) == "-"
+    assert dt.yerlesim_metni("struct", 0, []) == "struct/0/-"
+
+
+def test_ilk_uye_zinciri(ycoz):
+    """outer → inner (0. ofsette değerle yapı); bildirim tipli ilk üye tanımına çözülür; birlik,
+    işaretçi ve dizi ilk üye bağ kurmaz."""
+    z = ycoz.ilk_uye_zinciri("ana:0x30")
+    assert [(e["tur"], e["ad"], e["konum"]) for e in z] == [("struct", "inner", "ana:0x20")]
+    assert z[0]["ozet"] == dt.yerlesim_ozeti("struct/8/0:4s,4:4s")
+    assert z[0]["takma_ad"] == "cinner_t"                  # en küçük takma ad
+    assert [e["konum"] for e in ycoz.ilk_uye_zinciri("ana:0xC4")] == ["ana:0x1010"]
+    for k in ("ana:0xD8", "ana:0xE0", "ana:0xE4", "ana:0x20"):
+        assert ycoz.ilk_uye_zinciri(k) == [], k
+
+
+def test_takma_adlar_isaretciden_gecmez(ycoz):
+    indeks = ycoz.takma_ad_indeksi()
+    assert [a for a, _ in indeks["ana:0x20"]] == ["cinner_t", "inner2_t", "inner_t"]
+    assert all(a != "pinner_t" for v in indeks.values() for a, _ in v)
+    assert [a for a, _ in indeks["ana:0xc8"]] == ["nodef_t"]
+
+
+def test_dosya_yollari_dwarf5_ve_dwarf4():
+    t5 = dt.dosya_yollari(5, [".", "/usr/include", "./lib//compress/../common"],
+                          [("a.c", 0), ("stdio.h", 1), ("zstd.h", 2), ("/mutlak/x.h", 2), ("y.h", 9)])
+    assert t5 == {"taban": 0, "yollar": ["a.c", "/usr/include/stdio.h", "lib/common/zstd.h",
+                                         "/mutlak/x.h", None]}
+    t4 = dt.dosya_yollari(4, ["/usr/include"], [("a.c", 0), ("stdio.h", 1)], "/build/p")
+    assert t4 == {"taban": 1, "yollar": ["/build/p/a.c", "/usr/include/stdio.h"]}
+
+
+@pytest.mark.parametrize("yol,beklenen", [
+    ("/usr/include/aarch64-linux-gnu/bits/types/struct_FILE.h", "sistem"),
+    ("/usr/lib/gcc/aarch64-linux-gnu/14/include/stddef.h", "sistem"),
+    ("/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/stdio.h", "sistem"),
+    ("<built-in>", "sistem"),
+    ("<dwz>", None),
+    ("lib/hash.h", "gnulib"),
+    ("lib/malloc/dynarray.h", "gnulib"),
+    ("libx/hash.h", "program"),
+    ("src/system.h", "program"),
+    ("/build/p/lib.h", "program"),
+    (None, None),
+])
+def test_koken_sinifi(yol, beklenen):
+    assert dt.koken_sinifi(yol, ["lib"]) == beklenen
+
+
+def test_gnulib_dizinleri_esik_ve_genel_adlar():
+    assert dt.gnulib_dizinleri(["src/du.c", "lib/xmalloc.c", "lib/quotearg.c", None]) == ["lib"]
+    assert dt.gnulib_dizinleri(["lib/xmalloc.c", "lib/hash.c", "lib/fts.c"]) == []   # tek modül
+    assert dt.gnulib_dizinleri(["./lib//compress/zstd_compress.c", "lib/common/xxhash.c"]) == []
+    assert dt.koken_sinifi("lib/hash.h", dt.gnulib_dizinleri(["lib/zstd.c"])) == "program"
+
+
+def test_koken_kaynaklari(ycoz):
+    """Kendi decl_file'ı; bildirimde tanımınki; tanımsız bildirimde takma adınki; decl_file'sız
+    tanımda yalnız aynı yerleşimli öbür tanım (farklı yerleşimli 'dup' kullanılmaz)."""
+    assert ycoz.gnulib_dizinleri() == ["lib"]
+    k = ycoz.koken("ana:0x30", "struct", "outer", False, ycoz.yerlesim("ana:0x30")["ozet"])
+    assert k == {"dosya": "/usr/include/x/bits/types.h", "kaynak": "kendi", "sinif": "sistem",
+                 "tanimsiz": False}
+    assert ycoz.koken("ana:0x20", "struct", "inner", False)["sinif"] == "gnulib"
+    assert ycoz.koken("ana:0xC0", "struct", "ext", True) == {
+        "dosya": "src/ext.h", "kaynak": "tanim", "sinif": "program", "tanimsiz": False}
+    assert ycoz.koken("ana:0xC8", "struct", "nodef", True) == {
+        "dosya": "t.h", "kaynak": "takma_ad", "sinif": "program", "tanimsiz": True}
+    k = ycoz.koken("ana:0x1030", "struct", "dup", False, ycoz.yerlesim("ana:0x1030")["ozet"])
+    assert (k["dosya"], k["sinif"]) == (None, None)
+    gnulibsiz = _yerlesim_dunyasi(gnulib=False)
+    assert gnulibsiz.koken("ana:0x20", "struct", "inner", False)["sinif"] == "program"
+
+
+def test_yapi_tablosu_yeni_alanlar(ycoz):
+    tablo = ycoz.yapilar(ycoz.fonksiyonlar())
+    assert set(tablo) >= {"ana:0x30", "ana:0xc0", "ana:0x1010"}
+    outer = tablo["ana:0x30"]
+    assert outer["yerlesim"]["imza"].startswith("struct/48/0:4s,4:4s,8:8p")
+    assert [e["ad"] for e in outer["ilk_uye"]] == ["inner"]
+    assert outer["koken"]["sinif"] == "sistem" and outer["takma_adlar"] == []
+    ext = tablo["ana:0xc0"]
+    assert ext["yerlesim"] is None and ext["ilk_uye"] == [] and ext["tanimlar"] == ["ana:0x1010"]
+    assert ext["koken"]["kaynak"] == "tanim"
+    assert tablo["ana:0x1010"]["uyeler"] == [{"ad": "p", "ofset": 0, "kanonik": "char *",
+                                              "sinif": "char*"}]
+    kim = dt.k1_kimligi("ana:0xc0", tablo)
+    assert kim == {"kimlik": f"struct ext #{tablo['ana:0x1010']['yerlesim']['ozet']}",
+                   "durum": "bildirim_cozuldu", "konum": "ana:0x1010"}
+    assert dt.k1_tabakasi("ana:0xc0", tablo) == "program"
+    assert dt.k1_tabakasi("ana:0x30", tablo) == "kutuphane"
+
+
+def _ykayit(tur="struct", ad_=None, ozet=None, bildirim=False, tanimlar=(), takma=(),
+            ilk_uye=(), sinif="program", durum="tam"):
+    return {"tur": tur, "ad": ad_, "bildirim": bildirim, "tanimlar": list(tanimlar),
+            "takma_adlar": list(takma), "ilk_uye": list(ilk_uye),
+            "yerlesim": None if bildirim else {"durum": durum, "ozet": ozet if durum == "tam"
+                                                else None},
+            "koken": {"sinif": sinif, "tanimsiz": bildirim and not tanimlar}}
+
+
+def test_k1_kimligi_durumlari():
+    yapilar = {
+        "ana:0x1": _ykayit(ad_="foo", ozet="a1"),
+        "ana:0x2": _ykayit(ad_="foo", bildirim=True, tanimlar=["ana:0x1", "ana:0x3"]),
+        "ana:0x3": _ykayit(ad_="foo", ozet="a1"),                 # aynı yerleşimli kopya
+        "ana:0x4": _ykayit(ad_="dict", ozet="d56"),
+        "ana:0x5": _ykayit(ad_="dict", ozet="d48"),
+        "ana:0x6": _ykayit(ad_="dict", bildirim=True, tanimlar=["ana:0x4", "ana:0x5"]),
+        "ana:0x7": _ykayit(ad_="bio_st", bildirim=True),
+        "ana:0x8": _ykayit(ozet="an", takma=["zeta_t", "alfa_t"]),
+        "ana:0x9": _ykayit(ad_="eks", durum="eksik"),
+        "ana:0xa": _ykayit(ad_="eks", bildirim=True, tanimlar=["ana:0x9"]),
+        "ana:0xb": {"hata": "dongu"},
+    }
+    k = {x: dt.k1_kimligi(x, yapilar) for x in yapilar}
+    assert k["ana:0x1"] == {"kimlik": "struct foo #a1", "durum": "tanim", "konum": "ana:0x1"}
+    assert (k["ana:0x2"]["kimlik"], k["ana:0x2"]["durum"]) == ("struct foo #a1", "bildirim_cozuldu")
+    assert k["ana:0x4"]["kimlik"] != k["ana:0x5"]["kimlik"]       # redis/hiredis dict ayrı
+    assert (k["ana:0x6"]["kimlik"], k["ana:0x6"]["durum"]) == (None, "cok_tanimli")
+    assert k["ana:0x7"] == {"kimlik": "struct bio_st #bildirim", "durum": "opak",
+                            "konum": "ana:0x7"}
+    assert k["ana:0x8"]["kimlik"] == "struct <anon> #an ~alfa_t"
+    assert k["ana:0x9"]["durum"] == k["ana:0xa"]["durum"] == "yerlesim_eksik"
+    assert k["ana:0xb"]["durum"] == "hata" and dt.k1_kimligi("ana:0xff", yapilar)["durum"] == "hata"
+    assert {v["durum"] for v in k.values()} <= set(dt.K1_DURUMLARI)
+
+
+def test_k1_aile_haritasi_bagli_bilesen():
+    """X → Y ve W → Y: X, W, Y tek aile; temsilci sözlükçe en küçük; zincir ardışık bağlanır."""
+    z = lambda ad_, ozet: {"tur": "struct", "ad": ad_, "ozet": ozet, "takma_ad": None}
+    yapilar = {
+        "ana:0x1": _ykayit(ad_="x", ozet="1", ilk_uye=[z("y", "2"), z("t", "4")]),
+        "ana:0x2": _ykayit(ad_="w", ozet="3", ilk_uye=[z("y", "2")]),
+        "ana:0x3": _ykayit(ad_="yalniz", ozet="5"),
+        "ana:0x4": _ykayit(ad_="b", bildirim=True),
+    }
+    aile = dt.k1_aile_haritasi(yapilar)
+    temsilci = {aile[x] for x in ("struct x #1", "struct y #2", "struct t #4", "struct w #3")}
+    assert temsilci == {"struct t #4"}
+    assert aile["struct yalniz #5"] == "struct yalniz #5"
+    assert "struct b #bildirim" not in aile
+
+
+def test_k1_tabakasi_tanimsiz_dis():
+    yapilar = {"ana:0x1": _ykayit(ad_="bio_st", bildirim=True, sinif="program"),
+               "ana:0x2": _ykayit(ad_="evbuffer", bildirim=True, sinif=None),
+               "ana:0x3": _ykayit(ad_="stat", ozet="s", sinif="sistem"),
+               "ana:0x4": _ykayit(ad_="h", ozet="h", sinif="gnulib"),
+               # bildirimin kendi kökeni sistem, çözüldüğü tanımınki program: tanımınki geçer
+               "ana:0x5": _ykayit(ad_="x", bildirim=True, tanimlar=["ana:0x6"], sinif="sistem"),
+               "ana:0x6": _ykayit(ad_="x", ozet="x", sinif="program")}
+    assert [dt.k1_tabakasi(k, yapilar) for k in sorted(yapilar)] == [
+        "program", None, "kutuphane", "kutuphane", "program", "program"]
+    assert [dt.k1_tabakasi(k, yapilar, tanimsiz_dis=True) for k in sorted(yapilar)] == [
+        "kutuphane", "kutuphane", "kutuphane", "kutuphane", "program", "program"]
+
+
+_DU = None
+
+
+def _du_debug():
+    toplu = (Path.home() / "karadul_olcum/runs/t0b-1acba60/dwarf/coreutils/toplu.json")
+    if not toplu.is_file():
+        return None
+    for s in json.loads(toplu.read_text(encoding="utf-8"))["dosyalar"]:
+        if (s.get("ikili") or "").endswith("/du") and Path(s["debug"]).is_file():
+            return Path(s["debug"])
+    return None
+
+
+@pytest.mark.skipif(not _TREE.is_file(), reason="yerel Debian 13 tree dbgsym yok")
+def test_gercek_tree_yerlesim_ve_koken():
+    b = dt.cikar(_TREE)
+    yap = {y["kimlik"]: y for y in b["yapilar"].values() if not y.get("hata")}
+    st = yap["struct stat"]
+    assert st["yerlesim"]["imza"].startswith("struct/128/0:8s,8:8s,16:4s,")
+    assert ",72:8s,80:8s," in st["yerlesim"]["imza"]        # st_atim (timespec) düzleşti
+    assert st["koken"]["sinif"] == "sistem"
+    f = yap["struct _IO_FILE"]
+    assert f["takma_adlar"] == ["FILE"] and f["koken"]["sinif"] == "sistem"
+    assert yap["struct _info"]["koken"] == {"dosya": "tree.h", "kaynak": "kendi",
+                                            "sinif": "program", "tanimsiz": False}
+
+
+@pytest.mark.skipif(_du_debug() is None, reason="yerel Debian 13 coreutils dbgsym ya da T0b dizini yok")
+def test_gercek_du_gnulib():
+    b = dt.cikar(_du_debug())
+    yap = {y["kimlik"]: y for y in b["yapilar"].values() if not y.get("hata")}
+    assert yap["struct hash_tuning"]["koken"]["sinif"] == "gnulib"
+    assert yap["struct hash_tuning"]["takma_adlar"] == ["Hash_tuning"]
+    assert yap["struct __va_list"]["koken"]["sinif"] == "sistem"
+    zincir = yap["struct cycle_check_state"]["ilk_uye"]
+    assert [e["ad"] for e in zincir] == ["dev_ino"]

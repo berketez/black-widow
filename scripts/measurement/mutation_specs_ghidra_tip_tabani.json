@@ -1,0 +1,181 @@
+{
+  "_comment": "ghidra_tip_tabani.py (plan v2.2 T0c: çıplak Ghidra tip tabanı ve K1 ölçüleri) kurallarının mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ghidra_tip_tabani.json",
+  "mutants": [
+    {
+      "id": "t0c_ulong_imzali",
+      "desc": "Ghidra ulong imzalı long'a çevrilir",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_adli_tip_dogru_mu",
+      "find": "\"long\": \"long int\", \"ulong\": \"long unsigned int\",",
+      "replace": "\"long\": \"long int\", \"ulong\": \"long int\","
+    },
+    {
+      "id": "t0c_typedef_adi_aday_degil",
+      "desc": "typedef AD TABAN biçiminde AD aday sayılmaz",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_adli_tip_dogru_mu",
+      "find": "        adaylar = sorted({(ad, 0), *(tuple(a) for a in ic[\"adaylar\"])})",
+      "replace": "        adaylar = sorted({*(tuple(a) for a in ic[\"adaylar\"])})"
+    },
+    {
+      "id": "t0c_derinlik_yok_sayilir",
+      "desc": "adlı tip doğruluğunda işaretçi derinliği yok sayılır",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_adli_tip_dogru_mu",
+      "find": "    return any((a, d) in kabul for a, d in g[\"adaylar\"])",
+      "replace": "    return any(a in {x for x, _ in kabul} for a, _ in g[\"adaylar\"])"
+    },
+    {
+      "id": "t0c_typedef_tam_derinlikte",
+      "desc": "zincirdeki typedef önündeki işaretçi sayısı yerine tam derinlikle kabul edilir",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_dwarf_kabul_ciftleri",
+      "find": "            ciftler.add((adim[\"ad\"], k))",
+      "replace": "            ciftler.add((adim[\"ad\"], toplam))"
+    },
+    {
+      "id": "t0c_takma_ad_kabul_yok",
+      "desc": "kök yapının takma adları kabul edilmez",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_dwarf_kabul_ciftleri",
+      "find": "    for a in takma_adlar:\n        ciftler.add((a, toplam))",
+      "replace": "    for a in ():\n        ciftler.add((a, toplam))"
+    },
+    {
+      "id": "t0c_etiket_derinlik_iki",
+      "desc": "derinlik 2'deki adlı tip de yapı kümesi etiketi olur",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_ghidra_yapi_etiketi",
+      "find": "    if g[\"tur\"] == \"adli\" and g[\"derinlik\"] == 1:",
+      "replace": "    if g[\"tur\"] == \"adli\" and g[\"derinlik\"] in (1, 2):"
+    },
+    {
+      "id": "t0c_typedef_haritasi_kullanilmaz",
+      "desc": "Ghidra typedef haritası kullanılmaz (size_t * yapı etiketi olur)",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_ghidra_yapi_etiketi",
+      "find": "        yerlesik = _yerlesige_iner_mi(s, typedefler)",
+      "replace": "        yerlesik = None"
+    },
+    {
+      "id": "t0c_ciftler_ikili_arasi",
+      "desc": "çiftler ikililer arasında da kurulur",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_program_k1_ciftler_ikili_icinde",
+      "find": "    t = k1_topla(k1_sayimlari(o) for _, o in sorted(ikililer.items()))",
+      "replace": "    t = k1_sayimlari([x for _, o in sorted(ikililer.items()) for x in o])"
+    },
+    {
+      "id": "t0c_kapsam_tekil_dahil",
+      "desc": "tek üyeli küme de kapsama sayılır",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_k1_sayimlari_ve_oranlar",
+      "find": "    kapsanan = sum(n for n in etiket.values() if n >= 2)",
+      "replace": "    kapsanan = sum(etiket.values())"
+    },
+    {
+      "id": "t0c_b3_tekil_dahil",
+      "desc": "B-cubed kesinliğe tek üyeli kümeler girer",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_k1_sayimlari_ve_oranlar",
+      "find": "    b3p = sum(m * m / etiket[e] for (e, t), m in ortak.items() if etiket[e] >= 2)",
+      "replace": "    b3p = sum(m * m / etiket[e] for (e, t), m in ortak.items())"
+    },
+    {
+      "id": "t0c_makro_tanimsiz_sifir",
+      "desc": "tanımsız oranlı program makroya 0 olarak girer",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_makro_tanimsiz_program_disarida",
+      "find": "    tanimli = [d for d in degerler if d is not None]",
+      "replace": "    tanimli = [d or 0.0 for d in degerler]"
+    },
+    {
+      "id": "t0c_yuzdelik_kaydi",
+      "desc": "yüzdelik bir sıra yukarıdan alınır",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_yuzdelik_en_yakin_sira",
+      "find": "    return v[max(0, math.ceil(q * len(v)) - 1)]",
+      "replace": "    return v[min(len(v) - 1, math.ceil(q * len(v)))]"
+    },
+    {
+      "id": "t0c_karistirma_yok",
+      "desc": "negatif kontrolde etiketler karıştırılmaz (ters çevrilir)",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_karistirma_kontrolu",
+      "find": "                rng.shuffle(etiketler)",
+      "replace": "                etiketler.reverse()"
+    },
+    {
+      "id": "t0c_uygun_thunk_dahil",
+      "desc": "Ghidra thunk'ı uygun fonksiyon sayılır",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_uygun_mu",
+      "find": "    return (f.get(\"eslesme\") == \"adres\" and not f.get(\"klon\") and not ghidra.get(\"thunk\")",
+      "replace": "    return (f.get(\"eslesme\") == \"adres\" and not f.get(\"klon\")"
+    },
+    {
+      "id": "t0c_uygun_cpp_dahil",
+      "desc": "C++ birimi uygun fonksiyon sayılır",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_uygun_mu",
+      "find": "            and dil == \"C\" and bool(f.get(\"decompile\")))",
+      "replace": "            and dil in (\"C\", \"C++\") and bool(f.get(\"decompile\")))"
+    },
+    {
+      "id": "t0c_nufus_abi_dahil",
+      "desc": "ABI yedeğiyle ve kısmi eşlenen parametreler nüfusa girer",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_ikili_kayitlari_nufus_ve_esleme",
+      "find": "            if s.get(\"depolama_kaynagi\") != \"dwarf\" or s.get(\"eslesme\") != \"tam\":",
+      "replace": "            if s.get(\"depolama_ortagi\") is None:"
+    },
+    {
+      "id": "t0c_ghidra_parametresi_siradan",
+      "desc": "Ghidra parametresi depolama ortağı yerine DWARF sırasıyla alınır",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_ikili_kayitlari_nufus_ve_esleme",
+      "find": "            gpar = gp[s[\"depolama_ortagi\"] - 1]",
+      "replace": "            gpar = gp[(sd[\"sira\"] or 1) - 1]"
+    },
+    {
+      "id": "t0c_kimliksiz_dahil",
+      "desc": "kimliksiz (çok tanımlı) kökler K1'e girer",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_k1_tablosu_tabaka_duzey_ve_onemsizler",
+      "find": "        if k.get(\"dwarf_sinif\") != \"yapi*\" or k.get(\"kimlik\") is None:",
+      "replace": "        if k.get(\"dwarf_sinif\") != \"yapi*\":"
+    },
+    {
+      "id": "t0c_tabaka_kisitlanmaz",
+      "desc": "tabaka nüfusu kısıtlamaz",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_k1_tablosu_tabaka_duzey_ve_onemsizler",
+      "find": "        if tabaka != \"hepsi\" and k.get(tabaka_alani) != tabaka:",
+      "replace": "        if False:"
+    },
+    {
+      "id": "t0c_tek_sinif_kahin",
+      "desc": "tek sınıf tabanı gerçek kimlikle etiketlenir",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_k1_tablosu_tabaka_duzey_ve_onemsizler",
+      "find": "            e = \"tek\"",
+      "replace": "            e = k[\"kimlik\"]"
+    },
+    {
+      "id": "t0c_aile_kati_ayni",
+      "desc": "aile düzeyi katı kimlikle hesaplanır",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_k1_tablosu_tabaka_duzey_ve_onemsizler",
+      "find": "        ogeler.append((e, k[\"kimlik\"] if duzey == \"kati\" else k[\"aile\"]))",
+      "replace": "        ogeler.append((e, k[\"kimlik\"]))"
+    },
+    {
+      "id": "t0c_ev_yolu_acik",
+      "desc": "depoya giden yollarda ev dizini açık kalır",
+      "module": "scripts/measurement/ghidra_tip_tabani.py",
+      "test": "tests/test_ghidra_tip_tabani.py::test_ev_yolu",
+      "find": "    return \"~\" + s[len(ev):] if s == ev or s.startswith(ev + \"/\") else s",
+      "replace": "    return s"
+    }
+  ]
+}

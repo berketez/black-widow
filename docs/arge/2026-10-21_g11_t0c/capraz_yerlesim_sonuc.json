@@ -1,0 +1,27 @@
+{
+ "tree": {
+  "tanim": 7,
+  "ayni": 7,
+  "farklar": []
+ },
+ "tmux": {
+  "tanim": 494,
+  "ayni": 494,
+  "farklar": []
+ },
+ "htop": {
+  "tanim": 133,
+  "ayni": 133,
+  "farklar": []
+ },
+ "sqlite3": {
+  "tanim": 32,
+  "ayni": 32,
+  "farklar": []
+ },
+ "openssl": {
+  "tanim": 38,
+  "ayni": 38,
+  "farklar": []
+ }
+}
