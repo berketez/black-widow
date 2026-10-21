@@ -461,4 +461,8 @@ PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measur
   - Yazmaç (DW_AT_location'ın ilk girdisi ↔ eşlenen Ghidra parametresinin depolaması): **12/12 aynı**.
   - Fonksiyon girişi (üst subprogram'ın low_pc + 0x100000 = Ghidra girişi): **12/12**.
   - Ad: denetlenebilen 8/8 aynı. Kalan 4'te ad dwz ek dosyasındaki dizgide (`DW_FORM_GNU_strp_alt`); Apple `dwarfdump` bunu `DW_AT_name ()` diye boş gösteriyor. Bu denetim aracının sınırı; `decl_file` ve `decl_line` doğru parametreyi gösteriyor (ör. `zstd_opt.c:82`, `ZSTD_setBasePrices`'ın 2. parametresi).
-- **Açık:** "tree'de Karadul ile bayt bayt eşdeğerlik" iddiası, N1 için Debian geliştirme setinde koşulan Karadul çıktılarıyla ayrıca karşılaştırılacak.
+- **Karadul ile eşdeğerlik (bağımsız):** N1 için koşulan Karadul çıktısıyla karşılaştırıldı. Koşu a10fde3, `~/karadul_olcum/n1_debian13/tree/`.
+  - Karadul'un `static/ghidra_output/decompiled/*.c` dosyalarından baştaki künye yorumu (`// Function:` … `// Stack:`) ve sondaki `// --- DISASSEMBLY` eki atıldı.
+  - Dosyalar künyedeki `// Address:` alanıyla adrese eşlendi.
+  - Sonuç: `ghidra_2/tree.json`'daki 250 fonksiyonun **250'sinde decompile gövdesi aynı**.
+  - Ada göre eşleme yanıltır: aynı adlı PLT thunk'ı ile dış blok taslağı (ör. `strlen` 0x103d30 ve 0x135028) ayrı dosyalara yazılıyor.
