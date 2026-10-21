@@ -1,5 +1,5 @@
 {
-  "_comment": "alt_kanal.py (plan v2.2 N0b) yüklemlerinin, halefin ve karar kuralının ('yalnız zayıflar') mutasyon koruması. Her mutant bir tanımı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_alt_kanal.json",
+  "_comment": "alt_kanal.py (plan v2.2 N0b) yüklemlerinin, halefin ve karar kuralının ('yalnız zayıflar') ve alt_kanal_olc.py'nin (adım 2) ölçüm adımlarının mutasyon koruması. Her mutant bir tanımı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_alt_kanal.json",
   "mutants": [
     {
       "id": "n0b_oz_ad_buyuk_harf_sabit",
@@ -48,6 +48,54 @@
       "test": "tests/test_alt_kanal.py::test_halef_yapisal_suzgec_yalniz_en_iyiye_bakar",
       "find": "        if r.get(\"strategy\") in YAPISAL_SUZGEC:",
       "replace": "        if r.get(\"strategy\") in ():"
+    },
+    {
+      "id": "n0b_bicim_parcasi_yalniz_ilk_sozcuk",
+      "desc": "bicim_parcasi adı kuran üç sözcükten yalnız ilkine bakar (took %llu milliseconds kaçar)",
+      "module": "scripts/measurement/alt_kanal.py",
+      "test": "tests/test_alt_kanal.py::test_bicim_parcasi_ad_kuran_sozcuk_belirtece_tasiyor",
+      "find": "for _, bas, son in g.sozcukler[:AD_PARCASI] for b_bas, b_son in belirtecler)",
+      "replace": "for _, bas, son in g.sozcukler[:1] for b_bas, b_son in belirtecler)"
+    },
+    {
+      "id": "n0b_yuzde_yuzde_belirtec_sayilir",
+      "desc": "%% (düz yüzde işareti) dönüşüm belirteci sayılır",
+      "module": "scripts/measurement/alt_kanal.py",
+      "test": "tests/test_alt_kanal.py::test_bicim_belirteci_yuzde_yuzde_ve_bosluk_bayragi",
+      "find": "    return [(m.start(), m.end()) for m in BICIM_BELIRTECI_RE.finditer(s) if m.group(0) != \"%%\"]",
+      "replace": "    return [(m.start(), m.end()) for m in BICIM_BELIRTECI_RE.finditer(s)]"
+    },
+    {
+      "id": "n0b_olc_yem_dahil",
+      "desc": "adım 2: yem öğeleri ana sayılara girer",
+      "module": "scripts/measurement/alt_kanal_olc.py",
+      "test": "tests/test_alt_kanal_olc.py::test_ogeler_yem_disarida_ve_tam_anahtardan",
+      "find": "        if item[\"yem\"]:\n            continue\n",
+      "replace": "        if False:\n            continue\n"
+    },
+    {
+      "id": "n0b_olc_tam_degerlendiriciden",
+      "desc": "adım 2: nihai etiket anahtar yerine değerlendiriciden (tp öğesi tam sayılmaz)",
+      "module": "scripts/measurement/alt_kanal_olc.py",
+      "test": "tests/test_alt_kanal_olc.py::test_ogeler_yem_disarida_ve_tam_anahtardan",
+      "find": "\"nihai\": ep.final_label(item, etiketler[iid][\"etiket\"]),",
+      "replace": "\"nihai\": etiketler[iid][\"etiket\"],"
+    },
+    {
+      "id": "n0b_olc_taban_ad_denetimi_yok",
+      "desc": "adım 2: öğenin adayı ile kaydın adı denetlenmeden eşlenir",
+      "module": "scripts/measurement/alt_kanal_olc.py",
+      "test": "tests/test_alt_kanal_olc.py::test_esleme_taban_ad_ve_eslenmeyenler",
+      "find": "        if ak.taban_ad(o[\"aday\"]) != ak.taban_ad(k[\"ad\"]):",
+      "replace": "        if False:"
+    },
+    {
+      "id": "n0b_olc_sha256_denetimi_yok",
+      "desc": "adım 2: sha256 uyuşmazlığında koşu durmaz",
+      "module": "scripts/measurement/alt_kanal_olc.py",
+      "test": "tests/test_alt_kanal_olc.py::test_sha256_denetimi",
+      "find": "    if gercek != beklenen:",
+      "replace": "    if False:"
     }
   ]
 }
