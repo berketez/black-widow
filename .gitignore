@@ -76,3 +76,6 @@ karadul-ui-*.png
 *.png
 # Proje-yerel Claude yapılandırması
 .claude/
+
+# Üçüncü taraf metni (Apple `man ld`), depo herkese açık; yeniden üretme ve sha256: llvm_arm64.md kaynak 9
+docs/arge/2026-10-15_makale/derleyici/deney_llvm/out/man_ld.txt

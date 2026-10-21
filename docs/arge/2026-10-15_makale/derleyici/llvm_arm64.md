@@ -625,7 +625,7 @@ Mevcut `scripts/measurement/function_f1.py` yalnız ELF'i (pyelftools) destekliy
 **Apple belgeleri ve araçları**
 
 8. Apple, "Writing ARM64 code for Apple platforms" **[D]**: x18, x29, çağıran tarafı genişletme, variadic yığın yuvaları, red zone 128, tip boyutları. https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms
-9. Apple `ld(1)` man sayfası, CommandLineTools, ld-27037.1 **[Y]**: `-dead_strip`, `-order_file`, `-export_dynamic`, `-x`, `-S`, `-no_deduplicate`, `-keep_duplicates_list`, `-verbose_deduplicate`, `-no_function_starts`, `-ld_classic`. (`man ld`; kopya: `deney_llvm/out/man_ld.txt`)
+9. Apple `ld(1)` man sayfası, CommandLineTools, ld-27037.1 **[Y]**: `-dead_strip`, `-order_file`, `-export_dynamic`, `-x`, `-S`, `-no_deduplicate`, `-keep_duplicates_list`, `-verbose_deduplicate`, `-no_function_starts`, `-ld_classic`. (`man ld`; dosya `/Library/Developer/CommandLineTools/usr/share/man/man1/ld.1`, CommandLineTools 27.0.0. Yerel kopya `deney_llvm/out/man_ld.txt` Apple'ın metni olduğu için depoya girmez; `man ld | col -b` aynı baytları üretir, sha256 `7487ceeb61ba9fd610d2279b9cf8d7306546feae7e446f295cd2db6fa3575190`, 2026-10-21'de doğrulandı.)
 10. Apple `strip(1)` man sayfası **[Y]**: seçeneksiz kullanım yürütülebilirde `-u -r` ile eşdeğer. (`man strip`)
 11. macOS SDK (CommandLineTools) **[Y]**:
     - `usr/include/_types.h:64-70`: `_FORTIFY_SOURCE 2` varsayılanı.
