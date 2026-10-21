@@ -1,0 +1,10 @@
+{
+ "sema": "karadul-ks1-sabitler/1",
+ "dosyalar": {
+  "karadul/reconstruction/tarif/kesin.py": "cd77947252ed9514cf6664c87a45837c513ef7aa7f15bf82abaa3243f541bcc9",
+  "scripts/measurement/ks1_olc.py": "26feb9b0be52dc978ab39ed1398aa3c8099041d90d690e6a55265cd8827b15d7",
+  "tests/test_tarif_kesin.py": "f92823b4f49e202b137aa3b1a404bb187560db796d25b099de7dacea53431f84",
+  "tests/test_ks1_olc.py": "52237e25253bbdbfc9020ae1df853d46b8a72db6521e8060aa657c62641da9eb",
+  "scripts/measurement/mutation_specs_ks1.json": "d69dfad026755ddaba204876cd16dc2f52ea9a7e980636019dd2db0e560b4665"
+ }
+}
