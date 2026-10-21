@@ -1,9 +1,10 @@
 # Görülmemiş dilim: ön kayıt taslağı
 
 - **Tarih:** 2026-10-19
-- **Durum:** Taslak. Aday seçilmedi ve aday listesi çekilmedi. Bu belge yalnız yöntemi yazar. Berke onaylayıp commit'lediğinde ön kayıt olur. Aday listesi bu commit'ten **sonra** çekilir, yani kurallar sonuç görülmeden konur.
+- **Durum:** Taslak, sürüm 2 (2026-10-19 öğleden sonra). Aday seçilmedi ve aday listesi çekilmedi. Bu belge yalnız yöntemi yazar. Berke onaylayıp commit'lediğinde ön kayıt olur. Aday listesi bu commit'ten **sonra** çekilir, yani kurallar sonuç görülmeden konur.
+- **Sürüm 2'de değişen (Berke'nin kararları, 2026-10-19):** Birincil model Qwen3.8-27B oldu; sınır tarihi **S = 2026-08-05**. G8 kararı geçici, dilimin koşulu G34'te kesinleşir (§9, seçenek A). "Sürüyor" tanımı kabul edildi (§8). Fizibilite sayımları yeni sınırla yeniden yapıldı (§10). Sürüm 1 (952018f) S = 2026-06-01 kullanıyordu.
 - **Plan bağlantısı:** `docs/arge/2026-10-17_plan_v2.md` §5. G6'da dilimin ön kaydı yapılır, G8 karar kuralı dilime bakar, G31'de dilim açılır. Onuncu Adam İ3 (`docs/arge/2026-10-17_v2/onuncu_adam.md`).
-- **Model bağlantısı:** `model_secimi.md`. Birincil Qwen3.6-27B, yedek Gemma 4 26B-A4B-it (QAT).
+- **Model bağlantısı:** `model_secimi.md`. Birincil Qwen3.8-27B (GGUF Q4_K_M), ikinci model Gemma 4 26B-A4B-it (QAT, MLX).
 - **Ölçüm bağlantısı:** `pilot_protokolu.md`. Koşullar, istemler ve değerlendirme pilotla aynı.
 
 ## 0. Amaç ve ilkeler
@@ -21,28 +22,27 @@
 
 ### 1.1 Tanım
 
-- S, pilotta kullanılan modellerin ağırlıklarının herkese açık olduğu en geç tarihe en az bir aylık pay eklenerek bulunur.
-- Pilot modellerinin tarihleri (`model_secimi.md` K4 ve K5):
+- **S = 2026-08-05** (UTC; Berke'nin kararı, 2026-10-19). Dayanağı Qwen3.8-27B'nin ağırlık deposunun açıldığı gün (`model_secimi.md` K20).
+- Pilot modellerinin tarihleri:
 
-| Model | Tarih |
-|---|---|
-| Qwen3.6-27B | Depo 2026-04-21'de açıldı; ağırlıklar 2026-04-22'de yüklendi |
-| Gemma 4 26B-A4B-it | Yayım 2026-04-02 |
-| Gemma 4 QAT sürümü | Depo 2026-04-29; GGUF deposu 2026-05-01 |
+| Model | Tarih | Kaynak |
+|---|---|---|
+| Qwen3.8-27B (birincil) | Depo 2026-08-05'te açıldı; son değişiklik 2026-08-14 | HF API (`model_secimi.md` K20) |
+| Gemma 4 26B-A4B-it (ikinci) | Yayım 2026-04-02; QAT deposu 2026-04-29. Ön eğitim kesimi Ocak 2025 (beyan) | `model_secimi.md` K5 |
 
-- En geç tarih 2026-05-01. **S = 2026-06-01** (UTC).
-- **Gerekçe:** Bir model, ağırlıkları yayımlanmadan önce herkese açık olmayan bir kodu göremez. Bu sınır, üreticinin beyan ettiği kesim tarihine güvenmeyi gerektirmez. Qwen3.6 zaten kesim beyan etmiyor.
-- **Payın gerekçesi:** HF `createdAt` ile deponun herkese açıldığı gün arasında fark olabilir; sonradan yüklenen revizyonlar da olabilir.
+- **Gerekçe:** Bir model, ağırlıkları yayımlanmadan önce herkese açık olmayan bir kodu göremez. Sınır üreticinin kesim beyanına dayanmaz; Qwen3.8 zaten kesim beyan etmiyor. Gemma 4'ün yayımı daha erken olduğundan aynı sınır onun için de geçerlidir.
+- **Duyarlılık katmanı:** Depo 2026-08-05'te açıldı, ağırlıklar en geç 2026-08-14'te herkese açıktı. Bu iki tarih arasında ilk kez açılmış bir projenin eğitim verisine girmesi pratikte olanaksız, çünkü eğitimin yayımdan önce bitmesi gerekir. Yine de bu aralıkta açılmış projeler (`created` 2026-08-05..2026-08-14) künyede işaretlenir ve sonuç onlar olmadan da raporlanır.
+- **Sürüm 1'den fark:** Sürüm 1, Nisan 2026'da yayımlanan Qwen3.6-27B'ye göre S = 2026-06-01 kullanıyordu. Model değişince sınır iki ay ileri kaydı ve aday penceresi daraldı (§10).
 
 ### 1.2 Model ya da revizyon değişirse
 
-- Pilotta S'den sonra yayımlanmış bir model de kullanılırsa (ör. Ağustos 2026'da yayımlanan Qwen3.8-27B), o modelin sonuçları bu dilimde "görülmemiş" diye raporlanamaz. Bu durumda S o model için yeniden tanımlanır ve yalnız yeni S'den sonra açılmış projeler kullanılır.
+- Pilotta S'den sonra yayımlanmış bir model de kullanılırsa, o modelin sonuçları bu dilimde "görülmemiş" diye raporlanamaz. Bu durumda S o model için yeniden tanımlanır ve yalnız yeni S'den sonra açılmış projeler kullanılır.
 - Ağırlıkları değiştiren yeni bir revizyon kullanılırsa S, o revizyonun tarihinden yeniden hesaplanır.
 
 ### 1.3 İsteğe bağlı ikinci katman (yalnız Gemma 4; varsayılan: kapalı)
 
 - Gemma 4, ön eğitim kesimini Ocak 2025 diye beyan ediyor (`model_secimi.md` K5).
-- İstenirse bir "beyan sonrası" katmanı eklenebilir: ilk herkese açık görünümü 2025-04-01 ile 2026-05-31 arasında olan projeler.
+- İstenirse bir "beyan sonrası" katmanı eklenebilir: ilk herkese açık görünümü 2025-04-01 ile 2026-08-04 arasında olan projeler.
 - Bu katman yalnız Gemma sonuçları için geçerlidir ve ana analize girmez. Son eğitim verisinin tarihi açıklanmadığı için "olası görülmüş" uyarısıyla raporlanır.
 
 ### 1.4 G33'e öncü model eklenirse
@@ -56,7 +56,7 @@
 - **Kaynak:** Yalnız GitHub. GitLab, Codeberg ve SourceHut kapsam dışı; bu bir yanlılık olarak raporlanır (§11).
 - **Sorgu:** GitHub REST `GET /search/repositories`:
 
-  `language:C created:2026-06-01..<T> stars:>=50 fork:false archived:false mirror:false is:public`
+  `language:C created:2026-08-05..<T> stars:>=50 fork:false archived:false mirror:false is:public`
 
   - T = kura günü − 30 gün. Böylece yeni depolar yıldız toplayacak zaman bulur.
   - Kura günü, bu belgenin onaylı sürümünde sabitlenir. Öneri: G30 ile G31 arası, doğrulama seti kilitlendikten sonra.
@@ -104,7 +104,7 @@
   - Yukarıdaki programların fork'u, yeniden yazımı, eklentisi ya da klonu olan projeler: README ya da açıklamada program adı "fork of", "port of", "based on", "plugin for", "clone of" gibi bir ifadeyle geçiyorsa.
   - Bu programların kaynak dosyalarını taşıyan projeler (U6'nın yol kuralıyla).
   - Örnek sınıflar: tmux eklentileri, htop türevleri, coreutils yeniden yazımları.
-- **Not:** Dilimdeki projeler tanım gereği 2026-06-01'den sonra açılmış; listedekiler ise eski programlar. Doğrudan çakışma olamaz; önemli olan türevler.
+- **Not:** Dilimdeki projeler tanım gereği 2026-08-05'ten sonra açılmış; listedekiler ise eski programlar. Doğrudan çakışma olamaz; önemli olan türevler.
 
 ## 5. Kura yöntemi
 
@@ -115,7 +115,6 @@
 - **Ölçütlerin sırası** (ucuzdan pahalıya): U1, U2, U4, U12, U13, U10, U11, U5, U6, U7, U3 (klon gerekir), U8 (derleme gerekir), U9 (`nm` ve dSYM).
 - **Seçim:**
   - Karışık sırada ilerlenir. Bütün ölçütleri geçen ilk **N = 10** proje seçilir; en az 8.
-  - §9'daki seçenek B seçilirse sıra şöyledir: geçen ilk 3 proje pilot parçası, sonraki 10 proje kilitli parça.
 - **Alan kotası:**
   - Aynı alan sınıfından en çok 3 proje alınır.
   - Sınıflar: emülatör ve sanal makine; oyun; ağ; sıkıştırma ve arşiv; metin, ayrıştırma ve dil; sistem aracı ve kabuk; grafik ve medya; diğer.
@@ -168,7 +167,7 @@
 - **Değerlendirme:** Kör protokol v2. G32'de iki insan değerlendirici ve bir vekil (plan G32).
 - **Ana ölçü:** Δb_görülmemiş = yakın(B) − yakın(A), proje başına makro ortalama (plan §3 madde 4). Δc de aynı biçimde.
 - **GA:** Proje kümeli, iki aşamalı bootstrap: önce projeler, sonra proje içinde fonksiyonlar yeniden örneklenir. 10.000 tekrar, tohum 20261019.
-- **"Sürüyor" için öneri** (`pilot_protokolu.md` §11.3): Δb_görülmemiş ≥ 10 puan ve %95 GA alt sınırı > 0. Berke onaylar.
+- **"Sürüyor" tanımı** (Berke'nin kararı, 2026-10-19; `pilot_protokolu.md` §11.3): Δb_görülmemiş ≥ 10 puan ve %95 GA alt sınırı > 0. LLM tarafında önceden yazılmış koşulların en iyisi, Karadul tarafında A1 kullanılır.
 - **İkincil ölçüler:**
   - Δb_geliştirme − Δb_görülmemiş: LLM'in ezberden gelen kazancının ölçüsü.
   - Tam oranlarının iki kümede karşılaştırılması.
@@ -178,25 +177,37 @@
   - Sonuç: q = 0,4 için Δ'nın %95 GA yarı genişliği ≈ ±9-11 puan.
   - Önerilen "sürüyor" ölçütü bu genişlikle okunabilir. "≥ 15 puan" ölçütü ise sınırda kalır.
 
-## 9. Zamanlama: G8 kuralıyla çelişki
+## 9. Zamanlama: G8 kuralıyla çelişki (karar verildi)
 
-- Plana göre dilimin ön kaydı G6'da yapılıyor, dilim G31'de açılıyor. Oysa G8 kuralının ikinci koşulu ("fark görülmemiş dilimde de sürüyor") G8'de **ölçülemez**.
-- **Seçenek A (öneri):**
+- Plana göre dilimin ön kaydı G6'da yapılıyor, dilim G31'de açılıyor. G8 kuralının ikinci koşulu ("fark görülmemiş dilimde de sürüyor") G8'de ölçülemez.
+- **Karar (Berke, 2026-10-19): seçenek A.**
   - G8 kararı geliştirme setiyle **geçici** olarak verilir.
   - Dilim G31'de açılır; kesin okuma G34'te yapılır.
-  - G31 sonucu G8'deki geçici yönle çelişirse makale G31 sonucunu izler. Bu kural önceden yazılır.
-  - Basit ve istatistik olarak daha sağlam.
-- **Seçenek B:**
-  - Kura 3 pilot projesi ve 10 kilitli proje çeker (§5).
-  - Pilot projeleri G6-G8 arasında derlenip ölçülür; G8'de ikinci koşulun ön okuması yapılır. Ardından bu projeler geliştirme seti statüsüne düşer.
-  - Sakıncaları:
-    - 3 proje × 30 fonksiyon ≈ 90 öğe; Δ'nın GA'sı ±13 puan ya da daha geniş, yani okuma zayıf kalır.
-    - Kuranın hemen yapılması gerekir. S'den bugüne yalnız ~4,5 ay geçti ve T kuralı (§2) aday sayısını daha da azaltır.
-- Karar Berke'nin.
+  - G31 sonucu G8'deki geçici yönle çelişirse makale G31 sonucunu izler.
+- Sürüm 1'deki seçenek B (3 pilot projesi) uygulanmaz; §5'teki kura bu yüzden yalnız kilitli parçayı (N = 10) çeker.
 
 ## 10. Fizibilite (yalnız sayım)
 
-2026-10-19'da GitHub arama API'sinde yalnız `total_count` değeri okundu. Depo adları görüntülenmedi ve aday seçilmedi. Sorguların hepsi `language:C fork:false` içeriyor.
+2026-10-19 13:07'de GitHub arama API'sinde yalnız `total_count` değeri okundu. Depo adları görüntülenmedi ve aday seçilmedi. Sorguların hepsi `language:C fork:false archived:false mirror:false` içeriyor.
+
+**Sürüm 2 (S = 2026-08-05):**
+
+| `created` aralığı | Yıldız | Sonuç |
+|---|---|---|
+| 2026-08-05..2026-10-15 | ≥ 20 | 710 |
+| 2026-08-05..2026-10-15 | ≥ 50 | 308 |
+| 2026-08-05..2026-10-15 | ≥ 100 | 146 |
+| 2026-08-05..2026-09-19 (bugün kura yapılsaydı T = bugün − 30 gün) | ≥ 50 | 163 |
+| 2026-08-05..2026-08-14 (§1.1 duyarlılık katmanı) | ≥ 50 | 47 |
+| Kıyas: 2024-08-05..2024-10-15 | ≥ 50 | 243 |
+
+- U2-U13'ten sonra ne kadar aday kalacağı bilinmiyor. Gömülü yazılım, Linux'a özgü projeler ve ödev depoları büyük bir pay tutabilir.
+- Bugün kura yapılsaydı ≥ 50 yıldızlı 163 aday olurdu; %5-10'u kalsa 8-16 uygun proje. N = 10 için **sınırda**.
+- Kura G30-G31 arasında yapılırsa pencere 3 ay civarına çıkar ve aday sayısı artar. Bu, bugünkü sayımdan bir tahmindir.
+- Önerilen önlem (Berke onaylar): Uygun proje sayısı 8'in altında kalırsa yıldız eşiği bir kez, önceden yazılmış biçimde ≥ 20'ye iner. Kura günlüğüne yazılır.
+- Gözlem: 2026'nın Ağustos-Ekim penceresindeki ≥ 50 yıldızlı yeni C deposu sayısı (308), iki yıl önceki aynı penceredekinden (243) fazla. Oysa eski depolar iki yıl daha fazla yıldız topladı. Bu, yapay zekâ destekli geliştirmenin artmasıyla tutarlı olabilir; **kanıtlanmadı**. Her durumda U5'in önemini artırıyor.
+
+**Sürüm 1'in sayımları (S = 2026-06-01; kayıt için):**
 
 | `created` aralığı | Yıldız | Sonuç |
 |---|---|---|
@@ -210,15 +221,10 @@
 | 2025-04-01..2026-04-30 (§1.3 katmanına yakın pencere) | ≥ 50 | 1.449 |
 | Kıyas: 2024-05-01..2024-10-15 | ≥ 50 | 606 |
 
-- U2-U13'ten sonra ne kadar aday kalacağı bilinmiyor. Gömülü yazılım, Linux'a özgü projeler ve ödev depoları büyük bir pay tutabilir.
-- ≥ 50 yıldızlı 580 adayın %5-10'u kalsa 29-58 uygun proje olur. N = 10 için bu yeterli görünüyor.
-- GitHub'ın dil tespiti ve yıldız sayıları zamanla değişir. Ham liste kayıt altına alındığı için kura yine de tekrarlanabilir.
-- Gözlem: 2026'nın Mayıs-Ekim penceresinde ≥ 50 yıldızlı yeni C deposu sayısı (699), iki yıl önceki aynı penceredekinden (606) fazla. Oysa eski depoların yıldız toplamak için iki yıl daha fazla zamanı oldu. Bu, yapay zekâ destekli geliştirmenin artmasıyla tutarlı olabilir; **kanıtlanmadı**. Her durumda U5'in önemini artırıyor.
-
 ## 11. Riskler ve sınırlamalar
 
 - **LLM yardımı:** 2026 projelerinde yapay zekâ desteği yaygın. U5 yalnız açık işaretleri yakalar; işaretin olmaması kodun insan yazımı olduğunu kanıtlamaz. Onuncu Adam'ın uyarısı ("LLM'e tipik isimler LLM lehine yanlılık yaratır") tamamen giderilemez; bu yüzden raporlanır.
-- **Genç projeler:** Projeler en çok ~6 aylık; ünlü programlardan daha küçük ve daha az olgun. "Görülmemiş" etkisi "genç proje" etkisinden ayrılamaz.
+- **Genç projeler:** S = 2026-08-05 ile projeler kura gününde en çok ~4 aylık olur; ünlü programlardan daha küçük ve daha az olgun. "Görülmemiş" etkisi "genç proje" etkisinden ayrılamaz.
 - **Kaynak yanlılığı:** Tek forge (GitHub) ve yıldız eşiği, popüler projelere doğru bir yanlılık getirir.
 - **Kopya kod:** U6 ve §7'deki denetim yalnız bilinen kopyaları ve ayırt edici dizgisi olanları yakalar. Modelin gördüğü eski bir koddan uyarlanmış fonksiyonlar dilimde kalabilir.
 - **Derlenebilirlik süzgeci:** macOS'ta derlenen projeler seçilir; Linux'a özgü projeler dışarıda kalır.
@@ -227,12 +233,13 @@
 
 ## 12. Onay bekleyenler
 
-1. S = 2026-06-01 ve §1.3 katmanı (varsayılan kapalı). Karar Berke'nin.
-2. Eşikler: yıldız ≥ 50; commit ≥ 20; boyut 2.000-100.000 satır; U9 için ≥ 60 GT fonksiyonu; N = 10; proje başına 30 fonksiyon.
+**Karara bağlananlar (Berke, 2026-10-19):** S = 2026-08-05; zamanlama seçenek A; "sürüyor" = Δb ≥ 10 puan ve %95 GA alt sınırı > 0; LLM tarafında önceden yazılmış koşulların en iyisi, Karadul tarafında A1.
+
+**Bekleyenler:**
+1. §1.3 katmanı (varsayılan kapalı).
+2. Eşikler: yıldız ≥ 50; commit ≥ 20; boyut 2.000-100.000 satır; U9 için ≥ 60 GT fonksiyonu; N = 10; proje başına 30 fonksiyon. §10'daki eşik indirme kuralı.
 3. U5'in işaret listesi ve U6'nın kütüphane listesi. İkisi de kura betiğinde sabitlenir.
 4. Alan kotası (sınıf başına en çok 3).
-5. Zamanlama: seçenek A ya da B (§9).
-6. "Sürüyor" tanımı (§8).
-7. Kura günü ve T'nin tanımı (kura günü − 30 gün).
-8. G33'te öncü model kullanılıp kullanılmayacağı; gerekirse S2 ve ikinci kura (§1.4).
-9. Kura betiğini kimin yazacağı. Betik, ham liste çekilmeden önce commit'lenmeli.
+5. Kura günü ve T'nin tanımı (kura günü − 30 gün).
+6. G33'te öncü model kullanılıp kullanılmayacağı; gerekirse S2 ve ikinci kura (§1.4).
+7. Kura betiğini kimin yazacağı. Betik, ham liste çekilmeden önce commit'lenmeli.

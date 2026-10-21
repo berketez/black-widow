@@ -1,12 +1,38 @@
 # G6 LLM pilotu: model seçimi
 
 - **Tarih:** 2026-10-19
-- **Durum:** Taslak. Hiçbir model indirilmedi ya da çalıştırılmadı. İndirme ve kurulum ana oturumun onayına bağlı.
+- **Durum:** Sürüm 2 (2026-10-19 öğleden sonra). Sürüm 1 952018f ile commit'lendi. Sürüm 2'de Berke'nin kararlarıyla birincil model değişti (§0). Hiçbir model indirilmedi; iki model de diskte vardı.
 - **Kapsam:** Plan v2 G6 (`docs/arge/2026-10-17_plan_v2.md` §5). Berke'nin kararı (2026-10-19): pilot yerel modelle yapılır. Gerekçeler: API fiyatları yüksek; öncü modeller tersine mühendislik isteklerinde engele takılabilir.
 - **Bu klasördeki öteki belgeler:** `pilot_protokolu.md`, `gorulmemis_dilim_onkayit_taslak.md`.
 - **Kanıt kayıtları:** Zamanla değişebilecek her iddia §9'da Claim / Evidence / Confidence / Date checked / What may change biçiminde durur. Metindeki [K#] etiketleri oraya bağlanır. Kaynak sırası: resmî model kartı ya da makale > arXiv > sürüm notları > blog > forum.
 
-## 0. Öneri (özet)
+## 0. Karar (sürüm 2, Berke, 2026-10-19)
+
+| | Birincil | İkinci model (hızlı kıyas; tam pilotta koşulur) |
+|---|---|---|
+| Model | Qwen3.8-27B | Gemma 4 26B-A4B-it, QAT |
+| Dosya (diskte) | `~/.lmstudio/models/lmstudio-community/Qwen3.8-27B-GGUF/Qwen3.8-27B-Q4_K_M.gguf` (16.810.714.336 B) ve görüntü kodlayıcı `mmproj-Qwen3.8-27B-BF16.gguf` (931.145.856 B) | `~/.lmstudio/models/lmstudio-community/gemma-4-26B-A4B-it-QAT-MLX-4bit/` (3 safetensors, 15.608.838.574 B) |
+| LM Studio anahtarı | `qwen/qwen3.8-27b` (mimari `qwen35`, Q4_K_M) | `google/gemma-4-26b-a4b-qat` (mimari `gemma4`, MLX 4 bit) |
+| Üretici deposu | `Qwen/Qwen3.8-27B` (Apache-2.0; depo 2026-08-05) [K20] | `google/gemma-4-26B-A4B-it` (Apache-2.0; yayım 2026-04-02) [K5] |
+| Çalışma zamanı | LM Studio'nun llama.cpp motorundaki `llama-server` (2.60.0), doğrudan ve yalın bayraklarla [K27][K28] | LM Studio 0.4.25+1 yerel sunucusu, mlx-llm motoru 1.13.1 [K27] |
+| Bellek ve hız | Kuru koşuda ölçüldü (`pilot_protokolu.md` §8.1; kuru koşu yarıda durdu) | Ölçülmedi: kuru koşu Gemma'ya gelmeden durdu (2026-10-19) |
+| Eğitim verisi zaman sınırı | Kesim beyan edilmemiş; depo 2026-08-05 → görülmemiş dilim sınırı **S = 2026-08-05** | Ön eğitim kesimi Ocak 2025 (beyan); yayım 2026-04-02 |
+
+**Kararlar (Berke, 2026-10-19):**
+- Birincil model diskteki Qwen3.8-27B GGUF. Qwen3.6-27B **indirilmeyecek**.
+- `orcarouter/Qwen3.8-27B-Uncensored-MLX` **kullanılmayacak**: ağırlıkları üçüncü taraf değiştirmiş (ölçüt Ö4).
+- Gemma 4 26B-A4B QAT ikinci model olarak tam pilotta koşulur.
+- Çalışma zamanı LM Studio'nun OpenAI uyumlu yerel sunucusu. Log-olasılık ve belirlenimcilik sondada doğrulandı [K27]; ayrı bir Python sanal ortamı gerekmedi.
+- **Kuru koşuda değişen (2026-10-19):** LM Studio'nun Qwen3.8 yüklemesi bellek eşiğini aştı (`llama-server` RSS 20,1 GiB; koşu bekçi tarafından durduruldu). Nedeni LM Studio'nun llama.cpp'ye verdiği ana bellek istem önbelleği (`--cache-ram` varsayılanı 8192 MiB), 32 bağlam kontrol noktası ve görüntü kodlayıcı. Qwen bu yüzden aynı motor ikilisiyle, bu üçü kapalı olarak doğrudan çalıştırılıyor. Yalın sunucunun belleği ~16,4 GiB RSS + ~1,1 GiB footprint; kuru kümenin 40 çağrısında çıktıları LM Studio'nunkiyle bayt bayt aynı [K28]. Gemma 4 LM Studio'da kalıyor.
+
+**Sürüm 1'e göre değişiklik ve gerekçe:**
+- Sürüm 1, görülmemiş dilim penceresini geniş tutmak için Ağustos 2026'da yayımlanan Qwen3.8'i ölçüt Ö2 ile elemişti (§3.1). Berke bu ödünleşimi tersine çevirdi: Model diskte, indirme gerekmiyor ve kod kıyaslarında en güçlü aday (LiveCodeBench v6 90,3; Qwen3.6-27B 83,9) [K20][K1]. LLM lehine okuma ilkesi (§0'daki sürüm 1 gerekçesi madde 3) de en güçlü modeli ister.
+- Bedeli: Görülmemiş dilimin sınırı 2026-06-01'den **2026-08-05**'e kaydı. Kura gününe kadar aday penceresi ~3 aya iniyor (`gorulmemis_dilim_onkayit_taslak.md` §10).
+- Ö2 bu yüzden sürüm 2'de "ağırlıkların ilk yayımı ≤ S" diye okunur; S = 2026-08-05.
+
+**Sürüm 1'in önerisi (yerine geçti):** Birincil Qwen3.6-27B (`mlx-community/Qwen3.6-27B-4bit`, indirilecekti), yedek Gemma 4 26B-A4B QAT. Gerekçeleri aşağıda kayıt için duruyor.
+
+## 0.1 Sürüm 1 önerisi (kayıt için)
 
 | | Birincil | Yedek |
 |---|---|---|
@@ -49,8 +75,9 @@
 | LM Studio'nun gömülü MLX ortamı (`~/.lmstudio/extensions/backends/vendor/_amphibian/app-mlx-generate-mac14-arm64@34`) | Python 3.11; mlx 0.32.0; mlx_lm 0.31.3; mlx_vlm 0.6.5; transformers 5.14.1; tokenizers 0.22.2; huggingface_hub 1.24.0 | Var (`qwen3_5.py`, `qwen3_5_moe.py`) | Var (`gemma4.py`, `gemma4_text.py`) |
 | LM Studio llama.cpp motoru | 2.50.0'a kadar | GGUF ile | GGUF ile |
 | Ollama | İstemci 0.35.0; sunucu çalışmıyor | Denenmedi | Denenmedi |
+| **LM Studio 0.4.25+1 yerel sunucusu (sürüm 2'de kullanılan)** | Seçili motorlar: llama.cpp 2.60.0 (GGUF), mlx-llm 1.13.1 (MLX). Görev metninde 2.50.0 ve 1.11.0 yazıyordu; LM Studio 2026-10-19 sabahı motorları güncellemiş | `qwen35` (GGUF) | `gemma4` (MLX) |
 
-Sonuç: Sistemdeki mlx_lm 0.30.5, önerilen iki modelden hiçbirini yükleyemez. Çözüm seçenekleri §8'de.
+Sonuç: Sistemdeki mlx_lm 0.30.5, iki modelden hiçbirini yükleyemez. Sürüm 2'de LM Studio'nun sunucusu kullanılıyor (§8).
 
 ### 1.3 Diskte zaten bulunan modeller (görev metniyle çelişki)
 
@@ -86,11 +113,11 @@ Görev metninde "Önceki modeller 13 Ekim'de silindi" yazıyor. Dosya sistemi ba
 
 | Model (HF deposu) | Tür | 4 bit disk / bellek | Bağlam | Lisans | Kesim / ilk yayım | Kod kıyasları (üretici beyanı) | Karar |
 |---|---|---|---|---|---|---|---|
-| Qwen3.6-27B (`Qwen/Qwen3.6-27B`) | Yoğun 27B | 16,05 GB / 15,4-18,3 GB, ölçülmüş [K3] | 262K | Apache-2.0 | Belirtilmemiş / 2026-04-22 [K4] | SWE-bench Verified 77,2; LiveCodeBench v6 83,9 [K1] | **Birincil** |
-| Gemma 4 26B-A4B (`google/gemma-4-26B-A4B-it`, QAT) | MoE; 25,2B toplam, 3,8B etkin | 15,61 GB / ~16-17,5 GB, tahmin | 256K | Apache-2.0 | Ocak 2025 / 2026-04-02; QAT 2026-04-29 [K5] | LiveCodeBench v6 77,1; Codeforces ELO 1718 [K5] | **Yedek** |
+| Qwen3.6-27B (`Qwen/Qwen3.6-27B`) | Yoğun 27B | 16,05 GB / 15,4-18,3 GB, ölçülmüş [K3] | 262K | Apache-2.0 | Belirtilmemiş / 2026-04-22 [K4] | SWE-bench Verified 77,2; LiveCodeBench v6 83,9 [K1] | Sürüm 1'in birincili; sürüm 2'de indirilmedi |
+| Gemma 4 26B-A4B (`google/gemma-4-26B-A4B-it`, QAT) | MoE; 25,2B toplam, 3,8B etkin | 15,61 GB / ~16-17,5 GB, tahmin | 256K | Apache-2.0 | Ocak 2025 / 2026-04-02; QAT 2026-04-29 [K5] | LiveCodeBench v6 77,1; Codeforces ELO 1718 [K5] | Sürüm 1'de yedek; **sürüm 2'de ikinci model** |
 | Gemma 4 31B (`google/gemma-4-31B-it`) | Yoğun 30,7B | ~17-18 GB / ~19-20 GB ve üstü, tahmin | 256K | Apache-2.0 | Ocak 2025 / 2026-04-02 | LiveCodeBench v6 80,0; Codeforces ELO 2150 [K8] | Elendi (Ö1). Bellek sınırda. Üretim hızı ~15-19 jeton/sn; bu sayılar topluluktan ve daha büyük bellekli makinelerden [K10] |
 | Qwen3.6-35B-A3B (`Qwen/Qwen3.6-35B-A3B`) | MoE; 35,95B toplam, ~3B etkin | ~20,2 GB (hesap: 35,95e9 × 4,5 bit) | 262K | Apache-2.0 | Belirtilmemiş / 2026-04-15 [K24] | — | Elendi (Ö1). 4 bitte bütçeyi aşıyor |
-| Qwen3.8-27B (`Qwen/Qwen3.8-27B`) | Yoğun 27B, Qwen3.6 ile aynı mimari ailesi | GGUF Q4_K_M 16,8 GB (diskte) | 262K | Apache-2.0 | Belirtilmemiş / depo 2026-08-05, son değişiklik 2026-08-14 [K20] | LiveCodeBench v6 90,3; SWE-bench Pro 61,7 [K20] | Elendi (Ö2). Görülmemiş dilimin sınırını Eylül 2026'ya iter (§7). Sonra duyarlılık koşusu olarak kullanılabilir |
+| Qwen3.8-27B (`Qwen/Qwen3.8-27B`) | Yoğun 27B, Qwen3.6 ile aynı mimari ailesi | GGUF Q4_K_M 16,8 GB (diskte) | 262K | Apache-2.0 | Belirtilmemiş / depo 2026-08-05, son değişiklik 2026-08-14 [K20] | LiveCodeBench v6 90,3; SWE-bench Pro 61,7 [K20] | Sürüm 1'de elenmişti (Ö2). **Sürüm 2'de birincil** (Berke'nin kararı, §0); görülmemiş dilim sınırı S = 2026-08-05 |
 | gpt-oss-20b (`openai/gpt-oss-20b`) | MoE; 21B toplam, 3,6B etkin; MXFP4 | Disk doğrulanmadı / ≤ 16 GB (kart) | 131.072 | Apache-2.0 | Haziran 2024 / 2025-08-04 [K21] | Kartta kod kıyası yok | Üçüncü sırada. Eski bir model; "harmony" biçimi ayrı bir istem düzeni ister |
 | Devstral Small 2 (`mistralai/Devstral-Small-2-24B-Instruct-2512`) | Yoğun 24B; FP8 dağıtılıyor | ~14 GB / ~15-16 GB, tahmin | 256K | Apache-2.0 | Belirtilmemiş / 2025-11-28 [K22] | SWE-bench Verified 68,0 [K22] | Dördüncü sırada. Ajan işleri için yapılmış; isim görevine dair kanıt yok |
 | OLMo 3.1 32B Instruct (`allenai/Olmo-3.1-32B-Instruct`) | Yoğun 32,2B | ~18 GB / ~20 GB ve üstü, tahmin | 65.536 (ikincil kaynak) | Apache-2.0 | Kesim belirtilmemiş, ama eğitim verisi açık (Dolma 3, Dolci) / 2025-12-10 [K23] | — | Pilotta yok (Ö1 sınırda). Eğitim verisi açık olan tek aday: görülmemiş dilimde sızıntı doğrudan denetlenebilir. Makale için not edildi |
@@ -199,23 +226,14 @@ Model yükleme, araç yükü ve aynı anda koşan Ghidra için %20 pay eklenmeli
 
 **Neden Gemma 4 31B değil:** 4 bitte bellek ~19-20 GB ve üstüne çıkıyor; Ghidra ile birlikte bütçeyi zorlar. Üretim hızı ~15-19 jeton/sn. Kod kıyaslarında da Qwen3.6-27B'nin gerisinde.
 
-## 8. Kurulum (onay gerektirir; hiçbiri çalıştırılmadı)
+## 8. Kurulum (sürüm 2: LM Studio; indirme yok)
 
-1. **Çalışma zamanı.**
-   - (a) Önerilen yol: Spotlight dışındaki bir kökte ayrı bir sanal ortam, örneğin `~/Black_Widow/workspaces/2026-10-19_g6_pilot/venv` (`workspaces/` `.gitignore`'da). Sürümler LM Studio'daki ortamla aynı tutulur: `mlx==0.32.0`, `mlx-lm==0.31.3`, `tokenizers==0.22.2`, `huggingface_hub==1.24.0`. Paket kurmak bir indirmedir ve onay ister (CLAUDE.md §19).
-   - (b) İndirmesiz geçici yol: harness, LM Studio'nun gömülü ortamındaki `bin/python3.11` ile çalıştırılır. Sakıncası: LM Studio güncellenince bu ortam değişebilir. Bu yol seçilirse sürümler künyeye yazılır.
-   - Sistemdeki anaconda mlx_lm'i yükseltmek önerilmez, çünkü başka araçları etkiler.
-2. **Birincil modelin indirilmesi.**
-   - Dosya: `mlx-community/Qwen3.6-27B-4bit`, 16.054.541.599 bayt, 3 safetensors parçası [K2].
-   - İndirmeden önce depo revizyonu (commit sha) seçilir ve künyeye yazılır.
-   - Hedef dizin Spotlight dışında olmalı (CLAUDE.md §28 kural 1), örneğin `~/Black_Widow/workspaces/2026-10-19_g6_pilot/modeller/`. `~/.lmstudio` gizli bir dizin; Arama Gizliliği listesinde olup olmadığı doğrulanmadı.
-   - Komut örneği (çalıştırılmadı): `hf download mlx-community/Qwen3.6-27B-4bit --revision <sha> --local-dir <hedef>`.
-3. **Doğrulama.**
-   - İndirilen her safetensors dosyasının sha256'sı, HF'nin LFS özetiyle karşılaştırılır.
-   - Yedeğin yerel dosyaları için de aynı karşılaştırma yapılır. Bugün yalnız boyutlar karşılaştırıldı.
-4. **Sohbet şablonu.**
-   - Gemma 4 deposunda Nisan-Temmuz 2026 arasında sohbet şablonunu ya da araç çağrısı biçimini değiştiren en az dört commit var [K6]. Yerel kopyadaki şablonun hangi sürüm olduğu bilinmiyor.
-   - Kullanılan şablon dosyasının sha256'sı künyeye yazılır. Kuru koşuda düşünme kipinin gerçekten kapandığı denetlenir.
+1. **Çalışma zamanı:** Gemma 4 için LM Studio 0.4.25+1 yerel sunucusu, `http://localhost:1234` (LM Studio hizmet olarak çalışıyor). Qwen3.8 için aynı LM Studio kurulumundaki `llama-server` ikilisi (llama.cpp motoru 2.60.0) yalın bayraklarla, `http://127.0.0.1:8137` [K28]. Sistem paketlerine ve anaconda'ya dokunulmadı; Python sanal ortamı kurulmadı; hiçbir şey indirilmedi.
+2. **Yükleme:** `lms load <anahtar> -c 10240 --gpu max --parallel 1 --no-speculative-draft-mtp --identifier <kimlik>`. Kimlikler: `g6-qwen38`, `g6-gemma4`. Harness aynı anda tek model yükler; model değiştirirken öncekini boşaltır.
+3. **Çağrı:** `/v1/chat/completions` ile sıcaklık 0, tohum 20261019, `logprobs: true`. Düşünme kapalıyken `reasoning_effort: "none"`. Künye için ayrıca `/api/v0/chat/completions` çağrılır; bu uç motor adını ve sürümünü, model bilgisini ve hız istatistiğini veriyor ama log-olasılık vermiyor [K27].
+4. **Doğrulama:** Model dosyalarının sha256'sı künyede (`workspaces/2026-10-19_g6_pilot/kunye/`). llama.cpp için LM Studio'nun geçirdiği sohbet şablonu dosyasının sha256'sı da künyeye yazılır; MLX için modelin `chat_template.jinja` dosyasının.
+5. **Bilinen risk:** LM Studio motorları kendiliğinden güncelleyebiliyor (bu sabah 2.50.0 → 2.60.0 ve 1.11.0 → 1.13.1 oldu). Her yüklemede künye motor sürümünü yeniden yazar. Koşu sırasında sürüm değişirse bu künyelerde görünür ve raporlanır.
+6. **Sürüm 1'in kurulum planı** (`mlx-community/Qwen3.6-27B-4bit` indirmesi ve mlx 0.32.0 + mlx_lm 0.31.3 sanal ortamı) uygulanmadı.
 
 ## 9. Kanıt kayıtları
 
@@ -384,21 +402,44 @@ Her kayıt için Date checked: 2026-10-19.
 - Confidence: Boyutlar için yüksek. QAT kökeni için orta: sayfa kaynağı adıyla veriyor, ama `google/gemma-4-26B-A4B-it-QAT` adresi 401 döndü. Google'ın QAT depoları başka adlarla var (K5).
 - What may change: Depo yeniden yüklenebilir. sha256 karşılaştırması yapılmalı.
 
+**K28 — LM Studio'nun Qwen3.8 yüklemesinin belleği ve yalın sunucu (yerel ölçüm, 2026-10-19)**
+- Claim:
+  - LM Studio, Qwen3.8 GGUF için `llama-server`'ı şu bayraklarla başlatıyor: `--ctx-checkpoints 32`, `--load-mode mmap+mlock`, `--mmproj <görüntü kodlayıcı>`, `--kv-unified`; `--cache-ram` vermiyor, yani llama.cpp varsayılanı 8192 MiB geçerli (`llama-server --help`).
+  - Kuru koşunun 40 çağrısından sonra `vmmap -summary`: eşlenmiş dosya (ağırlıklar) 15,4 GB yerleşik; MALLOC_LARGE 8,3 GB sanal, 1,2 GB yerleşik, 6,9 GB takas ya da sıkıştırılmış; fiziksel footprint 10,6 GB (tepe 10,8).
+  - Model yeniden yüklenip 4 çağrı yapıldığında `llama-server` RSS'i 20,1 GiB oldu; bekçi (eşik 20 GiB) kuru koşuyu durdurdu.
+  - Aynı ikili `--cache-ram 0 --ctx-checkpoints 0` ile ve görüntü kodlayıcı olmadan başlatıldığında RSS ~16,4 GiB, footprint ~1,1 GiB.
+  - Kuru kümenin 10 fonksiyonu × 4 koşulda (40 çağrı, koşu 1) yalın sunucunun çıktısı LM Studio'nunkiyle **40 / 40 bayt bayt aynı**; ayrıştırılmış isim ve durum da, girdi jeton sayıları da 40 / 40 aynı.
+- Evidence: `workspaces/2026-10-19_g6_pilot/kuru_kosu.log`, `ham/qwen38_lmstudio/`, `ham/qwen38/`; `vmmap -summary`, `footprint -p`, `ps`.
+- Confidence: Yüksek (doğrudan ölçüm; eşdeğerlik 40 çağrıda).
+- What may change: LM Studio sürümü ya da motor varsayılanları değişirse.
+
+**K27 — LM Studio yerel sunucusunun yetenekleri (yerel sonda, 2026-10-19)**
+- Claim:
+  - LM Studio 0.4.25+1; seçili motorlar llama.cpp 2.60.0 ve mlx-llm 1.13.1 (`lms runtime ls`).
+  - `/v1/chat/completions`, `logprobs: true` ile içerik jetonlarının log-olasılığını ve baytlarını veriyor.
+  - `reasoning_effort: "none"` iki modelde de düşünme jetonunu 0'a indiriyor. `chat_template_kwargs`, `enable_thinking` ve `reasoning: {effort}` Qwen3.8'de etkisiz.
+  - Aynı istek üç kez gönderildiğinde içerik ve log-olasılıklar iki modelde de bayt bayt aynı.
+  - `/api/v0/chat/completions` motor adı ve sürümü, model bilgisi ve hız istatistiği veriyor; log-olasılık vermiyor.
+  - Bellek: llama.cpp ağırlıkları mmap ile tutuyor (`llama-server` RSS ~16,3-17,7 GiB, footprint ~3,2 GiB). MLX ağırlıkları Metal tamponlarında tutuyor (LM Studio `node` işçisi footprint ~16 GiB, RSS ~8,5 GiB).
+- Evidence: `workspaces/2026-10-19_g6_pilot/sonda/` (istek ve yanıtlar), `lms runtime ls`, `lms ps`, `footprint -p`.
+- Confidence: Yüksek (yerelde, doğrudan gözlem). Belirlenimcilik sondası kısa bir istemle yapıldı; asıl ölçüm kuru koşuda ve pilotun koşu 2'sinde.
+- What may change: LM Studio sürümü ve motorları güncellenebilir.
+
 ## 10. Dürüst sınırlamalar
 
-- **Yerel modelin sonucu öncü modellere genellenemez.** Pilot, ≤ 30B parametreli, 4 bit nicemlenmiş, Nisan 2026'da yayımlanmış açık bir modelle yapılıyor. Kural tetiklenmezse bu, "öncü bir LLM de Karadul'u geçemez" anlamına gelmez. Kural tetiklenirse sonuç güçlüdür. Okuma kuralları `pilot_protokolu.md` §11'de.
+- **Yerel modelin sonucu öncü modellere genellenemez.** Pilot ≤ 30B parametreli, 4 bit nicemlenmiş iki açık modelle yapılıyor: Qwen3.8-27B (Ağustos 2026, GGUF Q4_K_M) ve Gemma 4 26B-A4B (Nisan 2026, QAT). Kural tetiklenmezse bu, "öncü bir LLM de Karadul'u geçemez" anlamına gelmez. Kural tetiklenirse sonuç güçlüdür. Okuma kuralları `pilot_protokolu.md` §11'de.
 - G33 kıyasında öncü model gerekip gerekmediği ayrı bir karardır ve **Berke'ye bırakıldı**. Bu belge o kararı vermiyor.
-- 4 bit nicemlemenin bu görevdeki kaybı ölçülemiyor: 8 bit ve bf16 sürümler bütçeye sığmıyor. Gemma 4'ün QAT sürümü bu riski azaltır; Qwen3.6 için üreticinin bir QAT sürümü bulunamadı.
+- 4 bit nicemlemenin bu görevdeki kaybı ölçülemiyor: 8 bit ve bf16 sürümler bütçeye sığmıyor. Gemma 4'ün QAT sürümü bu riski azaltır; birincil Qwen3.8 ise QAT değil, eğitim sonrası Q4_K_M nicemlemesi.
 - Kod kıyas sayıları üretici beyanıdır ve isim görevini ölçmez.
 - Hız sayıları topluluk ölçümüdür. Kuru koşunun ilk işi, bu sayıları bu makinede yeniden ölçmektir.
 - Görev kanıtı aile düzeyinde. Önerinin güveni bu yüzden "orta".
 
 ## 11. Ana oturumun ve Berke'nin vereceği kararlar
 
-1. Birincil ve yedek modelin onayı.
-2. Qwen3.6-27B'nin indirilmesi (16,05 GB) ve hedef dizin.
-3. Çalışma zamanı: yeni sanal ortam mı (paket indirme gerekir), LM Studio'nun gömülü ortamı mı?
-4. Yedeğin de tam pilotta koşulup koşulmayacağı (§7).
-5. G33'te öncü model kullanılıp kullanılmayacağı. Bu karar görülmemiş dilimin sınır tarihini de etkiler (`gorulmemis_dilim_onkayit_taslak.md` §1.4).
-6. Diskteki `orcarouter/Qwen3.8-27B-Uncensored-MLX` kopyası (15 GB). Bu belge yalnız "araştırmada kullanılmaz" diyor; silme kararı Berke'nin.
-7. "Modeller 13 Ekim'de silindi" hafıza kaydının düzeltilmesi.
+**Kapananlar (Berke, 2026-10-19):** Birincil model Qwen3.8-27B (GGUF), ikinci model Gemma 4 26B-A4B QAT; Qwen3.6 indirilmeyecek; `orcarouter` kopyası kullanılmayacak; çalışma zamanı LM Studio.
+
+**Bekleyenler:**
+1. G33'te öncü model kullanılıp kullanılmayacağı. Kullanılırsa görülmemiş dilim için daha geç bir sınır gerekir (`gorulmemis_dilim_onkayit_taslak.md` §1.4).
+2. Diskteki `orcarouter/Qwen3.8-27B-Uncensored-MLX` kopyası (15 GB). Bu belge yalnız "kullanılmaz" diyor; silme kararı Berke'nin.
+3. "Modeller 13 Ekim'de silindi" hafıza kaydının düzeltilmesi.
+4. LM Studio'nun motorları kendiliğinden güncellemesi (§8 madde 5): Uzun koşular için otomatik güncellemenin kapatılması bir ayar değişikliğidir ve Berke'nin kararıdır.

@@ -1,11 +1,42 @@
 # G6 LLM pilotu: protokol (ön kayıt taslağı)
 
 - **Tarih:** 2026-10-19
-- **Durum:** Taslak. Berke onaylayıp commit'lediğinde ön kayıt olur. Bu commit, örneklem çekilmeden ve hiçbir model çıktısı görülmeden önce atılmalı.
+- **Durum:** Sürüm 2 (2026-10-19 öğleden sonra). Sürüm 1 952018f ile commit'lendi; sürüm 2'deki değişiklikler §0.1'de ve hepsi tam pilottan önce yazıldı. Örneklem bu sürümde çekildi; kuru koşu dışında hiçbir model çıktısı görülmeden önce.
 - **Plan bağlantısı:** `docs/arge/2026-10-17_plan_v2.md` §5 (G6 satırı, G8 karar kuralları, Ürün izi / KaradulLM) ve §3 (çalışma ilkeleri).
-- **Model:** `model_secimi.md`. Birincil Qwen3.6-27B, yedek Gemma 4 26B-A4B-it (QAT). İkisi de 4 bit, MLX.
-- **Değerlendirme araçları ve yordamı:** `scripts/measurement/etiket_paketi.py`, `scripts/measurement/etiket_puan.py` ve `docs/arge/etiket_protokolu_v2.md`. Bunları başka bir ajan yazıyor; 2026-10-19 öğleden sonra üçü de depoda ama commit'lenmemiş. Protokol v2, G4 için tek adaylı bir tasarım anlatıyor. G6'nın ihtiyacı olan çok adaylı kip henüz yok; bu belgedeki ilgili arayüz varsayımları §9.1'de **VARSAYIM** diye işaretli.
-- **Bu belge kod içermez.** Harness'ı (pilotu koşturan betik) kimin yazacağına ana oturum karar verir (§17).
+- **Model:** `model_secimi.md`. Birincil Qwen3.8-27B (GGUF Q4_K_M, LM Studio'da `qwen/qwen3.8-27b`); ikinci model Gemma 4 26B-A4B-it QAT (MLX 4 bit, LM Studio'da `google/gemma-4-26b-a4b-qat`).
+- **Değerlendirme araçları ve yordamı:** `scripts/measurement/etiket_paketi.py`, `scripts/measurement/etiket_puan.py` ve `docs/arge/etiket_protokolu_v2.md` (3316567). Çok adaylı kip baf6faa ile depoya girdi (`etiket_paketi.py uret-cok`, `etiket_puan.py puan-cok`); harness'ın aday biçimini okuyacak biçimde yazıldı. §9.1'deki **VARSAYIM**'lar pilot koşulmadan önce bu kiple uçtan uca sınanır.
+- **Harness:** `scripts/measurement/llm_pilot.py`; testler `tests/test_llm_pilot.py` (41 test). Mutasyon tanımı `scripts/measurement/mutation_specs_llm_pilot.json`: 27 mutantın 27'si öldü (2026-10-21).
+- **Pilotun durumu (2026-10-21):** Tam pilot koşulmadı. Kuru koşu Berke'nin kararıyla (2026-10-19, "koşmasına gerek yok şu an") yarıda durdu; ne kadarının koştuğu §8.1'de.
+
+## 0.1 Sürüm 2'de değişenler (2026-10-19, tam pilottan önce)
+
+Berke'nin kararları ve kuru koşuya kadar yapılan uygulama değişiklikleri:
+
+| Konu | Sürüm 1 | Sürüm 2 | Neden |
+|---|---|---|---|
+| Birincil model | Qwen3.6-27B, MLX 4 bit (indirilecekti) | Qwen3.8-27B, GGUF Q4_K_M (diskte) | Berke'nin kararı: model diskte, indirme gerekmiyor, kod kıyaslarında daha güçlü. Bedeli: görülmemiş dilimin sınırı 2026-08-05'e kaydı |
+| İkinci model | Gemma 4 26B-A4B (yedek, isteğe bağlı tam koşu) | Aynı model; tam pilotta **koşulur** (hızlı kıyas) | Berke'nin kararı |
+| Çalışma zamanı | mlx_lm sanal ortamı | Gemma 4: LM Studio 0.4.25+1 yerel sunucusu (mlx-llm motoru 1.13.1). Qwen3.8: LM Studio'nun llama.cpp motorundaki `llama-server` (2.60.0; sürüm 0.7.0-dev, commit 2a66703) doğrudan ve yalın bayraklarla | LM Studio önce denendi (Berke'nin kararı); log-olasılık ve belirlenimcilik doğrulandı. Ama LM Studio'nun Qwen yüklemesi kuru koşuda bellek eşiğini aştı (§8.1). Yalın sunucu aynı ikili, aynı model dosyası ve aynı şablonla aynı çıktıyı veriyor: kuru kümenin 40 çağrısında 40 / 40 bayt bayt aynı |
+| Düşünmeyi kapatma | sohbet şablonu (`enable_thinking`) | Gemma (LM Studio): `reasoning_effort: "none"`. Qwen (yalın sunucu): `chat_template_kwargs: {"enable_thinking": false}` | LM Studio'da `chat_template_kwargs` etkisiz, `none` iki modelde de düşünmeyi kapattı. Qwen'in şablonu `enable_thinking` değişkenini okuyor; yalın sunucuda doğrudan o kullanılır |
+| Önek önbelleği | İstekler arasında kullanılmaz | Qwen (yalın sunucu): ana bellek istem önbelleği ve bağlam kontrol noktaları kapalı (`--cache-ram 0 --ctx-checkpoints 0`); yuvadaki son istemin öneki yeniden kullanılabilir. Gemma (LM Studio): LM Studio'nun varsayılanı | Gemma için sapma. Etkisi belirlenimcilik koşusunda (ters sıra, yeni süreç) ölçülür |
+| İstem | P1 | P2 (§4) | P1'deki örnek ad ve adresler dev setinde gerçek |
+| Kuru koşu kümesi | 10 + 10 | 5 + 5 | Koordinatörün kararı; kapılar oran olarak korunur (§8) |
+| Düşünme kipi (B-D, C-D) | Açgözlü çözme, modelin varsayılan düşünme çabası, 2.304 jeton | Üreticinin düşünme kipi örneklemesi (Qwen3.8: sıcaklık 1,0, top_p 0,95, top_k 20; Gemma 4: 1,0, 0,95, 64), sabit tohum 20261019; Qwen'de düşünme çabası `low`. Bütçe aynı (2.304) | Kuru koşuda açgözlü çözme ve varsayılan çaba (`xhigh`) ile iki Qwen çağrısının ikisi de bütçeyi doldurdu, cevap çıkmadı; biri tekrar döngüsüne girdi. Yeni ayarla 4 / 4 çağrı bütçe içinde bitti (500-1.160 jeton). Düşünmesiz koşullar açgözlü kalır |
+| Karadul tarafı | A1 varsa A1 | A1 hesaplandı ve kullanılır (§3.1) | |
+| G8 okuması | Öneri | Kabul edildi (§11) | Berke'nin kararı |
+
+## 0.2 Harness düzeltmeleri (2026-10-21, tam pilottan önce)
+
+Kuru koşu durduktan sonra harness'ın kodu okundu ve bu belgeyle karşılaştırıldı. Ön kayıt değişmedi. Aşağıdakiler kodun bu belgeden saptığı yerlerdi; düzeltmeler kodu belgeye uydurur. Her biri için bir test ve o testi kırması gereken bir mutant var.
+
+| Sapma | Etkisi | Düzeltme |
+|---|---|---|
+| Gemma 4'ün düşünme kanalı (`<\|channel>thought … <channel\|>`, modelin sohbet şablonundaki işaretler) ayıklanmıyordu; yalnız Qwen'in `<think>` bloğu ayıklanıyordu (§5) | Düşünme içerikte kalırsa içindeki taslak cevap isim sayılabilirdi | İki biçim de ayıklanır. Kapanmamış blok metnin sonuna kadar düşünme sayılır: cevap yoktur, bütçe dolduysa `butce_asimi` |
+| JSON konumu düşünmesi ayıklanmış metinde hesaplanıp ham içerikte kullanılıyordu | Düşünme içerikte kalırsa ismin güveni ya kaybolur ya da taslağın jetonlarından hesaplanırdı | Konumlar ham içerikte; güven cevabın jetonlarından |
+| K-1 "40 / 40 çağrı" denetlenmiyordu (yalnız biten kayıtlar sayılıyordu); K-3 sondanın, K-5 bellek denemesinin tamamlandığını denetlemiyordu (§8) | Yarıda kalan kuru koşu kapılardan geçebilirdi. 2026-10-21'de eski kod kuru koşu verisinde "hepsi geçti" diyordu | Kapılar beklenen çağrı sayısını denetler. K-5 bellek denemesi koşulmadan geçmez |
+| Beklenmeyen bir hata türünde (ör. bozuk JSON yanıtı) pilot modeli boşaltmıyordu | Ayrı oturumda başlatılan `llama-server` (~16 GiB) yetim kalırdı | Her hatada durum yazılır ve model boşaltılır; beklenmeyen hata yine yükselir |
+| Künyenin çözme ayarları sürüm 1 metniydi ("düşünmede `reasoning_effort` verilmez") | Künye ham kayıtlardaki gerçek ayarlarla çelişirdi | Künye istemcinin gerçekte gönderdiği istek gövdesini yazar |
+| Mutasyon tanımı git dışındaydı; 2 mutant kodun eski hâline aitti | Bellek eşiği ve hata sonrası boşaltma için geçerli mutant kanıtı yoktu | Tanım depoda (`scripts/measurement/mutation_specs_llm_pilot.json`), 27 / 27 |
 
 ## 0. Sorular
 
@@ -25,8 +56,8 @@ Her koşu, başında ve sonunda `kunye.json` yazar. Alanlar:
 
 - **Karadul:** commit; taban v2 koşusunun dizini ve kimliği; Ghidra sürümü (12.1.2 olmalı); özgün ve strip'li ikilinin sha256'sı ve UUID'si; export trie denetiminin sonucu; popülasyon dosyasının (`macho_score.json`) sha256'sı; Karadul yapılandırması K (§3.1).
 - **Model:** HF depo kimliği; revizyon (commit sha); her safetensors dosyasının sha256'sı; sohbet şablonunun sha256'sı.
-- **Çalışma zamanı:** Python, mlx ve mlx_lm sürümleri; macOS sürümü; `hw.model`, bellek, GPU çekirdek sayısı.
-- **İstem:** beş istem dosyasının sha256'sı (§4) ve istem sürümü (`P1`).
+- **Çalışma zamanı:** LM Studio uygulama sürümü, seçili motorlar, yüklü modelin motor adı ve sürümü (`/api/v0`), model bilgisi; Python sürümü; macOS sürümü. Uygulama: `llm_pilot.py kunye`.
+- **İstem:** beş istem dosyasının sha256'sı (§4) ve istem sürümü (`P2`).
 - **Diğer:** harness commit'i; tohumlar (§2); başlangıç ve bitiş zamanı; koşu sırasında Ghidra'nın çalışıp çalışmadığı.
 
 ## 2. Örneklem
@@ -61,7 +92,7 @@ Ana örneklemle çakışmayan kümeler, aynı `Random` nesnesinin devamıyla çe
 
 | Küme | Tanım | Boyut |
 |---|---|---|
-| Kuru koşu | Kalan popülasyondan program başına 10 | 20 |
+| Kuru koşu | Kalan popülasyondan program başına 5 (sürüm 2; ön kayıtta 10) | 10 |
 | Reddetme sondası | Kalan popülasyonda, Ghidra C'si şu dizgelerden birini içerenler (büyük/küçük harf duyarsız): `pass`, `auth`, `key`, `crypt`, `priv`, `exec`, `sock`, `root`, `uid`. Program başına 10; yetmezse kalan popülasyondan tamamlanır | 20 |
 | Bellek denemesi | Popülasyonun kırpma sonrası en uzun 5 istemi (C koşulu) | 5 |
 
@@ -72,6 +103,16 @@ Ana örneklemin içinden alınan kümeler:
 | Düşünme kipi | Her programın çekim sırasındaki ilk 50'si | 100 |
 | İnsan denetimi | Her programın çekim sırasındaki ilk 15'i (düşünme kümesinin içinde) | 30 |
 | Yem | §9.3 | 30 |
+
+### 2.4.1 Çekim sonucu (2026-10-19, sürüm 2)
+
+- Popülasyon dosyaları: `workspaces/olcum_mac/runs/taban-v2-62ad154/{htop,tmux}/macho_score.json` (taban v2, commit 62ad154, Ghidra 12.1.2). sha256'ları `workspaces/2026-10-19_g6_pilot/orneklem.json` künyesinde.
+- Kaynak ağaçları: htop 3.5.3 ve tmux 3.8 (`workspaces/2026-10-15_oturum_scratchpad/src/`).
+- Uygun popülasyon:
+  - htop: 597 program satırından 567. Dışlanan 30'unun hepsi `belirsiz`, yani platforma özgü dosyalarda farklı metinli çoklu tanım.
+  - tmux: 2.545 program satırından 2.456. Dışlananlar: 82 `yok` (gövde bulunamadı), 6 `belirsiz`, 1 Ghidra C dosyası yok.
+- Kümeler ön kayıttaki yöntemle çekildi: ana 150 + 150; kuru 5 + 5; sonda 10 + 10; düşünme 50 + 50; insan denetimi 15 + 15; yem 30.
+- Bellek kümesi (C isteminin en uzun 5'i): 4'ü tmux'tan, 1'i htop'tan.
 
 ### 2.5 Örneklem büyüklüğü
 
@@ -92,7 +133,7 @@ Ana örneklemin içinden alınan kümeler:
 | B-D, C-D | B ve C, düşünme kipi açık | B ve C ile aynı | 100 |
 | YEM | Yem aday (§9.3) | — | 30 |
 | D (KaradulLM) | LLM + Karadul araçları (ajan) | Araç katmanı | Pilottan sonra (§15) |
-| İsteğe bağlı: B′, B′-Ç, C′, C′-Ç | Yedek modelle aynı koşullar | Aynı | 300 |
+| B′, B′-Ç, C′, C′-Ç, B′-D, C′-D | İkinci modelle (Gemma 4) aynı koşullar; sürüm 2'de tam pilotta koşulur | Aynı | 300 (düşünme 100) |
 
 - Her çağrı bağımsızdır: yeni bir sohbet açılır, önceki fonksiyonlardan bilgi taşınmaz.
 - Bir fonksiyonun koşulları sabit sırayla koşulur: B, B-Ç, C, C-Ç.
@@ -102,6 +143,12 @@ Ana örneklemin içinden alınan kümeler:
 - **A0:** Taban v2 koşusunun `naming_map`'i, yani pilot günündeki ürün.
 - **A1:** A0 + tarif katmanı. Tarif ölçüm yolundan gelir (`scripts/measurement/tarif_olc.py`); hatta bağlı değil (plan G18).
 - G8 okumasında, pilot gününde koşturulabiliyorsa A1, koşturulamıyorsa A0 kullanılır. İkisi de raporlanır. Gerekçe: Her iki taraf da önceden yazılmış en iyi yapılandırmasıyla karşılaştırılır. LLM tarafı için bkz. §11.1.
+- **Uygulama (sürüm 2):** A1 hesaplandı, yani K = A1.
+  - Bir fonksiyonun A1 adı: Tarif katmanı ipucu olmayan bir ad verdiyse o ad (`run_tarif`; kesin girdisi `tarif_olc.reliable_names` köprüsü), vermediyse A0 adı. İpuçları (`ipucu:`) ad sayılmaz.
+  - A0 adı: Popülasyondaki fonksiyonlar için puanlayıcı satırındaki `pred` (`status` `tp` ya da `wrong`); popülasyon dışındaki komşular için `naming_map`'teki `FUN_<adres>` adı (jenerik olmayan).
+  - A1'in kaynak dağılımı (uygun popülasyonda): htop'ta kesin 1, tarif 39, A0 83 (567 fonksiyondan 123'üne ad); tmux'ta kesin 128, tarif 249, A0 550 (2.456'dan 927'sine ad).
+  - Kanıt paketindeki etiketler: kaynağı `kesin` olan ad `[proven]`; tarif ve A0 adları `[inferred]`.
+  - Not: `reliable_names` `strings` komutunu PATH'ten çağırıyor; bu makinede PATH'te önce `/opt/anaconda3/bin/strings` (GNU) geliyor. Kesin adlar o araçla bulundu; künyeye yazılır.
 - Kanıt paketindeki komşu adları, G8'de kullanılan yapılandırmadan (A1 ya da A0) gelir.
 - **Hedef fonksiyonun Karadul adı pakete hiçbir zaman girmez.** Berke'nin 2026-10-15 kararı: model, Karadul'un adayını görmeden kör tarif yapar.
 
@@ -134,7 +181,7 @@ Kaynak: Taban v2 koşusunun `static/` dizini üzerinde `karadul.reconstruction.t
   - 9.000 bayt ≈ 6.000 jeton. Dev setinde fonksiyonların ~%5-8'i bu sınırı aşıyor.
 - Gönderilmeden önce her istem sızıntı taramasından geçer (§12).
 
-## 4. İstem metinleri (tam metin, sürüm P1)
+## 4. İstem metinleri (tam metin, sürüm P2)
 
 - **Dil:** İstemler İngilizce. Gerekçeler:
   - Modeller kod görevlerinde İngilizce talimatla daha güvenilir çalışıyor.
@@ -142,20 +189,22 @@ Kaynak: Taban v2 koşusunun `static/` dizini üzerinde `karadul.reconstruction.t
   - Literatürdeki kıyaslar İngilizce istem kullanıyor.
 - **JSON anahtarları:** `isim`, `gerekce`, `cekimser`. Görev metnindeki şemaya uyar.
 - **Sabitleme:** Aşağıdaki beş blok, harness'taki beş istem dosyasının bayt bayt içeriğidir; her dosya tek bir satır sonuyla biter. Taslak sha256 değerleri bu metinlerden hesaplandı. Dosyalar depoya girdiğinde yeniden hesaplanıp künyeye yazılır.
-- **Sürüm kuralı:** Herhangi bir değişiklik yeni bir istem sürümü (P2) demektir ve kuru koşu tekrarlanır (§8).
+- **Sürüm kuralı:** Herhangi bir değişiklik yeni bir istem sürümü demektir ve kuru koşu tekrarlanır (§8).
+- **P1 → P2 (2026-10-19, kuru koşudan önce):** Yalnız `sistem_ortak.txt` değişti. P1'deki örnek ad `window_resize`, tmux'ta gerçek bir fonksiyonun adı; örnek adresler `FUN_100024758` ve `DAT_1000a1b20` de dev setindeki gerçek fonksiyon adresleri. Bunlar sabit metin sızıntı taramasında (§12 madde 3) yakalanacak türden bir risk. P2'de örnekler `parse_header_field`, `hash_table_insert`, `FUN_100012340` ve `DAT_100056780` oldu. Dördü de iki programın sembol tablosunda ve Ghidra fonksiyon adreslerinde yok (2026-10-19'da denetlendi). Öteki dört dosya P1 ile bayt bayt aynı.
+- **Kaynak:** Metinler `scripts/measurement/llm_pilot.py`'de sabit olarak durur (`ISTEM_DOSYALARI`); `istem` adımı aynı içeriği `workspaces/2026-10-19_g6_pilot/istemler/` altına dosya olarak yazar.
 
-**`sistem_ortak.txt`** (1.326 bayt; Gemma 318, Qwen 309 jeton; sha256 `cb5f953d8a41fbd9fc1b83d29fa12ed29cb36d29536a923d403da6575b32666f`)
+**`sistem_ortak.txt`** (P2: 1.331 bayt; Gemma 320, Qwen 310 jeton; sha256 `4d6b2fbd144f2fba99eb3996211416bedef282a45240c3f33d4279472e1476c3`. P1: 1.326 bayt, sha256 `cb5f953d…b32666f`)
 
 ```text
 You are an experienced reverse engineer. You will see one function from a stripped macOS arm64 executable, decompiled to C by Ghidra. The executable is an open-source program; this analysis is part of an academic study on naming functions in stripped binaries.
 
-In the decompiled code, functions that belong to the program have placeholder names such as FUN_100024758, global data has placeholder names such as DAT_1000a1b20, and functions imported from system libraries keep their real names (for example _malloc, _strlen, _ioctl).
+In the decompiled code, functions that belong to the program have placeholder names such as FUN_100012340, global data has placeholder names such as DAT_100056780, and functions imported from system libraries keep their real names (for example _malloc, _strlen, _ioctl).
 
 Your task: propose the name that the function's author most likely gave it in the original source code.
 
 Rules:
 1. Use only what you are shown: the code's behaviour, library calls, string literals, constants and data flow.
-2. Prefer a name that states the function's main action and its object (verb + object), for example parse_config_line or window_resize.
+2. Prefer a name that states the function's main action and its object (verb + object), for example parse_header_field or hash_table_insert.
 3. The name must be a valid C identifier: letters, digits and underscores, starting with a letter, at most 64 characters.
 4. Do not answer with a placeholder (FUN_..., sub_..., func, function, handler, helper, do_work), and do not answer with the name of a well-known library function (for example memcpy, qsort, sigaction) unless the function really is that library function.
 5. Reply with exactly one JSON object and nothing else.
@@ -248,11 +297,13 @@ Decompiled function:
 | En çok jeton | Düşünme kapalı: 256. Düşünme açık: 2.304 (2.048 düşünme + 256 yanıt) | Dolunca `butce_asimi` |
 | Bağlam | En uzun istem ~7,6K jeton; çıktıyla birlikte ~8K, düşünme kipinde üstüne düşünme bütçesi | Kırpma ile sağlanır (§3.2, §3.3). Bellek, K-5 kapısında en uzun istemlerle ölçülür |
 | Toplu işlem | Yok (tek tek) | |
-| Önek önbelleği | İstekler arasında kullanılmaz | Belirlenimcilik ve sıra bağımsızlığı için |
-| Spekülatif çözme ve MTP taslağı | Kapalı | |
+| Önek önbelleği | LM Studio'nun varsayılanı (sürüm 2; kapatılamıyor) | Sapma; etkisi belirlenimcilik koşusunda ölçülür (§7) |
+| Spekülatif çözme ve MTP taslağı | Kapalı (`--no-speculative-draft-mtp`) | |
 | KV önbellek nicemlemesi | Kapalı | |
 | Durdurma | Modelin `generation_config`'indeki EOS jetonları | |
-| Log-olasılık | Üretilen her jetonun seçilen jeton log-olasılığı saklanır | VARSAYIM: mlx_lm 0.31.3'te `stream_generate` yanıtlarında `logprobs` var. Kuru koşuda doğrulanır (K-1) |
+| Log-olasılık | Üretilen her jetonun seçilen jeton log-olasılığı saklanır | LM Studio `/v1/chat/completions` `logprobs: true` ile içerik jetonlarının log-olasılığını ve baytlarını veriyor (sonda, 2026-10-19). Düşünme metninin jetonları gelmez |
+| Çalışma zamanı (sürüm 2) | Gemma: LM Studio 0.4.25+1 yerel sunucusu, `http://localhost:1234`; `lms load <anahtar> -c 10240 --gpu max --parallel 1 --no-speculative-draft-mtp --identifier <kimlik>`. Qwen: `~/.lmstudio/extensions/backends/llama.cpp-mac-arm64-apple-metal-advsimd-2.60.0/llama-server --ctx-size 10240 --n-gpu-layers 999 --parallel 1 --jinja --chat-template-file <LM Studio'nun ürettiği şablonun kopyası, sha256 c3cf9e34…> --flash-attn on --cache-ram 0 --ctx-checkpoints 0 --batch-size 2048 --ubatch-size 512 --threads 10 --cache-type-k f16 --cache-type-v f16 --load-mode mmap+mlock --reasoning-format deepseek --seed 20261019`, `http://127.0.0.1:8137` | LM Studio'nun Qwen için verdiği bayraklardan farkı yalnız `--cache-ram 0`, `--ctx-checkpoints 0` (LM Studio: varsayılan 8192 MiB ve 32) ve görüntü kodlayıcının (`--mmproj`) yüklenmemesi |
+| Düşünme denetimi (sürüm 2) | Kapalı: Gemma'da `reasoning_effort: "none"`, Qwen'de `chat_template_kwargs: {"enable_thinking": false}`. Açık (B-D, C-D): üreticinin düşünme örneklemesi ve sabit tohum; Qwen'de `chat_template_kwargs: {"reasoning_effort": "low"}` (`llm_pilot.py` `DUSUNME_AYARLARI`) | Açgözlü düşünme kuru koşuda döngüye girdi (§0.1). Düşünme kipi çağrıları bu yüzden açgözlü değildir; belirlenimcilik denetimi yalnız B ve C'de yapılır |
 
 ## 7. Belirlenimcilik denetimi
 
@@ -265,27 +316,63 @@ Decompiled function:
 
 ## 8. Kuru koşu ve model kapıları
 
-**Kuru koşu içeriği:**
-- Kuru koşu kümesi: 20 fonksiyon × B, B-Ç, C, C-Ç.
-- Reddetme sondası: 20 fonksiyon × B ve C.
-- Bellek denemesi: 5 en uzun istem, C koşulu.
-- Belirlenimcilik: Kuru koşu kümesinde B'nin ikinci koşusu.
+**Kuru koşu içeriği (sürüm 2; iki model için ayrı ayrı):**
+- Kuru koşu kümesi: 5 + 5 fonksiyon × B, B-Ç, C, C-Ç (koşu 1).
+- Belirlenimcilik: Aynı 10 fonksiyon × dört koşul, model yeniden yüklenip ters sırayla (koşu 2).
+- Düşünme kipi: Kuru kümenin ilk 2 fonksiyonu × B-D ve C-D. (Plan 10 fonksiyondu. Açgözlü deneme ilk iki çağrıda döngüye ve bütçe aşımına düşünce ayar değişti; yeni ayar 2 fonksiyonda ölçüldü. Ana pilotun süre tahmini için yeterli.)
+- Reddetme sondası: 10 + 10 fonksiyon × B ve C.
+- Bellek denemesi: Uygun popülasyonun C istemi en uzun 5 fonksiyonu × C; bunların en uzun 2'si × C-D.
+- Sürücü betikler: `workspaces/2026-10-19_g6_pilot/kuru_kosu.sh` (LM Studio ile ilk deneme; bellek eşiğinde durdu), `kuru_kosu2.sh` (Qwen yalın sunucu), `kuru_kosu3.sh` (kalan adımlar ve Gemma).
 
-Kuru koşu çıktıları ana analize girmez; sonuçları künyeye yazılır.
+Kuru koşu çıktıları ana analize girmez; sonuçları künyeye ve rapora yazılır.
 
-**Kapılar (birincil model):**
+**Bellek ölçüsü:** LM Studio'nun motor süreci (llama.cpp için `llama-server`, MLX için LM Studio'nun `node` işçisi) için max(RSS, `footprint` phys_footprint), GiB cinsinden. Her çağrıdan sonra ölçülür. llama.cpp ağırlıkları mmap ile tuttuğu için RSS'te görünür; MLX ağırlıkları Metal tamponlarında tutar ve footprint'te görünür. İkisinin büyüğü modelin bellekteki payıdır.
+- **Kapı ve durdurma eşiği üst sınırla denetlenir** (`bellek_ust_gb`): llama.cpp'de RSS + footprint (yerleşik kirli kısmı iki kez sayar, yani ihtiyatlı), MLX'te max(RSS, footprint). İki ölçü de her çağrıda kaydedilir (`bellek_gb`, `bellek_ust_gb`). Gerekçe: llama.cpp'de RSS mmap'li ağırlıkları, footprint KV önbelleği ve istem önbelleğini gösterir; ikisinin büyüğü belleği olduğundan az gösterir.
+
+**Kapılar (oranlar ön kayıttaki gibi; sayılar 5 + 5 kümeye göre):**
 
 | Kapı | Ölçüt |
 |---|---|
-| K-1 Yükleme ve şablon | Model yükleniyor. Düşünme kapalıyken çıktıda düşünme metni yok ya da blok boş. Log-olasılıklar alınabiliyor. 20 / 20 çağrı tamamlanıyor |
-| K-2 JSON geçerliliği | Kuru koşu kümesinde B ve C'de ≥ %95 (≥ 38 / 40) |
-| K-3 Reddetme | Sonda kümesinde B ve C'de toplam `ret` ≤ 1 / 40 |
-| K-4 Belirlenimcilik | B'nin iki koşusunda ≥ 19 / 20 aynı ham çıktı |
-| K-5 Bellek | Bellek denemesinde en yüksek bellek (`mx.get_peak_memory()`) ≤ 20 GB |
+| K-1 Yükleme ve şablon | Model yükleniyor. Düşünme kapalıyken düşünme metni yok. Log-olasılıklar geliyor. Kuru kümede 40 / 40 çağrı tamamlanıyor |
+| K-2 JSON geçerliliği | Kuru kümede B ve C'de ≥ %95 (≥ 19 / 20) |
+| K-3 Reddetme | Sondada B ve C'de toplam `ret` ≤ 1 / 40 |
+| K-4 Belirlenimcilik | Kuru kümede dört koşulun iki koşusunda ≥ %95 aynı ham çıktı (≥ 38 / 40) |
+| K-5 Bellek | Bütün kuru koşu çağrılarında en yüksek bellek ≤ 20 GiB |
 | K-6 Süre | Ölçülen hızla §13'teki süre yeniden hesaplanır. Toplam 24 saati aşarsa düşünme alt kümesi 50 fonksiyona iner (her programdan ilk 25) |
 
-- Birincil model K-1…K-5'ten birini geçemezse yedeğe geçilir ve kuru koşu yedekle tekrarlanır. Yedek de geçemezse pilot durur ve karar ana oturuma döner.
+- Birincil model K-1…K-5'ten birini geçemezse pilot o modelle başlamaz ve karar ana oturuma döner. İkinci model için aynı kapılar geçerli.
 - Kuru koşudan sonra istem değişmez. Bir şablon hatası gibi bir nedenle değişmesi gerekirse yeni istem sürümü yazılır, kuru koşu tekrarlanır, değişiklik ve gerekçesi kayda geçer.
+- Kapıları `llm_pilot.py kapilar --model <ad>` hesaplar. Sonuçlar §8.1'de.
+
+### 8.1 Kuru koşu sonuçları
+
+**Durum (2026-10-21): kuru koşu tamamlanmadı.** Qwen3.8 adımlarının bir kısmı koştu, Gemma 4 hiç koşmadı. Berke 2026-10-19'da "koşmasına gerek yok şu an" deyince süreçler durduruldu. Pilot, kuru koşu iki modelde de tamamlanmadan başlamaz.
+
+**Qwen3.8 (yalın `llama-server`).** Kaynak: `llm_pilot.py kapilar --model qwen38`, düzeltilmiş kodla (§0.2), 2026-10-21.
+
+| Kapı | Sonuç | Sayılar |
+|---|---|---|
+| K-1 | Geçti | Kuru kümede 40 / 40 çağrı; düşünmesiz çağrıların hiçbirinde düşünme metni yok |
+| K-2 | Geçti | B ve C'de 20 / 20 geçerli JSON |
+| K-3 | **Eksik** | Sondanın 40 çağrısından 25'i koştu; `ret` 0 |
+| K-4 | Geçti | Dört koşulda 40 / 40 bayt bayt aynı ham çıktı (model yeniden yüklenip ters sırayla) |
+| K-5 | **Eksik** | Bellek denemesi koşmadı (C 0 / 5, C-D 0 / 2). Öbür çağrılarda tepe 17,63 GiB (üst sınır) |
+| K-6 | Hesaplanmadı | Aşağıdaki kaba hesap |
+
+**Koşan 109 çağrı:** kuru küme koşu 1 ve koşu 2 (80), düşünme kipi (4), sonda (25).
+- Durumlar: B ve C'de 20 / 20 geçerli. Çekimser oranı B-Ç'de 3 / 10, C-Ç'de 4 / 10; iki koşuda da aynı. Düşünme kipinde B-D'de de C-D'de de 1 geçerli + 1 `zorunluyken_cekimser`.
+- Çağrı başına ortalama süre (makine yükü 33-45): düşünmesiz kuru küme 20,4-25,9 sn, sonda 31,7-36,4 sn, düşünme kipi 95,8-102,9 sn.
+
+**K-6 için kaba hesap** [hesap; Gemma ölçülmedi]:
+- Qwen3.8 için kuru küme ortalamalarıyla:
+  - ana koşullar: 300 × (20,4 + 20,9 + 25,2 + 25,9) sn ≈ 7,7 sa;
+  - belirlenimcilik: 300 × (21,5 + 24,4) sn ≈ 3,8 sa;
+  - düşünme kipi: 100 × (95,8 + 102,9) sn ≈ 5,5 sa.
+  - Toplam ≈ 17 sa. Düşünmesiz çağrılar sondadaki hızla koşarsa ≈ 23 sa.
+- Gemma 4 için §13'ün sürüm 1 tahmini 3,4-5,1 sa. İki model birlikte ≈ 20-22 sa; §13'teki %20 payla ≈ 24,5-26,6 sa.
+- K-6 sınırda. Düşünme alt kümesinin 50'ye inip inmeyeceği Gemma'nın kuru koşusundan sonra hesaplanır.
+
+**Önceki deneme:** LM Studio'nun kendi Qwen yüklemesi kuru koşuda bellek eşiğini aştı (RSS 20,1 GiB; `model_secimi.md` K28). Yalın sunucuya bu yüzden geçildi.
 
 ## 9. Değerlendirme (kör protokol v2)
 
@@ -408,11 +495,11 @@ Ayrı raporlanırlar; G8 kararına girmezler.
 
 Plan v2'deki kural: "LLM pilotunda (b)−(a) ≥ 15 puan ve fark görülmemiş dilimde de sürüyor → Makalenin ana sonucu 'gevşek isim oranı' olmaz. Ana sonuç: sabit kesinlikte kapsam, tip ve yapı doğruluğu, görülmemiş kodda dayanıklılık, determinizm, maliyet."
 
-### 11.1 İşlemsel tanım (öneri; Berke onaylar)
+### 11.1 İşlemsel tanım (Berke'nin kararıyla kabul edildi, 2026-10-19)
 
 - **(a):** A1 varsa A1, yoksa A0 (§3.1).
 - **(b):** B, yani isim zorunlu, sıfır atış.
-- **LLM lehine okuma:** Kural, önceden yazılmış LLM satırlarının **en yükseğiyle** okunur. Bu satırlar: B; B-D (yalnız düşünme alt kümesinde, A ile aynı 100 fonksiyon üzerinden); yedek model koşulduysa B′.
+- **LLM lehine okuma:** Kural, önceden yazılmış LLM satırlarının **en yükseğiyle** okunur. Bu satırlar: B ve B′ (iki model); B-D ve B′-D (yalnız düşünme alt kümesinde, A ile aynı fonksiyonlar üzerinden).
   - Gerekçe: Kural Karadul'u sınıyor. Zayıf bir LLM yapılandırması seçmek Karadul'u olduğundan iyi gösterir.
   - Bilinen yan etki: Birden çok gürültülü tahminin en yükseğini almak sonucu yukarı yanlı kılar (çoklu karşılaştırma). Bu bilerek kabul edilir; yanlılık LLM lehine, yani Karadul'un iddiasına karşı yöndedir. Seçilen satır ve bütün satırların değerleri birlikte raporlanır.
 - **"≥ 15 puan":** Makro Δb'nin nokta tahmini ≥ 15,0 (plan metni). %95 GA raporlanır.
@@ -429,8 +516,9 @@ Plan v2'deki kural: "LLM pilotunda (b)−(a) ≥ 15 puan ve fark görülmemiş d
 ### 11.3 İkinci koşul: görülmemiş dilim
 
 - G6'da yalnız dilimin ön kaydı yapılır; dilim plana göre G31'de açılır. Bu yüzden ikinci koşul **G8'de ölçülemez**.
-- Sonuç: G8 kararı geçicidir. Kesin okuma G34'te yapılır. Zamanlama seçenekleri `gorulmemis_dilim_onkayit_taslak.md` §9'da.
-- **"Sürüyor" için öneri:** Görülmemiş dilimde Δb ≥ 10 puan ve proje kümeli bootstrap ile %95 GA'nın alt sınırı > 0. Bu tanım LLM lehinedir. Berke onaylar.
+- Sonuç: G8 kararı geçicidir. Kesin okuma G34'te yapılır.
+- **"Sürüyor" tanımı (kabul edildi):** Görülmemiş dilimde Δb ≥ 10 puan ve proje kümeli bootstrap ile %95 GA'nın alt sınırı > 0. Bu tanım LLM lehinedir.
+- **Zamanlama (kabul edildi):** G8 kararı geçicidir; görülmemiş dilim koşulu G34'te kesinleşir (`gorulmemis_dilim_onkayit_taslak.md` §9, seçenek A).
 
 ### 11.4 Düşünme kipi yolu (önceden yazılı)
 
@@ -463,12 +551,20 @@ Plan v2'deki kural: "LLM pilotunda (b)−(a) ≥ 15 puan ve fark görülmemiş d
    - Komşu adları yalnız K'nın çıktısından gelir.
    - Hedefin K adı paket metninde tam sözcük olarak geçmemelidir. İstisna: aynı ad bir dizgi sabiti olarak da geçiyorsa. Bu otomatik denetlenir.
 5. **Değerlendirici paketi.** `etiket_paketi.py`'nin sızıntı denetimi uygulanır: gerçek ad yalnız aday alanında geçebilir.
+5.1 **Sonuçlar (2026-10-19, `istem` adımı).**
+   - Yasak ad kümesi (özgün ikilide tanımlı olup strip'li kopyada bulunmayan, en az 4 karakterli C adları): htop 816, tmux 2.950.
+   - Kod taraması: Uygun popülasyonun bütün istemlerinde (htop 567, tmux 2.456) **0 sızıntı**. Kanıt paketinde hedefin gerçek adı: **0**.
+   - Pozitif kontrol: Aynı tarayıcı, conda strip'li 14 Ekim tmux koşusunun ilk 400 fonksiyonundan 321'inde sızıntı buldu. Yani tarayıcı çalışıyor, taban v2'nin Apple strip'i temiz.
+   - Sabit istem metni (P2) iki programın yasak kümesine karşı temiz.
+   - Katman sayıları: öz-ad dizgisi htop 0, tmux 256; komşunun Karadul adı hedefin gerçek adıyla aynı: tmux 8.
 6. **Bilinen ve ölçülmeyen yanlılıklar.**
    - htop ve tmux ünlü programlar; LLM onların kaynağını büyük olasılıkla görmüştür (ezber).
    - Tarif kuralları da htop ve tmux üstünde yazıldı; A1 de iyimser çıkar.
    - Bu iki yanlılığın net yönü bilinmiyor. Görülmemiş dilim ikisini birden temizler: kod hem model hem Karadul için yenidir.
 
 ## 13. Süre ve kaynak tahmini
+
+Bu bölüm sürüm 1'in tahmini (Qwen3.6 ölçümleriyle). Qwen3.8'in kuru koşuda ölçülen hızıyla yapılan yeniden hesap (K-6) §8.1'de.
 
 Varsayımlar:
 - Ortalama istem (Gemma tokenizer'ıyla; Qwen %1-2 daha az): B 2.120, B-Ç 2.180, C 2.570, C-Ç 2.630 jeton (`model_secimi.md` §4.2).
@@ -500,29 +596,29 @@ Varsayımlar:
 
 | Dosya | İçerik |
 |---|---|
-| `kunye.json` | §1 |
-| `orneklem.json` | 300 adres; alt kümeler; çekim sırası; popülasyonun sha256'sı; dışlananlar |
-| `istemler/` | Beş istem dosyası ve sha256'ları |
-| `ham/<model>/<kosul>/<program>_<adres>.json` | İstemin sha256'sı, ham çıktı, düşünme metni, jeton log-olasılıkları, süreler, jeton sayıları, en yüksek bellek |
-| `adaylar.jsonl` | Etiket paketinin girdisi (şema aşağıda) |
-| `belirlenimcilik.json`, `kuru_kosu.json` | §7, §8 |
-| `paket/`, `etiket/`, `puan.json` | Kör paket, vekil ve insan etiketleri, puanlar |
+| `orneklem.json` | Tohumlar, kümeler (ana, kuru, sonda, düşünme, insan, yem, bellek), popülasyon dosyalarının sha256'sı, dışlananlar |
+| `istem_ozeti.json` | İstem dosyalarının sha256'sı, sızıntı ve katman sayıları, A1 kaynak dağılımı |
+| `istemler/` | Beş istem dosyası; `htop.jsonl` ve `tmux.jsonl`: fonksiyon başına kod, kanıt alanları, kırpma, sızıntı sayıları, A0 ve A1 adayları (gerçek ad yok) |
+| `ham/<model>/<küme>/<koşul>/t<tekrar>/<program>_<adres>.json` | İstem sha256'sı, çözme ayarları, ham çıktı, düşünme metni, jeton log-olasılıkları, ayrıştırma, güven, süre, jeton sayıları, bellek |
+| `ilerleme.jsonl` | Çağrı başına bir satır: zaman, model, küme, koşul, tekrar, durum, süre, bellek, jeton sayıları |
+| `gunluk.log`, `pilot_durumu.json` | Arka plan pilotunun günlüğü ve adım durumu (kaldığı yerden devam için) |
+| `kunye/<model>_<zaman>.json` | Commit, model dosyalarının sha256'sı, LM Studio ve motor sürümleri, sohbet şablonu sha256'sı, istem sha256'ları, tohumlar |
+| `adaylar.jsonl` | `llm_pilot.py adaylar` çıktısı; etiket paketinin girdisi |
+| `kuru_kosu.sh`, `kuru_kosu.log`, `pilot.log` | Sürücü betik ve günlükler |
+| `mutasyon_llm_pilot.json` | Mutasyon tanımının ilk kopyası; 2026-10-21'den beri geçersiz, yerine `scripts/measurement/mutation_specs_llm_pilot.json` |
 
-**`adaylar.jsonl` satır şeması (VARSAYIM; §9.1):**
+**`adaylar.jsonl` satırı:**
 
 ```text
-{"program", "adres", "kosul", "model", "model_revizyon", "istem_surumu",
- "isim", "cekimser", "durum", "guven_ort_logprob", "guven_min_prob",
- "kirpildi", "girdi_jeton", "cikti_jeton", "sure_sn", "ham_sha256"}
+{"id": "<program>-<adres>", "program", "adres", "kosul": "A0|A1|B|B-Ç|C|C-Ç|B-D|C-D",
+ "model": "karadul|qwen38|gemma4", "aday": "<ad>|null", "cekimser": true|false,
+ "durum": "gecerli|isimsiz|jenerik|cekimser|zorunluyken_cekimser|butce_asimi|ret|gecersiz",
+ "kaynak": "kesin|tarif|A0|naming_map|null", "guven_ort_logprob", "guven_min_prob", "kirpildi", "tekrar"}
 ```
 
-`durum` şu değerlerden biridir: `gecerli`, `jenerik`, `cekimser`, `zorunluyken_cekimser`, `butce_asimi`, `ret`, `gecersiz`.
+Gerçek ad bu dosyaya hiçbir yoldan girmez. `aday` yalnız `durum == "gecerli"` iken dolu; çekimserlik `cekimser` alanında.
 
-**Depoya önerilenler (commit kararı ana oturumun):**
-- Harness betiği; önerilen ad `scripts/measurement/llm_pilot.py`. Plan §6'ya göre `scripts/measurement/` paralel güvenli grupta.
-- İstem dosyaları.
-- Sonuç özeti, `docs/arge/` altında.
-- Ham model çıktıları depo dışında kalır; depoya yalnız sha256 listeleri girer.
+**Depoya girenler:** `scripts/measurement/llm_pilot.py`, `tests/test_llm_pilot.py` ve `scripts/measurement/mutation_specs_llm_pilot.json`. İstem metinleri harness'ta sabit. Ham model çıktıları depo dışında kalır.
 
 ## 15. KaradulLM satırı (D; pilottan sonra)
 
@@ -549,17 +645,20 @@ Varsayımlar:
 - **4 bit nicemleme.** Kaybı bu makinede ölçülemiyor.
 - **Kırpma.** Uzun fonksiyonlarda LLM'i dezavantajlı bırakabilir. Bu yüzden ayrı katman olarak raporlanır.
 - **Karadul'un güven kanalı kopuk** (plan §2 madde 6). Taban v2'de A'nın risk-kapsam eğrisi tek bir nokta olabilir.
+- **Çalışma zamanı (sürüm 2).** LM Studio'da önek önbelleği kapatılamıyor ve motorlar kendiliğinden güncellenebiliyor. İkisinin etkisi künye ve belirlenimcilik koşusuyla izlenir, ama önceden denetlenemez.
+- **Makine yükü.** Pilot, başka ajanların işleriyle aynı makinede koşuyor; kuru koşu sırasında yük ortalaması 33-45 idi. Süre ölçümleri bu yük altında alındı; maliyet karşılaştırmasında (§10.7) bu not düşülür.
+- **Q4_K_M nicemlemesi (birincil).** Qwen3.8'in kayıpsız (bf16) sürümü bu makinede koşamıyor; nicemleme kaybı ölçülemiyor.
+- **Gemma 4'ün düşünme metninin yeri ölçülmedi.** LM Studio'nun Gemma yanıtında düşünmeyi `content`'e mi, `reasoning_content`'e mi koyduğu bilinmiyor; kuru koşu Gemma'ya gelmeden durdu. Ayrıştırıcı iki durumu da karşılıyor (§0.2); Gemma'nın kuru koşusunda doğrulanır.
 
 ## 17. Açık kararlar
 
-1. Rubrik: Kapandı. Sürüm 2 yürürlükte ("yanlış fiil → `yanlis`", Berke'nin kararı). Kayıt için listede duruyor.
-2. G8 okumasında A1'in (tarif katmanı) kullanılması (§3.1).
-3. Çok adaylı etiket kipi: aracın sahibi ve ana oturum (§9.1).
-4. Yedek modelin tam pilotta da koşulması (`model_secimi.md` §7).
-5. Görülmemiş dilimin zamanlaması: G8 geçici mi kalsın, yoksa pilot parçası mı eklensin (`gorulmemis_dilim_onkayit_taslak.md` §9).
-6. "Sürüyor" tanımı (§11.3).
-7. İnsan denetimini kimin yapacağı.
-8. İkinci vekil değerlendirici (maliyet).
-9. Düşünme kipi alt kümesinin boyutu (100).
-10. Harness'ı kimin yazacağı ve hangi dosyaya.
-11. G33'te öncü model kullanılıp kullanılmayacağı.
+**Kapananlar (Berke, 2026-10-19):** Rubrik sürüm 2; birincil model Qwen3.8-27B, ikinci model Gemma 4 26B-A4B QAT; çalışma zamanı LM Studio; G8 tanımları ve zamanlaması; Karadul tarafında A1.
+
+**Bekleyenler:**
+1. Çok adaylı etiket kipi baf6faa ile depoda. Harness'ın `adaylar.jsonl` çıktısıyla uçtan uca sınaması ve §9.1'deki varsayımlar pilot koşulmadan önce yapılır.
+2. Pilotun ne zaman koşacağı (Berke, 2026-10-19: "koşmasına gerek yok şu an"). Önce iki modelin kuru koşusu tamamlanır (§8.1).
+3. İnsan denetimini kimin yapacağı.
+4. İkinci vekil değerlendirici (maliyet).
+5. Düşünme kipi alt kümesinin boyutu: ön kayıtta 100; K-6 kuralı 24 saati aşan tahminde 50'ye indiriyor (§8.1, §13).
+6. `tarif_olc.reliable_names`'in PATH'teki `strings`'e bağlı olması (§3.1): Ölçüm aracı tutarlılığı için ayrı bir düzeltme gerekebilir. Bu pilot künyeye yazıp olduğu gibi kullanıyor.
+7. G33'te öncü model kullanılıp kullanılmayacağı.
