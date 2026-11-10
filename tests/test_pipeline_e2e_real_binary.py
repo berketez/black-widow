@@ -15,7 +15,10 @@ Buradaki testler:
 
 Skip mantığı:
 
-- ``karadul`` CLI yoksa (PATH'te değilse) tüm modül skip.
+- CLI, testi koşturan yorumlayıcıyla ``python -m karadul`` olarak çağrılır
+  (``cwd`` depo kökü). PATH'teki ``karadul`` betiği başka bir kurulumun
+  (ör. ana ağaca bakan editable kurulumun) kodunu koşturabildiği için
+  kullanılmaz.
 - Fixture binary'ler yoksa (build yapılmadıysa) skip.
 - Uzun koşan ikinci-pipeline (x86_64 smoke) ``@pytest.mark.benchmark``
   ile işaretli; varsayılan ``pytest`` koşumunda dışlanır
@@ -27,8 +30,8 @@ B25 fixture'ları: ``tests/fixtures/diverse/`` altında
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -43,9 +46,14 @@ DIVERSE_DIR = REPO_ROOT / "tests" / "fixtures" / "diverse"
 # ---------------------------------------------------------------------------
 
 
-def _karadul_cli() -> Optional[str]:
-    """``karadul`` çalıştırılabilir mi? Yoksa None döndür."""
-    return shutil.which("karadul")
+def _karadul_cli() -> list[str]:
+    """CLI komut öneki: testi koşturan yorumlayıcıyla ``python -m karadul``.
+
+    PATH'te bulunan ``karadul`` betiği başka bir ortamın ya da başka bir
+    çalışma ağacının kodunu koşturabilir. ``-m`` ile ve ``cwd=REPO_ROOT`` ile
+    çağrılınca testlerin yanındaki kod yüklenir.
+    """
+    return [sys.executable, "-m", "karadul"]
 
 
 def _fixture_pair(arch: str) -> tuple[Path, Path]:
@@ -87,10 +95,6 @@ def _latest_timestamp_dir(workspace_root: Path) -> Optional[Path]:
 
 pytestmark = [
     pytest.mark.skipif(
-        _karadul_cli() is None,
-        reason="karadul CLI PATH'te değil (pip install -e . gerekli)",
-    ),
-    pytest.mark.skipif(
         not _have_fixtures("arm64"),
         reason=(
             "diverse fixture yok (tests/fixtures/diverse/hello_macho_arm64_*). "
@@ -115,13 +119,11 @@ def e2e_workspace(tmp_path_factory: pytest.TempPathFactory) -> Path:
     Module scope sayesinde pipeline 1 kez koşar, tüm assertion'lar aynı
     çıktıyı paylaşır. Tipik süre: ~13 sn (Mac arm64). Üst limit: 600 sn.
     """
-    karadul = _karadul_cli()
-    assert karadul is not None  # pytestmark zaten skip etti
     stripped, _ = _fixture_pair("arm64")
 
     out_dir = tmp_path_factory.mktemp("e2e_arm64")
     cmd = [
-        karadul,
+        *_karadul_cli(),
         "analyze",
         str(stripped),
         "--output-dir",
@@ -341,13 +343,11 @@ class TestX86_64Smoke:
     def test_x86_64_pipeline_completes(
         self, tmp_path_factory: pytest.TempPathFactory,
     ) -> None:
-        karadul = _karadul_cli()
-        assert karadul is not None
         stripped, _ = _fixture_pair("x86_64")
         out_dir = tmp_path_factory.mktemp("e2e_x86")
         proc = subprocess.run(
             [
-                karadul, "analyze", str(stripped),
+                *_karadul_cli(), "analyze", str(stripped),
                 "--output-dir", str(out_dir), "--skip-dynamic",
             ],
             cwd=str(REPO_ROOT),

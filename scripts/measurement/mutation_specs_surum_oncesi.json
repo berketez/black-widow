@@ -1,0 +1,229 @@
+{
+ "_comment": "Sürüm öncesi hata düzeltmelerinin (belge denetimi, 2026-11-10) mutasyon tanımları. Her mutant ilgili düzeltmeyi geri alır ya da bozar; tests/test_surum_oncesi_hatalar.py içindeki testin gerçek başarısızlığıyla ölmesi beklenir. Mutantların uzunluğu özgün metinden farklıdır (bayat .pyc tuzağı). Koşu: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_surum_oncesi.json",
+ "mutants": [
+  {
+   "id": "so1_analyze_ciplak_pipeline",
+   "desc": "analyze() yine çıplak Pipeline kurar (aşama kaydı yok)",
+   "module": "karadul/__init__.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestAnalyzeAsamaKaydi::test_asama_listesi_dolu_ve_cli_ile_ayni",
+   "find": "    pipeline = build_pipeline(cfg)\n",
+   "replace": "    pipeline = Pipeline(cfg)  # mutant\n"
+  },
+  {
+   "id": "so1_analyze_ciplak_pipeline_gercek_kosu",
+   "desc": "aynı mutant, sahtesiz identify koşusuyla",
+   "module": "karadul/__init__.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestAnalyzeAsamaKaydi::test_gercek_kosuda_asama_sonucu_doner",
+   "find": "    pipeline = build_pipeline(cfg)\n",
+   "replace": "    pipeline = Pipeline(cfg)  # mutant\n"
+  },
+  {
+   "id": "so1_analyze_cli_den_farkli_liste",
+   "desc": "analyze() CLI'dan farklı aşama listesi kurar (dinamik atılır)",
+   "module": "karadul/__init__.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestAnalyzeAsamaKaydi::test_asama_listesi_dolu_ve_cli_ile_ayni",
+   "find": "    pipeline = build_pipeline(cfg)\n",
+   "replace": "    pipeline = build_pipeline(cfg, skip_dynamic=True)\n"
+  },
+  {
+   "id": "so1_analyze_stages_iletilmez",
+   "desc": "analyze() stages parametresini run'a iletmez",
+   "module": "karadul/__init__.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestAnalyzeAsamaKaydi::test_stages_parametresi_run_a_iletilir",
+   "find": "    return pipeline.run(path, stages=stages)\n",
+   "replace": "    return pipeline.run(path, stages=None)\n"
+  },
+  {
+   "id": "so2_online_kapali_taraf",
+   "desc": "--online yine click'in 'kapalı' tarafı olur",
+   "module": "karadul/cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestAgBayraklari::test_ag_anahtari",
+   "find": "@click.option(\"--enable-network\", \"--online\", \"enable_network\",",
+   "replace": "@click.option(\"--enable-network/--online\", \"enable_network\","
+  },
+  {
+   "id": "so2_online_kapali_taraf_bildirim",
+   "desc": "aynı mutant, seçenek bildirimi denetimiyle",
+   "module": "karadul/cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestAgBayraklari::test_iki_bayrak_da_yardimda_ve_kapatan_bayrak_yok",
+   "find": "@click.option(\"--enable-network\", \"--online\", \"enable_network\",",
+   "replace": "@click.option(\"--enable-network/--online\", \"enable_network\","
+  },
+  {
+   "id": "so2_ag_anahtari_acilmaz",
+   "desc": "bayrak verilse de network.enabled açılmaz",
+   "module": "karadul/cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestAgBayraklari::test_ag_anahtari",
+   "find": "        cfg.network.enabled = True\n",
+   "replace": "        cfg.network.enabled = bool(0)\n"
+  },
+  {
+   "id": "so2_source_match_acilmaz",
+   "desc": "bayrak verilse de source_match.enabled açılmaz",
+   "module": "karadul/cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestAgBayraklari::test_ag_anahtari",
+   "find": "        cfg.source_match.enabled = True\n",
+   "replace": "        cfg.source_match.enabled = bool(0)\n"
+  },
+  {
+   "id": "so3_json_output_yok_sayilir",
+   "desc": "--json dalı --output'u yine işlemez",
+   "module": "karadul/cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestJsonIleOutput::test_json_ve_output_birlikte",
+   "find": "        if clean_output_dir:\n            _write_clean_output(\n                result, clean_output_dir, output_format,\n                out=err_console, quiet=True,",
+   "replace": "        if clean_output_dir and not json_output:\n            _write_clean_output(\n                result, clean_output_dir, output_format,\n                out=err_console, quiet=True,"
+  },
+  {
+   "id": "so3_json_stdout_kirlenir",
+   "desc": "--json dalında biçimleme iletileri stdout'a yazılır",
+   "module": "karadul/cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestJsonIleOutput::test_json_ve_output_birlikte",
+   "find": "                out=err_console, quiet=True,",
+   "replace": "                out=console, quiet=False,"
+  },
+  {
+   "id": "so3_json_stderr_gurultu",
+   "desc": "--json dalında sessiz kip kapanır (stderr'e ileti dökülür)",
+   "module": "karadul/cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestJsonIleOutput::test_json_ve_output_birlikte",
+   "find": "                out=err_console, quiet=True,",
+   "replace": "                out=err_console, quiet=False,"
+  },
+  {
+   "id": "so3_tablo_dali_output_yazmaz",
+   "desc": "tablo dalı --output'u işlemez (yeniden düzenleme gerilemesi)",
+   "module": "karadul/cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestJsonIleOutput::test_tablo_dalinda_output_yazilir",
+   "find": "    if clean_output_dir:\n        _write_clean_output(\n            result, clean_output_dir, output_format, out=console, quiet=False,",
+   "replace": "    if clean_output_dir and json_output:\n        _write_clean_output(\n            result, clean_output_dir, output_format, out=console, quiet=False,"
+  },
+  {
+   "id": "so3_tablo_dali_ozet_susar",
+   "desc": "tablo dalında biçimleme özeti basılmaz",
+   "module": "karadul/cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestJsonIleOutput::test_tablo_dalinda_output_yazilir",
+   "find": "    if not quiet:\n        out.print(Rule(\"Output Formatting\", style=\"cyan\"))",
+   "replace": "    if quiet:\n        out.print(Rule(\"Output Formatting\", style=\"cyan\"))"
+  },
+  {
+   "id": "so4_ahocorasick_temelden_cikar",
+   "desc": "pyahocorasick temel bağımlılıklardan çıkarılır",
+   "module": "pyproject.toml",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestAhocorasickBagimliligi::test_kosulsuz_ice_aktarilan_paket_temel_bagimlilikta",
+   "find": "    \"pyahocorasick>=2.0\",\n]",
+   "replace": "]"
+  },
+  {
+   "id": "so5_pyfiglet_yokken_coker",
+   "desc": "pyfiglet yokken içe aktarma yine çöker",
+   "module": "karadul/hacker_cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestHackerCliPyfigletsiz::test_pyfiglet_yokken_ice_aktarilir_ve_yardim_basar",
+   "find": "except ImportError:\n    pyfiglet = None\n",
+   "replace": "except ImportError:\n    raise\n"
+  },
+  {
+   "id": "so5_sade_baslik_bos",
+   "desc": "pyfiglet yokken başlık boş kalır",
+   "module": "karadul/hacker_cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestHackerCliPyfigletsiz::test_pyfiglet_yokken_ice_aktarilir_ve_yardim_basar",
+   "find": "    return _PLAIN_TITLE\n",
+   "replace": "    return \"\"\n"
+  },
+  {
+   "id": "so5_suslu_baslik_kullanilmaz",
+   "desc": "pyfiglet kuruluyken de sade başlık kullanılır",
+   "module": "karadul/hacker_cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestHackerCliPyfigletsiz::test_pyfiglet_varken_suslu_baslik_kullanilir",
+   "find": "    if pyfiglet is not None:\n        try:",
+   "replace": "    if pyfiglet is None:\n        try:"
+  },
+  {
+   "id": "so5_help_hedef_sanilir",
+   "desc": "--help yine hedef yolu sanılır",
+   "module": "karadul/hacker_cli.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestHackerCliPyfigletsiz::test_yardim_bayragi_analiz_baslatmaz",
+   "find": "sys.argv[1] in (\"-h\", \"--help\")",
+   "replace": "sys.argv[1] in (\"-h\", \"--yardim\")"
+  },
+  {
+   "id": "so6_e2e_path_teki_betik",
+   "desc": "uçtan uca test yine PATH'teki karadul betiğini çağırır",
+   "module": "tests/test_pipeline_e2e_real_binary.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestE2eCliYalitimi::test_komut_oneki_sys_executable_ile_modul_cagrisi",
+   "find": "    return [sys.executable, \"-m\", \"karadul\"]\n",
+   "replace": "    return [\"karadul\"]\n"
+  },
+  {
+   "id": "so6_e2e_path_teki_betik_kosu",
+   "desc": "aynı mutant, önek gerçekten çalıştırılarak",
+   "module": "tests/test_pipeline_e2e_real_binary.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestE2eCliYalitimi::test_komut_oneki_bu_agacin_kodunu_kosturur",
+   "find": "    return [sys.executable, \"-m\", \"karadul\"]\n",
+   "replace": "    return [\"karadul\"]\n"
+  },
+  {
+   "id": "so7_ngram_atlama_kalkar",
+   "desc": "veri yokken atlama koşulu kalkar (testler yine düşer)",
+   "module": "tests/test_ngram_db_v2_smoke.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestNgramDumanTestiVeriYokken::test_veri_dizini_yokken_gerekceyle_atlar",
+   "find": "    not _DB_DIR.is_dir(),\n",
+   "replace": "    False,\n"
+  },
+  {
+   "id": "so7_ngram_hep_atlar",
+   "desc": "atlama koşulsuz olur (yarım veri de sessizce geçer)",
+   "module": "tests/test_ngram_db_v2_smoke.py",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestNgramDumanTestiVeriYokken::test_veri_dizini_bos_ise_atlamaz_duser",
+   "find": "    not _DB_DIR.is_dir(),\n",
+   "replace": "    True,\n"
+  },
+  {
+   "id": "so8_belge_olmayan_secenek",
+   "desc": "belgeye var olmayan -o seçeneği geri gelir",
+   "module": "docs/quickstart.md",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestQuickstartBelgesi",
+   "find": "karadul analyze /path/to/binary --output ./out\n",
+   "replace": "karadul analyze /path/to/binary -o ./out\n"
+  },
+  {
+   "id": "so8_belge_olmayan_asama_secimi",
+   "desc": "belgede --stage için var olmayan aşama adı",
+   "module": "docs/quickstart.md",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestQuickstartBelgesi",
+   "find": "karadul analyze /path/to/binary --stage static\n",
+   "replace": "karadul analyze /path/to/binary --stage decompile\n"
+  },
+  {
+   "id": "so8_belge_yanlis_asama_adlari",
+   "desc": "Python örneğine eski aşama adları geri gelir",
+   "module": "docs/quickstart.md",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestQuickstartBelgesi::test_python_ornekleri_derlenir_ve_gercek_adlari_kullanir",
+   "find": "stages=[\"identify\", \"static\"]",
+   "replace": "stages=[\"static_analysis\", \"decompile\"]"
+  },
+  {
+   "id": "so8_belge_olmayan_oznitelik",
+   "desc": "Python örneğine var olmayan result.artifacts geri gelir",
+   "module": "docs/quickstart.md",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestQuickstartBelgesi::test_python_ornekleri_derlenir_ve_gercek_adlari_kullanir",
+   "find": "result.get_all_artifacts().items()",
+   "replace": "result.artifacts.items()"
+  },
+  {
+   "id": "so8_belge_config_dizgi_yolu",
+   "desc": "Config.load'a düz dizgi (.toml) yolu geri gelir",
+   "module": "docs/quickstart.md",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestQuickstartBelgesi::test_python_ornekleri_derlenir_ve_gercek_adlari_kullanir",
+   "find": "Config.load(Path(\"karadul.yaml\"))",
+   "replace": "Config.load(\"/path/to/config.toml\")"
+  },
+  {
+   "id": "so8_belge_ghidra_surumu",
+   "desc": "belgeye eski Ghidra sürümü geri gelir",
+   "module": "docs/quickstart.md",
+   "test": "tests/test_surum_oncesi_hatalar.py::TestQuickstartBelgesi::test_ghidra_surumu_sabitlenen_surumle_ayni",
+   "find": "Ghidra 12.1.2. Sabitlenen",
+   "replace": "Ghidra 11.x. Sabitlenen"
+  }
+ ]
+}

@@ -26,7 +26,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
-import pyfiglet
 from rich.console import Console, Group
 from rich.layout import Layout
 from rich.live import Live
@@ -39,6 +38,15 @@ from rich.theme import Theme
 
 from karadul import __version__
 from karadul.cli_common import build_pipeline, format_size
+
+# pyfiglet yalnız süs başlığı içindir ve hiçbir ekte tanımlı değildir; yokken
+# `karadul-hack` içe aktarmada çökmesin, sade başlıkla çalışsın.
+pyfiglet: Any
+try:
+    import pyfiglet as _pyfiglet_mod
+    pyfiglet = _pyfiglet_mod
+except ImportError:
+    pyfiglet = None
 
 logger = logging.getLogger("karadul")
 
@@ -93,13 +101,30 @@ _SPIDER_ART = r"""
                    \/
 """
 
+# pyfiglet yokken kullanılan sade başlık (örümcek çizimiyle aynı hizada).
+_PLAIN_TITLE = "\n              K A R A D U L\n"
+
+
+def _title_art() -> str:
+    """Başlık yazısı: pyfiglet varsa bloody font, yoksa sade başlık satırı.
+
+    Font dosyası eksikse (pyfiglet kurulu ama `bloody` yok) da sade başlığa
+    düşülür; süs yüzünden komut çökmez.
+    """
+    if pyfiglet is not None:
+        try:
+            return pyfiglet.figlet_format("KARADUL", font="bloody")
+        except Exception:
+            logger.debug("pyfiglet bloody font yüklenemedi, sade başlık", exc_info=True)
+    return _PLAIN_TITLE
+
 
 def _build_logo() -> Text:
-    """pyfiglet bloody font + Black Widow spider."""
+    """Başlık (pyfiglet bloody font ya da sade yazı) + Black Widow spider."""
     text = Text()
 
-    # Bloody font
-    bloody = pyfiglet.figlet_format("KARADUL", font="bloody")
+    # Bloody font (pyfiglet yoksa sade başlık)
+    bloody = _title_art()
     for line in bloody.split("\n"):
         text.append(line + "\n", style="dark_violet")
 
@@ -1232,8 +1257,27 @@ def run_interactive() -> None:
 # ---------------------------------------------------------------
 # Entry points
 # ---------------------------------------------------------------
+_USAGE = """Usage: karadul-hack [TARGET]
+
+  Live-dashboard front end for the Karadul analysis pipeline.
+
+  TARGET   Path to analyze. Without it, an interactive prompt asks for one.
+
+Options:
+  -h, --help   Show this message and exit.
+
+For scripting and the full option set, use: karadul analyze --help
+"""
+
+
 def main() -> None:
     """pyproject.toml entry point: karadul-hack."""
+    # `--help` eskiden hedef yolu sanılıyor, "Target not found: --help" ile
+    # 1 koduyla çıkılıyordu; kullanım metni basılır, 0 ile çıkılır.
+    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+        sys.stdout.write(_USAGE)
+        return
+
     if len(sys.argv) > 1:
         # Dogrudan hedef verilmis
         show_banner()

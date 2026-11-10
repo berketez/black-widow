@@ -126,7 +126,7 @@ from karadul.config import Config
 _AHOCORASICK_AVAILABLE: bool
 ahocorasick: Any
 try:
-    import ahocorasick as _ahocorasick_mod  # pyahocorasick paketi (perf extra)
+    import ahocorasick as _ahocorasick_mod  # pyahocorasick paketi (temel bağımlılık)
     ahocorasick = _ahocorasick_mod
     _AHOCORASICK_AVAILABLE = True
 except ImportError:  # pragma: no cover - ahocorasick yoksa fallback yol calisir

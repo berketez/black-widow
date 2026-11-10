@@ -33,13 +33,21 @@ def analyze(
     Public API entry point. Minimal boilerplate ile tek cagride
     tum pipeline calistirilir (target detection + tum stage'ler).
 
+    Aşamalar CLI'ın (`karadul analyze`) kullandığı kurucuyla,
+    `karadul.cli_common.build_pipeline` ile kaydedilir; varsayılan sıra
+    `karadul.cli_common.DEFAULT_STAGE_ORDER`'dır. Dinamik aşama kayıtlıdır
+    ama `config.security.allow_target_execution` açılmadıkça hedefi
+    çalıştırmaz (atlanır).
+
     Args:
         binary_path: Analiz edilecek binary yolu.
         config: Istege bagli Config; None ise Config.load() default.
         stages: Istege bagli stage alt kumesi (None = hepsi).
 
     Returns:
-        PipelineResult -- success, errors, artifacts, stage ciktilari.
+        PipelineResult -- success, stages (aşama adı -> StageResult),
+        workspace_path, total_duration; artefaktlar için
+        `result.get_all_artifacts()`.
 
     Raises:
         FileNotFoundError: binary_path yoksa.
@@ -55,7 +63,12 @@ def analyze(
         raise FileNotFoundError(f"Binary bulunamadi: {path}")
 
     cfg = config if config is not None else Config.load()
-    pipeline = Pipeline(cfg)
+    # Aşamalar CLI ile aynı kurucudan gelir. Çıplak `Pipeline(cfg)` hiçbir
+    # aşama kaydetmez; `run` hedef tespitinden sonra aşama sonucu olmadan döner.
+    # İçe aktarma burada: `import karadul` aşama modüllerini yüklemesin.
+    from karadul.cli_common import build_pipeline
+
+    pipeline = build_pipeline(cfg)
     return pipeline.run(path, stages=stages)
 
 

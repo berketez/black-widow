@@ -327,6 +327,62 @@ def _emit_analyze_json(target_info: TargetInfo, result, cfg: Config) -> None:
     click.echo(_json.dumps(payload, indent=2, ensure_ascii=False, default=str))
 
 
+def _write_clean_output(
+    result,
+    clean_output_dir: str,
+    output_format: str,
+    *,
+    out: Console,
+    quiet: bool,
+) -> None:
+    """`analyze --output`: workspace'ten temiz çıktı dizini üret.
+
+    Hem tablo dalından hem `--json` dalından çağrılır; `--json` eskiden bu adıma
+    gelmeden dönüyor, `--output` sessizce yok sayılıyordu.
+
+    Args:
+        result: Pipeline sonucu (workspace_path ve target_name buradan okunur).
+        clean_output_dir: `--output` ile verilen dizin.
+        output_format: "clean" ya da "raw".
+        out: İletilerin yazılacağı konsol. `--json` modunda stderr konsolu
+             verilir; stdout'ta yalnız JSON kalmalıdır.
+        quiet: True ise yalnız hatalar yazılır.
+    """
+    from karadul.core.output_formatter import OutputFormatter
+    from karadul.core.workspace import Workspace
+
+    # Pipeline'in kullandigi workspace'i yeniden olustur (path'ten)
+    ws = Workspace.__new__(Workspace)
+    ws._workspace_dir = result.workspace_path
+    ws._created = True
+    ws._base_dir = result.workspace_path.parent.parent
+    ws._target_name = result.target_name
+    ws._timestamp = result.workspace_path.name
+
+    formatter = OutputFormatter(ws, result)
+    out_path = Path(clean_output_dir).resolve()
+
+    if not quiet:
+        out.print(Rule("Output Formatting", style="cyan"))
+        out.print(f"  Format: [bold]{output_format}[/bold]")
+        out.print(f"  Output: [dim]{out_path}[/dim]")
+
+    fmt_result = formatter.format_output(out_path, fmt=output_format)
+
+    if fmt_result.success:
+        if not quiet:
+            out.print(
+                f"  [green]OK[/green] {fmt_result.files_written} dosya yazildi"
+                f" ({fmt_result.src_files} kaynak, {fmt_result.reports_generated} rapor)"
+            )
+    else:
+        for err in fmt_result.errors:
+            out.print(f"  [red]HATA:[/red] {err}")
+
+    if not quiet:
+        out.print()
+
+
 # B17 refactor (2026-05-14): Stage filtreleme + sinif resolve mantigi
 # `karadul.cli_common`'a tasindi. Burada sadece geriye uyum wrapper'lari
 # birakildi; eski modul-disi cagrilar (test / monkeypatch) kirilmasin.
@@ -473,8 +529,12 @@ def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
 @click.option("--config", "config_path", type=click.Path(), default=None,
               help="Config YAML dosyasi.")
 @click.option("--verbose", is_flag=True, help="Debug log.")
-@click.option("--enable-network/--online", "enable_network", is_flag=True, default=False,
-              help="B12 (2026-05-13): Network erisimi ac (default offline, deterministic).")
+# `--online`, `--enable-network`'ün eş adıdır: ikisi de ağı AÇAR. Eskiden
+# "--enable-network/--online" biçiminde yazılmıştı; click eğik çizgiden sonrasını
+# "kapalı" taraf sayar, yani `--online` ağı kapalı bırakıyordu.
+@click.option("--enable-network", "--online", "enable_network", is_flag=True, default=False,
+              help="B12 (2026-05-13): Network erisimi ac (default offline, deterministic). "
+                   "--online aynı bayrağın eş adıdır.")
 # NOT (2026-05-13): --use-llm/--no-llm/--llm-model/--use-ml flag'leri kaldirildi
 # (B11, feedback_no_llm.md). LLM kullanilmiyor, deterministic CPU-only.
 @click.option("--compute-recovery/--no-compute-recovery", default=None,
@@ -779,7 +839,16 @@ def analyze(
 
     # P3: --json -> makine-okunur payload (tablo yerine).
     if json_output:
+        # Önce JSON basılır: temiz çıktı yazılırken bir hata çıksa bile analiz
+        # özeti stdout'ta kalır.
         _emit_analyze_json(target_info, result, cfg)
+        # --json ile --output birlikte verilebilir: temiz çıktı yine yazılır.
+        # İletiler stderr'e gider (yalnız hata varsa), stdout'ta yalnız JSON kalır.
+        if clean_output_dir:
+            _write_clean_output(
+                result, clean_output_dir, output_format,
+                out=err_console, quiet=True,
+            )
         return
 
     # Sonuc tablosu
@@ -856,36 +925,9 @@ def analyze(
 
     # OutputFormatter: --output flag'i verildiyse temiz cikti dizini uret
     if clean_output_dir:
-        from karadul.core.output_formatter import OutputFormatter
-        from karadul.core.workspace import Workspace
-
-        # Pipeline'in kullandigi workspace'i yeniden olustur (path'ten)
-        ws = Workspace.__new__(Workspace)
-        ws._workspace_dir = result.workspace_path
-        ws._created = True
-        ws._base_dir = result.workspace_path.parent.parent
-        ws._target_name = result.target_name
-        ws._timestamp = result.workspace_path.name
-
-        formatter = OutputFormatter(ws, result)
-        out_path = Path(clean_output_dir).resolve()
-
-        console.print(Rule("Output Formatting", style="cyan"))
-        console.print(f"  Format: [bold]{output_format}[/bold]")
-        console.print(f"  Output: [dim]{out_path}[/dim]")
-
-        fmt_result = formatter.format_output(out_path, fmt=output_format)
-
-        if fmt_result.success:
-            console.print(
-                f"  [green]OK[/green] {fmt_result.files_written} dosya yazildi"
-                f" ({fmt_result.src_files} kaynak, {fmt_result.reports_generated} rapor)"
-            )
-        else:
-            for err in fmt_result.errors:
-                console.print(f"  [red]HATA:[/red] {err}")
-
-        console.print()
+        _write_clean_output(
+            result, clean_output_dir, output_format, out=console, quiet=False,
+        )
 
 
 # ---------------------------------------------------------------

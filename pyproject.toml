@@ -42,6 +42,10 @@ dependencies = [
     "pyyaml>=6.0",
     "dataclasses-json>=0.6",
     "tqdm>=4.60",
+    # Reconstruct aşaması isim haritasını Aho-Corasick ile uygular
+    # (karadul/reconstruction/aho_replacer.py, yedek yol yok); paket
+    # `import karadul.reconstruction` için koşulsuz gerekir.
+    "pyahocorasick>=2.0",
 ]
 
 [project.urls]
@@ -59,7 +63,8 @@ yara = ["yara-python>=4.3.0"]  # v1.10.0 Batch 5B HIGH-9: CVE-2019-11517 koruma 
 ml = ["torch>=2.2.0", "transformers>=4.40.0", "tokenizers>=0.19.0", "safetensors>=0.4.0", "accelerate>=0.30.0"]
 deobf = ["z3-solver>=4.12.0"]
 computation = ["z3-solver>=4.12.0", "sympy>=1.12", "networkx>=3.0"]
-perf = ["lmdb>=1.4", "msgpack>=1.0", "pyahocorasick>=2.0"]
+# pyahocorasick temel bağımlılıklara taşındı (reconstruct aşaması onsuz içe aktarılamıyor).
+perf = ["lmdb>=1.4", "msgpack>=1.0"]
 app = ["pywebview>=5.0"]  # native macOS penceresi (WKWebView) -- Black Widow .app bundle
 decompilers = ["angr>=9.2"]
 # Python .pyc decompile: pycdc (C++ binary, pip'te YOK -> scripts/setup_pycdc.sh

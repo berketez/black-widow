@@ -23,6 +23,17 @@ from karadul.reconstruction.ngram_namer import (
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _DB_DIR = _REPO_ROOT / "sigs" / "ngram_name_db"
 
+# Veritabanı depoda izlenmez (üretilen veri). Dizin hiç yoksa testler düşmez,
+# gerekçesiyle atlanır. Dizin var ama içi eksikse testler yine DÜŞER: yarım
+# veri sessizce geçmesin.
+pytestmark = pytest.mark.skipif(
+    not _DB_DIR.is_dir(),
+    reason=(
+        "n-gram isim veritabanı yok: sigs/ngram_name_db/ depoda izlenmiyor; "
+        "scripts/build_ngram_db_v2.py ile üretilir"
+    ),
+)
+
 
 class TestNgramDBFiles:
     """DB dosyalarinin var olup yuklenebildigini dogrula."""
