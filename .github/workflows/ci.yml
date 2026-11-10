@@ -48,7 +48,7 @@ jobs:
         run: npm install --prefix scripts --no-audit --no-fund
 
       # pyelftools: used by scripts/measurement/ and their tests; no extra declares it.
-      # pyfiglet:   imported by karadul/hacker_cli.py; no extra declares it.
+      # pyfiglet:   optional banner for karadul/hacker_cli.py; installed so its test runs.
       - name: Install karadul with test extras
         run: |
           python -m pip install --upgrade pip
@@ -56,16 +56,15 @@ jobs:
 
       # Default selection from pyproject.toml: not integration, not benchmark.
       #
-      # Explicitly excluded because they cannot pass on a clean clone:
-      #   tests/test_ngram_db_v2_smoke.py          (16 tests) need sigs/ngram_name_db/,
-      #                                            which is git-ignored and not in the repo.
+      # Explicitly excluded because it cannot pass on a clean clone:
       #   tests/test_pipeline_e2e_real_binary.py   (8 tests in this selection) run
       #                                            `karadul analyze` end to end; that needs
       #                                            Ghidra, and the runner has none.
+      # tests/test_ngram_db_v2_smoke.py needs sigs/ngram_name_db/ (git-ignored) and skips
+      # itself when the directory is missing.
       - name: Run test suite
         run: |
           python -m pytest -q -rfEs \
-            --ignore=tests/test_ngram_db_v2_smoke.py \
             --ignore=tests/test_pipeline_e2e_real_binary.py
 
   install-smoke:
@@ -130,16 +129,13 @@ jobs:
         run: |
           "$RUNNER_TEMP/venv/bin/python" -c "import karadul.reconstruction, pyghidra, capstone, lief; print('ok')"
 
-  # Known packaging bugs, reproduced on purpose so they stay visible.
-  # This job is expected to FAIL until they are fixed; it does not fail the workflow.
-  #   1. A base install cannot import karadul.reconstruction: it needs pyahocorasick,
-  #      which only the `perf` extra declares.
-  #   2. The `karadul-hack` entry point imports pyfiglet, which nothing declares.
-  # When this job turns green, delete it.
-  known-issues:
-    name: Known packaging issues (expected to fail)
+  # Regression guard for two packaging bugs fixed on 2026-11-10:
+  #   1. A base install could not import karadul.reconstruction (pyahocorasick was only in
+  #      the `perf` extra; it is a base dependency now).
+  #   2. The `karadul-hack` entry point crashed without pyfiglet (the import is optional now).
+  base-install:
+    name: Base install without extras
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -156,7 +152,7 @@ jobs:
           "$RUNNER_TEMP/venv/bin/python" -m pip install --upgrade pip
           "$RUNNER_TEMP/venv/bin/python" -m pip install .
 
-      - name: import karadul.reconstruction without the perf extra
+      - name: import karadul.reconstruction with no extras
         working-directory: ${{ runner.temp }}
         run: |
           "$RUNNER_TEMP/venv/bin/python" -c "import karadul.reconstruction"

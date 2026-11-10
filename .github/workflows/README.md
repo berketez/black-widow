@@ -17,28 +17,21 @@ Tetikleyiciler: `main`'e push, `main`'e açılan PR, elle (`workflow_dispatch`).
 |----|----------|
 | `tests` | Ubuntu (Python 3.11 ve 3.12) ve macOS (Python 3.12) üzerinde `pip install -e ".[dev,perf,binary,computation,cpp]" pyelftools pyfiglet`, `npm install --prefix scripts`, sonra varsayılan pytest seçimi (`pyproject.toml`: `not integration and not benchmark`) |
 | `install-smoke` | Ubuntu, Python 3.11 ve 3.12: temiz sanal ortama düzenlenemez (`pip install .`) kurulum; depo dışından `karadul --version`, `karadul --help`, `karadul analyze --help`, `blackwidow --help`, `python -m karadul --help`; genel API içe aktarımları ve varsayılan aşama listesi; ardından README'nin önerdiği `.[ghidra,binary,perf]` ile `import karadul.reconstruction` |
-| `known-issues` | Bilinen iki paketleme hatasını bilerek yeniden üretir; düzeltilene kadar başarısız olması beklenir, `continue-on-error: true` ile iş akışını düşürmez. Yeşile döndüğünde silinmeli |
-
-`known-issues` işinin yakaladığı hatalar:
-
-1. Ek seçmeden yapılan kurulumda (`pip install .`) `import karadul.reconstruction`
-   düşer: `pyahocorasick` yalnız `perf` ekinde tanımlı.
-2. `karadul-hack` giriş noktası `pyfiglet`'i içe aktarır; hiçbir ek bunu kurmaz.
+| `base-install` | Ek seçmeden yapılan kurulumda (`pip install .`) `import karadul.reconstruction` ve `karadul-hack --help` çalışmalı. 2026-11-10'da düzeltilen iki paketleme hatasının (`pyahocorasick` yalnız `perf` ekindeydi; `pyfiglet` zorunluydu) geri gelmesini yakalar |
 
 ### Açıkça dışarıda bırakılan testler
 
-Temiz klonda geçmeleri mümkün değil; `--ignore` ile iş akışında adıyla ayrıldılar:
+Temiz klonda geçmesi mümkün değil; `--ignore` ile iş akışında adıyla ayrıldı (`tests/test_ngram_db_v2_smoke.py` ise verisi yokken kendisi atlar):
 
 | Dosya | Test sayısı | Neden |
 |-------|-------------|-------|
-| `tests/test_ngram_db_v2_smoke.py` | 16 | `sigs/ngram_name_db/` gerekiyor; dizin git-ignore'lu, depoda yok. Veri yokken atlamak yerine düşüyor |
 | `tests/test_pipeline_e2e_real_binary.py` | 8 (varsayılan seçimde) | `karadul analyze`'ı uçtan uca koşturur, Ghidra gerekir. Ayrıca CLI'ı `shutil.which("karadul")` ile bulduğu için yerelde test edilen ortamın değil, PATH'teki ilk kurulumun kodunu koşturabilir |
 
 ### Pakette tanımlı olmayan test bağımlılıkları
 
 - `pyelftools`: `scripts/measurement/` ve testleri (`tests/test_dwarf_tip.py`,
   `tests/test_parametre_hizala.py`) kullanıyor.
-- `pyfiglet`: `karadul/hacker_cli.py` içe aktarıyor.
+- `pyfiglet`: `karadul/hacker_cli.py`'nin isteğe bağlı başlığı; testi koşsun diye kuruluyor.
 
 İkisi de iş akışında elle kuruluyor. Kalıcı çözüm `pyproject.toml`'a eklemek.
 
@@ -62,7 +55,6 @@ npm install --prefix scripts --no-audit --no-fund
 
 # ci.yml / tests
 .venv-ci/bin/python -m pytest -q -rfEs \
-    --ignore=tests/test_ngram_db_v2_smoke.py \
     --ignore=tests/test_pipeline_e2e_real_binary.py
 
 # benchmark.yml

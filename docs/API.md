@@ -28,10 +28,9 @@ karadul.analyze(binary_path, *, config=None, stages=None) -> PipelineResult
 | config | `Config \| None` | `None` | `None` means `Config.load()` |
 | stages | `list[str] \| None` | `None` | Stage names to run; unknown names are skipped with a warning |
 
-**Known issue.** `analyze()` creates `Pipeline(cfg)` and calls `run()` without registering
-any stage. The call therefore detects the target, creates a workspace and returns a
-`PipelineResult` with no stage results. Until this is fixed, build the pipeline with the
-helper the CLI uses (`karadul.cli_common` is internal, not part of `__all__`):
+`analyze()` registers the same stages as the CLI (`karadul.cli_common.build_pipeline`). To run a
+subset or stop early, build the pipeline yourself (`karadul.cli_common` is internal, not part of
+`__all__`):
 
 ```python
 from pathlib import Path
@@ -61,7 +60,7 @@ Built-in stages (`karadul/stages.py`), in default order (`DEFAULT_STAGE_ORDER` i
 | `static` | `StaticAnalysisStage` | For native binaries: Ghidra (PyGhidra if installed, otherwise `analyzeHeadless`) |
 | `dynamic` | `DynamicAnalysisStage` | Skipped unless `config.security.allow_target_execution` is `True` (CLI: `--dynamic`); then runs the target under Frida |
 | `deobfuscate` | `DeobfuscationStage` | |
-| `reconstruct` | `ReconstructionStage` | Naming, types, comments. Imports `pyahocorasick` (`perf` extra) |
+| `reconstruct` | `ReconstructionStage` | Naming, types, comments |
 | `report` | `ReportStage` | |
 
 Every stage other than `identify` declares `requires = ("identify",)`.

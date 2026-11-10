@@ -62,7 +62,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[ghidra,binary,perf]"
 ```
 
-Plain `pip install -e .` installs the CLI, but the reconstruct stage imports `karadul.reconstruction`, which needs `pyahocorasick`; only the `perf` extra installs it (see [Known issues](#known-issues)).
+Plain `pip install -e .` is enough to import every stage; the extras add the Ghidra bridge (`ghidra`), binary parsers (`binary`) and the LMDB signature backend (`perf`).
 
 Other extras (defined in `pyproject.toml`):
 
@@ -96,7 +96,7 @@ karadul analyze /path/to/binary --output ./out
 # Stop after a given stage (here: after Ghidra decompilation)
 karadul analyze /path/to/binary --stage static
 
-# Machine-readable summary on stdout (note: --output is ignored together with --json)
+# Machine-readable summary on stdout (can be combined with --output)
 karadul analyze /path/to/binary --json
 
 # Detection only: type, language, size, SHA-256
@@ -145,7 +145,7 @@ DIR/
 
 ## Python API
 
-`import karadul` exposes `analyze`, `Pipeline`, `Config`, `__version__`. See [`docs/API.md`](docs/API.md), including a known issue with `karadul.analyze()`.
+`import karadul` exposes `analyze`, `Pipeline`, `Config`, `__version__`. See [`docs/API.md`](docs/API.md).
 
 ## Desktop app (macOS)
 
@@ -168,11 +168,8 @@ The app's update check reads `appcast.json` from the latest GitHub release by de
 
 ## Known issues
 
-- `karadul.analyze()` builds a `Pipeline` without registering any stage, so it returns after target detection with no stage results. Use the CLI or the workaround in [`docs/API.md`](docs/API.md).
-- `pip install -e .` without the `perf` extra: `import karadul.reconstruction` fails with `No module named 'ahocorasick'`.
-- `karadul-hack` imports `pyfiglet`, which no extra installs.
-- `karadul analyze --json` returns before `--output` is processed.
-- `--online` is declared as the "off" side of `--enable-network`, so it leaves network access disabled. Use `--enable-network`.
+- `Config.load()` expects a `pathlib.Path`; a plain string raises `AttributeError`, and a path that does not exist silently falls back to the defaults.
+- `karadul batch analyze` only knows target paths from the author's machine (see above).
 
 ## Tests
 
@@ -181,14 +178,12 @@ What CI runs (`.github/workflows/ci.yml`):
 ```bash
 pip install -e ".[dev,perf,binary,computation,cpp]" pyelftools pyfiglet
 npm install --prefix scripts --no-audit --no-fund
-python -m pytest -q \
-    --ignore=tests/test_ngram_db_v2_smoke.py \
-    --ignore=tests/test_pipeline_e2e_real_binary.py
+python -m pytest -q --ignore=tests/test_pipeline_e2e_real_binary.py
 ```
 
 - `pyproject.toml` deselects tests marked `integration` and `benchmark` by default; `.github/workflows/benchmark.yml` runs the `benchmark` ones (metric code on committed fixtures, no accuracy threshold).
-- `pyelftools` and `pyfiglet` are needed by tests but no extra declares them.
-- `tests/test_ngram_db_v2_smoke.py` needs `sigs/ngram_name_db/`, which is not in the repository; `tests/test_pipeline_e2e_real_binary.py` runs the full pipeline and needs Ghidra.
+- `pyelftools` is needed by the measurement tests and `pyfiglet` by one banner test; no extra declares them.
+- `tests/test_ngram_db_v2_smoke.py` needs `sigs/ngram_name_db/`, which is not in the repository, and skips without it; `tests/test_pipeline_e2e_real_binary.py` runs the full pipeline and needs Ghidra.
 - On a machine with Ghidra installed, some tests run Ghidra or read local measurement data when it is present; they skip otherwise.
 
 ## Measurement documents
