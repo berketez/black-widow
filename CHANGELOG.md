@@ -16,7 +16,7 @@ düzeltmesi birlikte geldiği için 1.20.0-pre → 1.21.1.
   (`karadul/reconstruction/tarif/alt_kanal.py`).
 - Ürün eşiği (`min_naming_confidence`) genel adlara uygulanabilir.
 - Bu davranışlar `binary_reconstruction` altındaki üç bayrakla yönetilir (`enable_ks1_anchors`,
-  `enable_subchannel_silencing`, `apply_global_naming_threshold`).
+  `enable_subchannel_silencing`, `apply_global_naming_threshold`). **Üçü de öntanımlı açık.**
 - Paketleme: derlemeden ön denetim (`build_mac_app.sh --check`), `pycdc`'nin pakete girmesi.
 - KS-1 çapaları ve ad bayrakları analiz hattına bağlandı (`karadul/pipeline/steps/kesin_anchors.py`);
   bayraklar öntanımlı kapalıyken ad haritası değişmez. Rapor, koşunun bayraklarını
@@ -29,6 +29,11 @@ düzeltmesi birlikte geldiği için 1.20.0-pre → 1.21.1.
   (`flow_functions_reverted`, `flow_functions_skipped`, `flow_files_failed`).
 
 ### Değişenler
+- **Kanıtlı adlandırma öntanımlı açık.** Ürün daha az ad verir: kör etikette zayıf çıkan dokuz
+  dizgi alt kanalı ad vermez, güveni `min_naming_confidence` (0,7) altındaki fonksiyon ve veri
+  adları yazılmaz, `__func__` günlük kalıbından gelen adlar "kesin" etiketiyle yazılır, yalnız
+  assert'e dayanan adlar yazılmaz. Küçük bir programda hiç fonksiyon adı önerilmeyebilir.
+  Eski davranış için üç bayrak `karadul.yaml`'da `false` yapılır.
 - Akış sadeleştirme (`binary_reconstruction.enable_flow_simplification`) öntanımlı **kapalı**.
   Adım yeniden yazıldı (aşağıya bakın) ama yeniden açılması ayrı bir karar; `karadul.yaml` ile
   açılabilir.

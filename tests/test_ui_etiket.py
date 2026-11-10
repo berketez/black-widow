@@ -424,7 +424,11 @@ def test_ayar_paneli_metni_yaniltmaz():
     assert "Bu güvenin altında fonksiyon isimsiz (FUN_) bırakılır" not in html
     m = re.search(r'<div class="n">İsim güven eşiği</div><div class="d">([^<]*)</div>', html)
     assert m
-    assert "fonksiyon adlarına uygulanmaz" in m.group(1)
+    # "aç"tan (1.21.1) beri ürün eşiği genel adlara uygulanır; metin bunu söyler
+    assert "fonksiyon adlarına uygulanmaz" not in m.group(1)
+    assert "fonksiyon ve veri adları" in m.group(1)
+    assert "Ghidra adıyla kalır" in m.group(1)
+    assert "Yerel değişken adlarına uygulanmaz" in m.group(1)
     # ayar düğmeleri yerinde: davranış değişmedi
     assert 'id="cfgConf"' in html and 'id="cfgUnk"' in html
 

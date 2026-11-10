@@ -82,8 +82,8 @@ def test_kayit_ve_sira():
     assert KA.KS1_ARTIFACT_KEY == "kesin_anchors" and KA.PRE_NAME_META_KEY == "pre_name_meta"
 
 
-def test_ontanimli_yapilandirmada_kapali():
-    assert KA.ks1_enabled(Config()) is False
+def test_ontanimli_yapilandirmada_acik():
+    assert KA.ks1_enabled(Config()) is True
 
 
 # --------------------------------------------------------------------------------------------
@@ -149,14 +149,32 @@ def test_bayrak_acikken_yapit_ve_yan_cikti(tmp_path, ad_veren_tablo):
     assert ctx.errors == []
 
 
-def test_urun_tablosuyla_capalar_kayda_gecer_ad_veren_yok(tmp_path):
-    """Ürün tablosu dört satırda da susar: çapalar yan çıktıda, hiçbiri ad vermez."""
+def test_urun_tablosuyla_ad_veren_capalar(tmp_path):
+    """Ürün tablosu ("aç"tan beri ölçümden türer): yalnız assert'e dayanan çapa susar."""
+    karma().yaz(tmp_path)
+    ctx, _ = _ctx(tmp_path, acik=True)
+    b = KA.KesinAnchorsStep().run(ctx)["kesin_anchors"]
+    assert b.status == "ok" and len(b.anchors) == 7
+    assert sorted((a.rows, a.label) for a in b.named()) == [
+        (("assert", "func_kalibi"), "kesin"), (("assert_ust",), "doğrulanmadı"),
+        (("func_aktarma",), "doğrulanmadı"), (("func_kalibi",), "kesin"),
+    ]
+    assert b.skipped() == {"anahtar_fun_degil": 1, "parca": 1, "satir_sus": 1}
+    belge = json.loads((tmp_path / "reconstructed" / "kesin_capalar.json").read_text("utf-8"))
+    assert belge["ad_veren"] == 4 and belge["satir_durumu"] == dict(B.ROW_STATUS) == TABLO
+
+
+def test_hepsi_susan_tabloyla_capalar_kayda_gecer_ad_veren_yok(tmp_path, monkeypatch):
+    """Tablo dört satırda da sussa çapalar yine yan çıktıya yazılır, hiçbiri ad vermez."""
+    sus = {r: B.STATUS_SILENT for r in B.DECISION_ROWS}
+    ozgun = B.bind_static
+    monkeypatch.setattr(B, "bind_static", lambda d: ozgun(d, row_status=sus))
     karma().yaz(tmp_path)
     ctx, _ = _ctx(tmp_path, acik=True)
     b = KA.KesinAnchorsStep().run(ctx)["kesin_anchors"]
     assert b.status == "ok" and len(b.anchors) == 7 and b.named() == []
     belge = json.loads((tmp_path / "reconstructed" / "kesin_capalar.json").read_text("utf-8"))
-    assert belge["ad_veren"] == 0 and belge["satir_durumu"] == dict(B.ROW_STATUS)
+    assert belge["ad_veren"] == 0 and belge["satir_durumu"] == sus
 
 
 def test_girdi_static_dizinidir_deobfuscated_degil(tmp_path, ad_veren_tablo):

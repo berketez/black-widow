@@ -486,13 +486,15 @@ class BinaryReconstructionConfig:
     enable_function_id: bool = True         # Ghidra FunctionID analyzer
     function_id_db_paths: list[str] = field(default_factory=list)  # Ek .fidb dosyalari
     min_naming_confidence: float = 0.7  # NSA-grade: dusuk confidence isim verme, yanlis isim isimsizden kotu
-    # Plan v2.2 N1 adım 3 (kanıtlı adlandırma). Üçü de öntanımlı KAPALI: bayraklar kapalıyken
-    # ad haritası bugünkü çıktıyla aynıdır. Hangi KS-1 satırının "kesin" sayılacağı ve hangi alt
-    # kanalın susacağı kullanıcı ayarı DEĞİLDİR; ölçümden türeyen tablolar ürün modüllerinde
-    # durur (tarif/baglama.py, tarif/alt_kanal.py). Bayraklar ablasyon kolları için vardır.
-    enable_ks1_anchors: bool = False            # KS-1 kesin çapaları ön ad kanalından ad verir
-    enable_subchannel_silencing: bool = False   # N0b'de zayıf çıkan string_context alt kanalları susar
-    apply_global_naming_threshold: bool = False  # min_naming_confidence c_namer'ın genel adlarına uygulanır
+    # Plan v2.2 N1 adım 3 (kanıtlı adlandırma). Üçü de öntanımlı AÇIK (2026-11-10, "aç"):
+    # ölçülmüş çapalar ad verir, zayıf alt kanallar susar, ürün eşiği genel adlara uygulanır.
+    # Üçü de kapatılırsa ad haritası 1.20 çıktısıyla aynıdır. Hangi KS-1 satırının "kesin"
+    # sayılacağı ve hangi alt kanalın susacağı kullanıcı ayarı DEĞİLDİR; ölçümden türeyen
+    # tablolar ürün modüllerinde durur (tarif/baglama.py, tarif/alt_kanal.py). Bayraklar
+    # ablasyon kolları için vardır.
+    enable_ks1_anchors: bool = True            # KS-1 kesin çapaları ön ad kanalından ad verir
+    enable_subchannel_silencing: bool = True   # N0b'de zayıf çıkan string_context alt kanalları susar
+    apply_global_naming_threshold: bool = True  # min_naming_confidence c_namer'ın genel adlarına uygulanır
     max_functions_to_process: int = 0  # 0 = limitsiz, tum fonksiyonlari isle
     max_decompile_timeout_per_func: int = 30
     # Harici signature JSON dosyalari (build-signature-db.py ciktilari)

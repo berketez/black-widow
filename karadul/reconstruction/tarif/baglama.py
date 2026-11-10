@@ -85,9 +85,8 @@ STATUS_KESIN = "kesin"                # ad verir, etiket "kesin"
 STATUS_UNVERIFIED = "dogrulanmadi"    # ad verir, etiket "doğrulanmadı"
 STATUS_SILENT = "sus"                 # ad vermez
 ROW_STATUSES = (STATUS_KESIN, STATUS_UNVERIFIED, STATUS_SILENT)
-# Ürünün satır tablosu. "Aç" commit'ine kadar dört satır da susar; o commit tabloyu
-# ``row_status_table``'ın adım 2 sayılarına uygulanmasıyla doldurur ve testle kilitler.
-ROW_STATUS: Mapping[str, str] = MappingProxyType({row: STATUS_SILENT for row in DECISION_ROWS})
+# Ürünün satır tablosu ``ROW_STATUS`` aşağıda, geçiş kuralından sonra tanımlıdır: adım 2
+# ölçümünün sayılarına ``row_status_table`` uygulanarak türetilir (elle yazılmaz).
 
 # ---- Adım 2 kararından satır durumuna geçiş (§2.5) ----
 DECISION_KESIN = "kesin"
@@ -183,6 +182,24 @@ def row_status_table(measurements: Mapping[str, tuple[str, int, int]]) -> dict[s
         else:
             table[row] = STATUS_SILENT
     return table
+
+
+# --------------------------------------------------------------------------------------------
+# Ürünün satır tablosu
+
+# Adım 2 ölçümü: satır → (karar, havuzlanmış tekil öğe sayısı, tam ada eşit olmayan).
+# Kaynak: ``docs/arge/2026-10-21_g11_n1/ks1_olcum.json`` (``kararlar[satır].karar`` ve
+# ``havuz.n``, ``havuz.n − havuz.k``); ön kayıt a22d833, sapma kaydı 0da58cf, ölçüm 5d0b528.
+# Bu sayılar testle o dosyaya kilitlidir (``tests/test_tarif_baglama.py``).
+STEP2_MEASUREMENT: Mapping[str, tuple[str, int, int]] = MappingProxyType({
+    ROW_ASSERT: (DECISION_NOT_KESIN, 228, 40),
+    ROW_ASSERT_LIFTED: (DECISION_INSUFFICIENT, 7, 2),
+    ROW_FUNC: (DECISION_KESIN, 262, 13),
+    ROW_FORWARD: (DECISION_INSUFFICIENT, 36, 0),
+})
+# Geçiş kuralı ölçümden önce yazıldı (yukarıda); tablo onun bu sayılara uygulanmasıdır:
+# ``func_kalibi`` kesin; ``func_aktarma`` ve ``assert_ust`` doğrulanmadı; ``assert`` susar.
+ROW_STATUS: Mapping[str, str] = MappingProxyType(row_status_table(STEP2_MEASUREMENT))
 
 
 # --------------------------------------------------------------------------------------------

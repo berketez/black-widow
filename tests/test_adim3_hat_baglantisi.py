@@ -96,12 +96,16 @@ def _koken(out: Path) -> dict:
 # Bayrak okuma
 
 
-def test_ontanimli_bayraklar_kapali():
-    """Öntanımlılar "aç" commit'ine (9.) kadar kapalıdır; o commit bu sınamayı bilerek çevirir."""
+def test_ontanimli_bayraklar_acik():
+    """Öntanımlılar "aç" commit'inden (9.) beri açıktır: c_namer susturma ve ürün eşiğiyle kurulur."""
+    from karadul.reconstruction.tarif import alt_kanal
     br = Config().binary_reconstruction
-    assert [getattr(br, b) for b in BAYRAKLAR] == [False, False, False]
-    assert FL.c_namer_options(br) == {}
-    assert FM.global_naming_threshold(br) is None
+    assert [getattr(br, b) for b in BAYRAKLAR] == [True, True, True]
+    assert FL.c_namer_options(br) == {
+        "silenced_subchannels": alt_kanal.SILENCED_SUBCHANNELS,
+        "global_min_confidence": 0.7,
+    }
+    assert FM.global_naming_threshold(br) == 0.7
 
 
 @pytest.mark.parametrize("deger", [None, 0, 1, "true", MagicMock()])

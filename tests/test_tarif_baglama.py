@@ -150,10 +150,27 @@ def test_satir_tablosu_eksik_satir_susar_yabanci_satir_hata():
             B.row_status_table({yabanci: ("kesin", 10, 0)})
 
 
-def test_urun_tablosu_ac_commitine_kadar_susar():
-    assert dict(B.ROW_STATUS) == {r: B.STATUS_SILENT for r in B.DECISION_ROWS}
+def test_urun_tablosu_olcumden_turer_ve_kilitli():
+    """ "Aç" commit'i: tablo elle yazılmaz, geçiş kuralının adım 2 sayılarına uygulanmasıdır."""
+    assert dict(B.ROW_STATUS) == B.row_status_table(B.STEP2_MEASUREMENT) == TABLO
+    assert set(B.STEP2_MEASUREMENT) == set(B.DECISION_ROWS)
     with pytest.raises(TypeError):
-        B.ROW_STATUS["func_kalibi"] = "kesin"   # type: ignore[index]
+        B.ROW_STATUS["func_kalibi"] = "sus"   # type: ignore[index]
+    with pytest.raises(TypeError):
+        B.STEP2_MEASUREMENT["assert"] = ("kesin", 1, 0)   # type: ignore[index]
+
+
+def test_adim2_sayilari_olcum_dosyasiyla_ayni():
+    """Koddaki sayılar commit'li ölçüm dosyasından (ks1_olcum.json) okunanla aynı olmalı."""
+    import json
+    from pathlib import Path
+    yol = Path(__file__).resolve().parents[1] / "docs/arge/2026-10-21_g11_n1/ks1_olcum.json"
+    kararlar = json.loads(yol.read_text(encoding="utf-8"))["kararlar"]
+    assert set(kararlar) == set(B.DECISION_ROWS)
+    for satir, (karar, n, yanlis) in B.STEP2_MEASUREMENT.items():
+        havuz = kararlar[satir]["havuz"]
+        assert kararlar[satir]["karar"] == karar, satir
+        assert (havuz["n"], havuz["n"] - havuz["k"]) == (n, yanlis), satir
 
 
 # --------------------------------------------------------------------------------------------
@@ -216,10 +233,17 @@ def test_etiket_en_iyi_satir():
 def test_etiket_susan_satir_ad_vermez():
     assert B.anchor_label(("assert",), cpp=False, row_status=TABLO) is None
     assert B.anchor_label((), cpp=False, row_status=HEPSI_KESIN) is None
-    # ürün tablosu (hepsi sus): hiçbir satır bileşimi ad vermez
+    # hepsi susan tablo: hiçbir satır bileşimi ad vermez
+    sus = {r: B.STATUS_SILENT for r in B.DECISION_ROWS}
     for satirlar in _alt_kumeler(B.DECISION_ROWS):
-        assert B.anchor_label(satirlar, cpp=False) is None
-        assert B.anchor_label(satirlar, cpp=True) is None
+        assert B.anchor_label(satirlar, cpp=False, row_status=sus) is None
+        assert B.anchor_label(satirlar, cpp=True, row_status=sus) is None
+    # öntanımlı tablo ürün tablosudur: sınama tablosuyla aynı etiketi verir
+    for satirlar in _alt_kumeler(B.DECISION_ROWS):
+        for cpp in (False, True):
+            assert B.anchor_label(satirlar, cpp=cpp) == B.anchor_label(satirlar, cpp=cpp, row_status=TABLO)
+    assert B.anchor_label(("assert",), cpp=False) is None
+    assert B.anchor_label(("func_kalibi",), cpp=False) == "kesin"
 
 
 def test_etiket_tabloda_olmayan_satir_susar():
@@ -399,11 +423,17 @@ def test_baglama_susan_satir_ad_vermez():
     assert [(a.rows, a.label, a.skip) for a in b.anchors] == [
         (("assert",), None, "satir_sus"), (("func_kalibi",), "kesin", None),
         (("func_aktarma",), "doğrulanmadı", None)]
-    # ürün tablosuyla (hepsi sus) hiçbir çapa ad vermez
+    # hepsi susan tabloyla hiçbir çapa ad vermez
+    sus = {x: "sus" for x in B.DECISION_ROWS}
     r, fonk = _sonuc(_capa(0x1000, "denetle", ("assert",)), _capa(0x2000, "oturum_ac"))
-    b0 = B.bind(r, fonk, cpp=False)
+    b0 = B.bind(r, fonk, cpp=False, row_status=sus)
     assert b0.named() == [] and b0.skipped() == {"satir_sus": 2}
-    assert b0.row_status == {x: "sus" for x in B.DECISION_ROWS}
+    assert b0.row_status == sus
+    # öntanımlı tablo ürün tablosudur: yalnız assert'e dayanan çapa susar
+    b1 = B.bind(r, fonk, cpp=False)
+    assert [(a.rows, a.label, a.skip) for a in b1.anchors] == [
+        (("assert",), None, "satir_sus"), (("func_kalibi",), "kesin", None)]
+    assert b1.row_status == TABLO
 
 
 def test_baglama_cok_turlu_capa_en_iyi_satirla():
@@ -533,14 +563,25 @@ def test_uctan_uca_karma_ikili(tmp_path, bicim):
                      "ks1_skipped": {"anahtar_fun_degil": 1, "parca": 1, "satir_sus": 1}}
 
 
-def test_uctan_uca_urun_tablosuyla_ad_yok(tmp_path):
-    """Öntanımlı tablo (hepsi sus): çapalar kayda geçer, hiçbiri ad vermez."""
-    b = B.bind_static(karma().yaz(tmp_path))
+def test_uctan_uca_hepsi_susan_tabloyla_ad_yok(tmp_path):
+    """Hepsi susan tablo: çapalar kayda geçer, hiçbiri ad vermez."""
+    sus = {r: B.STATUS_SILENT for r in B.DECISION_ROWS}
+    b = B.bind_static(karma().yaz(tmp_path), row_status=sus)
     assert b.status == "ok" and len(b.anchors) == 7 and b.named() == []
     assert all(a.label is None for a in b.anchors)
     adlar, kunye = {"FUN_1": "eski"}, {}
     assert B.apply_binding(adlar, b, kunye)["written"] == 0
     assert adlar == {"FUN_1": "eski"} and kunye == {}
+
+
+def test_uctan_uca_ontanimli_tablo_urun_tablosudur(tmp_path):
+    """Öntanımlı çağrı ("aç"tan beri) ölçümden türeyen tabloyla bağlar."""
+    dizin = karma().yaz(tmp_path)
+    b, bt = B.bind_static(dizin), B.bind_static(dizin, row_status=TABLO)
+    assert [a.as_dict() for a in b.anchors] == [a.as_dict() for a in bt.anchors]
+    assert len(b.anchors) == 7 and len(b.named()) == 4
+    assert sorted(a.label for a in b.named()) == ["doğrulanmadı", "doğrulanmadı", "kesin", "kesin"]
+    assert b.skipped() == {"anahtar_fun_degil": 1, "parca": 1, "satir_sus": 1}
 
 
 @pytest.mark.parametrize("bicim, thunk, cpp", [

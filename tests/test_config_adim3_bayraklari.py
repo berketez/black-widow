@@ -1,7 +1,7 @@
-"""Plan v2.2 N1 adım 3 yapılandırma bayrakları: öntanımlı kapalı, YAML'dan okunur.
+"""Plan v2.2 N1 adım 3 yapılandırma bayrakları: öntanımlı AÇIK ("aç" commit'i), YAML'dan okunur.
 
-Bayraklar kapalıyken ürünün ad haritası değişmez; davranışı açan tek yer "aç" commit'idir.
-Öntanımlıyı sessizce çeviren bir değişiklik bu testi kırar.
+Bayraklar "aç" commit'ine kadar kapalıydı; o commit üçünü de açtı ve bu sınamaları bilerek
+çevirdi. Öntanımlıyı sessizce geri çeviren bir değişiklik bu testi kırar.
 """
 from __future__ import annotations
 
@@ -14,24 +14,33 @@ from karadul.config import BinaryReconstructionConfig, Config
 BAYRAKLAR = ("enable_ks1_anchors", "enable_subchannel_silencing", "apply_global_naming_threshold")
 
 
-def test_bayraklar_ontanimli_kapali():
+def test_bayraklar_ontanimli_acik():
     cfg = Config()
     for ad in BAYRAKLAR:
-        assert getattr(cfg.binary_reconstruction, ad) is False, ad
+        assert getattr(cfg.binary_reconstruction, ad) is True, ad
     alanlar = {f.name: f for f in dataclasses.fields(BinaryReconstructionConfig)}
     for ad in BAYRAKLAR:
-        assert alanlar[ad].default is False and alanlar[ad].type in (bool, "bool")
+        assert alanlar[ad].default is True and alanlar[ad].type in (bool, "bool")
 
 
 @pytest.mark.parametrize("ad", BAYRAKLAR)
-def test_bayrak_yamldan_okunur(tmp_path, ad):
+def test_bayrak_yamldan_kapatilir(tmp_path, ad):
+    """Ablasyon kolları için her bayrak tek başına kapatılabilir; biri öbürünü kapatmaz."""
     yol = tmp_path / "karadul.yaml"
-    yol.write_text(f"binary_reconstruction:\n  {ad}: true\n", encoding="utf-8")
+    yol.write_text(f"binary_reconstruction:\n  {ad}: false\n", encoding="utf-8")
     cfg = Config.load(yol)
-    assert getattr(cfg.binary_reconstruction, ad) is True
+    assert getattr(cfg.binary_reconstruction, ad) is False
     for oteki in BAYRAKLAR:
         if oteki != ad:
-            assert getattr(cfg.binary_reconstruction, oteki) is False   # biri öbürünü açmaz
+            assert getattr(cfg.binary_reconstruction, oteki) is True
+
+
+def test_uc_bayrak_birlikte_kapatilinca_eski_davranis_yapilandirmasi(tmp_path):
+    yol = tmp_path / "karadul.yaml"
+    yol.write_text("binary_reconstruction:\n" + "".join(f"  {ad}: false\n" for ad in BAYRAKLAR),
+                   encoding="utf-8")
+    cfg = Config.load(yol)
+    assert [getattr(cfg.binary_reconstruction, ad) for ad in BAYRAKLAR] == [False, False, False]
 
 
 def test_urun_esigi_degismedi():

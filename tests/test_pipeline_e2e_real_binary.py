@@ -230,13 +230,17 @@ class TestPipelineArtifacts:
         data = json.loads(nm.read_text(encoding="utf-8"))
         # En azından 'global' anahtarı olmalı
         assert "global" in data, f"naming_map.json 'global' anahtarı yok: {list(data)}"
-        # 4 user fonksiyon var (add, multiply, get_greeting, print_info)
-        # Hepsini doğru isimlendirmesini beklemiyoruz; en az 1 FUN_xxx
-        # için karadul bir öneri üretmeli.
-        if not data["global"]:
-            pytest.fail(
-                "naming_map.json['global'] boş — naming pipeline hiç çalışmamış."
-            )
+        assert isinstance(data["global"], dict)
+        # 1.21.1'den beri ürün eşiği ve alt kanal susturması öntanımlı açık: bu küçük
+        # ikilide kanıtı zayıf adların hepsi düşebilir, boş 'global' artık "hat
+        # çalışmadı" demek değildir. Adlandırma adımının koştuğu rapordan okunur.
+        raporlar = sorted(e2e_workspace.rglob("report.json"))
+        assert raporlar, f"report.json yok ({e2e_workspace})"
+        stats = json.loads(raporlar[0].read_text(encoding="utf-8"))[
+            "pipeline"]["stages"]["reconstruct"]["stats"]
+        assert "timing_c_naming_iter0" in stats, "c_namer adımı koşmamış"
+        assert stats.get("naming_flags", {}).get("silencing") is True
+        assert "naming_by_label" in stats
 
 
 # ---------------------------------------------------------------------------

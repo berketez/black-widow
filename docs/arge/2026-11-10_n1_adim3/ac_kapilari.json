@@ -1,0 +1,495 @@
+{
+  "ikililer": {
+    "debian-tmux": {
+      "K-A": {
+        "a0_taban_bayt_ayni": true,
+        "a0_taban_fun_ayni": true,
+        "at_fark_fun_olmayan": 337,
+        "at_farkli_anahtar": 337,
+        "at_fun_a0_ile_ayni": true,
+        "tuttu": true
+      },
+      "K-B": {
+        "A1": {
+          "ad_veren": 111,
+          "capa": 111,
+          "etiket_dagilimi": {
+            "doğrulanmadı": 877,
+            "kesin": 97
+          },
+          "haritada_ayni_adla": 111,
+          "haritada_baska_adla": 0,
+          "haritada_yok": 0,
+          "ks1_kesin": 97,
+          "ks1_named": 111,
+          "ks1_skipped": {},
+          "ks1_status": "ok"
+        },
+        "A3": {
+          "ad_veren": 111,
+          "capa": 111,
+          "etiket_dagilimi": {
+            "doğrulanmadı": 200,
+            "kesin": 97
+          },
+          "haritada_ayni_adla": 111,
+          "haritada_baska_adla": 0,
+          "haritada_yok": 0,
+          "ks1_kesin": 97,
+          "ks1_named": 111,
+          "ks1_skipped": {},
+          "ks1_status": "ok"
+        },
+        "tuttu": true
+      },
+      "K-C": {
+        "A2": {
+          "dizgi_kanali_adi": 211,
+          "sub_channel_uyusmayan": 0,
+          "susan_kanaldan": 0
+        },
+        "A3": {
+          "dizgi_kanali_adi": 152,
+          "sub_channel_uyusmayan": 0,
+          "susan_kanaldan": 0
+        },
+        "tuttu": true
+      },
+      "K-D": {
+        "A2": {
+          "merged_var": true,
+          "name_merger_below_global_min": 0,
+          "name_merger_total": 246,
+          "src_ile_farkli_dosya": 0
+        },
+        "A3": {
+          "merged_var": true,
+          "name_merger_below_global_min": 0,
+          "name_merger_total": 297,
+          "src_ile_farkli_dosya": 0
+        },
+        "tuttu": true
+      },
+      "K-F": {
+        "a0da_olmayan_yeni_fun": 0,
+        "ongoru": {
+          "ad": 14,
+          "bilinmiyor": 0,
+          "dokunulmaz": 230,
+          "silinir": 392
+        },
+        "ongorulemeyen": 0,
+        "tutan": 608,
+        "tutmayan": 0,
+        "tuttu": true,
+        "yalniz_cakisma_eki_farki": 28
+      },
+      "K-G": {
+        "a3_a3b_bayt_ayni": true,
+        "tuttu": true
+      },
+      "fun_ad": {
+        "A0": 636,
+        "A1": 636,
+        "A2": 244,
+        "A3": 295,
+        "A3b": 295,
+        "AT": 636
+      },
+      "genel_ad": {
+        "A0": 973,
+        "A1": 973,
+        "A2": 244,
+        "A3": 295,
+        "A3b": 295,
+        "AT": 636
+      }
+    },
+    "debian-tree": {
+      "K-A": {
+        "a0_taban_bayt_ayni": true,
+        "a0_taban_fun_ayni": true,
+        "at_fark_fun_olmayan": 189,
+        "at_farkli_anahtar": 189,
+        "at_fun_a0_ile_ayni": true,
+        "tuttu": true
+      },
+      "K-B": {
+        "A1": {
+          "ad_veren": 0,
+          "capa": 0,
+          "etiket_dagilimi": {
+            "doğrulanmadı": 239
+          },
+          "haritada_ayni_adla": 0,
+          "haritada_baska_adla": 0,
+          "haritada_yok": 0,
+          "ks1_kesin": 0,
+          "ks1_named": 0,
+          "ks1_skipped": {},
+          "ks1_status": "ok"
+        },
+        "A3": {
+          "ad_veren": 0,
+          "capa": 0,
+          "etiket_dagilimi": {
+            "doğrulanmadı": 5
+          },
+          "haritada_ayni_adla": 0,
+          "haritada_baska_adla": 0,
+          "haritada_yok": 0,
+          "ks1_kesin": 0,
+          "ks1_named": 0,
+          "ks1_skipped": {},
+          "ks1_status": "ok"
+        },
+        "tuttu": true
+      },
+      "K-C": {
+        "A2": {
+          "dizgi_kanali_adi": 0,
+          "sub_channel_uyusmayan": 0,
+          "susan_kanaldan": 0
+        },
+        "A3": {
+          "dizgi_kanali_adi": 0,
+          "sub_channel_uyusmayan": 0,
+          "susan_kanaldan": 0
+        },
+        "tuttu": true
+      },
+      "K-D": {
+        "A2": {
+          "merged_var": true,
+          "name_merger_below_global_min": 0,
+          "name_merger_total": 5,
+          "src_ile_farkli_dosya": 0
+        },
+        "A3": {
+          "merged_var": true,
+          "name_merger_below_global_min": 0,
+          "name_merger_total": 5,
+          "src_ile_farkli_dosya": 0
+        },
+        "tuttu": true
+      },
+      "K-F": {
+        "a0da_olmayan_yeni_fun": 0,
+        "ongoru": {
+          "ad": 0,
+          "bilinmiyor": 0,
+          "dokunulmaz": 5,
+          "silinir": 45
+        },
+        "ongorulemeyen": 0,
+        "tutan": 50,
+        "tutmayan": 0,
+        "tuttu": true,
+        "yalniz_cakisma_eki_farki": 0
+      },
+      "K-G": {
+        "a3_a3b_bayt_ayni": true,
+        "tuttu": true
+      },
+      "fun_ad": {
+        "A0": 50,
+        "A1": 50,
+        "A2": 5,
+        "A3": 5,
+        "A3b": 5,
+        "AT": 50
+      },
+      "genel_ad": {
+        "A0": 239,
+        "A1": 239,
+        "A2": 5,
+        "A3": 5,
+        "A3b": 5,
+        "AT": 50
+      }
+    },
+    "mac-htop": {
+      "K-A": {
+        "a0_taban_bayt_ayni": true,
+        "a0_taban_fun_ayni": true,
+        "at_fark_fun_olmayan": 104,
+        "at_farkli_anahtar": 104,
+        "at_fun_a0_ile_ayni": true,
+        "tuttu": true
+      },
+      "K-B": {
+        "A1": {
+          "ad_veren": 0,
+          "capa": 0,
+          "etiket_dagilimi": {
+            "doğrulanmadı": 205
+          },
+          "haritada_ayni_adla": 0,
+          "haritada_baska_adla": 0,
+          "haritada_yok": 0,
+          "ks1_kesin": 0,
+          "ks1_named": 0,
+          "ks1_skipped": {},
+          "ks1_status": "ok"
+        },
+        "A3": {
+          "ad_veren": 0,
+          "capa": 0,
+          "etiket_dagilimi": {},
+          "haritada_ayni_adla": 0,
+          "haritada_baska_adla": 0,
+          "haritada_yok": 0,
+          "ks1_kesin": 0,
+          "ks1_named": 0,
+          "ks1_skipped": {},
+          "ks1_status": "ok"
+        },
+        "tuttu": true
+      },
+      "K-C": {
+        "A2": {
+          "dizgi_kanali_adi": 0,
+          "sub_channel_uyusmayan": 0,
+          "susan_kanaldan": 0
+        },
+        "A3": {
+          "dizgi_kanali_adi": 0,
+          "sub_channel_uyusmayan": 0,
+          "susan_kanaldan": 0
+        },
+        "tuttu": true
+      },
+      "K-D": {
+        "A2": {
+          "merged_var": false,
+          "name_merger_below_global_min": null,
+          "name_merger_total": null,
+          "src_ile_farkli_dosya": 0
+        },
+        "A3": {
+          "merged_var": false,
+          "name_merger_below_global_min": null,
+          "name_merger_total": null,
+          "src_ile_farkli_dosya": 0
+        },
+        "tuttu": true
+      },
+      "K-F": {
+        "a0da_olmayan_yeni_fun": 0,
+        "ongoru": {
+          "ad": 0,
+          "bilinmiyor": 0,
+          "dokunulmaz": 0,
+          "silinir": 101
+        },
+        "ongorulemeyen": 0,
+        "tutan": 101,
+        "tutmayan": 0,
+        "tuttu": true,
+        "yalniz_cakisma_eki_farki": 0
+      },
+      "K-G": {
+        "a3_a3b_bayt_ayni": true,
+        "tuttu": true
+      },
+      "fun_ad": {
+        "A0": 101,
+        "A1": 101,
+        "A2": 0,
+        "A3": 0,
+        "A3b": 0,
+        "AT": 101
+      },
+      "genel_ad": {
+        "A0": 205,
+        "A1": 205,
+        "A2": 0,
+        "A3": 0,
+        "A3b": 0,
+        "AT": 101
+      }
+    },
+    "mac-tmux": {
+      "K-A": {
+        "a0_taban_bayt_ayni": true,
+        "a0_taban_fun_ayni": true,
+        "at_fark_fun_olmayan": 269,
+        "at_farkli_anahtar": 269,
+        "at_fun_a0_ile_ayni": true,
+        "tuttu": true
+      },
+      "K-B": {
+        "A1": {
+          "ad_veren": 172,
+          "capa": 172,
+          "etiket_dagilimi": {
+            "doğrulanmadı": 998,
+            "kesin": 150
+          },
+          "haritada_ayni_adla": 172,
+          "haritada_baska_adla": 0,
+          "haritada_yok": 0,
+          "ks1_kesin": 150,
+          "ks1_named": 172,
+          "ks1_skipped": {
+            "parca": 14
+          },
+          "ks1_status": "ok"
+        },
+        "A3": {
+          "ad_veren": 172,
+          "capa": 172,
+          "etiket_dagilimi": {
+            "doğrulanmadı": 245,
+            "kesin": 150
+          },
+          "haritada_ayni_adla": 172,
+          "haritada_baska_adla": 0,
+          "haritada_yok": 0,
+          "ks1_kesin": 150,
+          "ks1_named": 172,
+          "ks1_skipped": {
+            "parca": 14
+          },
+          "ks1_status": "ok"
+        },
+        "tuttu": true
+      },
+      "K-C": {
+        "A2": {
+          "dizgi_kanali_adi": 274,
+          "sub_channel_uyusmayan": 0,
+          "susan_kanaldan": 0
+        },
+        "A3": {
+          "dizgi_kanali_adi": 199,
+          "sub_channel_uyusmayan": 0,
+          "susan_kanaldan": 0
+        },
+        "tuttu": true
+      },
+      "K-D": {
+        "A2": {
+          "merged_var": true,
+          "name_merger_below_global_min": 0,
+          "name_merger_total": 303,
+          "src_ile_farkli_dosya": 0
+        },
+        "A3": {
+          "merged_var": true,
+          "name_merger_below_global_min": 0,
+          "name_merger_total": 395,
+          "src_ile_farkli_dosya": 0
+        },
+        "tuttu": true
+      },
+      "K-F": {
+        "a0da_olmayan_yeni_fun": 0,
+        "ongoru": {
+          "ad": 16,
+          "bilinmiyor": 0,
+          "dokunulmaz": 287,
+          "silinir": 572
+        },
+        "ongorulemeyen": 0,
+        "tutan": 835,
+        "tutmayan": 0,
+        "tuttu": true,
+        "yalniz_cakisma_eki_farki": 40
+      },
+      "K-G": {
+        "a3_a3b_bayt_ayni": true,
+        "tuttu": true
+      },
+      "fun_ad": {
+        "A0": 875,
+        "A1": 878,
+        "A2": 303,
+        "A3": 395,
+        "A3b": 395,
+        "AT": 875
+      },
+      "genel_ad": {
+        "A0": 1144,
+        "A1": 1147,
+        "A2": 303,
+        "A3": 395,
+        "A3b": 395,
+        "AT": 875
+      }
+    }
+  },
+  "kapilar": {
+    "K-A": {
+      "tutan": 4,
+      "tutmayan": 0,
+      "tuttu": true
+    },
+    "K-B": {
+      "tutan": 4,
+      "tutmayan": 0,
+      "tuttu": true
+    },
+    "K-C": {
+      "tutan": 4,
+      "tutmayan": 0,
+      "tuttu": true
+    },
+    "K-D": {
+      "tutan": 4,
+      "tutmayan": 0,
+      "tuttu": true
+    },
+    "K-E": {
+      "uygulanmaz": "kollar tam hat koşusuyla üretildi; koşum betiği yok"
+    },
+    "K-F": {
+      "tutan": 4,
+      "tutmayan": 0,
+      "tuttu": true
+    },
+    "K-G": {
+      "tutan": 4,
+      "tutmayan": 0,
+      "tuttu": true
+    }
+  },
+  "kollar": {
+    "A0": {
+      "apply_global_naming_threshold": false,
+      "enable_ks1_anchors": false,
+      "enable_subchannel_silencing": false,
+      "tohum": "1"
+    },
+    "A1": {
+      "apply_global_naming_threshold": false,
+      "enable_ks1_anchors": true,
+      "enable_subchannel_silencing": false,
+      "tohum": "1"
+    },
+    "A2": {
+      "apply_global_naming_threshold": true,
+      "enable_ks1_anchors": false,
+      "enable_subchannel_silencing": true,
+      "tohum": "1"
+    },
+    "A3": {
+      "apply_global_naming_threshold": true,
+      "enable_ks1_anchors": true,
+      "enable_subchannel_silencing": true,
+      "tohum": "1"
+    },
+    "A3b": {
+      "apply_global_naming_threshold": true,
+      "enable_ks1_anchors": true,
+      "enable_subchannel_silencing": true,
+      "tohum": "2"
+    },
+    "AT": {
+      "apply_global_naming_threshold": true,
+      "enable_ks1_anchors": false,
+      "enable_subchannel_silencing": false,
+      "tohum": "1"
+    }
+  }
+}
