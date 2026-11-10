@@ -1,0 +1,7993 @@
+{
+ "sema": "karadul-ks1-olc/1",
+ "komut": "olc",
+ "onkosul": {
+  "onkayit_commit": "a22d833cfea4095d8ebb51a1d7b6c25c76ad1779",
+  "onkayit_commit_atasi": true,
+  "sapma_commit": "0da58cfdcd3f10061a00df230db69eff8d3ce7f4",
+  "sha256": {
+   "karadul/reconstruction/tarif/kesin.py": "2a412e8a4467cff152a8ed271d0216a5fcb3038f1299ca6e8927e3319838cc48",
+   "scripts/measurement/ks1_olc.py": "975c4d1265d8610efd03e5a9c9d55cdd784b1ba9b7720d304ff00e7776418fb9",
+   "scripts/measurement/function_f1.py": "edc782981f98abc6683dec0ee948c7caafcbeaf01759fdc8ddc14dd8586c4bdc",
+   "scripts/measurement/macho_f1.py": "bc48eac6fe1f2879374f17a5ba198672718f43e648df0b84d18b3e21e7705f43",
+   "scripts/measurement/macho_measure.py": "d4d517fd43e835ea1546f51186e7167b732d7b4551826ef3353e6009916667d8",
+   "tests/benchmark/metrics.py": "114456c29af17fb9451a23ede4a2bf071cb02295372b91c25d46878c8240fd09"
+  }
+ },
+ "arac": {
+  "betik_sha256": "975c4d1265d8610efd03e5a9c9d55cdd784b1ba9b7720d304ff00e7776418fb9",
+  "kesin_sha256": "2a412e8a4467cff152a8ed271d0216a5fcb3038f1299ca6e8927e3319838cc48",
+  "git_head": "0da58cfdcd3f10061a00df230db69eff8d3ce7f4",
+  "python": "3.12.7",
+  "ks1_surumu": 2,
+  "ghidra": {
+   "surum": "12.1.2",
+   "elf": 119
+  }
+ },
+ "secimler": {
+  "n_min": 10,
+  "en_az_program": 2,
+  "esik": 0.95,
+  "zenginlik_esigi": 0.05
+ },
+ "nufus": {
+  "bulunan": {
+   "debian/coreutils": 106,
+   "debian/htop": 1,
+   "debian/openssl": 1,
+   "debian/redis-tools": 4,
+   "debian/sqlite3": 1,
+   "debian/tmux": 1,
+   "debian/tree": 1,
+   "debian/zstd": 2,
+   "mac/htop": 1,
+   "mac/tmux": 1
+  },
+  "biten": {
+   "debian/coreutils": 106,
+   "debian/htop": 1,
+   "debian/openssl": 1,
+   "debian/redis-tools": 4,
+   "debian/sqlite3": 1,
+   "debian/tmux": 1,
+   "debian/tree": 1,
+   "debian/zstd": 2,
+   "mac/htop": 1,
+   "mac/tmux": 1
+  },
+  "beklenen": {
+   "mac/tmux": 1,
+   "mac/htop": 1,
+   "debian/tmux": 1,
+   "debian/htop": 1,
+   "debian/tree": 1,
+   "debian/zstd": 2,
+   "debian/redis-tools": 4,
+   "debian/sqlite3": 1,
+   "debian/openssl": 1,
+   "debian/coreutils": 106
+  },
+  "eksik_izinli": false,
+  "sorunlar": []
+ },
+ "birimler": {
+  "debian/coreutils": {
+   "turler": {
+    "assert": {
+     "tekil": {
+      "n": 34,
+      "kesinlik": {
+       "k": 29,
+       "n": 34,
+       "oran": 0.852941,
+       "aralik": [
+        0.6987,
+        0.9355
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 29,
+       "n": 34,
+       "oran": 0.852941,
+       "aralik": [
+        0.6987,
+        0.9355
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 67,
+      "kesinlik": {
+       "k": 61,
+       "n": 67,
+       "oran": 0.910448,
+       "aralik": [
+        0.8181,
+        0.9583
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 61,
+       "n": 67,
+       "oran": 0.910448,
+       "aralik": [
+        0.8181,
+        0.9583
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 32,
+       "kesinlik": {
+        "k": 27,
+        "n": 32,
+        "oran": 0.84375,
+        "aralik": [
+         0.6825,
+         0.9314
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 27,
+        "n": 32,
+        "oran": 0.84375,
+        "aralik": [
+         0.6825,
+         0.9314
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 34,
+       "kesinlik": {
+        "k": 29,
+        "n": 34,
+        "oran": 0.852941,
+        "aralik": [
+         0.6987,
+         0.9355
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 29,
+        "n": 34,
+        "oran": 0.852941,
+        "aralik": [
+         0.6987,
+         0.9355
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 2,
+       "dogru": 2
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 12717,
+      "kapsam": {
+       "k": 65,
+       "n": 12717,
+       "oran": 0.005111,
+       "aralik": [
+        0.004,
+        0.0065
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 59,
+       "n": 12717,
+       "oran": 0.004639,
+       "aralik": [
+        0.0036,
+        0.006
+       ]
+      }
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 12717,
+      "kapsam": {
+       "k": 0,
+       "n": 12717,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0003
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 12717,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0003
+       ]
+      }
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 12717,
+      "kapsam": {
+       "k": 0,
+       "n": 12717,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0003
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 12717,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0003
+       ]
+      }
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 12717,
+      "kapsam": {
+       "k": 0,
+       "n": 12717,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0003
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 12717,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0003
+       ]
+      }
+     }
+    },
+    "export": {
+     "tekil": {
+      "n": 3,
+      "kesinlik": {
+       "k": 3,
+       "n": 3,
+       "oran": 1.0,
+       "aralik": [
+        0.4385,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 3,
+       "n": 3,
+       "oran": 1.0,
+       "aralik": [
+        0.4385,
+        1.0
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 211,
+      "kesinlik": {
+       "k": 211,
+       "n": 211,
+       "oran": 1.0,
+       "aralik": [
+        0.9821,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 211,
+       "n": 211,
+       "oran": 1.0,
+       "aralik": [
+        0.9821,
+        1.0
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 3,
+       "kesinlik": {
+        "k": 3,
+        "n": 3,
+        "oran": 1.0,
+        "aralik": [
+         0.4385,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 3,
+        "n": 3,
+        "oran": 1.0,
+        "aralik": [
+         0.4385,
+         1.0
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 3,
+       "kesinlik": {
+        "k": 3,
+        "n": 3,
+        "oran": 1.0,
+        "aralik": [
+         0.4385,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 3,
+        "n": 3,
+        "oran": 1.0,
+        "aralik": [
+         0.4385,
+         1.0
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 211,
+      "kapsam": {
+       "k": 211,
+       "n": 211,
+       "oran": 1.0,
+       "aralik": [
+        0.9821,
+        1.0
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 211,
+       "n": 211,
+       "oran": 1.0,
+       "aralik": [
+        0.9821,
+        1.0
+       ]
+      }
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "n": 34,
+      "kesinlik": {
+       "k": 29,
+       "n": 34,
+       "oran": 0.852941,
+       "aralik": [
+        0.6987,
+        0.9355
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 29,
+       "n": 34,
+       "oran": 0.852941,
+       "aralik": [
+        0.6987,
+        0.9355
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 67,
+      "kesinlik": {
+       "k": 61,
+       "n": 67,
+       "oran": 0.910448,
+       "aralik": [
+        0.8181,
+        0.9583
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 61,
+       "n": 67,
+       "oran": 0.910448,
+       "aralik": [
+        0.8181,
+        0.9583
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 32,
+       "kesinlik": {
+        "k": 27,
+        "n": 32,
+        "oran": 0.84375,
+        "aralik": [
+         0.6825,
+         0.9314
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 27,
+        "n": 32,
+        "oran": 0.84375,
+        "aralik": [
+         0.6825,
+         0.9314
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 34,
+       "kesinlik": {
+        "k": 29,
+        "n": 34,
+        "oran": 0.852941,
+        "aralik": [
+         0.6987,
+         0.9355
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 29,
+        "n": 34,
+        "oran": 0.852941,
+        "aralik": [
+         0.6987,
+         0.9355
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 2,
+       "dogru": 2
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 12717,
+      "kapsam": {
+       "k": 65,
+       "n": 12717,
+       "oran": 0.005111,
+       "aralik": [
+        0.004,
+        0.0065
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 59,
+       "n": 12717,
+       "oran": 0.004639,
+       "aralik": [
+        0.0036,
+        0.006
+       ]
+      }
+     }
+    }
+   },
+   "nufus": 12717,
+   "export_gt": 211,
+   "cpp_disarida": [],
+   "elfler": {
+    "[": {
+     "capa": 4,
+     "nufus": 96,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/12/558d152739b42ea5dfd5400673221776786454.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 111
+     }
+    },
+    "arch": {
+     "capa": 2,
+     "nufus": 85,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/0f/9710be5df2326b71257b81a0b59f0128c7b2f6.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 100
+     }
+    },
+    "b2sum": {
+     "capa": 2,
+     "nufus": 103,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/4c/ca4aa5fad403fe5ed9761369e3e9d183cbe32e.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "base32": {
+     "capa": 3,
+     "nufus": 99,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/06/e533ce5410837974a09e8e0a9652d71487ea24.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 114
+     }
+    },
+    "base64": {
+     "capa": 2,
+     "nufus": 99,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/c5/b94099ea84c2d661bf42df3eef8c30b91bb224.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 114
+     }
+    },
+    "basename": {
+     "capa": 2,
+     "nufus": 89,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/44/66f8f769484f4bedc39b91df3994e9151e189d.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 104
+     }
+    },
+    "basenc": {
+     "capa": 4,
+     "nufus": 141,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/47/d8a259ed35724b3b214e0ad1f2d570101b20a0.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 156
+     }
+    },
+    "cat": {
+     "capa": 2,
+     "nufus": 95,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/fd/454726f7ad74a034a07a5259d3a354633ae685.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 110
+     }
+    },
+    "chcon": {
+     "capa": 4,
+     "nufus": 162,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/70/cecca2fcd34e96dcf21c9f3c802db3de23fbd2.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 180
+     }
+    },
+    "chgrp": {
+     "capa": 4,
+     "nufus": 156,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/c8/b6d8a9f9ee68be26049ae9ebfa228971e85beb.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 173
+     }
+    },
+    "chmod": {
+     "capa": 4,
+     "nufus": 151,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/98/7cdb2f53148c9c103eb9154595ec52936941e0.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 168
+     }
+    },
+    "chown": {
+     "capa": 4,
+     "nufus": 156,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/48/78fdd5be9a68d709aab1fc7ee118978e3d99b3.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 173
+     }
+    },
+    "chroot": {
+     "capa": 2,
+     "nufus": 93,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/61/1475d0583cd01ca0aca97a553b94fc5bc9be7f.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 108
+     }
+    },
+    "cksum": {
+     "capa": 3,
+     "nufus": 169,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/73/04ef257f1572518b59f101d4cb276e90357816.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 205
+     }
+    },
+    "comm": {
+     "capa": 2,
+     "nufus": 105,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/94/dde14d5484fac013c25625aa77828cdcdf64df.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "cp": {
+     "capa": 5,
+     "nufus": 280,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/1f/6c7a3e4dd501706cfa31c259ccd616b783a190.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 301
+     }
+    },
+    "csplit": {
+     "capa": 2,
+     "nufus": 111,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/d3/b66a862ab54a639882a38cb6fdea9e0545b00e.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 127
+     }
+    },
+    "cut": {
+     "capa": 3,
+     "nufus": 100,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/84/670cbd3acb0ea1012c22a4767227e9887d84cd.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 115
+     }
+    },
+    "date": {
+     "capa": 2,
+     "nufus": 119,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/5f/9da7caf61574e0587ebab7d8ac7b0435a50ece.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 142
+     }
+    },
+    "dd": {
+     "capa": 2,
+     "nufus": 135,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/8e/4dff13b989abce899d6222d26228dc76766d3e.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 155
+     }
+    },
+    "df": {
+     "capa": 4,
+     "nufus": 176,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/2d/c712d66963c843ce09362e9c1e7e623d2a6cb7.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 194
+     }
+    },
+    "dir": {
+     "capa": 3,
+     "nufus": 297,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/3a/27f52961c440385aad766dab1943f68b9824ca.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 321
+     }
+    },
+    "dircolors": {
+     "capa": 2,
+     "nufus": 97,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/2d/3dc76584844f23a2a347e29f0f72d89612eecb.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 113
+     }
+    },
+    "dirname": {
+     "capa": 2,
+     "nufus": 88,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/1d/a5c2c954cc00198018ae320a4e0c10bb173683.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 103
+     }
+    },
+    "du": {
+     "capa": 5,
+     "nufus": 215,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/6e/f655d2912a2dc77be7dadf22426ff48a728959.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 235
+     }
+    },
+    "echo": {
+     "capa": 3,
+     "nufus": 85,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/cf/f15ef5fd2ebe4e4f746c35da168b8baf1844d9.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 100
+     }
+    },
+    "env": {
+     "capa": 2,
+     "nufus": 91,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/27/42e088105ce76698cab292241926008ad1bcb1.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 107
+     }
+    },
+    "expand": {
+     "capa": 2,
+     "nufus": 97,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/23/bddf2a8d3bf528393d510d294cb7c5e85c1dd8.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 112
+     }
+    },
+    "expr": {
+     "capa": 2,
+     "nufus": 99,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b2/4410a3469c3ca99530701378e55fb479264fd5.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 115
+     }
+    },
+    "factor": {
+     "capa": 8,
+     "nufus": 111,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/32/d49a0aa4384dadf88606c425b627fa060315e0.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 133
+     }
+    },
+    "false": {
+     "capa": 2,
+     "nufus": 84,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/1c/ec6458c54159ccf9ffd782b2c215abcee9716e.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 99
+     }
+    },
+    "fmt": {
+     "capa": 2,
+     "nufus": 100,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/25/b788b417dde503297981dbad0ff19eda427522.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 115
+     }
+    },
+    "fold": {
+     "capa": 2,
+     "nufus": 91,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/d8/79b4a5074f8205ae2ad9b23d2b9f28b101cfe1.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 106
+     }
+    },
+    "groups": {
+     "capa": 2,
+     "nufus": 88,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/94/c0497b14daf36a84538e77d67787020d10e569.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 103
+     }
+    },
+    "head": {
+     "capa": 2,
+     "nufus": 96,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/99/c042f9ac8acdcbb9d0c121da24b8461b97e0a9.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 113
+     }
+    },
+    "hostid": {
+     "capa": 2,
+     "nufus": 86,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/c9/763bbe07a69d4084fa1fbde1696616d7706f19.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 101
+     }
+    },
+    "id": {
+     "capa": 2,
+     "nufus": 94,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/f1/9790a8a84a9253f10b4a2a718e4d827b9d69f8.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 109
+     }
+    },
+    "install": {
+     "capa": 6,
+     "nufus": 297,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/a4/240f9ca7853945911bff6d69775185a5fd68c9.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 318
+     }
+    },
+    "join": {
+     "capa": 2,
+     "nufus": 123,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/62/c53d1392300f1c6f3c709c0f3fe6e360c0b127.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 140
+     }
+    },
+    "libstdbuf.so": {
+     "capa": 0,
+     "nufus": 2,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e0/ad530f4a685d7da0cefe8119ce19afcb90749d.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani",
+      "gt_fonksiyon": 9
+     }
+    },
+    "link": {
+     "capa": 2,
+     "nufus": 86,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/8a/51526d6b8d87b87af47beba6ce28f446c30d5f.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 101
+     }
+    },
+    "ln": {
+     "capa": 2,
+     "nufus": 167,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/26/08fe50ca2ac3d76ee152c7d9fcccab25a3c231.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 184
+     }
+    },
+    "logname": {
+     "capa": 2,
+     "nufus": 86,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b4/3c281b12f2466db1048181152645c4b8f7938a.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 101
+     }
+    },
+    "ls": {
+     "capa": 3,
+     "nufus": 297,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/87/a7eadc711cd002f7b00ba923179e5713498159.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 321
+     }
+    },
+    "md5sum": {
+     "capa": 2,
+     "nufus": 93,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/18/260edb58753d4d028ecc71c5b8d30a2282321e.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 109
+     }
+    },
+    "mkdir": {
+     "capa": 6,
+     "nufus": 183,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/40/7e8e1607c312f9eb84665a6eba616346fb27e2.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 200
+     }
+    },
+    "mkfifo": {
+     "capa": 4,
+     "nufus": 170,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/ea/5b54e2a4382823f2c694f4cbab3d356b617560.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 187
+     }
+    },
+    "mknod": {
+     "capa": 4,
+     "nufus": 171,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/69/376e00caf753636da9e8d2b638ccf567899f0f.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 188
+     }
+    },
+    "mktemp": {
+     "capa": 2,
+     "nufus": 96,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b0/c147bd68f39dd75dc804f2af82da8e7f4621a0.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 111
+     }
+    },
+    "mv": {
+     "capa": 5,
+     "nufus": 286,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/60/5d56f31544c28d9eada3c04f2cfacdf19af731.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 307
+     }
+    },
+    "nice": {
+     "capa": 2,
+     "nufus": 85,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/20/bf71a6294d634b8bfea85889e25c72d63bfda5.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 100
+     }
+    },
+    "nl": {
+     "capa": 2,
+     "nufus": 97,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/6d/c8d6785e11c334164cddab29e82897226c35d8.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 112
+     }
+    },
+    "nohup": {
+     "capa": 2,
+     "nufus": 92,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/d5/da7b06c71434520cece001db1387b5e6743450.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 107
+     }
+    },
+    "nproc": {
+     "capa": 2,
+     "nufus": 90,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/aa/0d177fdb1ba7488162b8c94416c08a3adc777f.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 105
+     }
+    },
+    "numfmt": {
+     "capa": 2,
+     "nufus": 115,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e5/b32a35e10c6bafaf4bda32eea11e85f359eb53.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 130
+     }
+    },
+    "od": {
+     "capa": 3,
+     "nufus": 139,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/9a/c572395e6895c3b3a3653488286cf76a2ee8f3.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 156
+     }
+    },
+    "paste": {
+     "capa": 2,
+     "nufus": 91,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e4/7af8bbfffd72538b30d8d076895eafa344209a.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 106
+     }
+    },
+    "pathchk": {
+     "capa": 2,
+     "nufus": 86,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e3/006bf315eebe9d212a74e8fac0e16079368dc1.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 101
+     }
+    },
+    "pinky": {
+     "capa": 2,
+     "nufus": 97,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/c6/aefde0ae3503be3a247d3510ab9af994835a8f.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 113
+     }
+    },
+    "pr": {
+     "capa": 2,
+     "nufus": 135,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/f7/2d6fba56e8ff3b3aa1a997b5ef90e24dd8cdbe.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 152
+     }
+    },
+    "printenv": {
+     "capa": 2,
+     "nufus": 84,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/87/a80a5390c372a19eefb86c0c2f72546589cfe1.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 99
+     }
+    },
+    "printf": {
+     "capa": 2,
+     "nufus": 109,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/a2/df244731ea74f53673f65bc6a9332ca31268e7.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 126
+     }
+    },
+    "ptx": {
+     "capa": 2,
+     "nufus": 105,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/21/872e6b6e6f9f4c1b0b6788fbeda8f4911b5c1c.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "pwd": {
+     "capa": 2,
+     "nufus": 88,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/8c/e9785a378a1868d5f713d250dc01f106e6ca23.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 103
+     }
+    },
+    "readlink": {
+     "capa": 2,
+     "nufus": 119,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/c7/9f74cde4662306c993464c7fb03ee4c5eed76f.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 136
+     }
+    },
+    "realpath": {
+     "capa": 2,
+     "nufus": 122,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/0b/86cdedf99ee16c222d3abd82d83dfce42e79be.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 139
+     }
+    },
+    "rm": {
+     "capa": 4,
+     "nufus": 169,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e2/c065165b86d1acec3c1c27a5039ad1470200a5.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 186
+     }
+    },
+    "rmdir": {
+     "capa": 2,
+     "nufus": 89,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/3a/4815a44bb7a8d60c4b9077dfe1a8c025db20de.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 104
+     }
+    },
+    "runcon": {
+     "capa": 2,
+     "nufus": 90,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/d3/7ba8dab6e2bdc95866038b120b0f74ee402b57.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 105
+     }
+    },
+    "seq": {
+     "capa": 2,
+     "nufus": 101,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b1/59d7b463515b248494e9dfcb52df8abc581eb6.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 116
+     }
+    },
+    "sha1sum": {
+     "capa": 2,
+     "nufus": 93,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/85/0e3adf60c9a1ca8b5a6aac0708050fc7cf8e36.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 109
+     }
+    },
+    "sha224sum": {
+     "capa": 2,
+     "nufus": 100,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e5/575da56564a8237a326e24e7d7cd2f7ebfeb73.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "sha256sum": {
+     "capa": 2,
+     "nufus": 100,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/cf/8e0dc11d9f8efc009b3567c3fb6bab83786cc9.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "sha384sum": {
+     "capa": 2,
+     "nufus": 100,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/92/0f5a3c2d8315c39f7bf3e4b412efd2c6f11a6d.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "sha512sum": {
+     "capa": 2,
+     "nufus": 100,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/50/58d61b884c8baaf614aae1aa8651e5d5803e14.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "shred": {
+     "capa": 3,
+     "nufus": 136,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b9/5a841318447fd73d18a6c9fff16dd287e28982.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 151
+     }
+    },
+    "shuf": {
+     "capa": 3,
+     "nufus": 143,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/4a/73ee9930ec79178771c87b6dfdd8299870c596.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 160
+     }
+    },
+    "sleep": {
+     "capa": 2,
+     "nufus": 91,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/43/86d9cb62f28a53367fb90473ed3f989efe5bde.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 106
+     }
+    },
+    "sort": {
+     "capa": 3,
+     "nufus": 226,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/63/2ccbca942da8575d34c9a4635e9df0f0a59e04.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 248
+     }
+    },
+    "split": {
+     "capa": 3,
+     "nufus": 120,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b3/30b44d1b97c045bd583bb53f312d3ff605b6fd.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 135
+     }
+    },
+    "stat": {
+     "capa": 2,
+     "nufus": 147,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/a2/dd42c218343faad06c55593dc50d244a2ef2d4.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 165
+     }
+    },
+    "stdbuf": {
+     "capa": 2,
+     "nufus": 96,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/80/5f86be245b941580507fd688f40ee986949f06.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 111
+     }
+    },
+    "stty": {
+     "capa": 3,
+     "nufus": 99,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/cf/78ec84c50f28ff0ba1ad085f7ad0dfb49b7ae2.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 115
+     }
+    },
+    "sum": {
+     "capa": 2,
+     "nufus": 112,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/28/aaf8c697ad8fad0d4d41f9c07073aa7ef33734.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 127
+     }
+    },
+    "sync": {
+     "capa": 2,
+     "nufus": 85,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e9/091933e7a2b41813a3c5cdfb82bdb3264751da.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 100
+     }
+    },
+    "tac": {
+     "capa": 2,
+     "nufus": 97,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/d5/56daa429139ce8afc93f4638cf5911aa06766c.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 112
+     }
+    },
+    "tail": {
+     "capa": 5,
+     "nufus": 156,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/9e/35a1fd2e82534e3905f0e9a5688356487e46bb.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 177
+     }
+    },
+    "tee": {
+     "capa": 4,
+     "nufus": 107,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/2a/05b65f6d82984498ae194b4396188107e3833b.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 122
+     }
+    },
+    "test": {
+     "capa": 4,
+     "nufus": 89,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/cf/3e0bb9b0b7ee490adc771a6cb74d984bf0c947.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 104
+     }
+    },
+    "timeout": {
+     "capa": 2,
+     "nufus": 95,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b7/717927f0f20be6f4a623bb594021e728f66dc1.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 110
+     }
+    },
+    "touch": {
+     "capa": 3,
+     "nufus": 116,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/7d/919931a213758542a5cc34a51372fcac254a0e.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 138
+     }
+    },
+    "tr": {
+     "capa": 4,
+     "nufus": 101,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/69/ea1f4d224071f7b0d691a372c95e708f129082.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 118
+     }
+    },
+    "true": {
+     "capa": 2,
+     "nufus": 84,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/f4/4cf0fef31c0ff51be40cae69c432fd30c2b199.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 99
+     }
+    },
+    "truncate": {
+     "capa": 2,
+     "nufus": 87,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/5c/636a8836e54b5e86d4bc3735f7296f1591ef96.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 102
+     }
+    },
+    "tsort": {
+     "capa": 4,
+     "nufus": 98,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/34/989d160712bd27a0afb3a0bd9675bd8170b860.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 113
+     }
+    },
+    "tty": {
+     "capa": 2,
+     "nufus": 84,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/18/fb6b742387feda791aad1457b91bc6497ab0da.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 99
+     }
+    },
+    "uname": {
+     "capa": 2,
+     "nufus": 85,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/10/3b55c886d311fd25562eea3020a31e47884950.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 100
+     }
+    },
+    "unexpand": {
+     "capa": 2,
+     "nufus": 97,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/c2/7c951f00028bb05ff033ec01c8bdc4b6c95004.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 112
+     }
+    },
+    "uniq": {
+     "capa": 2,
+     "nufus": 105,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/62/4f06ce00b7574beab7ad97fd77dd0ee35e55a2.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 122
+     }
+    },
+    "unlink": {
+     "capa": 2,
+     "nufus": 86,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/d0/11693df76ca76e32795504f0801f0be2b157dd.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 101
+     }
+    },
+    "users": {
+     "capa": 2,
+     "nufus": 93,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/5f/fe40d82b15b5a62a1699fae1b2854f86dc2781.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 109
+     }
+    },
+    "vdir": {
+     "capa": 3,
+     "nufus": 297,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/df/b6d64ea49e6fa316d3baa15349014936b63bc8.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 321
+     }
+    },
+    "wc": {
+     "capa": 2,
+     "nufus": 122,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/0b/c93319a5db309ac7a66a3b5db177cf8f619ab2.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 138
+     }
+    },
+    "who": {
+     "capa": 2,
+     "nufus": 97,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/a9/0d000e9ada96e558a9b7226c236f8df9c81e73.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 114
+     }
+    },
+    "whoami": {
+     "capa": 2,
+     "nufus": 86,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/64/740b4266c041e8e28c9d018125d43eba1de7fd.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 101
+     }
+    },
+    "yes": {
+     "capa": 2,
+     "nufus": 88,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/3b/ab5e9d852933b78054f71e97596975e7ffecf4.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 103
+     }
+    }
+   }
+  },
+  "debian/htop": {
+   "turler": {
+    "assert": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 222,
+      "kapsam": {
+       "k": 0,
+       "n": 222,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.017
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 222,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.017
+       ]
+      }
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 222,
+      "kapsam": {
+       "k": 0,
+       "n": 222,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.017
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 222,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.017
+       ]
+      }
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 222,
+      "kapsam": {
+       "k": 0,
+       "n": 222,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.017
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 222,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.017
+       ]
+      }
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 222,
+      "kapsam": {
+       "k": 0,
+       "n": 222,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.017
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 222,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.017
+       ]
+      }
+     }
+    },
+    "export": {
+     "tekil": {
+      "n": 366,
+      "kesinlik": {
+       "k": 366,
+       "n": 366,
+       "oran": 1.0,
+       "aralik": [
+        0.9896,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 366,
+       "n": 366,
+       "oran": 1.0,
+       "aralik": [
+        0.9896,
+        1.0
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 366,
+      "kesinlik": {
+       "k": 366,
+       "n": 366,
+       "oran": 1.0,
+       "aralik": [
+        0.9896,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 366,
+       "n": 366,
+       "oran": 1.0,
+       "aralik": [
+        0.9896,
+        1.0
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 366,
+       "kesinlik": {
+        "k": 366,
+        "n": 366,
+        "oran": 1.0,
+        "aralik": [
+         0.9896,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 366,
+        "n": 366,
+        "oran": 1.0,
+        "aralik": [
+         0.9896,
+         1.0
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 366,
+       "kesinlik": {
+        "k": 366,
+        "n": 366,
+        "oran": 1.0,
+        "aralik": [
+         0.9896,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 366,
+        "n": 366,
+        "oran": 1.0,
+        "aralik": [
+         0.9896,
+         1.0
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 373,
+      "kapsam": {
+       "k": 366,
+       "n": 373,
+       "oran": 0.981233,
+       "aralik": [
+        0.9618,
+        0.9909
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 366,
+       "n": 373,
+       "oran": 0.981233,
+       "aralik": [
+        0.9618,
+        0.9909
+       ]
+      }
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 222,
+      "kapsam": {
+       "k": 0,
+       "n": 222,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.017
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 222,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.017
+       ]
+      }
+     }
+    }
+   },
+   "nufus": 222,
+   "export_gt": 373,
+   "cpp_disarida": [],
+   "elfler": {
+    "htop": {
+     "capa": 366,
+     "nufus": 222,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_htop-dbgsym_3.4.1-5_arm64/usr/lib/debug/.build-id/74/b4c5569781b50403c35ca18fa901c9ea290385.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani",
+      "gt_fonksiyon": 617
+     }
+    }
+   }
+  },
+  "debian/openssl": {
+   "turler": {
+    "assert": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 563,
+      "kapsam": {
+       "k": 0,
+       "n": 563,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0068
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 563,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0068
+       ]
+      }
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 563,
+      "kapsam": {
+       "k": 0,
+       "n": 563,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0068
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 563,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0068
+       ]
+      }
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "n": 15,
+      "kesinlik": {
+       "k": 15,
+       "n": 15,
+       "oran": 1.0,
+       "aralik": [
+        0.7961,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 15,
+       "n": 15,
+       "oran": 1.0,
+       "aralik": [
+        0.7961,
+        1.0
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 15,
+      "kesinlik": {
+       "k": 15,
+       "n": 15,
+       "oran": 1.0,
+       "aralik": [
+        0.7961,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 15,
+       "n": 15,
+       "oran": 1.0,
+       "aralik": [
+        0.7961,
+        1.0
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 14,
+       "kesinlik": {
+        "k": 14,
+        "n": 14,
+        "oran": 1.0,
+        "aralik": [
+         0.7847,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 14,
+        "n": 14,
+        "oran": 1.0,
+        "aralik": [
+         0.7847,
+         1.0
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 15,
+       "kesinlik": {
+        "k": 15,
+        "n": 15,
+        "oran": 1.0,
+        "aralik": [
+         0.7961,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 15,
+        "n": 15,
+        "oran": 1.0,
+        "aralik": [
+         0.7961,
+         1.0
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 1,
+       "dogru": 1
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 563,
+      "kapsam": {
+       "k": 14,
+       "n": 563,
+       "oran": 0.024867,
+       "aralik": [
+        0.0149,
+        0.0413
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 14,
+       "n": 563,
+       "oran": 0.024867,
+       "aralik": [
+        0.0149,
+        0.0413
+       ]
+      }
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 563,
+      "kapsam": {
+       "k": 0,
+       "n": 563,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0068
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 563,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0068
+       ]
+      }
+     }
+    },
+    "export": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 0,
+      "kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "n": 15,
+      "kesinlik": {
+       "k": 15,
+       "n": 15,
+       "oran": 1.0,
+       "aralik": [
+        0.7961,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 15,
+       "n": 15,
+       "oran": 1.0,
+       "aralik": [
+        0.7961,
+        1.0
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 15,
+      "kesinlik": {
+       "k": 15,
+       "n": 15,
+       "oran": 1.0,
+       "aralik": [
+        0.7961,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 15,
+       "n": 15,
+       "oran": 1.0,
+       "aralik": [
+        0.7961,
+        1.0
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 14,
+       "kesinlik": {
+        "k": 14,
+        "n": 14,
+        "oran": 1.0,
+        "aralik": [
+         0.7847,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 14,
+        "n": 14,
+        "oran": 1.0,
+        "aralik": [
+         0.7847,
+         1.0
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 15,
+       "kesinlik": {
+        "k": 15,
+        "n": 15,
+        "oran": 1.0,
+        "aralik": [
+         0.7961,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 15,
+        "n": 15,
+        "oran": 1.0,
+        "aralik": [
+         0.7961,
+         1.0
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 1,
+       "dogru": 1
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 563,
+      "kapsam": {
+       "k": 14,
+       "n": 563,
+       "oran": 0.024867,
+       "aralik": [
+        0.0149,
+        0.0413
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 14,
+       "n": 563,
+       "oran": 0.024867,
+       "aralik": [
+        0.0149,
+        0.0413
+       ]
+      }
+     }
+    }
+   },
+   "nufus": 563,
+   "export_gt": 0,
+   "cpp_disarida": [],
+   "elfler": {
+    "openssl": {
+     "capa": 15,
+     "nufus": 563,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_openssl-dbgsym_3.5.7-1~deb13u2_arm64/usr/lib/debug/.build-id/c3/007af23475310898afa78b35cbebe4bbf83173.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 604
+     }
+    }
+   }
+  },
+  "debian/redis-tools": {
+   "turler": {
+    "assert": {
+     "tekil": {
+      "n": 30,
+      "kesinlik": {
+       "k": 22,
+       "n": 30,
+       "oran": 0.733333,
+       "aralik": [
+        0.5555,
+        0.8582
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 22,
+       "n": 30,
+       "oran": 0.733333,
+       "aralik": [
+        0.5555,
+        0.8582
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 56,
+      "kesinlik": {
+       "k": 47,
+       "n": 56,
+       "oran": 0.839286,
+       "aralik": [
+        0.7219,
+        0.9131
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 47,
+       "n": 56,
+       "oran": 0.839286,
+       "aralik": [
+        0.7219,
+        0.9131
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 25,
+       "kesinlik": {
+        "k": 20,
+        "n": 25,
+        "oran": 0.8,
+        "aralik": [
+         0.6087,
+         0.9114
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 20,
+        "n": 25,
+        "oran": 0.8,
+        "aralik": [
+         0.6087,
+         0.9114
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 30,
+       "kesinlik": {
+        "k": 22,
+        "n": 30,
+        "oran": 0.733333,
+        "aralik": [
+         0.5555,
+         0.8582
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 22,
+        "n": 30,
+        "oran": 0.733333,
+        "aralik": [
+         0.5555,
+         0.8582
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 5,
+       "dogru": 2
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 1458,
+      "kapsam": {
+       "k": 51,
+       "n": 1458,
+       "oran": 0.034979,
+       "aralik": [
+        0.0267,
+        0.0457
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 45,
+       "n": 1458,
+       "oran": 0.030864,
+       "aralik": [
+        0.0231,
+        0.041
+       ]
+      }
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 1458,
+      "kapsam": {
+       "k": 0,
+       "n": 1458,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0026
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 1458,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0026
+       ]
+      }
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 1458,
+      "kapsam": {
+       "k": 0,
+       "n": 1458,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0026
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 1458,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0026
+       ]
+      }
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 1458,
+      "kapsam": {
+       "k": 0,
+       "n": 1458,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0026
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 1458,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0026
+       ]
+      }
+     }
+    },
+    "export": {
+     "tekil": {
+      "n": 3855,
+      "kesinlik": {
+       "k": 3855,
+       "n": 3855,
+       "oran": 1.0,
+       "aralik": [
+        0.999,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 3855,
+       "n": 3855,
+       "oran": 1.0,
+       "aralik": [
+        0.999,
+        1.0
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 8394,
+      "kesinlik": {
+       "k": 8394,
+       "n": 8394,
+       "oran": 1.0,
+       "aralik": [
+        0.9995,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 8394,
+       "n": 8394,
+       "oran": 1.0,
+       "aralik": [
+        0.9995,
+        1.0
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 3855,
+       "kesinlik": {
+        "k": 3855,
+        "n": 3855,
+        "oran": 1.0,
+        "aralik": [
+         0.999,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 3855,
+        "n": 3855,
+        "oran": 1.0,
+        "aralik": [
+         0.999,
+         1.0
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 3855,
+       "kesinlik": {
+        "k": 3855,
+        "n": 3855,
+        "oran": 1.0,
+        "aralik": [
+         0.999,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 3855,
+        "n": 3855,
+        "oran": 1.0,
+        "aralik": [
+         0.999,
+         1.0
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 8539,
+      "kapsam": {
+       "k": 8394,
+       "n": 8539,
+       "oran": 0.983019,
+       "aralik": [
+        0.9801,
+        0.9856
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 8394,
+       "n": 8539,
+       "oran": 0.983019,
+       "aralik": [
+        0.9801,
+        0.9856
+       ]
+      }
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "n": 30,
+      "kesinlik": {
+       "k": 22,
+       "n": 30,
+       "oran": 0.733333,
+       "aralik": [
+        0.5555,
+        0.8582
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 22,
+       "n": 30,
+       "oran": 0.733333,
+       "aralik": [
+        0.5555,
+        0.8582
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 56,
+      "kesinlik": {
+       "k": 47,
+       "n": 56,
+       "oran": 0.839286,
+       "aralik": [
+        0.7219,
+        0.9131
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 47,
+       "n": 56,
+       "oran": 0.839286,
+       "aralik": [
+        0.7219,
+        0.9131
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 25,
+       "kesinlik": {
+        "k": 20,
+        "n": 25,
+        "oran": 0.8,
+        "aralik": [
+         0.6087,
+         0.9114
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 20,
+        "n": 25,
+        "oran": 0.8,
+        "aralik": [
+         0.6087,
+         0.9114
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 30,
+       "kesinlik": {
+        "k": 22,
+        "n": 30,
+        "oran": 0.733333,
+        "aralik": [
+         0.5555,
+         0.8582
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 22,
+        "n": 30,
+        "oran": 0.733333,
+        "aralik": [
+         0.5555,
+         0.8582
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 5,
+       "dogru": 2
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 1458,
+      "kapsam": {
+       "k": 51,
+       "n": 1458,
+       "oran": 0.034979,
+       "aralik": [
+        0.0267,
+        0.0457
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 45,
+       "n": 1458,
+       "oran": 0.030864,
+       "aralik": [
+        0.0231,
+        0.041
+       ]
+      }
+     }
+    }
+   },
+   "nufus": 1458,
+   "export_gt": 8539,
+   "cpp_disarida": [],
+   "elfler": {
+    "redis-benchmark": {
+     "capa": 397,
+     "nufus": 77,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_redis-tools-dbgsym_8.0.2-3+deb13u2_arm64/usr/lib/debug/.build-id/e7/55d9673ab599cac4b7ad7a66c5ef00286866ac.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani",
+      "gt_fonksiyon": 493
+     }
+    },
+    "redis-check-aof": {
+     "capa": 3795,
+     "nufus": 624,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_redis-tools-dbgsym_8.0.2-3+deb13u2_arm64/usr/lib/debug/.build-id/2d/7d4de05c8c6718188a74edee76a1e771a9f690.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani",
+      "gt_fonksiyon": 4758
+     }
+    },
+    "redis-check-rdb": {
+     "capa": 3795,
+     "nufus": 624,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_redis-tools-dbgsym_8.0.2-3+deb13u2_arm64/usr/lib/debug/.build-id/2d/7d4de05c8c6718188a74edee76a1e771a9f690.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani",
+      "gt_fonksiyon": 4758
+     }
+    },
+    "redis-cli": {
+     "capa": 463,
+     "nufus": 133,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_redis-tools-dbgsym_8.0.2-3+deb13u2_arm64/usr/lib/debug/.build-id/20/70a9d12012dbd8f35176746bf7419b0109bba7.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani",
+      "gt_fonksiyon": 650
+     }
+    }
+   }
+  },
+  "debian/sqlite3": {
+   "turler": {
+    "assert": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 389,
+      "kapsam": {
+       "k": 0,
+       "n": 389,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0098
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 389,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0098
+       ]
+      }
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 389,
+      "kapsam": {
+       "k": 0,
+       "n": 389,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0098
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 389,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0098
+       ]
+      }
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 389,
+      "kapsam": {
+       "k": 0,
+       "n": 389,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0098
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 389,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0098
+       ]
+      }
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 389,
+      "kapsam": {
+       "k": 0,
+       "n": 389,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0098
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 389,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0098
+       ]
+      }
+     }
+    },
+    "export": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 0,
+      "kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 389,
+      "kapsam": {
+       "k": 0,
+       "n": 389,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0098
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 389,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0098
+       ]
+      }
+     }
+    }
+   },
+   "nufus": 389,
+   "export_gt": 0,
+   "cpp_disarida": [],
+   "elfler": {
+    "sqlite3": {
+     "capa": 0,
+     "nufus": 389,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_sqlite3-dbgsym_3.46.1-7+deb13u2_arm64/usr/lib/debug/.build-id/3f/7a5f6ddc4dc8cccc9739ce16d6a86f801cf154.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 431
+     }
+    }
+   }
+  },
+  "debian/tmux": {
+   "turler": {
+    "assert": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 1851,
+      "kapsam": {
+       "k": 0,
+       "n": 1851,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0021
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 1851,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0021
+       ]
+      }
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 1851,
+      "kapsam": {
+       "k": 0,
+       "n": 1851,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0021
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 1851,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0021
+       ]
+      }
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "n": 97,
+      "kesinlik": {
+       "k": 91,
+       "n": 97,
+       "oran": 0.938144,
+       "aralik": [
+        0.8716,
+        0.9713
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 91,
+       "n": 97,
+       "oran": 0.938144,
+       "aralik": [
+        0.8716,
+        0.9713
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 97,
+      "kesinlik": {
+       "k": 91,
+       "n": 97,
+       "oran": 0.938144,
+       "aralik": [
+        0.8716,
+        0.9713
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 91,
+       "n": 97,
+       "oran": 0.938144,
+       "aralik": [
+        0.8716,
+        0.9713
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 88,
+       "kesinlik": {
+        "k": 83,
+        "n": 88,
+        "oran": 0.943182,
+        "aralik": [
+         0.8738,
+         0.9755
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 83,
+        "n": 88,
+        "oran": 0.943182,
+        "aralik": [
+         0.8738,
+         0.9755
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 96,
+       "kesinlik": {
+        "k": 90,
+        "n": 96,
+        "oran": 0.9375,
+        "aralik": [
+         0.8703,
+         0.971
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 90,
+        "n": 96,
+        "oran": 0.9375,
+        "aralik": [
+         0.8703,
+         0.971
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 9,
+       "dogru": 8
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 1851,
+      "kapsam": {
+       "k": 88,
+       "n": 1851,
+       "oran": 0.047542,
+       "aralik": [
+        0.0387,
+        0.0582
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 83,
+       "n": 1851,
+       "oran": 0.044841,
+       "aralik": [
+        0.0363,
+        0.0552
+       ]
+      }
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "n": 15,
+      "kesinlik": {
+       "k": 15,
+       "n": 15,
+       "oran": 1.0,
+       "aralik": [
+        0.7961,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 15,
+       "n": 15,
+       "oran": 1.0,
+       "aralik": [
+        0.7961,
+        1.0
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 15,
+      "kesinlik": {
+       "k": 15,
+       "n": 15,
+       "oran": 1.0,
+       "aralik": [
+        0.7961,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 15,
+       "n": 15,
+       "oran": 1.0,
+       "aralik": [
+        0.7961,
+        1.0
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 15,
+       "kesinlik": {
+        "k": 15,
+        "n": 15,
+        "oran": 1.0,
+        "aralik": [
+         0.7961,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 15,
+        "n": 15,
+        "oran": 1.0,
+        "aralik": [
+         0.7961,
+         1.0
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 14,
+       "kesinlik": {
+        "k": 14,
+        "n": 14,
+        "oran": 1.0,
+        "aralik": [
+         0.7847,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 14,
+        "n": 14,
+        "oran": 1.0,
+        "aralik": [
+         0.7847,
+         1.0
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 1851,
+      "kapsam": {
+       "k": 15,
+       "n": 1851,
+       "oran": 0.008104,
+       "aralik": [
+        0.0049,
+        0.0133
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 15,
+       "n": 1851,
+       "oran": 0.008104,
+       "aralik": [
+        0.0049,
+        0.0133
+       ]
+      }
+     }
+    },
+    "export": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 0,
+      "kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "n": 111,
+      "kesinlik": {
+       "k": 105,
+       "n": 111,
+       "oran": 0.945946,
+       "aralik": [
+        0.8871,
+        0.975
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 105,
+       "n": 111,
+       "oran": 0.945946,
+       "aralik": [
+        0.8871,
+        0.975
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 111,
+      "kesinlik": {
+       "k": 105,
+       "n": 111,
+       "oran": 0.945946,
+       "aralik": [
+        0.8871,
+        0.975
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 105,
+       "n": 111,
+       "oran": 0.945946,
+       "aralik": [
+        0.8871,
+        0.975
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 102,
+       "kesinlik": {
+        "k": 97,
+        "n": 102,
+        "oran": 0.95098,
+        "aralik": [
+         0.8903,
+         0.9789
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 97,
+        "n": 102,
+        "oran": 0.95098,
+        "aralik": [
+         0.8903,
+         0.9789
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 110,
+       "kesinlik": {
+        "k": 104,
+        "n": 110,
+        "oran": 0.945455,
+        "aralik": [
+         0.8861,
+         0.9748
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 104,
+        "n": 110,
+        "oran": 0.945455,
+        "aralik": [
+         0.8861,
+         0.9748
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 9,
+       "dogru": 8
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 1851,
+      "kapsam": {
+       "k": 102,
+       "n": 1851,
+       "oran": 0.055105,
+       "aralik": [
+        0.0456,
+        0.0665
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 97,
+       "n": 1851,
+       "oran": 0.052404,
+       "aralik": [
+        0.0431,
+        0.0635
+       ]
+      }
+     }
+    }
+   },
+   "nufus": 1851,
+   "export_gt": 0,
+   "cpp_disarida": [],
+   "elfler": {
+    "tmux": {
+     "capa": 111,
+     "nufus": 1851,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_tmux-dbgsym_3.5a-3_arm64/usr/lib/debug/.build-id/e4/ac63904bbb8831dd1c9c7106b1e04f566af0bb.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 1921
+     }
+    }
+   }
+  },
+  "debian/tree": {
+   "turler": {
+    "assert": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 110,
+      "kapsam": {
+       "k": 0,
+       "n": 110,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0337
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 110,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0337
+       ]
+      }
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 110,
+      "kapsam": {
+       "k": 0,
+       "n": 110,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0337
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 110,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0337
+       ]
+      }
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 110,
+      "kapsam": {
+       "k": 0,
+       "n": 110,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0337
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 110,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0337
+       ]
+      }
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 110,
+      "kapsam": {
+       "k": 0,
+       "n": 110,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0337
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 110,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0337
+       ]
+      }
+     }
+    },
+    "export": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 0,
+      "kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 110,
+      "kapsam": {
+       "k": 0,
+       "n": 110,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0337
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 110,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0337
+       ]
+      }
+     }
+    }
+   },
+   "nufus": 110,
+   "export_gt": 0,
+   "cpp_disarida": [],
+   "elfler": {
+    "tree": {
+     "capa": 0,
+     "nufus": 110,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_tree-dbgsym_2.2.1-1_arm64/usr/lib/debug/.build-id/d9/2a927b3c35989420228a9112c46d7c864a9aed.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 119
+     }
+    }
+   }
+  },
+  "debian/zstd": {
+   "turler": {
+    "assert": {
+     "tekil": {
+      "n": 164,
+      "kesinlik": {
+       "k": 137,
+       "n": 164,
+       "oran": 0.835366,
+       "aralik": [
+        0.7711,
+        0.8843
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 137,
+       "n": 164,
+       "oran": 0.835366,
+       "aralik": [
+        0.7711,
+        0.8843
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 164,
+      "kesinlik": {
+       "k": 137,
+       "n": 164,
+       "oran": 0.835366,
+       "aralik": [
+        0.7711,
+        0.8843
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 137,
+       "n": 164,
+       "oran": 0.835366,
+       "aralik": [
+        0.7711,
+        0.8843
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 144,
+       "kesinlik": {
+        "k": 119,
+        "n": 144,
+        "oran": 0.826389,
+        "aralik": [
+         0.7563,
+         0.8796
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 119,
+        "n": 144,
+        "oran": 0.826389,
+        "aralik": [
+         0.7563,
+         0.8796
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 164,
+       "kesinlik": {
+        "k": 137,
+        "n": 164,
+        "oran": 0.835366,
+        "aralik": [
+         0.7711,
+         0.8843
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 137,
+        "n": 164,
+        "oran": 0.835366,
+        "aralik": [
+         0.7711,
+         0.8843
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 20,
+       "dogru": 18
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 919,
+      "kapsam": {
+       "k": 144,
+       "n": 919,
+       "oran": 0.156692,
+       "aralik": [
+        0.1346,
+        0.1816
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 119,
+       "n": 919,
+       "oran": 0.129489,
+       "aralik": [
+        0.1093,
+        0.1527
+       ]
+      }
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "n": 4,
+      "kesinlik": {
+       "k": 2,
+       "n": 4,
+       "oran": 0.5,
+       "aralik": [
+        0.15,
+        0.85
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 2,
+       "n": 4,
+       "oran": 0.5,
+       "aralik": [
+        0.15,
+        0.85
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 4,
+      "kesinlik": {
+       "k": 2,
+       "n": 4,
+       "oran": 0.5,
+       "aralik": [
+        0.15,
+        0.85
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 2,
+       "n": 4,
+       "oran": 0.5,
+       "aralik": [
+        0.15,
+        0.85
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 4,
+       "kesinlik": {
+        "k": 2,
+        "n": 4,
+        "oran": 0.5,
+        "aralik": [
+         0.15,
+         0.85
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 2,
+        "n": 4,
+        "oran": 0.5,
+        "aralik": [
+         0.15,
+         0.85
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 4,
+       "kesinlik": {
+        "k": 2,
+        "n": 4,
+        "oran": 0.5,
+        "aralik": [
+         0.15,
+         0.85
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 2,
+        "n": 4,
+        "oran": 0.5,
+        "aralik": [
+         0.15,
+         0.85
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 4,
+       "dogru": 4
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 919,
+      "kapsam": {
+       "k": 4,
+       "n": 919,
+       "oran": 0.004353,
+       "aralik": [
+        0.0017,
+        0.0111
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 2,
+       "n": 919,
+       "oran": 0.002176,
+       "aralik": [
+        0.0006,
+        0.0079
+       ]
+      }
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 919,
+      "kapsam": {
+       "k": 0,
+       "n": 919,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0042
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 919,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0042
+       ]
+      }
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 919,
+      "kapsam": {
+       "k": 0,
+       "n": 919,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0042
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 919,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0042
+       ]
+      }
+     }
+    },
+    "export": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 0,
+      "kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "n": 168,
+      "kesinlik": {
+       "k": 139,
+       "n": 168,
+       "oran": 0.827381,
+       "aralik": [
+        0.7631,
+        0.877
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 139,
+       "n": 168,
+       "oran": 0.827381,
+       "aralik": [
+        0.7631,
+        0.877
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 168,
+      "kesinlik": {
+       "k": 139,
+       "n": 168,
+       "oran": 0.827381,
+       "aralik": [
+        0.7631,
+        0.877
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 139,
+       "n": 168,
+       "oran": 0.827381,
+       "aralik": [
+        0.7631,
+        0.877
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 148,
+       "kesinlik": {
+        "k": 121,
+        "n": 148,
+        "oran": 0.817568,
+        "aralik": [
+         0.7476,
+         0.8715
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 121,
+        "n": 148,
+        "oran": 0.817568,
+        "aralik": [
+         0.7476,
+         0.8715
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 168,
+       "kesinlik": {
+        "k": 139,
+        "n": 168,
+        "oran": 0.827381,
+        "aralik": [
+         0.7631,
+         0.877
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 139,
+        "n": 168,
+        "oran": 0.827381,
+        "aralik": [
+         0.7631,
+         0.877
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 20,
+       "dogru": 18
+      },
+      "parca": {
+       "n": 4,
+       "dogru": 4
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 919,
+      "kapsam": {
+       "k": 148,
+       "n": 919,
+       "oran": 0.161045,
+       "aralik": [
+        0.1387,
+        0.1862
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 121,
+       "n": 919,
+       "oran": 0.131665,
+       "aralik": [
+        0.1113,
+        0.1551
+       ]
+      }
+     }
+    }
+   },
+   "nufus": 919,
+   "export_gt": 0,
+   "cpp_disarida": [
+    "pzstd"
+   ],
+   "elfler": {
+    "zstd": {
+     "capa": 172,
+     "nufus": 919,
+     "kunye": {
+      "debug": "/Users/apple/karadul_olcum/downloads/debian13/x_zstd-dbgsym_1.5.7+dfsg-1_arm64/usr/lib/debug/.build-id/20/c5b67186051ca393971d93efad300e26edffc6.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 1111
+     }
+    }
+   }
+  },
+  "mac/htop": {
+   "turler": {
+    "assert": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 597,
+      "kapsam": {
+       "k": 0,
+       "n": 597,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0064
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 597,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0064
+       ]
+      }
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 597,
+      "kapsam": {
+       "k": 0,
+       "n": 597,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0064
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 597,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0064
+       ]
+      }
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 597,
+      "kapsam": {
+       "k": 0,
+       "n": 597,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0064
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 597,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0064
+       ]
+      }
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 597,
+      "kapsam": {
+       "k": 0,
+       "n": 597,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0064
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 597,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0064
+       ]
+      }
+     }
+    },
+    "export": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 0,
+      "kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 597,
+      "kapsam": {
+       "k": 0,
+       "n": 597,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0064
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 597,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0064
+       ]
+      }
+     }
+    }
+   },
+   "nufus": 597,
+   "export_gt": 0,
+   "cpp_disarida": [],
+   "elfler": {
+    "htop": {
+     "capa": 0,
+     "nufus": 597,
+     "kunye": {
+      "gt": "/Users/apple/Black_Widow/workspaces/olcum_mac/corpus/htop/gt/htop.gt.json",
+      "gt_fonksiyon": 605
+     }
+    }
+   }
+  },
+  "mac/tmux": {
+   "turler": {
+    "assert": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 2545,
+      "kapsam": {
+       "k": 0,
+       "n": 2545,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0015
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 2545,
+       "oran": 0.0,
+       "aralik": [
+        0.0,
+        0.0015
+       ]
+      }
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "n": 3,
+      "kesinlik": {
+       "k": 3,
+       "n": 3,
+       "oran": 1.0,
+       "aralik": [
+        0.4385,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 3,
+       "n": 3,
+       "oran": 1.0,
+       "aralik": [
+        0.4385,
+        1.0
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 3,
+      "kesinlik": {
+       "k": 3,
+       "n": 3,
+       "oran": 1.0,
+       "aralik": [
+        0.4385,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 3,
+       "n": 3,
+       "oran": 1.0,
+       "aralik": [
+        0.4385,
+        1.0
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 3,
+       "kesinlik": {
+        "k": 3,
+        "n": 3,
+        "oran": 1.0,
+        "aralik": [
+         0.4385,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 3,
+        "n": 3,
+        "oran": 1.0,
+        "aralik": [
+         0.4385,
+         1.0
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 3,
+       "kesinlik": {
+        "k": 3,
+        "n": 3,
+        "oran": 1.0,
+        "aralik": [
+         0.4385,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 3,
+        "n": 3,
+        "oran": 1.0,
+        "aralik": [
+         0.4385,
+         1.0
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 14,
+       "dogru": 14
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 2545,
+      "kapsam": {
+       "k": 3,
+       "n": 2545,
+       "oran": 0.001179,
+       "aralik": [
+        0.0004,
+        0.0035
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 3,
+       "n": 2545,
+       "oran": 0.001179,
+       "aralik": [
+        0.0004,
+        0.0035
+       ]
+      }
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "n": 150,
+      "kesinlik": {
+       "k": 143,
+       "n": 150,
+       "oran": 0.953333,
+       "aralik": [
+        0.9068,
+        0.9772
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 143,
+       "n": 150,
+       "oran": 0.953333,
+       "aralik": [
+        0.9068,
+        0.9772
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 150,
+      "kesinlik": {
+       "k": 143,
+       "n": 150,
+       "oran": 0.953333,
+       "aralik": [
+        0.9068,
+        0.9772
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 143,
+       "n": 150,
+       "oran": 0.953333,
+       "aralik": [
+        0.9068,
+        0.9772
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 150,
+       "kesinlik": {
+        "k": 143,
+        "n": 150,
+        "oran": 0.953333,
+        "aralik": [
+         0.9068,
+         0.9772
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 143,
+        "n": 150,
+        "oran": 0.953333,
+        "aralik": [
+         0.9068,
+         0.9772
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 148,
+       "kesinlik": {
+        "k": 141,
+        "n": 148,
+        "oran": 0.952703,
+        "aralik": [
+         0.9056,
+         0.9769
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 141,
+        "n": 148,
+        "oran": 0.952703,
+        "aralik": [
+         0.9056,
+         0.9769
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 2545,
+      "kapsam": {
+       "k": 150,
+       "n": 2545,
+       "oran": 0.058939,
+       "aralik": [
+        0.0504,
+        0.0688
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 143,
+       "n": 2545,
+       "oran": 0.056189,
+       "aralik": [
+        0.0479,
+        0.0658
+       ]
+      }
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "n": 21,
+      "kesinlik": {
+       "k": 21,
+       "n": 21,
+       "oran": 1.0,
+       "aralik": [
+        0.8454,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 21,
+       "n": 21,
+       "oran": 1.0,
+       "aralik": [
+        0.8454,
+        1.0
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 21,
+      "kesinlik": {
+       "k": 21,
+       "n": 21,
+       "oran": 1.0,
+       "aralik": [
+        0.8454,
+        1.0
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 21,
+       "n": 21,
+       "oran": 1.0,
+       "aralik": [
+        0.8454,
+        1.0
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 21,
+       "kesinlik": {
+        "k": 21,
+        "n": 21,
+        "oran": 1.0,
+        "aralik": [
+         0.8454,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 21,
+        "n": 21,
+        "oran": 1.0,
+        "aralik": [
+         0.8454,
+         1.0
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 19,
+       "kesinlik": {
+        "k": 19,
+        "n": 19,
+        "oran": 1.0,
+        "aralik": [
+         0.8318,
+         1.0
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 19,
+        "n": 19,
+        "oran": 1.0,
+        "aralik": [
+         0.8318,
+         1.0
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 2545,
+      "kapsam": {
+       "k": 21,
+       "n": 2545,
+       "oran": 0.008251,
+       "aralik": [
+        0.0054,
+        0.0126
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 21,
+       "n": 2545,
+       "oran": 0.008251,
+       "aralik": [
+        0.0054,
+        0.0126
+       ]
+      }
+     }
+    },
+    "export": {
+     "tekil": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 0,
+      "kesinlik": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "proje_normallestirmesi": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      },
+      "tek_turlu": {
+       "n": 0,
+       "kesinlik": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "proje_normallestirmesi": {
+        "k": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 0,
+       "dogru": 0
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 0,
+      "kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      },
+      "dogru_kapsam": {
+       "k": 0,
+       "n": 0,
+       "oran": null,
+       "aralik": null
+      }
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "n": 172,
+      "kesinlik": {
+       "k": 165,
+       "n": 172,
+       "oran": 0.959302,
+       "aralik": [
+        0.9184,
+        0.9801
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 165,
+       "n": 172,
+       "oran": 0.959302,
+       "aralik": [
+        0.9184,
+        0.9801
+       ]
+      }
+     },
+     "ornek_duzeyi": {
+      "n": 172,
+      "kesinlik": {
+       "k": 165,
+       "n": 172,
+       "oran": 0.959302,
+       "aralik": [
+        0.9184,
+        0.9801
+       ]
+      },
+      "proje_normallestirmesi": {
+       "k": 165,
+       "n": 172,
+       "oran": 0.959302,
+       "aralik": [
+        0.9184,
+        0.9801
+       ]
+      }
+     },
+     "duyarlilik": {
+      "yalniz_ana": {
+       "n": 172,
+       "kesinlik": {
+        "k": 165,
+        "n": 172,
+        "oran": 0.959302,
+        "aralik": [
+         0.9184,
+         0.9801
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 165,
+        "n": 172,
+        "oran": 0.959302,
+        "aralik": [
+         0.9184,
+         0.9801
+        ]
+       }
+      },
+      "tek_turlu": {
+       "n": 170,
+       "kesinlik": {
+        "k": 163,
+        "n": 170,
+        "oran": 0.958824,
+        "aralik": [
+         0.9175,
+         0.9799
+        ]
+       },
+       "proje_normallestirmesi": {
+        "k": 163,
+        "n": 170,
+        "oran": 0.958824,
+        "aralik": [
+         0.9175,
+         0.9799
+        ]
+       }
+      }
+     },
+     "ayri": {
+      "klon": {
+       "n": 0,
+       "dogru": 0
+      },
+      "parca": {
+       "n": 14,
+       "dogru": 14
+      },
+      "eslenemedi": {
+       "n": 0
+      }
+     },
+     "kapsam": {
+      "nufus": 2545,
+      "kapsam": {
+       "k": 172,
+       "n": 2545,
+       "oran": 0.067583,
+       "aralik": [
+        0.0585,
+        0.078
+       ]
+      },
+      "dogru_kapsam": {
+       "k": 165,
+       "n": 2545,
+       "oran": 0.064833,
+       "aralik": [
+        0.0559,
+        0.0751
+       ]
+      }
+     }
+    }
+   },
+   "nufus": 2545,
+   "export_gt": 0,
+   "cpp_disarida": [],
+   "elfler": {
+    "tmux": {
+     "capa": 186,
+     "nufus": 2545,
+     "kunye": {
+      "gt": "/Users/apple/Black_Widow/workspaces/olcum_mac/corpus/tmux/gt/tmux.gt.json",
+      "gt_fonksiyon": 2572
+     }
+    }
+   }
+  }
+ },
+ "kararlar": {
+  "assert": {
+   "giren_birimler": [
+    "debian/coreutils",
+    "debian/redis-tools",
+    "debian/zstd"
+   ],
+   "giren_programlar": [
+    "coreutils",
+    "redis-tools",
+    "zstd"
+   ],
+   "kucuk_birimler": [],
+   "gorunumler": {
+    "tekil": {
+     "makro_kesinlik": 0.807213,
+     "program_kesinligi": {
+      "coreutils": 0.852941,
+      "redis-tools": 0.733333,
+      "zstd": 0.835366
+     },
+     "wilson_ihlali": [
+      "debian/coreutils",
+      "debian/redis-tools",
+      "debian/zstd"
+     ]
+    },
+    "ornek_duzeyi": {
+     "makro_kesinlik": 0.8617,
+     "program_kesinligi": {
+      "coreutils": 0.910448,
+      "redis-tools": 0.839286,
+      "zstd": 0.835366
+     },
+     "wilson_ihlali": [
+      "debian/redis-tools",
+      "debian/zstd"
+     ]
+    }
+   },
+   "karar_makrosu": 0.807213,
+   "karar": "kesin_degil",
+   "esik": 0.95,
+   "n_min": 10,
+   "en_az_program": 2,
+   "havuz": {
+    "k": 188,
+    "n": 228,
+    "oran": 0.824561,
+    "aralik": [
+     0.7699,
+     0.8684
+    ]
+   },
+   "havuz_ornek": {
+    "k": 245,
+    "n": 287,
+    "oran": 0.853659,
+    "aralik": [
+     0.8081,
+     0.8899
+    ]
+   }
+  },
+  "assert_ust": {
+   "giren_birimler": [],
+   "giren_programlar": [],
+   "kucuk_birimler": [
+    "debian/zstd",
+    "mac/tmux"
+   ],
+   "gorunumler": {
+    "tekil": {
+     "makro_kesinlik": null,
+     "program_kesinligi": {},
+     "wilson_ihlali": []
+    },
+    "ornek_duzeyi": {
+     "makro_kesinlik": null,
+     "program_kesinligi": {},
+     "wilson_ihlali": []
+    }
+   },
+   "karar_makrosu": null,
+   "karar": "yetersiz",
+   "esik": 0.95,
+   "n_min": 10,
+   "en_az_program": 2,
+   "havuz": {
+    "k": 5,
+    "n": 7,
+    "oran": 0.714286,
+    "aralik": [
+     0.3589,
+     0.9178
+    ]
+   },
+   "havuz_ornek": {
+    "k": 5,
+    "n": 7,
+    "oran": 0.714286,
+    "aralik": [
+     0.3589,
+     0.9178
+    ]
+   }
+  },
+  "func_kalibi": {
+   "giren_birimler": [
+    "debian/openssl",
+    "debian/tmux",
+    "mac/tmux"
+   ],
+   "giren_programlar": [
+    "openssl",
+    "tmux"
+   ],
+   "kucuk_birimler": [],
+   "gorunumler": {
+    "tekil": {
+     "makro_kesinlik": 0.972869,
+     "program_kesinligi": {
+      "openssl": 1.0,
+      "tmux": 0.945739
+     },
+     "wilson_ihlali": []
+    },
+    "ornek_duzeyi": {
+     "makro_kesinlik": 0.972869,
+     "program_kesinligi": {
+      "openssl": 1.0,
+      "tmux": 0.945739
+     },
+     "wilson_ihlali": []
+    }
+   },
+   "karar_makrosu": 0.972869,
+   "karar": "kesin",
+   "esik": 0.95,
+   "n_min": 10,
+   "en_az_program": 2,
+   "havuz": {
+    "k": 249,
+    "n": 262,
+    "oran": 0.950382,
+    "aralik": [
+     0.917,
+     0.9708
+    ]
+   },
+   "havuz_ornek": {
+    "k": 249,
+    "n": 262,
+    "oran": 0.950382,
+    "aralik": [
+     0.917,
+     0.9708
+    ]
+   }
+  },
+  "func_aktarma": {
+   "giren_birimler": [
+    "debian/tmux",
+    "mac/tmux"
+   ],
+   "giren_programlar": [
+    "tmux"
+   ],
+   "kucuk_birimler": [],
+   "gorunumler": {
+    "tekil": {
+     "makro_kesinlik": 1.0,
+     "program_kesinligi": {
+      "tmux": 1.0
+     },
+     "wilson_ihlali": []
+    },
+    "ornek_duzeyi": {
+     "makro_kesinlik": 1.0,
+     "program_kesinligi": {
+      "tmux": 1.0
+     },
+     "wilson_ihlali": []
+    }
+   },
+   "karar_makrosu": 1.0,
+   "karar": "yetersiz",
+   "esik": 0.95,
+   "n_min": 10,
+   "en_az_program": 2,
+   "havuz": {
+    "k": 36,
+    "n": 36,
+    "oran": 1.0,
+    "aralik": [
+     0.9036,
+     1.0
+    ]
+   },
+   "havuz_ornek": {
+    "k": 36,
+    "n": 36,
+    "oran": 1.0,
+    "aralik": [
+     0.9036,
+     1.0
+    ]
+   }
+  }
+ },
+ "rapor_satirlari": {
+  "export": {
+   "tekil": {
+    "k": 4224,
+    "n": 4224,
+    "oran": 1.0,
+    "aralik": [
+     0.9991,
+     1.0
+    ]
+   },
+   "ornek_duzeyi": {
+    "k": 8971,
+    "n": 8971,
+    "oran": 1.0,
+    "aralik": [
+     0.9996,
+     1.0
+    ]
+   }
+  },
+  "dizgi_turleri": {
+   "tekil": {
+    "k": 475,
+    "n": 530,
+    "oran": 0.896226,
+    "aralik": [
+     0.8673,
+     0.9194
+    ]
+   },
+   "ornek_duzeyi": {
+    "k": 532,
+    "n": 589,
+    "oran": 0.903226,
+    "aralik": [
+     0.8767,
+     0.9246
+    ]
+   }
+  }
+ },
+ "sinif": {
+  "debian/coreutils": {
+   "elf": 106,
+   "ic_fonksiyon": 14120,
+   "snake_dizgi": 97,
+   "dizgi_zenginligi": 0.00687,
+   "ic_fonksiyon_ortanca": 112.0,
+   "boyut_tabakasi": "kucuk",
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "yoksul"
+  },
+  "debian/htop": {
+   "elf": 1,
+   "ic_fonksiyon": 609,
+   "snake_dizgi": 113,
+   "dizgi_zenginligi": 0.18555,
+   "ic_fonksiyon_ortanca": 609.0,
+   "boyut_tabakasi": "orta",
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "zengin"
+  },
+  "debian/openssl": {
+   "elf": 1,
+   "ic_fonksiyon": 592,
+   "snake_dizgi": 404,
+   "dizgi_zenginligi": 0.682432,
+   "ic_fonksiyon_ortanca": 592.0,
+   "boyut_tabakasi": "orta",
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "zengin"
+  },
+  "debian/redis-tools": {
+   "elf": 4,
+   "ic_fonksiyon": 10531,
+   "snake_dizgi": 225,
+   "dizgi_zenginligi": 0.021365,
+   "ic_fonksiyon_ortanca": 2672.0,
+   "boyut_tabakasi": "buyuk",
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "yoksul"
+  },
+  "debian/sqlite3": {
+   "elf": 1,
+   "ic_fonksiyon": 429,
+   "snake_dizgi": 85,
+   "dizgi_zenginligi": 0.198135,
+   "ic_fonksiyon_ortanca": 429.0,
+   "boyut_tabakasi": "kucuk",
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "zengin"
+  },
+  "debian/tmux": {
+   "elf": 1,
+   "ic_fonksiyon": 1920,
+   "snake_dizgi": 496,
+   "dizgi_zenginligi": 0.258333,
+   "ic_fonksiyon_ortanca": 1920.0,
+   "boyut_tabakasi": "orta",
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "zengin"
+  },
+  "debian/tree": {
+   "elf": 1,
+   "ic_fonksiyon": 119,
+   "snake_dizgi": 0,
+   "dizgi_zenginligi": 0.0,
+   "ic_fonksiyon_ortanca": 119.0,
+   "boyut_tabakasi": "kucuk",
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "yoksul"
+  },
+  "debian/zstd": {
+   "elf": 2,
+   "ic_fonksiyon": 1931,
+   "snake_dizgi": 6,
+   "dizgi_zenginligi": 0.003107,
+   "ic_fonksiyon_ortanca": 965.5,
+   "boyut_tabakasi": "orta",
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "yoksul"
+  },
+  "mac/htop": {
+   "elf": 1,
+   "ic_fonksiyon": 597,
+   "snake_dizgi": 58,
+   "dizgi_zenginligi": 0.097152,
+   "ic_fonksiyon_ortanca": 597.0,
+   "boyut_tabakasi": "orta",
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "zengin"
+  },
+  "mac/tmux": {
+   "elf": 1,
+   "ic_fonksiyon": 2588,
+   "snake_dizgi": 986,
+   "dizgi_zenginligi": 0.380989,
+   "ic_fonksiyon_ortanca": 2588.0,
+   "boyut_tabakasi": "buyuk",
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "zengin"
+  }
+ },
+ "bekleyen": []
+}
