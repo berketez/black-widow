@@ -1,0 +1,429 @@
+{
+ "_comment": "Ad geçerliliği süzgeci (2026-11-10; rapor.md bulgu 8 ve 9'un ad kısmı): name_validity listeleri ve kararı, c_namer'da aday ve ön ad süzgeci, çakışma eki, sayaç ve köken kaydı. Her mutantın find/replace uzunluğu farklıdır. Koşum (yalıtılmış kopyada): PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ad_gecerliligi.json",
+ "mutants": [
+  {
+   "id": "nv_c11_break_eksik",
+   "desc": "C11 listesinden break çıkar",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_c11_anahtar_sozcukleri_tam_liste",
+   "find": "    auto break case char const",
+   "replace": "    auto case char const"
+  },
+  {
+   "id": "nv_c23_sozcukleri_yok",
+   "desc": "C23 sözcükleri (true, false, bool …) anahtar sözcük sayılmaz",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_c11_anahtar_sozcukleri_tam_liste",
+   "find": "= C11_KEYWORDS | C23_KEYWORDS | GNU_KEYWORDS",
+   "replace": "= C11_KEYWORDS | GNU_KEYWORDS"
+  },
+  {
+   "id": "nv_gnu_sozcukleri_yok",
+   "desc": "gnu kipinin asm sözcüğü anahtar sözcük sayılmaz",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_c11_anahtar_sozcukleri_tam_liste",
+   "find": "= C11_KEYWORDS | C23_KEYWORDS | GNU_KEYWORDS",
+   "replace": "= C11_KEYWORDS | C23_KEYWORDS"
+  },
+  {
+   "id": "nv_undefined_ailesi_eksik",
+   "desc": "undefined2/4/6/8 tip sözcüğü sayılmaz",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_tip_adlari_dosya_kapsaminda_ve_yerelde",
+   "find": "_GHIDRA_UNDEFINED_SIZES = range(1, 9)",
+   "replace": "_GHIDRA_UNDEFINED_SIZES = range(1, 9, 2)"
+  },
+  {
+   "id": "nv_std_tipler_yok",
+   "desc": "stdint/stddef tip adları listeden düşer",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_tip_adlari_dosya_kapsaminda_ve_yerelde",
+   "find": "BODY_TYPE_NAMES: frozenset[str] = GHIDRA_TYPE_WORDS | STD_TYPE_NAMES",
+   "replace": "BODY_TYPE_NAMES: frozenset[str] = GHIDRA_TYPE_WORDS"
+  },
+  {
+   "id": "nv_tip_adi_yerelde_sorulmaz",
+   "desc": "yerel adda tip adı sınaması yapılmaz",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_tip_adlari_dosya_kapsaminda_ve_yerelde",
+   "find": "    if name in (BODY_TYPE_NAMES if local else FILE_SCOPE_TYPE_NAMES):",
+   "replace": "    if not local and name in FILE_SCOPE_TYPE_NAMES:"
+  },
+  {
+   "id": "nv_addr_yerelde_yasak",
+   "desc": "yerel adda da dosya kapsamı listesi kullanılır (addr reddedilir)",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_tip_adlari_dosya_kapsaminda_ve_yerelde",
+   "find": "    if name in (BODY_TYPE_NAMES if local else FILE_SCOPE_TYPE_NAMES):",
+   "replace": "    if name in FILE_SCOPE_TYPE_NAMES:"
+  },
+  {
+   "id": "nv_anahtar_sozcuk_sinamasi_yok",
+   "desc": "anahtar sözcük sınaması kalkar",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_anahtar_sozcuk_adi_verilmez",
+   "find": "    if name in C_KEYWORDS:\n        return REASON_KEYWORD\n",
+   "replace": ""
+  },
+  {
+   "id": "nv_tip_adi_sinamasi_yok",
+   "desc": "tip adı sınaması kalkar",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_tip_adi_verilmez",
+   "find": "    if name in (BODY_TYPE_NAMES if local else FILE_SCOPE_TYPE_NAMES):\n        return REASON_TYPE_NAME\n",
+   "replace": ""
+  },
+  {
+   "id": "nv_neden_sirasi",
+   "desc": "tip adı anahtar sözcükten önce sınanır (bool tip adı çıkar)",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_neden_sirasi_ve_cakisma",
+   "find": "    if name in C_KEYWORDS:\n        return REASON_KEYWORD\n    if name in (BODY_TYPE_NAMES if local else FILE_SCOPE_TYPE_NAMES):\n        return REASON_TYPE_NAME\n",
+   "replace": "    if name in (BODY_TYPE_NAMES if local else FILE_SCOPE_TYPE_NAMES):\n        return REASON_TYPE_NAME\n    if name in C_KEYWORDS:  # sıra değişti\n        return REASON_KEYWORD\n"
+  },
+  {
+   "id": "nv_tanimlayici_onek_eslesmesi",
+   "desc": "tanımlayıcı sınaması yalnız adın başına bakar",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_tanimlayici_bicimi",
+   "find": "_IDENTIFIER_RE.fullmatch(name) is not None",
+   "replace": "_IDENTIFIER_RE.match(name) is not None"
+  },
+  {
+   "id": "nv_cakisma_yerelde_de",
+   "desc": "yerel adda da fonksiyon adı çakışması sorulur",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_neden_sirasi_ve_cakisma",
+   "find": "    if not local and existing_functions and isinstance(name, str):",
+   "replace": "    if existing_functions and isinstance(name, str):"
+  },
+  {
+   "id": "nv_kendi_adiyla_cakisir",
+   "desc": "fonksiyon kendi adıyla çakışır",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_neden_sirasi_ve_cakisma",
+   "find": "        if owner is not None and owner != own_name:",
+   "replace": "        if owner is not None:"
+  },
+  {
+   "id": "nv_cakisma_sinamasi_yok",
+   "desc": "var olan fonksiyon adı sınaması kalkar",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_var_olan_fonksiyon_adi_verilmez",
+   "find": "        owner = existing_functions.get(name)\n",
+   "replace": "        owner = None\n"
+  },
+  {
+   "id": "nv_ithal_adi_soyulmaz",
+   "desc": "ithal adının _'siz hâli var olan ad sayılmaz",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_ithal_adinin_alt_cizgisiz_hali",
+   "find": "        alias = import_alias(name) if is_import else None",
+   "replace": "        alias = None"
+  },
+  {
+   "id": "nv_her_ad_soyulur",
+   "desc": "ithal olmayan adın da _'siz hâli var olan ad sayılır",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_ithal_adinin_alt_cizgisiz_hali",
+   "find": "        alias = import_alias(name) if is_import else None",
+   "replace": "        alias = import_alias(name)"
+  },
+  {
+   "id": "nv_tam_ad_onceligi_yok",
+   "desc": "_'siz ad tam adın sahibini ezer",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_ithal_adinin_alt_cizgisiz_hali",
+   "find": "        names.setdefault(alias, owner)",
+   "replace": "        names[alias] = owner"
+  },
+  {
+   "id": "nv_butun_alt_cizgiler_soyulur",
+   "desc": "ithal adından bütün baştaki alt çizgiler soyulur",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_ithal_adinin_alt_cizgisiz_hali",
+   "find": "        return name[1:]",
+   "replace": "        return name.lstrip(\"_\")"
+  },
+  {
+   "id": "nv_ek_ilk_degeri",
+   "desc": "çakışma eki 2 yerine 10'dan başlar",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_unique_name_eki",
+   "find": "FIRST_COLLISION_SUFFIX = 2",
+   "replace": "FIRST_COLLISION_SUFFIX = 10"
+  },
+  {
+   "id": "nv_ek_ayrilmis_adi_atlamaz",
+   "desc": "ek var olan fonksiyon adını atlamaz",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_ad_gecerliligi.py::test_unique_name_eki",
+   "find": "    while f\"{base}_{suffix}\" in used or f\"{base}_{suffix}\" in reserved:",
+   "replace": "    while f\"{base}_{suffix}\" in used:"
+  },
+  {
+   "id": "cn_suzgec_cagrilmaz",
+   "desc": "aday süzgeci hiç çalışmaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_anahtar_sozcuk_adi_verilmez",
+   "find": "        rejected_name_counts = self._reject_invalid_names(\n            existing_functions, prov, names_by_address)",
+   "replace": "        rejected_name_counts: dict[str, int] = {}"
+  },
+  {
+   "id": "cn_var_olan_adlar_bos",
+   "desc": "var olan fonksiyon adları süzgece verilmez",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_var_olan_fonksiyon_adi_verilmez",
+   "find": "        existing_functions = self._existing_function_names()",
+   "replace": "        existing_functions = {}"
+  },
+  {
+   "id": "cn_ithal_bayragi_okunmaz",
+   "desc": "fonksiyonun ithal bayrağı okunmaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_ithal_adinin_alt_cizgisiz_hali_verilmez",
+   "find": "is_import=bool(raw.get(\"is_thunk\") or raw.get(\"is_external\")),",
+   "replace": "is_import=False,"
+  },
+  {
+   "id": "cn_dis_fonksiyon_ithal_sayilmaz",
+   "desc": "yalnız thunk ithal sayılır (dış fonksiyon sayılmaz)",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_dis_fonksiyon_da_ithaldir",
+   "find": "is_import=bool(raw.get(\"is_thunk\") or raw.get(\"is_external\")),",
+   "replace": "is_import=bool(raw.get(\"is_thunk\")),"
+  },
+  {
+   "id": "cn_sahip_adi_yok",
+   "desc": "çakışılan ithal fonksiyonun Ghidra adı kayda geçmez",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_ithal_adinin_alt_cizgisiz_hali_verilmez",
+   "find": "        if owner_name != name:\n            owner[\"existing_name\"] = owner_name\n",
+   "replace": ""
+  },
+  {
+   "id": "cn_sahip_adi_her_zaman",
+   "desc": "sahibin adı reddedilen adla aynıyken de yazılır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_var_olan_fonksiyon_adi_verilmez",
+   "find": "        if owner_name != name:\n",
+   "replace": "        if owner_name:\n"
+  },
+  {
+   "id": "cn_aday_sayaci",
+   "desc": "atılan aday yanlış sayılır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_tip_adi_verilmez",
+   "find": "                rejected[reason] = rejected.get(reason, 0) + 1",
+   "replace": "                rejected[reason] = rejected.get(reason, 0) + 10"
+  },
+  {
+   "id": "cn_hepsi_gecersiz_sayilmaz",
+   "desc": "bütün adayları atılan anahtar eleme sayımına girmez",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_anahtar_sozcuk_adi_verilmez",
+   "find": "                prov.count_eliminated(\"all_candidates_invalid_name\", key, ordered)",
+   "replace": "                pass"
+  },
+  {
+   "id": "cn_kalan_adaylar_da_atilir",
+   "desc": "bir adayı atılan anahtarın kalan adayları da atılır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_reddedilen_adayin_yerine_siradaki_gecerli_aday",
+   "find": "            self._candidates[key] = kept\n        return rejected",
+   "replace": "            self._candidates[key] = []\n        return rejected"
+  },
+  {
+   "id": "cn_gecersiz_aday_listede_kalir",
+   "desc": "atılan aday listeden çıkarılmaz (yalnız sayılır)",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_suzgec_dogrudan_kapsam_ve_sira",
+   "find": "            self._candidates[key] = kept\n        return rejected",
+   "replace": "            self._candidates[key] = list(cands)\n        return rejected"
+  },
+  {
+   "id": "cn_her_anahtar_ikili_kapsam",
+   "desc": "yerel anahtar da ikili kapsamlı sayılır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_suzgec_dogrudan_kapsam_ve_sira",
+   "find": "        return func_name != old_name",
+   "replace": "        return False"
+  },
+  {
+   "id": "cn_kendi_adini_degistiren_yerel",
+   "desc": "kendi adını değiştiren fonksiyon yerel sayılır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_suzgec_dogrudan_kapsam_ve_sira",
+   "find": "        return func_name != old_name",
+   "replace": "        return True"
+  },
+  {
+   "id": "cn_aday_kendi_adi_verilmez",
+   "desc": "aday sınamasına simgenin kendi adı verilmez",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_suzgec_dogrudan_kapsam_ve_sira",
+   "find": "                    existing_functions=existing_functions, own_name=own_name,\n                )",
+   "replace": "                    existing_functions=existing_functions,\n                )"
+  },
+  {
+   "id": "cn_aday_kapsami_verilmez",
+   "desc": "aday sınamasına kapsam verilmez (hepsi dosya kapsamı)",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_suzgec_dogrudan_kapsam_ve_sira",
+   "find": "                    cand.new_name, local=local,",
+   "replace": "                    cand.new_name,"
+  },
+  {
+   "id": "cn_cakisma_adresi_yok",
+   "desc": "çakışılan fonksiyonun adresi kayda geçmez",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_var_olan_fonksiyon_adi_verilmez",
+   "find": "        if info is not None and info.address:\n            owner[\"existing_address\"] = info.address\n",
+   "replace": ""
+  },
+  {
+   "id": "cn_cakisma_adresi_her_nedende",
+   "desc": "adres çakışma dışındaki nedenlerde de yazılır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_suzgec_dogrudan_kapsam_ve_sira",
+   "find": "        if reason != _name_validity.REASON_COLLISION:\n            return {}\n",
+   "replace": ""
+  },
+  {
+   "id": "cn_koken_sayaci",
+   "desc": "köken kaydındaki ret sayacı yanlış",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_anahtar_sozcuk_adi_verilmez",
+   "find": "        counts[reason] = counts.get(reason, 0) + 1",
+   "replace": "        counts[reason] = counts.get(reason, 0) + 11"
+  },
+  {
+   "id": "cn_kayit_new_name_kalir",
+   "desc": "ret kaydı proposed_name yanında new_name de taşır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_anahtar_sozcuk_adi_verilmez",
+   "find": "            entry[\"proposed_name\"] = entry.pop(\"new_name\")",
+   "replace": "            entry[\"proposed_name\"] = entry[\"new_name\"]"
+  },
+  {
+   "id": "cn_kayit_kapsami",
+   "desc": "ret kaydında kapsam hep global",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_suzgec_dogrudan_kapsam_ve_sira",
+   "find": "            \"key\": key, \"scope\": self._scope(key), \"source\": source, \"reason\": reason,",
+   "replace": "            \"key\": key, \"scope\": \"global\", \"source\": source, \"reason\": reason,"
+  },
+  {
+   "id": "cn_on_ad_suzulmez",
+   "desc": "ön adlar süzgeçten geçmez",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_on_ad_ayni_kurallardan_gecer",
+   "find": "                if pre_reason is not None:\n                    rejected_name_counts[pre_reason]",
+   "replace": "                if pre_reason is not None and False:\n                    rejected_name_counts[pre_reason]"
+  },
+  {
+   "id": "cn_on_ad_reddi_adi_yine_verir",
+   "desc": "reddedilen ön ad sayılır ama yine de verilir",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_on_ad_ayni_kurallardan_gecer",
+   "find": "                            self._collision_owner(sanitized, pre_reason, existing_functions),\n                        )\n                    continue\n",
+   "replace": "                            self._collision_owner(sanitized, pre_reason, existing_functions),\n                        )\n"
+  },
+  {
+   "id": "cn_on_ad_var_olan_adlar_bos",
+   "desc": "ön ad var olan fonksiyon adlarına karşı sınanmaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_on_ad_ayni_kurallardan_gecer",
+   "find": "                        sanitized, existing_functions=existing_functions,\n",
+   "replace": "                        sanitized,\n"
+  },
+  {
+   "id": "cn_on_ad_kendi_adi_verilmez",
+   "desc": "ön ad sınamasına anahtarın kendi adı verilmez",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_on_ad_ozdes_esleme_ve_ham_ad",
+   "find": "                        own_name=self._own_function_name(old_name, names_by_address))",
+   "replace": "                        )"
+  },
+  {
+   "id": "cn_on_ad_adres_cozulmez",
+   "desc": "ön ad anahtarı adresten fonksiyona çözülmez (kendi adı çakışma sayılır)",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_on_ad_anahtari_ayni_fonksiyonu_gosteriyorsa_cakisma_degil",
+   "find": "                        own_name=self._own_function_name(old_name, names_by_address))",
+   "replace": "                        own_name=old_name)"
+  },
+  {
+   "id": "cn_adres_cozumu_her_anahtara",
+   "desc": "veri anahtarı da adresten fonksiyona çözülür",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_on_ad_anahtari_ayni_fonksiyonu_gosteriyorsa_cakisma_degil",
+   "find": "        if key in self._func_by_name or not _GHIDRA_AUTO_FUNC.match(key):\n            return key\n",
+   "replace": "        if key in self._func_by_name:\n            return key\n"
+  },
+  {
+   "id": "cn_on_ad_sayaci",
+   "desc": "reddedilen ön ad yanlış sayılır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_kunyeli_on_ad_da_reddedilir",
+   "find": "rejected_name_counts[pre_reason] = rejected_name_counts.get(pre_reason, 0) + 1",
+   "replace": "rejected_name_counts[pre_reason] = rejected_name_counts.get(pre_reason, 0) + 12"
+  },
+  {
+   "id": "cn_on_ad_kaydi_yok",
+   "desc": "reddedilen ön ad köken kaydına yazılmaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_on_ad_ayni_kurallardan_gecer",
+   "find": "                    if prov is not None:\n                        prov.add_rejected_pre_name(",
+   "replace": "                    if prov is None:\n                        prov.add_rejected_pre_name("
+  },
+  {
+   "id": "cn_on_ad_ham_adi_yok",
+   "desc": "temizlenen ön adın ham hâli kayda geçmez",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_on_ad_ozdes_esleme_ve_ham_ad",
+   "find": "            if str(raw_name) != name:\n                entry[\"raw_name\"] = str(raw_name)\n",
+   "replace": ""
+  },
+  {
+   "id": "cn_on_ad_turu_yok",
+   "desc": "reddedilen ön adın türü kayda geçmez",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_kunyeli_on_ad_da_reddedilir",
+   "find": "            if kind:\n                entry[\"pre_name_kind\"] = str(kind)\n",
+   "replace": ""
+  },
+  {
+   "id": "cn_ek_var_olani_atlamaz",
+   "desc": "çakışma eki var olan fonksiyon adını atlamaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_ayni_adi_isteyen_iki_fonksiyon",
+   "find": "                () if self._is_local_name_key(key) else existing_functions,",
+   "replace": "                (),"
+  },
+  {
+   "id": "cn_ek_yerelde_de_atlar",
+   "desc": "yerel adın eki de var olan fonksiyon adını atlar",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_yerel_adin_eki_fonksiyon_adina_bakmaz",
+   "find": "                () if self._is_local_name_key(key) else existing_functions,",
+   "replace": "                existing_functions,"
+  },
+  {
+   "id": "cn_sonuc_sayaci_yok",
+   "desc": "sonuç nesnesine ret sayacı yazılmaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_koken_kaydi_kapaliyken_de_ayni_karar",
+   "find": "            rejected_name_counts=dict(sorted(rejected_name_counts.items())),\n",
+   "replace": ""
+  },
+  {
+   "id": "cn_koken_bolumu_yok",
+   "desc": "köken kaydında ret listesi boş yazılır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_ad_gecerliligi.py::test_tip_adi_verilmez",
+   "find": "                \"rejected\": self.name_validity[\"rejected\"],",
+   "replace": "                \"rejected\": [],"
+  }
+ ]
+}

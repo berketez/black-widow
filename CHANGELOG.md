@@ -70,6 +70,9 @@ düzeltmesi birlikte geldiği için 1.20.0-pre → 1.21.1.
   fonksiyonlarda başka fonksiyonun adresini, boyutunu ve çağıranlarını yazıyordu.
 - Zincirli parametre adlandırmasında iki parametre tek ada çöküyordu.
 - Analiz, ağ kapalıyken de başvuru kaynağı indirmeyi ve derlemeyi deniyordu.
+- Adlandırıcı C anahtar sözcüğünü (`break`), tip adını (`undefined`) ya da ikilide başka bir
+  fonksiyona ait adı (`write`) fonksiyon adı olarak verebiliyordu. Bu adaylar artık reddedilir
+  ve rapora nedeniyle yazılır (`naming_rejected`; `karadul/reconstruction/name_validity.py`).
 - Tip değişimi ikilinin dizgi sabitlerini ve yorumlarını da değiştiriyordu (`"iv undefined\n"` →
   `"iv uint64_t\n"`). Değişim artık yalnız kod içinde ve tip konumunda yapılır; dizgi ya da
   yorum metni değişirse dosya özgün metniyle yazılır ve sayılır (`type_recovery_reverted`).

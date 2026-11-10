@@ -52,6 +52,7 @@ from karadul.core.naming_labels import (
     LABEL_UNVERIFIED,
     STRATEGY_KS1,
 )
+from karadul.reconstruction import name_validity as _name_validity
 from karadul.reconstruction.aho_replacer import AhoFinder, AhoReplacer
 from karadul.reconstruction.tarif import alt_kanal as _alt_kanal
 from karadul.reconstruction.tarif import baglama as _baglama
@@ -114,6 +115,9 @@ class CNamingResult:
     # attığı aday sayısı (alt kanal -> adet; süzgeç kapalıysa boş).
     label_map: dict[str, str] = field(default_factory=dict)
     silenced_counts: dict[str, int] = field(default_factory=dict)
+    # Ad geçerliliği süzgecinin reddettiği ad sayısı (ret nedeni -> adet; aday ve ön ad
+    # birlikte). Nedenler: ``name_validity.REJECT_REASONS``. Boş: hiçbir ad reddedilmedi.
+    rejected_name_counts: dict[str, int] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -155,6 +159,9 @@ class _FunctionInfo:
     params: list[dict[str, str]] = field(default_factory=list)
     return_type: str = ""
     calling_convention: str = ""
+    # İthal fonksiyon mu (Ghidra ``is_thunk`` ya da ``is_external``). Yalnız ad geçerliliği
+    # süzgeci okur (var olan fonksiyon adları); stratejiler kullanmaz.
+    is_import: bool = False
 
 
 @dataclass
@@ -231,10 +238,22 @@ class _ProvenanceRecorder:
         # öntanımlısıyla hiç oluşmazlar):
         "all_candidates_silenced",       # bütün adayları susan alt kanaldan
         "below_global_min_confidence",   # en iyi aday ürün eşiğinin altında
+        # Ad geçerliliği süzgeci (genel ve yerel anahtarda; geçersiz ad yoksa hiç oluşmaz):
+        "all_candidates_invalid_name",   # bütün adayları geçersiz ya da çakışan ad
     )
+
+    # Reddedilen adın kaynağı (``name_validity["rejected"][i]["source"]``)
+    REJECTED_SOURCES = ("candidate", "pre_names")
 
     def __init__(self, min_confidence: float) -> None:
         self.min_confidence = min_confidence
+        # Ad geçerliliği süzgeci: reddedilen her ad nedeniyle (kaynak -> neden -> adet ve
+        # tek tek kayıt). Hiçbir ad reddedilmediyse sayaçlar ve liste boştur.
+        self.name_validity: dict[str, Any] = {
+            "definition_version": _name_validity.DEFINITION_VERSION,
+            "rejected_counts": {source: {} for source in self.REJECTED_SOURCES},
+            "rejected": [],
+        }
         # Susturma süzgeci ve genel eşik (kapalıyken de kayda geçer: koşunun kol kimliği)
         self.silencing: dict[str, Any] = {
             "enabled": False, "definition_version": _alt_kanal.DEFINITION_VERSION,
@@ -368,6 +387,48 @@ class _ProvenanceRecorder:
         except Exception:
             self._fail()
 
+    def _add_rejected(
+        self, key: str, source: str, reason: str, entry: dict[str, Any],
+        owner: dict[str, str] | None,
+    ) -> None:
+        counts = self.name_validity["rejected_counts"].setdefault(source, {})
+        counts[reason] = counts.get(reason, 0) + 1
+        rec: dict[str, Any] = {
+            "key": key, "scope": self._scope(key), "source": source, "reason": reason,
+        }
+        rec.update(entry)
+        if owner:
+            # çakışmada adın sahibi olan fonksiyon (``existing_address``; ad ithal adının
+            # ``_``'siz hâliyse sahibinin Ghidra adı ``existing_name``)
+            rec.update(owner)
+        self.name_validity["rejected"].append(rec)
+
+    def add_rejected_candidate(
+        self, key: str, cand: Any, reason: str, owner: dict[str, str] | None = None,
+    ) -> None:
+        """Ad geçerliliği süzgecinin attığı aday: önerdiği ad, stratejisi, güveni, kanıtı."""
+        try:
+            entry = self._candidate_entry(cand)
+            entry["proposed_name"] = entry.pop("new_name")
+            self._add_rejected(key, "candidate", reason, entry, owner)
+        except Exception:
+            self._fail()
+
+    def add_rejected_pre_name(
+        self, key: str, raw_name: Any, name: str, reason: str, strategy: str,
+        kind: str | None = None, owner: dict[str, str] | None = None,
+    ) -> None:
+        """Ad geçerliliği süzgecinin reddettiği ön ad (``name``: temizlenmiş, reddedilen ad)."""
+        try:
+            entry: dict[str, Any] = {"proposed_name": name, "strategy": strategy}
+            if str(raw_name) != name:
+                entry["raw_name"] = str(raw_name)
+            if kind:
+                entry["pre_name_kind"] = str(kind)
+            self._add_rejected(key, "pre_names", reason, entry, owner)
+        except Exception:
+            self._fail()
+
     def attach_pre_name_alternatives(
         self, all_candidates: dict[str, list[Any]],
     ) -> None:
@@ -405,6 +466,14 @@ class _ProvenanceRecorder:
             "global_min_confidence": self.global_min_confidence,
             "max_runners_up": NAMING_PROVENANCE_MAX_RUNNERS_UP,
             "silencing": self.silencing,
+            "name_validity": {
+                "definition_version": self.name_validity["definition_version"],
+                "rejected_counts": {
+                    source: dict(sorted(counts.items()))
+                    for source, counts in self.name_validity["rejected_counts"].items()
+                },
+                "rejected": self.name_validity["rejected"],
+            },
             "summary": {
                 "candidate_keys": self.candidate_keys,
                 "renamed_global": renamed_global,
@@ -1790,6 +1859,108 @@ class CVariableNamer:
             self._candidates[key] = kept
         return dropped
 
+    @staticmethod
+    def _is_local_name_key(key: str) -> bool:
+        """Aday anahtarı yerel bir ad mı (parametre, yerel değişken).
+
+        Genel anahtar (``FUN_…``, ``DAT_…``) ve kendi adını değiştiren fonksiyon
+        (``ad::ad``; C++ / ObjC simgesi) ikili kapsamlıdır.
+        """
+        if "::" not in key:
+            return False
+        func_name, old_name = key.split("::", 1)
+        return func_name != old_name
+
+    def _reject_invalid_names(
+        self, existing_functions: dict[str, str], prov: _ProvenanceRecorder | None,
+        names_by_address: dict[int, str] | None = None,
+    ) -> dict[str, int]:
+        """Adı geçerli olmayan adayları at (kurallar ve listeler: ``name_validity``).
+
+        Her kapsamda: C tanımlayıcısı olmayan ad, C anahtar sözcüğü, tip adı. Yalnız ikili
+        kapsamlı anahtarda: ikilide başka bir fonksiyonun adı (``existing_functions``).
+        Liste sırası korunur; kalan adayların seçimi değişmez ve anahtar sıradaki geçerli
+        adayıyla yarışır. Bütün adayları atılan anahtar ``all_candidates_invalid_name`` diye
+        sayılır. Dönen sözlük: ret nedeni → atılan aday sayısı.
+        """
+        rejected: dict[str, int] = {}
+        for key in sorted(self._candidates):
+            cands = self._candidates[key]
+            if not cands:
+                continue
+            local = self._is_local_name_key(key)
+            old_name = key.split("::", 1)[1] if "::" in key else key
+            own_name = self._own_function_name(old_name, names_by_address or {})
+            kept: list[_NamingCandidate] = []
+            for cand in cands:
+                reason = _name_validity.reject_reason(
+                    cand.new_name, local=local,
+                    existing_functions=existing_functions, own_name=own_name,
+                )
+                if reason is None:
+                    kept.append(cand)
+                    continue
+                rejected[reason] = rejected.get(reason, 0) + 1
+                if prov is not None:
+                    prov.add_rejected_candidate(
+                        key, cand, reason,
+                        self._collision_owner(cand.new_name, reason, existing_functions))
+            if len(kept) == len(cands):
+                continue
+            if not kept and prov is not None:
+                ordered = sorted(cands, key=lambda c: c.confidence, reverse=True)
+                prov.count_eliminated("all_candidates_invalid_name", key, ordered)
+            self._candidates[key] = kept
+        return rejected
+
+    def _existing_function_names(self) -> dict[str, str]:
+        """İkilide var olan fonksiyon adları (ad → sahibinin Ghidra adı), ``ghidra_functions.json``
+        sırasıyla. İthal fonksiyonun ``_``'siz adı da girer (``name_validity``)."""
+        infos = list(self._functions.values()) + list(self._func_by_name.values())
+        return _name_validity.existing_function_names(
+            (info.name, getattr(info, "is_import", False)) for info in infos)
+
+    def _function_names_by_address(self) -> dict[int, str]:
+        """Adres (tam sayı) → Ghidra fonksiyon adı. Onaltılık okunamayan adres atlanır."""
+        names: dict[int, str] = {}
+        for address, info in self._functions.items():
+            try:
+                names.setdefault(int(address, 16), info.name)
+            except (TypeError, ValueError):
+                continue
+        return names
+
+    def _own_function_name(self, key: str, names_by_address: dict[int, str]) -> str:
+        """Anahtarın gösterdiği fonksiyonun Ghidra adı; bulunamazsa anahtarın kendisi.
+
+        Ön ad anahtarı adresten kurulmuş bir yer tutucu olabilir (``FUN_<adres>``) ve o
+        adresteki fonksiyonun Ghidra'da gerçek bir adı bulunabilir (htop: ``FUN_001322e4``
+        anahtarına ``full_write`` ön adı; o adresteki fonksiyon zaten ``full_write``). Ad o
+        fonksiyonun kendi adıysa çakışma değildir.
+        """
+        if key in self._func_by_name or not _GHIDRA_AUTO_FUNC.match(key):
+            return key
+        return names_by_address.get(int(key.split("_", 1)[1], 16)) or key
+
+    def _collision_owner(
+        self, name: Any, reason: str, existing_functions: dict[str, str],
+    ) -> dict[str, str]:
+        """Çakışma nedeninde adın sahibi olan fonksiyon; öbür nedenlerde boş sözlük.
+
+        ``existing_address``: sahibin adresi. ``existing_name``: sahibin Ghidra adı, yalnız
+        reddedilen addan farklıysa (ithal adının ``_``'siz hâliyle çakışma).
+        """
+        if reason != _name_validity.REASON_COLLISION:
+            return {}
+        owner_name = existing_functions.get(name, "")
+        owner: dict[str, str] = {}
+        info = self._func_by_name.get(owner_name)
+        if info is not None and info.address:
+            owner["existing_address"] = info.address
+        if owner_name != name:
+            owner["existing_name"] = owner_name
+        return owner
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -2048,6 +2219,16 @@ class CVariableNamer:
             }
             prov.global_min_confidence = global_min
 
+        # Ad geçerliliği süzgeci: verilen her ad geçerli bir C tanımlayıcısı ve ikili içinde
+        # tek anlamlı olsun (kurallar, listeler ve kaynakları: name_validity). Susturmadan
+        # SONRA çalışır: susan aday burada yeniden sayılmaz, susturma sayaçları değişmez.
+        # Var olan fonksiyon adları ghidra_functions.json'dan (ithal, export, Ghidra'nın adı;
+        # ithal adın baştaki "_" soyulmuş hâli de: Mach-O).
+        existing_functions = self._existing_function_names()
+        names_by_address = self._function_names_by_address()
+        rejected_name_counts = self._reject_invalid_names(
+            existing_functions, prov, names_by_address)
+
         # Pre-names: BinaryNameExtractor'dan gelen yuksek guvenirlikli isimler.
         # Künyesi olan ön adlar öncelik sırasıyla (elle > main > KS-1) öne alınır;
         # kalanlar verildikleri sırayla işlenir. Künye yoksa sıra ve davranış
@@ -2068,8 +2249,25 @@ class CVariableNamer:
                     # CamelCase'i koru (Swift/ObjC isimleri icin)
                     has_camel = any(c.isupper() for c in new_name[1:]) if len(new_name) > 1 else False
                     sanitized = _sanitize_c_name(new_name, preserve_case=has_camel) if hasattr(new_name, '__len__') else str(new_name)
+                strategy = STRATEGY_KS1 if kind == _baglama.KIND_KS1 else "binary_extract"
+                # Ad geçerliliği: ön ad her türde (elle, main, KS-1 dahil) aynı kurallardan
+                # geçer. Reddedilen ön ad verilmez ve "aynı ad" düşmesi sayılmaz; anahtar
+                # aday listesiyle yarışmayı sürdürür.
+                pre_reason = (
+                    _name_validity.reject_reason(
+                        sanitized, existing_functions=existing_functions,
+                        own_name=self._own_function_name(old_name, names_by_address))
+                    if sanitized and sanitized != "unnamed" else None
+                )
+                if pre_reason is not None:
+                    rejected_name_counts[pre_reason] = rejected_name_counts.get(pre_reason, 0) + 1
+                    if prov is not None:
+                        prov.add_rejected_pre_name(
+                            old_name, new_name, sanitized, pre_reason, strategy, kind,
+                            self._collision_owner(sanitized, pre_reason, existing_functions),
+                        )
+                    continue
                 if sanitized and sanitized != "unnamed" and sanitized not in used_new_names:
-                    strategy = STRATEGY_KS1 if kind == _baglama.KIND_KS1 else "binary_extract"
                     # KS-1'de künyedeki etiket; elle adda etiket yok; kalan her ön ad "doğrulanmadı"
                     label = _baglama.entry_label(meta)
                     naming_map[old_name] = sanitized
@@ -2151,14 +2349,13 @@ class CVariableNamer:
                     prov.count_eliminated("below_global_min_confidence", key, candidates)
                 continue
 
-            # Cakisma kontrolu: ayni yeni isim birden fazla eski isme verilmesin
-            new_name = best.new_name
-            if new_name in used_new_names:
-                # Suffix ekle
-                suffix = 2
-                while f"{new_name}_{suffix}" in used_new_names:
-                    suffix += 1
-                new_name = f"{new_name}_{suffix}"
+            # Cakisma kontrolu: ayni yeni isim birden fazla eski isme verilmesin.
+            # Adı ilk isteyen anahtar eksiz alır, sonraki _2, _3 ... ekini (anahtar sırası
+            # belirlenimli: G9). İkili kapsamlı adda ek, var olan fonksiyon adlarını da atlar.
+            new_name = _name_validity.unique_name(
+                best.new_name, used_new_names,
+                () if self._is_local_name_key(key) else existing_functions,
+            )
 
             used_new_names.add(new_name)
             by_strategy[best.strategy] = by_strategy.get(best.strategy, 0) + 1
@@ -2326,6 +2523,7 @@ class CVariableNamer:
             strategy_map=strategy_map,
             label_map=label_map,
             silenced_counts=dict(sorted(silenced_counts.items())),
+            rejected_name_counts=dict(sorted(rejected_name_counts.items())),
         )
 
     # ------------------------------------------------------------------
@@ -2352,6 +2550,7 @@ class CVariableNamer:
                 params=raw.get("parameters", raw.get("params", [])),
                 return_type=raw.get("return_type", ""),
                 calling_convention=raw.get("calling_convention", ""),
+                is_import=bool(raw.get("is_thunk") or raw.get("is_external")),
             )
             if info.address:
                 self._functions[info.address] = info

@@ -267,6 +267,8 @@ def test_provenance_file_schema(ws, tmp_path, serial_pool):
         "global", "per_function", "eliminated_keys", "below_min_confidence_candidates",
         # plan v2.2 N1 adım 3: yalnız alan eklendi, şema sürümü 1 kaldı
         "silencing", "global_min_confidence",
+        # ad geçerliliği süzgeci (2026-11-10): yalnız alan eklendi, şema sürümü 1 kaldı
+        "name_validity",
     }
     assert prov["schema"] == NAMING_PROVENANCE_SCHEMA == "karadul.naming_provenance"
     assert prov["schema_version"] == NAMING_PROVENANCE_SCHEMA_VERSION == 1

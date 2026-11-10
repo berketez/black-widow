@@ -351,6 +351,22 @@ def test_etiket_sayaclari_gercek_sayilardan():
     assert sahte == {}
 
 
+def test_reddedilen_ad_sayaci_rapora_yazilir():
+    """Ad geçerliliği süzgecinin sayaçları (neden → adet) stats'a taşınır; alan yoksa yazılmaz."""
+    stats: dict = {}
+    reddedilen = {"collides_with_existing_function": 4, "invalid_c_keyword": 1}
+    FN._record_label_stats(SimpleNamespace(label_map={}, silenced_counts={},
+                                           rejected_name_counts=reddedilen), stats)
+    assert stats["naming_rejected"] == reddedilen
+    assert stats["naming_rejected"] is not reddedilen          # kopya; sonuç nesnesi değişmez
+    eski: dict = {}
+    FN._record_label_stats(SimpleNamespace(label_map={}, silenced_counts={}), eski)
+    assert "naming_rejected" not in eski
+    bos: dict = {}
+    FN._record_label_stats(SimpleNamespace(label_map={}, silenced_counts={}, rejected_name_counts={}), bos)
+    assert bos["naming_rejected"] == {}
+
+
 # --------------------------------------------------------------------------------------------
 # FeedbackLoopStep: kol kimliği istatistiklerde
 

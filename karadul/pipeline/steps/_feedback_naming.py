@@ -251,6 +251,11 @@ def _record_label_stats(naming_result: Any, stats: dict[str, Any]) -> None:
     silenced = getattr(naming_result, "silenced_counts", None)
     if isinstance(silenced, dict):
         stats["naming_silenced"] = dict(silenced)
+    # Ad geçerliliği süzgecinin reddettiği adaylar (neden → adet): C anahtar sözcüğü, tip adı,
+    # ikilide başka bir fonksiyona ait ad. Sonuç bu alanı taşımıyorsa yazılmaz.
+    rejected = getattr(naming_result, "rejected_name_counts", None)
+    if isinstance(rejected, dict):
+        stats["naming_rejected"] = dict(rejected)
 
 
 def _run_c_namer(
