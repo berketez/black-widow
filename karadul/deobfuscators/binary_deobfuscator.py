@@ -68,12 +68,30 @@ class BinaryDeobfuscator:
     ]
 
     # Ghidra artifact pattern'leri (temizlenecek)
-    # v1.7.x: .*? -> [^*]{0,5000} -- */ yoksa tum inputu taramayi onle
+    # KISIT: decompiler uyarıları (``/* WARNING: ... */`` ve ``/* DISPLAY
+    # WARNING ... */``) bu listede DEĞİL. Uyarı, Ghidra'nın "bu fonksiyon
+    # eksik çözüldü" dediği kanıttır (jumptable kurtarılamadı, tip yayılımı
+    # oturmadı, bozuk komut...); silinirse kullanıcı eksik decompile'ı tam
+    # sanar. Eski iki kalıp ayrıca dizgi sabitinin İÇİNE de isabet ediyordu
+    # (sqlite3: ``"/* WARNING: Script requires ... */\n"`` -> ``"\n"``).
     GHIDRA_ARTIFACTS = [
-        re.compile(r"/\*\s*WARNING:[^*]{0,5000}\*/"),
-        re.compile(r"/\*\s*DISPLAY WARNING[^*]{0,5000}\*/"),
         re.compile(r"  /\*\s*@.*?\*/"),  # Ghidra annotation comments
     ]
+
+    # Korunan decompiler uyarısının başı: blok yorumun ilk sözcüğü.
+    GHIDRA_WARNING_HEAD = re.compile(r"/\*\s*(?:WARNING:|DISPLAY WARNING)")
+
+    # C sözcük birimleri: dizgi, karakter sabiti, satır yorumu, blok yorum.
+    # Uyarı sayımı bununla yapılır; dizgi sabiti içindeki "/* WARNING: */"
+    # metni yorum DEĞİLDİR ve sayılmaz. Kapanmayan blok yorum dosya sonuna
+    # kadar tek yorum sayılır.
+    _C_NONCODE_TOKEN = re.compile(
+        r'"(?:\\.|[^"\\\n])*"'
+        r"|'(?:\\.|[^'\\\n])*'"
+        r"|//[^\n]*"
+        r"|/\*.*?(?:\*/|\Z)",
+        re.DOTALL,
+    )
 
     def __init__(self, config):
         self._config = config
@@ -127,6 +145,8 @@ class BinaryDeobfuscator:
                 shutil.copy2(str(meta_src), str(deobf_dir / meta_name))
 
         total_cleaned = 0
+        total_warnings_kept = 0
+        total_warnings_lost = 0
         total_anti_debug = 0
         total_xor_decrypted = 0
         total_strings_decrypted = 0
@@ -138,7 +158,8 @@ class BinaryDeobfuscator:
                 content = c_file.read_text(errors="replace")
                 original_len = len(content)
 
-                # 1. Ghidra artifact temizligi
+                # 1. Ghidra artifact temizligi (uyarılar korunur, yalnız sayılır)
+                warnings_in = self._count_ghidra_warnings(content)
                 content, cleaned = self._clean_ghidra_artifacts(content)
                 total_cleaned += cleaned
 
@@ -198,12 +219,31 @@ class BinaryDeobfuscator:
                 # 7. Bos satir normalizasyonu
                 content = re.sub(r"\n{4,}", "\n\n\n", content)
 
+                # Sayaç YAZILAN metinden alınır: "korundu" denen uyarı gerçekten
+                # dosyadadır. Aradaki adımlar (ölü kod, CFF) uyarı taşıyan bir
+                # bloğu atarsa fark ayrı sayaca düşer ve günlüğe yazılır.
+                warnings_out = self._count_ghidra_warnings(content)
+                total_warnings_kept += warnings_out
+                if warnings_out < warnings_in:
+                    total_warnings_lost += warnings_in - warnings_out
+                    logger.warning(
+                        "%s: %d Ghidra uyarısı deobfuscation adımlarında düştü "
+                        "(giriş %d, çıkış %d)",
+                        c_file.name, warnings_in - warnings_out,
+                        warnings_in, warnings_out,
+                    )
+
                 c_file.write_text(content)
 
             except Exception as exc:
                 errors.append(f"{c_file.name}: {exc}")
 
+        # ghidra_artifacts_cleaned: yalnız gerçekten SİLİNEN artık sayısı.
+        # ghidra_warnings_kept: çıktı dosyalarında duran decompiler uyarısı.
+        # ghidra_warnings_lost: girişte olup çıkışta olmayan uyarı (beklenen 0).
         stats["ghidra_artifacts_cleaned"] = total_cleaned
+        stats["ghidra_warnings_kept"] = total_warnings_kept
+        stats["ghidra_warnings_lost"] = total_warnings_lost
         stats["anti_debug_markers"] = total_anti_debug
         stats["xor_patterns_found"] = total_xor_decrypted
         stats["strings_decrypted"] = total_strings_decrypted
@@ -214,17 +254,38 @@ class BinaryDeobfuscator:
 
         logger.info(
             "Binary deobfuscation tamamlandi: %d temizlik, %d anti-debug, "
-            "%d XOR, %d string, %d opaque, %d CFF",
+            "%d XOR, %d string, %d opaque, %d CFF, %d Ghidra uyarısı korundu",
             total_cleaned, total_anti_debug, total_xor_decrypted,
             total_strings_decrypted, total_opaque_preds, total_cff_deflattened,
+            total_warnings_kept,
         )
 
         return BinaryDeobfuscationResult(
             success=True, artifacts=artifacts, stats=stats, errors=errors,
         )
 
+    def _count_ghidra_warnings(self, content: str) -> int:
+        """Metindeki decompiler uyarı yorumlarını say (metni değiştirmez).
+
+        Yalnız GERÇEK blok yorumlar sayılır: ``/* WARNING: ...`` ya da
+        ``/* DISPLAY WARNING ...`` ile başlayan yorum. Dizgi sabiti, karakter
+        sabiti ve ``//`` yorumu içindeki aynı metin sayılmaz. Çok satırlı
+        uyarı tek uyarıdır.
+        """
+        count = 0
+        for match in self._C_NONCODE_TOKEN.finditer(content):
+            # Desen ``/*`` ile başlar: dizgi ya da ``//`` birimi eşleşmez.
+            if self.GHIDRA_WARNING_HEAD.match(match.group(0)):
+                count += 1
+        return count
+
     def _clean_ghidra_artifacts(self, content: str) -> tuple[str, int]:
-        """Ghidra'nin eklediği gereksiz yorumları temizle."""
+        """Ghidra'nin eklediği gereksiz yorumları temizle.
+
+        Decompiler uyarıları (``/* WARNING: ... */``) temizlenmez: korunur ve
+        ``_count_ghidra_warnings`` ile ayrıca sayılır. Dönen sayı yalnız
+        gerçekten silinen artık sayısıdır.
+        """
         count = 0
         for pattern in self.GHIDRA_ARTIFACTS:
             matches = pattern.findall(content)

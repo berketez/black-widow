@@ -823,6 +823,26 @@ CRYPTO_APIS: dict[str, dict[str, Any]] = {
 # Ana sinif
 # ---------------------------------------------------------------------------
 
+_C_NONCODE_TOKEN = re.compile(
+    r'"(?:\\.|[^"\\\n])*(?:"|(?=\n)|\Z)'
+    r"|'(?:\\.|[^'\\\n])*(?:'|(?=\n)|\Z)"
+    r"|//[^\n]*"
+    r"|/\*.*?(?:\*/|\Z)",
+    re.DOTALL,
+)
+_GHIDRA_WARNING_HEAD = re.compile(r"/\*\s*(?:WARNING:|DISPLAY WARNING)")
+
+
+def _strip_ghidra_warnings(content: str) -> str:
+    """Decompiler uyarı yorumlarını analiz metninden çıkar (dizgilere dokunmaz)."""
+    if "WARNING" not in content:
+        return content
+    return _C_NONCODE_TOKEN.sub(
+        lambda m: "" if _GHIDRA_WARNING_HEAD.match(m.group(0)) else m.group(0),
+        content,
+    )
+
+
 class CAlgorithmIdentifier:
     """Decompile edilmis C kodunda algoritma tespiti.
 
@@ -949,6 +969,11 @@ class CAlgorithmIdentifier:
                 with errors_lock:
                     errors.append(f"Cannot read {c_file.name}: {exc}")
                 return file_matches
+
+            # Decompiler uyarıları çıktıda korunur ama analiz girdisi değildir:
+            # "Removing unreachable block" içindeki "block" sözcüğü Feistel
+            # bağlam anahtarını tek başına sağlıyordu.
+            content = _strip_ghidra_warnings(content)
 
             functions = self._extract_functions(content, func_meta, c_file.stem)
 

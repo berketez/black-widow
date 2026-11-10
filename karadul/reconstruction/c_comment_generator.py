@@ -744,10 +744,18 @@ def _format_iter_bound(bound: str) -> str:
     return bound
 
 
+_GHIDRA_WARNING_RE = re.compile(r"/\*\s*(?:WARNING:|DISPLAY WARNING)[^*]{0,5000}\*/")
+
+
+def _lookahead(ctx: str, start: int, width: int) -> str:
+    """``ctx[start:]`` metninin ilk ``width`` karakteri; decompiler uyarıları sayılmaz."""
+    return _GHIDRA_WARNING_RE.sub("", ctx[start:start + width + 4000])[:width]
+
+
 def _logic_error_return(m: re.Match, ctx: str) -> str:
     """if (x < 0) pattern'inin return icerip icermedigine bak."""
     # Satirdan sonraki birkaç satira bak
-    rest = ctx[m.end():][:200]
+    rest = _lookahead(ctx, m.end(), 200)
     if re.search(r"return\s+(-1|0|NULL|false)", rest[:150]):
         return f"error check: return on {m.group(1)} failure"
     return f"check {m.group(1)} for negative value"
@@ -755,7 +763,7 @@ def _logic_error_return(m: re.Match, ctx: str) -> str:
 
 def _logic_nonzero_check(m: re.Match, ctx: str) -> str:
     """if (x != 0) pattern'i -- errno style error check."""
-    rest = ctx[m.end():][:200]
+    rest = _lookahead(ctx, m.end(), 200)
     if re.search(r"return\s+(-1|0|NULL|false)|goto\s+\w+", rest[:150]):
         return f"error check: handle {m.group(1)} != 0"
     return ""
@@ -764,7 +772,7 @@ def _logic_nonzero_check(m: re.Match, ctx: str) -> str:
 def _logic_null_check(m: re.Match, ctx: str) -> str:
     """if (ptr == NULL) pattern'inin hangi path'e gittigine bak."""
     var = m.group(1)
-    rest = ctx[m.end():][:200]
+    rest = _lookahead(ctx, m.end(), 200)
     if re.search(r"return\s+(-1|0|NULL|false)", rest[:150]):
         return f"null check: return on {var} == NULL"
     if re.search(r"goto\s+\w+", rest[:150]):
@@ -776,7 +784,7 @@ def _logic_null_check(m: re.Match, ctx: str) -> str:
 
 def _logic_while_break(m: re.Match, ctx: str) -> str:
     """while(1) icerisinde break kosulunu bul."""
-    rest = ctx[m.end():][:500]
+    rest = _lookahead(ctx, m.end(), 500)
     break_match = re.search(r"if\s*\(\s*([^)]{1,40})\s*\)\s*(?:\{?\s*break|break)", rest)
     if break_match:
         cond = break_match.group(1).strip()
@@ -788,7 +796,7 @@ def _logic_while_break(m: re.Match, ctx: str) -> str:
 def _logic_alloc_pattern(m: re.Match, ctx: str) -> str:
     """malloc/calloc sonrasi null check varsa 'allocate + check' yaz."""
     var = m.group(1)
-    rest = ctx[m.end():][:200]
+    rest = _lookahead(ctx, m.end(), 200)
     if re.search(rf"if\s*\(\s*{re.escape(var)}\s*==\s*(?:NULL|0)", rest):
         return f"allocate memory for {var} (checked)"
     return f"allocate memory for {var}"
@@ -857,7 +865,7 @@ def _logic_bounds_check(m: re.Match, ctx: str) -> str:
     """Bounds check: if (x >= limit) veya if (x > limit)."""
     var = m.group(1)
     bound = m.group(2)
-    rest = ctx[m.end():][:150]
+    rest = _lookahead(ctx, m.end(), 150)
     if re.search(r"return|goto|break", rest[:100]):
         return f"bounds check: {var} against {bound}"
     return ""

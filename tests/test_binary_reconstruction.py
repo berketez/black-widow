@@ -1886,7 +1886,11 @@ class TestBinaryDeobfuscator:
         return FakeWorkspace()
 
     def test_ghidra_artifact_cleanup(self, config, tmp_path):
-        """Ghidra WARNING yorumlari temizlenmeli."""
+        """Ghidra WARNING yorumları KORUNMALI (silinmemeli); sayaç ayrı.
+
+        Eski beklenti "temizlenmeli" idi; çıktı sağlamlığı denetimi (kusur 12)
+        uyarıların decompiler kanıtı olduğunu gösterdi.
+        """
         decompiled = tmp_path / "decompiled_src"
         decompiled.mkdir()
         (decompiled / "func.c").write_text(
@@ -1899,7 +1903,11 @@ class TestBinaryDeobfuscator:
         ws = self._make_workspace(tmp_path, decompiled)
         result = deobf.deobfuscate(ws)
         assert result.success is True
-        assert result.stats.get("ghidra_artifacts_cleaned", 0) > 0
+        assert result.stats["ghidra_artifacts_cleaned"] == 0
+        assert result.stats["ghidra_warnings_kept"] == 2
+        out = (tmp_path / "deobfuscated" / "decompiled" / "func.c").read_text()
+        assert "/* WARNING: Restarted to delay slot code */" in out
+        assert "/* DISPLAY WARNING - bad instruction */" in out
 
     def test_anti_debug_marking_ptrace(self, config, tmp_path):
         """ptrace anti-debug kodu isaretlenmeli."""
