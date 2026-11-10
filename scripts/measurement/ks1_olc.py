@@ -23,8 +23,11 @@ Alt komutlar
       - ölçümü belirleyen dosyaların (``OLCUM_DOSYALARI``) sha256'sı o commit'teki
         ``ks1_sabitler.json`` ile aynı;
       - birim başına ELF sayısı beklenenle aynı, hepsi bitmiş ve aynı sabitlenmiş Ghidra sürümüyle.
+    Sapma kaydı (``ks1_sapma_1.md``) varsa sha256'lar onu ekleyen commit'teki
+    ``ks1_sapma_1_sabitler.json``'dan okunur; o commit ön kayıt commit'inin torunu olmalıdır.
 ``sabitle``
     ``ks1_sabitler.json``'u bugünkü dosyaların sha256'larıyla yazar (ön kayıt commit'inden önce).
+    ``--sapma`` ile sapma kaydının sabitlerini (``ks1_sapma_1_sabitler.json``) yazar.
 
 Birimler
 --------
@@ -67,6 +70,10 @@ OLC_YOLU = Path(__file__).resolve()
 ONKAYIT_DIZINI = REPO / "docs" / "arge" / "2026-10-21_g11_n1"
 ONKAYIT_YOLU = ONKAYIT_DIZINI / "ks1_onkayit.md"
 SABITLER_YOLU = ONKAYIT_DIZINI / "ks1_sabitler.json"
+# Sapma kaydı 1 (ön kayıttan sonra, ölçüm sonucu görülmeden yapılan kod değişikliği): ölçüm, sabitleri
+# bu kaydı ekleyen commit'ten okur. Yeni bir sapma yeni bir kayıt ve bu sabitlerin değişmesi demektir.
+SAPMA_YOLU = ONKAYIT_DIZINI / "ks1_sapma_1.md"
+SAPMA_SABITLER_YOLU = ONKAYIT_DIZINI / "ks1_sapma_1_sabitler.json"
 SABITLER_SEMA = "karadul-ks1-sabitler/1"
 KESIN_REL = "karadul/reconstruction/tarif/kesin.py"
 # Ölçümün sonucunu belirleyen dosyalar (depo köküne göre): çıkarıcı, bu betik ve GT, ofset ile
@@ -121,6 +128,9 @@ CPP_ISARETLERI = ("_Z", "__gxx_personality", "__cxa_begin_catch", "__cxa_end_cat
                   "__cxa_rethrow")
 
 OFSET_KAYNAGI = "ghidra_entry"   # ``function_f1.derive_image_offset``'in kanıtlı kaynağı
+# Ofset kanıtı (sapma kaydı 1): Ghidra'nın görüntü tabanı; ``entry`` varsa onunla çapraz denetlenir
+KAYNAK_TABAN_VE_ENTRY = "goruntu_tabani+ghidra_entry"
+KAYNAK_TABAN = "goruntu_tabani"
 DURUM_DOGRU = "dogru"
 DURUM_YANLIS = "yanlis"
 SATIR_ANA = "ana"
@@ -161,8 +171,9 @@ def onkayit_commit(yol: Path = ONKAYIT_YOLU, kok: Path = REPO) -> str:
     return satirlar[-1]
 
 
-def commit_atasi_mi(commit: str, kok: Path = REPO) -> bool:
-    r = _git("merge-base", "--is-ancestor", commit, "HEAD", kok=kok)
+def commit_atasi_mi(commit: str, kok: Path = REPO, torun: str = "HEAD") -> bool:
+    """``commit``, ``torun``'un (varsayılan HEAD) atası mı (kendisi dahil)."""
+    r = _git("merge-base", "--is-ancestor", commit, torun, kok=kok)
     if r.returncode not in (0, 1):
         raise OnkosulHatasi(f"git merge-base: {r.stderr.strip() or r.returncode}")
     return r.returncode == 0
@@ -188,19 +199,37 @@ def sha256_denetle(yol: Path, beklenen: str) -> str:
 
 
 def onkosullari_denetle(kok: Path = REPO, onkayit: Path = ONKAYIT_YOLU,
-                        sabitler: Path = SABITLER_YOLU) -> dict[str, Any]:
-    """Ön kayıt commit'i HEAD'in atası; ölçüm dosyaları ön kayıttaki sha256'larla aynı."""
+                        sabitler: Path = SABITLER_YOLU, sapma: Optional[Path] = None,
+                        sapma_sabitler: Optional[Path] = None) -> dict[str, Any]:
+    """Ön kayıt commit'i HEAD'in atası; ölçüm dosyaları sabitlenen sha256'larla aynı.
+
+    ``sapma`` verilmezse sabitler ön kayıt commit'inden okunur. Verilirse sapma kaydını ekleyen
+    commit HEAD'in atası ve ön kayıt commit'inin torunu olmalıdır; sabitler o commit'teki
+    ``sapma_sabitler``'den okunur. Sapma kaydı ön kaydı silmez: ikisi de çıktıya yazılır.
+    """
     commit = onkayit_commit(onkayit, kok)
     if not commit_atasi_mi(commit, kok):
         raise OnkosulHatasi(f"ön kayıt commit'i {commit} HEAD'in atası değil")
-    belge = committeki_sabitler(commit, kok, sabitler)
+    sapma_commit = None
+    if sapma is not None:
+        if sapma_sabitler is None:
+            raise OnkosulHatasi("sapma kaydı için sabitler dosyası verilmedi")
+        sapma_commit = onkayit_commit(sapma, kok)
+        if not commit_atasi_mi(sapma_commit, kok):
+            raise OnkosulHatasi(f"sapma commit'i {sapma_commit} HEAD'in atası değil")
+        if sapma_commit == commit or not commit_atasi_mi(commit, kok, torun=sapma_commit):
+            raise OnkosulHatasi(f"sapma commit'i {sapma_commit} ön kayıt commit'inden ({commit}) sonra değil")
+        belge = committeki_sabitler(sapma_commit, kok, sapma_sabitler)
+    else:
+        belge = committeki_sabitler(commit, kok, sabitler)
     dosyalar = belge.get("dosyalar") or {}
     denetlenen = {}
     for rel in OLCUM_DOSYALARI:
         if rel not in dosyalar:
             raise OnkosulHatasi(f"ön kayıtta {rel} için sha256 yok")
         denetlenen[rel] = sha256_denetle(Path(kok) / rel, dosyalar[rel])
-    return {"onkayit_commit": commit, "onkayit_commit_atasi": True, "sha256": denetlenen}
+    return {"onkayit_commit": commit, "onkayit_commit_atasi": True, "sapma_commit": sapma_commit,
+            "sha256": denetlenen}
 
 
 def _yukle(ad: str, yol: Path) -> ModuleType:
@@ -646,6 +675,51 @@ def gt_mac(e: Elf, mac_veri: Path) -> GtBirimi:
     return GtBirimi(adlar, nufus, set(), {"gt": str(yol), "gt_fonksiyon": len(adlar)})
 
 
+def ghidra_goruntu_tabani(static: Path) -> Optional[int]:
+    """Ghidra'nın kaydettiği görüntü tabanı (``program_info.image_base``, onaltılık); yoksa None."""
+    try:
+        deger = (_json(Path(static) / "ghidra_combined_results.json").get("program_info") or {}).get("image_base")
+        return None if deger is None else int(str(deger), 16)
+    except (OSError, ValueError):
+        return None
+
+
+def en_dusuk_yukleme_adresi(yol: Path) -> int:
+    """ELF'in en düşük PT_LOAD sanal adresi (analiz edilen ikilinin kendi başlığından; GT değil)."""
+    from elftools.elf.elffile import ELFFile
+    with open(yol, "rb") as f:
+        adresler = [s["p_vaddr"] for s in ELFFile(f).iter_segments() if s["p_type"] == "PT_LOAD"]
+    if not adresler:
+        raise OnkosulHatasi(f"{yol}: PT_LOAD bölütü yok")
+    return min(adresler)
+
+
+def elf_ofseti(ad: str, static: Path, soyulmus: Path, gfonk: list[dict[str, Any]], giris: int,
+               entry_ofseti: int, entry_kaynagi: str) -> tuple[int, str]:
+    """Ghidra adresi − dosya adresi, kanıtıyla (sapma kaydı 1).
+
+    Kanıt: Ghidra'nın görüntü tabanı − ELF'in en düşük PT_LOAD adresi. Çapraz denetimler:
+      - Ghidra'da ``entry`` fonksiyonu varsa (``entry_kaynagi`` = ``ghidra_entry``) ondan türetilen
+        ofset aynı olmalı;
+      - ELF'in giriş adresi (``giris``) sıfır değilse Ghidra'da ``ofset + giris``'te bir fonksiyon
+        başlamalı. ``-rdynamic`` programlarda Ghidra girişi dinamik simge tablosundan adlandırır
+        (``_start``), ``entry`` adlı fonksiyon olmaz; giriş noktasız paylaşımlı nesnede giriş 0'dır.
+    Taban kayıtlı değilse ya da bir denetim tutmazsa adres eşlemesi kanıtsız kalır: ölçüm durur.
+    """
+    taban = ghidra_goruntu_tabani(static)
+    if taban is None:
+        raise OnkosulHatasi(f"{ad}: Ghidra görüntü tabanı kayıtlı değil; ofset kanıtlanamıyor")
+    ofset = taban - en_dusuk_yukleme_adresi(soyulmus)
+    if giris and not any(g["addr"] == ofset + giris for g in gfonk):
+        raise OnkosulHatasi(f"{ad}: giriş adresinde (0x{ofset + giris:x}) Ghidra fonksiyonu yok")
+    if entry_kaynagi != OFSET_KAYNAGI:
+        return ofset, KAYNAK_TABAN
+    if entry_ofseti != ofset:
+        raise OnkosulHatasi(f"{ad}: ofset kanıtları çelişiyor (entry 0x{entry_ofseti:x}, "
+                            f"görüntü tabanı 0x{ofset:x})")
+    return ofset, KAYNAK_TABAN_VE_ENTRY
+
+
 def gt_elf(e: Elf, indir: Path) -> GtBirimi:
     f1 = _f1()
     hedef = _json(e.kosu / "raw" / "target_info.json")
@@ -658,10 +732,10 @@ def gt_elf(e: Elf, indir: Path) -> GtBirimi:
         raise OnkosulHatasi(f"{e.ad}: build-id {bid} için {len(adaylar)} hata ayıklama dosyası")
     gt = f1.extract_gt(adaylar[0], soyulmus, corpus=e.program, binary=e.ad)
     gfonk = f1.load_ghidra_functions(Path(e.static) / "ghidra_functions.json")
-    ofset, kaynak = f1.derive_image_offset(gfonk, int(gt["entry"], 16), gt["elf_type"])
-    if kaynak != OFSET_KAYNAGI:
-        # Ghidra'da ``entry`` yoksa yardımcı varsayılan tabana düşer; adres eşlemesi kanıtsız kalır
-        raise OnkosulHatasi(f"{e.ad}: ofset Ghidra entry'den türetilemedi (kaynak: {kaynak})")
+    giris = int(gt["entry"], 16)
+    entry_ofseti, entry_kaynagi = f1.derive_image_offset(gfonk, giris, gt["elf_type"])
+    # Ghidra'da ``entry`` yoksa yardımcı varsayılan tabana düşer; ofset görüntü tabanından kanıtlanır
+    ofset, kaynak = elf_ofseti(e.ad, Path(e.static), soyulmus, gfonk, giris, entry_ofseti, entry_kaynagi)
     turler = f1.classify_detected(gfonk, gt["exec_sections"], ofset)
     adsiz = {g["addr"] - ofset for g in gfonk if not g["is_thunk"]
              and turler.get(g["addr"] - ofset) == "code"
@@ -753,7 +827,8 @@ def ghidra_denetle(elfler: list[Elf]) -> dict[str, Any]:
 def olc(elfler: list[Elf], mac_veri: Optional[Path], indir: Optional[Path],
         denetle: bool = True, beklenen: Optional[dict[str, int]] = BEKLENEN_ELF,
         eksik_izinli: bool = False) -> dict[str, Any]:
-    onkosul = onkosullari_denetle() if denetle else {"denetlenmedi": True}
+    onkosul = (onkosullari_denetle(sapma=SAPMA_YOLU, sapma_sabitler=SAPMA_SABITLER_YOLU)
+               if denetle else {"denetlenmedi": True})
     nufus_kunyesi = nufus_denetle(elfler, beklenen, eksik_izinli)
     ghidra = ghidra_denetle(elfler) if denetle else {"denetlenmedi": True}
     kesin = kesin_modulu(onkosul.get("sha256", {}).get(KESIN_REL))
@@ -834,6 +909,7 @@ def olc_markdown(s: dict[str, Any]) -> str:
     sec = s["secimler"]
     satirlar = ["# KS-1 ölçümü (adım 2)", "",
                 f"- Ön kayıt commit'i: `{s['onkosul'].get('onkayit_commit', '—')}`; "
+                f"sapma kaydı commit'i: `{s['onkosul'].get('sapma_commit') or '—'}`; "
                 f"`kesin.py` sha256 `{s['arac']['kesin_sha256'][:16]}…`; "
                 f"`ks1_olc.py` sha256 `{s['arac']['betik_sha256'][:16]}…`; "
                 f"Ghidra `{s['arac']['ghidra'].get('surum', '—')}`.",
@@ -916,10 +992,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     o.add_argument("--md", type=Path, default=None)
     o.add_argument("--eksik-izinli", action="store_true",
                    help="bitmemiş ya da eksik ELF varken de ölç (eksikler çıktıda listelenir)")
-    sub.add_parser("sabitle", help="ks1_sabitler.json'u bugünkü sha256'larla yaz")
+    sb = sub.add_parser("sabitle", help="ks1_sabitler.json'u bugünkü sha256'larla yaz")
+    sb.add_argument("--sapma", action="store_true",
+                    help="sapma kaydının sabitlerini (ks1_sapma_1_sabitler.json) yaz")
     a = ap.parse_args(argv)
     if a.komut == "sabitle":
-        belge = sabitle()
+        belge = sabitle(hedef=SAPMA_SABITLER_YOLU if a.sapma else SABITLER_YOLU)
         for rel, h in belge["dosyalar"].items():
             print(f"{h}  {rel}")
         return 0

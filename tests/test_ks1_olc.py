@@ -12,7 +12,8 @@ Kilitlenen davranışlar:
       koşulu; export ve birleşik satır karar dışı,
   (d) kapsam (export'ta payda dışa aktarılan GT) ve döküm satırları,
   (e) ön koşullar: ön kayıt commit'i atası, ölçüm dosyalarının sha256 denetimi, birim başına ELF
-      sayısı, Ghidra sürümü, ofsetin kanıtlı kaynağı,
+      sayısı, Ghidra sürümü; ofset kanıtı (Ghidra görüntü tabanı, ``entry`` ve giriş adresiyle
+      çapraz denetim); sapma kaydı (sabitler sapma commit'inden, o commit ön kaydın torunu),
   (f) program sınıfı eş değişkeni (ortak mutlak eşik) ve GT'siz sayım (çıktıda ad yok).
 
 Mutasyon koruması: ``scripts/measurement/mutation_specs_ks1.json``.
@@ -347,10 +348,12 @@ def test_ghidra_surumu_denetimi(tmp_path):
         ko.ghidra_denetle([ea, ko.Elf("debian", "htop", "htop", c, c)])
 
 
-def _static(kok, fonksiyonlar):
+def _static(kok, fonksiyonlar, taban="00100000"):
     st = kok / "static"
     st.mkdir(parents=True)
     (st / "ghidra_functions.json").write_text(json.dumps({"functions": fonksiyonlar}))
+    bilgi = {} if taban is None else {"image_base": taban}
+    (st / "ghidra_combined_results.json").write_text(json.dumps({"program_info": bilgi}))
     return st
 
 
@@ -386,18 +389,46 @@ def test_gt_elf_ofset_nufus_export_klon(tmp_path, monkeypatch):
     sahte.read_elf_info = lambda yol: {"build_id": "abcdef"}
     sahte.extract_gt = lambda d, s_, corpus="", binary="": gt if d == dbg else None
     monkeypatch.setattr(ko, "_f1", lambda: sahte)
+    monkeypatch.setattr(ko, "en_dusuk_yukleme_adresi", lambda yol: 0)
     e = ko.Elf("debian", "prog", "prog", st, tmp_path / "ws")
     g = ko.gt_elf(e, indir)
-    assert g.kunye["ofset"] == "0x100000" and g.kunye["ofset_kaynagi"] == "ghidra_entry"
+    assert g.kunye["ofset"] == "0x100000"
+    assert g.kunye["ofset_kaynagi"] == ko.KAYNAK_TABAN_VE_ENTRY == "goruntu_tabani+ghidra_entry"
     assert sorted(g.adlar) == [0x100500, 0x101000, 0x102000, 0x103000]
     assert g.nufus == {0x101000} and g.export_gt == {0x103000}
-    # Ghidra'da ``entry`` yoksa ofset varsayılana düşer: adres eşlemesi kanıtsız, ölçüm durur
-    st2 = _static(tmp_path / "ws2", [f for f in fonk if f["name"] != "entry"])
-    (tmp_path / "ws2" / "raw").mkdir()
-    (tmp_path / "ws2" / "raw" / "target_info.json").write_text(
-        (tmp_path / "ws" / "raw" / "target_info.json").read_text())
-    with pytest.raises(ko.OnkosulHatasi, match="ofset Ghidra entry'den türetilemedi"):
-        ko.gt_elf(ko.Elf("debian", "prog", "prog", st2, tmp_path / "ws2"), indir)
+
+    def kur(ad, fonksiyonlar, taban="00100000"):
+        st_ = _static(tmp_path / ad, fonksiyonlar, taban)
+        (tmp_path / ad / "raw").mkdir()
+        (tmp_path / ad / "raw" / "target_info.json").write_text(
+            (tmp_path / "ws" / "raw" / "target_info.json").read_text())
+        return ko.Elf("debian", "prog", "prog", st_, tmp_path / ad)
+
+    entrysiz = [f for f in fonk if f["name"] != "entry"]
+    # -rdynamic program: Ghidra girişi ``_start`` diye adlandırır; görüntü tabanı tek başına kanıt
+    g2 = ko.gt_elf(kur("ws2", entrysiz + [_fonk(0x100500, "_start")]), indir)
+    assert g2.kunye["ofset"] == "0x100000" and g2.kunye["ofset_kaynagi"] == ko.KAYNAK_TABAN == "goruntu_tabani"
+    assert g2.nufus == {0x101000}
+    # giriş adresinde Ghidra fonksiyonu yoksa adres eşlemesi kanıtsız: durur
+    with pytest.raises(ko.OnkosulHatasi, match="giriş adresinde"):
+        ko.gt_elf(kur("ws3", entrysiz), indir)
+    # görüntü tabanı kayıtlı değilse varsayılana düşülmez: durur
+    with pytest.raises(ko.OnkosulHatasi, match="görüntü tabanı kayıtlı değil"):
+        ko.gt_elf(kur("ws4", fonk, taban=None), indir)
+    # ``entry``'den türetilen ofset görüntü tabanıyla çelişirse durur
+    celiski = entrysiz + [_fonk(0x200500, "entry"), _fonk(0x100500)]
+    with pytest.raises(ko.OnkosulHatasi, match="ofset kanıtları çelişiyor"):
+        ko.gt_elf(kur("ws5", celiski), indir)
+    # ofset = görüntü tabanı − en düşük PT_LOAD adresi
+    monkeypatch.setattr(ko, "en_dusuk_yukleme_adresi", lambda yol: 0x1000)
+    g6 = ko.gt_elf(kur("ws6", fonk, taban="00101000"), indir)
+    assert g6.kunye["ofset"] == "0x100000" and sorted(g6.adlar)[0] == 0x100500
+    monkeypatch.setattr(ko, "en_dusuk_yukleme_adresi", lambda yol: 0)
+    # giriş noktasız paylaşımlı nesne (e_entry = 0): giriş denetimi yok, taban kanıt
+    gt["entry"] = "0x0"
+    g7 = ko.gt_elf(kur("ws7", entrysiz), indir)
+    assert g7.kunye["ofset_kaynagi"] == ko.KAYNAK_TABAN
+    gt["entry"] = "0x500"
     soyulmus.write_bytes(b"degisti")
     with pytest.raises(ko.OnkosulHatasi, match="sha256"):
         ko.gt_elf(e, indir)
@@ -520,6 +551,74 @@ def test_onkosul_olcum_yardimcisi_degisince_durur(tmp_path, rel):
     (kok / rel).write_text("# değişti\n")
     with pytest.raises(ko.OnkosulHatasi, match="sha256"):
         ko.onkosullari_denetle(kok, d / "ks1_onkayit.md", d / "ks1_sabitler.json")
+
+
+def _sapma_yaz(kok, d):
+    belge = {"sema": ko.SABITLER_SEMA, "dosyalar": {
+        rel: ko.sha256_dosya(kok / rel) for rel in ko.OLCUM_DOSYALARI}}
+    (d / "ks1_sapma_1_sabitler.json").write_text(json.dumps(belge))
+    (d / "ks1_sapma_1.md").write_text("# sapma 1\n")
+
+
+def test_sapma_kaydi_sabitleri_sapma_commitinden_okunur(tmp_path):
+    """Ön kayıttan sonra kod değişirse ölçüm durur; sapma kaydı commit'lenince yeni sabitlerle sürer."""
+    kok, d = _depo(tmp_path)
+    _sabitle(kok, d)
+    _git(kok, "add", "-A")
+    _git(kok, "commit", "-q", "-m", "ön kayıt")
+    arg = (kok, d / "ks1_onkayit.md", d / "ks1_sabitler.json")
+    sapma = {"sapma": d / "ks1_sapma_1.md", "sapma_sabitler": d / "ks1_sapma_1_sabitler.json"}
+    (kok / "scripts" / "measurement" / "ks1_olc.py").write_text("# olc, sapma 1\n")
+    with pytest.raises(ko.OnkosulHatasi, match="sha256"):
+        ko.onkosullari_denetle(*arg)                       # sapmasız: kod ön kayıttakinden farklı
+    _sapma_yaz(kok, d)
+    with pytest.raises(ko.OnkosulHatasi, match="commit'lenmemiş"):
+        ko.onkosullari_denetle(*arg, **sapma)              # sapma yazıldı ama commit'lenmedi
+    _git(kok, "add", "-A")
+    _git(kok, "commit", "-q", "-m", "sapma 1")
+    o = ko.onkosullari_denetle(*arg, **sapma)
+    assert len(o["sapma_commit"]) == 40 and o["sapma_commit"] != o["onkayit_commit"]
+    assert sorted(o["sha256"]) == sorted(ko.OLCUM_DOSYALARI)
+    with pytest.raises(ko.OnkosulHatasi, match="sabitler dosyası verilmedi"):
+        ko.onkosullari_denetle(*arg, sapma=d / "ks1_sapma_1.md")
+    # sapmadan sonra kod yine değişirse durur (yeni bir sapma kaydı gerekir)
+    (kok / "karadul" / "reconstruction" / "tarif" / "kesin.py").write_text("KS1_VERSION = 9\n")
+    with pytest.raises(ko.OnkosulHatasi, match="sha256"):
+        ko.onkosullari_denetle(*arg, **sapma)
+
+
+def test_sapma_kaydi_onkayitla_ayni_committe_olamaz(tmp_path):
+    """Sapma, ön kayıttan SONRA gelen ayrı bir commit'tir; aynı commit'te gelirse sayılmaz."""
+    kok, d = _depo(tmp_path)
+    _sabitle(kok, d)
+    _sapma_yaz(kok, d)
+    _git(kok, "add", "-A")
+    _git(kok, "commit", "-q", "-m", "ön kayıt ve sapma birlikte")
+    with pytest.raises(ko.OnkosulHatasi, match="sonra değil"):
+        ko.onkosullari_denetle(kok, d / "ks1_onkayit.md", d / "ks1_sabitler.json",
+                               sapma=d / "ks1_sapma_1.md", sapma_sabitler=d / "ks1_sapma_1_sabitler.json")
+
+
+def test_olc_sabitleri_sapma_kaydiyla_denetler(monkeypatch):
+    """``olc`` ön koşulları sapma kaydıyla çağırır (sabitler sapma commit'inden)."""
+    gorulen = {}
+
+    def sahte(**kw):
+        gorulen.update(kw)
+        raise ko.OnkosulHatasi("deneme")
+    monkeypatch.setattr(ko, "onkosullari_denetle", sahte)
+    with pytest.raises(ko.OnkosulHatasi, match="deneme"):
+        ko.olc([], None, None)
+    assert gorulen == {"sapma": ko.SAPMA_YOLU, "sapma_sabitler": ko.SAPMA_SABITLER_YOLU}
+    assert ko.SAPMA_YOLU.name == "ks1_sapma_1.md" and ko.SAPMA_SABITLER_YOLU.name == "ks1_sapma_1_sabitler.json"
+
+
+def test_goruntu_tabani_okuma(tmp_path):
+    assert ko.ghidra_goruntu_tabani(_static(tmp_path / "a", [])) == 0x100000
+    assert ko.ghidra_goruntu_tabani(_static(tmp_path / "b", [], taban="00000000")) == 0   # 0 geçerli taban
+    assert ko.ghidra_goruntu_tabani(_static(tmp_path / "c", [], taban=None)) is None
+    assert ko.ghidra_goruntu_tabani(_static(tmp_path / "d", [], taban="taban-degil")) is None
+    assert ko.ghidra_goruntu_tabani(tmp_path / "yok") is None
 
 
 def test_onkosul_sabitlerde_eksik_dosya(tmp_path):

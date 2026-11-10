@@ -418,14 +418,6 @@
    "replace": "    for rel in OLCUM_DOSYALARI[:2]:\n        if rel not in dosyalar:\n"
   },
   {
-   "id": "olc_ofset_kaynagi_denetlenmez",
-   "desc": "ölçüm: ofset varsayılana düşse de ölçüm sürer",
-   "module": "scripts/measurement/ks1_olc.py",
-   "test": "tests/test_ks1_olc.py::test_gt_elf_ofset_nufus_export_klon",
-   "find": "    if kaynak != OFSET_KAYNAGI:\n",
-   "replace": "    if not kaynak:\n"
-  },
-  {
    "id": "olc_beklenmeyen_birim_gecer",
    "desc": "ölçüm: beklenmeyen birim eksiksizlik denetimine takılmaz",
    "module": "scripts/measurement/ks1_olc.py",
@@ -480,6 +472,70 @@
    "test": "tests/test_ks1_olc.py::test_gt_mac_nufus_ve_hedef_denetimi",
    "find": "             and not gt_klon_mu(n, PLATFORM_MAC)}\n",
    "replace": "             and bool(n)}\n"
+  },
+  {
+   "id": "olc_ofset_celiskisi_gecer",
+   "desc": "ölçüm: entry'den türetilen ofset görüntü tabanıyla çelişse de ölçüm sürer",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_gt_elf_ofset_nufus_export_klon",
+   "find": "    if entry_ofseti != ofset:\n",
+   "replace": "    if entry_ofseti < 0:\n"
+  },
+  {
+   "id": "olc_giris_fonksiyonu_aranmaz",
+   "desc": "ölçüm: giriş adresinde Ghidra fonksiyonu olup olmadığı denetlenmez",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_gt_elf_ofset_nufus_export_klon",
+   "find": "    if giris and not any(g[\"addr\"] == ofset + giris for g in gfonk):\n",
+   "replace": "    if giris < 0:\n"
+  },
+  {
+   "id": "olc_taban_yoksa_varsayilan",
+   "desc": "ölçüm: görüntü tabanı kayıtlı değilse varsayılan 0x100000 kullanılır",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_gt_elf_ofset_nufus_export_klon",
+   "find": "    taban = ghidra_goruntu_tabani(static)\n",
+   "replace": "    taban = ghidra_goruntu_tabani(static) or 0x100000\n"
+  },
+  {
+   "id": "olc_ofset_yukleme_adresi_yok",
+   "desc": "ölçüm: ofset, en düşük PT_LOAD adresi düşülmeden görüntü tabanına eşitlenir",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_gt_elf_ofset_nufus_export_klon",
+   "find": "    ofset = taban - en_dusuk_yukleme_adresi(soyulmus)\n",
+   "replace": "    ofset = taban\n"
+  },
+  {
+   "id": "olc_sapma_ata_denetimi_yok",
+   "desc": "ölçüm: sapma kaydı ön kayıtla aynı commit'te gelse de kabul edilir",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_sapma_kaydi_onkayitla_ayni_committe_olamaz",
+   "find": "        if sapma_commit == commit or not commit_atasi_mi(commit, kok, torun=sapma_commit):\n",
+   "replace": "        if not sapma_commit:\n"
+  },
+  {
+   "id": "olc_sapma_sabitleri_onkayittan",
+   "desc": "ölçüm: sapma kaydı varken sabitler yine ön kayıt commit'inden okunur",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_sapma_kaydi_sabitleri_sapma_commitinden_okunur",
+   "find": "        belge = committeki_sabitler(sapma_commit, kok, sapma_sabitler)\n",
+   "replace": "        belge = committeki_sabitler(commit, kok, sabitler)\n"
+  },
+  {
+   "id": "olc_olcum_sapmasiz_denetler",
+   "desc": "ölçüm: olc ön koşulları sapma kaydı olmadan denetler",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_olc_sabitleri_sapma_kaydiyla_denetler",
+   "find": "    onkosul = (onkosullari_denetle(sapma=SAPMA_YOLU, sapma_sabitler=SAPMA_SABITLER_YOLU)\n",
+   "replace": "    onkosul = (onkosullari_denetle()\n"
+  },
+  {
+   "id": "olc_sifir_taban_yok_sayilir",
+   "desc": "ölçüm: 0 görüntü tabanı 'kayıtlı değil' sayılır",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_goruntu_tabani_okuma",
+   "find": "        return None if deger is None else int(str(deger), 16)\n",
+   "replace": "        return int(str(deger), 16) if deger and int(str(deger), 16) else None\n"
   }
  ]
 }
