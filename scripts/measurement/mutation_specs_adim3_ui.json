@@ -1,0 +1,245 @@
+{
+  "_comment": "Plan v2.2 N1 adım 3, 8. commit (arayüzde etiket ve gerçek puan) mutasyon koruması: ui/server.py (köken alanları, bayat kayıt koruması, liste etiketi, özet satırı) ve ui/index.html (rozet işlevleri). Her mutant bir davranışı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). ui8_js_* mutantlarından test_rozet_islevleri_node_ile'ye bağlı olanlar node ister; node yoksa o test atlanır ve mutant 'survived' görünür. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_adim3_ui.json",
+  "mutants": [
+    {
+      "id": "ui8_bayat_koruma_kalkar",
+      "desc": "Bayat kayıt koruması kalkar: kayıttaki ad o anki adla aynı olmasa da kayıt geçerli sayılır (elle değişen ad eski adın etiketini taşır)",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_elle_degisen_adda_koken_elle_ve_etiket_yok",
+      "find": "    if rec.get(\"new_name\") != current:\n        return None\n    return rec",
+      "replace": "    if False and rec.get(\"new_name\") != current:\n        return None\n    return rec"
+    },
+    {
+      "id": "ui8_bayat_liste_korumasiz",
+      "desc": "Liste etiketi bayat kayıt korumasından geçmeden kayıttan okunur",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_elle_degisen_adda_koken_elle_ve_etiket_yok",
+      "find": "\"label\": _record_label(_name_record(cmap, addr, name))})",
+      "replace": "\"label\": _record_label(cmap.get(addr))})"
+    },
+    {
+      "id": "ui8_bayat_koken_elle_degil",
+      "desc": "Bayat kayıtta köken \"elle\" yerine kaydın kaynağı ve puanı gösterilir",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_elle_degisen_adda_koken_elle_ve_etiket_yok",
+      "find": "        return {\"source\": PRE_NAME_KIND_MANUAL}",
+      "replace": "        return {\"source\": raw.get(\"source\"), \"confidence\": raw.get(\"confidence\")}"
+    },
+    {
+      "id": "ui8_adsiz_fonksiyona_koken",
+      "desc": "Adı olmayan fonksiyon (ad == adres) kaydı var diye \"elle\" kökeni alır",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_adsiz_fonksiyon_kaydi_olsa_da_etiket_ve_koken_almaz",
+      "find": "    if not isinstance(raw, dict) or current == addr:",
+      "replace": "    if not isinstance(raw, dict):"
+    },
+    {
+      "id": "ui8_adsiz_fonksiyona_etiket",
+      "desc": "Adres kendi adı olarak kayıtlıysa adsız fonksiyon kayıttaki etiketi alır",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_bayat_kayit_dogrudan",
+      "find": "    if not isinstance(rec, dict) or current == addr:",
+      "replace": "    if not isinstance(rec, dict):"
+    },
+    {
+      "id": "ui8_etiketsiz_kayda_dogrulanmadi",
+      "desc": "Etiketsiz kayda rozet verisi üretilir: etiket yoksa \"doğrulanmadı\" varsayılır",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_etiketsiz_kayitta_rozet_verisi_yok",
+      "find": "    return label if isinstance(label, str) and label in NAME_LABELS else None",
+      "replace": "    return label if isinstance(label, str) and label in NAME_LABELS else NAME_LABELS[-1]"
+    },
+    {
+      "id": "ui8_etiketsiz_kayda_kesin",
+      "desc": "Etiketsiz kayda rozet verisi üretilir: etiket yoksa \"kesin\" varsayılır",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_kesin_yalniz_etiketten",
+      "find": "    return label if isinstance(label, str) and label in NAME_LABELS else None",
+      "replace": "    return label if isinstance(label, str) and label in NAME_LABELS else NAME_LABELS[0]"
+    },
+    {
+      "id": "ui8_puandan_kesin",
+      "desc": "\"kesin\" puandan türetilir: puanı 0,9 ve üstü olan her kayıt \"kesin\" görünür",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_kesin_yalniz_etiketten",
+      "find": "    label = rec.get(\"label\")\n    return label if",
+      "replace": "    label = rec.get(\"label\")\n    if isinstance(rec.get(\"confidence\"), float) and rec[\"confidence\"] >= 0.9:\n        return NAME_LABELS[0]\n    return label if"
+    },
+    {
+      "id": "ui8_sozluk_disi_etiket_gecer",
+      "desc": "Sözlükte olmayan etiket değeri de arayüze geçer",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_etiketsiz_kayitta_rozet_verisi_yok",
+      "find": "    return label if isinstance(label, str) and label in NAME_LABELS else None",
+      "replace": "    return label if isinstance(label, str) else None"
+    },
+    {
+      "id": "ui8_label_listeye_gecmez",
+      "desc": "Etiket fonksiyon listesine geçmez (alan hep None)",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_listede_her_fonksiyonun_label_alani_var",
+      "find": "\"label\": _record_label(_name_record(cmap, addr, name))})",
+      "replace": "\"label\": None})"
+    },
+    {
+      "id": "ui8_label_alani_listede_yok",
+      "desc": "Fonksiyon listesindeki kayıtlar label alanını hiç taşımaz",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_listede_her_fonksiyonun_label_alani_var",
+      "find": "\"in\": indeg.get(addr, 0),\n                      \"label\": _record_label(_name_record(cmap, addr, name))})",
+      "replace": "\"in\": indeg.get(addr, 0)})"
+    },
+    {
+      "id": "ui8_etiket_kanit_kartina_gecmez",
+      "desc": "Etiket kanıt kartının köken paketine geçmez",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_kesin_kaydin_alanlari_gecer",
+      "find": "        \"label\": _record_label(rec),",
+      "replace": "        \"label\": None,"
+    },
+    {
+      "id": "ui8_kanal_gecmez",
+      "desc": "Kanal köken paketine geçmez",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_kesin_kaydin_alanlari_gecer",
+      "find": "        \"channel\": _record_channel(rec),",
+      "replace": "        \"channel\": None,"
+    },
+    {
+      "id": "ui8_kanit_gecmez",
+      "desc": "Kanıt köken paketine geçmez",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_dogrulanmadi_kaydin_alanlari_gecer",
+      "find": "        \"evidence\": _record_evidence(rec),",
+      "replace": "        \"evidence\": None,"
+    },
+    {
+      "id": "ui8_null_puan_cokme",
+      "desc": "Sayı olmayan puan (null) denetimden geçer ve sonlu mu denetiminde hata verir",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_null_puan_hata_vermez",
+      "find": "    if isinstance(value, bool) or not isinstance(value, (int, float)):",
+      "replace": "    if isinstance(value, bool):"
+    },
+    {
+      "id": "ui8_sonsuz_puan_gecer",
+      "desc": "NaN ve sonsuz puan arayüze geçer",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_sayi_olmayan_puan_gosterilmez",
+      "find": "    if not math.isfinite(value):\n        return None\n",
+      "replace": ""
+    },
+    {
+      "id": "ui8_eski_bicim_sabit_puan",
+      "desc": "Eski biçimli c_namer kaydının sabit 1.0 puanı gösterilir",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_eski_bicim_sabit_puan_gosterilmez",
+      "find": "    if rec.get(\"source\") == SOURCE_C_NAMER and \"label\" not in rec:",
+      "replace": "    if False and rec.get(\"source\") == SOURCE_C_NAMER and \"label\" not in rec:"
+    },
+    {
+      "id": "ui8_etiketi_null_puan_gizlenir",
+      "desc": "Etiketi null olan yeni biçimli kaydın (elle ön ad) gerçek puanı da gizlenir",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_eski_bicim_sabit_puan_gosterilmez",
+      "find": "    if rec.get(\"source\") == SOURCE_C_NAMER and \"label\" not in rec:",
+      "replace": "    if rec.get(\"source\") == SOURCE_C_NAMER and rec.get(\"label\") is None:"
+    },
+    {
+      "id": "ui8_nesne_olmayan_harita_cokme",
+      "desc": "Temiz harita JSON nesnesi değilse build_model çöker",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_temiz_harita_nesne_degilse_model_cokmez",
+      "find": "        except (json.JSONDecodeError, OSError, TypeError, AttributeError):\n            m = {}",
+      "replace": "        except (json.JSONDecodeError, OSError, TypeError):\n            m = {}"
+    },
+    {
+      "id": "ui8_ozet_rapor_yok_sayilir",
+      "desc": "Özet satırı rapordaki naming_by_label sayılarını yok sayar",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_ozet_rapordaki_etiket_sayilariyla",
+      "find": "    if isinstance(by_label, dict):",
+      "replace": "    if False and isinstance(by_label, dict):"
+    },
+    {
+      "id": "ui8_ozet_eski_satir_geri",
+      "desc": "Eski \"yüksek-güven isim\" satırı geri gelir",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_ozet_rapordaki_etiket_sayilariyla",
+      "find": "    for name_label, count in _label_counts(st, Path(run_dir)):",
+      "replace": "    if st.get(\"naming_high_confidence\"):\n        out.append({\"label\": \"yüksek-güven isim\", \"count\": st[\"naming_high_confidence\"]})\n    for name_label, count in _label_counts(st, Path(run_dir)):"
+    },
+    {
+      "id": "ui8_ozet_uydurma_sifir",
+      "desc": "Etiket verisi yokken özet satırı her etiket için 0 yazar",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_ozet_etiket_verisi_yoksa_satir_yok",
+      "find": "    return [(lab, found[lab]) for lab in NAME_LABELS if lab in found]",
+      "replace": "    return [(lab, found.get(lab, 0)) for lab in NAME_LABELS]"
+    },
+    {
+      "id": "ui8_ozet_bool_sayilir",
+      "desc": "Rapordaki bool değer sayı diye gösterilir",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_ozet_gecersiz_rapor_degerleri_sayilmaz",
+      "find": " and not isinstance(v, bool) and v >= 0}",
+      "replace": " and v >= 0}"
+    },
+    {
+      "id": "ui8_ozet_eksi_sayi",
+      "desc": "Rapordaki eksi değer sayı diye gösterilir",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_ozet_gecersiz_rapor_degerleri_sayilmaz",
+      "find": " and not isinstance(v, bool) and v >= 0}",
+      "replace": " and not isinstance(v, bool)}"
+    },
+    {
+      "id": "ui8_ozet_haritadan_saymaz",
+      "desc": "Raporda sayı yokken temiz haritadaki etiketler sayılmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_etiket.py::test_ozet_rapor_yoksa_temiz_haritadan_sayar",
+      "find": "        if label is not None:\n            found[label] = found.get(label, 0) + 1",
+      "replace": "        if label is not None and False:\n            found[label] = found.get(label, 0) + 1"
+    },
+    {
+      "id": "ui8_js_varsayilan_rozet",
+      "desc": "index.html: etiket yoksa ya da sözlükte değilse \"doğrulanmadı\" rozeti çizilir",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_etiket.py::test_rozet_islevleri_node_ile",
+      "find": "? NAME_LABEL[label] : null;",
+      "replace": "? NAME_LABEL[label] : NAME_LABEL['doğrulanmadı'];"
+    },
+    {
+      "id": "ui8_js_puandan_kesin",
+      "desc": "index.html: sayı verilince (puan) 0,95 ve üstünde \"kesin\" rozeti çizilir",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_etiket.py::test_rozet_islevleri_node_ile",
+      "find": "  const li=labelInfo(label); if(!li) return '';",
+      "replace": "  const li=labelInfo(label)||(label>=0.95?NAME_LABEL['kesin']:null); if(!li) return '';"
+    },
+    {
+      "id": "ui8_js_null_puan_basilir",
+      "desc": "index.html: null puan 0.00 diye basılır",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_etiket.py::test_rozet_islevleri_node_ile",
+      "find": "  return (prov && typeof prov.confidence==='number' && isFinite(prov.confidence))",
+      "replace": "  return (prov && prov.confidence!==undefined)"
+    },
+    {
+      "id": "ui8_js_kacis_kalkar",
+      "desc": "index.html: rozet ipucundaki kanıt dizgisi kaçırılmadan niteliğe yazılır",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_etiket.py::test_rozet_islevleri_node_ile",
+      "find": "title=\"${esc(tip)}\">${esc(mini?li.mark:label)}",
+      "replace": "title=\"${tip}\">${esc(mini?li.mark:label)}"
+    },
+    {
+      "id": "ui8_js_sozluk_yazimi",
+      "desc": "index.html: arayüz sözlüğündeki bir etiket ASCII yazılır (sunucunun etiketiyle eşleşmez)",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_etiket.py::test_arayuz_sozlugu_naming_labels_ile_ayni",
+      "find": "  'doğrulanmadı':{cls:'u'",
+      "replace": "  'dogrulanmadi':{cls:'u'"
+    }
+  ]
+}

@@ -26,6 +26,7 @@ import glob
 import hashlib
 import hmac
 import json
+import math
 import os
 import platform
 import re
@@ -49,6 +50,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import yaml  # noqa: E402  (config.py hard-import eder -> her zaman kurulu)
 from karadul.config import Config  # noqa: E402
 from karadul.core import overrides  # noqa: E402
+from karadul.core.naming_labels import (  # noqa: E402
+    NAME_LABELS,
+    PRE_NAME_KIND_MANUAL,
+    SOURCE_C_NAMER,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 HOME = Path.home()
@@ -241,12 +247,16 @@ def build_model() -> dict | None:
         for c in callees:
             indeg[c] = indeg.get(c, 0) + 1
 
+    # Liste etiketi: temiz haritadaki kayıt o anki adı anlatıyorsa kayıttaki etiket; kayıt yoksa,
+    # bayatsa ya da etiket taşımıyorsa None (arayüz o satıra işaret çizmez).
+    cmap = _clean_mappings(ws)
     funcs = []
     for addr in addrs:
         name = names.get(addr, addr)
         cls = _classify(name)
         funcs.append({"addr": addr, "name": name, "cls": cls,
-                      "out": len(calls[addr]), "in": indeg.get(addr, 0)})
+                      "out": len(calls[addr]), "in": indeg.get(addr, 0),
+                      "label": _record_label(_name_record(cmap, addr, name))})
     n_named = sum(1 for x in funcs if x["cls"] == "named")
     n_weak = sum(1 for x in funcs if x["cls"] == "weak")
     n_unnamed = sum(1 for x in funcs if x["cls"] == "unnamed")
@@ -370,7 +380,7 @@ def _clean_mappings(ws: str | None = None) -> dict:
     if rd:
         try:
             m = json.loads((rd / "clean" / "naming_map.json").read_text()).get("mappings", {})
-        except (json.JSONDecodeError, OSError, TypeError):
+        except (json.JSONDecodeError, OSError, TypeError, AttributeError):
             m = {}
     if not isinstance(m, dict):
         m = {}
@@ -378,6 +388,90 @@ def _clean_mappings(ws: str | None = None) -> dict:
         _CACHE["cmap_ws"] = ws
         _CACHE["cmap"] = m
     return m
+
+
+# ---------------------------------------------------------------------------
+# Ad kökeni: etiket, gerçek puan, kanal, kanıt (temiz haritadaki kayıttan)
+#
+# KURAL: arayüze giden her alan kayıtta YAZILI olandır. Etiket puandan, kaynaktan ya da kanaldan
+# türetilmez; kayıtta etiket yoksa etiket None gider ve rozet çizilmez. Etiketlerin yazımı
+# karadul.core.naming_labels'tan gelir.
+# ---------------------------------------------------------------------------
+def _name_record(cmap, addr: str, current: str) -> dict | None:
+    """Temiz haritada ``addr`` kaydı; yalnız kayıt fonksiyonun O ANKİ adını anlatıyorsa döner.
+
+    Bayat kayıt koruması: ad arayüzden değiştirilince ``reconstructed/src/naming_map.json``
+    güncellenir, temiz haritadaki kayıt eski adı anlatmayı sürdürür. Kayıttaki ``new_name`` o anki
+    adla aynı değilse kaydın etiketi, puanı, kanalı ve kanıtı bu ada ait değildir -> None.
+    Adı olmayan fonksiyonun (ad == adres) anlatılacak kökeni yoktur -> None.
+    """
+    rec = cmap.get(addr) if isinstance(cmap, dict) else None
+    if not isinstance(rec, dict) or current == addr:
+        return None
+    if rec.get("new_name") != current:
+        return None
+    return rec
+
+
+def _record_label(rec) -> str | None:
+    """Kayıtta yazılı etiket; kayıt ya da sözlükte geçerli bir etiket yoksa None."""
+    if not isinstance(rec, dict):
+        return None
+    label = rec.get("label")
+    return label if isinstance(label, str) and label in NAME_LABELS else None
+
+
+def _record_confidence(rec: dict) -> float | None:
+    """Kayıttaki gerçek puan; sayı değilse (``null`` dahil) None.
+
+    Eski biçimli c_namer kaydı ``label`` anahtarını hiç taşımaz ve puanı her ad için sabit 1.0'dı
+    (ölçülmüş bir güven değil): o değer gösterilmez.
+    """
+    value = rec.get("confidence")
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    if not math.isfinite(value):
+        return None
+    if rec.get("source") == SOURCE_C_NAMER and "label" not in rec:
+        return None
+    return value
+
+
+def _record_channel(rec: dict) -> str | None:
+    channel = rec.get("channel")
+    return channel if isinstance(channel, str) and channel else None
+
+
+def _record_evidence(rec: dict):
+    """Kısa kanıt: dizgi ya da ``{rol, kanit_sayisi}`` nesnesi; başka her şey None."""
+    evidence = rec.get("evidence")
+    if isinstance(evidence, (str, dict)) and evidence:
+        return evidence
+    return None
+
+
+def _provenance(cmap, addr: str, current: str) -> dict | None:
+    """``addr``'in o anki adının kökeni (kanıt kartı).
+
+    Kayıt yok ya da fonksiyon adsız -> None. Kayıt başka bir adı anlatıyorsa (bayat) ad elle
+    verilmiştir: yalnız ``{"source": "elle"}`` döner; etiket, puan, kanal ve kanıt gösterilmez.
+    """
+    raw = cmap.get(addr) if isinstance(cmap, dict) else None
+    if not isinstance(raw, dict) or current == addr:
+        return None
+    rec = _name_record(cmap, addr, current)
+    if rec is None:
+        return {"source": PRE_NAME_KIND_MANUAL}
+    prov = {
+        "source": rec.get("source"),
+        "confidence": _record_confidence(rec),
+        "label": _record_label(rec),
+        "channel": _record_channel(rec),
+        "evidence": _record_evidence(rec),
+    }
+    if rec.get("library"):
+        prov["library"] = rec["library"]
+    return prov
 
 
 def _decompiled_text(addr: str) -> str:
@@ -566,12 +660,7 @@ def _evidence(addr: str) -> dict:
 
     text = _decompiled_text(addr)
     cmap = _clean_mappings()
-    prov = None
-    rec = cmap.get(addr)
-    if isinstance(rec, dict):
-        prov = {"source": rec.get("source"), "confidence": rec.get("confidence")}
-        if rec.get("library"):
-            prov["library"] = rec["library"]
+    prov = _provenance(cmap, addr, current)
 
     cls = _classify(current)
     return {
@@ -1645,10 +1734,39 @@ def _report_substages(run_dir: str) -> list[dict]:
         v = st.get(key)
         if v:
             out.append({"label": label, "count": v})
-    hc = st.get("naming_high_confidence")
-    if hc:
-        out.append({"label": "yüksek-güven isim", "count": hc})
+    # Etiket başına ad sayısı. Eski "yüksek-güven isim" satırı (naming_high_confidence) c_namer'ın
+    # ölçülmemiş iç puanına dayanıyordu; yerini kayıttaki etiketlerin sayımı aldı.
+    for name_label, count in _label_counts(st, Path(run_dir)):
+        out.append({"label": f"etiket: {name_label}", "count": count,
+                    "unit": "ad", "name_label": name_label})
     return out
+
+
+def _label_counts(stats, run_dir: Path) -> list[tuple[str, int]]:
+    """Etiket başına ad sayısı, sözlük sırasıyla; veri yoksa boş liste (sayı uydurulmaz).
+
+    Önce rapor istatistiklerindeki ``naming_by_label``; o yoksa temiz haritadaki
+    (``clean/naming_map.json``) etiketli kayıtlar sayılır.
+    """
+    by_label = stats.get("naming_by_label") if isinstance(stats, dict) else None
+    if isinstance(by_label, dict):
+        counts = {k: v for k, v in by_label.items()
+                  if k in NAME_LABELS and isinstance(v, int) and not isinstance(v, bool) and v >= 0}
+        if counts:
+            return [(lab, counts[lab]) for lab in NAME_LABELS if lab in counts]
+    try:
+        mappings = json.loads(
+            (run_dir / "clean" / "naming_map.json").read_text(encoding="utf-8"))["mappings"]
+    except (json.JSONDecodeError, OSError, KeyError, TypeError, ValueError):
+        return []
+    if not isinstance(mappings, dict):
+        return []
+    found: dict[str, int] = {}
+    for rec in mappings.values():
+        label = _record_label(rec)
+        if label is not None:
+            found[label] = found.get(label, 0) + 1
+    return [(lab, found[lab]) for lab in NAME_LABELS if lab in found]
 
 
 # Asama bitis satiri -- karadul/cli.py::_log_stage_complete'in yazdigi bicim:

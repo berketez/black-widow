@@ -255,6 +255,14 @@
   .iv-qt{height:4px; border-radius:3px; background:var(--faint); overflow:hidden}
   .iv-qt i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--named),var(--cyan)); transition:width .6s ease}
   .iv-mtag{font-size:8px; letter-spacing:1px; color:var(--named); border:1px solid rgba(56,224,138,.4); border-radius:7px; padding:0 5px; flex-shrink:0}
+  /* ad etiketi rozeti — yalnız kayıtta etiket varsa çizilir (k: kesin, v: doğrulandı, u: doğrulanmadı) */
+  .lbadge{font-size:8px; letter-spacing:1px; color:var(--dim); border:1px solid var(--border); border-radius:7px; padding:0 5px; flex-shrink:0}
+  .lbadge.k{color:var(--named); border-color:rgba(56,224,138,.4)}
+  .lbadge.v{color:var(--cyan); border-color:rgba(56,216,240,.4)}
+  .lbadge.u{color:var(--weak); border-color:rgba(230,169,46,.4)}
+  .fn .lbadge.u{color:var(--dim); border-color:var(--border)}
+  .substage.lb-u .d{background:var(--dim); box-shadow:none} .substage.lb-u b{color:var(--weak)}
+  .substage.lb-v .d{background:var(--cyan); box-shadow:0 0 5px var(--cyan)} .substage.lb-v b{color:var(--cyan)}
 
   /* kod paneli — başlık "yeniden adlandır" düğmesi */
   .chead .iv-edit{cursor:pointer; color:var(--dim); border:1px solid var(--border); border-radius:2px; padding:1px 6px; font-size:11px; flex-shrink:0}
@@ -586,11 +594,11 @@
       </div>
       <div class="setsep"></div>
       <div class="setrow">
-        <div class="lab"><div class="n">İsim güven eşiği</div><div class="d">Emin değilsen isim verme — yüksek = daha az ama daha doğru isim</div></div>
+        <div class="lab"><div class="n">İsim güven eşiği</div><div class="d">Bayt kalıbı eşleşmelerini ve ikiliden çıkarılan ad adaylarını bu güvenin altında eler. Dizgi ve çağrı bağlamından türetilen fonksiyon adlarına uygulanmaz; o adların etiketi ve puanı kanıt kartında görünür.</div></div>
         <div class="ctl"><input type="range" id="cfgConf" min="0" max="1" step="0.05"><span class="val" id="cfgConfV">—</span></div>
       </div>
       <div class="setrow">
-        <div class="lab"><div class="n">İsim atama alt sınırı</div><div class="d">Bu güvenin altında fonksiyon isimsiz (FUN_) bırakılır</div></div>
+        <div class="lab"><div class="n">İsim atama alt sınırı</div><div class="d">Ad birleştirme adımında birleşik güveni bunun altında kalan aday düşer. Kaynak metne daha önce yazılmış fonksiyon adlarını geri almaz.</div></div>
         <div class="ctl"><input type="range" id="cfgUnk" min="0" max="1" step="0.05"><span class="val" id="cfgUnkV">—</span></div>
       </div>
       <div class="setrow">
@@ -776,9 +784,12 @@ function renderStages(p){
     if(s.key==='reconstruct' && (p.substages||[]).length){
       const sub=document.createElement('div'); sub.className='substages';
       p.substages.forEach(ss=>{
-        const r=document.createElement('div'); r.className='substage';
+        // etiket sayımı satırı (unit'li): sayı raporda/haritada yazılı olandır, 0 da gösterilir
+        const li=labelInfo(ss.name_label);
+        const r=document.createElement('div'); r.className='substage'+(li?' lb-'+li.cls:'');
         r.innerHTML=`<span class="d"></span><span class="lbl">${esc(ss.label)}</span>`+
-          (ss.count?` · <b>${esc(ss.count)}</b> fonksiyon kurtarıldı`:'');
+          (ss.unit ? (ss.count!=null?` · <b>${esc(ss.count)}</b> ${esc(ss.unit)}`:'')
+                   : (ss.count?` · <b>${esc(ss.count)}</b> fonksiyon kurtarıldı`:''));
         sub.appendChild(r);
       });
       box.appendChild(sub);
@@ -865,7 +876,8 @@ function buildList(list){
     d.className='fn '+f.cls+(f.addr===CENTER?' active':''); d.dataset.addr=f.addr;
     const shown=f.cls==='unnamed'?('FUN_'+f.addr.slice(-6)):f.name;
     const mtag=MANUAL.has(f.addr)?'<span class="iv-mtag">manuel</span>':'';
-    d.innerHTML=`<span class="dot"></span><span class="nm">${esc(shown)}</span>${mtag}<span class="deg"><b>${f.out}</b>↗ ${f.in}↘</span>`;
+    const ltag=labelBadge(f.label,true);   // etiket yoksa '' (işaret çizilmez)
+    d.innerHTML=`<span class="dot"></span><span class="nm">${esc(shown)}</span>${ltag}${mtag}<span class="deg"><b>${f.out}</b>↗ ${f.in}↘</span>`;
     d.onclick=()=>focus(f.addr);
     frag.appendChild(d);
   }
@@ -1136,6 +1148,7 @@ function applyRename(addr,name){
   const f=BYADDR[addr]; if(!f) return;
   MODEL.names[addr]=name;                 // decompiled highlight'ın okuduğu harita
   f.name=name; f.cls=classify(name);      // FUN_ → named/weak
+  f.label=null;                           // etiket eski ada aitti; elle verilen ad etiket taşımaz
   MANUAL.add(addr);
   clearRenameErr();
   recount(); buildFilters(); updateProgress();
@@ -1166,6 +1179,46 @@ function _evCard(title,count){
   return {card,b};
 }
 function _fmtConf(c){ const n=Number(c); return isFinite(n)&&n<=1?n.toFixed(2):esc(String(c)); }
+/* ---- ad etiketi (kesin / doğrulandı / doğrulanmadı) ----
+   Rozet YALNIZ sunucunun gönderdiği etiketten çizilir; etiket yoksa hiçbir şey çizilmez.
+   Puandan, kaynaktan ya da kanaldan etiket türetilmez. Anahtarların yazımı
+   karadul.core.naming_labels ile aynıdır (tests/test_ui_etiket.py kilitler). */
+/* ETIKET-BASLA */
+const NAME_LABEL={
+  'kesin':{cls:'k',mark:'kesin',tip:'kesin: ad ikilinin kendi ad yuvasından okundu; bu kanalın tam ad kesinliği ön kayıtlı ölçümde hedefi tuttu'},
+  'doğrulandı':{cls:'v',mark:'doğrulandı',tip:'doğrulandı: kanal ölçüldü, yanlış oranı hedefin altında'},
+  'doğrulanmadı':{cls:'u',mark:'?',tip:'doğrulanmadı: adın geldiği kanal ölçülmedi ya da ölçüm hedefi göstermedi'}
+};
+function labelInfo(label){
+  return (typeof label==='string' && Object.prototype.hasOwnProperty.call(NAME_LABEL,label)) ? NAME_LABEL[label] : null;
+}
+// mini: liste satırındaki küçük işaret; extraTip: ipucuna eklenecek kanal/kanıt satırları
+function labelBadge(label,mini,extraTip){
+  const li=labelInfo(label); if(!li) return '';
+  const tip=[li.tip,extraTip].filter(Boolean).join('\n');
+  return `<span class="lbadge ${li.cls}" title="${esc(tip)}">${esc(mini?li.mark:label)}</span>`;
+}
+// ipucu metni: kanal ve kanıt (yalnız kayıtta olanlar); ikisi de yoksa ''
+function provTip(prov){
+  if(!prov) return '';
+  const out=[];
+  if(typeof prov.channel==='string' && prov.channel.length) out.push('kanal: '+prov.channel);
+  const ev=prov.evidence;
+  if(typeof ev==='string' && ev.length) out.push('kanıt: "'+trunc(ev,160)+'"');
+  else if(ev && typeof ev==='object'){
+    const parts=[];
+    if(ev.rol!=null && String(ev.rol).length) parts.push('rol '+ev.rol);
+    if(typeof ev.kanit_sayisi==='number') parts.push(ev.kanit_sayisi+' kanıt');
+    if(parts.length) out.push('kanıt: '+parts.join(', '));
+  }
+  return out.join('\n');
+}
+// gerçek puan; puan sayı değilse (null dahil) hiçbir şey gösterilmez
+function provScore(prov){
+  return (prov && typeof prov.confidence==='number' && isFinite(prov.confidence))
+    ? `<span class="iv-cconf">${_fmtConf(prov.confidence)}</span>` : '';
+}
+/* ETIKET-BITIS */
 function renderEvidence(j){
   const box=$('evBox'); box.innerHTML=''; j=j||{};
 
@@ -1194,9 +1247,12 @@ function renderEvidence(j){
     const bits=[];
     if(prov){ if(prov.source)bits.push(prov.source); if(prov.library)bits.push(prov.library); }
     const nm = cur && String(cur).length ? cur : '—';
+    // köken · etiket rozeti · gerçek puan; ipucunda kanal ve kanıt. Etiket ya da puan yoksa çizilmez.
+    const tip=provTip(prov);
     row.innerHTML=`<span class="iv-cn">${esc(nm)}</span>`+
-      (bits.length?`<span class="iv-csrc">${esc(bits.join(' · '))}</span>`:'')+
-      (prov&&prov.confidence!=null?`<span class="iv-cconf">${_fmtConf(prov.confidence)}</span>`:'')+
+      (bits.length?`<span class="iv-csrc"${tip?` title="${esc(tip)}"`:''}>${esc(bits.join(' · '))}</span>`:'')+
+      (prov?labelBadge(prov.label,false,tip):'')+
+      provScore(prov)+
       `<span class="iv-carrow">▸</span>`;
     if(cur && !String(cur).startsWith('FUN_')){
       row.classList.add('pick');
