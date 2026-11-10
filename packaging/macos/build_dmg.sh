@@ -9,7 +9,37 @@ REPO="$(cd "$HERE/../.." && pwd)"
 # repo dist/'e kopyalanır -- imaj tek dosya, içindeki imza taşınmaktan etkilenmez.
 # Not: build dizini "caches" içeremez (bkz. build_mac_app.sh) -> Ghidra jar'ları atlar.
 BUILD_ROOT="${KARADUL_BUILD_DIR:-$HOME/Library/BlackWidowBuild}"
+case "$BUILD_ROOT" in /*) ;; *) BUILD_ROOT="$PWD/$BUILD_ROOT";; esac
 APP="${KARADUL_APP:-$BUILD_ROOT/Black Widow.app}"
+# iCloud bekçisi (build_mac_app.sh'takiyle AYNI mantık; birini değiştirirsen ötekini de):
+# derleme dizini ya da paketlenecek .app Desktop / Documents / Mobile Documents
+# altındaysa baştan reddet -- FileProvider'ın iliştirdiği xattr'lar mührü bozar.
+_fiziksel() {
+  local p="$1" kalan=""
+  while [ ! -d "$p" ]; do kalan="/$(basename "$p")$kalan"; p="$(dirname "$p")"; done
+  echo "$(cd -P "$p" && pwd -P)$kalan"
+}
+_kucuk() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+_icloud_altinda() {
+  local aday kok y k
+  for aday in "$1" "$(_fiziksel "$1")"; do
+    y="$(_kucuk "$aday")"
+    case "$y" in *"/mobile documents"|*"/mobile documents/"*) return 0;; esac
+    for kok in "$HOME/Desktop" "$HOME/Documents" \
+               "$(_fiziksel "$HOME/Desktop")" "$(_fiziksel "$HOME/Documents")"; do
+      k="$(_kucuk "$kok")"
+      case "$y" in "$k"|"$k"/*) return 0;; esac
+    done
+  done
+  return 1
+}
+for _yol in "$BUILD_ROOT" "$APP"; do
+  if _icloud_altinda "$_yol"; then
+    echo "!! iCloud ile eşitlenen bir kökün altında (Desktop / Documents / Mobile Documents): $_yol" >&2
+    echo "   .app ve geçici DMG orada üretilmez. KARADUL_BUILD_DIR'i ~/Library altına ver." >&2
+    exit 1
+  fi
+done
 DIST="$REPO/dist"
 mkdir -p "$DIST"
 
