@@ -52,6 +52,25 @@ from karadul.config import CPU_PERF_CORES, Config
 logger = logging.getLogger(__name__)
 
 
+def _has_rename_chain(names: list[Any]) -> bool:
+    """Bir rename'in yeni adı, aynı fonksiyondaki BAŞKA bir rename'in eski adı mı?"""
+    originals = {sn.original_name for sn in names}
+    return any(
+        sn.semantic_name in originals and sn.semantic_name != sn.original_name
+        for sn in names
+    )
+
+
+def _unique_placeholder(index: int, *texts: str) -> str:
+    """Verilen metinlerin hiçbirinde geçmeyen ara ad (zincirli rename için)."""
+    serial = 0
+    while True:
+        placeholder = f"__karadul_rename_{index}_{serial}__"
+        if not any(placeholder in text for text in texts):
+            return placeholder
+        serial += 1
+
+
 def _replace_whole_word(text: str, old: str, new: str) -> str:
     """str.replace gibi hizli ama sadece tam kelime eslesir (word boundary).
 
@@ -3095,9 +3114,24 @@ class SemanticParameterNamer:
             # Govde bolgesi: body_open .. body_close
             body_region = c_code[body_open:body_close]
 
-            for sn in func_names_list:
+            # KISIT: rename'ler sırayla uygulanır. Bir parametrenin YENİ adı başka
+            # bir parametrenin ESKİ adıysa (param_1 -> param_3, param_3 -> x)
+            # ikinci adım birincinin ürettiği adı da değiştirir: imzada yorum
+            # birikir ("x /* was: param_3 */ /* was: param_1 */"), gövdede iki
+            # ayrı değişken tek ada çöker. Ölçüm: 117 ikilide 2 fonksiyon.
+            # Zincir varsa her yeni ad önce benzersiz bir ara ada yazılır,
+            # bütün rename'ler bittikten sonra gerçek adına çevrilir. Zincir
+            # yoksa ara ad kullanılmaz; çıktı eskisiyle bayt bayt aynıdır.
+            pending: list[tuple[str, str]] = []  # (ara ad, gerçek yeni ad)
+            chained = _has_rename_chain(func_names_list)
+
+            for index, sn in enumerate(func_names_list):
                 orig = sn.original_name
                 new = sn.semantic_name
+                if chained:
+                    final = new
+                    new = _unique_placeholder(index, sig_region, body_region)
+                    pending.append((new, final))
 
                 # Imzadaki parametre bildirimini degistir (yorum ekleyerek)
                 sig_pattern = re.compile(
@@ -3116,6 +3150,10 @@ class SemanticParameterNamer:
                 # "was:" yorumlarindaki yanlislikla degismis isimleri geri al
                 new_body = new_body.replace(f"was: {new}", f"was: {orig}")
                 body_region = new_body
+
+            for placeholder, final in pending:
+                sig_region = sig_region.replace(placeholder, final)
+                body_region = body_region.replace(placeholder, final)
 
             # Degisiklikleri c_code'a uygula (bottom-to-top: offset'ler bozulmaz)
             c_code = (

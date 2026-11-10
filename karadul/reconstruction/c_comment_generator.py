@@ -886,6 +886,173 @@ _FUNC_RE = _FUNC_SIG_RE
 
 
 # ---------------------------------------------------------------------------
+# Yorum metni temizleme -- yoruma yazılan HER metnin tek giriş noktası
+# ---------------------------------------------------------------------------
+# KISIT: C'de yorumlar iç içe geçmez. Blok yorumunun içine "*/" yazılırsa blok
+# orada kapanır ve kalan satırlar koda sızar (ölçüm: 117/119 ikili, 6 721
+# fonksiyon; imzadaki "/* was: param_2 */" belge bloğuna kopyalanıyordu).
+# Yorum üreten bütün yollar _doc_block / _inline_comment / _line_comment
+# üzerinden yazar; bunlar dışında yorum metni birleştiren kod OLMAMALI.
+
+_EMBEDDED_COMMENT_RE = re.compile(r"/\*\s*(.*?)\s*\*/", re.DOTALL)
+
+
+def _comment_safe(text: str) -> str:
+    """Blok yorumunun İÇİNE yazılacak metinden yorum işaretlerini temizle.
+
+    - Gömülü yorum, bilgisi kaybolmadan paranteze çevrilir:
+      ``int count /* was: param_2 */`` -> ``int count (was: param_2)``
+    - Tek kalan ``*/`` ve ``/*`` araya boşluk konarak etkisizleştirilir.
+
+    Yorum işareti içermeyen metin AYNEN döner (kusursuz bloklar bayt bayt aynı).
+    """
+    if "/*" not in text and "*/" not in text:
+        return text
+    text = _EMBEDDED_COMMENT_RE.sub(lambda m: "(" + m.group(1) + ")", text)
+    return text.replace("*/", "* /").replace("/*", "/ *")
+
+
+def _doc_block(fields: list[str]) -> str:
+    """Belge bloğunu (``/** ... */``) alanlardan kur; her alan temizlenir."""
+    lines = ["/**"]
+    lines.extend(" * " + _comment_safe(body) for body in fields)
+    lines.append(" */")
+    return "\n".join(lines)
+
+
+def _inline_comment(indent: str, text: str) -> str:
+    """Tek satırlık ``/* ... */`` yorumu; metin temizlenir."""
+    return f"{indent}/* {_comment_safe(text)} */"
+
+
+def _line_comment(text: str) -> str:
+    """``//`` yorumu. Satır sonu ya da sondaki ters bölü yorumu sonraki KOD
+    satırına taşırır (satır birleştirme); ikisi de etkisizleştirilir."""
+    if "\n" in text or "\r" in text:
+        text = " ".join(text.splitlines())
+    if text.rstrip().endswith("\\"):
+        text = text.rstrip() + " ."
+    return "// " + text
+
+
+# ---------------------------------------------------------------------------
+# Üst veri indeksleri -- fonksiyonun KENDİ adresiyle arama
+# ---------------------------------------------------------------------------
+# KISIT: ad tek başına anahtar değildir. ELF'te thunk ile dış sembol aynı adı
+# taşır (memcpy @00103ce0 ve memcpy @00135000); ada göre indeks son kaydı
+# tutar ve belge bloğu öbür fonksiyonun adresini/boyutunu/çağıranlarını yazar
+# (ölçüm: 119/119 ikili, 20 546 fonksiyon). Doğru anahtar, dosya başlığındaki
+# "// Address:" satırıdır; Ghidra JSON'ları aynı adresi taşır.
+
+_HEADER_ADDRESS_RE = re.compile(r"^// Address:\s+(\S+)\s*$")
+
+
+def _norm_address(address: Any) -> str:
+    """Adresi karşılaştırma anahtarına çevir ("0x00103CE0" == "00103ce0")."""
+    if not isinstance(address, str):
+        return ""
+    addr = address.strip().lower()
+    if addr.startswith("0x"):
+        addr = addr[2:]
+    if not addr:
+        return ""
+    return addr.lstrip("0") or "0"
+
+
+def _record_address(record: Any) -> str:
+    if not isinstance(record, dict):
+        return ""
+    return _norm_address(record.get("address") or record.get("entry_point"))
+
+
+class _FunctionIndex(dict):
+    """Fonksiyon üst verisi: ad -> kayıt (geriye uyum), ayrıca adres -> kayıt.
+
+    ``name_count`` bir adın kaç fonksiyona ait olduğunu tutar; 1'den büyükse
+    o adla arama yapılamaz.
+    """
+
+    def __init__(self, by_name: dict[str, Any] | None = None) -> None:
+        super().__init__(by_name or {})
+        self.by_address: dict[str, Any] = {}
+        self.name_count: dict[str, int] = {}
+
+    @classmethod
+    def from_records(cls, functions: list[Any]) -> "_FunctionIndex":
+        index = cls()
+        for func in functions:
+            if not (isinstance(func, dict) and "name" in func):
+                continue
+            name = func["name"]
+            index[name] = func
+            index.name_count[name] = index.name_count.get(name, 0) + 1
+            addr = _record_address(func)
+            if addr:
+                # Aynı adres iki kayıtta ise ilki kalır (Ghidra bunu üretmez).
+                index.by_address.setdefault(addr, func)
+        return index
+
+    @classmethod
+    def of(cls, func_meta: Any) -> "_FunctionIndex":
+        """Düz (ada göre) dict'i indekse sar; her ad tek fonksiyon sayılır."""
+        if isinstance(func_meta, cls):
+            return func_meta
+        index = cls(func_meta if isinstance(func_meta, dict) else {})
+        for name, record in index.items():
+            index.name_count[name] = 1
+            addr = _record_address(record)
+            if addr:
+                index.by_address.setdefault(addr, record)
+        return index
+
+
+class _CallGraphIndex(dict):
+    """Çağrı grafiği: ad -> {callers, callees} (geriye uyum), ayrıca adres ->.
+
+    ``addresses_by_name`` bir adın grafikte kaç ayrı adreste göründüğünü tutar.
+    """
+
+    def __init__(self, by_name: dict[str, Any] | None = None) -> None:
+        super().__init__(by_name or {})
+        self.by_address: dict[str, dict[str, list[str]]] = {}
+        self.addresses_by_name: dict[str, set[str]] = {}
+
+    @classmethod
+    def of(cls, call_graph: Any) -> "_CallGraphIndex":
+        if isinstance(call_graph, cls):
+            return call_graph
+        return cls(call_graph if isinstance(call_graph, dict) else {})
+
+
+def _name_is_own(
+    key: str,
+    own_address: str,
+    functions: _FunctionIndex,
+    graph: _CallGraphIndex,
+) -> bool:
+    """``key`` adı yalnız BU fonksiyona mı ait? (Ada göre aramanın ön koşulu.)
+
+    Ad birden çok fonksiyona aitse ya da adın tek kaydı başka bir adresteyse
+    ada göre gelen veri başka fonksiyonun olabilir: kullanılmaz (tahmin yok).
+    Ad üst veride hiç yoksa belirsizlik kanıtı da yoktur; kullanılır.
+    """
+    if not key:
+        return False
+    if functions.name_count.get(key, 0) > 1:
+        return False
+    graph_addresses = graph.addresses_by_name.get(key, ())
+    if len(graph_addresses) > 1:
+        return False
+    if own_address:
+        record_addr = _record_address(functions.get(key))
+        if record_addr and record_addr != own_address:
+            return False
+        if graph_addresses and own_address not in graph_addresses:
+            return False
+    return True
+
+
+# ---------------------------------------------------------------------------
 # ProcessPoolExecutor worker'lari -- top-level (pickle edilebilir)
 # ---------------------------------------------------------------------------
 
@@ -1038,9 +1205,10 @@ class CCommentGenerator:
 
         # Ghidra JSON'lari {total, program, functions/strings/edges} formatinda.
         # Bunlari fonksiyon ismine gore indexle.
-        func_meta = self._index_functions(raw_func_meta)
+        # İndeksler burada BİR kez sarılır; dosya başına yeniden kurulmaz.
+        func_meta = _FunctionIndex.of(self._index_functions(raw_func_meta))
         string_refs = self._index_strings(raw_string_refs)
-        call_graph = self._index_call_graph(raw_call_graph)
+        call_graph = _CallGraphIndex.of(self._index_call_graph(raw_call_graph))
 
         # Algoritma sonuclarini fonksiyon bazli indexle
         algo_index = self._index_algorithms(algorithm_results or [])
@@ -1181,6 +1349,24 @@ class CCommentGenerator:
                         continue  # Bu bir fonksiyon tanimi degil
                 func_starts.append((i, match.group(1), match.group(2)))
 
+        # Üst veri fonksiyonun KENDİ adresiyle aranır; ada göre arama yalnız
+        # ad bu fonksiyona aitse yapılır (bkz. _name_is_own).
+        functions = _FunctionIndex.of(func_meta)
+        graph = _CallGraphIndex.of(call_graph)
+        own_address = {
+            line_no: self._own_header_address(lines, line_no)
+            for line_no, _, _ in func_starts
+        }
+
+        def name_is_own(line_no: int, name: str) -> bool:
+            return _name_is_own(
+                name, _norm_address(own_address[line_no]), functions, graph,
+            )
+
+        # Dosya adı (Ghidra adı) en çok BİR fonksiyonu tanımlar. Dosyada birden
+        # çok tanım varsa hangisinin olduğu bilinemez: ada göre aramada kullanılmaz.
+        own_filename = filename if len(func_starts) == 1 else ""
+
         # Her fonksiyon icin header block ekle
         for line_no, func_name, params in func_starts:
             # Onceki satir zaten yorum mu?
@@ -1190,11 +1376,12 @@ class CCommentGenerator:
             header = self._build_function_header(
                 func_name=func_name,
                 params=params,
-                func_meta=func_meta,
+                func_meta=functions,
                 string_refs=string_refs,
-                call_graph=call_graph,
+                call_graph=graph,
                 algo_index=algo_index,
-                filename=filename,
+                filename=own_filename,
+                address=own_address[line_no],
             )
             if header:
                 insertions.append((line_no, header))
@@ -1226,14 +1413,14 @@ class CCommentGenerator:
             # Vulnerability check (oncelikli)
             vuln_comment = self._check_vulnerability(stripped)
             if vuln_comment:
-                insertions.append((i, f"{indent}/* {vuln_comment} */"))
+                insertions.append((i, _inline_comment(indent, vuln_comment)))
                 counters["vulns"] += 1
                 continue  # Bir satirda bir yorum yeter
 
             # Syscall annotation
             syscall_comment = self._check_syscall(stripped)
             if syscall_comment:
-                insertions.append((i, f"{indent}/* {syscall_comment} */"))
+                insertions.append((i, _inline_comment(indent, syscall_comment)))
                 counters["syscalls"] += 1
                 continue
 
@@ -1243,27 +1430,27 @@ class CCommentGenerator:
             ctx_after = content[line_offset:line_offset + 500]
             logic_comment = self._check_logic_pattern(stripped, ctx_after)
             if logic_comment:
-                insertions.append((i, f"{indent}/* {logic_comment} */"))
+                insertions.append((i, _inline_comment(indent, logic_comment)))
                 counters["logic"] += 1
                 continue
 
             # Control flow annotation
             cf_comment = self._check_control_flow(stripped, content)
             if cf_comment:
-                insertions.append((i, f"{indent}/* {cf_comment} */"))
+                insertions.append((i, _inline_comment(indent, cf_comment)))
                 counters["control"] += 1
 
         # Algoritma label'lari: fonksiyon body basindaki ilk satira
         for line_no, func_name, _ in func_starts:
-            if func_name in algo_index:
+            if func_name in algo_index and name_is_own(line_no, func_name):
                 algos = algo_index[func_name]
                 for algo in algos:
-                    label = f"/* ALGORITHM: {algo.name} (confidence: {algo.confidence:.0%}, via {algo.detection_method}) */"
+                    label = f"ALGORITHM: {algo.name} (confidence: {algo.confidence:.0%}, via {algo.detection_method})"
                     # Fonksiyon acilis { 'den sonraki satira ekle
                     insert_at = line_no + 1
                     if insert_at < len(lines):
                         indent = "    "
-                        insertions.append((insert_at, f"{indent}{label}"))
+                        insertions.append((insert_at, _inline_comment(indent, label)))
                         counters["algos"] += 1
 
         # Computation Recovery yorumlari: CFG fingerprint + formula
@@ -1276,27 +1463,30 @@ class CCommentGenerator:
             # Yanlis spesifik isim, dogru genel profilden daha zararli.
             # Pcode classify (6 profil) primary source olarak kullaniliyor.
             # CFG matching sadece WL hash exact match icin aktif (nadir).
-            if cfg_index and func_name in cfg_index:
+            # Ada göre indeksler: ad başka bir fonksiyonla paylaşılıyorsa yazılmaz.
+            own_name = name_is_own(line_no, func_name)
+
+            if cfg_index and func_name in cfg_index and own_name:
                 func_cfg = cfg_index[func_name]
                 best = max(func_cfg, key=lambda m: m.get("confidence", 0))
                 # Sadece WL structure hash exact match (hash_matched flag)
                 if best.get("hash_matched", False) and best.get("confidence", 0) > 0.97:
-                    comp_comments.append(
-                        "// [Computation] CFG exact match: %s (hash verified)"
+                    comp_comments.append(_line_comment(
+                        "[Computation] CFG exact match: %s (hash verified)"
                         % best.get("matched_algorithm", "unknown")
-                    )
+                    ))
 
             # Formula extraction sonuclari (max 3 per function)
-            if formula_index and func_name in formula_index:
+            if formula_index and func_name in formula_index and own_name:
                 func_formulas = formula_index[func_name]
                 for formula in func_formulas[:3]:
                     expr = formula.get("ascii", "")
                     if expr:
                         ftype = formula.get("formula_type", "")
                         suffix = f" [{ftype}]" if ftype else ""
-                        comp_comments.append(
-                            "// [Computation] Formula: %s%s" % (expr, suffix)
-                        )
+                        comp_comments.append(_line_comment(
+                            "[Computation] Formula: %s%s" % (expr, suffix)
+                        ))
 
             # Yorum satirlarini fonksiyon imzasinin hemen ustune ekle
             for comment in comp_comments:
@@ -1314,6 +1504,24 @@ class CCommentGenerator:
     # Fonksiyon header block olusturma
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _own_header_address(lines: list[str], line_no: int) -> str:
+        """İmza satırının hemen üstündeki dosya başlığından adresi oku.
+
+        Başlık biçimi (ghidra/headless.py): ``// Address:  00103ce0``. İmzadan
+        yukarı yalnız boş satır, yorum ve önişlemci satırları geçilir; araya
+        kod girerse başlık başka bir fonksiyonundur ve adres bilinmez ("").
+        """
+        for i in range(line_no - 1, -1, -1):
+            line = lines[i]
+            match = _HEADER_ADDRESS_RE.match(line)
+            if match:
+                return match.group(1)
+            stripped = line.strip()
+            if stripped and not stripped.startswith(("//", "/*", "*", "#")):
+                break
+        return ""
+
     def _build_function_header(
         self,
         func_name: str,
@@ -1323,8 +1531,14 @@ class CCommentGenerator:
         call_graph: dict[str, Any],
         algo_index: dict[str, list[AlgorithmMatch]],
         filename: str = "",
+        address: str = "",
     ) -> str:
         """Doxygen-benzeri fonksiyon baslik yorumu olustur.
+
+        ``address``: fonksiyonun KENDİ adresi (dosya başlığındaki
+        ``// Address:`` satırı). Verilirse üst veri bu adresle aranır. Ada
+        göre arama yalnız ad bu fonksiyona aitse yapılır; ad birden çok
+        fonksiyona aitse ve adres eşlenemiyorsa alan YAZILMAZ.
 
         Ornek cikti:
         /**
@@ -1338,24 +1552,51 @@ class CCommentGenerator:
          * @security Handles sensitive crypto material
          */
         """
-        parts: list[str] = ["/**"]
+        fields: list[str] = []
 
-        # Metadata lookup: fonksiyon adi ile dene, bulamazsa dosya adindan
-        # orijinal Ghidra ismini cikar (dosya: FUN_1000019c0.c -> FUN_1000019c0)
-        meta = func_meta.get(func_name, {})
-        if not meta and filename:
-            ghidra_name = filename.rsplit(".", 1)[0]  # .c uzantisini kaldir
-            meta = func_meta.get(ghidra_name, {})
+        functions = _FunctionIndex.of(func_meta)
+        graph = _CallGraphIndex.of(call_graph)
+        own = _norm_address(address)
 
-        # Orijinal Ghidra ismini de hesapla (call graph ve string lookup icin)
+        # Orijinal Ghidra ismi (dosya: FUN_1000019c0.c -> FUN_1000019c0).
+        # Ada göre aramada fonksiyon adından sonra denenir.
         ghidra_name = ""
         if filename:
             ghidra_name = filename.rsplit(".", 1)[0]
+        # Yalnız bu fonksiyona ait olduğu bilinen adlar (ada göre arama için)
+        own_names = [
+            key for key in (func_name, ghidra_name)
+            if _name_is_own(key, own, functions, graph)
+        ]
 
-        # Call graph ve string bilgilerini brief'ten once hazirla
-        cg_entry = call_graph.get(func_name) or (call_graph.get(ghidra_name) if ghidra_name else None) or {}
+        # Metadata lookup: önce KENDİ adresiyle; olmazsa kendine ait adla.
+        meta: dict[str, Any] = {}
+        if own and own in functions.by_address:
+            meta = functions.by_address[own]
+        else:
+            for key in own_names:
+                meta = functions.get(key) or {}
+                if meta:
+                    break
+
+        # Call graph: grafik adres taşıyorsa yalnız adresle (ada göre kayıt aynı
+        # adlı fonksiyonların BİRLEŞİMİDİR); taşımıyorsa kendine ait adla.
+        cg_entry: dict[str, Any] = {}
+        if own and graph.by_address:
+            cg_entry = graph.by_address.get(own, {})
+        else:
+            for key in own_names:
+                cg_entry = graph.get(key) or {}
+                if cg_entry:
+                    break
         callees = cg_entry.get("callees", [])
-        func_strings = string_refs.get(func_name) or (string_refs.get(ghidra_name, []) if ghidra_name else [])
+
+        # String referansları yalnız ada göre indeksli: kendine ait adla.
+        func_strings: Any = []
+        for key in own_names:
+            func_strings = string_refs.get(key) or []
+            if func_strings:
+                break
 
         # String referanslarini duzlestir (list[dict] -> list[str] olabilir)
         flat_strings: list[str] = []
@@ -1368,63 +1609,62 @@ class CCommentGenerator:
 
         # @brief -- API profil + string domain ile akilli aciklama
         brief = self._build_smart_brief(func_name, callees, flat_strings or None)
-        parts.append(f" * @brief {brief}")
+        fields.append(f"@brief {brief}")
 
         # @address -- metadata'dan
-        address = meta.get("address") or meta.get("entry_point")
-        if address:
-            parts.append(f" * @address {address}")
+        meta_address = meta.get("address") or meta.get("entry_point")
+        if meta_address:
+            fields.append(f"@address {meta_address}")
         elif func_name.startswith("FUN_"):
-            parts.append(f" * @address 0x{func_name[4:]}")
+            fields.append(f"@address 0x{func_name[4:]}")
 
         # @size
         size = meta.get("size") or meta.get("length")
         if size:
-            parts.append(f" * @size {size} bytes")
+            fields.append(f"@size {size} bytes")
 
         # @params
         if params.strip() and params.strip() != "void":
             param_list = [p.strip() for p in params.split(",") if p.strip()]
             for p in param_list:
-                parts.append(f" * @param {p}")
+                fields.append(f"@param {p}")
 
         # @called_by -- cagri grafiginden
         callers = cg_entry.get("callers", [])
         if callers:
             caller_str = ", ".join(callers[:5])
             site_count = len(callers)
-            parts.append(f" * @called_by {caller_str} ({site_count} site{'s' if site_count > 1 else ''})")
+            fields.append(f"@called_by {caller_str} ({site_count} site{'s' if site_count > 1 else ''})")
 
         # @calls -- cagri grafiginden
         if callees:
             callee_str = ", ".join(callees[:8])
-            parts.append(f" * @calls {callee_str}")
+            fields.append(f"@calls {callee_str}")
 
         # @strings -- ilgili string referanslari (flat_strings yukarda hazirlandı)
         if flat_strings:
             str_list = [f'"{s}"' for s in flat_strings[:5]]
-            parts.append(f" * @strings {', '.join(str_list)}")
+            fields.append(f"@strings {', '.join(str_list)}")
 
         # @algorithm -- tespit edilen algoritmalar
-        if func_name in algo_index:
+        if func_name in algo_index and func_name in own_names:
             for algo in algo_index[func_name]:
-                parts.append(
-                    f" * @algorithm {algo.name} ({algo.category}, "
+                fields.append(
+                    f"@algorithm {algo.name} ({algo.category}, "
                     f"confidence: {algo.confidence:.0%})"
                 )
 
         # @security -- hassas islev tespiti
         security_note = self._detect_security_relevance(func_name, params)
         if security_note:
-            parts.append(f" * @security {security_note}")
-
-        parts.append(" */")
+            fields.append(f"@security {security_note}")
 
         # Cok kisa header'lari atla (sadece brief varsa ve generic ise)
-        if len(parts) <= 4 and "FUN_" in func_name:
+        if len(fields) <= 2 and "FUN_" in func_name:
             return ""
 
-        return "\n".join(parts)
+        # Bütün alanlar tek noktadan, temizlenerek yazılır (bkz. _doc_block).
+        return _doc_block(fields)
 
     # ------------------------------------------------------------------
     # Satirlik yorum kontrolleri
@@ -1652,11 +1892,7 @@ class CCommentGenerator:
         # Ghidra formati: functions listesi var
         functions = raw.get("functions")
         if isinstance(functions, list):
-            result: dict[str, Any] = {}
-            for func in functions:
-                if isinstance(func, dict) and "name" in func:
-                    result[func["name"]] = func
-            return result
+            return _FunctionIndex.from_records(functions)
         # Eger "functions" yoksa, zaten fonksiyon ismine gore indexli olabilir
         # veya tanimlanamiyor -- raw'i dondur
         return raw
@@ -1722,7 +1958,8 @@ class CCommentGenerator:
         edges = raw.get("edges")
         if not isinstance(edges, list):
             return raw
-        result: dict[str, dict[str, list[str]]] = {}
+        result = _CallGraphIndex()
+        by_address = result.by_address
         for edge in edges:
             if not isinstance(edge, dict):
                 continue
@@ -1738,6 +1975,20 @@ class CCommentGenerator:
                     result[callee] = {"callers": [], "callees": []}
                 if caller and caller not in result[callee]["callers"]:
                     result[callee]["callers"].append(caller)
+
+            # Aynı kenar, uçların ADRESİYLE: aynı adlı iki fonksiyon ayrışır.
+            caller_addr = _norm_address(edge.get("from"))
+            callee_addr = _norm_address(edge.get("to"))
+            if caller and caller_addr:
+                result.addresses_by_name.setdefault(caller, set()).add(caller_addr)
+                entry = by_address.setdefault(caller_addr, {"callers": [], "callees": []})
+                if callee and callee not in entry["callees"]:
+                    entry["callees"].append(callee)
+            if callee and callee_addr:
+                result.addresses_by_name.setdefault(callee, set()).add(callee_addr)
+                entry = by_address.setdefault(callee_addr, {"callers": [], "callees": []})
+                if caller and caller not in entry["callers"]:
+                    entry["callers"].append(caller)
         return result
 
     @staticmethod
