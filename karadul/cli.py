@@ -378,6 +378,9 @@ def _write_clean_output(
     else:
         for err in fmt_result.errors:
             out.print(f"  [red]HATA:[/red] {err}")
+    # Uyarılar sessiz kipte de basılır: kullanıcının aldığı çıktının eksik olduğunu bilmesi gerekir
+    for uyari in getattr(fmt_result, "warnings", []):
+        out.print(f"  [yellow]UYARI:[/yellow] {uyari}")
 
     if not quiet:
         out.print()

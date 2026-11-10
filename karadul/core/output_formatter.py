@@ -62,6 +62,9 @@ class FormatResult:
     src_files: int = 0
     reports_generated: int = 0
     errors: list[str] = field(default_factory=list)
+    # Başarıyı bozmayan ama kullanıcının bilmesi gereken durumlar (ör. son aşamalar çıktı
+    # üretmediği için daha erken bir aşamanın kaynağına düşüldü).
+    warnings: list[str] = field(default_factory=list)
 
 
 class OutputFormatter:
@@ -82,6 +85,7 @@ class OutputFormatter:
     ) -> None:
         self._workspace = workspace
         self._result = pipeline_result
+        self._warnings: list[str] = []
 
     def format_output(self, output_dir: Path, fmt: str = "clean") -> FormatResult:
         """Ciktiyi formatla.
@@ -133,6 +137,7 @@ class OutputFormatter:
     def _format_clean(self, output_dir: Path) -> FormatResult:
         """Temiz, organize cikti dizini uret."""
         errors: list[str] = []
+        self._warnings = []
         files_written = 0
         src_files = 0
 
@@ -156,6 +161,14 @@ class OutputFormatter:
         src_files += src_count
         files_written += src_count
         errors.extend(errs)
+
+        # Yeniden kurma asamasi kostuysa kaynak beklenir: tek dosya bile yazilamadiysa
+        # sonuc basarili SAYILMAZ (raporlar yazilsa da). Reconstruct kosmadiysa
+        # (or. --stage static) kaynaksiz cikti olagandir.
+        reconstruct_ran = "reconstruct" in getattr(self._result, "stages", {})
+        sources_missing = language == "c" and reconstruct_ran and src_count == 0
+        if sources_missing and not errs:
+            errors.append("Temiz çıktıya kaynak dosyası yazılamadı: yeniden kurulan kaynak bulunamadı")
 
         # 2. Naming map uret
         naming_map = self._build_naming_map()
@@ -216,7 +229,7 @@ class OutputFormatter:
         except Exception as exc:
             errors.append(f"README.md yazma hatasi: {exc}")
 
-        success = src_files > 0 or reports_generated > 0
+        success = (src_files > 0 or reports_generated > 0) and not sources_missing
         return FormatResult(
             success=success,
             output_dir=output_dir,
@@ -224,6 +237,7 @@ class OutputFormatter:
             src_files=src_files,
             reports_generated=reports_generated,
             errors=errors,
+            warnings=list(self._warnings),
         )
 
     def _detect_language(self) -> str:
@@ -262,11 +276,19 @@ class OutputFormatter:
 
         reconstructed = self._workspace.get_stage_dir("reconstructed")
 
-        # CProjectBuilder ciktisi varsa (project/ dizini)
+        # CProjectBuilder ciktisi varsa (project/ dizini) VE icinde kaynak varsa.
+        # Dizin var ama bossa (sonraki asamalar cikti uretmediyse) eskiden 0 dosya
+        # kopyalanip "basarili" deniyordu: kullanici bos bir src/ aliyordu. Bos proje
+        # dizini kullanilmaz; en olgun DOLU asamaya dusulur ve bu uyari olarak yazilir.
         project_dir = reconstructed / "project"
-        if project_dir.exists():
+        if project_dir.exists() and any(project_dir.rglob("*.c")):
             files_written += self._copy_project_tree(project_dir, src_dir, errors)
             return files_written, errors
+        if project_dir.exists():
+            self._warnings.append(
+                "Proje ağacı (reconstructed/project) boş: son aşamalar kaynak üretmedi; "
+                "daha erken bir aşamanın çıktısı kullanıldı (yorum ve alt sistem klasörleri yok)"
+            )
 
         # Yoksa en son islenenmis kaynagi bul
         # Oncelik: commented > typed > merged > decompiled

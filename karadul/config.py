@@ -474,7 +474,11 @@ class BinaryReconstructionConfig:
     # statik ad c_namer._strategy_api_param_propagation'da zaten var. Fonksiyona
     # bağlı dinamik kanıt (çağıran çerçevesi, plan v2 DN-1) gelene kadar kapalı.
     enable_dynamic_naming: bool = False       # v1.9.0: Frida trace -> degisken isimlendirme
-    enable_flow_simplification: bool = True   # Goto elimination / label renaming (v1.5.5)
+    # Öntanımlı KAPALI (2026-11-10): çıktı sağlamlığı denetiminde (119 ikili) akış sadeleştirme,
+    # goto içeren fonksiyonların çoğunda C metnini bozdu (ayraç dengesi ya da koşul/dönüş mantığı
+    # değişiyor; docs/arge/2026-11-10_cikti_saglamligi/rapor.md). Yanlış kod göstermektense
+    # Ghidra'nın ham akışı korunur. Düzeltilip ölçülmeden açılmaz.
+    enable_flow_simplification: bool = False  # Goto elimination / label renaming (v1.5.5)
     goto_max_inline_lines: int = 15           # Tek-hedefli goto inline icin max block satir sayisi
     max_algo_matches: int = 0                   # Algorithm match budget (0 = unlimited)
     pdb_auto_load: bool = True              # Windows PE icin PDB otomatik yukleme

@@ -87,6 +87,13 @@ def run_reference_differ(
         )
 
 
+def reference_download_allowed(config: Any) -> bool:
+    """Başvuru kaynağı ağdan indirilebilir mi: ana ağ anahtarı ve indirme izni birlikte açık olmalı."""
+    net = getattr(config, "network", None)
+    return bool(net is not None and getattr(net, "enabled", False)
+                and getattr(net, "allow_reference_download", False))
+
+
 def _match_against_db(
     *,
     pc: Any, detections: Any,
@@ -107,8 +114,12 @@ def _match_against_db(
         Path.home() / ".cache" / "karadul" / "ref_db"
     )
     ref_path.mkdir(parents=True, exist_ok=True)
+    # Başvuru kaynağını ağdan indirip derlemek (auto_populate) yalnız ağ açıkça açılmışsa:
+    # ``network.enabled`` VE ``network.allow_reference_download``. Eskiden koşulsuz True idi;
+    # analiz, kullanıcı ağı açmadan kaynak indirmeyi ve ``./Configure`` + ``make`` çalıştırmayı
+    # deniyordu ("çevrimdışı öntanımlı" sözüne aykırı).
     differ = ReferenceDiffer(
-        reference_db_path=ref_path, auto_populate=True,
+        reference_db_path=ref_path, auto_populate=reference_download_allowed(pc.config),
     )
     func_data_for_refdiff = func_data if func_data is not None else (
         json.loads(functions_json.read_text(encoding="utf-8", errors="replace"))

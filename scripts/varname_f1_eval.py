@@ -228,7 +228,9 @@ def parse_reconstructed(src_dir: Path) -> dict[int, FuncVars]:
     imza çıparlaması daha az tuzak içerir; değişken adları zaten özdeştir.
     """
     by_addr: dict[int, tuple[str, FuncVars]] = {}
-    for cfile in sorted(src_dir.glob("*.c")):
+    # Temiz çıktı fonksiyon dosyalarını alt klasörlere (``src/<altsistem>/``) yazar; düz
+    # ``*.c`` araması hiçbir dosya bulmuyor ve koruma testi "fonksiyon yok" diye düşüyordu.
+    for cfile in sorted(src_dir.rglob("*.c")):
         try:
             text = cfile.read_text(encoding="utf-8", errors="replace")
         except OSError:
