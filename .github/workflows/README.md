@@ -1,116 +1,75 @@
-# GitHub Actions Workflows
+# GitHub Actions iş akışları
 
-## benchmark.yml — Benchmark CI Gate
+Bu iş akışlarının hiçbiri ad kalitesini ölçmez ve hiçbirinde doğruluk eşiği yok.
+Ad ve tip ölçümleri Ghidra ile, depo dışında koşulur ve sonuçları `docs/arge/`
+altında ön kayıtlı belgelerle tutulur. CI makinesinde Ghidra yok.
 
-### Amac
+Önceki "F1 kapısı" kaldırıldı: `scripts/run_mock_benchmark.py` koda sabit yazılmış
+bir F1 değerini (0,9091) döndürüyor, iş akışı da bunu 0,85 eşiğiyle kıyaslıyordu.
+Yanındaki `scripts/ci_baseline_check.py` adımı da commit'li bir JSON'daki sayıyı
+0,0 tabanıyla kıyaslıyordu; kodu ölçmüyordu.
 
-Her PR ve main push'ta karadul'un `renamed_f1` metriğinin önceki sürüme
-göre gerilemediğini doğrular. Ghidra gerektirmez; tümüyle pre-computed
-fixture ve committed baseline JSON üzerinden çalışır.
+## ci.yml
 
-### Tetikleyiciler
+Tetikleyiciler: `main`'e push, `main`'e açılan PR, elle (`workflow_dispatch`).
 
-| Tetikleyici | Koşul |
-|-------------|-------|
-| `push` | `main` branch |
-| `pull_request` | `main`'e açılan PR |
-| `workflow_dispatch` | Manuel tetikleme (Actions UI'dan) |
+| İş | Ne yapar |
+|----|----------|
+| `tests` | Ubuntu (Python 3.11 ve 3.12) ve macOS (Python 3.12) üzerinde `pip install -e ".[dev,perf,binary,computation,cpp]" pyelftools pyfiglet`, `npm install --prefix scripts`, sonra varsayılan pytest seçimi (`pyproject.toml`: `not integration and not benchmark`) |
+| `install-smoke` | Ubuntu, Python 3.11 ve 3.12: temiz sanal ortama düzenlenemez (`pip install .`) kurulum; depo dışından `karadul --version`, `karadul --help`, `karadul analyze --help`, `blackwidow --help`, `python -m karadul --help`; genel API içe aktarımları ve varsayılan aşama listesi; ardından README'nin önerdiği `.[ghidra,binary,perf]` ile `import karadul.reconstruction` |
+| `known-issues` | Bilinen iki paketleme hatasını bilerek yeniden üretir; düzeltilene kadar başarısız olması beklenir, `continue-on-error: true` ile iş akışını düşürmez. Yeşile döndüğünde silinmeli |
 
-### Adimlar
+`known-issues` işinin yakaladığı hatalar:
 
-1. **Checkout** — `actions/checkout@v4`
-2. **Python 3.12 kurulum** — `actions/setup-python@v5`, pip cache aktif
-3. **Karadul kurulum** — `pip install -e ".[binary,computation,dev]"` + pytest
-4. **Smoke testler** — `pytest tests/benchmark/ -m "" -q`
-   - `-m ""` tüm marker'ları dahil eder (benchmark-marked testler varsayilan olarak atlanir)
-   - 100+ test bekleniyor; herhangi biri fail ederse job fail olur
-5. **renamed_f1 gate** — `python scripts/ci_baseline_check.py`
-   - Floor: `0.0` (v1.11 beta; v1.13'te `0.5`'e yükselecek)
-   - Regresyon kontrolü: `.benchmark-baseline.json` yoksa atlanir (ilk koşu)
-6. **Artifact yükleme** — baseline JSON 30 gün saklanir
-7. **Job summary** — renamed_f1 ve temel metrikler GitHub UI'da görünür
+1. Ek seçmeden yapılan kurulumda (`pip install .`) `import karadul.reconstruction`
+   düşer: `pyahocorasick` yalnız `perf` ekinde tanımlı.
+2. `karadul-hack` giriş noktası `pyfiglet`'i içe aktarır; hiçbir ek bunu kurmaz.
 
-### Ghidra Neden Yok?
+### Açıkça dışarıda bırakılan testler
 
-Ghidra headless CI'da kurulumu 2 GB+ indirme + 10 dakika gerektiriyor.
-Bu fazda (v1.11) sadece pre-computed fixture ve `_compare_maps` birim
-testleri kullanılıyor. Gerçek Ghidra CI'ı v1.12'de ayrı workflow olarak
-eklenecek (`ghidra-ci.yml`).
+Temiz klonda geçmeleri mümkün değil; `--ignore` ile iş akışında adıyla ayrıldılar:
 
-### Dosyalar
+| Dosya | Test sayısı | Neden |
+|-------|-------------|-------|
+| `tests/test_ngram_db_v2_smoke.py` | 16 | `sigs/ngram_name_db/` gerekiyor; dizin git-ignore'lu, depoda yok. Veri yokken atlamak yerine düşüyor |
+| `tests/test_pipeline_e2e_real_binary.py` | 8 (varsayılan seçimde) | `karadul analyze`'ı uçtan uca koşturur, Ghidra gerekir. Ayrıca CLI'ı `shutil.which("karadul")` ile bulduğu için yerelde test edilen ortamın değil, PATH'teki ilk kurulumun kodunu koşturabilir |
 
-| Dosya | Amac |
-|-------|------|
-| `benchmarks/stripped_baseline_2026_04_23_real.json` | Committed baseline (renamed_f1 kaynak degeri) |
-| `tests/benchmark/fixtures/linux_elf_stripped/` | ELF fixture (sample_elf_stripped) |
-| `scripts/ci_baseline_check.py` | Floor + regresyon kontrol scripti |
-| `.benchmark-baseline.json` | Opsiyonel regresyon baseline (commit edilirse aktif olur) |
+### Pakette tanımlı olmayan test bağımlılıkları
 
-### Floor Degerleri (Milestone Tablosu)
+- `pyelftools`: `scripts/measurement/` ve testleri (`tests/test_dwarf_tip.py`,
+  `tests/test_parametre_hizala.py`) kullanıyor.
+- `pyfiglet`: `karadul/hacker_cli.py` içe aktarıyor.
 
-| Versiyon | Floor | Aciklama |
-|----------|-------|----------|
-| v1.11 (simdi) | 0.0 | Stripped user fn henuz resolve edilmiyor |
-| v1.13 (hedef) | 0.5 | Renamed fn baseline established olunca artir |
-| v1.15 (hedef) | 0.7 | Mature naming pipeline |
+İkisi de iş akışında elle kuruluyor. Kalıcı çözüm `pyproject.toml`'a eklemek.
 
-### Local Debug
+## benchmark.yml
 
-Workflow'u local'de calistirmak icin `act` kullanin:
+Tetikleyiciler `ci.yml` ile aynı. Ubuntu, Python 3.12:
+`pip install -e ".[dev,perf,binary,computation,cpp]"`, sonra
+`pytest -m "benchmark and not integration" --ignore=tests/test_pipeline_e2e_real_binary.py`.
+
+Bu testler ölçüm ve kıyas kodunu commit'li fikstürler üzerinde sınar; Karadul'un
+adlarının ne kadar doğru olduğunu ölçmez. `tests/benchmark/test_parallel_naming_perf.py`
+paralel adlandırmanın en az 1,3 kat hızlandırdığını denetliyor; yüklü bir CI makinesinde
+dalgalanabilir.
+
+## Yerelde aynı adımlar
 
 ```bash
-# act kurulumu (Homebrew)
-brew install act
+python -m venv .venv-ci
+.venv-ci/bin/python -m pip install -e ".[dev,perf,binary,computation,cpp]" pyelftools pyfiglet
+npm install --prefix scripts --no-audit --no-fund
 
-# Workflow'u simule et
-act pull_request -j benchmark
+# ci.yml / tests
+.venv-ci/bin/python -m pytest -q -rfEs \
+    --ignore=tests/test_ngram_db_v2_smoke.py \
+    --ignore=tests/test_pipeline_e2e_real_binary.py
 
-# Sadece belirli adimi debug et
-act pull_request -j benchmark -s GITHUB_TOKEN=dummy
+# benchmark.yml
+.venv-ci/bin/python -m pytest -q -rfEs -m "benchmark and not integration" \
+    --ignore=tests/test_pipeline_e2e_real_binary.py
 ```
 
-Alternatif olarak adim adim manual:
-
-```bash
-# 1. Kurulum
-pip install -e ".[binary,computation,dev]" && pip install pytest pytest-cov
-
-# 2. Smoke testler
-pytest tests/benchmark/ -m "" -q --tb=short
-
-# 3. Gate kontrolu
-python scripts/ci_baseline_check.py \
-    --baseline benchmarks/stripped_baseline_2026_04_23_real.json \
-    --floor 0.0
-
-# Beklenen cikti:
-# [check] renamed_f1 = 0.0000  floor = 0.0000
-# [PASS]  renamed_f1 0.0000 >= floor 0.0000
-# [info]  .benchmark-baseline.json not found — regression check skipped
-# [OK]    Benchmark gate passed.
-```
-
-### Yaygin Hatalar
-
-**`ModuleNotFoundError: No module named 'karadul'`**
-Karadul editable install yapilmamis. `pip install -e .` calistirin.
-
-**`pytest: error: unrecognized arguments: -m ""`**
-pytest versiyonu cok eski. `pip install "pytest>=8.0"` ile guncellleyin.
-
-**`[FAIL] renamed_f1 X.XXXX < floor Y.YYYY`**
-Bir PR naming pipeline'ini bozdu. `benchmarks/` altindaki JSON'lari
-inceleyin, hangi commit'te dusus oldugunnu bulmak icin:
-```bash
-git log --oneline benchmarks/stripped_baseline_2026_04_23_real.json
-```
-
-**`[FAIL] REGRESSION: renamed_f1 dropped from ...`**
-`.benchmark-baseline.json` mevcut ve mevcut deger daha dusuk.
-Kasitliysa floor'u guncelleyin veya `.benchmark-baseline.json`'i commit
-edin. Kasitsizsa pipeline'daki regresyonu bulun ve duzeltein.
-
-### PR Comment
-
-`marocchino/sticky-pull-request-comment` eski workflow'dan kaldirildi
-(gereksiz external dependency). Gate sonucu GitHub Job Summary'de gorunur.
+Ghidra kurulu bir makinede `tests/test_ghidra.py::TestRealBinary::test_ghidra_full_analysis`
+atlanmaz, gerçekten Ghidra koşturur. `pyghidra` kurulu değilse `analyzeHeadless` yoluna
+düşer ve bu yolda düşebilir. CI makinesinde Ghidra olmadığı için atlanır.

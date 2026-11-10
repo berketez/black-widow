@@ -1,0 +1,168 @@
+name: CI
+
+# Full test suite + clean-install smoke test.
+# No accuracy gate: nothing here measures naming quality. Accuracy is measured
+# offline with Ghidra (see docs/arge/); CI runners have no Ghidra.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.12"
+          - os: macos-latest
+            python-version: "3.12"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Set up Node.js (JS deobfuscation helpers in scripts/)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install JS helper packages
+        run: npm install --prefix scripts --no-audit --no-fund
+
+      # pyelftools: used by scripts/measurement/ and their tests; no extra declares it.
+      # pyfiglet:   imported by karadul/hacker_cli.py; no extra declares it.
+      - name: Install karadul with test extras
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,perf,binary,computation,cpp]" pyelftools pyfiglet
+
+      # Default selection from pyproject.toml: not integration, not benchmark.
+      #
+      # Explicitly excluded because they cannot pass on a clean clone:
+      #   tests/test_ngram_db_v2_smoke.py          (16 tests) need sigs/ngram_name_db/,
+      #                                            which is git-ignored and not in the repo.
+      #   tests/test_pipeline_e2e_real_binary.py   (8 tests in this selection) run
+      #                                            `karadul analyze` end to end; that needs
+      #                                            Ghidra, and the runner has none.
+      - name: Run test suite
+        run: |
+          python -m pytest -q -rfEs \
+            --ignore=tests/test_ngram_db_v2_smoke.py \
+            --ignore=tests/test_pipeline_e2e_real_binary.py
+
+  install-smoke:
+    name: Clean install smoke test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Non-editable install into a fresh venv; checks run outside the checkout so
+      # that `import karadul` resolves to the installed package, not the source tree.
+      - name: Base install (no extras)
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/python" -m pip install --upgrade pip
+          "$RUNNER_TEMP/venv/bin/python" -m pip install .
+
+      - name: CLI entry points
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          V="$RUNNER_TEMP/venv/bin"
+          "$V/karadul" --version
+          "$V/karadul" --help
+          "$V/karadul" analyze --help
+          "$V/blackwidow" --help
+          "$V/python" -m karadul --help
+
+      - name: Public API imports and default stage list
+        working-directory: ${{ runner.temp }}
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" - <<'PY'
+          import karadul
+          from karadul import Config, Pipeline, analyze
+          from karadul.cli_common import build_pipeline
+          import karadul.stages
+
+          assert set(karadul.__all__) >= {"analyze", "Pipeline", "Config", "__version__"}
+          assert "site-packages" in karadul.__file__, karadul.__file__
+          stages = build_pipeline(Config()).registered_stages
+          assert stages == ["identify", "static", "dynamic", "deobfuscate", "reconstruct", "report"], stages
+          assert Config().security.allow_target_execution is False
+          print("karadul", karadul.__version__, "from", karadul.__file__)
+          PY
+
+      - name: Install the extras the README recommends for native binaries
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" -m pip install ".[ghidra,binary,perf]"
+
+      - name: Reconstruction stage imports with recommended extras
+        working-directory: ${{ runner.temp }}
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" -c "import karadul.reconstruction, pyghidra, capstone, lief; print('ok')"
+
+  # Known packaging bugs, reproduced on purpose so they stay visible.
+  # This job is expected to FAIL until they are fixed; it does not fail the workflow.
+  #   1. A base install cannot import karadul.reconstruction: it needs pyahocorasick,
+  #      which only the `perf` extra declares.
+  #   2. The `karadul-hack` entry point imports pyfiglet, which nothing declares.
+  # When this job turns green, delete it.
+  known-issues:
+    name: Known packaging issues (expected to fail)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Base install (no extras)
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/python" -m pip install --upgrade pip
+          "$RUNNER_TEMP/venv/bin/python" -m pip install .
+
+      - name: import karadul.reconstruction without the perf extra
+        working-directory: ${{ runner.temp }}
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" -c "import karadul.reconstruction"
+
+      - name: karadul-hack --help without pyfiglet
+        if: ${{ !cancelled() }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          "$RUNNER_TEMP/venv/bin/karadul-hack" --help

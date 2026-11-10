@@ -1,481 +1,199 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/Ghidra-11%2B-red?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyTDIgN2wxMCA1IDEwLTV6TTIgMTdsMTAgNSAxMC01TTIgMTJsMTAgNSAxMC01Ii8+PC9zdmc+" alt="Ghidra">
+  <img src="https://img.shields.io/badge/Ghidra-12.1.2-red?style=for-the-badge" alt="Ghidra 12.1.2">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Lines-138K%2B-blue?style=for-the-badge" alt="Lines">
 </p>
 
 <h1 align="center">Black Widow</h1>
 <h3 align="center">Karadul</h3>
 
 <p align="center">
-  <strong>Automated binary reverse engineering suite that decompiles, analyzes, and reconstructs closed-source binaries into readable, annotated source code with algorithm-level understanding.</strong>
-</p>
-
-<p align="center">
-  Mach-O / ELF / PE / Electron / .NET / JVM -- C, C++, Objective-C, Swift, Go, Rust, Java, C#, JavaScript
+  <strong>A research pipeline on top of Ghidra that post-processes decompiled code from stripped binaries: proposed names, some recovered types, comments and reports.</strong>
 </p>
 
 ---
 
-## What It Does
+## What it is
 
-Black Widow takes a stripped, closed-source binary as input and produces readable, structured source code as output. Not just raw decompilation -- it recovers variable names, struct layouts, algorithm identities, data flow pipelines, and inter-procedural dependencies. The output is annotated C with comments, recovered types, and a full HTML report.
+- **Ghidra does the heavy work.** Loading, disassembly and decompilation come from Ghidra 12.1.2, run headless (through PyGhidra when the `pyghidra` package is installed, otherwise through `analyzeHeadless`).
+- **Karadul adds a layer on top.** It proposes function and variable names, tries to recover some types and structs, adds comments and writes reports. This naming layer is a research project; it is not finished and it is often wrong (see [Status](#status)).
+- **No LLM, no ML model.** The engine is rule- and computation-based and is meant to be deterministic. In a committed check, two runs of the same code on htop and tmux produced byte-identical `naming_map.json` files ([`docs/arge/2026-10-21_g9_n0/ol7_yeniden_sonuc.md`](docs/arge/2026-10-21_g9_n0/ol7_yeniden_sonuc.md)); other output files were not compared there.
+- **Offline by default.** Network access is off unless you pass `--enable-network`.
+- **The target is not executed by default.** Dynamic analysis runs the target under Frida only when you pass `--dynamic` (`security.allow_target_execution`, default `false`, in `karadul/config.py`).
 
-```
- INPUT                           BLACK WIDOW                              OUTPUT
-+----------+    +------------------------------------------------+    +------------------+
-|          |    |                                                  |    |                  |
-| Stripped |    |  Identify -> Static -> Dynamic -> Deobfuscate   |    | Named, commented |
-| Binary   | -> |         -> Reconstruct -> Report                | -> | source code with |
-| (Mach-O, |    |                                                  |    | recovered types, |
-|  ELF,    |    |  6 pipeline stages, 27 analyzer modules,        |    | struct layouts,  |
-|  PE,     |    |  10 naming strategies, Bayesian fusion,         |    | algorithm IDs,   |
-|  .asar)  |    |  3-layer algorithm detection, struct recovery   |    | HTML report      |
-|          |    |                                                  |    |                  |
-+----------+    +------------------------------------------------+    +------------------+
-```
+## Status
 
-## Architecture
+Read this section before relying on any output.
 
-```
-                              karadul analyze /path/to/binary
-                                         |
-                    +--------------------+--------------------+
-                    |                                          |
-              IDENTIFICATION                            CONFIGURATION
-              TargetDetector                             Config (YAML)
-              Language/Format                            Ghidra paths
-              Compiler/Packer                            Timeouts/Workers
-                    |                                          |
-                    +--------------------+--------------------+
-                                         |
-                    =============================================
-                    |           STATIC ANALYSIS                 |
-                    |                                           |
-                    |  Ghidra Headless (PyGhidra API)           |
-                    |    - Function decompilation               |
-                    |    - String extraction                    |
-                    |    - Call graph construction               |
-                    |    - Cross-references (xrefs)             |
-                    |    - Type information                     |
-                    |                                           |
-                    |  Binary Intelligence                      |
-                    |    - Subsystem detection                  |
-                    |    - Protocol identification              |
-                    |    - Security mechanism analysis           |
-                    |                                           |
-                    |  Signature Matching                       |
-                    |    - FLIRT signatures (1.5M+ functions)   |
-                    |    - Byte pattern matching                |
-                    |    - YARA rule scanning                   |
-                    |    - CAPA capability detection            |
-                    =============================================
-                                         |
-                    =============================================
-                    |          DYNAMIC ANALYSIS (optional)      |
-                    |                                           |
-                    |  Frida Runtime Instrumentation             |
-                    |    - Function tracing                     |
-                    |    - Memory scanning                      |
-                    |    - ObjC/Swift method hooking            |
-                    |    - Node.js API interception             |
-                    =============================================
-                                         |
-                    =============================================
-                    |           DEOBFUSCATION                   |
-                    |                                           |
-                    |  Binary: opaque predicate removal,        |
-                    |          string decryption                |
-                    |  JS: CFF deflattening, Babel pipeline,    |
-                    |      synchrony, deep deobfuscation        |
-                    =============================================
-                                         |
-          +-------------+---------------+--------------+---------------+
-          |             |               |              |               |
-     ALGORITHM     TYPE RECOVERY    NAMING         DATA FLOW     STRUCT
-     DETECTION                      ENGINE         TRACKER       RECOVERY
-          |             |               |              |               |
-   3-layer engine  Struct/Enum/    10-strategy    Inter-proc     Pointer
-   IEEE-754 const  VTable from     Bayesian       4 patterns     arithmetic
-   Structural      pointer         fusion         14K+ deps      -> field
-   API correlation arithmetic      8 sources      discovered     access
-          |             |               |              |               |
-          +-------------+---------------+--------------+---------------+
-                                         |
-                    =============================================
-                    |         RECONSTRUCTION                    |
-                    |                                           |
-                    |  Named C files with recovered types       |
-                    |  Algorithm-aware comments                 |
-                    |  Module/project structure                 |
-                    |  Formula extraction (LaTeX/ASCII)         |
-                    |  Dispatch resolution (ObjC/C++ vtable)    |
-                    =============================================
-                                         |
-                    =============================================
-                    |            REPORTING                      |
-                    |                                           |
-                    |  HTML report with metrics                 |
-                    |  JSON machine-readable output             |
-                    |  Markdown summary                         |
-                    |  SARIF for CI/CD integration              |
-                    =============================================
-```
+- **Name quality.** The most recent committed evaluation (2026-10-19, run `taban-v2-62ad154`, Ghidra 12.1.2) labelled function names Karadul assigned in two stripped macOS arm64 Mach-O programs (`scripts/measurement/macho_measure.py`):
 
-## Key Capabilities
+  | Program | Names judged | Wrong | Exact or close |
+  |---|---|---|---|
+  | tmux | 385 | 45.5% | 19.7% |
+  | htop | 97 | 81.4% | 4.1% |
 
-### Multi-Domain Algorithm Intelligence Engine
+  The labels come from Claude agents acting as blind proxy raters; no human rater has been used yet. Source and method: [`docs/arge/2026-10-19_g4_etiketleme/sonuc.md`](docs/arge/2026-10-19_g4_etiketleme/sonuc.md) and `onkayit.md` next to it (in Turkish).
+- **Exact-name anchors (KS-1).** A pre-registered measurement (2026-11-10; 119 arm64 binaries from 8 open-source programs) checked names read from the binary's own name slots against symbol ground truth, by exact equality. Names taken from `"%s: ..."` log calls that pass `__func__` were right for 249 of 262 distinct names (decision: precise, ≥ 95%). Names taken from assert calls were right for 188 of 228 (decision: not precise): 40 of the 42 wrong assert anchors name a function that was inlined into the measured one. These anchors cover only a small share of the functions that need a name (about 6% in tmux, none in htop, sqlite3 or tree), and they are **not yet wired into the product output**. Source: [`docs/arge/2026-10-21_g11_n1/ks1_olcum.md`](docs/arge/2026-10-21_g11_n1/ks1_olcum.md), pre-registration `ks1_onkayit.md` and deviation record `ks1_sapma_1.md` next to it (in Turkish).
+- **Confidence values are not calibrated.** The clean output carries the confidence recorded by the naming step and a label (`kesin` / `doğrulanmadı`) for each function and data name (`karadul/core/output_formatter.py`, `karadul/core/naming_labels.py`). Until the anchors above are wired in, every name is labelled `doğrulanmadı` (not verified).
+- **Algorithm and crypto tags** (`ALGORITHM:` comments) are pattern heuristics. Their precision has not been measured. Constant-based tags now require whole-token matches and at least two algorithm-specific constants in the same function; before that fix, programs without any cryptography received hundreds of such tags.
+- **Measured formats.** Name and type measurements have been run only on arm64 Mach-O and arm64 ELF. The code also recognises PE, .NET, JVM/APK, Go, Swift, Rust, Delphi, Python bytecode, JavaScript bundles and Electron apps; none of these has an accuracy measurement.
+- **No release yet.** No GitHub release or prebuilt DMG has been published.
+- **CLI messages are mostly in Turkish.**
 
-Three-layer detection with Gaussian copula confidence fusion and Platt-calibrated scoring:
+## Requirements
 
-| Layer | Method | What It Finds |
-|-------|--------|---------------|
-| **Layer 1** | IEEE-754 Constant Fingerprinting | Crypto S-boxes, hash init vectors, mathematical constants embedded in code |
-| **Layer 2** | Structural Code Pattern Matching | Loop structures, butterfly operations, accumulator patterns across 35+ formula types |
-| **Layer 3** | API Correlation | Known crypto/math library calls, BLAS/LAPACK indicators, system API usage |
+- Python 3.11 or newer (`requires-python` in `pyproject.toml`).
+- Ghidra **12.1.2** for native binaries. This is the pinned version (`GHIDRA_PINNED_VERSION` in `karadul/config.py`). Other versions are used with a warning, because decompiler output can differ between Ghidra versions.
+- A JDK that your Ghidra release supports (the macOS app build bundles JDK 21: `packaging/macos/build_mac_app.sh`).
+- Optional: Node.js for JavaScript targets (helper scripts in `scripts/package.json`; run `npm install --prefix scripts`), Frida for `--dynamic`.
 
-Confidence fusion uses correlation-aware Noisy-OR with negative evidence penalties and call-graph consistency checks. Results are classified into tiers: **CONFIRMED** / **HIGH** / **MEDIUM** / **LOW**.
+Point Karadul at Ghidra with `GHIDRA_INSTALL_DIR` (or `GHIDRA_HOME`). Without it, a few common install locations and `PATH` are searched (`_find_ghidra_tool` in `karadul/config.py`). The Ghidra path is not read from `karadul.yaml`.
 
-35 formula extractors including: matrix operations, ODE discretization, FFT butterfly, Newton-Raphson, Adam optimizer, softmax, CRC/hash rounds, finite differences, convolution, gradient descent, Simpson's rule, and more.
-
-### Bayesian Function Naming
-
-8 evidence sources fused with correlation-aware Bayesian log-odds:
-
-```
-log_odds = log(prior / (1-prior)) + SUM_i  w_i * log(conf_i / (1 - conf_i))
-P(correct) = sigmoid(log_odds)
-```
-
-Sources: symbol table, string context, API calls, call graph position, dataflow analysis, type information, byte pattern matching, source matching. Correlation weights (w_i < 1) prevent double-counting of dependent evidence.
-
-10 naming strategies with confidence tiers from 0.20 to 0.95.
-
-### Virtual Dispatch Resolution
-
-Statically resolves **84% of dynamic method calls** in Objective-C and C++ binaries:
-
-- ObjC: `objc_msgSend` / `objc_msgSendSuper` -> actual method implementations
-- C++: vtable dispatch -> concrete function targets
-- 4-phase pipeline: site scanning, selector mapping, type propagation, call graph augmentation
-
-### Inter-Procedural Data Flow Tracking
-
-Discovers **14,000+ cross-function data dependencies** through 4 pattern types:
-
-1. **Parameter Passthrough** -- caller argument flows into callee argument
-2. **Return-to-Argument** -- function return value passed as argument to another function
-3. **Struct/Global Mediation** -- write to struct field, read from another function
-4. **Allocation Chain** -- malloc -> fill -> use -> free lifecycle tracking
-
-### Struct Recovery from Pointer Arithmetic
-
-Transforms raw pointer arithmetic into semantic struct field accesses:
-
-```c
-// BEFORE (Ghidra output)
-*(int *)(param_18 + 4)
-*(double *)(param_18 + 0x10)
-
-// AFTER (Black Widow reconstruction)
-elem->num_nodes    /* was: *(int *)(param_18 + 4) */
-elem->stiffness    /* was: *(double *)(param_18 + 0x10) */
-```
-
-3-phase pipeline: template matching from algorithm detection, call graph propagation, code rewrite.
-
-### Computation Recovery
-
-Extracts mathematical formulas from decompiled code and outputs LaTeX/ASCII representations. Recognizes 35+ computational patterns including BLAS/LAPACK calls, matrix operations, ODE solvers, FFT, neural network operations, and numerical methods.
-
-## Supported Formats
-
-| Category | Formats | Languages |
-|----------|---------|-----------|
-| **Native Binary** | Mach-O, ELF, PE, Universal Binary | C, C++, Objective-C, Swift, Go, Rust |
-| **Managed Binary** | JAR, APK, .NET Assembly | Java, Kotlin, C# |
-| **JavaScript Bundle** | webpack, esbuild, Terser, obfuscator.io | JavaScript, TypeScript |
-| **Packed Application** | Electron .app / .asar | JS + native components |
-| **Special** | Delphi, Python bytecode | Delphi (Object Pascal), Python |
-
-## Technology Stack
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Decompilation | **Ghidra** (PyGhidra API) | Binary -> decompiled C |
-| Disassembly | **Capstone** | Multi-arch instruction decoding |
-| Binary Parsing | **LIEF** | Mach-O / ELF / PE format parsing |
-| Dynamic Analysis | **Frida** | Runtime instrumentation and hooking |
-| Pattern Matching | **YARA** | Rule-based binary pattern scanning |
-| Constraint Solving | **Z3** | Deobfuscation, opaque predicate removal |
-| ML Naming | **LLM4Decompile** | Neural decompilation assistance |
-| Formula Extraction | **SymPy** | Symbolic math for computation recovery |
-| Signature DB | Custom (1.5M+ sigs) | Library function identification |
-| CLI | **Click** + **Rich** | Terminal interface with progress bars |
-
-## Tested Targets
-
-| Target | Type | Size | Functions | Recovery | Details |
-|--------|------|------|-----------|----------|---------|
-| Rectangle | Swift (Mach-O) | 1.8 MB | 2,852 | 89.9% | 257 structs, 24 enums recovered |
-| Steam | C++ ARM64 (Mach-O) | 4.1 MB | 11,296 | 74.2% | 542 signature matches, 945 opaque predicates removed |
-| Claude Code | JS (esbuild) | 11.8 MB | 43,747 | 57.3% | 1,590 modules, 83K comments added |
-| Cursor | JS (3 bundles) | 5.97 MB | 17,705 | 65.4% | 72 modules unpacked |
-
-Recovery % = named symbols / total symbols, weighted by confidence.
+The large signature and name databases used during development (`sigs/`, `~/.karadul/signatures.lmdb`) are **not** part of this repository. Unless you supply signature files yourself (`binary_reconstruction.external_signature_paths` in `karadul.yaml`, or `sigs/` and `signatures_*.json` in the project root; see `karadul/analyzers/signature_db.py`), only the signatures built into the source tree are used.
 
 ## Installation
 
-**Requirements:** Python 3.11+, Ghidra 11+ (for binary decompilation), Node.js 20+ (for JS analysis)
-
 ```bash
-# Clone
 git clone https://github.com/berketez/black-widow.git
 cd black-widow
+python -m venv .venv && source .venv/bin/activate
 
-# Base install
-pip install -e .
-
-# With binary analysis support
-pip install -e ".[binary]"    # capstone + lief
-
-# With dynamic analysis
-pip install -e ".[dynamic]"   # frida
-
-# With ML-assisted naming
-pip install -e ".[ml]"        # torch + transformers
-
-# With deobfuscation extras
-pip install -e ".[deobf]"     # z3-solver
-
-# With the desktop app (native macOS window)
-pip install -e ".[app]"       # pywebview / WKWebView
-
-# Everything
-pip install -e ".[all]"
+# Native binaries: Ghidra bridge + binary parsing + the reconstruction stage's dependencies
+pip install -e ".[ghidra,binary,perf]"
 ```
 
-Set `GHIDRA_INSTALL_DIR` environment variable to your Ghidra installation path.
+Plain `pip install -e .` installs the CLI, but the reconstruct stage imports `karadul.reconstruction`, which needs `pyahocorasick`; only the `perf` extra installs it (see [Known issues](#known-issues)).
 
-## Quick Start
+Other extras (defined in `pyproject.toml`):
+
+| Extra | Installs | Used for |
+|---|---|---|
+| `computation` | z3-solver, sympy, networkx | Struct constraint solving, CFG isomorphism, formula extraction |
+| `deobf` | z3-solver | Deobfuscation passes |
+| `cpp` | cxxfilt | C++ name demangling |
+| `yara` | yara-python | YARA scanning |
+| `dynamic` | frida-tools | `--dynamic` |
+| `python` | decompyle3, xdis | Python bytecode fallback |
+| `decompilers` | angr | `--decompiler-backend angr` |
+| `ml` | torch, transformers, ... | Not used by the analysis engine |
+| `app` | pywebview | macOS desktop window |
+| `dev` | pytest, pytest-cov, mypy | Tests |
+| `full` / `all` | everything above | |
+
+## Quick start
 
 ```bash
-# Analyze a native binary
+karadul --help                      # also: python -m karadul --help
+karadul analyze --help
+
+# Full pipeline: identify -> static (Ghidra) -> dynamic (skipped without --dynamic)
+#                -> deobfuscate -> reconstruct -> report
 karadul analyze /path/to/binary
 
-# Analyze an Electron app
-karadul analyze /path/to/app.asar
+# Same, and also write a clean output directory
+karadul analyze /path/to/binary --output ./out
 
-# Analyze a JavaScript bundle
-karadul analyze /path/to/bundle.js
+# Stop after a given stage (here: after Ghidra decompilation)
+karadul analyze /path/to/binary --stage static
 
-# Get target information without full analysis
+# Machine-readable summary on stdout (note: --output is ignored together with --json)
+karadul analyze /path/to/binary --json
+
+# Detection only: type, language, size, SHA-256
 karadul info /path/to/binary
 
-# Batch analyze multiple targets
-karadul batch analyze --targets all
-
-# List previous analyses
+# Previous analyses, active configuration
 karadul list
-
-# Run reconstructed project (JS targets)
-karadul run <target-name>
+karadul config show
+karadul config validate
 ```
 
-The CLI is `rich`-powered: `karadul analyze` shows a live pipeline progress bar, `--json`
-emits machine-readable output, `-q/--quiet` suppresses chrome, and `karadul config
-show/path/validate` inspects the active `karadul.yaml`.
+`karadul analyze` writes a workspace under `./workspaces/` in the current directory. `--output-dir DIR` moves it to `DIR/workspaces/`. Note that the same directory is where external signature files (`sigs/`, `signatures_*.json`) are looked up, so `--output-dir` also changes which signature files are loaded.
 
-## Desktop App (macOS)
+### Commands that run code
 
-Black Widow ships a dark, mission-control GUI -- the **Black Widow console** -- a native
-macOS window (WKWebView) with a guided flow: pick a binary, watch the pipeline run, explore
-the radial call graph, and work in **Analyst mode** -- inline rename with persistent
-per-binary overrides, a "why is this unnamed?" diagnosis, a bidirectional call map, an
-evidence panel, and a settings panel that writes `karadul.yaml`. The app mark is the red
-Black Widow hourglass.
+- `karadul analyze --dynamic` runs the target program under Frida. Use it only on binaries you trust.
+- `karadul run <target>` runs `npm install && npm start` in a reconstructed JavaScript project, i.e. code derived from the target. It asks for confirmation unless you pass `-y`.
+
+`karadul batch analyze` analyses fixed target paths written into `karadul/batch.py` (applications on the author's machine). It is not useful elsewhere yet.
+
+## Output
+
+Workspace (`karadul/core/workspace.py`):
+
+```
+workspaces/<target>/<UTC timestamp>/
+  raw/            # target info, extracted inputs
+  static/         # static analysis output, including Ghidra's
+  dynamic/        # Frida output (only with --dynamic)
+  deobfuscated/
+  reconstructed/  # renamed and commented sources, naming_map.json
+  reports/        # report files
+```
+
+Clean output with `--output DIR` (`karadul/core/output_formatter.py`):
+
+```
+DIR/
+  src/
+  naming_map.json
+  dependency_graph.json
+  report.json
+  report.html
+  README.md
+```
+
+## Python API
+
+`import karadul` exposes `analyze`, `Pipeline`, `Config`, `__version__`. See [`docs/API.md`](docs/API.md), including a known issue with `karadul.analyze()`.
+
+## Desktop app (macOS)
+
+A local web console and a native macOS wrapper live in `ui/` and `packaging/macos/`:
 
 ```bash
-# Run the console directly (opens http://127.0.0.1:8000)
-python ui/server.py
-
-# Build the native .app (red hourglass icon, opens in its own window)
-bash packaging/macos/build_mac_app.sh          # core: bundled Python + karadul + UI (opens, no analysis)
-bash packaging/macos/build_mac_app.sh --full   # self-contained: + Ghidra + JDK + signature DB
-bash packaging/macos/build_dmg.sh              # -> dist/BlackWidow-*.dmg
+python ui/server.py                                 # http://127.0.0.1:8000 (port: KARADUL_PORT)
+bash packaging/macos/build_mac_app.sh               # app bundle without Ghidra/JDK
+bash packaging/macos/build_mac_app.sh --full        # bundles Ghidra, a JDK and the signature DB
+bash packaging/macos/build_dmg.sh                   # -> dist/BlackWidow-*.dmg
 ```
 
-The `--full` bundle is offline and double-clickable (everything lives inside the `.app`, so
-macOS privacy protection never blocks it); it is large (~3.5 GB) because it bundles Ghidra,
-a JDK, and the signature database. The core build is ~200 MB: the window opens, but analysis
-needs `--full` (or an external Ghidra via `GHIDRA_INSTALL_DIR`).
-
-Builds are ad-hoc signed, not notarized, so the first launch on another Mac is blocked by
-Gatekeeper -- see [Installing the DMG](#installing-the-dmg-macos) below to allow it.
-
-## Installing the DMG (macOS)
-
-Grab `BlackWidow-*.dmg` from the
-[Releases](https://github.com/berketez/black-widow/releases) page, then:
-
-1. Open the DMG and drag **Black Widow.app** into **Applications**.
-2. On first launch macOS may say the app *"is damaged"* or *"cannot be verified"* and refuse
-   to open. This is Gatekeeper reacting to an **ad-hoc signed, non-notarized** build -- expected
-   for an open-source, non-commercial tool (no paid Apple Developer account is used).
-3. Allow it once: open **System Settings > Privacy & Security**, scroll to the bottom, and
-   click **"Open Anyway"** next to the Black Widow notice. Confirm, and the app opens normally
-   from then on. (macOS 15+ removed the old right-click **Open** shortcut, so use this panel.)
-
-Prefer the terminal? Clear the quarantine flag instead:
+`build_dmg.sh` signs with a Developer ID if one is available, otherwise ad-hoc; notarization is not done. An ad-hoc signed app copied to another Mac is blocked by Gatekeeper on first launch; clear the quarantine flag with:
 
 ```bash
 xattr -dr com.apple.quarantine "/Applications/Black Widow.app"
 ```
 
-4. **Easiest:** after dragging the app to Applications, double-click **İlk Açılış (karantinayı
-   kaldır).command** inside the mounted DMG. It finds the installed app (`/Applications` or
-   `~/Applications`), clears the quarantine flag automatically and opens it -- no Terminal, no
-   System Settings trip. (It is a plain shell script, so on its own first run macOS may ask you
-   to confirm once; click **Open**.)
+The app's update check reads `appcast.json` from the latest GitHub release by default (`KARADUL_UPDATE_MANIFEST_URL` overrides it; see `ui/server.py`). No release has been published yet, so the check finds nothing.
 
-The app checks a **self-hosted update manifest** (`appcast.json`) for a newer version and shows
-a dismissible banner. If you click **İndir ve Aç**, it downloads the new DMG, verifies its
-**SHA-256** against the manifest (rejecting the file on any mismatch), and mounts it for you --
-but it **never replaces itself in place** (that would break the ad-hoc signature and re-trigger
-Gatekeeper). You still drag the new app over the old one. The **Help > Güncellemeleri Kontrol Et**
-menu forces an immediate check (bypassing the 24-hour throttle).
+## Known issues
 
-> **Maintainer note (publishing updates):** the update feed is a single JSON manifest you host
-> yourself, so no paid Apple account or GitHub release is required.
-> 1. Run `bash packaging/macos/build_dmg.sh`; it writes `dist/BlackWidow-*.dmg.sha256` and prints
->    a ready-to-edit `appcast.json` fragment (version, sha256, size, timestamp).
-> 2. Upload the DMG to your host, fill `dmg_url`/`notes_url` with URLs **on that same host**, and
->    publish the manifest JSON.
-> 3. Point the app at it with `KARADUL_UPDATE_MANIFEST_URL=https://your-host/karadul/appcast.json`
->    (extra hosts via `KARADUL_UPDATE_ALLOWED_HOSTS`, comma-separated). `dmg_url`/`notes_url` must
->    resolve to an allowed host over `https` or the built-in SSRF guard rejects them.
->
-> The manifest schema is `{version, dmg_url, sha256, size_bytes, notes_url, published_at, min_os}`;
-> the in-app check compares `version` against the running version with the same semver logic.
-
-## Output
-
-```
-workspace/<target>/
-  static/
-    ghidra_output/           # Raw Ghidra decompilation
-    ghidra_functions.json    # Function metadata
-    ghidra_strings.json      # Extracted strings
-    ghidra_call_graph.json   # Call graph
-  reconstruction/
-    named_c/                 # Named and commented C files
-    type_recovered/          # Files with recovered struct/enum types
-    semantic_named/          # Algorithm-aware parameter names
-  report/
-    report.html              # Interactive HTML report
-    report.json              # Machine-readable results
-    report.md                # Markdown summary
-    report.sarif             # SARIF for CI/CD
-  naming_map.json            # Complete symbol mapping
-```
-
-## Project Structure
-
-```
-karadul/                         # 138K+ lines Python
-  analyzers/                     # 27 binary analyzers
-    binary_intelligence.py       #   Architecture extraction from strings/symbols
-    signature_db.py              #   1.5M+ library function signatures
-    macho.py                     #   Mach-O format analyzer
-    go_binary.py                 #   Go binary recovery (string table, interfaces)
-    swift_binary.py              #   Swift metadata, protocol conformances
-    rust_binary.py               #   Rust panic strings, trait objects
-    electron.py                  #   Electron app unpacking
-    yara_scanner.py              #   YARA rule-based scanning
-    capa_scanner.py              #   CAPA capability detection
-    flirt_parser.py              #   FLIRT signature matching
-    byte_pattern_matcher.py      #   Byte-level pattern matching
-    cfg_analyzer.py              #   Control flow graph analysis
-    packed_binary.py             #   Packer/protector detection
-    ...
-  core/                          # Pipeline infrastructure
-    pipeline.py                  #   Stage-based execution engine
-    target.py                    #   Target detection and classification
-    report_generator.py          #   Multi-format report generation
-    workspace.py                 #   Analysis workspace management
-    ...
-  deobfuscators/                 # Deobfuscation engines
-    cff_deflattener.py           #   Control flow flattening recovery
-    opaque_predicate.py          #   Opaque predicate removal
-    string_decryptor.py          #   Encrypted string recovery
-    deep_pipeline.py             #   Multi-pass JS deobfuscation
-    binary_deobfuscator.py       #   Binary-level deobfuscation
-    ...
-  reconstruction/                # Source reconstruction
-    c_namer.py                   #   10-strategy variable/function naming
-    c_type_recoverer.py          #   Struct/enum/vtable recovery
-    c_algorithm_id.py            #   3-layer algorithm detection
-    c_comment_generator.py       #   Algorithm-aware comment generation
-    name_merger.py               #   Bayesian multi-source name fusion
-    string_intelligence.py       #   String-based intelligence extraction
-    binary_name_extractor.py     #   Debug string / RTTI / build path extraction
-    engineering/                  #   Advanced reconstruction
-      dispatch_resolver.py       #     ObjC/C++ virtual dispatch resolution
-      data_flow.py               #     Inter-procedural data flow tracking
-      struct_recovery.py         #     Pointer arithmetic -> struct fields
-      semantic_namer.py          #     Algorithm-aware parameter naming
-      confidence_calibrator.py   #     Gaussian copula confidence fusion
-      formula_reconstructor.py   #     Mathematical formula reconstruction
-      patterns.py                #     9,600+ engineering algorithm patterns
-      constants.py               #     4,000+ IEEE-754 constant fingerprints
-      ...
-    computation/                  #   Mathematical computation recovery
-      formula_extractor.py       #     35+ formula pattern extractors
-      constraint_solver.py       #     Z3-based constraint solving
-      signature_fusion.py        #     Multi-source signature fusion
-      cfg_fingerprint.py         #     CFG-based function fingerprinting
-      ...
-    naming/                       #   Advanced naming subsystem
-      ...
-    source_matcher/               #   Source code matching (npm, open-source)
-      ...
-    ml/                           #   ML-assisted reconstruction
-      llm4decompile.py           #     Neural decompilation model
-      ...
-  ghidra/                        # Ghidra integration
-    headless.py                  #   PyGhidra API wrapper
-    bsim.py                      #   BSim function similarity
-    program_diff.py              #   Binary diffing
-    debugger_bridge.py           #   Ghidra debugger integration
-    scripts/                     #   Ghidra analysis scripts
-  frida/                         # Dynamic analysis
-    session.py                   #   Frida session management
-    collectors/                  #   Runtime data collectors
-    hooks/                       #   ObjC/Node.js/generic hooks
-  reporting/                     # Report generation
-    html_report.py               #   Interactive HTML reports
-    sarif_report.py              #   SARIF CI/CD integration
-    markdown_report.py           #   Markdown reports
-    json_report.py               #   JSON output
-  stages.py                      #   Pipeline stage definitions
-  cli.py                         #   Main CLI (Click-based)
-  hacker_cli.py                  #   Hacker-style interactive CLI
-  config.py                      #   Central configuration
-  batch.py                       #   Batch analysis runner
-scripts/                         # Auxiliary analysis scripts
-tests/                           # 1,180+ tests
-docs/                            # Technical documentation
-tools/                           # Development utilities
-```
+- `karadul.analyze()` builds a `Pipeline` without registering any stage, so it returns after target detection with no stage results. Use the CLI or the workaround in [`docs/API.md`](docs/API.md).
+- `pip install -e .` without the `perf` extra: `import karadul.reconstruction` fails with `No module named 'ahocorasick'`.
+- `karadul-hack` imports `pyfiglet`, which no extra installs.
+- `karadul analyze --json` returns before `--output` is processed.
+- `--online` is declared as the "off" side of `--enable-network`, so it leaves network access disabled. Use `--enable-network`.
 
 ## Tests
 
+What CI runs (`.github/workflows/ci.yml`):
+
 ```bash
-pytest tests/ -v
+pip install -e ".[dev,perf,binary,computation,cpp]" pyelftools pyfiglet
+npm install --prefix scripts --no-audit --no-fund
+python -m pytest -q \
+    --ignore=tests/test_ngram_db_v2_smoke.py \
+    --ignore=tests/test_pipeline_e2e_real_binary.py
 ```
 
-1,180+ tests covering target detection, binary analysis, signature matching, naming strategies, type recovery, algorithm detection, deobfuscation, pipeline integration, and report generation.
+- `pyproject.toml` deselects tests marked `integration` and `benchmark` by default; `.github/workflows/benchmark.yml` runs the `benchmark` ones (metric code on committed fixtures, no accuracy threshold).
+- `pyelftools` and `pyfiglet` are needed by tests but no extra declares them.
+- `tests/test_ngram_db_v2_smoke.py` needs `sigs/ngram_name_db/`, which is not in the repository; `tests/test_pipeline_e2e_real_binary.py` runs the full pipeline and needs Ghidra.
+- On a machine with Ghidra installed, some tests run Ghidra or read local measurement data when it is present; they skip otherwise.
+
+## Measurement documents
+
+Research plans, pre-registrations and results are in `docs/arge/` (in Turkish). The current plan is [`docs/arge/2026-10-21_plan_v2_2.md`](docs/arge/2026-10-21_plan_v2_2.md).
 
 ## License
 
@@ -483,4 +201,4 @@ MIT License. See [LICENSE](LICENSE).
 
 ## Author
 
-**Berke Tezgocen**
+**Berke Tezgöçen**
