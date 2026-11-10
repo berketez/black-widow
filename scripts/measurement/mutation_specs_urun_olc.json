@@ -1,0 +1,525 @@
+{
+ "_comment": "Ürün adlarının GT'ye karşı ölçümü (plan v2.2 N1 adım 3; scripts/measurement/urun_olc.py) mutasyon koruması: anahtar sınıfı ve ölçüye girmeyen girişler, hükümler, etiket ve kanal, ölçülerin pay ve paydaları, program düzeyi makro, kararlar, eksiksizlik, çıktıda ad olmaması, karsilastir farkları. Her mutant bir tanımı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_urun_olc.json",
+ "mutants": [
+  {
+   "id": "urun_anahtar_thunk_fonksiyon",
+   "desc": "thunk_FUN_ anahtarı da fonksiyon adı sayılır (anahtar biçimi gevşer)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_anahtar_sinifi",
+   "find": "FONKSIYON_ANAHTARI_RE = re.compile(r\"^FUN_([0-9a-fA-F]+)$\")",
+   "replace": "FONKSIYON_ANAHTARI_RE = re.compile(r\"^(?:thunk_)?FUN_([0-9a-fA-F]+)$\")"
+  },
+  {
+   "id": "urun_veri_onekleri_dar",
+   "desc": "PTR_ ve UNK_ anahtarları veri sayılmaz",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_anahtar_sinifi",
+   "find": "VERI_ONEKLERI = (\"DAT_\", \"PTR_\", \"UNK_\")",
+   "replace": "VERI_ONEKLERI = (\"DAT_\",)"
+  },
+  {
+   "id": "urun_harita_iter1",
+   "desc": "ad haritası ikinci yinelemeden okunur (src_iter1)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_sabitler_ks1_ve_urunden",
+   "find": "HARITA_REL = Path(\"reconstructed\") / \"src\" / \"naming_map.json\"",
+   "replace": "HARITA_REL = Path(\"reconstructed\") / \"src_iter1\" / \"naming_map.json\""
+  },
+  {
+   "id": "urun_ozdes_ad_sayilir",
+   "desc": "yeni adı anahtarın kendisi olan giriş ad sayılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_fonksiyon_veri_ayrimi_ve_atlamalar",
+   "find": "ad_mi = isinstance(yeni, str) and bool(yeni) and yeni != anahtar",
+   "replace": "ad_mi = isinstance(yeni, str) and bool(yeni)"
+  },
+  {
+   "id": "urun_ghidra_yok_olculur",
+   "desc": "o adreste Ghidra fonksiyonu olmayan giriş de ölçülür",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_fonksiyon_veri_ayrimi_ve_atlamalar",
+   "find": "        g = ghidra.get(adres)\n",
+   "replace": "        g = ghidra.get(adres) or {\"name\": anahtar}\n"
+  },
+  {
+   "id": "urun_ghidra_adli_olculur",
+   "desc": "Ghidra'nın zaten adlandırdığı fonksiyon da ad verilen sayılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_fonksiyon_veri_ayrimi_ve_atlamalar",
+   "find": "elif not f1.is_generic_name(g[\"name\"], [adres]):",
+   "replace": "elif False and not f1.is_generic_name(g[\"name\"], [adres]):"
+  },
+  {
+   "id": "urun_jenerik_ad_olculur",
+   "desc": "adres etiketi biçimindeki ürün adı da ad verilen sayılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_fonksiyon_veri_ayrimi_ve_atlamalar",
+   "find": "elif f1.is_generic_name(yeni, [adres]):",
+   "replace": "elif False and f1.is_generic_name(yeni, [adres]):"
+  },
+  {
+   "id": "urun_ayni_adres_gecer",
+   "desc": "aynı adresi gösteren iki anahtar sessizce geçer",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_ayni_adres_iki_kez_olcumu_durdurur",
+   "find": "        if adres in gorulen:\n",
+   "replace": "        if False and adres in gorulen:\n"
+  },
+  {
+   "id": "urun_eslenemeyen_dogru",
+   "desc": "GT'de karşılığı olmayan ad doğru sayılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_hukumler_dogru_yanlis_klon_eslenemeyen",
+   "find": "hukum = {\"satir\": ks1.SATIR_ESLENEMEDI, \"durum\": YANLIS, \"proje\": False}",
+   "replace": "hukum = {\"satir\": ks1.SATIR_ESLENEMEDI, \"durum\": DOGRU, \"proje\": False}"
+  },
+  {
+   "id": "urun_eslenemeyen_atlanir",
+   "desc": "GT'de karşılığı olmayan ad ölçüden düşer (yanlış sayılmaz)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_hukumler_dogru_yanlis_klon_eslenemeyen",
+   "find": "            gt_adlari = gt.adlar.get(adres)\n",
+   "replace": "            gt_adlari = gt.adlar.get(adres)\n            if gt_adlari is None:\n                continue\n"
+  },
+  {
+   "id": "urun_macho_alt_cizgi_soyulmaz",
+   "desc": "Mach-O'da GT adının baştaki _'ı soyulmaz (platform Debian sayılır)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_hukum_macho_alt_cizgi",
+   "find": "hukum = ks1.capa_degerlendir(yeni, gt_adlari, platform_)",
+   "replace": "hukum = ks1.capa_degerlendir(yeni, gt_adlari, ks1.PLATFORM_DEBIAN)"
+  },
+  {
+   "id": "urun_etiketsiz_dogrulanmadi",
+   "desc": "etiket alanı olmayan kayıt 'doğrulanmadı' sayılır (eski koşu yeniden ayırt edilemez)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_etiket_oku",
+   "find": "return etiket if etiket in naming_labels.NAME_LABELS else ETIKETSIZ",
+   "replace": "return etiket if etiket in naming_labels.NAME_LABELS else naming_labels.LABEL_UNVERIFIED"
+  },
+  {
+   "id": "urun_etiket_sozluk_disi",
+   "desc": "sözlükte olmayan etiket değeri olduğu gibi alınır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_etiket_oku",
+   "find": "return etiket if etiket in naming_labels.NAME_LABELS else ETIKETSIZ",
+   "replace": "return etiket if etiket else ETIKETSIZ"
+  },
+  {
+   "id": "urun_alt_kanal_hesaplanmaz",
+   "desc": "alt kanalı yazılmamış string_context adı sınıflanmaz",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_kanal_oku",
+   "find": "return f\"{naming_labels.STRATEGY_STRING_CONTEXT}/{hesaplanan}\", ALT_KANAL_SONRADAN",
+   "replace": "return kanal, ALT_KANAL_SONRADAN"
+  },
+  {
+   "id": "urun_alt_kanal_uyusmazligi_gorunmez",
+   "desc": "kayıttaki alt kanal sınıflayıcıyla karşılaştırılmaz",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_kanal_oku",
+   "find": "ALT_KANAL_KAYITTAN if kayit[\"sub_channel\"] == hesaplanan else ALT_KANAL_UYUSMUYOR",
+   "replace": "ALT_KANAL_KAYITTAN if kayit[\"sub_channel\"] else ALT_KANAL_UYUSMUYOR"
+  },
+  {
+   "id": "urun_kesinlik_paydasi_nufus",
+   "desc": "kesinliğin paydası yalnız nüfustaki adlar olur (nüfus dışı yanlışlar düşer)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_olcu_paydalari_ve_wilson",
+   "find": "    n = len(kayitlar)\n",
+   "replace": "    n = len([k for k in kayitlar if k[\"nufusta\"]])\n"
+  },
+  {
+   "id": "urun_kapsamda_nufus_disi",
+   "desc": "kapsamın payına nüfus dışındaki adlar da girer",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_olcu_paydalari_ve_wilson",
+   "find": "    nf = [k for k in kayitlar if k[\"nufusta\"]]\n    return {\"ad_verilen\": n,",
+   "replace": "    nf = [k for k in kayitlar if k[\"nufusta\"] or True]\n    return {\"ad_verilen\": n,"
+  },
+  {
+   "id": "urun_yanlis_orani_dogru",
+   "desc": "yanlış oranı doğru adları sayar",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_olcu_paydalari_ve_wilson",
+   "find": "\"yanlis_orani\": ks1.oran(n - dogru, n),",
+   "replace": "\"yanlis_orani\": ks1.oran(dogru, n),"
+  },
+  {
+   "id": "urun_dogru_kapsam_butun_adlar",
+   "desc": "tam ad kapsamının payı nüfus dışındaki doğru adları da sayar",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_olcu_paydalari_ve_wilson",
+   "find": "\"dogru_kapsam\": ks1.oran(sum(1 for k in nf if k[\"durum\"] == DOGRU), nufus)}",
+   "replace": "\"dogru_kapsam\": ks1.oran(sum(1 for k in kayitlar if k[\"durum\"] == DOGRU), nufus)}"
+  },
+  {
+   "id": "urun_tekil_herhangi",
+   "desc": "tekil öğe bir örneği doğruysa doğru sayılır (hepsi doğru kuralı kalkar)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_fonksiyon_ozeti_dokum_ve_duyarlilik",
+   "find": "sum(1 for g in gruplar.values() if all(g))",
+   "replace": "sum(1 for g in gruplar.values() if any(g) or 0)"
+  },
+  {
+   "id": "urun_nufus_ici_paydasi",
+   "desc": "nüfus içi kesinliğin paydası bütün adlar olur",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_fonksiyon_ozeti_dokum_ve_duyarlilik",
+   "find": "\"nufus_ici_kesinlik\": ks1.oran(sum(1 for k in nf if k[\"durum\"] == DOGRU), len(nf)),",
+   "replace": "\"nufus_ici_kesinlik\": ks1.oran(sum(1 for k in nf if k[\"durum\"] == DOGRU), len(kayitlar)),"
+  },
+  {
+   "id": "urun_proje_satiri_tam_esitlik",
+   "desc": "proje normalleştirmesi satırı tam eşitliği sayar",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_fonksiyon_ozeti_dokum_ve_duyarlilik",
+   "find": "ks1.oran(sum(1 for k in kayitlar if k[\"proje\"]), len(kayitlar))",
+   "replace": "ks1.oran(sum(1 for k in kayitlar if k[\"durum\"] == DOGRU), len(kayitlar))"
+  },
+  {
+   "id": "urun_makro_birim_duzeyi",
+   "desc": "makro birim düzeyinde alınır (aynı programın platformları ayrı program sayılır)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_program_makrosu",
+   "find": "programlar.setdefault(ks1.birim_programi(b), []).append(b)",
+   "replace": "programlar.setdefault(b, []).append(b)"
+  },
+  {
+   "id": "urun_makro_n_min_yok",
+   "desc": "paydası N_MIN'in altındaki birim de makroya girer",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_program_makrosu",
+   "find": "giren = sorted(b for b, o in oranlar.items() if o[\"n\"] >= n_min)",
+   "replace": "giren = sorted(b for b, o in oranlar.items() if o[\"n\"] >= 1)"
+  },
+  {
+   "id": "urun_makro_n_min_siki",
+   "desc": "paydası tam N_MIN olan birim makroya girmez",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_program_makrosu",
+   "find": "giren = sorted(b for b, o in oranlar.items() if o[\"n\"] >= n_min)",
+   "replace": "giren = sorted(b for b, o in oranlar.items() if o[\"n\"] > n_min)"
+  },
+  {
+   "id": "urun_grup_strateji_bakilmaz",
+   "desc": "kanal grubu stratejiye bakmadan alt kanal adından okunur",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_kanal_grubu_urunun_susan_kumesi",
+   "find": "susan = (strateji == naming_labels.STRATEGY_STRING_CONTEXT and bool(ayrac)",
+   "replace": "susan = (bool(ayrac)"
+  },
+  {
+   "id": "urun_grup_ters",
+   "desc": "susan ve kalan grupları yer değiştirir",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_kanal_grubu_urunun_susan_kumesi",
+   "find": "    return GRUP_SUSAN if susan else GRUP_KALAN",
+   "replace": "    return GRUP_SUSAN if not susan else GRUP_KALAN"
+  },
+  {
+   "id": "urun_grup_agresif_kalan",
+   "desc": "agresif alt kanal kalan gruba düşer (grup ürünün susan kümesinden okunmaz)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_kanal_grubu_urunun_susan_kumesi",
+   "find": "             and alt in alt_kanal.SILENCED_SUBCHANNELS)",
+   "replace": "             and alt in alt_kanal.SILENCED_SUBCHANNELS - {alt_kanal.SUB_AGGRESSIVE})"
+  },
+  {
+   "id": "urun_capraz_dogru_hepsi",
+   "desc": "etiket × kanal tablosunda her ad doğru sayılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_olc_yeni_kosu_etiket_ve_kimlik",
+   "find": "h[\"dogru\"] += int(k[\"durum\"] == DOGRU)",
+   "replace": "h[\"dogru\"] += int(bool(k[\"durum\"]))"
+  },
+  {
+   "id": "urun_capraz_eksen_ters",
+   "desc": "etiket × kanal tablosunun eksenleri yer değiştirir",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_olc_yeni_kosu_etiket_ve_kimlik",
+   "find": "h = tablo.setdefault(k[\"etiket\"], {}).setdefault(k[\"kanal\"],",
+   "replace": "h = tablo.setdefault(str(k[\"kanal\"]), {}).setdefault(k[\"etiket\"],"
+  },
+  {
+   "id": "urun_havuz_payda",
+   "desc": "havuzun paydası toplam değil en büyük birim olur",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_havuz_toplar",
+   "find": "sum(o[a][\"n\"] for o in ozetler))",
+   "replace": "max(o[a][\"n\"] for o in ozetler) + 0)"
+  },
+  {
+   "id": "urun_etiket_kapsam_paydasi",
+   "desc": "etiket kırılımında etiketi taşımayan birimler kapsam paydasından düşer",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_toplam_ve_tabaka_ozeti",
+   "find": "dilim = {b: v[\"ozet\"][alan].get(d) or bos_olcu(v[\"nufus\"]) for b, v in birimler.items()}",
+   "replace": "dilim = {b: v[\"ozet\"][alan][d] for b, v in birimler.items() if d in v[\"ozet\"][alan]}"
+  },
+  {
+   "id": "urun_tabaka_ters",
+   "desc": "tabaka özeti o tabakada olmayan birimleri toplar",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_toplam_ve_tabaka_ozeti",
+   "find": "                       if str(v[\"sinif\"].get(alan)) == d}",
+   "replace": "                       if str(v[\"sinif\"].get(alan)) != d or False}"
+  },
+  {
+   "id": "urun_birim_sirasi_alfabetik",
+   "desc": "birimler küçükten büyüğe değil ada göre sıralanır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_toplam_ve_tabaka_ozeti",
+   "find": "    return sorted(birimler, key=anahtar)",
+   "replace": "    return sorted(birimler)"
+  },
+  {
+   "id": "urun_karar_yanlis_siki",
+   "desc": "yanlış oranı hedefi sınırda tutmaz (≤ yerine <)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karar_yanlis_orani_hedefi",
+   "find": "ort is not None and ort <= Fraction(str(YANLIS_HEDEFI))",
+   "replace": "ort is not None and ort < Fraction(str(YANLIS_HEDEFI))"
+  },
+  {
+   "id": "urun_karar_tek_program",
+   "desc": "tek programla da karar verilir (yetersiz dalı kalkar)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karar_yanlis_orani_hedefi",
+   "find": "    if kesir is None or program_sayisi < EN_AZ_PROGRAM:",
+   "replace": "    if kesir is None:"
+  },
+  {
+   "id": "urun_karar_kesin_butun_adlar",
+   "desc": "'kesin' kararı bütün adların kesinliğinden okunur",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karar_kesin_etiketli_adlar",
+   "find": "kesin = {b: (v[\"ozet\"][\"etiket\"].get(ETIKET_KESIN) or bos_olcu(v[\"nufus\"]))[\"kesinlik\"]",
+   "replace": "kesin = {b: v[\"ozet\"][\"fonksiyon\"][\"kesinlik\"]"
+  },
+  {
+   "id": "urun_karar_kesin_siki",
+   "desc": "'kesin' eşiği sınırda tutmaz (≥ yerine >)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karar_kesin_etiketli_adlar",
+   "find": "ort is not None and ort >= Fraction(str(KESIN_ETIKET_ESIGI))",
+   "replace": "ort is not None and ort > Fraction(str(KESIN_ETIKET_ESIGI))"
+  },
+  {
+   "id": "urun_wilson_ihlali_gorunmez",
+   "desc": "Wilson üst sınırı eşiğin altındaki birim listelenmez",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karar_kesin_etiketli_adlar",
+   "find": "sorted(b for b in giren if kesin[b][\"aralik\"][1] < KESIN_ETIKET_ESIGI)",
+   "replace": "sorted(b for b in giren if kesin[b][\"aralik\"][1] < 0)"
+  },
+  {
+   "id": "urun_cpp_olculur",
+   "desc": "C++ ikili ölçüye girer",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_olc_uctan_uca_eski_kosu",
+   "find": "        if ks1.cpp_ikili_mi(fonk, e.platform):",
+   "replace": "        if False and ks1.cpp_ikili_mi(fonk, e.platform):"
+  },
+  {
+   "id": "urun_kimlik_susturma_okunmaz",
+   "desc": "kol kimliğinde susturma bayrağı okunmaz",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_olc_yeni_kosu_etiket_ve_kimlik",
+   "find": "\"susturma\": susturma.get(\"enabled\") if isinstance(susturma, dict) else None,",
+   "replace": "\"susturma\": None,"
+  },
+  {
+   "id": "urun_ciktida_adlar",
+   "desc": "ikili künyesine ürün adları yazılır (çıktıda ad)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_ciktida_ad_yok_ve_belirlenimci",
+   "find": "            \"ad_verilen\": len(kayitlar), \"dogru\": sum(",
+   "replace": "            \"adlar\": sorted(k[\"ad\"] for k in kayitlar), \"ad_verilen\": len(kayitlar), \"dogru\": sum("
+  },
+  {
+   "id": "urun_ogede_ad",
+   "desc": "öğe düzeyi kayda ürün adı yazılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_oge_yaz_oku",
+   "find": "return OGE_AYRACI.join((k[\"durum\"], k[\"satir\"],",
+   "replace": "return OGE_AYRACI.join((k[\"durum\"], k[\"ad\"], k[\"satir\"],"
+  },
+  {
+   "id": "urun_haritasiz_bitmis",
+   "desc": "ad haritası yazılmamış koşu bitmiş sayılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_haritasizlari_isaretle",
+   "find": "    return [e if e.static is None or harita_yolu(e).is_file() else",
+   "replace": "    return [e if True or e.static is None or harita_yolu(e).is_file() else"
+  },
+  {
+   "id": "urun_eksiksizlik_hep_izinli",
+   "desc": "eksik ya da bitmemiş koşuda ölçüm durmaz",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_eksiksizlik_ikili_sayisi_bitmemis_ve_haritasiz",
+   "find": "nufus_kunyesi = ks1.nufus_denetle(elfler, beklenen, eksik_izinli)",
+   "replace": "nufus_kunyesi = ks1.nufus_denetle(elfler, beklenen, True)"
+  },
+  {
+   "id": "urun_beklenen_sayi_denetlenmez",
+   "desc": "birim başına beklenen ikili sayısı denetlenmez",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_eksiksizlik_ikili_sayisi_bitmemis_ve_haritasiz",
+   "find": "nufus_kunyesi = ks1.nufus_denetle(elfler, beklenen, eksik_izinli)",
+   "replace": "nufus_kunyesi = ks1.nufus_denetle(elfler, None, eksik_izinli)"
+  },
+  {
+   "id": "urun_ayni_dosya_gorunmez",
+   "desc": "aynı sha256'lı ikililer listelenmez",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_ayni_dosyalar_listelenir",
+   "find": "    return sorted(sorted(g) for g in gruplar.values() if len(g) > 1)",
+   "replace": "    return sorted(sorted(g) for g in gruplar.values() if len(g) >= 3)"
+  },
+  {
+   "id": "urun_gecis_yalniz_ortak",
+   "desc": "karşılaştırma yalnız iki kolda da adı olan adresleri sayar",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_gecis_ve_farklar",
+   "find": "        for adres in sorted(set(t) | set(y)):",
+   "replace": "        for adres in sorted(set(t).intersection(y)):"
+  },
+  {
+   "id": "urun_kayip_yanlis_silinen",
+   "desc": "kaybedilen doğru ad yerine silinen yanlış ad sayılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_gecis_ve_farklar",
+   "find": "silinen, bozulan = gecis[(DOGRU, ADSIZ)], gecis[(DOGRU, YANLIS)]",
+   "replace": "silinen, bozulan = gecis[(YANLIS, ADSIZ)], gecis[(DOGRU, YANLIS)]"
+  },
+  {
+   "id": "urun_kazanc_yalniz_yeni",
+   "desc": "yanlıştan doğruya dönen ad kazanılan sayılmaz",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_gecis_ve_farklar",
+   "find": "\"kazanilan_dogru\": gecis[(ADSIZ, DOGRU)] + gecis[(YANLIS, DOGRU)],",
+   "replace": "\"kazanilan_dogru\": gecis[(ADSIZ, DOGRU)],"
+  },
+  {
+   "id": "urun_giderilen_yalniz_silinen",
+   "desc": "doğruya dönen yanlış ad giderilen sayılmaz",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_gecis_ve_farklar",
+   "find": "\"giderilen_yanlis\": gecis[(YANLIS, ADSIZ)] + gecis[(YANLIS, DOGRU)],",
+   "replace": "\"giderilen_yanlis\": gecis[(YANLIS, ADSIZ)],"
+  },
+  {
+   "id": "urun_yeni_yanlis_kalan",
+   "desc": "yeni yanlış yerine kalan yanlış sayılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_gecis_ve_farklar",
+   "find": "\"yeni_yanlis\": gecis[(ADSIZ, YANLIS)] + gecis[(DOGRU, YANLIS)],",
+   "replace": "\"yeni_yanlis\": gecis[(YANLIS, YANLIS)] + gecis[(DOGRU, YANLIS)],"
+  },
+  {
+   "id": "urun_kayip_paydasi_ad_verilen",
+   "desc": "kayıp oranının paydası tabandaki doğru adlar değil bütün adlar olur",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_gecis_ve_farklar",
+   "find": "\"kayip_orani\": ks1.oran(silinen + bozulan, kollar[\"taban\"][\"dogru\"]),",
+   "replace": "\"kayip_orani\": ks1.oran(silinen + bozulan, kollar[\"taban\"][\"ad_verilen\"]),"
+  },
+  {
+   "id": "urun_kayip_kanali_yok",
+   "desc": "kaybedilen doğru adın taban kanalı sayılmaz",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_gecis_ve_farklar",
+   "find": "            if td == DOGRU and yd != DOGRU:",
+   "replace": "            if td == DOGRU and yd != DOGRU and False:"
+  },
+  {
+   "id": "urun_kayip_havuz_siniri_dahil",
+   "desc": "kayıp tam sınırdayken de inceleme ister (> yerine ≥, havuz)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_kayip_siniri",
+   "find": "elif asan or Fraction(havuz_kaybi[\"k\"], havuz_kaybi[\"n\"]) > Fraction(str(KAYIP_INCELEME_SINIRI)):",
+   "replace": "elif asan or Fraction(havuz_kaybi[\"k\"], havuz_kaybi[\"n\"]) >= Fraction(str(KAYIP_INCELEME_SINIRI)):"
+  },
+  {
+   "id": "urun_kayip_birim_siniri_dahil",
+   "desc": "kayıp tam sınırdaki birim sınırı aşmış sayılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_kayip_siniri",
+   "find": "if o[\"n\"] >= N_MIN and Fraction(o[\"k\"], o[\"n\"]) > Fraction(str(KAYIP_INCELEME_SINIRI)))",
+   "replace": "if o[\"n\"] >= N_MIN and Fraction(o[\"k\"], o[\"n\"]) >= Fraction(str(KAYIP_INCELEME_SINIRI)))"
+  },
+  {
+   "id": "urun_kayip_birim_ortulur",
+   "desc": "sınırı aşan birim havuz düşükse inceleme istemez",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_kayip_siniri",
+   "find": "elif asan or Fraction(havuz_kaybi[\"k\"], havuz_kaybi[\"n\"]) > Fraction(str(KAYIP_INCELEME_SINIRI)):",
+   "replace": "elif Fraction(havuz_kaybi[\"k\"], havuz_kaybi[\"n\"]) > Fraction(str(KAYIP_INCELEME_SINIRI)):"
+  },
+  {
+   "id": "urun_yon_esit_dusmus",
+   "desc": "yanlış oranı aynı kalan birim düşmüş sayılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_yanlis_yonu",
+   "find": "                >= Fraction(birimler[b][\"taban\"][\"yanlis\"], birimler[b][\"taban\"][\"ad_verilen\"])]",
+   "replace": "                > Fraction(birimler[b][\"taban\"][\"yanlis\"], birimler[b][\"taban\"][\"ad_verilen\"])]"
+  },
+  {
+   "id": "urun_yon_kucuk_birim",
+   "desc": "N_MIN'in altında ad verilen birim de yön kararına girer",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_yanlis_yonu",
+   "find": "if min(v[\"taban\"][\"ad_verilen\"], v[\"yeni\"][\"ad_verilen\"]) >= N_MIN)",
+   "replace": "if min(v[\"taban\"][\"ad_verilen\"], v[\"yeni\"][\"ad_verilen\"]) >= 1)"
+  },
+  {
+   "id": "urun_dosya_sha_denetlenmez",
+   "desc": "iki kolda dosyası farklı ikili adresle eşlenir",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_ayni_ikili_kosulu",
+   "find": "            elif te[elf].get(\"dosya_sha256\") != ye[elf].get(\"dosya_sha256\"):",
+   "replace": "            elif False and te[elf].get(\"dosya_sha256\") != ye[elf].get(\"dosya_sha256\"):"
+  },
+  {
+   "id": "urun_tek_kol_ikili_gecer",
+   "desc": "yalnız bir kolda bulunan ikili ölçümü durdurmaz",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_ayni_ikili_kosulu",
+   "find": "    if sorun and not eksik_izinli:\n        raise OnkosulHatasi(\"kollar",
+   "replace": "    if sorun and False and not eksik_izinli:\n        raise OnkosulHatasi(\"kollar"
+  },
+  {
+   "id": "urun_sema_denetlenmez",
+   "desc": "'olc' çıktısı olmayan belge karşılaştırılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_ayni_ikili_kosulu",
+   "find": "        if o.get(\"sema\") != SEMA or o.get(\"komut\") != \"olc\":",
+   "replace": "        if False and (o.get(\"sema\") != SEMA or o.get(\"komut\") != \"olc\"):"
+  },
+  {
+   "id": "urun_ozet_tutarliligi_yok",
+   "desc": "öğe listesi özetle karşılaştırılmaz",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_karsilastir_ayni_ikili_kosulu",
+   "find": "        ozet_tutarliligi(o, kol)\n",
+   "replace": "        pass  # öğe listesi denetlenmez\n"
+  },
+  {
+   "id": "urun_cli_durunca_sifir",
+   "desc": "ölçüm durunca çıkış kodu 0 olur",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_cli_olc_ve_karsilastir",
+   "find": "        print(f\"DURDU: {hata}\", file=sys.stderr)\n        return 2",
+   "replace": "        print(f\"DURDU: {hata}\", file=sys.stderr)\n        return 2 * 0"
+  },
+  {
+   "id": "urun_cli_beklenen_yok",
+   "desc": "komut satırı beklenen ikili sayısını denetlemez",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_cli_olc_ve_karsilastir",
+   "find": "sonuc = olc(elfler, a.mac_veri, a.debian_indir, beklenen=ks1.BEKLENEN_ELF,",
+   "replace": "sonuc = olc(elfler, a.mac_veri, a.debian_indir, beklenen=None,"
+  }
+ ]
+}
