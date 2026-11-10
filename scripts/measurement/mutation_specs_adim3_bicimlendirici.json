@@ -1,0 +1,69 @@
+{
+ "_comment": "Plan v2.2 N1 adım 3, 1. commit: biçimlendirici c_namer adlarını gerçek güven ve etiketle yazar. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_adim3_bicimlendirici.json",
+ "mutants": [
+  {
+   "id": "bicim_sabit_bir_geri",
+   "desc": "biçimlendirici her c_namer adına yine sabit 1.0 yazar",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_output_formatter_guven.py::test_guven_etiket_kanal_koken_kaydindan",
+   "find": "                    \"confidence\": provenance_confidence(record),\n",
+   "replace": "                    \"confidence\": 1.0,\n"
+  },
+  {
+   "id": "bicim_koken_taban_yinelemeden",
+   "desc": "köken her zaman taban yinelemenin (src/) kaydından okunur",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_output_formatter_guven.py::test_ad_ve_koken_ayni_yinelemeden",
+   "find": "            provenance = self._read_c_namer_provenance(map_path)\n",
+   "replace": "            provenance = self._read_c_namer_provenance(c_namer_maps[0])\n"
+  },
+  {
+   "id": "bicim_baska_adin_kaydi_kullanilir",
+   "desc": "kayıttaki ad haritadaki adla aynı değilken de güven taşınır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_output_formatter_guven.py::test_kayit_yoksa_guven_bilinmiyor_ve_asla_sabit_bir",
+   "find": "                if not isinstance(record, dict) or record.get(\"new_name\") != new_name:\n",
+   "replace": "                if not isinstance(record, dict):\n"
+  },
+  {
+   "id": "etiket_kayitsiz_kesin",
+   "desc": "kaydı olmayan ad 'kesin' etiketi alır",
+   "module": "karadul/core/naming_labels.py",
+   "test": "tests/test_output_formatter_guven.py::test_etiket_kurali",
+   "find": "    if not record:\n        return LABEL_UNVERIFIED\n",
+   "replace": "    if not record:\n        return LABEL_CERTAIN\n"
+  },
+  {
+   "id": "etiket_gecersiz_deger_gecer",
+   "desc": "sözlükte olmayan etiket değeri olduğu gibi taşınır",
+   "module": "karadul/core/naming_labels.py",
+   "test": "tests/test_output_formatter_guven.py::test_etiket_kurali",
+   "find": "    if label in NAME_LABELS:\n",
+   "replace": "    if label:\n"
+  },
+  {
+   "id": "etiket_elle_dogrulanmadi",
+   "desc": "elle verilen ad 'doğrulanmadı' etiketi alır",
+   "module": "karadul/core/naming_labels.py",
+   "test": "tests/test_output_formatter_guven.py::test_etiket_kurali",
+   "find": "    if record.get(\"pre_name_kind\") == PRE_NAME_KIND_MANUAL:\n        return None\n",
+   "replace": "    if record.get(\"pre_name_kind\") == PRE_NAME_KIND_MANUAL:\n        return LABEL_UNVERIFIED\n"
+  },
+  {
+   "id": "guven_bool_sayi_sayilir",
+   "desc": "güven alanındaki bool sayı sayılır",
+   "module": "karadul/core/naming_labels.py",
+   "test": "tests/test_output_formatter_guven.py::test_guven_ve_kanal_yardimcilari",
+   "find": "    if isinstance(value, bool) or not isinstance(value, (int, float)):\n",
+   "replace": "    if not isinstance(value, (int, float)):\n"
+  },
+  {
+   "id": "kanal_alt_kanal_her_stratejide",
+   "desc": "alt kanal, string_context dışındaki stratejilere de eklenir",
+   "module": "karadul/core/naming_labels.py",
+   "test": "tests/test_output_formatter_guven.py::test_guven_ve_kanal_yardimcilari",
+   "find": "    if strategy == STRATEGY_STRING_CONTEXT and record.get(\"sub_channel\"):\n",
+   "replace": "    if record.get(\"sub_channel\"):\n"
+  }
+ ]
+}

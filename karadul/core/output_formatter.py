@@ -29,6 +29,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
+from karadul.core.naming_labels import (
+    NAMING_PROVENANCE_FILE,
+    PROVENANCE_GLOBAL,
+    SOURCE_C_NAMER,
+    provenance_channel,
+    provenance_confidence,
+    provenance_evidence,
+    provenance_label,
+)
 from karadul.core.result import PipelineResult, StageResult
 from karadul.core.workspace import Workspace
 
@@ -641,6 +650,8 @@ class OutputFormatter:
             global_renames = c_data.get("global", {})
             if not isinstance(global_renames, dict):
                 continue
+            # Ad ve köken AYNI yinelemeden gelir: her haritanın kendi kardeş köken kaydı okunur.
+            provenance = self._read_c_namer_provenance(map_path)
             for orig, new_name in global_renames.items():
                 if not isinstance(orig, str) or not isinstance(new_name, str):
                     continue
@@ -648,19 +659,40 @@ class OutputFormatter:
                     continue
                 if not orig.startswith(placeholder_prefixes):
                     continue
+                # Güven, etiket ve kanal köken kaydından taşınır. Kayıt yoksa ya da kayıttaki ad
+                # bu haritadaki adla aynı değilse güven bilinmiyordur: ``None`` yazılır, sabit bir
+                # değer uydurulmaz (eskiden her ada 1.0 yazılıyordu).
+                record = provenance.get(orig)
+                if not isinstance(record, dict) or record.get("new_name") != new_name:
+                    record = None
                 naming_map["mappings"][orig] = {
-                    # Duz map per-giris confidence tutmaz; uygulanan final
-                    # isim oldugu icin 1.0.
                     "new_name": new_name,
-                    "source": "c_namer",
-                    "confidence": 1.0,
+                    "source": SOURCE_C_NAMER,
+                    "confidence": provenance_confidence(record),
+                    "label": provenance_label(record),
+                    "channel": provenance_channel(record),
+                    "evidence": provenance_evidence(record),
                 }
                 c_namer_added += 1
         if c_namer_added:
-            naming_map["sources"].append("c_namer")
+            naming_map["sources"].append(SOURCE_C_NAMER)
 
         naming_map["total_mappings"] = len(naming_map["mappings"])
         return naming_map
+
+    @staticmethod
+    def _read_c_namer_provenance(map_path: Path) -> dict[str, Any]:
+        """``naming_map.json``'ın yanındaki köken kaydının genel (``global``) bölümü.
+
+        Dosya yoksa, okunamıyorsa ya da biçimi beklenen gibi değilse boş sözlük döner; o zaman
+        adlar güvensiz (``None``) ve "doğrulanmadı" etiketiyle yazılır.
+        """
+        try:
+            data = json.loads((map_path.parent / NAMING_PROVENANCE_FILE).read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return {}
+        records = data.get(PROVENANCE_GLOBAL) if isinstance(data, dict) else None
+        return records if isinstance(records, dict) else {}
 
     # ------------------------------------------------------------------
     # Dependency graph
