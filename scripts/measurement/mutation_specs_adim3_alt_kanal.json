@@ -1,0 +1,317 @@
+{
+ "_comment": "N1 adım 3, 2. commit: ürün alt kanal modülünün (karadul/reconstruction/tarif/alt_kanal.py) mutasyon koruması: yüklemler ve öncelik sırası, karar tablosu ve susan küme, etiket, anahtar sözcük çıkarımı. Her mutant bir tanımı bozar; ilgili test KIRMIZI olmalı (killed) ve gerçek test başarısızlığıyla ölmeli (içe aktarma ya da sözdizimi hatasıyla değil). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_adim3_alt_kanal.json",
+ "mutants": [
+  {
+   "id": "adim3_ak_sira_tek_sozcuk_tanimlayici",
+   "desc": "tanimlayici tek_sozcuk'ten önce denenir (k = 1 tanımlayıcı dizgi tanimlayici olur)",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_tek_sozcuk_bicim_kanallarindan_once",
+   "find": "    SubChannel(SUB_SINGLE_WORD, _is_single_word),\n    SubChannel(SUB_IDENTIFIER, _is_identifier),\n",
+   "replace": "    SubChannel(SUB_IDENTIFIER, _is_identifier),\n    SubChannel(SUB_SINGLE_WORD, _is_single_word),  # sıra\n"
+  },
+  {
+   "id": "adim3_ak_sira_hata_bicim",
+   "desc": "bicim_dizgisi hata_iletisi'nden önce denenir (belirteçli hata iletisi biçim dizgisi olur)",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_hata_iletisi_ve_sozcuk_siniri",
+   "find": "    SubChannel(SUB_ERROR_MESSAGE, _is_error_message),\n    SubChannel(SUB_FORMAT_STRING, _is_format_string),\n",
+   "replace": "    SubChannel(SUB_FORMAT_STRING, _is_format_string),\n    SubChannel(SUB_ERROR_MESSAGE, _is_error_message),  # sıra\n"
+  },
+  {
+   "id": "adim3_ak_sira_kod_bicim_parcasi",
+   "desc": "bicim_parcasi kod_parcasi'ndan önce denenir",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_kod_parcasi_bicim_parcasindan_once",
+   "find": "    SubChannel(SUB_CODE_FRAGMENT, _is_code_fragment),\n    SubChannel(SUB_FORMAT_FRAGMENT, _is_format_fragment),\n",
+   "replace": "    SubChannel(SUB_FORMAT_FRAGMENT, _is_format_fragment),\n    SubChannel(SUB_CODE_FRAGMENT, _is_code_fragment),  # sıra\n"
+  },
+  {
+   "id": "adim3_ak_sira_oz_ad_tek_sozcuk",
+   "desc": "tek_sozcuk oz_ad'dan önce denenir (başvuru betiğiyle karşılaştırma yakalamalı)",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_rastgele_dizgilerde_siniflama_basvuruyla_ayni",
+   "find": "    SubChannel(SUB_OWN_NAME, _is_own_name),\n    SubChannel(SUB_SINGLE_WORD, _is_single_word),\n",
+   "replace": "    SubChannel(SUB_SINGLE_WORD, _is_single_word),\n    SubChannel(SUB_OWN_NAME, _is_own_name),  # sıra\n"
+  },
+  {
+   "id": "adim3_ak_sira_liste",
+   "desc": "kebap_ad tanimlayici'dan önce yazılır (alt kanal sırası tanımın parçası)",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_alt_kanal_listesi_ve_sirasi",
+   "find": "    SubChannel(SUB_IDENTIFIER, _is_identifier),\n    SubChannel(SUB_KEBAB_NAME, _is_kebab_name),\n",
+   "replace": "    SubChannel(SUB_KEBAB_NAME, _is_kebab_name),\n    SubChannel(SUB_IDENTIFIER, _is_identifier),  # sıra\n"
+  },
+  {
+   "id": "adim3_ak_oz_ad_susar",
+   "desc": "oz_ad susan kümeye girer",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_susan_ve_kalan_alt_kanallar",
+   "find": "    SUB_OWN_NAME: DECISION_UNCERTAIN,\n",
+   "replace": "    SUB_OWN_NAME: DECISION_WEAK,\n"
+  },
+  {
+   "id": "adim3_ak_agresif_ad_verir",
+   "desc": "agresif susan kümeden çıkar (ölçülmemiş kanal ad verir)",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_susan_ve_kalan_alt_kanallar",
+   "find": "    SUB_AGGRESSIVE: DECISION_UNMEASURED,\n",
+   "replace": "    SUB_AGGRESSIVE: DECISION_UNCERTAIN,\n"
+  },
+  {
+   "id": "adim3_ak_kebap_ad_susar",
+   "desc": "kebap_ad zayıf yazılır (L3 duyarlılığındaki karar ana karar sanılır)",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_karar_tablosu_kesinlik_tablosuyla_ayni",
+   "find": "    SUB_KEBAB_NAME: DECISION_UNCERTAIN,\n",
+   "replace": "    SUB_KEBAB_NAME: DECISION_WEAK,\n"
+  },
+  {
+   "id": "adim3_ak_tanimlayici_ad_verir",
+   "desc": "tanimlayici belirsiz yazılır (L3 duyarlılığındaki karar ana karar sanılır)",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_karar_tablosu_kesinlik_tablosuyla_ayni",
+   "find": "    SUB_IDENTIFIER: DECISION_WEAK,\n",
+   "replace": "    SUB_IDENTIFIER: DECISION_UNCERTAIN,\n"
+  },
+  {
+   "id": "adim3_ak_kalan_karar_dar",
+   "desc": "katı kural: belirsiz alt kanal da susar",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_susan_ve_kalan_alt_kanallar",
+   "find": "KEPT_DECISIONS = frozenset({DECISION_VERIFIED, DECISION_UNCERTAIN})",
+   "replace": "KEPT_DECISIONS = frozenset({DECISION_VERIFIED})"
+  },
+  {
+   "id": "adim3_ak_kalan_karar_genis",
+   "desc": "zayıf alt kanal ad vermeyi sürdürür",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_silenced_from_yalniz_kalan_kararlar_ad_verir",
+   "find": "KEPT_DECISIONS = frozenset({DECISION_VERIFIED, DECISION_UNCERTAIN})",
+   "replace": "KEPT_DECISIONS = frozenset({DECISION_VERIFIED, DECISION_UNCERTAIN, DECISION_WEAK})"
+  },
+  {
+   "id": "adim3_ak_eksik_karar_ad_verir",
+   "desc": "tabloda kararı olmayan alt kanal ad verir (ölçülmemiş kanal susmaz)",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_silenced_from_karari_eksik_alt_kanal_susar",
+   "find": "                     if decisions.get(name) not in KEPT_DECISIONS)",
+   "replace": "                     if decisions.get(name, DECISION_UNCERTAIN) not in KEPT_DECISIONS)"
+  },
+  {
+   "id": "adim3_ak_belirsiz_dogrulandi_etiketi",
+   "desc": "belirsiz alt kanal \"doğrulandı\" etiketi taşır",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_kalan_alt_kanallarin_etiketi_dogrulanmadi",
+   "find": "    DECISION_UNCERTAIN: LABEL_UNVERIFIED,\n",
+   "replace": "    DECISION_UNCERTAIN: LABEL_VERIFIED,\n"
+  },
+  {
+   "id": "adim3_ak_susan_etiket_alir",
+   "desc": "susan alt kanal da etiket alır",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_kalan_alt_kanallarin_etiketi_dogrulanmadi",
+   "find": "    if is_silenced(sub_channel):\n        return None\n    return DECISION_LABELS[SUBCHANNEL_DECISIONS[sub_channel]]",
+   "replace": "    return DECISION_LABELS.get(SUBCHANNEL_DECISIONS[sub_channel], LABEL_UNVERIFIED)"
+  },
+  {
+   "id": "adim3_ak_bilinmeyen_alt_kanal_sessiz",
+   "desc": "bilinmeyen alt kanal adı hata vermez, susmuyor sayılır",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_bilinmeyen_alt_kanal_hata_verir",
+   "find": "    _require_known(sub_channel)\n    return sub_channel in SILENCED_SUBCHANNELS",
+   "replace": "    return sub_channel in SILENCED_SUBCHANNELS"
+  },
+  {
+   "id": "adim3_ak_yuzde_yuzde_belirtec",
+   "desc": "\"%%\" dönüşüm belirteci sayılır",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_bicim_belirteci_yuzde_yuzde_ve_bosluk_bayragi",
+   "find": "            if m.group(0) != ESCAPED_PERCENT]",
+   "replace": "            if m.group(0)]"
+  },
+  {
+   "id": "adim3_ak_oz_ad_buyuk_harf",
+   "desc": "oz_ad tümü büyük harfli tanımlayıcıyı (sabit, ortam değişkeni) da kendi adı sayar",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_oz_ad_ve_tanimlayici",
+   "find": "    return (_is_underscored_identifier(inp.stripped) and any(c.islower() for c in inp.stripped)\n            and inp.name == inp.stripped.lower())",
+   "replace": "    return _is_underscored_identifier(inp.stripped) and inp.name == inp.stripped.lower()"
+  },
+  {
+   "id": "adim3_ak_oz_ad_ad_esitligi",
+   "desc": "oz_ad adın dizgiye eşit olmasını aramaz",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_oz_ad_ve_tanimlayici",
+   "find": "    return (_is_underscored_identifier(inp.stripped) and any(c.islower() for c in inp.stripped)\n            and inp.name == inp.stripped.lower())",
+   "replace": "    return _is_underscored_identifier(inp.stripped) and any(c.islower() for c in inp.stripped)"
+  },
+  {
+   "id": "adim3_ak_tanimlayici_alt_cizgisiz",
+   "desc": "alt çizgisiz tanımlayıcı da tanimlayici sayılır",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_oz_ad_ve_tanimlayici",
+   "find": "    return bool(IDENTIFIER_RE.match(stripped)) and \"_\" in stripped\n",
+   "replace": "    return bool(IDENTIFIER_RE.match(stripped))\n"
+  },
+  {
+   "id": "adim3_ak_bosluk_atilmaz",
+   "desc": "kanıtın baştaki ve sondaki boşluğu atılmaz",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_oz_ad_ve_tanimlayici",
+   "find": "evidence=evidence, stripped=evidence.strip(), name=name,",
+   "replace": "evidence=evidence, stripped=evidence, name=name,"
+  },
+  {
+   "id": "adim3_ak_cakisma_eki_adi",
+   "desc": "sınıflama çakışma ekli ada bakar (proposed_name okunmaz)",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_oz_ad_cakisma_ekinden_once_gelen_adla",
+   "find": "name=str(record.get(\"proposed_name\") or record.get(\"new_name\") or \"\"),",
+   "replace": "name=str(record.get(\"new_name\") or \"\"),"
+  },
+  {
+   "id": "adim3_ak_agresif_bos_kod_yolu",
+   "desc": "kod yolu boş aday agresif sayılır",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_agresif_kod_yolu_her_bicimden_once",
+   "find": "    return inp.code_path == PATH_AGGRESSIVE\n",
+   "replace": "    return inp.code_path != PATH_CLASSIC\n"
+  },
+  {
+   "id": "adim3_ak_kod_parcasi_kaynak",
+   "desc": "kod_parcasi kanıt kaynağına bakmaz: dizgi tablosundaki satır sonu da kod parçası olur",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_kod_parcasi_yalniz_gercek_olmayan_govde_literali",
+   "find": "    return inp.evidence_origin == ORIGIN_BODY_LITERAL and (\n        \"\\n\" in inp.evidence or bool(GHIDRA_AUTO_NAME_RE.search(inp.evidence)))",
+   "replace": "    return (\n        \"\\n\" in inp.evidence or bool(GHIDRA_AUTO_NAME_RE.search(inp.evidence)))"
+  },
+  {
+   "id": "adim3_ak_kod_parcasi_satir_sonu",
+   "desc": "kod_parcasi ham satır sonuna bakmaz",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_kod_parcasi_bicim_parcasindan_once",
+   "find": "    return inp.evidence_origin == ORIGIN_BODY_LITERAL and (\n        \"\\n\" in inp.evidence or bool(GHIDRA_AUTO_NAME_RE.search(inp.evidence)))",
+   "replace": "    return inp.evidence_origin == ORIGIN_BODY_LITERAL and (\n        bool(GHIDRA_AUTO_NAME_RE.search(inp.evidence)))"
+  },
+  {
+   "id": "adim3_ak_ghidra_adi_rakamsiz_undefined",
+   "desc": "rakamsız \"undefined\" sözcüğü Ghidra adı sayılır",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_kod_parcasi_yalniz_gercek_olmayan_govde_literali",
+   "find": "    r\"|undefined\\d+)\\b\")",
+   "replace": "    r\"|undefined)\\b\")"
+  },
+  {
+   "id": "adim3_ak_bicim_parcasi_dorduncu_sozcuk",
+   "desc": "ada girmeyen dördüncü anahtar sözcük de biçim parçası sayılır",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_bicim_parcasi_dorduncu_sozcuk_ada_girmez",
+   "find": "for _, start, end in inp.keywords[:NAME_PARTS] for",
+   "replace": "for _, start, end in inp.keywords for"
+  },
+  {
+   "id": "adim3_ak_bicim_parcasi_bitisik",
+   "desc": "belirtece yalnız bitişik sözcük taşmış sayılır",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_bicim_parcasi_bitisik_sozcuk_tasma_degil",
+   "find": "    return any(start < spec_end and spec_start < end\n",
+   "replace": "    return any(start <= spec_end and spec_start <= end\n"
+  },
+  {
+   "id": "adim3_ak_bosluk_bayragi",
+   "desc": "printf belirtecinde boşluk bayrağı alınır (\"50% done\" belirteç olur)",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_bicim_belirteci_yuzde_yuzde_ve_bosluk_bayragi",
+   "find": "    r\"%(?:(?:\\d+\\$)?[-+#0']*",
+   "replace": "    r\"%(?:(?:\\d+\\$)?[-+#0' ]*"
+  },
+  {
+   "id": "adim3_ak_tek_sozcuk_sifir",
+   "desc": "anahtar sözcüğü olmayan dizgi (k = 0) tek sözcük sayılır",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_tek_sozcuk_bicim_kanallarindan_once",
+   "find": "    return inp.k == 1\n",
+   "replace": "    return inp.k < 2\n"
+  },
+  {
+   "id": "adim3_ak_kebap_buyuk_harf",
+   "desc": "kebap_ad büyük harfli belirteci de alır",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_kebap_ad",
+   "find": "KEBAB_RE = re.compile(r\"^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$\")",
+   "replace": "KEBAB_RE = re.compile(r\"^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$\", re.IGNORECASE)"
+  },
+  {
+   "id": "adim3_ak_hata_sozcuk_siniri",
+   "desc": "hata belirteci sözcük sonunda aranmaz (\"badge\" → \"bad\")",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_hata_iletisi_ve_sozcuk_siniri",
+   "find": "|overflow|out\\s+of|usage|must|expected)\\b\",",
+   "replace": "|overflow|out\\s+of|usage|must|expected)\","
+  },
+  {
+   "id": "adim3_ak_hata_harf_buyuklugu",
+   "desc": "hata belirteci harf büyüklüğüne duyarlı olur",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_hata_iletisi_ve_sozcuk_siniri",
+   "find": "    re.IGNORECASE)\n\n# --- Alt kanal adları",
+   "replace": "    0)\n\n# --- Alt kanal adları"
+  },
+  {
+   "id": "adim3_ak_bicim_dizgisi_belirtec",
+   "desc": "bicim_dizgisi printf belirtecine bakmaz (yalnız şablon yer tutucusu)",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_bicim_dizgisi_duz_metin_diger",
+   "find": "    return bool(format_specs(inp.evidence)) or any(p in inp.evidence\n                                                   for p in TEMPLATE_PLACEHOLDERS)",
+   "replace": "    return any(p in inp.evidence for p in TEMPLATE_PLACEHOLDERS)"
+  },
+  {
+   "id": "adim3_ak_sablon_yer_tutucu",
+   "desc": "\"#[\" şablon yer tutucusu sayılmaz",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_bicim_dizgisi_duz_metin_diger",
+   "find": "TEMPLATE_PLACEHOLDERS = (\"#{\", \"#[\", \"${\", \"{{\")",
+   "replace": "TEMPLATE_PLACEHOLDERS = (\"#{\", \"${\", \"{{\")"
+  },
+  {
+   "id": "adim3_ak_duz_metin_c_isleci",
+   "desc": "duz_metin C işlecine bakmaz",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_bicim_dizgisi_duz_metin_diger",
+   "find": "    return len(inp.stripped.split()) > 1 and not C_OPERATOR_RE.search(inp.stripped)\n",
+   "replace": "    return len(inp.stripped.split()) > 1\n"
+  },
+  {
+   "id": "adim3_ak_durak_sozcuk_eksik",
+   "desc": "\"set\" durak sözcük sayılmaz",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_anahtar_sozcukler_c_namer_ile_ayni",
+   "find": "    \"say\", \"she\", \"his\", \"her\", \"him\", \"get\", \"got\", \"set\",\n",
+   "replace": "    \"say\", \"she\", \"his\", \"her\", \"him\", \"get\", \"got\",\n"
+  },
+  {
+   "id": "adim3_ak_azami_anahtar",
+   "desc": "anahtar sözcük sayısı dörtte kesilmez",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_anahtar_sozcukler_c_namer_ile_ayni",
+   "find": "MAX_KEYWORDS = 4 ",
+   "replace": "MAX_KEYWORDS = 40 "
+  },
+  {
+   "id": "adim3_ak_kisa_dizgi",
+   "desc": "üç karakterlik dizgiden anahtar sözcük çıkmaz",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_anahtar_sozcukler_c_namer_ile_ayni",
+   "find": "    if len(s) < MIN_STRING_LENGTH:",
+   "replace": "    if len(s) <= MIN_STRING_LENGTH:"
+  },
+  {
+   "id": "adim3_ak_anahtar_kucuk_harf",
+   "desc": "anahtar sözcük küçük harfe çevrilmez",
+   "module": "karadul/reconstruction/tarif/alt_kanal.py",
+   "test": "tests/test_tarif_alt_kanal.py::test_anahtar_sozcukler_c_namer_ile_ayni",
+   "find": "        word = m.group(0).lower()\n",
+   "replace": "        word = m.group(0)\n"
+  }
+ ]
+}
