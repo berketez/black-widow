@@ -1,0 +1,14 @@
+{
+ "sema": "karadul-ks1-sabitler/1",
+ "dosyalar": {
+  "karadul/reconstruction/tarif/kesin.py": "2a412e8a4467cff152a8ed271d0216a5fcb3038f1299ca6e8927e3319838cc48",
+  "scripts/measurement/ks1_olc.py": "33156644d6c0c87cdce95b0b4abf7337616bb5a8511ab780e16f9a8d8cc49bce",
+  "scripts/measurement/function_f1.py": "edc782981f98abc6683dec0ee948c7caafcbeaf01759fdc8ddc14dd8586c4bdc",
+  "scripts/measurement/macho_f1.py": "bc48eac6fe1f2879374f17a5ba198672718f43e648df0b84d18b3e21e7705f43",
+  "scripts/measurement/macho_measure.py": "d4d517fd43e835ea1546f51186e7167b732d7b4551826ef3353e6009916667d8",
+  "tests/benchmark/metrics.py": "114456c29af17fb9451a23ede4a2bf071cb02295372b91c25d46878c8240fd09",
+  "tests/test_tarif_kesin.py": "02c716c633ba4d8b99cfe9e4ece1fbd5459e6482eb4fdc6464bd1ea074d9c76a",
+  "tests/test_ks1_olc.py": "d9236ed798b331f72937e2c33e46f56b9712de8300d0b28a51dfe2f31d047c8d",
+  "scripts/measurement/mutation_specs_ks1.json": "faa9054f73c806757d45bcb453ec12c82067f878907b6378b247dfe48ead798d"
+ }
+}

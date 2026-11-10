@@ -1,0 +1,855 @@
+{
+ "sema": "karadul-ks1-olc/1",
+ "komut": "sinif",
+ "birimler": {
+  "debian/coreutils": {
+   "elf": 106,
+   "ic_fonksiyon": 14120,
+   "snake_dizgi": 97,
+   "dizgi_zenginligi": 0.00687,
+   "ic_fonksiyon_ortanca": 112.0,
+   "boyut_tabakasi": "kucuk",
+   "elfler": [
+    {
+     "elf": "[",
+     "ic_fonksiyon": 108,
+     "snake_dizgi": 1,
+     "cpp": false
+    },
+    {
+     "elf": "arch",
+     "ic_fonksiyon": 97,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "b2sum",
+     "ic_fonksiyon": 117,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "base32",
+     "ic_fonksiyon": 111,
+     "snake_dizgi": 1,
+     "cpp": false
+    },
+    {
+     "elf": "base64",
+     "ic_fonksiyon": 111,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "basename",
+     "ic_fonksiyon": 101,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "basenc",
+     "ic_fonksiyon": 153,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "cat",
+     "ic_fonksiyon": 107,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "chcon",
+     "ic_fonksiyon": 176,
+     "snake_dizgi": 4,
+     "cpp": false
+    },
+    {
+     "elf": "chgrp",
+     "ic_fonksiyon": 169,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "chmod",
+     "ic_fonksiyon": 164,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "chown",
+     "ic_fonksiyon": 169,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "chroot",
+     "ic_fonksiyon": 105,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "cksum",
+     "ic_fonksiyon": 186,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "comm",
+     "ic_fonksiyon": 118,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "cp",
+     "ic_fonksiyon": 296,
+     "snake_dizgi": 3,
+     "cpp": false
+    },
+    {
+     "elf": "csplit",
+     "ic_fonksiyon": 124,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "cut",
+     "ic_fonksiyon": 112,
+     "snake_dizgi": 1,
+     "cpp": false
+    },
+    {
+     "elf": "date",
+     "ic_fonksiyon": 138,
+     "snake_dizgi": 1,
+     "cpp": false
+    },
+    {
+     "elf": "dd",
+     "ic_fonksiyon": 152,
+     "snake_dizgi": 3,
+     "cpp": false
+    },
+    {
+     "elf": "df",
+     "ic_fonksiyon": 190,
+     "snake_dizgi": 5,
+     "cpp": false
+    },
+    {
+     "elf": "dir",
+     "ic_fonksiyon": 317,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "dircolors",
+     "ic_fonksiyon": 110,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "dirname",
+     "ic_fonksiyon": 100,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "du",
+     "ic_fonksiyon": 230,
+     "snake_dizgi": 4,
+     "cpp": false
+    },
+    {
+     "elf": "echo",
+     "ic_fonksiyon": 97,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "env",
+     "ic_fonksiyon": 104,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "expand",
+     "ic_fonksiyon": 109,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "expr",
+     "ic_fonksiyon": 112,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "factor",
+     "ic_fonksiyon": 130,
+     "snake_dizgi": 6,
+     "cpp": false
+    },
+    {
+     "elf": "false",
+     "ic_fonksiyon": 96,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "fmt",
+     "ic_fonksiyon": 112,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "fold",
+     "ic_fonksiyon": 103,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "groups",
+     "ic_fonksiyon": 100,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "head",
+     "ic_fonksiyon": 110,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "hostid",
+     "ic_fonksiyon": 98,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "id",
+     "ic_fonksiyon": 106,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "install",
+     "ic_fonksiyon": 313,
+     "snake_dizgi": 6,
+     "cpp": false
+    },
+    {
+     "elf": "join",
+     "ic_fonksiyon": 137,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "libstdbuf.so",
+     "ic_fonksiyon": 9,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "link",
+     "ic_fonksiyon": 98,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "ln",
+     "ic_fonksiyon": 180,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "logname",
+     "ic_fonksiyon": 98,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "ls",
+     "ic_fonksiyon": 317,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "md5sum",
+     "ic_fonksiyon": 106,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "mkdir",
+     "ic_fonksiyon": 196,
+     "snake_dizgi": 6,
+     "cpp": false
+    },
+    {
+     "elf": "mkfifo",
+     "ic_fonksiyon": 183,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "mknod",
+     "ic_fonksiyon": 184,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "mktemp",
+     "ic_fonksiyon": 108,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "mv",
+     "ic_fonksiyon": 302,
+     "snake_dizgi": 4,
+     "cpp": false
+    },
+    {
+     "elf": "nice",
+     "ic_fonksiyon": 97,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "nl",
+     "ic_fonksiyon": 109,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "nohup",
+     "ic_fonksiyon": 104,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "nproc",
+     "ic_fonksiyon": 102,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "numfmt",
+     "ic_fonksiyon": 127,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "od",
+     "ic_fonksiyon": 153,
+     "snake_dizgi": 3,
+     "cpp": false
+    },
+    {
+     "elf": "paste",
+     "ic_fonksiyon": 103,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "pathchk",
+     "ic_fonksiyon": 98,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "pinky",
+     "ic_fonksiyon": 110,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "pr",
+     "ic_fonksiyon": 149,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "printenv",
+     "ic_fonksiyon": 96,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "printf",
+     "ic_fonksiyon": 123,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "ptx",
+     "ic_fonksiyon": 118,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "pwd",
+     "ic_fonksiyon": 100,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "readlink",
+     "ic_fonksiyon": 132,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "realpath",
+     "ic_fonksiyon": 135,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "rm",
+     "ic_fonksiyon": 182,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "rmdir",
+     "ic_fonksiyon": 101,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "runcon",
+     "ic_fonksiyon": 102,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "seq",
+     "ic_fonksiyon": 113,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "sha1sum",
+     "ic_fonksiyon": 106,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "sha224sum",
+     "ic_fonksiyon": 114,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "sha256sum",
+     "ic_fonksiyon": 114,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "sha384sum",
+     "ic_fonksiyon": 114,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "sha512sum",
+     "ic_fonksiyon": 114,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "shred",
+     "ic_fonksiyon": 148,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "shuf",
+     "ic_fonksiyon": 156,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "sleep",
+     "ic_fonksiyon": 103,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "sort",
+     "ic_fonksiyon": 244,
+     "snake_dizgi": 3,
+     "cpp": false
+    },
+    {
+     "elf": "split",
+     "ic_fonksiyon": 132,
+     "snake_dizgi": 3,
+     "cpp": false
+    },
+    {
+     "elf": "stat",
+     "ic_fonksiyon": 162,
+     "snake_dizgi": 5,
+     "cpp": false
+    },
+    {
+     "elf": "stdbuf",
+     "ic_fonksiyon": 108,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "stty",
+     "ic_fonksiyon": 112,
+     "snake_dizgi": 1,
+     "cpp": false
+    },
+    {
+     "elf": "sum",
+     "ic_fonksiyon": 124,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "sync",
+     "ic_fonksiyon": 97,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "tac",
+     "ic_fonksiyon": 109,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "tail",
+     "ic_fonksiyon": 173,
+     "snake_dizgi": 4,
+     "cpp": false
+    },
+    {
+     "elf": "tee",
+     "ic_fonksiyon": 119,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "test",
+     "ic_fonksiyon": 101,
+     "snake_dizgi": 1,
+     "cpp": false
+    },
+    {
+     "elf": "timeout",
+     "ic_fonksiyon": 107,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "touch",
+     "ic_fonksiyon": 134,
+     "snake_dizgi": 1,
+     "cpp": false
+    },
+    {
+     "elf": "tr",
+     "ic_fonksiyon": 115,
+     "snake_dizgi": 4,
+     "cpp": false
+    },
+    {
+     "elf": "true",
+     "ic_fonksiyon": 96,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "truncate",
+     "ic_fonksiyon": 99,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "tsort",
+     "ic_fonksiyon": 110,
+     "snake_dizgi": 1,
+     "cpp": false
+    },
+    {
+     "elf": "tty",
+     "ic_fonksiyon": 96,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "uname",
+     "ic_fonksiyon": 97,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "unexpand",
+     "ic_fonksiyon": 109,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "uniq",
+     "ic_fonksiyon": 119,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "unlink",
+     "ic_fonksiyon": 98,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "users",
+     "ic_fonksiyon": 106,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "vdir",
+     "ic_fonksiyon": 317,
+     "snake_dizgi": 2,
+     "cpp": false
+    },
+    {
+     "elf": "wc",
+     "ic_fonksiyon": 135,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "who",
+     "ic_fonksiyon": 111,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "whoami",
+     "ic_fonksiyon": 98,
+     "snake_dizgi": 0,
+     "cpp": false
+    },
+    {
+     "elf": "yes",
+     "ic_fonksiyon": 100,
+     "snake_dizgi": 0,
+     "cpp": false
+    }
+   ],
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "yoksul"
+  },
+  "debian/htop": {
+   "elf": 1,
+   "ic_fonksiyon": 609,
+   "snake_dizgi": 113,
+   "dizgi_zenginligi": 0.18555,
+   "ic_fonksiyon_ortanca": 609.0,
+   "boyut_tabakasi": "orta",
+   "elfler": [
+    {
+     "elf": "htop",
+     "ic_fonksiyon": 609,
+     "snake_dizgi": 113,
+     "cpp": false
+    }
+   ],
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "zengin"
+  },
+  "debian/openssl": {
+   "elf": 1,
+   "ic_fonksiyon": 592,
+   "snake_dizgi": 404,
+   "dizgi_zenginligi": 0.682432,
+   "ic_fonksiyon_ortanca": 592.0,
+   "boyut_tabakasi": "orta",
+   "elfler": [
+    {
+     "elf": "openssl",
+     "ic_fonksiyon": 592,
+     "snake_dizgi": 404,
+     "cpp": false
+    }
+   ],
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "zengin"
+  },
+  "debian/redis-tools": {
+   "elf": 4,
+   "ic_fonksiyon": 10531,
+   "snake_dizgi": 225,
+   "dizgi_zenginligi": 0.021365,
+   "ic_fonksiyon_ortanca": 2672.0,
+   "boyut_tabakasi": "buyuk",
+   "elfler": [
+    {
+     "elf": "redis-benchmark",
+     "ic_fonksiyon": 477,
+     "snake_dizgi": 7,
+     "cpp": false
+    },
+    {
+     "elf": "redis-check-aof",
+     "ic_fonksiyon": 4710,
+     "snake_dizgi": 99,
+     "cpp": false
+    },
+    {
+     "elf": "redis-check-rdb",
+     "ic_fonksiyon": 4710,
+     "snake_dizgi": 99,
+     "cpp": false
+    },
+    {
+     "elf": "redis-cli",
+     "ic_fonksiyon": 634,
+     "snake_dizgi": 20,
+     "cpp": false
+    }
+   ],
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "yoksul"
+  },
+  "debian/sqlite3": {
+   "elf": 1,
+   "ic_fonksiyon": 429,
+   "snake_dizgi": 85,
+   "dizgi_zenginligi": 0.198135,
+   "ic_fonksiyon_ortanca": 429.0,
+   "boyut_tabakasi": "kucuk",
+   "elfler": [
+    {
+     "elf": "sqlite3",
+     "ic_fonksiyon": 429,
+     "snake_dizgi": 85,
+     "cpp": false
+    }
+   ],
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "zengin"
+  },
+  "debian/tmux": {
+   "elf": 1,
+   "ic_fonksiyon": 1920,
+   "snake_dizgi": 496,
+   "dizgi_zenginligi": 0.258333,
+   "ic_fonksiyon_ortanca": 1920.0,
+   "boyut_tabakasi": "orta",
+   "elfler": [
+    {
+     "elf": "tmux",
+     "ic_fonksiyon": 1920,
+     "snake_dizgi": 496,
+     "cpp": false
+    }
+   ],
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "zengin"
+  },
+  "debian/tree": {
+   "elf": 1,
+   "ic_fonksiyon": 119,
+   "snake_dizgi": 0,
+   "dizgi_zenginligi": 0.0,
+   "ic_fonksiyon_ortanca": 119.0,
+   "boyut_tabakasi": "kucuk",
+   "elfler": [
+    {
+     "elf": "tree",
+     "ic_fonksiyon": 119,
+     "snake_dizgi": 0,
+     "cpp": false
+    }
+   ],
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "yoksul"
+  },
+  "debian/zstd": {
+   "elf": 2,
+   "ic_fonksiyon": 1931,
+   "snake_dizgi": 6,
+   "dizgi_zenginligi": 0.003107,
+   "ic_fonksiyon_ortanca": 965.5,
+   "boyut_tabakasi": "orta",
+   "elfler": [
+    {
+     "elf": "pzstd",
+     "ic_fonksiyon": 845,
+     "snake_dizgi": 0,
+     "cpp": true
+    },
+    {
+     "elf": "zstd",
+     "ic_fonksiyon": 1086,
+     "snake_dizgi": 6,
+     "cpp": false
+    }
+   ],
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "yoksul"
+  },
+  "mac/htop": {
+   "elf": 1,
+   "ic_fonksiyon": 597,
+   "snake_dizgi": 58,
+   "dizgi_zenginligi": 0.097152,
+   "ic_fonksiyon_ortanca": 597.0,
+   "boyut_tabakasi": "orta",
+   "elfler": [
+    {
+     "elf": "htop",
+     "ic_fonksiyon": 597,
+     "snake_dizgi": 58,
+     "cpp": false
+    }
+   ],
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "zengin"
+  },
+  "mac/tmux": {
+   "elf": 1,
+   "ic_fonksiyon": 2588,
+   "snake_dizgi": 986,
+   "dizgi_zenginligi": 0.380989,
+   "ic_fonksiyon_ortanca": 2588.0,
+   "boyut_tabakasi": "buyuk",
+   "elfler": [
+    {
+     "elf": "tmux",
+     "ic_fonksiyon": 2588,
+     "snake_dizgi": 986,
+     "cpp": false
+    }
+   ],
+   "zenginlik_esigi": 0.05,
+   "zenginlik_sinifi": "zengin"
+  }
+ },
+ "bekleyen": [],
+ "tanim": {
+  "snake_re": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$",
+  "boyut_sinirlari": [
+   [
+    500,
+    "kucuk"
+   ],
+   [
+    2000,
+    "orta"
+   ]
+  ],
+  "zenginlik_esigi": 0.05
+ }
+}

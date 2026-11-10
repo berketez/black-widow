@@ -1,0 +1,32 @@
+| Birim | Tür | Yuva | Dizgi | K0 sonrası | K1 sonrası | K2 sonrası | Aday fonksiyon | K3 sonrası | K4 sonrası | Çapa (K5 sonrası) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| debian/coreutils | `assert` | 122 | 88 | 88 | 86 | 85 | 76 | 67 | 67 | 67 |
+| debian/coreutils | `func_kalibi` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/coreutils | `func_aktarma` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/htop | `assert` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/htop | `func_kalibi` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/htop | `func_aktarma` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/openssl | `assert` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/openssl | `func_kalibi` | 208 | 29 | 29 | 29 | 29 | 17 | 15 | 15 | 15 |
+| debian/openssl | `func_aktarma` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/redis-tools | `assert` | 217 | 140 | 140 | 140 | 140 | 130 | 122 | 118 | 56 |
+| debian/redis-tools | `func_kalibi` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/redis-tools | `func_aktarma` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/sqlite3 | `assert` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/sqlite3 | `func_kalibi` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/sqlite3 | `func_aktarma` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/tmux | `assert` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/tmux | `func_kalibi` | 284 | 138 | 138 | 136 | 130 | 111 | 97 | 97 | 97 |
+| debian/tmux | `func_aktarma` | 28 | 19 | 19 | 18 | 17 | 17 | 15 | 15 | 15 |
+| debian/tree | `assert` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/tree | `func_kalibi` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/tree | `func_aktarma` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/zstd | `assert` | 2423 | 461 | 365 | 362 | 316 | 256 | 168 | 168 | 168 |
+| debian/zstd | `func_kalibi` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| debian/zstd | `func_aktarma` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| mac/htop | `assert` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| mac/htop | `func_kalibi` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| mac/htop | `func_aktarma` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| mac/tmux | `assert` | 14 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
+| mac/tmux | `func_kalibi` | 283 | 186 | 186 | 185 | 182 | 163 | 150 | 150 | 150 |
+| mac/tmux | `func_aktarma` | 71 | 23 | 23 | 23 | 23 | 22 | 21 | 21 | 21 |
