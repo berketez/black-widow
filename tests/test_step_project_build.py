@@ -63,3 +63,54 @@ class TestBuildException:
         ):
             ProjectBuildStep().run(base_ctx)
         assert any("disk full" in e for e in base_ctx.errors)
+
+
+class TestBuildReport:
+    """Kurucunun sayımı ve hata listesi rapora ulaşır (2026-11-10: eskiden yutuluyordu)."""
+
+    def _run(self, base_ctx, build_result):
+        fake_cls = MagicMock()
+        fake_cls.return_value.build.return_value = build_result
+        with patch(
+            "karadul.reconstruction.c_project_builder.CProjectBuilder", fake_cls,
+        ):
+            return ProjectBuildStep().run(base_ctx)
+
+    def test_degismez_ihlali_hatalara_gecer(self, base_ctx) -> None:
+        from karadul.reconstruction.c_project_builder import CProjectBuildResult
+        sonuc = CProjectBuildResult(
+            success=False, files_written=3,
+            errors=["Değişmez ihlali: 2 fonksiyon çıktıda yok"],
+            functions_total=5, functions_placed=3, functions_missing=2, functions_duplicated=0,
+        )
+        self._run(base_ctx, sonuc)
+        assert base_ctx.errors == ["C project build: Değişmez ihlali: 2 fonksiyon çıktıda yok"]
+        assert base_ctx.stats["project_functions_total"] == 5
+        assert base_ctx.stats["project_functions_placed"] == 3
+        assert base_ctx.stats["project_functions_missing"] == 2
+        assert base_ctx.stats["project_functions_duplicated"] == 0
+        assert "project_files" not in base_ctx.stats      # başarısız kurulum dosya sayısı yazmaz
+
+    def test_basarili_kurulumda_sayim_yazilir_hata_yok(self, base_ctx) -> None:
+        from karadul.reconstruction.c_project_builder import CProjectBuildResult
+        sonuc = CProjectBuildResult(
+            success=True, files_written=4,
+            functions_total=4, functions_placed=4, functions_missing=0, functions_duplicated=0,
+        )
+        self._run(base_ctx, sonuc)
+        assert base_ctx.errors == []
+        assert base_ctx.stats["project_files"] == 4
+        assert base_ctx.stats["project_functions_total"] == 4
+        assert base_ctx.stats["project_functions_missing"] == 0
+
+    def test_sayi_olmayan_alan_yazilmaz(self, base_ctx) -> None:
+        # Eski biçimli sonuç nesnesi (alanlar yok ya da sayı değil): hiçbir sayaç uydurulmaz
+        self._run(base_ctx, MagicMock(success=True, files_written=7))
+        assert base_ctx.stats["project_files"] == 7
+        assert not any(k.startswith("project_functions_") for k in base_ctx.stats)
+        assert base_ctx.errors == []
+
+    def test_liste_olmayan_hata_alani_harf_harf_yazilmaz(self, base_ctx) -> None:
+        # errors yanlış türdeyse (dizgi) karakterleri tek tek hata diye yazılmaz
+        self._run(base_ctx, MagicMock(success=True, files_written=1, errors="bozuk"))
+        assert base_ctx.errors == []

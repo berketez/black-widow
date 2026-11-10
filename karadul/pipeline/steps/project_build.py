@@ -18,6 +18,33 @@ from karadul.pipeline.registry import Step, register_step
 logger = logging.getLogger(__name__)
 
 
+# Kurucunun fonksiyon sayımı: sonuç alanı -> rapordaki ``stats`` anahtarı
+_BUILD_COUNTERS = {
+    "functions_total": "project_functions_total",
+    "functions_placed": "project_functions_placed",
+    "functions_missing": "project_functions_missing",
+    "functions_duplicated": "project_functions_duplicated",
+}
+
+
+def _record_build_report(ctx: StepContext, build_result: Any) -> None:
+    """Kurucunun sayımını ve hata listesini rapora taşı (başarılı olsun olmasın).
+
+    Kurucu "her girdi fonksiyonu çıktıda tam bir kez" değişmezini kendi denetler ve ihlali
+    ``errors`` listesine yazar. Bu liste eskiden adımda yutuluyordu: düşen fonksiyon rapora
+    ulaşmıyordu. Sayı olmayan alan (eski sonuç nesnesi) yazılmaz.
+    """
+    for field_name, stat_key in _BUILD_COUNTERS.items():
+        value = getattr(build_result, field_name, None)
+        if isinstance(value, int) and not isinstance(value, bool):
+            ctx.stats[stat_key] = value
+    build_errors = getattr(build_result, "errors", None)
+    if isinstance(build_errors, (list, tuple)):
+        for err in build_errors:
+            logger.warning("C project build: %s", err)
+            ctx.errors.append(f"C project build: {err}")
+
+
 @register_step(
     name="project_build",
     requires=[
@@ -59,6 +86,7 @@ class ProjectBuildStep(Step):
                 logger.info(
                     "Project built: %d dosya", build_result.files_written,
                 )
+            _record_build_report(ctx, build_result)
         except Exception as exc:
             logger.warning("C project build hatasi: %s", exc)
             ctx.errors.append(f"C project build hatasi: {exc}")
