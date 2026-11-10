@@ -18,6 +18,26 @@ düzeltmesi birlikte geldiği için 1.20.0-pre → 1.21.1.
 - Bu davranışlar `binary_reconstruction` altındaki üç bayrakla yönetilir (`enable_ks1_anchors`,
   `enable_subchannel_silencing`, `apply_global_naming_threshold`).
 - Paketleme: derlemeden ön denetim (`build_mac_app.sh --check`), `pycdc`'nin pakete girmesi.
+- KS-1 çapaları ve ad bayrakları analiz hattına bağlandı (`karadul/pipeline/steps/kesin_anchors.py`);
+  bayraklar öntanımlı kapalıyken ad haritası değişmez. Rapor, koşunun bayraklarını
+  (`naming_flags`), etiket başına ad sayısını ve susturulan aday sayısını taşır.
+- Ürün adlarını simge doğrusuyla karşılaştıran ölçüm betiği (`scripts/measurement/urun_olc.py`).
+  İlk ölçüm (kanıtlı adlandırma kapalı, 118 ikili, tam eşitlik): 6 394 fonksiyon adının 1 184'ü
+  doğru. Ayrıntı: `docs/arge/2026-11-10_n1_adim3/urun_olcumu_taban.md`.
+- Rapor sayaçları: proje ağacına giren, yerleşen, eksik ve çift fonksiyon sayısı
+  (`project_functions_*`); akış sadeleştirmede geri alınan ve atlanan fonksiyon
+  (`flow_functions_reverted`, `flow_functions_skipped`, `flow_files_failed`).
+
+### Değişenler
+- Akış sadeleştirme (`binary_reconstruction.enable_flow_simplification`) öntanımlı **kapalı**.
+  Adım yeniden yazıldı (aşağıya bakın) ama yeniden açılması ayrı bir karar; `karadul.yaml` ile
+  açılabilir.
+- Başvuru kaynağını ağdan indirip derleme yalnız `network.enabled` ve
+  `network.allow_reference_download` birlikte açıkken yapılır.
+- Proje ağacında dosya adları baştaki `_` karakterini korur ve proje genelinde benzersizdir;
+  alt sistem yerleşimi koşudan koşuya aynıdır. Eski çıktıyla dosya yolları karşılaştırılamaz.
+- Aynı adı taşıyan birden çok fonksiyon varsa belge yorumuna adrese bağlanamayan üst veri
+  (`@address`, `@size`, `@called_by`, `@calls`, `@algorithm`, `@strings`) yazılmaz.
 
 ### Düzeltilenler
 - Temiz çıktı her ada güven 1.0 yazıyordu.
@@ -31,6 +51,26 @@ düzeltmesi birlikte geldiği için 1.20.0-pre → 1.21.1.
   `build/lib` dosyalarının pakete girmesi).
 - CI'daki F1 kapısı koda sabit bir sayıyı eşikle karşılaştırıyordu; kaldırıldı, yerine tam test
   takımı ve temiz kurulum sınaması geldi.
+- Az fonksiyonlu ikililerde temiz çıktı kaynaksız çıkıyordu: ikinci tur tam kipte koşunca
+  isimlendirici kendi yazdığı dizini siliyordu. Temiz çıktı da boş kaynak diziniyle "OK"
+  diyordu; artık daha erken bir aşamaya düşer ve uyarır, kaynak yazılamazsa başarılı saymaz.
+- Proje ağacı, aynı dosya adına inen fonksiyonları düşürüyordu (ör. `_exit` ile `exit`); 119
+  ikilide 40-64 fonksiyon. Kurucu artık her girdi fonksiyonunun çıktıda tam bir kez yer aldığını
+  denetler; hata listesi rapora ulaşır.
+- Paralel decompile'da aynı adlı iki fonksiyon aynı dosyaya yazılabiliyor, biri kayboluyordu.
+- Akış sadeleştirme goto içeren fonksiyonların çoğunda C metnini bozuyordu (ayraç dengesi,
+  silinen bloklar, yanlış bağlanan `break`). Adım deyim ağacı üzerinde çalışacak biçimde yeniden
+  yazıldı; her değişen fonksiyon bir ard koşuldan geçer, tutmazsa özgün metin korunur.
+- Belge yorumları iç içe yorumla geçerli C'yi bozuyordu (`@param … /* was: … */`) ve aynı adlı
+  fonksiyonlarda başka fonksiyonun adresini, boyutunu ve çağıranlarını yazıyordu.
+- Zincirli parametre adlandırmasında iki parametre tek ada çöküyordu.
+- Analiz, ağ kapalıyken de başvuru kaynağı indirmeyi ve derlemeyi deniyordu.
+- Tip değişimi ikilinin dizgi sabitlerini ve yorumlarını da değiştiriyordu (`"iv undefined\n"` →
+  `"iv uint64_t\n"`). Değişim artık yalnız kod içinde ve tip konumunda yapılır; dizgi ya da
+  yorum metni değişirse dosya özgün metniyle yazılır ve sayılır (`type_recovery_reverted`).
+- Decompiler'ın uyarı yorumları (`/* WARNING: … */`) çıktıdan siliniyordu; bir programda aynı
+  kalıp bir dizgi sabitini de siliyordu. Uyarılar artık korunur (`ghidra_warnings_kept`,
+  `ghidra_warnings_lost`); algoritma tanıyıcı ve yorum üretici uyarı metnini kod saymaz.
 
 ## [1.14.5] - 2026-05-09/10 (test debt + güvenlik hardening)
 
