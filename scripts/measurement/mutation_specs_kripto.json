@@ -1,0 +1,173 @@
+{
+  "_comment": "c_algorithm_id.py sabit-tabanlı kripto tespiti kurallarının (2026-11-10 düzeltmesi) mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı); hepsi sözdizimce geçerli. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_kripto.json",
+  "mutants": [
+    {
+      "id": "kripto_zayif_ust_sinir",
+      "desc": "zayıf sabit üst sınırı 0xFFFF yerine 0xFF (0x1021, 0x8082, 0x100 kanıt sayılır)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestZayifVeSayi::test_zayif_sabit",
+      "find": "CONST_WEAK_MAX: int = 0xFFFF",
+      "replace": "CONST_WEAK_MAX: int = 0xFF"
+    },
+    {
+      "id": "kripto_zayif_bit_sayisi",
+      "desc": "az bitli sabit süzgeci kapalı (0x80000001, 0x8000000000000080 kanıt sayılır)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestZayifVeSayi::test_zayif_sabit",
+      "find": "CONST_WEAK_MAX_POPCOUNT: int = 2",
+      "replace": "CONST_WEAK_MAX_POPCOUNT: int = -1"
+    },
+    {
+      "id": "kripto_zayif_periyot",
+      "desc": "tekrar deseni süzgeci kapalı (0xff00ff00, 0x01010101 kanıt sayılır)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestZayifVeSayi::test_zayif_sabit",
+      "find": "CONST_WEAK_PERIODS_BITS: tuple[int, ...] = (4, 8, 16)",
+      "replace": "CONST_WEAK_PERIODS_BITS: tuple[int, ...] = ()"
+    },
+    {
+      "id": "kripto_zayif_maske_blogu",
+      "desc": "tek kesintisiz 1 bloğu (maske) süzgeci kapalı (0x0fffffff kanıt sayılır)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestZayifVeSayi::test_zayif_sabit",
+      "find": "if shifted & (shifted + 1) == 0:",
+      "replace": "if shifted & (shifted + 1) == -1:"
+    },
+    {
+      "id": "kripto_dizin_zayif_suzgeci",
+      "desc": "imza dizini zayıf değerleri süzmüyor (Keccak 0x1, 0x8082 ... kanıt olur)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestZayifVeSayi::test_keccak_zayif_tur_sabitleri_sayilmaz",
+      "find": "values = tuple(c for c in unique if not _is_weak_constant(c))",
+      "replace": "values = tuple(unique)"
+    },
+    {
+      "id": "kripto_tek_sabit_yeter",
+      "desc": "varsayılan eşik 2 yerine 1 (tek ayırt edici sabit etiket verir)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestZayifVeSayi::test_tek_ayirt_edici_sabit_yetmez",
+      "find": "need = CONST_MIN_DISTINCT_OVERRIDES.get(algo_name, CONST_MIN_DISTINCT)",
+      "replace": "need = CONST_MIN_DISTINCT_OVERRIDES.get(algo_name, 1)"
+    },
+    {
+      "id": "kripto_keccak_esik_iki",
+      "desc": "Keccak eşiği 3 yerine 2 (iki tur sabiti etiket verir)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestZayifVeSayi::test_keccak_uc_farkli_tur_sabiti_ister",
+      "find": "\"Keccak/SHA-3\": 3,",
+      "replace": "\"Keccak/SHA-3\": 3 - 1,"
+    },
+    {
+      "id": "kripto_crc32_esik_iki",
+      "desc": "CRC32 istisnası kalkar (tek polinom etiket vermez)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestZayifVeSayi::test_crc32_tek_polinom_yeter",
+      "find": "\"CRC32\": 1,",
+      "replace": "\"CRC32\": 1 + 1,"
+    },
+    {
+      "id": "kripto_yari_tek_basina",
+      "desc": "64 bit belirtecin yalnız üst yarısı yeter (SHA-512 H SHA-256 H verir)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestBirlesik64::test_yari_tek_basina_kanit_degil",
+      "find": "common = owners.get(lo, frozenset()) & owners.get(hi, frozenset())",
+      "replace": "common = owners.get(hi, frozenset())"
+    },
+    {
+      "id": "kripto_birlesik_yok",
+      "desc": "64 bit birleştirilmiş yazım hiç bölünmez (SHA1Init tespit edilmez)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestBirlesik64::test_sha1init_ghidra_bicimi",
+      "find": "for wide_value in wide:",
+      "replace": "for wide_value in wide[:0]:"
+    },
+    {
+      "id": "kripto_tumleyen_yok",
+      "desc": "32 bit ikiye tümleyen eşi denenmez (-0x28955b88 MD5 T0 sayılmaz)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestTamBelirtec::test_isaretli_onaltilik_ikiye_tumleyen_ile_eslesir",
+      "find": "cands.add((-mag) & _MASK32)",
+      "replace": "cands.add(mag & _MASK32)"
+    },
+    {
+      "id": "kripto_yorum_dizge_sayilir",
+      "desc": "yorum ve dizgeler atılmaz",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestTamBelirtec::test_yorum_ve_dizge_icindeki_sabit_sayilmaz",
+      "find": "clean = _COMMENT_OR_STRING_RE.sub(\" \", body)",
+      "replace": "clean = body"
+    },
+    {
+      "id": "kripto_tanimlayici_siniri",
+      "desc": "belirteç önündeki harf/rakam/_ sınırı kalkar (DAT_1779033703 sabit sayılır)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestTamBelirtec::test_tanimlayici_ve_ondalik_kesir_icindeki_rakam_sayilmaz",
+      "find": "r\"(?<![\\w.])(?P<num>",
+      "replace": "r\"(?<![.])(?P<num>"
+    },
+    {
+      "id": "kripto_belirtec_sonu",
+      "desc": "belirteç sonu sınırı kalkar (1013904242.0 kesir sayısı sabit sayılır)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestTamBelirtec::test_tanimlayici_ve_ondalik_kesir_icindeki_rakam_sayilmaz",
+      "find": "[uU]?)?(?![\\w.])\"",
+      "replace": "[uU]?)?\""
+    },
+    {
+      "id": "kripto_rcon_dizisi",
+      "desc": "2'nin kuvvetlerinden oluşan dizi zayıf sayılmaz (AES rcon tek başına AES verir)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestSiraliTablo::test_rcon_dizisi_zayif",
+      "find": "if all(v == 0 or v & (v - 1) == 0 for v in values):",
+      "replace": "if all(v == 0 for v in values):"
+    },
+    {
+      "id": "kripto_aritmetik_dizi",
+      "desc": "sabit adımlı dizi zayıf sayılmaz",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestSiraliTablo::test_zayif_dizi",
+      "find": "return len(steps) == 1",
+      "replace": "return len(steps) > 999"
+    },
+    {
+      "id": "kripto_dizi_kesintisiz",
+      "desc": "dizi ayırıcısı rakam dışı her şey (ayrı deyimlerdeki sıralı değerler dizi sayılır)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestSiraliTablo::test_kesintili_dizi_aes_degil",
+      "find": "_RUN_SEPARATOR_RE = re.compile(r\"\\s*,\\s*\")",
+      "replace": "_RUN_SEPARATOR_RE = re.compile(r\"\\D*\")"
+    },
+    {
+      "id": "kripto_dizi_etiketsiz",
+      "desc": "sıralı tablo kanıtı etiket vermez (yalnız skaler sayı sayılır)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestSiraliTablo::test_sirali_sbox_dizisi_aes",
+      "find": "if not sequence_hit and len(matched) < need:",
+      "replace": "if len(matched) < need:"
+    },
+    {
+      "id": "kripto_ortak_ad_dusmez",
+      "desc": "kesin eşleşen ortak sahip varken ortak ad da verilir (MD5 yanında MD5/SHA-1)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestOrtakSabit::test_md5_t_degerleri_ortak_adi_bastirir",
+      "find": "if co_owners & definite.keys():",
+      "replace": "if not co_owners:"
+    },
+    {
+      "id": "kripto_ozgu_sabit_sarti",
+      "desc": "yalnız ortak sabitlerle kesin etiket verilir (MD5 init hem MD5 hem SHA-1)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestOrtakSabit::test_md5_init_yalniz_ortak_ad",
+      "find": "if sequence_hit or any(owners[v] == {algo_name} for v in matched):",
+      "replace": "if True:"
+    },
+    {
+      "id": "kripto_govde_siniri_500",
+      "desc": "eski 500 karakter gövde sınırı geri gelir (SHA1Init atlanır)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_c_algorithm_id_sabit.py::TestIdentify::test_kisa_baslatma_fonksiyonu_tespit_edilir",
+      "find": "CONST_SCAN_MIN_BODY_CHARS: int = 0",
+      "replace": "CONST_SCAN_MIN_BODY_CHARS: int = 500"
+    }
+  ]
+}

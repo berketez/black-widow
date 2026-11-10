@@ -41,6 +41,65 @@ BLAS_ML_INDICATORS: frozenset[str] = frozenset({
 
 
 # ---------------------------------------------------------------------------
+# Sabit-tabanlı tespit kuralları (2026-11-10 düzeltmesi)
+# ---------------------------------------------------------------------------
+# Eski kural sabiti gövdede alt dize olarak arıyordu ("0x1", her "0x1..." sayısının
+# içinde bulunuyordu; "0xfffffff", her 0xffffffff'in içinde) ve büyük sabitli bir
+# grubun yarısını yeterli sayıyordu. Sonuç: kripto içermeyen Mac tmux'ta 1901,
+# htop'ta 355 sabit-tabanlı etiket (çoğu Keccak/SHA-3 ve Poly1305).
+#
+# Yeni kural:
+#   1. Sabit yalnız bütün bir sayı belirteci (token) olarak eşleşir; yorum ve dizge
+#      içindekiler sayılmaz. Belirteç onaltılık ya da ondalık, U/L/UL/LL/ULL ekli olabilir.
+#      Her belirteç ikiye tümleyen eşiyle (32 ve 64 bit) de denenir: Ghidra 0xd76aa478'i
+#      "-0x28955b88" diye, "sum -= 0x9e3779b9" satırını "sum + 0x61c88647" diye basabilir.
+#   2. 64 bitlik bir belirtecin iki 32 bitlik yarısı da aynı algoritmanın ayırt edici
+#      sabitiyse iki sabit de bulunmuş sayılır: Ghidra yan yana iki 32 bitlik alana
+#      yazmayı tek sabite birleştirir (SHA1Init: 0xefcdab8967452301). Yarılar tek tek
+#      kanıt sayılmaz (SHA-512'nin 0x6a09e667f3bcc908'i SHA-256 H0 vermez).
+#   3. Zayıf sabitler (küçük değerler, 2'nin kuvvetleri, maskeler, tekrar desenleri)
+#      hiçbir zaman kanıt değildir.
+#   4. Etiket için aynı fonksiyonda algoritmaya ait en az CONST_MIN_DISTINCT farklı
+#      ayırt edici sabit gerekir.
+#   5. Küçük değerli tablolar (S-kutusu, permütasyon) yalnız listedeki sıranın
+#      tamamı kesintisiz bir sayı dizisi olarak geçerse kanıttır.
+#   6. Birden çok algoritmanın ortak sabitleri (SHA-512 H = BLAKE2b IV, MD5 init =
+#      SHA-1 H0-H3) tek başına bir algoritma seçtirmez: başka bir algoritmanın kendine
+#      özgü sabiti yoksa etiket "BLAKE2/SHA-512" gibi ortak ad taşır.
+
+#: Bu değere kadar (dahil) olan sabitler tek başına hiçbir zaman kanıt sayılmaz
+#: (0x36, 0x5c, 0xff, 0x1021, tablo indisleri, kaydırma miktarları).
+CONST_WEAK_MAX: int = 0xFFFF
+#: 1 bitlerinin (ya da 0 bitlerinin) sayısı bu değere eşit ya da küçükse sabit zayıftır:
+#: 2'nin kuvvetleri, 0x80000001, 0xfffffffe, 0x7fffffff.
+CONST_WEAK_MAX_POPCOUNT: int = 2
+#: Bu periyotlarla (bit) kendini tekrar eden sabitler zayıftır: 0x01010101, 0xff00ff00, 0x55555555.
+CONST_WEAK_PERIODS_BITS: tuple[int, ...] = (4, 8, 16)
+#: Bir algoritmanın etiketi için aynı fonksiyonda gereken farklı ayırt edici sabit sayısı.
+CONST_MIN_DISTINCT: int = 2
+#: Algoritmaya özgü istisnalar.
+CONST_MIN_DISTINCT_OVERRIDES: dict[str, int] = {
+    # Bit bit CRC32 gerçeklemesinin tek tanımlayıcı sabiti polinomdur (0xEDB88320,
+    # 32 bit, yüksek entropi); tablo .rodata'da olduğundan başka sabit görünmez.
+    "CRC32": 1,
+    # Keccak tur sabitleri seyrek bitli desenlerdir; tek tek bayrak değerlerine
+    # benzedikleri için üç farklı sabit istenir.
+    "Keccak/SHA-3": 3,
+}
+#: Küçük değerli bir tablonun (bütün değerleri <= CONST_WEAK_MAX) kanıt sayılması için
+#: listedeki dizinin en az bu kadar öğesi olmalı ve dizinin tamamı sırayla görünmeli.
+CONST_SEQUENCE_MIN_LEN: int = 8
+#: Sabit taraması bu uzunluktan kısa fonksiyon gövdelerini atlar. Eski 500 sınırı
+#: alt dize eşleşmesinin yanlışlarını bastırmak içindi; SHA1Init gibi gerçek başlatma
+#: fonksiyonları ~130 karakterdir. Kanıt artık ayırt edici sabit kümesine dayandığı
+#: için sınır kaldırıldı (0).
+CONST_SCAN_MIN_BODY_CHARS: int = 0
+#: 32 ve 64 bitlik değer maskeleri.
+_MASK32: int = (1 << 32) - 1
+_MASK64: int = (1 << 64) - 1
+
+
+# ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
 
@@ -120,30 +179,78 @@ class CAlgorithmResult:
 # Yaklasim 1: Sabit-bazli tanimlar (Constant-Based Identification)
 # ---------------------------------------------------------------------------
 
+# Tablolar matematiksel tanımlarından üretilip testte yeniden hesaplanarak denetlenir
+# (tests/test_c_algorithm_id_sabit.py): SHA-2 K/H asal köklerinin kesirleri, MD5 T
+# sinüs değerleri, Keccak RC LFSR çıktısı, Camellia Σ karekök kesirleri.
+# Küçük ya da zayıf değerler listede kalabilir; kanıt olarak süzülürler (bkz. kurallar).
 ALGORITHM_SIGNATURES: dict[str, dict[str, list[int]]] = {
     "AES": {
+        # Küçük değerli tablolar: yalnız sıralı ve kesintisiz dizi olarak kanıt.
         "sbox": [0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5],
+        # rcon 2'nin kuvvetleridir; zayıf dizi, hiçbir zaman kanıt değil.
         "rcon": [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80],
         "inv_sbox": [0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38],
     },
     "SHA-256": {
-        "k_constants": [0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5],
-        "h_init": [0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A],
+        "k_constants": [
+            0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5, 0x3956C25B, 0x59F111F1, 0x923F82A4, 0xAB1C5ED5,
+            0xD807AA98, 0x12835B01, 0x243185BE, 0x550C7DC3, 0x72BE5D74, 0x80DEB1FE, 0x9BDC06A7, 0xC19BF174,
+            0xE49B69C1, 0xEFBE4786, 0x0FC19DC6, 0x240CA1CC, 0x2DE92C6F, 0x4A7484AA, 0x5CB0A9DC, 0x76F988DA,
+            0x983E5152, 0xA831C66D, 0xB00327C8, 0xBF597FC7, 0xC6E00BF3, 0xD5A79147, 0x06CA6351, 0x14292967,
+            0x27B70A85, 0x2E1B2138, 0x4D2C6DFC, 0x53380D13, 0x650A7354, 0x766A0ABB, 0x81C2C92E, 0x92722C85,
+            0xA2BFE8A1, 0xA81A664B, 0xC24B8B70, 0xC76C51A3, 0xD192E819, 0xD6990624, 0xF40E3585, 0x106AA070,
+            0x19A4C116, 0x1E376C08, 0x2748774C, 0x34B0BCB5, 0x391C0CB3, 0x4ED8AA4A, 0x5B9CCA4F, 0x682E6FF3,
+            0x748F82EE, 0x78A5636F, 0x84C87814, 0x8CC70208, 0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2,
+        ],
+        "h_init": [
+            0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19,
+        ],
     },
     "SHA-512": {
         "k_constants": [
-            0x428A2F98D728AE22, 0x7137449123EF65CD,
-            0xB5C0FBCFEC4D3B2F, 0xE9B5DBA58189DBBC,
+            0x428A2F98D728AE22, 0x7137449123EF65CD, 0xB5C0FBCFEC4D3B2F, 0xE9B5DBA58189DBBC,
+            0x3956C25BF348B538, 0x59F111F1B605D019, 0x923F82A4AF194F9B, 0xAB1C5ED5DA6D8118,
+            0xD807AA98A3030242, 0x12835B0145706FBE, 0x243185BE4EE4B28C, 0x550C7DC3D5FFB4E2,
+            0x72BE5D74F27B896F, 0x80DEB1FE3B1696B1, 0x9BDC06A725C71235, 0xC19BF174CF692694,
+            0xE49B69C19EF14AD2, 0xEFBE4786384F25E3, 0x0FC19DC68B8CD5B5, 0x240CA1CC77AC9C65,
+            0x2DE92C6F592B0275, 0x4A7484AA6EA6E483, 0x5CB0A9DCBD41FBD4, 0x76F988DA831153B5,
+            0x983E5152EE66DFAB, 0xA831C66D2DB43210, 0xB00327C898FB213F, 0xBF597FC7BEEF0EE4,
+            0xC6E00BF33DA88FC2, 0xD5A79147930AA725, 0x06CA6351E003826F, 0x142929670A0E6E70,
+            0x27B70A8546D22FFC, 0x2E1B21385C26C926, 0x4D2C6DFC5AC42AED, 0x53380D139D95B3DF,
+            0x650A73548BAF63DE, 0x766A0ABB3C77B2A8, 0x81C2C92E47EDAEE6, 0x92722C851482353B,
+            0xA2BFE8A14CF10364, 0xA81A664BBC423001, 0xC24B8B70D0F89791, 0xC76C51A30654BE30,
+            0xD192E819D6EF5218, 0xD69906245565A910, 0xF40E35855771202A, 0x106AA07032BBD1B8,
+            0x19A4C116B8D2D0C8, 0x1E376C085141AB53, 0x2748774CDF8EEB99, 0x34B0BCB5E19B48A8,
+            0x391C0CB3C5C95A63, 0x4ED8AA4AE3418ACB, 0x5B9CCA4F7763E373, 0x682E6FF3D6B2B8A3,
+            0x748F82EE5DEFB2FC, 0x78A5636F43172F60, 0x84C87814A1F0AB72, 0x8CC702081A6439EC,
+            0x90BEFFFA23631E28, 0xA4506CEBDE82BDE9, 0xBEF9A3F7B2C67915, 0xC67178F2E372532B,
+            0xCA273ECEEA26619C, 0xD186B8C721C0C207, 0xEADA7DD6CDE0EB1E, 0xF57D4F7FEE6ED178,
+            0x06F067AA72176FBA, 0x0A637DC5A2C898A6, 0x113F9804BEF90DAE, 0x1B710B35131C471B,
+            0x28DB77F523047D84, 0x32CAAB7B40C72493, 0x3C9EBE0A15C9BEBC, 0x431D67C49C100D4C,
+            0x4CC5D4BECB3E42B6, 0x597F299CFC657E2A, 0x5FCB6FAB3AD6FAEC, 0x6C44198C4A475817,
         ],
+        # BLAKE2b IV ile aynı; yalnız bunlarla eşleşen fonksiyon "BLAKE2/SHA-512" olur.
         "h_init": [
-            0x6A09E667F3BCC908, 0xBB67AE8584CAA73B,
+            0x6A09E667F3BCC908, 0xBB67AE8584CAA73B, 0x3C6EF372FE94F82B, 0xA54FF53A5F1D36F1,
+            0x510E527FADE682D1, 0x9B05688C2B3E6C1F, 0x1F83D9ABFB41BD6B, 0x5BE0CD19137E2179,
         ],
     },
     "SHA-1": {
+        # H0-H3 MD5 init ile ortak; H4 (0xC3D2E1F0) SHA-1'e özgü.
         "h_init": [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0],
+        "k_constants": [0x5A827999, 0x6ED9EBA1, 0x8F1BBCDC, 0xCA62C1D6],
     },
     "MD5": {
-        "t_values": [0xD76AA478, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE],
+        "t_values": [
+            0xD76AA478, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE, 0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501,
+            0x698098D8, 0x8B44F7AF, 0xFFFF5BB1, 0x895CD7BE, 0x6B901122, 0xFD987193, 0xA679438E, 0x49B40821,
+            0xF61E2562, 0xC040B340, 0x265E5A51, 0xE9B6C7AA, 0xD62F105D, 0x02441453, 0xD8A1E681, 0xE7D3FBC8,
+            0x21E1CDE6, 0xC33707D6, 0xF4D50D87, 0x455A14ED, 0xA9E3E905, 0xFCEFA3F8, 0x676F02D9, 0x8D2A4C8A,
+            0xFFFA3942, 0x8771F681, 0x6D9D6122, 0xFDE5380C, 0xA4BEEA44, 0x4BDECFA9, 0xF6BB4B60, 0xBEBFBC70,
+            0x289B7EC6, 0xEAA127FA, 0xD4EF3085, 0x04881D05, 0xD9D4D039, 0xE6DB99E5, 0x1FA27CF8, 0xC4AC5665,
+            0xF4292244, 0x432AFF97, 0xAB9423A7, 0xFC93A039, 0x655B59C3, 0x8F0CCC92, 0xFFEFF47D, 0x85845DD1,
+            0x6FA87E4F, 0xFE2CE6E0, 0xA3014314, 0x4E0811A1, 0xF7537E82, 0xBD3AF235, 0x2AD7D2BB, 0xEB86D391,
+        ],
         "init": [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476],
     },
     "CRC32": {
@@ -151,10 +258,12 @@ ALGORITHM_SIGNATURES: dict[str, dict[str, list[int]]] = {
         "table_start": [0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA],
     },
     "CRC16-CCITT": {
+        # 0x1021 zayıf (<= CONST_WEAK_MAX): sabitle etiket veremez, kayıt uyumluluk için duruyor.
         "polynomial": [0x1021],
     },
     "DES": {
-        # ip_table: 16+ eleman -- kisa diziler her yerde bulunur, uzun tablo benzersiz
+        # ip_table: 16+ eleman -- kisa diziler her yerde bulunur, uzun tablo benzersiz.
+        # Küçük değerli tablo: yalnız 32 öğenin tamamı sırayla ve kesintisiz geçerse kanıt.
         "ip_table": [
             58, 50, 42, 34, 26, 18, 10, 2,
             60, 52, 44, 36, 28, 20, 12, 4,
@@ -177,20 +286,42 @@ ALGORITHM_SIGNATURES: dict[str, dict[str, list[int]]] = {
         "p_array_start": [0x243F6A88, 0x85A308D3, 0x13198A2E, 0x03707344],
     },
     "Twofish": {
+        # 0x169 ve 0x14D zayıf: sabitle etiket veremez, kayıt uyumluluk için duruyor.
         "mds_poly": [0x169],
         "rs_poly": [0x14D],
     },
     "Poly1305": {
-        "clamp": [0x0FFFFFFF, 0x0FFFFFFC, 0x0FFFFFFC, 0x0FFFFFFC],
+        # RFC 7539 kenetleme maskesinin 32 bitlik sözcükleri (0x0FFFFFFF, 0x0FFFFFFC) tek
+        # parça maskedir, her yerde geçer ve kanıt sayılmaz (eski kuralda 0x0FFFFFFF,
+        # 0xFFFFFFFF'in alt dizesi olarak her fonksiyonda bulunuyordu). Kanıt olarak
+        # kenetlemenin 64 bitlik biçimleri ve poly1305-donna sınır maskeleri kullanılır.
+        "clamp": [0x0FFFFFFC0FFFFFFF, 0x0FFFFFFC0FFFFFFC],
+        "donna_masks": [
+            0x3FFFF03, 0x3FFC0FF, 0x3F03FFF,             # donna-32: r1..r3
+            0xFFC0FFFFFFF, 0xFFFFFC0FFFF, 0xFFFFFFC0F,  # donna-64: r0..r2
+        ],
     },
     "GOST": {
         "sbox1": [4, 10, 9, 2, 13, 8, 0, 14, 6, 11, 1, 12, 7, 15, 5, 3],
     },
     "Keccak/SHA-3": {
-        "round_constants": [0x0000000000000001, 0x0000000000008082],
+        # 24 tur sabitinin hepsi; <= 0xFFFF olanlar ve 2 bitli olanlar (0x80000001,
+        # 0x8000000000000080) zayıf sayılıp süzülür, geriye 14 ayırt edici değer kalır.
+        "round_constants": [
+            0x0000000000000001, 0x0000000000008082, 0x800000000000808A, 0x8000000080008000,
+            0x000000000000808B, 0x0000000080000001, 0x8000000080008081, 0x8000000000008009,
+            0x000000000000008A, 0x0000000000000088, 0x0000000080008009, 0x000000008000000A,
+            0x000000008000808B, 0x800000000000008B, 0x8000000000008089, 0x8000000000008003,
+            0x8000000000008002, 0x8000000000000080, 0x000000000000800A, 0x800000008000000A,
+            0x8000000080008081, 0x8000000000008080, 0x0000000080000001, 0x8000000080008008,
+        ],
     },
     "BLAKE2": {
-        "iv": [0x6A09E667F3BCC908, 0xBB67AE8584CAA73B],
+        # BLAKE2b IV = SHA-512 H; yalnız bunlarla eşleşen fonksiyon "BLAKE2/SHA-512" olur.
+        "iv": [
+            0x6A09E667F3BCC908, 0xBB67AE8584CAA73B, 0x3C6EF372FE94F82B, 0xA54FF53A5F1D36F1,
+            0x510E527FADE682D1, 0x9B05688C2B3E6C1F, 0x1F83D9ABFB41BD6B, 0x5BE0CD19137E2179,
+        ],
         # sigma_first_row SILINDI: [0,1,2,...,7] her yerde FP uretiyor
     },
     "Whirlpool": {
@@ -200,13 +331,23 @@ ALGORITHM_SIGNATURES: dict[str, dict[str, list[int]]] = {
         "sbox1_start": [0x30FB40D4, 0x9FA0FF0B, 0x6BECCD2F, 0x3F258C7A],
     },
     "IDEA": {
-        "mul_mod": [0x10001],  # 2^16 + 1
+        # 2^16 + 1 (aynı zamanda RSA üssü 65537): zayıf, sabitle etiket veremez.
+        "mul_mod": [0x10001],
     },
     "Serpent/TEA/XTEA": {
-        "golden_ratio": [0x9E3779B9],  # shared constant -- ayristirma structural'dan
+        # Altın oran sabiti karma fonksiyonlarında da yaygın (Fibonacci karması, zstd);
+        # tek başına yetmez. TEA/XTEA şifre çözmesinin başlangıç toplamı 32*delta ile
+        # birlikte görülürse etiket verilir.
+        "golden_ratio": [0x9E3779B9],
+        "decrypt_sum": [0xC6EF3720],
     },
     "Camellia": {
         "sigma1": [0xA09E667F, 0x3BCC908B],
+        # Σ1..Σ6 64 bitlik biçimleri (2, 3, 5, 7, 11, 13'ün karekök kesirleri).
+        "sigma64": [
+            0xA09E667F3BCC908B, 0xB67AE8584CAA73B2, 0xC6EF372FE94F82BE,
+            0x54FF53A5F1D36F1C, 0x10E527FADE682D1D, 0xB05688C2B3E6C1FD,
+        ],
     },
 }
 
@@ -233,6 +374,159 @@ _ALGO_CATEGORIES: dict[str, str] = {
     "CRC16-CCITT": "checksum",
     "Poly1305": "mac",
 }
+
+
+# ---------------------------------------------------------------------------
+# Sabit-tabanlı tespit yardımcıları
+# ---------------------------------------------------------------------------
+
+# Bütün bir sayı belirteci: önünde harf/rakam/_/. yok, arkasında da yok (DAT_00123456,
+# FUN_0010b340 ve 1.5e10 içindeki rakamlar sayılmaz). Onaltılık ya da ondalık gövde,
+# C tamsayı ekleri (U, L, UL, LL, ULL, LU, LLU; büyük/küçük harf). Eksi işareti belirtece
+# katılmaz; her belirteç ikiye tümleyen eşiyle de denendiği için gerekmez.
+_NUM_TOKEN_RE = re.compile(
+    r"(?<![\w.])(?P<num>0[xX][0-9a-fA-F]+|\d+)"
+    r"(?:[uU](?:ll|LL|[lL])?|(?:ll|LL|[lL])[uU]?)?(?![\w.])"
+)
+# Yorumlar ve dizge/karakter sabitleri; soldan sağa ilk gelen kazanır, böylece
+# dizge içindeki "/*" ya da yorum içindeki tırnak öbürünü bozmaz.
+_COMMENT_OR_STRING_RE = re.compile(
+    r"/\*.*?\*/|//[^\n]*|\"(?:\\.|[^\"\\\n])*\"|'(?:\\.|[^'\\\n])*'",
+    re.DOTALL,
+)
+# Bir dizi (ilklendirme listesi) içinde iki belirteç arasında yalnız virgül ve boşluk olur.
+_RUN_SEPARATOR_RE = re.compile(r"\s*,\s*")
+
+
+def _is_weak_constant(value: int) -> bool:
+    """Sabit tek başına kanıt olamayacak kadar yaygın mı?
+
+    Zayıf: CONST_WEAK_MAX'a kadar her değer; 1 ya da 0 bitleri en çok
+    CONST_WEAK_MAX_POPCOUNT olan değerler; tek kesintisiz 1 bloğu olan maskeler
+    (0x0fffffff, 0xfffffff0); CONST_WEAK_PERIODS_BITS periyotlarıyla tekrar eden desenler.
+    """
+    if value <= CONST_WEAK_MAX:
+        return True
+    width = 32 if value <= _MASK32 else 64
+    width_mask = (1 << width) - 1
+    if bin(value).count("1") <= CONST_WEAK_MAX_POPCOUNT:
+        return True
+    if bin(~value & width_mask).count("1") <= CONST_WEAK_MAX_POPCOUNT:
+        return True
+    shifted = value >> ((value & -value).bit_length() - 1)
+    if shifted & (shifted + 1) == 0:
+        return True
+    for period in CONST_WEAK_PERIODS_BITS:
+        unit = value & ((1 << period) - 1)
+        repeated = 0
+        for i in range(width // period):
+            repeated |= unit << (i * period)
+        if repeated == value:
+            return True
+    return False
+
+
+def _is_weak_sequence(values: list[int]) -> bool:
+    """Küçük değerli bir tablo sıralı dizi olarak bile kanıt olamayacak kadar sıradan mı?
+
+    Zayıf: CONST_SEQUENCE_MIN_LEN'den az farklı değer; yalnız 0 ve 2'nin kuvvetleri
+    (AES rcon, bayrak tabloları); sabit adımlı aritmetik dizi (0,1,2,...; 56,48,40,...).
+    """
+    if len(set(values)) < CONST_SEQUENCE_MIN_LEN:
+        return True
+    if all(v == 0 or v & (v - 1) == 0 for v in values):
+        return True
+    steps = {b - a for a, b in zip(values, values[1:])}
+    return len(steps) == 1
+
+
+@dataclass(frozen=True)
+class _ConstGroup:
+    """Bir imza grubunun kanıt olarak kullanılabilir hali.
+
+    Attributes:
+        label: Grup adı (ALGORITHM_SIGNATURES anahtarı).
+        values: Ayırt edici skaler değerler; zayıflar süzülmüş, liste sırası korunmuş.
+        sequence: Küçük değerli tablo kanıtı olarak aranacak sıralı dizi ya da None.
+    """
+
+    label: str
+    values: tuple[int, ...]
+    sequence: tuple[int, ...] | None
+
+
+def _build_const_index(
+    signatures: dict[str, dict[str, list[int]]],
+) -> tuple[dict[str, list[_ConstGroup]], dict[int, frozenset[str]]]:
+    """İmza tablosundan grup kanıt tanımlarını ve değer -> sahip algoritmalar dizinini kur."""
+    groups_by_algo: dict[str, list[_ConstGroup]] = {}
+    owners: dict[int, set[str]] = {}
+    for algo, groups in signatures.items():
+        specs: list[_ConstGroup] = []
+        for label, constants in groups.items():
+            unique = tuple(dict.fromkeys(constants))
+            if all(c <= CONST_WEAK_MAX for c in unique):
+                is_table = (
+                    len(constants) >= CONST_SEQUENCE_MIN_LEN
+                    and not _is_weak_sequence(list(constants))
+                )
+                specs.append(_ConstGroup(label, (), tuple(constants) if is_table else None))
+                continue
+            values = tuple(c for c in unique if not _is_weak_constant(c))
+            specs.append(_ConstGroup(label, values, None))
+            for v in values:
+                owners.setdefault(v, set()).add(algo)
+        groups_by_algo[algo] = specs
+    return groups_by_algo, {v: frozenset(a) for v, a in owners.items()}
+
+
+def _collect_constant_tokens(body: str) -> tuple[set[int], list[int], list[list[set[int]]]]:
+    """Gövdedeki sayı belirteçlerini topla (yorum ve dizgeler atılarak).
+
+    Returns:
+        (değerler, 64 bitlik değerler, diziler):
+        - değerler: her belirtecin olası değerleri: kendisi ve 32/64 bitlik ikiye tümleyen
+          eşi. Toplanan sabit Ghidra'da üç biçimde görünebilir: "x + 0xd76aa478",
+          "x + -0x28955b88", "x - 0x28955b88"; TEA'nın "sum -= 0x9e3779b9" satırı da
+          "sum + 0x61c88647" olarak basılır.
+        - 64 bitlik değerler: 32 bitlik yarılara bölünmeye aday (> 0xFFFFFFFF) değerler.
+        - diziler: yalnız virgülle ayrılmış ardışık belirteçlerin değer kümeleri listesi
+          (ilklendirme listesi ya da argüman listesi); küçük tablo dizisi araması için.
+    """
+    clean = _COMMENT_OR_STRING_RE.sub(" ", body)
+    values: set[int] = set()
+    wide: list[int] = []
+    runs: list[list[set[int]]] = []
+    current: list[set[int]] = []
+    prev_end = -1
+    for m in _NUM_TOKEN_RE.finditer(clean):
+        num = m.group("num")
+        mag = int(num, 16) if num[:2] in ("0x", "0X") else int(num)
+        cands = {mag & _MASK64, (-mag) & _MASK64}
+        if mag <= (1 << 32):
+            cands.add((-mag) & _MASK32)
+        values |= cands
+        wide.extend(c for c in cands if c > _MASK32)
+        if prev_end >= 0 and _RUN_SEPARATOR_RE.fullmatch(clean, prev_end, m.start()):
+            current.append(cands)
+        else:
+            if len(current) >= CONST_SEQUENCE_MIN_LEN:
+                runs.append(current)
+            current = [cands]
+        prev_end = m.end()
+    if len(current) >= CONST_SEQUENCE_MIN_LEN:
+        runs.append(current)
+    return values, wide, runs
+
+
+def _contains_sequence(runs: list[list[set[int]]], sequence: tuple[int, ...]) -> bool:
+    """Dizi, belirteç dizilerinden birinde kesintisiz ve sırayla geçiyor mu?"""
+    n = len(sequence)
+    for run in runs:
+        for start in range(len(run) - n + 1):
+            if all(sequence[i] in run[start + i] for i in range(n)):
+                return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -544,6 +838,7 @@ class CAlgorithmIdentifier:
     def __init__(self, config: Config | None = None) -> None:
         self.config = config or Config()
         self._signatures = ALGORITHM_SIGNATURES
+        self._const_groups, self._const_owners = _build_const_index(self._signatures)
         self._structural = STRUCTURAL_PATTERNS
         self._crypto_apis = CRYPTO_APIS
         # Onceden compile: tek combined regex ile tum API'leri tek geciste ara
@@ -869,88 +1164,104 @@ class CAlgorithmIdentifier:
     def _scan_constants(
         self, body: str, func_name: str, address: str,
     ) -> list[AlgorithmMatch]:
-        """Fonksiyon body'sinde bilinen kriptografik sabitleri ara.
+        """Fonksiyon gövdesinde bilinen kriptografik sabitleri ara.
 
-        v1.4.3 degisiklikler:
-        - Cok kucuk fonksiyonlar (<500 char) atlanir -- kripto olmasi cok dusuk ihtimal.
-        - Ayni degere sahip tekrarlanan sabitler (orn. eski [0x36, 0x36, 0x36, 0x36])
-          deduplicate edilir, tek sabit olarak sayilir.
-        - Hex ve decimal eslesme birbirini cift saymaz -- hex bulunduysa decimal atlanir.
-        - Kucuk sabit (hepsi <256) esigi: en az 6 farkli sabit VE %90 esleme zorunlu.
+        Kurallar dosya başındaki "Sabit-tabanlı tespit kuralları" bölümündedir:
+        tam belirteç eşleşmesi, zayıf sabit süzgeci, algoritma başına en az
+        CONST_MIN_DISTINCT farklı ayırt edici sabit, küçük tablolar için kesintisiz
+        sıralı dizi, yalnız ortak sabitlerle eşleşmede ortak ad.
         """
-        # v1.4.3: Cok kucuk fonksiyonlar kripto olamaz
-        if len(body) < 500:
+        if len(body) < CONST_SCAN_MIN_BODY_CHARS:
             return []
 
-        matches: list[AlgorithmMatch] = []
-        body_lower = body.lower()
+        values, wide, runs = _collect_constant_tokens(body)
+        owners = self._const_owners
 
-        for algo_name, sig_groups in self._signatures.items():
+        # 64 bitlik belirtecin iki yarısı da aynı algoritmanın ayırt edici sabitiyse
+        # (iki 32 bitlik alana birleştirilmiş yazım) iki yarı o algoritma için bulunmuş sayılır.
+        halves: dict[str, set[int]] = {}
+        for wide_value in wide:
+            lo, hi = wide_value & _MASK32, wide_value >> 32
+            common = owners.get(lo, frozenset()) & owners.get(hi, frozenset())
+            for algo_name in common:
+                halves.setdefault(algo_name, set()).update((lo, hi))
+
+        # algo -> (eşleşen değerler, güven, kanıt)
+        definite: dict[str, tuple[set[int], float, list[str]]] = {}
+        shared_only: dict[str, tuple[set[int], float, list[str]]] = {}
+
+        for algo_name, groups in self._const_groups.items():
+            present = values | halves.get(algo_name, set())
+            matched: set[int] = set()
             evidence: list[str] = []
-            total_sig_groups = len(sig_groups)
             matched_groups = 0
-
-            for sig_label, constants in sig_groups.items():
-                # v1.4.3 Fix A: Tekrarlanan sabitleri deduplicate et
-                # Eski [0x36, 0x36, 0x36, 0x36] -> [0x36] olurdu, 4 kere saymaz
-                unique_constants = list(dict.fromkeys(constants))
-
-                found_count = 0
-                for const in unique_constants:
-                    hex_str = hex(const)
-                    hex_lower = hex_str.lower()
-
-                    # v1.4.3 Fix B: Hex bulunduysa decimal arama -- cift saymayi onle
-                    found = False
-                    if hex_lower in body_lower:
-                        found = True
-                        evidence.append(f"{sig_label}: {hex_str}")
-                    elif const < 256:
-                        # Decimal formatinda ara (sadece hex bulunamadiysa)
-                        dec_str = str(const)
-                        if re.search(rf"\b{dec_str}\b", body):
-                            found = True
-                            evidence.append(f"{sig_label}: {dec_str} (decimal)")
-
-                    if found:
-                        found_count += 1
-
-                # Bu grup icin yeterli sabit eslesti mi?
-                # v1.4.3 Fix C: Kucuk sabit esigi guclendirildi
-                all_small = all(c < 256 for c in unique_constants)
-                if all_small:
-                    # Tum sabitler kucukse: en az 6 farkli sabit VE %90 esleme zorunlu
-                    required = max(6, int(len(unique_constants) * 0.9))
-                else:
-                    required = max(1, len(unique_constants) // 2)
-
-                if found_count >= required:
+            sequence_hit = False
+            for group in groups:
+                group_hits = [v for v in group.values if v in present]
+                sequence = group.sequence
+                group_seq = sequence is not None and _contains_sequence(runs, sequence)
+                if group_hits or group_seq:
                     matched_groups += 1
+                matched.update(group_hits)
+                evidence.extend(f"{group.label}: {hex(v)}" for v in group_hits)
+                if sequence is not None and group_seq:
+                    sequence_hit = True
+                    evidence.append(f"{group.label}: ordered table ({len(sequence)} items)")
 
-            if matched_groups > 0 and evidence:
-                # Confidence: eslesen grup sayisina gore
-                confidence = min(0.95, 0.4 + 0.3 * (matched_groups / total_sig_groups))
+            need = CONST_MIN_DISTINCT_OVERRIDES.get(algo_name, CONST_MIN_DISTINCT)
+            if not sequence_hit and len(matched) < need:
+                continue
 
-                # Birden fazla grup eslestiyse cok yuksek guven
-                if matched_groups >= 2:
-                    confidence = min(0.95, confidence + 0.2)
+            # Güven: eşleşen grup oranı; birden çok grup eşleştiyse ek güven
+            confidence = min(0.95, 0.4 + 0.3 * (matched_groups / len(groups)))
+            if matched_groups >= 2:
+                confidence = min(0.95, confidence + 0.2)
 
-                category = _ALGO_CATEGORIES.get(algo_name, "unknown")
+            entry = (matched, confidence, evidence)
+            if sequence_hit or any(owners[v] == {algo_name} for v in matched):
+                definite[algo_name] = entry
+            else:
+                shared_only[algo_name] = entry
 
-                # v1.4.2: Numeric library ise constant-based confidence dusur
-                if self._is_numeric_library:
-                    confidence *= 0.2
+        # Yalnız ortak sabitlerle eşleşen aday: ortak sahiplerden biri kendine özgü bir
+        # sabitle kesin eşleştiyse sabitleri o açıklar ve aday düşer; yoksa sahiplerin
+        # hepsinin adıyla tek bir ortak etiket verilir ("BLAKE2/SHA-512", "MD5/SHA-1").
+        combined: dict[str, tuple[list[str], float, list[str]]] = {}
+        for algo_name, (matched, confidence, evidence) in shared_only.items():
+            co_owners: set[str] = set().union(*(owners[v] for v in matched))
+            if co_owners & definite.keys():
+                continue
+            members = sorted(co_owners)
+            label = "/".join(members)
+            previous = combined.get(label)
+            if previous is None:
+                combined[label] = (members, confidence, list(evidence))
+            else:
+                merged_evidence = previous[2] + [e for e in evidence if e not in previous[2]]
+                combined[label] = (members, min(previous[1], confidence), merged_evidence)
 
-                matches.append(AlgorithmMatch(
-                    name=algo_name,
-                    category=category,
-                    confidence=round(confidence, 2),
-                    detection_method="constant",
-                    evidence=evidence[:10],  # max 10 evidence
-                    function_name=func_name,
-                    address=address,
-                ))
+        def _make(name: str, category: str, confidence: float, evidence: list[str]) -> AlgorithmMatch:
+            # v1.4.2: Numeric library ise constant-based confidence dusur
+            if self._is_numeric_library:
+                confidence *= 0.2
+            return AlgorithmMatch(
+                name=name,
+                category=category,
+                confidence=round(confidence, 2),
+                detection_method="constant",
+                evidence=evidence[:10],  # max 10 evidence
+                function_name=func_name,
+                address=address,
+            )
 
+        matches: list[AlgorithmMatch] = []
+        for algo_name, (_matched, confidence, evidence) in definite.items():
+            category = _ALGO_CATEGORIES.get(algo_name, "unknown")
+            matches.append(_make(algo_name, category, confidence, evidence))
+        for label, (members, confidence, evidence) in combined.items():
+            categories = {_ALGO_CATEGORIES.get(m, "unknown") for m in members}
+            category = categories.pop() if len(categories) == 1 else "unknown"
+            matches.append(_make(label, category, confidence, evidence))
         return matches
 
     # ------------------------------------------------------------------
