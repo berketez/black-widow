@@ -422,7 +422,7 @@ def _get_available_stages(requested: list[str]) -> list:
               help="Sessiz mod: banner/ara ciktilar bastirilir, sadece final sonuc gosterilir.")
 @click.pass_context
 def main(ctx: click.Context, verbose: bool, quiet: bool) -> None:
-    """Black Widow (Karadul) v3 -- Reverse Engineering Suite"""
+    """Black Widow (Karadul) -- Reverse Engineering Suite"""
     # v1.20.5: multiprocessing varsayilanini 'spawn' yap (force=True). Linux
     # varsayilani 'fork'; PyGhidra JVM (cok-thread'li) ayaktayken fork() child
     # process'e kilitli mutex'leri (JVM/LMDB/logging) kopyalayip futex deadlock'a

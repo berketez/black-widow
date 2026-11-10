@@ -47,7 +47,10 @@ mkdir -p "$DIST"
 VER="$(python3 -c "
 import tomllib
 print(tomllib.load(open('$REPO/pyproject.toml','rb'))['project']['version'])
-" 2>/dev/null || echo "1.20.0")"
+" 2>/dev/null || true)"
+# tomllib yoksa (eski python3) gömülü bir sürüm numarasına düşme: pyproject'ten grep ile oku
+[ -n "$VER" ] || VER="$(grep -m1 '^version *= *"' "$REPO/pyproject.toml" | cut -d'"' -f2)"
+[ -n "$VER" ] || { echo "!! sürüm okunamadı: $REPO/pyproject.toml"; exit 1; }
 DMG="$DIST/BlackWidow-$VER.dmg"
 TMP_DMG="$BUILD_ROOT/BlackWidow-$VER.dmg"      # iCloud dışında üret, sonra kopyala
 

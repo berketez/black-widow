@@ -17,7 +17,7 @@ from karadul import Config, Pipeline, analyze
 
 def test_version_is_string() -> None:
     assert isinstance(karadul.__version__, str)
-    assert karadul.__version__ == "1.20.0-pre"
+    assert karadul.__version__ == "1.21.1"
 
 
 def test_codename() -> None:

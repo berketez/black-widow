@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.21.1] - 2026-11-10 (kanıtlı adlandırma altyapısı + sürüm öncesi düzeltmeler)
+
+1.14.5 ile bu sürüm arasındaki değişiklikler bu dosyaya işlenmedi; ayrıntı için `git log` ve
+`docs/arge/` altındaki ön kayıt ve sonuç belgelerine bakın. Sürüm numarası: yeni özellik ve hata
+düzeltmesi birlikte geldiği için 1.20.0-pre → 1.21.1.
+
+### Eklenenler
+- Güven etiketi: her fonksiyon ve veri adı gerçek güvenini ve etiketini ("kesin" / "doğrulanmadı")
+  taşır; temiz çıktı ve arayüz bunu gösterir (`karadul/core/naming_labels.py`).
+- KS-1 kesin çapalar: ikilinin kendi ad yuvalarından (günlük çağrısındaki `__func__`, assert)
+  okunan adlar (`karadul/reconstruction/tarif/kesin.py`, `baglama.py`). Ön kayıtlı ölçüm:
+  `__func__` kalıbı 249/262 doğru (kesin), assert 188/228 (kesin değil; ad olarak kullanılmaz).
+- Alt kanal susturması: kör etikette zayıf çıkan dokuz dizgi alt kanalı ad vermez
+  (`karadul/reconstruction/tarif/alt_kanal.py`).
+- Ürün eşiği (`min_naming_confidence`) genel adlara uygulanabilir.
+- Bu davranışlar `binary_reconstruction` altındaki üç bayrakla yönetilir (`enable_ks1_anchors`,
+  `enable_subchannel_silencing`, `apply_global_naming_threshold`).
+- Paketleme: derlemeden ön denetim (`build_mac_app.sh --check`), `pycdc`'nin pakete girmesi.
+
+### Düzeltilenler
+- Temiz çıktı her ada güven 1.0 yazıyordu.
+- Sabit tabanlı kripto tespiti, kripto içermeyen programlara yüzlerce sahte `ALGORITHM:` etiketi
+  yazıyordu.
+- `karadul.analyze()` hiçbir aşama koşmuyordu; `--online` ağı kapalı bırakıyordu; `--json` ile
+  `--output` birlikte çalışmıyordu; temel kurulumda `import karadul.reconstruction` düşüyordu;
+  `karadul-hack` `pyfiglet` olmadan çöküyordu; `Config.load` dizgi yolu kabul etmiyordu.
+- Künyeli ön adlar temizlenirken değişiyordu (`Vector_add` → `vector_add`).
+- macOS paketleme hattı bugünkü kaynakla derlenmiyordu (çalışma zamanı arşivinin yolu, bayat
+  `build/lib` dosyalarının pakete girmesi).
+- CI'daki F1 kapısı koda sabit bir sayıyı eşikle karşılaştırıyordu; kaldırıldı, yerine tam test
+  takımı ve temiz kurulum sınaması geldi.
+
 ## [1.14.5] - 2026-05-09/10 (test debt + güvenlik hardening)
 
 `macho.py` (926 LOC) ve `packed_binary.py` (1438 LOC) sıfırdan test edildi.
