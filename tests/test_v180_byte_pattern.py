@@ -75,6 +75,22 @@ def _make_binary_and_json(tmp_path, n_funcs: int, pattern: bytes):
     return bin_path, json_path
 
 
+# Testler otool'un ÇIKTISINI sahteler (``mock.patch("subprocess.run")``); gerçek otool
+# çalışmaz. Matcher ise aracın YOLUNU kurulurken makinede arar (``_find_otool``): otool
+# olmayan makinede (Linux) yol None olur, sahte çıktıya gidilmez ve her eşleştirme
+# "__TEXT segment bilgisi alinamadi" ile 0 eşleşme döner. O zaman "0 eşleşme" bekleyen
+# testler de yanlış nedenle geçer. Yol burada sabitlenir; testler her platformda aynı
+# dalı sınar.
+_SAHTE_OTOOL = "/usr/bin/otool"
+
+
+@pytest.fixture(autouse=True)
+def _otool_yolu_sabit(monkeypatch):
+    monkeypatch.setattr(
+        BytePatternMatcher, "_find_otool", staticmethod(lambda: _SAHTE_OTOOL),
+    )
+
+
 def _run_match(tmp_path, n_funcs, pattern, sig, **kwargs):
     """Ortak test logic: binary olustur, matcher calistir, result dondur."""
     bin_path, json_path = _make_binary_and_json(tmp_path, n_funcs, pattern)

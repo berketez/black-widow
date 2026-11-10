@@ -17,6 +17,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -31,6 +32,29 @@ _spec.loader.exec_module(olc)
 
 ak = olc.alt_kanal()      # sha256 denetimiyle yüklenir
 PAKET_SEMASI = "karadul-etiket-paketi/2"
+
+
+def _onkayit_commit_eksik() -> str:
+    """Ön kayıt commit'i bu ağaçta nesne olarak yoksa atlama nedeni, varsa boş dizgi.
+
+    Ata denetimi (``git merge-base --is-ancestor``) commit nesnesi olmadan yapılamaz: sığ
+    checkout (``git clone --depth 1``, CI'da ``fetch-depth`` verilmemiş checkout) ve kaynak
+    arşivi bu nesneyi taşımaz. Nesne VARSA testler koşar; commit ata değilse düşerler.
+    """
+    if shutil.which("git") is None:
+        return "git yok"
+    try:
+        r = subprocess.run(["git", "cat-file", "-e", olc.ONKAYIT_COMMIT + "^{commit}"],
+                           cwd=_KOK, capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError) as hata:
+        return f"git çalıştırılamadı: {hata}"
+    if r.returncode != 0:
+        return (f"ön kayıt commit'i {olc.ONKAYIT_COMMIT} bu ağaçta yok "
+                "(sığ checkout ya da kaynak arşivi); tam geçmiş gerekir")
+    return ""
+
+
+_ONKAYIT_EKSIK = _onkayit_commit_eksik()
 
 
 # --------------------------------------------------------------------------------------------
@@ -83,7 +107,7 @@ def test_onkayitli_surumler_belgedekiyle_ayni():
     assert olc.sha256_dosya(olc.ALT_KANAL_YOLU) == olc.ALT_KANAL_SHA256
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git yok")
+@pytest.mark.skipif(bool(_ONKAYIT_EKSIK), reason=_ONKAYIT_EKSIK)
 def test_commit_atasi():
     assert olc.commit_atasi_mi(olc.ONKAYIT_COMMIT) is True
     with pytest.raises(olc.OnkosulHatasi):
@@ -219,6 +243,7 @@ _GERCEK_VAR = (olc.G4_VERI / "anahtar_tmux_385_kor.json").exists() and \
 
 
 @pytest.mark.skipif(not _GERCEK_VAR, reason="G4 verisi ya da ön kayıt kayıtları yok")
+@pytest.mark.skipif(bool(_ONKAYIT_EKSIK), reason=_ONKAYIT_EKSIK)   # olc() ön koşulu: ata denetimi
 def test_gercek_veri_eslenme_ve_g4_toplamlari():
     s = olc.olc()
     assert s["esleme"]["toplam"] == {"ana_oge": 482, "eslenen": 482, "oran": 1.0}

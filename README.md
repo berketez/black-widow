@@ -177,17 +177,18 @@ The app's update check reads `appcast.json` from the latest GitHub release by de
 
 ## Tests
 
-What CI runs (`.github/workflows/ci.yml`):
+What CI runs (`.github/workflows/ci.yml`), on Ubuntu (Python 3.11 and 3.12) and macOS (Python 3.12), from a full-history checkout (`fetch-depth: 0`):
 
 ```bash
 pip install -e ".[dev,perf,binary,computation,cpp]" pyelftools pyfiglet
 npm install --prefix scripts --no-audit --no-fund
-python -m pytest -q --ignore=tests/test_pipeline_e2e_real_binary.py
+python -m pytest -q -rfEs --ignore=tests/test_pipeline_e2e_real_binary.py
 ```
 
 - `pyproject.toml` deselects tests marked `integration` and `benchmark` by default; `.github/workflows/benchmark.yml` runs the `benchmark` ones (metric code on committed fixtures, no accuracy threshold).
 - `pyelftools` is needed by the measurement tests and `pyfiglet` by one banner test; no extra declares them.
 - `tests/test_ngram_db_v2_smoke.py` needs `sigs/ngram_name_db/`, which is not in the repository, and skips without it; `tests/test_pipeline_e2e_real_binary.py` runs the full pipeline and needs Ghidra.
+- Tests that need something the machine lacks skip and say why (`-rs` lists the reasons): `otool` and an `nm` that reads Mach-O (not on the Linux runners), `synchrony` (optional; not installed on any runner), and the pre-registration commit `f23f4ea` that two tests in `tests/test_alt_kanal_olc.py` check (absent from a shallow clone or a source archive).
 - On a machine with Ghidra installed, some tests run Ghidra or read local measurement data when it is present; they skip otherwise.
 
 ## Measurement documents

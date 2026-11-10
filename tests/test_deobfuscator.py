@@ -96,9 +96,16 @@ class TestSynchronyWrapper:
     """SynchronyWrapper testleri."""
 
     def test_is_available(self, deob_config: Config) -> None:
-        """synchrony kurulu ve calisabilir olmali."""
+        """synchrony makinede kuruluysa wrapper onu çalışır görmeli.
+
+        synchrony isteğe bağlı bir araçtır (``npm install -g deobfuscator``); hiçbir extra
+        ya da ``scripts/package.json`` onu kurmaz. Kurulu değilse test atlanır; kuruluysa
+        ``is_available()`` aracı ``--version`` ile gerçekten çalıştırıp True dönmelidir.
+        """
+        sync_path = deob_config.tools.synchrony   # öntanımlı: /opt/homebrew/bin/synchrony
+        if not Path(sync_path).exists() and shutil.which(str(sync_path)) is None:
+            pytest.skip(f"synchrony kurulu değil ({sync_path}); isteğe bağlı JS deobfuscation aracı")
         wrapper = SynchronyWrapper(deob_config)
-        # /opt/homebrew/bin/synchrony mevcut
         assert wrapper.is_available() is True
 
     def test_deobfuscate_simple(

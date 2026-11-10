@@ -6,7 +6,8 @@ Test kapsami:
 - >threshold imza -> trie path (FlirtTrieMatcher kullanilir)
 - Trie ve linear path ayni naming map'i uretir (parity check)
 - Workspace JSON ciktisi ``flirt_match_strategy`` alanini icerir
-- Performance: 200 pattern x ~5MB binary trie linear'dan 2x+ hizli
+- Hız: 200 imza aynı 4 baytlık prologla başlarken ve 300 fonksiyon taranırken trie yolu
+  doğrusal yoldan hızlı (ölçülen rejim ve sınırları ``TestPerformance`` belgesinde)
 """
 
 from __future__ import annotations
@@ -66,6 +67,21 @@ class FakeFLIRTSig:
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
+# Gerçek ``BytePatternMatcher`` kullanan testler otool'un ÇIKTISINI sahteler
+# (``mock.patch("subprocess.run")``); gerçek otool çalışmaz. Matcher ise aracın YOLUNU
+# kurulurken makinede arar (``_find_otool``): otool olmayan makinede (Linux) yol None olur,
+# sahte çıktıya gidilmez ve iki yol da "__TEXT segment bilgisi alinamadi" ile döner. Yol
+# burada sabitlenir; testler her platformda aynı dalı sınar.
+_SAHTE_OTOOL = "/usr/bin/otool"
+
+
+@pytest.fixture(autouse=True)
+def _otool_yolu_sabit(monkeypatch):
+    monkeypatch.setattr(
+        BytePatternMatcher, "_find_otool", staticmethod(lambda: _SAHTE_OTOOL),
+    )
+
 
 @pytest.fixture
 def fake_pc(tmp_path: Path):
@@ -136,6 +152,44 @@ _OTOOL_OUTPUT = (
     "   vmaddr 0x0000000100000000\n"
     "  fileoff 0\n"
 )
+
+_PROLOGUE_PATTERN = (
+    b"\x55\x48\x89\xe5\x41\x57\x41\x56\x41\x55\x41\x54\x53\x48\x81\xec"
+    b"\xa8\x00\x00\x00\x48\x89\xfb\x4c\x89\xe7\xe8\x00\x00\x00\x00\x90"
+)
+
+
+def _make_prologue_binary(tmp_path: Path, n_funcs: int) -> tuple[Path, Path]:
+    """``n_funcs`` bilinmeyen fonksiyon; hepsi ``_PROLOGUE_PATTERN`` ile başlar.
+
+    Fonksiyonlar 0x1000'den itibaren 64 bayt aralıklı (vmaddr 0x100000000, fileoff 0).
+    """
+    data = bytearray(0x1000 + n_funcs * 64 + 64)
+    funcs = []
+    for i in range(n_funcs):
+        offset = 0x1000 + i * 64
+        data[offset:offset + len(_PROLOGUE_PATTERN)] = _PROLOGUE_PATTERN
+        addr = 0x100000000 + offset
+        funcs.append({"name": f"FUN_{addr:x}", "address": f"{addr:x}", "size": 64})
+    bin_path = tmp_path / "prologue_bin"
+    bin_path.write_bytes(bytes(data))
+    functions_json = tmp_path / "prologue_functions.json"
+    functions_json.write_text(json.dumps({"functions": funcs}))
+    return bin_path, functions_json
+
+
+def _best_of(fn, repeats: int) -> tuple[float, object]:
+    """``fn``'i bir kez ısıt, ``repeats`` kez ölç; (en kısa süre, son sonuç) döndür.
+
+    En kısa süre alınır: zamanlayıcı gürültüsü (başka süreç, GC) süreyi yalnız uzatır.
+    """
+    result = fn()
+    best = float("inf")
+    for _ in range(repeats):
+        t0 = time.perf_counter()
+        result = fn()
+        best = min(best, time.perf_counter() - t0)
+    return best, result
 
 
 # ---------------------------------------------------------------------------
@@ -455,73 +509,92 @@ class TestLinearTrieParity:
 # ---------------------------------------------------------------------------
 
 class TestPerformance:
-    """Trie path 200 pattern + 5MB binary'de linear'dan en az 2x hizli olmali.
+    """Trie yolu, tasarlandığı rejimde doğrusal yoldan hızlıdır.
 
-    NOT: 5MB binary degil; 200 imza vs sample_binary (8KB) zaten hız farki
-    gosterir cunku linear'da imza basina kontrol var. Gercek 5MB tarama yok
-    -- her FUN_xxx 32 byte slice. Esas optimizasyon: imza tarafinda trie
-    ile prefix dallanmasi.
+    Rejim: imzaların çoğu aynı 4 baytlık prologla başlıyor ve taranan fonksiyon sayısı trie
+    kurulumunu amorti edecek kadar çok.
+
+    Neden bu rejim? "Doğrusal" yol aslında doğrusal değil: imzaları ilk 4 bayta göre
+    kovalar (``_build_sig_index``) ve fonksiyon başına yalnız kendi kovasını gezer. Trie
+    yolu ise her çağrıda trie'yi baştan kurar (200 imza için ≈ 1 ms). Trie ancak kovalar
+    kalabalıkken (çok imza aynı prologla başlarken) ve kurulum maliyeti çok fonksiyona
+    yayılırken kazanır.
+
+    Ölçüm (2026-11-10; Apple Silicon, CPython 3.12.7; 200 imza; en iyi tekrar, ms):
+
+        imzaların ilk 4 baytı | fonksiyon | doğrusal |  trie | trie / doğrusal
+        benzersiz             |         3 |     0,21 |  1,27 | 6,1  (trie YAVAŞ)
+        benzersiz             |       300 |     0,78 |  3,01 | 3,8  (trie YAVAŞ)
+        benzersiz             |      3000 |     5,48 | 15,56 | 2,8  (trie YAVAŞ)
+        ortak                 |         3 |     0,52 |  1,31 | 2,5  (trie YAVAŞ)
+        ortak                 |        30 |     2,30 |  1,46 | 0,64
+        ortak                 |       300 |    19,76 |  2,58 | 0,13 (bu test)
+        ortak                 |      3000 |   195,49 | 14,51 | 0,07
+
+    Bu testin eski hali ilk satırı ölçüyordu (benzersiz önek, 3 fonksiyon) ve adındaki
+    iddiayı ("trie doğrusaldan hızlı") taşıyamadığı için "5 kattan fazla yavaş olmasın"a
+    gevşetilmişti; ölçülen oran zaten 4-6 kat, CI koşucusunda 14 kattı. O rejimde iddia
+    yanlış; test iddianın doğru olduğu rejime taşındı ve iddiayı aynen sınıyor (trie < doğrusal).
     """
 
-    def test_trie_faster_than_linear_200_sigs(self, tmp_path):
-        bin_path, pattern1 = _make_sample_binary(tmp_path)
-        functions_json = _make_functions_json(tmp_path)
+    N_SIGS = 200
+    N_FUNCS = 300
 
-        # 200 imza: 1'i gercek pattern1, geri kalani benzersiz prefix
+    def test_trie_faster_than_linear_200_sigs(self, tmp_path):
+        bin_path, functions_json = _make_prologue_binary(tmp_path, self.N_FUNCS)
+
+        # 200 imza, hepsi aynı 4 baytlık prologla başlar: doğrusal yolun kovası 200 imza
+        # taşır. Yalnız "_real" fonksiyon baytlarıyla eşleşir.
         sigs = [
             FakeFLIRTSig(
                 name="_real",
-                byte_pattern=pattern1[:20],
+                byte_pattern=_PROLOGUE_PATTERN[:20],
                 mask=b"\xff" * 20,
             ),
         ]
-        for i in range(199):
-            # Benzersiz prefix (linear path bunlari sirayla gezecek)
-            prefix = bytes([
-                (i >> 8) & 0xFF, i & 0xFF, 0xCC, 0xDD,
-            ]) + bytes([(i + 1) % 256] * 16)
+        for i in range(self.N_SIGS - 1):
+            body = (
+                _PROLOGUE_PATTERN[:4]
+                + bytes([(i >> 8) & 0xFF, i & 0xFF])
+                + bytes([(i + 1) % 256] * 14)
+            )
             sigs.append(FakeFLIRTSig(
                 name=f"_dummy_{i}",
-                byte_pattern=prefix,
-                mask=b"\xff" * len(prefix),
+                byte_pattern=body,
+                mask=b"\xff" * len(body),
             ))
 
-        m = BytePatternMatcher(min_pattern_length=16, min_confidence=0.50)
+        # Seçicilik eşikleri kapalı: 300 fonksiyon aynı imzayla eşleşir ve hepsi sayılır;
+        # böylece iki yolun gerçekten eşleştirme yaptığı sonuçtan görülür.
+        m = BytePatternMatcher(
+            min_pattern_length=16, min_confidence=0.50,
+            max_selective=self.N_FUNCS, max_suspicious=self.N_FUNCS,
+        )
 
         with mock.patch("subprocess.run") as mock_run:
             mock_run.return_value = mock.Mock(
                 stdout=_OTOOL_OUTPUT, stderr="", returncode=0,
             )
+            linear_time, linear_res = _best_of(
+                lambda: m.match_unknown_functions(bin_path, functions_json, sigs),
+                repeats=5,
+            )
+            trie_time, trie_res = _best_of(
+                lambda: m.match_unknown_functions_trie(bin_path, functions_json, sigs),
+                repeats=5,
+            )
 
-            # Linear path
-            t0 = time.monotonic()
-            for _ in range(3):  # 3x ortalama
-                linear_res = m.match_unknown_functions(
-                    bin_path, functions_json, sigs,
-                )
-            linear_time = (time.monotonic() - t0) / 3.0
+        # İki yol da işi gerçekten yaptı (hata dalı ya da boş tarama ölçülmedi)
+        for res in (linear_res, trie_res):
+            assert res.errors == []
+            assert res.functions_scanned == self.N_FUNCS
+            assert res.total_matched == self.N_FUNCS
+            assert {info["matched_name"] for info in res.matches.values()} == {"_real"}
 
-            # Trie path
-            t0 = time.monotonic()
-            for _ in range(3):
-                trie_res = m.match_unknown_functions_trie(
-                    bin_path, functions_json, sigs,
-                )
-            trie_time = (time.monotonic() - t0) / 3.0
-
-        # Ayni eslesme sayisi
-        assert linear_res.total_matched == trie_res.total_matched
-
-        # Sıkı kuralları gevsetelim: trie en az linear kadar hizli olmali.
-        # CI flake'i icin 1.5x esiği. (Gercek 5MB binary 200+ imza
-        # senaryosunda trie ~3-10x hizlanir, 8KB+200 sample'da 1.5x
-        # garanti edilebilir minimum.)
-        # NOT: Trie kurma maliyeti var; 1 fonksiyon icin trie bazen yavas.
-        # Bu yuzden assertion en azindan ayni siralamada (factor < 5x daha
-        # yavas degil) olmali.
-        assert trie_time <= linear_time * 5.0, (
-            f"Trie cok yavas: linear={linear_time*1000:.1f}ms "
-            f"trie={trie_time*1000:.1f}ms"
+        assert trie_time < linear_time, (
+            f"Trie doğrusaldan hızlı değil: doğrusal={linear_time * 1000:.2f} ms "
+            f"trie={trie_time * 1000:.2f} ms "
+            f"({self.N_SIGS} ortak önekli imza, {self.N_FUNCS} fonksiyon)"
         )
 
     def test_trie_correctness_200_sigs(self, tmp_path):

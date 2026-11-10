@@ -7,7 +7,7 @@ Bu modul ``flirt_parser.py``'a v1.14'te eklenen capability'leri test eder:
 3. ``FlirtPattern`` normalize internal IR
 4. ``FlirtTrieMatcher`` -- prefix byte trie + sliding window scan
    (synthetic binary uzerinde bilinen pattern'la match)
-5. Performance: 100 pattern x 1MB binary < 1 sn
+5. Ölçekleme: tarama süresi veri boyunda doğrusal, kalıp sayısında alt-doğrusal
 
 Mevcut ``test_flirt_parser.py`` ile cakismaz; eski API'ler ayri tutulur.
 """
@@ -368,43 +368,113 @@ class TestFlirtTrieMatcher:
 
 
 # ---------------------------------------------------------------------------
-# 6. Performance smoke testi (100 pattern x 1MB binary < 1 sn)
+# 6. Ölçekleme testleri (veri boyu ve kalıp sayısı)
 # ---------------------------------------------------------------------------
 
 
+def _random_patterns(count: int) -> list[FlirtPattern]:
+    """``count`` rastgele kalıp: 8 bayt, baytların ~%20'si wildcard (sabit tohum)."""
+    import random
+
+    rng = random.Random(1234)
+    patterns: list[FlirtPattern] = []
+    for i in range(count):
+        prefix = bytes(rng.randint(0, 255) for _ in range(8))
+        mask = bytes(0xFF if rng.random() > 0.2 else 0x00 for _ in range(8))
+        patterns.append(_mk_pattern(prefix, f"f_{i}", mask=mask))
+    return patterns
+
+
+def _best_scan_seconds(
+    cases: list[tuple[FlirtTrieMatcher, bytes]], rounds: int = 5,
+) -> list[float]:
+    """Her (matcher, veri) çifti için ``scan_binary``'nin en kısa CPU süresi.
+
+    Saat ``time.process_time``: yalnız bu sürecin işlemci süresi. Tarama tek iş parçacıklı
+    saf hesap; duvar saati ise başka süreçler araya girdikçe uzar. Ölçüm (çekirdek sayısının
+    1,5 katı meşgul süreç varken, 64 -> 256 KiB, 8 ölçüm): duvar saatiyle oran 4,4 - 10,8,
+    CPU süresiyle 3,9 - 4,6.
+
+    En kısa süre alınır (gürültü süreyi yalnız uzatır); turlar çiftleri sırayla dolaşır.
+    """
+    best = [float("inf")] * len(cases)
+    for _ in range(rounds):
+        for i, (matcher, binary) in enumerate(cases):
+            t0 = time.process_time()
+            matcher.scan_binary(binary, verify_crc=False)
+            best[i] = min(best[i], time.process_time() - t0)
+    return best
+
+
 class TestPerformance:
-    """Trie matcher'in 1MB binary uzerinde 100 pattern ile performansi."""
+    """Trie tarayıcının ölçekleme davranışı: makineden bağımsız iki iddia.
 
-    def test_100_patterns_1mb_binary_under_1s(self) -> None:
-        # 100 farkli pattern uret (her biri ~8 byte, %20 wildcard)
-        import os
+    Bu sınıf eskiden tek bir mutlak hedefi sınıyordu ("100 kalıp x 1 MiB < 1,0 sn").
+    Mutlak süre kodu değil makineyi ölçüyor: aynı kod geliştirme makinesinde 0,60 sn,
+    GitHub koşucularında 1,20 - 1,65 sn (koşu 42830613886) sürdü; tarama saf Python
+    döngüsü, koşucu 2,0 - 2,75 kat yavaş. Gürültü değil, kararlı hız farkı.
+
+    Kodun kendi sözü (``FlirtTrieMatcher`` belgesi) karmaşıklık: tarama O(N * d_avg),
+    yani veri boyunda doğrusal ve kalıp sayısından (neredeyse) bağımsız. Bunlar oranla,
+    aynı süreçte, aynı makinede ölçülür; makine hızı sadeleşir.
+
+    Ölçüm (2026-11-10; Apple Silicon, CPython 3.12.7; 10 bağımsız ölçüm; parantezde
+    çekirdek sayısının 1,5 katı meşgul süreç varken en büyük değer):
+        veri 64 KiB -> 256 KiB (4 kat)    : süre 3,9 - 4,1 kat (4,8)  doğrusal 4, karesel 16
+        kalıp 10 -> 100 (10 kat)          : süre 1,4 kat (1,6)        kalıp başına tarama 10
+        ofset başına maliyet              : ~570 ns; 1 MiB 0,60 sn, 4 MiB 2,58 sn (4,3 kat)
+
+    Eşikler iki hipotezin geometrik ortası: doğrusal ile karesel (4 ve 16 -> 8), trie ile
+    kalıp başına tarama (1 ve 10 -> 3,16).
+
+    Yakalananlar (bellek içi mutantla denendi): her ofsette verinin kalanını kopyalayan
+    tarama (oran 9,7) ve trie yerine kalıpları tek tek deneyen tarama (oran 10,5).
+    Yakalanmayan: sabit çarpanlı yavaşlama (her şey 3 kat yavaşlarsa oranlar değişmez).
+    """
+
+    SMALL = 64 * 1024
+    LARGE = 4 * SMALL          # 256 KiB
+
+    @staticmethod
+    def _binary(size: int) -> bytes:
         import random
-        rng = random.Random(1234)
 
-        patterns: list[FlirtPattern] = []
-        for i in range(100):
-            prefix = bytes(rng.randint(0, 255) for _ in range(8))
-            mask = bytes(
-                0xFF if rng.random() > 0.2 else 0x00
-                for _ in range(8)
-            )
-            patterns.append(_mk_pattern(prefix, f"f_{i}", mask=mask))
+        return random.Random(99).randbytes(size)
 
-        matcher = FlirtTrieMatcher(patterns)
+    def test_scan_time_linear_in_binary_size(self) -> None:
+        """100 kalıp: veri 4 katına çıkınca süre ~4 katına çıkar (karesel değil)."""
+        matcher = FlirtTrieMatcher(_random_patterns(100))
+        small, large = self._binary(self.SMALL), self._binary(self.LARGE)
 
-        # 1MB rastgele veri
-        binary = os.urandom(1024 * 1024)
+        t_small, t_large = _best_scan_seconds([(matcher, small), (matcher, large)])
 
-        t0 = time.perf_counter()
-        matches = matcher.scan_binary(binary, verify_crc=False)
-        elapsed = time.perf_counter() - t0
-
-        # Performans hedefi: < 1.0 sn (genis tolerans)
-        assert elapsed < 1.0, f"Trie matcher 1MB/100p {elapsed:.3f}s (>1.0s limit)"
+        ratio = t_large / t_small
+        assert ratio < 8.0, (
+            f"Tarama veri boyunda doğrusal değil: {self.SMALL // 1024} KiB {t_small:.3f} sn, "
+            f"{self.LARGE // 1024} KiB {t_large:.3f} sn, oran {ratio:.1f} "
+            f"(doğrusal 4, karesel 16, eşik 8)"
+        )
         # Sonuc tipi dogru
+        matches = matcher.scan_binary(small, verify_crc=False)
         assert isinstance(matches, list)
         for m in matches:
             assert isinstance(m, FlirtMatch)
+
+    def test_scan_time_sublinear_in_pattern_count(self) -> None:
+        """Kalıp sayısı 10 katına çıkınca süre 10 katına çıkmaz (trie'nin varlık nedeni)."""
+        binary = self._binary(self.SMALL)
+
+        t_10, t_100 = _best_scan_seconds([
+            (FlirtTrieMatcher(_random_patterns(10)), binary),
+            (FlirtTrieMatcher(_random_patterns(100)), binary),
+        ])
+
+        ratio = t_100 / t_10
+        assert ratio < 10 ** 0.5, (
+            f"Tarama süresi kalıp sayısıyla büyüyor: 10 kalıp {t_10:.3f} sn, "
+            f"100 kalıp {t_100:.3f} sn, oran {ratio:.2f} "
+            f"(trie ~1, kalıp başına tarama 10, eşik 3,16)"
+        )
 
 
 # ---------------------------------------------------------------------------

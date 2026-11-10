@@ -34,6 +34,23 @@ from karadul.analyzers.dwarf_extractor import (
 )
 
 
+# Bu dosyadaki testler dwarfdump'ın ÇIKTISINI sahteler (``subprocess.run`` / ``Popen``
+# yamalanır); gerçek dwarfdump hiç çalışmaz. DwarfExtractor ise aracın YOLUNU her çağrıda
+# ``resolve_tool("dwarfdump")`` ile makinede arar: dwarfdump olmayan makinede (Linux) None
+# döner ve sahte çıktıya hiç gidilmez -- çıktı bekleyen testler düşer, "boş sonuç" bekleyenler
+# yanlış nedenle geçer. Yol burada sabitlenir; testler her platformda aynı dalı sınar.
+# "Araç yok" dalını ``TestDwarfdumpMissing`` ayrıca sınar.
+_SAHTE_DWARFDUMP = "/usr/bin/dwarfdump"
+
+
+@pytest.fixture(autouse=True)
+def _dwarfdump_yolu_sabit(monkeypatch):
+    monkeypatch.setattr(
+        "karadul.analyzers.dwarf_extractor.resolve_tool",
+        lambda name, **kwargs: _SAHTE_DWARFDUMP if name == "dwarfdump" else None,
+    )
+
+
 # ======================================================================
 # Sample dwarfdump output fragments
 # ======================================================================
@@ -543,6 +560,39 @@ class TestHasDebugInfo:
             mock_run.return_value = MagicMock(returncode=1, stdout="")
             ext = DwarfExtractor(binary)
             assert ext.has_debug_info() is False
+
+
+class TestDwarfdumpMissing:
+    """dwarfdump makinede yok (``resolve_tool`` None): araç hiç çalıştırılmaz, sonuç boş.
+
+    Linux'ta olağan durum. Dosya düzeyindeki yol sabitlemesi burada geri alınır.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _dwarfdump_yok(self, monkeypatch, _dwarfdump_yolu_sabit):
+        monkeypatch.setattr(
+            "karadul.analyzers.dwarf_extractor.resolve_tool",
+            lambda name, **kwargs: None,
+        )
+
+    def _binary(self, tmp_path: Path) -> Path:
+        binary = tmp_path / "bin"
+        binary.write_bytes(b"\x00" * 64)
+        return binary
+
+    def test_has_debug_info_false_and_tool_not_run(self, tmp_path):
+        ext = DwarfExtractor(self._binary(tmp_path))
+        with patch("karadul.analyzers.dwarf_extractor.subprocess.run") as mock_run:
+            assert ext.has_debug_info() is False
+        mock_run.assert_not_called()
+
+    def test_extract_and_exports_empty_and_tool_not_run(self, tmp_path):
+        ext = DwarfExtractor(self._binary(tmp_path))
+        with patch("karadul.analyzers.dwarf_extractor.subprocess.Popen") as mock_popen:
+            assert ext.extract_functions() == []
+            assert ext.to_ground_truth() == {}
+            assert ext.to_signature_json()["functions"] == {}
+        mock_popen.assert_not_called()
 
 
 # ======================================================================

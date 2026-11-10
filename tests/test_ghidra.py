@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -37,6 +38,37 @@ SAMPLE_MACHO = Path(__file__).parent / "fixtures" / "sample_macho"
 import shutil as _shutil
 _codex_resolved = _shutil.which("codex")
 CODEX_CLI = Path(_codex_resolved).resolve() if _codex_resolved else Path("/nonexistent/codex")
+
+
+def _require_otool() -> None:
+    """otool PATH'te yoksa testi nedeniyle atla.
+
+    otool Apple'ın geliştirici aracıdır; Linux'ta olağan olarak bulunmaz. MachOAnalyzer
+    onu ``config.tools.otool`` ("otool") adıyla PATH'ten çalıştırır.
+    """
+    if shutil.which("otool") is None:
+        pytest.skip(
+            "otool PATH'te yok (Apple geliştirici aracı); "
+            "test onu gerçek bir Mach-O dosyasında çalıştırıyor"
+        )
+
+
+def _require_macho_capable_nm() -> None:
+    """PATH'teki nm sample_macho'yu okuyamıyorsa testi nedeniyle atla.
+
+    nm her yerde var ama GNU binutils nm (Linux) Mach-O'yu tanımaz ("file format not
+    recognized", çıkış kodu 1). Yoklama düz ``nm <dosya>``; test ise analyzer'ın kendi
+    çağrısını (``nm -g``) ve çıktı ayrıştırmasını sınar.
+    """
+    nm = shutil.which("nm")
+    if nm is None:
+        pytest.skip("nm PATH'te yok")
+    probe = subprocess.run(
+        [nm, str(SAMPLE_MACHO)], capture_output=True, text=True, timeout=60,
+    )
+    if probe.returncode != 0:
+        reason = (probe.stderr.strip().splitlines() or ["neden yok"])[-1]
+        pytest.skip(f"PATH'teki nm ({nm}) Mach-O okuyamıyor: {reason}")
 
 
 @pytest.fixture
@@ -304,6 +336,7 @@ class TestMachOAnalyzer:
         """otool -L ciktisi dynamic library'leri listeler."""
         if not SAMPLE_MACHO.exists():
             pytest.skip("sample_macho fixture bulunamadi")
+        _require_otool()
         result = analyzer._run_otool_libs(SAMPLE_MACHO)
         assert result is not None
         assert "libraries" in result
@@ -316,6 +349,7 @@ class TestMachOAnalyzer:
         """otool -l ciktisi bos olmamali."""
         if not SAMPLE_MACHO.exists():
             pytest.skip("sample_macho fixture bulunamadi")
+        _require_otool()
         result = analyzer._run_otool_load_commands(SAMPLE_MACHO)
         assert result
         assert "LC_SEGMENT_64" in result
@@ -334,6 +368,7 @@ class TestMachOAnalyzer:
         """nm global symbol'leri bulmali."""
         if not SAMPLE_MACHO.exists():
             pytest.skip("sample_macho fixture bulunamadi")
+        _require_macho_capable_nm()
         result = analyzer._run_nm(SAMPLE_MACHO)
         assert result is not None
         assert result["total"] > 0

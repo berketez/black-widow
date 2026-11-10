@@ -30,6 +30,22 @@ from karadul.analyzers.byte_pattern_matcher import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+# Bu dosyadaki testler otool'un ÇIKTISINI sahteler (``mock.patch("subprocess.run")``);
+# gerçek otool hiç çalışmaz. Ama matcher aracın YOLUNU kurulurken makinede arıyor
+# (``_find_otool``): otool olmayan makinede (Linux) yol None olur, sahte çıktıya hiç
+# gidilmez ve eşleştirme "__TEXT segment bilgisi alinamadi" ile döner. Yol burada
+# sabitlenir; böylece testler her platformda aynı dalı sınar. "otool yok" dalını sınayan
+# testler ``m._otool_path = None`` ile bunu geri alır.
+_SAHTE_OTOOL = "/usr/bin/otool"
+
+
+@pytest.fixture(autouse=True)
+def _otool_yolu_sabit(monkeypatch):
+    monkeypatch.setattr(
+        BytePatternMatcher, "_find_otool", staticmethod(lambda: _SAHTE_OTOOL),
+    )
+
+
 @pytest.fixture
 def matcher():
     """Varsayilan BytePatternMatcher instance'i."""

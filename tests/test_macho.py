@@ -1347,6 +1347,15 @@ class TestUniversalBinaryLipo:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """analyze_static yan etkilerini sustur (sadece lipo dali test edilir)."""
+        # lipo'nun ÇALIŞMASI sahte (``subprocess.run`` yamalanır) ama analyzer aracın
+        # YOLUNU ``resolve_tool("lipo")`` ile makinede arar. lipo olmayan makinede (Linux)
+        # None döner ve sahte çalıştırmaya hiç gidilmez: arm64 -> x86_64 denemesi 0 çağrıyla
+        # düşer, timeout testi ise "lipo bulunamadi" hatasıyla yanlış nedenle geçer. Yol
+        # sabitlenir; testler her platformda lipo'yu çalıştırma dalını sınar.
+        monkeypatch.setattr(
+            "karadul.analyzers.macho.resolve_tool",
+            lambda name, **kwargs: f"/usr/bin/{name}", raising=True,
+        )
         monkeypatch.setattr(
             MachOAnalyzer, "_run_otool_libs",
             lambda self, p: None, raising=True,

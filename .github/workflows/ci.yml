@@ -30,8 +30,13 @@ jobs:
             python-version: "3.12"
 
     steps:
+      # Full history: tests/test_alt_kanal_olc.py checks that the pre-registration commit
+      # (f23f4ea) is an ancestor of HEAD. A shallow checkout does not contain that commit;
+      # the two tests would then skip instead of running.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -62,6 +67,9 @@ jobs:
       #                                            Ghidra, and the runner has none.
       # tests/test_ngram_db_v2_smoke.py needs sigs/ngram_name_db/ (git-ignored) and skips
       # itself when the directory is missing.
+      # Tests that need a tool the runner lacks skip, with the reason in the -rs summary:
+      # otool and a Mach-O-capable nm (missing on the Linux runners), synchrony (not
+      # installed on any runner).
       - name: Run test suite
         run: |
           python -m pytest -q -rfEs \
