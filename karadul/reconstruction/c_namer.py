@@ -47,7 +47,14 @@ from pathlib import Path
 from typing import Any
 
 from karadul.config import CPU_PERF_CORES, Config
+from karadul.core.naming_labels import (
+    EXACT_NAME_PATTERN,
+    LABEL_UNVERIFIED,
+    STRATEGY_KS1,
+)
 from karadul.reconstruction.aho_replacer import AhoFinder, AhoReplacer
+from karadul.reconstruction.tarif import alt_kanal as _alt_kanal
+from karadul.reconstruction.tarif import baglama as _baglama
 from karadul.reconstruction.c_namer_patterns import (
     COMBO_PATTERNS as _EXTENDED_COMBO_PATTERNS,
     SINGLE_API_HINTS as _EXTENDED_SINGLE_API_HINTS,
@@ -102,6 +109,11 @@ class CNamingResult:
     # kalip FUN_xxx olarak birakilir (korroborasyon yoksa). old_name -> deger.
     confidence_map: dict[str, float] = field(default_factory=dict)
     strategy_map: dict[str, str] = field(default_factory=dict)
+    # Plan v2.2 N1 adım 3: genel adların güven etiketi (old_name -> "kesin" |
+    # "doğrulanmadı"; elle verilen ad burada yer almaz) ve susturma süzgecinin
+    # attığı aday sayısı (alt kanal -> adet; süzgeç kapalıysa boş).
+    label_map: dict[str, str] = field(default_factory=dict)
+    silenced_counts: dict[str, int] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -215,10 +227,21 @@ class _ProvenanceRecorder:
         "below_min_confidence",      # en iyi aday bile min_confidence altinda
         "global_structural_filter",  # global ad + call_graph/callee_based/api_call
         "pre_named",                 # ad zaten pre_names'ten verildi
+        # Plan v2.2 N1 adım 3 (ikisi de yalnız genel anahtarda; kurucunun
+        # öntanımlısıyla hiç oluşmazlar):
+        "all_candidates_silenced",       # bütün adayları susan alt kanaldan
+        "below_global_min_confidence",   # en iyi aday ürün eşiğinin altında
     )
 
     def __init__(self, min_confidence: float) -> None:
         self.min_confidence = min_confidence
+        # Susturma süzgeci ve genel eşik (kapalıyken de kayda geçer: koşunun kol kimliği)
+        self.silencing: dict[str, Any] = {
+            "enabled": False, "definition_version": _alt_kanal.DEFINITION_VERSION,
+            "silenced": [], "candidates_dropped": {},
+        }
+        self.global_min_confidence: float | None = None
+        self.pre_names_dropped_duplicate = 0
         self.global_records: dict[str, dict[str, Any]] = {}
         self.per_function: dict[str, dict[str, dict[str, Any]]] = {}
         # neden -> kapsam ("global" | "local") -> kazanan adayin stratejisi -> anahtar adedi
@@ -258,8 +281,13 @@ class _ProvenanceRecorder:
     def add_pre_name(
         self, old_name: str, raw_name: Any, new_name: str,
         strategy: str, confidence: float,
+        label: str | None = None, meta: dict[str, Any] | None = None,
     ) -> None:
-        """pre_names'ten (BinaryNameExtractor / kurtarma tohumu) gelen ad."""
+        """pre_names'ten (BinaryNameExtractor / kurtarma tohumu) gelen ad.
+
+        ``label``: güven etiketi (elle verilen adda ``None``; alan yazılmaz).
+        ``meta``: geçerli künye (tür ve KS-1 kanıtı); yoksa ek alan yazılmaz.
+        """
         try:
             rec: dict[str, Any] = {
                 "key": old_name,
@@ -274,6 +302,13 @@ class _ProvenanceRecorder:
             raw = str(raw_name)
             if raw != new_name:
                 rec["proposed_name"] = raw
+            if label is not None:
+                rec["label"] = label
+            if meta:
+                if meta.get("kind"):
+                    rec["pre_name_kind"] = str(meta["kind"])
+                if isinstance(meta.get(STRATEGY_KS1), dict):
+                    rec[STRATEGY_KS1] = meta[STRATEGY_KS1]
             self.global_records[old_name] = rec
             self.pre_names_applied += 1
         except Exception:
@@ -282,8 +317,13 @@ class _ProvenanceRecorder:
     def add_rename(
         self, key: str, func_name: str, old_name: str, new_name: str,
         candidates: list[Any],
+        label: str | None = None, sub_channel: str | None = None,
     ) -> None:
-        """Aday listesinden secilen ad. candidates guvene gore sirali olmali."""
+        """Aday listesinden secilen ad. candidates guvene gore sirali olmali.
+
+        ``label`` ve ``sub_channel`` yalnız genel adlarda verilir (yerel adlar
+        etiket taşımaz).
+        """
         try:
             best = candidates[0]
             rec = self._candidate_entry(best)
@@ -302,6 +342,10 @@ class _ProvenanceRecorder:
             if func_name:
                 self.per_function.setdefault(func_name, {})[old_name] = rec
             else:
+                if label is not None:
+                    rec["label"] = label
+                if sub_channel is not None:
+                    rec["sub_channel"] = sub_channel
                 self.global_records[old_name] = rec
         except Exception:
             self._fail()
@@ -350,17 +394,25 @@ class _ProvenanceRecorder:
         renamed_global = sum(
             1 for r in self.global_records.values() if r.get("source") == "candidate"
         )
+        labels_global: dict[str, int] = {}
+        for r in self.global_records.values():
+            if r.get("label"):
+                labels_global[r["label"]] = labels_global.get(r["label"], 0) + 1
         return {
             "schema": NAMING_PROVENANCE_SCHEMA,
             "schema_version": NAMING_PROVENANCE_SCHEMA_VERSION,
             "min_confidence": float(self.min_confidence),
+            "global_min_confidence": self.global_min_confidence,
             "max_runners_up": NAMING_PROVENANCE_MAX_RUNNERS_UP,
+            "silencing": self.silencing,
             "summary": {
                 "candidate_keys": self.candidate_keys,
                 "renamed_global": renamed_global,
                 "renamed_local": sum(len(m) for m in self.per_function.values()),
                 "pre_names_given": self.pre_names_given,
                 "pre_names_applied": self.pre_names_applied,
+                "pre_names_dropped_duplicate": self.pre_names_dropped_duplicate,
+                "labels_global": dict(sorted(labels_global.items())),
             },
             "global": self.global_records,
             "per_function": self.per_function,
@@ -1644,6 +1696,13 @@ class CVariableNamer:
         record_provenance: Isim kokeni kaydini (naming_provenance.json)
             naming_map.json'un yanina yaz. Ad secimini etkilemez; kapatmak
             yalniz bu dosyayi uretmemek demektir. Varsayilan acik.
+        silenced_subchannels: Genel adlarda adayı atılacak ``string_context``
+            alt kanalları (``tarif.alt_kanal`` adları). Öntanımlı boş: süzgeç
+            kapalı, davranış değişmez. Kümeyi hat verir; kullanıcı ayarı değil.
+        global_min_confidence: Genel adlara (FUN_, DAT_ ...) uygulanan ürün
+            eşiği; en iyi adayı bunun altında kalan anahtar ad almaz. Öntanımlı
+            ``None``: uygulanmaz. Yerel adlar (parametre, yerel değişken)
+            etkilenmez.
     """
 
     # v1.5.5: Global prefix'ler -- bu prefix'li isimler TUM dosyalarda ayni
@@ -1656,10 +1715,18 @@ class CVariableNamer:
         config: Config,
         min_confidence: float = 0.15,
         record_provenance: bool = True,
+        *,
+        silenced_subchannels: frozenset[str] | None = None,
+        global_min_confidence: float | None = None,
     ) -> None:
         self._config = config
         self._min_confidence = min_confidence
         self._record_provenance = record_provenance
+        self._silenced_subchannels: frozenset[str] = frozenset(silenced_subchannels or ())
+        unknown = self._silenced_subchannels - set(_alt_kanal.SUBCHANNEL_NAMES)
+        if unknown:
+            raise ValueError(f"bilinmeyen alt kanal: {sorted(unknown)}")
+        self._global_min_confidence = global_min_confidence
 
         # Dahili state -- analyze_and_rename sirasinda doldurulan
         self._functions: dict[str, _FunctionInfo] = {}     # address -> info
@@ -1680,6 +1747,49 @@ class CVariableNamer:
         # Thread-safe erisim icin lock (_candidates dict'e concurrent yazim)
         self._candidates_lock = threading.Lock()
 
+    @staticmethod
+    def _string_sub_channel(cand: _NamingCandidate) -> str | None:
+        """``string_context`` adayının alt kanalı (ürün sınıflayıcısı); öbür stratejilerde None.
+
+        Sınıflanan dört alan köken kaydına yazılanlarla aynıdır; ad, çakışma ekinden
+        önceki addır (N0b'nin sınıfladığı alanlar).
+        """
+        if cand.strategy != _alt_kanal.STRATEGY:
+            return None
+        return _alt_kanal.classify(
+            evidence=cand.evidence or "", name=cand.new_name or "",
+            code_path=cand.code_path or "", evidence_origin=cand.evidence_origin or "",
+        )
+
+    def _silence_candidates(
+        self, silenced: frozenset[str], prov: _ProvenanceRecorder | None,
+    ) -> dict[str, int]:
+        """Genel anahtarlarda, alt kanalı ``silenced`` içinde olan string_context adaylarını at.
+
+        Yerel anahtarlar (``fonksiyon::ad``) ve öbür stratejilerin adayları dokunulmadan kalır.
+        Bütün adayları atılan anahtar ``all_candidates_silenced`` diye sayılır. Dönen sözlük:
+        alt kanal → atılan aday sayısı.
+        """
+        dropped: dict[str, int] = {}
+        for key in sorted(self._candidates):
+            if "::" in key:
+                continue
+            cands = self._candidates[key]
+            if not cands:
+                continue
+            kept: list[_NamingCandidate] = []
+            for cand in cands:
+                sub = self._string_sub_channel(cand)
+                if sub is not None and sub in silenced:
+                    dropped[sub] = dropped.get(sub, 0) + 1
+                else:
+                    kept.append(cand)
+            if not kept and prov is not None:
+                ordered = sorted(cands, key=lambda c: c.confidence, reverse=True)
+                prov.count_eliminated("all_candidates_silenced", key, ordered)
+            self._candidates[key] = kept
+        return dropped
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -1693,8 +1803,13 @@ class CVariableNamer:
         output_dir: Path,
         pre_names: dict[str, str] | None = None,
         xrefs_json: Path | None = None,
+        pre_name_meta: dict[str, dict[str, Any]] | None = None,
     ) -> CNamingResult:
         """Tam pipeline: JSON'lari yukle, stratejileri calistir, C dosyalarini yeniden yaz.
+
+        ``pre_name_meta``: ön adların künyesi (anahtar → ``{kind, name, exact,
+        label, ks1}``). Künyedeki ``name`` ön adla aynı değilse künye yok
+        sayılır. Verilmezse ön adlar bugünkü gibi işlenir.
 
         Args:
             decompiled_dir: Ghidra'dan gelen decompiled .c dosyalari dizini.
@@ -1911,28 +2026,71 @@ class CVariableNamer:
             prov.candidate_keys = sum(1 for c in self._candidates.values() if c)
             prov.pre_names_given = len(pre_names) if pre_names else 0
 
-        # Pre-names: BinaryNameExtractor'dan gelen yuksek guvenirlikli isimler
+        # Plan v2.2 N1 adım 3: genel adların güven etiketi ve susturma sayaçları
+        label_map: dict[str, str] = {}
+        silenced_counts: dict[str, int] = {}
+        silenced_set = getattr(self, "_silenced_subchannels", frozenset())
+        global_min = getattr(self, "_global_min_confidence", None)
+
+        # Susturma süzgeci (N0b kararı): genel anahtarlarda, alt kanalı susan
+        # string_context adayları listeden çıkar. Liste sırası korunur; kalan
+        # adayların seçimi değişmez. Strateji yalnız en iyi dizgiyi aday yaptığı
+        # için (bkz. _strategy_string_context) susan dizginin yerine bir sonraki
+        # dizgiye GEÇİLMEZ: geçilseydi ölçülen nüfus değişirdi.
+        if silenced_set:
+            silenced_counts = self._silence_candidates(silenced_set, prov)
+        if prov is not None:
+            prov.silencing = {
+                "enabled": bool(silenced_set),
+                "definition_version": _alt_kanal.DEFINITION_VERSION,
+                "silenced": sorted(silenced_set),
+                "candidates_dropped": dict(sorted(silenced_counts.items())),
+            }
+            prov.global_min_confidence = global_min
+
+        # Pre-names: BinaryNameExtractor'dan gelen yuksek guvenirlikli isimler.
+        # Künyesi olan ön adlar öncelik sırasıyla (elle > main > KS-1) öne alınır;
+        # kalanlar verildikleri sırayla işlenir. Künye yoksa sıra ve davranış
+        # eskisiyle aynıdır.
         if pre_names:
-            for old_name, new_name in pre_names.items():
+            for old_name, new_name in _baglama.ordered_pre_names(pre_names, pre_name_meta):
                 if not old_name or len(old_name) < 2:
                     continue
-                # CamelCase'i koru (Swift/ObjC isimleri icin)
-                has_camel = any(c.isupper() for c in new_name[1:]) if len(new_name) > 1 else False
-                sanitized = _sanitize_c_name(new_name, preserve_case=has_camel) if hasattr(new_name, '__len__') else str(new_name)
+                # Künye yalnız anlattığı ad hâlâ sözlükteki adsa geçerlidir
+                meta = _baglama.meta_for(pre_name_meta, old_name, new_name)
+                kind = meta["kind"] if meta else None
+                if (_baglama.is_exact(meta) and isinstance(new_name, str)
+                        and re.fullmatch(EXACT_NAME_PATTERN, new_name)):
+                    # Tam ad iddiası (KS-1, elle): temizleme adı değiştirmesin
+                    # (Vector_add -> vector_add, _foo -> foo)
+                    sanitized = new_name
+                else:
+                    # CamelCase'i koru (Swift/ObjC isimleri icin)
+                    has_camel = any(c.isupper() for c in new_name[1:]) if len(new_name) > 1 else False
+                    sanitized = _sanitize_c_name(new_name, preserve_case=has_camel) if hasattr(new_name, '__len__') else str(new_name)
                 if sanitized and sanitized != "unnamed" and sanitized not in used_new_names:
+                    strategy = STRATEGY_KS1 if kind == _baglama.KIND_KS1 else "binary_extract"
+                    # KS-1'de künyedeki etiket; elle adda etiket yok; kalan her ön ad "doğrulanmadı"
+                    label = _baglama.entry_label(meta)
                     naming_map[old_name] = sanitized
                     used_new_names.add(sanitized)
-                    by_strategy["binary_extract"] = by_strategy.get("binary_extract", 0) + 1
+                    by_strategy[strategy] = by_strategy.get(strategy, 0) + 1
                     # pre_names = FIX-1 main / gnulib fingerprint / boilerplate /
                     # binary_extractor -> yuksek guven (deterministik kurtarma).
                     confidence_map[old_name] = 0.95
-                    strategy_map[old_name] = "binary_extract"
+                    strategy_map[old_name] = strategy
+                    if label is not None:
+                        label_map[old_name] = label
                     high_conf += 1
                     if prov is not None:
                         prov.add_pre_name(
                             old_name, new_name, sanitized,
                             strategy_map[old_name], confidence_map[old_name],
+                            label=label, meta=meta,
                         )
+                elif sanitized and sanitized != "unnamed" and prov is not None:
+                    # aynı ad daha öncelikli bir ön adda kullanıldı: bu anahtar ad almaz
+                    prov.pre_names_dropped_duplicate += 1
             logger.info("Pre-names: %d isim binary extractor'dan eklendi", len(pre_names))
 
         # v1.5.5: Scope-aware naming map -- fonksiyon-lokal degiskenleri
@@ -1985,6 +2143,14 @@ class CVariableNamer:
                     prov.count_eliminated("pre_named", key, candidates)
                 continue
 
+            # Ürün eşiği (plan v2.2 N1 adım 3): genel adda en iyi aday eşiğin
+            # altındaysa ad verilmez (ör. DAT_ -> global_<4 hane>, güven 0,30).
+            # Yerel adlar etkilenmez. Öntanımlı None: uygulanmaz.
+            if not func_name and global_min is not None and best.confidence < global_min:
+                if prov is not None:
+                    prov.count_eliminated("below_global_min_confidence", key, candidates)
+                continue
+
             # Cakisma kontrolu: ayni yeni isim birden fazla eski isme verilmesin
             new_name = best.new_name
             if new_name in used_new_names:
@@ -2010,15 +2176,23 @@ class CVariableNamer:
             else:
                 low_conf += 1
 
+            best_label: str | None = None
+            best_sub: str | None = None
             if func_name:
                 # Fonksiyon-bazli lokal rename
                 per_func_maps.setdefault(func_name, {})[old_name] = new_name
             else:
                 # Global rename (DAT_, FUN_ vb.)
                 global_map[old_name] = new_name
+                # Sezgisel adayın etiketi: ölçülmüş "kesin" kanal yalnız KS-1 ön
+                # adıdır; aday listesinden gelen her genel ad "doğrulanmadı"dır.
+                best_sub = self._string_sub_channel(best)
+                best_label = LABEL_UNVERIFIED
+                label_map[old_name] = best_label
 
             if prov is not None:
-                prov.add_rename(key, func_name, old_name, new_name, candidates)
+                prov.add_rename(key, func_name, old_name, new_name, candidates,
+                                label=best_label, sub_channel=best_sub)
 
         if prov is not None:
             prov.attach_pre_name_alternatives(self._candidates)
@@ -2150,6 +2324,8 @@ class CVariableNamer:
             errors=errors,
             confidence_map=confidence_map,
             strategy_map=strategy_map,
+            label_map=label_map,
+            silenced_counts=dict(sorted(silenced_counts.items())),
         )
 
     # ------------------------------------------------------------------

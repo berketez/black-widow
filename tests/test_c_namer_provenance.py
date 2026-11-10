@@ -265,6 +265,8 @@ def test_provenance_file_schema(ws, tmp_path, serial_pool):
     assert set(prov) == {
         "schema", "schema_version", "min_confidence", "max_runners_up", "summary",
         "global", "per_function", "eliminated_keys", "below_min_confidence_candidates",
+        # plan v2.2 N1 adım 3: yalnız alan eklendi, şema sürümü 1 kaldı
+        "silencing", "global_min_confidence",
     }
     assert prov["schema"] == NAMING_PROVENANCE_SCHEMA == "karadul.naming_provenance"
     assert prov["schema_version"] == NAMING_PROVENANCE_SCHEMA_VERSION == 1
@@ -273,6 +275,7 @@ def test_provenance_file_schema(ws, tmp_path, serial_pool):
     assert set(prov["summary"]) == {
         "candidate_keys", "renamed_global", "renamed_local",
         "pre_names_given", "pre_names_applied",
+        "pre_names_dropped_duplicate", "labels_global",
     }
     assert set(prov["eliminated_keys"]) == set(_ProvenanceRecorder.ELIMINATION_REASONS)
 
@@ -280,9 +283,11 @@ def test_provenance_file_schema(ws, tmp_path, serial_pool):
                 "n_candidates", "runners_up"}
     allowed = required | {"proposed_name", "evidence", "code_path", "rule",
                           "evidence_origin"}
+    # plan v2.2 N1 adım 3: yalnız GENEL kayıtlara eklenen alanlar (yerel adlar etiket taşımaz)
+    allowed_global = allowed | {"label", "sub_channel", "pre_name_kind", "ks1"}
     n_cand_global = n_local = 0
     for old, func, rec in _all_records(prov):
-        assert required <= set(rec) <= allowed, rec
+        assert required <= set(rec) <= (allowed if func else allowed_global), rec
         assert rec["key"] == (f"{func}::{old}" if func else old)
         assert rec["source"] in ("candidate", "pre_names")
         assert isinstance(rec["new_name"], str) and rec["new_name"]

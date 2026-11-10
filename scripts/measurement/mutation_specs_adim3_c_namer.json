@@ -1,0 +1,173 @@
+{
+ "_comment": "Plan v2.2 N1 adım 3, 5. commit: c_namer susturma süzgeci, künyeli ön adlar, ürün eşiği, etiket. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_adim3_c_namer.json",
+ "mutants": [
+  {
+   "id": "cn_suzgec_yerel_anahtara_da",
+   "desc": "süzgeç yerel (fonksiyon::ad) anahtarlara da uygulanır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_suzgec_yalniz_genel_anahtar_ve_yalniz_dizgi_adayi",
+   "find": "        for key in sorted(self._candidates):\n            if \"::\" in key:\n                continue\n            cands = self._candidates[key]\n",
+   "replace": "        for key in sorted(self._candidates):\n            cands = self._candidates[key]\n"
+  },
+  {
+   "id": "cn_suzgec_her_stratejiye",
+   "desc": "alt kanal sınıflaması dizgi dışı stratejilerin adaylarına da uygulanır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_suzgec_yalniz_genel_anahtar_ve_yalniz_dizgi_adayi",
+   "find": "        if cand.strategy != _alt_kanal.STRATEGY:\n            return None\n",
+   "replace": "        if not cand.strategy:\n            return None\n"
+  },
+  {
+   "id": "cn_suzgec_tersine",
+   "desc": "süzgeç susan kanalı tutar, kalan kanalı atar",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_susan_alt_kanalin_adaylari_atilir",
+   "find": "                if sub is not None and sub in silenced:\n",
+   "replace": "                if sub is not None and sub not in silenced:\n"
+  },
+  {
+   "id": "cn_suzgec_sayac",
+   "desc": "atılan aday sayısı yanlış sayılır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_susan_alt_kanalin_adaylari_atilir",
+   "find": "                    dropped[sub] = dropped.get(sub, 0) + 1\n",
+   "replace": "                    dropped[sub] = dropped.get(sub, 0) + 10\n"
+  },
+  {
+   "id": "cn_hepsi_sustu_sayilmaz",
+   "desc": "bütün adayları susan anahtar eleme sayımına girmez",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_susan_dizginin_yerine_sonraki_dizgiye_gecilmez",
+   "find": "            if not kept and prov is not None:\n",
+   "replace": "            if not cands and prov is not None:\n"
+  },
+  {
+   "id": "cn_suzgec_cagrilmaz",
+   "desc": "susan küme verilse de süzgeç çalışmaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_susan_alt_kanalin_adaylari_atilir",
+   "find": "        if silenced_set:\n            silenced_counts = self._silence_candidates(silenced_set, prov)\n",
+   "replace": "        if silenced_set and not silenced_set:\n            silenced_counts = self._silence_candidates(silenced_set, prov)\n"
+  },
+  {
+   "id": "cn_bilinmeyen_kanal_gecer",
+   "desc": "kurucu bilinmeyen alt kanal adını sessizce kabul eder",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_bilinmeyen_alt_kanal_reddedilir",
+   "find": "        if unknown:\n            raise ValueError(f\"bilinmeyen alt kanal",
+   "replace": "        if not self:\n            raise ValueError(f\"bilinmeyen alt kanal"
+  },
+  {
+   "id": "cn_esik_yerel_adlara_da",
+   "desc": "ürün eşiği yerel adlara da uygulanır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_urun_esigi_yalniz_genel_adlara",
+   "find": "            if not func_name and global_min is not None and best.confidence < global_min:\n",
+   "replace": "            if global_min is not None and best.confidence < global_min:\n"
+  },
+  {
+   "id": "cn_esik_esitlikte_duser",
+   "desc": "güveni eşiğe eşit ad düşer",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_urun_esigi_yalniz_genel_adlara",
+   "find": "and best.confidence < global_min:\n",
+   "replace": "and best.confidence <= global_min:\n"
+  },
+  {
+   "id": "cn_esik_uygulanmaz",
+   "desc": "ürün eşiği verilse de uygulanmaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_urun_esigi_yalniz_genel_adlara",
+   "find": "        global_min = getattr(self, \"_global_min_confidence\", None)\n",
+   "replace": "        global_min = None\n"
+  },
+  {
+   "id": "cn_tam_ad_temizlenir",
+   "desc": "künyesi tam ad diyen ön ad yine temizlenir (Vector_add -> vector_add)",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_ks1_on_adi_tam_yazilir_ve_kesin_etiketi_tasir",
+   "find": "                if (_baglama.is_exact(meta) and isinstance(new_name, str)\n",
+   "replace": "                if (False and isinstance(new_name, str)\n"
+  },
+  {
+   "id": "cn_tam_ad_bicim_denetimsiz",
+   "desc": "geçerli tanımlayıcı olmayan tam ad olduğu gibi yazılır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_tam_ad_gecerli_tanimlayici_degilse_temizlenir",
+   "find": "                        and re.fullmatch(EXACT_NAME_PATTERN, new_name)):\n",
+   "replace": "                        and new_name):\n"
+  },
+  {
+   "id": "cn_on_ad_etiketi_hep_dogrulanmadi",
+   "desc": "KS-1 ön adı 'kesin' etiketini taşımaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_ks1_on_adi_tam_yazilir_ve_kesin_etiketi_tasir",
+   "find": "                    label = _baglama.entry_label(meta)\n",
+   "replace": "                    label = LABEL_UNVERIFIED\n"
+  },
+  {
+   "id": "cn_kunye_ad_denetimsiz",
+   "desc": "künye, anlattığı ad ezilmiş olsa da geçerli sayılır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_kunye_baska_adi_anlatiyorsa_yok_sayilir",
+   "find": "                meta = _baglama.meta_for(pre_name_meta, old_name, new_name)\n",
+   "replace": "                meta = (pre_name_meta or {}).get(old_name)\n"
+  },
+  {
+   "id": "cn_on_ad_sirasi_sozluk",
+   "desc": "ön adlar öncelik sırasıyla değil sözlük sırasıyla işlenir",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_on_ad_onceligi_ve_ayni_adin_dusmesi",
+   "find": "            for old_name, new_name in _baglama.ordered_pre_names(pre_names, pre_name_meta):\n",
+   "replace": "            for old_name, new_name in pre_names.items():\n"
+  },
+  {
+   "id": "cn_ks1_stratejisi_yazilmaz",
+   "desc": "KS-1 ön adının stratejisi binary_extract yazılır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_ks1_on_adi_tam_yazilir_ve_kesin_etiketi_tasir",
+   "find": "                    strategy = STRATEGY_KS1 if kind == _baglama.KIND_KS1 else \"binary_extract\"\n",
+   "replace": "                    strategy = \"binary_extract\"\n"
+  },
+  {
+   "id": "cn_dusen_on_ad_sayilmaz",
+   "desc": "aynı ad yüzünden düşen ön ad sayılmaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_on_ad_onceligi_ve_ayni_adin_dusmesi",
+   "find": "                elif sanitized and sanitized != \"unnamed\" and prov is not None:\n",
+   "replace": "                elif not sanitized and prov is not None:\n"
+  },
+  {
+   "id": "cn_aday_etiketi_kesin",
+   "desc": "aday listesinden gelen genel ad 'kesin' etiketi alır",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_ontanimli_kurucuyla_cikti_bayt_bayt_ayni",
+   "find": "                best_label = LABEL_UNVERIFIED\n",
+   "replace": "                best_label = \"kesin\"\n"
+  },
+  {
+   "id": "cn_alt_kanal_kayda_yazilmaz",
+   "desc": "kazanan dizgi adayının alt kanalı köken kaydına yazılmaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_ontanimli_kurucuyla_cikti_bayt_bayt_ayni",
+   "find": "                best_sub = self._string_sub_channel(best)\n",
+   "replace": "                best_sub = None\n"
+  },
+  {
+   "id": "cn_etiket_haritasi_on_adsiz",
+   "desc": "ön adların etiketi sonuç haritasına yazılmaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_ks1_on_adi_tam_yazilir_ve_kesin_etiketi_tasir",
+   "find": "                    if label is not None:\n                        label_map[old_name] = label\n",
+   "replace": "                    if label is None:\n                        label_map[old_name] = label\n"
+  },
+  {
+   "id": "cn_kunye_kayda_yazilmaz",
+   "desc": "ön adın künyesi (tür, KS-1 kanıtı) köken kaydına geçmez",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_c_namer_susturma.py::test_ks1_on_adi_tam_yazilir_ve_kesin_etiketi_tasir",
+   "find": "                            label=label, meta=meta,\n",
+   "replace": "                            label=label, meta={},\n"
+  }
+ ]
+}
