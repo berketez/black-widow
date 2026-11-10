@@ -1,0 +1,437 @@
+{
+ "_comment": "Akış sadeleştirici (c_flow_simplifier.py, 2026-11-10 onarımı) mutasyon koruması: ard koşul denetimi (denge, etiket, goto, çağrı, return, deyim, akış grafı), düşme koruması ve her geçişin ön koşulları. Her mutant bir koruyucuyu kaldırır; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_flow_simplifier.json",
+ "mutants": [
+  {
+   "id": "akis_ard_kosul_kapali",
+   "desc": "ard koşul ihlalinde özgün metne dönülmez (denetim kapalı)",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestRevertOnViolation::test_bad_pass_restores_original_text",
+   "find": "        if violation is not None:\n            logger.debug(",
+   "replace": "        if violation is not None and False:\n            logger.debug("
+  },
+  {
+   "id": "akis_ayristirma_hatasi_yutulur",
+   "desc": "geçişin ürettiği metin ayrışmasa da devam edilir (özgün metne dönülmez)",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestRevertOnViolation::test_overlapping_edits_revert",
+   "find": "                return text, {\"functions_reverted\": 1, \"reverted_ayrıştırma\": 1}",
+   "replace": "                continue"
+  },
+  {
+   "id": "akis_denge_denetimi_yok",
+   "desc": "ayraç/parantez dengesi denetlenmez",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestPostcondition::test_broken_transformations_are_named",
+   "find": "    if not _brackets_balanced(new_code):\n        return \"denge\"",
+   "replace": "    if False and not _brackets_balanced(new_code):\n        return \"denge\""
+  },
+  {
+   "id": "akis_denge_yalniz_sayim",
+   "desc": "iç içelik yerine yalnız boş yığın aranır (ters kapanış kabul edilir)",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestPostcondition::test_brackets_balanced_helper",
+   "find": "            if not stack or stack.pop() != pairs[c]:\n                return False",
+   "replace": "            if not stack or stack.pop() is None:\n                return False"
+  },
+  {
+   "id": "akis_etiket_denetimi_yok",
+   "desc": "iki kez tanımlanan etiket kabul edilir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestPostcondition::test_broken_transformations_are_named",
+   "find": "    if new.duplicate_labels and not old.duplicate_labels:",
+   "replace": "    if False and new.duplicate_labels and not old.duplicate_labels:"
+  },
+  {
+   "id": "akis_goto_denetimi_yok",
+   "desc": "etiketi olmayan yeni goto kabul edilir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestPostcondition::test_out_of_function_goto_is_tolerated_but_not_new_ones",
+   "find": "    if not dangling_new <= dangling_old:",
+   "replace": "    if False and not dangling_new <= dangling_old:"
+  },
+  {
+   "id": "akis_cagri_denetimi_yok",
+   "desc": "çağrı çoklu kümesi bildirilen farkla karşılaştırılmaz",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestPostcondition::test_declared_copies_are_accepted_and_required",
+   "find": "        if {k: v for k, v in expected.items() if v} != dict(calls_new):",
+   "replace": "        if False and {k: v for k, v in expected.items() if v} != dict(calls_new):"
+  },
+  {
+   "id": "akis_cagri_kaybi_denetimi_yok",
+   "desc": "fark bilinmediğinde çağrı kaybı aranmaz",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestPostcondition::test_declared_copies_are_accepted_and_required",
+   "find": "        if calls_old - calls_new:",
+   "replace": "        if False and calls_old - calls_new:"
+  },
+  {
+   "id": "akis_cagri_farki_yok_sayilir",
+   "desc": "geçişlerin bildirdiği kopya farkı toplanmaz",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestInlineRootCauses::test_multi_target_conditional_sites_get_braces",
+   "find": "            call_delta.update(pdelta)",
+   "replace": "            call_delta.update({})"
+  },
+  {
+   "id": "akis_return_denetimi_yok",
+   "desc": "return kümesi karşılaştırılmaz",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestPostcondition::test_broken_transformations_are_named",
+   "find": "    if _return_set(old) != _return_set(new):",
+   "replace": "    if False and _return_set(old) != _return_set(new):"
+  },
+  {
+   "id": "akis_deyim_denetimi_yok",
+   "desc": "deyim kümesi karşılaştırılmaz (artık parça kabul edilir)",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestPostcondition::test_broken_transformations_are_named",
+   "find": "    if _statement_set(old) != _statement_set(new):",
+   "replace": "    if False and _statement_set(old) != _statement_set(new):"
+  },
+  {
+   "id": "akis_akis_denetimi_yok",
+   "desc": "denetim akış grafı eşdeğerliği aranmaz",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestPostcondition::test_break_bound_to_wrong_loop_is_a_flow_violation",
+   "find": "        if not _cfg_equivalent(old_cfg, _Cfg(new)):",
+   "replace": "        if False and not _cfg_equivalent(old_cfg, _Cfg(new)):"
+  },
+  {
+   "id": "akis_akis_dugum_metni_karsilastirilmaz",
+   "desc": "graf karşılaştırmasında düğüm metinleri değil yalnız ardıl sayısı karşılaştırılır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestPostcondition::test_broken_transformations_are_named",
+   "find": "        if a.labels[x] != b.labels[y] or len(sx) != len(sy):",
+   "replace": "        if len(sx) != len(sy):"
+  },
+  {
+   "id": "akis_akis_degilleme_dallari_degismez",
+   "desc": "!(k) koşulunda dallar yer değiştirmez",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestPostcondition::test_negated_condition_with_swapped_arms_is_equivalent",
+   "find": "        if negated:\n            true_to, false_to = false_to, true_to",
+   "replace": "        if negated and False:\n            true_to, false_to = false_to, true_to"
+  },
+  {
+   "id": "akis_akis_sabit_dogru_listesi_genis",
+   "desc": "koşullu do-while da 'her zaman doğru' sayılır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestBreakContinueRootCauses::test_goto_before_conditional_do_while_is_not_continue",
+   "find": "_ALWAYS_TRUE = frozenset({\"true\", \"1\"})",
+   "replace": "_ALWAYS_TRUE = frozenset({\"true\", \"1\", \"n > 0\"})"
+  },
+  {
+   "id": "akis_akis_switch_dallari_karsilastirilmaz",
+   "desc": "switch düğümünde case değerleri etikete girmez",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestPostcondition::test_cfg_compares_switch_case_values",
+   "find": "                (\"switch\", self._text(node.cond), tuple(names)), tuple(targets)",
+   "replace": "                (\"switch\", self._text(node.cond)), tuple(targets)"
+  },
+  {
+   "id": "akis_maske_karakter_sabiti",
+   "desc": "karakter sabitleri maskelenmez ('}' ayraç sayılır)",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestLexing::test_mask_keeps_length_and_newlines",
+   "find": "    r\"/\\*.*?\\*/|//[^\\n]*|\\\"(?:\\\\.|[^\\\"\\\\\\n])*\\\"|'(?:\\\\.|[^'\\\\\\n])*'\", re.S\n)",
+   "replace": "    r\"/\\*.*?\\*/|//[^\\n]*|\\\"(?:\\\\.|[^\\\"\\\\\\n])*\\\"\", re.S\n)"
+  },
+  {
+   "id": "akis_sozcuk_kuskusu_yok",
+   "desc": "kapanmamış yorum/dizgi olan fonksiyon da işlenir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestLexing::test_unparseable_function_is_untouched",
+   "find": "        if _LEX_DOUBT_RE.search(self.code):\n            raise _ParseError(",
+   "replace": "        if False and _LEX_DOUBT_RE.search(self.code):\n            raise _ParseError("
+  },
+  {
+   "id": "akis_on_islemci_kuskusu_yok",
+   "desc": "gövdesinde ön işlemci satırı olan fonksiyon da işlenir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestLexing::test_unparseable_function_is_untouched",
+   "find": "_LEX_DOUBT_RE = re.compile(r\"/\\*|\\*/|[\\\"'\\\\]|^[ \\t]*#\", re.MULTILINE)",
+   "replace": "_LEX_DOUBT_RE = re.compile(r\"/\\*|\\*/|[\\\"'\\\\]\", re.MULTILINE)"
+  },
+  {
+   "id": "akis_yinelenen_etiket_islenir",
+   "desc": "Ghidra'nın iki kez yazdığı etiketi olan fonksiyon da işlenir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestLexing::test_duplicate_label_function_is_untouched",
+   "find": "        if original.duplicate_labels:\n            return text, {\"functions_skipped\": 1}",
+   "replace": "        if False and original.duplicate_labels:\n            return text, {\"functions_skipped\": 1}"
+  },
+  {
+   "id": "akis_dusme_korumasi_yok",
+   "desc": "önceki deyim atlama olmasa da etikete düşülmüyor sayılır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestInlineRootCauses::test_fallthrough_guard_is_in_the_pass",
+   "find": "        if prev.kind not in _JUMP_KINDS:\n            return False",
+   "replace": "        if prev.kind not in _JUMP_KINDS:\n            return True  # mutant"
+  },
+  {
+   "id": "akis_dusme_blok_basi",
+   "desc": "bloğun ilk deyimi olan etikete düşülmüyor sayılır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestEarlyReturnRootCauses::test_return_inside_block_is_kept",
+   "find": "        if parent is None or parent.items is None or label.index == 0:\n            return False",
+   "replace": "        if parent is None or parent.items is None or label.index < 0:\n            return False"
+  },
+  {
+   "id": "akis_gomme_ayracsiz",
+   "desc": "ayraçsız alt deyim olan goto'nun yerine blok ayraçsız konur",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestInlineRootCauses::test_goto_on_its_own_line_under_if_gets_braces",
+   "find": "                if g.parent.kind == \"block\" and not lead.strip():",
+   "replace": "                if g.parent.kind != \"yok\" and not lead.strip():"
+  },
+  {
+   "id": "akis_gomme_satir_ortasi",
+   "desc": "satır ortasındaki goto satır başındaymış gibi değiştirilir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestInlineRootCauses::test_goto_inside_one_line_braces_keeps_them",
+   "find": "                if g.parent.kind == \"block\" and not lead.strip():",
+   "replace": "                if g.parent.kind == \"block\" and len(lead) >= 0:"
+  },
+  {
+   "id": "akis_gomme_break_bitisi",
+   "desc": "break ile biten blok da kopyalanır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestInlineRootCauses::test_block_ending_in_break_is_not_copied",
+   "find": "            if kind == \"return\" or kind == \"goto\":\n                term = it",
+   "replace": "            if kind == \"return\" or kind == \"goto\" or kind == \"break\":\n                term = it"
+  },
+  {
+   "id": "akis_gomme_ic_break",
+   "desc": "içinde break/continue olan blok da kopyalanır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestInlineRootCauses::test_unsafe_blocks_are_not_inlined",
+   "find": "                if node.kind in (\"label\", \"case\", \"break\", \"continue\"):\n                    return None\n            j += 1",
+   "replace": "                if node.kind in (\"label\", \"case\"):\n                    return None\n            j += 1"
+  },
+  {
+   "id": "akis_gomme_ic_etiket",
+   "desc": "içinde etiket olan blok da kopyalanır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestInlineRootCauses::test_unsafe_blocks_are_not_inlined",
+   "find": "                if node.kind in (\"label\", \"case\", \"break\", \"continue\"):\n                    return None\n            j += 1",
+   "replace": "                if node.kind in (\"case\", \"break\", \"continue\"):\n                    return None\n            j += 1"
+  },
+  {
+   "id": "akis_gomme_kendine_atlayan",
+   "desc": "kendi etiketine atlayan blok da kopyalanır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestInlineRootCauses::test_self_jumping_block_is_not_inlined",
+   "find": "            if any(cut[0] <= g.start < cut[1] for g in sites):\n                continue",
+   "replace": "            if False and any(cut[0] <= g.start < cut[1] for g in sites):\n                continue"
+  },
+  {
+   "id": "akis_gomme_gec_bildirim",
+   "desc": "geç bildirilen adı anan blok da taşınır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestInlineRootCauses::test_late_declared_name_blocks_move",
+   "find": "        if an.mentions_late_declared(first.start, term.end):\n            return None",
+   "replace": "        if False and an.mentions_late_declared(first.start, term.end):\n            return None"
+  },
+  {
+   "id": "akis_gomme_sonraki_satir",
+   "desc": "'goto L; L:' de satır içine alınır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestInlineRootCauses::test_goto_to_next_line_label_is_not_inlined",
+   "find": "            if any(g is label.parent.items[label.index - 1] for g in sites):\n                continue",
+   "replace": "            if False and any(g is label.parent.items[label.index - 1] for g in sites):\n                continue"
+  },
+  {
+   "id": "akis_gomme_kopya_farki_yanlis",
+   "desc": "çok hedefli gömmede kopya sayısı bir fazla bildirilir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestInlineRootCauses::test_multi_target_conditional_sites_get_braces",
+   "find": "            copies = len(sites) - 1\n            if copies:",
+   "replace": "            copies = len(sites)\n            if copies:"
+  },
+  {
+   "id": "akis_lab_disi_etiketler",
+   "desc": "LAB_ dışındaki etiketlere de dokunulur",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestInlineRootCauses::test_non_lab_labels_are_left_alone",
+   "find": "_LAB_NAME_RE = re.compile(r\"LAB_[0-9a-fA-F]+\\Z\")",
+   "replace": "_LAB_NAME_RE = re.compile(r\"\\w+\\Z\")"
+  },
+  {
+   "id": "akis_erken_donus_olu_silme",
+   "desc": "düşerek ulaşılan return de etiketle birlikte silinir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestEarlyReturnRootCauses::test_fallthrough_return_is_kept",
+   "find": "            if label.parent.items[label.index + 1] is ret and an.no_fallthrough(label):",
+   "replace": "            if label.parent.items[label.index + 1] is ret:"
+  },
+  {
+   "id": "akis_erken_donus_cok_satir",
+   "desc": "çok satırlı return de kopyalanır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestEarlyReturnRootCauses::test_multiline_return_is_not_copied",
+   "find": "            if \"\\n\" in ret_src or len(ret_src) >= _MAX_RETURN_LEN:",
+   "replace": "            if len(ret_src) >= _MAX_RETURN_LEN:"
+  },
+  {
+   "id": "akis_break_en_icteki_dongu",
+   "desc": "break için en içteki döngüye bakılır (aradaki switch görülmez)",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestBreakContinueRootCauses::test_goto_inside_switch_is_not_break",
+   "find": "                brk = g.brk\n",
+   "replace": "                brk = g.loop  # mutant\n"
+  },
+  {
+   "id": "akis_break_kardes_sirasi",
+   "desc": "etiket döngünün hemen ardında olmasa da break yapılır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestBreakContinueRootCauses::test_label_not_immediately_after_loop_is_not_break",
+   "find": "                    and label.index == brk.index + 1\n",
+   "replace": "                    and label.index > brk.index\n"
+  },
+  {
+   "id": "akis_break_ic_dongu",
+   "desc": "goto'yu saran döngü yerine etiketin önündeki herhangi bir döngü kabul edilir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestBreakContinueRootCauses::test_goto_out_of_nested_loop_is_not_break",
+   "find": "                if (\n                    brk is not None\n                    and brk.kind in _LOOP_KINDS",
+   "replace": "                while brk is not None and brk.loop is not None and brk.parent is not parent:\n                    brk = brk.loop\n                if (\n                    brk is not None\n                    and brk.kind in _LOOP_KINDS"
+  },
+  {
+   "id": "akis_continue_for",
+   "desc": "for döngüsünde de continue yapılır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestBreakContinueRootCauses::test_goto_before_for_is_not_continue",
+   "find": "                            loop.kind == \"while\"\n",
+   "replace": "                            loop.kind in (\"while\", \"for\")\n"
+  },
+  {
+   "id": "akis_ifelse_else_tek_goto",
+   "desc": "ELSE etiketine başka goto gitse de yeniden yapılandırılır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestIfElseRootCauses::test_else_label_with_second_goto_is_kept",
+   "find": "            or len(an.gotos.get(else_name, ())) != 1\n",
+   "replace": "            or len(an.gotos.get(else_name, ())) < 1  # mutant\n"
+  },
+  {
+   "id": "akis_ifelse_else_kardes",
+   "desc": "ELSE etiketi başka blokta olsa da kabul edilir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestIfElseRootCauses::test_else_label_in_outer_block_blocks_restructure",
+   "find": "            or else_label.parent is not head.parent\n",
+   "replace": "            or else_label.parent is None\n"
+  },
+  {
+   "id": "akis_ifelse_end_kardes",
+   "desc": "bitiş etiketi başka blokta olsa da kabul edilir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestIfElseRootCauses::test_end_label_in_outer_block_blocks_restructure",
+   "find": "            or end_label.parent is not head.parent\n",
+   "replace": "            or end_label.parent is None\n"
+  },
+  {
+   "id": "akis_ifelse_ic_etiket",
+   "desc": "then/else parçasında etiket olsa da yeniden yapılandırılır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestIfElseRootCauses::test_label_inside_then_part_blocks_restructure",
+   "find": "                    if node.kind == \"label\" or node.kind == \"goto\":\n                        return None",
+   "replace": "                    if node.kind == \"goto\":\n                        return None"
+  },
+  {
+   "id": "akis_ifelse_bildirim",
+   "desc": "then/else parçasında bildirim olsa da yeniden yapılandırılır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestIfElseRootCauses::test_declaration_in_part_blocks_restructure",
+   "find": "                if top.kind == \"expr\" and _looks_like_decl(code[top.start:top.end]):\n                    return None",
+   "replace": "                if False and top.kind == \"expr\" and _looks_like_decl(code[top.start:top.end]):\n                    return None"
+  },
+  {
+   "id": "akis_ifelse_bitis_etiketi_silinir",
+   "desc": "bitiş etiketine başka goto gitse de etiket silinir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestIfElseRootCauses::test_end_label_with_second_goto_is_kept",
+   "find": "        if len(an.gotos.get(end_name, ())) > 1:",
+   "replace": "        if len(an.gotos.get(end_name, ())) > 99:  # mutant"
+  },
+  {
+   "id": "akis_zincir_olu_silme",
+   "desc": "düşerek ulaşılan 'A: goto B;' satırındaki goto da silinir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestCascadeRootCauses::test_fallthrough_keeps_the_goto",
+   "find": "            if follower.kind == \"goto\" and an.no_fallthrough(label):",
+   "replace": "            if follower.kind == \"goto\":"
+  },
+  {
+   "id": "akis_ad_cakismasi",
+   "desc": "yeni etiket adı var olan tanımlayıcıyla çakışabilir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestRename::test_new_name_never_collides_with_identifier",
+   "find": "                if new_name not in file_ctx.taken:\n                    break",
+   "replace": "                if new_name is not None:\n                    break"
+  },
+  {
+   "id": "akis_ad_bitissiz_blok",
+   "desc": "atlamayla bitmeyen bloğun etiketine de ad verilir",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestRename::test_loop_head_label_gets_no_exit_name",
+   "find": "            if not block or not terminator:",
+   "replace": "            if not block:"
+  },
+  {
+   "id": "akis_ad_sezgi_gurultusu",
+   "desc": "sınıflama sezgisi goto hedeflerini ve __stack_chk_fail'i de görür",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestRename::test_label_names_do_not_feed_the_heuristic",
+   "find": "        block = _HEURISTIC_NOISE_RE.sub(\" \", block)\n",
+   "replace": "        block = block + \"\"\n"
+  },
+  {
+   "id": "akis_ad_yalniz_kod",
+   "desc": "yeniden adlandırma dosyanın tamamında sözcük değiştirir (yorum, dizgi, ek)",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestLexing::test_strings_comments_and_trailer_are_untouched",
+   "find": "        if not parts:\n            return content, stats\n        parts.append(content[cursor:])\n        return \"\".join(parts), stats",
+   "replace": "        if not parts:\n            return content, stats\n        parts.append(content[cursor:])\n        return \"\".join(parts).replace(\"LAB_001\", \"cleanup_and_return\"), stats"
+  },
+  {
+   "id": "akis_buyuk_icerik_korumasi",
+   "desc": "500K+ içerikte de bütün geçişler çalışır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestRevertOnViolation::test_large_content_only_renames",
+   "find": "            if skip_inline and name != \"rename\":\n                continue",
+   "replace": "            if False and skip_inline and name != \"rename\":\n                continue"
+  },
+  {
+   "id": "akis_geri_alinan_sayac",
+   "desc": "geri alınan fonksiyonun dönüşüm sayaçları da yazılır",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestRevertOnViolation::test_bad_pass_restores_original_text",
+   "find": "            return text, {\"functions_reverted\": 1, \"reverted_\" + violation: 1}",
+   "replace": "            return text, {\"functions_reverted\": 1, \"reverted_\" + violation: 1, **stats}"
+  },
+  {
+   "id": "akis_hatali_dosya_sayaci",
+   "desc": "hata veren dosya sayılmaz",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestRevertOnViolation::test_directory_counts_failed_files_and_continues",
+   "find": "                result.files_failed += 1",
+   "replace": "                result.files_failed += 0  # mutant"
+  },
+  {
+   "id": "akis_dizin_geri_alinan_sayaci",
+   "desc": "özgün metne dönen fonksiyon sayısı dizin sonucuna taşınmaz",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestRevertOnViolation::test_directory_writes_only_verified_functions",
+   "find": "                result.functions_reverted += stats.get(\"functions_reverted\", 0)",
+   "replace": "                result.functions_reverted += 0"
+  },
+  {
+   "id": "akis_atlanan_sayaci",
+   "desc": "ayrıştırılamayan fonksiyon sayılmaz",
+   "module": "karadul/reconstruction/c_flow_simplifier.py",
+   "test": "tests/test_flow_simplifier_saglamlik.py::TestLexing::test_unparseable_function_is_counted",
+   "find": "        except (_ParseError, RecursionError):\n            return text, {\"functions_skipped\": 1}",
+   "replace": "        except (_ParseError, RecursionError):\n            return text, {}"
+  }
+ ]
+}

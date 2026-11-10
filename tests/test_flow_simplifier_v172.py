@@ -89,6 +89,13 @@ LAB_001:
         # Not: _pass_early_return sadece tek-return label'lari donusturur.
         # Bu durumda printf ikinci satir, is_pure_return False olur.
         assert "goto LAB_001" in result or "goto" not in result
+        # 2026-11-10: eski beklenti, iki deyimli blogun ayracsiz
+        # "if (x < 0)" altina konmasini da kabul ediyordu (return -1
+        # kosulsuz hale geliyordu). Blok satir icine alinirsa ayracli olmali.
+        assert "if (x < 0) return -1;" not in result
+        if "goto" not in result:
+            assert "if (x < 0) {" in result
+            assert result.index("printf") < result.index("return -1;") < result.index("}")
 
 
 class TestCascadingGotoCollapse:
@@ -291,6 +298,13 @@ LAB_00cc:
         assert stats["multi_target_inlined"] >= 2
         # goto LAB_00cc kalmamali
         assert "goto LAB_00cc" not in result or "goto" not in result
+        # 2026-11-10: eski beklenti ayracsiz gommeyi de kabul ediyordu
+        # ("if (a == NULL)" altinda yalniz free(a) kosullu kaliyor, return -1
+        # kosulsuz calisiyordu). Iki deyimli blok ayracla sarilmali.
+        assert "if (a == NULL) {" in result
+        assert "if (b == NULL) {" in result
+        assert result.count("{") == result.count("}")
+        assert result.rstrip().endswith("return 0;\n}")
 
     def test_no_inline_large_block(self):
         """6+ satirlik cleanup block inline edilmemeli (multi icin limit 5)."""
