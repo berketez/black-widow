@@ -22,6 +22,37 @@ from karadul.pipeline.registry import Step, register_step
 logger = logging.getLogger(__name__)
 
 
+# Sadeleştiricinin güvence sayaçları: sonuç alanı -> rapordaki ``stats`` anahtarı
+_GUARD_COUNTERS = {
+    "functions_reverted": "flow_functions_reverted",
+    "functions_skipped": "flow_functions_skipped",
+    "files_failed": "flow_files_failed",
+}
+
+
+def _record_guard_counters(ctx: StepContext, flow_result: Any) -> None:
+    """Ard koşul sayaçlarını rapora taşı; geri alınan ya da hata veren varsa uyar.
+
+    ``functions_reverted``: dönüşümden sonra ard koşul (ayraç dengesi, etiketler, çağrı ve
+    ``return`` kümeleri, denetim akışı eşdeğerliği) tutmadığı için özgün metni yazılan
+    fonksiyon. Sıfırdan büyükse bir dönüşüm hatalıdır; kod korunmuştur ama bu sessiz kalmaz.
+    Sayı olmayan alan (eski sonuç nesnesi) yazılmaz.
+    """
+    for field_name, stat_key in _GUARD_COUNTERS.items():
+        value = getattr(flow_result, field_name, None)
+        if isinstance(value, int) and not isinstance(value, bool):
+            ctx.stats[stat_key] = value
+    reverted = ctx.stats.get("flow_functions_reverted", 0)
+    failed = ctx.stats.get("flow_files_failed", 0)
+    if reverted or failed:
+        message = (
+            f"Flow simplify: {reverted} fonksiyon ard koşul tutmadığı için özgün hâline "
+            f"döndürüldü, {failed} dosya işlenemedi"
+        )
+        logger.warning(message)
+        ctx.errors.append(message)
+
+
 @register_step(
     name="flow_simplify",
     requires=[
@@ -54,6 +85,7 @@ class FlowSimplifyStep(Step):
             ctx.stats["flow_ifelse_restructured"] = flow_result.ifelse_restructured
             ctx.stats["flow_cascading_collapsed"] = flow_result.cascading_collapsed
             ctx.stats["flow_multi_target_inlined"] = flow_result.multi_target_inlined
+            _record_guard_counters(ctx, flow_result)
             logger.info(
                 "Flow simplify: %d goto eliminated, %d label renamed, "
                 "%d early_ret, %d break/cont, %d if-else, %d cascade, %d multi",
