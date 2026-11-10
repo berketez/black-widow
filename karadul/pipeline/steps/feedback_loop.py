@@ -20,8 +20,45 @@ from karadul.pipeline.steps._feedback_loop_iter import (
     LoopState,
     run_one_iteration,
 )
+from karadul.pipeline.steps._feedback_naming_merger import (
+    config_flag,
+    global_naming_threshold,
+)
+from karadul.reconstruction.tarif import alt_kanal as _alt_kanal
+from karadul.reconstruction.tarif import baglama as _baglama
 
 logger = logging.getLogger(__name__)
+
+
+def c_namer_options(br_cfg: Any) -> dict[str, Any]:
+    """c_namer kurucusunun bayraklara bağlı anahtar sözcüklü argümanları (plan v2.2 N1 adım 3).
+
+    İki bayrak da kapalıyken boş sözlük döner: c_namer bugünkü gibi, öntanımlı kurulur. Susan
+    küme ürün modülünde sabittir (N0b kararı); kullanıcı ayarı değildir. Eşik değeri
+    ``min_naming_confidence``'tır.
+    """
+    options: dict[str, Any] = {}
+    if config_flag(br_cfg, "enable_subchannel_silencing"):
+        options["silenced_subchannels"] = _alt_kanal.SILENCED_SUBCHANNELS
+    threshold = global_naming_threshold(br_cfg)
+    if threshold is not None:
+        options["global_min_confidence"] = threshold
+    return options
+
+
+def naming_flags(br_cfg: Any) -> dict[str, Any]:
+    """Koşunun kol kimliği (``stats["naming_flags"]`` → ``report.json``).
+
+    Ablasyon okuyucusu kolun beklenen değerlerini bununla karşılaştırır; yapılandırma dosyasının
+    unutulması sessiz kalmaz. ``global_threshold``: uygulanan eşik, uygulanmıyorsa ``None``.
+    """
+    return {
+        "ks1": config_flag(br_cfg, "enable_ks1_anchors"),
+        "silencing": config_flag(br_cfg, "enable_subchannel_silencing"),
+        "global_threshold": global_naming_threshold(br_cfg),
+        "ks1_row_status": dict(_baglama.ROW_STATUS),
+        "definition_version": _alt_kanal.DEFINITION_VERSION,
+    }
 
 
 @register_step(
@@ -68,6 +105,7 @@ class FeedbackLoopStep(Step):
         min_abs_new = cfg.pipeline_min_new_names_per_iter  # v1.10.0 M2 T6
 
         # --- State ---
+        ctx.stats["naming_flags"] = naming_flags(cfg)
         comp_engine, c_namer, type_recoverer = self._pre_instantiate(pc)
         reconstructed_dir = pc.workspace.get_stage_dir("reconstructed")
         c_files: list[Path] = a["c_files"]
@@ -260,7 +298,10 @@ class FeedbackLoopStep(Step):
         if pc.config.binary_reconstruction.enable_c_naming:
             try:
                 from karadul.reconstruction.c_namer import CVariableNamer
-                c_namer = CVariableNamer(pc.config)
+                # Susturma ve ürün eşiği bayraklara göre; ikisi de kapalıyken öntanımlı kurucu
+                c_namer = CVariableNamer(
+                    pc.config, **c_namer_options(pc.config.binary_reconstruction),
+                )
             except ImportError as e:
                 # Graceful degradation: c_namer opsiyonel, yoksa None kalir.
                 logger.debug(

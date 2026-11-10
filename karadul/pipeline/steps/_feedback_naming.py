@@ -225,6 +225,34 @@ def _compute_namer_output(
     return output_dir
 
 
+def _pre_name_meta(ctx: Any) -> dict[str, Any] | None:
+    """Faz 2 tohumundaki ön ad künyesi (``pre_name_meta``); yoksa ya da sözlük değilse None."""
+    artifacts = getattr(ctx, "artifacts", None)
+    try:
+        meta = artifacts.get("pre_name_meta") if artifacts is not None else None
+    except Exception:
+        return None
+    return meta if isinstance(meta, dict) else None
+
+
+def _record_label_stats(naming_result: Any, stats: dict[str, Any]) -> None:
+    """c_namer'ın etiket ve susturma sayaçlarını istatistiklere yaz (gerçek sayılar).
+
+    ``naming_by_label``: etiket → genel ad sayısı; ``naming_silenced``: alt kanal → süzülen aday
+    sayısı (susturma kapalıyken boş). Sonuç bu alanları taşımıyorsa hiçbir şey yazılmaz.
+    ``naming_by_strategy`` ile aynı yerde ve aynı sonuçtan yazılır (son yineleme kazanır).
+    """
+    label_map = getattr(naming_result, "label_map", None)
+    if isinstance(label_map, dict):
+        by_label: dict[str, int] = {}
+        for label in label_map.values():
+            by_label[label] = by_label.get(label, 0) + 1
+        stats["naming_by_label"] = dict(sorted(by_label.items()))
+    silenced = getattr(naming_result, "silenced_counts", None)
+    if isinstance(silenced, dict):
+        stats["naming_silenced"] = dict(silenced)
+
+
 def _run_c_namer(
     *,
     ctx: Any,
@@ -298,16 +326,24 @@ def _run_c_namer(
                 config=pc.config, stats=stats, errors=errors,
             )
         else:
+            # Ön ad künyesi (plan v2.2 N1 adım 3): stages.py Faz 2 tohumuna koyar. Yoksa
+            # (KS-1 kapalı) c_namer bugünkü çağrıyla, künyesiz çalışır.
+            meta_kwargs: dict[str, Any] = {}
+            pre_name_meta = _pre_name_meta(ctx)
+            if pre_name_meta is not None:
+                meta_kwargs["pre_name_meta"] = pre_name_meta
             naming_result = c_namer.analyze_and_rename(
                 namer_dir, functions_json, strings_json,
                 call_graph_json, namer_output,
                 pre_names=extracted_names or None,
                 xrefs_json=xrefs_json if xrefs_json.exists() else None,
+                **meta_kwargs,
             )
         if naming_result.success:
             stats["variables_renamed"] = naming_result.total_renamed
             stats["naming_by_strategy"] = naming_result.by_strategy
             stats["naming_high_confidence"] = naming_result.high_confidence
+            _record_label_stats(naming_result, stats)
             artifacts["named_sources"] = namer_output
             logger.info(
                 "C Naming: %d isim degistirildi%s",

@@ -29,6 +29,51 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def config_flag(br_cfg: Any, name: str) -> bool:
+    """Adlandırma bayrağı açık mı. Yalnız gerçek ``True`` açık sayılır: eksik öznitelik ya da
+    sahte yapılandırma nesnesinin döndürdüğü doğru benzeri değer bayrağı açmaz."""
+    return getattr(br_cfg, name, False) is True
+
+
+def global_naming_threshold(br_cfg: Any) -> float | None:
+    """Genel adlara uygulanacak ürün eşiği; uygulanmıyorsa ``None`` (plan v2.2 N1 adım 3, §4.4).
+
+    ``apply_global_naming_threshold`` açıksa ``min_naming_confidence`` (öntanımlı 0,7). Aynı
+    değer c_namer'ın seçimine ve NameMerger çıktısına verilir: ürün tek eşik taşır.
+    """
+    if not config_flag(br_cfg, "apply_global_naming_threshold"):
+        return None
+    value = getattr(br_cfg, "min_naming_confidence", None)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
+
+def drop_below_threshold(
+    final_naming_map: dict[str, str], merged_names: Any, threshold: float | None,
+) -> tuple[dict[str, str], int]:
+    """NameMerger haritasından, birleşik güveni eşiğin altında kalan genel anahtarları çıkar.
+
+    Genel anahtar: içinde ``::`` olmayan (c_namer'daki tanım). Eşik ``None`` ise harita
+    olduğu gibi döner. Güveni okunamayan giriş düşürülmez (kanıtsız karar verilmez).
+    Dönen: (süzülmüş harita, düşen anahtar sayısı).
+    """
+    if threshold is None:
+        return final_naming_map, 0
+    kept: dict[str, str] = {}
+    for key, name in final_naming_map.items():
+        confidence = getattr(merged_names.get(key), "final_confidence", None)
+        if (
+            "::" not in key
+            and isinstance(confidence, (int, float))
+            and not isinstance(confidence, bool)
+            and confidence < threshold
+        ):
+            continue
+        kept[key] = name
+    return kept, len(final_naming_map) - len(kept)
+
+
 def run_name_merger(
     *,
     ctx: Any,
@@ -114,6 +159,15 @@ def run_name_merger(
         stats["name_merger_total"] = merge_result.total_merged
         stats["name_merger_exact_multi"] = merge_result.exact_multi_matches
         stats["name_merger_conflicts"] = merge_result.conflicts_resolved
+
+        # Ürün eşiği (bayrak açıksa): c_namer'ın seçimindeki eşiğin aynısı, öbür kaynakların
+        # 0,30-0,70 arasında ad yazmasını önler. Bayrak kapalıyken harita değişmez.
+        threshold = global_naming_threshold(pc.config.binary_reconstruction)
+        final_naming_map, below = drop_below_threshold(
+            final_naming_map, merge_result.merged_names, threshold,
+        )
+        if threshold is not None:
+            stats["name_merger_below_global_min"] = below
 
         # Bos/kisa key'leri cikar (regex \b()\b bos string bozulmasini onle)
         final_naming_map = {

@@ -45,6 +45,8 @@ from karadul.pipeline.steps import (  # noqa: F401
     binaryninja_analysis,
     # B7 (2026-05-13): TRex/PDB/BN JSON tuketici
     type_recovery_consumer,
+    # Plan v2.2 N1 adım 3: KS-1 kesin çapaları (bayrak kapalıyken iş yapmaz)
+    kesin_anchors,
 )
 
 __all__ = [
@@ -68,6 +70,7 @@ __all__ = [
     "flow_simplify",
     "ghidra_metadata",
     "inline_detection",
+    "kesin_anchors",
     "packer_fingerprint",
     "parallel_algo_eng",
     "pcode_cfg_analysis",
