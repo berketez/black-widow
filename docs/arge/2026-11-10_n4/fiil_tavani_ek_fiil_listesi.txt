@@ -1,0 +1,32 @@
+# N4 fiil tavanı ölçümü: sözlük dışı fiil ÖLÇME listesi (ürün sözlüğü DEĞİLDİR)
+# Yazıldığı an: 2026-11-10, GT açılmadan önce. GT görüldükten sonra değiştirilmez.
+# Kaynak: genel İngilizce / C tanımlayıcı fiilleri; hiçbir programın ad listesinden alınmadı.
+# Sözlük v0'daki 180 belirteçten hiçbiri burada olamaz; bir belirteç iki kesimde olamaz
+# (betik ikisini de denetler, tutmazsa durur).
+# Biçim: "[kesim]" başlığı, altında boşlukla ayrılmış belirteçler. '#' yorumdur.
+# acik: tanımlayıcıda çoğunlukla fiil olarak okunan belirteçler.
+# belirsiz: tanımlayıcıda ad olarak da sık geçen belirteçler (yalnız üst kestirim için).
+
+[acik]
+convert translate transform resolve select deselect choose toggle notify merge split join
+iterate traverse visit collect gather generate replace substitute rename redraw refresh reload
+restore revert retry redirect rebuild recalculate recompute reflow repaint reopen reconnect
+respawn restart schedule reschedule defer trigger invoke expire normalize canonicalize sanitize
+trim clamp unwrap concat combine populate seek advance rewind unmap mount unmount rotate reverse
+invert unmark highlight activate deactivate wakeup broadcast publish subscribe forward relay
+requeue synchronize rollback confirm deny reject allow permit grant revoke authenticate authorize
+encrypt decrypt derive shuffle estimate predict guess detect identify recognize classify
+determine decide evaluate eval interpret compile assemble coerce promote demote extract
+inject embed include exclude define undefine declare describe explain summarize enumerate probe
+inspect examine analyze monitor observe replay capture retain protect hide unhide reveal expose
+restrict constrain throttle invalidate increment incr decrement decr adjust stretch arrange
+partition divide multiply subtract negate ignore lose submit commit remap rehash reinit
+reinitialize reparse rescan reorder rebalance redo undo ensure require try attempt fail succeed
+complete skip strip filter fill wrap recurse descend ascend collapse fold unfold indent unindent
+quote unquote interpolate unbind unset
+
+[belirsiz]
+call return step pass take give keep hold cover share record trace track watch guard scale fit
+center rank sign seed sample cast pad round scroll jump shift flip mark fire raise throw catch
+wake sync import export grab touch bump tune pick walk switch focus signal queue list name tag
+order group limit mask cap tick map view edit use work note
