@@ -1125,8 +1125,6 @@ class GhidraHeadless:
                     # Adres suffix'i ile cakismayi onle (C++ overload, thunk vb.)
                     addr_suffix = func_addr.replace(":", "_")[-8:]
                     filepath = decompiled_dir / (safe_name + ".c")
-                    if filepath.exists():
-                        filepath = decompiled_dir / (f"{safe_name}_{addr_suffix}.c")
 
                     header_lines = [
                         "// Function: %s" % func_name,
@@ -1167,11 +1165,21 @@ class GhidraHeadless:
                         for instr in disasm:
                             file_content += "// %s  %s\n" % (instr["address"], instr["text"])
 
-                    filepath.write_text(file_content, encoding="utf-8")
+                    # "Yoksa oluştur" tek adımda (O_EXCL). Eski kod önce exists() ile
+                    # bakıp sonra yazıyordu; paralel decompile'da aynı adlı iki fonksiyon
+                    # (ör. iki PLT thunk'ı) denetimi birlikte geçip aynı dosyaya yazıyor,
+                    # biri kayboluyordu. Hangisinin eksiz adı alacağı zamanlamaya bağlıdır;
+                    # dosyanın kimliği başlıktaki adrestir.
+                    try:
+                        with filepath.open("x", encoding="utf-8") as fh:
+                            fh.write(file_content)
+                    except FileExistsError:
+                        filepath = decompiled_dir / (f"{safe_name}_{addr_suffix}.c")
+                        filepath.write_text(file_content, encoding="utf-8")
 
                     result_entry = {
                         "name": func_name, "address": func_addr,
-                        "file": safe_name + ".c", "lines": c_code.count("\n") + 1,
+                        "file": filepath.name, "lines": c_code.count("\n") + 1,
                         "size": func_size, "success": True,
                         "instruction_count": len(disasm), "xrefs": xrefs,
                     }
