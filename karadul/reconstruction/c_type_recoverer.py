@@ -26,6 +26,7 @@ Kullanim:
 
 from __future__ import annotations
 
+import bisect
 import json
 import logging
 import os
@@ -39,6 +40,44 @@ from karadul.config import CPU_PERF_CORES, Config
 # ---------------------------------------------------------------------------
 # ProcessPoolExecutor worker'lari -- top-level (pickle edilebilir)
 # ---------------------------------------------------------------------------
+
+
+# C'nin kod DIŞI sözcük birimleri: dizgi sabiti, karakter sabiti, ``//`` ve
+# ``/* */`` yorumu.  Tek desen soldan sağa taranır; böylece ``"/*"`` dizgisi
+# yorum, ``/* " */`` yorumu dizgi başlatmaz.  Şüpheli durumda DOKUNMA yönünde
+# kalınır: kapanmayan dizgi ya da karakter sabiti satır sonuna, kapanmayan
+# blok yorum dosya sonuna kadar kod dışı sayılır.
+_C_NONCODE_TOKEN = re.compile(
+    r'"(?:\\.|[^"\\\n])*(?:"|(?=\n)|\Z)'
+    r"|'(?:\\.|[^'\\\n])*(?:'|(?=\n)|\Z)"
+    r"|//[^\n]*"
+    r"|/\*.*?(?:\*/|\Z)",
+    re.DOTALL,
+)
+
+# Ghidra'nın decompiler uyarısı: ``/* WARNING: ... */`` (ve eski kalıpla
+# birlikte anılan ``/* DISPLAY WARNING ... */``).  binary_deobfuscator bunları
+# çıktıda korur.
+_GHIDRA_WARNING_HEAD = re.compile(r"/\*\s*(?:WARNING:|DISPLAY WARNING)")
+
+
+def _blank_ghidra_warnings(content: str) -> str:
+    """Decompiler uyarı yorumlarını aynı uzunlukta boşlukla ört (analiz için).
+
+    Satır yapısı korunur.  Dizgi sabiti içindeki ``/* WARNING: ... */`` metni
+    yorum değildir; ona dokunulmaz.
+    """
+    if "WARNING" not in content:
+        return content
+
+    def _sub(m: re.Match[str]) -> str:
+        token = m.group(0)
+        # Desen ``/*`` ile başlar: dizgi ya da ``//`` birimi eşleşmez.
+        if _GHIDRA_WARNING_HEAD.match(token):
+            return "".join("\n" if ch == "\n" else " " for ch in token)
+        return token
+
+    return _C_NONCODE_TOKEN.sub(_sub, content)
 
 
 def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
@@ -71,6 +110,13 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
                 "switch_vars": {}, "compare_vars": {},
                 "string_context": {}, "type_usages": {},
                 "case_comments": {}}
+
+    # KISIT: decompiler uyarıları artık çıktıda korunuyor (silinmiyor) ama
+    # ANALİZ girdisi değiller.  Aşağıdaki satır desenleri uyarı metnini kod
+    # sanar: "Removing unreachable block (ram,0x...)" -> ``block`` çağrısı,
+    # "Bad instruction - Truncating" -> ``instruction`` aritmetiği.  Yalnız
+    # bu işçinin okuduğu kopyada boşlukla örtülür; dosyaya yazılmaz.
+    content = _blank_ghidra_warnings(content)
 
     current_func = c_file.stem
 
@@ -304,27 +350,227 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
     }
 
 
-def _apply_types_worker(
-    input_path: str,
-    output_path: str,
+# ---------------------------------------------------------------------------
+# Metin sadakati -- tip değişimi yalnız KOD sözcüklerine, yalnız TİP konumunda
+# ---------------------------------------------------------------------------
+#
+# İkilinin gerçek metni (dizgi ve karakter sabitleri) ve decompiler'ın
+# yorumları tip değişiminin konusu DEĞİLDİR.  Eski kod tek bir ``\b...\b``
+# deseniyle bütün dosya metnini değiştiriyordu: openssl'de ``"iv undefined\n"``
+# dizgisi ``"iv uint64_t\n"`` oluyor, c_namer'ın ``undefined`` adını verdiği
+# fonksiyon ``uint64_t`` adını alıyordu.
+
+_C_WHITESPACE = " \t\r\n\f\v"
+
+# Bu sözcüklerden SONRA gelen tip sözcüğü tip değil addır:
+# ``struct undefined``, ``goto undefined``.
+_NAME_INTRODUCING_KEYWORDS = frozenset({"struct", "union", "enum", "goto"})
+
+# ``(W)`` parantezinden önce gelip de çağrı OLMAYAN sözcükler:
+# ``return (undefined4)x``, ``sizeof(undefined8)``, ``case (undefined4)3:``.
+# Başka bir tanımlayıcıdan sonra gelen ``(W)`` tek argümanlı çağrıdır
+# (``f(undefined)``) ve tip konumu sayılmaz.
+_CAST_PREFIX_KEYWORDS = frozenset({"return", "sizeof", "case"})
+
+# ``(W)`` cast'inden sonra bir işlenen başlar: tanımlayıcı, sayı, ``(``,
+# tekli işleç, dizgi ya da karakter sabiti, bileşik sabit.  ``;`` ``,`` ``)``
+# ya da ikili işleç gelirse parantez içindeki sözcük bir DEĞERDİR, tip değil.
+_CAST_OPERAND_START = frozenset(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789"
+    "(*&-+!~\"'{."
+)
+
+# ``W (*ad) [16]``, ``W (**) [16]``, ``W (*ad)(int)``: diziye ya da
+# fonksiyona gösterici bildirgeci.  ``W(*p);`` (çağrı) buna UYMAZ.
+_POINTER_DECLARATOR_RE = re.compile(r"\(\s*\*+\s*(?:[A-Za-z_]\w*)?\s*\)\s*[\[(]")
+
+# ``W [16] ad`` (dizi dönüş tipi) ve ``(W [8])x`` (dizi cast'i).
+_ARRAY_SUFFIX_RE = re.compile(r"(?:\[[^\[\]\n;]*\]\s*)+")
+
+
+def _is_ident_start(ch: str) -> bool:
+    return ch == "_" or ("a" <= ch <= "z") or ("A" <= ch <= "Z")
+
+
+def _is_type_position(text: str, start: int, end: int) -> bool:
+    """``text[start:end]`` sözcüğü bir TİP konumunda mı duruyor?
+
+    Kural, Debian 13 arm64 geliştirme setinin 117 ikilisinin ham Ghidra
+    çıktısındaki 133 398 ``undefined*`` geçişinden çıkarıldı (2026-11-10):
+    sözcüğü izleyen belirteç hepsinde aşağıdaki beş biçimden biri.  Yalnız
+    bunlar tip konumudur; kalan her yer (ad, değer, etiket) olduğu gibi
+    bırakılır.  Yanlış yerde değiştirmek metni bozar; tip konumunu kaçırmak
+    yalnız Ghidra'nın kendi tip adını yerinde bırakır.
+
+    Tip konumu (W = tip sözcüğü):
+      1. ``W ad``                     bildirim, parametre, dönüş tipi
+      2. ``W *ad`` / ``W *)``         gösterici bildirimi ya da cast'i
+      3. ``(W)işlenen``, ``sizeof(W)``  değer cast'i
+      4. ``W [N] ad`` / ``(W [N])``   dizi dönüş tipi ya da dizi cast'i
+      5. ``W (*ad) [N]`` / ``W (*)(...)``  diziye ya da fonksiyona gösterici
+
+    Tip konumu DEĞİL:
+      - ardından ``(`` gelen ad: fonksiyon tanımı ya da çağrısı
+        (``int undefined(long a)``, ``undefined(x)``, ``undefined(*p);``)
+      - çıplak ad: ``f(undefined, x)``, ``p = undefined;`` (fonksiyon
+        göstericisi ya da değişken)
+      - üye adı: ``a.undefined``, ``a->undefined``
+      - etiket: ``undefined:``, ``goto undefined``; ``struct undefined``
+      - bildirgeç adı: ``long undefined;``, ``char *undefined)``
+
+    Bilinen belirsizlik: ``undefined * x`` hem gösterici bildirimi hem çarpma
+    olabilir (C'nin typedef sorunu).  Ham Ghidra çıktısında bu biçim 73 014
+    geçişin hepsinde göstericidir; tip sayılır.
+    """
+    n = len(text)
+
+    # --- Önceki belirteç: üye erişimi ve ad tanıtan sözcükler ---
+    i = start - 1
+    while i >= 0 and text[i] in _C_WHITESPACE:
+        i -= 1
+    if i >= 0:
+        prev = text[i]
+        if prev == ".":
+            return False
+        if prev == ">" and i >= 1 and text[i - 1] == "-":
+            return False
+        if prev == "_" or prev.isalnum():
+            j = i
+            while j >= 0 and (text[j] == "_" or text[j].isalnum()):
+                j -= 1
+            if text[j + 1:i + 1] in _NAME_INTRODUCING_KEYWORDS:
+                return False
+
+    # --- Sonraki belirteç ---
+    k = end
+    while k < n and text[k] in _C_WHITESPACE:
+        k += 1
+    if k >= n:
+        return False
+    nxt = text[k]
+
+    # 1. W ad
+    if _is_ident_start(nxt):
+        return True
+
+    # 2. W *ad  /  W *)
+    if nxt == "*":
+        while k < n and (text[k] == "*" or text[k] in _C_WHITESPACE):
+            k += 1
+        return k < n and (_is_ident_start(text[k]) or text[k] == ")")
+
+    # 3. (W)işlenen  /  sizeof(W)
+    if nxt == ")":
+        if i < 0 or text[i] != "(":
+            return False
+        p = i - 1
+        while p >= 0 and text[p] in _C_WHITESPACE:
+            p -= 1
+        if p >= 0 and (text[p] == "_" or text[p].isalnum()):
+            q = p
+            while q >= 0 and (text[q] == "_" or text[q].isalnum()):
+                q -= 1
+            before = text[q + 1:p + 1]
+            if before == "sizeof":
+                return True
+            if before not in _CAST_PREFIX_KEYWORDS:
+                return False  # f(undefined): tek argümanlı çağrı
+        k += 1
+        while k < n and text[k] in _C_WHITESPACE:
+            k += 1
+        return k < n and text[k] in _CAST_OPERAND_START
+
+    # 4. W [N] ad  /  (W [N])
+    if nxt == "[":
+        m = _ARRAY_SUFFIX_RE.match(text, k)
+        if not m:
+            return False
+        k = m.end()
+        return k < n and (_is_ident_start(text[k]) or text[k] == ")")
+
+    # 5. W (*ad) [N]  /  W (*)(...)
+    if nxt == "(":
+        return _POINTER_DECLARATOR_RE.match(text, k) is not None
+
+    return False
+
+
+def _replace_type_words(content: str, replacements: dict[str, str]) -> str:
+    """Tip sözcüklerini yalnız kod içinde ve yalnız tip konumunda değiştir.
+
+    Dizgi sabitleri, karakter sabitleri ve yorumlar olduğu gibi kalır;
+    tip konumu kuralı için bkz. ``_is_type_position``.
+    """
+    sorted_keys = sorted(replacements.keys(), key=len, reverse=True)
+    if not sorted_keys:
+        return content
+    # Kod dışı birim ÖNCE denenir: içindeki sözcük hiç eşleşmez.
+    combined = re.compile(
+        r"(?P<noncode>" + _C_NONCODE_TOKEN.pattern + r")"
+        r"|\b(?P<word>" + "|".join(re.escape(k) for k in sorted_keys) + r")\b",
+        re.DOTALL,
+    )
+
+    def _sub(m: re.Match[str]) -> str:
+        word = m.group("word")
+        if word is None:
+            return m.group(0)  # dizgi, karakter sabiti ya da yorum
+        if not _is_type_position(content, m.start("word"), m.end("word")):
+            return word
+        return replacements.get(word, word)
+
+    return combined.sub(_sub, content)
+
+
+def _replace_first_in_code(text: str, old: str, new: str) -> str:
+    """``old`` metninin KOD içindeki ilk geçişini ``new`` ile değiştir.
+
+    Dizgi sabiti, karakter sabiti ya da yorumla kesişen geçişler atlanır.
+    Kod dışı birim yoksa sonuç ``text.replace(old, new, 1)`` ile aynıdır.
+    """
+    if not old:
+        return text
+    pos = text.find(old)
+    if pos == -1:
+        return text
+    spans = [(m.start(), m.end()) for m in _C_NONCODE_TOKEN.finditer(text)]
+    starts = [s for s, _ in spans]
+    while pos != -1:
+        end = pos + len(old)
+        # [pos, end) ile kesişebilecek tek aday: end'den önce başlayan son birim
+        idx = bisect.bisect_left(starts, end) - 1
+        if idx < 0 or spans[idx][1] <= pos:
+            return text[:pos] + new + text[end:]
+        pos = text.find(old, pos + 1)
+    return text
+
+
+def _noncode_multiset(content: str) -> dict[str, int]:
+    """Dizgi sabitlerinin, karakter sabitlerinin ve yorumların çoklu kümesi."""
+    counts: dict[str, int] = {}
+    for m in _C_NONCODE_TOKEN.finditer(content):
+        token = m.group(0)
+        counts[token] = counts.get(token, 0) + 1
+    return counts
+
+
+def _apply_types_to_text(
+    content: str,
     replacements: dict[str, str],
     per_func_replacements: dict[str, dict[str, str]] | None = None,
-) -> str:
-    """C dosyasindaki generic tipleri kurtarilan tiplerle degistir (process-safe).
+) -> tuple[str, bool]:
+    """Bir C dosyasının metnine tip değişimini uygula (dosyaya yazmaz).
 
-    ProcessPoolExecutor icin top-level fonksiyon.
-
-    v1.7.2: per_func_replacements destegi eklendi.  Her fonksiyonun scope'u
-    icinde degisken bazli tip degisimi yapilir.  Format:
-        {func_name: {old_decl_pattern: new_decl_pattern, ...}}
+    Son koşul: tip değişiminden önce ve sonra metindeki dizgi sabitlerinin,
+    karakter sabitlerinin ve yorumların çoklu kümesi AYNI olmalı.  Bozulursa
+    özgün metin döndürülür; sessiz bozulma olmaz (çağıran sayar ve günlüğe
+    yazar).
 
     Returns:
-        output_path (basarili) veya bos string (hata).
+        (metin, geri_alındı).  ``geri_alındı`` True ise ``metin`` girdinin
+        aynısıdır.
     """
-    try:
-        content = Path(input_path).read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return ""
+    original = content
 
     # --- Per-function replacements (v1.7.2) ---
     # Her fonksiyon scope'unda variable-specific tip degisimi uygula.
@@ -335,16 +581,44 @@ def _apply_types_worker(
     # undefined* tiplerini degistir + context-bazli replacements
     all_replacements = dict(_UNDEFINED_DEFAULTS)
     all_replacements.update(replacements)
+    content = _replace_type_words(content, all_replacements)
 
-    # TEK combined regex ile tek geciste tum replace
-    sorted_keys = sorted(all_replacements.keys(), key=len, reverse=True)
-    if sorted_keys:
-        combined = re.compile(
-            r"\b(" + "|".join(re.escape(k) for k in sorted_keys) + r")\b"
-        )
-        content = combined.sub(
-            lambda m: all_replacements.get(m.group(0), m.group(0)), content,
-        )
+    if _noncode_multiset(content) != _noncode_multiset(original):
+        return original, True
+    return content, False
+
+
+def _apply_types_worker(
+    input_path: str,
+    output_path: str,
+    replacements: dict[str, str],
+    per_func_replacements: dict[str, dict[str, str]] | None = None,
+) -> tuple[str, bool]:
+    """C dosyasindaki generic tipleri kurtarilan tiplerle degistir (process-safe).
+
+    ProcessPoolExecutor icin top-level fonksiyon.
+
+    v1.7.2: per_func_replacements destegi eklendi.  Her fonksiyonun scope'u
+    icinde degisken bazli tip degisimi yapilir.  Format:
+        {func_name: {old_decl_pattern: new_decl_pattern, ...}}
+
+    Tip değişimi yalnız kod sözcüklerine ve yalnız tip konumunda uygulanır;
+    dizgi sabitleri, karakter sabitleri ve yorumlar değişmez
+    (``_apply_types_to_text``).  Son koşul bozulursa dosya özgün metniyle
+    (yalnız ``types.h`` include'u eklenerek) yazılır ve ``geri_alındı`` True
+    döner.
+
+    Returns:
+        (output_path, geri_alındı).  Okuma hatasında ("", False).
+    """
+    try:
+        content = Path(input_path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return "", False
+
+    content, reverted = _apply_types_to_text(
+        content, replacements, per_func_replacements,
+    )
 
     # types.h include ekle
     if not content.startswith("#include"):
@@ -359,7 +633,7 @@ def _apply_types_worker(
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(content, encoding="utf-8")
-    return output_path
+    return output_path, reverted
 
 
 # C kontrol anahtar kelimeleri -- fonksiyon tanimi ISMI olamazlar.
@@ -442,9 +716,12 @@ def _apply_per_func_replacements(
         result_parts.append(content[last_end:func_start])
 
         # Fonksiyon header + body al, icinde replace yap
+        # KISIT: değişim yalnız KOD içindeki ilk geçişe uygulanır.  Düz
+        # ``str.replace(old, new, 1)`` ilk geçiş bir dizgi sabitinin ya da
+        # yorumun içindeyse onu değiştirir, asıl bildirime hiç dokunmazdı.
         func_text = content[func_start:body_end]
         for old_str, new_str in func_replacements.items():
-            func_text = func_text.replace(old_str, new_str, 1)
+            func_text = _replace_first_in_code(func_text, old_str, new_str)
 
         result_parts.append(func_text)
         # KISIT: last_end ASLA geri gitmemeli -- brace matching hatali bir
@@ -543,6 +820,11 @@ class CTypeRecoveryResult:
         output_files: Tip duzeltilmis C dosyalari.
         total_types_recovered: Toplam kurtarilan tip sayisi.
         errors: Hata mesajlari.
+        type_recovery_reverted: Tip değişimi geri alınan dosya sayısı.  Son
+            koşul (dizgi sabitleri, karakter sabitleri ve yorumlar tip
+            değişiminden önce ve sonra aynı) bozulduğu için özgün metniyle
+            yazılan dosyalar.  Beklenen 0.
+        reverted_files: Geri alınan dosyaların girdi yolları.
     """
 
     success: bool
@@ -554,6 +836,8 @@ class CTypeRecoveryResult:
     output_files: list[Path] = field(default_factory=list)
     total_types_recovered: int = 0
     errors: list[str] = field(default_factory=list)
+    type_recovery_reverted: int = 0
+    reverted_files: list[Path] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -970,13 +1254,23 @@ class CTypeRecoverer:
             for f in c_files
         ]
         output_files: list[Path] = []
+        reverted_files: list[Path] = []
         with ProcessPoolExecutor(max_workers=num_workers) as pool:
             futs_apply = [pool.submit(_apply_types_worker, *args) for args in apply_args]
             for i, apply_fut in enumerate(futs_apply):
                 try:
-                    r = apply_fut.result(timeout=600)
+                    r, reverted = apply_fut.result(timeout=600)
                     if r:
                         output_files.append(Path(r))
+                    if reverted:
+                        # Son koşul bozuldu: dosya özgün metniyle yazıldı.
+                        # Sessiz geçilmez; sayaç ve günlük.
+                        reverted_files.append(Path(apply_args[i][0]))
+                        logger.warning(
+                            "Tip değişimi geri alındı (dizgi sabiti, karakter "
+                            "sabiti ya da yorum değişecekti): %s",
+                            apply_args[i][0],
+                        )
                 except TimeoutError:
                     errors.append(f"Apply timeout: {apply_args[i][0]}")
                 except BrokenExecutor as exc:
@@ -989,10 +1283,11 @@ class CTypeRecoverer:
 
         logger.info(
             "CTypeRecovery tamamlandi: %d struct (%d ghidra + %d pattern), "
-            "%d enum (%d ghidra + %d pattern), %d vtable, %d tip degisimi",
+            "%d enum (%d ghidra + %d pattern), %d vtable, %d tip degisimi, "
+            "%d dosyada tip değişimi geri alındı",
             len(structs), len(ghidra_structs), len(pattern_structs),
             len(enums), len(ghidra_enums), len(pattern_enums),
-            len(vtables), len(type_replacements),
+            len(vtables), len(type_replacements), len(reverted_files),
         )
 
         return CTypeRecoveryResult(
@@ -1005,6 +1300,8 @@ class CTypeRecoverer:
             output_files=output_files,
             total_types_recovered=total,
             errors=errors,
+            type_recovery_reverted=len(reverted_files),
+            reverted_files=reverted_files,
         )
 
     # ------------------------------------------------------------------

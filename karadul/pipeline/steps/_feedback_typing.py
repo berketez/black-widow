@@ -115,6 +115,27 @@ def run_typing_phase(
 # ---------------------------------------------------------------------------
 
 
+def _record_type_guard(stats: dict[str, Any], errors: list[str], type_result: Any) -> None:
+    """Tip kurtarmanın son koşul sayacını rapora taşı; geri alınan dosya sessiz kalmaz.
+
+    ``type_recovery_reverted``: tip değişimi dizgi, karakter sabiti ya da yorum metnini
+    değiştirdiği için özgün metniyle yazılan dosya sayısı. Yinelemeler arasında toplanır
+    (aynı dosya iki yinelemede geri alınırsa iki kez sayılır). Sayı olmayan alan (eski sonuç
+    nesnesi) yazılmaz.
+    """
+    reverted = getattr(type_result, "type_recovery_reverted", None)
+    if not isinstance(reverted, int) or isinstance(reverted, bool):
+        return
+    stats["type_recovery_reverted"] = stats.get("type_recovery_reverted", 0) + reverted
+    if reverted:
+        message = (
+            f"Type recovery: {reverted} dosyada tip değişimi dizgi ya da yorum metnini "
+            "değiştirdiği için geri alındı"
+        )
+        logger.warning(message)
+        errors.append(message)
+
+
 def _run_type_recovery(
     *,
     ctx: Any,
@@ -186,6 +207,7 @@ def _run_type_recovery(
             )
         else:
             errors.extend(type_result.errors)
+        _record_type_guard(stats, errors, type_result)
 
         # Incremental modda type_dir'e islenmemis dosyalari kopyala
         if incr_type_dir and type_result.success and type_result.output_files:
