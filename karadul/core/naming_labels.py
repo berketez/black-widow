@@ -27,7 +27,11 @@ PROVENANCE_GLOBAL = "global"
 # Köken kaydındaki strateji ve ön ad türü adları
 STRATEGY_KS1 = "ks1"
 STRATEGY_STRING_CONTEXT = "string_context"
-PRE_NAME_KIND_MANUAL = "elle"
+PRE_NAME_KIND_MANUAL = "elle"        # analistin verdiği ad
+PRE_NAME_KIND_MAIN = "main_giris"    # yükleyici bilgisinden (``__libc_start_main``) kurtarılan main
+PRE_NAME_KIND_KS1 = "ks1"            # KS-1 kesin çapası
+# Künyesinde ``exact`` olan ön ad temizlenmeden yazılır; ad bu biçimde değilse künye yok sayılır.
+EXACT_NAME_PATTERN = r"[A-Za-z_][A-Za-z0-9_]*"
 
 SOURCE_C_NAMER = "c_namer"
 

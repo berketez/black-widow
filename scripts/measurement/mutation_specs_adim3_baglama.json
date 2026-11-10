@@ -1,0 +1,397 @@
+{
+ "_comment": "N1 adım 3, KS-1 bağlama modülü (tarif/baglama.py) mutasyon koruması; tasarım docs/arge/2026-11-10_n1_adim3/baglama_tasarimi_taslak.md §5.4 (3. satır) ve ekleri. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_adim3_baglama.json",
+ "mutants": [
+  {
+   "id": "bag_etiket_hepsi_kesin",
+   "desc": "\"en az bir satır kesin\" → \"bütün satırlar kesin\" (çok türlü çapa etiketini yitirir)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_etiket_en_iyi_satir",
+   "find": "    if STATUS_KESIN in statuses:",
+   "replace": "    if statuses == {STATUS_KESIN}:"
+  },
+  {
+   "id": "bag_cpp_kesin_verilir",
+   "desc": "C++ ikilide de \"kesin\" etiketi verilir",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_etiket_cpp_ikilide_kesin_yok",
+   "find": "return LABEL_UNVERIFIED if cpp else LABEL_KESIN",
+   "replace": "return LABEL_KESIN"
+  },
+  {
+   "id": "bag_cpp_baglamaya_gecmez",
+   "desc": "bağlama C++ işaretini etiket kuralına geçirmez",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_uctan_uca_cpp_ikili",
+   "find": "label = anchor_label(rows, cpp=cpp, row_status=row_status)",
+   "replace": "label = anchor_label(rows, cpp=False, row_status=row_status)"
+  },
+  {
+   "id": "bag_sus_satir_ad_verir",
+   "desc": "susan satır \"doğrulanmadı\" etiketiyle ad verir",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_etiket_susan_satir_ad_vermez",
+   "find": "    if STATUS_UNVERIFIED in statuses:",
+   "replace": "    if statuses & {STATUS_UNVERIFIED, STATUS_SILENT}:"
+  },
+  {
+   "id": "bag_main_adi_ezilir",
+   "desc": "adı main olan (künyesiz) anahtara KS-1 yazar",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_yazma_main_korunur",
+   "find": "if kind in PROTECTED_KINDS or current == MAIN_NAME:",
+   "replace": "if kind in PROTECTED_KINDS:"
+  },
+  {
+   "id": "bag_main_kunyesi_ezilir",
+   "desc": "main girişi künyeli anahtar korunmaz",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_yazma_main_girisi_kunyesi_korunur",
+   "find": "PROTECTED_KINDS = frozenset({KIND_MANUAL, KIND_MAIN})",
+   "replace": "PROTECTED_KINDS = frozenset({KIND_MANUAL})"
+  },
+  {
+   "id": "bag_main_adi_ikinci_anahtara",
+   "desc": "main adı, başka bir anahtarda dururken ikinci bir anahtara verilir",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_yazma_main_adi_ikinci_anahtara_verilmez",
+   "find": "if anchor.name == MAIN_NAME and MAIN_NAME in extracted_names.values():",
+   "replace": "if False:"
+  },
+  {
+   "id": "bag_parca_satir_tasir",
+   "desc": "parça çapası satır taşır (türüne göre karar satırına girer)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_satir_tanimi_tablo",
+   "find": "    if role == K.ROLE_FRAGMENT:\n        return ()\n",
+   "replace": ""
+  },
+  {
+   "id": "bag_parca_nedeni_yok",
+   "desc": "parça çapası parça diye ayrılmaz (ad almaya aday olur; yalnız satırsız kaldığı için düşer)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_baglama_parca_ad_almaz_kayda_gecer",
+   "find": "    if anchor.role == K.ROLE_FRAGMENT:\n        return SKIP_FRAGMENT\n",
+   "replace": ""
+  },
+  {
+   "id": "bag_wilson_siniri_ge",
+   "desc": "Wilson alt sınırı hedefe eşitken de satır susar (> yerine >=)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_gecis_kurali_sinir_esitlikte_dogrulanmadi",
+   "find": "return STATUS_SILENT if low > target else STATUS_UNVERIFIED",
+   "replace": "return STATUS_SILENT if low >= target else STATUS_UNVERIFIED"
+  },
+  {
+   "id": "bag_macho_soyulmaz",
+   "desc": "Mach-O'da içe aktarılan adın baştaki _'ı soyulmadan C++ işareti aranır",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_cpp_ikili",
+   "find": "            name = name[1:]",
+   "replace": "            name = name[0:]  "
+  },
+  {
+   "id": "bag_macho_baglamaya_gecmez",
+   "desc": "bağlama dosya biçimini C++ sınamasına geçirmez (Mach-O ELF gibi sınanır)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_uctan_uca_cpp_ikili",
+   "find": "macho=is_macho(inp.executable_format))",
+   "replace": "macho=False)"
+  },
+  {
+   "id": "bag_n_sifir_kesin",
+   "desc": "ölçülmemiş satır (n = 0) karar kesin ise kesin olur",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_gecis_kurali_dort_satir",
+   "find": "    if n == 0:\n        return STATUS_SILENT\n    if decision == DECISION_KESIN:",
+   "replace": "    if decision == DECISION_KESIN:"
+  },
+  {
+   "id": "bag_kesin_degil_kesin_olur",
+   "desc": "kesin_degil kararı da kesin durumuna geçer",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_gecis_kurali_kesin_yalniz_kesin_karardan",
+   "find": "    if decision == DECISION_KESIN:\n        return STATUS_KESIN",
+   "replace": "    if decision != DECISION_INSUFFICIENT:\n        return STATUS_KESIN"
+  },
+  {
+   "id": "bag_yetersiz_kesin_olur",
+   "desc": "yetersiz kararı da kesin durumuna geçer",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_gecis_kurali_kesin_yalniz_kesin_karardan",
+   "find": "    if decision == DECISION_KESIN:\n        return STATUS_KESIN",
+   "replace": "    if decision != DECISION_NOT_KESIN:\n        return STATUS_KESIN"
+  },
+  {
+   "id": "bag_yanlis_hedefi",
+   "desc": "yanlış oranı hedefi %10 yerine %20 (N0b kuralından ayrışır)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_gecis_kurali_n0b_kuraliyla_ayni",
+   "find": "WRONG_RATE_TARGET = 0.10 ",
+   "replace": "WRONG_RATE_TARGET = 0.2 "
+  },
+  {
+   "id": "bag_yanlis_hedefi_gercek_tablo",
+   "desc": "yanlış oranı hedefi %15: gerçek ölçüm sayılarında assert satırı susmaz",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_gecis_kurali_gercek_olcum_sayilariyla",
+   "find": "WRONG_RATE_TARGET = 0.10 ",
+   "replace": "WRONG_RATE_TARGET = 0.150 "
+  },
+  {
+   "id": "bag_wilson_z",
+   "desc": "Wilson z değeri %99'a göre (2,576)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_gecis_kurali_n0b_kuraliyla_ayni",
+   "find": "WILSON_Z = 1.96  ",
+   "replace": "WILSON_Z = 2.576  "
+  },
+  {
+   "id": "bag_tablo_eksik_satir_ad_verir",
+   "desc": "ölçümde geçmeyen karar satırı doğrulanmadı sayılır",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_satir_tablosu_eksik_satir_susar_yabanci_satir_hata",
+   "find": "        else:\n            table[row] = STATUS_SILENT",
+   "replace": "        else:\n            table[row] = STATUS_UNVERIFIED"
+  },
+  {
+   "id": "bag_tablo_yabanci_satir",
+   "desc": "karar satırı olmayan anahtar (export) sessizce kabul edilir",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_satir_tablosu_eksik_satir_susar_yabanci_satir_hata",
+   "find": "    if unknown:\n        raise ValueError(f\"karar satırı değil: {unknown}\")\n",
+   "replace": ""
+  },
+  {
+   "id": "bag_urun_tablosu_acik",
+   "desc": "ürün tablosu \"aç\" commit'inden önce kesin ile dolu",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_urun_tablosu_ac_commitine_kadar_susar",
+   "find": "MappingProxyType({row: STATUS_SILENT for row in DECISION_ROWS})",
+   "replace": "MappingProxyType({row: STATUS_KESIN for row in DECISION_ROWS})"
+  },
+  {
+   "id": "bag_tabloda_olmayan_satir_kesin",
+   "desc": "satır tablosunda bulunmayan satır kesin sayılır",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_etiket_tabloda_olmayan_satir_susar",
+   "find": "statuses = {row_status.get(row, STATUS_SILENT) for row in rows}",
+   "replace": "statuses = {row_status.get(row, STATUS_KESIN) for row in rows}"
+  },
+  {
+   "id": "bag_assert_rol_aranmaz",
+   "desc": "assert satırı role bakmaz (kaldırılmış assert de assert satırına girer)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_satir_tanimi_gorunum_ile_ayni",
+   "find": "ROW_ASSERT: K.TYPE_ASSERT in have and role == K.ROLE_OWN,",
+   "replace": "ROW_ASSERT: K.TYPE_ASSERT in have,"
+  },
+  {
+   "id": "bag_ust_satiri_ture_bakar",
+   "desc": "assert_ust satırı yalnız assert türlü çapayı alır (ölçüm yalnız role bakar)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_satir_tanimi_gorunum_ile_ayni",
+   "find": "ROW_ASSERT_LIFTED: role == K.ROLE_LIFTED,",
+   "replace": "ROW_ASSERT_LIFTED: role == K.ROLE_LIFTED and K.TYPE_ASSERT in have,"
+  },
+  {
+   "id": "bag_aktarma_satiri_yok",
+   "desc": "func_aktarma türü kendi satırına girmez",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_satir_tanimi_tablo",
+   "find": "ROW_FORWARD: K.TYPE_FORWARD in have,",
+   "replace": "ROW_FORWARD: False,"
+  },
+  {
+   "id": "bag_cpp_isareti_eksik",
+   "desc": "C++ işaretlerinden __cxa_throw düşer",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_cpp_isaretleri_olcumle_ayni",
+   "find": "\"__cxa_end_catch\", \"__cxa_throw\",",
+   "replace": "\"__cxa_end_catch\","
+  },
+  {
+   "id": "bag_cpp_ic_fonksiyon",
+   "desc": "C++ işareti iç fonksiyon adlarında da aranır",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_cpp_ikili",
+   "find": "        if not (f.get(\"is_thunk\") or f.get(\"is_external\")):\n            continue\n",
+   "replace": ""
+  },
+  {
+   "id": "bag_fun_disi_anahtar",
+   "desc": "FUN_ olmayan Ghidra adı (entry, _INIT_1) da anahtar olur",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_anahtar_yalniz_fun",
+   "find": "FUN_KEY_RE = re.compile(r\"^FUN_[0-9a-fA-F]+$\")",
+   "replace": "FUN_KEY_RE = re.compile(r\"^\\w+$\")"
+  },
+  {
+   "id": "bag_fun_disi_capa_ad_alir",
+   "desc": "anahtarı FUN_ olmayan çapa atlanmaz",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_baglama_fun_disi_anahtar_atlanir",
+   "find": "    if not key:\n        return SKIP_KEY\n",
+   "replace": ""
+  },
+  {
+   "id": "bag_export_capa_sayilir",
+   "desc": "export çapası dizgi çapası gibi işlenir",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_baglama_export_ad_almaz_yalniz_sayilir",
+   "find": "        if not set(anchor.types) & set(K.STRING_TYPES):",
+   "replace": "        if not anchor.types:"
+  },
+  {
+   "id": "bag_ad_bicimi_denetlenmez",
+   "desc": "tanımlayıcı olmayan ad olduğu gibi yazılmaya aday olur",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_baglama_ad_oldugu_gibi_ve_tanimlayici",
+   "find": "    if not K.name_candidate(anchor.name):\n        return SKIP_NAME_FORM\n",
+   "replace": ""
+  },
+  {
+   "id": "bag_kunye_exact_degil",
+   "desc": "KS-1 künyesi adı temizlemeye bırakır (exact yanlış)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_baglama_kunye_bicimi",
+   "find": "return {\"kind\": KIND_KS1, \"name\": self.name, \"exact\": True,",
+   "replace": "return {\"kind\": KIND_KS1, \"name\": self.name, \"exact\": False,"
+  },
+  {
+   "id": "bag_sira_sozluk_sirasi",
+   "desc": "çapalar adres dizgisine göre sıralanır (sayısal değil)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_baglama_adrese_gore_sirali",
+   "find": "for address in sorted(result.anchors, key=lambda a: int(a, 16)):",
+   "replace": "for address in sorted(result.anchors):"
+  },
+  {
+   "id": "bag_turler_daraltilir",
+   "desc": "çıkarıcı yalnız dizgi türleriyle çağrılır (ölçülen çapa kümesinden ayrılır)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_cikarim_turleri_daraltilmaz",
+   "find": "result = K.extract(inp)",
+   "replace": "result = K.extract(inp, types=K.STRING_TYPES)"
+  },
+  {
+   "id": "bag_elle_ad_ezilir",
+   "desc": "elle künyeli anahtar korunmaz",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_yazma_elle_ad_korunur",
+   "find": "PROTECTED_KINDS = frozenset({KIND_MANUAL, KIND_MAIN})",
+   "replace": "PROTECTED_KINDS = frozenset({KIND_MAIN})"
+  },
+  {
+   "id": "bag_ezilen_sayilmaz",
+   "desc": "ezilen Faz 1 adı sayılmaz",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_yazma_faz1_adi_ezilir_ve_sayilir",
+   "find": "overrode[kind] = overrode.get(kind, 0) + 1",
+   "replace": "overrode[kind] = overrode.get(kind, 0)"
+  },
+  {
+   "id": "bag_faz1_adi_ezilmez",
+   "desc": "anahtarda başka bir ad varsa KS-1 yazmaz",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_yazma_faz1_adi_ezilir_ve_sayilir",
+   "find": "        if current != anchor.name or meta.get(key) != new_entry:",
+   "replace": "        if current is None:"
+  },
+  {
+   "id": "bag_ikinci_cagri_yazar",
+   "desc": "ikinci çağrı aynı adı yeniden yazar (yazma sayacı şişer)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_yazma_ikinci_cagri_degisiklik_yapmaz",
+   "find": "        if current != anchor.name or meta.get(key) != new_entry:",
+   "replace": "        if True:"
+  },
+  {
+   "id": "bag_ezilen_sayaci_birikmez",
+   "desc": "ezilen ad sayacı ikinci çağrıda sıfırlanır",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_yazma_ikinci_cagri_degisiklik_yapmaz",
+   "find": "        total = dict(stats.get(\"ks1_overrode\") or {})",
+   "replace": "        total = dict()"
+  },
+  {
+   "id": "bag_kunye_adi_denetlenmez",
+   "desc": "adı uyuşmayan künye geçerli sayılır (etiket yanlış ada geçer)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_kunye_ad_uyusmazliginda_yok_sayilir",
+   "find": "    if not isinstance(entry, dict) or entry.get(\"name\") != name:",
+   "replace": "    if not isinstance(entry, dict):"
+  },
+  {
+   "id": "bag_yapit_yokken_durum",
+   "desc": "yapıt yokken de istatistik yazılır (bugünkü davranış değişir)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_yazma_yapit_yoksa_dokunmaz",
+   "find": "    if binding is None:\n        return summary\n",
+   "replace": "    binding = binding or disabled()\n"
+  },
+  {
+   "id": "bag_ks1_disi_kesin_etiket",
+   "desc": "KS-1 dışı tür de künyesindeki \"kesin\" etiketini alır",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_on_ad_etiketi",
+   "find": "    if kind == KIND_KS1 and entry.get(\"label\") == LABEL_KESIN:",
+   "replace": "    if entry.get(\"label\") == LABEL_KESIN:"
+  },
+  {
+   "id": "bag_elle_etiket_tasir",
+   "desc": "elle ad \"doğrulanmadı\" etiketi taşır",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_on_ad_etiketi",
+   "find": "    if kind == KIND_MANUAL:\n        return None\n",
+   "replace": ""
+  },
+  {
+   "id": "bag_exact_her_tur",
+   "desc": "olduğu gibi yazım tür sınırı olmadan künyeye bırakılır",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_on_ad_yazimi",
+   "find": "entry.get(\"kind\") in EXACT_KINDS and entry.get(\"exact\") is True",
+   "replace": "entry.get(\"exact\") is True"
+  },
+  {
+   "id": "bag_isleme_sirasi",
+   "desc": "ön adların işleme sırasında KS-1, main girişinin önüne geçer",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_on_ad_isleme_sirasi",
+   "find": "PRE_NAME_ORDER = (KIND_MANUAL, KIND_MAIN, KIND_KS1)",
+   "replace": "PRE_NAME_ORDER = (KIND_MANUAL, KIND_KS1, KIND_MAIN, )"
+  },
+  {
+   "id": "bag_tur_isareti_hepsine",
+   "desc": "tohumun dokunmadığı anahtarlara da tür yazılır",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_tur_isaretleme_yalniz_degisen_anahtarlar",
+   "find": "changed = [key for key, name in after.items() if before.get(key) != name]",
+   "replace": "changed = [key for key, name in after.items()]"
+  },
+  {
+   "id": "bag_eksik_dosya_hata_olur",
+   "desc": "eksik girdi dosyası girdi_eksik yerine başka bir duruma düşer",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_durum_girdi_eksik_dosya",
+   "find": "    if missing:\n        return Binding(status=RUN_INPUT_MISSING, detail=\"eksik dosya: \" + \", \".join(missing),\n                       row_status=table)\n",
+   "replace": ""
+  },
+  {
+   "id": "bag_desteklenmeyen_ok",
+   "desc": "desteklenmeyen platform ok durumuyla raporlanır",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_durum_desteklenmeyen_platform",
+   "find": "row_status=row_status, status=RUN_UNSUPPORTED,",
+   "replace": "row_status=row_status, status=RUN_OK,"
+  },
+  {
+   "id": "bag_disassembly_yok_ok",
+   "desc": "gömülü disassembly yokken durum ok kalır",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_durum_girdi_eksik_disassembly_yok",
+   "find": "    if not inp.code:\n        return Binding(status=RUN_INPUT_MISSING, detail=\"gömülü disassembly yok\",\n                       program=inp.program, abi=result.abi, cpp=cpp, row_status=table)\n",
+   "replace": ""
+  }
+ ]
+}
