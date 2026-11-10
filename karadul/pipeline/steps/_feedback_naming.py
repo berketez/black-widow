@@ -124,7 +124,10 @@ def run_naming_phase(
         and _has_output
         and not (incremental_files is not None and iter_index > 0)
     ):
-        decompiled_dir = _compute_namer_output(
+        # Yalnız yol hesaplanır. Burada _compute_namer_output çağrılırsa
+        # (v1.10.0 M15 temizliği) isimlendiricinin az önce yazdığı
+        # src_iterN silinir ve sonraki bütün adımlar boş dizinle çalışır.
+        decompiled_dir = _namer_output_path(
             reconstructed_dir, output_dir, iter_index,
         )
 
@@ -194,11 +197,25 @@ def run_naming_phase(
 # ---------------------------------------------------------------------------
 
 
+def _namer_output_path(
+    reconstructed_dir: Path, output_dir: Path, iter_index: int,
+) -> Path:
+    """İsimlendirici çıktı dizininin yolu. Diske dokunmaz."""
+    if iter_index > 0:
+        return reconstructed_dir / f"src_iter{iter_index}"
+    return output_dir
+
+
 def _compute_namer_output(
     reconstructed_dir: Path, output_dir: Path, iter_index: int,
 ) -> Path:
+    """Çıktı dizinini hazırlar: iter > 0 ise eski içeriği siler.
+
+    Yalnız isimlendirici yazmadan ÖNCE çağrılır; yazdıktan sonra yol
+    gerekiyorsa _namer_output_path kullanılır.
+    """
     if iter_index > 0:
-        out = reconstructed_dir / f"src_iter{iter_index}"
+        out = _namer_output_path(reconstructed_dir, output_dir, iter_index)
         # v1.10.0 M15: stale iter ciktisini temizle (onceki kosudan kalan
         # dosyalar yeni isimlendirme ile karismasin).
         if out.exists():
