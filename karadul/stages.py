@@ -2577,14 +2577,25 @@ class ReconstructionStage(Stage):
         static_dir: "Path | None",
         context: "PipelineContext",
         stats: dict,
+        *,
+        kesin: Any = None,
+        meta: "dict | None" = None,
     ) -> dict:
         """Deterministik kurtarma isimlerini pre_names kanalina (extracted_names)
         enjekte eder ve manuel-override haritasini dondurur.
 
         Oncelik sirasi (TEK tanim -- CLAUDE.md §11, dagitik if yok):
-          analist override > main (loader-kesin) > gnulib fingerprint (upstream,
-          GT-leakage yok) > ELF/CRT boilerplate. Her kurtarma "onceki isim varsa
-          EZME" guard'i tasir; bu yuzden sira = oncelik ve iki kez cagri idempotent.
+          analist override > main (loader-kesin) > KS-1 kesin çapası > Faz 1 adları
+          > gnulib fingerprint (upstream, GT-leakage yok) > ELF/CRT boilerplate.
+          Çağrı sırası: main -> KS-1 -> gnulib -> boilerplate -> override. main ve
+          override var olanı ezer, KS-1 yalnız korunmayan adı ezer, gnulib ve
+          boilerplate yalnız boş yuvaya yazar; bu yüzden iki kez çağrı idempotent.
+
+        ``kesin`` / ``meta`` (plan v2.2 N1 adım 3): ``kesin_anchors`` adımının
+        bağlaması ve ön ad künyesi (anahtar -> tür). ``meta`` verilmezse KS-1
+        uygulanmaz, künye tutulmaz: davranış eskisiyle aynıdır. Tohumların imzası
+        değişmediği için tür, sözlüğün önceki ve sonraki hâli karşılaştırılarak
+        bulunur; mantık ``tarif/baglama.py``'dedir.
 
         STEP REGISTRY TUZAGI (kok sebep, 2026-07-16): Bu tohum, Phase-2
         ``feedback_loop`` naming step'inden ONCE calismali. Aksi halde c_namer
@@ -2597,10 +2608,33 @@ class ReconstructionStage(Stage):
         """
         if not isinstance(extracted_names, dict):
             return {}
+        if meta is None:
+            self._recover_main_from_entry(extracted_names, static_dir, stats)
+            self._recover_gnulib_from_fingerprints(extracted_names, static_dir, stats)
+            self._recover_elf_boilerplate(extracted_names, static_dir, stats)
+            return self._apply_manual_overrides(extracted_names, context, stats)
+
+        from karadul.reconstruction.tarif import baglama as _bg
+
+        # Künyesi olmayan mevcut adlar Faz 1'den (BinaryNameExtractor, byte pattern, CAPA).
+        _bg.mark_changed(
+            meta, {}, {k: v for k, v in extracted_names.items() if k not in meta},
+            _bg.KIND_PHASE1,
+        )
+        before = dict(extracted_names)
         self._recover_main_from_entry(extracted_names, static_dir, stats)
+        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_MAIN)
+        _bg.apply_binding(extracted_names, kesin, meta, stats)
+        before = dict(extracted_names)
         self._recover_gnulib_from_fingerprints(extracted_names, static_dir, stats)
+        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_GNULIB)
+        before = dict(extracted_names)
         self._recover_elf_boilerplate(extracted_names, static_dir, stats)
-        return self._apply_manual_overrides(extracted_names, context, stats)
+        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_ELF_BOILERPLATE)
+        manual_map = self._apply_manual_overrides(extracted_names, context, stats)
+        for key, name in manual_map.items():
+            meta[key] = _bg.make_meta(_bg.KIND_MANUAL, name)
+        return manual_map
 
     def _recover_main_from_entry(
         self, extracted_names: dict, static_dir: "Path | None", stats: dict
@@ -3062,8 +3096,16 @@ class ReconstructionStage(Stage):
                 "geciliyor. Config/YAML override'inizi kaldirabilirsiniz.",
             )
             _use_step_registry = True  # monolith fallback silindi -> tek yol.
+        # Plan v2.2 N1 adım 3: KS-1 bağlaması ve ön ad künyesi. Step yolu doldurur;
+        # None iken tohum eskisi gibi çalışır.
+        _ks1_binding: Any = None
+        _pre_name_meta: dict | None = None
         if _use_step_registry:
             from karadul.pipeline.runner import PipelineRunner
+            from karadul.pipeline.steps.kesin_anchors import (
+                seed_inputs as _ks1_seed_inputs,
+                with_pre_name_meta as _with_pre_name_meta,
+            )
             try:
                 # v1.10.0 M4 entegrasyon: computation paketleri Phase 1'e
                 # eklendi.
@@ -3074,6 +3116,9 @@ class ReconstructionStage(Stage):
                 runner = PipelineRunner(steps=[
                     "binary_prep",
                     "ghidra_metadata",
+                    # Plan v2.2 N1 adım 3: KS-1 kesin çapaları (static/'ten bir kez
+                    # çıkarılır; bayrak kapalıyken iş yapmaz). Adları aşağıdaki tohum yazar.
+                    "kesin_anchors",
                     # v1.11.0 Hafta 1: BSim SHADOW MODE — ghidra_metadata
                     # sonrasi (bsim_matches.json resolve edilebilsin),
                     # byte_pattern oncesi. Fusion'a/NameMerger'a YAZMAZ,
@@ -3146,6 +3191,8 @@ class ReconstructionStage(Stage):
             extracted_names = _a["extracted_names"]
             calibrated_matches = _a["calibrated_matches"]
             _capa_capabilities = _a["capa_capabilities"]
+            # kesin_anchors: bağlama ve ön ad künyesi (adım kapalıysa ikisi de None)
+            _ks1_binding, _pre_name_meta = _ks1_seed_inputs(_a.get("kesin_anchors"))
 
             # stats/errors/artifacts merge — step'lerin biriktirdigi.
             # v1.14.0 Dalga 0: artifacts_pending mirror'i kaldirildi;
@@ -3171,6 +3218,7 @@ class ReconstructionStage(Stage):
             if isinstance(extracted_names, dict):
                 self._seed_recovery_pre_names(
                     extracted_names, static_dir, context, stats,
+                    kesin=_ks1_binding, meta=_pre_name_meta,
                 )
 
             # v1.10.0 M1 T3.4: Phase 2 — feedback_loop + struct_recovery
@@ -3186,9 +3234,10 @@ class ReconstructionStage(Stage):
                     "computation_struct_recovery",
                     "struct_recovery",
                 ])
+                # Künye c_namer'a bu tohumla ulaşır (ctx.artifacts["pre_name_meta"]).
                 step_ctx2 = runner_phase2.run(
                     context,
-                    seed_artifacts=dict(step_ctx.artifacts),
+                    seed_artifacts=_with_pre_name_meta(step_ctx.artifacts, _pre_name_meta),
                 )
             except RuntimeError as exc:
                 return StageResult(
@@ -3292,6 +3341,7 @@ class ReconstructionStage(Stage):
             extracted_names = {}
         _manual_overrides_map = self._seed_recovery_pre_names(
             extracted_names, static_dir, context, stats,
+            kesin=_ks1_binding, meta=_pre_name_meta,
         )
 
         # 1.9. Assembly Analysis -- Ghidra decompiler fallback

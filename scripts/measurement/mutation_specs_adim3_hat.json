@@ -1,0 +1,405 @@
+{
+ "_comment": "Plan v2.2 N1 adım 3, 6. ve 7. commit: hat bağlantısı (kesin_anchors adımı, c_namer'ın bayraklara göre kurulması, künyenin c_namer'a geçmesi, rapor sayaçları, NameMerger eşiği) ve stages.py (adım listesi, tohum sırası, künyenin Faz 2 tohumuna girmesi). Her mutant bir davranışı bozar; ilgili test KIRMIZI olmalı (killed) ve gerçek test başarısızlığıyla ölmeli (toplama ya da içe aktarma hatasıyla değil). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_adim3_hat.json -v",
+ "mutants": [
+  {
+   "id": "hat_adim_bayrak_yok_sayilir",
+   "desc": "kesin_anchors adımı bayrağa bakmadan çalışır (tasarım §5.4 satır 6)",
+   "module": "karadul/pipeline/steps/kesin_anchors.py",
+   "test": "tests/test_step_kesin_anchors.py::test_bayrak_kapaliyken_is_yapmaz",
+   "find": "if not ks1_enabled(getattr(pc, \"config\", None)):",
+   "replace": "if False and not ks1_enabled(getattr(pc, \"config\", None)):"
+  },
+  {
+   "id": "hat_adim_deobfuscated_okunur",
+   "desc": "girdi static/ yerine deobfuscated/ dizininden okunur (tasarım §5.4 satır 6)",
+   "module": "karadul/pipeline/steps/kesin_anchors.py",
+   "test": "tests/test_step_kesin_anchors.py::test_girdi_static_dizinidir_deobfuscated_degil",
+   "find": "KS1_INPUT_STAGE = \"static\"",
+   "replace": "KS1_INPUT_STAGE = \"deobfuscated\""
+  },
+  {
+   "id": "hat_adim_dogru_benzeri_bayrak",
+   "desc": "bayrak gerçek True yerine doğru benzeri her değerle açılır",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_step_kesin_anchors.py::test_sahte_yapilandirma_bayragi_acmaz",
+   "find": "return getattr(br_cfg, name, False) is True",
+   "replace": "return bool(getattr(br_cfg, name, False))"
+  },
+  {
+   "id": "hat_adim_yan_cikti_yazilmaz",
+   "desc": "kesin_capalar.json yazılmaz",
+   "module": "karadul/pipeline/steps/kesin_anchors.py",
+   "test": "tests/test_step_kesin_anchors.py::test_bayrak_acikken_yapit_ve_yan_cikti",
+   "find": "        self._dump(ctx, binding)\n",
+   "replace": "        pass  # mutant: yan çıktı yok\n"
+  },
+  {
+   "id": "hat_adim_yan_cikti_ascii",
+   "desc": "yan çıktı \\u kaçışlarıyla yazılır (etiketler okunmaz)",
+   "module": "karadul/pipeline/steps/kesin_anchors.py",
+   "test": "tests/test_step_kesin_anchors.py::test_bayrak_acikken_yapit_ve_yan_cikti",
+   "find": "json.dumps(binding.as_dict(), indent=2, ensure_ascii=False)",
+   "replace": "json.dumps(binding.as_dict(), indent=2, ensure_ascii=True)"
+  },
+  {
+   "id": "hat_adim_durum_yazilmaz",
+   "desc": "çıkarımın durumu istatistiklere yazılmaz",
+   "module": "karadul/pipeline/steps/kesin_anchors.py",
+   "test": "tests/test_step_kesin_anchors.py::test_girdi_eksikse_hat_dusmez",
+   "find": "        ctx.stats[KS1_STAT_STATUS] = binding.status\n",
+   "replace": "        pass  # mutant: durum yok\n"
+  },
+  {
+   "id": "hat_adim_hata_hatti_dusurur",
+   "desc": "dizin çözülemezse hata yakalanmaz, hat düşer",
+   "module": "karadul/pipeline/steps/kesin_anchors.py",
+   "test": "tests/test_step_kesin_anchors.py::test_dizin_cozulemezse_hat_dusmez",
+   "find": "        except Exception as exc:  # bind_static fırlatmaz",
+   "replace": "        except ZeroDivisionError as exc:  # bind_static fırlatmaz"
+  },
+  {
+   "id": "hat_tohum_kapali_baglama_kunye_uretir",
+   "desc": "adım kapalıyken de künye sözlüğü üretilir (bayrak kapalıyken ön ad sırası değişirdi)",
+   "module": "karadul/pipeline/steps/kesin_anchors.py",
+   "test": "tests/test_step_kesin_anchors.py::test_tohum_girdileri",
+   "find": "if not isinstance(artifact, baglama.Binding) or artifact.status == baglama.RUN_DISABLED:",
+   "replace": "if not isinstance(artifact, baglama.Binding):"
+  },
+  {
+   "id": "hat_faz2_tohumu_kunyesiz",
+   "desc": "künye Faz 2 tohumuna yazılmaz",
+   "module": "karadul/pipeline/steps/kesin_anchors.py",
+   "test": "tests/test_step_kesin_anchors.py::test_faz2_tohumu",
+   "find": "        seed[PRE_NAME_META_KEY] = meta\n",
+   "replace": "        pass  # mutant: künye yok\n"
+  },
+  {
+   "id": "hat_faz2_tohumu_bos_kunye_duser",
+   "desc": "boş künye sözlüğü tohuma girmez (None ile boş karışır)",
+   "module": "karadul/pipeline/steps/kesin_anchors.py",
+   "test": "tests/test_step_kesin_anchors.py::test_faz2_tohumu",
+   "find": "    if meta is not None:\n        seed[PRE_NAME_META_KEY] = meta",
+   "replace": "    if meta:\n        seed[PRE_NAME_META_KEY] = meta"
+  },
+  {
+   "id": "hat_c_namer_susturma_verilmez",
+   "desc": "susturma bayrağı açıkken susan küme c_namer'a verilmez",
+   "module": "karadul/pipeline/steps/feedback_loop.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_susturma_bayragi_hatta_etkili",
+   "find": "    if config_flag(br_cfg, \"enable_subchannel_silencing\"):\n        options",
+   "replace": "    if False and config_flag(br_cfg, \"enable_subchannel_silencing\"):\n        options"
+  },
+  {
+   "id": "hat_c_namer_susturma_hep_acik",
+   "desc": "susturma bayrak kapalıyken de uygulanır (bayrak yok sayılır)",
+   "module": "karadul/pipeline/steps/feedback_loop.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_bayraklar_kapaliyken_hat_ciktisi_bayt_bayt_ayni",
+   "find": "    if config_flag(br_cfg, \"enable_subchannel_silencing\"):\n        options",
+   "replace": "    if True or config_flag(br_cfg, \"enable_subchannel_silencing\"):\n        options"
+  },
+  {
+   "id": "hat_c_namer_susan_kume_hepsi",
+   "desc": "susan küme yerine bütün alt kanallar verilir (oz_ad ve kebap_ad da susar)",
+   "module": "karadul/pipeline/steps/feedback_loop.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_c_namer_secenekleri_bayraklara_gore",
+   "find": "options[\"silenced_subchannels\"] = _alt_kanal.SILENCED_SUBCHANNELS",
+   "replace": "options[\"silenced_subchannels\"] = frozenset(_alt_kanal.SUBCHANNEL_NAMES)"
+  },
+  {
+   "id": "hat_c_namer_esik_verilmez",
+   "desc": "ürün eşiği bayrağı açıkken eşik c_namer'a verilmez (tasarım §5.4 satır 6: eşik uygulanmaz)",
+   "module": "karadul/pipeline/steps/feedback_loop.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_esik_bayragi_hatta_etkili",
+   "find": "        options[\"global_min_confidence\"] = threshold\n",
+   "replace": "        pass  # mutant: eşik yok\n"
+  },
+  {
+   "id": "hat_esik_hep_acik",
+   "desc": "ürün eşiği bayrak kapalıyken de uygulanır",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_bayraklar_kapaliyken_hat_ciktisi_bayt_bayt_ayni",
+   "find": "    if not config_flag(br_cfg, \"apply_global_naming_threshold\"):\n        return None",
+   "replace": "    if False and not config_flag(br_cfg, \"apply_global_naming_threshold\"):\n        return None"
+  },
+  {
+   "id": "hat_esik_degeri_sabit",
+   "desc": "eşik min_naming_confidence yerine sabit 0,7 olur",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_esik_degeri_yapilandirmadan",
+   "find": "    return float(value)\n",
+   "replace": "    return 0.7 + 0.0 * float(value)\n"
+  },
+  {
+   "id": "hat_esik_yanlis_bayrak",
+   "desc": "ürün eşiği susturma bayrağına bağlanır",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_kol_kimligi",
+   "find": "    if not config_flag(br_cfg, \"apply_global_naming_threshold\"):",
+   "replace": "    if not config_flag(br_cfg, \"enable_subchannel_silencing\"):"
+  },
+  {
+   "id": "hat_on_kurulum_secenekler_verilmez",
+   "desc": "c_namer bayraklara bakılmadan öntanımlı kurulur (tasarım §5.4 satır 6: bayrak yok sayılır)",
+   "module": "karadul/pipeline/steps/feedback_loop.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_on_kurulum_bayraklar_acikken",
+   "find": "pc.config, **c_namer_options(pc.config.binary_reconstruction),",
+   "replace": "pc.config, **{},"
+  },
+  {
+   "id": "hat_kol_kimligi_yazilmaz",
+   "desc": "naming_flags istatistiklere (rapora) yazılmaz",
+   "module": "karadul/pipeline/steps/feedback_loop.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_dongu_kol_kimligini_istatistiklere_yazar",
+   "find": "        ctx.stats[\"naming_flags\"] = naming_flags(cfg)\n",
+   "replace": "        naming_flags(cfg)  # mutant: yazılmaz\n"
+  },
+  {
+   "id": "hat_kol_kimligi_ks1_yanlis_bayrak",
+   "desc": "kol kimliğinde ks1 alanı susturma bayrağını gösterir",
+   "module": "karadul/pipeline/steps/feedback_loop.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_kol_kimligi",
+   "find": "\"ks1\": config_flag(br_cfg, \"enable_ks1_anchors\"),",
+   "replace": "\"ks1\": config_flag(br_cfg, \"enable_subchannel_silencing\"),"
+  },
+  {
+   "id": "hat_kol_kimligi_esik_bool",
+   "desc": "kol kimliğinde eşik değeri yerine doğruluk değeri yazılır",
+   "module": "karadul/pipeline/steps/feedback_loop.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_kol_kimligi",
+   "find": "\"global_threshold\": global_naming_threshold(br_cfg),",
+   "replace": "\"global_threshold\": global_naming_threshold(br_cfg) is not None,"
+  },
+  {
+   "id": "hat_kunye_c_namera_gecmez",
+   "desc": "tohumdaki künye c_namer'a verilmez (KS-1 adı sıradan ön ad olur)",
+   "module": "karadul/pipeline/steps/_feedback_naming.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_kunye_faz2_tohumundan_c_namera_ulasir",
+   "find": "                meta_kwargs[\"pre_name_meta\"] = pre_name_meta\n",
+   "replace": "                pass  # mutant: künye yok\n"
+  },
+  {
+   "id": "hat_kunye_yokken_de_gecer",
+   "desc": "künye yokken de pre_name_meta parametresi verilir (bugünkü çağrı değişir)",
+   "module": "karadul/pipeline/steps/_feedback_naming.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_kunye_yokken_c_namer_bugunku_cagriyla",
+   "find": "            if pre_name_meta is not None:\n                meta_kwargs",
+   "replace": "            if True or pre_name_meta is not None:\n                meta_kwargs"
+  },
+  {
+   "id": "hat_kunye_sozluk_denetimi_yok",
+   "desc": "sözlük olmayan yapıt künye diye c_namer'a verilir",
+   "module": "karadul/pipeline/steps/_feedback_naming.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_sozluk_olmayan_kunye_gecirilmez",
+   "find": "    return meta if isinstance(meta, dict) else None",
+   "replace": "    return meta"
+  },
+  {
+   "id": "hat_etiket_sayaci_yazilmaz",
+   "desc": "naming_by_label ve naming_silenced istatistiklere yazılmaz",
+   "module": "karadul/pipeline/steps/_feedback_naming.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_susturma_bayragi_hatta_etkili",
+   "find": "            _record_label_stats(naming_result, stats)\n",
+   "replace": "            pass  # mutant: sayaç yok\n"
+  },
+  {
+   "id": "hat_etiket_sayaci_anahtar_sayar",
+   "desc": "etiket sayacı etiketleri değil anahtarları sayar (her biri 1)",
+   "module": "karadul/pipeline/steps/_feedback_naming.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_etiket_sayaclari_gercek_sayilardan",
+   "find": "            by_label[label] = by_label.get(label, 0) + 1",
+   "replace": "            by_label[label] = 1  # mutant"
+  },
+  {
+   "id": "hat_merger_esik_uygulanmaz",
+   "desc": "NameMerger çıktısına ürün eşiği uygulanmaz (tasarım §5.4 satır 6)",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_name_merger_esigi_bayrak_acikken",
+   "find": "            final_naming_map, merge_result.merged_names, threshold,\n",
+   "replace": "            final_naming_map, merge_result.merged_names, None,\n"
+  },
+  {
+   "id": "hat_merger_esik_esitlikte_duser",
+   "desc": "eşiğe eşit güven de düşer (< yerine <=)",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_esik_genel_anahtarlari_dusurur",
+   "find": "            and confidence < threshold\n",
+   "replace": "            and confidence <= threshold\n"
+  },
+  {
+   "id": "hat_merger_esik_yerel_anahtara",
+   "desc": "eşik yerel anahtarlara (fonksiyon::ad) da uygulanır",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_esik_genel_anahtarlari_dusurur",
+   "find": "            \"::\" not in key\n",
+   "replace": "            (\"::\" not in key or True)\n"
+  },
+  {
+   "id": "hat_merger_esik_ters",
+   "desc": "eşiğin üstündekiler düşer, altındakiler kalır",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_name_merger_esigi_bayrak_acikken",
+   "find": "            and confidence < threshold\n",
+   "replace": "            and confidence >= threshold\n"
+  },
+  {
+   "id": "hat_merger_sayac_sifirda_yazilmaz",
+   "desc": "düşen yokken sayaç yazılmaz (ölçülmüş 0 ile ölçülmemiş karışır)",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_name_merger_esigi_dusen_yoksa_sifir_yazar",
+   "find": "        if threshold is not None:\n            stats[\"name_merger_below_global_min\"] = below",
+   "replace": "        if below:\n            stats[\"name_merger_below_global_min\"] = below"
+  },
+  {
+   "id": "hat_merger_sayac_kapaliyken_yazilir",
+   "desc": "bayrak kapalıyken de eşik sayacı yazılır (uydurma 0)",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_adim3_hat_baglantisi.py::test_name_merger_esigi_bayrak_kapaliyken_uygulanmaz",
+   "find": "        if threshold is not None:\n            stats[\"name_merger_below_global_min\"] = below",
+   "replace": "        if True:\n            stats[\"name_merger_below_global_min\"] = below"
+  },
+  {
+   "id": "stages_ks1_main_den_once",
+   "desc": "KS-1 main tohumundan önce çağrılır (tasarım §5.4 satır 7): main adı ikinci anahtara düşer",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_priority_order",
+   "find": "        self._recover_main_from_entry(extracted_names, static_dir, stats)\n        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_MAIN)\n        _bg.apply_binding(extracted_names, kesin, meta, stats)\n",
+   "replace": "        _bg.apply_binding(extracted_names, kesin, meta, stats)\n        before = dict(extracted_names)  # mutant: KS-1 önce\n        self._recover_main_from_entry(extracted_names, static_dir, stats)\n        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_MAIN)\n"
+  },
+  {
+   "id": "stages_ks1_gnulib_den_sonra",
+   "desc": "KS-1 gnulib tohumundan sonra çağrılır (tasarım §5.4 satır 7): gnulib adı yazılıp ezilir",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_priority_order",
+   "find": "        _bg.apply_binding(extracted_names, kesin, meta, stats)\n        before = dict(extracted_names)\n        self._recover_gnulib_from_fingerprints(extracted_names, static_dir, stats)\n        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_GNULIB)\n",
+   "replace": "        before = dict(extracted_names)\n        self._recover_gnulib_from_fingerprints(extracted_names, static_dir, stats)\n        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_GNULIB)\n        _bg.apply_binding(extracted_names, kesin, meta, stats)  # mutant: KS-1 sonra\n"
+  },
+  {
+   "id": "stages_ks1_gnulib_den_sonra_cagri_sekli",
+   "desc": "KS-1 gnulib'den sonra çağrılırsa çağrı şekli adayları belirsiz kalır",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_ks1_runs_before_gnulib_call_shape",
+   "find": "        _bg.apply_binding(extracted_names, kesin, meta, stats)\n        before = dict(extracted_names)\n        self._recover_gnulib_from_fingerprints(extracted_names, static_dir, stats)\n        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_GNULIB)\n",
+   "replace": "        before = dict(extracted_names)\n        self._recover_gnulib_from_fingerprints(extracted_names, static_dir, stats)\n        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_GNULIB)\n        _bg.apply_binding(extracted_names, kesin, meta, stats)  # mutant: KS-1 sonra\n"
+  },
+  {
+   "id": "stages_ks1_elle_den_sonra",
+   "desc": "KS-1 en sonda çağrılır; elle adın künyesi henüz yazılmadığı için KS-1 analistin adını ezer",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_manual_override_beats_everything",
+   "find": "        manual_map = self._apply_manual_overrides(extracted_names, context, stats)\n        for key, name in manual_map.items():\n",
+   "replace": "        manual_map = self._apply_manual_overrides(extracted_names, context, stats)\n        _bg.apply_binding(extracted_names, kesin, meta, stats)  # mutant: KS-1 elle'den sonra\n        for key, name in manual_map.items():\n"
+  },
+  {
+   "id": "stages_ks1_uygulanmaz",
+   "desc": "KS-1 adları ön ad sözlüğüne hiç yazılmaz",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_priority_order",
+   "find": "        _bg.apply_binding(extracted_names, kesin, meta, stats)\n",
+   "replace": "        pass  # mutant: KS-1 yok\n"
+  },
+  {
+   "id": "stages_kunyesiz_de_ks1",
+   "desc": "künye verilmeyince de KS-1 uygulanır (bayrak kapalıyken davranış değişir)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_without_meta_ks1_is_not_applied",
+   "find": "        if meta is None:\n            self._recover_main_from_entry",
+   "replace": "        if meta is None and kesin is not None:\n            meta = {}\n        if meta is None:\n            self._recover_main_from_entry"
+  },
+  {
+   "id": "stages_faz1_isaretlenmez",
+   "desc": "Faz 1 ön adları tür almaz",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_kinds_are_marked_per_seed",
+   "find": "            meta, {}, {k: v for k, v in extracted_names.items() if k not in meta},\n",
+   "replace": "            meta, {}, {},  # mutant: Faz 1 işaretsiz\n"
+  },
+  {
+   "id": "stages_faz1_isareti_kunyeyi_ezer",
+   "desc": "ikinci çağrıda bütün künyeler Faz 1 diye yeniden yazılır (main, KS-1, elle künyesi kaybolur)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_second_call_changes_nothing",
+   "find": "{k: v for k, v in extracted_names.items() if k not in meta},",
+   "replace": "{k: v for k, v in extracted_names.items()},"
+  },
+  {
+   "id": "stages_main_turu_isaretlenmez",
+   "desc": "main girişi künyesi yazılmaz",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_kinds_are_marked_per_seed",
+   "find": "        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_MAIN)\n",
+   "replace": "        pass  # mutant: main işaretsiz\n"
+  },
+  {
+   "id": "stages_gnulib_turu_yanlis",
+   "desc": "gnulib adları ELF önyükü diye işaretlenir",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_kinds_are_marked_per_seed",
+   "find": "        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_GNULIB)\n",
+   "replace": "        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_ELF_BOILERPLATE)\n"
+  },
+  {
+   "id": "stages_onyuk_oncesi_goruntu_alinmaz",
+   "desc": "önyükten önce sözlük görüntüsü yenilenmez: gnulib adları önyük diye yeniden işaretlenir",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_kinds_are_marked_per_seed",
+   "find": "        before = dict(extracted_names)\n        self._recover_elf_boilerplate(extracted_names, static_dir, stats)\n",
+   "replace": "        self._recover_elf_boilerplate(extracted_names, static_dir, stats)  # mutant: görüntü yok\n"
+  },
+  {
+   "id": "stages_elle_turu_isaretlenmez",
+   "desc": "elle adların künyesi yazılmaz (eski tür kalır)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_manual_override_beats_everything",
+   "find": "            meta[key] = _bg.make_meta(_bg.KIND_MANUAL, name)\n",
+   "replace": "            pass  # mutant: elle işaretsiz\n"
+  },
+  {
+   "id": "stages_elle_turu_karsilastirmayla",
+   "desc": "elle tür dönen haritayla değil sözlük karşılaştırmasıyla işaretlenir (aynı ad verilirse tür kaybolur)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_manual_name_equal_to_seeded_name_is_still_manual",
+   "find": "        for key, name in manual_map.items():\n            meta[key] = _bg.make_meta(_bg.KIND_MANUAL, name)\n",
+   "replace": "        for key, name in manual_map.items():\n            if before.get(key) != name:\n                meta[key] = _bg.make_meta(_bg.KIND_MANUAL, name)\n"
+  },
+  {
+   "id": "stages_adim_listede_yok",
+   "desc": "kesin_anchors Faz 1 adım listesine eklenmez",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestExecuteBinaryKs1Wiring::test_step_list_has_kesin_anchors_after_ghidra_metadata",
+   "find": "                    \"kesin_anchors\",\n",
+   "replace": "                    # mutant: adım yok\n"
+  },
+  {
+   "id": "stages_kunye_tohuma_eklenmez",
+   "desc": "künye Faz 2 tohumuna eklenmez (tasarım §5.4 satır 7)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestExecuteBinaryKs1Wiring::test_meta_reaches_phase2_seed",
+   "find": "seed_artifacts=_with_pre_name_meta(step_ctx.artifacts, _pre_name_meta),",
+   "replace": "seed_artifacts=_with_pre_name_meta(step_ctx.artifacts, None),"
+  },
+  {
+   "id": "stages_baglama_tohuma_verilmez",
+   "desc": "Faz 2 öncesi tohum çağrısına bağlama verilmez (KS-1 adları c_namer'dan önce yazılmaz)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestExecuteBinaryKs1Wiring::test_meta_reaches_phase2_seed",
+   "find": "                    kesin=_ks1_binding, meta=_pre_name_meta,\n",
+   "replace": "                    kesin=None, meta=_pre_name_meta,\n"
+  },
+  {
+   "id": "stages_kunye_tohum_cagrisina_verilmez",
+   "desc": "Faz 2 öncesi tohum çağrısına künye verilmez (boş künye tohuma girer, KS-1 uygulanmaz)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestExecuteBinaryKs1Wiring::test_meta_reaches_phase2_seed",
+   "find": "                    kesin=_ks1_binding, meta=_pre_name_meta,\n",
+   "replace": "                    kesin=_ks1_binding, meta=None,\n"
+  },
+  {
+   "id": "stages_kapaliyken_kunye_uretilir",
+   "desc": "adım kapalıyken de künye sözlüğü kurulur ve tohuma girer (bayrak kapalıyken ön ad sırası değişirdi)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestExecuteBinaryKs1Wiring::test_without_ks1_today_behaviour",
+   "find": "            _ks1_binding, _pre_name_meta = _ks1_seed_inputs(_a.get(\"kesin_anchors\"))\n",
+   "replace": "            _ks1_binding, _pre_name_meta = _ks1_seed_inputs(_a.get(\"kesin_anchors\"))[0], {}\n"
+  }
+ ]
+}
