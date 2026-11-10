@@ -4012,9 +4012,14 @@ class ReconstructionStage(Stage):
                             _ref_path = Path(ref_db_path) if ref_db_path else Path.home() / ".cache" / "karadul" / "ref_db"
                             _ref_path.mkdir(parents=True, exist_ok=True)
                             if detections:  # Version tespit edildiyse eslestir
+                                # Ağdan kaynak indirme yalnız ağ açıkça açılmışsa
+                                # (step yolundaki çağrıyla aynı kural).
+                                from karadul.pipeline.steps._feedback_naming_refdiff import (
+                                    reference_download_allowed as _ref_dl_allowed,
+                                )
                                 ref_differ = ReferenceDiffer(
                                     reference_db_path=_ref_path,
-                                    auto_populate=True,
+                                    auto_populate=_ref_dl_allowed(context.config),
                                 )
                                 _func_data_for_refdiff = _func_data if _func_data is not None else (
                                     json.loads(functions_json.read_text(encoding="utf-8", errors="replace"))

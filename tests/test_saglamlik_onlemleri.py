@@ -60,6 +60,24 @@ def test_ontanimli_yapilandirmada_indirme_kapali_ve_cagri_ayara_bagli():
     assert "auto_populate=reference_download_allowed(pc.config)" in kaynak
 
 
+
+def test_hicbir_cagri_kosulsuz_indirme_acmaz():
+    """karadul/ altında ReferenceDiffer'a sabit auto_populate=True veren çağrı kalmamalı."""
+    from pathlib import Path
+
+    import karadul
+    kok = Path(karadul.__file__).parent
+    bulunan = [
+        f"{yol.relative_to(kok)}:{i}"
+        for yol in sorted(kok.rglob("*.py"))
+        for i, satir in enumerate(yol.read_text(encoding="utf-8", errors="replace").splitlines(), 1)
+        if "auto_populate=True" in satir.replace(" ", "") and not satir.lstrip().startswith("#")
+    ]
+    assert bulunan == []
+    # eski hat (stages.py) da aynı kuralı kullanır
+    stages = (kok / "stages.py").read_text(encoding="utf-8")
+    assert "auto_populate=_ref_dl_allowed(context.config)" in stages
+
 # --------------------------------------------------------------------------------------------
 # 3. Boş proje ağacı: temiz çıktı boş kalmaz, kalırsa "başarılı" denmez
 
