@@ -1,0 +1,5212 @@
+{
+ "girdi": {
+  "ham": {
+   "program": {
+    "debian/coreutils": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 106,
+       "ihtiyatli": 106,
+       "ust": 106
+      },
+      "sonra": {
+       "ust": 1
+      }
+     },
+     "dosya": 36568,
+     "fonksiyon": 36568,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 2124,
+     "ikili": 106,
+     "once": {
+      "ayracsiz_gomme_blok": 1429,
+      "ayracsiz_gomme_fonksiyon": 942,
+      "bagimsiz": {
+       "akış": 847,
+       "ayrıştırma": 140,
+       "denge": 797,
+       "deyim": 51,
+       "etiket": 8,
+       "eşdeğer": 54,
+       "goto": 4
+      },
+      "bagimsiz_bozuk": 1847,
+      "belirti": {
+       "erisilemez": 490
+      },
+      "clang": {
+       "denetlenen": 1901,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 35,
+        "'AD' statement not in loop statement": 5,
+        "GNU line marker directive requires a simple digit sequence": 2,
+        "a parameter list without types is only allowed in a function definition": 120,
+        "array initializer must be an initializer list or wide string literal": 2,
+        "block pointer to non-function type is invalid": 1,
+        "expected ')'": 145,
+        "expected ';' after expression": 9,
+        "expected ';' after top level declarator": 50,
+        "expected 'AD' in do|while loop": 272,
+        "expected '}'": 276,
+        "expected expression": 37,
+        "expected identifier": 26,
+        "expected identifier or '('": 506,
+        "expected parameter declarator": 142,
+        "expected statement": 24,
+        "exponent has no digits": 1,
+        "extraneous ')'AD';'": 3,
+        "extraneous closing brace ('}')": 103,
+        "illegal initializer (only variables can be initialized)": 2,
+        "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 2,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 5,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 117,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; dereference with * [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; remove & [-Wint-conversion]": 2,
+        "indirection requires pointer operand ('AD' invalid)": 10,
+        "initializer element is not a compile-time constant": 151,
+        "invalid digit 'AD' in decimal constant": 1,
+        "invalid digit 'AD' in octal constant": 1,
+        "invalid operands to binary expression ('AD' and 'AD')": 18,
+        "redefinition of 'AD'": 127,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 105,
+        "redefinition of label 'AD'": 52,
+        "redefinition of parameter 'AD'": 1,
+        "subscripted value is not an array, pointer, or vector": 101,
+        "unknown type name 'AD'": 129,
+        "use of undeclared identifier 'AD'": 223,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 14,
+        "use of undeclared label 'AD'": 159,
+        "while loop outside of a function": 164
+       },
+       "yeni_hata_turu_olan": 966
+      },
+      "degisen_dosya": 1901,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 1674,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 1285,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 1747,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 1602,
+       "ayracsiz_kosula_blok_gomuldu": 1373,
+       "ayracsiz_kosula_blok_sonda_gorulen": 1151,
+       "cagri_azalan_fonksiyon": 473,
+       "deyim_azalan_fonksiyon": 496,
+       "dusmeli_etiket_satir_icine_alindi": 3050,
+       "dusmeli_etiket_silindi": 2331,
+       "dusmeli_etiket_silindi_ihtiyatli": 1312,
+       "satir_icine_alinan_etiket": 3060,
+       "soz_bozuk": 807,
+       "soz_bozuk:erken_kapanan": 539,
+       "soz_bozuk:kapanmamis": 264,
+       "soz_bozuk:parantez": 4
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 340,
+       "bozuk": 340,
+       "degisen": 369,
+       "eşdeğer": 29,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 314,
+        "B2_continue_for_ya_da_kosullu_do_while": 33
+       }
+      },
+      "early_return": {
+       "akış": 11,
+       "bozuk": 11,
+       "degisen": 11,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 11
+       }
+      },
+      "ifelse": {
+       "akış": 1,
+       "ayrıştırma": 1,
+       "bozuk": 2,
+       "degisen": 2
+      },
+      "multi_inline": {
+       "akış": 213,
+       "ayrıştırma": 1,
+       "belirti": {
+        "erisilemez": 134
+       },
+       "bozuk": 401,
+       "degisen": 401,
+       "denge": 184,
+       "etiket": 3,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 188,
+        "K2_ayracsiz_kosula_cok_deyim": 203,
+        "K3_duserek_ulasilan_blok_silindi": 399,
+        "K4b_yalniz_noktali_virgul_kaldi": 401,
+        "aday_etiket_var": 401
+       }
+      },
+      "rename": {
+       "degisen": 1402,
+       "eşdeğer": 1402
+      },
+      "single_inline": {
+       "akış": 768,
+       "ayrıştırma": 188,
+       "belirti": {
+        "erisilemez": 425
+       },
+       "bozuk": 1621,
+       "degisen": 1621,
+       "denge": 654,
+       "etiket": 7,
+       "goto": 4,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 1056,
+        "K2_ayracsiz_kosula_cok_deyim": 728,
+        "K3_duserek_ulasilan_blok_silindi": 1621,
+        "K4b_yalniz_noktali_virgul_kaldi": 1614,
+        "aday_etiket_var": 1621
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 919
+      },
+      "clang": {
+       "denetlenen": 919
+      },
+      "degisen_dosya": 919,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 1,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 1,
+       "ayracsiz_kosula_blok_gomuldu": 2,
+       "satir_icine_alinan_etiket": 1
+      },
+      "denetci_ust_sinir_ama_esdeger": 1,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 1,
+      "etiket_adi": {
+       "cleanup_and_return": 242,
+       "error_cleanup": 157,
+       "error_exit": 9,
+       "exit_function": 957
+      },
+      "urun": {
+       "breaks_continues": 39,
+       "early_returns": 39,
+       "eliminated": 80,
+       "functions_changed": 919,
+       "functions_skipped": 3,
+       "multi_target_inlined": 2,
+       "renamed": 1365
+      }
+     }
+    },
+    "debian/htop": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      }
+     },
+     "dosya": 1148,
+     "fonksiyon": 1148,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 116,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 65,
+      "ayracsiz_gomme_fonksiyon": 40,
+      "bagimsiz": {
+       "akış": 54,
+       "ayrıştırma": 8,
+       "denge": 28,
+       "deyim": 3,
+       "eşdeğer": 10,
+       "goto": 1,
+       "çağrı": 1
+      },
+      "bagimsiz_bozuk": 95,
+      "belirti": {
+       "cift_donus": 1,
+       "erisilemez": 9
+      },
+      "clang": {
+       "denetlenen": 105,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 2,
+        "'AD' statement not in switch statement": 1,
+        "a parameter list without types is only allowed in a function definition": 1,
+        "expected ')'": 4,
+        "expected ';' after top level declarator": 3,
+        "expected 'AD' in do|while loop": 11,
+        "expected '}'": 18,
+        "expected expression": 4,
+        "expected identifier or '('": 11,
+        "expected parameter declarator": 1,
+        "extraneous closing brace ('}')": 7,
+        "function cannot return function type 'AD'": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 1,
+        "indirection requires pointer operand ('AD' invalid)": 1,
+        "initializer element is not a compile-time constant": 5,
+        "invalid digit 'AD' in octal constant": 1,
+        "invalid operands to binary expression ('AD' and 'AD')": 2,
+        "redefinition of 'AD'": 2,
+        "unknown type name 'AD'": 4,
+        "use of undeclared identifier 'AD'": 1,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 2,
+        "use of undeclared label 'AD'": 10,
+        "while loop outside of a function": 3
+       },
+       "yeni_hata_turu_olan": 41
+      },
+      "degisen_dosya": 105,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 84,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 72,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 87,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 78,
+       "ayracsiz_kosula_blok_gomuldu": 59,
+       "ayracsiz_kosula_blok_sonda_gorulen": 55,
+       "cagri_azalan_fonksiyon": 6,
+       "deyim_azalan_fonksiyon": 6,
+       "dusmeli_etiket_satir_icine_alindi": 160,
+       "dusmeli_etiket_silindi": 117,
+       "dusmeli_etiket_silindi_ihtiyatli": 67,
+       "satir_icine_alinan_etiket": 163,
+       "soz_bozuk": 29,
+       "soz_bozuk:erken_kapanan": 12,
+       "soz_bozuk:kapanmamis": 17
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 15,
+       "bozuk": 15,
+       "degisen": 16,
+       "eşdeğer": 1,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 14,
+        "B2_continue_for_ya_da_kosullu_do_while": 2
+       }
+      },
+      "multi_inline": {
+       "akış": 16,
+       "belirti": {
+        "erisilemez": 4
+       },
+       "bozuk": 30,
+       "degisen": 30,
+       "denge": 14,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 15,
+        "K2_ayracsiz_kosula_cok_deyim": 7,
+        "K3_duserek_ulasilan_blok_silindi": 30,
+        "K4b_yalniz_noktali_virgul_kaldi": 30,
+        "aday_etiket_var": 30
+       }
+      },
+      "rename": {
+       "degisen": 65,
+       "eşdeğer": 65
+      },
+      "single_inline": {
+       "akış": 47,
+       "ayrıştırma": 11,
+       "belirti": {
+        "erisilemez": 10
+       },
+       "bozuk": 76,
+       "degisen": 76,
+       "denge": 16,
+       "goto": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 49,
+        "K2_ayracsiz_kosula_cok_deyim": 39,
+        "K3_duserek_ulasilan_blok_silindi": 76,
+        "K4b_yalniz_noktali_virgul_kaldi": 76,
+        "aday_etiket_var": 76
+       },
+       "çağrı": 1
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 32
+      },
+      "clang": {
+       "denetlenen": 32
+      },
+      "degisen_dosya": 32,
+      "denetci": {
+       "satir_icine_alinan_etiket": 1
+      },
+      "etiket_adi": {
+       "cleanup_and_return": 6,
+       "error_cleanup": 7,
+       "error_exit": 1,
+       "exit_function": 23
+      },
+      "urun": {
+       "breaks_continues": 2,
+       "early_returns": 5,
+       "eliminated": 8,
+       "functions_changed": 32,
+       "inlined": 1,
+       "renamed": 37
+      }
+     }
+    },
+    "debian/openssl": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      },
+      "sonra": {
+       "ust": 1
+      }
+     },
+     "dosya": 5672,
+     "fonksiyon": 5672,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 236,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 179,
+      "ayracsiz_gomme_fonksiyon": 97,
+      "bagimsiz": {
+       "akış": 106,
+       "ayrıştırma": 17,
+       "denge": 65,
+       "deyim": 7,
+       "etiket": 3,
+       "eşdeğer": 29,
+       "goto": 4
+      },
+      "bagimsiz_bozuk": 202,
+      "belirti": {
+       "erisilemez": 41
+      },
+      "clang": {
+       "denetlenen": 231,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 3,
+        "'AD' statement not in switch statement": 2,
+        "GNU line marker directive requires a simple digit sequence": 2,
+        "a parameter list without types is only allowed in a function definition": 4,
+        "called object type 'AD' is not a function or function pointer": 1,
+        "expected ')'": 4,
+        "expected ';' after top level declarator": 8,
+        "expected 'AD' in do|while loop": 25,
+        "expected '}'": 39,
+        "expected expression": 4,
+        "expected identifier": 4,
+        "expected identifier or '('": 22,
+        "expected parameter declarator": 4,
+        "extraneous closing brace ('}')": 15,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 1,
+        "indirection requires pointer operand ('AD' invalid)": 1,
+        "initializer element is not a compile-time constant": 4,
+        "invalid digit 'AD' in decimal constant": 1,
+        "invalid digit 'AD' in octal constant": 1,
+        "invalid operands to binary expression ('AD' and 'AD')": 9,
+        "redefinition of 'AD'": 1,
+        "redefinition of label 'AD'": 15,
+        "unknown type name 'AD'": 2,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 9,
+        "use of undeclared label 'AD'": 22,
+        "while loop outside of a function": 6
+       },
+       "yeni_hata_turu_olan": 91
+      },
+      "degisen_dosya": 231,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 190,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 170,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 194,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 179,
+       "ayracsiz_kosula_blok_gomuldu": 160,
+       "ayracsiz_kosula_blok_sonda_gorulen": 140,
+       "cagri_azalan_fonksiyon": 16,
+       "deyim_azalan_fonksiyon": 16,
+       "dusmeli_etiket_satir_icine_alindi": 393,
+       "dusmeli_etiket_silindi": 278,
+       "dusmeli_etiket_silindi_ihtiyatli": 188,
+       "satir_icine_alinan_etiket": 396,
+       "soz_bozuk": 66,
+       "soz_bozuk:erken_kapanan": 27,
+       "soz_bozuk:kapanmamis": 39
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 21,
+       "bozuk": 21,
+       "degisen": 24,
+       "eşdeğer": 3,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 17,
+        "B2_continue_for_ya_da_kosullu_do_while": 8
+       }
+      },
+      "early_return": {
+       "akış": 4,
+       "bozuk": 4,
+       "degisen": 6,
+       "eşdeğer": 2,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 4
+       }
+      },
+      "multi_inline": {
+       "akış": 42,
+       "belirti": {
+        "erisilemez": 19
+       },
+       "bozuk": 71,
+       "degisen": 71,
+       "denge": 26,
+       "etiket": 3,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 30,
+        "K2_ayracsiz_kosula_cok_deyim": 29,
+        "K3_duserek_ulasilan_blok_silindi": 71,
+        "K4b_yalniz_noktali_virgul_kaldi": 71,
+        "aday_etiket_var": 71
+       }
+      },
+      "rename": {
+       "degisen": 190,
+       "eşdeğer": 190
+      },
+      "single_inline": {
+       "akış": 99,
+       "ayrıştırma": 21,
+       "belirti": {
+        "erisilemez": 30
+       },
+       "bozuk": 165,
+       "degisen": 165,
+       "denge": 38,
+       "etiket": 4,
+       "goto": 3,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 89,
+        "K2_ayracsiz_kosula_cok_deyim": 76,
+        "K3_duserek_ulasilan_blok_silindi": 165,
+        "K4b_yalniz_noktali_virgul_kaldi": 165,
+        "aday_etiket_var": 165
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 131
+      },
+      "clang": {
+       "denetlenen": 131
+      },
+      "degisen_dosya": 131,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 1,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 1,
+       "ayracsiz_kosula_blok_gomuldu": 1,
+       "satir_icine_alinan_etiket": 1
+      },
+      "denetci_ust_sinir_ama_esdeger": 1,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 1,
+      "etiket_adi": {
+       "cleanup_and_return": 62,
+       "error_cleanup": 59,
+       "error_exit": 1,
+       "exit_function": 67
+      },
+      "urun": {
+       "breaks_continues": 14,
+       "early_returns": 36,
+       "eliminated": 51,
+       "functions_changed": 131,
+       "functions_skipped": 1,
+       "inlined": 1,
+       "renamed": 189
+      }
+     }
+    },
+    "debian/redis-tools": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 4,
+       "ihtiyatli": 4,
+       "ust": 4
+      },
+      "sonra": {
+       "ust": 2
+      }
+     },
+     "dosya": 13397,
+     "fonksiyon": 13397,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 2929,
+     "ikili": 4,
+     "once": {
+      "ayracsiz_gomme_blok": 1713,
+      "ayracsiz_gomme_fonksiyon": 1023,
+      "bagimsiz": {
+       "akış": 1262,
+       "ayrıştırma": 225,
+       "denge": 907,
+       "deyim": 21,
+       "etiket": 11,
+       "eşdeğer": 133,
+       "goto": 16,
+       "çağrı": 2
+      },
+      "bagimsiz_bozuk": 2444,
+      "belirti": {
+       "cift_donus": 2,
+       "erisilemez": 386
+      },
+      "clang": {
+       "denetlenen": 2577,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 39,
+        "'AD' statement not in loop statement": 2,
+        "GNU line marker directive requires a simple digit sequence": 31,
+        "a parameter list without types is only allowed in a function definition": 48,
+        "array initializer must be an initializer list or wide string literal": 4,
+        "expected ')'": 81,
+        "expected ';' after do|while statement": 2,
+        "expected ';' after expression": 6,
+        "expected ';' after top level declarator": 99,
+        "expected 'AD' in do|while loop": 406,
+        "expected '}'": 450,
+        "expected expression": 131,
+        "expected identifier": 37,
+        "expected identifier or '('": 460,
+        "expected parameter declarator": 47,
+        "expected statement": 6,
+        "extraneous ')'AD';'": 2,
+        "extraneous closing brace ('}')": 227,
+        "function cannot return function type 'AD'": 4,
+        "illegal initializer (only variables can be initialized)": 24,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 6,
+        "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 2,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 14,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 25,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; dereference with * [-Wint-conversion]": 4,
+        "indirection requires pointer operand ('AD' invalid)": 19,
+        "initializer element is not a compile-time constant": 88,
+        "invalid digit 'AD' in decimal constant": 2,
+        "invalid operands to binary expression ('AD' and 'AD')": 11,
+        "redefinition of 'AD'": 30,
+        "redefinition of 'AD' as different kind of symbol": 9,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 8,
+        "redefinition of label 'AD'": 90,
+        "redefinition of parameter 'AD'": 2,
+        "subscripted value is not an array, pointer, or vector": 14,
+        "unknown type name 'AD'": 88,
+        "use of undeclared identifier 'AD'": 28,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 45,
+        "use of undeclared label 'AD'": 239,
+        "while loop outside of a function": 58
+       },
+       "yeni_hata_turu_olan": 1185
+      },
+      "degisen_dosya": 2577,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 2127,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 1763,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 2202,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 1975,
+       "ayracsiz_kosula_blok_gomuldu": 1576,
+       "ayracsiz_kosula_blok_sonda_gorulen": 1306,
+       "cagri_azalan_fonksiyon": 287,
+       "deyim_azalan_fonksiyon": 376,
+       "dusmeli_etiket_satir_icine_alindi": 4220,
+       "dusmeli_etiket_silindi": 3145,
+       "dusmeli_etiket_silindi_ihtiyatli": 2026,
+       "satir_icine_alinan_etiket": 4260,
+       "soz_bozuk": 929,
+       "soz_bozuk:erken_kapanan": 506,
+       "soz_bozuk:kapanmamis": 419,
+       "soz_bozuk:parantez": 4
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 390,
+       "bozuk": 390,
+       "degisen": 412,
+       "eşdeğer": 22,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 372,
+        "B2_continue_for_ya_da_kosullu_do_while": 30
+       }
+      },
+      "early_return": {
+       "akış": 36,
+       "bozuk": 36,
+       "degisen": 44,
+       "eşdeğer": 8,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 36
+       }
+      },
+      "ifelse": {
+       "ayrıştırma": 3,
+       "bozuk": 3,
+       "degisen": 3
+      },
+      "multi_inline": {
+       "akış": 374,
+       "ayrıştırma": 2,
+       "belirti": {
+        "erisilemez": 157
+       },
+       "bozuk": 768,
+       "degisen": 768,
+       "denge": 380,
+       "etiket": 12,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 416,
+        "K2_ayracsiz_kosula_cok_deyim": 256,
+        "K3_duserek_ulasilan_blok_silindi": 766,
+        "K4b_yalniz_noktali_virgul_kaldi": 766,
+        "aday_etiket_var": 766,
+        "ayrıştırılamadı": 2,
+        "siniflanmadi": 2
+       }
+      },
+      "rename": {
+       "degisen": 1839,
+       "eşdeğer": 1837,
+       "hükümsüz": 2
+      },
+      "single_inline": {
+       "akış": 1053,
+       "ayrıştırma": 296,
+       "belirti": {
+        "erisilemez": 347
+       },
+       "bozuk": 2055,
+       "degisen": 2057,
+       "denge": 675,
+       "etiket": 13,
+       "goto": 16,
+       "hükümsüz": 2,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 1422,
+        "K2_ayracsiz_kosula_cok_deyim": 912,
+        "K3_duserek_ulasilan_blok_silindi": 2055,
+        "K4b_yalniz_noktali_virgul_kaldi": 2042,
+        "aday_etiket_var": 2055
+       },
+       "çağrı": 2
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 857
+      },
+      "clang": {
+       "denetlenen": 857
+      },
+      "degisen_dosya": 857,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 4,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 4,
+       "ayracsiz_kosula_blok_gomuldu": 6,
+       "satir_icine_alinan_etiket": 8
+      },
+      "denetci_ust_sinir_ama_esdeger": 4,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 4,
+      "etiket_adi": {
+       "cleanup_and_return": 163,
+       "error_cleanup": 178,
+       "error_exit": 162,
+       "exit_function": 617
+      },
+      "urun": {
+       "breaks_continues": 26,
+       "early_returns": 120,
+       "eliminated": 156,
+       "functions_changed": 857,
+       "functions_skipped": 4,
+       "inlined": 6,
+       "multi_target_inlined": 4,
+       "renamed": 1120
+      }
+     }
+    },
+    "debian/sqlite3": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      }
+     },
+     "dosya": 1144,
+     "fonksiyon": 1144,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 118,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 97,
+      "ayracsiz_gomme_fonksiyon": 56,
+      "bagimsiz": {
+       "akış": 52,
+       "ayrıştırma": 12,
+       "denge": 40,
+       "deyim": 1,
+       "etiket": 1,
+       "eşdeğer": 5,
+       "goto": 1
+      },
+      "bagimsiz_bozuk": 107,
+      "belirti": {
+       "erisilemez": 25
+      },
+      "clang": {
+       "denetlenen": 112,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 4,
+        "GNU line marker directive requires a simple digit sequence": 2,
+        "a parameter list without types is only allowed in a function definition": 2,
+        "array initializer must be an initializer list or wide string literal": 2,
+        "expected ')'": 2,
+        "expected ';' after do|while statement": 1,
+        "expected ';' after top level declarator": 8,
+        "expected 'AD' in do|while loop": 24,
+        "expected '}'": 27,
+        "expected expression": 4,
+        "expected identifier": 2,
+        "expected identifier or '('": 16,
+        "expected parameter declarator": 1,
+        "extraneous ')'AD';'": 1,
+        "extraneous closing brace ('}')": 9,
+        "illegal initializer (only variables can be initialized)": 1,
+        "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 2,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 4,
+        "initializer element is not a compile-time constant": 7,
+        "redefinition of 'AD'": 4,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 1,
+        "redefinition of label 'AD'": 8,
+        "unknown type name 'AD'": 1,
+        "use of undeclared identifier 'AD'": 1,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 1,
+        "use of undeclared label 'AD'": 14,
+        "while loop outside of a function": 2
+       },
+       "yeni_hata_turu_olan": 55
+      },
+      "degisen_dosya": 112,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 97,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 86,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 99,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 92,
+       "ayracsiz_kosula_blok_gomuldu": 90,
+       "ayracsiz_kosula_blok_sonda_gorulen": 78,
+       "cagri_azalan_fonksiyon": 15,
+       "deyim_azalan_fonksiyon": 15,
+       "dusmeli_etiket_satir_icine_alindi": 220,
+       "dusmeli_etiket_silindi": 158,
+       "dusmeli_etiket_silindi_ihtiyatli": 95,
+       "satir_icine_alinan_etiket": 221,
+       "soz_bozuk": 40,
+       "soz_bozuk:erken_kapanan": 16,
+       "soz_bozuk:kapanmamis": 23,
+       "soz_bozuk:parantez": 1
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 15,
+       "bozuk": 15,
+       "degisen": 16,
+       "eşdeğer": 1,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 13,
+        "B2_continue_for_ya_da_kosullu_do_while": 3
+       }
+      },
+      "early_return": {
+       "akış": 1,
+       "bozuk": 1,
+       "degisen": 1,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 1
+       }
+      },
+      "multi_inline": {
+       "akış": 20,
+       "belirti": {
+        "erisilemez": 10
+       },
+       "bozuk": 36,
+       "degisen": 36,
+       "denge": 16,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 16,
+        "K2_ayracsiz_kosula_cok_deyim": 13,
+        "K3_duserek_ulasilan_blok_silindi": 36,
+        "K4b_yalniz_noktali_virgul_kaldi": 36,
+        "aday_etiket_var": 36
+       }
+      },
+      "rename": {
+       "degisen": 95,
+       "eşdeğer": 95
+      },
+      "single_inline": {
+       "akış": 46,
+       "ayrıştırma": 17,
+       "belirti": {
+        "erisilemez": 21
+       },
+       "bozuk": 93,
+       "degisen": 93,
+       "denge": 28,
+       "etiket": 1,
+       "goto": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 65,
+        "K2_ayracsiz_kosula_cok_deyim": 50,
+        "K3_duserek_ulasilan_blok_silindi": 93,
+        "K4b_yalniz_noktali_virgul_kaldi": 93,
+        "aday_etiket_var": 93
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 53
+      },
+      "clang": {
+       "denetlenen": 53
+      },
+      "degisen_dosya": 53,
+      "etiket_adi": {
+       "cleanup_and_return": 16,
+       "error_cleanup": 20,
+       "error_exit": 4,
+       "exit_function": 37
+      },
+      "urun": {
+       "breaks_continues": 6,
+       "early_returns": 8,
+       "eliminated": 14,
+       "functions_changed": 53,
+       "renamed": 77
+      }
+     }
+    },
+    "debian/tmux": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      },
+      "sonra": {
+       "ust": 1
+      }
+     },
+     "dosya": 2588,
+     "fonksiyon": 2588,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 558,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 372,
+      "ayracsiz_gomme_fonksiyon": 222,
+      "bagimsiz": {
+       "akış": 257,
+       "ayrıştırma": 39,
+       "denge": 174,
+       "deyim": 8,
+       "etiket": 2,
+       "eşdeğer": 24,
+       "goto": 3
+      },
+      "bagimsiz_bozuk": 483,
+      "belirti": {
+       "erisilemez": 91
+      },
+      "clang": {
+       "denetlenen": 507,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 4,
+        "'AD' statement not in switch statement": 1,
+        "GNU line marker directive requires a simple digit sequence": 3,
+        "a parameter list without types is only allowed in a function definition": 16,
+        "array initializer must be an initializer list or wide string literal": 1,
+        "expected ')'": 14,
+        "expected ';' after expression": 3,
+        "expected ';' after top level declarator": 18,
+        "expected 'AD' in do|while loop": 79,
+        "expected '}'": 104,
+        "expected expression": 28,
+        "expected identifier": 5,
+        "expected identifier or '('": 80,
+        "expected parameter declarator": 7,
+        "expected statement": 1,
+        "extraneous closing brace ('}')": 36,
+        "function cannot return function type 'AD'": 1,
+        "illegal initializer (only variables can be initialized)": 5,
+        "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 7,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 5,
+        "indirection requires pointer operand ('AD' invalid)": 4,
+        "initializer element is not a compile-time constant": 15,
+        "invalid digit 'AD' in decimal constant": 1,
+        "invalid digit 'AD' in octal constant": 3,
+        "redefinition of 'AD'": 4,
+        "redefinition of 'AD' as different kind of symbol": 1,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 2,
+        "redefinition of label 'AD'": 23,
+        "subscripted value is not an array, pointer, or vector": 1,
+        "unknown type name 'AD'": 19,
+        "use of undeclared identifier 'AD'": 4,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 5,
+        "use of undeclared label 'AD'": 44,
+        "while loop outside of a function": 17
+       },
+       "yeni_hata_turu_olan": 227
+      },
+      "degisen_dosya": 507,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 410,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 339,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 420,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 375,
+       "ayracsiz_kosula_blok_gomuldu": 361,
+       "ayracsiz_kosula_blok_sonda_gorulen": 290,
+       "cagri_azalan_fonksiyon": 43,
+       "deyim_azalan_fonksiyon": 62,
+       "dusmeli_etiket_satir_icine_alindi": 792,
+       "dusmeli_etiket_silindi": 549,
+       "dusmeli_etiket_silindi_ihtiyatli": 324,
+       "satir_icine_alinan_etiket": 805,
+       "soz_bozuk": 182,
+       "soz_bozuk:erken_kapanan": 86,
+       "soz_bozuk:kapanmamis": 96
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 110,
+       "bozuk": 110,
+       "degisen": 119,
+       "eşdeğer": 9,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 100,
+        "B2_continue_for_ya_da_kosullu_do_while": 11
+       }
+      },
+      "early_return": {
+       "akış": 1,
+       "bozuk": 1,
+       "degisen": 1,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 1
+       }
+      },
+      "multi_inline": {
+       "akış": 71,
+       "belirti": {
+        "erisilemez": 36
+       },
+       "bozuk": 152,
+       "degisen": 152,
+       "denge": 80,
+       "etiket": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 85,
+        "K2_ayracsiz_kosula_cok_deyim": 53,
+        "K3_duserek_ulasilan_blok_silindi": 149,
+        "K4b_yalniz_noktali_virgul_kaldi": 152,
+        "aday_etiket_var": 152
+       }
+      },
+      "rename": {
+       "degisen": 343,
+       "eşdeğer": 343
+      },
+      "single_inline": {
+       "akış": 201,
+       "ayrıştırma": 46,
+       "belirti": {
+        "erisilemez": 63
+       },
+       "bozuk": 388,
+       "degisen": 388,
+       "denge": 134,
+       "deyim": 1,
+       "etiket": 3,
+       "goto": 3,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 279,
+        "K2_ayracsiz_kosula_cok_deyim": 201,
+        "K3_duserek_ulasilan_blok_silindi": 387,
+        "K4b_yalniz_noktali_virgul_kaldi": 387,
+        "aday_etiket_var": 388
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 124
+      },
+      "clang": {
+       "denetlenen": 124
+      },
+      "degisen_dosya": 124,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 5,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 5,
+       "ayracsiz_kosula_blok_gomuldu": 11,
+       "satir_icine_alinan_etiket": 7
+      },
+      "denetci_ust_sinir_ama_esdeger": 5,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 5,
+      "etiket_adi": {
+       "cleanup_and_return": 43,
+       "error_cleanup": 36,
+       "exit_function": 72
+      },
+      "urun": {
+       "breaks_continues": 10,
+       "early_returns": 9,
+       "eliminated": 31,
+       "functions_changed": 124,
+       "inlined": 2,
+       "multi_target_inlined": 10,
+       "renamed": 151
+      }
+     }
+    },
+    "debian/tree": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      }
+     },
+     "dosya": 250,
+     "fonksiyon": 250,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 26,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 14,
+      "ayracsiz_gomme_fonksiyon": 11,
+      "bagimsiz": {
+       "akış": 10,
+       "ayrıştırma": 1,
+       "denge": 7,
+       "etiket": 1,
+       "eşdeğer": 3
+      },
+      "bagimsiz_bozuk": 19,
+      "belirti": {
+       "erisilemez": 2
+      },
+      "clang": {
+       "denetlenen": 22,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 1,
+        "GNU line marker directive requires a simple digit sequence": 1,
+        "a parameter list without types is only allowed in a function definition": 1,
+        "expected ';' after top level declarator": 1,
+        "expected 'AD' in do|while loop": 4,
+        "expected '}'": 3,
+        "expected identifier or '('": 4,
+        "extraneous closing brace ('}')": 1,
+        "indirection requires pointer operand ('AD' invalid)": 1,
+        "initializer element is not a compile-time constant": 1,
+        "redefinition of label 'AD'": 2,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 1,
+        "use of undeclared label 'AD'": 2,
+        "while loop outside of a function": 1
+       },
+       "yeni_hata_turu_olan": 10
+      },
+      "degisen_dosya": 22,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 17,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 14,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 17,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 15,
+       "ayracsiz_kosula_blok_gomuldu": 12,
+       "ayracsiz_kosula_blok_sonda_gorulen": 12,
+       "cagri_azalan_fonksiyon": 2,
+       "deyim_azalan_fonksiyon": 2,
+       "dusmeli_etiket_satir_icine_alindi": 35,
+       "dusmeli_etiket_silindi": 24,
+       "dusmeli_etiket_silindi_ihtiyatli": 12,
+       "satir_icine_alinan_etiket": 35,
+       "soz_bozuk": 7,
+       "soz_bozuk:erken_kapanan": 4,
+       "soz_bozuk:kapanmamis": 3
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 3,
+       "bozuk": 3,
+       "degisen": 4,
+       "eşdeğer": 1,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 3,
+        "B2_continue_for_ya_da_kosullu_do_while": 1
+       }
+      },
+      "early_return": {
+       "akış": 1,
+       "bozuk": 1,
+       "degisen": 1,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 1
+       }
+      },
+      "multi_inline": {
+       "bozuk": 7,
+       "degisen": 7,
+       "denge": 7,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 7,
+        "K2_ayracsiz_kosula_cok_deyim": 1,
+        "K3_duserek_ulasilan_blok_silindi": 7,
+        "K4b_yalniz_noktali_virgul_kaldi": 7,
+        "aday_etiket_var": 7
+       }
+      },
+      "rename": {
+       "degisen": 17,
+       "eşdeğer": 17
+      },
+      "single_inline": {
+       "akış": 9,
+       "ayrıştırma": 2,
+       "belirti": {
+        "erisilemez": 2
+       },
+       "bozuk": 16,
+       "degisen": 16,
+       "denge": 4,
+       "etiket": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 10,
+        "K2_ayracsiz_kosula_cok_deyim": 9,
+        "K3_duserek_ulasilan_blok_silindi": 16,
+        "K4b_yalniz_noktali_virgul_kaldi": 16,
+        "aday_etiket_var": 16
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 6
+      },
+      "clang": {
+       "denetlenen": 6
+      },
+      "degisen_dosya": 6,
+      "etiket_adi": {
+       "cleanup_and_return": 1,
+       "exit_function": 7
+      },
+      "urun": {
+       "breaks_continues": 1,
+       "early_returns": 1,
+       "eliminated": 2,
+       "functions_changed": 6,
+       "renamed": 8
+      }
+     }
+    },
+    "debian/zstd": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 2,
+       "ihtiyatli": 2,
+       "ust": 2
+      }
+     },
+     "dosya": 2600,
+     "fonksiyon": 2600,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 680,
+     "ikili": 2,
+     "once": {
+      "ayracsiz_gomme_blok": 611,
+      "ayracsiz_gomme_fonksiyon": 306,
+      "bagimsiz": {
+       "akış": 298,
+       "ayrıştırma": 53,
+       "denge": 209,
+       "deyim": 5,
+       "etiket": 2,
+       "eşdeğer": 48,
+       "goto": 1,
+       "çağrı": 2
+      },
+      "bagimsiz_bozuk": 570,
+      "belirti": {
+       "erisilemez": 123
+      },
+      "clang": {
+       "denetlenen": 618,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 10,
+        "'AD' statement not in switch statement": 1,
+        "GNU line marker directive requires a simple digit sequence": 1,
+        "a parameter list without types is only allowed in a function definition": 3,
+        "array initializer must be an initializer list or wide string literal": 5,
+        "expected ')'": 34,
+        "expected ';' after expression": 6,
+        "expected ';' after top level declarator": 53,
+        "expected 'AD' in do|while loop": 139,
+        "expected '}'": 102,
+        "expected expression": 29,
+        "expected identifier": 13,
+        "expected identifier or '('": 101,
+        "expected parameter declarator": 13,
+        "expected statement": 2,
+        "extraneous closing brace ('}')": 72,
+        "function cannot return function type 'AD'": 2,
+        "illegal initializer (only variables can be initialized)": 12,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 3,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 12,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 7,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; dereference with * [-Wint-conversion]": 3,
+        "indirection requires pointer operand ('AD' invalid)": 7,
+        "initializer element is not a compile-time constant": 36,
+        "invalid operands to binary expression ('AD' and 'AD')": 1,
+        "member reference base type 'AD' is not a structure or union": 3,
+        "redefinition of 'AD'": 25,
+        "redefinition of 'AD' as different kind of symbol": 2,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 7,
+        "redefinition of label 'AD'": 20,
+        "subscripted value is not an array, pointer, or vector": 3,
+        "unknown type name 'AD'": 28,
+        "use of undeclared identifier 'AD'": 14,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 8,
+        "use of undeclared label 'AD'": 73,
+        "variable length array declaration not allowed at file scope": 1,
+        "while loop outside of a function": 39
+       },
+       "yeni_hata_turu_olan": 267
+      },
+      "degisen_dosya": 618,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 514,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 408,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 529,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 468,
+       "ayracsiz_kosula_blok_gomuldu": 576,
+       "ayracsiz_kosula_blok_sonda_gorulen": 425,
+       "cagri_azalan_fonksiyon": 77,
+       "deyim_azalan_fonksiyon": 96,
+       "dusmeli_etiket_satir_icine_alindi": 1037,
+       "dusmeli_etiket_silindi": 799,
+       "dusmeli_etiket_silindi_ihtiyatli": 438,
+       "satir_icine_alinan_etiket": 1054,
+       "soz_bozuk": 212,
+       "soz_bozuk:erken_kapanan": 112,
+       "soz_bozuk:kapanmamis": 99,
+       "soz_bozuk:parantez": 1
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 127,
+       "bozuk": 127,
+       "degisen": 129,
+       "eşdeğer": 2,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 112,
+        "B2_continue_for_ya_da_kosullu_do_while": 20
+       }
+      },
+      "early_return": {
+       "akış": 2,
+       "bozuk": 2,
+       "degisen": 6,
+       "eşdeğer": 4,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 2
+       }
+      },
+      "ifelse": {
+       "ayrıştırma": 2,
+       "bozuk": 2,
+       "degisen": 2
+      },
+      "multi_inline": {
+       "akış": 129,
+       "ayrıştırma": 2,
+       "belirti": {
+        "erisilemez": 92
+       },
+       "bozuk": 233,
+       "degisen": 233,
+       "denge": 101,
+       "etiket": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 109,
+        "K2_ayracsiz_kosula_cok_deyim": 125,
+        "K3_duserek_ulasilan_blok_silindi": 232,
+        "K4b_yalniz_noktali_virgul_kaldi": 233,
+        "aday_etiket_var": 233
+       }
+      },
+      "rename": {
+       "degisen": 491,
+       "eşdeğer": 491
+      },
+      "single_inline": {
+       "akış": 212,
+       "ayrıştırma": 61,
+       "belirti": {
+        "erisilemez": 68
+       },
+       "bozuk": 391,
+       "degisen": 391,
+       "denge": 112,
+       "etiket": 4,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 256,
+        "K2_ayracsiz_kosula_cok_deyim": 193,
+        "K3_duserek_ulasilan_blok_silindi": 389,
+        "K4b_yalniz_noktali_virgul_kaldi": 391,
+        "aday_etiket_var": 391
+       },
+       "çağrı": 2
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 179
+      },
+      "clang": {
+       "denetlenen": 179
+      },
+      "degisen_dosya": 179,
+      "etiket_adi": {
+       "cleanup_and_return": 24,
+       "error_cleanup": 13,
+       "error_exit": 4,
+       "exit_function": 186
+      },
+      "urun": {
+       "breaks_continues": 13,
+       "early_returns": 44,
+       "eliminated": 57,
+       "functions_changed": 179,
+       "renamed": 227
+      }
+     }
+    },
+    "mac/htop": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      }
+     },
+     "dosya": 790,
+     "fonksiyon": 790,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 81,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 47,
+      "ayracsiz_gomme_fonksiyon": 24,
+      "bagimsiz": {
+       "akış": 40,
+       "ayrıştırma": 6,
+       "denge": 17,
+       "deyim": 1,
+       "eşdeğer": 2
+      },
+      "bagimsiz_bozuk": 64,
+      "belirti": {
+       "erisilemez": 19
+      },
+      "clang": {
+       "denetlenen": 66,
+       "tur": {
+        "GNU line marker directive requires a simple digit sequence": 1,
+        "expected ';' after do|while statement": 1,
+        "expected ';' after top level declarator": 1,
+        "expected 'AD' in do|while loop": 10,
+        "expected '}'": 5,
+        "expected expression": 3,
+        "expected identifier": 1,
+        "expected identifier or '('": 13,
+        "extraneous closing brace ('}')": 5,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 1,
+        "initializer element is not a compile-time constant": 2,
+        "redefinition of label 'AD'": 1,
+        "unknown type name 'AD'": 2,
+        "use of undeclared label 'AD'": 6,
+        "while loop outside of a function": 1
+       },
+       "yeni_hata_turu_olan": 24
+      },
+      "degisen_dosya": 66,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 62,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 55,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 63,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 59,
+       "ayracsiz_kosula_blok_gomuldu": 33,
+       "ayracsiz_kosula_blok_sonda_gorulen": 23,
+       "cagri_azalan_fonksiyon": 8,
+       "deyim_azalan_fonksiyon": 8,
+       "dusmeli_etiket_satir_icine_alindi": 115,
+       "dusmeli_etiket_silindi": 102,
+       "dusmeli_etiket_silindi_ihtiyatli": 65,
+       "satir_icine_alinan_etiket": 116,
+       "soz_bozuk": 19,
+       "soz_bozuk:erken_kapanan": 14,
+       "soz_bozuk:kapanmamis": 5
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "degisen": 1,
+       "eşdeğer": 1
+      },
+      "early_return": {
+       "akış": 1,
+       "bozuk": 1,
+       "degisen": 2,
+       "eşdeğer": 1,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 1
+       }
+      },
+      "multi_inline": {
+       "akış": 13,
+       "belirti": {
+        "erisilemez": 7
+       },
+       "bozuk": 21,
+       "degisen": 21,
+       "denge": 8,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 9,
+        "K2_ayracsiz_kosula_cok_deyim": 9,
+        "K3_duserek_ulasilan_blok_silindi": 21,
+        "K4b_yalniz_noktali_virgul_kaldi": 21,
+        "aday_etiket_var": 21
+       }
+      },
+      "rename": {
+       "degisen": 43,
+       "eşdeğer": 43
+      },
+      "single_inline": {
+       "akış": 31,
+       "ayrıştırma": 6,
+       "belirti": {
+        "erisilemez": 14
+       },
+       "bozuk": 51,
+       "degisen": 51,
+       "denge": 14,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 31,
+        "K2_ayracsiz_kosula_cok_deyim": 14,
+        "K3_duserek_ulasilan_blok_silindi": 51,
+        "K4b_yalniz_noktali_virgul_kaldi": 51,
+        "aday_etiket_var": 51
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 28
+      },
+      "clang": {
+       "denetlenen": 28
+      },
+      "degisen_dosya": 28,
+      "etiket_adi": {
+       "cleanup_and_return": 4,
+       "error_cleanup": 1,
+       "exit_function": 37
+      },
+      "urun": {
+       "breaks_continues": 1,
+       "early_returns": 4,
+       "eliminated": 5,
+       "functions_changed": 28,
+       "renamed": 42
+      }
+     }
+    },
+    "mac/tmux": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      }
+     },
+     "dosya": 2821,
+     "fonksiyon": 2821,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 545,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 311,
+      "ayracsiz_gomme_fonksiyon": 196,
+      "bagimsiz": {
+       "akış": 232,
+       "ayrıştırma": 39,
+       "denge": 175,
+       "deyim": 6,
+       "etiket": 4,
+       "eşdeğer": 19,
+       "çağrı": 1
+      },
+      "bagimsiz_bozuk": 457,
+      "belirti": {
+       "erisilemez": 87
+      },
+      "clang": {
+       "denetlenen": 476,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 6,
+        "'AD' statement not in loop statement": 1,
+        "'AD' statement not in switch statement": 2,
+        "GNU line marker directive requires a simple digit sequence": 1,
+        "a parameter list without types is only allowed in a function definition": 23,
+        "array initializer must be an initializer list or wide string literal": 2,
+        "expected ')'": 32,
+        "expected ';' after expression": 1,
+        "expected ';' after top level declarator": 35,
+        "expected 'AD' in do|while loop": 78,
+        "expected '}'": 54,
+        "expected expression": 26,
+        "expected identifier": 4,
+        "expected identifier or '('": 123,
+        "expected parameter declarator": 7,
+        "expected statement": 4,
+        "extraneous closing brace ('}')": 70,
+        "function cannot return function type 'AD'": 1,
+        "illegal initializer (only variables can be initialized)": 22,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD'; take the address with & [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 3,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 10,
+        "indirection requires pointer operand ('AD' invalid)": 3,
+        "initializer element is not a compile-time constant": 32,
+        "invalid digit 'AD' in octal constant": 1,
+        "redefinition of 'AD'": 23,
+        "redefinition of 'AD' as different kind of symbol": 1,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 2,
+        "redefinition of label 'AD'": 15,
+        "subscripted value is not an array, pointer, or vector": 1,
+        "unknown type name 'AD'": 40,
+        "use of undeclared identifier 'AD'": 17,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 12,
+        "use of undeclared label 'AD'": 26,
+        "while loop outside of a function": 20
+       },
+       "yeni_hata_turu_olan": 226
+      },
+      "degisen_dosya": 476,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 429,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 369,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 449,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 409,
+       "ayracsiz_kosula_blok_gomuldu": 304,
+       "ayracsiz_kosula_blok_sonda_gorulen": 241,
+       "cagri_azalan_fonksiyon": 49,
+       "deyim_azalan_fonksiyon": 96,
+       "dusmeli_etiket_satir_icine_alindi": 787,
+       "dusmeli_etiket_silindi": 523,
+       "dusmeli_etiket_silindi_ihtiyatli": 344,
+       "satir_icine_alinan_etiket": 789,
+       "soz_bozuk": 181,
+       "soz_bozuk:erken_kapanan": 131,
+       "soz_bozuk:kapanmamis": 50
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 10,
+       "bozuk": 10,
+       "degisen": 15,
+       "eşdeğer": 5,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 9,
+        "B2_continue_for_ya_da_kosullu_do_while": 3
+       }
+      },
+      "early_return": {
+       "akış": 1,
+       "bozuk": 1,
+       "degisen": 1,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 1
+       }
+      },
+      "multi_inline": {
+       "akış": 84,
+       "ayrıştırma": 1,
+       "belirti": {
+        "erisilemez": 45
+       },
+       "bozuk": 130,
+       "degisen": 130,
+       "denge": 38,
+       "etiket": 7,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 41,
+        "K2_ayracsiz_kosula_cok_deyim": 65,
+        "K3_duserek_ulasilan_blok_silindi": 130,
+        "K4b_yalniz_noktali_virgul_kaldi": 130,
+        "aday_etiket_var": 130
+       }
+      },
+      "rename": {
+       "degisen": 328,
+       "eşdeğer": 328
+      },
+      "single_inline": {
+       "akış": 200,
+       "ayrıştırma": 38,
+       "belirti": {
+        "erisilemez": 66
+       },
+       "bozuk": 391,
+       "degisen": 391,
+       "denge": 148,
+       "etiket": 4,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 236,
+        "K2_ayracsiz_kosula_cok_deyim": 158,
+        "K3_duserek_ulasilan_blok_silindi": 390,
+        "K4b_yalniz_noktali_virgul_kaldi": 386,
+        "aday_etiket_var": 391
+       },
+       "çağrı": 1
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 199
+      },
+      "clang": {
+       "denetlenen": 199
+      },
+      "degisen_dosya": 199,
+      "etiket_adi": {
+       "cleanup_and_return": 77,
+       "error_cleanup": 27,
+       "error_exit": 2,
+       "exit_function": 188
+      },
+      "urun": {
+       "breaks_continues": 5,
+       "early_returns": 5,
+       "eliminated": 10,
+       "functions_changed": 199,
+       "renamed": 294
+      }
+     }
+    }
+   },
+   "tabaka": {
+    "buyuk": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 5,
+       "ihtiyatli": 5,
+       "ust": 5
+      },
+      "sonra": {
+       "ust": 2
+      }
+     },
+     "dosya": 16218,
+     "fonksiyon": 16218,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 3474,
+     "ikili": 5,
+     "once": {
+      "ayracsiz_gomme_blok": 2024,
+      "ayracsiz_gomme_fonksiyon": 1219,
+      "bagimsiz": {
+       "akış": 1494,
+       "ayrıştırma": 264,
+       "denge": 1082,
+       "deyim": 27,
+       "etiket": 15,
+       "eşdeğer": 152,
+       "goto": 16,
+       "çağrı": 3
+      },
+      "bagimsiz_bozuk": 2901,
+      "belirti": {
+       "cift_donus": 2,
+       "erisilemez": 473
+      },
+      "clang": {
+       "denetlenen": 3053,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 45,
+        "'AD' statement not in loop statement": 3,
+        "'AD' statement not in switch statement": 2,
+        "GNU line marker directive requires a simple digit sequence": 32,
+        "a parameter list without types is only allowed in a function definition": 71,
+        "array initializer must be an initializer list or wide string literal": 6,
+        "expected ')'": 113,
+        "expected ';' after do|while statement": 2,
+        "expected ';' after expression": 7,
+        "expected ';' after top level declarator": 134,
+        "expected 'AD' in do|while loop": 484,
+        "expected '}'": 504,
+        "expected expression": 157,
+        "expected identifier": 41,
+        "expected identifier or '('": 583,
+        "expected parameter declarator": 54,
+        "expected statement": 10,
+        "extraneous ')'AD';'": 2,
+        "extraneous closing brace ('}')": 297,
+        "function cannot return function type 'AD'": 5,
+        "illegal initializer (only variables can be initialized)": 46,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 6,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD'; take the address with & [-Wint-conversion]": 1,
+        "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 2,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 17,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 35,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; dereference with * [-Wint-conversion]": 4,
+        "indirection requires pointer operand ('AD' invalid)": 22,
+        "initializer element is not a compile-time constant": 120,
+        "invalid digit 'AD' in decimal constant": 2,
+        "invalid digit 'AD' in octal constant": 1,
+        "invalid operands to binary expression ('AD' and 'AD')": 11,
+        "redefinition of 'AD'": 53,
+        "redefinition of 'AD' as different kind of symbol": 10,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 10,
+        "redefinition of label 'AD'": 105,
+        "redefinition of parameter 'AD'": 2,
+        "subscripted value is not an array, pointer, or vector": 15,
+        "unknown type name 'AD'": 128,
+        "use of undeclared identifier 'AD'": 45,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 57,
+        "use of undeclared label 'AD'": 265,
+        "while loop outside of a function": 78
+       },
+       "yeni_hata_turu_olan": 1411
+      },
+      "degisen_dosya": 3053,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 2556,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 2132,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 2651,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 2384,
+       "ayracsiz_kosula_blok_gomuldu": 1880,
+       "ayracsiz_kosula_blok_sonda_gorulen": 1547,
+       "cagri_azalan_fonksiyon": 336,
+       "deyim_azalan_fonksiyon": 472,
+       "dusmeli_etiket_satir_icine_alindi": 5007,
+       "dusmeli_etiket_silindi": 3668,
+       "dusmeli_etiket_silindi_ihtiyatli": 2370,
+       "satir_icine_alinan_etiket": 5049,
+       "soz_bozuk": 1110,
+       "soz_bozuk:erken_kapanan": 637,
+       "soz_bozuk:kapanmamis": 469,
+       "soz_bozuk:parantez": 4
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 400,
+       "bozuk": 400,
+       "degisen": 427,
+       "eşdeğer": 27,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 381,
+        "B2_continue_for_ya_da_kosullu_do_while": 33
+       }
+      },
+      "early_return": {
+       "akış": 37,
+       "bozuk": 37,
+       "degisen": 45,
+       "eşdeğer": 8,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 37
+       }
+      },
+      "ifelse": {
+       "ayrıştırma": 3,
+       "bozuk": 3,
+       "degisen": 3
+      },
+      "multi_inline": {
+       "akış": 458,
+       "ayrıştırma": 3,
+       "belirti": {
+        "erisilemez": 202
+       },
+       "bozuk": 898,
+       "degisen": 898,
+       "denge": 418,
+       "etiket": 19,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 457,
+        "K2_ayracsiz_kosula_cok_deyim": 321,
+        "K3_duserek_ulasilan_blok_silindi": 896,
+        "K4b_yalniz_noktali_virgul_kaldi": 896,
+        "aday_etiket_var": 896,
+        "ayrıştırılamadı": 2,
+        "siniflanmadi": 2
+       }
+      },
+      "rename": {
+       "degisen": 2167,
+       "eşdeğer": 2165,
+       "hükümsüz": 2
+      },
+      "single_inline": {
+       "akış": 1253,
+       "ayrıştırma": 334,
+       "belirti": {
+        "erisilemez": 413
+       },
+       "bozuk": 2446,
+       "degisen": 2448,
+       "denge": 823,
+       "etiket": 17,
+       "goto": 16,
+       "hükümsüz": 2,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 1658,
+        "K2_ayracsiz_kosula_cok_deyim": 1070,
+        "K3_duserek_ulasilan_blok_silindi": 2445,
+        "K4b_yalniz_noktali_virgul_kaldi": 2428,
+        "aday_etiket_var": 2446
+       },
+       "çağrı": 3
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 1056
+      },
+      "clang": {
+       "denetlenen": 1056
+      },
+      "degisen_dosya": 1056,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 4,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 4,
+       "ayracsiz_kosula_blok_gomuldu": 6,
+       "satir_icine_alinan_etiket": 8
+      },
+      "denetci_ust_sinir_ama_esdeger": 4,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 4,
+      "etiket_adi": {
+       "cleanup_and_return": 240,
+       "error_cleanup": 205,
+       "error_exit": 164,
+       "exit_function": 805
+      },
+      "urun": {
+       "breaks_continues": 31,
+       "early_returns": 125,
+       "eliminated": 166,
+       "functions_changed": 1056,
+       "functions_skipped": 4,
+       "inlined": 6,
+       "multi_target_inlined": 4,
+       "renamed": 1414
+      }
+     }
+    },
+    "kucuk": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 108,
+       "ihtiyatli": 108,
+       "ust": 108
+      },
+      "sonra": {
+       "ust": 1
+      }
+     },
+     "dosya": 37962,
+     "fonksiyon": 37962,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 2268,
+     "ikili": 108,
+     "once": {
+      "ayracsiz_gomme_blok": 1540,
+      "ayracsiz_gomme_fonksiyon": 1009,
+      "bagimsiz": {
+       "akış": 909,
+       "ayrıştırma": 153,
+       "denge": 844,
+       "deyim": 52,
+       "etiket": 10,
+       "eşdeğer": 62,
+       "goto": 5
+      },
+      "bagimsiz_bozuk": 1973,
+      "belirti": {
+       "erisilemez": 517
+      },
+      "clang": {
+       "denetlenen": 2035,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 40,
+        "'AD' statement not in loop statement": 5,
+        "GNU line marker directive requires a simple digit sequence": 5,
+        "a parameter list without types is only allowed in a function definition": 123,
+        "array initializer must be an initializer list or wide string literal": 4,
+        "block pointer to non-function type is invalid": 1,
+        "expected ')'": 147,
+        "expected ';' after do|while statement": 1,
+        "expected ';' after expression": 9,
+        "expected ';' after top level declarator": 59,
+        "expected 'AD' in do|while loop": 300,
+        "expected '}'": 306,
+        "expected expression": 41,
+        "expected identifier": 28,
+        "expected identifier or '('": 526,
+        "expected parameter declarator": 143,
+        "expected statement": 24,
+        "exponent has no digits": 1,
+        "extraneous ')'AD';'": 4,
+        "extraneous closing brace ('}')": 113,
+        "illegal initializer (only variables can be initialized)": 3,
+        "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 3,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 7,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 121,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; dereference with * [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; remove & [-Wint-conversion]": 2,
+        "indirection requires pointer operand ('AD' invalid)": 11,
+        "initializer element is not a compile-time constant": 159,
+        "invalid digit 'AD' in decimal constant": 1,
+        "invalid digit 'AD' in octal constant": 1,
+        "invalid operands to binary expression ('AD' and 'AD')": 18,
+        "redefinition of 'AD'": 131,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 106,
+        "redefinition of label 'AD'": 62,
+        "redefinition of parameter 'AD'": 1,
+        "subscripted value is not an array, pointer, or vector": 101,
+        "unknown type name 'AD'": 130,
+        "use of undeclared identifier 'AD'": 224,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 16,
+        "use of undeclared label 'AD'": 175,
+        "while loop outside of a function": 167
+       },
+       "yeni_hata_turu_olan": 1031
+      },
+      "degisen_dosya": 2035,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 1788,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 1385,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 1863,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 1709,
+       "ayracsiz_kosula_blok_gomuldu": 1475,
+       "ayracsiz_kosula_blok_sonda_gorulen": 1241,
+       "cagri_azalan_fonksiyon": 490,
+       "deyim_azalan_fonksiyon": 513,
+       "dusmeli_etiket_satir_icine_alindi": 3305,
+       "dusmeli_etiket_silindi": 2513,
+       "dusmeli_etiket_silindi_ihtiyatli": 1419,
+       "satir_icine_alinan_etiket": 3316,
+       "soz_bozuk": 854,
+       "soz_bozuk:erken_kapanan": 559,
+       "soz_bozuk:kapanmamis": 290,
+       "soz_bozuk:parantez": 5
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 358,
+       "bozuk": 358,
+       "degisen": 389,
+       "eşdeğer": 31,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 330,
+        "B2_continue_for_ya_da_kosullu_do_while": 37
+       }
+      },
+      "early_return": {
+       "akış": 13,
+       "bozuk": 13,
+       "degisen": 13,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 13
+       }
+      },
+      "ifelse": {
+       "akış": 1,
+       "ayrıştırma": 1,
+       "bozuk": 2,
+       "degisen": 2
+      },
+      "multi_inline": {
+       "akış": 233,
+       "ayrıştırma": 1,
+       "belirti": {
+        "erisilemez": 144
+       },
+       "bozuk": 444,
+       "degisen": 444,
+       "denge": 207,
+       "etiket": 3,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 211,
+        "K2_ayracsiz_kosula_cok_deyim": 217,
+        "K3_duserek_ulasilan_blok_silindi": 442,
+        "K4b_yalniz_noktali_virgul_kaldi": 444,
+        "aday_etiket_var": 444
+       }
+      },
+      "rename": {
+       "degisen": 1514,
+       "eşdeğer": 1514
+      },
+      "single_inline": {
+       "akış": 823,
+       "ayrıştırma": 207,
+       "belirti": {
+        "erisilemez": 448
+       },
+       "bozuk": 1730,
+       "degisen": 1730,
+       "denge": 686,
+       "etiket": 9,
+       "goto": 5,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 1131,
+        "K2_ayracsiz_kosula_cok_deyim": 787,
+        "K3_duserek_ulasilan_blok_silindi": 1730,
+        "K4b_yalniz_noktali_virgul_kaldi": 1723,
+        "aday_etiket_var": 1730
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 978
+      },
+      "clang": {
+       "denetlenen": 978
+      },
+      "degisen_dosya": 978,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 1,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 1,
+       "ayracsiz_kosula_blok_gomuldu": 2,
+       "satir_icine_alinan_etiket": 1
+      },
+      "denetci_ust_sinir_ama_esdeger": 1,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 1,
+      "etiket_adi": {
+       "cleanup_and_return": 259,
+       "error_cleanup": 177,
+       "error_exit": 13,
+       "exit_function": 1001
+      },
+      "urun": {
+       "breaks_continues": 46,
+       "early_returns": 48,
+       "eliminated": 96,
+       "functions_changed": 978,
+       "functions_skipped": 3,
+       "multi_target_inlined": 2,
+       "renamed": 1450
+      }
+     }
+    },
+    "orta": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 6,
+       "ihtiyatli": 6,
+       "ust": 6
+      },
+      "sonra": {
+       "ust": 2
+      }
+     },
+     "dosya": 12798,
+     "fonksiyon": 12798,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 1671,
+     "ikili": 6,
+     "once": {
+      "ayracsiz_gomme_blok": 1274,
+      "ayracsiz_gomme_fonksiyon": 689,
+      "bagimsiz": {
+       "akış": 755,
+       "ayrıştırma": 123,
+       "denge": 493,
+       "deyim": 24,
+       "etiket": 7,
+       "eşdeğer": 113,
+       "goto": 9,
+       "çağrı": 3
+      },
+      "bagimsiz_bozuk": 1414,
+      "belirti": {
+       "cift_donus": 1,
+       "erisilemez": 283
+      },
+      "clang": {
+       "denetlenen": 1527,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 19,
+        "'AD' statement not in switch statement": 5,
+        "GNU line marker directive requires a simple digit sequence": 7,
+        "a parameter list without types is only allowed in a function definition": 24,
+        "array initializer must be an initializer list or wide string literal": 6,
+        "called object type 'AD' is not a function or function pointer": 1,
+        "expected ')'": 56,
+        "expected ';' after do|while statement": 1,
+        "expected ';' after expression": 9,
+        "expected ';' after top level declarator": 83,
+        "expected 'AD' in do|while loop": 264,
+        "expected '}'": 268,
+        "expected expression": 68,
+        "expected identifier": 23,
+        "expected identifier or '('": 227,
+        "expected parameter declarator": 25,
+        "expected statement": 3,
+        "extraneous closing brace ('}')": 135,
+        "function cannot return function type 'AD'": 4,
+        "illegal initializer (only variables can be initialized)": 17,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 3,
+        "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 21,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 15,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; dereference with * [-Wint-conversion]": 3,
+        "indirection requires pointer operand ('AD' invalid)": 13,
+        "initializer element is not a compile-time constant": 62,
+        "invalid digit 'AD' in decimal constant": 2,
+        "invalid digit 'AD' in octal constant": 5,
+        "invalid operands to binary expression ('AD' and 'AD')": 12,
+        "member reference base type 'AD' is not a structure or union": 3,
+        "redefinition of 'AD'": 32,
+        "redefinition of 'AD' as different kind of symbol": 3,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 9,
+        "redefinition of label 'AD'": 59,
+        "subscripted value is not an array, pointer, or vector": 4,
+        "unknown type name 'AD'": 55,
+        "use of undeclared identifier 'AD'": 19,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 24,
+        "use of undeclared label 'AD'": 155,
+        "variable length array declaration not allowed at file scope": 1,
+        "while loop outside of a function": 66
+       },
+       "yeni_hata_turu_olan": 650
+      },
+      "degisen_dosya": 1527,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 1260,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 1044,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 1293,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 1159,
+       "ayracsiz_kosula_blok_gomuldu": 1189,
+       "ayracsiz_kosula_blok_sonda_gorulen": 933,
+       "cagri_azalan_fonksiyon": 150,
+       "deyim_azalan_fonksiyon": 188,
+       "dusmeli_etiket_satir_icine_alindi": 2497,
+       "dusmeli_etiket_silindi": 1845,
+       "dusmeli_etiket_silindi_ihtiyatli": 1082,
+       "satir_icine_alinan_etiket": 2534,
+       "soz_bozuk": 508,
+       "soz_bozuk:erken_kapanan": 251,
+       "soz_bozuk:kapanmamis": 256,
+       "soz_bozuk:parantez": 1
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 273,
+       "bozuk": 273,
+       "degisen": 289,
+       "eşdeğer": 16,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 243,
+        "B2_continue_for_ya_da_kosullu_do_while": 41
+       }
+      },
+      "early_return": {
+       "akış": 8,
+       "bozuk": 8,
+       "degisen": 15,
+       "eşdeğer": 7,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 8
+       }
+      },
+      "ifelse": {
+       "ayrıştırma": 2,
+       "bozuk": 2,
+       "degisen": 2
+      },
+      "multi_inline": {
+       "akış": 271,
+       "ayrıştırma": 2,
+       "belirti": {
+        "erisilemez": 158
+       },
+       "bozuk": 507,
+       "degisen": 507,
+       "denge": 229,
+       "etiket": 5,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 248,
+        "K2_ayracsiz_kosula_cok_deyim": 223,
+        "K3_duserek_ulasilan_blok_silindi": 503,
+        "K4b_yalniz_noktali_virgul_kaldi": 507,
+        "aday_etiket_var": 507
+       }
+      },
+      "rename": {
+       "degisen": 1132,
+       "eşdeğer": 1132
+      },
+      "single_inline": {
+       "akış": 590,
+       "ayrıştırma": 145,
+       "belirti": {
+        "erisilemez": 185
+       },
+       "bozuk": 1071,
+       "degisen": 1071,
+       "denge": 314,
+       "deyim": 1,
+       "etiket": 11,
+       "goto": 7,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 704,
+        "K2_ayracsiz_kosula_cok_deyim": 523,
+        "K3_duserek_ulasilan_blok_silindi": 1068,
+        "K4b_yalniz_noktali_virgul_kaldi": 1070,
+        "aday_etiket_var": 1071
+       },
+       "çağrı": 3
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 494
+      },
+      "clang": {
+       "denetlenen": 494
+      },
+      "degisen_dosya": 494,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 6,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 6,
+       "ayracsiz_kosula_blok_gomuldu": 12,
+       "satir_icine_alinan_etiket": 9
+      },
+      "denetci_ust_sinir_ama_esdeger": 6,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 6,
+      "etiket_adi": {
+       "cleanup_and_return": 139,
+       "error_cleanup": 116,
+       "error_exit": 6,
+       "exit_function": 385
+      },
+      "urun": {
+       "breaks_continues": 40,
+       "early_returns": 98,
+       "eliminated": 152,
+       "functions_changed": 494,
+       "functions_skipped": 1,
+       "inlined": 4,
+       "multi_target_inlined": 10,
+       "renamed": 646
+      }
+     }
+    }
+   },
+   "toplam": {
+    "bozuk_ikili": {
+     "once": {
+      "bagimsiz": 119,
+      "ihtiyatli": 119,
+      "ust": 119
+     },
+     "sonra": {
+      "ust": 5
+     }
+    },
+    "dosya": 66978,
+    "fonksiyon": 66978,
+    "goto_iceren_govdede_gec_bildirim": 0,
+    "ham_bozuk": 0,
+    "ham_goto_iceren_fonksiyon": 7413,
+    "ikili": 119,
+    "once": {
+     "ayracsiz_gomme_blok": 4838,
+     "ayracsiz_gomme_fonksiyon": 2917,
+     "bagimsiz": {
+      "akış": 3158,
+      "ayrıştırma": 540,
+      "denge": 2419,
+      "deyim": 103,
+      "etiket": 32,
+      "eşdeğer": 327,
+      "goto": 30,
+      "çağrı": 6
+     },
+     "bagimsiz_bozuk": 6288,
+     "belirti": {
+      "cift_donus": 3,
+      "erisilemez": 1273
+     },
+     "clang": {
+      "denetlenen": 6615,
+      "tur": {
+       "'AD' statement not in loop or switch statement": 104,
+       "'AD' statement not in loop statement": 8,
+       "'AD' statement not in switch statement": 7,
+       "GNU line marker directive requires a simple digit sequence": 44,
+       "a parameter list without types is only allowed in a function definition": 218,
+       "array initializer must be an initializer list or wide string literal": 16,
+       "block pointer to non-function type is invalid": 1,
+       "called object type 'AD' is not a function or function pointer": 1,
+       "expected ')'": 316,
+       "expected ';' after do|while statement": 4,
+       "expected ';' after expression": 25,
+       "expected ';' after top level declarator": 276,
+       "expected 'AD' in do|while loop": 1048,
+       "expected '}'": 1078,
+       "expected expression": 266,
+       "expected identifier": 92,
+       "expected identifier or '('": 1336,
+       "expected parameter declarator": 222,
+       "expected statement": 37,
+       "exponent has no digits": 1,
+       "extraneous ')'AD';'": 6,
+       "extraneous closing brace ('}')": 545,
+       "function cannot return function type 'AD'": 9,
+       "illegal initializer (only variables can be initialized)": 66,
+       "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 9,
+       "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD'; take the address with & [-Wint-conversion]": 1,
+       "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 6,
+       "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 45,
+       "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 171,
+       "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; dereference with * [-Wint-conversion]": 8,
+       "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; remove & [-Wint-conversion]": 2,
+       "indirection requires pointer operand ('AD' invalid)": 46,
+       "initializer element is not a compile-time constant": 341,
+       "invalid digit 'AD' in decimal constant": 5,
+       "invalid digit 'AD' in octal constant": 7,
+       "invalid operands to binary expression ('AD' and 'AD')": 41,
+       "member reference base type 'AD' is not a structure or union": 3,
+       "redefinition of 'AD'": 216,
+       "redefinition of 'AD' as different kind of symbol": 13,
+       "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 125,
+       "redefinition of label 'AD'": 226,
+       "redefinition of parameter 'AD'": 3,
+       "subscripted value is not an array, pointer, or vector": 120,
+       "unknown type name 'AD'": 313,
+       "use of undeclared identifier 'AD'": 288,
+       "use of undeclared identifier 'AD'; did you mean 'AD'?": 97,
+       "use of undeclared label 'AD'": 595,
+       "variable length array declaration not allowed at file scope": 1,
+       "while loop outside of a function": 311
+      },
+      "yeni_hata_turu_olan": 3092
+     },
+     "degisen_dosya": 6615,
+     "denetci": {
+      "akis_anlami_bozulan_fonksiyon": 5604,
+      "akis_anlami_bozulan_fonksiyon_ihtiyatli": 4561,
+      "akis_sadelestirmenin_bozdugu_fonksiyon": 5807,
+      "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 5252,
+      "ayracsiz_kosula_blok_gomuldu": 4544,
+      "ayracsiz_kosula_blok_sonda_gorulen": 3721,
+      "cagri_azalan_fonksiyon": 976,
+      "deyim_azalan_fonksiyon": 1173,
+      "dusmeli_etiket_satir_icine_alindi": 10809,
+      "dusmeli_etiket_silindi": 8026,
+      "dusmeli_etiket_silindi_ihtiyatli": 4871,
+      "satir_icine_alinan_etiket": 10899,
+      "soz_bozuk": 2472,
+      "soz_bozuk:erken_kapanan": 1447,
+      "soz_bozuk:kapanmamis": 1015,
+      "soz_bozuk:parantez": 10
+     }
+    },
+    "once_gecis": {
+     "break_continue": {
+      "akış": 1031,
+      "bozuk": 1031,
+      "degisen": 1105,
+      "eşdeğer": 74,
+      "kok": {
+       "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 954,
+       "B2_continue_for_ya_da_kosullu_do_while": 111
+      }
+     },
+     "early_return": {
+      "akış": 58,
+      "bozuk": 58,
+      "degisen": 73,
+      "eşdeğer": 15,
+      "kok": {
+       "E1_duserek_ulasilan_return_silindi": 58
+      }
+     },
+     "ifelse": {
+      "akış": 1,
+      "ayrıştırma": 6,
+      "bozuk": 7,
+      "degisen": 7
+     },
+     "multi_inline": {
+      "akış": 962,
+      "ayrıştırma": 6,
+      "belirti": {
+       "erisilemez": 504
+      },
+      "bozuk": 1849,
+      "degisen": 1849,
+      "denge": 854,
+      "etiket": 27,
+      "kok": {
+       "K1_blok_ayrac_sinirini_asiyor": 916,
+       "K2_ayracsiz_kosula_cok_deyim": 761,
+       "K3_duserek_ulasilan_blok_silindi": 1841,
+       "K4b_yalniz_noktali_virgul_kaldi": 1847,
+       "aday_etiket_var": 1847,
+       "ayrıştırılamadı": 2,
+       "siniflanmadi": 2
+      }
+     },
+     "rename": {
+      "degisen": 4813,
+      "eşdeğer": 4811,
+      "hükümsüz": 2
+     },
+     "single_inline": {
+      "akış": 2666,
+      "ayrıştırma": 686,
+      "belirti": {
+       "erisilemez": 1046
+      },
+      "bozuk": 5247,
+      "degisen": 5249,
+      "denge": 1823,
+      "deyim": 1,
+      "etiket": 37,
+      "goto": 28,
+      "hükümsüz": 2,
+      "kok": {
+       "K1_blok_ayrac_sinirini_asiyor": 3493,
+       "K2_ayracsiz_kosula_cok_deyim": 2380,
+       "K3_duserek_ulasilan_blok_silindi": 5243,
+       "K4b_yalniz_noktali_virgul_kaldi": 5221,
+       "aday_etiket_var": 5247
+      },
+      "çağrı": 6
+     }
+    },
+    "sonra": {
+     "bagimsiz": {
+      "eşdeğer": 2528
+     },
+     "clang": {
+      "denetlenen": 2528
+     },
+     "degisen_dosya": 2528,
+     "denetci": {
+      "akis_anlami_bozulan_fonksiyon": 11,
+      "akis_sadelestirmenin_bozdugu_fonksiyon": 11,
+      "ayracsiz_kosula_blok_gomuldu": 20,
+      "satir_icine_alinan_etiket": 18
+     },
+     "denetci_ust_sinir_ama_esdeger": 11,
+     "denetci_ust_sinir_ama_esdeger_ve_ayracli": 11,
+     "etiket_adi": {
+      "cleanup_and_return": 638,
+      "error_cleanup": 498,
+      "error_exit": 183,
+      "exit_function": 2191
+     },
+     "urun": {
+      "breaks_continues": 117,
+      "early_returns": 271,
+      "eliminated": 414,
+      "functions_changed": 2528,
+      "functions_skipped": 8,
+      "inlined": 10,
+      "multi_target_inlined": 16,
+      "renamed": 3510
+     }
+    }
+   }
+  },
+  "struct": {
+   "program": {
+    "debian/coreutils": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 105,
+       "ihtiyatli": 105,
+       "ust": 105
+      },
+      "sonra": {
+       "ust": 1
+      }
+     },
+     "dosya": 36568,
+     "fonksiyon": 36568,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 2124,
+     "ikili": 106,
+     "once": {
+      "ayracsiz_gomme_blok": 1511,
+      "ayracsiz_gomme_fonksiyon": 953,
+      "bagimsiz": {
+       "akış": 659,
+       "ayrıştırma": 164,
+       "denge": 603,
+       "deyim": 71,
+       "etiket": 11,
+       "eşdeğer": 69,
+       "goto": 2
+      },
+      "bagimsiz_bozuk": 1510,
+      "belirti": {
+       "erisilemez": 364
+      },
+      "clang": {
+       "denetlenen": 1579,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 36,
+        "'AD' statement not in loop statement": 3,
+        "'AD' statement not in switch statement": 1,
+        "a parameter list without types is only allowed in a function definition": 25,
+        "block pointer to non-function type is invalid": 1,
+        "expected ')'": 41,
+        "expected ';' after do|while statement": 6,
+        "expected ';' after expression": 110,
+        "expected ';' after top level declarator": 57,
+        "expected 'AD' in do|while loop": 277,
+        "expected '}'": 235,
+        "expected expression": 117,
+        "expected identifier": 27,
+        "expected identifier or '('": 210,
+        "expected parameter declarator": 41,
+        "expected statement": 23,
+        "exponent has no digits": 1,
+        "extraneous ')'AD';'": 7,
+        "extraneous closing brace ('}')": 154,
+        "illegal initializer (only variables can be initialized)": 4,
+        "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 8,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 11,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; dereference with * [-Wint-conversion]": 1,
+        "indirection requires pointer operand ('AD' invalid)": 16,
+        "initializer element is not a compile-time constant": 53,
+        "invalid digit 'AD' in decimal constant": 1,
+        "invalid operands to binary expression ('AD' and 'AD')": 26,
+        "member reference type 'AD' is not a pointer": 2,
+        "redefinition of 'AD'": 12,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 12,
+        "redefinition of label 'AD'": 67,
+        "redefinition of parameter 'AD'": 1,
+        "subscripted value is not an array, pointer, or vector": 4,
+        "unexpected type name 'AD': expected expression": 1,
+        "unknown type name 'AD'": 2,
+        "use of undeclared identifier 'AD'": 1,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 10,
+        "use of undeclared label 'AD'": 149,
+        "while loop outside of a function": 61
+       },
+       "yeni_hata_turu_olan": 760
+      },
+      "degisen_dosya": 1579,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 1334,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 1179,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 1424,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 1291,
+       "ayracsiz_kosula_blok_gomuldu": 1442,
+       "ayracsiz_kosula_blok_sonda_gorulen": 1169,
+       "cagri_azalan_fonksiyon": 134,
+       "deyim_azalan_fonksiyon": 154,
+       "dusmeli_etiket_satir_icine_alindi": 2665,
+       "dusmeli_etiket_silindi": 1937,
+       "dusmeli_etiket_silindi_ihtiyatli": 1229,
+       "satir_icine_alinan_etiket": 2676,
+       "soz_bozuk": 603,
+       "soz_bozuk:erken_kapanan": 243,
+       "soz_bozuk:kapanmamis": 246,
+       "soz_bozuk:parantez": 114
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 340,
+       "bozuk": 340,
+       "degisen": 369,
+       "eşdeğer": 29,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 314,
+        "B2_continue_for_ya_da_kosullu_do_while": 33
+       }
+      },
+      "early_return": {
+       "akış": 11,
+       "bozuk": 11,
+       "degisen": 11,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 11
+       }
+      },
+      "ifelse": {
+       "akış": 1,
+       "ayrıştırma": 1,
+       "bozuk": 2,
+       "degisen": 2
+      },
+      "multi_inline": {
+       "akış": 219,
+       "ayrıştırma": 1,
+       "belirti": {
+        "erisilemez": 150
+       },
+       "bozuk": 417,
+       "degisen": 417,
+       "denge": 189,
+       "etiket": 8,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 190,
+        "K2_ayracsiz_kosula_cok_deyim": 219,
+        "K3_duserek_ulasilan_blok_silindi": 415,
+        "K4_silme_kisa_kuyruk_kaldi": 171,
+        "K4b_yalniz_noktali_virgul_kaldi": 249,
+        "aday_etiket_var": 417
+       }
+      },
+      "rename": {
+       "degisen": 1407,
+       "eşdeğer": 1407
+      },
+      "single_inline": {
+       "akış": 581,
+       "ayrıştırma": 194,
+       "belirti": {
+        "erisilemez": 267
+       },
+       "bozuk": 1259,
+       "degisen": 1259,
+       "denge": 476,
+       "etiket": 6,
+       "goto": 2,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 692,
+        "K2_ayracsiz_kosula_cok_deyim": 697,
+        "K3_duserek_ulasilan_blok_silindi": 1259,
+        "K4_silme_kisa_kuyruk_kaldi": 317,
+        "K4b_yalniz_noktali_virgul_kaldi": 1008,
+        "aday_etiket_var": 1259
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 924
+      },
+      "clang": {
+       "denetlenen": 924
+      },
+      "degisen_dosya": 924,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 1,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 1,
+       "ayracsiz_kosula_blok_gomuldu": 2,
+       "satir_icine_alinan_etiket": 1
+      },
+      "denetci_ust_sinir_ama_esdeger": 1,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 1,
+      "etiket_adi": {
+       "cleanup_and_return": 244,
+       "error_cleanup": 160,
+       "error_exit": 12,
+       "exit_function": 956
+      },
+      "urun": {
+       "breaks_continues": 39,
+       "early_returns": 39,
+       "eliminated": 80,
+       "functions_changed": 924,
+       "functions_skipped": 3,
+       "multi_target_inlined": 2,
+       "renamed": 1372
+      }
+     }
+    },
+    "debian/htop": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      }
+     },
+     "dosya": 1148,
+     "fonksiyon": 1148,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 116,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 64,
+      "ayracsiz_gomme_fonksiyon": 39,
+      "bagimsiz": {
+       "akış": 45,
+       "ayrıştırma": 7,
+       "denge": 37,
+       "deyim": 4,
+       "eşdeğer": 11,
+       "goto": 1
+      },
+      "bagimsiz_bozuk": 94,
+      "belirti": {
+       "cift_donus": 1,
+       "erisilemez": 7
+      },
+      "clang": {
+       "denetlenen": 105,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 2,
+        "'AD' statement not in switch statement": 1,
+        "a parameter list without types is only allowed in a function definition": 1,
+        "expected ')'": 3,
+        "expected ';' after top level declarator": 3,
+        "expected 'AD' in do|while loop": 11,
+        "expected '}'": 18,
+        "expected expression": 1,
+        "expected identifier or '('": 16,
+        "expected parameter declarator": 1,
+        "extraneous ')'AD';'": 1,
+        "extraneous closing brace ('}')": 13,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 1,
+        "initializer element is not a compile-time constant": 4,
+        "invalid digit 'AD' in octal constant": 1,
+        "invalid operands to binary expression ('AD' and 'AD')": 2,
+        "redefinition of 'AD'": 2,
+        "unknown type name 'AD'": 1,
+        "use of undeclared identifier 'AD'": 1,
+        "use of undeclared label 'AD'": 10,
+        "while loop outside of a function": 3
+       },
+       "yeni_hata_turu_olan": 45
+      },
+      "degisen_dosya": 105,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 83,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 70,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 86,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 79,
+       "ayracsiz_kosula_blok_gomuldu": 58,
+       "ayracsiz_kosula_blok_sonda_gorulen": 54,
+       "cagri_azalan_fonksiyon": 4,
+       "deyim_azalan_fonksiyon": 4,
+       "dusmeli_etiket_satir_icine_alindi": 157,
+       "dusmeli_etiket_silindi": 114,
+       "dusmeli_etiket_silindi_ihtiyatli": 66,
+       "satir_icine_alinan_etiket": 160,
+       "soz_bozuk": 37,
+       "soz_bozuk:erken_kapanan": 17,
+       "soz_bozuk:kapanmamis": 17,
+       "soz_bozuk:parantez": 3
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 15,
+       "bozuk": 15,
+       "degisen": 16,
+       "eşdeğer": 1,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 14,
+        "B2_continue_for_ya_da_kosullu_do_while": 2
+       }
+      },
+      "multi_inline": {
+       "akış": 16,
+       "belirti": {
+        "erisilemez": 4
+       },
+       "bozuk": 30,
+       "degisen": 30,
+       "denge": 14,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 15,
+        "K2_ayracsiz_kosula_cok_deyim": 7,
+        "K3_duserek_ulasilan_blok_silindi": 30,
+        "K4_silme_kisa_kuyruk_kaldi": 3,
+        "K4b_yalniz_noktali_virgul_kaldi": 27,
+        "aday_etiket_var": 30
+       }
+      },
+      "rename": {
+       "degisen": 65,
+       "eşdeğer": 65
+      },
+      "single_inline": {
+       "akış": 38,
+       "ayrıştırma": 10,
+       "belirti": {
+        "erisilemez": 8
+       },
+       "bozuk": 75,
+       "degisen": 75,
+       "denge": 25,
+       "deyim": 1,
+       "goto": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 48,
+        "K2_ayracsiz_kosula_cok_deyim": 39,
+        "K3_duserek_ulasilan_blok_silindi": 75,
+        "K4_silme_kisa_kuyruk_kaldi": 14,
+        "K4b_yalniz_noktali_virgul_kaldi": 63,
+        "aday_etiket_var": 75
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 32
+      },
+      "clang": {
+       "denetlenen": 32
+      },
+      "degisen_dosya": 32,
+      "denetci": {
+       "satir_icine_alinan_etiket": 1
+      },
+      "etiket_adi": {
+       "cleanup_and_return": 6,
+       "error_cleanup": 7,
+       "error_exit": 1,
+       "exit_function": 23
+      },
+      "urun": {
+       "breaks_continues": 2,
+       "early_returns": 5,
+       "eliminated": 8,
+       "functions_changed": 32,
+       "inlined": 1,
+       "renamed": 37
+      }
+     }
+    },
+    "debian/openssl": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      },
+      "sonra": {
+       "ust": 1
+      }
+     },
+     "dosya": 5672,
+     "fonksiyon": 5672,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 236,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 185,
+      "ayracsiz_gomme_fonksiyon": 98,
+      "bagimsiz": {
+       "akış": 86,
+       "ayrıştırma": 13,
+       "denge": 84,
+       "deyim": 14,
+       "etiket": 3,
+       "eşdeğer": 27,
+       "goto": 4
+      },
+      "bagimsiz_bozuk": 204,
+      "belirti": {
+       "erisilemez": 34
+      },
+      "clang": {
+       "denetlenen": 231,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 2,
+        "'AD' statement not in switch statement": 2,
+        "a parameter list without types is only allowed in a function definition": 4,
+        "expected ')'": 5,
+        "expected ';' after top level declarator": 10,
+        "expected 'AD' in do|while loop": 20,
+        "expected '}'": 28,
+        "expected expression": 2,
+        "expected identifier": 3,
+        "expected identifier or '('": 37,
+        "expected parameter declarator": 5,
+        "extraneous closing brace ('}')": 34,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 1,
+        "indirection requires pointer operand ('AD' invalid)": 1,
+        "initializer element is not a compile-time constant": 6,
+        "invalid digit 'AD' in decimal constant": 1,
+        "invalid digit 'AD' in octal constant": 1,
+        "invalid operands to binary expression ('AD' and 'AD')": 6,
+        "redefinition of 'AD'": 1,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 1,
+        "redefinition of label 'AD'": 9,
+        "unknown type name 'AD'": 1,
+        "use of undeclared identifier 'AD'": 2,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 2,
+        "use of undeclared label 'AD'": 19,
+        "while loop outside of a function": 6
+       },
+       "yeni_hata_turu_olan": 81
+      },
+      "degisen_dosya": 231,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 191,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 174,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 196,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 183,
+       "ayracsiz_kosula_blok_gomuldu": 162,
+       "ayracsiz_kosula_blok_sonda_gorulen": 138,
+       "cagri_azalan_fonksiyon": 15,
+       "deyim_azalan_fonksiyon": 15,
+       "dusmeli_etiket_satir_icine_alindi": 388,
+       "dusmeli_etiket_silindi": 276,
+       "dusmeli_etiket_silindi_ihtiyatli": 193,
+       "satir_icine_alinan_etiket": 391,
+       "soz_bozuk": 84,
+       "soz_bozuk:erken_kapanan": 42,
+       "soz_bozuk:kapanmamis": 41,
+       "soz_bozuk:parantez": 1
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 21,
+       "bozuk": 21,
+       "degisen": 24,
+       "eşdeğer": 3,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 17,
+        "B2_continue_for_ya_da_kosullu_do_while": 8
+       }
+      },
+      "early_return": {
+       "akış": 4,
+       "bozuk": 4,
+       "degisen": 6,
+       "eşdeğer": 2,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 4
+       }
+      },
+      "multi_inline": {
+       "akış": 46,
+       "belirti": {
+        "erisilemez": 21
+       },
+       "bozuk": 75,
+       "degisen": 75,
+       "denge": 26,
+       "etiket": 3,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 30,
+        "K2_ayracsiz_kosula_cok_deyim": 31,
+        "K3_duserek_ulasilan_blok_silindi": 75,
+        "K4_silme_kisa_kuyruk_kaldi": 13,
+        "K4b_yalniz_noktali_virgul_kaldi": 64,
+        "aday_etiket_var": 75
+       }
+      },
+      "rename": {
+       "degisen": 190,
+       "eşdeğer": 190
+      },
+      "single_inline": {
+       "akış": 74,
+       "ayrıştırma": 17,
+       "belirti": {
+        "erisilemez": 22
+       },
+       "bozuk": 164,
+       "degisen": 164,
+       "denge": 58,
+       "deyim": 9,
+       "etiket": 3,
+       "goto": 3,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 87,
+        "K2_ayracsiz_kosula_cok_deyim": 76,
+        "K3_duserek_ulasilan_blok_silindi": 164,
+        "K4_silme_kisa_kuyruk_kaldi": 47,
+        "K4b_yalniz_noktali_virgul_kaldi": 126,
+        "aday_etiket_var": 164
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 131
+      },
+      "clang": {
+       "denetlenen": 131
+      },
+      "degisen_dosya": 131,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 1,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 1,
+       "ayracsiz_kosula_blok_gomuldu": 1,
+       "satir_icine_alinan_etiket": 1
+      },
+      "denetci_ust_sinir_ama_esdeger": 1,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 1,
+      "etiket_adi": {
+       "cleanup_and_return": 62,
+       "error_cleanup": 59,
+       "error_exit": 1,
+       "exit_function": 67
+      },
+      "urun": {
+       "breaks_continues": 14,
+       "early_returns": 36,
+       "eliminated": 51,
+       "functions_changed": 131,
+       "functions_skipped": 1,
+       "inlined": 1,
+       "renamed": 189
+      }
+     }
+    },
+    "debian/redis-tools": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 4,
+       "ihtiyatli": 4,
+       "ust": 4
+      },
+      "sonra": {
+       "ust": 2
+      }
+     },
+     "dosya": 13397,
+     "fonksiyon": 13397,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 2929,
+     "ikili": 4,
+     "once": {
+      "ayracsiz_gomme_blok": 1694,
+      "ayracsiz_gomme_fonksiyon": 1012,
+      "bagimsiz": {
+       "akış": 1072,
+       "ayrıştırma": 200,
+       "denge": 1022,
+       "deyim": 68,
+       "etiket": 11,
+       "eşdeğer": 178,
+       "goto": 6
+      },
+      "bagimsiz_bozuk": 2379,
+      "belirti": {
+       "erisilemez": 330
+      },
+      "clang": {
+       "denetlenen": 2557,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 35,
+        "'AD' statement not in loop statement": 2,
+        "a parameter list without types is only allowed in a function definition": 44,
+        "array initializer must be an initializer list or wide string literal": 2,
+        "expected ')'": 90,
+        "expected ';' after do|while statement": 2,
+        "expected ';' after expression": 2,
+        "expected ';' after top level declarator": 111,
+        "expected 'AD' in do|while loop": 414,
+        "expected '}'": 458,
+        "expected expression": 28,
+        "expected identifier": 31,
+        "expected identifier or '('": 515,
+        "expected parameter declarator": 56,
+        "expected statement": 6,
+        "expression is not assignable": 6,
+        "extraneous ')'AD';'": 27,
+        "extraneous closing brace ('}')": 414,
+        "function cannot return function type 'AD'": 2,
+        "illegal initializer (only variables can be initialized)": 20,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 6,
+        "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 2,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 4,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 29,
+        "indirection requires pointer operand ('AD' invalid)": 14,
+        "initializer element is not a compile-time constant": 90,
+        "invalid digit 'AD' in decimal constant": 2,
+        "invalid operands to binary expression ('AD' and 'AD')": 81,
+        "redefinition of 'AD'": 31,
+        "redefinition of 'AD' as different kind of symbol": 6,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 10,
+        "redefinition of label 'AD'": 99,
+        "subscripted value is not an array, pointer, or vector": 14,
+        "unknown type name 'AD'": 30,
+        "use of undeclared identifier 'AD'": 14,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 30,
+        "use of undeclared label 'AD'": 239,
+        "while loop outside of a function": 79
+       },
+       "yeni_hata_turu_olan": 1239
+      },
+      "degisen_dosya": 2557,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 2053,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 1733,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 2134,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 1915,
+       "ayracsiz_kosula_blok_gomuldu": 1517,
+       "ayracsiz_kosula_blok_sonda_gorulen": 1256,
+       "cagri_azalan_fonksiyon": 237,
+       "deyim_azalan_fonksiyon": 279,
+       "dusmeli_etiket_satir_icine_alindi": 3986,
+       "dusmeli_etiket_silindi": 2941,
+       "dusmeli_etiket_silindi_ihtiyatli": 1950,
+       "satir_icine_alinan_etiket": 4026,
+       "soz_bozuk": 1022,
+       "soz_bozuk:erken_kapanan": 569,
+       "soz_bozuk:kapanmamis": 434,
+       "soz_bozuk:parantez": 19
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 390,
+       "bozuk": 390,
+       "degisen": 412,
+       "eşdeğer": 22,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 372,
+        "B2_continue_for_ya_da_kosullu_do_while": 30
+       }
+      },
+      "early_return": {
+       "akış": 36,
+       "bozuk": 36,
+       "degisen": 44,
+       "eşdeğer": 8,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 36
+       }
+      },
+      "ifelse": {
+       "ayrıştırma": 3,
+       "bozuk": 3,
+       "degisen": 3
+      },
+      "multi_inline": {
+       "akış": 366,
+       "ayrıştırma": 2,
+       "belirti": {
+        "erisilemez": 162
+       },
+       "bozuk": 783,
+       "degisen": 783,
+       "denge": 382,
+       "etiket": 33,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 390,
+        "K2_ayracsiz_kosula_cok_deyim": 265,
+        "K3_duserek_ulasilan_blok_silindi": 781,
+        "K4_silme_kisa_kuyruk_kaldi": 190,
+        "K4b_yalniz_noktali_virgul_kaldi": 599,
+        "aday_etiket_var": 781,
+        "ayrıştırılamadı": 2,
+        "siniflanmadi": 2
+       }
+      },
+      "rename": {
+       "degisen": 1841,
+       "eşdeğer": 1839,
+       "hükümsüz": 2
+      },
+      "single_inline": {
+       "akış": 847,
+       "ayrıştırma": 257,
+       "belirti": {
+        "erisilemez": 275
+       },
+       "bozuk": 1946,
+       "degisen": 1948,
+       "denge": 807,
+       "deyim": 16,
+       "etiket": 11,
+       "goto": 8,
+       "hükümsüz": 2,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 1301,
+        "K2_ayracsiz_kosula_cok_deyim": 875,
+        "K3_duserek_ulasilan_blok_silindi": 1946,
+        "K4_silme_kisa_kuyruk_kaldi": 446,
+        "K4b_yalniz_noktali_virgul_kaldi": 1603,
+        "aday_etiket_var": 1946
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 857
+      },
+      "clang": {
+       "denetlenen": 857
+      },
+      "degisen_dosya": 857,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 4,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 4,
+       "ayracsiz_kosula_blok_gomuldu": 6,
+       "satir_icine_alinan_etiket": 8
+      },
+      "denetci_ust_sinir_ama_esdeger": 4,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 4,
+      "etiket_adi": {
+       "cleanup_and_return": 161,
+       "error_cleanup": 180,
+       "error_exit": 162,
+       "exit_function": 617
+      },
+      "urun": {
+       "breaks_continues": 26,
+       "early_returns": 120,
+       "eliminated": 156,
+       "functions_changed": 857,
+       "functions_skipped": 4,
+       "inlined": 6,
+       "multi_target_inlined": 4,
+       "renamed": 1120
+      }
+     }
+    },
+    "debian/sqlite3": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      }
+     },
+     "dosya": 1144,
+     "fonksiyon": 1144,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 118,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 102,
+      "ayracsiz_gomme_fonksiyon": 56,
+      "bagimsiz": {
+       "akış": 43,
+       "ayrıştırma": 12,
+       "denge": 47,
+       "deyim": 2,
+       "etiket": 1,
+       "eşdeğer": 6,
+       "goto": 1
+      },
+      "bagimsiz_bozuk": 106,
+      "belirti": {
+       "erisilemez": 21
+      },
+      "clang": {
+       "denetlenen": 112,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 3,
+        "a parameter list without types is only allowed in a function definition": 1,
+        "array initializer must be an initializer list or wide string literal": 1,
+        "expected ')'": 3,
+        "expected ';' after do|while statement": 1,
+        "expected ';' after top level declarator": 8,
+        "expected 'AD' in do|while loop": 26,
+        "expected '}'": 28,
+        "expected identifier": 1,
+        "expected identifier or '('": 20,
+        "expected parameter declarator": 3,
+        "extraneous ')'AD';'": 2,
+        "extraneous closing brace ('}')": 19,
+        "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 2,
+        "initializer element is not a compile-time constant": 5,
+        "invalid operands to binary expression ('AD' and 'AD')": 8,
+        "redefinition of 'AD'": 2,
+        "redefinition of label 'AD'": 9,
+        "use of undeclared label 'AD'": 13,
+        "while loop outside of a function": 3
+       },
+       "yeni_hata_turu_olan": 67
+      },
+      "degisen_dosya": 112,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 96,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 86,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 99,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 92,
+       "ayracsiz_kosula_blok_gomuldu": 94,
+       "ayracsiz_kosula_blok_sonda_gorulen": 78,
+       "cagri_azalan_fonksiyon": 10,
+       "deyim_azalan_fonksiyon": 10,
+       "dusmeli_etiket_satir_icine_alindi": 214,
+       "dusmeli_etiket_silindi": 152,
+       "dusmeli_etiket_silindi_ihtiyatli": 97,
+       "satir_icine_alinan_etiket": 215,
+       "soz_bozuk": 47,
+       "soz_bozuk:erken_kapanan": 22,
+       "soz_bozuk:kapanmamis": 24,
+       "soz_bozuk:parantez": 1
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 15,
+       "bozuk": 15,
+       "degisen": 16,
+       "eşdeğer": 1,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 13,
+        "B2_continue_for_ya_da_kosullu_do_while": 3
+       }
+      },
+      "early_return": {
+       "akış": 1,
+       "bozuk": 1,
+       "degisen": 1,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 1
+       }
+      },
+      "multi_inline": {
+       "akış": 20,
+       "belirti": {
+        "erisilemez": 11
+       },
+       "bozuk": 37,
+       "degisen": 37,
+       "denge": 16,
+       "etiket": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 16,
+        "K2_ayracsiz_kosula_cok_deyim": 14,
+        "K3_duserek_ulasilan_blok_silindi": 37,
+        "K4_silme_kisa_kuyruk_kaldi": 11,
+        "K4b_yalniz_noktali_virgul_kaldi": 27,
+        "aday_etiket_var": 37
+       }
+      },
+      "rename": {
+       "degisen": 95,
+       "eşdeğer": 95
+      },
+      "single_inline": {
+       "akış": 34,
+       "ayrıştırma": 15,
+       "belirti": {
+        "erisilemez": 16
+       },
+       "bozuk": 91,
+       "degisen": 91,
+       "denge": 39,
+       "deyim": 1,
+       "etiket": 1,
+       "goto": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 63,
+        "K2_ayracsiz_kosula_cok_deyim": 50,
+        "K3_duserek_ulasilan_blok_silindi": 91,
+        "K4_silme_kisa_kuyruk_kaldi": 21,
+        "K4b_yalniz_noktali_virgul_kaldi": 74,
+        "aday_etiket_var": 91
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 53
+      },
+      "clang": {
+       "denetlenen": 53
+      },
+      "degisen_dosya": 53,
+      "etiket_adi": {
+       "cleanup_and_return": 16,
+       "error_cleanup": 20,
+       "error_exit": 4,
+       "exit_function": 37
+      },
+      "urun": {
+       "breaks_continues": 6,
+       "early_returns": 8,
+       "eliminated": 14,
+       "functions_changed": 53,
+       "renamed": 77
+      }
+     }
+    },
+    "debian/tmux": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      },
+      "sonra": {
+       "ust": 1
+      }
+     },
+     "dosya": 2588,
+     "fonksiyon": 2588,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 558,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 371,
+      "ayracsiz_gomme_fonksiyon": 221,
+      "bagimsiz": {
+       "akış": 215,
+       "ayrıştırma": 31,
+       "denge": 211,
+       "deyim": 13,
+       "etiket": 3,
+       "eşdeğer": 30,
+       "goto": 3
+      },
+      "bagimsiz_bozuk": 476,
+      "belirti": {
+       "cift_donus": 1,
+       "erisilemez": 87
+      },
+      "clang": {
+       "denetlenen": 506,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 2,
+        "a parameter list without types is only allowed in a function definition": 13,
+        "array initializer must be an initializer list or wide string literal": 2,
+        "expected ')'": 9,
+        "expected ';' after expression": 1,
+        "expected ';' after top level declarator": 17,
+        "expected 'AD' in do|while loop": 78,
+        "expected '}'": 104,
+        "expected expression": 9,
+        "expected identifier": 4,
+        "expected identifier or '('": 103,
+        "expected parameter declarator": 4,
+        "expected statement": 1,
+        "extraneous ')'AD';'": 3,
+        "extraneous closing brace ('}')": 81,
+        "illegal initializer (only variables can be initialized)": 2,
+        "incompatible integer to pointer conversion returning 'AD' from a function with result type 'AD' [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 2,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 4,
+        "indirection requires pointer operand ('AD' invalid)": 2,
+        "initializer element is not a compile-time constant": 9,
+        "invalid digit 'AD' in decimal constant": 1,
+        "invalid digit 'AD' in octal constant": 2,
+        "invalid operands to binary expression ('AD' and 'AD')": 18,
+        "redefinition of 'AD'": 3,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 3,
+        "redefinition of label 'AD'": 21,
+        "unknown type name 'AD'": 2,
+        "use of undeclared identifier 'AD'": 1,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 3,
+        "use of undeclared label 'AD'": 45,
+        "while loop outside of a function": 14
+       },
+       "yeni_hata_turu_olan": 245
+      },
+      "degisen_dosya": 506,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 401,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 338,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 412,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 372,
+       "ayracsiz_kosula_blok_gomuldu": 360,
+       "ayracsiz_kosula_blok_sonda_gorulen": 286,
+       "cagri_azalan_fonksiyon": 33,
+       "deyim_azalan_fonksiyon": 44,
+       "dusmeli_etiket_satir_icine_alindi": 746,
+       "dusmeli_etiket_silindi": 514,
+       "dusmeli_etiket_silindi_ihtiyatli": 322,
+       "satir_icine_alinan_etiket": 759,
+       "soz_bozuk": 211,
+       "soz_bozuk:erken_kapanan": 108,
+       "soz_bozuk:kapanmamis": 99,
+       "soz_bozuk:parantez": 4
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 110,
+       "bozuk": 110,
+       "degisen": 119,
+       "eşdeğer": 9,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 100,
+        "B2_continue_for_ya_da_kosullu_do_while": 11
+       }
+      },
+      "early_return": {
+       "akış": 1,
+       "bozuk": 1,
+       "degisen": 1,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 1
+       }
+      },
+      "multi_inline": {
+       "akış": 70,
+       "belirti": {
+        "erisilemez": 38
+       },
+       "bozuk": 157,
+       "degisen": 158,
+       "denge": 82,
+       "etiket": 5,
+       "hükümsüz": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 85,
+        "K2_ayracsiz_kosula_cok_deyim": 57,
+        "K3_duserek_ulasilan_blok_silindi": 154,
+        "K4_silme_kisa_kuyruk_kaldi": 42,
+        "K4b_yalniz_noktali_virgul_kaldi": 118,
+        "aday_etiket_var": 157
+       }
+      },
+      "rename": {
+       "degisen": 344,
+       "eşdeğer": 342,
+       "hükümsüz": 2
+      },
+      "single_inline": {
+       "akış": 151,
+       "ayrıştırma": 37,
+       "belirti": {
+        "cift_donus": 1,
+        "erisilemez": 54
+       },
+       "bozuk": 369,
+       "degisen": 370,
+       "denge": 175,
+       "etiket": 3,
+       "goto": 3,
+       "hükümsüz": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 260,
+        "K2_ayracsiz_kosula_cok_deyim": 197,
+        "K3_duserek_ulasilan_blok_silindi": 367,
+        "K4_silme_kisa_kuyruk_kaldi": 82,
+        "K4b_yalniz_noktali_virgul_kaldi": 300,
+        "aday_etiket_var": 368,
+        "ayrıştırılamadı": 1,
+        "siniflanmadi": 1
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 124
+      },
+      "clang": {
+       "denetlenen": 124
+      },
+      "degisen_dosya": 124,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 5,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 5,
+       "ayracsiz_kosula_blok_gomuldu": 11,
+       "satir_icine_alinan_etiket": 7
+      },
+      "denetci_ust_sinir_ama_esdeger": 5,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 5,
+      "etiket_adi": {
+       "cleanup_and_return": 43,
+       "error_cleanup": 37,
+       "exit_function": 71
+      },
+      "urun": {
+       "breaks_continues": 10,
+       "early_returns": 9,
+       "eliminated": 31,
+       "functions_changed": 124,
+       "functions_skipped": 2,
+       "inlined": 2,
+       "multi_target_inlined": 10,
+       "renamed": 151
+      }
+     }
+    },
+    "debian/tree": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      }
+     },
+     "dosya": 250,
+     "fonksiyon": 250,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 26,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 14,
+      "ayracsiz_gomme_fonksiyon": 11,
+      "bagimsiz": {
+       "akış": 9,
+       "ayrıştırma": 1,
+       "denge": 8,
+       "etiket": 1,
+       "eşdeğer": 3
+      },
+      "bagimsiz_bozuk": 19,
+      "belirti": {
+       "erisilemez": 1
+      },
+      "clang": {
+       "denetlenen": 22,
+       "tur": {
+        "expected ';' after top level declarator": 1,
+        "expected 'AD' in do|while loop": 5,
+        "expected '}'": 3,
+        "expected identifier or '('": 4,
+        "extraneous closing brace ('}')": 2,
+        "indirection requires pointer operand ('AD' invalid)": 1,
+        "initializer element is not a compile-time constant": 1,
+        "redefinition of label 'AD'": 2,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 1,
+        "use of undeclared label 'AD'": 1,
+        "while loop outside of a function": 2
+       },
+       "yeni_hata_turu_olan": 10
+      },
+      "degisen_dosya": 22,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 17,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 14,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 17,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 16,
+       "ayracsiz_kosula_blok_gomuldu": 12,
+       "ayracsiz_kosula_blok_sonda_gorulen": 12,
+       "cagri_azalan_fonksiyon": 2,
+       "deyim_azalan_fonksiyon": 2,
+       "dusmeli_etiket_satir_icine_alindi": 33,
+       "dusmeli_etiket_silindi": 23,
+       "dusmeli_etiket_silindi_ihtiyatli": 12,
+       "satir_icine_alinan_etiket": 33,
+       "soz_bozuk": 8,
+       "soz_bozuk:erken_kapanan": 5,
+       "soz_bozuk:kapanmamis": 3
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 3,
+       "bozuk": 3,
+       "degisen": 4,
+       "eşdeğer": 1,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 3,
+        "B2_continue_for_ya_da_kosullu_do_while": 1
+       }
+      },
+      "early_return": {
+       "akış": 1,
+       "bozuk": 1,
+       "degisen": 1,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 1
+       }
+      },
+      "multi_inline": {
+       "bozuk": 7,
+       "degisen": 7,
+       "denge": 7,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 7,
+        "K2_ayracsiz_kosula_cok_deyim": 1,
+        "K3_duserek_ulasilan_blok_silindi": 7,
+        "K4b_yalniz_noktali_virgul_kaldi": 7,
+        "aday_etiket_var": 7
+       }
+      },
+      "rename": {
+       "degisen": 17,
+       "eşdeğer": 17
+      },
+      "single_inline": {
+       "akış": 8,
+       "ayrıştırma": 2,
+       "belirti": {
+        "erisilemez": 1
+       },
+       "bozuk": 16,
+       "degisen": 16,
+       "denge": 5,
+       "etiket": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 10,
+        "K2_ayracsiz_kosula_cok_deyim": 9,
+        "K3_duserek_ulasilan_blok_silindi": 16,
+        "K4_silme_kisa_kuyruk_kaldi": 2,
+        "K4b_yalniz_noktali_virgul_kaldi": 14,
+        "aday_etiket_var": 16
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 6
+      },
+      "clang": {
+       "denetlenen": 6
+      },
+      "degisen_dosya": 6,
+      "etiket_adi": {
+       "cleanup_and_return": 1,
+       "exit_function": 7
+      },
+      "urun": {
+       "breaks_continues": 1,
+       "early_returns": 1,
+       "eliminated": 2,
+       "functions_changed": 6,
+       "renamed": 8
+      }
+     }
+    },
+    "debian/zstd": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 2,
+       "ihtiyatli": 2,
+       "ust": 2
+      }
+     },
+     "dosya": 2600,
+     "fonksiyon": 2600,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 680,
+     "ikili": 2,
+     "once": {
+      "ayracsiz_gomme_blok": 618,
+      "ayracsiz_gomme_fonksiyon": 311,
+      "bagimsiz": {
+       "akış": 243,
+       "ayrıştırma": 53,
+       "denge": 243,
+       "deyim": 17,
+       "etiket": 3,
+       "eşdeğer": 58
+      },
+      "bagimsiz_bozuk": 559,
+      "belirti": {
+       "erisilemez": 123
+      },
+      "clang": {
+       "denetlenen": 617,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 15,
+        "'AD' statement not in switch statement": 1,
+        "array initializer must be an initializer list or wide string literal": 4,
+        "expected ')'": 19,
+        "expected ';' after expression": 1,
+        "expected ';' after top level declarator": 38,
+        "expected 'AD' in do|while loop": 138,
+        "expected '}'": 102,
+        "expected expression": 4,
+        "expected identifier": 9,
+        "expected identifier or '('": 129,
+        "expected parameter declarator": 4,
+        "expected statement": 2,
+        "extraneous ')'AD';'": 11,
+        "extraneous closing brace ('}')": 113,
+        "function cannot return function type 'AD'": 1,
+        "illegal initializer (only variables can be initialized)": 6,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 3,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD'; take the address with & [-Wint-conversion]": 4,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 9,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 3,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; dereference with * [-Wint-conversion]": 1,
+        "indirection requires pointer operand ('AD' invalid)": 6,
+        "initializer element is not a compile-time constant": 25,
+        "invalid operands to binary expression ('AD' and 'AD')": 23,
+        "member reference base type 'AD' is not a structure or union": 3,
+        "redefinition of 'AD'": 18,
+        "redefinition of 'AD' as different kind of symbol": 2,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 7,
+        "redefinition of label 'AD'": 20,
+        "subscripted value is not an array, pointer, or vector": 2,
+        "unknown type name 'AD'": 10,
+        "use of undeclared identifier 'AD'": 3,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 11,
+        "use of undeclared label 'AD'": 66,
+        "variable length array declaration not allowed at file scope": 2,
+        "while loop outside of a function": 32
+       },
+       "yeni_hata_turu_olan": 303
+      },
+      "degisen_dosya": 617,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 502,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 406,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 517,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 469,
+       "ayracsiz_kosula_blok_gomuldu": 570,
+       "ayracsiz_kosula_blok_sonda_gorulen": 413,
+       "cagri_azalan_fonksiyon": 61,
+       "deyim_azalan_fonksiyon": 79,
+       "dusmeli_etiket_satir_icine_alindi": 961,
+       "dusmeli_etiket_silindi": 741,
+       "dusmeli_etiket_silindi_ihtiyatli": 405,
+       "satir_icine_alinan_etiket": 979,
+       "soz_bozuk": 243,
+       "soz_bozuk:erken_kapanan": 139,
+       "soz_bozuk:kapanmamis": 102,
+       "soz_bozuk:parantez": 2
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 127,
+       "bozuk": 127,
+       "degisen": 129,
+       "eşdeğer": 2,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 112,
+        "B2_continue_for_ya_da_kosullu_do_while": 20
+       }
+      },
+      "early_return": {
+       "akış": 2,
+       "bozuk": 2,
+       "degisen": 6,
+       "eşdeğer": 4,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 2
+       }
+      },
+      "ifelse": {
+       "ayrıştırma": 2,
+       "bozuk": 2,
+       "degisen": 2
+      },
+      "multi_inline": {
+       "akış": 134,
+       "ayrıştırma": 2,
+       "belirti": {
+        "erisilemez": 99
+       },
+       "bozuk": 235,
+       "degisen": 235,
+       "denge": 94,
+       "etiket": 5,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 98,
+        "K2_ayracsiz_kosula_cok_deyim": 133,
+        "K3_duserek_ulasilan_blok_silindi": 234,
+        "K4_silme_kisa_kuyruk_kaldi": 92,
+        "K4b_yalniz_noktali_virgul_kaldi": 145,
+        "aday_etiket_var": 235
+       }
+      },
+      "rename": {
+       "degisen": 491,
+       "eşdeğer": 491
+      },
+      "single_inline": {
+       "akış": 142,
+       "ayrıştırma": 56,
+       "belirti": {
+        "erisilemez": 55
+       },
+       "bozuk": 370,
+       "degisen": 370,
+       "denge": 168,
+       "etiket": 4,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 238,
+        "K2_ayracsiz_kosula_cok_deyim": 183,
+        "K3_duserek_ulasilan_blok_silindi": 368,
+        "K4_silme_kisa_kuyruk_kaldi": 106,
+        "K4b_yalniz_noktali_virgul_kaldi": 276,
+        "aday_etiket_var": 370
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 181
+      },
+      "clang": {
+       "denetlenen": 181
+      },
+      "degisen_dosya": 181,
+      "etiket_adi": {
+       "cleanup_and_return": 22,
+       "error_cleanup": 17,
+       "error_exit": 4,
+       "exit_function": 186
+      },
+      "urun": {
+       "breaks_continues": 13,
+       "early_returns": 44,
+       "eliminated": 57,
+       "functions_changed": 181,
+       "renamed": 229
+      }
+     }
+    },
+    "mac/htop": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      }
+     },
+     "dosya": 790,
+     "fonksiyon": 790,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 81,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 43,
+      "ayracsiz_gomme_fonksiyon": 24,
+      "bagimsiz": {
+       "akış": 35,
+       "ayrıştırma": 5,
+       "denge": 18,
+       "deyim": 1,
+       "etiket": 2,
+       "eşdeğer": 4
+      },
+      "bagimsiz_bozuk": 61,
+      "belirti": {
+       "erisilemez": 19
+      },
+      "clang": {
+       "denetlenen": 65,
+       "tur": {
+        "expected ';' after do|while statement": 1,
+        "expected ';' after top level declarator": 1,
+        "expected 'AD' in do|while loop": 9,
+        "expected '}'": 5,
+        "expected identifier or '('": 12,
+        "extraneous closing brace ('}')": 8,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 1,
+        "initializer element is not a compile-time constant": 2,
+        "redefinition of label 'AD'": 3,
+        "use of undeclared label 'AD'": 6,
+        "while loop outside of a function": 1
+       },
+       "yeni_hata_turu_olan": 25
+      },
+      "degisen_dosya": 65,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 59,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 55,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 60,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 57,
+       "ayracsiz_kosula_blok_gomuldu": 29,
+       "ayracsiz_kosula_blok_sonda_gorulen": 23,
+       "cagri_azalan_fonksiyon": 6,
+       "deyim_azalan_fonksiyon": 6,
+       "dusmeli_etiket_satir_icine_alindi": 111,
+       "dusmeli_etiket_silindi": 98,
+       "dusmeli_etiket_silindi_ihtiyatli": 63,
+       "satir_icine_alinan_etiket": 112,
+       "soz_bozuk": 18,
+       "soz_bozuk:erken_kapanan": 13,
+       "soz_bozuk:kapanmamis": 5
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "degisen": 1,
+       "eşdeğer": 1
+      },
+      "early_return": {
+       "akış": 1,
+       "bozuk": 1,
+       "degisen": 2,
+       "eşdeğer": 1,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 1
+       }
+      },
+      "multi_inline": {
+       "akış": 11,
+       "belirti": {
+        "erisilemez": 7
+       },
+       "bozuk": 21,
+       "degisen": 21,
+       "denge": 8,
+       "etiket": 2,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 9,
+        "K2_ayracsiz_kosula_cok_deyim": 9,
+        "K3_duserek_ulasilan_blok_silindi": 21,
+        "K4_silme_kisa_kuyruk_kaldi": 3,
+        "K4b_yalniz_noktali_virgul_kaldi": 18,
+        "aday_etiket_var": 21
+       }
+      },
+      "rename": {
+       "degisen": 43,
+       "eşdeğer": 43
+      },
+      "single_inline": {
+       "akış": 27,
+       "ayrıştırma": 5,
+       "belirti": {
+        "erisilemez": 14
+       },
+       "bozuk": 47,
+       "degisen": 47,
+       "denge": 15,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 27,
+        "K2_ayracsiz_kosula_cok_deyim": 14,
+        "K3_duserek_ulasilan_blok_silindi": 47,
+        "K4_silme_kisa_kuyruk_kaldi": 3,
+        "K4b_yalniz_noktali_virgul_kaldi": 44,
+        "aday_etiket_var": 47
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 28
+      },
+      "clang": {
+       "denetlenen": 28
+      },
+      "degisen_dosya": 28,
+      "etiket_adi": {
+       "cleanup_and_return": 4,
+       "error_cleanup": 1,
+       "exit_function": 37
+      },
+      "urun": {
+       "breaks_continues": 1,
+       "early_returns": 4,
+       "eliminated": 5,
+       "functions_changed": 28,
+       "renamed": 42
+      }
+     }
+    },
+    "mac/tmux": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 1,
+       "ihtiyatli": 1,
+       "ust": 1
+      }
+     },
+     "dosya": 2821,
+     "fonksiyon": 2821,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 545,
+     "ikili": 1,
+     "once": {
+      "ayracsiz_gomme_blok": 305,
+      "ayracsiz_gomme_fonksiyon": 193,
+      "bagimsiz": {
+       "akış": 215,
+       "ayrıştırma": 38,
+       "denge": 175,
+       "deyim": 11,
+       "etiket": 4,
+       "eşdeğer": 31,
+       "hükümsüz": 1
+      },
+      "bagimsiz_bozuk": 443,
+      "belirti": {
+       "erisilemez": 82
+      },
+      "clang": {
+       "denetlenen": 475,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 6,
+        "'AD' statement not in loop statement": 1,
+        "'AD' statement not in switch statement": 2,
+        "a parameter list without types is only allowed in a function definition": 20,
+        "array initializer must be an initializer list or wide string literal": 2,
+        "expected ')'": 28,
+        "expected ';' after top level declarator": 29,
+        "expected 'AD' in do|while loop": 74,
+        "expected '}'": 55,
+        "expected expression": 7,
+        "expected identifier": 5,
+        "expected identifier or '('": 120,
+        "expected parameter declarator": 6,
+        "expected statement": 4,
+        "extraneous ')'AD';'": 1,
+        "extraneous closing brace ('}')": 78,
+        "illegal initializer (only variables can be initialized)": 18,
+        "incompatible integer to pointer conversion assigning to 'AD' from 'AD' [-Wint-conversion]": 1,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD'; take the address with & [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 8,
+        "initializer element is not a compile-time constant": 27,
+        "invalid digit 'AD' in octal constant": 1,
+        "redefinition of 'AD'": 20,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 3,
+        "redefinition of label 'AD'": 13,
+        "unknown type name 'AD'": 16,
+        "use of undeclared identifier 'AD'": 2,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 13,
+        "use of undeclared label 'AD'": 26,
+        "while loop outside of a function": 17
+       },
+       "yeni_hata_turu_olan": 213
+      },
+      "degisen_dosya": 475,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 418,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 366,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 437,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 396,
+       "ayracsiz_kosula_blok_gomuldu": 301,
+       "ayracsiz_kosula_blok_sonda_gorulen": 239,
+       "cagri_azalan_fonksiyon": 42,
+       "deyim_azalan_fonksiyon": 82,
+       "dusmeli_etiket_satir_icine_alindi": 752,
+       "dusmeli_etiket_silindi": 508,
+       "dusmeli_etiket_silindi_ihtiyatli": 345,
+       "satir_icine_alinan_etiket": 754,
+       "soz_bozuk": 175,
+       "soz_bozuk:erken_kapanan": 123,
+       "soz_bozuk:kapanmamis": 52
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 10,
+       "bozuk": 10,
+       "degisen": 15,
+       "eşdeğer": 5,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 9,
+        "B2_continue_for_ya_da_kosullu_do_while": 3
+       }
+      },
+      "early_return": {
+       "akış": 1,
+       "bozuk": 1,
+       "degisen": 1,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 1
+       }
+      },
+      "multi_inline": {
+       "akış": 84,
+       "ayrıştırma": 1,
+       "belirti": {
+        "erisilemez": 45
+       },
+       "bozuk": 131,
+       "degisen": 132,
+       "denge": 38,
+       "etiket": 8,
+       "hükümsüz": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 41,
+        "K2_ayracsiz_kosula_cok_deyim": 65,
+        "K3_duserek_ulasilan_blok_silindi": 131,
+        "K4_silme_kisa_kuyruk_kaldi": 17,
+        "K4b_yalniz_noktali_virgul_kaldi": 114,
+        "aday_etiket_var": 131
+       }
+      },
+      "rename": {
+       "degisen": 330,
+       "eşdeğer": 328,
+       "hükümsüz": 2
+      },
+      "single_inline": {
+       "akış": 183,
+       "ayrıştırma": 37,
+       "belirti": {
+        "erisilemez": 60
+       },
+       "bozuk": 376,
+       "degisen": 376,
+       "denge": 150,
+       "deyim": 2,
+       "etiket": 4,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 218,
+        "K2_ayracsiz_kosula_cok_deyim": 156,
+        "K3_duserek_ulasilan_blok_silindi": 373,
+        "K4_silme_kisa_kuyruk_kaldi": 28,
+        "K4b_yalniz_noktali_virgul_kaldi": 347,
+        "aday_etiket_var": 374,
+        "ayrıştırılamadı": 2,
+        "siniflanmadi": 2
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 199
+      },
+      "clang": {
+       "denetlenen": 199
+      },
+      "degisen_dosya": 199,
+      "etiket_adi": {
+       "cleanup_and_return": 78,
+       "error_cleanup": 27,
+       "error_exit": 2,
+       "exit_function": 186
+      },
+      "urun": {
+       "breaks_continues": 5,
+       "early_returns": 5,
+       "eliminated": 10,
+       "functions_changed": 199,
+       "functions_skipped": 2,
+       "renamed": 293
+      }
+     }
+    }
+   },
+   "tabaka": {
+    "buyuk": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 5,
+       "ihtiyatli": 5,
+       "ust": 5
+      },
+      "sonra": {
+       "ust": 2
+      }
+     },
+     "dosya": 16218,
+     "fonksiyon": 16218,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 3474,
+     "ikili": 5,
+     "once": {
+      "ayracsiz_gomme_blok": 1999,
+      "ayracsiz_gomme_fonksiyon": 1205,
+      "bagimsiz": {
+       "akış": 1287,
+       "ayrıştırma": 238,
+       "denge": 1197,
+       "deyim": 79,
+       "etiket": 15,
+       "eşdeğer": 209,
+       "goto": 6,
+       "hükümsüz": 1
+      },
+      "bagimsiz_bozuk": 2822,
+      "belirti": {
+       "erisilemez": 412
+      },
+      "clang": {
+       "denetlenen": 3032,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 41,
+        "'AD' statement not in loop statement": 3,
+        "'AD' statement not in switch statement": 2,
+        "a parameter list without types is only allowed in a function definition": 64,
+        "array initializer must be an initializer list or wide string literal": 4,
+        "expected ')'": 118,
+        "expected ';' after do|while statement": 2,
+        "expected ';' after expression": 2,
+        "expected ';' after top level declarator": 140,
+        "expected 'AD' in do|while loop": 488,
+        "expected '}'": 513,
+        "expected expression": 35,
+        "expected identifier": 36,
+        "expected identifier or '('": 635,
+        "expected parameter declarator": 62,
+        "expected statement": 10,
+        "expression is not assignable": 6,
+        "extraneous ')'AD';'": 28,
+        "extraneous closing brace ('}')": 492,
+        "function cannot return function type 'AD'": 2,
+        "illegal initializer (only variables can be initialized)": 38,
+        "incompatible integer to pointer conversion assigning to 'AD' from 'AD' [-Wint-conversion]": 1,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 6,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD'; take the address with & [-Wint-conversion]": 1,
+        "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 2,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 4,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 37,
+        "indirection requires pointer operand ('AD' invalid)": 14,
+        "initializer element is not a compile-time constant": 117,
+        "invalid digit 'AD' in decimal constant": 2,
+        "invalid digit 'AD' in octal constant": 1,
+        "invalid operands to binary expression ('AD' and 'AD')": 81,
+        "redefinition of 'AD'": 51,
+        "redefinition of 'AD' as different kind of symbol": 6,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 13,
+        "redefinition of label 'AD'": 112,
+        "subscripted value is not an array, pointer, or vector": 14,
+        "unknown type name 'AD'": 46,
+        "use of undeclared identifier 'AD'": 16,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 43,
+        "use of undeclared label 'AD'": 265,
+        "while loop outside of a function": 96
+       },
+       "yeni_hata_turu_olan": 1452
+      },
+      "degisen_dosya": 3032,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 2471,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 2099,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 2571,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 2311,
+       "ayracsiz_kosula_blok_gomuldu": 1818,
+       "ayracsiz_kosula_blok_sonda_gorulen": 1495,
+       "cagri_azalan_fonksiyon": 279,
+       "deyim_azalan_fonksiyon": 361,
+       "dusmeli_etiket_satir_icine_alindi": 4738,
+       "dusmeli_etiket_silindi": 3449,
+       "dusmeli_etiket_silindi_ihtiyatli": 2295,
+       "satir_icine_alinan_etiket": 4780,
+       "soz_bozuk": 1197,
+       "soz_bozuk:erken_kapanan": 692,
+       "soz_bozuk:kapanmamis": 486,
+       "soz_bozuk:parantez": 19
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 400,
+       "bozuk": 400,
+       "degisen": 427,
+       "eşdeğer": 27,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 381,
+        "B2_continue_for_ya_da_kosullu_do_while": 33
+       }
+      },
+      "early_return": {
+       "akış": 37,
+       "bozuk": 37,
+       "degisen": 45,
+       "eşdeğer": 8,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 37
+       }
+      },
+      "ifelse": {
+       "ayrıştırma": 3,
+       "bozuk": 3,
+       "degisen": 3
+      },
+      "multi_inline": {
+       "akış": 450,
+       "ayrıştırma": 3,
+       "belirti": {
+        "erisilemez": 207
+       },
+       "bozuk": 914,
+       "degisen": 915,
+       "denge": 420,
+       "etiket": 41,
+       "hükümsüz": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 431,
+        "K2_ayracsiz_kosula_cok_deyim": 330,
+        "K3_duserek_ulasilan_blok_silindi": 912,
+        "K4_silme_kisa_kuyruk_kaldi": 207,
+        "K4b_yalniz_noktali_virgul_kaldi": 713,
+        "aday_etiket_var": 912,
+        "ayrıştırılamadı": 2,
+        "siniflanmadi": 2
+       }
+      },
+      "rename": {
+       "degisen": 2171,
+       "eşdeğer": 2167,
+       "hükümsüz": 4
+      },
+      "single_inline": {
+       "akış": 1030,
+       "ayrıştırma": 294,
+       "belirti": {
+        "erisilemez": 335
+       },
+       "bozuk": 2322,
+       "degisen": 2324,
+       "denge": 957,
+       "deyim": 18,
+       "etiket": 15,
+       "goto": 8,
+       "hükümsüz": 2,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 1519,
+        "K2_ayracsiz_kosula_cok_deyim": 1031,
+        "K3_duserek_ulasilan_blok_silindi": 2319,
+        "K4_silme_kisa_kuyruk_kaldi": 474,
+        "K4b_yalniz_noktali_virgul_kaldi": 1950,
+        "aday_etiket_var": 2320,
+        "ayrıştırılamadı": 2,
+        "siniflanmadi": 2
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 1056
+      },
+      "clang": {
+       "denetlenen": 1056
+      },
+      "degisen_dosya": 1056,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 4,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 4,
+       "ayracsiz_kosula_blok_gomuldu": 6,
+       "satir_icine_alinan_etiket": 8
+      },
+      "denetci_ust_sinir_ama_esdeger": 4,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 4,
+      "etiket_adi": {
+       "cleanup_and_return": 239,
+       "error_cleanup": 207,
+       "error_exit": 164,
+       "exit_function": 803
+      },
+      "urun": {
+       "breaks_continues": 31,
+       "early_returns": 125,
+       "eliminated": 166,
+       "functions_changed": 1056,
+       "functions_skipped": 6,
+       "inlined": 6,
+       "multi_target_inlined": 4,
+       "renamed": 1413
+      }
+     }
+    },
+    "kucuk": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 107,
+       "ihtiyatli": 107,
+       "ust": 107
+      },
+      "sonra": {
+       "ust": 1
+      }
+     },
+     "dosya": 37962,
+     "fonksiyon": 37962,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 2268,
+     "ikili": 108,
+     "once": {
+      "ayracsiz_gomme_blok": 1627,
+      "ayracsiz_gomme_fonksiyon": 1020,
+      "bagimsiz": {
+       "akış": 711,
+       "ayrıştırma": 177,
+       "denge": 658,
+       "deyim": 73,
+       "etiket": 13,
+       "eşdeğer": 78,
+       "goto": 3
+      },
+      "bagimsiz_bozuk": 1635,
+      "belirti": {
+       "erisilemez": 386
+      },
+      "clang": {
+       "denetlenen": 1713,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 39,
+        "'AD' statement not in loop statement": 3,
+        "'AD' statement not in switch statement": 1,
+        "a parameter list without types is only allowed in a function definition": 26,
+        "array initializer must be an initializer list or wide string literal": 1,
+        "block pointer to non-function type is invalid": 1,
+        "expected ')'": 44,
+        "expected ';' after do|while statement": 7,
+        "expected ';' after expression": 110,
+        "expected ';' after top level declarator": 66,
+        "expected 'AD' in do|while loop": 308,
+        "expected '}'": 266,
+        "expected expression": 117,
+        "expected identifier": 28,
+        "expected identifier or '('": 234,
+        "expected parameter declarator": 44,
+        "expected statement": 23,
+        "exponent has no digits": 1,
+        "extraneous ')'AD';'": 9,
+        "extraneous closing brace ('}')": 175,
+        "illegal initializer (only variables can be initialized)": 4,
+        "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 2,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 9,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 13,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; dereference with * [-Wint-conversion]": 1,
+        "indirection requires pointer operand ('AD' invalid)": 17,
+        "initializer element is not a compile-time constant": 59,
+        "invalid digit 'AD' in decimal constant": 1,
+        "invalid operands to binary expression ('AD' and 'AD')": 34,
+        "member reference type 'AD' is not a pointer": 2,
+        "redefinition of 'AD'": 14,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 12,
+        "redefinition of label 'AD'": 78,
+        "redefinition of parameter 'AD'": 1,
+        "subscripted value is not an array, pointer, or vector": 4,
+        "unexpected type name 'AD': expected expression": 1,
+        "unknown type name 'AD'": 2,
+        "use of undeclared identifier 'AD'": 1,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 11,
+        "use of undeclared label 'AD'": 163,
+        "while loop outside of a function": 66
+       },
+       "yeni_hata_turu_olan": 837
+      },
+      "degisen_dosya": 1713,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 1447,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 1279,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 1540,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 1399,
+       "ayracsiz_kosula_blok_gomuldu": 1548,
+       "ayracsiz_kosula_blok_sonda_gorulen": 1259,
+       "cagri_azalan_fonksiyon": 146,
+       "deyim_azalan_fonksiyon": 166,
+       "dusmeli_etiket_satir_icine_alindi": 2912,
+       "dusmeli_etiket_silindi": 2112,
+       "dusmeli_etiket_silindi_ihtiyatli": 1338,
+       "satir_icine_alinan_etiket": 2924,
+       "soz_bozuk": 658,
+       "soz_bozuk:erken_kapanan": 270,
+       "soz_bozuk:kapanmamis": 273,
+       "soz_bozuk:parantez": 115
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 358,
+       "bozuk": 358,
+       "degisen": 389,
+       "eşdeğer": 31,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 330,
+        "B2_continue_for_ya_da_kosullu_do_while": 37
+       }
+      },
+      "early_return": {
+       "akış": 13,
+       "bozuk": 13,
+       "degisen": 13,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 13
+       }
+      },
+      "ifelse": {
+       "akış": 1,
+       "ayrıştırma": 1,
+       "bozuk": 2,
+       "degisen": 2
+      },
+      "multi_inline": {
+       "akış": 239,
+       "ayrıştırma": 1,
+       "belirti": {
+        "erisilemez": 161
+       },
+       "bozuk": 461,
+       "degisen": 461,
+       "denge": 212,
+       "etiket": 9,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 213,
+        "K2_ayracsiz_kosula_cok_deyim": 234,
+        "K3_duserek_ulasilan_blok_silindi": 459,
+        "K4_silme_kisa_kuyruk_kaldi": 182,
+        "K4b_yalniz_noktali_virgul_kaldi": 283,
+        "aday_etiket_var": 461
+       }
+      },
+      "rename": {
+       "degisen": 1519,
+       "eşdeğer": 1519
+      },
+      "single_inline": {
+       "akış": 623,
+       "ayrıştırma": 211,
+       "belirti": {
+        "erisilemez": 284
+       },
+       "bozuk": 1366,
+       "degisen": 1366,
+       "denge": 520,
+       "deyim": 1,
+       "etiket": 8,
+       "goto": 3,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 765,
+        "K2_ayracsiz_kosula_cok_deyim": 756,
+        "K3_duserek_ulasilan_blok_silindi": 1366,
+        "K4_silme_kisa_kuyruk_kaldi": 340,
+        "K4b_yalniz_noktali_virgul_kaldi": 1096,
+        "aday_etiket_var": 1366
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 983
+      },
+      "clang": {
+       "denetlenen": 983
+      },
+      "degisen_dosya": 983,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 1,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 1,
+       "ayracsiz_kosula_blok_gomuldu": 2,
+       "satir_icine_alinan_etiket": 1
+      },
+      "denetci_ust_sinir_ama_esdeger": 1,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 1,
+      "etiket_adi": {
+       "cleanup_and_return": 261,
+       "error_cleanup": 180,
+       "error_exit": 16,
+       "exit_function": 1000
+      },
+      "urun": {
+       "breaks_continues": 46,
+       "early_returns": 48,
+       "eliminated": 96,
+       "functions_changed": 983,
+       "functions_skipped": 3,
+       "multi_target_inlined": 2,
+       "renamed": 1457
+      }
+     }
+    },
+    "orta": {
+     "bozuk_ikili": {
+      "once": {
+       "bagimsiz": 6,
+       "ihtiyatli": 6,
+       "ust": 6
+      },
+      "sonra": {
+       "ust": 2
+      }
+     },
+     "dosya": 12798,
+     "fonksiyon": 12798,
+     "goto_iceren_govdede_gec_bildirim": 0,
+     "ham_bozuk": 0,
+     "ham_goto_iceren_fonksiyon": 1671,
+     "ikili": 6,
+     "once": {
+      "ayracsiz_gomme_blok": 1281,
+      "ayracsiz_gomme_fonksiyon": 693,
+      "bagimsiz": {
+       "akış": 624,
+       "ayrıştırma": 109,
+       "denge": 593,
+       "deyim": 49,
+       "etiket": 11,
+       "eşdeğer": 130,
+       "goto": 8
+      },
+      "bagimsiz_bozuk": 1394,
+      "belirti": {
+       "cift_donus": 2,
+       "erisilemez": 270
+      },
+      "clang": {
+       "denetlenen": 1524,
+       "tur": {
+        "'AD' statement not in loop or switch statement": 21,
+        "'AD' statement not in switch statement": 4,
+        "a parameter list without types is only allowed in a function definition": 18,
+        "array initializer must be an initializer list or wide string literal": 6,
+        "expected ')'": 36,
+        "expected ';' after do|while statement": 1,
+        "expected ';' after expression": 2,
+        "expected ';' after top level declarator": 69,
+        "expected 'AD' in do|while loop": 256,
+        "expected '}'": 257,
+        "expected expression": 16,
+        "expected identifier": 16,
+        "expected identifier or '('": 297,
+        "expected parameter declarator": 14,
+        "expected statement": 3,
+        "extraneous ')'AD';'": 15,
+        "extraneous closing brace ('}')": 249,
+        "function cannot return function type 'AD'": 1,
+        "illegal initializer (only variables can be initialized)": 8,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 3,
+        "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD'; take the address with & [-Wint-conversion]": 4,
+        "incompatible integer to pointer conversion returning 'AD' from a function with result type 'AD' [-Wint-conversion]": 1,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 12,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 10,
+        "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; dereference with * [-Wint-conversion]": 1,
+        "indirection requires pointer operand ('AD' invalid)": 9,
+        "initializer element is not a compile-time constant": 46,
+        "invalid digit 'AD' in decimal constant": 2,
+        "invalid digit 'AD' in octal constant": 4,
+        "invalid operands to binary expression ('AD' and 'AD')": 49,
+        "member reference base type 'AD' is not a structure or union": 3,
+        "redefinition of 'AD'": 24,
+        "redefinition of 'AD' as different kind of symbol": 2,
+        "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 11,
+        "redefinition of label 'AD'": 53,
+        "subscripted value is not an array, pointer, or vector": 2,
+        "unknown type name 'AD'": 14,
+        "use of undeclared identifier 'AD'": 7,
+        "use of undeclared identifier 'AD'; did you mean 'AD'?": 16,
+        "use of undeclared label 'AD'": 146,
+        "variable length array declaration not allowed at file scope": 2,
+        "while loop outside of a function": 56
+       },
+       "yeni_hata_turu_olan": 699
+      },
+      "degisen_dosya": 1524,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 1236,
+       "akis_anlami_bozulan_fonksiyon_ihtiyatli": 1043,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 1271,
+       "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 1160,
+       "ayracsiz_kosula_blok_gomuldu": 1179,
+       "ayracsiz_kosula_blok_sonda_gorulen": 914,
+       "cagri_azalan_fonksiyon": 119,
+       "deyim_azalan_fonksiyon": 148,
+       "dusmeli_etiket_satir_icine_alindi": 2363,
+       "dusmeli_etiket_silindi": 1743,
+       "dusmeli_etiket_silindi_ihtiyatli": 1049,
+       "satir_icine_alinan_etiket": 2401,
+       "soz_bozuk": 593,
+       "soz_bozuk:erken_kapanan": 319,
+       "soz_bozuk:kapanmamis": 264,
+       "soz_bozuk:parantez": 10
+      }
+     },
+     "once_gecis": {
+      "break_continue": {
+       "akış": 273,
+       "bozuk": 273,
+       "degisen": 289,
+       "eşdeğer": 16,
+       "kok": {
+        "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 243,
+        "B2_continue_for_ya_da_kosullu_do_while": 41
+       }
+      },
+      "early_return": {
+       "akış": 8,
+       "bozuk": 8,
+       "degisen": 15,
+       "eşdeğer": 7,
+       "kok": {
+        "E1_duserek_ulasilan_return_silindi": 8
+       }
+      },
+      "ifelse": {
+       "ayrıştırma": 2,
+       "bozuk": 2,
+       "degisen": 2
+      },
+      "multi_inline": {
+       "akış": 277,
+       "ayrıştırma": 2,
+       "belirti": {
+        "erisilemez": 169
+       },
+       "bozuk": 518,
+       "degisen": 519,
+       "denge": 224,
+       "etiket": 15,
+       "hükümsüz": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 237,
+        "K2_ayracsiz_kosula_cok_deyim": 237,
+        "K3_duserek_ulasilan_blok_silindi": 514,
+        "K4_silme_kisa_kuyruk_kaldi": 153,
+        "K4b_yalniz_noktali_virgul_kaldi": 372,
+        "aday_etiket_var": 518
+       }
+      },
+      "rename": {
+       "degisen": 1133,
+       "eşdeğer": 1131,
+       "hükümsüz": 2
+      },
+      "single_inline": {
+       "akış": 432,
+       "ayrıştırma": 125,
+       "belirti": {
+        "cift_donus": 1,
+        "erisilemez": 153
+       },
+       "bozuk": 1025,
+       "degisen": 1026,
+       "denge": 441,
+       "deyim": 10,
+       "etiket": 10,
+       "goto": 7,
+       "hükümsüz": 1,
+       "kok": {
+        "K1_blok_ayrac_sinirini_asiyor": 660,
+        "K2_ayracsiz_kosula_cok_deyim": 509,
+        "K3_duserek_ulasilan_blok_silindi": 1021,
+        "K4_silme_kisa_kuyruk_kaldi": 252,
+        "K4b_yalniz_noktali_virgul_kaldi": 809,
+        "aday_etiket_var": 1024,
+        "ayrıştırılamadı": 1,
+        "siniflanmadi": 1
+       }
+      }
+     },
+     "sonra": {
+      "bagimsiz": {
+       "eşdeğer": 496
+      },
+      "clang": {
+       "denetlenen": 496
+      },
+      "degisen_dosya": 496,
+      "denetci": {
+       "akis_anlami_bozulan_fonksiyon": 6,
+       "akis_sadelestirmenin_bozdugu_fonksiyon": 6,
+       "ayracsiz_kosula_blok_gomuldu": 12,
+       "satir_icine_alinan_etiket": 9
+      },
+      "denetci_ust_sinir_ama_esdeger": 6,
+      "denetci_ust_sinir_ama_esdeger_ve_ayracli": 6,
+      "etiket_adi": {
+       "cleanup_and_return": 137,
+       "error_cleanup": 121,
+       "error_exit": 6,
+       "exit_function": 384
+      },
+      "urun": {
+       "breaks_continues": 40,
+       "early_returns": 98,
+       "eliminated": 152,
+       "functions_changed": 496,
+       "functions_skipped": 3,
+       "inlined": 4,
+       "multi_target_inlined": 10,
+       "renamed": 648
+      }
+     }
+    }
+   },
+   "toplam": {
+    "bozuk_ikili": {
+     "once": {
+      "bagimsiz": 118,
+      "ihtiyatli": 118,
+      "ust": 118
+     },
+     "sonra": {
+      "ust": 5
+     }
+    },
+    "dosya": 66978,
+    "fonksiyon": 66978,
+    "goto_iceren_govdede_gec_bildirim": 0,
+    "ham_bozuk": 0,
+    "ham_goto_iceren_fonksiyon": 7413,
+    "ikili": 119,
+    "once": {
+     "ayracsiz_gomme_blok": 4907,
+     "ayracsiz_gomme_fonksiyon": 2918,
+     "bagimsiz": {
+      "akış": 2622,
+      "ayrıştırma": 524,
+      "denge": 2448,
+      "deyim": 201,
+      "etiket": 39,
+      "eşdeğer": 417,
+      "goto": 17,
+      "hükümsüz": 1
+     },
+     "bagimsiz_bozuk": 5851,
+     "belirti": {
+      "cift_donus": 2,
+      "erisilemez": 1068
+     },
+     "clang": {
+      "denetlenen": 6269,
+      "tur": {
+       "'AD' statement not in loop or switch statement": 101,
+       "'AD' statement not in loop statement": 6,
+       "'AD' statement not in switch statement": 7,
+       "a parameter list without types is only allowed in a function definition": 108,
+       "array initializer must be an initializer list or wide string literal": 11,
+       "block pointer to non-function type is invalid": 1,
+       "expected ')'": 198,
+       "expected ';' after do|while statement": 10,
+       "expected ';' after expression": 114,
+       "expected ';' after top level declarator": 275,
+       "expected 'AD' in do|while loop": 1052,
+       "expected '}'": 1036,
+       "expected expression": 168,
+       "expected identifier": 80,
+       "expected identifier or '('": 1166,
+       "expected parameter declarator": 120,
+       "expected statement": 36,
+       "exponent has no digits": 1,
+       "expression is not assignable": 6,
+       "extraneous ')'AD';'": 52,
+       "extraneous closing brace ('}')": 916,
+       "function cannot return function type 'AD'": 3,
+       "illegal initializer (only variables can be initialized)": 50,
+       "incompatible integer to pointer conversion assigning to 'AD' from 'AD' [-Wint-conversion]": 1,
+       "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 9,
+       "incompatible integer to pointer conversion initializing 'AD' with an expression of type 'AD'; take the address with & [-Wint-conversion]": 5,
+       "incompatible integer to pointer conversion passing 'AD' to parameter of type 'AD' [-Wint-conversion]": 4,
+       "incompatible integer to pointer conversion returning 'AD' from a function with result type 'AD' [-Wint-conversion]": 1,
+       "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' (aka 'AD') [-Wint-conversion]": 25,
+       "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD' [-Wint-conversion]": 60,
+       "incompatible pointer to integer conversion initializing 'AD' with an expression of type 'AD'; dereference with * [-Wint-conversion]": 2,
+       "indirection requires pointer operand ('AD' invalid)": 40,
+       "initializer element is not a compile-time constant": 222,
+       "invalid digit 'AD' in decimal constant": 5,
+       "invalid digit 'AD' in octal constant": 5,
+       "invalid operands to binary expression ('AD' and 'AD')": 164,
+       "member reference base type 'AD' is not a structure or union": 3,
+       "member reference type 'AD' is not a pointer": 2,
+       "redefinition of 'AD'": 89,
+       "redefinition of 'AD' as different kind of symbol": 8,
+       "redefinition of 'AD' with a different type: 'AD' vs 'AD'": 36,
+       "redefinition of label 'AD'": 243,
+       "redefinition of parameter 'AD'": 1,
+       "subscripted value is not an array, pointer, or vector": 20,
+       "unexpected type name 'AD': expected expression": 1,
+       "unknown type name 'AD'": 62,
+       "use of undeclared identifier 'AD'": 24,
+       "use of undeclared identifier 'AD'; did you mean 'AD'?": 70,
+       "use of undeclared label 'AD'": 574,
+       "variable length array declaration not allowed at file scope": 2,
+       "while loop outside of a function": 218
+      },
+      "yeni_hata_turu_olan": 2988
+     },
+     "degisen_dosya": 6269,
+     "denetci": {
+      "akis_anlami_bozulan_fonksiyon": 5154,
+      "akis_anlami_bozulan_fonksiyon_ihtiyatli": 4421,
+      "akis_sadelestirmenin_bozdugu_fonksiyon": 5382,
+      "akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli": 4870,
+      "ayracsiz_kosula_blok_gomuldu": 4545,
+      "ayracsiz_kosula_blok_sonda_gorulen": 3668,
+      "cagri_azalan_fonksiyon": 544,
+      "deyim_azalan_fonksiyon": 675,
+      "dusmeli_etiket_satir_icine_alindi": 10013,
+      "dusmeli_etiket_silindi": 7304,
+      "dusmeli_etiket_silindi_ihtiyatli": 4682,
+      "satir_icine_alinan_etiket": 10105,
+      "soz_bozuk": 2448,
+      "soz_bozuk:erken_kapanan": 1281,
+      "soz_bozuk:kapanmamis": 1023,
+      "soz_bozuk:parantez": 144
+     }
+    },
+    "once_gecis": {
+     "break_continue": {
+      "akış": 1031,
+      "bozuk": 1031,
+      "degisen": 1105,
+      "eşdeğer": 74,
+      "kok": {
+       "B1_break_icteki_donguye_ya_da_switch_e_baglaniyor": 954,
+       "B2_continue_for_ya_da_kosullu_do_while": 111
+      }
+     },
+     "early_return": {
+      "akış": 58,
+      "bozuk": 58,
+      "degisen": 73,
+      "eşdeğer": 15,
+      "kok": {
+       "E1_duserek_ulasilan_return_silindi": 58
+      }
+     },
+     "ifelse": {
+      "akış": 1,
+      "ayrıştırma": 6,
+      "bozuk": 7,
+      "degisen": 7
+     },
+     "multi_inline": {
+      "akış": 966,
+      "ayrıştırma": 6,
+      "belirti": {
+       "erisilemez": 537
+      },
+      "bozuk": 1893,
+      "degisen": 1895,
+      "denge": 856,
+      "etiket": 65,
+      "hükümsüz": 2,
+      "kok": {
+       "K1_blok_ayrac_sinirini_asiyor": 881,
+       "K2_ayracsiz_kosula_cok_deyim": 801,
+       "K3_duserek_ulasilan_blok_silindi": 1885,
+       "K4_silme_kisa_kuyruk_kaldi": 542,
+       "K4b_yalniz_noktali_virgul_kaldi": 1368,
+       "aday_etiket_var": 1891,
+       "ayrıştırılamadı": 2,
+       "siniflanmadi": 2
+      }
+     },
+     "rename": {
+      "degisen": 4823,
+      "eşdeğer": 4817,
+      "hükümsüz": 6
+     },
+     "single_inline": {
+      "akış": 2085,
+      "ayrıştırma": 630,
+      "belirti": {
+       "cift_donus": 1,
+       "erisilemez": 772
+      },
+      "bozuk": 4713,
+      "degisen": 4716,
+      "denge": 1918,
+      "deyim": 29,
+      "etiket": 33,
+      "goto": 18,
+      "hükümsüz": 3,
+      "kok": {
+       "K1_blok_ayrac_sinirini_asiyor": 2944,
+       "K2_ayracsiz_kosula_cok_deyim": 2296,
+       "K3_duserek_ulasilan_blok_silindi": 4706,
+       "K4_silme_kisa_kuyruk_kaldi": 1066,
+       "K4b_yalniz_noktali_virgul_kaldi": 3855,
+       "aday_etiket_var": 4710,
+       "ayrıştırılamadı": 3,
+       "siniflanmadi": 3
+      }
+     }
+    },
+    "sonra": {
+     "bagimsiz": {
+      "eşdeğer": 2535
+     },
+     "clang": {
+      "denetlenen": 2535
+     },
+     "degisen_dosya": 2535,
+     "denetci": {
+      "akis_anlami_bozulan_fonksiyon": 11,
+      "akis_sadelestirmenin_bozdugu_fonksiyon": 11,
+      "ayracsiz_kosula_blok_gomuldu": 20,
+      "satir_icine_alinan_etiket": 18
+     },
+     "denetci_ust_sinir_ama_esdeger": 11,
+     "denetci_ust_sinir_ama_esdeger_ve_ayracli": 11,
+     "etiket_adi": {
+      "cleanup_and_return": 637,
+      "error_cleanup": 508,
+      "error_exit": 186,
+      "exit_function": 2187
+     },
+     "urun": {
+      "breaks_continues": 117,
+      "early_returns": 271,
+      "eliminated": 414,
+      "functions_changed": 2535,
+      "functions_skipped": 12,
+      "inlined": 10,
+      "multi_target_inlined": 16,
+      "renamed": 3518
+     }
+    }
+   }
+  }
+ },
+ "kunye": {
+  "aciklama": {
+   "bagimsiz": "_postcondition_violation ile dosya düzeyi hüküm (denge/ayrıştırma/etiket/goto/çağrı/return/akış)",
+   "clang": "değişen dosyada clang -fsyntax-only hata türleri; yeni_hata_turu_olan = girdide olmayan bir hata türü çıkan dosya",
+   "denetci": "denetle.py K4 akış ölçütleri (birebir); akis_sadelestirmenin_bozdugu_fonksiyon_ihtiyatli = rapordaki 4 661",
+   "once_gecis": "eski sürümün her geçişi ham girdide tek başına",
+   "urun": "yeni sürümün kendi sayaçları (functions_reverted = ard koşul yüzünden özgün metne dönen fonksiyon)"
+  },
+  "beklenen_ikili": 119,
+  "betik": "docs/arge/2026-11-10_cikti_saglamligi/akis_sadelestirme_olcum.py",
+  "clang": "Apple clang version 21.0.0 (clang-2100.4.1.1)",
+  "denetle_sha1": "9128c747abe5381ec09a60e7ca837d7a502dcf06",
+  "girdi_dizinleri": {
+   "ham": "static/ghidra_output/decompiled",
+   "struct": "reconstructed/struct_recovered"
+  },
+  "girdi_kokleri": [
+   "/Users/apple/karadul_olcum/n1_debian13",
+   "/Users/apple/Black_Widow/workspaces/olcum_mac/runs/ol7-c-b7faeac"
+  ],
+  "once_commit": "4fba538",
+  "program_suzgeci": null,
+  "sonra_commit": "4fba5387055db0e0ba79604dc4fec4dfbd327217",
+  "sonra_modul_commitsiz_degisiklik": true,
+  "sonra_modul_sha1": "032b2b1181fbefeb5de8279a273a273524614b8e",
+  "sure_s": 295.8,
+  "tarih": "2026-11-10 15:59:45"
+ }
+}
