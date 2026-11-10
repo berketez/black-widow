@@ -1,0 +1,7124 @@
+{
+ "sema": "karadul-ks1-bagimsiz/1",
+ "aciklama": "KS-1 adım 2 ölçümünün bağımsız yeniden hesabı; fonksiyon adı içermez.",
+ "girdi": {
+  "kesin": "karadul/reconstruction/tarif/kesin.py",
+  "kesin_sha256": "2a412e8a4467cff152a8ed271d0216a5fcb3038f1299ca6e8927e3319838cc48",
+  "ks1_surumu": 2,
+  "mac_kosu": "workspaces/olcum_mac/runs/ol7-a-9a36142",
+  "mac_corpus": "workspaces/olcum_mac/corpus",
+  "debian_kosu": "~/karadul_olcum/n1_debian13",
+  "debian_indirme": "~/karadul_olcum/downloads/debian13",
+  "python": "3.12.7",
+  "bulunan": {
+   "debian/coreutils": 106,
+   "debian/htop": 1,
+   "debian/openssl": 1,
+   "debian/redis-tools": 4,
+   "debian/sqlite3": 1,
+   "debian/tmux": 1,
+   "debian/tree": 1,
+   "debian/zstd": 2,
+   "mac/htop": 1,
+   "mac/tmux": 1
+  },
+  "beklenen": {
+   "mac/tmux": 1,
+   "mac/htop": 1,
+   "debian/tmux": 1,
+   "debian/htop": 1,
+   "debian/tree": 1,
+   "debian/zstd": 2,
+   "debian/redis-tools": 4,
+   "debian/sqlite3": 1,
+   "debian/openssl": 1,
+   "debian/coreutils": 106
+  }
+ },
+ "secimler": {
+  "n_min": 10,
+  "en_az_program": 2,
+  "esik": 0.95,
+  "z": 1.96
+ },
+ "yorumlar": [
+  {
+   "konu": "ELF GT'si",
+   "belge": "§6 (function_f1.extract_gt'ye havale)",
+   "yorum": "dbgsym .debug dosyasının .symtab'ındaki tanımlı (SHN_UNDEF olmayan) STT_FUNC simgeleri; aynı adresteki adlar takma ad. Boyut ya da bağlama süzgeci yok."
+  },
+  {
+   "konu": "Mac GT'si",
+   "belge": "§6 (macho_measure prepare'e havale)",
+   "yorum": "özgün ikilide /usr/bin/nm -m; (__TEXT,__text) bölümünde tanımlı ve adresi __text bölümünün içinde olan simgeler (Mach-O başlığı simgesi bölüm dışındadır)."
+  },
+  {
+   "konu": "derleyici eki",
+   "belge": "§6 Klon satırı",
+   "yorum": "ad, taban + bir ya da daha çok (.isra|.constprop|.part|.cold|.lto_priv|.clone|.llvm|.__uniq)(.N)* ekiyle bitiyorsa eklidir; taban ilk ekten önceki kısımdır. OUTLINED_FUNCTION_N eklidir, tabanı yoktur. Listede olmayan ekler (.localalias) ek sayılmaz."
+  },
+  {
+   "konu": "klon satırında doğruluk",
+   "belge": "§6",
+   "yorum": "bütün takma adlar ekliyse: çapa adı takma adlardan birinin tabanına eşitse doğru."
+  },
+  {
+   "konu": "parça çapasının doğruluğu",
+   "belge": "§6 (ölçütü açık yazılmamış)",
+   "yorum": "öbür çapalarla aynı ölçüt: ana satırda tam eşitlik, klon satırında taban eşitliği."
+  },
+  {
+   "konu": "satır üyeliği",
+   "belge": "§8, §4 Roller",
+   "yorum": "assert: türü assert ve rolü kendi; assert_ust: türü assert ve rolü ust; func_kalibi/func_aktarma: o türü taşıyan, parça olmayan; export: türü export; dizgi_turleri: herhangi bir dizgi türünü taşıyan, parça olmayan (çapa başına bir). Parça (rol parca) ayrı sayılır: assert_ust ve dizgi_turleri satırlarında."
+  },
+  {
+   "konu": "tekil öğe",
+   "belge": "§7 [karar 16]",
+   "yorum": "birim içinde (satır, ad); birimin bütün ELF'lerindeki örnekleri doğruysa doğru."
+  },
+  {
+   "konu": "CRT fonksiyonları (ELF nüfusu)",
+   "belge": "§7 (liste verilmemiş)",
+   "yorum": "C çalışma zamanı başlangıç kodu (crt1.o, crti.o, crtbegin.o simgeleri; 12 ad, betikte özet olarak): takma adlarından biri listedeyse CRT. Yalnız kapsam paydasını etkiler."
+  },
+  {
+   "konu": "ad bekleyen Ghidra fonksiyonu (nüfus)",
+   "belge": "§7 'adı jenerik'; liste §5 K5",
+   "yorum": "K5'teki jenerik ad listesi: FUN_, thunk_FUN_, LAB_, SUB_, sub_, entry, _INIT_N, _FINI_N. Yalnız kapsam paydasını etkiler."
+  },
+  {
+   "konu": "Ghidra'nın `code` sınıfı (ELF nüfusu)",
+   "belge": "§7 (tanım verilmemiş)",
+   "yorum": "dış (is_external) olmayan ve adresi çalıştırılabilir, .plt ailesinden olmayan bir bellek bloğunda olan fonksiyon. Yalnız kapsam paydasını etkiler."
+  },
+  {
+   "konu": "export GT'si (ELF)",
+   "belge": "§7, §8",
+   "yorum": "adresi strip'li ikilinin .dynsym'inde tanımlı bir FUNC/IFUNC simgesinin adresi olan GT fonksiyonu (adres düzeyinde)."
+  },
+  {
+   "konu": "Mac sınıfı",
+   "belge": "§7 (macho_f1.fragment_class'a havale)",
+   "yorum": "bütün adları OUTLINED_FUNCTION_N ise outlined; bütün adları .cold(.N) ile bitiyorsa cold; yoksa program."
+  },
+  {
+   "konu": "C++ işareti",
+   "belge": "§7",
+   "yorum": "belge işaretleri Ghidra'nın verdiği adlar üzerinden anlatıyor: Ghidra'nın thunk ya da dış fonksiyon adları (Mach-O'da baştaki tek _ soyulur). İkilinin kendi içe aktarma tablosu (.dynsym tanımsızları; nm -u) duyarlılık olarak ayrıca hesaplanır."
+  },
+  {
+   "konu": "C++ ikilinin nüfusu",
+   "belge": "§7 'kesinlik dışı, GT'siz sayılır'",
+   "yorum": "C++ ikili kesinliğe de kapsam paydasına da girmez."
+  },
+  {
+   "konu": "havuz",
+   "belge": "§8 madde 6",
+   "yorum": "satırın bütün birimleri (küçükler dahil) üzerinden Σ doğru / Σ n."
+  }
+ ],
+ "denetimler": {
+  "elf_debug_build_id_ayni": 116,
+  "elf_export_simgesi": 9123,
+  "elf_export_simgesi_gt_ile_ayni_ad": 9123,
+  "elf_giris_adresinde_gt_var": 115,
+  "elf_giris_adresli": 115,
+  "elf_strip_li": 116,
+  "ghidra_yinelenen_adres": 0,
+  "ikili": 119,
+  "ikili_sha256_kunyeyle_ayni": 119,
+  "jenerik_tanim_farki": 0,
+  "mac_hazir_gt_ayni": 2,
+  "mac_hazir_gt_ozgun_sha_ayni": 2,
+  "mac_hazir_gt_sinif_ayni": 2,
+  "mac_hazir_gt_strip_sha_ayni": 2,
+  "mac_text_bolumu_ayni": 2
+ },
+ "birimler": {
+  "debian/coreutils": {
+   "elfler": {
+    "[": {
+     "capa": 4,
+     "nufus": 97,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/12/558d152739b42ea5dfd5400673221776786454.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 111
+     }
+    },
+    "arch": {
+     "capa": 2,
+     "nufus": 86,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/0f/9710be5df2326b71257b81a0b59f0128c7b2f6.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 100
+     }
+    },
+    "b2sum": {
+     "capa": 2,
+     "nufus": 104,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/4c/ca4aa5fad403fe5ed9761369e3e9d183cbe32e.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "base32": {
+     "capa": 3,
+     "nufus": 100,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/06/e533ce5410837974a09e8e0a9652d71487ea24.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 114
+     }
+    },
+    "base64": {
+     "capa": 2,
+     "nufus": 100,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/c5/b94099ea84c2d661bf42df3eef8c30b91bb224.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 114
+     }
+    },
+    "basename": {
+     "capa": 2,
+     "nufus": 90,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/44/66f8f769484f4bedc39b91df3994e9151e189d.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 104
+     }
+    },
+    "basenc": {
+     "capa": 4,
+     "nufus": 142,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/47/d8a259ed35724b3b214e0ad1f2d570101b20a0.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 156
+     }
+    },
+    "cat": {
+     "capa": 2,
+     "nufus": 96,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/fd/454726f7ad74a034a07a5259d3a354633ae685.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 110
+     }
+    },
+    "chcon": {
+     "capa": 4,
+     "nufus": 163,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/70/cecca2fcd34e96dcf21c9f3c802db3de23fbd2.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 180
+     }
+    },
+    "chgrp": {
+     "capa": 4,
+     "nufus": 157,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/c8/b6d8a9f9ee68be26049ae9ebfa228971e85beb.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 173
+     }
+    },
+    "chmod": {
+     "capa": 4,
+     "nufus": 152,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/98/7cdb2f53148c9c103eb9154595ec52936941e0.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 168
+     }
+    },
+    "chown": {
+     "capa": 4,
+     "nufus": 157,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/48/78fdd5be9a68d709aab1fc7ee118978e3d99b3.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 173
+     }
+    },
+    "chroot": {
+     "capa": 2,
+     "nufus": 94,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/61/1475d0583cd01ca0aca97a553b94fc5bc9be7f.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 108
+     }
+    },
+    "cksum": {
+     "capa": 3,
+     "nufus": 170,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/73/04ef257f1572518b59f101d4cb276e90357816.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 205
+     }
+    },
+    "comm": {
+     "capa": 2,
+     "nufus": 106,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/94/dde14d5484fac013c25625aa77828cdcdf64df.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "cp": {
+     "capa": 5,
+     "nufus": 281,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/1f/6c7a3e4dd501706cfa31c259ccd616b783a190.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 301
+     }
+    },
+    "csplit": {
+     "capa": 2,
+     "nufus": 112,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/d3/b66a862ab54a639882a38cb6fdea9e0545b00e.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 127
+     }
+    },
+    "cut": {
+     "capa": 3,
+     "nufus": 101,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/84/670cbd3acb0ea1012c22a4767227e9887d84cd.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 115
+     }
+    },
+    "date": {
+     "capa": 2,
+     "nufus": 120,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/5f/9da7caf61574e0587ebab7d8ac7b0435a50ece.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 142
+     }
+    },
+    "dd": {
+     "capa": 2,
+     "nufus": 136,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/8e/4dff13b989abce899d6222d26228dc76766d3e.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 155
+     }
+    },
+    "df": {
+     "capa": 4,
+     "nufus": 177,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/2d/c712d66963c843ce09362e9c1e7e623d2a6cb7.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 194
+     }
+    },
+    "dir": {
+     "capa": 3,
+     "nufus": 298,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/3a/27f52961c440385aad766dab1943f68b9824ca.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 321
+     }
+    },
+    "dircolors": {
+     "capa": 2,
+     "nufus": 98,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/2d/3dc76584844f23a2a347e29f0f72d89612eecb.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 113
+     }
+    },
+    "dirname": {
+     "capa": 2,
+     "nufus": 89,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/1d/a5c2c954cc00198018ae320a4e0c10bb173683.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 103
+     }
+    },
+    "du": {
+     "capa": 5,
+     "nufus": 216,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/6e/f655d2912a2dc77be7dadf22426ff48a728959.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 235
+     }
+    },
+    "echo": {
+     "capa": 3,
+     "nufus": 86,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/cf/f15ef5fd2ebe4e4f746c35da168b8baf1844d9.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 100
+     }
+    },
+    "env": {
+     "capa": 2,
+     "nufus": 92,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/27/42e088105ce76698cab292241926008ad1bcb1.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 107
+     }
+    },
+    "expand": {
+     "capa": 2,
+     "nufus": 98,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/23/bddf2a8d3bf528393d510d294cb7c5e85c1dd8.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 112
+     }
+    },
+    "expr": {
+     "capa": 2,
+     "nufus": 100,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b2/4410a3469c3ca99530701378e55fb479264fd5.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 115
+     }
+    },
+    "factor": {
+     "capa": 8,
+     "nufus": 112,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/32/d49a0aa4384dadf88606c425b627fa060315e0.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 133
+     }
+    },
+    "false": {
+     "capa": 2,
+     "nufus": 85,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/1c/ec6458c54159ccf9ffd782b2c215abcee9716e.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 99
+     }
+    },
+    "fmt": {
+     "capa": 2,
+     "nufus": 101,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/25/b788b417dde503297981dbad0ff19eda427522.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 115
+     }
+    },
+    "fold": {
+     "capa": 2,
+     "nufus": 92,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/d8/79b4a5074f8205ae2ad9b23d2b9f28b101cfe1.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 106
+     }
+    },
+    "groups": {
+     "capa": 2,
+     "nufus": 89,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/94/c0497b14daf36a84538e77d67787020d10e569.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 103
+     }
+    },
+    "head": {
+     "capa": 2,
+     "nufus": 97,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/99/c042f9ac8acdcbb9d0c121da24b8461b97e0a9.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 113
+     }
+    },
+    "hostid": {
+     "capa": 2,
+     "nufus": 87,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/c9/763bbe07a69d4084fa1fbde1696616d7706f19.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 101
+     }
+    },
+    "id": {
+     "capa": 2,
+     "nufus": 95,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/f1/9790a8a84a9253f10b4a2a718e4d827b9d69f8.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 109
+     }
+    },
+    "install": {
+     "capa": 6,
+     "nufus": 298,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/a4/240f9ca7853945911bff6d69775185a5fd68c9.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 318
+     }
+    },
+    "join": {
+     "capa": 2,
+     "nufus": 124,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/62/c53d1392300f1c6f3c709c0f3fe6e360c0b127.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 140
+     }
+    },
+    "libstdbuf.so": {
+     "capa": 0,
+     "nufus": 2,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e0/ad530f4a685d7da0cefe8119ce19afcb90749d.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani",
+      "gt_fonksiyon": 9
+     }
+    },
+    "link": {
+     "capa": 2,
+     "nufus": 87,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/8a/51526d6b8d87b87af47beba6ce28f446c30d5f.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 101
+     }
+    },
+    "ln": {
+     "capa": 2,
+     "nufus": 168,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/26/08fe50ca2ac3d76ee152c7d9fcccab25a3c231.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 184
+     }
+    },
+    "logname": {
+     "capa": 2,
+     "nufus": 87,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b4/3c281b12f2466db1048181152645c4b8f7938a.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 101
+     }
+    },
+    "ls": {
+     "capa": 3,
+     "nufus": 298,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/87/a7eadc711cd002f7b00ba923179e5713498159.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 321
+     }
+    },
+    "md5sum": {
+     "capa": 2,
+     "nufus": 94,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/18/260edb58753d4d028ecc71c5b8d30a2282321e.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 109
+     }
+    },
+    "mkdir": {
+     "capa": 6,
+     "nufus": 184,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/40/7e8e1607c312f9eb84665a6eba616346fb27e2.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 200
+     }
+    },
+    "mkfifo": {
+     "capa": 4,
+     "nufus": 171,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/ea/5b54e2a4382823f2c694f4cbab3d356b617560.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 187
+     }
+    },
+    "mknod": {
+     "capa": 4,
+     "nufus": 172,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/69/376e00caf753636da9e8d2b638ccf567899f0f.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 188
+     }
+    },
+    "mktemp": {
+     "capa": 2,
+     "nufus": 97,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b0/c147bd68f39dd75dc804f2af82da8e7f4621a0.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 111
+     }
+    },
+    "mv": {
+     "capa": 5,
+     "nufus": 287,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/60/5d56f31544c28d9eada3c04f2cfacdf19af731.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 307
+     }
+    },
+    "nice": {
+     "capa": 2,
+     "nufus": 86,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/20/bf71a6294d634b8bfea85889e25c72d63bfda5.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 100
+     }
+    },
+    "nl": {
+     "capa": 2,
+     "nufus": 98,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/6d/c8d6785e11c334164cddab29e82897226c35d8.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 112
+     }
+    },
+    "nohup": {
+     "capa": 2,
+     "nufus": 93,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/d5/da7b06c71434520cece001db1387b5e6743450.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 107
+     }
+    },
+    "nproc": {
+     "capa": 2,
+     "nufus": 91,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/aa/0d177fdb1ba7488162b8c94416c08a3adc777f.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 105
+     }
+    },
+    "numfmt": {
+     "capa": 2,
+     "nufus": 116,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e5/b32a35e10c6bafaf4bda32eea11e85f359eb53.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 130
+     }
+    },
+    "od": {
+     "capa": 3,
+     "nufus": 140,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/9a/c572395e6895c3b3a3653488286cf76a2ee8f3.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 156
+     }
+    },
+    "paste": {
+     "capa": 2,
+     "nufus": 92,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e4/7af8bbfffd72538b30d8d076895eafa344209a.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 106
+     }
+    },
+    "pathchk": {
+     "capa": 2,
+     "nufus": 87,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e3/006bf315eebe9d212a74e8fac0e16079368dc1.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 101
+     }
+    },
+    "pinky": {
+     "capa": 2,
+     "nufus": 98,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/c6/aefde0ae3503be3a247d3510ab9af994835a8f.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 113
+     }
+    },
+    "pr": {
+     "capa": 2,
+     "nufus": 136,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/f7/2d6fba56e8ff3b3aa1a997b5ef90e24dd8cdbe.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 152
+     }
+    },
+    "printenv": {
+     "capa": 2,
+     "nufus": 85,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/87/a80a5390c372a19eefb86c0c2f72546589cfe1.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 99
+     }
+    },
+    "printf": {
+     "capa": 2,
+     "nufus": 110,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/a2/df244731ea74f53673f65bc6a9332ca31268e7.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 126
+     }
+    },
+    "ptx": {
+     "capa": 2,
+     "nufus": 106,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/21/872e6b6e6f9f4c1b0b6788fbeda8f4911b5c1c.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "pwd": {
+     "capa": 2,
+     "nufus": 89,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/8c/e9785a378a1868d5f713d250dc01f106e6ca23.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 103
+     }
+    },
+    "readlink": {
+     "capa": 2,
+     "nufus": 120,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/c7/9f74cde4662306c993464c7fb03ee4c5eed76f.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 136
+     }
+    },
+    "realpath": {
+     "capa": 2,
+     "nufus": 123,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/0b/86cdedf99ee16c222d3abd82d83dfce42e79be.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 139
+     }
+    },
+    "rm": {
+     "capa": 4,
+     "nufus": 170,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e2/c065165b86d1acec3c1c27a5039ad1470200a5.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 186
+     }
+    },
+    "rmdir": {
+     "capa": 2,
+     "nufus": 90,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/3a/4815a44bb7a8d60c4b9077dfe1a8c025db20de.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 104
+     }
+    },
+    "runcon": {
+     "capa": 2,
+     "nufus": 91,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/d3/7ba8dab6e2bdc95866038b120b0f74ee402b57.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 105
+     }
+    },
+    "seq": {
+     "capa": 2,
+     "nufus": 102,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b1/59d7b463515b248494e9dfcb52df8abc581eb6.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 116
+     }
+    },
+    "sha1sum": {
+     "capa": 2,
+     "nufus": 94,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/85/0e3adf60c9a1ca8b5a6aac0708050fc7cf8e36.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 109
+     }
+    },
+    "sha224sum": {
+     "capa": 2,
+     "nufus": 101,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e5/575da56564a8237a326e24e7d7cd2f7ebfeb73.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "sha256sum": {
+     "capa": 2,
+     "nufus": 101,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/cf/8e0dc11d9f8efc009b3567c3fb6bab83786cc9.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "sha384sum": {
+     "capa": 2,
+     "nufus": 101,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/92/0f5a3c2d8315c39f7bf3e4b412efd2c6f11a6d.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "sha512sum": {
+     "capa": 2,
+     "nufus": 101,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/50/58d61b884c8baaf614aae1aa8651e5d5803e14.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 121
+     }
+    },
+    "shred": {
+     "capa": 3,
+     "nufus": 137,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b9/5a841318447fd73d18a6c9fff16dd287e28982.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 151
+     }
+    },
+    "shuf": {
+     "capa": 3,
+     "nufus": 144,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/4a/73ee9930ec79178771c87b6dfdd8299870c596.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 160
+     }
+    },
+    "sleep": {
+     "capa": 2,
+     "nufus": 92,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/43/86d9cb62f28a53367fb90473ed3f989efe5bde.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 106
+     }
+    },
+    "sort": {
+     "capa": 3,
+     "nufus": 227,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/63/2ccbca942da8575d34c9a4635e9df0f0a59e04.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 248
+     }
+    },
+    "split": {
+     "capa": 3,
+     "nufus": 121,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b3/30b44d1b97c045bd583bb53f312d3ff605b6fd.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 135
+     }
+    },
+    "stat": {
+     "capa": 2,
+     "nufus": 148,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/a2/dd42c218343faad06c55593dc50d244a2ef2d4.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 165
+     }
+    },
+    "stdbuf": {
+     "capa": 2,
+     "nufus": 97,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/80/5f86be245b941580507fd688f40ee986949f06.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 111
+     }
+    },
+    "stty": {
+     "capa": 3,
+     "nufus": 100,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/cf/78ec84c50f28ff0ba1ad085f7ad0dfb49b7ae2.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 115
+     }
+    },
+    "sum": {
+     "capa": 2,
+     "nufus": 113,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/28/aaf8c697ad8fad0d4d41f9c07073aa7ef33734.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 127
+     }
+    },
+    "sync": {
+     "capa": 2,
+     "nufus": 86,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/e9/091933e7a2b41813a3c5cdfb82bdb3264751da.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 100
+     }
+    },
+    "tac": {
+     "capa": 2,
+     "nufus": 98,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/d5/56daa429139ce8afc93f4638cf5911aa06766c.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 112
+     }
+    },
+    "tail": {
+     "capa": 5,
+     "nufus": 157,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/9e/35a1fd2e82534e3905f0e9a5688356487e46bb.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 177
+     }
+    },
+    "tee": {
+     "capa": 4,
+     "nufus": 108,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/2a/05b65f6d82984498ae194b4396188107e3833b.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 122
+     }
+    },
+    "test": {
+     "capa": 4,
+     "nufus": 90,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/cf/3e0bb9b0b7ee490adc771a6cb74d984bf0c947.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 104
+     }
+    },
+    "timeout": {
+     "capa": 2,
+     "nufus": 96,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/b7/717927f0f20be6f4a623bb594021e728f66dc1.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 110
+     }
+    },
+    "touch": {
+     "capa": 3,
+     "nufus": 117,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/7d/919931a213758542a5cc34a51372fcac254a0e.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 138
+     }
+    },
+    "tr": {
+     "capa": 4,
+     "nufus": 102,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/69/ea1f4d224071f7b0d691a372c95e708f129082.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 118
+     }
+    },
+    "true": {
+     "capa": 2,
+     "nufus": 85,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/f4/4cf0fef31c0ff51be40cae69c432fd30c2b199.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 99
+     }
+    },
+    "truncate": {
+     "capa": 2,
+     "nufus": 88,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/5c/636a8836e54b5e86d4bc3735f7296f1591ef96.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 102
+     }
+    },
+    "tsort": {
+     "capa": 4,
+     "nufus": 99,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/34/989d160712bd27a0afb3a0bd9675bd8170b860.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 113
+     }
+    },
+    "tty": {
+     "capa": 2,
+     "nufus": 85,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/18/fb6b742387feda791aad1457b91bc6497ab0da.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 99
+     }
+    },
+    "uname": {
+     "capa": 2,
+     "nufus": 86,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/10/3b55c886d311fd25562eea3020a31e47884950.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 100
+     }
+    },
+    "unexpand": {
+     "capa": 2,
+     "nufus": 98,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/c2/7c951f00028bb05ff033ec01c8bdc4b6c95004.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 112
+     }
+    },
+    "uniq": {
+     "capa": 2,
+     "nufus": 106,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/62/4f06ce00b7574beab7ad97fd77dd0ee35e55a2.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 122
+     }
+    },
+    "unlink": {
+     "capa": 2,
+     "nufus": 87,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/d0/11693df76ca76e32795504f0801f0be2b157dd.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 101
+     }
+    },
+    "users": {
+     "capa": 2,
+     "nufus": 94,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/5f/fe40d82b15b5a62a1699fae1b2854f86dc2781.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 109
+     }
+    },
+    "vdir": {
+     "capa": 3,
+     "nufus": 298,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/df/b6d64ea49e6fa316d3baa15349014936b63bc8.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 321
+     }
+    },
+    "wc": {
+     "capa": 2,
+     "nufus": 123,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/0b/c93319a5db309ac7a66a3b5db177cf8f619ab2.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 138
+     }
+    },
+    "who": {
+     "capa": 2,
+     "nufus": 98,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/a9/0d000e9ada96e558a9b7226c236f8df9c81e73.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 114
+     }
+    },
+    "whoami": {
+     "capa": 2,
+     "nufus": 87,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/64/740b4266c041e8e28c9d018125d43eba1de7fd.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 101
+     }
+    },
+    "yes": {
+     "capa": 2,
+     "nufus": 89,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_coreutils-dbgsym_9.7-3_arm64/usr/lib/debug/.build-id/3b/ab5e9d852933b78054f71e97596975e7ffecf4.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 103
+     }
+    }
+   },
+   "cpp_disarida": [],
+   "yinelenen_disarida": [],
+   "nufus": 12822,
+   "export_gt": 211,
+   "nufus_varyantlari": {
+    "crt_dahil": 13351,
+    "kod_kosulsuz": 12822,
+    "kod_yalniz_text": 12822
+   },
+   "satirlar": {
+    "assert": {
+     "tekil": {
+      "dogru": 29,
+      "n": 34,
+      "oran": 0.852941,
+      "aralik": [
+       0.6987,
+       0.9355
+      ]
+     },
+     "ornek": {
+      "dogru": 61,
+      "n": 67,
+      "oran": 0.910448,
+      "aralik": [
+       0.8181,
+       0.9583
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 27,
+      "n": 32
+     },
+     "tek_turlu": {
+      "dogru": 29,
+      "n": 34
+     },
+     "klon": {
+      "dogru": 2,
+      "n": 2
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 12822,
+      "pay": 65,
+      "dogru_pay": 59,
+      "oran": 0.005069
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 12822,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 12822,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 12822,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "export": {
+     "tekil": {
+      "dogru": 3,
+      "n": 3,
+      "oran": 1.0,
+      "aralik": [
+       0.4385,
+       1.0
+      ]
+     },
+     "ornek": {
+      "dogru": 211,
+      "n": 211,
+      "oran": 1.0,
+      "aralik": [
+       0.9821,
+       1.0
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 3,
+      "n": 3
+     },
+     "tek_turlu": {
+      "dogru": 3,
+      "n": 3
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 211,
+      "pay": 211,
+      "dogru_pay": 211,
+      "oran": 1.0
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "dogru": 29,
+      "n": 34,
+      "oran": 0.852941,
+      "aralik": [
+       0.6987,
+       0.9355
+      ]
+     },
+     "ornek": {
+      "dogru": 61,
+      "n": 67,
+      "oran": 0.910448,
+      "aralik": [
+       0.8181,
+       0.9583
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 27,
+      "n": 32
+     },
+     "tek_turlu": {
+      "dogru": 29,
+      "n": 34
+     },
+     "klon": {
+      "dogru": 2,
+      "n": 2
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 12822,
+      "pay": 65,
+      "dogru_pay": 59,
+      "oran": 0.005069
+     }
+    }
+   }
+  },
+  "debian/htop": {
+   "elfler": {
+    "htop": {
+     "capa": 366,
+     "nufus": 222,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_htop-dbgsym_3.4.1-5_arm64/usr/lib/debug/.build-id/74/b4c5569781b50403c35ca18fa901c9ea290385.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani",
+      "gt_fonksiyon": 617
+     }
+    }
+   },
+   "cpp_disarida": [],
+   "yinelenen_disarida": [],
+   "nufus": 222,
+   "export_gt": 373,
+   "nufus_varyantlari": {
+    "crt_dahil": 226,
+    "kod_kosulsuz": 222,
+    "kod_yalniz_text": 222
+   },
+   "satirlar": {
+    "assert": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 222,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 222,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 222,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 222,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "export": {
+     "tekil": {
+      "dogru": 366,
+      "n": 366,
+      "oran": 1.0,
+      "aralik": [
+       0.9896,
+       1.0
+      ]
+     },
+     "ornek": {
+      "dogru": 366,
+      "n": 366,
+      "oran": 1.0,
+      "aralik": [
+       0.9896,
+       1.0
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 366,
+      "n": 366
+     },
+     "tek_turlu": {
+      "dogru": 366,
+      "n": 366
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 373,
+      "pay": 366,
+      "dogru_pay": 366,
+      "oran": 0.981233
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 222,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    }
+   }
+  },
+  "debian/openssl": {
+   "elfler": {
+    "openssl": {
+     "capa": 15,
+     "nufus": 563,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_openssl-dbgsym_3.5.7-1~deb13u2_arm64/usr/lib/debug/.build-id/c3/007af23475310898afa78b35cbebe4bbf83173.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 604
+     }
+    }
+   },
+   "cpp_disarida": [],
+   "yinelenen_disarida": [],
+   "nufus": 563,
+   "export_gt": 0,
+   "nufus_varyantlari": {
+    "crt_dahil": 568,
+    "kod_kosulsuz": 563,
+    "kod_yalniz_text": 563
+   },
+   "satirlar": {
+    "assert": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 563,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 563,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "dogru": 15,
+      "n": 15,
+      "oran": 1.0,
+      "aralik": [
+       0.7961,
+       1.0
+      ]
+     },
+     "ornek": {
+      "dogru": 15,
+      "n": 15,
+      "oran": 1.0,
+      "aralik": [
+       0.7961,
+       1.0
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 14,
+      "n": 14
+     },
+     "tek_turlu": {
+      "dogru": 15,
+      "n": 15
+     },
+     "klon": {
+      "dogru": 1,
+      "n": 1
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 563,
+      "pay": 14,
+      "dogru_pay": 14,
+      "oran": 0.024867
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 563,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "export": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 0,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": null
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "dogru": 15,
+      "n": 15,
+      "oran": 1.0,
+      "aralik": [
+       0.7961,
+       1.0
+      ]
+     },
+     "ornek": {
+      "dogru": 15,
+      "n": 15,
+      "oran": 1.0,
+      "aralik": [
+       0.7961,
+       1.0
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 14,
+      "n": 14
+     },
+     "tek_turlu": {
+      "dogru": 15,
+      "n": 15
+     },
+     "klon": {
+      "dogru": 1,
+      "n": 1
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 563,
+      "pay": 14,
+      "dogru_pay": 14,
+      "oran": 0.024867
+     }
+    }
+   }
+  },
+  "debian/redis-tools": {
+   "elfler": {
+    "redis-benchmark": {
+     "capa": 397,
+     "nufus": 77,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_redis-tools-dbgsym_8.0.2-3+deb13u2_arm64/usr/lib/debug/.build-id/e7/55d9673ab599cac4b7ad7a66c5ef00286866ac.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani",
+      "gt_fonksiyon": 493
+     }
+    },
+    "redis-check-aof": {
+     "capa": 3795,
+     "nufus": 624,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_redis-tools-dbgsym_8.0.2-3+deb13u2_arm64/usr/lib/debug/.build-id/2d/7d4de05c8c6718188a74edee76a1e771a9f690.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani",
+      "gt_fonksiyon": 4758
+     }
+    },
+    "redis-check-rdb": {
+     "capa": 3795,
+     "nufus": 624,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_redis-tools-dbgsym_8.0.2-3+deb13u2_arm64/usr/lib/debug/.build-id/2d/7d4de05c8c6718188a74edee76a1e771a9f690.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani",
+      "gt_fonksiyon": 4758
+     }
+    },
+    "redis-cli": {
+     "capa": 463,
+     "nufus": 134,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_redis-tools-dbgsym_8.0.2-3+deb13u2_arm64/usr/lib/debug/.build-id/20/70a9d12012dbd8f35176746bf7419b0109bba7.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani",
+      "gt_fonksiyon": 650
+     }
+    }
+   },
+   "cpp_disarida": [],
+   "yinelenen_disarida": [],
+   "nufus": 1459,
+   "export_gt": 8539,
+   "nufus_varyantlari": {
+    "crt_dahil": 1475,
+    "kod_kosulsuz": 1459,
+    "kod_yalniz_text": 1459
+   },
+   "satirlar": {
+    "assert": {
+     "tekil": {
+      "dogru": 22,
+      "n": 30,
+      "oran": 0.733333,
+      "aralik": [
+       0.5555,
+       0.8582
+      ]
+     },
+     "ornek": {
+      "dogru": 47,
+      "n": 56,
+      "oran": 0.839286,
+      "aralik": [
+       0.7219,
+       0.9131
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 20,
+      "n": 25
+     },
+     "tek_turlu": {
+      "dogru": 22,
+      "n": 30
+     },
+     "klon": {
+      "dogru": 2,
+      "n": 5
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 1459,
+      "pay": 51,
+      "dogru_pay": 45,
+      "oran": 0.034955
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 1459,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 1459,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 1459,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "export": {
+     "tekil": {
+      "dogru": 3855,
+      "n": 3855,
+      "oran": 1.0,
+      "aralik": [
+       0.999,
+       1.0
+      ]
+     },
+     "ornek": {
+      "dogru": 8394,
+      "n": 8394,
+      "oran": 1.0,
+      "aralik": [
+       0.9995,
+       1.0
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 3855,
+      "n": 3855
+     },
+     "tek_turlu": {
+      "dogru": 3855,
+      "n": 3855
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 8539,
+      "pay": 8394,
+      "dogru_pay": 8394,
+      "oran": 0.983019
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "dogru": 22,
+      "n": 30,
+      "oran": 0.733333,
+      "aralik": [
+       0.5555,
+       0.8582
+      ]
+     },
+     "ornek": {
+      "dogru": 47,
+      "n": 56,
+      "oran": 0.839286,
+      "aralik": [
+       0.7219,
+       0.9131
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 20,
+      "n": 25
+     },
+     "tek_turlu": {
+      "dogru": 22,
+      "n": 30
+     },
+     "klon": {
+      "dogru": 2,
+      "n": 5
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 1459,
+      "pay": 51,
+      "dogru_pay": 45,
+      "oran": 0.034955
+     }
+    }
+   }
+  },
+  "debian/sqlite3": {
+   "elfler": {
+    "sqlite3": {
+     "capa": 0,
+     "nufus": 390,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_sqlite3-dbgsym_3.46.1-7+deb13u2_arm64/usr/lib/debug/.build-id/3f/7a5f6ddc4dc8cccc9739ce16d6a86f801cf154.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 431
+     }
+    }
+   },
+   "cpp_disarida": [],
+   "yinelenen_disarida": [],
+   "nufus": 390,
+   "export_gt": 0,
+   "nufus_varyantlari": {
+    "crt_dahil": 395,
+    "kod_kosulsuz": 390,
+    "kod_yalniz_text": 390
+   },
+   "satirlar": {
+    "assert": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 390,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 390,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 390,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 390,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "export": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 0,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": null
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 390,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    }
+   }
+  },
+  "debian/tmux": {
+   "elfler": {
+    "tmux": {
+     "capa": 111,
+     "nufus": 1851,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_tmux-dbgsym_3.5a-3_arm64/usr/lib/debug/.build-id/e4/ac63904bbb8831dd1c9c7106b1e04f566af0bb.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 1921
+     }
+    }
+   },
+   "cpp_disarida": [],
+   "yinelenen_disarida": [],
+   "nufus": 1851,
+   "export_gt": 0,
+   "nufus_varyantlari": {
+    "crt_dahil": 1856,
+    "kod_kosulsuz": 1851,
+    "kod_yalniz_text": 1851
+   },
+   "satirlar": {
+    "assert": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 1851,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 1851,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "dogru": 91,
+      "n": 97,
+      "oran": 0.938144,
+      "aralik": [
+       0.8716,
+       0.9713
+      ]
+     },
+     "ornek": {
+      "dogru": 91,
+      "n": 97,
+      "oran": 0.938144,
+      "aralik": [
+       0.8716,
+       0.9713
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 83,
+      "n": 88
+     },
+     "tek_turlu": {
+      "dogru": 90,
+      "n": 96
+     },
+     "klon": {
+      "dogru": 8,
+      "n": 9
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 1851,
+      "pay": 88,
+      "dogru_pay": 83,
+      "oran": 0.047542
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "dogru": 15,
+      "n": 15,
+      "oran": 1.0,
+      "aralik": [
+       0.7961,
+       1.0
+      ]
+     },
+     "ornek": {
+      "dogru": 15,
+      "n": 15,
+      "oran": 1.0,
+      "aralik": [
+       0.7961,
+       1.0
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 15,
+      "n": 15
+     },
+     "tek_turlu": {
+      "dogru": 14,
+      "n": 14
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 1851,
+      "pay": 15,
+      "dogru_pay": 15,
+      "oran": 0.008104
+     }
+    },
+    "export": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 0,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": null
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "dogru": 105,
+      "n": 111,
+      "oran": 0.945946,
+      "aralik": [
+       0.8871,
+       0.975
+      ]
+     },
+     "ornek": {
+      "dogru": 105,
+      "n": 111,
+      "oran": 0.945946,
+      "aralik": [
+       0.8871,
+       0.975
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 97,
+      "n": 102
+     },
+     "tek_turlu": {
+      "dogru": 104,
+      "n": 110
+     },
+     "klon": {
+      "dogru": 8,
+      "n": 9
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 1851,
+      "pay": 102,
+      "dogru_pay": 97,
+      "oran": 0.055105
+     }
+    }
+   }
+  },
+  "debian/tree": {
+   "elfler": {
+    "tree": {
+     "capa": 0,
+     "nufus": 110,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_tree-dbgsym_2.2.1-1_arm64/usr/lib/debug/.build-id/d9/2a927b3c35989420228a9112c46d7c864a9aed.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 119
+     }
+    }
+   },
+   "cpp_disarida": [],
+   "yinelenen_disarida": [],
+   "nufus": 110,
+   "export_gt": 0,
+   "nufus_varyantlari": {
+    "crt_dahil": 115,
+    "kod_kosulsuz": 110,
+    "kod_yalniz_text": 110
+   },
+   "satirlar": {
+    "assert": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 110,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 110,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 110,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 110,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "export": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 0,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": null
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 110,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    }
+   }
+  },
+  "debian/zstd": {
+   "elfler": {
+    "zstd": {
+     "capa": 172,
+     "nufus": 913,
+     "kunye": {
+      "debug": "~/karadul_olcum/downloads/debian13/x_zstd-dbgsym_1.5.7+dfsg-1_arm64/usr/lib/debug/.build-id/20/c5b67186051ca393971d93efad300e26edffc6.debug",
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry",
+      "gt_fonksiyon": 1111
+     }
+    }
+   },
+   "cpp_disarida": [
+    "pzstd"
+   ],
+   "yinelenen_disarida": [],
+   "nufus": 913,
+   "export_gt": 0,
+   "nufus_varyantlari": {
+    "crt_dahil": 918,
+    "kod_kosulsuz": 913,
+    "kod_yalniz_text": 913
+   },
+   "satirlar": {
+    "assert": {
+     "tekil": {
+      "dogru": 137,
+      "n": 164,
+      "oran": 0.835366,
+      "aralik": [
+       0.7711,
+       0.8843
+      ]
+     },
+     "ornek": {
+      "dogru": 137,
+      "n": 164,
+      "oran": 0.835366,
+      "aralik": [
+       0.7711,
+       0.8843
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 119,
+      "n": 144
+     },
+     "tek_turlu": {
+      "dogru": 137,
+      "n": 164
+     },
+     "klon": {
+      "dogru": 18,
+      "n": 20
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 913,
+      "pay": 144,
+      "dogru_pay": 119,
+      "oran": 0.157722
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "dogru": 2,
+      "n": 4,
+      "oran": 0.5,
+      "aralik": [
+       0.15,
+       0.85
+      ]
+     },
+     "ornek": {
+      "dogru": 2,
+      "n": 4,
+      "oran": 0.5,
+      "aralik": [
+       0.15,
+       0.85
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 2,
+      "n": 4
+     },
+     "tek_turlu": {
+      "dogru": 2,
+      "n": 4
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 4,
+      "n": 4
+     },
+     "kapsam": {
+      "nufus": 913,
+      "pay": 4,
+      "dogru_pay": 2,
+      "oran": 0.004381
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 913,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 913,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "export": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 0,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": null
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "dogru": 139,
+      "n": 168,
+      "oran": 0.827381,
+      "aralik": [
+       0.7631,
+       0.877
+      ]
+     },
+     "ornek": {
+      "dogru": 139,
+      "n": 168,
+      "oran": 0.827381,
+      "aralik": [
+       0.7631,
+       0.877
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 121,
+      "n": 148
+     },
+     "tek_turlu": {
+      "dogru": 139,
+      "n": 168
+     },
+     "klon": {
+      "dogru": 18,
+      "n": 20
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 4,
+      "n": 4
+     },
+     "kapsam": {
+      "nufus": 913,
+      "pay": 148,
+      "dogru_pay": 121,
+      "oran": 0.162103
+     }
+    }
+   }
+  },
+  "mac/htop": {
+   "elfler": {
+    "htop": {
+     "capa": 0,
+     "nufus": 597,
+     "kunye": {
+      "gt_kaynagi": "workspaces/olcum_mac/corpus/htop/orig/htop",
+      "gt_fonksiyon": 605
+     }
+    }
+   },
+   "cpp_disarida": [],
+   "yinelenen_disarida": [],
+   "nufus": 597,
+   "export_gt": 0,
+   "nufus_varyantlari": {},
+   "satirlar": {
+    "assert": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 597,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 597,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 597,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 597,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "export": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 0,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": null
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 597,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    }
+   }
+  },
+  "mac/tmux": {
+   "elfler": {
+    "tmux": {
+     "capa": 186,
+     "nufus": 2545,
+     "kunye": {
+      "gt_kaynagi": "workspaces/olcum_mac/corpus/tmux/orig/tmux",
+      "gt_fonksiyon": 2572
+     }
+    }
+   },
+   "cpp_disarida": [],
+   "yinelenen_disarida": [],
+   "nufus": 2545,
+   "export_gt": 0,
+   "nufus_varyantlari": {},
+   "satirlar": {
+    "assert": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 2545,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": 0.0
+     }
+    },
+    "assert_ust": {
+     "tekil": {
+      "dogru": 3,
+      "n": 3,
+      "oran": 1.0,
+      "aralik": [
+       0.4385,
+       1.0
+      ]
+     },
+     "ornek": {
+      "dogru": 3,
+      "n": 3,
+      "oran": 1.0,
+      "aralik": [
+       0.4385,
+       1.0
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 3,
+      "n": 3
+     },
+     "tek_turlu": {
+      "dogru": 3,
+      "n": 3
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 14,
+      "n": 14
+     },
+     "kapsam": {
+      "nufus": 2545,
+      "pay": 3,
+      "dogru_pay": 3,
+      "oran": 0.001179
+     }
+    },
+    "func_kalibi": {
+     "tekil": {
+      "dogru": 143,
+      "n": 150,
+      "oran": 0.953333,
+      "aralik": [
+       0.9068,
+       0.9772
+      ]
+     },
+     "ornek": {
+      "dogru": 143,
+      "n": 150,
+      "oran": 0.953333,
+      "aralik": [
+       0.9068,
+       0.9772
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 143,
+      "n": 150
+     },
+     "tek_turlu": {
+      "dogru": 141,
+      "n": 148
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 2545,
+      "pay": 150,
+      "dogru_pay": 143,
+      "oran": 0.058939
+     }
+    },
+    "func_aktarma": {
+     "tekil": {
+      "dogru": 21,
+      "n": 21,
+      "oran": 1.0,
+      "aralik": [
+       0.8454,
+       1.0
+      ]
+     },
+     "ornek": {
+      "dogru": 21,
+      "n": 21,
+      "oran": 1.0,
+      "aralik": [
+       0.8454,
+       1.0
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 21,
+      "n": 21
+     },
+     "tek_turlu": {
+      "dogru": 19,
+      "n": 19
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 2545,
+      "pay": 21,
+      "dogru_pay": 21,
+      "oran": 0.008251
+     }
+    },
+    "export": {
+     "tekil": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "ornek": {
+      "dogru": 0,
+      "n": 0,
+      "oran": null,
+      "aralik": null
+     },
+     "yalniz_ana": {
+      "dogru": 0,
+      "n": 0
+     },
+     "tek_turlu": {
+      "dogru": 0,
+      "n": 0
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 0,
+      "n": 0
+     },
+     "kapsam": {
+      "nufus": 0,
+      "pay": 0,
+      "dogru_pay": 0,
+      "oran": null
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "dogru": 165,
+      "n": 172,
+      "oran": 0.959302,
+      "aralik": [
+       0.9184,
+       0.9801
+      ]
+     },
+     "ornek": {
+      "dogru": 165,
+      "n": 172,
+      "oran": 0.959302,
+      "aralik": [
+       0.9184,
+       0.9801
+      ]
+     },
+     "yalniz_ana": {
+      "dogru": 165,
+      "n": 172
+     },
+     "tek_turlu": {
+      "dogru": 163,
+      "n": 170
+     },
+     "klon": {
+      "dogru": 0,
+      "n": 0
+     },
+     "eslenemeyen": 0,
+     "parca": {
+      "dogru": 14,
+      "n": 14
+     },
+     "kapsam": {
+      "nufus": 2545,
+      "pay": 172,
+      "dogru_pay": 165,
+      "oran": 0.067583
+     }
+    }
+   }
+  }
+ },
+ "kararlar": {
+  "assert": {
+   "giren_birimler": [
+    "debian/coreutils",
+    "debian/redis-tools",
+    "debian/zstd"
+   ],
+   "giren_programlar": [
+    "coreutils",
+    "redis-tools",
+    "zstd"
+   ],
+   "kucuk_birimler": [],
+   "gorunumler": {
+    "tekil": {
+     "birim_kesinligi": {
+      "debian/coreutils": "29/34",
+      "debian/redis-tools": "22/30",
+      "debian/zstd": "137/164"
+     },
+     "program_kesinligi": {
+      "coreutils": {
+       "kesir": "29/34",
+       "oran": 0.852941
+      },
+      "redis-tools": {
+       "kesir": "11/15",
+       "oran": 0.733333
+      },
+      "zstd": {
+       "kesir": "137/164",
+       "oran": 0.835366
+      }
+     },
+     "makro": {
+      "kesir": "101273/125460",
+      "oran": 0.807213
+     },
+     "wilson_ust": {
+      "debian/coreutils": 0.9355,
+      "debian/redis-tools": 0.8582,
+      "debian/zstd": 0.8843
+     },
+     "wilson_ihlali": [
+      "debian/coreutils",
+      "debian/redis-tools",
+      "debian/zstd"
+     ]
+    },
+    "ornek": {
+     "birim_kesinligi": {
+      "debian/coreutils": "61/67",
+      "debian/redis-tools": "47/56",
+      "debian/zstd": "137/164"
+     },
+     "program_kesinligi": {
+      "coreutils": {
+       "kesir": "61/67",
+       "oran": 0.910448
+      },
+      "redis-tools": {
+       "kesir": "47/56",
+       "oran": 0.839286
+      },
+      "zstd": {
+       "kesir": "137/164",
+       "oran": 0.835366
+      }
+     },
+     "makro": {
+      "kesir": "132557/153832",
+      "oran": 0.8617
+     },
+     "wilson_ust": {
+      "debian/coreutils": 0.9583,
+      "debian/redis-tools": 0.9131,
+      "debian/zstd": 0.8843
+     },
+     "wilson_ihlali": [
+      "debian/redis-tools",
+      "debian/zstd"
+     ]
+    }
+   },
+   "karar_makrosu": {
+    "kesir": "101273/125460",
+    "oran": 0.807213
+   },
+   "esik_gecildi": false,
+   "karar": "kesin_degil",
+   "havuz": {
+    "dogru": 188,
+    "n": 228,
+    "oran": 0.824561,
+    "aralik": [
+     0.7699,
+     0.8684
+    ]
+   },
+   "havuz_ornek": {
+    "dogru": 245,
+    "n": 287,
+    "oran": 0.853659,
+    "aralik": [
+     0.8081,
+     0.8899
+    ]
+   }
+  },
+  "assert_ust": {
+   "giren_birimler": [],
+   "giren_programlar": [],
+   "kucuk_birimler": [
+    "debian/zstd",
+    "mac/tmux"
+   ],
+   "gorunumler": {
+    "tekil": {
+     "birim_kesinligi": {},
+     "program_kesinligi": {},
+     "makro": null,
+     "wilson_ust": {},
+     "wilson_ihlali": []
+    },
+    "ornek": {
+     "birim_kesinligi": {},
+     "program_kesinligi": {},
+     "makro": null,
+     "wilson_ust": {},
+     "wilson_ihlali": []
+    }
+   },
+   "karar_makrosu": null,
+   "esik_gecildi": null,
+   "karar": "yetersiz",
+   "havuz": {
+    "dogru": 5,
+    "n": 7,
+    "oran": 0.714286,
+    "aralik": [
+     0.3589,
+     0.9178
+    ]
+   },
+   "havuz_ornek": {
+    "dogru": 5,
+    "n": 7,
+    "oran": 0.714286,
+    "aralik": [
+     0.3589,
+     0.9178
+    ]
+   }
+  },
+  "func_kalibi": {
+   "giren_birimler": [
+    "debian/openssl",
+    "debian/tmux",
+    "mac/tmux"
+   ],
+   "giren_programlar": [
+    "openssl",
+    "tmux"
+   ],
+   "kucuk_birimler": [],
+   "gorunumler": {
+    "tekil": {
+     "birim_kesinligi": {
+      "debian/openssl": "15/15",
+      "debian/tmux": "91/97",
+      "mac/tmux": "143/150"
+     },
+     "program_kesinligi": {
+      "openssl": {
+       "kesir": "1/1",
+       "oran": 1.0
+      },
+      "tmux": {
+       "kesir": "27521/29100",
+       "oran": 0.945739
+      }
+     },
+     "makro": {
+      "kesir": "56621/58200",
+      "oran": 0.972869
+     },
+     "wilson_ust": {
+      "debian/openssl": 1.0,
+      "debian/tmux": 0.9713,
+      "mac/tmux": 0.9772
+     },
+     "wilson_ihlali": []
+    },
+    "ornek": {
+     "birim_kesinligi": {
+      "debian/openssl": "15/15",
+      "debian/tmux": "91/97",
+      "mac/tmux": "143/150"
+     },
+     "program_kesinligi": {
+      "openssl": {
+       "kesir": "1/1",
+       "oran": 1.0
+      },
+      "tmux": {
+       "kesir": "27521/29100",
+       "oran": 0.945739
+      }
+     },
+     "makro": {
+      "kesir": "56621/58200",
+      "oran": 0.972869
+     },
+     "wilson_ust": {
+      "debian/openssl": 1.0,
+      "debian/tmux": 0.9713,
+      "mac/tmux": 0.9772
+     },
+     "wilson_ihlali": []
+    }
+   },
+   "karar_makrosu": {
+    "kesir": "56621/58200",
+    "oran": 0.972869
+   },
+   "esik_gecildi": true,
+   "karar": "kesin",
+   "havuz": {
+    "dogru": 249,
+    "n": 262,
+    "oran": 0.950382,
+    "aralik": [
+     0.917,
+     0.9708
+    ]
+   },
+   "havuz_ornek": {
+    "dogru": 249,
+    "n": 262,
+    "oran": 0.950382,
+    "aralik": [
+     0.917,
+     0.9708
+    ]
+   }
+  },
+  "func_aktarma": {
+   "giren_birimler": [
+    "debian/tmux",
+    "mac/tmux"
+   ],
+   "giren_programlar": [
+    "tmux"
+   ],
+   "kucuk_birimler": [],
+   "gorunumler": {
+    "tekil": {
+     "birim_kesinligi": {
+      "debian/tmux": "15/15",
+      "mac/tmux": "21/21"
+     },
+     "program_kesinligi": {
+      "tmux": {
+       "kesir": "1/1",
+       "oran": 1.0
+      }
+     },
+     "makro": {
+      "kesir": "1/1",
+      "oran": 1.0
+     },
+     "wilson_ust": {
+      "debian/tmux": 1.0,
+      "mac/tmux": 1.0
+     },
+     "wilson_ihlali": []
+    },
+    "ornek": {
+     "birim_kesinligi": {
+      "debian/tmux": "15/15",
+      "mac/tmux": "21/21"
+     },
+     "program_kesinligi": {
+      "tmux": {
+       "kesir": "1/1",
+       "oran": 1.0
+      }
+     },
+     "makro": {
+      "kesir": "1/1",
+      "oran": 1.0
+     },
+     "wilson_ust": {
+      "debian/tmux": 1.0,
+      "mac/tmux": 1.0
+     },
+     "wilson_ihlali": []
+    }
+   },
+   "karar_makrosu": {
+    "kesir": "1/1",
+    "oran": 1.0
+   },
+   "esik_gecildi": true,
+   "karar": "yetersiz",
+   "havuz": {
+    "dogru": 36,
+    "n": 36,
+    "oran": 1.0,
+    "aralik": [
+     0.9036,
+     1.0
+    ]
+   },
+   "havuz_ornek": {
+    "dogru": 36,
+    "n": 36,
+    "oran": 1.0,
+    "aralik": [
+     0.9036,
+     1.0
+    ]
+   }
+  }
+ },
+ "rapor_satirlari": {
+  "export": {
+   "tekil": {
+    "dogru": 4224,
+    "n": 4224,
+    "oran": 1.0,
+    "aralik": [
+     0.9991,
+     1.0
+    ]
+   },
+   "ornek": {
+    "dogru": 8971,
+    "n": 8971,
+    "oran": 1.0,
+    "aralik": [
+     0.9996,
+     1.0
+    ]
+   }
+  },
+  "dizgi_turleri": {
+   "tekil": {
+    "dogru": 475,
+    "n": 530,
+    "oran": 0.896226,
+    "aralik": [
+     0.8673,
+     0.9194
+    ]
+   },
+   "ornek": {
+    "dogru": 532,
+    "n": 589,
+    "oran": 0.903226,
+    "aralik": [
+     0.8767,
+     0.9246
+    ]
+   }
+  }
+ },
+ "sinif": {
+  "debian/coreutils": {
+   "elf": 106,
+   "ic_fonksiyon": 14120,
+   "snake_dizgi": 97,
+   "dizgi_zenginligi": 0.00687,
+   "zenginlik_sinifi": "yoksul",
+   "ic_fonksiyon_ortanca": 112.0,
+   "boyut_tabakasi": "kucuk"
+  },
+  "debian/htop": {
+   "elf": 1,
+   "ic_fonksiyon": 609,
+   "snake_dizgi": 113,
+   "dizgi_zenginligi": 0.18555,
+   "zenginlik_sinifi": "zengin",
+   "ic_fonksiyon_ortanca": 609.0,
+   "boyut_tabakasi": "orta"
+  },
+  "debian/openssl": {
+   "elf": 1,
+   "ic_fonksiyon": 592,
+   "snake_dizgi": 404,
+   "dizgi_zenginligi": 0.682432,
+   "zenginlik_sinifi": "zengin",
+   "ic_fonksiyon_ortanca": 592.0,
+   "boyut_tabakasi": "orta"
+  },
+  "debian/redis-tools": {
+   "elf": 4,
+   "ic_fonksiyon": 10531,
+   "snake_dizgi": 225,
+   "dizgi_zenginligi": 0.021365,
+   "zenginlik_sinifi": "yoksul",
+   "ic_fonksiyon_ortanca": 2672.0,
+   "boyut_tabakasi": "buyuk"
+  },
+  "debian/sqlite3": {
+   "elf": 1,
+   "ic_fonksiyon": 429,
+   "snake_dizgi": 85,
+   "dizgi_zenginligi": 0.198135,
+   "zenginlik_sinifi": "zengin",
+   "ic_fonksiyon_ortanca": 429.0,
+   "boyut_tabakasi": "kucuk"
+  },
+  "debian/tmux": {
+   "elf": 1,
+   "ic_fonksiyon": 1920,
+   "snake_dizgi": 496,
+   "dizgi_zenginligi": 0.258333,
+   "zenginlik_sinifi": "zengin",
+   "ic_fonksiyon_ortanca": 1920.0,
+   "boyut_tabakasi": "orta"
+  },
+  "debian/tree": {
+   "elf": 1,
+   "ic_fonksiyon": 119,
+   "snake_dizgi": 0,
+   "dizgi_zenginligi": 0.0,
+   "zenginlik_sinifi": "yoksul",
+   "ic_fonksiyon_ortanca": 119.0,
+   "boyut_tabakasi": "kucuk"
+  },
+  "debian/zstd": {
+   "elf": 2,
+   "ic_fonksiyon": 1931,
+   "snake_dizgi": 6,
+   "dizgi_zenginligi": 0.003107,
+   "zenginlik_sinifi": "yoksul",
+   "ic_fonksiyon_ortanca": 965.5,
+   "boyut_tabakasi": "orta"
+  },
+  "mac/htop": {
+   "elf": 1,
+   "ic_fonksiyon": 597,
+   "snake_dizgi": 58,
+   "dizgi_zenginligi": 0.097152,
+   "zenginlik_sinifi": "zengin",
+   "ic_fonksiyon_ortanca": 597.0,
+   "boyut_tabakasi": "orta"
+  },
+  "mac/tmux": {
+   "elf": 1,
+   "ic_fonksiyon": 2588,
+   "snake_dizgi": 986,
+   "dizgi_zenginligi": 0.380989,
+   "zenginlik_sinifi": "zengin",
+   "ic_fonksiyon_ortanca": 2588.0,
+   "boyut_tabakasi": "buyuk"
+  }
+ },
+ "kirilganlik": {
+  "func_kalibi": {
+   "debian/openssl": {
+    "ek_yanlis": 1,
+    "bozan_kosul": "makro",
+    "karar_makrosu": {
+     "kesir": "18227/19400",
+     "oran": 0.939536
+    }
+   },
+   "debian/tmux": {
+    "ek_yanlis": 4,
+    "bozan_kosul": "wilson",
+    "karar_makrosu": {
+     "kesir": "56021/58200",
+     "oran": 0.96256
+    }
+   },
+   "mac/tmux": {
+    "ek_yanlis": 6,
+    "bozan_kosul": "wilson",
+    "karar_makrosu": {
+     "kesir": "56039/58200",
+     "oran": 0.962869
+    }
+   }
+  }
+ },
+ "kural_yollari": {
+  "tekil_oge_karar_satirlarinda": 533,
+  "cok_ornekli_tekil_oge": 21,
+  "ornekleri_karisik_hukumlu_tekil_oge": 0,
+  "eslenemeyen_capa": 0,
+  "klon_satirina_dusen_dizgi_capasi": 37,
+  "cok_takma_adli_gt_ye_dusen_dizgi_capasi": 0,
+  "cok_takma_adli_gt_ye_dusen_export_capasi": 4,
+  "cok_turlu_capa": 3,
+  "mach_o_dizgi_capasi": 186
+ },
+ "yanlis_capalar": [
+  {
+   "birim": "mac/tmux",
+   "elf": "tmux",
+   "adres": "10000928c",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "mac/tmux",
+   "elf": "tmux",
+   "adres": "10003d3b0",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "mac/tmux",
+   "elf": "tmux",
+   "adres": "100040f08",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "mac/tmux",
+   "elf": "tmux",
+   "adres": "1000424c4",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "mac/tmux",
+   "elf": "tmux",
+   "adres": "100063cc0",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "mac/tmux",
+   "elf": "tmux",
+   "adres": "100077dc0",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "mac/tmux",
+   "elf": "tmux",
+   "adres": "10007f360",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/coreutils",
+   "elf": "base32",
+   "adres": "1025e0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/coreutils",
+   "elf": "basenc",
+   "adres": "1026e0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/coreutils",
+   "elf": "du",
+   "adres": "1034e0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/coreutils",
+   "elf": "factor",
+   "adres": "104fc8",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/coreutils",
+   "elf": "mv",
+   "adres": "10ccc0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/coreutils",
+   "elf": "touch",
+   "adres": "1036a0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/redis-tools",
+   "elf": "redis-benchmark",
+   "adres": "113a70",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/redis-tools",
+   "elf": "redis-benchmark",
+   "adres": "114bc0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/redis-tools",
+   "elf": "redis-check-aof",
+   "adres": "2fcdd0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/redis-tools",
+   "elf": "redis-check-rdb",
+   "adres": "2fcdd0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/redis-tools",
+   "elf": "redis-cli",
+   "adres": "12b3c0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/redis-tools",
+   "elf": "redis-cli",
+   "adres": "133640",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/redis-tools",
+   "elf": "redis-cli",
+   "adres": "1344c0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "klon",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/redis-tools",
+   "elf": "redis-cli",
+   "adres": "13494c",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "klon",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/redis-tools",
+   "elf": "redis-cli",
+   "adres": "135b20",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "klon",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/tmux",
+   "elf": "tmux",
+   "adres": "12fac4",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/tmux",
+   "elf": "tmux",
+   "adres": "131704",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/tmux",
+   "elf": "tmux",
+   "adres": "1346e0",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/tmux",
+   "elf": "tmux",
+   "adres": "1596e8",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/tmux",
+   "elf": "tmux",
+   "adres": "18e904",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/tmux",
+   "elf": "tmux",
+   "adres": "194500",
+   "satirlar": [
+    "func_kalibi",
+    "dizgi_turleri"
+   ],
+   "sinif": "klon",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "10a480",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "10b090",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "10e6c0",
+   "satirlar": [
+    "assert_ust",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "111be0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "11d388",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1219a0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "123404",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "123d80",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "12aeac",
+   "satirlar": [
+    "assert_ust",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "12b070",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "12d3c8",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "12f4a0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "133280",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "19e780",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "19eb60",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1a3720",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1a5008",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1a7fa0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1b0d00",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1b4660",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1b4a90",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "klon",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1bb2b0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1c2948",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1d7960",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1de060",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "klon",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1de328",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1e3f00",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1edfe0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  },
+  {
+   "birim": "debian/zstd",
+   "elf": "zstd",
+   "adres": "1ef7e0",
+   "satirlar": [
+    "assert",
+    "dizgi_turleri"
+   ],
+   "sinif": "ana",
+   "gt_takma_ad_sayisi": 1
+  }
+ ],
+ "duyarlilik": {
+  "cpp_ikili_tablosu": {
+   "tanim": "C++ işareti Ghidra adları yerine ikilinin içe aktarma tablosundan",
+   "iki_kaynagin_ayristigi_ikililer": [
+    "debian/redis-tools:redis-check-aof",
+    "debian/redis-tools:redis-check-rdb"
+   ],
+   "ayrinti": {
+    "debian/redis-tools:redis-check-aof": {
+     "ice_aktarilan_ad": 326,
+     "isaretli_ice_aktarilan": 1,
+     "gt_fonksiyon": 4758,
+     "gt_mangled_adli": 7,
+     "dizgi_capasi": 9,
+     "dizgi_capasi_dogru": 8,
+     "mangled_gt_ye_dusen_dizgi_capasi": 0
+    },
+    "debian/redis-tools:redis-check-rdb": {
+     "ice_aktarilan_ad": 326,
+     "isaretli_ice_aktarilan": 1,
+     "gt_fonksiyon": 4758,
+     "gt_mangled_adli": 7,
+     "dizgi_capasi": 9,
+     "dizgi_capasi_dogru": 8,
+     "mangled_gt_ye_dusen_dizgi_capasi": 0
+    }
+   },
+   "degisen_birimler": {
+    "debian/redis-tools": {
+     "elf_sayisi": 2,
+     "cpp_disarida": [
+      "redis-check-aof",
+      "redis-check-rdb"
+     ],
+     "yinelenen_disarida": [],
+     "nufus": 211,
+     "export_gt": 855,
+     "satirlar": {
+      "assert": {
+       "tekil": {
+        "dogru": 22,
+        "n": 29,
+        "oran": 0.758621,
+        "aralik": [
+         0.5789,
+         0.8778
+        ]
+       },
+       "ornek": {
+        "dogru": 31,
+        "n": 38,
+        "oran": 0.815789,
+        "aralik": [
+         0.6658,
+         0.9078
+        ]
+       },
+       "yalniz_ana": {
+        "dogru": 20,
+        "n": 24
+       },
+       "tek_turlu": {
+        "dogru": 22,
+        "n": 29
+       },
+       "klon": {
+        "dogru": 2,
+        "n": 5
+       },
+       "eslenemeyen": 0,
+       "parca": {
+        "dogru": 0,
+        "n": 0
+       },
+       "kapsam": {
+        "nufus": 211,
+        "pay": 33,
+        "dogru_pay": 29,
+        "oran": 0.156398
+       }
+      },
+      "assert_ust": {
+       "tekil": {
+        "dogru": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "ornek": {
+        "dogru": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "yalniz_ana": {
+        "dogru": 0,
+        "n": 0
+       },
+       "tek_turlu": {
+        "dogru": 0,
+        "n": 0
+       },
+       "klon": {
+        "dogru": 0,
+        "n": 0
+       },
+       "eslenemeyen": 0,
+       "parca": {
+        "dogru": 0,
+        "n": 0
+       },
+       "kapsam": {
+        "nufus": 211,
+        "pay": 0,
+        "dogru_pay": 0,
+        "oran": 0.0
+       }
+      },
+      "func_kalibi": {
+       "tekil": {
+        "dogru": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "ornek": {
+        "dogru": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "yalniz_ana": {
+        "dogru": 0,
+        "n": 0
+       },
+       "tek_turlu": {
+        "dogru": 0,
+        "n": 0
+       },
+       "klon": {
+        "dogru": 0,
+        "n": 0
+       },
+       "eslenemeyen": 0,
+       "parca": {
+        "dogru": 0,
+        "n": 0
+       },
+       "kapsam": {
+        "nufus": 211,
+        "pay": 0,
+        "dogru_pay": 0,
+        "oran": 0.0
+       }
+      },
+      "func_aktarma": {
+       "tekil": {
+        "dogru": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "ornek": {
+        "dogru": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "yalniz_ana": {
+        "dogru": 0,
+        "n": 0
+       },
+       "tek_turlu": {
+        "dogru": 0,
+        "n": 0
+       },
+       "klon": {
+        "dogru": 0,
+        "n": 0
+       },
+       "eslenemeyen": 0,
+       "parca": {
+        "dogru": 0,
+        "n": 0
+       },
+       "kapsam": {
+        "nufus": 211,
+        "pay": 0,
+        "dogru_pay": 0,
+        "oran": 0.0
+       }
+      },
+      "export": {
+       "tekil": {
+        "dogru": 441,
+        "n": 441,
+        "oran": 1.0,
+        "aralik": [
+         0.9914,
+         1.0
+        ]
+       },
+       "ornek": {
+        "dogru": 822,
+        "n": 822,
+        "oran": 1.0,
+        "aralik": [
+         0.9953,
+         1.0
+        ]
+       },
+       "yalniz_ana": {
+        "dogru": 441,
+        "n": 441
+       },
+       "tek_turlu": {
+        "dogru": 441,
+        "n": 441
+       },
+       "klon": {
+        "dogru": 0,
+        "n": 0
+       },
+       "eslenemeyen": 0,
+       "parca": {
+        "dogru": 0,
+        "n": 0
+       },
+       "kapsam": {
+        "nufus": 855,
+        "pay": 822,
+        "dogru_pay": 822,
+        "oran": 0.961404
+       }
+      },
+      "dizgi_turleri": {
+       "tekil": {
+        "dogru": 22,
+        "n": 29,
+        "oran": 0.758621,
+        "aralik": [
+         0.5789,
+         0.8778
+        ]
+       },
+       "ornek": {
+        "dogru": 31,
+        "n": 38,
+        "oran": 0.815789,
+        "aralik": [
+         0.6658,
+         0.9078
+        ]
+       },
+       "yalniz_ana": {
+        "dogru": 20,
+        "n": 24
+       },
+       "tek_turlu": {
+        "dogru": 22,
+        "n": 29
+       },
+       "klon": {
+        "dogru": 2,
+        "n": 5
+       },
+       "eslenemeyen": 0,
+       "parca": {
+        "dogru": 0,
+        "n": 0
+       },
+       "kapsam": {
+        "nufus": 211,
+        "pay": 33,
+        "dogru_pay": 29,
+        "oran": 0.156398
+       }
+      }
+     }
+    }
+   },
+   "kararlar": {
+    "assert": {
+     "karar": "kesin_degil",
+     "karar_makrosu": {
+      "kesir": "197839/242556",
+      "oran": 0.815643
+     },
+     "giren_programlar": [
+      "coreutils",
+      "redis-tools",
+      "zstd"
+     ],
+     "tekil": {
+      "birim_kesinligi": {
+       "debian/coreutils": "29/34",
+       "debian/redis-tools": "22/29",
+       "debian/zstd": "137/164"
+      },
+      "makro": {
+       "kesir": "197839/242556",
+       "oran": 0.815643
+      },
+      "wilson_ihlali": [
+       "debian/coreutils",
+       "debian/redis-tools",
+       "debian/zstd"
+      ]
+     },
+     "ornek": {
+      "birim_kesinligi": {
+       "debian/coreutils": "61/67",
+       "debian/redis-tools": "31/38",
+       "debian/zstd": "137/164"
+      },
+      "makro": {
+       "kesir": "534791/626316",
+       "oran": 0.853868
+      },
+      "wilson_ihlali": [
+       "debian/redis-tools",
+       "debian/zstd"
+      ]
+     }
+    },
+    "assert_ust": {
+     "karar": "yetersiz",
+     "karar_makrosu": null,
+     "giren_programlar": [],
+     "tekil": {
+      "birim_kesinligi": {},
+      "makro": null,
+      "wilson_ihlali": []
+     },
+     "ornek": {
+      "birim_kesinligi": {},
+      "makro": null,
+      "wilson_ihlali": []
+     }
+    },
+    "func_kalibi": {
+     "karar": "kesin",
+     "karar_makrosu": {
+      "kesir": "56621/58200",
+      "oran": 0.972869
+     },
+     "giren_programlar": [
+      "openssl",
+      "tmux"
+     ],
+     "tekil": {
+      "birim_kesinligi": {
+       "debian/openssl": "15/15",
+       "debian/tmux": "91/97",
+       "mac/tmux": "143/150"
+      },
+      "makro": {
+       "kesir": "56621/58200",
+       "oran": 0.972869
+      },
+      "wilson_ihlali": []
+     },
+     "ornek": {
+      "birim_kesinligi": {
+       "debian/openssl": "15/15",
+       "debian/tmux": "91/97",
+       "mac/tmux": "143/150"
+      },
+      "makro": {
+       "kesir": "56621/58200",
+       "oran": 0.972869
+      },
+      "wilson_ihlali": []
+     }
+    },
+    "func_aktarma": {
+     "karar": "yetersiz",
+     "karar_makrosu": {
+      "kesir": "1/1",
+      "oran": 1.0
+     },
+     "giren_programlar": [
+      "tmux"
+     ],
+     "tekil": {
+      "birim_kesinligi": {
+       "debian/tmux": "15/15",
+       "mac/tmux": "21/21"
+      },
+      "makro": {
+       "kesir": "1/1",
+       "oran": 1.0
+      },
+      "wilson_ihlali": []
+     },
+     "ornek": {
+      "birim_kesinligi": {
+       "debian/tmux": "15/15",
+       "mac/tmux": "21/21"
+      },
+      "makro": {
+       "kesir": "1/1",
+       "oran": 1.0
+      },
+      "wilson_ihlali": []
+     }
+    }
+   },
+   "rapor_satirlari": {
+    "export": {
+     "tekil": {
+      "dogru": 810,
+      "n": 810,
+      "oran": 1.0,
+      "aralik": [
+       0.9953,
+       1.0
+      ]
+     },
+     "ornek": {
+      "dogru": 1399,
+      "n": 1399,
+      "oran": 1.0,
+      "aralik": [
+       0.9973,
+       1.0
+      ]
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "dogru": 475,
+      "n": 529,
+      "oran": 0.897921,
+      "aralik": [
+       0.8692,
+       0.9209
+      ]
+     },
+     "ornek": {
+      "dogru": 516,
+      "n": 571,
+      "oran": 0.903678,
+      "aralik": [
+       0.8767,
+       0.9252
+      ]
+     }
+    }
+   }
+  },
+  "yinelenen_ikili_tek": {
+   "tanim": "birim içinde sha256'sı aynı ikililerden yalnız ilki sayılır",
+   "ayni_ozetli_ikililer": [
+    "debian/redis-tools:redis-check-aof",
+    "debian/redis-tools:redis-check-rdb"
+   ],
+   "farkli_dosya_sayisi": 118,
+   "degisen_birimler": {
+    "debian/redis-tools": {
+     "elf_sayisi": 3,
+     "cpp_disarida": [],
+     "yinelenen_disarida": [
+      "redis-check-rdb"
+     ],
+     "nufus": 835,
+     "export_gt": 4697,
+     "satirlar": {
+      "assert": {
+       "tekil": {
+        "dogru": 22,
+        "n": 30,
+        "oran": 0.733333,
+        "aralik": [
+         0.5555,
+         0.8582
+        ]
+       },
+       "ornek": {
+        "dogru": 39,
+        "n": 47,
+        "oran": 0.829787,
+        "aralik": [
+         0.6986,
+         0.9111
+        ]
+       },
+       "yalniz_ana": {
+        "dogru": 20,
+        "n": 25
+       },
+       "tek_turlu": {
+        "dogru": 22,
+        "n": 30
+       },
+       "klon": {
+        "dogru": 2,
+        "n": 5
+       },
+       "eslenemeyen": 0,
+       "parca": {
+        "dogru": 0,
+        "n": 0
+       },
+       "kapsam": {
+        "nufus": 835,
+        "pay": 42,
+        "dogru_pay": 37,
+        "oran": 0.050299
+       }
+      },
+      "assert_ust": {
+       "tekil": {
+        "dogru": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "ornek": {
+        "dogru": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "yalniz_ana": {
+        "dogru": 0,
+        "n": 0
+       },
+       "tek_turlu": {
+        "dogru": 0,
+        "n": 0
+       },
+       "klon": {
+        "dogru": 0,
+        "n": 0
+       },
+       "eslenemeyen": 0,
+       "parca": {
+        "dogru": 0,
+        "n": 0
+       },
+       "kapsam": {
+        "nufus": 835,
+        "pay": 0,
+        "dogru_pay": 0,
+        "oran": 0.0
+       }
+      },
+      "func_kalibi": {
+       "tekil": {
+        "dogru": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "ornek": {
+        "dogru": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "yalniz_ana": {
+        "dogru": 0,
+        "n": 0
+       },
+       "tek_turlu": {
+        "dogru": 0,
+        "n": 0
+       },
+       "klon": {
+        "dogru": 0,
+        "n": 0
+       },
+       "eslenemeyen": 0,
+       "parca": {
+        "dogru": 0,
+        "n": 0
+       },
+       "kapsam": {
+        "nufus": 835,
+        "pay": 0,
+        "dogru_pay": 0,
+        "oran": 0.0
+       }
+      },
+      "func_aktarma": {
+       "tekil": {
+        "dogru": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "ornek": {
+        "dogru": 0,
+        "n": 0,
+        "oran": null,
+        "aralik": null
+       },
+       "yalniz_ana": {
+        "dogru": 0,
+        "n": 0
+       },
+       "tek_turlu": {
+        "dogru": 0,
+        "n": 0
+       },
+       "klon": {
+        "dogru": 0,
+        "n": 0
+       },
+       "eslenemeyen": 0,
+       "parca": {
+        "dogru": 0,
+        "n": 0
+       },
+       "kapsam": {
+        "nufus": 835,
+        "pay": 0,
+        "dogru_pay": 0,
+        "oran": 0.0
+       }
+      },
+      "export": {
+       "tekil": {
+        "dogru": 3855,
+        "n": 3855,
+        "oran": 1.0,
+        "aralik": [
+         0.999,
+         1.0
+        ]
+       },
+       "ornek": {
+        "dogru": 4608,
+        "n": 4608,
+        "oran": 1.0,
+        "aralik": [
+         0.9992,
+         1.0
+        ]
+       },
+       "yalniz_ana": {
+        "dogru": 3855,
+        "n": 3855
+       },
+       "tek_turlu": {
+        "dogru": 3855,
+        "n": 3855
+       },
+       "klon": {
+        "dogru": 0,
+        "n": 0
+       },
+       "eslenemeyen": 0,
+       "parca": {
+        "dogru": 0,
+        "n": 0
+       },
+       "kapsam": {
+        "nufus": 4697,
+        "pay": 4608,
+        "dogru_pay": 4608,
+        "oran": 0.981052
+       }
+      },
+      "dizgi_turleri": {
+       "tekil": {
+        "dogru": 22,
+        "n": 30,
+        "oran": 0.733333,
+        "aralik": [
+         0.5555,
+         0.8582
+        ]
+       },
+       "ornek": {
+        "dogru": 39,
+        "n": 47,
+        "oran": 0.829787,
+        "aralik": [
+         0.6986,
+         0.9111
+        ]
+       },
+       "yalniz_ana": {
+        "dogru": 20,
+        "n": 25
+       },
+       "tek_turlu": {
+        "dogru": 22,
+        "n": 30
+       },
+       "klon": {
+        "dogru": 2,
+        "n": 5
+       },
+       "eslenemeyen": 0,
+       "parca": {
+        "dogru": 0,
+        "n": 0
+       },
+       "kapsam": {
+        "nufus": 835,
+        "pay": 42,
+        "dogru_pay": 37,
+        "oran": 0.050299
+       }
+      }
+     }
+    }
+   },
+   "kararlar": {
+    "assert": {
+     "karar": "kesin_degil",
+     "karar_makrosu": {
+      "kesir": "101273/125460",
+      "oran": 0.807213
+     },
+     "giren_programlar": [
+      "coreutils",
+      "redis-tools",
+      "zstd"
+     ],
+     "tekil": {
+      "birim_kesinligi": {
+       "debian/coreutils": "29/34",
+       "debian/redis-tools": "22/30",
+       "debian/zstd": "137/164"
+      },
+      "makro": {
+       "kesir": "101273/125460",
+       "oran": 0.807213
+      },
+      "wilson_ihlali": [
+       "debian/coreutils",
+       "debian/redis-tools",
+       "debian/zstd"
+      ]
+     },
+     "ornek": {
+      "birim_kesinligi": {
+       "debian/coreutils": "61/67",
+       "debian/redis-tools": "39/47",
+       "debian/zstd": "137/164"
+      },
+      "makro": {
+       "kesir": "1330133/1549308",
+       "oran": 0.858534
+      },
+      "wilson_ihlali": [
+       "debian/redis-tools",
+       "debian/zstd"
+      ]
+     }
+    },
+    "assert_ust": {
+     "karar": "yetersiz",
+     "karar_makrosu": null,
+     "giren_programlar": [],
+     "tekil": {
+      "birim_kesinligi": {},
+      "makro": null,
+      "wilson_ihlali": []
+     },
+     "ornek": {
+      "birim_kesinligi": {},
+      "makro": null,
+      "wilson_ihlali": []
+     }
+    },
+    "func_kalibi": {
+     "karar": "kesin",
+     "karar_makrosu": {
+      "kesir": "56621/58200",
+      "oran": 0.972869
+     },
+     "giren_programlar": [
+      "openssl",
+      "tmux"
+     ],
+     "tekil": {
+      "birim_kesinligi": {
+       "debian/openssl": "15/15",
+       "debian/tmux": "91/97",
+       "mac/tmux": "143/150"
+      },
+      "makro": {
+       "kesir": "56621/58200",
+       "oran": 0.972869
+      },
+      "wilson_ihlali": []
+     },
+     "ornek": {
+      "birim_kesinligi": {
+       "debian/openssl": "15/15",
+       "debian/tmux": "91/97",
+       "mac/tmux": "143/150"
+      },
+      "makro": {
+       "kesir": "56621/58200",
+       "oran": 0.972869
+      },
+      "wilson_ihlali": []
+     }
+    },
+    "func_aktarma": {
+     "karar": "yetersiz",
+     "karar_makrosu": {
+      "kesir": "1/1",
+      "oran": 1.0
+     },
+     "giren_programlar": [
+      "tmux"
+     ],
+     "tekil": {
+      "birim_kesinligi": {
+       "debian/tmux": "15/15",
+       "mac/tmux": "21/21"
+      },
+      "makro": {
+       "kesir": "1/1",
+       "oran": 1.0
+      },
+      "wilson_ihlali": []
+     },
+     "ornek": {
+      "birim_kesinligi": {
+       "debian/tmux": "15/15",
+       "mac/tmux": "21/21"
+      },
+      "makro": {
+       "kesir": "1/1",
+       "oran": 1.0
+      },
+      "wilson_ihlali": []
+     }
+    }
+   },
+   "rapor_satirlari": {
+    "export": {
+     "tekil": {
+      "dogru": 4224,
+      "n": 4224,
+      "oran": 1.0,
+      "aralik": [
+       0.9991,
+       1.0
+      ]
+     },
+     "ornek": {
+      "dogru": 5185,
+      "n": 5185,
+      "oran": 1.0,
+      "aralik": [
+       0.9993,
+       1.0
+      ]
+     }
+    },
+    "dizgi_turleri": {
+     "tekil": {
+      "dogru": 475,
+      "n": 530,
+      "oran": 0.896226,
+      "aralik": [
+       0.8673,
+       0.9194
+      ]
+     },
+     "ornek": {
+      "dogru": 524,
+      "n": 580,
+      "oran": 0.903448,
+      "aralik": [
+       0.8767,
+       0.9249
+      ]
+     }
+    }
+   }
+  },
+  "nufus_uzlastirma": {
+   "tanim": "CRT listesine libc_nonshared sarmalayıcısı eklenir; Ghidra'nın caseD_N adı da ad bekleyen sayılır",
+   "birim_nufusu": {
+    "debian/coreutils": {
+     "bagimsiz": 12822,
+     "uzlastirma": 12717
+    },
+    "debian/htop": {
+     "bagimsiz": 222,
+     "uzlastirma": 222
+    },
+    "debian/openssl": {
+     "bagimsiz": 563,
+     "uzlastirma": 563
+    },
+    "debian/redis-tools": {
+     "bagimsiz": 1459,
+     "uzlastirma": 1458
+    },
+    "debian/sqlite3": {
+     "bagimsiz": 390,
+     "uzlastirma": 389
+    },
+    "debian/tmux": {
+     "bagimsiz": 1851,
+     "uzlastirma": 1851
+    },
+    "debian/tree": {
+     "bagimsiz": 110,
+     "uzlastirma": 110
+    },
+    "debian/zstd": {
+     "bagimsiz": 913,
+     "uzlastirma": 919
+    },
+    "mac/htop": {
+     "bagimsiz": 597,
+     "uzlastirma": 597
+    },
+    "mac/tmux": {
+     "bagimsiz": 2545,
+     "uzlastirma": 2545
+    }
+   },
+   "fark_dokumu": {
+    "debian/coreutils": {
+     "farkli_elf": 105,
+     "yalniz_bagimsiz": 105,
+     "yalniz_uzlastirma": 0,
+     "ornek": [
+      {
+       "elf": "[",
+       "ghidra_adresi": "1081e0",
+       "yon": "yalniz_bagimsiz"
+      },
+      {
+       "elf": "arch",
+       "ghidra_adresi": "1069e0",
+       "yon": "yalniz_bagimsiz"
+      },
+      {
+       "elf": "b2sum",
+       "ghidra_adresi": "10ae80",
+       "yon": "yalniz_bagimsiz"
+      },
+      {
+       "elf": "base32",
+       "ghidra_adresi": "1081e0",
+       "yon": "yalniz_bagimsiz"
+      },
+      {
+       "elf": "base64",
+       "ghidra_adresi": "108020",
+       "yon": "yalniz_bagimsiz"
+      },
+      {
+       "elf": "basename",
+       "ghidra_adresi": "106960",
+       "yon": "yalniz_bagimsiz"
+      }
+     ]
+    },
+    "debian/redis-tools": {
+     "farkli_elf": 1,
+     "yalniz_bagimsiz": 1,
+     "yalniz_uzlastirma": 0,
+     "ornek": [
+      {
+       "elf": "redis-cli",
+       "ghidra_adresi": "15f720",
+       "yon": "yalniz_bagimsiz"
+      }
+     ]
+    },
+    "debian/sqlite3": {
+     "farkli_elf": 1,
+     "yalniz_bagimsiz": 1,
+     "yalniz_uzlastirma": 0,
+     "ornek": [
+      {
+       "elf": "sqlite3",
+       "ghidra_adresi": "138f60",
+       "yon": "yalniz_bagimsiz"
+      }
+     ]
+    },
+    "debian/zstd": {
+     "farkli_elf": 1,
+     "yalniz_bagimsiz": 0,
+     "yalniz_uzlastirma": 6,
+     "ornek": [
+      {
+       "elf": "zstd",
+       "ghidra_adresi": "1cb840",
+       "yon": "yalniz_uzlastirma"
+      },
+      {
+       "elf": "zstd",
+       "ghidra_adresi": "1cd0e0",
+       "yon": "yalniz_uzlastirma"
+      },
+      {
+       "elf": "zstd",
+       "ghidra_adresi": "1d1da0",
+       "yon": "yalniz_uzlastirma"
+      },
+      {
+       "elf": "zstd",
+       "ghidra_adresi": "1d3640",
+       "yon": "yalniz_uzlastirma"
+      },
+      {
+       "elf": "zstd",
+       "ghidra_adresi": "1d938c",
+       "yon": "yalniz_uzlastirma"
+      },
+      {
+       "elf": "zstd",
+       "ghidra_adresi": "1da060",
+       "yon": "yalniz_uzlastirma"
+      }
+     ]
+    }
+   },
+   "farkli_elf_sayisi": 108
+  }
+ },
+ "karsilastirma": {
+  "olcum": "docs/arge/2026-10-21_g11_n1/ks1_olcum.json",
+  "olcum_sha256": "d7056fcd49ca34a212bd5e76b697813be85e9cf3a390db49ec6c6b87423182c2",
+  "hucre": 1868,
+  "tutan": 1736,
+  "farkli": 132,
+  "gruplar": {
+   "birim": {
+    "hucre": 30,
+    "farkli": 0
+   },
+   "elf_kunyesi": {
+    "hucre": 468,
+    "farkli": 0
+   },
+   "export_paydasi": {
+    "hucre": 10,
+    "farkli": 0
+   },
+   "karar": {
+    "hucre": 80,
+    "farkli": 0
+   },
+   "kesinlik_ve_pay": {
+    "hucre": 1020,
+    "farkli": 0
+   },
+   "nufus": {
+    "hucre": 178,
+    "farkli": 132
+   },
+   "program_sinifi": {
+    "hucre": 70,
+    "farkli": 0
+   },
+   "rapor_satiri": {
+    "hucre": 12,
+    "farkli": 0
+   }
+  },
+  "farklar": [
+   {
+    "hucre": "birim|debian/coreutils|nufus",
+    "bagimsiz": 12822,
+    "olcum": 12717
+   },
+   {
+    "hucre": "birim|debian/redis-tools|nufus",
+    "bagimsiz": 1459,
+    "olcum": 1458
+   },
+   {
+    "hucre": "birim|debian/sqlite3|nufus",
+    "bagimsiz": 390,
+    "olcum": 389
+   },
+   {
+    "hucre": "birim|debian/zstd|nufus",
+    "bagimsiz": 913,
+    "olcum": 919
+   },
+   {
+    "hucre": "elf|debian/coreutils|[|nufus",
+    "bagimsiz": 97,
+    "olcum": 96
+   },
+   {
+    "hucre": "elf|debian/coreutils|arch|nufus",
+    "bagimsiz": 86,
+    "olcum": 85
+   },
+   {
+    "hucre": "elf|debian/coreutils|b2sum|nufus",
+    "bagimsiz": 104,
+    "olcum": 103
+   },
+   {
+    "hucre": "elf|debian/coreutils|base32|nufus",
+    "bagimsiz": 100,
+    "olcum": 99
+   },
+   {
+    "hucre": "elf|debian/coreutils|base64|nufus",
+    "bagimsiz": 100,
+    "olcum": 99
+   },
+   {
+    "hucre": "elf|debian/coreutils|basename|nufus",
+    "bagimsiz": 90,
+    "olcum": 89
+   },
+   {
+    "hucre": "elf|debian/coreutils|basenc|nufus",
+    "bagimsiz": 142,
+    "olcum": 141
+   },
+   {
+    "hucre": "elf|debian/coreutils|cat|nufus",
+    "bagimsiz": 96,
+    "olcum": 95
+   },
+   {
+    "hucre": "elf|debian/coreutils|chcon|nufus",
+    "bagimsiz": 163,
+    "olcum": 162
+   },
+   {
+    "hucre": "elf|debian/coreutils|chgrp|nufus",
+    "bagimsiz": 157,
+    "olcum": 156
+   },
+   {
+    "hucre": "elf|debian/coreutils|chmod|nufus",
+    "bagimsiz": 152,
+    "olcum": 151
+   },
+   {
+    "hucre": "elf|debian/coreutils|chown|nufus",
+    "bagimsiz": 157,
+    "olcum": 156
+   },
+   {
+    "hucre": "elf|debian/coreutils|chroot|nufus",
+    "bagimsiz": 94,
+    "olcum": 93
+   },
+   {
+    "hucre": "elf|debian/coreutils|cksum|nufus",
+    "bagimsiz": 170,
+    "olcum": 169
+   },
+   {
+    "hucre": "elf|debian/coreutils|comm|nufus",
+    "bagimsiz": 106,
+    "olcum": 105
+   },
+   {
+    "hucre": "elf|debian/coreutils|cp|nufus",
+    "bagimsiz": 281,
+    "olcum": 280
+   },
+   {
+    "hucre": "elf|debian/coreutils|csplit|nufus",
+    "bagimsiz": 112,
+    "olcum": 111
+   },
+   {
+    "hucre": "elf|debian/coreutils|cut|nufus",
+    "bagimsiz": 101,
+    "olcum": 100
+   },
+   {
+    "hucre": "elf|debian/coreutils|date|nufus",
+    "bagimsiz": 120,
+    "olcum": 119
+   },
+   {
+    "hucre": "elf|debian/coreutils|dd|nufus",
+    "bagimsiz": 136,
+    "olcum": 135
+   },
+   {
+    "hucre": "elf|debian/coreutils|df|nufus",
+    "bagimsiz": 177,
+    "olcum": 176
+   },
+   {
+    "hucre": "elf|debian/coreutils|dircolors|nufus",
+    "bagimsiz": 98,
+    "olcum": 97
+   },
+   {
+    "hucre": "elf|debian/coreutils|dirname|nufus",
+    "bagimsiz": 89,
+    "olcum": 88
+   },
+   {
+    "hucre": "elf|debian/coreutils|dir|nufus",
+    "bagimsiz": 298,
+    "olcum": 297
+   },
+   {
+    "hucre": "elf|debian/coreutils|du|nufus",
+    "bagimsiz": 216,
+    "olcum": 215
+   },
+   {
+    "hucre": "elf|debian/coreutils|echo|nufus",
+    "bagimsiz": 86,
+    "olcum": 85
+   },
+   {
+    "hucre": "elf|debian/coreutils|env|nufus",
+    "bagimsiz": 92,
+    "olcum": 91
+   },
+   {
+    "hucre": "elf|debian/coreutils|expand|nufus",
+    "bagimsiz": 98,
+    "olcum": 97
+   },
+   {
+    "hucre": "elf|debian/coreutils|expr|nufus",
+    "bagimsiz": 100,
+    "olcum": 99
+   },
+   {
+    "hucre": "elf|debian/coreutils|factor|nufus",
+    "bagimsiz": 112,
+    "olcum": 111
+   },
+   {
+    "hucre": "elf|debian/coreutils|false|nufus",
+    "bagimsiz": 85,
+    "olcum": 84
+   },
+   {
+    "hucre": "elf|debian/coreutils|fmt|nufus",
+    "bagimsiz": 101,
+    "olcum": 100
+   },
+   {
+    "hucre": "elf|debian/coreutils|fold|nufus",
+    "bagimsiz": 92,
+    "olcum": 91
+   },
+   {
+    "hucre": "elf|debian/coreutils|groups|nufus",
+    "bagimsiz": 89,
+    "olcum": 88
+   },
+   {
+    "hucre": "elf|debian/coreutils|head|nufus",
+    "bagimsiz": 97,
+    "olcum": 96
+   },
+   {
+    "hucre": "elf|debian/coreutils|hostid|nufus",
+    "bagimsiz": 87,
+    "olcum": 86
+   },
+   {
+    "hucre": "elf|debian/coreutils|id|nufus",
+    "bagimsiz": 95,
+    "olcum": 94
+   },
+   {
+    "hucre": "elf|debian/coreutils|install|nufus",
+    "bagimsiz": 298,
+    "olcum": 297
+   },
+   {
+    "hucre": "elf|debian/coreutils|join|nufus",
+    "bagimsiz": 124,
+    "olcum": 123
+   },
+   {
+    "hucre": "elf|debian/coreutils|link|nufus",
+    "bagimsiz": 87,
+    "olcum": 86
+   },
+   {
+    "hucre": "elf|debian/coreutils|ln|nufus",
+    "bagimsiz": 168,
+    "olcum": 167
+   },
+   {
+    "hucre": "elf|debian/coreutils|logname|nufus",
+    "bagimsiz": 87,
+    "olcum": 86
+   },
+   {
+    "hucre": "elf|debian/coreutils|ls|nufus",
+    "bagimsiz": 298,
+    "olcum": 297
+   },
+   {
+    "hucre": "elf|debian/coreutils|md5sum|nufus",
+    "bagimsiz": 94,
+    "olcum": 93
+   },
+   {
+    "hucre": "elf|debian/coreutils|mkdir|nufus",
+    "bagimsiz": 184,
+    "olcum": 183
+   },
+   {
+    "hucre": "elf|debian/coreutils|mkfifo|nufus",
+    "bagimsiz": 171,
+    "olcum": 170
+   },
+   {
+    "hucre": "elf|debian/coreutils|mknod|nufus",
+    "bagimsiz": 172,
+    "olcum": 171
+   },
+   {
+    "hucre": "elf|debian/coreutils|mktemp|nufus",
+    "bagimsiz": 97,
+    "olcum": 96
+   },
+   {
+    "hucre": "elf|debian/coreutils|mv|nufus",
+    "bagimsiz": 287,
+    "olcum": 286
+   },
+   {
+    "hucre": "elf|debian/coreutils|nice|nufus",
+    "bagimsiz": 86,
+    "olcum": 85
+   },
+   {
+    "hucre": "elf|debian/coreutils|nl|nufus",
+    "bagimsiz": 98,
+    "olcum": 97
+   },
+   {
+    "hucre": "elf|debian/coreutils|nohup|nufus",
+    "bagimsiz": 93,
+    "olcum": 92
+   },
+   {
+    "hucre": "elf|debian/coreutils|nproc|nufus",
+    "bagimsiz": 91,
+    "olcum": 90
+   },
+   {
+    "hucre": "elf|debian/coreutils|numfmt|nufus",
+    "bagimsiz": 116,
+    "olcum": 115
+   },
+   {
+    "hucre": "elf|debian/coreutils|od|nufus",
+    "bagimsiz": 140,
+    "olcum": 139
+   },
+   {
+    "hucre": "elf|debian/coreutils|paste|nufus",
+    "bagimsiz": 92,
+    "olcum": 91
+   },
+   {
+    "hucre": "elf|debian/coreutils|pathchk|nufus",
+    "bagimsiz": 87,
+    "olcum": 86
+   },
+   {
+    "hucre": "elf|debian/coreutils|pinky|nufus",
+    "bagimsiz": 98,
+    "olcum": 97
+   },
+   {
+    "hucre": "elf|debian/coreutils|printenv|nufus",
+    "bagimsiz": 85,
+    "olcum": 84
+   },
+   {
+    "hucre": "elf|debian/coreutils|printf|nufus",
+    "bagimsiz": 110,
+    "olcum": 109
+   },
+   {
+    "hucre": "elf|debian/coreutils|pr|nufus",
+    "bagimsiz": 136,
+    "olcum": 135
+   },
+   {
+    "hucre": "elf|debian/coreutils|ptx|nufus",
+    "bagimsiz": 106,
+    "olcum": 105
+   },
+   {
+    "hucre": "elf|debian/coreutils|pwd|nufus",
+    "bagimsiz": 89,
+    "olcum": 88
+   },
+   {
+    "hucre": "elf|debian/coreutils|readlink|nufus",
+    "bagimsiz": 120,
+    "olcum": 119
+   },
+   {
+    "hucre": "elf|debian/coreutils|realpath|nufus",
+    "bagimsiz": 123,
+    "olcum": 122
+   },
+   {
+    "hucre": "elf|debian/coreutils|rmdir|nufus",
+    "bagimsiz": 90,
+    "olcum": 89
+   },
+   {
+    "hucre": "elf|debian/coreutils|rm|nufus",
+    "bagimsiz": 170,
+    "olcum": 169
+   },
+   {
+    "hucre": "elf|debian/coreutils|runcon|nufus",
+    "bagimsiz": 91,
+    "olcum": 90
+   },
+   {
+    "hucre": "elf|debian/coreutils|seq|nufus",
+    "bagimsiz": 102,
+    "olcum": 101
+   },
+   {
+    "hucre": "elf|debian/coreutils|sha1sum|nufus",
+    "bagimsiz": 94,
+    "olcum": 93
+   },
+   {
+    "hucre": "elf|debian/coreutils|sha224sum|nufus",
+    "bagimsiz": 101,
+    "olcum": 100
+   },
+   {
+    "hucre": "elf|debian/coreutils|sha256sum|nufus",
+    "bagimsiz": 101,
+    "olcum": 100
+   },
+   {
+    "hucre": "elf|debian/coreutils|sha384sum|nufus",
+    "bagimsiz": 101,
+    "olcum": 100
+   },
+   {
+    "hucre": "elf|debian/coreutils|sha512sum|nufus",
+    "bagimsiz": 101,
+    "olcum": 100
+   },
+   {
+    "hucre": "elf|debian/coreutils|shred|nufus",
+    "bagimsiz": 137,
+    "olcum": 136
+   },
+   {
+    "hucre": "elf|debian/coreutils|shuf|nufus",
+    "bagimsiz": 144,
+    "olcum": 143
+   },
+   {
+    "hucre": "elf|debian/coreutils|sleep|nufus",
+    "bagimsiz": 92,
+    "olcum": 91
+   },
+   {
+    "hucre": "elf|debian/coreutils|sort|nufus",
+    "bagimsiz": 227,
+    "olcum": 226
+   },
+   {
+    "hucre": "elf|debian/coreutils|split|nufus",
+    "bagimsiz": 121,
+    "olcum": 120
+   },
+   {
+    "hucre": "elf|debian/coreutils|stat|nufus",
+    "bagimsiz": 148,
+    "olcum": 147
+   },
+   {
+    "hucre": "elf|debian/coreutils|stdbuf|nufus",
+    "bagimsiz": 97,
+    "olcum": 96
+   },
+   {
+    "hucre": "elf|debian/coreutils|stty|nufus",
+    "bagimsiz": 100,
+    "olcum": 99
+   },
+   {
+    "hucre": "elf|debian/coreutils|sum|nufus",
+    "bagimsiz": 113,
+    "olcum": 112
+   },
+   {
+    "hucre": "elf|debian/coreutils|sync|nufus",
+    "bagimsiz": 86,
+    "olcum": 85
+   },
+   {
+    "hucre": "elf|debian/coreutils|tac|nufus",
+    "bagimsiz": 98,
+    "olcum": 97
+   },
+   {
+    "hucre": "elf|debian/coreutils|tail|nufus",
+    "bagimsiz": 157,
+    "olcum": 156
+   },
+   {
+    "hucre": "elf|debian/coreutils|tee|nufus",
+    "bagimsiz": 108,
+    "olcum": 107
+   },
+   {
+    "hucre": "elf|debian/coreutils|test|nufus",
+    "bagimsiz": 90,
+    "olcum": 89
+   },
+   {
+    "hucre": "elf|debian/coreutils|timeout|nufus",
+    "bagimsiz": 96,
+    "olcum": 95
+   },
+   {
+    "hucre": "elf|debian/coreutils|touch|nufus",
+    "bagimsiz": 117,
+    "olcum": 116
+   },
+   {
+    "hucre": "elf|debian/coreutils|true|nufus",
+    "bagimsiz": 85,
+    "olcum": 84
+   },
+   {
+    "hucre": "elf|debian/coreutils|truncate|nufus",
+    "bagimsiz": 88,
+    "olcum": 87
+   },
+   {
+    "hucre": "elf|debian/coreutils|tr|nufus",
+    "bagimsiz": 102,
+    "olcum": 101
+   },
+   {
+    "hucre": "elf|debian/coreutils|tsort|nufus",
+    "bagimsiz": 99,
+    "olcum": 98
+   },
+   {
+    "hucre": "elf|debian/coreutils|tty|nufus",
+    "bagimsiz": 85,
+    "olcum": 84
+   },
+   {
+    "hucre": "elf|debian/coreutils|uname|nufus",
+    "bagimsiz": 86,
+    "olcum": 85
+   },
+   {
+    "hucre": "elf|debian/coreutils|unexpand|nufus",
+    "bagimsiz": 98,
+    "olcum": 97
+   },
+   {
+    "hucre": "elf|debian/coreutils|uniq|nufus",
+    "bagimsiz": 106,
+    "olcum": 105
+   },
+   {
+    "hucre": "elf|debian/coreutils|unlink|nufus",
+    "bagimsiz": 87,
+    "olcum": 86
+   },
+   {
+    "hucre": "elf|debian/coreutils|users|nufus",
+    "bagimsiz": 94,
+    "olcum": 93
+   },
+   {
+    "hucre": "elf|debian/coreutils|vdir|nufus",
+    "bagimsiz": 298,
+    "olcum": 297
+   },
+   {
+    "hucre": "elf|debian/coreutils|wc|nufus",
+    "bagimsiz": 123,
+    "olcum": 122
+   },
+   {
+    "hucre": "elf|debian/coreutils|whoami|nufus",
+    "bagimsiz": 87,
+    "olcum": 86
+   },
+   {
+    "hucre": "elf|debian/coreutils|who|nufus",
+    "bagimsiz": 98,
+    "olcum": 97
+   },
+   {
+    "hucre": "elf|debian/coreutils|yes|nufus",
+    "bagimsiz": 89,
+    "olcum": 88
+   },
+   {
+    "hucre": "elf|debian/redis-tools|redis-cli|nufus",
+    "bagimsiz": 134,
+    "olcum": 133
+   },
+   {
+    "hucre": "elf|debian/sqlite3|sqlite3|nufus",
+    "bagimsiz": 390,
+    "olcum": 389
+   },
+   {
+    "hucre": "elf|debian/zstd|zstd|nufus",
+    "bagimsiz": 913,
+    "olcum": 919
+   },
+   {
+    "hucre": "satir|debian/coreutils|assert_ust|kapsam.nufus",
+    "bagimsiz": 12822,
+    "olcum": 12717
+   },
+   {
+    "hucre": "satir|debian/coreutils|assert|kapsam.nufus",
+    "bagimsiz": 12822,
+    "olcum": 12717
+   },
+   {
+    "hucre": "satir|debian/coreutils|dizgi_turleri|kapsam.nufus",
+    "bagimsiz": 12822,
+    "olcum": 12717
+   },
+   {
+    "hucre": "satir|debian/coreutils|func_aktarma|kapsam.nufus",
+    "bagimsiz": 12822,
+    "olcum": 12717
+   },
+   {
+    "hucre": "satir|debian/coreutils|func_kalibi|kapsam.nufus",
+    "bagimsiz": 12822,
+    "olcum": 12717
+   },
+   {
+    "hucre": "satir|debian/redis-tools|assert_ust|kapsam.nufus",
+    "bagimsiz": 1459,
+    "olcum": 1458
+   },
+   {
+    "hucre": "satir|debian/redis-tools|assert|kapsam.nufus",
+    "bagimsiz": 1459,
+    "olcum": 1458
+   },
+   {
+    "hucre": "satir|debian/redis-tools|dizgi_turleri|kapsam.nufus",
+    "bagimsiz": 1459,
+    "olcum": 1458
+   },
+   {
+    "hucre": "satir|debian/redis-tools|func_aktarma|kapsam.nufus",
+    "bagimsiz": 1459,
+    "olcum": 1458
+   },
+   {
+    "hucre": "satir|debian/redis-tools|func_kalibi|kapsam.nufus",
+    "bagimsiz": 1459,
+    "olcum": 1458
+   },
+   {
+    "hucre": "satir|debian/sqlite3|assert_ust|kapsam.nufus",
+    "bagimsiz": 390,
+    "olcum": 389
+   },
+   {
+    "hucre": "satir|debian/sqlite3|assert|kapsam.nufus",
+    "bagimsiz": 390,
+    "olcum": 389
+   },
+   {
+    "hucre": "satir|debian/sqlite3|dizgi_turleri|kapsam.nufus",
+    "bagimsiz": 390,
+    "olcum": 389
+   },
+   {
+    "hucre": "satir|debian/sqlite3|func_aktarma|kapsam.nufus",
+    "bagimsiz": 390,
+    "olcum": 389
+   },
+   {
+    "hucre": "satir|debian/sqlite3|func_kalibi|kapsam.nufus",
+    "bagimsiz": 390,
+    "olcum": 389
+   },
+   {
+    "hucre": "satir|debian/zstd|assert_ust|kapsam.nufus",
+    "bagimsiz": 913,
+    "olcum": 919
+   },
+   {
+    "hucre": "satir|debian/zstd|assert|kapsam.nufus",
+    "bagimsiz": 913,
+    "olcum": 919
+   },
+   {
+    "hucre": "satir|debian/zstd|dizgi_turleri|kapsam.nufus",
+    "bagimsiz": 913,
+    "olcum": 919
+   },
+   {
+    "hucre": "satir|debian/zstd|func_aktarma|kapsam.nufus",
+    "bagimsiz": 913,
+    "olcum": 919
+   },
+   {
+    "hucre": "satir|debian/zstd|func_kalibi|kapsam.nufus",
+    "bagimsiz": 913,
+    "olcum": 919
+   }
+  ],
+  "nufus_uzlastirma_sonrasi": {
+   "hucre": 1868,
+   "farkli": 0,
+   "gruplar": {
+    "birim": {
+     "hucre": 30,
+     "farkli": 0
+    },
+    "elf_kunyesi": {
+     "hucre": 468,
+     "farkli": 0
+    },
+    "export_paydasi": {
+     "hucre": 10,
+     "farkli": 0
+    },
+    "karar": {
+     "hucre": 80,
+     "farkli": 0
+    },
+    "kesinlik_ve_pay": {
+     "hucre": 1020,
+     "farkli": 0
+    },
+    "nufus": {
+     "hucre": 178,
+     "farkli": 0
+    },
+    "program_sinifi": {
+     "hucre": 70,
+     "farkli": 0
+    },
+    "rapor_satiri": {
+     "hucre": 12,
+     "farkli": 0
+    }
+   },
+   "farklar": []
+  },
+  "olcum_md": {
+   "dosya": "docs/arge/2026-10-21_g11_n1/ks1_olcum.md",
+   "tablo_satiri": 19,
+   "sifir_olmayan_satir_bagimsiz": 19,
+   "hucre": 190,
+   "farkli": 0,
+   "farklar": []
+  }
+ },
+ "goz_denetimi": {
+  "havuz_tanimi": "karar satırlarına giren dizgi çapaları (parça ve export dışarıda), bağımsız hesabın hükmüyle; ölçüm çıktısı öğe düzeyinde hüküm taşımaz",
+  "tohum": 20261110,
+  "havuz": {
+   "dogru": 532,
+   "yanlis": 57
+  },
+  "secilen": {
+   "dogru": [
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "1a2610",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/tmux",
+     "elf": "tmux",
+     "adres": "168b40",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "100064fdc",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "100014f4c",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "1b3400",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/tmux",
+     "elf": "tmux",
+     "adres": "171dc0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "1e1e60",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "10e044",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "100034684",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/tmux",
+     "elf": "tmux",
+     "adres": "1411ec",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "1f1bc8",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "10004f360",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "1000339f0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "10ada0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "100080720",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/tmux",
+     "elf": "tmux",
+     "adres": "196d60",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/tmux",
+     "elf": "tmux",
+     "adres": "158a20",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/tmux",
+     "elf": "tmux",
+     "adres": "15df20",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/tmux",
+     "elf": "tmux",
+     "adres": "197680",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "12ca30",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/openssl",
+     "elf": "openssl",
+     "adres": "1538d0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/openssl",
+     "elf": "openssl",
+     "adres": "155260",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "1a91c4",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "100070ffc",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/coreutils",
+     "elf": "tee",
+     "adres": "1032e0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/redis-tools",
+     "elf": "redis-benchmark",
+     "adres": "11a920",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/tmux",
+     "elf": "tmux",
+     "adres": "174410",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "100023b6c",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "113e00",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "10006a958",
+     "sinif": "ana"
+    }
+   ],
+   "yanlis": [
+    {
+     "birim": "debian/redis-tools",
+     "elf": "redis-cli",
+     "adres": "133640",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/coreutils",
+     "elf": "touch",
+     "adres": "1036a0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/redis-tools",
+     "elf": "redis-cli",
+     "adres": "13494c",
+     "sinif": "klon"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "19e780",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "12aeac",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "123404",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "100077dc0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "1b0d00",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/redis-tools",
+     "elf": "redis-check-aof",
+     "adres": "2fcdd0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/coreutils",
+     "elf": "basenc",
+     "adres": "1026e0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "10000928c",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/tmux",
+     "elf": "tmux",
+     "adres": "1346e0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "10b090",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/redis-tools",
+     "elf": "redis-check-rdb",
+     "adres": "2fcdd0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "100063cc0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "12d3c8",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/tmux",
+     "elf": "tmux",
+     "adres": "18e904",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "1edfe0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/coreutils",
+     "elf": "mv",
+     "adres": "10ccc0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "1bb2b0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/coreutils",
+     "elf": "factor",
+     "adres": "104fc8",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/tmux",
+     "elf": "tmux",
+     "adres": "1596e8",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "1e3f00",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/tmux",
+     "elf": "tmux",
+     "adres": "194500",
+     "sinif": "klon"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "1000424c4",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "123d80",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/redis-tools",
+     "elf": "redis-benchmark",
+     "adres": "113a70",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/zstd",
+     "elf": "zstd",
+     "adres": "111be0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "debian/redis-tools",
+     "elf": "redis-benchmark",
+     "adres": "114bc0",
+     "sinif": "ana"
+    },
+    {
+     "birim": "mac/tmux",
+     "elf": "tmux",
+     "adres": "100040f08",
+     "sinif": "ana"
+    }
+   ]
+  },
+  "elle": {
+   "aciklama": "Çapa adı ile GT adları ekranda yan yana okundu (--goz-ornegi); adlar hiçbir dosyaya yazılmadı. Hüküm: ölçümün (ve onunla hücre hücre tutan bağımsız hesabın) doğru/yanlış kararına katılıyor muyum.",
+   "dogru": {
+    "bakilan": 30,
+    "katilan": 30,
+    "katilmayan": 0,
+    "sinif": {
+     "ana": 30,
+     "klon": 0
+    }
+   },
+   "yanlis": {
+    "bakilan": 30,
+    "katilan": 30,
+    "katilmayan": 0,
+    "sinif": {
+     "ana": 28,
+     "klon": 2
+    },
+    "tur": {
+     "capa_adi_baska_bir_fonksiyonun_adi": 30,
+     "takma_ad_ek_ya_da_yazim_farki": 0
+    },
+    "not": {
+     "gt_si_giris_fonksiyonu_olan": 2,
+     "ayni_capanin_bayt_bayt_ayni_iki_ikilideki_kopyasi": 2
+    }
+   },
+   "ek_bakilanlar": {
+    "ornek_disinda_kalan_yanlis": {
+     "bakilan": 27,
+     "katilan": 27,
+     "katilmayan": 0
+    },
+    "klon_satirina_dusen_capa": {
+     "bakilan": 37,
+     "katilan": 37,
+     "katilmayan": 0
+    },
+    "parca_capasi": {
+     "bakilan": 18,
+     "katilan": 18,
+     "katilmayan": 0
+    },
+    "kaldirilmis_capa_assert_ust": {
+     "bakilan": 7,
+     "katilan": 7,
+     "katilmayan": 0
+    }
+   }
+  }
+ }
+}
