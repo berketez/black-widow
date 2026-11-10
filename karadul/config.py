@@ -161,6 +161,9 @@ GHIDRA_PINNED_DIR = "~/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC"
 
 # Env yoksa ilk bakılan kurulum.
 _GHIDRA_KNOWN_DIR = GHIDRA_PINNED_DIR
+# Paket başlatıcısı (packaging/macos/app/bw_launch.sh) gömülü Ghidra varken bunu "1" yapar:
+# o zaman Ghidra yalnız GHIDRA_INSTALL_DIR/GHIDRA_HOME altında aranır.
+GHIDRA_STRICT_ENV = "KARADUL_GHIDRA_STRICT"
 
 
 def _find_ghidra_tool(rel: str, fallback: str) -> Path:
@@ -178,6 +181,15 @@ def _find_ghidra_tool(rel: str, fallback: str) -> Path:
         v = os.environ.get(ev)
         if v:
             bases.append(Path(os.path.expanduser(v)))
+    if os.environ.get(GHIDRA_STRICT_ENV) == "1":
+        # Gömülü Ghidra taşıyan paket: yalnız env'deki kuruluma bakılır. Kurulum bozuksa
+        # makinedeki başka bir Ghidra'ya (başka sürüm olabilir) SESSİZCE düşülmez; araç
+        # bulunamaz ve arayüz bunu söyler.
+        for base in bases:
+            cand = base / rel
+            if cand.exists():
+                return cand.resolve()
+        return (bases[0] / rel) if bases else _resolve_path(fallback)
     bases.append(_resolve_path(_GHIDRA_KNOWN_DIR))
     for pat in ("~/ghidra*", "~/Ghidra*", "/Applications/ghidra*",
                 "/opt/homebrew/Caskroom/ghidra/*/ghidra_*", "/opt/ghidra*",
@@ -937,12 +949,21 @@ class Config:
     ghidra_scripts_dir: Path = field(default_factory=lambda: Path(__file__).parent / "ghidra" / "scripts")
 
     @classmethod
-    def load(cls, path: Optional[Path] = None) -> Config:
-        """YAML dosyasından yükle, yoksa varsayılan."""
+    def load(cls, path: Optional[Path | str] = None) -> Config:
+        """YAML dosyasından yükle, yoksa varsayılan.
+
+        ``path`` dizgi de olabilir. Açıkça verilen yol yoksa uyarı günlüğe yazılır ve
+        varsayılanlara (``./karadul.yaml`` ya da yerleşik değerler) düşülür: yazım hatalı
+        bir yol sessizce yok sayılmaz.
+        """
+        if path is not None and not isinstance(path, Path):
+            path = Path(path)
         if path and path.exists():
             with open(path) as f:
                 data = yaml.safe_load(f) or {}
             return cls._from_dict(data)
+        if path is not None:
+            logger.warning("Yapılandırma dosyası bulunamadı: %s; varsayılanlar kullanılıyor", path)
         # Varsayılan config dosyası kontrolü
         default_path = Path.cwd() / "karadul.yaml"
         if default_path.exists():

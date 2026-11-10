@@ -168,7 +168,7 @@ The app's update check reads `appcast.json` from the latest GitHub release by de
 
 ## Known issues
 
-- `Config.load()` expects a `pathlib.Path`; a plain string raises `AttributeError`, and a path that does not exist silently falls back to the defaults.
+- `Config.load(path)` falls back to the defaults when `path` does not exist; it logs a warning but does not raise.
 - `karadul batch analyze` only knows target paths from the author's machine (see above).
 
 ## Tests

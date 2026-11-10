@@ -46,7 +46,13 @@ export KARADUL_DATA_DIR="${KARADUL_DATA_DIR:-$HOME/Library/Application Support/B
 mkdir -p "$KARADUL_DATA_DIR"
 
 # Analiz araçları SADECE bundle'da varsa (full build); yoksa app yine de açılır
-[ -d "$RES/ghidra" ] && export GHIDRA_INSTALL_DIR="$RES/ghidra"
+# Gömülü Ghidra varken başka kuruluma düşme (KARADUL_GHIDRA_STRICT; karadul/config.py):
+# paket bozuksa derleyen makinedeki ya da kullanıcının makinesindeki başka bir Ghidra
+# sürümüyle sessizce çalışmasın.
+if [ -d "$RES/ghidra" ]; then
+  export GHIDRA_INSTALL_DIR="$RES/ghidra"
+  export KARADUL_GHIDRA_STRICT=1
+fi
 # Ghidra ClassJar.ignoreJar(): yolunda "caches"/"ExternalLibraries"/"flatrepo" geçen
 # jar'ları atlar -> uygulama açılır ama analiz "extension point" hatasıyla ölür.
 # Sessiz başarısızlık yerine kullanıcıyı uyar (ör. app'i böyle bir klasöre koymuşsa).
@@ -68,6 +74,10 @@ PY="$RES/python/bin/python3.12"
 LAUNCH="$RES/ui/app_window.py"
 LOG="$KARADUL_DATA_DIR/app.log"
 export PYTHONUNBUFFERED=1
+# Paket Python'u yalıtık kalsın: kullanıcının ~/.local site-packages'ı ya da ortamdaki
+# PYTHONPATH/PYTHONHOME paketin kendi modüllerinin önüne geçmesin.
+export PYTHONNOUSERSITE=1
+unset PYTHONPATH PYTHONHOME
 # Bundle'a .pyc YAZMA: yazarsa ad-hoc imza mührü kırılır -> macOS "damaged" der.
 # (build_mac_app.sh stdlib'i önceden derliyor; bu ikinci emniyet kemeri.)
 export PYTHONDONTWRITEBYTECODE=1

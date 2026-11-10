@@ -36,3 +36,57 @@ def test_bayrak_yamldan_okunur(tmp_path, ad):
 
 def test_urun_esigi_degismedi():
     assert Config().binary_reconstruction.min_naming_confidence == 0.7
+
+
+# --------------------------------------------------------------------------------------------
+# Config.load ve Ghidra arama sıkılığı (sürüm öncesi sağlamlaştırma)
+
+
+def test_config_load_dizgi_yol_kabul_eder(tmp_path):
+    yol = tmp_path / "karadul.yaml"
+    yol.write_text("binary_reconstruction:\n  min_naming_confidence: 0.55\n", encoding="utf-8")
+    assert Config.load(str(yol)).binary_reconstruction.min_naming_confidence == 0.55
+    assert Config.load(yol).binary_reconstruction.min_naming_confidence == 0.55
+
+
+def test_config_load_olmayan_yolda_uyarir(tmp_path, monkeypatch, caplog):
+    monkeypatch.chdir(tmp_path)          # ./karadul.yaml yok: yerleşik varsayılanlar
+    with caplog.at_level("WARNING", logger="karadul.config"):
+        cfg = Config.load(tmp_path / "yok.yaml")
+    assert cfg.binary_reconstruction.min_naming_confidence == 0.7
+    assert any("bulunamadı" in r.getMessage() and "yok.yaml" in r.getMessage() for r in caplog.records)
+    caplog.clear()
+    with caplog.at_level("WARNING", logger="karadul.config"):
+        Config.load()                    # yol verilmedi: uyarı yok
+    assert not caplog.records
+
+
+def _ghidra_kur(kok):
+    (kok / "support").mkdir(parents=True)
+    (kok / "support" / "analyzeHeadless").write_text("#!/bin/sh\n", encoding="utf-8")
+    return kok
+
+
+def test_ghidra_siki_kipte_baska_kuruluma_dusulmez(tmp_path, monkeypatch):
+    from karadul import config as cfg_mod
+    gomulu = _ghidra_kur(tmp_path / "paket" / "ghidra")
+    baska = _ghidra_kur(tmp_path / "baska")
+    monkeypatch.setattr(cfg_mod, "_GHIDRA_KNOWN_DIR", str(baska))      # makinedeki başka kurulum
+    monkeypatch.delenv("GHIDRA_HOME", raising=False)
+    # sıkı kip, gömülü kurulum sağlam: o bulunur
+    monkeypatch.setenv("GHIDRA_INSTALL_DIR", str(gomulu))
+    monkeypatch.setenv(cfg_mod.GHIDRA_STRICT_ENV, "1")
+    bulunan = cfg_mod._find_ghidra_tool("support/analyzeHeadless", "analyzeHeadless")
+    assert bulunan == (gomulu / "support" / "analyzeHeadless").resolve()
+    # sıkı kip, gömülü kurulum bozuk: başka kuruluma düşülmez, var olmayan gömülü yol döner
+    (gomulu / "support" / "analyzeHeadless").unlink()
+    bulunan = cfg_mod._find_ghidra_tool("support/analyzeHeadless", "analyzeHeadless")
+    assert bulunan == gomulu / "support" / "analyzeHeadless" and not bulunan.exists()
+    # sıkı kip kapalı: bugünkü davranış, sabitlenen/bilinen kuruluma düşülür
+    monkeypatch.delenv(cfg_mod.GHIDRA_STRICT_ENV)
+    bulunan = cfg_mod._find_ghidra_tool("support/analyzeHeadless", "analyzeHeadless")
+    assert bulunan == (baska / "support" / "analyzeHeadless").resolve()
+    # sıkı kip yalnız "1" ile açılır
+    monkeypatch.setenv(cfg_mod.GHIDRA_STRICT_ENV, "0")
+    assert cfg_mod._find_ghidra_tool("support/analyzeHeadless", "analyzeHeadless") == \
+        (baska / "support" / "analyzeHeadless").resolve()
