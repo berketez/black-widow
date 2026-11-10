@@ -13,11 +13,16 @@ Alt komutlar
     Program sınıfı eş değişkeni (GT'siz): dizgi zenginliği (snake_case tanımlayıcı biçimli dizgi
     sayısı / iç fonksiyon sayısı) ve boyut tabakası. Değerler platform başına kilitlenir.
 ``olc``
-    Çapa ↔ GT (adım 2; ön kayıt commit'lenmeden koşmaz). Tür ve birim başına kesinlik ve Wilson %95
-    aralığı, birimler arası makro ortalama, kapsam; klon ekli GT adları, parça çapaları ve
-    eşlenemeyenler ayrı satırda. Koşu başında ön koşullar denetlenir:
+    Çapa ↔ GT (adım 2; ön kayıt commit'lenmeden koşmaz). Satır ve birim başına kesinlik ve Wilson %95
+    aralığı, kapsam ve satır kararı. Kesinliğe parça dışındaki bütün çapalar girer: klon ekli GT
+    adında taban eşitliği doğrudur, GT'de karşılığı olmayan çapa yanlıştır. Karar kaynak program
+    düzeyindedir: aynı programın platform birimleri önce ortalanır, sonra programlar eşit ağırlıkla;
+    tekil ve örnek düzeyi makrolarının küçüğü ≥ %95 olmalı ve giren hiçbir birimin Wilson üst sınırı
+    %95'in altında kalmamalıdır. Koşu başında ön koşullar denetlenir:
       - ön kayıt dosyasını ekleyen commit HEAD'in atası;
-      - ``kesin.py`` ve bu betiğin sha256'sı o commit'teki ``ks1_sabitler.json`` ile aynı.
+      - ölçümü belirleyen dosyaların (``OLCUM_DOSYALARI``) sha256'sı o commit'teki
+        ``ks1_sabitler.json`` ile aynı;
+      - birim başına ELF sayısı beklenenle aynı, hepsi bitmiş ve aynı sabitlenmiş Ghidra sürümüyle.
 ``sabitle``
     ``ks1_sabitler.json``'u bugünkü dosyaların sha256'larıyla yazar (ön kayıt commit'inden önce).
 
@@ -46,6 +51,7 @@ import subprocess
 import sys
 from collections import Counter
 from dataclasses import dataclass
+from fractions import Fraction
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Iterable, Optional
@@ -62,10 +68,19 @@ ONKAYIT_DIZINI = REPO / "docs" / "arge" / "2026-10-21_g11_n1"
 ONKAYIT_YOLU = ONKAYIT_DIZINI / "ks1_onkayit.md"
 SABITLER_YOLU = ONKAYIT_DIZINI / "ks1_sabitler.json"
 SABITLER_SEMA = "karadul-ks1-sabitler/1"
-# Ön kayıtla sabitlenen dosyalar (depo köküne göre)
-SABIT_DOSYALAR = (
-    "karadul/reconstruction/tarif/kesin.py",
+KESIN_REL = "karadul/reconstruction/tarif/kesin.py"
+# Ölçümün sonucunu belirleyen dosyalar (depo köküne göre): çıkarıcı, bu betik ve GT, ofset ile
+# nüfusu üreten yardımcılar. ``olc`` bunların sha256'sını ön kayıt commit'indekiyle karşılaştırır.
+OLCUM_DOSYALARI = (
+    KESIN_REL,
     "scripts/measurement/ks1_olc.py",
+    "scripts/measurement/function_f1.py",
+    "scripts/measurement/macho_f1.py",
+    "scripts/measurement/macho_measure.py",
+    "tests/benchmark/metrics.py",
+)
+# Ön kayıtla sabitlenen bütün dosyalar: ölçüm dosyaları + testler ve mutant belirtimi
+SABIT_DOSYALAR = OLCUM_DOSYALARI + (
     "tests/test_tarif_kesin.py",
     "tests/test_ks1_olc.py",
     "scripts/measurement/mutation_specs_ks1.json",
@@ -75,28 +90,37 @@ PLATFORM_MAC = "mac"
 PLATFORM_DEBIAN = "debian"
 BITTI = "BITTI"
 ONDALIK = 6
-# Nüfusun beklenen büyüklüğü (ön kayıt §7): ölçüm yalnız biten ELF'leri sayıp yarım koşuyu geçirmesin
-BEKLENEN_ELF = {PLATFORM_MAC: 2, PLATFORM_DEBIAN: 117}
+# Nüfusun beklenen büyüklüğü (ön kayıt §7), birim (platform/program) başına: ölçüm yalnız biten
+# ELF'leri sayıp yarım koşuyu geçirmesin. Mac 2, Debian 117 ELF.
+BEKLENEN_ELF = {
+    "mac/tmux": 1, "mac/htop": 1,
+    "debian/tmux": 1, "debian/htop": 1, "debian/tree": 1, "debian/zstd": 2,
+    "debian/redis-tools": 4, "debian/sqlite3": 1, "debian/openssl": 1, "debian/coreutils": 106,
+}
 
-# ---- Ön kayıt seçimleri (ks1_onkayit.md §8-§9; [seçim] maddeleri, varsayılanlar) ----
-N_MIN = 10              # makro ortalamaya girmek için birimdeki en az çapa
-EN_AZ_BIRIM = 2         # bir türün karara girmesi için N_MIN'i geçen en az birim
-KESINLIK_ESIGI = 0.95   # makro ortalama eşiği (plan v2.1 3.2)
+# ---- Ön kayıt seçimleri (ks1_onkayit.md §8-§9) ----
+N_MIN = 10              # karara girmek için birimdeki en az tekil öğe
+EN_AZ_PROGRAM = 2       # satırın karara girmesi için N_MIN'i geçen en az FARKLI kaynak program
+KESINLIK_ESIGI = 0.95   # makro ortalama eşiği (plan v2.1 3.2); Wilson üst sınırı koşulu da bununla
+ZENGINLIK_ESIGI = 0.05  # dizgi zenginliği sınıfı: iki platformda ortak mutlak eşik
+GORUNUMLER = ("tekil", "ornek_duzeyi")   # karar, ikisinin makrosunun küçüğüyle verilir
 # Program sınıfı: snake_case tanımlayıcı biçimli dizgi
 SNAKE_RE = re.compile(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$")
 BOYUT_SINIRLARI = ((500, "kucuk"), (2000, "orta"))   # iç fonksiyon sayısı: <500, <2000, ≥2000
 BOYUT_EN_BUYUK = "buyuk"
 
 # Derleyici ekleri: GT adının bütün takma adları bunlardan birini taşıyorsa çapa "klon" satırına
-# düşer (tür kesinliğine girmez). Taban ad, ekler soyularak bulunur.
+# düşer; doğruluğu, ekler soyularak bulunan taban adla tam eşitliktir.
 KLON_EKI_RE = re.compile(r"\.(?:isra|constprop|part|cold|lto_priv|clone|llvm|__uniq)(?:\.\d+)*$")
 DIS_PARCA_RE = re.compile(r"^_?OUTLINED_FUNCTION_\d+$")
 # C++ ikili (GT adları mangled; tam eşitlik tanımsız): içe aktarılan adlardan biri mangled (``_Z``;
 # Ghidra çoğunu açtığı için yetmez), C++ istisna kişiliği ya da C++ istisna ABI'si.
-# ``__cxa_finalize`` / ``__cxa_atexit`` C ikililerinde de vardır, işaret değildir.
+# ``__cxa_finalize`` / ``__cxa_atexit`` C ikililerinde de vardır, işaret değildir. Mach-O'da adın
+# baştaki tek ``_``'ı soyulduktan sonra aranır (``__Znwm``, ``___cxa_throw``).
 CPP_ISARETLERI = ("_Z", "__gxx_personality", "__cxa_begin_catch", "__cxa_end_catch", "__cxa_throw",
                   "__cxa_rethrow")
 
+OFSET_KAYNAGI = "ghidra_entry"   # ``function_f1.derive_image_offset``'in kanıtlı kaynağı
 DURUM_DOGRU = "dogru"
 DURUM_YANLIS = "yanlis"
 SATIR_ANA = "ana"
@@ -165,14 +189,14 @@ def sha256_denetle(yol: Path, beklenen: str) -> str:
 
 def onkosullari_denetle(kok: Path = REPO, onkayit: Path = ONKAYIT_YOLU,
                         sabitler: Path = SABITLER_YOLU) -> dict[str, Any]:
-    """Ön kayıt commit'i HEAD'in atası; kesin.py ve bu betik ön kayıttaki sha256'larla aynı."""
+    """Ön kayıt commit'i HEAD'in atası; ölçüm dosyaları ön kayıttaki sha256'larla aynı."""
     commit = onkayit_commit(onkayit, kok)
     if not commit_atasi_mi(commit, kok):
         raise OnkosulHatasi(f"ön kayıt commit'i {commit} HEAD'in atası değil")
     belge = committeki_sabitler(commit, kok, sabitler)
     dosyalar = belge.get("dosyalar") or {}
     denetlenen = {}
-    for rel in ("karadul/reconstruction/tarif/kesin.py", "scripts/measurement/ks1_olc.py"):
+    for rel in OLCUM_DOSYALARI:
         if rel not in dosyalar:
             raise OnkosulHatasi(f"ön kayıtta {rel} için sha256 yok")
         denetlenen[rel] = sha256_denetle(Path(kok) / rel, dosyalar[rel])
@@ -277,9 +301,13 @@ def _json(yol: Path) -> Any:
     return json.loads(Path(yol).read_text(encoding="utf-8"))
 
 
-def cpp_ikili_mi(fonksiyonlar: list[dict[str, Any]]) -> bool:
-    """İçe aktarılan (thunk/dış) adlardan biri C++ çalışma zamanına ait mi (GT'siz)."""
-    return any(str(f.get("name") or "").startswith(CPP_ISARETLERI)
+def cpp_ikili_mi(fonksiyonlar: list[dict[str, Any]], platform_: str = PLATFORM_DEBIAN) -> bool:
+    """İçe aktarılan (thunk/dış) adlardan biri C++ çalışma zamanına ait mi (GT'siz).
+
+    Mach-O'da Ghidra içe aktarılan adı baştaki ``_`` ile verir (``___assert_rtn``); işaret, tek ``_``
+    soyulduktan sonra aranır. Soyulmadan aransaydı ``_ZSTD_…`` gibi C adları ``_Z`` sayılırdı.
+    """
+    return any(platform_adi(str(f.get("name") or ""), platform_).startswith(CPP_ISARETLERI)
                for f in fonksiyonlar if f.get("is_thunk") or f.get("is_external"))
 
 
@@ -298,11 +326,11 @@ def boyut_tabakasi(ic_fonksiyon: float) -> str:
     return BOYUT_EN_BUYUK
 
 
-def elf_sinif_olcusu(static: Path) -> dict[str, Any]:
+def elf_sinif_olcusu(static: Path, platform_: str = PLATFORM_DEBIAN) -> dict[str, Any]:
     fonk = _json(Path(static) / "ghidra_functions.json").get("functions", [])
     dizgi = _json(Path(static) / "ghidra_strings.json").get("strings", [])
     return {"ic_fonksiyon": ic_fonksiyon_sayisi(fonk), "snake_dizgi": snake_dizgi_sayisi(dizgi),
-            "cpp": cpp_ikili_mi(fonk)}
+            "cpp": cpp_ikili_mi(fonk, platform_)}
 
 
 def _ortanca(degerler: list[float]) -> Optional[float]:
@@ -331,23 +359,18 @@ def sinif(elfler: list[Elf]) -> dict[str, Any]:
         if e.static is None:
             bekleyen.append(f"{birim_anahtari(e)}/{e.ad}")
             continue
-        birimler.setdefault(birim_anahtari(e), []).append({"elf": e.ad, **elf_sinif_olcusu(e.static)})
+        birimler.setdefault(birim_anahtari(e), []).append(
+            {"elf": e.ad, **elf_sinif_olcusu(e.static, e.platform)})
     tablo = {b: {**birim_sinifi(o), "elfler": o} for b, o in sorted(birimler.items())}
-    # zenginlik sınıfı: platform içinde ortancaya göre ([seçim], ön kayıt §9)
-    platformlar = sorted({b.split("/")[0] for b in tablo})
-    for p in platformlar:
-        degerler = [t["dizgi_zenginligi"] for b, t in tablo.items()
-                    if b.startswith(p + "/") and t["dizgi_zenginligi"] is not None]
-        esik = _ortanca(degerler)
-        for b, t in tablo.items():
-            if b.startswith(p + "/"):
-                z = t["dizgi_zenginligi"]
-                t["zenginlik_esigi"] = esik
-                t["zenginlik_sinifi"] = (None if z is None or esik is None
-                                         else ("zengin" if z >= esik else "yoksul"))
+    # zenginlik sınıfı: iki platformda ortak, önceden yazılmış mutlak eşik (ön kayıt §9). Platform
+    # içi ortanca kullanılsaydı aynı program platform değişince sınıf değiştirirdi.
+    for t in tablo.values():
+        z = t["dizgi_zenginligi"]
+        t["zenginlik_esigi"] = ZENGINLIK_ESIGI
+        t["zenginlik_sinifi"] = None if z is None else ("zengin" if z >= ZENGINLIK_ESIGI else "yoksul")
     return {"sema": SEMA, "komut": "sinif", "birimler": tablo, "bekleyen": sorted(bekleyen),
             "tanim": {"snake_re": SNAKE_RE.pattern, "boyut_sinirlari": BOYUT_SINIRLARI,
-                      "zenginlik_esigi": "platform içindeki birimlerin ortancası"}}
+                      "zenginlik_esigi": ZENGINLIK_ESIGI}}
 
 
 def say(elfler: list[Elf], kesin: Optional[ModuleType] = None) -> dict[str, Any]:
@@ -368,7 +391,7 @@ def say(elfler: list[Elf], kesin: Optional[ModuleType] = None) -> dict[str, Any]
         for c in r.anchors.values():
             b["rol_tur"][f"{c.role}:{'+'.join(c.types)}"] += 1
         fonk = _json(Path(e.static) / "ghidra_functions.json").get("functions", [])
-        b["cpp_elf"] += int(cpp_ikili_mi(fonk))
+        b["cpp_elf"] += int(cpp_ikili_mi(fonk, e.platform))
     tablo = {}
     for k, b in sorted(birimler.items()):
         tablo[k] = {"elf": b["elf"], "abi": sorted(b["abi"]), "cpp_elf": b["cpp_elf"],
@@ -384,7 +407,11 @@ def say(elfler: list[Elf], kesin: Optional[ModuleType] = None) -> dict[str, Any]
 DIZGI_TURLERI = "dizgi_turleri"   # birleşik satır: assert + func_kalibi + func_aktarma, çapa başına bir
 ASSERT_UST = "assert_ust"         # parçadan üst fonksiyona kaldırılmış assert çapaları (ayrı karar)
 # Karar satırları (ön kayıt §8): tür başına; assert kendi gövdesinde ve kaldırılmış olarak ayrı
-KARAR_SATIRLARI = ("assert", ASSERT_UST, "func_kalibi", "func_aktarma", "export", DIZGI_TURLERI)
+KARAR_SATIRLARI = ("assert", ASSERT_UST, "func_kalibi", "func_aktarma")
+# Yalnız raporlananlar: export ad üretmez (Ghidra'nın adını işaretler), birleşik satır karar
+# satırlarının toplamıdır ve başarısız bir satırı örtebilir. Bunlar için karar hesaplanmaz.
+RAPOR_SATIRLARI = ("export", DIZGI_TURLERI)
+BUTUN_SATIRLAR = KARAR_SATIRLARI + RAPOR_SATIRLARI
 
 
 def _f1() -> ModuleType:
@@ -429,6 +456,7 @@ def capa_degerlendir(capa_ad: str, gt_adlari: list[str], platform_: str) -> dict
     ``satir``: ``ana`` (GT adlarından en az biri eksiz) ya da ``klon`` (bütün adlar ekli).
     ``durum``: ana satırda çapa adı bir GT adına tam eşit (Mach-O'da baştaki ``_`` soyulmuş);
     klon satırında eki soyulmuş bir tabana tam eşit. Büyük/küçük harf, önek ya da ek yok sayılmaz.
+    İki satır da kesinliğe girer (``karar_ogeleri``).
     ``proje``: ``function_f1.match_strict`` (proje normalleştirmesi; yalnız duyarlılık satırı).
     """
     adlar = [platform_adi(g, platform_) for g in gt_adlari]
@@ -490,60 +518,115 @@ def gorunum(kayitlar: list[dict[str, Any]], satir: str) -> list[dict[str, Any]]:
     return [k for k in kayitlar if satir in k["turler"]]
 
 
-def ana_ogeler(kayitlar: list[dict[str, Any]], tekil: bool) -> list[dict[str, Any]]:
-    """Kesinliğe giren öğeler: parça değil, ana satır. Tekilde aynı ad bir öğedir ve bütün
-    örnekleri doğruysa doğrudur ([seçim], ön kayıt §7)."""
-    ana = [k for k in kayitlar if k["rol"] != "parca" and k["satir"] == SATIR_ANA]
+def karar_ogeleri(kayitlar: list[dict[str, Any]], tekil: bool,
+                  yalniz_ana: bool = False) -> list[dict[str, Any]]:
+    """Kesinliğe giren öğeler (ön kayıt §6-§7): parça dışındaki bütün çapalar.
+
+    Ana satırda tam eşitlik, klon satırında taban eşitliği doğrudur; GT'de karşılığı olmayan
+    (eşlenemeyen) çapa yanlıştır: ürün hepsine ad yazar. ``yalniz_ana``: yalnız ana satır (eski
+    tanım; duyarlılık satırı). Tekilde aynı ad bir öğedir ve bütün örnekleri doğruysa doğrudur.
+    """
+    secilen = [k for k in kayitlar
+               if k["rol"] != "parca" and (k["satir"] == SATIR_ANA or not yalniz_ana)]
     if not tekil:
-        return [{"ornek": 1, "durum": k["durum"], "proje": k["proje"]} for k in ana]
+        return [{"ornek": 1, "dogru": k["durum"] == DURUM_DOGRU, "proje": bool(k["proje"])}
+                for k in secilen]
     gruplar: dict[str, list[dict[str, Any]]] = {}
-    for k in ana:
+    for k in secilen:
         gruplar.setdefault(k["ad"], []).append(k)
-    return [{"ornek": len(g),
-             "durum": DURUM_DOGRU if all(x["durum"] == DURUM_DOGRU for x in g) else DURUM_YANLIS,
-             "proje": all(x["proje"] for x in g)} for _, g in sorted(gruplar.items())]
+    return [{"ornek": len(g), "dogru": all(x["durum"] == DURUM_DOGRU for x in g),
+             "proje": all(bool(x["proje"]) for x in g)} for _, g in sorted(gruplar.items())]
 
 
-def kesinlik_ozeti(kayitlar: list[dict[str, Any]], tekil: bool = True) -> dict[str, Any]:
-    ogeler = ana_ogeler(kayitlar, tekil)
+def kesinlik_ozeti(kayitlar: list[dict[str, Any]], tekil: bool = True,
+                   yalniz_ana: bool = False) -> dict[str, Any]:
+    ogeler = karar_ogeleri(kayitlar, tekil, yalniz_ana)
     n = len(ogeler)
-    return {"n": n, "kesinlik": oran(sum(1 for o in ogeler if o["durum"] == DURUM_DOGRU), n),
+    return {"n": n, "kesinlik": oran(sum(1 for o in ogeler if o["dogru"]), n),
             "proje_normallestirmesi": oran(sum(1 for o in ogeler if o["proje"]), n)}
 
 
 def ayri_satirlar(kayitlar: list[dict[str, Any]]) -> dict[str, Any]:
-    """Kesinliğe girmeyenler: klon satırı, parça çapaları, eşlenemeyenler."""
+    """Döküm: klon satırı ve eşlenemeyenler (kesinliğe girer), parça çapaları (girmez)."""
     def say_(ks: list[dict[str, Any]]) -> dict[str, Any]:
         return {"n": len(ks), "dogru": sum(1 for k in ks if k["durum"] == DURUM_DOGRU)}
     return {"klon": say_([k for k in kayitlar if k["rol"] != "parca" and k["satir"] == SATIR_KLON]),
             "parca": say_([k for k in kayitlar if k["rol"] == "parca" and k["satir"] != SATIR_ESLENEMEDI]),
-            "eslenemedi": {"n": sum(1 for k in kayitlar if k["satir"] == SATIR_ESLENEMEDI)}}
+            "eslenemedi": {"n": sum(1 for k in kayitlar
+                                    if k["rol"] != "parca" and k["satir"] == SATIR_ESLENEMEDI)}}
 
 
-def kapsam_ozeti(kayitlar: list[dict[str, Any]], nufus: int) -> dict[str, Any]:
-    """Kapsam = nüfusta çapalanan / nüfus; tam isim kapsamı = nüfusta doğru çapa / nüfus."""
-    nf = [k for k in kayitlar if k["rol"] != "parca" and k["nufusta"]]
+def kapsam_ozeti(kayitlar: list[dict[str, Any]], nufus: int, alan: str = "nufusta") -> dict[str, Any]:
+    """Kapsam = nüfusta çapalanan / nüfus; tam ad kapsamı = nüfusta doğru çapa / nüfus.
+
+    ``alan``: çapanın paydaya ait olduğunu gösteren kayıt alanı. Dizgi türlerinde ``nufusta`` (ad
+    bekleyen nüfus); export satırında ``export_gt`` (dışa aktarılan GT fonksiyonları; bunlar ad
+    bekleyen nüfusa girmez).
+    """
+    nf = [k for k in kayitlar if k["rol"] != "parca" and k[alan]]
     return {"nufus": nufus, "kapsam": oran(len(nf), nufus),
             "dogru_kapsam": oran(sum(1 for k in nf if k["durum"] == DURUM_DOGRU), nufus)}
 
 
+def birim_programi(birim: str) -> str:
+    """``platform/program`` → program. Aynı kaynak programın platform birimleri tek programdır."""
+    return birim.split("/", 1)[1]
+
+
+def _kesir(ozet: dict[str, Any]) -> Fraction:
+    return Fraction(ozet["kesinlik"]["k"], ozet["kesinlik"]["n"])
+
+
 def makro(birim_ozetleri: dict[str, dict[str, Any]], n_min: int = N_MIN,
-          en_az_birim: int = EN_AZ_BIRIM, esik: float = KESINLIK_ESIGI) -> dict[str, Any]:
-    """Tür kararı (ön kayıt §8): n ≥ n_min birimlerin kesinlik ortalaması ≥ eşik; en az
-    ``en_az_birim`` birim gerekir, yoksa ``yetersiz``."""
-    giren = {b: o for b, o in sorted(birim_ozetleri.items()) if o["n"] >= n_min}
-    kucuk = sorted(b for b, o in birim_ozetleri.items() if 0 < o["n"] < n_min)
-    ortalama = (round(sum(o["kesinlik"]["oran"] for o in giren.values()) / len(giren), ONDALIK)
-                if giren else None)
-    if len(giren) < en_az_birim:
+          en_az_program: int = EN_AZ_PROGRAM, esik: float = KESINLIK_ESIGI) -> dict[str, Any]:
+    """Satır kararı (ön kayıt §8). ``birim_ozetleri``: birim → {tekil, ornek_duzeyi} özetleri.
+
+    1. Giren birim: tekil n ≥ ``n_min``.
+    2. Görünüm başına (tekil, örnek düzeyi): aynı kaynak programın giren platform birimlerinin
+       kesinliği ortalanır, sonra programlar eşit ağırlıkla ortalanır (makro).
+    3. ``yetersiz``: giren farklı program sayısı < ``en_az_program``.
+    4. ``kesin``: iki görünümün makrosu da ≥ eşik (karar makrosu = küçüğü) ve hiçbir görünümde
+       giren bir birimin Wilson üst sınırı eşiğin altında değil; yoksa ``kesin_degil``.
+
+    Eşik karşılaştırması kesirlerle yapılır (yuvarlama yok); Wilson sınırı ``macho_f1``'in
+    yuvarladığı değerdir.
+    """
+    sinir = Fraction(str(esik))
+    giren = sorted(b for b, o in birim_ozetleri.items() if o["tekil"]["n"] >= n_min)
+    kucuk = sorted(b for b, o in birim_ozetleri.items() if 0 < o["tekil"]["n"] < n_min)
+    programlar: dict[str, list[str]] = {}
+    for b in giren:
+        programlar.setdefault(birim_programi(b), []).append(b)
+    gorunumler: dict[str, Any] = {}
+    tam: list[Fraction] = []
+    for g in GORUNUMLER:
+        prog = {p: sum(_kesir(birim_ozetleri[b][g]) for b in bs) / len(bs)
+                for p, bs in sorted(programlar.items())}
+        ort = sum(prog.values()) / len(prog) if prog else None
+        if ort is not None:
+            tam.append(ort)
+        ihlal = sorted(b for b in giren if birim_ozetleri[b][g]["kesinlik"]["aralik"][1] < esik)
+        gorunumler[g] = {"makro_kesinlik": None if ort is None else round(float(ort), ONDALIK),
+                         "program_kesinligi": {p: round(float(v), ONDALIK) for p, v in prog.items()},
+                         "wilson_ihlali": ihlal}
+    karar_makrosu = min(tam) if tam else None
+    if len(programlar) < en_az_program:
         karar = "yetersiz"
+    elif karar_makrosu >= sinir and not any(gorunumler[g]["wilson_ihlali"] for g in GORUNUMLER):
+        karar = "kesin"
     else:
-        karar = "kesin" if ortalama >= esik else "kesin_degil"
-    havuz_n = sum(o["n"] for o in birim_ozetleri.values())
-    havuz_k = sum(o["kesinlik"]["k"] for o in birim_ozetleri.values())
-    return {"giren_birimler": sorted(giren), "kucuk_birimler": kucuk, "makro_kesinlik": ortalama,
-            "karar": karar, "esik": esik, "n_min": n_min, "en_az_birim": en_az_birim,
-            "havuz": oran(havuz_k, havuz_n)}
+        karar = "kesin_degil"
+    return {"giren_birimler": giren, "giren_programlar": sorted(programlar), "kucuk_birimler": kucuk,
+            "gorunumler": gorunumler,
+            "karar_makrosu": None if karar_makrosu is None else round(float(karar_makrosu), ONDALIK),
+            "karar": karar, "esik": esik, "n_min": n_min, "en_az_program": en_az_program,
+            "havuz": havuz(birim_ozetleri, "tekil"), "havuz_ornek": havuz(birim_ozetleri, "ornek_duzeyi")}
+
+
+def havuz(birim_ozetleri: dict[str, dict[str, Any]], gorunum_: str) -> dict[str, Any]:
+    """Bütün birimlerin (küçükler dahil) havuzlanmış kesinliği; kararı değiştirmez."""
+    return oran(sum(o[gorunum_]["kesinlik"]["k"] for o in birim_ozetleri.values()),
+                sum(o[gorunum_]["n"] for o in birim_ozetleri.values()))
 
 
 def gt_mac(e: Elf, mac_veri: Path) -> GtBirimi:
@@ -558,7 +641,8 @@ def gt_mac(e: Elf, mac_veri: Path) -> GtBirimi:
     gfonk = f1.load_ghidra_functions(Path(e.static) / "ghidra_functions.json")
     adsiz = {g["addr"] for g in gfonk
              if not g["is_thunk"] and f1.is_generic_name(g["name"], [g["addr"]])}
-    nufus = {a for a, n in adlar.items() if a in adsiz and mf.fragment_class(n) == mf.CLASS_PROGRAM}
+    nufus = {a for a, n in adlar.items() if a in adsiz and mf.fragment_class(n) == mf.CLASS_PROGRAM
+             and not gt_klon_mu(n, PLATFORM_MAC)}
     return GtBirimi(adlar, nufus, set(), {"gt": str(yol), "gt_fonksiyon": len(adlar)})
 
 
@@ -575,6 +659,9 @@ def gt_elf(e: Elf, indir: Path) -> GtBirimi:
     gt = f1.extract_gt(adaylar[0], soyulmus, corpus=e.program, binary=e.ad)
     gfonk = f1.load_ghidra_functions(Path(e.static) / "ghidra_functions.json")
     ofset, kaynak = f1.derive_image_offset(gfonk, int(gt["entry"], 16), gt["elf_type"])
+    if kaynak != OFSET_KAYNAGI:
+        # Ghidra'da ``entry`` yoksa yardımcı varsayılan tabana düşer; adres eşlemesi kanıtsız kalır
+        raise OnkosulHatasi(f"{e.ad}: ofset Ghidra entry'den türetilemedi (kaynak: {kaynak})")
     turler = f1.classify_detected(gfonk, gt["exec_sections"], ofset)
     adsiz = {g["addr"] - ofset for g in gfonk if not g["is_thunk"]
              and turler.get(g["addr"] - ofset) == "code"
@@ -595,25 +682,36 @@ def gt_elf(e: Elf, indir: Path) -> GtBirimi:
 
 
 def birim_ozeti(kayitlar: list[dict[str, Any]], nufus: int, export_gt: int,
-                satirlar: Iterable[str] = KARAR_SATIRLARI) -> dict[str, Any]:
+                satirlar: Iterable[str] = BUTUN_SATIRLAR) -> dict[str, Any]:
+    """Satır başına: iki karar görünümü, duyarlılık satırları, döküm ve kapsam.
+
+    Duyarlılık (karar dışı): ``yalniz_ana`` eski tanımdır (klon ve eşlenemeyen dışarıda);
+    ``tek_turlu`` yalnız bir türü taşıyan çapalardır (türün tek başına kesinliği).
+    """
     out: dict[str, Any] = {}
     for t in satirlar:
         g = gorunum(kayitlar, t)
         out[t] = {"tekil": kesinlik_ozeti(g, tekil=True), "ornek_duzeyi": kesinlik_ozeti(g, tekil=False),
+                  "duyarlilik": {
+                      "yalniz_ana": kesinlik_ozeti(g, tekil=True, yalniz_ana=True),
+                      "tek_turlu": kesinlik_ozeti([k for k in g if len(k["turler"]) == 1], tekil=True)},
                   "ayri": ayri_satirlar(g),
-                  "kapsam": kapsam_ozeti(g, export_gt if t == "export" else nufus)}
+                  "kapsam": (kapsam_ozeti(g, export_gt, alan="export_gt") if t == "export"
+                             else kapsam_ozeti(g, nufus))}
     return out
 
 
 def nufus_denetle(elfler: list[Elf], beklenen: Optional[dict[str, int]] = BEKLENEN_ELF,
                   eksik_izinli: bool = False) -> dict[str, Any]:
-    """Bulunan ELF sayısı beklenenle aynı ve hepsi bitmiş olmalı; değilse ölçüm durur."""
-    bulunan = Counter(e.platform for e in elfler)
-    biten = Counter(e.platform for e in elfler if e.static is not None)
+    """Birim (platform/program) başına bulunan ELF sayısı beklenenle aynı ve hepsi bitmiş olmalı;
+    değilse ölçüm durur. Beklenmeyen birim de sorundur. ``beklenen`` None ise sayı denetlenmez."""
+    bulunan = Counter(birim_anahtari(e) for e in elfler)
+    biten = Counter(birim_anahtari(e) for e in elfler if e.static is not None)
     sorun = []
-    for p, n in sorted((beklenen or {}).items()):
-        if bulunan.get(p, 0) != n:
-            sorun.append(f"{p}: {bulunan.get(p, 0)} ELF bulundu, beklenen {n}")
+    if beklenen is not None:
+        for b in sorted(set(beklenen) | set(bulunan)):
+            if bulunan.get(b, 0) != beklenen.get(b, 0):
+                sorun.append(f"{b}: {bulunan.get(b, 0)} ELF bulundu, beklenen {beklenen.get(b, 0)}")
     bekleyen = sorted(f"{birim_anahtari(e)}/{e.ad}" for e in elfler if e.static is None)
     if bekleyen:
         sorun.append(f"{len(bekleyen)} ELF bitmemiş ya da hatalı: {bekleyen[:5]}")
@@ -623,12 +721,42 @@ def nufus_denetle(elfler: list[Elf], beklenen: Optional[dict[str, int]] = BEKLEN
             "beklenen": beklenen, "eksik_izinli": eksik_izinli, "sorunlar": sorun}
 
 
+def ghidra_surumu(kosu: Path) -> Optional[str]:
+    """Koşu raporundaki Ghidra sürümü; rapor yoksa ya da koşu sabitlenmiş sürümle yapılmadıysa None."""
+    try:
+        ortam = _json(Path(kosu) / "reports" / "report.json").get("environment") or {}
+    except (OSError, ValueError):
+        return None
+    g = ortam.get("ghidra") or {}
+    return g.get("version") if g.get("matches_pinned") is True and g.get("version") else None
+
+
+def ghidra_denetle(elfler: list[Elf]) -> dict[str, Any]:
+    """Biten bütün ELF'ler aynı, sabitlenmiş Ghidra sürümüyle analiz edilmiş olmalı; değilse durur."""
+    surumler: Counter = Counter()
+    sorunlu = []
+    for e in elfler:
+        if e.static is None:
+            continue
+        surum = ghidra_surumu(e.kosu)
+        if surum is None:
+            sorunlu.append(f"{birim_anahtari(e)}/{e.ad}")
+        else:
+            surumler[surum] += 1
+    if sorunlu:
+        raise OnkosulHatasi(f"Ghidra sürümü doğrulanamadı ({len(sorunlu)} ELF): {sorunlu[:5]}")
+    if len(surumler) > 1:
+        raise OnkosulHatasi(f"ELF'ler farklı Ghidra sürümleriyle analiz edilmiş: {dict(surumler)}")
+    return {"surum": next(iter(surumler), None), "elf": sum(surumler.values())}
+
+
 def olc(elfler: list[Elf], mac_veri: Optional[Path], indir: Optional[Path],
         denetle: bool = True, beklenen: Optional[dict[str, int]] = BEKLENEN_ELF,
         eksik_izinli: bool = False) -> dict[str, Any]:
     onkosul = onkosullari_denetle() if denetle else {"denetlenmedi": True}
     nufus_kunyesi = nufus_denetle(elfler, beklenen, eksik_izinli)
-    kesin = kesin_modulu(onkosul.get("sha256", {}).get("karadul/reconstruction/tarif/kesin.py"))
+    ghidra = ghidra_denetle(elfler) if denetle else {"denetlenmedi": True}
+    kesin = kesin_modulu(onkosul.get("sha256", {}).get(KESIN_REL))
     birimler: dict[str, dict[str, Any]] = {}
     bekleyen = []
     for e in elfler:
@@ -638,7 +766,7 @@ def olc(elfler: list[Elf], mac_veri: Optional[Path], indir: Optional[Path],
         b = birimler.setdefault(birim_anahtari(e), {
             "kayitlar": [], "nufus": 0, "export_gt": 0, "elfler": {}, "cpp_disarida": []})
         fonk = _json(Path(e.static) / "ghidra_functions.json").get("functions", [])
-        if cpp_ikili_mi(fonk):
+        if cpp_ikili_mi(fonk, e.platform):
             b["cpp_disarida"].append(e.ad)   # C++: tam eşitlik tanımsız; yalnız GT'siz sayım (§7)
             continue
         gt = gt_mac(e, mac_veri) if e.platform == PLATFORM_MAC else gt_elf(e, indir)
@@ -652,15 +780,22 @@ def olc(elfler: list[Elf], mac_veri: Optional[Path], indir: Optional[Path],
                        "nufus": b["nufus"], "export_gt": b["export_gt"],
                        "cpp_disarida": b["cpp_disarida"], "elfler": b["elfler"]}
                    for k, b in sorted(birimler.items())}
-    kararlar = {t: makro({k: v["turler"][t]["tekil"] for k, v in sonuc_birim.items()})
+    kararlar = {t: makro({k: v["turler"][t] for k, v in sonuc_birim.items()})
                 for t in KARAR_SATIRLARI}
+    # karar dışı satırlar: yalnız havuz (birim ayrıntısı ``birimler`` altında)
+    rapor = {t: {g: havuz({k: v["turler"][t] for k, v in sonuc_birim.items()}, g) for g in GORUNUMLER}
+             for t in RAPOR_SATIRLARI}
+    siniflar = {b: {k: v for k, v in t.items() if k != "elfler"}
+                for b, t in sinif(elfler)["birimler"].items()}
     return {"sema": SEMA, "komut": "olc", "onkosul": onkosul,
             "arac": {"betik_sha256": sha256_dosya(OLC_YOLU), "kesin_sha256": sha256_dosya(KESIN_YOLU),
                      "git_head": _git("rev-parse", "HEAD").stdout.strip(),
-                     "python": platform.python_version()},
-            "secimler": {"n_min": N_MIN, "en_az_birim": EN_AZ_BIRIM, "esik": KESINLIK_ESIGI},
+                     "python": platform.python_version(), "ks1_surumu": kesin.KS1_VERSION,
+                     "ghidra": ghidra},
+            "secimler": {"n_min": N_MIN, "en_az_program": EN_AZ_PROGRAM, "esik": KESINLIK_ESIGI,
+                         "zenginlik_esigi": ZENGINLIK_ESIGI},
             "nufus": nufus_kunyesi, "birimler": sonuc_birim, "kararlar": kararlar,
-            "bekleyen": sorted(bekleyen)}
+            "rapor_satirlari": rapor, "sinif": siniflar, "bekleyen": sorted(bekleyen)}
 
 
 # --------------------------------------------------------------------------------------------
@@ -690,38 +825,64 @@ def _aralik(o: dict[str, Any]) -> str:
     return "—" if not a else f"{yuzde(a[0])}-{yuzde(a[1])}"
 
 
+def _k_n(o: dict[str, Any]) -> str:
+    return f"{o['k']}/{o['n']}"
+
+
 def olc_markdown(s: dict[str, Any]) -> str:
-    """Ölçüm özeti: karar tablosu, birim × satır kesinlik ve kapsam. Ad içermez."""
+    """Ölçüm özeti: karar tablosu, rapor satırları, birim × satır kesinlik ve kapsam. Ad içermez."""
+    sec = s["secimler"]
     satirlar = ["# KS-1 ölçümü (adım 2)", "",
                 f"- Ön kayıt commit'i: `{s['onkosul'].get('onkayit_commit', '—')}`; "
                 f"`kesin.py` sha256 `{s['arac']['kesin_sha256'][:16]}…`; "
-                f"`ks1_olc.py` sha256 `{s['arac']['betik_sha256'][:16]}…`.",
-                f"- Nüfus: {s['nufus']['biten']} / beklenen {s['nufus']['beklenen']}; sorunlar: "
+                f"`ks1_olc.py` sha256 `{s['arac']['betik_sha256'][:16]}…`; "
+                f"Ghidra `{s['arac']['ghidra'].get('surum', '—')}`.",
+                f"- Nüfus: {sum(s['nufus']['biten'].values())} ELF bitti; sorunlar: "
                 f"{'; '.join(s['nufus']['sorunlar']) or 'yok'}.",
-                f"- Seçimler: N_MIN = {s['secimler']['n_min']}, en az {s['secimler']['en_az_birim']} birim, "
-                f"eşik {yuzde(s['secimler']['esik'])}.", "", "## Karar", "",
-                "| Satır | Makro kesinlik | Giren birimler | Küçük birimler | Havuz | Karar |",
-                "|---|---|---|---|---|---|"]
+                f"- Seçimler: N_MIN = {sec['n_min']}, en az {sec['en_az_program']} farklı program, "
+                f"eşik {yuzde(sec['esik'])}; karar makrosu = tekil ve örnek düzeyi makrolarının küçüğü; "
+                f"giren hiçbir birimin Wilson üst sınırı eşiğin altında olamaz.", "", "## Karar", "",
+                "| Satır | Makro (tekil) | Makro (örnek) | Karar makrosu | Giren programlar | "
+                "Giren birimler | Küçük birimler | Wilson ihlali | Havuz (tekil) | Karar |",
+                "|---|---|---|---|---|---|---|---|---|---|"]
     for t, k in s["kararlar"].items():
+        gt_, go = k["gorunumler"]["tekil"], k["gorunumler"]["ornek_duzeyi"]
+        ihlal = sorted(set(gt_["wilson_ihlali"]) | set(go["wilson_ihlali"]))
         h = k["havuz"]
-        satirlar.append(f"| `{t}` | {yuzde(k['makro_kesinlik'])} | {', '.join(k['giren_birimler']) or '—'} | "
-                        f"{', '.join(k['kucuk_birimler']) or '—'} | {h['k']}/{h['n']} ({_aralik(h)}) | "
-                        f"`{k['karar']}` |")
+        satirlar.append(
+            f"| `{t}` | {yuzde(gt_['makro_kesinlik'])} | {yuzde(go['makro_kesinlik'])} | "
+            f"{yuzde(k['karar_makrosu'])} | {', '.join(k['giren_programlar']) or '—'} | "
+            f"{', '.join(k['giren_birimler']) or '—'} | {', '.join(k['kucuk_birimler']) or '—'} | "
+            f"{', '.join(ihlal) or '—'} | {_k_n(h)} ({_aralik(h)}) | `{k['karar']}` |")
+    satirlar += ["", "## Yalnız raporlanan satırlar (karar yok)", "",
+                 "| Satır | Havuz (tekil) | %95 aralık | Havuz (örnek) |", "|---|---|---|---|"]
+    for t, r in s["rapor_satirlari"].items():
+        satirlar.append(f"| `{t}` | {_k_n(r['tekil'])} ({yuzde(r['tekil']['oran'])}) | "
+                        f"{_aralik(r['tekil'])} | {_k_n(r['ornek_duzeyi'])} "
+                        f"({yuzde(r['ornek_duzeyi']['oran'])}) |")
     satirlar += ["", "## Birim başına", "",
-                 "| Birim | Satır | n (tekil) | Kesinlik | %95 aralık | Örnek düzeyi | Proje norm. | "
-                 "Klon (doğru/n) | Parça (doğru/n) | Eşlenemeyen | Kapsam | Tam ad kapsamı |",
-                 "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+                 "| Birim | Satır | n (tekil) | Kesinlik | %95 aralık | Örnek düzeyi | Yalnız ana | "
+                 "Tek türlü | Proje norm. | Klon (doğru/n) | Eşlenemeyen | Parça (doğru/n) | Kapsam | "
+                 "Tam ad kapsamı |",
+                 "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for b, v in s["birimler"].items():
         for t, o in v["turler"].items():
-            tk, ok, ay, kp = o["tekil"], o["ornek_duzeyi"], o["ayri"], o["kapsam"]
-            if not (tk["n"] or ay["klon"]["n"] or ay["parca"]["n"] or ay["eslenemedi"]["n"]):
+            tk, ok, ay, kp, du = o["tekil"], o["ornek_duzeyi"], o["ayri"], o["kapsam"], o["duyarlilik"]
+            if not (tk["n"] or ay["parca"]["n"]):
                 continue
             satirlar.append(
                 f"| {b} | `{t}` | {tk['n']} | {yuzde(tk['kesinlik']['oran'])} | {_aralik(tk['kesinlik'])} | "
-                f"{ok['kesinlik']['k']}/{ok['n']} | {tk['proje_normallestirmesi']['k']}/{tk['n']} | "
-                f"{ay['klon']['dogru']}/{ay['klon']['n']} | {ay['parca']['dogru']}/{ay['parca']['n']} | "
-                f"{ay['eslenemedi']['n']} | {yuzde(kp['kapsam']['oran'])} "
+                f"{_k_n(ok['kesinlik'])} | {_k_n(du['yalniz_ana']['kesinlik'])} | "
+                f"{_k_n(du['tek_turlu']['kesinlik'])} | {_k_n(tk['proje_normallestirmesi'])} | "
+                f"{ay['klon']['dogru']}/{ay['klon']['n']} | {ay['eslenemedi']['n']} | "
+                f"{ay['parca']['dogru']}/{ay['parca']['n']} | {yuzde(kp['kapsam']['oran'])} "
                 f"({kp['kapsam']['k']}/{kp['nufus']}) | {yuzde(kp['dogru_kapsam']['oran'])} |")
+    satirlar += ["", "## Program sınıfı (eş değişken, GT'siz)", "",
+                 "| Birim | Dizgi zenginliği | Zenginlik sınıfı | Boyut tabakası |", "|---|---|---|---|"]
+    for b, t in s["sinif"].items():
+        z = t["dizgi_zenginligi"]
+        satirlar.append(f"| {b} | {'—' if z is None else f'{z:.3f}'.replace('.', ',')} | "
+                        f"`{t['zenginlik_sinifi']}` | `{t['boyut_tabakasi']}` |")
     if any(v["cpp_disarida"] for v in s["birimler"].values()):
         cpp = [f"{b}: {', '.join(v['cpp_disarida'])}" for b, v in s["birimler"].items() if v["cpp_disarida"]]
         satirlar += ["", "C++ (kesinlik dışı): " + ", ".join(cpp) + "."]

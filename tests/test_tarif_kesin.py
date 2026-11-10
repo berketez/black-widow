@@ -218,7 +218,7 @@ def test_func_kalibi_cagri_kurali(tmp_path, bicim, yerlesim, beklenen):
 
 
 @pytest.mark.parametrize("bicim, gecer", [
-    ("%s: x=%d", True), ("%s:", True), ("%s(): bitti", True), ("%s() basladi", True),
+    ("%s: x=%d", True), ("%s:", True), ("%s(): bitti", False), ("%s() basladi", False),
     ("%s %s", False), ("%s - hata", False), ("x%s: y", False), ("%sx: y", False), ("%d: %s", False),
 ])
 def test_bicim_ayraci(tmp_path, bicim, gecer):
@@ -237,8 +237,11 @@ def test_bicim_birden_cok_yazmacta_ise_yuva_yok(tmp_path):
 
 
 @pytest.mark.parametrize("deger, gecer", [
-    ("oturum_ac", True), ("main", True), ("_iç", False), ("oturum ac", False), ("oturum-ac", False),
-    ("a", False), ("9abc", False), ("prog", False), ("Oturum_Ac2", True),
+    ("oturum_ac", True), ("main", False), ("_iç", False), ("oturum ac", False), ("oturum-ac", False),
+    ("a", False), ("9abc", False), ("prog", False), ("Oturum_Ac2", True), ("oturumAc", True),
+    ("OTURUM_AC", False), ("oturum_ac\n", False), ("prog_ac", True), ("_oturum", False),
+    # çok parçalı ve küçük harfli ama tanımlayıcı değil: günlük süzgeci tanımlayıcı şartını örtmemeli
+    ("oturum_ac-x", False), ("9oturum_ac", False), ("oturum_ac.c", False), ("ic_adı", False),
 ])
 def test_ad_yuvasi_dizgisi(tmp_path, deger, gecer):
     ik = temel(ELF, program="prog")
@@ -386,8 +389,8 @@ def test_assert_parcasi_ust_fonksiyona_kalkar(tmp_path):
 
 def test_assert_parcasi_iki_ustlu_ise_sahipsiz(tmp_path):
     ik = temel(MACHO)
-    fa = ik.dizgi(DZ, "satir_sil")
-    s = ik.fonksiyon(0x100008000, adr(0, fa) + [bl(ASSERT_RTN)])
+    fa, fd = ik.dizgi(DZ, "satir_sil"), ik.dizgi(DZ + 0x20, "izgara.c")
+    s = ik.fonksiyon(0x100008000, adr(0, fa) + adr(1, fd) + [bl(ASSERT_RTN)])
     ik.fonksiyon(0x100001000, [bl(s), "ret"])
     ik.fonksiyon(0x100001100, [bl(s), "ret"])
     r = cikar(ik, tmp_path)
@@ -397,11 +400,35 @@ def test_assert_parcasi_iki_ustlu_ise_sahipsiz(tmp_path):
 
 def test_donen_fonksiyon_parca_degildir(tmp_path):
     ik = temel(MACHO)
-    fa = ik.dizgi(DZ, "denetle")
-    f = ik.fonksiyon(0x100008000, adr(0, fa) + [bl(ASSERT_RTN), "ret"])
+    fa, fd = ik.dizgi(DZ, "denetle"), ik.dizgi(DZ + 0x20, "a.c")
+    f = ik.fonksiyon(0x100008000, adr(0, fa) + adr(1, fd) + [bl(ASSERT_RTN), "ret"])
     ik.fonksiyon(0x100001000, [bl(f), "ret"])
     r = cikar(ik, tmp_path)
     assert capa_adlari(r) == {f"{f:x}": ("denetle", ("assert",), "kendi")}
+
+
+@pytest.mark.parametrize("ek", ["dolayli", "kosullu_dis"])
+def test_dolayli_cagrili_ya_da_disa_kosullu_dallanan_parca_degildir(tmp_path, ek):
+    ik = temel(MACHO)
+    fa, fd = ik.dizgi(DZ, "dogrula_bunu"), ik.dizgi(DZ + 0x20, "a.c")
+    bas = ["blr x8"] if ek == "dolayli" else [f"cbz x0,0x{DIGER:x}"]
+    s = ik.fonksiyon(0x100008000, bas + adr(0, fa) + adr(1, fd) + [bl(ASSERT_RTN)])
+    ik.fonksiyon(0x100001000, [bl(s), "ret"])
+    r = cikar(ik, tmp_path)
+    assert capa_adlari(r) == {f"{s:x}": ("dogrula_bunu", ("assert",), "kendi")}
+    assert r.counts["assert_parcasi"] == 0
+
+
+def test_parca_zinciri_sabit_nokta(tmp_path):
+    ik = temel(MACHO)
+    fa, fd = ik.dizgi(DZ, "zincir_bas"), ik.dizgi(DZ + 0x20, "a.c")
+    sb = ik.fonksiyon(0x100008100, adr(0, fa) + adr(1, fd) + [bl(ASSERT_RTN)])   # assert parçası
+    sa = ik.fonksiyon(0x100008000, ["mov w2,#0x1", f"b 0x{sb:x}"])                # parçaya kuyruk çağrısı
+    p = ik.fonksiyon(0x100001000, ["cbz x0,0x100001008", bl(sa), "ret"])
+    r = cikar(ik, tmp_path)
+    assert r.counts["assert_parcasi"] == 2
+    assert capa_adlari(r) == {f"{p:x}": ("zincir_bas", ("assert",), "ust"),
+                              f"{sb:x}": ("zincir_bas", ("assert",), "parca")}
 
 
 def test_yukleyici_ozeti_assert_yuvasinda(tmp_path):
@@ -499,8 +526,9 @@ def test_K3_turler_arasi_celiski(tmp_path):
     assert r.anchors == {}
     # aynı ad iki türden gelirse çapa iki türü de taşır
     ik2 = temel(ELF)
-    fmt, ad = ik2.dizgi(DZ, "%s: x"), ik2.dizgi(DZ + 0x40, "bir_ad")
-    g = ik2.fonksiyon(0x100001000, aapcs_log(fmt, ad) + adr(3, ad) + [bl(ASSERT_FAIL), "ret"])
+    fmt, ad, fd = ik2.dizgi(DZ, "%s: x"), ik2.dizgi(DZ + 0x40, "bir_ad"), ik2.dizgi(DZ + 0x20, "a.c")
+    g = ik2.fonksiyon(0x100001000, aapcs_log(fmt, ad) + adr(1, fd) + adr(3, ad)
+                      + [bl(ASSERT_FAIL), "ret"])
     r2 = cikar(ik2, tmp_path / "b")
     assert capa_adlari(r2) == {f"{g:x}": ("bir_ad", ("assert", "func_kalibi"), "kendi")}
     del f
@@ -509,12 +537,74 @@ def test_K3_turler_arasi_celiski(tmp_path):
 def test_K4_ad_tekligi(tmp_path):
     ik = temel(ELF)
     fmt = ik.dizgi(DZ, "%s: x")
-    a1, a2 = ik.dizgi(DZ + 0x40, "kullan"), ik.dizgi(DZ + 0x60, "kullan")   # iki ayrı nesne, aynı ad
+    a1, a2 = ik.dizgi(DZ + 0x40, "kullan_bunu"), ik.dizgi(DZ + 0x60, "kullan_bunu")   # iki nesne, aynı ad
     ik.fonksiyon(0x100001000, aapcs_log(fmt, a1) + ["ret"])
     ik.fonksiyon(0x100001100, aapcs_log(fmt, a2) + ["ret"])
     r = cikar(ik, tmp_path)
     assert r.anchors == {}
     assert r.counts["eleme:K4_ad_cok_fonksiyonda:func_kalibi"] == 2
+
+
+@pytest.mark.parametrize("bicim, ghidra_adi, dolu", [
+    (ELF, "oturum_kapat", True), (MACHO, "_oturum_kapat", True), (ELF, "_oturum_kapat", False),
+    (MACHO, "FUN_100004400", False),
+])
+def test_K4_ghidra_adi_dolu(tmp_path, bicim, ghidra_adi, dolu):
+    ik = temel(bicim)
+    fmt, ad = ik.dizgi(DZ, "%s: %s"), ik.dizgi(DZ + 0x40, "oturum_kapat")
+    ik.fonksiyon(0x100004400, ["b 0x200000100"], ad=ghidra_adi, thunk=True, kaynak="IMPORTED")
+    govde = (darwin_log(fmt, ad) if bicim == MACHO else aapcs_log(fmt, ad)) + ["ret"]
+    f = ik.fonksiyon(0x100001000, govde)
+    r = cikar(ik, tmp_path)
+    assert (f"{f:x}" in r.anchors) is not dolu
+    assert r.counts.get("eleme:K4_ghidra_adi_dolu:func_kalibi", 0) == int(dolu)
+
+
+def test_K0_dosya_bilinmiyor(tmp_path):
+    ik = temel(ELF)
+    ex, fd, fa = ik.dizgi(DZ, "x_y"), ik.dizgi(DZ + 0x20, "a.c"), ik.dizgi(DZ + 0x40, "yardimci_fonk")
+    f = ik.fonksiyon(0x100001000, adr(0, ex) + ["mov x1,x20"] + adr(3, fa) + [bl(ASSERT_FAIL), "ret"])
+    r = cikar(ik, tmp_path)
+    assert f"{f:x}" not in r.anchors
+    assert r.counts["eleme:K0_dosya_bilinmiyor:assert"] == 1
+    # dosyası bilinmeyen ad, aynı gövdedeki başka bir ad için K3'te rakip sayılır
+    ik2 = temel(ELF)
+    ex, fd = ik2.dizgi(DZ, "x_y"), ik2.dizgi(DZ + 0x20, "a.c")
+    yabanci, kendi = ik2.dizgi(DZ + 0x40, "yabanci_ad"), ik2.dizgi(DZ + 0x60, "kendi_ad")
+    g = ik2.fonksiyon(0x100001000, adr(0, ex) + ["mov x1,x20"] + adr(3, yabanci) + [bl(ASSERT_FAIL)]
+                      + adr(0, ex) + adr(1, fd) + adr(3, kendi) + [bl(ASSERT_FAIL), "ret"])
+    r2 = cikar(ik2, tmp_path / "b")
+    assert f"{g:x}" not in r2.anchors
+    assert r2.counts["eleme:K3_govdede_cok_ad:assert"] == 1
+
+
+def test_assert_yuvasinda_ad_bicimi_suzgeci_yok(tmp_path):
+    ik = temel(ELF, program="tree")
+    ex, fd = ik.dizgi(DZ, "x_y"), ik.dizgi(DZ + 0x20, "a.c")
+    a1, a2 = ik.dizgi(DZ + 0x40, "main"), ik.dizgi(DZ + 0x60, "tree")
+    f1 = ik.fonksiyon(0x100001000, adr(0, ex) + adr(1, fd) + adr(3, a1) + [bl(ASSERT_FAIL), "ret"])
+    f2 = ik.fonksiyon(0x100001100, adr(0, ex) + adr(1, fd) + adr(3, a2) + [bl(ASSERT_FAIL), "ret"])
+    r = cikar(ik, tmp_path)
+    assert capa_adlari(r) == {f"{f1:x}": ("main", ("assert",), "kendi"),
+                              f"{f2:x}": ("tree", ("assert",), "kendi")}
+
+
+@pytest.mark.parametrize("program, deger, gecer", [
+    ("redis-cli", "redis_cli", False), ("redis-cli", "Redis_Cli", False),
+    ("redis-cli", "redis_cli_main", True), ("tmux", "tmux_kur", True),
+])
+def test_gunluk_turunde_program_adi_bicimleri(tmp_path, program, deger, gecer):
+    ik = temel(ELF, program=program)
+    fmt, ad = ik.dizgi(DZ, "%s: x"), ik.dizgi(DZ + 0x40, deger)
+    f = ik.fonksiyon(0x100001000, aapcs_log(fmt, ad) + ["ret"])
+    assert (f"{f:x}" in cikar(ik, tmp_path).anchors) is gecer
+
+
+def test_ad_bicimi_islevleri():
+    assert K.program_name_forms("redis-cli") == frozenset({"redis-cli", "redis_cli", "redis", "cli"})
+    assert K.log_name_candidate("pencereBul", "p") and not K.log_name_candidate("PENCERE_BUL", "p")
+    assert not K.log_name_candidate("pencere", "p") and K.log_name_candidate("pencere_bul", "p")
+    assert K.name_candidate("main") and not K.name_candidate("main\n") and not K.name_candidate(None)
 
 
 def test_K5_zaten_adli(tmp_path):

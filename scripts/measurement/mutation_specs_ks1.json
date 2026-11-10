@@ -1,245 +1,485 @@
 {
-  "_comment": "KS-1 (plan v2.2 N1) mutasyon koruması: kesin.py (çıkarıcı, inline koruması) ve ks1_olc.py (ad karşılaştırması, tekilleştirme, tür kararı, ön koşullar). Her mutant bir tanımı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ks1.json",
-  "mutants": [
-    {
-      "id": "ks1_assert_darwin_sira",
-      "desc": "Darwin __assert_rtn'de fonksiyon adı 4. argümandan okunur (ifade çapa olur)",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_assert_darwin_birinci_arguman",
-      "find": "{\"assert_rtn\": 0, \"assert_fail\": 3, \"assert_perror_fail\": 3}",
-      "replace": "{\"assert_rtn\": 3, \"assert_fail\": 3, \"assert_perror_fail\": 3, \"x\": 0}"
-    },
-    {
-      "id": "ks1_assert_glibc_sira",
-      "desc": "glibc __assert_fail'de fonksiyon adı 1. argümandan okunur",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_assert_glibc_dorduncu_arguman",
-      "find": "{\"assert_rtn\": 0, \"assert_fail\": 3, \"assert_perror_fail\": 3}",
-      "replace": "{\"assert_rtn\": 0, \"assert_fail\": 0, \"assert_perror_fail\": 0, \"x\": 3}"
-    },
-    {
-      "id": "ks1_bicim_ayraci_yok",
-      "desc": "biçim dizgisi %s ile başlaması yeter (ayraç aranmaz: \"%s %s\" de yuva olur)",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_bicim_ayraci",
-      "find": "FORMAT_RE = re.compile(r\"^%s(?::|\\(\\))\")",
-      "replace": "FORMAT_RE = re.compile(r\"^%s\")"
-    },
-    {
-      "id": "ks1_tanimlayici_gevsek",
-      "desc": "ad yuvasındaki dizginin tanımlayıcı olması aranmaz (boşluksuz her dizgi)",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_ad_yuvasi_dizgisi",
-      "find": "IDENT_RE = re.compile(r\"^[A-Za-z_][A-Za-z0-9_]+$\")",
-      "replace": "IDENT_RE = re.compile(r\"^\\S+$\")"
-    },
-    {
-      "id": "ks1_program_adi_dislanmaz",
-      "desc": "ikilinin kendi adı (ör. tmux) ad yuvasında çapa olur",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_ad_yuvasi_dizgisi",
-      "find": "    return value != program\n",
-      "replace": "    return True\n"
-    },
-    {
-      "id": "ks1_darwin_yigin_yok",
-      "desc": "Darwin'de de hizalı argüman x(biçim+1)'den okunur (değişken argüman yığında değilmiş gibi)",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_func_kalibi_cagri_kurali",
-      "find": "    if abi == ABI_DARWIN:\n        return cs.slot(0)\n",
-      "replace": "    if abi == ABI_DARWIN and False:\n        return cs.slot(0)\n"
-    },
-    {
-      "id": "ks1_birlesme_ilk_yol",
-      "desc": "birleşme noktasında ilk öncülün yazmaçları alınır (yollar uyuşmasa da)",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_birlesmede_yalniz_uyusan_deger_kalir",
-      "find": "    regs = {k: v for k, v in first.regs.items() if all(s.regs.get(k) == v for s in rest)}\n",
-      "replace": "    regs = dict(first.regs)\n"
-    },
-    {
-      "id": "ks1_cagri_yazmac_oldurmez",
-      "desc": "çağrı, çağıranın sakladığı yazmaçları (x0-x18) öldürmez",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_cagri_cagiranin_sakladigi_yazmaclari_oldurur",
-      "find": "            for n in _CALLER_SAVED:\n",
-      "replace": "            for n in ():\n"
-    },
-    {
-      "id": "ks1_yigin_bayatlamaz",
-      "desc": "çağrıdan sonra yığın yuvaları taze kalır (önceki çağrının değişken argümanı sonrakine geçer)",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_bayat_yigin_yuvasi_degisken_arguman_sayilmaz",
-      "find": "st.stack = {k: (v, False) for k, (v, _) in st.stack.items()}",
-      "replace": "st.stack = {k: (v, True) for k, (v, _) in st.stack.items()}"
-    },
-    {
-      "id": "ks1_parca_kaldirilmaz",
-      "desc": "assert parçası üst fonksiyona kaldırılmaz (yuva parçada kalır)",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_assert_parcasi_ust_fonksiyona_kalkar",
-      "find": "        res = next(iter(ups)) if len(ups) == 1 else None\n",
-      "replace": "        res = f\n"
-    },
-    {
-      "id": "ks1_K1_kapali",
-      "desc": "K1 kapalı: yuva dışı başvurusu olan dizgi de çapa verir",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_K1_yuva_disi_basvuru",
-      "find": "        if impure:\n",
-      "replace": "        if impure and False:\n"
-    },
-    {
-      "id": "ks1_K2_kapali",
-      "desc": "K2 kapalı: birden çok fonksiyonun yuvasındaki dizgi birine çapa olur",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_K2_cok_sahip",
-      "find": "        if len(owners) != 1:\n",
-      "replace": "        if len(owners) > 99:\n"
-    },
-    {
-      "id": "ks1_K3_kapali",
-      "desc": "K3 kapalı: gövdesinde iki farklı ad olan fonksiyon çapa alır",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_K3_govdede_cok_ad_elenmis_dizgi_dahil",
-      "find": "        if len(body_names.get(o, set())) > 1:\n",
-      "replace": "        if len(body_names.get(o, set())) > 10:\n"
-    },
-    {
-      "id": "ks1_K4_kapali",
-      "desc": "K4 kapalı: aynı ad iki fonksiyona çapalanır",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_K4_ad_tekligi",
-      "find": "        if len(owners_of_name[name]) > 1:\n",
-      "replace": "        if len(owners_of_name[name]) > 10:\n"
-    },
-    {
-      "id": "ks1_K5_kapali",
-      "desc": "K5 kapalı: Ghidra'nın adlandırdığı fonksiyona dizgi çapası yazılır",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_K5_zaten_adli",
-      "find": "        if f is None or not is_generic_name(f.name):\n            drop(DROP_NAMED",
-      "replace": "        if f is None:\n            drop(DROP_NAMED"
-    },
-    {
-      "id": "ks1_export_oto_ad",
-      "desc": "export türü Ghidra'nın oto adlarını (_DT_INIT) da dışa aktarım sayar",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_export_ve_oto_adlar",
-      "find": "            if is_generic_name(f.name) or f.name in NOT_EXPORT_NAMES:\n",
-      "replace": "            if is_generic_name(f.name):\n"
-    },
-    {
-      "id": "ks1_K0_kapali",
-      "desc": "K0 kapalı: başlık dosyasındaki assert (inline edilen yardımcı) çapa verir",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_K0_baslik_dosyasi",
-      "find": "        if any(s.header for s in sl):\n",
-      "replace": "        if any(s.header for s in sl) and False:\n"
-    },
-    {
-      "id": "ks1_sinir_iyimser",
-      "desc": "güvenlik sınırı aşılınca blok eski (iyimser) durumunu korur",
-      "module": "karadul/reconstruction/tarif/kesin.py",
-      "test": "tests/test_tarif_kesin.py::test_guvenlik_siniri_tutucu",
-      "find": "            new_in = _State()   # sınır aşıldı: en tutucu durum (hiçbir değer bilinmiyor)\n",
-      "replace": "            pass\n"
-    },
-    {
-      "id": "olc_tam_esitlik_gevsek",
-      "desc": "ölçüm: ana satırda büyük/küçük harf yok sayılır",
-      "module": "scripts/measurement/ks1_olc.py",
-      "test": "tests/test_ks1_olc.py::test_capa_degerlendir_tam_esitlik",
-      "find": "        satir, dogru = SATIR_ANA, capa_ad in adlar\n",
-      "replace": "        satir, dogru = SATIR_ANA, capa_ad.lower() in [a.lower() for a in adlar]\n"
-    },
-    {
-      "id": "olc_klon_ana_satirda",
-      "desc": "ölçüm: klon ekli GT adları ayrı satıra düşmez (ana satırda yanlış sayılır)",
-      "module": "scripts/measurement/ks1_olc.py",
-      "test": "tests/test_ks1_olc.py::test_capa_degerlendir_tam_esitlik",
-      "find": "    if gt_klon_mu(gt_adlari, platform_):\n",
-      "replace": "    if False:\n"
-    },
-    {
-      "id": "olc_mac_alt_cizgi_soyulmaz",
-      "desc": "ölçüm: Mach-O simgesinin baştaki _ soyulmaz",
-      "module": "scripts/measurement/ks1_olc.py",
-      "test": "tests/test_ks1_olc.py::test_platform_adi",
-      "find": "    if platform_ == PLATFORM_MAC and ad.startswith(\"_\"):\n",
-      "replace": "    if False:\n"
-    },
-    {
-      "id": "olc_tekil_ilk_ornek",
-      "desc": "ölçüm: tekilleştirilen öğenin durumu yalnız ilk örnekten alınır",
-      "module": "scripts/measurement/ks1_olc.py",
-      "test": "tests/test_ks1_olc.py::test_tekillestirme_butun_ornekler_dogru_olmali",
-      "find": "\"durum\": DURUM_DOGRU if all(x[\"durum\"] == DURUM_DOGRU for x in g) else DURUM_YANLIS,",
-      "replace": "\"durum\": g[0][\"durum\"],"
-    },
-    {
-      "id": "olc_parca_kesinlige_girer",
-      "desc": "ölçüm: parça çapaları tür kesinliğine girer",
-      "module": "scripts/measurement/ks1_olc.py",
-      "test": "tests/test_ks1_olc.py::test_parca_klon_eslenemeyen_kesinlige_girmez",
-      "find": "    ana = [k for k in kayitlar if k[\"rol\"] != \"parca\" and k[\"satir\"] == SATIR_ANA]\n",
-      "replace": "    ana = [k for k in kayitlar if k[\"satir\"] == SATIR_ANA]\n"
-    },
-    {
-      "id": "olc_n_min_yok",
-      "desc": "ölçüm: az çapalı birimler de makro ortalamaya girer",
-      "module": "scripts/measurement/ks1_olc.py",
-      "test": "tests/test_ks1_olc.py::test_makro_karar",
-      "find": "if o[\"n\"] >= n_min}",
-      "replace": "if o[\"n\"] >= 1}"
-    },
-    {
-      "id": "olc_tek_birim_yeter",
-      "desc": "ölçüm: tek birim kararı vermeye yeter",
-      "module": "scripts/measurement/ks1_olc.py",
-      "test": "tests/test_ks1_olc.py::test_makro_karar",
-      "find": "    if len(giren) < en_az_birim:\n",
-      "replace": "    if len(giren) < 1:\n"
-    },
-    {
-      "id": "olc_sha256_denetimi_yok",
-      "desc": "ölçüm: sha256 uyuşmazlığında koşu durmaz",
-      "module": "scripts/measurement/ks1_olc.py",
-      "test": "tests/test_ks1_olc.py::test_sha256_denetimi",
-      "find": "    if gercek != beklenen:\n",
-      "replace": "    if False:\n"
-    },
-    {
-      "id": "olc_nufus_denetimi_yok",
-      "desc": "ölçüm: eksik ya da bitmemiş ELF varken de ölçüm sürer (yarım koşu geçer)",
-      "module": "scripts/measurement/ks1_olc.py",
-      "test": "tests/test_ks1_olc.py::test_nufus_eksikse_olcum_durur",
-      "find": "    if sorun and not eksik_izinli:\n",
-      "replace": "    if False:\n"
-    },
-    {
-      "id": "olc_elf_ofset_yok",
-      "desc": "ölçüm: ELF GT adresleri Ghidra adres uzayına (PIE ofseti) taşınmaz",
-      "module": "scripts/measurement/ks1_olc.py",
-      "test": "tests/test_ks1_olc.py::test_gt_elf_ofset_nufus_export_klon",
-      "find": "        adlar[dosya + ofset] = list(fn[\"names\"])\n",
-      "replace": "        adlar[dosya] = list(fn[\"names\"])\n"
-    },
-    {
-      "id": "olc_elf_klon_nufusta",
-      "desc": "ölçüm: klon ekli GT fonksiyonları ad bekleyen nüfusa girer",
-      "module": "scripts/measurement/ks1_olc.py",
-      "test": "tests/test_ks1_olc.py::test_gt_elf_ofset_nufus_export_klon",
-      "find": "        elif not fn[\"crt\"] and dosya in adsiz and not gt_klon_mu(fn[\"names\"], PLATFORM_DEBIAN):\n",
-      "replace": "        elif not fn[\"crt\"] and dosya in adsiz:\n"
-    },
-    {
-      "id": "olc_calisma_alani_elf_adi",
-      "desc": "ölçüm: çalışma alanı adı ELF adına eşit varsayılır (coreutils '[' → '_' bulunamaz)",
-      "module": "scripts/measurement/ks1_olc.py",
-      "test": "tests/test_ks1_olc.py::test_calisma_alani_adi_elf_adindan_farkli",
-      "find": "    adlar = sorted(a for a in (taban.iterdir() if taban.is_dir() else []) if a.is_dir())\n",
-      "replace": "    adlar = [taban / kok.name] if (taban / kok.name).is_dir() else []\n"
-    }
-  ]
+ "_comment": "KS-1 (plan v2.2 N1) mutasyon koruması: kesin.py (çıkarıcı, inline koruması) ve ks1_olc.py (ad karşılaştırması, tekilleştirme, tür kararı, ön koşullar). Her mutant bir tanımı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ks1.json",
+ "mutants": [
+  {
+   "id": "ks1_assert_darwin_sira",
+   "desc": "Darwin __assert_rtn'de fonksiyon adı 4. argümandan okunur (ifade çapa olur)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_assert_darwin_birinci_arguman",
+   "find": "{\"assert_rtn\": 0, \"assert_fail\": 3, \"assert_perror_fail\": 3}",
+   "replace": "{\"assert_rtn\": 3, \"assert_fail\": 3, \"assert_perror_fail\": 3, \"x\": 0}"
+  },
+  {
+   "id": "ks1_assert_glibc_sira",
+   "desc": "glibc __assert_fail'de fonksiyon adı 1. argümandan okunur",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_assert_glibc_dorduncu_arguman",
+   "find": "{\"assert_rtn\": 0, \"assert_fail\": 3, \"assert_perror_fail\": 3}",
+   "replace": "{\"assert_rtn\": 0, \"assert_fail\": 0, \"assert_perror_fail\": 0, \"x\": 3}"
+  },
+  {
+   "id": "ks1_bicim_ayraci_yok",
+   "desc": "biçim dizgisi %s ile başlaması yeter (ayraç aranmaz: \"%s %s\" de yuva olur)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_bicim_ayraci",
+   "find": "FORMAT_RE = re.compile(r\"^%s:\")",
+   "replace": "FORMAT_RE = re.compile(r\"^%s\")"
+  },
+  {
+   "id": "ks1_tanimlayici_gevsek",
+   "desc": "ad yuvasındaki dizginin tanımlayıcı olması aranmaz (boşluksuz her dizgi)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_ad_yuvasi_dizgisi",
+   "find": "IDENT_RE = re.compile(r\"^[A-Za-z_][A-Za-z0-9_]+$\")",
+   "replace": "IDENT_RE = re.compile(r\"^\\S+$\")"
+  },
+  {
+   "id": "ks1_program_adi_dislanmaz",
+   "desc": "günlük türünde ikilinin adı (ya da adının bir biçimi) ad yuvasında çapa olur",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_gunluk_turunde_program_adi_bicimleri",
+   "find": "    return value.lower() not in program_name_forms(program)\n",
+   "replace": "    return bool(value)\n"
+  },
+  {
+   "id": "ks1_darwin_yigin_yok",
+   "desc": "Darwin'de de hizalı argüman x(biçim+1)'den okunur (değişken argüman yığında değilmiş gibi)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_func_kalibi_cagri_kurali",
+   "find": "    if abi == ABI_DARWIN:\n        return cs.slot(0)\n",
+   "replace": "    if abi == ABI_DARWIN and False:\n        return cs.slot(0)\n"
+  },
+  {
+   "id": "ks1_birlesme_ilk_yol",
+   "desc": "birleşme noktasında ilk öncülün yazmaçları alınır (yollar uyuşmasa da)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_birlesmede_yalniz_uyusan_deger_kalir",
+   "find": "    regs = {k: v for k, v in first.regs.items() if all(s.regs.get(k) == v for s in rest)}\n",
+   "replace": "    regs = dict(first.regs)\n"
+  },
+  {
+   "id": "ks1_cagri_yazmac_oldurmez",
+   "desc": "çağrı, çağıranın sakladığı yazmaçları (x0-x18) öldürmez",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_cagri_cagiranin_sakladigi_yazmaclari_oldurur",
+   "find": "            for n in _CALLER_SAVED:\n",
+   "replace": "            for n in ():\n"
+  },
+  {
+   "id": "ks1_yigin_bayatlamaz",
+   "desc": "çağrıdan sonra yığın yuvaları taze kalır (önceki çağrının değişken argümanı sonrakine geçer)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_bayat_yigin_yuvasi_degisken_arguman_sayilmaz",
+   "find": "st.stack = {k: (v, False) for k, (v, _) in st.stack.items()}",
+   "replace": "st.stack = {k: (v, True) for k, (v, _) in st.stack.items()}"
+  },
+  {
+   "id": "ks1_parca_kaldirilmaz",
+   "desc": "assert parçası üst fonksiyona kaldırılmaz (yuva parçada kalır)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_assert_parcasi_ust_fonksiyona_kalkar",
+   "find": "        res = next(iter(ups)) if len(ups) == 1 else None\n",
+   "replace": "        res = f\n"
+  },
+  {
+   "id": "ks1_K1_kapali",
+   "desc": "K1 kapalı: yuva dışı başvurusu olan dizgi de çapa verir",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_K1_yuva_disi_basvuru",
+   "find": "        if impure:\n",
+   "replace": "        if impure and False:\n"
+  },
+  {
+   "id": "ks1_K2_kapali",
+   "desc": "K2 kapalı: birden çok fonksiyonun yuvasındaki dizgi birine çapa olur",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_K2_cok_sahip",
+   "find": "        if len(owners) != 1:\n",
+   "replace": "        if len(owners) > 999:\n"
+  },
+  {
+   "id": "ks1_K3_kapali",
+   "desc": "K3 kapalı: gövdesinde iki farklı ad olan fonksiyon çapa alır",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_K3_govdede_cok_ad_elenmis_dizgi_dahil",
+   "find": "        if len(body_names.get(o, set())) > 1:\n",
+   "replace": "        if len(body_names.get(o, set())) > 10:\n"
+  },
+  {
+   "id": "ks1_K4_kapali",
+   "desc": "K4 kapalı: aynı ad iki fonksiyona çapalanır",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_K4_ad_tekligi",
+   "find": "        if len(owners_of_name[name]) > 1:\n",
+   "replace": "        if len(owners_of_name[name]) > 10:\n"
+  },
+  {
+   "id": "ks1_K5_kapali",
+   "desc": "K5 kapalı: Ghidra'nın adlandırdığı fonksiyona dizgi çapası yazılır",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_K5_zaten_adli",
+   "find": "        if f is None or not is_generic_name(f.name):\n            drop(DROP_NAMED",
+   "replace": "        if f is None:\n            drop(DROP_NAMED"
+  },
+  {
+   "id": "ks1_export_oto_ad",
+   "desc": "export türü Ghidra'nın oto adlarını (_DT_INIT) da dışa aktarım sayar",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_export_ve_oto_adlar",
+   "find": "            if is_generic_name(f.name) or f.name in NOT_EXPORT_NAMES:\n",
+   "replace": "            if is_generic_name(f.name):\n"
+  },
+  {
+   "id": "ks1_K0_kapali",
+   "desc": "K0 kapalı: başlık dosyasındaki assert (inline edilen yardımcı) çapa verir",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_K0_baslik_dosyasi",
+   "find": "        if any(s.header for s in sl):\n",
+   "replace": "        if any(s.header for s in sl) and False:\n"
+  },
+  {
+   "id": "ks1_sinir_iyimser",
+   "desc": "güvenlik sınırı aşılınca blok eski (iyimser) durumunu korur",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_guvenlik_siniri_tutucu",
+   "find": "            new_in = _State()   # sınır aşıldı: en tutucu durum (hiçbir değer bilinmiyor)\n",
+   "replace": "            pass\n"
+  },
+  {
+   "id": "olc_tam_esitlik_gevsek",
+   "desc": "ölçüm: ana satırda büyük/küçük harf yok sayılır",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_capa_degerlendir_tam_esitlik",
+   "find": "        satir, dogru = SATIR_ANA, capa_ad in adlar\n",
+   "replace": "        satir, dogru = SATIR_ANA, capa_ad.lower() in [a.lower() for a in adlar]\n"
+  },
+  {
+   "id": "olc_klon_ana_satirda",
+   "desc": "ölçüm: klon ekli GT adları ayrı satıra düşmez (ana satırda yanlış sayılır)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_capa_degerlendir_tam_esitlik",
+   "find": "    if gt_klon_mu(gt_adlari, platform_):\n",
+   "replace": "    if False:\n"
+  },
+  {
+   "id": "olc_mac_alt_cizgi_soyulmaz",
+   "desc": "ölçüm: Mach-O simgesinin baştaki _ soyulmaz",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_platform_adi",
+   "find": "    if platform_ == PLATFORM_MAC and ad.startswith(\"_\"):\n",
+   "replace": "    if False:\n"
+  },
+  {
+   "id": "olc_tekil_ilk_ornek",
+   "desc": "ölçüm: tekilleştirilen öğenin durumu yalnız ilk örnekten alınır",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_tekillestirme_butun_ornekler_dogru_olmali",
+   "find": "\"dogru\": all(x[\"durum\"] == DURUM_DOGRU for x in g),",
+   "replace": "\"dogru\": g[0][\"durum\"] == DURUM_DOGRU,"
+  },
+  {
+   "id": "olc_parca_kesinlige_girer",
+   "desc": "ölçüm: parça çapaları tür kesinliğine girer",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_klon_ve_eslenemeyen_kesinlige_girer_parca_girmez",
+   "find": "               if k[\"rol\"] != \"parca\" and (k[\"satir\"] == SATIR_ANA or not yalniz_ana)]\n",
+   "replace": "               if k[\"satir\"] == SATIR_ANA or not yalniz_ana]\n"
+  },
+  {
+   "id": "olc_n_min_yok",
+   "desc": "ölçüm: az öğeli birimler de karara girer",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_karar_ayni_program_iki_platform_tek_programdir",
+   "find": "if o[\"tekil\"][\"n\"] >= n_min)",
+   "replace": "if o[\"tekil\"][\"n\"] >= 1)"
+  },
+  {
+   "id": "olc_sha256_denetimi_yok",
+   "desc": "ölçüm: sha256 uyuşmazlığında koşu durmaz",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_sha256_denetimi",
+   "find": "    if gercek != beklenen:\n",
+   "replace": "    if False:\n"
+  },
+  {
+   "id": "olc_nufus_denetimi_yok",
+   "desc": "ölçüm: eksik ya da bitmemiş ELF varken de ölçüm sürer (yarım koşu geçer)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_nufus_eksikse_olcum_durur",
+   "find": "    if sorun and not eksik_izinli:\n",
+   "replace": "    if False:\n"
+  },
+  {
+   "id": "olc_elf_ofset_yok",
+   "desc": "ölçüm: ELF GT adresleri Ghidra adres uzayına (PIE ofseti) taşınmaz",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_gt_elf_ofset_nufus_export_klon",
+   "find": "        adlar[dosya + ofset] = list(fn[\"names\"])\n",
+   "replace": "        adlar[dosya] = list(fn[\"names\"])\n"
+  },
+  {
+   "id": "olc_elf_klon_nufusta",
+   "desc": "ölçüm: klon ekli GT fonksiyonları ad bekleyen nüfusa girer",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_gt_elf_ofset_nufus_export_klon",
+   "find": "        elif not fn[\"crt\"] and dosya in adsiz and not gt_klon_mu(fn[\"names\"], PLATFORM_DEBIAN):\n",
+   "replace": "        elif not fn[\"crt\"] and dosya in adsiz:\n"
+  },
+  {
+   "id": "olc_calisma_alani_elf_adi",
+   "desc": "ölçüm: çalışma alanı adı ELF adına eşit varsayılır (coreutils '[' → '_' bulunamaz)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_calisma_alani_adi_elf_adindan_farkli",
+   "find": "    adlar = sorted(a for a in (taban.iterdir() if taban.is_dir() else []) if a.is_dir())\n",
+   "replace": "    adlar = [taban / kok.name] if (taban / kok.name).is_dir() else []\n"
+  },
+  {
+   "id": "ks1_bicim_ayrac_parantez",
+   "desc": "biçim ayracı olarak %s() yeniden kabul edilir (ölçülmemiş biçim kesin sayılır)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_bicim_ayraci",
+   "find": "FORMAT_RE = re.compile(r\"^%s:\")",
+   "replace": "FORMAT_RE = re.compile(r\"^%s(?::|\\(\\))\")"
+  },
+  {
+   "id": "ks1_ad_cok_parca_sarti_yok",
+   "desc": "günlük türünde tek sözcüklü ad (main) çapa olur",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_ad_yuvasi_dizgisi",
+   "find": "    if not name_candidate(value) or not MULTI_PART_RE.search(value):\n",
+   "replace": "    if not name_candidate(value):\n"
+  },
+  {
+   "id": "ks1_kucuk_harf_sarti_yok",
+   "desc": "günlük türünde tamamı büyük harf sabit (OTURUM_AC) çapa olur",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_ad_yuvasi_dizgisi",
+   "find": "    if not any(c.islower() for c in value):\n",
+   "replace": "    if not value:\n"
+  },
+  {
+   "id": "ks1_program_adi_harf_duyarli",
+   "desc": "program adı dışlaması harf duyarlı (Redis_Cli geçer)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_gunluk_turunde_program_adi_bicimleri",
+   "find": "    return value.lower() not in program_name_forms(program)\n",
+   "replace": "    return value not in program_name_forms(program)\n"
+  },
+  {
+   "id": "ks1_program_adi_parcasiz",
+   "desc": "program adının alt çizgili biçimi dışlanmaz (redis_cli geçer)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_ad_bicimi_islevleri",
+   "find": "    forms = {p, re.sub(r\"[-.]\", \"_\", p)} | set(re.split(r\"[-.]\", p))\n",
+   "replace": "    forms = {p} | set(re.split(r\"[-.]\", p))\n"
+  },
+  {
+   "id": "ks1_assert_ad_bicimi_suzgeci",
+   "desc": "assert yuvası da günlük ad biçimi süzgecinden geçer (main, tree düşer)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_assert_yuvasinda_ad_bicimi_suzgeci_yok",
+   "find": "candidate(v, allow_loader=True, log=False, t=TYPE_ASSERT)",
+   "replace": "candidate(v, allow_loader=True, log=True, t=TYPE_ASSERT)"
+  },
+  {
+   "id": "ks1_tanimlayici_tam_eslesme_yok",
+   "desc": "ad dizgisi sondaki satır sonuyla kabul edilir (main\\n aday olur)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_ad_bicimi_islevleri",
+   "find": "IDENT_RE.fullmatch(value) is not None",
+   "replace": "IDENT_RE.match(value) is not None"
+  },
+  {
+   "id": "ks1_K0_bilinmeyen_dosya_gecer",
+   "desc": "dosya argümanı çözülemeyen assert yuvası çapa verir (K0 değerlendirilemeden)",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_K0_dosya_bilinmiyor",
+   "find": "            header = None if path is None else bool(HEADER_FILE_RE.search(path))\n",
+   "replace": "            header = bool(path and HEADER_FILE_RE.search(path))\n"
+  },
+  {
+   "id": "ks1_K4_ghidra_adi_kapali",
+   "desc": "Ghidra'nın başka fonksiyona verdiği adla çakışan çapa geçer",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_K4_ghidra_adi_dolu",
+   "find": "        if taken.get(name, set()) - {o}:\n",
+   "replace": "        if not name:\n"
+  },
+  {
+   "id": "ks1_K4_mac_alt_cizgi_soyulmaz",
+   "desc": "Mach-O'da Ghidra adının baştaki _'ı soyulmadan karşılaştırılır",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_K4_ghidra_adi_dolu",
+   "find": "        if abi == ABI_DARWIN and nm.startswith(\"_\"):\n",
+   "replace": "        if abi is None:\n"
+  },
+  {
+   "id": "ks1_parca_dolayli_cagri",
+   "desc": "dolaylı çağrısı (blr) olan fonksiyon assert parçası sayılır",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_dolayli_cagrili_ya_da_disa_kosullu_dallanan_parca_degildir",
+   "find": "    cand = [a for a in sorted(flows) if not flows[a].has_return and not flows[a].has_icall]\n",
+   "replace": "    cand = [a for a in sorted(flows) if not flows[a].has_return]\n"
+  },
+  {
+   "id": "ks1_parca_kosullu_dis_dallanma",
+   "desc": "işlev dışına koşullu dallanan fonksiyon assert parçası sayılır",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_dolayli_cagrili_ya_da_disa_kosullu_dallanan_parca_degildir",
+   "find": "            tg = set(flows[a].call_targets) | set(flows[a].cond_out)\n",
+   "replace": "            tg = set(flows[a].call_targets)\n"
+  },
+  {
+   "id": "ks1_parca_tek_gecis",
+   "desc": "parça tespiti tek geçiş: parçaya kuyruk çağrısı yapan parça tanınmaz",
+   "module": "karadul/reconstruction/tarif/kesin.py",
+   "test": "tests/test_tarif_kesin.py::test_parca_zinciri_sabit_nokta",
+   "find": "            if tg & (assert_targets | stubs) and tg <= allowed | stubs:\n",
+   "replace": "            if tg & assert_targets and tg <= allowed:\n"
+  },
+  {
+   "id": "olc_tek_program_yeter",
+   "desc": "ölçüm: tek kaynak program kararı vermeye yeter",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_karar_ayni_program_iki_platform_tek_programdir",
+   "find": "    if len(programlar) < en_az_program:\n",
+   "replace": "    if len(programlar) < 1:\n"
+  },
+  {
+   "id": "olc_klon_karar_disi",
+   "desc": "ölçüm: klon satırı ve eşlenemeyenler kesinliğe girmez (eski tanım)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_klon_ve_eslenemeyen_kesinlige_girer_parca_girmez",
+   "find": "(k[\"satir\"] == SATIR_ANA or not yalniz_ana)]",
+   "replace": "(k[\"satir\"] == SATIR_ANA)]"
+  },
+  {
+   "id": "olc_eslenemeyen_karar_disi",
+   "desc": "ölçüm: GT'de karşılığı olmayan çapa kesinlikten düşer (yanlış sayılmaz)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_tekilde_eslenemeyen_ornek_adi_yanlis_yapar",
+   "find": "(k[\"satir\"] == SATIR_ANA or not yalniz_ana)]",
+   "replace": "(k[\"satir\"] == SATIR_ANA or (not yalniz_ana and k[\"satir\"] != SATIR_ESLENEMEDI))]"
+  },
+  {
+   "id": "olc_program_duzeyi_yok",
+   "desc": "ölçüm: makro birim düzeyinde (aynı programın platformları ayrı kanıt sayılır)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_karar_program_duzeyinde_makro",
+   "find": "        programlar.setdefault(birim_programi(b), []).append(b)\n",
+   "replace": "        programlar.setdefault(b, []).append(b)\n"
+  },
+  {
+   "id": "olc_karar_yalniz_tekil",
+   "desc": "ölçüm: karar makrosu yalnız tekil görünümden (örnek düzeyi karara girmez)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_karar_tekil_ve_ornek_duzeyinin_kucugu",
+   "find": "    karar_makrosu = min(tam) if tam else None\n",
+   "replace": "    karar_makrosu = tam[0] if tam else None\n"
+  },
+  {
+   "id": "olc_wilson_kosulu_yok",
+   "desc": "ölçüm: Wilson üst sınırı koşulu yok (makro kötü birimi örter)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_karar_wilson_ust_siniri_kotu_birimi_ortmez",
+   "find": "    elif karar_makrosu >= sinir and not any(gorunumler[g][\"wilson_ihlali\"] for g in GORUNUMLER):\n",
+   "replace": "    elif karar_makrosu >= sinir:\n"
+  },
+  {
+   "id": "olc_esik_kati_buyuk",
+   "desc": "ölçüm: eşik tam eşitlikte geçmez (≥ yerine >)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_karar_esik_tam_esitlikte_gecer",
+   "find": "    elif karar_makrosu >= sinir and not any(",
+   "replace": "    elif karar_makrosu > sinir and not any("
+  },
+  {
+   "id": "olc_export_karar_satiri",
+   "desc": "ölçüm: export yeniden karar satırı olur",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_karar_ve_rapor_satirlari_ayri",
+   "find": "KARAR_SATIRLARI = (\"assert\", ASSERT_UST, \"func_kalibi\", \"func_aktarma\")\n",
+   "replace": "KARAR_SATIRLARI = (\"assert\", ASSERT_UST, \"func_kalibi\", \"func_aktarma\", \"export\")\n"
+  },
+  {
+   "id": "olc_export_kapsam_paydasi",
+   "desc": "ölçüm: export kapsamının payı ad bekleyen nüfustan sayılır (hep 0 çıkar)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_export_kapsaminin_paydasi_disa_aktarilan_gt",
+   "find": "kapsam_ozeti(g, export_gt, alan=\"export_gt\") if t == \"export\"",
+   "replace": "kapsam_ozeti(g, export_gt) if t == \"export\""
+  },
+  {
+   "id": "olc_yardimci_denetlenmez",
+   "desc": "ölçüm: GT/ofset yardımcılarının sha256'sı denetlenmez",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_onkosul_olcum_yardimcisi_degisince_durur",
+   "find": "    for rel in OLCUM_DOSYALARI:\n        if rel not in dosyalar:\n",
+   "replace": "    for rel in OLCUM_DOSYALARI[:2]:\n        if rel not in dosyalar:\n"
+  },
+  {
+   "id": "olc_ofset_kaynagi_denetlenmez",
+   "desc": "ölçüm: ofset varsayılana düşse de ölçüm sürer",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_gt_elf_ofset_nufus_export_klon",
+   "find": "    if kaynak != OFSET_KAYNAGI:\n",
+   "replace": "    if not kaynak:\n"
+  },
+  {
+   "id": "olc_beklenmeyen_birim_gecer",
+   "desc": "ölçüm: beklenmeyen birim eksiksizlik denetimine takılmaz",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_nufus_eksikse_olcum_durur",
+   "find": "        for b in sorted(set(beklenen) | set(bulunan)):\n",
+   "replace": "        for b in sorted(set(beklenen)):\n"
+  },
+  {
+   "id": "olc_ghidra_denetimi_yok",
+   "desc": "ölçüm: Ghidra sürümü doğrulanamayan ELF varken ölçüm sürer",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_ghidra_surumu_denetimi",
+   "find": "    if sorunlu:\n        raise OnkosulHatasi(f\"Ghidra sürümü doğrulanamadı",
+   "replace": "    if len(sorunlu) > 99:\n        raise OnkosulHatasi(f\"Ghidra sürümü doğrulanamadı"
+  },
+  {
+   "id": "olc_ghidra_sabit_olmayan_gecer",
+   "desc": "ölçüm: sabitlenmiş sürümle yapılmamış koşu kabul edilir",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_ghidra_surumu_denetimi",
+   "find": "    return g.get(\"version\") if g.get(\"matches_pinned\") is True and g.get(\"version\") else None\n",
+   "replace": "    return g.get(\"version\") or None\n"
+  },
+  {
+   "id": "olc_ghidra_cok_surum_gecer",
+   "desc": "ölçüm: farklı Ghidra sürümleriyle analiz edilmiş ELF'ler birlikte ölçülür",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_ghidra_surumu_denetimi",
+   "find": "    if len(surumler) > 1:\n",
+   "replace": "    if len(surumler) > 99:\n"
+  },
+  {
+   "id": "olc_zenginlik_esigi_kati",
+   "desc": "ölçüm: zenginlik eşiğine eşit birim yoksul sayılır",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_zenginlik_esigi_ortak_ve_mutlak",
+   "find": "(\"zengin\" if z >= ZENGINLIK_ESIGI else \"yoksul\")",
+   "replace": "(\"zengin\" if z > ZENGINLIK_ESIGI else \"yoksul\")"
+  },
+  {
+   "id": "olc_cpp_mac_soyulmaz",
+   "desc": "ölçüm: Mach-O'da C++ işareti baştaki _ soyulmadan aranır",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_cpp_ikili_mi",
+   "find": "platform_adi(str(f.get(\"name\") or \"\"), platform_).startswith(CPP_ISARETLERI)",
+   "replace": "str(f.get(\"name\") or \"\").startswith(CPP_ISARETLERI)"
+  },
+  {
+   "id": "olc_mac_klon_nufusta",
+   "desc": "ölçüm: Mac'te derleyici ekli klon ad bekleyen nüfusa girer",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_ks1_olc.py::test_gt_mac_nufus_ve_hedef_denetimi",
+   "find": "             and not gt_klon_mu(n, PLATFORM_MAC)}\n",
+   "replace": "             and bool(n)}\n"
+  }
+ ]
 }

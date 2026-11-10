@@ -15,8 +15,10 @@ Türler (tam tanımlar ön kayıt §3):
     Darwin ``__assert_rtn(fonksiyon, dosya, satır, ifade)``: 1. argüman.
     glibc ``__assert_fail`` / ``__assert_perror_fail(ifade, dosya, satır, fonksiyon)``: 4. argüman.
 ``func_kalibi``
-    Bir çağrıda tek bir argüman ``%s:`` ya da ``%s()`` ile başlayan biçim dizgisidir; o ilk ``%s``'e
-    hizalı argüman (biçimden sonraki ilk değişken argüman) tanımlayıcı biçimli sabit dizgidir.
+    Bir çağrıda tek bir argüman ``%s:`` ile başlayan biçim dizgisidir; o ilk ``%s``'e hizalı
+    argüman (biçimden sonraki ilk değişken argüman) tanımlayıcı biçimli sabit dizgidir. Günlük
+    türlerinde (bu ve ``func_aktarma``) ad en az iki parçalıdır (alt çizgi ya da küçükten büyüğe
+    geçiş), en az bir küçük harf taşır ve ikilinin adı ya da adının bir parçası değildir.
 ``func_aktarma``
     Fonksiyonun bir parametresi ``func_kalibi`` hizasına (ya da başka bir aktarıcının aynı
     parametresine) gidiyorsa fonksiyon o parametrenin aktarıcısıdır. Aktarıcıya o parametrede
@@ -34,13 +36,15 @@ birleşme noktasında yalnız bütün gelen yollarda aynı olan değerler tutulu
 
 - K0 başlık dosyası: dosya argümanı başlık (``.h`` …) olan assert yuvası çapa vermez; başlıkta
   tanımlı fonksiyon başka gövdelere inline edilmiş olabilir. Bu adlar K3'te gövde adı sayılmaz.
+  Dosya argümanı sabit bir dizgiye çözülemeyen assert yuvası da çapa vermez (K0 değerlendirilemez).
 - K1 saf başvuru: dizgiye başvuran her fonksiyon onu bir ad yuvasında kullanır (ya da yalnız assert
   yuvasında tüketilen bir yükleyicidir); başka türlü başvuru varsa dizgi çapa vermez.
 - K2 tek sahip: dizginin yuva kullanıcıları (assert parçaları üst fonksiyona kaldırılarak) tek bir
   fonksiyona iner; inmezse çapa yok.
 - K3 gövdede tek ad: bir fonksiyonun ad yuvalarında (elenmiş dizgiler dahil) birden çok farklı ad
   varsa çapa yok. Türler arası çelişki de buraya düşer.
-- K4 ad tekliği: aynı ad birden çok fonksiyona çapalanıyorsa hiçbirine çapa yok.
+- K4 ad tekliği: aynı ad birden çok fonksiyona çapalanıyorsa hiçbirine çapa yok; ad Ghidra'nın
+  başka bir fonksiyona zaten verdiği (jenerik olmayan) bir adsa da çapa yok.
 - K5 zaten adlı: Ghidra fonksiyonu kendisi adlandırmışsa dizgi türlerinden çapa yazılmaz.
 
 Çıktı adrese göre sıralıdır; bütün küme dolaşımları sıralıdır (belirlenimcilik).
@@ -55,7 +59,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
-KS1_VERSION = 1
+KS1_VERSION = 2
 
 TYPE_ASSERT = "assert"
 TYPE_FUNC = "func_kalibi"
@@ -80,8 +84,10 @@ HEADER_FILE_RE = re.compile(r"\.(?:h|hh|hpp|hxx|h\+\+|inl|inc|def|tcc)$", re.I)
 
 # Ad yuvasındaki dizgi: C tanımlayıcısı, en az iki karakter
 IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]+$")
-# Biçim dizgisi: ``%s`` ile başlar, hemen ardından ``:`` ya da ``()`` gelir
-FORMAT_RE = re.compile(r"^%s(?::|\(\))")
+# Biçim dizgisi: ``%s`` ile başlar, hemen ardından ``:`` gelir
+FORMAT_RE = re.compile(r"^%s:")
+# Günlük türlerinde ad biçimi: en az iki parça (harf/rakam_harf/rakam ya da küçükten büyüğe geçiş)
+MULTI_PART_RE = re.compile(r"[A-Za-z0-9]_[A-Za-z0-9]|[a-z][A-Z]")
 ARG_REGS = 8
 
 # Ghidra'nın yer tutucu ya da kendiliğinden verdiği adlar: fonksiyon "ad bekliyor"
@@ -97,14 +103,16 @@ SOURCE_IMPORTED = "IMPORTED"
 
 # Koruma kuralları ve eleme nedenleri (ön kayıt §5)
 DROP_HEADER = "K0_baslik_dosyasi"
+DROP_HEADER_UNKNOWN = "K0_dosya_bilinmiyor"
 DROP_IMPURE = "K1_yuva_disi_basvuru"
 DROP_NO_OWNER = "K2_sahipsiz"
 DROP_MULTI_OWNER = "K2_cok_sahip"
 DROP_BODY_MULTI = "K3_govdede_cok_ad"
 DROP_NAME_MULTI = "K4_ad_cok_fonksiyonda"
+DROP_NAME_TAKEN = "K4_ghidra_adi_dolu"
 DROP_NAMED = "K5_zaten_adli"
-DROP_REASONS = (DROP_HEADER, DROP_IMPURE, DROP_NO_OWNER, DROP_MULTI_OWNER, DROP_BODY_MULTI,
-                DROP_NAME_MULTI, DROP_NAMED)
+DROP_REASONS = (DROP_HEADER, DROP_HEADER_UNKNOWN, DROP_IMPURE, DROP_NO_OWNER, DROP_MULTI_OWNER,
+                DROP_BODY_MULTI, DROP_NAME_MULTI, DROP_NAME_TAKEN, DROP_NAMED)
 # Huni aşamaları (her tür için ayrı sayılır; ön kayıt §5)
 FUNNEL = ("1_yuva", "2_dizgi", "3_K0_sonrasi", "4_K1_sonrasi", "5_K2_sonrasi", "6_aday_fonksiyon",
           "7_K3_sonrasi", "8_K4_sonrasi", "9_capa")
@@ -508,6 +516,8 @@ class FunctionFlow:
     has_return: bool                     # ``ret`` ya da dolaylı dallanma var
     exit_regs: dict[int, Value] | None   # bütün ``ret``'lerde ortak x0-x7
     call_targets: list[int]              # ``bl`` ve kuyruk çağrısı hedefleri
+    cond_out: list[int] = field(default_factory=list)   # işlev dışına koşullu dallanma hedefleri
+    has_icall: bool = False              # dolaylı çağrı (``blr``) var
 
 
 def _blocks(insns: list[Insn]) -> tuple[list[int], dict[int, list[Insn]], dict[int, list[int]]]:
@@ -550,6 +560,8 @@ def _run_block(addr: int, st: _State, blk: list[Insn], body: set[int],
         is_call = kind in ("call", "icall") or (kind == "jump" and tgt not in body)
         if is_call:
             if flow is not None:
+                if kind == "icall":
+                    flow.has_icall = True
                 flow.calls.append(CallSite(
                     function=addr, pc=ins.pc, target=None if kind == "icall" else tgt,
                     regs=tuple(sorted((n, v) for n, v in st.regs.items() if n < ARG_REGS)),
@@ -567,6 +579,7 @@ def _run_block(addr: int, st: _State, blk: list[Insn], body: set[int],
         elif kind == "cond":
             if flow is not None and tgt is not None and tgt not in body:
                 flow.jumps_out.append(tgt)
+                flow.cond_out.append(tgt)
         elif kind == "end":
             # tuzak komutları (brk, udf, hlt) dönüş değildir; dolaylı dallanma dönüş sayılır
             if flow is not None and _may_return(ins.mnemonic):
@@ -638,6 +651,7 @@ def analyze_function(addr: int, insns: list[Insn],
     flow.calls.sort(key=lambda c: c.pc)
     flow.jumps_out = sorted(set(flow.jumps_out))
     flow.call_targets = sorted(set(flow.call_targets))
+    flow.cond_out = sorted(set(flow.cond_out))
     return flow
 
 
@@ -691,11 +705,30 @@ def is_generic_name(name: str) -> bool:
     return not name or bool(GENERIC_NAME_RE.match(name))
 
 
-def name_candidate(value: str | None, program: str) -> bool:
-    """Ad yuvasındaki dizgi aday mı: tanımlayıcı biçimi ve ikilinin kendi adı değil."""
-    if value is None or not IDENT_RE.match(value):
+def name_candidate(value: str | None) -> bool:
+    """Ad yuvasındaki dizgi aday mı: bütünüyle C tanımlayıcısı (en az iki karakter)."""
+    return value is not None and IDENT_RE.fullmatch(value) is not None
+
+
+def program_name_forms(program: str) -> frozenset[str]:
+    """İkilinin adı ve parçaları, küçük harfle: ``redis-cli`` → redis-cli, redis_cli, redis, cli."""
+    p = program.lower()
+    forms = {p, re.sub(r"[-.]", "_", p)} | set(re.split(r"[-.]", p))
+    return frozenset(f for f in forms if f)
+
+
+def log_name_candidate(value: str | None, program: str) -> bool:
+    """Günlük türlerinde (``func_kalibi``, ``func_aktarma``) ad: tanımlayıcı, en az iki parçalı,
+    en az bir küçük harfli; ikilinin adı ya da adının bir parçası değil (harf duyarsız).
+
+    ``%s:`` yuvası yapısal değil, alışkanlıktır: tek sözcüklü ya da tamamı büyük harf sabitler orada
+    çoğunlukla program, alt komut, modül ya da düzey adıdır. Assert yuvası bu süzgeçten geçmez.
+    """
+    if not name_candidate(value) or not MULTI_PART_RE.search(value):
         return False
-    return value != program
+    if not any(c.islower() for c in value):
+        return False
+    return value.lower() not in program_name_forms(program)
 
 
 def assert_arg_index(name: str) -> int | None:
@@ -725,7 +758,7 @@ class _Slot:
     pc: int
     callee: int | None
     loader: int        # değer bir yükleyici özetinden geldiyse onun adresi, yoksa -1
-    header: bool = False   # assert'in dosya argümanı başlık dosyası (K0)
+    header: bool | None = False   # assert'in dosya argümanı başlık mı (K0); None: çözülemedi
 
 
 def _loader_summaries(inp: StaticInput) -> dict[int, dict[int, Value]]:
@@ -801,9 +834,16 @@ def _string_anchors(inp: StaticInput, flows: Mapping[int, FunctionFlow],
         for t in ts:
             bump(f"eleme:{reason}:{t}")
 
-    def candidate(v: Value | None, allow_loader: bool) -> bool:
-        return (v is not None and v[0] == CONST and (allow_loader or v[2] == NO_ORIGIN)
-                and name_candidate(strings.get(v[1]), inp.program))
+    def candidate(v: Value | None, allow_loader: bool, log: bool, t: str) -> bool:
+        if v is None or v[0] != CONST or not (allow_loader or v[2] == NO_ORIGIN):
+            return False
+        value = strings.get(v[1])
+        if not name_candidate(value):
+            return False
+        if log and not log_name_candidate(value, inp.program):
+            bump(f"ad_bicimi_eleme:{t}")
+            return False
+        return True
 
     # 1. Doğrudan yuvalar: assert ve func_kalibi; func_kalibi hizasında parametre → aktarıcı
     slots: list[_Slot] = []
@@ -815,17 +855,17 @@ def _string_anchors(inp: StaticInput, flows: Mapping[int, FunctionFlow],
             ai = assert_arg_index(names.get(cs.target, ""))
             if ai is not None:
                 v = cs.reg(ai)
-                if TYPE_ASSERT in types and candidate(v, allow_loader=True):
+                if TYPE_ASSERT in types and candidate(v, allow_loader=True, log=False, t=TYPE_ASSERT):
                     fv = cs.reg(ASSERT_FILE_ARG)
                     path = strings.get(fv[1]) if fv is not None and fv[0] == CONST else None
-                    slots.append(_Slot(TYPE_ASSERT, v[1], a, cs.pc, cs.target, v[2],
-                                       bool(path and HEADER_FILE_RE.search(path))))
+                    header = None if path is None else bool(HEADER_FILE_RE.search(path))
+                    slots.append(_Slot(TYPE_ASSERT, v[1], a, cs.pc, cs.target, v[2], header))
                 continue
             fr = format_register(cs, strings)
             if fr is None:
                 continue
             v = aligned_value(cs, fr, abi)
-            if TYPE_FUNC in types and candidate(v, allow_loader=False):
+            if TYPE_FUNC in types and candidate(v, allow_loader=False, log=True, t=TYPE_FUNC):
                 slots.append(_Slot(TYPE_FUNC, v[1], a, cs.pc, cs.target, NO_ORIGIN))
             elif v is not None and v[0] == PARAM:
                 forwarders.setdefault(a, set()).add(v[1])
@@ -846,7 +886,7 @@ def _string_anchors(inp: StaticInput, flows: Mapping[int, FunctionFlow],
             for cs in flows[a].calls:
                 for j in sorted(forwarders.get(cs.target, ())):
                     v = cs.reg(j)
-                    if candidate(v, allow_loader=False):
+                    if candidate(v, allow_loader=False, log=True, t=TYPE_FORWARD):
                         slots.append(_Slot(TYPE_FORWARD, v[1], a, cs.pc, cs.target, NO_ORIGIN))
     counts["aktarici_fonksiyon"] = len(forwarders)
     for s in slots:
@@ -859,11 +899,22 @@ def _string_anchors(inp: StaticInput, flows: Mapping[int, FunctionFlow],
         for t in flows[a].jumps_out:
             if t in flows and t != a:
                 edges_in.setdefault(t, set()).add(a)
+    # Parça: dönmeyen ve dolaylı çağrısız; çağrı, kuyruk çağrısı ve işlev dışına koşullu dallanma
+    # hedeflerinin hepsi assert, yükleyici ya da başka bir parça, en az biri assert ya da parça.
+    # Sabit nokta: parçayı kuyruk çağrısıyla çağıran parça da parçadır.
+    allowed = assert_targets | set(summaries)
+    cand = [a for a in sorted(flows) if not flows[a].has_return and not flows[a].has_icall]
     stubs: set[int] = set()
-    for a in sorted(flows):
-        tg = set(flows[a].call_targets)
-        if not flows[a].has_return and tg & assert_targets and tg <= assert_targets | set(summaries):
-            stubs.add(a)
+    changed = True
+    while changed:
+        changed = False
+        for a in cand:
+            if a in stubs:
+                continue
+            tg = set(flows[a].call_targets) | set(flows[a].cond_out)
+            if tg & (assert_targets | stubs) and tg <= allowed | stubs:
+                stubs.add(a)
+                changed = True
     counts["assert_parcasi"] = len(stubs)
     lifted: dict[int, int | None] = {}
 
@@ -894,11 +945,15 @@ def _string_anchors(inp: StaticInput, flows: Mapping[int, FunctionFlow],
         if any(s.header for s in sl):
             drop(DROP_HEADER, ts, dizgi=f"{sa:x}")
             continue
-        for t in ts:
-            bump(f"3_K0_sonrasi:{t}")
         owners = {lift(s.site) for s in sl}
         for o in sorted(o for o in owners if o is not None):
             body_names.setdefault(o, set()).add(strings[sa])
+        # dosya argümanı çözülemedi: K0 değerlendirilemez (tutucu); ad yine de gövde adı sayılır
+        if any(s.type == TYPE_ASSERT and s.header is None for s in sl):
+            drop(DROP_HEADER_UNKNOWN, ts, dizgi=f"{sa:x}")
+            continue
+        for t in ts:
+            bump(f"3_K0_sonrasi:{t}")
         users = {s.site for s in sl}
         loaders = {s.loader for s in sl if s.loader != NO_ORIGIN}
         impure = [r for r in sorted(inp.string_refs.get(sa, set())) if r not in users | loaders]
@@ -940,6 +995,15 @@ def _string_anchors(inp: StaticInput, flows: Mapping[int, FunctionFlow],
     owners_of_name: dict[str, list[int]] = {}
     for o in k3:
         owners_of_name.setdefault(strings[owned[o][0]], []).append(o)
+    # Ghidra'nın zaten verdiği (jenerik olmayan) adlar → adresler; Mach-O'da baştaki tek ``_`` soyulur
+    taken: dict[str, set[int]] = {}
+    for fa in sorted(funcs):
+        nm = funcs[fa].name
+        if is_generic_name(nm):
+            continue
+        if abi == ABI_DARWIN and nm.startswith("_"):
+            nm = nm[1:]
+        taken.setdefault(nm, set()).add(fa)
     result: dict[int, Anchor] = {}
     fragments: dict[int, tuple[str, list[_Slot]]] = {}
     for o in k3:
@@ -947,6 +1011,9 @@ def _string_anchors(inp: StaticInput, flows: Mapping[int, FunctionFlow],
         ts = types_of(o)
         if len(owners_of_name[name]) > 1:
             drop(DROP_NAME_MULTI, ts, adres=f"{o:x}")
+            continue
+        if taken.get(name, set()) - {o}:
+            drop(DROP_NAME_TAKEN, ts, adres=f"{o:x}")
             continue
         for t in ts:
             bump(f"8_K4_sonrasi:{t}")
