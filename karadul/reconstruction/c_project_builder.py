@@ -10,20 +10,30 @@ Cikti yapisi:
     .vscode/ .clangd
     include/          -- types.h + subsystem header'lari
     src/
-      main.c          -- entry point fonksiyonlari
-      subsystem_XXX/  -- API-based gruplama
-      misc/           -- thunks_and_stubs.c + utility_functions.c
+      main.c                 -- entry point fonksiyonlari (varsa)
+      subsystem_<ad>/        -- API kuralı ya da çağrı grafı topluluğu
+        <fonksiyon>.c        -- dosya başına bir fonksiyon
+        thunks_and_stubs.c   -- kısa fonksiyonlar tek dosyada
     analysis/
       call_graph.dot / algorithms.md / xref_index.md / subsystem_map.md
+
+Değişmezler (2026-11-10 çıktı sağlamlığı denetimi, kusur 2 ve 14):
+  * Girdideki her fonksiyon (kaynak dosya) çıktıda tam bir kez yer alır.
+    Dosya adları harf duyarsız dosya sisteminde de çakışmaz. Kurucu bunu
+    sonunda defterinden ve diskten denetler; ihlali `errors` listesine yazar
+    ve `success=False` döner.
+  * Yerleşim (alt sistem dizini, dosya adı) yalnız girdinin içeriğine
+    bağlıdır; girdi sırasına ve PYTHONHASHSEED'e bağlı değildir.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
-import shutil
-from collections import defaultdict
+import zlib
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -96,6 +106,11 @@ def _build_lookup() -> None:
 
 _build_lookup()
 
+# Eşit puanda alt sistem seçimi: kural tablosundaki sıra (girdi sırası değil).
+_SUBSYSTEM_ORDER: dict[str, int] = {
+    name: idx for idx, (name, _apis) in enumerate(_SUBSYSTEM_RULES)
+}
+
 # ---------------------------------------------------------------------------
 # Entry point tespiti
 # ---------------------------------------------------------------------------
@@ -108,11 +123,41 @@ _ENTRY_NAMES = frozenset({
 # Ghidra thunk fonksiyon pattern'i
 _THUNK_RE = re.compile(r"^thunk_", re.IGNORECASE)
 
-# Ghidra auto-generated FUN_ pattern
-_FUN_RE = re.compile(r"^FUN_[0-9a-fA-F]+$")
-
 # Dosya adi sanitization icin guvenli olmayan karakterler
 _UNSAFE_FILENAME_RE = re.compile(r'[^a-zA-Z0-9_\-.]')
+
+# Art arda noktalar ("..") dosya adında kalmaz.
+_DOT_RUN_RE = re.compile(r'\.{2,}')
+
+# Kaynak dosya başlığındaki adres satırı (ghidra/headless.py yazar). Çakışan
+# dosya adlarını ayırt eden ek buradan alınır.
+_ADDRESS_HEADER_RE = re.compile(r"^// Address:\s+(\S+)\s*$", re.MULTILINE)
+
+# Dosya adı gövdesinin (uzantısız) en çok uzunluğu. Dosya sistemi sınırı 255
+# bayt; adres eki, sıra eki ve `.c` için pay kalır. ghidra/headless.py
+# fonksiyon adını aynı uzunlukta keser.
+_MAX_FILE_STEM_LEN = 200
+
+# Kurucunun kendi yazdığı kaynak dosyaları; fonksiyon dosyaları bu adları alamaz.
+_ENTRY_FILE_STEM = "main"
+_MERGED_FILE_STEM = "thunks_and_stubs"
+_RESERVED_FILE_STEM_RE = re.compile(
+    r"^(?:%s|%s(?:_part\d+)?)$" % (_ENTRY_FILE_STEM, _MERGED_FILE_STEM)
+)
+# Birleşik dosyanın (ve her parçasının) başlığı.
+_MERGED_BANNER = (
+    "// ==========================================================\n"
+    "// Thunks, stubs and small wrapper functions (auto-merged)\n"
+    "// ==========================================================\n\n"
+)
+
+# Adres eki bundan uzunsa (beklenmeyen başlık) özet eki kullanılır.
+_MAX_ADDRESS_SUFFIX_LEN = 32
+# Başlıkta adres yoksa kullanılan özet ekinin (sha1, onaltılık) uzunluğu.
+_HASH_SUFFIX_LEN = 8
+
+# Hata iletisinde örnek olarak adı yazılan fonksiyon sayısı.
+_ERROR_EXAMPLE_LIMIT = 5
 
 # ---------------------------------------------------------------------------
 # Sonuc dataclass
@@ -126,6 +171,46 @@ class CProjectBuildResult:
     subsystems_found: int = 0
     functions_merged: int = 0
     errors: list[str] = field(default_factory=list)
+    # Değişmez denetimi: girdideki fonksiyon (kaynak dosya) sayısı; çıktıda
+    # tam bir kez yer alan, hiç yer almayan ve birden çok yer alan sayıları.
+    functions_total: int = 0
+    functions_placed: int = 0
+    functions_missing: int = 0
+    functions_duplicated: int = 0
+
+
+class _BuildLedger:
+    """Bir kurulumda yazılan dosyaların ve fonksiyon yerleşiminin defteri.
+
+    Yollar harf katlanmış (casefold) anahtarla tutulur: yalnız harf
+    büyüklüğüyle ayrılan iki ad aynı dosya sayılır. Böylece güvence,
+    kurulumun yapıldığı dosya sisteminin harf duyarlılığına bağlı kalmaz.
+    """
+
+    def __init__(self, root: Path) -> None:
+        self.root = root
+        # casefold(göreli yol) -> diske yazılan göreli yol
+        self.files: dict[str, str] = {}
+        # casefold(göreli yol) -> o yola her yazışta konan birimler
+        self.file_units: dict[str, list[tuple[str, ...]]] = defaultdict(list)
+        # birim anahtarı -> yazıldığı göreli yollar
+        self.placements: dict[str, list[str]] = defaultdict(list)
+
+    def write(self, path: Path, text: str, units: tuple[str, ...] = ()) -> None:
+        """Dosyayı yaz; `units` bu dosyaya konan fonksiyonların anahtarlarıdır."""
+        rel = path.relative_to(self.root).as_posix()
+        key = rel.casefold()
+        path.write_text(text)
+        self.files[key] = rel
+        if units:
+            self.file_units[key].append(units)
+            for unit in units:
+                self.placements[unit].append(rel)
+
+    @property
+    def files_written(self) -> int:
+        """Diskteki ayrı dosya sayısı (aynı yola iki yazış bir sayılır)."""
+        return len(self.files)
 
 
 # ---------------------------------------------------------------------------
@@ -167,22 +252,23 @@ class CProjectBuilder:
             CProjectBuildResult
         """
         errors: list[str] = []
-        files_written = 0
         functions_merged = 0
 
         output_dir.mkdir(parents=True, exist_ok=True)
+        ledger = _BuildLedger(output_dir)
 
         # -- C dosyalarini topla -------------------------------------------
         c_files = sorted(source_dir.rglob("*.c"))
         if not c_files:
             return CProjectBuildResult(success=False, errors=["C dosyasi bulunamadi"])
 
-        # Her dosyanin icerigi ve satir sayisi
-        file_contents: dict[str, str] = {}   # stem -> content
-        file_lines: dict[str, int] = {}      # stem -> line count
-        for cf in c_files:
+        # Her kaynak dosya bir birimdir (bir fonksiyon). Sözlükler birim
+        # anahtarıyla tutulur: anahtar dosya gövdesidir (stem); aynı gövde alt
+        # dizinlerde yinelenirse göreli yol anahtar olur, hiçbir dosya ötekini ezmez.
+        file_contents: dict[str, str] = {}   # birim anahtarı -> content
+        file_lines: dict[str, int] = {}      # birim anahtarı -> line count
+        for cf, stem in self._unit_keys(c_files, source_dir):
             content = cf.read_text(errors="replace")
-            stem = cf.stem
             file_contents[stem] = content
             file_lines[stem] = content.count("\n") + 1
 
@@ -193,9 +279,10 @@ class CProjectBuilder:
         program_name = call_graph.get("program", "unknown") if call_graph else "unknown"
 
         # -- Subsystem siniflandirma ----------------------------------------
-        # func_name -> subsystem
+        # func_name -> subsystem. Düğümler anahtar (adres) sırasıyla dolaşılır:
+        # aynı adı taşıyan birden çok düğümde sonuç girdi sırasına bağlı kalmaz.
         func_subsystem: dict[str, str] = {}
-        for addr, node in nodes.items():
+        for _addr, node in sorted(nodes.items(), key=lambda item: item[0]):
             name = node.get("name", "")
             callees = node.get("callees", [])
             subsys = self._classify_subsystem(name, callees)
@@ -203,8 +290,8 @@ class CProjectBuilder:
 
         # Dosya stem'lerini de siniflandir (call graph'ta olmayanlari dahil)
         for stem in file_contents:
-            if stem not in func_subsystem:
-                func_subsystem[stem] = "misc"
+            if self._unit_name(stem) not in func_subsystem:
+                func_subsystem[self._unit_name(stem)] = "misc"
 
         # -- Community-based fallback (misc fonksiyonlar icin) ---------------
         if call_graph:
@@ -216,15 +303,9 @@ class CProjectBuilder:
         # -- Entry point'leri ayir ------------------------------------------
         entry_stems: list[str] = []
         for stem in file_contents:
-            if stem in _ENTRY_NAMES or stem.lower() in {"main", "_main", "entry"}:
+            name = self._unit_name(stem)
+            if name in _ENTRY_NAMES or name.lower() in {"main", "_main", "entry"}:
                 entry_stems.append(stem)
-            elif nodes:
-                # Call graph'ta hic caller'i olmayan ve adi bilinen
-                for addr, node in nodes.items():
-                    if node.get("name") == stem and node.get("caller_count", 0) == 0:
-                        if stem not in _ENTRY_NAMES and not _FUN_RE.match(stem):
-                            # Potansiyel entry, ama sadece ismi uygunsa
-                            pass
 
         # -- Kucuk fonksiyon tespiti ----------------------------------------
         small_funcs: dict[str, list[str]] = defaultdict(list)  # subsystem -> [stem, ...]
@@ -234,8 +315,9 @@ class CProjectBuilder:
             if stem in entry_stems:
                 continue  # entry point'ler ayri
             lines = file_lines[stem]
-            subsys = func_subsystem.get(stem, "misc")
-            is_thunk = bool(_THUNK_RE.match(stem))
+            name = self._unit_name(stem)
+            subsys = func_subsystem.get(name, "misc")
+            is_thunk = bool(_THUNK_RE.match(name))
             if is_thunk or lines < self.SMALL_FUNC_THRESHOLD:
                 small_funcs[subsys].append(stem)
             else:
@@ -262,101 +344,95 @@ class CProjectBuilder:
                 main_parts.append(f"// === {stem} ===\n")
                 main_parts.append(file_contents[stem])
                 main_parts.append("\n")
-            (src_dir / "main.c").write_text("".join(main_parts))
-            files_written += 1
+            ledger.write(
+                src_dir / f"{_ENTRY_FILE_STEM}.c", "".join(main_parts),
+                tuple(entry_stems),
+            )
 
         # -- 2. Subsystem dizinleri ve dosyalari ----------------------------
+        # Dosya adları proje genelinde ve harf duyarsız olarak benzersiz atanır.
+        file_stems = self._assign_file_stems(
+            [stem for stems in normal_funcs.values() for stem in stems],
+            file_contents,
+        )
         for subsys in sorted(active_subsystems):
             subsys_dir = src_dir / f"subsystem_{subsys}"
             subsys_dir.mkdir(exist_ok=True)
 
-            # Normal (buyuk) fonksiyonlar
-            normal = normal_funcs.get(subsys, [])
-            if normal:
-                written = self._write_grouped_files(
-                    subsys_dir, normal, file_contents, subsys
+            # Normal (buyuk) fonksiyonlar: dosya başına bir fonksiyon. Fonksiyon
+            # bölünmez; uzun fonksiyon da tek dosyaya yazılır.
+            for stem in normal_funcs.get(subsys, []):
+                ledger.write(
+                    subsys_dir / f"{file_stems[stem]}.c", file_contents[stem],
+                    (stem,),
                 )
-                files_written += written
 
             # Kucuk fonksiyonlar (thunk + stub) -> tek dosyada birlestirilir
             smalls = small_funcs.get(subsys, [])
             if smalls:
-                merged_content = self._merge_small_functions(smalls, file_contents)
                 functions_merged += len(smalls)
-                # thunks_and_stubs.c yazimi (500 satir limitine dikkat)
-                merged_files = self._split_if_large(
-                    merged_content, "thunks_and_stubs", subsys_dir
-                )
-                files_written += merged_files
+                self._write_merged_files(subsys_dir, smalls, file_contents, ledger)
 
         # -- 3. types.h ------------------------------------------------------
         types_content = self._build_types_h(source_dir, workspace)
-        (include_dir / "types.h").write_text(types_content)
-        files_written += 1
+        ledger.write(include_dir / "types.h", types_content)
 
         # -- 4. Subsystem header'lari ----------------------------------------
         for subsys in sorted(active_subsystems):
             header = self._build_subsystem_header(
-                subsys, normal_funcs.get(subsys, []) + small_funcs.get(subsys, []),
+                subsys,
+                [
+                    self._unit_name(stem)
+                    for stem in normal_funcs.get(subsys, []) + small_funcs.get(subsys, [])
+                ],
                 nodes,
             )
-            (include_dir / f"subsystem_{subsys}.h").write_text(header)
-            files_written += 1
+            ledger.write(include_dir / f"subsystem_{subsys}.h", header)
 
         # -- 5. IDE dosyalari -------------------------------------------------
         all_c_sources = self._collect_source_paths(src_dir, output_dir)
 
         cmake = self._build_cmake(program_name, all_c_sources)
-        (output_dir / "CMakeLists.txt").write_text(cmake)
-        files_written += 1
+        ledger.write(output_dir / "CMakeLists.txt", cmake)
 
         makefile = self._build_makefile(program_name, all_c_sources)
-        (output_dir / "Makefile").write_text(makefile)
-        files_written += 1
+        ledger.write(output_dir / "Makefile", makefile)
 
         compile_cmds = self._build_compile_commands(all_c_sources, output_dir)
-        (output_dir / "compile_commands.json").write_text(compile_cmds)
-        files_written += 1
+        ledger.write(output_dir / "compile_commands.json", compile_cmds)
 
         vscode_settings = self._build_vscode_settings()
-        (vscode_dir / "settings.json").write_text(vscode_settings)
-        files_written += 1
+        ledger.write(vscode_dir / "settings.json", vscode_settings)
 
         cpp_props = self._build_cpp_properties(output_dir)
-        (vscode_dir / "c_cpp_properties.json").write_text(cpp_props)
-        files_written += 1
+        ledger.write(vscode_dir / "c_cpp_properties.json", cpp_props)
 
         clangd = self._build_clangd_config()
-        (output_dir / ".clangd").write_text(clangd)
-        files_written += 1
+        ledger.write(output_dir / ".clangd", clangd)
 
         # -- 6. Analysis dosyalari -------------------------------------------
         # call_graph.dot
         if call_graph:
             try:
                 dot = self._build_call_graph_dot(nodes, edges)
-                (analysis_dir / "call_graph.dot").write_text(dot)
-                files_written += 1
+                ledger.write(analysis_dir / "call_graph.dot", dot)
             except Exception as exc:
                 errors.append(f"Call graph DOT hatasi: {exc}")
 
         # algorithms.md
         if algorithm_results and hasattr(algorithm_results, "algorithms"):
             algos_md = self._build_algorithm_report(algorithm_results)
-            (analysis_dir / "algorithms.md").write_text(algos_md)
-            files_written += 1
+            ledger.write(analysis_dir / "algorithms.md", algos_md)
 
         # xref_index.md
         if nodes:
             xref = self._build_xref_index(nodes)
-            (analysis_dir / "xref_index.md").write_text(xref)
-            files_written += 1
+            ledger.write(analysis_dir / "xref_index.md", xref)
 
         # subsystem_map.md
         if func_subsystem:
             smap = self._build_subsystem_map(func_subsystem, active_subsystems)
-            (analysis_dir / "subsystem_map.md").write_text(smap)
-            files_written += 1
+            ledger.write(analysis_dir / "subsystem_map.md", smap)
 
         # -- 7. README.md ----------------------------------------------------
         readme = self._build_readme(
@@ -366,20 +442,34 @@ class CProjectBuilder:
             functions_merged=functions_merged,
             algorithm_results=algorithm_results,
         )
-        (output_dir / "README.md").write_text(readme)
-        files_written += 1
+        ledger.write(output_dir / "README.md", readme)
 
+        # -- 8. Değişmez denetimi --------------------------------------------
+        # Girdideki her fonksiyon çıktıda tam bir kez yer almalı. İhlal sessiz
+        # kalmaz: hata listesine yazılır ve kurulum başarısız sayılır.
+        missing, duplicated, invariant_errors = self._check_placement(
+            file_contents, ledger, src_dir,
+        )
+        for message in invariant_errors:
+            logger.error("C project build: %s", message)
+        errors.extend(invariant_errors)
+
+        files_written = ledger.files_written
         logger.info(
             "C project built: %d dosya, %d subsystem, %d merged -> %s",
             files_written, len(active_subsystems), functions_merged, output_dir,
         )
 
         return CProjectBuildResult(
-            success=files_written > 0,
+            success=files_written > 0 and not invariant_errors,
             files_written=files_written,
             subsystems_found=len(active_subsystems),
             functions_merged=functions_merged,
             errors=errors,
+            functions_total=len(file_contents),
+            functions_placed=len(file_contents) - len(missing) - len(duplicated),
+            functions_missing=len(missing),
+            functions_duplicated=len(duplicated),
         )
 
     # ------------------------------------------------------------------
@@ -404,10 +494,173 @@ class CProjectBuilder:
 
         Go binary'lerde fonksiyon adlari '/' icerebilir (orn: runtime/internal/sys).
         Bu, workspace disina yazima (path traversal) yol acabilir.
+
+        Baştaki ve sondaki `_` korunur: `_exit` ile `exit` ayrı fonksiyonlardır
+        ve ayrı dosya adı almalıdır (eski kod `_` karakterlerini de siliyor,
+        ikisini aynı dosyaya yazıyordu). Yalnız noktalar kırpılır (gizli dosya,
+        `..`). Sonuç tek başına benzersizlik güvencesi vermez; onu
+        `_assign_file_stems` sağlar.
         """
         safe = _UNSAFE_FILENAME_RE.sub('_', stem)
-        safe = safe.strip('_.')
-        return safe or 'unnamed'
+        safe = _DOT_RUN_RE.sub('.', safe).strip('.')
+        if not any(ch.isalnum() for ch in safe):
+            return 'unnamed'
+        return safe
+
+    # ------------------------------------------------------------------
+    # Birim anahtarları ve çakışmasız dosya adları
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _unit_keys(c_files: list[Path], source_dir: Path) -> list[tuple[Path, str]]:
+        """Her kaynak dosyaya benzersiz bir birim anahtarı ver.
+
+        Anahtar dosya gövdesidir. Aynı gövde birden çok dizinde varsa en üst
+        dizindeki gövdeyi, ötekiler göreli yolu (uzantısız) anahtar alır.
+        Göreli yol `/` içerir, gövde içermez; anahtarlar çakışamaz.
+        """
+        stem_count = Counter(cf.stem for cf in c_files)
+        keyed: list[tuple[Path, str]] = []
+        for cf in c_files:
+            if stem_count[cf.stem] == 1 or cf.parent == source_dir:
+                key = cf.stem
+            else:
+                key = cf.relative_to(source_dir).with_suffix("").as_posix()
+            keyed.append((cf, key))
+        return keyed
+
+    @staticmethod
+    def _unit_name(key: str) -> str:
+        """Birim anahtarından fonksiyon adını (dosya gövdesini) çıkar."""
+        return key.rsplit("/", 1)[-1]
+
+    @staticmethod
+    def _disambiguator(key: str, content: str) -> str:
+        """Çakışan dosya adını ayırt eden belirlenimci ek.
+
+        Kaynak başlığındaki adres; başlık yoksa birim anahtarının özeti.
+        """
+        match = _ADDRESS_HEADER_RE.search(content)
+        if match:
+            address = _UNSAFE_FILENAME_RE.sub('_', match.group(1)).strip('._')
+            if 0 < len(address) <= _MAX_ADDRESS_SUFFIX_LEN:
+                return address
+        digest = hashlib.sha1(key.encode("utf-8", "surrogatepass")).hexdigest()
+        return digest[:_HASH_SUFFIX_LEN]
+
+    def _assign_file_stems(
+        self, keys: list[str], file_contents: dict[str, str],
+    ) -> dict[str, str]:
+        """Her birime proje genelinde benzersiz bir dosya adı gövdesi ata.
+
+        Benzersizlik harf duyarsızdır (macOS ve Windows dosya sistemleri) ve
+        kurucunun kendi dosya adlarını (`main`, `thunks_and_stubs`) dışlar.
+
+        1. Adı temizlenince değişmeyen birimler, anahtar sırasıyla kendi
+           adlarını alır.
+        2. Kalanlar (adı değişen, kesilen ya da adı alınmış olanlar) temizlenmiş
+           adı boşsa onu, değilse adres ekli hâlini alır; o da doluysa sıra
+           numarası eklenir.
+
+        Sonuç yalnız anahtar kümesine ve içeriğe bağlıdır; `keys` sırasına ve
+        karma tohumuna bağlı değildir.
+        """
+        assigned: dict[str, str] = {}
+        taken: set[str] = set()
+
+        def is_free(candidate: str) -> bool:
+            folded = candidate.casefold()
+            return folded not in taken and not _RESERVED_FILE_STEM_RE.match(folded)
+
+        def take(key: str, candidate: str) -> None:
+            assigned[key] = candidate
+            taken.add(candidate.casefold())
+
+        pending: list[tuple[str, str]] = []
+        for key in sorted(set(keys)):
+            safe = self._sanitize_stem(key)
+            if safe == key and len(safe) <= _MAX_FILE_STEM_LEN and is_free(safe):
+                take(key, safe)
+            else:
+                pending.append((key, safe))
+
+        for key, safe in pending:
+            if len(safe) <= _MAX_FILE_STEM_LEN and is_free(safe):
+                take(key, safe)
+                continue
+            suffix = self._disambiguator(key, file_contents.get(key, ""))
+            base = safe[:_MAX_FILE_STEM_LEN - len(suffix) - 1]
+            candidate = f"{base}_{suffix}"
+            ordinal = 1
+            while not is_free(candidate):
+                ordinal += 1
+                candidate = f"{base}_{suffix}_{ordinal}"
+            take(key, candidate)
+
+        return assigned
+
+    def _check_placement(
+        self, units: dict[str, str], ledger: _BuildLedger, src_dir: Path,
+    ) -> tuple[list[str], list[str], list[str]]:
+        """Değişmezi denetle: her birim çıktıda tam bir kez yer alır.
+
+        Defter çokluğu verir (bir birim kaç dosyaya kondu, bir yola kaç kez
+        yazıldı); disk varlığı verir (dosya yerinde mi, içerik içinde mi).
+        `src/` altında bu kurulumun yazmadığı kaynak dosya da ihlaldir: aynı
+        fonksiyon eski bir kurulumdan kalan dosyada ikinci kez durabilir.
+
+        Returns:
+            (eksik birimler, birden çok yerleşen birimler, hata iletileri)
+        """
+        on_disk: set[str] = set()
+        for file_key in sorted(ledger.file_units):
+            try:
+                text = (ledger.root / ledger.files[file_key]).read_text(errors="replace")
+            except OSError:
+                continue
+            # Aynı yola birden çok yazış olduysa yalnız sonuncusu diskte kalır.
+            for unit in ledger.file_units[file_key][-1]:
+                if units.get(unit, "").rstrip() in text:
+                    on_disk.add(unit)
+
+        missing: list[str] = []
+        duplicated: list[str] = []
+        for key in sorted(units):
+            placed = len(ledger.placements.get(key, ()))
+            if placed > 1:
+                duplicated.append(key)
+            elif placed == 0 or key not in on_disk:
+                missing.append(key)
+
+        stray = sorted(
+            rel for rel in (
+                path.relative_to(ledger.root).as_posix()
+                for path in src_dir.rglob("*.c")
+            )
+            if rel.casefold() not in ledger.file_units
+        )
+
+        def examples(names: list[str]) -> str:
+            shown = ", ".join(names[:_ERROR_EXAMPLE_LIMIT])
+            return shown + (", ..." if len(names) > _ERROR_EXAMPLE_LIMIT else "")
+
+        messages: list[str] = []
+        if missing:
+            messages.append(
+                "Değişmez ihlali: %d fonksiyon çıktıda yok (%s)"
+                % (len(missing), examples(missing))
+            )
+        if duplicated:
+            messages.append(
+                "Değişmez ihlali: %d fonksiyon çıktıda birden çok kez var (%s)"
+                % (len(duplicated), examples(duplicated))
+            )
+        if stray:
+            messages.append(
+                "Değişmez ihlali: src/ altında bu kurulumun yazmadığı %d kaynak "
+                "dosya var (%s)" % (len(stray), examples(stray))
+            )
+        return missing, duplicated, messages
 
     # ------------------------------------------------------------------
     # Call graph yukleme
@@ -468,8 +721,12 @@ class CProjectBuilder:
         if not subsystem_scores:
             return "misc"
 
-        best = max(subsystem_scores, key=subsystem_scores.get)  # type: ignore[arg-type]
-        return best
+        # Eşit puanda kural tablosundaki sıra kazanır; çağrılanların girdideki
+        # sırası sonucu değiştirmez.
+        return min(
+            subsystem_scores,
+            key=lambda subsys: (-subsystem_scores[subsys], _SUBSYSTEM_ORDER[subsys]),
+        )
 
     # ------------------------------------------------------------------
     # Community detection (label propagation)
@@ -482,12 +739,15 @@ class CProjectBuilder:
         baslar, iteratif olarak komsu cogunlugunun label'ini alir.
         3'ten az uyeli community'ler filtrelenir.
 
+        Sonuç belirlenimcidir: yalnız kenar kümesine bağlıdır; kenarların
+        girdideki sırasına ve PYTHONHASHSEED'e bağlı değildir. Düğümler ada
+        göre sıralı dolaşılır; komşu etiketlerinde eşitlik `_pick_label` ile,
+        eşit büyüklükteki toplulukların numarası etiket adıyla bozulur.
+
         Returns:
             {func_name: "group_N"} eslesmesi. Community'ye atanamayanlar
             sonucta yer almaz.
         """
-        from collections import Counter
-
         edges = call_graph.get("edges", [])
         if not edges:
             return {}
@@ -514,7 +774,7 @@ class CProjectBuilder:
                     labels.get(n, n) for n in adj[node] if n in labels
                 )
                 if neighbor_labels:
-                    majority = neighbor_labels.most_common(1)[0][0]
+                    majority = self._pick_label(node, neighbor_labels)
                     if labels[node] != majority:
                         labels[node] = majority
                         changed = True
@@ -527,9 +787,13 @@ class CProjectBuilder:
             community_members[label].append(node)
 
         # Kucuk community'leri (< 3 uye) filtrele
+        # Numara büyüklük sırasıyla verilir; eşit büyüklükte etiket adı belirler
+        # (yalnız büyüklükle sıralanınca eşitlikte girdi sırası belirliyordu).
         result: dict[str, str] = {}
         group_id = 0
-        for label, members in sorted(community_members.items(), key=lambda x: -len(x[1])):
+        for label, members in sorted(
+            community_members.items(), key=lambda x: (-len(x[1]), x[0]),
+        ):
             if len(members) >= 3:
                 group_name = "group_%d" % group_id
                 for m in members:
@@ -538,80 +802,75 @@ class CProjectBuilder:
 
         return result
 
+    @staticmethod
+    def _pick_label(node: str, neighbor_labels: Counter) -> str:
+        """Komşu etiketlerinden çoğunluğu seç; eşitliği belirlenimci boz.
+
+        Eski kod `most_common(1)` ile eşitlikte sayaca ilk gireni alıyordu;
+        sayaç bir `set` dolaşımıyla dolduğu için seçim PYTHONHASHSEED'e bağlıydı
+        (aynı girdiyle koşudan koşuya farklı `subsystem_group_N` dizinleri).
+
+        Eşitlik, (düğüm, etiket) çiftinin CRC32'siyle bozulur: sonuç her koşuda
+        aynıdır, ama alfabetik olarak küçük etiketleri kayırmaz. "En küçük
+        etiket" kuralı denendi ve seçilmedi: etiketi grafın bir ucundan yayıp
+        toplulukları büyütüyordu (Debian coreutils/ls, 412 düğüm: en büyük
+        topluluk o kuralla 336, CRC ile 60; eski kodda tohuma göre 69–288).
+        """
+        top = max(neighbor_labels.values())
+        tied = [label for label, count in neighbor_labels.items() if count == top]
+        if len(tied) == 1:
+            return tied[0]
+        return min(
+            tied,
+            key=lambda label: (zlib.crc32(f"{node}\0{label}".encode("utf-8", "surrogatepass")), label),
+        )
+
     # ------------------------------------------------------------------
     # Dosya yazma yardimcilari
     # ------------------------------------------------------------------
 
-    def _write_grouped_files(
+    def _write_merged_files(
         self, dest_dir: Path, stems: list[str],
-        file_contents: dict[str, str], subsystem: str,
-    ) -> int:
-        """Normal fonksiyonlari dosyalara yaz. 500 satir limiti uygula."""
-        written = 0
-        # Her fonksiyonu kendi dosyasina yaz
-        # Ayni subsystem'deki fonksiyonlari semantik gruplara ayirmak icin
-        # basit strateji: fonksiyon basina dosya, 500 satiri gesenler bolunur
-        for stem in stems:
-            content = file_contents.get(stem, "")
-            safe_stem = self._sanitize_stem(stem)
-            line_count = content.count("\n") + 1
-            if line_count <= self.MAX_LINES_PER_FILE:
-                (dest_dir / f"{safe_stem}.c").write_text(content)
-                written += 1
-            else:
-                written += self._split_if_large(content, safe_stem, dest_dir)
-        return written
+        file_contents: dict[str, str], ledger: _BuildLedger,
+    ) -> None:
+        """Küçük fonksiyonları birleştirip `thunks_and_stubs*.c` olarak yaz.
+
+        Birleşik içerik MAX_LINES_PER_FILE satırı aşarsa parçalara ayrılır;
+        kesim yalnız iki fonksiyonun arasından yapılır. Eski kod satır sayısına
+        göre kesiyor, bir fonksiyonun gövdesini iki dosyaya bölebiliyordu
+        (başlıksız `_partN.c` dosyaları).
+        """
+        banner_lines = _MERGED_BANNER.count("\n")
+        parts: list[list[str]] = [[]]
+        part_lines = banner_lines
+        for stem in sorted(stems):
+            # `_merge_small_functions` bloğu: ad satırı + içerik + boş satır
+            lines = file_contents.get(stem, "").rstrip().count("\n") + 3
+            if parts[-1] and part_lines + lines > self.MAX_LINES_PER_FILE:
+                parts.append([])
+                part_lines = banner_lines
+            parts[-1].append(stem)
+            part_lines += lines
+
+        for idx, part in enumerate(parts):
+            suffix = f"_part{idx + 1}" if len(parts) > 1 else ""
+            ledger.write(
+                dest_dir / f"{_MERGED_FILE_STEM}{suffix}.c",
+                self._merge_small_functions(part, file_contents),
+                tuple(part),
+            )
 
     def _merge_small_functions(
         self, stems: list[str], file_contents: dict[str, str],
     ) -> str:
         """Kucuk fonksiyonlari tek string'de birlestirilmis content olarak dondur."""
-        parts = [
-            "// ==========================================================\n"
-            "// Thunks, stubs and small wrapper functions (auto-merged)\n"
-            "// ==========================================================\n\n"
-        ]
+        parts = [_MERGED_BANNER]
         for stem in sorted(stems):
             content = file_contents.get(stem, "")
             parts.append(f"// --- {stem} ---\n")
             parts.append(content.rstrip())
             parts.append("\n\n")
         return "".join(parts)
-
-    def _split_if_large(self, content: str, base_name: str, dest_dir: Path) -> int:
-        """Icerik 500 satiri asarsa bolunmis dosyalar yaz. Dosya sayisini dondurur."""
-        base_name = self._sanitize_stem(base_name)
-        lines = content.split("\n")
-        if len(lines) <= self.MAX_LINES_PER_FILE:
-            (dest_dir / f"{base_name}.c").write_text(content)
-            return 1
-
-        # Fonksiyon sinirlarindan bolmeye calis (} ile biten satirlar)
-        chunks: list[list[str]] = []
-        current_chunk: list[str] = []
-        for line in lines:
-            current_chunk.append(line)
-            if len(current_chunk) >= self.MAX_LINES_PER_FILE:
-                # Fonksiyon sinirina denk gelmeye calis
-                # Son 20 satir icinde } ile biten satir ara
-                split_idx = len(current_chunk)
-                for i in range(len(current_chunk) - 1, max(0, len(current_chunk) - 20) - 1, -1):
-                    if current_chunk[i].strip() == "}":
-                        split_idx = i + 1
-                        break
-                chunks.append(current_chunk[:split_idx])
-                current_chunk = current_chunk[split_idx:]
-
-        if current_chunk:
-            chunks.append(current_chunk)
-
-        written = 0
-        for idx, chunk in enumerate(chunks):
-            suffix = f"_part{idx + 1}" if len(chunks) > 1 else ""
-            fname = f"{base_name}{suffix}.c"
-            (dest_dir / fname).write_text("\n".join(chunk))
-            written += 1
-        return written
 
     # ------------------------------------------------------------------
     # types.h
@@ -687,11 +946,12 @@ class CProjectBuilder:
             "",
         ]
 
-        # Call graph'tan fonksiyon imzalarini cikar
+        # Call graph'tan fonksiyon imzalarini cikar (adres sırasıyla)
         declared: set[str] = set()
-        for addr, node in nodes.items():
+        wanted = set(func_stems)
+        for addr, node in sorted(nodes.items(), key=lambda item: item[0]):
             name = node.get("name", "")
-            if name in func_stems and name not in declared:
+            if name in wanted and name not in declared:
                 lines.append(f"void {name}(void);  // @{node.get('address', '?')}")
                 declared.add(name)
 
@@ -978,11 +1238,14 @@ class CProjectBuilder:
             "## Directory Structure",
             "",
             "```",
-            "include/          -- Type definitions and subsystem headers",
+            "include/                -- Type definitions and subsystem headers",
             "src/",
-            "  main.c          -- Entry point functions",
-            "  subsystem_*/    -- Grouped by API usage (network, crypto, ...)",
-            "  misc/           -- Uncategorized + merged thunks",
+            "  main.c                -- Entry point functions (when detected)",
+            "  subsystem_<name>/     -- Grouped by API usage (network, crypto, ...)",
+            "                           or by call-graph community (group_N);",
+            "                           subsystem_misc holds the uncategorized",
+            "    <function>.c        -- One function per file",
+            "    thunks_and_stubs.c  -- Short functions and thunks, merged",
             "analysis/",
             "  call_graph.dot  -- Graphviz call graph",
             "  algorithms.md   -- Detected algorithm patterns",

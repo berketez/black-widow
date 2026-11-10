@@ -1,0 +1,317 @@
+{
+ "_comment": "Proje kurucu (CProjectBuilder) sağlamlık mutantları: çıktı sağlamlığı denetimi (docs/arge/2026-11-10_cikti_saglamligi) kusur 2 ve 14. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_project_builder.json -v. Her mutantın uzunluğu özgününden farklıdır (.pyc tuzağı) ve her 'find' dosyada tam bir kez geçer.",
+ "mutants": [
+  {
+   "id": "pb_temizle_alt_cizgi_eski_kod",
+   "desc": "Eski hata: baştaki '_' silinir; _exit kendi adını (_exit.c) alamaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_bastaki_alt_cizgi_ayri_dosya",
+   "find": "safe = _DOT_RUN_RE.sub('.', safe).strip('.')",
+   "replace": "safe = _DOT_RUN_RE.sub('.', safe).strip('_.')"
+  },
+  {
+   "id": "pb_temizle_nokta_dizisi",
+   "desc": "Art arda noktalar teke inmez ('a..b' olduğu gibi kalır)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_ad_temizleme",
+   "find": "safe = _DOT_RUN_RE.sub('.', safe).strip('.')",
+   "replace": "safe = safe.strip('.')"
+  },
+  {
+   "id": "pb_temizle_adsiz",
+   "desc": "Harf ya da rakam içermeyen ad 'unnamed' olmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_ad_temizleme",
+   "find": "if not any(ch.isalnum() for ch in safe):",
+   "replace": "if not safe:"
+  },
+  {
+   "id": "pb_birim_anahtari_alt_dizin",
+   "desc": "Alt dizinlerde aynı gövde: anahtar yine gövde olur, biri ötekini ezer",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_alt_dizinlerde_ayni_govde",
+   "find": "key = cf.relative_to(source_dir).with_suffix(\"\").as_posix()",
+   "replace": "key = cf.stem"
+  },
+  {
+   "id": "pb_ek_adres_yerine_ozet",
+   "desc": "Adres başlığı okunmaz; ek her zaman özet olur",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_gecersiz_karakter_ve_temiz_ad",
+   "find": "        if match:\n            address =",
+   "replace": "        if match and not key:\n            address ="
+  },
+  {
+   "id": "pb_ek_adres_uzunluk_siniri",
+   "desc": "Aşırı uzun adres dosya adına taşınır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_asiri_uzun_adres_yerine_ozet_eki",
+   "find": "if 0 < len(address) <= _MAX_ADDRESS_SUFFIX_LEN:",
+   "replace": "if address:"
+  },
+  {
+   "id": "pb_atama_serbest_harf_katlama",
+   "desc": "Boş ad denetimi harf katlamadan yapılır (FOO alınmışken Foo boş sayılır)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_harf_farki_harf_duyarsiz_dosya_sisteminde_cakismaz",
+   "find": "folded = candidate.casefold()",
+   "replace": "folded = candidate"
+  },
+  {
+   "id": "pb_atama_alinan_harf_katlama",
+   "desc": "Alınan ad harf katlanmadan saklanır (Foo alınmışken foo boş sayılır)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_harf_farki_harf_duyarsiz_dosya_sisteminde_cakismaz",
+   "find": "taken.add(candidate.casefold())",
+   "replace": "taken.add(candidate)"
+  },
+  {
+   "id": "pb_atama_ayrilmis_adlar",
+   "desc": "Kurucunun kendi dosya adları (thunks_and_stubs, main) ayrılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_kurucunun_kendi_dosya_adlari_ayrilmis",
+   "find": " and not _RESERVED_FILE_STEM_RE.match(folded)",
+   "replace": ""
+  },
+  {
+   "id": "pb_atama_sira",
+   "desc": "Atama anahtar sırasıyla değil girdi sırasıyla yapılır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_dosya_adi_atamasi_siradan_bagimsiz",
+   "find": "for key in sorted(set(keys)):",
+   "replace": "for key in keys:"
+  },
+  {
+   "id": "pb_atama_degismeyen_ad_onceligi",
+   "desc": "Adı değişmeyen birimin önceliği kalkar (gerçek a_b adını kaybeder)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_gecersiz_karakter_ve_temiz_ad",
+   "find": "if safe == key and len(safe) <= _MAX_FILE_STEM_LEN and is_free(safe):",
+   "replace": "if len(safe) <= _MAX_FILE_STEM_LEN and is_free(safe):"
+  },
+  {
+   "id": "pb_atama_uzunluk_birinci_gecis",
+   "desc": "Birinci geçişte uzunluk sınırı yok",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_kesilen_uzun_adlar_cakismaz",
+   "find": "if safe == key and len(safe) <= _MAX_FILE_STEM_LEN and is_free(safe):",
+   "replace": "if safe == key and is_free(safe):"
+  },
+  {
+   "id": "pb_atama_uzunluk_ikinci_gecis",
+   "desc": "İkinci geçişte uzunluk sınırı yok",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_kesilen_uzun_adlar_cakismaz",
+   "find": "            if len(safe) <= _MAX_FILE_STEM_LEN and is_free(safe):",
+   "replace": "            if is_free(safe):"
+  },
+  {
+   "id": "pb_atama_kesme_yok",
+   "desc": "Ek konurken ad kesilmez",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_kesilen_uzun_adlar_cakismaz",
+   "find": "base = safe[:_MAX_FILE_STEM_LEN - len(suffix) - 1]",
+   "replace": "base = safe"
+  },
+  {
+   "id": "pb_atama_kesme_ek_payi",
+   "desc": "Kesmede ek için pay bırakılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_kesilen_uzun_adlar_cakismaz",
+   "find": "base = safe[:_MAX_FILE_STEM_LEN - len(suffix) - 1]",
+   "replace": "base = safe[:_MAX_FILE_STEM_LEN]"
+  },
+  {
+   "id": "pb_atama_kesme_bir_fazla",
+   "desc": "Kesmede alt çizgi için pay bırakılmaz (ad sınırı bir karakter aşar)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_kesilen_uzun_adlar_cakismaz",
+   "find": "base = safe[:_MAX_FILE_STEM_LEN - len(suffix) - 1]",
+   "replace": "base = safe[:_MAX_FILE_STEM_LEN - len(suffix)]"
+  },
+  {
+   "id": "pb_atama_sira_eki",
+   "desc": "Adres ekli ad doluysa sıra numarası denenmez",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_ayni_ad_farkli_adres",
+   "find": "            while not is_free(candidate):",
+   "replace": "            while False:"
+  },
+  {
+   "id": "pb_defter_giris_birimleri",
+   "desc": "main.c'ye konan giriş noktaları deftere yazılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_giris_noktalari_main_c_icinde_bir_kez",
+   "find": "                tuple(entry_stems),",
+   "replace": "                (),"
+  },
+  {
+   "id": "pb_defter_normal_birim",
+   "desc": "Kendi dosyasına yazılan fonksiyon deftere yazılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_bastaki_alt_cizgi_ayri_dosya",
+   "find": "                    (stem,),",
+   "replace": "                    (),"
+  },
+  {
+   "id": "pb_defter_birlesik_birimler",
+   "desc": "Birleşik dosyanın ilk fonksiyonu deftere yazılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_birlesik_dosya_fonksiyon_sinirindan_bolunur",
+   "find": "                tuple(part),",
+   "replace": "                tuple(part[1:]),"
+  },
+  {
+   "id": "pb_defter_harf_katlama",
+   "desc": "Defter yolları harf katlamadan tutar",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_defter_harf_duyarsiz",
+   "find": "        key = rel.casefold()\n        path.write_text(text)",
+   "replace": "        key = rel\n        path.write_text(text)"
+  },
+  {
+   "id": "pb_birlesik_bolme_yok",
+   "desc": "Birleşik dosya toplam satıra göre bölünmez",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_birlesik_dosya_fonksiyon_sinirindan_bolunur",
+   "find": "if parts[-1] and part_lines + lines > self.MAX_LINES_PER_FILE:",
+   "replace": "if parts[-1] and lines > self.MAX_LINES_PER_FILE:"
+  },
+  {
+   "id": "pb_birlesik_bos_parca",
+   "desc": "Sınırdan uzun ilk fonksiyon boş (başlıksız) bir parça bırakır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_birlesik_dosya_fonksiyon_sinirindan_bolunur",
+   "find": "if parts[-1] and part_lines + lines > self.MAX_LINES_PER_FILE:",
+   "replace": "if part_lines + lines > self.MAX_LINES_PER_FILE:"
+  },
+  {
+   "id": "pb_birlesik_baslik_ilk_parca",
+   "desc": "İlk parçada başlık satırları sınıra sayılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_birlesik_dosya_satir_siniri_baslik_dahil",
+   "find": "        part_lines = banner_lines\n        for stem in sorted(stems):",
+   "replace": "        part_lines = 0\n        for stem in sorted(stems):"
+  },
+  {
+   "id": "pb_birlesik_baslik_sonraki_parca",
+   "desc": "Sonraki parçalarda başlık satırları sınıra sayılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_birlesik_dosya_satir_siniri_baslik_dahil",
+   "find": "                part_lines = banner_lines",
+   "replace": "                part_lines = 0"
+  },
+  {
+   "id": "pb_degismez_son_yazis",
+   "desc": "Aynı yola iki yazışta ilk yazılan diskte sayılır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_degismez_ustune_yazilan_fonksiyonu_bildirir",
+   "find": "ledger.file_units[file_key][-1]",
+   "replace": "ledger.file_units[file_key][0]"
+  },
+  {
+   "id": "pb_degismez_icerik",
+   "desc": "Diskteki içerik denetlenmez (dosya var ama fonksiyon içinde değil)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_degismez_eksik_cift_ve_yabanci_dosya",
+   "find": "if units.get(unit, \"\").rstrip() in text:",
+   "replace": "if text is not None:"
+  },
+  {
+   "id": "pb_degismez_cift",
+   "desc": "İki yere yazılan fonksiyon çift sayılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_degismez_eksik_cift_ve_yabanci_dosya",
+   "find": "if placed > 1:",
+   "replace": "if placed > 1 + 1:"
+  },
+  {
+   "id": "pb_degismez_diskte_yok",
+   "desc": "Deftere yazılmış ama diskte olmayan fonksiyon eksik sayılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_degismez_eksik_cift_ve_yabanci_dosya",
+   "find": "elif placed == 0 or key not in on_disk:",
+   "replace": "elif placed == 0:"
+  },
+  {
+   "id": "pb_degismez_yabanci_dosya",
+   "desc": "src/ altında kurulumun yazmadığı dosya bildirilmez",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_onceki_kurulumdan_kalan_dosya_bildirilir",
+   "find": "if rel.casefold() not in ledger.file_units",
+   "replace": "if not rel"
+  },
+  {
+   "id": "pb_degismez_basari",
+   "desc": "Değişmez ihlalinde kurucu yine başarılı der",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_degismez_ustune_yazilan_fonksiyonu_bildirir",
+   "find": "success=files_written > 0 and not invariant_errors,",
+   "replace": "success=files_written > 0,"
+  },
+  {
+   "id": "pb_degismez_hata_listesi",
+   "desc": "Değişmez ihlali hata listesine yazılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_degismez_ustune_yazilan_fonksiyonu_bildirir",
+   "find": "        errors.extend(invariant_errors)\n",
+   "replace": ""
+  },
+  {
+   "id": "pb_degismez_sayac",
+   "desc": "Eksik fonksiyon 'yerleşen' sayacından düşülmez",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_degismez_ustune_yazilan_fonksiyonu_bildirir",
+   "find": "functions_placed=len(file_contents) - len(missing) - len(duplicated),",
+   "replace": "functions_placed=len(file_contents) - len(duplicated),"
+  },
+  {
+   "id": "pb_etiket_eski_kod",
+   "desc": "Eski hata: eşitlikte most_common (set dolaşım sırası, PYTHONHASHSEED)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_yerlesim_karma_tohumundan_bagimsiz",
+   "find": "majority = self._pick_label(node, neighbor_labels)",
+   "replace": "majority = neighbor_labels.most_common(1)[0][0]"
+  },
+  {
+   "id": "pb_etiket_esitlik_ilk_gelen",
+   "desc": "Eşitlikte sayaca ilk giren etiket seçilir",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_yerlesim_karma_tohumundan_bagimsiz",
+   "find": "        if len(tied) == 1:",
+   "replace": "        if tied:"
+  },
+  {
+   "id": "pb_topluluk_numarasi",
+   "desc": "Eşit büyüklükte toplulukların numarası girdi sırasına kalır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_esit_buyuklukte_topluluk_numarasi_etiket_adiyla",
+   "find": "key=lambda x: (-len(x[1]), x[0]),",
+   "replace": "key=lambda x: -len(x[1]),"
+  },
+  {
+   "id": "pb_altsistem_esitlik",
+   "desc": "Eşit puanda alt sistem çağrılanların girdi sırasına kalır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_esit_puanda_altsistem_kural_sirasiyla",
+   "find": "_SUBSYSTEM_ORDER[subsys]),",
+   "replace": "0),"
+  },
+  {
+   "id": "pb_dugum_sirasi",
+   "desc": "Aynı adlı düğümlerde sonuç JSON sırasına kalır (sınıflama)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_ayni_adli_dugumlerde_girdi_sirasindan_bagimsiz",
+   "find": "        for _addr, node in sorted(nodes.items(), key=lambda item: item[0]):",
+   "replace": "        for _addr, node in nodes.items():"
+  },
+  {
+   "id": "pb_baslik_dugum_sirasi",
+   "desc": "Aynı adlı düğümlerde başlık dosyasındaki adres JSON sırasına kalır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_c_project_builder_saglamlik.py::test_ayni_adli_dugumlerde_girdi_sirasindan_bagimsiz",
+   "find": "        for addr, node in sorted(nodes.items(), key=lambda item: item[0]):",
+   "replace": "        for addr, node in nodes.items():"
+  }
+ ]
+}
