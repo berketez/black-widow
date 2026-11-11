@@ -372,6 +372,7 @@ def dwarf_govdeleri(debug: Path, ek_onbellek: Optional[dict] = None
     c = dt.Cozucu(ana, ek)
     govdeler: list[Govde] = []
     yapay = 0
+    ad_yollari: dict[str, set[str]] = {}     # sadeleşmiş birim adı → kaynak dosya yolları
     for _, d in sorted(ana.dieler.items()):
         if d.etiket != GOVDE_ETIKETI or "DW_AT_low_pc" not in d.oz:
             continue
@@ -384,9 +385,12 @@ def dwarf_govdeleri(debug: Path, ek_onbellek: Optional[dict] = None
             govdeler.append(Govde(adres, None, None, None))
             continue
         yol, kaynak = birim_yolu(c, *secim)
+        ad_yollari.setdefault(posixpath.normpath(secim[2]), set()).add(yol)
         govdeler.append(Govde(adres, yol, koken, kaynak))
+    # aynı adı taşıyan ayrı kaynak dosyalar: etiket yalnız addan alınsaydı birleşecek olanlar
+    ayni_adli = sum(1 for yollar in ad_yollari.values() if len(yollar) > 1)
     return govdeler, {"ek_yontemi": yontem, "govde": len(govdeler), "yapay_birimde_govde": yapay,
-                      "yalniz_ranges_govde": c.yalniz_ranges_govdeler()}
+                      "yalniz_ranges_govde": c.yalniz_ranges_govdeler(), "ayni_adli_kaynak": ayni_adli}
 
 
 def crt_mi(adlar: Iterable[str]) -> bool:
@@ -781,17 +785,26 @@ def duzey_ozeti(birimler: dict[str, dict[str, Any]], duzey: str) -> dict[str, An
     satirlar = {s: {a: tablo(s, a) for a in OLCU_ADLARI} for s in SATIRLAR}
     satirlar[SATIR_B0]["ari_p95"] = tablo(SATIR_B0, "ari_p95")
     urun = satirlar[SATIR_URUN][KARAR_OLCUSU]["program"]
-    giren = Counter()
+    giren: Counter = Counter()
     disarida: Counter = Counter()
+    bitisik: dict[str, list[Any]] = {}
+    turler = {t: {"modul": 0, "fonksiyon": 0, "cift": 0, "ortak": 0} for t in MODUL_TURLERI}
     for b, v in birimler.items():
         for e in v["elfler"].values():
             d = e["duzeyler"][duzey]
-            if d["giris"]:
-                giren[b] += 1
-            else:
+            if not d["giris"]:
                 disarida[d["neden"]] += 1
+                continue
+            giren[b] += 1
+            bitisik.setdefault(b, []).append(d["bitisiklik"]["oran"])
+            for tur, sayilar in d["modul_turleri"].items():
+                for alan, n in sayilar.items():
+                    turler[tur][alan] += n
     return {"satirlar": satirlar, "giren_ikili": dict(sorted(giren.items())),
             "disarida": dict(sorted(disarida.items())),
+            # yalnız rapor: GT'nin adres sırasındaki bitişikliği (makro) ve modül türü dökümü (havuz)
+            "bitisiklik": makro({b: ortalama(vs) for b, vs in bitisik.items()}),
+            "modul_turleri": turler,
             "kararlar": {
                 "rastgele": rastgele_karari(urun, satirlar[SATIR_B0]["ari_p95"]["program"]),
                 "b1": karsilastirma_karari(urun, satirlar[SATIR_B1][KARAR_OLCUSU]["program"])}}
@@ -827,6 +840,19 @@ def sabitle(kok: Path = REPO, hedef: Path = SABITLER_YOLU) -> dict[str, Any]:
 
 # --------------------------------------------------------------------------------------------
 # Komutlar: kuru ve olc
+
+
+def kosu_kunyesi(kosu: Optional[Path]) -> Optional[dict[str, Any]]:
+    """Koşu kökünün künyesi (``<kök>/kosu_kunyesi.json``; ``kosu`` kökün ``debian`` dizinidir):
+    ürünün commit'i ve çalışma ağacının temizliği. Dosya yoksa None."""
+    if kosu is None:
+        return None
+    yol = Path(kosu).parent / "kosu_kunyesi.json"
+    if not yol.is_file():
+        return None
+    agac = _json(yol).get("agac") or {}
+    return {"dosya": str(yol), "commit": agac.get("commit"), "kirli": agac.get("kirli"),
+            "karadul_surumu": agac.get("karadul_surumu")}
 
 
 def _ghidra_adresleri(e: Any) -> tuple[set[int], int, bool]:
@@ -917,6 +943,7 @@ def kuru_toplami(birimler: dict[str, dict[str, Any]]) -> dict[str, Any]:
                            for a in ("gt_fonksiyon_ghidrada", "etiketli_ghidrada")}
             t["ortak_n"] = sum(k["ortak"]["n"] for k in etiketli)
             t["lto_ikili"] = sum(1 for k in etiketli if k["lto"])
+            t["ayni_adli_kaynak"] = sum(k["dwarf"]["ayni_adli_kaynak"] for k in etiketli)
             t["n_min_alti"] = sum(1 for k in etiketli if k["ortak"]["n"] < N_MIN)
             t["tek_kaynak_dosya"] = sum(1 for k in etiketli if k["ortak"]["kaynak_dosya"] < 2)
             t["tek_dizin"] = sum(1 for k in etiketli if k["ortak"]["dizin"] < 2)
@@ -993,26 +1020,35 @@ def _yuzde(k: int, n: int) -> str:
     return "—" if not n else f"%{100 * k / n:.1f}".replace(".", ",")
 
 
+def _kunye_satiri(s: dict[str, Any]) -> str:
+    k = s.get("kosu_kunyesi")
+    if not k:
+        return "- Koşu künyesi: okunmadı."
+    return (f"- Koşu künyesi: ürün commit'i `{k.get('commit')}`, sürüm {k.get('karadul_surumu')}, "
+            f"kirli dosya {len(k.get('kirli') or [])}.")
+
+
 def kuru_markdown(s: dict[str, Any]) -> str:
     """Kuru koşu özeti: birim tablosu ve ikili tablosu. Uyum sayısı ve ad içermez."""
     satirlar = ["# Harita ölçümü: GT'siz kuru koşu", "",
                 f"- `harita_olc.py` sha256 `{s['arac']['betik_sha256'][:16]}…`; HEAD `{s['arac']['git_head'][:10]}`.",
                 f"- Nüfus: bulunan {sum(s['nufus']['bulunan'].values())} ikili, biten "
                 f"{sum(s['nufus']['biten'].values())}; sorunlar: {'; '.join(s['nufus']['sorunlar']) or 'yok'}.",
+                _kunye_satiri(s),
                 "- Bu koşu iki tarafı ayrı ayrı okur; modül ile GT etiketi çaprazlanmaz.", "",
                 "## Birim başına", "",
                 "| Birim | İkili | C++ (dışarıda) | Ürün okunan | GT okunan | İkisi de | Ghidra fonksiyonu | "
                 "Modüle atanan | Atanamayan | Çoklu modül | GT fonksiyonu | CRT | Gövdesiz | Etiketsiz | "
-                "Çelişkili | Etiketli | Etiketli → Ghidra | Ortak nüfus | LTO'lu ikili | N_MIN altı | "
-                "Tek kaynak dosya | Tek dizin |",
-                "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+                "Çelişkili | Etiketli | Etiketli → Ghidra | Ortak nüfus | LTO'lu ikili | Köken biriminden | "
+                "Yolu addan | Aynı adlı kaynak | N_MIN altı | Tek kaynak dosya | Tek dizin |",
+                "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for b, t in s["toplam"].items():
         u, g = t.get("urun") or {}, t.get("gt")
         if g is None:
             satirlar.append(f"| {b} | {t['ikili']} | {t['cpp_disarida']} | {t['urun_okunan']} | 0 (etiket "
                             f"yok) | 0 | {u.get('ghidra_fonksiyon', 0)} | {u.get('atanan', 0)} | "
                             f"{u.get('atanamayan', 0)} | {u.get('coklu_modul', 0)} | — | — | — | — | — | — | — | "
-                            "— | — | — | — | — |")
+                            "— | — | — | — | — | — | — | — |")
             continue
         satirlar.append(
             f"| {b} | {t['ikili']} | {t['cpp_disarida']} | {t['urun_okunan']} | {t['gt_okunan']} | "
@@ -1020,7 +1056,8 @@ def kuru_markdown(s: dict[str, Any]) -> str:
             f"{u['coklu_modul']} | {g['gt_fonksiyon']} | {g['crt']} | {g['govdesiz']} | {g['etiketsiz']} | "
             f"{g['celiskili']} | {g['etiketli']} | {t['esleme']['etiketli_ghidrada']} "
             f"({_yuzde(t['esleme']['etiketli_ghidrada'], g['etiketli'])}) | {t['ortak_n']} | "
-            f"{t['lto_ikili']} | {t['n_min_alti']} | {t['tek_kaynak_dosya']} | {t['tek_dizin']} |")
+            f"{t['lto_ikili']} | {g['koken_birimi']} | {g['yol_ad']} | {t['ayni_adli_kaynak']} | "
+            f"{t['n_min_alti']} | {t['tek_kaynak_dosya']} | {t['tek_dizin']} |")
     satirlar += ["", "## İkili başına", "",
                  "| Birim | İkili | Ghidra fonksiyonu | Thunk | Modül | Atanan | Atanamayan | GT fonksiyonu | "
                  "Etiketli | Kaynak dosya | Dizin | Köken biriminden | Yolu addan | Etiketli → Ghidra | "
@@ -1053,6 +1090,7 @@ def olc_markdown(s: dict[str, Any]) -> str:
                 f"- Nüfus: {sum(s['nufus']['biten'].values())} ikili bitti; sorunlar: "
                 f"{'; '.join(s['nufus']['sorunlar']) or 'yok'}; GT etiketi olmayan (ölçülmeyen): "
                 f"{len(s['gt_etiketsiz'])}.",
+                _kunye_satiri(s),
                 f"- Seçimler: N_MIN = {sec['n_min']}, en az {sec['en_az_program']} program, B0 "
                 f"{sec['b0_permutasyon']} karma, fark eşiği {sayi(sec['fark_esigi'], 2)}, çoğunluk "
                 f"{sayi(sec['cogunluk'], 2)}; karar ölçüsü ARI, karar düzeyi `{sec['karar_duzeyi']}`.", ""]
@@ -1081,6 +1119,15 @@ def olc_markdown(s: dict[str, Any]) -> str:
                 f"{sayi(m[SATIR_B0]['ari']['program'].get(p))} | {sayi(m[SATIR_B0]['ari_p95']['program'].get(p))} | "
                 f"{sayi(m[SATIR_B1]['ari']['program'].get(p))} | {sayi(m[SATIR_B1_GT]['ari']['program'].get(p))} | "
                 f"{sayi(kb['farklar'].get(p))} |")
+        bt = o["bitisiklik"]
+        satirlar += ["", f"GT bitişikliği (sınıf / adres sırasındaki öbek; 1: her sınıf tek öbek), makro "
+                     f"{sayi(bt['makro'])}; program başına: "
+                     + (", ".join(f"{p} {sayi(v)}" for p, v in bt["program"].items()) or "—") + ".", "",
+                     "| Modül türü | Modül | Fonksiyon | Aynı modülde çift | Bunlardan aynı sınıfta | Çift kesinliği |",
+                     "|---|---|---|---|---|---|"]
+        for tur, t in o["modul_turleri"].items():
+            satirlar.append(f"| `{tur}` | {t['modul']} | {t['fonksiyon']} | {t['cift']} | {t['ortak']} | "
+                            f"{sayi(Fraction(t['ortak'], t['cift']) if t['cift'] else None)} |")
         satirlar.append("")
     if s["gt_etiketsiz"]:
         satirlar += ["GT etiketi olmayan ikililer: " + ", ".join(
@@ -1130,6 +1177,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     except OnkosulHatasi as hata:
         print(f"DURDU: {hata}", file=sys.stderr)
         return 2
+    sonuc["kosu_kunyesi"] = kosu_kunyesi(a.debian_kosu)
     _yaz(a.json, sonuc)
     if a.md:
         a.md.write_text(kuru_markdown(sonuc) if a.komut == "kuru" else olc_markdown(sonuc),

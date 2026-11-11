@@ -98,7 +98,8 @@ def gt_tarafi(etiket, fonksiyon=None, yol_ad=0, yapay=0):
     return ho.GtTarafi(dict(etiket), set(etiket if fonksiyon is None else fonksiyon), sayac,
                        {"debug": "sentetik.debug", "ofset": "0x0", "ofset_kaynagi": "sentetik",
                         "dwarf": {"ek_yontemi": "altlink_yok", "govde": len(etiket),
-                                  "yapay_birimde_govde": yapay, "yalniz_ranges_govde": 0}})
+                                  "yapay_birimde_govde": yapay, "yalniz_ranges_govde": 0,
+                                  "ayni_adli_kaynak": 0}})
 
 
 def gt_tak(monkeypatch, tablo):
@@ -446,7 +447,17 @@ def test_dwarf_govdeleri(monkeypatch):
         (0x600, "src/b.c", "koken", "satir_tablosu")]
     assert [(g.adres, g.yol, g.koken) for g in govdeler if not g.yol] == [(0x300, None, None)]
     assert kunye == {"ek_yontemi": "altlink_yok", "govde": 6, "yapay_birimde_govde": 2,
-                     "yalniz_ranges_govde": 0}
+                     "yalniz_ranges_govde": 0, "ayni_adli_kaynak": 0}
+    # aynı adı taşıyan iki ayrı kaynak dosya (ayrı dizinlerde) sayılır ve ayrı etiket alır
+    ikiz = dwarf([die(1, CU, 0, name=ad_oz("sds.c")), govde(10, 0, 0x100), govde(11, 0, 0x110),
+                  die(101, CU, 100, name=ad_oz("./sds.c")), govde(110, 100, 0x200),
+                  die(201, CU, 200, name=ad_oz("tek.c")), govde(210, 200, 0x300)],
+                 {0: (1, CU, tablo5("src/sds.c")), 100: (101, CU, tablo5("deps/hiredis/sds.c")),
+                  200: (201, CU, tablo5("src/tek.c"))})
+    monkeypatch.setattr(dt, "dosya_yukle", lambda yol, rol: ikiz)
+    govdeler, kunye = ho.dwarf_govdeleri(Path("x.debug"))
+    assert sorted({g.yol for g in govdeler}) == ["deps/hiredis/sds.c", "src/sds.c", "src/tek.c"]
+    assert kunye["ayni_adli_kaynak"] == 1 and kunye["govde"] == 4
 
 
 def test_dwarf_govdeleri_ek_dosya_bulunamazsa_durur(monkeypatch):
@@ -835,7 +846,9 @@ def test_duzey_ozeti_kararlari():
         satirlar = {s: {a: None for a in ho.OLCU_ADLARI} for s in ho.SATIRLAR}
         satirlar["urun"]["ari"], satirlar["b0"]["ari"], satirlar["b1"]["ari"] = urun, b0, b1
         satirlar["b1_gt"]["ari"], satirlar["b0"]["ari_p95"] = b1_gt, b0_p95
-        return {"duzeyler": {"dosya": {"giris": True, "neden": None, "satirlar": satirlar}}}
+        return {"duzeyler": {"dosya": {
+            "giris": True, "neden": None, "satirlar": satirlar, "bitisiklik": {"oran": urun},
+            "modul_turleri": {"topluluk": {"modul": 2, "fonksiyon": 8, "cift": 12, "ortak": 5}}}}}
 
     birimler = {
         "debian/a": {"elfler": {"x": ikili(F(50, 100), F(0), F(10, 100), F(20, 100), F(90, 100)),
@@ -854,6 +867,11 @@ def test_duzey_ozeti_kararlari():
     kb = o["kararlar"]["b1"]
     assert kb["farklar"] == {"a": F(20, 100), "b": F(6, 100), "c": F(20, 100)}
     assert kb["karar"] == ho.KARAR_URUN
+    # yalnız rapor: bitişiklik program düzeyi makro, modül türü dökümü giren ikililerin toplamı
+    assert o["bitisiklik"]["program"] == {"a": F(40, 100), "b": F(8, 100), "c": F(60, 100)}
+    assert o["bitisiklik"]["makro"] == F(36, 100)
+    assert o["modul_turleri"]["topluluk"] == {"modul": 8, "fonksiyon": 32, "cift": 48, "ortak": 20}
+    assert o["modul_turleri"]["misc"] == {"modul": 0, "fonksiyon": 0, "cift": 0, "ortak": 0}
     birimler["debian/a"]["elfler"]["x"]["duzeyler"]["dosya"]["satirlar"]["urun"]["ari"] = F(-10, 100)
     birimler["debian/a"]["elfler"]["y"]["duzeyler"]["dosya"]["satirlar"]["urun"]["ari"] = F(0)
     assert ho.duzey_ozeti(birimler, "dosya")["kararlar"]["rastgele"]["karar"] == ho.KARAR_AYIRT_EDILEMIYOR
@@ -933,6 +951,12 @@ def test_olc_uctan_uca(tmp_path, monkeypatch):
     assert kb["makro_fark"] == 0 and kb["karar"] == ho.KARAR_AYRISMIYOR
     kr = o["kararlar"]["rastgele"]
     assert (kr["ustte"], kr["gerekli"], kr["karar"]) == (2, 2, ho.KARAR_RASTGELEDEN_IYI)
+    # yalnız rapor: bitişiklik (alfa ve beta bitişik, gama serpik) ve modül türü dökümü.
+    # Giren dört ikilide üçer topluluk modülü (dörder fonksiyon): 4 · 3 · C(4,2) = 72 çift;
+    # aynı dosyada olanlar: alfa 18, alfa2 18, beta 3, gama 18
+    assert o["bitisiklik"]["program"] == {"alfa": 1, "beta": 1, "gama": F(3, 12)}
+    assert o["modul_turleri"]["topluluk"] == {"modul": 12, "fonksiyon": 48, "cift": 72, "ortak": 57}
+    assert o["modul_turleri"]["kural"]["fonksiyon"] == 0          # thunk'ın modülü nüfusta yok
     # dizin düzeyi: iki sınıf (src, lib); aynı ikililer girer
     assert s["ozet"]["dizin"]["giren_ikili"] == o["giren_ikili"]
     assert satir("debian/alfa", "alfa", "urun", "dizin")["kesinlik"] == 1
@@ -949,6 +973,8 @@ def test_olc_ciktisinda_ad_yok_ve_belirlenimli(tmp_path, monkeypatch):
         for yasak in ("src/a.c", "src/b.c", "lib/c.c", "a.c", "FUN_", "islev", "malloc"):
             assert yasak not in metin, yasak
     assert "ayrismiyor" in md and "rastgeleden_iyi" in md and "mac/alfa/alfa" in md
+    assert "| `topluluk` | 12 | 48 | 72 | 57 | 0,792 |" in md and "GT bitişikliği" in md
+    assert "Koşu künyesi: okunmadı" in md
     # yuvarlanmış çıktı JSON'a yazılabilir; kesirler ondalığa döner
     geri = json.loads(j1)
     assert geri["ozet"]["dosya"]["satirlar"]["urun"]["ari"]["program"]["alfa"] == 1.0
@@ -1061,6 +1087,7 @@ def test_kuru_esleme_orani_ve_gt_hatasi(tmp_path, monkeypatch):
     t = s["toplam"]["debian/p"]
     assert (t["gt_okunamayan"], t["urun_okunan"], t["gt_okunan"], t["iki_taraf_okunan"]) == (1, 2, 1, 1)
     assert t["lto_ikili"] == 1 and t["n_min_alti"] == 1 and t["tek_dizin"] == 1
+    assert t["ayni_adli_kaynak"] == 0
     assert ho.GT_OKUNAMADI in ho.kuru_markdown(s)
 
 
@@ -1138,6 +1165,26 @@ def test_onkosul_sabitlerde_eksik_dosya(tmp_path):
     _git(kok, "commit", "-q", "-m", "ön kayıt")
     with pytest.raises(ho.OnkosulHatasi, match="sha256 yok"):
         ho.onkosullari_denetle(kok, d / "onkayit.md", d / "harita_sabitler.json")
+
+
+def test_kosu_kunyesi_ve_main_kuru(tmp_path, monkeypatch, capsys):
+    """Künye koşu kökünden (``debian`` dizininin üstü) okunur; ``kuru`` komutu çıktıya yazar."""
+    elfler, beklenen = olcum_kur(tmp_path, monkeypatch)
+    assert ho.kosu_kunyesi(tmp_path / "debian") is None and ho.kosu_kunyesi(None) is None
+    (tmp_path / "kosu_kunyesi.json").write_text(json.dumps(
+        {"agac": {"commit": "c" * 40, "kirli": [], "karadul_surumu": "1.2.3"}, "paralel": 3}))
+    k = ho.kosu_kunyesi(tmp_path / "debian")
+    assert k == {"dosya": str(tmp_path / "kosu_kunyesi.json"), "commit": "c" * 40, "kirli": [],
+                 "karadul_surumu": "1.2.3"}
+    asil = ho.kuru      # sentetik nüfus: beklenen ikili sayıları ve Mach-O GT'si olmadan
+    monkeypatch.setattr(ho, "kuru", lambda elfler, indir, mac_veri, eksik_izinli=False: asil(
+        elfler, indir, None, beklenen=beklenen, eksik_izinli=eksik_izinli))
+    kod = ho.main(["kuru", "--debian-kosu", str(tmp_path / "debian"), "--mac-kosu", str(tmp_path / "mac"),
+                   "--json", str(tmp_path / "k.json"), "--md", str(tmp_path / "k.md")])
+    assert kod == 0 and "kuru: 4 birim, 6 ikili" in capsys.readouterr().out
+    belge = json.loads((tmp_path / "k.json").read_text())
+    assert belge["kosu_kunyesi"]["commit"] == "c" * 40 and belge["sema"] == ho.KURU_SEMA
+    assert f"ürün commit'i `{'c' * 40}`, sürüm 1.2.3, kirli dosya 0" in (tmp_path / "k.md").read_text()
 
 
 def test_yuvarla_ve_sayi():

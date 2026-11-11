@@ -210,6 +210,14 @@
    "replace": "yapay += int(c.birim_adi(dt.ANA, d.birim) is not None)"
   },
   {
+   "id": "harita_ayni_adli_sayimi",
+   "desc": "aynı adlı kaynak sayımı tek yollu adları da sayar",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_dwarf_govdeleri",
+   "find": "ayni_adli = sum(1 for yollar in ad_yollari.values() if len(yollar) > 1)",
+   "replace": "ayni_adli = sum(1 for yollar in ad_yollari.values() if yollar)"
+  },
+  {
    "id": "harita_ek_dosya_sart_degil",
    "desc": "dwz ek dosyası bulunamasa da okuma sürer",
    "module": "scripts/measurement/harita_olc.py",
@@ -795,6 +803,38 @@
    "test": "tests/test_harita_olc.py::test_mac_gt_bilgisi",
    "find": "    alanlar = sorted({a for k in kayitlar if isinstance(k, dict) for a in k})\n",
    "replace": "    alanlar = []\n"
+  },
+  {
+   "id": "harita_ozet_tur_toplami",
+   "desc": "modül türü dökümü giren ikilileri toplamaz, sonuncuyu yazar",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_duzey_ozeti_kararlari",
+   "find": "                    turler[tur][alan] += n\n",
+   "replace": "                    turler[tur][alan] = n\n"
+  },
+  {
+   "id": "harita_ozet_bitisiklik_enbuyuk",
+   "desc": "birimin bitişikliği giren ikililerin ortalaması yerine en büyüğü",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_duzey_ozeti_kararlari",
+   "find": "\"bitisiklik\": makro({b: ortalama(vs) for b, vs in bitisik.items()}),",
+   "replace": "\"bitisiklik\": makro({b: max(vs) for b, vs in bitisik.items()}),"
+  },
+  {
+   "id": "harita_kunye_yolu",
+   "desc": "koşu künyesi koşu kökü yerine debian dizininde aranır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kosu_kunyesi_ve_main_kuru",
+   "find": "    yol = Path(kosu).parent / \"kosu_kunyesi.json\"\n",
+   "replace": "    yol = Path(kosu) / \"kosu_kunyesi.json\"\n"
+  },
+  {
+   "id": "harita_main_kunye_yazmaz",
+   "desc": "komut çıktısına koşu künyesi yazılmaz",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kosu_kunyesi_ve_main_kuru",
+   "find": "    sonuc[\"kosu_kunyesi\"] = kosu_kunyesi(a.debian_kosu)\n",
+   "replace": ""
   },
   {
    "id": "harita_onkosul_sha_denetlenmez",
