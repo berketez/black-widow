@@ -147,7 +147,9 @@ class JSONReporter:
                 "strings_found",
                 static_stats.get("ghidra_string_count", static_stats.get("string_count", static_stats.get("strings", 0))),
             )
-            summary["total_imports"] = static_stats.get("imports_found", 0)
+            # imports_found yalnız ithal listesi okunduğunda yazılır (analyzers/macho.py);
+            # okunamadıysa sayı bilinmiyor: 0 değil "N/A".
+            summary["total_imports"] = static_stats.get("imports_found", "N/A")
         else:
             summary["total_functions"] = "N/A"
             summary["total_strings"] = "N/A"

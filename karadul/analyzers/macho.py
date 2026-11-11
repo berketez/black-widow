@@ -275,6 +275,9 @@ class MachOAnalyzer(BaseAnalyzer):
             lief_path = workspace.save_json("static", "lief_analysis", lief_data)
             artifacts["lief_analysis"] = lief_path
             stats["lief_available"] = True
+            # Rapordaki summary.total_imports bu anahtardan okunur (reporting/json_report.py).
+            if "imported_functions" in lief_data:
+                stats["imports_found"] = len(lief_data["imported_functions"])
         else:
             stats["lief_available"] = False
 
@@ -622,6 +625,15 @@ class MachOAnalyzer(BaseAnalyzer):
                     lib_name = getattr(lib, "name", None)
                     if lib_name is not None:
                         result["libraries"].append(str(lib_name))
+
+            # İthal fonksiyon adları (rapordaki total_imports bunların sayısıdır). Ayrı try: okunamazsa
+            # öbür alanlar yine döner, anahtar hiç yazılmaz (sayı bilinmiyor, 0 değil).
+            try:
+                result["imported_functions"] = [
+                    str(getattr(fn, "name", fn)) for fn in binary.imported_functions
+                ]
+            except Exception:
+                logger.debug("lief imported_functions okunamadi", exc_info=True)
 
             return result
 

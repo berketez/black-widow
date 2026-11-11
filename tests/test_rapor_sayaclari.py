@@ -7,12 +7,14 @@
   kipinde 0 tur koşan eski döngünün sonu (stages.py) değeri 0 ile eziyordu.
 * ``convergence_reason``: ``feedback_loop`` nedeni Faz 2 koşucusunun yapıtına yazıyor; ``finalize``
   Faz 3 koşucusunda ve Faz 3 tohumunda bu anahtar yoktu, hep "unknown" yazılıyordu.
+* ``summary.total_imports``: ``static`` istatistiklerinde ``imports_found`` hiç üretilmiyordu.
 
 Testler sayaçları denetimin okuduğu yerden okur: aşama istatistikleri ve ``reports/report.json``.
 """
 
 from __future__ import annotations
 
+import json
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -21,12 +23,18 @@ from unittest.mock import MagicMock
 
 import pytest
 
+import tests.test_macho as _tm
+from karadul.analyzers.macho import MachOAnalyzer
 from karadul.config import Config
+from karadul.core.result import PipelineResult, StageResult
+from karadul.core.target import TargetType
+from karadul.core.workspace import Workspace
 from karadul.pipeline.context import StepContext
 from karadul.pipeline.steps import feedback_loop as _fl
 from karadul.pipeline.steps._feedback_loop_iter import IterOutcome
 from karadul.pipeline.steps.feedback_loop import FeedbackLoopStep
 from karadul.pipeline.steps.finalize import FinalizeStep
+from karadul.reporting.json_report import JSONReporter
 from karadul.stages import ReconstructionStage
 
 
@@ -219,3 +227,116 @@ class TestFeedbackLoopSayaclari:
         assert out["convergence_reason"] == "max_iter"
 
 
+# ---------------------------------------------------------------------------
+# 3. İthal sayısı: lief'in ithal listesi -> static imports_found -> summary.total_imports
+# ---------------------------------------------------------------------------
+
+
+class _FakeFunction:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+def _fake_lief(monkeypatch, binary: Any) -> None:
+    import sys
+    import types
+
+    fake = types.ModuleType("lief")
+    fake.parse = lambda _p: binary  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "lief", fake)
+
+
+class _BinaryWithImports:
+    format = "ELF"
+    segments: list = []
+    sections: list = []
+    libraries = ["libc.so.6"]
+    imported_functions = [_FakeFunction("memcpy"), _FakeFunction("strlen"), _FakeFunction("exit")]
+
+
+class _BinaryImportsBroken:
+    format = "ELF"
+    segments: list = []
+    sections: list = []
+    libraries: list = []
+
+    @property
+    def imported_functions(self):
+        raise RuntimeError("bozuk ithal tablosu")
+
+
+class TestRunLiefIthal:
+    def test_ithal_adlari_doner(self, monkeypatch, sample_macho_file, config) -> None:
+        _fake_lief(monkeypatch, _BinaryWithImports())
+        result = MachOAnalyzer(config)._run_lief(sample_macho_file)
+        assert result["imported_functions"] == ["memcpy", "strlen", "exit"]
+
+    def test_ithal_okunamazsa_anahtar_yok_ama_sonuc_doner(
+        self, monkeypatch, sample_macho_file, config,
+    ) -> None:
+        _fake_lief(monkeypatch, _BinaryImportsBroken())
+        result = MachOAnalyzer(config)._run_lief(sample_macho_file)
+        assert result is not None
+        assert "imported_functions" not in result
+        assert result["format"] == "ELF"
+
+
+def _analyze_static(monkeypatch, tmp_path, sample_macho_file, config, lief_data):
+    _tm.TestAnalyzeStatic()._patch_pipeline(monkeypatch, ghidra_result=None)
+    monkeypatch.setattr(MachOAnalyzer, "_run_lief", lambda self, p: lief_data, raising=True)
+    ws = _tm._make_workspace(tmp_path)
+    target = _tm._make_target(sample_macho_file, TargetType.ELF_BINARY)
+    return MachOAnalyzer(config).analyze_static(target, ws)
+
+
+_LIEF_BASE = {"format": "ELF", "header": {}, "segments": [], "sections": [], "libraries": []}
+
+
+class TestStaticImportsFound:
+    def test_ithal_sayisi_listenin_uzunlugu(
+        self, monkeypatch, tmp_path, sample_macho_file, config,
+    ) -> None:
+        lief_data = dict(_LIEF_BASE, imported_functions=["memcpy", "strlen", "exit"])
+        result = _analyze_static(monkeypatch, tmp_path, sample_macho_file, config, lief_data)
+        assert result.stats["imports_found"] == 3
+
+    def test_bos_liste_gercek_sifir(
+        self, monkeypatch, tmp_path, sample_macho_file, config,
+    ) -> None:
+        """İthal listesi okundu ve boşsa (statik bağlı ikili) sayı gerçekten 0'dır."""
+        lief_data = dict(_LIEF_BASE, imported_functions=[])
+        result = _analyze_static(monkeypatch, tmp_path, sample_macho_file, config, lief_data)
+        assert result.stats["imports_found"] == 0
+
+    @pytest.mark.parametrize("lief_data", [dict(_LIEF_BASE), None])
+    def test_liste_yoksa_sayi_yazilmaz(
+        self, monkeypatch, tmp_path, sample_macho_file, config, lief_data,
+    ) -> None:
+        result = _analyze_static(monkeypatch, tmp_path, sample_macho_file, config, lief_data)
+        assert "imports_found" not in result.stats
+
+
+def _report_summary(tmp_path: Path, static_stats: dict) -> dict:
+    """``reports/report.json`` yazılır ve denetimin okuduğu ``summary`` geri okunur."""
+    ws = Workspace(base_dir=tmp_path / "workspaces", target_name="ikili")
+    ws.create()
+    result = PipelineResult(target_name="ikili", target_hash="0" * 64, workspace_path=ws.path)
+    result.add_stage_result(StageResult(
+        stage_name="static", success=True, duration_seconds=1.0, stats=static_stats,
+    ))
+    path = JSONReporter().generate(result, ws)
+    return json.loads(path.read_text(encoding="utf-8"))["summary"]
+
+
+class TestReportTotalImports:
+    def test_rapor_imports_found_yazar(self, tmp_path) -> None:
+        summary = _report_summary(tmp_path, {"ghidra_function_count": 250, "imports_found": 63})
+        assert summary["total_imports"] == 63
+
+    def test_gercek_sifir_korunur(self, tmp_path) -> None:
+        summary = _report_summary(tmp_path, {"imports_found": 0})
+        assert summary["total_imports"] == 0
+
+    def test_bilinmiyorsa_sifir_degil(self, tmp_path) -> None:
+        summary = _report_summary(tmp_path, {"ghidra_function_count": 250})
+        assert summary["total_imports"] == "N/A"
