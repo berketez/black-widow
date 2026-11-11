@@ -78,4 +78,17 @@ CAPABILITY_PROBE_MAX_TOKENS = 32
 # Hata iletisine alınan uç cevabı parçasının en büyük uzunluğu (karakter).
 ERROR_EXCERPT_CHARS = 300
 
+# ============================================================================================
+# Aşama 1b: bağlam, okuyan araçlar, K0 iş akışı ve bütçeli döngü (asama1b.md)
+# ============================================================================================
+
+# --- Tasarım tanımları -----------------------------------------------------------------------
+MAX_TOOL_CALLS = 8              # §2.3 araç çağrısı / görev (pilot_protokolu.md §15)
+
+# --- Bu işin eşikleri [bu iş] (asama1b.md §2) ------------------------------------------------
+# `kanit` dizisinin üst sınırı: bir görevde en çok MAX_TOOL_CALLS araç sonucu + paketin iki sonucu
+# (get_evidence, get_decompiled) olabilir. Gerçek sınır istek başına verilen kimlik sayısıdır;
+# bu değer onun tavanıdır.
+REFS_MAX_ITEMS = MAX_TOOL_CALLS + 2
+
 __all__: list[str] = []

@@ -26,7 +26,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Optional, Sequence
 
-from karadul.lm import RATIONALE_MAX_CHARS
+from karadul.lm import RATIONALE_MAX_CHARS, REFS_MAX_ITEMS
 
 # ============================================================================================
 # 1. Pilot kopyası (llm_pilot.py:498-557). DEĞİŞTİRME: eşitlik testi pilotla karşılaştırır.
@@ -387,21 +387,76 @@ def build_envelope(tools: Mapping[str, Mapping[str, Any]], final_properties: Map
     return envelope
 
 
+def build_task_envelope(tools: Mapping[str, Mapping[str, Any]],
+                        final_branches: Sequence[Mapping[str, Any]],
+                        final_required: Sequence[str]) -> dict[str, Any]:
+    """Görev zarfı: araç dalları + bir ya da daha çok ``final`` dalı (hepsi kökteki tek ``anyOf``'ta).
+
+    ``build_envelope``'tan farkı: ``final`` birden çok düz dal olabilir ("ad öner": ad veren ve
+    çekimser) ve ``tools`` boş olabilir (bütçe bittiğinde model yalnız son cevabı verebilir; araç
+    çağrısı yapısal olarak üretilemez)."""
+    if not final_branches:
+        raise SchemaError("zarf en az bir final dalı ister")
+    envelope = {"anyOf": [*(call_branch(name, args) for name, args in tools.items()),
+                          *(final_branch(props, final_required) for props in final_branches)]}
+    check_schema(envelope)
+    return envelope
+
+
 # "Ad öner" cevabı (tasarım §3.1 son madde): pilotun {isim, gerekce, cekimser} şeması + kanit (sonuç
 # kimlikleri, arac_sozlesmeleri.md §1.3 "r7" biçimi). İki düz dal: ad veren ve çekimser.
+#
+# Şema İSTEK BAŞINA kurulur (``build_name_answer_schema``). Sabit bir genel şema yok: ilk sürümde
+# ``kanit`` sınırsız bir diziydi (öğe deseni ``^r[0-9]{1,9}$``, uzunluk sınırı yok) ve gerçek modelle
+# duman testinde dizi anlamsız kimliklerle dolup üretim bütçesini tüketti (asama1a.md Ek). Şimdi:
+# öğeler yalnız o istekte gerçekten verilen sonuç kimlikleri olabilir (``enum``) ve dizi en çok
+# verilen kimlik sayısı kadar (tavan ``REFS_MAX_ITEMS``) öğe taşır (``maxItems``).
 RESULT_ID_PATTERN = "^r[0-9]{1,9}$"
+_RESULT_ID_RE = re.compile(RESULT_ID_PATTERN)
 _RATIONALE = {"type": "string", "maxLength": RATIONALE_MAX_CHARS}
-_REFS = {"type": "array", "items": {"type": "string", "pattern": RESULT_ID_PATTERN}}
-NAME_ANSWER_SCHEMA: dict[str, Any] = {"anyOf": [
-    {"type": "object",
-     "properties": {"isim": {"type": "string", "pattern": NAME_RE.pattern}, "gerekce": _RATIONALE,
-                    "cekimser": {"const": False}, "kanit": _REFS},
-     "required": ["isim", "gerekce", "cekimser", "kanit"], "additionalProperties": False},
-    {"type": "object",
-     "properties": {"isim": {"type": "null"}, "gerekce": _RATIONALE, "cekimser": {"const": True},
-                    "kanit": _REFS},
-     "required": ["isim", "gerekce", "cekimser", "kanit"], "additionalProperties": False},
-]}
+NAME_ANSWER_REQUIRED = ("isim", "gerekce", "cekimser", "kanit")
+
+
+def checked_result_ids(evidence_ids: Iterable[Any]) -> list[str]:
+    """İstekte verilen sonuç kimlikleri: boş olmayan, ``r<sayı>`` biçiminde, yinelenmesiz liste.
+    Değilse ``SchemaError`` (kimliksiz istekte ``kanit`` şeması kurulamaz)."""
+    ids = list(evidence_ids)
+    if not ids:
+        raise SchemaError("kanit şeması en az bir sonuç kimliği ister")
+    for i in ids:
+        if not isinstance(i, str) or not _RESULT_ID_RE.fullmatch(i):
+            raise SchemaError("sonuç kimliği r<sayı> biçiminde olmalı")
+    if len(set(ids)) != len(ids):
+        raise SchemaError("sonuç kimlikleri yinelenemez")
+    return ids
+
+
+def refs_schema(evidence_ids: Iterable[Any]) -> dict[str, Any]:
+    """``kanit`` alanı: öğeleri yalnız verilen kimlikler, uzunluğu sınırlı dizi."""
+    ids = checked_result_ids(evidence_ids)
+    return {"type": "array", "items": {"type": "string", "enum": ids},
+            "maxItems": min(len(ids), REFS_MAX_ITEMS)}
+
+
+def name_answer_branches(evidence_ids: Iterable[Any], *, abstain_allowed: bool = True) -> list[dict[str, Any]]:
+    """"Ad öner" cevabının düz dallarının ``properties`` sözlükleri: ad veren ve (izinliyse) çekimser.
+    K0 şeması ve döngü zarfının ``final`` dalları aynı sözlüklerden kurulur."""
+    ids = checked_result_ids(evidence_ids)
+    named = {"isim": {"type": "string", "pattern": NAME_RE.pattern}, "gerekce": dict(_RATIONALE),
+             "cekimser": {"const": False}, "kanit": refs_schema(ids)}
+    abstain = {"isim": {"type": "null"}, "gerekce": dict(_RATIONALE), "cekimser": {"const": True},
+               "kanit": refs_schema(ids)}
+    return [named, abstain] if abstain_allowed else [named]
+
+
+def build_name_answer_schema(evidence_ids: Iterable[Any], *, abstain_allowed: bool = True) -> dict[str, Any]:
+    """"Ad öner" cevap şeması, o istekte verilen sonuç kimlikleriyle (``evidence_ids``)."""
+    schema = {"anyOf": [
+        {"type": "object", "properties": props, "required": list(NAME_ANSWER_REQUIRED),
+         "additionalProperties": False}
+        for props in name_answer_branches(evidence_ids, abstain_allowed=abstain_allowed)]}
+    check_schema(schema)
+    return schema
 
 
 # ============================================================================================

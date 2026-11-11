@@ -14,7 +14,9 @@ Kilitlenen davranışlar:
       ``true``/``1`` ve ``false``/``0`` ayrı değerlerdir,
   (e) desteklenmeyen şema (``$ref``, bilinmeyen anahtar sözcük, ``^…$`` olmayan desen, aynı düzeyde
       ``properties`` + ``anyOf``, yazılmamış ``additionalProperties``) reddedilir,
-  (f) "ad öner" cevap şeması: iki düz dal, gerekçe ≤ 240 karakter,
+  (f) "ad öner" cevap şeması istek başına kurulur: iki düz dal, gerekçe ≤ 240 karakter; ``kanit``
+      yalnız o istekte verilen sonuç kimliklerini taşır ve uzunluğu sınırlıdır (asama1a.md Ek: sınırsız
+      dizi gerçek modelde üretim bütçesini tüketmişti); görev zarfında birden çok ``final`` dalı,
   (g) tur ayrıştırma: düşünme bloğu atılır, düz metindeki ilk dengeli JSON okunur, bütçe aşımı ve
       ret ayrı sınıflar,
   (h) tek onarım turu: yalnız L2'de ve yalnız biçim hatasında, bir kez; onarım iletisi modelin
@@ -35,7 +37,7 @@ from pathlib import Path
 
 import pytest
 
-from karadul.lm import RATIONALE_MAX_CHARS
+from karadul.lm import MAX_TOOL_CALLS, RATIONALE_MAX_CHARS, REFS_MAX_ITEMS
 from karadul.lm import protocol as P
 
 KOK = Path(__file__).resolve().parents[1]
@@ -274,9 +276,11 @@ def test_dogrulayici_jsonschema_ile_ayni(zarf):
     adaylar = _T_ENV_VALID + _T_ENV_INVALID + [_bozulmus(rnd.choice(_T_ENV_VALID), rnd) for _ in range(400)]
     for obj in adaylar:
         assert (P.validate(obj, zarf) == []) == v.is_valid(obj), obj
-    va = jsonschema.Draft202012Validator(P.NAME_ANSWER_SCHEMA)
-    for obj in _cevaplar():
-        assert (P.validate(obj, P.NAME_ANSWER_SCHEMA) == []) == va.is_valid(obj), obj
+    for sema in (P.build_name_answer_schema(_KIMLIKLER), P.build_name_answer_schema(["r1"], abstain_allowed=False),
+                 P.build_task_envelope(_T_TOOL_SCHEMAS, P.name_answer_branches(_KIMLIKLER), P.NAME_ANSWER_REQUIRED)):
+        va = jsonschema.Draft202012Validator(sema)
+        for obj in _cevaplar() + [{"kind": "final", **o} for o in _cevaplar()] + _T_ENV_VALID:
+            assert (P.validate(obj, sema) == []) == va.is_valid(obj), obj
 
 
 def test_mantiksal_ve_sayi_ayri_degerler():
@@ -325,15 +329,22 @@ def test_desteklenmeyen_sema_reddedilir(sema):
 # (f) "ad öner" cevap şeması
 
 
+_KIMLIKLER = ["r1", "r22"]
+
+
 def _cevaplar():
     temel = {"isim": "parse_header_field", "gerekce": "g", "cekimser": False, "kanit": ["r1", "r22"]}
     cekimser = {"isim": None, "gerekce": "kanıt yok", "cekimser": True, "kanit": []}
     out = [temel, cekimser]
     for k, v in [("isim", None), ("isim", "1abc"), ("isim", "a" * 65), ("cekimser", True), ("cekimser", 0),
                  ("gerekce", "x" * (RATIONALE_MAX_CHARS + 1)), ("gerekce", "x" * RATIONALE_MAX_CHARS),
-                 ("kanit", ["x1"]), ("kanit", "r1"), ("kanit", ["r1234567890"])]:
+                 ("kanit", ["x1"]), ("kanit", "r1"), ("kanit", ["r1234567890"]), ("kanit", ["r3"]),
+                 ("kanit", ["r2"]), ("kanit", []), ("kanit", ["r22"]), ("kanit", ["r1", "r1"]),
+                 ("kanit", ["r1", "r22", "r1"]), ("kanit", ["r8", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]),
+                 ("kanit", [1]), ("kanit", [None])]:
         out.append({**temel, k: v})
-    for k, v in [("isim", "ad"), ("cekimser", False), ("kanit", ["r3"])]:
+    for k, v in [("isim", "ad"), ("cekimser", False), ("kanit", ["r3"]), ("kanit", ["r1"]),
+                 ("kanit", ["r1", "r1", "r1"])]:
         out.append({**cekimser, k: v})
     out.append({k: v for k, v in temel.items() if k != "kanit"})
     out.append({**temel, "guven": 0.9})
@@ -341,20 +352,93 @@ def _cevaplar():
 
 
 def test_ad_oner_semasi():
-    P.check_schema(P.NAME_ANSWER_SCHEMA)
-    s = P.NAME_ANSWER_SCHEMA
+    s = P.build_name_answer_schema(_KIMLIKLER)
+    P.check_schema(s)
     assert set(s) == {"anyOf"} and len(s["anyOf"]) == 2
+    assert all(b["required"] == ["isim", "gerekce", "cekimser", "kanit"] and b["additionalProperties"] is False
+               for b in s["anyOf"])
     assert s["anyOf"][0]["properties"]["isim"]["pattern"] == P.NAME_RE.pattern == lp._ISIM.pattern
     gecerli = {json.dumps(o, sort_keys=True) for o in _cevaplar() if not P.validate(o, s)}
+    ad = {"isim": "parse_header_field", "gerekce": "g", "cekimser": False}
+    yok = {"isim": None, "gerekce": "kanıt yok", "cekimser": True}
     beklenen = [
-        {"isim": "parse_header_field", "gerekce": "g", "cekimser": False, "kanit": ["r1", "r22"]},
-        {"isim": None, "gerekce": "kanıt yok", "cekimser": True, "kanit": []},
-        {"isim": "parse_header_field", "gerekce": "x" * RATIONALE_MAX_CHARS, "cekimser": False,
-         "kanit": ["r1", "r22"]},
-        {"isim": None, "gerekce": "kanıt yok", "cekimser": True, "kanit": ["r3"]},
+        {**ad, "kanit": ["r1", "r22"]}, {**ad, "kanit": []}, {**ad, "kanit": ["r22"]}, {**ad, "kanit": ["r1", "r1"]},
+        {**ad, "gerekce": "x" * RATIONALE_MAX_CHARS, "kanit": ["r1", "r22"]},
+        {**yok, "kanit": []}, {**yok, "kanit": ["r1"]},
     ]
     assert gecerli == {json.dumps(o, sort_keys=True) for o in beklenen}
     assert RATIONALE_MAX_CHARS == 240
+    # pilot ayrıştırıcısı fazla anahtarı (kanit) yok sayar: aynı cevap aynı durum sınıfını alır
+    for o in beklenen:
+        assert P.parse_name_answer(json.dumps(o), "stop", abstain_allowed=True, address="FUN_100012340")["durum"] in (
+            "gecerli", "cekimser")
+    zorunlu = P.build_name_answer_schema(_KIMLIKLER, abstain_allowed=False)
+    assert len(zorunlu["anyOf"]) == 1 and zorunlu["anyOf"][0]["properties"]["cekimser"] == {"const": False}
+    assert P.validate({**yok, "kanit": []}, zorunlu) != [] and P.validate({**ad, "kanit": ["r1"]}, zorunlu) == []
+    assert not hasattr(P, "NAME_ANSWER_SCHEMA")         # sabit, sınırsız genel şema yok
+
+
+def test_kanit_semasi_istek_basina_sinirli():
+    """asama1a.md Ek: sınırsız ``kanit`` dizisi gerçek modelde anlamsız kimliklerle dolup 128 jetonluk
+    bütçeyi tüketti. Dizi artık yalnız verilen kimlikleri taşır ve en çok verilen kimlik sayısı kadardır."""
+    k = P.refs_schema(["r3", "r4"])
+    assert k == {"type": "array", "items": {"type": "string", "enum": ["r3", "r4"]}, "maxItems": 2}
+    assert "pattern" not in k["items"]
+    assert P.validate(["r3", "r4"], k) == [] and P.validate([], k) == []
+    assert P.validate(["r1"], k) != [] and P.validate(["r3", "r4", "r3"], k) != []
+    assert P.validate(["r8", "r1", "r2", "r3", "r4", "r5"], k) != []       # duman testindeki taşan dizi
+    tek = P.refs_schema(["r7"])
+    assert tek["maxItems"] == 1 and P.validate(["r7", "r7"], tek) != []
+    cok = [f"r{i}" for i in range(1, 15)]
+    assert P.refs_schema(cok)["maxItems"] == REFS_MAX_ITEMS == MAX_TOOL_CALLS + 2 == 10
+    assert P.refs_schema(cok)["items"]["enum"] == cok and P.refs_schema(cok[:10])["maxItems"] == 10
+    for sema in (P.build_name_answer_schema(["r3", "r4"]), P.build_name_answer_schema(cok)):
+        for dal in sema["anyOf"]:
+            kanit = dal["properties"]["kanit"]
+            assert kanit["type"] == "array" and "maxItems" in kanit and "enum" in kanit["items"]
+            assert kanit["maxItems"] <= REFS_MAX_ITEMS and kanit["maxItems"] <= len(kanit["items"]["enum"])
+    for bozuk in ([], ["x1"], ["r1", "r1"], ["r"], [1], ["r1", None], ["r1234567890"], ("r1", "R2"), ["r1\n"]):
+        with pytest.raises(P.SchemaError):
+            P.build_name_answer_schema(bozuk)
+        with pytest.raises(P.SchemaError):
+            P.refs_schema(bozuk)
+    assert P.checked_result_ids(iter(["r1", "r2"])) == ["r1", "r2"]
+    # dallar bağımsız nesnelerdir: birini değiştirmek öbürünü etkilemez
+    a, b = P.name_answer_branches(["r1"])
+    a["kanit"]["items"]["enum"].append("r9")
+    a["gerekce"]["maxLength"] = 1
+    assert b["kanit"]["items"]["enum"] == ["r1"] and b["gerekce"]["maxLength"] == RATIONALE_MAX_CHARS
+    assert P.name_answer_branches(["r1"])[0]["kanit"]["items"]["enum"] == ["r1"]
+    # L3 biçimi: şema response_format'a girer
+    rf = P.response_format_for("L3", P.build_name_answer_schema(["r1", "r2"]))
+    assert rf["json_schema"]["schema"]["anyOf"][1]["properties"]["kanit"]["maxItems"] == 2
+
+
+def test_gorev_zarfi_birden_cok_final_dali():
+    dallar = P.name_answer_branches(["r1", "r2"])
+    z = P.build_task_envelope(_T_TOOL_SCHEMAS, dallar, P.NAME_ANSWER_REQUIRED)
+    P.check_schema(z)
+    assert set(z) == {"anyOf"} and len(z["anyOf"]) == len(_T_TOOL_SCHEMAS) + 2
+    son = z["anyOf"][-2:]
+    assert all(d["properties"]["kind"] == {"const": "final"} and d["additionalProperties"] is False for d in son)
+    assert son[0]["required"] == ["kind", "isim", "gerekce", "cekimser", "kanit"]
+    ad = {"kind": "final", "isim": "parse_header", "gerekce": "g", "cekimser": False, "kanit": ["r2"]}
+    yok = {"kind": "final", "isim": None, "gerekce": "g", "cekimser": True, "kanit": []}
+    cagri = {"kind": "call", "tool": "get_evidence", "args": {"addr": "FUN_100012340"}}
+    for obj in (ad, yok, cagri):
+        t = P.parse_turn(json.dumps(obj), "stop", z)
+        assert t.status == "gecerli" and t.branch is not None, obj
+    assert P.parse_turn(json.dumps({**ad, "kanit": ["r3"]}), "stop", z).status == "sema_ihlali"
+    assert P.parse_turn(json.dumps({k: v for k, v in ad.items() if k != "kind"}), "stop", z).status == "sema_ihlali"
+    # bütçe bittiğinde: araç dalı yok, model yalnız son cevabı verebilir
+    yalniz_son = P.build_task_envelope({}, dallar, P.NAME_ANSWER_REQUIRED)
+    assert len(yalniz_son["anyOf"]) == 2
+    assert P.parse_turn(json.dumps(cagri), "stop", yalniz_son).status == "sema_ihlali"
+    assert P.parse_turn(json.dumps(ad), "stop", yalniz_son).status == "gecerli"
+    with pytest.raises(P.SchemaError):
+        P.build_task_envelope(_T_TOOL_SCHEMAS, [], P.NAME_ANSWER_REQUIRED)
+    with pytest.raises(P.SchemaError):
+        P.build_task_envelope({}, [{"a": {"$ref": "#"}}], ["a"])
 
 
 # --------------------------------------------------------------------------------------------
