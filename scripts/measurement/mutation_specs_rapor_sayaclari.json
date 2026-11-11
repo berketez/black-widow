@@ -1,0 +1,125 @@
+{
+ "_comment": "Rapor sayaçları onarımı (2026-11-11; docs/arge/2026-11-11_rapor_sayaclari/sonuc.md): tur sayısı (stages.py eski döngü sonu ezmesi), yakınsama nedeni (Faz 3 tohumu) ve ithal sayısı (macho.py imports_found, json_report.py N/A). feedback_loop.py ve finalize.py mutantları bu onarımda değişmeyen üretici/okuyucu satırların yeni testlerle kilitlendiğini sınar. Her mutantın find/replace uzunluğu farklıdır. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_rapor_sayaclari.json",
+ "mutants": [
+  {
+   "id": "rs_tur_kosulsuz_ezilir",
+   "desc": "eski döngü sonu tur sayacını koşulsuz yazar (onarım öncesi davranış: 0 ile ezer)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_rapor_sayaclari.py::TestTurSayisi::test_feedback_loop_tur_sayisi_ezilmez",
+   "find": "        if not _use_step_registry:\n            stats[\"pipeline_iterations_run\"] = len(_iteration_stats)",
+   "replace": "        if True:\n            stats[\"pipeline_iterations_run\"] = len(_iteration_stats)"
+  },
+  {
+   "id": "rs_tur_kosul_ters",
+   "desc": "koşul ters: step-registry kipinde ezer",
+   "module": "karadul/stages.py",
+   "test": "tests/test_rapor_sayaclari.py::TestTurSayisi::test_tur_sayisi_denetimin_olcusuyle_tutarli",
+   "find": "        if not _use_step_registry:\n            stats[\"pipeline_iterations_run\"] = len(_iteration_stats)",
+   "replace": "        if _use_step_registry:\n            stats[\"pipeline_iterations_run\"] = len(_iteration_stats)"
+  },
+  {
+   "id": "rs_tur_uretici_siniri_yazar",
+   "desc": "feedback_loop koşulan tur yerine üst sınırı yazar",
+   "module": "karadul/pipeline/steps/feedback_loop.py",
+   "test": "tests/test_rapor_sayaclari.py::TestFeedbackLoopSayaclari::test_yeni_ad_kalmayinca_durur",
+   "find": "ctx.stats[\"pipeline_iterations_run\"] = len(iteration_stats)",
+   "replace": "ctx.stats[\"pipeline_iterations_run\"] = max_iter"
+  },
+  {
+   "id": "rs_tur_uretici_bir_eksik",
+   "desc": "feedback_loop son turun sıra numarasını (bir eksik) yazar",
+   "module": "karadul/pipeline/steps/feedback_loop.py",
+   "test": "tests/test_rapor_sayaclari.py::TestFeedbackLoopSayaclari::test_sinira_ulasinca_max_iter",
+   "find": "ctx.stats[\"pipeline_iterations_run\"] = len(iteration_stats)",
+   "replace": "ctx.stats[\"pipeline_iterations_run\"] = iter_index"
+  },
+  {
+   "id": "rs_neden_faz2den_alinmaz",
+   "desc": "Faz 2'nin yakınsama nedeni alınmaz (onarım öncesi davranış)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_rapor_sayaclari.py::TestYakinsamaNedeni::test_neden_faz3_tohumuna_ve_rapora_gider",
+   "find": "_convergence_reason = _b.get(\"convergence_reason\")",
+   "replace": "_convergence_reason = None"
+  },
+  {
+   "id": "rs_neden_yanlis_anahtar",
+   "desc": "neden Faz 3 tohumuna finalize'ın okumadığı anahtarla girer",
+   "module": "karadul/stages.py",
+   "test": "tests/test_rapor_sayaclari.py::TestYakinsamaNedeni::test_oran_nedeni_olduğu_gibi_tasinir",
+   "find": "_seed[\"convergence_reason\"] = _convergence_reason",
+   "replace": "_seed[\"convergence\"] = _convergence_reason"
+  },
+  {
+   "id": "rs_neden_none_tohuma_girer",
+   "desc": "neden yokken tohuma None girer (rapora None yazılır, \"unknown\" değil)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_rapor_sayaclari.py::TestYakinsamaNedeni::test_neden_yoksa_uydurulmaz",
+   "find": "            if _convergence_reason is not None:\n                _seed[",
+   "replace": "            if True:\n                _seed["
+  },
+  {
+   "id": "rs_finalize_yapiti_okumaz",
+   "desc": "finalize yapıta bakmadan hep \"unknown\" yazar",
+   "module": "karadul/pipeline/steps/finalize.py",
+   "test": "tests/test_rapor_sayaclari.py::TestYakinsamaNedeni::test_neden_faz3_tohumuna_ve_rapora_gider",
+   "find": "convergence_reason = ctx.artifacts.get(\"convergence_reason\", \"unknown\")",
+   "replace": "convergence_reason = \"unknown\""
+  },
+  {
+   "id": "rs_feedback_nedeni_yutar",
+   "desc": "feedback_loop yakınsamada nedeni kaydetmez (hep max_iter)",
+   "module": "karadul/pipeline/steps/feedback_loop.py",
+   "test": "tests/test_rapor_sayaclari.py::TestFeedbackLoopSayaclari::test_yeni_ad_kalmayinca_durur",
+   "find": "                convergence_reason = reason\n",
+   "replace": "                pass\n"
+  },
+  {
+   "id": "rs_ithal_sifir_yazilir",
+   "desc": "imports_found liste uzunluğu yerine 0 yazar",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_rapor_sayaclari.py::TestStaticImportsFound::test_ithal_sayisi_listenin_uzunlugu",
+   "find": "stats[\"imports_found\"] = len(lief_data[\"imported_functions\"])",
+   "replace": "stats[\"imports_found\"] = 0"
+  },
+  {
+   "id": "rs_ithal_bilinmezken_sifir",
+   "desc": "ithal listesi okunamadığında da imports_found 0 yazılır (uydurma sıfır)",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_rapor_sayaclari.py::TestStaticImportsFound::test_liste_yoksa_sayi_yazilmaz",
+   "find": "            if \"imported_functions\" in lief_data:\n                stats[\"imports_found\"] = len(lief_data[\"imported_functions\"])",
+   "replace": "            if True:\n                stats[\"imports_found\"] = len(lief_data.get(\"imported_functions\", []))"
+  },
+  {
+   "id": "rs_ithal_ad_yerine_nesne",
+   "desc": "_run_lief ad yerine nesnenin metin biçimini yazar",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_rapor_sayaclari.py::TestRunLiefIthal::test_ithal_adlari_doner",
+   "find": "str(getattr(fn, \"name\", fn)) for fn in binary.imported_functions",
+   "replace": "str(fn) for fn in binary.imported_functions"
+  },
+  {
+   "id": "rs_ithal_hatasi_tum_sonucu_dusurur",
+   "desc": "ithal tablosu hatası ayrı yakalanmaz; bütün lief sonucu None olur",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_rapor_sayaclari.py::TestRunLiefIthal::test_ithal_okunamazsa_anahtar_yok_ama_sonuc_doner",
+   "find": "            except Exception:\n                logger.debug(\"lief imported_functions okunamadi\"",
+   "replace": "            except ImportError:\n                logger.debug(\"lief imported_functions okunamadi\""
+  },
+  {
+   "id": "rs_rapor_bilinmezken_sifir",
+   "desc": "rapor imports_found yokken 0 yazar (onarım öncesi öntanımlı)",
+   "module": "karadul/reporting/json_report.py",
+   "test": "tests/test_rapor_sayaclari.py::TestReportTotalImports::test_bilinmiyorsa_sifir_degil",
+   "find": "summary[\"total_imports\"] = static_stats.get(\"imports_found\", \"N/A\")",
+   "replace": "summary[\"total_imports\"] = static_stats.get(\"imports_found\", 0)"
+  },
+  {
+   "id": "rs_rapor_yanlis_anahtar",
+   "desc": "rapor ithal sayısını üretilmeyen bir anahtardan okur",
+   "module": "karadul/reporting/json_report.py",
+   "test": "tests/test_rapor_sayaclari.py::TestReportTotalImports::test_rapor_imports_found_yazar",
+   "find": "summary[\"total_imports\"] = static_stats.get(\"imports_found\", \"N/A\")",
+   "replace": "summary[\"total_imports\"] = static_stats.get(\"import_count\", \"N/A\")"
+  }
+ ]
+}
