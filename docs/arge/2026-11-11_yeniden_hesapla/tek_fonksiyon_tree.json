@@ -1,0 +1,241 @@
+{
+ "binary": "/Users/apple/karadul_olcum/runs/yeniden-hesapla-2026-11-11/tek_fonksiyon/tree/tree",
+ "size_bytes": 134784,
+ "load_avg_start": [
+  7.4912109375,
+  13.40283203125,
+  11.69482421875
+ ],
+ "jvm_start_s": 1.88,
+ "import_and_analyze_s": 5.78,
+ "functions": 250,
+ "decomp_open_s": 0.219,
+ "decompile_sample": {
+  "n": 30,
+  "ok": 30,
+  "median_s": 0.0019,
+  "max_s": 0.0129,
+  "rows": [
+   {
+    "name": "FUN_00109868",
+    "address": "00109868",
+    "size": 100,
+    "ok": true,
+    "seconds": 0.0129
+   },
+   {
+    "name": "__fprintf_chk",
+    "address": "00135170",
+    "size": 1,
+    "ok": true,
+    "seconds": 0.0016
+   },
+   {
+    "name": "getgrgid",
+    "address": "00135218",
+    "size": 1,
+    "ok": true,
+    "seconds": 0.0016
+   },
+   {
+    "name": "FUN_00105df4",
+    "address": "00105df4",
+    "size": 20,
+    "ok": true,
+    "seconds": 0.0012
+   },
+   {
+    "name": "FUN_00106604",
+    "address": "00106604",
+    "size": 36,
+    "ok": true,
+    "seconds": 0.0017
+   },
+   {
+    "name": "__gmon_start__",
+    "address": "00103f40",
+    "size": 16,
+    "ok": true,
+    "seconds": 0.001
+   },
+   {
+    "name": "FUN_00109f80",
+    "address": "00109f80",
+    "size": 132,
+    "ok": true,
+    "seconds": 0.0036
+   },
+   {
+    "name": "FUN_00106160",
+    "address": "00106160",
+    "size": 60,
+    "ok": true,
+    "seconds": 0.0022
+   },
+   {
+    "name": "localtime",
+    "address": "001350b0",
+    "size": 1,
+    "ok": true,
+    "seconds": 0.001
+   },
+   {
+    "name": "FUN_0010df0c",
+    "address": "0010df0c",
+    "size": 72,
+    "ok": true,
+    "seconds": 0.0032
+   },
+   {
+    "name": "__isoc23_strtol",
+    "address": "00135168",
+    "size": 1,
+    "ok": true,
+    "seconds": 0.0007
+   },
+   {
+    "name": "FUN_0010cf00",
+    "address": "0010cf00",
+    "size": 116,
+    "ok": true,
+    "seconds": 0.003
+   },
+   {
+    "name": "stat64",
+    "address": "00103e80",
+    "size": 16,
+    "ok": true,
+    "seconds": 0.0023
+   },
+   {
+    "name": "__ctype_b_loc",
+    "address": "00103fa0",
+    "size": 16,
+    "ok": true,
+    "seconds": 0.0011
+   },
+   {
+    "name": "mbstowcs",
+    "address": "00135040",
+    "size": 1,
+    "ok": true,
+    "seconds": 0.0012
+   },
+   {
+    "name": "fputc",
+    "address": "00103de0",
+    "size": 16,
+    "ok": true,
+    "seconds": 0.0022
+   },
+   {
+    "name": "mbstowcs",
+    "address": "00103d60",
+    "size": 16,
+    "ok": true,
+    "seconds": 0.0018
+   },
+   {
+    "name": "FUN_0010a600",
+    "address": "0010a600",
+    "size": 72,
+    "ok": true,
+    "seconds": 0.0019
+   },
+   {
+    "name": "FUN_0010a648",
+    "address": "0010a648",
+    "size": 344,
+    "ok": true,
+    "seconds": 0.0073
+   },
+   {
+    "name": "fgets",
+    "address": "001040c0",
+    "size": 16,
+    "ok": true,
+    "seconds": 0.0021
+   },
+   {
+    "name": "strcasecmp",
+    "address": "00103f00",
+    "size": 16,
+    "ok": true,
+    "seconds": 0.0013
+   },
+   {
+    "name": "realloc",
+    "address": "00135130",
+    "size": 1,
+    "ok": true,
+    "seconds": 0.0009
+   },
+   {
+    "name": "FUN_00105f00",
+    "address": "00105f00",
+    "size": 60,
+    "ok": true,
+    "seconds": 0.0018
+   },
+   {
+    "name": "FUN_00106b00",
+    "address": "00106b00",
+    "size": 144,
+    "ok": true,
+    "seconds": 0.0035
+   },
+   {
+    "name": "__strcpy_chk",
+    "address": "00103e90",
+    "size": 16,
+    "ok": true,
+    "seconds": 0.0011
+   },
+   {
+    "name": "FUN_0010e4c4",
+    "address": "0010e4c4",
+    "size": 152,
+    "ok": true,
+    "seconds": 0.0053
+   },
+   {
+    "name": "FUN_0010d4cc",
+    "address": "0010d4cc",
+    "size": 40,
+    "ok": true,
+    "seconds": 0.0019
+   },
+   {
+    "name": "FUN_00105e20",
+    "address": "00105e20",
+    "size": 48,
+    "ok": true,
+    "seconds": 0.0013
+   },
+   {
+    "name": "FUN_0010c6c0",
+    "address": "0010c6c0",
+    "size": 304,
+    "ok": true,
+    "seconds": 0.0079
+   },
+   {
+    "name": "readdir64",
+    "address": "00103fe0",
+    "size": 16,
+    "ok": true,
+    "seconds": 0.002
+   }
+  ]
+ },
+ "project_bytes": 2950151,
+ "reopen_saved_project_s": 0.075,
+ "reopen_functions": 316,
+ "reopen_one_function_s": 0.226,
+ "reopen_one_function_ok": true,
+ "load_avg_end": [
+  7.61181640625,
+  13.32958984375,
+  11.6787109375
+ ]
+}

@@ -1,0 +1,241 @@
+{
+ "binary": "/Users/apple/karadul_olcum/runs/yeniden-hesapla-2026-11-11/tek_fonksiyon/htop/htop",
+ "size_bytes": 236672,
+ "load_avg_start": [
+  7.40234375,
+  13.19091796875,
+  11.63916015625
+ ],
+ "jvm_start_s": 1.6,
+ "import_and_analyze_s": 7.32,
+ "functions": 790,
+ "decomp_open_s": 0.219,
+ "decompile_sample": {
+  "n": 30,
+  "ok": 30,
+  "median_s": 0.0018,
+  "max_s": 0.032,
+  "rows": [
+   {
+    "name": "FUN_10001b038",
+    "address": "10001b038",
+    "size": 96,
+    "ok": true,
+    "seconds": 0.0134
+   },
+   {
+    "name": "FUN_10000e818",
+    "address": "10000e818",
+    "size": 1064,
+    "ok": true,
+    "seconds": 0.032
+   },
+   {
+    "name": "FUN_100013c6c",
+    "address": "100013c6c",
+    "size": 192,
+    "ok": true,
+    "seconds": 0.005
+   },
+   {
+    "name": "FUN_100009234",
+    "address": "100009234",
+    "size": 20,
+    "ok": true,
+    "seconds": 0.0014
+   },
+   {
+    "name": "FUN_10001b778",
+    "address": "10001b778",
+    "size": 96,
+    "ok": true,
+    "seconds": 0.0032
+   },
+   {
+    "name": "FUN_100010d88",
+    "address": "100010d88",
+    "size": 16,
+    "ok": true,
+    "seconds": 0.001
+   },
+   {
+    "name": "_fork",
+    "address": "1000213cc",
+    "size": 12,
+    "ok": true,
+    "seconds": 0.0014
+   },
+   {
+    "name": "FUN_100020b1c",
+    "address": "100020b1c",
+    "size": 68,
+    "ok": true,
+    "seconds": 0.0023
+   },
+   {
+    "name": "FUN_100007608",
+    "address": "100007608",
+    "size": 220,
+    "ok": true,
+    "seconds": 0.0066
+   },
+   {
+    "name": "FUN_10000a2e8",
+    "address": "10000a2e8",
+    "size": 312,
+    "ok": true,
+    "seconds": 0.0073
+   },
+   {
+    "name": "_vm_deallocate",
+    "address": "1000218b8",
+    "size": 12,
+    "ok": true,
+    "seconds": 0.0016
+   },
+   {
+    "name": "FUN_100004b58",
+    "address": "100004b58",
+    "size": 100,
+    "ok": true,
+    "seconds": 0.0024
+   },
+   {
+    "name": "FUN_100003608",
+    "address": "100003608",
+    "size": 32,
+    "ok": true,
+    "seconds": 0.0012
+   },
+   {
+    "name": "FUN_10001c7b4",
+    "address": "10001c7b4",
+    "size": 200,
+    "ok": true,
+    "seconds": 0.0049
+   },
+   {
+    "name": "FUN_10001caac",
+    "address": "10001caac",
+    "size": 40,
+    "ok": true,
+    "seconds": 0.0011
+   },
+   {
+    "name": "FUN_10000d918",
+    "address": "10000d918",
+    "size": 412,
+    "ok": true,
+    "seconds": 0.0082
+   },
+   {
+    "name": "FUN_100008f80",
+    "address": "100008f80",
+    "size": 12,
+    "ok": true,
+    "seconds": 0.0008
+   },
+   {
+    "name": "FUN_1000103a0",
+    "address": "1000103a0",
+    "size": 68,
+    "ok": true,
+    "seconds": 0.0018
+   },
+   {
+    "name": "FUN_1000147cc",
+    "address": "1000147cc",
+    "size": 20,
+    "ok": true,
+    "seconds": 0.0008
+   },
+   {
+    "name": "FUN_1000079e0",
+    "address": "1000079e0",
+    "size": 104,
+    "ok": true,
+    "seconds": 0.003
+   },
+   {
+    "name": "_log10",
+    "address": "100021534",
+    "size": 12,
+    "ok": true,
+    "seconds": 0.0007
+   },
+   {
+    "name": "_IOServiceGetMatchingService",
+    "address": "1000211f8",
+    "size": 12,
+    "ok": true,
+    "seconds": 0.0008
+   },
+   {
+    "name": "FUN_10000efa8",
+    "address": "10000efa8",
+    "size": 36,
+    "ok": true,
+    "seconds": 0.0012
+   },
+   {
+    "name": "FUN_10001f354",
+    "address": "10001f354",
+    "size": 64,
+    "ok": true,
+    "seconds": 0.0018
+   },
+   {
+    "name": "FUN_10000b224",
+    "address": "10000b224",
+    "size": 296,
+    "ok": true,
+    "seconds": 0.006
+   },
+   {
+    "name": "FUN_100004bf0",
+    "address": "100004bf0",
+    "size": 36,
+    "ok": true,
+    "seconds": 0.0012
+   },
+   {
+    "name": "_curs_set",
+    "address": "100021300",
+    "size": 12,
+    "ok": true,
+    "seconds": 0.001
+   },
+   {
+    "name": "FUN_10000b3f4",
+    "address": "10000b3f4",
+    "size": 44,
+    "ok": true,
+    "seconds": 0.0012
+   },
+   {
+    "name": "_strrchr",
+    "address": "1000217c8",
+    "size": 12,
+    "ok": true,
+    "seconds": 0.0011
+   },
+   {
+    "name": "FUN_10000505c",
+    "address": "10000505c",
+    "size": 192,
+    "ok": true,
+    "seconds": 0.0044
+   }
+  ]
+ },
+ "project_bytes": 4686855,
+ "reopen_saved_project_s": 0.08,
+ "reopen_functions": 976,
+ "reopen_one_function_s": 0.224,
+ "reopen_one_function_ok": true,
+ "load_avg_end": [
+  7.39453125,
+  13.001953125,
+  11.59033203125
+ ]
+}

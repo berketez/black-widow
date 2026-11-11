@@ -1,0 +1,770 @@
+{
+ "ca_new_pairs": {
+  "debian/tmux": {
+   "n": 0,
+   "by_method": {},
+   "functions": 0,
+   "pairs": []
+  },
+  "debian/openssl": {
+   "n": 33,
+   "by_method": {
+    "api": 18,
+    "structural": 15
+   },
+   "functions": 15,
+   "pairs": [
+    [
+     "FUN_001653a0",
+     "PBKDF2",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_001653a0",
+     "CSPRNG (OpenSSL)",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_0016eb00",
+     "TLS context",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_0017a1ac",
+     "OpenSSL key context",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_0017da80",
+     "OpenSSL key context",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_00183ec4",
+     "TLS session",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_00183ec4",
+     "TLS encrypted read",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_00183ec4",
+     "TLS encrypted write",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_0018f580",
+     "TLS encrypted write",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_0018f580",
+     "TLS encrypted read",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_0018bb68",
+     "TLS certificate verification",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_0018bb68",
+     "TLS encrypted write",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_0018bb68",
+     "TLS handshake (server)",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_0018bb68",
+     "TLS encrypted read",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_001a170c",
+     "CSPRNG (OpenSSL)",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_00196f80",
+     "OpenSSL key context",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_00196f80",
+     "OpenSSL symmetric encryption",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_00196f80",
+     "CSPRNG (OpenSSL)",
+     "api",
+     0.9
+    ],
+    [
+     "FUN_00196f80",
+     "Elliptic curve operations (ECDSA, ECDH)",
+     "structural",
+     0.85
+    ],
+    [
+     "FUN_0014c780",
+     "Base64 encoding/decoding",
+     "structural",
+     0.7
+    ],
+    [
+     "FUN_001686c4",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.7
+    ],
+    [
+     "FUN_00173fc0",
+     "Password-based key derivation (PBKDF2, scrypt)",
+     "structural",
+     0.7
+    ],
+    [
+     "FUN_00183ec4",
+     "Feistel cipher (DES, Blowfish, etc.)",
+     "structural",
+     0.7
+    ],
+    [
+     "FUN_00183ec4",
+     "Block cipher mode of operation (CBC, CTR, GCM)",
+     "structural",
+     0.7
+    ],
+    [
+     "FUN_0018cbc8",
+     "Block cipher mode of operation (CBC, CTR, GCM)",
+     "structural",
+     0.7
+    ],
+    [
+     "FUN_0018bb68",
+     "Block cipher mode of operation (CBC, CTR, GCM)",
+     "structural",
+     0.7
+    ],
+    [
+     "FUN_00164700",
+     "Elliptic curve operations (ECDSA, ECDH)",
+     "structural",
+     0.65
+    ],
+    [
+     "FUN_00183ec4",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.6
+    ],
+    [
+     "FUN_00196f80",
+     "Feistel cipher (DES, Blowfish, etc.)",
+     "structural",
+     0.6
+    ],
+    [
+     "FUN_00196f80",
+     "Block cipher mode of operation (CBC, CTR, GCM)",
+     "structural",
+     0.55
+    ],
+    [
+     "FUN_0016eb00",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.5
+    ],
+    [
+     "FUN_00176c6c",
+     "Password-based key derivation (PBKDF2, scrypt)",
+     "structural",
+     0.5
+    ],
+    [
+     "FUN_001653a0",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.4
+    ]
+   ]
+  },
+  "debian/sqlite3": {
+   "n": 6,
+   "by_method": {
+    "structural": 6
+   },
+   "functions": 4,
+   "pairs": [
+    [
+     "FUN_001097c0",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.7
+    ],
+    [
+     "FUN_001304a0",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.7
+    ],
+    [
+     "FUN_001304a0",
+     "Feistel cipher (DES, Blowfish, etc.)",
+     "structural",
+     0.5
+    ],
+    [
+     "FUN_00124930",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.45
+    ],
+    [
+     "FUN_0012f6c0",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.4
+    ],
+    [
+     "FUN_001304a0",
+     "Block cipher mode of operation (CBC, CTR, GCM)",
+     "structural",
+     0.4
+    ]
+   ]
+  },
+  "debian/redis-cli": {
+   "n": 2,
+   "by_method": {
+    "structural": 2
+   },
+   "functions": 1,
+   "pairs": [
+    [
+     "main",
+     "Feistel cipher (DES, Blowfish, etc.)",
+     "structural",
+     0.7
+    ],
+    [
+     "main",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.4
+    ]
+   ]
+  },
+  "debian/tree": {
+   "n": 0,
+   "by_method": {},
+   "functions": 0,
+   "pairs": []
+  },
+  "mac/tmux": {
+   "n": 4,
+   "by_method": {
+    "structural": 4
+   },
+   "functions": 4,
+   "pairs": [
+    [
+     "FUN_10004e778",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.7
+    ],
+    [
+     "FUN_100099394",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.7
+    ],
+    [
+     "FUN_100034c2c",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.4
+    ],
+    [
+     "entry",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.4
+    ]
+   ]
+  },
+  "mac/htop": {
+   "n": 4,
+   "by_method": {
+    "structural": 4
+   },
+   "functions": 4,
+   "pairs": [
+    [
+     "FUN_1000052f4",
+     "Password-based key derivation (PBKDF2, scrypt)",
+     "structural",
+     0.6
+    ],
+    [
+     "entry",
+     "Password-based key derivation (PBKDF2, scrypt)",
+     "structural",
+     0.6
+    ],
+    [
+     "FUN_100019a20",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.5
+    ],
+    [
+     "FUN_10000f9fc",
+     "Galois field operations (ECC, AES-GF)",
+     "structural",
+     0.45
+    ]
+   ]
+  }
+ },
+ "en1_label_prevalence": {
+  "debian/tmux": {
+   "bodies": 2547,
+   "functions_with_any_label_ge_0.40": 1909,
+   "top_labels": [
+    [
+     "rc4",
+     1897,
+     0.745
+    ],
+    [
+     "halton_sequence",
+     1156,
+     0.454
+    ],
+    [
+     "stack_canary",
+     435,
+     0.171
+    ],
+    [
+     "sm4",
+     385,
+     0.151
+    ],
+    [
+     "clmul",
+     172,
+     0.068
+    ],
+    [
+     "twofish",
+     172,
+     0.068
+    ],
+    [
+     "aes_128",
+     149,
+     0.059
+    ],
+    [
+     "ssh_key_exchange",
+     141,
+     0.055
+    ]
+   ]
+  },
+  "debian/openssl": {
+   "bodies": 5405,
+   "functions_with_any_label_ge_0.40": 1050,
+   "top_labels": [
+    [
+     "rc4",
+     1020,
+     0.189
+    ],
+    [
+     "halton_sequence",
+     447,
+     0.083
+    ],
+    [
+     "ipsec_esp",
+     259,
+     0.048
+    ],
+    [
+     "clmul",
+     230,
+     0.043
+    ],
+    [
+     "sm4",
+     221,
+     0.041
+    ],
+    [
+     "zlib_deflate",
+     161,
+     0.03
+    ],
+    [
+     "kuznyechik",
+     157,
+     0.029
+    ],
+    [
+     "stack_canary",
+     146,
+     0.027
+    ]
+   ]
+  },
+  "debian/sqlite3": {
+   "bodies": 1132,
+   "functions_with_any_label_ge_0.40": 566,
+   "top_labels": [
+    [
+     "rc4",
+     429,
+     0.379
+    ],
+    [
+     "halton_sequence",
+     419,
+     0.37
+    ],
+    [
+     "stack_canary",
+     77,
+     0.068
+    ],
+    [
+     "sm4",
+     57,
+     0.05
+    ],
+    [
+     "aes_128",
+     44,
+     0.039
+    ],
+    [
+     "aes_rcon",
+     29,
+     0.026
+    ],
+    [
+     "clmul",
+     23,
+     0.02
+    ],
+    [
+     "kuznyechik",
+     18,
+     0.016
+    ]
+   ]
+  },
+  "debian/redis-cli": {
+   "bodies": 1095,
+   "functions_with_any_label_ge_0.40": 615,
+   "top_labels": [
+    [
+     "rc4",
+     607,
+     0.554
+    ],
+    [
+     "halton_sequence",
+     331,
+     0.302
+    ],
+    [
+     "stack_canary",
+     134,
+     0.122
+    ],
+    [
+     "sm4",
+     55,
+     0.05
+    ],
+    [
+     "clmul",
+     43,
+     0.039
+    ],
+    [
+     "ikev2",
+     33,
+     0.03
+    ],
+    [
+     "ssh_key_exchange",
+     29,
+     0.026
+    ],
+    [
+     "kuznyechik",
+     25,
+     0.023
+    ]
+   ]
+  },
+  "debian/tree": {
+   "bodies": 248,
+   "functions_with_any_label_ge_0.40": 117,
+   "top_labels": [
+    [
+     "rc4",
+     116,
+     0.468
+    ],
+    [
+     "halton_sequence",
+     97,
+     0.391
+    ],
+    [
+     "aes_128",
+     27,
+     0.109
+    ],
+    [
+     "clmul",
+     20,
+     0.081
+    ],
+    [
+     "sm4",
+     13,
+     0.052
+    ],
+    [
+     "stack_canary",
+     13,
+     0.052
+    ],
+    [
+     "aes_rcon",
+     6,
+     0.024
+    ],
+    [
+     "twofish",
+     5,
+     0.02
+    ]
+   ]
+  },
+  "mac/tmux": {
+   "bodies": 2800,
+   "functions_with_any_label_ge_0.40": 2755,
+   "top_labels": [
+    [
+     "rc4",
+     2751,
+     0.983
+    ],
+    [
+     "halton_sequence",
+     1428,
+     0.51
+    ],
+    [
+     "sm4",
+     303,
+     0.108
+    ],
+    [
+     "clmul",
+     225,
+     0.08
+    ],
+    [
+     "ikev2",
+     149,
+     0.053
+    ],
+    [
+     "kuznyechik",
+     131,
+     0.047
+    ],
+    [
+     "aes_128",
+     120,
+     0.043
+    ],
+    [
+     "ssh_key_exchange",
+     73,
+     0.026
+    ]
+   ]
+  },
+  "mac/htop": {
+   "bodies": 764,
+   "functions_with_any_label_ge_0.40": 758,
+   "top_labels": [
+    [
+     "rc4",
+     758,
+     0.992
+    ],
+    [
+     "halton_sequence",
+     269,
+     0.352
+    ],
+    [
+     "rijndael_sbox_full",
+     45,
+     0.059
+    ],
+    [
+     "clmul",
+     37,
+     0.048
+    ],
+    [
+     "aes_128",
+     36,
+     0.047
+    ],
+    [
+     "sm4",
+     35,
+     0.046
+    ],
+    [
+     "ikev2",
+     20,
+     0.026
+    ],
+    [
+     "ssh_key_exchange",
+     20,
+     0.026
+    ]
+   ]
+  }
+ },
+ "sample_split": {
+  "gate": {
+   "n": 30,
+   "body_cap_new_functions": 0,
+   "body_cap_new": [],
+   "gate_new_functions": 13,
+   "gate_labels_per_function": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    3,
+    4,
+    4
+   ],
+   "rescan_seconds_median": 0.001,
+   "rescan_seconds_max": 0.0102
+  },
+  "body_cap": {
+   "n": 30,
+   "body_cap_new_functions": 3,
+   "body_cap_new": [
+    [
+     "mac/tmux",
+     "FUN_100034c2c",
+     8544,
+     [
+      "Galois field operations (ECC, AES-GF)"
+     ]
+    ],
+    [
+     "debian/openssl",
+     "FUN_001a170c",
+     27392,
+     [
+      "CSPRNG (OpenSSL)"
+     ]
+    ],
+    [
+     "debian/sqlite3",
+     "FUN_001097c0",
+     46689,
+     [
+      "Galois field operations (ECC, AES-GF)"
+     ]
+    ]
+   ],
+   "gate_new_functions": 30,
+   "gate_labels_per_function": [
+    2,
+    2,
+    2,
+    3,
+    3,
+    4,
+    4,
+    5,
+    5,
+    5,
+    6,
+    6,
+    6,
+    6,
+    7,
+    7,
+    8,
+    8,
+    10,
+    10,
+    10,
+    11,
+    11,
+    15,
+    16,
+    16,
+    17,
+    18,
+    20,
+    21
+   ],
+   "rescan_seconds_median": 0.056299999999999996,
+   "rescan_seconds_max": 1.2983
+  }
+ }
+}

@@ -1,0 +1,555 @@
+{
+ "debian/tmux": {
+  "workspace": "/Users/apple/karadul_olcum/n1_debian13/tmux/tmux/ws/workspaces/tmux/20261021_092848",
+  "n_functions": 2588,
+  "decompile": {
+   "attempted": 2588,
+   "success": 2588,
+   "failed": 0,
+   "skipped": 0,
+   "duration_s": 25.76
+  },
+  "decompiled_json_cap": {
+   "listed": 500,
+   "listed_with_high_vars": 320,
+   "not_listed": 2088,
+   "pcode_jsonl_functions": 2588,
+   "pcode_jsonl_with_vars": 2290
+  },
+  "ghidra_warning_functions": {
+   "jumptable_too_many_branches": 13,
+   "type_propagation_not_settling": 21,
+   "max_instructions_exceeded": 0,
+   "max_restarts_exceeded": 0
+  },
+  "body_cap_5000": {
+   "bodies_scanned": 2547,
+   "truncated": 121,
+   "truncated_median_len": 7519,
+   "truncated_max_len": 115359
+  },
+  "engineering_domain_gate": {
+   "has_domain": false,
+   "functions_without_const_struct_scan": 2547,
+   "func_meta_top_keys": [
+    "functions",
+    "program",
+    "total"
+   ],
+   "sampled_files": [
+    "FUN_0011cda0.c",
+    "FUN_0011e2c0.c",
+    "FUN_0011ebb4.c",
+    "FUN_0011ebe0.c",
+    "FUN_0011ec10.c",
+    "FUN_0011ecc0.c",
+    "FUN_0011edac.c",
+    "FUN_0011ef28.c",
+    "FUN_0011f020.c",
+    "FUN_0011f1a8.c"
+   ]
+  },
+  "deep_trace_top3": {
+   "trace_targets": 3,
+   "trace_total_nodes": 7,
+   "not_traced": 2585
+  },
+  "cfg_iso": {
+   "over_vf2_node_cap": 2,
+   "matched": 0,
+   "total": 2588,
+   "timing_s": 2.0
+  },
+  "computation_fusion": {
+   "matches": 234,
+   "accepted": 0
+  },
+  "bsim_shadow_functions_at_cap5": 420,
+  "timings": {
+   "ghidra_duration_s": 549.835,
+   "dur_static_s": 554.402,
+   "dur_reconstruct_s": 169.158,
+   "c_naming_iter0_s": 17.0,
+   "c_naming_iter1_s": 15.4,
+   "type_recovery_iter0_s": 4.8,
+   "feedback_loop_s": 60.0254,
+   "deep_tracing_s": 16.6,
+   "algorithm_id_s": 3.7462
+  },
+  "count_seconds": 3.19
+ },
+ "debian/openssl": {
+  "workspace": "/Users/apple/karadul_olcum/n1_debian13/openssl/openssl/ws/workspaces/openssl/20261021_094956",
+  "n_functions": 5672,
+  "decompile": {
+   "attempted": 5672,
+   "success": 5672,
+   "failed": 0,
+   "skipped": 0,
+   "duration_s": 60.94
+  },
+  "decompiled_json_cap": {
+   "listed": 500,
+   "listed_with_high_vars": 204,
+   "not_listed": 5172,
+   "pcode_jsonl_functions": 5672,
+   "pcode_jsonl_with_vars": 2897
+  },
+  "ghidra_warning_functions": {
+   "jumptable_too_many_branches": 12,
+   "type_propagation_not_settling": 13,
+   "max_instructions_exceeded": 0,
+   "max_restarts_exceeded": 0
+  },
+  "body_cap_5000": {
+   "bodies_scanned": 5405,
+   "truncated": 60,
+   "truncated_median_len": 10479,
+   "truncated_max_len": 146399
+  },
+  "engineering_domain_gate": {
+   "has_domain": false,
+   "functions_without_const_struct_scan": 5405,
+   "func_meta_top_keys": [
+    "functions",
+    "program",
+    "total"
+   ],
+   "sampled_files": [
+    "ASN1_ENUMERATED_free.c",
+    "ASN1_ENUMERATED_free_001459a0.c",
+    "ASN1_ENUMERATED_free_001459a4.c",
+    "ASN1_ENUMERATED_new.c",
+    "ASN1_ENUMERATED_new_00141c9c.c",
+    "ASN1_ENUMERATED_new_0021d798.c",
+    "ASN1_ENUMERATED_set.c",
+    "ASN1_ENUMERATED_set_00146ba0.c",
+    "ASN1_ENUMERATED_set_00146ba4.c",
+    "ASN1_GENERALIZEDTIME_free.c"
+   ]
+  },
+  "deep_trace_top3": {
+   "trace_targets": 3,
+   "trace_total_nodes": 8,
+   "not_traced": 5669
+  },
+  "cfg_iso": {
+   "over_vf2_node_cap": 7,
+   "matched": 0,
+   "total": 5672,
+   "timing_s": 3.326
+  },
+  "computation_fusion": {
+   "matches": 1753,
+   "accepted": 0
+  },
+  "bsim_shadow_functions_at_cap5": 8,
+  "timings": {
+   "ghidra_duration_s": 344.195,
+   "dur_static_s": 351.387,
+   "dur_reconstruct_s": 175.068,
+   "c_naming_iter0_s": 28.0,
+   "c_naming_iter1_s": 22.0,
+   "type_recovery_iter0_s": 7.2,
+   "feedback_loop_s": 84.7978,
+   "deep_tracing_s": 7.6,
+   "algorithm_id_s": 4.9355
+  },
+  "count_seconds": 4.47
+ },
+ "debian/sqlite3": {
+  "workspace": "/Users/apple/karadul_olcum/n1_debian13/sqlite3/sqlite3/ws/workspaces/sqlite3/20261021_094625",
+  "n_functions": 1144,
+  "decompile": {
+   "attempted": 1144,
+   "success": 1144,
+   "failed": 0,
+   "skipped": 0,
+   "duration_s": 9.09
+  },
+  "decompiled_json_cap": {
+   "listed": 500,
+   "listed_with_high_vars": 123,
+   "not_listed": 644,
+   "pcode_jsonl_functions": 1144,
+   "pcode_jsonl_with_vars": 574
+  },
+  "ghidra_warning_functions": {
+   "jumptable_too_many_branches": 62,
+   "type_propagation_not_settling": 2,
+   "max_instructions_exceeded": 0,
+   "max_restarts_exceeded": 0
+  },
+  "body_cap_5000": {
+   "bodies_scanned": 1132,
+   "truncated": 33,
+   "truncated_median_len": 9414,
+   "truncated_max_len": 191051
+  },
+  "engineering_domain_gate": {
+   "has_domain": false,
+   "functions_without_const_struct_scan": 1132,
+   "func_meta_top_keys": [
+    "functions",
+    "program",
+    "total"
+   ],
+   "sampled_files": [
+    "FUN_00108110.c",
+    "FUN_001097c0.c",
+    "FUN_0010b0f4.c",
+    "FUN_0010b120.c",
+    "FUN_0010b150.c",
+    "FUN_0010b200.c",
+    "FUN_0010b208.c",
+    "FUN_0010b2c8.c",
+    "FUN_0010b2e0.c",
+    "FUN_0010b300.c"
+   ]
+  },
+  "deep_trace_top3": {
+   "trace_targets": 3,
+   "trace_total_nodes": 7,
+   "not_traced": 1141
+  },
+  "cfg_iso": {
+   "over_vf2_node_cap": 1,
+   "matched": 0,
+   "total": 1144,
+   "timing_s": 1.405
+  },
+  "computation_fusion": {
+   "matches": 281,
+   "accepted": 0
+  },
+  "bsim_shadow_functions_at_cap5": 8,
+  "timings": {
+   "ghidra_duration_s": 140.311,
+   "dur_static_s": 143.244,
+   "dur_reconstruct_s": 63.977,
+   "c_naming_iter0_s": 13.9,
+   "c_naming_iter1_s": 13.3,
+   "type_recovery_iter0_s": 1.1,
+   "feedback_loop_s": 41.7346,
+   "deep_tracing_s": 2.6,
+   "algorithm_id_s": 1.0305
+  },
+  "count_seconds": 1.0
+ },
+ "debian/redis-cli": {
+  "workspace": "/Users/apple/karadul_olcum/n1_debian13/redis-tools/redis-cli/ws/workspaces/redis-cli/20261021_094219",
+  "n_functions": 1111,
+  "decompile": {
+   "attempted": 1111,
+   "success": 1111,
+   "failed": 0,
+   "skipped": 0,
+   "duration_s": 15.76
+  },
+  "decompiled_json_cap": {
+   "listed": 500,
+   "listed_with_high_vars": 396,
+   "not_listed": 611,
+   "pcode_jsonl_functions": 1111,
+   "pcode_jsonl_with_vars": 950
+  },
+  "ghidra_warning_functions": {
+   "jumptable_too_many_branches": 6,
+   "type_propagation_not_settling": 6,
+   "max_instructions_exceeded": 0,
+   "max_restarts_exceeded": 0
+  },
+  "body_cap_5000": {
+   "bodies_scanned": 1095,
+   "truncated": 41,
+   "truncated_median_len": 9374,
+   "truncated_max_len": 59090
+  },
+  "engineering_domain_gate": {
+   "has_domain": false,
+   "functions_without_const_struct_scan": 1095,
+   "func_meta_top_keys": [
+    "functions",
+    "program",
+    "total"
+   ],
+   "sampled_files": [
+    "ERR_clear_error.c",
+    "ERR_clear_error_00127104.c",
+    "ERR_clear_error_001bc408.c",
+    "ERR_peek_last_error.c",
+    "ERR_peek_last_error_00126744.c",
+    "ERR_peek_last_error_001bc0b0.c",
+    "ERR_reason_error_string.c",
+    "ERR_reason_error_string_00126980.c",
+    "ERR_reason_error_string_00126984.c",
+    "FUN_00126540.c"
+   ]
+  },
+  "deep_trace_top3": {
+   "trace_targets": 3,
+   "trace_total_nodes": 360,
+   "not_traced": 1108
+  },
+  "cfg_iso": {
+   "over_vf2_node_cap": 0,
+   "matched": 0,
+   "total": 1111,
+   "timing_s": 1.626
+  },
+  "computation_fusion": {
+   "matches": 332,
+   "accepted": 0
+  },
+  "bsim_shadow_functions_at_cap5": 4,
+  "timings": {
+   "ghidra_duration_s": 185.539,
+   "dur_static_s": 188.614,
+   "dur_reconstruct_s": 54.006,
+   "c_naming_iter0_s": 6.3,
+   "c_naming_iter1_s": 5.8,
+   "type_recovery_iter0_s": 1.5,
+   "feedback_loop_s": 22.3553,
+   "deep_tracing_s": 3.2,
+   "algorithm_id_s": 1.4413
+  },
+  "count_seconds": 0.96
+ },
+ "debian/tree": {
+  "workspace": "/Users/apple/karadul_olcum/n1_debian13/tree/tree/ws/workspaces/tree/20261021_092848",
+  "n_functions": 250,
+  "decompile": {
+   "attempted": 250,
+   "success": 250,
+   "failed": 0,
+   "skipped": 0,
+   "duration_s": 2.38
+  },
+  "decompiled_json_cap": {
+   "listed": 250,
+   "listed_with_high_vars": 199,
+   "not_listed": 0,
+   "pcode_jsonl_functions": 250,
+   "pcode_jsonl_with_vars": 199
+  },
+  "ghidra_warning_functions": {
+   "jumptable_too_many_branches": 2,
+   "type_propagation_not_settling": 1,
+   "max_instructions_exceeded": 0,
+   "max_restarts_exceeded": 0
+  },
+  "body_cap_5000": {
+   "bodies_scanned": 248,
+   "truncated": 7,
+   "truncated_median_len": 9331,
+   "truncated_max_len": 43991
+  },
+  "engineering_domain_gate": {
+   "has_domain": false,
+   "functions_without_const_struct_scan": 248,
+   "func_meta_top_keys": [
+    "functions",
+    "program",
+    "total"
+   ],
+   "sampled_files": [
+    "FUN_00103cc0.c",
+    "FUN_00104100.c",
+    "FUN_00105df4.c",
+    "FUN_00105e20.c",
+    "FUN_00105e50.c",
+    "FUN_00105f00.c",
+    "FUN_00105f40.c",
+    "FUN_00105fc0.c",
+    "FUN_00106040.c",
+    "FUN_001060ac.c"
+   ]
+  },
+  "deep_trace_top3": {
+   "trace_targets": 3,
+   "trace_total_nodes": 7,
+   "not_traced": 247
+  },
+  "cfg_iso": {
+   "over_vf2_node_cap": 0,
+   "matched": 0,
+   "total": 250,
+   "timing_s": 1.519
+  },
+  "computation_fusion": {
+   "matches": 70,
+   "accepted": 0
+  },
+  "bsim_shadow_functions_at_cap5": 12,
+  "timings": {
+   "ghidra_duration_s": 39.495,
+   "dur_static_s": 42.464,
+   "dur_reconstruct_s": 15.495,
+   "c_naming_iter0_s": 2.9,
+   "c_naming_iter1_s": 2.7,
+   "type_recovery_iter0_s": 0.9,
+   "feedback_loop_s": 9.5371,
+   "deep_tracing_s": 0.5,
+   "algorithm_id_s": 0.4229
+  },
+  "count_seconds": 0.21
+ },
+ "mac/tmux": {
+  "workspace": "/Users/apple/Black_Widow/workspaces/olcum_mac/runs/ol7-c-b7faeac/tmux/ws/workspaces/tmux/20261021_085320",
+  "n_functions": 2821,
+  "decompile": {
+   "attempted": 2821,
+   "success": 2821,
+   "failed": 0,
+   "skipped": 0,
+   "duration_s": 26.93
+  },
+  "decompiled_json_cap": {
+   "listed": 500,
+   "listed_with_high_vars": 421,
+   "not_listed": 2321,
+   "pcode_jsonl_functions": 2821,
+   "pcode_jsonl_with_vars": 2695
+  },
+  "ghidra_warning_functions": {
+   "jumptable_too_many_branches": 240,
+   "type_propagation_not_settling": 19,
+   "max_instructions_exceeded": 0,
+   "max_restarts_exceeded": 0
+  },
+  "body_cap_5000": {
+   "bodies_scanned": 2800,
+   "truncated": 134,
+   "truncated_median_len": 7905,
+   "truncated_max_len": 91497
+  },
+  "engineering_domain_gate": {
+   "has_domain": false,
+   "functions_without_const_struct_scan": 2800,
+   "func_meta_top_keys": [
+    "functions",
+    "program",
+    "total"
+   ],
+   "sampled_files": [
+    "FUN_100001f98.c",
+    "FUN_100001fdc.c",
+    "FUN_1000022c0.c",
+    "FUN_100002308.c",
+    "FUN_1000023a8.c",
+    "FUN_1000024c4.c",
+    "FUN_100002578.c",
+    "FUN_1000025e4.c",
+    "FUN_1000026dc.c",
+    "FUN_10000271c.c"
+   ]
+  },
+  "deep_trace_top3": {
+   "trace_targets": 1,
+   "trace_total_nodes": 14,
+   "not_traced": 2820
+  },
+  "cfg_iso": {
+   "over_vf2_node_cap": 0,
+   "matched": 0,
+   "total": 2821,
+   "timing_s": 2.066
+  },
+  "computation_fusion": {
+   "matches": 240,
+   "accepted": 0
+  },
+  "bsim_shadow_functions_at_cap5": 662,
+  "timings": {
+   "ghidra_duration_s": 716.159,
+   "dur_static_s": 721.626,
+   "dur_reconstruct_s": 213.971,
+   "c_naming_iter0_s": 19.0,
+   "c_naming_iter1_s": 18.0,
+   "type_recovery_iter0_s": 4.7,
+   "feedback_loop_s": 68.4755,
+   "deep_tracing_s": 19.5,
+   "algorithm_id_s": 4.1126
+  },
+  "count_seconds": 2.82
+ },
+ "mac/htop": {
+  "workspace": "/Users/apple/Black_Widow/workspaces/olcum_mac/runs/ol7-c-b7faeac/htop/ws/workspaces/htop/20261021_085005",
+  "n_functions": 790,
+  "decompile": {
+   "attempted": 790,
+   "success": 790,
+   "failed": 0,
+   "skipped": 0,
+   "duration_s": 4.98
+  },
+  "decompiled_json_cap": {
+   "listed": 500,
+   "listed_with_high_vars": 425,
+   "not_listed": 290,
+   "pcode_jsonl_functions": 790,
+   "pcode_jsonl_with_vars": 705
+  },
+  "ghidra_warning_functions": {
+   "jumptable_too_many_branches": 193,
+   "type_propagation_not_settling": 2,
+   "max_instructions_exceeded": 0,
+   "max_restarts_exceeded": 0
+  },
+  "body_cap_5000": {
+   "bodies_scanned": 764,
+   "truncated": 21,
+   "truncated_median_len": 7680,
+   "truncated_max_len": 41084
+  },
+  "engineering_domain_gate": {
+   "has_domain": false,
+   "functions_without_const_struct_scan": 764,
+   "func_meta_top_keys": [
+    "functions",
+    "program",
+    "total"
+   ],
+   "sampled_files": [
+    "FUN_100001784.c",
+    "FUN_1000018f4.c",
+    "FUN_100001930.c",
+    "FUN_10000194c.c",
+    "FUN_100001a6c.c",
+    "FUN_100001ac4.c",
+    "FUN_100001cdc.c",
+    "FUN_100001d18.c",
+    "FUN_100001d2c.c",
+    "FUN_100001d80.c"
+   ]
+  },
+  "deep_trace_top3": {
+   "trace_targets": null,
+   "trace_total_nodes": null,
+   "not_traced": 790
+  },
+  "cfg_iso": {
+   "over_vf2_node_cap": 0,
+   "matched": 0,
+   "total": 790,
+   "timing_s": 0.863
+  },
+  "computation_fusion": {
+   "matches": 196,
+   "accepted": 0
+  },
+  "bsim_shadow_functions_at_cap5": 126,
+  "timings": {
+   "ghidra_duration_s": 154.739,
+   "dur_static_s": 156.534,
+   "dur_reconstruct_s": 34.728,
+   "c_naming_iter0_s": 4.5,
+   "c_naming_iter1_s": 4.6,
+   "type_recovery_iter0_s": 1.4,
+   "feedback_loop_s": 17.4317,
+   "deep_tracing_s": 2.1,
+   "algorithm_id_s": 0.9643
+  },
+  "count_seconds": 0.71
+ }
+}

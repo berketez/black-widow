@@ -1,0 +1,6181 @@
+{
+ "seed": 20261111,
+ "sample_size": 30,
+ "naming_floor": 0.4,
+ "high": 0.7,
+ "census": {
+  "debian/tmux": {
+   "product_gate_open": false,
+   "ca": {
+    "cap_total": 10,
+    "full_total": 10,
+    "new_pairs_any": 0,
+    "new_pairs_ge_0.40": 0,
+    "new_pairs_ge_0.70": 0,
+    "lost_pairs_any": 0,
+    "new_examples": [],
+    "seconds_cap": 2.02,
+    "seconds_full": 2.46
+   },
+   "eng": {
+    "EN0_total": 0,
+    "EN1_total": 14780,
+    "EN2_total": 0,
+    "EN3_total": 15085,
+    "gate_new_any": 14780,
+    "gate_new_ge_0.40": 5363,
+    "gate_new_ge_0.70": 4856,
+    "body_new_any": 0,
+    "both_new_any": 15085,
+    "both_new_ge_0.40": 5609,
+    "both_new_ge_0.70": 5016,
+    "both_new_examples": [
+     [
+      "FUN_0011e2c0",
+      "aes_ni"
+     ],
+     [
+      "FUN_0011e2c0",
+      "clmul"
+     ],
+     [
+      "FUN_0011e2c0",
+      "halton_sequence"
+     ],
+     [
+      "FUN_0011e2c0",
+      "ikev2"
+     ],
+     [
+      "FUN_0011e2c0",
+      "kuznyechik"
+     ],
+     [
+      "FUN_0011e2c0",
+      "metropolis_hastings"
+     ],
+     [
+      "FUN_0011e2c0",
+      "rc4"
+     ],
+     [
+      "FUN_0011e2c0",
+      "sm4"
+     ],
+     [
+      "FUN_0011e2c0",
+      "ssh_key_exchange"
+     ],
+     [
+      "FUN_0011ecc0",
+      "halton_sequence"
+     ],
+     [
+      "FUN_0011ecc0",
+      "rc4"
+     ],
+     [
+      "FUN_0011ecc0",
+      "rijndael_sbox_full"
+     ],
+     [
+      "FUN_0011edac",
+      "halton_sequence"
+     ],
+     [
+      "FUN_0011edac",
+      "rc4"
+     ],
+     [
+      "FUN_0011edac",
+      "sm4"
+     ]
+    ],
+    "functions_with_new_ge_0.40": 1909,
+    "seconds": {
+     "EN0": 1.44,
+     "EN1": 13.57,
+     "EN2": 1.8,
+     "EN3": 19.61
+    }
+   },
+   "bodies": 2547,
+   "bodies_over_cap": 121
+  },
+  "debian/openssl": {
+   "product_gate_open": false,
+   "ca": {
+    "cap_total": 72,
+    "full_total": 105,
+    "new_pairs_any": 33,
+    "new_pairs_ge_0.40": 33,
+    "new_pairs_ge_0.70": 27,
+    "lost_pairs_any": 0,
+    "new_examples": [
+     [
+      "FUN_0014c780",
+      "Base64 encoding/decoding"
+     ],
+     [
+      "FUN_00164700",
+      "Elliptic curve operations (ECDSA, ECDH)"
+     ],
+     [
+      "FUN_001653a0",
+      "CSPRNG (OpenSSL)"
+     ],
+     [
+      "FUN_001653a0",
+      "Galois field operations (ECC, AES-GF)"
+     ],
+     [
+      "FUN_001653a0",
+      "PBKDF2"
+     ],
+     [
+      "FUN_001686c4",
+      "Galois field operations (ECC, AES-GF)"
+     ],
+     [
+      "FUN_0016eb00",
+      "Galois field operations (ECC, AES-GF)"
+     ],
+     [
+      "FUN_0016eb00",
+      "TLS context"
+     ],
+     [
+      "FUN_00173fc0",
+      "Password-based key derivation (PBKDF2, scrypt)"
+     ],
+     [
+      "FUN_00176c6c",
+      "Password-based key derivation (PBKDF2, scrypt)"
+     ],
+     [
+      "FUN_0017a1ac",
+      "OpenSSL key context"
+     ],
+     [
+      "FUN_0017da80",
+      "OpenSSL key context"
+     ],
+     [
+      "FUN_00183ec4",
+      "Block cipher mode of operation (CBC, CTR, GCM)"
+     ],
+     [
+      "FUN_00183ec4",
+      "Feistel cipher (DES, Blowfish, etc.)"
+     ],
+     [
+      "FUN_00183ec4",
+      "Galois field operations (ECC, AES-GF)"
+     ]
+    ],
+    "seconds_cap": 3.33,
+    "seconds_full": 3.84
+   },
+   "eng": {
+    "EN0_total": 0,
+    "EN1_total": 8988,
+    "EN2_total": 0,
+    "EN3_total": 9292,
+    "gate_new_any": 8988,
+    "gate_new_ge_0.40": 3937,
+    "gate_new_ge_0.70": 2771,
+    "body_new_any": 0,
+    "both_new_any": 9292,
+    "both_new_ge_0.40": 4212,
+    "both_new_ge_0.70": 2880,
+    "both_new_examples": [
+     [
+      "ASN1_STRING_get0_data",
+      "rc4"
+     ],
+     [
+      "ASN1_TIME_set_string_X509",
+      "ipsec_esp"
+     ],
+     [
+      "ASN1_TIME_set_string_X509",
+      "rc4"
+     ],
+     [
+      "ASN1_UTF8STRING_free",
+      "rc4"
+     ],
+     [
+      "ASN1_UTF8STRING_new",
+      "rc4"
+     ],
+     [
+      "BIO_f_base64",
+      "aes_rcon"
+     ],
+     [
+      "BIO_f_base64",
+      "rc4"
+     ],
+     [
+      "CMS_ReceiptRequest_create0_ex",
+      "rc4"
+     ],
+     [
+      "CMS_ReceiptRequest_get0_values",
+      "rc4"
+     ],
+     [
+      "CMS_RecipientInfo_get0_pkey_ctx",
+      "rc4"
+     ],
+     [
+      "CMS_RecipientInfo_kari_get0_ctx",
+      "rc4"
+     ],
+     [
+      "CMS_SignerInfo_get0_pkey_ctx",
+      "rc4"
+     ],
+     [
+      "CMS_add0_recipient_key",
+      "rc4"
+     ],
+     [
+      "CMS_add0_recipient_password",
+      "rc4"
+     ],
+     [
+      "CMS_get0_SignerInfos",
+      "rc4"
+     ]
+    ],
+    "functions_with_new_ge_0.40": 1050,
+    "seconds": {
+     "EN0": 1.65,
+     "EN1": 19.63,
+     "EN2": 1.98,
+     "EN3": 27.7
+    }
+   },
+   "bodies": 5405,
+   "bodies_over_cap": 60
+  },
+  "debian/sqlite3": {
+   "product_gate_open": false,
+   "ca": {
+    "cap_total": 16,
+    "full_total": 22,
+    "new_pairs_any": 6,
+    "new_pairs_ge_0.40": 6,
+    "new_pairs_ge_0.70": 2,
+    "lost_pairs_any": 0,
+    "new_examples": [
+     [
+      "FUN_001097c0",
+      "Galois field operations (ECC, AES-GF)"
+     ],
+     [
+      "FUN_00124930",
+      "Galois field operations (ECC, AES-GF)"
+     ],
+     [
+      "FUN_0012f6c0",
+      "Galois field operations (ECC, AES-GF)"
+     ],
+     [
+      "FUN_001304a0",
+      "Block cipher mode of operation (CBC, CTR, GCM)"
+     ],
+     [
+      "FUN_001304a0",
+      "Feistel cipher (DES, Blowfish, etc.)"
+     ],
+     [
+      "FUN_001304a0",
+      "Galois field operations (ECC, AES-GF)"
+     ]
+    ],
+    "seconds_cap": 0.56,
+    "seconds_full": 0.84
+   },
+   "eng": {
+    "EN0_total": 0,
+    "EN1_total": 2953,
+    "EN2_total": 0,
+    "EN3_total": 3095,
+    "gate_new_any": 2953,
+    "gate_new_ge_0.40": 1209,
+    "gate_new_ge_0.70": 914,
+    "body_new_any": 0,
+    "both_new_any": 3095,
+    "both_new_ge_0.40": 1315,
+    "both_new_ge_0.70": 972,
+    "both_new_examples": [
+     [
+      "FUN_001097c0",
+      "aes_128"
+     ],
+     [
+      "FUN_001097c0",
+      "aes_ctr"
+     ],
+     [
+      "FUN_001097c0",
+      "aes_rcon"
+     ],
+     [
+      "FUN_001097c0",
+      "aslr_detection"
+     ],
+     [
+      "FUN_001097c0",
+      "asn1_der"
+     ],
+     [
+      "FUN_001097c0",
+      "clmul"
+     ],
+     [
+      "FUN_001097c0",
+      "halton_sequence"
+     ],
+     [
+      "FUN_001097c0",
+      "ikev2"
+     ],
+     [
+      "FUN_001097c0",
+      "jwt"
+     ],
+     [
+      "FUN_001097c0",
+      "kuznyechik"
+     ],
+     [
+      "FUN_001097c0",
+      "lzma"
+     ],
+     [
+      "FUN_001097c0",
+      "metropolis_hastings"
+     ],
+     [
+      "FUN_001097c0",
+      "pid_controller"
+     ],
+     [
+      "FUN_001097c0",
+      "rc4"
+     ],
+     [
+      "FUN_001097c0",
+      "rijndael_sbox_full"
+     ]
+    ],
+    "functions_with_new_ge_0.40": 566,
+    "seconds": {
+     "EN0": 0.38,
+     "EN1": 3.87,
+     "EN2": 0.53,
+     "EN3": 8.16
+    }
+   },
+   "bodies": 1132,
+   "bodies_over_cap": 33
+  },
+  "debian/redis-cli": {
+   "product_gate_open": false,
+   "ca": {
+    "cap_total": 15,
+    "full_total": 17,
+    "new_pairs_any": 2,
+    "new_pairs_ge_0.40": 2,
+    "new_pairs_ge_0.70": 2,
+    "lost_pairs_any": 0,
+    "new_examples": [
+     [
+      "main",
+      "Feistel cipher (DES, Blowfish, etc.)"
+     ],
+     [
+      "main",
+      "Galois field operations (ECC, AES-GF)"
+     ]
+    ],
+    "seconds_cap": 0.67,
+    "seconds_full": 0.82
+   },
+   "eng": {
+    "EN0_total": 0,
+    "EN1_total": 3785,
+    "EN2_total": 0,
+    "EN3_total": 3932,
+    "gate_new_any": 3785,
+    "gate_new_ge_0.40": 1444,
+    "gate_new_ge_0.70": 1221,
+    "body_new_any": 0,
+    "both_new_any": 3932,
+    "both_new_ge_0.40": 1569,
+    "both_new_ge_0.70": 1286,
+    "both_new_examples": [
+     [
+      "FUN_00129ea0",
+      "rc4"
+     ],
+     [
+      "FUN_00129f20",
+      "halton_sequence"
+     ],
+     [
+      "FUN_00129f20",
+      "rc4"
+     ],
+     [
+      "FUN_0012a020",
+      "halton_sequence"
+     ],
+     [
+      "FUN_0012a020",
+      "rc4"
+     ],
+     [
+      "FUN_0012a020",
+      "saml"
+     ],
+     [
+      "FUN_0012a340",
+      "halton_sequence"
+     ],
+     [
+      "FUN_0012a340",
+      "rc4"
+     ],
+     [
+      "FUN_0012a6e8",
+      "halton_sequence"
+     ],
+     [
+      "FUN_0012a6e8",
+      "rc4"
+     ],
+     [
+      "FUN_0012a760",
+      "rc4"
+     ],
+     [
+      "FUN_0012a820",
+      "rc4"
+     ],
+     [
+      "FUN_0012a904",
+      "halton_sequence"
+     ],
+     [
+      "FUN_0012a904",
+      "rc4"
+     ],
+     [
+      "FUN_0012aa10",
+      "rc4"
+     ]
+    ],
+    "functions_with_new_ge_0.40": 615,
+    "seconds": {
+     "EN0": 0.49,
+     "EN1": 4.92,
+     "EN2": 0.62,
+     "EN3": 7.53
+    }
+   },
+   "bodies": 1095,
+   "bodies_over_cap": 41
+  },
+  "debian/tree": {
+   "product_gate_open": false,
+   "ca": {
+    "cap_total": 0,
+    "full_total": 0,
+    "new_pairs_any": 0,
+    "new_pairs_ge_0.40": 0,
+    "new_pairs_ge_0.70": 0,
+    "lost_pairs_any": 0,
+    "new_examples": [],
+    "seconds_cap": 0.12,
+    "seconds_full": 0.14
+   },
+   "eng": {
+    "EN0_total": 0,
+    "EN1_total": 938,
+    "EN2_total": 0,
+    "EN3_total": 950,
+    "gate_new_any": 938,
+    "gate_new_ge_0.40": 326,
+    "gate_new_ge_0.70": 309,
+    "body_new_any": 0,
+    "both_new_any": 950,
+    "both_new_ge_0.40": 339,
+    "both_new_ge_0.70": 313,
+    "both_new_examples": [
+     [
+      "FUN_00104100",
+      "aes_128"
+     ],
+     [
+      "FUN_00104100",
+      "aes_rcon"
+     ],
+     [
+      "FUN_00104100",
+      "asn1_der"
+     ],
+     [
+      "FUN_00104100",
+      "clmul"
+     ],
+     [
+      "FUN_00104100",
+      "halton_sequence"
+     ],
+     [
+      "FUN_00104100",
+      "ikev2"
+     ],
+     [
+      "FUN_00104100",
+      "kuznyechik"
+     ],
+     [
+      "FUN_00104100",
+      "metropolis_hastings"
+     ],
+     [
+      "FUN_00104100",
+      "rc4"
+     ],
+     [
+      "FUN_00104100",
+      "rijndael_sbox_full"
+     ],
+     [
+      "FUN_00104100",
+      "sm4"
+     ],
+     [
+      "FUN_00104100",
+      "ssh_key_exchange"
+     ],
+     [
+      "FUN_00104100",
+      "stack_canary"
+     ],
+     [
+      "FUN_00104100",
+      "twofish"
+     ],
+     [
+      "FUN_00104100",
+      "whirlpool"
+     ]
+    ],
+    "functions_with_new_ge_0.40": 117,
+    "seconds": {
+     "EN0": 0.09,
+     "EN1": 0.92,
+     "EN2": 0.11,
+     "EN3": 1.22
+    }
+   },
+   "bodies": 248,
+   "bodies_over_cap": 7
+  },
+  "mac/tmux": {
+   "product_gate_open": false,
+   "ca": {
+    "cap_total": 11,
+    "full_total": 15,
+    "new_pairs_any": 4,
+    "new_pairs_ge_0.40": 4,
+    "new_pairs_ge_0.70": 3,
+    "lost_pairs_any": 0,
+    "new_examples": [
+     [
+      "FUN_100034c2c",
+      "Galois field operations (ECC, AES-GF)"
+     ],
+     [
+      "FUN_10004e778",
+      "Galois field operations (ECC, AES-GF)"
+     ],
+     [
+      "FUN_100099394",
+      "Galois field operations (ECC, AES-GF)"
+     ],
+     [
+      "entry",
+      "Galois field operations (ECC, AES-GF)"
+     ]
+    ],
+    "seconds_cap": 2.17,
+    "seconds_full": 2.52
+   },
+   "eng": {
+    "EN0_total": 0,
+    "EN1_total": 20579,
+    "EN2_total": 0,
+    "EN3_total": 20846,
+    "gate_new_any": 20579,
+    "gate_new_ge_0.40": 5578,
+    "gate_new_ge_0.70": 5522,
+    "body_new_any": 0,
+    "both_new_any": 20846,
+    "both_new_ge_0.40": 5762,
+    "both_new_ge_0.70": 5693,
+    "both_new_examples": [
+     [
+      "FUN_100001f98",
+      "halton_sequence"
+     ],
+     [
+      "FUN_100001f98",
+      "rc4"
+     ],
+     [
+      "FUN_100001fdc",
+      "halton_sequence"
+     ],
+     [
+      "FUN_100001fdc",
+      "rc4"
+     ],
+     [
+      "FUN_1000022c0",
+      "halton_sequence"
+     ],
+     [
+      "FUN_1000022c0",
+      "rc4"
+     ],
+     [
+      "FUN_100002308",
+      "rc4"
+     ],
+     [
+      "FUN_1000023a8",
+      "halton_sequence"
+     ],
+     [
+      "FUN_1000023a8",
+      "rc4"
+     ],
+     [
+      "FUN_1000024c4",
+      "halton_sequence"
+     ],
+     [
+      "FUN_1000024c4",
+      "rc4"
+     ],
+     [
+      "FUN_100002578",
+      "rc4"
+     ],
+     [
+      "FUN_1000025e4",
+      "halton_sequence"
+     ],
+     [
+      "FUN_1000025e4",
+      "rc4"
+     ],
+     [
+      "FUN_1000026dc",
+      "rc4"
+     ]
+    ],
+    "functions_with_new_ge_0.40": 2755,
+    "seconds": {
+     "EN0": 1.56,
+     "EN1": 15.29,
+     "EN2": 1.97,
+     "EN3": 19.64
+    }
+   },
+   "bodies": 2800,
+   "bodies_over_cap": 134
+  },
+  "mac/htop": {
+   "product_gate_open": false,
+   "ca": {
+    "cap_total": 1,
+    "full_total": 5,
+    "new_pairs_any": 4,
+    "new_pairs_ge_0.40": 4,
+    "new_pairs_ge_0.70": 0,
+    "lost_pairs_any": 0,
+    "new_examples": [
+     [
+      "FUN_1000052f4",
+      "Password-based key derivation (PBKDF2, scrypt)"
+     ],
+     [
+      "FUN_10000f9fc",
+      "Galois field operations (ECC, AES-GF)"
+     ],
+     [
+      "FUN_100019a20",
+      "Galois field operations (ECC, AES-GF)"
+     ],
+     [
+      "entry",
+      "Password-based key derivation (PBKDF2, scrypt)"
+     ]
+    ],
+    "seconds_cap": 0.42,
+    "seconds_full": 0.48
+   },
+   "eng": {
+    "EN0_total": 0,
+    "EN1_total": 5451,
+    "EN2_total": 0,
+    "EN3_total": 5520,
+    "gate_new_any": 5451,
+    "gate_new_ge_0.40": 1356,
+    "gate_new_ge_0.70": 1326,
+    "body_new_any": 0,
+    "both_new_any": 5520,
+    "both_new_ge_0.40": 1409,
+    "both_new_ge_0.70": 1377,
+    "both_new_examples": [
+     [
+      "FUN_100001784",
+      "clmul"
+     ],
+     [
+      "FUN_100001784",
+      "halton_sequence"
+     ],
+     [
+      "FUN_100001784",
+      "rc4"
+     ],
+     [
+      "FUN_1000018f4",
+      "rc4"
+     ],
+     [
+      "FUN_100001930",
+      "rc4"
+     ],
+     [
+      "FUN_10000194c",
+      "halton_sequence"
+     ],
+     [
+      "FUN_10000194c",
+      "rc4"
+     ],
+     [
+      "FUN_100001a6c",
+      "rc4"
+     ],
+     [
+      "FUN_100001ac4",
+      "aes_128"
+     ],
+     [
+      "FUN_100001ac4",
+      "asn1_der"
+     ],
+     [
+      "FUN_100001ac4",
+      "clmul"
+     ],
+     [
+      "FUN_100001ac4",
+      "halton_sequence"
+     ],
+     [
+      "FUN_100001ac4",
+      "ikev2"
+     ],
+     [
+      "FUN_100001ac4",
+      "kuznyechik"
+     ],
+     [
+      "FUN_100001ac4",
+      "rc4"
+     ]
+    ],
+    "functions_with_new_ge_0.40": 758,
+    "seconds": {
+     "EN0": 0.33,
+     "EN1": 3.1,
+     "EN2": 0.37,
+     "EN3": 3.92
+    }
+   },
+   "bodies": 764,
+   "bodies_over_cap": 21
+  }
+ },
+ "samples": {
+  "gate": {
+   "n": 30,
+   "functions_with_new_ge_0.40": 13,
+   "seconds_per_function_max": 0.0102,
+   "seconds_per_function_median": 0.001,
+   "rows": [
+    {
+     "func": "sqlite3_error_offset",
+     "body_len": 42,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0006
+     },
+     "binary": "debian/sqlite3",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "X509V3_set_nconf",
+     "body_len": 43,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0009
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": [
+      "rc4"
+     ]
+    },
+    {
+     "func": "SSL_new",
+     "body_len": 63,
+     "ca_cap": {
+      "labels": [
+       [
+        "TLS session",
+        "api",
+        0.9
+       ]
+      ],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [
+       [
+        "TLS session",
+        "api",
+        0.9
+       ]
+      ],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0009
+     },
+     "binary": "debian/redis-cli",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "OSSL_CMP_CTX_set_http_cb_arg",
+     "body_len": 47,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0009
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "sqlite3_value_double",
+     "body_len": 39,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0007
+     },
+     "binary": "debian/sqlite3",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "d2i_PKCS7_bio",
+     "body_len": 73,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0011
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "FUN_100085404",
+     "body_len": 78,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ]
+      ],
+      "seconds": 0.0009
+     },
+     "binary": "mac/tmux",
+     "new_labels_ge_0.40": [
+      "halton_sequence",
+      "rc4"
+     ]
+    },
+    {
+     "func": "FUN_10000d00c",
+     "body_len": 1133,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0006
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0006
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0006
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0054
+     },
+     "binary": "mac/htop",
+     "new_labels_ge_0.40": [
+      "halton_sequence",
+      "kuznyechik",
+      "rc4"
+     ]
+    },
+    {
+     "func": "_ITM_deregisterTMCloneTable",
+     "body_len": 42,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0006
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "FUN_00173960",
+     "body_len": 105,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "rc4",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.001
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "OSSL_STORE_INFO_free",
+     "body_len": 39,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0007
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "FUN_10004dfcc",
+     "body_len": 232,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0015
+     },
+     "binary": "mac/tmux",
+     "new_labels_ge_0.40": [
+      "rc4"
+     ]
+    },
+    {
+     "func": "EVP_MAC_is_a",
+     "body_len": 31,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0008
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "ENGINE_by_id",
+     "body_len": 70,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0009
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "FUN_0012d580",
+     "body_len": 1211,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0008
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0007
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0009
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0072
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "halton_sequence",
+      "rc4",
+      "sm4",
+      "ssh_key_exchange"
+     ]
+    },
+    {
+     "func": "FUN_00133240",
+     "body_len": 1630,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0009
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.9
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.9
+       ]
+      ],
+      "seconds": 0.0092
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "aes_rcon",
+      "halton_sequence",
+      "rc4",
+      "ssh_key_exchange"
+     ]
+    },
+    {
+     "func": "TS_CONF_set_certs",
+     "body_len": 36,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0007
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "OPENSSL_LH_retrieve",
+     "body_len": 38,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0007
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "X509_STORE_CTX_set0_crls",
+     "body_len": 42,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0007
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "dictTwoPhaseUnlinkFree",
+     "body_len": 1599,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0009
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0009
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.001
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "sm4",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0079
+     },
+     "binary": "debian/redis-cli",
+     "new_labels_ge_0.40": [
+      "halton_sequence",
+      "rc4"
+     ]
+    },
+    {
+     "func": "FUN_001965e0",
+     "body_len": 51,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0008
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": [
+      "rc4"
+     ]
+    },
+    {
+     "func": "_strdup",
+     "body_len": 136,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0011
+     },
+     "binary": "mac/htop",
+     "new_labels_ge_0.40": [
+      "rc4"
+     ]
+    },
+    {
+     "func": "shutdown",
+     "body_len": 42,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0006
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "X509_CRL_print_ex",
+     "body_len": 36,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0009
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": [
+      "rc4"
+     ]
+    },
+    {
+     "func": "FUN_0019c9cc",
+     "body_len": 140,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.39
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0012
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "rc4"
+     ]
+    },
+    {
+     "func": "PEM_write_bio_PKCS7",
+     "body_len": 42,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0007
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "EVP_MD_do_all_provided",
+     "body_len": 41,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0008
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "memset",
+     "body_len": 71,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_open_full": {
+      "labels": [],
+      "seconds": 0.0008
+     },
+     "binary": "debian/tree",
+     "new_labels_ge_0.40": []
+    },
+    {
+     "func": "PKCS12_SAFEBAG_get0_bag_type",
+     "body_len": 47,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "rc4",
+        "constant",
+        0.9
+       ]
+      ],
+      "seconds": 0.0008
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": [
+      "rc4"
+     ]
+    },
+    {
+     "func": "FUN_100037b78",
+     "body_len": 161,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0001
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0002
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ]
+      ],
+      "seconds": 0.0012
+     },
+     "binary": "mac/tmux",
+     "new_labels_ge_0.40": [
+      "rc4"
+     ]
+    }
+   ]
+  },
+  "body_cap": {
+   "n": 30,
+   "functions_with_new_ge_0.40": 30,
+   "seconds_per_function_max": 1.2983,
+   "seconds_per_function_median": 0.056299999999999996,
+   "rows": [
+    {
+     "func": "FUN_0018e904",
+     "body_len": 24430,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0032
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0144
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0026
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.9
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.9
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.9
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.9
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "x509_certificate",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_ah",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.9
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.9
+       ],
+       [
+        "vm_detection_cpuid",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.9
+       ],
+       [
+        "lzma",
+        "constant",
+        0.9
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.9
+       ],
+       [
+        "keccak_round_constants_full",
+        "constant",
+        0.39
+       ],
+       [
+        "power_iteration",
+        "structural",
+        0.5
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.1618
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "aes_rcon",
+      "asn1_der",
+      "clmul",
+      "halton_sequence",
+      "hmac",
+      "ikev2",
+      "kuznyechik",
+      "lzma",
+      "power_iteration",
+      "rc4",
+      "sm4",
+      "ssh_key_exchange",
+      "stack_canary",
+      "twofish",
+      "whirlpool",
+      "zlib_deflate"
+     ]
+    },
+    {
+     "func": "FUN_00120b30",
+     "body_len": 7114,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0027
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0037
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0026
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.037
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "halton_sequence",
+      "rc4"
+     ]
+    },
+    {
+     "func": "FUN_0014c560",
+     "body_len": 115359,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0032
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0591
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0034
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "nelder_mead",
+        "constant",
+        0.2
+       ],
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "mersenne_twister",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.9
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.9
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.9
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.9
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "x509_certificate",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_ah",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.9
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.9
+       ],
+       [
+        "shadow_stack",
+        "constant",
+        0.9
+       ],
+       [
+        "vm_detection_cpuid",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.9
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.9
+       ],
+       [
+        "lzma",
+        "constant",
+        0.9
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.9
+       ],
+       [
+        "keccak_round_constants_full",
+        "constant",
+        0.39
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ],
+       [
+        "pid_controller",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 1.2392
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "aes_ni",
+      "aes_rcon",
+      "asn1_der",
+      "clmul",
+      "halton_sequence",
+      "hmac",
+      "ikev2",
+      "kuznyechik",
+      "lzma",
+      "pid_controller",
+      "rc4",
+      "rijndael_sbox_full",
+      "shadow_stack",
+      "sm4",
+      "ssh_key_exchange",
+      "stack_canary",
+      "twofish",
+      "whirlpool",
+      "zlib_deflate"
+     ]
+    },
+    {
+     "func": "FUN_00140500",
+     "body_len": 19469,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0031
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0119
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0027
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.9
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.9
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.9
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "x509_certificate",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.9
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.9
+       ],
+       [
+        "lzma",
+        "constant",
+        0.39
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.9
+       ],
+       [
+        "keccak_round_constants_full",
+        "constant",
+        0.39
+       ],
+       [
+        "power_iteration",
+        "structural",
+        0.5
+       ],
+       [
+        "cholesky_sampling",
+        "structural",
+        0.5
+       ],
+       [
+        "metropolis_hastings",
+        "structural",
+        0.5
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ],
+       [
+        "pid_controller",
+        "structural",
+        0.5
+       ],
+       [
+        "lqr_controller",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.1854
+     },
+     "binary": "debian/redis-cli",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "aes_rcon",
+      "asn1_der",
+      "cholesky_sampling",
+      "halton_sequence",
+      "hmac",
+      "ikev2",
+      "lqr_controller",
+      "metropolis_hastings",
+      "pid_controller",
+      "power_iteration",
+      "rc4",
+      "sm4",
+      "ssh_key_exchange",
+      "stack_canary",
+      "twofish",
+      "whirlpool",
+      "zlib_deflate"
+     ]
+    },
+    {
+     "func": "FUN_00199440",
+     "body_len": 12782,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0028
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0068
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0025
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.9
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.9
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.0615
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "aes_rcon",
+      "halton_sequence",
+      "rc4",
+      "sm4",
+      "stack_canary",
+      "twofish"
+     ]
+    },
+    {
+     "func": "FUN_0013b704",
+     "body_len": 5435,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.003
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0029
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.003
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.9
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0248
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "aes_ni",
+      "halton_sequence",
+      "rc4",
+      "sm4"
+     ]
+    },
+    {
+     "func": "FUN_10009ad34",
+     "body_len": 7867,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0025
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0037
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0024
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.9
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "lzma",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0316
+     },
+     "binary": "mac/tmux",
+     "new_labels_ge_0.40": [
+      "clmul",
+      "halton_sequence",
+      "kuznyechik",
+      "rc4"
+     ]
+    },
+    {
+     "func": "FUN_100034c2c",
+     "body_len": 8544,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0027
+     },
+     "ca_full": {
+      "labels": [
+       [
+        "Galois field operations (ECC, AES-GF)",
+        "structural",
+        0.4
+       ]
+      ],
+      "seconds": 0.0046
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0026
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.9
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_ah",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.9
+       ],
+       [
+        "shadow_stack",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "lzma",
+        "constant",
+        0.39
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.9
+       ]
+      ],
+      "seconds": 0.0469
+     },
+     "binary": "mac/tmux",
+     "new_labels_ge_0.40": [
+      "Galois field operations (ECC, AES-GF)",
+      "aes_rcon",
+      "halton_sequence",
+      "rc4",
+      "sm4",
+      "ssh_key_exchange",
+      "whirlpool"
+     ]
+    },
+    {
+     "func": "FUN_100010dcc",
+     "body_len": 5435,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0028
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0031
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0027
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.9
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.39
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.9
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.9
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "lzma",
+        "constant",
+        0.39
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.9
+       ]
+      ],
+      "seconds": 0.0301
+     },
+     "binary": "mac/tmux",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "aes_ni",
+      "halton_sequence",
+      "ikev2",
+      "kuznyechik",
+      "rc4",
+      "rijndael_sbox_full",
+      "sm4"
+     ]
+    },
+    {
+     "func": "FUN_001a170c",
+     "body_len": 27392,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0037
+     },
+     "ca_full": {
+      "labels": [
+       [
+        "CSPRNG (OpenSSL)",
+        "api",
+        0.9
+       ]
+      ],
+      "seconds": 0.017
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0027
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "mersenne_twister",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.39
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "x509_certificate",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.9
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ],
+       [
+        "shadow_stack",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.9
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.9
+       ],
+       [
+        "lzma",
+        "constant",
+        0.9
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_ctr",
+        "structural",
+        0.5
+       ],
+       [
+        "aes_cbc",
+        "structural",
+        0.5
+       ],
+       [
+        "sha256",
+        "structural",
+        0.5
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ],
+       [
+        "pid_controller",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.2155
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": [
+      "CSPRNG (OpenSSL)",
+      "aes_128",
+      "aes_cbc",
+      "aes_ctr",
+      "aes_ni",
+      "aes_rcon",
+      "asn1_der",
+      "clmul",
+      "halton_sequence",
+      "ikev2",
+      "lzma",
+      "pid_controller",
+      "rc4",
+      "sha256",
+      "sm4",
+      "stack_canary",
+      "zlib_deflate"
+     ]
+    },
+    {
+     "func": "FUN_0015ae08",
+     "body_len": 8015,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0031
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0045
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0026
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.9
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.9
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.048
+     },
+     "binary": "debian/redis-cli",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "asn1_der",
+      "halton_sequence",
+      "hmac",
+      "rc4",
+      "sm4",
+      "stack_canary",
+      "whirlpool"
+     ]
+    },
+    {
+     "func": "FUN_1000747f0",
+     "body_len": 19142,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0029
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0093
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0023
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.9
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_ah",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ],
+       [
+        "shadow_stack",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.094
+     },
+     "binary": "mac/tmux",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "halton_sequence",
+      "kuznyechik",
+      "rc4",
+      "sm4"
+     ]
+    },
+    {
+     "func": "FUN_001809c0",
+     "body_len": 11421,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0032
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0066
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0024
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "x509_certificate",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.9
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.9
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.9
+       ],
+       [
+        "lzma",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.39
+       ],
+       [
+        "keccak_round_constants_full",
+        "constant",
+        0.39
+       ],
+       [
+        "rsa_pkcs1_v15",
+        "structural",
+        0.5
+       ],
+       [
+        "rsa_oaep",
+        "structural",
+        0.5
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.0809
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "clmul",
+      "halton_sequence",
+      "ikev2",
+      "rc4",
+      "rsa_oaep",
+      "rsa_pkcs1_v15",
+      "sm4",
+      "ssh_key_exchange",
+      "stack_canary",
+      "zlib_deflate"
+     ]
+    },
+    {
+     "func": "FUN_0016a168",
+     "body_len": 12947,
+     "ca_cap": {
+      "labels": [
+       [
+        "OpenSSL key context",
+        "api",
+        0.9
+       ]
+      ],
+      "seconds": 0.0029
+     },
+     "ca_full": {
+      "labels": [
+       [
+        "OpenSSL key context",
+        "api",
+        0.9
+       ]
+      ],
+      "seconds": 0.0073
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0026
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "mersenne_twister",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.9
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.9
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ],
+       [
+        "shadow_stack",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "lzma",
+        "constant",
+        0.39
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.9
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ],
+       [
+        "pid_controller",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.0976
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "aes_rcon",
+      "clmul",
+      "halton_sequence",
+      "ikev2",
+      "pid_controller",
+      "rc4",
+      "sm4",
+      "stack_canary",
+      "whirlpool"
+     ]
+    },
+    {
+     "func": "FUN_001a7a50",
+     "body_len": 11920,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0028
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0065
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0033
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.9
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.9
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "x509_certificate",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.9
+       ],
+       [
+        "lzma",
+        "constant",
+        0.39
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.9
+       ],
+       [
+        "keccak_round_constants_full",
+        "constant",
+        0.39
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.0738
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "aes_rcon",
+      "asn1_der",
+      "clmul",
+      "halton_sequence",
+      "kuznyechik",
+      "rc4",
+      "rijndael_sbox_full",
+      "stack_canary",
+      "whirlpool",
+      "zlib_deflate"
+     ]
+    },
+    {
+     "func": "FUN_001aa540",
+     "body_len": 6297,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0027
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0034
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0023
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "lzma",
+        "constant",
+        0.9
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.39
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.0314
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "clmul",
+      "halton_sequence",
+      "lzma",
+      "rc4",
+      "stack_canary"
+     ]
+    },
+    {
+     "func": "FUN_0012d140",
+     "body_len": 7723,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0028
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0043
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0026
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.39
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "lzma",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.39
+       ],
+       [
+        "power_iteration",
+        "structural",
+        0.5
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.052
+     },
+     "binary": "debian/sqlite3",
+     "new_labels_ge_0.40": [
+      "halton_sequence",
+      "lzma",
+      "power_iteration",
+      "rc4",
+      "sm4",
+      "stack_canary"
+     ]
+    },
+    {
+     "func": "FUN_0013ad0c",
+     "body_len": 5883,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0027
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0031
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0023
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.39
+       ],
+       [
+        "keccak_round_constants_full",
+        "constant",
+        0.39
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.0366
+     },
+     "binary": "debian/redis-cli",
+     "new_labels_ge_0.40": [
+      "clmul",
+      "halton_sequence",
+      "rc4",
+      "sm4",
+      "stack_canary"
+     ]
+    },
+    {
+     "func": "FUN_0012c900",
+     "body_len": 10664,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0028
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0056
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0024
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.9
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.9
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.39
+       ],
+       [
+        "power_iteration",
+        "structural",
+        0.5
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.0574
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "aes_ni",
+      "asn1_der",
+      "halton_sequence",
+      "kuznyechik",
+      "power_iteration",
+      "rc4",
+      "sm4",
+      "ssh_key_exchange",
+      "stack_canary"
+     ]
+    },
+    {
+     "func": "FUN_0015acc0",
+     "body_len": 52618,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0031
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0275
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0028
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_xts",
+        "constant",
+        0.39
+       ],
+       [
+        "twofish",
+        "constant",
+        0.9
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.9
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.9
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_ah",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.9
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.9
+       ],
+       [
+        "lzma",
+        "constant",
+        0.39
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.9
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ],
+       [
+        "control_flow_flattening",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.2818
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "aes_ni",
+      "aes_rcon",
+      "clmul",
+      "control_flow_flattening",
+      "halton_sequence",
+      "hmac",
+      "rc4",
+      "rijndael_sbox_full",
+      "sm4",
+      "ssh_key_exchange",
+      "stack_canary",
+      "twofish",
+      "whirlpool",
+      "zlib_deflate"
+     ]
+    },
+    {
+     "func": "FUN_001b4730",
+     "body_len": 6054,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0028
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0037
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0024
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.037
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": [
+      "clmul",
+      "halton_sequence",
+      "kuznyechik",
+      "rc4",
+      "sm4",
+      "stack_canary"
+     ]
+    },
+    {
+     "func": "FUN_1000455bc",
+     "body_len": 6590,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0026
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0033
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0022
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0279
+     },
+     "binary": "mac/tmux",
+     "new_labels_ge_0.40": [
+      "halton_sequence",
+      "rc4"
+     ]
+    },
+    {
+     "func": "FUN_10001e31c",
+     "body_len": 9482,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0027
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0048
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0026
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "lzma",
+        "constant",
+        0.39
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0395
+     },
+     "binary": "mac/tmux",
+     "new_labels_ge_0.40": [
+      "halton_sequence",
+      "rc4"
+     ]
+    },
+    {
+     "func": "FUN_00123c70",
+     "body_len": 14212,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.003
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0079
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0026
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.9
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.9
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.39
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "x509_certificate",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.9
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.9
+       ],
+       [
+        "shadow_stack",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.9
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.9
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.9
+       ],
+       [
+        "lzma",
+        "constant",
+        0.9
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.9
+       ],
+       [
+        "keccak_round_constants_full",
+        "constant",
+        0.39
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.0998
+     },
+     "binary": "debian/tmux",
+     "new_labels_ge_0.40": [
+      "aes_128",
+      "aes_ni",
+      "aes_rcon",
+      "asn1_der",
+      "clmul",
+      "halton_sequence",
+      "ikev2",
+      "kuznyechik",
+      "lzma",
+      "rc4",
+      "sha_ni",
+      "sm4",
+      "ssh_key_exchange",
+      "stack_canary",
+      "twofish",
+      "zlib_deflate"
+     ]
+    },
+    {
+     "func": "FUN_100002c70",
+     "body_len": 10754,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0028
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0056
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0025
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0499
+     },
+     "binary": "mac/tmux",
+     "new_labels_ge_0.40": [
+      "halton_sequence",
+      "ikev2",
+      "rc4"
+     ]
+    },
+    {
+     "func": "redisvFormatCommand",
+     "body_len": 16518,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.003
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.009
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.004
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.39
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.39
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.39
+       ],
+       [
+        "metropolis_hastings",
+        "structural",
+        0.5
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.1585
+     },
+     "binary": "debian/redis-cli",
+     "new_labels_ge_0.40": [
+      "halton_sequence",
+      "metropolis_hastings",
+      "rc4",
+      "sm4",
+      "stack_canary"
+     ]
+    },
+    {
+     "func": "FUN_00181380",
+     "body_len": 7978,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0034
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0046
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0027
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.9
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.9
+       ],
+       [
+        "lzma",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.39
+       ],
+       [
+        "rsa_pkcs1_v15",
+        "structural",
+        0.5
+       ],
+       [
+        "rsa_oaep",
+        "structural",
+        0.5
+       ],
+       [
+        "x509_certificate",
+        "structural",
+        0.5
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ],
+       [
+        "pid_controller",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.0484
+     },
+     "binary": "debian/openssl",
+     "new_labels_ge_0.40": [
+      "clmul",
+      "halton_sequence",
+      "ikev2",
+      "pid_controller",
+      "rc4",
+      "rsa_oaep",
+      "rsa_pkcs1_v15",
+      "stack_canary",
+      "x509_certificate",
+      "zlib_deflate"
+     ]
+    },
+    {
+     "func": "FUN_10002676c",
+     "body_len": 5863,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0028
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0033
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0027
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.024
+     },
+     "binary": "mac/tmux",
+     "new_labels_ge_0.40": [
+      "clmul",
+      "halton_sequence",
+      "rc4"
+     ]
+    },
+    {
+     "func": "FUN_001097c0",
+     "body_len": 46689,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0037
+     },
+     "ca_full": {
+      "labels": [
+       [
+        "Galois field operations (ECC, AES-GF)",
+        "structural",
+        0.7
+       ]
+      ],
+      "seconds": 0.0244
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0037
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "cds_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.9
+       ],
+       [
+        "twofish",
+        "constant",
+        0.9
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.9
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.9
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "hmac",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "x509_certificate",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ipsec_ah",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant+structural",
+        0.95
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "clmul",
+        "constant",
+        0.9
+       ],
+       [
+        "sha_ni",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.9
+       ],
+       [
+        "lzma",
+        "constant",
+        0.9
+       ],
+       [
+        "rijndael_sbox_full",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.9
+       ],
+       [
+        "keccak_round_constants_full",
+        "constant",
+        0.39
+       ],
+       [
+        "metropolis_hastings",
+        "structural",
+        0.5
+       ],
+       [
+        "aes_ctr",
+        "structural",
+        0.5
+       ],
+       [
+        "jwt",
+        "structural",
+        0.5
+       ],
+       [
+        "stack_canary",
+        "structural",
+        0.5
+       ],
+       [
+        "aslr_detection",
+        "structural",
+        0.5
+       ],
+       [
+        "pid_controller",
+        "structural",
+        0.5
+       ]
+      ],
+      "seconds": 0.444
+     },
+     "binary": "debian/sqlite3",
+     "new_labels_ge_0.40": [
+      "Galois field operations (ECC, AES-GF)",
+      "aes_128",
+      "aes_ctr",
+      "aes_rcon",
+      "aslr_detection",
+      "asn1_der",
+      "clmul",
+      "halton_sequence",
+      "ikev2",
+      "jwt",
+      "kuznyechik",
+      "lzma",
+      "metropolis_hastings",
+      "pid_controller",
+      "rc4",
+      "rijndael_sbox_full",
+      "sm4",
+      "ssh_key_exchange",
+      "stack_canary",
+      "twofish",
+      "whirlpool",
+      "zlib_deflate"
+     ]
+    },
+    {
+     "func": "FUN_10005fce4",
+     "body_len": 8780,
+     "ca_cap": {
+      "labels": [],
+      "seconds": 0.0026
+     },
+     "ca_full": {
+      "labels": [],
+      "seconds": 0.0045
+     },
+     "en_product": {
+      "labels": [],
+      "seconds": 0.0027
+     },
+     "en_open_full": {
+      "labels": [
+       [
+        "halton_sequence",
+        "constant",
+        0.9
+       ],
+       [
+        "brent_solver",
+        "constant",
+        0.39
+       ],
+       [
+        "bond_pricing",
+        "constant",
+        0.39
+       ],
+       [
+        "mersenne_twister",
+        "constant",
+        0.39
+       ],
+       [
+        "vix_calculation",
+        "constant",
+        0.39
+       ],
+       [
+        "aes_128",
+        "constant",
+        0.39
+       ],
+       [
+        "twofish",
+        "constant",
+        0.39
+       ],
+       [
+        "aria",
+        "constant",
+        0.39
+       ],
+       [
+        "sm4",
+        "constant",
+        0.9
+       ],
+       [
+        "rc4",
+        "constant",
+        0.9
+       ],
+       [
+        "kuznyechik",
+        "constant",
+        0.9
+       ],
+       [
+        "whirlpool",
+        "constant",
+        0.39
+       ],
+       [
+        "argon2",
+        "constant",
+        0.39
+       ],
+       [
+        "tls12_handshake",
+        "constant",
+        0.39
+       ],
+       [
+        "x509_certificate",
+        "constant",
+        0.39
+       ],
+       [
+        "asn1_der",
+        "constant",
+        0.9
+       ],
+       [
+        "ipsec_esp",
+        "constant",
+        0.39
+       ],
+       [
+        "ikev2",
+        "constant",
+        0.39
+       ],
+       [
+        "ssh_key_exchange",
+        "constant",
+        0.9
+       ],
+       [
+        "clmul",
+        "constant",
+        0.39
+       ],
+       [
+        "zlib_deflate",
+        "constant",
+        0.39
+       ],
+       [
+        "lzma",
+        "constant",
+        0.9
+       ],
+       [
+        "aes_rcon",
+        "constant",
+        0.39
+       ],
+       [
+        "keccak_round_constants_full",
+        "constant",
+        0.39
+       ]
+      ],
+      "seconds": 0.0454
+     },
+     "binary": "mac/tmux",
+     "new_labels_ge_0.40": [
+      "asn1_der",
+      "halton_sequence",
+      "kuznyechik",
+      "lzma",
+      "rc4",
+      "sm4",
+      "ssh_key_exchange"
+     ]
+    }
+   ]
+  }
+ },
+ "pool_sizes": {
+  "gate": 13991,
+  "body_cap": 417
+ }
+}

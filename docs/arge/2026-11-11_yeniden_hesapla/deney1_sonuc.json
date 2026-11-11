@@ -1,0 +1,712 @@
+{
+ "seed": 20261111,
+ "pool_size": 9705,
+ "census": {
+  "debian/tmux": {
+   "functions_in_call_graph": 2146,
+   "algorithm_detections_head": 10,
+   "functions_with_detection": 10,
+   "product_targets": [
+    "entry",
+    "_FINI_0",
+    "_DT_INIT"
+   ]
+  },
+  "debian/openssl": {
+   "functions_in_call_graph": 2303,
+   "algorithm_detections_head": 72,
+   "functions_with_detection": 64,
+   "product_targets": [
+    "EVP_DecryptInit_ex",
+    "entry",
+    "_FINI_0"
+   ]
+  },
+  "debian/sqlite3": {
+   "functions_in_call_graph": 672,
+   "algorithm_detections_head": 16,
+   "functions_with_detection": 13,
+   "product_targets": [
+    "entry",
+    "_FINI_0",
+    "_DT_INIT"
+   ]
+  },
+  "debian/redis-cli": {
+   "functions_in_call_graph": 806,
+   "algorithm_detections_head": 15,
+   "functions_with_detection": 14,
+   "product_targets": [
+    "main",
+    "cliSecureConnection",
+    "redisInitiateSSLWithContext"
+   ]
+  },
+  "debian/tree": {
+   "functions_in_call_graph": 186,
+   "algorithm_detections_head": 0,
+   "functions_with_detection": 0,
+   "product_targets": [
+    "entry",
+    "_FINI_0",
+    "_DT_INIT"
+   ]
+  },
+  "mac/tmux": {
+   "functions_in_call_graph": 2820,
+   "algorithm_detections_head": 11,
+   "functions_with_detection": 11,
+   "product_targets": [
+    "entry"
+   ]
+  },
+  "mac/htop": {
+   "functions_in_call_graph": 788,
+   "algorithm_detections_head": 1,
+   "functions_with_detection": 1,
+   "product_targets": []
+  }
+ },
+ "summary": {
+  "n": 30,
+  "product_with_descendant_labels": 0,
+  "big_with_descendant_labels": 0,
+  "big_extra_over_product": 0,
+  "product_seconds_max": 0.0316,
+  "big_seconds_max": 0.0044,
+  "big_seconds_median": 0.0038,
+  "big_nodes_median": 1
+ },
+ "rows": [
+  {
+   "binary": "mac/tmux",
+   "function": "FUN_100024384",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0053
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0041
+   }
+  },
+  {
+   "binary": "debian/tmux",
+   "function": "FUN_00150800",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0032
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0031
+   }
+  },
+  {
+   "binary": "debian/tmux",
+   "function": "FUN_001b7940",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0316
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0034
+   }
+  },
+  {
+   "binary": "debian/redis-cli",
+   "function": "aeCreateEventLoop",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 28,
+    "depth": 3,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0016
+   },
+   "big": {
+    "success": true,
+    "nodes": 28,
+    "depth": 3,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0013
+   }
+  },
+  {
+   "binary": "mac/tmux",
+   "function": "FUN_10002e348",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0045
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.004
+   }
+  },
+  {
+   "binary": "debian/tmux",
+   "function": "FUN_00193a60",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0032
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0032
+   }
+  },
+  {
+   "binary": "mac/tmux",
+   "function": "_exit",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0044
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0038
+   }
+  },
+  {
+   "binary": "debian/openssl",
+   "function": "SSL_sendfile",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0046
+   },
+   "big": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0039
+   }
+  },
+  {
+   "binary": "debian/redis-cli",
+   "function": "redisConnectWrapper",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 70,
+    "depth": 5,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0018
+   },
+   "big": {
+    "success": true,
+    "nodes": 70,
+    "depth": 6,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0015
+   }
+  },
+  {
+   "binary": "debian/openssl",
+   "function": "OCSP_RESPONSE_it",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0264
+   },
+   "big": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0041
+   }
+  },
+  {
+   "binary": "debian/openssl",
+   "function": "FUN_0016d1c0",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0041
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0042
+   }
+  },
+  {
+   "binary": "mac/tmux",
+   "function": "FUN_10003b344",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0044
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0038
+   }
+  },
+  {
+   "binary": "mac/tmux",
+   "function": "FUN_10003f044",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0037
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0044
+   }
+  },
+  {
+   "binary": "debian/tmux",
+   "function": "FUN_00141100",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0033
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.003
+   }
+  },
+  {
+   "binary": "debian/redis-cli",
+   "function": "FUN_0012aaa4",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0014
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0011
+   }
+  },
+  {
+   "binary": "debian/tmux",
+   "function": "FUN_0016c4e0",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0224
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0031
+   }
+  },
+  {
+   "binary": "debian/tree",
+   "function": "FUN_00106628",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0003
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0002
+   }
+  },
+  {
+   "binary": "debian/openssl",
+   "function": "UI_get_string_type",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0044
+   },
+   "big": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.004
+   }
+  },
+  {
+   "binary": "debian/tmux",
+   "function": "FUN_00156000",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0032
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.003
+   }
+  },
+  {
+   "binary": "mac/tmux",
+   "function": "FUN_1000973d8",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0041
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0041
+   }
+  },
+  {
+   "binary": "debian/sqlite3",
+   "function": "FUN_0010e964",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0012
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0009
+   }
+  },
+  {
+   "binary": "debian/openssl",
+   "function": "OPENSSL_DIR_read",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0041
+   },
+   "big": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0043
+   }
+  },
+  {
+   "binary": "debian/sqlite3",
+   "function": "FUN_00112c80",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0011
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0009
+   }
+  },
+  {
+   "binary": "debian/openssl",
+   "function": "OSSL_CMP_CTX_set1_transactionID",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0218
+   },
+   "big": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0041
+   }
+  },
+  {
+   "binary": "debian/openssl",
+   "function": "FUN_00193d00",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.004
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0038
+   }
+  },
+  {
+   "binary": "mac/tmux",
+   "function": "FUN_100037aa8",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.004
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0037
+   }
+  },
+  {
+   "binary": "debian/tmux",
+   "function": "FUN_00196b40",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0032
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0031
+   }
+  },
+  {
+   "binary": "debian/openssl",
+   "function": "OSSL_ENCODER_up_ref",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0041
+   },
+   "big": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.004
+   }
+  },
+  {
+   "binary": "debian/openssl",
+   "function": "SSL_load_client_CA_file",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0217
+   },
+   "big": {
+    "success": true,
+    "nodes": 2,
+    "depth": 1,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0039
+   }
+  },
+  {
+   "binary": "debian/tree",
+   "function": "FUN_00107010",
+   "own_labels": [],
+   "product": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0002
+   },
+   "big": {
+    "success": true,
+    "nodes": 1,
+    "depth": 0,
+    "descendant_labels": [],
+    "errors": [],
+    "seconds": 0.0002
+   }
+  }
+ ]
+}

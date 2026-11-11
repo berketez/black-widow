@@ -1,0 +1,423 @@
+{
+ "seed": 20261111,
+ "pool_size": 11126,
+ "census": {
+  "debian/tmux": {
+   "listed": {
+    "functions_with_resolved_vars": 149,
+    "resolved_vars": 432,
+    "merged_changed_lines": 0,
+    "merged_changed_files": 0,
+    "raw_changed_lines": 0,
+    "raw_changed_files": 0,
+    "seconds": 15.37
+   },
+   "unlisted": {
+    "functions_with_resolved_vars": 1783,
+    "resolved_vars": 10204,
+    "merged_changed_lines": 5,
+    "merged_changed_files": 5,
+    "raw_changed_lines": 33,
+    "raw_changed_files": 31,
+    "seconds": 13.37
+   }
+  },
+  "debian/openssl": {
+   "listed": {
+    "functions_with_resolved_vars": 204,
+    "resolved_vars": 466,
+    "merged_changed_lines": 0,
+    "merged_changed_files": 0,
+    "raw_changed_lines": 0,
+    "raw_changed_files": 0,
+    "seconds": 8.18
+   },
+   "unlisted": {
+    "functions_with_resolved_vars": 1321,
+    "resolved_vars": 7417,
+    "merged_changed_lines": 0,
+    "merged_changed_files": 0,
+    "raw_changed_lines": 12,
+    "raw_changed_files": 11,
+    "seconds": 17.11
+   }
+  },
+  "debian/sqlite3": {
+   "listed": {
+    "functions_with_resolved_vars": 58,
+    "resolved_vars": 143,
+    "merged_changed_lines": 0,
+    "merged_changed_files": 0,
+    "raw_changed_lines": 0,
+    "raw_changed_files": 0,
+    "seconds": 3.13
+   },
+   "unlisted": {
+    "functions_with_resolved_vars": 399,
+    "resolved_vars": 2453,
+    "merged_changed_lines": 1,
+    "merged_changed_files": 1,
+    "raw_changed_lines": 6,
+    "raw_changed_files": 6,
+    "seconds": 0.73
+   }
+  },
+  "debian/redis-cli": {
+   "listed": {
+    "functions_with_resolved_vars": 195,
+    "resolved_vars": 817,
+    "merged_changed_lines": 0,
+    "merged_changed_files": 0,
+    "raw_changed_lines": 0,
+    "raw_changed_files": 0,
+    "seconds": 3.54
+   },
+   "unlisted": {
+    "functions_with_resolved_vars": 500,
+    "resolved_vars": 3223,
+    "merged_changed_lines": 1,
+    "merged_changed_files": 1,
+    "raw_changed_lines": 9,
+    "raw_changed_files": 8,
+    "seconds": 0.53
+   }
+  },
+  "debian/tree": {
+   "listed": {
+    "functions_with_resolved_vars": 145,
+    "resolved_vars": 753,
+    "merged_changed_lines": 0,
+    "merged_changed_files": 0,
+    "raw_changed_lines": 0,
+    "raw_changed_files": 0,
+    "seconds": 0.7
+   },
+   "unlisted": {
+    "functions_with_resolved_vars": 0,
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "merged_changed_files": 0,
+    "raw_changed_lines": 0,
+    "raw_changed_files": 0,
+    "seconds": 0.06
+   }
+  },
+  "mac/tmux": {
+   "listed": {
+    "functions_with_resolved_vars": 386,
+    "resolved_vars": 1398,
+    "merged_changed_lines": 0,
+    "merged_changed_files": 0,
+    "raw_changed_lines": 0,
+    "raw_changed_files": 0,
+    "seconds": 8.66
+   },
+   "unlisted": {
+    "functions_with_resolved_vars": 2153,
+    "resolved_vars": 12125,
+    "merged_changed_lines": 10,
+    "merged_changed_files": 9,
+    "raw_changed_lines": 41,
+    "raw_changed_files": 35,
+    "seconds": 7.11
+   }
+  },
+  "mac/htop": {
+   "listed": {
+    "functions_with_resolved_vars": 407,
+    "resolved_vars": 1723,
+    "merged_changed_lines": 0,
+    "merged_changed_files": 0,
+    "raw_changed_lines": 1,
+    "raw_changed_files": 1,
+    "seconds": 1.95
+   },
+   "unlisted": {
+    "functions_with_resolved_vars": 256,
+    "resolved_vars": 1199,
+    "merged_changed_lines": 0,
+    "merged_changed_files": 0,
+    "raw_changed_lines": 1,
+    "raw_changed_files": 1,
+    "seconds": 0.26
+   }
+  }
+ },
+ "sample": {
+  "n": 30,
+  "functions_with_change_merged": 0,
+  "functions_with_change_raw": 0,
+  "rows": [
+   {
+    "binary": "debian/tmux",
+    "name": "FUN_00157cb0",
+    "address": "00157cb0",
+    "resolved_vars": 12,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 4.222
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "ASN1_UTF8STRING_free",
+    "address": "0021dd40",
+    "resolved_vars": 1,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 9.402
+   },
+   {
+    "binary": "debian/redis-cli",
+    "name": "redisConnectUnixNonBlock",
+    "address": "00150240",
+    "resolved_vars": 1,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 1.954
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "CMS_decrypt_set1_key",
+    "address": "00147e78",
+    "resolved_vars": 6,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 6.312
+   },
+   {
+    "binary": "debian/tmux",
+    "name": "FUN_0016b4c0",
+    "address": "0016b4c0",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 3.85
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "TLS_server_method",
+    "address": "00220488",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 5.816
+   },
+   {
+    "binary": "mac/tmux",
+    "name": "FUN_10008b860",
+    "address": "10008b860",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 6.851
+   },
+   {
+    "binary": "mac/tmux",
+    "name": "FUN_10003e4ac",
+    "address": "10003e4ac",
+    "resolved_vars": 1,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 0.731
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "OSSL_CMP_CTX_push1_subjectAltName",
+    "address": "00145adc",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 17.437
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "OSSL_STORE_expect",
+    "address": "001491b0",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 9.414
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "EVP_CIPHER_get0_description",
+    "address": "00143e8c",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 10.778
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "SSL_CTX_set_generate_session_id",
+    "address": "001426b8",
+    "resolved_vars": 3,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 33.139
+   },
+   {
+    "binary": "debian/tmux",
+    "name": "FUN_001837c0",
+    "address": "001837c0",
+    "resolved_vars": 9,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 8.536
+   },
+   {
+    "binary": "debian/tmux",
+    "name": "FUN_00187c28",
+    "address": "00187c28",
+    "resolved_vars": 4,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 2.183
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "EVP_PKEY_meth_get0",
+    "address": "0021d458",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 22.99
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "TS_RESP_CTX_set_signer_digest",
+    "address": "001472f0",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 14.042
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "TS_RESP_CTX_set_status_info",
+    "address": "0021e758",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 13.001
+   },
+   {
+    "binary": "debian/sqlite3",
+    "name": "FUN_0010c740",
+    "address": "0010c740",
+    "resolved_vars": 1,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 2.027
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "SSL_get_certificate",
+    "address": "00145fd4",
+    "resolved_vars": 2,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 5.559
+   },
+   {
+    "binary": "mac/tmux",
+    "name": "FUN_100061e80",
+    "address": "100061e80",
+    "resolved_vars": 4,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 3.985
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "ERR_set_debug",
+    "address": "0021df78",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 5.369
+   },
+   {
+    "binary": "mac/tmux",
+    "name": "FUN_10001ec50",
+    "address": "10001ec50",
+    "resolved_vars": 6,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 3.004
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "X509_ATTRIBUTE_create",
+    "address": "00149c78",
+    "resolved_vars": 4,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 4.027
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "CMS_RecipientInfo_kari_get0_ctx",
+    "address": "00143ff0",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 0.917
+   },
+   {
+    "binary": "mac/tmux",
+    "name": "FUN_100079484",
+    "address": "100079484",
+    "resolved_vars": 19,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 1.668
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "OSSL_CMP_CTX_set1_serverPath",
+    "address": "00149f60",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 1.504
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "X509_STORE_CTX_new",
+    "address": "00144410",
+    "resolved_vars": 1,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 1.084
+   },
+   {
+    "binary": "debian/openssl",
+    "name": "EVP_PKEY_set_int_param",
+    "address": "00142d90",
+    "resolved_vars": 0,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 0.855
+   },
+   {
+    "binary": "debian/tmux",
+    "name": "FUN_0017ba40",
+    "address": "0017ba40",
+    "resolved_vars": 3,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 3.233
+   },
+   {
+    "binary": "mac/tmux",
+    "name": "FUN_10007b270",
+    "address": "10007b270",
+    "resolved_vars": 2,
+    "merged_changed_lines": 0,
+    "raw_changed_lines": 0,
+    "seconds": 2.751
+   }
+  ]
+ }
+}
