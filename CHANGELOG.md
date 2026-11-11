@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.21.2] - 2026-11-11 (ön ad düzeltmeleri)
+
+Yalnız hata düzeltmesi: 1.21.1 → 1.21.2. Ürün ölçümünün yeni kolu 1.21.1'de (commit 93a2956)
+koşuldu; bu iki düzeltme o ölçümde yoktur.
+
+### Düzeltilenler
+- ELF önyük adları baştaki alt çizgisi atılarak yazılıyordu (`_start` → `start`,
+  `__do_global_dtors_aux` → `do_global_dtors_aux`). Önyük adı artık tam ad türündedir ve
+  temizlenmeden yazılır (`karadul/reconstruction/tarif/baglama.py`, `EXACT_KINDS`). Geliştirme
+  setindeki keşif sayımı: 232/458 doğru; temizlenmeden yazılsa 458/458. Debian `tree`'de ad
+  haritasındaki fark yalnız bu iki anahtardır.
+- gnulib parmak izi `xstrtol_error` dizgiyi taşıyan yanlış fonksiyona ad veriyordu; bakılan her
+  GT'li korpusta 0 doğru verdiği için katalogdan çıkarıldı
+  (`karadul/analyzers/gnulib_fingerprints.py`). Geliştirme setinde hep yanlış görünen öbür üç
+  girdi (`version_etc`, `hard_locale`, `full_write`) LTO'lu Ubuntu derlemesinde doğru ad
+  verdiği için tutuldu; karar bekliyor. Kanıt: `docs/arge/2026-11-11_on_ad_onarimi/sonuc.md`.
+
 ## [1.21.1] - 2026-11-10 (kanıtlı adlandırma altyapısı + sürüm öncesi düzeltmeler)
 
 1.14.5 ile bu sürüm arasındaki değişiklikler bu dosyaya işlenmedi; ayrıntı için `git log` ve
