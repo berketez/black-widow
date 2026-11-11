@@ -6,7 +6,9 @@ Aşama 1a notu: ``docs/arge/2026-11-11_karadullm/asama1a.md``.
 Motor LLM'siz kalır: ``karadul/`` altındaki hiçbir motor modülü bu paketi içe aktarmaz (K-M1).
 Bu paket motor modüllerinden okuyabilir; tersi yasaktır.
 
-Modüller (bu aşamada):
+Aşama 1b notu: ``docs/arge/2026-11-11_karadullm/asama1b.md``.
+
+Modüller:
 
 - ``backend``: arka uç soyutlaması; yerel yalın ``llama-server``, kullanıcının OpenAI uyumlu ucu,
   testler için betikli sahte arka uç.
@@ -14,6 +16,11 @@ Modüller (bu aşamada):
 - ``memory_guard``: ``llama-server`` için RSS + footprint ölçümü ve eşik.
 - ``protocol``: tur şeması (düz ``anyOf`` zarfı), şema doğrulayıcı, cevap ayrıştırma, onarım kuralı.
 - ``audit``: denetim günlüğü (anahtar ve ham ikili verisi yazılmaz).
+- ``context``: sabit önek (sistem istemi KL-0 + araç tanımları), kanıt paketi metni (pilot biçimi),
+  veri / talimat ayrımı (kaçışlama, sarmalama), kod kırpma, bağlam bütçesi.
+- ``tools``: araç kaydı, saklı çalışma alanının salt okunur görünümü ve üç okuyan araç
+  (``get_evidence``, ``get_decompiled``, ``get_xrefs``).
+- ``agent``: K0 iş akışı ve bütçeli döngü (K1 / K2 öntanımlı kapalı).
 
 İçe aktarma yan etkisizdir: sunucu başlatılmaz, ağ açılmaz, dosya yazılmaz. Alt modüller burada
 içe aktarılmaz; yalnız sabitler tanımlıdır.
@@ -82,13 +89,62 @@ ERROR_EXCERPT_CHARS = 300
 # Aşama 1b: bağlam, okuyan araçlar, K0 iş akışı ve bütçeli döngü (asama1b.md)
 # ============================================================================================
 
+# --- Pilot kopyaları (llm_pilot.py; eşitliği tests/test_lm_context.py ile kilitli) ------------
+CODE_LIMIT_BYTES = 9000         # llm_pilot.py:60 KOD_SINIR; tek atış kipinde kod tavanı
+CODE_HEAD_BYTES = 7000          # llm_pilot.py:61 KOD_BAS
+CODE_TAIL_BYTES = 2000          # llm_pilot.py:62 KOD_SON
+EVIDENCE_MAX_CALLEES = 40       # llm_pilot.py:463
+EVIDENCE_MAX_CALLERS = 30       # llm_pilot.py:464
+EVIDENCE_MAX_CALLBACKS = 20     # llm_pilot.py:465-466
+EVIDENCE_MAX_STRINGS = 40       # llm_pilot.py:467
+EVIDENCE_STRING_CHARS = 120     # llm_pilot.py:460
+EVIDENCE_MAX_CONSTANTS = 20     # llm_pilot.py:468
+EVIDENCE_API_LIMIT = 10**6      # llm_pilot.py:462: kütüphane çağrıları listesi fiilen sınırsız
+
 # --- Tasarım tanımları -----------------------------------------------------------------------
 MAX_TOOL_CALLS = 8              # §2.3 araç çağrısı / görev (pilot_protokolu.md §15)
+MAX_TOOL_CALLS_K1 = 2           # §2.3 K1: en çok 2 ek bakış
+CONTEXT_TOKENS_K2 = 16384       # §2.3 K2 bağlamı
+CONTEXT_TOKENS_K2_FALLBACK = 12288  # §2.3 bellek kapısı tutmazsa
+XREFS_MAX_ROWS = 30             # arac_sozlesmeleri.md O3: limit ≤ 30
+# §2.3 bağlam bütçesi dilimleri (K2, jeton). Toplam 15.972 (testle kilitli).
+BUDGET_PREFIX_TOKENS = 2200
+BUDGET_SESSION_TOKENS = 600
+BUDGET_PACKAGE_TOKENS = 4100
+BUDGET_TOOL_RESULTS_TOKENS = 6000
+BUDGET_OUTPUT_TOKENS = 2560
+BUDGET_MARGIN_TOKENS = 512
+# Jeton kestirimi [tahmin]: gerçek sayı her zaman ucun `usage` alanından okunur (§2.3).
+BYTES_PER_TOKEN_CODE = 1.5      # arac_sozlesmeleri.md §2: kod, 9.000 bayt ≈ 6.000 jeton
+BYTES_PER_TOKEN_TEXT = 4.294    # tasarım §4.1: sistem_ortak.txt 1.331 bayt = 310 jeton
+
+# --- Tasarım seçimleri [seçim] ---------------------------------------------------------------
+LOOP_CODE_LIMIT_BYTES = 4500    # §4.3, arac_sozlesmeleri.md O2: döngü kipinde çağrı başına kod
+TIME_BUDGET_FACTOR = 4.0        # §2.3 süre / görev: beklenen sürenin 4 katı
 
 # --- Bu işin eşikleri [bu iş] (asama1b.md §2) ------------------------------------------------
 # `kanit` dizisinin üst sınırı: bir görevde en çok MAX_TOOL_CALLS araç sonucu + paketin iki sonucu
 # (get_evidence, get_decompiled) olabilir. Gerçek sınır istek başına verilen kimlik sayısıdır;
 # bu değer onun tavanıdır.
 REFS_MAX_ITEMS = MAX_TOOL_CALLS + 2
+# Araç sonucunun (serileştirilmiş zarf) bayt tavanı; sözleşme get_evidence için sayı sınırı veriyor,
+# bayt sınırı vermiyor. Sayı sınırlarıyla en kötü durum kestirimi bu tavanın altında kalmazsa liste
+# sınırları yarılanır ve `truncated` dolar (sessiz kesme yok).
+EVIDENCE_RESULT_MAX_BYTES = 16000
+# get_evidence boyut hesabında zarfın veri dışı alanları (id, tool, ok, kind, source) için pay.
+ENVELOPE_OVERHEAD_BYTES = 256
+# get_xrefs: satır başına en çok ~190 bayt (FUN_ + 16 basamak + etiketli 128 karakterlik ad) × 30
+# satır + zarf.
+XREFS_RESULT_MAX_BYTES = 8000
+# get_decompiled: kod en çok CODE_LIMIT_BYTES (+ kırpma satırı). JSON kaçışı bir baytı en çok altı
+# bayta çıkarır (\uXXXX); tavan bu en kötü durumun üstündedir, yani yalnız araç hatasında tetiklenir.
+DECOMPILED_RESULT_MAX_BYTES = 6 * (CODE_LIMIT_BYTES + 200) + 4096
+# get_decompiled.ghidra_warnings: en çok bu kadar ayrı uyarı, her biri en çok bu kadar karakter.
+WARNINGS_MAX_ITEMS = 8
+WARNING_MAX_CHARS = 160
+# Kanıt paketine giren adın en büyük uzunluğu; daha uzun ya da tanımlayıcı olmayan ad gösterilmez.
+NAME_TAG_MAX_CHARS = 128
+# get_decompiled satır numarası argümanlarının şema tavanı.
+LINE_NUMBER_MAX = 999999
 
 __all__: list[str] = []
