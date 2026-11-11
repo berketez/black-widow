@@ -218,7 +218,9 @@ class MarkdownReporter:
         strings = stats.get('strings_found', stats.get('ghidra_string_count', stats.get('string_count', stats.get('strings', 0))))
         lines.append(f"- **Functions found:** {functions}")
         lines.append(f"- **Strings found:** {strings}")
-        lines.append(f"- **Imports found:** {_safe_get(stats, 'imports_found', '0')}")
+        # imports_found yalnız ithal listesi okunduğunda yazılır (analyzers/macho.py); yoksa sayı
+        # bilinmiyor: 0 değil "N/A" (reporting/json_report.py summary.total_imports ile aynı).
+        lines.append(f"- **Imports found:** {_safe_get(stats, 'imports_found')}")
 
         if "webpack_modules" in stats:
             lines.append(f"- **Webpack modules:** {stats['webpack_modules']}")

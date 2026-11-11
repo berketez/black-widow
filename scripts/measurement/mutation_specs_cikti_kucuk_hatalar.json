@@ -1,0 +1,21 @@
+{
+ "_comment": "Çıktıdaki beş küçük hata (2026-11-11; docs/arge/2026-11-11_cikti_kucuk_hatalar/sonuc.md): Markdown ithal sayısı, ELF kitaplık listesi, stripped ELF simgeleri, CLI ithal satırı, HTML ad tablosu başlığı. Her mutantın find/replace uzunluğu farklıdır. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_cikti_kucuk_hatalar.json",
+ "mutants": [
+  {
+   "id": "ck_md_ithal_sifir_ontanimli",
+   "desc": "Markdown ithal sayısı bilinmiyorken 0 yazar (onarım öncesi davranış)",
+   "module": "karadul/reporting/markdown_report.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestMarkdownImports::test_bilinmiyorsa_sifir_degil",
+   "find": "{_safe_get(stats, 'imports_found')}",
+   "replace": "{_safe_get(stats, 'imports_found', '0')}"
+  },
+  {
+   "id": "ck_md_ithal_sayi_yazilmaz",
+   "desc": "Markdown ithal sayısı hep N/A yazar (değer okunmaz)",
+   "module": "karadul/reporting/markdown_report.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestMarkdownImports::test_sayi_varsa_yazilir",
+   "find": "{_safe_get(stats, 'imports_found')}",
+   "replace": "{'N/A'}"
+  }
+ ]
+}
