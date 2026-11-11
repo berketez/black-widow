@@ -1,0 +1,8051 @@
+{
+ "birimler": {
+  "debian/coreutils": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 3684,
+     "aile_1": 6894,
+     "aile_2": 2676,
+     "aile_3": 195,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ikisi",
+       2620
+      ],
+      [
+       "yok|yok|ic",
+       2452
+      ],
+      [
+       "cagri_sonucu|diger|ikisi",
+       770
+      ],
+      [
+       "yok|yok|lib",
+       596
+      ],
+      [
+       "yok|diger|ikisi",
+       575
+      ]
+     ],
+     "entropi_bit_birlesik": 4.4749,
+     "farkli_uclu": 95,
+     "fonksiyon": 13449,
+     "ikili_ici_en_sik_uclu_payi": 0.1985
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 174,
+     "a1&a4": 4,
+     "a1&a5": 260,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 61,
+     "a2&a4": 9,
+     "a2&a5": 0,
+     "a2&a6": 20,
+     "a2&ty": 0,
+     "a3&a4": 237,
+     "a3&a5": 374,
+     "a3&a6": 43,
+     "a3&ty": 0,
+     "a4&a5": 235,
+     "a4&a6": 1795,
+     "a4&ty": 0,
+     "a5&a6": 49,
+     "a5&ty": 0,
+     "a6&ty": 0
+    },
+    "n": 13449,
+    "oran": {
+     "a1": 0.0193,
+     "a1_al": 0.0065,
+     "a1_al_saf": 0.0059,
+     "a1_yaz_cok": 0.0022,
+     "a1_yaz_tek": 0.0011,
+     "a1_yuklem": 0.0095,
+     "a1g_yuklem_okur_cagrili": 0.0019,
+     "a2": 0.0123,
+     "a2_birakir": 0.005,
+     "a2_birakir_her_yolda": 0.005,
+     "a2_buyutur": 0.0004,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0069,
+     "a2g_alan_birak_genis": 0.0022,
+     "a3": 0.1435,
+     "a3_iki_ofset": 0.1194,
+     "a3_sifir_disi": 0.1435,
+     "a3_var": 0.3081,
+     "a3_yazar": 0.1183,
+     "a4": 0.3302,
+     "a4_degisken": 0.3302,
+     "a4_paylasimli": 0.3038,
+     "a4_sabit_veri": 0.1196,
+     "a4_sabit_veri_ddalsiz": 0.1037,
+     "a4_yazar": 0.0802,
+     "a5": 0.1194,
+     "a5_donmez": 0.0213,
+     "a5_param_yazar": 0.009,
+     "a5_sabit_bos": 0.0007,
+     "a5_ye_gecisli": 0.0219,
+     "a5_ye_yerel": 0.0673,
+     "a6": 0.3292,
+     "a6_ic": 0.2289,
+     "a6_lib": 0.1004,
+     "a6_lib_ayirici": 0.0707,
+     "a6_lib_birakici": 0.0027,
+     "a6_sarma_kullanan": 0.041,
+     "a6g_ic_genis": 0.2629,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.7261,
+     "en_az_bir_a1_a2_a6": 0.3594,
+     "en_az_bir_a3_a5siz": 0.5552,
+     "en_az_bir_a5siz": 0.6609,
+     "en_az_bir_ty_dahil": 0.7261,
+     "ty": 0.0,
+     "ty_dizgili": 0.0,
+     "ty_kayit": 0.0173,
+     "v1_create_genis": 0.0074,
+     "v1_destroy": 0.005,
+     "v1_init": 0.0091,
+     "v1_is": 0.0262,
+     "v1_kalip1_is": 0.0166,
+     "v1_kalip2_init": 0.0009,
+     "v1_kalip3_arg": 0.002,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0061,
+     "yalniz:a3": 0.0916,
+     "yalniz:a4": 0.1614,
+     "yalniz:a5": 0.0652,
+     "yalniz:a6": 0.1883,
+     "yalniz:ty": 0.0
+    },
+    "satirsiz": {
+     "I": 717,
+     "K": 2671,
+     "Y": 296,
+     "n": 3684
+    },
+    "sayi": {
+     "a1": 260,
+     "a1_al": 88,
+     "a1_al_saf": 80,
+     "a1_yaz_cok": 29,
+     "a1_yaz_tek": 15,
+     "a1_yuklem": 128,
+     "a1g_yuklem_okur_cagrili": 25,
+     "a2": 166,
+     "a2_birakir": 67,
+     "a2_birakir_her_yolda": 67,
+     "a2_buyutur": 6,
+     "a2_sokum": 0,
+     "a2_taze": 93,
+     "a2g_alan_birak_genis": 30,
+     "a3": 1930,
+     "a3_iki_ofset": 1606,
+     "a3_sifir_disi": 1930,
+     "a3_var": 4143,
+     "a3_yazar": 1591,
+     "a4": 4441,
+     "a4_degisken": 4441,
+     "a4_paylasimli": 4086,
+     "a4_sabit_veri": 1609,
+     "a4_sabit_veri_ddalsiz": 1395,
+     "a4_yazar": 1078,
+     "a5": 1606,
+     "a5_donmez": 286,
+     "a5_param_yazar": 121,
+     "a5_sabit_bos": 9,
+     "a5_ye_gecisli": 294,
+     "a5_ye_yerel": 905,
+     "a6": 4428,
+     "a6_ic": 3078,
+     "a6_lib": 1350,
+     "a6_lib_ayirici": 951,
+     "a6_lib_birakici": 36,
+     "a6_sarma_kullanan": 552,
+     "a6g_ic_genis": 3536,
+     "disasm_yok": 0,
+     "en_az_bir": 9765,
+     "en_az_bir_a1_a2_a6": 4834,
+     "en_az_bir_a3_a5siz": 7467,
+     "en_az_bir_a5siz": 8888,
+     "en_az_bir_ty_dahil": 9765,
+     "ty": 0,
+     "ty_dizgili": 0,
+     "ty_kayit": 232,
+     "v1_create_genis": 99,
+     "v1_destroy": 67,
+     "v1_init": 123,
+     "v1_is": 353,
+     "v1_kalip1_is": 223,
+     "v1_kalip2_init": 12,
+     "v1_kalip3_arg": 27,
+     "yalniz:a1": 0,
+     "yalniz:a2": 82,
+     "yalniz:a3": 1232,
+     "yalniz:a4": 2170,
+     "yalniz:a5": 877,
+     "yalniz:a6": 2533,
+     "yalniz:ty": 0
+    },
+    "sinif": {
+     "I": 3193,
+     "K": 8062,
+     "Y": 2194
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 260
+     },
+     "a2": {
+      "I": 8,
+      "K": 158,
+      "Y": 0
+     },
+     "a3": {
+      "I": 224,
+      "K": 1287,
+      "Y": 419
+     },
+     "a4": {
+      "I": 1322,
+      "K": 2262,
+      "Y": 857
+     },
+     "a5": {
+      "I": 111,
+      "K": 469,
+      "Y": 1026
+     },
+     "a6": {
+      "I": 2105,
+      "K": 2210,
+      "Y": 113
+     },
+     "en_az_bir": {
+      "I": 2476,
+      "K": 5391,
+      "Y": 1898
+     },
+     "ty": {
+      "I": 0,
+      "K": 0,
+      "Y": 0
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 3693,
+     "aile_1": 6918,
+     "aile_2": 2679,
+     "aile_3": 195,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ikisi",
+       2623
+      ],
+      [
+       "yok|yok|ic",
+       2452
+      ],
+      [
+       "cagri_sonucu|diger|ikisi",
+       779
+      ],
+      [
+       "yok|yok|lib",
+       596
+      ],
+      [
+       "yok|diger|ikisi",
+       581
+      ]
+     ],
+     "entropi_bit_birlesik": 4.4762,
+     "farkli_uclu": 95,
+     "fonksiyon": 13485,
+     "ikili_ici_en_sik_uclu_payi": 0.198
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 174,
+     "a1&a4": 4,
+     "a1&a5": 260,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 61,
+     "a2&a4": 9,
+     "a2&a5": 0,
+     "a2&a6": 20,
+     "a2&ty": 0,
+     "a3&a4": 237,
+     "a3&a5": 374,
+     "a3&a6": 43,
+     "a3&ty": 0,
+     "a4&a5": 238,
+     "a4&a6": 1795,
+     "a4&ty": 0,
+     "a5&a6": 49,
+     "a5&ty": 0,
+     "a6&ty": 0
+    },
+    "n": 13485,
+    "oran": {
+     "a1": 0.0193,
+     "a1_al": 0.0065,
+     "a1_al_saf": 0.0059,
+     "a1_yaz_cok": 0.0022,
+     "a1_yaz_tek": 0.0011,
+     "a1_yuklem": 0.0095,
+     "a1g_yuklem_okur_cagrili": 0.0019,
+     "a2": 0.0123,
+     "a2_birakir": 0.005,
+     "a2_birakir_her_yolda": 0.005,
+     "a2_buyutur": 0.0004,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0069,
+     "a2g_alan_birak_genis": 0.0022,
+     "a3": 0.1433,
+     "a3_iki_ofset": 0.1193,
+     "a3_sifir_disi": 0.1433,
+     "a3_var": 0.3083,
+     "a3_yazar": 0.1182,
+     "a4": 0.3309,
+     "a4_degisken": 0.3309,
+     "a4_paylasimli": 0.3043,
+     "a4_sabit_veri": 0.1204,
+     "a4_sabit_veri_ddalsiz": 0.1043,
+     "a4_yazar": 0.0802,
+     "a5": 0.1195,
+     "a5_donmez": 0.0217,
+     "a5_param_yazar": 0.009,
+     "a5_sabit_bos": 0.0007,
+     "a5_ye_gecisli": 0.0218,
+     "a5_ye_yerel": 0.0671,
+     "a6": 0.3284,
+     "a6_ic": 0.2283,
+     "a6_lib": 0.1001,
+     "a6_lib_ayirici": 0.0705,
+     "a6_lib_birakici": 0.0027,
+     "a6_sarma_kullanan": 0.0412,
+     "a6g_ic_genis": 0.2622,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.7261,
+     "en_az_bir_a1_a2_a6": 0.3585,
+     "en_az_bir_a3_a5siz": 0.5553,
+     "en_az_bir_a5siz": 0.6609,
+     "en_az_bir_ty_dahil": 0.7261,
+     "ty": 0.0,
+     "ty_dizgili": 0.0,
+     "ty_kayit": 0.0172,
+     "v1_create_genis": 0.0073,
+     "v1_destroy": 0.005,
+     "v1_init": 0.0091,
+     "v1_is": 0.0262,
+     "v1_kalip1_is": 0.0165,
+     "v1_kalip2_init": 0.0009,
+     "v1_kalip3_arg": 0.002,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0061,
+     "yalniz:a3": 0.0916,
+     "yalniz:a4": 0.1623,
+     "yalniz:a5": 0.0653,
+     "yalniz:a6": 0.1878,
+     "yalniz:ty": 0.0
+    },
+    "satirsiz": {
+     "I": 717,
+     "K": 2680,
+     "Y": 296,
+     "n": 3693
+    },
+    "sayi": {
+     "a1": 260,
+     "a1_al": 88,
+     "a1_al_saf": 80,
+     "a1_yaz_cok": 29,
+     "a1_yaz_tek": 15,
+     "a1_yuklem": 128,
+     "a1g_yuklem_okur_cagrili": 25,
+     "a2": 166,
+     "a2_birakir": 67,
+     "a2_birakir_her_yolda": 67,
+     "a2_buyutur": 6,
+     "a2_sokum": 0,
+     "a2_taze": 93,
+     "a2g_alan_birak_genis": 30,
+     "a3": 1933,
+     "a3_iki_ofset": 1609,
+     "a3_sifir_disi": 1933,
+     "a3_var": 4158,
+     "a3_yazar": 1594,
+     "a4": 4462,
+     "a4_degisken": 4462,
+     "a4_paylasimli": 4104,
+     "a4_sabit_veri": 1624,
+     "a4_sabit_veri_ddalsiz": 1407,
+     "a4_yazar": 1081,
+     "a5": 1612,
+     "a5_donmez": 292,
+     "a5_param_yazar": 121,
+     "a5_sabit_bos": 9,
+     "a5_ye_gecisli": 294,
+     "a5_ye_yerel": 905,
+     "a6": 4428,
+     "a6_ic": 3078,
+     "a6_lib": 1350,
+     "a6_lib_ayirici": 951,
+     "a6_lib_birakici": 36,
+     "a6_sarma_kullanan": 555,
+     "a6g_ic_genis": 3536,
+     "disasm_yok": 0,
+     "en_az_bir": 9792,
+     "en_az_bir_a1_a2_a6": 4834,
+     "en_az_bir_a3_a5siz": 7488,
+     "en_az_bir_a5siz": 8912,
+     "en_az_bir_ty_dahil": 9792,
+     "ty": 0,
+     "ty_dizgili": 0,
+     "ty_kayit": 232,
+     "v1_create_genis": 99,
+     "v1_destroy": 67,
+     "v1_init": 123,
+     "v1_is": 353,
+     "v1_kalip1_is": 223,
+     "v1_kalip2_init": 12,
+     "v1_kalip3_arg": 27,
+     "yalniz:a1": 0,
+     "yalniz:a2": 82,
+     "yalniz:a3": 1235,
+     "yalniz:a4": 2188,
+     "yalniz:a5": 880,
+     "yalniz:a6": 2533,
+     "yalniz:ty": 0
+    },
+    "sinif": {
+     "I": 3193,
+     "K": 8092,
+     "Y": 2200
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 260
+     },
+     "a2": {
+      "I": 8,
+      "K": 158,
+      "Y": 0
+     },
+     "a3": {
+      "I": 224,
+      "K": 1290,
+      "Y": 419
+     },
+     "a4": {
+      "I": 1322,
+      "K": 2277,
+      "Y": 863
+     },
+     "a5": {
+      "I": 111,
+      "K": 475,
+      "Y": 1026
+     },
+     "a6": {
+      "I": 2105,
+      "K": 2210,
+      "Y": 113
+     },
+     "en_az_bir": {
+      "I": 2476,
+      "K": 5412,
+      "Y": 1904
+     },
+     "ty": {
+      "I": 0,
+      "K": 0,
+      "Y": 0
+     }
+    }
+   }
+  },
+  "debian/htop": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 40,
+     "aile_1": 159,
+     "aile_2": 33,
+     "aile_3": 2,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       50
+      ],
+      [
+       "yok|yok|ikisi",
+       26
+      ],
+      [
+       "yok|diger|ic",
+       19
+      ],
+      [
+       "yok|diger|ikisi",
+       16
+      ],
+      [
+       "sabit|diger|ic",
+       8
+      ]
+     ],
+     "entropi_bit_birlesik": 4.4716,
+     "farkli_uclu": 45,
+     "fonksiyon": 234,
+     "ikili_ici_en_sik_uclu_payi": 0.2137
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 1,
+     "a1&a4": 0,
+     "a1&a5": 1,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 7,
+     "a2&a4": 0,
+     "a2&a5": 0,
+     "a2&a6": 1,
+     "a2&ty": 0,
+     "a3&a4": 15,
+     "a3&a5": 9,
+     "a3&a6": 3,
+     "a3&ty": 20,
+     "a4&a5": 0,
+     "a4&a6": 2,
+     "a4&ty": 6,
+     "a5&a6": 0,
+     "a5&ty": 0,
+     "a6&ty": 9
+    },
+    "n": 234,
+    "oran": {
+     "a1": 0.0043,
+     "a1_al": 0.0,
+     "a1_al_saf": 0.0,
+     "a1_yaz_cok": 0.0,
+     "a1_yaz_tek": 0.0043,
+     "a1_yuklem": 0.0,
+     "a1g_yuklem_okur_cagrili": 0.0043,
+     "a2": 0.0598,
+     "a2_birakir": 0.0598,
+     "a2_birakir_her_yolda": 0.0598,
+     "a2_buyutur": 0.0,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0,
+     "a2g_alan_birak_genis": 0.0128,
+     "a3": 0.6752,
+     "a3_iki_ofset": 0.4957,
+     "a3_sifir_disi": 0.6752,
+     "a3_var": 0.7821,
+     "a3_yazar": 0.2479,
+     "a4": 0.1111,
+     "a4_degisken": 0.1111,
+     "a4_paylasimli": 0.0983,
+     "a4_sabit_veri": 0.2393,
+     "a4_sabit_veri_ddalsiz": 0.2222,
+     "a4_yazar": 0.0556,
+     "a5": 0.0769,
+     "a5_donmez": 0.0,
+     "a5_param_yazar": 0.0427,
+     "a5_sabit_bos": 0.0214,
+     "a5_ye_gecisli": 0.0085,
+     "a5_ye_yerel": 0.0256,
+     "a6": 0.0598,
+     "a6_ic": 0.0513,
+     "a6_lib": 0.0085,
+     "a6_lib_ayirici": 0.0,
+     "a6_lib_birakici": 0.0043,
+     "a6_sarma_kullanan": 0.2735,
+     "a6g_ic_genis": 0.0769,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.8291,
+     "en_az_bir_a1_a2_a6": 0.1197,
+     "en_az_bir_a3_a5siz": 0.2222,
+     "en_az_bir_a5siz": 0.7906,
+     "en_az_bir_ty_dahil": 0.8291,
+     "ty": 0.1368,
+     "ty_dizgili": 0.1368,
+     "ty_kayit": 0.2735,
+     "v1_create_genis": 0.0,
+     "v1_destroy": 0.0598,
+     "v1_init": 0.0427,
+     "v1_is": 0.0214,
+     "v1_kalip1_is": 0.0214,
+     "v1_kalip2_init": 0.0043,
+     "v1_kalip3_arg": 0.047,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0299,
+     "yalniz:a3": 0.5342,
+     "yalniz:a4": 0.0385,
+     "yalniz:a5": 0.0385,
+     "yalniz:a6": 0.0385,
+     "yalniz:ty": 0.0
+    },
+    "satirsiz": {
+     "I": 18,
+     "K": 17,
+     "Y": 5,
+     "n": 40
+    },
+    "sayi": {
+     "a1": 1,
+     "a1_al": 0,
+     "a1_al_saf": 0,
+     "a1_yaz_cok": 0,
+     "a1_yaz_tek": 1,
+     "a1_yuklem": 0,
+     "a1g_yuklem_okur_cagrili": 1,
+     "a2": 14,
+     "a2_birakir": 14,
+     "a2_birakir_her_yolda": 14,
+     "a2_buyutur": 0,
+     "a2_sokum": 0,
+     "a2_taze": 0,
+     "a2g_alan_birak_genis": 3,
+     "a3": 158,
+     "a3_iki_ofset": 116,
+     "a3_sifir_disi": 158,
+     "a3_var": 183,
+     "a3_yazar": 58,
+     "a4": 26,
+     "a4_degisken": 26,
+     "a4_paylasimli": 23,
+     "a4_sabit_veri": 56,
+     "a4_sabit_veri_ddalsiz": 52,
+     "a4_yazar": 13,
+     "a5": 18,
+     "a5_donmez": 0,
+     "a5_param_yazar": 10,
+     "a5_sabit_bos": 5,
+     "a5_ye_gecisli": 2,
+     "a5_ye_yerel": 6,
+     "a6": 14,
+     "a6_ic": 12,
+     "a6_lib": 2,
+     "a6_lib_ayirici": 0,
+     "a6_lib_birakici": 1,
+     "a6_sarma_kullanan": 64,
+     "a6g_ic_genis": 18,
+     "disasm_yok": 0,
+     "en_az_bir": 194,
+     "en_az_bir_a1_a2_a6": 28,
+     "en_az_bir_a3_a5siz": 52,
+     "en_az_bir_a5siz": 185,
+     "en_az_bir_ty_dahil": 194,
+     "ty": 32,
+     "ty_dizgili": 32,
+     "ty_kayit": 64,
+     "v1_create_genis": 0,
+     "v1_destroy": 14,
+     "v1_init": 10,
+     "v1_is": 5,
+     "v1_kalip1_is": 5,
+     "v1_kalip2_init": 1,
+     "v1_kalip3_arg": 11,
+     "yalniz:a1": 0,
+     "yalniz:a2": 7,
+     "yalniz:a3": 125,
+     "yalniz:a4": 9,
+     "yalniz:a5": 9,
+     "yalniz:a6": 9,
+     "yalniz:ty": 0
+    },
+    "sinif": {
+     "I": 107,
+     "K": 101,
+     "Y": 26
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 1
+     },
+     "a2": {
+      "I": 0,
+      "K": 14,
+      "Y": 0
+     },
+     "a3": {
+      "I": 76,
+      "K": 71,
+      "Y": 11
+     },
+     "a4": {
+      "I": 12,
+      "K": 12,
+      "Y": 2
+     },
+     "a5": {
+      "I": 1,
+      "K": 4,
+      "Y": 13
+     },
+     "a6": {
+      "I": 12,
+      "K": 2,
+      "Y": 0
+     },
+     "en_az_bir": {
+      "I": 89,
+      "K": 84,
+      "Y": 21
+     },
+     "ty": {
+      "I": 21,
+      "K": 9,
+      "Y": 2
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 40,
+     "aile_1": 162,
+     "aile_2": 35,
+     "aile_3": 2,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       50
+      ],
+      [
+       "yok|yok|ikisi",
+       26
+      ],
+      [
+       "yok|diger|ic",
+       19
+      ],
+      [
+       "yok|diger|ikisi",
+       16
+      ],
+      [
+       "sabit|diger|ic",
+       8
+      ]
+     ],
+     "entropi_bit_birlesik": 4.5226,
+     "farkli_uclu": 47,
+     "fonksiyon": 239,
+     "ikili_ici_en_sik_uclu_payi": 0.2092
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 1,
+     "a1&a4": 0,
+     "a1&a5": 1,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 7,
+     "a2&a4": 0,
+     "a2&a5": 0,
+     "a2&a6": 1,
+     "a2&ty": 0,
+     "a3&a4": 15,
+     "a3&a5": 10,
+     "a3&a6": 3,
+     "a3&ty": 20,
+     "a4&a5": 1,
+     "a4&a6": 2,
+     "a4&ty": 6,
+     "a5&a6": 0,
+     "a5&ty": 0,
+     "a6&ty": 9
+    },
+    "n": 239,
+    "oran": {
+     "a1": 0.0042,
+     "a1_al": 0.0,
+     "a1_al_saf": 0.0,
+     "a1_yaz_cok": 0.0,
+     "a1_yaz_tek": 0.0042,
+     "a1_yuklem": 0.0,
+     "a1g_yuklem_okur_cagrili": 0.0042,
+     "a2": 0.0586,
+     "a2_birakir": 0.0586,
+     "a2_birakir_her_yolda": 0.0586,
+     "a2_buyutur": 0.0,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0,
+     "a2g_alan_birak_genis": 0.0126,
+     "a3": 0.6695,
+     "a3_iki_ofset": 0.4895,
+     "a3_sifir_disi": 0.6695,
+     "a3_var": 0.7741,
+     "a3_yazar": 0.2469,
+     "a4": 0.1213,
+     "a4_degisken": 0.1213,
+     "a4_paylasimli": 0.1088,
+     "a4_sabit_veri": 0.2343,
+     "a4_sabit_veri_ddalsiz": 0.2176,
+     "a4_yazar": 0.0544,
+     "a5": 0.0837,
+     "a5_donmez": 0.0042,
+     "a5_param_yazar": 0.0418,
+     "a5_sabit_bos": 0.0209,
+     "a5_ye_gecisli": 0.0084,
+     "a5_ye_yerel": 0.0293,
+     "a6": 0.0586,
+     "a6_ic": 0.0502,
+     "a6_lib": 0.0084,
+     "a6_lib_ayirici": 0.0,
+     "a6_lib_birakici": 0.0042,
+     "a6_sarma_kullanan": 0.2678,
+     "a6g_ic_genis": 0.0753,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.8326,
+     "en_az_bir_a1_a2_a6": 0.1172,
+     "en_az_bir_a3_a5siz": 0.2301,
+     "en_az_bir_a5siz": 0.795,
+     "en_az_bir_ty_dahil": 0.8326,
+     "ty": 0.1339,
+     "ty_dizgili": 0.1339,
+     "ty_kayit": 0.2678,
+     "v1_create_genis": 0.0,
+     "v1_destroy": 0.0586,
+     "v1_init": 0.0418,
+     "v1_is": 0.0209,
+     "v1_kalip1_is": 0.0209,
+     "v1_kalip2_init": 0.0042,
+     "v1_kalip3_arg": 0.046,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0293,
+     "yalniz:a3": 0.5272,
+     "yalniz:a4": 0.046,
+     "yalniz:a5": 0.0377,
+     "yalniz:a6": 0.0377,
+     "yalniz:ty": 0.0
+    },
+    "satirsiz": {
+     "I": 18,
+     "K": 17,
+     "Y": 5,
+     "n": 40
+    },
+    "sayi": {
+     "a1": 1,
+     "a1_al": 0,
+     "a1_al_saf": 0,
+     "a1_yaz_cok": 0,
+     "a1_yaz_tek": 1,
+     "a1_yuklem": 0,
+     "a1g_yuklem_okur_cagrili": 1,
+     "a2": 14,
+     "a2_birakir": 14,
+     "a2_birakir_her_yolda": 14,
+     "a2_buyutur": 0,
+     "a2_sokum": 0,
+     "a2_taze": 0,
+     "a2g_alan_birak_genis": 3,
+     "a3": 160,
+     "a3_iki_ofset": 117,
+     "a3_sifir_disi": 160,
+     "a3_var": 185,
+     "a3_yazar": 59,
+     "a4": 29,
+     "a4_degisken": 29,
+     "a4_paylasimli": 26,
+     "a4_sabit_veri": 56,
+     "a4_sabit_veri_ddalsiz": 52,
+     "a4_yazar": 13,
+     "a5": 20,
+     "a5_donmez": 1,
+     "a5_param_yazar": 10,
+     "a5_sabit_bos": 5,
+     "a5_ye_gecisli": 2,
+     "a5_ye_yerel": 7,
+     "a6": 14,
+     "a6_ic": 12,
+     "a6_lib": 2,
+     "a6_lib_ayirici": 0,
+     "a6_lib_birakici": 1,
+     "a6_sarma_kullanan": 64,
+     "a6g_ic_genis": 18,
+     "disasm_yok": 0,
+     "en_az_bir": 199,
+     "en_az_bir_a1_a2_a6": 28,
+     "en_az_bir_a3_a5siz": 55,
+     "en_az_bir_a5siz": 190,
+     "en_az_bir_ty_dahil": 199,
+     "ty": 32,
+     "ty_dizgili": 32,
+     "ty_kayit": 64,
+     "v1_create_genis": 0,
+     "v1_destroy": 14,
+     "v1_init": 10,
+     "v1_is": 5,
+     "v1_kalip1_is": 5,
+     "v1_kalip2_init": 1,
+     "v1_kalip3_arg": 11,
+     "yalniz:a1": 0,
+     "yalniz:a2": 7,
+     "yalniz:a3": 126,
+     "yalniz:a4": 11,
+     "yalniz:a5": 9,
+     "yalniz:a6": 9,
+     "yalniz:ty": 0
+    },
+    "sinif": {
+     "I": 107,
+     "K": 103,
+     "Y": 29
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 1
+     },
+     "a2": {
+      "I": 0,
+      "K": 14,
+      "Y": 0
+     },
+     "a3": {
+      "I": 76,
+      "K": 72,
+      "Y": 12
+     },
+     "a4": {
+      "I": 12,
+      "K": 13,
+      "Y": 4
+     },
+     "a5": {
+      "I": 1,
+      "K": 5,
+      "Y": 14
+     },
+     "a6": {
+      "I": 12,
+      "K": 2,
+      "Y": 0
+     },
+     "en_az_bir": {
+      "I": 89,
+      "K": 86,
+      "Y": 24
+     },
+     "ty": {
+      "I": 21,
+      "K": 9,
+      "Y": 2
+     }
+    }
+   }
+  },
+  "debian/openssl": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 284,
+     "aile_1": 235,
+     "aile_2": 32,
+     "aile_3": 4,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "cagri_sonucu|yok|ikisi",
+       66
+      ],
+      [
+       "cagri_sonucu|yok|lib",
+       56
+      ],
+      [
+       "bilinmez|diger|ikisi",
+       34
+      ],
+      [
+       "yok|yok|lib",
+       29
+      ],
+      [
+       "yok|yok|ikisi",
+       26
+      ]
+     ],
+     "entropi_bit_birlesik": 5.0359,
+     "farkli_uclu": 65,
+     "fonksiyon": 555,
+     "ikili_ici_en_sik_uclu_payi": 0.1189
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 1,
+     "a1&a4": 0,
+     "a1&a5": 3,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 0,
+     "a2&a4": 0,
+     "a2&a5": 0,
+     "a2&a6": 0,
+     "a2&ty": 0,
+     "a3&a4": 11,
+     "a3&a5": 7,
+     "a3&a6": 4,
+     "a3&ty": 0,
+     "a4&a5": 11,
+     "a4&a6": 2,
+     "a4&ty": 25,
+     "a5&a6": 5,
+     "a5&ty": 0,
+     "a6&ty": 0
+    },
+    "n": 555,
+    "oran": {
+     "a1": 0.0054,
+     "a1_al": 0.0,
+     "a1_al_saf": 0.0,
+     "a1_yaz_cok": 0.0,
+     "a1_yaz_tek": 0.0,
+     "a1_yuklem": 0.0054,
+     "a1g_yuklem_okur_cagrili": 0.0,
+     "a2": 0.0,
+     "a2_birakir": 0.0,
+     "a2_birakir_her_yolda": 0.0,
+     "a2_buyutur": 0.0,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0,
+     "a2g_alan_birak_genis": 0.0,
+     "a3": 0.1009,
+     "a3_iki_ofset": 0.0631,
+     "a3_sifir_disi": 0.1009,
+     "a3_var": 0.3099,
+     "a3_yazar": 0.1189,
+     "a4": 0.3189,
+     "a4_degisken": 0.3189,
+     "a4_paylasimli": 0.2973,
+     "a4_sabit_veri": 0.2721,
+     "a4_sabit_veri_ddalsiz": 0.1946,
+     "a4_yazar": 0.0973,
+     "a5": 0.0631,
+     "a5_donmez": 0.0036,
+     "a5_param_yazar": 0.0054,
+     "a5_sabit_bos": 0.0072,
+     "a5_ye_gecisli": 0.0144,
+     "a5_ye_yerel": 0.0396,
+     "a6": 0.0721,
+     "a6_ic": 0.0324,
+     "a6_lib": 0.0396,
+     "a6_lib_ayirici": 0.0,
+     "a6_lib_birakici": 0.0,
+     "a6_sarma_kullanan": 0.0631,
+     "a6g_ic_genis": 0.0324,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.4883,
+     "en_az_bir_a1_a2_a6": 0.0775,
+     "en_az_bir_a3_a5siz": 0.3928,
+     "en_az_bir_a5siz": 0.4649,
+     "en_az_bir_ty_dahil": 0.5441,
+     "ty": 0.1009,
+     "ty_dizgili": 0.1009,
+     "ty_kayit": 0.1009,
+     "v1_create_genis": 0.0,
+     "v1_destroy": 0.0,
+     "v1_init": 0.0072,
+     "v1_is": 0.1225,
+     "v1_kalip1_is": 0.1117,
+     "v1_kalip2_init": 0.0,
+     "v1_kalip3_arg": 0.0,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0,
+     "yalniz:a3": 0.0667,
+     "yalniz:a4": 0.2757,
+     "yalniz:a5": 0.0234,
+     "yalniz:a6": 0.0577,
+     "yalniz:ty": 0.0559
+    },
+    "satirsiz": {
+     "I": 3,
+     "K": 268,
+     "Y": 13,
+     "n": 284
+    },
+    "sayi": {
+     "a1": 3,
+     "a1_al": 0,
+     "a1_al_saf": 0,
+     "a1_yaz_cok": 0,
+     "a1_yaz_tek": 0,
+     "a1_yuklem": 3,
+     "a1g_yuklem_okur_cagrili": 0,
+     "a2": 0,
+     "a2_birakir": 0,
+     "a2_birakir_her_yolda": 0,
+     "a2_buyutur": 0,
+     "a2_sokum": 0,
+     "a2_taze": 0,
+     "a2g_alan_birak_genis": 0,
+     "a3": 56,
+     "a3_iki_ofset": 35,
+     "a3_sifir_disi": 56,
+     "a3_var": 172,
+     "a3_yazar": 66,
+     "a4": 177,
+     "a4_degisken": 177,
+     "a4_paylasimli": 165,
+     "a4_sabit_veri": 151,
+     "a4_sabit_veri_ddalsiz": 108,
+     "a4_yazar": 54,
+     "a5": 35,
+     "a5_donmez": 2,
+     "a5_param_yazar": 3,
+     "a5_sabit_bos": 4,
+     "a5_ye_gecisli": 8,
+     "a5_ye_yerel": 22,
+     "a6": 40,
+     "a6_ic": 18,
+     "a6_lib": 22,
+     "a6_lib_ayirici": 0,
+     "a6_lib_birakici": 0,
+     "a6_sarma_kullanan": 35,
+     "a6g_ic_genis": 18,
+     "disasm_yok": 0,
+     "en_az_bir": 271,
+     "en_az_bir_a1_a2_a6": 43,
+     "en_az_bir_a3_a5siz": 218,
+     "en_az_bir_a5siz": 258,
+     "en_az_bir_ty_dahil": 302,
+     "ty": 56,
+     "ty_dizgili": 56,
+     "ty_kayit": 56,
+     "v1_create_genis": 0,
+     "v1_destroy": 0,
+     "v1_init": 4,
+     "v1_is": 68,
+     "v1_kalip1_is": 62,
+     "v1_kalip2_init": 0,
+     "v1_kalip3_arg": 0,
+     "yalniz:a1": 0,
+     "yalniz:a2": 0,
+     "yalniz:a3": 37,
+     "yalniz:a4": 153,
+     "yalniz:a5": 13,
+     "yalniz:a6": 32,
+     "yalniz:ty": 31
+    },
+    "sinif": {
+     "I": 30,
+     "K": 475,
+     "Y": 50
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 3
+     },
+     "a2": {
+      "I": 0,
+      "K": 0,
+      "Y": 0
+     },
+     "a3": {
+      "I": 0,
+      "K": 49,
+      "Y": 7
+     },
+     "a4": {
+      "I": 9,
+      "K": 152,
+      "Y": 16
+     },
+     "a5": {
+      "I": 2,
+      "K": 9,
+      "Y": 24
+     },
+     "a6": {
+      "I": 18,
+      "K": 17,
+      "Y": 5
+     },
+     "en_az_bir": {
+      "I": 27,
+      "K": 207,
+      "Y": 37
+     },
+     "ty": {
+      "I": 0,
+      "K": 56,
+      "Y": 0
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 294,
+     "aile_1": 256,
+     "aile_2": 33,
+     "aile_3": 5,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "cagri_sonucu|yok|ikisi",
+       69
+      ],
+      [
+       "cagri_sonucu|yok|lib",
+       58
+      ],
+      [
+       "bilinmez|diger|ikisi",
+       35
+      ],
+      [
+       "yok|yok|lib",
+       29
+      ],
+      [
+       "yok|yok|ikisi",
+       28
+      ]
+     ],
+     "entropi_bit_birlesik": 5.0649,
+     "farkli_uclu": 68,
+     "fonksiyon": 588,
+     "ikili_ici_en_sik_uclu_payi": 0.1173
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 1,
+     "a1&a4": 0,
+     "a1&a5": 3,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 0,
+     "a2&a4": 0,
+     "a2&a5": 0,
+     "a2&a6": 0,
+     "a2&ty": 0,
+     "a3&a4": 12,
+     "a3&a5": 9,
+     "a3&a6": 4,
+     "a3&ty": 0,
+     "a4&a5": 12,
+     "a4&a6": 2,
+     "a4&ty": 25,
+     "a5&a6": 5,
+     "a5&ty": 0,
+     "a6&ty": 0
+    },
+    "n": 588,
+    "oran": {
+     "a1": 0.0051,
+     "a1_al": 0.0,
+     "a1_al_saf": 0.0,
+     "a1_yaz_cok": 0.0,
+     "a1_yaz_tek": 0.0,
+     "a1_yuklem": 0.0051,
+     "a1g_yuklem_okur_cagrili": 0.0,
+     "a2": 0.0,
+     "a2_birakir": 0.0,
+     "a2_birakir_her_yolda": 0.0,
+     "a2_buyutur": 0.0,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0,
+     "a2g_alan_birak_genis": 0.0,
+     "a3": 0.0986,
+     "a3_iki_ofset": 0.0629,
+     "a3_sifir_disi": 0.0986,
+     "a3_var": 0.3061,
+     "a3_yazar": 0.1224,
+     "a4": 0.3367,
+     "a4_degisken": 0.3367,
+     "a4_paylasimli": 0.3163,
+     "a4_sabit_veri": 0.2704,
+     "a4_sabit_veri_ddalsiz": 0.1973,
+     "a4_yazar": 0.102,
+     "a5": 0.0629,
+     "a5_donmez": 0.0051,
+     "a5_param_yazar": 0.0051,
+     "a5_sabit_bos": 0.0068,
+     "a5_ye_gecisli": 0.0153,
+     "a5_ye_yerel": 0.0374,
+     "a6": 0.0697,
+     "a6_ic": 0.0306,
+     "a6_lib": 0.0391,
+     "a6_lib_ayirici": 0.0,
+     "a6_lib_birakici": 0.0,
+     "a6_sarma_kullanan": 0.0629,
+     "a6g_ic_genis": 0.0306,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.5,
+     "en_az_bir_a1_a2_a6": 0.0748,
+     "en_az_bir_a3_a5siz": 0.4082,
+     "en_az_bir_a5siz": 0.4779,
+     "en_az_bir_ty_dahil": 0.5527,
+     "ty": 0.0952,
+     "ty_dizgili": 0.0952,
+     "ty_kayit": 0.0952,
+     "v1_create_genis": 0.0,
+     "v1_destroy": 0.0,
+     "v1_init": 0.0068,
+     "v1_is": 0.1241,
+     "v1_kalip1_is": 0.1139,
+     "v1_kalip2_init": 0.0,
+     "v1_kalip3_arg": 0.0,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0,
+     "yalniz:a3": 0.0629,
+     "yalniz:a4": 0.2942,
+     "yalniz:a5": 0.0221,
+     "yalniz:a6": 0.0561,
+     "yalniz:ty": 0.0527
+    },
+    "satirsiz": {
+     "I": 3,
+     "K": 278,
+     "Y": 13,
+     "n": 294
+    },
+    "sayi": {
+     "a1": 3,
+     "a1_al": 0,
+     "a1_al_saf": 0,
+     "a1_yaz_cok": 0,
+     "a1_yaz_tek": 0,
+     "a1_yuklem": 3,
+     "a1g_yuklem_okur_cagrili": 0,
+     "a2": 0,
+     "a2_birakir": 0,
+     "a2_birakir_her_yolda": 0,
+     "a2_buyutur": 0,
+     "a2_sokum": 0,
+     "a2_taze": 0,
+     "a2g_alan_birak_genis": 0,
+     "a3": 58,
+     "a3_iki_ofset": 37,
+     "a3_sifir_disi": 58,
+     "a3_var": 180,
+     "a3_yazar": 72,
+     "a4": 198,
+     "a4_degisken": 198,
+     "a4_paylasimli": 186,
+     "a4_sabit_veri": 159,
+     "a4_sabit_veri_ddalsiz": 116,
+     "a4_yazar": 60,
+     "a5": 37,
+     "a5_donmez": 3,
+     "a5_param_yazar": 3,
+     "a5_sabit_bos": 4,
+     "a5_ye_gecisli": 9,
+     "a5_ye_yerel": 22,
+     "a6": 41,
+     "a6_ic": 18,
+     "a6_lib": 23,
+     "a6_lib_ayirici": 0,
+     "a6_lib_birakici": 0,
+     "a6_sarma_kullanan": 37,
+     "a6g_ic_genis": 18,
+     "disasm_yok": 0,
+     "en_az_bir": 294,
+     "en_az_bir_a1_a2_a6": 44,
+     "en_az_bir_a3_a5siz": 240,
+     "en_az_bir_a5siz": 281,
+     "en_az_bir_ty_dahil": 325,
+     "ty": 56,
+     "ty_dizgili": 56,
+     "ty_kayit": 56,
+     "v1_create_genis": 0,
+     "v1_destroy": 0,
+     "v1_init": 4,
+     "v1_is": 73,
+     "v1_kalip1_is": 67,
+     "v1_kalip2_init": 0,
+     "v1_kalip3_arg": 0,
+     "yalniz:a1": 0,
+     "yalniz:a2": 0,
+     "yalniz:a3": 37,
+     "yalniz:a4": 173,
+     "yalniz:a5": 13,
+     "yalniz:a6": 33,
+     "yalniz:ty": 31
+    },
+    "sinif": {
+     "I": 30,
+     "K": 505,
+     "Y": 53
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 3
+     },
+     "a2": {
+      "I": 0,
+      "K": 0,
+      "Y": 0
+     },
+     "a3": {
+      "I": 0,
+      "K": 51,
+      "Y": 7
+     },
+     "a4": {
+      "I": 9,
+      "K": 170,
+      "Y": 19
+     },
+     "a5": {
+      "I": 2,
+      "K": 11,
+      "Y": 24
+     },
+     "a6": {
+      "I": 18,
+      "K": 18,
+      "Y": 5
+     },
+     "en_az_bir": {
+      "I": 27,
+      "K": 227,
+      "Y": 40
+     },
+     "ty": {
+      "I": 0,
+      "K": 56,
+      "Y": 0
+     }
+    }
+   }
+  },
+  "debian/redis-tools": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 625,
+     "aile_1": 1152,
+     "aile_2": 259,
+     "aile_3": 42,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       280
+      ],
+      [
+       "yok|diger|ic",
+       221
+      ],
+      [
+       "sabit|yok|ic",
+       142
+      ],
+      [
+       "yok|diger|ikisi",
+       132
+      ],
+      [
+       "yok|param_alani|ic",
+       95
+      ]
+     ],
+     "entropi_bit_birlesik": 5.2743,
+     "farkli_uclu": 93,
+     "fonksiyon": 2078,
+     "ikili_ici_en_sik_uclu_payi": 0.14
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 32,
+     "a1&a4": 0,
+     "a1&a5": 43,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 0,
+     "a2&a4": 0,
+     "a2&a5": 0,
+     "a2&a6": 0,
+     "a2&ty": 0,
+     "a3&a4": 68,
+     "a3&a5": 148,
+     "a3&a6": 44,
+     "a3&ty": 43,
+     "a4&a5": 31,
+     "a4&a6": 1,
+     "a4&ty": 23,
+     "a5&a6": 18,
+     "a5&ty": 16,
+     "a6&ty": 10
+    },
+    "n": 2078,
+    "oran": {
+     "a1": 0.0207,
+     "a1_al": 0.0048,
+     "a1_al_saf": 0.0048,
+     "a1_yaz_cok": 0.0067,
+     "a1_yaz_tek": 0.001,
+     "a1_yuklem": 0.0082,
+     "a1g_yuklem_okur_cagrili": 0.0077,
+     "a2": 0.001,
+     "a2_birakir": 0.001,
+     "a2_birakir_her_yolda": 0.0,
+     "a2_buyutur": 0.0,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0,
+     "a2g_alan_birak_genis": 0.0,
+     "a3": 0.5332,
+     "a3_iki_ofset": 0.4365,
+     "a3_sifir_disi": 0.5332,
+     "a3_var": 0.616,
+     "a3_yazar": 0.3316,
+     "a4": 0.1092,
+     "a4_degisken": 0.1092,
+     "a4_paylasimli": 0.1083,
+     "a4_sabit_veri": 0.217,
+     "a4_sabit_veri_ddalsiz": 0.1959,
+     "a4_yazar": 0.0265,
+     "a5": 0.1458,
+     "a5_donmez": 0.0245,
+     "a5_param_yazar": 0.0443,
+     "a5_sabit_bos": 0.0106,
+     "a5_ye_gecisli": 0.0269,
+     "a5_ye_yerel": 0.05,
+     "a6": 0.0544,
+     "a6_ic": 0.0457,
+     "a6_lib": 0.0087,
+     "a6_lib_ayirici": 0.0,
+     "a6_lib_birakici": 0.0,
+     "a6_sarma_kullanan": 0.0221,
+     "a6g_ic_genis": 0.065,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.6992,
+     "en_az_bir_a1_a2_a6": 0.076,
+     "en_az_bir_a3_a5siz": 0.1848,
+     "en_az_bir_a5siz": 0.6487,
+     "en_az_bir_ty_dahil": 0.7926,
+     "ty": 0.1323,
+     "ty_dizgili": 0.1323,
+     "ty_kayit": 0.2676,
+     "v1_create_genis": 0.0,
+     "v1_destroy": 0.001,
+     "v1_init": 0.0563,
+     "v1_is": 0.1295,
+     "v1_kalip1_is": 0.1155,
+     "v1_kalip2_init": 0.0,
+     "v1_kalip3_arg": 0.001,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.001,
+     "yalniz:a3": 0.4129,
+     "yalniz:a4": 0.063,
+     "yalniz:a5": 0.0505,
+     "yalniz:a6": 0.0269,
+     "yalniz:ty": 0.0934
+    },
+    "satirsiz": {
+     "I": 378,
+     "K": 228,
+     "Y": 19,
+     "n": 625
+    },
+    "sayi": {
+     "a1": 43,
+     "a1_al": 10,
+     "a1_al_saf": 10,
+     "a1_yaz_cok": 14,
+     "a1_yaz_tek": 2,
+     "a1_yuklem": 17,
+     "a1g_yuklem_okur_cagrili": 16,
+     "a2": 2,
+     "a2_birakir": 2,
+     "a2_birakir_her_yolda": 0,
+     "a2_buyutur": 0,
+     "a2_sokum": 0,
+     "a2_taze": 0,
+     "a2g_alan_birak_genis": 0,
+     "a3": 1108,
+     "a3_iki_ofset": 907,
+     "a3_sifir_disi": 1108,
+     "a3_var": 1280,
+     "a3_yazar": 689,
+     "a4": 227,
+     "a4_degisken": 227,
+     "a4_paylasimli": 225,
+     "a4_sabit_veri": 451,
+     "a4_sabit_veri_ddalsiz": 407,
+     "a4_yazar": 55,
+     "a5": 303,
+     "a5_donmez": 51,
+     "a5_param_yazar": 92,
+     "a5_sabit_bos": 22,
+     "a5_ye_gecisli": 56,
+     "a5_ye_yerel": 104,
+     "a6": 113,
+     "a6_ic": 95,
+     "a6_lib": 18,
+     "a6_lib_ayirici": 0,
+     "a6_lib_birakici": 0,
+     "a6_sarma_kullanan": 46,
+     "a6g_ic_genis": 135,
+     "disasm_yok": 0,
+     "en_az_bir": 1453,
+     "en_az_bir_a1_a2_a6": 158,
+     "en_az_bir_a3_a5siz": 384,
+     "en_az_bir_a5siz": 1348,
+     "en_az_bir_ty_dahil": 1647,
+     "ty": 275,
+     "ty_dizgili": 275,
+     "ty_kayit": 556,
+     "v1_create_genis": 0,
+     "v1_destroy": 2,
+     "v1_init": 117,
+     "v1_is": 269,
+     "v1_kalip1_is": 240,
+     "v1_kalip2_init": 0,
+     "v1_kalip3_arg": 2,
+     "yalniz:a1": 0,
+     "yalniz:a2": 2,
+     "yalniz:a3": 858,
+     "yalniz:a4": 131,
+     "yalniz:a5": 105,
+     "yalniz:a6": 56,
+     "yalniz:ty": 194
+    },
+    "sinif": {
+     "I": 1112,
+     "K": 722,
+     "Y": 244
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 43
+     },
+     "a2": {
+      "I": 0,
+      "K": 2,
+      "Y": 0
+     },
+     "a3": {
+      "I": 595,
+      "K": 375,
+      "Y": 138
+     },
+     "a4": {
+      "I": 79,
+      "K": 128,
+      "Y": 20
+     },
+     "a5": {
+      "I": 70,
+      "K": 51,
+      "Y": 182
+     },
+     "a6": {
+      "I": 91,
+      "K": 21,
+      "Y": 1
+     },
+     "en_az_bir": {
+      "I": 734,
+      "K": 494,
+      "Y": 225
+     },
+     "ty": {
+      "I": 192,
+      "K": 69,
+      "Y": 14
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 635,
+     "aile_1": 1163,
+     "aile_2": 263,
+     "aile_3": 42,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       280
+      ],
+      [
+       "yok|diger|ic",
+       221
+      ],
+      [
+       "sabit|yok|ic",
+       142
+      ],
+      [
+       "yok|diger|ikisi",
+       132
+      ],
+      [
+       "yok|param_alani|ic",
+       95
+      ]
+     ],
+     "entropi_bit_birlesik": 5.3012,
+     "farkli_uclu": 95,
+     "fonksiyon": 2103,
+     "ikili_ici_en_sik_uclu_payi": 0.1384
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 32,
+     "a1&a4": 0,
+     "a1&a5": 43,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 0,
+     "a2&a4": 0,
+     "a2&a5": 0,
+     "a2&a6": 0,
+     "a2&ty": 0,
+     "a3&a4": 68,
+     "a3&a5": 152,
+     "a3&a6": 44,
+     "a3&ty": 43,
+     "a4&a5": 31,
+     "a4&a6": 1,
+     "a4&ty": 23,
+     "a5&a6": 18,
+     "a5&ty": 16,
+     "a6&ty": 12
+    },
+    "n": 2103,
+    "oran": {
+     "a1": 0.0204,
+     "a1_al": 0.0048,
+     "a1_al_saf": 0.0048,
+     "a1_yaz_cok": 0.0067,
+     "a1_yaz_tek": 0.001,
+     "a1_yuklem": 0.0081,
+     "a1g_yuklem_okur_cagrili": 0.0076,
+     "a2": 0.001,
+     "a2_birakir": 0.001,
+     "a2_birakir_her_yolda": 0.0,
+     "a2_buyutur": 0.0,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0,
+     "a2g_alan_birak_genis": 0.0,
+     "a3": 0.5302,
+     "a3_iki_ofset": 0.4322,
+     "a3_sifir_disi": 0.5302,
+     "a3_var": 0.6144,
+     "a3_yazar": 0.3281,
+     "a4": 0.1089,
+     "a4_degisken": 0.1089,
+     "a4_paylasimli": 0.1079,
+     "a4_sabit_veri": 0.2154,
+     "a4_sabit_veri_ddalsiz": 0.1945,
+     "a4_yazar": 0.0271,
+     "a5": 0.1479,
+     "a5_donmez": 0.0243,
+     "a5_param_yazar": 0.0437,
+     "a5_sabit_bos": 0.0105,
+     "a5_ye_gecisli": 0.0266,
+     "a5_ye_yerel": 0.0533,
+     "a6": 0.0547,
+     "a6_ic": 0.0452,
+     "a6_lib": 0.0095,
+     "a6_lib_ayirici": 0.0,
+     "a6_lib_birakici": 0.0,
+     "a6_sarma_kullanan": 0.0219,
+     "a6g_ic_genis": 0.0642,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.6981,
+     "en_az_bir_a1_a2_a6": 0.0761,
+     "en_az_bir_a3_a5siz": 0.1845,
+     "en_az_bir_a5siz": 0.6462,
+     "en_az_bir_ty_dahil": 0.7903,
+     "ty": 0.1317,
+     "ty_dizgili": 0.1317,
+     "ty_kayit": 0.2653,
+     "v1_create_genis": 0.0,
+     "v1_destroy": 0.001,
+     "v1_init": 0.0556,
+     "v1_is": 0.1289,
+     "v1_kalip1_is": 0.1151,
+     "v1_kalip2_init": 0.0,
+     "v1_kalip3_arg": 0.001,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.001,
+     "yalniz:a3": 0.4094,
+     "yalniz:a4": 0.0632,
+     "yalniz:a5": 0.0518,
+     "yalniz:a6": 0.0276,
+     "yalniz:ty": 0.0922
+    },
+    "satirsiz": {
+     "I": 378,
+     "K": 230,
+     "Y": 27,
+     "n": 635
+    },
+    "sayi": {
+     "a1": 43,
+     "a1_al": 10,
+     "a1_al_saf": 10,
+     "a1_yaz_cok": 14,
+     "a1_yaz_tek": 2,
+     "a1_yuklem": 17,
+     "a1g_yuklem_okur_cagrili": 16,
+     "a2": 2,
+     "a2_birakir": 2,
+     "a2_birakir_her_yolda": 0,
+     "a2_buyutur": 0,
+     "a2_sokum": 0,
+     "a2_taze": 0,
+     "a2g_alan_birak_genis": 0,
+     "a3": 1115,
+     "a3_iki_ofset": 909,
+     "a3_sifir_disi": 1115,
+     "a3_var": 1292,
+     "a3_yazar": 690,
+     "a4": 229,
+     "a4_degisken": 229,
+     "a4_paylasimli": 227,
+     "a4_sabit_veri": 453,
+     "a4_sabit_veri_ddalsiz": 409,
+     "a4_yazar": 57,
+     "a5": 311,
+     "a5_donmez": 51,
+     "a5_param_yazar": 92,
+     "a5_sabit_bos": 22,
+     "a5_ye_gecisli": 56,
+     "a5_ye_yerel": 112,
+     "a6": 115,
+     "a6_ic": 95,
+     "a6_lib": 20,
+     "a6_lib_ayirici": 0,
+     "a6_lib_birakici": 0,
+     "a6_sarma_kullanan": 46,
+     "a6g_ic_genis": 135,
+     "disasm_yok": 0,
+     "en_az_bir": 1468,
+     "en_az_bir_a1_a2_a6": 160,
+     "en_az_bir_a3_a5siz": 388,
+     "en_az_bir_a5siz": 1359,
+     "en_az_bir_ty_dahil": 1662,
+     "ty": 277,
+     "ty_dizgili": 277,
+     "ty_kayit": 558,
+     "v1_create_genis": 0,
+     "v1_destroy": 2,
+     "v1_init": 117,
+     "v1_is": 271,
+     "v1_kalip1_is": 242,
+     "v1_kalip2_init": 0,
+     "v1_kalip3_arg": 2,
+     "yalniz:a1": 0,
+     "yalniz:a2": 2,
+     "yalniz:a3": 861,
+     "yalniz:a4": 133,
+     "yalniz:a5": 109,
+     "yalniz:a6": 58,
+     "yalniz:ty": 194
+    },
+    "sinif": {
+     "I": 1115,
+     "K": 727,
+     "Y": 261
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 43
+     },
+     "a2": {
+      "I": 0,
+      "K": 2,
+      "Y": 0
+     },
+     "a3": {
+      "I": 598,
+      "K": 375,
+      "Y": 142
+     },
+     "a4": {
+      "I": 79,
+      "K": 129,
+      "Y": 21
+     },
+     "a5": {
+      "I": 70,
+      "K": 51,
+      "Y": 190
+     },
+     "a6": {
+      "I": 91,
+      "K": 23,
+      "Y": 1
+     },
+     "en_az_bir": {
+      "I": 737,
+      "K": 497,
+      "Y": 234
+     },
+     "ty": {
+      "I": 192,
+      "K": 71,
+      "Y": 14
+     }
+    }
+   }
+  },
+  "debian/sqlite3": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 96,
+     "aile_1": 263,
+     "aile_2": 40,
+     "aile_3": 8,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|lib",
+       44
+      ],
+      [
+       "yok|yok|yok",
+       39
+      ],
+      [
+       "yok|yok|ikisi",
+       31
+      ],
+      [
+       "yok|diger|ikisi",
+       27
+      ],
+      [
+       "cagri_sonucu|diger|lib",
+       16
+      ]
+     ],
+     "entropi_bit_birlesik": 5.2576,
+     "farkli_uclu": 73,
+     "fonksiyon": 407,
+     "ikili_ici_en_sik_uclu_payi": 0.1081
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 7,
+     "a1&a4": 0,
+     "a1&a5": 7,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 1,
+     "a2&a4": 0,
+     "a2&a5": 0,
+     "a2&a6": 0,
+     "a2&ty": 0,
+     "a3&a4": 13,
+     "a3&a5": 25,
+     "a3&a6": 3,
+     "a3&ty": 7,
+     "a4&a5": 1,
+     "a4&a6": 4,
+     "a4&ty": 0,
+     "a5&a6": 3,
+     "a5&ty": 0,
+     "a6&ty": 0
+    },
+    "n": 407,
+    "oran": {
+     "a1": 0.0172,
+     "a1_al": 0.0049,
+     "a1_al_saf": 0.0025,
+     "a1_yaz_cok": 0.0,
+     "a1_yaz_tek": 0.0,
+     "a1_yuklem": 0.0123,
+     "a1g_yuklem_okur_cagrili": 0.0074,
+     "a2": 0.0025,
+     "a2_birakir": 0.0,
+     "a2_birakir_her_yolda": 0.0,
+     "a2_buyutur": 0.0,
+     "a2_sokum": 0.0025,
+     "a2_taze": 0.0,
+     "a2g_alan_birak_genis": 0.0049,
+     "a3": 0.5258,
+     "a3_iki_ofset": 0.3514,
+     "a3_sifir_disi": 0.5258,
+     "a3_var": 0.7322,
+     "a3_yazar": 0.3587,
+     "a4": 0.172,
+     "a4_degisken": 0.172,
+     "a4_paylasimli": 0.1671,
+     "a4_sabit_veri": 0.2211,
+     "a4_sabit_veri_ddalsiz": 0.2064,
+     "a4_yazar": 0.0295,
+     "a5": 0.1106,
+     "a5_donmez": 0.0049,
+     "a5_param_yazar": 0.0369,
+     "a5_sabit_bos": 0.0147,
+     "a5_ye_gecisli": 0.0197,
+     "a5_ye_yerel": 0.0491,
+     "a6": 0.0737,
+     "a6_ic": 0.0197,
+     "a6_lib": 0.0541,
+     "a6_lib_ayirici": 0.0,
+     "a6_lib_birakici": 0.0,
+     "a6_sarma_kullanan": 0.0172,
+     "a6g_ic_genis": 0.0246,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.7641,
+     "en_az_bir_a1_a2_a6": 0.0934,
+     "en_az_bir_a3_a5siz": 0.2555,
+     "en_az_bir_a5siz": 0.7224,
+     "en_az_bir_ty_dahil": 0.7813,
+     "ty": 0.0344,
+     "ty_dizgili": 0.0344,
+     "ty_kayit": 0.3342,
+     "v1_create_genis": 0.0,
+     "v1_destroy": 0.0,
+     "v1_init": 0.0835,
+     "v1_is": 0.0663,
+     "v1_kalip1_is": 0.0467,
+     "v1_kalip2_init": 0.0025,
+     "v1_kalip3_arg": 0.0,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0,
+     "yalniz:a3": 0.4251,
+     "yalniz:a4": 0.1302,
+     "yalniz:a5": 0.0418,
+     "yalniz:a6": 0.0491,
+     "yalniz:ty": 0.0172
+    },
+    "satirsiz": {
+     "I": 3,
+     "K": 87,
+     "Y": 6,
+     "n": 96
+    },
+    "sayi": {
+     "a1": 7,
+     "a1_al": 2,
+     "a1_al_saf": 1,
+     "a1_yaz_cok": 0,
+     "a1_yaz_tek": 0,
+     "a1_yuklem": 5,
+     "a1g_yuklem_okur_cagrili": 3,
+     "a2": 1,
+     "a2_birakir": 0,
+     "a2_birakir_her_yolda": 0,
+     "a2_buyutur": 0,
+     "a2_sokum": 1,
+     "a2_taze": 0,
+     "a2g_alan_birak_genis": 2,
+     "a3": 214,
+     "a3_iki_ofset": 143,
+     "a3_sifir_disi": 214,
+     "a3_var": 298,
+     "a3_yazar": 146,
+     "a4": 70,
+     "a4_degisken": 70,
+     "a4_paylasimli": 68,
+     "a4_sabit_veri": 90,
+     "a4_sabit_veri_ddalsiz": 84,
+     "a4_yazar": 12,
+     "a5": 45,
+     "a5_donmez": 2,
+     "a5_param_yazar": 15,
+     "a5_sabit_bos": 6,
+     "a5_ye_gecisli": 8,
+     "a5_ye_yerel": 20,
+     "a6": 30,
+     "a6_ic": 8,
+     "a6_lib": 22,
+     "a6_lib_ayirici": 0,
+     "a6_lib_birakici": 0,
+     "a6_sarma_kullanan": 7,
+     "a6g_ic_genis": 10,
+     "disasm_yok": 0,
+     "en_az_bir": 311,
+     "en_az_bir_a1_a2_a6": 38,
+     "en_az_bir_a3_a5siz": 104,
+     "en_az_bir_a5siz": 294,
+     "en_az_bir_ty_dahil": 318,
+     "ty": 14,
+     "ty_dizgili": 14,
+     "ty_kayit": 136,
+     "v1_create_genis": 0,
+     "v1_destroy": 0,
+     "v1_init": 34,
+     "v1_is": 27,
+     "v1_kalip1_is": 19,
+     "v1_kalip2_init": 1,
+     "v1_kalip3_arg": 0,
+     "yalniz:a1": 0,
+     "yalniz:a2": 0,
+     "yalniz:a3": 173,
+     "yalniz:a4": 53,
+     "yalniz:a5": 17,
+     "yalniz:a6": 20,
+     "yalniz:ty": 7
+    },
+    "sinif": {
+     "I": 27,
+     "K": 285,
+     "Y": 95
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 7
+     },
+     "a2": {
+      "I": 0,
+      "K": 1,
+      "Y": 0
+     },
+     "a3": {
+      "I": 17,
+      "K": 140,
+      "Y": 57
+     },
+     "a4": {
+      "I": 2,
+      "K": 49,
+      "Y": 19
+     },
+     "a5": {
+      "I": 0,
+      "K": 11,
+      "Y": 34
+     },
+     "a6": {
+      "I": 6,
+      "K": 22,
+      "Y": 2
+     },
+     "en_az_bir": {
+      "I": 24,
+      "K": 198,
+      "Y": 89
+     },
+     "ty": {
+      "I": 0,
+      "K": 14,
+      "Y": 0
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 103,
+     "aile_1": 273,
+     "aile_2": 41,
+     "aile_3": 8,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|lib",
+       49
+      ],
+      [
+       "yok|yok|yok",
+       41
+      ],
+      [
+       "yok|yok|ikisi",
+       31
+      ],
+      [
+       "yok|diger|ikisi",
+       28
+      ],
+      [
+       "yok|diger|lib",
+       17
+      ]
+     ],
+     "entropi_bit_birlesik": 5.2476,
+     "farkli_uclu": 73,
+     "fonksiyon": 425,
+     "ikili_ici_en_sik_uclu_payi": 0.1153
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 7,
+     "a1&a4": 0,
+     "a1&a5": 7,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 1,
+     "a2&a4": 0,
+     "a2&a5": 0,
+     "a2&a6": 0,
+     "a2&ty": 0,
+     "a3&a4": 13,
+     "a3&a5": 25,
+     "a3&a6": 3,
+     "a3&ty": 7,
+     "a4&a5": 1,
+     "a4&a6": 5,
+     "a4&ty": 0,
+     "a5&a6": 3,
+     "a5&ty": 0,
+     "a6&ty": 0
+    },
+    "n": 425,
+    "oran": {
+     "a1": 0.0165,
+     "a1_al": 0.0047,
+     "a1_al_saf": 0.0024,
+     "a1_yaz_cok": 0.0,
+     "a1_yaz_tek": 0.0,
+     "a1_yuklem": 0.0118,
+     "a1g_yuklem_okur_cagrili": 0.0071,
+     "a2": 0.0024,
+     "a2_birakir": 0.0,
+     "a2_birakir_her_yolda": 0.0,
+     "a2_buyutur": 0.0,
+     "a2_sokum": 0.0024,
+     "a2_taze": 0.0,
+     "a2g_alan_birak_genis": 0.0047,
+     "a3": 0.5153,
+     "a3_iki_ofset": 0.3435,
+     "a3_sifir_disi": 0.5153,
+     "a3_var": 0.7224,
+     "a3_yazar": 0.3553,
+     "a4": 0.1741,
+     "a4_degisken": 0.1741,
+     "a4_paylasimli": 0.1694,
+     "a4_sabit_veri": 0.2282,
+     "a4_sabit_veri_ddalsiz": 0.2141,
+     "a4_yazar": 0.0329,
+     "a5": 0.1082,
+     "a5_donmez": 0.0047,
+     "a5_param_yazar": 0.0376,
+     "a5_sabit_bos": 0.0141,
+     "a5_ye_gecisli": 0.0188,
+     "a5_ye_yerel": 0.0471,
+     "a6": 0.0753,
+     "a6_ic": 0.0188,
+     "a6_lib": 0.0565,
+     "a6_lib_ayirici": 0.0,
+     "a6_lib_birakici": 0.0,
+     "a6_sarma_kullanan": 0.0188,
+     "a6g_ic_genis": 0.0282,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.7576,
+     "en_az_bir_a1_a2_a6": 0.0941,
+     "en_az_bir_a3_a5siz": 0.2565,
+     "en_az_bir_a5siz": 0.7153,
+     "en_az_bir_ty_dahil": 0.7741,
+     "ty": 0.0329,
+     "ty_dizgili": 0.0329,
+     "ty_kayit": 0.3224,
+     "v1_create_genis": 0.0,
+     "v1_destroy": 0.0,
+     "v1_init": 0.0824,
+     "v1_is": 0.0729,
+     "v1_kalip1_is": 0.0541,
+     "v1_kalip2_init": 0.0024,
+     "v1_kalip3_arg": 0.0,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0,
+     "yalniz:a3": 0.4188,
+     "yalniz:a4": 0.1318,
+     "yalniz:a5": 0.0424,
+     "yalniz:a6": 0.0494,
+     "yalniz:ty": 0.0165
+    },
+    "satirsiz": {
+     "I": 4,
+     "K": 91,
+     "Y": 8,
+     "n": 103
+    },
+    "sayi": {
+     "a1": 7,
+     "a1_al": 2,
+     "a1_al_saf": 1,
+     "a1_yaz_cok": 0,
+     "a1_yaz_tek": 0,
+     "a1_yuklem": 5,
+     "a1g_yuklem_okur_cagrili": 3,
+     "a2": 1,
+     "a2_birakir": 0,
+     "a2_birakir_her_yolda": 0,
+     "a2_buyutur": 0,
+     "a2_sokum": 1,
+     "a2_taze": 0,
+     "a2g_alan_birak_genis": 2,
+     "a3": 219,
+     "a3_iki_ofset": 146,
+     "a3_sifir_disi": 219,
+     "a3_var": 307,
+     "a3_yazar": 151,
+     "a4": 74,
+     "a4_degisken": 74,
+     "a4_paylasimli": 72,
+     "a4_sabit_veri": 97,
+     "a4_sabit_veri_ddalsiz": 91,
+     "a4_yazar": 14,
+     "a5": 46,
+     "a5_donmez": 2,
+     "a5_param_yazar": 16,
+     "a5_sabit_bos": 6,
+     "a5_ye_gecisli": 8,
+     "a5_ye_yerel": 20,
+     "a6": 32,
+     "a6_ic": 8,
+     "a6_lib": 24,
+     "a6_lib_ayirici": 0,
+     "a6_lib_birakici": 0,
+     "a6_sarma_kullanan": 8,
+     "a6g_ic_genis": 12,
+     "disasm_yok": 0,
+     "en_az_bir": 322,
+     "en_az_bir_a1_a2_a6": 40,
+     "en_az_bir_a3_a5siz": 109,
+     "en_az_bir_a5siz": 304,
+     "en_az_bir_ty_dahil": 329,
+     "ty": 14,
+     "ty_dizgili": 14,
+     "ty_kayit": 137,
+     "v1_create_genis": 0,
+     "v1_destroy": 0,
+     "v1_init": 35,
+     "v1_is": 31,
+     "v1_kalip1_is": 23,
+     "v1_kalip2_init": 1,
+     "v1_kalip3_arg": 0,
+     "yalniz:a1": 0,
+     "yalniz:a2": 0,
+     "yalniz:a3": 178,
+     "yalniz:a4": 56,
+     "yalniz:a5": 18,
+     "yalniz:a6": 21,
+     "yalniz:ty": 7
+    },
+    "sinif": {
+     "I": 30,
+     "K": 297,
+     "Y": 98
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 7
+     },
+     "a2": {
+      "I": 0,
+      "K": 1,
+      "Y": 0
+     },
+     "a3": {
+      "I": 19,
+      "K": 143,
+      "Y": 57
+     },
+     "a4": {
+      "I": 2,
+      "K": 53,
+      "Y": 19
+     },
+     "a5": {
+      "I": 0,
+      "K": 11,
+      "Y": 35
+     },
+     "a6": {
+      "I": 6,
+      "K": 24,
+      "Y": 2
+     },
+     "en_az_bir": {
+      "I": 26,
+      "K": 206,
+      "Y": 90
+     },
+     "ty": {
+      "I": 0,
+      "K": 14,
+      "Y": 0
+     }
+    }
+   }
+  },
+  "debian/tmux": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 344,
+     "aile_1": 883,
+     "aile_2": 328,
+     "aile_3": 68,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       236
+      ],
+      [
+       "yok|diger|ikisi",
+       152
+      ],
+      [
+       "cagri_sonucu|yok|ic",
+       124
+      ],
+      [
+       "yok|yok|ikisi",
+       124
+      ],
+      [
+       "yok|diger|ic",
+       109
+      ]
+     ],
+     "entropi_bit_birlesik": 4.8964,
+     "farkli_uclu": 77,
+     "fonksiyon": 1623,
+     "ikili_ici_en_sik_uclu_payi": 0.1454
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 49,
+     "a1&a4": 3,
+     "a1&a5": 60,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 72,
+     "a2&a4": 12,
+     "a2&a5": 0,
+     "a2&a6": 3,
+     "a2&ty": 0,
+     "a3&a4": 46,
+     "a3&a5": 166,
+     "a3&a6": 86,
+     "a3&ty": 158,
+     "a4&a5": 24,
+     "a4&a6": 5,
+     "a4&ty": 2,
+     "a5&a6": 6,
+     "a5&ty": 17,
+     "a6&ty": 64
+    },
+    "n": 1623,
+    "oran": {
+     "a1": 0.037,
+     "a1_al": 0.0179,
+     "a1_al_saf": 0.0179,
+     "a1_yaz_cok": 0.0025,
+     "a1_yaz_tek": 0.0043,
+     "a1_yuklem": 0.0123,
+     "a1g_yuklem_okur_cagrili": 0.0006,
+     "a2": 0.0678,
+     "a2_birakir": 0.0376,
+     "a2_birakir_her_yolda": 0.029,
+     "a2_buyutur": 0.0055,
+     "a2_sokum": 0.0006,
+     "a2_taze": 0.024,
+     "a2g_alan_birak_genis": 0.0055,
+     "a3": 0.6235,
+     "a3_iki_ofset": 0.3715,
+     "a3_sifir_disi": 0.6235,
+     "a3_var": 0.7597,
+     "a3_yazar": 0.2508,
+     "a4": 0.0832,
+     "a4_degisken": 0.0832,
+     "a4_paylasimli": 0.0733,
+     "a4_sabit_veri": 0.1374,
+     "a4_sabit_veri_ddalsiz": 0.1319,
+     "a4_yazar": 0.04,
+     "a5": 0.1707,
+     "a5_donmez": 0.0031,
+     "a5_param_yazar": 0.0364,
+     "a5_sabit_bos": 0.0062,
+     "a5_ye_gecisli": 0.0173,
+     "a5_ye_yerel": 0.114,
+     "a6": 0.0918,
+     "a6_ic": 0.0795,
+     "a6_lib": 0.0123,
+     "a6_lib_ayirici": 0.0037,
+     "a6_lib_birakici": 0.0031,
+     "a6_sarma_kullanan": 0.2298,
+     "a6g_ic_genis": 0.1386,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.788,
+     "en_az_bir_a1_a2_a6": 0.1947,
+     "en_az_bir_a3_a5siz": 0.2656,
+     "en_az_bir_a5siz": 0.7388,
+     "en_az_bir_ty_dahil": 0.8669,
+     "ty": 0.1922,
+     "ty_dizgili": 0.1922,
+     "ty_kayit": 0.2113,
+     "v1_create_genis": 0.0296,
+     "v1_destroy": 0.0376,
+     "v1_init": 0.0345,
+     "v1_is": 0.0561,
+     "v1_kalip1_is": 0.0431,
+     "v1_kalip2_init": 0.0031,
+     "v1_kalip3_arg": 0.0037,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0197,
+     "yalniz:a3": 0.4042,
+     "yalniz:a4": 0.0376,
+     "yalniz:a5": 0.0493,
+     "yalniz:a6": 0.0333,
+     "yalniz:ty": 0.0789
+    },
+    "satirsiz": {
+     "I": 169,
+     "K": 151,
+     "Y": 24,
+     "n": 344
+    },
+    "sayi": {
+     "a1": 60,
+     "a1_al": 29,
+     "a1_al_saf": 29,
+     "a1_yaz_cok": 4,
+     "a1_yaz_tek": 7,
+     "a1_yuklem": 20,
+     "a1g_yuklem_okur_cagrili": 1,
+     "a2": 110,
+     "a2_birakir": 61,
+     "a2_birakir_her_yolda": 47,
+     "a2_buyutur": 9,
+     "a2_sokum": 1,
+     "a2_taze": 39,
+     "a2g_alan_birak_genis": 9,
+     "a3": 1012,
+     "a3_iki_ofset": 603,
+     "a3_sifir_disi": 1012,
+     "a3_var": 1233,
+     "a3_yazar": 407,
+     "a4": 135,
+     "a4_degisken": 135,
+     "a4_paylasimli": 119,
+     "a4_sabit_veri": 223,
+     "a4_sabit_veri_ddalsiz": 214,
+     "a4_yazar": 65,
+     "a5": 277,
+     "a5_donmez": 5,
+     "a5_param_yazar": 59,
+     "a5_sabit_bos": 10,
+     "a5_ye_gecisli": 28,
+     "a5_ye_yerel": 185,
+     "a6": 149,
+     "a6_ic": 129,
+     "a6_lib": 20,
+     "a6_lib_ayirici": 6,
+     "a6_lib_birakici": 5,
+     "a6_sarma_kullanan": 373,
+     "a6g_ic_genis": 225,
+     "disasm_yok": 0,
+     "en_az_bir": 1279,
+     "en_az_bir_a1_a2_a6": 316,
+     "en_az_bir_a3_a5siz": 431,
+     "en_az_bir_a5siz": 1199,
+     "en_az_bir_ty_dahil": 1407,
+     "ty": 312,
+     "ty_dizgili": 312,
+     "ty_kayit": 343,
+     "v1_create_genis": 48,
+     "v1_destroy": 61,
+     "v1_init": 56,
+     "v1_is": 91,
+     "v1_kalip1_is": 70,
+     "v1_kalip2_init": 5,
+     "v1_kalip3_arg": 6,
+     "yalniz:a1": 0,
+     "yalniz:a2": 32,
+     "yalniz:a3": 656,
+     "yalniz:a4": 61,
+     "yalniz:a5": 80,
+     "yalniz:a6": 54,
+     "yalniz:ty": 128
+    },
+    "sinif": {
+     "I": 711,
+     "K": 615,
+     "Y": 297
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 60
+     },
+     "a2": {
+      "I": 22,
+      "K": 88,
+      "Y": 0
+     },
+     "a3": {
+      "I": 458,
+      "K": 374,
+      "Y": 180
+     },
+     "a4": {
+      "I": 41,
+      "K": 73,
+      "Y": 21
+     },
+     "a5": {
+      "I": 16,
+      "K": 22,
+      "Y": 239
+     },
+     "a6": {
+      "I": 126,
+      "K": 22,
+      "Y": 1
+     },
+     "en_az_bir": {
+      "I": 542,
+      "K": 464,
+      "Y": 273
+     },
+     "ty": {
+      "I": 226,
+      "K": 67,
+      "Y": 19
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 391,
+     "aile_1": 1090,
+     "aile_2": 363,
+     "aile_3": 72,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       265
+      ],
+      [
+       "yok|diger|ikisi",
+       208
+      ],
+      [
+       "yok|diger|ic",
+       158
+      ],
+      [
+       "yok|yok|ikisi",
+       145
+      ],
+      [
+       "cagri_sonucu|yok|ic",
+       125
+      ]
+     ],
+     "entropi_bit_birlesik": 4.9,
+     "farkli_uclu": 81,
+     "fonksiyon": 1916,
+     "ikili_ici_en_sik_uclu_payi": 0.1383
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 49,
+     "a1&a4": 3,
+     "a1&a5": 60,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 84,
+     "a2&a4": 18,
+     "a2&a5": 0,
+     "a2&a6": 3,
+     "a2&ty": 0,
+     "a3&a4": 70,
+     "a3&a5": 166,
+     "a3&a6": 86,
+     "a3&ty": 175,
+     "a4&a5": 28,
+     "a4&a6": 5,
+     "a4&ty": 2,
+     "a5&a6": 7,
+     "a5&ty": 17,
+     "a6&ty": 64
+    },
+    "n": 1916,
+    "oran": {
+     "a1": 0.0313,
+     "a1_al": 0.0151,
+     "a1_al_saf": 0.0151,
+     "a1_yaz_cok": 0.0021,
+     "a1_yaz_tek": 0.0037,
+     "a1_yuklem": 0.0104,
+     "a1g_yuklem_okur_cagrili": 0.0005,
+     "a2": 0.0658,
+     "a2_birakir": 0.0339,
+     "a2_birakir_her_yolda": 0.0256,
+     "a2_buyutur": 0.0052,
+     "a2_sokum": 0.0005,
+     "a2_taze": 0.0261,
+     "a2g_alan_birak_genis": 0.0057,
+     "a3": 0.6425,
+     "a3_iki_ofset": 0.4134,
+     "a3_sifir_disi": 0.6425,
+     "a3_var": 0.7719,
+     "a3_yazar": 0.274,
+     "a4": 0.0929,
+     "a4_degisken": 0.0929,
+     "a4_paylasimli": 0.0825,
+     "a4_sabit_veri": 0.1524,
+     "a4_sabit_veri_ddalsiz": 0.1451,
+     "a4_yazar": 0.0459,
+     "a5": 0.1482,
+     "a5_donmez": 0.0026,
+     "a5_param_yazar": 0.0308,
+     "a5_sabit_bos": 0.0052,
+     "a5_ye_gecisli": 0.0183,
+     "a5_ye_yerel": 0.0966,
+     "a6": 0.0799,
+     "a6_ic": 0.0689,
+     "a6_lib": 0.011,
+     "a6_lib_ayirici": 0.0031,
+     "a6_lib_birakici": 0.0026,
+     "a6_sarma_kullanan": 0.2375,
+     "a6g_ic_genis": 0.12,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.7959,
+     "en_az_bir_a1_a2_a6": 0.1754,
+     "en_az_bir_a3_a5siz": 0.2547,
+     "en_az_bir_a5siz": 0.7531,
+     "en_az_bir_ty_dahil": 0.8685,
+     "ty": 0.1775,
+     "ty_dizgili": 0.1775,
+     "ty_kayit": 0.1962,
+     "v1_create_genis": 0.0313,
+     "v1_destroy": 0.0339,
+     "v1_init": 0.0402,
+     "v1_is": 0.0506,
+     "v1_kalip1_is": 0.0397,
+     "v1_kalip2_init": 0.0031,
+     "v1_kalip3_arg": 0.0037,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0177,
+     "yalniz:a3": 0.44,
+     "yalniz:a4": 0.0386,
+     "yalniz:a5": 0.0428,
+     "yalniz:a6": 0.0297,
+     "yalniz:ty": 0.0725
+    },
+    "satirsiz": {
+     "I": 181,
+     "K": 184,
+     "Y": 26,
+     "n": 391
+    },
+    "sayi": {
+     "a1": 60,
+     "a1_al": 29,
+     "a1_al_saf": 29,
+     "a1_yaz_cok": 4,
+     "a1_yaz_tek": 7,
+     "a1_yuklem": 20,
+     "a1g_yuklem_okur_cagrili": 1,
+     "a2": 126,
+     "a2_birakir": 65,
+     "a2_birakir_her_yolda": 49,
+     "a2_buyutur": 10,
+     "a2_sokum": 1,
+     "a2_taze": 50,
+     "a2g_alan_birak_genis": 11,
+     "a3": 1231,
+     "a3_iki_ofset": 792,
+     "a3_sifir_disi": 1231,
+     "a3_var": 1479,
+     "a3_yazar": 525,
+     "a4": 178,
+     "a4_degisken": 178,
+     "a4_paylasimli": 158,
+     "a4_sabit_veri": 292,
+     "a4_sabit_veri_ddalsiz": 278,
+     "a4_yazar": 88,
+     "a5": 284,
+     "a5_donmez": 5,
+     "a5_param_yazar": 59,
+     "a5_sabit_bos": 10,
+     "a5_ye_gecisli": 35,
+     "a5_ye_yerel": 185,
+     "a6": 153,
+     "a6_ic": 132,
+     "a6_lib": 21,
+     "a6_lib_ayirici": 6,
+     "a6_lib_birakici": 5,
+     "a6_sarma_kullanan": 455,
+     "a6g_ic_genis": 230,
+     "disasm_yok": 0,
+     "en_az_bir": 1525,
+     "en_az_bir_a1_a2_a6": 336,
+     "en_az_bir_a3_a5siz": 488,
+     "en_az_bir_a5siz": 1443,
+     "en_az_bir_ty_dahil": 1664,
+     "ty": 340,
+     "ty_dizgili": 340,
+     "ty_kayit": 376,
+     "v1_create_genis": 60,
+     "v1_destroy": 65,
+     "v1_init": 77,
+     "v1_is": 97,
+     "v1_kalip1_is": 76,
+     "v1_kalip2_init": 6,
+     "v1_kalip3_arg": 7,
+     "yalniz:a1": 0,
+     "yalniz:a2": 34,
+     "yalniz:a3": 843,
+     "yalniz:a4": 74,
+     "yalniz:a5": 82,
+     "yalniz:a6": 57,
+     "yalniz:ty": 139
+    },
+    "sinif": {
+     "I": 850,
+     "K": 766,
+     "Y": 300
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 60
+     },
+     "a2": {
+      "I": 26,
+      "K": 100,
+      "Y": 0
+     },
+     "a3": {
+      "I": 581,
+      "K": 469,
+      "Y": 181
+     },
+     "a4": {
+      "I": 52,
+      "K": 105,
+      "Y": 21
+     },
+     "a5": {
+      "I": 16,
+      "K": 29,
+      "Y": 239
+     },
+     "a6": {
+      "I": 129,
+      "K": 23,
+      "Y": 1
+     },
+     "en_az_bir": {
+      "I": 669,
+      "K": 582,
+      "Y": 274
+     },
+     "ty": {
+      "I": 238,
+      "K": 83,
+      "Y": 19
+     }
+    }
+   }
+  },
+  "debian/tree": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 31,
+     "aile_1": 66,
+     "aile_2": 14,
+     "aile_3": 1,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|lib",
+       28
+      ],
+      [
+       "cagri_sonucu|diger|ikisi",
+       11
+      ],
+      [
+       "yok|yok|ikisi",
+       10
+      ],
+      [
+       "bilinmez|yok|lib",
+       8
+      ],
+      [
+       "sabit|yok|ikisi",
+       5
+      ]
+     ],
+     "entropi_bit_birlesik": 4.0911,
+     "farkli_uclu": 30,
+     "fonksiyon": 112,
+     "ikili_ici_en_sik_uclu_payi": 0.25
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 0,
+     "a1&a4": 1,
+     "a1&a5": 1,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 0,
+     "a2&a4": 2,
+     "a2&a5": 0,
+     "a2&a6": 0,
+     "a2&ty": 0,
+     "a3&a4": 8,
+     "a3&a5": 1,
+     "a3&a6": 0,
+     "a3&ty": 0,
+     "a4&a5": 2,
+     "a4&a6": 2,
+     "a4&ty": 5,
+     "a5&a6": 0,
+     "a5&ty": 0,
+     "a6&ty": 0
+    },
+    "n": 112,
+    "oran": {
+     "a1": 0.0089,
+     "a1_al": 0.0,
+     "a1_al_saf": 0.0,
+     "a1_yaz_cok": 0.0,
+     "a1_yaz_tek": 0.0,
+     "a1_yuklem": 0.0089,
+     "a1g_yuklem_okur_cagrili": 0.0,
+     "a2": 0.0893,
+     "a2_birakir": 0.0089,
+     "a2_birakir_her_yolda": 0.0089,
+     "a2_buyutur": 0.0179,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0625,
+     "a2g_alan_birak_genis": 0.0,
+     "a3": 0.2143,
+     "a3_iki_ofset": 0.1607,
+     "a3_sifir_disi": 0.2143,
+     "a3_var": 0.4286,
+     "a3_yazar": 0.1161,
+     "a4": 0.4196,
+     "a4_degisken": 0.4196,
+     "a4_paylasimli": 0.4018,
+     "a4_sabit_veri": 0.4554,
+     "a4_sabit_veri_ddalsiz": 0.4554,
+     "a4_yazar": 0.1161,
+     "a5": 0.0893,
+     "a5_donmez": 0.0089,
+     "a5_param_yazar": 0.0,
+     "a5_sabit_bos": 0.0268,
+     "a5_ye_gecisli": 0.0089,
+     "a5_ye_yerel": 0.0714,
+     "a6": 0.0446,
+     "a6_ic": 0.0089,
+     "a6_lib": 0.0357,
+     "a6_lib_ayirici": 0.0179,
+     "a6_lib_birakici": 0.0,
+     "a6_sarma_kullanan": 0.1696,
+     "a6g_ic_genis": 0.0268,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.7232,
+     "en_az_bir_a1_a2_a6": 0.1429,
+     "en_az_bir_a3_a5siz": 0.5179,
+     "en_az_bir_a5siz": 0.6607,
+     "en_az_bir_ty_dahil": 0.7232,
+     "ty": 0.0446,
+     "ty_dizgili": 0.0446,
+     "ty_kayit": 0.3304,
+     "v1_create_genis": 0.0804,
+     "v1_destroy": 0.0089,
+     "v1_init": 0.0,
+     "v1_is": 0.1518,
+     "v1_kalip1_is": 0.1429,
+     "v1_kalip2_init": 0.0,
+     "v1_kalip3_arg": 0.0,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0714,
+     "yalniz:a3": 0.1339,
+     "yalniz:a4": 0.2946,
+     "yalniz:a5": 0.0625,
+     "yalniz:a6": 0.0268,
+     "yalniz:ty": 0.0
+    },
+    "satirsiz": {
+     "I": 0,
+     "K": 30,
+     "Y": 1,
+     "n": 31
+    },
+    "sayi": {
+     "a1": 1,
+     "a1_al": 0,
+     "a1_al_saf": 0,
+     "a1_yaz_cok": 0,
+     "a1_yaz_tek": 0,
+     "a1_yuklem": 1,
+     "a1g_yuklem_okur_cagrili": 0,
+     "a2": 10,
+     "a2_birakir": 1,
+     "a2_birakir_her_yolda": 1,
+     "a2_buyutur": 2,
+     "a2_sokum": 0,
+     "a2_taze": 7,
+     "a2g_alan_birak_genis": 0,
+     "a3": 24,
+     "a3_iki_ofset": 18,
+     "a3_sifir_disi": 24,
+     "a3_var": 48,
+     "a3_yazar": 13,
+     "a4": 47,
+     "a4_degisken": 47,
+     "a4_paylasimli": 45,
+     "a4_sabit_veri": 51,
+     "a4_sabit_veri_ddalsiz": 51,
+     "a4_yazar": 13,
+     "a5": 10,
+     "a5_donmez": 1,
+     "a5_param_yazar": 0,
+     "a5_sabit_bos": 3,
+     "a5_ye_gecisli": 1,
+     "a5_ye_yerel": 8,
+     "a6": 5,
+     "a6_ic": 1,
+     "a6_lib": 4,
+     "a6_lib_ayirici": 2,
+     "a6_lib_birakici": 0,
+     "a6_sarma_kullanan": 19,
+     "a6g_ic_genis": 3,
+     "disasm_yok": 0,
+     "en_az_bir": 81,
+     "en_az_bir_a1_a2_a6": 16,
+     "en_az_bir_a3_a5siz": 58,
+     "en_az_bir_a5siz": 74,
+     "en_az_bir_ty_dahil": 81,
+     "ty": 5,
+     "ty_dizgili": 5,
+     "ty_kayit": 37,
+     "v1_create_genis": 9,
+     "v1_destroy": 1,
+     "v1_init": 0,
+     "v1_is": 17,
+     "v1_kalip1_is": 16,
+     "v1_kalip2_init": 0,
+     "v1_kalip3_arg": 0,
+     "yalniz:a1": 0,
+     "yalniz:a2": 8,
+     "yalniz:a3": 15,
+     "yalniz:a4": 33,
+     "yalniz:a5": 7,
+     "yalniz:a6": 3,
+     "yalniz:ty": 0
+    },
+    "sinif": {
+     "I": 5,
+     "K": 92,
+     "Y": 15
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 1
+     },
+     "a2": {
+      "I": 1,
+      "K": 9,
+      "Y": 0
+     },
+     "a3": {
+      "I": 0,
+      "K": 20,
+      "Y": 4
+     },
+     "a4": {
+      "I": 4,
+      "K": 35,
+      "Y": 8
+     },
+     "a5": {
+      "I": 0,
+      "K": 2,
+      "Y": 8
+     },
+     "a6": {
+      "I": 0,
+      "K": 5,
+      "Y": 0
+     },
+     "en_az_bir": {
+      "I": 5,
+      "K": 62,
+      "Y": 14
+     },
+     "ty": {
+      "I": 0,
+      "K": 5,
+      "Y": 0
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 33,
+     "aile_1": 67,
+     "aile_2": 14,
+     "aile_3": 1,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|lib",
+       28
+      ],
+      [
+       "cagri_sonucu|diger|ikisi",
+       11
+      ],
+      [
+       "yok|yok|ikisi",
+       10
+      ],
+      [
+       "bilinmez|yok|lib",
+       8
+      ],
+      [
+       "yok|yok|yok",
+       7
+      ]
+     ],
+     "entropi_bit_birlesik": 4.0988,
+     "farkli_uclu": 30,
+     "fonksiyon": 115,
+     "ikili_ici_en_sik_uclu_payi": 0.2435
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 0,
+     "a1&a4": 1,
+     "a1&a5": 1,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 0,
+     "a2&a4": 2,
+     "a2&a5": 0,
+     "a2&a6": 0,
+     "a2&ty": 0,
+     "a3&a4": 8,
+     "a3&a5": 1,
+     "a3&a6": 0,
+     "a3&ty": 0,
+     "a4&a5": 2,
+     "a4&a6": 2,
+     "a4&ty": 5,
+     "a5&a6": 0,
+     "a5&ty": 0,
+     "a6&ty": 0
+    },
+    "n": 115,
+    "oran": {
+     "a1": 0.0087,
+     "a1_al": 0.0,
+     "a1_al_saf": 0.0,
+     "a1_yaz_cok": 0.0,
+     "a1_yaz_tek": 0.0,
+     "a1_yuklem": 0.0087,
+     "a1g_yuklem_okur_cagrili": 0.0,
+     "a2": 0.087,
+     "a2_birakir": 0.0087,
+     "a2_birakir_her_yolda": 0.0087,
+     "a2_buyutur": 0.0174,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0609,
+     "a2g_alan_birak_genis": 0.0,
+     "a3": 0.2087,
+     "a3_iki_ofset": 0.1565,
+     "a3_sifir_disi": 0.2087,
+     "a3_var": 0.4174,
+     "a3_yazar": 0.113,
+     "a4": 0.4174,
+     "a4_degisken": 0.4174,
+     "a4_paylasimli": 0.4,
+     "a4_sabit_veri": 0.4522,
+     "a4_sabit_veri_ddalsiz": 0.4435,
+     "a4_yazar": 0.1217,
+     "a5": 0.087,
+     "a5_donmez": 0.0087,
+     "a5_param_yazar": 0.0,
+     "a5_sabit_bos": 0.0261,
+     "a5_ye_gecisli": 0.0087,
+     "a5_ye_yerel": 0.0696,
+     "a6": 0.0435,
+     "a6_ic": 0.0087,
+     "a6_lib": 0.0348,
+     "a6_lib_ayirici": 0.0174,
+     "a6_lib_birakici": 0.0,
+     "a6_sarma_kullanan": 0.1739,
+     "a6g_ic_genis": 0.0261,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.713,
+     "en_az_bir_a1_a2_a6": 0.1391,
+     "en_az_bir_a3_a5siz": 0.513,
+     "en_az_bir_a5siz": 0.6522,
+     "en_az_bir_ty_dahil": 0.713,
+     "ty": 0.0435,
+     "ty_dizgili": 0.0435,
+     "ty_kayit": 0.3217,
+     "v1_create_genis": 0.0783,
+     "v1_destroy": 0.0087,
+     "v1_init": 0.0,
+     "v1_is": 0.1478,
+     "v1_kalip1_is": 0.1391,
+     "v1_kalip2_init": 0.0,
+     "v1_kalip3_arg": 0.0,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0696,
+     "yalniz:a3": 0.1304,
+     "yalniz:a4": 0.2957,
+     "yalniz:a5": 0.0609,
+     "yalniz:a6": 0.0261,
+     "yalniz:ty": 0.0
+    },
+    "satirsiz": {
+     "I": 0,
+     "K": 30,
+     "Y": 3,
+     "n": 33
+    },
+    "sayi": {
+     "a1": 1,
+     "a1_al": 0,
+     "a1_al_saf": 0,
+     "a1_yaz_cok": 0,
+     "a1_yaz_tek": 0,
+     "a1_yuklem": 1,
+     "a1g_yuklem_okur_cagrili": 0,
+     "a2": 10,
+     "a2_birakir": 1,
+     "a2_birakir_her_yolda": 1,
+     "a2_buyutur": 2,
+     "a2_sokum": 0,
+     "a2_taze": 7,
+     "a2g_alan_birak_genis": 0,
+     "a3": 24,
+     "a3_iki_ofset": 18,
+     "a3_sifir_disi": 24,
+     "a3_var": 48,
+     "a3_yazar": 13,
+     "a4": 48,
+     "a4_degisken": 48,
+     "a4_paylasimli": 46,
+     "a4_sabit_veri": 52,
+     "a4_sabit_veri_ddalsiz": 51,
+     "a4_yazar": 14,
+     "a5": 10,
+     "a5_donmez": 1,
+     "a5_param_yazar": 0,
+     "a5_sabit_bos": 3,
+     "a5_ye_gecisli": 1,
+     "a5_ye_yerel": 8,
+     "a6": 5,
+     "a6_ic": 1,
+     "a6_lib": 4,
+     "a6_lib_ayirici": 2,
+     "a6_lib_birakici": 0,
+     "a6_sarma_kullanan": 20,
+     "a6g_ic_genis": 3,
+     "disasm_yok": 0,
+     "en_az_bir": 82,
+     "en_az_bir_a1_a2_a6": 16,
+     "en_az_bir_a3_a5siz": 59,
+     "en_az_bir_a5siz": 75,
+     "en_az_bir_ty_dahil": 82,
+     "ty": 5,
+     "ty_dizgili": 5,
+     "ty_kayit": 37,
+     "v1_create_genis": 9,
+     "v1_destroy": 1,
+     "v1_init": 0,
+     "v1_is": 17,
+     "v1_kalip1_is": 16,
+     "v1_kalip2_init": 0,
+     "v1_kalip3_arg": 0,
+     "yalniz:a1": 0,
+     "yalniz:a2": 8,
+     "yalniz:a3": 15,
+     "yalniz:a4": 34,
+     "yalniz:a5": 7,
+     "yalniz:a6": 3,
+     "yalniz:ty": 0
+    },
+    "sinif": {
+     "I": 5,
+     "K": 93,
+     "Y": 17
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 1
+     },
+     "a2": {
+      "I": 1,
+      "K": 9,
+      "Y": 0
+     },
+     "a3": {
+      "I": 0,
+      "K": 20,
+      "Y": 4
+     },
+     "a4": {
+      "I": 4,
+      "K": 36,
+      "Y": 8
+     },
+     "a5": {
+      "I": 0,
+      "K": 2,
+      "Y": 8
+     },
+     "a6": {
+      "I": 0,
+      "K": 5,
+      "Y": 0
+     },
+     "en_az_bir": {
+      "I": 5,
+      "K": 63,
+      "Y": 14
+     },
+     "ty": {
+      "I": 0,
+      "K": 5,
+      "Y": 0
+     }
+    }
+   }
+  },
+  "debian/zstd": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 316,
+     "aile_1": 1228,
+     "aile_2": 238,
+     "aile_3": 59,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       170
+      ],
+      [
+       "bilinmez|diger|ikisi",
+       140
+      ],
+      [
+       "yok|diger|yok",
+       120
+      ],
+      [
+       "yok|diger|ikisi",
+       98
+      ],
+      [
+       "bilinmez|yok|yok",
+       95
+      ]
+     ],
+     "entropi_bit_birlesik": 5.3946,
+     "farkli_uclu": 95,
+     "fonksiyon": 1841,
+     "ikili_ici_en_sik_uclu_payi": 0.1124
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 53,
+     "a1&a4": 0,
+     "a1&a5": 96,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 27,
+     "a2&a4": 10,
+     "a2&a5": 0,
+     "a2&a6": 2,
+     "a2&ty": 0,
+     "a3&a4": 43,
+     "a3&a5": 139,
+     "a3&a6": 31,
+     "a3&ty": 0,
+     "a4&a5": 8,
+     "a4&a6": 3,
+     "a4&ty": 0,
+     "a5&a6": 3,
+     "a5&ty": 0,
+     "a6&ty": 0
+    },
+    "n": 1841,
+    "oran": {
+     "a1": 0.0521,
+     "a1_al": 0.0109,
+     "a1_al_saf": 0.0065,
+     "a1_yaz_cok": 0.0005,
+     "a1_yaz_tek": 0.0125,
+     "a1_yuklem": 0.0282,
+     "a1g_yuklem_okur_cagrili": 0.0027,
+     "a2": 0.0375,
+     "a2_birakir": 0.0158,
+     "a2_birakir_her_yolda": 0.0038,
+     "a2_buyutur": 0.0,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0228,
+     "a2g_alan_birak_genis": 0.0081,
+     "a3": 0.5682,
+     "a3_iki_ofset": 0.4992,
+     "a3_sifir_disi": 0.5682,
+     "a3_var": 0.6697,
+     "a3_yazar": 0.4454,
+     "a4": 0.0646,
+     "a4_degisken": 0.0646,
+     "a4_paylasimli": 0.0592,
+     "a4_sabit_veri": 0.1635,
+     "a4_sabit_veri_ddalsiz": 0.1548,
+     "a4_yazar": 0.0136,
+     "a5": 0.1955,
+     "a5_donmez": 0.0255,
+     "a5_param_yazar": 0.0489,
+     "a5_sabit_bos": 0.0152,
+     "a5_ye_gecisli": 0.0125,
+     "a5_ye_yerel": 0.1086,
+     "a6": 0.1037,
+     "a6_ic": 0.0782,
+     "a6_lib": 0.0255,
+     "a6_lib_ayirici": 0.0065,
+     "a6_lib_birakici": 0.006,
+     "a6_sarma_kullanan": 0.0109,
+     "a6g_ic_genis": 0.0864,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.8284,
+     "en_az_bir_a1_a2_a6": 0.1923,
+     "en_az_bir_a3_a5siz": 0.2499,
+     "en_az_bir_a5siz": 0.7366,
+     "en_az_bir_ty_dahil": 0.8284,
+     "ty": 0.0,
+     "ty_dizgili": 0.0,
+     "ty_kayit": 0.0701,
+     "v1_create_genis": 0.0228,
+     "v1_destroy": 0.0158,
+     "v1_init": 0.1054,
+     "v1_is": 0.0483,
+     "v1_kalip1_is": 0.0185,
+     "v1_kalip2_init": 0.0011,
+     "v1_kalip3_arg": 0.0033,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0185,
+     "yalniz:a3": 0.4411,
+     "yalniz:a4": 0.032,
+     "yalniz:a5": 0.0918,
+     "yalniz:a6": 0.0837,
+     "yalniz:ty": 0.0
+    },
+    "satirsiz": {
+     "I": 107,
+     "K": 164,
+     "Y": 45,
+     "n": 316
+    },
+    "sayi": {
+     "a1": 96,
+     "a1_al": 20,
+     "a1_al_saf": 12,
+     "a1_yaz_cok": 1,
+     "a1_yaz_tek": 23,
+     "a1_yuklem": 52,
+     "a1g_yuklem_okur_cagrili": 5,
+     "a2": 69,
+     "a2_birakir": 29,
+     "a2_birakir_her_yolda": 7,
+     "a2_buyutur": 0,
+     "a2_sokum": 0,
+     "a2_taze": 42,
+     "a2g_alan_birak_genis": 15,
+     "a3": 1046,
+     "a3_iki_ofset": 919,
+     "a3_sifir_disi": 1046,
+     "a3_var": 1233,
+     "a3_yazar": 820,
+     "a4": 119,
+     "a4_degisken": 119,
+     "a4_paylasimli": 109,
+     "a4_sabit_veri": 301,
+     "a4_sabit_veri_ddalsiz": 285,
+     "a4_yazar": 25,
+     "a5": 360,
+     "a5_donmez": 47,
+     "a5_param_yazar": 90,
+     "a5_sabit_bos": 28,
+     "a5_ye_gecisli": 23,
+     "a5_ye_yerel": 200,
+     "a6": 191,
+     "a6_ic": 144,
+     "a6_lib": 47,
+     "a6_lib_ayirici": 12,
+     "a6_lib_birakici": 11,
+     "a6_sarma_kullanan": 20,
+     "a6g_ic_genis": 159,
+     "disasm_yok": 0,
+     "en_az_bir": 1525,
+     "en_az_bir_a1_a2_a6": 354,
+     "en_az_bir_a3_a5siz": 460,
+     "en_az_bir_a5siz": 1356,
+     "en_az_bir_ty_dahil": 1525,
+     "ty": 0,
+     "ty_dizgili": 0,
+     "ty_kayit": 129,
+     "v1_create_genis": 42,
+     "v1_destroy": 29,
+     "v1_init": 194,
+     "v1_is": 89,
+     "v1_kalip1_is": 34,
+     "v1_kalip2_init": 2,
+     "v1_kalip3_arg": 6,
+     "yalniz:a1": 0,
+     "yalniz:a2": 34,
+     "yalniz:a3": 812,
+     "yalniz:a4": 59,
+     "yalniz:a5": 169,
+     "yalniz:a6": 154,
+     "yalniz:ty": 0
+    },
+    "sinif": {
+     "I": 487,
+     "K": 874,
+     "Y": 480
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 96
+     },
+     "a2": {
+      "I": 0,
+      "K": 69,
+      "Y": 0
+     },
+     "a3": {
+      "I": 262,
+      "K": 525,
+      "Y": 259
+     },
+     "a4": {
+      "I": 5,
+      "K": 98,
+      "Y": 16
+     },
+     "a5": {
+      "I": 9,
+      "K": 63,
+      "Y": 288
+     },
+     "a6": {
+      "I": 143,
+      "K": 47,
+      "Y": 1
+     },
+     "en_az_bir": {
+      "I": 380,
+      "K": 710,
+      "Y": 435
+     },
+     "ty": {
+      "I": 0,
+      "K": 0,
+      "Y": 0
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 338,
+     "aile_1": 1266,
+     "aile_2": 245,
+     "aile_3": 59,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       170
+      ],
+      [
+       "bilinmez|diger|ikisi",
+       146
+      ],
+      [
+       "yok|diger|yok",
+       120
+      ],
+      [
+       "yok|diger|ikisi",
+       102
+      ],
+      [
+       "bilinmez|yok|yok",
+       95
+      ]
+     ],
+     "entropi_bit_birlesik": 5.4201,
+     "farkli_uclu": 96,
+     "fonksiyon": 1908,
+     "ikili_ici_en_sik_uclu_payi": 0.1116
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 53,
+     "a1&a4": 0,
+     "a1&a5": 96,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 28,
+     "a2&a4": 11,
+     "a2&a5": 0,
+     "a2&a6": 2,
+     "a2&ty": 0,
+     "a3&a4": 46,
+     "a3&a5": 139,
+     "a3&a6": 31,
+     "a3&ty": 0,
+     "a4&a5": 8,
+     "a4&a6": 3,
+     "a4&ty": 0,
+     "a5&a6": 5,
+     "a5&ty": 0,
+     "a6&ty": 0
+    },
+    "n": 1908,
+    "oran": {
+     "a1": 0.0503,
+     "a1_al": 0.0105,
+     "a1_al_saf": 0.0063,
+     "a1_yaz_cok": 0.0005,
+     "a1_yaz_tek": 0.0121,
+     "a1_yuklem": 0.0273,
+     "a1g_yuklem_okur_cagrili": 0.0026,
+     "a2": 0.0377,
+     "a2_birakir": 0.0157,
+     "a2_birakir_her_yolda": 0.0042,
+     "a2_buyutur": 0.0,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0231,
+     "a2g_alan_birak_genis": 0.0079,
+     "a3": 0.5624,
+     "a3_iki_ofset": 0.4948,
+     "a3_sifir_disi": 0.5624,
+     "a3_var": 0.6661,
+     "a3_yazar": 0.4403,
+     "a4": 0.0666,
+     "a4_degisken": 0.0666,
+     "a4_paylasimli": 0.0608,
+     "a4_sabit_veri": 0.1651,
+     "a4_sabit_veri_ddalsiz": 0.1562,
+     "a4_yazar": 0.0147,
+     "a5": 0.1944,
+     "a5_donmez": 0.0294,
+     "a5_param_yazar": 0.0472,
+     "a5_sabit_bos": 0.0147,
+     "a5_ye_gecisli": 0.0131,
+     "a5_ye_yerel": 0.1048,
+     "a6": 0.1017,
+     "a6_ic": 0.0755,
+     "a6_lib": 0.0262,
+     "a6_lib_ayirici": 0.0063,
+     "a6_lib_birakici": 0.0058,
+     "a6_sarma_kullanan": 0.0115,
+     "a6g_ic_genis": 0.0833,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.8229,
+     "en_az_bir_a1_a2_a6": 0.1887,
+     "en_az_bir_a3_a5siz": 0.2479,
+     "en_az_bir_a5siz": 0.7296,
+     "en_az_bir_ty_dahil": 0.8229,
+     "ty": 0.0,
+     "ty_dizgili": 0.0,
+     "ty_kayit": 0.0676,
+     "v1_create_genis": 0.0231,
+     "v1_destroy": 0.0157,
+     "v1_init": 0.1038,
+     "v1_is": 0.0466,
+     "v1_kalip1_is": 0.0178,
+     "v1_kalip2_init": 0.001,
+     "v1_kalip3_arg": 0.0037,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0183,
+     "yalniz:a3": 0.4376,
+     "yalniz:a4": 0.033,
+     "yalniz:a5": 0.0933,
+     "yalniz:a6": 0.0812,
+     "yalniz:ty": 0.0
+    },
+    "satirsiz": {
+     "I": 108,
+     "K": 183,
+     "Y": 47,
+     "n": 338
+    },
+    "sayi": {
+     "a1": 96,
+     "a1_al": 20,
+     "a1_al_saf": 12,
+     "a1_yaz_cok": 1,
+     "a1_yaz_tek": 23,
+     "a1_yuklem": 52,
+     "a1g_yuklem_okur_cagrili": 5,
+     "a2": 72,
+     "a2_birakir": 30,
+     "a2_birakir_her_yolda": 8,
+     "a2_buyutur": 0,
+     "a2_sokum": 0,
+     "a2_taze": 44,
+     "a2g_alan_birak_genis": 15,
+     "a3": 1073,
+     "a3_iki_ofset": 944,
+     "a3_sifir_disi": 1073,
+     "a3_var": 1271,
+     "a3_yazar": 840,
+     "a4": 127,
+     "a4_degisken": 127,
+     "a4_paylasimli": 116,
+     "a4_sabit_veri": 315,
+     "a4_sabit_veri_ddalsiz": 298,
+     "a4_yazar": 28,
+     "a5": 371,
+     "a5_donmez": 56,
+     "a5_param_yazar": 90,
+     "a5_sabit_bos": 28,
+     "a5_ye_gecisli": 25,
+     "a5_ye_yerel": 200,
+     "a6": 194,
+     "a6_ic": 144,
+     "a6_lib": 50,
+     "a6_lib_ayirici": 12,
+     "a6_lib_birakici": 11,
+     "a6_sarma_kullanan": 22,
+     "a6g_ic_genis": 159,
+     "disasm_yok": 0,
+     "en_az_bir": 1570,
+     "en_az_bir_a1_a2_a6": 360,
+     "en_az_bir_a3_a5siz": 473,
+     "en_az_bir_a5siz": 1392,
+     "en_az_bir_ty_dahil": 1570,
+     "ty": 0,
+     "ty_dizgili": 0,
+     "ty_kayit": 129,
+     "v1_create_genis": 44,
+     "v1_destroy": 30,
+     "v1_init": 198,
+     "v1_is": 89,
+     "v1_kalip1_is": 34,
+     "v1_kalip2_init": 2,
+     "v1_kalip3_arg": 7,
+     "yalniz:a1": 0,
+     "yalniz:a2": 35,
+     "yalniz:a3": 835,
+     "yalniz:a4": 63,
+     "yalniz:a5": 178,
+     "yalniz:a6": 155,
+     "yalniz:ty": 0
+    },
+    "sinif": {
+     "I": 490,
+     "K": 934,
+     "Y": 484
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 96
+     },
+     "a2": {
+      "I": 0,
+      "K": 72,
+      "Y": 0
+     },
+     "a3": {
+      "I": 264,
+      "K": 550,
+      "Y": 259
+     },
+     "a4": {
+      "I": 5,
+      "K": 104,
+      "Y": 18
+     },
+     "a5": {
+      "I": 9,
+      "K": 74,
+      "Y": 288
+     },
+     "a6": {
+      "I": 143,
+      "K": 50,
+      "Y": 1
+     },
+     "en_az_bir": {
+      "I": 382,
+      "K": 751,
+      "Y": 437
+     },
+     "ty": {
+      "I": 0,
+      "K": 0,
+      "Y": 0
+     }
+    }
+   }
+  },
+  "mac/htop": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 87,
+     "aile_1": 365,
+     "aile_2": 120,
+     "aile_3": 25,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       88
+      ],
+      [
+       "yok|yok|ikisi",
+       54
+      ],
+      [
+       "yok|diger|ic",
+       44
+      ],
+      [
+       "cagri_sonucu|diger|ic",
+       33
+      ],
+      [
+       "yok|param_alani|ic",
+       33
+      ]
+     ],
+     "entropi_bit_birlesik": 5.0741,
+     "farkli_uclu": 74,
+     "fonksiyon": 597,
+     "ikili_ici_en_sik_uclu_payi": 0.1474
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 14,
+     "a1&a4": 1,
+     "a1&a5": 16,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 29,
+     "a2&a4": 8,
+     "a2&a5": 0,
+     "a2&a6": 4,
+     "a2&ty": 1,
+     "a3&a4": 54,
+     "a3&a5": 44,
+     "a3&a6": 14,
+     "a3&ty": 14,
+     "a4&a5": 7,
+     "a4&a6": 2,
+     "a4&ty": 5,
+     "a5&a6": 2,
+     "a5&ty": 0,
+     "a6&ty": 8
+    },
+    "n": 597,
+    "oran": {
+     "a1": 0.0268,
+     "a1_al": 0.0034,
+     "a1_al_saf": 0.0034,
+     "a1_yaz_cok": 0.0101,
+     "a1_yaz_tek": 0.0067,
+     "a1_yuklem": 0.0067,
+     "a1g_yuklem_okur_cagrili": 0.0017,
+     "a2": 0.1206,
+     "a2_birakir": 0.0553,
+     "a2_birakir_her_yolda": 0.0519,
+     "a2_buyutur": 0.0017,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0637,
+     "a2g_alan_birak_genis": 0.0101,
+     "a3": 0.6097,
+     "a3_iki_ofset": 0.4657,
+     "a3_sifir_disi": 0.6097,
+     "a3_var": 0.6968,
+     "a3_yazar": 0.2931,
+     "a4": 0.1675,
+     "a4_degisken": 0.1675,
+     "a4_paylasimli": 0.1575,
+     "a4_sabit_veri": 0.1742,
+     "a4_sabit_veri_ddalsiz": 0.1658,
+     "a4_yazar": 0.0385,
+     "a5": 0.1323,
+     "a5_donmez": 0.0067,
+     "a5_param_yazar": 0.0452,
+     "a5_sabit_bos": 0.0251,
+     "a5_ye_gecisli": 0.0134,
+     "a5_ye_yerel": 0.067,
+     "a6": 0.0821,
+     "a6_ic": 0.0553,
+     "a6_lib": 0.0268,
+     "a6_lib_ayirici": 0.0117,
+     "a6_lib_birakici": 0.0067,
+     "a6_sarma_kullanan": 0.2345,
+     "a6g_ic_genis": 0.0704,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.8543,
+     "en_az_bir_a1_a2_a6": 0.2228,
+     "en_az_bir_a3_a5siz": 0.3719,
+     "en_az_bir_a5siz": 0.809,
+     "en_az_bir_ty_dahil": 0.8543,
+     "ty": 0.0402,
+     "ty_dizgili": 0.0402,
+     "ty_kayit": 0.1089,
+     "v1_create_genis": 0.0653,
+     "v1_destroy": 0.0553,
+     "v1_init": 0.0586,
+     "v1_is": 0.0335,
+     "v1_kalip1_is": 0.0151,
+     "v1_kalip2_init": 0.0017,
+     "v1_kalip3_arg": 0.0335,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0637,
+     "yalniz:a3": 0.3903,
+     "yalniz:a4": 0.0586,
+     "yalniz:a5": 0.0452,
+     "yalniz:a6": 0.0536,
+     "yalniz:ty": 0.0
+    },
+    "satirsiz": {
+     "I": 34,
+     "K": 47,
+     "Y": 6,
+     "n": 87
+    },
+    "sayi": {
+     "a1": 16,
+     "a1_al": 2,
+     "a1_al_saf": 2,
+     "a1_yaz_cok": 6,
+     "a1_yaz_tek": 4,
+     "a1_yuklem": 4,
+     "a1g_yuklem_okur_cagrili": 1,
+     "a2": 72,
+     "a2_birakir": 33,
+     "a2_birakir_her_yolda": 31,
+     "a2_buyutur": 1,
+     "a2_sokum": 0,
+     "a2_taze": 38,
+     "a2g_alan_birak_genis": 6,
+     "a3": 364,
+     "a3_iki_ofset": 278,
+     "a3_sifir_disi": 364,
+     "a3_var": 416,
+     "a3_yazar": 175,
+     "a4": 100,
+     "a4_degisken": 100,
+     "a4_paylasimli": 94,
+     "a4_sabit_veri": 104,
+     "a4_sabit_veri_ddalsiz": 99,
+     "a4_yazar": 23,
+     "a5": 79,
+     "a5_donmez": 4,
+     "a5_param_yazar": 27,
+     "a5_sabit_bos": 15,
+     "a5_ye_gecisli": 8,
+     "a5_ye_yerel": 40,
+     "a6": 49,
+     "a6_ic": 33,
+     "a6_lib": 16,
+     "a6_lib_ayirici": 7,
+     "a6_lib_birakici": 4,
+     "a6_sarma_kullanan": 140,
+     "a6g_ic_genis": 42,
+     "disasm_yok": 0,
+     "en_az_bir": 510,
+     "en_az_bir_a1_a2_a6": 133,
+     "en_az_bir_a3_a5siz": 222,
+     "en_az_bir_a5siz": 483,
+     "en_az_bir_ty_dahil": 510,
+     "ty": 24,
+     "ty_dizgili": 24,
+     "ty_kayit": 65,
+     "v1_create_genis": 39,
+     "v1_destroy": 33,
+     "v1_init": 35,
+     "v1_is": 20,
+     "v1_kalip1_is": 9,
+     "v1_kalip2_init": 1,
+     "v1_kalip3_arg": 20,
+     "yalniz:a1": 0,
+     "yalniz:a2": 38,
+     "yalniz:a3": 233,
+     "yalniz:a4": 35,
+     "yalniz:a5": 27,
+     "yalniz:a6": 32,
+     "yalniz:ty": 0
+    },
+    "sinif": {
+     "I": 265,
+     "K": 230,
+     "Y": 102
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 16
+     },
+     "a2": {
+      "I": 31,
+      "K": 41,
+      "Y": 0
+     },
+     "a3": {
+      "I": 166,
+      "K": 132,
+      "Y": 66
+     },
+     "a4": {
+      "I": 54,
+      "K": 37,
+      "Y": 9
+     },
+     "a5": {
+      "I": 4,
+      "K": 13,
+      "Y": 62
+     },
+     "a6": {
+      "I": 32,
+      "K": 17,
+      "Y": 0
+     },
+     "en_az_bir": {
+      "I": 231,
+      "K": 183,
+      "Y": 96
+     },
+     "ty": {
+      "I": 15,
+      "K": 8,
+      "Y": 1
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 87,
+     "aile_1": 365,
+     "aile_2": 120,
+     "aile_3": 25,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       88
+      ],
+      [
+       "yok|yok|ikisi",
+       54
+      ],
+      [
+       "yok|diger|ic",
+       44
+      ],
+      [
+       "cagri_sonucu|diger|ic",
+       33
+      ],
+      [
+       "yok|param_alani|ic",
+       33
+      ]
+     ],
+     "entropi_bit_birlesik": 5.0741,
+     "farkli_uclu": 74,
+     "fonksiyon": 597,
+     "ikili_ici_en_sik_uclu_payi": 0.1474
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 14,
+     "a1&a4": 1,
+     "a1&a5": 16,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 29,
+     "a2&a4": 8,
+     "a2&a5": 0,
+     "a2&a6": 4,
+     "a2&ty": 1,
+     "a3&a4": 54,
+     "a3&a5": 44,
+     "a3&a6": 14,
+     "a3&ty": 14,
+     "a4&a5": 7,
+     "a4&a6": 2,
+     "a4&ty": 5,
+     "a5&a6": 2,
+     "a5&ty": 0,
+     "a6&ty": 8
+    },
+    "n": 597,
+    "oran": {
+     "a1": 0.0268,
+     "a1_al": 0.0034,
+     "a1_al_saf": 0.0034,
+     "a1_yaz_cok": 0.0101,
+     "a1_yaz_tek": 0.0067,
+     "a1_yuklem": 0.0067,
+     "a1g_yuklem_okur_cagrili": 0.0017,
+     "a2": 0.1206,
+     "a2_birakir": 0.0553,
+     "a2_birakir_her_yolda": 0.0519,
+     "a2_buyutur": 0.0017,
+     "a2_sokum": 0.0,
+     "a2_taze": 0.0637,
+     "a2g_alan_birak_genis": 0.0101,
+     "a3": 0.6097,
+     "a3_iki_ofset": 0.4657,
+     "a3_sifir_disi": 0.6097,
+     "a3_var": 0.6968,
+     "a3_yazar": 0.2931,
+     "a4": 0.1675,
+     "a4_degisken": 0.1675,
+     "a4_paylasimli": 0.1575,
+     "a4_sabit_veri": 0.1742,
+     "a4_sabit_veri_ddalsiz": 0.1658,
+     "a4_yazar": 0.0385,
+     "a5": 0.1323,
+     "a5_donmez": 0.0067,
+     "a5_param_yazar": 0.0452,
+     "a5_sabit_bos": 0.0251,
+     "a5_ye_gecisli": 0.0134,
+     "a5_ye_yerel": 0.067,
+     "a6": 0.0821,
+     "a6_ic": 0.0553,
+     "a6_lib": 0.0268,
+     "a6_lib_ayirici": 0.0117,
+     "a6_lib_birakici": 0.0067,
+     "a6_sarma_kullanan": 0.2345,
+     "a6g_ic_genis": 0.0704,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.8543,
+     "en_az_bir_a1_a2_a6": 0.2228,
+     "en_az_bir_a3_a5siz": 0.3719,
+     "en_az_bir_a5siz": 0.809,
+     "en_az_bir_ty_dahil": 0.8543,
+     "ty": 0.0402,
+     "ty_dizgili": 0.0402,
+     "ty_kayit": 0.1089,
+     "v1_create_genis": 0.0653,
+     "v1_destroy": 0.0553,
+     "v1_init": 0.0586,
+     "v1_is": 0.0335,
+     "v1_kalip1_is": 0.0151,
+     "v1_kalip2_init": 0.0017,
+     "v1_kalip3_arg": 0.0335,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0637,
+     "yalniz:a3": 0.3903,
+     "yalniz:a4": 0.0586,
+     "yalniz:a5": 0.0452,
+     "yalniz:a6": 0.0536,
+     "yalniz:ty": 0.0
+    },
+    "satirsiz": {
+     "I": 34,
+     "K": 47,
+     "Y": 6,
+     "n": 87
+    },
+    "sayi": {
+     "a1": 16,
+     "a1_al": 2,
+     "a1_al_saf": 2,
+     "a1_yaz_cok": 6,
+     "a1_yaz_tek": 4,
+     "a1_yuklem": 4,
+     "a1g_yuklem_okur_cagrili": 1,
+     "a2": 72,
+     "a2_birakir": 33,
+     "a2_birakir_her_yolda": 31,
+     "a2_buyutur": 1,
+     "a2_sokum": 0,
+     "a2_taze": 38,
+     "a2g_alan_birak_genis": 6,
+     "a3": 364,
+     "a3_iki_ofset": 278,
+     "a3_sifir_disi": 364,
+     "a3_var": 416,
+     "a3_yazar": 175,
+     "a4": 100,
+     "a4_degisken": 100,
+     "a4_paylasimli": 94,
+     "a4_sabit_veri": 104,
+     "a4_sabit_veri_ddalsiz": 99,
+     "a4_yazar": 23,
+     "a5": 79,
+     "a5_donmez": 4,
+     "a5_param_yazar": 27,
+     "a5_sabit_bos": 15,
+     "a5_ye_gecisli": 8,
+     "a5_ye_yerel": 40,
+     "a6": 49,
+     "a6_ic": 33,
+     "a6_lib": 16,
+     "a6_lib_ayirici": 7,
+     "a6_lib_birakici": 4,
+     "a6_sarma_kullanan": 140,
+     "a6g_ic_genis": 42,
+     "disasm_yok": 0,
+     "en_az_bir": 510,
+     "en_az_bir_a1_a2_a6": 133,
+     "en_az_bir_a3_a5siz": 222,
+     "en_az_bir_a5siz": 483,
+     "en_az_bir_ty_dahil": 510,
+     "ty": 24,
+     "ty_dizgili": 24,
+     "ty_kayit": 65,
+     "v1_create_genis": 39,
+     "v1_destroy": 33,
+     "v1_init": 35,
+     "v1_is": 20,
+     "v1_kalip1_is": 9,
+     "v1_kalip2_init": 1,
+     "v1_kalip3_arg": 20,
+     "yalniz:a1": 0,
+     "yalniz:a2": 38,
+     "yalniz:a3": 233,
+     "yalniz:a4": 35,
+     "yalniz:a5": 27,
+     "yalniz:a6": 32,
+     "yalniz:ty": 0
+    },
+    "sinif": {
+     "I": 265,
+     "K": 230,
+     "Y": 102
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 16
+     },
+     "a2": {
+      "I": 31,
+      "K": 41,
+      "Y": 0
+     },
+     "a3": {
+      "I": 166,
+      "K": 132,
+      "Y": 66
+     },
+     "a4": {
+      "I": 54,
+      "K": 37,
+      "Y": 9
+     },
+     "a5": {
+      "I": 4,
+      "K": 13,
+      "Y": 62
+     },
+     "a6": {
+      "I": 32,
+      "K": 17,
+      "Y": 0
+     },
+     "en_az_bir": {
+      "I": 231,
+      "K": 183,
+      "Y": 96
+     },
+     "ty": {
+      "I": 15,
+      "K": 8,
+      "Y": 1
+     }
+    }
+   }
+  },
+  "mac/tmux": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 402,
+     "aile_1": 1119,
+     "aile_2": 549,
+     "aile_3": 119,
+     "aile_4": 3,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       315
+      ],
+      [
+       "cagri_sonucu|yok|ic",
+       168
+      ],
+      [
+       "yok|diger|ic",
+       133
+      ],
+      [
+       "yok|diger|ikisi",
+       128
+      ],
+      [
+       "yok|yok|ikisi",
+       122
+      ]
+     ],
+     "entropi_bit_birlesik": 5.2309,
+     "farkli_uclu": 92,
+     "fonksiyon": 2192,
+     "ikili_ici_en_sik_uclu_payi": 0.1437
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 91,
+     "a1&a4": 6,
+     "a1&a5": 102,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 90,
+     "a2&a4": 13,
+     "a2&a5": 0,
+     "a2&a6": 3,
+     "a2&ty": 0,
+     "a3&a4": 116,
+     "a3&a5": 254,
+     "a3&a6": 163,
+     "a3&ty": 219,
+     "a4&a5": 48,
+     "a4&a6": 10,
+     "a4&ty": 46,
+     "a5&a6": 28,
+     "a5&ty": 16,
+     "a6&ty": 127
+    },
+    "n": 2192,
+    "oran": {
+     "a1": 0.0465,
+     "a1_al": 0.0205,
+     "a1_al_saf": 0.0187,
+     "a1_yaz_cok": 0.0041,
+     "a1_yaz_tek": 0.0046,
+     "a1_yuklem": 0.0173,
+     "a1g_yuklem_okur_cagrili": 0.0032,
+     "a2": 0.0607,
+     "a2_birakir": 0.037,
+     "a2_birakir_her_yolda": 0.0219,
+     "a2_buyutur": 0.0,
+     "a2_sokum": 0.0018,
+     "a2_taze": 0.0219,
+     "a2g_alan_birak_genis": 0.0055,
+     "a3": 0.6204,
+     "a3_iki_ofset": 0.365,
+     "a3_sifir_disi": 0.6204,
+     "a3_var": 0.7445,
+     "a3_yazar": 0.2532,
+     "a4": 0.1373,
+     "a4_degisken": 0.1373,
+     "a4_paylasimli": 0.1163,
+     "a4_sabit_veri": 0.0821,
+     "a4_sabit_veri_ddalsiz": 0.0789,
+     "a4_yazar": 0.0465,
+     "a5": 0.1971,
+     "a5_donmez": 0.0082,
+     "a5_param_yazar": 0.0438,
+     "a5_sabit_bos": 0.005,
+     "a5_ye_gecisli": 0.0433,
+     "a5_ye_yerel": 0.1017,
+     "a6": 0.1177,
+     "a6_ic": 0.1072,
+     "a6_lib": 0.0105,
+     "a6_lib_ayirici": 0.0018,
+     "a6_lib_birakici": 0.0014,
+     "a6_sarma_kullanan": 0.1852,
+     "a6g_ic_genis": 0.1355,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.8166,
+     "en_az_bir_a1_a2_a6": 0.2235,
+     "en_az_bir_a3_a5siz": 0.3476,
+     "en_az_bir_a5siz": 0.7632,
+     "en_az_bir_ty_dahil": 0.8654,
+     "ty": 0.1743,
+     "ty_dizgili": 0.1743,
+     "ty_kayit": 0.1875,
+     "v1_create_genis": 0.0219,
+     "v1_destroy": 0.037,
+     "v1_init": 0.0379,
+     "v1_is": 0.0516,
+     "v1_kalip1_is": 0.0338,
+     "v1_kalip2_init": 0.0036,
+     "v1_kalip3_arg": 0.0073,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.016,
+     "yalniz:a3": 0.3481,
+     "yalniz:a4": 0.0648,
+     "yalniz:a5": 0.0534,
+     "yalniz:a6": 0.0283,
+     "yalniz:ty": 0.0488
+    },
+    "satirsiz": {
+     "I": 203,
+     "K": 181,
+     "Y": 18,
+     "n": 402
+    },
+    "sayi": {
+     "a1": 102,
+     "a1_al": 45,
+     "a1_al_saf": 41,
+     "a1_yaz_cok": 9,
+     "a1_yaz_tek": 10,
+     "a1_yuklem": 38,
+     "a1g_yuklem_okur_cagrili": 7,
+     "a2": 133,
+     "a2_birakir": 81,
+     "a2_birakir_her_yolda": 48,
+     "a2_buyutur": 0,
+     "a2_sokum": 4,
+     "a2_taze": 48,
+     "a2g_alan_birak_genis": 12,
+     "a3": 1360,
+     "a3_iki_ofset": 800,
+     "a3_sifir_disi": 1360,
+     "a3_var": 1632,
+     "a3_yazar": 555,
+     "a4": 301,
+     "a4_degisken": 301,
+     "a4_paylasimli": 255,
+     "a4_sabit_veri": 180,
+     "a4_sabit_veri_ddalsiz": 173,
+     "a4_yazar": 102,
+     "a5": 432,
+     "a5_donmez": 18,
+     "a5_param_yazar": 96,
+     "a5_sabit_bos": 11,
+     "a5_ye_gecisli": 95,
+     "a5_ye_yerel": 223,
+     "a6": 258,
+     "a6_ic": 235,
+     "a6_lib": 23,
+     "a6_lib_ayirici": 4,
+     "a6_lib_birakici": 3,
+     "a6_sarma_kullanan": 406,
+     "a6g_ic_genis": 297,
+     "disasm_yok": 0,
+     "en_az_bir": 1790,
+     "en_az_bir_a1_a2_a6": 490,
+     "en_az_bir_a3_a5siz": 762,
+     "en_az_bir_a5siz": 1673,
+     "en_az_bir_ty_dahil": 1897,
+     "ty": 382,
+     "ty_dizgili": 382,
+     "ty_kayit": 411,
+     "v1_create_genis": 48,
+     "v1_destroy": 81,
+     "v1_init": 83,
+     "v1_is": 113,
+     "v1_kalip1_is": 74,
+     "v1_kalip2_init": 8,
+     "v1_kalip3_arg": 16,
+     "yalniz:a1": 0,
+     "yalniz:a2": 35,
+     "yalniz:a3": 763,
+     "yalniz:a4": 142,
+     "yalniz:a5": 117,
+     "yalniz:a6": 62,
+     "yalniz:ty": 107
+    },
+    "sinif": {
+     "I": 1021,
+     "K": 759,
+     "Y": 412
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 102
+     },
+     "a2": {
+      "I": 24,
+      "K": 109,
+      "Y": 0
+     },
+     "a3": {
+      "I": 642,
+      "K": 435,
+      "Y": 283
+     },
+     "a4": {
+      "I": 123,
+      "K": 125,
+      "Y": 53
+     },
+     "a5": {
+      "I": 65,
+      "K": 57,
+      "Y": 310
+     },
+     "a6": {
+      "I": 211,
+      "K": 34,
+      "Y": 13
+     },
+     "en_az_bir": {
+      "I": 818,
+      "K": 578,
+      "Y": 394
+     },
+     "ty": {
+      "I": 270,
+      "K": 77,
+      "Y": 35
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 450,
+     "aile_1": 1393,
+     "aile_2": 616,
+     "aile_3": 125,
+     "aile_4": 3,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       370
+      ],
+      [
+       "yok|diger|ic",
+       191
+      ],
+      [
+       "yok|diger|ikisi",
+       189
+      ],
+      [
+       "cagri_sonucu|yok|ic",
+       174
+      ],
+      [
+       "yok|yok|ikisi",
+       149
+      ]
+     ],
+     "entropi_bit_birlesik": 5.1929,
+     "farkli_uclu": 96,
+     "fonksiyon": 2587,
+     "ikili_ici_en_sik_uclu_payi": 0.143
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 91,
+     "a1&a4": 6,
+     "a1&a5": 102,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 104,
+     "a2&a4": 24,
+     "a2&a5": 0,
+     "a2&a6": 3,
+     "a2&ty": 0,
+     "a3&a4": 169,
+     "a3&a5": 255,
+     "a3&a6": 169,
+     "a3&ty": 240,
+     "a4&a5": 48,
+     "a4&a6": 10,
+     "a4&ty": 48,
+     "a5&a6": 28,
+     "a5&ty": 16,
+     "a6&ty": 128
+    },
+    "n": 2587,
+    "oran": {
+     "a1": 0.0394,
+     "a1_al": 0.0174,
+     "a1_al_saf": 0.0158,
+     "a1_yaz_cok": 0.0035,
+     "a1_yaz_tek": 0.0039,
+     "a1_yuklem": 0.0147,
+     "a1g_yuklem_okur_cagrili": 0.0027,
+     "a2": 0.0603,
+     "a2_birakir": 0.0348,
+     "a2_birakir_her_yolda": 0.0197,
+     "a2_buyutur": 0.0,
+     "a2_sokum": 0.0015,
+     "a2_taze": 0.024,
+     "a2g_alan_birak_genis": 0.0062,
+     "a3": 0.6424,
+     "a3_iki_ofset": 0.4078,
+     "a3_sifir_disi": 0.6424,
+     "a3_var": 0.7576,
+     "a3_yazar": 0.2725,
+     "a4": 0.1496,
+     "a4_degisken": 0.1496,
+     "a4_paylasimli": 0.1307,
+     "a4_sabit_veri": 0.0963,
+     "a4_sabit_veri_ddalsiz": 0.0912,
+     "a4_yazar": 0.0499,
+     "a5": 0.1689,
+     "a5_donmez": 0.0073,
+     "a5_param_yazar": 0.0375,
+     "a5_sabit_bos": 0.0043,
+     "a5_ye_gecisli": 0.0379,
+     "a5_ye_yerel": 0.0862,
+     "a6": 0.1036,
+     "a6_ic": 0.0947,
+     "a6_lib": 0.0089,
+     "a6_lib_ayirici": 0.0015,
+     "a6_lib_birakici": 0.0012,
+     "a6_sarma_kullanan": 0.1917,
+     "a6g_ic_genis": 0.1202,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.8261,
+     "en_az_bir_a1_a2_a6": 0.2022,
+     "en_az_bir_a3_a5siz": 0.3363,
+     "en_az_bir_a5siz": 0.7793,
+     "en_az_bir_ty_dahil": 0.8705,
+     "ty": 0.1596,
+     "ty_dizgili": 0.1596,
+     "ty_kayit": 0.172,
+     "v1_create_genis": 0.024,
+     "v1_destroy": 0.0348,
+     "v1_init": 0.0398,
+     "v1_is": 0.0468,
+     "v1_kalip1_is": 0.0317,
+     "v1_kalip2_init": 0.0046,
+     "v1_kalip3_arg": 0.0077,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0151,
+     "yalniz:a3": 0.3854,
+     "yalniz:a4": 0.0657,
+     "yalniz:a5": 0.0468,
+     "yalniz:a6": 0.0255,
+     "yalniz:ty": 0.0445
+    },
+    "satirsiz": {
+     "I": 223,
+     "K": 209,
+     "Y": 18,
+     "n": 450
+    },
+    "sayi": {
+     "a1": 102,
+     "a1_al": 45,
+     "a1_al_saf": 41,
+     "a1_yaz_cok": 9,
+     "a1_yaz_tek": 10,
+     "a1_yuklem": 38,
+     "a1g_yuklem_okur_cagrili": 7,
+     "a2": 156,
+     "a2_birakir": 90,
+     "a2_birakir_her_yolda": 51,
+     "a2_buyutur": 0,
+     "a2_sokum": 4,
+     "a2_taze": 62,
+     "a2g_alan_birak_genis": 16,
+     "a3": 1662,
+     "a3_iki_ofset": 1055,
+     "a3_sifir_disi": 1662,
+     "a3_var": 1960,
+     "a3_yazar": 705,
+     "a4": 387,
+     "a4_degisken": 387,
+     "a4_paylasimli": 338,
+     "a4_sabit_veri": 249,
+     "a4_sabit_veri_ddalsiz": 236,
+     "a4_yazar": 129,
+     "a5": 437,
+     "a5_donmez": 19,
+     "a5_param_yazar": 97,
+     "a5_sabit_bos": 11,
+     "a5_ye_gecisli": 98,
+     "a5_ye_yerel": 223,
+     "a6": 268,
+     "a6_ic": 245,
+     "a6_lib": 23,
+     "a6_lib_ayirici": 4,
+     "a6_lib_birakici": 3,
+     "a6_sarma_kullanan": 496,
+     "a6g_ic_genis": 311,
+     "disasm_yok": 0,
+     "en_az_bir": 2137,
+     "en_az_bir_a1_a2_a6": 523,
+     "en_az_bir_a3_a5siz": 870,
+     "en_az_bir_a5siz": 2016,
+     "en_az_bir_ty_dahil": 2252,
+     "ty": 413,
+     "ty_dizgili": 413,
+     "ty_kayit": 445,
+     "v1_create_genis": 62,
+     "v1_destroy": 90,
+     "v1_init": 103,
+     "v1_is": 121,
+     "v1_kalip1_is": 82,
+     "v1_kalip2_init": 12,
+     "v1_kalip3_arg": 20,
+     "yalniz:a1": 0,
+     "yalniz:a2": 39,
+     "yalniz:a3": 997,
+     "yalniz:a4": 170,
+     "yalniz:a5": 121,
+     "yalniz:a6": 66,
+     "yalniz:ty": 115
+    },
+    "sinif": {
+     "I": 1220,
+     "K": 951,
+     "Y": 416
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 102
+     },
+     "a2": {
+      "I": 31,
+      "K": 125,
+      "Y": 0
+     },
+     "a3": {
+      "I": 808,
+      "K": 567,
+      "Y": 287
+     },
+     "a4": {
+      "I": 143,
+      "K": 191,
+      "Y": 53
+     },
+     "a5": {
+      "I": 65,
+      "K": 61,
+      "Y": 311
+     },
+     "a6": {
+      "I": 219,
+      "K": 34,
+      "Y": 15
+     },
+     "en_az_bir": {
+      "I": 997,
+      "K": 742,
+      "Y": 398
+     },
+     "ty": {
+      "I": 282,
+      "K": 95,
+      "Y": 36
+     }
+    }
+   }
+  }
+ },
+ "denetim": {
+  "giris_duzeltmesi": {
+   "acik": true,
+   "birim": {
+    "debian/coreutils": {
+     "dusme_adayi_fonksiyon": 3377,
+     "giris_ilk_komut_degil": 498,
+     "nufusta_giris_hala_ilk_degil": 0,
+     "nufusta_govde_disina_dusen": 97,
+     "yastigi_atilan_fonksiyon": 498
+    },
+    "debian/htop": {
+     "dusme_adayi_fonksiyon": 72,
+     "giris_ilk_komut_degil": 2,
+     "nufusta_giris_hala_ilk_degil": 0,
+     "nufusta_govde_disina_dusen": 0,
+     "yastigi_atilan_fonksiyon": 2
+    },
+    "debian/openssl": {
+     "dusme_adayi_fonksiyon": 88,
+     "giris_ilk_komut_degil": 14,
+     "nufusta_giris_hala_ilk_degil": 0,
+     "nufusta_govde_disina_dusen": 3,
+     "yastigi_atilan_fonksiyon": 14
+    },
+    "debian/redis-tools": {
+     "dusme_adayi_fonksiyon": 2167,
+     "giris_ilk_komut_degil": 13,
+     "nufusta_giris_hala_ilk_degil": 0,
+     "nufusta_govde_disina_dusen": 64,
+     "yastigi_atilan_fonksiyon": 13
+    },
+    "debian/sqlite3": {
+     "dusme_adayi_fonksiyon": 56,
+     "giris_ilk_komut_degil": 6,
+     "nufusta_giris_hala_ilk_degil": 0,
+     "nufusta_govde_disina_dusen": 0,
+     "yastigi_atilan_fonksiyon": 6
+    },
+    "debian/tmux": {
+     "dusme_adayi_fonksiyon": 305,
+     "giris_ilk_komut_degil": 2,
+     "nufusta_giris_hala_ilk_degil": 0,
+     "nufusta_govde_disina_dusen": 2,
+     "yastigi_atilan_fonksiyon": 2
+    },
+    "debian/tree": {
+     "dusme_adayi_fonksiyon": 14,
+     "giris_ilk_komut_degil": 0,
+     "nufusta_giris_hala_ilk_degil": 0,
+     "nufusta_govde_disina_dusen": 0,
+     "yastigi_atilan_fonksiyon": 0
+    },
+    "debian/zstd": {
+     "dusme_adayi_fonksiyon": 485,
+     "giris_ilk_komut_degil": 6,
+     "nufusta_giris_hala_ilk_degil": 0,
+     "nufusta_govde_disina_dusen": 15,
+     "yastigi_atilan_fonksiyon": 6
+    },
+    "mac/htop": {
+     "dusme_adayi_fonksiyon": 85,
+     "giris_ilk_komut_degil": 0,
+     "nufusta_giris_hala_ilk_degil": 0,
+     "nufusta_govde_disina_dusen": 0,
+     "yastigi_atilan_fonksiyon": 0
+    },
+    "mac/tmux": {
+     "dusme_adayi_fonksiyon": 357,
+     "giris_ilk_komut_degil": 0,
+     "nufusta_giris_hala_ilk_degil": 0,
+     "nufusta_govde_disina_dusen": 22,
+     "yastigi_atilan_fonksiyon": 0
+    }
+   },
+   "tanim": "BTI'li PLT girişlerinin iniş yastıklarını gövdeden çıkarır.\n\n    Debian arm64 ELF'lerinde PLT girişi ``bti c`` ile başlar; Ghidra thunk fonksiyonunu yastıktan\n    SONRAKİ adreste kuruyor ve yastığı, o girişe kuyruk çağrısı yapan fonksiyonun gövdesine\n    katıyor. Gömülü disassembly adrese göre sıralı olduğu için yastık listenin başına düşer.\n    Dünkü ``on_sayim.Fonksiyon`` listedeki ilk komutu giriş sayar; böyle fonksiyonlarda akış\n    yastıktan başlar, gövde sonundan düşer ve fonksiyon \"hiç dönmez\" görünür, kuyruk çağrısı da\n    çağrı sayılmaz (bu sayımın p-code çapraz denetimi buldu).\n\n    Düzeltme: girişi içermeyen, yalnız ``bti`` komutlarından oluşan ve bitişi bilinen bir fonksiyon\n    girişi olan bitişik parçalar listeden atılır; o parçaya giden dallanmaların hedefi parçanın\n    bitişine (thunk girişine) çevrilir. Dönüş: (yeni liste, atılan yastık sayısı).\n    \non_sayim.Fonksiyon + iki düzeltme (``GIRIS_DUZELTMESI`` açıkken):\n\n    1. Giriş: iniş yastıkları atılır (``yastiklari_ayikla``); giriş yine de listenin ilk komutu\n       değilse akış ``self.adres`` bloğundan başlatılır.\n    2. Gövde dışına düşme: bir komuttan sonraki adres (pc + 4) bu fonksiyonun listesinde yoksa ama\n       başka bir fonksiyonun girişi ya da başka bir fonksiyonun listesindeyse, akış o koda düşer\n       (paylaşılan kuyruk). Dünkü ``on_sayim`` bu yolu yok sayıyordu: fonksiyon olduğundan kısa\n       ve çağrısız görünüyordu. Burada düşme, hedefi pc + 4 olan bir kuyruk çağrısı gibi kaydedilir\n       (çağrı olayı ve dönen çıkış; hedef dönmeyen bir fonksiyonsa dönmeyen son).\n    "
+  },
+  "not": "Dünkü çıktılar Mac'te ol7-a-9a36142 koşusundandır; bu sayım başka bir Mac koşusuyla yapıldıysa Mac birimlerinde fark beklenebilir.",
+  "on_sayim_json": {
+   "dosya_sha256": "750c86a4d3d6b09b314eadec2fd632d3ef5b4e2306a5680f7116a0586ccbe59b",
+   "eslesen_birim": 10,
+   "eslesmeyen": []
+  },
+  "tablo_yuvasi_json": {
+   "dosya_sha256": "77f05265e81c9b36af737d7cdf22e5926df96ba5208c2cf33d5001178fcb6ed2",
+   "eslesen_birim": 10,
+   "eslesmeyen": []
+  },
+  "v1_n4": {
+   "dosya_sha256": "750c86a4d3d6b09b314eadec2fd632d3ef5b4e2306a5680f7116a0586ccbe59b",
+   "eslesen_birim": 5,
+   "eslesmeyen": [
+    {
+     "birim": "debian/coreutils",
+     "biz": [
+      353,
+      123,
+      67,
+      99,
+      30
+     ],
+     "dunku": [
+      352,
+      122,
+      66,
+      100,
+      30
+     ]
+    },
+    {
+     "birim": "debian/openssl",
+     "biz": [
+      73,
+      4,
+      0,
+      0,
+      0
+     ],
+     "dunku": [
+      74,
+      4,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "birim": "debian/redis-tools",
+     "biz": [
+      271,
+      117,
+      2,
+      0,
+      0
+     ],
+     "dunku": [
+      273,
+      117,
+      2,
+      0,
+      0
+     ]
+    },
+    {
+     "birim": "debian/zstd",
+     "biz": [
+      89,
+      198,
+      30,
+      44,
+      15
+     ],
+     "dunku": [
+      89,
+      197,
+      30,
+      44,
+      15
+     ]
+    },
+    {
+     "birim": "mac/tmux",
+     "biz": [
+      121,
+      103,
+      90,
+      62,
+      16
+     ],
+     "dunku": [
+      124,
+      103,
+      90,
+      62,
+      16
+     ]
+    }
+   ]
+  },
+  "yeni_eslesmeyen_anahtar": 29
+ },
+ "havuz": {
+  "debian": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 5420,
+     "aile_1": 10880,
+     "aile_2": 3620,
+     "aile_3": 379,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       3215
+      ],
+      [
+       "yok|yok|ikisi",
+       2939
+      ],
+      [
+       "yok|diger|ikisi",
+       1015
+      ],
+      [
+       "cagri_sonucu|diger|ikisi",
+       932
+      ],
+      [
+       "bilinmez|yok|yok",
+       820
+      ]
+     ],
+     "entropi_bit_birlesik": 5.058,
+     "farkli_uclu": 129,
+     "fonksiyon": 20299,
+     "ikili_ici_en_sik_uclu_payi": 0.177
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 317,
+     "a1&a4": 8,
+     "a1&a5": 471,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 168,
+     "a2&a4": 33,
+     "a2&a5": 0,
+     "a2&a6": 26,
+     "a2&ty": 0,
+     "a3&a4": 441,
+     "a3&a5": 869,
+     "a3&a6": 214,
+     "a3&ty": 228,
+     "a4&a5": 312,
+     "a4&a6": 1814,
+     "a4&ty": 61,
+     "a5&a6": 84,
+     "a5&ty": 33,
+     "a6&ty": 83
+    },
+    "n": 20299,
+    "oran": {
+     "a1": 0.0232,
+     "a1_al": 0.0073,
+     "a1_al_saf": 0.0065,
+     "a1_yaz_cok": 0.0024,
+     "a1_yaz_tek": 0.0024,
+     "a1_yuklem": 0.0111,
+     "a1g_yuklem_okur_cagrili": 0.0025,
+     "a2": 0.0183,
+     "a2_birakir": 0.0086,
+     "a2_birakir_her_yolda": 0.0067,
+     "a2_buyutur": 0.0008,
+     "a2_sokum": 0.0001,
+     "a2_taze": 0.0089,
+     "a2g_alan_birak_genis": 0.0029,
+     "a3": 0.2733,
+     "a3_iki_ofset": 0.2141,
+     "a3_sifir_disi": 0.2733,
+     "a3_var": 0.4232,
+     "a3_yazar": 0.1867,
+     "a4": 0.2582,
+     "a4_degisken": 0.2582,
+     "a4_paylasimli": 0.2384,
+     "a4_sabit_veri": 0.1444,
+     "a4_sabit_veri_ddalsiz": 0.1279,
+     "a4_yazar": 0.0648,
+     "a5": 0.1307,
+     "a5_donmez": 0.0194,
+     "a5_param_yazar": 0.0192,
+     "a5_sabit_bos": 0.0043,
+     "a5_ye_gecisli": 0.0207,
+     "a5_ye_yerel": 0.0714,
+     "a6": 0.2448,
+     "a6_ic": 0.1717,
+     "a6_lib": 0.0732,
+     "a6_lib_ayirici": 0.0478,
+     "a6_lib_birakici": 0.0026,
+     "a6_sarma_kullanan": 0.055,
+     "a6g_ic_genis": 0.2022,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.733,
+     "en_az_bir_a1_a2_a6": 0.2851,
+     "en_az_bir_a3_a5siz": 0.4519,
+     "en_az_bir_a5siz": 0.6701,
+     "en_az_bir_ty_dahil": 0.7507,
+     "ty": 0.0342,
+     "ty_dizgili": 0.0342,
+     "ty_kayit": 0.0765,
+     "v1_create_genis": 0.0098,
+     "v1_destroy": 0.0086,
+     "v1_init": 0.0265,
+     "v1_is": 0.0453,
+     "v1_kalip1_is": 0.033,
+     "v1_kalip2_init": 0.001,
+     "v1_kalip3_arg": 0.0026,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0081,
+     "yalniz:a3": 0.1925,
+     "yalniz:a4": 0.1315,
+     "yalniz:a5": 0.0629,
+     "yalniz:a6": 0.1409,
+     "yalniz:ty": 0.0177
+    },
+    "satirsiz": {
+     "I": 1395,
+     "K": 3616,
+     "Y": 409,
+     "n": 5420
+    },
+    "sayi": {
+     "a1": 471,
+     "a1_al": 149,
+     "a1_al_saf": 132,
+     "a1_yaz_cok": 48,
+     "a1_yaz_tek": 48,
+     "a1_yuklem": 226,
+     "a1g_yuklem_okur_cagrili": 51,
+     "a2": 372,
+     "a2_birakir": 174,
+     "a2_birakir_her_yolda": 136,
+     "a2_buyutur": 17,
+     "a2_sokum": 2,
+     "a2_taze": 181,
+     "a2g_alan_birak_genis": 59,
+     "a3": 5548,
+     "a3_iki_ofset": 4347,
+     "a3_sifir_disi": 5548,
+     "a3_var": 8590,
+     "a3_yazar": 3790,
+     "a4": 5242,
+     "a4_degisken": 5242,
+     "a4_paylasimli": 4840,
+     "a4_sabit_veri": 2932,
+     "a4_sabit_veri_ddalsiz": 2596,
+     "a4_yazar": 1315,
+     "a5": 2654,
+     "a5_donmez": 394,
+     "a5_param_yazar": 390,
+     "a5_sabit_bos": 87,
+     "a5_ye_gecisli": 420,
+     "a5_ye_yerel": 1450,
+     "a6": 4970,
+     "a6_ic": 3485,
+     "a6_lib": 1485,
+     "a6_lib_ayirici": 971,
+     "a6_lib_birakici": 53,
+     "a6_sarma_kullanan": 1116,
+     "a6g_ic_genis": 4104,
+     "disasm_yok": 0,
+     "en_az_bir": 14879,
+     "en_az_bir_a1_a2_a6": 5787,
+     "en_az_bir_a3_a5siz": 9174,
+     "en_az_bir_a5siz": 13602,
+     "en_az_bir_ty_dahil": 15239,
+     "ty": 694,
+     "ty_dizgili": 694,
+     "ty_kayit": 1553,
+     "v1_create_genis": 198,
+     "v1_destroy": 174,
+     "v1_init": 538,
+     "v1_is": 919,
+     "v1_kalip1_is": 669,
+     "v1_kalip2_init": 21,
+     "v1_kalip3_arg": 52,
+     "yalniz:a1": 0,
+     "yalniz:a2": 165,
+     "yalniz:a3": 3908,
+     "yalniz:a4": 2669,
+     "yalniz:a5": 1277,
+     "yalniz:a6": 2861,
+     "yalniz:ty": 360
+    },
+    "sinif": {
+     "I": 5672,
+     "K": 11226,
+     "Y": 3401
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 471
+     },
+     "a2": {
+      "I": 31,
+      "K": 341,
+      "Y": 0
+     },
+     "a3": {
+      "I": 1632,
+      "K": 2841,
+      "Y": 1075
+     },
+     "a4": {
+      "I": 1474,
+      "K": 2809,
+      "Y": 959
+     },
+     "a5": {
+      "I": 209,
+      "K": 631,
+      "Y": 1814
+     },
+     "a6": {
+      "I": 2501,
+      "K": 2346,
+      "Y": 123
+     },
+     "en_az_bir": {
+      "I": 4277,
+      "K": 7610,
+      "Y": 2992
+     },
+     "ty": {
+      "I": 439,
+      "K": 220,
+      "Y": 35
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 5527,
+     "aile_1": 11195,
+     "aile_2": 3673,
+     "aile_3": 384,
+     "aile_4": 0,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       3244
+      ],
+      [
+       "yok|yok|ikisi",
+       2970
+      ],
+      [
+       "yok|diger|ikisi",
+       1085
+      ],
+      [
+       "cagri_sonucu|diger|ikisi",
+       962
+      ],
+      [
+       "bilinmez|yok|yok",
+       825
+      ]
+     ],
+     "entropi_bit_birlesik": 5.0744,
+     "farkli_uclu": 131,
+     "fonksiyon": 20779,
+     "ikili_ici_en_sik_uclu_payi": 0.1749
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 317,
+     "a1&a4": 8,
+     "a1&a5": 471,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 181,
+     "a2&a4": 40,
+     "a2&a5": 0,
+     "a2&a6": 26,
+     "a2&ty": 0,
+     "a3&a4": 469,
+     "a3&a5": 876,
+     "a3&a6": 214,
+     "a3&ty": 245,
+     "a4&a5": 321,
+     "a4&a6": 1815,
+     "a4&ty": 61,
+     "a5&a6": 87,
+     "a5&ty": 33,
+     "a6&ty": 85
+    },
+    "n": 20779,
+    "oran": {
+     "a1": 0.0227,
+     "a1_al": 0.0072,
+     "a1_al_saf": 0.0064,
+     "a1_yaz_cok": 0.0023,
+     "a1_yaz_tek": 0.0023,
+     "a1_yuklem": 0.0109,
+     "a1g_yuklem_okur_cagrili": 0.0025,
+     "a2": 0.0188,
+     "a2_birakir": 0.0086,
+     "a2_birakir_her_yolda": 0.0067,
+     "a2_buyutur": 0.0009,
+     "a2_sokum": 0.0001,
+     "a2_taze": 0.0093,
+     "a2g_alan_birak_genis": 0.0029,
+     "a3": 0.2798,
+     "a3_iki_ofset": 0.22,
+     "a3_sifir_disi": 0.2798,
+     "a3_var": 0.4293,
+     "a3_yazar": 0.1898,
+     "a4": 0.2572,
+     "a4_degisken": 0.2572,
+     "a4_paylasimli": 0.2375,
+     "a4_sabit_veri": 0.1467,
+     "a4_sabit_veri_ddalsiz": 0.13,
+     "a4_yazar": 0.0652,
+     "a5": 0.1295,
+     "a5_donmez": 0.0198,
+     "a5_param_yazar": 0.0188,
+     "a5_sabit_bos": 0.0042,
+     "a5_ye_gecisli": 0.0207,
+     "a5_ye_yerel": 0.0702,
+     "a6": 0.2398,
+     "a6_ic": 0.1679,
+     "a6_lib": 0.0719,
+     "a6_lib_ayirici": 0.0467,
+     "a6_lib_birakici": 0.0026,
+     "a6_sarma_kullanan": 0.0581,
+     "a6g_ic_genis": 0.1978,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.734,
+     "en_az_bir_a1_a2_a6": 0.28,
+     "en_az_bir_a3_a5siz": 0.4476,
+     "en_az_bir_a5siz": 0.6716,
+     "en_az_bir_ty_dahil": 0.7519,
+     "ty": 0.0348,
+     "ty_dizgili": 0.0348,
+     "ty_kayit": 0.0765,
+     "v1_create_genis": 0.0102,
+     "v1_destroy": 0.0086,
+     "v1_init": 0.0271,
+     "v1_is": 0.045,
+     "v1_kalip1_is": 0.033,
+     "v1_kalip2_init": 0.0011,
+     "v1_kalip3_arg": 0.0026,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0081,
+     "yalniz:a3": 0.1988,
+     "yalniz:a4": 0.1315,
+     "yalniz:a5": 0.0624,
+     "yalniz:a6": 0.1381,
+     "yalniz:ty": 0.0179
+    },
+    "satirsiz": {
+     "I": 1409,
+     "K": 3693,
+     "Y": 425,
+     "n": 5527
+    },
+    "sayi": {
+     "a1": 471,
+     "a1_al": 149,
+     "a1_al_saf": 132,
+     "a1_yaz_cok": 48,
+     "a1_yaz_tek": 48,
+     "a1_yuklem": 226,
+     "a1g_yuklem_okur_cagrili": 51,
+     "a2": 391,
+     "a2_birakir": 179,
+     "a2_birakir_her_yolda": 139,
+     "a2_buyutur": 18,
+     "a2_sokum": 2,
+     "a2_taze": 194,
+     "a2g_alan_birak_genis": 61,
+     "a3": 5813,
+     "a3_iki_ofset": 4572,
+     "a3_sifir_disi": 5813,
+     "a3_var": 8920,
+     "a3_yazar": 3944,
+     "a4": 5345,
+     "a4_degisken": 5345,
+     "a4_paylasimli": 4935,
+     "a4_sabit_veri": 3048,
+     "a4_sabit_veri_ddalsiz": 2702,
+     "a4_yazar": 1355,
+     "a5": 2691,
+     "a5_donmez": 411,
+     "a5_param_yazar": 391,
+     "a5_sabit_bos": 87,
+     "a5_ye_gecisli": 430,
+     "a5_ye_yerel": 1459,
+     "a6": 4982,
+     "a6_ic": 3488,
+     "a6_lib": 1494,
+     "a6_lib_ayirici": 971,
+     "a6_lib_birakici": 53,
+     "a6_sarma_kullanan": 1207,
+     "a6g_ic_genis": 4111,
+     "disasm_yok": 0,
+     "en_az_bir": 15252,
+     "en_az_bir_a1_a2_a6": 5818,
+     "en_az_bir_a3_a5siz": 9300,
+     "en_az_bir_a5siz": 13956,
+     "en_az_bir_ty_dahil": 15623,
+     "ty": 724,
+     "ty_dizgili": 724,
+     "ty_kayit": 1589,
+     "v1_create_genis": 212,
+     "v1_destroy": 179,
+     "v1_init": 564,
+     "v1_is": 936,
+     "v1_kalip1_is": 686,
+     "v1_kalip2_init": 22,
+     "v1_kalip3_arg": 54,
+     "yalniz:a1": 0,
+     "yalniz:a2": 168,
+     "yalniz:a3": 4130,
+     "yalniz:a4": 2732,
+     "yalniz:a5": 1296,
+     "yalniz:a6": 2869,
+     "yalniz:ty": 371
+    },
+    "sinif": {
+     "I": 5820,
+     "K": 11517,
+     "Y": 3442
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 471
+     },
+     "a2": {
+      "I": 35,
+      "K": 356,
+      "Y": 0
+     },
+     "a3": {
+      "I": 1762,
+      "K": 2970,
+      "Y": 1081
+     },
+     "a4": {
+      "I": 1485,
+      "K": 2887,
+      "Y": 973
+     },
+     "a5": {
+      "I": 209,
+      "K": 658,
+      "Y": 1824
+     },
+     "a6": {
+      "I": 2504,
+      "K": 2355,
+      "Y": 123
+     },
+     "en_az_bir": {
+      "I": 4411,
+      "K": 7824,
+      "Y": 3017
+     },
+     "ty": {
+      "I": 451,
+      "K": 238,
+      "Y": 35
+     }
+    }
+   }
+  },
+  "mac": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 489,
+     "aile_1": 1484,
+     "aile_2": 669,
+     "aile_3": 144,
+     "aile_4": 3,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       403
+      ],
+      [
+       "yok|diger|ic",
+       177
+      ],
+      [
+       "yok|yok|ikisi",
+       176
+      ],
+      [
+       "cagri_sonucu|yok|ic",
+       173
+      ],
+      [
+       "yok|diger|ikisi",
+       151
+      ]
+     ],
+     "entropi_bit_birlesik": 5.305,
+     "farkli_uclu": 104,
+     "fonksiyon": 2789,
+     "ikili_ici_en_sik_uclu_payi": 0.1445
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 105,
+     "a1&a4": 7,
+     "a1&a5": 118,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 119,
+     "a2&a4": 21,
+     "a2&a5": 0,
+     "a2&a6": 7,
+     "a2&ty": 1,
+     "a3&a4": 170,
+     "a3&a5": 298,
+     "a3&a6": 177,
+     "a3&ty": 233,
+     "a4&a5": 55,
+     "a4&a6": 12,
+     "a4&ty": 51,
+     "a5&a6": 30,
+     "a5&ty": 16,
+     "a6&ty": 135
+    },
+    "n": 2789,
+    "oran": {
+     "a1": 0.0423,
+     "a1_al": 0.0169,
+     "a1_al_saf": 0.0154,
+     "a1_yaz_cok": 0.0054,
+     "a1_yaz_tek": 0.005,
+     "a1_yuklem": 0.0151,
+     "a1g_yuklem_okur_cagrili": 0.0029,
+     "a2": 0.0735,
+     "a2_birakir": 0.0409,
+     "a2_birakir_her_yolda": 0.0283,
+     "a2_buyutur": 0.0004,
+     "a2_sokum": 0.0014,
+     "a2_taze": 0.0308,
+     "a2g_alan_birak_genis": 0.0065,
+     "a3": 0.6181,
+     "a3_iki_ofset": 0.3865,
+     "a3_sifir_disi": 0.6181,
+     "a3_var": 0.7343,
+     "a3_yazar": 0.2617,
+     "a4": 0.1438,
+     "a4_degisken": 0.1438,
+     "a4_paylasimli": 0.1251,
+     "a4_sabit_veri": 0.1018,
+     "a4_sabit_veri_ddalsiz": 0.0975,
+     "a4_yazar": 0.0448,
+     "a5": 0.1832,
+     "a5_donmez": 0.0079,
+     "a5_param_yazar": 0.0441,
+     "a5_sabit_bos": 0.0093,
+     "a5_ye_gecisli": 0.0369,
+     "a5_ye_yerel": 0.0943,
+     "a6": 0.1101,
+     "a6_ic": 0.0961,
+     "a6_lib": 0.014,
+     "a6_lib_ayirici": 0.0039,
+     "a6_lib_birakici": 0.0025,
+     "a6_sarma_kullanan": 0.1958,
+     "a6g_ic_genis": 0.1215,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.8247,
+     "en_az_bir_a1_a2_a6": 0.2234,
+     "en_az_bir_a3_a5siz": 0.3528,
+     "en_az_bir_a5siz": 0.773,
+     "en_az_bir_ty_dahil": 0.863,
+     "ty": 0.1456,
+     "ty_dizgili": 0.1456,
+     "ty_kayit": 0.1707,
+     "v1_create_genis": 0.0312,
+     "v1_destroy": 0.0409,
+     "v1_init": 0.0423,
+     "v1_is": 0.0477,
+     "v1_kalip1_is": 0.0298,
+     "v1_kalip2_init": 0.0032,
+     "v1_kalip3_arg": 0.0129,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0262,
+     "yalniz:a3": 0.3571,
+     "yalniz:a4": 0.0635,
+     "yalniz:a5": 0.0516,
+     "yalniz:a6": 0.0337,
+     "yalniz:ty": 0.0384
+    },
+    "satirsiz": {
+     "I": 237,
+     "K": 228,
+     "Y": 24,
+     "n": 489
+    },
+    "sayi": {
+     "a1": 118,
+     "a1_al": 47,
+     "a1_al_saf": 43,
+     "a1_yaz_cok": 15,
+     "a1_yaz_tek": 14,
+     "a1_yuklem": 42,
+     "a1g_yuklem_okur_cagrili": 8,
+     "a2": 205,
+     "a2_birakir": 114,
+     "a2_birakir_her_yolda": 79,
+     "a2_buyutur": 1,
+     "a2_sokum": 4,
+     "a2_taze": 86,
+     "a2g_alan_birak_genis": 18,
+     "a3": 1724,
+     "a3_iki_ofset": 1078,
+     "a3_sifir_disi": 1724,
+     "a3_var": 2048,
+     "a3_yazar": 730,
+     "a4": 401,
+     "a4_degisken": 401,
+     "a4_paylasimli": 349,
+     "a4_sabit_veri": 284,
+     "a4_sabit_veri_ddalsiz": 272,
+     "a4_yazar": 125,
+     "a5": 511,
+     "a5_donmez": 22,
+     "a5_param_yazar": 123,
+     "a5_sabit_bos": 26,
+     "a5_ye_gecisli": 103,
+     "a5_ye_yerel": 263,
+     "a6": 307,
+     "a6_ic": 268,
+     "a6_lib": 39,
+     "a6_lib_ayirici": 11,
+     "a6_lib_birakici": 7,
+     "a6_sarma_kullanan": 546,
+     "a6g_ic_genis": 339,
+     "disasm_yok": 0,
+     "en_az_bir": 2300,
+     "en_az_bir_a1_a2_a6": 623,
+     "en_az_bir_a3_a5siz": 984,
+     "en_az_bir_a5siz": 2156,
+     "en_az_bir_ty_dahil": 2407,
+     "ty": 406,
+     "ty_dizgili": 406,
+     "ty_kayit": 476,
+     "v1_create_genis": 87,
+     "v1_destroy": 114,
+     "v1_init": 118,
+     "v1_is": 133,
+     "v1_kalip1_is": 83,
+     "v1_kalip2_init": 9,
+     "v1_kalip3_arg": 36,
+     "yalniz:a1": 0,
+     "yalniz:a2": 73,
+     "yalniz:a3": 996,
+     "yalniz:a4": 177,
+     "yalniz:a5": 144,
+     "yalniz:a6": 94,
+     "yalniz:ty": 107
+    },
+    "sinif": {
+     "I": 1286,
+     "K": 989,
+     "Y": 514
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 118
+     },
+     "a2": {
+      "I": 55,
+      "K": 150,
+      "Y": 0
+     },
+     "a3": {
+      "I": 808,
+      "K": 567,
+      "Y": 349
+     },
+     "a4": {
+      "I": 177,
+      "K": 162,
+      "Y": 62
+     },
+     "a5": {
+      "I": 69,
+      "K": 70,
+      "Y": 372
+     },
+     "a6": {
+      "I": 243,
+      "K": 51,
+      "Y": 13
+     },
+     "en_az_bir": {
+      "I": 1049,
+      "K": 761,
+      "Y": 490
+     },
+     "ty": {
+      "I": 285,
+      "K": 85,
+      "Y": 36
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 537,
+     "aile_1": 1758,
+     "aile_2": 736,
+     "aile_3": 150,
+     "aile_4": 3,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       458
+      ],
+      [
+       "yok|diger|ic",
+       235
+      ],
+      [
+       "yok|diger|ikisi",
+       212
+      ],
+      [
+       "yok|yok|ikisi",
+       203
+      ],
+      [
+       "cagri_sonucu|yok|ic",
+       179
+      ]
+     ],
+     "entropi_bit_birlesik": 5.2631,
+     "farkli_uclu": 107,
+     "fonksiyon": 3184,
+     "ikili_ici_en_sik_uclu_payi": 0.1438
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 105,
+     "a1&a4": 7,
+     "a1&a5": 118,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 133,
+     "a2&a4": 32,
+     "a2&a5": 0,
+     "a2&a6": 7,
+     "a2&ty": 1,
+     "a3&a4": 223,
+     "a3&a5": 299,
+     "a3&a6": 183,
+     "a3&ty": 254,
+     "a4&a5": 55,
+     "a4&a6": 12,
+     "a4&ty": 53,
+     "a5&a6": 30,
+     "a5&ty": 16,
+     "a6&ty": 136
+    },
+    "n": 3184,
+    "oran": {
+     "a1": 0.0371,
+     "a1_al": 0.0148,
+     "a1_al_saf": 0.0135,
+     "a1_yaz_cok": 0.0047,
+     "a1_yaz_tek": 0.0044,
+     "a1_yuklem": 0.0132,
+     "a1g_yuklem_okur_cagrili": 0.0025,
+     "a2": 0.0716,
+     "a2_birakir": 0.0386,
+     "a2_birakir_her_yolda": 0.0258,
+     "a2_buyutur": 0.0003,
+     "a2_sokum": 0.0013,
+     "a2_taze": 0.0314,
+     "a2g_alan_birak_genis": 0.0069,
+     "a3": 0.6363,
+     "a3_iki_ofset": 0.4187,
+     "a3_sifir_disi": 0.6363,
+     "a3_var": 0.7462,
+     "a3_yazar": 0.2764,
+     "a4": 0.153,
+     "a4_degisken": 0.153,
+     "a4_paylasimli": 0.1357,
+     "a4_sabit_veri": 0.1109,
+     "a4_sabit_veri_ddalsiz": 0.1052,
+     "a4_yazar": 0.0477,
+     "a5": 0.1621,
+     "a5_donmez": 0.0072,
+     "a5_param_yazar": 0.0389,
+     "a5_sabit_bos": 0.0082,
+     "a5_ye_gecisli": 0.0333,
+     "a5_ye_yerel": 0.0826,
+     "a6": 0.0996,
+     "a6_ic": 0.0873,
+     "a6_lib": 0.0122,
+     "a6_lib_ayirici": 0.0035,
+     "a6_lib_birakici": 0.0022,
+     "a6_sarma_kullanan": 0.1997,
+     "a6g_ic_genis": 0.1109,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.8313,
+     "en_az_bir_a1_a2_a6": 0.206,
+     "en_az_bir_a3_a5siz": 0.343,
+     "en_az_bir_a5siz": 0.7849,
+     "en_az_bir_ty_dahil": 0.8675,
+     "ty": 0.1372,
+     "ty_dizgili": 0.1372,
+     "ty_kayit": 0.1602,
+     "v1_create_genis": 0.0317,
+     "v1_destroy": 0.0386,
+     "v1_init": 0.0433,
+     "v1_is": 0.0443,
+     "v1_kalip1_is": 0.0286,
+     "v1_kalip2_init": 0.0041,
+     "v1_kalip3_arg": 0.0126,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0242,
+     "yalniz:a3": 0.3863,
+     "yalniz:a4": 0.0644,
+     "yalniz:a5": 0.0465,
+     "yalniz:a6": 0.0308,
+     "yalniz:ty": 0.0361
+    },
+    "satirsiz": {
+     "I": 257,
+     "K": 256,
+     "Y": 24,
+     "n": 537
+    },
+    "sayi": {
+     "a1": 118,
+     "a1_al": 47,
+     "a1_al_saf": 43,
+     "a1_yaz_cok": 15,
+     "a1_yaz_tek": 14,
+     "a1_yuklem": 42,
+     "a1g_yuklem_okur_cagrili": 8,
+     "a2": 228,
+     "a2_birakir": 123,
+     "a2_birakir_her_yolda": 82,
+     "a2_buyutur": 1,
+     "a2_sokum": 4,
+     "a2_taze": 100,
+     "a2g_alan_birak_genis": 22,
+     "a3": 2026,
+     "a3_iki_ofset": 1333,
+     "a3_sifir_disi": 2026,
+     "a3_var": 2376,
+     "a3_yazar": 880,
+     "a4": 487,
+     "a4_degisken": 487,
+     "a4_paylasimli": 432,
+     "a4_sabit_veri": 353,
+     "a4_sabit_veri_ddalsiz": 335,
+     "a4_yazar": 152,
+     "a5": 516,
+     "a5_donmez": 23,
+     "a5_param_yazar": 124,
+     "a5_sabit_bos": 26,
+     "a5_ye_gecisli": 106,
+     "a5_ye_yerel": 263,
+     "a6": 317,
+     "a6_ic": 278,
+     "a6_lib": 39,
+     "a6_lib_ayirici": 11,
+     "a6_lib_birakici": 7,
+     "a6_sarma_kullanan": 636,
+     "a6g_ic_genis": 353,
+     "disasm_yok": 0,
+     "en_az_bir": 2647,
+     "en_az_bir_a1_a2_a6": 656,
+     "en_az_bir_a3_a5siz": 1092,
+     "en_az_bir_a5siz": 2499,
+     "en_az_bir_ty_dahil": 2762,
+     "ty": 437,
+     "ty_dizgili": 437,
+     "ty_kayit": 510,
+     "v1_create_genis": 101,
+     "v1_destroy": 123,
+     "v1_init": 138,
+     "v1_is": 141,
+     "v1_kalip1_is": 91,
+     "v1_kalip2_init": 13,
+     "v1_kalip3_arg": 40,
+     "yalniz:a1": 0,
+     "yalniz:a2": 77,
+     "yalniz:a3": 1230,
+     "yalniz:a4": 205,
+     "yalniz:a5": 148,
+     "yalniz:a6": 98,
+     "yalniz:ty": 115
+    },
+    "sinif": {
+     "I": 1485,
+     "K": 1181,
+     "Y": 518
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 118
+     },
+     "a2": {
+      "I": 62,
+      "K": 166,
+      "Y": 0
+     },
+     "a3": {
+      "I": 974,
+      "K": 699,
+      "Y": 353
+     },
+     "a4": {
+      "I": 197,
+      "K": 228,
+      "Y": 62
+     },
+     "a5": {
+      "I": 69,
+      "K": 74,
+      "Y": 373
+     },
+     "a6": {
+      "I": 251,
+      "K": 51,
+      "Y": 15
+     },
+     "en_az_bir": {
+      "I": 1228,
+      "K": 925,
+      "Y": 494
+     },
+     "ty": {
+      "I": 297,
+      "K": 103,
+      "Y": 37
+     }
+    }
+   }
+  },
+  "tum": {
+   "adsiz": {
+    "aile_sayisina_gore": {
+     "aile_0": 5909,
+     "aile_1": 12364,
+     "aile_2": 4289,
+     "aile_3": 523,
+     "aile_4": 3,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       3618
+      ],
+      [
+       "yok|yok|ikisi",
+       3115
+      ],
+      [
+       "yok|diger|ikisi",
+       1166
+      ],
+      [
+       "cagri_sonucu|diger|ikisi",
+       1007
+      ],
+      [
+       "bilinmez|yok|yok",
+       942
+      ]
+     ],
+     "entropi_bit_birlesik": 5.1403,
+     "farkli_uclu": 133,
+     "fonksiyon": 23088,
+     "ikili_ici_en_sik_uclu_payi": 0.173
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 422,
+     "a1&a4": 15,
+     "a1&a5": 589,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 287,
+     "a2&a4": 54,
+     "a2&a5": 0,
+     "a2&a6": 33,
+     "a2&ty": 1,
+     "a3&a4": 611,
+     "a3&a5": 1167,
+     "a3&a6": 391,
+     "a3&ty": 461,
+     "a4&a5": 367,
+     "a4&a6": 1826,
+     "a4&ty": 112,
+     "a5&a6": 114,
+     "a5&ty": 49,
+     "a6&ty": 218
+    },
+    "n": 23088,
+    "oran": {
+     "a1": 0.0255,
+     "a1_al": 0.0085,
+     "a1_al_saf": 0.0076,
+     "a1_yaz_cok": 0.0027,
+     "a1_yaz_tek": 0.0027,
+     "a1_yuklem": 0.0116,
+     "a1g_yuklem_okur_cagrili": 0.0026,
+     "a2": 0.025,
+     "a2_birakir": 0.0125,
+     "a2_birakir_her_yolda": 0.0093,
+     "a2_buyutur": 0.0008,
+     "a2_sokum": 0.0003,
+     "a2_taze": 0.0116,
+     "a2g_alan_birak_genis": 0.0033,
+     "a3": 0.315,
+     "a3_iki_ofset": 0.235,
+     "a3_sifir_disi": 0.315,
+     "a3_var": 0.4608,
+     "a3_yazar": 0.1958,
+     "a4": 0.2444,
+     "a4_degisken": 0.2444,
+     "a4_paylasimli": 0.2247,
+     "a4_sabit_veri": 0.1393,
+     "a4_sabit_veri_ddalsiz": 0.1242,
+     "a4_yazar": 0.0624,
+     "a5": 0.1371,
+     "a5_donmez": 0.018,
+     "a5_param_yazar": 0.0222,
+     "a5_sabit_bos": 0.0049,
+     "a5_ye_gecisli": 0.0227,
+     "a5_ye_yerel": 0.0742,
+     "a6": 0.2286,
+     "a6_ic": 0.1626,
+     "a6_lib": 0.066,
+     "a6_lib_ayirici": 0.0425,
+     "a6_lib_birakici": 0.0026,
+     "a6_sarma_kullanan": 0.072,
+     "a6g_ic_genis": 0.1924,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.7441,
+     "en_az_bir_a1_a2_a6": 0.2776,
+     "en_az_bir_a3_a5siz": 0.44,
+     "en_az_bir_a5siz": 0.6825,
+     "en_az_bir_ty_dahil": 0.7643,
+     "ty": 0.0476,
+     "ty_dizgili": 0.0476,
+     "ty_kayit": 0.0879,
+     "v1_create_genis": 0.0123,
+     "v1_destroy": 0.0125,
+     "v1_init": 0.0284,
+     "v1_is": 0.0456,
+     "v1_kalip1_is": 0.0326,
+     "v1_kalip2_init": 0.0013,
+     "v1_kalip3_arg": 0.0038,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0103,
+     "yalniz:a3": 0.2124,
+     "yalniz:a4": 0.1233,
+     "yalniz:a5": 0.0615,
+     "yalniz:a6": 0.128,
+     "yalniz:ty": 0.0202
+    },
+    "satirsiz": {
+     "I": 1632,
+     "K": 3844,
+     "Y": 433,
+     "n": 5909
+    },
+    "sayi": {
+     "a1": 589,
+     "a1_al": 196,
+     "a1_al_saf": 175,
+     "a1_yaz_cok": 63,
+     "a1_yaz_tek": 62,
+     "a1_yuklem": 268,
+     "a1g_yuklem_okur_cagrili": 59,
+     "a2": 577,
+     "a2_birakir": 288,
+     "a2_birakir_her_yolda": 215,
+     "a2_buyutur": 18,
+     "a2_sokum": 6,
+     "a2_taze": 267,
+     "a2g_alan_birak_genis": 77,
+     "a3": 7272,
+     "a3_iki_ofset": 5425,
+     "a3_sifir_disi": 7272,
+     "a3_var": 10638,
+     "a3_yazar": 4520,
+     "a4": 5643,
+     "a4_degisken": 5643,
+     "a4_paylasimli": 5189,
+     "a4_sabit_veri": 3216,
+     "a4_sabit_veri_ddalsiz": 2868,
+     "a4_yazar": 1440,
+     "a5": 3165,
+     "a5_donmez": 416,
+     "a5_param_yazar": 513,
+     "a5_sabit_bos": 113,
+     "a5_ye_gecisli": 523,
+     "a5_ye_yerel": 1713,
+     "a6": 5277,
+     "a6_ic": 3753,
+     "a6_lib": 1524,
+     "a6_lib_ayirici": 982,
+     "a6_lib_birakici": 60,
+     "a6_sarma_kullanan": 1662,
+     "a6g_ic_genis": 4443,
+     "disasm_yok": 0,
+     "en_az_bir": 17179,
+     "en_az_bir_a1_a2_a6": 6410,
+     "en_az_bir_a3_a5siz": 10158,
+     "en_az_bir_a5siz": 15758,
+     "en_az_bir_ty_dahil": 17646,
+     "ty": 1100,
+     "ty_dizgili": 1100,
+     "ty_kayit": 2029,
+     "v1_create_genis": 285,
+     "v1_destroy": 288,
+     "v1_init": 656,
+     "v1_is": 1052,
+     "v1_kalip1_is": 752,
+     "v1_kalip2_init": 30,
+     "v1_kalip3_arg": 88,
+     "yalniz:a1": 0,
+     "yalniz:a2": 238,
+     "yalniz:a3": 4904,
+     "yalniz:a4": 2846,
+     "yalniz:a5": 1421,
+     "yalniz:a6": 2955,
+     "yalniz:ty": 467
+    },
+    "sinif": {
+     "I": 6958,
+     "K": 12215,
+     "Y": 3915
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 589
+     },
+     "a2": {
+      "I": 86,
+      "K": 491,
+      "Y": 0
+     },
+     "a3": {
+      "I": 2440,
+      "K": 3408,
+      "Y": 1424
+     },
+     "a4": {
+      "I": 1651,
+      "K": 2971,
+      "Y": 1021
+     },
+     "a5": {
+      "I": 278,
+      "K": 701,
+      "Y": 2186
+     },
+     "a6": {
+      "I": 2744,
+      "K": 2397,
+      "Y": 136
+     },
+     "en_az_bir": {
+      "I": 5326,
+      "K": 8371,
+      "Y": 3482
+     },
+     "ty": {
+      "I": 724,
+      "K": 305,
+      "Y": 71
+     }
+    }
+   },
+   "jenerik": {
+    "aile_sayisina_gore": {
+     "aile_0": 6064,
+     "aile_1": 12953,
+     "aile_2": 4409,
+     "aile_3": 534,
+     "aile_4": 3,
+     "aile_5": 0,
+     "aile_6": 0
+    },
+    "demet": {
+     "en_sik_5": [
+      [
+       "yok|yok|ic",
+       3702
+      ],
+      [
+       "yok|yok|ikisi",
+       3173
+      ],
+      [
+       "yok|diger|ikisi",
+       1297
+      ],
+      [
+       "cagri_sonucu|diger|ikisi",
+       1051
+      ],
+      [
+       "bilinmez|yok|yok",
+       947
+      ]
+     ],
+     "entropi_bit_birlesik": 5.1554,
+     "farkli_uclu": 135,
+     "fonksiyon": 23963,
+     "ikili_ici_en_sik_uclu_payi": 0.1708
+    },
+    "kesisim": {
+     "a1&a2": 0,
+     "a1&a3": 422,
+     "a1&a4": 15,
+     "a1&a5": 589,
+     "a1&a6": 0,
+     "a1&ty": 0,
+     "a2&a3": 314,
+     "a2&a4": 72,
+     "a2&a5": 0,
+     "a2&a6": 33,
+     "a2&ty": 1,
+     "a3&a4": 692,
+     "a3&a5": 1175,
+     "a3&a6": 397,
+     "a3&ty": 499,
+     "a4&a5": 376,
+     "a4&a6": 1827,
+     "a4&ty": 114,
+     "a5&a6": 117,
+     "a5&ty": 49,
+     "a6&ty": 221
+    },
+    "n": 23963,
+    "oran": {
+     "a1": 0.0246,
+     "a1_al": 0.0082,
+     "a1_al_saf": 0.0073,
+     "a1_yaz_cok": 0.0026,
+     "a1_yaz_tek": 0.0026,
+     "a1_yuklem": 0.0112,
+     "a1g_yuklem_okur_cagrili": 0.0025,
+     "a2": 0.0258,
+     "a2_birakir": 0.0126,
+     "a2_birakir_her_yolda": 0.0092,
+     "a2_buyutur": 0.0008,
+     "a2_sokum": 0.0003,
+     "a2_taze": 0.0123,
+     "a2g_alan_birak_genis": 0.0035,
+     "a3": 0.3271,
+     "a3_iki_ofset": 0.2464,
+     "a3_sifir_disi": 0.3271,
+     "a3_var": 0.4714,
+     "a3_yazar": 0.2013,
+     "a4": 0.2434,
+     "a4_degisken": 0.2434,
+     "a4_paylasimli": 0.224,
+     "a4_sabit_veri": 0.1419,
+     "a4_sabit_veri_ddalsiz": 0.1267,
+     "a4_yazar": 0.0629,
+     "a5": 0.1338,
+     "a5_donmez": 0.0181,
+     "a5_param_yazar": 0.0215,
+     "a5_sabit_bos": 0.0047,
+     "a5_ye_gecisli": 0.0224,
+     "a5_ye_yerel": 0.0719,
+     "a6": 0.2211,
+     "a6_ic": 0.1572,
+     "a6_lib": 0.064,
+     "a6_lib_ayirici": 0.041,
+     "a6_lib_birakici": 0.0025,
+     "a6_sarma_kullanan": 0.0769,
+     "a6g_ic_genis": 0.1863,
+     "disasm_yok": 0.0,
+     "en_az_bir": 0.7469,
+     "en_az_bir_a1_a2_a6": 0.2702,
+     "en_az_bir_a3_a5siz": 0.4337,
+     "en_az_bir_a5siz": 0.6867,
+     "en_az_bir_ty_dahil": 0.7672,
+     "ty": 0.0484,
+     "ty_dizgili": 0.0484,
+     "ty_kayit": 0.0876,
+     "v1_create_genis": 0.0131,
+     "v1_destroy": 0.0126,
+     "v1_init": 0.0293,
+     "v1_is": 0.0449,
+     "v1_kalip1_is": 0.0324,
+     "v1_kalip2_init": 0.0015,
+     "v1_kalip3_arg": 0.0039,
+     "yalniz:a1": 0.0,
+     "yalniz:a2": 0.0102,
+     "yalniz:a3": 0.2237,
+     "yalniz:a4": 0.1226,
+     "yalniz:a5": 0.0603,
+     "yalniz:a6": 0.1238,
+     "yalniz:ty": 0.0203
+    },
+    "satirsiz": {
+     "I": 1666,
+     "K": 3949,
+     "Y": 449,
+     "n": 6064
+    },
+    "sayi": {
+     "a1": 589,
+     "a1_al": 196,
+     "a1_al_saf": 175,
+     "a1_yaz_cok": 63,
+     "a1_yaz_tek": 62,
+     "a1_yuklem": 268,
+     "a1g_yuklem_okur_cagrili": 59,
+     "a2": 619,
+     "a2_birakir": 302,
+     "a2_birakir_her_yolda": 221,
+     "a2_buyutur": 19,
+     "a2_sokum": 6,
+     "a2_taze": 294,
+     "a2g_alan_birak_genis": 83,
+     "a3": 7839,
+     "a3_iki_ofset": 5905,
+     "a3_sifir_disi": 7839,
+     "a3_var": 11296,
+     "a3_yazar": 4824,
+     "a4": 5832,
+     "a4_degisken": 5832,
+     "a4_paylasimli": 5367,
+     "a4_sabit_veri": 3401,
+     "a4_sabit_veri_ddalsiz": 3037,
+     "a4_yazar": 1507,
+     "a5": 3207,
+     "a5_donmez": 434,
+     "a5_param_yazar": 515,
+     "a5_sabit_bos": 113,
+     "a5_ye_gecisli": 536,
+     "a5_ye_yerel": 1722,
+     "a6": 5299,
+     "a6_ic": 3766,
+     "a6_lib": 1533,
+     "a6_lib_ayirici": 982,
+     "a6_lib_birakici": 60,
+     "a6_sarma_kullanan": 1843,
+     "a6g_ic_genis": 4464,
+     "disasm_yok": 0,
+     "en_az_bir": 17899,
+     "en_az_bir_a1_a2_a6": 6474,
+     "en_az_bir_a3_a5siz": 10392,
+     "en_az_bir_a5siz": 16455,
+     "en_az_bir_ty_dahil": 18385,
+     "ty": 1161,
+     "ty_dizgili": 1161,
+     "ty_kayit": 2099,
+     "v1_create_genis": 313,
+     "v1_destroy": 302,
+     "v1_init": 702,
+     "v1_is": 1077,
+     "v1_kalip1_is": 777,
+     "v1_kalip2_init": 35,
+     "v1_kalip3_arg": 94,
+     "yalniz:a1": 0,
+     "yalniz:a2": 245,
+     "yalniz:a3": 5360,
+     "yalniz:a4": 2937,
+     "yalniz:a5": 1444,
+     "yalniz:a6": 2967,
+     "yalniz:ty": 486
+    },
+    "sinif": {
+     "I": 7305,
+     "K": 12698,
+     "Y": 3960
+    },
+    "sinif_kirilimi": {
+     "a1": {
+      "I": 0,
+      "K": 0,
+      "Y": 589
+     },
+     "a2": {
+      "I": 97,
+      "K": 522,
+      "Y": 0
+     },
+     "a3": {
+      "I": 2736,
+      "K": 3669,
+      "Y": 1434
+     },
+     "a4": {
+      "I": 1682,
+      "K": 3115,
+      "Y": 1035
+     },
+     "a5": {
+      "I": 278,
+      "K": 732,
+      "Y": 2197
+     },
+     "a6": {
+      "I": 2755,
+      "K": 2406,
+      "Y": 138
+     },
+     "en_az_bir": {
+      "I": 5639,
+      "K": 8749,
+      "Y": 3511
+     },
+     "ty": {
+      "I": 748,
+      "K": 341,
+      "Y": 72
+     }
+    }
+   }
+  }
+ },
+ "ikililer": [
+  {
+   "adsiz": 102,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 76,
+   "ikili": "[",
+   "jenerik": 102,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 91,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 67,
+   "ikili": "arch",
+   "jenerik": 91,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 111,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 76,
+   "ikili": "b2sum",
+   "jenerik": 111,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 105,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 72,
+   "ikili": "base32",
+   "jenerik": 105,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 105,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 72,
+   "ikili": "base64",
+   "jenerik": 105,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 95,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 67,
+   "ikili": "basename",
+   "jenerik": 95,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 147,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 104,
+   "ikili": "basenc",
+   "jenerik": 147,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 101,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 74,
+   "ikili": "cat",
+   "jenerik": 101,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 170,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 128,
+   "ikili": "chcon",
+   "jenerik": 170,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 163,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 128,
+   "ikili": "chgrp",
+   "jenerik": 163,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 158,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 128,
+   "ikili": "chmod",
+   "jenerik": 158,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 163,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 128,
+   "ikili": "chown",
+   "jenerik": 163,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 99,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 67,
+   "ikili": "chroot",
+   "jenerik": 99,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 179,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 114,
+   "ikili": "cksum",
+   "jenerik": 179,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 112,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 77,
+   "ikili": "comm",
+   "jenerik": 112,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 290,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 210,
+   "ikili": "cp",
+   "jenerik": 290,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 118,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 88,
+   "ikili": "csplit",
+   "jenerik": 118,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 106,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 79,
+   "ikili": "cut",
+   "jenerik": 106,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 132,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 93,
+   "ikili": "date",
+   "jenerik": 132,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 146,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 104,
+   "ikili": "dd",
+   "jenerik": 146,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 184,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 136,
+   "ikili": "df",
+   "jenerik": 184,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 299,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 243,
+   "ikili": "dir",
+   "jenerik": 311,
+   "yeni_adli": 14,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 104,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 79,
+   "ikili": "dircolors",
+   "jenerik": 104,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 94,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 68,
+   "ikili": "dirname",
+   "jenerik": 94,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 224,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 174,
+   "ikili": "du",
+   "jenerik": 224,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 91,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 65,
+   "ikili": "echo",
+   "jenerik": 91,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 98,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 73,
+   "ikili": "env",
+   "jenerik": 98,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 103,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 73,
+   "ikili": "expand",
+   "jenerik": 103,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 106,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 79,
+   "ikili": "expr",
+   "jenerik": 106,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 124,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 91,
+   "ikili": "factor",
+   "jenerik": 124,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 90,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 65,
+   "ikili": "false",
+   "jenerik": 90,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 106,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 76,
+   "ikili": "fmt",
+   "jenerik": 106,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 97,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 67,
+   "ikili": "fold",
+   "jenerik": 97,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 94,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 65,
+   "ikili": "groups",
+   "jenerik": 94,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 104,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 72,
+   "ikili": "head",
+   "jenerik": 104,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 92,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 64,
+   "ikili": "hostid",
+   "jenerik": 92,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 100,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 71,
+   "ikili": "id",
+   "jenerik": 100,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 307,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 219,
+   "ikili": "install",
+   "jenerik": 307,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 131,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 93,
+   "ikili": "join",
+   "jenerik": 131,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 5,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 3,
+   "ikili": "libstdbuf.so",
+   "jenerik": 5,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 92,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 64,
+   "ikili": "link",
+   "jenerik": 92,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 174,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 127,
+   "ikili": "ln",
+   "jenerik": 174,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 92,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 64,
+   "ikili": "logname",
+   "jenerik": 92,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 299,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 243,
+   "ikili": "ls",
+   "jenerik": 311,
+   "yeni_adli": 14,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 100,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 70,
+   "ikili": "md5sum",
+   "jenerik": 100,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 190,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 143,
+   "ikili": "mkdir",
+   "jenerik": 190,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 177,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 133,
+   "ikili": "mkfifo",
+   "jenerik": 177,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 178,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 133,
+   "ikili": "mknod",
+   "jenerik": 178,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 102,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 74,
+   "ikili": "mktemp",
+   "jenerik": 102,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 296,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 212,
+   "ikili": "mv",
+   "jenerik": 296,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 91,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 64,
+   "ikili": "nice",
+   "jenerik": 91,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 103,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 73,
+   "ikili": "nl",
+   "jenerik": 103,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 98,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 68,
+   "ikili": "nohup",
+   "jenerik": 98,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 96,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 66,
+   "ikili": "nproc",
+   "jenerik": 96,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 121,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 89,
+   "ikili": "numfmt",
+   "jenerik": 121,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 147,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 99,
+   "ikili": "od",
+   "jenerik": 147,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 97,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 70,
+   "ikili": "paste",
+   "jenerik": 97,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 92,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 65,
+   "ikili": "pathchk",
+   "jenerik": 92,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 104,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 76,
+   "ikili": "pinky",
+   "jenerik": 104,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 143,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 107,
+   "ikili": "pr",
+   "jenerik": 143,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 90,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 64,
+   "ikili": "printenv",
+   "jenerik": 90,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 117,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 79,
+   "ikili": "printf",
+   "jenerik": 117,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 112,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 76,
+   "ikili": "ptx",
+   "jenerik": 112,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 94,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 66,
+   "ikili": "pwd",
+   "jenerik": 94,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 126,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 96,
+   "ikili": "readlink",
+   "jenerik": 126,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 129,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 101,
+   "ikili": "realpath",
+   "jenerik": 129,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 176,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 140,
+   "ikili": "rm",
+   "jenerik": 176,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 95,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 69,
+   "ikili": "rmdir",
+   "jenerik": 95,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 96,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 64,
+   "ikili": "runcon",
+   "jenerik": 96,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 107,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 78,
+   "ikili": "seq",
+   "jenerik": 107,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 100,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 70,
+   "ikili": "sha1sum",
+   "jenerik": 100,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 108,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 76,
+   "ikili": "sha224sum",
+   "jenerik": 108,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 108,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 76,
+   "ikili": "sha256sum",
+   "jenerik": 108,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 108,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 76,
+   "ikili": "sha384sum",
+   "jenerik": 108,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 108,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 76,
+   "ikili": "sha512sum",
+   "jenerik": 108,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 142,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 102,
+   "ikili": "shred",
+   "jenerik": 142,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 150,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 111,
+   "ikili": "shuf",
+   "jenerik": 150,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 97,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 67,
+   "ikili": "sleep",
+   "jenerik": 97,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 238,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 181,
+   "ikili": "sort",
+   "jenerik": 238,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 126,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 85,
+   "ikili": "split",
+   "jenerik": 126,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 156,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 108,
+   "ikili": "stat",
+   "jenerik": 156,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 102,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 74,
+   "ikili": "stdbuf",
+   "jenerik": 102,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 106,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 74,
+   "ikili": "stty",
+   "jenerik": 106,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 118,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 81,
+   "ikili": "sum",
+   "jenerik": 118,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 91,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 65,
+   "ikili": "sync",
+   "jenerik": 91,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 103,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 72,
+   "ikili": "tac",
+   "jenerik": 103,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 167,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 120,
+   "ikili": "tail",
+   "jenerik": 167,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 113,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 78,
+   "ikili": "tee",
+   "jenerik": 113,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 95,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 75,
+   "ikili": "test",
+   "jenerik": 95,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 101,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 71,
+   "ikili": "timeout",
+   "jenerik": 101,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 128,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 89,
+   "ikili": "touch",
+   "jenerik": 128,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 109,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 77,
+   "ikili": "tr",
+   "jenerik": 109,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 90,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 65,
+   "ikili": "true",
+   "jenerik": 90,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 93,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 66,
+   "ikili": "truncate",
+   "jenerik": 93,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 104,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 72,
+   "ikili": "tsort",
+   "jenerik": 104,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 90,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 65,
+   "ikili": "tty",
+   "jenerik": 90,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 91,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 67,
+   "ikili": "uname",
+   "jenerik": 91,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 103,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 73,
+   "ikili": "unexpand",
+   "jenerik": 103,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 113,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 80,
+   "ikili": "uniq",
+   "jenerik": 113,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 92,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 64,
+   "ikili": "unlink",
+   "jenerik": 92,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 100,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 69,
+   "ikili": "users",
+   "jenerik": 100,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 299,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 243,
+   "ikili": "vdir",
+   "jenerik": 311,
+   "yeni_adli": 14,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 129,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 91,
+   "ikili": "wc",
+   "jenerik": 129,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 105,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 76,
+   "ikili": "who",
+   "jenerik": 105,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 92,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 64,
+   "ikili": "whoami",
+   "jenerik": 92,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 94,
+   "birim": "debian/coreutils",
+   "en_az_bir_adsiz": 65,
+   "ikili": "yes",
+   "jenerik": 94,
+   "yeni_adli": null,
+   "yeni_bitti": false
+  },
+  {
+   "adsiz": 234,
+   "birim": "debian/htop",
+   "en_az_bir_adsiz": 194,
+   "ikili": "htop",
+   "jenerik": 239,
+   "yeni_adli": 8,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 555,
+   "birim": "debian/openssl",
+   "en_az_bir_adsiz": 271,
+   "ikili": "openssl",
+   "jenerik": 588,
+   "yeni_adli": 35,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 85,
+   "birim": "debian/redis-tools",
+   "en_az_bir_adsiz": 70,
+   "ikili": "redis-benchmark",
+   "jenerik": 88,
+   "yeni_adli": 5,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 904,
+   "birim": "debian/redis-tools",
+   "en_az_bir_adsiz": 618,
+   "ikili": "redis-check-aof",
+   "jenerik": 912,
+   "yeni_adli": 10,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 904,
+   "birim": "debian/redis-tools",
+   "en_az_bir_adsiz": 618,
+   "ikili": "redis-check-rdb",
+   "jenerik": 912,
+   "yeni_adli": 10,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 185,
+   "birim": "debian/redis-tools",
+   "en_az_bir_adsiz": 147,
+   "ikili": "redis-cli",
+   "jenerik": 191,
+   "yeni_adli": 8,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 407,
+   "birim": "debian/sqlite3",
+   "en_az_bir_adsiz": 311,
+   "ikili": "sqlite3",
+   "jenerik": 425,
+   "yeni_adli": 20,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 1623,
+   "birim": "debian/tmux",
+   "en_az_bir_adsiz": 1279,
+   "ikili": "tmux",
+   "jenerik": 1916,
+   "yeni_adli": 295,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 112,
+   "birim": "debian/tree",
+   "en_az_bir_adsiz": 81,
+   "ikili": "tree",
+   "jenerik": 115,
+   "yeni_adli": 5,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 828,
+   "birim": "debian/zstd",
+   "en_az_bir_adsiz": 693,
+   "ikili": "pzstd",
+   "jenerik": 832,
+   "yeni_adli": 6,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 1013,
+   "birim": "debian/zstd",
+   "en_az_bir_adsiz": 832,
+   "ikili": "zstd",
+   "jenerik": 1076,
+   "yeni_adli": 65,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 597,
+   "birim": "mac/htop",
+   "en_az_bir_adsiz": 510,
+   "ikili": "htop",
+   "jenerik": 597,
+   "yeni_adli": 0,
+   "yeni_bitti": true
+  },
+  {
+   "adsiz": 2192,
+   "birim": "mac/tmux",
+   "en_az_bir_adsiz": 1790,
+   "ikili": "tmux",
+   "jenerik": 2587,
+   "yeni_adli": 395,
+   "yeni_bitti": true
+  }
+ ],
+ "kunye": {
+  "aileler": {
+   "a1": {
+    "ad": "erişimci",
+    "ates": [
+     "a1_al",
+     "a1_yaz_tek",
+     "a1_yaz_cok",
+     "a1_yuklem"
+    ]
+   },
+   "a2": {
+    "ad": "yaşam",
+    "ates": [
+     "a2_birakir",
+     "a2_taze",
+     "a2_buyutur",
+     "a2_sokum"
+    ]
+   },
+   "a3": {
+    "ad": "alan",
+    "ates": [
+     "a3_sifir_disi"
+    ]
+   },
+   "a4": {
+    "ad": "global",
+    "ates": [
+     "a4_degisken"
+    ]
+   },
+   "a5": {
+    "ad": "sözleşme",
+    "ates": [
+     "a5_ye_yerel",
+     "a5_ye_gecisli",
+     "a5_param_yazar",
+     "a5_donmez"
+    ]
+   },
+   "a6": {
+    "ad": "sarma",
+    "ates": [
+     "a6_lib",
+     "a6_ic"
+    ]
+   }
+  },
+  "betik": "docs/arge/2026-11-11_n4_v2/on_sayim_v2.py",
+  "betik_sha256": "2b2ccfed273261c9242324c9a78855b5519c3824d533355eb3cde59d042d5678",
+  "birlesimler": {
+   "en_az_bir": "altı aileden en az biri",
+   "en_az_bir_a1_a2_a6": "A1, A2 ya da A6",
+   "en_az_bir_a3_a5siz": "A3 ve A5 dışındaki dört aileden en az biri",
+   "en_az_bir_a5siz": "A5 dışındaki beş aileden en az biri",
+   "en_az_bir_ty_dahil": "altı aile ya da ty_dizgili"
+  },
+  "debian_kosu": "~/karadul_olcum/n1_debian13",
+  "degisken_bloklari": [
+   ".bss",
+   ".data",
+   ".tbss",
+   ".tdata",
+   "__DATA",
+   "__bss",
+   "__common",
+   "__data"
+  ],
+  "ek_sayaclar": [
+   "disasm_yok",
+   "a1_al_saf",
+   "a1g_yuklem_okur_cagrili",
+   "a2_birakir_her_yolda",
+   "a2g_alan_birak_genis",
+   "a6g_ic_genis",
+   "a3_var",
+   "a3_iki_ofset",
+   "a3_yazar",
+   "a4_yazar",
+   "a4_paylasimli",
+   "a4_sabit_veri",
+   "a4_sabit_veri_ddalsiz",
+   "a5_sabit_bos",
+   "a6_lib_ayirici",
+   "a6_lib_birakici",
+   "a6_sarma_kullanan",
+   "ty_kayit",
+   "ty_dizgili",
+   "v1_is",
+   "v1_kalip1_is",
+   "v1_init",
+   "v1_kalip2_init",
+   "v1_destroy",
+   "v1_create_genis",
+   "v1_kalip3_arg"
+  ],
+  "ikili_sayisi": {
+   "debian/coreutils": 106,
+   "debian/htop": 1,
+   "debian/openssl": 1,
+   "debian/redis-tools": 4,
+   "debian/sqlite3": 1,
+   "debian/tmux": 1,
+   "debian/tree": 1,
+   "debian/zstd": 2,
+   "mac/htop": 1,
+   "mac/tmux": 1
+  },
+  "mac_kosu": "workspaces/olcum_mac/runs/ol7-c-b7faeac",
+  "nufuslar": {
+   "adsiz": "yeni ürün koşusu ikilide bittiyse jenerik eksi naming_map global'de ürün adı alanlar; bitmediyse jenerik'in tamamı",
+   "jenerik": "thunk ve dış olmayan, adı ^FUN_<onaltılık>$ olan Ghidra fonksiyonu (dünkü isim_bekleyen)"
+  },
+  "on_sayim_sha256": "d3e3b9ed955c2f89cb8f84b1a31a70d8c5904af43c84e1bc94c9ada37b599b56",
+  "python": "3.12.7",
+  "sabit_veri_bloklari": [
+   ".data.rel.ro",
+   ".rodata",
+   "__DATA_CONST",
+   "__const"
+  ],
+  "salt_okur": [
+   "ctype_b_loc",
+   "ctype_tolower_loc",
+   "ctype_toupper_loc",
+   "maskrune",
+   "memchr",
+   "memcmp",
+   "strcasecmp",
+   "strchr",
+   "strcmp",
+   "strcspn",
+   "strlen",
+   "strncasecmp",
+   "strncmp",
+   "strnlen",
+   "strpbrk",
+   "strrchr",
+   "strspn",
+   "strstr",
+   "tolower",
+   "toupper",
+   "wcscmp",
+   "wcslen"
+  ],
+  "secim": null,
+  "surum": 1,
+  "tablo_yuvasi_sha256": "6c9a2ea5adbeeebac52d54c21a210adde4c6d25f213eecf8b43126f97246b77f",
+  "tanimlar": {
+   "a1_al": "Yalın; dış saklama yok; dönüş türü void değil; U'da tam bir f_i,o var, geri kalanı sabit",
+   "a1_al_saf": "a1_al ve U = {f_i,o}",
+   "a1_yaz_cok": "a1_yaz_tek ile aynı, yazılan ayrı ofset sayısı ≥ 2",
+   "a1_yaz_tek": "Yalın; dış saklama var ve hepsinin taban değeri aynı tek {p_i}, ofseti sabit, saklanan değerler ⊆ {sabit, parametre}; dönüş void ya da U ⊆ parametreler; yazılan ofset sayısı 1",
+   "a1_yuklem": "Yalın; dış saklama yok; dönüş void değil; U ⊆ {0, 1, b} ve U sabit değil (b içeriyor ya da en az iki değer)",
+   "a1g_yuklem_okur_cagrili": "Aileye girmez (gevşetme sayacı): a1_yuklem'in çağrı koşulu 'bütün çağrılar SALT_OKUR kütüphane listesine' biçiminde gevşetilmiş hâli; en az bir çağrı var",
+   "a2_birakir": "dünkü fire_destroy (ana yolda bir bırakıcı çağrısının x0'ı tam {p_i})",
+   "a2_birakir_her_yolda": "Aileye girmez: dünkü destroy_her_yolda (bırakmasız dönen yol yok)",
+   "a2_buyutur": "dünkü create_buyutme (döndürülen ayırıcı realloc/reallocarray)",
+   "a2_sokum": "a2g_alan_birak_genis ve fonksiyonun bütün çağrı yerleri bırakıcı (alanları bırakıp sıfırlamaktan başka çağrısı yok)",
+   "a2_taze": "dünkü fire_create_genis ve create_buyutme değil",
+   "a2g_alan_birak_genis": "Aileye girmez: dünkü kalip2 (bir bırakıcı çağrısının x0'ı {f_i,o}; p_i'nin en az iki ofsetine sabit/parametre yazılıyor; p_i'nin kendisi bırakılmıyor)",
+   "a3_iki_ofset": "Aynı p_i üstünden en az iki ayrı ofset (okunan ∪ yazılan)",
+   "a3_sifir_disi": "a3_var ve ofsetlerden en az biri 0 değil (aile bayrağı)",
+   "a3_var": "Taban değeri tam {p_i} ve ofseti sabit olan en az bir dış yükleme ya da dış saklama",
+   "a3_yazar": "a3_var ve en az bir dış saklama",
+   "a4_degisken": "adrp(+add) / adr ile kurulan ya da adrp + bellek işleneniyle erişilen mutlak adreslerden en az biri DEGISKEN_BLOKLARI içinde (aile bayrağı). İzleme doğrusal: yazmaç yeniden yazılınca ya da çağrıda (x0-x18, x30) bilgi silinir; kontrol akışına bakılmaz",
+   "a4_paylasimli": "a4_degisken ve adreslerden en az birine aynı ikilide başka bir iç fonksiyon da başvuruyor (tam adres eşitliği; aynı değişkenin başka alanına başvuru sayılmaz)",
+   "a4_sabit_veri": "Adreslerden en az biri SABIT_VERI_BLOKLARI içinde ve bir Ghidra dizgisinin içinde değil",
+   "a4_sabit_veri_ddalsiz": "a4_sabit_veri ve fonksiyonda dolaylı dallanma (atlama tablosu) yok",
+   "a4_yazar": "a4_degisken ve o adreslerden birine doğrudan saklama",
+   "a5_donmez": "Girişten dönen bir çıkışa ulaşılamıyor (dünkü tum_yollar_donmez)",
+   "a5_param_yazar": "Dönen çıkış var; dolaylı çağrı ve dolaylı dallanma yok; dış saklama var ve hepsinin taban değeri tam {p_i}, ofseti sabit; çağrı yok ya da bütün çağrı hedefleri yan etkisiz",
+   "a5_sabit_bos": "a5_ye_yerel ve (U tek bir sabit ya da dönüş void ve dış yükleme yok)",
+   "a5_ye_gecisli": "Yan etkisiz, geçişli kanıt: en az bir çağrı var; dış saklama, dolaylı çağrı ve dolaylı dallanma yok; dönen çıkış var; her çağrı hedefi çözülüyor, kütüphane hedefleri ⊆ SALT_OKUR, iç hedeflerin hepsi yan etkisiz (çağrı grafında en büyük sabit nokta)",
+   "a5_ye_yerel": "Yan etkisiz, yerel kanıt: yalın ve dış saklama yok",
+   "a6_ic": "a6g_ic_genis ve hata ailesi dışında tam bir çağrı yeri var, kontrol akışında döngü yok, dönüş void ya da çıkışlardan en az biri o çağrının dönüşünü taşıyor (ince iletici)",
+   "a6_lib": "Dış saklama, dolaylı çağrı ve dolaylı dallanma yok; hata ailesi (dönmez, ileti, errno, dönmeyen iç fonksiyon) dışındaki çağrı yerlerinin hepsi aynı tek kütüphane adına iniyor; o çağrıların her birinde x0-x7'den en az biri bir parametre içeriyor; dönüş void ya da U ⊆ o çağrıların dönüşü ∪ sabitler",
+   "a6_sarma_kullanan": "Aileye girmez: çağrı hedeflerinden biri a6_lib ateşleyen bir iç fonksiyon",
+   "a6g_ic_genis": "Aileye girmez: a6_lib ile aynı koşullar, hedef tek bir iç fonksiyon (kendisi ve dönmeyen iç fonksiyon değil)",
+   "demet": "A5'in bilgi ölçüsü için (dönüş türü, yazma türü, çağrı türü) üçlüsü; ikili içinde dağılımın entropisi ve en sık üçlünün payı raporlanır",
+   "ortak": "Zemin dünkü on_sayim.py: gömülü AArch64 disassembly üstünde fonksiyon içi ileri veri akışı (değerler p_i, k_c, b, r_pc, f_i,o, s, ?). 'Çağrı' = derleyici eki ve CRT dışındaki çağrı yeri (bl, blr, kuyruk çağrısı). 'Dış saklama' = tabanı sp/x29 olmayan ve taban değeri yığın adresi olmayan saklama. 'Dış yükleme' = aynı koşulla yükleme (blok giriş durumundan komut komut yeniden oynatılır). 'Yalın' = çağrı yok, dolaylı dallanma (br) yok, en az bir dönen çıkış var. U = dönen çıkışlardaki x0 değerlerinin birleşimi.",
+   "ty_dizgili": "dünkü gevşek ad kanıtı: tablo kaydında ve kayıt dizgilerinden biri tanımlayıcı ya da kısa ad biçiminde ('bugün ad almıyor' koşulu burada nüfus tanımıyla uygulanır)",
+   "ty_kayit": "dünkü 'tablo kaydında' (tablo_yuvasi_sayim.py)"
+  },
+  "yeni_kosu": {
+   "biten": [
+    "debian/coreutils/dir",
+    "debian/coreutils/ls",
+    "debian/coreutils/vdir",
+    "debian/htop/htop",
+    "debian/openssl/openssl",
+    "debian/redis-tools/redis-benchmark",
+    "debian/redis-tools/redis-check-aof",
+    "debian/redis-tools/redis-check-rdb",
+    "debian/redis-tools/redis-cli",
+    "debian/sqlite3/sqlite3",
+    "debian/tmux/tmux",
+    "debian/tree/tree",
+    "debian/zstd/pzstd",
+    "debian/zstd/zstd",
+    "mac/htop/htop",
+    "mac/tmux/tmux"
+   ],
+   "biten_ikili": 16,
+   "biten_ikililerde_ad_alan_FUN": 904,
+   "ikili": 119,
+   "kok": "~/karadul_olcum/runs/urun-yeni-93a2956"
+  }
+ },
+ "makro": {
+  "adsiz": {
+   "oran": {
+    "a1": 0.0226,
+    "a2": 0.0371,
+    "a3": 0.4188,
+    "a4": 0.208,
+    "a5": 0.1265,
+    "a6": 0.1067,
+    "en_az_bir": 0.7342,
+    "en_az_bir_a1_a2_a6": 0.1652,
+    "en_az_bir_a3_a5siz": 0.345,
+    "en_az_bir_a5siz": 0.6806,
+    "en_az_bir_ty_dahil": 0.7629,
+    "ty": 0.073
+   },
+   "program_sayisi": 8
+  },
+  "jenerik": {
+   "oran": {
+    "a1": 0.0214,
+    "a2": 0.0366,
+    "a3": 0.4176,
+    "a4": 0.2125,
+    "a5": 0.1233,
+    "a6": 0.1044,
+    "en_az_bir": 0.734,
+    "en_az_bir_a1_a2_a6": 0.1613,
+    "en_az_bir_a3_a5siz": 0.3452,
+    "en_az_bir_a5siz": 0.6813,
+    "en_az_bir_ty_dahil": 0.7615,
+    "ty": 0.0699
+   },
+   "program_sayisi": 8
+  }
+ },
+ "pcode_capraz": {
+  "nufus": "jenerik",
+  "sayim": {
+   "debian": {
+    "bozuk_satir": 0,
+    "donmez:n": 411,
+    "donmez:uyusmaz": 51,
+    "param_yazar:n": 391,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 430,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 1459,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   },
+   "debian/coreutils": {
+    "bozuk_satir": 0,
+    "donmez:n": 292,
+    "donmez:uyusmaz": 25,
+    "param_yazar:n": 121,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 294,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 905,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   },
+   "debian/htop": {
+    "bozuk_satir": 0,
+    "donmez:n": 1,
+    "donmez:uyusmaz": 0,
+    "param_yazar:n": 10,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 2,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 7,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   },
+   "debian/openssl": {
+    "bozuk_satir": 0,
+    "donmez:n": 3,
+    "donmez:uyusmaz": 0,
+    "param_yazar:n": 3,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 9,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 22,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   },
+   "debian/redis-tools": {
+    "bozuk_satir": 0,
+    "donmez:n": 51,
+    "donmez:uyusmaz": 26,
+    "param_yazar:n": 92,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 56,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 112,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   },
+   "debian/sqlite3": {
+    "bozuk_satir": 0,
+    "donmez:n": 2,
+    "donmez:uyusmaz": 0,
+    "param_yazar:n": 16,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 8,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 20,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   },
+   "debian/tmux": {
+    "bozuk_satir": 0,
+    "donmez:n": 5,
+    "donmez:uyusmaz": 0,
+    "param_yazar:n": 59,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 35,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 185,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   },
+   "debian/tree": {
+    "bozuk_satir": 0,
+    "donmez:n": 1,
+    "donmez:uyusmaz": 0,
+    "param_yazar:n": 0,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 1,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 8,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   },
+   "debian/zstd": {
+    "bozuk_satir": 0,
+    "donmez:n": 56,
+    "donmez:uyusmaz": 0,
+    "param_yazar:n": 90,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 25,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 200,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   },
+   "mac": {
+    "bozuk_satir": 0,
+    "donmez:n": 23,
+    "donmez:uyusmaz": 0,
+    "param_yazar:n": 124,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 106,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 263,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   },
+   "mac/htop": {
+    "bozuk_satir": 0,
+    "donmez:n": 4,
+    "donmez:uyusmaz": 0,
+    "param_yazar:n": 27,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 8,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 40,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   },
+   "mac/tmux": {
+    "bozuk_satir": 0,
+    "donmez:n": 19,
+    "donmez:uyusmaz": 0,
+    "param_yazar:n": 97,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 98,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 223,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   },
+   "tum": {
+    "bozuk_satir": 0,
+    "donmez:n": 434,
+    "donmez:uyusmaz": 51,
+    "param_yazar:n": 515,
+    "param_yazar:uyusmaz": 0,
+    "pcode_dosyasi_yok": 0,
+    "pcode_kaydi_yok": 0,
+    "ye_gecisli:callind": 0,
+    "ye_gecisli:n": 536,
+    "ye_gecisli:store": 0,
+    "ye_gecisli:uyusmaz": 0,
+    "ye_yerel:cagri": 0,
+    "ye_yerel:n": 1722,
+    "ye_yerel:store": 0,
+    "ye_yerel:uyusmaz": 0
+   }
+  },
+  "tanim": "A5 iddialarının ikinci, bağımsız türetimle çapraz denetimi (GT'siz; kesinlik değildir).\n\n    İkinci türetim Ghidra decompiler'ının yüksek p-code'udur (``ghidra_output/pcode.jsonl``;\n    seçici listede STORE, CALL, CALLIND ve RETURN var). Uyuşmazlık tanımları:\n\n    - ``ye_yerel``: p-code'da STORE, CALLIND ya da derleyici eki/CRT dışı bir hedefe CALL var;\n    - ``ye_gecisli``: p-code'da STORE ya da CALLIND var (CALL beklenir);\n    - ``param_yazar``: p-code'da hiç STORE yok;\n    - ``donmez``: p-code'da gerçek bir RETURN var. Ghidra dönmeyen bitişi ilk girdisi sabit 1\n      olan RETURN ile işaretler; ilk girdisi başka olan RETURN gerçek dönüştür.\n    "
+ }
+}
