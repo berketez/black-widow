@@ -5,6 +5,7 @@
 - **Ne yapıldı:** `on_sayim.py` sürüm 2'ye yeni sayaçlar eklendi; sürüm 1'in bütün sayaçları aynı değerde kaldı (§7.1). Ürün kodu değişmedi.
 - **İşaretler:** **[hesap]** çıktı sayılarından aritmetik. **[tahmin]** açık bir varsayıma dayanır. **[okuma]** decompile metninin elle okunmasıyla verilen yargı; GT değildir.
 - Bu belgede program fonksiyonu adı ve adres yoktur. Kütüphane (import) adları ve fiil sözlüğü sözcükleri geçer.
+- **Düzeltme notu (2026-11-11):** ertesi günkü çapraz denetim (`../2026-11-11_n4_v2/taslak.md` §5.4; Ghidra p-code'uyla) bu belgenin betiği `on_sayim.py`'de iki hata buldu: Debian ELF'lerinde PLT girişindeki `bti c` komutunun çağıranın gövdesine katılması (giriş bloğu yanlış seçiliyor) ve gövde dışına düşen akışın yok sayılması. Etkisi: §2.7'deki Debian "dönmeyen iç", "hiç dönmeyen" ve FK3 geniş sayıları şişkindir ("hiç dönmeyen" 1 095 → düzeltmeyle 434). Kural sayaçları çok az değişiyor (`is` 1 082 → 1 077) ve bu belgenin hükümleri değişmiyor. Mac sütunları birinci hatadan etkilenmedi. Bu belgenin sayıları ve betiği değiştirilmedi; düzeltilmiş sayım `on_sayim_v2.py`'dedir. Hataları bulan ajanın raporudur; ana oturum yalnız betiğin öz sınamasını koştu.
 
 **Dosyalar:**
 
