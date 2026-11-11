@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.22.1] - 2026-11-11 (KaradulLM çekirdeği + rapor ve temiz çıktı düzeltmeleri)
+
+Yeni özellik ve hata düzeltmesi birlikte: 1.21.3 → 1.22.1.
+
+### Eklenenler
+- `karadul/lm/`: isteğe bağlı model katmanının (KaradulLM) arka uç çekirdeği. Yerel
+  `llama-server` ve OpenAI uyumlu kullanıcı ucu için arka uç soyutlaması, hız yoklaması ve
+  arayüz kipi kuralı, bellek bekçisi, şemaya zorlanmış tur protokolü, denetim günlüğü.
+  **Motor bu paketi içe aktarmaz**; analiz hattı LLM'siz ve deterministik kalır. Paket henüz
+  komut satırına ya da arayüze bağlı değildir (ajan döngüsü ve araçlar sonraki aşamada).
+  Tasarım ve ölçümler: `docs/arge/2026-11-11_karadullm/`.
+
+### Düzeltilenler
+- Rapor sayaçları: `pipeline_iterations_run` hep 0, `convergence_reason` hep "unknown", ithal
+  sayısı hep 0 yazılıyordu. Üçü de gerçek değeri taşır (Debian `tree`: 2 tur, `no_new_names`,
+  63 ithal). İthal tablosu okunamazsa 0 yerine "N/A" yazılır. Ayrıntı:
+  `docs/arge/2026-11-11_rapor_sayaclari/sonuc.md`.
+- Temiz çıktının `naming_map.json`'u koda uygulanmamış adları ve eski = yeni girişleri eşleme
+  diye listeliyordu. Biçim 1.1: `mappings` yalnız koda uygulanmış adları taşır; öbür kayıtlar
+  nedeniyle birlikte `candidates` bölümündedir (kayıt silinmez). Geçersiz C adı eşleme sayılmaz.
+  119 ikilide uygulanmayan 6 675 ve özdeş 9 823 giriş eşlemeden çıktı.
+- Temiz çıktının `README.md`'si diskte olmayan bir dizin yapısı anlatıyordu; yapı ve dosya
+  sayıları artık yazılan çıktıdan türer. Ayrıntı: `docs/arge/2026-11-11_temiz_harita/sonuc.md`.
+- Arayüz, haritanın 1.1 biçiminde kütüphane çağrısı ipuçlarını kaybetmesin diye iki bölümü
+  birlikte okur.
+
 ## [1.21.3] - 2026-11-11 (arayüz kanıt düzeltmeleri)
 
 Yalnız hata düzeltmesi: 1.21.2 → 1.21.3.

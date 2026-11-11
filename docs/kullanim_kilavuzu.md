@@ -1,6 +1,6 @@
 # Karadul — kısa kullanma kılavuzu
 
-Sürüm 1.21.3 için. Yöntemlerin ayrıntısı kitaplarda; bu sayfa yalnız günlük kullanımı anlatır.
+Sürüm 1.22.1 için. Yöntemlerin ayrıntısı kitaplarda; bu sayfa yalnız günlük kullanımı anlatır.
 
 ## 1. Ne yapar, ne yapmaz
 
