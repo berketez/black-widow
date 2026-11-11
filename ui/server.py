@@ -451,7 +451,12 @@ def _active_binary_hash(ws: str | None = None) -> str | None:
 
 
 def _clean_mappings(ws: str | None = None) -> dict:
-    """Aktif run'in clean/naming_map.json 'mappings' bloku (provenance/hint icin)."""
+    """Aktif run'in clean/naming_map.json kayıtları (provenance/hint icin).
+
+    Biçim 1.1'de koda uygulanmamış kayıtlar (imza veritabanının tanıdığı ithal semboller dahil)
+    ``candidates`` bölümündedir; kütüphane çağrısı ipucu ``library`` alanını onlardan okur. Bir
+    anahtar iki bölümden yalnız birindedir: birleşim 1.0'daki ``mappings`` kümesidir.
+    """
     ws = ws or WS
     if not ws:
         return {}
@@ -462,7 +467,8 @@ def _clean_mappings(ws: str | None = None) -> dict:
     rd = _active_run_dir(ws)
     if rd:
         try:
-            m = json.loads((rd / "clean" / "naming_map.json").read_text()).get("mappings", {})
+            data = json.loads((rd / "clean" / "naming_map.json").read_text())
+            m = {**(data.get("candidates") or {}), **(data.get("mappings") or {})}
         except (json.JSONDecodeError, OSError, TypeError, AttributeError):
             m = {}
     if not isinstance(m, dict):
