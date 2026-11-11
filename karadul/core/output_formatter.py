@@ -8,15 +8,14 @@ output dizini uretir. Dil tipine gore farkli strateji uygular:
 
 Cikti yapisi:
   output/
-    src/                   # Reconstructed source (duzenlenmis)
-      main.c (veya .js)
-      modules/             # Modul bazli ayrilmis dosyalar
-      types/               # Kurtarilan tipler (struct, enum)
+    src/                   # Yeniden kurulan kaynak; yerleşim kaynağa bağlı: CProjectBuilder
+                           # ağacı (src/src/subsystem_*, include/, Makefile …) ya da proje
+                           # ağacı yoksa main.c + modules/ + types/
     report.json            # Detayli analiz raporu
     report.html            # Gorsel rapor (browser'da acilabilir)
-    naming_map.json        # Tum isim eslestirmeleri
+    naming_map.json        # İsim eşleştirmeleri
     dependency_graph.json  # Bagimlilik grafigi
-    README.md              # Analiz ozeti
+    README.md              # Analiz özeti; anlattığı dizin yapısı diskteki çıktıdan üretilir
 """
 
 from __future__ import annotations
@@ -42,6 +41,21 @@ from karadul.core.result import PipelineResult, StageResult
 from karadul.core.workspace import Workspace
 
 logger = logging.getLogger(__name__)
+
+# README'nin "Output Structure" bölümünde bir dizin için sıralanan en çok girdi; fazlası tek satırda
+# sayıyla özetlenir (düz src/ binlerce dosya taşıyabilir).
+README_TREE_MAX_ENTRIES = 20
+
+# Biçimlendiricinin kendi yazdığı üst düzey çıktıların açıklaması. Yalnız diskte bulunan girdiye
+# yazılır; listede olmayan girdi açıklamasız gösterilir.
+_README_ENTRY_DESCRIPTIONS = {
+    "src": "Reconstructed source code",
+    "report.json": "Machine-readable analysis report",
+    "report.html": "Visual report (open in browser)",
+    "naming_map.json": "Name mappings",
+    "dependency_graph.json": "Call graph / dependency info",
+    "README.md": "This file",
+}
 
 
 @dataclass
@@ -223,7 +237,7 @@ class OutputFormatter:
         # 6. README.md
         readme_path = output_dir / "README.md"
         try:
-            readme_content = self._build_readme(language, src_files, naming_map)
+            readme_content = self._build_readme(language, src_files, naming_map, output_dir)
             readme_path.write_text(readme_content, encoding="utf-8")
             files_written += 1
         except Exception as exc:
@@ -845,13 +859,24 @@ class OutputFormatter:
         language: str,
         src_files: int,
         naming_map: dict[str, Any],
+        output_dir: Optional[Path] = None,
     ) -> str:
-        """Analiz ozet README.md uret."""
+        """Analiz özeti README.md üret.
+
+        ``output_dir`` verilirse "Output Structure" bölümü ve "Source Files" sayısı diskteki
+        çıktıdan türetilir (eskiden dile göre elle yazılmış sabit bir ağaç basılıyordu:
+        ``src/main.c``, ``src/modules/``, ``src/types/``; proje ağacı yazılan çıktıda bunların
+        hiçbiri yoktu). Verilmezse yapı bölümü yazılmaz, kaynak sayısı ``src_files``'tır.
+        """
         from karadul import __version__
         from datetime import datetime, timezone
 
         now = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
         total_mappings = naming_map.get("total_mappings", 0)
+        src_root = output_dir / "src" if output_dir is not None else None
+        if src_root is not None and src_root.is_dir():
+            # Diskteki sayı: biçimlendiricinin sayacı ezilen dosyaları da sayabiliyor (genel dal).
+            src_files = self._count_files(src_root)
 
         lang_display = {
             "c": "C/C++",
@@ -879,33 +904,13 @@ class OutputFormatter:
             f"| Source Files | {src_files} |",
             f"| Names Recovered | {total_mappings} |",
             "",
-            "## Output Structure",
-            "",
-            "```",
-            "output/",
         ]
 
-        # Dizin yapisi
-        lines.append("  src/                  # Reconstructed source code")
-        if language == "c":
-            lines.append("    main.c              # Entry point")
-            lines.append("    modules/            # Subsystem modules")
-            lines.append("    types/              # Recovered structs/enums")
-        elif language == "javascript":
-            lines.append("    main.js             # Main application code")
-            lines.append("    modules/            # Webpack modules")
-        elif language == "swift":
-            lines.append("    modules/            # Swift source files")
-
-        lines.extend([
-            "  report.json           # Machine-readable analysis report",
-            "  report.html           # Visual report (open in browser)",
-            "  naming_map.json       # All name recovery mappings",
-            "  dependency_graph.json # Call graph / dependency info",
-            "  README.md             # This file",
-            "```",
-            "",
-        ])
+        # Dizin yapısı: yazılan dosya ve dizinlerden (README.md bu listeden hemen sonra yazılır).
+        if output_dir is not None:
+            lines.extend(["## Output Structure", "", "```"])
+            lines.extend(self._output_tree_lines(output_dir))
+            lines.extend(["```", ""])
 
         # Pipeline ozeti
         lines.append("## Pipeline Stages")
@@ -956,6 +961,59 @@ class OutputFormatter:
         ])
 
         return "\n".join(lines)
+
+    @staticmethod
+    def _count_files(directory: Path) -> int:
+        """``directory`` altındaki (alt dizinler dahil) dosya sayısı."""
+        return sum(1 for p in directory.rglob("*") if p.is_file())
+
+    @classmethod
+    def _output_tree_lines(cls, output_dir: Path) -> list[str]:
+        """Çıktı dizininin iki düzeyli ağacı; her satır diskteki bir girdidir.
+
+        Üst düzey girdiler ve üst düzey dizinlerin çocukları sıralanır; dizinin yanına içindeki
+        dosya sayısı yazılır. Bir dizinde :data:`README_TREE_MAX_ENTRIES`'ten çok girdi varsa kalanı
+        tek satırda sayıyla özetlenir. README.md henüz yazılmadığı için diskte yoksa "This file"
+        olarak eklenir: bu liste kurulduktan hemen sonra yazılan dosyanın kendisidir.
+        """
+        def label(path: Path) -> str:
+            return f"{path.name}/" if path.is_dir() else path.name
+
+        def note(path: Path, description: Optional[str]) -> str:
+            parts = [description] if description else []
+            if path.is_dir():
+                n = cls._count_files(path)
+                parts.append(f"{n} file" if n == 1 else f"{n} files")
+            return ", ".join(parts)
+
+        def order(paths) -> list[Path]:
+            return sorted(paths, key=lambda p: (not p.is_dir(), p.name.lower(), p.name))
+
+        def children(directory: Path) -> list[Path]:
+            return order(directory.iterdir())
+
+        rows: list[tuple[str, str]] = []
+
+        def add(entries: list[Path], depth: int, top_level: bool) -> None:
+            for entry in entries[:README_TREE_MAX_ENTRIES]:
+                description = _README_ENTRY_DESCRIPTIONS.get(entry.name) if top_level else None
+                rows.append(("  " * depth + label(entry), note(entry, description)))
+                if top_level and entry.is_dir():
+                    add(children(entry), depth + 1, top_level=False)
+            hidden = len(entries) - README_TREE_MAX_ENTRIES
+            if hidden > 0:
+                rows.append(("  " * depth + f"... ({hidden} more)", ""))
+
+        top = list(output_dir.iterdir()) if output_dir.is_dir() else []
+        if not (output_dir / "README.md").exists():
+            top.append(output_dir / "README.md")
+        add(order(top), 1, top_level=True)
+
+        width = max((len(text) for text, _ in rows), default=0) + 1
+        lines = [f"{output_dir.name}/"]
+        for text, comment in rows:
+            lines.append(f"{text.ljust(width)}# {comment}" if comment else text)
+        return lines
 
     # ------------------------------------------------------------------
     # Utility methods

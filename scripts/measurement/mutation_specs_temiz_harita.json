@@ -1,0 +1,69 @@
+{
+ "_comment": "Temiz çıktının README'si ve ad haritası dürüst (2026-11-11). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_temiz_harita.json",
+ "mutants": [
+  {
+   "id": "readme_sabit_agac_geri",
+   "desc": "README yine dile göre elle yazılmış sabit ağacı basar (src/main.c, modules/, types/)",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_readme_yapisi_diskteki_cikti",
+   "find": "            lines.extend(self._output_tree_lines(output_dir))\n",
+   "replace": "            lines.extend([\"output/\", \"  src/\", \"    main.c\", \"    modules/\", \"    types/\"])\n"
+  },
+  {
+   "id": "readme_kaynak_sayisi_sayactan",
+   "desc": "Source Files diskten değil biçimlendiricinin sayacından yazılır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_source_files_diskten_sayaci_sisik_olsa_da",
+   "find": "            src_files = self._count_files(src_root)\n",
+   "replace": "            pass\n"
+  },
+  {
+   "id": "readme_cocuklar_listelenmez",
+   "desc": "üst düzey dizinlerin çocukları listelenmez",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_readme_yapisi_diskteki_cikti",
+   "find": "                if top_level and entry.is_dir():\n",
+   "replace": "                if False:\n"
+  },
+  {
+   "id": "readme_dizin_sayisi_dogrudan_cocuk",
+   "desc": "dizinin yanına alt dizinler dahil dosya sayısı yerine doğrudan çocuk sayısı yazılır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_dizin_sayisi_alt_dizinler_dahil_dosya_sayisi",
+   "find": "                n = cls._count_files(path)\n",
+   "replace": "                n = len(list(path.iterdir()))\n"
+  },
+  {
+   "id": "readme_aciklama_her_duzeyde",
+   "desc": "üst düzey açıklaması src/ altındaki aynı adlı girdiye de yazılır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_ust_duzey_aciklamalar_yalniz_bilinen_dosyalara",
+   "find": "                description = _README_ENTRY_DESCRIPTIONS.get(entry.name) if top_level else None\n",
+   "replace": "                description = _README_ENTRY_DESCRIPTIONS.get(entry.name, \"Source file\")\n"
+  },
+  {
+   "id": "readme_kesme_bir_fazla",
+   "desc": "kalabalık dizinde kalan girdi sayısı bir eksik yazılır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_kalabalik_dizin_kesilir_kalan_sayilir",
+   "find": "            hidden = len(entries) - README_TREE_MAX_ENTRIES\n",
+   "replace": "            hidden = len(entries) - README_TREE_MAX_ENTRIES - 1\n"
+  },
+  {
+   "id": "readme_kendisi_listelenmez",
+   "desc": "README.md henüz yazılmadığı için yapı listesinde yer almaz",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_readme_henuz_yazilmadiysa_bu_dosya_olarak_listelenir",
+   "find": "            top.append(output_dir / \"README.md\")\n",
+   "replace": "            pass\n"
+  },
+  {
+   "id": "readme_ad_sayisi_haritadan_degil",
+   "desc": "Names Recovered haritadaki total_mappings yerine kayıt sayısının bir fazlasını yazar",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_names_recovered_haritadaki_total_mappings",
+   "find": "            f\"| Names Recovered | {total_mappings} |\",\n",
+   "replace": "            f\"| Names Recovered | {total_mappings + 1} |\",\n"
+  }
+ ]
+}
