@@ -232,6 +232,15 @@ def test_kayan_medyan_ve_kip_durumu():
     k = t.decide()
     assert k.mode == P.MODE_INTERACTIVE and k.t_hat_sec == pytest.approx(2500 / 1100 + 80 / 25.45)
     assert LM.ROLLING_WINDOW == 5
+    # Bant kuralı izleyicideki önceki kipe göre işler: kuyruktayken T̂ = 9 sn kuyrukta tutar.
+    tek = P.SpeedTracker(window=1)
+    tek.observe(117.3, 10.9)
+    assert tek.decide().mode == P.MODE_QUEUE
+    tek.observe(2500 / 8, 80.0)
+    k = tek.decide()
+    assert k.t_hat_sec == pytest.approx(9.0) and k.mode == P.MODE_QUEUE
+    tek.observe(2500 / 7, 80.0)
+    assert tek.decide().mode == P.MODE_INTERACTIVE
 
 
 def test_ilk_jeton_gostergesi():

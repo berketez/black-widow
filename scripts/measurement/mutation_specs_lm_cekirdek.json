@@ -1,0 +1,1061 @@
+{
+  "_comment": "KaradulLM Aşama 1a çekirdeği (karadul/lm: backend, probe, memory_guard, protocol, audit). Her mutant bir davranışı bozar; hedef test KIRMIZI olmalı (killed). Her test işlevi en az bir mutantın hedefidir. Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_lm_cekirdek.json",
+  "mutants": [
+    {
+      "id": "r_dusunme_bayragi",
+      "desc": "Düşünme bloğu deseni satır kipine döner (re.S yerine re.M)",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_sabitler_pilotla_ayni",
+      "find": "(?:<channel\\|>|\\Z)\", re.S)",
+      "replace": "(?:<channel\\|>|\\Z)\", re.M | 0)"
+    },
+    {
+      "id": "r_dusunme_sonu_bas",
+      "desc": "think_end bloğun sonu yerine başını döndürür",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_dusunme_ve_ilk_json_pilotla_ayni",
+      "find": "        end = m.end()",
+      "replace": "        end = m.start()"
+    },
+    {
+      "id": "r_ilk_json_ilk_hatada_durur",
+      "desc": "first_json ilk çözülemeyen '{'den sonra aramayı keser",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_dusunme_ve_ilk_json_pilotla_ayni",
+      "find": "        except json.JSONDecodeError:\n            pass\n        i = text.find(\"{\", i + 1)",
+      "replace": "        except json.JSONDecodeError:\n            break\n        i = text.find(\"{\", i + 1)"
+    },
+    {
+      "id": "r_ret_dusunmeye_bakar",
+      "desc": "Reddetme kalıbı düşünme bloğunun içinde de aranır",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_ayristirma_pilotla_ayni",
+      "find": "        elif any(k in metin[cevap_bas:].lower() for k in REFUSAL_PATTERNS):",
+      "replace": "        elif any(k in metin.lower() for k in REFUSAL_PATTERNS):"
+    },
+    {
+      "id": "r_cekimser_izni_ters",
+      "desc": "Zorunlu koşulda çekimserlik kabul edilir",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_ayristirma_pilotla_ayni",
+      "find": "        if not abstain_allowed:",
+      "replace": "        if abstain_allowed:"
+    },
+    {
+      "id": "r_hex_jeton_kisa",
+      "desc": "Kendi adresini taşıyan ad kuralı 3 basamağa iner",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_jenerik_kurali_olcum_kuraliyla_ayni",
+      "find": "_HEX_TOKEN_RE = re.compile(r\"^[0-9a-f]{4,}$\")",
+      "replace": "_HEX_TOKEN_RE = re.compile(r\"^[0-9a-f]{3,99}$\")"
+    },
+    {
+      "id": "r_adres_eki_yok",
+      "desc": "Kendi adresini taşıyan ad jenerik sayılmaz",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_jenerik_kurali_olcum_kuraliyla_ayni",
+      "find": "    return _embeds_own_address(name, addresses)",
+      "replace": "    return False and _embeds_own_address(name, addresses)"
+    },
+    {
+      "id": "r_adres_FUN_oneki",
+      "desc": "FUN_ öneki yanlış kesilir",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_ayristirma_durum_siniflari_acik_degerler",
+      "find": "        s = s[4:]",
+      "replace": "        s = s[3:] "
+    },
+    {
+      "id": "r_adres_mantiksal",
+      "desc": "Mantıksal değer adres kabul edilir",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_ayristirma_durum_siniflari_acik_degerler",
+      "find": "    if isinstance(address, bool):\n        raise ValueError(\"adres mantıksal değer olamaz\")",
+      "replace": "    if False:\n        raise ValueError(\"adres mantıksal değer olamaz\")"
+    },
+    {
+      "id": "r_arac_dali_acik",
+      "desc": "Araç dalı fazladan anahtara açık",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_zarf_duz_anyOf",
+      "find": "\"required\": [\"kind\", \"tool\", \"args\"], \"additionalProperties\": False}",
+      "replace": "\"required\": [\"kind\", \"tool\", \"args\"], \"additionalProperties\": True}"
+    },
+    {
+      "id": "r_bos_zarf",
+      "desc": "Araçsız zarf kurulur",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_zarf_duz_anyOf",
+      "find": "    if not tools:\n        raise SchemaError(\"zarf en az bir araç ister\")",
+      "replace": "    if not tools and False:\n        raise SchemaError(\"zarf en az bir araç ister\")"
+    },
+    {
+      "id": "r_fazla_anahtar",
+      "desc": "additionalProperties false uygulanmaz",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_zarf_gecerli_ve_gecersiz",
+      "find": "            elif ap is False:",
+      "replace": "            elif ap is None:"
+    },
+    {
+      "id": "r_dal_tespiti",
+      "desc": "Dal numarası tek eşleşmede de yazılmaz",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_zarf_gecerli_ve_gecersiz",
+      "find": "    branch = branches[0] if len(branches) == 1 else None",
+      "replace": "    branch = None"
+    },
+    {
+      "id": "r_maxlength_kayik",
+      "desc": "maxLength bir fazlasına izin verir",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_dogrulayici_jsonschema_ile_ayni",
+      "find": "        if \"maxLength\" in schema and len(value) > schema[\"maxLength\"]:",
+      "replace": "        if \"maxLength\" in schema and len(value) > schema[\"maxLength\"] + 1:"
+    },
+    {
+      "id": "r_tamsayi_mantiksal",
+      "desc": "integer tipi true/false kabul eder",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_dogrulayici_jsonschema_ile_ayni",
+      "find": "        return (isinstance(value, int) and not isinstance(value, bool)) or (",
+      "replace": "        return isinstance(value, int) or ("
+    },
+    {
+      "id": "r_minimum_yok",
+      "desc": "minimum denetlenmez",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_dogrulayici_jsonschema_ile_ayni",
+      "find": "        if \"minimum\" in schema and value < schema[\"minimum\"]:",
+      "replace": "        if \"minimum\" in schema and value < schema[\"minimum\"] - 1:"
+    },
+    {
+      "id": "r_json_esitlik_mantiksal",
+      "desc": "const/enum'da false ile 0 eşit sayılır",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_mantiksal_ve_sayi_ayri_degerler",
+      "find": "    if isinstance(a, bool) or isinstance(b, bool):",
+      "replace": "    if isinstance(a, bool) and isinstance(b, bool):"
+    },
+    {
+      "id": "r_desen_capa",
+      "desc": "Desen için ^ ya da $ yeterli sayılır",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_desteklenmeyen_sema_reddedilir",
+      "find": "not (p.startswith(\"^\") and p.endswith(\"$\")):",
+      "replace": "not (p.startswith(\"^\") or p.endswith(\"$\")):"
+    },
+    {
+      "id": "r_bilinmeyen_anahtar",
+      "desc": "Bilinmeyen anahtar sözcük sessizce geçer",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_desteklenmeyen_sema_reddedilir",
+      "find": "        if k not in SUPPORTED_KEYWORDS:",
+      "replace": "        if k not in SUPPORTED_KEYWORDS and k == '$id':"
+    },
+    {
+      "id": "r_ek_ozellik_yazilmaz",
+      "desc": "additionalProperties yazılmamış nesne kabul edilir",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_desteklenmeyen_sema_reddedilir",
+      "find": "        if \"additionalProperties\" not in s:",
+      "replace": "        if \"additionalProperties\" not in s and False:"
+    },
+    {
+      "id": "r_cekimser_dali_gevsek",
+      "desc": "Çekimser dalında cekimser herhangi bir mantıksal değer",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_ad_oner_semasi",
+      "find": "\"cekimser\": {\"const\": True},",
+      "replace": "\"cekimser\": {\"type\": \"boolean\"},"
+    },
+    {
+      "id": "i_gerekce_tavani",
+      "desc": "Gerekçe tavanı 240'tan büyür",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_protocol.py::test_ad_oner_semasi",
+      "find": "RATIONALE_MAX_CHARS = 240 ",
+      "replace": "RATIONALE_MAX_CHARS = 2400 "
+    },
+    {
+      "id": "r_tur_dusunme_atilmaz",
+      "desc": "Tur ayrıştırmada düşünme bloğu atılmaz",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_tur_ayristirma",
+      "find": "    start = think_end(text)\n    obj, b, e = first_json(text, start)",
+      "replace": "    start = 0\n    obj, b, e = first_json(text, start)"
+    },
+    {
+      "id": "r_tur_butce",
+      "desc": "Bütçe aşımı geçersiz sayılır",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_tur_ayristirma",
+      "find": "        if finish_reason == \"length\":\n            status = \"butce_asimi\"",
+      "replace": "        if finish_reason == \"lengthx\":\n            status = \"butce_asimi\""
+    },
+    {
+      "id": "r_onarim_iki_kez",
+      "desc": "L2'de ikinci onarıma izin verilir",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_tek_onarim_kurali",
+      "find": "repairs_done < MAX_REPAIRS[level]:",
+      "replace": "repairs_done <= MAX_REPAIRS[level]:"
+    },
+    {
+      "id": "r_onarim_L1",
+      "desc": "L1'de onarım açılır",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_tek_onarim_kurali",
+      "find": "MAX_REPAIRS = {\"L1\": 0, \"L2\": 1, \"L3\": 0}",
+      "replace": "MAX_REPAIRS = {\"L1\": 1, \"L2\": 1, \"L3\": 0}  # mutant"
+    },
+    {
+      "id": "r_onarim_butce",
+      "desc": "Bütçe aşımı da onarılır",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_tek_onarim_kurali",
+      "find": "REPAIRABLE = frozenset({\"gecersiz\", \"sema_ihlali\"})",
+      "replace": "REPAIRABLE = frozenset({\"gecersiz\", \"sema_ihlali\", \"butce_asimi\"})"
+    },
+    {
+      "id": "r_bilinmeyen_duzey",
+      "desc": "Bilinmeyen düzey sessizce geçer",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_tek_onarim_kurali_bilinmeyen_duzey",
+      "find": "    if level not in MAX_REPAIRS:\n        raise ValueError",
+      "replace": "    if level not in MAX_REPAIRS and False:\n        raise ValueError"
+    },
+    {
+      "id": "r_onarim_yansitir",
+      "desc": "Onarım iletisi modelin yazdığı nesneyi geri gönderir",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_onarim_iletisi_model_degerini_yansitmaz",
+      "find": "        reason = \"it did not match the required schema: \" + \"; \".join(",
+      "replace": "        reason = \"it did not match the required schema: \" + json.dumps(parsed.obj) + \"; \".join("
+    },
+    {
+      "id": "r_strict_yok",
+      "desc": "L3'te strict kapalı",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_response_format_duzeye_gore",
+      "find": "\"json_schema\": {\"name\": name, \"strict\": True,",
+      "replace": "\"json_schema\": {\"name\": name, \"strict\": False,"
+    },
+    {
+      "id": "r_L2_bicimi",
+      "desc": "L2'de json_object yerine metin",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_response_format_duzeye_gore",
+      "find": "        return {\"type\": \"json_object\"}\n    raise ValueError",
+      "replace": "        return {\"type\": \"text\"}\n    raise ValueError"
+    },
+    {
+      "id": "b_kontrol_noktasi",
+      "desc": "Kontrol noktası bayrağı pilottan sapar",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_komut_pilot_bayraklariyla_ayni",
+      "find": "\"--ctx-checkpoints\", \"0\",",
+      "replace": "\"--ctx-checkpoints\", \"32\","
+    },
+    {
+      "id": "b_sablon_bayragi",
+      "desc": "Şablon dosyası komuta girmez",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_komut_pilot_bayraklariyla_ayni",
+      "find": "        k += [\"--chat-template-file\", str(template_path)]",
+      "replace": "        k += []"
+    },
+    {
+      "id": "b_host_herkese_acik",
+      "desc": "Sunucu bütün arayüzlere bağlanır",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_komut_anahtarli_ve_yalniz_loopback",
+      "find": "\"--host\", \"127.0.0.1\",\n         \"--port\"",
+      "replace": "\"--host\", \"0.0.0.0\",\n         \"--port\""
+    },
+    {
+      "id": "b_anahtar_kisa",
+      "desc": "Anahtar 16 bayta düşer",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_komut_anahtarli_ve_yalniz_loopback",
+      "find": "_KEY_BYTES = 32",
+      "replace": "_KEY_BYTES = 8 * 2"
+    },
+    {
+      "id": "b_komut_gizlenmez",
+      "desc": "Komut gizlenmeden kayda girer",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_komut_anahtarli_ve_yalniz_loopback",
+      "find": "    return [REDACTED if (api_key and part == api_key) else part for part in cmd]",
+      "replace": "    return list(cmd)"
+    },
+    {
+      "id": "i_bellek_esigi",
+      "desc": "Bellek eşiği pilottan sapar",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_backend.py::test_sabitler_pilotla_ayni",
+      "find": "MEMORY_LIMIT_GIB = 20.0 ",
+      "replace": "MEMORY_LIMIT_GIB = 22.00 "
+    },
+    {
+      "id": "i_tohum",
+      "desc": "Tohum pilottan sapar",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_backend.py::test_sabitler_pilotla_ayni",
+      "find": "MODEL_SEED = 20261019 ",
+      "replace": "MODEL_SEED = 202611110 "
+    },
+    {
+      "id": "b_sicaklik",
+      "desc": "Sıcaklık 0 değil",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_istek_govdesi_pilotun_cozme_ayarlariyla_ayni",
+      "find": "\"temperature\": 0,\n",
+      "replace": "\"temperature\": 0.7,\n"
+    },
+    {
+      "id": "b_dusunme_acik",
+      "desc": "Düşünme kapatılmaz",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_istek_govdesi_pilotun_cozme_ayarlariyla_ayni",
+      "find": "            body[\"chat_template_kwargs\"] = {\"enable_thinking\": False}",
+      "replace": "            body[\"chat_template_kwargs\"] = {\"enable_thinking\": True}"
+    },
+    {
+      "id": "b_setsid",
+      "desc": "start_new_session kullanılır",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_baslatma_surec_grubu_pid_dosyasi_ve_kunye",
+      "find": "stdin=subprocess.DEVNULL, process_group=0)",
+      "replace": "stdin=subprocess.DEVNULL, start_new_session=True)"
+    },
+    {
+      "id": "b_pid_dosyasi_yok",
+      "desc": "PID dosyası yazılmaz",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_baslatma_surec_grubu_pid_dosyasi_ve_kunye",
+      "find": "                self._write_pid_file(self._proc.pid, self._port)\n",
+      "replace": "                pass  # PID dosyası yazılmıyor\n"
+    },
+    {
+      "id": "b_sablon_ozeti_yok",
+      "desc": "Şablon sha256'sı künyeye girmez",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_baslatma_surec_grubu_pid_dosyasi_ve_kunye",
+      "find": "\"sablon_sha256\": None if self.template_path is None else sha256_file(self.template_path),",
+      "replace": "\"sablon_sha256\": None,"
+    },
+    {
+      "id": "b_ikili_denetimi_yok",
+      "desc": "İkili yokken ayrı hata verilmez",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_ikili_yoksa_surec_acilmaz",
+      "find": "        if not self.binary.is_file():\n",
+      "replace": "        if False and not self.binary.is_file():\n"
+    },
+    {
+      "id": "b_hazir_olmadan_gecer",
+      "desc": "Hazır olmayan sunucu hazır sayılır",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_hazir_olmazsa_kapatir",
+      "find": "        raise BackendError(f\"llama-server {self.ready_timeout:.0f} saniyede hazır olmadı\")",
+      "replace": "        return"
+    },
+    {
+      "id": "b_saglik_hatasi_yutulmaz",
+      "desc": "Sağlık yoklamasındaki geçici hata başlatmayı bozar",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_saglik_hatasi_yutulur_sonra_hazir",
+      "find": "            except LMError:\n                pass\n            self._sleep(HEALTH_POLL_SEC)",
+      "replace": "            except ValueError:\n                pass\n            self._sleep(HEALTH_POLL_SEC)"
+    },
+    {
+      "id": "b_erken_cikis_gorulmez",
+      "desc": "Erken çıkan süreç fark edilmez",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_erken_cikista_pid_dosyasi_silinir",
+      "find": "            if self._proc.poll() is not None:\n                raise BackendError(f\"llama-server erken",
+      "replace": "            if False:\n                raise BackendError(f\"llama-server erken"
+    },
+    {
+      "id": "b_hata_iletisi_gizlenmez",
+      "desc": "Başlatma hatası anahtardan arındırılmaz",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_popen_hatasi_anahtari_sizdirmaz",
+      "find": "                msg = self._redact(f\"{type(e).__name__}: {e}\")",
+      "replace": "                msg = f\"{type(e).__name__}: {e}\""
+    },
+    {
+      "id": "b_hata_baglamda",
+      "desc": "Hata except içinde yükselir (özgün istisna bağlamda kalır)",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_popen_hatasi_anahtari_sizdirmaz",
+      "find": "                failure = f\"llama-server başlatılamadı: {msg}\"",
+      "replace": "                raise BackendError(f\"llama-server başlatılamadı: {msg}\")"
+    },
+    {
+      "id": "b_hatada_kapatmaz",
+      "desc": "Başlatma hatasında süreç kapatılmaz",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_kesmede_de_kapatir",
+      "find": "                self._shutdown(\"hata\")\n                if self.audit",
+      "replace": "                pass\n                if self.audit"
+    },
+    {
+      "id": "b_kill_yok",
+      "desc": "terminate işlemezse kill yapılmaz",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_terminate_islemezse_kill",
+      "find": "                    proc.kill()\n",
+      "replace": "                    pass  # kill yok\n"
+    },
+    {
+      "id": "b_yetim_ikili_bakilmaz",
+      "desc": "Yetim denetimi yalnız kapıya bakar (yabancı süreç öldürülür)",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_yetim_surec_kapatilir_yabanci_surec_kapatilmaz",
+      "find": "        if str(self.binary) in args and f\"--port {port}\" in args:",
+      "replace": "        if f\"--port {port}\" in args:"
+    },
+    {
+      "id": "b_yetim_temizlenmez",
+      "desc": "Başlatmada yetim süreç temizlenmez",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_yetim_surec_kapatilir_yabanci_surec_kapatilmaz",
+      "find": "                self.reap_recorded()\n                ident = self._static_identity()",
+      "replace": "                ident = self._static_identity()"
+    },
+    {
+      "id": "b_yetim_kill_yok",
+      "desc": "Yetim terminate ile ölmezse SIGKILL gönderilmez",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_yetim_terminate_ile_olmezse_kill",
+      "find": "                    self._kill(pid, signal.SIGKILL)",
+      "replace": "                    pass  # SIGKILL yok"
+    },
+    {
+      "id": "b_bosta_sinir",
+      "desc": "Boşta süresi sınırda durdurmaz",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_bosta_kalinca_durur",
+      "find": "            if self._clock() - self._last_activity < self.idle_shutdown_sec:",
+      "replace": "            if self._clock() - self._last_activity <= self.idle_shutdown_sec:"
+    },
+    {
+      "id": "b_iletiler_kayitta",
+      "desc": "İletiler istek künyesine girer",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_sohbet_govdesi_ve_gunlukte_anahtar_yok",
+      "find": "        meta = {k: v for k, v in body.items() if k != \"messages\"}",
+      "replace": "        meta = dict(body)"
+    },
+    {
+      "id": "b_semasiz_istek",
+      "desc": "Yerel uçta şema gönderilmez",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_sohbet_govdesi_ve_gunlukte_anahtar_yok",
+      "find": "return self._client.chat(messages, protocol.response_format_for(\"L3\", schema), stream,",
+      "replace": "return self._client.chat(messages, protocol.response_format_for(\"L1\", None), stream,"
+    },
+    {
+      "id": "b_ilk_istekte_baslatmaz",
+      "desc": "Sohbet sunucuyu ilk istekte başlatmaz",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_sohbet_ilk_istekte_baslatir_ve_surec_olurse_kapatir",
+      "find": "        if self.pid is None:\n            self.start()\n        self._state = STATE_BUSY",
+      "replace": "        if False:\n            self.start()\n        self._state = STATE_BUSY"
+    },
+    {
+      "id": "b_olu_surec_kapatilmaz",
+      "desc": "Ölen sunucu sohbet hatasında kapatılmaz",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_sohbet_ilk_istekte_baslatir_ve_surec_olurse_kapatir",
+      "find": "            if self._proc is not None and self._proc.poll() is not None:\n                self.stop(\"hata\")",
+      "replace": "            if False:\n                self.stop(\"hata\")"
+    },
+    {
+      "id": "b_http_hatasi_gizlenmez",
+      "desc": "HTTP hata parçası anahtardan arındırılmaz",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_http_hata_iletisinde_anahtar_yok",
+      "find": "            err = HttpStatusError(e.status, self.redact(e.excerpt))",
+      "replace": "            err = HttpStatusError(e.status, e.excerpt)"
+    },
+    {
+      "id": "b_loopback_ozel_ag",
+      "desc": "Özel ağ adresleri loopback sayılır",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_loopback_tanimi",
+      "find": "        return ipaddress.ip_address(h).is_loopback",
+      "replace": "        return ipaddress.ip_address(h).is_private"
+    },
+    {
+      "id": "b_loopback_onek",
+      "desc": "Adı 127.0.0.1 ile başlayan makine loopback sayılır",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_loopback_tanimi",
+      "find": "    if h == \"localhost\":\n        return True",
+      "replace": "    if h == \"localhost\" or h.startswith(\"127.0.0.1\"):\n        return True"
+    },
+    {
+      "id": "b_onay_denetimi_yok",
+      "desc": "Loopback dışı uca onaysız istek atılır",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_loopback_olmayan_uca_onaysiz_istek_atilmaz",
+      "find": "        if not self.loopback and not self.allow_network:",
+      "replace": "        if False:"
+    },
+    {
+      "id": "b_loopback_tanınmaz",
+      "desc": "Loopback uç da onay ister",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_onayla_ve_loopbackte_istek_atilir",
+      "find": "        self.loopback = is_loopback_host(parts.hostname)",
+      "replace": "        self.loopback = False"
+    },
+    {
+      "id": "b_onay_yok_sayilir",
+      "desc": "Verilen ağ onayı yok sayılır",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_onayla_ve_loopbackte_istek_atilir",
+      "find": "        self.allow_network = bool(allow_network)",
+      "replace": "        self.allow_network = False"
+    },
+    {
+      "id": "a_url_sorgu",
+      "desc": "Kayda yazılan URL sorgu dizgisini taşır",
+      "module": "karadul/lm/audit.py",
+      "test": "tests/test_lm_backend.py::test_uc_adresi_dogrulanir_ve_kunyede_gizli_yok",
+      "find": "    return urllib.parse.urlunsplit((p.scheme, netloc, p.path, \"\", \"\"))",
+      "replace": "    return urllib.parse.urlunsplit((p.scheme, netloc, p.path, p.query, \"\"))"
+    },
+    {
+      "id": "b_url_kullanici_bilgisi",
+      "desc": "URL'deki kullanıcı bilgisi kabul edilir",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_uc_adresi_dogrulanir_ve_kunyede_gizli_yok",
+      "find": "        if parts.username is not None or parts.password is not None:",
+      "replace": "        if False:"
+    },
+    {
+      "id": "b_L3_gecerlilik",
+      "desc": "L3 için şemaya uyan çıktı aranmaz (ters koşul)",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_yetenek_duzeyi_L3",
+      "find": "_LEVEL_PROBE_SCHEMA).status == \"gecerli\":",
+      "replace": "_LEVEL_PROBE_SCHEMA).status == \"sema_ihlali\":"
+    },
+    {
+      "id": "b_L3_isteminde_sema",
+      "desc": "L3 yoklama istemi şemayı anlatır",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_yetenek_duzeyi_L3",
+      "find": "_LEVEL_PROBE_L3_MESSAGES = [{\"role\": \"user\", \"content\": \"Say hello.\"}]",
+      "replace": "_LEVEL_PROBE_L3_MESSAGES = [{\"role\": \"user\", \"content\": \"Say hello as {\\\"kind\\\": \\\"probe\\\", \\\"n\\\": 7}.\"}]"
+    },
+    {
+      "id": "b_400_desteklenmez_sayilmaz",
+      "desc": "HTTP 400 'desteklenmiyor' sayılmaz",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_yetenek_duzeyi_L2_ve_L1",
+      "find": "_UNSUPPORTED_STATUS = frozenset({400, 404, 415, 422, 501})",
+      "replace": "_UNSUPPORTED_STATUS = frozenset({404, 415, 501})"
+    },
+    {
+      "id": "b_L2_json_bakilmaz",
+      "desc": "json_object kabul edilince çıktı denetlenmez",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_yetenek_duzeyi_L2_ve_L1",
+      "find": "                if r2 is not None and _is_whole_json_object(r2.content):",
+      "replace": "                if r2 is not None:"
+    },
+    {
+      "id": "b_her_hata_desteklenmez",
+      "desc": "Her HTTP hatası 'desteklenmiyor' sayılır (401 dahil)",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_yetenek_yoklamasi_baska_hatada_duzey_uydurmaz",
+      "find": "            if e.status in _UNSUPPORTED_STATUS:",
+      "replace": "            if e.status >= 400:"
+    },
+    {
+      "id": "b_reddedilen_uca_L1",
+      "desc": "Hiçbir isteği kabul etmeyen uca L1 yazılır",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_yetenek_yoklamasi_baska_hatada_duzey_uydurmaz",
+      "find": "                    raise BackendError(\"uç düz sohbet isteğini de reddetti; yetenek düzeyi belirlenemedi\")",
+      "replace": "                    pass"
+    },
+    {
+      "id": "b_yoklanmadan_sema",
+      "desc": "Yoklanmamış uca şemalı istek gider",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_yoklanmadan_semali_istek_yok_ve_duzeye_gore_bicim",
+      "find": "        if schema is not None and self._level is None:",
+      "replace": "        if False:"
+    },
+    {
+      "id": "b_akis_ilk_jeton",
+      "desc": "İlk jeton zamanı her parçada güncellenir",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_akis_okuma_icerik_ve_zaman_damgalari",
+      "find": "            if out[\"first\"] is None:\n                out[\"first\"] = now",
+      "replace": "            out[\"first\"] = now"
+    },
+    {
+      "id": "b_akis_bos_parca",
+      "desc": "Boş içerik parçası sayılır",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_akis_okuma_icerik_ve_zaman_damgalari",
+      "find": "        if isinstance(piece, str) and piece:",
+      "replace": "        if isinstance(piece, str):"
+    },
+    {
+      "id": "b_akis_done_yok",
+      "desc": "[DONE] sonrası okunmaya devam edilir",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_akis_okuma_icerik_ve_zaman_damgalari",
+      "find": "        if data == b\"[DONE]\":\n            break",
+      "replace": "        if data == b\"[DONE]\":\n            continue"
+    },
+    {
+      "id": "b_akis_hata_parcasi",
+      "desc": "Akıştaki hata parçası yok sayılır",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_akista_hata_ve_bozuk_parca",
+      "find": "        if \"error\" in chunk:\n            raise BackendError(f\"uç akışta",
+      "replace": "        if \"error\" in chunk and False:\n            raise BackendError(f\"uç akışta"
+    },
+    {
+      "id": "b_akis_kullanim_yok",
+      "desc": "Akışta usage istenmez",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_akisli_sohbet_on_token_ve_sure",
+      "find": "            body[\"stream_options\"] = {\"include_usage\": True}",
+      "replace": "            body[\"stream_options\"] = {\"include_usage\": False}"
+    },
+    {
+      "id": "b_yonlendirme_izlenir",
+      "desc": "Yönlendirme izlenir",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_yonlendirme_izlenmez",
+      "find": "        raise urllib.error.HTTPError(req.full_url, code, \"yönlendirme izlenmez\", headers, fp)",
+      "replace": "        return super().redirect_request(req, fp, code, msg, headers, newurl)"
+    },
+    {
+      "id": "f_gecikme_yok",
+      "desc": "Sahte arka uç gecikmeyi oynatmaz",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_sahte_arka_uc_betigi_oynatir",
+      "find": "        if r.delay_sec:\n            self._sleep(r.delay_sec)",
+      "replace": "        if r.delay_sec:\n            pass"
+    },
+    {
+      "id": "f_sira_ters",
+      "desc": "Sahte arka uç betiği sondan oynatır",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_sahte_arka_uc_betigi_oynatir",
+      "find": "        r = self.replies.pop(0)",
+      "replace": "        r = self.replies.pop()"
+    },
+    {
+      "id": "b_hatali_istek_kayitsiz",
+      "desc": "Hatalı model isteği kayda girmez",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_her_model_istegi_tek_kayit",
+      "find": "            except BaseException as e:\n                if self.audit is not None:",
+      "replace": "            except BaseException as e:\n                if False:"
+    },
+    {
+      "id": "g_mb_birimi",
+      "desc": "MB çarpanı 1000 tabanlı",
+      "module": "karadul/lm/memory_guard.py",
+      "test": "tests/test_lm_backend.py::test_bellek_olcusu_pilotla_ayni",
+      "find": "_UNIT_GIB = {\"KB\": 1 / 1048576, \"MB\": 1 / 1024, \"GB\": 1.0}",
+      "replace": "_UNIT_GIB = {\"KB\": 1 / 1048576, \"MB\": 1 / 1000.0, \"GB\": 1.0}"
+    },
+    {
+      "id": "g_ust_sinir_max",
+      "desc": "Üst sınır toplam yerine en büyük",
+      "module": "karadul/lm/memory_guard.py",
+      "test": "tests/test_lm_backend.py::test_bellek_olcusu_pilotla_ayni",
+      "find": "    return round(rss_gib + (footprint_gib or 0.0), MEMORY_ROUND_DIGITS)",
+      "replace": "    return round(max(rss_gib, footprint_gib or 0.0), MEMORY_ROUND_DIGITS)"
+    },
+    {
+      "id": "g_esik_esit",
+      "desc": "Eşiğe eşit değer aşım sayılır",
+      "module": "karadul/lm/memory_guard.py",
+      "test": "tests/test_lm_backend.py::test_bellek_esigi_sinirda",
+      "find": "        return sample.upper_gib > self.limit_gib",
+      "replace": "        return sample.upper_gib >= self.limit_gib"
+    },
+    {
+      "id": "g_tekrar_tetikler",
+      "desc": "Bekçi her aşımda yeniden tetiklenir",
+      "module": "karadul/lm/memory_guard.py",
+      "test": "tests/test_lm_backend.py::test_bellek_esigi_sinirda",
+      "find": "            if self.tripped is None and self.exceeds(sample):",
+      "replace": "            if self.exceeds(sample):"
+    },
+    {
+      "id": "g_footprint_uydurulur",
+      "desc": "Ölçülemeyen footprint 0 yazılır",
+      "module": "karadul/lm/memory_guard.py",
+      "test": "tests/test_lm_backend.py::test_bellek_olculemezse_karar_yok",
+      "find": "    except (OSError, subprocess.TimeoutExpired):\n        fp = None",
+      "replace": "    except (OSError, subprocess.TimeoutExpired):\n        fp = 0.0"
+    },
+    {
+      "id": "g_surec_yokken_karar",
+      "desc": "PID yokken de ölçülür",
+      "module": "karadul/lm/memory_guard.py",
+      "test": "tests/test_lm_backend.py::test_bellek_olculemezse_karar_yok",
+      "find": "        pid = self.pid_provider()\n        if pid is None:\n            return None",
+      "replace": "        pid = self.pid_provider() or 0"
+    },
+    {
+      "id": "g_artalan_olcmez",
+      "desc": "Artalan döngüsü ölçmez",
+      "module": "karadul/lm/memory_guard.py",
+      "test": "tests/test_lm_backend.py::test_bellek_bekcisi_artalan",
+      "find": "            while not self._stop.is_set():\n                self.check()",
+      "replace": "            while not self._stop.is_set():\n                self.last"
+    },
+    {
+      "id": "b_bellek_durumu",
+      "desc": "Bellek durdurması ayrı durum yazmaz",
+      "module": "karadul/lm/backend.py",
+      "test": "tests/test_lm_backend.py::test_bellek_asiminda_arka_uc_durur",
+      "find": "_STOP_STATE = {\"bellek\": STATE_MEMORY_STOPPED, \"hata\": STATE_ERROR}",
+      "replace": "_STOP_STATE = {\"hata\": STATE_ERROR}"
+    },
+    {
+      "id": "a_bayt_ham",
+      "desc": "Ham bayt kayda düz metin girer",
+      "module": "karadul/lm/audit.py",
+      "test": "tests/test_lm_backend.py::test_gunlukte_anahtar_ve_ham_veri_yok",
+      "find": "        return _summarize_bytes(bytes(value))",
+      "replace": "        return bytes(value).decode(\"latin-1\")  # ham"
+    },
+    {
+      "id": "a_gizli_degistirilmez",
+      "desc": "Kayıt satırında gizli değer değiştirilmez",
+      "module": "karadul/lm/audit.py",
+      "test": "tests/test_lm_backend.py::test_gunlukte_anahtar_ve_ham_veri_yok",
+      "find": "            line = redact_text(json.dumps(record, ensure_ascii=False, sort_keys=True), self._secrets)",
+      "replace": "            line = json.dumps(record, ensure_ascii=False, sort_keys=True)"
+    },
+    {
+      "id": "a_dosya_izni",
+      "desc": "Günlük dosyası herkese okunur",
+      "module": "karadul/lm/audit.py",
+      "test": "tests/test_lm_backend.py::test_gunlukte_anahtar_ve_ham_veri_yok",
+      "find": "os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)",
+      "replace": "os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o0644)"
+    },
+    {
+      "id": "a_yasak_anahtar_yok",
+      "desc": "Authorization/headers alanı ayıklanmaz",
+      "module": "karadul/lm/audit.py",
+      "test": "tests/test_lm_backend.py::test_gunlukte_anahtar_ve_ham_veri_yok",
+      "find": "            out[key] = REDACTED if key.lower() in FORBIDDEN_KEYS else scrub(v)",
+      "replace": "            out[key] = scrub(v)"
+    },
+    {
+      "id": "a_repr_yazilir",
+      "desc": "Tanınmayan nesne repr ile yazılır",
+      "module": "karadul/lm/audit.py",
+      "test": "tests/test_lm_backend.py::test_gunlukte_anahtar_ve_ham_veri_yok",
+      "find": "    return f\"<{type(value).__name__}>\"",
+      "replace": "    return repr(value)"
+    },
+    {
+      "id": "a_hash_dogrulamasi",
+      "desc": "İkili özeti yol karakterlerini kabul eder",
+      "module": "karadul/lm/audit.py",
+      "test": "tests/test_lm_backend.py::test_oturum_yolu_dogrulamasi",
+      "find": "_HEX64 = re.compile(r\"^[0-9a-f]{64}$\")",
+      "replace": "_HEX64 = re.compile(r\"^[0-9a-fA-F./]{64}$\")"
+    },
+    {
+      "id": "a_oturum_kimligi",
+      "desc": "Oturum kimliği yol karakterlerini kabul eder",
+      "module": "karadul/lm/audit.py",
+      "test": "tests/test_lm_backend.py::test_oturum_yolu_dogrulamasi",
+      "find": "_SESSION_ID = re.compile(r\"^[A-Za-z0-9_-]{1,64}$\")",
+      "replace": "_SESSION_ID = re.compile(r\"^[A-Za-z0-9_./-]{1,64}$\")"
+    },
+    {
+      "id": "g_ice_aktarmada_surec",
+      "desc": "İçe aktarmada süreç açılır",
+      "module": "karadul/lm/memory_guard.py",
+      "test": "tests/test_lm_backend.py::test_ice_aktarma_yan_etkisiz",
+      "find": "_PS_TIMEOUT_SEC = 30",
+      "replace": "_PS_TIMEOUT_SEC = 30 + subprocess.run([\"true\"]).returncode"
+    },
+    {
+      "id": "x_motor_lm_aktarir",
+      "desc": "Bir motor modülü karadul.lm'i içe aktarır",
+      "module": "karadul/exceptions.py",
+      "test": "tests/test_lm_backend.py::test_motor_karadul_lm_paketini_ice_aktarmaz",
+      "find": "from __future__ import annotations\n",
+      "replace": "from __future__ import annotations\nfrom karadul.lm import protocol as _lm_protocol  # mutant\n"
+    },
+    {
+      "id": "r_disari_bagimlilik",
+      "desc": "Paket standart kitaplık dışı modül içe aktarır",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_backend.py::test_lm_yalniz_standart_kitaplik_ve_karadul",
+      "find": "import json\nimport re\nfrom dataclasses import dataclass",
+      "replace": "import json\nimport jsonschema  # noqa: F401\nimport re\nfrom dataclasses import dataclass"
+    },
+    {
+      "id": "p_ek_deseni_bozuk",
+      "desc": "İstek 2 konuşmayı sona eklemez (asistan turu yok)",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_yoklama_iki_istek_ve_ek_deseni",
+      "find": "    return [*first, {\"role\": \"assistant\", \"content\": first_reply}, {\"role\": \"user\", \"content\": _PROBE_SUFFIX}]",
+      "replace": "    return [*first, {\"role\": \"user\", \"content\": _PROBE_SUFFIX}]"
+    },
+    {
+      "id": "p_etiket_yok",
+      "desc": "Yoklama metni etiketsiz (yeniden ölçüm önbelleğe çarpar)",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_yoklama_iki_istek_ve_ek_deseni",
+      "find": "    lines = [f\"Probe {nonce}.\"]",
+      "replace": "    lines = [\"Probe.\"]"
+    },
+    {
+      "id": "p_ilk_tavan",
+      "desc": "İstek 1 64 jeton üretir",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_yoklama_iki_istek_ve_ek_deseni",
+      "find": "    r1 = backend.chat(m1, stream=True, max_tokens=PROBE_FIRST_MAX_TOKENS,",
+      "replace": "    r1 = backend.chat(m1, stream=True, max_tokens=PROBE_GEN_TOKENS,"
+    },
+    {
+      "id": "p_cache_r1",
+      "desc": "ö istek 1'in cache_n'inden okunur",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_timings_yolu",
+      "find": "        res.cached_tokens = _count(r2.timings.get(\"cache_n\"))",
+      "replace": "        res.cached_tokens = _count((r1.timings).get(\"cache_n\"))"
+    },
+    {
+      "id": "p_ortak_onek_cache_yok",
+      "desc": "Ortak önek usage yokken cache_n'i saymaz",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_timings_yolu",
+      "find": "            common = n + c if n is not None and c is not None else None",
+      "replace": "            common = n"
+    },
+    {
+      "id": "p_onek_esik_dahil",
+      "desc": "P eşiği sınırı dışlar",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_timings_hiz_alanlari_sinir",
+      "find": "    if n is None or n < PROBE_MIN_PREFILL_TOKENS:",
+      "replace": "    if n is None or n <= PROBE_MIN_PREFILL_TOKENS:"
+    },
+    {
+      "id": "p_sonsuz_hiz",
+      "desc": "Sonsuz hız kabul edilir",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_timings_hiz_alanlari_sinir",
+      "find": "    return x if math.isfinite(x) and x > 0 else None",
+      "replace": "    return x if x > 0 else None"
+    },
+    {
+      "id": "p_uretim_esik",
+      "desc": "G eşiği uygulanmaz (timings)",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_timings_hiz_alanlari_sinir",
+      "find": "    if n is None or n < PROBE_MIN_GEN_TOKENS:\n        return None\n    return _positive(timings.get(\"predicted_per_second\"))",
+      "replace": "    if n is None:\n        return None\n    return _positive(timings.get(\"predicted_per_second\"))"
+    },
+    {
+      "id": "p_islenen_toplam",
+      "desc": "İşlenen jeton yerine toplam istem jetonu",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_akis_yolu_onbellek_bildirilirse",
+      "find": "    return r.prompt_tokens - r.cached_tokens",
+      "replace": "    return r.prompt_tokens"
+    },
+    {
+      "id": "p_onbellek_varsayilir",
+      "desc": "Önbellek bilgisi yokken 0 varsayılır",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_akis_yolu_onbellek_bilgisi_yoksa_P_ve_o_bos",
+      "find": "    if r.prompt_tokens is None or r.cached_tokens is None:\n        return None\n    return r.prompt_tokens - r.cached_tokens",
+      "replace": "    if r.prompt_tokens is None:\n        return None\n    return r.prompt_tokens - (r.cached_tokens or 0)"
+    },
+    {
+      "id": "p_o_uydurulur",
+      "desc": "Önbellek bildirilmezse ö = 0 yazılır",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_akis_yolu_onbellek_bilgisi_yoksa_P_ve_o_bos",
+      "find": "    if c is None or p is None or p == 0:\n        return None",
+      "replace": "    if p is None or p == 0:\n        return None\n    if c is None:\n        return 0"
+    },
+    {
+      "id": "p_uretim_bir_eksik",
+      "desc": "G'de ilk jeton düşülmez",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_akis_hiz_aritmetigi_sinir",
+      "find": "    return (n - 1) / dt if dt > 0 else None",
+      "replace": "    return n / dt if dt > 0 else None"
+    },
+    {
+      "id": "p_isaret_denetimi_yok",
+      "desc": "P'de işaret tutarlılığı denetlenmez",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_akis_hiz_aritmetigi_sinir",
+      "find": "    if abs(dn) < PROBE_MIN_PREFILL_TOKENS or dt == 0 or (dn > 0) != (dt > 0):",
+      "replace": "    if abs(dn) < PROBE_MIN_PREFILL_TOKENS or dt == 0:"
+    },
+    {
+      "id": "p_kullanim_esik_kati",
+      "desc": "ö eşiği dışlayıcı",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_onek_yeniden_kullanimi_esigi",
+      "find": "    return 1 if c >= PROBE_REUSE_FRACTION * p else 0",
+      "replace": "    return 1 if c > PROBE_REUSE_FRACTION * p else 0"
+    },
+    {
+      "id": "i_kullanim_orani",
+      "desc": "ö oranı %90",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_probe.py::test_onek_yeniden_kullanimi_esigi",
+      "find": "PROBE_REUSE_FRACTION = 0.95 ",
+      "replace": "PROBE_REUSE_FRACTION = 0.9 "
+    },
+    {
+      "id": "p_olcumsuz_deger",
+      "desc": "Ölçülmemiş P sıfır yazılır",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_olculmeden_once_bos",
+      "find": "    prefill_tps: Optional[float] = None         # P",
+      "replace": "    prefill_tps: Optional[float] = 0.0  # P"
+    },
+    {
+      "id": "p_olcumsuz_kip",
+      "desc": "Ölçüm yokken kuyruk kipi varsayılır",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_olculmeden_once_bos",
+      "find": "    if t_hat is None:\n        return None\n    if previous == MODE_INTERACTIVE:",
+      "replace": "    if t_hat is None:\n        return MODE_QUEUE\n    if previous == MODE_INTERACTIVE:"
+    },
+    {
+      "id": "p_onislem_veya",
+      "desc": "N_yeni = 30 için iki koşuldan biri yeter",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_beklenen_sure_tasarim_tablosu",
+      "find": "    n_new = REF_PROMPT_TOKENS_PREFILLED if (prefix_reuse == 1 and prefill_on_select) else REF_PROMPT_TOKENS\n    return n_new / p + REF_OUTPUT_TOKENS / g",
+      "replace": "    n_new = REF_PROMPT_TOKENS_PREFILLED if (prefix_reuse == 1 or prefill_on_select) else REF_PROMPT_TOKENS\n    return n_new / p + REF_OUTPUT_TOKENS / g"
+    },
+    {
+      "id": "p_ek_sure",
+      "desc": "T̂'ye t_ek eklenir",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_beklenen_sure_tasarim_tablosu",
+      "find": "    return n_new / p + REF_OUTPUT_TOKENS / g",
+      "replace": "    return n_new / p + REF_OUTPUT_TOKENS / g + 0.5"
+    },
+    {
+      "id": "p_tau_kati",
+      "desc": "τ sınırında kuyruk",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_kip_kurali_sinir",
+      "find": "    return MODE_INTERACTIVE if t_hat <= tau else MODE_QUEUE",
+      "replace": "    return MODE_INTERACTIVE if t_hat < tau else MODE_QUEUE"
+    },
+    {
+      "id": "i_tau",
+      "desc": "τ 12 sn",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_probe.py::test_kip_kurali_sinir",
+      "find": "INTERACTIVE_TAU_SEC = 10.0 ",
+      "replace": "INTERACTIVE_TAU_SEC = 12.00 "
+    },
+    {
+      "id": "p_bant_ust_yok",
+      "desc": "Etkileşimliden çıkışta bant yok",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_kip_bandi",
+      "find": "        return MODE_QUEUE if t_hat > tau * (1 + band) else MODE_INTERACTIVE",
+      "replace": "        return MODE_QUEUE if t_hat > tau else MODE_INTERACTIVE"
+    },
+    {
+      "id": "p_bant_alt_yok",
+      "desc": "Kuyruktan çıkışta bant yok",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_kip_bandi",
+      "find": "        return MODE_INTERACTIVE if t_hat <= tau * (1 - band) else MODE_QUEUE",
+      "replace": "        return MODE_INTERACTIVE if t_hat <= tau else MODE_QUEUE"
+    },
+    {
+      "id": "p_bilinmeyen_kip",
+      "desc": "Bilinmeyen önceki kip yok sayılır",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_kip_bandi",
+      "find": "        raise ValueError(f\"bilinmeyen kip: {previous!r}\")",
+      "replace": "        pass"
+    },
+    {
+      "id": "p_pencere_buyuk",
+      "desc": "Kayan pencere 6 gözlem",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_kayan_medyan_ve_kip_durumu",
+      "find": "        self._p: deque[float] = deque(maxlen=window)",
+      "replace": "        self._p: deque[float] = deque(maxlen=window + 1)"
+    },
+    {
+      "id": "p_ortalama",
+      "desc": "Medyan yerine ortalama",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_kayan_medyan_ve_kip_durumu",
+      "find": "        p = statistics.median(self._p) if self._p else None",
+      "replace": "        p = statistics.mean(self._p) if self._p else None"
+    },
+    {
+      "id": "p_kip_unutulur",
+      "desc": "İzleyici önceki kipi unutur (bant işlemez)",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_kayan_medyan_ve_kip_durumu",
+      "find": "        self.mode = decide_mode(t_hat, self.mode)",
+      "replace": "        self.mode = decide_mode(t_hat, None)"
+    },
+    {
+      "id": "p_ilk_jeton_yarim",
+      "desc": "İlk jeton süresi yanlış hesaplanır",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_ilk_jeton_gostergesi",
+      "find": "    return n_new / p\n",
+      "replace": "    return n_new / p / 2\n"
+    },
+    {
+      "id": "i_ilk_jeton_hedefi",
+      "desc": "İlk jeton hedefi 5 sn",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_probe.py::test_ilk_jeton_gostergesi",
+      "find": "FIRST_TOKEN_TARGET_SEC = 3.0 ",
+      "replace": "FIRST_TOKEN_TARGET_SEC = 5.00 "
+    },
+    {
+      "id": "p_amac_yok",
+      "desc": "Yoklama istekleri görev diye kaydedilir",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_yoklama_denetim_kaydi",
+      "find": "    r1 = backend.chat(m1, stream=True, max_tokens=PROBE_FIRST_MAX_TOKENS, purpose=\"yoklama-1\")",
+      "replace": "    r1 = backend.chat(m1, stream=True, max_tokens=PROBE_FIRST_MAX_TOKENS, purpose=\"gorev\")"
+    },
+    {
+      "id": "p_sonuc_kaydi_yok",
+      "desc": "Yoklama sonucu kayda girmez",
+      "module": "karadul/lm/probe.py",
+      "test": "tests/test_lm_probe.py::test_yoklama_denetim_kaydi",
+      "find": "        audit.write(\"yoklama\", arka_uc=backend.identity(), sonuc=res.as_dict())",
+      "replace": "        pass"
+    }
+  ]
+}

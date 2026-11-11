@@ -62,6 +62,7 @@ def test_sabitler_pilotla_ayni():
 def _sapma_metinleri() -> list[str]:
     return [
         "", "düz metin", "{", "}", "{}", "[]", '[{"a": 1}]', '{"a": 1} {"b": 2}', 'x {"a": {"b": "}"}} y',
+        '{bozuk {"isim": "sonraki_ad", "gerekce": "g", "cekimser": false}',
         '{"isim": "parse_header", "gerekce": "g", "cekimser": false}',
         '<think>düşünce {"isim": "yanlis"}</think>{"isim": "dogru_ad", "gerekce": "g", "cekimser": false}',
         '<think>bitmeyen düşünce {"isim": "x", "gerekce": "g", "cekimser": false}',
