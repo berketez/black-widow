@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.22.2] - 2026-11-11 (çıktı ve gösterge düzeltmeleri)
+
+Yalnız hata düzeltmesi: 1.22.1 → 1.22.2. Ad davranışı değişmedi (Debian `tree`'de ölçülen ad
+haritası 1.22.1 ile bayt bayt aynı); ürün ölçümünün `yeni2` kolu 1.22.1'de koşuldu.
+
+### Düzeltilenler
+- Canlı CLI ekranında sahte gösterge vardı: CPU yüzdesi rastgele sayıyla üretiliyordu ve aşama
+  sürerken hazır eylem metinleri zamanlayıcıyla dönüyordu. İkisi de kaldırıldı
+  (`karadul/hacker_cli.py`); ekrandaki metin ve sayılar yalnız gerçek olaylardan gelir.
+- Markdown raporu ithal sayısı bilinmiyorken "0" yazıyordu; artık "N/A".
+- `lief_analysis.json` kitaplık listesi ELF ve PE'de hep boştu (lief 0.17 bu biçimlerde düz
+  metin veriyor).
+- Stripped ELF'te `symbols.json` 0 simgeydi; ELF'te dinamik simge tablosu okunur. Bu çıktı
+  yalnız gösterimde kullanılır, ad kanallarına girmez.
+- CLI "Imports" satırı ikililerde hiç çıkmıyordu.
+- Temiz çıktının `report.html` ad tablosu imza eşleşmelerini "Recovered" diye listeliyordu;
+  başlık "Name Candidates" oldu, koda uygulanma denetimi yapılmadığı tabloda yazıyor; özdeş
+  kayıtlar teke indirildi. Ayrıntı: `docs/arge/2026-11-11_cikti_kucuk_hatalar/sonuc.md`.
+
 ## [1.22.1] - 2026-11-11 (KaradulLM çekirdeği + rapor ve temiz çıktı düzeltmeleri)
 
 Yeni özellik ve hata düzeltmesi birlikte: 1.21.3 → 1.22.1.
