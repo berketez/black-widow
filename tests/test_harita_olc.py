@@ -412,25 +412,25 @@ def test_kaynak_birimi_dwarf_tip_kuraliyla_ayni():
 
 
 def test_birim_yolu():
-    dieler = [die(1, CU, 0, name=ad_oz("sds.c")), die(101, CU, 100, name=ad_oz("sds.c")),
-              die(201, CU, 200, name=ad_oz("../modules/./v/hnsw.c")), die(301, CU, 300, name=ad_oz("lib//x.c")),
+    dieler = [die(1, CU, 0, name=ad_oz("ortak.c")), die(101, CU, 100, name=ad_oz("ortak.c")),
+              die(201, CU, 200, name=ad_oz("../modules/./v/vek.c")), die(301, CU, 300, name=ad_oz("lib//x.c")),
               die(401, CU, 400, name=ad_oz("y.c")), die(501, CU, 500, name=ad_oz("z.c")),
               die(601, CU, 600, name=ad_oz("w.c"))]
-    ana = dwarf(dieler, {0: (1, CU, tablo5("src/sds.c")), 100: (101, CU, tablo5("deps/hiredis/sds.c")),
-                         200: (201, CU, tablo5("modules/v/hnsw.c")),
+    ana = dwarf(dieler, {0: (1, CU, tablo5("src/ortak.c")), 100: (101, CU, tablo5("deps/kitap/ortak.c")),
+                         200: (201, CU, tablo5("modules/v/vek.c")),
                          300: (301, CU, {"taban": 1, "yollar": ["baska/x.c"]}),   # DWARF 4: 0. dosya yok
                          400: (401, CU, {"hata": "bozuk"}), 500: (501, CU, None),
                          600: (601, CU, tablo5("src/baska.c"))})                  # ad uyuşmuyor
     c = dt.Cozucu(ana)
     # aynı adlı iki birim, satır tablosundaki yolla ayrışır
-    assert ho.birim_yolu(c, dt.ANA, 0, "sds.c") == ("src/sds.c", ho.YOL_SATIR_TABLOSU)
-    assert ho.birim_yolu(c, dt.ANA, 100, "sds.c") == ("deps/hiredis/sds.c", ho.YOL_SATIR_TABLOSU)
-    assert ho.birim_yolu(c, dt.ANA, 200, "../modules/./v/hnsw.c") == ("modules/v/hnsw.c", ho.YOL_SATIR_TABLOSU)
+    assert ho.birim_yolu(c, dt.ANA, 0, "ortak.c") == ("src/ortak.c", ho.YOL_SATIR_TABLOSU)
+    assert ho.birim_yolu(c, dt.ANA, 100, "ortak.c") == ("deps/kitap/ortak.c", ho.YOL_SATIR_TABLOSU)
+    assert ho.birim_yolu(c, dt.ANA, 200, "../modules/./v/vek.c") == ("modules/v/vek.c", ho.YOL_SATIR_TABLOSU)
     assert ho.birim_yolu(c, dt.ANA, 300, "lib//x.c") == ("lib/x.c", ho.YOL_AD)
     assert ho.birim_yolu(c, dt.ANA, 400, "y.c") == ("y.c", ho.YOL_AD)
     assert ho.birim_yolu(c, dt.ANA, 500, "z.c") == ("z.c", ho.YOL_AD)
     assert ho.birim_yolu(c, dt.ANA, 600, "w.c") == ("w.c", ho.YOL_AD)
-    assert ho.dizin_etiketi("src/sds.c") == "src" and ho.dizin_etiketi("deps/hiredis/sds.c") == "deps/hiredis"
+    assert ho.dizin_etiketi("src/ortak.c") == "src" and ho.dizin_etiketi("deps/kitap/ortak.c") == "deps/kitap"
     assert ho.dizin_etiketi("tree.c") == ho.KOK_DIZIN
 
 
@@ -449,14 +449,14 @@ def test_dwarf_govdeleri(monkeypatch):
     assert kunye == {"ek_yontemi": "altlink_yok", "govde": 6, "yapay_birimde_govde": 2,
                      "yalniz_ranges_govde": 0, "ayni_adli_kaynak": 0}
     # aynı adı taşıyan iki ayrı kaynak dosya (ayrı dizinlerde) sayılır ve ayrı etiket alır
-    ikiz = dwarf([die(1, CU, 0, name=ad_oz("sds.c")), govde(10, 0, 0x100), govde(11, 0, 0x110),
-                  die(101, CU, 100, name=ad_oz("./sds.c")), govde(110, 100, 0x200),
+    ikiz = dwarf([die(1, CU, 0, name=ad_oz("ortak.c")), govde(10, 0, 0x100), govde(11, 0, 0x110),
+                  die(101, CU, 100, name=ad_oz("./ortak.c")), govde(110, 100, 0x200),
                   die(201, CU, 200, name=ad_oz("tek.c")), govde(210, 200, 0x300)],
-                 {0: (1, CU, tablo5("src/sds.c")), 100: (101, CU, tablo5("deps/hiredis/sds.c")),
+                 {0: (1, CU, tablo5("src/ortak.c")), 100: (101, CU, tablo5("deps/kitap/ortak.c")),
                   200: (201, CU, tablo5("src/tek.c"))})
     monkeypatch.setattr(dt, "dosya_yukle", lambda yol, rol: ikiz)
     govdeler, kunye = ho.dwarf_govdeleri(Path("x.debug"))
-    assert sorted({g.yol for g in govdeler}) == ["deps/hiredis/sds.c", "src/sds.c", "src/tek.c"]
+    assert sorted({g.yol for g in govdeler}) == ["deps/kitap/ortak.c", "src/ortak.c", "src/tek.c"]
     assert kunye["ayni_adli_kaynak"] == 1 and kunye["govde"] == 4
 
 

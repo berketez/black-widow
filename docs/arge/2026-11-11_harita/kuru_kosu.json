@@ -1,0 +1,7069 @@
+{
+ "sema": "karadul-harita-kuru/1",
+ "komut": "kuru",
+ "arac": {
+  "betik_sha256": "1a205ca42d4d9e3d0c418ae0e8383f5c69804e42efeb4d4452b0839aaf1e40f6",
+  "git_head": "7cc02ba791c7b7931c3bff6dc68e1f4f93aa60c8",
+  "python": "3.12.7",
+  "ghidra": {
+   "surum": "12.1.2",
+   "elf": 119
+  }
+ },
+ "secimler": {
+  "n_min": 10,
+  "en_az_program": 2
+ },
+ "nufus": {
+  "bulunan": {
+   "debian/coreutils": 106,
+   "debian/htop": 1,
+   "debian/openssl": 1,
+   "debian/redis-tools": 4,
+   "debian/sqlite3": 1,
+   "debian/tmux": 1,
+   "debian/tree": 1,
+   "debian/zstd": 2,
+   "mac/htop": 1,
+   "mac/tmux": 1
+  },
+  "biten": {
+   "debian/coreutils": 106,
+   "debian/htop": 1,
+   "debian/openssl": 1,
+   "debian/redis-tools": 4,
+   "debian/sqlite3": 1,
+   "debian/tmux": 1,
+   "debian/tree": 1,
+   "debian/zstd": 2,
+   "mac/htop": 1,
+   "mac/tmux": 1
+  },
+  "beklenen": {
+   "mac/tmux": 1,
+   "mac/htop": 1,
+   "debian/tmux": 1,
+   "debian/htop": 1,
+   "debian/tree": 1,
+   "debian/zstd": 2,
+   "debian/redis-tools": 4,
+   "debian/sqlite3": 1,
+   "debian/openssl": 1,
+   "debian/coreutils": 106
+  },
+  "eksik_izinli": false,
+  "sorunlar": []
+ },
+ "birimler": {
+  "debian/coreutils": {
+   "elfler": {
+    "[": {
+     "urun": {
+      "kaynak_dosya": 278,
+      "basliksiz_dosya": 0,
+      "baslik": 278,
+      "ghidra_fonksiyon": 278,
+      "atanan": 278,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 26,
+      "thunk": 170
+     },
+     "gt": {
+      "gt_fonksiyon": 111,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 102,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 24,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 102,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 102,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 102,
+      "modul": 21,
+      "kaynak_dosya": 24,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 102,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "arch": {
+     "urun": {
+      "kaynak_dosya": 246,
+      "basliksiz_dosya": 0,
+      "baslik": 246,
+      "ghidra_fonksiyon": 246,
+      "atanan": 246,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 21,
+      "thunk": 149
+     },
+     "gt": {
+      "gt_fonksiyon": 100,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 91,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 22,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 91,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 91,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 91,
+      "modul": 18,
+      "kaynak_dosya": 22,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 91,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "b2sum": {
+     "urun": {
+      "kaynak_dosya": 314,
+      "basliksiz_dosya": 0,
+      "baslik": 314,
+      "ghidra_fonksiyon": 314,
+      "atanan": 314,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 197
+     },
+     "gt": {
+      "gt_fonksiyon": 121,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 112,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 31,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 112,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 112,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 112,
+      "modul": 16,
+      "kaynak_dosya": 31,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 112,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "base32": {
+     "urun": {
+      "kaynak_dosya": 301,
+      "basliksiz_dosya": 0,
+      "baslik": 301,
+      "ghidra_fonksiyon": 301,
+      "atanan": 301,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 17,
+      "thunk": 190
+     },
+     "gt": {
+      "gt_fonksiyon": 114,
+      "crt": 9,
+      "govdesiz": 1,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 104,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 27,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 105,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 104,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 104,
+      "modul": 14,
+      "kaynak_dosya": 27,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 104,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "base64": {
+     "urun": {
+      "kaynak_dosya": 298,
+      "basliksiz_dosya": 0,
+      "baslik": 298,
+      "ghidra_fonksiyon": 298,
+      "atanan": 298,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 22,
+      "thunk": 187
+     },
+     "gt": {
+      "gt_fonksiyon": 114,
+      "crt": 9,
+      "govdesiz": 1,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 104,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 27,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 105,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 104,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 104,
+      "modul": 19,
+      "kaynak_dosya": 27,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 104,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "basename": {
+     "urun": {
+      "kaynak_dosya": 247,
+      "basliksiz_dosya": 0,
+      "baslik": 247,
+      "ghidra_fonksiyon": 247,
+      "atanan": 247,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 146
+     },
+     "gt": {
+      "gt_fonksiyon": 104,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 95,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 25,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 95,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 95,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 95,
+      "modul": 12,
+      "kaynak_dosya": 25,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 95,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "basenc": {
+     "urun": {
+      "kaynak_dosya": 343,
+      "basliksiz_dosya": 0,
+      "baslik": 343,
+      "ghidra_fonksiyon": 343,
+      "atanan": 343,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 21,
+      "thunk": 190
+     },
+     "gt": {
+      "gt_fonksiyon": 156,
+      "crt": 9,
+      "govdesiz": 2,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 145,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 28,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 147,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 145,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 145,
+      "modul": 17,
+      "kaynak_dosya": 28,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 145,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "cat": {
+     "urun": {
+      "kaynak_dosya": 296,
+      "basliksiz_dosya": 0,
+      "baslik": 296,
+      "ghidra_fonksiyon": 296,
+      "atanan": 296,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 17,
+      "thunk": 189
+     },
+     "gt": {
+      "gt_fonksiyon": 110,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 101,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 30,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 101,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 101,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 101,
+      "modul": 15,
+      "kaynak_dosya": 30,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 101,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "chcon": {
+     "urun": {
+      "kaynak_dosya": 446,
+      "basliksiz_dosya": 0,
+      "baslik": 446,
+      "ghidra_fonksiyon": 446,
+      "atanan": 446,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 270
+     },
+     "gt": {
+      "gt_fonksiyon": 180,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 171,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 40,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 171,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 171,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 171,
+      "modul": 16,
+      "kaynak_dosya": 40,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 171,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "chgrp": {
+     "urun": {
+      "kaynak_dosya": 403,
+      "basliksiz_dosya": 0,
+      "baslik": 403,
+      "ghidra_fonksiyon": 403,
+      "atanan": 403,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 234
+     },
+     "gt": {
+      "gt_fonksiyon": 173,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 164,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 38,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 164,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 164,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 164,
+      "modul": 16,
+      "kaynak_dosya": 38,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 164,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "chmod": {
+     "urun": {
+      "kaynak_dosya": 364,
+      "basliksiz_dosya": 0,
+      "baslik": 365,
+      "ghidra_fonksiyon": 365,
+      "atanan": 365,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 11,
+      "thunk": 201
+     },
+     "gt": {
+      "gt_fonksiyon": 168,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 159,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 36,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 159,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 159,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 159,
+      "modul": 9,
+      "kaynak_dosya": 36,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 159,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "chown": {
+     "urun": {
+      "kaynak_dosya": 403,
+      "basliksiz_dosya": 0,
+      "baslik": 403,
+      "ghidra_fonksiyon": 403,
+      "atanan": 403,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 234
+     },
+     "gt": {
+      "gt_fonksiyon": 173,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 164,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 38,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 164,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 164,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 164,
+      "modul": 16,
+      "kaynak_dosya": 38,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 164,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "chroot": {
+     "urun": {
+      "kaynak_dosya": 311,
+      "basliksiz_dosya": 0,
+      "baslik": 311,
+      "ghidra_fonksiyon": 311,
+      "atanan": 311,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 17,
+      "thunk": 206
+     },
+     "gt": {
+      "gt_fonksiyon": 108,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 99,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 28,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 99,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 99,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 99,
+      "modul": 13,
+      "kaynak_dosya": 28,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 99,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "cksum": {
+     "urun": {
+      "kaynak_dosya": 475,
+      "basliksiz_dosya": 0,
+      "baslik": 479,
+      "ghidra_fonksiyon": 479,
+      "atanan": 479,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 35,
+      "thunk": 293
+     },
+     "gt": {
+      "gt_fonksiyon": 205,
+      "crt": 9,
+      "govdesiz": 11,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 185,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 46,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 196,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 185,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 185,
+      "modul": 31,
+      "kaynak_dosya": 46,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 185,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "comm": {
+     "urun": {
+      "kaynak_dosya": 296,
+      "basliksiz_dosya": 0,
+      "baslik": 296,
+      "ghidra_fonksiyon": 296,
+      "atanan": 296,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 17,
+      "thunk": 178
+     },
+     "gt": {
+      "gt_fonksiyon": 121,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 112,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 33,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 112,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 112,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 112,
+      "modul": 14,
+      "kaynak_dosya": 33,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 112,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "cp": {
+     "urun": {
+      "kaynak_dosya": 743,
+      "basliksiz_dosya": 0,
+      "baslik": 746,
+      "ghidra_fonksiyon": 746,
+      "atanan": 746,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 12,
+      "thunk": 450
+     },
+     "gt": {
+      "gt_fonksiyon": 301,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 292,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 83,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 292,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 292,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 292,
+      "modul": 9,
+      "kaynak_dosya": 83,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 292,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "csplit": {
+     "urun": {
+      "kaynak_dosya": 347,
+      "basliksiz_dosya": 0,
+      "baslik": 347,
+      "ghidra_fonksiyon": 347,
+      "atanan": 347,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 223
+     },
+     "gt": {
+      "gt_fonksiyon": 127,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 118,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 31,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 118,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 118,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 118,
+      "modul": 13,
+      "kaynak_dosya": 31,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 118,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "cut": {
+     "urun": {
+      "kaynak_dosya": 313,
+      "basliksiz_dosya": 0,
+      "baslik": 313,
+      "ghidra_fonksiyon": 313,
+      "atanan": 313,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 21,
+      "thunk": 201
+     },
+     "gt": {
+      "gt_fonksiyon": 115,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 106,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 31,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 106,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 106,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 106,
+      "modul": 17,
+      "kaynak_dosya": 31,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 106,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "date": {
+     "urun": {
+      "kaynak_dosya": 375,
+      "basliksiz_dosya": 0,
+      "baslik": 376,
+      "ghidra_fonksiyon": 376,
+      "atanan": 376,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 23,
+      "thunk": 238
+     },
+     "gt": {
+      "gt_fonksiyon": 142,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 133,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 34,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 133,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 133,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 133,
+      "modul": 20,
+      "kaynak_dosya": 34,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 133,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "dd": {
+     "urun": {
+      "kaynak_dosya": 387,
+      "basliksiz_dosya": 0,
+      "baslik": 388,
+      "ghidra_fonksiyon": 388,
+      "atanan": 388,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 236
+     },
+     "gt": {
+      "gt_fonksiyon": 155,
+      "crt": 9,
+      "govdesiz": 8,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 138,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 30,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 146,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 138,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 138,
+      "modul": 12,
+      "kaynak_dosya": 30,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 138,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "df": {
+     "urun": {
+      "kaynak_dosya": 470,
+      "basliksiz_dosya": 0,
+      "baslik": 472,
+      "ghidra_fonksiyon": 472,
+      "atanan": 472,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 11,
+      "thunk": 282
+     },
+     "gt": {
+      "gt_fonksiyon": 194,
+      "crt": 9,
+      "govdesiz": 8,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 177,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 55,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 185,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 177,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 177,
+      "modul": 8,
+      "kaynak_dosya": 55,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 177,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "dir": {
+     "urun": {
+      "kaynak_dosya": 664,
+      "basliksiz_dosya": 0,
+      "baslik": 665,
+      "ghidra_fonksiyon": 665,
+      "atanan": 665,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 33,
+      "thunk": 348
+     },
+     "gt": {
+      "gt_fonksiyon": 321,
+      "crt": 9,
+      "govdesiz": 8,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 304,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 54,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 312,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 304,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 304,
+      "modul": 28,
+      "kaynak_dosya": 54,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 304,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "dircolors": {
+     "urun": {
+      "kaynak_dosya": 283,
+      "basliksiz_dosya": 0,
+      "baslik": 283,
+      "ghidra_fonksiyon": 283,
+      "atanan": 283,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 173
+     },
+     "gt": {
+      "gt_fonksiyon": 113,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 104,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 25,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 104,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 104,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 104,
+      "modul": 13,
+      "kaynak_dosya": 25,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 104,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "dirname": {
+     "urun": {
+      "kaynak_dosya": 249,
+      "basliksiz_dosya": 0,
+      "baslik": 249,
+      "ghidra_fonksiyon": 249,
+      "atanan": 249,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 149
+     },
+     "gt": {
+      "gt_fonksiyon": 103,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 94,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 24,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 94,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 94,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 94,
+      "modul": 14,
+      "kaynak_dosya": 24,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 94,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "du": {
+     "urun": {
+      "kaynak_dosya": 532,
+      "basliksiz_dosya": 0,
+      "baslik": 532,
+      "ghidra_fonksiyon": 532,
+      "atanan": 532,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 23,
+      "thunk": 302
+     },
+     "gt": {
+      "gt_fonksiyon": 235,
+      "crt": 9,
+      "govdesiz": 8,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 218,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 50,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 226,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 218,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 218,
+      "modul": 21,
+      "kaynak_dosya": 50,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 218,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "echo": {
+     "urun": {
+      "kaynak_dosya": 246,
+      "basliksiz_dosya": 0,
+      "baslik": 246,
+      "ghidra_fonksiyon": 246,
+      "atanan": 246,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 14,
+      "thunk": 149
+     },
+     "gt": {
+      "gt_fonksiyon": 100,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 91,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 22,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 91,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 91,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 91,
+      "modul": 12,
+      "kaynak_dosya": 22,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 91,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "env": {
+     "urun": {
+      "kaynak_dosya": 318,
+      "basliksiz_dosya": 0,
+      "baslik": 318,
+      "ghidra_fonksiyon": 318,
+      "atanan": 318,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 14,
+      "thunk": 214
+     },
+     "gt": {
+      "gt_fonksiyon": 107,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 98,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 24,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 98,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 98,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 98,
+      "modul": 12,
+      "kaynak_dosya": 24,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 98,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "expand": {
+     "urun": {
+      "kaynak_dosya": 284,
+      "basliksiz_dosya": 0,
+      "baslik": 284,
+      "ghidra_fonksiyon": 284,
+      "atanan": 284,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 22,
+      "thunk": 175
+     },
+     "gt": {
+      "gt_fonksiyon": 112,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 103,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 26,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 103,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 103,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 103,
+      "modul": 18,
+      "kaynak_dosya": 26,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 103,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "expr": {
+     "urun": {
+      "kaynak_dosya": 298,
+      "basliksiz_dosya": 0,
+      "baslik": 298,
+      "ghidra_fonksiyon": 298,
+      "atanan": 298,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 22,
+      "thunk": 186
+     },
+     "gt": {
+      "gt_fonksiyon": 115,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 106,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 26,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 106,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 106,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 106,
+      "modul": 18,
+      "kaynak_dosya": 26,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 106,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "factor": {
+     "urun": {
+      "kaynak_dosya": 383,
+      "basliksiz_dosya": 0,
+      "baslik": 383,
+      "ghidra_fonksiyon": 383,
+      "atanan": 383,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 253
+     },
+     "gt": {
+      "gt_fonksiyon": 133,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 124,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 26,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 124,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 124,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 124,
+      "modul": 15,
+      "kaynak_dosya": 26,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 124,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "false": {
+     "urun": {
+      "kaynak_dosya": 239,
+      "basliksiz_dosya": 0,
+      "baslik": 239,
+      "ghidra_fonksiyon": 239,
+      "atanan": 239,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 143
+     },
+     "gt": {
+      "gt_fonksiyon": 99,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 90,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 22,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 90,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 90,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 90,
+      "modul": 16,
+      "kaynak_dosya": 22,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 90,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "fmt": {
+     "urun": {
+      "kaynak_dosya": 293,
+      "basliksiz_dosya": 0,
+      "baslik": 293,
+      "ghidra_fonksiyon": 293,
+      "atanan": 293,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 21,
+      "thunk": 181
+     },
+     "gt": {
+      "gt_fonksiyon": 115,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 106,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 26,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 106,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 106,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 106,
+      "modul": 17,
+      "kaynak_dosya": 26,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 106,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "fold": {
+     "urun": {
+      "kaynak_dosya": 283,
+      "basliksiz_dosya": 0,
+      "baslik": 284,
+      "ghidra_fonksiyon": 284,
+      "atanan": 284,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 181
+     },
+     "gt": {
+      "gt_fonksiyon": 106,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 97,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 26,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 97,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 97,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 97,
+      "modul": 15,
+      "kaynak_dosya": 26,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 97,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "groups": {
+     "urun": {
+      "kaynak_dosya": 270,
+      "basliksiz_dosya": 0,
+      "baslik": 270,
+      "ghidra_fonksiyon": 270,
+      "atanan": 270,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 14,
+      "thunk": 170
+     },
+     "gt": {
+      "gt_fonksiyon": 103,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 94,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 25,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 94,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 94,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 94,
+      "modul": 10,
+      "kaynak_dosya": 25,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 94,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "head": {
+     "urun": {
+      "kaynak_dosya": 292,
+      "basliksiz_dosya": 0,
+      "baslik": 292,
+      "ghidra_fonksiyon": 292,
+      "atanan": 292,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 182
+     },
+     "gt": {
+      "gt_fonksiyon": 113,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 104,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 27,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 104,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 104,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 104,
+      "modul": 15,
+      "kaynak_dosya": 27,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 104,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "hostid": {
+     "urun": {
+      "kaynak_dosya": 247,
+      "basliksiz_dosya": 0,
+      "baslik": 247,
+      "ghidra_fonksiyon": 247,
+      "atanan": 247,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 13,
+      "thunk": 149
+     },
+     "gt": {
+      "gt_fonksiyon": 101,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 92,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 23,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 92,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 92,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 92,
+      "modul": 10,
+      "kaynak_dosya": 23,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 92,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "id": {
+     "urun": {
+      "kaynak_dosya": 306,
+      "basliksiz_dosya": 0,
+      "baslik": 306,
+      "ghidra_fonksiyon": 306,
+      "atanan": 306,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 20,
+      "thunk": 200
+     },
+     "gt": {
+      "gt_fonksiyon": 109,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 100,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 28,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 100,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 100,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 100,
+      "modul": 17,
+      "kaynak_dosya": 28,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 100,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "install": {
+     "urun": {
+      "kaynak_dosya": 812,
+      "basliksiz_dosya": 0,
+      "baslik": 815,
+      "ghidra_fonksiyon": 815,
+      "atanan": 815,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 12,
+      "thunk": 502
+     },
+     "gt": {
+      "gt_fonksiyon": 318,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 309,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 91,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 309,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 309,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 309,
+      "modul": 8,
+      "kaynak_dosya": 91,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 309,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "join": {
+     "urun": {
+      "kaynak_dosya": 330,
+      "basliksiz_dosya": 0,
+      "baslik": 330,
+      "ghidra_fonksiyon": 330,
+      "atanan": 330,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 20,
+      "thunk": 193
+     },
+     "gt": {
+      "gt_fonksiyon": 140,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 131,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 35,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 131,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 131,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 131,
+      "modul": 17,
+      "kaynak_dosya": 35,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 131,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "libstdbuf.so": {
+     "urun": {
+      "kaynak_dosya": 34,
+      "basliksiz_dosya": 0,
+      "baslik": 34,
+      "ghidra_fonksiyon": 34,
+      "atanan": 34,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 5,
+      "thunk": 25
+     },
+     "gt": {
+      "gt_fonksiyon": 9,
+      "crt": 7,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 2,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 1,
+      "dizin": 1
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 2,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 2,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 2,
+      "modul": 2,
+      "kaynak_dosya": 1,
+      "dizin": 1,
+      "giris": {
+       "dosya": "kucuk",
+       "dizin": "kucuk"
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 2,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "link": {
+     "urun": {
+      "kaynak_dosya": 246,
+      "basliksiz_dosya": 0,
+      "baslik": 247,
+      "ghidra_fonksiyon": 247,
+      "atanan": 247,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 149
+     },
+     "gt": {
+      "gt_fonksiyon": 101,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 92,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 23,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 92,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 92,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 92,
+      "modul": 13,
+      "kaynak_dosya": 23,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 92,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "ln": {
+     "urun": {
+      "kaynak_dosya": 420,
+      "basliksiz_dosya": 0,
+      "baslik": 421,
+      "ghidra_fonksiyon": 421,
+      "atanan": 421,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 14,
+      "thunk": 241
+     },
+     "gt": {
+      "gt_fonksiyon": 184,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 175,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 52,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 175,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 175,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 175,
+      "modul": 12,
+      "kaynak_dosya": 52,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 175,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "logname": {
+     "urun": {
+      "kaynak_dosya": 249,
+      "basliksiz_dosya": 0,
+      "baslik": 250,
+      "ghidra_fonksiyon": 250,
+      "atanan": 250,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 152
+     },
+     "gt": {
+      "gt_fonksiyon": 101,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 92,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 23,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 92,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 92,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 92,
+      "modul": 16,
+      "kaynak_dosya": 23,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 92,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "ls": {
+     "urun": {
+      "kaynak_dosya": 664,
+      "basliksiz_dosya": 0,
+      "baslik": 665,
+      "ghidra_fonksiyon": 665,
+      "atanan": 665,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 33,
+      "thunk": 348
+     },
+     "gt": {
+      "gt_fonksiyon": 321,
+      "crt": 9,
+      "govdesiz": 8,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 304,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 54,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 312,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 304,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 304,
+      "modul": 28,
+      "kaynak_dosya": 54,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 304,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "md5sum": {
+     "urun": {
+      "kaynak_dosya": 299,
+      "basliksiz_dosya": 0,
+      "baslik": 299,
+      "ghidra_fonksiyon": 299,
+      "atanan": 299,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 193
+     },
+     "gt": {
+      "gt_fonksiyon": 109,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 100,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 28,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 100,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 100,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 100,
+      "modul": 13,
+      "kaynak_dosya": 28,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 100,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "mkdir": {
+     "urun": {
+      "kaynak_dosya": 514,
+      "basliksiz_dosya": 0,
+      "baslik": 514,
+      "ghidra_fonksiyon": 514,
+      "atanan": 514,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 318
+     },
+     "gt": {
+      "gt_fonksiyon": 200,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 191,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 50,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 191,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 191,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 191,
+      "modul": 13,
+      "kaynak_dosya": 50,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 191,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "mkfifo": {
+     "urun": {
+      "kaynak_dosya": 470,
+      "basliksiz_dosya": 0,
+      "baslik": 471,
+      "ghidra_fonksiyon": 471,
+      "atanan": 471,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 17,
+      "thunk": 288
+     },
+     "gt": {
+      "gt_fonksiyon": 187,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 178,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 45,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 178,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 178,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 178,
+      "modul": 14,
+      "kaynak_dosya": 45,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 178,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "mknod": {
+     "urun": {
+      "kaynak_dosya": 481,
+      "basliksiz_dosya": 0,
+      "baslik": 481,
+      "ghidra_fonksiyon": 481,
+      "atanan": 481,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 22,
+      "thunk": 297
+     },
+     "gt": {
+      "gt_fonksiyon": 188,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 179,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 46,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 179,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 179,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 179,
+      "modul": 18,
+      "kaynak_dosya": 46,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 179,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "mktemp": {
+     "urun": {
+      "kaynak_dosya": 285,
+      "basliksiz_dosya": 0,
+      "baslik": 285,
+      "ghidra_fonksiyon": 285,
+      "atanan": 285,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 17,
+      "thunk": 177
+     },
+     "gt": {
+      "gt_fonksiyon": 111,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 102,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 26,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 102,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 102,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 102,
+      "modul": 14,
+      "kaynak_dosya": 26,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 102,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "mv": {
+     "urun": {
+      "kaynak_dosya": 750,
+      "basliksiz_dosya": 0,
+      "baslik": 753,
+      "ghidra_fonksiyon": 753,
+      "atanan": 753,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 451
+     },
+     "gt": {
+      "gt_fonksiyon": 307,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 298,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 87,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 298,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 298,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 298,
+      "modul": 14,
+      "kaynak_dosya": 87,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 298,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "nice": {
+     "urun": {
+      "kaynak_dosya": 258,
+      "basliksiz_dosya": 0,
+      "baslik": 258,
+      "ghidra_fonksiyon": 258,
+      "atanan": 258,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 21,
+      "thunk": 161
+     },
+     "gt": {
+      "gt_fonksiyon": 100,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 91,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 23,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 91,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 91,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 91,
+      "modul": 18,
+      "kaynak_dosya": 23,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 91,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "nl": {
+     "urun": {
+      "kaynak_dosya": 299,
+      "basliksiz_dosya": 0,
+      "baslik": 299,
+      "ghidra_fonksiyon": 299,
+      "atanan": 299,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 21,
+      "thunk": 190
+     },
+     "gt": {
+      "gt_fonksiyon": 112,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 103,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 27,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 103,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 103,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 103,
+      "modul": 18,
+      "kaynak_dosya": 27,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 103,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "nohup": {
+     "urun": {
+      "kaynak_dosya": 274,
+      "basliksiz_dosya": 0,
+      "baslik": 274,
+      "ghidra_fonksiyon": 274,
+      "atanan": 274,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 20,
+      "thunk": 170
+     },
+     "gt": {
+      "gt_fonksiyon": 107,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 98,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 28,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 98,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 98,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 98,
+      "modul": 16,
+      "kaynak_dosya": 28,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 98,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "nproc": {
+     "urun": {
+      "kaynak_dosya": 275,
+      "basliksiz_dosya": 0,
+      "baslik": 275,
+      "ghidra_fonksiyon": 275,
+      "atanan": 275,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 17,
+      "thunk": 173
+     },
+     "gt": {
+      "gt_fonksiyon": 105,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 96,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 25,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 96,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 96,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 96,
+      "modul": 14,
+      "kaynak_dosya": 25,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 96,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "numfmt": {
+     "urun": {
+      "kaynak_dosya": 311,
+      "basliksiz_dosya": 0,
+      "baslik": 312,
+      "ghidra_fonksiyon": 312,
+      "atanan": 312,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 15,
+      "thunk": 185
+     },
+     "gt": {
+      "gt_fonksiyon": 130,
+      "crt": 9,
+      "govdesiz": 13,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 108,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 27,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 121,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 108,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 108,
+      "modul": 12,
+      "kaynak_dosya": 27,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 108,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "od": {
+     "urun": {
+      "kaynak_dosya": 380,
+      "basliksiz_dosya": 0,
+      "baslik": 380,
+      "ghidra_fonksiyon": 380,
+      "atanan": 380,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 25,
+      "thunk": 227
+     },
+     "gt": {
+      "gt_fonksiyon": 156,
+      "crt": 9,
+      "govdesiz": 4,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 143,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 37,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 147,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 143,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 143,
+      "modul": 21,
+      "kaynak_dosya": 37,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 143,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "paste": {
+     "urun": {
+      "kaynak_dosya": 277,
+      "basliksiz_dosya": 0,
+      "baslik": 278,
+      "ghidra_fonksiyon": 278,
+      "atanan": 278,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 175
+     },
+     "gt": {
+      "gt_fonksiyon": 106,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 97,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 25,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 97,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 97,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 97,
+      "modul": 13,
+      "kaynak_dosya": 25,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 97,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "pathchk": {
+     "urun": {
+      "kaynak_dosya": 259,
+      "basliksiz_dosya": 0,
+      "baslik": 259,
+      "ghidra_fonksiyon": 259,
+      "atanan": 259,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 161
+     },
+     "gt": {
+      "gt_fonksiyon": 101,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 92,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 24,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 92,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 92,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 92,
+      "modul": 15,
+      "kaynak_dosya": 24,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 92,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "pinky": {
+     "urun": {
+      "kaynak_dosya": 402,
+      "basliksiz_dosya": 0,
+      "baslik": 402,
+      "ghidra_fonksiyon": 402,
+      "atanan": 402,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 20,
+      "thunk": 292
+     },
+     "gt": {
+      "gt_fonksiyon": 113,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 104,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 27,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 104,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 104,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 104,
+      "modul": 15,
+      "kaynak_dosya": 27,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 104,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "pr": {
+     "urun": {
+      "kaynak_dosya": 377,
+      "basliksiz_dosya": 0,
+      "baslik": 377,
+      "ghidra_fonksiyon": 377,
+      "atanan": 377,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 27,
+      "thunk": 228
+     },
+     "gt": {
+      "gt_fonksiyon": 152,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 143,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 37,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 143,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 143,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 143,
+      "modul": 23,
+      "kaynak_dosya": 37,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 143,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "printenv": {
+     "urun": {
+      "kaynak_dosya": 245,
+      "basliksiz_dosya": 0,
+      "baslik": 245,
+      "ghidra_fonksiyon": 245,
+      "atanan": 245,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 149
+     },
+     "gt": {
+      "gt_fonksiyon": 99,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 90,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 22,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 90,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 90,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 90,
+      "modul": 12,
+      "kaynak_dosya": 22,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 90,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "printf": {
+     "urun": {
+      "kaynak_dosya": 310,
+      "basliksiz_dosya": 0,
+      "baslik": 310,
+      "ghidra_fonksiyon": 310,
+      "atanan": 310,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 187
+     },
+     "gt": {
+      "gt_fonksiyon": 126,
+      "crt": 9,
+      "govdesiz": 1,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 116,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 34,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 117,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 116,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 116,
+      "modul": 13,
+      "kaynak_dosya": 34,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 116,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "ptx": {
+     "urun": {
+      "kaynak_dosya": 335,
+      "basliksiz_dosya": 0,
+      "baslik": 335,
+      "ghidra_fonksiyon": 335,
+      "atanan": 335,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 23,
+      "thunk": 217
+     },
+     "gt": {
+      "gt_fonksiyon": 121,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 112,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 28,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 112,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 112,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 112,
+      "modul": 17,
+      "kaynak_dosya": 28,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 112,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "pwd": {
+     "urun": {
+      "kaynak_dosya": 285,
+      "basliksiz_dosya": 0,
+      "baslik": 285,
+      "ghidra_fonksiyon": 285,
+      "atanan": 285,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 15,
+      "thunk": 185
+     },
+     "gt": {
+      "gt_fonksiyon": 103,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 94,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 24,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 94,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 94,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 94,
+      "modul": 12,
+      "kaynak_dosya": 24,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 94,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "readlink": {
+     "urun": {
+      "kaynak_dosya": 300,
+      "basliksiz_dosya": 0,
+      "baslik": 300,
+      "ghidra_fonksiyon": 300,
+      "atanan": 300,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 20,
+      "thunk": 168
+     },
+     "gt": {
+      "gt_fonksiyon": 136,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 127,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 30,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 127,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 127,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 127,
+      "modul": 17,
+      "kaynak_dosya": 30,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 127,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "realpath": {
+     "urun": {
+      "kaynak_dosya": 305,
+      "basliksiz_dosya": 0,
+      "baslik": 306,
+      "ghidra_fonksiyon": 306,
+      "atanan": 306,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 171
+     },
+     "gt": {
+      "gt_fonksiyon": 139,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 130,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 30,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 130,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 130,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 130,
+      "modul": 16,
+      "kaynak_dosya": 30,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 130,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "rm": {
+     "urun": {
+      "kaynak_dosya": 395,
+      "basliksiz_dosya": 0,
+      "baslik": 395,
+      "ghidra_fonksiyon": 395,
+      "atanan": 395,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 213
+     },
+     "gt": {
+      "gt_fonksiyon": 186,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 177,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 45,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 177,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 177,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 177,
+      "modul": 14,
+      "kaynak_dosya": 45,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 177,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "rmdir": {
+     "urun": {
+      "kaynak_dosya": 274,
+      "basliksiz_dosya": 0,
+      "baslik": 274,
+      "ghidra_fonksiyon": 274,
+      "atanan": 274,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 21,
+      "thunk": 173
+     },
+     "gt": {
+      "gt_fonksiyon": 104,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 95,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 25,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 95,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 95,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 95,
+      "modul": 17,
+      "kaynak_dosya": 25,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 95,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "runcon": {
+     "urun": {
+      "kaynak_dosya": 307,
+      "basliksiz_dosya": 0,
+      "baslik": 307,
+      "ghidra_fonksiyon": 307,
+      "atanan": 307,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 20,
+      "thunk": 205
+     },
+     "gt": {
+      "gt_fonksiyon": 105,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 96,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 23,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 96,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 96,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 96,
+      "modul": 17,
+      "kaynak_dosya": 23,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 96,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "seq": {
+     "urun": {
+      "kaynak_dosya": 297,
+      "basliksiz_dosya": 0,
+      "baslik": 297,
+      "ghidra_fonksiyon": 297,
+      "atanan": 297,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 15,
+      "thunk": 184
+     },
+     "gt": {
+      "gt_fonksiyon": 116,
+      "crt": 9,
+      "govdesiz": 7,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 100,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 28,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 107,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 100,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 100,
+      "modul": 11,
+      "kaynak_dosya": 28,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 100,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "sha1sum": {
+     "urun": {
+      "kaynak_dosya": 299,
+      "basliksiz_dosya": 0,
+      "baslik": 299,
+      "ghidra_fonksiyon": 299,
+      "atanan": 299,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 193
+     },
+     "gt": {
+      "gt_fonksiyon": 109,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 100,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 28,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 100,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 100,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 100,
+      "modul": 13,
+      "kaynak_dosya": 28,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 100,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "sha224sum": {
+     "urun": {
+      "kaynak_dosya": 323,
+      "basliksiz_dosya": 0,
+      "baslik": 323,
+      "ghidra_fonksiyon": 323,
+      "atanan": 323,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 209
+     },
+     "gt": {
+      "gt_fonksiyon": 121,
+      "crt": 9,
+      "govdesiz": 1,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 111,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 29,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 112,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 111,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 111,
+      "modul": 16,
+      "kaynak_dosya": 29,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 111,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "sha256sum": {
+     "urun": {
+      "kaynak_dosya": 323,
+      "basliksiz_dosya": 0,
+      "baslik": 323,
+      "ghidra_fonksiyon": 323,
+      "atanan": 323,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 209
+     },
+     "gt": {
+      "gt_fonksiyon": 121,
+      "crt": 9,
+      "govdesiz": 1,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 111,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 29,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 112,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 111,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 111,
+      "modul": 16,
+      "kaynak_dosya": 29,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 111,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "sha384sum": {
+     "urun": {
+      "kaynak_dosya": 323,
+      "basliksiz_dosya": 0,
+      "baslik": 323,
+      "ghidra_fonksiyon": 323,
+      "atanan": 323,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 209
+     },
+     "gt": {
+      "gt_fonksiyon": 121,
+      "crt": 9,
+      "govdesiz": 1,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 111,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 29,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 112,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 111,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 111,
+      "modul": 13,
+      "kaynak_dosya": 29,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 111,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "sha512sum": {
+     "urun": {
+      "kaynak_dosya": 323,
+      "basliksiz_dosya": 0,
+      "baslik": 323,
+      "ghidra_fonksiyon": 323,
+      "atanan": 323,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 209
+     },
+     "gt": {
+      "gt_fonksiyon": 121,
+      "crt": 9,
+      "govdesiz": 1,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 111,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 29,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 112,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 111,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 111,
+      "modul": 13,
+      "kaynak_dosya": 29,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 111,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "shred": {
+     "urun": {
+      "kaynak_dosya": 393,
+      "basliksiz_dosya": 0,
+      "baslik": 393,
+      "ghidra_fonksiyon": 393,
+      "atanan": 393,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 28,
+      "thunk": 245
+     },
+     "gt": {
+      "gt_fonksiyon": 151,
+      "crt": 9,
+      "govdesiz": 8,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 134,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 41,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 142,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 134,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 134,
+      "modul": 23,
+      "kaynak_dosya": 41,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 134,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "shuf": {
+     "urun": {
+      "kaynak_dosya": 377,
+      "basliksiz_dosya": 0,
+      "baslik": 377,
+      "ghidra_fonksiyon": 377,
+      "atanan": 377,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 28,
+      "thunk": 221
+     },
+     "gt": {
+      "gt_fonksiyon": 160,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 151,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 38,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 151,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 151,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 151,
+      "modul": 25,
+      "kaynak_dosya": 38,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 151,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "sleep": {
+     "urun": {
+      "kaynak_dosya": 263,
+      "basliksiz_dosya": 0,
+      "baslik": 263,
+      "ghidra_fonksiyon": 263,
+      "atanan": 263,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 160
+     },
+     "gt": {
+      "gt_fonksiyon": 106,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 97,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 28,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 97,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 97,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 97,
+      "modul": 15,
+      "kaynak_dosya": 28,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 97,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "sort": {
+     "urun": {
+      "kaynak_dosya": 625,
+      "basliksiz_dosya": 0,
+      "baslik": 625,
+      "ghidra_fonksiyon": 625,
+      "atanan": 625,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 36,
+      "thunk": 381
+     },
+     "gt": {
+      "gt_fonksiyon": 248,
+      "crt": 9,
+      "govdesiz": 4,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 235,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 56,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 239,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 235,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 235,
+      "modul": 32,
+      "kaynak_dosya": 56,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 235,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "split": {
+     "urun": {
+      "kaynak_dosya": 396,
+      "basliksiz_dosya": 0,
+      "baslik": 396,
+      "ghidra_fonksiyon": 396,
+      "atanan": 396,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 264
+     },
+     "gt": {
+      "gt_fonksiyon": 135,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 126,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 43,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 126,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 126,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 126,
+      "modul": 14,
+      "kaynak_dosya": 43,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 126,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "stat": {
+     "urun": {
+      "kaynak_dosya": 470,
+      "basliksiz_dosya": 0,
+      "baslik": 471,
+      "ghidra_fonksiyon": 471,
+      "atanan": 471,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 26,
+      "thunk": 309
+     },
+     "gt": {
+      "gt_fonksiyon": 165,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 156,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 50,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 156,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 156,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 156,
+      "modul": 23,
+      "kaynak_dosya": 50,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 156,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "stdbuf": {
+     "urun": {
+      "kaynak_dosya": 286,
+      "basliksiz_dosya": 0,
+      "baslik": 286,
+      "ghidra_fonksiyon": 286,
+      "atanan": 286,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 23,
+      "thunk": 178
+     },
+     "gt": {
+      "gt_fonksiyon": 111,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 102,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 31,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 102,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 102,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 102,
+      "modul": 17,
+      "kaynak_dosya": 31,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 102,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "stty": {
+     "urun": {
+      "kaynak_dosya": 309,
+      "basliksiz_dosya": 0,
+      "baslik": 309,
+      "ghidra_fonksiyon": 309,
+      "atanan": 309,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 25,
+      "thunk": 197
+     },
+     "gt": {
+      "gt_fonksiyon": 115,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 106,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 27,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 106,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 106,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 106,
+      "modul": 20,
+      "kaynak_dosya": 27,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 106,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "sum": {
+     "urun": {
+      "kaynak_dosya": 314,
+      "basliksiz_dosya": 0,
+      "baslik": 314,
+      "ghidra_fonksiyon": 314,
+      "atanan": 314,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 20,
+      "thunk": 190
+     },
+     "gt": {
+      "gt_fonksiyon": 127,
+      "crt": 9,
+      "govdesiz": 8,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 110,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 31,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 118,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 110,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 110,
+      "modul": 14,
+      "kaynak_dosya": 31,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 110,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "sync": {
+     "urun": {
+      "kaynak_dosya": 261,
+      "basliksiz_dosya": 0,
+      "baslik": 261,
+      "ghidra_fonksiyon": 261,
+      "atanan": 261,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 164
+     },
+     "gt": {
+      "gt_fonksiyon": 100,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 91,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 23,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 91,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 91,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 91,
+      "modul": 15,
+      "kaynak_dosya": 23,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 91,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "tac": {
+     "urun": {
+      "kaynak_dosya": 306,
+      "basliksiz_dosya": 0,
+      "baslik": 306,
+      "ghidra_fonksiyon": 306,
+      "atanan": 306,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 21,
+      "thunk": 197
+     },
+     "gt": {
+      "gt_fonksiyon": 112,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 103,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 32,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 103,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 103,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 103,
+      "modul": 16,
+      "kaynak_dosya": 32,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 103,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "tail": {
+     "urun": {
+      "kaynak_dosya": 412,
+      "basliksiz_dosya": 0,
+      "baslik": 412,
+      "ghidra_fonksiyon": 412,
+      "atanan": 412,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 22,
+      "thunk": 239
+     },
+     "gt": {
+      "gt_fonksiyon": 177,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 168,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 43,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 168,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 168,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 168,
+      "modul": 20,
+      "kaynak_dosya": 43,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 168,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "tee": {
+     "urun": {
+      "kaynak_dosya": 306,
+      "basliksiz_dosya": 0,
+      "baslik": 306,
+      "ghidra_fonksiyon": 306,
+      "atanan": 306,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 187
+     },
+     "gt": {
+      "gt_fonksiyon": 122,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 113,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 30,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 113,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 113,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 113,
+      "modul": 14,
+      "kaynak_dosya": 30,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 113,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "test": {
+     "urun": {
+      "kaynak_dosya": 268,
+      "basliksiz_dosya": 0,
+      "baslik": 268,
+      "ghidra_fonksiyon": 268,
+      "atanan": 268,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 167
+     },
+     "gt": {
+      "gt_fonksiyon": 104,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 95,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 21,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 95,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 95,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 95,
+      "modul": 15,
+      "kaynak_dosya": 21,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 95,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "timeout": {
+     "urun": {
+      "kaynak_dosya": 333,
+      "basliksiz_dosya": 0,
+      "baslik": 333,
+      "ghidra_fonksiyon": 333,
+      "atanan": 333,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 20,
+      "thunk": 226
+     },
+     "gt": {
+      "gt_fonksiyon": 110,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 101,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 27,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 101,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 101,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 101,
+      "modul": 17,
+      "kaynak_dosya": 27,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 101,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "touch": {
+     "urun": {
+      "kaynak_dosya": 360,
+      "basliksiz_dosya": 0,
+      "baslik": 361,
+      "ghidra_fonksiyon": 361,
+      "atanan": 361,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 13,
+      "thunk": 227
+     },
+     "gt": {
+      "gt_fonksiyon": 138,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 129,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 31,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 129,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 129,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 129,
+      "modul": 11,
+      "kaynak_dosya": 31,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 129,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "tr": {
+     "urun": {
+      "kaynak_dosya": 299,
+      "basliksiz_dosya": 0,
+      "baslik": 299,
+      "ghidra_fonksiyon": 299,
+      "atanan": 299,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 16,
+      "thunk": 184
+     },
+     "gt": {
+      "gt_fonksiyon": 118,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 109,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 26,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 109,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 109,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 109,
+      "modul": 13,
+      "kaynak_dosya": 26,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 109,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "true": {
+     "urun": {
+      "kaynak_dosya": 239,
+      "basliksiz_dosya": 0,
+      "baslik": 239,
+      "ghidra_fonksiyon": 239,
+      "atanan": 239,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 143
+     },
+     "gt": {
+      "gt_fonksiyon": 99,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 90,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 22,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 90,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 90,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 90,
+      "modul": 16,
+      "kaynak_dosya": 22,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 90,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "truncate": {
+     "urun": {
+      "kaynak_dosya": 266,
+      "basliksiz_dosya": 0,
+      "baslik": 266,
+      "ghidra_fonksiyon": 266,
+      "atanan": 266,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 167
+     },
+     "gt": {
+      "gt_fonksiyon": 102,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 93,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 24,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 93,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 93,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 93,
+      "modul": 16,
+      "kaynak_dosya": 24,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 93,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "tsort": {
+     "urun": {
+      "kaynak_dosya": 279,
+      "basliksiz_dosya": 0,
+      "baslik": 279,
+      "ghidra_fonksiyon": 279,
+      "atanan": 279,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 20,
+      "thunk": 169
+     },
+     "gt": {
+      "gt_fonksiyon": 113,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 104,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 26,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 104,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 104,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 104,
+      "modul": 16,
+      "kaynak_dosya": 26,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 104,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "tty": {
+     "urun": {
+      "kaynak_dosya": 251,
+      "basliksiz_dosya": 0,
+      "baslik": 251,
+      "ghidra_fonksiyon": 251,
+      "atanan": 251,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 155
+     },
+     "gt": {
+      "gt_fonksiyon": 99,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 90,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 22,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 90,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 90,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 90,
+      "modul": 16,
+      "kaynak_dosya": 22,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 90,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "uname": {
+     "urun": {
+      "kaynak_dosya": 246,
+      "basliksiz_dosya": 0,
+      "baslik": 246,
+      "ghidra_fonksiyon": 246,
+      "atanan": 246,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 21,
+      "thunk": 149
+     },
+     "gt": {
+      "gt_fonksiyon": 100,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 91,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 22,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 91,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 91,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 91,
+      "modul": 18,
+      "kaynak_dosya": 22,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 91,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "unexpand": {
+     "urun": {
+      "kaynak_dosya": 287,
+      "basliksiz_dosya": 0,
+      "baslik": 287,
+      "ghidra_fonksiyon": 287,
+      "atanan": 287,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 14,
+      "thunk": 178
+     },
+     "gt": {
+      "gt_fonksiyon": 112,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 103,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 26,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 103,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 103,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 103,
+      "modul": 11,
+      "kaynak_dosya": 26,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 103,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "uniq": {
+     "urun": {
+      "kaynak_dosya": 309,
+      "basliksiz_dosya": 0,
+      "baslik": 309,
+      "ghidra_fonksiyon": 309,
+      "atanan": 309,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 23,
+      "thunk": 190
+     },
+     "gt": {
+      "gt_fonksiyon": 122,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 113,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 30,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 113,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 113,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 113,
+      "modul": 20,
+      "kaynak_dosya": 30,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 113,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "unlink": {
+     "urun": {
+      "kaynak_dosya": 247,
+      "basliksiz_dosya": 0,
+      "baslik": 247,
+      "ghidra_fonksiyon": 247,
+      "atanan": 247,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 149
+     },
+     "gt": {
+      "gt_fonksiyon": 101,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 92,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 23,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 92,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 92,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 92,
+      "modul": 17,
+      "kaynak_dosya": 23,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 92,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "users": {
+     "urun": {
+      "kaynak_dosya": 363,
+      "basliksiz_dosya": 0,
+      "baslik": 363,
+      "ghidra_fonksiyon": 363,
+      "atanan": 363,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 20,
+      "thunk": 257
+     },
+     "gt": {
+      "gt_fonksiyon": 109,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 100,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 25,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 100,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 100,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 100,
+      "modul": 16,
+      "kaynak_dosya": 25,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 100,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "vdir": {
+     "urun": {
+      "kaynak_dosya": 664,
+      "basliksiz_dosya": 0,
+      "baslik": 665,
+      "ghidra_fonksiyon": 665,
+      "atanan": 665,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 33,
+      "thunk": 348
+     },
+     "gt": {
+      "gt_fonksiyon": 321,
+      "crt": 9,
+      "govdesiz": 8,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 304,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 54,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 312,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 304,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 304,
+      "modul": 28,
+      "kaynak_dosya": 54,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 304,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "wc": {
+     "urun": {
+      "kaynak_dosya": 355,
+      "basliksiz_dosya": 0,
+      "baslik": 355,
+      "ghidra_fonksiyon": 355,
+      "atanan": 355,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 25,
+      "thunk": 220
+     },
+     "gt": {
+      "gt_fonksiyon": 138,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 129,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 35,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 129,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 129,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 129,
+      "modul": 19,
+      "kaynak_dosya": 35,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 129,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "who": {
+     "urun": {
+      "kaynak_dosya": 403,
+      "basliksiz_dosya": 0,
+      "baslik": 403,
+      "ghidra_fonksiyon": 403,
+      "atanan": 403,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 23,
+      "thunk": 292
+     },
+     "gt": {
+      "gt_fonksiyon": 114,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 105,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 28,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 105,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 105,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 105,
+      "modul": 19,
+      "kaynak_dosya": 28,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 105,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "whoami": {
+     "urun": {
+      "kaynak_dosya": 253,
+      "basliksiz_dosya": 0,
+      "baslik": 253,
+      "ghidra_fonksiyon": 253,
+      "atanan": 253,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 155
+     },
+     "gt": {
+      "gt_fonksiyon": 101,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 92,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 23,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 92,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 92,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 92,
+      "modul": 15,
+      "kaynak_dosya": 23,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 92,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "yes": {
+     "urun": {
+      "kaynak_dosya": 249,
+      "basliksiz_dosya": 0,
+      "baslik": 249,
+      "ghidra_fonksiyon": 249,
+      "atanan": 249,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 22,
+      "thunk": 149
+     },
+     "gt": {
+      "gt_fonksiyon": 103,
+      "crt": 9,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 94,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 25,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 94,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 94,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 94,
+      "modul": 18,
+      "kaynak_dosya": 25,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 94,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    }
+   },
+   "cpp_disarida": []
+  },
+  "debian/htop": {
+   "elfler": {
+    "htop": {
+     "urun": {
+      "kaynak_dosya": 1147,
+      "basliksiz_dosya": 0,
+      "baslik": 1148,
+      "ghidra_fonksiyon": 1148,
+      "atanan": 1148,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 37,
+      "thunk": 539
+     },
+     "gt": {
+      "gt_fonksiyon": 617,
+      "crt": 8,
+      "govdesiz": 1,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 608,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 85,
+      "dizin": 4
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 609,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 608,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 608,
+      "modul": 34,
+      "kaynak_dosya": 85,
+      "dizin": 4,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani"
+     },
+     "dwarf": {
+      "ek_yontemi": "altlink_yok",
+      "govde": 608,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    }
+   },
+   "cpp_disarida": []
+  },
+  "debian/openssl": {
+   "elfler": {
+    "openssl": {
+     "urun": {
+      "kaynak_dosya": 5668,
+      "basliksiz_dosya": 0,
+      "baslik": 5672,
+      "ghidra_fonksiyon": 5672,
+      "atanan": 5672,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 31,
+      "thunk": 5080
+     },
+     "gt": {
+      "gt_fonksiyon": 604,
+      "crt": 8,
+      "govdesiz": 0,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 596,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 74,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 596,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 596,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 596,
+      "modul": 22,
+      "kaynak_dosya": 74,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "altlink_yok",
+      "govde": 596,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    }
+   },
+   "cpp_disarida": []
+  },
+  "debian/redis-tools": {
+   "elfler": {
+    "redis-benchmark": {
+     "urun": {
+      "kaynak_dosya": 891,
+      "basliksiz_dosya": 0,
+      "baslik": 892,
+      "ghidra_fonksiyon": 892,
+      "atanan": 892,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 32,
+      "thunk": 415
+     },
+     "gt": {
+      "gt_fonksiyon": 493,
+      "crt": 8,
+      "govdesiz": 6,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 479,
+      "koken_birimi": 267,
+      "yol_ad": 0,
+      "kaynak_dosya": 25,
+      "dizin": 3
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 485,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 479,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 479,
+      "modul": 27,
+      "kaynak_dosya": 25,
+      "dizin": 3,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": true,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 479,
+      "yapay_birimde_govde": 267,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    },
+    "redis-check-aof": {
+     "urun": {
+      "kaynak_dosya": 5696,
+      "basliksiz_dosya": 0,
+      "baslik": 5697,
+      "ghidra_fonksiyon": 5697,
+      "atanan": 5697,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 53,
+      "thunk": 987
+     },
+     "gt": {
+      "gt_fonksiyon": 4758,
+      "crt": 8,
+      "govdesiz": 72,
+      "etiketsiz": 3,
+      "celiskili": 0,
+      "etiketli": 4675,
+      "koken_birimi": 3916,
+      "yol_ad": 0,
+      "kaynak_dosya": 145,
+      "dizin": 7
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 4750,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 4675,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 4675,
+      "modul": 48,
+      "kaynak_dosya": 145,
+      "dizin": 7,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": true,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 4678,
+      "yapay_birimde_govde": 3919,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 1
+     }
+    },
+    "redis-check-rdb": {
+     "urun": {
+      "kaynak_dosya": 5696,
+      "basliksiz_dosya": 0,
+      "baslik": 5697,
+      "ghidra_fonksiyon": 5697,
+      "atanan": 5697,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 53,
+      "thunk": 987
+     },
+     "gt": {
+      "gt_fonksiyon": 4758,
+      "crt": 8,
+      "govdesiz": 72,
+      "etiketsiz": 3,
+      "celiskili": 0,
+      "etiketli": 4675,
+      "koken_birimi": 3916,
+      "yol_ad": 0,
+      "kaynak_dosya": 145,
+      "dizin": 7
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 4750,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 4675,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 4675,
+      "modul": 48,
+      "kaynak_dosya": 145,
+      "dizin": 7,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": true,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 4678,
+      "yapay_birimde_govde": 3919,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 1
+     }
+    },
+    "redis-cli": {
+     "urun": {
+      "kaynak_dosya": 1110,
+      "basliksiz_dosya": 0,
+      "baslik": 1111,
+      "ghidra_fonksiyon": 1111,
+      "atanan": 1111,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 30,
+      "thunk": 477
+     },
+     "gt": {
+      "gt_fonksiyon": 650,
+      "crt": 9,
+      "govdesiz": 4,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 637,
+      "koken_birimi": 392,
+      "yol_ad": 0,
+      "kaynak_dosya": 27,
+      "dizin": 4
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 641,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 637,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 637,
+      "modul": 25,
+      "kaynak_dosya": 27,
+      "dizin": 4,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": true,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 637,
+      "yapay_birimde_govde": 392,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    }
+   },
+   "cpp_disarida": []
+  },
+  "debian/sqlite3": {
+   "elfler": {
+    "sqlite3": {
+     "urun": {
+      "kaynak_dosya": 1144,
+      "basliksiz_dosya": 0,
+      "baslik": 1144,
+      "ghidra_fonksiyon": 1144,
+      "atanan": 1144,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 13,
+      "thunk": 715
+     },
+     "gt": {
+      "gt_fonksiyon": 431,
+      "crt": 9,
+      "govdesiz": 4,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 418,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 1,
+      "dizin": 1
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 422,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 418,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 418,
+      "modul": 10,
+      "kaynak_dosya": 1,
+      "dizin": 1,
+      "giris": {
+       "dosya": "gt_tek_sinif",
+       "dizin": "gt_tek_sinif"
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "altlink_yok",
+      "govde": 418,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    }
+   },
+   "cpp_disarida": []
+  },
+  "debian/tmux": {
+   "elfler": {
+    "tmux": {
+     "urun": {
+      "kaynak_dosya": 2588,
+      "basliksiz_dosya": 0,
+      "baslik": 2588,
+      "ghidra_fonksiyon": 2588,
+      "atanan": 2588,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 18,
+      "thunk": 668
+     },
+     "gt": {
+      "gt_fonksiyon": 1921,
+      "crt": 8,
+      "govdesiz": 2,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 1911,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 147,
+      "dizin": 2
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 1913,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 1911,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 1911,
+      "modul": 15,
+      "kaynak_dosya": 147,
+      "dizin": 2,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "altlink_yok",
+      "govde": 1911,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    }
+   },
+   "cpp_disarida": []
+  },
+  "debian/tree": {
+   "elfler": {
+    "tree": {
+     "urun": {
+      "kaynak_dosya": 250,
+      "basliksiz_dosya": 0,
+      "baslik": 250,
+      "ghidra_fonksiyon": 250,
+      "atanan": 250,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 14,
+      "thunk": 131
+     },
+     "gt": {
+      "gt_fonksiyon": 119,
+      "crt": 8,
+      "govdesiz": 1,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 110,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 11,
+      "dizin": 1
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 111,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 110,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 110,
+      "modul": 10,
+      "kaynak_dosya": 11,
+      "dizin": 1,
+      "giris": {
+       "dosya": null,
+       "dizin": "gt_tek_sinif"
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "altlink_yok",
+      "govde": 110,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    }
+   },
+   "cpp_disarida": []
+  },
+  "debian/zstd": {
+   "elfler": {
+    "zstd": {
+     "urun": {
+      "kaynak_dosya": 1431,
+      "basliksiz_dosya": 0,
+      "baslik": 1444,
+      "ghidra_fonksiyon": 1444,
+      "atanan": 1444,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 19,
+      "thunk": 358
+     },
+     "gt": {
+      "gt_fonksiyon": 1111,
+      "crt": 8,
+      "govdesiz": 24,
+      "etiketsiz": 0,
+      "celiskili": 0,
+      "etiketli": 1079,
+      "koken_birimi": 0,
+      "yol_ad": 0,
+      "kaynak_dosya": 43,
+      "dizin": 6
+     },
+     "esleme": {
+      "gt_fonksiyon_ghidrada": 1103,
+      "gt_fonksiyon_orani": 1.0,
+      "etiketli_ghidrada": 1079,
+      "etiketli_orani": 1.0
+     },
+     "ortak": {
+      "n": 1079,
+      "modul": 16,
+      "kaynak_dosya": 43,
+      "dizin": 6,
+      "giris": {
+       "dosya": null,
+       "dizin": null
+      }
+     },
+     "gt_etiketi": true,
+     "lto": false,
+     "kunye": {
+      "ofset": "0x100000",
+      "ofset_kaynagi": "goruntu_tabani+ghidra_entry"
+     },
+     "dwarf": {
+      "ek_yontemi": "debugaltlink",
+      "govde": 1079,
+      "yapay_birimde_govde": 0,
+      "yalniz_ranges_govde": 0,
+      "ayni_adli_kaynak": 0
+     }
+    }
+   },
+   "cpp_disarida": [
+    "pzstd"
+   ]
+  },
+  "mac/htop": {
+   "elfler": {
+    "htop": {
+     "urun": {
+      "kaynak_dosya": 786,
+      "basliksiz_dosya": 0,
+      "baslik": 790,
+      "ghidra_fonksiyon": 790,
+      "atanan": 790,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 48,
+      "thunk": 193
+     },
+     "gt": {
+      "neden": "mac_gt_derleme_birimi_tasimiyor",
+      "gt_okundu": true,
+      "gt_fonksiyon": 605,
+      "gt_kayit_alanlari": [
+       "addr",
+       "names",
+       "sinif"
+      ]
+     },
+     "gt_etiketi": false
+    }
+   },
+   "cpp_disarida": []
+  },
+  "mac/tmux": {
+   "elfler": {
+    "tmux": {
+     "urun": {
+      "kaynak_dosya": 2813,
+      "basliksiz_dosya": 0,
+      "baslik": 2821,
+      "ghidra_fonksiyon": 2821,
+      "atanan": 2821,
+      "atanamayan": 0,
+      "coklu_modul": 0,
+      "yinelenen": 0,
+      "ghidra_disi": 0,
+      "modul": 31,
+      "thunk": 233
+     },
+     "gt": {
+      "neden": "mac_gt_derleme_birimi_tasimiyor",
+      "gt_okundu": true,
+      "gt_fonksiyon": 2572,
+      "gt_kayit_alanlari": [
+       "addr",
+       "names",
+       "sinif"
+      ]
+     },
+     "gt_etiketi": false
+    }
+   },
+   "cpp_disarida": []
+  }
+ },
+ "toplam": {
+  "debian/coreutils": {
+   "ikili": 106,
+   "cpp_disarida": 0,
+   "gt_okunamayan": 0,
+   "urun_okunan": 106,
+   "gt_okunan": 106,
+   "iki_taraf_okunan": 106,
+   "urun": {
+    "atanamayan": 0,
+    "atanan": 36573,
+    "baslik": 36573,
+    "basliksiz_dosya": 0,
+    "coklu_modul": 0,
+    "ghidra_disi": 0,
+    "ghidra_fonksiyon": 36573,
+    "kaynak_dosya": 36542,
+    "modul": 2058,
+    "thunk": 22453,
+    "yinelenen": 0
+   },
+   "gt": {
+    "celiskili": 0,
+    "crt": 952,
+    "etiketli": 13432,
+    "etiketsiz": 0,
+    "govdesiz": 112,
+    "gt_fonksiyon": 14496,
+    "koken_birimi": 0,
+    "yol_ad": 0
+   },
+   "esleme": {
+    "gt_fonksiyon_ghidrada": 13544,
+    "etiketli_ghidrada": 13432
+   },
+   "ortak_n": 13432,
+   "lto_ikili": 0,
+   "ayni_adli_kaynak": 0,
+   "girer": {
+    "dosya": 105,
+    "dizin": 105
+   },
+   "n_min_alti": 1,
+   "tek_kaynak_dosya": 1,
+   "tek_dizin": 1
+  },
+  "debian/htop": {
+   "ikili": 1,
+   "cpp_disarida": 0,
+   "gt_okunamayan": 0,
+   "urun_okunan": 1,
+   "gt_okunan": 1,
+   "iki_taraf_okunan": 1,
+   "urun": {
+    "atanamayan": 0,
+    "atanan": 1148,
+    "baslik": 1148,
+    "basliksiz_dosya": 0,
+    "coklu_modul": 0,
+    "ghidra_disi": 0,
+    "ghidra_fonksiyon": 1148,
+    "kaynak_dosya": 1147,
+    "modul": 37,
+    "thunk": 539,
+    "yinelenen": 0
+   },
+   "gt": {
+    "celiskili": 0,
+    "crt": 8,
+    "etiketli": 608,
+    "etiketsiz": 0,
+    "govdesiz": 1,
+    "gt_fonksiyon": 617,
+    "koken_birimi": 0,
+    "yol_ad": 0
+   },
+   "esleme": {
+    "gt_fonksiyon_ghidrada": 609,
+    "etiketli_ghidrada": 608
+   },
+   "ortak_n": 608,
+   "lto_ikili": 0,
+   "ayni_adli_kaynak": 0,
+   "girer": {
+    "dosya": 1,
+    "dizin": 1
+   },
+   "n_min_alti": 0,
+   "tek_kaynak_dosya": 0,
+   "tek_dizin": 0
+  },
+  "debian/openssl": {
+   "ikili": 1,
+   "cpp_disarida": 0,
+   "gt_okunamayan": 0,
+   "urun_okunan": 1,
+   "gt_okunan": 1,
+   "iki_taraf_okunan": 1,
+   "urun": {
+    "atanamayan": 0,
+    "atanan": 5672,
+    "baslik": 5672,
+    "basliksiz_dosya": 0,
+    "coklu_modul": 0,
+    "ghidra_disi": 0,
+    "ghidra_fonksiyon": 5672,
+    "kaynak_dosya": 5668,
+    "modul": 31,
+    "thunk": 5080,
+    "yinelenen": 0
+   },
+   "gt": {
+    "celiskili": 0,
+    "crt": 8,
+    "etiketli": 596,
+    "etiketsiz": 0,
+    "govdesiz": 0,
+    "gt_fonksiyon": 604,
+    "koken_birimi": 0,
+    "yol_ad": 0
+   },
+   "esleme": {
+    "gt_fonksiyon_ghidrada": 596,
+    "etiketli_ghidrada": 596
+   },
+   "ortak_n": 596,
+   "lto_ikili": 0,
+   "ayni_adli_kaynak": 0,
+   "girer": {
+    "dosya": 1,
+    "dizin": 1
+   },
+   "n_min_alti": 0,
+   "tek_kaynak_dosya": 0,
+   "tek_dizin": 0
+  },
+  "debian/redis-tools": {
+   "ikili": 4,
+   "cpp_disarida": 0,
+   "gt_okunamayan": 0,
+   "urun_okunan": 4,
+   "gt_okunan": 4,
+   "iki_taraf_okunan": 4,
+   "urun": {
+    "atanamayan": 0,
+    "atanan": 13397,
+    "baslik": 13397,
+    "basliksiz_dosya": 0,
+    "coklu_modul": 0,
+    "ghidra_disi": 0,
+    "ghidra_fonksiyon": 13397,
+    "kaynak_dosya": 13393,
+    "modul": 168,
+    "thunk": 2866,
+    "yinelenen": 0
+   },
+   "gt": {
+    "celiskili": 0,
+    "crt": 33,
+    "etiketli": 10466,
+    "etiketsiz": 6,
+    "govdesiz": 154,
+    "gt_fonksiyon": 10659,
+    "koken_birimi": 8491,
+    "yol_ad": 0
+   },
+   "esleme": {
+    "gt_fonksiyon_ghidrada": 10626,
+    "etiketli_ghidrada": 10466
+   },
+   "ortak_n": 10466,
+   "lto_ikili": 4,
+   "ayni_adli_kaynak": 2,
+   "girer": {
+    "dosya": 4,
+    "dizin": 4
+   },
+   "n_min_alti": 0,
+   "tek_kaynak_dosya": 0,
+   "tek_dizin": 0
+  },
+  "debian/sqlite3": {
+   "ikili": 1,
+   "cpp_disarida": 0,
+   "gt_okunamayan": 0,
+   "urun_okunan": 1,
+   "gt_okunan": 1,
+   "iki_taraf_okunan": 1,
+   "urun": {
+    "atanamayan": 0,
+    "atanan": 1144,
+    "baslik": 1144,
+    "basliksiz_dosya": 0,
+    "coklu_modul": 0,
+    "ghidra_disi": 0,
+    "ghidra_fonksiyon": 1144,
+    "kaynak_dosya": 1144,
+    "modul": 13,
+    "thunk": 715,
+    "yinelenen": 0
+   },
+   "gt": {
+    "celiskili": 0,
+    "crt": 9,
+    "etiketli": 418,
+    "etiketsiz": 0,
+    "govdesiz": 4,
+    "gt_fonksiyon": 431,
+    "koken_birimi": 0,
+    "yol_ad": 0
+   },
+   "esleme": {
+    "gt_fonksiyon_ghidrada": 422,
+    "etiketli_ghidrada": 418
+   },
+   "ortak_n": 418,
+   "lto_ikili": 0,
+   "ayni_adli_kaynak": 0,
+   "girer": {
+    "dosya": 0,
+    "dizin": 0
+   },
+   "n_min_alti": 0,
+   "tek_kaynak_dosya": 1,
+   "tek_dizin": 1
+  },
+  "debian/tmux": {
+   "ikili": 1,
+   "cpp_disarida": 0,
+   "gt_okunamayan": 0,
+   "urun_okunan": 1,
+   "gt_okunan": 1,
+   "iki_taraf_okunan": 1,
+   "urun": {
+    "atanamayan": 0,
+    "atanan": 2588,
+    "baslik": 2588,
+    "basliksiz_dosya": 0,
+    "coklu_modul": 0,
+    "ghidra_disi": 0,
+    "ghidra_fonksiyon": 2588,
+    "kaynak_dosya": 2588,
+    "modul": 18,
+    "thunk": 668,
+    "yinelenen": 0
+   },
+   "gt": {
+    "celiskili": 0,
+    "crt": 8,
+    "etiketli": 1911,
+    "etiketsiz": 0,
+    "govdesiz": 2,
+    "gt_fonksiyon": 1921,
+    "koken_birimi": 0,
+    "yol_ad": 0
+   },
+   "esleme": {
+    "gt_fonksiyon_ghidrada": 1913,
+    "etiketli_ghidrada": 1911
+   },
+   "ortak_n": 1911,
+   "lto_ikili": 0,
+   "ayni_adli_kaynak": 0,
+   "girer": {
+    "dosya": 1,
+    "dizin": 1
+   },
+   "n_min_alti": 0,
+   "tek_kaynak_dosya": 0,
+   "tek_dizin": 0
+  },
+  "debian/tree": {
+   "ikili": 1,
+   "cpp_disarida": 0,
+   "gt_okunamayan": 0,
+   "urun_okunan": 1,
+   "gt_okunan": 1,
+   "iki_taraf_okunan": 1,
+   "urun": {
+    "atanamayan": 0,
+    "atanan": 250,
+    "baslik": 250,
+    "basliksiz_dosya": 0,
+    "coklu_modul": 0,
+    "ghidra_disi": 0,
+    "ghidra_fonksiyon": 250,
+    "kaynak_dosya": 250,
+    "modul": 14,
+    "thunk": 131,
+    "yinelenen": 0
+   },
+   "gt": {
+    "celiskili": 0,
+    "crt": 8,
+    "etiketli": 110,
+    "etiketsiz": 0,
+    "govdesiz": 1,
+    "gt_fonksiyon": 119,
+    "koken_birimi": 0,
+    "yol_ad": 0
+   },
+   "esleme": {
+    "gt_fonksiyon_ghidrada": 111,
+    "etiketli_ghidrada": 110
+   },
+   "ortak_n": 110,
+   "lto_ikili": 0,
+   "ayni_adli_kaynak": 0,
+   "girer": {
+    "dosya": 1,
+    "dizin": 0
+   },
+   "n_min_alti": 0,
+   "tek_kaynak_dosya": 0,
+   "tek_dizin": 1
+  },
+  "debian/zstd": {
+   "ikili": 1,
+   "cpp_disarida": 1,
+   "gt_okunamayan": 0,
+   "urun_okunan": 1,
+   "gt_okunan": 1,
+   "iki_taraf_okunan": 1,
+   "urun": {
+    "atanamayan": 0,
+    "atanan": 1444,
+    "baslik": 1444,
+    "basliksiz_dosya": 0,
+    "coklu_modul": 0,
+    "ghidra_disi": 0,
+    "ghidra_fonksiyon": 1444,
+    "kaynak_dosya": 1431,
+    "modul": 19,
+    "thunk": 358,
+    "yinelenen": 0
+   },
+   "gt": {
+    "celiskili": 0,
+    "crt": 8,
+    "etiketli": 1079,
+    "etiketsiz": 0,
+    "govdesiz": 24,
+    "gt_fonksiyon": 1111,
+    "koken_birimi": 0,
+    "yol_ad": 0
+   },
+   "esleme": {
+    "gt_fonksiyon_ghidrada": 1103,
+    "etiketli_ghidrada": 1079
+   },
+   "ortak_n": 1079,
+   "lto_ikili": 0,
+   "ayni_adli_kaynak": 0,
+   "girer": {
+    "dosya": 1,
+    "dizin": 1
+   },
+   "n_min_alti": 0,
+   "tek_kaynak_dosya": 0,
+   "tek_dizin": 0
+  },
+  "mac/htop": {
+   "ikili": 1,
+   "cpp_disarida": 0,
+   "gt_okunamayan": 0,
+   "urun_okunan": 1,
+   "gt_okunan": 0,
+   "iki_taraf_okunan": 0,
+   "urun": {
+    "atanamayan": 0,
+    "atanan": 790,
+    "baslik": 790,
+    "basliksiz_dosya": 0,
+    "coklu_modul": 0,
+    "ghidra_disi": 0,
+    "ghidra_fonksiyon": 790,
+    "kaynak_dosya": 786,
+    "modul": 48,
+    "thunk": 193,
+    "yinelenen": 0
+   }
+  },
+  "mac/tmux": {
+   "ikili": 1,
+   "cpp_disarida": 0,
+   "gt_okunamayan": 0,
+   "urun_okunan": 1,
+   "gt_okunan": 0,
+   "iki_taraf_okunan": 0,
+   "urun": {
+    "atanamayan": 0,
+    "atanan": 2821,
+    "baslik": 2821,
+    "basliksiz_dosya": 0,
+    "coklu_modul": 0,
+    "ghidra_disi": 0,
+    "ghidra_fonksiyon": 2821,
+    "kaynak_dosya": 2813,
+    "modul": 31,
+    "thunk": 233,
+    "yinelenen": 0
+   }
+  }
+ },
+ "kosu_kunyesi": {
+  "dosya": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/kosu_kunyesi.json",
+  "commit": "93a29569e4c3b61123b322af70b8c32e4d48e520",
+  "kirli": [],
+  "karadul_surumu": "1.21.1"
+ }
+}
