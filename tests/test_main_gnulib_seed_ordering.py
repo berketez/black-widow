@@ -154,7 +154,7 @@ class TestSeedRecoveryGnulib:
         # Her anchor gnulib upstream lib/<src>'da birebir gecer (dogrulandi):
         _write_c(decompiled, "FUN_00201000", '  error(1,0,"memory exhausted");')      # xalloc_die
         _write_c(decompiled, "FUN_00202000", '  printf("Usage: %s [OPTION]...");')     # usage
-        _write_c(decompiled, "FUN_00203000", '  error(0,0,"invalid suffix in %s");')   # xstrtol_error
+        _write_c(decompiled, "FUN_00203000", '  error(0,errno,"error closing file");')  # close_stdin
         return static_dir
 
     def test_string_fp_recovers_unique_names(self, tmp_path: Path) -> None:
@@ -173,7 +173,7 @@ class TestSeedRecoveryGnulib:
 
         assert extracted.get("FUN_00201000") == "xalloc_die"
         assert extracted.get("FUN_00202000") == "usage"
-        assert extracted.get("FUN_00203000") == "xstrtol_error"
+        assert extracted.get("FUN_00203000") == "close_stdin"
         assert stats.get("gnulib_recovered") == 3
 
     def test_does_not_overwrite_existing_prename(self, tmp_path: Path) -> None:
@@ -266,7 +266,7 @@ _KS1_MAIN_ADLI = "FUN_00300000"  # KS-1 buna "main" demek ister
 _GNULIB = "FUN_00201000"        # "memory exhausted" -> xalloc_die adayı
 _FAZ1 = "FUN_00400000"          # Faz 1 adı taşıyan, KS-1 çapalı
 _FAZ1_GNULIB = "FUN_00202000"   # Faz 1 adı taşıyan gnulib adayı (usage)
-_GNULIB_ONYUK = "FUN_00500000"  # hem gnulib (xstrtol_error) hem önyük (register_tm_clones) adayı
+_GNULIB_ONYUK = "FUN_00500000"  # hem gnulib (close_stdin) hem önyük (register_tm_clones) adayı
 _ONYUK = "FUN_00600000"         # yalnız önyük adayı (deregister_tm_clones)
 _AKIS_A, _AKIS_B = "FUN_00700000", "FUN_00701000"   # ikisi de close_stream çağrı şekli
 
@@ -295,7 +295,7 @@ def _full_static_dir(tmp_path: Path) -> Path:
     (decompiled / f"{_MAIN}.c").write_text(_MAIN_C, encoding="utf-8")
     _write_c(decompiled, _GNULIB, '  error(1,0,"memory exhausted");')           # xalloc_die
     _write_c(decompiled, _FAZ1_GNULIB, '  printf("Usage: %s [OPTION]...");')      # usage
-    _write_c(decompiled, _GNULIB_ONYUK, '  error(0,0,"invalid suffix in %s");')   # xstrtol_error
+    _write_c(decompiled, _GNULIB_ONYUK, '  error(0,errno,"error closing file");')  # close_stdin
     for key in (_KS1_MAIN_ADLI, _FAZ1, _ONYUK, _AKIS_A, _AKIS_B):
         _write_c(decompiled, key, "  return;")
 
@@ -375,7 +375,7 @@ class TestSeedKs1Order:
                        initial={_FAZ1: "eski_faz1", _FAZ1_GNULIB: "faz1_usage"})
         assert r.names == {
             _FAZ1: "Vector_add", _FAZ1_GNULIB: "faz1_usage", _MAIN: "main",
-            _GNULIB: "xalloc_die", _GNULIB_ONYUK: "xstrtol_error",
+            _GNULIB: "xalloc_die", _GNULIB_ONYUK: "close_stdin",
             _ONYUK: "deregister_tm_clones", _KS1_MAIN_ADLI: "Analist_adi",
         }
         assert _kinds(r.meta) == {
@@ -406,7 +406,7 @@ class TestSeedKs1Order:
         assert r.names[_GNULIB] == "bellek_bitti"           # KS-1 > gnulib
         assert r.names[_FAZ1] == "Vector_add"               # KS-1 > Faz 1
         assert r.names[_FAZ1_GNULIB] == "faz1_usage"        # Faz 1 > gnulib
-        assert r.names[_GNULIB_ONYUK] == "xstrtol_error"    # gnulib > önyük
+        assert r.names[_GNULIB_ONYUK] == "close_stdin"      # gnulib > önyük
         assert r.names[_ONYUK] == "deregister_tm_clones"
         assert _kinds(r.meta)[_GNULIB] == "ks1" and _kinds(r.meta)[_MAIN] == "main_giris"
         # sayaçlar: iki çapa ad verdi, ikisi korunan ad yüzünden atlandı; yalnız Faz 1 adı ezildi
@@ -414,7 +414,7 @@ class TestSeedKs1Order:
         assert r.stats["ks1_named"] == 2 and r.stats["ks1_kesin"] == 2
         assert r.stats["ks1_skipped"] == {"ad_main_dolu": 1, "korunan_anahtar": 1}
         assert r.stats["ks1_overrode"] == {"faz1": 1}       # gnulib adı hiç yazılmadı ki ezilsin
-        assert r.stats["gnulib_recovered"] == 1             # yalnız xstrtol_error
+        assert r.stats["gnulib_recovered"] == 1             # yalnız close_stdin
         assert r.stats["main_recovered"] == _MAIN
 
     def test_manual_override_beats_everything(self, tmp_path: Path) -> None:

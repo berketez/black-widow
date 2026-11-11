@@ -66,6 +66,10 @@ class GnulibFingerprint:
 # Curated set: coreutils'te yaygin, ayirt-edici string sabitli gnulib
 # fonksiyonlari. Her anchor gnulib lib/<source>'da birebir gecer (dogrulandi).
 GNULIB_FINGERPRINTS: tuple[GnulibFingerprint, ...] = (
+    # NOT (2026-11-11): version_etc yapıya bağlı. LTO'lu Ubuntu 9.4'te 6/6 doğru; LTO'suz
+    # Debian 9.4'te 0/5 (GT'ye göre "Written by" version_etc_arn'da kalıyor, ad onu çağıranın),
+    # geliştirme setinde 0/104. Kural gereği çıkarılmadı; öneri
+    # docs/arge/2026-11-11_on_ad_onarimi/sonuc.md'de.
     GnulibFingerprint(
         "version_etc", ("Written by",), "version-etc.c",
         "surum/yazar ciktisi -- her coreutils binary'sinde tam 1 fonksiyon",
@@ -89,10 +93,13 @@ GNULIB_FINGERPRINTS: tuple[GnulibFingerprint, ...] = (
         "argmatch", ("ambiguous argument", "Valid arguments"), "argmatch.c",
         "enum arg secenegi eslestirme",
     ),
-    GnulibFingerprint(
-        "xstrtol_error", ("invalid suffix in",), "xstrtol-error.c",
-        "sayisal (--lines vb.) arg ayristirma hatasi",
-    ),
+    # NOT: xstrtol_error ("invalid suffix in") 2026-11-11'de ÇIKARILDI. Baktığımız her GT'li
+    # korpusta 0 doğru: geliştirme seti (Debian 13) 0/9, Debian 9.4 ve Ubuntu 9.4 coreutils
+    # (5'er ikili) ateşlenme yok, Ubuntu 9.4 od/pr 0/2. xstrtol-error.c'deki static
+    # xstrtol_error çağıranına (xstrtol_fatal) satır içine alınıyor; dizgiyi taşıyan fonksiyonun
+    # GT adı xstrtol_error değil. Kanıt ve komutlar: docs/arge/2026-11-11_on_ad_onarimi/sonuc.md.
+    # Girdi silindiği için sonraki girdilerin sıra numarası bir azaldı (close_stdin 5 -> 4,
+    # usage 6 -> 5); 2026-11-10 dökümündeki numaralar eski sıradır.
     GnulibFingerprint(
         "close_stdin", ("error closing file",), "closein.c",
         "stdin kapatma hata handler'i -- close_stdout 'write error' ile cakismaz",
@@ -182,6 +189,10 @@ class GnulibCallShape:
 # ``gettext_quote`` bilinen bir istisnadir (kendisi de ``fout=1``, thunk ve
 # ``proper_name_lite`` ile karisir) -> call-shape kanalindan CIKARILDI; string
 # sabiti olmadigi icin bu fonksiyon simdilik yakalanamaz (kabul edilen sinir).
+# NOT (2026-11-11): hard_locale ve full_write yapıya bağlı. LTO'lu Ubuntu 9.4'te hard_locale
+# 7/7, full_write 1/1 doğru; LTO'suz Debian 9.4'te 0/5 ve 0/1 (GT'ye göre setlocale ve write'ı
+# doğrudan çağıran iç fonksiyon setlocale_null_r / safe_write, ad onu çağıranın), geliştirme
+# setinde 0/104 ve 0/11. Kural gereği çıkarılmadı; öneri docs/arge/2026-11-11_on_ad_onarimi/sonuc.md.
 GNULIB_CALL_SHAPES: tuple[GnulibCallShape, ...] = (
     GnulibCallShape(
         "close_stream", ("__fpending",), "close-stream.c",

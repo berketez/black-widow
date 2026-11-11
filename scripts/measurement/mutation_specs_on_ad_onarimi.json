@@ -47,7 +47,7 @@
    "module": "karadul/reconstruction/tarif/baglama.py",
    "test": "tests/test_on_ad_onarimi.py::test_tohum_onyuk_kunyesi_tam_ad_der",
    "find": "\"exact\": kind in EXACT_KINDS}",
-   "replace": "\"exact\": kind == KIND_MANUAL}"
+   "replace": "\"exact\": kind in (KIND_MANUAL,)}"
   },
   {
    "id": "oa_cnamer_tam_ad_alt_cizgi_soyar",
@@ -88,6 +88,38 @@
    "test": "tests/test_on_ad_onarimi.py::test_tohum_onyuk_kunyesi_tam_ad_der",
    "find": "\"_start\", (\"__libc_start_main\",),",
    "replace": "\"start\", (\"__libc_start_main\",),"
+  },
+  {
+   "id": "oa_xstrtol_error_geri_eklenir",
+   "desc": "onarım 2: çıkarılan xstrtol_error girdisi kataloğa geri eklenir",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_gnulib_fingerprints.py::TestXstrtolErrorRemoved::test_invalid_suffix_string_gets_no_name",
+   "find": "    GnulibFingerprint(\n        \"close_stdin\",",
+   "replace": "    GnulibFingerprint(\"xstrtol_error\", (\"invalid suffix in\",), \"xstrtol-error.c\"),\n    GnulibFingerprint(\n        \"close_stdin\","
+  },
+  {
+   "id": "oa_xstrtol_error_baska_dizgiyle",
+   "desc": "onarım 2: xstrtol_error ad olarak başka bir dizgiyle geri gelir",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_gnulib_fingerprints.py::TestXstrtolErrorRemoved::test_xstrtol_error_not_in_catalog",
+   "find": "    GnulibFingerprint(\n        \"close_stdin\",",
+   "replace": "    GnulibFingerprint(\"xstrtol_error\", (\"invalid argument\",), \"xstrtol-error.c\"),\n    GnulibFingerprint(\n        \"close_stdin\","
+  },
+  {
+   "id": "oa_tutulan_girdi_silinir",
+   "desc": "onarım 2: kural gereği tutulan close_stdin yanlışlıkla silinir",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_gnulib_fingerprints.py::TestXstrtolErrorRemoved::test_kept_entries_still_match",
+   "find": "        \"close_stdin\", (\"error closing file\",), \"closein.c\",",
+   "replace": "        \"close_stdin\", (\"error closing file!!\",), \"closein.c\","
+  },
+  {
+   "id": "oa_tohum_onceligi_close_stdin",
+   "desc": "onarım 2: tohum sınamasında gnulib > önyük önceliği close_stdin dizgisiyle kilitli",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_priority_order",
+   "find": "        \"close_stdin\", (\"error closing file\",), \"closein.c\",",
+   "replace": "        \"close_stdin\", (\"error closing\", \"stdin\"), \"closein.c\","
   }
  ]
 }

@@ -107,6 +107,28 @@ class TestNoEmitInlineFingerprints:
         assert "emit_ancillary_info" not in names
 
 
+class TestXstrtolErrorRemoved:
+    """``xstrtol_error`` ("invalid suffix in") katalogdan ÇIKARILDI (2026-11-11).
+
+    Kanıt (docs/arge/2026-11-11_on_ad_onarimi/sonuc.md): baktığımız her GT'li korpusta 0 doğru —
+    geliştirme seti 0/9, Debian 9.4 ve Ubuntu 9.4 (5'er ikili) hiç ateşlenmedi, Ubuntu 9.4 od/pr
+    0/2. Dizgi, ``xstrtol_error``'ın satır içine alındığı çağıranda duruyor; ad yanlış fonksiyona
+    gidiyordu. Dizgiyi taşıyan fonksiyon artık bu katmandan ad almaz.
+    """
+
+    def test_xstrtol_error_not_in_catalog(self):
+        assert "xstrtol_error" not in {fp.name for fp in GNULIB_FINGERPRINTS}
+        assert not any("invalid suffix in" in a for fp in GNULIB_FINGERPRINTS for a in fp.anchors)
+
+    def test_invalid_suffix_string_gets_no_name(self):
+        assert match_function(['invalid suffix in %s%s argument "%s"']) is None
+
+    def test_kept_entries_still_match(self):
+        # aynı karar kuralıyla TUTULAN girdiler (Ubuntu 9.4'te doğru ad veriyor) yerinde
+        assert match_function(["Written by %s.\n"]) == "version_etc"
+        assert match_function(["error closing file"]) == "close_stdin"
+
+
 class TestCallShapeMatch:
     def test_close_stream(self):
         # __fpending cagiran, fout>=2, thunk degil
