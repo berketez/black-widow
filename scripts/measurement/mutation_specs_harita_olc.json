@@ -1,0 +1,824 @@
+{
+ "_comment": "Harita ölçümü (ürün modülü ↔ kaynak dosya; scripts/measurement/harita_olc.py) mutasyon koruması: ürün tarafının adresle okunması, GT etiketinin kaynak birimi ve yolu, çift sayımlı ölçüler, düzeltilmiş Rand indeksi, V-ölçüsü, tabanlar (B0, B1, yozlaşmış sınırlar), giriş kuralı, birim-program-makro, kararlar, ön koşullar, kuru koşunun çaprazlamaması, çıktıda ad olmaması. Her mutant bir tanımı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_harita_olc.json",
+ "mutants": [
+  {
+   "id": "harita_proje_yolu",
+   "desc": "modül ataması proje ağacı yerine düz kaynak dizininden okunur",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_sabitler_ks1den",
+   "find": "PROJE_SRC_REL = Path(\"reconstructed\") / \"project\" / \"src\"",
+   "replace": "PROJE_SRC_REL = Path(\"reconstructed\") / \"src\""
+  },
+  {
+   "id": "harita_olcum_dosyasi_eksik",
+   "desc": "DWARF okuyucu ön kayıtla sabitlenen dosyalardan çıkar",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_sabitler_ks1den",
+   "find": "    \"scripts/measurement/dwarf_tip.py\",\n",
+   "replace": ""
+  },
+  {
+   "id": "harita_karar_olcusu",
+   "desc": "karar ölçüsü ARI yerine çift kesinliği",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_sabitler_ks1den",
+   "find": "KARAR_OLCUSU = \"ari\"",
+   "replace": "KARAR_OLCUSU = \"kesinlik\""
+  },
+  {
+   "id": "harita_baslik_satir_ici",
+   "desc": "satır içindeki '// Address:' metni de fonksiyon başlığı sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_urun_oku_baslik_bicimi",
+   "find": "re.compile(r\"^// Address:\\s+([0-9A-Fa-f]+)\\s*$\", re.MULTILINE)",
+   "replace": "re.compile(r\"// Address:\\s+([0-9A-Fa-f]+)\\s*$\", re.MULTILINE)"
+  },
+  {
+   "id": "harita_baslik_satir_sonu",
+   "desc": "adresten sonra başka metin taşıyan satır da başlık sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_urun_oku_baslik_bicimi",
+   "find": "re.compile(r\"^// Address:\\s+([0-9A-Fa-f]+)\\s*$\", re.MULTILINE)",
+   "replace": "re.compile(r\"^// Address:\\s+([0-9A-Fa-f]+)\", re.MULTILINE)"
+  },
+  {
+   "id": "harita_modul_son_dizin",
+   "desc": "modül, src'ye göre ilk dizin yerine dosyanın bulunduğu son dizin",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_dosya_modulu_ve_turu",
+   "find": "return goreli.parts[0] if len(goreli.parts) > 1 else KOK_MODUL",
+   "replace": "return goreli.parts[-2] if len(goreli.parts) > 1 else KOK_MODUL"
+  },
+  {
+   "id": "harita_kok_modul_yok",
+   "desc": "src kökündeki dosya kendi adıyla modül olur",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_dosya_modulu_ve_turu",
+   "find": "return goreli.parts[0] if len(goreli.parts) > 1 else KOK_MODUL",
+   "replace": "return goreli.parts[0] if len(goreli.parts) > 0 else KOK_MODUL  # kök"
+  },
+  {
+   "id": "harita_turu_topluluk_gevsek",
+   "desc": "subsystem_group_ ile başlayan her ad topluluk sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_dosya_modulu_ve_turu",
+   "find": "TOPLULUK_RE = re.compile(r\"^subsystem_group_\\d+$\")",
+   "replace": "TOPLULUK_RE = re.compile(r\"^subsystem_group_\")"
+  },
+  {
+   "id": "harita_misc_adi",
+   "desc": "misc modülünün adı tanınmaz (kural sayılır, misc tekil görünümü boşalır)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_dosya_modulu_ve_turu",
+   "find": "MISC_MODUL = \"subsystem_misc\"",
+   "replace": "MISC_MODUL = \"subsystem_miscellaneous\""
+  },
+  {
+   "id": "harita_ghidra_disi_atanir",
+   "desc": "Ghidra'nın fonksiyon listesinde olmayan adres de modüle atanır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_urun_oku_birlesik_dosya_ve_sayaclar",
+   "find": "        if adres not in ghidra:\n",
+   "replace": "        if False and adres not in ghidra:\n"
+  },
+  {
+   "id": "harita_coklu_modul_atanir",
+   "desc": "iki ayrı modülde geçen fonksiyon ilk modüle atanır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_urun_oku_birlesik_dosya_ve_sayaclar",
+   "find": "        elif len(set(moduller)) > 1:\n",
+   "replace": "        elif len(set(moduller)) > 22:\n"
+  },
+  {
+   "id": "harita_atanamayan_sayimi",
+   "desc": "çoklu modüldeki fonksiyon da atanamayan sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_urun_oku_birlesik_dosya_ve_sayaclar",
+   "find": "sayac[\"atanamayan\"] = len(ghidra - set(yerler))",
+   "replace": "sayac[\"atanamayan\"] = len(ghidra - set(atama))"
+  },
+  {
+   "id": "harita_projesiz_bitmis_sayilir",
+   "desc": "proje ağacı yazılmamış koşu bitmiş sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_proje_agaci_yoksa",
+   "find": "return [e if e.static is None or proje_src(e.kosu).is_dir() else replace(e, static=None)",
+   "replace": "return [e if True or proje_src(e.kosu).is_dir() else replace(e, static=None)"
+  },
+  {
+   "id": "harita_proje_agaci_yoksa_bos",
+   "desc": "proje ağacı yoksa okuma durmaz, boş atama döner",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_proje_agaci_yoksa",
+   "find": "    if not src.is_dir():\n        raise OnkosulHatasi(f\"{src}: proje ağacı yok\")\n",
+   "replace": ""
+  },
+  {
+   "id": "harita_yapay_birim_etiket",
+   "desc": "LTO'nun yapay birimi kaynak dosya sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kaynak_birimi_kurallari",
+   "find": "        if ad and ad != YAPAY_BIRIM:\n",
+   "replace": "        if ad:\n"
+  },
+  {
+   "id": "harita_koken_sirasi_ters",
+   "desc": "köken zinciri en derinden değil gövdenin kendisinden başlanarak taranır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kaynak_birimi_kurallari",
+   "find": "    for rol, k, _ in reversed(zincir):\n",
+   "replace": "    for rol, k, _ in zincir:\n"
+  },
+  {
+   "id": "harita_kismi_birim_sayilir",
+   "desc": "dwz kısmi birimi de kaynak birim sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kaynak_birimi_kurallari",
+   "find": "        if birim is None or birim[\"etiket\"] != DERLEME_BIRIMI:\n",
+   "replace": "        if birim is None:\n"
+  },
+  {
+   "id": "harita_koken_hep_kendi",
+   "desc": "köken biriminden gelen etiket 'kendi' diye işaretlenir (LTO sayımı kaybolur)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kaynak_birimi_kurallari",
+   "find": "kendi = (rol, k.birim) == (dt.ANA, d.birim)",
+   "replace": "kendi = rol == dt.ANA"
+  },
+  {
+   "id": "harita_zincir_hatasinda_etiketsiz",
+   "desc": "köken zinciri çözülemeyince gövdenin kendi birimine düşülmez",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kaynak_birimi_kurallari",
+   "find": "        zincir = [(dt.ANA, d, \"kendi\")]\n",
+   "replace": "        zincir = []\n"
+  },
+  {
+   "id": "harita_yol_dwarf4_tablosu",
+   "desc": "DWARF 4 satır tablosunun ilk dosyası da birimin kaynak dosyası sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_birim_yolu",
+   "find": "and tablo.get(\"taban\") == 0:",
+   "replace": "and tablo.get(\"taban\") in (0, 1):"
+  },
+  {
+   "id": "harita_yol_ad_uyusmazligi",
+   "desc": "satır tablosunun 0. dosyası birim adıyla uyuşmasa da kullanılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_birim_yolu",
+   "find": "        if ilk and posixpath.basename(ilk) == posixpath.basename(ad_yolu):\n",
+   "replace": "        if ilk:\n"
+  },
+  {
+   "id": "harita_yol_yalniz_ad",
+   "desc": "kaynak dosya yolu hep DW_AT_name'den alınır (aynı adlı iki birim birleşir)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_birim_yolu",
+   "find": "    if isinstance(tablo, dict) and \"hata\" not in tablo",
+   "replace": "    if False and isinstance(tablo, dict) and \"hata\" not in tablo"
+  },
+  {
+   "id": "harita_yol_sadelesmez",
+   "desc": "DW_AT_name sadeleştirilmeden etiket olur",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_birim_yolu",
+   "find": "    ad_yolu = posixpath.normpath(ad)\n",
+   "replace": "    ad_yolu = ad\n"
+  },
+  {
+   "id": "harita_dizin_kok",
+   "desc": "kökteki dosyanın dizin etiketi boş dizgi olur",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_birim_yolu",
+   "find": "    return posixpath.dirname(yol) or KOK_DIZIN\n",
+   "replace": "    return posixpath.dirname(yol)\n"
+  },
+  {
+   "id": "harita_govde_etiketi_denetlenmez",
+   "desc": "low_pc taşıyan her DIE (değişken dahil) fonksiyon gövdesi sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_dwarf_govdeleri",
+   "find": "        if d.etiket != GOVDE_ETIKETI or \"DW_AT_low_pc\" not in d.oz:\n",
+   "replace": "        if \"DW_AT_low_pc\" not in d.oz:\n"
+  },
+  {
+   "id": "harita_yapay_sayimi",
+   "desc": "yapay birimdeki gövde sayımı (LTO işareti) bütün gövdeleri sayar",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_dwarf_govdeleri",
+   "find": "yapay += int(c.birim_adi(dt.ANA, d.birim) == YAPAY_BIRIM)",
+   "replace": "yapay += int(c.birim_adi(dt.ANA, d.birim) is not None)"
+  },
+  {
+   "id": "harita_ek_dosya_sart_degil",
+   "desc": "dwz ek dosyası bulunamasa da okuma sürer",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_dwarf_govdeleri_ek_dosya_bulunamazsa_durur",
+   "find": "    if ana.altlink is not None and ek is None:\n",
+   "replace": "    if False and ana.altlink is not None and ek is None:\n"
+  },
+  {
+   "id": "harita_crt_etiketlenir",
+   "desc": "CRT fonksiyonları da nüfusa girer",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_gt_etiketle",
+   "find": "        if crt_mi(isimler):\n",
+   "replace": "        if False and crt_mi(isimler):\n"
+  },
+  {
+   "id": "harita_crt_herhangi_ad",
+   "desc": "takma adlarından biri CRT adı olan fonksiyon CRT sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_gt_etiketle",
+   "find": "return bool(adlar) and all(ks1._f1().is_crt_name(a) for a in adlar)",
+   "replace": "return bool(adlar) and not all(not ks1._f1().is_crt_name(a) for a in adlar)"
+  },
+  {
+   "id": "harita_celiskili_etiketlenir",
+   "desc": "aynı adreste iki ayrı kaynak dosya varsa ilki etiket olur",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_gt_etiketle",
+   "find": "        elif len(yollar) > 1:\n",
+   "replace": "        elif len(yollar) > 22:\n"
+  },
+  {
+   "id": "harita_ofset_uygulanmaz",
+   "desc": "DWARF adresi Ghidra adres uzayına taşınmaz",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_gt_etiketle",
+   "find": "adrese.setdefault(g.adres + ofset, []).append(g)",
+   "replace": "adrese.setdefault(g.adres, []).append(g)"
+  },
+  {
+   "id": "harita_etiketsiz_govde_celiski",
+   "desc": "aynı adresteki etiketsiz gövde çelişki sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_gt_etiketle",
+   "find": "        yollar = {g.yol for g in etiketli}\n",
+   "replace": "        yollar = {g.yol for g in list(buradaki)}\n"
+  },
+  {
+   "id": "harita_koken_sayimi",
+   "desc": "köken biriminden etiketlenenlerin sayımı bütün etiketlileri sayar",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_gt_etiketle",
+   "find": "sayac[\"koken_birimi\"] += int(all(g.koken == KOKEN_KOKEN for g in etiketli))",
+   "replace": "sayac[\"koken_birimi\"] += int(bool(etiketli))"
+  },
+  {
+   "id": "harita_yol_ad_sayilmaz",
+   "desc": "yolu yalnız addan gelen etiketler sayılmaz (bütünlük koşulu körleşir)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_gt_etiketle",
+   "find": "sayac[\"yol_ad\"] += int(any(g.yol_kaynagi == YOL_AD for g in etiketli))",
+   "replace": "sayac[\"yol_ad\"] += 0 * int(any(g.yol_kaynagi == YOL_AD for g in etiketli))"
+  },
+  {
+   "id": "harita_gt_oku_ofsetsiz",
+   "desc": "ks1_olc'nin kanıtladığı ofset GT etiketlerine uygulanmaz",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_gt_oku_ks1_gt_elf_ve_dwarf",
+   "find": "    ofset = int(str(gt.kunye[\"ofset\"]), 16)\n",
+   "replace": "    ofset = 0 * int(str(gt.kunye[\"ofset\"]), 16)\n"
+  },
+  {
+   "id": "harita_cift_formulu",
+   "desc": "çift sayısı n(n−1)/2 yerine n²/2",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_cift_olculeri_elle_hesap",
+   "find": "    return n * (n - 1) // 2\n",
+   "replace": "    return n * n // 2\n"
+  },
+  {
+   "id": "harita_kesinlik_paydasi",
+   "desc": "çift kesinliğinin paydası aynı modüldeki çiftler yerine aynı sınıftaki çiftler",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_cift_olculeri_elle_hesap",
+   "find": "kesinlik = Fraction(ortak, urun) if urun else None",
+   "replace": "kesinlik = Fraction(ortak, gt) if urun and gt else None"
+  },
+  {
+   "id": "harita_duyarlilik_paydasi",
+   "desc": "çift duyarlılığının paydası aynı sınıftaki çiftler yerine aynı modüldeki çiftler",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_cift_olculeri_elle_hesap",
+   "find": "duyarlilik = Fraction(ortak, gt) if gt else None",
+   "replace": "duyarlilik = Fraction(ortak, urun) if gt and urun else None"
+  },
+  {
+   "id": "harita_f1_payi",
+   "desc": "F1'in payında 2 çarpanı yok",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_cift_olculeri_elle_hesap",
+   "find": "f1 = Fraction(2 * ortak, urun + gt) if urun + gt else None",
+   "replace": "f1 = Fraction(ortak, urun + gt) if urun + gt else None"
+  },
+  {
+   "id": "harita_ari_beklenen_yok",
+   "desc": "Rand indeksi şansa göre düzeltilmez (beklenen ortak çift 0)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_cift_olculeri_elle_hesap",
+   "find": "        beklenen = Fraction(urun * gt, toplam)\n",
+   "replace": "        beklenen = Fraction(0)\n"
+  },
+  {
+   "id": "harita_ari_paydasi_enbuyuk",
+   "desc": "ARI paydasında ortalama yerine en büyük (başka bir düzeltme tanımı)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_cift_olculeri_elle_hesap",
+   "find": "payda = Fraction(urun + gt, 2) - beklenen",
+   "replace": "payda = max(urun, gt) - beklenen"
+  },
+  {
+   "id": "harita_ari_yozlasmis_sifir",
+   "desc": "iki bölme de yozlaşmışken ARI tanımsız yerine 0",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_olculer_yozlasmis_sinirlar",
+   "find": "ari = (ortak - beklenen) / payda if payda else None",
+   "replace": "ari = (ortak - beklenen) / payda if payda else Fraction(0)"
+  },
+  {
+   "id": "harita_turdeslik_tamlik_karisir",
+   "desc": "türdeşlik koşullu entropisi yanlış taraftan hesaplanır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_v_olcusu_elle_hesap",
+   "find": "1.0 - (h_ortak - h_modul) / h_sinif",
+   "replace": "1.0 - (h_ortak - (h_sinif)) / h_sinif"
+  },
+  {
+   "id": "harita_tamlik_paydasi",
+   "desc": "tamlık modül entropisi yerine sınıf entropisine bölünür",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_v_olcusu_elle_hesap",
+   "find": "1.0 - (h_ortak - h_sinif) / h_modul",
+   "replace": "1.0 - (h_ortak - h_sinif) / (h_sinif)"
+  },
+  {
+   "id": "harita_v_aritmetik",
+   "desc": "V-ölçüsü harmonik yerine aritmetik ortalama",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_v_olcusu_elle_hesap",
+   "find": "\"v\": 2 * turdeslik * tamlik / toplam if toplam > 0 else 0.0}",
+   "replace": "\"v\": toplam / 2 if toplam > 0 else 0.0}"
+  },
+  {
+   "id": "harita_tek_modul_tamlik",
+   "desc": "tek modülde tamlık 1 yerine −1",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_olculer_yozlasmis_sinirlar",
+   "find": "    tamlik = 1.0 if h_modul <= 0 else",
+   "replace": "    tamlik = -1.0 if h_modul <= 0 else"
+  },
+  {
+   "id": "harita_capraz_uzunluk",
+   "desc": "eşit uzunlukta olmayan etiket dizileri sessizce kırpılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_olculer_yozlasmis_sinirlar",
+   "find": "    if len(urun) != len(gt):\n        raise ValueError(f\"etiket dizileri eşit uzunlukta olmalı: {len(urun)} ≠ {len(gt)}\")\n",
+   "replace": ""
+  },
+  {
+   "id": "harita_bitisiklik_ilk_obek",
+   "desc": "bitişiklikte ilk öbek sayılmaz (son elemanla karşılaştırılır)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_bitisiklik_ve_modul_turu_dokumu",
+   "find": "if i == 0 or s != siniflar[i - 1])",
+   "replace": "if s != siniflar[i - 1])"
+  },
+  {
+   "id": "harita_modul_turu_ortak",
+   "desc": "modül türü dökümünde ortak çift yerine fonksiyon sayısı toplanır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_bitisiklik_ve_modul_turu_dokumu",
+   "find": "        out[modul_turu(m)][\"ortak\"] += cift(n)\n",
+   "replace": "        out[modul_turu(m)][\"ortak\"] += n\n"
+  },
+  {
+   "id": "harita_b1_fazlalik_sonda",
+   "desc": "bitişik bölmede fazlalık baştaki değil sondaki parçalara verilir",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_b1_bolme",
+   "find": "(1 if i < artan else 0)",
+   "replace": "(1 if i >= k - artan else 0)"
+  },
+  {
+   "id": "harita_b1_parca_siniri",
+   "desc": "parça sayısının alt sınırı denetlenmez",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_b1_bolme",
+   "find": "    if not 1 <= k <= max(n, 1):\n",
+   "replace": "    if not k <= max(n, 1):\n"
+  },
+  {
+   "id": "harita_misc_tekil_degil",
+   "desc": "misc tekil görünümünde misc üyeleri ayrılmaz",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_misc_tekil_ve_yuzdelik",
+   "find": "return [(m, i) if m == MISC_MODUL else m for i, m in enumerate(moduller)]",
+   "replace": "return [m for i, m in enumerate(moduller)]"
+  },
+  {
+   "id": "harita_yuzdelik_asagi",
+   "desc": "yüzdelik sırası yukarı yerine aşağı yuvarlanır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_misc_tekil_ve_yuzdelik",
+   "find": "return sirali[max(math.ceil(pay * len(sirali)), 1) - 1]",
+   "replace": "return sirali[max(math.floor(pay * len(sirali)), 1) - 1]"
+  },
+  {
+   "id": "harita_b0_tohum_sabit",
+   "desc": "B0 tohumu ikiliye bağlı metinden değil sabit metinden",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_b0_ozeti",
+   "find": "rng = random.Random(dt.tohum(tohum_metni))",
+   "replace": "rng = random.Random(dt.tohum(B0_TOHUM_METNI))"
+  },
+  {
+   "id": "harita_b0_karma_yok",
+   "desc": "B0'da etiketler karılmaz (taban ürünün kendisi olur)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_b0_ozeti",
+   "find": "        rng.shuffle(karisik)\n",
+   "replace": "        pass\n"
+  },
+  {
+   "id": "harita_b0_p_duzeltmesiz",
+   "desc": "permütasyon p değerinde +1 düzeltmesi yok (p sıfır olabilir)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_b0_ozeti",
+   "find": "Fraction(1 + sum(1 for a in ariler if a >= urun_ari), len(ariler) + 1)",
+   "replace": "Fraction(sum(1 for a in ariler if a >= urun_ari), len(ariler))"
+  },
+  {
+   "id": "harita_b0_p_esitlik",
+   "desc": "p değerinde ürününkine eşit karmalar sayılmaz",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_b0_ozeti",
+   "find": "sum(1 for a in ariler if a >= urun_ari)",
+   "replace": "sum(1 for a in ariler if a > urun_ari)"
+  },
+  {
+   "id": "harita_b0_beklenen_kesinlik",
+   "desc": "kapalı biçim beklenen kesinlik GT yerine ürün çift yoğunluğu",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_b0_ozeti",
+   "find": "\"kesinlik\": Fraction(s[\"gt\"], s[\"toplam\"]) if s[\"toplam\"] else None,",
+   "replace": "\"kesinlik\": Fraction(s[\"urun\"], s[\"toplam\"]) if s[\"toplam\"] else None,"
+  },
+  {
+   "id": "harita_n_min_siniri",
+   "desc": "nüfusu tam N_MIN olan ikili ölçüye girmez",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_giris_engeli",
+   "find": "    if n < N_MIN:\n",
+   "replace": "    if n <= N_MIN:\n"
+  },
+  {
+   "id": "harita_tek_sinif_girer",
+   "desc": "GT'de tek sınıf olan ikili ölçüye girer",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_giris_engeli",
+   "find": "    if len(boyut) < 2:\n",
+   "replace": "    if not boyut:\n"
+  },
+  {
+   "id": "harita_hepsi_ayri_girer",
+   "desc": "GT'de aynı sınıfta hiç çift olmayan ikili ölçüye girer",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_giris_engeli",
+   "find": "    if not any(v > 1 for v in boyut.values()):\n",
+   "replace": "    if False and not any(v > 1 for v in boyut.values()):\n"
+  },
+  {
+   "id": "harita_yol_ad_girer",
+   "desc": "yolu satır tablosundan okunamayan etiket taşıyan ikili ölçüye girer",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_giris_engeli",
+   "find": "    if yol_ad:\n        return NEDEN_YOL_AD\n",
+   "replace": ""
+  },
+  {
+   "id": "harita_b1_gt_sayisi",
+   "desc": "B1-GT satırı GT sınıf sayısı yerine ürünün modül sayısıyla bölünür",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_duzey_olcumu_satirlar",
+   "find": "SATIR_B1_GT: olculer(b1_bolme(n, out[\"sinif\"]), siniflar),",
+   "replace": "SATIR_B1_GT: olculer(b1_bolme(n, out[\"modul\"] + 0), siniflar),"
+  },
+  {
+   "id": "harita_b1_modul_sayisi",
+   "desc": "B1 satırı ürünün modül sayısı yerine GT sınıf sayısıyla bölünür (ürünün bilemeyeceği bilgi)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_duzey_olcumu_satirlar",
+   "find": "SATIR_B1: olculer(b1_bolme(n, out[\"modul\"]), siniflar),",
+   "replace": "SATIR_B1: olculer(b1_bolme(n, out[\"sinif\"] + 0), siniflar),"
+  },
+  {
+   "id": "harita_misc_tekil_satiri",
+   "desc": "misc tekil satırı ürünün kendi bölmesiyle hesaplanır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_duzey_olcumu_satirlar",
+   "find": "SATIR_MISC_TEKIL: olculer(misc_tekil(moduller), siniflar),",
+   "replace": "SATIR_MISC_TEKIL: olculer(moduller, siniflar),"
+  },
+  {
+   "id": "harita_tek_modul_satiri",
+   "desc": "tek modül sınırı her fonksiyon ayrı bölmesiyle hesaplanır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_duzey_olcumu_satirlar",
+   "find": "SATIR_TEK: olculer([0] * n, siniflar),",
+   "replace": "SATIR_TEK: olculer(list(range(n)), siniflar),"
+  },
+  {
+   "id": "harita_giremeyen_olculur",
+   "desc": "ölçüye giremeyen ikili için de satırlar hesaplanır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_duzey_olcumu_satirlar",
+   "find": "    if engel is not None:\n        return out\n",
+   "replace": ""
+  },
+  {
+   "id": "harita_nufus_sirasi_ters",
+   "desc": "ortak nüfus adres sırasının tersine dizilir (B1 adres sırasına dayanır)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_elf_olcumu_ortak_nufus_ve_ogeler",
+   "find": "return sorted(set(urun.modul) & set(gt.etiket))",
+   "replace": "return sorted(set(urun.modul) & set(gt.etiket), reverse=True)"
+  },
+  {
+   "id": "harita_nufus_yalniz_urun",
+   "desc": "nüfus GT etiketi olmayan fonksiyonları da içerir",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_elf_olcumu_ortak_nufus_ve_ogeler",
+   "find": "return sorted(set(urun.modul) & set(gt.etiket))",
+   "replace": "return sorted(set(urun.modul))"
+  },
+  {
+   "id": "harita_dizin_dosyayla_ayni",
+   "desc": "dizin düzeyinde sınıf olarak dosya yolu kullanılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_elf_olcumu_ortak_nufus_ve_ogeler",
+   "find": "DUZEY_DIZIN: [dizin_etiketi(y) for y in dosyalar]}",
+   "replace": "DUZEY_DIZIN: list(dosyalar)}"
+  },
+  {
+   "id": "harita_yol_ad_iletilmez",
+   "desc": "yol kaynağı bütünlük koşulu ikili ölçümüne iletilmez",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_elf_olcumu_ortak_nufus_ve_ogeler",
+   "find": "duzey_olcumu(moduller, siniflar[d], tohum_metni, gt.sayac.get(\"yol_ad\", 0))",
+   "replace": "duzey_olcumu(moduller, siniflar[d], tohum_metni)"
+  },
+  {
+   "id": "harita_ogeler_yol_yazar",
+   "desc": "öğelerde sınıf numarası yerine kaynak dosya yolu yazılır (çıktıya ad sızar)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_olc_ciktisinda_ad_yok_ve_belirlenimli",
+   "find": "[str(kod[d][siniflar[d][i]]) for d in DUZEYLER]",
+   "replace": "[str(siniflar[d][i]) for d in DUZEYLER]"
+  },
+  {
+   "id": "harita_birim_giremeyen_sayilir",
+   "desc": "birim değerine ölçüye giremeyen ikililer de katılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_ortalama_birim_program_makro",
+   "find": "                    for e in elfler if e[\"duzeyler\"][duzey][\"giris\"])",
+   "replace": "                    for e in elfler)"
+  },
+  {
+   "id": "harita_ortalama_none_sifir",
+   "desc": "değeri olmayan öğe ortalamaya 0 olarak girer",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_ortalama_birim_program_makro",
+   "find": "    d = [v for v in degerler if v is not None]\n",
+   "replace": "    d = [v or 0 for v in degerler]\n"
+  },
+  {
+   "id": "harita_program_once_ortalanmaz",
+   "desc": "aynı programın platform birimleri ayrı program sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_ortalama_birim_program_makro",
+   "find": "programlar.setdefault(ks1.birim_programi(b), []).append(v)",
+   "replace": "programlar.setdefault(b, []).append(v)"
+  },
+  {
+   "id": "harita_karar_esik_yok",
+   "desc": "B1 kararında fark eşiği yok: her pozitif makro fark 'ürün geçer'",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_karsilastirma_karari",
+   "find": "    elif makro_fark >= esik and pozitif >= gerekli:\n",
+   "replace": "    elif makro_fark > 0 and pozitif >= gerekli:\n"
+  },
+  {
+   "id": "harita_karar_esik_kesin",
+   "desc": "fark tam eşikteyken karar verilmez",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_karsilastirma_karari",
+   "find": "    elif makro_fark >= esik and pozitif >= gerekli:\n",
+   "replace": "    elif makro_fark > esik and pozitif >= gerekli:\n"
+  },
+  {
+   "id": "harita_karar_cogunluk_yok",
+   "desc": "'ürün geçer' kararında program çoğunluğu aranmaz",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_karsilastirma_karari",
+   "find": "    elif makro_fark >= esik and pozitif >= gerekli:\n",
+   "replace": "    elif makro_fark >= esik:\n"
+  },
+  {
+   "id": "harita_karar_taban_cogunluk_yok",
+   "desc": "'taban geçer' kararında program çoğunluğu aranmaz",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_karsilastirma_karari",
+   "find": "    elif makro_fark <= -esik and negatif >= gerekli:\n",
+   "replace": "    elif makro_fark <= -esik:\n"
+  },
+  {
+   "id": "harita_karar_yetersiz_yok",
+   "desc": "tek programla da B1 kararı verilir",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_karsilastirma_karari",
+   "find": "    if len(programlar) < en_az_program:\n",
+   "replace": "    if not programlar:\n",
+   "occurrence": 1
+  },
+  {
+   "id": "harita_gerekli_asagi",
+   "desc": "çoğunluk için gereken program sayısı aşağı yuvarlanır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_karsilastirma_karari",
+   "find": "gerekli = math.ceil(cogunluk * len(programlar))",
+   "replace": "gerekli = math.floor(cogunluk * len(programlar))",
+   "occurrence": 1
+  },
+  {
+   "id": "harita_rastgele_yetersiz_yok",
+   "desc": "tek programla da rastgele kararı verilir",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_rastgele_karari",
+   "find": "    if len(programlar) < en_az_program:\n",
+   "replace": "    if not programlar:\n",
+   "occurrence": 2
+  },
+  {
+   "id": "harita_rastgele_esit_ustte",
+   "desc": "ürünün ARI'si B0'ın 95. yüzdeliğine eşitken de 'üstte' sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_rastgele_karari",
+   "find": "ustte = sum(1 for p in programlar if urun[p] > b0_p95[p])",
+   "replace": "ustte = sum(1 for p in programlar if urun[p] >= b0_p95[p])"
+  },
+  {
+   "id": "harita_karar_b1_yerine_b1gt",
+   "desc": "B1 kararı GT sınıf sayısıyla bölen satıra karşı verilir",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_duzey_ozeti_kararlari",
+   "find": "\"b1\": karsilastirma_karari(urun, satirlar[SATIR_B1][KARAR_OLCUSU][\"program\"])}}",
+   "replace": "\"b1\": karsilastirma_karari(urun, satirlar[SATIR_B1_GT][KARAR_OLCUSU][\"program\"])}}"
+  },
+  {
+   "id": "harita_rastgele_ortalamaya_karsi",
+   "desc": "rastgele kararı B0'ın 95. yüzdeliği yerine ortalamasına karşı verilir",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_duzey_ozeti_kararlari",
+   "find": "rastgele_karari(urun, satirlar[SATIR_B0][\"ari_p95\"][\"program\"])",
+   "replace": "rastgele_karari(urun, satirlar[SATIR_B0][\"ari\"][\"program\"])"
+  },
+  {
+   "id": "harita_olc_tohum_ortak",
+   "desc": "bütün ikililer B0'da aynı tohumu kullanır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_olc_uctan_uca",
+   "find": "elf_olcumu(urun, gt, f\"{B0_TOHUM_METNI}|{birim}/{e.ad}\")",
+   "replace": "elf_olcumu(urun, gt, f\"{B0_TOHUM_METNI}\")"
+  },
+  {
+   "id": "harita_olc_mac_olculur",
+   "desc": "GT'si derleme birimi taşımayan Mach-O ikili de ölçülmeye çalışılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_olc_uctan_uca",
+   "find": "        if e.platform == ks1.PLATFORM_MAC:\n            gt_etiketsiz",
+   "replace": "        if False and e.platform == ks1.PLATFORM_MAC:\n            gt_etiketsiz"
+  },
+  {
+   "id": "harita_olc_cpp_olculur",
+   "desc": "C++ ikili de ölçülür",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_olc_uctan_uca",
+   "find": "            b[\"cpp_disarida\"].append(e.ad)     # ``ks1_olc`` ile aynı nüfus kuralı\n            continue\n",
+   "replace": "            b[\"cpp_disarida\"].append(e.ad)     # ``ks1_olc`` ile aynı nüfus kuralı\n"
+  },
+  {
+   "id": "harita_olc_projesiz_bekleyen_degil",
+   "desc": "olc proje ağacı olmayan koşuyu bitmemiş saymaz",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_olc_eksik_kosuda_durur",
+   "find": "    onkosul = onkosullari_denetle() if denetle else {\"denetlenmedi\": True}\n    elfler = projesizleri_isaretle(elfler)\n",
+   "replace": "    onkosul = onkosullari_denetle() if denetle else {\"denetlenmedi\": True}\n"
+  },
+  {
+   "id": "harita_olc_denetlemez",
+   "desc": "olc ön kayıt koşullarını denetlemeden ölçer",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_olc_on_kosul_once_denetlenir",
+   "find": "    onkosul = onkosullari_denetle() if denetle else {\"denetlenmedi\": True}\n",
+   "replace": "    onkosul = {\"denetlenmedi\": True}\n"
+  },
+  {
+   "id": "harita_main_denetimi_kapatir",
+   "desc": "CLI olc komutu ön koşul denetimini kapatır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_main_olc_on_kosulsuz_kosmaz",
+   "find": "sonuc = olc(elfler, a.debian_indir, a.mac_veri, eksik_izinli=a.eksik_izinli)",
+   "replace": "sonuc = olc(elfler, a.debian_indir, a.mac_veri, eksik_izinli=a.eksik_izinli, denetle=False)"
+  },
+  {
+   "id": "harita_kuru_caprazlar",
+   "desc": "kuru koşu modül ile GT etiketini çaprazlar (ön kayıttan önce uyum hesaplanır)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kuru_caprazlamaz",
+   "find": "                h = huni(urun, gt, ghidra)\n",
+   "replace": "                h = huni(urun, gt, ghidra)\n                kayit[\"olcum\"] = elf_olcumu(urun, gt, \"kuru\")\n"
+  },
+  {
+   "id": "harita_kuru_cpp_okunur",
+   "desc": "kuru koşu C++ ikiliyi de okur",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kuru_caprazlamaz",
+   "find": "        if cpp:\n            b[\"cpp_disarida\"].append(e.ad)\n            continue\n",
+   "replace": "        if cpp:\n            b[\"cpp_disarida\"].append(e.ad)\n"
+  },
+  {
+   "id": "harita_kuru_gt_hatasinda_durur",
+   "desc": "kuru koşu ön koşulu tutmayan ikilide hatayı yazmak yerine durur",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kuru_esleme_orani_ve_gt_hatasi",
+   "find": "            except (OnkosulHatasi, ValueError, OSError, KeyError) as hata:\n",
+   "replace": "            except (ValueError, OSError, KeyError) as hata:\n"
+  },
+  {
+   "id": "harita_esleme_paydasi",
+   "desc": "etiketli fonksiyonların adres eşleme oranı bütün GT fonksiyonlarına bölünür",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kuru_esleme_orani_ve_gt_hatasi",
+   "find": "\"etiketli_orani\": _oran(etiketli_eslesen, len(etiketli))},",
+   "replace": "\"etiketli_orani\": _oran(etiketli_eslesen, len(gt.fonksiyon))},"
+  },
+  {
+   "id": "harita_esleme_etiketli_hepsi",
+   "desc": "Ghidra'nın bulamadığı etiketli fonksiyonlar da eşleşmiş sayılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kuru_esleme_orani_ve_gt_hatasi",
+   "find": "    etiketli_eslesen = len(etiketli & ghidra_adresleri)\n",
+   "replace": "    etiketli_eslesen = len(etiketli)\n"
+  },
+  {
+   "id": "harita_huni_ortak_yalniz_urun",
+   "desc": "huni ortak nüfusu GT etiketi olmayan fonksiyonları da sayar",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kuru_caprazlamaz",
+   "find": "    ortak = sorted(set(urun.modul) & etiketli)\n",
+   "replace": "    ortak = sorted(set(urun.modul))\n"
+  },
+  {
+   "id": "harita_lto_isareti",
+   "desc": "LTO işareti yapay birimdeki gövde sayısından bağımsız hep açık",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kuru_caprazlamaz",
+   "find": "                             lto=gt.kunye[\"dwarf\"][\"yapay_birimde_govde\"] > 0,\n",
+   "replace": "                             lto=gt.kunye[\"dwarf\"][\"yapay_birimde_govde\"] >= 0,\n"
+  },
+  {
+   "id": "harita_mac_gt_alanlari",
+   "desc": "Mach-O GT kaydının alanları okunmaz (derleme birimi bilgisi olmadığı gösterilmez)",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_mac_gt_bilgisi",
+   "find": "    alanlar = sorted({a for k in kayitlar if isinstance(k, dict) for a in k})\n",
+   "replace": "    alanlar = []\n"
+  },
+  {
+   "id": "harita_onkosul_sha_denetlenmez",
+   "desc": "ölçüm dosyalarının sha256'sı ön kayıttakiyle karşılaştırılmaz",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_onkosul_olcum_dosyasi_degisince_durur",
+   "find": "denetlenen[rel] = ks1.sha256_denetle(Path(kok) / rel, dosyalar[rel])",
+   "replace": "denetlenen[rel] = dosyalar[rel]"
+  },
+  {
+   "id": "harita_onkosul_eksik_dosya",
+   "desc": "ön kayıtta sha256'sı olmayan ölçüm dosyası denetimsiz geçer",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_onkosul_sabitlerde_eksik_dosya",
+   "find": "        if rel not in dosyalar:\n            raise OnkosulHatasi(f\"ön kayıtta {rel} için sha256 yok\")\n        denetlenen[rel] = ks1.sha256_denetle(Path(kok) / rel, dosyalar[rel])\n",
+   "replace": "        if rel in dosyalar:\n            denetlenen[rel] = ks1.sha256_denetle(Path(kok) / rel, dosyalar[rel])\n"
+  },
+  {
+   "id": "harita_sabitle_yalniz_olcum",
+   "desc": "sabitle testleri ve mutant tanımını sabitlemez",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_sabitle_ve_onkosullar",
+   "find": "for rel in SABIT_DOSYALAR}}",
+   "replace": "for rel in OLCUM_DOSYALARI}}"
+  }
+ ]
+}
