@@ -40,6 +40,8 @@ python3 -I -B docs/arge/2026-11-11_n4_v2/on_sayim_v2.py \
 
 ## 0. Kısa sonuç
 
+> **Güncelleme notu (2026-11-11, ana oturum):** bu belgedeki sayılar yeni ürün koşusu 16 / 119 ikilide bitmişken sayılmıştı. Koşu bitince aynı komut yeniden çalıştırıldı; `on_sayim_v2.json` ve `on_sayim_v2.md` tam koşunun (119 / 119) sayılarını taşır. Değişen başlıklar: adsız nüfus (havuz) 23 088 → 21 915; en az bir satır alan 17 179 (%74,4) → 16 479 (%75,2); A3 %31,5 → %32,6; A4 %24,4 → %23,7; A5 %13,7 → %13,5; A6 %22,9 → %24,0. İki Mac ikilisinin sayıları değişmedi (2 300 / 2 789, %82,5). Aşağıdaki metin ilk sayımdaki hâliyle bırakıldı; hükümler değişmiyor.
+
 1. **Altı aile, adsız fonksiyonların %74,4'üne (havuz) ve %82,5'ine (iki Mac ikilisi) en az bir satır yazabiliyor.** Bu, tanımların ateşleme payıdır; doğru satır payı değildir.
    - Birleşimin büyük kısmı iki "kısmi" aileden gelir: A3 (parametre üstünden alan erişimi) ve A4 (global değişken). A3 ve A5 çıkarılınca pay %44,0 / %35,3'e iner.
    - Fiil sınıfı taşıyan satırlar (A1 ∪ A2) küçüktür: havuzda %5,1, Mac'te %11,6 **[hesap]**. Dünkü fiil tavanıyla aynı büyüklükte; "%75 doğru fiil" bu çerçevede de erişilemez.
