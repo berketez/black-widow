@@ -1,0 +1,109 @@
+{
+  "_comment": "Arayüz onarımı (2026-11-11, fonksiyon kartı envanteri §2): çağrı kenarları Ghidra çağrı grafiğinden (Onarım A) ve 'imza eşleşmesi yok' cümlesi yalnız aday yokken (Onarım B). Her mutant bir davranışı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ui_cagri_kenari.json",
+  "mutants": [
+    {
+      "id": "a_grafik_hic_kullanilmaz",
+      "desc": "Çağrı grafiği hiç kullanılmaz; eski metin yöntemi (metinde geçen her FUN_ çağrı)",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_cagri_kenari.py::test_adres_basvurusu_cagri_sayilmaz",
+      "find": "    graph = _call_graph_edges(Path(dec), ws, addr_set)",
+      "replace": "    graph = None and _call_graph_edges(Path(dec), ws, addr_set)"
+    },
+    {
+      "id": "a_adres_basvurusu_cagriya_eklenir",
+      "desc": "Metinde adı geçen ama grafikte kenarı olmayan başvuru yine çağrı sayılır",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_cagri_kenari.py::test_adres_basvurusu_cagri_sayilmaz",
+      "find": "            callees = set(graph.get(addr, ()))",
+      "replace": "            callees = set(graph.get(addr, ())) | mentioned"
+    },
+    {
+      "id": "a_grafik_kenari_metinle_kesilir",
+      "desc": "Grafikteki kenar metinde ad geçmiyorsa düşürülür",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_cagri_kenari.py::test_grafikte_olan_kenar_metinde_gecmese_de_cagri",
+      "find": "            callees = set(graph.get(addr, ()))",
+      "replace": "            callees = set(graph.get(addr, ())) & mentioned"
+    },
+    {
+      "id": "a_sessiz_geri_dusus",
+      "desc": "Grafik yokken de kaynak 'ghidra_call_graph' yazılır (metin yöntemine sessiz düşüş)",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_cagri_kenari.py::test_grafik_yoksa_metin_yontemi_isaretli",
+      "find": "    calls_source = \"ghidra_call_graph\" if graph is not None else \"text\"",
+      "replace": "    calls_source = \"ghidra_call_graph\""
+    },
+    {
+      "id": "a_baska_kosunun_grafigi_kabul",
+      "desc": "Düğümleri bu decompile dizininin fonksiyonlarıyla hiç örtüşmeyen grafik kabul edilir",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_cagri_kenari.py::test_baska_kosunun_grafigi_metin_yontemine_duser",
+      "find": "    if addr_set and not known:",
+      "replace": "    if False and addr_set and not known:"
+    },
+    {
+      "id": "a_dugum_bicimi_okunmaz",
+      "desc": "Kenar listesi olmayan (yalnız düğüm) grafik okunmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_cagri_kenari.py::test_yalniz_dugum_bicimi_de_okunur",
+      "find": "    elif isinstance(nodes, dict):\n        pairs =",
+      "replace": "    elif False and isinstance(nodes, dict):\n        pairs ="
+    },
+    {
+      "id": "a_kanit_paketinde_kaynak_yok",
+      "desc": "Kanıt paketi calls_source taşımaz (arayüz metin kipini etiketleyemez)",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_cagri_kenari.py::test_grafik_yoksa_metin_yontemi_isaretli",
+      "find": "        \"calls_source\": model.get(\"calls_source\"),",
+      "replace": "        \"calls_source\": None,"
+    },
+    {
+      "id": "a_html_kanit_etiketi_yok",
+      "desc": "Arayüz kanıt kartı metin kipinde de 'ÇAĞRI BAĞLAMI' der",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_cagri_kenari.py::test_arayuz_metin_kipini_etiketliyor",
+      "find": "    const byText=j.calls_source==='text';",
+      "replace": "    const byText=false;"
+    },
+    {
+      "id": "a_html_merkez_etiketi_yok",
+      "desc": "Haritanın merkez sayacı metin kipinde de 'çağırdığı · çağıran' der",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_cagri_kenari.py::test_arayuz_metin_kipini_etiketliyor",
+      "find": "  ad.textContent=MODEL.calls_source==='text'",
+      "replace": "  ad.textContent=false"
+    },
+    {
+      "id": "b_aday_varken_de_yazilir",
+      "desc": "'İmza eşleşmesi yok' imza adayı olan fonksiyonda da yazılır (eski hata)",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_cagri_kenari.py::test_imza_adayi_varken_eslesme_yok_yazilmaz",
+      "find": "    no_candidate = sig is not None and addr not in sig",
+      "replace": "    no_candidate = sig is not None"
+    },
+    {
+      "id": "b_kayit_okunamazken_yazilir",
+      "desc": "İmza eşleşme kaydı okunamazken de 'eşleşme yok' yazılır",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_cagri_kenari.py::test_imza_kaydi_okunamiyorsa_eslesme_yok_yazilmaz",
+      "find": "    no_candidate = sig is not None and addr not in sig",
+      "replace": "    no_candidate = sig is None or addr not in sig"
+    },
+    {
+      "id": "b_zayif_adda_eski_cumle",
+      "desc": "Zayıf adda aday varken de 'kesin imza eşleşmesi yok' yazılır",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_cagri_kenari.py::test_zayif_adda_aday_varken_kesin_eslesme_yok_yazilmaz",
+      "find": "                       if no_candidate else \"Yalnızca zayıf/adres-sonekli isim\")",
+      "replace": "                       if True else \"Yalnızca zayıf/adres-sonekli isim\")"
+    },
+    {
+      "id": "b_karar_imzaya_baglanir",
+      "desc": "İmza adayı teşhisin kararını değiştirir (karar mantığına dokunulmamalı)",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_cagri_kenari.py::test_imza_adayi_karari_degistirmez",
+      "find": "    elif ext:\n        verdict = \"app_wrapper\"",
+      "replace": "    elif ext or not no_candidate:\n        verdict = \"app_wrapper\""
+    }
+  ]
+}
