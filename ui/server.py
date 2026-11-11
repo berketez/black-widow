@@ -215,6 +215,73 @@ def _security_info(ws: str | None = None) -> dict:
     return out
 
 
+def _load_call_graph(dec: Path, ws: str):
+    """Decompile dizininin yanındaki ``static/ghidra_call_graph.json``; yoksa çalışma alanında ara.
+
+    Okunamazsa ya da JSON bozuksa None.
+    """
+    root = Path(ws).resolve()
+    for parent in list(dec.resolve().parents)[:3]:
+        if parent != root and root not in parent.parents:
+            break  # çalışma alanının dışına çıkma
+        p = parent / "ghidra_call_graph.json"
+        if p.is_file():
+            try:
+                return json.loads(p.read_text())
+            except (json.JSONDecodeError, OSError, ValueError):
+                return None
+    return _read_static_json(Path(ws), "ghidra_call_graph")
+
+
+def _call_graph_edges(dec: Path, ws: str, addr_set: set[str]) -> dict[str, set[str]] | None:
+    """Ghidra çağrı grafiğinden FUN_ düğümleri arasındaki çağrı kenarları: ``{çağıran: {çağrılan}}``.
+
+    Grafik adrese anahtarlı (``edges[].from/to`` ya da ``nodes[adres].callees[].address``); adres
+    ``FUN_<adres>`` dosya adına çevrilir. Yalnız iki ucu da FUN_ dosyası olan kenarlar tutulur
+    (ithaller ve Ghidra'nın adlandırdığı fonksiyonlar arayüzde düğüm değil).
+
+    Dosya yok, okunamıyor, biçimi beklenen değil ya da grafiğin düğümleri bu decompile dizininin
+    fonksiyonlarıyla hiç örtüşmüyorsa (başka bir koşunun grafiği) None: çağıran metin yöntemine
+    düşer ve bunu işaretler.
+    """
+    data = _load_call_graph(dec, ws)
+    if not isinstance(data, dict):
+        return None
+    by_hex = {a[4:].lower(): a for a in addr_set}
+
+    def fun(address) -> str | None:
+        if not isinstance(address, str):
+            return None
+        h = address.lower()
+        if h.startswith("0x"):
+            h = h[2:]
+        return by_hex.get(h)
+
+    pairs: list[tuple] = []
+    nodes = data.get("nodes")
+    edges = data.get("edges")
+    if isinstance(edges, list):
+        pairs = [(e.get("from"), e.get("to")) for e in edges if isinstance(e, dict)]
+    elif isinstance(nodes, dict):
+        pairs = [(a, c.get("address")) for a, n in nodes.items() if isinstance(n, dict)
+                 for c in (n.get("callees") or []) if isinstance(c, dict)]
+    else:
+        return None
+    if isinstance(nodes, dict):
+        known = {fun(a) for a in nodes}
+    else:
+        known = {fun(x) for pair in pairs for x in pair}
+    known.discard(None)
+    if addr_set and not known:
+        return None
+    out: dict[str, set[str]] = {}
+    for src, dst in pairs:
+        s, d = fun(src), fun(dst)
+        if s and d:
+            out.setdefault(s, set()).add(d)
+    return out
+
+
 def build_model() -> dict | None:
     ws = WS  # global degisebilir -> yerel kopya
     if not ws:
@@ -234,15 +301,30 @@ def build_model() -> dict | None:
     addrs = [os.path.basename(f)[:-2] for f in files]
     addr_set = set(addrs)
 
+    # Çağrı kenarları Ghidra'nın çağrı grafiğinden. Metinde adı geçip grafikte kenarı olmayan FUN_
+    # başvurusu (adresin alınması: geri çağrı kaydı, tablo, karşılaştırma) çağrı sayılmaz,
+    # ``addr_refs``'e gider. Grafik okunamazsa metin yöntemine düşülür ve bu ``calls_source="text"``
+    # ile açıkça işaretlenir (arayüz listeyi "metinde adı geçenler" diye etiketler).
+    graph = _call_graph_edges(Path(dec), ws, addr_set)
+    calls_source = "ghidra_call_graph" if graph is not None else "text"
     calls: dict[str, list[str]] = {}
+    addr_refs: dict[str, list[str]] | None = {} if graph is not None else None
     indeg: dict[str, int] = {a: 0 for a in addrs}
     for f, addr in zip(files, addrs):
         try:
             text = Path(f).read_text(errors="ignore")
         except OSError:
             text = ""
-        callees = (set(_FUN_RE.findall(text)) & addr_set)
-        callees.discard(addr)
+        mentioned = (set(_FUN_RE.findall(text)) & addr_set)
+        mentioned.discard(addr)
+        if graph is None:
+            callees = mentioned
+        else:
+            callees = set(graph.get(addr, ()))
+            callees.discard(addr)
+            refs = mentioned - callees
+            if refs:
+                addr_refs[addr] = sorted(refs)
         calls[addr] = sorted(callees)
         for c in callees:
             indeg[c] = indeg.get(c, 0) + 1
@@ -268,7 +350,8 @@ def build_model() -> dict | None:
     except Exception:  # noqa: BLE001
         security = {"packer": None, "anti_debug": None}
     model = {
-        "functions": funcs, "calls": calls, "names": names,
+        "functions": funcs, "calls": calls, "calls_source": calls_source,
+        "addr_refs": addr_refs, "names": names,
         "total": len(funcs), "named": n_named, "weak": n_weak,
         "unnamed": n_unnamed, "recovered": n_named + n_weak,
         "entry": entry, "workspace": str(ws), "binary": _ws_binary_name(ws),
@@ -667,6 +750,8 @@ def _evidence(addr: str) -> dict:
         "addr": addr,
         "current_name": current,
         "cls": cls,
+        # "ghidra_call_graph": callers/callees gerçek çağrı; "text": metinde adı geçenler (grafik yok)
+        "calls_source": model.get("calls_source"),
         "callers": callers,
         "callees": callees,
         "strings": _extract_strings(text),

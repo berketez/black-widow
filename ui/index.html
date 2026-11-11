@@ -974,7 +974,10 @@ function drawRadial(addr){
   const lbl=el('text'); lbl.setAttribute('x',cx); lbl.setAttribute('y',cy-34); lbl.setAttribute('class','corelbl');
   lbl.textContent=f.cls==='unnamed'?('FUN_'+f.addr.slice(-6)):trunc(f.name,30);
   const ad=el('text'); ad.setAttribute('x',cx); ad.setAttribute('y',cy+38); ad.setAttribute('class','coreaddr');
-  ad.textContent='◀ '+(f.out||0)+' çağırdığı  ·  '+(f.in||0)+' çağıran ▶';
+  // çağrı grafiği yoksa sunucu metin yöntemine düşer (calls_source==='text'): sayılar çağrı değil
+  ad.textContent=MODEL.calls_source==='text'
+    ? '◀ '+(f.out||0)+' metninde adı geçen  ·  '+(f.in||0)+' adının geçtiği ▶'
+    : '◀ '+(f.out||0)+' çağırdığı  ·  '+(f.in||0)+' çağıran ▶';
   // ne iş yapıyor? — evidence gelince dolar (setMapRole), redraw'da cache'ten
   const role=el('text'); role.setAttribute('id','mapRole'); role.setAttribute('x',cx); role.setAttribute('y',cy+53); role.setAttribute('class','corerole');
   role.textContent=MAP_ROLE[addr]||'';
@@ -1274,7 +1277,9 @@ function renderEvidence(j){
   const callers=Array.isArray(j.callers)?j.callers:[];
   const callees=Array.isArray(j.callees)?j.callees:[];
   if(callers.length||callees.length){
-    const {card,b}=_evCard('⇄ ÇAĞRI BAĞLAMI', null);
+    // çağrı grafiği yoksa liste çağrı değil, metinde adı geçenlerdir (sunucu calls_source='text')
+    const byText=j.calls_source==='text';
+    const {card,b}=_evCard(byText?'⇄ METİNDE ADI GEÇENLER (çağrı grafiği yok)':'⇄ ÇAĞRI BAĞLAMI', null);
     const refs=document.createElement('div'); refs.className='iv-refs';
     const addRef=(rf,kind)=>{
       const cls=rf.cls||'unnamed';
@@ -1282,7 +1287,7 @@ function renderEvidence(j){
       const clickable=rf.addr && BYADDR[rf.addr];
       const ln=document.createElement('div');
       ln.className='iv-refln '+kind+' '+cls+(clickable?' link':'');
-      ln.innerHTML=`<span class="rd"></span><span class="nm">${esc(kind==='callers'?'çağıran: ':'')}${esc(nm)}</span><span class="rx">${esc(TRLABEL[cls]||cls)}</span>`;
+      ln.innerHTML=`<span class="rd"></span><span class="nm">${esc(kind==='callers'?(byText?'adının geçtiği: ':'çağıran: '):'')}${esc(nm)}</span><span class="rx">${esc(TRLABEL[cls]||cls)}</span>`;
       if(clickable) ln.onclick=()=>focus(rf.addr);
       refs.appendChild(ln);
     };
