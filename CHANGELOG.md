@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.21.3] - 2026-11-11 (arayüz kanıt düzeltmeleri)
+
+Yalnız hata düzeltmesi: 1.21.2 → 1.21.3.
+
+### Düzeltilenler
+- Arayüzün "çağıran / çağırdığı" listesi, decompile metninde adı geçen her fonksiyonu çağrı
+  sayıyordu; bir fonksiyonun yalnız adresini kullanan da "çağıran" görünüyordu. Kenarlar artık
+  Ghidra'nın çağrı grafiğinden kurulur (`ui/server.py`); çağrı olmayan başvurular modelde ayrı
+  bir alanda (`addr_refs`) tutulur. Çağrı grafiği okunamazsa eski yöntem kullanılır ve arayüz
+  listeyi "metinde adı geçenler" diye etiketler. Dört saklı çalışma alanında kenarlar çağrı
+  grafiğiyle birebir (Mac tmux'ta 13 350 → 8 574 kenar).
+- "NEDEN İSİMSİZ?" teşhisi, imza adayı olan fonksiyonda da "imza eşleşmesi yok" diyordu; cümle
+  yalnız aday yokken yazılır. Ayrıntı: `docs/arge/2026-11-11_fonksiyon_karti/arayuz_onarimi.md`.
+
 ## [1.21.2] - 2026-11-11 (ön ad düzeltmeleri)
 
 Yalnız hata düzeltmesi: 1.21.1 → 1.21.2. Ürün ölçümünün yeni kolu 1.21.1'de (commit 93a2956)
