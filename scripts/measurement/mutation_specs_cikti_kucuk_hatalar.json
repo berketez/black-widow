@@ -40,6 +40,94 @@
    "test": "tests/test_cikti_kucuk_hatalar.py::TestLiefLibraries::test_macho_nesne_adi_okunur",
    "find": "lib_name = lib if isinstance(lib, str) else getattr(lib, \"name\", None)",
    "replace": "lib_name = lib if isinstance(lib, str) else None"
+  },
+  {
+   "id": "ck_simge_dinamik_tablo_okunmaz",
+   "desc": "ELF'te dinamik simge tablosu hiç okunmaz (onarım öncesi davranış: stripped ELF'te 0 simge)",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestStaticSymbols::test_elf_nm_bos_dinamik_tablo_okunur",
+   "find": "if target.target_type == TargetType.ELF_BINARY and not (symbols or {}).get(\"symbols\"):",
+   "replace": "if False:"
+  },
+  {
+   "id": "ck_simge_yalniz_nm_basarisizsa",
+   "desc": "dinamik tablo yalnız nm başarısızsa okunur; nm boş liste verince okunmaz",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestStaticSymbols::test_elf_nm_bos_dinamik_tablo_okunur",
+   "find": "if target.target_type == TargetType.ELF_BINARY and not (symbols or {}).get(\"symbols\"):",
+   "replace": "if target.target_type == TargetType.ELF_BINARY and symbols is None:"
+  },
+  {
+   "id": "ck_simge_nm_ezilir",
+   "desc": "nm simge verdiğinde de dinamik tablo nm sonucunu ezer",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestStaticSymbols::test_elf_nm_simge_verdiyse_nm_kalir",
+   "find": "if target.target_type == TargetType.ELF_BINARY and not (symbols or {}).get(\"symbols\"):",
+   "replace": "if target.target_type == TargetType.ELF_BINARY:"
+  },
+  {
+   "id": "ck_simge_bicim_bakilmaz",
+   "desc": "dosya biçimine bakılmaz: Mach-O'da da ELF tablosu okunur",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestStaticSymbols::test_macho_dinamik_tablo_okunmaz",
+   "find": "if target.target_type == TargetType.ELF_BINARY and not (symbols or {}).get(\"symbols\"):",
+   "replace": "if not (symbols or {}).get(\"symbols\"):"
+  },
+  {
+   "id": "ck_simge_yerel_dahil",
+   "desc": "yerel (LOCAL) dinamik simgeler de yazılır (nm -g yalnız dış simgeleri yazar)",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestRunElfDynsym::test_yalniz_dis_simgeler",
+   "find": "                    or binding not in (_STB_GLOBAL, _STB_WEAK, _STB_GNU_UNIQUE)\n",
+   "replace": ""
+  },
+  {
+   "id": "ck_simge_tanimsiz_adres",
+   "desc": "tanımsız (ithal) simgeye de adres yazılır (nm boş bırakır)",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestRunElfDynsym::test_gercek_lief_nm_gD_ile_ayni",
+   "find": "\"address\": None if sym.shndx == _SHN_UNDEF else f\"{sym.value:0{width}x}\",",
+   "replace": "\"address\": f\"{sym.value:0{width}x}\","
+  },
+  {
+   "id": "ck_simge_elf32_genislik",
+   "desc": "ELF32'de de 16 haneli adres",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestRunElfDynsym::test_elf32_adres_genisligi",
+   "find": "width = 16 if int(binary.header.identity_class) == 2 else 8",
+   "replace": "width = 16"
+  },
+  {
+   "id": "ck_harf_zayif_tanimli_kucuk",
+   "desc": "zayıf tanımlı simge küçük harf alır (W yerine w)",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::test_elf_nm_harfi",
+   "find": "return letter if shndx == _SHN_UNDEF else letter.upper()",
+   "replace": "return letter"
+  },
+  {
+   "id": "ck_harf_zayif_nesne_yok",
+   "desc": "zayıf nesne ile zayıf fonksiyon ayrılmaz (v yerine w)",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::test_elf_nm_harfi",
+   "find": "letter = \"v\" if sym_type == _STT_OBJECT else \"w\"",
+   "replace": "letter = \"w\""
+  },
+  {
+   "id": "ck_harf_bss_ayrilmaz",
+   "desc": "NOBITS bölümü (bss) veri sayılır (B yerine D)",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::test_elf_nm_harfi",
+   "find": "    if sec_type == _SHT_NOBITS:\n        return \"B\"\n",
+   "replace": ""
+  },
+  {
+   "id": "ck_harf_salt_okunur_veri",
+   "desc": "yazılamayan ALLOC bölümü de D alır (R yerine D)",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::test_elf_nm_harfi",
+   "find": "return \"D\" if sec_flags & _SHF_WRITE else \"R\"",
+   "replace": "return \"D\""
   }
  ]
 }

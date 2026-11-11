@@ -49,6 +49,46 @@ def _stat_is_regular(st: Any) -> bool:
         return False
 
 
+# ELF sabitleri (System V gABI): özel bölüm indisleri, bölüm tipi ve bayrakları, simge bağlama ve tipi.
+_SHN_UNDEF, _SHN_ABS, _SHN_COMMON = 0, 0xFFF1, 0xFFF2
+_SHT_NOBITS = 8
+_SHF_WRITE, _SHF_ALLOC, _SHF_EXECINSTR = 0x1, 0x2, 0x4
+_STB_GLOBAL, _STB_WEAK, _STB_GNU_UNIQUE = 1, 2, 10
+_STT_OBJECT, _STT_SECTION, _STT_FILE, _STT_COMMON, _STT_GNU_IFUNC = 1, 3, 4, 5, 10
+
+
+def _elf_nm_letter(
+    binding: int, sym_type: int, shndx: int,
+    sec_type: int | None, sec_flags: int | None,
+) -> str:
+    """Dış (global/zayıf) ELF simgesinin ``nm`` harfi; llvm-nm ``getNMTypeChar`` kuralı.
+
+    Bölümü bilinmeyen tanımlı simge "?" alır (nm de öyle yazar).
+    """
+    if binding == _STB_WEAK:
+        letter = "v" if sym_type == _STT_OBJECT else "w"
+        return letter if shndx == _SHN_UNDEF else letter.upper()
+    if shndx == _SHN_UNDEF:
+        return "U"
+    if shndx == _SHN_COMMON or sym_type == _STT_COMMON:
+        return "C"
+    if binding == _STB_GNU_UNIQUE:
+        return "u"
+    if sym_type == _STT_GNU_IFUNC:
+        return "i"
+    if shndx == _SHN_ABS:
+        return "A"
+    if sec_flags is None:
+        return "?"
+    if sec_flags & _SHF_EXECINSTR:
+        return "T"
+    if sec_type == _SHT_NOBITS:
+        return "B"
+    if sec_flags & _SHF_ALLOC:
+        return "D" if sec_flags & _SHF_WRITE else "R"
+    return "?" if sec_flags & _SHF_WRITE else "N"
+
+
 @register_analyzer(TargetType.MACHO_BINARY)
 @register_analyzer(TargetType.UNIVERSAL_BINARY)
 @register_analyzer(TargetType.ELF_BINARY)
@@ -264,6 +304,12 @@ class MachOAnalyzer(BaseAnalyzer):
 
         # 5. nm: symbol table
         symbols = self._run_nm(binary_path)
+        # `nm -g` stripped ELF'te dinamik simgeleri göstermez (-D yok); PATH'teki nm ELF'i hiç
+        # okumayabilir (conda cctools nm). nm simge vermediyse ELF'in dinamik simge tablosu okunur.
+        if target.target_type == TargetType.ELF_BINARY and not (symbols or {}).get("symbols"):
+            dynsym = self._run_elf_dynsym(binary_path)
+            if dynsym is not None:
+                symbols = dynsym
         if symbols is not None:
             sym_path = workspace.save_json("static", "symbols", symbols)
             artifacts["symbols"] = sym_path
@@ -559,6 +605,53 @@ class MachOAnalyzer(BaseAnalyzer):
             "binary": str(binary_path),
             "total": len(symbols),
             "symbols": symbols,
+        }
+
+    def _run_elf_dynsym(self, binary_path: Path) -> dict[str, Any] | None:
+        """ELF dinamik simge tablosunun dış simgeleri, ``nm -gD`` kayıtlarıyla aynı biçimde.
+
+        Ad sürüm eki (``@GLIBC_2.17``) taşımaz. lief yoksa ya da tablo okunamazsa None.
+        """
+        try:
+            import lief
+        except ImportError:
+            return None
+
+        try:
+            binary = lief.parse(str(binary_path))
+            if binary is None:
+                return None
+            width = 16 if int(binary.header.identity_class) == 2 else 8  # ELFCLASS64 = 2
+            symbols: list[dict[str, Any]] = []
+            for sym in binary.dynamic_symbols:
+                binding, sym_type = int(sym.binding), int(sym.type)
+                # nm -g yalnız dış simgeleri yazar; bölüm/dosya simgeleri ve adsız giriş atlanır.
+                if (
+                    not sym.name
+                    or binding not in (_STB_GLOBAL, _STB_WEAK, _STB_GNU_UNIQUE)
+                    or sym_type in (_STT_SECTION, _STT_FILE)
+                ):
+                    continue
+                sec = sym.section if sym.shndx not in (_SHN_UNDEF, _SHN_ABS, _SHN_COMMON) else None
+                letter = _elf_nm_letter(
+                    binding, sym_type, sym.shndx,
+                    int(sec.type) if sec is not None else None,
+                    int(sec.flags) if sec is not None else None,
+                )
+                symbols.append({
+                    "address": None if sym.shndx == _SHN_UNDEF else f"{sym.value:0{width}x}",
+                    "type": letter,
+                    "name": sym.name,
+                })
+        except Exception as exc:
+            logger.warning("ELF dinamik simge tablosu okunamadi: %s", exc)
+            return None
+
+        return {
+            "binary": str(binary_path),
+            "total": len(symbols),
+            "symbols": symbols,
+            "source": "elf_dynamic_symbols",
         }
 
     def _run_lief(self, binary_path: Path) -> dict[str, Any] | None:
