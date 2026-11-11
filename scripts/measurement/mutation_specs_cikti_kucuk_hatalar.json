@@ -128,6 +128,30 @@
    "test": "tests/test_cikti_kucuk_hatalar.py::test_elf_nm_harfi",
    "find": "return \"D\" if sec_flags & _SHF_WRITE else \"R\"",
    "replace": "return \"D\""
+  },
+  {
+   "id": "ck_cli_panel_ikili_ithal_yok",
+   "desc": "canlı panel ikilinin ithal sayısını okumaz (onarım öncesi: yalnız JS anahtarı)",
+   "module": "karadul/hacker_cli.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestCliImports::test_canli_panel_ikili_ithal_sayisi",
+   "find": "            (\"imports_found\", \"Imports\"),  # ikili (analyzers/macho.py, lief ithal listesi)\n",
+   "replace": ""
+  },
+  {
+   "id": "ck_cli_gunluk_ikili_ithal_yok",
+   "desc": "aşama günlüğü ikilinin ithal sayısını okumaz (onarım öncesi)",
+   "module": "karadul/hacker_cli.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestCliImports::test_asama_gunlugu_ikili_ithal_sayisi",
+   "find": "        # ithal fonksiyon sayısı (analyzers/macho.py, lief); \"imports\" yalnız JS'te üretilir\n        (\"imports_found\", \"Imports\"),\n",
+   "replace": ""
+  },
+  {
+   "id": "ck_cli_panel_js_ithal_yok",
+   "desc": "canlı panel JS ithal sayısını okumaz (var olan JS anahtarı korunmalı)",
+   "module": "karadul/hacker_cli.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestCliImports::test_canli_panel_js_ithal_sayisi_korunur",
+   "find": "            (\"imports\", \"Imports\"),  # JS (scripts/deobfuscate.mjs stats.imports)\n",
+   "replace": ""
   }
  ]
 }

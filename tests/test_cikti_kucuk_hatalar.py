@@ -10,6 +10,8 @@ yanlış ya da eksik bilgi gösteren çıktılar. Hiçbiri ad davranışını de
 3. ``symbols.json`` stripped ELF'te 0 simgeydi: ``nm -g`` dinamik simge tablosunu okumaz (``-D``
    yok) ve PATH'teki nm (conda cctools) ELF'i hiç okumaz. nm simge vermezse ELF'in dinamik simge
    tablosu lief ile okunur; kayıtlar ``nm -gD`` ile aynı (adres, harf, sürüm eksiz ad).
+4. CLI "Imports" satırı ikililerde hiç çıkmıyordu: ``stats["imports"]`` yalnız JS çözümleyicisinde
+   üretilir; ikililerin sayısı ``imports_found``. Değer yoksa satır yazılmaz.
 """
 
 from __future__ import annotations
@@ -209,7 +211,9 @@ class TestRunElfDynsym:
         assert MachOAnalyzer(config)._run_elf_dynsym(tmp_path / "ikili") is None
 
 
-_NM_ONE = {"binary": "x", "total": 1, "symbols": [{"address": "0x100", "type": "T", "name": "_main"}]}
+_NM_ONE = {
+    "binary": "x", "total": 1, "symbols": [{"address": "0x100", "type": "T", "name": "_main"}],
+}
 _DYNSYM = {
     "binary": "x", "total": 2, "source": "elf_dynamic_symbols",
     "symbols": [
@@ -271,3 +275,57 @@ class TestStaticSymbols:
         assert data == empty
         assert count == 0
         assert calls == []
+
+
+# ---------------------------------------------------------------------------
+# 4. CLI "Imports" satırı
+# ---------------------------------------------------------------------------
+
+
+def _imports_lines(lines: list[str]) -> list[str]:
+    return [ln for ln in lines if "Imports" in ln]
+
+
+class TestCliImports:
+    def test_canli_panel_ikili_ithal_sayisi(self) -> None:
+        import karadul.hacker_cli as h
+
+        stats = {"ghidra_function_count": 250, "imports_found": 63}
+        lines = _imports_lines(h._format_stage_stats("static", stats))
+        assert len(lines) == 1
+        assert "Imports: [medium_purple1]63[/]" in lines[0]
+
+    def test_canli_panel_js_ithal_sayisi_korunur(self) -> None:
+        import karadul.hacker_cli as h
+
+        lines = _imports_lines(h._format_stage_stats("static", {"functions": 10, "imports": 12}))
+        assert len(lines) == 1
+        assert "Imports: [medium_purple1]12[/]" in lines[0]
+
+    def test_canli_panel_deger_yoksa_satir_yok(self) -> None:
+        import karadul.hacker_cli as h
+
+        assert _imports_lines(h._format_stage_stats("static", {"ghidra_function_count": 250})) == []
+
+    @staticmethod
+    def _stage_log(monkeypatch, stats: dict) -> str:
+        import io
+
+        from rich.console import Console
+
+        import karadul.hacker_cli as h
+
+        buf = io.StringIO()
+        monkeypatch.setattr(h, "console", Console(file=buf, theme=h.KARADUL_THEME, width=200))
+        h._show_stage_result("static", StageResult(
+            stage_name="static", success=True, duration_seconds=1.0, stats=stats,
+        ), "12:00:00")
+        return buf.getvalue()
+
+    def test_asama_gunlugu_ikili_ithal_sayisi(self, monkeypatch) -> None:
+        out = self._stage_log(monkeypatch, {"ghidra_function_count": 250, "imports_found": 63})
+        assert "|-- Imports: 63" in out
+
+    def test_asama_gunlugu_deger_yoksa_satir_yok(self, monkeypatch) -> None:
+        out = self._stage_log(monkeypatch, {"ghidra_function_count": 250})
+        assert "Imports" not in out

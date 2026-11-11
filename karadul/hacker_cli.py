@@ -255,6 +255,8 @@ def _show_stage_result(stage_name: str, stage_result, ts: str) -> None:
         ("dylib_count", "Dynamic libraries"),
         ("string_count", "Strings (basic)"),
         ("symbol_count", "Symbols"),
+        # ithal fonksiyon sayısı (analyzers/macho.py, lief); "imports" yalnız JS'te üretilir
+        ("imports_found", "Imports"),
         ("ghidra_function_count", "Ghidra functions"),
         ("ghidra_string_count", "Ghidra strings"),
         ("ghidra_call_graph_edges", "Call graph edges"),
@@ -984,7 +986,8 @@ def _format_stage_stats(stage_name: str, stats: dict[str, Any]) -> list[str]:
             ("strings", "Strings"),
             ("string_count", "Strings"),
             ("symbol_count", "Symbols"),
-            ("imports", "Imports"),
+            ("imports", "Imports"),  # JS (scripts/deobfuscate.mjs stats.imports)
+            ("imports_found", "Imports"),  # ikili (analyzers/macho.py, lief ithal listesi)
         ]
         for key, label in mappings:
             val = stats.get(key)
