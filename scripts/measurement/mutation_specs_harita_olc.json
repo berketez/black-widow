@@ -567,7 +567,41 @@
    "module": "scripts/measurement/harita_olc.py",
    "test": "tests/test_harita_olc.py::test_elf_olcumu_ortak_nufus_ve_ogeler",
    "find": "DUZEY_DIZIN: [dizin_etiketi(y) for y in dosyalar]}",
-   "replace": "DUZEY_DIZIN: list(dosyalar)}"
+   "replace": "DUZEY_DIZIN: list(dosyalar)}",
+   "occurrence": 1
+  },
+  {
+   "id": "harita_huni_dizin_dosyayla_ayni",
+   "desc": "kuru koşunun dizin sayımı ve giriş öngörüsü dosya yoluyla yapılır",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kuru_caprazlamaz",
+   "find": "DUZEY_DIZIN: [dizin_etiketi(y) for y in dosyalar]}",
+   "replace": "DUZEY_DIZIN: list(dosyalar)}",
+   "occurrence": 2
+  },
+  {
+   "id": "harita_huni_giris_yol_ad",
+   "desc": "kuru koşunun giriş öngörüsü yol kaynağı bütünlük koşulunu uygulamaz",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_elf_olcumu_ortak_nufus_ve_ogeler",
+   "find": "giris_engeli(len(ortak), siniflar[d], gt.sayac.get(\"yol_ad\", 0))",
+   "replace": "giris_engeli(len(ortak), siniflar[d])"
+  },
+  {
+   "id": "harita_kuru_ghidra_durur",
+   "desc": "kuru koşu Ghidra sürümü ön koşulu tutmayınca hatayı yazmak yerine durur",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kuru_esleme_orani_ve_gt_hatasi",
+   "find": "    try:\n        ghidra_kunyesi = ks1.ghidra_denetle(elfler)\n    except OnkosulHatasi as hata:\n        ghidra_kunyesi = {\"hata\": str(hata)}\n",
+   "replace": "    ghidra_kunyesi = ks1.ghidra_denetle(elfler)\n"
+  },
+  {
+   "id": "harita_kuru_ghidra_denetlenmez",
+   "desc": "kuru koşu Ghidra sürümü ön koşulunu sınamaz",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_kuru_caprazlamaz",
+   "find": "        ghidra_kunyesi = ks1.ghidra_denetle(elfler)\n    except OnkosulHatasi as hata:\n",
+   "replace": "        ghidra_kunyesi = {}\n    except OnkosulHatasi as hata:\n"
   },
   {
    "id": "harita_yol_ad_iletilmez",

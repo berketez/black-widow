@@ -770,6 +770,10 @@ def test_elf_olcumu_ortak_nufus_ve_ogeler():
     # yolu satır tablosundan okunamayan etiket varsa ikili iki düzeyde de dışarıda (bütünlük koşulu)
     disarida = ho.elf_olcumu(urun, gt_tarafi(uc_dosya(), yol_ad=2), "tohum")
     assert [disarida["duzeyler"][d]["neden"] for d in ho.DUZEYLER] == [ho.NEDEN_YOL_AD] * 2
+    # huninin giriş öngörüsü ölçümle aynı kuralı uygular
+    assert ho.huni(urun, gt, set(ADRESLER))["ortak"]["giris"] == {"dosya": None, "dizin": None}
+    assert ho.huni(urun, gt_tarafi(uc_dosya(), yol_ad=2), set(ADRESLER))["ortak"]["giris"] == {
+        "dosya": ho.NEDEN_YOL_AD, "dizin": ho.NEDEN_YOL_AD}
 
 
 # --------------------------------------------------------------------------------------------
@@ -1055,8 +1059,16 @@ def test_kuru_caprazlamaz(tmp_path, monkeypatch):
     assert alfa["gt"]["etiketli"] == 12 and alfa["gt"]["kaynak_dosya"] == 3 and alfa["gt"]["dizin"] == 2
     assert alfa["esleme"] == {"gt_fonksiyon_ghidrada": 12, "gt_fonksiyon_orani": 1.0,
                               "etiketli_ghidrada": 12, "etiketli_orani": 1.0}
-    assert alfa["ortak"] == {"n": 12, "modul": 3, "kaynak_dosya": 3, "dizin": 2}
+    assert alfa["ortak"] == {"n": 12, "modul": 3, "kaynak_dosya": 3, "dizin": 2,
+                             "giris": {"dosya": None, "dizin": None}}
     assert alfa["gt_etiketi"] is True and alfa["lto"] is False
+    # giriş öngörüsü yalnız nüfusun büyüklüğüne ve GT sınıflarına bakar
+    assert s["birimler"]["debian/gama"]["elfler"]["kucuk"]["ortak"]["giris"] == {
+        "dosya": ho.NEDEN_KUCUK, "dizin": ho.NEDEN_KUCUK}
+    assert s["toplam"]["debian/gama"]["girer"] == {"dosya": 1, "dizin": 1}
+    assert s["toplam"]["debian/alfa"]["girer"] == {"dosya": 2, "dizin": 2}
+    # ölçümü durduracak Ghidra sürümü ön koşulu kuru koşuda da sınanır
+    assert s["arac"]["ghidra"] == {"surum": "12.1.2", "elf": 7}
     mac = s["birimler"]["mac/alfa"]["elfler"]["alfa"]
     assert mac["gt_etiketi"] is False and mac["gt"]["neden"] == ho.MAC_GT_NEDENI and mac["urun"]["atanan"] == 12
     t = s["toplam"]
@@ -1066,6 +1078,9 @@ def test_kuru_caprazlamaz(tmp_path, monkeypatch):
     assert t["mac/alfa"]["urun_okunan"] == 1 and "gt" not in t["mac/alfa"]
     md = ho.kuru_markdown(s)
     assert "çaprazlanmaz" in md and "debian/gama" in md and ho.MAC_GT_NEDENI in md
+    assert "Ghidra sürümü denetimi: tamam, sürüm 12.1.2, 7 ikili" in md
+    assert "| debian/gama | 2 | 18 | 1 | 1 | 1 | 1 | 1 |" in md       # ortak nüfus ve giriş öngörüsü
+    assert f"| {ho.NEDEN_KUCUK}; {ho.NEDEN_KUCUK} |" in md
     assert "src/a.c" not in md and "FUN_" not in md
 
 
@@ -1073,7 +1088,8 @@ def test_kuru_esleme_orani_ve_gt_hatasi(tmp_path, monkeypatch):
     kok = tmp_path / "debian"
     fonksiyonlar = [fonk(a) for a in ADRESLER[:8]]              # Ghidra son dört fonksiyonu bulamadı
     alan_kur(kok, "debian", "p", "eksik", fonksiyonlar, yerlesim_kur({a: "subsystem_misc" for a in ADRESLER[:6]}))
-    alan_kur(kok, "debian", "p", "hatali", fonksiyonlar, yerlesim_kur({a: "subsystem_misc" for a in ADRESLER[:6]}))
+    alan_kur(kok, "debian", "p", "hatali", fonksiyonlar, yerlesim_kur({a: "subsystem_misc" for a in ADRESLER[:6]}),
+             surum="11.4")                                      # başka Ghidra sürümü: ölçümü durdurur
     gt_tak(monkeypatch, {"eksik": gt_tarafi(uc_dosya(), fonksiyon=ADRESLER + [0x7000], yapay=3),
                          "hatali": ho.OnkosulHatasi("ofset kanıtlanamıyor")})
     s = ho.kuru(ks1.elfleri_topla(None, kok), None, None, beklenen={"debian/p": 2})
@@ -1081,14 +1097,18 @@ def test_kuru_esleme_orani_ve_gt_hatasi(tmp_path, monkeypatch):
     assert e["esleme"] == {"gt_fonksiyon_ghidrada": 8, "gt_fonksiyon_orani": round(8 / 13, 6),
                            "etiketli_ghidrada": 8, "etiketli_orani": round(8 / 12, 6)}
     assert e["urun"]["atanan"] == 6 and e["urun"]["atanamayan"] == 2
-    assert e["ortak"] == {"n": 6, "modul": 1, "kaynak_dosya": 2, "dizin": 1} and e["lto"] is True
+    assert e["ortak"] == {"n": 6, "modul": 1, "kaynak_dosya": 2, "dizin": 1,
+                          "giris": {"dosya": ho.NEDEN_KUCUK, "dizin": ho.NEDEN_KUCUK}} and e["lto"] is True
     h = s["birimler"]["debian/p"]["elfler"]["hatali"]
     assert h["gt_etiketi"] is False and h["gt"]["neden"] == ho.GT_OKUNAMADI and "ofset" in h["gt"]["hata"]
     t = s["toplam"]["debian/p"]
     assert (t["gt_okunamayan"], t["urun_okunan"], t["gt_okunan"], t["iki_taraf_okunan"]) == (1, 2, 1, 1)
     assert t["lto_ikili"] == 1 and t["n_min_alti"] == 1 and t["tek_dizin"] == 1
     assert t["ayni_adli_kaynak"] == 0
-    assert ho.GT_OKUNAMADI in ho.kuru_markdown(s)
+    # Ghidra sürümü ön koşulu tutmuyor: kuru koşu durmaz, hatayı yazar
+    assert "farklı Ghidra sürümleriyle" in s["arac"]["ghidra"]["hata"]
+    md = ho.kuru_markdown(s)
+    assert ho.GT_OKUNAMADI in md and "Ghidra sürümü denetimi: DURUR" in md
 
 
 def test_mac_gt_bilgisi(tmp_path, monkeypatch):
