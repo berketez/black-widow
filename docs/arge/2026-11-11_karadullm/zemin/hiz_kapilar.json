@@ -1,0 +1,261 @@
+{
+ "gunluk_satir_bas": 1282,
+ "ilerleme_satir_bas": 111,
+ "toplam": {
+  "cagri": 22,
+  "istem_jetonu": 100931,
+  "uretilen_jeton": 2199,
+  "onek_jeton_sn": 106.8,
+  "uretim_jeton_sn": 10.1
+ },
+ "ilerleme_girdi_jetonu": 100931,
+ "ilerleme_satiri": 22,
+ "ortak_onek_bulunan_cagri": 8,
+ "kume_kosul": {
+  "sonda/C": {
+   "cagri": 8,
+   "istem_jetonu": 31577,
+   "uretilen_jeton": 358,
+   "onek_jeton_sn": 106.4,
+   "uretim_jeton_sn": 10.6
+  },
+  "sonda/B": {
+   "cagri": 7,
+   "istem_jetonu": 23633,
+   "uretilen_jeton": 340,
+   "onek_jeton_sn": 112.4,
+   "uretim_jeton_sn": 10.5
+  },
+  "bellek/C": {
+   "cagri": 5,
+   "istem_jetonu": 32360,
+   "uretilen_jeton": 243,
+   "onek_jeton_sn": 103.2,
+   "uretim_jeton_sn": 10.0
+  },
+  "bellek/C-D": {
+   "cagri": 2,
+   "istem_jetonu": 13361,
+   "uretilen_jeton": 1258,
+   "onek_jeton_sn": 107.5,
+   "uretim_jeton_sn": 9.9
+  }
+ },
+ "siralama_eslesmesi": true,
+ "cagri_basina": [
+  {
+   "kume": "sonda",
+   "kosul": "C",
+   "istem": 4089,
+   "onek_jeton_sn": 152.1,
+   "uretilen": 40,
+   "uretim_jeton_sn": 15.1,
+   "sure_sn": 29.559
+  },
+  {
+   "kume": "sonda",
+   "kosul": "B",
+   "istem": 1159,
+   "onek_jeton_sn": 154.8,
+   "uretilen": 50,
+   "uretim_jeton_sn": 16.0,
+   "sure_sn": 10.63
+  },
+  {
+   "kume": "sonda",
+   "kosul": "C",
+   "istem": 1381,
+   "onek_jeton_sn": 157.0,
+   "uretilen": 47,
+   "uretim_jeton_sn": 15.6,
+   "sure_sn": 11.835
+  },
+  {
+   "kume": "sonda",
+   "kosul": "B",
+   "istem": 6654,
+   "onek_jeton_sn": 142.6,
+   "uretilen": 45,
+   "uretim_jeton_sn": 11.6,
+   "sure_sn": 50.589
+  },
+  {
+   "kume": "sonda",
+   "kosul": "C",
+   "istem": 7257,
+   "onek_jeton_sn": 91.4,
+   "uretilen": 42,
+   "uretim_jeton_sn": 7.9,
+   "sure_sn": 84.749
+  },
+  {
+   "kume": "sonda",
+   "kosul": "B",
+   "istem": 3117,
+   "onek_jeton_sn": 96.4,
+   "uretilen": 53,
+   "uretim_jeton_sn": 9.5,
+   "sure_sn": 37.933
+  },
+  {
+   "kume": "sonda",
+   "kosul": "C",
+   "istem": 3573,
+   "onek_jeton_sn": 106.7,
+   "uretilen": 44,
+   "uretim_jeton_sn": 10.3,
+   "sure_sn": 37.803
+  },
+  {
+   "kume": "sonda",
+   "kosul": "B",
+   "istem": 1762,
+   "onek_jeton_sn": 108.9,
+   "uretilen": 46,
+   "uretim_jeton_sn": 10.4,
+   "sure_sn": 20.619
+  },
+  {
+   "kume": "sonda",
+   "kosul": "C",
+   "istem": 2165,
+   "onek_jeton_sn": 110.5,
+   "uretilen": 51,
+   "uretim_jeton_sn": 9.2,
+   "sure_sn": 25.196
+  },
+  {
+   "kume": "sonda",
+   "kosul": "B",
+   "istem": 1464,
+   "onek_jeton_sn": 84.3,
+   "uretilen": 46,
+   "uretim_jeton_sn": 10.4,
+   "sure_sn": 21.81
+  },
+  {
+   "kume": "sonda",
+   "kosul": "C",
+   "istem": 1749,
+   "onek_jeton_sn": 107.8,
+   "uretilen": 47,
+   "uretim_jeton_sn": 10.7,
+   "sure_sn": 20.638
+  },
+  {
+   "kume": "sonda",
+   "kosul": "B",
+   "istem": 5091,
+   "onek_jeton_sn": 107.3,
+   "uretilen": 49,
+   "uretim_jeton_sn": 10.1,
+   "sure_sn": 52.358
+  },
+  {
+   "kume": "sonda",
+   "kosul": "C",
+   "istem": 6403,
+   "onek_jeton_sn": 103.0,
+   "uretilen": 44,
+   "uretim_jeton_sn": 10.0,
+   "sure_sn": 66.588
+  },
+  {
+   "kume": "sonda",
+   "kosul": "B",
+   "istem": 4386,
+   "onek_jeton_sn": 102.7,
+   "uretilen": 51,
+   "uretim_jeton_sn": 8.3,
+   "sure_sn": 48.91
+  },
+  {
+   "kume": "sonda",
+   "kosul": "C",
+   "istem": 4960,
+   "onek_jeton_sn": 98.8,
+   "uretilen": 43,
+   "uretim_jeton_sn": 10.4,
+   "sure_sn": 54.398
+  },
+  {
+   "kume": "bellek",
+   "kosul": "C",
+   "istem": 6910,
+   "onek_jeton_sn": 105.1,
+   "uretilen": 48,
+   "uretim_jeton_sn": 9.9,
+   "sure_sn": 70.757
+  },
+  {
+   "kume": "bellek",
+   "kosul": "C",
+   "istem": 6403,
+   "onek_jeton_sn": 104.1,
+   "uretilen": 44,
+   "uretim_jeton_sn": 10.0,
+   "sure_sn": 65.938
+  },
+  {
+   "kume": "bellek",
+   "kosul": "C",
+   "istem": 6203,
+   "onek_jeton_sn": 95.4,
+   "uretilen": 53,
+   "uretim_jeton_sn": 10.1,
+   "sure_sn": 70.379
+  },
+  {
+   "kume": "bellek",
+   "kosul": "C",
+   "istem": 6132,
+   "onek_jeton_sn": 105.6,
+   "uretilen": 58,
+   "uretim_jeton_sn": 9.8,
+   "sure_sn": 64.049
+  },
+  {
+   "kume": "bellek",
+   "kosul": "C",
+   "istem": 6712,
+   "onek_jeton_sn": 106.3,
+   "uretilen": 40,
+   "uretim_jeton_sn": 10.0,
+   "sure_sn": 67.232
+  },
+  {
+   "kume": "bellek",
+   "kosul": "C-D",
+   "istem": 6934,
+   "onek_jeton_sn": 106.1,
+   "uretilen": 808,
+   "uretim_jeton_sn": 9.8,
+   "sure_sn": 147.717
+  },
+  {
+   "kume": "bellek",
+   "kosul": "C-D",
+   "istem": 6427,
+   "onek_jeton_sn": 108.9,
+   "uretilen": 450,
+   "uretim_jeton_sn": 10.2,
+   "sure_sn": 103.413
+  }
+ ],
+ "yuk_ortalamasi_1dk": {
+  "ornek": 354,
+  "ortalama": 17.67,
+  "en_az": 6.2,
+  "en_cok": 26.46,
+  "ilk_zaman": "2026-11-11T09:57:41",
+  "son_zaman": "2026-11-11T10:18:04"
+ },
+ "bekci_tepe": {
+  "zaman": "2026-11-11T10:16:17",
+  "pid": 91251,
+  "rss_gib": 16.332,
+  "footprint_gib": 1.129,
+  "ust_gib": 17.46
+ },
+ "bekci_olaylar": []
+}

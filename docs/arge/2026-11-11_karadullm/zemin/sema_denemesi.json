@@ -1,0 +1,527 @@
+{
+ "komut": [
+  "/Users/apple/.lmstudio/extensions/backends/llama.cpp-mac-arm64-apple-metal-advsimd-2.60.0/llama-server",
+  "--model",
+  "/Users/apple/.lmstudio/models/lmstudio-community/Qwen3.8-27B-GGUF/Qwen3.8-27B-Q4_K_M.gguf",
+  "--host",
+  "127.0.0.1",
+  "--port",
+  "8139",
+  "--ctx-size",
+  "10240",
+  "--n-gpu-layers",
+  "999",
+  "--parallel",
+  "1",
+  "--jinja",
+  "--flash-attn",
+  "on",
+  "--cache-ram",
+  "0",
+  "--ctx-checkpoints",
+  "0",
+  "--batch-size",
+  "2048",
+  "--ubatch-size",
+  "512",
+  "--threads",
+  "10",
+  "--cache-type-k",
+  "f16",
+  "--cache-type-v",
+  "f16",
+  "--load-mode",
+  "mmap+mlock",
+  "--reasoning-format",
+  "deepseek",
+  "--no-webui",
+  "--seed",
+  "20261019",
+  "--chat-template-file",
+  "/Users/apple/Black_Widow/workspaces/2026-10-19_g6_pilot/sablon/qwen38_chat-template.jinja",
+  "--api-key",
+  "<gizli>"
+ ],
+ "zarf_semasi": {
+  "anyOf": [
+   {
+    "type": "object",
+    "properties": {
+     "kind": {
+      "const": "call"
+     },
+     "tool": {
+      "const": "get_evidence"
+     },
+     "args": {
+      "type": "object",
+      "properties": {
+       "address": {
+        "type": "string",
+        "pattern": "^0x[0-9a-f]{1,16}$"
+       }
+      },
+      "required": [
+       "address"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "kind",
+     "tool",
+     "args"
+    ],
+    "additionalProperties": false
+   },
+   {
+    "type": "object",
+    "properties": {
+     "kind": {
+      "const": "call"
+     },
+     "tool": {
+      "const": "get_decompiled"
+     },
+     "args": {
+      "type": "object",
+      "properties": {
+       "address": {
+        "type": "string",
+        "pattern": "^0x[0-9a-f]{1,16}$"
+       }
+      },
+      "required": [
+       "address"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "kind",
+     "tool",
+     "args"
+    ],
+    "additionalProperties": false
+   },
+   {
+    "type": "object",
+    "properties": {
+     "kind": {
+      "const": "call"
+     },
+     "tool": {
+      "const": "get_xrefs"
+     },
+     "args": {
+      "type": "object",
+      "properties": {
+       "address": {
+        "type": "string",
+        "pattern": "^0x[0-9a-f]{1,16}$"
+       },
+       "direction": {
+        "enum": [
+         "to",
+         "from"
+        ]
+       }
+      },
+      "required": [
+       "address",
+       "direction"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "kind",
+     "tool",
+     "args"
+    ],
+    "additionalProperties": false
+   },
+   {
+    "type": "object",
+    "properties": {
+     "kind": {
+      "const": "call"
+     },
+     "tool": {
+      "const": "propose_name"
+     },
+     "args": {
+      "type": "object",
+      "properties": {
+       "address": {
+        "type": "string",
+        "pattern": "^0x[0-9a-f]{1,16}$"
+       },
+       "name": {
+        "type": "string",
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+       },
+       "reason": {
+        "type": "string",
+        "maxLength": 200
+       }
+      },
+      "required": [
+       "address",
+       "name",
+       "reason"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "kind",
+     "tool",
+     "args"
+    ],
+    "additionalProperties": false
+   },
+   {
+    "type": "object",
+    "properties": {
+     "kind": {
+      "const": "final"
+     },
+     "text": {
+      "type": "string",
+      "maxLength": 400
+     }
+    },
+    "required": [
+     "kind",
+     "text"
+    ],
+    "additionalProperties": false
+   }
+  ]
+ },
+ "sistem": "Bir tersine mühendislik asistanısın. Her turda YALNIZ tek bir JSON nesnesi yaz.\nAraç çağırmak için: {\"kind\":\"call\",\"tool\":<ad>,\"args\":{...}}. Araçlar:\n- get_evidence {address}  - get_decompiled {address}  - get_xrefs {address, direction: to|from}\n- propose_name {address, name, reason}\nBitirmek için: {\"kind\":\"final\",\"text\":<kısa açıklama>}. Adresler küçük harfli 0x… biçimindedir.",
+ "baslangic": "2026-11-11T10:20:29+0300",
+ "yuk_once": [
+  13.53,
+  17.88,
+  16.48
+ ],
+ "jsonschema_paketi": "4.23.0",
+ "denemeler": [
+  {
+   "i": 0,
+   "gorev": "0x1000a3f0 adresindeki fonksiyonun kanıtını getir.",
+   "sure_sn": 3.992,
+   "bitis": "stop",
+   "icerik": "{\"kind\":\"call\",\"tool\":\"get_evidence\",\"args\":{\"address\":\"0x1000a3f0\"}}",
+   "usage": {
+    "completion_tokens": 27,
+    "prompt_tokens": 171,
+    "total_tokens": 198,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    }
+   },
+   "timings": {
+    "cache_n": 0,
+    "prompt_n": 171,
+    "prompt_ms": 1128.802,
+    "prompt_per_token_ms": 6.601181286549707,
+    "prompt_per_second": 151.48803776038667,
+    "predicted_n": 27,
+    "predicted_ms": 2858.379,
+    "predicted_per_token_ms": 109.93765384615384,
+    "predicted_per_second": 9.09606458765615
+   },
+   "json_gecerli": true,
+   "sema_uygun": true,
+   "aciklama": "eşleşen dal [0]",
+   "jsonschema_uygun": true
+  },
+  {
+   "i": 1,
+   "gorev": "0x10002b10 fonksiyonunun decompile çıktısını iste.",
+   "sure_sn": 4.091,
+   "bitis": "stop",
+   "icerik": "{\"kind\":\"call\",\"tool\":\"get_decompiled\",\"args\":{\"address\":\"0x10002b10\"}}",
+   "usage": {
+    "completion_tokens": 27,
+    "prompt_tokens": 170,
+    "total_tokens": 197,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    }
+   },
+   "timings": {
+    "cache_n": 0,
+    "prompt_n": 170,
+    "prompt_ms": 1874.156,
+    "prompt_per_token_ms": 11.02444705882353,
+    "prompt_per_second": 90.70749713471024,
+    "predicted_n": 27,
+    "predicted_ms": 2209.004,
+    "predicted_per_token_ms": 84.9616923076923,
+    "predicted_per_second": 11.77001037571684
+   },
+   "json_gecerli": true,
+   "sema_uygun": true,
+   "aciklama": "eşleşen dal [1]",
+   "jsonschema_uygun": true
+  },
+  {
+   "i": 2,
+   "gorev": "0x10004c88 fonksiyonunu kimler çağırıyor? Gelen başvuruları iste.",
+   "sure_sn": 4.631,
+   "bitis": "stop",
+   "icerik": "{\"kind\":\"call\",\"tool\":\"get_xrefs\",\"args\":{\"address\":\"0x10004c88\",\"direction\":\"from\"}}",
+   "usage": {
+    "completion_tokens": 31,
+    "prompt_tokens": 175,
+    "total_tokens": 206,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    }
+   },
+   "timings": {
+    "cache_n": 0,
+    "prompt_n": 175,
+    "prompt_ms": 1981.505,
+    "prompt_per_token_ms": 11.322885714285714,
+    "prompt_per_second": 88.31670876429784,
+    "predicted_n": 31,
+    "predicted_ms": 2631.585,
+    "predicted_per_token_ms": 87.7195,
+    "predicted_per_second": 11.399973780060305
+   },
+   "json_gecerli": true,
+   "sema_uygun": true,
+   "aciklama": "eşleşen dal [2]",
+   "jsonschema_uygun": true
+  },
+  {
+   "i": 3,
+   "gorev": "0x10007d20 fonksiyonu yalnız bir tamponu sıfırlıyor; ona ad öner.",
+   "sure_sn": 4.12,
+   "bitis": "stop",
+   "icerik": "{\"kind\":\"call\",\"tool\":\"get_decompiled\",\"args\":{\"address\":\"0x10007d20\"}}",
+   "usage": {
+    "completion_tokens": 27,
+    "prompt_tokens": 178,
+    "total_tokens": 205,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    }
+   },
+   "timings": {
+    "cache_n": 0,
+    "prompt_n": 178,
+    "prompt_ms": 1937.306,
+    "prompt_per_token_ms": 10.883741573033708,
+    "prompt_per_second": 91.8801676142024,
+    "predicted_n": 27,
+    "predicted_ms": 2162.532,
+    "predicted_per_token_ms": 83.17430769230769,
+    "predicted_per_second": 12.022943475518511
+   },
+   "json_gecerli": true,
+   "sema_uygun": true,
+   "aciklama": "eşleşen dal [1]",
+   "jsonschema_uygun": true
+  },
+  {
+   "i": 4,
+   "gorev": "0x1000f004 fonksiyonunun çağırdığı fonksiyonları (giden başvurular) iste.",
+   "sure_sn": 4.688,
+   "bitis": "stop",
+   "icerik": "{\"kind\":\"call\",\"tool\":\"get_xrefs\",\"args\":{\"address\":\"0x1000f004\",\"direction\":\"to\"}}",
+   "usage": {
+    "completion_tokens": 31,
+    "prompt_tokens": 181,
+    "total_tokens": 212,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    }
+   },
+   "timings": {
+    "cache_n": 0,
+    "prompt_n": 181,
+    "prompt_ms": 2044.542,
+    "prompt_per_token_ms": 11.295812154696133,
+    "prompt_per_second": 88.5283843520945,
+    "predicted_n": 31,
+    "predicted_ms": 2633.986,
+    "predicted_per_token_ms": 87.79953333333333,
+    "predicted_per_second": 11.389582176974365
+   },
+   "json_gecerli": true,
+   "sema_uygun": true,
+   "aciklama": "eşleşen dal [2]",
+   "jsonschema_uygun": true
+  },
+  {
+   "i": 5,
+   "gorev": "Elimde yeterli kanıt yok; kullanıcıya bunu söyleyerek bitir.",
+   "sure_sn": 4.868,
+   "bitis": "stop",
+   "icerik": "{\"kind\":\"final\",\"text\":\"Yeterli kanıt bulunamadığı için analiz tamamlanamadı. Lütfen ek bilgi veya adres sağlayın.\"}",
+   "usage": {
+    "completion_tokens": 34,
+    "prompt_tokens": 164,
+    "total_tokens": 198,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    }
+   },
+   "timings": {
+    "cache_n": 0,
+    "prompt_n": 164,
+    "prompt_ms": 1934.603,
+    "prompt_per_token_ms": 11.796359756097562,
+    "prompt_per_second": 84.77191444446225,
+    "predicted_n": 34,
+    "predicted_ms": 2907.945,
+    "predicted_per_token_ms": 88.11954545454546,
+    "predicted_per_second": 11.348220134837488
+   },
+   "json_gecerli": true,
+   "sema_uygun": true,
+   "aciklama": "eşleşen dal [4]",
+   "jsonschema_uygun": true
+  },
+  {
+   "i": 6,
+   "gorev": "0x100013a0 adresindeki fonksiyon bir sağlama toplamı hesaplıyor; ad öner.",
+   "sure_sn": 4.169,
+   "bitis": "stop",
+   "icerik": "{\"kind\":\"call\",\"tool\":\"get_decompiled\",\"args\":{\"address\":\"0x100013a0\"}}",
+   "usage": {
+    "completion_tokens": 27,
+    "prompt_tokens": 176,
+    "total_tokens": 203,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    }
+   },
+   "timings": {
+    "cache_n": 0,
+    "prompt_n": 176,
+    "prompt_ms": 1957.593,
+    "prompt_per_token_ms": 11.1226875,
+    "prompt_per_second": 89.90632884363603,
+    "predicted_n": 27,
+    "predicted_ms": 2199.123,
+    "predicted_per_token_ms": 84.58165384615384,
+    "predicted_per_second": 11.82289485399407
+   },
+   "json_gecerli": true,
+   "sema_uygun": true,
+   "aciklama": "eşleşen dal [1]",
+   "jsonschema_uygun": true
+  },
+  {
+   "i": 7,
+   "gorev": "0x1000beef fonksiyonunun kanıt paketini getir.",
+   "sure_sn": 4.042,
+   "bitis": "stop",
+   "icerik": "{\"kind\":\"call\",\"tool\":\"get_evidence\",\"args\":{\"address\":\"0x1000beef\"}}",
+   "usage": {
+    "completion_tokens": 25,
+    "prompt_tokens": 168,
+    "total_tokens": 193,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    }
+   },
+   "timings": {
+    "cache_n": 0,
+    "prompt_n": 168,
+    "prompt_ms": 1972.135,
+    "prompt_per_token_ms": 11.738898809523809,
+    "prompt_per_second": 85.18686601069399,
+    "predicted_n": 25,
+    "predicted_ms": 2051.317,
+    "predicted_per_token_ms": 85.47154166666667,
+    "predicted_per_second": 11.699800664646176
+   },
+   "json_gecerli": true,
+   "sema_uygun": true,
+   "aciklama": "eşleşen dal [0]",
+   "jsonschema_uygun": true
+  },
+  {
+   "i": 8,
+   "gorev": "0x10009000 için decompile metnini getir.",
+   "sure_sn": 4.174,
+   "bitis": "stop",
+   "icerik": "{\"kind\":\"call\",\"tool\":\"get_decompiled\",\"args\":{\"address\":\"0x10009000\"}}",
+   "usage": {
+    "completion_tokens": 27,
+    "prompt_tokens": 167,
+    "total_tokens": 194,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    }
+   },
+   "timings": {
+    "cache_n": 0,
+    "prompt_n": 167,
+    "prompt_ms": 1995.309,
+    "prompt_per_token_ms": 11.947958083832335,
+    "prompt_per_second": 83.69630969438819,
+    "predicted_n": 27,
+    "predicted_ms": 2164.374,
+    "predicted_per_token_ms": 83.24515384615384,
+    "predicted_per_second": 12.0127112966613
+   },
+   "json_gecerli": true,
+   "sema_uygun": true,
+   "aciklama": "eşleşen dal [1]",
+   "jsonschema_uygun": true
+  },
+  {
+   "i": 9,
+   "gorev": "İş bitti; üç fonksiyona ad önerildiğini özetleyerek bitir.",
+   "sure_sn": 12.315,
+   "bitis": "stop",
+   "icerik": "{\"kind\":\"final\",\"text\":\"Tersine mühendislik oturumu tamamlandı. Analiz edilen kod blokları üzerinde çalışılarak üç fonksiyona anlamlı ve bağlama uygun isimler önerildi. Bu isimler, fonksiyonların gerçekleştirdiği işlevleri (örneğin veri işleme, kontrol akışı veya yardımcı rutinler) yansıtmaktadır. Adlandırma önerileri, kodun okunabilirliğini ve sürdürülebilirliğini artırmak amacıyla yapılmıştır.\"}",
+   "usage": {
+    "completion_tokens": 111,
+    "prompt_tokens": 170,
+    "total_tokens": 281,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    }
+   },
+   "timings": {
+    "cache_n": 0,
+    "prompt_n": 170,
+    "prompt_ms": 1989.214,
+    "prompt_per_token_ms": 11.701258823529411,
+    "prompt_per_second": 85.46089058291366,
+    "predicted_n": 111,
+    "predicted_ms": 10315.641,
+    "predicted_per_token_ms": 93.77855454545454,
+    "predicted_per_second": 10.66341878318565
+   },
+   "json_gecerli": true,
+   "sema_uygun": true,
+   "aciklama": "eşleşen dal [4]",
+   "jsonschema_uygun": true
+  }
+ ],
+ "ozet": {
+  "deneme": 10,
+  "sema_uygun": 10,
+  "json_gecerli": 10,
+  "ortalama_sure_sn": 5.109,
+  "bellek_tepe": {
+   "rss_gib": 16.373,
+   "footprint_gib": 1.026,
+   "ust_gib": 17.4
+  }
+ },
+ "gunluk_dilbilgisi_satirlari": [],
+ "bitis": "2026-11-11T10:21:27+0300",
+ "sonra_pgrep": ""
+}

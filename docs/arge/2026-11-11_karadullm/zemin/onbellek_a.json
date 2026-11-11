@@ -1,0 +1,139 @@
+{
+ "ad": "a",
+ "ek_bayraklar": [
+  "--cache-ram",
+  "0",
+  "--ctx-checkpoints",
+  "0"
+ ],
+ "komut": [
+  "/Users/apple/.lmstudio/extensions/backends/llama.cpp-mac-arm64-apple-metal-advsimd-2.60.0/llama-server",
+  "--model",
+  "/Users/apple/.lmstudio/models/lmstudio-community/Qwen3.8-27B-GGUF/Qwen3.8-27B-Q4_K_M.gguf",
+  "--host",
+  "127.0.0.1",
+  "--port",
+  "8139",
+  "--ctx-size",
+  "10240",
+  "--n-gpu-layers",
+  "999",
+  "--parallel",
+  "1",
+  "--jinja",
+  "--flash-attn",
+  "on",
+  "--batch-size",
+  "2048",
+  "--ubatch-size",
+  "512",
+  "--threads",
+  "10",
+  "--cache-type-k",
+  "f16",
+  "--cache-type-v",
+  "f16",
+  "--load-mode",
+  "mmap+mlock",
+  "--reasoning-format",
+  "deepseek",
+  "--no-webui",
+  "--seed",
+  "20261019",
+  "--chat-template-file",
+  "/Users/apple/Black_Widow/workspaces/2026-10-19_g6_pilot/sablon/qwen38_chat-template.jinja",
+  "--cache-ram",
+  "0",
+  "--ctx-checkpoints",
+  "0",
+  "--api-key",
+  "<gizli>"
+ ],
+ "baslangic": "2026-11-11T10:18:04+0300",
+ "yuk_ortalamasi_once": [
+  22.06,
+  20.45,
+  16.97
+ ],
+ "istekler": {
+  "r1": {
+   "sure_sn": 25.78,
+   "prompt_tokens": 2594,
+   "cached_tokens": 0,
+   "completion_tokens": 7,
+   "timings_prompt_n": 2594,
+   "timings_cache_n": 0,
+   "timings_prompt_ms": 25343.664,
+   "prompt_per_second": 102.35299836677127,
+   "predicted_n": 7,
+   "predicted_per_second": 14.05866681662578
+  },
+  "r2_ek": {
+   "sure_sn": 0.834,
+   "prompt_tokens": 2637,
+   "cached_tokens": 2600,
+   "completion_tokens": 6,
+   "timings_prompt_n": 37,
+   "timings_cache_n": 2600,
+   "timings_prompt_ms": 491.278,
+   "prompt_per_second": 75.31377346431144,
+   "predicted_n": 6,
+   "predicted_per_second": 15.035739953870351
+  },
+  "r3_dal": {
+   "sure_sn": 22.304,
+   "prompt_tokens": 2593,
+   "cached_tokens": 0,
+   "completion_tokens": 2,
+   "timings_prompt_n": 2593,
+   "timings_cache_n": 0,
+   "timings_prompt_ms": 22217.919,
+   "prompt_per_second": 116.70759984317162,
+   "predicted_n": 2,
+   "predicted_per_second": 13.207073708678369
+  }
+ },
+ "bellek_ornekleri": {
+  "hazir": {
+   "rss_gib": 16.241,
+   "footprint_gib": 1.045,
+   "ust_gib": 17.286
+  },
+  "r1_sonra": {
+   "rss_gib": 16.342,
+   "footprint_gib": 1.121,
+   "ust_gib": 17.463
+  },
+  "r2_sonra": {
+   "rss_gib": 16.342,
+   "footprint_gib": 1.121,
+   "ust_gib": 17.463
+  },
+  "r3_sonra": {
+   "rss_gib": 16.338,
+   "footprint_gib": 1.122,
+   "ust_gib": 17.46
+  }
+ },
+ "sigmadi": false,
+ "hazir_sn": 4.1,
+ "bellek_tepe": {
+  "rss_gib": 16.342,
+  "footprint_gib": 1.121,
+  "ust_gib": 17.463
+ },
+ "bekci_asimi": null,
+ "yuk_ortalamasi_sonra": [
+  16.49,
+  19.1,
+  16.68
+ ],
+ "gunluk_kontrol_noktasi_satirlari": [],
+ "gunluk_secim_satirlari": [
+  "0.04.115.278 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1",
+  "0.30.154.347 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.986 (> 0.100 thold), f_keep = 1.000",
+  "0.31.290.855 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.990 (> 0.100 thold), f_keep = 0.972"
+ ],
+ "bitis": "2026-11-11T10:19:00+0300",
+ "sonra_pgrep": ""
+}

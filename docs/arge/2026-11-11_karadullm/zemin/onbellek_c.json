@@ -1,0 +1,147 @@
+{
+ "ad": "c",
+ "ek_bayraklar": [
+  "--cache-ram",
+  "0",
+  "--ctx-checkpoints",
+  "1"
+ ],
+ "komut": [
+  "/Users/apple/.lmstudio/extensions/backends/llama.cpp-mac-arm64-apple-metal-advsimd-2.60.0/llama-server",
+  "--model",
+  "/Users/apple/.lmstudio/models/lmstudio-community/Qwen3.8-27B-GGUF/Qwen3.8-27B-Q4_K_M.gguf",
+  "--host",
+  "127.0.0.1",
+  "--port",
+  "8139",
+  "--ctx-size",
+  "10240",
+  "--n-gpu-layers",
+  "999",
+  "--parallel",
+  "1",
+  "--jinja",
+  "--flash-attn",
+  "on",
+  "--batch-size",
+  "2048",
+  "--ubatch-size",
+  "512",
+  "--threads",
+  "10",
+  "--cache-type-k",
+  "f16",
+  "--cache-type-v",
+  "f16",
+  "--load-mode",
+  "mmap+mlock",
+  "--reasoning-format",
+  "deepseek",
+  "--no-webui",
+  "--seed",
+  "20261019",
+  "--chat-template-file",
+  "/Users/apple/Black_Widow/workspaces/2026-10-19_g6_pilot/sablon/qwen38_chat-template.jinja",
+  "--cache-ram",
+  "0",
+  "--ctx-checkpoints",
+  "1",
+  "--api-key",
+  "<gizli>"
+ ],
+ "baslangic": "2026-11-11T10:19:00+0300",
+ "yuk_ortalamasi_once": [
+  16.49,
+  19.1,
+  16.68
+ ],
+ "istekler": {
+  "r1": {
+   "sure_sn": 23.647,
+   "prompt_tokens": 2594,
+   "cached_tokens": 0,
+   "completion_tokens": 7,
+   "timings_prompt_n": 2594,
+   "timings_cache_n": 0,
+   "timings_prompt_ms": 23231.899,
+   "prompt_per_second": 111.65682151080287,
+   "predicted_n": 7,
+   "predicted_per_second": 14.58707633660165
+  },
+  "r2_ek": {
+   "sure_sn": 0.858,
+   "prompt_tokens": 2637,
+   "cached_tokens": 2600,
+   "completion_tokens": 6,
+   "timings_prompt_n": 37,
+   "timings_cache_n": 2600,
+   "timings_prompt_ms": 491.281,
+   "prompt_per_second": 75.31331356189227,
+   "predicted_n": 6,
+   "predicted_per_second": 13.964803110240949
+  },
+  "r3_dal": {
+   "sure_sn": 23.285,
+   "prompt_tokens": 2593,
+   "cached_tokens": 0,
+   "completion_tokens": 2,
+   "timings_prompt_n": 2593,
+   "timings_cache_n": 0,
+   "timings_prompt_ms": 23198.804,
+   "prompt_per_second": 111.77300347035131,
+   "predicted_n": 2,
+   "predicted_per_second": 13.391900578530105
+  }
+ },
+ "bellek_ornekleri": {
+  "hazir": {
+   "rss_gib": 16.349,
+   "footprint_gib": 1.003,
+   "ust_gib": 17.352
+  },
+  "r1_sonra": {
+   "rss_gib": 16.574,
+   "footprint_gib": 1.226,
+   "ust_gib": 17.8
+  },
+  "r2_sonra": {
+   "rss_gib": 16.574,
+   "footprint_gib": 1.226,
+   "ust_gib": 17.8
+  },
+  "r3_sonra": {
+   "rss_gib": 16.459,
+   "footprint_gib": 1.268,
+   "ust_gib": 17.726
+  }
+ },
+ "sigmadi": false,
+ "hazir_sn": 4.1,
+ "bellek_tepe": {
+  "rss_gib": 16.574,
+  "footprint_gib": 1.226,
+  "ust_gib": 17.8
+ },
+ "bekci_asimi": null,
+ "yuk_ortalamasi_sonra": [
+  16.59,
+  18.91,
+  16.77
+ ],
+ "gunluk_kontrol_noktasi_satirlari": [
+  "0.22.046.568 W slot create_check: id  0 | task 0 | erasing old context checkpoint (pos_min = 2077, pos_max = 2077, n_tokens = 2078, size = 149.626 MiB)",
+  "0.26.354.649 W slot create_check: id  0 | task 0 | erasing old context checkpoint (pos_min = 2558, pos_max = 2558, n_tokens = 2559, size = 149.626 MiB)",
+  "0.28.060.278 W slot create_check: id  0 | task 12 | erasing old context checkpoint (pos_min = 2589, pos_max = 2589, n_tokens = 2590, size = 149.626 MiB)",
+  "0.28.121.622 W slot create_check: id  0 | task 12 | erasing old context checkpoint (pos_min = 2599, pos_max = 2599, n_tokens = 2600, size = 149.626 MiB)",
+  "0.28.223.278 W slot create_check: id  0 | task 12 | erasing old context checkpoint (pos_min = 2601, pos_max = 2601, n_tokens = 2602, size = 149.626 MiB)",
+  "0.47.448.511 W slot create_check: id  0 | task 21 | erasing old context checkpoint (pos_min = 2076, pos_max = 2076, n_tokens = 2077, size = 149.626 MiB)",
+  "0.51.961.435 W slot create_check: id  0 | task 21 | erasing old context checkpoint (pos_min = 2558, pos_max = 2558, n_tokens = 2559, size = 149.626 MiB)"
+ ],
+ "gunluk_secim_satirlari": [
+  "0.04.113.141 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1",
+  "0.28.060.030 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.986 (> 0.100 thold), f_keep = 1.000",
+  "0.29.241.744 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.990 (> 0.100 thold), f_keep = 0.972"
+ ],
+ "bitis": "2026-11-11T10:19:56+0300",
+ "sonra_pgrep": ""
+}
