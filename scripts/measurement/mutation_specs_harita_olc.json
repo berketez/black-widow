@@ -871,6 +871,22 @@
    "replace": ""
   },
   {
+   "id": "harita_mac_gt_hatasinda_durur",
+   "desc": "Mach-O GT dosyası bulunamayınca kuru koşu hatayı yazmak yerine durur",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_mac_gt_bilgisi",
+   "find": "    except (OnkosulHatasi, OSError, ValueError, KeyError) as hata:\n        # GT dosyası",
+   "replace": "    except (OnkosulHatasi, ValueError, KeyError) as hata:\n        # GT dosyası"
+  },
+  {
+   "id": "harita_olc_ghidra_denetlenmez",
+   "desc": "olc Ghidra sürümünün tek ve sabit olduğunu denetlemez",
+   "module": "scripts/measurement/harita_olc.py",
+   "test": "tests/test_harita_olc.py::test_main_olc_ciktilari_yazar",
+   "find": "    ghidra_kunyesi = ks1.ghidra_denetle(elfler) if denetle else {\"denetlenmedi\": True}\n",
+   "replace": "    ghidra_kunyesi = {\"denetlenmedi\": True}\n"
+  },
+  {
    "id": "harita_onkosul_sha_denetlenmez",
    "desc": "ölçüm dosyalarının sha256'sı ön kayıttakiyle karşılaştırılmaz",
    "module": "scripts/measurement/harita_olc.py",

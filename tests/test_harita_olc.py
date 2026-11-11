@@ -1033,6 +1033,28 @@ def test_main_olc_on_kosulsuz_kosmaz(tmp_path, monkeypatch, capsys):
     assert "denetle" not in gorulen and not (tmp_path / "o.json").exists()
 
 
+def test_main_olc_ciktilari_yazar(tmp_path, monkeypatch, capsys):
+    """Ön koşullar tutunca ``olc`` komutu JSON ve Markdown'u yazar (sentetik nüfus; ön koşul denetimi
+    burada sahtesiyle değiştirilir, komutun kendisi kapatamaz)."""
+    elfler, beklenen = olcum_kur(tmp_path, monkeypatch)
+    monkeypatch.setattr(ho, "onkosullari_denetle", lambda: {"onkayit_commit": "a" * 40, "sha256": {}})
+    asil = ho.olc
+    monkeypatch.setattr(ho, "olc", lambda elfler, indir, mac_veri, eksik_izinli=False: asil(
+        elfler, indir, mac_veri, beklenen=beklenen, eksik_izinli=eksik_izinli))
+    (tmp_path / "kosu_kunyesi.json").write_text(json.dumps({"agac": {"commit": "c" * 40, "kirli": []}}))
+    kod = ho.main(["olc", "--debian-kosu", str(tmp_path / "debian"), "--mac-kosu", str(tmp_path / "mac"),
+                   "--json", str(tmp_path / "o.json"), "--md", str(tmp_path / "o.md")])
+    assert kod == 0 and "olc: 3 birim, 5 ikili" in capsys.readouterr().out
+    belge = json.loads((tmp_path / "o.json").read_text())
+    assert belge["onkosul"]["onkayit_commit"] == "a" * 40 and belge["kosu_kunyesi"]["commit"] == "c" * 40
+    assert belge["arac"]["ghidra"] == {"surum": "12.1.2", "elf": 7}
+    assert belge["ozet"]["dosya"]["kararlar"]["b1"]["karar"] == ho.KARAR_AYRISMIYOR
+    assert belge["ozet"]["dosya"]["satirlar"]["urun"]["ari"]["program"]["alfa"] == 1.0
+    md = (tmp_path / "o.md").read_text()
+    assert f"Ön kayıt commit'i: `{'a' * 40}`" in md and "Ghidra `12.1.2`" in md
+    assert "LTO'lu ikili taşıyan birimler: yok." in md and "## Düzey: dizin" in md
+
+
 # --------------------------------------------------------------------------------------------
 # (h) kuru
 
@@ -1121,6 +1143,13 @@ def test_mac_gt_bilgisi(tmp_path, monkeypatch):
     assert ho.mac_gt_bilgisi(e, tmp_path) == {"neden": ho.MAC_GT_NEDENI, "gt_okundu": True, "gt_fonksiyon": 2,
                                               "gt_kayit_alanlari": ["addr", "names", "sinif"]}
     assert ho.mac_gt_bilgisi(e, None) == {"neden": ho.MAC_GT_NEDENI, "gt_okundu": False}
+
+    # GT dosyası yoksa (ör. worktree'de varsayılan veri dizini) kuru koşu durmaz, hatayı yazar
+    def yok(e, veri):
+        raise FileNotFoundError("x.gt.json")
+    monkeypatch.setattr(ks1, "gt_mac", yok)
+    b = ho.mac_gt_bilgisi(e, tmp_path)
+    assert b["gt_okundu"] is False and b["neden"] == ho.MAC_GT_NEDENI and "FileNotFoundError" in b["hata"]
 
 
 # --------------------------------------------------------------------------------------------

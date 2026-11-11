@@ -874,8 +874,12 @@ def mac_gt_bilgisi(e: Any, mac_veri: Optional[Path]) -> dict[str, Any]:
     """Mach-O GT'sinin taşıdığı alanlar: derleme birimi bilgisi yok (yalnız ad, adres, sınıf)."""
     if mac_veri is None:
         return {"neden": MAC_GT_NEDENI, "gt_okundu": False}
-    gt = ks1.gt_mac(e, mac_veri)
-    kayitlar = _json(Path(gt.kunye["gt"])).get("functions") or []
+    try:
+        gt = ks1.gt_mac(e, mac_veri)
+        kayitlar = _json(Path(gt.kunye["gt"])).get("functions") or []
+    except (OnkosulHatasi, OSError, ValueError, KeyError) as hata:
+        # GT dosyası bulunamadı ya da analiz edilen dosyayla uyuşmuyor: kuru koşu durmaz, yazar
+        return {"neden": MAC_GT_NEDENI, "gt_okundu": False, "hata": f"{type(hata).__name__}: {hata}"}
     alanlar = sorted({a for k in kayitlar if isinstance(k, dict) for a in k})
     return {"neden": MAC_GT_NEDENI, "gt_okundu": True, "gt_fonksiyon": len(gt.adlar),
             "gt_kayit_alanlari": alanlar}
