@@ -664,6 +664,14 @@ class ReportGenerator:
         if not naming_data:
             return ""
 
+        # Aynı satır birden çok kez gelebilir: imza kaydı adres taşımaz, aynı adlı iki thunk (PLT ve
+        # dış blok) iki özdeş kayıt üretir (Debian tree: 133 kaydın 63'ü). Tablo ve sayı tekil satır.
+        _seen: dict[tuple[str, ...], dict[str, Any]] = {}
+        for entry in naming_data:
+            key = tuple(str(entry.get(k)) for k in ("original", "recovered", "source", "confidence"))
+            _seen.setdefault(key, entry)
+        naming_data = list(_seen.values())
+
         # Confidence'a gore sirala, ilk 30'u goster
         sorted_names = sorted(
             naming_data, key=lambda x: x.get("confidence", 0), reverse=True,

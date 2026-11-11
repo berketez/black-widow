@@ -19,6 +19,7 @@ yanlış ya da eksik bilgi gösteren çıktılar. Hiçbiri ad davranışını de
 
 from __future__ import annotations
 
+import re
 import sys
 import types
 from pathlib import Path
@@ -392,6 +393,31 @@ class TestHtmlNameCandidates:
         html = ReportGenerator(_result(ws, {}), ws).generate_html()
         assert "<h2>Name Candidates (top 30 of 40)</h2>" in html
         assert "Name Recovery" not in html
+
+    def test_ozdes_kayitlar_tek_satir(self, tmp_path) -> None:
+        """Aynı adlı iki thunk iki özdeş imza kaydı üretir (tree: 133 kaydın 63'ü); bir aday sayılır."""
+        from karadul.core.report_generator import ReportGenerator
+
+        ws = _workspace(tmp_path)
+        rec = [{"original": f"fn{i}", "matched": f"fn{i}", "library": "libc", "confidence": 0.98}
+               for i in range(40)]
+        ws.save_json("reconstructed", "signature_matches", {"total": 80, "matches": rec + rec})
+        html = ReportGenerator(_result(ws, {}), ws)._naming_table()
+        assert "<h2>Name Candidates (top 30 of 40)</h2>" in html
+        originals = re.findall(r'<td class="original">(.*?)</td>', html)
+        assert len(originals) == 30
+        assert len(set(originals)) == 30
+
+    def test_guveni_farkli_kayitlar_ayri(self, tmp_path) -> None:
+        from karadul.core.report_generator import ReportGenerator
+
+        ws = _workspace(tmp_path)
+        ws.save_json("reconstructed", "signature_matches", {"total": 2, "matches": [
+            {"original": "FUN_1", "matched": "copy_buffer", "library": "libc", "confidence": 0.54},
+            {"original": "FUN_1", "matched": "copy_buffer", "library": "libc", "confidence": 0.9},
+        ]})
+        html = ReportGenerator(_result(ws, {}), ws)._naming_table()
+        assert "<h2>Name Candidates (2)</h2>" in html
 
     def test_aday_yoksa_bolum_yok(self, tmp_path) -> None:
         from karadul.core.report_generator import ReportGenerator

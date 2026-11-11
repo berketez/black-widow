@@ -200,6 +200,22 @@
    "test": "tests/test_cikti_kucuk_hatalar.py::TestHtmlNameCandidates::test_otuzdan_azsa_yalniz_toplam",
    "find": "count_text = f\"top {len(sorted_names)} of {total}\" if total > len(sorted_names) else str(total)",
    "replace": "count_text = f\"top {len(sorted_names)} of {total}\""
+  },
+  {
+   "id": "ck_html_ozdes_kayit_tekrar",
+   "desc": "özdeş kayıtlar ayrı satır ve sayı (tekilleştirme yok)",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestHtmlNameCandidates::test_ozdes_kayitlar_tek_satir",
+   "find": "        naming_data = list(_seen.values())\n",
+   "replace": ""
+  },
+  {
+   "id": "ck_html_tekil_anahtar_guvensiz",
+   "desc": "güveni farklı kayıtlar da tek satıra indirilir",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestHtmlNameCandidates::test_guveni_farkli_kayitlar_ayri",
+   "find": "(\"original\", \"recovered\", \"source\", \"confidence\")",
+   "replace": "(\"original\", \"recovered\", \"source\")"
   }
  ]
 }
