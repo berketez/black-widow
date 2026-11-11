@@ -1,0 +1,93 @@
+{
+ "_comment": "Ön ad kanalı onarımı (2026-11-11; docs/arge/2026-11-11_on_ad_onarimi/sonuc.md): onarım 1 ELF önyük adı temizlenmeden yazılır (tarif/baglama.py EXACT_KINDS) ve temizlenmemiş ad ad geçerliliği süzgecinden geçer. c_namer.py, name_validity.py ve elf_boilerplate.py mutantları yalnız yeni testlerin o davranışları kilitlediğini sınar (dosyalar bu onarımda değişmedi). Her mutantın find/replace uzunluğu farklıdır. Koşum (yalıtılmış kopyada): PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_on_ad_onarimi.json",
+ "mutants": [
+  {
+   "id": "oa_onyuk_tam_ad_degil",
+   "desc": "ELF önyükü tam ad türlerinden çıkar (onarım öncesi davranış)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_on_ad_onarimi.py::test_onyuk_adi_temizlenmeden_yazilir",
+   "find": "EXACT_KINDS = frozenset({KIND_KS1, KIND_MANUAL, KIND_ELF_BOILERPLATE})",
+   "replace": "EXACT_KINDS = frozenset({KIND_KS1, KIND_MANUAL})"
+  },
+  {
+   "id": "oa_onyuk_tam_ad_degil_tohum",
+   "desc": "ELF önyükü tam ad türlerinden çıkar; tohumun künyesi exact taşımaz",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_on_ad_onarimi.py::test_tohum_onyuk_kunyesi_tam_ad_der",
+   "find": "EXACT_KINDS = frozenset({KIND_KS1, KIND_MANUAL, KIND_ELF_BOILERPLATE})",
+   "replace": "EXACT_KINDS = frozenset({KIND_MANUAL, KIND_KS1})  # "
+  },
+  {
+   "id": "oa_butun_turler_tam_ad",
+   "desc": "bütün ön ad türleri tam ad sayılır (gnulib ve Faz 1 adı da temizlenmez)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_on_ad_onarimi.py::test_onyuk_adi_temizlenmeden_yazilir",
+   "find": "EXACT_KINDS = frozenset({KIND_KS1, KIND_MANUAL, KIND_ELF_BOILERPLATE})",
+   "replace": "EXACT_KINDS = frozenset(KIND_PRIORITY)"
+  },
+  {
+   "id": "oa_gnulib_de_tam_ad",
+   "desc": "gnulib de tam ad türüne girer",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_on_ad_onarimi.py::test_onyuk_adi_temizlenmeden_yazilir",
+   "find": "EXACT_KINDS = frozenset({KIND_KS1, KIND_MANUAL, KIND_ELF_BOILERPLATE})",
+   "replace": "EXACT_KINDS = frozenset({KIND_KS1, KIND_MANUAL, KIND_ELF_BOILERPLATE, KIND_GNULIB})"
+  },
+  {
+   "id": "oa_kunye_exact_alani_bakilmaz",
+   "desc": "is_exact künyenin exact alanına bakmaz (tür yeter)",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_tarif_baglama.py::test_kunye_kur",
+   "find": "return entry is not None and entry.get(\"kind\") in EXACT_KINDS and entry.get(\"exact\") is True",
+   "replace": "return entry is not None and entry.get(\"kind\") in EXACT_KINDS"
+  },
+  {
+   "id": "oa_make_meta_yalniz_elle",
+   "desc": "make_meta exact'i yalnız elle türüne verir",
+   "module": "karadul/reconstruction/tarif/baglama.py",
+   "test": "tests/test_on_ad_onarimi.py::test_tohum_onyuk_kunyesi_tam_ad_der",
+   "find": "\"exact\": kind in EXACT_KINDS}",
+   "replace": "\"exact\": kind == KIND_MANUAL}"
+  },
+  {
+   "id": "oa_cnamer_tam_ad_alt_cizgi_soyar",
+   "desc": "c_namer tam adın baştaki/sondaki alt çizgisini atar",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_on_ad_onarimi.py::test_onyuk_adi_temizlenmeden_yazilir",
+   "find": "                    sanitized = new_name\n",
+   "replace": "                    sanitized = new_name.strip(\"_\")\n"
+  },
+  {
+   "id": "oa_cnamer_on_ad_reddi_yok",
+   "desc": "ön ad geçerlilik reddi uygulanmaz (çakışan önyük adı verilir)",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_on_ad_onarimi.py::test_temizlenmemis_onyuk_adi_baska_fonksiyonunsa_reddedilir",
+   "find": "                if pre_reason is not None:",
+   "replace": "                if pre_reason is not None and False:"
+  },
+  {
+   "id": "oa_ithal_takma_adi_yok",
+   "desc": "ithal adın baştaki _ soyulmuş hâli var olan ad sayılmaz",
+   "module": "karadul/reconstruction/name_validity.py",
+   "test": "tests/test_on_ad_onarimi.py::test_temizlenmemis_onyuk_adi_ithal_adiyla_cakisirsa_reddedilir",
+   "find": "        return name[1:]",
+   "replace": "        return None"
+  },
+  {
+   "id": "oa_kendi_adi_sorulmaz",
+   "desc": "anahtarın gösterdiği fonksiyonun Ghidra adı kendi adı sayılmaz",
+   "module": "karadul/reconstruction/c_namer.py",
+   "test": "tests/test_on_ad_onarimi.py::test_simgeli_ikilide_onyuk_adi_kendi_adidir",
+   "find": "        return names_by_address.get(int(key.split(\"_\", 1)[1], 16)) or key",
+   "replace": "        return key"
+  },
+  {
+   "id": "oa_katalog_start_temizlenmis",
+   "desc": "katalogdaki _start adı temizlenmiş biçimde yazılır",
+   "module": "karadul/analyzers/elf_boilerplate.py",
+   "test": "tests/test_on_ad_onarimi.py::test_tohum_onyuk_kunyesi_tam_ad_der",
+   "find": "\"_start\", (\"__libc_start_main\",),",
+   "replace": "\"start\", (\"__libc_start_main\",),"
+  }
+ ]
+}

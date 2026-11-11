@@ -384,8 +384,8 @@ class TestSeedKs1Order:
         }
         # künyedeki ad sözlükteki adla aynı: c_namer künyeyi geçerli sayar
         assert all(B.meta_for(r.meta, k, v) is r.meta[k] for k, v in r.names.items())
-        # tam ad türleri: KS-1 ve elle; KS-1 künyesi etiket ve kanıt taşır
-        assert {k for k, e in r.meta.items() if e["exact"]} == {_FAZ1, _KS1_MAIN_ADLI}
+        # tam ad türleri: KS-1, elle ve ELF önyükü; KS-1 künyesi etiket ve kanıt taşır
+        assert {k for k, e in r.meta.items() if e["exact"]} == {_FAZ1, _KS1_MAIN_ADLI, _ONYUK}
         assert r.meta[_FAZ1]["label"] == "kesin"
         assert r.meta[_FAZ1]["ks1"]["satirlar"] == ["func_kalibi"]
         assert r.manual == {_KS1_MAIN_ADLI: "Analist_adi"}

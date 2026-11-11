@@ -822,7 +822,8 @@ def test_cikarim_turleri_daraltilmaz(tmp_path, monkeypatch):
 def test_tur_sabitleri_ve_oncelik():
     assert B.KIND_PRIORITY == ("elle", "main_giris", "ks1", "faz1", "gnulib", "elf_onyuk")
     assert B.PRE_NAME_ORDER == ("elle", "main_giris", "ks1")
-    assert B.EXACT_KINDS == {"ks1", "elle"} and B.PROTECTED_KINDS == {"elle", "main_giris"}
+    assert B.EXACT_KINDS == {"ks1", "elle", "elf_onyuk"}
+    assert B.PROTECTED_KINDS == {"elle", "main_giris"}
     # KS-1'den yüksek öncelikli türler korunur, düşükler ezilir
     sira = B.KIND_PRIORITY.index
     assert {k for k in B.KIND_PRIORITY if sira(k) < sira("ks1")} == set(B.PROTECTED_KINDS)
@@ -832,8 +833,15 @@ def test_kunye_kur():
     assert B.make_meta("elle", "Process_new") == {"kind": "elle", "name": "Process_new", "exact": True}
     assert B.make_meta("gnulib", "xalloc_die") == {"kind": "gnulib", "name": "xalloc_die",
                                                    "exact": False}
-    for tur in ("main_giris", "faz1", "elf_onyuk"):
+    for tur in ("main_giris", "faz1"):
         assert B.make_meta(tur, "x")["exact"] is False
+    # ELF önyük adı bağlayıcının simge adıdır: temizlenmeden yazılır (baştaki "_" korunur)
+    onyuk = B.make_meta("elf_onyuk", "__do_global_dtors_aux")
+    assert onyuk == {"kind": "elf_onyuk", "name": "__do_global_dtors_aux", "exact": True}
+    assert B.is_exact(onyuk)
+    # künye "exact" demiyorsa tür tek başına yetmez; gnulib künyesi "exact" dese de tam ad değildir
+    assert not B.is_exact({"kind": "elf_onyuk", "name": "_start", "exact": False})
+    assert not B.is_exact({"kind": "gnulib", "name": "rpl_fclose", "exact": True})
     with pytest.raises(ValueError):
         B.make_meta("tarif", "x")
 

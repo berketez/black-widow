@@ -67,8 +67,11 @@ KIND_PHASE1 = "faz1"              # BinaryNameExtractor, byte pattern, CAPA
 KIND_PRIORITY = (KIND_MANUAL, KIND_MAIN, KIND_KS1, KIND_PHASE1, KIND_GNULIB, KIND_ELF_BOILERPLATE)
 # c_namer'ın ön adları işleme sırası; kalanlar özgün sözlük sırasıyla arkadan gelir (§2.4)
 PRE_NAME_ORDER = (KIND_MANUAL, KIND_MAIN, KIND_KS1)
-# Adı temizlenmeden, olduğu gibi yazılan türler (§2.4 tuzak 1)
-EXACT_KINDS = frozenset({KIND_KS1, KIND_MANUAL})
+# Adı temizlenmeden, olduğu gibi yazılan türler (§2.4 tuzak 1). ELF önyükü de tam addır: katalog
+# adı (``_start``, ``__do_global_dtors_aux``) bağlayıcının simge adıdır; temizleyici baştaki alt
+# çizgiyi atınca doğru ad yanlışa döner (geliştirme seti 232/458 → temizlenmeden 458/458;
+# ``docs/arge/2026-11-10_n1_adim3/kalan_kanal_dokumu.md`` §3).
+EXACT_KINDS = frozenset({KIND_KS1, KIND_MANUAL, KIND_ELF_BOILERPLATE})
 # KS-1'in üzerine yazamadığı türler
 PROTECTED_KINDS = frozenset({KIND_MANUAL, KIND_MAIN})
 MAIN_NAME = "main"
@@ -280,7 +283,8 @@ def _check_row_status(row_status: Mapping[str, str]) -> None:
 
 
 def make_meta(kind: str, name: str) -> dict[str, Any]:
-    """KS-1 dışı bir ön adın künyesi. Etiket yazılmaz; c_namer ``entry_label``'ı kullanır."""
+    """KS-1 dışı bir ön adın künyesi. Etiket yazılmaz; c_namer ``entry_label``'ı kullanır.
+    ``exact``: tür ``EXACT_KINDS``'te mi (elle ad ve ELF önyük adı temizlenmeden yazılır)."""
     if kind not in KIND_PRIORITY:
         raise ValueError(f"bilinmeyen ön ad türü: {kind!r}")
     return {"kind": kind, "name": name, "exact": kind in EXACT_KINDS}
