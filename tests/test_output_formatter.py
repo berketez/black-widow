@@ -723,7 +723,9 @@ class TestReportGenerator:
         gen = ReportGenerator(binary_pipeline_result, workspace)
         html = gen.generate_html()
 
-        assert "Name Recovery" in html
+        # Tablo imza / ikili dizgi adaylarını listeler; uygulanıp uygulanmadıklarını denetlemez,
+        # bu yüzden başlık "Name Recovery" değil (2026-11-11, test_cikti_kucuk_hatalar.py).
+        assert "Name Candidates" in html
         assert "FUN_100001234" in html or "print_greeting" in html
 
     def test_html_no_external_deps(

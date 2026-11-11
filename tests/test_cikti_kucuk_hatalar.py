@@ -12,6 +12,9 @@ yanlış ya da eksik bilgi gösteren çıktılar. Hiçbiri ad davranışını de
    tablosu lief ile okunur; kayıtlar ``nm -gD`` ile aynı (adres, harf, sürüm eksiz ad).
 4. CLI "Imports" satırı ikililerde hiç çıkmıyordu: ``stats["imports"]`` yalnız JS çözümleyicisinde
    üretilir; ikililerin sayısı ``imports_found``. Değer yoksa satır yazılmaz.
+5. Temiz çıktının ``report.html`` ad tablosu imza eşleşmelerini ve ikili dizgi adlarını "Name Recovery
+   (Top 30)" / "Recovered" başlığıyla listeliyordu; bunlar koda uygulanıp uygulanmadığı denetlenmemiş
+   adaylar. Başlık artık "Name Candidates" ve gösterilen / toplam aday sayısını söyler.
 """
 
 from __future__ import annotations
@@ -329,3 +332,69 @@ class TestCliImports:
     def test_asama_gunlugu_deger_yoksa_satir_yok(self, monkeypatch) -> None:
         out = self._stage_log(monkeypatch, {"ghidra_function_count": 250})
         assert "Imports" not in out
+
+
+# ---------------------------------------------------------------------------
+# 5. HTML raporu (temiz çıktı): ad tablosu adayları "kurtarıldı" diye göstermez
+# ---------------------------------------------------------------------------
+
+
+def _naming_ws(tmp_path: Path, n_sig: int, n_bin: int) -> Workspace:
+    """Çalışma alanı: n_sig imza eşleşmesi (çoğu eski adla aynı, tree'deki gibi), n_bin ikili adı."""
+    ws = _workspace(tmp_path)
+    ws.save_json("reconstructed", "signature_matches", {
+        "total": n_sig,
+        "matches": [
+            {"original": f"fn{i}", "matched": f"fn{i}" if i % 3 else f"lib_fn{i}",
+             "library": "libc", "confidence": 0.98}
+            for i in range(n_sig)
+        ],
+    })
+    if n_bin:
+        ws.save_json("reconstructed", "binary_names", {"names": {
+            f"FUN_{i:08x}": {"recovered": f"name{i}", "source": "string_analysis", "confidence": 0.5}
+            for i in range(n_bin)
+        }})
+    return ws
+
+
+def _naming_html(tmp_path: Path, n_sig: int, n_bin: int = 0) -> str:
+    from karadul.core.report_generator import ReportGenerator
+
+    ws = _naming_ws(tmp_path, n_sig, n_bin)
+    return ReportGenerator(_result(ws, {}), ws)._naming_table()
+
+
+class TestHtmlNameCandidates:
+    def test_baslik_aday_ve_toplam_sayi(self, tmp_path) -> None:
+        html = _naming_html(tmp_path, n_sig=133)
+        assert "<h2>Name Candidates (top 30 of 133)</h2>" in html
+        assert html.count("<tr>") == 31  # başlık satırı + 30 aday
+
+    def test_toplam_iki_kaynagi_sayar(self, tmp_path) -> None:
+        html = _naming_html(tmp_path, n_sig=25, n_bin=10)
+        assert "<h2>Name Candidates (top 30 of 35)</h2>" in html
+
+    def test_otuzdan_azsa_yalniz_toplam(self, tmp_path) -> None:
+        html = _naming_html(tmp_path, n_sig=2)
+        assert "<h2>Name Candidates (2)</h2>" in html
+
+    def test_kurtarildi_denmez(self, tmp_path) -> None:
+        html = _naming_html(tmp_path, n_sig=133)
+        assert "Recover" not in html
+        assert "<th>Candidate</th>" in html
+        assert "does not check whether a candidate was applied to the code" in html
+
+    def test_tam_rapor(self, tmp_path) -> None:
+        from karadul.core.report_generator import ReportGenerator
+
+        ws = _naming_ws(tmp_path, 40, 0)
+        html = ReportGenerator(_result(ws, {}), ws).generate_html()
+        assert "<h2>Name Candidates (top 30 of 40)</h2>" in html
+        assert "Name Recovery" not in html
+
+    def test_aday_yoksa_bolum_yok(self, tmp_path) -> None:
+        from karadul.core.report_generator import ReportGenerator
+
+        ws = _workspace(tmp_path)
+        assert ReportGenerator(_result(ws, {}), ws)._naming_table() == ""

@@ -698,11 +698,18 @@ class ReportGenerator:
                 f"</tr>"
             )
 
+        # Bu kayıtlar (imza eşleşmesi, ikili dizgi adı) aday; koda uygulanıp uygulanmadıkları burada
+        # denetlenmiyor (uygulanmış adlar: temiz çıktının naming_map.json "mappings" bölümü).
+        # Başlık "kurtarıldı" demez; gösterilen ve toplam aday sayısını söyler.
+        total = len(naming_data)
+        count_text = f"top {len(sorted_names)} of {total}" if total > len(sorted_names) else str(total)
         return (
-            "<h2>Name Recovery (Top 30)</h2>"
+            f"<h2>Name Candidates ({count_text})</h2>"
             '<div class="card">'
+            '<p class="na">Signature-database matches and binary-string names. '
+            "This table does not check whether a candidate was applied to the code.</p>"
             '<table class="naming-table">'
-            "<tr><th>Original</th><th>Recovered</th><th>Source</th><th>Confidence</th></tr>"
+            "<tr><th>Original</th><th>Candidate</th><th>Source</th><th>Confidence</th></tr>"
             f"{rows}"
             "</table>"
             "</div>"

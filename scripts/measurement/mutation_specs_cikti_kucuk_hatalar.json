@@ -152,6 +152,54 @@
    "test": "tests/test_cikti_kucuk_hatalar.py::TestCliImports::test_canli_panel_js_ithal_sayisi_korunur",
    "find": "            (\"imports\", \"Imports\"),  # JS (scripts/deobfuscate.mjs stats.imports)\n",
    "replace": ""
+  },
+  {
+   "id": "ck_html_baslik_kurtarma",
+   "desc": "başlık yeniden \"Name Recovery (Top 30)\" (onarım öncesi)",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestHtmlNameCandidates::test_baslik_aday_ve_toplam_sayi",
+   "find": "f\"<h2>Name Candidates ({count_text})</h2>\"",
+   "replace": "\"<h2>Name Recovery (Top 30)</h2>\""
+  },
+  {
+   "id": "ck_html_sutun_recovered",
+   "desc": "sütun başlığı yeniden \"Recovered\" (onarım öncesi)",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestHtmlNameCandidates::test_kurtarildi_denmez",
+   "find": "<th>Candidate</th>",
+   "replace": "<th>Recovered</th>"
+  },
+  {
+   "id": "ck_html_not_yok",
+   "desc": "tablonun uygulanmayı denetlemediği notu yazılmaz",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestHtmlNameCandidates::test_kurtarildi_denmez",
+   "find": "            '<p class=\"na\">Signature-database matches and binary-string names. '\n            \"This table does not check whether a candidate was applied to the code.</p>\"\n",
+   "replace": ""
+  },
+  {
+   "id": "ck_html_toplam_gosterilen",
+   "desc": "toplam yerine gösterilen satır sayısı yazılır",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestHtmlNameCandidates::test_baslik_aday_ve_toplam_sayi",
+   "find": "        total = len(naming_data)\n",
+   "replace": "        total = len(sorted_names)\n"
+  },
+  {
+   "id": "ck_html_toplam_yazilmaz",
+   "desc": "30'dan çok aday varken toplam yazılmaz",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestHtmlNameCandidates::test_toplam_iki_kaynagi_sayar",
+   "find": "count_text = f\"top {len(sorted_names)} of {total}\" if total > len(sorted_names) else str(total)",
+   "replace": "count_text = str(len(sorted_names))"
+  },
+  {
+   "id": "ck_html_az_aday_top",
+   "desc": "30'dan az aday varken de \"top N of N\" yazılır",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestHtmlNameCandidates::test_otuzdan_azsa_yalniz_toplam",
+   "find": "count_text = f\"top {len(sorted_names)} of {total}\" if total > len(sorted_names) else str(total)",
+   "replace": "count_text = f\"top {len(sorted_names)} of {total}\""
   }
  ]
 }
