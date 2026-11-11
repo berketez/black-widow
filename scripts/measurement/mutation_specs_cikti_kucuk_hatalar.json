@@ -16,6 +16,30 @@
    "test": "tests/test_cikti_kucuk_hatalar.py::TestMarkdownImports::test_sayi_varsa_yazilir",
    "find": "{_safe_get(stats, 'imports_found')}",
    "replace": "{'N/A'}"
+  },
+  {
+   "id": "ck_lief_kitaplik_yalniz_name",
+   "desc": "kitaplık adı yalnız .name alanından okunur (onarım öncesi: ELF/PE listesi boş)",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestLiefLibraries::test_elf_duz_metin_okunur",
+   "find": "lib_name = lib if isinstance(lib, str) else getattr(lib, \"name\", None)",
+   "replace": "lib_name = getattr(lib, \"name\", None)"
+  },
+  {
+   "id": "ck_lief_kitaplik_gercek_elf",
+   "desc": "aynı geri dönüş, gerçek lief ve depodaki stripped ELF ile",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestLiefLibraries::test_gercek_lief_elf",
+   "find": "lib_name = lib if isinstance(lib, str) else getattr(lib, \"name\", None)",
+   "replace": "lib_name = getattr(lib, 'name', None)"
+  },
+  {
+   "id": "ck_lief_kitaplik_nesne_okunmaz",
+   "desc": "Mach-O kitaplık nesnesinin adı okunmaz",
+   "module": "karadul/analyzers/macho.py",
+   "test": "tests/test_cikti_kucuk_hatalar.py::TestLiefLibraries::test_macho_nesne_adi_okunur",
+   "find": "lib_name = lib if isinstance(lib, str) else getattr(lib, \"name\", None)",
+   "replace": "lib_name = lib if isinstance(lib, str) else None"
   }
  ]
 }

@@ -619,10 +619,11 @@ class MachOAnalyzer(BaseAnalyzer):
                         "offset": sec.offset,
                     })
 
-            # Libraries (lief lib union — name attribute getattr ile alinir)
+            # Libraries: lief 0.17'de Mach-O DylibCommand nesnesi (.name) verir, ELF ve PE düz
+            # metin (str'de .name yok; eskiden ELF listesi hep boş kalıyordu). İkisi de okunur.
             if hasattr(binary, "libraries"):
                 for lib in binary.libraries:
-                    lib_name = getattr(lib, "name", None)
+                    lib_name = lib if isinstance(lib, str) else getattr(lib, "name", None)
                     if lib_name is not None:
                         result["libraries"].append(str(lib_name))
 

@@ -5,12 +5,19 @@ Rapor sayaçları (docs/arge/2026-11-11_rapor_sayaclari/sonuc.md) ve temiz harit
 yanlış ya da eksik bilgi gösteren çıktılar. Hiçbiri ad davranışını değiştirmez.
 
 1. Markdown raporu ithal sayısı bilinmiyorken "0" yazıyordu (JSON raporu "N/A" yazıyor).
+2. ``lief_analysis.json`` kitaplık listesi ELF'te hep boştu: lief 0.17 ELF ve PE kitaplıklarını düz
+   metin verir, kod yalnız Mach-O nesnelerinin ``.name`` alanını okuyordu.
 """
 
 from __future__ import annotations
 
+import sys
+import types
 from pathlib import Path
 
+import pytest
+
+from karadul.analyzers.macho import MachOAnalyzer
 from karadul.core.result import PipelineResult, StageResult
 from karadul.core.workspace import Workspace
 from karadul.reporting.markdown_report import MarkdownReporter
@@ -58,3 +65,48 @@ class TestMarkdownImports:
     def test_bilinmiyorsa_sifir_degil(self, tmp_path) -> None:
         line = _markdown_imports_line(tmp_path, {"ghidra_function_count": 250})
         assert line == "- **Imports found:** N/A"
+
+
+# ---------------------------------------------------------------------------
+# 2. lief kitaplık listesi: ELF/PE düz metin, Mach-O nesne
+# ---------------------------------------------------------------------------
+
+_ELF_STRIPPED = (
+    Path(__file__).parent / "benchmark" / "fixtures" / "linux_elf_stripped" / "sample_elf_stripped"
+)
+
+
+def _fake_lief(monkeypatch, binary) -> None:
+    fake = types.ModuleType("lief")
+    fake.parse = lambda _p: binary  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "lief", fake)
+
+
+class _Dylib:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+def _lief_binary(libraries: list) -> object:
+    return types.SimpleNamespace(
+        format="ELF", segments=[], sections=[], libraries=libraries, imported_functions=[],
+    )
+
+
+class TestLiefLibraries:
+    def test_elf_duz_metin_okunur(self, monkeypatch, tmp_path, config) -> None:
+        _fake_lief(monkeypatch, _lief_binary(["libc.so.6", "ld-linux-aarch64.so.1"]))
+        result = MachOAnalyzer(config)._run_lief(tmp_path / "ikili")
+        assert result["libraries"] == ["libc.so.6", "ld-linux-aarch64.so.1"]
+
+    def test_macho_nesne_adi_okunur(self, monkeypatch, tmp_path, config) -> None:
+        _fake_lief(monkeypatch, _lief_binary([_Dylib("/usr/lib/libSystem.B.dylib")]))
+        result = MachOAnalyzer(config)._run_lief(tmp_path / "ikili")
+        assert result["libraries"] == ["/usr/lib/libSystem.B.dylib"]
+
+    def test_gercek_lief_elf(self, config) -> None:
+        """Depodaki stripped ELF örneği gerçek lief ile: DT_NEEDED girdisi listede."""
+        pytest.importorskip("lief")
+        result = MachOAnalyzer(config)._run_lief(_ELF_STRIPPED)
+        assert result is not None
+        assert result["libraries"] == ["libc.so.6"]
