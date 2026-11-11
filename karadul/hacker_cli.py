@@ -17,7 +17,6 @@ import io
 import json
 import logging
 import os
-import random
 import sys
 import threading
 import time
@@ -577,7 +576,7 @@ class LiveAnalysisState:
     current_action: str = ""
     stage_results: dict[str, dict[str, Any]] = field(default_factory=dict)
     start_time: float = 0.0
-    # Canli sayaclar (simuelasyon icin)
+    # Canlı sayaçlar: yalnız gerçek aşama sonuçlarından doldurulur; doldurulmayan alan gösterilmez
     functions_found: int = 0
     functions_total: int = 0
     strings_found: int = 0
@@ -645,9 +644,6 @@ def _build_live_panel(state: LiveAnalysisState) -> Panel:
         eta_str = "done"
     else:
         eta_str = "calculating..."
-
-    # CPU simuelasyonu (gercekci gorunmesi icin)
-    cpu_pct = random.randint(78, 99) if state.is_running else 0
 
     lines: list[str] = []
 
@@ -738,8 +734,7 @@ def _build_live_panel(state: LiveAnalysisState) -> Panel:
     # Alt bilgi satiri
     lines.append(
         f" [dim]\u23f1 Elapsed:[/] [bright_white]{_format_duration(elapsed)}[/] "
-        f"[dim]|[/] [dim]ETA:[/] [bright_white]{eta_str}[/] "
-        f"[dim]|[/] [dim]CPU:[/] [bright_white]{cpu_pct}%[/]"
+        f"[dim]|[/] [dim]ETA:[/] [bright_white]{eta_str}[/]"
     )
 
     content = "\n".join(lines)
@@ -1040,14 +1035,10 @@ class _LiveDashboard:
         self._tick = 0
 
     def __rich_console__(self, console, options):
-        # Action text rotate
+        # Eylem metni zamanlayıcıyla DÖNDÜRÜLMEZ: ekrandaki her metin gerçek bir olaydan gelir
+        # (aşama başlangıcı/bitişi, on_progress iletisi). Hazır metin listesiyle "çalışıyormuş
+        # gibi" görünüm sahte göstergedir ve yasaktır.
         self._tick += 1
-        if self._state.is_running and self._state.current_stage and self._tick % 20 == 0:
-            desc = _STAGE_DESCRIPTIONS.get(self._state.current_stage, {})
-            actions = desc.get("actions", [])
-            if actions:
-                self._state.current_action = actions[self._tick // 20 % len(actions)]
-
         yield _build_dashboard(self._state)
 
 
@@ -1059,7 +1050,7 @@ def analyze_with_live_output(target_path: str) -> None:
 
     Rich Live display kullanarak pipeline calisirken canli progress gosterir.
     Pipeline callback mekanizmasi ile her stage basinda/sonunda UI guncellenir.
-    Arka plan thread'i ile sayaclar simule edilir.
+    Ekrandaki metin ve sayılar yalnız gerçek olaylardan gelir; simülasyon yoktur.
     """
     from karadul.config import Config
     from karadul.core.target import TargetDetector, TargetType
@@ -1123,9 +1114,8 @@ def analyze_with_live_output(target_path: str) -> None:
     # 4. Pipeline callback'leri -- sadece state'i gunceller, UI Rich tarafindan yenilenir
     def on_stage_start(stage_name: str, index: int, total: int) -> None:
         state.current_stage = stage_name
-        desc = _STAGE_DESCRIPTIONS.get(stage_name, {})
-        actions = desc.get("actions", [f"Processing {stage_name}..."])
-        state.current_action = actions[0] if actions else f"Running {stage_name}..."
+        # Hazır eylem listesinden metin seçilmez; aşamanın başladığı gerçek olaydır.
+        state.current_action = f"Running {stage_name}..."
         state.sub_progress_msg = ""
         state.sub_progress_frac = -1.0
 
