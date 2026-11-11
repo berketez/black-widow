@@ -124,3 +124,24 @@ Koşular 2026-11-11, worktree'de, 4668e83 üzerinde.
 - Yetenek yoklamasında model şemayı istemsiz tutturursa L3 sanılabilir; istem şemayı anlatmadığı için olasılık düşük ama sıfır değil. L2 yanlış sınıflaması zararsızdır (sunucu tarafında doğrulama + onarım).
 - Doğrulayıcı JSON Schema düzenli ifadesi yerine Python `re` kullanır; desenler basit tutulmalı.
 - Akış yolundaki P'nin boş kalma sorunu (§2 madde 2) kullanıcı uçlarının çoğunda kipin "ölçülemedi" kalması demek.
+
+## Ek (ana oturum, 2026-11-11 14:42): gerçek yerel sunucuyla duman testi
+
+Ajan bu işte gerçek sunucu çalıştıramadı (yasaktı). Birleştirmeden sonra ana oturum, makine boşken (yük ortalaması 3,0) paketi gerçek `llama-server` ve Qwen3.8-27B Q4_K_M ile bir kez çalıştırdı. Betik `zemin/lm_duman.py`, çıktı `zemin/lm_duman_sonuc.json`. Tek koşu; tekrar edilmedi.
+
+| | Sonuç |
+|---|---|
+| Başlatma (`LlamaServerBackend.start`, `/health` hazır) | 10,6 sn |
+| Yetenek düzeyi | L3 |
+| Hız yoklaması (`probe.run_probe`, `timings` yolu) | önek 184,0 jeton/sn; üretim 17,3 jeton/sn; süre 9,4 sn |
+| Önek yeniden kullanımı ("ek" deseni) | var: 1 013 / 1 013 jeton önbellekten |
+| "Ad öner" için beklenen süre ve kip | 18,2 sn → `kuyruk` (τ = 10 sn) |
+| Şemaya zorlanmış istek (`NAME_ANSWER_SCHEMA`, 128 jeton) | 7,8 sn; `finish_reason: length`; ayrıştırma hükmü `butce_asimi` |
+| Bellek (`memory_guard.measure_process`) | 17,471 GiB (RSS 16,353 + footprint 1,118) |
+| Kapatma | `stop("istek")` sonrası `pgrep llama-server` boş |
+
+Doğrulananlar (§6'daki "gerçek sunucuyla koşmadı" maddelerinden): başlatma ve `/health`, `timings` alanlarının gelmesi, önek yeniden kullanımının ölçülmesi, şemalı isteğin motorda derlenmesi, bellek ölçümü, kapatma. Denetim günlüğünde anahtar ya da yetki başlığı yok.
+
+**Yeni bulgu (Aşama 1b'de düzeltilmeli):** şemalı istekte model adı ve gerekçeyi doğru doldurdu, sonra `kanit` dizisini sınırsız doldurmaya başladı (`"r8","r1","r2",…`) ve 128 jetonluk bütçeyi tüketti; cevap geçersiz sayıldı. Şema dizinin uzunluğunu ve öğelerini sınırlamıyor; dilbilgisi kısıtı da sonsuz diziye izin veriyor. Düzeltme: `kanit` için `maxItems` ve öğe değerlerini o istekte gerçekten verilen kanıt kimlikleriyle sınırlayan bir `enum` (istek başına kurulur), ya da K0'da alanı sunucunun doldurması. Yapay tek örnek; oran ölçülmedi.
+
+Boş makinedeki hız (184,0 / 17,3), tasarım §8.1'in "A-boş" sınıfı için kullandığı başvuru değerine (195 / 20,5; başka model) yakın ama altında; §8.2'deki süreler bu ölçümle yeniden hesaplanmalı.
