@@ -1,0 +1,2676 @@
+{
+ "kunye": {
+  "betik": "docs/arge/2026-11-11_fonksiyon_karti/envanter_sayim.py",
+  "betik_sha256": "fbd44f3810dfaf8444ea88feaef0fc383ca5b8f33eb54021ae78167baa480408",
+  "ui_server_sha256": "6afcc1c36c17acda14170bf05dea478ac6a329b25c6e6f2d368fd3ed3b9a94d3",
+  "ui_index_sha256": "6287b605e5a5d8597cd037e83ec5a028a139cd592484fcc6aceea444a6b7d0d2",
+  "git_head": "b1ee66f",
+  "zaman": "2026-11-11T09:20:31+03:00",
+  "python": "3.12.7",
+  "kokler": {
+   "yeni": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956",
+   "taban_debian": "/Users/apple/karadul_olcum/n1_debian13",
+   "taban_mac": "/Users/apple/Black_Widow/workspaces/olcum_mac/runs/ol7-c-b7faeac",
+   "tablo": "/Users/apple/Black_Widow/docs/arge/2026-11-10_n4/tablo_yuvasi_sayim.json"
+  },
+  "kanit_tanimlari": {
+   "cagiran": "En az bir çağıran: ghidra_xrefs called_by ∪ ghidra_call_graph callers (kendisi hariç).",
+   "cagrilan_ic": "En az bir iç çağrılan: çağrılanın ghidra_functions kaydı thunk/dış değil, ya da adı thunk_ ile başlıyor.",
+   "cagrilan_ithal": "En az bir ithal çağrılan: çağrılan thunk ya da dış ve adı jenerik değil (FUN_/thunk_ ile başlamıyor).",
+   "cagrilan_ithal_ayirt": "İthal çağrılanlardan en az biri arayüzün gürültü listesinde (ui/server.py _NOISE_CALLS) değil; Mach-O'da baştaki tek _ soyularak.",
+   "cagrilan_ithal_yalniz_gurultu": "İthal çağrılanı var ama hepsi gürültü listesinde (cagrilan_ithal ∖ cagrilan_ithal_ayirt).",
+   "dizgi_xref": "ghidra_xrefs strings_used boş değil (Ghidra veri başvurusu, dizgi tipli).",
+   "dizgi_govde": "Decompile gövdesinde (disassembly hariç) en az bir \"…\" dizgi sabiti (arayüzün _STR_LIT_RE düzeni).",
+   "sabit_govde": "Decompile gövdesinde en az bir 0x… onaltılık sabit.",
+   "veri_etiketi_govde": "Decompile gövdesinde en az bir DAT_/_DAT_/PTR_ etiketi (veri başvurusunun metin vekili).",
+   "imza_parametreli": "Ham decompile imza satırında en az bir parametre (void dışında).",
+   "imza_adli_tip": "Ham decompile imzasında (dönüş ya da parametre) Ghidra'nın temel tip adları (GHIDRA_BASE_TYPES) dışında bir tip adı; ör. FILE, DIR, tm, bir struct.",
+   "ghidra_uyari": "Ham decompile metninde en az bir Ghidra uyarı yorumu (c_algorithm_id._GHIDRA_WARNING_HEAD).",
+   "ghidra_uyari_kuskulu": "Ghidra uyarılarından en az biri rapor.md:149'daki 'eksik ya da kuşkulu decompile' listesinde.",
+   "boyut_karmasiklik": "ghidra_functions size ve ghidra_cfg cyclomatic_complexity ikisi de var.",
+   "yerel_ad_kaydi": "naming_provenance.json per_function[FUN_…] var (yerel değişken/parametre adı kaydı).",
+   "param_adi": "param_naming_map.json functions[FUN_…] var.",
+   "param_alan_bilinen": "param_naming_map domain 'unknown' değil.",
+   "blok_aciklama": "annotated/block_annotations.json annotated_functions içinde function_name == FUN_….",
+   "algoritma_etiketi": "algorithms.json algorithms[].function == FUN_….",
+   "bilesim_asamasi": "algorithm_compositions.json bir aşamanın functions listesinde FUN_….",
+   "veri_akisi": "data_flow.json kenarında kaynak/hedef ya da data_flow_pipelines.json functions listesinde FUN_….",
+   "struct_kaynagi": "struct_recovery.json enriched_structs[].source_functions içinde FUN_….",
+   "amac_metni_icerikli": "intelligence_report function_analyses[FUN_…].purpose geri dönüş metinlerinden başka bir parça taşıyor.",
+   "zeka_algoritma": "intelligence_report function_analyses[FUN_…].algorithms boş değil.",
+   "zafiyet_uyarisi": "commented/FUN_….c içinde c_comment_generator.VULN_PATTERNS uyarılarından biri.",
+   "alt_sistem_anlamli": "out/src/src/subsystem_<x>/ yerleşiminde x, group_N ve misc dışında (API kuralı; c_project_builder.py:690-729). subsystem_map.md ilk 50 adla kesildiği için yerleşim okunur.",
+   "alt_sistem_grup": "out/src/src/subsystem_group_N/ yerleşimi (çağrı grafı topluluğu; c_project_builder.py:735).",
+   "adresi_baska_govdede": "Adı başka bir jenerik fonksiyonun decompile metninde çağrı kenarı olmadan geçiyor (arayüz modelinin ters kenarı − Ghidra çağıranları): gösterici ataması, geri çağrı argümanı.",
+   "bsim_aday": "bsim_shadow.json'da adayı var (arayüzün süzgeciyle: FUN_/DAT_ ve adres sonekli adlar hariç).",
+   "imza_adayi_uygulanmamis": "signature_matches.json original == FUN_… (ad haritasına girmemiş imza adayı).",
+   "ad_koken_global": "naming_provenance.json global[FUN_…] var (yalnız ad alanlarda olur; adsızda 0 beklenir)."
+  },
+  "bos_kart_tanimlari": {
+   "kart_bos_ghidra": "Ghidra kanıtlarından hiçbiri yok: cagiran, cagrilan_ic, cagrilan_ithal, dizgi_xref, dizgi_govde, veri_etiketi_govde. Geriye yalnız boyut/karmaşıklık ve yerleşim kalır.",
+   "icerik_adsiz": "Fonksiyonun ne yaptığını adıyla söyleyen kanıt yok: cagrilan_ithal yok ve dizgi (dizgi_xref ∪ dizgi_govde) yok. Kalan: çağrı ilişkisi, sabit, veri etiketi, boyut.",
+   "ui_bos": "Arayüz bugün hiçbir kanıt satırı çizmez: ipucu yok, dizgi yok, çağrı bağlamı (build_model çağıran ∪ çağrılan) yok.",
+   "kart_bos_tam": "kart_bos_ghidra ve adresi_baska_govdede de yok.",
+   "iliski_yok": "Çağıran yok, iç çağrılan yok, adresi başka gövdede geçmiyor (fonksiyon ilişki grafında yalnız ya da yalnız ithal çağrılarla bağlı)."
+  },
+  "kuskulu_uyarilar": [
+   "Removing unreachable block",
+   "Could not recover jumptable",
+   "Treating indirect jump as call",
+   "Type propagation algorithm not settling",
+   "Restarted to delay deadcode elimination",
+   "Heritage AFTER dead removal"
+  ]
+ },
+ "ikililer": [
+  {
+   "birim": "debian/tmux",
+   "kaynak": "yeni",
+   "yeni_kosu_dizini_var": true,
+   "calisma_alani": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/debian/tmux/tmux/ws/workspaces/tmux/20261111_052758",
+   "nufus": {
+    "ghidra_fonksiyon": 2588,
+    "jenerik_ad_tumu": 1916,
+    "jenerik_thunk_dis_degil": 1916,
+    "ad_haritasi_global_jenerik_anahtar": 293,
+    "adsiz": 1623,
+    "src_iter_haritasinda_ek_anahtar": 2,
+    "ghidra_adi_birden_cok_fonksiyonda": 222
+   },
+   "kanit": {
+    "cagiran": {
+     "n": 1069,
+     "oran": 0.6587
+    },
+    "cagrilan_ic": {
+     "n": 1223,
+     "oran": 0.7535
+    },
+    "cagrilan_ithal": {
+     "n": 762,
+     "oran": 0.4695
+    },
+    "cagrilan_ithal_ayirt": {
+     "n": 286,
+     "oran": 0.1762
+    },
+    "cagrilan_ithal_yalniz_gurultu": {
+     "n": 476,
+     "oran": 0.2933
+    },
+    "dizgi_xref": {
+     "n": 361,
+     "oran": 0.2224
+    },
+    "dizgi_govde": {
+     "n": 531,
+     "oran": 0.3272
+    },
+    "sabit_govde": {
+     "n": 1451,
+     "oran": 0.894
+    },
+    "veri_etiketi_govde": {
+     "n": 383,
+     "oran": 0.236
+    },
+    "imza_parametreli": {
+     "n": 1527,
+     "oran": 0.9409
+    },
+    "imza_adli_tip": {
+     "n": 18,
+     "oran": 0.0111
+    },
+    "ghidra_uyari": {
+     "n": 455,
+     "oran": 0.2803
+    },
+    "ghidra_uyari_kuskulu": {
+     "n": 25,
+     "oran": 0.0154
+    },
+    "boyut_karmasiklik": {
+     "n": 1623,
+     "oran": 1.0
+    },
+    "yerel_ad_kaydi": {
+     "n": 1429,
+     "oran": 0.8805
+    },
+    "param_adi": {
+     "n": 394,
+     "oran": 0.2428
+    },
+    "param_alan_bilinen": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "blok_aciklama": {
+     "n": 612,
+     "oran": 0.3771
+    },
+    "algoritma_etiketi": {
+     "n": 4,
+     "oran": 0.0025
+    },
+    "bilesim_asamasi": {
+     "n": 17,
+     "oran": 0.0105
+    },
+    "veri_akisi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "struct_kaynagi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "amac_metni_icerikli": {
+     "n": 482,
+     "oran": 0.297
+    },
+    "zeka_algoritma": {
+     "n": 5,
+     "oran": 0.0031
+    },
+    "zafiyet_uyarisi": {
+     "n": 1,
+     "oran": 0.0006
+    },
+    "alt_sistem_anlamli": {
+     "n": 339,
+     "oran": 0.2089
+    },
+    "alt_sistem_grup": {
+     "n": 1200,
+     "oran": 0.7394
+    },
+    "adresi_baska_govdede": {
+     "n": 905,
+     "oran": 0.5576
+    },
+    "bsim_aday": {
+     "n": 305,
+     "oran": 0.1879
+    },
+    "imza_adayi_uygulanmamis": {
+     "n": 8,
+     "oran": 0.0049
+    },
+    "ad_koken_global": {
+     "n": 0,
+     "oran": 0.0
+    }
+   },
+   "bos_kart": {
+    "kart_bos_ghidra": {
+     "n": 62,
+     "oran": 0.0382
+    },
+    "icerik_adsiz": {
+     "n": 677,
+     "oran": 0.4171
+    },
+    "ui_bos": {
+     "n": 57,
+     "oran": 0.0351
+    },
+    "kart_bos_tam": {
+     "n": 53,
+     "oran": 0.0327
+    },
+    "iliski_yok": {
+     "n": 74,
+     "oran": 0.0456
+    }
+   },
+   "cagirani_yok": {
+    "cagirani_yok": {
+     "n": 554,
+     "oran": 0.3413
+    },
+    "cagirani_yok_ve_icerik_adsiz": {
+     "n": 216,
+     "oran": 0.1331
+    }
+   },
+   "arayuz": {
+    "sayaclar": {
+     "alt_sistem_kaydi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "alt_sistem_md_listesinde": {
+      "n": 308,
+      "oran": 0.1898
+     },
+     "bsim_en_iyi_aday_ayni_adli_programdan": {
+      "n": 227,
+      "oran": 0.1399
+     },
+     "cagri_baglami": {
+      "n": 1548,
+      "oran": 0.9538
+     },
+     "decompile_dosyasi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "dizgi": {
+      "n": 513,
+      "oran": 0.3161
+     },
+     "eski_urun_adi_belirsiz": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "eski_urun_adi_var": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_cagrilan_var_ui_hicbiri": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_functions_imza_dolu": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "imza_satiri_bulunamadi": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ipucu": {
+      "n": 764,
+      "oran": 0.4707
+     },
+     "ipucu_FUN_uygulanmamis_imza": {
+      "n": 19,
+      "oran": 0.0117
+     },
+     "ipucu_kendisi": {
+      "n": 8,
+      "oran": 0.0049
+     },
+     "ithal_var_ipucu_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "kart_bos_ghidra_ama_adresi_alinmis": {
+      "n": 9,
+      "oran": 0.0055
+     },
+     "teshis_bsim_satiri": {
+      "n": 305,
+      "oran": 0.1879
+     },
+     "teshis_ikili_geneli_satir": {
+      "n": 1623,
+      "oran": 1.0
+     },
+     "teshis_imza_yok_ama_imza_adayi_var": {
+      "n": 8,
+      "oran": 0.0049
+     },
+     "ui_cagiran_eksik": {
+      "n": 2,
+      "oran": 0.0012
+     },
+     "ui_cagiran_fazla": {
+      "n": 905,
+      "oran": 0.5576
+     },
+     "ui_cagiran_fazla_ghidra_cagirani_yok": {
+      "n": 335,
+      "oran": 0.2064
+     },
+     "ui_cagrilan_eksik": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagrilan_fazla": {
+      "n": 1096,
+      "oran": 0.6753
+     }
+    },
+    "teshis_karari": {
+     "app_specific": 682,
+     "app_wrapper": 710,
+     "bsim_shadow": 231
+    },
+    "harita_rol_satiri": {
+     "app_specific": 515,
+     "bsim_shadow": 169,
+     "cagri": 764,
+     "dizgi": 175
+    },
+    "bsim_en_iyi_aday_programi": {
+     "tmux": 227,
+     "opera_updateinstaller": 32,
+     "redis-check-aof": 23,
+     "htop": 10,
+     "rust_macho_arm64_stripped": 9,
+     "cat": 3,
+     "hashbench_O0.stripped": 1
+    },
+    "fazla_kenar_sinifi": {
+     "toplam": 3510,
+     "yalniz_cagri_disi": 3507,
+     "yalniz_cagri_sozdizimi": 3
+    }
+   },
+   "ikili_geneli": {
+    "susturma_acik": true,
+    "susturulan_aday_toplam": 499,
+    "susturulan_aday_sinif_sayisi": 9,
+    "elenen_global_anahtar": {
+     "all_candidates_invalid_name": 0,
+     "all_candidates_silenced": 51,
+     "below_global_min_confidence": 337,
+     "below_min_confidence": 0,
+     "global_structural_filter": 1378,
+     "pre_named": 60
+    },
+    "esik_alti_aday_global": 0,
+    "genel_esik": 0.7,
+    "temiz_haritada_uygulanmamis_FUN_imza_kaydi": 8,
+    "subsystem_map_md_kesilen_ad": 2229,
+    "subsystem_map_md_listelenen_ad": 359,
+    "yerlesim_dosya_sayisi": 2587,
+    "imza_eslesmesi_FUN": 12,
+    "computation_fusion_matches": 234,
+    "computation_fusion_accepted": 0,
+    "bsim_shadow_functions": 1920,
+    "comments_added": 12956
+   },
+   "n4_tablo_yuvasi_sayimi": {
+    "isim_bekleyen": 1916,
+    "cagirani_yok": 630,
+    "tablo_kaydinda": 376,
+    "gevsek_kayit_dizgili": 340,
+    "gevsek_ust_sinir": 256,
+    "tablo": 24
+   },
+   "eksik_dosyalar": []
+  },
+  {
+   "birim": "debian/tree",
+   "kaynak": "yeni",
+   "yeni_kosu_dizini_var": true,
+   "calisma_alani": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/debian/tree/tree/ws/workspaces/tree/20261111_050850",
+   "nufus": {
+    "ghidra_fonksiyon": 250,
+    "jenerik_ad_tumu": 115,
+    "jenerik_thunk_dis_degil": 115,
+    "ad_haritasi_global_jenerik_anahtar": 3,
+    "adsiz": 112,
+    "src_iter_haritasinda_ek_anahtar": 0,
+    "ghidra_adi_birden_cok_fonksiyonda": 64
+   },
+   "kanit": {
+    "cagiran": {
+     "n": 63,
+     "oran": 0.5625
+    },
+    "cagrilan_ic": {
+     "n": 42,
+     "oran": 0.375
+    },
+    "cagrilan_ithal": {
+     "n": 93,
+     "oran": 0.8304
+    },
+    "cagrilan_ithal_ayirt": {
+     "n": 81,
+     "oran": 0.7232
+    },
+    "cagrilan_ithal_yalniz_gurultu": {
+     "n": 12,
+     "oran": 0.1071
+    },
+    "dizgi_xref": {
+     "n": 51,
+     "oran": 0.4554
+    },
+    "dizgi_govde": {
+     "n": 56,
+     "oran": 0.5
+    },
+    "sabit_govde": {
+     "n": 75,
+     "oran": 0.6696
+    },
+    "veri_etiketi_govde": {
+     "n": 90,
+     "oran": 0.8036
+    },
+    "imza_parametreli": {
+     "n": 91,
+     "oran": 0.8125
+    },
+    "imza_adli_tip": {
+     "n": 6,
+     "oran": 0.0536
+    },
+    "ghidra_uyari": {
+     "n": 31,
+     "oran": 0.2768
+    },
+    "ghidra_uyari_kuskulu": {
+     "n": 4,
+     "oran": 0.0357
+    },
+    "boyut_karmasiklik": {
+     "n": 112,
+     "oran": 1.0
+    },
+    "yerel_ad_kaydi": {
+     "n": 93,
+     "oran": 0.8304
+    },
+    "param_adi": {
+     "n": 21,
+     "oran": 0.1875
+    },
+    "param_alan_bilinen": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "blok_aciklama": {
+     "n": 50,
+     "oran": 0.4464
+    },
+    "algoritma_etiketi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "bilesim_asamasi": {
+     "n": 1,
+     "oran": 0.0089
+    },
+    "veri_akisi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "struct_kaynagi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "amac_metni_icerikli": {
+     "n": 38,
+     "oran": 0.3393
+    },
+    "zeka_algoritma": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "zafiyet_uyarisi": {
+     "n": 13,
+     "oran": 0.1161
+    },
+    "alt_sistem_anlamli": {
+     "n": 24,
+     "oran": 0.2143
+    },
+    "alt_sistem_grup": {
+     "n": 77,
+     "oran": 0.6875
+    },
+    "adresi_baska_govdede": {
+     "n": 42,
+     "oran": 0.375
+    },
+    "bsim_aday": {
+     "n": 6,
+     "oran": 0.0536
+    },
+    "imza_adayi_uygulanmamis": {
+     "n": 4,
+     "oran": 0.0357
+    },
+    "ad_koken_global": {
+     "n": 0,
+     "oran": 0.0
+    }
+   },
+   "bos_kart": {
+    "kart_bos_ghidra": {
+     "n": 5,
+     "oran": 0.0446
+    },
+    "icerik_adsiz": {
+     "n": 18,
+     "oran": 0.1607
+    },
+    "ui_bos": {
+     "n": 7,
+     "oran": 0.0625
+    },
+    "kart_bos_tam": {
+     "n": 5,
+     "oran": 0.0446
+    },
+    "iliski_yok": {
+     "n": 31,
+     "oran": 0.2768
+    }
+   },
+   "cagirani_yok": {
+    "cagirani_yok": {
+     "n": 49,
+     "oran": 0.4375
+    },
+    "cagirani_yok_ve_icerik_adsiz": {
+     "n": 8,
+     "oran": 0.0714
+    }
+   },
+   "arayuz": {
+    "sayaclar": {
+     "alt_sistem_kaydi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "alt_sistem_md_listesinde": {
+      "n": 112,
+      "oran": 1.0
+     },
+     "bsim_en_iyi_aday_ayni_adli_programdan": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "cagri_baglami": {
+      "n": 80,
+      "oran": 0.7143
+     },
+     "decompile_dosyasi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "dizgi": {
+      "n": 53,
+      "oran": 0.4732
+     },
+     "eski_urun_adi_belirsiz": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "eski_urun_adi_var": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_cagrilan_var_ui_hicbiri": {
+      "n": 1,
+      "oran": 0.0089
+     },
+     "ghidra_functions_imza_dolu": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "imza_satiri_bulunamadi": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ipucu": {
+      "n": 92,
+      "oran": 0.8214
+     },
+     "ipucu_FUN_uygulanmamis_imza": {
+      "n": 6,
+      "oran": 0.0536
+     },
+     "ipucu_kendisi": {
+      "n": 4,
+      "oran": 0.0357
+     },
+     "ithal_var_ipucu_yok": {
+      "n": 1,
+      "oran": 0.0089
+     },
+     "kart_bos_ghidra_ama_adresi_alinmis": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "teshis_bsim_satiri": {
+      "n": 6,
+      "oran": 0.0536
+     },
+     "teshis_ikili_geneli_satir": {
+      "n": 112,
+      "oran": 1.0
+     },
+     "teshis_imza_yok_ama_imza_adayi_var": {
+      "n": 4,
+      "oran": 0.0357
+     },
+     "ui_cagiran_eksik": {
+      "n": 1,
+      "oran": 0.0089
+     },
+     "ui_cagiran_fazla": {
+      "n": 42,
+      "oran": 0.375
+     },
+     "ui_cagiran_fazla_ghidra_cagirani_yok": {
+      "n": 18,
+      "oran": 0.1607
+     },
+     "ui_cagrilan_eksik": {
+      "n": 1,
+      "oran": 0.0089
+     },
+     "ui_cagrilan_fazla": {
+      "n": 61,
+      "oran": 0.5446
+     }
+    },
+    "teshis_karari": {
+     "app_specific": 15,
+     "app_wrapper": 92,
+     "bsim_shadow": 5
+    },
+    "harita_rol_satiri": {
+     "app_specific": 14,
+     "bsim_shadow": 5,
+     "cagri": 92,
+     "dizgi": 1
+    },
+    "bsim_en_iyi_aday_programi": {
+     "cat": 4,
+     "rust_macho_arm64_stripped": 1,
+     "tmux": 1
+    },
+    "fazla_kenar_sinifi": {
+     "toplam": 129,
+     "yalniz_cagri_disi": 129
+    }
+   },
+   "ikili_geneli": {
+    "susturma_acik": true,
+    "susturulan_aday_toplam": 54,
+    "susturulan_aday_sinif_sayisi": 9,
+    "elenen_global_anahtar": {
+     "all_candidates_invalid_name": 0,
+     "all_candidates_silenced": 0,
+     "below_global_min_confidence": 189,
+     "below_min_confidence": 0,
+     "global_structural_filter": 102,
+     "pre_named": 0
+    },
+    "esik_alti_aday_global": 0,
+    "genel_esik": 0.7,
+    "temiz_haritada_uygulanmamis_FUN_imza_kaydi": 4,
+    "subsystem_map_md_kesilen_ad": 60,
+    "subsystem_map_md_listelenen_ad": 190,
+    "yerlesim_dosya_sayisi": 249,
+    "imza_eslesmesi_FUN": 5,
+    "computation_fusion_matches": 70,
+    "computation_fusion_accepted": 0,
+    "bsim_shadow_functions": 119,
+    "comments_added": 1102
+   },
+   "n4_tablo_yuvasi_sayimi": {
+    "isim_bekleyen": 115,
+    "cagirani_yok": 51,
+    "tablo_kaydinda": 37,
+    "gevsek_kayit_dizgili": 5,
+    "gevsek_ust_sinir": 5,
+    "tablo": 2
+   },
+   "eksik_dosyalar": []
+  },
+  {
+   "birim": "debian/sqlite3",
+   "kaynak": "yeni",
+   "yeni_kosu_dizini_var": true,
+   "calisma_alani": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/debian/sqlite3/sqlite3/ws/workspaces/sqlite3/20261111_055118",
+   "nufus": {
+    "ghidra_fonksiyon": 1144,
+    "jenerik_ad_tumu": 425,
+    "jenerik_thunk_dis_degil": 425,
+    "ad_haritasi_global_jenerik_anahtar": 18,
+    "adsiz": 407,
+    "src_iter_haritasinda_ek_anahtar": 0,
+    "ghidra_adi_birden_cok_fonksiyonda": 239
+   },
+   "kanit": {
+    "cagiran": {
+     "n": 192,
+     "oran": 0.4717
+    },
+    "cagrilan_ic": {
+     "n": 160,
+     "oran": 0.3931
+    },
+    "cagrilan_ithal": {
+     "n": 291,
+     "oran": 0.715
+    },
+    "cagrilan_ithal_ayirt": {
+     "n": 275,
+     "oran": 0.6757
+    },
+    "cagrilan_ithal_yalniz_gurultu": {
+     "n": 16,
+     "oran": 0.0393
+    },
+    "dizgi_xref": {
+     "n": 152,
+     "oran": 0.3735
+    },
+    "dizgi_govde": {
+     "n": 170,
+     "oran": 0.4177
+    },
+    "sabit_govde": {
+     "n": 348,
+     "oran": 0.855
+    },
+    "veri_etiketi_govde": {
+     "n": 120,
+     "oran": 0.2948
+    },
+    "imza_parametreli": {
+     "n": 377,
+     "oran": 0.9263
+    },
+    "imza_adli_tip": {
+     "n": 10,
+     "oran": 0.0246
+    },
+    "ghidra_uyari": {
+     "n": 186,
+     "oran": 0.457
+    },
+    "ghidra_uyari_kuskulu": {
+     "n": 67,
+     "oran": 0.1646
+    },
+    "boyut_karmasiklik": {
+     "n": 407,
+     "oran": 1.0
+    },
+    "yerel_ad_kaydi": {
+     "n": 337,
+     "oran": 0.828
+    },
+    "param_adi": {
+     "n": 77,
+     "oran": 0.1892
+    },
+    "param_alan_bilinen": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "blok_aciklama": {
+     "n": 187,
+     "oran": 0.4595
+    },
+    "algoritma_etiketi": {
+     "n": 10,
+     "oran": 0.0246
+    },
+    "bilesim_asamasi": {
+     "n": 4,
+     "oran": 0.0098
+    },
+    "veri_akisi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "struct_kaynagi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "amac_metni_icerikli": {
+     "n": 125,
+     "oran": 0.3071
+    },
+    "zeka_algoritma": {
+     "n": 57,
+     "oran": 0.14
+    },
+    "zafiyet_uyarisi": {
+     "n": 2,
+     "oran": 0.0049
+    },
+    "alt_sistem_anlamli": {
+     "n": 38,
+     "oran": 0.0934
+    },
+    "alt_sistem_grup": {
+     "n": 286,
+     "oran": 0.7027
+    },
+    "adresi_baska_govdede": {
+     "n": 164,
+     "oran": 0.4029
+    },
+    "bsim_aday": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "imza_adayi_uygulanmamis": {
+     "n": 40,
+     "oran": 0.0983
+    },
+    "ad_koken_global": {
+     "n": 0,
+     "oran": 0.0
+    }
+   },
+   "bos_kart": {
+    "kart_bos_ghidra": {
+     "n": 61,
+     "oran": 0.1499
+    },
+    "icerik_adsiz": {
+     "n": 105,
+     "oran": 0.258
+    },
+    "ui_bos": {
+     "n": 74,
+     "oran": 0.1818
+    },
+    "kart_bos_tam": {
+     "n": 55,
+     "oran": 0.1351
+    },
+    "iliski_yok": {
+     "n": 129,
+     "oran": 0.317
+    }
+   },
+   "cagirani_yok": {
+    "cagirani_yok": {
+     "n": 215,
+     "oran": 0.5283
+    },
+    "cagirani_yok_ve_icerik_adsiz": {
+     "n": 90,
+     "oran": 0.2211
+    }
+   },
+   "arayuz": {
+    "sayaclar": {
+     "alt_sistem_kaydi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "alt_sistem_md_listesinde": {
+      "n": 160,
+      "oran": 0.3931
+     },
+     "bsim_en_iyi_aday_ayni_adli_programdan": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "cagri_baglami": {
+      "n": 280,
+      "oran": 0.688
+     },
+     "decompile_dosyasi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "dizgi": {
+      "n": 167,
+      "oran": 0.4103
+     },
+     "eski_urun_adi_belirsiz": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "eski_urun_adi_var": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_cagrilan_var_ui_hicbiri": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_functions_imza_dolu": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "imza_satiri_bulunamadi": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ipucu": {
+      "n": 300,
+      "oran": 0.7371
+     },
+     "ipucu_FUN_uygulanmamis_imza": {
+      "n": 57,
+      "oran": 0.14
+     },
+     "ipucu_kendisi": {
+      "n": 39,
+      "oran": 0.0958
+     },
+     "ithal_var_ipucu_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "kart_bos_ghidra_ama_adresi_alinmis": {
+      "n": 6,
+      "oran": 0.0147
+     },
+     "teshis_bsim_satiri": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "teshis_ikili_geneli_satir": {
+      "n": 407,
+      "oran": 1.0
+     },
+     "teshis_imza_yok_ama_imza_adayi_var": {
+      "n": 40,
+      "oran": 0.0983
+     },
+     "ui_cagiran_eksik": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagiran_fazla": {
+      "n": 164,
+      "oran": 0.4029
+     },
+     "ui_cagiran_fazla_ghidra_cagirani_yok": {
+      "n": 85,
+      "oran": 0.2088
+     },
+     "ui_cagrilan_eksik": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagrilan_fazla": {
+      "n": 197,
+      "oran": 0.484
+     }
+    },
+    "teshis_karari": {
+     "app_specific": 107,
+     "app_wrapper": 300
+    },
+    "harita_rol_satiri": {
+     "app_specific": 97,
+     "cagri": 300,
+     "dizgi": 10
+    },
+    "bsim_en_iyi_aday_programi": {},
+    "fazla_kenar_sinifi": {
+     "toplam": 438,
+     "yalniz_cagri_disi": 438
+    }
+   },
+   "ikili_geneli": {
+    "susturma_acik": true,
+    "susturulan_aday_toplam": 170,
+    "susturulan_aday_sinif_sayisi": 9,
+    "elenen_global_anahtar": {
+     "all_candidates_invalid_name": 0,
+     "all_candidates_silenced": 6,
+     "below_global_min_confidence": 199,
+     "below_min_confidence": 0,
+     "global_structural_filter": 324,
+     "pre_named": 0
+    },
+    "esik_alti_aday_global": 0,
+    "genel_esik": 0.7,
+    "temiz_haritada_uygulanmamis_FUN_imza_kaydi": 40,
+    "subsystem_map_md_kesilen_ad": 949,
+    "subsystem_map_md_listelenen_ad": 195,
+    "yerlesim_dosya_sayisi": 1143,
+    "imza_eslesmesi_FUN": 41,
+    "computation_fusion_matches": 281,
+    "computation_fusion_accepted": 0,
+    "bsim_shadow_functions": 15,
+    "comments_added": 4986
+   },
+   "n4_tablo_yuvasi_sayimi": {
+    "isim_bekleyen": 425,
+    "cagirani_yok": 227,
+    "tablo_kaydinda": 137,
+    "gevsek_kayit_dizgili": 14,
+    "gevsek_ust_sinir": 11,
+    "tablo": 15
+   },
+   "eksik_dosyalar": []
+  },
+  {
+   "birim": "debian/coreutils/cat",
+   "kaynak": "yeni",
+   "yeni_kosu_dizini_var": true,
+   "calisma_alani": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/debian/coreutils/cat/ws/workspaces/cat/20261111_061846",
+   "nufus": {
+    "ghidra_fonksiyon": 296,
+    "jenerik_ad_tumu": 101,
+    "jenerik_thunk_dis_degil": 101,
+    "ad_haritasi_global_jenerik_anahtar": 12,
+    "adsiz": 89,
+    "src_iter_haritasinda_ek_anahtar": 0,
+    "ghidra_adi_birden_cok_fonksiyonda": 63
+   },
+   "kanit": {
+    "cagiran": {
+     "n": 37,
+     "oran": 0.4157
+    },
+    "cagrilan_ic": {
+     "n": 61,
+     "oran": 0.6854
+    },
+    "cagrilan_ithal": {
+     "n": 58,
+     "oran": 0.6517
+    },
+    "cagrilan_ithal_ayirt": {
+     "n": 20,
+     "oran": 0.2247
+    },
+    "cagrilan_ithal_yalniz_gurultu": {
+     "n": 38,
+     "oran": 0.427
+    },
+    "dizgi_xref": {
+     "n": 8,
+     "oran": 0.0899
+    },
+    "dizgi_govde": {
+     "n": 8,
+     "oran": 0.0899
+    },
+    "sabit_govde": {
+     "n": 65,
+     "oran": 0.7303
+    },
+    "veri_etiketi_govde": {
+     "n": 37,
+     "oran": 0.4157
+    },
+    "imza_parametreli": {
+     "n": 70,
+     "oran": 0.7865
+    },
+    "imza_adli_tip": {
+     "n": 17,
+     "oran": 0.191
+    },
+    "ghidra_uyari": {
+     "n": 53,
+     "oran": 0.5955
+    },
+    "ghidra_uyari_kuskulu": {
+     "n": 3,
+     "oran": 0.0337
+    },
+    "boyut_karmasiklik": {
+     "n": 89,
+     "oran": 1.0
+    },
+    "yerel_ad_kaydi": {
+     "n": 58,
+     "oran": 0.6517
+    },
+    "param_adi": {
+     "n": 26,
+     "oran": 0.2921
+    },
+    "param_alan_bilinen": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "blok_aciklama": {
+     "n": 26,
+     "oran": 0.2921
+    },
+    "algoritma_etiketi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "bilesim_asamasi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "veri_akisi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "struct_kaynagi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "amac_metni_icerikli": {
+     "n": 24,
+     "oran": 0.2697
+    },
+    "zeka_algoritma": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "zafiyet_uyarisi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "alt_sistem_anlamli": {
+     "n": 20,
+     "oran": 0.2247
+    },
+    "alt_sistem_grup": {
+     "n": 58,
+     "oran": 0.6517
+    },
+    "adresi_baska_govdede": {
+     "n": 31,
+     "oran": 0.3483
+    },
+    "bsim_aday": {
+     "n": 8,
+     "oran": 0.0899
+    },
+    "imza_adayi_uygulanmamis": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "ad_koken_global": {
+     "n": 0,
+     "oran": 0.0
+    }
+   },
+   "bos_kart": {
+    "kart_bos_ghidra": {
+     "n": 1,
+     "oran": 0.0112
+    },
+    "icerik_adsiz": {
+     "n": 31,
+     "oran": 0.3483
+    },
+    "ui_bos": {
+     "n": 8,
+     "oran": 0.0899
+    },
+    "kart_bos_tam": {
+     "n": 1,
+     "oran": 0.0112
+    },
+    "iliski_yok": {
+     "n": 11,
+     "oran": 0.1236
+    }
+   },
+   "cagirani_yok": {
+    "cagirani_yok": {
+     "n": 52,
+     "oran": 0.5843
+    },
+    "cagirani_yok_ve_icerik_adsiz": {
+     "n": 24,
+     "oran": 0.2697
+    }
+   },
+   "arayuz": {
+    "sayaclar": {
+     "alt_sistem_kaydi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "alt_sistem_md_listesinde": {
+      "n": 89,
+      "oran": 1.0
+     },
+     "bsim_en_iyi_aday_ayni_adli_programdan": {
+      "n": 3,
+      "oran": 0.0337
+     },
+     "cagri_baglami": {
+      "n": 76,
+      "oran": 0.8539
+     },
+     "decompile_dosyasi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "dizgi": {
+      "n": 8,
+      "oran": 0.0899
+     },
+     "eski_urun_adi_belirsiz": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "eski_urun_adi_var": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_cagrilan_var_ui_hicbiri": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_functions_imza_dolu": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "imza_satiri_bulunamadi": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ipucu": {
+      "n": 60,
+      "oran": 0.6742
+     },
+     "ipucu_FUN_uygulanmamis_imza": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ipucu_kendisi": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ithal_var_ipucu_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "kart_bos_ghidra_ama_adresi_alinmis": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "teshis_bsim_satiri": {
+      "n": 8,
+      "oran": 0.0899
+     },
+     "teshis_ikili_geneli_satir": {
+      "n": 89,
+      "oran": 1.0
+     },
+     "teshis_imza_yok_ama_imza_adayi_var": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagiran_eksik": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagiran_fazla": {
+      "n": 31,
+      "oran": 0.3483
+     },
+     "ui_cagiran_fazla_ghidra_cagirani_yok": {
+      "n": 15,
+      "oran": 0.1685
+     },
+     "ui_cagrilan_eksik": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagrilan_fazla": {
+      "n": 33,
+      "oran": 0.3708
+     }
+    },
+    "teshis_karari": {
+     "app_specific": 22,
+     "app_wrapper": 59,
+     "bsim_shadow": 8
+    },
+    "harita_rol_satiri": {
+     "app_specific": 22,
+     "bsim_shadow": 7,
+     "cagri": 60
+    },
+    "bsim_en_iyi_aday_programi": {
+     "redis-check-aof": 4,
+     "cat": 3,
+     "rust_macho_arm64_stripped": 1
+    },
+    "fazla_kenar_sinifi": {
+     "ikisi": 1,
+     "toplam": 63,
+     "yalniz_cagri_disi": 62
+    }
+   },
+   "ikili_geneli": {
+    "susturma_acik": true,
+    "susturulan_aday_toplam": 15,
+    "susturulan_aday_sinif_sayisi": 4,
+    "elenen_global_anahtar": {
+     "all_candidates_invalid_name": 0,
+     "all_candidates_silenced": 0,
+     "below_global_min_confidence": 32,
+     "below_min_confidence": 0,
+     "global_structural_filter": 93,
+     "pre_named": 0
+    },
+    "esik_alti_aday_global": 0,
+    "genel_esik": 0.7,
+    "temiz_haritada_uygulanmamis_FUN_imza_kaydi": 0,
+    "subsystem_map_md_kesilen_ad": 99,
+    "subsystem_map_md_listelenen_ad": 197,
+    "yerlesim_dosya_sayisi": 294,
+    "imza_eslesmesi_FUN": 0,
+    "computation_fusion_matches": 65,
+    "computation_fusion_accepted": 0,
+    "bsim_shadow_functions": 107,
+    "comments_added": 876
+   },
+   "n4_tablo_yuvasi_sayimi": {
+    "isim_bekleyen": 101,
+    "cagirani_yok": 56,
+    "tablo_kaydinda": 0,
+    "gevsek_kayit_dizgili": 0,
+    "gevsek_ust_sinir": 0,
+    "tablo": 0
+   },
+   "eksik_dosyalar": []
+  },
+  {
+   "birim": "debian/coreutils/ls",
+   "kaynak": "yeni",
+   "yeni_kosu_dizini_var": true,
+   "calisma_alani": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/debian/coreutils/ls/ws/workspaces/ls/20261111_055659",
+   "nufus": {
+    "ghidra_fonksiyon": 665,
+    "jenerik_ad_tumu": 311,
+    "jenerik_thunk_dis_degil": 311,
+    "ad_haritasi_global_jenerik_anahtar": 12,
+    "adsiz": 299,
+    "src_iter_haritasinda_ek_anahtar": 0,
+    "ghidra_adi_birden_cok_fonksiyonda": 115
+   },
+   "kanit": {
+    "cagiran": {
+     "n": 164,
+     "oran": 0.5485
+    },
+    "cagrilan_ic": {
+     "n": 158,
+     "oran": 0.5284
+    },
+    "cagrilan_ithal": {
+     "n": 194,
+     "oran": 0.6488
+    },
+    "cagrilan_ithal_ayirt": {
+     "n": 90,
+     "oran": 0.301
+    },
+    "cagrilan_ithal_yalniz_gurultu": {
+     "n": 104,
+     "oran": 0.3478
+    },
+    "dizgi_xref": {
+     "n": 29,
+     "oran": 0.097
+    },
+    "dizgi_govde": {
+     "n": 43,
+     "oran": 0.1438
+    },
+    "sabit_govde": {
+     "n": 228,
+     "oran": 0.7625
+    },
+    "veri_etiketi_govde": {
+     "n": 81,
+     "oran": 0.2709
+    },
+    "imza_parametreli": {
+     "n": 269,
+     "oran": 0.8997
+    },
+    "imza_adli_tip": {
+     "n": 38,
+     "oran": 0.1271
+    },
+    "ghidra_uyari": {
+     "n": 100,
+     "oran": 0.3344
+    },
+    "ghidra_uyari_kuskulu": {
+     "n": 8,
+     "oran": 0.0268
+    },
+    "boyut_karmasiklik": {
+     "n": 299,
+     "oran": 1.0
+    },
+    "yerel_ad_kaydi": {
+     "n": 248,
+     "oran": 0.8294
+    },
+    "param_adi": {
+     "n": 71,
+     "oran": 0.2375
+    },
+    "param_alan_bilinen": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "blok_aciklama": {
+     "n": 86,
+     "oran": 0.2876
+    },
+    "algoritma_etiketi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "bilesim_asamasi": {
+     "n": 1,
+     "oran": 0.0033
+    },
+    "veri_akisi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "struct_kaynagi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "amac_metni_icerikli": {
+     "n": 110,
+     "oran": 0.3679
+    },
+    "zeka_algoritma": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "zafiyet_uyarisi": {
+     "n": 5,
+     "oran": 0.0167
+    },
+    "alt_sistem_anlamli": {
+     "n": 46,
+     "oran": 0.1538
+    },
+    "alt_sistem_grup": {
+     "n": 219,
+     "oran": 0.7324
+    },
+    "adresi_baska_govdede": {
+     "n": 127,
+     "oran": 0.4247
+    },
+    "bsim_aday": {
+     "n": 30,
+     "oran": 0.1003
+    },
+    "imza_adayi_uygulanmamis": {
+     "n": 4,
+     "oran": 0.0134
+    },
+    "ad_koken_global": {
+     "n": 0,
+     "oran": 0.0
+    }
+   },
+   "bos_kart": {
+    "kart_bos_ghidra": {
+     "n": 16,
+     "oran": 0.0535
+    },
+    "icerik_adsiz": {
+     "n": 105,
+     "oran": 0.3512
+    },
+    "ui_bos": {
+     "n": 16,
+     "oran": 0.0535
+    },
+    "kart_bos_tam": {
+     "n": 12,
+     "oran": 0.0401
+    },
+    "iliski_yok": {
+     "n": 61,
+     "oran": 0.204
+    }
+   },
+   "cagirani_yok": {
+    "cagirani_yok": {
+     "n": 135,
+     "oran": 0.4515
+    },
+    "cagirani_yok_ve_icerik_adsiz": {
+     "n": 58,
+     "oran": 0.194
+    }
+   },
+   "arayuz": {
+    "sayaclar": {
+     "alt_sistem_kaydi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "alt_sistem_md_listesinde": {
+      "n": 299,
+      "oran": 1.0
+     },
+     "bsim_en_iyi_aday_ayni_adli_programdan": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "cagri_baglami": {
+      "n": 236,
+      "oran": 0.7893
+     },
+     "decompile_dosyasi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "dizgi": {
+      "n": 36,
+      "oran": 0.1204
+     },
+     "eski_urun_adi_belirsiz": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "eski_urun_adi_var": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_cagrilan_var_ui_hicbiri": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_functions_imza_dolu": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "imza_satiri_bulunamadi": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ipucu": {
+      "n": 195,
+      "oran": 0.6522
+     },
+     "ipucu_FUN_uygulanmamis_imza": {
+      "n": 5,
+      "oran": 0.0167
+     },
+     "ipucu_kendisi": {
+      "n": 4,
+      "oran": 0.0134
+     },
+     "ithal_var_ipucu_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "kart_bos_ghidra_ama_adresi_alinmis": {
+      "n": 4,
+      "oran": 0.0134
+     },
+     "teshis_bsim_satiri": {
+      "n": 30,
+      "oran": 0.1003
+     },
+     "teshis_ikili_geneli_satir": {
+      "n": 299,
+      "oran": 1.0
+     },
+     "teshis_imza_yok_ama_imza_adayi_var": {
+      "n": 4,
+      "oran": 0.0134
+     },
+     "ui_cagiran_eksik": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagiran_fazla": {
+      "n": 127,
+      "oran": 0.4247
+     },
+     "ui_cagiran_fazla_ghidra_cagirani_yok": {
+      "n": 49,
+      "oran": 0.1639
+     },
+     "ui_cagrilan_eksik": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagrilan_fazla": {
+      "n": 160,
+      "oran": 0.5351
+     }
+    },
+    "teshis_karari": {
+     "app_specific": 84,
+     "app_wrapper": 186,
+     "bsim_shadow": 29
+    },
+    "harita_rol_satiri": {
+     "app_specific": 84,
+     "bsim_shadow": 20,
+     "cagri": 195
+    },
+    "bsim_en_iyi_aday_programi": {
+     "redis-check-aof": 8,
+     "wc": 6,
+     "cat": 4,
+     "hashbench_O0.stripped": 3,
+     "opera_updateinstaller": 3,
+     "tmux": 2,
+     "htop": 2,
+     "rust_macho_arm64_stripped": 1,
+     "opera_autoupdate": 1
+    },
+    "fazla_kenar_sinifi": {
+     "ikisi": 1,
+     "toplam": 304,
+     "yalniz_cagri_disi": 303
+    }
+   },
+   "ikili_geneli": {
+    "susturma_acik": true,
+    "susturulan_aday_toplam": 38,
+    "susturulan_aday_sinif_sayisi": 7,
+    "elenen_global_anahtar": {
+     "all_candidates_invalid_name": 0,
+     "all_candidates_silenced": 0,
+     "below_global_min_confidence": 167,
+     "below_min_confidence": 0,
+     "global_structural_filter": 274,
+     "pre_named": 1
+    },
+    "esik_alti_aday_global": 0,
+    "genel_esik": 0.7,
+    "temiz_haritada_uygulanmamis_FUN_imza_kaydi": 4,
+    "subsystem_map_md_kesilen_ad": 223,
+    "subsystem_map_md_listelenen_ad": 442,
+    "yerlesim_dosya_sayisi": 662,
+    "imza_eslesmesi_FUN": 6,
+    "computation_fusion_matches": 124,
+    "computation_fusion_accepted": 0,
+    "bsim_shadow_functions": 317,
+    "comments_added": 2388
+   },
+   "n4_tablo_yuvasi_sayimi": {
+    "isim_bekleyen": 311,
+    "cagirani_yok": 140,
+    "tablo_kaydinda": 68,
+    "gevsek_kayit_dizgili": 0,
+    "gevsek_ust_sinir": 0,
+    "tablo": 2
+   },
+   "eksik_dosyalar": []
+  },
+  {
+   "birim": "debian/coreutils/sort",
+   "kaynak": "yeni",
+   "yeni_kosu_dizini_var": true,
+   "calisma_alani": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/debian/coreutils/sort/ws/workspaces/sort/20261111_060153",
+   "nufus": {
+    "ghidra_fonksiyon": 625,
+    "jenerik_ad_tumu": 238,
+    "jenerik_thunk_dis_degil": 238,
+    "ad_haritasi_global_jenerik_anahtar": 14,
+    "adsiz": 224,
+    "src_iter_haritasinda_ek_anahtar": 0,
+    "ghidra_adi_birden_cok_fonksiyonda": 127
+   },
+   "kanit": {
+    "cagiran": {
+     "n": 141,
+     "oran": 0.6295
+    },
+    "cagrilan_ic": {
+     "n": 136,
+     "oran": 0.6071
+    },
+    "cagrilan_ithal": {
+     "n": 134,
+     "oran": 0.5982
+    },
+    "cagrilan_ithal_ayirt": {
+     "n": 74,
+     "oran": 0.3304
+    },
+    "cagrilan_ithal_yalniz_gurultu": {
+     "n": 60,
+     "oran": 0.2679
+    },
+    "dizgi_xref": {
+     "n": 32,
+     "oran": 0.1429
+    },
+    "dizgi_govde": {
+     "n": 33,
+     "oran": 0.1473
+    },
+    "sabit_govde": {
+     "n": 160,
+     "oran": 0.7143
+    },
+    "veri_etiketi_govde": {
+     "n": 65,
+     "oran": 0.2902
+    },
+    "imza_parametreli": {
+     "n": 199,
+     "oran": 0.8884
+    },
+    "imza_adli_tip": {
+     "n": 36,
+     "oran": 0.1607
+    },
+    "ghidra_uyari": {
+     "n": 100,
+     "oran": 0.4464
+    },
+    "ghidra_uyari_kuskulu": {
+     "n": 3,
+     "oran": 0.0134
+    },
+    "boyut_karmasiklik": {
+     "n": 224,
+     "oran": 1.0
+    },
+    "yerel_ad_kaydi": {
+     "n": 182,
+     "oran": 0.8125
+    },
+    "param_adi": {
+     "n": 67,
+     "oran": 0.2991
+    },
+    "param_alan_bilinen": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "blok_aciklama": {
+     "n": 74,
+     "oran": 0.3304
+    },
+    "algoritma_etiketi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "bilesim_asamasi": {
+     "n": 1,
+     "oran": 0.0045
+    },
+    "veri_akisi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "struct_kaynagi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "amac_metni_icerikli": {
+     "n": 67,
+     "oran": 0.2991
+    },
+    "zeka_algoritma": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "zafiyet_uyarisi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "alt_sistem_anlamli": {
+     "n": 49,
+     "oran": 0.2188
+    },
+    "alt_sistem_grup": {
+     "n": 143,
+     "oran": 0.6384
+    },
+    "adresi_baska_govdede": {
+     "n": 106,
+     "oran": 0.4732
+    },
+    "bsim_aday": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "imza_adayi_uygulanmamis": {
+     "n": 2,
+     "oran": 0.0089
+    },
+    "ad_koken_global": {
+     "n": 0,
+     "oran": 0.0
+    }
+   },
+   "bos_kart": {
+    "kart_bos_ghidra": {
+     "n": 22,
+     "oran": 0.0982
+    },
+    "icerik_adsiz": {
+     "n": 90,
+     "oran": 0.4018
+    },
+    "ui_bos": {
+     "n": 22,
+     "oran": 0.0982
+    },
+    "kart_bos_tam": {
+     "n": 16,
+     "oran": 0.0714
+    },
+    "iliski_yok": {
+     "n": 32,
+     "oran": 0.1429
+    }
+   },
+   "cagirani_yok": {
+    "cagirani_yok": {
+     "n": 83,
+     "oran": 0.3705
+    },
+    "cagirani_yok_ve_icerik_adsiz": {
+     "n": 47,
+     "oran": 0.2098
+    }
+   },
+   "arayuz": {
+    "sayaclar": {
+     "alt_sistem_kaydi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "alt_sistem_md_listesinde": {
+      "n": 224,
+      "oran": 1.0
+     },
+     "bsim_en_iyi_aday_ayni_adli_programdan": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "cagri_baglami": {
+      "n": 190,
+      "oran": 0.8482
+     },
+     "decompile_dosyasi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "dizgi": {
+      "n": 33,
+      "oran": 0.1473
+     },
+     "eski_urun_adi_belirsiz": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "eski_urun_adi_var": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_cagrilan_var_ui_hicbiri": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_functions_imza_dolu": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "imza_satiri_bulunamadi": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ipucu": {
+      "n": 137,
+      "oran": 0.6116
+     },
+     "ipucu_FUN_uygulanmamis_imza": {
+      "n": 5,
+      "oran": 0.0223
+     },
+     "ipucu_kendisi": {
+      "n": 2,
+      "oran": 0.0089
+     },
+     "ithal_var_ipucu_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "kart_bos_ghidra_ama_adresi_alinmis": {
+      "n": 6,
+      "oran": 0.0268
+     },
+     "teshis_bsim_satiri": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "teshis_ikili_geneli_satir": {
+      "n": 224,
+      "oran": 1.0
+     },
+     "teshis_imza_yok_ama_imza_adayi_var": {
+      "n": 2,
+      "oran": 0.0089
+     },
+     "ui_cagiran_eksik": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagiran_fazla": {
+      "n": 106,
+      "oran": 0.4732
+     },
+     "ui_cagiran_fazla_ghidra_cagirani_yok": {
+      "n": 29,
+      "oran": 0.1295
+     },
+     "ui_cagrilan_eksik": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagrilan_fazla": {
+      "n": 137,
+      "oran": 0.6116
+     }
+    },
+    "teshis_karari": {
+     "app_specific": 87,
+     "app_wrapper": 137
+    },
+    "harita_rol_satiri": {
+     "app_specific": 87,
+     "cagri": 137
+    },
+    "bsim_en_iyi_aday_programi": {},
+    "fazla_kenar_sinifi": {
+     "ikisi": 1,
+     "toplam": 261,
+     "yalniz_cagri_disi": 260
+    }
+   },
+   "ikili_geneli": {
+    "susturma_acik": true,
+    "susturulan_aday_toplam": 45,
+    "susturulan_aday_sinif_sayisi": 7,
+    "elenen_global_anahtar": {
+     "all_candidates_invalid_name": 0,
+     "all_candidates_silenced": 0,
+     "below_global_min_confidence": 84,
+     "below_min_confidence": 0,
+     "global_structural_filter": 194,
+     "pre_named": 0
+    },
+    "esik_alti_aday_global": 0,
+    "genel_esik": 0.7,
+    "temiz_haritada_uygulanmamis_FUN_imza_kaydi": 2,
+    "subsystem_map_md_kesilen_ad": 244,
+    "subsystem_map_md_listelenen_ad": 381,
+    "yerlesim_dosya_sayisi": 622,
+    "imza_eslesmesi_FUN": 4,
+    "computation_fusion_matches": 133,
+    "computation_fusion_accepted": 0,
+    "bsim_shadow_functions": 126,
+    "comments_added": 2213
+   },
+   "n4_tablo_yuvasi_sayimi": {
+    "isim_bekleyen": 238,
+    "cagirani_yok": 88,
+    "tablo_kaydinda": 0,
+    "gevsek_kayit_dizgili": 0,
+    "gevsek_ust_sinir": 0,
+    "tablo": 0
+   },
+   "eksik_dosyalar": []
+  },
+  {
+   "birim": "mac/tmux",
+   "kaynak": "yeni",
+   "yeni_kosu_dizini_var": true,
+   "calisma_alani": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/mac/tmux/ws/workspaces/tmux/20261111_054109",
+   "nufus": {
+    "ghidra_fonksiyon": 2821,
+    "jenerik_ad_tumu": 2587,
+    "jenerik_thunk_dis_degil": 2587,
+    "ad_haritasi_global_jenerik_anahtar": 395,
+    "adsiz": 2192,
+    "src_iter_haritasinda_ek_anahtar": 0,
+    "ghidra_adi_birden_cok_fonksiyonda": 1
+   },
+   "kanit": {
+    "cagiran": {
+     "n": 1483,
+     "oran": 0.6766
+    },
+    "cagrilan_ic": {
+     "n": 1626,
+     "oran": 0.7418
+    },
+    "cagrilan_ithal": {
+     "n": 826,
+     "oran": 0.3768
+    },
+    "cagrilan_ithal_ayirt": {
+     "n": 396,
+     "oran": 0.1807
+    },
+    "cagrilan_ithal_yalniz_gurultu": {
+     "n": 430,
+     "oran": 0.1962
+    },
+    "dizgi_xref": {
+     "n": 704,
+     "oran": 0.3212
+    },
+    "dizgi_govde": {
+     "n": 710,
+     "oran": 0.3239
+    },
+    "sabit_govde": {
+     "n": 1924,
+     "oran": 0.8777
+    },
+    "veri_etiketi_govde": {
+     "n": 500,
+     "oran": 0.2281
+    },
+    "imza_parametreli": {
+     "n": 2039,
+     "oran": 0.9302
+    },
+    "imza_adli_tip": {
+     "n": 24,
+     "oran": 0.0109
+    },
+    "ghidra_uyari": {
+     "n": 287,
+     "oran": 0.1309
+    },
+    "ghidra_uyari_kuskulu": {
+     "n": 29,
+     "oran": 0.0132
+    },
+    "boyut_karmasiklik": {
+     "n": 2192,
+     "oran": 1.0
+    },
+    "yerel_ad_kaydi": {
+     "n": 1968,
+     "oran": 0.8978
+    },
+    "param_adi": {
+     "n": 468,
+     "oran": 0.2135
+    },
+    "param_alan_bilinen": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "blok_aciklama": {
+     "n": 767,
+     "oran": 0.3499
+    },
+    "algoritma_etiketi": {
+     "n": 5,
+     "oran": 0.0023
+    },
+    "bilesim_asamasi": {
+     "n": 71,
+     "oran": 0.0324
+    },
+    "veri_akisi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "struct_kaynagi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "amac_metni_icerikli": {
+     "n": 96,
+     "oran": 0.0438
+    },
+    "zeka_algoritma": {
+     "n": 4,
+     "oran": 0.0018
+    },
+    "zafiyet_uyarisi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "alt_sistem_anlamli": {
+     "n": 420,
+     "oran": 0.1916
+    },
+    "alt_sistem_grup": {
+     "n": 1617,
+     "oran": 0.7377
+    },
+    "adresi_baska_govdede": {
+     "n": 1253,
+     "oran": 0.5716
+    },
+    "bsim_aday": {
+     "n": 1177,
+     "oran": 0.537
+    },
+    "imza_adayi_uygulanmamis": {
+     "n": 14,
+     "oran": 0.0064
+    },
+    "ad_koken_global": {
+     "n": 0,
+     "oran": 0.0
+    }
+   },
+   "bos_kart": {
+    "kart_bos_ghidra": {
+     "n": 98,
+     "oran": 0.0447
+    },
+    "icerik_adsiz": {
+     "n": 1037,
+     "oran": 0.4731
+    },
+    "ui_bos": {
+     "n": 68,
+     "oran": 0.031
+    },
+    "kart_bos_tam": {
+     "n": 71,
+     "oran": 0.0324
+    },
+    "iliski_yok": {
+     "n": 100,
+     "oran": 0.0456
+    }
+   },
+   "cagirani_yok": {
+    "cagirani_yok": {
+     "n": 709,
+     "oran": 0.3234
+    },
+    "cagirani_yok_ve_icerik_adsiz": {
+     "n": 300,
+     "oran": 0.1369
+    }
+   },
+   "arayuz": {
+    "sayaclar": {
+     "alt_sistem_kaydi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "alt_sistem_md_listesinde": {
+      "n": 365,
+      "oran": 0.1665
+     },
+     "bsim_en_iyi_aday_ayni_adli_programdan": {
+      "n": 1080,
+      "oran": 0.4927
+     },
+     "cagri_baglami": {
+      "n": 2099,
+      "oran": 0.9576
+     },
+     "decompile_dosyasi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "dizgi": {
+      "n": 692,
+      "oran": 0.3157
+     },
+     "eski_urun_adi_belirsiz": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "eski_urun_adi_var": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_cagrilan_var_ui_hicbiri": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_functions_imza_dolu": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "imza_satiri_bulunamadi": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ipucu": {
+      "n": 842,
+      "oran": 0.3841
+     },
+     "ipucu_FUN_uygulanmamis_imza": {
+      "n": 21,
+      "oran": 0.0096
+     },
+     "ipucu_kendisi": {
+      "n": 14,
+      "oran": 0.0064
+     },
+     "ithal_var_ipucu_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "kart_bos_ghidra_ama_adresi_alinmis": {
+      "n": 27,
+      "oran": 0.0123
+     },
+     "teshis_bsim_satiri": {
+      "n": 1177,
+      "oran": 0.537
+     },
+     "teshis_ikili_geneli_satir": {
+      "n": 2192,
+      "oran": 1.0
+     },
+     "teshis_imza_yok_ama_imza_adayi_var": {
+      "n": 14,
+      "oran": 0.0064
+     },
+     "ui_cagiran_eksik": {
+      "n": 1,
+      "oran": 0.0005
+     },
+     "ui_cagiran_fazla": {
+      "n": 1253,
+      "oran": 0.5716
+     },
+     "ui_cagiran_fazla_ghidra_cagirani_yok": {
+      "n": 411,
+      "oran": 0.1875
+     },
+     "ui_cagrilan_eksik": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagrilan_fazla": {
+      "n": 1525,
+      "oran": 0.6957
+     }
+    },
+    "teshis_karari": {
+     "app_specific": 632,
+     "app_wrapper": 392,
+     "bsim_shadow": 1168
+    },
+    "harita_rol_satiri": {
+     "app_specific": 406,
+     "bsim_shadow": 630,
+     "cagri": 842,
+     "dizgi": 314
+    },
+    "bsim_en_iyi_aday_programi": {
+     "tmux": 1080,
+     "opera_updateinstaller": 47,
+     "htop": 15,
+     "rust_macho_arm64_stripped": 15,
+     "cat": 8,
+     "redis-check-aof": 6,
+     "hashbench_O0.stripped": 3,
+     "opera_autoupdate": 3
+    },
+    "fazla_kenar_sinifi": {
+     "ikisi": 5,
+     "toplam": 4777,
+     "yalniz_cagri_disi": 4709,
+     "yalniz_cagri_sozdizimi": 63
+    }
+   },
+   "ikili_geneli": {
+    "susturma_acik": true,
+    "susturulan_aday_toplam": 700,
+    "susturulan_aday_sinif_sayisi": 9,
+    "elenen_global_anahtar": {
+     "all_candidates_invalid_name": 0,
+     "all_candidates_silenced": 75,
+     "below_global_min_confidence": 269,
+     "below_min_confidence": 0,
+     "global_structural_filter": 1762,
+     "pre_named": 80
+    },
+    "esik_alti_aday_global": 0,
+    "genel_esik": 0.7,
+    "temiz_haritada_uygulanmamis_FUN_imza_kaydi": 14,
+    "subsystem_map_md_kesilen_ad": 2394,
+    "subsystem_map_md_listelenen_ad": 430,
+    "yerlesim_dosya_sayisi": 2811,
+    "imza_eslesmesi_FUN": 18,
+    "computation_fusion_matches": 240,
+    "computation_fusion_accepted": 0,
+    "bsim_shadow_functions": 2588,
+    "comments_added": 11220
+   },
+   "n4_tablo_yuvasi_sayimi": {
+    "isim_bekleyen": 2587,
+    "cagirani_yok": 787,
+    "tablo_kaydinda": 445,
+    "gevsek_kayit_dizgili": 413,
+    "gevsek_ust_sinir": 274,
+    "tablo": 28
+   },
+   "eksik_dosyalar": []
+  },
+  {
+   "birim": "mac/htop",
+   "kaynak": "yeni",
+   "yeni_kosu_dizini_var": true,
+   "calisma_alani": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/mac/htop/ws/workspaces/htop/20261111_055521",
+   "nufus": {
+    "ghidra_fonksiyon": 790,
+    "jenerik_ad_tumu": 597,
+    "jenerik_thunk_dis_degil": 597,
+    "ad_haritasi_global_jenerik_anahtar": 0,
+    "adsiz": 597,
+    "src_iter_haritasinda_ek_anahtar": 0,
+    "ghidra_adi_birden_cok_fonksiyonda": 1
+   },
+   "kanit": {
+    "cagiran": {
+     "n": 381,
+     "oran": 0.6382
+    },
+    "cagrilan_ic": {
+     "n": 420,
+     "oran": 0.7035
+    },
+    "cagrilan_ithal": {
+     "n": 258,
+     "oran": 0.4322
+    },
+    "cagrilan_ithal_ayirt": {
+     "n": 138,
+     "oran": 0.2312
+    },
+    "cagrilan_ithal_yalniz_gurultu": {
+     "n": 120,
+     "oran": 0.201
+    },
+    "dizgi_xref": {
+     "n": 137,
+     "oran": 0.2295
+    },
+    "dizgi_govde": {
+     "n": 134,
+     "oran": 0.2245
+    },
+    "sabit_govde": {
+     "n": 486,
+     "oran": 0.8141
+    },
+    "veri_etiketi_govde": {
+     "n": 218,
+     "oran": 0.3652
+    },
+    "imza_parametreli": {
+     "n": 542,
+     "oran": 0.9079
+    },
+    "imza_adli_tip": {
+     "n": 17,
+     "oran": 0.0285
+    },
+    "ghidra_uyari": {
+     "n": 101,
+     "oran": 0.1692
+    },
+    "ghidra_uyari_kuskulu": {
+     "n": 14,
+     "oran": 0.0235
+    },
+    "boyut_karmasiklik": {
+     "n": 597,
+     "oran": 1.0
+    },
+    "yerel_ad_kaydi": {
+     "n": 526,
+     "oran": 0.8811
+    },
+    "param_adi": {
+     "n": 138,
+     "oran": 0.2312
+    },
+    "param_alan_bilinen": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "blok_aciklama": {
+     "n": 199,
+     "oran": 0.3333
+    },
+    "algoritma_etiketi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "bilesim_asamasi": {
+     "n": 1,
+     "oran": 0.0017
+    },
+    "veri_akisi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "struct_kaynagi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "amac_metni_icerikli": {
+     "n": 23,
+     "oran": 0.0385
+    },
+    "zeka_algoritma": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "zafiyet_uyarisi": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "alt_sistem_anlamli": {
+     "n": 108,
+     "oran": 0.1809
+    },
+    "alt_sistem_grup": {
+     "n": 443,
+     "oran": 0.742
+    },
+    "adresi_baska_govdede": {
+     "n": 368,
+     "oran": 0.6164
+    },
+    "bsim_aday": {
+     "n": 0,
+     "oran": 0.0
+    },
+    "imza_adayi_uygulanmamis": {
+     "n": 10,
+     "oran": 0.0168
+    },
+    "ad_koken_global": {
+     "n": 0,
+     "oran": 0.0
+    }
+   },
+   "bos_kart": {
+    "kart_bos_ghidra": {
+     "n": 24,
+     "oran": 0.0402
+    },
+    "icerik_adsiz": {
+     "n": 286,
+     "oran": 0.4791
+    },
+    "ui_bos": {
+     "n": 21,
+     "oran": 0.0352
+    },
+    "kart_bos_tam": {
+     "n": 18,
+     "oran": 0.0302
+    },
+    "iliski_yok": {
+     "n": 30,
+     "oran": 0.0503
+    }
+   },
+   "cagirani_yok": {
+    "cagirani_yok": {
+     "n": 216,
+     "oran": 0.3618
+    },
+    "cagirani_yok_ve_icerik_adsiz": {
+     "n": 99,
+     "oran": 0.1658
+    }
+   },
+   "arayuz": {
+    "sayaclar": {
+     "alt_sistem_kaydi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "alt_sistem_md_listesinde": {
+      "n": 507,
+      "oran": 0.8492
+     },
+     "bsim_en_iyi_aday_ayni_adli_programdan": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "cagri_baglami": {
+      "n": 567,
+      "oran": 0.9497
+     },
+     "decompile_dosyasi_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "dizgi": {
+      "n": 129,
+      "oran": 0.2161
+     },
+     "eski_urun_adi_belirsiz": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "eski_urun_adi_var": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_cagrilan_var_ui_hicbiri": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ghidra_functions_imza_dolu": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "imza_satiri_bulunamadi": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ipucu": {
+      "n": 261,
+      "oran": 0.4372
+     },
+     "ipucu_FUN_uygulanmamis_imza": {
+      "n": 14,
+      "oran": 0.0235
+     },
+     "ipucu_kendisi": {
+      "n": 10,
+      "oran": 0.0168
+     },
+     "ithal_var_ipucu_yok": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "kart_bos_ghidra_ama_adresi_alinmis": {
+      "n": 6,
+      "oran": 0.0101
+     },
+     "teshis_bsim_satiri": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "teshis_ikili_geneli_satir": {
+      "n": 597,
+      "oran": 1.0
+     },
+     "teshis_imza_yok_ama_imza_adayi_var": {
+      "n": 10,
+      "oran": 0.0168
+     },
+     "ui_cagiran_eksik": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagiran_fazla": {
+      "n": 368,
+      "oran": 0.6164
+     },
+     "ui_cagiran_fazla_ghidra_cagirani_yok": {
+      "n": 163,
+      "oran": 0.273
+     },
+     "ui_cagrilan_eksik": {
+      "n": 0,
+      "oran": 0.0
+     },
+     "ui_cagrilan_fazla": {
+      "n": 389,
+      "oran": 0.6516
+     }
+    },
+    "teshis_karari": {
+     "app_specific": 336,
+     "app_wrapper": 261
+    },
+    "harita_rol_satiri": {
+     "app_specific": 287,
+     "cagri": 261,
+     "dizgi": 49
+    },
+    "bsim_en_iyi_aday_programi": {},
+    "fazla_kenar_sinifi": {
+     "ikisi": 5,
+     "toplam": 879,
+     "yalniz_cagri_disi": 874
+    }
+   },
+   "ikili_geneli": {
+    "susturma_acik": true,
+    "susturulan_aday_toplam": 115,
+    "susturulan_aday_sinif_sayisi": 8,
+    "elenen_global_anahtar": {
+     "all_candidates_invalid_name": 0,
+     "all_candidates_silenced": 14,
+     "below_global_min_confidence": 104,
+     "below_min_confidence": 0,
+     "global_structural_filter": 460,
+     "pre_named": 0
+    },
+    "esik_alti_aday_global": 0,
+    "genel_esik": 0.7,
+    "temiz_haritada_uygulanmamis_FUN_imza_kaydi": 10,
+    "subsystem_map_md_kesilen_ad": 160,
+    "subsystem_map_md_listelenen_ad": 634,
+    "yerlesim_dosya_sayisi": 783,
+    "imza_eslesmesi_FUN": 10,
+    "computation_fusion_matches": 196,
+    "computation_fusion_accepted": 0,
+    "bsim_shadow_functions": 35,
+    "comments_added": 2046
+   },
+   "n4_tablo_yuvasi_sayimi": {
+    "isim_bekleyen": 597,
+    "cagirani_yok": 216,
+    "tablo_kaydinda": 65,
+    "gevsek_kayit_dizgili": 26,
+    "gevsek_ust_sinir": 18,
+    "tablo": 17
+   },
+   "eksik_dosyalar": []
+  }
+ ]
+}
