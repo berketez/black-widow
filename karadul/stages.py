@@ -4818,13 +4818,16 @@ class ReconstructionStage(Stage):
                 context.metadata["file_cache"] = _file_cache
         # === v1.7.5: Pipeline feedback loop sonu ===
 
-        stats["pipeline_iterations_run"] = len(_iteration_stats)
-        stats["pipeline_iteration_details"] = _iteration_stats
-        stats["timing_pipeline_loop"] = round(time.monotonic() - _loop_start, 1)
-        logger.info(
-            "Pipeline feedback loop: %d iterasyon, toplam %.1fs",
-            len(_iteration_stats), time.monotonic() - _loop_start,
-        )
+        # Step-registry kipinde döngü burada 0 tur koşar; turları Faz 2'deki feedback_loop adımı
+        # sayıp stats'a yazdı (steps/feedback_loop.py). O değerler burada 0 ile ezilmez.
+        if not _use_step_registry:
+            stats["pipeline_iterations_run"] = len(_iteration_stats)
+            stats["pipeline_iteration_details"] = _iteration_stats
+            stats["timing_pipeline_loop"] = round(time.monotonic() - _loop_start, 1)
+            logger.info(
+                "Pipeline feedback loop: %d iterasyon, toplam %.1fs",
+                len(_iteration_stats), time.monotonic() - _loop_start,
+            )
 
         # === v1.10.0 M4 ESKI monolith entegrasyon: computation paketleri ===
         # HEM step registry HEM bu monolith yolu desteklenir (Berke karari).
