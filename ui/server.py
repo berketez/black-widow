@@ -644,6 +644,33 @@ def _bsim_shadow() -> dict:
     return out
 
 
+def _signature_candidates() -> set[str] | None:
+    """``reconstructed/signature_matches.json``'daki imza adaylarının Ghidra adları (``original``).
+
+    Kayıt yoksa ya da okunamıyorsa None: "aday yok" diye bilinmez.
+    """
+    ws = WS
+    if not ws:
+        return None
+    with _CACHE_LOCK:
+        if _CACHE.get("sig_ws") == ws and "sig" in _CACHE:
+            return _CACHE["sig"]
+    out: set[str] | None = None
+    p = next(iter(Path(ws).rglob("reconstructed/signature_matches.json")), None)
+    if p:
+        try:
+            matches = json.loads(p.read_text()).get("matches")
+            if isinstance(matches, list):
+                out = {str(m.get("original")) for m in matches
+                       if isinstance(m, dict) and m.get("original")}
+        except (json.JSONDecodeError, OSError, TypeError, ValueError, AttributeError):
+            out = None
+    with _CACHE_LOCK:
+        _CACHE["sig_ws"] = ws
+        _CACHE["sig"] = out
+    return out
+
+
 def _recon_stats() -> dict:
     """Aktif run'in report.json reconstruct.stats bloku (teshis baglami)."""
     ws = WS
@@ -675,10 +702,15 @@ def _naming_diagnosis(addr: str, text: str, cmap: dict, cls: str) -> dict:
     hexa = addr[4:] if addr.startswith("FUN_") else addr
     signals: list[str] = []
 
-    # 1) imza durumu (isimsiz => uygulanabilir imza tutmamis)
+    # 1) imza durumu. "eşleşme yok" yalnız imza eşleşme kaydı okunup bu fonksiyon için aday
+    # bulunmadığında yazılır. Aday varsa (ada uygulanmamış olsa da) ya da kayıt okunamıyorsa bu iddia
+    # yazılmaz; yerine başka bir iddia da konmaz.
+    sig = _signature_candidates()
+    no_candidate = sig is not None and addr not in sig
     if cls == "weak":
-        signals.append("Yalnızca zayıf/adres-sonekli isim — kesin imza eşleşmesi yok")
-    else:
+        signals.append("Yalnızca zayıf/adres-sonekli isim — kesin imza eşleşmesi yok"
+                       if no_candidate else "Yalnızca zayıf/adres-sonekli isim")
+    elif no_candidate:
         signals.append("Uygulanabilir imza/parmak izi eşleşmesi yok")
 
     # 2) BSim gölge (bare-hex, sifir-dolgulu da dene)

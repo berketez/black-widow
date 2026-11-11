@@ -182,3 +182,56 @@ def test_arayuz_metin_kipini_etiketliyor():
     assert "j.calls_source==='text'" in html
     assert "METİNDE ADI GEÇENLER" in html
     assert "metninde adı geçen" in html
+
+
+# ---------------------------------------------------------------------------
+# Teşhis: "imza eşleşmesi yok" yalnız gerçekten aday yokken (envanter §2, Hata B)
+# ---------------------------------------------------------------------------
+_NO_SIG = "Uygulanabilir imza/parmak izi eşleşmesi yok"
+_WEAK_NO_SIG = "Yalnızca zayıf/adres-sonekli isim — kesin imza eşleşmesi yok"
+
+
+def _sig_ws(root: Path, originals: list[str] | None) -> Path:
+    ws = _make_ws(root, _graph(_EDGES))
+    if originals is not None:
+        (ws / "reconstructed" / "signature_matches.json").write_text(json.dumps(
+            {"total": len(originals),
+             "matches": [{"original": o, "matched": "strlen", "library": "libc",
+                          "confidence": 0.9, "purpose": ""} for o in originals]}),
+            encoding="utf-8")
+    return ws
+
+
+def _diag(srv, ws: Path, addr: str, cls: str = "unnamed") -> dict:
+    srv._CACHE.clear()
+    srv.activate_workspace(str(ws))
+    return srv._naming_diagnosis(addr, "", {}, cls)
+
+
+def test_imza_adayi_varken_eslesme_yok_yazilmaz(srv, tmp_path):
+    d = _diag(srv, _sig_ws(tmp_path / "ws", [C, "entry"]), C)
+    assert _NO_SIG not in d["signals"]
+    assert not any("imza" in s for s in d["signals"])   # yerine yeni iddia da yok
+
+
+def test_imza_adayi_yokken_eslesme_yok_yazilir(srv, tmp_path):
+    d = _diag(srv, _sig_ws(tmp_path / "ws", ["entry"]), C)
+    assert _NO_SIG in d["signals"]
+
+
+def test_imza_kaydi_okunamiyorsa_eslesme_yok_yazilmaz(srv, tmp_path):
+    d = _diag(srv, _sig_ws(tmp_path / "ws", None), C)
+    assert _NO_SIG not in d["signals"]
+
+
+def test_zayif_adda_aday_varken_kesin_eslesme_yok_yazilmaz(srv, tmp_path):
+    ws = _sig_ws(tmp_path / "ws", [C])
+    assert _diag(srv, ws, C, "weak")["signals"][0] == "Yalnızca zayıf/adres-sonekli isim"
+    assert _WEAK_NO_SIG in _diag(srv, ws, B, "weak")["signals"]
+
+
+def test_imza_adayi_karari_degistirmez(srv, tmp_path):
+    with_c = _diag(srv, _sig_ws(tmp_path / "a", [C]), C)
+    without = _diag(srv, _sig_ws(tmp_path / "b", []), C)
+    assert with_c["verdict"] == without["verdict"]
+    assert with_c["reason"] == without["reason"]
