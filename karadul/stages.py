@@ -3262,6 +3262,9 @@ class ReconstructionStage(Stage):
                 "struct_recovery_decompiled_dir",
                 _b["final_decompiled_dir"],
             )
+            # Faz 3'teki finalize yakınsama nedenini kendi koşucusunun yapıtlarından okur;
+            # feedback_loop'un çıktısı bu koşucuda kalır, Faz 3 tohumuna buradan taşınır.
+            _convergence_reason = _b.get("convergence_reason")
 
             # stats/errors/pending artifact merge
             # v1.14.0 Dalga 0: artifacts_pending mirror'i kaldirildi;
@@ -5143,6 +5146,9 @@ class ReconstructionStage(Stage):
                 "call_graph_json_path": call_graph_json,
                 "xrefs_json_path": xrefs_json,
             })
+            # finalize, stats["convergence_reason"]'ı bu tohumdan yazar (yoksa "unknown").
+            if _convergence_reason is not None:
+                _seed["convergence_reason"] = _convergence_reason
             # comment_generation'in giris dizini flow_simplify sonrasi; ancak
             # semantic_naming step'i bunu kendi uretiyor. İlk adim olan
             # inline_detection'a decompiled_dir key'i lazim (Phase 1'den

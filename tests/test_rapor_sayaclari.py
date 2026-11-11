@@ -5,6 +5,8 @@
 
 * ``pipeline_iterations_run``: turları Faz 2'deki ``feedback_loop`` adımı sayıyor; step-registry
   kipinde 0 tur koşan eski döngünün sonu (stages.py) değeri 0 ile eziyordu.
+* ``convergence_reason``: ``feedback_loop`` nedeni Faz 2 koşucusunun yapıtına yazıyor; ``finalize``
+  Faz 3 koşucusunda ve Faz 3 tohumunda bu anahtar yoktu, hep "unknown" yazılıyordu.
 
 Testler sayaçları denetimin okuduğu yerden okur: aşama istatistikleri ve ``reports/report.json``.
 """
@@ -125,6 +127,23 @@ class TestTurSayisi:
         result, _seed = _run_three_phases(tmp_path, monkeypatch, "no_new_names")
         turlar = [k for k in result.stats if k.startswith("timing_c_naming_iter")]
         assert result.stats["pipeline_iterations_run"] == len(turlar) == 2
+
+
+class TestYakinsamaNedeni:
+    def test_neden_faz3_tohumuna_ve_rapora_gider(self, tmp_path, monkeypatch) -> None:
+        result, seed = _run_three_phases(tmp_path, monkeypatch, "no_new_names")
+        assert seed.get("convergence_reason") == "no_new_names"
+        assert result.stats["convergence_reason"] == "no_new_names"
+
+    def test_oran_nedeni_olduğu_gibi_tasinir(self, tmp_path, monkeypatch) -> None:
+        result, _seed = _run_three_phases(tmp_path, monkeypatch, "convergence_ratio_0.004")
+        assert result.stats["convergence_reason"] == "convergence_ratio_0.004"
+
+    def test_neden_yoksa_uydurulmaz(self, tmp_path, monkeypatch) -> None:
+        """feedback_loop neden vermediyse tohuma anahtar girmez; finalize "unknown" yazar."""
+        result, seed = _run_three_phases(tmp_path, monkeypatch, None)
+        assert "convergence_reason" not in seed
+        assert result.stats["convergence_reason"] == "unknown"
 
 
 # ---------------------------------------------------------------------------
