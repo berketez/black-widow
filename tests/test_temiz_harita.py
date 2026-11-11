@@ -1,15 +1,26 @@
-"""Temiz çıktının README'si diskteki çıktıyı anlatır.
+"""Temiz çıktının README'si diskteki çıktıyı, ad haritası koda uygulanmış adları anlatır.
 
-Çıktı sağlamlığı denetimi (``docs/arge/2026-11-10_cikti_saglamligi/rapor.md`` bulgu 20) 119/119
-ikilide README'nin ``src/main.c``, ``src/modules/``, ``src/types/`` dediğini, yazılan çıktının ise
-``src/src/subsystem_*/`` olduğunu gösterdi: yapı dile göre elle yazılmış sabit bir ağaçtı.
-Kilitlenen davranışlar:
+Çıktı sağlamlığı denetimi (``docs/arge/2026-11-10_cikti_saglamligi/rapor.md`` bulgu 6 ve 20):
+119/119 ikilide README ``src/main.c``, ``src/modules/``, ``src/types/`` diyordu, yazılan çıktı ise
+``src/src/subsystem_*/`` idi; ``naming_map.json`` koda uygulanmamış adları (6 675) ve eski = yeni
+girişleri (9 823) "eşleme" olarak listeliyordu; Mach-O'da ``$`` taşıyan adlar vardı.
+
+README için kilitlenen davranışlar:
   - "Output Structure" bloğundaki her satır diskte var olan bir girdidir; üst düzeydeki ve
     ``src/``'nin altındaki her girdi listelenir;
   - dizinin yanındaki sayı içindeki (alt dizinler dahil) dosya sayısıdır;
   - "Source Files" diskteki ``src/`` dosya sayısıdır (biçimlendiricinin sayacı değil);
   - "Names Recovered" haritadaki ``total_mappings``'tir;
   - kalabalık dizin kesilir ve kalan girdi sayısı yazılır.
+
+Ad haritası için kilitlenen davranışlar (biçim 1.1):
+  - ``mappings`` yalnız temiz çıktının C kodunda (yorum ve dizgi dışında) görülen yeniden
+    adlandırmaları taşır; ``total_mappings`` onları sayar;
+  - öbür kayıtlar silinmez: alanlarıyla ve ``reason`` ile ``candidates``'e gider
+    (``same_as_original``, ``not_in_code`` ya da ``name_validity`` nedeni);
+  - geçersiz C adı, kodda geçse bile eşleme olmaz;
+  - doğrulanacak C kodu yoksa (JS) yalnız eski = yeni girişler ayrılır, ``applied_check``
+    ``not_checked`` olur.
 
 Mutasyon koruması: ``scripts/measurement/mutation_specs_temiz_harita.json``.
 """
@@ -224,3 +235,241 @@ def test_readme_henuz_yazilmadiysa_bu_dosya_olarak_listelenir(tmp_path):
     girdiler, _ = _ayristir(OutputFormatter._output_tree_lines(out))
     assert (Path("README.md"), False, "This file") in girdiler
     assert [str(g[0]) for g in girdiler] == ["src", "naming_map.json", "README.md"]
+
+
+# ---------------------------------------------------------------------------
+# Ad haritası: yalnız koda uygulanmış adlar eşlemedir
+# ---------------------------------------------------------------------------
+
+def _kodlu_alan(ws: Workspace, dosyalar: dict[str, str], c_namer: dict[str, str],
+                imza: list[dict] | None = None) -> None:
+    """Proje ağacı (verilen .c/.h metinleri) + c_namer haritası + imza eşleşmeleri."""
+    rec = ws.get_stage_dir("reconstructed")
+    for goreli, metin in dosyalar.items():
+        p = rec / "project" / goreli
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(metin, encoding="utf-8")
+    (rec / "src").mkdir(parents=True, exist_ok=True)
+    (rec / "src" / "naming_map.json").write_text(
+        json.dumps({"global": c_namer, "per_function": {}}), encoding="utf-8")
+    if imza is not None:
+        ws.save_json("reconstructed", "signature_matches", {"total": len(imza), "matches": imza})
+
+
+def _imza(orijinal: str, ad: str, kutuphane: str = "libc", guven: float = 0.9) -> dict:
+    return {"original": orijinal, "matched": ad, "library": kutuphane, "confidence": guven}
+
+
+_KOD = {
+    # c_namer FUN_00101000 -> parse_args: tanım ve çağrı yeni adda
+    "src/subsystem_io/parse_args.c": (
+        "/* @calls FUN_00102000 */\n"
+        "int parse_args(int argc)\n{\n  return __ctype_b_loc() + strlen(\"x\");\n}\n"),
+    # imza önerisi FUN_00102000 -> update_record: kod hâlâ FUN_00102000 tanımlıyor
+    "src/subsystem_io/FUN_00102000.c": "void FUN_00102000(void)\n{\n  parse_args(1);\n}\n",
+    # ithal sarmalayıcılar (Ghidra thunk'ları): adları değişmedi
+    "src/subsystem_misc/__ctype_b_loc.c": "int __ctype_b_loc(void)\n{\n  return 0;\n}\n",
+    "src/subsystem_misc/strlen.c": "int strlen(char *s)\n{\n  return 0;\n}\n",
+    "src/main.c": "int main(void)\n{\n  _fopen$DARWIN_EXTSN(0);\n  return parse_args(0);\n}\n",
+}
+
+
+def _harita(out: Path) -> dict:
+    return json.loads((out / "naming_map.json").read_text(encoding="utf-8"))
+
+
+def test_yalniz_uygulanan_ad_esleme_digerleri_gerekcesiyle_aday(ws, tmp_path):
+    imza = [_imza("FUN_00102000", "update_record", "sqlite3", 0.79),
+            _imza("strlen", "strlen"),
+            _imza("__ctype_b_loc", "ctype_b_loc", guven=0.98),
+            _imza("_fopen$DARWIN_EXTSN", "fopen$DARWIN_EXTSN")]
+    _kodlu_alan(ws, _KOD, {"FUN_00101000": "parse_args"}, imza)
+    out = tmp_path / "temiz"
+    _bicimle(ws, out)
+    h = _harita(out)
+    assert h["version"] == of.NAMING_MAP_FORMAT_VERSION == "1.1"
+    assert h["applied_check"] == of.APPLIED_CHECK_C_SOURCE
+    assert set(h["mappings"]) == {"FUN_00101000"}
+    assert h["mappings"]["FUN_00101000"]["new_name"] == "parse_args"
+    assert h["mappings"]["FUN_00101000"]["source"] == "c_namer"
+    assert h["total_mappings"] == len(h["mappings"]) == 1
+    nedenler = {k: v["reason"] for k, v in h["candidates"].items()}
+    assert nedenler == {
+        "FUN_00102000": of.CANDIDATE_NOT_IN_CODE,
+        "strlen": of.CANDIDATE_SAME_AS_ORIGINAL,
+        "__ctype_b_loc": of.CANDIDATE_NOT_IN_CODE,
+        "_fopen$DARWIN_EXTSN": "invalid_c_identifier",
+    }
+    assert h["total_candidates"] == len(h["candidates"]) == 4
+    # hiçbir kayıt silinmedi; aday kendi alanlarını taşır
+    assert set(h["mappings"]) | set(h["candidates"]) == {"FUN_00101000"} | {m["original"] for m in imza}
+    assert not set(h["mappings"]) & set(h["candidates"])
+    assert h["candidates"]["FUN_00102000"] == {
+        "new_name": "update_record", "source": "signature_db", "confidence": 0.79,
+        "library": "sqlite3", "reason": of.CANDIDATE_NOT_IN_CODE}
+    assert h["sources"] == ["signature_db", "c_namer"]
+
+
+def test_eski_ad_yalniz_bir_cagrida_kalsa_da_tanim_yeni_addaysa_uygulanmis(ws, tmp_path):
+    kod = {"src/a.c": "int read_conf(void)\n{\n  return 0;\n}\n",
+           "src/b.c": "int caller(void)\n{\n  return FUN_00103000();\n}\n"}
+    _kodlu_alan(ws, kod, {"FUN_00103000": "read_conf"})
+    out = tmp_path / "temiz"
+    _bicimle(ws, out)
+    assert set(_harita(out)["mappings"]) == {"FUN_00103000"}
+
+
+def test_yeni_ad_baska_fonksiyonun_tanimiysa_eski_tanim_durdukca_uygulanmamis(ws, tmp_path):
+    """İmza FUN_A için log_debug öneriyor; log_debug adını c_namer FUN_B'ye vermiş; FUN_A duruyor."""
+    kod = {"src/a.c": "void FUN_00104000(void)\n{\n  log_debug();\n}\n",
+           "src/b.c": "void log_debug(void)\n{\n  return;\n}\n"}
+    _kodlu_alan(ws, kod, {"FUN_00105000": "log_debug"}, [_imza("FUN_00104000", "log_debug")])
+    out = tmp_path / "temiz"
+    _bicimle(ws, out)
+    h = _harita(out)
+    assert set(h["mappings"]) == {"FUN_00105000"}
+    assert h["candidates"]["FUN_00104000"]["reason"] == of.CANDIDATE_NOT_IN_CODE
+
+
+def test_veri_adi_eski_ad_koddan_kalkinca_uygulanmis(ws, tmp_path):
+    kod = {"src/a.c": "int f(void)\n{\n  return g_config + DAT_00106000;\n}\n",
+           "include/globals.h": "extern int g_config;\nextern int g_table;\n"}
+    _kodlu_alan(ws, kod, {"DAT_00107000": "g_config", "DAT_00106000": "g_table",
+                          "DAT_00108000": "g_unused"})
+    out = tmp_path / "temiz"
+    _bicimle(ws, out)
+    h = _harita(out)
+    assert set(h["mappings"]) == {"DAT_00107000"}
+    # DAT_00106000 kodda duruyor (yeni ad başlıkta geçse de); g_unused kodda hiç yok
+    assert h["candidates"]["DAT_00106000"]["reason"] == of.CANDIDATE_NOT_IN_CODE
+    assert h["candidates"]["DAT_00108000"]["reason"] == of.CANDIDATE_NOT_IN_CODE
+
+
+def test_yorumda_ya_da_dizgide_gecen_ad_kodda_sayilmaz(ws, tmp_path):
+    kod = {"src/a.c": ("// open_db burada degil\n/* open_db: belge */\n"
+                       "int f(void)\n{\n  puts(\"open_db\");\n  return 'o';\n}\n")}
+    _kodlu_alan(ws, kod, {"FUN_00109000": "open_db"})
+    out = tmp_path / "temiz"
+    _bicimle(ws, out)
+    h = _harita(out)
+    assert h["mappings"] == {}
+    assert h["candidates"]["FUN_00109000"]["reason"] == of.CANDIDATE_NOT_IN_CODE
+
+
+def test_gecersiz_c_adi_kodda_gecse_de_esleme_olmaz(ws, tmp_path):
+    """``long`` kodda tip olarak geçer, eski ad kodda yok: yine de eşleme değil (ad süzgeci)."""
+    kod = {"src/a.c": "long f(void)\n{\n  return 0;\n}\n"}
+    _kodlu_alan(ws, kod, {"FUN_0010a000": "long", "FUN_0010b000": "uint32_t"})
+    out = tmp_path / "temiz"
+    _bicimle(ws, out)
+    h = _harita(out)
+    assert h["mappings"] == {}
+    assert h["candidates"]["FUN_0010a000"]["reason"] == "invalid_c_keyword"
+
+
+def test_dolar_isaretli_ad_tek_sozcuk(ws, tmp_path):
+    """``_fopen$X`` kodda tek ad: ``$`` ile bölünürse eski ad kodda yok sanılır."""
+    kod = {"src/a.c": "int g(void)\n{\n  return _fopen$X(0) + my_fopen;\n}\n"}
+    _kodlu_alan(ws, kod, {}, [_imza("_fopen$X", "my_fopen")])
+    out = tmp_path / "temiz"
+    _bicimle(ws, out)
+    h = _harita(out)
+    assert h["mappings"] == {}
+    assert h["candidates"]["_fopen$X"]["reason"] == of.CANDIDATE_NOT_IN_CODE
+
+
+def test_adres_anahtarinda_eski_ad_ghidranin_verdigi_ad(ws, tmp_path):
+    """c_namer anahtarı adresten kurulur; Ghidra o fonksiyona ``entry``/sembol adı vermişse kodda
+    geçen eski ad odur. ``start`` kodda bir alan adı olarak geçse de giriş fonksiyonu hâlâ ``entry``;
+    ``full_write`` Ghidra'nın zaten verdiği ad (kod değişmedi)."""
+    kod = {"src/main.c": "void entry(long p)\n{\n  struct r x;\n  x.start = 0;\n}\n",
+           "src/io/full_write.c": "long full_write(int fd)\n{\n  return 0;\n}\n",
+           "src/io/g.c": "int g(void)\n{\n  return full_write(1);\n}\n"}
+    _kodlu_alan(ws, kod, {"FUN_00105dc0": "start", "FUN_001322e4": "full_write"})
+    ws.save_json("static", "ghidra_functions", {"functions": [
+        {"name": "entry", "address": "00105dc0"}, {"name": "full_write", "address": "001322e4"},
+        {"name": "g", "address": "0x105000"}]})
+    out = tmp_path / "temiz"
+    _bicimle(ws, out)
+    h = _harita(out)
+    assert h["mappings"] == {}
+    assert h["candidates"]["FUN_00105dc0"]["reason"] == of.CANDIDATE_NOT_IN_CODE
+    assert h["candidates"]["FUN_001322e4"]["reason"] == of.CANDIDATE_SAME_AS_ORIGINAL
+
+
+def test_adres_anahtari_cozumu_yalniz_yer_tutucuda():
+    adlar = {0x105dc0: "entry", 0x1000052f4: "Settings_write"}
+    assert OutputFormatter._name_in_code("FUN_00105dc0", adlar) == "entry"
+    assert OutputFormatter._name_in_code("FUN_1000052f4", adlar) == "Settings_write"
+    assert OutputFormatter._name_in_code("FUN_00999999", adlar) == "FUN_00999999"   # adres yok
+    assert OutputFormatter._name_in_code("DAT_00105dc0", adlar) == "DAT_00105dc0"   # veri anahtarı
+    assert OutputFormatter._name_in_code("strlen", adlar) == "strlen"
+
+
+def test_c_ciktisi_kodsuzsa_hicbir_ad_uygulanmis_sayilmaz(ws, tmp_path):
+    _kodlu_alan(ws, {}, {"FUN_00101000": "parse_args"})
+    f = OutputFormatter(ws, _sonuc(ws, "c"))
+    h = f._build_naming_map(tmp_path / "bos_src", "c")
+    assert h["applied_check"] == of.APPLIED_CHECK_C_SOURCE
+    assert h["mappings"] == {} and h["total_mappings"] == 0
+    assert h["candidates"]["FUN_00101000"]["reason"] == of.CANDIDATE_NOT_IN_CODE
+
+
+def test_js_ciktisinda_denetim_yok_yalniz_ozdes_ayrilir(js_ws, tmp_path):
+    named = js_ws.get_stage_dir("reconstructed") / "named_project"
+    named.mkdir(parents=True)
+    (named / "index.js").write_text("module.exports = 1;\n", encoding="utf-8")
+    (named / "naming-manifest.json").write_text(json.dumps({"modules": {
+        "1234": {"name": "file-system", "source": "npm", "confidence": 0.8},
+        "lodash": {"name": "lodash", "source": "npm", "confidence": 0.9}}}), encoding="utf-8")
+    out = tmp_path / "temiz"
+    OutputFormatter(js_ws, _sonuc(js_ws, "javascript")).format_output(out, fmt="clean")
+    h = _harita(out)
+    assert h["applied_check"] == of.APPLIED_CHECK_NOT_CHECKED
+    assert set(h["mappings"]) == {"1234"}          # C ad kuralı JS modül adına uygulanmaz
+    assert h["candidates"]["lodash"]["reason"] == of.CANDIDATE_SAME_AS_ORIGINAL
+    readme = (out / "README.md").read_text(encoding="utf-8")
+    assert "was not checked against the code" in readme
+
+
+@pytest.fixture
+def js_ws(tmp_path: Path) -> Workspace:
+    w = Workspace(base_dir=tmp_path / "js_workspaces", target_name="paket")
+    w.create()
+    return w
+
+
+def test_readme_aday_sayisi_ve_anlami(ws, tmp_path):
+    _kodlu_alan(ws, _KOD, {"FUN_00101000": "parse_args"},
+                [_imza("FUN_00102000", "update_record"), _imza("strlen", "strlen")])
+    out = tmp_path / "temiz"
+    readme = _bicimle(ws, out)
+    h = _harita(out)
+    assert f"| Names Recovered | {h['total_mappings']} |" in readme
+    assert f"| Name Candidates (not applied) | {h['total_candidates']} |" in readme
+    assert (h["total_mappings"], h["total_candidates"]) == (1, 2)
+    assert "counts only renames that appear in the code under `src/`" in readme
+
+
+@pytest.mark.parametrize("baslik, ad", [
+    ("void FUN_00101000(void)\n", "FUN_00101000"),
+    ("static int\nparse_args(int argc, char **argv) ", "parse_args"),
+    ("void walk(void (*cb)(int, char *), int n)", "walk"),
+    # işlev göstericisi döndüren tanım tanınmaz (Ghidra ``code *`` yazar); tanımlayıcı kuralına düşer
+    ("code * (*resolver(int x))(void)", None),
+    ("struct node ", None),
+    ("int table[] = ", None),
+    ("typedef struct ", None),
+])
+def test_tanim_basligindan_fonksiyon_adi(baslik, ad):
+    assert OutputFormatter._definition_name(baslik) == ad
+
+
+def test_dosya_kapsaminda_tanimlanan_adlar():
+    kod = ("struct s {\n  int a;\n};\n"
+           "int f(int x)\n{\n  if (x) {\n    g();\n  }\n  return 0;\n}\n"
+           "int tablo[2] = {1, 2};\n"
+           "void h(void)\n{\n}\n")
+    assert OutputFormatter._defined_function_names(kod) == {"f", "h"}
+    # dengesiz bir kapanış ayracından sonra gövde içi "if (...) {" tanım sayılmaz
+    assert OutputFormatter._defined_function_names("}\nif (x) {\n}\nwhile (y) {\n}\n") == set()

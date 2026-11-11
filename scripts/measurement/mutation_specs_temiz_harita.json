@@ -64,6 +64,142 @@
    "test": "tests/test_temiz_harita.py::test_names_recovered_haritadaki_total_mappings",
    "find": "            f\"| Names Recovered | {total_mappings} |\",\n",
    "replace": "            f\"| Names Recovered | {total_mappings + 1} |\",\n"
+  },
+  {
+   "id": "harita_hepsi_esleme",
+   "desc": "her kayıt yine eşleme sayılır (ayırma yok)",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_yalniz_uygulanan_ad_esleme_digerleri_gerekcesiyle_aday",
+   "find": "            if reason is None:\n",
+   "replace": "            if True:\n"
+  },
+  {
+   "id": "harita_aday_silinir",
+   "desc": "uygulanmamış kayıt adaylara yazılmaz, sessizce düşer",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_yalniz_uygulanan_ad_esleme_digerleri_gerekcesiyle_aday",
+   "find": "                candidates[orig] = {**record",
+   "replace": "                _dusen = {**record"
+  },
+  {
+   "id": "harita_toplam_hepsini_sayar",
+   "desc": "total_mappings uygulanmamış kayıtları da sayar",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_yalniz_uygulanan_ad_esleme_digerleri_gerekcesiyle_aday",
+   "find": "            \"total_mappings\": len(mappings),\n",
+   "replace": "            \"total_mappings\": len(naming_map[\"mappings\"]),\n"
+  },
+  {
+   "id": "harita_ozdes_kurali_yok",
+   "desc": "eski = yeni giriş ayrı gerekçeyle ayrılmaz",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_yalniz_uygulanan_ad_esleme_digerleri_gerekcesiyle_aday",
+   "find": "        if new_name == orig or new_name == name_in_code:\n",
+   "replace": "        if False:\n"
+  },
+  {
+   "id": "harita_ad_suzgeci_yok",
+   "desc": "geçersiz C adı kodda geçince eşleme olur",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_gecersiz_c_adi_kodda_gecse_de_esleme_olmaz",
+   "find": "        if invalid is not None:\n",
+   "replace": "        if False:\n"
+  },
+  {
+   "id": "harita_yorum_kod_sayilir",
+   "desc": "yorum ve dizgi kod sayılır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_yorumda_ya_da_dizgide_gecen_ad_kodda_sayilmaz",
+   "find": "            code = _C_NON_CODE_RE.sub(\" \", text)\n",
+   "replace": "            code = text\n"
+  },
+  {
+   "id": "harita_tanim_kurali_yok",
+   "desc": "tanım yeni adı taşısa da eski ad bir çağrıda kaldıysa uygulanmamış sayılır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_eski_ad_yalniz_bir_cagrida_kalsa_da_tanim_yeni_addaysa_uygulanmis",
+   "find": "        if new_name in defined and old not in defined:\n",
+   "replace": "        if False:\n"
+  },
+  {
+   "id": "harita_eski_tanim_bakilmaz",
+   "desc": "eski fonksiyon tanımı dururken yeni ad başka bir tanımda geçince uygulanmış sayılır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_yeni_ad_baska_fonksiyonun_tanimiysa_eski_tanim_durdukca_uygulanmamis",
+   "find": "        if new_name in defined and old not in defined:\n",
+   "replace": "        if new_name in defined:\n"
+  },
+  {
+   "id": "harita_eski_ad_kodda_bakilmaz",
+   "desc": "eski veri adı kodda dururken yeni ad geçince uygulanmış sayılır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_veri_adi_eski_ad_koddan_kalkinca_uygulanmis",
+   "find": "        if old not in defined and new_name in identifiers and old not in identifiers:\n",
+   "replace": "        if old not in defined and new_name in identifiers:\n"
+  },
+  {
+   "id": "harita_dolar_bolunur",
+   "desc": "$ taşıyan ad iki sözcüğe bölünür",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_dolar_isaretli_ad_tek_sozcuk",
+   "find": "_C_TOKEN_RE = re.compile(r\"(?<![\\w$])[A-Za-z_$][\\w$]*\")\n",
+   "replace": "_C_TOKEN_RE = re.compile(r\"(?<![\\w])[A-Za-z_][\\w]*\")\n"
+  },
+  {
+   "id": "harita_anahtar_sozcuk_tanim",
+   "desc": "if/while başlığı fonksiyon tanımı sayılır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_dosya_kapsaminda_tanimlanan_adlar",
+   "find": "                    if name is not None and name not in C_KEYWORDS:\n",
+   "replace": "                    if name is not None:\n"
+  },
+  {
+   "id": "harita_ic_ice_ayrac",
+   "desc": "parametredeki iç içe ayraç sayılmaz (ilk '(' eş sayılır)",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_tanim_basligindan_fonksiyon_adi",
+   "find": "                depth -= 1\n                if depth == 0:\n",
+   "replace": "                depth -= 1\n                if True:\n"
+  },
+  {
+   "id": "harita_js_c_denetimi",
+   "desc": "C kodu olmayan JS çıktısına C denetimi uygulanır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_js_ciktisinda_denetim_yok_yalniz_ozdes_ayrilir",
+   "find": "        if src_dir is not None and (language == \"c\" or cls._has_c_code(src_dir)):\n",
+   "replace": "        if src_dir is not None:\n"
+  },
+  {
+   "id": "harita_kodsuz_c_denetimsiz",
+   "desc": "C çıktısında kod yazılamadıysa adlar denetimsiz eşleme kalır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_c_ciktisi_kodsuzsa_hicbir_ad_uygulanmis_sayilmaz",
+   "find": "        if src_dir is not None and (language == \"c\" or cls._has_c_code(src_dir)):\n",
+   "replace": "        if src_dir is not None and cls._has_c_code(src_dir):\n"
+  },
+  {
+   "id": "readme_aday_satiri_yok",
+   "desc": "README uygulanmamış aday sayısını yazmaz",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_readme_aday_sayisi_ve_anlami",
+   "find": "            lines.append(f\"| Name Candidates (not applied) | {naming_map['total_candidates']} |\")\n",
+   "replace": "            pass\n"
+  },
+  {
+   "id": "harita_adres_anahtari_cozulmez",
+   "desc": "adres anahtarının koddaki adı Ghidra'dan çözülmez (anahtar aranır)",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_adres_anahtarinda_eski_ad_ghidranin_verdigi_ad",
+   "find": "        return ghidra_names.get(int(m.group(1), 16), key)\n",
+   "replace": "        return key\n"
+  },
+  {
+   "id": "harita_ghidra_adi_ozdes_sayilmaz",
+   "desc": "yeni ad Ghidra'nın zaten verdiği adla aynıyken ayrı gerekçe yazılmaz",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_temiz_harita.py::test_adres_anahtarinda_eski_ad_ghidranin_verdigi_ad",
+   "find": "        if new_name == orig or new_name == name_in_code:\n",
+   "replace": "        if new_name == orig:\n"
   }
  ]
 }

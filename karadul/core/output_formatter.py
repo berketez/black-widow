@@ -52,10 +52,37 @@ _README_ENTRY_DESCRIPTIONS = {
     "src": "Reconstructed source code",
     "report.json": "Machine-readable analysis report",
     "report.html": "Visual report (open in browser)",
-    "naming_map.json": "Name mappings",
+    "naming_map.json": "Name mappings and candidates (see Summary)",
     "dependency_graph.json": "Call graph / dependency info",
     "README.md": "This file",
 }
+
+# --- Temiz ad haritası (DIR/naming_map.json) -------------------------------------------------
+# Biçim 1.1: ``mappings`` yalnız temiz çıktının koduna uygulanmış adlardır; geri kalan kayıtlar
+# silinmez, gerekçesiyle ``candidates`` bölümüne taşınır. 1.0'da ``mappings`` toplanan her kaydı
+# taşıyordu (imza veritabanı, bayt kalıbı vb. önerileri, eski = yeni girişler dahil).
+NAMING_MAP_FORMAT_VERSION = "1.1"
+# ``applied_check``: ``mappings``'in nasıl süzüldüğü.
+APPLIED_CHECK_C_SOURCE = "c_source"        # src/ altındaki C kodunda doğrulandı
+APPLIED_CHECK_NOT_CHECKED = "not_checked"  # doğrulanacak C kodu yok (ör. JS çıktısı)
+# ``candidates`` kayıtlarındaki ``reason`` değerleri; geçersiz C adında ``reason``
+# ``name_validity`` sözlüğündeki nedendir (invalid_c_identifier, invalid_c_keyword,
+# invalid_type_name).
+CANDIDATE_SAME_AS_ORIGINAL = "same_as_original"   # yeni ad, koddaki adla aynı: ad değişmedi
+CANDIDATE_NOT_IN_CODE = "not_in_code"             # yeni ad temiz çıktının kodunda yok
+# Adresten kurulmuş yer tutucu anahtar (c_namer ``FUN_{adres:08x}`` yazar). Ghidra o adresteki
+# fonksiyona başka bir ad vermişse (``entry``, ``_FINI_0``, sembol adı) kodda geçen eski ad odur.
+_ADDRESS_KEY_RE = re.compile(r"(?:FUN|sub)_([0-9a-fA-F]+)")
+
+# Kod denetiminde okunan dosyalar ve C sözcük birimleri. Yorum ve dizgi/karakter sabitleri
+# boşlukla değiştirilir: yorumdaki ``@calls FUN_x`` ya da dizgideki ad "kodda" sayılmaz.
+_C_CODE_SUFFIXES = frozenset({".c", ".h"})
+_C_NON_CODE_RE = re.compile(
+    r"//[^\n]*|/\*.*?\*/|\"(?:\\.|[^\"\\\n])*\"|'(?:\\.|[^'\\\n])*'", re.S)
+# Ghidra çıktısında ``$`` taşıyan adlar var (Mach-O ``_fdopen$DARWIN_EXTSN``); tek sözcük sayılır.
+_C_TOKEN_RE = re.compile(r"(?<![\w$])[A-Za-z_$][\w$]*")
+_C_SCOPE_RE = re.compile(r"[{};]")
+_C_TRAILING_NAME_RE = re.compile(r"([A-Za-z_$][\w$]*)\s*$")
 
 
 @dataclass
@@ -185,7 +212,7 @@ class OutputFormatter:
             errors.append("Temiz çıktıya kaynak dosyası yazılamadı: yeniden kurulan kaynak bulunamadı")
 
         # 2. Naming map uret
-        naming_map = self._build_naming_map()
+        naming_map = self._build_naming_map(src_dir, language)
         naming_map_path = output_dir / "naming_map.json"
         try:
             naming_map_path.write_text(
@@ -540,10 +567,18 @@ class OutputFormatter:
     # ------------------------------------------------------------------
     # Naming map
     # ------------------------------------------------------------------
-    def _build_naming_map(self) -> dict[str, Any]:
-        """Tum isim eslestirmelerini birlestir."""
+    def _build_naming_map(
+        self, src_dir: Optional[Path] = None, language: str = "",
+    ) -> dict[str, Any]:
+        """Kaynaklardaki ad kayıtlarını topla; koda uygulananları ``mappings``'e ayır.
+
+        Toplama sırası ve üstüne yazma kuralı değişmedi (binary_names, imza, bayt kalıbı,
+        hesaplama kurtarma, JS manifestosu, c_namer; c_namer yer tutucu anahtarlarda kazanır).
+        Ayırma :meth:`_separate_candidates`'te: ``src_dir`` temiz çıktının kaynak dizinidir;
+        verilmezse kod denetimi yapılamaz (``applied_check: not_checked``).
+        """
         naming_map: dict[str, Any] = {
-            "version": "1.0",
+            "version": NAMING_MAP_FORMAT_VERSION,
             "target": self._result.target_name,
             "mappings": {},
             "sources": [],
@@ -713,8 +748,195 @@ class OutputFormatter:
         if c_namer_added:
             naming_map["sources"].append(SOURCE_C_NAMER)
 
-        naming_map["total_mappings"] = len(naming_map["mappings"])
-        return naming_map
+        return self._separate_candidates(
+            naming_map, src_dir, language, self._ghidra_names_by_address())
+
+    def _ghidra_names_by_address(self) -> dict[int, str]:
+        """``static/ghidra_functions.json``: adres -> Ghidra'nın fonksiyona verdiği ad.
+
+        Kayıt yoksa ya da okunamıyorsa boş sözlük: anahtarlar olduğu gibi kodda aranır.
+        """
+        data = self._workspace.load_json("static", "ghidra_functions")
+        names: dict[int, str] = {}
+        functions = data.get("functions") if isinstance(data, dict) else None
+        for fn in functions if isinstance(functions, list) else []:
+            if not isinstance(fn, dict) or not isinstance(fn.get("name"), str):
+                continue
+            try:
+                names.setdefault(int(str(fn.get("address", "")), 16), fn["name"])
+            except ValueError:
+                continue
+        return names
+
+    @classmethod
+    def _separate_candidates(
+        cls, naming_map: dict[str, Any], src_dir: Optional[Path], language: str,
+        ghidra_names: Optional[dict[int, str]] = None,
+    ) -> dict[str, Any]:
+        """Toplanan kayıtları uygulanmış eşlemeler ve uygulanmamış adaylar olarak ayır.
+
+        ``mappings`` yalnız koda uygulanmış adları taşır; ``total_mappings`` onları sayar.
+        Öbür kayıtlar SİLİNMEZ: aynı alanlarıyla, ``reason`` eklenerek ``candidates``'e gider.
+        Eski 1.0 haritasındaki kayıt kümesi ``mappings`` ile ``candidates``'in birleşimidir (bir
+        anahtar ikisinden yalnız birindedir).
+
+        Kod denetimi temiz çıktıda C kodu varsa ya da dil C ise yapılır (kod hiç yazılamadıysa
+        hiçbir ad uygulanmış sayılmaz). Başka dilde (JS modül adları C tanımlayıcısı değildir)
+        yalnız eski = yeni girişler ayrılır ve ``applied_check`` ``not_checked`` olur.
+        """
+        if src_dir is not None and (language == "c" or cls._has_c_code(src_dir)):
+            applied_check = APPLIED_CHECK_C_SOURCE
+            code = cls._scan_c_code(src_dir)
+        else:
+            applied_check = APPLIED_CHECK_NOT_CHECKED
+            code = None
+        mappings: dict[str, Any] = {}
+        candidates: dict[str, Any] = {}
+        for orig, record in naming_map["mappings"].items():   # kayıtlar hep sözlük (yukarıda)
+            reason = cls._candidate_reason(
+                orig, record.get("new_name"), code, cls._name_in_code(orig, ghidra_names or {}))
+            if reason is None:
+                mappings[orig] = record
+            else:
+                candidates[orig] = {**record, "reason": reason}
+        return {
+            "version": naming_map["version"],
+            "target": naming_map["target"],
+            "applied_check": applied_check,
+            "mappings": mappings,
+            "total_mappings": len(mappings),
+            "candidates": candidates,
+            "total_candidates": len(candidates),
+            "sources": naming_map["sources"],
+        }
+
+    @staticmethod
+    def _name_in_code(key: str, ghidra_names: dict[int, str]) -> str:
+        """Anahtarın kodda geçmesi beklenen eski adı.
+
+        Adresten kurulmuş yer tutucu anahtarda (``FUN_00105dc0``) Ghidra'nın o adresteki
+        fonksiyona verdiği ad (``entry``); öbür anahtarlarda ve adres bilinmiyorsa anahtarın
+        kendisi.
+        """
+        m = _ADDRESS_KEY_RE.fullmatch(key)
+        if m is None:
+            return key
+        return ghidra_names.get(int(m.group(1), 16), key)
+
+    @staticmethod
+    def _candidate_reason(
+        orig: str, new_name: Any, code: Optional[tuple[set[str], set[str]]],
+        name_in_code: Optional[str] = None,
+    ) -> Optional[str]:
+        """Kayıt uygulanmış bir eşlemeyse ``None``; değilse ``candidates``'teki gerekçesi.
+
+        Sıra: eski = yeni -> geçersiz C adı -> kodda yok. ``code`` ``None`` ise (denetlenecek
+        C kodu yok) yalnız ilk kural uygulanır. ``name_in_code``: kodda geçmesi beklenen eski ad
+        (:meth:`_name_in_code`); verilmezse anahtarın kendisi. Yeni ad onunla aynıysa kod zaten
+        bu adı taşıyordu: ad değişmedi.
+
+        Kodda uygulanmış sayılmak (``code`` = (tanımlayıcılar, tanımlanan fonksiyon adları);
+        ikisi de yorum ve dizgi dışındaki koddan):
+          - yeni ad bir fonksiyon tanımının adı ve eski ad hiçbir fonksiyon tanımının adı değil
+            (eski ad bazı çağrılarda kalmış olsa da tanım yeni adı taşıyor); ya da
+          - eski ad hiçbir tanımın adı değil, yeni ad kodda geçiyor ve eski ad kodda hiç geçmiyor
+            (veri adları, gövdesi çıktıda olmayan fonksiyonlar).
+        Eski ad hâlâ bir tanımın adıysa öneri o fonksiyona uygulanmamıştır; yeni ad başka bir
+        fonksiyonun tanımında ya da bir alan/yerel adı olarak geçse bile (``start``).
+        """
+        if new_name == orig or new_name == name_in_code:
+            return CANDIDATE_SAME_AS_ORIGINAL
+        if code is None:
+            return None
+        old = name_in_code or orig
+        from karadul.reconstruction.name_validity import lexical_reject_reason
+
+        invalid = lexical_reject_reason(new_name)
+        if invalid is not None:
+            return invalid
+        identifiers, defined = code
+        if new_name in defined and old not in defined:
+            return None
+        if old not in defined and new_name in identifiers and old not in identifiers:
+            return None
+        return CANDIDATE_NOT_IN_CODE
+
+    @staticmethod
+    def _has_c_code(src_dir: Path) -> bool:
+        """``src_dir`` altında en az bir .c/.h dosyası var mı."""
+        if not src_dir.is_dir():
+            return False
+        return any(p.suffix in _C_CODE_SUFFIXES and p.is_file() for p in src_dir.rglob("*"))
+
+    @classmethod
+    def _scan_c_code(cls, src_dir: Path) -> tuple[set[str], set[str]]:
+        """``src_dir`` altındaki .c/.h kodunun tanımlayıcıları ve tanımlanan fonksiyon adları.
+
+        Yorumlar ve dizgi/karakter sabitleri atılır. Fonksiyon tanımı: dosya kapsamında (ayraç
+        derinliği 0) açılan ``{``'den önceki başlık ``ad(...)`` ile bitiyorsa ``ad``; C anahtar
+        sözcükleri sayılmaz (dengesiz bir ayraçtan sonra ``if (...) {`` tanım sanılmasın).
+        Dizin yoksa iki küme de boştur.
+        """
+        identifiers: set[str] = set()
+        defined: set[str] = set()
+        if not src_dir.is_dir():
+            return identifiers, defined
+        for path in sorted(src_dir.rglob("*")):
+            if path.suffix not in _C_CODE_SUFFIXES or not path.is_file():
+                continue
+            try:
+                text = path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            code = _C_NON_CODE_RE.sub(" ", text)
+            identifiers.update(_C_TOKEN_RE.findall(code))
+            defined.update(cls._defined_function_names(code))
+        return identifiers, defined
+
+    @staticmethod
+    def _defined_function_names(code: str) -> set[str]:
+        """Yorumsuz C metninde dosya kapsamında tanımlanan fonksiyonların adları."""
+        from karadul.reconstruction.name_validity import C_KEYWORDS
+
+        names: set[str] = set()
+        depth = 0
+        boundary = 0
+        for m in _C_SCOPE_RE.finditer(code):
+            ch = m.group()
+            if ch == "{":
+                if depth == 0:
+                    name = OutputFormatter._definition_name(code[boundary:m.start()])
+                    if name is not None and name not in C_KEYWORDS:
+                        names.add(name)
+                depth += 1
+            elif ch == "}":
+                depth = max(depth - 1, 0)
+                if depth == 0:
+                    boundary = m.end()
+            elif depth == 0:
+                boundary = m.end()
+        return names
+
+    @staticmethod
+    def _definition_name(header: str) -> Optional[str]:
+        """``... ad(parametreler)`` biçiminde biten başlıktaki ``ad``; değilse ``None``.
+
+        Son ``)``'nin eşi olan ``(`` geriye doğru sayılarak bulunur (parametrede iç içe ayraç
+        olabilir: işlev göstericisi).
+        """
+        head = header.rstrip()
+        if not head.endswith(")"):
+            return None
+        depth = 0
+        for i in range(len(head) - 1, -1, -1):
+            if head[i] == ")":
+                depth += 1
+            elif head[i] == "(":
+                depth -= 1
+                if depth == 0:
+                    m = _C_TRAILING_NAME_RE.search(head, 0, i)
+                    return m.group(1) if m else None
+        return None
 
     @staticmethod
     def _read_c_namer_provenance(map_path: Path) -> dict[str, Any]:
@@ -903,8 +1125,27 @@ class OutputFormatter:
             f"| Duration | {self._result.total_duration:.1f}s |",
             f"| Source Files | {src_files} |",
             f"| Names Recovered | {total_mappings} |",
-            "",
         ]
+        if "total_candidates" in naming_map:
+            lines.append(f"| Name Candidates (not applied) | {naming_map['total_candidates']} |")
+        lines.append("")
+        applied_check = naming_map.get("applied_check")
+        if applied_check == APPLIED_CHECK_C_SOURCE:
+            lines.extend([
+                "`Names Recovered` counts only renames that appear in the code under `src/` "
+                "(`naming_map.json` → `mappings`). Proposals that did not reach the code, "
+                "entries whose new name equals the old one and names that are not valid C "
+                "identifiers are listed separately with a reason "
+                "(`naming_map.json` → `candidates`).",
+                "",
+            ])
+        elif applied_check == APPLIED_CHECK_NOT_CHECKED:
+            lines.extend([
+                "`Names Recovered` was not checked against the code (no C source to check); "
+                "entries whose new name equals the old one are listed separately "
+                "(`naming_map.json` → `candidates`).",
+                "",
+            ])
 
         # Dizin yapısı: yazılan dosya ve dizinlerden (README.md bu listeden hemen sonra yazılır).
         if output_dir is not None:
