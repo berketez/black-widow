@@ -1,0 +1,12 @@
+{
+ "sema": "karadul-ks1-sabitler/1",
+ "dosyalar": {
+  "scripts/measurement/harita_olc.py": "1a205ca42d4d9e3d0c418ae0e8383f5c69804e42efeb4d4452b0839aaf1e40f6",
+  "scripts/measurement/ks1_olc.py": "975c4d1265d8610efd03e5a9c9d55cdd784b1ba9b7720d304ff00e7776418fb9",
+  "scripts/measurement/dwarf_tip.py": "b62d496be4ac8610668d9b87512e7dd56733942274b31dd8cc73447ea1e4065e",
+  "scripts/measurement/function_f1.py": "edc782981f98abc6683dec0ee948c7caafcbeaf01759fdc8ddc14dd8586c4bdc",
+  "tests/benchmark/metrics.py": "114456c29af17fb9451a23ede4a2bf071cb02295372b91c25d46878c8240fd09",
+  "tests/test_harita_olc.py": "67fd764cc2a6bd258864b43308f846cbdee310b86aacc0adb7d44fc71fd3b7b1",
+  "scripts/measurement/mutation_specs_harita_olc.json": "8a18c9957bc8fb1ed4fdccc07ca2fe4406fc17aac0939cf216436ad1511f5037"
+ }
+}
