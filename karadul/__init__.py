@@ -9,7 +9,7 @@ from __future__ import annotations
 # NOTE: __version__ BIR sinif/fonksiyon importundan ONCE tanimlanmali.
 # `karadul.core.report_generator` gibi alt moduller `from karadul import
 # __version__` yaptiginda kismen-yuklenmis-modul hatasi almayalim diye.
-__version__ = "1.22.2"
+__version__ = "1.23.1"
 __codename__ = "Karadul"
 
 from pathlib import Path  # noqa: E402

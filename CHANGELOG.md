@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.23.1] - 2026-11-12 (KaradulLM ajanı, adres yerleşimi bayrağı, çıktı düzeltmeleri)
+
+Yeni özellik ve hata düzeltmesi birlikte: 1.22.2 → 1.23.1. Ad davranışı değişmedi (Debian `tree`,
+Mac `htop` ve Debian `pzstd`'de ad haritası önce/sonra bayt bayt aynı). Tam test takımı: 8 289
+geçti, 0 kaldı.
+
+### Eklenenler
+- KaradulLM Aşama 1b (`karadul/lm/`): bağlam yönetimi, üç okuyan araç (`get_evidence`,
+  `get_decompiled`, `get_xrefs`), K0 "ad öner" iş akışı ve K1/K2 için bütçeli döngü (öntanımlı
+  kapalı). Arayüze bağlı değil; motor bu paketi içe aktarmaz. Gerçek modelde 5 fonksiyonluk
+  duman testi: boru hattı çalışıyor, model 5 / 5 çekimser kaldı (ad doğruluğu ölçülmedi).
+  Ayrıntı: `docs/arge/2026-11-11_karadullm/asama1b.md`.
+- Proje kurucuda adres sırasına dayalı yerleşim, bayrak arkasında ve öntanımlı KAPALI
+  (`enable_address_placement`). Kapalıyken çıktı bayt bayt eskisiyle aynı (119 / 119 çalışma
+  alanı). Eşik yalnız Debian 13 / AArch64 / GCC 14'te sınandı ve o araç zincirine özgü; doğrulama
+  ölçümü yapılmadan açılmaz. Ayrıntı: `docs/arge/2026-11-12_yerlesim/uygulama.md`.
+
+### Düzeltilenler
+- Dili "cpp" olan ikilide temiz çıktı kaynak dosyalarını eziyordu (Debian `pzstd`: 12 757
+  dosyadan 1 201'i kalıyordu, kalanlar ara aşama kopyasıydı). `out/src` artık proje ağacıyla aynı.
+- `types.h` aynı girdide koşudan koşuya değişiyordu (paralel işçilerin bitiş sırasıyla
+  birleştirme); sonuçlar artık dosya yolu sırasıyla birleştiriliyor.
+- `signature_matches.json` kaydı fonksiyon adresini ve eşleşme yolunu taşımıyordu; aynı adlı iki
+  thunk özdeş kayıt üretiyordu.
+- `report.html` strateji bölümü imza adımını "Signature Database (FLIRT) … byte signatures" diye
+  anlatıyordu; adım bayt karşılaştırmıyor. Metin gerçek işi ve eşleşme yoluna göre dökümü yazıyor;
+  "names recovered" → "name candidates".
+- KaradulLM: "ad öner" cevap şemasında `kanit` dizisi sınırsızdı; bellek bekçisinin durdurduğu
+  sunucu bir sonraki görevde kendiliğinden yeniden başlıyordu.
+  Ayrıntı: `docs/arge/2026-11-12_cikti_hatalari/sonuc.md`.
+
+### Ölçüm
+- Ürün adları, `yeni2` kolu (1.22.1): ön kayıtlı beklentilerin hepsi tuttu; yanlış ad oranı
+  havuzda %40,0 → %29,7, makroda %60,8 → %52,8. "Yanlış ≤ %10" tutmuyor.
+  Ayrıntı: `docs/arge/2026-11-10_n1_adim3/urun_olcumu_sonuc_ek1.md`.
+
 ## [1.22.2] - 2026-11-11 (çıktı ve gösterge düzeltmeleri)
 
 Yalnız hata düzeltmesi: 1.22.1 → 1.22.2. Ad davranışı değişmedi (Debian `tree`'de ölçülen ad
