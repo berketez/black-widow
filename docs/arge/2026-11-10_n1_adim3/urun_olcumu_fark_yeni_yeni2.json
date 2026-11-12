@@ -1,0 +1,1636 @@
+{
+ "sema": "karadul-urun-karsilastir/1",
+ "komut": "karsilastir",
+ "kollar": {
+  "taban": {
+   "kol": {
+    "ad": "yeni",
+    "kok_debian": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/debian",
+    "kok_mac": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/mac"
+   },
+   "arac": {
+    "betik_sha256": "06131cdc55f752bcebc7a8bcfd2921ad39a2b63db3f627b9945c3e2c384380ae",
+    "ks1_olc_sha256": "975c4d1265d8610efd03e5a9c9d55cdd784b1ba9b7720d304ff00e7776418fb9",
+    "git_head": "07c3f86ef10f5199373bc741ce012c181f3544bc",
+    "python": "3.12.7",
+    "ghidra_surumleri": {
+     "12.1.2": 119
+    }
+   },
+   "kol_kimligi": {
+    "{\"genel_esik\": 0.7, \"koken_var\": true, \"susturma\": true}": 118
+   },
+   "toplam": {
+    "havuz": {
+     "ad_verilen": 2270,
+     "dogru": 1363,
+     "yanlis": 907,
+     "nufus": 21371,
+     "kesinlik": {
+      "k": 1363,
+      "n": 2270,
+      "oran": 0.600441,
+      "aralik": [
+       0.5801,
+       0.6204
+      ]
+     },
+     "yanlis_orani": {
+      "k": 907,
+      "n": 2270,
+      "oran": 0.399559,
+      "aralik": [
+       0.3796,
+       0.4199
+      ]
+     },
+     "kapsam": {
+      "k": 1773,
+      "n": 21371,
+      "oran": 0.082963,
+      "aralik": [
+       0.0793,
+       0.0867
+      ]
+     },
+     "dogru_kapsam": {
+      "k": 1120,
+      "n": 21371,
+      "oran": 0.052407,
+      "aralik": [
+       0.0495,
+       0.0555
+      ]
+     },
+     "nufus_ici_kesinlik": {
+      "k": 1120,
+      "n": 1773,
+      "oran": 0.631698,
+      "aralik": [
+       0.609,
+       0.6538
+      ]
+     },
+     "proje_normallestirmesi": {
+      "k": 1592,
+      "n": 2270,
+      "oran": 0.701322,
+      "aralik": [
+       0.6822,
+       0.7198
+      ]
+     },
+     "tekil_kesinlik": {
+      "k": 411,
+      "n": 869,
+      "oran": 0.472957,
+      "aralik": [
+       0.44,
+       0.5062
+      ]
+     }
+    },
+    "makro": {
+     "kesinlik": {
+      "makro": 0.391677,
+      "program": {
+       "coreutils": 0.680986,
+       "openssl": 0.628571,
+       "redis-tools": 0.275862,
+       "sqlite3": 0.15,
+       "tmux": 0.506951,
+       "zstd": 0.107692
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/zstd",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [
+       "debian/htop",
+       "debian/tree"
+      ],
+      "n_min": 10
+     },
+     "yanlis_orani": {
+      "makro": 0.608323,
+      "program": {
+       "coreutils": 0.319014,
+       "openssl": 0.371429,
+       "redis-tools": 0.724138,
+       "sqlite3": 0.85,
+       "tmux": 0.493049,
+       "zstd": 0.892308
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/zstd",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [
+       "debian/htop",
+       "debian/tree"
+      ],
+      "n_min": 10
+     },
+     "kapsam": {
+      "makro": 0.049452,
+      "program": {
+       "coreutils": 0.07832,
+       "htop": 0.006757,
+       "openssl": 0.05151,
+       "redis-tools": 0.005487,
+       "sqlite3": 0.03856,
+       "tmux": 0.152575,
+       "tree": 0.009091,
+       "zstd": 0.053319
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/htop",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/tree",
+       "debian/zstd",
+       "mac/htop",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [],
+      "n_min": 10
+     },
+     "dogru_kapsam": {
+      "makro": 0.023258,
+      "program": {
+       "coreutils": 0.059291,
+       "htop": 0.0,
+       "openssl": 0.033748,
+       "redis-tools": 0.0,
+       "sqlite3": 0.002571,
+       "tmux": 0.077012,
+       "tree": 0.009091,
+       "zstd": 0.004353
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/htop",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/tree",
+       "debian/zstd",
+       "mac/htop",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [],
+      "n_min": 10
+     },
+     "nufus_ici_kesinlik": {
+      "makro": 0.413008,
+      "program": {
+       "coreutils": 0.757028,
+       "openssl": 0.655172,
+       "sqlite3": 0.066667,
+       "tmux": 0.504542,
+       "zstd": 0.081633
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/openssl",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/zstd",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [
+       "debian/htop",
+       "debian/redis-tools",
+       "debian/tree"
+      ],
+      "n_min": 10
+     },
+     "proje_normallestirmesi": {
+      "makro": 0.474207,
+      "program": {
+       "coreutils": 0.830282,
+       "openssl": 0.685714,
+       "redis-tools": 0.413793,
+       "sqlite3": 0.25,
+       "tmux": 0.511607,
+       "zstd": 0.153846
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/zstd",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [
+       "debian/htop",
+       "debian/tree"
+      ],
+      "n_min": 10
+     },
+     "tekil_kesinlik": {
+      "makro": 0.358953,
+      "program": {
+       "coreutils": 0.617647,
+       "openssl": 0.628571,
+       "redis-tools": 0.142857,
+       "sqlite3": 0.15,
+       "tmux": 0.506951,
+       "zstd": 0.107692
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/zstd",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [
+       "debian/htop",
+       "debian/tree"
+      ],
+      "n_min": 10
+     }
+    }
+   },
+   "kesin_etiket": {
+    "havuz": {
+     "ad_verilen": 262,
+     "dogru": 249,
+     "yanlis": 13,
+     "nufus": 21371,
+     "kesinlik": {
+      "k": 249,
+      "n": 262,
+      "oran": 0.950382,
+      "aralik": [
+       0.917,
+       0.9708
+      ]
+     },
+     "yanlis_orani": {
+      "k": 13,
+      "n": 262,
+      "oran": 0.049618,
+      "aralik": [
+       0.0292,
+       0.083
+      ]
+     },
+     "kapsam": {
+      "k": 252,
+      "n": 21371,
+      "oran": 0.011792,
+      "aralik": [
+       0.0104,
+       0.0133
+      ]
+     },
+     "dogru_kapsam": {
+      "k": 240,
+      "n": 21371,
+      "oran": 0.01123,
+      "aralik": [
+       0.0099,
+       0.0127
+      ]
+     }
+    },
+    "makro": {
+     "kesinlik": {
+      "makro": 0.972869,
+      "program": {
+       "openssl": 1.0,
+       "tmux": 0.945739
+      },
+      "giren_birimler": [
+       "debian/openssl",
+       "debian/tmux",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [],
+      "n_min": 10
+     },
+     "yanlis_orani": {
+      "makro": 0.027131,
+      "program": {
+       "openssl": 0.0,
+       "tmux": 0.054261
+      },
+      "giren_birimler": [
+       "debian/openssl",
+       "debian/tmux",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [],
+      "n_min": 10
+     },
+     "kapsam": {
+      "makro": 0.009763,
+      "program": {
+       "coreutils": 0.0,
+       "htop": 0.0,
+       "openssl": 0.024867,
+       "redis-tools": 0.0,
+       "sqlite3": 0.0,
+       "tmux": 0.05324,
+       "tree": 0.0,
+       "zstd": 0.0
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/htop",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/tree",
+       "debian/zstd",
+       "mac/htop",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [],
+      "n_min": 10
+     },
+     "dogru_kapsam": {
+      "makro": 0.009423,
+      "program": {
+       "coreutils": 0.0,
+       "htop": 0.0,
+       "openssl": 0.024867,
+       "redis-tools": 0.0,
+       "sqlite3": 0.0,
+       "tmux": 0.050515,
+       "tree": 0.0,
+       "zstd": 0.0
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/htop",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/tree",
+       "debian/zstd",
+       "mac/htop",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [],
+      "n_min": 10
+     }
+    }
+   },
+   "kararlar": {
+    "yanlis_orani": {
+     "olcu": "yanlis_orani",
+     "esik": 0.1,
+     "makro": 0.608323,
+     "program": {
+      "coreutils": 0.319014,
+      "openssl": 0.371429,
+      "redis-tools": 0.724138,
+      "sqlite3": 0.85,
+      "tmux": 0.493049,
+      "zstd": 0.892308
+     },
+     "giren_birimler": [
+      "debian/coreutils",
+      "debian/openssl",
+      "debian/redis-tools",
+      "debian/sqlite3",
+      "debian/tmux",
+      "debian/zstd",
+      "mac/tmux"
+     ],
+     "kucuk_birimler": [
+      "debian/htop",
+      "debian/tree"
+     ],
+     "n_min": 10,
+     "karar": "tutmuyor"
+    },
+    "kesin_etiket": {
+     "olcu": "kesinlik",
+     "etiket": "kesin",
+     "esik": 0.95,
+     "makro": 0.972869,
+     "program": {
+      "openssl": 1.0,
+      "tmux": 0.945739
+     },
+     "giren_birimler": [
+      "debian/openssl",
+      "debian/tmux",
+      "mac/tmux"
+     ],
+     "kucuk_birimler": [],
+     "n_min": 10,
+     "wilson_ihlali": [],
+     "karar": "tutuyor"
+    }
+   }
+  },
+  "yeni": {
+   "kol": {
+    "ad": "yeni2",
+    "kok_debian": "/Users/apple/karadul_olcum/runs/urun-yeni2-f30ac9a/debian",
+    "kok_mac": "/Users/apple/karadul_olcum/runs/urun-yeni2-f30ac9a/mac"
+   },
+   "arac": {
+    "betik_sha256": "06131cdc55f752bcebc7a8bcfd2921ad39a2b63db3f627b9945c3e2c384380ae",
+    "ks1_olc_sha256": "975c4d1265d8610efd03e5a9c9d55cdd784b1ba9b7720d304ff00e7776418fb9",
+    "git_head": "2be12ede8e57f81abca877fe14a73a68b1a6e2c6",
+    "python": "3.12.7",
+    "ghidra_surumleri": {
+     "12.1.2": 119
+    }
+   },
+   "kol_kimligi": {
+    "{\"genel_esik\": 0.7, \"koken_var\": true, \"susturma\": true}": 118
+   },
+   "toplam": {
+    "havuz": {
+     "ad_verilen": 2261,
+     "dogru": 1589,
+     "yanlis": 672,
+     "nufus": 21371,
+     "kesinlik": {
+      "k": 1589,
+      "n": 2261,
+      "oran": 0.702786,
+      "aralik": [
+       0.6836,
+       0.7213
+      ]
+     },
+     "yanlis_orani": {
+      "k": 672,
+      "n": 2261,
+      "oran": 0.297214,
+      "aralik": [
+       0.2787,
+       0.3164
+      ]
+     },
+     "kapsam": {
+      "k": 1764,
+      "n": 21371,
+      "oran": 0.082542,
+      "aralik": [
+       0.0789,
+       0.0863
+      ]
+     },
+     "dogru_kapsam": {
+      "k": 1120,
+      "n": 21371,
+      "oran": 0.052407,
+      "aralik": [
+       0.0495,
+       0.0555
+      ]
+     },
+     "nufus_ici_kesinlik": {
+      "k": 1120,
+      "n": 1764,
+      "oran": 0.634921,
+      "aralik": [
+       0.6122,
+       0.6571
+      ]
+     },
+     "proje_normallestirmesi": {
+      "k": 1592,
+      "n": 2261,
+      "oran": 0.704113,
+      "aralik": [
+       0.685,
+       0.7226
+      ]
+     },
+     "tekil_kesinlik": {
+      "k": 425,
+      "n": 868,
+      "oran": 0.489631,
+      "aralik": [
+       0.4565,
+       0.5229
+      ]
+     }
+    },
+    "makro": {
+     "kesinlik": {
+      "makro": 0.472196,
+      "program": {
+       "coreutils": 0.834869,
+       "openssl": 0.685714,
+       "redis-tools": 0.413793,
+       "sqlite3": 0.25,
+       "tmux": 0.510341,
+       "zstd": 0.138462
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/zstd",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [
+       "debian/htop",
+       "debian/tree"
+      ],
+      "n_min": 10
+     },
+     "yanlis_orani": {
+      "makro": 0.527804,
+      "program": {
+       "coreutils": 0.165131,
+       "openssl": 0.314286,
+       "redis-tools": 0.586207,
+       "sqlite3": 0.75,
+       "tmux": 0.489659,
+       "zstd": 0.861538
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/zstd",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [
+       "debian/htop",
+       "debian/tree"
+      ],
+      "n_min": 10
+     },
+     "kapsam": {
+      "makro": 0.049364,
+      "program": {
+       "coreutils": 0.077613,
+       "htop": 0.006757,
+       "openssl": 0.05151,
+       "redis-tools": 0.005487,
+       "sqlite3": 0.03856,
+       "tmux": 0.152575,
+       "tree": 0.009091,
+       "zstd": 0.053319
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/htop",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/tree",
+       "debian/zstd",
+       "mac/htop",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [],
+      "n_min": 10
+     },
+     "dogru_kapsam": {
+      "makro": 0.023258,
+      "program": {
+       "coreutils": 0.059291,
+       "htop": 0.0,
+       "openssl": 0.033748,
+       "redis-tools": 0.0,
+       "sqlite3": 0.002571,
+       "tmux": 0.077012,
+       "tree": 0.009091,
+       "zstd": 0.004353
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/htop",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/tree",
+       "debian/zstd",
+       "mac/htop",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [],
+      "n_min": 10
+     },
+     "nufus_ici_kesinlik": {
+      "makro": 0.414389,
+      "program": {
+       "coreutils": 0.763931,
+       "openssl": 0.655172,
+       "sqlite3": 0.066667,
+       "tmux": 0.504542,
+       "zstd": 0.081633
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/openssl",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/zstd",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [
+       "debian/htop",
+       "debian/redis-tools",
+       "debian/tree"
+      ],
+      "n_min": 10
+     },
+     "proje_normallestirmesi": {
+      "makro": 0.47509,
+      "program": {
+       "coreutils": 0.835578,
+       "openssl": 0.685714,
+       "redis-tools": 0.413793,
+       "sqlite3": 0.25,
+       "tmux": 0.511607,
+       "zstd": 0.153846
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/zstd",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [
+       "debian/htop",
+       "debian/tree"
+      ],
+      "n_min": 10
+     },
+     "tekil_kesinlik": {
+      "makro": 0.415962,
+      "program": {
+       "coreutils": 0.69697,
+       "openssl": 0.685714,
+       "redis-tools": 0.214286,
+       "sqlite3": 0.25,
+       "tmux": 0.510341,
+       "zstd": 0.138462
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/zstd",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [
+       "debian/htop",
+       "debian/tree"
+      ],
+      "n_min": 10
+     }
+    }
+   },
+   "kesin_etiket": {
+    "havuz": {
+     "ad_verilen": 262,
+     "dogru": 249,
+     "yanlis": 13,
+     "nufus": 21371,
+     "kesinlik": {
+      "k": 249,
+      "n": 262,
+      "oran": 0.950382,
+      "aralik": [
+       0.917,
+       0.9708
+      ]
+     },
+     "yanlis_orani": {
+      "k": 13,
+      "n": 262,
+      "oran": 0.049618,
+      "aralik": [
+       0.0292,
+       0.083
+      ]
+     },
+     "kapsam": {
+      "k": 252,
+      "n": 21371,
+      "oran": 0.011792,
+      "aralik": [
+       0.0104,
+       0.0133
+      ]
+     },
+     "dogru_kapsam": {
+      "k": 240,
+      "n": 21371,
+      "oran": 0.01123,
+      "aralik": [
+       0.0099,
+       0.0127
+      ]
+     }
+    },
+    "makro": {
+     "kesinlik": {
+      "makro": 0.972869,
+      "program": {
+       "openssl": 1.0,
+       "tmux": 0.945739
+      },
+      "giren_birimler": [
+       "debian/openssl",
+       "debian/tmux",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [],
+      "n_min": 10
+     },
+     "yanlis_orani": {
+      "makro": 0.027131,
+      "program": {
+       "openssl": 0.0,
+       "tmux": 0.054261
+      },
+      "giren_birimler": [
+       "debian/openssl",
+       "debian/tmux",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [],
+      "n_min": 10
+     },
+     "kapsam": {
+      "makro": 0.009763,
+      "program": {
+       "coreutils": 0.0,
+       "htop": 0.0,
+       "openssl": 0.024867,
+       "redis-tools": 0.0,
+       "sqlite3": 0.0,
+       "tmux": 0.05324,
+       "tree": 0.0,
+       "zstd": 0.0
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/htop",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/tree",
+       "debian/zstd",
+       "mac/htop",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [],
+      "n_min": 10
+     },
+     "dogru_kapsam": {
+      "makro": 0.009423,
+      "program": {
+       "coreutils": 0.0,
+       "htop": 0.0,
+       "openssl": 0.024867,
+       "redis-tools": 0.0,
+       "sqlite3": 0.0,
+       "tmux": 0.050515,
+       "tree": 0.0,
+       "zstd": 0.0
+      },
+      "giren_birimler": [
+       "debian/coreutils",
+       "debian/htop",
+       "debian/openssl",
+       "debian/redis-tools",
+       "debian/sqlite3",
+       "debian/tmux",
+       "debian/tree",
+       "debian/zstd",
+       "mac/htop",
+       "mac/tmux"
+      ],
+      "kucuk_birimler": [],
+      "n_min": 10
+     }
+    }
+   },
+   "kararlar": {
+    "yanlis_orani": {
+     "olcu": "yanlis_orani",
+     "esik": 0.1,
+     "makro": 0.527804,
+     "program": {
+      "coreutils": 0.165131,
+      "openssl": 0.314286,
+      "redis-tools": 0.586207,
+      "sqlite3": 0.75,
+      "tmux": 0.489659,
+      "zstd": 0.861538
+     },
+     "giren_birimler": [
+      "debian/coreutils",
+      "debian/openssl",
+      "debian/redis-tools",
+      "debian/sqlite3",
+      "debian/tmux",
+      "debian/zstd",
+      "mac/tmux"
+     ],
+     "kucuk_birimler": [
+      "debian/htop",
+      "debian/tree"
+     ],
+     "n_min": 10,
+     "karar": "tutmuyor"
+    },
+    "kesin_etiket": {
+     "olcu": "kesinlik",
+     "etiket": "kesin",
+     "esik": 0.95,
+     "makro": 0.972869,
+     "program": {
+      "openssl": 1.0,
+      "tmux": 0.945739
+     },
+     "giren_birimler": [
+      "debian/openssl",
+      "debian/tmux",
+      "mac/tmux"
+     ],
+     "kucuk_birimler": [],
+     "n_min": 10,
+     "wilson_ihlali": [],
+     "karar": "tutuyor"
+    }
+   }
+  }
+ },
+ "ghidra_ayni": true,
+ "sorunlar": [],
+ "eksik_izinli": false,
+ "birimler": {
+  "debian/coreutils": {
+   "elf": 106,
+   "nufus": {
+    "taban": 12717,
+    "yeni": 12717
+   },
+   "taban": {
+    "ad_verilen": 1420,
+    "dogru": 967,
+    "yanlis": 453,
+    "yanlis_orani": {
+     "k": 453,
+     "n": 1420,
+     "oran": 0.319014,
+     "aralik": [
+      0.2953,
+      0.3437
+     ]
+    }
+   },
+   "yeni": {
+    "ad_verilen": 1411,
+    "dogru": 1178,
+    "yanlis": 233,
+    "yanlis_orani": {
+     "k": 233,
+     "n": 1411,
+     "oran": 0.165131,
+     "aralik": [
+      0.1467,
+      0.1854
+     ]
+    }
+   },
+   "gecis": {
+    "adsiz>dogru": 0,
+    "adsiz>yanlis": 0,
+    "dogru>adsiz": 0,
+    "dogru>dogru": 967,
+    "dogru>yanlis": 0,
+    "yanlis>adsiz": 9,
+    "yanlis>dogru": 211,
+    "yanlis>yanlis": 233
+   },
+   "kaybedilen_dogru": 0,
+   "kaybedilen_silinen": 0,
+   "kaybedilen_yanlisa_donen": 0,
+   "kazanilan_dogru": 211,
+   "giderilen_yanlis": 220,
+   "yeni_yanlis": 0,
+   "kayip_orani": {
+    "k": 0,
+    "n": 967,
+    "oran": 0.0,
+    "aralik": [
+     0.0,
+     0.004
+    ]
+   },
+   "kayip_kanali": {},
+   "kazanc_kanali": {
+    "on_ad:elf_onyuk": 211
+   }
+  },
+  "debian/htop": {
+   "elf": 1,
+   "nufus": {
+    "taban": 222,
+    "yeni": 222
+   },
+   "taban": {
+    "ad_verilen": 6,
+    "dogru": 2,
+    "yanlis": 4,
+    "yanlis_orani": {
+     "k": 4,
+     "n": 6,
+     "oran": 0.666667,
+     "aralik": [
+      0.3,
+      0.9032
+     ]
+    }
+   },
+   "yeni": {
+    "ad_verilen": 6,
+    "dogru": 3,
+    "yanlis": 3,
+    "yanlis_orani": {
+     "k": 3,
+     "n": 6,
+     "oran": 0.5,
+     "aralik": [
+      0.1876,
+      0.8124
+     ]
+    }
+   },
+   "gecis": {
+    "adsiz>dogru": 0,
+    "adsiz>yanlis": 0,
+    "dogru>adsiz": 0,
+    "dogru>dogru": 2,
+    "dogru>yanlis": 0,
+    "yanlis>adsiz": 0,
+    "yanlis>dogru": 1,
+    "yanlis>yanlis": 3
+   },
+   "kaybedilen_dogru": 0,
+   "kaybedilen_silinen": 0,
+   "kaybedilen_yanlisa_donen": 0,
+   "kazanilan_dogru": 1,
+   "giderilen_yanlis": 1,
+   "yeni_yanlis": 0,
+   "kayip_orani": {
+    "k": 0,
+    "n": 2,
+    "oran": 0.0,
+    "aralik": [
+     0.0,
+     0.6576
+    ]
+   },
+   "kayip_kanali": {},
+   "kazanc_kanali": {
+    "on_ad:elf_onyuk": 1
+   }
+  },
+  "debian/openssl": {
+   "elf": 1,
+   "nufus": {
+    "taban": 563,
+    "yeni": 563
+   },
+   "taban": {
+    "ad_verilen": 35,
+    "dogru": 22,
+    "yanlis": 13,
+    "yanlis_orani": {
+     "k": 13,
+     "n": 35,
+     "oran": 0.371429,
+     "aralik": [
+      0.2317,
+      0.5366
+     ]
+    }
+   },
+   "yeni": {
+    "ad_verilen": 35,
+    "dogru": 24,
+    "yanlis": 11,
+    "yanlis_orani": {
+     "k": 11,
+     "n": 35,
+     "oran": 0.314286,
+     "aralik": [
+      0.1855,
+      0.4798
+     ]
+    }
+   },
+   "gecis": {
+    "adsiz>dogru": 0,
+    "adsiz>yanlis": 0,
+    "dogru>adsiz": 0,
+    "dogru>dogru": 22,
+    "dogru>yanlis": 0,
+    "yanlis>adsiz": 0,
+    "yanlis>dogru": 2,
+    "yanlis>yanlis": 11
+   },
+   "kaybedilen_dogru": 0,
+   "kaybedilen_silinen": 0,
+   "kaybedilen_yanlisa_donen": 0,
+   "kazanilan_dogru": 2,
+   "giderilen_yanlis": 2,
+   "yeni_yanlis": 0,
+   "kayip_orani": {
+    "k": 0,
+    "n": 22,
+    "oran": 0.0,
+    "aralik": [
+     0.0,
+     0.1487
+    ]
+   },
+   "kayip_kanali": {},
+   "kazanc_kanali": {
+    "on_ad:elf_onyuk": 2
+   }
+  },
+  "debian/redis-tools": {
+   "elf": 4,
+   "nufus": {
+    "taban": 1458,
+    "yeni": 1458
+   },
+   "taban": {
+    "ad_verilen": 29,
+    "dogru": 8,
+    "yanlis": 21,
+    "yanlis_orani": {
+     "k": 21,
+     "n": 29,
+     "oran": 0.724138,
+     "aralik": [
+      0.5428,
+      0.853
+     ]
+    }
+   },
+   "yeni": {
+    "ad_verilen": 29,
+    "dogru": 12,
+    "yanlis": 17,
+    "yanlis_orani": {
+     "k": 17,
+     "n": 29,
+     "oran": 0.586207,
+     "aralik": [
+      0.4074,
+      0.7449
+     ]
+    }
+   },
+   "gecis": {
+    "adsiz>dogru": 0,
+    "adsiz>yanlis": 0,
+    "dogru>adsiz": 0,
+    "dogru>dogru": 8,
+    "dogru>yanlis": 0,
+    "yanlis>adsiz": 0,
+    "yanlis>dogru": 4,
+    "yanlis>yanlis": 17
+   },
+   "kaybedilen_dogru": 0,
+   "kaybedilen_silinen": 0,
+   "kaybedilen_yanlisa_donen": 0,
+   "kazanilan_dogru": 4,
+   "giderilen_yanlis": 4,
+   "yeni_yanlis": 0,
+   "kayip_orani": {
+    "k": 0,
+    "n": 8,
+    "oran": 0.0,
+    "aralik": [
+     0.0,
+     0.3244
+    ]
+   },
+   "kayip_kanali": {},
+   "kazanc_kanali": {
+    "on_ad:elf_onyuk": 4
+   }
+  },
+  "debian/sqlite3": {
+   "elf": 1,
+   "nufus": {
+    "taban": 389,
+    "yeni": 389
+   },
+   "taban": {
+    "ad_verilen": 20,
+    "dogru": 3,
+    "yanlis": 17,
+    "yanlis_orani": {
+     "k": 17,
+     "n": 20,
+     "oran": 0.85,
+     "aralik": [
+      0.6396,
+      0.9476
+     ]
+    }
+   },
+   "yeni": {
+    "ad_verilen": 20,
+    "dogru": 5,
+    "yanlis": 15,
+    "yanlis_orani": {
+     "k": 15,
+     "n": 20,
+     "oran": 0.75,
+     "aralik": [
+      0.5313,
+      0.8881
+     ]
+    }
+   },
+   "gecis": {
+    "adsiz>dogru": 0,
+    "adsiz>yanlis": 0,
+    "dogru>adsiz": 0,
+    "dogru>dogru": 3,
+    "dogru>yanlis": 0,
+    "yanlis>adsiz": 0,
+    "yanlis>dogru": 2,
+    "yanlis>yanlis": 15
+   },
+   "kaybedilen_dogru": 0,
+   "kaybedilen_silinen": 0,
+   "kaybedilen_yanlisa_donen": 0,
+   "kazanilan_dogru": 2,
+   "giderilen_yanlis": 2,
+   "yeni_yanlis": 0,
+   "kayip_orani": {
+    "k": 0,
+    "n": 3,
+    "oran": 0.0,
+    "aralik": [
+     0.0,
+     0.5615
+    ]
+   },
+   "kayip_kanali": {},
+   "kazanc_kanali": {
+    "on_ad:elf_onyuk": 2
+   }
+  },
+  "debian/tmux": {
+   "elf": 1,
+   "nufus": {
+    "taban": 1851,
+    "yeni": 1851
+   },
+   "taban": {
+    "ad_verilen": 295,
+    "dogru": 146,
+    "yanlis": 149,
+    "yanlis_orani": {
+     "k": 149,
+     "n": 295,
+     "oran": 0.505085,
+     "aralik": [
+      0.4483,
+      0.5617
+     ]
+    }
+   },
+   "yeni": {
+    "ad_verilen": 295,
+    "dogru": 148,
+    "yanlis": 147,
+    "yanlis_orani": {
+     "k": 147,
+     "n": 295,
+     "oran": 0.498305,
+     "aralik": [
+      0.4416,
+      0.555
+     ]
+    }
+   },
+   "gecis": {
+    "adsiz>dogru": 0,
+    "adsiz>yanlis": 0,
+    "dogru>adsiz": 0,
+    "dogru>dogru": 146,
+    "dogru>yanlis": 0,
+    "yanlis>adsiz": 0,
+    "yanlis>dogru": 2,
+    "yanlis>yanlis": 147
+   },
+   "kaybedilen_dogru": 0,
+   "kaybedilen_silinen": 0,
+   "kaybedilen_yanlisa_donen": 0,
+   "kazanilan_dogru": 2,
+   "giderilen_yanlis": 2,
+   "yeni_yanlis": 0,
+   "kayip_orani": {
+    "k": 0,
+    "n": 146,
+    "oran": 0.0,
+    "aralik": [
+     0.0,
+     0.0256
+    ]
+   },
+   "kayip_kanali": {},
+   "kazanc_kanali": {
+    "on_ad:elf_onyuk": 2
+   }
+  },
+  "debian/tree": {
+   "elf": 1,
+   "nufus": {
+    "taban": 110,
+    "yeni": 110
+   },
+   "taban": {
+    "ad_verilen": 5,
+    "dogru": 3,
+    "yanlis": 2,
+    "yanlis_orani": {
+     "k": 2,
+     "n": 5,
+     "oran": 0.4,
+     "aralik": [
+      0.1176,
+      0.7693
+     ]
+    }
+   },
+   "yeni": {
+    "ad_verilen": 5,
+    "dogru": 5,
+    "yanlis": 0,
+    "yanlis_orani": {
+     "k": 0,
+     "n": 5,
+     "oran": 0.0,
+     "aralik": [
+      0.0,
+      0.4345
+     ]
+    }
+   },
+   "gecis": {
+    "adsiz>dogru": 0,
+    "adsiz>yanlis": 0,
+    "dogru>adsiz": 0,
+    "dogru>dogru": 3,
+    "dogru>yanlis": 0,
+    "yanlis>adsiz": 0,
+    "yanlis>dogru": 2,
+    "yanlis>yanlis": 0
+   },
+   "kaybedilen_dogru": 0,
+   "kaybedilen_silinen": 0,
+   "kaybedilen_yanlisa_donen": 0,
+   "kazanilan_dogru": 2,
+   "giderilen_yanlis": 2,
+   "yeni_yanlis": 0,
+   "kayip_orani": {
+    "k": 0,
+    "n": 3,
+    "oran": 0.0,
+    "aralik": [
+     0.0,
+     0.5615
+    ]
+   },
+   "kayip_kanali": {},
+   "kazanc_kanali": {
+    "on_ad:elf_onyuk": 2
+   }
+  },
+  "debian/zstd": {
+   "elf": 1,
+   "nufus": {
+    "taban": 919,
+    "yeni": 919
+   },
+   "taban": {
+    "ad_verilen": 65,
+    "dogru": 7,
+    "yanlis": 58,
+    "yanlis_orani": {
+     "k": 58,
+     "n": 65,
+     "oran": 0.892308,
+     "aralik": [
+      0.794,
+      0.9468
+     ]
+    }
+   },
+   "yeni": {
+    "ad_verilen": 65,
+    "dogru": 9,
+    "yanlis": 56,
+    "yanlis_orani": {
+     "k": 56,
+     "n": 65,
+     "oran": 0.861538,
+     "aralik": [
+      0.7573,
+      0.9254
+     ]
+    }
+   },
+   "gecis": {
+    "adsiz>dogru": 0,
+    "adsiz>yanlis": 0,
+    "dogru>adsiz": 0,
+    "dogru>dogru": 7,
+    "dogru>yanlis": 0,
+    "yanlis>adsiz": 0,
+    "yanlis>dogru": 2,
+    "yanlis>yanlis": 56
+   },
+   "kaybedilen_dogru": 0,
+   "kaybedilen_silinen": 0,
+   "kaybedilen_yanlisa_donen": 0,
+   "kazanilan_dogru": 2,
+   "giderilen_yanlis": 2,
+   "yeni_yanlis": 0,
+   "kayip_orani": {
+    "k": 0,
+    "n": 7,
+    "oran": 0.0,
+    "aralik": [
+     0.0,
+     0.3543
+    ]
+   },
+   "kayip_kanali": {},
+   "kazanc_kanali": {
+    "on_ad:elf_onyuk": 2
+   }
+  },
+  "mac/htop": {
+   "elf": 1,
+   "nufus": {
+    "taban": 597,
+    "yeni": 597
+   },
+   "taban": {
+    "ad_verilen": 0,
+    "dogru": 0,
+    "yanlis": 0,
+    "yanlis_orani": {
+     "k": 0,
+     "n": 0,
+     "oran": null,
+     "aralik": null
+    }
+   },
+   "yeni": {
+    "ad_verilen": 0,
+    "dogru": 0,
+    "yanlis": 0,
+    "yanlis_orani": {
+     "k": 0,
+     "n": 0,
+     "oran": null,
+     "aralik": null
+    }
+   },
+   "gecis": {
+    "adsiz>dogru": 0,
+    "adsiz>yanlis": 0,
+    "dogru>adsiz": 0,
+    "dogru>dogru": 0,
+    "dogru>yanlis": 0,
+    "yanlis>adsiz": 0,
+    "yanlis>dogru": 0,
+    "yanlis>yanlis": 0
+   },
+   "kaybedilen_dogru": 0,
+   "kaybedilen_silinen": 0,
+   "kaybedilen_yanlisa_donen": 0,
+   "kazanilan_dogru": 0,
+   "giderilen_yanlis": 0,
+   "yeni_yanlis": 0,
+   "kayip_orani": {
+    "k": 0,
+    "n": 0,
+    "oran": null,
+    "aralik": null
+   },
+   "kayip_kanali": {},
+   "kazanc_kanali": {}
+  },
+  "mac/tmux": {
+   "elf": 1,
+   "nufus": {
+    "taban": 2545,
+    "yeni": 2545
+   },
+   "taban": {
+    "ad_verilen": 395,
+    "dogru": 205,
+    "yanlis": 190,
+    "yanlis_orani": {
+     "k": 190,
+     "n": 395,
+     "oran": 0.481013,
+     "aralik": [
+      0.4322,
+      0.5302
+     ]
+    }
+   },
+   "yeni": {
+    "ad_verilen": 395,
+    "dogru": 205,
+    "yanlis": 190,
+    "yanlis_orani": {
+     "k": 190,
+     "n": 395,
+     "oran": 0.481013,
+     "aralik": [
+      0.4322,
+      0.5302
+     ]
+    }
+   },
+   "gecis": {
+    "adsiz>dogru": 0,
+    "adsiz>yanlis": 0,
+    "dogru>adsiz": 0,
+    "dogru>dogru": 205,
+    "dogru>yanlis": 0,
+    "yanlis>adsiz": 0,
+    "yanlis>dogru": 0,
+    "yanlis>yanlis": 190
+   },
+   "kaybedilen_dogru": 0,
+   "kaybedilen_silinen": 0,
+   "kaybedilen_yanlisa_donen": 0,
+   "kazanilan_dogru": 0,
+   "giderilen_yanlis": 0,
+   "yeni_yanlis": 0,
+   "kayip_orani": {
+    "k": 0,
+    "n": 205,
+    "oran": 0.0,
+    "aralik": [
+     0.0,
+     0.0184
+    ]
+   },
+   "kayip_kanali": {},
+   "kazanc_kanali": {}
+  }
+ },
+ "toplam": {
+  "kaybedilen_dogru": 0,
+  "kaybedilen_silinen": 0,
+  "kaybedilen_yanlisa_donen": 0,
+  "kazanilan_dogru": 226,
+  "giderilen_yanlis": 235,
+  "yeni_yanlis": 0,
+  "taban": {
+   "ad_verilen": 2270,
+   "dogru": 1363,
+   "yanlis": 907,
+   "yanlis_orani": {
+    "k": 907,
+    "n": 2270,
+    "oran": 0.399559,
+    "aralik": [
+     0.3796,
+     0.4199
+    ]
+   }
+  },
+  "yeni": {
+   "ad_verilen": 2261,
+   "dogru": 1589,
+   "yanlis": 672,
+   "yanlis_orani": {
+    "k": 672,
+    "n": 2261,
+    "oran": 0.297214,
+    "aralik": [
+     0.2787,
+     0.3164
+    ]
+   }
+  },
+  "kayip_kanali": {},
+  "kazanc_kanali": {
+   "on_ad:elf_onyuk": 226
+  },
+  "kayip_orani": {
+   "havuz": {
+    "k": 0,
+    "n": 1363,
+    "oran": 0.0,
+    "aralik": [
+     0.0,
+     0.0028
+    ]
+   },
+   "makro": {
+    "makro": 0.0,
+    "program": {
+     "coreutils": 0.0,
+     "openssl": 0.0,
+     "tmux": 0.0
+    },
+    "giren_birimler": [
+     "debian/coreutils",
+     "debian/openssl",
+     "debian/tmux",
+     "mac/tmux"
+    ],
+    "kucuk_birimler": [
+     "debian/htop",
+     "debian/redis-tools",
+     "debian/sqlite3",
+     "debian/tree",
+     "debian/zstd"
+    ],
+    "n_min": 10
+   }
+  }
+ },
+ "kararlar": {
+  "kaybedilen_dogru": {
+   "sinir": 0.15,
+   "havuz": {
+    "k": 0,
+    "n": 1363,
+    "oran": 0.0,
+    "aralik": [
+     0.0,
+     0.0028
+    ]
+   },
+   "siniri_asan_birimler": [],
+   "karar": "beklenen_aralikta"
+  },
+  "yanlis_yonu": {
+   "karsilastirilan_birimler": [
+    "debian/coreutils",
+    "debian/openssl",
+    "debian/redis-tools",
+    "debian/sqlite3",
+    "debian/tmux",
+    "debian/zstd",
+    "mac/tmux"
+   ],
+   "dusmeyen_birimler": [
+    "mac/tmux"
+   ],
+   "karar": "incele"
+  }
+ }
+}
