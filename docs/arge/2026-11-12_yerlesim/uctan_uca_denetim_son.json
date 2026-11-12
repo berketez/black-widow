@@ -1,0 +1,64 @@
+{
+ "agac": "/Users/apple/Black_Widow/.claude/worktrees/agent-a1ba0644b26a86b1d",
+ "kok": "/Users/apple/karadul_olcum/runs/yerlesim-2026-11-12/son",
+ "isler": {
+  "acik/debian/tree": {
+   "bitti": true,
+   "out_dosya": 284,
+   "out_src_proje_dosya": 279,
+   "proje_dosya": 279,
+   "src_dizin": {
+    "addr": 16
+   },
+   "yerlesim_raporu": {
+    "schema": "karadul-placement/1",
+    "requested": "address_padding",
+    "strategy": "address_padding",
+    "fallback_reason": null,
+    "padding_threshold": 16,
+    "alignment": 32,
+    "units": 250,
+    "entry_units": 1,
+    "functions": 250,
+    "memory_blocks_known": true,
+    "units_placed_by_address": 249,
+    "units_without_address": 0,
+    "measured_gaps": 180,
+    "signal_gaps": 10,
+    "padding_cuts": 11,
+    "block_cuts": 4
+   },
+   "out_ta_yerlesim_raporu": true,
+   "readme_placement": true,
+   "rapor_proje_sayaclari": {
+    "project_functions_total": 250,
+    "project_functions_placed": 250,
+    "project_functions_missing": 0,
+    "project_functions_duplicated": 0,
+    "project_files": 279
+   },
+   "raporda_proje_kurulum_hatasi": 0
+  }
+ },
+ "tree_acik_olcu": {
+  "ghidra_adres_kumesi_sakliyla_ayni": true,
+  "urun_okuma": {
+   "kaynak_dosya": 250,
+   "basliksiz_dosya": 0,
+   "baslik": 250,
+   "ghidra_fonksiyon": 250,
+   "atanan": 250,
+   "atanamayan": 0,
+   "coklu_modul": 0,
+   "yinelenen": 0,
+   "ghidra_disi": 0,
+   "modul": 17
+  },
+  "nufus": 110,
+  "nufustan_eksik": 0,
+  "ari": 0.911061,
+  "yeniden_uretimdeki_ari": 0.911061,
+  "bolme_islevle_ayni": true,
+  "nufusta_kok_modul": 0
+ }
+}

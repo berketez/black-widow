@@ -1,0 +1,4570 @@
+{
+ "sema": "karadul-yerlesim-kurulum-denetimi/1",
+ "uyari": "GT'siz kurulum denetimi; uyum ölçüsü içermez",
+ "kokler": {
+  "debian13": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956",
+  "eski": "/Users/apple/karadul_olcum/runs/aday-f893d72"
+ },
+ "ozet": {
+  "alan": 129,
+  "kapali_sakliyla_ayni": 119,
+  "kapali_farkli": [
+   "eski/debian-9.4-3/cat",
+   "eski/debian-9.4-3/comm",
+   "eski/debian-9.4-3/cut",
+   "eski/debian-9.4-3/expr",
+   "eski/debian-9.4-3/wc",
+   "eski/ubuntu-9.4-3ubuntu6/cat",
+   "eski/ubuntu-9.4-3ubuntu6/comm",
+   "eski/ubuntu-9.4-3ubuntu6/cut",
+   "eski/ubuntu-9.4-3ubuntu6/expr",
+   "eski/ubuntu-9.4-3ubuntu6/wc"
+  ],
+  "acik_kurulan": 129,
+  "acik_basarisiz": 0,
+  "eksik": 0,
+  "cift": 0,
+  "strateji": {
+   "address_padding": 122,
+   "api_community": 7
+  },
+  "geri_dusus": {
+   "None": 122,
+   "no_padding_signal": 7
+  },
+  "adressiz_birim": 0
+ },
+ "alanlar": {
+  "debian13/debian/coreutils/[": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 314,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 278,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 14,
+    "dolgu_siniri": 16,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 21,
+    "en_buyuk_grup_payi": 0.393502,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 17,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/arch": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 277,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 246,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 13,
+    "dolgu_siniri": 15,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 20,
+    "en_buyuk_grup_payi": 0.387755,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 16,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/b2sum": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 343,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 314,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 20,
+    "dolgu_siniri": 22,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 27,
+    "en_buyuk_grup_payi": 0.402556,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 23,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/base32": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 328,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 301,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 16,
+    "dolgu_siniri": 17,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 22,
+    "en_buyuk_grup_payi": 0.406667,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 18,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/base64": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 330,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 298,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 17,
+    "dolgu_siniri": 18,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 23,
+    "en_buyuk_grup_payi": 0.40404,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 19,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/basename": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 273,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 247,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 14,
+    "dolgu_siniri": 15,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 20,
+    "en_buyuk_grup_payi": 0.378049,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 16,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/basenc": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 374,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 343,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 17,
+    "dolgu_siniri": 19,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 24,
+    "en_buyuk_grup_payi": 0.356725,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 20,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/cat": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 323,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 296,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 17,
+    "dolgu_siniri": 18,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 23,
+    "en_buyuk_grup_payi": 0.410169,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 19,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/chcon": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 475,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 446,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 21,
+    "dolgu_siniri": 24,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 29,
+    "en_buyuk_grup_payi": 0.393258,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 25,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/chgrp": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 432,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 403,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 22,
+    "dolgu_siniri": 23,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 28,
+    "en_buyuk_grup_payi": 0.375622,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 24,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/chmod": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 385,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 365,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 21,
+    "dolgu_siniri": 22,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 27,
+    "en_buyuk_grup_payi": 0.354396,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 23,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/chown": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 432,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 403,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 22,
+    "dolgu_siniri": 23,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 28,
+    "en_buyuk_grup_payi": 0.375622,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 24,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/chroot": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 338,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 311,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 17,
+    "dolgu_siniri": 18,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 23,
+    "en_buyuk_grup_payi": 0.429032,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 19,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/cksum": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 520,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 479,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 29,
+    "dolgu_siniri": 31,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 36,
+    "en_buyuk_grup_payi": 0.376569,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 32,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/comm": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 323,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 296,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 23,
+    "dolgu_siniri": 24,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 29,
+    "en_buyuk_grup_payi": 0.386441,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 25,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/cp": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 765,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 746,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 49,
+    "dolgu_siniri": 51,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 56,
+    "en_buyuk_grup_payi": 0.389262,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 52,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/csplit": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 373,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 347,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 20,
+    "dolgu_siniri": 21,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 26,
+    "en_buyuk_grup_payi": 0.416185,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 22,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/cut": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 344,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 313,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 17,
+    "dolgu_siniri": 19,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 24,
+    "en_buyuk_grup_payi": 0.413462,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 20,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/date": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 408,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 376,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 18,
+    "dolgu_siniri": 21,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 26,
+    "en_buyuk_grup_payi": 0.408,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 22,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/dd": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 413,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 388,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 19,
+    "dolgu_siniri": 21,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 26,
+    "en_buyuk_grup_payi": 0.395349,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 22,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/df": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 491,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 472,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 35,
+    "dolgu_siniri": 37,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 42,
+    "en_buyuk_grup_payi": 0.388535,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 38,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/dir": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 707,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 665,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 28,
+    "dolgu_siniri": 31,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 36,
+    "en_buyuk_grup_payi": 0.335843,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 32,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/dircolors": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 309,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 283,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 16,
+    "dolgu_siniri": 17,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 22,
+    "en_buyuk_grup_payi": 0.393617,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 18,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/dirname": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 277,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 249,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 14,
+    "dolgu_siniri": 15,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 20,
+    "en_buyuk_grup_payi": 0.383065,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 16,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/du": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 565,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 532,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 30,
+    "dolgu_siniri": 32,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 37,
+    "en_buyuk_grup_payi": 0.365348,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 33,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/echo": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 270,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 246,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 12,
+    "dolgu_siniri": 14,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 19,
+    "en_buyuk_grup_payi": 0.387755,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 15,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/env": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 342,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 318,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 13,
+    "dolgu_siniri": 15,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 20,
+    "en_buyuk_grup_payi": 0.435331,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 16,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/expand": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 316,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 284,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 18,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 23,
+    "en_buyuk_grup_payi": 0.39576,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 19,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/expr": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 330,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 298,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 14,
+    "dolgu_siniri": 16,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 21,
+    "en_buyuk_grup_payi": 0.390572,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 17,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/factor": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 411,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 383,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 14,
+    "dolgu_siniri": 15,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 20,
+    "en_buyuk_grup_payi": 0.429319,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 16,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/false": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 267,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 239,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 13,
+    "dolgu_siniri": 14,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 19,
+    "en_buyuk_grup_payi": 0.382353,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 15,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/fmt": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 324,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 293,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 17,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 22,
+    "en_buyuk_grup_payi": 0.39726,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 18,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/fold": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 311,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 284,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 16,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 21,
+    "en_buyuk_grup_payi": 0.409894,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 17,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/groups": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 294,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 270,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 14,
+    "dolgu_siniri": 15,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 20,
+    "en_buyuk_grup_payi": 0.405204,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 16,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/head": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 321,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 292,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 13,
+    "dolgu_siniri": 15,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 20,
+    "en_buyuk_grup_payi": 0.402062,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 16,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/hostid": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 270,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 247,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 12,
+    "dolgu_siniri": 13,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 18,
+    "en_buyuk_grup_payi": 0.386179,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 14,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/id": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 336,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 306,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 17,
+    "dolgu_siniri": 19,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 24,
+    "en_buyuk_grup_payi": 0.422951,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 20,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/install": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 834,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 815,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 51,
+    "dolgu_siniri": 53,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 58,
+    "en_buyuk_grup_payi": 0.399263,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 54,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/join": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 360,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 330,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 23,
+    "dolgu_siniri": 26,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 31,
+    "en_buyuk_grup_payi": 0.3769,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 27,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/libstdbuf.so": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 50,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 34,
+    "giris_birimi": 0,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 1,
+    "dolgu_siniri": 1,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 6,
+    "en_buyuk_grup_payi": 0.382353,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 2,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/link": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 272,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 247,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 13,
+    "dolgu_siniri": 14,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 19,
+    "en_buyuk_grup_payi": 0.386179,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 15,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/ln": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 444,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 421,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 30,
+    "dolgu_siniri": 32,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 37,
+    "en_buyuk_grup_payi": 0.369048,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 33,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/logname": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 278,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 250,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 12,
+    "dolgu_siniri": 13,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 18,
+    "en_buyuk_grup_payi": 0.389558,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 14,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/ls": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 707,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 665,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 28,
+    "dolgu_siniri": 31,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 36,
+    "en_buyuk_grup_payi": 0.335843,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 32,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/md5sum": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 327,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 299,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 18,
+    "dolgu_siniri": 20,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 25,
+    "en_buyuk_grup_payi": 0.416107,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 21,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/mkdir": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 542,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 514,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 27,
+    "dolgu_siniri": 28,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 33,
+    "en_buyuk_grup_payi": 0.403509,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 29,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/mkfifo": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 497,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 471,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 26,
+    "dolgu_siniri": 27,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 32,
+    "en_buyuk_grup_payi": 0.397872,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 28,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/mknod": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 513,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 481,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 26,
+    "dolgu_siniri": 28,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 33,
+    "en_buyuk_grup_payi": 0.402083,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 29,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/mktemp": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 312,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 285,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 16,
+    "dolgu_siniri": 18,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 23,
+    "en_buyuk_grup_payi": 0.397887,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 19,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/mv": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 776,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 753,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 53,
+    "dolgu_siniri": 54,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 59,
+    "en_buyuk_grup_payi": 0.386968,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 55,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/nice": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 289,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 258,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 13,
+    "dolgu_siniri": 15,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 20,
+    "en_buyuk_grup_payi": 0.400778,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 16,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/nl": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 330,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 299,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 18,
+    "dolgu_siniri": 20,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 25,
+    "en_buyuk_grup_payi": 0.409396,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 21,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/nohup": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 304,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 274,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 18,
+    "dolgu_siniri": 19,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 24,
+    "en_buyuk_grup_payi": 0.399267,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 20,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/nproc": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 302,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 275,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 14,
+    "dolgu_siniri": 15,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 20,
+    "en_buyuk_grup_payi": 0.405109,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 16,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/numfmt": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 336,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 312,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 18,
+    "dolgu_siniri": 20,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 25,
+    "en_buyuk_grup_payi": 0.382637,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 21,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/od": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 415,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 380,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 21,
+    "dolgu_siniri": 23,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 28,
+    "en_buyuk_grup_payi": 0.387863,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 24,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/paste": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 303,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 278,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 16,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 21,
+    "en_buyuk_grup_payi": 0.404332,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 17,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/pathchk": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 288,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 259,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 16,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 21,
+    "en_buyuk_grup_payi": 0.399225,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 17,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/pinky": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 432,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 402,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 17,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 22,
+    "en_buyuk_grup_payi": 0.473815,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 18,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/pr": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 414,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 377,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 23,
+    "dolgu_siniri": 26,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 31,
+    "en_buyuk_grup_payi": 0.388298,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 27,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/printenv": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 271,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 245,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 12,
+    "dolgu_siniri": 13,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 18,
+    "en_buyuk_grup_payi": 0.389344,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 14,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/printf": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 336,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 310,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 19,
+    "dolgu_siniri": 21,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 26,
+    "en_buyuk_grup_payi": 0.38835,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 22,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/ptx": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 368,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 335,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 17,
+    "dolgu_siniri": 19,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 24,
+    "en_buyuk_grup_payi": 0.419162,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 20,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/pwd": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 310,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 285,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 14,
+    "dolgu_siniri": 16,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 21,
+    "en_buyuk_grup_payi": 0.419014,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 17,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/readlink": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 330,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 300,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 16,
+    "dolgu_siniri": 17,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 22,
+    "en_buyuk_grup_payi": 0.35786,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 18,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/realpath": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 333,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 306,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 18,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 23,
+    "en_buyuk_grup_payi": 0.357377,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 19,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/rm": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 421,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 395,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 24,
+    "dolgu_siniri": 25,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 30,
+    "en_buyuk_grup_payi": 0.347716,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 26,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/rmdir": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 305,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 274,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 16,
+    "dolgu_siniri": 17,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 22,
+    "en_buyuk_grup_payi": 0.406593,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 18,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/runcon": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 337,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 307,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 12,
+    "dolgu_siniri": 13,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 18,
+    "en_buyuk_grup_payi": 0.428105,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 14,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/seq": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 322,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 297,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 17,
+    "dolgu_siniri": 18,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 23,
+    "en_buyuk_grup_payi": 0.398649,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 19,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/sha1sum": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 327,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 299,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 19,
+    "dolgu_siniri": 20,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 25,
+    "en_buyuk_grup_payi": 0.416107,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 21,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/sha224sum": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 352,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 323,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 18,
+    "dolgu_siniri": 19,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 24,
+    "en_buyuk_grup_payi": 0.409938,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 20,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/sha256sum": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 352,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 323,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 18,
+    "dolgu_siniri": 19,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 24,
+    "en_buyuk_grup_payi": 0.409938,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 20,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/sha384sum": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 349,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 323,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 18,
+    "dolgu_siniri": 19,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 24,
+    "en_buyuk_grup_payi": 0.409938,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 20,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/sha512sum": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 349,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 323,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 18,
+    "dolgu_siniri": 19,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 24,
+    "en_buyuk_grup_payi": 0.409938,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 20,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/shred": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 431,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 393,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 27,
+    "dolgu_siniri": 28,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 33,
+    "en_buyuk_grup_payi": 0.405612,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 29,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/shuf": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 415,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 377,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 23,
+    "dolgu_siniri": 25,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 30,
+    "en_buyuk_grup_payi": 0.37766,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 26,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/sleep": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 291,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 263,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 16,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 21,
+    "en_buyuk_grup_payi": 0.389313,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 17,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/sort": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 671,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 625,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 32,
+    "dolgu_siniri": 36,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 41,
+    "en_buyuk_grup_payi": 0.397436,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 37,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/split": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 424,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 396,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 26,
+    "dolgu_siniri": 29,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 34,
+    "en_buyuk_grup_payi": 0.432911,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 30,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/stat": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 506,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 471,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 30,
+    "dolgu_siniri": 32,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 37,
+    "en_buyuk_grup_payi": 0.425532,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 33,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/stdbuf": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 319,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 286,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 20,
+    "dolgu_siniri": 21,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 26,
+    "en_buyuk_grup_payi": 0.4,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 22,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/stty": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 344,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 309,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 16,
+    "dolgu_siniri": 18,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 23,
+    "en_buyuk_grup_payi": 0.412338,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 19,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/sum": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 344,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 314,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 20,
+    "dolgu_siniri": 22,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 27,
+    "en_buyuk_grup_payi": 0.389776,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 23,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/sync": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 289,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 261,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 14,
+    "dolgu_siniri": 16,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 21,
+    "en_buyuk_grup_payi": 0.403846,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 17,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/tac": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 337,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 306,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 18,
+    "dolgu_siniri": 19,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 24,
+    "en_buyuk_grup_payi": 0.416393,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 20,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/tail": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 444,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 412,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 26,
+    "dolgu_siniri": 29,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 34,
+    "en_buyuk_grup_payi": 0.374696,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 30,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/tee": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 335,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 306,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 18,
+    "dolgu_siniri": 19,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 24,
+    "en_buyuk_grup_payi": 0.393443,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 20,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/test": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 296,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 268,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 16,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 21,
+    "en_buyuk_grup_payi": 0.400749,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 17,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/timeout": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 363,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 333,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 17,
+    "dolgu_siniri": 18,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 23,
+    "en_buyuk_grup_payi": 0.439759,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 19,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/touch": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 383,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 361,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 17,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 22,
+    "en_buyuk_grup_payi": 0.405556,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 18,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/tr": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 325,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 299,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 18,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 23,
+    "en_buyuk_grup_payi": 0.395973,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 19,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/true": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 267,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 239,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 13,
+    "dolgu_siniri": 14,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 19,
+    "en_buyuk_grup_payi": 0.382353,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 15,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/truncate": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 295,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 266,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 14,
+    "dolgu_siniri": 16,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 21,
+    "en_buyuk_grup_payi": 0.403774,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 17,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/tsort": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 309,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 279,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 14,
+    "dolgu_siniri": 15,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 20,
+    "en_buyuk_grup_payi": 0.388489,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 16,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/tty": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 280,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 251,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 12,
+    "dolgu_siniri": 13,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 18,
+    "en_buyuk_grup_payi": 0.396,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 14,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/uname": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 277,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 246,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 13,
+    "dolgu_siniri": 15,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 20,
+    "en_buyuk_grup_payi": 0.387755,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 16,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/unexpand": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 311,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 287,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 17,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 22,
+    "en_buyuk_grup_payi": 0.398601,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 18,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/uniq": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 342,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 309,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 16,
+    "dolgu_siniri": 17,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 22,
+    "en_buyuk_grup_payi": 0.396104,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 18,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/unlink": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 276,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 247,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 12,
+    "dolgu_siniri": 13,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 18,
+    "en_buyuk_grup_payi": 0.386179,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 14,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/users": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 393,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 363,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 16,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 21,
+    "en_buyuk_grup_payi": 0.461326,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 17,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/vdir": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 707,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 665,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 28,
+    "dolgu_siniri": 31,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 36,
+    "en_buyuk_grup_payi": 0.335843,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 32,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/wc": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 390,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 355,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 20,
+    "dolgu_siniri": 22,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 27,
+    "en_buyuk_grup_payi": 0.40113,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 23,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/who": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 436,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 403,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 15,
+    "dolgu_siniri": 17,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 22,
+    "en_buyuk_grup_payi": 0.472637,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 18,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/whoami": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 282,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 253,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 12,
+    "dolgu_siniri": 13,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 18,
+    "en_buyuk_grup_payi": 0.392857,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 14,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/coreutils/yes": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 281,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 249,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 13,
+    "dolgu_siniri": 15,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 20,
+    "en_buyuk_grup_payi": 0.383065,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 16,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/htop/htop": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 1194,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 1148,
+    "giris_birimi": 2,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 45,
+    "dolgu_siniri": 47,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 51,
+    "en_buyuk_grup_payi": 0.306283,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 47,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/openssl/openssl": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 5709,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 5672,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 42,
+    "dolgu_siniri": 43,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 48,
+    "en_buyuk_grup_payi": 0.592841,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 44,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/redis-tools/redis-benchmark": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 933,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 892,
+    "giris_birimi": 2,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 5,
+    "dolgu_siniri": 5,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 10,
+    "en_buyuk_grup_payi": 0.298876,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 6,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/redis-tools/redis-check-aof": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 5759,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 5697,
+    "giris_birimi": 2,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 48,
+    "dolgu_siniri": 57,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 62,
+    "en_buyuk_grup_payi": 0.108867,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 58,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/redis-tools/redis-check-rdb": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 5759,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 5697,
+    "giris_birimi": 2,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 48,
+    "dolgu_siniri": 57,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 62,
+    "en_buyuk_grup_payi": 0.108867,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 58,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/redis-tools/redis-cli": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 1150,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 1111,
+    "giris_birimi": 2,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 8,
+    "dolgu_siniri": 9,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 14,
+    "en_buyuk_grup_payi": 0.3156,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 10,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/sqlite3/sqlite3": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 1167,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 1144,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 3,
+    "dolgu_siniri": 3,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 8,
+    "en_buyuk_grup_payi": 0.412948,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 4,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/tmux/tmux": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 2616,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 2588,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 67,
+    "dolgu_siniri": 69,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 74,
+    "en_buyuk_grup_payi": 0.171241,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 70,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/tree/tree": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 274,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 250,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 10,
+    "dolgu_siniri": 11,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 16,
+    "en_buyuk_grup_payi": 0.26506,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 12,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/zstd/pzstd": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 1200,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 1156,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 35,
+    "dolgu_siniri": 58,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 63,
+    "en_buyuk_grup_payi": 0.1671,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 59,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/debian/zstd/zstd": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 1460,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 1444,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 23,
+    "dolgu_siniri": 23,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 28,
+    "en_buyuk_grup_payi": 0.15246,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 24,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "debian13/mac/htop": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 844,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "api_community",
+    "geri_dusus": "no_padding_signal",
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 790,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 0,
+    "dolgu_siniri": 0,
+    "blok_siniri": 2,
+    "blok_bilgisi": true,
+    "grup": 0,
+    "en_buyuk_grup_payi": null,
+    "blok_gruplari": {}
+   }
+  },
+  "debian13/mac/tmux": {
+   "girdi": {
+    "kaynak": "annotated",
+    "denenen": [
+     "annotated"
+    ],
+    "dosya": 2854,
+    "ayni": true
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 2821,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 2,
+    "dolgu_siniri": 7,
+    "blok_siniri": 2,
+    "blok_bilgisi": true,
+    "grup": 10,
+    "en_buyuk_grup_payi": 0.616312,
+    "blok_gruplari": {
+     "EXTERNAL": 1,
+     "__stubs": 1,
+     "__text": 8
+    }
+   }
+  },
+  "eski/debian-9.4-3/cat": {
+   "girdi": {
+    "kaynak": null,
+    "denenen": [
+     "annotated",
+     "commented",
+     "semantic_named",
+     "struct_recovered",
+     "typed",
+     "merged",
+     "src"
+    ],
+    "dosya": 254,
+    "ayni": false
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 223,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 1,
+    "dolgu_siniri": 1,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 6,
+    "en_buyuk_grup_payi": 0.423423,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 2,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "eski/debian-9.4-3/comm": {
+   "girdi": {
+    "kaynak": null,
+    "denenen": [
+     "annotated",
+     "commented",
+     "semantic_named",
+     "struct_recovered",
+     "typed",
+     "merged",
+     "src"
+    ],
+    "dosya": 259,
+    "ayni": false
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "api_community",
+    "geri_dusus": "no_padding_signal",
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 229,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 0,
+    "dolgu_siniri": 1,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 0,
+    "en_buyuk_grup_payi": null,
+    "blok_gruplari": {}
+   }
+  },
+  "eski/debian-9.4-3/cut": {
+   "girdi": {
+    "kaynak": null,
+    "denenen": [
+     "annotated",
+     "commented",
+     "semantic_named",
+     "struct_recovered",
+     "typed",
+     "merged",
+     "src"
+    ],
+    "dosya": 267,
+    "ayni": false
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 239,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 1,
+    "dolgu_siniri": 1,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 6,
+    "en_buyuk_grup_payi": 0.420168,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 2,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "eski/debian-9.4-3/expr": {
+   "girdi": {
+    "kaynak": null,
+    "denenen": [
+     "annotated",
+     "commented",
+     "semantic_named",
+     "struct_recovered",
+     "typed",
+     "merged",
+     "src"
+    ],
+    "dosya": 262,
+    "ayni": false
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "api_community",
+    "geri_dusus": "no_padding_signal",
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 233,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 0,
+    "dolgu_siniri": 1,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 0,
+    "en_buyuk_grup_payi": null,
+    "blok_gruplari": {}
+   }
+  },
+  "eski/debian-9.4-3/wc": {
+   "girdi": {
+    "kaynak": null,
+    "denenen": [
+     "annotated",
+     "commented",
+     "semantic_named",
+     "struct_recovered",
+     "typed",
+     "merged",
+     "src"
+    ],
+    "dosya": 296,
+    "ayni": false
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "api_community",
+    "geri_dusus": "no_padding_signal",
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 268,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 0,
+    "dolgu_siniri": 0,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 0,
+    "en_buyuk_grup_payi": null,
+    "blok_gruplari": {}
+   }
+  },
+  "eski/ubuntu-9.4-3ubuntu6/cat": {
+   "girdi": {
+    "kaynak": null,
+    "denenen": [
+     "annotated",
+     "commented",
+     "semantic_named",
+     "struct_recovered",
+     "typed",
+     "merged",
+     "src"
+    ],
+    "dosya": 169,
+    "ayni": false
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "api_community",
+    "geri_dusus": "no_padding_signal",
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 146,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 0,
+    "dolgu_siniri": 1,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 0,
+    "en_buyuk_grup_payi": null,
+    "blok_gruplari": {}
+   }
+  },
+  "eski/ubuntu-9.4-3ubuntu6/comm": {
+   "girdi": {
+    "kaynak": null,
+    "denenen": [
+     "annotated",
+     "commented",
+     "semantic_named",
+     "struct_recovered",
+     "typed",
+     "merged",
+     "src"
+    ],
+    "dosya": 162,
+    "ayni": false
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "api_community",
+    "geri_dusus": "no_padding_signal",
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 144,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 0,
+    "dolgu_siniri": 0,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 0,
+    "en_buyuk_grup_payi": null,
+    "blok_gruplari": {}
+   }
+  },
+  "eski/ubuntu-9.4-3ubuntu6/cut": {
+   "girdi": {
+    "kaynak": null,
+    "denenen": [
+     "annotated",
+     "commented",
+     "semantic_named",
+     "struct_recovered",
+     "typed",
+     "merged",
+     "src"
+    ],
+    "dosya": 181,
+    "ayni": false
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "api_community",
+    "geri_dusus": "no_padding_signal",
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 157,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 0,
+    "dolgu_siniri": 0,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 0,
+    "en_buyuk_grup_payi": null,
+    "blok_gruplari": {}
+   }
+  },
+  "eski/ubuntu-9.4-3ubuntu6/expr": {
+   "girdi": {
+    "kaynak": null,
+    "denenen": [
+     "annotated",
+     "commented",
+     "semantic_named",
+     "struct_recovered",
+     "typed",
+     "merged",
+     "src"
+    ],
+    "dosya": 187,
+    "ayni": false
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 165,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 1,
+    "dolgu_siniri": 2,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 7,
+    "en_buyuk_grup_payi": 0.408537,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 3,
+     "EXTERNAL": 1
+    }
+   }
+  },
+  "eski/ubuntu-9.4-3ubuntu6/wc": {
+   "girdi": {
+    "kaynak": null,
+    "denenen": [
+     "annotated",
+     "commented",
+     "semantic_named",
+     "struct_recovered",
+     "typed",
+     "merged",
+     "src"
+    ],
+    "dosya": 200,
+    "ayni": false
+   },
+   "acik": {
+    "girdi_dizini": "annotated",
+    "basarili": true,
+    "strateji": "address_padding",
+    "geri_dusus": null,
+    "eksik": 0,
+    "cift": 0,
+    "hata": 0,
+    "birim": 181,
+    "giris_birimi": 1,
+    "adressiz_birim": 0,
+    "sinyal_dolgu": 1,
+    "dolgu_siniri": 1,
+    "blok_siniri": 4,
+    "blok_bilgisi": true,
+    "grup": 6,
+    "en_buyuk_grup_payi": 0.388889,
+    "blok_gruplari": {
+     ".fini": 1,
+     ".init": 1,
+     ".plt": 1,
+     ".text": 2,
+     "EXTERNAL": 1
+    }
+   }
+  }
+ }
+}

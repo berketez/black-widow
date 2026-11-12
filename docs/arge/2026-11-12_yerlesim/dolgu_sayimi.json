@@ -1,0 +1,8835 @@
+{
+ "sema": "karadul-yerlesim-dolgu-sayimi/1",
+ "uyari": "GT'siz sayım; uyum ölçüsü içermez",
+ "esik": 16,
+ "hizalama": 32,
+ "kutular": [
+  "negatif",
+  "0",
+  "1-15",
+  "16-31",
+  ">=32"
+ ],
+ "kokler": {
+  "debian13": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956",
+  "eski": "/Users/apple/karadul_olcum/runs/aday-f893d72"
+ },
+ "gruplar": {
+  "debian13/debian/coreutils": {
+   "ikili": 106,
+   "bicim": [
+    "Executable and Linking Format (ELF)"
+   ],
+   "ana_kod_blogu": [
+    ".text"
+   ],
+   "fonksiyon": 36573,
+   "olculen_cift": 28488,
+   "kutular": {
+    "negatif": 126,
+    "0": 14855,
+    "1-15": 11332,
+    "16-31": 2002,
+    ">=32": 173
+   },
+   "sinyalsiz_ikili": [],
+   "sinyal_yogunlugu": {
+    "en_az": 0.047782,
+    "ortanca": 0.069772,
+    "en_cok": 0.099567
+   },
+   "yasak_kalan_payi": {
+    "en_az": 0.0,
+    "en_cok": 0.029412
+   },
+   "pozitif_dolgu": 6100,
+   "pozitif_dolgu_sonrasi_hizali": 5987,
+   "thunk_yeri": {
+    "ana_kod": 482,
+    "yurutulebilir_diger": 14310,
+    "yurutulemez": 7661
+   },
+   "blok_bilgisi_olmayan": 0
+  },
+  "debian13/debian/htop": {
+   "ikili": 1,
+   "bicim": [
+    "Executable and Linking Format (ELF)"
+   ],
+   "ana_kod_blogu": [
+    ".text"
+   ],
+   "fonksiyon": 1148,
+   "olculen_cift": 964,
+   "kutular": {
+    "negatif": 0,
+    "0": 501,
+    "1-15": 416,
+    "16-31": 45,
+    ">=32": 2
+   },
+   "sinyalsiz_ikili": [],
+   "sinyal_yogunlugu": {
+    "en_az": 0.04668,
+    "ortanca": 0.04668,
+    "en_cok": 0.04668
+   },
+   "yasak_kalan_payi": {
+    "en_az": 0.001626,
+    "en_cok": 0.001626
+   },
+   "pozitif_dolgu": 287,
+   "pozitif_dolgu_sonrasi_hizali": 287,
+   "thunk_yeri": {
+    "ana_kod": 9,
+    "yurutulebilir_diger": 350,
+    "yurutulemez": 180
+   },
+   "blok_bilgisi_olmayan": 0
+  },
+  "debian13/debian/openssl": {
+   "ikili": 1,
+   "bicim": [
+    "Executable and Linking Format (ELF)"
+   ],
+   "ana_kod_blogu": [
+    ".text"
+   ],
+   "fonksiyon": 5672,
+   "olculen_cift": 3962,
+   "kutular": {
+    "negatif": 8,
+    "0": 1994,
+    "1-15": 1917,
+    "16-31": 42,
+    ">=32": 1
+   },
+   "sinyalsiz_ikili": [],
+   "sinyal_yogunlugu": {
+    "en_az": 0.010601,
+    "ortanca": 0.010601,
+    "en_cok": 0.010601
+   },
+   "yasak_kalan_payi": {
+    "en_az": 0.001661,
+    "en_cok": 0.001661
+   },
+   "pozitif_dolgu": 272,
+   "pozitif_dolgu_sonrasi_hizali": 272,
+   "thunk_yeri": {
+    "ana_kod": 13,
+    "yurutulebilir_diger": 3361,
+    "yurutulemez": 1706
+   },
+   "blok_bilgisi_olmayan": 0
+  },
+  "debian13/debian/redis-tools": {
+   "ikili": 4,
+   "bicim": [
+    "Executable and Linking Format (ELF)"
+   ],
+   "ana_kod_blogu": [
+    ".text"
+   ],
+   "fonksiyon": 13397,
+   "olculen_cift": 12462,
+   "kutular": {
+    "negatif": 7,
+    "0": 7312,
+    "1-15": 5015,
+    "16-31": 109,
+    ">=32": 19
+   },
+   "sinyalsiz_ikili": [],
+   "sinyal_yogunlugu": {
+    "en_az": 0.00664,
+    "ortanca": 0.008668,
+    "en_cok": 0.008924
+   },
+   "yasak_kalan_payi": {
+    "en_az": 0.00042,
+    "en_cok": 0.002037
+   },
+   "pozitif_dolgu": 4234,
+   "pozitif_dolgu_sonrasi_hizali": 4213,
+   "thunk_yeri": {
+    "ana_kod": 142,
+    "yurutulebilir_diger": 1805,
+    "yurutulemez": 919
+   },
+   "blok_bilgisi_olmayan": 0
+  },
+  "debian13/debian/sqlite3": {
+   "ikili": 1,
+   "bicim": [
+    "Executable and Linking Format (ELF)"
+   ],
+   "ana_kod_blogu": [
+    ".text"
+   ],
+   "fonksiyon": 1144,
+   "olculen_cift": 899,
+   "kutular": {
+    "negatif": 4,
+    "0": 482,
+    "1-15": 410,
+    "16-31": 3,
+    ">=32": 0
+   },
+   "sinyalsiz_ikili": [],
+   "sinyal_yogunlugu": {
+    "en_az": 0.003337,
+    "ortanca": 0.003337,
+    "en_cok": 0.003337
+   },
+   "yasak_kalan_payi": {
+    "en_az": 0.002331,
+    "en_cok": 0.002331
+   },
+   "pozitif_dolgu": 174,
+   "pozitif_dolgu_sonrasi_hizali": 174,
+   "thunk_yeri": {
+    "ana_kod": 3,
+    "yurutulebilir_diger": 471,
+    "yurutulemez": 241
+   },
+   "blok_bilgisi_olmayan": 0
+  },
+  "debian13/debian/tmux": {
+   "ikili": 1,
+   "bicim": [
+    "Executable and Linking Format (ELF)"
+   ],
+   "ana_kod_blogu": [
+    ".text"
+   ],
+   "fonksiyon": 2588,
+   "olculen_cift": 2360,
+   "kutular": {
+    "negatif": 0,
+    "0": 1323,
+    "1-15": 968,
+    "16-31": 67,
+    ">=32": 2
+   },
+   "sinyalsiz_ikili": [],
+   "sinyal_yogunlugu": {
+    "en_az": 0.02839,
+    "ortanca": 0.02839,
+    "en_cok": 0.02839
+   },
+   "yasak_kalan_payi": {
+    "en_az": 0.000521,
+    "en_cok": 0.000521
+   },
+   "pozitif_dolgu": 815,
+   "pozitif_dolgu_sonrasi_hizali": 815,
+   "thunk_yeri": {
+    "ana_kod": 2,
+    "yurutulebilir_diger": 442,
+    "yurutulemez": 224
+   },
+   "blok_bilgisi_olmayan": 0
+  },
+  "debian13/debian/tree": {
+   "ikili": 1,
+   "bicim": [
+    "Executable and Linking Format (ELF)"
+   ],
+   "ana_kod_blogu": [
+    ".text"
+   ],
+   "fonksiyon": 250,
+   "olculen_cift": 180,
+   "kutular": {
+    "negatif": 0,
+    "0": 129,
+    "1-15": 40,
+    "16-31": 10,
+    ">=32": 1
+   },
+   "sinyalsiz_ikili": [],
+   "sinyal_yogunlugu": {
+    "en_az": 0.055556,
+    "ortanca": 0.055556,
+    "en_cok": 0.055556
+   },
+   "yasak_kalan_payi": {
+    "en_az": 0.008547,
+    "en_cok": 0.008547
+   },
+   "pozitif_dolgu": 50,
+   "pozitif_dolgu_sonrasi_hizali": 50,
+   "thunk_yeri": {
+    "ana_kod": 1,
+    "yurutulebilir_diger": 64,
+    "yurutulemez": 66
+   },
+   "blok_bilgisi_olmayan": 0
+  },
+  "debian13/debian/zstd": {
+   "ikili": 2,
+   "bicim": [
+    "Executable and Linking Format (ELF)"
+   ],
+   "ana_kod_blogu": [
+    ".text"
+   ],
+   "fonksiyon": 2600,
+   "olculen_cift": 2377,
+   "kutular": {
+    "negatif": 1,
+    "0": 1324,
+    "1-15": 971,
+    "16-31": 58,
+    ">=32": 23
+   },
+   "sinyalsiz_ikili": [],
+   "sinyal_yogunlugu": {
+    "en_az": 0.017332,
+    "ortanca": 0.025333,
+    "en_cok": 0.033333
+   },
+   "yasak_kalan_payi": {
+    "en_az": 0.001164,
+    "en_cok": 0.023445
+   },
+   "pozitif_dolgu": 843,
+   "pozitif_dolgu_sonrasi_hizali": 837,
+   "thunk_yeri": {
+    "ana_kod": 43,
+    "yurutulebilir_diger": 411,
+    "yurutulemez": 215
+   },
+   "blok_bilgisi_olmayan": 0
+  },
+  "debian13/mac": {
+   "ikili": 2,
+   "bicim": [
+    "Mac OS X Mach-O"
+   ],
+   "ana_kod_blogu": [
+    "__text"
+   ],
+   "fonksiyon": 3611,
+   "olculen_cift": 3605,
+   "kutular": {
+    "negatif": 18,
+    "0": 3568,
+    "1-15": 12,
+    "16-31": 2,
+    ">=32": 5
+   },
+   "sinyalsiz_ikili": [
+    "debian13/mac/htop"
+   ],
+   "sinyal_yogunlugu": {
+    "en_az": 0.0,
+    "ortanca": 0.000355,
+    "en_cok": 0.00071
+   },
+   "yasak_kalan_payi": {
+    "en_az": 0.345455,
+    "en_cok": 0.367449
+   },
+   "pozitif_dolgu": 19,
+   "pozitif_dolgu_sonrasi_hizali": 4,
+   "thunk_yeri": {
+    "ana_kod": 19,
+    "yurutulebilir_diger": 405,
+    "yurutulemez": 2
+   },
+   "blok_bilgisi_olmayan": 0
+  },
+  "eski/debian-9.4-3": {
+   "ikili": 5,
+   "bicim": [
+    "Executable and Linking Format (ELF)"
+   ],
+   "ana_kod_blogu": [
+    ".text"
+   ],
+   "fonksiyon": 1192,
+   "olculen_cift": 841,
+   "kutular": {
+    "negatif": 0,
+    "0": 585,
+    "1-15": 252,
+    "16-31": 2,
+    ">=32": 2
+   },
+   "sinyalsiz_ikili": [
+    "eski/debian-9.4-3/comm",
+    "eski/debian-9.4-3/expr",
+    "eski/debian-9.4-3/wc"
+   ],
+   "sinyal_yogunlugu": {
+    "en_az": 0.0,
+    "ortanca": 0.0,
+    "en_cok": 0.00641
+   },
+   "yasak_kalan_payi": {
+    "en_az": 0.123967,
+    "en_cok": 0.145833
+   },
+   "pozitif_dolgu": 251,
+   "pozitif_dolgu_sonrasi_hizali": 128,
+   "thunk_yeri": {
+    "ana_kod": 9,
+    "yurutulebilir_diger": 316,
+    "yurutulemez": 331
+   },
+   "blok_bilgisi_olmayan": 0
+  },
+  "eski/ubuntu-9.4-3ubuntu6": {
+   "ikili": 5,
+   "bicim": [
+    "Executable and Linking Format (ELF)"
+   ],
+   "ana_kod_blogu": [
+    ".text"
+   ],
+   "fonksiyon": 794,
+   "olculen_cift": 457,
+   "kutular": {
+    "negatif": 0,
+    "0": 375,
+    "1-15": 78,
+    "16-31": 2,
+    ">=32": 2
+   },
+   "sinyalsiz_ikili": [
+    "eski/ubuntu-9.4-3ubuntu6/cat",
+    "eski/ubuntu-9.4-3ubuntu6/comm",
+    "eski/ubuntu-9.4-3ubuntu6/cut"
+   ],
+   "sinyal_yogunlugu": {
+    "en_az": 0.0,
+    "ortanca": 0.0,
+    "en_cok": 0.010638
+   },
+   "yasak_kalan_payi": {
+    "en_az": 0.1,
+    "en_cok": 0.166667
+   },
+   "pozitif_dolgu": 77,
+   "pozitif_dolgu_sonrasi_hizali": 36,
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 302,
+    "yurutulemez": 317
+   },
+   "blok_bilgisi_olmayan": 0
+  }
+ },
+ "ikililer": {
+  "debian13/debian/coreutils/[": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 278,
+   "thunk": 170,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 109,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 109,
+    ".text": 109,
+    ".fini": 1,
+    "EXTERNAL": 58
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 108,
+    "yurutulemez": 58
+   },
+   "olculen_cift": 216,
+   "kutular": {
+    "negatif": 1,
+    "0": 112,
+    "1-15": 87,
+    "16-31": 14,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 60,
+    "1-15": 31,
+    "16-31": 14,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 60,
+    "4": 4,
+    "8": 13,
+    "12": 14,
+    "16": 4,
+    "20": 5,
+    "24": 4,
+    "28": 1,
+    "36": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 64,
+    "4": 6,
+    "8": 12,
+    "12": 8,
+    "16": 16,
+    "20": 2,
+    "24": 1
+   },
+   "pozitif_dolgu": 47,
+   "pozitif_dolgu_sonrasi_hizali": 46,
+   "yasak_kalanli_baslangic": 3,
+   "sinyal_dolgu": 14,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.064815,
+   "dolgu_siniri": 16,
+   "blok_siniri": 4,
+   "dilim": 21
+  },
+  "debian13/debian/coreutils/arch": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 246,
+   "thunk": 149,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 98,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 95,
+    ".text": 98,
+    ".fini": 1,
+    "EXTERNAL": 51
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 94,
+    "yurutulemez": 51
+   },
+   "olculen_cift": 191,
+   "kutular": {
+    "negatif": 1,
+    "0": 101,
+    "1-15": 74,
+    "16-31": 13,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 56,
+    "1-15": 25,
+    "16-31": 13,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 56,
+    "4": 4,
+    "8": 10,
+    "12": 11,
+    "16": 3,
+    "20": 4,
+    "24": 5,
+    "28": 1,
+    "60": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 61,
+    "4": 7,
+    "8": 12,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 40,
+   "pozitif_dolgu_sonrasi_hizali": 39,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 13,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.068063,
+   "dolgu_siniri": 15,
+   "blok_siniri": 4,
+   "dilim": 20
+  },
+  "debian13/debian/coreutils/b2sum": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 314,
+   "thunk": 197,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 119,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 126,
+    ".text": 119,
+    ".fini": 1,
+    "EXTERNAL": 67
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 125,
+    "yurutulemez": 67
+   },
+   "olculen_cift": 243,
+   "kutular": {
+    "negatif": 1,
+    "0": 127,
+    "1-15": 93,
+    "16-31": 20,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 67,
+    "1-15": 28,
+    "16-31": 20,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 67,
+    "4": 4,
+    "8": 10,
+    "12": 14,
+    "16": 6,
+    "20": 6,
+    "24": 6,
+    "28": 2,
+    "36": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 73,
+    "4": 8,
+    "8": 16,
+    "12": 6,
+    "16": 15,
+    "20": 1
+   },
+   "pozitif_dolgu": 50,
+   "pozitif_dolgu_sonrasi_hizali": 49,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 20,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.082305,
+   "dolgu_siniri": 22,
+   "blok_siniri": 4,
+   "dilim": 27
+  },
+  "debian13/debian/coreutils/base32": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 301,
+   "thunk": 190,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 112,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 122,
+    ".text": 112,
+    ".fini": 1,
+    "EXTERNAL": 65
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 121,
+    "yurutulemez": 65
+   },
+   "olculen_cift": 232,
+   "kutular": {
+    "negatif": 1,
+    "0": 124,
+    "1-15": 90,
+    "16-31": 16,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 66,
+    "1-15": 27,
+    "16-31": 16,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 66,
+    "4": 3,
+    "8": 12,
+    "12": 12,
+    "16": 3,
+    "20": 6,
+    "24": 6,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 69,
+    "4": 8,
+    "8": 16,
+    "12": 6,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 44,
+   "pozitif_dolgu_sonrasi_hizali": 43,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 16,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.068966,
+   "dolgu_siniri": 17,
+   "blok_siniri": 4,
+   "dilim": 22
+  },
+  "debian13/debian/coreutils/base64": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 298,
+   "thunk": 187,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 112,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 120,
+    ".text": 112,
+    ".fini": 1,
+    "EXTERNAL": 64
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 119,
+    "yurutulemez": 64
+   },
+   "olculen_cift": 230,
+   "kutular": {
+    "negatif": 1,
+    "0": 123,
+    "1-15": 88,
+    "16-31": 17,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 66,
+    "1-15": 26,
+    "16-31": 17,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 66,
+    "4": 4,
+    "8": 11,
+    "12": 11,
+    "16": 4,
+    "20": 6,
+    "24": 6,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 69,
+    "4": 7,
+    "8": 13,
+    "12": 6,
+    "16": 16,
+    "20": 1
+   },
+   "pozitif_dolgu": 44,
+   "pozitif_dolgu_sonrasi_hizali": 43,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 17,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.073913,
+   "dolgu_siniri": 18,
+   "blok_siniri": 4,
+   "dilim": 23
+  },
+  "debian13/debian/coreutils/basename": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 247,
+   "thunk": 146,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 102,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 93,
+    ".text": 102,
+    ".fini": 1,
+    "EXTERNAL": 50
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 92,
+    "yurutulemez": 50
+   },
+   "olculen_cift": 193,
+   "kutular": {
+    "negatif": 1,
+    "0": 103,
+    "1-15": 74,
+    "16-31": 14,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 59,
+    "1-15": 26,
+    "16-31": 14,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 59,
+    "4": 4,
+    "8": 10,
+    "12": 12,
+    "16": 3,
+    "20": 6,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 64,
+    "4": 7,
+    "8": 13,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 41,
+   "pozitif_dolgu_sonrasi_hizali": 40,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 14,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.072539,
+   "dolgu_siniri": 15,
+   "blok_siniri": 4,
+   "dilim": 20
+  },
+  "debian13/debian/coreutils/basenc": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 343,
+   "thunk": 190,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 154,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 122,
+    ".text": 154,
+    ".fini": 1,
+    "EXTERNAL": 65
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 121,
+    "yurutulemez": 65
+   },
+   "olculen_cift": 274,
+   "kutular": {
+    "negatif": 1,
+    "0": 147,
+    "1-15": 107,
+    "16-31": 17,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 89,
+    "1-15": 44,
+    "16-31": 17,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 89,
+    "4": 8,
+    "8": 15,
+    "12": 21,
+    "16": 4,
+    "20": 6,
+    "24": 5,
+    "28": 2,
+    "60": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 91,
+    "4": 10,
+    "8": 20,
+    "12": 10,
+    "16": 22,
+    "20": 1
+   },
+   "pozitif_dolgu": 63,
+   "pozitif_dolgu_sonrasi_hizali": 62,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 17,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.062044,
+   "dolgu_siniri": 19,
+   "blok_siniri": 4,
+   "dilim": 24
+  },
+  "debian13/debian/coreutils/cat": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 296,
+   "thunk": 189,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 108,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 121,
+    ".text": 108,
+    ".fini": 1,
+    "EXTERNAL": 65
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 120,
+    "yurutulemez": 65
+   },
+   "olculen_cift": 227,
+   "kutular": {
+    "negatif": 1,
+    "0": 118,
+    "1-15": 90,
+    "16-31": 17,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 61,
+    "1-15": 27,
+    "16-31": 17,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 61,
+    "4": 6,
+    "8": 10,
+    "12": 11,
+    "16": 3,
+    "20": 5,
+    "24": 5,
+    "28": 4,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 69,
+    "4": 7,
+    "8": 14,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 45,
+   "pozitif_dolgu_sonrasi_hizali": 44,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 17,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.07489,
+   "dolgu_siniri": 18,
+   "blok_siniri": 4,
+   "dilim": 23
+  },
+  "debian13/debian/coreutils/chcon": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 446,
+   "thunk": 270,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 178,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 175,
+    ".text": 178,
+    ".fini": 1,
+    "EXTERNAL": 91
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 174,
+    "yurutulemez": 91
+   },
+   "olculen_cift": 351,
+   "kutular": {
+    "negatif": 1,
+    "0": 184,
+    "1-15": 142,
+    "16-31": 21,
+    ">=32": 3
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 99,
+    "1-15": 53,
+    "16-31": 21,
+    ">=32": 3
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 99,
+    "4": 12,
+    "8": 23,
+    "12": 18,
+    "16": 5,
+    "20": 6,
+    "24": 5,
+    "28": 5,
+    "148": 1,
+    "236": 1,
+    "4096": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 102,
+    "4": 15,
+    "8": 22,
+    "12": 18,
+    "16": 20,
+    "20": 1
+   },
+   "pozitif_dolgu": 77,
+   "pozitif_dolgu_sonrasi_hizali": 76,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 21,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.059829,
+   "dolgu_siniri": 24,
+   "blok_siniri": 4,
+   "dilim": 29
+  },
+  "debian13/debian/coreutils/chgrp": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 403,
+   "thunk": 234,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 171,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 151,
+    ".text": 171,
+    ".fini": 1,
+    "EXTERNAL": 79
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 150,
+    "yurutulemez": 79
+   },
+   "olculen_cift": 320,
+   "kutular": {
+    "negatif": 1,
+    "0": 170,
+    "1-15": 126,
+    "16-31": 22,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 97,
+    "1-15": 49,
+    "16-31": 22,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 97,
+    "4": 11,
+    "8": 20,
+    "12": 18,
+    "16": 5,
+    "20": 8,
+    "24": 5,
+    "28": 4,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 99,
+    "4": 17,
+    "8": 20,
+    "12": 16,
+    "16": 18,
+    "20": 1
+   },
+   "pozitif_dolgu": 72,
+   "pozitif_dolgu_sonrasi_hizali": 71,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 22,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.06875,
+   "dolgu_siniri": 23,
+   "blok_siniri": 4,
+   "dilim": 28
+  },
+  "debian13/debian/coreutils/chmod": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 365,
+   "thunk": 201,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 166,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 129,
+    ".text": 166,
+    ".fini": 1,
+    "EXTERNAL": 68
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 128,
+    "yurutulemez": 68
+   },
+   "olculen_cift": 293,
+   "kutular": {
+    "negatif": 1,
+    "0": 157,
+    "1-15": 113,
+    "16-31": 21,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 95,
+    "1-15": 47,
+    "16-31": 21,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 95,
+    "4": 11,
+    "8": 20,
+    "12": 16,
+    "16": 5,
+    "20": 6,
+    "24": 6,
+    "28": 4,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 95,
+    "4": 17,
+    "8": 19,
+    "12": 16,
+    "16": 18,
+    "20": 1
+   },
+   "pozitif_dolgu": 69,
+   "pozitif_dolgu_sonrasi_hizali": 68,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 21,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.071672,
+   "dolgu_siniri": 22,
+   "blok_siniri": 4,
+   "dilim": 27
+  },
+  "debian13/debian/coreutils/chown": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 403,
+   "thunk": 234,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 171,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 151,
+    ".text": 171,
+    ".fini": 1,
+    "EXTERNAL": 79
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 150,
+    "yurutulemez": 79
+   },
+   "olculen_cift": 320,
+   "kutular": {
+    "negatif": 1,
+    "0": 170,
+    "1-15": 126,
+    "16-31": 22,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 97,
+    "1-15": 49,
+    "16-31": 22,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 97,
+    "4": 11,
+    "8": 20,
+    "12": 18,
+    "16": 5,
+    "20": 8,
+    "24": 5,
+    "28": 4,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 99,
+    "4": 17,
+    "8": 20,
+    "12": 16,
+    "16": 18,
+    "20": 1
+   },
+   "pozitif_dolgu": 72,
+   "pozitif_dolgu_sonrasi_hizali": 71,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 22,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.06875,
+   "dolgu_siniri": 23,
+   "blok_siniri": 4,
+   "dilim": 28
+  },
+  "debian13/debian/coreutils/chroot": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 311,
+   "thunk": 206,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 106,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 133,
+    ".text": 106,
+    ".fini": 1,
+    "EXTERNAL": 70
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 132,
+    "yurutulemez": 70
+   },
+   "olculen_cift": 237,
+   "kutular": {
+    "negatif": 1,
+    "0": 124,
+    "1-15": 94,
+    "16-31": 17,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 60,
+    "1-15": 26,
+    "16-31": 17,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 60,
+    "4": 3,
+    "8": 10,
+    "12": 13,
+    "16": 4,
+    "20": 6,
+    "24": 6,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 67,
+    "4": 8,
+    "8": 13,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 44,
+   "pozitif_dolgu_sonrasi_hizali": 43,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 17,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.07173,
+   "dolgu_siniri": 18,
+   "blok_siniri": 4,
+   "dilim": 23
+  },
+  "debian13/debian/coreutils/cksum": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 479,
+   "thunk": 293,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 203,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 180,
+    ".text": 203,
+    ".fini": 1,
+    "EXTERNAL": 94
+   },
+   "thunk_yeri": {
+    "ana_kod": 20,
+    "yurutulebilir_diger": 179,
+    "yurutulemez": 94
+   },
+   "olculen_cift": 381,
+   "kutular": {
+    "negatif": 1,
+    "0": 198,
+    "1-15": 151,
+    "16-31": 29,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 111,
+    "1-15": 59,
+    "16-31": 29,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 111,
+    "4": 15,
+    "8": 20,
+    "12": 24,
+    "16": 8,
+    "20": 8,
+    "24": 10,
+    "28": 3,
+    "56": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 124,
+    "4": 17,
+    "8": 27,
+    "12": 11,
+    "16": 23,
+    "20": 1
+   },
+   "pozitif_dolgu": 90,
+   "pozitif_dolgu_sonrasi_hizali": 89,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 29,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.076115,
+   "dolgu_siniri": 31,
+   "blok_siniri": 4,
+   "dilim": 36
+  },
+  "debian13/debian/coreutils/comm": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 296,
+   "thunk": 178,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 119,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 114,
+    ".text": 119,
+    ".fini": 1,
+    "EXTERNAL": 61
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 113,
+    "yurutulemez": 61
+   },
+   "olculen_cift": 231,
+   "kutular": {
+    "negatif": 1,
+    "0": 118,
+    "1-15": 88,
+    "16-31": 23,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 64,
+    "1-15": 29,
+    "16-31": 23,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 64,
+    "4": 6,
+    "8": 12,
+    "12": 11,
+    "16": 5,
+    "20": 7,
+    "24": 9,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 76,
+    "4": 7,
+    "8": 14,
+    "12": 7,
+    "16": 14,
+    "20": 1
+   },
+   "pozitif_dolgu": 53,
+   "pozitif_dolgu_sonrasi_hizali": 52,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 23,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.099567,
+   "dolgu_siniri": 24,
+   "blok_siniri": 4,
+   "dilim": 29
+  },
+  "debian13/debian/coreutils/cp": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 746,
+   "thunk": 450,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 299,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 290,
+    ".text": 299,
+    ".fini": 1,
+    "EXTERNAL": 155
+   },
+   "thunk_yeri": {
+    "ana_kod": 6,
+    "yurutulebilir_diger": 289,
+    "yurutulemez": 155
+   },
+   "olculen_cift": 587,
+   "kutular": {
+    "negatif": 3,
+    "0": 294,
+    "1-15": 239,
+    "16-31": 49,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 3,
+    "0": 154,
+    "1-15": 90,
+    "16-31": 49,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 3,
+    "0": 154,
+    "4": 25,
+    "8": 31,
+    "12": 34,
+    "16": 6,
+    "20": 17,
+    "24": 12,
+    "28": 14,
+    "148": 1,
+    "1272": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 184,
+    "4": 27,
+    "8": 30,
+    "12": 27,
+    "16": 30,
+    "20": 1
+   },
+   "pozitif_dolgu": 141,
+   "pozitif_dolgu_sonrasi_hizali": 140,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 49,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.083475,
+   "dolgu_siniri": 51,
+   "blok_siniri": 4,
+   "dilim": 56
+  },
+  "debian13/debian/coreutils/csplit": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 347,
+   "thunk": 223,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 125,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 144,
+    ".text": 125,
+    ".fini": 1,
+    "EXTERNAL": 76
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 143,
+    "yurutulemez": 76
+   },
+   "olculen_cift": 267,
+   "kutular": {
+    "negatif": 2,
+    "0": 136,
+    "1-15": 108,
+    "16-31": 20,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 67,
+    "1-15": 34,
+    "16-31": 20,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 67,
+    "4": 8,
+    "8": 11,
+    "12": 15,
+    "16": 6,
+    "20": 6,
+    "24": 6,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 80,
+    "4": 8,
+    "8": 15,
+    "12": 8,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 55,
+   "pozitif_dolgu_sonrasi_hizali": 54,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 20,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.074906,
+   "dolgu_siniri": 21,
+   "blok_siniri": 4,
+   "dilim": 26
+  },
+  "debian13/debian/coreutils/cut": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 313,
+   "thunk": 201,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 113,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 129,
+    ".text": 113,
+    ".fini": 1,
+    "EXTERNAL": 69
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 128,
+    "yurutulemez": 69
+   },
+   "olculen_cift": 240,
+   "kutular": {
+    "negatif": 1,
+    "0": 124,
+    "1-15": 96,
+    "16-31": 17,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 63,
+    "1-15": 29,
+    "16-31": 17,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 63,
+    "4": 5,
+    "8": 10,
+    "12": 14,
+    "16": 3,
+    "20": 7,
+    "24": 6,
+    "28": 1,
+    "40": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 73,
+    "4": 7,
+    "8": 13,
+    "12": 7,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 48,
+   "pozitif_dolgu_sonrasi_hizali": 47,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 17,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.070833,
+   "dolgu_siniri": 19,
+   "blok_siniri": 4,
+   "dilim": 24
+  },
+  "debian13/debian/coreutils/date": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 376,
+   "thunk": 238,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 140,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 153,
+    ".text": 140,
+    ".fini": 1,
+    "EXTERNAL": 81
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 152,
+    "yurutulemez": 81
+   },
+   "olculen_cift": 291,
+   "kutular": {
+    "negatif": 1,
+    "0": 152,
+    "1-15": 117,
+    "16-31": 18,
+    ">=32": 3
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 79,
+    "1-15": 38,
+    "16-31": 18,
+    ">=32": 3
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 79,
+    "4": 9,
+    "8": 14,
+    "12": 15,
+    "16": 4,
+    "20": 7,
+    "24": 6,
+    "28": 1,
+    "148": 1,
+    "4112": 1,
+    "5872": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 81,
+    "4": 16,
+    "8": 15,
+    "12": 11,
+    "16": 16,
+    "20": 1
+   },
+   "pozitif_dolgu": 59,
+   "pozitif_dolgu_sonrasi_hizali": 57,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 18,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.061856,
+   "dolgu_siniri": 21,
+   "blok_siniri": 4,
+   "dilim": 26
+  },
+  "debian13/debian/coreutils/dd": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 388,
+   "thunk": 236,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 153,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 153,
+    ".text": 153,
+    ".fini": 1,
+    "EXTERNAL": 80
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 152,
+    "yurutulemez": 80
+   },
+   "olculen_cift": 304,
+   "kutular": {
+    "negatif": 1,
+    "0": 161,
+    "1-15": 121,
+    "16-31": 19,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 87,
+    "1-15": 43,
+    "16-31": 19,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 87,
+    "4": 9,
+    "8": 16,
+    "12": 18,
+    "16": 3,
+    "20": 6,
+    "24": 7,
+    "28": 3,
+    "44": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 92,
+    "4": 13,
+    "8": 19,
+    "12": 13,
+    "16": 15,
+    "20": 1
+   },
+   "pozitif_dolgu": 64,
+   "pozitif_dolgu_sonrasi_hizali": 63,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 19,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.0625,
+   "dolgu_siniri": 21,
+   "blok_siniri": 4,
+   "dilim": 26
+  },
+  "debian13/debian/coreutils/df": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 472,
+   "thunk": 282,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 192,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 183,
+    ".text": 192,
+    ".fini": 1,
+    "EXTERNAL": 95
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 182,
+    "yurutulemez": 95
+   },
+   "olculen_cift": 373,
+   "kutular": {
+    "negatif": 1,
+    "0": 186,
+    "1-15": 149,
+    "16-31": 35,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 97,
+    "1-15": 56,
+    "16-31": 35,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 97,
+    "4": 14,
+    "8": 17,
+    "12": 25,
+    "16": 5,
+    "20": 9,
+    "24": 11,
+    "28": 10,
+    "148": 1,
+    "600": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 123,
+    "4": 13,
+    "8": 22,
+    "12": 15,
+    "16": 18,
+    "20": 1
+   },
+   "pozitif_dolgu": 93,
+   "pozitif_dolgu_sonrasi_hizali": 92,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 35,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.093834,
+   "dolgu_siniri": 37,
+   "blok_siniri": 4,
+   "dilim": 42
+  },
+  "debian13/debian/coreutils/dir": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 665,
+   "thunk": 348,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 319,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 223,
+    ".text": 319,
+    ".fini": 1,
+    "EXTERNAL": 121
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 222,
+    "yurutulemez": 121
+   },
+   "olculen_cift": 540,
+   "kutular": {
+    "negatif": 2,
+    "0": 276,
+    "1-15": 231,
+    "16-31": 28,
+    ">=32": 3
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 169,
+    "1-15": 116,
+    "16-31": 28,
+    ">=32": 3
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 169,
+    "4": 30,
+    "8": 39,
+    "12": 47,
+    "16": 4,
+    "20": 7,
+    "24": 9,
+    "28": 8,
+    "148": 1,
+    "2384": 1,
+    "5624": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 196,
+    "4": 26,
+    "8": 35,
+    "12": 23,
+    "16": 38,
+    "20": 1
+   },
+   "pozitif_dolgu": 147,
+   "pozitif_dolgu_sonrasi_hizali": 146,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 28,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.051852,
+   "dolgu_siniri": 31,
+   "blok_siniri": 4,
+   "dilim": 36
+  },
+  "debian13/debian/coreutils/dircolors": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 283,
+   "thunk": 173,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 111,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 111,
+    ".text": 111,
+    ".fini": 1,
+    "EXTERNAL": 59
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 110,
+    "yurutulemez": 59
+   },
+   "olculen_cift": 220,
+   "kutular": {
+    "negatif": 1,
+    "0": 116,
+    "1-15": 86,
+    "16-31": 16,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 63,
+    "1-15": 29,
+    "16-31": 16,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 63,
+    "4": 3,
+    "8": 13,
+    "12": 13,
+    "16": 4,
+    "20": 6,
+    "24": 4,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 70,
+    "4": 8,
+    "8": 14,
+    "12": 6,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 46,
+   "pozitif_dolgu_sonrasi_hizali": 45,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 16,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.072727,
+   "dolgu_siniri": 17,
+   "blok_siniri": 4,
+   "dilim": 22
+  },
+  "debian13/debian/coreutils/dirname": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 249,
+   "thunk": 149,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 101,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 95,
+    ".text": 101,
+    ".fini": 1,
+    "EXTERNAL": 51
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 94,
+    "yurutulemez": 51
+   },
+   "olculen_cift": 194,
+   "kutular": {
+    "negatif": 1,
+    "0": 103,
+    "1-15": 75,
+    "16-31": 14,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 58,
+    "1-15": 26,
+    "16-31": 14,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 58,
+    "4": 4,
+    "8": 11,
+    "12": 11,
+    "16": 3,
+    "20": 5,
+    "24": 5,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 63,
+    "4": 7,
+    "8": 13,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 41,
+   "pozitif_dolgu_sonrasi_hizali": 40,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 14,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.072165,
+   "dolgu_siniri": 15,
+   "blok_siniri": 4,
+   "dilim": 20
+  },
+  "debian13/debian/coreutils/du": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 532,
+   "thunk": 302,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 233,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 194,
+    ".text": 233,
+    ".fini": 1,
+    "EXTERNAL": 103
+   },
+   "thunk_yeri": {
+    "ana_kod": 6,
+    "yurutulebilir_diger": 193,
+    "yurutulemez": 103
+   },
+   "olculen_cift": 425,
+   "kutular": {
+    "negatif": 2,
+    "0": 218,
+    "1-15": 173,
+    "16-31": 30,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 125,
+    "1-15": 73,
+    "16-31": 30,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 125,
+    "4": 18,
+    "8": 27,
+    "12": 28,
+    "16": 5,
+    "20": 9,
+    "24": 9,
+    "28": 7,
+    "148": 1,
+    "5872": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 139,
+    "4": 25,
+    "8": 25,
+    "12": 20,
+    "16": 23,
+    "20": 1
+   },
+   "pozitif_dolgu": 105,
+   "pozitif_dolgu_sonrasi_hizali": 103,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 30,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.070588,
+   "dolgu_siniri": 32,
+   "blok_siniri": 4,
+   "dilim": 37
+  },
+  "debian13/debian/coreutils/echo": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 246,
+   "thunk": 149,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 98,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 95,
+    ".text": 98,
+    ".fini": 1,
+    "EXTERNAL": 51
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 94,
+    "yurutulemez": 51
+   },
+   "olculen_cift": 191,
+   "kutular": {
+    "negatif": 1,
+    "0": 101,
+    "1-15": 75,
+    "16-31": 12,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 56,
+    "1-15": 26,
+    "16-31": 12,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 56,
+    "4": 4,
+    "8": 10,
+    "12": 12,
+    "16": 3,
+    "20": 4,
+    "24": 4,
+    "28": 1,
+    "148": 1,
+    "616": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 61,
+    "4": 7,
+    "8": 12,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 40,
+   "pozitif_dolgu_sonrasi_hizali": 39,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 12,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.062827,
+   "dolgu_siniri": 14,
+   "blok_siniri": 4,
+   "dilim": 19
+  },
+  "debian13/debian/coreutils/env": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 318,
+   "thunk": 214,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 105,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 138,
+    ".text": 105,
+    ".fini": 1,
+    "EXTERNAL": 73
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 137,
+    "yurutulemez": 73
+   },
+   "olculen_cift": 241,
+   "kutular": {
+    "negatif": 2,
+    "0": 127,
+    "1-15": 97,
+    "16-31": 13,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 61,
+    "1-15": 26,
+    "16-31": 13,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 61,
+    "4": 3,
+    "8": 12,
+    "12": 11,
+    "16": 4,
+    "20": 4,
+    "24": 4,
+    "28": 1,
+    "56": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 65,
+    "4": 9,
+    "8": 13,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 41,
+   "pozitif_dolgu_sonrasi_hizali": 40,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 13,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.053942,
+   "dolgu_siniri": 15,
+   "blok_siniri": 4,
+   "dilim": 20
+  },
+  "debian13/debian/coreutils/expand": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 284,
+   "thunk": 175,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 110,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 112,
+    ".text": 110,
+    ".fini": 1,
+    "EXTERNAL": 60
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 111,
+    "yurutulemez": 60
+   },
+   "olculen_cift": 220,
+   "kutular": {
+    "negatif": 1,
+    "0": 116,
+    "1-15": 85,
+    "16-31": 15,
+    ">=32": 3
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 63,
+    "1-15": 27,
+    "16-31": 15,
+    ">=32": 3
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 63,
+    "4": 6,
+    "8": 10,
+    "12": 11,
+    "16": 3,
+    "20": 6,
+    "24": 5,
+    "28": 1,
+    "36": 1,
+    "148": 1,
+    "4096": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 70,
+    "4": 7,
+    "8": 15,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 45,
+   "pozitif_dolgu_sonrasi_hizali": 44,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.068182,
+   "dolgu_siniri": 18,
+   "blok_siniri": 4,
+   "dilim": 23
+  },
+  "debian13/debian/coreutils/expr": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 298,
+   "thunk": 186,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 113,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 116,
+    ".text": 113,
+    ".fini": 1,
+    "EXTERNAL": 67
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 115,
+    "yurutulemez": 67
+   },
+   "olculen_cift": 227,
+   "kutular": {
+    "negatif": 1,
+    "0": 122,
+    "1-15": 88,
+    "16-31": 14,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 67,
+    "1-15": 28,
+    "16-31": 14,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 67,
+    "4": 6,
+    "8": 12,
+    "12": 10,
+    "16": 3,
+    "20": 5,
+    "24": 5,
+    "28": 1,
+    "68": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 69,
+    "4": 10,
+    "8": 13,
+    "12": 7,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 44,
+   "pozitif_dolgu_sonrasi_hizali": 43,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 14,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.061674,
+   "dolgu_siniri": 16,
+   "blok_siniri": 4,
+   "dilim": 21
+  },
+  "debian13/debian/coreutils/factor": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 383,
+   "thunk": 253,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 131,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 164,
+    ".text": 131,
+    ".fini": 1,
+    "EXTERNAL": 86
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 163,
+    "yurutulemez": 86
+   },
+   "olculen_cift": 293,
+   "kutular": {
+    "negatif": 2,
+    "0": 162,
+    "1-15": 114,
+    "16-31": 14,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 83,
+    "1-15": 30,
+    "16-31": 14,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 83,
+    "4": 5,
+    "8": 12,
+    "12": 13,
+    "16": 4,
+    "20": 4,
+    "24": 4,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 73,
+    "4": 10,
+    "8": 15,
+    "12": 10,
+    "16": 20,
+    "20": 2,
+    "24": 1
+   },
+   "pozitif_dolgu": 45,
+   "pozitif_dolgu_sonrasi_hizali": 44,
+   "yasak_kalanli_baslangic": 3,
+   "sinyal_dolgu": 14,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.047782,
+   "dolgu_siniri": 15,
+   "blok_siniri": 4,
+   "dilim": 20
+  },
+  "debian13/debian/coreutils/false": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 239,
+   "thunk": 143,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 97,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 91,
+    ".text": 97,
+    ".fini": 1,
+    "EXTERNAL": 49
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 90,
+    "yurutulemez": 49
+   },
+   "olculen_cift": 186,
+   "kutular": {
+    "negatif": 1,
+    "0": 100,
+    "1-15": 71,
+    "16-31": 13,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 57,
+    "1-15": 24,
+    "16-31": 13,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 57,
+    "4": 3,
+    "8": 10,
+    "12": 11,
+    "16": 4,
+    "20": 4,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 60,
+    "4": 7,
+    "8": 12,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 38,
+   "pozitif_dolgu_sonrasi_hizali": 37,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 13,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.069892,
+   "dolgu_siniri": 14,
+   "blok_siniri": 4,
+   "dilim": 19
+  },
+  "debian13/debian/coreutils/fmt": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 293,
+   "thunk": 181,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 113,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 116,
+    ".text": 113,
+    ".fini": 1,
+    "EXTERNAL": 62
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 115,
+    "yurutulemez": 62
+   },
+   "olculen_cift": 227,
+   "kutular": {
+    "negatif": 1,
+    "0": 121,
+    "1-15": 88,
+    "16-31": 15,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 66,
+    "1-15": 28,
+    "16-31": 15,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 66,
+    "4": 5,
+    "8": 11,
+    "12": 12,
+    "16": 3,
+    "20": 5,
+    "24": 5,
+    "28": 2,
+    "48": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 70,
+    "4": 8,
+    "8": 14,
+    "12": 7,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 45,
+   "pozitif_dolgu_sonrasi_hizali": 44,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.066079,
+   "dolgu_siniri": 17,
+   "blok_siniri": 4,
+   "dilim": 22
+  },
+  "debian13/debian/coreutils/fold": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 284,
+   "thunk": 181,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 104,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 116,
+    ".text": 104,
+    ".fini": 1,
+    "EXTERNAL": 62
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 115,
+    "yurutulemez": 62
+   },
+   "olculen_cift": 218,
+   "kutular": {
+    "negatif": 1,
+    "0": 114,
+    "1-15": 87,
+    "16-31": 15,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 59,
+    "1-15": 27,
+    "16-31": 15,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 59,
+    "4": 3,
+    "8": 10,
+    "12": 14,
+    "16": 3,
+    "20": 5,
+    "24": 6,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 65,
+    "4": 7,
+    "8": 13,
+    "12": 6,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 43,
+   "pozitif_dolgu_sonrasi_hizali": 42,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.068807,
+   "dolgu_siniri": 16,
+   "blok_siniri": 4,
+   "dilim": 21
+  },
+  "debian13/debian/coreutils/groups": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 270,
+   "thunk": 170,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 101,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 109,
+    ".text": 101,
+    ".fini": 1,
+    "EXTERNAL": 58
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 108,
+    "yurutulemez": 58
+   },
+   "olculen_cift": 208,
+   "kutular": {
+    "negatif": 1,
+    "0": 110,
+    "1-15": 82,
+    "16-31": 14,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 58,
+    "1-15": 26,
+    "16-31": 14,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 58,
+    "4": 3,
+    "8": 11,
+    "12": 12,
+    "16": 4,
+    "20": 4,
+    "24": 5,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 63,
+    "4": 7,
+    "8": 13,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 41,
+   "pozitif_dolgu_sonrasi_hizali": 40,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 14,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.067308,
+   "dolgu_siniri": 15,
+   "blok_siniri": 4,
+   "dilim": 20
+  },
+  "debian13/debian/coreutils/head": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 292,
+   "thunk": 182,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 111,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 117,
+    ".text": 111,
+    ".fini": 1,
+    "EXTERNAL": 62
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 116,
+    "yurutulemez": 62
+   },
+   "olculen_cift": 226,
+   "kutular": {
+    "negatif": 1,
+    "0": 121,
+    "1-15": 89,
+    "16-31": 13,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 65,
+    "1-15": 29,
+    "16-31": 13,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 65,
+    "4": 5,
+    "8": 11,
+    "12": 13,
+    "16": 3,
+    "20": 5,
+    "24": 4,
+    "28": 1,
+    "36": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 70,
+    "4": 8,
+    "8": 14,
+    "12": 6,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 44,
+   "pozitif_dolgu_sonrasi_hizali": 43,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 13,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.057522,
+   "dolgu_siniri": 15,
+   "blok_siniri": 4,
+   "dilim": 20
+  },
+  "debian13/debian/coreutils/hostid": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 247,
+   "thunk": 149,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 99,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 95,
+    ".text": 99,
+    ".fini": 1,
+    "EXTERNAL": 51
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 94,
+    "yurutulemez": 51
+   },
+   "olculen_cift": 192,
+   "kutular": {
+    "negatif": 1,
+    "0": 104,
+    "1-15": 74,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 59,
+    "1-15": 25,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 59,
+    "4": 3,
+    "8": 11,
+    "12": 11,
+    "16": 3,
+    "20": 4,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 61,
+    "4": 7,
+    "8": 12,
+    "12": 7,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 38,
+   "pozitif_dolgu_sonrasi_hizali": 37,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 12,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.0625,
+   "dolgu_siniri": 13,
+   "blok_siniri": 4,
+   "dilim": 18
+  },
+  "debian13/debian/coreutils/id": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 306,
+   "thunk": 200,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 107,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 129,
+    ".text": 107,
+    ".fini": 1,
+    "EXTERNAL": 68
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 128,
+    "yurutulemez": 68
+   },
+   "olculen_cift": 234,
+   "kutular": {
+    "negatif": 1,
+    "0": 121,
+    "1-15": 93,
+    "16-31": 17,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 59,
+    "1-15": 27,
+    "16-31": 17,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 59,
+    "4": 3,
+    "8": 11,
+    "12": 13,
+    "16": 5,
+    "20": 6,
+    "24": 5,
+    "28": 1,
+    "40": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 67,
+    "4": 8,
+    "8": 14,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 46,
+   "pozitif_dolgu_sonrasi_hizali": 45,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 17,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.07265,
+   "dolgu_siniri": 19,
+   "blok_siniri": 4,
+   "dilim": 24
+  },
+  "debian13/debian/coreutils/install": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 815,
+   "thunk": 502,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 316,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 325,
+    ".text": 316,
+    ".fini": 1,
+    "EXTERNAL": 172
+   },
+   "thunk_yeri": {
+    "ana_kod": 6,
+    "yurutulebilir_diger": 324,
+    "yurutulemez": 172
+   },
+   "olculen_cift": 639,
+   "kutular": {
+    "negatif": 2,
+    "0": 318,
+    "1-15": 266,
+    "16-31": 51,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 160,
+    "1-15": 100,
+    "16-31": 51,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 160,
+    "4": 29,
+    "8": 34,
+    "12": 37,
+    "16": 7,
+    "20": 17,
+    "24": 12,
+    "28": 15,
+    "148": 1,
+    "568": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 196,
+    "4": 28,
+    "8": 31,
+    "12": 30,
+    "16": 30,
+    "20": 1
+   },
+   "pozitif_dolgu": 153,
+   "pozitif_dolgu_sonrasi_hizali": 152,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 51,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.079812,
+   "dolgu_siniri": 53,
+   "blok_siniri": 4,
+   "dilim": 58
+  },
+  "debian13/debian/coreutils/join": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 330,
+   "thunk": 193,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 138,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 124,
+    ".text": 138,
+    ".fini": 1,
+    "EXTERNAL": 66
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 123,
+    "yurutulemez": 66
+   },
+   "olculen_cift": 260,
+   "kutular": {
+    "negatif": 1,
+    "0": 134,
+    "1-15": 99,
+    "16-31": 23,
+    ">=32": 3
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 75,
+    "1-15": 35,
+    "16-31": 23,
+    ">=32": 3
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 75,
+    "4": 8,
+    "8": 16,
+    "12": 11,
+    "16": 6,
+    "20": 9,
+    "24": 6,
+    "28": 2,
+    "148": 1,
+    "168": 1,
+    "4096": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 86,
+    "4": 10,
+    "8": 16,
+    "12": 10,
+    "16": 15,
+    "20": 1
+   },
+   "pozitif_dolgu": 61,
+   "pozitif_dolgu_sonrasi_hizali": 58,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 23,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.088462,
+   "dolgu_siniri": 26,
+   "blok_siniri": 4,
+   "dilim": 31
+  },
+  "debian13/debian/coreutils/libstdbuf.so": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 34,
+   "thunk": 25,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 7,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 12,
+    ".text": 7,
+    ".fini": 1,
+    "EXTERNAL": 13
+   },
+   "thunk_yeri": {
+    "ana_kod": 1,
+    "yurutulebilir_diger": 11,
+    "yurutulemez": 13
+   },
+   "olculen_cift": 17,
+   "kutular": {
+    "negatif": 0,
+    "0": 13,
+    "1-15": 3,
+    "16-31": 1,
+    ">=32": 0
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 3,
+    "1-15": 2,
+    "16-31": 1,
+    ">=32": 0
+   },
+   "ana_dolgu_degerleri": {
+    "0": 3,
+    "4": 2,
+    "28": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 4,
+    "12": 1,
+    "16": 2
+   },
+   "pozitif_dolgu": 3,
+   "pozitif_dolgu_sonrasi_hizali": 3,
+   "yasak_kalanli_baslangic": 0,
+   "sinyal_dolgu": 1,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.058824,
+   "dolgu_siniri": 1,
+   "blok_siniri": 4,
+   "dilim": 6
+  },
+  "debian13/debian/coreutils/link": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 247,
+   "thunk": 149,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 99,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 95,
+    ".text": 99,
+    ".fini": 1,
+    "EXTERNAL": 51
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 94,
+    "yurutulemez": 51
+   },
+   "olculen_cift": 192,
+   "kutular": {
+    "negatif": 1,
+    "0": 103,
+    "1-15": 74,
+    "16-31": 13,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 58,
+    "1-15": 25,
+    "16-31": 13,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 58,
+    "4": 3,
+    "8": 11,
+    "12": 11,
+    "16": 3,
+    "20": 4,
+    "24": 5,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 61,
+    "4": 7,
+    "8": 12,
+    "12": 7,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 39,
+   "pozitif_dolgu_sonrasi_hizali": 38,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 13,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.067708,
+   "dolgu_siniri": 14,
+   "blok_siniri": 4,
+   "dilim": 19
+  },
+  "debian13/debian/coreutils/ln": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 421,
+   "thunk": 241,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 182,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 155,
+    ".text": 182,
+    ".fini": 1,
+    "EXTERNAL": 82
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 154,
+    "yurutulemez": 82
+   },
+   "olculen_cift": 335,
+   "kutular": {
+    "negatif": 3,
+    "0": 176,
+    "1-15": 124,
+    "16-31": 30,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 3,
+    "0": 102,
+    "1-15": 44,
+    "16-31": 30,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 3,
+    "0": 102,
+    "4": 9,
+    "8": 15,
+    "12": 20,
+    "16": 6,
+    "20": 8,
+    "24": 8,
+    "28": 8,
+    "148": 1,
+    "544": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 111,
+    "4": 15,
+    "8": 20,
+    "12": 17,
+    "16": 18,
+    "20": 1
+   },
+   "pozitif_dolgu": 76,
+   "pozitif_dolgu_sonrasi_hizali": 75,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 30,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.089552,
+   "dolgu_siniri": 32,
+   "blok_siniri": 4,
+   "dilim": 37
+  },
+  "debian13/debian/coreutils/logname": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 250,
+   "thunk": 152,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 99,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 97,
+    ".text": 99,
+    ".fini": 1,
+    "EXTERNAL": 52
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 96,
+    "yurutulemez": 52
+   },
+   "olculen_cift": 194,
+   "kutular": {
+    "negatif": 1,
+    "0": 105,
+    "1-15": 75,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 59,
+    "1-15": 25,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 59,
+    "4": 3,
+    "8": 10,
+    "12": 12,
+    "16": 3,
+    "20": 4,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 61,
+    "4": 7,
+    "8": 12,
+    "12": 7,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 38,
+   "pozitif_dolgu_sonrasi_hizali": 37,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 12,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.061856,
+   "dolgu_siniri": 13,
+   "blok_siniri": 4,
+   "dilim": 18
+  },
+  "debian13/debian/coreutils/ls": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 665,
+   "thunk": 348,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 319,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 223,
+    ".text": 319,
+    ".fini": 1,
+    "EXTERNAL": 121
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 222,
+    "yurutulemez": 121
+   },
+   "olculen_cift": 540,
+   "kutular": {
+    "negatif": 2,
+    "0": 276,
+    "1-15": 231,
+    "16-31": 28,
+    ">=32": 3
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 169,
+    "1-15": 116,
+    "16-31": 28,
+    ">=32": 3
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 169,
+    "4": 30,
+    "8": 39,
+    "12": 47,
+    "16": 4,
+    "20": 7,
+    "24": 9,
+    "28": 8,
+    "148": 1,
+    "2384": 1,
+    "5624": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 196,
+    "4": 26,
+    "8": 35,
+    "12": 23,
+    "16": 38,
+    "20": 1
+   },
+   "pozitif_dolgu": 147,
+   "pozitif_dolgu_sonrasi_hizali": 146,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 28,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.051852,
+   "dolgu_siniri": 31,
+   "blok_siniri": 4,
+   "dilim": 36
+  },
+  "debian13/debian/coreutils/md5sum": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 299,
+   "thunk": 193,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 107,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 124,
+    ".text": 107,
+    ".fini": 1,
+    "EXTERNAL": 66
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 123,
+    "yurutulemez": 66
+   },
+   "olculen_cift": 229,
+   "kutular": {
+    "negatif": 1,
+    "0": 118,
+    "1-15": 90,
+    "16-31": 18,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 59,
+    "1-15": 26,
+    "16-31": 18,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 59,
+    "4": 4,
+    "8": 10,
+    "12": 12,
+    "16": 5,
+    "20": 6,
+    "24": 5,
+    "28": 2,
+    "36": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 67,
+    "4": 7,
+    "8": 13,
+    "12": 6,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 46,
+   "pozitif_dolgu_sonrasi_hizali": 45,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 18,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.078603,
+   "dolgu_siniri": 20,
+   "blok_siniri": 4,
+   "dilim": 25
+  },
+  "debian13/debian/coreutils/mkdir": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 514,
+   "thunk": 318,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 198,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 207,
+    ".text": 198,
+    ".fini": 1,
+    "EXTERNAL": 107
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 206,
+    "yurutulemez": 107
+   },
+   "olculen_cift": 403,
+   "kutular": {
+    "negatif": 1,
+    "0": 210,
+    "1-15": 164,
+    "16-31": 27,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 109,
+    "1-15": 59,
+    "16-31": 27,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 109,
+    "4": 17,
+    "8": 23,
+    "12": 19,
+    "16": 6,
+    "20": 6,
+    "24": 8,
+    "28": 7,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 117,
+    "4": 16,
+    "8": 22,
+    "12": 19,
+    "16": 23,
+    "20": 1
+   },
+   "pozitif_dolgu": 87,
+   "pozitif_dolgu_sonrasi_hizali": 86,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 27,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.066998,
+   "dolgu_siniri": 28,
+   "blok_siniri": 4,
+   "dilim": 33
+  },
+  "debian13/debian/coreutils/mkfifo": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 471,
+   "thunk": 288,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 185,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 187,
+    ".text": 185,
+    ".fini": 1,
+    "EXTERNAL": 97
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 186,
+    "yurutulemez": 97
+   },
+   "olculen_cift": 370,
+   "kutular": {
+    "negatif": 1,
+    "0": 194,
+    "1-15": 148,
+    "16-31": 26,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 103,
+    "1-15": 53,
+    "16-31": 26,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 103,
+    "4": 13,
+    "8": 23,
+    "12": 17,
+    "16": 5,
+    "20": 6,
+    "24": 9,
+    "28": 6,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 109,
+    "4": 16,
+    "8": 22,
+    "12": 15,
+    "16": 22,
+    "20": 1
+   },
+   "pozitif_dolgu": 80,
+   "pozitif_dolgu_sonrasi_hizali": 79,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 26,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.07027,
+   "dolgu_siniri": 27,
+   "blok_siniri": 4,
+   "dilim": 32
+  },
+  "debian13/debian/coreutils/mknod": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 481,
+   "thunk": 297,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 186,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 193,
+    ".text": 186,
+    ".fini": 1,
+    "EXTERNAL": 100
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 192,
+    "yurutulemez": 100
+   },
+   "olculen_cift": 377,
+   "kutular": {
+    "negatif": 1,
+    "0": 197,
+    "1-15": 151,
+    "16-31": 26,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 103,
+    "1-15": 53,
+    "16-31": 26,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 103,
+    "4": 13,
+    "8": 23,
+    "12": 17,
+    "16": 5,
+    "20": 6,
+    "24": 8,
+    "28": 7,
+    "48": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 110,
+    "4": 16,
+    "8": 22,
+    "12": 15,
+    "16": 22,
+    "20": 1
+   },
+   "pozitif_dolgu": 81,
+   "pozitif_dolgu_sonrasi_hizali": 80,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 26,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.068966,
+   "dolgu_siniri": 28,
+   "blok_siniri": 4,
+   "dilim": 33
+  },
+  "debian13/debian/coreutils/mktemp": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 285,
+   "thunk": 177,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 109,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 113,
+    ".text": 109,
+    ".fini": 1,
+    "EXTERNAL": 61
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 112,
+    "yurutulemez": 61
+   },
+   "olculen_cift": 220,
+   "kutular": {
+    "negatif": 3,
+    "0": 112,
+    "1-15": 87,
+    "16-31": 16,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 3,
+    "0": 59,
+    "1-15": 28,
+    "16-31": 16,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 3,
+    "0": 59,
+    "4": 3,
+    "8": 11,
+    "12": 14,
+    "16": 3,
+    "20": 6,
+    "24": 4,
+    "28": 3,
+    "40": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 68,
+    "4": 7,
+    "8": 14,
+    "12": 8,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 46,
+   "pozitif_dolgu_sonrasi_hizali": 45,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 16,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.072727,
+   "dolgu_siniri": 18,
+   "blok_siniri": 4,
+   "dilim": 23
+  },
+  "debian13/debian/coreutils/mv": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 753,
+   "thunk": 451,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 305,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 291,
+    ".text": 305,
+    ".fini": 1,
+    "EXTERNAL": 155
+   },
+   "thunk_yeri": {
+    "ana_kod": 6,
+    "yurutulebilir_diger": 290,
+    "yurutulemez": 155
+   },
+   "olculen_cift": 594,
+   "kutular": {
+    "negatif": 3,
+    "0": 296,
+    "1-15": 241,
+    "16-31": 53,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 3,
+    "0": 155,
+    "1-15": 92,
+    "16-31": 53,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 3,
+    "0": 155,
+    "4": 24,
+    "8": 31,
+    "12": 37,
+    "16": 6,
+    "20": 20,
+    "24": 12,
+    "28": 15,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 190,
+    "4": 27,
+    "8": 30,
+    "12": 27,
+    "16": 30,
+    "20": 1
+   },
+   "pozitif_dolgu": 146,
+   "pozitif_dolgu_sonrasi_hizali": 145,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 53,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.089226,
+   "dolgu_siniri": 54,
+   "blok_siniri": 4,
+   "dilim": 59
+  },
+  "debian13/debian/coreutils/nice": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 258,
+   "thunk": 161,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 98,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 103,
+    ".text": 98,
+    ".fini": 1,
+    "EXTERNAL": 55
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 102,
+    "yurutulemez": 55
+   },
+   "olculen_cift": 199,
+   "kutular": {
+    "negatif": 1,
+    "0": 106,
+    "1-15": 77,
+    "16-31": 13,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 57,
+    "1-15": 24,
+    "16-31": 13,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 57,
+    "4": 3,
+    "8": 10,
+    "12": 11,
+    "16": 3,
+    "20": 5,
+    "24": 4,
+    "28": 1,
+    "148": 1,
+    "4096": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 61,
+    "4": 7,
+    "8": 12,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 39,
+   "pozitif_dolgu_sonrasi_hizali": 38,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 13,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.065327,
+   "dolgu_siniri": 15,
+   "blok_siniri": 4,
+   "dilim": 20
+  },
+  "debian13/debian/coreutils/nl": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 299,
+   "thunk": 190,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 110,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 122,
+    ".text": 110,
+    ".fini": 1,
+    "EXTERNAL": 65
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 121,
+    "yurutulemez": 65
+   },
+   "olculen_cift": 230,
+   "kutular": {
+    "negatif": 1,
+    "0": 120,
+    "1-15": 89,
+    "16-31": 18,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 62,
+    "1-15": 26,
+    "16-31": 18,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 62,
+    "4": 4,
+    "8": 11,
+    "12": 11,
+    "16": 4,
+    "20": 7,
+    "24": 6,
+    "28": 1,
+    "148": 1,
+    "768": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 69,
+    "4": 7,
+    "8": 13,
+    "12": 7,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 46,
+   "pozitif_dolgu_sonrasi_hizali": 45,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 18,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.078261,
+   "dolgu_siniri": 20,
+   "blok_siniri": 4,
+   "dilim": 25
+  },
+  "debian13/debian/coreutils/nohup": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 274,
+   "thunk": 170,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 105,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 109,
+    ".text": 105,
+    ".fini": 1,
+    "EXTERNAL": 58
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 108,
+    "yurutulemez": 58
+   },
+   "olculen_cift": 212,
+   "kutular": {
+    "negatif": 1,
+    "0": 111,
+    "1-15": 81,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 59,
+    "1-15": 25,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 59,
+    "4": 4,
+    "8": 10,
+    "12": 11,
+    "16": 3,
+    "20": 6,
+    "24": 4,
+    "28": 5,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 66,
+    "4": 7,
+    "8": 13,
+    "12": 7,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 44,
+   "pozitif_dolgu_sonrasi_hizali": 43,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 18,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.084906,
+   "dolgu_siniri": 19,
+   "blok_siniri": 4,
+   "dilim": 24
+  },
+  "debian13/debian/coreutils/nproc": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 275,
+   "thunk": 173,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 103,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 111,
+    ".text": 103,
+    ".fini": 1,
+    "EXTERNAL": 59
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 110,
+    "yurutulemez": 59
+   },
+   "olculen_cift": 212,
+   "kutular": {
+    "negatif": 1,
+    "0": 113,
+    "1-15": 83,
+    "16-31": 14,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 60,
+    "1-15": 26,
+    "16-31": 14,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 60,
+    "4": 3,
+    "8": 11,
+    "12": 12,
+    "16": 5,
+    "20": 4,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 64,
+    "4": 7,
+    "8": 13,
+    "12": 6,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 41,
+   "pozitif_dolgu_sonrasi_hizali": 40,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 14,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.066038,
+   "dolgu_siniri": 15,
+   "blok_siniri": 4,
+   "dilim": 20
+  },
+  "debian13/debian/coreutils/numfmt": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 312,
+   "thunk": 185,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 128,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 119,
+    ".text": 128,
+    ".fini": 1,
+    "EXTERNAL": 63
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 118,
+    "yurutulemez": 63
+   },
+   "olculen_cift": 245,
+   "kutular": {
+    "negatif": 1,
+    "0": 127,
+    "1-15": 97,
+    "16-31": 18,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 70,
+    "1-15": 36,
+    "16-31": 18,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 70,
+    "4": 8,
+    "8": 12,
+    "12": 16,
+    "16": 3,
+    "20": 6,
+    "24": 6,
+    "28": 3,
+    "52": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 84,
+    "4": 10,
+    "8": 13,
+    "12": 8,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 56,
+   "pozitif_dolgu_sonrasi_hizali": 55,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 18,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.073469,
+   "dolgu_siniri": 20,
+   "blok_siniri": 4,
+   "dilim": 25
+  },
+  "debian13/debian/coreutils/od": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 380,
+   "thunk": 227,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 154,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 147,
+    ".text": 154,
+    ".fini": 1,
+    "EXTERNAL": 77
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 146,
+    "yurutulemez": 77
+   },
+   "olculen_cift": 299,
+   "kutular": {
+    "negatif": 1,
+    "0": 154,
+    "1-15": 121,
+    "16-31": 21,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 83,
+    "1-15": 46,
+    "16-31": 21,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 83,
+    "4": 11,
+    "8": 16,
+    "12": 19,
+    "16": 3,
+    "20": 8,
+    "24": 6,
+    "28": 4,
+    "148": 1,
+    "1232": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 96,
+    "4": 14,
+    "8": 21,
+    "12": 8,
+    "16": 14,
+    "20": 1
+   },
+   "pozitif_dolgu": 69,
+   "pozitif_dolgu_sonrasi_hizali": 68,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 21,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.070234,
+   "dolgu_siniri": 23,
+   "blok_siniri": 4,
+   "dilim": 28
+  },
+  "debian13/debian/coreutils/paste": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 278,
+   "thunk": 175,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 104,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 112,
+    ".text": 104,
+    ".fini": 1,
+    "EXTERNAL": 60
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 111,
+    "yurutulemez": 60
+   },
+   "olculen_cift": 214,
+   "kutular": {
+    "negatif": 1,
+    "0": 115,
+    "1-15": 82,
+    "16-31": 15,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 62,
+    "1-15": 24,
+    "16-31": 15,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 62,
+    "4": 3,
+    "8": 10,
+    "12": 11,
+    "16": 4,
+    "20": 5,
+    "24": 5,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 64,
+    "4": 8,
+    "8": 14,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 40,
+   "pozitif_dolgu_sonrasi_hizali": 39,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.070093,
+   "dolgu_siniri": 16,
+   "blok_siniri": 4,
+   "dilim": 21
+  },
+  "debian13/debian/coreutils/pathchk": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 259,
+   "thunk": 161,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 99,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 103,
+    ".text": 99,
+    ".fini": 1,
+    "EXTERNAL": 55
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 102,
+    "yurutulemez": 55
+   },
+   "olculen_cift": 200,
+   "kutular": {
+    "negatif": 1,
+    "0": 105,
+    "1-15": 78,
+    "16-31": 15,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 56,
+    "1-15": 25,
+    "16-31": 15,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 56,
+    "4": 3,
+    "8": 10,
+    "12": 12,
+    "16": 4,
+    "20": 4,
+    "24": 5,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 62,
+    "4": 7,
+    "8": 12,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 41,
+   "pozitif_dolgu_sonrasi_hizali": 40,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.075,
+   "dolgu_siniri": 16,
+   "blok_siniri": 4,
+   "dilim": 21
+  },
+  "debian13/debian/coreutils/pinky": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 402,
+   "thunk": 292,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 111,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 190,
+    ".text": 111,
+    ".fini": 1,
+    "EXTERNAL": 99
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 189,
+    "yurutulemez": 99
+   },
+   "olculen_cift": 299,
+   "kutular": {
+    "negatif": 1,
+    "0": 157,
+    "1-15": 124,
+    "16-31": 15,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 65,
+    "1-15": 27,
+    "16-31": 15,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 65,
+    "4": 3,
+    "8": 10,
+    "12": 14,
+    "16": 3,
+    "20": 4,
+    "24": 6,
+    "28": 2,
+    "60": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 69,
+    "4": 9,
+    "8": 14,
+    "12": 6,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 44,
+   "pozitif_dolgu_sonrasi_hizali": 43,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.050167,
+   "dolgu_siniri": 17,
+   "blok_siniri": 4,
+   "dilim": 22
+  },
+  "debian13/debian/coreutils/pr": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 377,
+   "thunk": 228,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 150,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 146,
+    ".text": 150,
+    ".fini": 1,
+    "EXTERNAL": 79
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 145,
+    "yurutulemez": 79
+   },
+   "olculen_cift": 294,
+   "kutular": {
+    "negatif": 2,
+    "0": 147,
+    "1-15": 119,
+    "16-31": 23,
+    ">=32": 3
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 79,
+    "1-15": 42,
+    "16-31": 23,
+    ">=32": 3
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 79,
+    "4": 8,
+    "8": 19,
+    "12": 15,
+    "16": 6,
+    "20": 7,
+    "24": 7,
+    "28": 3,
+    "148": 1,
+    "1368": 1,
+    "5624": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 96,
+    "4": 13,
+    "8": 16,
+    "12": 8,
+    "16": 16,
+    "20": 1
+   },
+   "pozitif_dolgu": 68,
+   "pozitif_dolgu_sonrasi_hizali": 67,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 23,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.078231,
+   "dolgu_siniri": 26,
+   "blok_siniri": 4,
+   "dilim": 31
+  },
+  "debian13/debian/coreutils/printenv": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 245,
+   "thunk": 149,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 97,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 95,
+    ".text": 97,
+    ".fini": 1,
+    "EXTERNAL": 51
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 94,
+    "yurutulemez": 51
+   },
+   "olculen_cift": 190,
+   "kutular": {
+    "negatif": 1,
+    "0": 102,
+    "1-15": 74,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 57,
+    "1-15": 25,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 57,
+    "4": 3,
+    "8": 11,
+    "12": 11,
+    "16": 3,
+    "20": 4,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 60,
+    "4": 7,
+    "8": 12,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 38,
+   "pozitif_dolgu_sonrasi_hizali": 37,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 12,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.063158,
+   "dolgu_siniri": 13,
+   "blok_siniri": 4,
+   "dilim": 18
+  },
+  "debian13/debian/coreutils/printf": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 310,
+   "thunk": 187,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 124,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 120,
+    ".text": 124,
+    ".fini": 1,
+    "EXTERNAL": 64
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 119,
+    "yurutulemez": 64
+   },
+   "olculen_cift": 242,
+   "kutular": {
+    "negatif": 1,
+    "0": 125,
+    "1-15": 95,
+    "16-31": 19,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 68,
+    "1-15": 33,
+    "16-31": 19,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 68,
+    "4": 7,
+    "8": 13,
+    "12": 13,
+    "16": 4,
+    "20": 7,
+    "24": 6,
+    "28": 2,
+    "148": 1,
+    "4096": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 77,
+    "4": 9,
+    "8": 15,
+    "12": 10,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 54,
+   "pozitif_dolgu_sonrasi_hizali": 53,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 19,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.078512,
+   "dolgu_siniri": 21,
+   "blok_siniri": 4,
+   "dilim": 26
+  },
+  "debian13/debian/coreutils/ptx": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 335,
+   "thunk": 217,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 119,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 140,
+    ".text": 119,
+    ".fini": 1,
+    "EXTERNAL": 74
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 139,
+    "yurutulemez": 74
+   },
+   "olculen_cift": 257,
+   "kutular": {
+    "negatif": 2,
+    "0": 136,
+    "1-15": 100,
+    "16-31": 17,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 69,
+    "1-15": 28,
+    "16-31": 17,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 69,
+    "4": 4,
+    "8": 10,
+    "12": 14,
+    "16": 3,
+    "20": 8,
+    "24": 5,
+    "28": 1,
+    "148": 1,
+    "724": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 71,
+    "4": 11,
+    "8": 13,
+    "12": 10,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 47,
+   "pozitif_dolgu_sonrasi_hizali": 46,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 17,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.066148,
+   "dolgu_siniri": 19,
+   "blok_siniri": 4,
+   "dilim": 24
+  },
+  "debian13/debian/coreutils/pwd": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 285,
+   "thunk": 185,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 101,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 119,
+    ".text": 101,
+    ".fini": 1,
+    "EXTERNAL": 63
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 118,
+    "yurutulemez": 63
+   },
+   "olculen_cift": 218,
+   "kutular": {
+    "negatif": 1,
+    "0": 115,
+    "1-15": 86,
+    "16-31": 14,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 58,
+    "1-15": 25,
+    "16-31": 14,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 58,
+    "4": 3,
+    "8": 11,
+    "12": 11,
+    "16": 3,
+    "20": 6,
+    "24": 4,
+    "28": 1,
+    "56": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 63,
+    "4": 7,
+    "8": 12,
+    "12": 7,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 41,
+   "pozitif_dolgu_sonrasi_hizali": 40,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 14,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.06422,
+   "dolgu_siniri": 16,
+   "blok_siniri": 4,
+   "dilim": 21
+  },
+  "debian13/debian/coreutils/readlink": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 300,
+   "thunk": 168,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 134,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 107,
+    ".text": 134,
+    ".fini": 1,
+    "EXTERNAL": 57
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 106,
+    "yurutulemez": 57
+   },
+   "olculen_cift": 239,
+   "kutular": {
+    "negatif": 1,
+    "0": 130,
+    "1-15": 91,
+    "16-31": 16,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 79,
+    "1-15": 36,
+    "16-31": 16,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 79,
+    "4": 8,
+    "8": 13,
+    "12": 15,
+    "16": 3,
+    "20": 6,
+    "24": 5,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 80,
+    "4": 10,
+    "8": 17,
+    "12": 10,
+    "16": 16,
+    "20": 1
+   },
+   "pozitif_dolgu": 53,
+   "pozitif_dolgu_sonrasi_hizali": 52,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 16,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.066946,
+   "dolgu_siniri": 17,
+   "blok_siniri": 4,
+   "dilim": 22
+  },
+  "debian13/debian/coreutils/realpath": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 306,
+   "thunk": 171,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 137,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 109,
+    ".text": 137,
+    ".fini": 1,
+    "EXTERNAL": 58
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 108,
+    "yurutulemez": 58
+   },
+   "olculen_cift": 244,
+   "kutular": {
+    "negatif": 1,
+    "0": 132,
+    "1-15": 93,
+    "16-31": 15,
+    ">=32": 3
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 80,
+    "1-15": 37,
+    "16-31": 15,
+    ">=32": 3
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 80,
+    "4": 9,
+    "8": 14,
+    "12": 14,
+    "16": 4,
+    "20": 4,
+    "24": 5,
+    "28": 2,
+    "48": 1,
+    "148": 1,
+    "4096": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 83,
+    "4": 10,
+    "8": 17,
+    "12": 10,
+    "16": 16,
+    "20": 1
+   },
+   "pozitif_dolgu": 55,
+   "pozitif_dolgu_sonrasi_hizali": 54,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.061475,
+   "dolgu_siniri": 18,
+   "blok_siniri": 4,
+   "dilim": 23
+  },
+  "debian13/debian/coreutils/rm": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 395,
+   "thunk": 213,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 184,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 137,
+    ".text": 184,
+    ".fini": 1,
+    "EXTERNAL": 72
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 136,
+    "yurutulemez": 72
+   },
+   "olculen_cift": 319,
+   "kutular": {
+    "negatif": 1,
+    "0": 173,
+    "1-15": 120,
+    "16-31": 24,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 107,
+    "1-15": 50,
+    "16-31": 24,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 107,
+    "4": 12,
+    "8": 20,
+    "12": 18,
+    "16": 5,
+    "20": 7,
+    "24": 6,
+    "28": 6,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 106,
+    "4": 19,
+    "8": 21,
+    "12": 17,
+    "16": 20,
+    "20": 1
+   },
+   "pozitif_dolgu": 75,
+   "pozitif_dolgu_sonrasi_hizali": 74,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 24,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.075235,
+   "dolgu_siniri": 25,
+   "blok_siniri": 4,
+   "dilim": 30
+  },
+  "debian13/debian/coreutils/rmdir": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 274,
+   "thunk": 173,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 102,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 111,
+    ".text": 102,
+    ".fini": 1,
+    "EXTERNAL": 59
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 110,
+    "yurutulemez": 59
+   },
+   "olculen_cift": 211,
+   "kutular": {
+    "negatif": 1,
+    "0": 110,
+    "1-15": 83,
+    "16-31": 16,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 57,
+    "1-15": 26,
+    "16-31": 16,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 57,
+    "4": 4,
+    "8": 11,
+    "12": 11,
+    "16": 4,
+    "20": 6,
+    "24": 5,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 64,
+    "4": 7,
+    "8": 13,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 43,
+   "pozitif_dolgu_sonrasi_hizali": 42,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 16,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.075829,
+   "dolgu_siniri": 17,
+   "blok_siniri": 4,
+   "dilim": 22
+  },
+  "debian13/debian/coreutils/runcon": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 307,
+   "thunk": 205,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 103,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 131,
+    ".text": 103,
+    ".fini": 1,
+    "EXTERNAL": 71
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 130,
+    "yurutulemez": 71
+   },
+   "olculen_cift": 232,
+   "kutular": {
+    "negatif": 1,
+    "0": 124,
+    "1-15": 94,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 61,
+    "1-15": 27,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 61,
+    "4": 3,
+    "8": 12,
+    "12": 12,
+    "16": 3,
+    "20": 4,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 62,
+    "4": 7,
+    "8": 14,
+    "12": 6,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 40,
+   "pozitif_dolgu_sonrasi_hizali": 39,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 12,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.051724,
+   "dolgu_siniri": 13,
+   "blok_siniri": 4,
+   "dilim": 18
+  },
+  "debian13/debian/coreutils/seq": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 297,
+   "thunk": 184,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 114,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 118,
+    ".text": 114,
+    ".fini": 1,
+    "EXTERNAL": 63
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 117,
+    "yurutulemez": 63
+   },
+   "olculen_cift": 230,
+   "kutular": {
+    "negatif": 1,
+    "0": 118,
+    "1-15": 93,
+    "16-31": 17,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 62,
+    "1-15": 32,
+    "16-31": 17,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 62,
+    "4": 9,
+    "8": 11,
+    "12": 12,
+    "16": 3,
+    "20": 6,
+    "24": 5,
+    "28": 3,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 76,
+    "4": 7,
+    "8": 12,
+    "12": 7,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 50,
+   "pozitif_dolgu_sonrasi_hizali": 49,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 17,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.073913,
+   "dolgu_siniri": 18,
+   "blok_siniri": 4,
+   "dilim": 23
+  },
+  "debian13/debian/coreutils/sha1sum": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 299,
+   "thunk": 193,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 107,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 124,
+    ".text": 107,
+    ".fini": 1,
+    "EXTERNAL": 66
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 123,
+    "yurutulemez": 66
+   },
+   "olculen_cift": 229,
+   "kutular": {
+    "negatif": 1,
+    "0": 118,
+    "1-15": 90,
+    "16-31": 19,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 59,
+    "1-15": 26,
+    "16-31": 19,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 59,
+    "4": 4,
+    "8": 10,
+    "12": 12,
+    "16": 5,
+    "20": 7,
+    "24": 5,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 67,
+    "4": 7,
+    "8": 13,
+    "12": 6,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 46,
+   "pozitif_dolgu_sonrasi_hizali": 45,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 19,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.082969,
+   "dolgu_siniri": 20,
+   "blok_siniri": 4,
+   "dilim": 25
+  },
+  "debian13/debian/coreutils/sha224sum": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 323,
+   "thunk": 209,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 119,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 132,
+    ".text": 119,
+    ".fini": 1,
+    "EXTERNAL": 70
+   },
+   "thunk_yeri": {
+    "ana_kod": 8,
+    "yurutulebilir_diger": 131,
+    "yurutulemez": 70
+   },
+   "olculen_cift": 249,
+   "kutular": {
+    "negatif": 1,
+    "0": 131,
+    "1-15": 98,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 68,
+    "1-15": 30,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 68,
+    "4": 6,
+    "8": 11,
+    "12": 13,
+    "16": 5,
+    "20": 6,
+    "24": 5,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 73,
+    "4": 9,
+    "8": 17,
+    "12": 6,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 49,
+   "pozitif_dolgu_sonrasi_hizali": 48,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 18,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.072289,
+   "dolgu_siniri": 19,
+   "blok_siniri": 4,
+   "dilim": 24
+  },
+  "debian13/debian/coreutils/sha256sum": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 323,
+   "thunk": 209,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 119,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 132,
+    ".text": 119,
+    ".fini": 1,
+    "EXTERNAL": 70
+   },
+   "thunk_yeri": {
+    "ana_kod": 8,
+    "yurutulebilir_diger": 131,
+    "yurutulemez": 70
+   },
+   "olculen_cift": 249,
+   "kutular": {
+    "negatif": 1,
+    "0": 131,
+    "1-15": 98,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 68,
+    "1-15": 30,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 68,
+    "4": 6,
+    "8": 11,
+    "12": 13,
+    "16": 5,
+    "20": 6,
+    "24": 5,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 73,
+    "4": 9,
+    "8": 17,
+    "12": 6,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 49,
+   "pozitif_dolgu_sonrasi_hizali": 48,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 18,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.072289,
+   "dolgu_siniri": 19,
+   "blok_siniri": 4,
+   "dilim": 24
+  },
+  "debian13/debian/coreutils/sha384sum": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 323,
+   "thunk": 209,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 119,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 132,
+    ".text": 119,
+    ".fini": 1,
+    "EXTERNAL": 70
+   },
+   "thunk_yeri": {
+    "ana_kod": 8,
+    "yurutulebilir_diger": 131,
+    "yurutulemez": 70
+   },
+   "olculen_cift": 249,
+   "kutular": {
+    "negatif": 1,
+    "0": 129,
+    "1-15": 100,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 66,
+    "1-15": 32,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 66,
+    "4": 8,
+    "8": 11,
+    "12": 13,
+    "16": 5,
+    "20": 6,
+    "24": 5,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 73,
+    "4": 9,
+    "8": 17,
+    "12": 6,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 51,
+   "pozitif_dolgu_sonrasi_hizali": 50,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 18,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.072289,
+   "dolgu_siniri": 19,
+   "blok_siniri": 4,
+   "dilim": 24
+  },
+  "debian13/debian/coreutils/sha512sum": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 323,
+   "thunk": 209,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 119,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 132,
+    ".text": 119,
+    ".fini": 1,
+    "EXTERNAL": 70
+   },
+   "thunk_yeri": {
+    "ana_kod": 8,
+    "yurutulebilir_diger": 131,
+    "yurutulemez": 70
+   },
+   "olculen_cift": 249,
+   "kutular": {
+    "negatif": 1,
+    "0": 129,
+    "1-15": 100,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 66,
+    "1-15": 32,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 66,
+    "4": 8,
+    "8": 11,
+    "12": 13,
+    "16": 5,
+    "20": 6,
+    "24": 5,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 73,
+    "4": 9,
+    "8": 17,
+    "12": 6,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 51,
+   "pozitif_dolgu_sonrasi_hizali": 50,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 18,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.072289,
+   "dolgu_siniri": 19,
+   "blok_siniri": 4,
+   "dilim": 24
+  },
+  "debian13/debian/coreutils/shred": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 393,
+   "thunk": 245,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 149,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 159,
+    ".text": 149,
+    ".fini": 1,
+    "EXTERNAL": 83
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 158,
+    "yurutulemez": 83
+   },
+   "olculen_cift": 306,
+   "kutular": {
+    "negatif": 1,
+    "0": 154,
+    "1-15": 123,
+    "16-31": 27,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 77,
+    "1-15": 42,
+    "16-31": 27,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 77,
+    "4": 5,
+    "8": 14,
+    "12": 23,
+    "16": 6,
+    "20": 6,
+    "24": 9,
+    "28": 6,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 98,
+    "4": 10,
+    "8": 16,
+    "12": 10,
+    "16": 14,
+    "20": 1
+   },
+   "pozitif_dolgu": 70,
+   "pozitif_dolgu_sonrasi_hizali": 69,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 27,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.088235,
+   "dolgu_siniri": 28,
+   "blok_siniri": 4,
+   "dilim": 33
+  },
+  "debian13/debian/coreutils/shuf": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 377,
+   "thunk": 221,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 158,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 142,
+    ".text": 158,
+    ".fini": 1,
+    "EXTERNAL": 75
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 141,
+    "yurutulemez": 75
+   },
+   "olculen_cift": 298,
+   "kutular": {
+    "negatif": 1,
+    "0": 154,
+    "1-15": 118,
+    "16-31": 23,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 86,
+    "1-15": 45,
+    "16-31": 23,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 86,
+    "4": 7,
+    "8": 17,
+    "12": 21,
+    "16": 5,
+    "20": 10,
+    "24": 6,
+    "28": 2,
+    "56": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 97,
+    "4": 10,
+    "8": 20,
+    "12": 13,
+    "16": 17,
+    "20": 1
+   },
+   "pozitif_dolgu": 70,
+   "pozitif_dolgu_sonrasi_hizali": 69,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 23,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.077181,
+   "dolgu_siniri": 25,
+   "blok_siniri": 4,
+   "dilim": 30
+  },
+  "debian13/debian/coreutils/sleep": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 263,
+   "thunk": 160,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 104,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 102,
+    ".text": 104,
+    ".fini": 1,
+    "EXTERNAL": 55
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 101,
+    "yurutulemez": 55
+   },
+   "olculen_cift": 204,
+   "kutular": {
+    "negatif": 1,
+    "0": 107,
+    "1-15": 80,
+    "16-31": 15,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 59,
+    "1-15": 27,
+    "16-31": 15,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 59,
+    "4": 5,
+    "8": 10,
+    "12": 12,
+    "16": 4,
+    "20": 6,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 66,
+    "4": 7,
+    "8": 12,
+    "12": 7,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 43,
+   "pozitif_dolgu_sonrasi_hizali": 42,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.073529,
+   "dolgu_siniri": 16,
+   "blok_siniri": 4,
+   "dilim": 21
+  },
+  "debian13/debian/coreutils/sort": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 625,
+   "thunk": 381,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 246,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 248,
+    ".text": 246,
+    ".fini": 1,
+    "EXTERNAL": 129
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 247,
+    "yurutulemez": 129
+   },
+   "olculen_cift": 492,
+   "kutular": {
+    "negatif": 2,
+    "0": 247,
+    "1-15": 207,
+    "16-31": 32,
+    ">=32": 4
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 127,
+    "1-15": 80,
+    "16-31": 32,
+    ">=32": 4
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 127,
+    "4": 22,
+    "8": 32,
+    "12": 26,
+    "16": 9,
+    "20": 9,
+    "24": 8,
+    "28": 6,
+    "100": 1,
+    "148": 1,
+    "168": 1,
+    "1776": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 156,
+    "4": 21,
+    "8": 28,
+    "12": 19,
+    "16": 21,
+    "20": 1
+   },
+   "pozitif_dolgu": 116,
+   "pozitif_dolgu_sonrasi_hizali": 114,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 32,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.065041,
+   "dolgu_siniri": 36,
+   "blok_siniri": 4,
+   "dilim": 41
+  },
+  "debian13/debian/coreutils/split": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 396,
+   "thunk": 264,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 133,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 171,
+    ".text": 133,
+    ".fini": 1,
+    "EXTERNAL": 90
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 170,
+    "yurutulemez": 90
+   },
+   "olculen_cift": 302,
+   "kutular": {
+    "negatif": 1,
+    "0": 149,
+    "1-15": 123,
+    "16-31": 26,
+    ">=32": 3
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 67,
+    "1-15": 35,
+    "16-31": 26,
+    ">=32": 3
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 67,
+    "4": 9,
+    "8": 14,
+    "12": 12,
+    "16": 7,
+    "20": 10,
+    "24": 4,
+    "28": 5,
+    "96": 1,
+    "148": 1,
+    "1264": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 88,
+    "4": 8,
+    "8": 15,
+    "12": 7,
+    "16": 14,
+    "20": 1
+   },
+   "pozitif_dolgu": 64,
+   "pozitif_dolgu_sonrasi_hizali": 63,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 26,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.086093,
+   "dolgu_siniri": 29,
+   "blok_siniri": 4,
+   "dilim": 34
+  },
+  "debian13/debian/coreutils/stat": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 471,
+   "thunk": 309,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 163,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 200,
+    ".text": 163,
+    ".fini": 1,
+    "EXTERNAL": 106
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 199,
+    "yurutulemez": 106
+   },
+   "olculen_cift": 361,
+   "kutular": {
+    "negatif": 2,
+    "0": 175,
+    "1-15": 152,
+    "16-31": 30,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 80,
+    "1-15": 48,
+    "16-31": 30,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 80,
+    "4": 7,
+    "8": 21,
+    "12": 20,
+    "16": 5,
+    "20": 9,
+    "24": 9,
+    "28": 7,
+    "148": 1,
+    "5624": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 102,
+    "4": 12,
+    "8": 20,
+    "12": 13,
+    "16": 15,
+    "20": 1
+   },
+   "pozitif_dolgu": 80,
+   "pozitif_dolgu_sonrasi_hizali": 79,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 30,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.083102,
+   "dolgu_siniri": 32,
+   "blok_siniri": 4,
+   "dilim": 37
+  },
+  "debian13/debian/coreutils/stdbuf": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 286,
+   "thunk": 178,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 109,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 114,
+    ".text": 109,
+    ".fini": 1,
+    "EXTERNAL": 61
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 113,
+    "yurutulemez": 61
+   },
+   "olculen_cift": 221,
+   "kutular": {
+    "negatif": 2,
+    "0": 112,
+    "1-15": 86,
+    "16-31": 20,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 58,
+    "1-15": 27,
+    "16-31": 20,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 58,
+    "4": 3,
+    "8": 11,
+    "12": 13,
+    "16": 5,
+    "20": 5,
+    "24": 5,
+    "28": 5,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 70,
+    "4": 7,
+    "8": 13,
+    "12": 7,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 48,
+   "pozitif_dolgu_sonrasi_hizali": 47,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 20,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.090498,
+   "dolgu_siniri": 21,
+   "blok_siniri": 4,
+   "dilim": 26
+  },
+  "debian13/debian/coreutils/stty": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 309,
+   "thunk": 197,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 113,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 127,
+    ".text": 113,
+    ".fini": 1,
+    "EXTERNAL": 67
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 126,
+    "yurutulemez": 67
+   },
+   "olculen_cift": 238,
+   "kutular": {
+    "negatif": 1,
+    "0": 127,
+    "1-15": 92,
+    "16-31": 16,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 66,
+    "1-15": 27,
+    "16-31": 16,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 66,
+    "4": 4,
+    "8": 10,
+    "12": 13,
+    "16": 4,
+    "20": 6,
+    "24": 4,
+    "28": 2,
+    "44": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 67,
+    "4": 9,
+    "8": 12,
+    "12": 8,
+    "16": 16,
+    "20": 1
+   },
+   "pozitif_dolgu": 45,
+   "pozitif_dolgu_sonrasi_hizali": 44,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 16,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.067227,
+   "dolgu_siniri": 18,
+   "blok_siniri": 4,
+   "dilim": 23
+  },
+  "debian13/debian/coreutils/sum": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 314,
+   "thunk": 190,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 125,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 122,
+    ".text": 125,
+    ".fini": 1,
+    "EXTERNAL": 65
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 121,
+    "yurutulemez": 65
+   },
+   "olculen_cift": 245,
+   "kutular": {
+    "negatif": 1,
+    "0": 123,
+    "1-15": 99,
+    "16-31": 20,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 65,
+    "1-15": 36,
+    "16-31": 20,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 65,
+    "4": 6,
+    "8": 11,
+    "12": 19,
+    "16": 5,
+    "20": 5,
+    "24": 7,
+    "28": 3,
+    "60": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 81,
+    "4": 10,
+    "8": 14,
+    "12": 8,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 58,
+   "pozitif_dolgu_sonrasi_hizali": 57,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 20,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.081633,
+   "dolgu_siniri": 22,
+   "blok_siniri": 4,
+   "dilim": 27
+  },
+  "debian13/debian/coreutils/sync": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 261,
+   "thunk": 164,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 98,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 105,
+    ".text": 98,
+    ".fini": 1,
+    "EXTERNAL": 56
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 104,
+    "yurutulemez": 56
+   },
+   "olculen_cift": 201,
+   "kutular": {
+    "negatif": 1,
+    "0": 106,
+    "1-15": 78,
+    "16-31": 14,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 56,
+    "1-15": 24,
+    "16-31": 14,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 56,
+    "4": 3,
+    "8": 10,
+    "12": 11,
+    "16": 3,
+    "20": 5,
+    "24": 4,
+    "28": 2,
+    "60": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 61,
+    "4": 7,
+    "8": 12,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 40,
+   "pozitif_dolgu_sonrasi_hizali": 39,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 14,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.069652,
+   "dolgu_siniri": 16,
+   "blok_siniri": 4,
+   "dilim": 21
+  },
+  "debian13/debian/coreutils/tac": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 306,
+   "thunk": 197,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 110,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 127,
+    ".text": 110,
+    ".fini": 1,
+    "EXTERNAL": 67
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 126,
+    "yurutulemez": 67
+   },
+   "olculen_cift": 235,
+   "kutular": {
+    "negatif": 1,
+    "0": 121,
+    "1-15": 94,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 60,
+    "1-15": 29,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 60,
+    "4": 6,
+    "8": 11,
+    "12": 12,
+    "16": 6,
+    "20": 6,
+    "24": 4,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 71,
+    "4": 8,
+    "8": 12,
+    "12": 7,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 48,
+   "pozitif_dolgu_sonrasi_hizali": 47,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 18,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.076596,
+   "dolgu_siniri": 19,
+   "blok_siniri": 4,
+   "dilim": 24
+  },
+  "debian13/debian/coreutils/tail": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 412,
+   "thunk": 239,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 175,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 154,
+    ".text": 175,
+    ".fini": 1,
+    "EXTERNAL": 81
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 153,
+    "yurutulemez": 81
+   },
+   "olculen_cift": 327,
+   "kutular": {
+    "negatif": 1,
+    "0": 168,
+    "1-15": 129,
+    "16-31": 26,
+    ">=32": 3
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 94,
+    "1-15": 50,
+    "16-31": 26,
+    ">=32": 3
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 94,
+    "4": 13,
+    "8": 18,
+    "12": 19,
+    "16": 6,
+    "20": 9,
+    "24": 6,
+    "28": 5,
+    "148": 1,
+    "152": 1,
+    "184": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 105,
+    "4": 16,
+    "8": 21,
+    "12": 14,
+    "16": 18,
+    "20": 1
+   },
+   "pozitif_dolgu": 79,
+   "pozitif_dolgu_sonrasi_hizali": 75,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 26,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.079511,
+   "dolgu_siniri": 29,
+   "blok_siniri": 4,
+   "dilim": 34
+  },
+  "debian13/debian/coreutils/tee": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 306,
+   "thunk": 187,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 120,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 120,
+    ".text": 120,
+    ".fini": 1,
+    "EXTERNAL": 64
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 119,
+    "yurutulemez": 64
+   },
+   "olculen_cift": 238,
+   "kutular": {
+    "negatif": 1,
+    "0": 126,
+    "1-15": 92,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 69,
+    "1-15": 30,
+    "16-31": 18,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 69,
+    "4": 5,
+    "8": 12,
+    "12": 13,
+    "16": 5,
+    "20": 6,
+    "24": 5,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 72,
+    "4": 12,
+    "8": 14,
+    "12": 9,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 49,
+   "pozitif_dolgu_sonrasi_hizali": 48,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 18,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.07563,
+   "dolgu_siniri": 19,
+   "blok_siniri": 4,
+   "dilim": 24
+  },
+  "debian13/debian/coreutils/test": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 268,
+   "thunk": 167,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 102,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 107,
+    ".text": 102,
+    ".fini": 1,
+    "EXTERNAL": 57
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 106,
+    "yurutulemez": 57
+   },
+   "olculen_cift": 207,
+   "kutular": {
+    "negatif": 1,
+    "0": 106,
+    "1-15": 84,
+    "16-31": 15,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 55,
+    "1-15": 29,
+    "16-31": 15,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 55,
+    "4": 2,
+    "8": 12,
+    "12": 15,
+    "16": 5,
+    "20": 5,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 59,
+    "4": 6,
+    "8": 11,
+    "12": 7,
+    "16": 16,
+    "20": 2,
+    "24": 1
+   },
+   "pozitif_dolgu": 45,
+   "pozitif_dolgu_sonrasi_hizali": 44,
+   "yasak_kalanli_baslangic": 3,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.072464,
+   "dolgu_siniri": 16,
+   "blok_siniri": 4,
+   "dilim": 21
+  },
+  "debian13/debian/coreutils/timeout": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 333,
+   "thunk": 226,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 108,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 146,
+    ".text": 108,
+    ".fini": 1,
+    "EXTERNAL": 77
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 145,
+    "yurutulemez": 77
+   },
+   "olculen_cift": 252,
+   "kutular": {
+    "negatif": 1,
+    "0": 131,
+    "1-15": 102,
+    "16-31": 17,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 61,
+    "1-15": 27,
+    "16-31": 17,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 61,
+    "4": 4,
+    "8": 12,
+    "12": 11,
+    "16": 5,
+    "20": 6,
+    "24": 4,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 67,
+    "4": 8,
+    "8": 14,
+    "12": 6,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 45,
+   "pozitif_dolgu_sonrasi_hizali": 44,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 17,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.06746,
+   "dolgu_siniri": 18,
+   "blok_siniri": 4,
+   "dilim": 23
+  },
+  "debian13/debian/coreutils/touch": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 361,
+   "thunk": 227,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 136,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 146,
+    ".text": 136,
+    ".fini": 1,
+    "EXTERNAL": 77
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 145,
+    "yurutulemez": 77
+   },
+   "olculen_cift": 280,
+   "kutular": {
+    "negatif": 1,
+    "0": 150,
+    "1-15": 112,
+    "16-31": 15,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 80,
+    "1-15": 37,
+    "16-31": 15,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 80,
+    "4": 9,
+    "8": 13,
+    "12": 15,
+    "16": 4,
+    "20": 6,
+    "24": 4,
+    "28": 1,
+    "48": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 79,
+    "4": 15,
+    "8": 15,
+    "12": 11,
+    "16": 15,
+    "20": 1
+   },
+   "pozitif_dolgu": 54,
+   "pozitif_dolgu_sonrasi_hizali": 53,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.053571,
+   "dolgu_siniri": 17,
+   "blok_siniri": 4,
+   "dilim": 22
+  },
+  "debian13/debian/coreutils/tr": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 299,
+   "thunk": 184,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 116,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 118,
+    ".text": 116,
+    ".fini": 1,
+    "EXTERNAL": 63
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 117,
+    "yurutulemez": 63
+   },
+   "olculen_cift": 232,
+   "kutular": {
+    "negatif": 1,
+    "0": 120,
+    "1-15": 93,
+    "16-31": 15,
+    ">=32": 3
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 64,
+    "1-15": 32,
+    "16-31": 15,
+    ">=32": 3
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 64,
+    "4": 6,
+    "8": 13,
+    "12": 13,
+    "16": 3,
+    "20": 6,
+    "24": 4,
+    "28": 2,
+    "96": 1,
+    "136": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 74,
+    "4": 7,
+    "8": 14,
+    "12": 8,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 50,
+   "pozitif_dolgu_sonrasi_hizali": 49,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.064655,
+   "dolgu_siniri": 18,
+   "blok_siniri": 4,
+   "dilim": 23
+  },
+  "debian13/debian/coreutils/true": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 239,
+   "thunk": 143,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 97,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 91,
+    ".text": 97,
+    ".fini": 1,
+    "EXTERNAL": 49
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 90,
+    "yurutulemez": 49
+   },
+   "olculen_cift": 186,
+   "kutular": {
+    "negatif": 1,
+    "0": 100,
+    "1-15": 71,
+    "16-31": 13,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 57,
+    "1-15": 24,
+    "16-31": 13,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 57,
+    "4": 3,
+    "8": 10,
+    "12": 11,
+    "16": 4,
+    "20": 4,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 60,
+    "4": 7,
+    "8": 12,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 38,
+   "pozitif_dolgu_sonrasi_hizali": 37,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 13,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.069892,
+   "dolgu_siniri": 14,
+   "blok_siniri": 4,
+   "dilim": 19
+  },
+  "debian13/debian/coreutils/truncate": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 266,
+   "thunk": 167,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 100,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 107,
+    ".text": 100,
+    ".fini": 1,
+    "EXTERNAL": 57
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 106,
+    "yurutulemez": 57
+   },
+   "olculen_cift": 205,
+   "kutular": {
+    "negatif": 1,
+    "0": 107,
+    "1-15": 81,
+    "16-31": 14,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 56,
+    "1-15": 26,
+    "16-31": 14,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 56,
+    "4": 5,
+    "8": 10,
+    "12": 11,
+    "16": 4,
+    "20": 5,
+    "24": 4,
+    "28": 1,
+    "48": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 63,
+    "4": 7,
+    "8": 12,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 42,
+   "pozitif_dolgu_sonrasi_hizali": 41,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 14,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.068293,
+   "dolgu_siniri": 16,
+   "blok_siniri": 4,
+   "dilim": 21
+  },
+  "debian13/debian/coreutils/tsort": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 279,
+   "thunk": 169,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 111,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 108,
+    ".text": 111,
+    ".fini": 1,
+    "EXTERNAL": 58
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 107,
+    "yurutulemez": 58
+   },
+   "olculen_cift": 217,
+   "kutular": {
+    "negatif": 1,
+    "0": 116,
+    "1-15": 85,
+    "16-31": 14,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 65,
+    "1-15": 29,
+    "16-31": 14,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 65,
+    "4": 6,
+    "8": 10,
+    "12": 13,
+    "16": 3,
+    "20": 6,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 68,
+    "4": 8,
+    "8": 14,
+    "12": 8,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 44,
+   "pozitif_dolgu_sonrasi_hizali": 43,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 14,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.064516,
+   "dolgu_siniri": 15,
+   "blok_siniri": 4,
+   "dilim": 20
+  },
+  "debian13/debian/coreutils/tty": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 251,
+   "thunk": 155,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 97,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 99,
+    ".text": 97,
+    ".fini": 1,
+    "EXTERNAL": 53
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 98,
+    "yurutulemez": 53
+   },
+   "olculen_cift": 194,
+   "kutular": {
+    "negatif": 1,
+    "0": 104,
+    "1-15": 76,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 57,
+    "1-15": 25,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 57,
+    "4": 3,
+    "8": 10,
+    "12": 12,
+    "16": 3,
+    "20": 4,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 60,
+    "4": 7,
+    "8": 12,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 38,
+   "pozitif_dolgu_sonrasi_hizali": 37,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 12,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.061856,
+   "dolgu_siniri": 13,
+   "blok_siniri": 4,
+   "dilim": 18
+  },
+  "debian13/debian/coreutils/uname": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 246,
+   "thunk": 149,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 98,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 95,
+    ".text": 98,
+    ".fini": 1,
+    "EXTERNAL": 51
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 94,
+    "yurutulemez": 51
+   },
+   "olculen_cift": 191,
+   "kutular": {
+    "negatif": 1,
+    "0": 101,
+    "1-15": 74,
+    "16-31": 13,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 56,
+    "1-15": 25,
+    "16-31": 13,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 56,
+    "4": 4,
+    "8": 10,
+    "12": 11,
+    "16": 3,
+    "20": 4,
+    "24": 5,
+    "28": 1,
+    "60": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 61,
+    "4": 7,
+    "8": 12,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 40,
+   "pozitif_dolgu_sonrasi_hizali": 39,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 13,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.068063,
+   "dolgu_siniri": 15,
+   "blok_siniri": 4,
+   "dilim": 20
+  },
+  "debian13/debian/coreutils/unexpand": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 287,
+   "thunk": 178,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 110,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 114,
+    ".text": 110,
+    ".fini": 1,
+    "EXTERNAL": 61
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 113,
+    "yurutulemez": 61
+   },
+   "olculen_cift": 222,
+   "kutular": {
+    "negatif": 1,
+    "0": 118,
+    "1-15": 86,
+    "16-31": 15,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 64,
+    "1-15": 27,
+    "16-31": 15,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 64,
+    "4": 6,
+    "8": 10,
+    "12": 11,
+    "16": 3,
+    "20": 6,
+    "24": 5,
+    "28": 1,
+    "32": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 70,
+    "4": 7,
+    "8": 15,
+    "12": 6,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 44,
+   "pozitif_dolgu_sonrasi_hizali": 43,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.067568,
+   "dolgu_siniri": 17,
+   "blok_siniri": 4,
+   "dilim": 22
+  },
+  "debian13/debian/coreutils/uniq": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 309,
+   "thunk": 190,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 120,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 122,
+    ".text": 120,
+    ".fini": 1,
+    "EXTERNAL": 65
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 121,
+    "yurutulemez": 65
+   },
+   "olculen_cift": 240,
+   "kutular": {
+    "negatif": 1,
+    "0": 129,
+    "1-15": 93,
+    "16-31": 16,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 71,
+    "1-15": 30,
+    "16-31": 16,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 71,
+    "4": 4,
+    "8": 13,
+    "12": 13,
+    "16": 3,
+    "20": 8,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 71,
+    "4": 11,
+    "8": 14,
+    "12": 10,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 47,
+   "pozitif_dolgu_sonrasi_hizali": 46,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 16,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.066667,
+   "dolgu_siniri": 17,
+   "blok_siniri": 4,
+   "dilim": 22
+  },
+  "debian13/debian/coreutils/unlink": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 247,
+   "thunk": 149,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 99,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 95,
+    ".text": 99,
+    ".fini": 1,
+    "EXTERNAL": 51
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 94,
+    "yurutulemez": 51
+   },
+   "olculen_cift": 192,
+   "kutular": {
+    "negatif": 1,
+    "0": 104,
+    "1-15": 74,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 59,
+    "1-15": 25,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 59,
+    "4": 3,
+    "8": 11,
+    "12": 11,
+    "16": 3,
+    "20": 4,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 61,
+    "4": 7,
+    "8": 12,
+    "12": 7,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 38,
+   "pozitif_dolgu_sonrasi_hizali": 37,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 12,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.0625,
+   "dolgu_siniri": 13,
+   "blok_siniri": 4,
+   "dilim": 18
+  },
+  "debian13/debian/coreutils/users": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 363,
+   "thunk": 257,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 107,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 167,
+    ".text": 107,
+    ".fini": 1,
+    "EXTERNAL": 87
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 166,
+    "yurutulemez": 87
+   },
+   "olculen_cift": 272,
+   "kutular": {
+    "negatif": 1,
+    "0": 146,
+    "1-15": 109,
+    "16-31": 15,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 65,
+    "1-15": 24,
+    "16-31": 15,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 65,
+    "4": 3,
+    "8": 10,
+    "12": 11,
+    "16": 3,
+    "20": 4,
+    "24": 6,
+    "28": 2,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 65,
+    "4": 8,
+    "8": 13,
+    "12": 7,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 40,
+   "pozitif_dolgu_sonrasi_hizali": 39,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.055147,
+   "dolgu_siniri": 16,
+   "blok_siniri": 4,
+   "dilim": 21
+  },
+  "debian13/debian/coreutils/vdir": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 665,
+   "thunk": 348,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 319,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 223,
+    ".text": 319,
+    ".fini": 1,
+    "EXTERNAL": 121
+   },
+   "thunk_yeri": {
+    "ana_kod": 5,
+    "yurutulebilir_diger": 222,
+    "yurutulemez": 121
+   },
+   "olculen_cift": 540,
+   "kutular": {
+    "negatif": 2,
+    "0": 276,
+    "1-15": 231,
+    "16-31": 28,
+    ">=32": 3
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 169,
+    "1-15": 116,
+    "16-31": 28,
+    ">=32": 3
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 169,
+    "4": 30,
+    "8": 39,
+    "12": 47,
+    "16": 4,
+    "20": 7,
+    "24": 9,
+    "28": 8,
+    "148": 1,
+    "2384": 1,
+    "5624": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 196,
+    "4": 26,
+    "8": 35,
+    "12": 23,
+    "16": 38,
+    "20": 1
+   },
+   "pozitif_dolgu": 147,
+   "pozitif_dolgu_sonrasi_hizali": 146,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 28,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.051852,
+   "dolgu_siniri": 31,
+   "blok_siniri": 4,
+   "dilim": 36
+  },
+  "debian13/debian/coreutils/wc": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 355,
+   "thunk": 220,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 136,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 142,
+    ".text": 136,
+    ".fini": 1,
+    "EXTERNAL": 75
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 141,
+    "yurutulemez": 75
+   },
+   "olculen_cift": 276,
+   "kutular": {
+    "negatif": 1,
+    "0": 143,
+    "1-15": 110,
+    "16-31": 20,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 75,
+    "1-15": 37,
+    "16-31": 20,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 75,
+    "4": 9,
+    "8": 15,
+    "12": 13,
+    "16": 5,
+    "20": 6,
+    "24": 7,
+    "28": 2,
+    "52": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 85,
+    "4": 12,
+    "8": 15,
+    "12": 10,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 59,
+   "pozitif_dolgu_sonrasi_hizali": 58,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 20,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.072464,
+   "dolgu_siniri": 22,
+   "blok_siniri": 4,
+   "dilim": 27
+  },
+  "debian13/debian/coreutils/who": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 403,
+   "thunk": 292,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 112,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 190,
+    ".text": 112,
+    ".fini": 1,
+    "EXTERNAL": 99
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 189,
+    "yurutulemez": 99
+   },
+   "olculen_cift": 300,
+   "kutular": {
+    "negatif": 1,
+    "0": 155,
+    "1-15": 127,
+    "16-31": 15,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 63,
+    "1-15": 30,
+    "16-31": 15,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 63,
+    "4": 4,
+    "8": 11,
+    "12": 15,
+    "16": 3,
+    "20": 4,
+    "24": 6,
+    "28": 2,
+    "148": 1,
+    "596": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 72,
+    "4": 8,
+    "8": 13,
+    "12": 6,
+    "16": 12,
+    "20": 1
+   },
+   "pozitif_dolgu": 47,
+   "pozitif_dolgu_sonrasi_hizali": 46,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 15,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.05,
+   "dolgu_siniri": 17,
+   "blok_siniri": 4,
+   "dilim": 22
+  },
+  "debian13/debian/coreutils/whoami": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 253,
+   "thunk": 155,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 99,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 99,
+    ".text": 99,
+    ".fini": 1,
+    "EXTERNAL": 53
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 98,
+    "yurutulemez": 53
+   },
+   "olculen_cift": 196,
+   "kutular": {
+    "negatif": 1,
+    "0": 106,
+    "1-15": 76,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 59,
+    "1-15": 25,
+    "16-31": 12,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 59,
+    "4": 3,
+    "8": 10,
+    "12": 12,
+    "16": 3,
+    "20": 4,
+    "24": 4,
+    "28": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 61,
+    "4": 7,
+    "8": 12,
+    "12": 7,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 38,
+   "pozitif_dolgu_sonrasi_hizali": 37,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 12,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.061224,
+   "dolgu_siniri": 13,
+   "blok_siniri": 4,
+   "dilim": 18
+  },
+  "debian13/debian/coreutils/yes": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 249,
+   "thunk": 149,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 101,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 95,
+    ".text": 101,
+    ".fini": 1,
+    "EXTERNAL": 51
+   },
+   "thunk_yeri": {
+    "ana_kod": 4,
+    "yurutulebilir_diger": 94,
+    "yurutulemez": 51
+   },
+   "olculen_cift": 194,
+   "kutular": {
+    "negatif": 1,
+    "0": 103,
+    "1-15": 75,
+    "16-31": 13,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 58,
+    "1-15": 26,
+    "16-31": 13,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 58,
+    "4": 4,
+    "8": 11,
+    "12": 11,
+    "16": 3,
+    "20": 4,
+    "24": 4,
+    "28": 2,
+    "44": 1,
+    "148": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 63,
+    "4": 7,
+    "8": 12,
+    "12": 7,
+    "16": 11,
+    "20": 1
+   },
+   "pozitif_dolgu": 41,
+   "pozitif_dolgu_sonrasi_hizali": 40,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 13,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.06701,
+   "dolgu_siniri": 15,
+   "blok_siniri": 4,
+   "dilim": 20
+  },
+  "debian13/debian/htop/htop": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 1148,
+   "thunk": 539,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 615,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 351,
+    ".text": 615,
+    ".fini": 1,
+    "EXTERNAL": 180
+   },
+   "thunk_yeri": {
+    "ana_kod": 9,
+    "yurutulebilir_diger": 350,
+    "yurutulemez": 180
+   },
+   "olculen_cift": 964,
+   "kutular": {
+    "negatif": 0,
+    "0": 501,
+    "1-15": 416,
+    "16-31": 45,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 327,
+    "1-15": 240,
+    "16-31": 45,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "0": 327,
+    "4": 78,
+    "8": 85,
+    "12": 77,
+    "16": 10,
+    "20": 9,
+    "24": 17,
+    "28": 9,
+    "56": 1,
+    "4116": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 361,
+    "4": 59,
+    "8": 56,
+    "12": 78,
+    "16": 60,
+    "20": 1
+   },
+   "pozitif_dolgu": 287,
+   "pozitif_dolgu_sonrasi_hizali": 287,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 45,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.04668,
+   "dolgu_siniri": 47,
+   "blok_siniri": 4,
+   "dilim": 52
+  },
+  "debian13/debian/openssl/openssl": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 5672,
+   "thunk": 5080,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 602,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 3362,
+    ".text": 602,
+    ".fini": 1,
+    "EXTERNAL": 1706
+   },
+   "thunk_yeri": {
+    "ana_kod": 13,
+    "yurutulebilir_diger": 3361,
+    "yurutulemez": 1706
+   },
+   "olculen_cift": 3962,
+   "kutular": {
+    "negatif": 8,
+    "0": 1994,
+    "1-15": 1917,
+    "16-31": 42,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 8,
+    "0": 321,
+    "1-15": 229,
+    "16-31": 42,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-8": 1,
+    "-4": 7,
+    "0": 321,
+    "4": 75,
+    "8": 78,
+    "12": 76,
+    "16": 10,
+    "20": 13,
+    "24": 11,
+    "28": 8,
+    "60": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 336,
+    "4": 45,
+    "8": 74,
+    "12": 73,
+    "16": 73,
+    "20": 1
+   },
+   "pozitif_dolgu": 272,
+   "pozitif_dolgu_sonrasi_hizali": 272,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 42,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.010601,
+   "dolgu_siniri": 43,
+   "blok_siniri": 4,
+   "dilim": 48
+  },
+  "debian13/debian/redis-tools/redis-benchmark": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 892,
+   "thunk": 415,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 491,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 264,
+    ".text": 491,
+    ".fini": 1,
+    "EXTERNAL": 135
+   },
+   "thunk_yeri": {
+    "ana_kod": 17,
+    "yurutulebilir_diger": 263,
+    "yurutulemez": 135
+   },
+   "olculen_cift": 753,
+   "kutular": {
+    "negatif": 2,
+    "0": 415,
+    "1-15": 331,
+    "16-31": 5,
+    ">=32": 0
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 285,
+    "1-15": 198,
+    "16-31": 5,
+    ">=32": 0
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 2,
+    "0": 285,
+    "4": 66,
+    "8": 57,
+    "12": 75,
+    "20": 3,
+    "24": 2
+   },
+   "ana_baslangic_kalani": {
+    "0": 266,
+    "4": 47,
+    "8": 61,
+    "12": 58,
+    "16": 58,
+    "20": 1
+   },
+   "pozitif_dolgu": 203,
+   "pozitif_dolgu_sonrasi_hizali": 202,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 5,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.00664,
+   "dolgu_siniri": 5,
+   "blok_siniri": 4,
+   "dilim": 10
+  },
+  "debian13/debian/redis-tools/redis-check-aof": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 5697,
+   "thunk": 987,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 4761,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 620,
+    ".text": 4761,
+    ".fini": 1,
+    "EXTERNAL": 314
+   },
+   "thunk_yeri": {
+    "ana_kod": 54,
+    "yurutulebilir_diger": 619,
+    "yurutulemez": 314
+   },
+   "olculen_cift": 5379,
+   "kutular": {
+    "negatif": 2,
+    "0": 3176,
+    "1-15": 2144,
+    "16-31": 48,
+    ">=32": 9
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 2868,
+    "1-15": 1833,
+    "16-31": 48,
+    ">=32": 9
+   },
+   "ana_dolgu_degerleri": {
+    "-980": 1,
+    "-8": 1,
+    "0": 2868,
+    "4": 598,
+    "8": 652,
+    "12": 583,
+    "16": 9,
+    "20": 15,
+    "24": 12,
+    "28": 12,
+    "36": 1,
+    "40": 1,
+    "68": 1,
+    "180": 1,
+    "684": 1,
+    "4088": 2,
+    "4104": 1,
+    "4344": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 2469,
+    "4": 533,
+    "8": 570,
+    "12": 611,
+    "16": 576,
+    "20": 1,
+    "24": 1
+   },
+   "pozitif_dolgu": 1890,
+   "pozitif_dolgu_sonrasi_hizali": 1880,
+   "yasak_kalanli_baslangic": 2,
+   "sinyal_dolgu": 48,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.008924,
+   "dolgu_siniri": 57,
+   "blok_siniri": 4,
+   "dilim": 62
+  },
+  "debian13/debian/redis-tools/redis-check-rdb": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 5697,
+   "thunk": 987,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 4761,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 620,
+    ".text": 4761,
+    ".fini": 1,
+    "EXTERNAL": 314
+   },
+   "thunk_yeri": {
+    "ana_kod": 54,
+    "yurutulebilir_diger": 619,
+    "yurutulemez": 314
+   },
+   "olculen_cift": 5379,
+   "kutular": {
+    "negatif": 2,
+    "0": 3176,
+    "1-15": 2144,
+    "16-31": 48,
+    ">=32": 9
+   },
+   "ana_kutular": {
+    "negatif": 2,
+    "0": 2868,
+    "1-15": 1833,
+    "16-31": 48,
+    ">=32": 9
+   },
+   "ana_dolgu_degerleri": {
+    "-980": 1,
+    "-8": 1,
+    "0": 2868,
+    "4": 598,
+    "8": 652,
+    "12": 583,
+    "16": 9,
+    "20": 15,
+    "24": 12,
+    "28": 12,
+    "36": 1,
+    "40": 1,
+    "68": 1,
+    "180": 1,
+    "684": 1,
+    "4088": 2,
+    "4104": 1,
+    "4344": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 2469,
+    "4": 533,
+    "8": 570,
+    "12": 611,
+    "16": 576,
+    "20": 1,
+    "24": 1
+   },
+   "pozitif_dolgu": 1890,
+   "pozitif_dolgu_sonrasi_hizali": 1880,
+   "yasak_kalanli_baslangic": 2,
+   "sinyal_dolgu": 48,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.008924,
+   "dolgu_siniri": 57,
+   "blok_siniri": 4,
+   "dilim": 62
+  },
+  "debian13/debian/redis-tools/redis-cli": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 1111,
+   "thunk": 477,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 648,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 305,
+    ".text": 648,
+    ".fini": 1,
+    "EXTERNAL": 156
+   },
+   "thunk_yeri": {
+    "ana_kod": 17,
+    "yurutulebilir_diger": 304,
+    "yurutulemez": 156
+   },
+   "olculen_cift": 951,
+   "kutular": {
+    "negatif": 1,
+    "0": 545,
+    "1-15": 396,
+    "16-31": 8,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 395,
+    "1-15": 242,
+    "16-31": 8,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 395,
+    "4": 73,
+    "8": 74,
+    "12": 95,
+    "16": 1,
+    "20": 3,
+    "24": 3,
+    "28": 1,
+    "4100": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 336,
+    "4": 66,
+    "8": 82,
+    "12": 80,
+    "16": 83,
+    "20": 1
+   },
+   "pozitif_dolgu": 251,
+   "pozitif_dolgu_sonrasi_hizali": 251,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 8,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.008412,
+   "dolgu_siniri": 9,
+   "blok_siniri": 4,
+   "dilim": 14
+  },
+  "debian13/debian/sqlite3/sqlite3": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 1144,
+   "thunk": 715,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 429,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 472,
+    ".text": 429,
+    ".fini": 1,
+    "EXTERNAL": 241
+   },
+   "thunk_yeri": {
+    "ana_kod": 3,
+    "yurutulebilir_diger": 471,
+    "yurutulemez": 241
+   },
+   "olculen_cift": 899,
+   "kutular": {
+    "negatif": 4,
+    "0": 482,
+    "1-15": 410,
+    "16-31": 3,
+    ">=32": 0
+   },
+   "ana_kutular": {
+    "negatif": 4,
+    "0": 250,
+    "1-15": 171,
+    "16-31": 3,
+    ">=32": 0
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 4,
+    "0": 250,
+    "4": 57,
+    "8": 52,
+    "12": 62,
+    "20": 1,
+    "24": 1,
+    "28": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 221,
+    "4": 36,
+    "8": 59,
+    "12": 54,
+    "16": 58,
+    "20": 1
+   },
+   "pozitif_dolgu": 174,
+   "pozitif_dolgu_sonrasi_hizali": 174,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 3,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.003337,
+   "dolgu_siniri": 3,
+   "blok_siniri": 4,
+   "dilim": 8
+  },
+  "debian13/debian/tmux/tmux": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 2588,
+   "thunk": 668,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 1919,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 443,
+    ".text": 1919,
+    ".fini": 1,
+    "EXTERNAL": 224
+   },
+   "thunk_yeri": {
+    "ana_kod": 2,
+    "yurutulebilir_diger": 442,
+    "yurutulemez": 224
+   },
+   "olculen_cift": 2360,
+   "kutular": {
+    "negatif": 0,
+    "0": 1323,
+    "1-15": 968,
+    "16-31": 67,
+    ">=32": 2
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 1103,
+    "1-15": 746,
+    "16-31": 67,
+    ">=32": 2
+   },
+   "ana_dolgu_degerleri": {
+    "0": 1103,
+    "4": 242,
+    "8": 244,
+    "12": 260,
+    "16": 20,
+    "20": 19,
+    "24": 16,
+    "28": 12,
+    "488": 1,
+    "4096": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 1046,
+    "4": 210,
+    "8": 193,
+    "12": 226,
+    "16": 243,
+    "20": 1
+   },
+   "pozitif_dolgu": 815,
+   "pozitif_dolgu_sonrasi_hizali": 815,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 67,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.02839,
+   "dolgu_siniri": 69,
+   "blok_siniri": 4,
+   "dilim": 74
+  },
+  "debian13/debian/tree/tree": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 250,
+   "thunk": 131,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 117,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 65,
+    ".text": 117,
+    ".fini": 1,
+    "EXTERNAL": 66
+   },
+   "thunk_yeri": {
+    "ana_kod": 1,
+    "yurutulebilir_diger": 64,
+    "yurutulemez": 66
+   },
+   "olculen_cift": 180,
+   "kutular": {
+    "negatif": 0,
+    "0": 129,
+    "1-15": 40,
+    "16-31": 10,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 66,
+    "1-15": 39,
+    "16-31": 10,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "0": 66,
+    "4": 11,
+    "8": 14,
+    "12": 14,
+    "16": 2,
+    "20": 2,
+    "24": 4,
+    "28": 2,
+    "32": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 59,
+    "4": 15,
+    "8": 17,
+    "12": 12,
+    "16": 13,
+    "20": 1
+   },
+   "pozitif_dolgu": 50,
+   "pozitif_dolgu_sonrasi_hizali": 50,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 10,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.055556,
+   "dolgu_siniri": 11,
+   "blok_siniri": 4,
+   "dilim": 16
+  },
+  "debian13/debian/zstd/pzstd": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 1156,
+   "thunk": 311,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 859,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 193,
+    ".text": 859,
+    ".fini": 1,
+    "EXTERNAL": 102
+   },
+   "thunk_yeri": {
+    "ana_kod": 17,
+    "yurutulebilir_diger": 192,
+    "yurutulemez": 102
+   },
+   "olculen_cift": 1050,
+   "kutular": {
+    "negatif": 0,
+    "0": 557,
+    "1-15": 435,
+    "16-31": 35,
+    ">=32": 23
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 463,
+    "1-15": 337,
+    "16-31": 35,
+    ">=32": 23
+   },
+   "ana_dolgu_degerleri": {
+    "0": 463,
+    "4": 106,
+    "8": 123,
+    "12": 108,
+    "16": 3,
+    "20": 15,
+    "24": 9,
+    "28": 8,
+    "32": 1,
+    "36": 1,
+    "40": 2,
+    "44": 1,
+    "60": 1,
+    "64": 2,
+    "72": 1,
+    "76": 1,
+    "80": 3,
+    "144": 1,
+    "168": 1,
+    "208": 1,
+    "260": 1,
+    "352": 1,
+    "480": 1,
+    "688": 1,
+    "820": 1,
+    "1192": 1,
+    "4100": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 496,
+    "4": 84,
+    "8": 85,
+    "12": 74,
+    "16": 119,
+    "20": 1
+   },
+   "pozitif_dolgu": 395,
+   "pozitif_dolgu_sonrasi_hizali": 389,
+   "yasak_kalanli_baslangic": 1,
+   "sinyal_dolgu": 35,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.033333,
+   "dolgu_siniri": 58,
+   "blok_siniri": 4,
+   "dilim": 63
+  },
+  "debian13/debian/zstd/zstd": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 1444,
+   "thunk": 358,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 1109,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 220,
+    ".text": 1109,
+    ".fini": 1,
+    "EXTERNAL": 113
+   },
+   "thunk_yeri": {
+    "ana_kod": 26,
+    "yurutulebilir_diger": 219,
+    "yurutulemez": 113
+   },
+   "olculen_cift": 1327,
+   "kutular": {
+    "negatif": 1,
+    "0": 767,
+    "1-15": 536,
+    "16-31": 23,
+    ">=32": 0
+   },
+   "ana_kutular": {
+    "negatif": 1,
+    "0": 659,
+    "1-15": 425,
+    "16-31": 23,
+    ">=32": 0
+   },
+   "ana_dolgu_degerleri": {
+    "-4": 1,
+    "0": 659,
+    "4": 147,
+    "8": 137,
+    "12": 141,
+    "16": 7,
+    "20": 11,
+    "24": 3,
+    "28": 2
+   },
+   "ana_baslangic_kalani": {
+    "0": 595,
+    "4": 121,
+    "8": 106,
+    "12": 132,
+    "16": 129,
+    "20": 5,
+    "24": 1,
+    "28": 20
+   },
+   "pozitif_dolgu": 448,
+   "pozitif_dolgu_sonrasi_hizali": 448,
+   "yasak_kalanli_baslangic": 26,
+   "sinyal_dolgu": 23,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.017332,
+   "dolgu_siniri": 23,
+   "blok_siniri": 4,
+   "dilim": 28
+  },
+  "debian13/mac/htop": {
+   "bicim": "Mac OS X Mach-O",
+   "dil": "AARCH64:LE:64:AppleSilicon",
+   "fonksiyon": 790,
+   "thunk": 193,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": "__text",
+   "ana_kod_fonksiyon": 605,
+   "blok_fonksiyon": {
+    "__text": 605,
+    "__stubs": 184,
+    "EXTERNAL": 1
+   },
+   "thunk_yeri": {
+    "ana_kod": 8,
+    "yurutulebilir_diger": 184,
+    "yurutulemez": 1
+   },
+   "olculen_cift": 787,
+   "kutular": {
+    "negatif": 0,
+    "0": 787,
+    "1-15": 0,
+    "16-31": 0,
+    ">=32": 0
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 604,
+    "1-15": 0,
+    "16-31": 0,
+    ">=32": 0
+   },
+   "ana_dolgu_degerleri": {
+    "0": 604
+   },
+   "ana_baslangic_kalani": {
+    "0": 67,
+    "4": 76,
+    "8": 82,
+    "12": 89,
+    "16": 82,
+    "20": 62,
+    "24": 81,
+    "28": 66
+   },
+   "pozitif_dolgu": 0,
+   "pozitif_dolgu_sonrasi_hizali": 0,
+   "yasak_kalanli_baslangic": 209,
+   "sinyal_dolgu": 0,
+   "sinyal_var": false,
+   "sinyal_yogunlugu": 0.0,
+   "dolgu_siniri": 0,
+   "blok_siniri": 2,
+   "dilim": 3
+  },
+  "debian13/mac/tmux": {
+   "bicim": "Mac OS X Mach-O",
+   "dil": "AARCH64:LE:64:AppleSilicon",
+   "fonksiyon": 2821,
+   "thunk": 233,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": "__text",
+   "ana_kod_fonksiyon": 2599,
+   "blok_fonksiyon": {
+    "__text": 2599,
+    "__stubs": 221,
+    "EXTERNAL": 1
+   },
+   "thunk_yeri": {
+    "ana_kod": 11,
+    "yurutulebilir_diger": 221,
+    "yurutulemez": 1
+   },
+   "olculen_cift": 2818,
+   "kutular": {
+    "negatif": 18,
+    "0": 2781,
+    "1-15": 12,
+    "16-31": 2,
+    ">=32": 5
+   },
+   "ana_kutular": {
+    "negatif": 18,
+    "0": 2561,
+    "1-15": 12,
+    "16-31": 2,
+    ">=32": 5
+   },
+   "ana_dolgu_degerleri": {
+    "-36": 4,
+    "-20": 1,
+    "-16": 1,
+    "-8": 5,
+    "-4": 7,
+    "0": 2561,
+    "4": 7,
+    "8": 5,
+    "16": 1,
+    "20": 1,
+    "36": 4,
+    "260": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 337,
+    "4": 338,
+    "8": 327,
+    "12": 314,
+    "16": 328,
+    "20": 298,
+    "24": 346,
+    "28": 311
+   },
+   "pozitif_dolgu": 19,
+   "pozitif_dolgu_sonrasi_hizali": 4,
+   "yasak_kalanli_baslangic": 955,
+   "sinyal_dolgu": 2,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.00071,
+   "dolgu_siniri": 7,
+   "blok_siniri": 2,
+   "dilim": 10
+  },
+  "eski/debian-9.4-3/cat": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 223,
+   "thunk": 126,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 96,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 62,
+    ".text": 96,
+    ".fini": 1,
+    "EXTERNAL": 63
+   },
+   "thunk_yeri": {
+    "ana_kod": 2,
+    "yurutulebilir_diger": 61,
+    "yurutulemez": 63
+   },
+   "olculen_cift": 156,
+   "kutular": {
+    "negatif": 0,
+    "0": 109,
+    "1-15": 46,
+    "16-31": 1,
+    ">=32": 0
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 49,
+    "1-15": 45,
+    "16-31": 1,
+    ">=32": 0
+   },
+   "ana_dolgu_degerleri": {
+    "0": 49,
+    "4": 14,
+    "8": 26,
+    "12": 5,
+    "24": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 37,
+    "4": 11,
+    "16": 34,
+    "20": 13,
+    "28": 1
+   },
+   "pozitif_dolgu": 46,
+   "pozitif_dolgu_sonrasi_hizali": 20,
+   "yasak_kalanli_baslangic": 14,
+   "sinyal_dolgu": 1,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.00641,
+   "dolgu_siniri": 1,
+   "blok_siniri": 4,
+   "dilim": 6
+  },
+  "eski/debian-9.4-3/comm": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 229,
+   "thunk": 120,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 108,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 59,
+    ".text": 108,
+    ".fini": 1,
+    "EXTERNAL": 60
+   },
+   "thunk_yeri": {
+    "ana_kod": 2,
+    "yurutulebilir_diger": 58,
+    "yurutulemez": 60
+   },
+   "olculen_cift": 165,
+   "kutular": {
+    "negatif": 0,
+    "0": 114,
+    "1-15": 50,
+    "16-31": 0,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 57,
+    "1-15": 49,
+    "16-31": 0,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "0": 57,
+    "4": 17,
+    "8": 28,
+    "12": 4,
+    "56": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 43,
+    "4": 11,
+    "16": 40,
+    "20": 13,
+    "28": 1
+   },
+   "pozitif_dolgu": 50,
+   "pozitif_dolgu_sonrasi_hizali": 30,
+   "yasak_kalanli_baslangic": 14,
+   "sinyal_dolgu": 0,
+   "sinyal_var": false,
+   "sinyal_yogunlugu": 0.0,
+   "dolgu_siniri": 1,
+   "blok_siniri": 4,
+   "dilim": 6
+  },
+  "eski/debian-9.4-3/cut": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 239,
+   "thunk": 136,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 102,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 67,
+    ".text": 102,
+    ".fini": 1,
+    "EXTERNAL": 68
+   },
+   "thunk_yeri": {
+    "ana_kod": 2,
+    "yurutulebilir_diger": 66,
+    "yurutulemez": 68
+   },
+   "olculen_cift": 167,
+   "kutular": {
+    "negatif": 0,
+    "0": 119,
+    "1-15": 47,
+    "16-31": 1,
+    ">=32": 0
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 54,
+    "1-15": 46,
+    "16-31": 1,
+    ">=32": 0
+   },
+   "ana_dolgu_degerleri": {
+    "0": 54,
+    "4": 13,
+    "8": 30,
+    "12": 3,
+    "16": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 39,
+    "4": 13,
+    "16": 37,
+    "20": 12,
+    "28": 1
+   },
+   "pozitif_dolgu": 47,
+   "pozitif_dolgu_sonrasi_hizali": 24,
+   "yasak_kalanli_baslangic": 13,
+   "sinyal_dolgu": 1,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.005988,
+   "dolgu_siniri": 1,
+   "blok_siniri": 4,
+   "dilim": 6
+  },
+  "eski/debian-9.4-3/expr": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 233,
+   "thunk": 128,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 103,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 61,
+    ".text": 103,
+    ".fini": 1,
+    "EXTERNAL": 67
+   },
+   "thunk_yeri": {
+    "ana_kod": 1,
+    "yurutulebilir_diger": 60,
+    "yurutulemez": 67
+   },
+   "olculen_cift": 162,
+   "kutular": {
+    "negatif": 0,
+    "0": 113,
+    "1-15": 48,
+    "16-31": 0,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 54,
+    "1-15": 47,
+    "16-31": 0,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "0": 54,
+    "4": 13,
+    "8": 29,
+    "12": 5,
+    "36": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 39,
+    "4": 13,
+    "16": 36,
+    "20": 14,
+    "28": 1
+   },
+   "pozitif_dolgu": 48,
+   "pozitif_dolgu_sonrasi_hizali": 24,
+   "yasak_kalanli_baslangic": 15,
+   "sinyal_dolgu": 0,
+   "sinyal_var": false,
+   "sinyal_yogunlugu": 0.0,
+   "dolgu_siniri": 1,
+   "blok_siniri": 4,
+   "dilim": 6
+  },
+  "eski/debian-9.4-3/wc": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 268,
+   "thunk": 146,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 121,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 72,
+    ".text": 121,
+    ".fini": 1,
+    "EXTERNAL": 73
+   },
+   "thunk_yeri": {
+    "ana_kod": 2,
+    "yurutulebilir_diger": 71,
+    "yurutulemez": 73
+   },
+   "olculen_cift": 191,
+   "kutular": {
+    "negatif": 0,
+    "0": 130,
+    "1-15": 61,
+    "16-31": 0,
+    ">=32": 0
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 60,
+    "1-15": 60,
+    "16-31": 0,
+    ">=32": 0
+   },
+   "ana_dolgu_degerleri": {
+    "0": 60,
+    "4": 26,
+    "8": 29,
+    "12": 5
+   },
+   "ana_baslangic_kalani": {
+    "0": 53,
+    "4": 15,
+    "16": 38,
+    "20": 14,
+    "28": 1
+   },
+   "pozitif_dolgu": 60,
+   "pozitif_dolgu_sonrasi_hizali": 30,
+   "yasak_kalanli_baslangic": 15,
+   "sinyal_dolgu": 0,
+   "sinyal_var": false,
+   "sinyal_yogunlugu": 0.0,
+   "dolgu_siniri": 0,
+   "blok_siniri": 4,
+   "dilim": 5
+  },
+  "eski/ubuntu-9.4-3ubuntu6/cat": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 147,
+   "thunk": 121,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 24,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 60,
+    ".text": 24,
+    ".fini": 1,
+    "EXTERNAL": 61
+   },
+   "thunk_yeri": {
+    "ana_kod": 1,
+    "yurutulebilir_diger": 59,
+    "yurutulemez": 61
+   },
+   "olculen_cift": 82,
+   "kutular": {
+    "negatif": 0,
+    "0": 72,
+    "1-15": 9,
+    "16-31": 0,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 14,
+    "1-15": 8,
+    "16-31": 0,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "0": 14,
+    "4": 3,
+    "8": 3,
+    "12": 2,
+    "32": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 7,
+    "4": 3,
+    "16": 10,
+    "20": 3,
+    "28": 1
+   },
+   "pozitif_dolgu": 9,
+   "pozitif_dolgu_sonrasi_hizali": 2,
+   "yasak_kalanli_baslangic": 4,
+   "sinyal_dolgu": 0,
+   "sinyal_var": false,
+   "sinyal_yogunlugu": 0.0,
+   "dolgu_siniri": 1,
+   "blok_siniri": 4,
+   "dilim": 6
+  },
+  "eski/ubuntu-9.4-3ubuntu6/comm": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 144,
+   "thunk": 111,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 31,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 55,
+    ".text": 31,
+    ".fini": 1,
+    "EXTERNAL": 56
+   },
+   "thunk_yeri": {
+    "ana_kod": 1,
+    "yurutulebilir_diger": 54,
+    "yurutulemez": 56
+   },
+   "olculen_cift": 84,
+   "kutular": {
+    "negatif": 0,
+    "0": 69,
+    "1-15": 15,
+    "16-31": 0,
+    ">=32": 0
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 16,
+    "1-15": 14,
+    "16-31": 0,
+    ">=32": 0
+   },
+   "ana_dolgu_degerleri": {
+    "0": 16,
+    "4": 8,
+    "8": 5,
+    "12": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 16,
+    "4": 2,
+    "16": 8,
+    "20": 4,
+    "28": 1
+   },
+   "pozitif_dolgu": 14,
+   "pozitif_dolgu_sonrasi_hizali": 8,
+   "yasak_kalanli_baslangic": 5,
+   "sinyal_dolgu": 0,
+   "sinyal_var": false,
+   "sinyal_yogunlugu": 0.0,
+   "dolgu_siniri": 0,
+   "blok_siniri": 4,
+   "dilim": 5
+  },
+  "eski/ubuntu-9.4-3ubuntu6/cut": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 157,
+   "thunk": 125,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 30,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 62,
+    ".text": 30,
+    ".fini": 1,
+    "EXTERNAL": 63
+   },
+   "thunk_yeri": {
+    "ana_kod": 1,
+    "yurutulebilir_diger": 61,
+    "yurutulemez": 63
+   },
+   "olculen_cift": 90,
+   "kutular": {
+    "negatif": 0,
+    "0": 74,
+    "1-15": 16,
+    "16-31": 0,
+    ">=32": 0
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 14,
+    "1-15": 15,
+    "16-31": 0,
+    ">=32": 0
+   },
+   "ana_dolgu_degerleri": {
+    "0": 14,
+    "4": 8,
+    "8": 5,
+    "12": 2
+   },
+   "ana_baslangic_kalani": {
+    "0": 11,
+    "4": 4,
+    "16": 11,
+    "20": 3,
+    "28": 1
+   },
+   "pozitif_dolgu": 15,
+   "pozitif_dolgu_sonrasi_hizali": 8,
+   "yasak_kalanli_baslangic": 4,
+   "sinyal_dolgu": 0,
+   "sinyal_var": false,
+   "sinyal_yogunlugu": 0.0,
+   "dolgu_siniri": 0,
+   "blok_siniri": 4,
+   "dilim": 5
+  },
+  "eski/ubuntu-9.4-3ubuntu6/expr": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 165,
+   "thunk": 128,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 35,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 61,
+    ".text": 35,
+    ".fini": 1,
+    "EXTERNAL": 67
+   },
+   "thunk_yeri": {
+    "ana_kod": 1,
+    "yurutulebilir_diger": 60,
+    "yurutulemez": 67
+   },
+   "olculen_cift": 94,
+   "kutular": {
+    "negatif": 0,
+    "0": 77,
+    "1-15": 15,
+    "16-31": 1,
+    ">=32": 1
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 18,
+    "1-15": 14,
+    "16-31": 1,
+    ">=32": 1
+   },
+   "ana_dolgu_degerleri": {
+    "0": 18,
+    "4": 4,
+    "8": 9,
+    "12": 1,
+    "24": 1,
+    "60": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 14,
+    "4": 4,
+    "16": 12,
+    "20": 4,
+    "28": 1
+   },
+   "pozitif_dolgu": 16,
+   "pozitif_dolgu_sonrasi_hizali": 8,
+   "yasak_kalanli_baslangic": 5,
+   "sinyal_dolgu": 1,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.010638,
+   "dolgu_siniri": 2,
+   "blok_siniri": 4,
+   "dilim": 7
+  },
+  "eski/ubuntu-9.4-3ubuntu6/wc": {
+   "bicim": "Executable and Linking Format (ELF)",
+   "dil": "AARCH64:LE:64:v8A",
+   "fonksiyon": 181,
+   "thunk": 139,
+   "blok_bilgisi": true,
+   "ana_kod_blogu": ".text",
+   "ana_kod_fonksiyon": 40,
+   "blok_fonksiyon": {
+    ".init": 1,
+    ".plt": 69,
+    ".text": 40,
+    ".fini": 1,
+    "EXTERNAL": 70
+   },
+   "thunk_yeri": {
+    "ana_kod": 1,
+    "yurutulebilir_diger": 68,
+    "yurutulemez": 70
+   },
+   "olculen_cift": 107,
+   "kutular": {
+    "negatif": 0,
+    "0": 83,
+    "1-15": 23,
+    "16-31": 1,
+    ">=32": 0
+   },
+   "ana_kutular": {
+    "negatif": 0,
+    "0": 16,
+    "1-15": 22,
+    "16-31": 1,
+    ">=32": 0
+   },
+   "ana_dolgu_degerleri": {
+    "0": 16,
+    "4": 10,
+    "8": 11,
+    "12": 1,
+    "24": 1
+   },
+   "ana_baslangic_kalani": {
+    "0": 13,
+    "4": 2,
+    "16": 21,
+    "20": 3,
+    "28": 1
+   },
+   "pozitif_dolgu": 23,
+   "pozitif_dolgu_sonrasi_hizali": 10,
+   "yasak_kalanli_baslangic": 4,
+   "sinyal_dolgu": 1,
+   "sinyal_var": true,
+   "sinyal_yogunlugu": 0.009346,
+   "dolgu_siniri": 1,
+   "blok_siniri": 4,
+   "dilim": 6
+  }
+ }
+}

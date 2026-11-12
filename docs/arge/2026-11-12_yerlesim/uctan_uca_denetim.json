@@ -1,0 +1,167 @@
+{
+ "agac": "/Users/apple/Black_Widow/.claude/worktrees/agent-a1ba0644b26a86b1d",
+ "kok": "/Users/apple/karadul_olcum/runs/yerlesim-2026-11-12",
+ "isler": {
+  "acik/debian/tree": {
+   "bitti": true,
+   "out_dosya": 284,
+   "out_src_proje_dosya": 279,
+   "proje_dosya": 279,
+   "src_dizin": {
+    "addr": 16
+   },
+   "yerlesim_raporu": {
+    "schema": "karadul-placement/1",
+    "requested": "address_padding",
+    "strategy": "address_padding",
+    "fallback_reason": null,
+    "padding_threshold": 16,
+    "alignment": 32,
+    "units": 250,
+    "entry_units": 1,
+    "functions": 250,
+    "memory_blocks_known": true,
+    "units_placed_by_address": 249,
+    "units_without_address": 0,
+    "measured_gaps": 180,
+    "signal_gaps": 10,
+    "padding_cuts": 11,
+    "block_cuts": 4
+   },
+   "out_ta_yerlesim_raporu": true,
+   "readme_placement": true,
+   "rapor_proje_sayaclari": {
+    "project_functions_total": 250,
+    "project_functions_placed": 250,
+    "project_functions_missing": 0,
+    "project_functions_duplicated": 0,
+    "project_files": 279
+   },
+   "raporda_proje_kurulum_hatasi": 0
+  },
+  "kapali/debian/tree": {
+   "bitti": true,
+   "out_dosya": 280,
+   "out_src_proje_dosya": 275,
+   "proje_dosya": 275,
+   "src_dizin": {
+    "diger": 13
+   },
+   "yerlesim_raporu": null,
+   "out_ta_yerlesim_raporu": false,
+   "readme_placement": false,
+   "rapor_proje_sayaclari": {
+    "project_functions_total": 250,
+    "project_functions_placed": 250,
+    "project_functions_missing": 0,
+    "project_functions_duplicated": 0,
+    "project_files": 275
+   },
+   "raporda_proje_kurulum_hatasi": 0
+  },
+  "acik/mac/htop": {
+   "bitti": true,
+   "out_dosya": 851,
+   "out_src_proje_dosya": 846,
+   "proje_dosya": 846,
+   "src_dizin": {
+    "diger": 47
+   },
+   "yerlesim_raporu": {
+    "schema": "karadul-placement/1",
+    "requested": "address_padding",
+    "strategy": "api_community",
+    "fallback_reason": "no_padding_signal",
+    "padding_threshold": 16,
+    "alignment": 32,
+    "units": 790,
+    "entry_units": 1,
+    "functions": 790,
+    "memory_blocks_known": true,
+    "units_placed_by_address": 789,
+    "units_without_address": 0,
+    "measured_gaps": 787,
+    "signal_gaps": 0,
+    "padding_cuts": 0,
+    "block_cuts": 2
+   },
+   "out_ta_yerlesim_raporu": true,
+   "readme_placement": true,
+   "rapor_proje_sayaclari": {
+    "project_functions_total": 790,
+    "project_functions_placed": 790,
+    "project_functions_missing": 0,
+    "project_functions_duplicated": 0,
+    "project_files": 846
+   },
+   "raporda_proje_kurulum_hatasi": 0
+  }
+ },
+ "tree_acik_kapali": {
+  "acik_dosya": 284,
+  "kapali_dosya": 280,
+  "ortak_yol": 18,
+  "ortak_ama_farkli": [
+   "README.md",
+   "report.html",
+   "report.json",
+   "src/README.md",
+   "src/analysis/subsystem_map.md",
+   "src/compile_commands.json",
+   "src/include/types.h"
+  ],
+  "yalniz_acik_ust_dizin": {
+   "src/src/subsystem_addr_135000": 66,
+   "src/src/subsystem_addr_103cc0": 65,
+   "src/src/subsystem_addr_105f00": 32,
+   "src/src/subsystem_addr_1098e0": 16,
+   "src/src/subsystem_addr_10e1e0": 13,
+   "src/src/subsystem_addr_10b8e0": 12,
+   "src/src/subsystem_addr_10d760": 11,
+   "src/src/subsystem_addr_10cf00": 10
+  },
+  "yalniz_kapali_sayi": 262,
+  "ad_haritasi_ayni": true,
+  "fonksiyon": {
+   "acik": 250,
+   "kapali": 250,
+   "ortak_adres": 250,
+   "metni_ayni": 250
+  }
+ },
+ "tree_acik_olcu": {
+  "ghidra_adres_kumesi_sakliyla_ayni": true,
+  "urun_okuma": {
+   "kaynak_dosya": 250,
+   "basliksiz_dosya": 0,
+   "baslik": 250,
+   "ghidra_fonksiyon": 250,
+   "atanan": 250,
+   "atanamayan": 0,
+   "coklu_modul": 0,
+   "yinelenen": 0,
+   "ghidra_disi": 0,
+   "modul": 17
+  },
+  "nufus": 110,
+  "nufustan_eksik": 0,
+  "ari": 0.911061,
+  "yeniden_uretimdeki_ari": 0.911061,
+  "bolme_islevle_ayni": true,
+  "nufusta_kok_modul": 0
+ },
+ "mac_htop_acik": {
+  "ghidra_adres_kumesi_sakliyla_ayni": true,
+  "atanan": [
+   790,
+   790
+  ],
+  "ortak_adres": 790,
+  "modul_sayisi": [
+   48,
+   48
+  ],
+  "modulu_ayni_adres": 790,
+  "bolme_ayni": true
+ }
+}

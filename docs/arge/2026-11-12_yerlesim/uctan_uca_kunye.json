@@ -1,0 +1,79 @@
+{
+ "amac": "yerleşim: uçtan uca koşu (bayrak açık / kapalı)",
+ "agac": "/Users/apple/Black_Widow/.claude/worktrees/agent-a1ba0644b26a86b1d",
+ "commit": "17e7e7ce2e3a9b0ca35c673d7641b6561fbeb73b",
+ "kirli": [],
+ "karadul_dosyasi": "/Users/apple/Black_Widow/.claude/worktrees/agent-a1ba0644b26a86b1d/karadul/__init__.py",
+ "karadul_surumu": "1.22.2",
+ "ghidra": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC",
+ "acik_yaml": "binary_reconstruction:\n  enable_address_placement: true\n",
+ "baslangic": "2026-11-12T08:51:26+03:00",
+ "isler": [
+  {
+   "anahtar": "acik/debian/tree",
+   "girdi": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/debian/tree/tree/ws/workspaces/tree/20261111_050850/raw/tree",
+   "girdi_sha256": "62810aca29543a765fa72b0d159e5bc61c21f3b6bedd79967d53a0db949f00c0",
+   "bayrak_acik": true,
+   "komut": [
+    "/opt/anaconda3/bin/python",
+    "-m",
+    "karadul",
+    "analyze",
+    "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/debian/tree/tree/ws/workspaces/tree/20261111_050850/raw/tree",
+    "--skip-dynamic",
+    "--config",
+    "/Users/apple/karadul_olcum/runs/yerlesim-2026-11-12/yerlesim_acik.yaml",
+    "--output-dir",
+    "/Users/apple/karadul_olcum/runs/yerlesim-2026-11-12/acik/debian/tree/ws",
+    "--output",
+    "/Users/apple/karadul_olcum/runs/yerlesim-2026-11-12/acik/debian/tree/out"
+   ],
+   "durum": "tamam",
+   "sure_sn": 60.1
+  },
+  {
+   "anahtar": "kapali/debian/tree",
+   "girdi": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/debian/tree/tree/ws/workspaces/tree/20261111_050850/raw/tree",
+   "girdi_sha256": "62810aca29543a765fa72b0d159e5bc61c21f3b6bedd79967d53a0db949f00c0",
+   "bayrak_acik": false,
+   "komut": [
+    "/opt/anaconda3/bin/python",
+    "-m",
+    "karadul",
+    "analyze",
+    "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/debian/tree/tree/ws/workspaces/tree/20261111_050850/raw/tree",
+    "--skip-dynamic",
+    "--output-dir",
+    "/Users/apple/karadul_olcum/runs/yerlesim-2026-11-12/kapali/debian/tree/ws",
+    "--output",
+    "/Users/apple/karadul_olcum/runs/yerlesim-2026-11-12/kapali/debian/tree/out"
+   ],
+   "durum": "tamam",
+   "sure_sn": 58.4
+  },
+  {
+   "anahtar": "acik/mac/htop",
+   "girdi": "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/mac/htop/ws/workspaces/htop/20261111_055521/raw/htop",
+   "girdi_sha256": "50d172cee23cb6f5793969e7612fd29723c4a927ea4161a7e8f039cfca70f1c3",
+   "bayrak_acik": true,
+   "komut": [
+    "/opt/anaconda3/bin/python",
+    "-m",
+    "karadul",
+    "analyze",
+    "/Users/apple/karadul_olcum/runs/urun-yeni-93a2956/mac/htop/ws/workspaces/htop/20261111_055521/raw/htop",
+    "--skip-dynamic",
+    "--config",
+    "/Users/apple/karadul_olcum/runs/yerlesim-2026-11-12/yerlesim_acik.yaml",
+    "--output-dir",
+    "/Users/apple/karadul_olcum/runs/yerlesim-2026-11-12/acik/mac/htop/ws",
+    "--output",
+    "/Users/apple/karadul_olcum/runs/yerlesim-2026-11-12/acik/mac/htop/out"
+   ],
+   "durum": "tamam",
+   "sure_sn": 196.3
+  }
+ ],
+ "bitis": "2026-11-12T08:56:41+03:00",
+ "commit_bitiste": "17e7e7ce2e3a9b0ca35c673d7641b6561fbeb73b"
+}
