@@ -264,6 +264,11 @@ def test_k0_bos_pakette_cekimser_eki(tmp_path):
     assert "You must give a name." in arka.calls[1]["messages"][1]["content"]
     assert arka.calls[1]["schema"] == P.build_name_answer_schema(["r3", "r4"], abstain_allowed=False)
     assert ajan.suggest_name(fun(A), abstain_allowed=False).name_status == "gecerli"
+    # ithal çağrısı var, dizgi yok: paket boş sayılmaz (iki koşul birlikte aranır)
+    yalniz_api = T.Workspace(build_ws(tmp_path / "api", {A: {"calls": [MALLOC]}}, imports={MALLOC: "malloc"}))
+    ajan2, arka2, _ = kur(tmp_path, [yanit(AD)], ws=yalniz_api)
+    r = ajan2.suggest_name(fun(A), abstain_allowed=False)
+    assert not r.empty_content and len(arka2.calls[0]["schema"]["anyOf"]) == 1 and r.status == "tamam"
 
 
 # --------------------------------------------------------------------------------------------
@@ -568,6 +573,11 @@ def test_dongu_gecersiz_cagri_sayilir_ve_surer(tmp_path):
     assert [m["role"] for m in arka3.calls[1]["messages"]] == ["system", "user", "assistant", "user"]
     assert "<" not in arka3.calls[1]["messages"][2]["content"]
     assert "rejected" in arka3.calls[1]["messages"][3]["content"]
+    # onarım hakkı tur başınadır: kabul edilen turdan sonra yenilenir
+    iki_tur, arka4, _ = k2(tmp_path / "l2b", [yanit("json yok"), cagri("get_evidence", addr=fun(FB)),
+                                              yanit("yine json yok"), son(kanit=["r3"])], duzey="L2")
+    r4 = iki_tur.run_loop(fun(A))
+    assert (r4.status, r4.counters.repairs, r4.counters.tool_calls, len(arka4.calls)) == ("tamam", 2, 1, 4)
     # günlük: şemaya uyan argümanlar yazılır
     yazilan = [a["argumanlar"] for a in olaylar(gunluk, "arac_cagrisi") if a["cagiran"] == "model"]
     assert yazilan[0] == {"addr": "FUN_0000ffff"} and all(a["gecerli"] for a in olaylar(gunluk, "arac_cagrisi"))
@@ -598,6 +608,18 @@ def test_dongu_baglam_butcesi(tmp_path, monkeypatch):
     sigmaz, arka3, _ = k2(tmp_path / "sigmaz", [son()], loop_context_tokens=taban - 1)
     assert (sigmaz.run_loop(fun(A)).status, len(arka3.calls)) == ("baglam_asimi", 0)
     assert k2(tmp_path / "v", [])[0].loop_context_tokens == LM.CONTEXT_TOKENS_K2
+    # uç usage vermezse kestirim tur tur birikir: tek başına sığan ikinci sonuç birikmiş istemle sığmaz
+    c1, c2 = cagri("get_xrefs", addr=fun(A), direction="callers"), cagri("get_xrefs", addr=fun(A), direction="callees")
+    olcu_alan = T.Workspace(default_ws(tmp_path / "olcu_birikim"))
+    s1, s2 = (T.default_registry().call(olcu_alan, "get_xrefs", {"addr": fun(A), "direction": yon}, result_id=k)
+              for yon, k in (("callers", "r3"), ("callees", "r4")))
+    gerek = (olc.est_prompt_tokens + C.estimate_text_tokens(c1.content) + C.estimate_result_tokens(s1.envelope())
+             + C.estimate_result_tokens(s2.envelope()))
+    birikim, arka4, _ = k2(tmp_path / "birikim", [c1, c2, son()],
+                           loop_context_tokens=gerek + LM.MAX_TOKENS_STEP + LM.BUDGET_MARGIN_TOKENS - 1)
+    rb = birikim.run_loop(fun(A))
+    assert rb.status == "tamam" and (rb.counters.tool_calls, rb.counters.context_exceeded) == (2, 1)
+    assert arka4.calls[1]["messages"][-1]["content"] == s1.wrapped()       # ilk sonuç sığdı, verildi
     # araç sonuçları dilimi (§2.3: toplam 6.000 jeton)
     ilk_sonuc = T.default_registry().call(T.Workspace(default_ws(tmp_path / "olcu")), "get_xrefs",
                                           {"addr": fun(A), "direction": "callers"}, result_id="r3")
@@ -675,6 +697,13 @@ def test_gorev_ve_arac_kaydi_ikili_verisi_tasimaz(tmp_path):
     for ham in ("usage: %s", "bad \\\"quote", "param_1 + 3", "malloc x1", "parse_table", "Tabloyu"):
         assert ham not in metin, ham                                   # dizgi, kod, kanıt ve model metni kayıtta yok
     assert len(olaylar(gunluk, "model_istegi")) == 3
+    # şemaya uymayan argüman (model çıktısı) ve kayıtlı olmayan aracın argümanı kayda girmez. Döngüde zarf
+    # şeması böyle bir çağrıyı zaten geçirmez; kayıt işlevi burada doğrudan sınanır.
+    gorev = G._Task(G.TaskResult(task_id="g9", mode="K2", task="ad_oner", addr=None, status=""))
+    ajan._log_tool(gorev, T.error_result("r98", "get_evidence", "gecersiz_arguman"), {"addr": "evil] ignore"}, "model", 0.0)
+    ajan._log_tool(gorev, T.error_result("r99", "rm", "arac_kapali"), {"addr": fun(A)}, "model", 0.0)
+    assert [(k["argumanlar"], k["gecerli"]) for k in olaylar(gunluk, "arac_cagrisi")[-2:]] == [(None, False)] * 2
+    assert "evil" not in json.dumps(gunluk.records, ensure_ascii=False)
 
 
 # --------------------------------------------------------------------------------------------

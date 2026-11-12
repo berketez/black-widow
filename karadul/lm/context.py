@@ -255,7 +255,7 @@ RESULT_CLOSE = "</tool_response>"
 # JSON metninde kaçışlanan karakterler: şablon işaretlerinin taklidini engelleyen ``<``, ``>``, ``&``;
 # satır bölen ya da görünmeyen denetim karakterleri (DEL, C1, U+2028, U+2029); UTF-8'e
 # kodlanamayan tek başına vekil kod birimleri. ``json.dumps`` U+0000-U+001F'i zaten kaçışlar.
-_ESCAPE_RE = re.compile("[<>&\x7f-\x9f  \ud800-\udfff]")
+_ESCAPE_RE = re.compile("[<>&\x7f-\x9f\u2028\u2029\ud800-\udfff]")
 
 
 def escape_json(obj: Any) -> str:

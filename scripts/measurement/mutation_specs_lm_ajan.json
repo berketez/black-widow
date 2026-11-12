@@ -1,0 +1,1277 @@
+{
+  "_comment": "KaradulLM Aşama 1b (karadul/lm: context, tools, agent; protocol'ün kanit şeması). Her mutant bir davranışı bozar; hedef test KIRMIZI olmalı (killed). tests/test_lm_context.py, test_lm_tools.py, test_lm_agent.py'deki her test işlevi ve test_lm_protocol.py'nin bu işte eklenen / değişen testleri en az bir mutantın hedefidir. Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_lm_ajan.json",
+  "mutants": [
+    {
+      "id": "c_kod_bas_siniri",
+      "desc": "Kırpmanın baş payı pilot değerinden farklı",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_context.py::test_sabitler_pilotla_ayni",
+      "find": "CODE_HEAD_BYTES = 7000 ",
+      "replace": "CODE_HEAD_BYTES = 6000 + 999 "
+    },
+    {
+      "id": "c_sablon_satiri",
+      "desc": "Paket şablonunda bir satır başlığı değişir",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_sabitler_pilotla_ayni",
+      "find": "\"- Called by: {CAGIRANLAR}\\n\"",
+      "replace": "\"- Called from: {CAGIRANLAR}\\n\""
+    },
+    {
+      "id": "c_baslik_deseni",
+      "desc": "Başlık deseni Stack satırını tanımaz",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_sabitler_pilotla_ayni",
+      "find": "(Function|Address|Size|Callers|Callees|Stack):",
+      "replace": "(Function|Address|Size|Callers|Callees):"
+    },
+    {
+      "id": "c_baslik_bos_satir",
+      "desc": "Başlıktan sonraki boş satırlar silinmez",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_baslik_ve_kirpma_pilotla_ayni",
+      "find": "    while i < len(lines) and not lines[i].strip():\n        i += 1\n",
+      "replace": "    while False and i < len(lines) and not lines[i].strip():\n        i += 1\n"
+    },
+    {
+      "id": "c_kirpma_bas_esik",
+      "desc": "Baş kısımda sınıra tam oturan satır atılır",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_baslik_ve_kirpma_pilotla_ayni",
+      "find": "        if n + b > head:",
+      "replace": "        if n + b >= head:"
+    },
+    {
+      "id": "c_kirpma_son_ters",
+      "desc": "Son kısmın satırları ters sırada kalır",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_baslik_ve_kirpma_pilotla_ayni",
+      "find": "    back.reverse()\n    omitted",
+      "replace": "    omitted"
+    },
+    {
+      "id": "c_kirpma_atlanan",
+      "desc": "Atlanan satır sayısı bir fazla yazılır",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_baslik_ve_kirpma_pilotla_ayni",
+      "find": "    omitted = len(lines) - len(front) - len(back)\n",
+      "replace": "    omitted = len(lines) - len(front) - len(back) + 1\n"
+    },
+    {
+      "id": "c_kirpma_esik",
+      "desc": "Sınırdaki kod da kırpılır",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_baslik_ve_kirpma_pilotla_ayni",
+      "find": "    if len(code.encode(\"utf-8\")) <= limit:",
+      "replace": "    if len(code.encode(\"utf-8\")) < limit:"
+    },
+    {
+      "id": "c_hedef_adi_gorunur",
+      "desc": "Hedefin kendi adı kanıt alanına girer",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kanit_alanlari_ve_sablon_pilotla_ayni",
+      "find": "        if a == target:\n            return f\"FUN_{a}\"\n",
+      "replace": "        if a == target and False:\n            return f\"FUN_{a}\"\n"
+    },
+    {
+      "id": "c_dizgi_kesme",
+      "desc": "Dizgi 120 yerine 121 karakterde kesilir",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kanit_alanlari_ve_sablon_pilotla_ayni",
+      "find": "json.dumps(s[:limits.string_chars], ensure_ascii=False)",
+      "replace": "json.dumps(s[:limits.string_chars + 1], ensure_ascii=False)"
+    },
+    {
+      "id": "c_dizgi_yinelenen",
+      "desc": "Yinelenen dizgiler atılmaz",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kanit_alanlari_ve_sablon_pilotla_ayni",
+      "find": "        if not s or s in seen:\n            continue\n        seen.add(s)\n        out.append(s)",
+      "replace": "        if not s:\n            continue\n        seen.add(s)\n        out.append(s)"
+    },
+    {
+      "id": "c_api_sirasiz",
+      "desc": "Kütüphane çağrıları ada göre sıralanmaz",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kanit_alanlari_ve_sablon_pilotla_ayni",
+      "find": "for k, v in sorted((pack.api_counts or {}).items())]",
+      "replace": "for k, v in reversed(sorted((pack.api_counts or {}).items()))]"
+    },
+    {
+      "id": "c_bos_alan",
+      "desc": "Boş alan 'none' yerine boş dizgi",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kanit_alanlari_ve_sablon_pilotla_ayni",
+      "find": "        if not items:\n            return \"none\"\n",
+      "replace": "        if not items:\n            return \"\"\n"
+    },
+    {
+      "id": "c_doldurma_cift_gecis",
+      "desc": "Şablon doldurma değerlerin içindeki yer tutucuyu yeniden işler",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kanit_alanlari_ve_sablon_pilotla_ayni",
+      "find": "    return _PLACEHOLDER.sub(lambda m: values[m.group(1)], template)",
+      "replace": "    return _PLACEHOLDER.sub(lambda m: values[m.group(1)], _PLACEHOLDER.sub(lambda m: values[m.group(1)], template))"
+    },
+    {
+      "id": "c_kirpma_sayimi_esik",
+      "desc": "Sınırdaki liste de kırpılmış sayılır",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kanit_kirpma_sayimi_metinle_tutarli",
+      "find": "for k, (n, lim) in counts.items() if n > lim}",
+      "replace": "for k, (n, lim) in counts.items() if n >= lim}"
+    },
+    {
+      "id": "c_dizgi_kesim_sayimi",
+      "desc": "Kesilen dizgi sayılmaz",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kanit_kirpma_sayimi_metinle_tutarli",
+      "find": "    cut = sum(1 for s in strings[:limits.strings] if len(s) > limits.string_chars)",
+      "replace": "    cut = sum(1 for s in strings[:limits.strings] if len(s) > 10 * limits.string_chars)"
+    },
+    {
+      "id": "c_yarilama",
+      "desc": "Çağıran sınırı yarılanmaz",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kanit_kirpma_sayimi_metinle_tutarli",
+      "find": "callees=max(1, self.callees // 2), callers=max(1, self.callers // 2),",
+      "replace": "callees=max(1, self.callees // 2), callers=max(1, self.callers),"
+    },
+    {
+      "id": "c_kacis_ve_isareti",
+      "desc": "& kaçışlanmaz",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kacislama_veri_blogu_kapatamaz",
+      "find": "re.compile(\"[<>&\\x7f",
+      "replace": "re.compile(\"[<>\\x7f"
+    },
+    {
+      "id": "c_kacis_kucuktur",
+      "desc": "< kaçışlanmaz: veri kapanış etiketini yazabilir",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kacislama_veri_blogu_kapatamaz",
+      "find": "re.compile(\"[<>&\\x7f",
+      "replace": "re.compile(\"[>&\\x7f"
+    },
+    {
+      "id": "c_kacis_satir_ayirici",
+      "desc": "U+2028 / U+2029 kaçışlanmaz",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kacislama_veri_blogu_kapatamaz",
+      "find": "\\x9f\\u2028\\u2029\\ud800",
+      "replace": "\\x9f\\ud800"
+    },
+    {
+      "id": "c_kacis_vekil",
+      "desc": "Tek başına vekil kod birimi kaçışlanmaz",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kacislama_veri_blogu_kapatamaz",
+      "find": "\\u2029\\ud800-\\udfff]",
+      "replace": "\\u2029]"
+    },
+    {
+      "id": "c_sarmalama_tek_satir",
+      "desc": "Sonuç bloğu satır sonu yerine boşlukla ayrılır",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kacislama_veri_blogu_kapatamaz",
+      "find": "    return f\"{RESULT_OPEN}\\n{escape_json(envelope)}\\n{RESULT_CLOSE}\"",
+      "replace": "    return f\"{RESULT_OPEN} {escape_json(envelope)} {RESULT_CLOSE}\""
+    },
+    {
+      "id": "c_nan_serbest",
+      "desc": "NaN serileştirilir (geçersiz JSON)",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_kacislama_veri_blogu_kapatamaz",
+      "find": "separators=(\",\", \":\"), allow_nan=False)",
+      "replace": "separators=(\",\", \":\"), allow_nan=True)"
+    },
+    {
+      "id": "c_model_ciktisi_ham",
+      "desc": "İşaret taşıyan model çıktısı geçmişe aynen yazılır",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_model_ciktisi_gecmise_ham_yazilmaz",
+      "find": "    if not _ESCAPE_RE.search(content):\n        return content\n",
+      "replace": "    if True or not _ESCAPE_RE.search(content):\n        return content\n"
+    },
+    {
+      "id": "c_model_nesnesi_kacissiz",
+      "desc": "Ayrıştırılmış nesne kaçışlanmadan yazılır",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_model_ciktisi_gecmise_ham_yazilmaz",
+      "find": "    if obj is not None:\n        return escape_json(obj)\n",
+      "replace": "    if obj is not None:\n        return json.dumps(obj, ensure_ascii=False)\n"
+    },
+    {
+      "id": "c_sistem_istemi",
+      "desc": "Sistem istemi tasarımdaki metinden sapar",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_sistem_istemi_tasarimdaki_metin",
+      "find": "\"1. Evidence first. State only",
+      "replace": "\"1. Evidence comes first. State only"
+    },
+    {
+      "id": "c_arac_blogu",
+      "desc": "Araç bloğu tasarımdaki metinden sapar",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_sistem_istemi_tasarimdaki_metin",
+      "find": "Stop as soon as you can answer.\\n",
+      "replace": "Stop when you can answer.\\n"
+    },
+    {
+      "id": "c_onek_k0_arac_blogu",
+      "desc": "K0 önekine araç çağırma bloğu girer",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_sabit_onek_bayt_bayt_ayni_ve_kipe_gore",
+      "find": "    if mode != MODE_K0:\n        body += TOOLS_BLOCK_KL0\n",
+      "replace": "    if mode == MODE_K0:\n        body += TOOLS_BLOCK_KL0 + ''\n"
+    },
+    {
+      "id": "c_onek_k0_blogu_yok",
+      "desc": "K0 öneki 'araç çağıramazsın' bloğunu taşımaz",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_sabit_onek_bayt_bayt_ayni_ve_kipe_gore",
+      "find": "    if mode == MODE_K0:\n        return body + K0_BLOCK\n",
+      "replace": "    if mode == MODE_K0:\n        return body + CALL_BLOCK\n"
+    },
+    {
+      "id": "c_onek_cok_satirli_arac",
+      "desc": "Çok satırlı araç tanımı kabul edilir",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_sabit_onek_bayt_bayt_ayni_ve_kipe_gore",
+      "find": "if not lines or any((not isinstance(s, str)) or \"\\n\" in s or not s for s in lines):",
+      "replace": "if not lines or any((not isinstance(s, str)) or not s for s in lines):"
+    },
+    {
+      "id": "c_onek_k1_siniri",
+      "desc": "K1 önekinde çağrı sınırı K2'ninki yazılır",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_sabit_onek_bayt_bayt_ayni_ve_kipe_gore",
+      "find": "        body += K1_LIMIT_LINE.format(n=MAX_TOOL_CALLS_K1)",
+      "replace": "        body += K1_LIMIT_LINE.format(n=MAX_TOOL_CALLS)"
+    },
+    {
+      "id": "c_soru_adres_deseni",
+      "desc": "Soru büyük harfli (çözümlenmemiş) adresle kurulur",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_soru_metni_ve_ileti_sirasi",
+      "find": "_FUN_ADDR = re.compile(r\"^FUN_[0-9a-f]{1,16}$\")",
+      "replace": "_FUN_ADDR = re.compile(r\"^FUN_[0-9a-fA-F]{1,16}$\")"
+    },
+    {
+      "id": "c_soru_cekimser_ters",
+      "desc": "Çekimser ve zorunlu ek yer değiştirir",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_soru_metni_ve_ileti_sirasi",
+      "find": "    text += _QUESTION_ABSTAIN.format(kind=kind) if abstain_allowed else _QUESTION_FORCED",
+      "replace": "    text += _QUESTION_ABSTAIN.format(kind=kind) if not abstain_allowed else _QUESTION_FORCED"
+    },
+    {
+      "id": "c_soru_kimlik_denetimi",
+      "desc": "Soru biçimsiz sonuç kimliğiyle kurulur",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_soru_metni_ve_ileti_sirasi",
+      "find": "    if not ids or any(not re.fullmatch(r\"r[0-9]{1,9}\", i) for i in ids):",
+      "replace": "    if not ids:"
+    },
+    {
+      "id": "c_ileti_oturum_sonda",
+      "desc": "Oturum bloğu paketten sonra gelir",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_soru_metni_ve_ileti_sirasi",
+      "find": "    parts = ([session_block.rstrip(\"\\n\")] if session_block else []) + list(package)",
+      "replace": "    parts = list(package) + ([session_block.rstrip(\"\\n\")] if session_block else []) + []"
+    },
+    {
+      "id": "c_kestirim_kod_orani",
+      "desc": "Kod oranı değişir",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_context.py::test_baglam_butcesi_aritmetigi",
+      "find": "BYTES_PER_TOKEN_CODE = 1.5 ",
+      "replace": "BYTES_PER_TOKEN_CODE = 1.55 "
+    },
+    {
+      "id": "c_butce_pay_yok",
+      "desc": "İstem payı hesabında pay düşülmez",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_baglam_butcesi_aritmetigi",
+      "find": "        return self.context_tokens - self.output_tokens - self.margin_tokens",
+      "replace": "        return self.context_tokens - self.output_tokens"
+    },
+    {
+      "id": "c_butce_sinir",
+      "desc": "Sınırdaki istem sığmaz sayılır",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_baglam_butcesi_aritmetigi",
+      "find": "        return prompt_tokens <= self.prompt_room",
+      "replace": "        return prompt_tokens < self.prompt_room"
+    },
+    {
+      "id": "c_sonuc_kestirimi_kod",
+      "desc": "Sonuç kestiriminde kod metin oranıyla sayılır",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_baglam_butcesi_aritmetigi",
+      "find": "    code_bytes = _utf8_len(escape_json(code)) if isinstance(code, str) else 0",
+      "replace": "    code_bytes = 0 if isinstance(code, str) else 0"
+    },
+    {
+      "id": "c_dilim_arac_sonuclari",
+      "desc": "Araç sonuçları dilimi büyür",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_context.py::test_baglam_butcesi_aritmetigi",
+      "find": "BUDGET_TOOL_RESULTS_TOKENS = 6000",
+      "replace": "BUDGET_TOOL_RESULTS_TOKENS = 16000"
+    },
+    {
+      "id": "c_korluk_alt_cizgi",
+      "desc": "Baştaki alt çizgili biçim sızıntı sayılmaz",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_korluk_taramasi_tam_sozcuk",
+      "find": "            if t in names or t.lstrip(\"_\") in names:",
+      "replace": "            if t in names:"
+    },
+    {
+      "id": "c_korluk_alt_dizgi",
+      "desc": "Tarama tam sözcük yerine alt dizgi sayar",
+      "module": "karadul/lm/context.py",
+      "test": "tests/test_lm_context.py::test_korluk_taramasi_tam_sozcuk",
+      "find": "            if t in names or t.lstrip(\"_\") in names:",
+      "replace": "            if any(n in t for n in names):"
+    },
+    {
+      "id": "t_adres_deseni",
+      "desc": "Adres deseni sözleşmeden sapar",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_kayit_uc_arac_ve_semalar",
+      "find": "ADDR_PATTERN = \"^FUN_[0-9a-fA-F]{3,16}$\"",
+      "replace": "ADDR_PATTERN = \"^FUN_[0-9a-fA-F]{1,160}$\""
+    },
+    {
+      "id": "t_xrefs_tavani",
+      "desc": "get_xrefs limit tavanı 30'dan büyür",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_tools.py::test_kayit_uc_arac_ve_semalar",
+      "find": "XREFS_MAX_ROWS = 30 ",
+      "replace": "XREFS_MAX_ROWS = 300 "
+    },
+    {
+      "id": "t_kayit_yinelenen_ad",
+      "desc": "Aynı adlı iki araç kaydedilir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_kayit_bozuk_tanimi_reddeder",
+      "find": "            if s.name in self._specs:",
+      "replace": "            if False and s.name in self._specs:"
+    },
+    {
+      "id": "t_kayit_acik_sema",
+      "desc": "Açık (ek anahtar kabul eden) argüman şeması kaydedilir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_kayit_bozuk_tanimi_reddeder",
+      "find": "if s.args_schema.get(\"type\") != \"object\" or s.args_schema.get(\"additionalProperties\") is not False:",
+      "replace": "if s.args_schema.get(\"type\") != \"object\":"
+    },
+    {
+      "id": "t_kayit_tavan_sifir",
+      "desc": "Sıfır boyut tavanı kabul edilir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_kayit_bozuk_tanimi_reddeder",
+      "find": "            if s.max_result_bytes <= 0:",
+      "replace": "            if s.max_result_bytes < 0:"
+    },
+    {
+      "id": "t_kapali_liste_kaydi_bozar",
+      "desc": "Kapalı adres listesi kayıtlı şemayı değiştirir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_kapali_adres_listesi",
+      "find": "schema = {**s.args_schema, \"properties\": dict(s.args_schema.get(\"properties\", {}))}",
+      "replace": "schema = {**s.args_schema, \"properties\": s.args_schema.get(\"properties\", {})}"
+    },
+    {
+      "id": "t_kapali_liste_bos",
+      "desc": "Boş kapalı liste kabul edilir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_kapali_adres_listesi",
+      "find": "                if not addr_enum:\n                    raise ValueError",
+      "replace": "                if False and not addr_enum:\n                    raise ValueError"
+    },
+    {
+      "id": "t_kenar_0x",
+      "desc": "0x önekli adres çözülmez",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_cagri_kenarlari_arayuz_kopyasiyla_ayni",
+      "find": "        h = address.lower()\n        if h.startswith(\"0x\"):\n            h = h[2:]\n        return by_hex.get(h)",
+      "replace": "        h = address.lower()\n        return by_hex.get(h)"
+    },
+    {
+      "id": "t_kenar_yabanci_grafik",
+      "desc": "Başka koşunun grafiği boş kenar kümesi olarak kabul edilir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_cagri_kenarlari_arayuz_kopyasiyla_ayni",
+      "find": "    if addr_set and not known:\n        return None\n",
+      "replace": "    if False and addr_set and not known:\n        return None\n"
+    },
+    {
+      "id": "t_kenar_dugum_bicimi",
+      "desc": "Yalnız düğüm biçimli grafik okunmaz",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_cagri_kenarlari_arayuz_kopyasiyla_ayni",
+      "find": "    elif isinstance(nodes, dict):\n        pairs = [(a, c.get(\"address\"))",
+      "replace": "    elif False and isinstance(nodes, dict):\n        pairs = [(a, c.get(\"address\"))"
+    },
+    {
+      "id": "t_oz_cagri",
+      "desc": "Öz çağrı çağrılanlar listesine girer",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_kenarlar_ve_adres_basvurulari_arayuz_modeliyle_ayni",
+      "find": "        return sorted(edges.get(hexaddr, set()) - {hexaddr}, key=lambda a: int(a, 16))",
+      "replace": "        return sorted(edges.get(hexaddr, set()), key=lambda a: int(a, 16))"
+    },
+    {
+      "id": "t_adres_basvurusu_cagri",
+      "desc": "Çağrı kenarı olan başvuru da adres başvurusu sayılır",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_kenarlar_ve_adres_basvurulari_arayuz_modeliyle_ayni",
+      "find": "                    extra = mentioned - edges.get(a, set())",
+      "replace": "                    extra = mentioned - set()"
+    },
+    {
+      "id": "t_grafiksiz_bos_liste",
+      "desc": "Grafik yokken çağıranlar boş liste döner",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_kenarlar_ve_adres_basvurulari_arayuz_modeliyle_ayni",
+      "find": "        edges = self.call_edges\n        if edges is None:\n            return None\n        return sorted((s for s, ds in edges.items() if hexaddr in ds and s != hexaddr)",
+      "replace": "        edges = self.call_edges\n        if edges is None:\n            return []\n        return sorted((s for s, ds in edges.items() if hexaddr in ds and s != hexaddr)"
+    },
+    {
+      "id": "t_tavan_denetimi",
+      "desc": "Tavanı aşan sonuç isteme girer",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_arac_hatasi_ve_tavani_asan_sonuc_isteme_girmez",
+      "find": "        if result.size_bytes() > spec.max_result_bytes:",
+      "replace": "        if False and result.size_bytes() > spec.max_result_bytes:"
+    },
+    {
+      "id": "t_arac_hatasi_yukselir",
+      "desc": "Aracın beklenmeyen hatası görevi düşürür",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_arac_hatasi_ve_tavani_asan_sonuc_isteme_girmez",
+      "find": "        except Exception:  # noqa: BLE001 — araç hatası görevi düşürmez; model sabit bir kod görür",
+      "replace": "        except KeyError:  # noqa: BLE001"
+    },
+    {
+      "id": "t_denetim_ozeti_veri",
+      "desc": "Denetim özetine sonuç verisi girer",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_arac_hatasi_ve_tavani_asan_sonuc_isteme_girmez",
+      "find": "\"sonuc_bayt\": len(text.encode(\"utf-8\")), \"kirpma\": self.truncated}",
+      "replace": "\"sonuc_bayt\": len(text.encode(\"utf-8\")), \"kirpma\": self.truncated, \"data\": self.data}"
+    },
+    {
+      "id": "t_sema_denetimi_yok",
+      "desc": "Argümanlar şemayla denetlenmez",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_hata_kodlari",
+      "find": "        if not isinstance(args, dict) or protocol.validate(args, spec.args_schema):",
+      "replace": "        if not isinstance(args, dict):"
+    },
+    {
+      "id": "t_bilinmeyen_arac",
+      "desc": "Kayıtsız araç iç hata sayılır",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_hata_kodlari",
+      "find": "            return error_result(result_id, str(name)[:64], ERR_TOOL_CLOSED)",
+      "replace": "            return error_result(result_id, str(name)[:64], ERR_INTERNAL)"
+    },
+    {
+      "id": "t_kor_ayni_ad",
+      "desc": "Hedefle aynı adı taşıyan komşu gösterilir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_korluk_kipinde_hedef_adi_sonuclara_girmez",
+      "find": "            if r is None or r[1] in BLIND_HIDDEN_TAGS or r[0] == hidden:",
+      "replace": "            if r is None or r[1] in BLIND_HIDDEN_TAGS:"
+    },
+    {
+      "id": "t_kor_elle_ad",
+      "desc": "Körlük kipinde elle verilen ad gösterilir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_korluk_kipinde_hedef_adi_sonuclara_girmez",
+      "find": "            if r is None or r[1] in BLIND_HIDDEN_TAGS or r[0] == hidden:",
+      "replace": "            if r is None or r[0] == hidden:"
+    },
+    {
+      "id": "t_kor_kayitsiz_ad",
+      "desc": "Körlük kipinde köken kaydı olmayan ad gösterilir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_korluk_kipinde_hedef_adi_sonuclara_girmez",
+      "find": "            return r if self._has_engine_record(a, r[0]) else None",
+      "replace": "            return r if True or self._has_engine_record(a, r[0]) else None"
+    },
+    {
+      "id": "t_etiket_bayat_kayit",
+      "desc": "Bayat kayıtlı ad doğrulanmamış motor adı görünür",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_ad_etiketleri",
+      "find": "        if rec.get(\"new_name\") != name:\n            return name, TAG_MANUAL",
+      "replace": "        if rec.get(\"new_name\") != name:\n            return name, TAG_UNVERIFIED"
+    },
+    {
+      "id": "t_etiket_yer_tutucu",
+      "desc": "Yer tutucu ad gösterilir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_ad_etiketleri",
+      "find": "        if protocol.is_placeholder_name(name, [int(hexaddr, 16)]):\n            return None",
+      "replace": "        if False and protocol.is_placeholder_name(name, [int(hexaddr, 16)]):\n            return None"
+    },
+    {
+      "id": "t_etiket_tanimlayici",
+      "desc": "Tanımlayıcı olmayan ad gösterilir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_ad_etiketleri",
+      "find": "        if name is None or len(name) > NAME_TAG_MAX_CHARS or not _NAME_OK.fullmatch(name):",
+      "replace": "        if name is None or len(name) > NAME_TAG_MAX_CHARS:"
+    },
+    {
+      "id": "t_etiket_kesin",
+      "desc": "Kesin etiketi 'verified' diye yazılır",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_ad_etiketleri",
+      "find": "LABEL_TAGS = {LABEL_CERTAIN: TAG_PROVEN,",
+      "replace": "LABEL_TAGS = {LABEL_CERTAIN: TAG_VERIFIED,"
+    },
+    {
+      "id": "t_adres_cozumu",
+      "desc": "Adres sayı değeriyle değil yazımıyla aranır",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_calisma_alani_salt_okunur_ve_adres_cozumu",
+      "find": "        return self._functions.get(int(addr[4:], 16))",
+      "replace": "        return addr[4:] if addr[4:] in self._functions.values() else None"
+    },
+    {
+      "id": "t_bozuk_alan_kabul",
+      "desc": "Fonksiyon listesi okunamayan çalışma alanı kabul edilir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools.py::test_calisma_alani_salt_okunur_ve_adres_cozumu",
+      "find": "        if not isinstance(funcs, list):\n            raise WorkspaceError",
+      "replace": "        if False and not isinstance(funcs, list):\n            raise WorkspaceError"
+    },
+    {
+      "id": "o_yon_ters",
+      "desc": "callers ve callees yer değiştirir",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_yon_adlari_tanimda_acik_ve_davranisla_tutarli",
+      "find": "    if direction == DIR_CALLERS:\n        addrs, kind, source, limits = ws.callers(a),",
+      "replace": "    if direction == DIR_CALLEES:\n        addrs, kind, source, limits = ws.callers(a), "
+    },
+    {
+      "id": "o_yon_tanimi",
+      "desc": "Tanımda callers yönünün açıklaması silinir",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_yon_adlari_tanimda_acik_ve_davranisla_tutarli",
+      "find": "direction \"callers\" = the functions that CALL '",
+      "replace": "direction \"callers\" = functions near '"
+    },
+    {
+      "id": "o_kanit_satir_sayisi",
+      "desc": "lines alanı başlık satırlarını da sayar",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_evidence_pilot_bicimli_alanlar",
+      "find": "    lines = len(strip_header(code).splitlines()) if code is not None else 0",
+      "replace": "    lines = len(code.splitlines()) if code is not None else 0"
+    },
+    {
+      "id": "o_kanit_turu",
+      "desc": "Kanıt sonucu yalnız 'olgu' diye etiketlenir",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_evidence_pilot_bicimli_alanlar",
+      "find": "        out = ToolOutput(data=data, kind=KIND_FACT_AND_INFERENCE,",
+      "replace": "        out = ToolOutput(data=data, kind=KIND_FACT,"
+    },
+    {
+      "id": "o_kanit_sinir_notu",
+      "desc": "Kanıt sonucunun sınırlama notu boş gider",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_evidence_pilot_bicimli_alanlar",
+      "find": "                         limits=LIMITS_EVIDENCE, truncated=truncated)",
+      "replace": "                         limits=(), truncated=truncated)"
+    },
+    {
+      "id": "o_kanit_kirpma_sessiz",
+      "desc": "Kanıt kırpması bildirilmez",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_evidence_sinirlar_kirpmayi_bildirir",
+      "find": "        truncated = evidence_truncation(pack, limits)\n",
+      "replace": "        truncated = None and evidence_truncation(pack, limits)\n"
+    },
+    {
+      "id": "o_uzun_ad",
+      "desc": "Çok uzun ad etiket olarak gösterilir",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_tools.py::test_get_evidence_sinirlar_kirpmayi_bildirir",
+      "find": "NAME_TAG_MAX_CHARS = 128",
+      "replace": "NAME_TAG_MAX_CHARS = 1280"
+    },
+    {
+      "id": "o_kanit_tavan_yok",
+      "desc": "Kanıt sonucu bayt tavanında sınırlar yarılanmaz",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_evidence_bayt_tavani_sinirlari_yarilar",
+      "find": "        if size + ENVELOPE_OVERHEAD_BYTES <= EVIDENCE_RESULT_MAX_BYTES or limits.at_floor():",
+      "replace": "        if True or size + ENVELOPE_OVERHEAD_BYTES <= EVIDENCE_RESULT_MAX_BYTES or limits.at_floor():"
+    },
+    {
+      "id": "o_baslik_silinmez",
+      "desc": "Decompile metninde Karadul başlığı kalır",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_decompiled_tek_atis_pilot_kirpmasi",
+      "find": "        raise ToolError(ERR_NO_DATA)\n    return strip_header(raw)",
+      "replace": "        raise ToolError(ERR_NO_DATA)\n    return raw"
+    },
+    {
+      "id": "o_tek_atis_kirpma_sessiz",
+      "desc": "Tek atış kırpması bildirilmez",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_decompiled_tek_atis_pilot_kirpmasi",
+      "find": "        if clipped:\n            truncated = {\"omitted\": omitted, \"total\": total}",
+      "replace": "        if clipped and False:\n            truncated = {\"omitted\": omitted, \"total\": total}"
+    },
+    {
+      "id": "o_dongu_son_bastan",
+      "desc": "'son' parçası baştan okur",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_decompiled_dongu_kipi_parcalar",
+      "find": "            shown = _take_lines(wanted, LOOP_CODE_LIMIT_BYTES, from_end=True)",
+      "replace": "            shown = _take_lines(wanted, LOOP_CODE_LIMIT_BYTES, from_end=False)"
+    },
+    {
+      "id": "o_dongu_tavani",
+      "desc": "Döngü kipinde kod tavanı 4.500 bayttan büyür",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_tools.py::test_get_decompiled_dongu_kipi_parcalar",
+      "find": "LOOP_CODE_LIMIT_BYTES = 4500 ",
+      "replace": "LOOP_CODE_LIMIT_BYTES = 45000 "
+    },
+    {
+      "id": "o_aralik_kayik",
+      "desc": "Satır aralığı bir satır kayar",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_decompiled_dongu_kipi_parcalar",
+      "find": "            wanted = lines[lf - 1:lt]",
+      "replace": "            wanted = lines[lf:lt + 1][:]"
+    },
+    {
+      "id": "o_ters_aralik",
+      "desc": "Ters satır aralığı boş sonuç döner",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_decompiled_gecersiz_aralik_ve_uzun_satir",
+      "find": "            if lf > lt:\n                raise ToolError(ERR_BAD_ARGUMENT)",
+      "replace": "            if False and lf > lt:\n                raise ToolError(ERR_BAD_ARGUMENT)"
+    },
+    {
+      "id": "o_uzun_satir_sessiz",
+      "desc": "Tavandan uzun tek satır sessizce atlanır",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_decompiled_gecersiz_aralik_ve_uzun_satir",
+      "find": "        if wanted and not shown:",
+      "replace": "        if False and wanted and not shown:"
+    },
+    {
+      "id": "o_uyari_tavani",
+      "desc": "Uyarı listesi tavansız döner",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_ghidra_uyarilari_tavanli",
+      "find": "    return seen[:WARNINGS_MAX_ITEMS], len(seen)",
+      "replace": "    return seen, len(seen)"
+    },
+    {
+      "id": "o_uyari_yinelenen",
+      "desc": "Yinelenen uyarı yeniden sayılır",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_ghidra_uyarilari_tavanli",
+      "find": "        if w and w not in seen:",
+      "replace": "        if w:"
+    },
+    {
+      "id": "o_xrefs_ofset",
+      "desc": "Sayfalama ofseti yok sayılır",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_xrefs_sayfalama_siralama_etiket",
+      "find": "    page = addrs[offset:offset + limit]",
+      "replace": "    page = addrs[:limit]"
+    },
+    {
+      "id": "o_xrefs_kirpma_sessiz",
+      "desc": "Listenin kalan kısmı bildirilmez",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_xrefs_sayfalama_siralama_etiket",
+      "find": "    truncated = {\"omitted\": len(addrs) - len(page), \"total\": len(addrs)} if len(page) < len(addrs) else None",
+      "replace": "    truncated = {\"omitted\": len(addrs) - len(page), \"total\": len(addrs)} if len(page) > len(addrs) + 0 else None"
+    },
+    {
+      "id": "o_adres_basvurusu_olgu",
+      "desc": "Metin vekili 'olgu' diye etiketlenir",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_get_xrefs_sayfalama_siralama_etiket",
+      "find": "ws.address_refs_to(a), KIND_PROXY, SOURCE_ADDRESS_REFS,",
+      "replace": "ws.address_refs_to(a), KIND_FACT, SOURCE_ADDRESS_REFS,"
+    },
+    {
+      "id": "o_grafiksiz_bos",
+      "desc": "Çağrı grafiği yokken boş liste döner",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_hata_kodlari",
+      "find": "    if addrs is None:\n",
+      "replace": "    if addrs is None and False:\n"
+    },
+    {
+      "id": "o_kodsuz_bos",
+      "desc": "Decompile dosyası yokken boş metin döner",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_hata_kodlari",
+      "find": "    if raw is None:\n        raise ToolError(ERR_NO_DATA)",
+      "replace": "    if raw is None:\n        raw = ''"
+    },
+    {
+      "id": "o_surec_modulu",
+      "desc": "Araç modülü süreç açan modülü içe aktarır",
+      "module": "karadul/lm/tools/read.py",
+      "test": "tests/test_lm_tools.py::test_arac_paketi_yalniz_standart_kitaplik_ve_karadul",
+      "find": "import re\nfrom typing import Any, Mapping, Optional",
+      "replace": "import re\nimport subprocess\nfrom typing import Any, Mapping, Optional"
+    },
+    {
+      "id": "a_uretim_tavani",
+      "desc": "Model isteğinin üretim tavanı iki katına çıkar",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_tek_cagri_paket_ve_sonuc",
+      "find": "schema=schema, max_tokens=MAX_TOKENS_STEP,\n",
+      "replace": "schema=schema, max_tokens=MAX_TOKENS_STEP * 2,\n"
+    },
+    {
+      "id": "a_k0_ad_durumu",
+      "desc": "Ad durumu sınıflanırken çekimser izni düşer",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_tek_cagri_paket_ve_sonuc",
+      "find": "reply.content, reply.finish_reason, abstain_allowed=abstain_allowed, address=a)[\"durum\"]",
+      "replace": "reply.content, reply.finish_reason, abstain_allowed=False, address=a)[\"durum\"]"
+    },
+    {
+      "id": "a_k0_dongu_kirpmasi",
+      "desc": "K0 paketi döngü kipinin kod tavanıyla kurulur",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_paketinden_pilotun_c_iletisi_geri_kurulur",
+      "find": "        package = self._build_package(task, a, single_shot=True)",
+      "replace": "        package = self._build_package(task, a, single_shot=False)"
+    },
+    {
+      "id": "a_onek_calisma_alani",
+      "desc": "Sabit önek çalışma alanından veri taşır",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_sabit_onek_iki_cagrida_ve_iki_calisma_alaninda_ayni",
+      "find": "        return fixed_prefix(mode, self.registry.definition_lines())",
+      "replace": "        return fixed_prefix(mode, self.registry.definition_lines()) + f'Functions: {self.workspace.function_count()}\\n'"
+    },
+    {
+      "id": "a_kanit_sabit_kimlik",
+      "desc": "kanit şeması her görevde ilk görevin kimlikleriyle kurulur",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_kanit_semasi_o_istegin_kimlikleriyle",
+      "find": "        schema = protocol.build_name_answer_schema(ids, abstain_allowed=abstain_allowed)",
+      "replace": "        schema = protocol.build_name_answer_schema([\"r1\", \"r2\"], abstain_allowed=abstain_allowed)"
+    },
+    {
+      "id": "a_kanit_tekil_degil",
+      "desc": "Cevaptaki yinelenen kimlikler tekilleştirilmez",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_kanit_semasi_o_istegin_kimlikleriyle",
+      "find": "            if i not in refs:\n                refs.append(i)",
+      "replace": "            if True or i not in refs:\n                refs.append(i)"
+    },
+    {
+      "id": "a_onarim_ham_cikti",
+      "desc": "Onarım turunda modelin ham çıktısı geri gönderilir",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_onarim_turu_yalniz_L2_ve_bir_kez",
+      "find": "                {\"role\": \"assistant\", \"content\": safe_assistant_content(reply.content, parsed.obj)},\n                protocol.repair_message(parsed)]",
+      "replace": "                {\"role\": \"assistant\", \"content\": reply.content},\n                protocol.repair_message(parsed)]"
+    },
+    {
+      "id": "a_onarim_sayaci",
+      "desc": "Onarım turu sayılmaz; her bozuk cevapta yeniden denenir",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_onarim_turu_yalniz_L2_ve_bir_kez",
+      "find": "            repairs += 1\n            task.result.counters.repairs += 1\n",
+      "replace": "            repairs += 1 - 1\n            task.result.counters.repairs += 1\n"
+    },
+    {
+      "id": "a_k0_iptal",
+      "desc": "K0 iptal isteğine bakmaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_durumlar_model_cagrilmadan_ya_da_cevapsiz",
+      "find": "        if self.cancel.is_set():\n            return task.finish(STATUS_CANCELLED)\n        schema",
+      "replace": "        if False and self.cancel.is_set():\n            return task.finish(STATUS_CANCELLED)\n        schema"
+    },
+    {
+      "id": "a_k0_yetenek",
+      "desc": "Yetenek düzeyi bilinmeyen uçta görev sürer",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_durumlar_model_cagrilmadan_ya_da_cevapsiz",
+      "find": "        if level not in protocol.CAPABILITY_LEVELS:\n            task.finish(STATUS_LEVEL_UNKNOWN)\n            return None",
+      "replace": "        if level not in protocol.CAPABILITY_LEVELS:\n            task.finish(STATUS_LEVEL_UNKNOWN)\n            return 'L1' or None"
+    },
+    {
+      "id": "a_k0_paket_hatasi",
+      "desc": "Paket kurulamayınca model yine çağrılır",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_durumlar_model_cagrilmadan_ya_da_cevapsiz",
+      "find": "                task.finish(STATUS_PACKAGE_ERROR, f\"{tool}:{result.error}\")\n                return None",
+      "replace": "                task.finish(STATUS_PACKAGE_ERROR, f\"{tool}:{result.error}\")\n                continue"
+    },
+    {
+      "id": "a_k0_baglam_denetimi",
+      "desc": "Bağlama sığmayan istem gönderilir",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_baglam_asimi_baslamadan_reddedilir",
+      "find": "        if not ContextBudget(self.context_tokens, MAX_TOKENS_STEP).fits(est):",
+      "replace": "        if False and not ContextBudget(self.context_tokens, MAX_TOKENS_STEP).fits(est):"
+    },
+    {
+      "id": "a_k0_bos_paket_eki",
+      "desc": "Boş pakette çekimser eki açılmaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_bos_pakette_cekimser_eki",
+      "find": "        abstain_allowed = abstain_allowed or task.result.empty_content\n        ids = [r.id for r in package]",
+      "replace": "        abstain_allowed = bool(abstain_allowed)\n        ids = [r.id for r in package]"
+    },
+    {
+      "id": "a_bos_paket_tanimi",
+      "desc": "Boş paket yalnız dizgisizliğe bakar",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k0_bos_pakette_cekimser_eki",
+      "find": "        task.result.empty_content = evidence.data[\"apis\"] == \"none\" and evidence.data[\"strings\"] == \"none\"",
+      "replace": "        task.result.empty_content = evidence.data[\"strings\"] == \"none\""
+    },
+    {
+      "id": "a_kor_baglam_yok",
+      "desc": "Körlük kipi araç bağlamına taşınmaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_korluk_kipinde_istemde_hedef_adi_yok",
+      "find": "        ctx = ToolContext(single_shot=single_shot, blind_target=a if self.blind_target else None)",
+      "replace": "        ctx = ToolContext(single_shot=single_shot, blind_target=None)"
+    },
+    {
+      "id": "a_kor_sizinti_gonderilir",
+      "desc": "Körlük taraması tutmayan istem gönderilir",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_korluk_kipinde_istemde_hedef_adi_yok",
+      "find": "        if self.blind_target and self._blind_leak(evidence, a):",
+      "replace": "        if False and self.blind_target and self._blind_leak(evidence, a):"
+    },
+    {
+      "id": "a_kor_dongu_sizinti",
+      "desc": "Döngüde körlük taramasına takılan sonuç modele verilir",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_korluk_dongude_sizan_sonuc_verilmez",
+      "find": "                if self.blind_target and self._blind_leak(result, a):",
+      "replace": "                if False and self.blind_target and self._blind_leak(result, a):"
+    },
+    {
+      "id": "a_kor_dongu_baglam",
+      "desc": "Döngüde araç bağlamı körlük hedefini taşımaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_korluk_dongude_sizan_sonuc_verilmez",
+      "find": "        ctx = ToolContext(single_shot=False, blind_target=a if self.blind_target else None)",
+      "replace": "        ctx = ToolContext(single_shot=False, blind_target=None)"
+    },
+    {
+      "id": "a_hata_metni_gizlenmez",
+      "desc": "Arka uç hata metni anahtardan arındırılmaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_arka_uc_hatasindan_sonra_ajan_tutarli",
+      "find": "            task.finish(STATUS_BACKEND_ERROR, self.audit.redact(text) if self.audit is not None else text)",
+      "replace": "            task.finish(STATUS_BACKEND_ERROR, text)"
+    },
+    {
+      "id": "a_bitis_override_yok",
+      "desc": "Görev bitişi override'ı yok sayar: arka uç hatasından sonra gelen bellek aşımı görevin durumuna yazılmaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_bellek_bekcisi_her_model_cagrisindan_sonra",
+      "find": "        if self.done and not override:",
+      "replace": "        if self.done:"
+    },
+    {
+      "id": "a_kilit_birakilmaz",
+      "desc": "Görev bitince ajan kilidi bırakılmaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_arka_uc_hatasindan_sonra_ajan_tutarli",
+      "find": "        try:\n            yield\n        finally:\n            self._lock.release()",
+      "replace": "        try:\n            yield\n        finally:\n            pass"
+    },
+    {
+      "id": "a_beklenmeyen_hata_durdurmaz",
+      "desc": "Beklenmeyen hatada arka uç açık kalır",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_beklenmeyen_hatada_arka_uc_durdurulur",
+      "find": "                for step in (lambda: self.backend.stop(\"hata\"), lambda: self._close(task, t0)):",
+      "replace": "                for step in (lambda: self._close(task, t0),):"
+    },
+    {
+      "id": "a_bellek_denetimi_yok",
+      "desc": "Model çağrısından sonra bellek bekçisi denetlenmez",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_bellek_bekcisi_her_model_cagrisindan_sonra",
+      "find": "        self._check_memory(task)\n        if reply is None:",
+      "replace": "        if reply is None:"
+    },
+    {
+      "id": "a_bellek_durumu_okunmaz",
+      "desc": "Arka ucun bellek_durdu durumu okunmaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_bellek_bekcisi_her_model_cagrisindan_sonra",
+      "find": "        if self.backend.state == STATE_MEMORY_STOPPED:",
+      "replace": "        if False and self.backend.state == STATE_MEMORY_STOPPED:"
+    },
+    {
+      "id": "a_bellek_yeniden_baslatir",
+      "desc": "Bellek nedeniyle durmuş sunucuya yeni görev istek atar",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_bellek_bekcisi_her_model_cagrisindan_sonra",
+      "find": "        if self._memory_stopped():\n",
+      "replace": "        if False and self._memory_stopped():\n"
+    },
+    {
+      "id": "a_bellek_yalniz_bekci",
+      "desc": "Durma denetimi yalnız bekçiye bakar: bekçisiz ajanda bellek_durdu arka uca yeni istek gider ve sunucu kendiliğinden başlar",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_bellek_bekcisi_her_model_cagrisindan_sonra",
+      "find": "        return tripped or self.backend.state == STATE_MEMORY_STOPPED",
+      "replace": "        return tripped"
+    },
+    {
+      "id": "a_bellek_yalniz_arka_uc",
+      "desc": "Durma denetimi yalnız arka uç durumuna bakar: yeniden başlatılmış sunucuya tetiklenmiş bekçiyle istek gider",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_bellek_bekcisi_her_model_cagrisindan_sonra",
+      "find": "        return tripped or self.backend.state == STATE_MEMORY_STOPPED",
+      "replace": "        return self.backend.state == STATE_MEMORY_STOPPED"
+    },
+    {
+      "id": "a_mesgul_denetimi",
+      "desc": "Meşgulken ikinci görev başka bir hata türüyle reddedilir",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_mesgulken_ikinci_gorev_reddedilir",
+      "find": "            raise AgentBusy(\"ajan başka bir görev yürütüyor\")",
+      "replace": "            raise LMError(\"ajan başka bir görev yürütüyor\")"
+    },
+    {
+      "id": "a_kapali_kip_calisir",
+      "desc": "Etkinleştirilmemiş K1/K2 çalışır",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k1_k2_kapaliyken_calismaz",
+      "find": "        if mode not in self.enabled_modes:\n            raise ModeDisabled(f\"{mode} kapalı",
+      "replace": "        if False and mode not in self.enabled_modes:\n            raise ModeDisabled(f\"{mode} kapalı"
+    },
+    {
+      "id": "a_ontanim_k2_acik",
+      "desc": "K2 öntanımlı olarak açık gelir",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k1_k2_kapaliyken_calismaz",
+      "find": "                 enabled_modes: Iterable[str] = (MODE_K0,), blind_target: bool = False,",
+      "replace": "                 enabled_modes: Iterable[str] = (MODE_K0, MODE_K2), blind_target: bool = False,"
+    },
+    {
+      "id": "a_gecmis_ortak_liste",
+      "desc": "Arka uca geçmiş listesinin kendisi gider (sonradan değişir)",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_arac_cagrisi_son_cevap_ve_gecmis",
+      "find": "            reply = self.backend.chat(list(messages), schema=schema,",
+      "replace": "            reply = self.backend.chat(messages, schema=schema,"
+    },
+    {
+      "id": "a_dongu_tek_atis_paketi",
+      "desc": "Döngü paketi tek atış kırpmasıyla kurulur",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_arac_cagrisi_son_cevap_ve_gecmis",
+      "find": "        package = self._build_package(task, a, single_shot=False)",
+      "replace": "        package = self._build_package(task, a, single_shot=True)"
+    },
+    {
+      "id": "a_dongu_hata_kanit",
+      "desc": "Hata sonuçları da kanıt olarak gösterilebilir",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_tekrar_tespiti",
+      "find": "            finals = protocol.name_answer_branches([r.id for r in task.results if r.ok],",
+      "replace": "            finals = protocol.name_answer_branches([r.id for r in task.results],"
+    },
+    {
+      "id": "a_tekrar_denetimi_yok",
+      "desc": "Aynı çağrı ikinci kez çalıştırılır",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_tekrar_tespiti",
+      "find": "            elif key in task.seen:",
+      "replace": "            elif False and key in task.seen:"
+    },
+    {
+      "id": "a_tekrar_adres_yazimi",
+      "desc": "Tekrar anahtarı adresin yazımına bağlı kalır",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_tekrar_tespiti",
+      "find": "            if a is not None:\n                norm[\"addr\"] = f\"FUN_{a}\"",
+      "replace": "            if a is not None:\n                norm[\"addr\"] = norm[\"addr\"]"
+    },
+    {
+      "id": "a_tekrar_ontanim",
+      "desc": "Tekrar anahtarı öntanımlı argümanları doldurmaz: aynı çağrının açık yazılmış öntanımlı biçimi yeni çağrı sayılır",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_tekrar_tespiti",
+      "find": "        norm = dict(spec.defaults) if spec is not None else {}",
+      "replace": "        norm = {}"
+    },
+    {
+      "id": "a_tekrar_paket_tohumu",
+      "desc": "Paketin çağrıları tekrar kümesine girmez",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_tekrar_tespiti",
+      "find": "            task.seen.add(self._call_key(tool, args))\n",
+      "replace": ""
+    },
+    {
+      "id": "a_butce_esigi",
+      "desc": "Araç bütçesi bir çağrı erken biter",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_arac_butcesi",
+      "find": "            if c.call_requests > max_calls:",
+      "replace": "            if c.call_requests >= max_calls:"
+    },
+    {
+      "id": "a_butce_sonrasi_arac_dali",
+      "desc": "Bütçe bittikten sonra zarfta araç dalları kalır",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_arac_butcesi",
+      "find": "            schema = protocol.build_task_envelope({} if forced_final else tool_schemas, finals,",
+      "replace": "            schema = protocol.build_task_envelope(tool_schemas if forced_final else tool_schemas, finals,"
+    },
+    {
+      "id": "a_k1_butcesi",
+      "desc": "K1 araç bütçesi 2'den büyür",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_agent.py::test_dongu_arac_butcesi",
+      "find": "MAX_TOOL_CALLS_K1 = 2 ",
+      "replace": "MAX_TOOL_CALLS_K1 = 20 "
+    },
+    {
+      "id": "a_gecersiz_cagri_sayaci",
+      "desc": "Geçersiz çağrı sayılmaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_gecersiz_cagri_sayilir_ve_surer",
+      "find": "                if result.error in INVALID_CALL_ERRORS:\n                    c.invalid_calls += 1",
+      "replace": "                if result.error in INVALID_CALL_ERRORS:\n                    c.invalid_calls += 1 - 1"
+    },
+    {
+      "id": "a_dongu_onarim_ham",
+      "desc": "Döngünün onarım turunda ham model çıktısı geri gönderilir",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_gecersiz_cagri_sayilir_ve_surer",
+      "find": "                messages.append({\"role\": \"assistant\", \"content\": safe_assistant_content(reply.content, parsed.obj)})\n                messages.append(protocol.repair_message(parsed))",
+      "replace": "                messages.append({\"role\": \"assistant\", \"content\": reply.content})\n                messages.append(protocol.repair_message(parsed))"
+    },
+    {
+      "id": "a_dongu_onarim_sifirlanmaz",
+      "desc": "Döngüde onarım hakkı kabul edilen turdan sonra yenilenmez (tur başına değil görev başına olur)",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_gecersiz_cagri_sayilir_ve_surer",
+      "find": "            repairs = 0\n            obj = parsed.obj",
+      "replace": "            obj = parsed.obj"
+    },
+    {
+      "id": "a_baglam_denetimi_dongu",
+      "desc": "Döngüde sonucun bağlama sığması denetlenmez",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_baglam_butcesi",
+      "find": "                if tool_tokens + cost > BUDGET_TOOL_RESULTS_TOKENS or not budget.fits(now + cost):",
+      "replace": "                if tool_tokens + cost > BUDGET_TOOL_RESULTS_TOKENS:"
+    },
+    {
+      "id": "a_dilim_denetimi",
+      "desc": "Araç sonuçları dilimi denetlenmez",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_baglam_butcesi",
+      "find": "                if tool_tokens + cost > BUDGET_TOOL_RESULTS_TOKENS or not budget.fits(now + cost):",
+      "replace": "                if not budget.fits(now + cost):"
+    },
+    {
+      "id": "a_gercek_jeton_yok_sayilir",
+      "desc": "Uçtan gelen gerçek jeton sayısı kullanılmaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_baglam_butcesi",
+      "find": "                now = real if real is not None else prompt_est",
+      "replace": "                now = prompt_est if real is not None else prompt_est"
+    },
+    {
+      "id": "a_istem_kestirimi_birikmez",
+      "desc": "Uç usage vermediğinde istem kestirimi turlarla büyümez: birikmiş istemle sığmayan sonuç verilir",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_baglam_butcesi",
+      "find": "            prompt_est += estimate_text_tokens(reply.content) + estimate_result_tokens(result.envelope())",
+      "replace": "            prompt_est += 0"
+    },
+    {
+      "id": "a_dongu_baslangic_baglami",
+      "desc": "Döngü bağlama sığmayan paketle başlar",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_baglam_butcesi",
+      "find": "        if not budget.fits(prompt_est):\n            return task.finish(STATUS_CONTEXT)",
+      "replace": "        if False and not budget.fits(prompt_est):\n            return task.finish(STATUS_CONTEXT)"
+    },
+    {
+      "id": "a_dongu_iptal",
+      "desc": "Döngü iptal isteğine bakmaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_iptal_ve_sure",
+      "find": "            if self.cancel.is_set():\n                return task.finish(STATUS_CANCELLED)\n            if deadline",
+      "replace": "            if False and self.cancel.is_set():\n                return task.finish(STATUS_CANCELLED)\n            if deadline"
+    },
+    {
+      "id": "a_sure_esigi",
+      "desc": "Süre sınırında görev kesilir",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_dongu_iptal_ve_sure",
+      "find": "            if deadline is not None and self._clock() > deadline:",
+      "replace": "            if deadline is not None and self._clock() >= deadline:"
+    },
+    {
+      "id": "a_sure_carpani",
+      "desc": "Süre bütçesi çarpanı değişir",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_agent.py::test_dongu_iptal_ve_sure",
+      "find": "TIME_BUDGET_FACTOR = 4.0 ",
+      "replace": "TIME_BUDGET_FACTOR = 40.0 "
+    },
+    {
+      "id": "a_k1_acik_adres",
+      "desc": "K1'de adres kapalı listeyle sınırlanmaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k1_adres_listesi_kapali",
+      "find": "        tool_schemas = self.registry.schemas(self._neighbours(a) if mode == MODE_K1 else None)",
+      "replace": "        tool_schemas = self.registry.schemas(None if mode == MODE_K1 else None)"
+    },
+    {
+      "id": "a_k1_komsu_geri_cagri",
+      "desc": "K1 listesine geri çağrı komşuları girmez",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_k1_adres_listesi_kapali",
+      "find": "            raw += [r.get(\"target\") for r in pack.callback_registrations]\n",
+      "replace": ""
+    },
+    {
+      "id": "a_gunluk_ham_arguman",
+      "desc": "Şemaya uymayan argüman da günlüğe yazılır / geçerli olan yazılmaz",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_gorev_ve_arac_kaydi_ikili_verisi_tasimaz",
+      "find": "                         argumanlar=args if valid else None, gecerli=valid,",
+      "replace": "                         argumanlar=(None if valid else args), gecerli=valid,"
+    },
+    {
+      "id": "a_gunluk_gecersiz_arguman",
+      "desc": "Şemaya uymayan argüman da kayda yazılır",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_gorev_ve_arac_kaydi_ikili_verisi_tasimaz",
+      "find": "argumanlar=args if valid else None, gecerli=valid,",
+      "replace": "argumanlar=args, gecerli=valid,"
+    },
+    {
+      "id": "a_gunluk_gorev_durumu",
+      "desc": "Görev kaydına durum yerine hata alanı yazılır",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_gorev_ve_arac_kaydi_ikili_verisi_tasimaz",
+      "find": "adres=r.addr, durum=r.status,",
+      "replace": "adres=r.addr, durum=r.error,"
+    },
+    {
+      "id": "a_gunluk_kirpilanlar",
+      "desc": "Kırpılan sonuçlar görev kaydına girmez",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_gorev_ve_arac_kaydi_ikili_verisi_tasimaz",
+      "find": "        r.truncated_ids = tuple(x.id for x in task.results if x.truncated is not None)",
+      "replace": "        r.truncated_ids = tuple(x.id for x in task.results if x.truncated is None and False)"
+    },
+    {
+      "id": "a_surec_modulu",
+      "desc": "Ajan modülü süreç açan modülü içe aktarır",
+      "module": "karadul/lm/agent.py",
+      "test": "tests/test_lm_agent.py::test_ajan_ice_aktarma_siniri_ve_yan_etkisizlik",
+      "find": "import re\nimport threading\nimport time",
+      "replace": "import re\nimport subprocess\nimport threading\nimport time"
+    },
+    {
+      "id": "p_kanit_sinirsiz",
+      "desc": "kanit dizisinin uzunluk sınırı kalkar",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_kanit_semasi_istek_basina_sinirli",
+      "find": "    return {\"type\": \"array\", \"items\": {\"type\": \"string\", \"enum\": ids},\n            \"maxItems\": min(len(ids), REFS_MAX_ITEMS)}",
+      "replace": "    return {\"type\": \"array\", \"items\": {\"type\": \"string\", \"enum\": ids}}"
+    },
+    {
+      "id": "p_kanit_genel_desen",
+      "desc": "kanit öğeleri verilen kimlikler yerine genel desenle sınırlanır",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_kanit_semasi_istek_basina_sinirli",
+      "find": "    return {\"type\": \"array\", \"items\": {\"type\": \"string\", \"enum\": ids},",
+      "replace": "    return {\"type\": \"array\", \"items\": {\"type\": \"string\", \"pattern\": RESULT_ID_PATTERN},"
+    },
+    {
+      "id": "p_kanit_tavani",
+      "desc": "kanit tavanı 10'dan büyür",
+      "module": "karadul/lm/__init__.py",
+      "test": "tests/test_lm_protocol.py::test_kanit_semasi_istek_basina_sinirli",
+      "find": "REFS_MAX_ITEMS = MAX_TOOL_CALLS + 2",
+      "replace": "REFS_MAX_ITEMS = MAX_TOOL_CALLS + 20"
+    },
+    {
+      "id": "p_kanit_yinelenen_kimlik",
+      "desc": "Yinelenen sonuç kimliği kabul edilir",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_kanit_semasi_istek_basina_sinirli",
+      "find": "    if len(set(ids)) != len(ids):\n        raise SchemaError",
+      "replace": "    if False and len(set(ids)) != len(ids):\n        raise SchemaError"
+    },
+    {
+      "id": "p_kanit_bos_kimlik",
+      "desc": "Kimliksiz istekte şema kurulur",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_kanit_semasi_istek_basina_sinirli",
+      "find": "    if not ids:\n        raise SchemaError(\"kanit şeması en az bir sonuç kimliği ister\")",
+      "replace": "    if not ids:\n        ids = [\"r0\"]"
+    },
+    {
+      "id": "p_dallar_ortak_nesne",
+      "desc": "Dallar gerekçe şemasını ortak nesne olarak paylaşır",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_kanit_semasi_istek_basina_sinirli",
+      "find": "    abstain = {\"isim\": {\"type\": \"null\"}, \"gerekce\": dict(_RATIONALE), \"cekimser\": {\"const\": True},",
+      "replace": "    abstain = {\"isim\": {\"type\": \"null\"}, \"gerekce\": (named[\"gerekce\"]), \"cekimser\": {\"const\": True},"
+    },
+    {
+      "id": "p_zorunlu_cekimser_dali",
+      "desc": "Zorunlu koşulda çekimser dalı kalır",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_ad_oner_semasi",
+      "find": "    return [named, abstain] if abstain_allowed else [named]",
+      "replace": "    return [named, abstain] if abstain_allowed else [named, abstain]"
+    },
+    {
+      "id": "p_zarf_finalsiz",
+      "desc": "Final dalı olmayan zarf kurulur",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_gorev_zarfi_birden_cok_final_dali",
+      "find": "    if not final_branches:\n        raise SchemaError(\"zarf en az bir final dalı ister\")",
+      "replace": "    if not final_branches:\n        final_branches = final_branches or []"
+    },
+    {
+      "id": "p_zarf_tek_final",
+      "desc": "Görev zarfı yalnız ilk final dalını taşır",
+      "module": "karadul/lm/protocol.py",
+      "test": "tests/test_lm_protocol.py::test_gorev_zarfi_birden_cok_final_dali",
+      "find": "                          *(final_branch(props, final_required) for props in final_branches)]}",
+      "replace": "                          *(final_branch(props, final_required) for props in final_branches[:1])]}"
+    }
+  ]
+}

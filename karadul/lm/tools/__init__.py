@@ -368,9 +368,8 @@ class Workspace:
 
         def lookup(a: str) -> Optional[tuple[str, str]]:
             a = self._canon(a) or a
-            if a == blind_target:
-                return None
             r = self.name_tag(a)
+            # Hedefin kendisi de bu kuralla gizlenir: adı ``hidden``'ın kendisidir.
             if r is None or r[1] in BLIND_HIDDEN_TAGS or r[0] == hidden:
                 return None
             return r if self._has_engine_record(a, r[0]) else None
