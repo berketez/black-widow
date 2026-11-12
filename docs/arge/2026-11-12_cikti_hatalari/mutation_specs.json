@@ -168,6 +168,38 @@
    "test": "tests/test_cikti_hatalari.py::TestGenelDalEzmez::test_cpp_kaynak_yazilamazsa_basarisiz",
    "find": "sources_missing = c_branch and reconstruct_ran and src_count == 0",
    "replace": "sources_missing = language == \"c\" and reconstruct_ran and src_count == 0"
+  },
+  {
+   "id": "im4_bitis_sirasiyla_birlestir",
+   "desc": "sonuçlar bitiş sırasıyla birleştirilir (onarım öncesi davranış)",
+   "module": "karadul/reconstruction/c_type_recoverer.py",
+   "test": "tests/test_cikti_hatalari.py::TestTypesHBelirlenimli::test_bitis_sirasi_types_h_degistirmez",
+   "find": "        for fp in file_paths:\n            result = parsed.get(fp)\n",
+   "replace": "        for fp in list(parsed):\n            result = parsed.get(fp)\n"
+  },
+  {
+   "id": "im4_bitis_sirasiyla_birlestir_yol_testi",
+   "desc": "aynı mutant, yol sırası testiyle",
+   "module": "karadul/reconstruction/c_type_recoverer.py",
+   "test": "tests/test_cikti_hatalari.py::TestTypesHBelirlenimli::test_dosya_yolu_sirasiyla_birlestirilir",
+   "find": "        for fp in file_paths:\n            result = parsed.get(fp)\n",
+   "replace": "        for fp in list(parsed):\n            result = parsed.get(fp)\n"
+  },
+  {
+   "id": "im4_ters_yol_sirasi",
+   "desc": "belirlenimli ama ters yol sırası (yapı numarası ve ilk tip değişir)",
+   "module": "karadul/reconstruction/c_type_recoverer.py",
+   "test": "tests/test_cikti_hatalari.py::TestTypesHBelirlenimli::test_dosya_yolu_sirasiyla_birlestirilir",
+   "find": "        for fp in file_paths:\n            result = parsed.get(fp)\n",
+   "replace": "        for fp in reversed(file_paths):\n            result = parsed.get(fp)\n"
+  },
+  {
+   "id": "im4_sonuc_birlestirilmez",
+   "desc": "toplanan sonuçlar hiç birleştirilmez",
+   "module": "karadul/reconstruction/c_type_recoverer.py",
+   "test": "tests/test_cikti_hatalari.py::TestTypesHBelirlenimli::test_bitis_sirasi_types_h_degistirmez",
+   "find": "            self._merge_parse_result(result)\n",
+   "replace": "            pass\n"
   }
  ]
 }

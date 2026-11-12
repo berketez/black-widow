@@ -21,6 +21,11 @@ Kanıt ve önce/sonra sayıları: ``docs/arge/2026-11-12_cikti_hatalari/sonuc.md
    kopyaladığı için aynı adlı dosyalar birbirini eziyordu (Debian ``pzstd``, dil ``cpp``:
    12 757 dosyadan 1 201'i kaldı; kalan ``typed_iter1`` kopyasıydı, proje ağacı kayboldu).
    Kaynak yalnız C ise C dalı kullanılır; genel dal göreli yolu korur.
+4. ``types.h`` koşudan koşuya değişiyordu: ``CTypeRecoverer.recover`` dosya ayrıştırma
+   sonuçlarını işçilerin bitiş sırasıyla (``as_completed``) birleştiriyordu; birleştirme sıraya
+   bağlı (yapı/enum numarası ilk görülme sırası, ilk görülen alan tipi kalır). Aynı girdiyle üç
+   koşu üç farklı ``types.h`` veriyordu. Sonuçlar artık dosya yolu sırasıyla birleştirilir.
+   Kaynak ``c_type_recoverer.py``'dir, ``c_project_builder.py`` yalnız kopyalar.
 """
 
 from __future__ import annotations
@@ -372,3 +377,75 @@ class TestGenelDalEzmez:
         fr, disk = _bicimle(tmp_path, "cpp", {"annotated/FUN_00001000.c": "ara0"})
         assert disk == {}
         assert not fr.success
+
+
+# ---------------------------------------------------------------------------
+# 4. Tip kurtarmanın types.h'si işçilerin bitiş sırasına bağlı değil
+# ---------------------------------------------------------------------------
+
+# İki dosya, iki ayrı taban göstericisi (iki yapı) ve aynı alana iki farklı tip (ilk görülen kalır)
+_C_DOSYALARI = {
+    "FUN_00001000.c": (
+        "void FUN_00001000(long alpha, long gamma)\n{\n"
+        "  *(long *)(alpha + 0x8) = 0;\n"
+        "  *(int *)(alpha + 0x10) = 1;\n"
+        "  *(int *)(gamma + 0x8) = 2;\n"
+        "  *(int *)(gamma + 0x18) = 3;\n"
+        "  return;\n}\n"
+    ),
+    "FUN_00002000.c": (
+        "void FUN_00002000(long beta, long gamma)\n{\n"
+        "  *(char *)(beta + 0x4) = 0;\n"
+        "  *(long *)(beta + 0x20) = 1;\n"
+        "  *(char *)(gamma + 0x8) = 2;\n"
+        "  return;\n}\n"
+    ),
+}
+
+
+def _types_h(tmp_path: Path, monkeypatch, etiket: str, ters: bool) -> str:
+    """CTypeRecoverer.recover'ı iş parçacığı havuzuyla ve zorlanmış bitiş sırasıyla koşar."""
+    import concurrent.futures as cf
+
+    from karadul.reconstruction.c_type_recoverer import CTypeRecoverer
+
+    dec = tmp_path / "dec"
+    if not dec.exists():
+        dec.mkdir()
+        for ad, metin in _C_DOSYALARI.items():
+            (dec / ad).write_text(metin, encoding="utf-8")
+
+    def sirali(fs, timeout=None):
+        cf.wait(list(fs), timeout=timeout)
+        return iter(sorted(fs, key=lambda f: fs[f], reverse=ters))
+
+    monkeypatch.setattr(cf, "ProcessPoolExecutor", cf.ThreadPoolExecutor)
+    monkeypatch.setattr(cf, "as_completed", sirali)
+    out = tmp_path / etiket
+    res = CTypeRecoverer(Config()).recover(dec, tmp_path / "yok.json", out)
+    assert res.success, res.errors
+    return (out / "types.h").read_text(encoding="utf-8")
+
+
+class TestTypesHBelirlenimli:
+    def test_bitis_sirasi_types_h_degistirmez(self, tmp_path, monkeypatch) -> None:
+        duz = _types_h(tmp_path, monkeypatch, "duz", ters=False)
+        ters = _types_h(tmp_path, monkeypatch, "ters", ters=True)
+        assert "recovered_struct_" in duz
+        assert ters == duz
+
+    def test_dosya_yolu_sirasiyla_birlestirilir(self, tmp_path, monkeypatch) -> None:
+        """Yapı numarası ve alan tipi dosya yolu sırasındaki ilk görülmedir (bitiş sırası değil)."""
+        import re as _re
+
+        h = _types_h(tmp_path, monkeypatch, "ters", ters=True)
+        bloklar = _re.findall(
+            r"\* Sources: ([^\n]*)\n \*/\nstruct (recovered_struct_\d+) \{\n(.*?)\n\};", h, _re.S)
+        # alpha (ilk dosya) 001, gamma (iki dosya) 002, beta (ikinci dosya) 003
+        assert [(s, n) for s, n, _ in bloklar] == [
+            ("FUN_00001000", "recovered_struct_001"),
+            ("FUN_00001000, FUN_00002000", "recovered_struct_002"),
+            ("FUN_00002000", "recovered_struct_003"),
+        ]
+        # gamma + 0x8: ilk dosyadaki int kalır (ikinci dosyadaki char değil)
+        assert "    int field_0x08;" in bloklar[1][2]

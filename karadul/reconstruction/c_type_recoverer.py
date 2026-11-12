@@ -1128,6 +1128,12 @@ class CTypeRecoverer:
             len(c_files), num_workers,
         )
         file_paths = [str(f) for f in c_files]
+        # Sonuçlar işçilerin bitiş sırasıyla gelir ama dosya yolu sırasıyla (c_files sıralı)
+        # birleştirilir. Birleştirme sıraya bağlıdır: ilk görülen alan tipi ve satır örneği kalır,
+        # yapı/enum numarası (recovered_struct_NNN) ilk görülme sırasıdır. Bitiş sırasıyla
+        # birleştirilince types.h koşudan koşuya değişiyordu (Debian tree, aynı girdi: üç koşu
+        # üç farklı types.h).
+        parsed: dict[str, dict[str, Any]] = {}
         with ProcessPoolExecutor(max_workers=num_workers) as pool:
             futs = {
                 pool.submit(_parse_c_file_worker, fp): fp
@@ -1143,9 +1149,7 @@ class CTypeRecoverer:
                     except Exception as exc:
                         errors.append(f"Parse worker hatasi ({futs[fut]}): {exc}")
                         continue
-                    if result["errors"]:
-                        errors.extend(result["errors"])
-                    self._merge_parse_result(result)
+                    parsed[futs[fut]] = result
             except TimeoutError:
                 errors.append(
                     "Parse asamasi toplam timeout (1200s) asildi, "
@@ -1153,6 +1157,13 @@ class CTypeRecoverer:
                 )
             except BrokenExecutor as exc:
                 errors.append(f"ProcessPool crash: {exc}")
+        for fp in file_paths:
+            result = parsed.get(fp)
+            if result is None:
+                continue
+            if result["errors"]:
+                errors.extend(result["errors"])
+            self._merge_parse_result(result)
 
         # 2. Struct'lari sentezle (pattern-based)
         pattern_structs = self._synthesize_structs()
