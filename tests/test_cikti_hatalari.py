@@ -110,6 +110,7 @@ class TestImzaKaydiAdres:
             decompiled_dir=dec, ctx=ctx,
         )
         rec = _records(ws)
+        assert rec and all("address" in r for r in rec)
         getcwd = [r for r in rec if r["original"] == "getcwd"]
         assert sorted(r["address"] for r in getcwd) == ["00103d00", "00135010"]
         # İki kayıt artık özdeş değil
@@ -136,6 +137,7 @@ class TestImzaKaydiAdres:
         })
         ReconstructionStage()._run_signature_matching(context, rc)
         rec = _records(ws)
+        assert rec and all("address" in r for r in rec)
         assert sorted(r["address"] for r in rec if r["original"] == "getcwd") == [
             "00103d00", "00135010"]
         assert [r["address"] for r in rec] == [m.address for m in rc.sig_matches]
@@ -296,6 +298,7 @@ class TestImzaKaydiYontem:
             decompiled_dir=dec, ctx=StepContext(pipeline_context=pc),
         )
         rec = _records(ws)
+        assert rec and all("method" in r for r in rec)
         assert {r["original"]: r["method"] for r in rec}["getcwd"] == "symbol"
         assert all(r["method"] for r in rec)
 
@@ -316,7 +319,9 @@ class TestImzaKaydiYontem:
             "call_graph_json_path": cg, "decompiled_dir": dec,
         })
         ReconstructionStage()._run_signature_matching(context, rc)
-        assert [r["method"] for r in _records(ws)] == [m.match_method for m in rc.sig_matches]
+        rec = _records(ws)
+        assert rec and all("method" in r for r in rec)
+        assert [r["method"] for r in rec] == [m.match_method for m in rc.sig_matches]
 
 
 # ---------------------------------------------------------------------------
