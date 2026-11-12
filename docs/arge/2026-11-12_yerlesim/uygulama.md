@@ -74,7 +74,7 @@
 | Debian 13, GCC 14.2 (117 ikili) | 0,000 – 0,029 | 0,981 – 1,000 (program başına) |
 | Debian coreutils 9.4-3, GCC 13.2 (5) | 0,124 – 0,146 | 0,510 |
 | Ubuntu 24.04, GCC 13.2, LTO (5) | 0,100 – 0,167 | 0,468 |
-| Mach-O (2) | 0,346 – 0,367 | 0,211 |
+| Mach-O (2) | 0,345 – 0,367 | 0,211 |
 
 - Gruplar ayrık. Beklenen değerler mekanizmadan: varsayılan rejimde 0; 16'ya hizalı rejimde 1/8; hizalamasız kodda 3/8 **[hesap]**. Gözlenenler bunlarla uyumlu.
 - Bir kapı (ör. pay < 1/16) başıboş beş ikilinin beşini de eski yerleşime döndürür ve geliştirme setinde hiçbir sonucu değiştirmez. Uygulanmadı: yeni bir sayı getirir, seçim ana oturumundur (`onkayit_taslak.md` §6).
