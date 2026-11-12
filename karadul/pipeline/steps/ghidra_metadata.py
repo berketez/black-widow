@@ -231,6 +231,9 @@ class GhidraMetadataStep(Step):
                                 # Aynı adlı iki fonksiyon (PLT ve dış blok thunk'ı) ayrı
                                 # kayıttır; adres olmadan kayıtlar özdeş çıkıyordu.
                                 "address": m.address,
+                                # Eşleşmenin yolu (symbol: fonksiyonun var olan adı aranır;
+                                # string_ref / call_pattern). Rapor bu dökümü yazar.
+                                "method": m.match_method,
                             }
                             for m in sig_matches
                         ],

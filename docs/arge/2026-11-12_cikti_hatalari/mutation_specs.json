@@ -22,8 +22,8 @@
    "desc": "emekli monolit yolu kayda adres yazmaz (onarım öncesi)",
    "module": "karadul/stages.py",
    "test": "tests/test_cikti_hatalari.py::TestImzaKaydiAdres::test_monolit_yolu_adres_yazar",
-   "find": "                             \"address\": m.address}",
-   "replace": "                             }"
+   "find": "\"address\": m.address, \"method\": m.match_method}",
+   "replace": "\"method\": m.match_method}"
   },
   {
    "id": "im2_okuyucu_harita_adresi_anahtar_sanar",
@@ -40,6 +40,102 @@
    "test": "tests/test_cikti_hatalari.py::TestImzaKaydiAdres::test_okuyucular_adres_alanindan_etkilenmez",
    "find": "\"original\": match.get(\"original\", \"\"),",
    "replace": "\"original\": match.get(\"address\") or match.get(\"original\", \"\"),"
+  },
+  {
+   "id": "im1_flirt_adi",
+   "desc": "satır adı yeniden \"Signature Database (FLIRT)\" (onarım öncesi)",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_hatalari.py::TestStratejiImzaSatiri::test_flirt_bayt_kurtarma_denmez",
+   "find": "\"name\": \"Signature Database Lookup\",",
+   "replace": "\"name\": \"Signature Database (FLIRT)\","
+  },
+  {
+   "id": "im1_bayt_imzasi_aciklamasi",
+   "desc": "açıklama yeniden \"identified via byte signatures\" (onarım öncesi)",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_hatalari.py::TestStratejiImzaSatiri::test_flirt_bayt_kurtarma_denmez",
+   "find": "                    \"signature database; this step compares no byte signatures. Matches are \"\n",
+   "replace": "                    \"Known library functions identified via byte signatures. Matches are \"\n"
+  },
+  {
+   "id": "im1_eski_etki_metni",
+   "desc": "etki yeniden \"N functions matched\" (onarım öncesi)",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_hatalari.py::TestStratejiImzaSatiri::test_yonteme_gore_dokum",
+   "find": "\"impact\": self._signature_impact(st[\"signature_matches\"]),",
+   "replace": "\"impact\": f\"{st['signature_matches']} functions matched\","
+  },
+  {
+   "id": "im1_dokum_yazilmaz",
+   "desc": "yöntem dökümü hiç yazılmaz",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_hatalari.py::TestStratejiImzaSatiri::test_yonteme_gore_dokum",
+   "find": "        return f\"{text}: \" + \", \".join(parts)",
+   "replace": "        return text"
+  },
+  {
+   "id": "im1_sayi_denetimi_yok",
+   "desc": "kayıt sayısı aşama sayısından farklıyken de döküm yazılır",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_hatalari.py::TestStratejiImzaSatiri::test_sayi_tutmazsa_dokum_yok",
+   "find": "if not isinstance(matches, list) or len(matches) != count:",
+   "replace": "if not isinstance(matches, list):"
+  },
+  {
+   "id": "im1_yontem_denetimi_yok",
+   "desc": "yöntem alanı olmayan kayıtla da döküm yazılır (yöntem uydurulur)",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_hatalari.py::TestStratejiImzaSatiri::test_yontem_yoksa_dokum_yok",
+   "find": "        if not all(isinstance(x, str) and x for x in methods):\n            return text\n",
+   "replace": ""
+  },
+  {
+   "id": "im1_tek_eksik_yontem",
+   "desc": "yöntem denetimi \"hepsi\" yerine \"biri\"",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_hatalari.py::TestStratejiImzaSatiri::test_bir_kayitta_yontem_eksikse_dokum_yok",
+   "find": "if not all(isinstance(x, str) and x for x in methods):",
+   "replace": "if not any(isinstance(x, str) and x for x in methods):"
+  },
+  {
+   "id": "im1_bilinmeyen_yontem_dusurulur",
+   "desc": "bilinmeyen yöntem dökümden düşer",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_hatalari.py::TestStratejiImzaSatiri::test_bilinmeyen_yontem_adiyla_yazilir",
+   "find": "        parts += [f\"{v} by {k}\" for k, v in sorted(counts.items())]\n",
+   "replace": ""
+  },
+  {
+   "id": "im1_ikili_ad_kurtarildi",
+   "desc": "ikili ad satırı yeniden \"names recovered\" (onarım öncesi)",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_hatalari.py::TestStratejiImzaSatiri::test_ikili_dizgi_adlari_aday",
+   "find": "\"impact\": f\"{st['binary_names_extracted']} name candidates\",",
+   "replace": "\"impact\": f\"{st['binary_names_extracted']} names recovered\","
+  },
+  {
+   "id": "im1_tam_rapor_eski_ad",
+   "desc": "tam raporda satır adı yeniden FLIRT",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_hatalari.py::TestStratejiImzaSatiri::test_tam_rapor",
+   "find": "\"name\": \"Signature Database Lookup\",",
+   "replace": "\"name\": \"Signature Database (FLIRT)\","
+  },
+  {
+   "id": "im1_adim_yontem_yok",
+   "desc": "etkin yol kayda yöntem yazmaz",
+   "module": "karadul/pipeline/steps/ghidra_metadata.py",
+   "test": "tests/test_cikti_hatalari.py::TestImzaKaydiYontem::test_adim_yolu_yontem_yazar",
+   "find": "                                \"method\": m.match_method,\n",
+   "replace": ""
+  },
+  {
+   "id": "im1_monolit_yontem_yok",
+   "desc": "monolit yol kayda yöntem yazmaz",
+   "module": "karadul/stages.py",
+   "test": "tests/test_cikti_hatalari.py::TestImzaKaydiYontem::test_monolit_yolu_yontem_yazar",
+   "find": "\"address\": m.address, \"method\": m.match_method}",
+   "replace": "\"address\": m.address}"
   }
  ]
 }

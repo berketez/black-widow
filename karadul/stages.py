@@ -1657,8 +1657,8 @@ class ReconstructionStage(Stage):
                             {"original": m.original_name, "matched": m.matched_name,
                              "library": m.library, "confidence": m.confidence,
                              "purpose": m.purpose,
-                             # Etkin yolla (ghidra_metadata) aynı kayıt: adres dahil.
-                             "address": m.address}
+                             # Etkin yolla (ghidra_metadata) aynı kayıt: adres ve yöntem dahil.
+                             "address": m.address, "method": m.match_method}
                             for m in sig_matches
                         ],
                     },

@@ -2,6 +2,14 @@
 
 Kanıt ve önce/sonra sayıları: ``docs/arge/2026-11-12_cikti_hatalari/sonuc.md``.
 
+1. Temiz çıktının ``report.html`` strateji bölümü imza veritabanı adımını "Signature Database
+   (FLIRT) — N functions matched / Known library functions identified via byte signatures"
+   diye anlatıyordu. Adım (``SignatureDB.match_all``) bayt karşılaştırmaz (``func_bytes=None``)
+   ve FLIRT değildir: fonksiyonun var olan adını, dizgilerini ve çağırdıklarını arar (Debian
+   tree: 133 eşleşmenin 128'i ``symbol``, yani ithal/simge adının aranması). Satır artık
+   "Signature Database Lookup — N matches: … by the function's existing name, …" der; döküm
+   kayda eklenen ``method`` alanından sayılır, alan yoksa yalnız sayı yazılır. "Binary Name
+   Extraction — N names recovered" de aday sayısıdır: "N name candidates".
 2. ``reconstructed/signature_matches.json`` kaydı fonksiyonun adresini taşımıyordu: aynı adlı iki
    thunk (Debian ``tree``'de ``getcwd`` 00103d00 PLT ve 00135010 dış blok) iki özdeş kayıt
    üretiyordu (133 kaydın 63'ü). ``SignatureMatch.address`` zaten doluydu (``match_all``);
@@ -161,3 +169,141 @@ class TestImzaKaydiAdres:
         finally:
             ui.WS = old_ws
             ui._CACHE.clear()
+
+
+# ---------------------------------------------------------------------------
+# 1. HTML raporunun strateji bölümü: imza veritabanı satırı
+# ---------------------------------------------------------------------------
+
+
+def _strategies_html(tmp_path: Path, stats: dict, matches: list[dict] | None = None) -> str:
+    from karadul.core.report_generator import ReportGenerator
+
+    ws = _workspace(tmp_path)
+    if matches is not None:
+        ws.save_json("reconstructed", "signature_matches",
+                     {"total": len(matches), "matches": matches})
+    return ReportGenerator(_result(ws, {"reconstruct": stats}), ws)._strategies_section()
+
+
+def _sig(method: str | None, i: int) -> dict:
+    rec = {"original": f"fn{i}", "matched": f"fn{i}", "library": "libc", "confidence": 0.98,
+           "purpose": "", "address": f"{0x1000 + i:08x}"}
+    if method is not None:
+        rec["method"] = method
+    return rec
+
+
+def _impact(html: str, name: str) -> str:
+    import re as _re
+
+    m = _re.search(rf'<span class="name">{_re.escape(name)}</span> '
+                   r'<span class="impact">(.*?)</span>', html)
+    assert m, html
+    return m.group(1)
+
+
+_TREE_METHODS = ["symbol"] * 128 + ["string_ref"] * 2 + ["call_pattern"] * 3
+
+
+class TestStratejiImzaSatiri:
+    def test_flirt_bayt_kurtarma_denmez(self, tmp_path) -> None:
+        """Eşleşmeler FLIRT değil, bayt imzası değil, koda uygulanması denetlenmiyor."""
+        html = _strategies_html(tmp_path, {"signature_matches": 133},
+                                [_sig(m, i) for i, m in enumerate(_TREE_METHODS)])
+        assert "FLIRT" not in html
+        assert "identified via byte signatures" not in html
+        assert "this step compares no byte signatures" in html
+        assert "Signature Database Lookup" in html
+        assert "does not check whether a match was applied to the code" in html
+        assert "recover" not in html.lower()
+
+    def test_yonteme_gore_dokum(self, tmp_path) -> None:
+        """Debian tree: 133 eşleşmenin 128'i fonksiyonun var olan adının aranması."""
+        html = _strategies_html(tmp_path, {"signature_matches": 133},
+                                [_sig(m, i) for i, m in enumerate(_TREE_METHODS)])
+        assert _impact(html, "Signature Database Lookup") == (
+            "133 matches: 128 by the function&#x27;s existing name, 2 by referenced strings, "
+            "3 by callees")
+
+    def test_bilinmeyen_yontem_adiyla_yazilir(self, tmp_path) -> None:
+        html = _strategies_html(tmp_path, {"signature_matches": 3},
+                                [_sig("symbol", 0), _sig("byte_pattern", 1), _sig("yeni", 2)])
+        assert _impact(html, "Signature Database Lookup") == (
+            "3 matches: 1 by the function&#x27;s existing name, 1 by bytes, 1 by yeni")
+
+    def test_yontem_yoksa_dokum_yok(self, tmp_path) -> None:
+        """Eski kayıt (yöntem alanı yok): yalnız sayı; döküm uydurulmaz."""
+        html = _strategies_html(tmp_path, {"signature_matches": 5},
+                                [_sig(None, i) for i in range(5)])
+        assert _impact(html, "Signature Database Lookup") == "5 matches"
+
+    def test_bir_kayitta_yontem_eksikse_dokum_yok(self, tmp_path) -> None:
+        html = _strategies_html(tmp_path, {"signature_matches": 3},
+                                [_sig("symbol", 0), _sig("symbol", 1), _sig(None, 2)])
+        assert _impact(html, "Signature Database Lookup") == "3 matches"
+
+    def test_sayi_tutmazsa_dokum_yok(self, tmp_path) -> None:
+        """Aşama sayısı ile kayıt sayısı farklıysa döküm sayıya eklenmez."""
+        html = _strategies_html(tmp_path, {"signature_matches": 6},
+                                [_sig("symbol", i) for i in range(5)])
+        assert _impact(html, "Signature Database Lookup") == "6 matches"
+
+    def test_kayit_yoksa_yalniz_sayi(self, tmp_path) -> None:
+        html = _strategies_html(tmp_path, {"signature_matches": 133})
+        assert _impact(html, "Signature Database Lookup") == "133 matches"
+
+    def test_ikili_dizgi_adlari_aday(self, tmp_path) -> None:
+        html = _strategies_html(tmp_path, {"binary_names_extracted": 12})
+        assert _impact(html, "Binary Name Extraction") == "12 name candidates"
+        assert "recover" not in html.lower()
+        assert "does not check whether a name was applied to the code" in html
+
+    def test_tam_rapor(self, tmp_path) -> None:
+        from karadul.core.report_generator import ReportGenerator
+
+        ws = _workspace(tmp_path)
+        ws.save_json("reconstructed", "signature_matches", {
+            "total": 2, "matches": [_sig("symbol", 0), _sig("call_pattern", 1)]})
+        html = ReportGenerator(
+            _result(ws, {"reconstruct": {"signature_matches": 2}}), ws).generate_html()
+        assert "Signature Database (FLIRT)" not in html
+        assert "2 matches: 1 by the function&#x27;s existing name, 1 by callees" in html
+
+
+class TestImzaKaydiYontem:
+    def test_adim_yolu_yontem_yazar(self, tmp_path) -> None:
+        from karadul.core.target import TargetType
+        from karadul.pipeline.context import StepContext
+        from karadul.pipeline.steps.ghidra_metadata import GhidraMetadataStep
+
+        ws = _workspace(tmp_path)
+        funcs, strings, cg, dec = _ghidra_inputs(tmp_path)
+        pc = _pipeline_context(ws)
+        GhidraMetadataStep._run_signature_db(
+            pc=pc, target=SimpleNamespace(target_type=TargetType.ELF_BINARY),
+            functions_json=funcs, strings_json=strings, call_graph_json=cg,
+            decompiled_dir=dec, ctx=StepContext(pipeline_context=pc),
+        )
+        rec = _records(ws)
+        assert {r["original"]: r["method"] for r in rec}["getcwd"] == "symbol"
+        assert all(r["method"] for r in rec)
+
+    def test_monolit_yolu_yontem_yazar(self, tmp_path) -> None:
+        from karadul.core.target import TargetType
+        from karadul.pipeline.reconstruction_context import ReconstructionContext
+        from karadul.stages import ReconstructionStage
+
+        ws = _workspace(tmp_path)
+        funcs, strings, cg, dec = _ghidra_inputs(tmp_path)
+        context = SimpleNamespace(
+            config=Config(), workspace=ws, report_progress=lambda *a, **k: None,
+            target=SimpleNamespace(target_type=TargetType.ELF_BINARY),
+        )
+        rc = ReconstructionContext()
+        rc.ph1_artifacts.update({
+            "functions_json_path": funcs, "strings_json_path": strings,
+            "call_graph_json_path": cg, "decompiled_dir": dec,
+        })
+        ReconstructionStage()._run_signature_matching(context, rc)
+        assert [r["method"] for r in _records(ws)] == [m.match_method for m in rc.sig_matches]

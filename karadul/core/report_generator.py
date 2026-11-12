@@ -363,11 +363,20 @@ class ReportGenerator:
         st = self._result.stages["reconstruct"].stats
 
         # Binary strategies
+        # İmza veritabanı adımı (SignatureDB.match_all) FLIRT değildir ve bayt karşılaştırmaz
+        # (func_bytes=None): fonksiyonun var olan adını, başvurduğu dizgileri ve çağırdıklarını
+        # veritabanında arar. Debian tree'de 133 eşleşmenin 128'i ithal/simge adının aranması.
+        # Eşleşme aday addır; koda uygulanıp uygulanmadığı burada denetlenmez.
         if st.get("signature_matches"):
             strategies.append({
-                "name": "Signature Database (FLIRT)",
-                "impact": f"{st['signature_matches']} functions matched",
-                "desc": "Known library functions identified via byte signatures.",
+                "name": "Signature Database Lookup",
+                "impact": self._signature_impact(st["signature_matches"]),
+                "desc": (
+                    "Ghidra function names, referenced strings and callees looked up in the "
+                    "signature database; this step compares no byte signatures. Matches are "
+                    "candidates: this section does not check whether a match was applied to "
+                    "the code."
+                ),
             })
 
         if st.get("byte_pattern_matched"):
@@ -378,10 +387,14 @@ class ReportGenerator:
             })
 
         if st.get("binary_names_extracted"):
+            # Sayı çıkarılan aday ad sayısıdır (reconstructed/binary_names.json); uygulanan değil.
             strategies.append({
                 "name": "Binary Name Extraction",
-                "impact": f"{st['binary_names_extracted']} names recovered",
-                "desc": "Debug strings, build paths, RTTI used to recover original names.",
+                "impact": f"{st['binary_names_extracted']} name candidates",
+                "desc": (
+                    "Names proposed from debug strings, build paths and RTTI. Candidates: this "
+                    "section does not check whether a name was applied to the code."
+                ),
             })
 
         if st.get("algorithms_detected"):
@@ -473,6 +486,36 @@ class ReportGenerator:
             "<h2>Analysis Strategies</h2>"
             f'<ul class="strategy-list">{items_html}</ul>'
         )
+
+    # SignatureMatch.match_method -> rapor metni (sıra sabit; bilinmeyen yöntem adıyla yazılır)
+    _SIG_METHOD_TEXT: tuple[tuple[str, str], ...] = (
+        ("symbol", "by the function's existing name"),
+        ("string_ref", "by referenced strings"),
+        ("call_pattern", "by callees"),
+        ("byte_pattern", "by bytes"),
+    )
+
+    def _signature_impact(self, count: Any) -> str:
+        """İmza eşleşmesi sayısı ve (biliniyorsa) eşleşme yoluna göre dökümü.
+
+        Döküm ``reconstructed/signature_matches.json`` kayıtlarının ``method`` alanından sayılır;
+        yalnız kayıt sayısı aşamanın sayısıyla aynıysa ve her kayıt yöntem taşıyorsa yazılır
+        (eski kayıtta alan yok: döküm uydurulmaz, yalnız sayı yazılır).
+        """
+        text = f"{count} matches"
+        data = self._workspace.load_json("reconstructed", "signature_matches")
+        matches = data.get("matches") if isinstance(data, dict) else None
+        if not isinstance(matches, list) or len(matches) != count:
+            return text
+        methods = [m.get("method") if isinstance(m, dict) else None for m in matches]
+        if not all(isinstance(x, str) and x for x in methods):
+            return text
+        counts: dict[str, int] = {}
+        for x in methods:
+            counts[x] = counts.get(x, 0) + 1
+        parts = [f"{counts.pop(k)} {label}" for k, label in self._SIG_METHOD_TEXT if k in counts]
+        parts += [f"{v} by {k}" for k, v in sorted(counts.items())]
+        return f"{text}: " + ", ".join(parts)
 
     # ------------------------------------------------------------------
     # Before/After comparison
