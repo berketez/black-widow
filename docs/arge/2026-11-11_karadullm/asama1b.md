@@ -69,7 +69,7 @@ Sıra tasarım §4.3'teki gibi: **[sabit önek] [oturum bloğu] [fonksiyon paket
 
 1. **K0 istemi pilotun C istemi değildir; yapısı farklıdır.** Tasarım iki şey istiyor: paket biçimi pilotun C şablonu olsun (§4.3) ve ikiliden gelen her metin zarfın `data` alanında JSON kaçışlı olsun (§6.2). İkisi aynı anda tutmaz. Yapılan: kanıt alanları pilotun metin biçimiyle (alan alan aynı dizgi) zarfın içinde taşınır; kod ayrı bir zarftadır. Kilitlenen değişmez: K0 isteminin zarfları çözülüp pilotun C şablonuna konunca pilotun C kullanıcı iletisi bayt bayt geri kurulur (`test_k0_paketinden_pilotun_c_iletisi_geri_kurulur`; küçük, kırpılmış ve sınıra takılan üç fonksiyonda). Yani ürün ile pilot aynı kanıtı gösterir (K-P0 bu anlamda tutar), ama modelin gördüğü metin aynı değildir: sistem istemi KL-0, paket JSON içinde, dizgiler iki kat kaçışlı, kodda satır sonları `\n`. Tasarım §9.2 K-P1'e göre bu ayrı bir satırdır (C*). Etkisi ölçülmedi.
 2. **`<`, `>`, `&` kaçışının hedefi sözleşmede yazmıyor.** `arac_sozlesmeleri.md` §1.4'te cümle "`<`, `>` ve `&` karakterleri `<`, `>`, `&` yapılır" diye duruyor (hedef dizgiler kaybolmuş). JSON'un kendi kaçışı (`\u003c`, `\u003e`, `\u0026`) seçildi: JSON çözümünde kayıpsız, zarf geçerli JSON kalıyor. HTML varlığı (`&lt;`) kastedildiyse tek sabit değişir (`context._ESCAPE_RE` ve yerine koyma).
-3. **Kaçışlamanın kod okunabilirliğine etkisi ölçülmedi.** Kodda her `<`, `>`, `&` altı karakterlik kaçışa dönüyor (`a < b`, `&DAT_…`). İlk ajanın iki çalışma alanındaki kuru koşusundan kalan sayılar **[doğrulanmadı: çıktısı saklanmamış, 2026-11-12'de yeniden koşulmadı, §5]**: tree'de 812, htop'ta 2.327 işaret; kaçışlı kod baytı ham kodun 1,050 ve 1,046 katı (satır sonu ve tırnak kaçışları dahil). Bu sayılar doğruysa bayt artışı küçük; jeton artışı ve modelin kaçışlı kodu okuma başarısı ölçülmedi. Öneri: Z9 (şablon işareti içerikte özel jeton olarak mı çözülüyor) ölçülsün; çözülmüyorsa kaçış yalnız `<|` ve `</` gibi işaret başlangıçlarına daraltılabilir. Kodda tasarımdaki kural duruyor.
+3. **Kaçışlamanın kod okunabilirliğine etkisi ölçülmedi.** Kodda her `<`, `>`, `&` altı karakterlik kaçışa dönüyor (`a < b`, `&DAT_…`). İki çalışma alanındaki kuru koşunun sayıları **[ölçüm, 2026-11-12, ana oturum, §5]**: tree'de 812, htop'ta 2.327 işaret; kaçışlı kod baytı ham kodun 1,050 ve 1,046 katı (satır sonu ve tırnak kaçışları dahil). Bayt artışı küçük; jeton artışı ve modelin kaçışlı kodu okuma başarısı ölçülmedi. Öneri: Z9 (şablon işareti içerikte özel jeton olarak mı çözülüyor) ölçülsün; çözülmüyorsa kaçış yalnız `<|` ve `</` gibi işaret başlangıçlarına daraltılabilir. Kodda tasarımdaki kural duruyor.
 4. **Sonuç bloğunun ayracı `<tool_response>` seçildi** (Qwen şablonunun araç sonucu etiketi; sözleşme §1.4'ün gerekçesi). Yol A'da sonuç kullanıcı iletisinde taşındığı için bu etiketi istemci yazıyor. Etiketin içerikte özel jetona çözülüp çözülmediği doğrulanmadı (Z9). Başka şablon ailesinde (`[INST]` gibi `<` taşımayan işaretler) bu kaçış yetmez; ayraç ve kaçış kümesi uç profiline göre değişmeli.
 5. **Yeni hata kodları: `veri_yok`, `gecersiz_arguman`.** Sözleşmenin beş kodu iki durumu karşılamıyor: (a) adres `ghidra_functions.json`'da var ama saklı dosya yok (ithal ya da Ghidra'nın adlandırdığı fonksiyonun `FUN_` dosyası; çağrı grafiği yok); (b) şemaya uymayan ya da anlamsız argüman (`aralik`'ta `line_from > line_to`). Sessizce boş sonuç dönmek "boş = yok" okumasını besleyeceği için hata seçildi. `gecersiz_arguman`, `bilinmeyen_adres` ve `arac_kapali` geçersiz çağrı sayılır; `veri_yok` sayılmaz.
 6. **`get_xrefs` sonucunda `n_calls` yok.** Sözleşme `[{addr, name_tag, n_calls}]` diyor; ürün çıktısında çağrı sayısı yok: iki çalışma alanında çağrı grafiğinin her (çağıran, çağrılan) çifti tekil, `ghidra_xrefs.json`'da da yineleme yok **[ölçüm, 2026-11-12, iki dosyanın doğrudan JSON sayımı: tree `edges` 485 / 485 tekil çift, `nodes[].callees` 485 / 485, `functions_called` 485 kayıtta 0 yineleme; htop 1.832 / 1.832, 1.832 / 1.832, 1.832'de 0]**. Alan uydurulmadı; `limits` bunu söylüyor. Pilotun `apis` alanındaki sayılar da bu yüzden hep `x1` **[ölçüm, 2026-11-12: `build_evidence` paketlerinde sayısı 1'den büyük API yok; tree 250, htop 790 paket]**.
@@ -133,15 +133,50 @@ python docs/arge/2026-11-11_karadullm/zemin/k0_duman.py <çalışma alanı> --ku
 
 Çalışma alanları (salt okunur): `~/karadul_olcum/runs/urun-yeni-93a2956/debian/tree/tree/ws/workspaces/tree/20261111_050850` ve `…/mac/htop/ws/workspaces/htop/20261111_055521`.
 
-**Durum: koşulmadı (2026-11-12).** İlk ajan bu komutu iki çalışma alanında koşmuş görünüyor (§2 madde 3 ve §8'deki sayılar oradan), ama çıktısı ağaçta ya da geçici dizinlerde yok ve tablo yazılmadan durduruldu. Tamamlama işinde betik çalıştırılmadı: makinede o sırada Ghidra'lı bir ürün ölçüm koşusu vardı ve ana oturum betiğin bu işte çalıştırılmamasını istedi. Betik yalnız okundu ve sözdizimi denetlendi (`python -m py_compile`); kullandığı arayüzler (`FakeBackend.replies` / `.calls`, `AuditLog(path, keep_in_memory=)`, `LlamaServerBackend(binary, model_path, state_dir, template_path=, ready_timeout=)`, `MemoryGuard.peak` / `.tripped`, `model_istegi` kaydının `timings` alanı) koddan doğrulandı.
+**Durum: koşuldu (2026-11-12, ana oturum; 1b main'e alındıktan sonra, commit c5141d5; çıktı `~/karadul_olcum/runs/k0-kuru-2026-11-12/{tree,htop}/k0_kuru_sonuc.json`).** Makinede o sırada tam test takımı ve mutasyon koşusu vardı; süreler karşılaştırma için kullanılmamalı. İlk ajanın çıktısı saklanmamış sayıları (kaçışlanan işaret 812 / 2.327; şişme 1,050 / 1,046) bu koşuda aynen çıktı.
 
-Ana oturuma: makine boşken iki çalışma alanında `--kuru --cikti <dizin>` ile koşup `k0_kuru_sonuc.json`'dan şu satırlar bu bölüme yazılmalı: `durumlar` (kaç fonksiyonda paket kurulamadı, `baglama_sigmayan`), `istem_jeton_kestirimi`, `sayimlar` (`kod_kirpildi_tek_atis`, `kanit_kirpildi`, `icerik_adsiz`, araç hata kodları), `kacislama` (§2 madde 3'ün sayıları), `kanit_kurma_sn` (§8'in sayıları). O zamana kadar §2 madde 3 ve §8'deki kuru koşu sayıları doğrulanmamıştır.
+| | Debian `tree` | Mac `htop` |
+|---|---|---|
+| Fonksiyon (toplam / program fonksiyonu / denenen) | 250 / 115 / 115 | 790 / 597 / 597 |
+| Kanıt paketi | 250 | 790 |
+| Durum | `tamam` 115; hata 0 | `tamam` 597; hata 0 |
+| Bağlama sığmayan (kestirimle; bağlam 10.240 jeton) | 0 | 0 |
+| İstem jeton kestirimi (en küçük / ortanca / en büyük) | 1.511 / 2.895 / 8.204 | 1.501 / 2.333 / 8.321 |
+| Kanıt sonucu, bayt (en küçük / ortanca / en büyük) | 539 / 682 / 2.467 | 540 / 646 / 3.010 |
+| Kod sonucu, bayt (en küçük / ortanca / en büyük) | 451 / 2.487 / 9.986 | 436 / 1.664 / 10.142 |
+| Araç çağrısı | 460 | 2.388 |
+| `kod_kirpildi_tek_atis` / `kod_kirpildi_dongu` | 14 / 27 | 28 / 84 |
+| `kanit_kirpildi` | 4 | 8 |
+| `icerik_adsiz` | 18 | 288 |
+| `ghidra_uyarili` | 34 | 101 |
+| `xrefs` kırpılan (çağrılan / çağıran / adres başvurusu) | 0 / 0 / 0 | 1 / 2 / 1 |
+| Kaçışlama: ham kod → kaçışlı kod, bayt | 348.572 → 366.055 | 1.303.056 → 1.363.117 |
+| Kaçışlanan işaret; şişme oranı | 812; 1,0502 | 2.327; 1,0461 |
+| `kanit_kurma_sn`; `dongu_sn` | 0,109; 0,093 | 0,357; 0,396 |
+| Sabit önek (K0) | 4.685 bayt; kestirim 1.092 jeton | aynı (sha256 `07065b19…`) |
+
+- "Bağlama sığmayan 0" kestirime dayanır (§2 madde 16); gerçek jeton sayısı §6'daki betikle ölçülecek.
+- Mac htop'ta program fonksiyonlarının 288'inin (597'de) içeriği adsız: model bu fonksiyonlarda yalnız kod ve yapısal kanıtla çalışır.
 
 Bu işte kuru koşudan bağımsız olarak doğrulananlar (iki çalışma alanının `static/` dosyalarının doğrudan okunmasıyla): §2 madde 6'nın kenar tekilliği sayıları ve `apis` sayılarının hep 1 olması.
 
 ## 6. Ana oturum için: gerçek modelle duman betiği
 
-**Durum: henüz koşulmadı.** Betik bu işte hiç çalıştırılmadı (ne gerçek ne kuru kipte); yalnız okundu ve `python -m py_compile` ile sözdizimi denetlendi (§5). Gerçek koşu, makine boşken ana oturumun işidir. Aşağıdaki "ne yapar / neyi ölçer" maddeleri betiğin koduna göre yazıldı, çıktısına göre değil.
+**Durum: koşuldu (2026-11-12 08:36–08:39, ana oturum; commit c5141d5; Mac `htop`, 5 fonksiyon, körlük kapalı; çıktı `~/karadul_olcum/runs/k0-duman-2026-11-12/`).** Makine boş DEĞİLDİ (iki ajan test ve Karadul koşuyordu; yük ortalaması ≈ 7): süreler hız ölçümü sayılmaz. Tamamlama işinde ajan betiği çalıştırmamıştı; aşağıdaki "ne yapar / neyi ölçer" maddeleri betiğin koduna göre yazıldı, sonuç tablosu çıktıdan.
+
+| Ölçü | Sonuç (n = 5; ölçüm değil, duman testi) |
+|---|---|
+| Sunucu başlatma | 10,8 sn; model Qwen3.8-27B Q4_K_M |
+| Görev durumu | `tamam` 5 / 5; onarım turu 0, geçersiz çağrı 0 |
+| Yeni `kanit` şeması | motorda derlendi; bitiş nedeni 5 / 5 `stop` (`length` yok); en uzun `kanit` dizisi 0; üretim 52–77 jeton (ortanca 59). Aşama 1a'daki "dizi bütçeyi tüketiyor" hatası görülmedi |
+| Ad durumu | **`cekimser` 5 / 5**: model hiçbir fonksiyona ad önermedi. Dört gerekçe "çağrılan fonksiyonların işlevi bilinmiyor", biri "yapı alanı ve dönüş değeri bilinmiyor" |
+| Gerçek / kestirilen istem jetonu | 1,06 – 1,17 (ortanca 1,08): kestirim gerçek sayıyı ortalama %8 düşük gösteriyor; en büyük mutlak sapma +497 jeton (kestirim 4 354, gerçek 4 851); 512 jetonluk pay bunu yalnız 15 jetonla karşılıyor, yani pay dar: daha uzun istemlerde sunucu isteği reddedebilir (payın orana bağlanması Aşama 2'den önce karar ister) |
+| Görev süresi (yük altında) | 26,8 – 95,7 sn (ortanca 35,6) |
+| Bellek tepesi | 17,53 GiB (RSS 16,38 + ayak izi 1,15); bekçi durdurmadı |
+| Kapanış | temiz; koşudan sonra `llama-server` süreci yok |
+
+- **Okuma:** boru hattı gerçek modelde uçtan uca çalışıyor ve şema düzeltmesi tutuyor. Ama K0 (tek atış, komşuya bakmadan) Mac htop'un adsız fonksiyonlarında beşte beş çekimser kaldı ve gerekçesi K1'in (komşu fonksiyona bakma) var oluş nedeniyle aynı. Beş fonksiyon oran vermez; kör pilotta K0'ın çekimser oranı ayrı satır olarak ölçülmeli. Çekimser kalmak yanlış ad vermekten iyidir, ama K0 tek başına kapsam getirmeyebilir.
+- `kanit` dizisinin doluyken sınırlandığı bu koşuda görülmedi (model hiç ad önermedi, dizi hep boş). Sınırın gerçek modelde dolu diziyle sınanması açık.
 
 ```zsh
 cd /Users/apple/Black_Widow
@@ -166,16 +201,16 @@ python docs/arge/2026-11-11_karadullm/zemin/k0_duman.py \
 
 ## 8. Doğrulanmayanlar ve riskler
 
-- **Gerçek modelle hiçbir yol koşmadı.** Yeni şemanın derlenmesi, KL-0 + zarf biçimli istemle modelin geçerli cevap üretmesi, Türkçe gerekçe, `kanit` kullanımı: hepsi §6'daki betiği bekliyor.
+- **Gerçek modelle yalnız K0, 5 fonksiyonda koştu (§6).** Yeni şema derlendi, model geçerli cevap ve Türkçe gerekçe üretti; ad önerilen bir cevap ve dolu `kanit` dizisi görülmedi (5 / 5 çekimser).
 - **Jeton kestirimi ölçüm değildir.** Bağlam ön denetimi kestirimle yapılır (kuru koşunun "bağlama sığmayan" sayısı da öyle; §5, bu işte koşulmadı). Kaçışlı JSON içindeki kodun gerçek jeton sayısı 1,5 bayt/jeton oranından sapabilir; sapma büyükse sunucu isteği reddeder ve görev `arka_uc_hatasi` ile biter (sessiz kırpma olmaz).
 - **K1 / K2 hiçbir modelle denenmedi.** Zarfın `integer` + `minimum` / `maximum` taşıyan argümanları ve K1'in büyük `enum` adres listesi motorda derlenmedi (Aşama 1a notu §2 madde 7 hâlâ geçerli). Kapılar (K-Z1, K-A1…) geçilmeden açılmamalı.
 - **Önek önbelleği ile `safe_assistant_content` etkileşimi ölçülmedi.** L3'te araç çağrısı turu yalnız sabit, `enum` ve desenli alanlardan oluştuğu için aynen yazılır; son cevabın gerekçesi `<` taşırsa yeniden yazılır ve o noktadan sonrası önbellekten düşer.
-- **Büyük ikili ölçülmedi.** `Workspace.packs` `build_evidence`'ı bütün ikili için bir kez koşturur (ilk ajanın kuru koşusunda tree 0,26 sn, htop 0,75 sn **[doğrulanmadı, §5]**; Z10 büyük ikili için açık). `address_refs` bütün decompile dosyalarını bir kez okur.
+- **Büyük ikili ölçülmedi.** `Workspace.packs` `build_evidence`'ı bütün ikili için bir kez koşturur (ana oturumun 2026-11-12 kuru koşusunda tree 0,11 sn, htop 0,36 sn; makinede o sırada test ve mutasyon koşuları vardı, §5; Z10 büyük ikili için açık). `address_refs` bütün decompile dosyalarını bir kez okur.
 - **Çalışma alanı nesne ömrünce değişmez sayılır.** Arayüzden ad değişince (`naming_map.json` güncellenir) `Workspace` yeniden kurulmalı; Aşama 3'ün işi.
 - **Ad haritası biçimi:** adlar `reconstructed/src/naming_map.json` `global` bölümünden, etiketler `naming_provenance.json`'dan okunur. Temiz çıktının 1.1 biçimli haritası (`mappings` / `candidates`) okunmuyor; ikisi ayrışırsa araç çalışma alanı haritasını gösterir.
 - **Körlük taraması hedefin adını dizgi ve kod alanlarında aramaz** (pilot §12: dizgideki eşleşme meşru kanıt). Kod ham Ghidra çıktısıdır; hedefin Karadul adı bir ithal adıyla aynıysa kodda görünür ve bu taramaya girmez (kanıt alanındaki `apis` taraması o durumu yakalar ve istemi durdurur).
 - **Denetim günlüğünde araç argümanları** (adres, yön, satır numarası) yazılır; ikili içeriği değildir ama hangi fonksiyonlara bakıldığını gösterir.
 - **`Agent._run`'daki `WorkspaceError` dalı bugünkü akışta erişilemez.** Paket araçları `Workspace.packs` hatasını kayıt katmanında `ic_hata`'ya çeviriyor (paket kurulamaz, görev `paket_hatasi`); K1'in `_neighbours`'ı paketler başarıyla kurulduktan sonra çağrıldığı için önbellekten okur. Dal savunma amaçlı duruyor; testi ve mutantı yok.
-- **`k0_duman.py`'nin gerçek ve kuru kipi koşulmadı** (§5, §6).
+- **`k0_duman.py` iki kipte de 2026-11-12'de ana oturumca koşuldu** (§5, §6); gerçek kip yük altında ve yalnız 5 fonksiyonda. Körlük kipi (`--kor`) gerçek modelde koşulmadı.
 - **Motor sınırı:** `karadul/lm/` dışındaki hiçbir `karadul/` modülü, `ui/` ya da `scripts/` `karadul.lm`'i içe aktarmıyor (2026-11-12 `grep`). Ters yönde `karadul/lm/tools/__init__.py` motordan iki modül okuyor: `karadul.core.naming_labels` (etiket sözlüğü) ve `karadul.reconstruction.tarif.evidence.build_evidence` (ilk kullanımda, işlev içinde). Tasarım §2.1 bunu öngörüyor ("bu paket motor modüllerinden okuyabilir; tersi yasaktır"); K-M1 Aşama 3'te `karadul analyze`'ın içe aktarma grafiğiyle ölçülecek.
 - Mutasyon koşusu sırasında görülenler §4'te.
