@@ -136,6 +136,38 @@
    "test": "tests/test_cikti_hatalari.py::TestImzaKaydiYontem::test_monolit_yolu_yontem_yazar",
    "find": "\"address\": m.address, \"method\": m.match_method}",
    "replace": "\"address\": m.address}"
+  },
+  {
+   "id": "im3_c_dali_yonlendirme_yok",
+   "desc": "yalnız C kaynaklı cpp hedefi yeniden genel dala düşer (onarım öncesi)",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_cikti_hatalari.py::TestGenelDalEzmez::test_cpp_ikilisi_proje_agacini_alir",
+   "find": "        c_branch = language == \"c\" or (\n            language not in (\"javascript\", \"swift\") and self._reconstructed_is_c_only()\n        )\n",
+   "replace": "        c_branch = language == \"c\"\n"
+  },
+  {
+   "id": "im3_genel_dal_duz_yol",
+   "desc": "genel dal yeniden düz src/<dosya adı> yoluna yazar (onarım öncesi)",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_cikti_hatalari.py::TestGenelDalEzmez::test_genel_dal_ayni_adli_dosyalari_ezmez",
+   "find": "dest = src_dir / f.relative_to(reconstructed)",
+   "replace": "dest = src_dir / f.name"
+  },
+  {
+   "id": "im3_yalniz_c_denetimi_yok",
+   "desc": "tek bir .c varken başka dilden kaynak da olsa C dalı seçilir",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_cikti_hatalari.py::TestGenelDalEzmez::test_karisik_kaynak_genel_dalda_kalir",
+   "find": "return \".c\" in suffixes and suffixes <= _C_CODE_SUFFIXES",
+   "replace": "return \".c\" in suffixes"
+  },
+  {
+   "id": "im3_kaynak_eksik_yalniz_c_dili",
+   "desc": "kaynak yazılamama kuralı yalnız dil \"c\" iken uygulanır",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_cikti_hatalari.py::TestGenelDalEzmez::test_cpp_kaynak_yazilamazsa_basarisiz",
+   "find": "sources_missing = c_branch and reconstruct_ran and src_count == 0",
+   "replace": "sources_missing = language == \"c\" and reconstruct_ran and src_count == 0"
   }
  ]
 }

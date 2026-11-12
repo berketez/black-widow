@@ -185,15 +185,20 @@ def test_proje_agaci_yoksa_main_modules_types_diskte_oldugu_icin_yazilir(ws, tmp
         assert (out / yol).exists()
 
 
-def test_source_files_diskten_sayaci_sisik_olsa_da(ws, tmp_path):
-    """Genel dal aynı adlı dosyaları üst üste yazıp her yazmayı sayar; README diskteki sayıyı yazar."""
-    rec = ws.get_stage_dir("reconstructed")
-    for asama in ("annotated", "merged", "typed", "commented"):
-        d = rec / asama
-        d.mkdir(parents=True)
-        (d / "parse.c").write_text(f"// {asama}\nint parse(void)\n{{\n  return 0;\n}}\n", encoding="utf-8")
+def test_source_files_diskten_sayaci_sisik_olsa_da(ws, tmp_path, monkeypatch):
+    """Biçimlendiricinin sayacı diskteki dosya sayısından büyük olsa da README diskteki sayıyı yazar.
+
+    Bu sayaç farkını eskiden genel dal üretiyordu (aynı adlı dosyaları üst üste yazıp her yazmayı
+    sayıyordu; dil ``cpp``). O ezme 2026-11-12'de giderildi (``tests/test_cikti_hatalari.py``);
+    sayaç farkı burada kaynak biçimlendiricisi yerine konarak üretilir.
+    """
+    def _sisik_sayac(self, src_dir):
+        (src_dir / "parse.c").write_text("int parse(void)\n{\n  return 0;\n}\n", encoding="utf-8")
+        return 4, []
+
+    monkeypatch.setattr(OutputFormatter, "_format_binary_sources", _sisik_sayac)
     out = tmp_path / "temiz"
-    fr = OutputFormatter(ws, _sonuc(ws, "cpp")).format_output(out, fmt="clean")
+    fr = OutputFormatter(ws, _sonuc(ws, "c")).format_output(out, fmt="clean")
     assert fr.src_files == 4                                 # biçimlendiricinin sayacı
     readme = (out / "README.md").read_text(encoding="utf-8")
     disk = _dosya_sayisi(out / "src")

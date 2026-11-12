@@ -84,6 +84,9 @@ _C_TOKEN_RE = re.compile(r"(?<![\w$])[A-Za-z_$][\w$]*")
 _C_SCOPE_RE = re.compile(r"[{};]")
 _C_TRAILING_NAME_RE = re.compile(r"([A-Za-z_$][\w$]*)\s*$")
 
+# Genel dalın (C/JS/Swift dışı) kopyaladığı kaynak dosya uzantıları
+_GENERIC_SOURCE_SUFFIXES = frozenset({".c", ".h", ".js", ".ts", ".py", ".swift", ".go", ".java"})
+
 
 @dataclass
 class FormatResult:
@@ -190,7 +193,16 @@ class OutputFormatter:
         language = self._detect_language()
 
         # 1. Kaynak dosyalarini kopyala ve organize et
-        if language == "c":
+        # Başka dilden derlenmiş ikilinin (C++, Rust, Go …) yeniden kurulan kaynağı da Ghidra'nın
+        # C'sidir: reconstructed/ altında yalnız C varsa C dalı kullanılır. Genel dal bütün ara
+        # aşamaları (annotated, merged, typed_iter1, project …) kopyalıyor ve eskiden düz
+        # src/<dosya adı> yoluna yazdığı için aynı adlı dosyalar birbirini eziyordu (Debian pzstd,
+        # language "cpp": 12 757 dosyadan 1 201'i kaldı; kalan, sıralı kopyada son gelen typed_iter1
+        # kopyasıydı, olgun proje ağacı kayboldu).
+        c_branch = language == "c" or (
+            language not in ("javascript", "swift") and self._reconstructed_is_c_only()
+        )
+        if c_branch:
             src_count, errs = self._format_binary_sources(src_dir)
         elif language == "javascript":
             src_count, errs = self._format_js_sources(src_dir)
@@ -207,7 +219,7 @@ class OutputFormatter:
         # sonuc basarili SAYILMAZ (raporlar yazilsa da). Reconstruct kosmadiysa
         # (or. --stage static) kaynaksiz cikti olagandir.
         reconstruct_ran = "reconstruct" in getattr(self._result, "stages", {})
-        sources_missing = language == "c" and reconstruct_ran and src_count == 0
+        sources_missing = c_branch and reconstruct_ran and src_count == 0
         if sources_missing and not errs:
             errors.append("Temiz çıktıya kaynak dosyası yazılamadı: yeniden kurulan kaynak bulunamadı")
 
@@ -544,6 +556,17 @@ class OutputFormatter:
     # ------------------------------------------------------------------
     # Generic source formatting
     # ------------------------------------------------------------------
+    def _reconstructed_is_c_only(self) -> bool:
+        """``reconstructed/`` altındaki kaynak dosyaları yalnız C mi (en az bir ``.c``, başka dil yok).
+
+        Başka dilden kaynak da varsa (ör. ``.py`` ile ikilinin C'si) C dalı onları almaz; genel dal
+        hepsini dizin yapısıyla kopyalar.
+        """
+        reconstructed = self._workspace.get_stage_dir("reconstructed")
+        suffixes = {p.suffix for p in reconstructed.rglob("*")
+                    if p.suffix in _GENERIC_SOURCE_SUFFIXES and p.is_file()}
+        return ".c" in suffixes and suffixes <= _C_CODE_SUFFIXES
+
     def _format_generic_sources(self, src_dir: Path) -> tuple[int, list[str]]:
         """Bilinmeyen dil icin generic formatting."""
         errors: list[str] = []
@@ -551,11 +574,12 @@ class OutputFormatter:
 
         reconstructed = self._workspace.get_stage_dir("reconstructed")
 
-        # Tum kaynak dosyalarini topla
-        source_exts = {".c", ".h", ".js", ".ts", ".py", ".swift", ".go", ".java"}
+        # Tum kaynak dosyalarini topla. Göreli yol korunur: aynı adlı iki dosya (farklı aşama ya da
+        # paket dizini, ör. iki __init__.py) aynı src/<ad> yoluna yazılıp birbirini ezmesin.
         for f in sorted(reconstructed.rglob("*")):
-            if f.is_file() and f.suffix in source_exts:
-                dest = src_dir / f.name
+            if f.is_file() and f.suffix in _GENERIC_SOURCE_SUFFIXES:
+                dest = src_dir / f.relative_to(reconstructed)
+                dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(f, dest)
                 files_written += 1
 
@@ -1097,7 +1121,8 @@ class OutputFormatter:
         total_mappings = naming_map.get("total_mappings", 0)
         src_root = output_dir / "src" if output_dir is not None else None
         if src_root is not None and src_root.is_dir():
-            # Diskteki sayı: biçimlendiricinin sayacı ezilen dosyaları da sayabiliyor (genel dal).
+            # Diskteki sayı: biçimlendiricinin sayacı diskteki dosya sayısından farklı olabilir
+            # (genel dal eskiden aynı adlı dosyaları ezip her yazmayı sayıyordu).
             src_files = self._count_files(src_root)
 
         lang_display = {

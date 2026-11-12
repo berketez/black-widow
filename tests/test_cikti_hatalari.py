@@ -16,6 +16,11 @@ Kanıt ve önce/sonra sayıları: ``docs/arge/2026-11-12_cikti_hatalari/sonuc.md
    kaydı yazan iki yer (etkin ``pipeline/steps/ghidra_metadata.py`` ve emekli monolit yolunun
    ``stages._run_signature_matching``'i) alanı yazmıyordu. Kayıt artık ``address`` taşır;
    okuyucular anahtarla okuduğu için davranışları değişmez.
+3. Temiz çıktının biçimlendiricisi dili C, JS ya da Swift olmayan hedefi genel dala gönderiyordu;
+   genel dal ``reconstructed/`` altındaki bütün kaynakları düz ``src/<dosya adı>`` yoluna
+   kopyaladığı için aynı adlı dosyalar birbirini eziyordu (Debian ``pzstd``, dil ``cpp``:
+   12 757 dosyadan 1 201'i kaldı; kalan ``typed_iter1`` kopyasıydı, proje ağacı kayboldu).
+   Kaynak yalnız C ise C dalı kullanılır; genel dal göreli yolu korur.
 """
 
 from __future__ import annotations
@@ -307,3 +312,63 @@ class TestImzaKaydiYontem:
         })
         ReconstructionStage()._run_signature_matching(context, rc)
         assert [r["method"] for r in _records(ws)] == [m.match_method for m in rc.sig_matches]
+
+
+# ---------------------------------------------------------------------------
+# 3. Temiz çıktı: C dışı dil etiketli ikilinin kaynakları ezilmez
+# ---------------------------------------------------------------------------
+
+
+def _bicimle(tmp_path: Path, language: str, files: dict[str, str], reconstruct: bool = True):
+    from karadul.core.output_formatter import OutputFormatter
+
+    ws = _workspace(tmp_path)
+    rec = ws.get_stage_dir("reconstructed")
+    for rel, text in files.items():
+        p = rec / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text, encoding="utf-8")
+    stages = {"identify": {"language": language}}
+    if reconstruct:
+        stages["reconstruct"] = {}
+    out = tmp_path / "out"
+    fr = OutputFormatter(ws, _result(ws, stages)).format_output(out, fmt="clean")
+    src = out / "src"
+    disk = {str(p.relative_to(src)): p.read_text(encoding="utf-8")
+            for p in sorted(src.rglob("*")) if p.is_file()}
+    return fr, disk
+
+
+class TestGenelDalEzmez:
+    def test_cpp_ikilisi_proje_agacini_alir(self, tmp_path) -> None:
+        """pzstd gibi: dil "cpp", kaynak yalnız C. Olgun proje ağacı gelir, ara aşamalar gelmez."""
+        fr, disk = _bicimle(tmp_path, "cpp", {
+            "project/src/subsystem_misc/FUN_00001000.c": "olgun",
+            "project/include/types.h": "tipler",
+            "annotated/FUN_00001000.c": "ara0",
+            "typed_iter1/FUN_00001000.c": "ara1",
+        })
+        assert disk == {"src/subsystem_misc/FUN_00001000.c": "olgun", "include/types.h": "tipler"}
+        assert fr.success
+
+    def test_genel_dal_ayni_adli_dosyalari_ezmez(self, tmp_path) -> None:
+        fr, disk = _bicimle(tmp_path, "python", {
+            "pkg_a/__init__.py": "A",
+            "pkg_b/__init__.py": "B",
+        })
+        assert disk == {"pkg_a/__init__.py": "A", "pkg_b/__init__.py": "B"}
+        assert fr.src_files == 2
+
+    def test_karisik_kaynak_genel_dalda_kalir(self, tmp_path) -> None:
+        """C ile başka dil birlikteyse C dalı öbür dili almazdı: genel dal hepsini korur."""
+        fr, disk = _bicimle(tmp_path, "cpp", {
+            "project/src/a.c": "c",
+            "pyc/mod.py": "py",
+        })
+        assert disk == {"project/src/a.c": "c", "pyc/mod.py": "py"}
+
+    def test_cpp_kaynak_yazilamazsa_basarisiz(self, tmp_path) -> None:
+        """C dalındaki kural C++ için de geçerli: yeniden kurma koştu ama kaynak yazılamadı."""
+        fr, disk = _bicimle(tmp_path, "cpp", {"annotated/FUN_00001000.c": "ara0"})
+        assert disk == {}
+        assert not fr.success
