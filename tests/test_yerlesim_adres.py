@@ -475,18 +475,24 @@ def test_blok_bilgisi_yoksa_uyari_ve_yalniz_dolgu(tmp_path, caplog):
 
 
 def test_api_etiketi_haritada_grup_basina_sayilir(tmp_path):
-    _alan_yaz(tmp_path, _IKI_DILIM)
-    graf = {"program": "p", "nodes": {
-        "00001000": {"name": "f1", "address": "00001000", "callees": [{"name": "malloc"}]},
-        "00001020": {"name": "f2", "address": "00001020", "callees": [{"name": "fopen"}, {"name": "fread"}]},
-        f"{0x1050 + ESIK:08x}": {"name": "f3", "address": f"{0x1050 + ESIK:08x}", "callees": []},
-    }, "edges": []}
+    """Etiketler çok olandan aza; eşitlikte kural tablosundaki sırayla (ada göre değil)."""
+    ikinci = 0x1060 + ESIK
+    fonksiyonlar = {"a": (0x1000, 0x20), "b": (0x1020, 0x20), "c": (0x1040, 0x20),
+                    "d": (ikinci, 0x20), "e": (ikinci + 0x20, 0x20), "f": (ikinci + 0x40, 0x20)}
+    cagrilanlar = {"a": ["malloc"], "b": ["calloc"], "c": ["fopen", "fread"],
+                   "d": ["SSL_read"], "e": ["socket"], "f": []}
+    _alan_yaz(tmp_path, fonksiyonlar)
+    graf = {"program": "p", "edges": [], "nodes": {
+        f"{adres:08x}": {"name": ad, "address": f"{adres:08x}",
+                         "callees": [{"name": c} for c in cagrilanlar[ad]]}
+        for ad, (adres, _boyut) in fonksiyonlar.items()}}
     (tmp_path / "static" / "ghidra_call_graph.json").write_text(json.dumps(graf))
     _, proje = _kur(tmp_path, _config())
     harita = (proje / "analysis" / "subsystem_map.md").read_text()
-    assert "| addr_1000 | .text | 1000 | 1050 | 2 | file_io 1, memory 1 |" in harita
+    assert "| addr_1000 | .text | 1000 | 1060 | 3 | memory 2, file_io 1 |" in harita
+    assert f"| addr_{ikinci:x} | .text | {ikinci:x} | {ikinci + 0x60:x} | 3 | network 1, crypto 1 |" in harita
     # API etiketi dizini belirlemez
-    assert set(_yerler(proje).values()) == {"subsystem_addr_1000", f"subsystem_addr_{0x1050 + ESIK:x}"}
+    assert set(_yerler(proje).values()) == {"subsystem_addr_1000", f"subsystem_addr_{ikinci:x}"}
 
 
 def test_adres_yerlesimi_belirlenimci(tmp_path):

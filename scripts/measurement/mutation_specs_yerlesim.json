@@ -1,0 +1,541 @@
+{
+ "_comment": "Adres sırasına dayalı yerleşim (2026-11-12): proje kurucudaki yeni kod, yapılandırma alanları ve iki ölçüm betiği. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_yerlesim.json -v. Her 'find' dosyada tam bir kez geçer; her mutantın uzunluğu özgününden farklıdır (.pyc tuzağı).",
+ "mutants": [
+  {
+   "id": "yr_esik_dahil",
+   "desc": "Dolgu tam eşik kadarken sınır konmaz (>= yerine >)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_esik_dahil_sinirdir",
+   "find": "if item.gap >= threshold:",
+   "replace": "if item.gap > threshold:"
+  },
+  {
+   "id": "yr_sinyal_alt_uc",
+   "desc": "Sinyal bandının alt ucu dışarıda kalır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_esik_dahil_sinirdir",
+   "find": "if threshold <= item.gap < alignment:",
+   "replace": "if threshold < item.gap < alignment:"
+  },
+  {
+   "id": "yr_sinyal_ust_uc",
+   "desc": "Sinyal bandının üst ucu (hizalama) içeri girer",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_hizalama_ve_ustu_sinirdir_ama_sinyal_degildir",
+   "find": "if threshold <= item.gap < alignment:",
+   "replace": "if threshold <= item.gap <= alignment:"
+  },
+  {
+   "id": "yr_sinyal_bantsiz",
+   "desc": "Sinyal, eşiği geçen her dolgu sayılır (hizalama üstü dahil)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_yalniz_hizalama_ustu_dolgu_sinyal_degildir",
+   "find": "if threshold <= item.gap < alignment:",
+   "replace": "if threshold <= item.gap:"
+  },
+  {
+   "id": "yr_sinyal_hep_var",
+   "desc": "Dolgu sinyali her zaman var sayılır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_sinyal_yoksa_eski_yerlesim",
+   "find": "return self.signal_gaps > 0",
+   "replace": "return self.signal_gaps >= 0"
+  },
+  {
+   "id": "yr_sinyal_tek_dolgu_yetmez",
+   "desc": "Tek sinyal dolgusu sinyal sayılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_hizalama_ve_ustu_sinirdir_ama_sinyal_degildir",
+   "find": "return self.signal_gaps > 0",
+   "replace": "return self.signal_gaps > 1"
+  },
+  {
+   "id": "yr_blok_degisimi_gorulmez",
+   "desc": "Bellek bloğu değişimi sınır sayılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_blok_siniri_dolgusuz_da_keser_ve_ayri_sayilir",
+   "find": "changed = block != previous.block",
+   "replace": "changed = False and block != previous.block"
+  },
+  {
+   "id": "yr_blok_siniri_sayilmaz",
+   "desc": "Blok sınırı sayacı artmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_blok_siniri_dolgusuz_da_keser_ve_ayri_sayilir",
+   "find": "layout.block_cuts += 1",
+   "replace": "layout.block_cuts += 0  #"
+  },
+  {
+   "id": "yr_dolgu_siniri_sayilmaz",
+   "desc": "Dolgu sınırı sayacı artmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_esik_dahil_sinirdir",
+   "find": "layout.padding_cuts += 1",
+   "replace": "layout.padding_cuts += 0  #"
+  },
+  {
+   "id": "yr_olculen_cift_sayilmaz",
+   "desc": "Ölçülen çift sayacı artmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_esik_dahil_sinirdir",
+   "find": "layout.measured_gaps += 1",
+   "replace": "layout.measured_gaps += 0  #"
+  },
+  {
+   "id": "yr_yurutulemez_blok_olculur",
+   "desc": "Yürütülemeyen blokta (EXTERNAL) da dolgu ölçülür ve blok bölünür",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_yurutulemez_blok_tek_dilimdir",
+   "find": "measurable = block is None or blocks[block].executable",
+   "replace": "measurable = True"
+  },
+  {
+   "id": "yr_blok_degisince_olculur",
+   "desc": "Blok değişse de dolgu ölçülür",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_blok_degisince_dolgu_olculmez",
+   "find": "if not changed and measurable:",
+   "replace": "if measurable:"
+  },
+  {
+   "id": "yr_dolgu_bastan_basa",
+   "desc": "Dolgu önceki fonksiyonun bitişinden değil başından ölçülür",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_dolgu_onceki_bitisten_sonraki_basa",
+   "find": "gap = address - (previous.address + previous.size)",
+   "replace": "gap = address - previous.address"
+  },
+  {
+   "id": "yr_blok_son_adres_disarida",
+   "desc": "Bloğun son adresi bloğun dışında sayılır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_blok_uclari_dahildir",
+   "find": "if found is not None and address <= blocks[found].end:",
+   "replace": "if found is not None and address < blocks[found].end:"
+  },
+  {
+   "id": "yr_blok_ilk_adres_disarida",
+   "desc": "Bloğun ilk adresi bloğun dışında sayılır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_blok_uclari_dahildir",
+   "find": "if blocks[mid].start <= address:",
+   "replace": "if blocks[mid].start < address:"
+  },
+  {
+   "id": "yr_yurutme_izni_harfi",
+   "desc": "Yürütme izni yanlış harfle aranır (okuma izni)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_bellek_bloklari_ayrisir_ve_siralanir",
+   "find": "_EXECUTE_PERMISSION = \"x\"",
+   "replace": "_EXECUTE_PERMISSION = \"rw\""
+  },
+  {
+   "id": "yr_bloklar_siralanmaz",
+   "desc": "Bellek blokları başlangıç adresine göre sıralanmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_bellek_bloklari_ayrisir_ve_siralanir",
+   "find": "blocks.sort(key=lambda b: (b.start, b.end, b.name))",
+   "replace": "pass"
+  },
+  {
+   "id": "yr_ters_blok_alinir",
+   "desc": "Bitişi başlangıcından küçük blok kabul edilir",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_bellek_bloklari_ayrisir_ve_siralanir",
+   "find": "if start is None or end is None or end < start:",
+   "replace": "if start is None or end is None:"
+  },
+  {
+   "id": "yr_bayrak_dogru_gibi_deger",
+   "desc": "Bayrak 'doğru gibi' her değerle açılır (sahte yapılandırma nesnesi bayrağı açar)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_bayrak_kapaliyken_plan_kurulmaz",
+   "find": "if getattr(settings, \"enable_address_placement\", False) is not True:",
+   "replace": "if not getattr(settings, \"enable_address_placement\", False):"
+  },
+  {
+   "id": "yr_ontanimli_acik",
+   "desc": "Bayrak öntanımlı açık",
+   "module": "karadul/config.py",
+   "test": "tests/test_yerlesim_adres.py::test_ontanimli_bayrak_kapali_ve_yaml_ile_acilir",
+   "find": "enable_address_placement: bool = False",
+   "replace": "enable_address_placement: bool = True"
+  },
+  {
+   "id": "yr_ontanimli_acikken_cikti_degisir",
+   "desc": "Bayrak öntanımlı açıkken öntanımlı yapılandırmayla çıktı değişir (yerleşim raporu yazılır)",
+   "module": "karadul/config.py",
+   "test": "tests/test_yerlesim_adres.py::test_bayrak_kapaliyken_cikti_ayni_ve_rapor_yok",
+   "find": "enable_address_placement: bool = False",
+   "replace": "enable_address_placement: bool = True"
+  },
+  {
+   "id": "yr_dondurulmus_esik",
+   "desc": "Dondurulmuş dolgu eşiği değişir",
+   "module": "karadul/config.py",
+   "test": "tests/test_yerlesim_adres.py::test_dondurulmus_sayilar",
+   "find": "address_placement_padding_threshold: int = 16",
+   "replace": "address_placement_padding_threshold: int = 12"
+  },
+  {
+   "id": "yr_dondurulmus_hizalama",
+   "desc": "Dondurulmuş hizalama değişir",
+   "module": "karadul/config.py",
+   "test": "tests/test_yerlesim_adres.py::test_dondurulmus_sayilar",
+   "find": "address_placement_alignment: int = 32",
+   "replace": "address_placement_alignment: int = 64"
+  },
+  {
+   "id": "yr_giris_noktasi_gruplanir",
+   "desc": "Giriş noktası da adres grubuna sayılır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_giris_noktasi_main_c_de_kalir",
+   "find": "grouped_keys = sorted(key for key in file_contents if key not in entries)",
+   "replace": "grouped_keys = sorted(file_contents)"
+  },
+  {
+   "id": "yr_sinyalsiz_devam",
+   "desc": "Dolgu sinyali yokken de adres yerleşimi uygulanır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_sinyal_yoksa_eski_yerlesim",
+   "find": "if not layout.has_padding_signal:",
+   "replace": "if False:"
+  },
+  {
+   "id": "yr_adressiz_devam",
+   "desc": "Hiçbir birim adreslenemezken geri düşülmez",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_hicbir_birim_adreslenemiyorsa_eski_yerlesim",
+   "find": "if not unit_slice:",
+   "replace": "if False:"
+  },
+  {
+   "id": "yr_listesiz_devam",
+   "desc": "Fonksiyon listesi yokken geri düşüş nedeni yanlış yazılır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_fonksiyon_listesi_yoksa_eski_yerlesim",
+   "find": "return fallback(FALLBACK_NO_FUNCTION_DATA)",
+   "replace": "return fallback(FALLBACK_NO_ADDRESSED_UNIT)"
+  },
+  {
+   "id": "yr_gecersiz_aralik_gecer",
+   "desc": "0 < eşik < hizalama koşulu denetlenmez",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_gecersiz_sayilarla_eski_yerlesim",
+   "find": "if not valid or not 0 < threshold < alignment:",
+   "replace": "if not valid:"
+  },
+  {
+   "id": "yr_gecersiz_tip_gecer",
+   "desc": "Eşik ve hizalamanın tam sayı olması denetlenmez",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_gecersiz_sayilarla_eski_yerlesim",
+   "find": "if not valid or not 0 < threshold < alignment:",
+   "replace": "if valid and not 0 < threshold < alignment:"
+  },
+  {
+   "id": "yr_grup_adi_genisliksiz",
+   "desc": "Grup adındaki adres eşit genişlikte yazılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_grup_adi_esit_genislikte_ve_dilimin_ilk_fonksiyonundan",
+   "find": "i: f\"{_ADDRESS_GROUP_PREFIX}{layout.slices[i].start:0{width}x}\" for i in used",
+   "replace": "i: f\"{_ADDRESS_GROUP_PREFIX}{layout.slices[i].start:x}\" for i in used"
+  },
+  {
+   "id": "yr_bilinmeyen_grup_adi",
+   "desc": "Adressiz birimlerin grubu başka ad alır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_adresi_okunamayan_birimler_ayri_grupta",
+   "find": "_ADDRESS_UNKNOWN_GROUP = _ADDRESS_GROUP_PREFIX + \"unknown\"",
+   "replace": "_ADDRESS_UNKNOWN_GROUP = _ADDRESS_GROUP_PREFIX + \"misc\""
+  },
+  {
+   "id": "yr_adressiz_uyarisi_yok",
+   "desc": "Adressiz birimler günlüğe yazılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_adresi_okunamayan_birimler_ayri_grupta",
+   "find": "        if unknown:\n            logger.warning(",
+   "replace": "        if False:\n            logger.warning("
+  },
+  {
+   "id": "yr_rapor_yalniz_adres_yerlesiminde",
+   "desc": "Eski yerleşime dönülünce placement.json yazılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_sinyal_yoksa_eski_yerlesim",
+   "find": "        if placement is not None:\n            ledger.write(",
+   "replace": "        if by_address:\n            ledger.write("
+  },
+  {
+   "id": "yr_readme_geri_dusus_notu_yok",
+   "desc": "Eski yerleşime dönülünce README'ye not düşülmez",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_sinyal_yoksa_eski_yerlesim",
+   "find": "        if placement is not None:\n            lines.extend(self._placement_readme_section(placement))",
+   "replace": "        if by_address:\n            lines.extend(self._placement_readme_section(placement))"
+  },
+  {
+   "id": "yr_geri_dusus_gunlugu_yok",
+   "desc": "Eski yerleşime dönüş günlüğe yazılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_sinyal_yoksa_eski_yerlesim",
+   "find": "            logger.warning(\n                \"Adres yerleşimi istendi ama uygulanamadı (%s); eski yerleşim \"",
+   "replace": "            logger.debug(\n                \"Adres yerleşimi istendi ama uygulanamadı (%s); eski yerleşim \""
+  },
+  {
+   "id": "yr_harita_eski_bicimde",
+   "desc": "Adres yerleşiminde subsystem_map.md eski biçimde yazılır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_readme_ve_harita_yontemi_anlatir_iddia_etmez",
+   "find": "        if by_address:\n            smap = self._build_address_map(placement, nodes)",
+   "replace": "        if False:\n            smap = self._build_address_map(placement, nodes)"
+  },
+  {
+   "id": "yr_readme_eski_dizin_anlatimi",
+   "desc": "Adres yerleşiminde README dizinleri API/topluluk diye anlatır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_readme_ve_harita_yontemi_anlatir_iddia_etmez",
+   "find": "        if by_address:\n            group_lines = [",
+   "replace": "        if False:\n            group_lines = ["
+  },
+  {
+   "id": "yr_yerlesim_uygulanmaz",
+   "desc": "Plan kurulur ama birimler eski sınıflandırmayla yerleşir",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_adres_yerlesimi_dilimleri_dizine_yazar",
+   "find": "            if by_address:\n                subsys = placement.unit_group[stem]",
+   "replace": "            if False:\n                subsys = placement.unit_group[stem]"
+  },
+  {
+   "id": "yr_sonuc_stratejisi_sabit",
+   "desc": "Sonuç nesnesi uygulanan stratejiyi bildirmez",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_adres_yerlesimi_dilimleri_dizine_yazar",
+   "find": "placement.strategy if placement is not None else PLACEMENT_API_COMMUNITY",
+   "replace": "PLACEMENT_API_COMMUNITY"
+  },
+  {
+   "id": "yr_sonuc_nedeni_bos",
+   "desc": "Sonuç nesnesi geri düşüş nedenini bildirmez",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_calisma_alani_yoksa_eski_yerlesim",
+   "find": "placement.fallback_reason if placement is not None else \"\"",
+   "replace": "\"\""
+  },
+  {
+   "id": "yr_yinelenen_adres_son_boyut",
+   "desc": "Aynı adres iki kez geçince büyük boyut değil son okunan alınır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_fonksiyon_boyutlari_bozuk_kayitlari_atlar",
+   "find": "sizes[address] = max(size, sizes.get(address, 0))",
+   "replace": "sizes[address] = size"
+  },
+  {
+   "id": "yr_negatif_boyut_alinir",
+   "desc": "Negatif boyutlu kayıt kabul edilir",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_fonksiyon_boyutlari_bozuk_kayitlari_atlar",
+   "find": "            if size < 0:\n                continue",
+   "replace": "            if size < -1:\n                continue"
+  },
+  {
+   "id": "yr_mantiksal_boyut_alinir",
+   "desc": "Mantıksal değer boyut olarak kabul edilir",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_fonksiyon_boyutlari_bozuk_kayitlari_atlar",
+   "find": "if address is None or isinstance(size, bool) or not isinstance(size, int):",
+   "replace": "if address is None or not isinstance(size, int):"
+  },
+  {
+   "id": "yr_ikinci_konum_okunmaz",
+   "desc": "Fonksiyon listesi yalnız ilk konumda aranır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_fonksiyon_listesi_ikinci_konumdan_okunur",
+   "find": "_FUNCTIONS_JSON_CANDIDATES = (\"ghidra_functions.json\", \"ghidra_output/functions.json\")",
+   "replace": "_FUNCTIONS_JSON_CANDIDATES = (\"ghidra_functions.json\",)"
+  },
+  {
+   "id": "yr_api_etiketi_cift_sayilir",
+   "desc": "Haritada API etiketi üye başına iki kez sayılır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_api_etiketi_haritada_grup_basina_sayilir",
+   "find": "            if label != \"misc\":\n                labels[group][label] += 1",
+   "replace": "            if label != \"misc\":\n                labels[group][label] += 2"
+  },
+  {
+   "id": "yr_api_etiketi_siralanmaz",
+   "desc": "Haritada API etiketleri sayıya göre değil ada göre sıralanır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_api_etiketi_haritada_grup_basina_sayilir",
+   "find": "key=lambda item: (-item[1], _SUBSYSTEM_ORDER[item[0]]),",
+   "replace": "key=lambda item: item[0],"
+  },
+  {
+   "id": "yr_grup_birim_sayisi",
+   "desc": "Yerleşim raporunda grubun birim sayısı sayılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_yerlesim_raporu_sayilari_ve_gruplari",
+   "find": "units_in: Counter = Counter(unit_slice.values())",
+   "replace": "units_in: Counter = Counter()"
+  },
+  {
+   "id": "yr_dilim_bitisi",
+   "desc": "Dilimin bitişi son fonksiyonun başı olur (boyut eklenmez)",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_dilim_ucu_ve_fonksiyon_sayisi",
+   "find": "start=members[0].address, end=last.address + last.size,",
+   "replace": "start=members[0].address, end=last.address,"
+  },
+  {
+   "id": "yr_dilim_blogu",
+   "desc": "Dilimin bellek bloğu kaydedilmez",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_blok_siniri_dolgusuz_da_keser_ve_ayri_sayilir",
+   "find": "block=members[0].block, functions=len(members),",
+   "replace": "block=None, functions=len(members),"
+  },
+  {
+   "id": "yr_blok_yok_uyarisi_ters",
+   "desc": "Bellek bloğu bilgisi yokken uyarı yazılmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_blok_bilgisi_yoksa_uyari_ve_yalniz_dolgu",
+   "find": "        if not blocks:\n            logger.warning(",
+   "replace": "        if blocks:\n            logger.warning("
+  },
+  {
+   "id": "yr_birimsiz_fonksiyon_sirada_degil",
+   "desc": "Dilimleme yalnız birimi olan fonksiyonlarda yapılır gibi: adresi listede olmayan birim de dilime bağlanmaya çalışılır",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_adresi_okunamayan_birimler_ayri_grupta",
+   "find": "if address is not None and address in layout.slice_of:",
+   "replace": "if address is not None and (address in layout.slice_of or True):"
+  },
+  {
+   "id": "ds_kutu_esik_ucu",
+   "desc": "Sayım: eşik kadar dolgu alt kutuya düşer",
+   "module": "scripts/measurement/yerlesim_dolgu_say.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_kutu_sinirlari",
+   "find": "    if dolgu < esik:",
+   "replace": "    if dolgu <= esik:"
+  },
+  {
+   "id": "ds_kutu_hiza_ucu",
+   "desc": "Sayım: hizalama kadar dolgu sinyal bandına düşer",
+   "module": "scripts/measurement/yerlesim_dolgu_say.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_kutu_sinirlari",
+   "find": "return adlar[3] if dolgu < hiza else adlar[4]",
+   "replace": "return adlar[3] if dolgu <= hiza else adlar[4]"
+  },
+  {
+   "id": "ds_kutu_negatif",
+   "desc": "Sayım: −1 baytlık dolgu negatif kutuya girmez",
+   "module": "scripts/measurement/yerlesim_dolgu_say.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_kutu_sinirlari",
+   "find": "    if dolgu < 0:",
+   "replace": "    if dolgu < -1:"
+  },
+  {
+   "id": "ds_ana_blok_toplam_fonksiyon",
+   "desc": "Sayım: ana kod bloğu toplam fonksiyon sayısıyla seçilir (PLT kazanabilir)",
+   "module": "scripts/measurement/yerlesim_dolgu_say.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_ikili_sayimi_kutular_ana_blok_ve_sinyal",
+   "find": "key=lambda i: (blok_govde[i], -i)",
+   "replace": "key=lambda i: (blok_fonksiyon[i], -i)"
+  },
+  {
+   "id": "ds_yasak_kalan_ucu",
+   "desc": "Sayım: kalanı tam (hizalama − eşik) olan başlangıç da yasak sayılır",
+   "module": "scripts/measurement/yerlesim_dolgu_say.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_yasak_kalanli_baslangic_sayilir",
+   "find": "if 0 < hiza - k < esik)",
+   "replace": "if 0 < hiza - k <= esik)"
+  },
+  {
+   "id": "ds_en_eski_kosu",
+   "desc": "Sayım: aynı ikilinin birden çok koşusunda en eskisi alınır",
+   "module": "scripts/measurement/yerlesim_dolgu_say.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_calisma_alanlari_anahtar_ve_en_yeni_kosu",
+   "find": "bulunan[\"/\".join(parcalar[:i])] = yol.parent",
+   "replace": "bulunan.setdefault(\"/\".join(parcalar[:i]), yol.parent)"
+  },
+  {
+   "id": "ds_hizali_baslangic_modulu",
+   "desc": "Sayım: pozitif dolgudan sonraki başlangıç hizalamaya değil eşiğe göre denetlenir",
+   "module": "scripts/measurement/yerlesim_dolgu_say.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_ikili_sayimi_kutular_ana_blok_ve_sinyal",
+   "find": "pozitif_hizali += int(g.address % hiza == 0)",
+   "replace": "pozitif_hizali += int(g.address % esik == 0)"
+  },
+  {
+   "id": "ds_sinyalsiz_listesi_ters",
+   "desc": "Sayım: sinyalsiz ikili listesine sinyalli ikililer yazılır",
+   "module": "scripts/measurement/yerlesim_dolgu_say.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_sinyalsiz_ikili_ve_grup_ozeti",
+   "find": "sorted(a for a, s in uyeler if not s[\"sinyal_var\"])",
+   "replace": "sorted(a for a, s in uyeler if s[\"sinyal_var\"])"
+  },
+  {
+   "id": "ds_ana_blok_disi_kutulanir",
+   "desc": "Sayım: ana kod bloğu dışındaki dolgular da ana kutulara girer",
+   "module": "scripts/measurement/yerlesim_dolgu_say.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_ikili_sayimi_kutular_ana_blok_ve_sinyal",
+   "find": "        if g.block != ana:\n            continue",
+   "replace": "        if False:\n            continue"
+  },
+  {
+   "id": "uo_ayni_bolme_tek_yon",
+   "desc": "Yeniden üretim: bölme eşitliği yalnız bir yönde denetlenir (kaba bölme eşit sayılır)",
+   "module": "scripts/measurement/yerlesim_urun_olc.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_ayni_bolme_etiket_adindan_bagimsiz",
+   "find": "return len(set(zip(a, b))) == len(set(a)) == len(set(b))",
+   "replace": "return len(set(zip(a, b))) == len(set(a))"
+  },
+  {
+   "id": "uo_bant_ust_ucu_yok",
+   "desc": "Yeniden üretim: duyarlılık dilimi hizalama üstü dolguda da keser",
+   "module": "scripts/measurement/yerlesim_urun_olc.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_bant_dilimi_yalniz_bantta_ve_blok_degisiminde_keser",
+   "find": "if g.block_changed or (g.gap is not None and esik <= g.gap < hiza):",
+   "replace": "if g.block_changed or (g.gap is not None and esik <= g.gap):"
+  },
+  {
+   "id": "uo_bant_blok_kesmez",
+   "desc": "Yeniden üretim: duyarlılık dilimi blok değişiminde kesmez",
+   "module": "scripts/measurement/yerlesim_urun_olc.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_bant_dilimi_yalniz_bantta_ve_blok_degisiminde_keser",
+   "find": "if g.block_changed or (g.gap is not None and esik <= g.gap < hiza):",
+   "replace": "if (g.gap is not None and esik <= g.gap < hiza):"
+  },
+  {
+   "id": "uo_algoritma_raporu_karsilastirilir",
+   "desc": "Yeniden üretim: algorithms.md karşılaştırmaya girer",
+   "module": "scripts/measurement/yerlesim_urun_olc.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_agac_ozeti_kok_yolunu_cevirir_ve_algoritma_raporunu_atlar",
+   "find": "        if goreli in KARSILASTIRMA_DISI:\n            continue",
+   "replace": "        if False:\n            continue"
+  },
+  {
+   "id": "uo_kok_yolu_cevrilmez",
+   "desc": "Yeniden üretim: compile_commands.json'da kök yolu çevrilmez",
+   "module": "scripts/measurement/yerlesim_urun_olc.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_agac_ozeti_kok_yolunu_cevirir_ve_algoritma_raporunu_atlar",
+   "find": "if yol_cevirisi and dosya.name == DERLEME_KOMUTLARI:",
+   "replace": "if False and dosya.name == DERLEME_KOMUTLARI:"
+  },
+  {
+   "id": "uo_girdi_esitlik_aranmaz",
+   "desc": "Yeniden üretim: ilk aday, saklı ağaçla karşılaştırılmadan girdi sayılır",
+   "module": "scripts/measurement/yerlesim_urun_olc.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_girdiyi_bul_sakli_agaci_veren_adayi_secer",
+   "find": "        if bulunan == beklenen:",
+   "replace": "        if True or bulunan == beklenen:"
+  },
+  {
+   "id": "uo_bayrak_hep_acik",
+   "desc": "Yeniden üretim: 'kapalı' kurulum da bayrağı açar",
+   "module": "scripts/measurement/yerlesim_urun_olc.py",
+   "test": "tests/test_yerlesim_betikleri.py::test_kur_bayragi_yapilandirmadan_acar",
+   "find": "cfg.binary_reconstruction.enable_address_placement = acik",
+   "replace": "cfg.binary_reconstruction.enable_address_placement = True"
+  }
+ ]
+}
