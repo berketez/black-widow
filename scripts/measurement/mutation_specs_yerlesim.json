@@ -298,6 +298,22 @@
    "replace": "        if False:\n            group_lines = ["
   },
   {
+   "id": "yr_readme_olmayan_dizini_anar",
+   "desc": "README, adressiz birim yokken de yazılmamış subsystem_addr_unknown dizinini anar",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_readme_ve_harita_yontemi_anlatir_iddia_etmez",
+   "find": "            if report[\"units_without_address\"]:\n                unknown +=",
+   "replace": "            if True:\n                unknown +="
+  },
+  {
+   "id": "yr_readme_adressiz_dizini_anmaz",
+   "desc": "README, adressiz birimlerin konduğu dizini hiç anmaz",
+   "module": "karadul/reconstruction/c_project_builder.py",
+   "test": "tests/test_yerlesim_adres.py::test_adresi_okunamayan_birimler_ayri_grupta",
+   "find": "            if report[\"units_without_address\"]:\n                unknown +=",
+   "replace": "            if False:\n                unknown +="
+  },
+  {
    "id": "yr_yerlesim_uygulanmaz",
    "desc": "Plan kurulur ama birimler eski sınıflandırmayla yerleşir",
    "module": "karadul/reconstruction/c_project_builder.py",

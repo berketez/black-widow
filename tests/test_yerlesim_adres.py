@@ -362,7 +362,8 @@ def test_readme_ve_harita_yontemi_anlatir_iddia_etmez(tmp_path):
     assert f"Strategy: `{cpb.PLACEMENT_ADDRESS_PADDING}`" in readme
     assert f">= {ESIK} bytes" in readme
     assert "- **Groups:** 2 (1 padding boundaries, 0 memory-block boundaries)" in readme
-    assert "- **Functions without a usable address:** 0" in readme
+    assert "- **Functions without a usable address:** 0\n" in readme
+    assert "subsystem_addr_unknown" not in readme      # yazılmayan dizin README'de anılmaz
     assert "not a verified" in readme
     assert "subsystem_addr_<a>/" in readme and "call-graph community (group_N)" not in readme
     harita = (proje / "analysis" / "subsystem_map.md").read_text()

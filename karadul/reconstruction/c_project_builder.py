@@ -1715,6 +1715,10 @@ class CProjectBuilder:
         report = placement.report
         lines = ["", "## Placement", ""]
         if placement.by_address:
+            # Dizin adı yalnız dizin gerçekten yazıldıysa geçer (README diskte olmayan yol anmaz).
+            unknown = "- **Functions without a usable address:** %d" % report["units_without_address"]
+            if report["units_without_address"]:
+                unknown += " (in `subsystem_%s`)" % _ADDRESS_UNKNOWN_GROUP
             lines.extend([
                 "Strategy: `%s`. Functions are grouped by their position in the "
                 "binary:" % placement.strategy,
@@ -1726,9 +1730,7 @@ class CProjectBuilder:
                 "- **Groups:** %d (%d padding boundaries, %d memory-block boundaries)" % (
                     len(report["groups"]), report["padding_cuts"], report["block_cuts"],
                 ),
-                "- **Functions without a usable address:** %d (in `subsystem_%s`)" % (
-                    report["units_without_address"], _ADDRESS_UNKNOWN_GROUP,
-                ),
+                unknown,
                 "",
                 "The groups describe the layout of the binary. They are not a "
                 "verified",
