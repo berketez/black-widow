@@ -18,9 +18,10 @@ yansıtmaz). Körlük kipinde (``blind_target=True``) hedefin Karadul adı hiçb
 taraması tutmazsa istem gönderilmez.
 
 Tutarlılık: her model çağrısı denetim günlüğüne düşer (``Backend.chat``); çalıştırılan her araç ve
-her görev de birer kayıttır (K-L1). Her model çağrısından sonra bellek bekçisi denetlenir. Arka uç
-hatası (``LMError``) görevi ``arka_uc_hatasi`` ile bitirir, ajan yeni göreve hazır kalır. Beklenmeyen
-her hata ve kesmede arka uç ``hata`` nedeniyle durdurulur (yetim süreç kalmaz) ve hata yükselir.
+her görev de birer kayıttır (K-L1). Her model çağrısından sonra bellek bekçisi denetlenir; bellek
+nedeniyle durmuş sunucuya yeni istek atılmaz (kendiliğinden yeniden başlatma yok). Arka uç hatası
+(``LMError``) görevi ``arka_uc_hatasi`` ile bitirir, ajan yeni göreve hazır kalır. Beklenmeyen her
+hata ve kesmede arka uç ``hata`` nedeniyle durdurulur (yetim süreç kalmaz) ve hata yükselir.
 """
 from __future__ import annotations
 
@@ -322,6 +323,10 @@ class Agent:
 
     # --- model çağrısı ------------------------------------------------------------------------
 
+    def _memory_stopped(self) -> bool:
+        tripped = self.memory_guard is not None and self.memory_guard.tripped is not None
+        return tripped or self.backend.state == STATE_MEMORY_STOPPED
+
     def _check_memory(self, task: _Task) -> None:
         if self.memory_guard is not None:
             sample = self.memory_guard.check()
@@ -336,6 +341,11 @@ class Agent:
     def _model_call(self, task: _Task, messages: list[dict[str, str]], schema: dict[str, Any],
                     purpose: str) -> Optional[ChatResult]:
         """Tek model isteği; ardından bellek bekçisi. Arka uç hatasında görev biter, ``None`` döner."""
+        if self._memory_stopped():
+            # Bellek nedeniyle durmuş sunucu kendiliğinden yeniden başlatılmaz: istek atılmaz. Yeniden
+            # denemek için arka uç açıkça başlatılır ve yeni bir bekçi kurulur.
+            task.finish(STATUS_MEMORY)
+            return None
         c = task.result.counters
         c.model_calls += 1
         reply: Optional[ChatResult] = None

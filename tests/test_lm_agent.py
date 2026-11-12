@@ -376,13 +376,22 @@ def test_bellek_bekcisi_her_model_cagrisindan_sonra(tmp_path):
     assert r.status == "tamam" and r.counters.model_calls == 2 and len(olcumler) == 2      # çağrı başına bir ölçüm
     assert r.memory["ust_gib"] == 17.5 and arka.stops == []
     # eşik aşılırsa: sunucu durur, cevap geçerli olsa da görev bellek_durdu ile biter
-    ajan2, arka2, gunluk2 = kur(tmp_path / "2", [yanit(AD), yanit(AD)])
+    ajan2, arka2, gunluk2 = kur(tmp_path / "2", [yanit(AD), yanit(AD0)])
     ajan2.memory_guard = M.MemoryGuard(lambda: 7, lambda s: arka2.stop("bellek"), measure=lambda pid: _ornek(21.0),
                                        audit=gunluk2)
     r2 = ajan2.suggest_name(fun(A))
     assert (r2.status, r2.answer, r2.memory["ust_gib"]) == ("bellek_durdu", None, 21.0)
     assert arka2.stops == ["bellek"] and arka2.state == B.STATE_MEMORY_STOPPED
     assert [k["olay"] for k in gunluk2.records][-2:] == ["bellek_durdu", "gorev"]
+    # bellek nedeniyle durmuş sunucu kendiliğinden yeniden başlatılmaz: sonraki görev istek atmadan biter
+    r2b = ajan2.suggest_name(fun(A))
+    assert (r2b.status, r2b.counters.model_calls, len(arka2.calls), arka2.starts) == ("bellek_durdu", 0, 1, 1)
+    arka2.start()
+    # arka uç yeniden başlatıldı ama tetiklenmiş bekçi yerinde: yine istek atılmaz
+    r2c = ajan2.suggest_name(fun(A))
+    assert (r2c.status, r2c.counters.model_calls, len(arka2.calls)) == ("bellek_durdu", 0, 1)
+    ajan2.memory_guard = None                       # açıkça yeniden başlatma + bekçinin yenilenmesi
+    assert ajan2.suggest_name(fun(A)).status == "tamam" and len(arka2.calls) == 2
     # arka uç hatası + bellek aşımı: neden bellektir
     ajan3, arka3, _ = kur(tmp_path / "3", [B.FakeReply(error=B.BackendError("bağlantı koptu"))])
     ajan3.memory_guard = M.MemoryGuard(lambda: 7, lambda s: arka3.stop("bellek"), measure=lambda pid: _ornek(22.0))
@@ -391,6 +400,9 @@ def test_bellek_bekcisi_her_model_cagrisindan_sonra(tmp_path):
     ajan4, arka4, _ = kur(tmp_path / "4", [yanit(AD, delay_sec=1)])
     arka4._sleep = lambda s: arka4.stop("bellek")
     assert ajan4.suggest_name(fun(A)).status == "bellek_durdu"
+    # bekçi yok, arka uç bellek_durdu: sonraki görev sunucuyu kendiliğinden başlatmaz, istek atmaz
+    r4 = ajan4.suggest_name(fun(A))
+    assert (r4.status, r4.counters.model_calls, len(arka4.calls), arka4.starts) == ("bellek_durdu", 0, 1, 1)
 
 
 def test_mesgulken_ikinci_gorev_reddedilir(tmp_path):
