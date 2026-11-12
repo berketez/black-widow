@@ -367,7 +367,7 @@ def test_readme_ve_harita_yontemi_anlatir_iddia_etmez(tmp_path):
     assert "not a verified" in readme
     assert "subsystem_addr_<a>/" in readme and "call-graph community (group_N)" not in readme
     harita = (proje / "analysis" / "subsystem_map.md").read_text()
-    assert f"| addr_1000 | .text | 1000 | 1050 | 2 | - |" in harita
+    assert "| addr_1000 | .text | 1000 | 1050 | 2 | - |" in harita
     assert f">= {ESIK} bytes" in harita
 
 
