@@ -24,6 +24,16 @@ Değişmezler (2026-11-10 çıktı sağlamlığı denetimi, kusur 2 ve 14):
     ve `success=False` döner.
   * Yerleşim (alt sistem dizini, dosya adı) yalnız girdinin içeriğine
     bağlıdır; girdi sırasına ve PYTHONHASHSEED'e bağlı değildir.
+
+Adres sırasına dayalı yerleşim (2026-11-12; bayrak arkasında, öntanımlı KAPALI:
+`binary_reconstruction.enable_address_placement`):
+  Fonksiyonlar adres sırasında bitişik dilimlere ayrılır; her dilim bir
+  `subsystem_addr_<adres>/` dizinidir. Yeni dilim, bellek bloğu değiştiğinde ya
+  da ardışık iki fonksiyon arasındaki dolgu eşiği bulduğunda başlar
+  (`slice_by_padding`). Dolgu sinyali olmayan ikilide eski yerleşime dönülür ve
+  bu README'ye, `analysis/placement.json`'a ve günlüğe yazılır. Bayrak kapalıyken
+  çıktı bayt bayt eskisiyle aynıdır. Ölçüm ve sınırlar:
+  docs/arge/2026-11-12_yerlesim/uygulama.md.
 """
 
 from __future__ import annotations
@@ -160,6 +170,231 @@ _HASH_SUFFIX_LEN = 8
 _ERROR_EXAMPLE_LIMIT = 5
 
 # ---------------------------------------------------------------------------
+# Adres sırasına dayalı yerleşim (bayrak arkasında; öntanımlı kapalı)
+# ---------------------------------------------------------------------------
+# Sayılar (dolgu eşiği, hizalama) burada DEĞİL, `karadul/config.py`'de
+# `BinaryReconstructionConfig.address_placement_*` alanlarında tanımlıdır.
+
+# Yerleşim stratejilerinin adları (README, placement.json ve sonuç nesnesinde).
+PLACEMENT_API_COMMUNITY = "api_community"      # API kuralları + çağrı grafı toplulukları
+PLACEMENT_ADDRESS_PADDING = "address_padding"  # adres sırası + dolgu sınırı
+
+# Adres yerleşimi istendiği hâlde eski yerleşime dönülmesinin nedenleri.
+FALLBACK_INVALID_PARAMETERS = "invalid_parameters"   # 0 < eşik < hizalama değil
+FALLBACK_NO_FUNCTION_DATA = "no_function_data"       # fonksiyon listesi (adres, boyut) okunamadı
+FALLBACK_NO_ADDRESSED_UNIT = "no_addressed_unit"     # hiçbir birimin adresi listede yok
+FALLBACK_NO_PADDING_SIGNAL = "no_padding_signal"     # [eşik, hizalama) aralığında hiç dolgu yok
+
+# Adres dilimi gruplarının adı: `addr_<dilimin ilk fonksiyonunun adresi>`; adresi
+# okunamayan ya da fonksiyon listesinde olmayan birimler tek grupta toplanır.
+_ADDRESS_GROUP_PREFIX = "addr_"
+_ADDRESS_UNKNOWN_GROUP = _ADDRESS_GROUP_PREFIX + "unknown"
+
+# Ghidra'nın bellek bloğu izin dizgisinde ("r-x") yürütme izni.
+_EXECUTE_PERMISSION = "x"
+
+# Çalışma alanında (`static/`) fonksiyon listesinin ve bellek bloklarının yeri.
+_FUNCTIONS_JSON_CANDIDATES = ("ghidra_functions.json", "ghidra_output/functions.json")
+_PROGRAM_INFO_JSON_CANDIDATES = (
+    "ghidra_combined_results.json", "ghidra_output/combined_results.json",
+)
+_PLACEMENT_REPORT_NAME = "placement.json"
+_PLACEMENT_REPORT_SCHEMA = "karadul-placement/1"
+
+
+@dataclass(frozen=True)
+class MemoryBlock:
+    """Ghidra bellek bloğu: [start, end] (uç dahil), ad ve yürütme izni."""
+
+    start: int
+    end: int
+    name: str
+    executable: bool
+
+
+@dataclass(frozen=True)
+class FunctionGap:
+    """Adres sırasındaki bir fonksiyon ve önündeki dolgu.
+
+    `gap`: bir önceki fonksiyonun bitişinden bu fonksiyonun başına kadarki bayt
+    (negatif: gövdeler örtüşüyor). Önceki fonksiyon başka bloktaysa, fonksiyon
+    sıranın başındaysa ya da blok yürütülebilir değilse `None`: orada dolgu
+    kuralı işlemez.
+    """
+
+    address: int
+    size: int
+    block: int | None        # `blocks` içindeki sıra; hiçbir blokta değilse None
+    gap: int | None
+    block_changed: bool      # önceki fonksiyon başka blokta (sıranın başı: False)
+
+
+@dataclass(frozen=True)
+class AddressSlice:
+    """Adres sırasında bitişik bir fonksiyon dilimi."""
+
+    start: int               # ilk fonksiyonun adresi
+    end: int                 # son fonksiyonun bitişi (dışında)
+    block: int | None
+    functions: int
+
+
+@dataclass
+class AddressLayout:
+    """Fonksiyon listesinin dilimlenmesi ve sayımları."""
+
+    slice_of: dict[int, int]          # fonksiyon adresi -> `slices` içindeki sıra
+    slices: list[AddressSlice]
+    padding_cuts: int = 0             # dolgu eşiği geçildiği için konan sınır
+    block_cuts: int = 0               # bellek bloğu değiştiği için konan sınır
+    signal_gaps: int = 0              # [eşik, hizalama) aralığındaki dolgu
+    measured_gaps: int = 0            # dolgusu ölçülen ardışık çift
+
+    @property
+    def has_padding_signal(self) -> bool:
+        return self.signal_gaps > 0
+
+
+def parse_memory_blocks(raw_blocks: Any) -> list[MemoryBlock]:
+    """`program_info.memory_blocks` listesinden adreslenebilir blokları çıkar.
+
+    Başlangıcı ya da bitişi düz onaltılık olmayan bloklar (Ghidra'nın yüklenmeyen
+    "ad::ofset" blokları) ve bozuk kayıtlar atlanır. Sonuç başlangıç adresine göre
+    sıralıdır.
+    """
+    blocks: list[MemoryBlock] = []
+    if not isinstance(raw_blocks, list):
+        return blocks
+    for raw in raw_blocks:
+        if not isinstance(raw, dict):
+            continue
+        start = _parse_hex(raw.get("start"))
+        end = _parse_hex(raw.get("end"))
+        if start is None or end is None or end < start:
+            continue
+        permissions = raw.get("permissions")
+        blocks.append(MemoryBlock(
+            start=start, end=end, name=str(raw.get("name", "")),
+            executable=isinstance(permissions, str) and _EXECUTE_PERMISSION in permissions,
+        ))
+    blocks.sort(key=lambda b: (b.start, b.end, b.name))
+    return blocks
+
+
+def _parse_hex(value: Any) -> int | None:
+    """Onaltılık adres dizgisini tam sayıya çevir; çevrilemiyorsa None."""
+    if isinstance(value, bool) or not isinstance(value, str):
+        return None
+    try:
+        return int(value, 16)
+    except ValueError:
+        return None
+
+
+def _block_index(address: int, blocks: list[MemoryBlock]) -> int | None:
+    """Adresi içeren bloğun sırası (bloklar başlangıca göre sıralı); yoksa None."""
+    low, high = 0, len(blocks) - 1
+    found: int | None = None
+    while low <= high:
+        mid = (low + high) // 2
+        if blocks[mid].start <= address:
+            found = mid
+            low = mid + 1
+        else:
+            high = mid - 1
+    if found is not None and address <= blocks[found].end:
+        return found
+    return None
+
+
+def function_gaps(
+    functions: dict[int, int], blocks: list[MemoryBlock],
+) -> list[FunctionGap]:
+    """Fonksiyonları (adres -> boyut) adres sırasına diz; her birinin önündeki dolguyu ver.
+
+    Dolgu yalnız aynı bloktaki ardışık iki fonksiyon arasında ve blok
+    yürütülebilirse ölçülür. Blok bilgisi yoksa (`blocks` boş) bütün fonksiyonlar
+    tek, yürütülebilir blokta sayılır. Yürütülemeyen blok (Ghidra'nın dış
+    fonksiyon yer tutucularını koyduğu `EXTERNAL`) gerçek kod taşımaz; oradaki
+    aralıklar dolgu değildir.
+    """
+    out: list[FunctionGap] = []
+    previous: FunctionGap | None = None
+    for address in sorted(functions):
+        size = functions[address]
+        block = _block_index(address, blocks) if blocks else None
+        gap: int | None = None
+        changed = False
+        if previous is not None:
+            changed = block != previous.block
+            measurable = block is None or blocks[block].executable
+            if not changed and measurable:
+                gap = address - (previous.address + previous.size)
+        current = FunctionGap(address, size, block, gap, changed)
+        out.append(current)
+        previous = current
+    return out
+
+
+def slice_by_padding(
+    functions: dict[int, int], blocks: list[MemoryBlock],
+    threshold: int, alignment: int,
+) -> AddressLayout:
+    """Adres sırasındaki fonksiyonları bitişik dilimlere böl.
+
+    Yeni dilim şu iki durumda başlar:
+      * fonksiyon bir öncekinden farklı bellek bloğundadır (PLT, `.text`,
+        `EXTERNAL` ... ayrı kalır);
+      * önündeki dolgu `threshold` baytı bulur (yürütülebilir blokta).
+
+    `alignment` dilimlemeyi değiştirmez; yalnız sinyal sayımının üst ucudur:
+    `signal_gaps`, `threshold <= dolgu < alignment` olan çiftlerin sayısıdır.
+    Bu bantta hiç dolgu yoksa ikilide dolgu sinyali yoktur (`has_padding_signal`).
+    """
+    layout = AddressLayout(slice_of={}, slices=[])
+    members: list[FunctionGap] = []
+
+    def close() -> None:
+        if members:
+            last = members[-1]
+            layout.slices.append(AddressSlice(
+                start=members[0].address, end=last.address + last.size,
+                block=members[0].block, functions=len(members),
+            ))
+            members.clear()
+
+    for item in function_gaps(functions, blocks):
+        if item.block_changed:
+            layout.block_cuts += 1
+            close()
+        elif item.gap is not None:
+            layout.measured_gaps += 1
+            if threshold <= item.gap < alignment:
+                layout.signal_gaps += 1
+            if item.gap >= threshold:
+                layout.padding_cuts += 1
+                close()
+        layout.slice_of[item.address] = len(layout.slices)
+        members.append(item)
+    close()
+    return layout
+
+
+@dataclass
+class _PlacementPlan:
+    """`build()` için yerleşim kararı (yalnız adres yerleşimi istendiğinde kurulur)."""
+
+    strategy: str                           # fiilen uygulanan strateji
+    fallback_reason: str = ""               # eski yerleşime dönüldüyse nedeni
+    unit_group: dict[str, str] = field(default_factory=dict)   # birim anahtarı -> grup adı
+    report: dict[str, Any] = field(default_factory=dict)       # placement.json içeriği
+
+    @property
+    def by_address(self) -> bool:
+        return self.strategy == PLACEMENT_ADDRESS_PADDING
+
+
+# ---------------------------------------------------------------------------
 # Sonuc dataclass
 # ---------------------------------------------------------------------------
 
@@ -177,6 +412,10 @@ class CProjectBuildResult:
     functions_placed: int = 0
     functions_missing: int = 0
     functions_duplicated: int = 0
+    # Fiilen uygulanan yerleşim stratejisi; adres yerleşimi istendiği hâlde eski
+    # yerleşime dönüldüyse nedeni (dönülmediyse boş).
+    placement_strategy: str = PLACEMENT_API_COMMUNITY
+    placement_fallback_reason: str = ""
 
 
 class _BuildLedger:
@@ -307,6 +546,14 @@ class CProjectBuilder:
             if name in _ENTRY_NAMES or name.lower() in {"main", "_main", "entry"}:
                 entry_stems.append(stem)
 
+        # -- Adres sırasına dayalı yerleşim (bayrak kapalıyken plan None) ----
+        # Plan yalnız `enable_address_placement` açıkken kurulur. Adres yerleşimi
+        # uygulanırsa grup adını birimin adres dilimi verir; uygulanamazsa
+        # (`fallback_reason`) yukarıdaki eski sınıflandırma geçerli kalır.
+        # Giriş noktaları iki yerleşimde de `main.c`'ye yazılır; gruba girmez.
+        placement = self._plan_address_placement(file_contents, entry_stems, workspace)
+        by_address = placement is not None and placement.by_address
+
         # -- Kucuk fonksiyon tespiti ----------------------------------------
         small_funcs: dict[str, list[str]] = defaultdict(list)  # subsystem -> [stem, ...]
         normal_funcs: dict[str, list[str]] = defaultdict(list)  # subsystem -> [stem, ...]
@@ -316,7 +563,10 @@ class CProjectBuilder:
                 continue  # entry point'ler ayri
             lines = file_lines[stem]
             name = self._unit_name(stem)
-            subsys = func_subsystem.get(name, "misc")
+            if by_address:
+                subsys = placement.unit_group[stem]
+            else:
+                subsys = func_subsystem.get(name, "misc")
             is_thunk = bool(_THUNK_RE.match(name))
             if is_thunk or lines < self.SMALL_FUNC_THRESHOLD:
                 small_funcs[subsys].append(stem)
@@ -430,9 +680,20 @@ class CProjectBuilder:
             ledger.write(analysis_dir / "xref_index.md", xref)
 
         # subsystem_map.md
-        if func_subsystem:
+        if by_address:
+            smap = self._build_address_map(placement, nodes)
+            ledger.write(analysis_dir / "subsystem_map.md", smap)
+        elif func_subsystem:
             smap = self._build_subsystem_map(func_subsystem, active_subsystems)
             ledger.write(analysis_dir / "subsystem_map.md", smap)
+
+        # placement.json: yalnız adres yerleşimi istendiğinde (uygulansın ya da
+        # eski yerleşime dönülsün); bayrak kapalıyken yazılmaz.
+        if placement is not None:
+            ledger.write(
+                analysis_dir / _PLACEMENT_REPORT_NAME,
+                json.dumps(placement.report, indent=2, ensure_ascii=False) + "\n",
+            )
 
         # -- 7. README.md ----------------------------------------------------
         readme = self._build_readme(
@@ -441,6 +702,7 @@ class CProjectBuilder:
             subsystems=sorted(active_subsystems),
             functions_merged=functions_merged,
             algorithm_results=algorithm_results,
+            placement=placement,
         )
         ledger.write(output_dir / "README.md", readme)
 
@@ -470,7 +732,250 @@ class CProjectBuilder:
             functions_placed=len(file_contents) - len(missing) - len(duplicated),
             functions_missing=len(missing),
             functions_duplicated=len(duplicated),
+            placement_strategy=(
+                placement.strategy if placement is not None else PLACEMENT_API_COMMUNITY
+            ),
+            placement_fallback_reason=(
+                placement.fallback_reason if placement is not None else ""
+            ),
         )
+
+    # ------------------------------------------------------------------
+    # Adres sırasına dayalı yerleşim
+    # ------------------------------------------------------------------
+
+    def _address_placement_settings(self) -> tuple[int, int] | None:
+        """Bayrak açıksa (dolgu eşiği, hizalama); kapalıysa None.
+
+        Bayrak yalnız `True` ise açık sayılır: yapılandırma verilmemişse (`None`)
+        ya da alan yoksa kapalıdır. Sayılar yalnız `karadul/config.py`'den okunur.
+        """
+        settings = getattr(self._config, "binary_reconstruction", None)
+        if getattr(settings, "enable_address_placement", False) is not True:
+            return None
+        return (
+            settings.address_placement_padding_threshold,
+            settings.address_placement_alignment,
+        )
+
+    @staticmethod
+    def _load_static_json(workspace, candidates: tuple[str, ...]) -> Any:
+        """Çalışma alanının `static` dizininden ilk okunabilen JSON; yoksa None."""
+        if not workspace:
+            return None
+        static_dir = workspace.get_stage_dir("static")
+        for relative in candidates:
+            path = static_dir / relative
+            if path.exists():
+                try:
+                    return json.loads(path.read_text())
+                except (json.JSONDecodeError, OSError) as exc:
+                    logger.warning("Yerleşim girdisi okunamadı %s: %s", path, exc)
+        return None
+
+    def _load_function_sizes(self, workspace) -> dict[int, int]:
+        """Ghidra fonksiyon listesinden adres -> boyut (bayt).
+
+        Adresi ya da boyutu okunamayan kayıt atlanır. Aynı adres iki kez
+        geçerse büyük boyut alınır (girdi sırasına bağlı kalmasın diye).
+        """
+        data = self._load_static_json(workspace, _FUNCTIONS_JSON_CANDIDATES)
+        records = data.get("functions") if isinstance(data, dict) else None
+        sizes: dict[int, int] = {}
+        if not isinstance(records, list):
+            return sizes
+        for record in records:
+            if not isinstance(record, dict):
+                continue
+            address = _parse_hex(record.get("address"))
+            size = record.get("size")
+            if address is None or isinstance(size, bool) or not isinstance(size, int):
+                continue
+            if size < 0:
+                continue
+            sizes[address] = max(size, sizes.get(address, 0))
+        return sizes
+
+    def _load_memory_blocks(self, workspace) -> list[MemoryBlock]:
+        """Ghidra'nın bellek blokları (`program_info.memory_blocks`); yoksa boş liste."""
+        data = self._load_static_json(workspace, _PROGRAM_INFO_JSON_CANDIDATES)
+        info = data.get("program_info") if isinstance(data, dict) else None
+        return parse_memory_blocks(info.get("memory_blocks") if isinstance(info, dict) else None)
+
+    @staticmethod
+    def _unit_address(content: str) -> int | None:
+        """Birimin başlığındaki adres (`// Address:` satırı); yoksa ya da bozuksa None."""
+        match = _ADDRESS_HEADER_RE.search(content)
+        return _parse_hex(match.group(1)) if match else None
+
+    def _plan_address_placement(
+        self, file_contents: dict[str, str], entry_stems: list[str], workspace,
+    ) -> _PlacementPlan | None:
+        """Adres yerleşimi planı; bayrak kapalıysa None.
+
+        Dilimleme Ghidra'nın BÜTÜN fonksiyon listesinde yapılır (birimi olmayan
+        fonksiyon da sırada yerini tutar; yoksa komşuları arasındaki aralık
+        dolgu sanılırdı). Sonra her birim, başlığındaki adresle dilimine
+        bağlanır. Adresi okunamayan ya da listede olmayan birimler
+        `addr_unknown` grubuna gider. Giriş noktaları (`entry_stems`) gruba
+        girmez: iki yerleşimde de `main.c`'ye yazılırlar.
+
+        Eski yerleşime dönülen durumlar (`fallback_reason`): eşik/hizalama
+        geçersiz, fonksiyon listesi yok, hiçbir birim adreslenemiyor, dolgu
+        sinyali yok. Karar README'ye, `analysis/placement.json`'a ve günlüğe
+        yazılır.
+        """
+        settings = self._address_placement_settings()
+        if settings is None:
+            return None
+        threshold, alignment = settings
+        entries = set(entry_stems)
+        grouped_keys = sorted(key for key in file_contents if key not in entries)
+        report: dict[str, Any] = {
+            "schema": _PLACEMENT_REPORT_SCHEMA,
+            "requested": PLACEMENT_ADDRESS_PADDING,
+            "strategy": PLACEMENT_API_COMMUNITY,
+            "fallback_reason": None,
+            "padding_threshold": threshold,
+            "alignment": alignment,
+            "units": len(file_contents),
+            "entry_units": len(file_contents) - len(grouped_keys),
+        }
+
+        def fallback(reason: str) -> _PlacementPlan:
+            report["fallback_reason"] = reason
+            logger.warning(
+                "Adres yerleşimi istendi ama uygulanamadı (%s); eski yerleşim "
+                "(API kuralları + çağrı grafı toplulukları) kullanılıyor", reason,
+            )
+            return _PlacementPlan(
+                strategy=PLACEMENT_API_COMMUNITY, fallback_reason=reason, report=report,
+            )
+
+        valid = all(
+            isinstance(v, int) and not isinstance(v, bool) for v in (threshold, alignment)
+        )
+        if not valid or not 0 < threshold < alignment:
+            return fallback(FALLBACK_INVALID_PARAMETERS)
+
+        sizes = self._load_function_sizes(workspace)
+        if not sizes:
+            return fallback(FALLBACK_NO_FUNCTION_DATA)
+        blocks = self._load_memory_blocks(workspace)
+        layout = slice_by_padding(sizes, blocks, threshold, alignment)
+
+        unit_slice: dict[str, int] = {}
+        unknown: list[str] = []
+        for key in grouped_keys:
+            address = self._unit_address(file_contents[key])
+            if address is not None and address in layout.slice_of:
+                unit_slice[key] = layout.slice_of[address]
+            else:
+                unknown.append(key)
+        report.update({
+            "functions": len(sizes),
+            "memory_blocks_known": bool(blocks),
+            "units_placed_by_address": len(unit_slice),
+            "units_without_address": len(unknown),
+            "measured_gaps": layout.measured_gaps,
+            "signal_gaps": layout.signal_gaps,
+            "padding_cuts": layout.padding_cuts,
+            "block_cuts": layout.block_cuts,
+        })
+        if not unit_slice:
+            return fallback(FALLBACK_NO_ADDRESSED_UNIT)
+        if not layout.has_padding_signal:
+            return fallback(FALLBACK_NO_PADDING_SIGNAL)
+
+        # Grup adı dilimin ilk fonksiyonunun adresidir: koşudan koşuya kararlı,
+        # eşit genişlikte yazıldığı için ad sırası adres sırasıdır.
+        used = sorted(set(unit_slice.values()))
+        width = max(len(f"{layout.slices[i].start:x}") for i in used)
+        names = {
+            i: f"{_ADDRESS_GROUP_PREFIX}{layout.slices[i].start:0{width}x}" for i in used
+        }
+        unit_group = {key: names[i] for key, i in unit_slice.items()}
+        unit_group.update({key: _ADDRESS_UNKNOWN_GROUP for key in unknown})
+        units_in: Counter = Counter(unit_slice.values())
+        report["strategy"] = PLACEMENT_ADDRESS_PADDING
+        report["groups"] = [
+            {
+                "name": names[i],
+                "memory_block": (
+                    blocks[layout.slices[i].block].name
+                    if layout.slices[i].block is not None else None
+                ),
+                "start": f"{layout.slices[i].start:0{width}x}",
+                "end": f"{layout.slices[i].end:0{width}x}",
+                "functions": layout.slices[i].functions,
+                "units": units_in[i],
+            }
+            for i in used
+        ]
+        if unknown:
+            logger.warning(
+                "Adres yerleşimi: %d birimin adresi fonksiyon listesinde yok; "
+                "%s grubuna kondu", len(unknown), _ADDRESS_UNKNOWN_GROUP,
+            )
+        if not blocks:
+            logger.warning(
+                "Adres yerleşimi: bellek bloğu bilgisi yok; blok sınırı konmadı "
+                "(PLT girişleri komşu koddan yalnız dolguyla ayrılır)"
+            )
+        logger.info(
+            "Adres yerleşimi: %d fonksiyon, %d grup (%d dolgu sınırı, %d blok "
+            "sınırı; eşik %d bayt)",
+            len(sizes), len(used), layout.padding_cuts, layout.block_cuts, threshold,
+        )
+        return _PlacementPlan(
+            strategy=PLACEMENT_ADDRESS_PADDING, unit_group=unit_group, report=report,
+        )
+
+    def _build_address_map(self, placement: _PlacementPlan, nodes: dict[str, dict]) -> str:
+        """Adres yerleşiminde `subsystem_map.md`: grup başına bir satır.
+
+        API kuralı etiketi (network, file_io ...) dizini belirlemez ama kaybolmaz:
+        her grubun yanında, üyelerinin kural etiketlerinin sayımı yazılır.
+        """
+        api_label: dict[str, str] = {}
+        for _addr, node in sorted(nodes.items(), key=lambda item: item[0]):
+            name = node.get("name", "")
+            api_label[name] = self._classify_subsystem(name, node.get("callees", []))
+        labels: dict[str, Counter] = defaultdict(Counter)
+        members: Counter = Counter()
+        for key, group in placement.unit_group.items():
+            members[group] += 1
+            label = api_label.get(self._unit_name(key), "misc")
+            if label != "misc":
+                labels[group][label] += 1
+
+        report = placement.report
+        lines = [
+            "# Subsystem Map\n",
+            "Placement strategy: `%s`. Groups are runs of consecutive functions in "
+            "address order; a new group starts where the memory block changes or "
+            "the gap before a function is >= %d bytes." % (
+                report["strategy"], report["padding_threshold"],
+            ),
+            "",
+            "| Group | Memory block | Start | End | Functions | API labels |",
+            "|-------|--------------|-------|-----|-----------|------------|",
+        ]
+        described = {g["name"]: g for g in report.get("groups", [])}
+        for group in sorted(members):
+            info = described.get(group, {})
+            api = ", ".join(
+                f"{label} {count}" for label, count in sorted(
+                    labels[group].items(),
+                    key=lambda item: (-item[1], _SUBSYSTEM_ORDER[item[0]]),
+                )
+            )
+            lines.append("| %s | %s | %s | %s | %d | %s |" % (
+                group, info.get("memory_block") or "-", info.get("start", "-"),
+                info.get("end", "-"), members[group], api or "-",
+            ))
+        lines.append("")
+        return "\n".join(lines)
 
     # ------------------------------------------------------------------
     # Yardimci: edge endpoint ve dosya adi sanitization
@@ -1200,6 +1705,47 @@ class CProjectBuilder:
     # README
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _placement_readme_section(placement: _PlacementPlan) -> list[str]:
+        """README'nin "Placement" bölümü: yalnız adres yerleşimi istendiğinde yazılır.
+
+        Yöntemi ve sayıları anlatır. Grupların özgün kaynak dosyalarını
+        yansıttığını İDDİA ETMEZ: bu, doğrulama ölçümü yapılmadan yazılmaz.
+        """
+        report = placement.report
+        lines = ["", "## Placement", ""]
+        if placement.by_address:
+            lines.extend([
+                "Strategy: `%s`. Functions are grouped by their position in the "
+                "binary:" % placement.strategy,
+                "consecutive functions in address order form a group, and a new "
+                "group starts",
+                "where the memory block changes or the gap before a function is "
+                ">= %d bytes." % report["padding_threshold"],
+                "",
+                "- **Groups:** %d (%d padding boundaries, %d memory-block boundaries)" % (
+                    len(report["groups"]), report["padding_cuts"], report["block_cuts"],
+                ),
+                "- **Functions without a usable address:** %d (in `subsystem_%s`)" % (
+                    report["units_without_address"], _ADDRESS_UNKNOWN_GROUP,
+                ),
+                "",
+                "The groups describe the layout of the binary. They are not a "
+                "verified",
+                "reconstruction of the original source files; the padding "
+                "threshold is",
+                "toolchain-specific. Details: `analysis/%s`." % _PLACEMENT_REPORT_NAME,
+            ])
+        else:
+            lines.extend([
+                "Address-order placement (`%s`) was requested but not applied: `%s`."
+                % (report["requested"], placement.fallback_reason),
+                "The directories below use the default grouping (API usage and "
+                "call-graph",
+                "communities). Details: `analysis/%s`." % _PLACEMENT_REPORT_NAME,
+            ])
+        return lines
+
     def _build_readme(
         self,
         program_name: str,
@@ -1207,7 +1753,10 @@ class CProjectBuilder:
         subsystems: list[str],
         functions_merged: int,
         algorithm_results=None,
+        placement: _PlacementPlan | None = None,
     ) -> str:
+        # `placement` None ise (bayrak kapalı) metin eskisiyle bayt bayt aynıdır.
+        by_address = placement is not None and placement.by_address
         lines = [
             f"# {program_name} -- Reverse Engineered Project",
             "",
@@ -1233,6 +1782,22 @@ class CProjectBuilder:
         for s in subsystems:
             lines.append(f"- `{s}`")
 
+        if placement is not None:
+            lines.extend(self._placement_readme_section(placement))
+
+        if by_address:
+            group_lines = [
+                "  subsystem_addr_<a>/   -- Consecutive functions in address order;",
+                "                           <a> is the address of the group's first",
+                "                           function (see Placement above)",
+            ]
+        else:
+            group_lines = [
+                "  subsystem_<name>/     -- Grouped by API usage (network, crypto, ...)",
+                "                           or by call-graph community (group_N);",
+                "                           subsystem_misc holds the uncategorized",
+            ]
+
         lines.extend([
             "",
             "## Directory Structure",
@@ -1241,9 +1806,7 @@ class CProjectBuilder:
             "include/                -- Type definitions and subsystem headers",
             "src/",
             "  main.c                -- Entry point functions (when detected)",
-            "  subsystem_<name>/     -- Grouped by API usage (network, crypto, ...)",
-            "                           or by call-graph community (group_N);",
-            "                           subsystem_misc holds the uncategorized",
+            *group_lines,
             "    <function>.c        -- One function per file",
             "    thunks_and_stubs.c  -- Short functions and thunks, merged",
             "analysis/",

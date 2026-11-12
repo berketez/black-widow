@@ -574,6 +574,22 @@ class BinaryReconstructionConfig:
     # (stages._apply_manual_overrides hash'ten bulur). Bu alan SADECE
     # default-olmayan bir yol icin -- auto-discover'a EK ikinci kaynaktir.
     overrides_path: Optional[str] = None
+    # Proje kurucuda adres sırasına dayalı yerleşim (2026-11-12). Öntanımlı KAPALI:
+    # kapalıyken kurucunun çıktısı bayt bayt eskisiyle aynıdır (API kuralları + çağrı
+    # grafı toplulukları). Açıkken fonksiyonlar adres sırasında bitişik dilimlere
+    # ayrılır; yeni dilim, bellek bloğu değiştiğinde ya da yürütülebilir blokta ardışık
+    # iki fonksiyon arasındaki dolgu `address_placement_padding_threshold` baytı
+    # bulduğunda başlar. Dolgu sinyali olmayan ikilide ([eşik, hizalama) aralığında hiç
+    # dolgu yok) kurucu eski yerleşime döner ve bunu README, analysis/placement.json ve
+    # günlükte belirtir.
+    # Eşik ve hizalama GELİŞTİRME SETİNDE seçildi (Debian 13 / AArch64 / GCC; ön kayıtsız
+    # keşif, docs/arge/2026-11-11_harita/yerlesim_kesfi.md) ve araç zincirine özgüdür:
+    # başka derleyici ya da hedefte sinyal olmayabilir. Doğrulama ölçümü yapılmadan
+    # öntanımlı açılmaz; sayılar doğrulama setinde yeniden ayarlanmaz
+    # (docs/arge/2026-11-12_yerlesim/).
+    enable_address_placement: bool = False
+    address_placement_padding_threshold: int = 16   # bayt; dolgu bundan küçük değilse sınır
+    address_placement_alignment: int = 32           # bayt; sinyal bandının üst ucu (dışında)
 
 
 @dataclass
