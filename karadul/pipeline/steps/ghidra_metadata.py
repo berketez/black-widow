@@ -228,6 +228,9 @@ class GhidraMetadataStep(Step):
                                 "library": m.library,
                                 "confidence": m.confidence,
                                 "purpose": m.purpose,
+                                # Aynı adlı iki fonksiyon (PLT ve dış blok thunk'ı) ayrı
+                                # kayıttır; adres olmadan kayıtlar özdeş çıkıyordu.
+                                "address": m.address,
                             }
                             for m in sig_matches
                         ],

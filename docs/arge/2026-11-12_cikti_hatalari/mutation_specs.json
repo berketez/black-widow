@@ -1,0 +1,45 @@
+{
+ "aciklama": "2026-11-12 çıktı hataları onarımının mutantları. Koşu: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec docs/arge/2026-11-12_cikti_hatalari/mutation_specs.json",
+ "mutants": [
+  {
+   "id": "im2_adim_adres_yok",
+   "desc": "etkin yol (ghidra_metadata) kayda adres yazmaz (onarım öncesi)",
+   "module": "karadul/pipeline/steps/ghidra_metadata.py",
+   "test": "tests/test_cikti_hatalari.py::TestImzaKaydiAdres::test_adim_yolu_adres_yazar",
+   "find": "                                \"address\": m.address,\n",
+   "replace": ""
+  },
+  {
+   "id": "im2_adim_adres_yanlis_alan",
+   "desc": "kayda adres yerine fonksiyon adı yazılır",
+   "module": "karadul/pipeline/steps/ghidra_metadata.py",
+   "test": "tests/test_cikti_hatalari.py::TestImzaKaydiAdres::test_adim_yolu_adres_yazar",
+   "find": "\"address\": m.address,",
+   "replace": "\"address\": m.original_name,"
+  },
+  {
+   "id": "im2_monolit_adres_yok",
+   "desc": "emekli monolit yolu kayda adres yazmaz (onarım öncesi)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_cikti_hatalari.py::TestImzaKaydiAdres::test_monolit_yolu_adres_yazar",
+   "find": "                             \"address\": m.address}",
+   "replace": "                             }"
+  },
+  {
+   "id": "im2_okuyucu_harita_adresi_anahtar_sanar",
+   "desc": "ad haritası okuyucusu adresi anahtar sanarsa adres alanı haritayı değiştirir",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_cikti_hatalari.py::TestImzaKaydiAdres::test_okuyucular_adres_alanindan_etkilenmez",
+   "find": "orig = match.get(\"original\", \"\")",
+   "replace": "orig = match.get(\"address\") or match.get(\"original\", \"\")"
+  },
+  {
+   "id": "im2_okuyucu_tablo_adresi_anahtar_sanar",
+   "desc": "HTML aday tablosu okuyucusu adresi özgün ad sanarsa adres alanı tabloyu değiştirir",
+   "module": "karadul/core/report_generator.py",
+   "test": "tests/test_cikti_hatalari.py::TestImzaKaydiAdres::test_okuyucular_adres_alanindan_etkilenmez",
+   "find": "\"original\": match.get(\"original\", \"\"),",
+   "replace": "\"original\": match.get(\"address\") or match.get(\"original\", \"\"),"
+  }
+ ]
+}

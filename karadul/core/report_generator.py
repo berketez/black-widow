@@ -664,8 +664,9 @@ class ReportGenerator:
         if not naming_data:
             return ""
 
-        # Aynı satır birden çok kez gelebilir: imza kaydı adres taşımaz, aynı adlı iki thunk (PLT ve
-        # dış blok) iki özdeş kayıt üretir (Debian tree: 133 kaydın 63'ü). Tablo ve sayı tekil satır.
+        # Aynı satır birden çok kez gelebilir: aynı adlı iki thunk (PLT ve dış blok) iki imza kaydı
+        # üretir (Debian tree: 133 kaydın 63'ü). Kayıtlar adresleriyle ayrılır ama tabloda adres
+        # sütunu yok; görünen satır aynı olduğundan tablo ve sayı tekil satır üzerinden.
         _seen: dict[tuple[str, ...], dict[str, Any]] = {}
         for entry in naming_data:
             key = tuple(str(entry.get(k)) for k in ("original", "recovered", "source", "confidence"))
