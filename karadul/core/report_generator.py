@@ -447,33 +447,46 @@ class ReportGenerator:
                 "desc": "Compiler-inlined stdlib functions (abs, strlen, memcpy) recognized.",
             })
 
-        # JS strategies
+        # B-B7: doğrulanmamış tanıtım cümleleri ("NSA-grade", "300+ rules", "3-level data
+        # flow", "5 strategies", "names recovered from original source") kaldırıldı; satır
+        # yalnız sayıyı ve ölçülmüş etiket dağılımını söyler. Ad değişikliği ikili hedefte de
+        # sayılır (eskiden JS'e özgü "Context-Aware Renaming" metniyle 119/119 raporda çıkıyordu).
         if st.get("variables_renamed"):
+            labels = st.get("naming_by_label")
+            label_txt = (
+                "label distribution of recovered function names: "
+                + ", ".join(f"{k}: {v}" for k, v in sorted(labels.items()))
+                if isinstance(labels, dict) and labels else
+                "no name label distribution recorded"
+            )
             strategies.append({
-                "name": "Context-Aware Renaming (NSA-grade)",
-                "impact": f"{st['variables_renamed']} variables renamed",
-                "desc": "300+ rules, 3-level data flow tracking, confidence scoring.",
+                "name": "Identifier Renaming",
+                "impact": f"{st['variables_renamed']} identifiers renamed",
+                "desc": (
+                    f"Names chosen by the naming pipeline; {label_txt}. A name is verified only "
+                    "if labelled 'kesin' or 'doğrulandı' (see Name Reliability)."
+                ),
             })
 
         if st.get("params_recovered"):
             strategies.append({
                 "name": "Parameter Recovery",
                 "impact": f"{st['params_recovered']} params ({st.get('params_recovery_rate', 'N/A')})",
-                "desc": "Function parameters recovered via 5 strategies (this.X, call-site, destructuring).",
+                "desc": "Function parameter names proposed from usage (member access, call sites, destructuring); not verified.",
             })
 
         if st.get("naming_total"):
             strategies.append({
                 "name": "NPM Naming Pipeline",
                 "impact": f"{st['naming_total']} modules named (avg conf: {st.get('naming_avg_confidence', 'N/A')})",
-                "desc": "npm fingerprint + source match + structural analysis for module identification.",
+                "desc": "Module names proposed from package fingerprints, source matching and structure; not verified.",
             })
 
         if st.get("source_match_names_recovered"):
             strategies.append({
                 "name": "Source Matching",
-                "impact": f"{st['source_match_names_recovered']} names recovered from original source",
-                "desc": "Minified functions matched to original npm package source code.",
+                "impact": f"{st['source_match_names_recovered']} names proposed by source matching",
+                "desc": "Minified functions compared with package sources; matches are candidates, not verified.",
             })
 
         if st.get("llm_variables_named"):
@@ -803,11 +816,24 @@ class ReportGenerator:
                 results.append({
                     "original": match.get("original", ""),
                     "recovered": match.get("matched", ""),
-                    "source": f"signature_db ({match.get('library', '')})",
+                    "source": self._signature_source(match),
                     "confidence": match.get("confidence", 0.0),
                 })
 
         return results
+
+    @staticmethod
+    def _signature_source(match: dict[str, Any]) -> str:
+        """İmza kaydının kaynak metni. Çok kitaplıklı adda ``library`` boş, adaylar
+        ``libraries``'te (P08); eskiden "signature_db ()" basılıyordu."""
+        lib = match.get("library") or ""
+        if lib:
+            return f"signature_db ({lib})"
+        libs = [str(x) for x in (match.get("libraries") or []) if x]
+        if libs:
+            shown = ", ".join(libs[:4]) + (f" +{len(libs) - 4}" if len(libs) > 4 else "")
+            return f"signature_db (one of: {shown})"
+        return "signature_db (library not recorded)"
 
     # ------------------------------------------------------------------
     # Dependency graph SVG
