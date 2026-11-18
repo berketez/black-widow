@@ -85,7 +85,7 @@
    "id": "ps3_onerilen_yeniden_aday",
    "desc": "tutulan dizgi adayı çağrı şekli katmanına yeniden aday olur",
    "module": "karadul/stages.py",
-   "test": "tests/test_ps3_gnulib_kanit.py::TestLtoYerlesimi::test_tutulan_aday_baska_gnulib_adi_almaz",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestLtoYerlesimi::test_tutulan_aday_cagri_sekli_katmaninda_yeniden_onerilmez",
    "find": "                    if fun_key in proposed:\n                        continue\n",
    "replace": "                    if fun_key in proposed and False:\n                        continue\n"
   },
@@ -94,8 +94,8 @@
    "desc": "başka adla dolu anahtar (main / Faz 1) gnulib adıyla ezilir",
    "module": "karadul/stages.py",
    "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedRecoveryGnulib::test_does_not_overwrite_existing_prename",
-   "find": "                if current is not None and current != nm:\n                    rec.update(decision=\"skipped\"",
-   "replace": "                if current is not None and not current != nm:\n                    rec.update(decision=\"skipped\""
+   "find": "                if current is not None and current != nm and current != inner:\n                    rec.update(decision=\"skipped\"",
+   "replace": "                if current is not None and not current != nm and current != inner:\n                    rec.update(decision=\"skipped\""
   },
   {
    "id": "ps3_tutulan_uygulandi_der",

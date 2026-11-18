@@ -241,6 +241,22 @@ class TestLtoYerlesimi:
         [karar] = [d for d in _kayit(static_dir)["decisions"] if d["key"] == "FUN_00105000"]
         assert (karar["name"], karar["reason"]) == ("version_etc_arn", "lto_yerlesimi_ic_ad")
 
+    def test_tutulan_aday_cagri_sekli_katmaninda_yeniden_onerilmez(self, tmp_path):
+        """Varlık kanıtı yetersizken dizgi katmanının tuttuğu aday, çağrı şekli katmanına (aynı
+        fonksiyon close_stream şeklinde de olsa) ikinci kez önerilmez: aday kaydında tek karar.
+        Yoksa rapor aynı fonksiyonu iki kez "tutulan aday" sayar (P-S3b kalem 5 bölümü)."""
+        nodes = {"00105000": _node("00105000", ["__fpending", "fclose"], ["00201000"]),
+                 "00201000": _node("00201000", ["FUN_00105000"])}
+        static_dir = _static(tmp_path, gnulib=False, nodes=nodes)
+        _write_c(static_dir / "decompiled", "FUN_00105000", '  fprintf(stream,"Written by %s.\\n",a);')
+        names: dict[str, str] = {}
+        ReconstructionStage()._recover_gnulib_from_fingerprints(names, static_dir, {})
+        assert "FUN_00105000" not in names
+        kararlar = [d for d in _kayit(static_dir)["decisions"] if d["key"] == "FUN_00105000"]
+        assert len(kararlar) == 1, kararlar
+        assert (kararlar[0]["name"], kararlar[0]["decision"], kararlar[0]["reason"]) == (
+            "version_etc", "withheld", "gnulib_kaniti_yetersiz")
+
     def test_kural_yalniz_uc_girdiye(self, tmp_path):
         """Yerleşime bağlı olmayan girdi (close_stream) ince çağıranda da ad alır."""
         nodes = {"00103000": _node("00103000", ["__fpending", "fclose"], ["00109000"]),
