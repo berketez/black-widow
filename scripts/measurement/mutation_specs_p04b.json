@@ -160,6 +160,22 @@
       "test": "tests/test_p04b_refdiff.py::test_yalniz_major_ortakligi_yetmez",
       "find": "LOOKUP_CLOSEST_MIN_SHARED: int = 2",
       "replace": "LOOKUP_CLOSEST_MIN_SHARED: int = 1 - 1"
+    },
+    {
+      "id": "kalibrasyon_skor_yazilir",
+      "desc": "yapıta yeniden 'kalibre' skor yazılır",
+      "module": "karadul/reconstruction/engineering/confidence_calibrator.py",
+      "test": "tests/test_p04b_kalibrasyon.py::test_kayit_kalibre_skor_ve_kademe_yazmaz",
+      "find": "            \"raw_confidence\": self.original.confidence,",
+      "replace": "            \"calibrated_confidence\": self.calibrated_confidence,"
+    },
+    {
+      "id": "kalibrasyon_ozet_ortalama",
+      "desc": "özet yeniden 'avg_confidence' (kalibre ortalama) yazar",
+      "module": "karadul/reconstruction/engineering/confidence_calibrator.py",
+      "test": "tests/test_p04b_kalibrasyon.py::test_ozet_ham_sayilar",
+      "find": "            \"avg_raw_confidence\": round(",
+      "replace": "            \"avg_confidence\": round("
     }
   ]
 }

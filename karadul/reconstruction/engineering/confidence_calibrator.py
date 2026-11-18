@@ -30,6 +30,16 @@ from karadul.reconstruction.c_algorithm_id import AlgorithmMatch
 
 logger = logging.getLogger(__name__)
 
+# MUH-05 (P04b, 2026-11-18): buradaki "kalibrasyon" hiçbir etiketli veri setine
+# uydurulmadı (korelasyon / negatif kanıt / çağrı uyumu katsayıları elle seçildi) ve
+# çıktısı hiçbir karara girmiyor (`calibrated_matches` aşağı akışta okunmuyor). Bu
+# yüzden yapıtlara düzeltilmiş skor ya da kademe "kalibre" diye yazılmaz; ham kanıt
+# sayıları yazılır. Ölçülmüş bir veri setiyle uydurulana kadar bu durum değişmez.
+CALIBRATION_STATUS: str = (
+    "none: not fitted to any labelled data and not used by any decision; "
+    "adjusted score and tier withheld, raw evidence counts reported"
+)
+
 
 # ---------------------------------------------------------------------------
 # Data classes
@@ -58,14 +68,21 @@ class CalibratedMatch:
     calibration_details: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Yapıta yazılan biçim (MUH-05, P04b).
+
+        ``calibrated_confidence`` ve ``tier`` hiçbir veri setine uydurulmadığı ve hiçbir
+        karara girmediği için "kalibre" diye yazılmaz; yerine ham kanıt sayıları
+        (bağımsız katman, kanıt satırı, çelişen kanıt, çağrı çizgesi uyumu) ve
+        dedektörün ham skoru yazılır.
+        """
         return {
             "original": self.original.to_dict(),
-            "calibrated_confidence": round(self.calibrated_confidence, 4),
-            "tier": self.tier,
+            "raw_confidence": self.original.confidence,
+            "evidence_count": len(self.original.evidence or []),
             "n_independent_sources": self.n_independent_sources,
             "negative_evidence_count": self.negative_evidence_count,
             "call_graph_consistency": round(self.call_graph_consistency, 4),
-            "calibration_details": self.calibration_details,
+            "calibration": CALIBRATION_STATUS,
         }
 
 
@@ -1498,52 +1515,58 @@ class ConfidenceCalibrator:
 
     @staticmethod
     def summarize(calibrated: list[CalibratedMatch]) -> dict[str, Any]:
-        """Kalibrasyon sonuclarinin ozet istatistigi.
+        """Ham kanıt özeti (MUH-05: düzeltilmiş skor ve kademe yazılmaz).
 
         Returns:
             {
                 "total": int,
-                "by_tier": {"CONFIRMED": n, "HIGH": n, ...},
-                "avg_confidence": float,
-                "avg_delta": float,    # ortalama |calibrated - original|
+                "by_independent_sources": {"1": n, "2": n, ...},
+                "with_negative_evidence": int,
+                "avg_raw_confidence": float | None,
+                "calibration": CALIBRATION_STATUS,
                 "top_5": [...]
             }
         """
         if not calibrated:
             return {
                 "total": 0,
-                "by_tier": {},
-                "avg_confidence": 0.0,
-                "avg_delta": 0.0,
+                "by_independent_sources": {},
+                "with_negative_evidence": 0,
+                "avg_raw_confidence": None,
                 "top_5": [],
+                "calibration": CALIBRATION_STATUS,
             }
 
-        by_tier: dict[str, int] = {}
-        total_conf = 0.0
-        total_delta = 0.0
-
-        for c in calibrated:
-            by_tier[c.tier] = by_tier.get(c.tier, 0) + 1
-            total_conf += c.calibrated_confidence
-            total_delta += abs(
-                c.calibrated_confidence - c.original.confidence
-            )
-
         n = len(calibrated)
+        # MUH-05: yapıta ham kanıt sayıları yazılır; düzeltilmiş skor / kademe yazılmaz.
+        by_sources: dict[str, int] = {}
+        with_negative = 0
+        for c in calibrated:
+            key = str(c.n_independent_sources)
+            by_sources[key] = by_sources.get(key, 0) + 1
+            if c.negative_evidence_count:
+                with_negative += 1
         top_5 = [
             {
                 "name": c.original.name,
                 "function": c.original.function_name,
-                "confidence": round(c.calibrated_confidence, 4),
-                "tier": c.tier,
+                "raw_confidence": c.original.confidence,
+                "n_independent_sources": c.n_independent_sources,
+                "evidence_count": len(c.original.evidence or []),
             }
-            for c in calibrated[:5]
+            for c in sorted(
+                calibrated,
+                key=lambda c: (-c.n_independent_sources, -len(c.original.evidence or [])),
+            )[:5]
         ]
 
         return {
             "total": n,
-            "by_tier": by_tier,
-            "avg_confidence": round(total_conf / n, 4),
-            "avg_delta": round(total_delta / n, 4),
+            "by_independent_sources": by_sources,
+            "with_negative_evidence": with_negative,
+            "avg_raw_confidence": round(
+                sum(c.original.confidence for c in calibrated) / n, 4,
+            ),
             "top_5": top_5,
+            "calibration": CALIBRATION_STATUS,
         }
