@@ -197,6 +197,11 @@ class SignatureMatch:
     # v1.21 Bug #18: fonksiyon adresi. Downstream join'lerin isim string'ine ek
     # olarak adres-bazli baglanti kurabilmesi icin match_all doldurur.
     address: str = ""
+    # P08 / IMZA-07: adı sağlayan (hedef platformla uyumlu) kitaplık adayları.
+    # Tek aile varsa ``library`` o adaydır; birden çok aile varsa ``library``
+    # boş kalır (tek kitaplık uydurulmaz) ve adaylar burada listelenir.
+    # None = bu eşleşme yolu kitaplık listesi üretmiyor.
+    libraries: list[str] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -210,6 +215,7 @@ class SignatureMatch:
             "version": self.version,
             "params": self.params,
             "address": self.address,
+            "libraries": self.libraries,
         }
 
 
@@ -303,6 +309,72 @@ def _is_platform_compatible(
 
     # Cross-platform: her platformda kullanilabilir
     return True
+
+
+_LIB_FAMILY_ALIASES: dict[str, str] = {
+    "c": "c", "glibc": "c", "c6": "c",
+    "system": "system", "system.b": "system",
+}
+
+
+def _lib_family(lib: str) -> str:
+    """Kitaplık adını aile anahtarına indir (IMZA-07: aynı kitaplığın farklı yazılışları).
+
+    ``libc`` / ``glibc`` / ``c`` → ``c``; ``libSystem.B`` / ``libsystem_c`` → ``system``;
+    ``libssl.so.3`` → ``ssl``. Yalnız yazılış farkını giderir; farklı kitaplıkları
+    birleştirmez (``musl`` ≠ ``glibc``, ``c++`` ≠ ``stdc++``).
+    """
+    s = (lib or "").strip().rsplit("/", 1)[-1].lower()
+    s = re.sub(r"\.so(\.[0-9.]+)?$", "", s)
+    s = re.sub(r"(\.[0-9]+)*\.dylib$", "", s)
+    s = re.sub(r"\.(tbd|dll)$", "", s)
+    if s.startswith("lib") and len(s) > 3:
+        s = s[3:]
+    if s.startswith("system_"):
+        return "system"
+    return _LIB_FAMILY_ALIASES.get(s, s)
+
+
+def _resolve_attribution(
+    info: dict[str, Any], target_platform: str | None,
+) -> tuple[str, str, list[str]] | None:
+    """Bir simge kaydından hedef platform için kitaplık iddiası (IMZA-07).
+
+    Döner: ``(kitaplık, kategori, aday kitaplıklar)``; hiçbir sağlayıcı platformla
+    uyumlu değilse None. Şema 2 kaydı (``providers``) platformla süzülür; geriye
+    tek kitaplık ailesi kalırsa iddia odur, birden çok aile kalırsa kitaplık BOŞ
+    döner (tek kitaplık uydurulmaz) ve adaylar listelenir. Şema 1 kaydı (tek
+    ``lib``) eski davranışla değerlendirilir.
+    """
+    providers = info.get("providers")
+    if not providers:
+        lib = info.get("lib", "")
+        cat = info.get("category", "")
+        if not _is_platform_compatible(lib, cat, target_platform, info.get("_platforms")):
+            return None
+        return lib, cat, [lib]
+    fams: list[str] = []
+    libs: list[str] = []
+    cat = ""
+    for p in providers:
+        try:
+            lib, pcat, plats = p[0], p[1] or "", p[2]
+        except (IndexError, TypeError):
+            continue
+        if not _is_platform_compatible(lib, pcat, target_platform, plats):
+            continue
+        fam = _lib_family(lib)
+        if fam in fams:
+            continue
+        fams.append(fam)
+        libs.append(lib)
+        if len(fams) == 1:
+            cat = pcat
+    if not fams:
+        return None
+    if len(fams) == 1:
+        return libs[0], cat, libs
+    return "", "", libs
 
 
 def _infer_platform_from_filename(filename: str) -> list[str] | None:
@@ -2028,38 +2100,36 @@ class SignatureDB:
         if self._lmdb_backend is not None:
             _lmdb_info = self._lmdb_backend.lookup_symbol(func_name)
             if _lmdb_info:
-                if _is_platform_compatible(
-                    _lmdb_info["lib"], _lmdb_info.get("category", ""),
-                    target_platform, _lmdb_info.get("_platforms"),
-                ):
+                _attr = _resolve_attribution(_lmdb_info, target_platform)
+                if _attr is not None:
                     return SignatureMatch(
                         original_name=func_name,
                         matched_name=func_name.lstrip("_"),
-                        library=_lmdb_info["lib"],
+                        library=_attr[0],
                         confidence=0.98,
                         match_method="symbol",
                         purpose=_lmdb_info.get("purpose", ""),
-                        category=_lmdb_info.get("category", ""),
+                        category=_attr[1],
                         params=_lmdb_info.get("params"),  # v1.10.0 M2 T4
+                        libraries=_attr[2],
                     )
                 # v1.10.0 C2: LMDB'de platform uyumsuz -> devam et
             # macOS _ prefix: hem without hem with dene (LMDB)
             if not func_name.startswith("_"):
                 _lmdb_info = self._lmdb_backend.lookup_symbol(f"_{func_name}")
                 if _lmdb_info:
-                    if _is_platform_compatible(
-                        _lmdb_info["lib"], _lmdb_info.get("category", ""),
-                        target_platform, _lmdb_info.get("_platforms"),
-                    ):
+                    _attr = _resolve_attribution(_lmdb_info, target_platform)
+                    if _attr is not None:
                         return SignatureMatch(
                             original_name=func_name,
                             matched_name=func_name,
-                            library=_lmdb_info["lib"],
+                            library=_attr[0],
                             confidence=0.97,
                             match_method="symbol",
                             purpose=_lmdb_info.get("purpose", ""),
-                            category=_lmdb_info.get("category", ""),
+                            category=_attr[1],
                             params=_lmdb_info.get("params"),  # v1.10.0 M2 T4
+                            libraries=_attr[2],
                         )
 
         # Protobuf demangled isimleri icin partial match

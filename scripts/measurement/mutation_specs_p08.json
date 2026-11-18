@@ -32,6 +32,54 @@
       "test": "tests/test_p08_sigdb_kunye.py::test_lmdb_backend_counts_and_version",
       "find": "\"sigdb_symbol_count\": dict_count + (lmdb_count or 0),",
       "replace": "\"sigdb_symbol_count\": dict_count,"
+    },
+    {
+      "id": "imza07_cok_aileye_ilk_kitaplik",
+      "desc": "çok kitaplıklı adda ilk kitaplık uyduruluyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_sigdb_saglayici.py::test_ambiguous_name_gets_no_single_library",
+      "find": "    if len(fams) == 1:\n        return libs[0], cat, libs\n    return \"\", \"\", libs",
+      "replace": "    if len(fams) >= 1:\n        return libs[0], cat, libs\n    return \"\", \"\", libs"
+    },
+    {
+      "id": "imza07_platform_suzgeci_yok",
+      "desc": "sağlayıcılar hedef platformla süzülmüyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_sigdb_saglayici.py::test_ambiguous_name_gets_no_single_library",
+      "find": "        if not _is_platform_compatible(lib, pcat, target_platform, plats):\n            continue",
+      "replace": "        if not _is_platform_compatible(lib, pcat, None, plats):\n            continue"
+    },
+    {
+      "id": "imza07_pypi_dislanmiyor",
+      "desc": "içe aktarımlı PyPI kaynağı dışlanmıyor",
+      "module": "scripts/build_sig_lmdb.py",
+      "test": "tests/test_p08_sigdb_saglayici.py::test_imported_symbol_sources_excluded",
+      "find": "    \"sigs/pypi_native_symbols.json\": (",
+      "replace": "    \"sigs/pypi_native_symbols.jsonX\": ("
+    },
+    {
+      "id": "imza07_ubuntu_glibc_disi_aliniyor",
+      "desc": "ubuntu kaynağının glibc dışı (içe aktarım olabilecek) kayıtları alınıyor",
+      "module": "scripts/build_sig_lmdb.py",
+      "test": "tests/test_p08_sigdb_saglayici.py::test_imported_symbol_sources_excluded",
+      "find": "        if cat != \"linux_glibc\":\n            return None",
+      "replace": "        if cat == \"__yok__\":\n            return None"
+    },
+    {
+      "id": "imza07_baslik_kitaplik_sayiliyor",
+      "desc": "başlık dosyası adı kitaplık sayılıyor",
+      "module": "scripts/build_sig_lmdb.py",
+      "test": "tests/test_p08_sigdb_saglayici.py::test_imported_symbol_sources_excluded",
+      "find": "_NON_LIBRARY_RE = re.compile(r\"(\\.h$|^unknown$|^$)\")",
+      "replace": "_NON_LIBRARY_RE = re.compile(r\"(^unknown$|^$)\")"
+    },
+    {
+      "id": "imza07_eski_db_eziliyor",
+      "desc": "şema 1 veritabanının üstüne yazılıyor",
+      "module": "scripts/build_sig_lmdb.py",
+      "test": "tests/test_p08_sigdb_saglayici.py::test_builder_refuses_to_overwrite_schema1_db",
+      "find": "and not _is_schema2_dir(output):",
+      "replace": "and False:"
     }
   ]
 }

@@ -42,6 +42,9 @@ import argparse
 import hashlib
 import json
 import logging
+import re
+import tempfile
+import zlib
 import shutil
 import sys
 import time
@@ -78,6 +81,153 @@ _META_KEYS = frozenset({
     "meta", "total", "version", "generator", "stats",
     "framework_stats", "library_stats", "category_stats",
 })
+
+
+# ---------------------------------------------------------------------------
+# Şema 2 (P08 / IMZA-07): kaynak tablosu ve ad başına sağlayıcı listesi
+# ---------------------------------------------------------------------------
+#
+# Şema 1'de LMDB anahtarı yalnız addı; aynı ad birden çok kitaplıkta geçince
+# ilk yazılan kalıyor, öbürleri kayboluyordu. Kaynaklardan ikisi içe aktarılan
+# simgeleri de "tanım" diye kaydetmişti (glibc'nin __printf_chk'ı →
+# "opencv_python_headless"). Şema 2'de her ad için SAĞLAYICI LİSTESİ tutulur
+# ([kitaplık, kategori, platformlar, kaynak dizini]); bir ad platformla süzüldükten
+# sonra birden çok kitaplık ailesinde kalıyorsa eşleme tek kitaplık uydurmaz.
+#
+# Kaynak tablosu: her dosyanın ürettiği betik ve neden "yalnız tanımlanan /
+# dışa aktarılan simge" sayıldığı. Platform, girdinin kendi "platforms" alanı
+# yoksa buradan gelir. Tabloda olmayan dosya "gözden geçirilmedi" diye yüklenir
+# ve künyede ayrıca listelenir; DIŞLANAN dosyalar hiç yüklenmez.
+SCHEMA_VERSION = 2
+
+SOURCE_TABLE: dict[str, dict[str, Any]] = {
+    "signatures_homebrew.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "scripts/build-signature-db.py: nm -g -U (yalnız tanımlı, dışa aktarılan); Homebrew macOS kitaplıkları"},
+    "signatures_homebrew_bytes.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "scripts/build_byte_signatures.py: tanımlı fonksiyonların gövde baytları (Homebrew + sistem kitaplıkları)"},
+    "signatures_homebrew_bytes_v2.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "scripts/flirt/build_selective_signatures.py: tanımlı fonksiyonların seçici bayt imzası"},
+    "sigs/anaconda_symbols.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "scripts/gen_anaconda_sigs.py: nm -gU (dışa aktarılan text simgeleri), macOS Anaconda"},
+    "sigs/combined_1M.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "scripts/mega-harvest-signatures.py: nm -g -U ve .tbd exports/re-exports blokları (macOS)"},
+    "sigs/extra/combined_swift_extra.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "scripts/mega-harvest-signatures.py: Swift simgeleri (macOS dışa aktarımları)"},
+    "sigs/dyld_cache_exports.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "scripts/gen_dyld_sigs.py: dyld_info -exports (dyld paylaşılan önbelleği, arm64e)"},
+    "sigs/sdk_tbd_symbols.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "scripts/gen_tbd_sigs.py: macOS SDK .tbd exports / reexported-symbols"},
+    "sigs/macos_system_symbols.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "tools/extract_macos_system_symbols.py: nm -gU"},
+    "sigs/homebrew_symbols.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "tools/extract_homebrew_sigs.py: nm -gU"},
+    "sigs/homebrew_deep.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "scripts/gen_homebrew_sigs.py: nm -gU (dylib), nm -g + yalnız 'T' (statik .a)"},
+    "sigs/homebrew_extra.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "scripts/gen_homebrew_extra_sigs.py: nm -gU (dylib), nm -g + yalnız T/S/D (statik .a)"},
+    "sigs/swift_objc_signatures.json": {
+        "provenance": "exports", "platforms": ["macho"],
+        "note": "gen_swift_objc_sigs.py: dyld paylaşılan önbelleği + elle yazılmış ObjC yöntemleri"},
+    "sigs/windows_real_exports.json": {
+        "provenance": "exports", "platforms": ["pe"],
+        "note": "scripts/gen_windows_real_sigs.py: PE dışa aktarım tablosu (Windows 11 DLL'leri)"},
+    "sigs/wine_dll_exports.json": {
+        "provenance": "exports", "platforms": ["pe"],
+        "note": "scripts/gen_wine_sigs.py: Wine/ReactOS .spec dışa aktarımları"},
+    "sigs/msys2_mingw_exports.json": {
+        "provenance": "exports", "platforms": ["pe"],
+        "note": "scripts/gen_msys2_sigs.py: PE dışa aktarım tablosu (adlı)"},
+    "sigs/mingw_headers.json": {
+        "provenance": "exports", "platforms": ["pe"],
+        "note": "scripts/gen_mingw_headers_sigs.py: mingw-w64 .def dışa aktarım listeleri + başlıklar"},
+    "sigs/windows_api_signatures.json": {
+        "provenance": "curated", "platforms": ["pe"],
+        "note": "sigs/gen_windows_sigs.py: elle yazılmış Windows API listesi"},
+    "sigs/windows_expanded.json": {
+        "provenance": "curated", "platforms": ["pe"],
+        "note": "scripts/gen_win_linux_sigs.py: elle yazılmış liste"},
+    "sigs/linux_signatures.json": {
+        "provenance": "curated", "platforms": ["elf"],
+        "note": "sigs/gen_linux_sigs.py: elle yazılmış glibc/musl/sistem çağrısı listesi"},
+    "sigs/linux_expanded.json": {
+        "provenance": "curated", "platforms": ["elf"],
+        "note": "scripts/gen_win_linux_sigs.py: elle yazılmış liste"},
+    "sigs/ubuntu_elf_signatures.json": {
+        "provenance": "exports_glibc_only", "platforms": ["elf"],
+        "note": ("scripts/gen_ubuntu_sigs.py içe aktarılan (SHN_UNDEF) simgeleri de yazıyor ve "
+                 "'_undef' işaretini yazmadan önce siliyor (:619-627, :738-740): tanım / içe aktarım "
+                 "ayırt edilemez. YALNIZ libc6 paketinin kayıtları (kategori 'linux_glibc') alınır: o "
+                 "paketin .so'ları yalnız birbirinden içe aktarır, kitaplık ailesi her durumda glibc; "
+                 "kitaplık adı 'glibc' olarak yazılır. Öbür kayıtlar dışlanır.")},
+    "sigs/flirt_github.json": {
+        "provenance": "exports", "platforms": None,
+        "note": "scripts/gen_flirt_sigs.py: FLIRT .pat (statik kitaplıklarda tanımlı fonksiyonlar); platform kategoriden"},
+    "sigs/go_expanded.json": {
+        "provenance": "exports", "platforms": None,
+        "note": "scripts/gen_go_sigs.py: Go simgeleri (Go içe aktarım yapmaz)"},
+    "sigs/go_stdlib_signatures.json": {
+        "provenance": "exports", "platforms": None, "note": "Go standart kitaplığı simgeleri"},
+    "sigs/rust_expanded.json": {
+        "provenance": "exports", "platforms": None, "note": "scripts/gen_rust_sigs.py: nm -gU"},
+    "sigs/rust_signatures.json": {
+        "provenance": "exports", "platforms": None, "note": "scripts/gen_rust_sigs.py: nm -gU"},
+    "sigs/cpp_stl_mangled.json": {
+        "provenance": "curated", "platforms": None,
+        "note": "scripts/gen_cpp_stl_sigs.py: derlenmiş STL şablon örnekleri (kitaplık C++ standart kitaplığı)"},
+    "sigs/cpp_signatures.json": {
+        "provenance": "curated", "platforms": None, "note": "gen_cpp_sigs.py: elle yazılmış C++ listesi"},
+    "sigs/compiler_intrinsics.json": {
+        "provenance": "curated", "platforms": None, "note": "scripts/gen_intrinsics_sigs.py: derleyici iç fonksiyonları"},
+    "sigs/runtime_signatures.json": {
+        "provenance": "curated", "platforms": None, "note": "Python C API / JNI / V8 / Ruby / Lua API adları"},
+    "sigs/generated_signatures.json": {
+        "provenance": "curated", "platforms": None, "note": "sigs/gen_expanded_sigs.py: elle yazılmış liste"},
+    "sigs/fortran_ccx.json": {
+        "provenance": "curated", "platforms": None, "note": "CalculiX Fortran yordamları"},
+}
+
+EXCLUDED_SOURCES: dict[str, str] = {
+    "sigs/pypi_native_symbols.json": (
+        "karışık: scripts/gen_pypi_sigs.py ELF .dynsym'deki içe aktarılan (SHN_UNDEF) simgeleri de "
+        "alıyor (:216-221, 'Simdilik hepsini alalim'); kitaplık adı PyPI paketi (gömülü kopyalar dahil). "
+        "glibc __printf_chk → opencv_python_headless kusurunun kaynağı (IMZA-07)"),
+    "sigs/extra/quantitative_finance.json": (
+        "bir kitaplığın dışa aktarımı değil: model üretimi algoritma adı listesi (generator: codex-consultant)"),
+    "sigs/tuned_weights.json": "imza değil (ağırlık tablosu); şema 1'de 'weights' adlı sahte bir simge yazıyordu",
+    "sigs/fortran_params.json": "imza kaydı yok (parametre tablosu)",
+    "sigs_macos_system.json": "boş",
+}
+
+# Kitaplık adı olmayan "kitaplık" değerleri (başlık dosyası, bilinmiyor): sağlayıcı sayılmaz.
+_NON_LIBRARY_RE = re.compile(r"(\.h$|^unknown$|^$)")
+
+
+def _source_key(project_root: Path, path: Path) -> str:
+    try:
+        return path.resolve().relative_to(project_root.resolve()).as_posix()
+    except ValueError:
+        return path.name
+
+
+def _flirt_platform(category: str) -> Optional[list[str]]:
+    c = (category or "").lower()
+    if "ubuntu" in c or "linux" in c or "glibc" in c or "debian" in c:
+        return ["elf"]
+    if "msvc" in c or "windows" in c or "vc" == c[-2:]:
+        return ["pe"]
+    return None
 
 
 def _infer_platform(name: str) -> Optional[list[str]]:
@@ -405,8 +555,13 @@ def build(
     *,
     rebuild: bool = False,
     map_size: int = DEFAULT_MAP_SIZE,
+    shards: int = 4,
 ) -> dict[str, Any]:
     """LMDB build'i calistir. Idempotent.
+
+    Şema 2 (P08 / IMZA-07): ad başına sağlayıcı listesi; kaynak tablosu
+    (``SOURCE_TABLE`` / ``EXCLUDED_SOURCES``); çıktı dizinine ``kunye.json``.
+    Var olan eski şemalı (künyesiz) bir veritabanının üstüne yazmaz.
 
     Returns
     -------
@@ -446,6 +601,12 @@ def build(
                 "hash": source_hash,
             }
 
+    # Eski şemalı veritabanını EZME (A/B için korunur; ör. ~/.karadul/signatures.lmdb).
+    if output.exists() and (output / "data.mdb").exists() and not _is_schema2_dir(output):
+        raise RuntimeError(
+            f"{output}: şema 2 künyesi olmayan bir veritabanı var; üstüne yazılmıyor. "
+            "Başka bir --output verin (ör. ~/karadul_olcum/sigdb/<sürüm>/signatures.lmdb).")
+
     # Rebuild modunda mevcut LMDB'yi sil
     if output.exists():
         logger.info("Mevcut LMDB siliniyor: %s", output)
@@ -480,38 +641,22 @@ def build(
                 db._env.set_mapsize(current_map_size)
 
     try:
+        # Şema 2 (IMZA-07): ad başına sağlayıcı listesi. Bellek sınırı için
+        # tek geçişte kayıtlar ad özetine göre parçalara (shard) ayrılır, sonra
+        # her parça ayrı toplanıp yazılır.
+        src_table, excluded, unreviewed = classify_sources(project_root, sources)
+        agg = aggregate_providers(project_root, src_table, shards=shards)
         total_symbols = 0
-        duplicate_skipped = 0
-        seen_names: set[str] = set()  # Ayni dosyalarda tekrar edenler icin
-
-        for i, src in enumerate(sources, 1):
-            if src.suffix != ".json":
-                # .pat dosyalari henuz LMDB'ye yazilmiyor (FLIRTParser
-                # runtime'da calisiyor, binary-specific matching).
-                continue
-
-            batch: list[tuple[str, dict]] = []
-            for name, info in iter_symbols_from_json(src):
-                # Ilk gelen kazanir (builtin DB ile ayni mantik)
-                if name in seen_names:
-                    duplicate_skipped += 1
-                    continue
-                seen_names.add(name)
-                batch.append((name, info))
-
-                # 50K'lik chunk'larda yaz (RAM disiplini)
-                if len(batch) >= 50_000:
-                    total_symbols += _write_batch(batch)
-                    batch.clear()
-
-            if batch:
-                total_symbols += _write_batch(batch)
-
-            if i % 10 == 0 or i == len(sources):
-                logger.info(
-                    "[%d/%d] %s -- toplam %d symbol",
-                    i, len(sources), src.name, total_symbols,
-                )
+        duplicate_skipped = 0  # birden çok sağlayıcılı ad sayısı (şema 1'de atlanan)
+        multi_family = 0
+        for batch, stats in agg:
+            total_symbols += _write_batch(batch)
+            duplicate_skipped += stats["multi_provider"]
+            multi_family += stats["multi_library"]
+        logger.info(
+            "Simge: %d ad, %d ad birden çok sağlayıcılı, %d ad birden çok kitaplıklı",
+            total_symbols, duplicate_skipped, multi_family,
+        )
 
         # v1.10.0 C3: Builtin string / call / byte signature'lari da LMDB'ye
         # yaz. Onceden sadece _symbol_db LMDB'ye aliniyor, ancak
@@ -531,6 +676,12 @@ def build(
         call_written += json_call_written
 
         # Version metadata yaz
+        build_id = f"s{SCHEMA_VERSION}-{source_hash[:12]}-{time.strftime('%Y%m%d')}"
+        db.put_metadata("schema_version", str(SCHEMA_VERSION).encode("ascii"))
+        db.put_metadata("build_id", build_id.encode("utf-8"))
+        db.put_metadata("sources_json", json.dumps(
+            [{"source": k, **{kk: vv for kk, vv in v.items() if kk != "path"}}
+             for k, v in src_table.items()], ensure_ascii=False).encode("utf-8"))
         db.put_metadata("source_hash", source_hash.encode("utf-8"))
         db.put_metadata("build_time", str(int(time.time())).encode("ascii"))
         db.put_metadata("source_count", str(len(sources)).encode("ascii"))
@@ -554,14 +705,34 @@ def build(
         f"build_time={int(time.time())}\n"
         f"sources={len(sources)}\n"
         f"symbols={total_symbols}\n"
-        f"duplicates_skipped={duplicate_skipped}\n",
+        f"duplicates_skipped={duplicate_skipped}\n"
+        f"schema_version={SCHEMA_VERSION}\n"
+        f"build_id={build_id}\n",
         encoding="utf-8",
     )
 
     elapsed = time.monotonic() - t0
     size = _dir_size(output)
+    # Sürüm künyesi (insan okur; DMG'ye gömülürken yanında gider).
+    kunye = {
+        "schema_version": SCHEMA_VERSION,
+        "build_id": build_id,
+        "source_hash": source_hash,
+        "build_time": int(time.time()),
+        "project_root": str(project_root),
+        "symbols": total_symbols,
+        "multi_provider_names": duplicate_skipped,
+        "multi_library_names": multi_family,
+        "sources": [{"source": k, **{kk: vv for kk, vv in v.items() if kk != "path"}}
+                    for k, v in src_table.items()],
+        "excluded_sources": excluded,
+        "unreviewed_sources": unreviewed,
+        "elapsed_sec": round(elapsed, 1),
+        "size_bytes": size,
+    }
+    (output / "kunye.json").write_text(json.dumps(kunye, indent=1, ensure_ascii=False), encoding="utf-8")
     logger.info(
-        "Build tamamlandi. %d symbol, %d duplicate skip, %.2fs, %.1f MB disk",
+        "Build tamamlandi. %d symbol, %d cok saglayicili, %.2fs, %.1f MB disk",
         total_symbols, duplicate_skipped, elapsed, size / 1024 / 1024,
     )
 
@@ -570,10 +741,166 @@ def build(
         "sources": len(sources),
         "symbols": total_symbols,
         "duplicates_skipped": duplicate_skipped,
+        "multi_library_names": multi_family,
+        "excluded_sources": excluded,
+        "unreviewed_sources": unreviewed,
+        "build_id": build_id,
         "elapsed_sec": elapsed,
         "size_bytes": size,
         "hash": source_hash,
     }
+
+
+# ---------------------------------------------------------------------------
+# Şema 2: kaynak sınıflaması ve sağlayıcı toplama
+# ---------------------------------------------------------------------------
+
+
+def _is_schema2_dir(output: Path) -> bool:
+    """Dizindeki veritabanı bu betiğin şema 2 çıktısı mı (künye ya da version.txt'den)."""
+    try:
+        if json.loads((output / "kunye.json").read_text("utf-8")).get("schema_version") == SCHEMA_VERSION:
+            return True
+    except (OSError, json.JSONDecodeError, AttributeError):
+        pass
+    try:
+        return f"schema_version={SCHEMA_VERSION}" in (output / "version.txt").read_text("utf-8")
+    except OSError:
+        return False
+
+
+def classify_sources(
+    project_root: Path, sources: list[Path],
+) -> tuple[dict[str, dict], list[dict], list[str]]:
+    """Kaynakları tabloya göre ayır: (yüklenecekler, dışlananlar, gözden geçirilmemişler)."""
+    table: dict[str, dict] = {}
+    excluded: list[dict] = []
+    unreviewed: list[str] = []
+    for src in sources:
+        if src.suffix != ".json":
+            continue  # .pat: FLIRTParser çalışma zamanında okur, LMDB'ye yazılmaz
+        key = _source_key(project_root, src)
+        if key in EXCLUDED_SOURCES:
+            excluded.append({"source": key, "reason": EXCLUDED_SOURCES[key]})
+            logger.info("Kaynak dışlandı: %s -- %s", key, EXCLUDED_SOURCES[key][:80])
+            continue
+        spec = SOURCE_TABLE.get(key)
+        if spec is None:
+            spec = {"provenance": "unreviewed", "platforms": None,
+                    "note": "kaynak tablosunda yok (gözden geçirilmedi)"}
+            unreviewed.append(key)
+            logger.warning("Gözden geçirilmemiş kaynak yükleniyor: %s", key)
+        table[key] = {**spec, "path": str(src)}
+    return table, excluded, unreviewed
+
+
+def _provider_from(key: str, spec: dict, info: dict) -> Optional[tuple[str, str, Optional[tuple]]]:
+    """Bir kaynak kaydından sağlayıcı ``(lib, category, platforms)``; sayılmazsa None."""
+    lib = str(info.get("lib") or "").strip()
+    cat = str(info.get("category") or "")
+    if spec["provenance"] == "exports_glibc_only":
+        if cat != "linux_glibc":
+            return None
+        lib = "glibc"
+    if _NON_LIBRARY_RE.search(lib):
+        return None
+    plats = info.get("_platforms")
+    if not plats:
+        plats = spec.get("platforms")
+        if plats is None and key == "sigs/flirt_github.json":
+            plats = _flirt_platform(cat)
+    return lib, cat, (tuple(sorted(plats)) if plats else None)
+
+
+def aggregate_providers(
+    project_root: Path, src_table: dict[str, dict], *, shards: int = 4,
+) -> Iterator[tuple[list[tuple[str, dict]], dict]]:
+    """Kaynakları bir kez okuyup ada göre parçala; her parça için (yazılacak kayıtlar, sayaç).
+
+    Kayıt (şema 2)::
+
+        {"providers": [[lib, category, [platform...] | None, kaynak_dizini], ...],
+         "lib": <tek kitaplık ailesi varsa o, yoksa "">, "libs": [...],
+         "category": <tek ailede ilk sağlayıcının kategorisi, yoksa "">,
+         "purpose": <ilk boş olmayan>, "params": <varsa>, "schema": 2}
+    """
+    import msgpack
+
+    from karadul.analyzers.signature_db import _lib_family
+
+    keys = list(src_table)
+    tmpdir = Path(tempfile.mkdtemp(prefix="sigdb_shard_"))
+    try:
+        files = [open(tmpdir / f"p{k}.mp", "wb") for k in range(shards)]
+        try:
+            for si, key in enumerate(keys):
+                spec = src_table[key]
+                kept = dropped = 0
+                for name, info in iter_symbols_from_json(Path(spec["path"])):
+                    prov = _provider_from(key, spec, info)
+                    if prov is None:
+                        dropped += 1
+                        continue
+                    kept += 1
+                    rec = (name, prov[0], prov[1], list(prov[2]) if prov[2] else None, si,
+                           info.get("purpose") or "", info.get("params"))
+                    files[zlib.crc32(name.encode("utf-8")) % shards].write(
+                        msgpack.packb(rec, use_bin_type=True))
+                spec["kept"] = kept
+                spec["dropped"] = dropped
+                logger.info("[%d/%d] %s -- alınan %d, düşülen %d", si + 1, len(keys), key, kept, dropped)
+        finally:
+            for f in files:
+                f.close()
+
+        for k in range(shards):
+            names: dict[str, dict] = {}
+            with open(tmpdir / f"p{k}.mp", "rb") as f:
+                for name, lib, cat, plats, si, purpose, params in msgpack.Unpacker(f, raw=False):
+                    ent = names.get(name)
+                    if ent is None:
+                        ent = names[name] = {"providers": [], "_seen": set(), "purpose": "", "params": None}
+                    sig = (lib, tuple(plats) if plats else None)
+                    if sig not in ent["_seen"]:
+                        ent["_seen"].add(sig)
+                        ent["providers"].append([lib, cat, plats, si])
+                    if purpose and not ent["purpose"]:
+                        ent["purpose"] = purpose
+                    if params is not None and ent["params"] is None:
+                        ent["params"] = params
+            batch: list[tuple[str, dict]] = []
+            st = {"multi_provider": 0, "multi_library": 0}
+            for name, ent in names.items():
+                provs = ent["providers"]
+                fams: list[str] = []
+                libs: list[str] = []
+                for p in provs:
+                    fam = _lib_family(p[0])
+                    if fam not in fams:
+                        fams.append(fam)
+                        libs.append(p[0])
+                val: dict[str, Any] = {
+                    "schema": SCHEMA_VERSION,
+                    "providers": provs,
+                    "libs": libs,
+                    "lib": libs[0] if len(fams) == 1 else "",
+                    "category": provs[0][1] if len(fams) == 1 else "",
+                    "purpose": ent["purpose"],
+                }
+                if ent["params"] is not None:
+                    val["params"] = ent["params"]
+                if len(provs) > 1:
+                    st["multi_provider"] += 1
+                if len(fams) > 1:
+                    st["multi_library"] += 1
+                batch.append((name, val))
+                if len(batch) >= 50_000:
+                    yield batch, {"multi_provider": 0, "multi_library": 0}
+                    batch = []
+            yield batch, st
+            names.clear()
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def _write_builtin_secondary_sigs(db: LMDBSignatureDB) -> tuple[int, int, int]:
@@ -766,6 +1093,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         help=f"LMDB map_size byte. Varsayilan: {DEFAULT_MAP_SIZE} ({DEFAULT_MAP_SIZE // 1024 // 1024} MB).",
     )
     parser.add_argument(
+        "--shards",
+        type=int,
+        default=4,
+        help="Bellek sınırı için ad parçası sayısı (şema 2 toplaması). Varsayılan: 4.",
+    )
+    parser.add_argument(
         "--quiet", "-q",
         action="store_true",
         help="Sadece ozet ciktisi.",
@@ -786,6 +1119,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             output=output,
             rebuild=args.rebuild,
             map_size=args.map_size,
+            shards=args.shards,
         )
     except Exception as exc:
         logger.error("Build basarisiz: %s", exc, exc_info=True)
