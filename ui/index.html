@@ -10,7 +10,7 @@
     --bg:#04060a; --bg2:#070b12; --panel:#080d15; --panel2:#0b111b;
     --border:#131d2b; --grid:rgba(60,110,160,.045);
     --text:#b8c4d2; --dim:#54617a; --faint:#2a3546;
-    --named:#38e08a; --weak:#e6a92e; --unnamed:#e63a54; --cyan:#38d8f0;
+    --named:#38e08a; --weak:#e6a92e; --unnamed:#e63a54; --cyan:#38d8f0; --ghidra:#7d8aa8;
     --widow:#e51334; --widow-glow:rgba(229,19,52,.55);
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -190,6 +190,7 @@
   .fn.named .dot{background:var(--named); color:var(--named)}
   .fn.weak .dot{background:var(--weak); color:var(--weak)}
   .fn.unnamed .dot{background:var(--unnamed); color:var(--unnamed)}
+  .fn.ghidra .dot{background:var(--ghidra); color:var(--ghidra)}
   .fn .nm{overflow:hidden; text-overflow:ellipsis; font-size:12px}
   .fn.unnamed .nm{color:var(--dim)}
   .fn .deg{margin-left:auto; color:var(--faint); font-size:9px; flex-shrink:0}
@@ -230,9 +231,9 @@
   footer .live{color:var(--named)} footer .live::before{content:"● "; animation:blink 1.4s steps(1) infinite}
   @keyframes blink{50%{opacity:.25}} footer .rt{margin-left:auto; color:var(--faint)} footer .k{color:var(--widow)}
   .ray{fill:none; stroke-width:1; opacity:.85; stroke-linecap:round}
-  .ray.named{stroke:var(--named)} .ray.weak{stroke:var(--weak)} .ray.unnamed{stroke:var(--unnamed)}
+  .ray.named{stroke:var(--named)} .ray.weak{stroke:var(--weak)} .ray.unnamed{stroke:var(--unnamed)} .ray.ghidra{stroke:var(--ghidra)}
   .node{cursor:pointer} .node .hit{fill:transparent}
-  .ndot.named{fill:var(--named)} .ndot.weak{fill:var(--weak)} .ndot.unnamed{fill:var(--unnamed)}
+  .ndot.named{fill:var(--named)} .ndot.weak{fill:var(--weak)} .ndot.unnamed{fill:var(--unnamed)} .ndot.ghidra{fill:var(--ghidra)}
   .nlbl{font-size:10px; fill:var(--dim)} .node:hover .nlbl{fill:var(--text)}
   .node:hover .ndot{filter:drop-shadow(0 0 5px currentColor)}
   .corelbl{font-size:12px; fill:var(--text); text-anchor:middle} .coreaddr{font-size:9px; fill:var(--dim); text-anchor:middle}
@@ -255,6 +256,10 @@
   .iv-qt{height:4px; border-radius:3px; background:var(--faint); overflow:hidden}
   .iv-qt i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--named),var(--cyan)); transition:width .6s ease}
   .iv-qlab{margin-top:5px; font-size:9px; letter-spacing:.5px; color:var(--dim); line-height:1.5}
+  .runbanner{display:none; padding:7px 16px; font-size:11px; line-height:1.55; border-bottom:1px solid var(--border); background:rgba(229,19,52,.08); color:var(--text)}
+  .runbanner.on{display:block}
+  .runbanner .head{color:var(--widow); font-weight:700; letter-spacing:1px}
+  .runbanner .skip,.runbanner .mut{color:var(--dim)}
   .fn.more{cursor:default; color:var(--dim); font-style:italic; justify-content:center}
   .iv-mtag{font-size:8px; letter-spacing:1px; color:var(--named); border:1px solid rgba(56,224,138,.4); border-radius:7px; padding:0 5px; flex-shrink:0}
   /* ad etiketi rozeti — yalnız kayıtta etiket varsa çizilir (k: kesin, v: doğrulandı, u: doğrulanmadı) */
@@ -533,6 +538,7 @@
     </div>
   </header>
   <div id="secBanner" class="secbanner"></div>
+  <div id="runBanner" class="runbanner"></div>
   <div class="rmain">
     <aside class="console">
       <div class="chdr">D: [SYMBOL.MAP] <span class="r" id="cnt">0</span></div>
@@ -739,6 +745,44 @@ function queueTexts(c){
               ' · etiketsiz '+c.etiketsiz+' · elle '+c.elle};
 }
 /* P17-GOSTERIM-BITIS */
+/* P17-DURUM-BASLA: analizin durumu (ARAYUZ-11). Sunucu durumu CLI'ın hesabıyla verir
+   (outcome / run_status: tam · kismi · basarisiz + nedenler); arayüz yalnız gösterir. */
+function runStatusLines(rs){
+  if(!rs) return [{cls:'mut',text:'Analiz durumu bilinmiyor: çalışma alanında rapor yok.'}];
+  if(rs.status==='tam') return [];
+  const out=[{cls:'head',text:rs.status==='basarisiz'
+    ? 'BAŞARISIZ AŞAMA VAR — gösterilen sonuç eksik'
+    : 'KISMİ SONUÇ — bazı adımlar hata verdi; gösterilen sonuç eksik olabilir'}];
+  const one=(r)=>(Array.isArray(r)&&r.length?r.slice(0,3).join(' · '):'neden bildirilmedi');
+  Object.entries(rs.failed||{}).forEach(([s,r])=>out.push({cls:'fail',text:s+' başarısız: '+one(r)}));
+  Object.entries(rs.partial||{}).forEach(([s,r])=>out.push({cls:'part',text:s+' kısmi: '+one(r)}));
+  Object.entries(rs.skipped||{}).forEach(([s,w])=>out.push({cls:'skip',text:s+' atlandı'+(w?': '+w:'')}));
+  return out;
+}
+function finishMessage(p){
+  p=p||{};
+  if(p.cancelled) return 'analiz iptal edildi — çıktı yarım kaldı, sonuç gösterilmiyor';
+  const o=p.outcome;
+  if(o&&o.status==='basarisiz'){
+    const rs=Object.entries(o.failed||{}).map(([s,r])=>s+': '+((Array.isArray(r)&&r[0])||'neden bildirilmedi'));
+    return 'analiz başarısız — '+rs.slice(0,3).join(' · ');
+  }
+  if(!o){
+    return p.rc===0 ? 'analiz bitti ama rapor okunamadı; sonuç gösterilemiyor'
+      : 'analiz başarısız (çıkış kodu '+p.rc+'); rapor yazılmadı — ayrıntı aşağıdaki günlükte';
+  }
+  return 'analiz bitti ('+(o.status==='kismi'?'kısmi':'tam')+') ama bu hedef türü'+
+    (o.target_type?' ('+o.target_type+')':'')+' için arayüzde fonksiyon görünümü yok'+
+    (p.clean_dir?' — çıktı: '+p.clean_dir:'');
+}
+/* P17-DURUM-BITIS */
+function renderRunBanner(j){
+  const el=$('runBanner'); if(!el) return;
+  const lines=runStatusLines(j&&j.run_status);
+  if(!lines.length){ el.classList.remove('on'); el.innerHTML=''; return; }
+  el.innerHTML=lines.map(l=>'<div class="'+esc(l.cls)+'">'+esc(l.text)+'</div>').join('');
+  el.classList.add('on');
+}
 /* analist katmanı: aktif filtre + manuel düzeltilen adresler + evidence yarış koruması */
 let FILTER='all'; const MANUAL=new Set(); let EVSEQ=0;
 
@@ -857,9 +901,10 @@ async function pollProgress(job){
   renderStages(p);
   if(p.finished){
     stopPolling();
-    if(p.cancelled){ analyzeFail('analiz iptal edildi — çıktı yarım kaldı, sonuç gösterilmiyor'); return; }
+    if(p.cancelled){ analyzeFail(finishMessage(p)); return; }
     if(p.workspace){
-      // substage'ler (kaç fonksiyon kurtarıldı) görünsün diye kısa bekleme
+      // substage'ler (kaç fonksiyon kurtarıldı) görünsün diye kısa bekleme; başarısız ya da
+      // kısmi aşama sonuç ekranında şerit olarak kalır (renderRunBanner)
       const delay=(p.substages&&p.substages.length)?2400:600;
       setTimeout(async ()=>{
         try{ const m=await (await fetch('/api/model')).json();
@@ -867,7 +912,8 @@ async function pollProgress(job){
         }catch(e){ analyzeFail('sonuç modeli yüklenemedi'); }
       }, delay);
     } else {
-      analyzeFail('analiz başarısız (pipeline hata verdi)');
+      // ARAYUZ-11: "pipeline hata verdi" her durumda yazılıyordu; artık rapordaki durum
+      analyzeFail(finishMessage(p));
     }
   }
 }
@@ -926,6 +972,7 @@ function enterResult(j){
   showView('result');
   recount();
   renderSecurityBanner(j);
+  renderRunBanner(j);
   buildList(MODEL.functions);
   buildFilters(); loadOverrides();
   if(!enterResult._ro){
@@ -1116,7 +1163,7 @@ async function loadCode(addr){
   const b=$('cBadge'); b.className='badge '+f.cls; b.textContent=TRLABEL[f.cls];
   $('cAddr').textContent=f.addr; $('cInspSub').textContent=f.addr; setRename(f); loadEvidence(addr);
   $('cBody').innerHTML='<span class="cm">// decompiled çekiliyor…</span>';
-  try{ const j=await (await fetch('/api/decompiled/'+addr)).json();
+  try{ const j=await (await fetch('/api/decompiled/'+encodeURIComponent(addr))).json();
     $('cBody').innerHTML=highlight(j.code||''); wireRefs();
   }catch(e){ $('cBody').innerHTML='<span class="un">// decompiled yok</span>'; }
 }
@@ -1177,6 +1224,7 @@ function passFilter(f){
   if(FILTER==='unnamed') return f.cls==='unnamed';
   if(FILTER==='weak')    return f.cls==='weak';
   if(FILTER==='manual')  return MANUAL.has(f.addr);
+  if(FILTER==='ghidra')  return f.cls==='ghidra';
   return true;
 }
 
@@ -1188,6 +1236,7 @@ function buildFilters(){
     ['unnamed','İsimsiz', MODEL.unnamed, 'u'],
     ['weak','Zayıf',    MODEL.weak,    'w'],
     ['manual','Düzeltilen', MANUAL.size, 'm'],
+    ['ghidra','Ghidra adı', MODEL.ghidra_named||0, ''],
   ];
   for(const [key,label,n,cc] of defs){
     const c=document.createElement('span');
@@ -1232,8 +1281,12 @@ async function loadOverrides(){
 /* ---- rename (düzelt) ---- */
 function setRename(f){
   const inp=$('renameInput'); if(!inp||!f) return;
-  inp.value = renameSeed(f);
-  inp.placeholder = f.cls==='unnamed' ? ('yeni isim… (Ghidra adı: '+f.name+')') : 'yeni isim…';
+  // Ghidra'nın / ikilinin kendi adı (ithal taslağı, entry ...): elle ad yalnız FUN_ için
+  const fixed=f.cls==='ghidra';
+  inp.disabled=fixed; $('renameOk').disabled=fixed;
+  inp.value = fixed ? '' : renameSeed(f);
+  inp.placeholder = fixed ? 'Ghidra / ikili adı — yeniden adlandırılmaz'
+    : (f.cls==='unnamed' ? ('yeni isim… (Ghidra adı: '+f.name+')') : 'yeni isim…');
   clearRenameErr();
 }
 function showRenameErr(m){ const e=$('renameErr'); e.textContent='⚠ '+m; e.classList.add('on'); }

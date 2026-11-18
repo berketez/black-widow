@@ -360,6 +360,78 @@
       "test": "tests/test_p17_iptal.py",
       "find": "    return n>=POLL_MAX_ERR\n",
       "replace": "    return n>=POLL_MAX_ERR*99\n"
+    },
+    {
+      "id": "d11_model_durum_yok",
+      "desc": "modelde analizin durumu yok (eski)",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_durum.py",
+      "find": "        \"run_status\": _report_outcome(Path(ws) / \"reports\" / \"report.json\"),",
+      "replace": "        \"run_status\": None,"
+    },
+    {
+      "id": "d11_yalniz_fun_dosyalari",
+      "desc": "model yalnız FUN_*.c dosyalarını alır (eski)",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_durum.py",
+      "find": "    files = sorted(f for f in glob.glob(f\"{dec}/*.c\") if _NODE_ID_RE.fullmatch(Path(f).stem))",
+      "replace": "    files = sorted(f for f in glob.glob(f\"{dec}/FUN_*.c\") if _NODE_ID_RE.fullmatch(Path(f).stem))"
+    },
+    {
+      "id": "d11_adli_kenar_yok",
+      "desc": "Ghidra adlı düğümlerin çağrı kenarları eşlenmez",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_durum.py",
+      "find": "    by_hex.update({h.lower(): a for h, a in (extra_hex or {}).items()})",
+      "replace": "    by_hex.update({})"
+    },
+    {
+      "id": "d11_ghidra_adi_toplamda",
+      "desc": "Ghidra adlı fonksiyonlar ad işi toplamına girer",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_durum.py",
+      "find": "        \"total\": len(funcs) - n_ghidra,",
+      "replace": "        \"total\": len(funcs),"
+    },
+    {
+      "id": "d11_bilinmeyen_dugum_kabul",
+      "desc": "uçlar modelde olmayan kimliği kabul eder",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_durum.py",
+      "find": "    return any(f[\"addr\"] == addr for f in model[\"functions\"])",
+      "replace": "    return True"
+    },
+    {
+      "id": "d11_bitiste_rapor_okunmaz",
+      "desc": "biten işin durumu rapordan okunmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_durum.py",
+      "find": "            outcome = _report_outcome(reps[-1])",
+      "replace": "            outcome = None"
+    },
+    {
+      "id": "d11_teshis_ghidra_adina",
+      "desc": "Ghidra adlı fonksiyona 'neden isimsiz' teşhisi yazılır",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_durum.py",
+      "find": "                      if cls not in (\"named\", \"ghidra\") else None),",
+      "replace": "                      if cls not in (\"named\",) else None),"
+    },
+    {
+      "id": "d11_js_tam_seritli",
+      "desc": "tam analizde de şerit çizilir / kısmi şeritsiz kalır",
+      "module": "ui/index.html",
+      "test": "tests/test_p17_durum.py",
+      "find": "  if(rs.status==='tam') return [];",
+      "replace": "  if(rs.status!=='basarisiz') return [];"
+    },
+    {
+      "id": "d11_js_genel_hata_iletisi",
+      "desc": "başarısız analizde neden yazılmaz",
+      "module": "ui/index.html",
+      "test": "tests/test_p17_durum.py",
+      "find": "  if(o&&o.status==='basarisiz'){",
+      "replace": "  if(o&&o.status==='basarisiz_x'){"
     }
   ]
 }

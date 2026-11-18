@@ -105,7 +105,7 @@ def test_list_uses_helpers():
     html = _html()
     assert "listCountText(rows.length,matched.length)" in html
     assert "moreRowText(rows.length,matched.length)" in html
-    assert "inp.value = renameSeed(f);" in html
+    assert "inp.value = fixed ? '' : renameSeed(f);" in html
 
 
 def test_bsim_diagnosis_is_factual(tmp_path, monkeypatch):

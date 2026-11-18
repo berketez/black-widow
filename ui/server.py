@@ -77,6 +77,11 @@ _SETTINGS_YAML = _DATA_ROOT / "karadul.yaml"
 WS: str | None = None
 _ADDR_RE = re.compile(r"_[0-9a-f]{3,}$")
 _FUN_RE = re.compile(r"FUN_[0-9a-fA-F]+")
+# Decompile dosya adından düğüm kimliği (ARAYUZ-11): Ghidra adları C tanımlayıcısı ya da
+# "operator.new" biçiminde; '/' ve baştaki '.' yok (yol geçişi olamaz). Uç doğrulaması ayrıca
+# kimliğin o anki modelde olmasını ister.
+_NODE_ID_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_.]{0,200}")
+_ADDR_HEADER_RE = re.compile(r"^// Address:\s+([0-9a-fA-F]+)\s*$", re.M)
 # Port env'den: app_window.py boş bir port seçip burayı öyle başlatır. Sabit 8000
 # hem çakışıyor hem de app_window'un KARADUL_PORT'u burada okunmadığı için o
 # kaçış yolu fiilen kırıktı. _TOKEN: /api/ping ile "bu gerçekten bizim server"
@@ -142,11 +147,49 @@ def find_ws(ws_root: str) -> tuple[Path | None, Path | None]:
     root = nm.parents[2] if nm is not None else p
     dec = None
     for d in sorted(root.rglob("decompiled")):
-        if d.is_dir() and next(d.glob("FUN_*.c"), None):
+        # ARAYUZ-11: sembollü ikilide FUN_ dosyası olmaz; her .c fonksiyon dosyası sayılır
+        if d.is_dir() and next(d.glob("*.c"), None):
             dec = d
             if "ghidra" in str(d):
                 break
     return nm, dec
+
+
+def _report_outcome(report_path: Path) -> dict | None:
+    """Analizin durumu report.json'daki aşama sonuçlarından (ARAYUZ-11); rapor yoksa None.
+
+    Durum hesabı CLI'ın kendisidir (``karadul.cli._analysis_outcome``: çıkış kodu 0 tam /
+    1 başarısız / 3 kısmi; P15a + P-S1'in ``partial`` / ``partial_reasons``'ı). Eskiden arayüz
+    çalışma alanı bulununca aşamalara bakmadan sonuç ekranına geçiyor, başarısız ya da kısmi
+    aşamanın izi kalmıyordu.
+    """
+    try:
+        rep = json.loads(report_path.read_text(encoding="utf-8"))
+        stages = rep["pipeline"]["stages"]
+    except (json.JSONDecodeError, KeyError, OSError, TypeError, ValueError):
+        return None
+    if not isinstance(stages, dict):
+        return None
+    from types import SimpleNamespace
+
+    from karadul.cli import _analysis_outcome   # tembel: ~0,5 sn, yalnız bitişte
+
+    def _sr(v: dict):
+        return SimpleNamespace(success=v.get("success") is True, skipped=v.get("skipped") is True,
+                               errors=v.get("errors") or [], stats=v.get("stats") or {})
+
+    st = {k: v for k, v in stages.items() if isinstance(v, dict)}
+    out = _analysis_outcome(SimpleNamespace(stages={k: _sr(v) for k, v in st.items()}))
+    rstats = (st.get("reconstruct") or {}).get("stats") or {}
+    target = rep.get("target") if isinstance(rep.get("target"), dict) else {}
+    return {
+        "status": out["status"], "exit_code": out["exit_code"],
+        "failed": out["failed"], "partial": out["partial"],
+        "skipped": {k: v.get("skip_reason") for k, v in st.items() if v.get("skipped") is True},
+        "reconstruct_status": rstats.get("reconstruct_status")
+        if isinstance(rstats, dict) else None,
+        "target_type": target.get("type"),
+    }
 
 
 def _classify(name: str) -> str:
@@ -247,12 +290,14 @@ def _load_call_graph(dec: Path, ws: str):
     return _read_static_json(Path(ws), "ghidra_call_graph")
 
 
-def _call_graph_edges(dec: Path, ws: str, addr_set: set[str]) -> dict[str, set[str]] | None:
-    """Ghidra çağrı grafiğinden FUN_ düğümleri arasındaki çağrı kenarları: ``{çağıran: {çağrılan}}``.
+def _call_graph_edges(dec: Path, ws: str, addr_set: set[str],
+                      extra_hex: dict[str, str] | None = None) -> dict[str, set[str]] | None:
+    """Ghidra çağrı grafiğinden düğümler arasındaki çağrı kenarları: ``{çağıran: {çağrılan}}``.
 
     Grafik adrese anahtarlı (``edges[].from/to`` ya da ``nodes[adres].callees[].address``); adres
-    ``FUN_<adres>`` dosya adına çevrilir. Yalnız iki ucu da FUN_ dosyası olan kenarlar tutulur
-    (ithaller ve Ghidra'nın adlandırdığı fonksiyonlar arayüzde düğüm değil).
+    düğüm kimliğine çevrilir: ``FUN_<adres>`` dosyaları adresinden, Ghidra'nın adlandırdığı
+    dosyalar (``extra_hex``: adres → dosya adı; dosyanın ``// Address:`` başlığından) da
+    ARAYUZ-11'den beri düğümdür. Yalnız iki ucu da decompile dosyası olan kenarlar tutulur.
 
     Dosya yok, okunamıyor, biçimi beklenen değil ya da grafiğin düğümleri bu decompile dizininin
     fonksiyonlarıyla hiç örtüşmüyorsa (başka bir koşunun grafiği) None: çağıran metin yöntemine
@@ -261,7 +306,8 @@ def _call_graph_edges(dec: Path, ws: str, addr_set: set[str]) -> dict[str, set[s
     data = _load_call_graph(dec, ws)
     if not isinstance(data, dict):
         return None
-    by_hex = {a[4:].lower(): a for a in addr_set}
+    by_hex = {a[4:].lower(): a for a in addr_set if a.startswith("FUN_")}
+    by_hex.update({h.lower(): a for h, a in (extra_hex or {}).items()})
 
     def fun(address) -> str | None:
         if not isinstance(address, str):
@@ -311,24 +357,36 @@ def build_model() -> dict | None:
             names = json.load(_fh).get("global", {})
     except (json.JSONDecodeError, OSError, AttributeError):
         names = {}
-    files = sorted(glob.glob(f"{dec}/FUN_*.c"))
-    addrs = [os.path.basename(f)[:-2] for f in files]
+    # ARAYUZ-11: Ghidra'nın adlandırdığı fonksiyonlar (entry, _DT_INIT, ithal taslakları; sembollü
+    # ikilide hepsi) de düğümdür: eskiden yalnız FUN_*.c sayılıyor, sembollü ikilide model hiç
+    # kurulamıyor, adlı fonksiyonlar açılamıyordu. Kimlik dosya adıdır; Karadul'un ad sayaçlarına
+    # girmezler (cls "ghidra").
+    files = sorted(f for f in glob.glob(f"{dec}/*.c") if _NODE_ID_RE.fullmatch(Path(f).stem))
+    addrs = [Path(f).stem for f in files]
     addr_set = set(addrs)
+    texts: dict[str, str] = {}
+    extra_hex: dict[str, str] = {}
+    for f, addr in zip(files, addrs):
+        try:
+            texts[addr] = Path(f).read_text(errors="ignore")
+        except OSError:
+            texts[addr] = ""
+        if not addr.startswith("FUN_"):
+            m = _ADDR_HEADER_RE.search(texts[addr][:400])
+            if m:
+                extra_hex[m.group(1)] = addr
 
     # Çağrı kenarları Ghidra'nın çağrı grafiğinden. Metinde adı geçip grafikte kenarı olmayan FUN_
     # başvurusu (adresin alınması: geri çağrı kaydı, tablo, karşılaştırma) çağrı sayılmaz,
     # ``addr_refs``'e gider. Grafik okunamazsa metin yöntemine düşülür ve bu ``calls_source="text"``
     # ile açıkça işaretlenir (arayüz listeyi "metinde adı geçenler" diye etiketler).
-    graph = _call_graph_edges(Path(dec), ws, addr_set)
+    graph = _call_graph_edges(Path(dec), ws, addr_set, extra_hex)
     calls_source = "ghidra_call_graph" if graph is not None else "text"
     calls: dict[str, list[str]] = {}
     addr_refs: dict[str, list[str]] | None = {} if graph is not None else None
     indeg: dict[str, int] = {a: 0 for a in addrs}
     for f, addr in zip(files, addrs):
-        try:
-            text = Path(f).read_text(errors="ignore")
-        except OSError:
-            text = ""
+        text = texts[addr]
         mentioned = (set(_FUN_RE.findall(text)) & addr_set)
         mentioned.discard(addr)
         if graph is None:
@@ -349,13 +407,15 @@ def build_model() -> dict | None:
     funcs = []
     for addr in addrs:
         name = names.get(addr, addr)
-        cls = _classify(name)
+        cls = _classify(name) if addr.startswith("FUN_") else "ghidra"
         funcs.append({"addr": addr, "name": name, "cls": cls,
                       "out": len(calls[addr]), "in": indeg.get(addr, 0),
-                      "label": _record_label(_name_record(cmap, addr, name))})
+                      "label": (_record_label(_name_record(cmap, addr, name))
+                                if cls != "ghidra" else None)})
     n_named = sum(1 for x in funcs if x["cls"] == "named")
     n_weak = sum(1 for x in funcs if x["cls"] == "weak")
     n_unnamed = sum(1 for x in funcs if x["cls"] == "unnamed")
+    n_ghidra = sum(1 for x in funcs if x["cls"] == "ghidra")
     entry = max(funcs, key=lambda x: x["out"])["addr"] if funcs else None
     # Guvenlik ozeti (packer/anti-debug): DEFANSIF -- patlarsa model bozulmaz,
     # security alanlari None kalir (mevcut alanlar aynen doner).
@@ -366,10 +426,13 @@ def build_model() -> dict | None:
     model = {
         "functions": funcs, "calls": calls, "calls_source": calls_source,
         "addr_refs": addr_refs, "names": names,
-        "total": len(funcs), "named": n_named, "weak": n_weak,
-        "unnamed": n_unnamed, "recovered": n_named + n_weak,
+        # total: Karadul'un adlandırma işi olan FUN_ fonksiyonları; Ghidra adlıları ayrı
+        "total": len(funcs) - n_ghidra, "named": n_named, "weak": n_weak,
+        "unnamed": n_unnamed, "recovered": n_named + n_weak, "ghidra_named": n_ghidra,
         "entry": entry, "workspace": str(ws), "binary": _ws_binary_name(ws),
         "security": security,
+        # ARAYUZ-11: analizin durumu (tam / kısmi / başarısız) çalışma alanının raporundan
+        "run_status": _report_outcome(Path(ws) / "reports" / "report.json"),
     }
     with _CACHE_LOCK:
         _CACHE["ws"] = ws
@@ -834,6 +897,19 @@ def _naming_diagnosis(addr: str, text: str, cmap: dict, cls: str) -> dict:
     return {"verdict": verdict, "reason": reason, "signals": signals}
 
 
+def _known_node(addr: str) -> bool:
+    """Uçlara gelen düğüm kimliği: biçimi güvenli VE o anki modelde var (FUN_ ya da Ghidra adı).
+
+    Model yoksa yalnız FUN_ biçimi kabul edilir (eski davranış; uç zaten 404 verir).
+    """
+    if not isinstance(addr, str) or not _NODE_ID_RE.fullmatch(addr):
+        return False
+    model = build_model()
+    if not model:
+        return bool(_FUN_RE.fullmatch(addr))
+    return any(f["addr"] == addr for f in model["functions"])
+
+
 def _evidence(addr: str) -> dict:
     """addr icin kanit paketi (yalnizca gercek veri)."""
     model = build_model()
@@ -842,10 +918,13 @@ def _evidence(addr: str) -> dict:
     names = model["names"]
     calls = model["calls"]
     current = names.get(addr, addr)
+    node_cls = next((f["cls"] for f in model["functions"] if f["addr"] == addr), None)
+
+    cls_of = {f["addr"]: f["cls"] for f in model["functions"]}
 
     def node(a: str) -> dict:
         nm = names.get(a, a)
-        return {"addr": a, "name": nm, "cls": _classify(nm)}
+        return {"addr": a, "name": nm, "cls": cls_of.get(a) or _classify(nm)}
 
     callees = [node(c) for c in calls.get(addr, [])]
     callers = [node(a) for a in sorted(a for a, cl in calls.items() if addr in cl)]
@@ -854,7 +933,7 @@ def _evidence(addr: str) -> dict:
     cmap = _clean_mappings()
     prov = _provenance(cmap, addr, current)
 
-    cls = _classify(current)
+    cls = node_cls or _classify(current)
     return {
         "addr": addr,
         "current_name": current,
@@ -867,7 +946,9 @@ def _evidence(addr: str) -> dict:
         "provenance": prov,
         "hints": _external_call_hints(text, cmap),
         # neden isimsiz/zayif kaldi? (yalnizca isimli olmayanlar icin)
-        "diagnosis": _naming_diagnosis(addr, text, cmap, cls) if cls != "named" else None,
+        # Ghidra'nın kendi adı (ithal taslağı, entry ...) Karadul'un adlandırma işi değil: teşhis yok
+        "diagnosis": (_naming_diagnosis(addr, text, cmap, cls)
+                      if cls not in ("named", "ghidra") else None),
     }
 
 
@@ -2352,12 +2433,22 @@ def _job_progress(job: str) -> dict:
     rc = proc.poll()
     finished = rc is not None
     workspace = None
+    outcome = None
+    clean_dir = None
     if finished:
         wsp = Path(j["ws_out"])
         hits = sorted(wsp.rglob("reconstructed/src/naming_map.json"),
                       key=lambda p: p.stat().st_mtime) if wsp.exists() else []
         if hits:
             workspace = str(hits[-1].parents[2])
+        # ARAYUZ-11: bitişte durum raporun aşamalarından (yalnız çıkış koduna değil);
+        # çalışma alanı olmayan hedefte (JS / Java / .NET / Python) de rapor okunur.
+        reps = sorted(wsp.rglob("reports/report.json"),
+                      key=lambda p: p.stat().st_mtime) if wsp.exists() else []
+        if reps:
+            outcome = _report_outcome(reps[-1])
+        cd = Path(j["run_dir"]) / "clean"
+        clean_dir = str(cd) if cd.is_dir() else None
         # finish'te kesin sayilar report.json'dan (log parse'a guvenme)
         rep_sub = _report_substages(j["run_dir"])
         if rep_sub:
@@ -2375,6 +2466,7 @@ def _job_progress(job: str) -> dict:
         "stages": stages, "substages": substages, "finished": finished,
         "workspace": workspace, "elapsed": round(time.time() - j["started"], 1),
         "binary": j["binary"], "rc": rc, "cancelled": bool(j.get("cancelled")),
+        "outcome": outcome, "clean_dir": clean_dir,
         "tail": "\n".join(log.splitlines()[-6:]),
     }
 
@@ -2498,8 +2590,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/evidence":
             qs = self.path.split("?", 1)[1] if "?" in self.path else ""
             q = dict(x.split("=", 1) for x in qs.split("&") if "=" in x)
-            addr = q.get("addr", "")
-            if not _FUN_RE.fullmatch(addr):
+            addr = urllib.parse.unquote(q.get("addr", ""))
+            if not _known_node(addr):
                 self._json({"error": "geçersiz adres"}, 400)
                 return
             ev = _evidence(addr)
@@ -2537,8 +2629,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(_safe(_update_dl_snapshot, {"status": "idle",
                        "downloaded": 0, "total": 0, "error": None}))
         elif path.startswith("/api/decompiled/"):
-            addr = path.split("/api/decompiled/", 1)[1]
-            if not re.fullmatch(r"FUN_[0-9a-fA-F]+", addr):
+            addr = urllib.parse.unquote(path.split("/api/decompiled/", 1)[1])
+            if not _known_node(addr):
                 self._json({"error": "geçersiz adres"}, 400)
                 return
             _, dec = find_ws(WS) if WS else (None, None)
