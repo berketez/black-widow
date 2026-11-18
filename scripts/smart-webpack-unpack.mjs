@@ -702,14 +702,24 @@ if (detectedModules.size === 0 || bundleFormat === "unknown") {
 // ---------- Write Modules ----------
 const moduleOutputs = [];
 const usedFileNames = new Set();
+let parseOkCount = 0;
+const parseFailed = [];
 
 for (const [moduleId, modInfo] of detectedModules.entries()) {
   try {
     let code;
+    let wrapped = false;
     if (modInfo.rawCode) {
       code = modInfo.rawCode;
     } else if (modInfo.node) {
-      const result = generate(modInfo.node, {
+      // BICIM-01: modül düğümü bir İFADEDİR (paket nesnesindeki
+      // `function (e, t, n) {...}`, ok işlevi ya da nesne yöntemi). Tek başına
+      // generate edilip dosyaya yazılınca adsız `function (` deyimi olur ve
+      // dosya ayrıştırılamaz. İfade deyimi olarak yazılır:
+      // `(function (e, t, n) {...});` — anlam eklemez, yalnız geçerli JS yapar.
+      const program = moduleNodeToProgram(modInfo.node);
+      wrapped = program !== null;
+      const result = generate(program || modInfo.node, {
         comments: true,
         compact: false,
         concise: false,
@@ -743,7 +753,10 @@ for (const [moduleId, modInfo] of detectedModules.entries()) {
       ` * Dependencies: [${deps.join(", ")}]`,
       ` * Node.js requires: [${reqDepsStr}]`,
       ` * Original var: ${modInfo.varName}`,
-      ` * Unpacked by Karadul v1.0`,
+      ...(wrapped
+        ? [` * Form: module factory written as an expression statement`]
+        : []),
+      ` * Unpacked by Karadul`,
       ` */`,
       ``,
     ].join("\n");
@@ -751,6 +764,15 @@ for (const [moduleId, modInfo] of detectedModules.entries()) {
     const moduleCode = header + code + "\n";
     const filePath = join(modulesDir, `${fileName}.js`);
     writeFileSync(filePath, moduleCode, "utf-8");
+
+    // Yazılan her modül ayrıştırıcıyla sınanır; ayrıştırılamayan sayılır ve
+    // çıktıda adıyla bildirilir (sessiz bozuk dosya yok).
+    const parseError = checkModuleParses(moduleCode);
+    if (parseError === null) {
+      parseOkCount += 1;
+    } else {
+      parseFailed.push({ file: `${fileName}.js`, error: parseError });
+    }
 
     moduleOutputs.push({
       id: moduleId,
@@ -764,6 +786,7 @@ for (const [moduleId, modInfo] of detectedModules.entries()) {
       esm_alias: modInfo.esmAlias || null,
       npm_package: modInfo.npmPackage || null,
       require_deps: modInfo.requireDeps || [],
+      parse_ok: parseError === null,
     });
   } catch (err) {
     errors.push(`Module ${moduleId} yazma hata: ${err.message}`);
@@ -840,11 +863,60 @@ emit({
     require_alias: requireAliasName,
   },
   modules: moduleOutputs,
+  // BICIM-01 / MEK-12: yazılan modüllerden kaçı ayrıştırılabildi (Babel,
+  // hata kurtarmasız). total_modules = modules_parse_ok + modules_parse_failed.
+  modules_parse_ok: parseOkCount,
+  modules_parse_failed: parseFailed.length,
+  parse_failed_modules: parseFailed.slice(0, 50),
   file_size: fileSize,
   errors,
 });
 
 // ===== Helpers =====
+
+// Modül ayrıştırma sınaması: girdi ayrıştırmasıyla aynı eklenti kümesi, ama
+// hata kurtarma KAPALI (kurtarılan hata = eksik AST = ayrıştırılamaz sayılır).
+// (Liste işlev içinde: üst düzey const, modül yazma döngüsü bu satırdan önce
+// koştuğu için TDZ hatası verirdi.)
+function checkModuleParses(code) {
+  const MODULE_CHECK_PLUGINS = [
+    "jsx", "typescript", "decorators-legacy", "classProperties",
+    "classPrivateProperties", "classPrivateMethods", "dynamicImport",
+    "optionalChaining", "nullishCoalescingOperator", "exportDefaultFrom",
+    "exportNamespaceFrom", "topLevelAwait", "importMeta",
+  ];
+  try {
+    parse(code, {
+      sourceType: "unambiguous",
+      allowImportExportEverywhere: true,
+      allowReturnOutsideFunction: true,
+      allowSuperOutsideMethod: true,
+      allowUndeclaredExports: true,
+      errorRecovery: false,
+      plugins: MODULE_CHECK_PLUGINS,
+    });
+    return null;
+  } catch (err) {
+    return String(err && err.message ? err.message : err).slice(0, 200);
+  }
+}
+
+// Modül düğümünü tek başına geçerli bir programa çevir (BICIM-01).
+// FunctionExpression / ArrowFunctionExpression -> ifade deyimi; ObjectMethod
+// (`0(e, t, n) {...}`) -> adsız FunctionExpression -> ifade deyimi. Generator
+// ifade deyiminin başındaki `function`'ı kendisi paranteze alır.
+function moduleNodeToProgram(node) {
+  let expr = node;
+  if (t.isObjectMethod(node)) {
+    expr = t.functionExpression(
+      null, node.params, node.body, node.generator, node.async,
+    );
+  }
+  if (t.isExpression(expr)) {
+    return t.program([t.expressionStatement(expr)]);
+  }
+  return null;
+}
 
 function emit(obj) {
   process.stdout.write(JSON.stringify(obj) + "\n");

@@ -1,0 +1,53 @@
+{
+  "_comment": "P20 (JS hattı) onarımlarının mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p20.json",
+  "mutants": [
+    {
+      "id": "p20_k1_sarmalama_yok",
+      "desc": "BICIM-01: modül düğümü sarmalanmadan yazılır (adsız function deyimi geri gelir)",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20_webpack_modules.py::test_every_extracted_module_parses",
+      "find": "const result = generate(program || modInfo.node, {",
+      "replace": "const result = generate(modInfo.node, {"
+    },
+    {
+      "id": "p20_k1_nesne_yontemi_cevrilmez",
+      "desc": "BICIM-01: nesne yöntemi (`0(e,t,n){}`) işlev ifadesine çevrilmez",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20_webpack_modules.py::test_object_method_module_becomes_function_expression",
+      "find": "  if (t.isObjectMethod(node)) {",
+      "replace": "  if (false && t.isObjectMethod(node)) {"
+    },
+    {
+      "id": "p20_k1_ayristirma_sinamasi_hep_gecer",
+      "desc": "MEK-12: ayrıştırma sınaması hatayı yutar (bozuk modül sayılmaz)",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20_webpack_modules.py::test_unparseable_module_is_counted_and_named",
+      "find": "    return String(err && err.message ? err.message : err).slice(0, 200);",
+      "replace": "    return null;"
+    },
+    {
+      "id": "p20_k1_hata_kurtarmali_sinama",
+      "desc": "MEK-12: sınama hata kurtarmasıyla yapılır (kurtarılan hata ayrıştırılmış sayılır)",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20_webpack_modules.py::test_unparseable_module_is_counted_and_named",
+      "find": "      errorRecovery: false,\n      plugins: MODULE_CHECK_PLUGINS,",
+      "replace": "      errorRecovery: true,\n      plugins: MODULE_CHECK_PLUGINS,"
+    },
+    {
+      "id": "p20_k1_kismi_isaretlenmez",
+      "desc": "MEK-12: ayrıştırılamayan modül varken adım kısmi sayılmaz",
+      "module": "karadul/deobfuscators/deep_pipeline.py",
+      "test": "tests/test_p20_webpack_modules.py::test_step_reports_unparseable_modules_as_partial",
+      "find": "                    if step[\"success\"]:\n                        step[\"partial\"] = True",
+      "replace": "                    if not step[\"success\"]:\n                        step[\"partial\"] = True"
+    },
+    {
+      "id": "p20_k1_sayac_uydurulur",
+      "desc": "MEK-12: betik sayaç vermediğinde 0 uydurulur",
+      "module": "karadul/deobfuscators/deep_pipeline.py",
+      "test": "tests/test_p20_webpack_modules.py::test_step_without_counter_does_not_invent_zero",
+      "find": "            if \"modules_parse_failed\" in json_result:",
+      "replace": "            if True:"
+    }
+  ]
+}

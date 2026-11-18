@@ -222,6 +222,11 @@ class DeepDeobfuscationPipeline:
             result.total_modules = step_result.get("total_modules", 0)
             result.bundle_format = step_result.get("bundle_format", "unknown")
             result.stats["unpack_modules"] = result.total_modules
+            if "modules_parse_failed" in step_result:
+                result.stats["unpack_modules_parse_ok"] = step_result["modules_parse_ok"]
+                result.stats["unpack_modules_parse_failed"] = step_result[
+                    "modules_parse_failed"
+                ]
 
         # --- Adim 4: Her modul uzerinde ikinci pass (variable renaming only) ---
         if result.modules_dir and result.total_modules > 0:
@@ -531,6 +536,24 @@ class DeepDeobfuscationPipeline:
                 "helpers": json_result.get("helpers_detected", {}),
                 "errors": json_result.get("errors", []),
             }
+            # BICIM-01 / MEK-12: betik yazdığı her modülü ayrıştırıcıyla sınar.
+            # Ayrıştırılamayan modül sayılır ve adım "kısmi" olur; sayı yoksa
+            # (eski betik) "bakılmadı" anlamında anahtar hiç yazılmaz.
+            if "modules_parse_failed" in json_result:
+                parse_failed = int(json_result.get("modules_parse_failed") or 0)
+                step["modules_parse_ok"] = int(json_result.get("modules_parse_ok") or 0)
+                step["modules_parse_failed"] = parse_failed
+                if parse_failed:
+                    failed_list = json_result.get("parse_failed_modules") or []
+                    step["parse_failed_modules"] = failed_list[:20]
+                    first = failed_list[0] if failed_list else {}
+                    step["error"] = (
+                        f"{parse_failed}/{step['total_modules']} modül "
+                        "ayrıştırılamıyor (ilk: "
+                        f"{first.get('file', '?')}: {first.get('error', '?')})"
+                    )
+                    if step["success"]:
+                        step["partial"] = True
             if not step["success"]:
                 if not step["total_modules"] and not step["errors"]:
                     # Script sorunsuz çalıştı, hata bildirmedi, modül bulamadı:
@@ -872,6 +895,11 @@ class DeepDeobfuscationPipeline:
             result.total_modules = step_result.get("total_modules", 0)
             result.bundle_format = step_result.get("bundle_format", "unknown")
             result.stats["unpack_modules"] = result.total_modules
+            if "modules_parse_failed" in step_result:
+                result.stats["unpack_modules_parse_ok"] = step_result["modules_parse_ok"]
+                result.stats["unpack_modules_parse_failed"] = step_result[
+                    "modules_parse_failed"
+                ]
 
         # Adim 5: Her modul uzerinde ikinci pass (variable renaming)
         if result.modules_dir and result.total_modules > 0:
