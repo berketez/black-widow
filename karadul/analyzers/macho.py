@@ -387,6 +387,22 @@ class MachOAnalyzer(BaseAnalyzer):
             artifacts["symbols"] = sym_path
             stats["symbol_count"] = len(symbols.get("symbols", []))
 
+        # Arac durumu (P01b): strings / nm / otool cagrisi tam mi, kismi mi, basarisiz mi.
+        # Bos cikti sessiz kalmaz: "hata" ve "kismi" durumlari errors listesine de yazilir.
+        tool_status = {
+            name: dict(st) for name, st in self.runner.tool_status.items()
+            if name in ("strings", "nm", "otool")
+        }
+        if tool_status:
+            stats["tool_status"] = tool_status
+            for name, st in sorted(tool_status.items()):
+                if st.get("durum") in ("kismi", "hata"):
+                    errors.append(
+                        "%s %s (cikis %s, %s satir): %s"
+                        % (name, st["durum"], st.get("cikis_kodu"), st.get("satir"),
+                           st.get("hata", ""))
+                    )
+
         # 6. lief (opsiyonel)
         lief_data = self._run_lief(binary_path)
         if lief_data is not None:
@@ -665,10 +681,20 @@ class MachOAnalyzer(BaseAnalyzer):
             [nm_path, "-g", str(binary_path)],  # -g: external (global) symbols
             timeout=60,
         )
-        if not result.success:
-            # nm basarisiz olabilir (stripped binary vb.)
-            logger.debug("nm basarisiz: %s", result.stderr[:200])
+        if not result.success and not result.stdout.strip():
+            # nm basarisiz olabilir (stripped binary vb.); durum runner.tool_status["nm"]'de
+            logger.warning(
+                "nm basarisiz (cikis %d, cikti yok): %s -- %s",
+                result.returncode, binary_path, result.stderr[:200],
+            )
             return None
+        if not result.success:
+            # Cikis != 0 ama cikti var (ör. conda cctools nm yeni arm64e yukleme komutunda):
+            # basilan simgeler kullanilir, durum "kismi" (P01b).
+            logger.warning(
+                "nm kismi cikti (cikis %d): %s -- %s",
+                result.returncode, binary_path, result.stderr[:200],
+            )
 
         symbols: list[dict[str, Any]] = []
         for line in result.stdout.splitlines():
