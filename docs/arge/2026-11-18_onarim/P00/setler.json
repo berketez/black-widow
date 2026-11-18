@@ -1,0 +1,1371 @@
+{
+ "olusturma": "2026-11-18T09:32:57+03:00",
+ "setler": {
+  "gelistirme": [
+   {
+    "anahtar": "debian/coreutils/[",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/[/ws/workspaces/_/20261021_095852/raw/[",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/[/ws/workspaces/_/20261021_095852/raw/[",
+    "boyut": 67936,
+    "sha256": "ddee5112577e6ef997d98fa50e06fc7d300e5a46ac2883349970e06cf0215238"
+   },
+   {
+    "anahtar": "debian/coreutils/arch",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/arch/ws/workspaces/arch/20261021_095938/raw/arch",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/arch/ws/workspaces/arch/20261021_095938/raw/arch",
+    "boyut": 68056,
+    "sha256": "9616f03321ce762171bf3eabc695d28315ff1929b0ea55777652c5970a6c9939"
+   },
+   {
+    "anahtar": "debian/coreutils/b2sum",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/b2sum/ws/workspaces/b2sum/20261021_100018/raw/b2sum",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/b2sum/ws/workspaces/b2sum/20261021_100018/raw/b2sum",
+    "boyut": 68056,
+    "sha256": "fa9494e4564363a29f7c029d6ebaf31e275e229fac1f8ba059ed6f4f9e0a26e4"
+   },
+   {
+    "anahtar": "debian/coreutils/base32",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/base32/ws/workspaces/base32/20261021_100111/raw/base32",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/base32/ws/workspaces/base32/20261021_100111/raw/base32",
+    "boyut": 68048,
+    "sha256": "8584a7bf4503bc64beb4308a15b1112790369eb2e434d8e1a97d2cc1e33c58a0"
+   },
+   {
+    "anahtar": "debian/coreutils/base64",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/base64/ws/workspaces/base64/20261021_100157/raw/base64",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/base64/ws/workspaces/base64/20261021_100157/raw/base64",
+    "boyut": 68048,
+    "sha256": "678daa837b6f8873d3e24775d357a619fb034e31b990510d8ae35293662a92ae"
+   },
+   {
+    "anahtar": "debian/coreutils/basename",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/basename/ws/workspaces/basename/20261021_100243/raw/basename",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/basename/ws/workspaces/basename/20261021_100243/raw/basename",
+    "boyut": 68048,
+    "sha256": "e5f735ef1e239481d53e44dae4217948198ac93f319cbd0df58a9e9a507d91c7"
+   },
+   {
+    "anahtar": "debian/coreutils/basenc",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/basenc/ws/workspaces/basenc/20261021_100325/raw/basenc",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/basenc/ws/workspaces/basenc/20261021_100325/raw/basenc",
+    "boyut": 68048,
+    "sha256": "a3d913eb626433a36e8b9e6125e067a5165adaba3e58ae84f31c0d4292e94cee"
+   },
+   {
+    "anahtar": "debian/coreutils/cat",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/cat/ws/workspaces/cat/20261021_100426/raw/cat",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/cat/ws/workspaces/cat/20261021_100426/raw/cat",
+    "boyut": 68088,
+    "sha256": "0d5a5dd543ed8d31220320eb513e4680ab303e48cb22a5edbf27a5a91561a71e"
+   },
+   {
+    "anahtar": "debian/coreutils/chcon",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/chcon/ws/workspaces/chcon/20261021_100513/raw/chcon",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/chcon/ws/workspaces/chcon/20261021_100513/raw/chcon",
+    "boyut": 133584,
+    "sha256": "eb92e9c7515bd04780ec19750dec33a97f4f07cba9747b3be9fccdf389d00490"
+   },
+   {
+    "anahtar": "debian/coreutils/chgrp",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/chgrp/ws/workspaces/chgrp/20261021_100637/raw/chgrp",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/chgrp/ws/workspaces/chgrp/20261021_100637/raw/chgrp",
+    "boyut": 133592,
+    "sha256": "4c0c9e16288bcbabb922a47f6914d02e1b2e5cb6f2416f266cd3b07511f3fa3d"
+   },
+   {
+    "anahtar": "debian/coreutils/chmod",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/chmod/ws/workspaces/chmod/20261021_100801/raw/chmod",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/chmod/ws/workspaces/chmod/20261021_100801/raw/chmod",
+    "boyut": 68056,
+    "sha256": "f00c257ef26821b07d22863543f61f8f44cf16ca06be47adc2a18abfb40c6802"
+   },
+   {
+    "anahtar": "debian/coreutils/chown",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/chown/ws/workspaces/chown/20261021_100913/raw/chown",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/chown/ws/workspaces/chown/20261021_100913/raw/chown",
+    "boyut": 133592,
+    "sha256": "f3522e4eb2c654c1ea0e0b550aa83ffa8ca36e2660c3aca4b1afcbc399170b30"
+   },
+   {
+    "anahtar": "debian/coreutils/chroot",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/chroot/ws/workspaces/chroot/20261021_104402/raw/chroot",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/chroot/ws/workspaces/chroot/20261021_104402/raw/chroot",
+    "boyut": 68048,
+    "sha256": "f78db8013c10b4ea8ed234afe1936504053cb4fa24b88938c5ec8fdc54bbd8a8"
+   },
+   {
+    "anahtar": "debian/coreutils/cksum",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/cksum/ws/workspaces/cksum/20261021_101022/raw/cksum",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/cksum/ws/workspaces/cksum/20261021_101022/raw/cksum",
+    "boyut": 133608,
+    "sha256": "9afa16517b9a1212f5c583e31f1b693688265ccb1f959e7ef39e256d8af99309"
+   },
+   {
+    "anahtar": "debian/coreutils/comm",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/comm/ws/workspaces/comm/20261021_101144/raw/comm",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/comm/ws/workspaces/comm/20261021_101144/raw/comm",
+    "boyut": 68064,
+    "sha256": "f87d284af034f8460c03e2ca61615ad89eed4e2014036d97760d159e48ef5836"
+   },
+   {
+    "anahtar": "debian/coreutils/cp",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/cp/ws/workspaces/cp/20261021_101233/raw/cp",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/cp/ws/workspaces/cp/20261021_101233/raw/cp",
+    "boyut": 199144,
+    "sha256": "175656d7957b42e9be1dadce5621cdc3c8ba76a552f9c84a2457f287618fc5a0"
+   },
+   {
+    "anahtar": "debian/coreutils/csplit",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/csplit/ws/workspaces/csplit/20261021_101428/raw/csplit",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/csplit/ws/workspaces/csplit/20261021_101428/raw/csplit",
+    "boyut": 68056,
+    "sha256": "2bee94acfcee8d7139f5c7283c71276e82206ffd6a036a8c1ee1be44ab81cb43"
+   },
+   {
+    "anahtar": "debian/coreutils/cut",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/cut/ws/workspaces/cut/20261021_101522/raw/cut",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/cut/ws/workspaces/cut/20261021_101522/raw/cut",
+    "boyut": 68056,
+    "sha256": "2b910f41d86805c20131df9f5ceec50831db66644b56cfb44facf83e79fbdd61"
+   },
+   {
+    "anahtar": "debian/coreutils/date",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/date/ws/workspaces/date/20261021_101610/raw/date",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/date/ws/workspaces/date/20261021_101610/raw/date",
+    "boyut": 133592,
+    "sha256": "07eedd3ee45fb55b4062f0affe3258c1e043445d551b48227451cd9257d15ad9"
+   },
+   {
+    "anahtar": "debian/coreutils/dd",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/dd/ws/workspaces/dd/20261021_101651/raw/dd",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/dd/ws/workspaces/dd/20261021_101651/raw/dd",
+    "boyut": 133632,
+    "sha256": "98ea6bdb1e445f9e49dd3a6a604797332b232539c56818f30875d73f3ff2e18c"
+   },
+   {
+    "anahtar": "debian/coreutils/df",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/df/ws/workspaces/df/20261021_101711/raw/df",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/df/ws/workspaces/df/20261021_101711/raw/df",
+    "boyut": 134080,
+    "sha256": "f090beb7722427e271be80b7e1e55e5c127a9f49d914f7fbfef7ca6709e98ce5"
+   },
+   {
+    "anahtar": "debian/coreutils/dir",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/dir/ws/workspaces/dir/20261021_101717/raw/dir",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/dir/ws/workspaces/dir/20261021_101717/raw/dir",
+    "boyut": 199576,
+    "sha256": "6ef3e9c9dd3c0e0106c60639331de36b314433f542a3fef7b73cb4a4faffd019"
+   },
+   {
+    "anahtar": "debian/coreutils/dircolors",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/dircolors/ws/workspaces/dircolors/20261021_101757/raw/dircolors",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/dircolors/ws/workspaces/dircolors/20261021_101757/raw/dircolors",
+    "boyut": 68056,
+    "sha256": "e356aaed8e5bf09e0b738497013749346c8cba00b12284601fab850d23bf00bc"
+   },
+   {
+    "anahtar": "debian/coreutils/dirname",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/dirname/ws/workspaces/dirname/20261021_101833/raw/dirname",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/dirname/ws/workspaces/dirname/20261021_101833/raw/dirname",
+    "boyut": 68048,
+    "sha256": "e7cc1ed30a72608bca6a2e393917bec77b0e5aaceefdb6b9442b674128562714"
+   },
+   {
+    "anahtar": "debian/coreutils/du",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/du/ws/workspaces/du/20261021_101842/raw/du",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/du/ws/workspaces/du/20261021_101842/raw/du",
+    "boyut": 133600,
+    "sha256": "62767cb901f5c9fc43a8897d005e4528cae7d0905a78af35536caed5474aa434"
+   },
+   {
+    "anahtar": "debian/coreutils/echo",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/echo/ws/workspaces/echo/20261021_101911/raw/echo",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/echo/ws/workspaces/echo/20261021_101911/raw/echo",
+    "boyut": 68048,
+    "sha256": "7d6a11b0739e83183bd01147b3e7e196ad99c24b4c282bab820d57314942b6e4"
+   },
+   {
+    "anahtar": "debian/coreutils/env",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/env/ws/workspaces/env/20261021_101915/raw/env",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/env/ws/workspaces/env/20261021_101915/raw/env",
+    "boyut": 68464,
+    "sha256": "a1a366aeec990c18d7ff97358e523925e449e2df224029fe048fc3ae35a97720"
+   },
+   {
+    "anahtar": "debian/coreutils/expand",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/expand/ws/workspaces/expand/20261021_101954/raw/expand",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/expand/ws/workspaces/expand/20261021_101954/raw/expand",
+    "boyut": 68064,
+    "sha256": "a92445aa97168266b0b11f642f5c368b95490216a5c7a834cd5ee1dc853f8d75"
+   },
+   {
+    "anahtar": "debian/coreutils/expr",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/expr/ws/workspaces/expr/20261021_102004/raw/expr",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/expr/ws/workspaces/expr/20261021_102004/raw/expr",
+    "boyut": 68040,
+    "sha256": "56ae85a0c61b2d3aba0940a0aa0c6da3029dbabceb32ce959bb340926e35e9f3"
+   },
+   {
+    "anahtar": "debian/coreutils/factor",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/factor/ws/workspaces/factor/20261021_102014/raw/factor",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/factor/ws/workspaces/factor/20261021_102014/raw/factor",
+    "boyut": 133592,
+    "sha256": "a758f307f3b968b941ea5d5e9fec9b138606f927ffced15b9948816c75d07a30"
+   },
+   {
+    "anahtar": "debian/coreutils/false",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/false/ws/workspaces/false/20261021_102041/raw/false",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/false/ws/workspaces/false/20261021_102041/raw/false",
+    "boyut": 68048,
+    "sha256": "712b3620b56a553535fe7de0d6c613880fe984bfa7aa371901a61587f7f1d65b"
+   },
+   {
+    "anahtar": "debian/coreutils/fmt",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/fmt/ws/workspaces/fmt/20261021_102051/raw/fmt",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/fmt/ws/workspaces/fmt/20261021_102051/raw/fmt",
+    "boyut": 68048,
+    "sha256": "540a07a9e627588f37049164b6acfc8497554a1c1a3d0828ef1f4fefa5046a6d"
+   },
+   {
+    "anahtar": "debian/coreutils/fold",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/fold/ws/workspaces/fold/20261021_102113/raw/fold",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/fold/ws/workspaces/fold/20261021_102113/raw/fold",
+    "boyut": 68048,
+    "sha256": "d85f2d99a9eaeff43bd887dc9458b61f36e5d384b73dfc17388f7e3072aa1989"
+   },
+   {
+    "anahtar": "debian/coreutils/groups",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/groups/ws/workspaces/groups/20261021_102123/raw/groups",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/groups/ws/workspaces/groups/20261021_102123/raw/groups",
+    "boyut": 68048,
+    "sha256": "62400fad5b74de132cc77f4fce17928e6d4ebbfb5d97dae3ecbecb42ef5e2672"
+   },
+   {
+    "anahtar": "debian/coreutils/head",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/head/ws/workspaces/head/20261021_102138/raw/head",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/head/ws/workspaces/head/20261021_102138/raw/head",
+    "boyut": 68056,
+    "sha256": "87b37095fa9c479fb59783f296ed2f88e87e14be4157f2955bcab5b5f3260769"
+   },
+   {
+    "anahtar": "debian/coreutils/hostid",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/hostid/ws/workspaces/hostid/20261021_102158/raw/hostid",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/hostid/ws/workspaces/hostid/20261021_102158/raw/hostid",
+    "boyut": 68048,
+    "sha256": "8df6e20164976bf1ddc0b38701f459581b942cc3000b9552fbc763fcaf94d44e"
+   },
+   {
+    "anahtar": "debian/coreutils/id",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/id/ws/workspaces/id/20261021_102206/raw/id",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/id/ws/workspaces/id/20261021_102206/raw/id",
+    "boyut": 68056,
+    "sha256": "9099881905b68f7831560a3cccef1a04d475568f985b97da51a9d88db84b9415"
+   },
+   {
+    "anahtar": "debian/coreutils/install",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/install/ws/workspaces/install/20261021_102226/raw/install",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/install/ws/workspaces/install/20261021_102226/raw/install",
+    "boyut": 199168,
+    "sha256": "9b55c1c1d6c20ea4092d28a2d9700ef633c036b97f5731c5920b72f83755ba23"
+   },
+   {
+    "anahtar": "debian/coreutils/join",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/join/ws/workspaces/join/20261021_102241/raw/join",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/join/ws/workspaces/join/20261021_102241/raw/join",
+    "boyut": 68096,
+    "sha256": "3ebd12f8c301f5b1b424ea5c1f6b04781ea2dddaeec6c2bf61172bc4c2209833"
+   },
+   {
+    "anahtar": "debian/coreutils/libstdbuf.so",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/libstdbuf.so/ws/workspaces/libstdbuf/20261021_104356/raw/libstdbuf",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/libstdbuf.so/ws/workspaces/libstdbuf/20261021_104356/raw/libstdbuf",
+    "boyut": 67592,
+    "sha256": "28e4024ee88ecff586e9c9cd46f8688242597fe35429e302219f6eb950a642bc"
+   },
+   {
+    "anahtar": "debian/coreutils/link",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/link/ws/workspaces/link/20261021_102253/raw/link",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/link/ws/workspaces/link/20261021_102253/raw/link",
+    "boyut": 68048,
+    "sha256": "0b65a64aa17794126a1189fdd07fdcef72a692e67e6cac906360ebbfba838a56"
+   },
+   {
+    "anahtar": "debian/coreutils/ln",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/ln/ws/workspaces/ln/20261021_102335/raw/ln",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/ln/ws/workspaces/ln/20261021_102335/raw/ln",
+    "boyut": 133600,
+    "sha256": "311846cb11aaeb5b0655b41a1f1bde2cd5150d90b92970cc376c2acbd6f635ee"
+   },
+   {
+    "anahtar": "debian/coreutils/logname",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/logname/ws/workspaces/logname/20261021_102339/raw/logname",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/logname/ws/workspaces/logname/20261021_102339/raw/logname",
+    "boyut": 68048,
+    "sha256": "c491a666ae66df2a3032b676ac7b0ef21dd15ca7a364f6c7b3604af9d089a608"
+   },
+   {
+    "anahtar": "debian/coreutils/ls",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/ls/ws/workspaces/ls/20261021_102420/raw/ls",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/ls/ws/workspaces/ls/20261021_102420/raw/ls",
+    "boyut": 199576,
+    "sha256": "0c062cc32ec13a8b0542c25659bd52faec0659f49b9efdd45eb383b26f1e10f5"
+   },
+   {
+    "anahtar": "debian/coreutils/md5sum",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/md5sum/ws/workspaces/md5sum/20261021_102432/raw/md5sum",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/md5sum/ws/workspaces/md5sum/20261021_102432/raw/md5sum",
+    "boyut": 68056,
+    "sha256": "261c116cb55c248aa6bb571d2cf46689cf8a88e0965fcf875181bf2cc6e0f7a5"
+   },
+   {
+    "anahtar": "debian/coreutils/mkdir",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/mkdir/ws/workspaces/mkdir/20261021_102446/raw/mkdir",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/mkdir/ws/workspaces/mkdir/20261021_102446/raw/mkdir",
+    "boyut": 133584,
+    "sha256": "6f977f773468265ba072d0f7e51f5ef74778e483fc65db8ebb685ea2a5d9da79"
+   },
+   {
+    "anahtar": "debian/coreutils/mkfifo",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/mkfifo/ws/workspaces/mkfifo/20261021_102518/raw/mkfifo",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/mkfifo/ws/workspaces/mkfifo/20261021_102518/raw/mkfifo",
+    "boyut": 133584,
+    "sha256": "78539e1b604de20a574ff23da69606cfbbc5870653b35c01dbf55c01701dac0b"
+   },
+   {
+    "anahtar": "debian/coreutils/mknod",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/mknod/ws/workspaces/mknod/20261021_102559/raw/mknod",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/mknod/ws/workspaces/mknod/20261021_102559/raw/mknod",
+    "boyut": 133584,
+    "sha256": "656886bafca08949f11556ddc931b7895588a98b4129c0bac582d1ecefc5ca07"
+   },
+   {
+    "anahtar": "debian/coreutils/mktemp",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/mktemp/ws/workspaces/mktemp/20261021_102616/raw/mktemp",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/mktemp/ws/workspaces/mktemp/20261021_102616/raw/mktemp",
+    "boyut": 68048,
+    "sha256": "321488fd7287d0fdf33d38527b74d80fa629b6cd89276a114ae721aa2fc39b0d"
+   },
+   {
+    "anahtar": "debian/coreutils/mv",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/mv/ws/workspaces/mv/20261021_102628/raw/mv",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/mv/ws/workspaces/mv/20261021_102628/raw/mv",
+    "boyut": 199144,
+    "sha256": "f1bc7dd4e9fd6d11791ab70901239dd4fa57f00d18be26c9d82603f6a985ff2e"
+   },
+   {
+    "anahtar": "debian/coreutils/nice",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/nice/ws/workspaces/nice/20261021_102702/raw/nice",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/nice/ws/workspaces/nice/20261021_102702/raw/nice",
+    "boyut": 68048,
+    "sha256": "0254981a2daaa7129ccfd8c62996032a2c97c803a2e9d3efbe17850698436a3e"
+   },
+   {
+    "anahtar": "debian/coreutils/nl",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/nl/ws/workspaces/nl/20261021_102711/raw/nl",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/nl/ws/workspaces/nl/20261021_102711/raw/nl",
+    "boyut": 68144,
+    "sha256": "4263e59545aa8b4df6290e6ba9f00e084a55d05ebee8188a375fd7e92a568c09"
+   },
+   {
+    "anahtar": "debian/coreutils/nohup",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/nohup/ws/workspaces/nohup/20261021_102743/raw/nohup",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/nohup/ws/workspaces/nohup/20261021_102743/raw/nohup",
+    "boyut": 68048,
+    "sha256": "6908402cbf9b157c2071fb974329a8c456c6e2ac3df29b8b6e96a6d88db34eb5"
+   },
+   {
+    "anahtar": "debian/coreutils/nproc",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/nproc/ws/workspaces/nproc/20261021_102756/raw/nproc",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/nproc/ws/workspaces/nproc/20261021_102756/raw/nproc",
+    "boyut": 68048,
+    "sha256": "fcb928960e01bfea14766e256f18237ec8a378a2a37581b1bd3c260fb7f2f311"
+   },
+   {
+    "anahtar": "debian/coreutils/numfmt",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/numfmt/ws/workspaces/numfmt/20261021_102826/raw/numfmt",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/numfmt/ws/workspaces/numfmt/20261021_102826/raw/numfmt",
+    "boyut": 133640,
+    "sha256": "75606dfdc3d57f1d059d70ef4088464244930a09fbf5ef8cc4f42e2aaeab1a04"
+   },
+   {
+    "anahtar": "debian/coreutils/od",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/od/ws/workspaces/od/20261021_102826/raw/od",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/od/ws/workspaces/od/20261021_102826/raw/od",
+    "boyut": 133600,
+    "sha256": "7f2a4cb682a2e7a6d678d5a368793f87bb9ee266bb9a734c31eba65ffcd3bf6e"
+   },
+   {
+    "anahtar": "debian/coreutils/paste",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/paste/ws/workspaces/paste/20261021_102841/raw/paste",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/paste/ws/workspaces/paste/20261021_102841/raw/paste",
+    "boyut": 68056,
+    "sha256": "bcfb30eafb4e6eb5f831c15ba3e6a14cfd4c74fb6ef7722c522a146082792be2"
+   },
+   {
+    "anahtar": "debian/coreutils/pathchk",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/pathchk/ws/workspaces/pathchk/20261021_102927/raw/pathchk",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/pathchk/ws/workspaces/pathchk/20261021_102927/raw/pathchk",
+    "boyut": 68048,
+    "sha256": "0ccc3bdfd46bc5f3d218ee6063bc88fd42ceec707a3e12997ba5970e7ad6e45b"
+   },
+   {
+    "anahtar": "debian/coreutils/pinky",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/pinky/ws/workspaces/pinky/20261021_102936/raw/pinky",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/pinky/ws/workspaces/pinky/20261021_102936/raw/pinky",
+    "boyut": 68096,
+    "sha256": "5d7c6fb7abca7482113171dd078e9f09a001351997827d261bee3b64409291d5"
+   },
+   {
+    "anahtar": "debian/coreutils/pr",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/pr/ws/workspaces/pr/20261021_102937/raw/pr",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/pr/ws/workspaces/pr/20261021_102937/raw/pr",
+    "boyut": 133656,
+    "sha256": "aacabdf202a7a7e6a0d6ceecd31f621a69fe40f2c160d41f49417aa4eb6dc1b7"
+   },
+   {
+    "anahtar": "debian/coreutils/printenv",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/printenv/ws/workspaces/printenv/20261021_103009/raw/printenv",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/printenv/ws/workspaces/printenv/20261021_103009/raw/printenv",
+    "boyut": 68048,
+    "sha256": "dedeaa124bd5f2a354dd36b0760a3ba388b69d496fc56feaa2ed072a711cb324"
+   },
+   {
+    "anahtar": "debian/coreutils/printf",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/printf/ws/workspaces/printf/20261021_103026/raw/printf",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/printf/ws/workspaces/printf/20261021_103026/raw/printf",
+    "boyut": 68048,
+    "sha256": "432943fe5b987a5f4db1c66f7cfba8b16880ae10e7d1eebfe261403327faad0a"
+   },
+   {
+    "anahtar": "debian/coreutils/ptx",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/ptx/ws/workspaces/ptx/20261021_103040/raw/ptx",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/ptx/ws/workspaces/ptx/20261021_103040/raw/ptx",
+    "boyut": 68096,
+    "sha256": "721348e8052de7d11f5c2322a6f2647e7ed96de6ca26b3001c3ac0da6428924f"
+   },
+   {
+    "anahtar": "debian/coreutils/pwd",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/pwd/ws/workspaces/pwd/20261021_103050/raw/pwd",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/pwd/ws/workspaces/pwd/20261021_103050/raw/pwd",
+    "boyut": 68048,
+    "sha256": "c588ccde0d255690843a57b5b868c44cfec513cec4eedeefe5d0e2b4ba8a9c4d"
+   },
+   {
+    "anahtar": "debian/coreutils/readlink",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/readlink/ws/workspaces/readlink/20261021_103125/raw/readlink",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/readlink/ws/workspaces/readlink/20261021_103125/raw/readlink",
+    "boyut": 68048,
+    "sha256": "8c9d035b9810368ae67845e15bc155a8309bf184510dec046a84c6cacc3c9cfe"
+   },
+   {
+    "anahtar": "debian/coreutils/realpath",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/realpath/ws/workspaces/realpath/20261021_103134/raw/realpath",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/realpath/ws/workspaces/realpath/20261021_103134/raw/realpath",
+    "boyut": 68056,
+    "sha256": "3dfcf6a616926abc0e154213156cdf876b2b109519183d907205a587ca0735d4"
+   },
+   {
+    "anahtar": "debian/coreutils/rm",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/rm/ws/workspaces/rm/20261021_103145/raw/rm",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/rm/ws/workspaces/rm/20261021_103145/raw/rm",
+    "boyut": 133592,
+    "sha256": "0bc3147fa63e9dba4eac651f71e09c41c663f539566e39e870b1d1e65795e106"
+   },
+   {
+    "anahtar": "debian/coreutils/rmdir",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/rmdir/ws/workspaces/rmdir/20261021_103217/raw/rmdir",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/rmdir/ws/workspaces/rmdir/20261021_103217/raw/rmdir",
+    "boyut": 68048,
+    "sha256": "f144ddbb3f8d07f3e5e4278fab9f84def93a58b728aaa7e1443bba1703e7ba1f"
+   },
+   {
+    "anahtar": "debian/coreutils/runcon",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/runcon/ws/workspaces/runcon/20261021_103226/raw/runcon",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/runcon/ws/workspaces/runcon/20261021_103226/raw/runcon",
+    "boyut": 68048,
+    "sha256": "e4be3517845dbd2f672a23a6362292db8ad3defd1e9c8a0166b0a502b59c51a7"
+   },
+   {
+    "anahtar": "debian/coreutils/seq",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/seq/ws/workspaces/seq/20261021_103253/raw/seq",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/seq/ws/workspaces/seq/20261021_103253/raw/seq",
+    "boyut": 68048,
+    "sha256": "b597d04caa08ed39d9906f90361b3558fc5e65ae7eae6724f958ca7224eb80f0"
+   },
+   {
+    "anahtar": "debian/coreutils/sha1sum",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sha1sum/ws/workspaces/sha1sum/20261021_103259/raw/sha1sum",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sha1sum/ws/workspaces/sha1sum/20261021_103259/raw/sha1sum",
+    "boyut": 68056,
+    "sha256": "aa660065dd668e36996da3ba351abe594f8e3a395221ff5b6b92077da5f3b5e7"
+   },
+   {
+    "anahtar": "debian/coreutils/sha224sum",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sha224sum/ws/workspaces/sha224sum/20261021_103309/raw/sha224sum",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sha224sum/ws/workspaces/sha224sum/20261021_103309/raw/sha224sum",
+    "boyut": 68056,
+    "sha256": "85967d32ef0123d2781b11637f1acb02471c022bb2b97736fa051c76d9d19fb0"
+   },
+   {
+    "anahtar": "debian/coreutils/sha256sum",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sha256sum/ws/workspaces/sha256sum/20261021_103344/raw/sha256sum",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sha256sum/ws/workspaces/sha256sum/20261021_103344/raw/sha256sum",
+    "boyut": 68056,
+    "sha256": "7911a1f0aec4678c540bd78ff886f48d42790c8689a82ed0ae25ed79ed5dd512"
+   },
+   {
+    "anahtar": "debian/coreutils/sha384sum",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sha384sum/ws/workspaces/sha384sum/20261021_103346/raw/sha384sum",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sha384sum/ws/workspaces/sha384sum/20261021_103346/raw/sha384sum",
+    "boyut": 68056,
+    "sha256": "aa826c3aa99e309038f4ba4930c33769f0f7d7a8ab622ba9d6bf34a9f0504e26"
+   },
+   {
+    "anahtar": "debian/coreutils/sha512sum",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sha512sum/ws/workspaces/sha512sum/20261021_103359/raw/sha512sum",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sha512sum/ws/workspaces/sha512sum/20261021_103359/raw/sha512sum",
+    "boyut": 68056,
+    "sha256": "e0eaa4b151cef9866e810acf2096761c7682179a8af0749db118c5dace389f0f"
+   },
+   {
+    "anahtar": "debian/coreutils/shred",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/shred/ws/workspaces/shred/20261021_103434/raw/shred",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/shred/ws/workspaces/shred/20261021_103434/raw/shred",
+    "boyut": 133592,
+    "sha256": "6e657549cacbd5f1925dc772e9840b6e6a9f863da35e5ad23f99f377dea2b2bf"
+   },
+   {
+    "anahtar": "debian/coreutils/shuf",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/shuf/ws/workspaces/shuf/20261021_103436/raw/shuf",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/shuf/ws/workspaces/shuf/20261021_103436/raw/shuf",
+    "boyut": 68048,
+    "sha256": "c0ef0149dbbee09e0df79d54ac21c47e2afaed8e2ab0ac8c4c9d665072b3b42a"
+   },
+   {
+    "anahtar": "debian/coreutils/sleep",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sleep/ws/workspaces/sleep/20261021_103449/raw/sleep",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sleep/ws/workspaces/sleep/20261021_103449/raw/sleep",
+    "boyut": 68048,
+    "sha256": "f42cf7276848ac3dfd4d90295233c1f12f5cdc7da2e5715e75a15f2c790acbd6"
+   },
+   {
+    "anahtar": "debian/coreutils/sort",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sort/ws/workspaces/sort/20261021_103535/raw/sort",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sort/ws/workspaces/sort/20261021_103535/raw/sort",
+    "boyut": 133848,
+    "sha256": "5cce41d5c496065cae95bae390c0798b53928156c8487258ffbe0d795886d381"
+   },
+   {
+    "anahtar": "debian/coreutils/split",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/split/ws/workspaces/split/20261021_103539/raw/split",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/split/ws/workspaces/split/20261021_103539/raw/split",
+    "boyut": 68488,
+    "sha256": "6b5010dfc10f19f1527f429b57a4ab045b0e517a111346ec46cc2d8189d8b9b3"
+   },
+   {
+    "anahtar": "debian/coreutils/stat",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/stat/ws/workspaces/stat/20261021_103539/raw/stat",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/stat/ws/workspaces/stat/20261021_103539/raw/stat",
+    "boyut": 133600,
+    "sha256": "5e4061cf4a54cc95985750521258b2062799beb6ec36d5694cc0b155291d27f7"
+   },
+   {
+    "anahtar": "debian/coreutils/stdbuf",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/stdbuf/ws/workspaces/stdbuf/20261021_103640/raw/stdbuf",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/stdbuf/ws/workspaces/stdbuf/20261021_103640/raw/stdbuf",
+    "boyut": 68048,
+    "sha256": "ca717a5a12706782d78330eccf53c882e08a17a42840f068b9ba3dad50537b71"
+   },
+   {
+    "anahtar": "debian/coreutils/stty",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/stty/ws/workspaces/stty/20261021_103653/raw/stty",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/stty/ws/workspaces/stty/20261021_103653/raw/stty",
+    "boyut": 133600,
+    "sha256": "632b8bf557b2b2dfde99c3f5909ea3038dbd41bcd8eb133c230ae5ac02df2dc7"
+   },
+   {
+    "anahtar": "debian/coreutils/sum",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sum/ws/workspaces/sum/20261021_103714/raw/sum",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sum/ws/workspaces/sum/20261021_103714/raw/sum",
+    "boyut": 68056,
+    "sha256": "8a2462669b91c7861ecd46d4c2f90f6dd7b70efe0fe0aa076a8904a0616b090d"
+   },
+   {
+    "anahtar": "debian/coreutils/sync",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sync/ws/workspaces/sync/20261021_103726/raw/sync",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/sync/ws/workspaces/sync/20261021_103726/raw/sync",
+    "boyut": 68048,
+    "sha256": "53de48f72a80c63bc2691d287c3e50dc485b593aac0a313fd0268157d318a575"
+   },
+   {
+    "anahtar": "debian/coreutils/tac",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/tac/ws/workspaces/tac/20261021_103744/raw/tac",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/tac/ws/workspaces/tac/20261021_103744/raw/tac",
+    "boyut": 68048,
+    "sha256": "1f5fd8ec9c33ae07d5a1357c2a7b6cb5176f4c9a220b6059d7a0219f373d4106"
+   },
+   {
+    "anahtar": "debian/coreutils/tail",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/tail/ws/workspaces/tail/20261021_103807/raw/tail",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/tail/ws/workspaces/tail/20261021_103807/raw/tail",
+    "boyut": 133616,
+    "sha256": "0deef9e8fab638b146b8e2e798a44a114e5f45ba2b5deedf4271017f0a8ecdbd"
+   },
+   {
+    "anahtar": "debian/coreutils/tee",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/tee/ws/workspaces/tee/20261021_103808/raw/tee",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/tee/ws/workspaces/tee/20261021_103808/raw/tee",
+    "boyut": 68056,
+    "sha256": "7cca81f5933fad4f6c49171a049d6cb4057477032f8e7c4ab78b0ac1907419e2"
+   },
+   {
+    "anahtar": "debian/coreutils/test",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/test/ws/workspaces/test/20261021_103830/raw/test",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/test/ws/workspaces/test/20261021_103830/raw/test",
+    "boyut": 68040,
+    "sha256": "6e03bbb1938ceede5ae4f69e87f6f2790d94bf60562d4a0806c2f19d8e2fa401"
+   },
+   {
+    "anahtar": "debian/coreutils/timeout",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/timeout/ws/workspaces/timeout/20261021_103856/raw/timeout",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/timeout/ws/workspaces/timeout/20261021_103856/raw/timeout",
+    "boyut": 68472,
+    "sha256": "bd653cdde85e17eafc0dbb0478f41598b87f24ae26f20a10f2366f1df8d5eb43"
+   },
+   {
+    "anahtar": "debian/coreutils/touch",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/touch/ws/workspaces/touch/20261021_103913/raw/touch",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/touch/ws/workspaces/touch/20261021_103913/raw/touch",
+    "boyut": 133592,
+    "sha256": "6c71a54d3c8ccc318aa5774fcd2e5bc462e9aed196d41cb43a591211bcd608cf"
+   },
+   {
+    "anahtar": "debian/coreutils/tr",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/tr/ws/workspaces/tr/20261021_103922/raw/tr",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/tr/ws/workspaces/tr/20261021_103922/raw/tr",
+    "boyut": 68048,
+    "sha256": "5c1750985b32b46ae8ae08022ca9f27b8b313f6a2926217c67de803f2724420a"
+   },
+   {
+    "anahtar": "debian/coreutils/true",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/true/ws/workspaces/true/20261021_103941/raw/true",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/true/ws/workspaces/true/20261021_103941/raw/true",
+    "boyut": 68048,
+    "sha256": "c5884f055e6a99450a4712bc03cc6551f8e28c80c81a3787174e78737860c530"
+   },
+   {
+    "anahtar": "debian/coreutils/truncate",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/truncate/ws/workspaces/truncate/20261021_104016/raw/truncate",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/truncate/ws/workspaces/truncate/20261021_104016/raw/truncate",
+    "boyut": 68048,
+    "sha256": "e12d8d36ca5d7ff32c3f7525b4afd7cfb41e7ea1396e4bd8eabb1d3ed28b95d1"
+   },
+   {
+    "anahtar": "debian/coreutils/tsort",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/tsort/ws/workspaces/tsort/20261021_104019/raw/tsort",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/tsort/ws/workspaces/tsort/20261021_104019/raw/tsort",
+    "boyut": 68048,
+    "sha256": "6e590952d6054614e61d33c95530c403e92ae6bb3f449f784b29248d4cc7a65f"
+   },
+   {
+    "anahtar": "debian/coreutils/tty",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/tty/ws/workspaces/tty/20261021_104022/raw/tty",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/tty/ws/workspaces/tty/20261021_104022/raw/tty",
+    "boyut": 68048,
+    "sha256": "f6713cf82ce57b0a93202d1fa71b42577aa0fac934f8c193415a43262627c0fe"
+   },
+   {
+    "anahtar": "debian/coreutils/uname",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/uname/ws/workspaces/uname/20261021_104100/raw/uname",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/uname/ws/workspaces/uname/20261021_104100/raw/uname",
+    "boyut": 68056,
+    "sha256": "d2be7afa7502647bb7efdd9ac226adb25844aa6a439e2dbacd34ec998aac4a14"
+   },
+   {
+    "anahtar": "debian/coreutils/unexpand",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/unexpand/ws/workspaces/unexpand/20261021_104104/raw/unexpand",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/unexpand/ws/workspaces/unexpand/20261021_104104/raw/unexpand",
+    "boyut": 68064,
+    "sha256": "ab67c3e1a04678f1dac3064a1bbbc12633cecf41d31b37fbb56bb2cf83ed4dff"
+   },
+   {
+    "anahtar": "debian/coreutils/uniq",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/uniq/ws/workspaces/uniq/20261021_104113/raw/uniq",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/uniq/ws/workspaces/uniq/20261021_104113/raw/uniq",
+    "boyut": 68072,
+    "sha256": "5fcd8781da5f3c60f2accbf302ff3d0e15314af6076cffcec88cc31527c3b2c1"
+   },
+   {
+    "anahtar": "debian/coreutils/unlink",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/unlink/ws/workspaces/unlink/20261021_104143/raw/unlink",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/unlink/ws/workspaces/unlink/20261021_104143/raw/unlink",
+    "boyut": 68048,
+    "sha256": "9b418f9ae69fddefb96cda6f9da1cacbe9cdd93fb01b4a8aa7c0f61cbb980eb9"
+   },
+   {
+    "anahtar": "debian/coreutils/users",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/users/ws/workspaces/users/20261021_104150/raw/users",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/users/ws/workspaces/users/20261021_104150/raw/users",
+    "boyut": 68080,
+    "sha256": "1302433ca91c6faa33605b86978c7ebabfb3a7bc4505e4c710f76cc1acd27545"
+   },
+   {
+    "anahtar": "debian/coreutils/vdir",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/vdir/ws/workspaces/vdir/20261021_104202/raw/vdir",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/vdir/ws/workspaces/vdir/20261021_104202/raw/vdir",
+    "boyut": 199576,
+    "sha256": "a2c769ffb5844255ac896d2a3446c87a225d94f3d052abf5baf5a100903da828"
+   },
+   {
+    "anahtar": "debian/coreutils/wc",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/wc/ws/workspaces/wc/20261021_104224/raw/wc",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/wc/ws/workspaces/wc/20261021_104224/raw/wc",
+    "boyut": 68064,
+    "sha256": "067f08d102fefbcb16fce1c3832136fa964a41e39b7a9570172c1e07ec6adba4"
+   },
+   {
+    "anahtar": "debian/coreutils/who",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/who/ws/workspaces/who/20261021_104236/raw/who",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/who/ws/workspaces/who/20261021_104236/raw/who",
+    "boyut": 68096,
+    "sha256": "22441ce27551367c3525924db4d452063c0f8b90d14371384f6ae966db793bc7"
+   },
+   {
+    "anahtar": "debian/coreutils/whoami",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/whoami/ws/workspaces/whoami/20261021_104321/raw/whoami",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/whoami/ws/workspaces/whoami/20261021_104321/raw/whoami",
+    "boyut": 68048,
+    "sha256": "7f02d3409f02aa8ad4c9540035916c948001242b8fa8b7e5cdcf251793cd7efb"
+   },
+   {
+    "anahtar": "debian/coreutils/yes",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/yes/ws/workspaces/yes/20261021_104328/raw/yes",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/coreutils/yes/ws/workspaces/yes/20261021_104328/raw/yes",
+    "boyut": 68048,
+    "sha256": "1ed1c1273388d22daaf00af35329df9874576018dad49cc6ea2913bb862890f5"
+   },
+   {
+    "anahtar": "debian/htop/htop",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/htop/htop/ws/workspaces/htop/20261021_092848/raw/htop",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/htop/htop/ws/workspaces/htop/20261021_092848/raw/htop",
+    "boyut": 399496,
+    "sha256": "9b61e8bec98fbab6b9d8bf8103573018f9ece4d476c21e312a9c81130e8cc767"
+   },
+   {
+    "anahtar": "debian/openssl/openssl",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/openssl/openssl/ws/workspaces/openssl/20261021_094956/raw/openssl",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/openssl/openssl/ws/workspaces/openssl/20261021_094956/raw/openssl",
+    "boyut": 1148168,
+    "sha256": "ef437d6d4088fb209e02d98d86c2f258f95bc68c0130ea358bbaca32b1462ab5"
+   },
+   {
+    "anahtar": "debian/redis-tools/redis-benchmark",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/redis-tools/redis-benchmark/ws/workspaces/redis-benchmark/20261021_093604/raw/redis-benchmark",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/redis-tools/redis-benchmark/ws/workspaces/redis-benchmark/20261021_093604/raw/redis-benchmark",
+    "boyut": 330424,
+    "sha256": "9a8b0a194af33cda5f64529e44269cd1c62fa94096229a2af833a715e1d42691"
+   },
+   {
+    "anahtar": "debian/redis-tools/redis-check-aof",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/redis-tools/redis-check-aof/ws/workspaces/redis-check-aof/20261021_093852/raw/redis-check-aof",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/redis-tools/redis-check-aof/ws/workspaces/redis-check-aof/20261021_093852/raw/redis-check-aof",
+    "boyut": 3169160,
+    "sha256": "65846e52d7bbebe852b033fd567680bb7640ad49fb6890c6f0ce3ae055d1012d"
+   },
+   {
+    "anahtar": "debian/redis-tools/redis-check-rdb",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/redis-tools/redis-check-rdb/ws/workspaces/redis-check-rdb/20261021_094100/raw/redis-check-rdb",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/redis-tools/redis-check-rdb/ws/workspaces/redis-check-rdb/20261021_094100/raw/redis-check-rdb",
+    "boyut": 3169160,
+    "sha256": "65846e52d7bbebe852b033fd567680bb7640ad49fb6890c6f0ce3ae055d1012d"
+   },
+   {
+    "anahtar": "debian/redis-tools/redis-cli",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/redis-tools/redis-cli/ws/workspaces/redis-cli/20261021_094219/raw/redis-cli",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/redis-tools/redis-cli/ws/workspaces/redis-cli/20261021_094219/raw/redis-cli",
+    "boyut": 640960,
+    "sha256": "9202a178d416da94340f6d0c82c11a7ca553f90d0c0960399725289eb26f595b"
+   },
+   {
+    "anahtar": "debian/sqlite3/sqlite3",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/sqlite3/sqlite3/ws/workspaces/sqlite3/20261021_094625/raw/sqlite3",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/sqlite3/sqlite3/ws/workspaces/sqlite3/20261021_094625/raw/sqlite3",
+    "boyut": 397632,
+    "sha256": "9d3aa02b5acd6dbc7c34cf95d3904f6bb5e6669f1134c7d3c41e70df967a987d"
+   },
+   {
+    "anahtar": "debian/tmux/tmux",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/tmux/tmux/ws/workspaces/tmux/20261021_092848/raw/tmux",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/tmux/tmux/ws/workspaces/tmux/20261021_092848/raw/tmux",
+    "boyut": 1122992,
+    "sha256": "0ad19f45a67c8b35b98dd5a7171e939b93b2879990d4ec04393f8131965650a4"
+   },
+   {
+    "anahtar": "debian/tree/tree",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/tree/tree/ws/workspaces/tree/20261021_092848/raw/tree",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/tree/tree/ws/workspaces/tree/20261021_092848/raw/tree",
+    "boyut": 134784,
+    "sha256": "62810aca29543a765fa72b0d159e5bc61c21f3b6bedd79967d53a0db949f00c0"
+   },
+   {
+    "anahtar": "debian/zstd/pzstd",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/zstd/pzstd/ws/workspaces/pzstd/20261021_092948/raw/pzstd",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/zstd/pzstd/ws/workspaces/pzstd/20261021_092948/raw/pzstd",
+    "boyut": 723448,
+    "sha256": "77866a8bf262a8651226151416a36e6e4f3e7fbdf201c64725b60be65ebf801b"
+   },
+   {
+    "anahtar": "debian/zstd/zstd",
+    "yol": "/Users/apple/karadul_olcum/n1_debian13/zstd/zstd/ws/workspaces/zstd/20261021_093222/raw/zstd",
+    "gercek_yol": "/Users/apple/karadul_olcum/n1_debian13/zstd/zstd/ws/workspaces/zstd/20261021_093222/raw/zstd",
+    "boyut": 1316424,
+    "sha256": "d1c353e40c4df2f11cf35c244980bf6e105764093da60ed0f0f2b388c1317c3e"
+   },
+   {
+    "anahtar": "mac/htop",
+    "yol": "/Users/apple/Black_Widow/workspaces/olcum_mac/runs/ol7-c-b7faeac/htop/ws/workspaces/htop/20261021_085005/raw/htop",
+    "gercek_yol": "/Users/apple/Black_Widow/workspaces/olcum_mac/runs/ol7-c-b7faeac/htop/ws/workspaces/htop/20261021_085005/raw/htop",
+    "boyut": 236672,
+    "sha256": "50d172cee23cb6f5793969e7612fd29723c4a927ea4161a7e8f039cfca70f1c3"
+   },
+   {
+    "anahtar": "mac/tmux",
+    "yol": "/Users/apple/Black_Widow/workspaces/olcum_mac/runs/ol7-c-b7faeac/tmux/ws/workspaces/tmux/20261021_085320/raw/tmux",
+    "gercek_yol": "/Users/apple/Black_Widow/workspaces/olcum_mac/runs/ol7-c-b7faeac/tmux/ws/workspaces/tmux/20261021_085320/raw/tmux",
+    "boyut": 1070432,
+    "sha256": "10fa041195a823953e2b207faeb4e34478048ba2c39d7f8fe6e7b9fc0c9997b7"
+   }
+  ],
+  "macos": [
+   {
+    "anahtar": "/bin/ls",
+    "yol": "/bin/ls",
+    "gercek_yol": "/bin/ls",
+    "boyut": 252512,
+    "sha256": "a7a0dcb67e60a7b726801c220a17ed7e139c99fe7c7bbacf4880e9779ba11e9c"
+   },
+   {
+    "anahtar": "/bin/cat",
+    "yol": "/bin/cat",
+    "gercek_yol": "/bin/cat",
+    "boyut": 184336,
+    "sha256": "2d839ffe60c9119a8c30256a04dec5a84751d3c07c3a63aa3762215b7c27996d"
+   },
+   {
+    "anahtar": "/bin/cp",
+    "yol": "/bin/cp",
+    "gercek_yol": "/bin/cp",
+    "boyut": 251328,
+    "sha256": "a589d802b1c0dcafb205223774d7652a1d0a08b835a2dfbcf72692bfbe412880"
+   },
+   {
+    "anahtar": "/bin/mv",
+    "yol": "/bin/mv",
+    "gercek_yol": "/bin/mv",
+    "boyut": 184784,
+    "sha256": "88ca0c1fbed42a740157e39c598412f8656bc4302e90d4b5650e3b4c159679c9"
+   },
+   {
+    "anahtar": "/bin/pwd",
+    "yol": "/bin/pwd",
+    "gercek_yol": "/bin/pwd",
+    "boyut": 166560,
+    "sha256": "eac6059f072cfb6ff3eaf76d50d083a5733dd7bd4096f2d2d11903aa4cddc06d"
+   },
+   {
+    "anahtar": "/bin/chmod",
+    "yol": "/bin/chmod",
+    "gercek_yol": "/bin/chmod",
+    "boyut": 186000,
+    "sha256": "3374f3be69005a61ebbcc5caac4c70892bb42220e6191f76121eafbb31449516"
+   },
+   {
+    "anahtar": "/bin/mkdir",
+    "yol": "/bin/mkdir",
+    "gercek_yol": "/bin/mkdir",
+    "boyut": 166816,
+    "sha256": "0874c3d6ea54d668f7b8eee5334e185117619ec4b624e6bc753b300b7a2cc71e"
+   },
+   {
+    "anahtar": "/bin/rm",
+    "yol": "/bin/rm",
+    "gercek_yol": "/bin/rm",
+    "boyut": 184544,
+    "sha256": "379becb11a3bda18c5ecce9bacafef5137de0ed037b07d49e44ffaf5ae8e3d71"
+   },
+   {
+    "anahtar": "/bin/echo",
+    "yol": "/bin/echo",
+    "gercek_yol": "/bin/echo",
+    "boyut": 166480,
+    "sha256": "d7879b0d088c1dd7a71c2909ed4df6a4d7002b01a0d3ccf67c071a4a11c8c01d"
+   },
+   {
+    "anahtar": "/bin/date",
+    "yol": "/bin/date",
+    "gercek_yol": "/bin/date",
+    "boyut": 217024,
+    "sha256": "27b3c582d87402dcb04d6de9f6fb8182ad1ec21feff9be2f1ae53d0d5eda018c"
+   },
+   {
+    "anahtar": "/bin/dd",
+    "yol": "/bin/dd",
+    "gercek_yol": "/bin/dd",
+    "boyut": 250496,
+    "sha256": "7d6565b257bab4860352d657c03a2df7765e83eeb48dfb1f03f67db38a5005e2"
+   },
+   {
+    "anahtar": "/bin/ps",
+    "yol": "/bin/ps",
+    "gercek_yol": "/bin/ps",
+    "boyut": 268736,
+    "sha256": "d0e7b30250a9b1bd2afd1d6462a10d8a2d10ca448d9ce76be067db8a9bf459e0"
+   },
+   {
+    "anahtar": "/bin/kill",
+    "yol": "/bin/kill",
+    "gercek_yol": "/bin/kill",
+    "boyut": 166848,
+    "sha256": "d7c79046be237de1e55c05f0a0d8c7edab5f919c85a29402b0cf98ce87471b86"
+   },
+   {
+    "anahtar": "/bin/zsh",
+    "yol": "/bin/zsh",
+    "gercek_yol": "/bin/zsh",
+    "boyut": 2045440,
+    "sha256": "82bab4884831effc95a1d22db7d0b71c0fb38363abf5e8228fdae5f7844ac175"
+   },
+   {
+    "anahtar": "/bin/bash",
+    "yol": "/bin/bash",
+    "gercek_yol": "/bin/bash",
+    "boyut": 1961872,
+    "sha256": "e0236611691e8bca51b778405812219ff7b64b52057c12538f298dfcdab81e39"
+   },
+   {
+    "anahtar": "/usr/bin/true",
+    "yol": "/usr/bin/true",
+    "gercek_yol": "/usr/bin/true",
+    "boyut": 133184,
+    "sha256": "0d7233119152bf4785f3ef148abcab615f4a4ae3ee8b2f1e72eed51c35212db3"
+   },
+   {
+    "anahtar": "/usr/bin/vim",
+    "yol": "/usr/bin/vim",
+    "gercek_yol": "/usr/bin/vim",
+    "boyut": 8469280,
+    "sha256": "1628d4b764f60fb23452a814b8755ec96c754f4daeb18e24c2c8a56c8fa8e69a"
+   },
+   {
+    "anahtar": "/usr/bin/ssh",
+    "yol": "/usr/bin/ssh",
+    "gercek_yol": "/usr/bin/ssh",
+    "boyut": 1748944,
+    "sha256": "2e9c9f8f01f7f1fb77e0b79598fa29fe10e443ef474ff2d338bb86e417b2f1c9"
+   },
+   {
+    "anahtar": "/usr/bin/top",
+    "yol": "/usr/bin/top",
+    "gercek_yol": "/usr/bin/top",
+    "boyut": 371696,
+    "sha256": "3a656b2263357591c449b2348dd8b6e2a04b4da26fb7f465b7e31e1dd598908b"
+   },
+   {
+    "anahtar": "/usr/bin/openssl",
+    "yol": "/usr/bin/openssl",
+    "gercek_yol": "/usr/bin/openssl",
+    "boyut": 1704416,
+    "sha256": "e9943868e4f155286effea8c78352e250ebc6385a12e02afc4c982e08e8016d7"
+   },
+   {
+    "anahtar": "/usr/bin/curl",
+    "yol": "/usr/bin/curl",
+    "gercek_yol": "/usr/bin/curl",
+    "boyut": 829680,
+    "sha256": "b6f8c43b623b760e2fa95910e3f62bb518257c48b4ef54ed09285e49d6d1b85f"
+   },
+   {
+    "anahtar": "/usr/bin/grep",
+    "yol": "/usr/bin/grep",
+    "gercek_yol": "/usr/bin/grep",
+    "boyut": 251680,
+    "sha256": "7077d92f9203ad16ec6644aaf4980057f54c7277256516e00ac5caa255b5910d"
+   },
+   {
+    "anahtar": "/usr/bin/find",
+    "yol": "/usr/bin/find",
+    "gercek_yol": "/usr/bin/find",
+    "boyut": 269168,
+    "sha256": "c8eef47317cfceec58970ad5b523d022b31d0f180e33f45c90c04b1c4179bb06"
+   },
+   {
+    "anahtar": "/usr/bin/gzip",
+    "yol": "/usr/bin/gzip",
+    "gercek_yol": "/usr/bin/gzip",
+    "boyut": 269600,
+    "sha256": "80c36b28a931410775eb7428b82b8116303b5f178efcc6a89d59454630295794"
+   },
+   {
+    "anahtar": "/usr/bin/zip",
+    "yol": "/usr/bin/zip",
+    "gercek_yol": "/usr/bin/zip",
+    "boyut": 617856,
+    "sha256": "910cb372ee4bcb9daaad188f19f9a041f843b1bc267c810fded696e731535e63"
+   },
+   {
+    "anahtar": "/usr/bin/unzip",
+    "yol": "/usr/bin/unzip",
+    "gercek_yol": "/usr/bin/unzip",
+    "boyut": 682928,
+    "sha256": "6e6632f2df7be9367a217d4260a18fb6aa2a7fd5ea362f940fcc7dfe6959cb79"
+   },
+   {
+    "anahtar": "/usr/bin/less",
+    "yol": "/usr/bin/less",
+    "gercek_yol": "/usr/bin/less",
+    "boyut": 695632,
+    "sha256": "454de14684fa7bf19f964ba2cce903f650eb67eae9b3282c648cd7d7c300def4"
+   },
+   {
+    "anahtar": "/usr/bin/awk",
+    "yol": "/usr/bin/awk",
+    "gercek_yol": "/usr/bin/awk",
+    "boyut": 465408,
+    "sha256": "310e75b917c4d346cecb6ffab9ca88507870242347a6cf0110eef4aa73b6f809"
+   },
+   {
+    "anahtar": "/usr/bin/sed",
+    "yol": "/usr/bin/sed",
+    "gercek_yol": "/usr/bin/sed",
+    "boyut": 268256,
+    "sha256": "bb4f47044b12a07b599e1f48123e468d0882d8ee14cc033b1b59707cf02f5b58"
+   },
+   {
+    "anahtar": "/usr/bin/diff",
+    "yol": "/usr/bin/diff",
+    "gercek_yol": "/usr/bin/diff",
+    "boyut": 367936,
+    "sha256": "d74f17ab262a398861254b5c70341caf3e193ad51c36a2ac81a0780d1644f3c6"
+   },
+   {
+    "anahtar": "/usr/bin/sort",
+    "yol": "/usr/bin/sort",
+    "gercek_yol": "/usr/bin/sort",
+    "boyut": 320208,
+    "sha256": "d3633d807e3aec681b5cff4f1df035beefa3e3b0b62b8dcb2f8863d918d7a505"
+   },
+   {
+    "anahtar": "/usr/bin/wc",
+    "yol": "/usr/bin/wc",
+    "gercek_yol": "/usr/bin/wc",
+    "boyut": 167584,
+    "sha256": "1f6160e420e65c2caa11ea9bb63262abb317352d0e2cd2c519fcc995d227ad10"
+   },
+   {
+    "anahtar": "/usr/bin/head",
+    "yol": "/usr/bin/head",
+    "gercek_yol": "/usr/bin/head",
+    "boyut": 167296,
+    "sha256": "1774a27eec1a39f7bfb6e4873f5ea5d797f6b2bad2680dc926a60aebb73c1777"
+   },
+   {
+    "anahtar": "/usr/bin/tail",
+    "yol": "/usr/bin/tail",
+    "gercek_yol": "/usr/bin/tail",
+    "boyut": 184688,
+    "sha256": "57244c5b7a064430c30df12deaec96d1b05dda1ed4a5f705c318551edfe77206"
+   },
+   {
+    "anahtar": "/usr/bin/file",
+    "yol": "/usr/bin/file",
+    "gercek_yol": "/usr/bin/file",
+    "boyut": 713808,
+    "sha256": "d8e4b968f4b77c651d8f250aac8425d6fb0bba4049d3c1a897d2e86b8a70e8df"
+   },
+   {
+    "anahtar": "/usr/bin/hexdump",
+    "yol": "/usr/bin/hexdump",
+    "gercek_yol": "/usr/bin/hexdump",
+    "boyut": 217776,
+    "sha256": "cad72c29b161132f80127a7d871204bde4504d01d8579583e787e631dcf7e927"
+   },
+   {
+    "anahtar": "/usr/bin/bc",
+    "yol": "/usr/bin/bc",
+    "gercek_yol": "/usr/bin/bc",
+    "boyut": 513152,
+    "sha256": "0217ca16eb2d577dbe8edc729c3b561f9888af7ecfcf875b79defa9c8d7149f8"
+   },
+   {
+    "anahtar": "/usr/bin/sqlite3",
+    "yol": "/usr/bin/sqlite3",
+    "gercek_yol": "/usr/bin/sqlite3",
+    "boyut": 6534336,
+    "sha256": "de4f4d55a1bed3482b204da17574204ccbf7034a95d3aedac0a23ecb2ac16e04"
+   },
+   {
+    "anahtar": "/usr/bin/base64",
+    "yol": "/usr/bin/base64",
+    "gercek_yol": "/usr/bin/base64",
+    "boyut": 218112,
+    "sha256": "96c6f8074067e3b1001a0c520e71545086bc8ad916074878edd02bf76a2ea9c4"
+   },
+   {
+    "anahtar": "/usr/bin/rsync",
+    "yol": "/usr/bin/rsync",
+    "gercek_yol": "/usr/bin/rsync",
+    "boyut": 1342352,
+    "sha256": "a00e99c2a73cb237267d09d29d2798a7ed77ce7ad5d8d588cd64b2f12a29bb31"
+   },
+   {
+    "anahtar": "/usr/sbin/sysctl",
+    "yol": "/usr/sbin/sysctl",
+    "gercek_yol": "/usr/sbin/sysctl",
+    "boyut": 184624,
+    "sha256": "c3e3632b35887ad30a21fa14a8b58c9abc77e6df4561cba306fd2df9a12a9e1a"
+   },
+   {
+    "anahtar": "/usr/sbin/chown",
+    "yol": "/usr/sbin/chown",
+    "gercek_yol": "/usr/sbin/chown",
+    "boyut": 200208,
+    "sha256": "1cfeaf3f83ed9c76cca1633c33b11a90801a5924d787fc2ee6f001d734110869"
+   },
+   {
+    "anahtar": "/usr/sbin/netstat",
+    "yol": "/usr/sbin/netstat",
+    "gercek_yol": "/usr/sbin/netstat",
+    "boyut": 761328,
+    "sha256": "b42bbdcc5ebce2127406d0a055cb42588115d28bab3e27723df03b9c5126498f"
+   },
+   {
+    "anahtar": "/usr/sbin/lsof",
+    "yol": "/usr/sbin/lsof",
+    "gercek_yol": "/usr/sbin/lsof",
+    "boyut": 470608,
+    "sha256": "15d29f9a5fb686e09d8fee2f39fdb81e783c61e1e717d123a958e2ca8a7f8b28"
+   },
+   {
+    "anahtar": "/usr/sbin/cron",
+    "yol": "/usr/sbin/cron",
+    "gercek_yol": "/usr/sbin/cron",
+    "boyut": 271360,
+    "sha256": "3652e9ff98b49e7765e3ada926c9f3ef51b26b4cccd070858b81ddcf6a971772"
+   },
+   {
+    "anahtar": "/usr/sbin/sshd",
+    "yol": "/usr/sbin/sshd",
+    "gercek_yol": "/usr/sbin/sshd",
+    "boyut": 958480,
+    "sha256": "57f8f02295c585e1f9db25f2c3d658ec1ea3bbd0896f78c6a57edfee23ba6147"
+   },
+   {
+    "anahtar": "/usr/sbin/ioreg",
+    "yol": "/usr/sbin/ioreg",
+    "gercek_yol": "/usr/sbin/ioreg",
+    "boyut": 173200,
+    "sha256": "924830a02c7ac8c2ad15410a516a78b806b04969efb7766ee007ef7636aa66c1"
+   },
+   {
+    "anahtar": "/usr/lib/dyld",
+    "yol": "/usr/lib/dyld",
+    "gercek_yol": "/usr/lib/dyld",
+    "boyut": 4129088,
+    "sha256": "d4f8b01fe49c4bb8c3696738874254f8f1241e1ec15643d0c57bb27fe1aad07c"
+   }
+  ],
+  "pe": [
+   {
+    "anahtar": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_24.exe",
+    "yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_24.exe",
+    "gercek_yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_24.exe",
+    "boyut": 278528,
+    "sha256": "1794014034e9b6d2a219054df8a5a21dbd035bd35dbb3be9a2c8c41adbf2c718"
+   },
+   {
+    "anahtar": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_41.exe",
+    "yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_41.exe",
+    "gercek_yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_41.exe",
+    "boyut": 257536,
+    "sha256": "4df9cc1079cf5ad8a9174a84b11bee313efdfd92859ccc95ff2da84ca1368cb1"
+   },
+   {
+    "anahtar": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/Decompiler/os/win_x86_64/decompile.exe",
+    "yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/Decompiler/os/win_x86_64/decompile.exe",
+    "gercek_yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/Decompiler/os/win_x86_64/decompile.exe",
+    "boyut": 2688512,
+    "sha256": "08fd2d0d9e47dd51d4143ce6a1b610adbe9adde827f72ab9f236007fcbc7942d"
+   },
+   {
+    "anahtar": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/Decompiler/os/win_x86_64/sleigh.exe",
+    "yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/Decompiler/os/win_x86_64/sleigh.exe",
+    "gercek_yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/Decompiler/os/win_x86_64/sleigh.exe",
+    "boyut": 938496,
+    "sha256": "af6aba8e660f57ae0af280e24e9b024098d5a30cbe418edcc252109e70cb785d"
+   },
+   {
+    "anahtar": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/FileFormats/os/win_x86_64/lzfse.exe",
+    "yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/FileFormats/os/win_x86_64/lzfse.exe",
+    "gercek_yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/FileFormats/os/win_x86_64/lzfse.exe",
+    "boyut": 193536,
+    "sha256": "90bbfe042cbdace6ac9077e610d7fa790d626a6db349e33ab401e29456043a32"
+   },
+   {
+    "anahtar": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/PDB/os/win_x86_64/pdb.exe",
+    "yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/PDB/os/win_x86_64/pdb.exe",
+    "gercek_yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/PDB/os/win_x86_64/pdb.exe",
+    "boyut": 70144,
+    "sha256": "846c49a698efffb719935bf4599e8896d2950d936696896ef41e49398d299ec5"
+   },
+   {
+    "anahtar": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/VersionTracking/WallaceSrc.exe",
+    "yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/VersionTracking/WallaceSrc.exe",
+    "gercek_yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/VersionTracking/WallaceSrc.exe",
+    "boyut": 33792,
+    "sha256": "168a175ccf74e80899d2519bbe6e1ae8b0fa2489af70e8cc0720afab1ad8b0ab"
+   },
+   {
+    "anahtar": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/VersionTracking/WallaceVersion2.exe",
+    "yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/VersionTracking/WallaceVersion2.exe",
+    "gercek_yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/VersionTracking/WallaceVersion2.exe",
+    "boyut": 33792,
+    "sha256": "94510664e6578bec7391d6023af414e2d2d8c4ff58ed3f618dd549ff648015cf"
+   },
+   {
+    "anahtar": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/WinhelloCPP/WinHelloCPP.exe",
+    "yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/WinhelloCPP/WinHelloCPP.exe",
+    "gercek_yol": "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/WinhelloCPP/WinHelloCPP.exe",
+    "boyut": 110592,
+    "sha256": "7a98a934de5f578c3a547af873221b221d037bafa87ceee71dd4f089dd228202"
+   },
+   {
+    "anahtar": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/t32.exe",
+    "yol": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/t32.exe",
+    "gercek_yol": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/t32.exe",
+    "boyut": 97792,
+    "sha256": "6b4195e640a85ac32eb6f9628822a622057df1e459df7c17a12f97aeabc9415b"
+   },
+   {
+    "anahtar": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/t64-arm.exe",
+    "yol": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/t64-arm.exe",
+    "gercek_yol": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/t64-arm.exe",
+    "boyut": 182784,
+    "sha256": "ebc4c06b7d95e74e315419ee7e88e1d0f71e9e9477538c00a93a9ff8c66a6cfc"
+   },
+   {
+    "anahtar": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/t64.exe",
+    "yol": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/t64.exe",
+    "gercek_yol": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/t64.exe",
+    "boyut": 108032,
+    "sha256": "81a618f21cb87db9076134e70388b6e9cb7c2106739011b6a51772d22cae06b7"
+   },
+   {
+    "anahtar": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+    "yol": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+    "gercek_yol": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+    "boyut": 91648,
+    "sha256": "47872cc77f8e18cf642f868f23340a468e537e64521d9a3a416c8b84384d064b"
+   },
+   {
+    "anahtar": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w64-arm.exe",
+    "yol": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w64-arm.exe",
+    "gercek_yol": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w64-arm.exe",
+    "boyut": 168448,
+    "sha256": "c5dc9884a8f458371550e09bd396e5418bf375820a31b9899f6499bf391c7b2e"
+   },
+   {
+    "anahtar": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w64.exe",
+    "yol": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w64.exe",
+    "gercek_yol": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w64.exe",
+    "boyut": 101888,
+    "sha256": "7a319ffaba23a017d7b1e18ba726ba6c54c53d6446db55f92af53c279894f8ad"
+   },
+   {
+    "anahtar": "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/GenPat.exe",
+    "yol": "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/GenPat.exe",
+    "gercek_yol": "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/GenPat.exe",
+    "boyut": 25088,
+    "sha256": "c0d136bda43adb0947dcb64c038d8faf410172c6f4402c634acce8b625b2c8a5"
+   },
+   {
+    "anahtar": "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/MakeLangId.exe",
+    "yol": "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/MakeLangId.exe",
+    "gercek_yol": "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/MakeLangId.exe",
+    "boyut": 24576,
+    "sha256": "527ab874e1b990acdd98d3eee10894a812fe98e5bc078b9ca31ce882c82aea0f"
+   },
+   {
+    "anahtar": "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/makensis.exe",
+    "yol": "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/makensis.exe",
+    "gercek_yol": "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/makensis.exe",
+    "boyut": 468992,
+    "sha256": "65343c225ec88393cc4453b0963caf63f763f42f48cb55736d51893ff2e29d4a"
+   },
+   {
+    "anahtar": "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/zip2exe.exe",
+    "yol": "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/zip2exe.exe",
+    "gercek_yol": "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/zip2exe.exe",
+    "boyut": 23040,
+    "sha256": "252ac7e51a704346dc180273961e1d282ba50987d17eabaa3ba88ef8be0e583f"
+   },
+   {
+    "anahtar": "/opt/homebrew/lib/node_modules/pnpm/dist/vendor/fastlist-0.3.0-x64.exe",
+    "yol": "/opt/homebrew/lib/node_modules/pnpm/dist/vendor/fastlist-0.3.0-x64.exe",
+    "gercek_yol": "/opt/homebrew/lib/node_modules/pnpm/dist/vendor/fastlist-0.3.0-x64.exe",
+    "boyut": 271872,
+    "sha256": "d1a71f9ac1728082c1b276392725c3e010b98714888579b99152e401abedbf11"
+   },
+   {
+    "anahtar": "/opt/homebrew/lib/node_modules/pnpm/dist/vendor/fastlist-0.3.0-x86.exe",
+    "yol": "/opt/homebrew/lib/node_modules/pnpm/dist/vendor/fastlist-0.3.0-x86.exe",
+    "gercek_yol": "/opt/homebrew/lib/node_modules/pnpm/dist/vendor/fastlist-0.3.0-x86.exe",
+    "boyut": 215040,
+    "sha256": "017411f3b0b5c0402cc3b2cb87c32c6fc71abd82e5b17ea6108990096c75a65d"
+   }
+  ],
+  "pozitif": [
+   {
+    "anahtar": "openssl_cli",
+    "yol": "/opt/homebrew/opt/openssl@3/bin/openssl",
+    "gercek_yol": "/opt/homebrew/Cellar/openssl@3/3.5.9/bin/openssl",
+    "boyut": 877936,
+    "sha256": "5cdb0aa473cab6eb29801e197a5f208bd693c9dd9b37148071094145daf82534"
+   },
+   {
+    "anahtar": "libcrypto",
+    "yol": "/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib",
+    "gercek_yol": "/opt/homebrew/Cellar/openssl@3/3.5.9/lib/libcrypto.3.dylib",
+    "boyut": 4720224,
+    "sha256": "ddd632c9239b6ca56abfd5f142b806c6343902c510bad7b307b2c5de59952a72"
+   },
+   {
+    "anahtar": "upx_pe_t32",
+    "yol": "/Users/apple/karadul_olcum/masum_kapi/pozitif/upx_t32.exe",
+    "gercek_yol": "/Users/apple/karadul_olcum/masum_kapi/pozitif/upx_t32.exe",
+    "boyut": 58880,
+    "sha256": "90c90fea6660f6201f84b532e2a0daac0efffba410750fc95102e69dc913e818"
+   },
+   {
+    "anahtar": "upx_pe_t64",
+    "yol": "/Users/apple/karadul_olcum/masum_kapi/pozitif/upx_t64.exe",
+    "gercek_yol": "/Users/apple/karadul_olcum/masum_kapi/pozitif/upx_t64.exe",
+    "boyut": 64512,
+    "sha256": "b99a0e13d78d490a32a5f73b253f6b6dfd7f63c551092a8e058af8dfdc2e76e5"
+   },
+   {
+    "anahtar": "upx_elf_true",
+    "yol": "/Users/apple/karadul_olcum/masum_kapi/pozitif/upx_debian_true",
+    "gercek_yol": "/Users/apple/karadul_olcum/masum_kapi/pozitif/upx_debian_true",
+    "boyut": 19860,
+    "sha256": "7caf6a87cf07064eb5ed309896929779e9686955945a942c42956538771d11ab"
+   },
+   {
+    "anahtar": "antidebug_x86_64",
+    "yol": "/Users/apple/karadul_olcum/masum_kapi/pozitif/antidebug_x86_64",
+    "gercek_yol": "/Users/apple/karadul_olcum/masum_kapi/pozitif/antidebug_x86_64",
+    "boyut": 8784,
+    "sha256": "69d91c015908493adcd024422e2a075b06a12f845339eecc5279266c571bd523"
+   }
+  ]
+ }
+}
