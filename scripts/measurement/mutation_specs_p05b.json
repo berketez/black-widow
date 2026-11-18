@@ -192,6 +192,14 @@
       "test": "tests/test_p05b_ipucu.py::test_ad_belirtecleri",
       "find": "_NAME_TOKEN_RE = re.compile(r\"[A-Z]?[a-z0-9]+|[A-Z]+(?![a-z])\")",
       "replace": "_NAME_TOKEN_RE = re.compile(r\"[A-Za-z0-9]+\")"
+    },
+    {
+      "id": "p05b_k5_yerel_bosluksuz",
+      "desc": "K5: P09 ölçümünün yerel deseni tip ile ad arasında ayırıcı istemez (return; → retur n)",
+      "module": "scripts/measurement/p09_olc.py",
+      "test": "tests/test_p05b_p09_yerel.py::test_gercek_yerelin_tip_degisimi_ortulmez",
+      "find": "    r\"\\s*(?P<ptr>(?:\\*\\s*)*)(?<=[\\s*])(?P<var>",
+      "replace": "    r\"\\s*(?P<ptr>(?:\\*\\s*)*)(?P<var>"
     }
   ]
 }

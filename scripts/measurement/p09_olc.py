@@ -93,9 +93,12 @@ _IMZA = re.compile(
     r"\s*\n?\s*\{",
     re.MULTILINE,
 )
+# Yerel bildirim: tip ile ad arasında boşluk ya da ``*`` zorunlu (P05b K5). Eski desen ``\s*``
+# kullandığı için ``  return;`` satırını ``retur`` tipli ``n`` yereli sayıyordu (aynı fonksiyonda
+# gerçek bir ``n`` yereli varsa onun tip değişimini örtüyordu).
 _YEREL = re.compile(
-    r"^[ \t]+(?P<type>(?:(?:const|unsigned|signed|struct|union|enum)\s+)*[A-Za-z_]\w*"
-    r"(?:\s*\*)*)\s*(?P<ptr>\**)\s*(?P<var>[A-Za-z_]\w*)\s*(?:\[[^\]\n]*\]\s*)*;[ \t]*$",
+    r"^[ \t]+(?P<type>(?:(?:const|unsigned|signed|struct|union|enum)\s+)*[A-Za-z_]\w*)"
+    r"\s*(?P<ptr>(?:\*\s*)*)(?<=[\s*])(?P<var>[A-Za-z_]\w*)\s*(?:\[[^\]\n]*\]\s*)*;[ \t]*$",
     re.MULTILINE,
 )
 _ANAHTAR_SOZ = {"return", "goto", "case", "else", "do", "break", "continue", "typedef"}
