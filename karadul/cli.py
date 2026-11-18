@@ -916,6 +916,14 @@ def analyze(
             "Functions recovered",
             f"{functions:>10}" if isinstance(functions, int) else "N/A",
         )
+        # P16a / GHIDRA-10: "Functions recovered" programın fonksiyonlarıdır; Ghidra'nın
+        # içe aktarım taslakları (PLT + EXTERNAL thunk) ayrı satırda.
+        if isinstance(st.get("ghidra_thunk_count"), int):
+            results_table.add_row(
+                "Import stubs (thunk)", f"{st['ghidra_thunk_count']:>10}",
+            )
+        if st.get("ghidra_success") is False and st.get("ghidra_error"):
+            results_table.add_row("Ghidra error", str(st["ghidra_error"])[:200])
         results_table.add_row(
             "Strings found",
             f"{strings:>10}" if isinstance(strings, int) else "N/A",
