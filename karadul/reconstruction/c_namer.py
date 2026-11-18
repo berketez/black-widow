@@ -232,6 +232,8 @@ STRING_CONTEXT_RULES: dict[str, tuple[str, ...]] = {
         "class_method", "func_paren", "src_path_pair", "src_path_single",
         "steam_keyword", "url_hint", "error_verb", "objc_selector",
         "assert_expr",
+        # P13a / AD-09: Faz 1 çıkarıcısının dizgi kanalı önerisi (dışarıdan aday; ön ad değil)
+        "phase1_extractor",
     ),
     # klasik anahtar kelime cikarimi (_extract_keywords_from_string)
     "classic": ("keywords",),
@@ -2045,12 +2047,19 @@ class CVariableNamer:
         pre_names: dict[str, str] | None = None,
         xrefs_json: Path | None = None,
         pre_name_meta: dict[str, dict[str, Any]] | None = None,
+        phase1_string_candidates: list[dict[str, Any]] | None = None,
     ) -> CNamingResult:
         """Tam pipeline: JSON'lari yukle, stratejileri calistir, C dosyalarini yeniden yaz.
 
         ``pre_name_meta``: ön adların künyesi (anahtar → ``{kind, name, exact,
         label, ks1}``). Künyedeki ``name`` ön adla aynı değilse künye yok
         sayılır. Verilmezse ön adlar bugünkü gibi işlenir.
+
+        ``phase1_string_candidates`` (P13a / AD-09): Faz 1 çıkarıcısının dizgi
+        içeriğinden kurduğu öneriler (``{key, name, confidence, source,
+        evidence}``). Ön ad DEĞİLDİR: ``string_context`` adayı olarak eklenir ve
+        susturma, ürün eşiği, ad geçerliliği süzgeçlerinden c_namer'ın kendi
+        adaylarıyla aynı yoldan geçer. Verilmezse davranış değişmez.
 
         Args:
             decompiled_dir: Ghidra'dan gelen decompiled .c dosyalari dizini.
@@ -2238,6 +2247,32 @@ class CVariableNamer:
         )
 
         # NOT (2026-05-13): LLM4Decompile blogu kaldirildi (B11, feedback_no_llm.md).
+
+        # P13a / AD-09: Faz 1 dizgi kanalı önerileri string_context adayı olur (ön ad değil).
+        # Kod yolu "aggressive": dizgiden kalıpla ad kuran yol; alt kanal sınıflayıcısı
+        # (tarif.alt_kanal) onları c_namer'ın kendi agresif adaylarıyla aynı kanala koyar ve
+        # aşağıdaki susturma / ürün eşiği / ad geçerliliği aynen uygulanır.
+        for rec in phase1_string_candidates or ():
+            if not isinstance(rec, dict):
+                continue
+            key, name, conf = rec.get("key"), rec.get("name"), rec.get("confidence")
+            if not (isinstance(key, str) and key.startswith(self._GLOBAL_PREFIXES)
+                    and isinstance(name, str) and name
+                    and isinstance(conf, (int, float)) and not isinstance(conf, bool)):
+                continue
+            evidence = str(rec.get("evidence") or "")
+            has_camel = any(c.isupper() for c in name[1:])
+            self._add_candidate(_NamingCandidate(
+                old_name=key,
+                new_name=_sanitize_c_name(name, preserve_case=has_camel),
+                confidence=float(conf),
+                strategy="string_context",
+                reason=f'Faz 1 {rec.get("source", "")}: "{evidence[:60]}"',
+                evidence=evidence,
+                code_path="aggressive",
+                rule="phase1_extractor",
+                evidence_origin="string_ref",
+            ), func_name=key)
 
         # Cephe 1b — Alg 1: cross-function pass-through param miras (sıralı post-pass).
         # Worker'lar per-fonksiyon izole (bir worker komşu fonksiyonun adayını

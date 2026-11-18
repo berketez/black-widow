@@ -320,6 +320,13 @@ def _run_c_namer(
         pre_name_meta = _pre_name_meta(ctx)
         if pre_name_meta is not None:
             meta_kwargs["pre_name_meta"] = pre_name_meta
+        # P13a / AD-09: Faz 1'in dizgi kanalı önerileri ön ad değil, c_namer adayıdır
+        # (parallel_algo_eng → phase1_string_candidates); susturma / eşik / ad geçerliliği c_namer'da.
+        ctx_artifacts = getattr(ctx, "artifacts", None)
+        phase1 = (ctx_artifacts.get("phase1_string_candidates")
+                  if ctx_artifacts is not None else None)
+        if isinstance(phase1, list) and phase1:
+            meta_kwargs["phase1_string_candidates"] = phase1
         naming_result = c_namer.analyze_and_rename(
             namer_dir, functions_json, strings_json,
             call_graph_json, namer_output,
