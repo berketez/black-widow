@@ -1,0 +1,29 @@
+{
+  "_comment": "P17 (2026-11-18) arayüz onarımlarının mutasyon koruması: ARAYUZ-03 (Hakkında ölçüm notu), ARAYUZ-04/05/06 (ayar paneli), MEK-04 (güncelleme sorgusu), ARAYUZ-14 (ad düzeltme), MEK-08 / ARAYUZ-12 / 13 / 15 (gösterim), ARAYUZ-10 (iptal, yoklama), ARAYUZ-11 (kısmi başarısızlık, adlı fonksiyonlar), ARAYUZ-09 (arayüz tarafı). Her mutant bir korumayı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p17.json",
+  "mutants": [
+    {
+      "id": "a03_eski_f1_notu",
+      "desc": "Hakkında notu eski F1 bandına döner",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_hakkinda.py",
+      "find": "    *_measurement_notes(_NAME_MEASUREMENT),\n]",
+      "replace": "    \"Dürüst deterministik isimlendirme F1'i ~0.45-0.49 bandında ölçüldü.\",\n]"
+    },
+    {
+      "id": "a03_sayi_elle_degisti",
+      "desc": "künyedeki yanlış ad sayısı kaynaktan ayrılır",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_hakkinda.py",
+      "find": "    \"wrong\": 672,             # toplam.havuz.yanlis",
+      "replace": "    \"wrong\": 600,               # toplam.havuz.yanlis"
+    },
+    {
+      "id": "a03_oran_yanlis_payda",
+      "desc": "yanlış oranı yanlış paydayla hesaplanır",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_hakkinda.py",
+      "find": "({_tr_pct(m['wrong'] / m['named'])};",
+      "replace": "({_tr_pct(m['wrong'] / m['population'])};"
+    }
+  ]
+}

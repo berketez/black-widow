@@ -1021,13 +1021,59 @@ def _write_settings(knobs) -> dict:
 _ABOUT_STATIC: dict | None = None
 _ABOUT_LOCK = threading.Lock()
 
-# Durustluk notlari (Berke'nin cercevesi, PAZARLIKSIZ): abartma yok, olculen
-# deger yazilir. F1 bandi = durust deterministik isimlendirme olcumu (per-binary
-# ortalama ~0.45-0.49; LLM'siz, CPU-only).
+# Hakkında notlarındaki ad ölçümü (ARAYUZ-03). Sayılar elle seçilmez: tek kaynak son ürün
+# ölçümünün JSON'u (`source`; kol `arm`). Paketli uygulamada docs/ yok, bu yüzden değerler
+# burada durur; tests/test_p17_hakkinda.py her değerin kaynak JSON'daki değerle aynı olduğunu
+# denetler (ölçüm yenilenince bu sözlük ve test birlikte güncellenir). Eski "F1 ~0.45-0.49"
+# bandı yalnız LTO'lu Ubuntu coreutils ölçümüydü; bugünkü ürünü anlatmıyordu.
+_NAME_MEASUREMENT = {
+    "source": "docs/arge/2026-11-10_n1_adim3/urun_olcumu_fark_yeni_yeni2.json",
+    "arm": "yeni",            # JSON'daki kol anahtarı (kol adı: yeni2)
+    "arm_name": "yeni2",
+    "code_version": "1.22.1",
+    "date": "2026-11-12",
+    "binaries": 118,
+    "named": 2261,            # toplam.havuz.ad_verilen
+    "wrong": 672,             # toplam.havuz.yanlis
+    "macro_wrong": 0.527804,  # toplam.makro.yanlis_orani.makro
+    "population": 21371,      # toplam.havuz.dogru_kapsam.n
+    "exact_correct": 1120,    # toplam.havuz.dogru_kapsam.k
+    "certain_named": 262,     # kesin_etiket.havuz.ad_verilen
+    "certain_correct": 249,   # kesin_etiket.havuz.dogru
+}
+
+
+def _tr_int(n: int) -> str:
+    """Türkçe binlik ayraç (ölçüm belgeleriyle aynı yazım): 21371 -> '21 371'."""
+    return f"{int(n):,}".replace(",", " ")
+
+
+def _tr_pct(x: float) -> str:
+    """Oran -> '%29,7' (bir ondalık, virgüllü)."""
+    return "%" + f"{100.0 * float(x):.1f}".replace(".", ",")
+
+
+def _measurement_notes(m: dict) -> list[str]:
+    """Ölçüm künyesinden Hakkında notları. Metindeki her sayı ``m``'den gelir."""
+    return [
+        (f"Ad ölçümü ({m['date']}; {m['code_version']} kodu; geliştirme setinde "
+         f"{m['binaries']} ikili; ölçüt özgün adla tam eşitlik): "
+         f"verilen {_tr_int(m['named'])} fonksiyon adından {_tr_int(m['wrong'])} tanesi yanlış "
+         f"({_tr_pct(m['wrong'] / m['named'])}; program ortalaması {_tr_pct(m['macro_wrong'])}). "
+         f"Ölçüme giren {_tr_int(m['population'])} fonksiyonun yalnız "
+         f"{_tr_int(m['exact_correct'])} tanesine ({_tr_pct(m['exact_correct'] / m['population'])}) "
+         f"özgün adı verildi."),
+        (f"'kesin' etiketli adlar: {_tr_int(m['certain_named'])} adın "
+         f"{_tr_int(m['certain_correct'])} tanesi doğru "
+         f"({_tr_pct(m['certain_correct'] / m['certain_named'])}). Öbür etiketlerdeki adları "
+         f"kanıt kartından denetleyin."),
+        f"Sonraki sürümler bu ölçümü yinelemedi. Kaynak: {m['source']}.",
+    ]
+
+
 _ABOUT_NOTES = [
     "Araştırma prototipi — üretim ya da adli kullanım için doğrulanmadı.",
-    "Dürüst deterministik isimlendirme F1'i ~0.45-0.49 bandında ölçüldü "
-    "(LLM'siz, CPU-only). İsimlerin bir kısmı yanlış ya da eksiktir.",
+    *_measurement_notes(_NAME_MEASUREMENT),
 ]
 # LMDB imza DB varsayilan konumu. TEK GERCEK KAYNAK:
 # karadul/analyzers/sigdb_lmdb.py::default_lmdb_path(). Burada BILEREK
