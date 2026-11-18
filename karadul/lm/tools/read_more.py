@@ -12,6 +12,10 @@ Sonuçta geçen program fonksiyonları ``items[].addr`` alanındadır: olay akı
 örümceği oynatamaz.
 
 - **O5 ``get_function_facts``**: boyut, blok, kenar, döngü, karmaşıklık, parametre sayısı, Ghidra uyarıları.
+- **O7 ``get_call_graph``**: derinlik ≤ 2, ≤ 40 düğüm, kapsama notu. **O7b ``find_path``**: en kısa çağrı yolları.
+- **R1 ``find_refs``** (sınıf R): ithal adını çağıranlar, dizgiyi kullananlar (ters dizin ``index.py``).
+- **O11 ``search_code``**: decompile metninde düz alt dizgi. **O8 ``get_name_provenance``**: adın kökeni.
+  **O10 ``get_types``**: Ghidra'nın tip tanımları (ikili geneli).
 """
 from __future__ import annotations
 

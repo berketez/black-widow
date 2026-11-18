@@ -172,7 +172,7 @@ O9 `find_similar` (vekil benzerlik; yön gösterici), S1 `get_summary` (P22b öz
 
 ## 4. Jeton maliyeti (tahmin)
 
-Keşif kipinin 10 araç tanım satırı ≈ 1 300 jeton **[tahmin: eski sözleşmenin araç başına ~130 jetonu]**; K2 bütçe tablosunda sabit önek dilimi 2 200 (tasarım §3.7). Tokenizer çalıştırılmadı; gerçek önek boyu P22e'de `usage`'tan ölçülmeli (ölçülmezse keşif kipinin sabit öneki dilimi aşabilir).
+Ajanın kendi kestirimiyle (`context.estimate_text_tokens`, P21 LM-04 düzeltmesi; gerçek jetonlayıcı değil) bugünkü K2 sabit öneki O1-O3 ile **5 292 bayt, 1 247 jeton**; keşif kümesinin 10 aracıyla **8 573 bayt, 2 027 jeton** **[hesap, 2026-11-18, `fixed_prefix("K2", …)`]**: yeni 7 tanım ≈ 780 jeton (araç başına ≈ 111). K2 bütçe tablosunda sabit önek dilimi 2 200 (tasarım §3.7): kestirimle sığıyor ama pay %8. Tokenizer çalıştırılmadı; gerçek önek boyu P22e'de `usage`'tan ölçülmeli. Keşif istemi eklenince (P22e) dilim aşılabilir: o zaman ya tanımlar kısaltılır ya da dilim yeniden dağıtılır.
 
 ## 5. Doğrulanmayanlar
 
