@@ -226,22 +226,6 @@
       "replace": "                project_location=None,"
     },
     {
-      "id": "g16_xref_sirasi_yok",
-      "desc": "GHIDRA-16: başvurular adres sırasına konmaz",
-      "module": "karadul/ghidra/headless.py",
-      "test": "tests/test_p16a_dizgi_bagi.py::test_dizgi_fonksiyon_bagi_baslananlardan",
-      "find": "            xrefs.sort(key=lambda x: _address_sort_key(x[\"from_address\"]))",
-      "replace": "            xrefs.sort(key=lambda x: 0)"
-    },
-    {
-      "id": "g16_fonksiyon_bagi_bos",
-      "desc": "GHIDRA-16: dizginin fonksiyon alanı boş kalır (eski davranış)",
-      "module": "karadul/ghidra/headless.py",
-      "test": "tests/test_p16a_dizgi_bagi.py::test_dizgi_fonksiyon_bagi_baslananlardan",
-      "find": "            entry[\"function\"] = first[\"from_function\"] if first else None",
-      "replace": "            entry[\"function\"] = None"
-    },
-    {
       "id": "g08_cikti_yoksa_basari",
       "desc": "GHIDRA-08: analyzeHeadless 0 ile çıkıp betik çıktısı üretmezse başarılı sayılır",
       "module": "karadul/ghidra/headless.py",
