@@ -65,12 +65,32 @@ class NamingPipeline:
         # NOT (2026-05-13): LLM Layer kaldirildi (B11)
         self.skip_llm = True
 
+        # Ağ kararları (MEK-03, 2026-11-18): öntanımlı ÇEVRİMDIŞI. Eskiden
+        # .d.ts indirmesi (unpkg.com) ağ ayarına hiç bakmıyordu ve config
+        # verilmezse kaynak eşleme (yalnız ağdan kaynak indiren SourceResolver)
+        # açık geliyordu. Artık:
+        #   - uzak .d.ts: network.enabled VE network.allow_dts_fetch
+        #   - kaynak eşleme: source_match.enabled VE network.enabled (ana anahtar)
+        #   - config yoksa hiçbir ağ katmanı açılmaz.
+        net_cfg = getattr(config, "network", None) if config is not None else None
+        self._network_enabled = getattr(net_cfg, "enabled", False) is True
+        self._dts_fetch_allowed = (
+            self._network_enabled and getattr(net_cfg, "allow_dts_fetch", False) is True
+        )
+
         # Source matching ayarlari
-        self._source_match_enabled = True
+        self._source_match_enabled = False
         if config is not None:
             sm_cfg = getattr(config, "source_match", None)
             if sm_cfg is not None:
-                self._source_match_enabled = getattr(sm_cfg, "enabled", True)
+                self._source_match_enabled = (
+                    getattr(sm_cfg, "enabled", False) is True and self._network_enabled
+                )
+                if getattr(sm_cfg, "enabled", False) is True and not self._network_enabled:
+                    logger.info(
+                        "Layer 1.5 (source_match): source_match.enabled açık ama "
+                        "network.enabled kapalı; kaynak indirme yapılmayacak."
+                    )
 
     def run(self, modules_dir: Path) -> NamingManifest:
         """Tum modulleri isimlendir.
@@ -102,7 +122,8 @@ class NamingPipeline:
         # npm fingerprint ile eslesen paketlerin .d.ts dosyalarindan
         # export isimlerini okuyup minified fonksiyonlarla eslestirir.
         # Ilk once lokal arama (node_modules), bulamazsa bilinen paketler
-        # icin remote fetch (unpkg.com) yapar.
+        # icin remote fetch (unpkg.com) yapar -- YALNIZ network.enabled ve
+        # network.allow_dts_fetch açıksa (MEK-03).
         if fp_results:
             t12 = time.monotonic()
             try:
@@ -111,11 +132,15 @@ class NamingPipeline:
 
                 # Lokal arama icin network'suz namer
                 dts_namer_local = DtsNamer(fetcher=lambda url: None)
-                # Remote arama icin network'lu namer (bilinen paketler icin)
-                dts_namer_remote = DtsNamer(timeout=8)
+                # Remote arama icin network'lu namer: yalnız ayar izin verirse kurulur.
+                dts_namer_remote = (
+                    DtsNamer(timeout=8, allow_network=True)
+                    if self._dts_fetch_allowed else None
+                )
 
                 dts_total_matches = 0
                 dts_remote_fetched = 0
+                dts_remote_skipped = 0
 
                 # Bilinen Cursor/VS Code bagimliliklari -- remote fetch icin whitelist
                 _CURSOR_KNOWN_PACKAGES = {
@@ -153,7 +178,13 @@ class NamingPipeline:
                             break
 
                     # Lokal bulunamadiysa ve bilinen paketse remote fetch dene
-                    if not dts_exports and pkg_name in _CURSOR_KNOWN_PACKAGES:
+                    if (
+                        not dts_exports and pkg_name in _CURSOR_KNOWN_PACKAGES
+                        and dts_namer_remote is None
+                    ):
+                        # Ağ kapalı: indirme yok; sayılır, rapora yazılır.
+                        dts_remote_skipped += 1
+                    elif not dts_exports and pkg_name in _CURSOR_KNOWN_PACKAGES:
                         try:
                             remote_content = dts_namer_remote.fetch_dts_content(pkg_name)
                             if remote_content:
@@ -198,14 +229,19 @@ class NamingPipeline:
                     except Exception as exc:
                         logger.debug("DTS export matching hatasi (%s): %s", module_id, exc)
 
-                if dts_total_matches > 0 or dts_remote_fetched > 0:
+                if dts_total_matches > 0 or dts_remote_fetched > 0 or dts_remote_skipped > 0:
                     manifest.statistics["dts_naming"] = {
                         "total_exports_matched": dts_total_matches,
                         "remote_fetched": dts_remote_fetched,
+                        # Yerelde .d.ts bulunamayan, ağ kapalı olduğu için
+                        # indirilmeyen paket sayısı (MEK-03).
+                        "remote_skipped_network_off": dts_remote_skipped,
                     }
                     logger.info(
-                        "Layer 1.2 (dts_naming): %d export eslesti, %d remote fetch (%.1fs)",
-                        dts_total_matches, dts_remote_fetched, time.monotonic() - t12,
+                        "Layer 1.2 (dts_naming): %d export eslesti, %d remote fetch, "
+                        "%d paket ağ kapalı olduğu için indirilmedi (%.1fs)",
+                        dts_total_matches, dts_remote_fetched, dts_remote_skipped,
+                        time.monotonic() - t12,
                     )
             except ImportError:
                 logger.debug("Layer 1.2 (dts_naming): DtsNamer modulu bulunamadi, atlaniyor")

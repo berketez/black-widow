@@ -243,6 +243,7 @@ class DtsNamer:
         timeout: int = _DEFAULT_TIMEOUT,
         delay_s: float = _DEFAULT_DELAY_S,
         fetcher: Any = None,
+        allow_network: bool = False,
     ) -> None:
         """DtsNamer olustur.
 
@@ -251,10 +252,15 @@ class DtsNamer:
             delay_s: Istekler arasi bekleme.
             fetcher: Test icin dependency injection -- fetch_dts_content yerine kullanilir.
                      callable(url: str) -> str | None seklinde olmali.
+            allow_network: True değilse ``fetch_dts_content`` ağa ÇIKMAZ
+                (MEK-03, 2026-11-18: öntanımlı çevrimdışı). Çağıran bunu yalnız
+                ``config.network.enabled and config.network.allow_dts_fetch``
+                iken True verir.
         """
         self.timeout = timeout
         self.delay_s = delay_s
         self._fetcher = fetcher
+        self.allow_network = allow_network is True
 
     def parse_dts(self, dts_content: str) -> list[DtsExport]:
         """Bir .d.ts dosyasinin icerigini parse edip export listesi cikar.
@@ -464,6 +470,11 @@ class DtsNamer:
             url = f"https://unpkg.com/@types/{package_name}@{version}/index.d.ts"
             return self._fetcher(url)
 
+        if not self.allow_network:
+            # MEK-03: ağ izni yok -> istek yok (paket adı dışarı sızmaz).
+            logger.debug("DTS indirme atlandi (ag izni yok): %s@%s", package_name, version)
+            return None
+
         # Strateji 1: @types paketinden
         urls = [
             f"https://unpkg.com/@types/{package_name}@{version}/index.d.ts",
@@ -519,7 +530,12 @@ class DtsNamer:
 
         content = self.fetch_dts_content(package_name, version)
         if content is None:
-            result.errors.append(f".d.ts indirilemedi: {package_name}@{version}")
+            if self._fetcher is None and not self.allow_network:
+                result.errors.append(
+                    f".d.ts indirilmedi (ağ izni yok): {package_name}@{version}"
+                )
+            else:
+                result.errors.append(f".d.ts indirilemedi: {package_name}@{version}")
             return result
 
         exports = self.parse_dts(content)

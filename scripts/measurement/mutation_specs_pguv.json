@@ -208,6 +208,70 @@
       "test": "tests/test_pguv_run.py::TestRunGate::test_warning_names_the_risk_even_with_yes",
       "find": "\"[bold red]UYARI:[/bold red] çalıştırılacak kod, analiz edilen kodun \"\n        \"kendisidir (güvenilmeyen kaynak).",
       "replace": "\"[bold red]UYARI:[/bold red] çalıştırılacak kod \"\n        \"güvenilmeyen kaynaktan gelebilir."
+    },
+    {
+      "id": "m03_dts_bayragi_okunmaz",
+      "desc": "uzak .d.ts yalnız network.enabled'a bakıyor (allow_dts_fetch okunmuyor)",
+      "module": "karadul/reconstruction/naming/pipeline.py",
+      "test": "tests/test_pguv_ag.py::TestJsNamingOffline::test_network_on_but_dts_fetch_not_allowed",
+      "find": "self._network_enabled and getattr(net_cfg, \"allow_dts_fetch\", False) is True",
+      "replace": "self._network_enabled"
+    },
+    {
+      "id": "m03_ana_anahtar_okunmaz",
+      "desc": "uzak .d.ts yalnız allow_dts_fetch'e bakıyor (network.enabled okunmuyor)",
+      "module": "karadul/reconstruction/naming/pipeline.py",
+      "test": "tests/test_pguv_ag.py::TestJsNamingOffline::test_dts_fetch_allowed_but_master_switch_off",
+      "find": "self._network_enabled and getattr(net_cfg, \"allow_dts_fetch\", False) is True",
+      "replace": "getattr(net_cfg, \"allow_dts_fetch\", False) is True"
+    },
+    {
+      "id": "m03_uzak_namer_hep_kurulur",
+      "desc": "uzak DtsNamer ayardan bağımsız kuruluyor (eski davranış)",
+      "module": "karadul/reconstruction/naming/pipeline.py",
+      "test": "tests/test_pguv_ag.py::TestJsNamingOffline::test_default_config_never_touches_network",
+      "find": "if self._dts_fetch_allowed else None",
+      "replace": "if True else None"
+    },
+    {
+      "id": "m03_kaynak_esleme_ana_anahtarsiz",
+      "desc": "kaynak eşleme network.enabled kapalıyken de açık",
+      "module": "karadul/reconstruction/naming/pipeline.py",
+      "test": "tests/test_pguv_ag.py::TestJsNamingOffline::test_source_match_without_network_switch",
+      "find": "getattr(sm_cfg, \"enabled\", False) is True and self._network_enabled\n                )",
+      "replace": "getattr(sm_cfg, \"enabled\", False) is True\n                )"
+    },
+    {
+      "id": "m03_configsiz_kaynak_esleme_acik",
+      "desc": "config verilmezse kaynak eşleme açık (eski davranış)",
+      "module": "karadul/reconstruction/naming/pipeline.py",
+      "test": "tests/test_pguv_ag.py::TestJsNamingOffline::test_no_config_never_touches_network",
+      "find": "        self._source_match_enabled = False\n        if config is not None:",
+      "replace": "        self._source_match_enabled = True\n        if config is not None:"
+    },
+    {
+      "id": "m03_atlanan_sayac_yanlis",
+      "desc": "ağ kapalı olduğu için indirilmeyen paket sayacı yanlış",
+      "module": "karadul/reconstruction/naming/pipeline.py",
+      "test": "tests/test_pguv_ag.py::TestJsNamingOffline::test_default_config_never_touches_network",
+      "find": "dts_remote_skipped += 1",
+      "replace": "dts_remote_skipped += 10"
+    },
+    {
+      "id": "m03_namer_varsayilan_cevrimici",
+      "desc": "DtsNamer öntanımlı olarak ağa çıkabiliyor",
+      "module": "karadul/reconstruction/dts_namer.py",
+      "test": "tests/test_pguv_ag.py::TestDtsNamerDefault::test_default_namer_is_offline",
+      "find": "        allow_network: bool = False,\n    ) -> None:",
+      "replace": "        allow_network: bool = True,\n    ) -> None:"
+    },
+    {
+      "id": "m03_namer_izin_denetimi_yok",
+      "desc": "fetch_dts_content ağ iznine bakmıyor",
+      "module": "karadul/reconstruction/dts_namer.py",
+      "test": "tests/test_pguv_ag.py::TestDtsNamerDefault::test_default_namer_is_offline",
+      "find": "        if not self.allow_network:\n            # MEK-03",
+      "replace": "        if False:\n            # MEK-03"
     }
   ]
 }
