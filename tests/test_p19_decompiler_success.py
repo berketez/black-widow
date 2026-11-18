@@ -126,8 +126,10 @@ def test_ilspy_success_semantics(tmp_path, n, code, success, partial):
 
 
 def test_ilspy_crash_static_stats(tmp_path):
+    from tests.test_dotnet_binary import _build_minimal_pe
+
     dll = tmp_path / "x.dll"
-    dll.write_bytes(b"MZ" + b"\x00" * 200)
+    dll.write_bytes(_build_minimal_pe(has_cli=True))
     an = DotNetBinaryAnalyzer(Config())
     an._ilspy_path = _fake_tool(tmp_path, n=0, ext="cs", code=1, stderr="crash")
     ws = Workspace(tmp_path / "ws", "x")

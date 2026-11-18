@@ -12,7 +12,7 @@ import struct
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -540,15 +540,22 @@ class TargetDetector:
             metadata = {"format": "pe"}
             if magic is not None:
                 metadata["magic"] = f"0x{magic:08X}"
-            # .NET kontrolu
+            # .NET kontrolu (BICIM-08: PE başlığındaki CLI dizini + BSJB)
             if self._is_dotnet(path):
                 return TargetInfo(
                     path=path, name=path.stem,
                     target_type=TargetType.DOTNET_ASSEMBLY,
                     language=Language.CSHARP,
                     file_size=file_size, file_hash=file_hash,
-                    metadata={**metadata, "runtime": ".net"},
+                    metadata={**metadata, "runtime": ".net",
+                              "dotnet_evidence": "cli_header+bsjb"},
                 )
+            # CLI başlığı yok ama CLR yükleyici dizgileri var: yerel PE olarak
+            # kalır (Ghidra), ipucu analist için metadata'ya yazılır.
+            if self._has_clr_host_strings(path):
+                metadata["clr_host_strings"] = True
+            if self._pe_clr_evidence(path)["clr_dir"]:
+                metadata["clr_dir_without_valid_metadata"] = True
             # Delphi kontrolu
             if self._is_delphi(path):
                 return TargetInfo(
@@ -746,24 +753,122 @@ class TargetDetector:
         return mei_magic in tail
 
     @staticmethod
-    def _is_dotnet(path: Path) -> bool:
-        """PE binary'nin .NET assembly olup olmadigini kontrol et.
+    def _pe_clr_evidence(path: Path) -> dict[str, Any]:
+        """PE başlığından CLR (CLI) kanıtı çıkar (BICIM-08).
 
-        mscoree.dll referansi ve CLI header'i aranir.
+        e_lfanew -> "PE\\0\\0" -> OptionalHeader (PE32/PE32+) ->
+        DataDirectory[14] (COM descriptor = CLI başlığı) RVA/Size. RVA bölüm
+        tablosuyla dosya ofsetine çevrilir; CLI başlığındaki ``cb`` (>= 72) ve
+        metadata RVA'sının gösterdiği ECMA-335 imzası ``BSJB`` denetlenir.
+
+        Returns:
+            ``{"pe": bool, "clr_dir": bool, "cli_header": bool, "bsjb": bool}``
+        """
+        ev = {"pe": False, "clr_dir": False, "cli_header": False, "bsjb": False}
+        try:
+            with open(path, "rb") as f:
+                head = f.read(4096)
+                if len(head) < 0x40 or head[:2] != _PE_MAGIC:
+                    return ev
+                e_lfanew = struct.unpack_from("<I", head, 0x3C)[0]
+                f.seek(0, 2)
+                size = f.tell()
+                if e_lfanew < 0x40 or e_lfanew + 24 > size or e_lfanew > 16 * 1024 * 1024:
+                    return ev
+                f.seek(e_lfanew)
+                nt = f.read(24 + 240)
+                if len(nt) < 24 or nt[:4] != b"PE\x00\x00":
+                    return ev
+                ev["pe"] = True
+                num_sections = struct.unpack_from("<H", nt, 6)[0]
+                opt_size = struct.unpack_from("<H", nt, 20)[0]
+                opt = nt[24:24 + opt_size]
+                if len(opt) < 2:
+                    return ev
+                magic = struct.unpack_from("<H", opt, 0)[0]
+                if magic == 0x10B:
+                    nrva_off, dd_off = 92, 96
+                elif magic == 0x20B:
+                    nrva_off, dd_off = 108, 112
+                else:
+                    return ev
+                if len(opt) < nrva_off + 4:
+                    return ev
+                nrva = struct.unpack_from("<I", opt, nrva_off)[0]
+                clr_off = dd_off + 14 * 8
+                if nrva <= 14 or len(opt) < clr_off + 8:
+                    return ev
+                clr_rva, clr_size = struct.unpack_from("<II", opt, clr_off)
+                if clr_rva == 0 or clr_size == 0:
+                    return ev
+                ev["clr_dir"] = True
+
+                # Bölüm tablosu: RVA -> dosya ofseti
+                if num_sections == 0 or num_sections > 96:
+                    return ev
+                f.seek(e_lfanew + 24 + opt_size)
+                sect = f.read(40 * num_sections)
+                sections = []
+                for i in range(len(sect) // 40):
+                    vsize, vaddr, rsize, rptr = struct.unpack_from("<IIII", sect, i * 40 + 8)
+                    sections.append((vaddr, max(vsize, rsize), rptr, rsize))
+
+                def rva_to_off(rva: int) -> Optional[int]:
+                    for vaddr, span, rptr, rsize in sections:
+                        if vaddr <= rva < vaddr + span:
+                            delta = rva - vaddr
+                            if delta < rsize:
+                                return rptr + delta
+                    return None
+
+                cli_off = rva_to_off(clr_rva)
+                if cli_off is None or cli_off + 16 > size:
+                    return ev
+                f.seek(cli_off)
+                cli = f.read(16)
+                cb = struct.unpack_from("<I", cli, 0)[0]
+                meta_rva, meta_size = struct.unpack_from("<II", cli, 8)
+                if cb < 72 or meta_rva == 0 or meta_size == 0:
+                    return ev
+                ev["cli_header"] = True
+                meta_off = rva_to_off(meta_rva)
+                if meta_off is None or meta_off + 4 > size:
+                    return ev
+                f.seek(meta_off)
+                ev["bsjb"] = f.read(4) == b"BSJB"
+        except (OSError, struct.error):
+            return ev
+        return ev
+
+    @staticmethod
+    def _has_clr_host_strings(path: Path) -> bool:
+        """CLR yükleyici/barındırıcı dizgileri (yalnız İKİNCİL ipucu).
+
+        ``mscoree.dll`` MSVC CRT'sinde (CorExitProcess) ve CLR'yi kendisi
+        yükleyen yerel yükleyicilerde de geçer; tek başına .NET kanıtı değildir.
         """
         try:
             with open(path, "rb") as f:
-                data = f.read(1_048_576)  # 1 MB
+                data = f.read(1_048_576)
         except OSError:
             return False
+        return any(s in data for s in (
+            b"mscoree.dll", b"_CorExeMain", b"CLRCreateInstance", b"CorBindToRuntime",
+        ))
 
-        # mscoree.dll: .NET CLR runtime yukleyicisi — her .NET PE'de bulunur
-        if b"mscoree.dll" in data or b"_CorExeMain" in data:
-            return True
-        # mscorlib veya System.Runtime referansi
-        if b"mscorlib" in data or b"System.Runtime" in data:
-            return True
-        return False
+    @staticmethod
+    def _is_dotnet(path: Path) -> bool:
+        """PE binary'nin .NET assembly olup olmadigini kontrol et.
+
+        BICIM-08: Karar PE başlığından verilir: DataDirectory[14] (CLI başlığı)
+        dolu, CLI başlığı geçerli ve metadata kökü ``BSJB``. Eskiden ilk 1 MB'ta
+        ``mscoree.dll`` / ``mscorlib`` / ``System.Runtime`` dizgisi yetiyordu;
+        MSVC CRT'li yerel ikililer ve CLR yükleyicileri .NET sayılıp Ghidra'dan
+        geçmiyordu. Dizgiler artık yalnız ikincil ipucu
+        (``_has_clr_host_strings``; metadata ``clr_host_strings``).
+        """
+        ev = TargetDetector._pe_clr_evidence(path)
+        return bool(ev["clr_dir"] and ev["cli_header"] and ev["bsjb"])
 
     @staticmethod
     def _is_delphi(path: Path) -> bool:

@@ -320,6 +320,54 @@
       "test": "tests/test_p19_decompiler_success.py::test_ilspy_crash_static_stats",
       "find": "                errors.append(f\"ILSpy basarisiz: {decompiled.get('error')}\")",
       "replace": "                pass"
+    },
+    {
+      "id": "b08_yalniz_dizin",
+      "desc": "BICIM-08: .NET kararı yalnız DataDirectory[14] doluluğuna iner (BSJB/CLI başlığı aranmaz)",
+      "module": "karadul/core/target.py",
+      "test": "tests/test_p19_dotnet_detection.py",
+      "find": "        return bool(ev[\"clr_dir\"] and ev[\"cli_header\"] and ev[\"bsjb\"])",
+      "replace": "        return bool(ev[\"clr_dir\"])"
+    },
+    {
+      "id": "b08_bsjb",
+      "desc": "BICIM-08: metadata imzası BSJB denetlenmez",
+      "module": "karadul/core/target.py",
+      "test": "tests/test_p19_dotnet_detection.py::test_clr_dir_without_bsjb_is_not_dotnet",
+      "find": "                ev[\"bsjb\"] = f.read(4) == b\"BSJB\"",
+      "replace": "                ev[\"bsjb\"] = True"
+    },
+    {
+      "id": "b08_ipucu_kaydi",
+      "desc": "BICIM-08: CLR yükleyici dizgisi ipucu metadata'ya yazılmaz",
+      "module": "karadul/core/target.py",
+      "test": "tests/test_p19_dotnet_detection.py::test_kulvar_native_loader_is_pe",
+      "find": "                metadata[\"clr_host_strings\"] = True",
+      "replace": "                pass"
+    },
+    {
+      "id": "b08_analizor_cli_yok",
+      "desc": "BICIM-08: .NET analizörü CLI başlığı yokken de başarılı",
+      "module": "karadul/analyzers/dotnet_binary.py",
+      "test": "tests/test_p19_dotnet_detection.py::test_analyzer_rejects_native_pe",
+      "find": "        if not cli_info.get(\"has_cli\"):",
+      "replace": "        if not cli_info.get(\"has_cli\") and 0:"
+    },
+    {
+      "id": "b08_reconstruct_cli_yok",
+      "desc": "BICIM-08: CLI başlığı yokken boş .csproj üretilir",
+      "module": "karadul/analyzers/dotnet_binary.py",
+      "test": "tests/test_p19_dotnet_detection.py::test_analyzer_rejects_native_pe",
+      "find": "        if analysis.get(\"not_dotnet\") or (",
+      "replace": "        if 0 and ("
+    },
+    {
+      "id": "b08_can_handle_dizgi",
+      "desc": "BICIM-08: can_handle her .exe/.dll'i kabul eder",
+      "module": "karadul/analyzers/dotnet_binary.py",
+      "test": "tests/test_p19_dotnet_detection.py::test_analyzer_rejects_native_pe",
+      "find": "            return TargetDetector._is_dotnet(path)",
+      "replace": "            return True"
     }
   ]
 }

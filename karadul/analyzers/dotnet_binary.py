@@ -615,21 +615,10 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
         suffix = path.suffix.lower()
 
         if suffix in (".dll", ".exe"):
-            try:
-                with open(path, "rb") as f:
-                    # PE magic: MZ
-                    if f.read(2) != _PE_MAGIC:
-                        return False
-                    # .NET CLI header kontrolu
-                    data = f.read(4096)
-                    # "mscoree.dll" veya ".NET" string'i varsa .NET
-                    return (
-                        b"mscoree.dll" in data
-                        or b".NETFramework" in data
-                        or b".NETCoreApp" in data
-                    )
-            except (OSError, PermissionError):
-                pass
+            # BICIM-08: dizgi ("mscoree.dll", ".NETFramework") değil, PE
+            # başlığındaki CLI dizini + geçerli CLI başlığı + BSJB metadata.
+            from karadul.core.target import TargetDetector
+            return TargetDetector._is_dotnet(path)
 
         return False
 
@@ -660,6 +649,27 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
         result_data["cli_header"] = {
             k: v for k, v in cli_info.items() if not k.startswith("_")
         }
+
+        # BICIM-08: CLI başlığı yoksa bu bir .NET derlemesi değil; "0 fonksiyon,
+        # başarılı" raporu analisti yanıltırdı (yerel kod hiç analiz edilmezdi).
+        if not cli_info.get("has_cli"):
+            msg = (
+                "CLI (.NET) basligi bulunamadi: dosya .NET derlemesi degil; "
+                "yerel PE olarak (Ghidra) analiz edilmeli"
+            )
+            errors.append(msg)
+            result_data["not_dotnet"] = True
+            output_path = workspace.get_stage_dir("static") / "dotnet_analysis.json"
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(json.dumps(result_data, indent=2, default=str))
+            return StageResult(
+                stage_name="static",
+                success=False,
+                duration_seconds=time.monotonic() - start,
+                artifacts={"dotnet_analysis": output_path},
+                stats={"has_cli_header": False, "not_dotnet": True},
+                errors=errors,
+            )
 
         # 2. .NET metadata tables parse
         if cli_info.get("has_cli") and raw_data:
@@ -787,6 +797,21 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
 
         analysis = json.loads(analysis_path.read_text())
         metadata = analysis.get("metadata", {})
+
+        # BICIM-08: CLI başlığı olmayan dosya için boş bir .csproj "yeniden
+        # kurulmuş proje" diye üretilmez.
+        if analysis.get("not_dotnet") or (
+            analysis.get("cli_header", {}).get("has_cli") is False
+        ):
+            return StageResult(
+                stage_name="reconstruct", success=False,
+                duration_seconds=time.monotonic() - start,
+                stats={"reconstructed": False, "not_dotnet": True},
+                errors=[
+                    "CLI (.NET) basligi yok: .NET projesi uretilmedi; "
+                    "dosya yerel PE olarak analiz edilmeli",
+                ],
+            )
 
         # .csproj dosyasi olustur (BICIM-04: düşman değerler süzülür, kaydedilir)
         csproj, rejected, project_name = self._csproj_and_rejections(
