@@ -1,0 +1,125 @@
+--- a/karadul/reconstruction/c_namer.py	2026-11-18 18:21:49
++++ b/karadul/reconstruction/c_namer.py	2026-11-18 18:22:04
+@@ -232,6 +232,8 @@
+         "class_method", "func_paren", "src_path_pair", "src_path_single",
+         "steam_keyword", "url_hint", "error_verb", "objc_selector",
+         "assert_expr",
++        # P13a / AD-09: Faz 1 çıkarıcısının dizgi kanalı önerisi (dışarıdan aday; ön ad değil)
++        "phase1_extractor",
+     ),
+     # klasik anahtar kelime cikarimi (_extract_keywords_from_string)
+     "classic": ("keywords",),
+@@ -2045,6 +2047,7 @@
+         pre_names: dict[str, str] | None = None,
+         xrefs_json: Path | None = None,
+         pre_name_meta: dict[str, dict[str, Any]] | None = None,
++        phase1_string_candidates: list[dict[str, Any]] | None = None,
+     ) -> CNamingResult:
+         """Tam pipeline: JSON'lari yukle, stratejileri calistir, C dosyalarini yeniden yaz.
+ 
+@@ -2052,6 +2055,12 @@
+         label, ks1}``). Künyedeki ``name`` ön adla aynı değilse künye yok
+         sayılır. Verilmezse ön adlar bugünkü gibi işlenir.
+ 
++        ``phase1_string_candidates`` (P13a / AD-09): Faz 1 çıkarıcısının dizgi
++        içeriğinden kurduğu öneriler (``{key, name, confidence, source,
++        evidence}``). Ön ad DEĞİLDİR: ``string_context`` adayı olarak eklenir ve
++        susturma, ürün eşiği, ad geçerliliği süzgeçlerinden c_namer'ın kendi
++        adaylarıyla aynı yoldan geçer. Verilmezse davranış değişmez.
++
+         Args:
+             decompiled_dir: Ghidra'dan gelen decompiled .c dosyalari dizini.
+             functions_json: ghidra_functions.json yolu.
+@@ -2239,6 +2248,32 @@
+ 
+         # NOT (2026-05-13): LLM4Decompile blogu kaldirildi (B11, feedback_no_llm.md).
+ 
++        # P13a / AD-09: Faz 1 dizgi kanalı önerileri string_context adayı olur (ön ad değil).
++        # Kod yolu "aggressive": dizgiden kalıpla ad kuran yol; alt kanal sınıflayıcısı
++        # (tarif.alt_kanal) onları c_namer'ın kendi agresif adaylarıyla aynı kanala koyar ve
++        # aşağıdaki susturma / ürün eşiği / ad geçerliliği aynen uygulanır.
++        for rec in phase1_string_candidates or ():
++            if not isinstance(rec, dict):
++                continue
++            key, name, conf = rec.get("key"), rec.get("name"), rec.get("confidence")
++            if not (isinstance(key, str) and key.startswith(self._GLOBAL_PREFIXES)
++                    and isinstance(name, str) and name
++                    and isinstance(conf, (int, float)) and not isinstance(conf, bool)):
++                continue
++            evidence = str(rec.get("evidence") or "")
++            has_camel = any(c.isupper() for c in name[1:])
++            self._add_candidate(_NamingCandidate(
++                old_name=key,
++                new_name=_sanitize_c_name(name, preserve_case=has_camel),
++                confidence=float(conf),
++                strategy="string_context",
++                reason=f'Faz 1 {rec.get("source", "")}: "{evidence[:60]}"',
++                evidence=evidence,
++                code_path="aggressive",
++                rule="phase1_extractor",
++                evidence_origin="string_ref",
++            ), func_name=key)
++
+         # Cephe 1b — Alg 1: cross-function pass-through param miras (sıralı post-pass).
+         # Worker'lar per-fonksiyon izole (bir worker komşu fonksiyonun adayını
+         # göremez), bu yüzden gather'dan SONRA, çözümlemeden ÖNCE main-process'te
+--- /dev/null
++++ b/tests/test_p13a_cnamer_dizgi_adayi.py
+@@ -0,0 +1,57 @@
++"""P13a / AD-09 (c_namer yaması): Faz 1 dizgi kanalı önerisi c_namer'da ``string_context`` adayıdır.
++
++Ön ad kanalından çıkarılan öneri (``parallel_algo_eng`` → ``phase1_string_candidates``) c_namer'a
++aday olarak verilir; susturma açıkken ``Class::Method`` kalıbı (alt kanal ``agresif``) susar ve
++``naming_silenced``'a sayılır, susturma kapalıyken klasik seçimden geçer. Yamasız c_namer bu
++argümanı tanımaz (TypeError): test yamayla birlikte gelir.
++"""
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import pytest
++
++sys.path.insert(0, str(Path(__file__).parent))
++import test_c_namer_determinism as T  # noqa: E402
++
++from karadul.config import Config  # noqa: E402
++from karadul.reconstruction import c_namer  # noqa: E402
++from karadul.reconstruction.c_namer import CVariableNamer  # noqa: E402
++from karadul.reconstruction.tarif import alt_kanal  # noqa: E402
++
++ADAY = {"key": "FUN_00007000", "name": "Foo_bar", "confidence": 0.92, "source": "debug_string",
++        "evidence": 'String xref: "Foo::bar failed" -> FUN_00007000'}
++
++
++@pytest.fixture
++def seri(monkeypatch):
++    monkeypatch.setattr(c_namer, "ProcessPoolExecutor", T._SerialExecutor)
++    monkeypatch.setattr(c_namer, "_worker_namer", None)
++
++
++def _kos(tmp_path: Path, **kurucu):
++    ws = T.build_workspace(tmp_path / "ws")
++    out = tmp_path / "out"
++    namer = CVariableNamer(Config(), min_confidence=0.15, **kurucu)
++    res = namer.analyze_and_rename(ws["decompiled"], ws["functions"], ws["strings"],
++                                   ws["call_graph"], out, phase1_string_candidates=[ADAY])
++    assert res.success, res.errors
++    prov = json.loads((out / c_namer.NAMING_PROVENANCE_FILE).read_text(encoding="utf-8"))
++    return res, prov
++
++
++def test_susturma_acikken_agresif_aday_susar(seri, tmp_path) -> None:
++    res, _ = _kos(tmp_path, silenced_subchannels=alt_kanal.SILENCED_SUBCHANNELS)
++    assert res.naming_map.get("FUN_00007000") != "foo_bar"
++    assert res.silenced_counts.get("agresif", 0) >= 1
++
++
++def test_susturma_kapaliyken_string_context_adayi_olarak_secilir(seri, tmp_path) -> None:
++    res, prov = _kos(tmp_path)
++    # ad ön ad yolundaki temizleyiciden geçer (CamelCase yoksa küçük harf)
++    assert res.naming_map.get("FUN_00007000") == "foo_bar"
++    assert res.strategy_map["FUN_00007000"] == "string_context"
++    kayit = prov["global"]["FUN_00007000"]
++    assert kayit["code_path"] == "aggressive" and kayit["rule"] == "phase1_extractor"

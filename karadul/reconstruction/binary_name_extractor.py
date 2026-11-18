@@ -165,6 +165,21 @@ _GHIDRA_AUTO_FUNC_RE = re.compile(r'^FUN_[0-9a-fA-F]+$')
 REASON_BELOW_MIN = "esik_alti"               # güveni min_naming_confidence altında
 REASON_BETTER_EXISTS = "daha_iyisi_var"      # aynı fonksiyona daha güvenli öneri var
 REASON_NAME_ELSEWHERE = "ad_baska_fonksiyonda"  # aynı ad daha güvenli başka fonksiyona verildi
+# P13a / AD-09: dizgi İÇERİĞİNDEN ad kuran öneri ön ad kanalına girmez; c_namer'a ``string_context``
+# adayı olarak gider (susturma, ürün eşiği, ad geçerliliği orada). Ön ad kanalı bu süzgeçleri atlar.
+REASON_STRING_CHANNEL = "dizgi_kanali"
+# Dizgi içeriğinden ad kuran stratejiler. ``debug_string``'in ihraç simgesi dalı (kanıtı
+# ``EXPORT_EVIDENCE_PREFIX`` ile başlar) dizgi değil ikilinin kendi simgesidir; ön ad kanalında kalır.
+STRING_CHANNEL_SOURCES = frozenset({"debug_string", "string_intel"})
+EXPORT_EVIDENCE_PREFIX = "Export symbol: "
+
+
+def is_string_channel(name: "ExtractedName") -> bool:
+    """Öneri, bir dizginin İÇERİĞİNDEN kurulmuş ad mı (AD-09)."""
+    if name.source not in STRING_CHANNEL_SOURCES:
+        return False
+    return not (name.source == "debug_string"
+                and (name.evidence or "").startswith(EXPORT_EVIDENCE_PREFIX))
 
 # C++ isim normalizasyon yardimcilari
 _SNAKE_CASE_RE = re.compile(r'[a-z0-9]+(?:_[a-z0-9]+)+')
@@ -465,6 +480,9 @@ class BinaryNameExtractor:
         # Fonksiyon başına seçilen öneri ve seçilmeyenler (nedeniyle); ``selection_record``
         self._selected: dict[str, ExtractedName] = {}
         self._unselected: list[tuple[ExtractedName, str]] = []
+        # Ön ad kanalının haritası ve dizgi kanalı önerileri (AD-09)
+        self._pre_name_map: dict[str, str] = {}
+        self._string_proposals: list[ExtractedName] = []
 
         # Dahili state
         self._strings: list[_StringEntry] = []
@@ -1066,7 +1084,7 @@ class BinaryNameExtractor:
                     recovered_name=clean_name,
                     source='debug_string',
                     confidence=0.95,
-                    evidence=f'Export symbol: {name}',
+                    evidence=f'{EXPORT_EVIDENCE_PREFIX}{name}',
                     class_name=class_name,
                     source_file=None,
                 ))
@@ -1086,7 +1104,7 @@ class BinaryNameExtractor:
                         recovered_name=clean_name,
                         source='debug_string',
                         confidence=0.85,
-                        evidence=f'Export symbol: {name}',
+                        evidence=f'{EXPORT_EVIDENCE_PREFIX}{name}',
                         class_name=possible_class,
                         source_file=None,
                     ))
@@ -2632,10 +2650,30 @@ class BinaryNameExtractor:
         selected = {orig: best_by_func[orig] for orig in naming_map}
         return naming_map, selected, unselected
 
+    def as_pre_name_map(self) -> dict[str, str]:
+        """Ön ad kanalına giden ``{eski: yeni}``: ``as_naming_map``'in dizgi kanalı dışındaki seçimi.
+
+        Dizgi içeriğinden kurulan öneriler (``is_string_channel``) burada yoktur; onlar
+        ``string_candidates`` ile c_namer'a aday olarak gider (P13a / AD-09).
+        """
+        return dict(self._pre_name_map)
+
+    def string_candidates(self) -> list[dict[str, Any]]:
+        """Dizgi kanalı önerileri, c_namer'a ``string_context`` adayı olarak verilecek biçimde.
+
+        Her kayıt: ``key`` (Ghidra adı), ``name``, ``confidence``, ``source``, ``evidence``. Eşik ve
+        seçim c_namer'ındır; burada süzülmez. Sıra belirlenimci (strateji ve dizgi sırası).
+        """
+        return [
+            {"key": n.original_name, "name": n.recovered_name, "confidence": n.confidence,
+             "source": n.source, "evidence": n.evidence}
+            for n in self._string_proposals
+        ]
+
     def selection_record(self) -> dict[str, Any]:
         """``binary_names.json`` gövdesi: fonksiyon başına SEÇİLEN kayıt ve seçilmeyen öneriler.
 
-        ``names`` yalnız ``as_naming_map()``'teki adları taşır (ön ad kanalına giden ad); her
+        ``names`` yalnız ``as_pre_name_map()``'teki adları taşır (ön ad kanalına giden ad); her
         seçilmeyen öneri ``candidates``'te nedeniyle durur (ad yerine kanıt satırı).
         ``extract()`` çağrılmadan boş kayıt döner.
         """
@@ -2667,7 +2705,14 @@ class BinaryNameExtractor:
 
         Ayrica class-method, member-var ve source-file bilgilerini topla.
         """
-        self._naming_map, self._selected, self._unselected = self._select(result.names)
+        # Bütün stratejilerin seçimi (``as_naming_map``; eski arayüz, betikler ve testler okur)
+        self._naming_map, _, _ = self._select(result.names)
+        # Ön ad kanalının seçimi (AD-09): dizgi içeriğinden ad kuran öneriler seçime girmez;
+        # nedeniyle aday kalır ve ``string_candidates`` ile c_namer'a gider.
+        self._string_proposals = [n for n in result.names if is_string_channel(n)]
+        self._pre_name_map, self._selected, self._unselected = self._select(
+            [n for n in result.names if not is_string_channel(n)])
+        self._unselected.extend((n, REASON_STRING_CHANNEL) for n in self._string_proposals)
 
         # Class-method bilgilerini result'a aktar
         if hasattr(self, '_collected_class_methods'):

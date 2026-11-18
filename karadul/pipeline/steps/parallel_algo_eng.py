@@ -37,6 +37,8 @@ logger = logging.getLogger(__name__)
     produces=[
         "binary_name_result",
         "eng_result",
+        # P13a / AD-09: Faz 1 dizgi kanalı önerileri (c_namer adayı; ön ad değil)
+        "phase1_string_candidates",
     ],
     parallelizable_with=["algorithm_id"],
 )
@@ -79,10 +81,12 @@ class ParallelAlgoEngStep(Step):
         # v1.9.2 thread-safe merge — her future kendi stats/artifacts dict'ini
         # getirir, main thread burada konsolide eder.
         binary_name_result: dict[str, str] = {}
+        phase1_string_candidates: list[dict[str, Any]] = []
         eng_result: Any = None
 
         if name_dict.get("success"):
             binary_name_result = name_dict.get("result", {}) or {}
+            phase1_string_candidates = list(name_dict.get("string_candidates") or [])
             ctx.stats.update(name_dict.get("stats", {}))
             self._absorb_artifacts(ctx, name_dict.get("artifacts", {}))
         elif not name_dict.get("skipped") and "error" in name_dict:
@@ -101,6 +105,7 @@ class ParallelAlgoEngStep(Step):
         return {
             "binary_name_result": binary_name_result,
             "eng_result": eng_result,
+            "phase1_string_candidates": phase1_string_candidates,
         }
 
     @staticmethod
@@ -143,20 +148,28 @@ def _run_binary_name_extraction(
             # güvenli öneri, aynı ad tek fonksiyonda). Eskiden bütün stratejilerin ham listesi
             # sözlüğe çevriliyordu: eşik altı öneri geçiyor, aynı fonksiyonda listedeki SON
             # öneri kazanıyor, aynı ad birden çok fonksiyona gidiyordu.
-            names = extractor.as_naming_map()
+            # P13a / AD-09: dizgi içeriğinden kurulan öneriler (``Class::Method`` dizgisi, hata /
+            # assert iletisi) ön ad DEĞİL; c_namer'a ``string_context`` adayı olarak gider ve
+            # aynı susturma / ürün eşiği / ad geçerliliğinden geçer (N0b'nin susturduğu sinyal
+            # ön ad yolundan geri gelmesin). Seçimden önce ayrılırlar.
+            names = extractor.as_pre_name_map()
+            string_candidates = extractor.string_candidates()
             extract_path = pc.workspace.save_json(
                 "reconstructed", "binary_names", extractor.selection_record(),
             )
             logger.info(
-                "Binary Name Extraction: %d isim (%d öneriden), %d class",
-                len(names), len(extract_result.names), len(extract_result.class_methods),
+                "Binary Name Extraction: %d isim (%d öneriden; %d dizgi adayı c_namer'a), %d class",
+                len(names), len(extract_result.names), len(string_candidates),
+                len(extract_result.class_methods),
             )
             return {
                 "success": True,
                 "result": names,
+                "string_candidates": string_candidates,
                 "stats": {
                     "binary_names_extracted": len(names),
                     "binary_name_proposals": len(extract_result.names),
+                    "binary_name_string_candidates": len(string_candidates),
                     "classes_detected": len(extract_result.class_methods),
                 },
                 "artifacts": {"binary_names": extract_path},

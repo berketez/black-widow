@@ -77,8 +77,9 @@ class TestWorkerIsolation:
 
         fake_ext = MagicMock()
         fake_ext.return_value.extract.return_value = fake_res
-        # P13a / AD-06: ön ad çıkarıcının kendi seçimi (as_naming_map), ham liste değil
-        fake_ext.return_value.as_naming_map.return_value = {"FUN_1000": "validate_input"}
+        # P13a / AD-06 + AD-09: ön ad çıkarıcının kendi seçimi (dizgi kanalı hariç), ham liste değil
+        fake_ext.return_value.as_pre_name_map.return_value = {"FUN_1000": "validate_input"}
+        fake_ext.return_value.string_candidates.return_value = []
         fake_ext.return_value.selection_record.return_value = {"total": 1}
 
         with patch(
@@ -143,7 +144,8 @@ class TestStepOrchestration:
 
         fake_ext = MagicMock()
         fake_ext.return_value.extract.return_value = fake_name_res
-        fake_ext.return_value.as_naming_map.return_value = {"FUN_1": "foo"}
+        fake_ext.return_value.as_pre_name_map.return_value = {"FUN_1": "foo"}
+        fake_ext.return_value.string_candidates.return_value = []
         fake_ext.return_value.selection_record.return_value = {"total": 1}
 
         # Engineering
