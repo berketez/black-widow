@@ -1,0 +1,421 @@
+{
+ "_comment": "P22e (KaradulLM oturum, kipler, izin, plan, kısıtlı terminal, defter): tekrar anahtarı, izin tablosu ve politika, sunucu ikilisi denetimi, belirlenimci plan, girdi sınırları ve ayrıştırıcı, defter, oturum yaşam döngüsü / analizle dışlama / iptal / devam / kararlar. Her mutant bir davranışı bozar; hedef test KIRMIZI olmalı (killed). Mutant metni özgününden farklı uzunlukta (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_lm_oturum.json Çıkarılan eşdeğer mutant: ss_yuva_bosalt (kapanışta yuvanın boşaltılması; open_session ve current_session kapalı oturumu zaten yok sayar, davranış aynı).",
+ "mutants": [
+  {
+   "id": "ck_to_tek_yazim",
+   "desc": "find_path to argümanı tek yazıma çevrilmez",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_session.py::test_tekrar_anahtari_find_path_hedefini_de_tek_yaziya_cevirir",
+   "find": "                if k != \"addr\" and isinstance(sub, Mapping) and sub.get(\"pattern\") == ADDR_PATTERN:",
+   "replace": "                if False:"
+  },
+  {
+   "id": "iz_oner_kesif",
+   "desc": "keşifte öneri izni açılır",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_izin.py::test_izin_tablosu_tasarimla_ayni",
+   "find": "    ACT_PROPOSE: {MODE_EXPLORE: DENY,",
+   "replace": "    ACT_PROPOSE: {MODE_EXPLORE: ALLOW,"
+  },
+  {
+   "id": "iz_ag_kesif",
+   "desc": "keşifte ağ ask olur",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_izin.py::test_izin_tablosu_tasarimla_ayni",
+   "find": "    ACT_NETWORK: {MODE_EXPLORE: DENY,",
+   "replace": "    ACT_NETWORK: {MODE_EXPLORE: ASK,"
+  },
+  {
+   "id": "iz_kilitli_hucre",
+   "desc": "keşifteki ağ hücresi kilitli değil",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_izin.py::test_politika_yalniz_daraltir_kilitli_satirlar_acilmaz",
+   "find": "            if action in LOCKED_ACTIONS or (action, mode) in LOCKED_CELLS:",
+   "replace": "            if action in LOCKED_ACTIONS:"
+  },
+  {
+   "id": "iz_kilitli_eylem",
+   "desc": "uygula / çalıştır kilidi yok",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_izin.py::test_politika_yalniz_daraltir_kilitli_satirlar_acilmaz",
+   "find": "LOCKED_ACTIONS = frozenset({ACT_APPLY, ACT_RUN})",
+   "replace": "LOCKED_ACTIONS = frozenset()"
+  },
+  {
+   "id": "iz_gevsetme",
+   "desc": "politika gevşetmeye izin verir",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_izin.py::test_politika_yalniz_daraltir_kilitli_satirlar_acilmaz",
+   "find": "            if _STRICTNESS[value] < _STRICTNESS[base]:",
+   "replace": "            if _STRICTNESS[value] < 0:"
+  },
+  {
+   "id": "iz_ag_kati_bool",
+   "desc": "ağ ayarı katı bool değil",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_izin.py::test_oneri_ag_uzun_is_kararlari",
+   "find": "            return enabled is True and consent is True",
+   "replace": "            return bool(enabled) and bool(consent)"
+  },
+  {
+   "id": "iz_uzun_bilinmiyor",
+   "desc": "süre bilinmiyorsa onaysız başlar",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_izin.py::test_oneri_ag_uzun_is_kararlari",
+   "find": "        if expected_sec is None or expected_sec >= self.long_job_sec:",
+   "replace": "        if expected_sec is not None and expected_sec >= self.long_job_sec:"
+  },
+  {
+   "id": "iz_uzun_esik",
+   "desc": "eşiğe eşit süre onaysız",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_izin.py::test_oneri_ag_uzun_is_kararlari",
+   "find": "expected_sec >= self.long_job_sec:",
+   "replace": "expected_sec > self.long_job_sec:"
+  },
+  {
+   "id": "iz_oneri_izin",
+   "desc": "öneri türü yalnız kip listesinden (izin bakılmaz)",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_izin.py::test_oneri_ag_uzun_is_kararlari",
+   "find": "        return self.decide(ACT_PROPOSE, mode) == ALLOW and kind in mode_spec(mode).proposals",
+   "replace": "        return kind in mode_spec(mode).proposals"
+  },
+  {
+   "id": "sb_cozulmus_ad",
+   "desc": "sembolik bağın çözülmüş adı denetlenmez",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_izin.py::test_sunucu_ikilisi_hedef_olamaz",
+   "find": "    if p.name != SERVER_BINARY_NAME or real.name != SERVER_BINARY_NAME:",
+   "replace": "    if p.name != SERVER_BINARY_NAME:"
+  },
+  {
+   "id": "sb_calisma_alani",
+   "desc": "çalışma alanının içindeki ikili kabul",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_izin.py::test_sunucu_ikilisi_hedef_olamaz",
+   "find": "    if real == ws_real or ws_real in real.parents:",
+   "replace": "    if real == ws_real:"
+  },
+  {
+   "id": "sb_hedef_ozeti",
+   "desc": "hedefin kopyası kabul",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_izin.py::test_sunucu_ikilisi_hedef_olamaz",
+   "find": "    if isinstance(target_sha256, str) and digest == target_sha256.lower():",
+   "replace": "    if False:"
+  },
+  {
+   "id": "pl_tavan",
+   "desc": "plan adım tavanı yok",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_session.py::test_plan_belirlenimci_tavanli_ve_beklenen_sure",
+   "find": "    for fn in found[:PLAN_MAX_STEPS]:",
+   "replace": "    for fn in found:"
+  },
+  {
+   "id": "pl_hizsiz_sure",
+   "desc": "hız yokken beklenen süre 0 uydurulur",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_session.py::test_plan_belirlenimci_tavanli_ve_beklenen_sure",
+   "find": "and e > 0 else None",
+   "replace": "and e > 0 else 0.0"
+  },
+  {
+   "id": "pl_hedef_kod",
+   "desc": "thunk hedef plan doğrulamasından geçer",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_session.py::test_plan_dogrulama_adresleri_ve_semayi_sinar",
+   "find": "        if a is None or a not in ws.code_files:",
+   "replace": "        if a is None:"
+  },
+  {
+   "id": "pl_yineleme",
+   "desc": "aynı görev yinelemesi yakalanmaz",
+   "module": "karadul/lm/modes.py",
+   "test": "tests/test_lm_session.py::test_plan_dogrulama_adresleri_ve_semayi_sinar",
+   "find": "        if key in seen:",
+   "replace": "        if key in ():"
+  },
+  {
+   "id": "rp_izin_denetimsiz",
+   "desc": "izin listesi girdi denetimini atlar, her boşluğu siler",
+   "module": "karadul/lm/repl.py",
+   "test": "tests/test_lm_repl.py::test_izin_listesi_tek_oge_ve_dusman_girdiler",
+   "find": "    try:\n        check_text(text)\n    except InputError:\n        return False\n    return text.strip(\" \") in ALLOWED_COMMANDS",
+   "replace": "    if not isinstance(text, str):\n        return False\n    return text.strip() in ALLOWED_COMMANDS"
+  },
+  {
+   "id": "rp_bicim_karakteri",
+   "desc": "biçim karakterleri (Cf) geçer",
+   "module": "karadul/lm/repl.py",
+   "test": "tests/test_lm_repl.py::test_girdi_sinirlari_gorunmez_ve_denetim_karakteri_reddedilir",
+   "find": "_REJECTED_CATEGORIES = frozenset({\"Cc\", \"Cf\", \"Cs\", \"Co\", \"Cn\", \"Zl\", \"Zp\"})",
+   "replace": "_REJECTED_CATEGORIES = frozenset({\"Cc\", \"Cs\", \"Co\", \"Cn\", \"Zl\", \"Zp\"})"
+  },
+  {
+   "id": "rp_bosluk",
+   "desc": "U+0020 dışı boşluk geçer",
+   "module": "karadul/lm/repl.py",
+   "test": "tests/test_lm_repl.py::test_girdi_sinirlari_gorunmez_ve_denetim_karakteri_reddedilir",
+   "find": "(cat == \"Zs\" and ch != \" \")",
+   "replace": "(cat == \"Zsx\" and ch != \" \")"
+  },
+  {
+   "id": "rp_gorunmez",
+   "desc": "görünmez dolgu harfleri geçer",
+   "module": "karadul/lm/repl.py",
+   "test": "tests/test_lm_repl.py::test_girdi_sinirlari_gorunmez_ve_denetim_karakteri_reddedilir",
+   "find": "ord(ch) in _INVISIBLE or",
+   "replace": "False or"
+  },
+  {
+   "id": "rp_uzunluk",
+   "desc": "2 001 karakter geçer",
+   "module": "karadul/lm/repl.py",
+   "test": "tests/test_lm_repl.py::test_girdi_uzunlugu_ve_turkce_metin",
+   "find": "    if len(text) > max_chars:",
+   "replace": "    if len(text) > max_chars + 1:"
+  },
+  {
+   "id": "rp_soru_kip",
+   "desc": "serbest metin açıkla kipinde de soru",
+   "module": "karadul/lm/repl.py",
+   "test": "tests/test_lm_repl.py::test_soru_yalniz_kesifte_ve_anmalar",
+   "find": "        if mode != \"kesif\":",
+   "replace": "        if mode == \"plan\":"
+  },
+  {
+   "id": "rp_derinlik",
+   "desc": "derinlik 3 kabul",
+   "module": "karadul/lm/repl.py",
+   "test": "tests/test_lm_repl.py::test_ayristirma_hatalari",
+   "find": "int(tok) > DEFAULT_CLOSURE_DEPTH:",
+   "replace": "int(tok) > DEFAULT_CLOSURE_DEPTH + 1:"
+  },
+  {
+   "id": "rp_ascii_rakam",
+   "desc": "ASCII dışı rakam derinlik olur",
+   "module": "karadul/lm/repl.py",
+   "test": "tests/test_lm_repl.py::test_ayristirma_hatalari",
+   "find": "    if not tok.isascii() or not tok.isdigit()",
+   "replace": "    if not tok.isdigit()"
+  },
+  {
+   "id": "rp_sinanamadi_etiket",
+   "desc": "sınanamadı temiz gösterilir",
+   "module": "karadul/lm/repl.py",
+   "test": "tests/test_lm_repl.py::test_satir_bicimi_olaylardan",
+   "find": "\"sinanamadi\": \"SINANAMADI (kanıt yok)\"",
+   "replace": "\"sinanamadi\": \"ÇELİŞKİ BULUNMADI\""
+  },
+  {
+   "id": "nb_ret_nedeni",
+   "desc": "ret kaydı nedensiz yazılır",
+   "module": "karadul/lm/notebook.py",
+   "test": "tests/test_lm_session.py::test_defter_izinler_oneri_durumu_ve_kararlar",
+   "find": "REC_REJECT: (\"oneri_kimligi\", \"neden\")",
+   "replace": "REC_REJECT: (\"oneri_kimligi\",)"
+  },
+  {
+   "id": "nb_tek_karar",
+   "desc": "öneriye ikinci karar yazılır",
+   "module": "karadul/lm/notebook.py",
+   "test": "tests/test_lm_session.py::test_defter_izinler_oneri_durumu_ve_kararlar",
+   "find": "            if p[\"durum\"] != \"bekleyen\":",
+   "replace": "            if p[\"durum\"] == \"yok\":"
+  },
+  {
+   "id": "nb_dosya_izni",
+   "desc": "defter 0644",
+   "module": "karadul/lm/notebook.py",
+   "test": "tests/test_lm_session.py::test_defter_izinler_oneri_durumu_ve_kararlar",
+   "find": "getattr(os, \"O_NOFOLLOW\", 0), 0o600)",
+   "replace": "getattr(os, \"O_NOFOLLOW\", 0), 0o0644)"
+  },
+  {
+   "id": "nb_d10_durum",
+   "desc": "bekleyen ad da reddedilen sayılır",
+   "module": "karadul/lm/notebook.py",
+   "test": "tests/test_lm_session.py::test_defter_izinler_oneri_durumu_ve_kararlar",
+   "find": "            if p[\"durum\"] == REC_REJECT and p[\"oneri_turu\"] == \"ad\":",
+   "replace": "            if p[\"oneri_turu\"] == \"ad\":"
+  },
+  {
+   "id": "nb_blok_tavan",
+   "desc": "oturum bloğu jeton tavanını aşar",
+   "module": "karadul/lm/notebook.py",
+   "test": "tests/test_lm_session.py::test_oturum_blogu_belirlenimci_ve_tavanli",
+   "find": "        while lines and estimate_text_tokens(text) > max_tokens:",
+   "replace": "        while False:"
+  },
+  {
+   "id": "nb_bozuk_satir",
+   "desc": "bozuk satır sayılmaz",
+   "module": "karadul/lm/notebook.py",
+   "test": "tests/test_lm_session.py::test_defter_sembolik_bag_ve_bozuk_satir",
+   "find": "            except (ValueError, TypeError):\n                corrupt += 1",
+   "replace": "            except (ValueError, TypeError):\n                continue"
+  },
+  {
+   "id": "ss_tek_oturum",
+   "desc": "ikinci oturum açılır",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_oturum_yasam_dongusu_tek_oturum",
+   "find": "        if _ACTIVE is not None and not _ACTIVE.closed:\n            raise SessionExists",
+   "replace": "        if False:\n            raise SessionExists"
+  },
+  {
+   "id": "ss_analiz_model",
+   "desc": "analiz sürerken model işi kabul",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_analizle_dislama_model_ve_yazma_yok",
+   "find": "        if self._analysis_running():\n            return _REASON_ANALYSIS\n        if self._uses_network()",
+   "replace": "        if self._uses_network()"
+  },
+  {
+   "id": "ss_analiz_kuyruk",
+   "desc": "kuyruktaki iş başlamadan bakılmaz",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_analizle_dislama_model_ve_yazma_yok",
+   "find": "        why = self._model_refusal(job.kip if job.kip != MODE_PLAN else MODE_EXPLAIN)",
+   "replace": "        why = None"
+  },
+  {
+   "id": "ss_analiz_not",
+   "desc": "analiz sürerken not yazılır",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_analizle_dislama_model_ve_yazma_yok",
+   "find": "    def _cmd_not(self, cmd: Command) -> dict[str, Any]:\n        if self._analysis_running():",
+   "replace": "    def _cmd_not(self, cmd: Command) -> dict[str, Any]:\n        if False:"
+  },
+  {
+   "id": "ss_iptal_olay",
+   "desc": "iptal olayı yayılmaz",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_iptal_kuyrugu_bosaltir_sonraki_gorev_tamam",
+   "find": "        self._emit(\"iptal\", kaynak=kaynak)",
+   "replace": "        pass"
+  },
+  {
+   "id": "ss_iptal_ajan",
+   "desc": "süren görev iptal edilmez",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_iptal_kuyrugu_bosaltir_sonraki_gorev_tamam",
+   "find": "        if running and self.agent is not None:\n            self.agent.cancel_current()",
+   "replace": "        if False:\n            self.agent.cancel_current()"
+  },
+  {
+   "id": "ss_kuyruk_bosalt",
+   "desc": "iptal kuyruğu boşaltmaz",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_iptal_kuyrugu_bosaltir_sonraki_gorev_tamam",
+   "find": "            dropped = len(self._jobs)\n            self._jobs.clear()",
+   "replace": "            dropped = len(self._jobs)"
+  },
+  {
+   "id": "ss_kip_mesgul",
+   "desc": "görev sürerken kip değişir",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_iptal_kuyrugu_bosaltir_sonraki_gorev_tamam",
+   "find": "    def _cmd_kip(self, cmd: Command) -> dict[str, Any]:\n        if self._busy():",
+   "replace": "    def _cmd_kip(self, cmd: Command) -> dict[str, Any]:\n        if False:"
+  },
+  {
+   "id": "ss_kapanis_iptal",
+   "desc": "kapanışta iptal olayı yok",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_kapanis_suren_isi_iptal_eder",
+   "find": "            self._emit(\"iptal\", kaynak=CANCEL_CLOSING)",
+   "replace": "            pass"
+  },
+  {
+   "id": "ss_plan_durdur",
+   "desc": "plan iptalden sonra sürer",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_plan_durdurulunca_kalan_adimlar_acilmaz",
+   "find": "                if self._stop.is_set() or self.closed:",
+   "replace": "                if self.closed:"
+  },
+  {
+   "id": "ss_oneri_izin",
+   "desc": "keşifte yorum önerisi açılır",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_kip_izinleri_yorum_ve_ad_onerisi",
+   "find": "        if not self.policy.may_propose(task_mode, kind):",
+   "replace": "        if False:"
+  },
+  {
+   "id": "ss_ad_kip",
+   "desc": "ad önerisi her kipte",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_kip_izinleri_yorum_ve_ad_onerisi",
+   "find": "        if tur == JOB_NAME and self.mode != MODE_NAME:",
+   "replace": "        if False:"
+  },
+  {
+   "id": "ss_uzun_is",
+   "desc": "hız bilinmeyen zincir onaysız başlar",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_kip_izinleri_yorum_ve_ad_onerisi",
+   "find": "        if decision == LONG_JOB_ASK or always_ask:",
+   "replace": "        if always_ask:"
+  },
+  {
+   "id": "ss_ad_ret",
+   "desc": "RET hükümlü ad önerisi açılır",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_kip_izinleri_yorum_ve_ad_onerisi",
+   "find": "            if r.verdict == guard.VERDICT_REJECT:",
+   "replace": "            if False:"
+  },
+  {
+   "id": "ss_plan_onay",
+   "desc": "plan onaysız başlar",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_plan_onayla_yurut_ve_sonuc_ac",
+   "find": "        return self._gate_long(job, plan.gorev_ust_siniri, always_ask=True)",
+   "replace": "        return self._enqueue(job)"
+  },
+  {
+   "id": "ss_ret_neden",
+   "desc": "boşluktan ibaret ret nedeni kabul",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_karar_ret_nedeni_d10_ve_kabulde_yeniden_denetim",
+   "find": "            if not isinstance(reason, str) or not reason.strip(\" \"):",
+   "replace": "            if not isinstance(reason, str):"
+  },
+  {
+   "id": "ss_d10_ajan",
+   "desc": "reddedilen ad ajana geçmez",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_karar_ret_nedeni_d10_ve_kabulde_yeniden_denetim",
+   "find": "            self.agent.rejected_names.setdefault(p[\"adres\"], set()).add(p[\"deger\"])",
+   "replace": "            pass"
+  },
+  {
+   "id": "ss_kabul_denetim",
+   "desc": "kabulde D1 / D2 koşmaz",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_karar_ret_nedeni_d10_ve_kabulde_yeniden_denetim",
+   "find": "        return [f\"{f.rule} {f.code}\" for f in rep.findings if f.rule in (\"D1\", \"D2\")]",
+   "replace": "        return []"
+  },
+  {
+   "id": "ss_devam_d10",
+   "desc": "devamda reddedilen adlar ajana yüklenmez",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_devam_defter_ve_ozet_deposundan",
+   "find": "                self.agent.rejected_names.setdefault(a, set()).update(names)",
+   "replace": "                pass"
+  },
+  {
+   "id": "ss_devam_sayac",
+   "desc": "devam satırı bekleyen öneriyi saymaz",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_lm_session.py::test_devam_defter_ve_ozet_deposundan",
+   "find": "            pending = len(self.notebook.pending())",
+   "replace": "            pending = 0"
+  }
+ ]
+}

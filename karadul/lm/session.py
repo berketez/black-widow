@@ -208,6 +208,9 @@ class Session:
         self._job_seq = 0
         self._worker: Optional[threading.Thread] = None
         self._backend_state: Optional[str] = None
+        # Defter yazımları (öneri, not, karar) tek kilit altında: aynı öneriye iki istekten aynı anda
+        # karar yazılamasın, öneri kimliği yinelenmesin (istek iş parçacıkları + iş parçacığı).
+        self._nb_lock = threading.Lock()
 
     # --- olaylar ------------------------------------------------------------------------------
 
@@ -514,7 +517,8 @@ class Session:
         if a is None:
             return self._refuse(f"{cmd.hedef}: çalışma alanında böyle bir fonksiyon yok")
         try:
-            self.notebook.note(self.id, a, cmd.metin or "")
+            with self._nb_lock:
+                self.notebook.note(self.id, a, cmd.metin or "")
         except (NotebookError, OSError) as e:
             return self._refuse(f"not yazılamadı: {e}")
         self._line(f"not deftere yazıldı: FUN_{a}")
@@ -660,6 +664,11 @@ class Session:
 
     def _file_proposal(self, kind: str, task_mode: str, r: TaskResult, value: str, reason: Optional[str],
                        refs: list[str], verdict: Optional[str]) -> None:
+        with self._nb_lock:
+            self._file_proposal_locked(kind, task_mode, r, value, reason, refs, verdict)
+
+    def _file_proposal_locked(self, kind: str, task_mode: str, r: TaskResult, value: str,
+                              reason: Optional[str], refs: list[str], verdict: Optional[str]) -> None:
         if not self.policy.may_propose(task_mode, kind):
             self._line(f"öneri açılmadı: {mode_spec(task_mode).label} kipinde {kind} önerisi yok")
             return
@@ -695,6 +704,11 @@ class Session:
     # --- kararlar (öneri kartı; P22c) -----------------------------------------------------------
 
     def decide(self, proposal_id: str, decision: str, reason: Optional[str] = None) -> dict[str, Any]:
+        """Analistin öneri kararı; ``_decide_locked``'u defter kilidi altında çağırır."""
+        with self._nb_lock:
+            return self._decide_locked(proposal_id, decision, reason)
+
+    def _decide_locked(self, proposal_id: str, decision: str, reason: Optional[str]) -> dict[str, Any]:
         """Analistin öneri kararı (yalnız kimlikle). ``ret`` neden ister. ``kabul``de ad önerisi için D1 ve D2
         bugünkü çalışma alanıyla yeniden koşar (çift denetim); tutmazsa kabul yazılmaz. Dönüş:
         ``{"tamam": bool, "hata": ileti | None, "oneri": öneri kaydı | None}``. Ad haritasına / model

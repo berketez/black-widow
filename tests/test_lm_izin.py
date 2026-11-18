@@ -244,6 +244,12 @@ def test_sunucu_ikilisi_hedef_olamaz(tmp_path):
     bag.symlink_to(ws / "raw" / "hedef")
     with pytest.raises(M.ServerBinaryRefused):
         M.check_server_binary(bag, ws, hedef_sha)
+    # adı llama-server olan sembolik bağ başka adlı bir ikiliyi gösteriyor (çözülmüş adı da denetlenir)
+    bag2 = tmp_path / "bag2" / "llama-server"
+    bag2.parent.mkdir()
+    bag2.symlink_to(tmp_path / "bin" / "sunucu")
+    with pytest.raises(M.ServerBinaryRefused, match="adı"):
+        M.check_server_binary(bag2, ws, hedef_sha)
     # yok / çalıştırılamaz
     with pytest.raises(M.ServerBinaryRefused, match="bulunamadı"):
         M.check_server_binary(tmp_path / "yok" / "llama-server", ws, hedef_sha)

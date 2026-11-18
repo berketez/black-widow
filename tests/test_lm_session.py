@@ -87,10 +87,12 @@ def test_defter_izinler_oneri_durumu_ve_kararlar(tmp_path):
     durum = {p["oneri_kimligi"]: (p["durum"], p.get("neden")) for p in nb.proposals()}
     assert durum == {"p1": ("ret", "yanlış: tabloyu değil başlığı okuyor"), "p2": ("kabul", None)}
     assert nb.pending() == [] and nb.rejected_names() == {"1000": {"parse_table"}}
+    _oneri(nb, adres="1000", deger="bekleyen_ad")                            # bekleyen ad D10'a girmez
+    assert nb.rejected_names() == {"1000": {"parse_table"}}
     # yeniden okunan defter aynı; hiçbir şey silinmez, satır sayısı = kayıt sayısı
     yeni = N.Notebook(SHA, root=tmp_path)
     assert [r.as_dict() for r in yeni.records()] == [r.as_dict() for r in nb.records()]
-    assert len(nb.path.read_text(encoding="utf-8").splitlines()) == 5 and yeni.last_time() == "z"
+    assert len(nb.path.read_text(encoding="utf-8").splitlines()) == 6 and yeni.last_time() == "2026-11-18T20:00:00+03:00"
     # kurallar
     for kotu, ileti in [
         (N.NoteRecord("ret", "z", "o1", oneri_kimligi="p1", neden="x"), "zaten"),
@@ -107,7 +109,7 @@ def test_defter_izinler_oneri_durumu_ve_kararlar(tmp_path):
     ]:
         with pytest.raises(N.NotebookError, match=ileti):
             nb.append(kotu)
-    assert len(nb.path.read_text(encoding="utf-8").splitlines()) == 5
+    assert len(nb.path.read_text(encoding="utf-8").splitlines()) == 6
     with pytest.raises(ValueError):
         N.Notebook("../x", root=tmp_path)
 
@@ -277,12 +279,13 @@ def _kanit_kimlikleri(sema) -> list[str]:
 class AdArka(B.FakeBackend):
     """"Ad öner" cevabını istekten kuran sahte arka uç: ``kanit`` o istekte verilen ilk kimlik."""
 
-    def __init__(self, n: int = 1, **kw):
+    def __init__(self, n: int = 1, isim: str = AD_CEVAP["isim"], **kw):
         super().__init__([], **kw)
         self.kalan = n
+        self.isim = isim
 
     def _chat(self, messages, schema, stream, max_tokens, on_token):
-        c = json.dumps({**AD_CEVAP, "kanit": _kanit_kimlikleri(schema)[:1]}, ensure_ascii=False)
+        c = json.dumps({**AD_CEVAP, "isim": self.isim, "kanit": _kanit_kimlikleri(schema)[:1]}, ensure_ascii=False)
         self.replies = [B.FakeReply(content=c, chunks=[c[:5], c[5:]])] if self.kalan > 0 else []
         self.kalan -= 1
         return super()._chat(messages, schema, stream, max_tokens, on_token)
@@ -357,6 +360,10 @@ def test_kip_izinleri_yorum_ve_ad_onerisi(tmp_path):
     o = olay(s, "oneri")[-1]
     assert (o["oneri_turu"], o["deger"]) == ("ad", "open_connection") and o["hukum"] is not None
     assert len(o["kanit"]) == 1 and o["kanit"][0].startswith("r")
+    # denetim RET veren ad önerisi açılmaz (C anahtar sözcüğü: D1)
+    s.agent.backend = AdArka(isim="while")
+    assert s.submit(f"/ad {fun(ZR)}")["kabul"] and s.wait_idle(BEKLE)
+    assert olay(s, "oneri")[-1] == o and "denetim RET" in satir(s)[-1]
     # plan kipinde görev komutu yok; kip değişikliği görev sürerken yok
     s.submit("/kip plan")
     assert "plan kipinde işler /plan" in s.submit(f"/acikla {fun(ZX)}")["hata"]
@@ -369,6 +376,7 @@ def test_karar_ret_nedeni_d10_ve_kabulde_yeniden_denetim(tmp_path):
     for adres, deger in ((A, "parse_input_line"), (A, "malloc"), (FB, "read_header"), (A, "yorum metni")):
         _oneri(nb, adres=adres, deger=deger, tur="yorum" if " " in deger else "ad")
     assert s.decide("p1", "ret")["hata"] == "ret için neden zorunlu"
+    assert s.decide("p1", "ret", "   ")["hata"] == "ret için neden zorunlu"
     assert "U+001B" in s.decide("p1", "ret", "kötü\x1b")["hata"]
     assert s.decide("p1", "sil")["hata"] == "karar kabul ya da ret olmalı"
     assert s.decide("p9", "kabul")["hata"] == "böyle bir öneri yok"
@@ -435,6 +443,7 @@ def test_iptal_kuyrugu_bosaltir_sonraki_gorev_tamam(tmp_path):
     assert arka.giris.wait(BEKLE)
     s.submit(f"/ad {fun(ZR)}")
     assert s.status()["calisan"]["hedef"] == fun(ZX) and s.status()["kuyruk"] == 1
+    assert "görev sürerken kip değişmez" in s.submit("/kip kesif")["hata"] and s.mode == "adlandir"
     assert s.submit("/durdur")["kabul"]
     iptal = olay(s, "iptal")
     assert len(iptal) == 1 and iptal[0]["kaynak"] == "analist" and iptal[0]["gorev"] is None
@@ -527,3 +536,45 @@ def test_hiz_olcumu_gercek_degerle(tmp_path):
     assert "hız ölçülemedi" in satir(s)[-1] and s.agent.expected_task_sec is None
     h = s.status()["hiz"]
     assert (h["P"], h["G"], h["T"]) == (None, None, None) and h["zaman"]          # ölçüm yapıldı, değer yok
+
+
+
+def test_plan_durdurulunca_kalan_adimlar_acilmaz(tmp_path):
+    ws = plan_ws(tmp_path / "ws")
+    kapi, giris = threading.Event(), threading.Event()
+
+    class Bekleyen(OzetArka):
+        def _chat(self, *a, **k):
+            giris.set()
+            kapi.wait(BEKLE)
+            return super()._chat(*a, **k)
+    arka = Bekleyen({a: "Bağlantı kurar." for a in CAGIRANLAR})
+    s = ac(tmp_path, arka, ws_root=ws.root, mode="plan")
+    s.submit("/plan dizgi bağlantı 1")
+    s.submit("/onayla")
+    assert giris.wait(BEKLE)
+    assert s.cancel() is True
+    kapi.set()
+    assert s.wait_idle(BEKLE)
+    assert "plan durdu: 1/11 adım bitti" in satir(s) and len(arka.calls) == 1
+    assert olay(s, "gorev_bitti")[-1]["durum"] == "iptal" and olay(s, "oneri") == []
+
+
+def test_ayni_oneriye_eszamanli_kararlar_tek_kayit(tmp_path):
+    """Arayüzün istek iş parçacıkları aynı öneriye aynı anda karar gönderirse defterde tek karar kalır
+    (defter kilidi). Yarış belirlenimci değildir: bu sınama gerileme koruması, mutasyon kanıtı değil."""
+    s = ac(tmp_path, B.FakeBackend([]), ws_root=default_ws(tmp_path / "ws"))
+    _oneri(s.notebook, adres=A, deger="parse_input_line")
+    sonuc: list[bool] = []
+    bariyer = threading.Barrier(8)
+
+    def karar(i):
+        bariyer.wait()
+        sonuc.append(s.decide("p1", "ret" if i % 2 else "kabul", f"neden {i}")["tamam"])
+    ts = [threading.Thread(target=karar, args=(i,)) for i in range(8)]
+    for t_ in ts:
+        t_.start()
+    for t_ in ts:
+        t_.join(BEKLE)
+    assert sorted(sonuc) == [False] * 7 + [True]
+    assert len([r for r in N.Notebook(SHA, root=tmp_path / "depo").records() if r.tur in ("kabul", "ret")]) == 1
