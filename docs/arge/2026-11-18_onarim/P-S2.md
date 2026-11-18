@@ -9,8 +9,8 @@ Brif: `ONARIM_BRIF.md`. Karar: K-3 (Berke, 2026-11-18 10:1x: "çöpler hangisiys
 | Kalem | Durum | Commit |
 |---|---|---|
 | 0 — ön kayıt | bitti | f4e9ae1 |
-| 1 — A1 ölü monolit + `_execute_legacy` + yalnız onları sınayan testler | bitti | (bu commit) |
-| 2 — A1b çift koşan blok (BORU-01) | bekliyor | |
+| 1 — A1 ölü monolit + `_execute_legacy` + yalnız onları sınayan testler | bitti | 7c5ed28 |
+| 2 — A1b çift koşan blok (BORU-01) | bitti | (bu commit) |
 | 3 — kalan çağrılmayan metotlar (silinmez, liste) | bekliyor | |
 
 ## Gürültü tabanı (B0a ↔ B0b, aynı kod 112350e, `PYTHONHASHSEED=0`, `--paralel 1`)
@@ -90,3 +90,32 @@ Girinti değişikliği 6 mutantın `find` metnini, silme 2 mutantın hedefini ka
 - Sağlamlık denetimi (`saglamlik_denetle.py`): B0a ve A1 kusur tablosu aynı (eski_fonksiyon_adi_yorumda_kalan 25, fonksiyon_anahtari_ghidrada_yok 6, yerel_son_tur_baska_adla_fonksiyon 87, baslik_tanim_farkli 4, yerel_ilk_tur_baska_adla_fonksiyon 1).
 - A1 koşusu worktree'den, kod kirli (commit'ten önce): künyede `f4e9ae1` + kirli `karadul/stages.py`; koşu sırasında yalnız test dosyaları değişti (`agac_degisti: true` bundan), `stages.py` koşu öncesi ve sonrası bayt bayt aynı (`cmp`).
 - **Ön kayıt kalem 1: H1a–H1d tuttu.**
+
+## Kalem 2 — K-3 A1b (BORU-01): "ESKİ monolith entegrasyon" bloğu
+
+### Önce (A1 = 7c5ed28; blok yerinde, koşulsuz)
+- Blok `_execute_binary`'de Faz 2'den sonra, Faz 3'ten önce, `_use_step_registry`'ye bakmadan koşuyordu: (a) `CFGAnalyzer().analyze(cfg_json)` + `HybridCFGMatcher` ile CFG-iso'yu baştan yapıp `stats.cfg_iso_matched_functions`'ı eziyordu; (b) `SignatureFuser` ile füzyonu baştan yapıp `computation_fusion_matches/accepted`'ı eziyordu (boş `fuse` sonucunu da sayarak); (c) bayrak açıkken MaxSMT çözücüsünü bütün ikili için ikinci kez koşturuyordu; (d) kabul edilen füzyon adlarını Faz 2 bittikten sonra `extracted_names`'e yazıp `computation_fusion_injected` sayıyordu (Faz 3 tohumunda `extracted_names` yok: hiçbir ada ulaşmıyordu, BORU-03); (e) `StructRecoveryEngine.recover`'ı girdi = çıktı = `struct_recovered` ile ikinci kez çağırıyordu (P10'dan beri motor bunu reddediyor) ve (f) koşulsuz `stats["timing_struct_recovery"]` yazıyordu.
+- Ölçülen etki (4 ikili, B0a = A1): `timing_struct_recovery` **0,0** (4/4; adımın gerçek süresi 0,15–0,60 sn iken). CFG-iso ve füzyon ikili başına iki kez koşuyordu.
+
+### Onarım
+- Blok (13 deyim, eski 2271-2534) silindi; yalnız bloğun okuduğu köprü adları (`reconstructed_dir`, `ghidra_types_json`, `cfg_json`, `_pcode_result`) kalktı. Faz 2 yorumu güncellendi (MaxSMT adayları P10'dan beri `struct_recovery` adımında). AST karşılaştırması (`a1b_dogrula.py`): blok ve dört köprü adı dışında `_execute_binary` ve diğer 38 tanım eskisiyle aynı.
+- stages.py 3 153 → **2 885** satır (A1 + A1b toplam: 5 985 → 2 885, −3 100).
+- Neyin koptuğu (P10.md § "P-S2'ye" ile karşılaştırıldı): CFG-iso / füzyon / MaxSMT değerleri artık adımların değeri; `computation_fusion_injected` sayacı ve enjeksiyon gitti (davranış yoktu); `--maxsmt-struct` adım yolundan çalışmaya devam ediyor (P10 Kalem 1; `tests/test_p10_maxsmt.py` 8/8 yeşil); `timing_struct_recovery` adımın süresi.
+
+### Sonra (A1b ↔ A1, 4 ikili) — ön kayıt H2a–H2c
+| ikili | `timing_struct_recovery` önce → sonra | adım süresi `struct_recovery_duration_s` (A1b) | `computation_fusion_matches` önce → sonra | `cfg_iso_matched_functions` | `computation_fusion_accepted` | `out/` gerçek fark |
+|---|---|---|---|---|---|---|
+| debian/coreutils/cat | 0,0 → **0,1** | 0,1453 | 66 → 66 | 0 → 0 | 0 → 0 | **0** |
+| debian/tree/tree | 0,0 → **0,2** | 0,1957 | 70 → 70 | 0 → 0 | 0 → 0 | **0** |
+| debian/coreutils/expr | 0,0 → **0,2** | 0,1547 | 68 → 68 | 0 → 0 | 0 → 0 | **0** |
+| mac/htop | 0,0 → **0,5** | 0,5219 | 196 → 196 | 0 → 0 | 0 → 0 | 2 (yalnız `data_flow_edges` 4 274 → 4 287: gürültü, aşağıda) |
+
+- H2a: `timing_struct_recovery` = `round(adım süresi, 1)` 4/4 (sapma 0); `computation_fusion_matches` önce = sonra (4/4; ≤ beklentisi eşitlikle tuttu: bu ikililerde boş `fuse` sonucu yok); accepted / CFG-iso 0 = 0; `computation_fusion_injected` iki tarafta da yok; istatistik anahtar kümesi aynı (`anahtar_kumesi.py`: 0). Oynak alan dışında değişen tek anahtar htop `data_flow_edges` — **gürültü**: `reconstruct.stats.data_flow_edges` aynı kodla da değişiyor (B0a ↔ B0b tree 120 ↔ 128) ve kaynağı `karadul/reconstruction/engineering/data_flow.py:783-797` (`ThreadPoolExecutor` + `as_completed` ile `all_func_code.update` / kenar listesi birleştirme sırası). htop girdisiyle Ghidra'sız yeniden oynatma (`veri_akisi_tekrar.py`, aynı girdi 6 kez, A1b çalışma alanı `reconstructed/commented`): `total_edges` = 4 286, 4 286, 4 286, 4 286, **4 273**, 4 286 (13 kenarlık salınım; koşular arasındaki fark da 13). Bloğun veri akışına giden bir yolu yok (veri akışı Faz 3 `deep_tracing`'de diskteki `.c`'den okuyor; bütün `.c` iki koşuda bayt bayt aynı). **H2a tuttu** (gürültü notuyla).
+- H2b: `out/` 4/4 ikilide oynak alan dışında aynı (htop'taki tek fark yukarıdaki gürültü sayacı; `.c` / `.h` / ad haritaları bayt bayt aynı). Çalışma alanında `reconstructed/struct_recovered/` (298 / 252 / 300 / 792 dosya) ve `struct_recovered_candidates/` A1 ↔ A1b oynak alan dışında aynı (`ws_yapi_karsilastir.py`: fark 0). B0a ↔ A1b de aynı sonuç (yalnız htop `data_flow_edges`). **H2b tuttu.**
+- H2c: stages.py kodunda (yorum dışı, AST) `HybridCFGMatcher`, `SignatureFuser`, `StructLayoutSolver`, `StructRecoveryEngine`, `CFGAnalyzer`, `computation_fusion_injected` geçişi **0** (`test_stages_hesaplama_kollarini_icermez`). **H2c tuttu.**
+- Aykırı öncül ("blok gerçekten etkisiz değil"): **çürütüldü** — bloğun silinmesi `out/`'ta ve yapı kurtarma ağacında hiçbir şeyi değiştirmedi; tek etkisi yanlış sayaçlardı (`timing_struct_recovery` 0,0).
+
+### Testler ve mutasyon
+- `tests/test_ps2_olu_kod.py::TestCiftKosuYok` (4 test): adımın `timing_struct_recovery` değeri (1,7) ve `computation_fusion_matches` (7) ezilmez, `computation_fusion_injected` yazılmaz; `StructRecoveryEngine.recover` ve `CFGAnalyzer.analyze` aşama kodundan hiç çağrılmaz; stages.py kodunda hesaplama kollarına atıf yok. A1 koduna (7c5ed28) karşı **4/4 kırmızı**, doğru nedenle (`0.0 == 1.7`, `1 == 7`, çağrılar `['cfg_analyze', 'struct_recover']`, yasak adlar bulundu).
+- `tests/test_computation_integration.py`: `TestMaxSMTCandidatePassesToEngine` yeniden yazıldı (aday yolu `struct_recovery` adımının `requires`'ında, stages.py'de kopya yok; eski koda karşı kırmızı); `TestFusionInjectsExtractedNames` silindi (metin testiydi, davranış yoktu; gerekçe dosyada yorum olarak).
+- `mutation_specs_ps2.json` son kodla **8/8 öldü** (A1 4 + A1b 4: süre ezilir, füzyon sayacı ezilir, yapı motoru geri gelir, CFG-iso geri gelir). P10 mutant tanımı son kodla **32/32**; yamalı başka paket tanımları son kodla 50/50, 34/34, 13/13.

@@ -5,10 +5,12 @@ Silinenler adım kipinde hiç çalışmıyordu: eski tek gövdeli Faz 1 yolu (``
 ``raise NotImplementedError`` ve ``DeobfuscationStage``'in ``use_deep=False`` /
 ``_execute_legacy`` yolu. Kanıt ve ölçüm: ``docs/arge/2026-11-18_onarim/P-S2.md``.
 
-Bu dosya iki şeyi kilitler:
+Bu dosya üç şeyi kilitler:
 1. Ölü kod geri gelmez (eski kodda KIRMIZI).
 2. Tek kalan yol bozulmaz: ``use_step_registry=False`` hâlâ yüksek sesle uyarıp adım
    koşucusunun üç fazını koşar (eski kodda da yeşil; mutantla sınanır).
+3. K-3 A1b (BORU-01): "ESKİ monolith entegrasyon" bloğu silindi; CFG-iso, füzyon ve yapı
+   kurtarma aşama kodunda ikinci kez koşmaz, adımların istatistikleri ezilmez.
 """
 
 from __future__ import annotations
@@ -158,3 +160,75 @@ class TestTekYol:
         assert not any("use_step_registry" in r.getMessage() for r in caplog.records)
         assert sonuc.success is True, sonuc.errors
         assert len(kosulan) == 3
+
+
+# ---------------------------------------------------------------------------
+# K-3 A1b (BORU-01): "ESKİ monolith entegrasyon" bloğu silindi. Blok adım kipinde de
+# koşulsuz koşuyordu: CFG-iso, füzyon ve yapı kurtarmayı her ikilide İKİNCİ kez koşturup
+# adımların istatistiklerini eziyordu (timing_struct_recovery ~0,0 ile).
+# ---------------------------------------------------------------------------
+
+
+class TestCiftKosuYok:
+    def test_adimin_yapi_kurtarma_suresi_ezilmez(self, tmp_path, monkeypatch) -> None:
+        sonuc, _ = _uc_faz(tmp_path, monkeypatch, Config(),
+                           faz2_stats={"timing_struct_recovery": 1.7})
+        assert sonuc.stats["timing_struct_recovery"] == 1.7
+
+    def test_adimin_fuzyon_sayaci_ezilmez(self, tmp_path, monkeypatch) -> None:
+        """Füzyon adımının sayacı aşama kodunda yeniden hesaplanmaz (blok 1 sayardı)."""
+        sm = SimpleNamespace(original_name="FUN_00101000", matched_name="memcpy",
+                             confidence=0.9)
+        sonuc, _ = _uc_faz(
+            tmp_path, monkeypatch, Config(),
+            faz1_artifacts={"sig_matches": [sm]},
+            faz1_stats={"computation_fusion_matches": 7, "computation_fusion_accepted": 0},
+        )
+        assert sonuc.stats["computation_fusion_matches"] == 7
+        assert "computation_fusion_injected" not in sonuc.stats
+
+    def test_yapi_motoru_ve_cfg_iso_asama_kodundan_cagrilmaz(self, tmp_path, monkeypatch) -> None:
+        """Yapı kurtarma motoru ve CFG-iso yalnız adımlarda koşar (ikili başına bir kez)."""
+        import karadul.analyzers.cfg_analyzer as cfg_mod
+        import karadul.reconstruction.engineering as eng_mod
+
+        cagri: list[str] = []
+
+        class _SayanMotor:
+            def __init__(self, *a, **k) -> None:
+                pass
+
+            def recover(self, **kw):
+                cagri.append("struct_recover")
+                return SimpleNamespace(success=False, rewritten_files=[], total_structs=0,
+                                       field_access_rewrites=0, types_header_path=None)
+
+        monkeypatch.setattr(eng_mod, "StructRecoveryEngine", _SayanMotor)
+        monkeypatch.setattr(cfg_mod.CFGAnalyzer, "analyze",
+                            lambda self, p: cagri.append("cfg_analyze"))
+        cfg_json = tmp_path / "ghidra_cfg.json"
+        cfg_json.write_text('{"functions": []}', encoding="utf-8")
+        sonuc, _ = _uc_faz(
+            tmp_path, monkeypatch, Config(),
+            faz1_artifacts={"cfg_json_path": cfg_json},
+            faz2_artifacts={"updated_eng_result": SimpleNamespace(success=True, algorithms=[])},
+        )
+        assert sonuc.success is True, sonuc.errors
+        assert cagri == []
+
+    def test_stages_hesaplama_kollarini_icermez(self) -> None:
+        """Kodda (yorum dışı) hesaplama kollarına ve enjeksiyon sayacına atıf yok."""
+        agac = ast.parse(Path(stages_mod.__file__).read_text(encoding="utf-8"))
+        adlar: set[str] = set()
+        for n in ast.walk(agac):
+            if isinstance(n, ast.Name):
+                adlar.add(n.id)
+            elif isinstance(n, ast.Attribute):
+                adlar.add(n.attr)
+            elif isinstance(n, ast.ImportFrom):
+                adlar.update(a.name for a in n.names)
+            elif isinstance(n, ast.Constant) and isinstance(n.value, str):
+                adlar.add(n.value)
+        yasak = {"HybridCFGMatcher", "SignatureFuser", "StructLayoutSolver",
+                 "StructRecoveryEngine", "CFGAnalyzer", "computation_fusion_injected"}
+        assert adlar.isdisjoint(yasak), adlar & yasak

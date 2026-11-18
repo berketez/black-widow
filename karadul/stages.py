@@ -2071,7 +2071,6 @@ class ReconstructionStage(Stage):
         assert rc.reconstructed_dir is not None, "_prepare_workspace reconstructed_dir set etmedi"
         static_dir: Path = rc.static_dir
         deob_dir: Path = rc.dirs["deobfuscated"]
-        reconstructed_dir: Path = rc.reconstructed_dir
 
         _use_step_registry = bool(
             getattr(context.config, "pipeline", None)
@@ -2154,16 +2153,12 @@ class ReconstructionStage(Stage):
         functions_json = _a["functions_json_path"]
         strings_json = _a["strings_json_path"]
         call_graph_json = _a["call_graph_json_path"]
-        ghidra_types_json = _a["ghidra_types_json_path"]
         xrefs_json = _a["xrefs_json_path"]
-        cfg_json = _a["cfg_json_path"]
         # ghidra_metadata — parse cache + signature DB
         _func_data = _a["functions_data"]
         _string_data = _a["strings_data"]
         _call_graph_data = _a["call_graph_data"]
         sig_matches = _a["sig_matches"]
-        # pcode_cfg_analysis
-        _pcode_result = _a["pcode_result"]
         # algorithm_id + parallel_algo_eng -> confidence_filter bunlari
         # filtered artifact olarak tekrar expose eder.
         algo_result = _a["algo_result_filtered"]
@@ -2205,9 +2200,11 @@ class ReconstructionStage(Stage):
         # degil cunku feedback_loop uretir). feedback_loop step'inin
         # needs listesi Phase 1'den gelen her seyi kapsiyor.
         try:
-            # v1.10.0 M4: computation_struct_recovery feedback_loop'tan
-            # sonra, eski struct_recovery'den ONCE calisir -- MaxSMT
-            # adaylarini StructRecoveryEngine'e candidate olarak gecmeli.
+            # v1.10.0 M4: computation_struct_recovery struct_recovery'den ONCE
+            # calisir; MaxSMT adaylarini struct_recovery adimi motora iletir
+            # (P10, BORU-04). CFG-iso / fuzyon / yapi kurtarma YALNIZ adimlarda
+            # kosar: asama kodundaki ikinci kopya ("ESKI monolith entegrasyon"
+            # blogu, BORU-01) 2026-11-18'de silindi (K-3 A1b, P-S2).
             runner_phase2 = PipelineRunner(steps=[
                 "feedback_loop",
                 "computation_struct_recovery",
@@ -2267,271 +2264,6 @@ class ReconstructionStage(Stage):
             extracted_names, static_dir, context, stats,
             kesin=_ks1_binding, meta=_pre_name_meta,
         )
-
-        # === v1.10.0 M4 ESKI monolith entegrasyon: computation paketleri ===
-        # HEM step registry HEM bu monolith yolu desteklenir (Berke karari).
-        # Feature flag'ler kapaliysa hicbir is yapilmaz, davranis ayni kalir.
-        # Sonuc: MaxSMT struct adaylari StructRecoveryEngine'e candidate olarak
-        # iletilir; fusion/cfg_iso bilgileri NameMerger icin artifact'ta tutulur.
-        _computation_struct_candidates: list = []
-        _cfg_iso_matches_monolith: dict = {}
-        _fused_matches_monolith: dict = {}
-
-        # --- CFG Iso (assembly_analysis sonrasi zaten geldi; monolith yolunda
-        # cfg_result su an mevcut degilse atla) ---
-        _monolith_cfg_iso_enabled = getattr(
-            context.config, "computation_recovery", None,
-        ) and getattr(context.config.computation_recovery, "enable_cfg_iso", False)
-        if _monolith_cfg_iso_enabled:
-            try:
-                from karadul.analyzers.cfg_analyzer import CFGAnalyzer
-                from karadul.computation.cfg_iso import (
-                    HybridCFGMatcher,
-                    default_template_bank,
-                )
-                from karadul.pipeline.steps.cfg_iso_match import (
-                    _ghidra_cfg_to_attributed,
-                )
-
-                _cfg_json_path = Path(cfg_json) if isinstance(cfg_json, (str, Path)) else None
-                _cfg_iso_result = None
-                if _cfg_json_path and _cfg_json_path.exists():
-                    _cfg_iso_result = CFGAnalyzer().analyze(_cfg_json_path)
-                if _cfg_iso_result and _cfg_iso_result.functions:
-                    _matcher = HybridCFGMatcher(
-                        config=context.config.computation_recovery,
-                        templates=default_template_bank(),
-                    )
-                    _top_k = int(getattr(
-                        context.config.computation_recovery,
-                        "cfg_iso_top_k_candidates", 10,
-                    ))
-                    _min_conf = float(getattr(
-                        context.config.computation_recovery,
-                        "cfg_iso_min_confidence", 0.7,
-                    ))
-                    for _fn in _cfg_iso_result.functions:
-                        _fn_addr = getattr(_fn, "address", None)
-                        if not _fn_addr:
-                            continue
-                        try:
-                            _attr = _ghidra_cfg_to_attributed(_fn)
-                            if _attr.node_count() == 0:
-                                continue
-                            _top = _matcher.match(_attr, top_k=_top_k)
-                            if _top and _top[0].confidence >= _min_conf:
-                                _cfg_iso_matches_monolith[_fn_addr] = _top[0]
-                        except Exception:
-                            continue
-                    stats["cfg_iso_matched_functions"] = len(_cfg_iso_matches_monolith)
-                    logger.info(
-                        "(monolith) CFG iso match: %d fonksiyon eslesti",
-                        len(_cfg_iso_matches_monolith),
-                    )
-            except ImportError:
-                logger.debug("(monolith) cfg_iso importable degil, atlaniyor")
-            except Exception as _exc:
-                logger.warning("(monolith) cfg_iso hatasi (atlaniyor): %s", _exc)
-
-        # --- Signature Fusion (log-odds ensemble) ---
-        _monolith_fusion_enabled = getattr(
-            context.config, "computation", None,
-        ) and getattr(
-            context.config.computation, "enable_computation_fusion", False,
-        )
-        if _monolith_fusion_enabled:
-            try:
-                from karadul.computation.fusion import SignatureFuser
-                from karadul.pipeline.steps.computation_fusion import (
-                    _cfg_match_to_candidate,
-                    _sig_match_to_candidate,
-                )
-
-                _fuser = SignatureFuser.from_computation_config(
-                    context.config.computation,
-                )
-                _sig_by_key: dict = {}
-                for _sm in (sig_matches or []):
-                    _key = getattr(_sm, "original_name", None)
-                    if not _key:
-                        continue
-                    _prev = _sig_by_key.get(_key)
-                    if _prev is None or getattr(_sm, "confidence", 0.0) > getattr(
-                        _prev, "confidence", 0.0,
-                    ):
-                        _sig_by_key[_key] = _sm
-                _all_keys = set(_sig_by_key) | set(_cfg_iso_matches_monolith)
-                for _key in _all_keys:
-                    _cands = []
-                    if _key in _sig_by_key:
-                        _cands.append(_sig_match_to_candidate(_sig_by_key[_key]))
-                    if _key in _cfg_iso_matches_monolith:
-                        _cands.append(
-                            _cfg_match_to_candidate(
-                                _cfg_iso_matches_monolith[_key], _key,
-                            ),
-                        )
-                    if _cands:
-                        _fused_matches_monolith[_key] = _fuser.fuse(_cands)
-                _n_accept = sum(
-                    1 for _flist in _fused_matches_monolith.values()
-                    for _fm in _flist if getattr(_fm, "decision", "") == "accept"
-                )
-                stats["computation_fusion_matches"] = len(_fused_matches_monolith)
-                stats["computation_fusion_accepted"] = _n_accept
-                logger.info(
-                    "(monolith) computation fusion: %d fonksiyon, %d accept",
-                    len(_fused_matches_monolith), _n_accept,
-                )
-            except ImportError:
-                logger.debug("(monolith) computation fusion importable degil, atlaniyor")
-            except Exception as _exc:
-                logger.warning("(monolith) computation fusion hatasi (atlaniyor): %s", _exc)
-
-        # --- MaxSMT Struct Recovery ---
-        _monolith_struct_enabled = getattr(
-            context.config, "computation", None,
-        ) and getattr(
-            context.config.computation,
-            "enable_computation_struct_recovery", False,
-        )
-        if _monolith_struct_enabled and _pcode_result is not None:
-            try:
-                from karadul.computation.struct_recovery import StructLayoutSolver
-                from karadul.pipeline.steps.computation_struct_recovery import (
-                    _extract_accesses_from_pcode,
-                )
-
-                _accesses = _extract_accesses_from_pcode(_pcode_result)
-                if _accesses:
-                    _solver = StructLayoutSolver(context.config.computation)
-                    _struct_result = _solver.solve_from_raw(
-                        accesses=_accesses,
-                        max_time_seconds=context.config.computation.struct_solver_timeout,
-                    )
-                    _computation_struct_candidates = list(
-                        _struct_result.assigned_structs.values(),
-                    )
-                    stats["computation_struct_solved"] = len(
-                        _computation_struct_candidates,
-                    )
-                    stats["computation_struct_confidence"] = round(
-                        _struct_result.confidence, 3,
-                    )
-                    logger.info(
-                        "(monolith) MaxSMT struct: %d aday (%.0f%% acilanmis)",
-                        len(_computation_struct_candidates),
-                        _struct_result.confidence * 100,
-                    )
-            except ImportError:
-                logger.debug("(monolith) MaxSMT struct importable degil (z3 yok?)")
-            except Exception as _exc:
-                logger.warning("(monolith) MaxSMT struct hatasi (atlaniyor): %s", _exc)
-
-        # --- Fusion accepted match'leri extracted_names'e enjekte et ---
-        # NameMerger, `computation_fusion` source weight'i (0.90) ile bu
-        # isimleri butunlestirir. Sadece decision == "accept" ve
-        # calibrated_probability >= accept_threshold olanlar gecer.
-        if _fused_matches_monolith and isinstance(extracted_names, dict):
-            _added = 0
-            for _key, _flist in _fused_matches_monolith.items():
-                for _fm in _flist:
-                    if getattr(_fm, "decision", "") != "accept":
-                        continue
-                    _new_name = getattr(_fm, "symbol_name", "") or ""
-                    if not _new_name or _new_name == _key:
-                        continue
-                    # Onceden isimlendirilmis FUN_xxx'i ezme (yuksek guvenli).
-                    if _key.startswith(("FUN_", "sub_", "thunk_")):
-                        if _key not in extracted_names:
-                            extracted_names[_key] = _new_name
-                            _added += 1
-            if _added > 0:
-                stats["computation_fusion_injected"] = _added
-                logger.info(
-                    "(monolith) computation fusion extracted_names'e %d isim enjekte edildi",
-                    _added,
-                )
-
-        # === v1.10.0 M4 ESKI monolith entegrasyon sonu ===
-
-        # 3.1. Engineering Struct Recovery -- algoritma-bazli struct isimlendirme
-        _step_start = time.monotonic()
-        if context.config.binary_reconstruction.enable_struct_recovery and eng_result:
-            try:
-                from karadul.reconstruction.engineering import StructRecoveryEngine
-                struct_engine = StructRecoveryEngine(context.config)
-
-                # Algoritma bilgisini topla
-                all_algos = _collect_all_algorithms(algo_result, eng_result)
-
-                struct_dir = reconstructed_dir / "struct_recovered"
-                struct_dir.mkdir(parents=True, exist_ok=True)
-
-                # v1.5.2: Computation Recovery struct verilerini hazirla
-                _comp_structs_for_eng = None
-                if _computation_result and _computation_result.success:
-                    _cs_layer = _computation_result.layer_results.get("constraint_solver")
-                    if _cs_layer and hasattr(_cs_layer, "structs") and _cs_layer.structs:
-                        _comp_structs_for_eng = [
-                            s.to_dict() for s in _cs_layer.structs
-                        ]
-
-                # v1.10.0 M4 (Berke karari): MaxSMT kurtarma adaylarini
-                # EKLE olarak StructRecoveryEngine'e gecir. Eski engine bu
-                # candidate'lari kendi merge mantigiyla isler (computation
-                # recovery struct'lari gibi best-effort aday seti).
-                if _computation_struct_candidates:
-                    _comp_structs_for_eng = list(_comp_structs_for_eng or [])
-                    for _sc in _computation_struct_candidates:
-                        try:
-                            _comp_structs_for_eng.append({
-                                "name": getattr(_sc, "name", "maxsmt_struct"),
-                                "size": getattr(_sc, "size", 0),
-                                "fields": [
-                                    {
-                                        "offset": getattr(_f, "offset", 0),
-                                        "size": getattr(_f, "size", 0),
-                                        "type_hint": getattr(_f, "type_hint", None),
-                                    }
-                                    for _f in getattr(_sc, "fields", [])
-                                ],
-                                "source": "computation_struct_recovery",
-                            })
-                        except Exception:
-                            continue
-                    logger.debug(
-                        "StructRecoveryEngine'e %d MaxSMT candidate gecildi",
-                        len(_computation_struct_candidates),
-                    )
-
-                struct_result = struct_engine.recover(
-                    decompiled_dir=decompiled_dir,
-                    functions_json=functions_json,
-                    ghidra_types_json=ghidra_types_json,
-                    call_graph_json=call_graph_json,
-                    output_dir=struct_dir,
-                    algorithm_matches=all_algos,
-                    computation_structs=_comp_structs_for_eng,
-                )
-                if struct_result.success:
-                    stats["structs_enriched"] = struct_result.total_structs
-                    stats["field_access_rewrites"] = struct_result.field_access_rewrites
-                    if struct_result.types_header_path:
-                        artifacts["enriched_types_header"] = struct_result.types_header_path
-                    # Sonraki adimlar struct-recovered output'u kullansin
-                    if struct_result.rewritten_files:
-                        decompiled_dir = struct_dir
-                    logger.info(
-                        "Struct Recovery: %d struct, %d field rewrite",
-                        struct_result.total_structs, struct_result.field_access_rewrites,
-                    )
-            except ImportError:
-                logger.debug("StructRecoveryEngine bulunamadi, atlaniyor")
-            except Exception as exc:
-                logger.warning("Struct recovery hatasi (atlaniyor): %s", exc)
-                errors.append(f"Struct recovery hatasi: {exc}")
-        stats["timing_struct_recovery"] = round(time.monotonic() - _step_start, 1)
 
         # v1.10.0 M1 T3.5: Phase 3 — step registry runner2. 10 post-feedback
         # step'i calistir (inline_detection ... finalize). Finalize step'i

@@ -32,6 +32,38 @@
    "test": "tests/test_rapor_sayaclari.py::TestTurSayisi",
    "find": "        _seed: dict[str, Any] = {\n",
    "replace": "        stats[\"pipeline_iterations_run\"] = 0\n        _seed: dict[str, Any] = {\n"
+  },
+  {
+   "id": "ps2_a1b_sure_ezilir",
+   "desc": "aşama kodu adımın timing_struct_recovery değerini ezer (silinen bloğun koşulsuz yazımı)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps2_olu_kod.py::TestCiftKosuYok::test_adimin_yapi_kurtarma_suresi_ezilmez",
+   "find": "        _seed: dict[str, Any] = {\n",
+   "replace": "        stats[\"timing_struct_recovery\"] = 0.0\n        _seed: dict[str, Any] = {\n"
+  },
+  {
+   "id": "ps2_a1b_fuzyon_ezilir",
+   "desc": "aşama kodu füzyon sayacını yeniden hesaplayıp ezer (silinen bloğun ikinci füzyonu)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps2_olu_kod.py::TestCiftKosuYok::test_adimin_fuzyon_sayaci_ezilmez",
+   "find": "        _seed: dict[str, Any] = {\n",
+   "replace": "        stats[\"computation_fusion_matches\"] = len(sig_matches or [])\n        _seed: dict[str, Any] = {\n"
+  },
+  {
+   "id": "ps2_a1b_yapi_motoru_geri",
+   "desc": "yapı kurtarma motoru aşama kodundan ikinci kez çağrılır",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps2_olu_kod.py::TestCiftKosuYok::test_yapi_motoru_ve_cfg_iso_asama_kodundan_cagrilmaz",
+   "find": "        _seed: dict[str, Any] = {\n",
+   "replace": "        from karadul.reconstruction.engineering import StructRecoveryEngine\n        StructRecoveryEngine(context.config).recover(decompiled_dir=decompiled_dir)\n        _seed: dict[str, Any] = {\n"
+  },
+  {
+   "id": "ps2_a1b_cfg_iso_geri",
+   "desc": "CFG-iso çözümlemesi aşama kodunda ikinci kez koşar",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps2_olu_kod.py::TestCiftKosuYok::test_yapi_motoru_ve_cfg_iso_asama_kodundan_cagrilmaz",
+   "find": "        _seed: dict[str, Any] = {\n",
+   "replace": "        from karadul.analyzers.cfg_analyzer import CFGAnalyzer\n        CFGAnalyzer().analyze(_a[\"cfg_json_path\"])\n        _seed: dict[str, Any] = {\n"
   }
  ]
 }

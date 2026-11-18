@@ -424,44 +424,37 @@ class TestCLIFlagWiring:
 
 
 # ---------------------------------------------------------------------------
-# 10. MaxSMT -> StructRecoveryEngine candidate pass (monolith entegrasyon)
+# 10. MaxSMT -> StructRecoveryEngine candidate pass (yalnız adım tarafı)
 # ---------------------------------------------------------------------------
 
 
 class TestMaxSMTCandidatePassesToEngine:
-    """Monolith yolunda _computation_struct_candidates'in
-    StructRecoveryEngine'e candidate olarak gecmesini dogrular.
+    """MaxSMT adayları yapı motoruna YALNIZ ``struct_recovery`` adımı tarafından iletilir.
 
-    Bu test kod path'inin SATIR-LEVEL bir kontrolu (stages.py icinde
-    ilgili kod blogunun var oldugunu ve dogru kullanildigini).
+    P10 (BORU-04) aday yolunu adıma taşıdı; ``stages.py``'deki ikinci kopya (çözücüyü
+    bütün ikili için yeniden koşturup adayları motorun okumadığı anahtarlarla veren
+    "monolith" blok, BORU-01) 2026-11-18'de silindi (K-3 A1b, P-S2). Davranış testi:
+    ``tests/test_p10_maxsmt.py``; çift koşunun dönmediği: ``tests/test_ps2_olu_kod.py``.
     """
 
-    def test_stages_contains_maxsmt_candidate_passthrough(self) -> None:
+    def test_aday_yolu_adimda_stages_kopyasi_yok(self) -> None:
+        import karadul.pipeline.steps  # noqa: F401  (adım kayıtları)
         import karadul.stages as stages
+        from karadul.pipeline.registry import get_step
 
+        assert "recovered_struct_candidates" in get_step("struct_recovery").requires
         src = Path(stages.__file__).read_text(encoding="utf-8")
-        # Monolith yolunda MaxSMT candidate StructRecoveryEngine'e gecer
-        assert "_computation_struct_candidates" in src
-        assert "computation_struct_recovery" in src
-        # StructRecoveryEngine'e computation_structs= olarak gider
-        assert "computation_structs=_comp_structs_for_eng" in src
+        assert "_computation_struct_candidates" not in src
+        assert "StructLayoutSolver" not in src
 
 
 # ---------------------------------------------------------------------------
-# 11. Fusion extracted_names enjeksiyonu
+# 11. Fusion extracted_names enjeksiyonu: kaldırıldı (P-S2, 2026-11-18)
 # ---------------------------------------------------------------------------
-
-
-class TestFusionInjectsExtractedNames:
-    def test_accepted_fusion_adds_to_extracted_names(self) -> None:
-        """stages.py monolith yolunda accept decision'lar extracted_names'e yazilir."""
-        import karadul.stages as stages
-
-        src = Path(stages.__file__).read_text(encoding="utf-8")
-        assert "_fused_matches_monolith" in src
-        assert "computation_fusion_injected" in src
-        # FUN_/sub_/thunk_ kontrolu -- debug sembollerini ezme
-        assert "FUN_" in src and "sub_" in src
+# ``TestFusionInjectsExtractedNames`` stages.py metninde "monolith" enjeksiyon kodunu
+# arıyordu. Enjeksiyon Faz 2 bittikten sonra yapıldığı için hiçbir ada ulaşmıyordu
+# (BORU-03), yalnız ``computation_fusion_injected`` sayacı "enjekte edildi" diyebilirdi.
+# Blokla birlikte silindi (K-3 A1b); davranış yoktu, test de kalktı.
 
 
 # ---------------------------------------------------------------------------
