@@ -303,11 +303,14 @@ class TestLimits:
         ])
         binp = tmp_path / "app.bin"
         binp.write_bytes(blob)
-        config.security.max_archive_extract_size = 3 * len(body)
+        # BICIM-14: bütçe CArchive girdileriyle (burada iki PYZ blobu, diske
+        # yazılır) ORTAK; PYZ modüllerine kalan = bütçe - CArchive baytları.
+        config.security.max_archive_extract_size = 3 * len(body) + len(pyz1) + len(pyz2)
         res = PyInstallerExtractor(config).extract(binp, tmp_path / "out")
         names = sorted(ef.original_name for ef in res.extracted_files
                        if ef.metadata.get("pyz_module"))
         assert names == ["a1", "a2", "b1"]
+        assert res.report["carchive_bytes_inflated"] == len(pyz1) + len(pyz2)
 
 
 # ---------------------------------------------------------------------------

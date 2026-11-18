@@ -63,7 +63,57 @@ def _is_windows_reserved(name: str) -> bool:
 
 # v1.10.0 Batch 5B CRITICAL-3: PyInstaller zlib decompress limit (100MB).
 # staticmethod _extract_entry icinde self.config erisemiyor; modul sabit.
+# extract() artik SecurityConfig.max_decompress_bytes'i parametre olarak verir
+# (BICIM-14); bu sabit dogrudan cagrilarin varsayilanidir.
 _MAX_PYINSTALLER_DECOMPRESS = 100 * 1024 * 1024
+
+
+def _inflate_capped(raw: bytes, cap: int) -> tuple[Optional[bytes], int]:
+    """zlib akışını en çok ``cap`` bayta aç: (veri | None, üretilen bayt).
+
+    BICIM-14: ``safe_zlib_decompress`` bomba durumunda kaç bayt ürettiğini
+    söylemiyordu; toplam bütçe yalnız yazılanı sayarsa 100 000 bomba girdisi
+    her biri ``cap`` kadar CPU harcatabilirdi. Üretilen bayt (reddedilse de)
+    bütçeden düşülür.
+    """
+    try:
+        d = zlib.decompressobj()
+        out = d.decompress(raw, cap + 1)
+        if len(out) > cap:
+            return None, len(out)
+        if d.unconsumed_tail:
+            return None, len(out)
+        tail = d.flush()
+        if len(out) + len(tail) > cap:
+            return None, len(out) + len(tail)
+        return out + tail, len(out) + len(tail)
+    except zlib.error:
+        return None, 0
+
+
+def _unique_rel_path(rel: str, used: set[str]) -> str:
+    """Göreli yolu ``used`` içinde tekil yap (NFC + casefold).
+
+    Aynı adlı iki TOC girdisi ya da harf duyarsız dosya sisteminde ``A``/``a``
+    aynı dosyaya yazılıp biri sessizce kayboluyordu (BICIM-14). Çakışmada son
+    bileşene uzantıdan önce ``~N`` eklenir: ``dir/foo~2.so``.
+    """
+    def key(p: str) -> str:
+        return unicodedata.normalize("NFC", p).casefold()
+
+    k0 = key(rel)
+    if k0 not in used:
+        used.add(k0)
+        return rel
+    head, tail = os.path.split(rel)
+    stem, ext = os.path.splitext(tail)
+    n = 2
+    while True:
+        cand = os.path.join(head, "%s~%d%s" % (stem, n, ext)) if head else "%s~%d%s" % (stem, n, ext)
+        if key(cand) not in used:
+            used.add(key(cand))
+            return cand
+        n += 1
 
 
 # ---------------------------------------------------------------------------
@@ -142,12 +192,15 @@ class UnpackResult:
     errors: list[str] = field(default_factory=list)
     duration_seconds: float = 0.0
     output_dir: Optional[Path] = None
+    # Çıkarma raporu (BICIM-14): bütçe, ad çakışması, atlanan girdiler.
+    report: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """JSON-serializable dict'e donustur."""
         return {
             "success": self.success,
             "packing_type": self.packing_type.value,
+            "report": self.report,
             "extracted_count": len(self.extracted_files),
             "extracted_files": [
                 {
@@ -1437,10 +1490,46 @@ class PyInstallerExtractor:
         output_dir.mkdir(parents=True, exist_ok=True)
         errors = []
         extracted = []
+        sec = self.config.security
+        report: dict[str, Any] = {
+            "budget_bytes": int(sec.max_archive_extract_size),
+            "carchive_bytes_inflated": 0,
+            "entries_total": 0,
+            "entries_not_extracted_budget": 0,
+            "renamed": [],
+            "budget_exceeded": False,
+        }
+
+        # BICIM-14: dosyanın tamamı belleğe alınmadan önce boyut denetimi.
+        try:
+            file_size = binary_path.stat().st_size
+        except OSError as exc:
+            return UnpackResult(
+                success=False,
+                packing_type=PackingType.PYINSTALLER,
+                errors=["Dosya okunamadi: %s" % exc],
+                duration_seconds=time.monotonic() - start,
+                output_dir=output_dir,
+                report=report,
+            )
+        if file_size > sec.max_binary_size_bytes:
+            return UnpackResult(
+                success=False,
+                packing_type=PackingType.PYINSTALLER,
+                errors=[
+                    "Dosya boyutu %d bayt, ust sinir %d (security.max_binary_size_bytes); "
+                    "PyInstaller arsivi acilmadi" % (file_size, sec.max_binary_size_bytes)
+                ],
+                duration_seconds=time.monotonic() - start,
+                output_dir=output_dir,
+                report=report,
+            )
 
         try:
             with open(binary_path, "rb") as f:
-                data = f.read()
+                data = f.read(sec.max_binary_size_bytes + 1)
+            if len(data) > sec.max_binary_size_bytes:
+                raise OSError("dosya okunurken buyudu (ust sinir asildi)")
         except OSError as exc:
             return UnpackResult(
                 success=False,
@@ -1480,16 +1569,58 @@ class PyInstallerExtractor:
             len(toc_entries), pkg_start, toc_info["toc_offset"],
         )
 
-        # Her entry'yi cikar
-        for entry in toc_entries:
+        # Her entry'yi cikar. BICIM-14: toplam açılmış boyut bütçesi
+        # (security.max_archive_extract_size) CArchive ile PYZ arasında
+        # paylaşılır; aynı/harf duyarsız eşit adlar tekilleştirilir.
+        report["entries_total"] = len(toc_entries)
+        budget = int(sec.max_archive_extract_size)
+        per_entry_cap = int(sec.max_decompress_bytes)
+        used_paths: set[str] = set()
+        for idx, entry in enumerate(toc_entries):
+            if budget <= 0:
+                report["budget_exceeded"] = True
+                report["entries_not_extracted_budget"] += len(toc_entries) - idx
+                break
+            accounting: dict[str, Any] = {}
             try:
                 extracted_file = self._extract_entry(
                     data, pkg_start, entry, output_dir,
+                    max_size=per_entry_cap,
+                    budget_left=budget,
+                    used_paths=used_paths,
+                    accounting=accounting,
                 )
                 if extracted_file is not None:
                     extracted.append(extracted_file)
             except Exception as exc:
                 errors.append("Entry cikartma hatasi (%s): %s" % (entry.get("name", "?"), exc))
+            consumed = int(accounting.get("consumed", 0))
+            budget -= consumed
+            report["carchive_bytes_inflated"] += consumed
+            if accounting.get("over_budget"):
+                # Girdi kalan toplam bütçeye sığmadı: çıkarma burada durur.
+                report["budget_exceeded"] = True
+                report["entries_not_extracted_budget"] += 1
+                budget = 0
+            if accounting.get("renamed_to"):
+                report["renamed"].append(
+                    {"from": entry.get("name"), "to": accounting["renamed_to"]},
+                )
+        if report["budget_exceeded"]:
+            errors.append(
+                "PyInstaller CArchive toplam acilmis boyut butcesi (%d bayt) asildi: "
+                "%d girdi cikarilmadi" % (
+                    report["budget_bytes"],
+                    report["entries_not_extracted_budget"],
+                )
+            )
+        if report["renamed"]:
+            errors.append(
+                "PyInstaller CArchive: %d girdi ad cakismasi nedeniyle yeniden "
+                "adlandirildi (ayni ad ya da harf duyarsiz esit ad; ilk ornek: %s -> %s)"
+                % (len(report["renamed"]), report["renamed"][0]["from"],
+                   report["renamed"][0]["to"])
+            )
 
         # PYZ (ZlibArchive): kullanıcı modüllerinin çoğu buradadır; CArchive
         # yalnız ham blobu verir, içindeki modüller ayrıca açılır.
@@ -1497,7 +1628,10 @@ class PyInstallerExtractor:
             e.get("name") == _PYI_CRYPTO_KEY_MODULE for e in toc_entries
         )
         extracted.extend(
-            self._extract_pyz_archives(extracted, output_dir, crypto_key_present, errors)
+            self._extract_pyz_archives(
+                extracted, output_dir, crypto_key_present, errors,
+                budget=max(budget, 0),
+            )
         )
 
         # Politika PYZ ile aynı: CArchive code girdileri de sınıflanır (sürüm: PYZ
@@ -1542,6 +1676,7 @@ class PyInstallerExtractor:
             errors=errors,
             duration_seconds=duration,
             output_dir=output_dir,
+            report=report,
         )
 
     def _extract_pyz_archives(
@@ -1550,15 +1685,19 @@ class PyInstallerExtractor:
         output_dir: Path,
         crypto_key_present: bool,
         errors: list[str],
+        budget: Optional[int] = None,
     ) -> list[ExtractedFile]:
         """CArchive'den çıkan PYZ bloblarını aç (``<ad>_extracted/`` altına).
 
         Her PYZ'nin raporu kendi ExtractedFile'ının ``metadata["pyz"]`` alanına
         yazılır. Toplam açılmış boyut bütçesi (``SecurityConfig.
-        max_archive_extract_size``) tüm PYZ arşivleri arasında paylaşılır.
+        max_archive_extract_size``) tüm PYZ arşivleri arasında paylaşılır;
+        ``budget`` verilirse (extract: CArchive'den kalan) o kullanılır
+        (BICIM-14: CArchive + PYZ ortak bütçe).
         """
         members: list[ExtractedFile] = []
-        budget = self.config.security.max_archive_extract_size
+        if budget is None:
+            budget = self.config.security.max_archive_extract_size
         output_root = output_dir.resolve()
         for ef in list(extracted):
             # CArchive 'z' girdisi (TOC_TYPES'ta "ZIPFILE"); içerik magic ile doğrulanır.
@@ -1722,6 +1861,11 @@ class PyInstallerExtractor:
         pkg_start: int,
         entry: dict[str, Any],
         output_dir: Path,
+        *,
+        max_size: int = _MAX_PYINSTALLER_DECOMPRESS,
+        budget_left: Optional[int] = None,
+        used_paths: Optional[set[str]] = None,
+        accounting: Optional[dict[str, Any]] = None,
     ) -> Optional[ExtractedFile]:
         """Tek bir TOC entry'sini dosyaya cikar.
 
@@ -1730,10 +1874,21 @@ class PyInstallerExtractor:
             pkg_start: Package baslangic offset'i.
             entry: TOC entry bilgileri.
             output_dir: Cikti dizini.
+            max_size: Girdi basina acilmis boyut siniri (sikistirilmis girdi).
+            budget_left: Kalan toplam butce (None = sinirsiz). Girdi sigmazsa
+                yazilmaz ve ``accounting["over_budget"] = True``.
+            used_paths: Bu cikarmada kullanilan goreli yollar (NFC+casefold);
+                verilirse ad cakismasi ``ad~N`` ile cozulur (BICIM-14).
+            accounting: Cikti: ``consumed`` (butceden dusulecek bayt; reddedilen
+                bomba girdisinin urettigi dahil), ``over_budget``,
+                ``renamed_to``.
 
         Returns:
             ExtractedFile veya None.
         """
+        if accounting is None:
+            accounting = {}
+        accounting.setdefault("consumed", 0)
         name = entry["name"]
         if not name:
             return None
@@ -1763,14 +1918,22 @@ class PyInstallerExtractor:
         # uncompressed olabilir. Yeni ``safe_zlib_decompress`` max_size+1
         # isteyip erken bomb tespiti yapar.
         if entry["is_compressed"] and length > 0:
-            decompressed = safe_zlib_decompress(
-                raw, max_size=_MAX_PYINSTALLER_DECOMPRESS,
-            )
+            cap = max_size if budget_left is None else min(max_size, budget_left)
+            decompressed, produced = _inflate_capped(raw, cap)
+            # Üretilen bayt reddedilse de bütçeden düşer (CPU/bellek işi yapıldı).
+            accounting["consumed"] = produced
             if decompressed is None:
-                logger.warning(
-                    "PyInstaller entry decompress reddedildi (bomb/hatali): %s",
-                    name,
-                )
+                if produced > cap and budget_left is not None and budget_left < max_size:
+                    accounting["over_budget"] = True
+                    logger.warning(
+                        "PyInstaller entry toplam butceye sigmadi, cikarma durdu: %s",
+                        name,
+                    )
+                else:
+                    logger.warning(
+                        "PyInstaller entry decompress reddedildi (bomb/hatali): %s",
+                        name,
+                    )
                 return None
             # Uncompressed_length ile tutarlilik (metadata guvenilmez ama sinyal)
             expected = entry.get("uncompressed_length", 0)
@@ -1781,13 +1944,32 @@ class PyInstallerExtractor:
                     expected, len(decompressed), name,
                 )
             raw = decompressed
+        else:
+            if budget_left is not None and len(raw) > budget_left:
+                accounting["over_budget"] = True
+                logger.warning(
+                    "PyInstaller entry toplam butceye sigmadi, cikarma durdu: %s",
+                    name,
+                )
+                return None
+            accounting["consumed"] = len(raw)
 
         # Dosya adini guvenli hale getir
         safe_name = name.replace("/", os.sep).replace("\\", os.sep)
         safe_name = safe_name.lstrip(os.sep).lstrip(".")
         # .. dizileri kaldir (path traversal)
-        parts = [p for p in safe_name.split(os.sep) if p not in ("..", ".")]
+        parts = [p for p in safe_name.split(os.sep) if p not in ("..", ".", "")]
         safe_name = os.sep.join(parts) if parts else "unnamed"
+
+        # BICIM-14: aynı ad ya da harf duyarsız eşit ad sessizce ezilmesin.
+        if used_paths is not None:
+            unique = _unique_rel_path(safe_name, used_paths)
+            if unique != safe_name:
+                logger.warning(
+                    "PyInstaller entry ad cakismasi: %s -> %s", name, unique,
+                )
+                accounting["renamed_to"] = unique
+                safe_name = unique
 
         out_path = (output_dir / safe_name).resolve()
         # v1.10.0 Fix Sprint HIGH-1: Path.relative_to ile prefix confusion
@@ -1843,7 +2025,11 @@ class PyInstallerExtractor:
             )
             return None
         try:
-            os.write(fd, raw)
+            # os.write kısmi yazabilir: hepsi yazılana kadar sür.
+            view = memoryview(raw)
+            while view:
+                n = os.write(fd, view)
+                view = view[n:]
         finally:
             os.close(fd)
 
@@ -1857,17 +2043,20 @@ class PyInstallerExtractor:
         elif type_name == "ZIPFILE":
             file_type = "zip"
 
+        metadata: dict[str, Any] = {
+            "type_name": type_name,
+            "was_compressed": entry["is_compressed"],
+            "original_length": entry["data_length"],
+            "uncompressed_length": entry["uncompressed_length"],
+        }
+        if accounting.get("renamed_to"):
+            metadata["renamed_due_to_collision"] = True
         return ExtractedFile(
             path=out_path,
             original_name=name,
             file_type=file_type,
             size=len(raw),
-            metadata={
-                "type_name": type_name,
-                "was_compressed": entry["is_compressed"],
-                "original_length": entry["data_length"],
-                "uncompressed_length": entry["uncompressed_length"],
-            },
+            metadata=metadata,
         )
 
     @staticmethod

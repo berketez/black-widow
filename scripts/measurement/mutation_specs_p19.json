@@ -216,6 +216,62 @@
       "test": "tests/test_p19_asar.py::test_analyze_static_offline",
       "find": "                stats[\"asar_extract\"] = self.last_asar_report",
       "replace": "                pass"
+    },
+    {
+      "id": "b14_butce_dusmez",
+      "desc": "BICIM-14: CArchive girdileri toplam bütçeden düşülmez",
+      "module": "karadul/analyzers/packed_binary.py",
+      "test": "tests/test_p19_carchive_budget.py",
+      "find": "            budget -= consumed",
+      "replace": "            budget -= 0"
+    },
+    {
+      "id": "b14_bomba_isi_sayilmaz",
+      "desc": "BICIM-14: açılan (reddedilen bomba dahil) bayt bütçeye yazılmaz",
+      "module": "karadul/analyzers/packed_binary.py",
+      "test": "tests/test_p19_carchive_budget.py",
+      "find": "            accounting[\"consumed\"] = produced",
+      "replace": "            accounting[\"consumed\"] = 0"
+    },
+    {
+      "id": "b14_butceye_sigmaz",
+      "desc": "BICIM-14: kalan bütçeye sığmayan girdi bomba sayılır, çıkarma durmaz",
+      "module": "karadul/analyzers/packed_binary.py",
+      "test": "tests/test_p19_carchive_budget.py::test_total_budget_stops_extraction",
+      "find": "if produced > cap and budget_left is not None and budget_left < max_size:",
+      "replace": "if produced > cap and budget_left is None:"
+    },
+    {
+      "id": "b14_pyz_ortak_butce",
+      "desc": "BICIM-14: PYZ'ye CArchive'den kalan değil tam bütçe verilir",
+      "module": "karadul/analyzers/packed_binary.py",
+      "test": "tests/test_p19_carchive_budget.py::test_pyz_gets_only_what_carchive_left",
+      "find": "                budget=max(budget, 0),",
+      "replace": "                budget=None,"
+    },
+    {
+      "id": "b14_ad_cakismasi",
+      "desc": "BICIM-14: ad çakışması çözülmez (aynı ad ezilir)",
+      "module": "karadul/analyzers/packed_binary.py",
+      "test": "tests/test_p19_carchive_budget.py::test_same_and_casefold_names_not_overwritten",
+      "find": "        if used_paths is not None:",
+      "replace": "        if used_paths is None:"
+    },
+    {
+      "id": "b14_harf_duyarsiz",
+      "desc": "BICIM-14: harf duyarsız eşit adlar ayrı sayılır (APFS'te ezilir)",
+      "module": "karadul/analyzers/packed_binary.py",
+      "test": "tests/test_p19_carchive_budget.py::test_same_and_casefold_names_not_overwritten",
+      "find": "        return unicodedata.normalize(\"NFC\", p).casefold()",
+      "replace": "        return p"
+    },
+    {
+      "id": "b14_boyut_once",
+      "desc": "BICIM-14: dosya boyutu okumadan önce denetlenmez",
+      "module": "karadul/analyzers/packed_binary.py",
+      "test": "tests/test_p19_carchive_budget.py::test_size_checked_before_reading",
+      "find": "        if file_size > sec.max_binary_size_bytes:",
+      "replace": "        if file_size > sec.max_binary_size_bytes * 99:"
     }
   ]
 }
