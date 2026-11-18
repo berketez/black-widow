@@ -1,0 +1,109 @@
+{
+  "_comment": "P05 (anlamsal parametre adlandırıcısı: MUH-01, MUH-02, MUH-11) onarımlarının mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metninin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p05.json",
+  "mutants": [
+    {
+      "id": "p05_k1_sanitize_rakam",
+      "desc": "MUH-01: rakamla başlayan ad (0xffff…) süzgeçten ad olarak çıkar",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_kapi.py::test_sanitize_rakamla_baslayan_ad_bos",
+      "find": "    if not name or name[0].isdigit():\n        return \"\"",
+      "replace": "    if not name or name[0] == \"#\":\n        return \"\""
+    },
+    {
+      "id": "p05_k1_gecerlilik_yok",
+      "desc": "MUH-01/11: kapı ad geçerliliğine bakmaz (anahtar sözcük, tip adı, sabit geçer)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_kapi.py::test_gecersiz_aday_reddedilir_siradaki_aday_kazanir",
+      "find": "                    reason = _gate_name_reason(cand.semantic_name)",
+      "replace": "                    reason = None"
+    },
+    {
+      "id": "p05_k1_ghidra_adi_gecer",
+      "desc": "MUH-01: Ghidra'nın kendi ad biçimi (DAT_…, local_…) ad olur",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_kapi.py::test_kapi_ad_nedenleri",
+      "find": "    if _GHIDRA_GENERATED_NAME.match(name):\n        return GATE_GHIDRA_NAME",
+      "replace": "    if _GHIDRA_GENERATED_NAME.match(name) and False:\n        return GATE_GHIDRA_NAME"
+    },
+    {
+      "id": "p05_k1_ekli_ad_kapisiz",
+      "desc": "MUH-01: çakışma ekiyle oluşan ad (src_2) kapıdan geçmez, Ghidra biçimli ad verilir",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_kapi.py::test_ekli_ad_ghidra_bicimindeyse_siradaki_aday",
+      "find": "                    reason = _gate_name_reason(final_name)",
+      "replace": "                    reason = None"
+    },
+    {
+      "id": "p05_k1_esik_yok",
+      "desc": "MUH-11: ürün eşiği uygulanmaz",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_kapi.py::test_esik_altindaki_aday_verilmez",
+      "find": "                if cand.confidence < self._min_confidence:",
+      "replace": "                if cand.confidence < -1.0:"
+    },
+    {
+      "id": "p05_k1_govde_cakismasi_yok",
+      "desc": "MUH-01: gövdedeki aynı adlı tanımlayıcı çakışma sayılmaz (iki değişken tek ada çöker)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_kapi.py::test_govdedeki_ad_ile_cakisma_ek_alir",
+      "find": "                used = set(self._identifiers_in(func_name))",
+      "replace": "                used = set()"
+    },
+    {
+      "id": "p05_k1_ortme_yok",
+      "desc": "Çakışma sayımında dizgi ve yorumlar örtülmez",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_kapi.py::test_dizgi_ve_yorumdaki_ad_cakisma_sayilmaz",
+      "find": "    return set(_IDENTIFIER_RE.findall(_NON_CODE_RE.sub(\" \", code)))",
+      "replace": "    return set(_IDENTIFIER_RE.findall(code))"
+    },
+    {
+      "id": "p05_k1_bildirim_sarti_yok",
+      "desc": "MUH-01: çağıranda bildirilmemiş ad (küresel _stdout) yayılır",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_kapi.py::test_yayilim_yalniz_cagiranin_degiskeninden",
+      "find": "                            and arg_name in declared\n",
+      "replace": "                            and arg_name not in ()\n"
+    },
+    {
+      "id": "p05_k1_ayrac_dengesi_yok",
+      "desc": "MUH-01: iç içe çağrının virgülü üst düzey sayılır (konumlar kayar)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_kapi.py::test_yayilim_yalniz_cagiranin_degiskeninden",
+      "find": "        elif ch == \",\" and depth == 1:",
+      "replace": "        elif ch == \",\":"
+    },
+    {
+      "id": "p05_k1_koken_yazilmaz",
+      "desc": "MUH-11: kabul edilen ad köken kaydına geçmez",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_kapi.py::test_rename_ucta_uca_kusurlu_ad_yok_ve_koken_tam",
+      "find": "            self._gate_accepted.append(record)",
+      "replace": "            self._gate_accepted.extend([])"
+    },
+    {
+      "id": "p05_k1_harita_ayrintisi_yok",
+      "desc": "MUH-11: param_naming_map.json'da adın kanalı / güveni / gerekçesi yok",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_kapi.py::test_rename_ucta_uca_kusurlu_ad_yok_ve_koken_tam",
+      "find": "                    \"names\": details.get(func_name, {}),",
+      "replace": "                    \"names\": {},"
+    },
+    {
+      "id": "p05_k1_adim_ilk_yineleme",
+      "desc": "MUH-11: köken bölümü c_namer'ın son yinelemesi yerine ilkine yazılır",
+      "module": "karadul/pipeline/steps/semantic_naming.py",
+      "test": "tests/test_p05_kapi.py::test_adim_son_yinelemenin_kaydina_yazar",
+      "find": "        return max(candidates, key=lambda item: item[0])[1]",
+      "replace": "        return min(candidates, key=lambda item: item[0])[1]"
+    },
+    {
+      "id": "p05_k1_adim_yazmaz",
+      "desc": "MUH-11: adım köken bölümünü yazmaz",
+      "module": "karadul/pipeline/steps/semantic_naming.py",
+      "test": "tests/test_p05_kapi.py::test_adim_calisinca_koken_bolumu_ve_sayac",
+      "find": "            data[PARAM_PROVENANCE_SECTION] = section\n",
+      "replace": "            data.pop(PARAM_PROVENANCE_SECTION, None)\n"
+    }
+  ]
+}

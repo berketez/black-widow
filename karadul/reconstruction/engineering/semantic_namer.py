@@ -47,7 +47,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from karadul.config import CPU_PERF_CORES, Config
+from karadul.config import CPU_PERF_CORES, Config, MinConfidencePresets
+from karadul.reconstruction import name_validity as _name_validity
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,9 @@ class SemanticNamingResult:
     output_files: list[Path] = field(default_factory=list)
     naming_map: dict[str, dict[str, str]] = field(default_factory=dict)  # func -> {old: new}
     errors: list[str] = field(default_factory=list)
+    # Ad kapısının köken kaydı (``SemanticParameterNamer.provenance_section``; MUH-11):
+    # eşik, kabul edilen her ad (kanal, güven, gerekçe, önerilen ad), ret nedeni sayaçları.
+    provenance: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -188,13 +192,139 @@ def _is_ghidra_auto_name(name: str) -> bool:
 
 
 def _sanitize_c_name(name: str) -> str:
-    """Ismi gecerli C identifier'a donustur."""
+    """Adı C tanımlayıcısı biçimine getir; kurulamıyorsa boş dizgi döner (MUH-01).
+
+    Tanımlayıcı dışı karakterler ``_`` olur, ``_`` öbekleri teke iner, baştaki ve sondaki ``_``
+    atılır. Sonuç boşsa ya da rakamla başlıyorsa (``0xffffffffffffffff``, ``10``) boş dizgi
+    döner: sabit bir ad değildir ve önüne ``_`` eklenerek "düzeltilmez". Boş ad ad kapısında
+    (``invalid_c_identifier``) reddedilir; eskiden ``unnamed`` gibi anlamsız bir ad dönüyordu.
+    """
     name = re.sub(r"[^a-zA-Z0-9_]", "_", name)
-    if name and name[0].isdigit():
-        name = "_" + name
-    name = re.sub(r"_+", "_", name)
-    name = name.strip("_")
-    return name or "unnamed"
+    name = re.sub(r"_+", "_", name).strip("_")
+    if not name or name[0].isdigit():
+        return ""
+    return name
+
+
+# ---------------------------------------------------------------------------
+# Ad kapısı (MUH-01, MUH-11): koda yazılan her parametre adı buradan geçer
+# ---------------------------------------------------------------------------
+
+# Ghidra'nın kendi ürettiği ad biçimleri: parametreye verilen böyle bir ad küresel bir veri
+# (``DAT_00130770``), başka bir fonksiyon ya da Ghidra'nın yerel değişkeni okunuyormuş gibi
+# gösterir. Adresli önekli biçimlerde son parça en az 4 onaltılık hanedir.
+_GHIDRA_GENERATED_NAME = re.compile(
+    r"^(?:(?:DAT|PTR|FUN|LAB|SUB|EXT|OFF|UNK|switchD|caseD|thunk_FUN|PTR_FUN|s|u)"
+    r"_(?:\w*_)?[0-9a-fA-F]{4,}"
+    r"|local_[0-9a-fA-F]+|param_\d+|src_\d+|dest_\d+|[a-z]{1,2}Var\d+"
+    r"|[a-z]{1,3}Stack_[0-9a-fA-F]+|in_\w+|extraout_\w+|unaff_\w+)$"
+)
+
+# Kapının ret nedenleri (köken kaydına bu yazımla girer). Ad geçerliliği nedenleri
+# ``name_validity.REJECT_REASONS``'tan gelir (yerel ad kuralı: 1-3).
+GATE_BELOW_THRESHOLD = "below_min_confidence"
+GATE_GHIDRA_NAME = "ghidra_generated_name"
+GATE_REJECT_REASONS = (
+    GATE_BELOW_THRESHOLD,
+    _name_validity.REASON_NOT_IDENTIFIER,
+    _name_validity.REASON_KEYWORD,
+    _name_validity.REASON_TYPE_NAME,
+    GATE_GHIDRA_NAME,
+)
+
+# Köken kaydındaki bölümün adı ve şeması (``naming_provenance.json`` içinde ayrı bölüm)
+PARAM_PROVENANCE_SECTION = "semantic_params"
+PARAM_PROVENANCE_SCHEMA_VERSION = 1
+
+# Dizgi, karakter sabiti ve yorum: tanımlayıcı sayımında örtülür
+_NON_CODE_RE = re.compile(
+    r'"(?:\\.|[^"\\\n])*"'
+    r"|'(?:\\.|[^'\\\n])*'"
+    r"|//[^\n]*"
+    r"|/\*.*?\*/",
+    re.DOTALL,
+)
+_IDENTIFIER_RE = re.compile(r"\b[A-Za-z_]\w*\b")
+_PLAIN_IDENTIFIER_RE = re.compile(r"[A-Za-z_]\w*")
+
+
+def _gate_name_reason(name: str) -> str | None:
+    """Adın sözcüğüne bakan ret nedeni (eşik dışı kurallar); ad verilebilirse ``None``."""
+    reason = _name_validity.lexical_reject_reason(name, local=True)
+    if reason is not None:
+        return reason
+    if _GHIDRA_GENERATED_NAME.match(name):
+        return GATE_GHIDRA_NAME
+    return None
+
+
+def _code_identifiers(code: str) -> set[str]:
+    """Koddaki tanımlayıcılar (dizgi, karakter sabiti ve yorumlar örtülü)."""
+    return set(_IDENTIFIER_RE.findall(_NON_CODE_RE.sub(" ", code)))
+
+
+def _split_call_args(code: str, open_idx: int) -> list[str] | None:
+    """``code[open_idx] == '('`` olan çağrının argümanları (ayraç dengeli, üst düzey virgülle).
+
+    Dizgi ve karakter sabitlerinin içindeki ayraç ve virgül sayılmaz. Kapanmayan çağrıda ``None``.
+    Eskiden ``\\(([^)]*)\\)`` ilk ``)``'de kesiyordu: ``(uint64_t)x`` argümanı ``(uint64_t``
+    oluyor, iç içe çağrıda konumlar kayıyordu (MUH-01).
+    """
+    depth = 0
+    args: list[str] = []
+    start = open_idx + 1
+    i = open_idx
+    n = len(code)
+    while i < n:
+        ch = code[i]
+        if ch in "\"'":
+            j = i + 1
+            while j < n and code[j] != ch:
+                j += 2 if code[j] == "\\" else 1
+            i = j + 1
+            continue
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+            if depth == 0:
+                last = code[start:i].strip()
+                if last or args:
+                    args.append(last)
+                return args
+        elif ch == "," and depth == 1:
+            args.append(code[start:i].strip())
+            start = i + 1
+        i += 1
+    return None
+
+
+_LOCAL_DECL_RE = re.compile(
+    r"^[ \t]+(?P<type>(?:(?:const|unsigned|signed|struct|union|enum)\s+)*[A-Za-z_]\w*)"
+    r"(?:\s*\*+\s*|\s+)(?P<var>[A-Za-z_]\w*)\s*(?:\[[^\]\n]*\]\s*)*;[ \t]*$",
+    re.MULTILINE,
+)
+_DECL_NOT_TYPE = frozenset({
+    "return", "goto", "case", "else", "do", "break", "continue", "typedef", "sizeof",
+})
+
+
+def _declared_variables(code: str) -> set[str]:
+    """Fonksiyonun kendi değişkenleri: imzadaki parametre adları ve satır başı yerel bildirimler."""
+    names: set[str] = set()
+    sig = _FUNC_SIG_RE.search(code)
+    if sig:
+        for raw in sig.group(2).split(","):
+            m = re.search(r"([A-Za-z_]\w*)\s*(?:\[[^\]]*\]\s*)*$", raw.strip())
+            if m and m.group(1) != "void":
+                names.add(m.group(1))
+        body = code[sig.end():]
+    else:
+        body = code
+    for m in _LOCAL_DECL_RE.finditer(_NON_CODE_RE.sub(" ", body)):
+        if m.group("type").split()[0] not in _DECL_NOT_TYPE:
+            names.add(m.group("var"))
+    return names
 
 
 # ---------------------------------------------------------------------------
@@ -1851,6 +1981,74 @@ class SemanticParameterNamer:
         # v1.7.2: signature_db -> param naming
         self._sig_matches: dict[str, Any] = {}              # func_name -> SignatureMatch
         self._api_param_db: Any = None                      # Lazy-loaded APIParamDB
+        # Ad kapısı (MUH-11): yerel ad eşiği ürünün ayarından (c_namer'ın yerel adlara
+        # uyguladığı değerle aynı: ``min_confidence.c_namer_apply``).
+        self._min_confidence = self._local_threshold(config)
+        self._identifier_cache: dict[str, set[str]] = {}
+        self._declared_cache: dict[str, set[str]] = {}
+        self._gate_accepted: list[dict[str, Any]] = []
+        self._gate_rejected: dict[str, dict[str, int]] = {}
+        self._gate_unnamed: dict[str, int] = {}
+
+    @staticmethod
+    def _local_threshold(config: Any) -> float:
+        """Yerel (parametre) adın ürün eşiği: ``config.min_confidence.c_namer_apply``."""
+        value = getattr(getattr(config, "min_confidence", None), "c_namer_apply", None)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            value = MinConfidencePresets().c_namer_apply
+        return float(value)
+
+    def _reset_gate(self) -> None:
+        self._identifier_cache.clear()
+        self._declared_cache.clear()
+        self._gate_accepted = []
+        self._gate_rejected = {}
+        self._gate_unnamed = {}
+
+    def _identifiers_in(self, func_name: str) -> set[str]:
+        """Fonksiyonun girdi kodundaki tanımlayıcılar (dizgi ve yorum örtülü; önbellekli)."""
+        if func_name not in self._identifier_cache:
+            self._identifier_cache[func_name] = _code_identifiers(
+                self._func_codes.get(func_name, ""),
+            )
+        return self._identifier_cache[func_name]
+
+    def _declared_in(self, func_name: str) -> set[str]:
+        """Fonksiyonun kendi değişkenleri (parametre + yerel bildirim; önbellekli)."""
+        if func_name not in self._declared_cache:
+            self._declared_cache[func_name] = _declared_variables(
+                self._func_codes.get(func_name, ""),
+            )
+        return self._declared_cache[func_name]
+
+    def _call_args(self, caller: str, callee: str) -> list[list[str]]:
+        """``caller`` kodundaki her ``callee(...)`` çağrısının argüman listesi."""
+        code = self._func_codes.get(caller, "")
+        out: list[list[str]] = []
+        for m in re.finditer(rf"\b{re.escape(callee)}\s*\(", code):
+            args = _split_call_args(code, m.end() - 1)
+            if args is not None:
+                out.append(args)
+        return out
+
+    def provenance_section(self) -> dict[str, Any]:
+        """Son ``rename`` koşusunun köken kaydı bölümü (``naming_provenance.json``'a girer).
+
+        ``accepted``: koda yazılan her ad (fonksiyon, eski ad, ad, önerilen ad, kanal, güven,
+        gerekçe). ``rejected``: kanal → ret nedeni → aday sayısı (kapıdan geçemeyen adaylar;
+        aynı parametrenin sonraki adayı denenir). ``unnamed``: hiçbir adayı geçemediği için
+        adsız kalan parametre sayısı (kazananın kanalına göre).
+        """
+        return {
+            "schema_version": PARAM_PROVENANCE_SCHEMA_VERSION,
+            "producer": "semantic_namer",
+            "min_confidence": self._min_confidence,
+            "name_validity_definition_version": _name_validity.DEFINITION_VERSION,
+            "reject_reasons": list(GATE_REJECT_REASONS),
+            "accepted": list(self._gate_accepted),
+            "rejected": {k: dict(v) for k, v in sorted(self._gate_rejected.items())},
+            "unnamed": dict(sorted(self._gate_unnamed.items())),
+        }
 
     # ------------------------------------------------------------------
     # Public API
@@ -1886,6 +2084,7 @@ class SemanticParameterNamer:
         errors: list[str] = []
         all_names: list[SemanticName] = []
         naming_map: dict[str, dict[str, str]] = {}
+        self._reset_gate()
 
         # 1. Veri yukle
         try:
@@ -2084,14 +2283,34 @@ class SemanticParameterNamer:
         # 7. param_naming_map.json kaydet
         map_path = output_dir.parent / "param_naming_map.json"
         try:
+            # Her adın kanalı, güveni ve gerekçesi ``names`` altında (MUH-11); ``renames``
+            # (eski → yeni) eski okuyucular için olduğu gibi kalır. Kapının eşiği ve ret
+            # sayaçları ``gate`` altında.
+            details: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
+            for sn in all_names:
+                details[sn.function_name][sn.original_name] = {
+                    "name": sn.semantic_name,
+                    "source": sn.source,
+                    "confidence": sn.confidence,
+                    "reason": sn.reason,
+                }
+            gate = self.provenance_section()
             map_data: dict[str, Any] = {
                 "version": "1.7.2",  # v1.7.2
+                "schema_version": 2,
                 "total_renamed": len(all_names),
+                "gate": {
+                    k: gate[k] for k in (
+                        "min_confidence", "name_validity_definition_version",
+                        "rejected", "unnamed",
+                    )
+                },
                 "functions": {},
             }
             for func_name, func_map in naming_map.items():
                 map_data["functions"][func_name] = {
                     "renames": func_map,
+                    "names": details.get(func_name, {}),
                     "domain": self._func_domains.get(func_name, "unknown"),
                 }
             map_path.write_text(
@@ -2117,6 +2336,7 @@ class SemanticParameterNamer:
             output_files=output_files,
             naming_map=naming_map,
             errors=errors,
+            provenance=self.provenance_section(),
         )
 
     # ------------------------------------------------------------------
@@ -2566,22 +2786,24 @@ class SemanticParameterNamer:
                 caller_code = self._func_codes.get(caller, "")
                 if not caller_code:
                     continue
-                # v1.8.0: [^)]*  negated char class -> O(n) safe, boyut siniri yok.
                 if func_name not in caller_code:
                     continue
 
-                # Caller kodunda func_name cagrisini bul
-                call_pattern = re.compile(
-                    rf"\b{re.escape(func_name)}\s*\(([^)]*)\)"
-                )
-                for call_match in call_pattern.finditer(caller_code):
-                    args_str = call_match.group(1)
-                    args = [a.strip() for a in args_str.split(",")]
+                # Çağrıların argümanları ayraç dengeli ayrıştırılır (MUH-01). Ad yalnız
+                # çağıranın KENDİ değişkeni olan düz bir tanımlayıcıdan yayılır: sabit
+                # (0xffffffffffffffff), dizgi, cast ((uint64_t)x), adres alma (&local_100),
+                # ifade (x != 0) ve çağıranda bildirilmemiş ad (küresel, fonksiyon) ad vermez.
+                call_args = self._call_args(caller, func_name)
+                declared = self._declared_in(caller)
+                for args in call_args:
                     if param_pos < len(args):
-                        arg_name = args[param_pos].strip()
-                        # Arguman anlamli bir isim mi?
-                        if arg_name and not _is_auto_or_generic_name(arg_name):
-                            # Ismi dogrudan al ama basit temizle
+                        arg_name = args[param_pos]
+                        if (
+                            _PLAIN_IDENTIFIER_RE.fullmatch(arg_name)
+                            and arg_name in declared
+                            and not _is_auto_or_generic_name(arg_name)
+                            and not _GHIDRA_GENERATED_NAME.match(arg_name)
+                        ):
                             clean = _sanitize_c_name(arg_name)
                             if clean and len(clean) > 1:
                                 conf = self._BASE_CONFIDENCE["call_graph_propagation"] * self._PROPAGATION_DECAY
@@ -2593,11 +2815,9 @@ class SemanticParameterNamer:
                 # c) Caller'da zaten bilinen isimler varsa, onlari da kontrol et
                 caller_known = known_names.get(caller, {})
                 if caller_known:
-                    for call_match in call_pattern.finditer(caller_code):
-                        args_str = call_match.group(1)
-                        args = [a.strip() for a in args_str.split(",")]
+                    for args in call_args:
                         if param_pos < len(args):
-                            arg_name = args[param_pos].strip()
+                            arg_name = args[param_pos]
                             if arg_name in caller_known:
                                 propagated = caller_known[arg_name]
                                 conf = self._BASE_CONFIDENCE["call_graph_propagation"] * (self._PROPAGATION_DECAY ** 2)
@@ -2972,13 +3192,21 @@ class SemanticParameterNamer:
         self,
         candidates: list[SemanticName],
     ) -> list[SemanticName]:
-        """Ayni parametre icin birden fazla oneri varsa en iyisini sec.
+        """Her parametre için kapıdan geçen en iyi adayı seç (tek ad kapısı; MUH-01, MUH-11).
 
         Kurallar:
-        1. Confidence'a gore sirala (buyuk -> kucuk).
-        2. Esit confidence'da strateji onceligi: template > callgraph > struct > heuristic.
-        3. Ayni fonksiyon icerisinde isim cakismasi varsa _2, _3 ekle.
-        4. Zaten anlamli isim olan parametreleri dokunma.
+        1. Adaylar güvene göre (büyük → küçük), eşitlikte strateji önceliğine göre sıralanır.
+        2. Sırayla her aday kapıdan geçirilir; ilk geçen kazanır. Kapı: ürün eşiği
+           (``self._min_confidence``), ad geçerliliği (``name_validity`` yerel ad kuralı:
+           tanımlayıcı, anahtar sözcük, tip adı), Ghidra'nın kendi ad biçimi
+           (``DAT_…``, ``local_…``, ``uVar1`` …). Hiçbir aday geçemezse parametre adsız kalır.
+        3. Çakışma: ad fonksiyonun girdi kodunda (dizgi ve yorum örtülü) zaten geçiyorsa ya da bu
+           fonksiyonda başka bir parametreye verildiyse ``_2``, ``_3`` … eki alır
+           (``name_validity.unique_name``; c_namer'ın yerel ad kuralı). Eskiden yalnız
+           parametre adlarına bakılıyordu; gövdedeki aynı adlı yerel ile parametre tek ada
+           çöküyordu.
+        4. Kabul edilen her ad, ret nedenleri ve adsız kalan parametreler köken kaydına geçer
+           (``provenance_section``).
         """
         if not candidates:
             return []
@@ -2990,42 +3218,60 @@ class SemanticParameterNamer:
             by_param[key].append(c)
 
         winners: list[SemanticName] = []
-        # Fonksiyon bazinda kullanilan isimleri takip et
-        used_names: dict[str, set[str]] = defaultdict(set)
-
-        # v1.8.0 Bug 2 fix: Mevcut non-auto parametre isimlerini pre-seed et.
-        # Boylece semantic rename sonucu mevcut bir parametreyle ayni isim almaz.
-        seen_funcs: set[str] = set()
-        for (func_name, _), _ in by_param.items():
-            if func_name in seen_funcs:
-                continue
-            seen_funcs.add(func_name)
-            for p in self._get_function_params(func_name):
-                pname = p.get("name", "")
-                if pname and not _is_auto_or_generic_name(pname):
-                    used_names[func_name].add(pname)
+        used_names: dict[str, set[str]] = {}
 
         for (func_name, orig_name), param_candidates in by_param.items():
-            # En iyi adayi sec
             param_candidates.sort(
                 key=lambda c: (
                     -c.confidence,
                     -self._STRATEGY_PRIORITY.get(c.source, 0),
                 ),
             )
-            winner = param_candidates[0]
+            if func_name not in used_names:
+                used = set(self._identifiers_in(func_name))
+                for p in self._get_function_params(func_name):
+                    pname = p.get("name", "")
+                    if pname and not _is_auto_or_generic_name(pname):
+                        used.add(pname)
+                used_names[func_name] = used
+            winner: SemanticName | None = None
+            final_name = ""
+            for cand in param_candidates:
+                if cand.confidence < self._min_confidence:
+                    reason: str | None = GATE_BELOW_THRESHOLD
+                else:
+                    reason = _gate_name_reason(cand.semantic_name)
+                if reason is None:
+                    final_name = _name_validity.unique_name(
+                        cand.semantic_name, used_names[func_name],
+                    )
+                    # Ekli ad da kapıdan geçer: ``src`` → ``src_2`` Ghidra'nın ad biçimidir
+                    reason = _gate_name_reason(final_name)
+                if reason is None:
+                    winner = cand
+                    break
+                per_source = self._gate_rejected.setdefault(cand.source, {})
+                per_source[reason] = per_source.get(reason, 0) + 1
+            if winner is None:
+                top = param_candidates[0].source
+                self._gate_unnamed[top] = self._gate_unnamed.get(top, 0) + 1
+                continue
 
-            # Isim cakismasi kontrolu
-            desired = winner.semantic_name
-            final_name = desired
-            suffix = 2
-            while final_name in used_names[func_name]:
-                final_name = f"{desired}_{suffix}"
-                suffix += 1
-
+            proposed = winner.semantic_name
             used_names[func_name].add(final_name)
             winner.semantic_name = final_name
             winners.append(winner)
+            record: dict[str, Any] = {
+                "function": func_name,
+                "param": orig_name,
+                "name": final_name,
+                "source": winner.source,
+                "confidence": winner.confidence,
+                "reason": winner.reason,
+            }
+            if final_name != proposed:
+                record["proposed_name"] = proposed
+            self._gate_accepted.append(record)
 
         return winners
 

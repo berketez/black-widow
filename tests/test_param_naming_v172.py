@@ -827,11 +827,12 @@ class TestEdgeCases:
     def test_sanitize_c_name_special_chars(self):
         """_sanitize_c_name should handle special characters."""
         assert _sanitize_c_name("my-name") == "my_name"
-        # Note: _sanitize_c_name strips leading _ after adding it for digit start
-        # This is existing behavior we don't change
-        assert _sanitize_c_name("123abc") == "123abc"
+        # P05 (MUH-01): rakamla başlayan sonuç tanımlayıcı değildir; boş döner ve ad kapısı
+        # reddeder (eskiden "123abc" / "0xff" aynen ad oluyordu, boş ad "unnamed" oluyordu)
+        assert _sanitize_c_name("123abc") == ""
+        assert _sanitize_c_name("0xffffffffffffffff") == ""
         assert _sanitize_c_name("a  b") == "a_b"
-        assert _sanitize_c_name("") == "unnamed"
+        assert _sanitize_c_name("") == ""
 
     def test_is_auto_name_detection(self):
         """_is_auto_or_generic_name should detect all Ghidra auto patterns."""

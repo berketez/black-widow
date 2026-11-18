@@ -55,6 +55,8 @@ def _make_namer() -> SemanticParameterNamer:
     """Create a minimal SemanticParameterNamer instance for unit testing."""
     cfg = Config()
     namer = SemanticParameterNamer.__new__(SemanticParameterNamer)
+    # Ad kapısının durumu (eşik, önbellekler, köken kaydı) kurucudan gelir (P05)
+    SemanticParameterNamer.__init__(namer, cfg)
     # Minimum attribute set required by methods under test
     namer._functions = {}
     namer._func_codes = {}

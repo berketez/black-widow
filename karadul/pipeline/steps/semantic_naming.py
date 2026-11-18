@@ -8,11 +8,13 @@ varsa parametreleri anlamli isimlerle yeniden adlandirir. Output dizini
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from pathlib import Path
 from typing import Any
 
+from karadul.core.naming_labels import NAMING_PROVENANCE_FILE
 from karadul.pipeline.context import StepContext
 from karadul.pipeline.registry import Step, register_step
 
@@ -75,6 +77,9 @@ class SemanticNamingStep(Step):
                 if sem_result and sem_result.success:
                     params_renamed = sem_result.total_renamed
                     ctx.stats["params_renamed"] = params_renamed
+                    ctx.stats["semantic_naming_provenance"] = self._write_provenance(
+                        reconstructed_dir, sem_result.provenance,
+                    )
                     if sem_result.output_files:
                         resulting_dir = sem_dir
                     logger.info(
@@ -97,6 +102,58 @@ class SemanticNamingStep(Step):
         }
 
     # --- internals -----------------------------------------------------
+
+    @staticmethod
+    def _latest_c_namer_dir(reconstructed_dir: Path) -> Path | None:
+        """c_namer'ın son yinelemesinin çıktı dizini (``src``, sonra artan ``src_iterN``).
+
+        Seçim kuralı çıktı biçimlendiricininkiyle aynıdır (``output_formatter``: ``src`` önce,
+        ``src_iterN`` artan sırada, son yineleme kazanır). Köken kaydı olmayan dizin atlanır.
+        """
+        candidates: list[tuple[int, Path]] = []
+        base = reconstructed_dir / "src"
+        if (base / NAMING_PROVENANCE_FILE).is_file():
+            candidates.append((0, base))
+        for d in reconstructed_dir.glob("src_iter*"):
+            suffix = d.name[len("src_iter"):]
+            if suffix.isdigit() and (d / NAMING_PROVENANCE_FILE).is_file():
+                candidates.append((int(suffix), d))
+        if not candidates:
+            return None
+        return max(candidates, key=lambda item: item[0])[1]
+
+    @classmethod
+    def _write_provenance(cls, reconstructed_dir: Path, section: dict[str, Any]) -> str:
+        """Parametre adlarının köken bölümünü c_namer'ın ``naming_provenance.json``'ına ekle.
+
+        Bölüm ``semantic_params`` anahtarıyla, c_namer'ın son yinelemesinin kaydına yazılır
+        (MUH-11: koda yazılan her ad köken kaydında kanalıyla görünür). Dönen değer
+        ``stats["semantic_naming_provenance"]``'a girer: ``yazildi:<dizin>``,
+        ``koken_kaydi_yok`` (c_namer kaydı yazılmamış; parametre adlarının ayrıntısı yine
+        ``param_naming_map.json``'da) ya da ``yazilamadi:<hata>``.
+        """
+        from karadul.reconstruction.engineering.semantic_namer import (
+            PARAM_PROVENANCE_SECTION,
+        )
+
+        target_dir = cls._latest_c_namer_dir(reconstructed_dir)
+        if target_dir is None:
+            return "koken_kaydi_yok"
+        path = target_dir / NAMING_PROVENANCE_FILE
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                return "yazilamadi:kayit_sozluk_degil"
+            data[PARAM_PROVENANCE_SECTION] = section
+            # c_namer'ın yazım biçimiyle aynı (indent=1, ensure_ascii, sort_keys)
+            path.write_text(
+                json.dumps(data, indent=1, ensure_ascii=True, sort_keys=True),
+                encoding="utf-8",
+            )
+        except (OSError, ValueError, TypeError) as exc:
+            logger.warning("%s yazilamadi: %s", path, exc)
+            return f"yazilamadi:{type(exc).__name__}"
+        return f"yazildi:{target_dir.name}"
 
     @staticmethod
     def _collect_all_algorithms(algo_result: Any, eng_result: Any) -> list[Any]:
