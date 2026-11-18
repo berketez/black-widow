@@ -1,0 +1,139 @@
+--- a/karadul/stages.py	2026-11-18 10:29:46
++++ b/karadul/stages.py	2026-11-18 10:30:20
+@@ -306,39 +306,50 @@
+ 
+         # YARA taramasi -- binary hedefler icin opsiyonel pattern tarama
+         context.report_progress("YARA pattern scanning...", 0.8)
++        # P03: durum her kosulda yazilir ("tarandi, temiz" != "taranmadi").
+         try:
+             from karadul.analyzers.yara_scanner import YaraScanner
+             scanner = YaraScanner()
+             scanner.load_builtin_rules()
+             yara_result = scanner.scan_file(target.path)
+-            if yara_result.matches:
+-                result.stats["yara_matches"] = len(yara_result.matches)
+-                result.stats["yara_scan_time_ms"] = yara_result.scan_time_ms
+-                result.stats["yara_backend"] = yara_result.backend
+-                for m in yara_result.matches:
+-                    tags_str = ",".join(m.tags) if m.tags else "unknown"
+-                    result.stats.setdefault("detected_tech", []).append(
+-                        f"{m.rule} ({tags_str})"
+-                    )
+-                logger.info(
+-                    "YARA: %d kural eslesti (%s backend, %.1fms)",
+-                    len(yara_result.matches), yara_result.backend,
+-                    yara_result.scan_time_ms,
++            result.stats["yara_status"] = yara_result.status
++            result.stats["yara_status_reason"] = yara_result.status_reason
++            result.stats["yara_backend"] = yara_result.backend
++            result.stats["yara_rules_loaded"] = yara_result.total_rules
++            result.stats["yara_matches"] = len(yara_result.matches)
++            result.stats["yara_scan_time_ms"] = yara_result.scan_time_ms
++            if yara_result.fallback_reason:
++                result.stats["yara_fallback_reason"] = yara_result.fallback_reason
++            for m in yara_result.matches:
++                tags_str = ",".join(m.tags) if m.tags else "unknown"
++                result.stats.setdefault("detected_tech", []).append(
++                    f"{m.rule} ({tags_str})"
+                 )
+-        except ImportError:
+-            logger.debug("YaraScanner bulunamadi, atlaniyor")
++            logger.info(
++                "YARA: %s, %d kural eslesti (%s backend, %.1fms)",
++                yara_result.status, len(yara_result.matches), yara_result.backend,
++                yara_result.scan_time_ms,
++            )
++        except ImportError as exc:
++            result.stats["yara_status"] = "arac_yok"
++            result.stats["yara_status_reason"] = f"yara_scanner import edilemedi: {exc}"
++            logger.warning("YaraScanner bulunamadi: %s", exc)
+         except Exception as exc:
++            result.stats["yara_status"] = "hata"
++            result.stats["yara_status_reason"] = f"{type(exc).__name__}: {exc}"
+             logger.warning("YARA tarama hatasi (atlaniyor): %s", exc)
+ 
+         # v1.8.6: CAPA capability detection -- binary hedefler icin
+-        if (
+-            context.config.binary_reconstruction.enable_capa
+-            and target.target_type in (
+-                TargetType.MACHO_BINARY, TargetType.UNIVERSAL_BINARY,
+-                TargetType.ELF_BINARY, TargetType.PE_BINARY, TargetType.GO_BINARY,
+-                TargetType.BUN_BINARY,
+-            )
+-        ):
++        _capa_binary = target.target_type in (
++            TargetType.MACHO_BINARY, TargetType.UNIVERSAL_BINARY,
++            TargetType.ELF_BINARY, TargetType.PE_BINARY, TargetType.GO_BINARY,
++            TargetType.BUN_BINARY,
++        )
++        if _capa_binary and not context.config.binary_reconstruction.enable_capa:
++            # P03: ayarla kapali -- sessiz kalma.
++            result.stats["capa_status"] = "kapali"
++            result.stats["capa_status_reason"] = "enable_capa=False"
++        if context.config.binary_reconstruction.enable_capa and _capa_binary:
+             context.report_progress("CAPA capability detection...", 0.85)
+             try:
+                 from karadul.analyzers.capa_scanner import CAPAScanner
+@@ -349,32 +360,39 @@
+                     rules_path=_capa_rules,
+                     timeout=_capa_timeout,
+                 )
+-                if capa_scanner.is_available():
+-                    capa_result = capa_scanner.scan(target.path)
+-                    if capa_result.success:
+-                        result.stats["capa_rules_matched"] = capa_result.total_rules_matched
+-                        result.stats["capa_functions_matched"] = capa_result.total_functions_matched
+-                        result.stats["capa_file_capabilities"] = len(capa_result.file_capabilities)
+-                        result.stats["capa_duration"] = round(capa_result.duration_seconds, 1)
+-                        # Sonuclari workspace'e kaydet (reconstruction kullanacak)
+-                        context.workspace.save_json(
+-                            "static", "capa_capabilities", capa_result.to_dict(),
+-                        )
+-                        logger.info(
+-                            "CAPA: %d kural eslesti, %d fonksiyonda capability "
+-                            "(%.1fs, format=%s)",
+-                            capa_result.total_rules_matched,
+-                            capa_result.total_functions_matched,
+-                            capa_result.duration_seconds,
+-                            capa_result.format_,
+-                        )
+-                    elif capa_result.errors:
+-                        logger.debug("CAPA scan basarisiz: %s", capa_result.errors[0])
++                # P03: scan() araç yokken de durum döndürür (arac_yok + neden).
++                capa_result = capa_scanner.scan(target.path)
++                result.stats["capa_status"] = capa_result.status
++                result.stats["capa_status_reason"] = capa_result.status_reason
++                result.stats["capa_backend"] = capa_result.backend
++                if capa_result.status != "calisti":
++                    logger.info("CAPA %s: %s", capa_result.status, capa_result.status_reason)
++                if capa_result.success:
++                    result.stats["capa_rules_matched"] = capa_result.total_rules_matched
++                    result.stats["capa_functions_matched"] = capa_result.total_functions_matched
++                    result.stats["capa_file_capabilities"] = len(capa_result.file_capabilities)
++                    result.stats["capa_duration"] = round(capa_result.duration_seconds, 1)
++                    # Sonuclari workspace'e kaydet (reconstruction kullanacak)
++                    context.workspace.save_json(
++                        "static", "capa_capabilities", capa_result.to_dict(),
++                    )
++                    logger.info(
++                        "CAPA: %d kural eslesti, %d fonksiyonda capability "
++                        "(%.1fs, format=%s)",
++                        capa_result.total_rules_matched,
++                        capa_result.total_functions_matched,
++                        capa_result.duration_seconds,
++                        capa_result.format_,
++                    )
+                 else:
+-                    logger.debug("CAPA mevcut degil, atlaniyor")
+-            except ImportError:
++                    logger.debug("CAPA sonuc yok: %s", capa_result.status_reason)
++            except ImportError as exc:
++                result.stats["capa_status"] = "arac_yok"
++                result.stats["capa_status_reason"] = f"capa_scanner import edilemedi: {exc}"
+                 logger.debug("flare-capa kurulu degil, CAPA atlaniyor")
+             except Exception as exc:
++                result.stats["capa_status"] = "hata"
++                result.stats["capa_status_reason"] = f"{type(exc).__name__}: {exc}"
+                 logger.warning("CAPA scan hatasi (atlaniyor): %s", exc)
+ 
+         # FLIRT (FLIRT yükleme bug'ı, 2026-09-25): bu aşama artık FLIRT imzası
