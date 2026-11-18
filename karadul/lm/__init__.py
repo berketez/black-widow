@@ -147,4 +147,11 @@ NAME_TAG_MAX_CHARS = 128
 # get_decompiled satır numarası argümanlarının şema tavanı.
 LINE_NUMBER_MAX = 999999
 
+# --- P21 (2026-11-18 onarım) eşikleri [bu iş] -------------------------------------------------
+# LM-02: geçici arka uç hatasından (bağlantı istek sürerken koptu, okuma zaman aşımı, akış bitiş
+# işareti gelmeden kesildi) sonra aynı isteğin en çok kaç kez yineleneceği. Yalnız sunucu ayaktaysa,
+# görev iptal edilmemişse ve süre bütçesi dolmamışsa yinelenir. 1: bir kopma görevi düşürmez; ikinci
+# kopma kalıcı sorun sayılır ve görev "arka_uc_hatasi" ile biter.
+MODEL_RETRY_MAX = 1
+
 __all__: list[str] = []

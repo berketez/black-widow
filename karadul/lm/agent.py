@@ -33,11 +33,11 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Iterable, Iterator, Mapping, Optional
 
 from karadul.lm import (
-    BUDGET_TOOL_RESULTS_TOKENS, CONTEXT_TOKENS, CONTEXT_TOKENS_K2, MAX_TOKENS_STEP, TIME_BUDGET_FACTOR, guard,
-    protocol,
+    BUDGET_TOOL_RESULTS_TOKENS, CONTEXT_TOKENS, CONTEXT_TOKENS_K2, MAX_TOKENS_STEP, MODEL_RETRY_MAX,
+    TIME_BUDGET_FACTOR, guard, protocol,
 )
 from karadul.lm.audit import AuditLog, canonical_json, sha256_text
-from karadul.lm.backend import STATE_MEMORY_STOPPED, Backend, ChatResult, LMError
+from karadul.lm.backend import STATE_ERROR, STATE_MEMORY_STOPPED, Backend, BackendError, ChatResult, LMError
 from karadul.lm.context import (
     MODE_K0, MODE_K1, MODE_K2, MODES, PROMPT_VERSION, ContextBudget, blind_leaks, estimate_result_tokens,
     estimate_text_tokens, fixed_prefix, max_calls_for, name_question, safe_assistant_content, user_message,
@@ -99,6 +99,7 @@ class Counters:
     context_exceeded: int = 0       # bağlama sığmadığı için verilmeyen sonuç
     blind_blocked: int = 0          # körlük taramasına takıldığı için verilmeyen sonuç
     repairs: int = 0                # onarım turu
+    retries: int = 0                # geçici arka uç hatasından sonra yinelenen istek (LM-02)
     prompt_tokens: int = 0          # uçtan gelen gerçek sayıların toplamı
     completion_tokens: int = 0
 
@@ -147,6 +148,7 @@ class _Task:
     results: list[ToolResult] = field(default_factory=list)
     seen: set[tuple[str, str]] = field(default_factory=set)
     done: bool = False
+    deadline: Optional[float] = None    # süre bütçesinin bittiği an (saat değeri); yoksa sınırsız
 
     def finish(self, status: str, error: Optional[str] = None, *, override: bool = False) -> None:
         if self.done and not override:
@@ -236,14 +238,14 @@ class Agent:
             # Adres alanına yalnız biçimi doğrulanmış değer yazılır (çağıranın verdiği ham dizgi değil).
             shown = addr if isinstance(addr, str) and _ADDR_RE.fullmatch(addr) else None
             task = _Task(TaskResult(task_id=f"g{self._task_seq}", mode=mode, task=TASK_NAME, addr=shown,
-                                    status="", blind=self.blind_target))
+                                    status="", blind=self.blind_target),
+                         deadline=None if deadline_sec is None else t0 + deadline_sec)
             try:
                 try:
                     if mode == MODE_K0:
                         self._execute_k0(task, addr, abstain_allowed)
                     else:
-                        self._execute_loop(task, mode, addr, abstain_allowed,
-                                           None if deadline_sec is None else t0 + deadline_sec)
+                        self._execute_loop(task, mode, addr, abstain_allowed, task.deadline)
                 except WorkspaceError as e:
                     task.finish(STATUS_PACKAGE_ERROR, str(e), override=True)
             except BaseException as e:
@@ -370,15 +372,24 @@ class Agent:
             task.finish(STATUS_MEMORY)
             return None
         c = task.result.counters
-        c.model_calls += 1
         reply: Optional[ChatResult] = None
-        try:
-            # Arka uca listenin kopyası gider: geçmiş sonradan uzasa da gönderilen istek değişmez.
-            reply = self.backend.chat(list(messages), schema=schema, max_tokens=MAX_TOKENS_STEP,
-                                      purpose=purpose)
-        except LMError as e:
-            text = f"{type(e).__name__}: {e}"
-            task.finish(STATUS_BACKEND_ERROR, self.audit.redact(text) if self.audit is not None else text)
+        attempt = 0
+        while True:
+            c.model_calls += 1
+            try:
+                # Arka uca listenin kopyası gider: geçmiş sonradan uzasa da gönderilen istek değişmez.
+                reply = self.backend.chat(list(messages), schema=schema, max_tokens=MAX_TOKENS_STEP,
+                                          purpose=purpose if attempt == 0 else f"{purpose}_yineleme")
+            except LMError as e:
+                if self._may_retry(task, e, attempt):
+                    attempt += 1
+                    c.retries += 1
+                    continue
+                text = f"{type(e).__name__}: {e}"
+                if attempt:
+                    text += f" (yineleme {attempt}/{MODEL_RETRY_MAX} sonrası)"
+                task.finish(STATUS_BACKEND_ERROR, self.audit.redact(text) if self.audit is not None else text)
+            break
         self._check_memory(task)
         if reply is None:
             return None
@@ -388,6 +399,18 @@ class Agent:
         c.prompt_tokens += reply.prompt_tokens or 0
         c.completion_tokens += reply.completion_tokens or 0
         return None if task.done else reply
+
+    def _may_retry(self, task: _Task, error: LMError, attempt: int) -> bool:
+        """Geçici arka uç hatasından sonra istek yinelenir mi (LM-02)? Yalnız bağlantı kopması / okuma
+        zaman aşımı / kesik akışta, bütçe kalmışsa, sunucu hata ya da bellek nedeniyle durmamışsa (ölmüş
+        yerel sunucu kendiliğinden yeniden yüklenmez), iptal yoksa ve süre bütçesi dolmamışsa."""
+        if not (isinstance(error, BackendError) and error.transient) or attempt >= MODEL_RETRY_MAX:
+            return False
+        if self.backend.state in (STATE_ERROR, STATE_MEMORY_STOPPED) or self._memory_stopped():
+            return False
+        if self.cancel.is_set():
+            return False
+        return task.deadline is None or self._clock() <= task.deadline
 
     def _level(self, task: _Task) -> Optional[str]:
         level = self.backend.capabilities().level

@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import atexit
 import hashlib
+import http.client
 import ipaddress
 import json
 import os
@@ -74,7 +75,13 @@ class LMError(RuntimeError):
 
 
 class BackendError(LMError):
-    pass
+    """Arka uç isteği başarısız. ``transient``: bağlantı istek sürerken koptu, okuma zaman aşımına
+    uğradı ya da akış bitiş işareti gelmeden kesildi; sunucu ayakta kaldıysa istek yinelenebilir
+    (LM-02). Uç HTTP hata kodu, bozuk cevap ve bağlanamama geçici sayılmaz."""
+
+    def __init__(self, message: str = "", *, transient: bool = False):
+        super().__init__(message)
+        self.transient = transient
 
 
 class HttpStatusError(BackendError):
@@ -293,12 +300,14 @@ def read_sse(lines: Iterable[bytes], clock: Callable[[], float], t0: float,
     pieces: list[str] = []
     out: dict[str, Any] = {"finish_reason": None, "usage": None, "timings": None,
                            "first": None, "last": None, "events": 0}
+    done = False
     for raw in lines:
         line = raw.strip()
         if not line or line.startswith(b":") or not line.startswith(b"data:"):
             continue
         data = line[5:].strip()
         if data == b"[DONE]":
+            done = True
             break
         try:
             chunk = json.loads(data)
@@ -312,8 +321,8 @@ def read_sse(lines: Iterable[bytes], clock: Callable[[], float], t0: float,
             out["usage"] = chunk["usage"]
         if isinstance(chunk.get("timings"), dict):
             out["timings"] = chunk["timings"]
-        choices = chunk.get("choices") or []
-        if not choices or not isinstance(choices[0], dict):
+        choices = chunk.get("choices")
+        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
             continue
         delta = choices[0].get("delta") or {}
         piece = delta.get("content") if isinstance(delta, dict) else None
@@ -328,6 +337,10 @@ def read_sse(lines: Iterable[bytes], clock: Callable[[], float], t0: float,
                 on_token(piece)
         if choices[0].get("finish_reason"):
             out["finish_reason"] = choices[0]["finish_reason"]
+    if not done and out["finish_reason"] is None:
+        # Bağlantı temiz kapandı ama ne ``[DONE]`` ne bitiş nedeni geldi: üretim yarıda kesildi. Yarım
+        # metin "başarılı" cevap diye dönmez (LM-02); bitiş nedeni gelmişse ``[DONE]``'sız uç kabul edilir.
+        raise BackendError("akış bitiş işareti gelmeden kesildi", transient=True)
     out["content"] = "".join(pieces)
     return out
 
@@ -342,7 +355,8 @@ def parse_completion(body: bytes) -> dict[str, Any]:
         raise BackendError("uç cevabı nesne değil")
     if "error" in d:
         raise BackendError(f"uç hata bildirdi: {str(d['error'])[:ERROR_EXCERPT_CHARS]}")
-    choice = (d.get("choices") or [{}])[0]
+    choices = d.get("choices")
+    choice = choices[0] if isinstance(choices, list) and choices else {}
     msg = choice.get("message") if isinstance(choice, dict) else None
     content = msg.get("content") if isinstance(msg, dict) else None
     return {"content": content if isinstance(content, str) else "",
@@ -410,10 +424,20 @@ class _OpenAIClient:
             else:
                 parts = parse_completion(resp.read())
                 parts.update({"first": None, "last": None, "events": 0})
+        except BackendError as e:
+            err = BackendError(self.redact(str(e)), transient=e.transient)
         except LMError as e:
             err = BackendError(self.redact(str(e)))
+        except (OSError, http.client.HTTPException) as e:
+            # Başlıklar geldikten sonra gövde / akış okunurken kopma ya da zaman aşımı (LM-02):
+            # ConnectionResetError, TimeoutError, IncompleteRead. Görev "arka uç hatası" ile biter.
+            err = BackendError(self.redact(f"cevap okunurken bağlantı koptu ({type(e).__name__}: {e})"),
+                               transient=True)
         finally:
-            resp.close()
+            try:
+                resp.close()
+            except (OSError, http.client.HTTPException):
+                pass
         if err is not None:
             raise err
         return ChatResult(content=parts["content"], finish_reason=parts["finish_reason"], usage=parts["usage"],
@@ -477,6 +501,7 @@ class Backend(ABC):
         başarılı ya da hatalı — denetim günlüğüne bir kayıt yazar (K-L1)."""
         messages = _check_messages(messages)
         with self._chat_lock:
+            wrapped: Optional[BackendError] = None
             try:
                 result = self._chat(messages, schema, stream, max_tokens, on_token)
             except BaseException as e:
@@ -485,7 +510,13 @@ class Backend(ABC):
                     self.audit.write("model_istegi", amac=purpose, arka_uc=self._audit_backend(),
                                      iletiler_sha256=digest, iletiler_bayt=nbytes,
                                      hata=self._redact(f"{type(e).__name__}: {e}"))
-                raise
+                if not isinstance(e, (OSError, http.client.HTTPException)):
+                    raise
+                # Arka ucun kendi katmanında sarılmamış G/Ç hatası da arka uç hatasıdır (LM-02). İstisna
+                # ``except`` dışında yükselir: özgün ileti (anahtar taşıyabilir) bağlama girmez.
+                wrapped = BackendError(self._redact(f"bağlantı hatası ({type(e).__name__}: {e})"), transient=True)
+            if wrapped is not None:
+                raise wrapped
             if self.audit is not None:
                 self.audit.write("model_istegi", amac=purpose, arka_uc=self._audit_backend(),
                                  **result.audit_fields())
