@@ -665,9 +665,21 @@ class BinaryReconstructionConfig:
     typeforge_timeout: float = 600.0         # Subprocess timeout (saniye)
     typeforge_min_confidence: float = 0.85   # Merge icin minimum guven esigi
     # v1.10.0 M3 T9: C++ RTTI/vtable reconstruction (Itanium ABI, single inheritance)
-    enable_rtti_recovery: bool = False       # ETKİSİZ: analiz akışına bağlı değil (yalnız `karadul rtti`; P13b bağlayacak)
+    enable_rtti_recovery: bool = False       # ETKİSİZ: analiz akışına bağlı değil (yalnız `karadul rtti`; P13b ad kanalını hazırladı, üretici adımı stages.py Faz 1'de yok)
     rtti_abi: str = "itanium"                # `karadul rtti` öntanımı: "itanium" | "msvc" (analiz akışında okunmuyor)
     rtti_max_vtable_entries: int = 64        # Vtable basina max okunacak method slot
+    # P13b / K-4: hata ayıklama bilgisi, ayrıştırılmış simge ve harici araç ad kanalları
+    # (``_feedback_naming_candidates.K4_CHANNEL_FLAGS``). Ad üreten kanal ölçülmeden açılmaz.
+    # PDB: libz3.dll + libz3.pdb'de ihraç tablosuyla çapraz denetim 771 / 771 aynı ad, aynı VA
+    # (GT'den bağımsız; P13b.md) → "sembol varsa onu kullan" ürün davranışı olarak açık; yalnız
+    # PE + yan .pdb + llvm-pdbutil varken çalışır. Öbürlerinin doğruluğu ölçülmedi → kapalı.
+    enable_pdb_naming: bool = True
+    enable_dwarf_naming: bool = False         # ikilideki ya da .dSYM'deki DWARF (GT ile aynı kaynak)
+    enable_rust_naming: bool = False          # Rust legacy / v0 ad ayrıştırma (nm simgeleri)
+    enable_go_naming: bool = False            # Go simgeleri (nm)
+    enable_binaryninja_naming: bool = False   # Binary Ninja fonksiyon adları (lisans gerekir)
+    enable_trex_naming: bool = False          # TRex yapı ipucu (girdisi üretilmiyor: desteklenmiyor)
+    enable_rtti_naming: bool = False          # C++ RTTI vtable yuvası adları (bağlanmadı: P13b)
     # v1.13 Dalga 1: anti-debug + packer fingerprint pipeline step'leri.
     # Default True -- opt-out flag'leri. KARADUL_DISABLE_ANTI_DEBUG vb.
     # ile ileride env override eklenebilir.
