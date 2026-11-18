@@ -315,9 +315,35 @@ def test_ui_name_arayuzun_byaddr_anahtariyla_ayni(srv, tmp_path):
     assert set(dolu.values()) == anahtarlar                    # her düğüme ulaşılır, düğümü olmayan ad yok
     assert len(set(dolu.values())) == len(dolu)                 # iki adres aynı düğüme gitmez
     assert dolu[A] == fun(A) and w.ui_name("0x" + A.upper()) == fun(A) == w.ui_name(A.lstrip("0"))
-    # Decompile dosyası olmayan (ithal thunk, Ghidra'nın adlandırdığı) ve çalışma alanında olmayan adres: None.
-    for a in (MALLOC, SIGNAL, ENTRY, "00fff000", "zz", None, 4096):
+    # Ghidra'nın adlandırdığı fonksiyonlar (ithal taslağı, entry) da arayüzde düğüm (ARAYUZ-11, P17):
+    # anahtarları dosya adı. Fikstürdeki dosyaların başlığı yok → Ghidra adıyla eşlenir.
+    assert (w.ui_name(MALLOC), w.ui_name(SIGNAL), w.ui_name(ENTRY)) == ("malloc", "signal", "entry")
+    # Çalışma alanında olmayan ya da biçimi bozuk adres: None.
+    for a in ("00fff000", "zz", None, 4096):
         assert w.ui_name(a) is None, a
+
+
+def test_ui_name_ghidra_adli_dosya_adres_basligindan(srv, tmp_path):
+    """Ghidra'nın adlandırdığı fonksiyonun dosya adı Ghidra adından farklıysa (betik adı arındırmış)
+    adres, arayüzün de okuduğu ``// Address:`` başlığından gelir; başlığı ve eşleşen adı olmayan dosya
+    eşlenmez (adres uydurulmaz)."""
+    kok = build_ws(tmp_path / "ws", {A: {"calls": [ENTRY]}}, named={ENTRY: "entry"})
+    dec = kok / "static" / "ghidra_output" / "decompiled"
+    (dec / "entry.c").unlink()
+    (dec / "entry_arindirilmis.c").write_text(f"// Function: entry\n// Address: {ENTRY}\n\nvoid entry(void) {{}}\n",
+                                             encoding="utf-8")
+    (dec / "yetim.c").write_text("void yetim(void) {}\n", encoding="utf-8")
+    w = T.Workspace(kok)
+    anahtarlar = _arayuz_anahtarlari(srv, kok)
+    assert w.ui_name(ENTRY) == "entry_arindirilmis" and "entry_arindirilmis" in anahtarlar
+    assert "yetim" in anahtarlar and "yetim" not in {w.ui_name(x) for x in w._functions.values()}
+
+
+def test_ui_desenleri_arayuzle_ayni(srv):
+    """LM paketi arayüz modülünü içe aktarmaz; düğüm kimliği ve adres başlığı desenleri elle eşlenir."""
+    assert T._UI_NODE_ID_RE.pattern == srv._NODE_ID_RE.pattern
+    assert T._UI_ADDR_HEADER_RE.pattern == srv._ADDR_HEADER_RE.pattern
+    assert T._UI_ADDR_HEADER_RE.flags == srv._ADDR_HEADER_RE.flags
 
 
 def test_ui_name_dosya_adindan_okunur_adres_yaziminden_kurulmaz(srv, tmp_path):

@@ -65,6 +65,12 @@ BLIND_HIDDEN_TAGS = frozenset({TAG_MANUAL, TAG_MODEL})
 ADDR_PATTERN = "^FUN_[0-9a-fA-F]{3,16}$"
 _ADDR_RE = re.compile(ADDR_PATTERN)
 _FUN_FILE_RE = re.compile(r"^FUN_([0-9a-fA-F]+)\.c$")
+# Arayüzün düğüm kimliği ve decompile başlığındaki adres satırı: ``ui/server.py``'deki
+# ``_NODE_ID_RE`` / ``_ADDR_HEADER_RE`` ile AYNI olmalı (``tests/test_lm_events.py`` iki deseni
+# karşılaştırır). LM paketi arayüz modülünü içe aktarmaz; eşitliği test kilitler.
+_UI_NODE_ID_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_.]{0,200}")
+_UI_ADDR_HEADER_RE = re.compile(r"^// Address:\s+([0-9a-fA-F]+)\s*$", re.M)
+_UI_HEADER_CHARS = 400   # ``ui/server.py::build_model`` başlığı ilk 400 karakterde arar
 # ui/server.py:74 ``_FUN_RE``
 _FUN_RE = re.compile(r"FUN_[0-9a-fA-F]+")
 # Kanıt paketine giren ad düz bir C tanımlayıcısı olmalı: köşeli ayraç, boşluk ya da noktalama
@@ -249,11 +255,44 @@ class Workspace:
 
         Anahtar ``FUN_<adres>`` diye KURULMAZ, dosyanın kendi adından okunur: ``ghidra_functions.json``'
         daki adres yazımı (``103cc0``) ile dosya adının yazımı (``FUN_00103cc0``) farklı olabilir.
-        Decompile dosyası olmayan adres (ithal, thunk, Ghidra'nın adlandırdığı fonksiyon) ya da
-        çalışma alanında olmayan adres için ``None``: arayüzde o adresin düğümü yoktur."""
+        Ghidra'nın adlandırdığı fonksiyonlar (``entry``, ithal taslakları) da arayüzde düğümdür
+        (ARAYUZ-11, P17): onların anahtarı da dosya adıdır (``_ui_named_nodes``). Decompile dosyası
+        olmayan ya da çalışma alanında olmayan adres için ``None``: arayüzde o adresin düğümü yoktur."""
         a = self._canon(hexaddr)
-        p = self.code_files.get(a) if a is not None else None
-        return None if p is None else p.name[:-2]
+        if a is None:
+            return None
+        p = self.code_files.get(a)
+        return p.name[:-2] if p is not None else self._ui_named_nodes.get(a)
+
+    @property
+    def _ui_named_nodes(self) -> dict[str, str]:
+        """Ghidra'nın adlandırdığı (``FUN_`` olmayan) decompile dosyalarının arayüz düğümleri: adres →
+        dosya adı (uzantısız). Arayüz (``ui/server.py::build_model``) adı ``_NODE_ID_RE``'ye uyan her
+        ``.c`` dosyasını düğüm yapar. Adres önce dosyanın ``// Address:`` başlığından (arayüzün çağrı
+        grafiği eşlemesiyle aynı kaynak), başlık yoksa ``ghidra_functions.json``'da dosya adıyla aynı
+        adı taşıyan fonksiyondan okunur. Adresi bulunamayan dosya eşlenmez (uydurulmaz)."""
+        if "ui_named" not in self._cache:
+            out: dict[str, str] = {}
+            if self.code_dir.is_dir():
+                by_name: dict[str, int] = {}
+                for name, _imp, n in self._ghidra:
+                    by_name.setdefault(name, n)
+                for p in sorted(self.code_dir.glob("*.c")):
+                    stem = p.name[:-2]
+                    if stem.startswith("FUN_") or not _UI_NODE_ID_RE.fullmatch(stem):
+                        continue
+                    try:
+                        head = p.read_text(errors="ignore")[:_UI_HEADER_CHARS]
+                    except OSError:
+                        head = ""
+                    m = _UI_ADDR_HEADER_RE.search(head)
+                    a = self._canon(m.group(1)) if m else None
+                    if a is None and stem in by_name:
+                        a = self._functions.get(by_name[stem])
+                    if a is not None and a not in self.code_files:
+                        out.setdefault(a, stem)
+            self._cache["ui_named"] = out
+        return self._cache["ui_named"]
 
     def read_code(self, hexaddr: str) -> Optional[str]:
         """Fonksiyonun ham decompile metni; dosya yoksa ya da okunamıyorsa ``None``."""
