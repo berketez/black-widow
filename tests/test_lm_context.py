@@ -313,14 +313,21 @@ def test_baglam_butcesi_aritmetigi():
     assert LM.CONTEXT_TOKENS_K2_FALLBACK == 12288 and LM.REFS_MAX_ITEMS == LM.MAX_TOOL_CALLS + 2 == 10
     b = C.ContextBudget(LM.CONTEXT_TOKENS, LM.MAX_TOKENS_STEP)
     assert b.margin_tokens == 512 and b.prompt_room == 10240 - 256 - 512 == 9472
-    assert b.fits(9472) and not b.fits(9473) and b.fits(0)
+    # P21 B-E2: pay = max(512, kestirimin %10'u); uçtan gelen gerçek sayı şişirilmez
+    assert LM.ESTIMATE_ERROR_FRACTION == 0.10 and b.margin_for(1000) == 512 and b.margin_for(9000) == 900
+    assert b.fits(5120) and b.margin_for(5120) == 512 and b.margin_for(5121) == 513
+    assert b.fits(9076) and not b.fits(9077) and b.fits(0)              # 9 076 + 908 + 256 = 10 240
+    assert b.fits(0, 9472) and not b.fits(1, 9472) and b.fits(100, 9372) and not b.fits(100, 9373)
+    assert b.context_needed(1000) == 1000 + 512 + 256 and b.context_needed(10, 5) == 5 + 10 + 512 + 256
     assert C.ContextBudget(1000, 100, 0).prompt_room == 900
-    # sonucun kestirimi: kod alanı kod oranıyla, kalanı metin oranıyla sayılır
+    assert C.ContextBudget(1000, 100, 0, 0.0).fits(900) and not C.ContextBudget(1000, 100, 0, 0.0).fits(901)
+    # sonucun kestirimi: kod alanı kod oranıyla, kalanın rakamları birer jeton, geri kalanı metin oranıyla
     kodlu = {"id": "r1", "tool": "get_decompiled", "ok": True, "data": {"code": "x" * 3000}, "kind": "olgu"}
     duz = {"id": "r1", "tool": "get_decompiled", "ok": True, "data": {"text": "x" * 3000}, "kind": "olgu"}
     tum = len(C.wrap_result(kodlu).encode("utf-8"))
-    assert C.estimate_result_tokens(kodlu) == C.estimate_tokens(tum - 3002, 3002)
-    assert C.estimate_result_tokens(duz) == C.estimate_tokens(len(C.wrap_result(duz).encode("utf-8")))
+    assert C.estimate_result_tokens(kodlu) == C.estimate_tokens(tum - 3002 - 1, 3002, 1)    # "r1"in rakamı
+    duz_metin = C.wrap_result(duz)
+    assert C.estimate_result_tokens(duz) == C.estimate_tokens(len(duz_metin.encode("utf-8")) - 1, 0, 1)
     assert C.estimate_result_tokens(kodlu) > 2 * C.estimate_result_tokens(duz)
     assert C.estimate_result_tokens({"id": "r1", "ok": False, "error": "tekrar"}) > 0
 

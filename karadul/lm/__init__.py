@@ -117,6 +117,15 @@ BUDGET_MARGIN_TOKENS = 512
 # Jeton kestirimi [tahmin]: gerçek sayı her zaman ucun `usage` alanından okunur (§2.3).
 BYTES_PER_TOKEN_CODE = 1.5      # arac_sozlesmeleri.md §2: kod, 9.000 bayt ≈ 6.000 jeton
 BYTES_PER_TOKEN_TEXT = 4.294    # tasarım §4.1: sistem_ortak.txt 1.331 bayt = 310 jeton
+# P21 LM-04 [bu iş]: kod dışı metindeki her ondalık rakam ayrı bir jeton sayılır (Qwen ön-jetonlayıcısı
+# rakamları tek tek böler; kulvar_LM.md LM-04). Adres listeleri (``FUN_10001d1fc, …``) ve ``0x`` sabitleri
+# düz metin oranıyla (4,294) sayılınca kestirim %6-17 düşük kalıyordu (2026-11-12 K0 dumanı, n = 5).
+TOKENS_PER_DIGIT = 1.0
+# P21 B-E2 [bu iş]: oransal pay. Bağlam payı = max(BUDGET_MARGIN_TOKENS, kestirim × bu oran). Rakam
+# düzeltmesinden sonra aynı 5 istemde gerçek / kestirim en çok 1,068 (lm04_sonra.txt); 0,10 bu en kötü
+# değerin üstünde bir yuvarlamadır. n = 5, tek ikili (Mac htop): yön gösterici; gerçek jetonlayıcıyla
+# daha geniş ölçüm P21.md'de bekliyor.
+ESTIMATE_ERROR_FRACTION = 0.10
 
 # --- Tasarım seçimleri [seçim] ---------------------------------------------------------------
 LOOP_CODE_LIMIT_BYTES = 4500    # §4.3, arac_sozlesmeleri.md O2: döngü kipinde çağrı başına kod

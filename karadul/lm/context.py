@@ -38,9 +38,9 @@ from typing import Any, Callable, Iterable, Mapping, Optional, Sequence
 from karadul.lm import (
     BUDGET_MARGIN_TOKENS, BUDGET_OUTPUT_TOKENS, BUDGET_PACKAGE_TOKENS, BUDGET_PREFIX_TOKENS,
     BUDGET_SESSION_TOKENS, BUDGET_TOOL_RESULTS_TOKENS, BYTES_PER_TOKEN_CODE, BYTES_PER_TOKEN_TEXT,
-    CODE_HEAD_BYTES, CODE_LIMIT_BYTES, CODE_TAIL_BYTES, EVIDENCE_API_LIMIT, EVIDENCE_MAX_CALLBACKS,
-    EVIDENCE_MAX_CALLEES, EVIDENCE_MAX_CALLERS, EVIDENCE_MAX_CONSTANTS, EVIDENCE_MAX_STRINGS,
-    EVIDENCE_STRING_CHARS, MAX_TOOL_CALLS, MAX_TOOL_CALLS_K1,
+    CODE_HEAD_BYTES, CODE_LIMIT_BYTES, CODE_TAIL_BYTES, ESTIMATE_ERROR_FRACTION, EVIDENCE_API_LIMIT,
+    EVIDENCE_MAX_CALLBACKS, EVIDENCE_MAX_CALLEES, EVIDENCE_MAX_CALLERS, EVIDENCE_MAX_CONSTANTS,
+    EVIDENCE_MAX_STRINGS, EVIDENCE_STRING_CHARS, MAX_TOOL_CALLS, MAX_TOOL_CALLS_K1, TOKENS_PER_DIGIT,
 )
 
 # ============================================================================================
@@ -462,46 +462,74 @@ K2_SLICES = {"onek": BUDGET_PREFIX_TOKENS, "oturum": BUDGET_SESSION_TOKENS, "pak
              "pay": BUDGET_MARGIN_TOKENS}
 
 
-def estimate_tokens(text_bytes: int, code_bytes: int = 0) -> int:
-    """Jeton kestirimi [tahmin]: düz metin 4,294 bayt/jeton, kod 1,5 bayt/jeton. Ölçüm değildir."""
-    if text_bytes < 0 or code_bytes < 0:
+def estimate_tokens(text_bytes: int, code_bytes: int = 0, digits: int = 0) -> int:
+    """Jeton kestirimi [tahmin]: düz metin 4,294 bayt/jeton, kod 1,5 bayt/jeton, kod dışı metindeki
+    her ondalık rakam 1 jeton (``digits``; ``text_bytes``'ın içinde sayılmaz). Ölçüm değildir."""
+    if text_bytes < 0 or code_bytes < 0 or digits < 0:
         raise ValueError("bayt sayısı eksi olamaz")
     # Kayan nokta artığı (4294 / 4,294 = 1000,0000000000001) bir üst tamsayıya itmesin.
-    return math.ceil(round(text_bytes / BYTES_PER_TOKEN_TEXT + code_bytes / BYTES_PER_TOKEN_CODE, 6))
+    return math.ceil(round(text_bytes / BYTES_PER_TOKEN_TEXT + code_bytes / BYTES_PER_TOKEN_CODE
+                           + digits * TOKENS_PER_DIGIT, 6))
 
 
 def _utf8_len(text: str) -> int:
     return len(text.encode("utf-8"))
 
 
+_DIGIT_RE = re.compile(r"[0-9]")
+
+
+def _text_parts(text: str) -> tuple[int, int]:
+    """Kod dışı metnin (rakam dışı bayt, rakam sayısı) ayrımı (LM-04: içerik türüne göre kestirim)."""
+    digits = len(_DIGIT_RE.findall(text))
+    return _utf8_len(text) - digits, digits
+
+
 def estimate_text_tokens(text: str) -> int:
-    return estimate_tokens(_utf8_len(text))
+    rest, digits = _text_parts(text)
+    return estimate_tokens(rest, 0, digits)
 
 
 def estimate_result_tokens(envelope: Mapping[str, Any]) -> int:
-    """Sarmalanmış bir sonucun jeton kestirimi: ``data.code`` kod oranıyla, kalanı metin oranıyla."""
-    wrapped = _utf8_len(wrap_result(envelope))
+    """Sarmalanmış bir sonucun jeton kestirimi: ``data.code`` kod oranıyla; kalanın rakamları birer
+    jeton, geri kalanı metin oranıyla (adres listeleri ve ``0x`` sabitleri rakam yoğundur, LM-04)."""
+    wrapped = wrap_result(envelope)
     data = envelope.get("data")
     code = data.get("code") if isinstance(data, Mapping) else None
-    code_bytes = _utf8_len(escape_json(code)) if isinstance(code, str) else 0
-    return estimate_tokens(wrapped - code_bytes, code_bytes)
+    coded = escape_json(code) if isinstance(code, str) else ""
+    rest = wrapped.replace(coded, "", 1) if coded else wrapped
+    text_bytes, digits = _text_parts(rest)
+    return estimate_tokens(text_bytes, _utf8_len(coded), digits)
 
 
 @dataclass(frozen=True)
 class ContextBudget:
-    """Bir isteğin bağlam bütçesi: istem + üretim + pay ≤ bağlam."""
+    """Bir isteğin bağlam bütçesi: istem + üretim + pay ≤ bağlam.
+
+    Pay = max(sabit ``margin_tokens``, kestirilen jetonların ``error_fraction`` oranı) (B-E2: sabit 512
+    büyük istemde kestirim hatasını karşılamıyordu; oran ölçülen en kötü hatanın üstünde). Uçtan gelen
+    gerçek sayılar (``known_tokens``) oranla şişirilmez; sabit pay yine uygulanır."""
 
     context_tokens: int
     output_tokens: int
     margin_tokens: int = BUDGET_MARGIN_TOKENS
+    error_fraction: float = ESTIMATE_ERROR_FRACTION
 
     @property
     def prompt_room(self) -> int:
-        """İstemin tutabileceği en çok jeton."""
+        """Sabit payla istemin tutabileceği en çok jeton (oransal pay hesaba katılmadan)."""
         return self.context_tokens - self.output_tokens - self.margin_tokens
 
-    def fits(self, prompt_tokens: int) -> bool:
-        return prompt_tokens <= self.prompt_room
+    def margin_for(self, estimated_tokens: int) -> int:
+        """Bu kestirimin payı: sabit pay ile oransal payın büyüğü."""
+        return max(self.margin_tokens, math.ceil(round(estimated_tokens * self.error_fraction, 6)))
+
+    def context_needed(self, estimated_tokens: int, known_tokens: int = 0) -> int:
+        """Bu istemin sığması için gereken en küçük bağlam."""
+        return known_tokens + estimated_tokens + self.margin_for(estimated_tokens) + self.output_tokens
+
+    def fits(self, estimated_tokens: int, known_tokens: int = 0) -> bool:
+        return self.context_needed(estimated_tokens, known_tokens) <= self.context_tokens
 
 
 # ============================================================================================

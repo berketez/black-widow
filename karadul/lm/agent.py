@@ -658,8 +658,9 @@ class Agent:
                 cost = estimate_result_tokens(result.envelope())
                 real = (reply.prompt_tokens + reply.completion_tokens
                         if reply.prompt_tokens is not None and reply.completion_tokens is not None else None)
-                now = real if real is not None else prompt_est
-                if tool_tokens + cost > BUDGET_TOOL_RESULTS_TOKENS or not budget.fits(now + cost):
+                # Uç gerçek sayıyı verdiyse o şişirilmez; yalnız kestirilen kısım paylanır (B-E2).
+                fits = budget.fits(cost, real) if real is not None else budget.fits(prompt_est + cost)
+                if tool_tokens + cost > BUDGET_TOOL_RESULTS_TOKENS or not fits:
                     # Sonuç bağlama sığmıyor: sessizce kırpılmaz, verilmez; model son cevabı verir.
                     result = error_result(result.id, tool, ERR_BUDGET, executed=True)
                     c.context_exceeded += 1

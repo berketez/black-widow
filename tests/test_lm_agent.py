@@ -254,7 +254,7 @@ def test_k0_durumlar_model_cagrilmadan_ya_da_cevapsiz(tmp_path):
 def test_k0_baglam_asimi_baslamadan_reddedilir(tmp_path):
     kestirim = kur(tmp_path / "olc", [yanit(AD)])[0].suggest_name(fun(BIG)).est_prompt_tokens
     assert kestirim > 6000                                            # 9.000 baytlık kod ≈ 6.000 jeton
-    sinir = kestirim + LM.MAX_TOKENS_STEP + LM.BUDGET_MARGIN_TOKENS
+    sinir = C.ContextBudget(0, LM.MAX_TOKENS_STEP).context_needed(kestirim)     # P21 B-E2: paylı kestirim
     sigar, arka, _ = kur(tmp_path / "sigar", [yanit(AD)], context_tokens=sinir)
     assert sigar.suggest_name(fun(BIG)).status == "tamam" and len(arka.calls) == 1
     sigmaz, arka2, gunluk = kur(tmp_path / "sigmaz", [yanit(AD)], context_tokens=sinir - 1)
@@ -601,7 +601,7 @@ def test_dongu_gecersiz_cagri_sayilir_ve_surer(tmp_path):
 
 def test_dongu_baglam_butcesi(tmp_path, monkeypatch):
     olc = k2(tmp_path / "olc", [son()])[0].run_loop(fun(A))
-    taban = olc.est_prompt_tokens + LM.MAX_TOKENS_STEP + LM.BUDGET_MARGIN_TOKENS
+    taban = C.ContextBudget(0, LM.MAX_TOKENS_STEP).context_needed(olc.est_prompt_tokens)   # P21 B-E2
     # paket sığıyor; HUB'ın kanıt paketi (binlerce bayt) sığmıyor → sonuç verilmez, model son cevabı verir
     ajan, arka, _ = k2(tmp_path / "dar", [cagri("get_evidence", addr=fun(HUB)), son()],
                        loop_context_tokens=taban + 200)
@@ -632,7 +632,7 @@ def test_dongu_baglam_butcesi(tmp_path, monkeypatch):
     gerek = (olc.est_prompt_tokens + C.estimate_text_tokens(c1.content) + C.estimate_result_tokens(s1.envelope())
              + C.estimate_result_tokens(s2.envelope()))
     birikim, arka4, _ = k2(tmp_path / "birikim", [c1, c2, son()],
-                           loop_context_tokens=gerek + LM.MAX_TOKENS_STEP + LM.BUDGET_MARGIN_TOKENS - 1)
+                           loop_context_tokens=C.ContextBudget(0, LM.MAX_TOKENS_STEP).context_needed(gerek) - 1)
     rb = birikim.run_loop(fun(A))
     assert rb.status == "tamam" and (rb.counters.tool_calls, rb.counters.context_exceeded) == (2, 1)
     assert arka4.calls[1]["messages"][-1]["content"] == s1.wrapped()       # ilk sonuç sığdı, verildi
