@@ -1750,8 +1750,10 @@ class ReconstructionStage(Stage):
                 LAYOUT_DEPENDENT_NAMES,
                 MIN_PRESENCE_MODULES,
                 THIN_CALLER_MAX_CALLEES,
+                USAGE_CONVENTION_NAME,
                 disambiguate,
                 extract_string_literals,
+                lto_less_inner_name,
                 lto_less_layout,
                 match_call_shape,
                 match_function,
@@ -1839,22 +1841,65 @@ class ReconstructionStage(Stage):
                         counts.append(int(node_by_key[ck].get("callee_count", 0)))
                 return counts
 
+            def _main_caller(fk: str) -> str | None:
+                """P-S3b kalem 2: adayı entry'den kurtarılan ``main`` doğrudan çağırıyor mu."""
+                for caller in (node_by_key.get(fk) or {}).get("callers", []) or []:
+                    if not isinstance(caller, dict):
+                        continue
+                    try:
+                        ck = f"FUN_{int(str(caller.get('address')), 16):08x}"
+                    except (ValueError, TypeError):
+                        continue
+                    if extracted_names.get(ck) == "main":
+                        return ck
+                return None
+
             def _offer(fk: str, nm: str, channel: str, evidence: str) -> bool:
                 """Tek karar noktasi: adi yaz ya da gerekcesiyle tut; yazildiysa True."""
                 proposed.add(fk)
                 rec: dict = {"key": fk, "name": nm, "channel": channel, "evidence": evidence}
                 current = extracted_names.get(fk)
-                if current is not None and current != nm:
+                inner = lto_less_inner_name(nm) if nm in LAYOUT_DEPENDENT_NAMES else None
+                if current is not None and current != nm and current != inner:
                     rec.update(decision="skipped", reason="on_ad_dolu", existing=current)
                     decisions.append(rec)
                     return False
                 if not presence.sufficient:
-                    rec.update(decision="withheld", reason="gnulib_kaniti_yetersiz",
-                               evidence_presence=presence_line)
+                    main_key = _main_caller(fk) if nm == USAGE_CONVENTION_NAME else None
+                    if main_key is None:
+                        rec.update(decision="withheld", reason="gnulib_kaniti_yetersiz",
+                                   evidence_presence=presence_line)
+                        decisions.append(rec)
+                        return False
+                    # P-S3b kalem 2: usage gnulib fonksiyonu değil, gelenek; iki bağımsız kanıt
+                    # (tek "Usage: %s" fonksiyonu + main onu doğrudan çağırıyor).
+                    rec.update(decision="applied", reason="usage_gelenegi",
+                               evidence_convention=(f"gnulib varlık kanıtı yok; 'Usage: %s' tek "
+                                                    f"fonksiyonda ve main ({main_key}) onu "
+                                                    f"doğrudan çağırıyor"))
                     decisions.append(rec)
-                    return False
+                    if current == nm:
+                        return False
+                    extracted_names[fk] = nm
+                    return True
                 if nm in LAYOUT_DEPENDENT_NAMES:
                     counts = _caller_counts(fk)
+                    if lto_less_layout(counts) and inner is not None:
+                        # P-S3b kalem 4: LTO'suz yerleşimde dizgi / çağrı iç fonksiyonda; iç adı yaz.
+                        rec.update(
+                            decision="applied", reason="lto_yerlesimi_ic_ad", name=inner,
+                            outer_name=nm, caller_callee_counts=counts,
+                            evidence_layout=(
+                                f"çağıranların hepsi ince sarmalayıcı (≤ {THIN_CALLER_MAX_CALLEES} "
+                                f"çağrı; çağrı sayıları {counts}): LTO'suz yerleşim, dizgi / çağrı "
+                                f"{nm}'in iç fonksiyonunda -> {inner}"
+                            ),
+                        )
+                        decisions.append(rec)
+                        if current == inner:
+                            return False
+                        extracted_names[fk] = inner
+                        return True
                     if lto_less_layout(counts):
                         rec.update(
                             decision="withheld", reason="lto_yerlesimi",
@@ -1916,7 +1961,7 @@ class ReconstructionStage(Stage):
                     if not nm:
                         continue
                     current = extracted_names.get(fun_key)
-                    if current is not None and current != nm:
+                    if current is not None and current not in (nm, lto_less_inner_name(nm)):
                         continue  # zaten isimli (main/string-fp) -> aday degil
                     cs_candidates.setdefault(nm, []).append(fun_key)
                 cs_assigned = 0

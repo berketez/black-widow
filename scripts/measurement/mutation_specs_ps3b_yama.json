@@ -1,0 +1,45 @@
+{
+ "_comment": "P-S3b stages yaması uygulanmışken (P-S4 için öneri; yama uygulanınca mutation_specs_ps3b.json'a taşınır)",
+ "mutants": [
+  {
+   "id": "ps3b_yama_usage_main_kaniti_yok",
+   "desc": "kalem 2: main çağırsa da usage tutulur (gelenek kanalı kapalı)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps3b_stages_yama.py::TestUsageGelenegi::test_main_cagiriyorsa_usage_yazilir",
+   "find": "                    if main_key is None:\n",
+   "replace": "                    if True or main_key is None:\n"
+  },
+  {
+   "id": "ps3b_yama_usage_main_sartsiz",
+   "desc": "kalem 2: main kanıtı aranmaz (her gnulib'siz usage yazılır)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps3b_stages_yama.py::TestUsageGelenegi::test_main_cagirmiyorsa_usage_yazilmaz",
+   "find": "                    main_key = _main_caller(fk) if nm == USAGE_CONVENTION_NAME else None\n",
+   "replace": "                    main_key = \"FUN_x\" if nm == USAGE_CONVENTION_NAME else None\n"
+  },
+  {
+   "id": "ps3b_yama_gelenek_her_ada",
+   "desc": "kalem 2: gelenek istisnası yalnız usage'a değil her ada",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps3b_stages_yama.py::TestUsageGelenegi::test_gelenek_yalniz_usage",
+   "find": "                    main_key = _main_caller(fk) if nm == USAGE_CONVENTION_NAME else None\n",
+   "replace": "                    main_key = _main_caller(fk)\n"
+  },
+  {
+   "id": "ps3b_yama_ic_ad_yok",
+   "desc": "kalem 4: LTO'suz yerleşimde iç ad yazılmaz (P-S3 davranışı)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps3b_stages_yama.py::TestIcAd::test_ince_cagiranlarda_ic_ad",
+   "find": "                    if lto_less_layout(counts) and inner is not None:\n",
+   "replace": "                    if False and lto_less_layout(counts) and inner is not None:\n"
+  },
+  {
+   "id": "ps3b_yama_ic_ad_idempotent_degil",
+   "desc": "kalem 4: çağrı şekli katmanı iç adla dolu anahtarı aday saymaz (ikinci çağrı karar kaydını değiştirir)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps3b_stages_yama.py::TestIcAd::test_ikinci_cagri_ayni",
+   "find": "                    if current is not None and current not in (nm, lto_less_inner_name(nm)):\n",
+   "replace": "                    if current is not None and current != nm:\n"
+  }
+ ]
+}
