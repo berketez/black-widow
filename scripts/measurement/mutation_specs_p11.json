@@ -1,0 +1,109 @@
+{
+  "_comment": "P11 (2026-11-18 onarımı) mutasyon koruması: TIP-03 (MaxSMT erişim çıkarımı: input0 alan kimliği değil, işaretçi tanım zinciri, kök kimliği), kol durum kaydı; TIP-01 (CFG-iso blok komut dökümü, süreç içi VF2, durum) ve TIP-02/BORU-03 (füzyon: adres anahtarı, tek aday, ölçülmüş kesinlik, bayraklı tüketim). Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı. Mutant uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p11.json",
+  "mutants": [
+    {
+      "id": "p11_k1_input0",
+      "desc": "LOAD/STORE işaretçisi yerine input0 (adres alanı kimliği) çözülür",
+      "module": "karadul/pipeline/steps/computation_struct_recovery.py",
+      "test": "tests/test_p11_maxsmt.py::test_input0_alan_kimligi_ofset_sayilmaz",
+      "find": "            resolved, reason = _resolve_pointer(ins[1], i, defs, ops)",
+      "replace": "            resolved, reason = _resolve_pointer(ins[0], i, defs, ops)  # m"
+    },
+    {
+      "id": "p11_k1_ptradd_carpim",
+      "desc": "PTRADD eleman boyutuyla çarpılmaz",
+      "module": "karadul/pipeline/steps/computation_struct_recovery.py",
+      "test": "tests/test_p11_maxsmt.py::test_ptradd_sabit_indeks_ofset_ve_kok",
+      "find": "                total += _signed_const(ins[1]) * int(getattr(ins[2], \"offset\", 0) or 0)",
+      "replace": "                total += _signed_const(ins[1])"
+    },
+    {
+      "id": "p11_k1_ptradd_erisim",
+      "desc": "PTRADD yine erişim sayılır",
+      "module": "karadul/pipeline/steps/computation_struct_recovery.py",
+      "test": "tests/test_p11_maxsmt.py::test_ptradd_erisim_degil",
+      "find": "            if mnem not in (\"LOAD\", \"STORE\"):\n                continue\n            out.counts[\"erisim\"] += 1",
+      "replace": "            if mnem not in (\"LOAD\", \"STORE\", \"PTRADD\"):\n                continue\n            out.counts[\"erisim\"] += 1"
+    },
+    {
+      "id": "p11_k1_store_genislik",
+      "desc": "STORE genişliği yazılan değerden değil işaretçiden",
+      "module": "karadul/pipeline/steps/computation_struct_recovery.py",
+      "test": "tests/test_p11_maxsmt.py::test_store_genisligi_yazilan_degerden",
+      "find": "                width_vn = ins[2] if len(ins) >= 3 else None",
+      "replace": "                width_vn = ins[1]"
+    },
+    {
+      "id": "p11_k1_zincir_toplam",
+      "desc": "iç içe ofsetler toplanmaz (yalnız son adım)",
+      "module": "karadul/pipeline/steps/computation_struct_recovery.py",
+      "test": "tests/test_p11_maxsmt.py::test_ardisik_int_add_ofsetleri_toplanir",
+      "find": "                total += _signed_const(b) if mnem == \"INT_ADD\" else -_signed_const(b)",
+      "replace": "                total = _signed_const(b) if mnem == \"INT_ADD\" else -_signed_const(b)"
+    },
+    {
+      "id": "p11_k1_onceki_tanim",
+      "desc": "en yakın önceki tanım yerine ilk tanım",
+      "module": "karadul/pipeline/steps/computation_struct_recovery.py",
+      "test": "tests/test_p11_maxsmt.py::test_en_yakin_onceki_tanim_kullanilir",
+      "find": "        d = idxs[pos - 1]",
+      "replace": "        d = idxs[0]"
+    },
+    {
+      "id": "p11_k1_dongu",
+      "desc": "yalnız sonradan tanımlanan yazmaç kök sayılır",
+      "module": "karadul/pipeline/steps/computation_struct_recovery.py",
+      "test": "tests/test_p11_maxsmt.py::test_yalniz_sonraki_tanim_dongu_sayilir",
+      "find": "            if idxs:\n                # Yalnız",
+      "replace": "            if 0 > 1:\n                # Yalnız"
+    },
+    {
+      "id": "p11_k1_gecici",
+      "desc": "tanımsız geçici değer kök sayılır",
+      "module": "karadul/pipeline/steps/computation_struct_recovery.py",
+      "test": "tests/test_p11_maxsmt.py::test_tanimsiz_gecici_ve_dizi_indeksi_atlanir",
+      "find": "            if _is_unique(cur):\n                # Geçici",
+      "replace": "            if False and _is_unique(cur):\n                # Geçici"
+    },
+    {
+      "id": "p11_k1_negatif",
+      "desc": "negatif ofset kabul edilir",
+      "module": "karadul/pipeline/steps/computation_struct_recovery.py",
+      "test": "tests/test_p11_maxsmt.py::test_tanimsiz_gecici_ve_dizi_indeksi_atlanir",
+      "find": "            if offset < 0:\n                out.counts[\"negatif_ofset\"] += 1",
+      "replace": "            if offset < -99999:\n                out.counts[\"negatif_ofset\"] += 1"
+    },
+    {
+      "id": "p11_k1_kok_tanim",
+      "desc": "kök kimliği tanım sırasını içermez",
+      "module": "karadul/pipeline/steps/computation_struct_recovery.py",
+      "test": "tests/test_p11_maxsmt.py::test_ayni_yazmac_farkli_tanim_farkli_degisken",
+      "find": "            var_name = f\"{fn_key}:{root[0]}:0x{root[1]:x}:{root[2]}@{def_idx}\"",
+      "replace": "            var_name = f\"{fn_key}:{root[0]}:0x{root[1]:x}:{root[2]}\""
+    },
+    {
+      "id": "p11_k1_ayni_ad",
+      "desc": "aynı adlı fonksiyonlar birleşir",
+      "module": "karadul/pipeline/steps/computation_struct_recovery.py",
+      "test": "tests/test_p11_maxsmt.py::test_ayni_adli_iki_fonksiyon_birlesmez",
+      "find": "            fn_key = f\"{fn_key}@{fn_addr}\"",
+      "replace": "            fn_key = fn_key"
+    },
+    {
+      "id": "p11_k1_hata_sayac",
+      "desc": "hata durumunda da sayaç yazılır",
+      "module": "karadul/computation/kol_durumu.py",
+      "test": "tests/test_p11_maxsmt.py::test_kol_durumu_hatada_sayac_yok",
+      "find": "    if durum != HATA:\n        kayit.update(sayaclar)",
+      "replace": "    kayit.update(sayaclar)"
+    },
+    {
+      "id": "p11_k1_isaretli",
+      "desc": "dar sabit işaretsiz okunur",
+      "module": "karadul/pipeline/steps/computation_struct_recovery.py",
+      "test": "tests/test_p11_maxsmt.py::test_isaretli_sabit",
+      "find": "    if value >= 1 << (bits - 1):\n        value -= 1 << bits",
+      "replace": "    if value >= 1 << (bits + 1) :\n        value -= 1 << bits"
+    }
+  ]
+}

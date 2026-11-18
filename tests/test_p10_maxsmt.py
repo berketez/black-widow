@@ -95,10 +95,13 @@ def phase2(tmp_path: Path, monkeypatch):
         solve_parallel = solve_from_raw
 
     monkeypatch.setattr(sr_pkg, "StructLayoutSolver", FakeSolver)
-    monkeypatch.setattr(csr, "_extract_accesses_per_function", lambda _p: {
-        "FUN_00101000": [MemoryAccess(var_name="v", offset=0, width=8),
-                         MemoryAccess(var_name="v", offset=8, width=4)],
-    })
+    # P11: adım erişimleri ``extract_struct_accesses`` üstünden alır (sayımla birlikte).
+    monkeypatch.setattr(csr, "extract_struct_accesses", lambda _p: csr.AccessExtraction(
+        per_function={
+            "FUN_00101000": [MemoryAccess(var_name="v", offset=0, width=8),
+                             MemoryAccess(var_name="v", offset=8, width=4)],
+        },
+    ))
 
     dec = tmp_path / "typed"
     dec.mkdir()

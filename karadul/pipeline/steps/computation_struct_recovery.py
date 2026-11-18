@@ -1,25 +1,29 @@
 """ComputationStructRecoveryStep -- MaxSMT struct layout kurtarma step'i.
 
-v1.10.0 M4 entegrasyonu: ``karadul.computation.struct_recovery`` paketini
-pipeline'a bagliyor. Feature flag
-``ComputationConfig.enable_computation_struct_recovery`` True ise Z3 MaxSMT
-cozucusu ile struct layout adaylarini hesaplar; ESKI StructRecoveryEngine'a
-aday listesi olarak aktarilmak uzere artifact'larda yayinlar.
+``ComputationConfig.enable_computation_struct_recovery`` açıksa (öntanım
+kapalı) Z3 MaxSMT çözücüsüyle fonksiyon başına yapı yerleşimi adayları
+hesaplar. Çıktıyı ``struct_recovery`` adımı ``StructRecoveryEngine``'e aday
+olarak verir (P10); koda yazım P10'un K-1 bayrağıyla kapalıdır.
 
-Tasarim kararlari:
-    - Eski StructRecoveryEngine ile CAKISMAZ, yerine onu besler
-      (Berke'nin karari: "MaxSMT ciktisi eski engine'e candidate olarak gecsin").
-    - Pcode/fonksiyon verisinden MemoryAccess cikarma best-effort; gerekli
-      alan yoksa bos sonuc doner (pipeline kirilmaz).
-    - Feature flag kapaliysa noop (bos/None sonuc, produce ettigi key'ler
-      downstream tarafindan sessizce gecilir).
+Erişim çıkarımı (TIP-03, P11): yalnız LOAD/STORE erişimdir. İkisinin de
+``input0``'ı adres alanı kimliğidir (sabit; ``ram`` = 433), ofset DEĞİL. Ofset
+işaretçi girdisinin (``input1``) tanım zincirinden okunur: ``PTRADD(b, i, n)``
+→ ``i*n``, ``INT_ADD(b, c)`` → ``c``, ``INT_SUB(b, c)`` → ``-c``, ``COPY``
+geçilir. Değişken kimliği zincirin kök varnode'u + tanım sırasıdır. JSONL'de
+kaydedilmeyen işlemlerle (CAST, PTRSUB, MULTIEQUAL) tanımlanan geçici
+değerler çözülemez ve sayılarak atlanır (``kol_maxsmt.erisim``).
+
+Durum: ``ctx.stats["kol_maxsmt"]`` (``karadul.computation.kol_durumu``).
 """
 
 from __future__ import annotations
 
+import bisect
 import logging
 import time
-from typing import Any
+from collections import Counter
+from dataclasses import dataclass, field
+from typing import Any, Optional
 
 from karadul.pipeline.context import StepContext
 from karadul.pipeline.registry import Step, register_step
@@ -27,115 +31,238 @@ from karadul.pipeline.registry import Step, register_step
 logger = logging.getLogger(__name__)
 
 
-def _extract_accesses_from_pcode(pcode_result: Any) -> list[Any]:
-    """PcodeAnalysisResult'tan MemoryAccess listesi cikar (best-effort).
+#: Alan ofseti sayılan en büyük bayt ofseti; ötesi dizi ya da küresel bellek sayılır.
+MAX_FIELD_OFFSET = 4096
+#: İşaretçi tanım zincirinde izlenen en çok adım.
+_MAX_CHAIN_DEPTH = 8
+_ACCESS_WIDTHS = (1, 2, 4, 8)
+_IN = "in"  # tanımı fonksiyonda olmayan kök (giriş yazmacı / parametre)
 
-    v1.10.0 Batch 6A: ``_extract_accesses_per_function`` kullan (bu duz
-    liste donen fonksiyon eski test/debug uyumu icin korundu; pipeline
-    step artik per-function cagirisi yapiyor).
+
+@dataclass
+class AccessExtraction:
+    """P-code'dan çıkarılan alan erişimleri ve sayımı (TIP-03).
+
+    ``per_function``: ``{fonksiyon: [MemoryAccess]}``.
+    ``bases``: ``{var_name: künye}``; künye taban varnode'u (alan, ofset, boyut),
+    tanım sırası (``"in"`` = fonksiyonda tanımı yok) ve varsa Ghidra'nın aynı
+    depolamadaki yüksek düzey değişken adı (``high_name``).
+    ``counts``: LOAD/STORE başına sonuç (``kabul`` ya da düşme nedeni).
     """
-    grouped = _extract_accesses_per_function(pcode_result)
+
+    per_function: dict[str, list[Any]] = field(default_factory=dict)
+    bases: dict[str, dict[str, Any]] = field(default_factory=dict)
+    counts: Counter = field(default_factory=Counter)
+
+
+def _vn_key(vn: Any) -> tuple[str, int, int]:
+    return (
+        str(getattr(vn, "space", "")),
+        int(getattr(vn, "offset", 0) or 0),
+        int(getattr(vn, "size", 0) or 0),
+    )
+
+
+def _is_const(vn: Any) -> bool:
+    return bool(getattr(vn, "is_constant", False)) or getattr(vn, "space", "") == "const"
+
+
+def _is_unique(vn: Any) -> bool:
+    return bool(getattr(vn, "is_unique", False)) or getattr(vn, "space", "") == "unique"
+
+
+def _signed_const(vn: Any) -> int:
+    """Sabit varnode değerini işaretli tamsayıya çevir.
+
+    Ghidra ``Varnode.getOffset()`` Java ``long`` döndürür (64 bitte zaten
+    işaretli); daha dar sabitlerde değer işaretsiz yazılmış olabilir.
+    """
+    value = int(getattr(vn, "offset", 0) or 0)
+    size = int(getattr(vn, "size", 0) or 0)
+    if value < 0 or size <= 0 or size > 8:
+        return value
+    bits = 8 * size
+    if value >= 1 << (bits - 1):
+        value -= 1 << bits
+    return value
+
+
+def _resolve_pointer(
+    vn: Any, use_idx: int, defs: dict[tuple, list[int]], ops: list[Any],
+) -> tuple[Optional[tuple[tuple[str, int, int], Any, int]], Optional[str]]:
+    """İşaretçi varnode'unu taban + sabit ofsete çöz.
+
+    Erişimden geriye, kullanımdan önceki en yakın tanımı (liste sırası = Ghidra
+    sıra numarası) izler: ``PTRADD(b, i, n)`` (``i``, ``n`` sabit) ``i*n``,
+    ``INT_ADD(b, c)`` ``c``, ``INT_SUB(b, c)`` ``-c`` ekler; ``COPY`` geçilir.
+    Başka bir işlemle tanımlanan (LOAD, CALL …) ya da fonksiyonda tanımı
+    olmayan yazmaç kök sayılır. Dönüş ``((kök anahtarı, tanım sırası, ofset), None)``
+    ya da ``(None, neden)``.
+    """
+    total = 0
+    cur, cur_idx = vn, use_idx
+    for _ in range(_MAX_CHAIN_DEPTH):
+        if cur is None:
+            return None, "eksik_girdi"
+        if _is_const(cur):
+            return None, "sabit_adres"
+        key = _vn_key(cur)
+        idxs = defs.get(key, [])
+        pos = bisect.bisect_left(idxs, cur_idx)
+        if pos == 0:
+            if idxs:
+                # Yalnız kullanımdan SONRA tanımlanıyor (döngü taşıması):
+                # hangi değerin geldiği bilinmez.
+                return None, "dongu_tanimi"
+            if _is_unique(cur):
+                # Geçici değer kaydedilmeyen bir işlemle (CAST, PTRSUB …) tanımlanmış.
+                return None, "tanimsiz_gecici"
+            return (key, _IN, total), None
+        d = idxs[pos - 1]
+        op = ops[d]
+        mnem = getattr(op, "mnemonic", "")
+        ins = list(getattr(op, "inputs", []) or [])
+        if mnem == "PTRADD" and len(ins) >= 3:
+            if _is_const(ins[1]) and _is_const(ins[2]):
+                total += _signed_const(ins[1]) * int(getattr(ins[2], "offset", 0) or 0)
+                cur, cur_idx = ins[0], d
+                continue
+            return None, "dizi_indeksi"
+        if mnem in ("INT_ADD", "INT_SUB") and len(ins) >= 2:
+            a, b = ins[0], ins[1]
+            if _is_const(a) and _is_const(b):
+                return None, "sabit_adres"
+            if _is_const(b):
+                total += _signed_const(b) if mnem == "INT_ADD" else -_signed_const(b)
+                cur, cur_idx = a, d
+                continue
+            if mnem == "INT_ADD" and _is_const(a):
+                total += _signed_const(a)
+                cur, cur_idx = b, d
+                continue
+            return None, "dizi_indeksi"
+        if mnem == "COPY" and ins:
+            cur, cur_idx = ins[0], d
+            continue
+        return (key, d, total), None
+    return None, "zincir_derin"
+
+
+def _high_names_by_storage(high_variables: Any) -> dict[str, str]:
+    """``(register, 0x4000, 8)`` → yüksek düzey ad; aynı depolamayı paylaşan adlar düşer."""
+    seen: dict[str, set[str]] = {}
+    for hv in high_variables or []:
+        if not isinstance(hv, dict):
+            continue
+        storage = str(hv.get("storage", "") or "")
+        name = str(hv.get("name", "") or "")
+        if storage and name:
+            seen.setdefault(storage, set()).add(name)
+    return {s: next(iter(n)) for s, n in seen.items() if len(n) == 1}
+
+
+def extract_struct_accesses(pcode_result: Any) -> AccessExtraction:
+    """P-code'dan fonksiyon başına alan erişimlerini çıkar (TIP-03 onarımı).
+
+    Yalnız LOAD ve STORE erişimdir (PTRADD adres hesabıdır). Ghidra'da ikisinin
+    de ``input0``'ı adres alanının kimliğini taşıyan sabittir (``ram`` = 433);
+    eski kod onu alan ofseti sanıyordu. İşaretçi ``input1``'dir; ofset onun tanım
+    zincirinden okunur (``_resolve_pointer``), değişken kimliği zincirin kök
+    varnode'u ve tanım sırasıdır (aynı yazmaç farklı tanımlarda farklı değişken).
+    Genişlik LOAD'da çıktı, STORE'da yazılan değer (``input2``) boyutudur.
+    """
+    from karadul.computation.struct_recovery import MemoryAccess
+
+    out = AccessExtraction()
+    if pcode_result is None:
+        return out
+    used_keys: dict[str, str] = {}
+    for fn in getattr(pcode_result, "functions", []) or []:
+        fn_name = str(getattr(fn, "name", "") or "")
+        fn_addr = str(getattr(fn, "address", "") or "")
+        fn_key = fn_name or fn_addr or "?"
+        if used_keys.get(fn_key, fn_addr) != fn_addr:
+            fn_key = f"{fn_key}@{fn_addr}"  # aynı adlı iki fonksiyon birleşmesin
+        used_keys.setdefault(fn_key, fn_addr)
+        ops = list(getattr(fn, "ops", []) or [])
+        defs: dict[tuple, list[int]] = {}
+        for i, op in enumerate(ops):
+            o = getattr(op, "output", None)
+            if o is not None:
+                defs.setdefault(_vn_key(o), []).append(i)
+        high_names = _high_names_by_storage(getattr(fn, "high_variables", None))
+        accesses: list[Any] = []
+        for i, op in enumerate(ops):
+            mnem = getattr(op, "mnemonic", "")
+            if mnem not in ("LOAD", "STORE"):
+                continue
+            out.counts["erisim"] += 1
+            ins = list(getattr(op, "inputs", []) or [])
+            if len(ins) < 2:
+                out.counts["eksik_girdi"] += 1
+                continue
+            if mnem == "LOAD":
+                width_vn = getattr(op, "output", None)
+            else:
+                width_vn = ins[2] if len(ins) >= 3 else None
+            width = int(getattr(width_vn, "size", 0) or 0) if width_vn is not None else 0
+            if width not in _ACCESS_WIDTHS:
+                out.counts["genislik"] += 1
+                continue
+            resolved, reason = _resolve_pointer(ins[1], i, defs, ops)
+            if resolved is None:
+                out.counts[reason or "cozulemedi"] += 1
+                continue
+            root, def_idx, offset = resolved
+            if offset < 0:
+                out.counts["negatif_ofset"] += 1
+                continue
+            if offset >= MAX_FIELD_OFFSET:
+                out.counts["buyuk_ofset"] += 1
+                continue
+            var_name = f"{fn_key}:{root[0]}:0x{root[1]:x}:{root[2]}@{def_idx}"
+            if var_name not in out.bases:
+                storage = f"({root[0]}, 0x{root[1]:x}, {root[2]})"
+                out.bases[var_name] = {
+                    "function": fn_key,
+                    "function_address": fn_addr,
+                    "space": root[0],
+                    "offset": root[1],
+                    "size": root[2],
+                    "definition": def_idx,
+                    "high_name": high_names.get(storage) if def_idx == _IN else None,
+                }
+            try:
+                accesses.append(MemoryAccess(
+                    var_name=var_name,
+                    offset=offset,
+                    width=width,
+                    access_type="write" if mnem == "STORE" else "read",
+                ))
+            except ValueError:
+                out.counts["gecersiz"] += 1
+                continue
+            out.counts["kabul"] += 1
+        if accesses:
+            out.per_function.setdefault(fn_key, []).extend(accesses)
+    return out
+
+
+def _extract_accesses_from_pcode(pcode_result: Any) -> list[Any]:
+    """Düz erişim listesi (eski test / hata ayıklama uyumu)."""
     flat: list[Any] = []
-    for _fn_key, fn_accesses in grouped.items():
+    for fn_accesses in _extract_accesses_per_function(pcode_result).values():
         flat.extend(fn_accesses)
     return flat
 
 
 def _extract_accesses_per_function(pcode_result: Any) -> dict[str, list[Any]]:
-    """PcodeAnalysisResult'tan fonksiyon-basina MemoryAccess haritasi cikar.
+    """``{fonksiyon: [MemoryAccess]}`` (``extract_struct_accesses`` üstünden).
 
-    v1.10.0 Batch 6A (Codex __unknown__ coupling fix):
-        Type hint yoksa aliasing analyzer her must_alias component'ini
-        BENZERSIZ __unknown_<hash>__ ailesine dusurur; ama bu yine de
-        tek Z3 oturumunda tek bir binary-genisliginde solver demektir ve
-        H2 geometri kisitlari 50 erisim x 10 aday x 5 alan'i gecince
-        exponential patlar. Cozum: solver'i per-function cagirip
-        scope'u fonksiyon basina sinirla. Boylece farkli fonksiyonlardaki
-        bilinmeyen variables birbirini ETKILEMEZ (encoder H4 skip + per-fn
-        scope beraber koruma).
-
-    Returns:
-        ``{fn_key: [MemoryAccess, ...]}`` fonksiyon key'i: isim veya adres.
+    Çözücü fonksiyon başına çağrılır (v1.10.0 Batch 6A): farklı fonksiyonların
+    bilinmeyen değişkenleri tek Z3 oturumunda birbirine kilitlenmez.
     """
-    from karadul.computation.struct_recovery import MemoryAccess
-
-    per_fn: dict[str, list[Any]] = {}
-    if pcode_result is None:
-        return per_fn
-
-    # PcodeAnalysisResult.functions: list[FunctionPcode]
-    functions = getattr(pcode_result, "functions", []) or []
-    for fn in functions:
-        fn_name = getattr(fn, "name", "") or getattr(fn, "address", "?")
-        fn_key = fn_name or "?"
-        accesses: list[Any] = []
-        ops = getattr(fn, "ops", []) or []
-        # FonksiyonBazli SSA/var isimleri yoksa fn adresinden fallback key uret.
-        for op in ops:
-            mnem = getattr(op, "mnemonic", "")
-            if mnem not in ("LOAD", "STORE", "PTRADD"):
-                continue
-            output = getattr(op, "output", None)
-            inputs = getattr(op, "inputs", []) or []
-            # LOAD/STORE: input[1] tipik olarak pointer + offset icerir.
-            # Ghidra'nin Pcode JSON'unda offset/width bilgisini cikarmak
-            # icin output veya input size'ini kullan.
-            width = None
-            if output is not None:
-                width = getattr(output, "size", None)
-            if width is None and inputs:
-                # Son input value tasir (STORE icin).
-                width = getattr(inputs[-1], "size", None)
-            if width not in (1, 2, 4, 8):
-                continue
-
-            # Offset tespiti — ptr aritmetigi icin sabit input arariz.
-            offset = None
-            for inp in inputs:
-                if getattr(inp, "is_constant", False):
-                    off_val = getattr(inp, "offset", None)
-                    if off_val is not None and 0 <= int(off_val) < 4096:
-                        offset = int(off_val)
-                        break
-            if offset is None:
-                # PTRADD'da ikinci input offset olabilir; best-effort.
-                if mnem == "PTRADD" and len(inputs) >= 2:
-                    second = inputs[1]
-                    off_val = getattr(second, "offset", None)
-                    if off_val is not None and 0 <= int(off_val) < 4096:
-                        offset = int(off_val)
-            if offset is None:
-                continue
-
-            # var_name icin SSA high_variable varsa onu, yoksa fn adresli
-            # placeholder kullan. Bu isimler aliasing analyzer'a gider;
-            # dogru isim olmasi sart degil, tek kural: ayni varsa ayni string.
-            hv = None
-            if output is not None:
-                hv = getattr(output, "high_variable", None)
-            var_name = hv or f"{fn_name}_var_{offset:x}"
-
-            access_type = "write" if mnem == "STORE" else "read"
-            try:
-                accesses.append(MemoryAccess(
-                    var_name=var_name,
-                    offset=offset,
-                    width=int(width),
-                    access_type=access_type,
-                ))
-            except ValueError as e:
-                # Graceful: width/offset sanity hatasi -> atla (invalid access).
-                logger.debug(
-                    "MemoryAccess sanity fail (var=%s, off=%s, w=%s): %s",
-                    var_name, offset, width, e,
-                )
-                continue
-
-        if accesses:
-            # Ayni fn_key ile birden fazla kayit olusursa merge et (idempotent).
-            per_fn.setdefault(fn_key, []).extend(accesses)
-
-    return per_fn
+    return extract_struct_accesses(pcode_result).per_function
 
 
 @register_step(
@@ -151,6 +278,11 @@ class ComputationStructRecoveryStep(Step):
     """Hesaplama bazli struct kurtarma -- MaxSMT layout cozucu."""
 
     def run(self, ctx: StepContext) -> dict[str, Any]:
+        from karadul.computation.kol_durumu import (
+            CALISTI, DESTEKLENMIYOR, HATA, KAPALI, STAT_MAXSMT, YAPI_ADAYI,
+            kol_durumu,
+        )
+
         pc = ctx.pipeline_context
         cfg_computation = getattr(pc.config, "computation", None)
 
@@ -161,58 +293,50 @@ class ComputationStructRecoveryStep(Step):
             "timing_computation_struct_recovery": 0.0,
         }
 
-        # Feature flag
-        if cfg_computation is None or not getattr(
-            cfg_computation, "enable_computation_struct_recovery", False,
-        ):
+        def _empty(durum: str, neden: str, **sayac: Any) -> dict[str, Any]:
+            ctx.stats[STAT_MAXSMT] = kol_durumu(durum, neden, YAPI_ADAYI, **sayac)
             empty_result["timing_computation_struct_recovery"] = round(
                 time.monotonic() - step_start, 3,
             )
             return empty_result
+
+        # Feature flag
+        if cfg_computation is None or not getattr(
+            cfg_computation, "enable_computation_struct_recovery", False,
+        ):
+            return _empty(
+                KAPALI,
+                "bayrak kapalı (computation.enable_computation_struct_recovery)",
+            )
 
         pcode_result = ctx.artifacts.get("pcode_result")
         if pcode_result is None:
             logger.debug(
                 "computation_struct_recovery: pcode_result yok, atlaniyor",
             )
-            empty_result["timing_computation_struct_recovery"] = round(
-                time.monotonic() - step_start, 3,
-            )
-            return empty_result
+            return _empty(DESTEKLENMIYOR, "P-code yok (pcode_result)")
 
         try:
             from karadul.computation.struct_recovery import StructLayoutSolver
 
-            # v1.10.0 Batch 6A: Codex __unknown__ coupling fix.
-            # Type hint yoksa TUM binary'deki bilinmeyen variables tek
-            # __unknown__ ailesine dusup H4 ile birbirine kilitleniyordu
-            # (farkli fonksiyonlar, farkli struct'lar sessizce ayni adaya
-            # zorlaniyordu). Cozum: per-function scope — her fonksiyon
-            # kendi scope'unda cozulur, fonksiyonlar arasi yanlislikla
-            # couple olmaz. Fonksiyonun kendi icinde aliasing analyzer
-            # zaten component basina benzersiz __unknown_<hash>__ uretir.
-            per_fn_accesses = _extract_accesses_per_function(pcode_result)
+            # v1.10.0 Batch 6A: fonksiyon başına çözüm (farklı fonksiyonların
+            # bilinmeyen değişkenleri tek Z3 oturumunda birbirine kilitlenmez).
+            # TIP-03: ofset LOAD/STORE işaretçisinin tanım zincirinden okunur.
+            extraction = extract_struct_accesses(pcode_result)
+            per_fn_accesses = extraction.per_function
+            access_counts = {k: int(v) for k, v in sorted(extraction.counts.items())}
             if not per_fn_accesses:
                 logger.info(
                     "computation_struct_recovery: pcode'dan access cikmadi",
                 )
-                empty_result["timing_computation_struct_recovery"] = round(
-                    time.monotonic() - step_start, 3,
+                return _empty(
+                    CALISTI, "P-code'da sabit ofsetli alan erişimi bulunmadı",
+                    erisim=access_counts, fonksiyon=0, aday=0,
                 )
-                return empty_result
 
-            # Per-function solve: her fonksiyon icin AYRI StructLayoutSolver
-            # instance (temiz Z3 Optimize scope). solver.solve_from_raw()
-            # __init__'te olusturulan persistent Optimize'i push/pop ile
-            # yonettigi icin ayri instance yerine ayni solver'da push da
-            # olurdu ama test/trace temizligi icin instance seviyesinde
-            # izolasyon tercih ediliyor.
-            #
-            # v1.10.0 Batch 6D (FIX 5 full): Fonksiyon icinde birden cok
-            # component varsa ``solve_parallel`` kullanilir (ProcessPool +
-            # per-worker Z3 Context). Tek component veya
-            # ``enable_parallel_solve=False`` ise otomatik olarak sequential
-            # solve_from_raw'a duser.
+            # Fonksiyon başına ayrı StructLayoutSolver (temiz Z3 kapsamı).
+            # ``enable_parallel_solve`` açıksa fonksiyon içinde birden çok
+            # bileşen ProcessPool ile çözülür; tek bileşende sıralı yola düşer.
             all_candidates: list[Any] = []
             total_accesses = 0
             total_explained = 0
@@ -242,6 +366,7 @@ class ComputationStructRecoveryStep(Step):
                 total_explained += max(0, explained_here)
                 total_solver_time += fn_result.solver_time_seconds
 
+            # Açıklanan erişim oranı: kalibre güven DEĞİL, yalnız oran.
             aggregate_confidence = (
                 total_explained / total_accesses if total_accesses else 0.0
             )
@@ -250,6 +375,14 @@ class ComputationStructRecoveryStep(Step):
                 aggregate_confidence, 3,
             )
             ctx.stats["computation_struct_functions"] = len(per_fn_results)
+            ctx.stats[STAT_MAXSMT] = kol_durumu(
+                CALISTI, "", YAPI_ADAYI,
+                erisim=access_counts,
+                fonksiyon=len(per_fn_results),
+                aday=len(all_candidates),
+                aciklanan_erisim=total_explained,
+                toplam_erisim=total_accesses,
+            )
             logger.info(
                 "MaxSMT struct recovery (per-fn): %d fn, %d struct aday, "
                 "%.0f%% access acilanmis, %.2fs toplam solver",
@@ -260,11 +393,8 @@ class ComputationStructRecoveryStep(Step):
             )
             timing = round(time.monotonic() - step_start, 3)
             ctx.stats["timing_computation_struct_recovery"] = timing
-            # Geriye uyumlu: ``computation_struct_result`` tek bir sonuc
-            # olarak kullaniliyordu; artik (per-fn dict + aggregate candidate
-            # listesi) tuple degil, per-fn dict'i esas sonuc olarak verelim.
-            # Downstream step'ler ``recovered_struct_candidates`` listesini
-            # kullaniyor (bu list tek dogruluk kaynagi).
+            # ``computation_struct_result`` = {fonksiyon: RecoveredStructLayout};
+            # yapı motoru (``struct_recovery`` adımı) aday olarak okur (P10).
             return {
                 "computation_struct_result": per_fn_results,
                 "recovered_struct_candidates": all_candidates,
@@ -274,13 +404,10 @@ class ComputationStructRecoveryStep(Step):
             logger.debug(
                 "computation_struct_recovery import hatasi (z3 yok?): %s", exc,
             )
+            return _empty(DESTEKLENMIYOR, f"bağımlılık yok: {exc}")
         except Exception as exc:
             logger.warning(
                 "computation_struct_recovery hatasi (atlaniyor): %s", exc,
             )
             ctx.errors.append(f"computation_struct_recovery: {exc}")
-
-        empty_result["timing_computation_struct_recovery"] = round(
-            time.monotonic() - step_start, 3,
-        )
-        return empty_result
+            return _empty(HATA, f"{type(exc).__name__}: {exc}")

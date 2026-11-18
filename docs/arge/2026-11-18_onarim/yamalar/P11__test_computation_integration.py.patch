@@ -1,0 +1,54 @@
+--- a/tests/test_computation_integration.py
++++ b/tests/test_computation_integration.py
+@@ -539,7 +539,11 @@
+         assert out == []
+ 
+     def test_extract_accesses_from_load_op(self) -> None:
+-        """LOAD op + constant offset input -> 1 MemoryAccess."""
++        """LOAD(ram, base + 8) -> ofset 8 (P11 / TIP-03).
++
++        Ghidra'da LOAD'un ``input0``'ı adres alanı kimliğidir (``ram`` = 433),
++        ofset değil; ofset işaretçinin (``input1``) tanımındadır.
++        """
+         from karadul.analyzers.pcode_analyzer import (
+             FunctionPcode,
+             PcodeAnalysisResult,
+@@ -553,18 +557,33 @@
+         output_vn = VarnodeInfo(
+             space="register", offset=0, size=4,
+             is_constant=False, is_register=True, is_unique=False,
+-            high_variable="v1",
++        )
++        space_id = VarnodeInfo(
++            space="const", offset=433, size=4,
++            is_constant=True, is_register=False, is_unique=False,
+         )
++        base = VarnodeInfo(
++            space="register", offset=0x4000, size=8,
++            is_constant=False, is_register=True, is_unique=False,
++        )
+         const_off = VarnodeInfo(
+             space="const", offset=8, size=8,
+             is_constant=True, is_register=False, is_unique=False,
+         )
++        ptr = VarnodeInfo(
++            space="unique", offset=0x100, size=8,
++            is_constant=False, is_register=False, is_unique=True,
++        )
++        add = PcodeOpInfo(
++            mnemonic="INT_ADD", seq_num=0, address="0x1000",
++            output=ptr, inputs=[base, const_off],
++        )
+         op = PcodeOpInfo(
+-            mnemonic="LOAD", seq_num=0, address="0x1000",
+-            output=output_vn, inputs=[const_off],
++            mnemonic="LOAD", seq_num=1, address="0x1000",
++            output=output_vn, inputs=[space_id, ptr],
+         )
+-        fn = FunctionPcode(name="foo", address="0x1000", ops=[op])
+-        res = PcodeAnalysisResult(total_functions=1, total_pcode_ops=1, functions=[fn])
++        fn = FunctionPcode(name="foo", address="0x1000", ops=[add, op])
++        res = PcodeAnalysisResult(total_functions=1, total_pcode_ops=2, functions=[fn])
+         out = _extract_accesses_from_pcode(res)
+         assert len(out) == 1
+         assert out[0].offset == 8
