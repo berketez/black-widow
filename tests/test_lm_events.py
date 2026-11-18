@@ -820,3 +820,110 @@ def test_gercek_istemci_yolunda_iptal_baglantiyi_kapatir(tmp_path):
     assert r.status == "iptal" and durum["okunan"] == 3 and durum["kapandi"] == 1    # 7 satırın 3'ü okundu
     assert [e["parca"] for e in akis.since(0)["olaylar"] if e["tur"] == "jeton"] == [1, 2]
     esler_tutarli(akis, gunluk)
+
+
+# --------------------------------------------------------------------------------------------
+# (g) içerik deposu
+
+SHA = "ab" * 32
+
+
+def _izin(p) -> int:
+    import os
+    import stat
+    return stat.S_IMODE(os.lstat(p).st_mode)
+
+
+def test_icerik_deposu_izinler_yol_ve_ezmeme(tmp_path):
+    kok = tmp_path / "ev" / ".karadul" / "lm"
+    d = E.ContentStore(SHA, "o1", root=kok)
+    assert d.dir == kok / SHA / "sonuclar" / "o1" and not (tmp_path / "ev").exists()     # kurmak dosya açmaz
+    zarf = {"id": "r3", "tool": "get_decompiled", "ok": True, "data": {"code": 'puts("\x1b[2J‮X");'}}
+    yol = d.put("r3", zarf)
+    assert yol == d.dir / "r3.json" and _izin(yol) == 0o600
+    for p in (kok, kok / SHA, kok / SHA / "sonuclar", d.dir):
+        assert _izin(p) == 0o700, p
+    assert d.get("r3") == zarf                                  # ham içerik aynen
+    goruntu = d.get_display("r3")
+    assert goruntu["data"]["code"] == 'puts("\\x1b[2J\\u202eX");' and yorumlanan_yok(json.dumps(goruntu))
+    uzun = {"id": "r4", "tool": "get_decompiled", "ok": True, "data": {"code": "x" * (LM.DISPLAY_TEXT_MAX_CHARS * 3)}}
+    d.put("r4", uzun)
+    assert d.get_display("r4") == uzun                          # tam metin: görüntüde kesilmez
+    with pytest.raises(FileExistsError):
+        d.put("r3", {"id": "r3", "ezildi": True})               # aynı kimlik ezilmez
+    assert d.get("r3") == zarf and d.get("r9") is None
+    for kotu in ("../r1", "r1/../x", "R1", "r", "r1.json", "", None, "r1234567890"):
+        with pytest.raises(ValueError):
+            d.path_for(kotu)
+    for sha, oturum in (("AB" * 32, "o1"), ("ab" * 31, "o1"), (SHA, "../o"), (SHA, "o/1"), (SHA, "")):
+        with pytest.raises(ValueError):
+            E.ContentStore(sha, oturum, root=kok)
+
+
+def test_icerik_deposu_sembolik_bag_yazmaz(tmp_path):
+    hedef = tmp_path / "baska"
+    hedef.mkdir()
+    kok = tmp_path / "lm"
+    (kok / SHA / "sonuclar").mkdir(parents=True)
+    (kok / SHA / "sonuclar" / "o1").symlink_to(hedef)
+    d = E.ContentStore(SHA, "o1", root=kok)
+    with pytest.raises(OSError):
+        d.put("r1", {"id": "r1"})
+    assert list(hedef.iterdir()) == []
+    d2 = E.ContentStore(SHA, "o2", root=kok)
+    d2.dir.mkdir()
+    (d2.dir / "r1.json").symlink_to(hedef / "dis.json")
+    with pytest.raises(OSError):
+        d2.put("r1", {"id": "r1"})
+    with pytest.raises(OSError):
+        d2.get("r1")
+    assert list(hedef.iterdir()) == []
+
+
+def test_ajan_arac_sonuclarini_depoya_yazar(tmp_path):
+    # Olaylı K0: iki paket sonucu depoda, modele giden zarflarla bayt bayt aynı içerikte.
+    depo = E.ContentStore(SHA, "o1", root=tmp_path / "depo")
+    ajan, arka, gunluk, akis = olayli(tmp_path, [yanit(AD)], content_store=depo)
+    assert ajan.suggest_name(fun(A)).status == "tamam"
+    from karadul.lm import context as C
+    giden = C.unwrap_results(arka.calls[0]["messages"][1]["content"])
+    assert [depo.get(z["id"]) for z in giden] == giden and len(giden) == 2
+    assert [e["icerik_saklandi"] for e in akis.since(0)["olaylar"] if e["tur"] == "arac_bitti"] == [True, True]
+    # Olay geri çağrısı yokken de yazar.
+    depo2 = E.ContentStore(SHA, "o2", root=tmp_path / "depo")
+    G.Agent(B.FakeBackend([yanit(AD)]), T.Workspace(default_ws(tmp_path / "ws2")), content_store=depo2).suggest_name(fun(A))
+    assert depo2.get("r1")["tool"] == "get_evidence" and depo2.get("r2")["tool"] == "get_decompiled"
+    # Döngüde modelin gördüğü SON hâl yazılır (körlükle verilmeyen sonuç: hata zarfı).
+    kayit = {"new_name": "report_error", "label": "doğrulanmadı"}
+    kok = build_ws(tmp_path / "kor", {A: {"calls": [FB]}, FB: {"calls": [MALLOC]}}, imports={MALLOC: "report_error"},
+                   names={A: "report_error", FB: "report_error"}, provenance={A: kayit, FB: kayit})
+    depo3 = E.ContentStore(SHA, "o3", root=tmp_path / "depo")
+    ajan3, _, _, _ = olayli(tmp_path / "3", [cagri("get_evidence", addr=fun(FB)), son(kanit=["r1"])],
+                            ws=T.Workspace(kok), enabled_modes=("K0", "K2"), blind_target=True, content_store=depo3)
+    ajan3.run_loop(fun(A))
+    assert depo3.get("r3") == {"id": "r3", "tool": "get_evidence", "ok": False, "error": "arac_kapali"}
+    # Depo yazılamıyor: görev sürer, olay bunu söyler.
+    engel = tmp_path / "dosya"
+    engel.write_text("x")
+    ajan4, _, _, akis4 = olayli(tmp_path / "4", [yanit(AD)], content_store=E.ContentStore(SHA, "o4", root=engel))
+    assert ajan4.suggest_name(fun(A)).status == "tamam"
+    assert [e["icerik_saklandi"] for e in akis4.since(0)["olaylar"] if e["tur"] == "arac_bitti"] == [False, False]
+
+
+def test_olay_modulu_ice_aktarma_siniri_ve_yan_etkisizlik(tmp_path):
+    import os
+    import subprocess
+    import sys
+    from tests.test_lm_tools import KOK, ice_aktarma_siniri
+    ice_aktarma_siniri(KOK / "karadul" / "lm" / "events.py")
+    ev = tmp_path / "ev"
+    kod = ("import socket, subprocess, sys, threading\n"
+           "def yasak(*a, **k):\n    raise AssertionError('yan etki')\n"
+           "subprocess.Popen.__init__ = yasak\nsocket.socket.connect = yasak\n"
+           "import karadul.lm.events as E\n"
+           "E.ContentStore('ab' * 32, 'o1')\nE.EventStream('o1').emit('satir', metin='x', duzey='bilgi')\n"
+           "assert threading.active_count() == 1\nprint('tamam')\n")
+    r = subprocess.run([sys.executable, "-c", kod], cwd=KOK, capture_output=True, text=True, timeout=120,
+                       env={**os.environ, "HOME": str(ev), "PYTHONDONTWRITEBYTECODE": "1"})
+    assert r.returncode == 0 and "tamam" in r.stdout, r.stderr[-2000:]
+    assert not (ev / ".karadul").exists()

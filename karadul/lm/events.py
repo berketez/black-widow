@@ -27,15 +27,19 @@ Bu modül süreç başlatmaz, ağa çıkmaz; içe aktarılınca dosya yazmaz.
 from __future__ import annotations
 
 import json
+import os
 import re
+import sys
 import threading
 import time
 import unicodedata
 from collections import deque
+from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
 from karadul.lm import DISPLAY_TEXT_MAX_CHARS, EVENT_RING_CAPACITY
-from karadul.lm.audit import _SESSION_ID, now_iso
+from karadul.lm.audit import _HEX64, _SESSION_ID, now_iso
+from karadul.lm.protocol import RESULT_ID_PATTERN
 
 # --- Zarf ve türler (tasarım §4.1) -------------------------------------------------------------
 ENVELOPE_KEYS = ("seq", "t_ms", "zaman", "oturum", "gorev", "tur")
@@ -356,3 +360,89 @@ class EventStream:
         with self._cond:
             self._closed = True
             self._cond.notify_all()
+
+
+# --- İçerik deposu (tasarım §4.1 "İçerik kuralı"; karar 6 (b)) -------------------------------
+
+CONTENT_DIR_NAME = "sonuclar"
+_RESULT_ID = re.compile(RESULT_ID_PATTERN)
+
+
+class ContentStore:
+    """Araç sonuçlarının tam metni: ``~/.karadul/lm/<ikili_sha256>/sonuclar/<oturum>/r<n>.json``.
+
+    Olay akışı araç sonucunun yalnız özetini taşır; terminalin "r3'ü aç" demesi ve "her araç çağrısı
+    içeriğiyle birlikte kayda geçer" (RAPOR §7.2 madde 3) buradan. Denetim günlüğü içeriksiz kalır.
+
+    - Kayıt modelin gördüğü zarfın kendisidir (ham; görüntü için ``get_display`` arındırır).
+    - Dizinler 0700, dosya 0600 (``audit.py`` kalıbı); yalnız yeni dosya açılır (``O_EXCL``): aynı
+      kimlik ikinci kez yazılmaz, var olan içerik ezilmez; dosya ya da oturum dizini sembolik bağsa
+      yazılmaz.
+    - Saklama: Berke kararı 6 (b) — ikiliyle birlikte kalır, oturum kapanınca silinmez; silmeyi
+      analist yapar. Bu sınıf hiçbir şey silmez.
+    - Yol yalnız doğrulanmış parçalardan kurulur: ikili sha256 (64 küçük onaltılık), oturum kimliği
+      (``[A-Za-z0-9_-]{1,64}``), sonuç kimliği (``r<sayı>``); değilse ``ValueError`` (yol aşımı yok).
+    Nesne kurmak dosya ya da dizin açmaz.
+    """
+
+    def __init__(self, binary_sha256: str, session_id: str, *, root: Optional[Path] = None):
+        if not isinstance(binary_sha256, str) or not _HEX64.fullmatch(binary_sha256):
+            raise ValueError("geçersiz ikili sha256 (64 küçük harfli onaltılık basamak beklenir)")
+        if not isinstance(session_id, str) or not _SESSION_ID.fullmatch(session_id):
+            raise ValueError("geçersiz oturum kimliği ([A-Za-z0-9_-]{1,64} beklenir)")
+        base = Path(root) if root is not None else Path.home() / ".karadul" / "lm"
+        self.dir = base / binary_sha256 / CONTENT_DIR_NAME / session_id
+
+    def path_for(self, result_id: str) -> Path:
+        if not isinstance(result_id, str) or not _RESULT_ID.fullmatch(result_id):
+            raise ValueError("geçersiz sonuç kimliği (r<sayı> beklenir)")
+        return self.dir / f"{result_id}.json"
+
+    def _ensure_dir(self) -> None:
+        missing: list[Path] = []
+        p = self.dir
+        while not p.exists() and not p.is_symlink():
+            missing.append(p)
+            p = p.parent
+        for d in reversed(missing):
+            try:
+                d.mkdir(mode=0o700)
+            except FileExistsError:
+                pass
+        if self.dir.is_symlink() or not self.dir.is_dir():
+            raise OSError(f"içerik dizini dizin değil ya da sembolik bağ: {self.dir}")
+
+    def put(self, result_id: str, envelope: Mapping[str, Any]) -> Path:
+        """Zarfı yazar ve yolunu döndürür. Yazılamazsa ``OSError`` (var olan dosya dahil)."""
+        path = self.path_for(result_id)
+        data = json.dumps(envelope, ensure_ascii=True, sort_keys=True).encode("ascii")
+        self._ensure_dir()
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
+        try:
+            view = memoryview(data)
+            while view:
+                view = view[os.write(fd, view):]
+        finally:
+            os.close(fd)
+        return path
+
+    def get(self, result_id: str) -> Optional[dict[str, Any]]:
+        """Saklı zarf (ham); yoksa ``None``. Sembolik bağ ya da bozuk içerik ``OSError`` / ``ValueError``."""
+        path = self.path_for(result_id)
+        if path.is_symlink():
+            raise OSError(f"içerik dosyası sembolik bağ: {path}")
+        try:
+            text = path.read_text(encoding="ascii")
+        except FileNotFoundError:
+            return None
+        obj = json.loads(text)
+        if not isinstance(obj, dict):
+            raise ValueError("içerik dosyası bir zarf değil")
+        return obj
+
+    def get_display(self, result_id: str) -> Optional[dict[str, Any]]:
+        """Saklı zarfın görüntülenebilir kopyası: terminale / arayüze bu verilir. Karakterler olaydaki
+        kuralla kaçışlanır; uzunluk kesilmez (analist tam metni açmak istiyor; zarf zaten aracın sonuç
+        tavanıyla sınırlı)."""
+        obj = self.get(result_id)
+        return None if obj is None else sanitize(obj, sys.maxsize)

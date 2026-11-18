@@ -42,7 +42,7 @@ from karadul.lm.context import (
     MODE_K0, MODE_K1, MODE_K2, MODES, PROMPT_VERSION, ContextBudget, blind_leaks, estimate_result_tokens,
     estimate_text_tokens, fixed_prefix, max_calls_for, name_question, safe_assistant_content, user_message,
 )
-from karadul.lm.events import CALLER_MODEL, CALLER_SERVER, touched_refs
+from karadul.lm.events import CALLER_MODEL, CALLER_SERVER, ContentStore, touched_refs
 from karadul.lm.memory_guard import MemoryGuard
 from karadul.lm.tools import (
     ADDR_PATTERN, ERR_BUDGET, ERR_REPEAT, ERR_TOOL_CLOSED, INVALID_CALL_ERRORS, ToolContext, ToolRegistry,
@@ -223,7 +223,8 @@ class Agent:
                  clock: Callable[[], float] = time.monotonic, cancel: Optional[threading.Event] = None,
                  rejected_names: Optional[Mapping[str, Iterable[str]]] = None,
                  expected_task_sec: Optional[float] = None,
-                 on_event: Optional[Callable[..., Any]] = None, stream: Optional[bool] = None):
+                 on_event: Optional[Callable[..., Any]] = None, stream: Optional[bool] = None,
+                 content_store: Optional[ContentStore] = None):
         modes = frozenset(enabled_modes)
         if not modes <= frozenset(MODES):
             raise ValueError(f"bilinmeyen ajan kipi: {sorted(modes - frozenset(MODES))}")
@@ -265,6 +266,10 @@ class Agent:
         # Akışlı model isteği (§3.3 adım 5): öntanım olay geri çağrısı varken açık (canlı görünüm),
         # yokken kapalı (ölçüm ve pilot eşitliği: pilot ``stream: false`` istiyor, istek gövdesi aynı kalır).
         self.stream = (on_event is not None) if stream is None else bool(stream)
+        # İçerik deposu (§4.1 "İçerik kuralı"): modelin gördüğü her araç sonucunun tam zarfı. Olaydan
+        # bağımsızdır (olay geri çağrısı yokken de yazar). Yazılamazsa görev sürer; ``arac_bitti``
+        # ``icerik_saklandi: false`` der.
+        self.content_store = content_store
 
     # --- olaylar (P22a) -----------------------------------------------------------------------
 
@@ -299,7 +304,15 @@ class Agent:
                    hedef=self._args_target(tool, args) if runs else None, arguman=self._shown_args(tool, args))
 
     def _tool_done(self, task: _Task, result: ToolResult) -> None:
-        """``arac_bitti``: modelin (ya da paketin) gördüğü sonucun özeti ve dokunulan fonksiyonlar."""
+        """Modelin (ya da paketin) gördüğü sonuç: içerik deposuna tam zarf; ``arac_bitti`` olayına özeti
+        ve dokunulan fonksiyonlar."""
+        saved: Optional[bool] = None
+        if self.content_store is not None:
+            try:
+                self.content_store.put(result.id, result.envelope())
+                saved = True
+            except (OSError, ValueError):
+                saved = False
         if self.on_event is None:
             return
         ws = self.workspace
@@ -312,7 +325,7 @@ class Agent:
         self._emit("arac_bitti", task, sonuc=result.id, arac=result.tool, tamam=result.ok, hata=result.error,
                    calistirildi=result.executed, tur_kind=result.kind, bayt=result.size_bytes(),
                    kirpma=result.truncated, sure_ms=task.tool_ms.get(result.id),
-                   dokunulan=fns[:EVENT_TOUCHED_MAX], dokunulan_toplam=len(fns), icerik_saklandi=None)
+                   dokunulan=fns[:EVENT_TOUCHED_MAX], dokunulan_toplam=len(fns), icerik_saklandi=saved)
 
     def _reply_done(self, task: _Task, reply: ChatResult, status: str, obj: Optional[Mapping[str, Any]]) -> None:
         """``model_cevabi`` (başarılı istek): ayrıştırma durumu, ucun gerçek jeton sayıları ve süre.
