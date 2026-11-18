@@ -343,6 +343,9 @@ def yeniden_oynat(kosu: Path, hedef: Path, gt: dict[int, dict] | None) -> dict[s
         a = {f: v.get("renames", {}) for f, v in kayitli.get("functions", {}).items()}
         b = {f: v.get("renames", {}) for f, v in yeni_harita.get("functions", {}).items()}
         dogrulama = "ayni" if a == b else "farkli"
+    # Köken kaydı (P05 sonrası kod): kabul edilen ad sayısı = yeniden adlandırma sayısı mı
+    koken = getattr(sonuc, "provenance", None)
+    koken_esit = (len(koken.get("accepted", [])) == sonuc.total_renamed) if koken else None
     # Çıktı dizinini tutma: yer kaplamasın (harita ve sayım yeter)
     for c in sem.glob("*.c"):
         c.unlink()
@@ -386,7 +389,8 @@ def yeniden_oynat(kosu: Path, hedef: Path, gt: dict[int, dict] | None) -> dict[s
         ogeler.append({"f": sn.function_name, "eski": sn.original_name, "ad": ad,
                        "kaynak": sn.source, "guven": sn.confidence,
                        "sinif": sinif, "hukum": h})
-    return {"durum": "tamam", "sure_sn": sure, "dogrulama": dogrulama, "sayac": dict(sayac),
+    return {"durum": "tamam", "sure_sn": sure, "dogrulama": dogrulama, "koken_esit": koken_esit,
+            "sayac": dict(sayac),
             "kaynak": dict(kaynak), "hukum": dict(hukum) if gt is not None else None,
             "kaynak_hukum": {k: dict(v) for k, v in kaynak_hukum.items()},
             "ogeler": ogeler}
@@ -421,6 +425,7 @@ def cmd_kos(args: argparse.Namespace) -> int:
     for s in ikililer.values():
         durum[s.get("durum")] += 1
         dogrulama[s.get("dogrulama", "-")] += 1
+        ikili_sayilari[f"koken_esit_{s.get('koken_esit')}"] += 1
         toplam.update(s.get("sayac", {}))
         kaynak.update(s.get("kaynak", {}))
         if s.get("hukum"):

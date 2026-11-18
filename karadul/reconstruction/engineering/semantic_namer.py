@@ -35,6 +35,7 @@ Kullanim:
 
 from __future__ import annotations
 
+import bisect
 import functools
 import json
 import logging
@@ -1227,23 +1228,113 @@ _ARRAY_BASE_RE = re.compile(r"\*\s*\(\s*[^)]*\s*\*\s*\)\s*(?:param_\d+|src_\d+|d
 _RETURN_RE = re.compile(r"\breturn\s+(?:param_\d+|src_\d+|dest_\d+)\b")
 
 
-def _get_loop_depth_for_param(code: str, param_name: str) -> int:
-    """Parametrenin en derin dongü icinde kullanildigi seviyeyi bul."""
+def _mask_non_code(code: str) -> str:
+    """Dizgi, karakter sabiti ve yorumları aynı uzunlukta boşlukla ört (konumlar korunur)."""
+    return _NON_CODE_RE.sub(
+        lambda m: "".join("\n" if c == "\n" else " " for c in m.group(0)), code,
+    )
+
+
+_LOOP_HEAD_BEFORE_PAREN_RE = re.compile(r"\b(?:for|while)\s*$")
+_DO_BEFORE_BRACE_RE = re.compile(r"\bdo\s*$")
+_BRACE_RE = re.compile(r"[{}]")
+
+
+def _brace_opens_loop(masked: str, brace_idx: int) -> bool:
+    """``masked[brace_idx]`` ``{``'sı bir ``for`` / ``while`` / ``do`` gövdesini mi açıyor.
+
+    ``{``'dan önceki ilk boşluk dışı karakter ``)`` ise eşi olan ``(`` geriye doğru bulunur ve
+    önündeki sözcük ``for`` / ``while`` mı diye bakılır; değilse önündeki sözcük ``do`` mu.
+    ``if`` / ``switch`` / ``else`` blokları ve fonksiyon gövdesi döngü değildir.
+    """
+    j = brace_idx - 1
+    while j >= 0 and masked[j].isspace():
+        j -= 1
+    if j < 0:
+        return False
+    if masked[j] == ")":
+        depth = 0
+        while j >= 0:
+            ch = masked[j]
+            if ch == ")":
+                depth += 1
+            elif ch == "(":
+                depth -= 1
+                if depth == 0:
+                    break
+            j -= 1
+        if j < 0:
+            return False
+        return bool(_LOOP_HEAD_BEFORE_PAREN_RE.search(masked, max(0, j - 16), j))
+    return bool(_DO_BEFORE_BRACE_RE.search(masked, max(0, j - 16), j + 1))
+
+
+@functools.lru_cache(maxsize=64)
+def _loop_depth_profile(code: str) -> tuple[str, tuple[int, ...], tuple[int, ...]]:
+    """Örtülü kod; her ``{`` / ``}``'nin konumu ve o karakterden sonraki döngü iç içeliği."""
+    masked = _mask_non_code(code)
+    positions: list[int] = []
+    depths: list[int] = []
+    stack: list[bool] = []
     depth = 0
-    max_depth = 0
-    found_at_depth = 0
-    for line in code.splitlines():
-        stripped = line.strip()
-        depth += stripped.count("{") - stripped.count("}")
-        depth = max(0, depth)
-        if param_name in stripped:
-            if _FOR_LOOP_RE.search(stripped) or _WHILE_LOOP_RE.search(stripped):
-                continue
-            found_at_depth = max(found_at_depth, depth)
-        # Dongü acilislarini say
-        if _FOR_LOOP_RE.search(stripped) or _WHILE_LOOP_RE.search(stripped):
-            max_depth = max(max_depth, depth)
-    return found_at_depth
+    for m in _BRACE_RE.finditer(masked):
+        if m.group(0) == "{":
+            is_loop = _brace_opens_loop(masked, m.start())
+            stack.append(is_loop)
+            if is_loop:
+                depth += 1
+        elif stack and stack.pop():
+            depth -= 1
+        positions.append(m.start())
+        depths.append(depth)
+    return masked, tuple(positions), tuple(depths)
+
+
+def _get_loop_depth_for_param(code: str, param_name: str) -> int:
+    """Parametrenin geçtiği en derin DÖNGÜ iç içeliği (MUH-02).
+
+    Yalnız ``for`` / ``while`` / ``do`` gövdeleri sayılır; ``if`` / ``switch`` blokları ve
+    fonksiyon gövdesi sayılmaz. Ad tam sözcük olarak aranır (``param_1`` ``param_10``'da
+    bulunmaz); dizgi ve yorumlar örtülür. Döngü başlığındaki kullanım (``i < param_2``)
+    döngünün dışındaki derinlikte sayılır. Ayraçsız tek deyimli döngü gövdesi sayılmaz
+    (Ghidra döngü gövdelerini ayraçla yazar).
+
+    Eskiden satırdaki ``{`` / ``}`` toplanıyordu: gövde 1, gövdedeki her ``if`` bloğu 2
+    sayılıyor, ``if`` içinde geçen tamsayı parametre "derinlik 2 ⇒ matris" kuralıyla
+    ``M_matrix`` alıyordu (coreutils'te 78 ad).
+    """
+    masked, positions, depths = _loop_depth_profile(code)
+    best = 0
+    for m in re.finditer(rf"\b{re.escape(param_name)}\b", masked):
+        k = bisect.bisect_left(positions, m.start())
+        if k and depths[k - 1] > best:
+            best = depths[k - 1]
+    return best
+
+
+# ``double *`` şablonları (matris, vektör, skaler başvuru) için kayan noktalı erişim kanıtı
+_FLOAT_POINTER_TYPES = frozenset({"double *", "float *"})
+
+
+@functools.lru_cache(maxsize=4096)
+def _float_access_pattern(param_name: str) -> re.Pattern[str]:
+    p = re.escape(param_name)
+    return re.compile(
+        rf"\(\s*(?:double|float)\s*\*\s*\)\s*\(*\s*(?:\(\s*\w+\s*\**\s*\)\s*)?{p}\b"
+    )
+
+
+def _has_float_access(code: str, param_name: str, param_type: str) -> bool:
+    """Parametre kayan noktalı öğe gösteriyor mu (MUH-02).
+
+    Tip ``double *`` / ``float *`` ise evet. Değilse (Ghidra işaretçiyi ``long`` / ``ulong`` /
+    ``undefined8`` gösterebilir) parametre üstünde ``(double *)`` / ``(float *)`` cast'i
+    görülmeli: ``*(double *)(param_1 + 8)``. Dizgi ve yorumlar örtülür.
+    """
+    if " ".join(param_type.replace("*", " * ").split()) in _FLOAT_POINTER_TYPES:
+        return True
+    masked = _loop_depth_profile(code)[0]
+    return bool(_float_access_pattern(param_name).search(masked))
 
 
 # v1.8.0: _MAX_USAGE_BODY esigi KALDIRILDI.  Tum regex pattern'leri
@@ -1812,9 +1903,13 @@ def _worker_infer_from_type_and_usage(
         loop_depth = _get_loop_depth_for_param(func_code, param_name)
         usage = _detect_usage_pattern(func_code, param_name)
         idx_pattern = _detect_index_pattern(func_code, param_name)
+        float_ok = _has_float_access(func_code, param_name, param_type)
 
         for tup in TYPE_USAGE_PATTERNS:
             if not _types_compatible(tup.c_type, param_type):
+                continue
+            # MUH-02: matris / vektör / skaler başvuru adı yalnız kayan noktalı erişim kanıtıyla
+            if tup.c_type == "double *" and not float_ok:
                 continue
             if tup.loop_depth is not None:
                 if tup.loop_depth == 3 and loop_depth < 3:
@@ -3022,10 +3117,14 @@ class SemanticParameterNamer:
             loop_depth = _get_loop_depth_for_param(func_code, param_name)
             usage = _detect_usage_pattern(func_code, param_name)
             idx_pattern = _detect_index_pattern(func_code, param_name)
+            float_ok = _has_float_access(func_code, param_name, param_type)
 
             for tup in TYPE_USAGE_PATTERNS:
                 # Tip eslesmesi
                 if not _types_compatible(tup.c_type, param_type):
+                    continue
+                # MUH-02: matris / vektör / skaler başvuru adı yalnız kayan noktalı erişim kanıtıyla
+                if tup.c_type == "double *" and not float_ok:
                     continue
 
                 # Dongü derinligi eslesmesi

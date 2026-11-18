@@ -198,25 +198,32 @@ class TestInferFromTypeAndUsageIntegration:
         cfg = mock.MagicMock()
         return SemanticParameterNamer(cfg)
 
+    # P05 (MUH-02): döngü derinliği artık gerçek döngüleri sayıyor; eskiden fonksiyon gövdesi de
+    # 1 sayıldığı için 2 katlı döngü "3" çıkıyordu. Bu testlerin konusu bağlam düzeltmesi
+    # (matrix → buffer / string); "3 katlı döngü = matris" anlamıyla 3 katlı döngü kullanılır.
     def _make_memcpy_code(self, param_name: str) -> str:
-        """memcpy kullanan, 2-seviye dongusu olan C kodu."""
+        """memcpy kullanan, 3-seviye dongusu olan C kodu."""
         return f"""
         void FUN_00401000({param_name}) {{
             for (int i = 0; i < n; i++) {{
                 for (int j = 0; j < m; j++) {{
-                    memcpy(&{param_name}[i*m+j], src, 8);
+                    for (int k = 0; k < 1; k++) {{
+                        memcpy(&{param_name}[i*m+j], src, 8);
+                    }}
                 }}
             }}
         }}
         """
 
     def _make_strlen_code(self, param_name: str) -> str:
-        """strlen kullanan, 2-seviye dongusu olan C kodu."""
+        """strlen kullanan, 3-seviye dongusu olan C kodu."""
         return f"""
         void FUN_00402000({param_name}) {{
             for (int i = 0; i < n; i++) {{
                 for (int j = 0; j < m; j++) {{
-                    int len = strlen((char*){param_name});
+                    for (int k = 0; k < 1; k++) {{
+                        int len = strlen((char*){param_name});
+                    }}
                 }}
             }}
         }}

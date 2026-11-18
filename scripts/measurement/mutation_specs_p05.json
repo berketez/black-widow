@@ -104,6 +104,62 @@
       "test": "tests/test_p05_kapi.py::test_adim_calisinca_koken_bolumu_ve_sayac",
       "find": "            data[PARAM_PROVENANCE_SECTION] = section\n",
       "replace": "            data.pop(PARAM_PROVENANCE_SECTION, None)\n"
+    },
+    {
+      "id": "p05_k2_if_dongu_sayilir",
+      "desc": "MUH-02: ayraç öncesi parantezli her blok (if/switch) döngü sayılır",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_dongu.py::test_if_blogu_dongu_sayilmaz",
+      "find": "        return bool(_LOOP_HEAD_BEFORE_PAREN_RE.search(masked, max(0, j - 16), j))",
+      "replace": "        return True"
+    },
+    {
+      "id": "p05_k2_do_sayilmaz",
+      "desc": "MUH-02: do gövdesi döngü sayılmaz",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_dongu.py::test_while_ve_do_dongusu",
+      "find": "    return bool(_DO_BEFORE_BRACE_RE.search(masked, max(0, j - 16), j + 1))",
+      "replace": "    return False"
+    },
+    {
+      "id": "p05_k2_alt_dizgi",
+      "desc": "MUH-02: parametre adı tam sözcük değil alt dizgi aranır (param_1 ⊂ param_10)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_dongu.py::test_tam_sozcuk_eslesmesi",
+      "find": "    for m in re.finditer(rf\"\\b{re.escape(param_name)}\\b\", masked):",
+      "replace": "    for m in re.finditer(re.escape(param_name), masked):"
+    },
+    {
+      "id": "p05_k2_ortme_yok",
+      "desc": "MUH-02: dizgi ve yorumdaki ayraçlar döngü sayılır",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_dongu.py::test_dizgi_ve_yorum_icindeki_ayrac_sayilmaz",
+      "find": "    masked = _mask_non_code(code)\n    positions: list[int] = []",
+      "replace": "    masked = code\n    positions: list[int] = []"
+    },
+    {
+      "id": "p05_k2_kanit_yok_paralel",
+      "desc": "MUH-02: paralel yolda double * şablonu kayan noktalı kanıt istemez",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_dongu.py::test_ulong_isaretci_kayan_nokta_kanitiyla_matris",
+      "find": "\n            if tup.c_type == \"double *\" and not float_ok:",
+      "replace": "\n            if tup.c_type == \"double *\" and False:"
+    },
+    {
+      "id": "p05_k2_kanit_yok_dizisel",
+      "desc": "MUH-02: dizisel yolda double * şablonu kayan noktalı kanıt istemez",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_dongu.py::test_ulong_isaretci_kayan_nokta_kanitiyla_matris",
+      "find": "\n                if tup.c_type == \"double *\" and not float_ok:",
+      "replace": "\n                if tup.c_type == \"double *\" and False:"
+    },
+    {
+      "id": "p05_k2_isaretci_tipi_kanit_sayilmaz",
+      "desc": "MUH-02: double * tipli parametre kanıtsız sayılır (gerçek matris adı kaybolur)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05_dongu.py::test_gercek_matris_carpimi_adi_korunur",
+      "find": "    if \" \".join(param_type.replace(\"*\", \" * \").split()) in _FLOAT_POINTER_TYPES:",
+      "replace": "    if False:"
     }
   ]
 }
