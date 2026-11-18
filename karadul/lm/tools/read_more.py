@@ -19,8 +19,10 @@ from typing import Any, Mapping, Optional
 
 from karadul.lm.context import strip_header
 from karadul.lm.tools import (
-    ADDR_PATTERN, ERR_UNKNOWN_ADDRESS, FACTS_RESULT_MAX_BYTES, KIND_FACT_AND_PROXY, ToolContext, ToolError,
-    ToolOutput, ToolSpec, Workspace, _hex_int, _read_json,
+    ADDR_PATTERN, CALL_GRAPH_MAX_DEPTH, CALL_GRAPH_MAX_EDGES, CALL_GRAPH_MAX_NODES, CALL_GRAPH_RESULT_MAX_BYTES,
+    ERR_BAD_ARGUMENT, ERR_NO_DATA, ERR_UNKNOWN_ADDRESS, FACTS_RESULT_MAX_BYTES, KIND_FACT, KIND_FACT_AND_PROXY,
+    PATH_MAX_DEPTH, PATH_MAX_PATHS, PATH_RESULT_MAX_BYTES, ToolContext, ToolError, ToolOutput, ToolSpec,
+    Workspace, _read_json, format_tag,
 )
 from karadul.lm.tools.read import ghidra_warnings
 
@@ -172,6 +174,163 @@ def get_function_facts(ws: Workspace, args: Mapping[str, Any], ctx: ToolContext)
 
 
 # ---------------------------------------------------------------------------------------------
+# O7 get_call_graph, O7b find_path
+
+SOURCE_CALL_GRAPH = "static/ghidra_call_graph.json"
+LIMITS_GRAPH = (
+    "Dolaylı çağrılar ve veri yuvasından çağrılanlar grafikte yoktur.",
+    "Yalnız decompile dosyası olan program fonksiyonları düğümdür; kütüphane çağrıları için find_refs.",
+    "Düğüm sırası: önce derinlik, sonra adres; tavan aşılırsa en derin ve en yüksek adresli düğümler düşer.",
+)
+LIMITS_PATH = (
+    "Yol yalnız Ghidra çağrı kenarlarından kurulur; yolun yokluğu çağrı ilişkisinin yokluğu değildir "
+    "(dolaylı çağrı, geri çağrı, veri yuvası grafikte yoktur).",
+    "Yalnız en kısa yollar listelenir; paths_total en kısa yolların toplam sayısıdır.",
+)
+DIR_DOWN, DIR_UP = "callees", "callers"
+_GRAPH_DEFAULTS = {"depth": CALL_GRAPH_MAX_DEPTH, "max_nodes": CALL_GRAPH_MAX_NODES}
+_PATH_DEFAULTS = {"max_depth": PATH_MAX_DEPTH}
+
+
+def _adjacency(ws: Workspace, direction: str) -> dict[str, list[str]]:
+    """Program fonksiyonları arası komşuluk (öz çağrı hariç, adrese göre artan). Grafik yoksa ya da bu
+    çalışma alanına ait değilse ``veri_yok`` (metin yöntemine sessizce düşülmez; ``get_xrefs`` kuralı)."""
+    edges = ws.call_edges
+    if edges is None:
+        raise ToolError(ERR_NO_DATA)
+
+    def build() -> dict[str, list[str]]:
+        out: dict[str, set[str]] = {}
+        for s, ds in edges.items():
+            for d in ds:
+                if s == d:
+                    continue
+                if direction == DIR_DOWN:
+                    out.setdefault(s, set()).add(d)
+                else:
+                    out.setdefault(d, set()).add(s)
+        return {k: sorted(v, key=lambda h: int(h, 16)) for k, v in out.items()}
+    return ws.cached(f"adjacency_{direction}", build)
+
+
+def _in_graph(ws: Workspace, a: str) -> None:
+    """Adres çağrı grafiğinin bir düğümü mü (decompile dosyası olan program fonksiyonu)."""
+    if a not in ws.code_files:
+        raise ToolError(ERR_NO_DATA)
+
+
+def get_call_graph(ws: Workspace, args: Mapping[str, Any], ctx: ToolContext) -> ToolOutput:
+    a = _resolve(ws, args.get("addr"))
+    direction = args["direction"]
+    depth = args.get("depth", _GRAPH_DEFAULTS["depth"])
+    max_nodes = args.get("max_nodes", _GRAPH_DEFAULTS["max_nodes"])
+    adj = _adjacency(ws, direction)
+    _in_graph(ws, a)
+    # Genişlik öncelikli: her düğüm ilk ulaşıldığı (en küçük) derinlikte, bir kez.
+    dist: dict[str, int] = {a: 0}
+    frontier = [a]
+    for d in range(1, depth + 1):
+        nxt: list[str] = []
+        for u in frontier:
+            for v in adj.get(u, ()):
+                if v not in dist:
+                    dist[v] = d
+                    nxt.append(v)
+        frontier = sorted(nxt, key=lambda h: int(h, 16))
+    reached = sorted((v for v in dist if v != a), key=lambda h: (dist[h], int(h, 16)))
+    shown = reached[:max_nodes]
+    shown_set = set(shown) | {a}
+    lookup = ws.name_lookup(ctx.blind_target)
+    items = [{"addr": f"FUN_{v}", "name_tag": format_tag(lookup(v)), "depth": dist[v]} for v in shown]
+    # Gösterilen düğümler arasındaki kenarlar (yön: çağıran → çağrılan), tavanlı.
+    down = _adjacency(ws, DIR_DOWN)
+    all_edges = [(s, d) for s in sorted(shown_set, key=lambda h: int(h, 16))
+                 for d in down.get(s, ()) if d in shown_set]
+    edges = [[f"FUN_{s}", f"FUN_{d}"] for s, d in all_edges[:CALL_GRAPH_MAX_EDGES]]
+    data = {"addr": f"FUN_{a}", "direction": direction, "depth": depth, "items": items, "edges": edges,
+            "coverage": {"reached": len(reached), "shown": len(shown), "omitted": len(reached) - len(shown),
+                         "edges_total": len(all_edges), "edges_omitted": len(all_edges) - len(edges)}}
+    truncated = None
+    if len(shown) < len(reached) or len(edges) < len(all_edges):
+        truncated = {"omitted": len(reached) - len(shown), "total": len(reached),
+                     "edges_omitted": len(all_edges) - len(edges)}
+    return ToolOutput(data=data, kind=KIND_FACT, source=SOURCE_CALL_GRAPH, limits=LIMITS_GRAPH,
+                      truncated=truncated)
+
+
+def find_path(ws: Workspace, args: Mapping[str, Any], ctx: ToolContext) -> ToolOutput:
+    a = _resolve(ws, args.get("addr"))
+    b = _resolve(ws, args.get("to"))
+    if a == b:
+        raise ToolError(ERR_BAD_ARGUMENT)
+    max_depth = args.get("max_depth", _PATH_DEFAULTS["max_depth"])
+    down = _adjacency(ws, DIR_DOWN)
+    _in_graph(ws, a)
+    _in_graph(ws, b)
+    # Katmanlı genişlik öncelikli arama: en kısa uzaklık ve en kısa yollar üzerindeki öncüller.
+    dist: dict[str, int] = {a: 0}
+    preds: dict[str, list[str]] = {}
+    frontier = [a]
+    d = 0
+    while frontier and b not in dist and d < max_depth:
+        d += 1
+        nxt: list[str] = []
+        for u in frontier:
+            for v in down.get(u, ()):
+                if v not in dist:
+                    dist[v] = d
+                    nxt.append(v)
+                if dist.get(v) == d:
+                    preds.setdefault(v, []).append(u)
+        frontier = nxt
+    lookup = ws.name_lookup(ctx.blind_target)
+    base = {"addr": f"FUN_{a}", "to": f"FUN_{b}", "max_depth": max_depth}
+    if b not in dist:
+        data = {**base, "found": False, "length": None, "paths": [], "paths_total": 0, "items": []}
+        return ToolOutput(data=data, kind=KIND_FACT, source=SOURCE_CALL_GRAPH, limits=LIMITS_PATH)
+    # Yalnız b'ye inen en kısa yolların düğümleri; sayım öncül DAG'ında dinamik programlama ile.
+    on_path = {b}
+    stack = [b]
+    while stack:
+        v = stack.pop()
+        for u in preds.get(v, ()):
+            if u not in on_path:
+                on_path.add(u)
+                stack.append(u)
+    count: dict[str, int] = {a: 1}
+    for v in sorted(on_path - {a}, key=lambda h: dist[h]):
+        count[v] = sum(count[u] for u in preds.get(v, ()) if u in on_path)
+    succ: dict[str, list[str]] = {}
+    for v in on_path:
+        for u in preds.get(v, ()):
+            if u in on_path:
+                succ.setdefault(u, []).append(v)
+    paths: list[list[str]] = []
+
+    def walk(u: str, acc: list[str]) -> None:
+        if len(paths) >= PATH_MAX_PATHS:
+            return
+        if u == b:
+            paths.append(acc)
+            return
+        for v in sorted(succ.get(u, ()), key=lambda h: int(h, 16)):
+            walk(v, acc + [v])
+
+    walk(a, [a])
+    nodes: list[str] = []
+    for p in paths:
+        for v in p[1:]:
+            if v not in nodes:
+                nodes.append(v)
+    items = [{"addr": f"FUN_{v}", "name_tag": format_tag(lookup(v))} for v in nodes]
+    data = {**base, "found": True, "length": dist[b], "paths": [[f"FUN_{v}" for v in p] for p in paths],
+            "paths_total": count[b], "items": items}
+    truncated = ({"omitted": count[b] - len(paths), "total": count[b]} if count[b] > len(paths) else None)
+    return ToolOutput(data=data, kind=KIND_FACT, source=SOURCE_CALL_GRAPH, limits=LIMITS_PATH,
+                      truncated=truncated)
+
+
+# ---------------------------------------------------------------------------------------------
 # Kayıt (v2 tasarımı §3.5; sıra full_registry'nin sırasıdır)
 
 MORE_TOOLS = (
@@ -186,4 +345,32 @@ MORE_TOOLS = (
         args_schema={"type": "object", "properties": {"addr": _ADDR_SCHEMA}, "required": ["addr"],
                      "additionalProperties": False},
         max_result_bytes=FACTS_RESULT_MAX_BYTES, func=get_function_facts),
+    ToolSpec(
+        name="get_call_graph", cls="O", signature="get_call_graph(addr, direction, depth, max_nodes)",
+        description=(
+            'the call graph around one function, from Ghidra\'s call graph. direction "callees" = functions addr '
+            'CALLS, and what they call; "callers" = functions that CALL addr, and their callers. "depth" 1 or '
+            f'{CALL_GRAPH_MAX_DEPTH} levels; "items" are the reached program functions with their "depth" (at most '
+            f'{CALL_GRAPH_MAX_NODES}); "edges" are [caller, callee] pairs among them; "coverage" says how many were '
+            'reached and how many are not shown.'),
+        args_schema={"type": "object",
+                     "properties": {"addr": _ADDR_SCHEMA, "direction": {"enum": [DIR_DOWN, DIR_UP]},
+                                    "depth": {"type": "integer", "minimum": 1, "maximum": CALL_GRAPH_MAX_DEPTH},
+                                    "max_nodes": {"type": "integer", "minimum": 1,
+                                                  "maximum": CALL_GRAPH_MAX_NODES}},
+                     "required": ["addr", "direction"], "additionalProperties": False},
+        max_result_bytes=CALL_GRAPH_RESULT_MAX_BYTES, func=get_call_graph, defaults=_GRAPH_DEFAULTS),
+    ToolSpec(
+        name="find_path", cls="O", signature="find_path(addr, to, max_depth)",
+        description=(
+            'shortest call chains from addr down to "to" (addr calls X, X calls ... calls "to"), from Ghidra\'s '
+            f'call graph. At most {PATH_MAX_PATHS} chains, each at most "max_depth" calls long (1-{PATH_MAX_DEPTH}). '
+            '"paths" lists the chains, "paths_total" counts all shortest chains, "found" false means no chain '
+            'within max_depth (indirect calls are not in the graph). Both ends must be program functions; to '
+            'reach a library function, first use find_refs to get its callers.'),
+        args_schema={"type": "object",
+                     "properties": {"addr": _ADDR_SCHEMA, "to": _ADDR_SCHEMA,
+                                    "max_depth": {"type": "integer", "minimum": 1, "maximum": PATH_MAX_DEPTH}},
+                     "required": ["addr", "to"], "additionalProperties": False},
+        max_result_bytes=PATH_RESULT_MAX_BYTES, func=find_path, defaults=_PATH_DEFAULTS),
 )

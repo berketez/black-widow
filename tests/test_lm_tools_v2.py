@@ -25,7 +25,7 @@ from karadul.lm.context import strip_header
 from karadul.lm.events import touched_refs
 from karadul.lm.tools import read_more as RM
 from tests.test_lm_tools import (
-    A, B, BIG, CB, D, ENTRY, HUB, HUB_CALLEES, MALLOC, SIGNAL, body, default_ws, fun,
+    A, B, BIG, CB, D, ENTRY, HUB, HUB_CALLEES, MALLOC, SIGNAL, body, build_ws, default_ws, fun,
 )
 
 
@@ -166,3 +166,123 @@ def test_facts_hata_kodlari(ws):
     assert call(ws, "get_function_facts", {"addr": "FUN_0000dead"}).error == "bilinmeyen_adres"
     assert call(ws, "get_function_facts", {"addr": "deadbeef"}).error == "gecersiz_arguman"
     assert call(ws, "get_function_facts", {"addr": fun(A), "x": 1}).error == "gecersiz_arguman"
+
+
+# --------------------------------------------------------------------------------------------
+# (c) O7 get_call_graph, O7b find_path
+
+def X(i: int) -> str:
+    return f"{0x20000 + 0x10 * i:08x}"
+
+
+@pytest.fixture()
+def gws(tmp_path) -> T.Workspace:
+    """Yol grafiği: elmas X0→{X1,X2}→X3→X4; uzun zincir X0→X5→…→X11 (7 adım); X0→Q1..Q5→X20
+    (5 en kısa yol; Q = X40..X44); X12 → X0 (tek çağıran); X30 kopuk."""
+    calls = {X(0): [X(1), X(2), X(5), *[X(40 + k) for k in range(5)]], X(1): [X(3)], X(2): [X(3)], X(3): [X(4)],
+             X(4): [], X(12): [X(0)], X(20): [], X(30): []}
+    for i in range(5, 11):
+        calls[X(i)] = [X(i + 1)]
+    calls[X(11)] = []
+    for k in range(5):
+        calls[X(40 + k)] = [X(20)]
+    return T.Workspace(build_ws(tmp_path / "g", {a: {"calls": c} for a, c in calls.items()},
+                                names={X(3): "mid_node"},
+                                provenance={X(3): {"new_name": "mid_node", "label": "kesin"}}))
+
+
+def test_graf_asagi_derinlik_sira_ve_kenarlar(ws):
+    r = call(ws, "get_call_graph", {"addr": fun(D), "direction": "callees", "depth": 2})
+    assert r.ok and r.kind == "olgu" and r.source == "static/ghidra_call_graph.json"
+    d = r.data
+    # ENTRY (Ghidra'nın adlandırdığı, FUN_ dosyası yok) düğüm değildir; öz çağrı (A→A) sayılmaz.
+    beklenen = sorted([A, B, "0000c000", "0000c010", "00007000", "00008000", "0000c020"], key=lambda h: int(h, 16))
+    assert [i["addr"] for i in d["items"]] == [fun(x) for x in beklenen]
+    assert {i["depth"] for i in d["items"]} == {1}
+    # Kenarlar: çağıran adresine, sonra çağrılana göre; öz çağrı (A→A) kenar değildir.
+    assert d["edges"] == [[fun(A), fun(B)]] + [[fun(D), fun(x)] for x in beklenen]
+    assert d["coverage"] == {"reached": 7, "shown": 7, "omitted": 0, "edges_total": len(d["edges"]),
+                             "edges_omitted": 0} and r.truncated is None
+    assert {i["addr"] for i in d["items"]} == set(touched_refs(r.envelope()))
+    tag = {i["addr"]: i["name_tag"] for i in d["items"]}
+    assert tag[fun(B)] == "[proven: parse_header]" and tag[fun(A)] == "[unverified: run_main]"
+
+
+def test_graf_yukari_ve_derinlik(gws):
+    d = call(gws, "get_call_graph", {"addr": fun(X(3)), "direction": "callers", "depth": 2}).data
+    assert [(i["addr"], i["depth"]) for i in d["items"]] == [(fun(X(1)), 1), (fun(X(2)), 1), (fun(X(0)), 2)]
+    d1 = call(gws, "get_call_graph", {"addr": fun(X(3)), "direction": "callers", "depth": 1}).data
+    assert [i["addr"] for i in d1["items"]] == [fun(X(1)), fun(X(2))]
+    # Öntanım derinlik 2: X0'ın aşağısı X1, X2, X5, Q1..Q5 (1) + X3, X6, X20 (2).
+    d0 = call(gws, "get_call_graph", {"addr": fun(X(0)), "direction": "callees"}).data
+    assert d0["depth"] == 2 and d0["coverage"]["reached"] == 11
+    assert [i["depth"] for i in d0["items"]] == [1] * 8 + [2] * 3
+
+
+def test_graf_dugum_tavani(ws):
+    r = call(ws, "get_call_graph", {"addr": fun(HUB), "direction": "callees"})
+    assert len(r.data["items"]) == T.CALL_GRAPH_MAX_NODES == 40
+    assert r.data["coverage"]["omitted"] == len(HUB_CALLEES) - 40 and r.truncated["omitted"] == 5
+    assert [i["addr"] for i in r.data["items"]] == [fun(x) for x in HUB_CALLEES[:40]]
+    r3 = call(ws, "get_call_graph", {"addr": fun(HUB), "direction": "callees", "max_nodes": 3})
+    assert len(r3.data["items"]) == 3 and r3.truncated == {"omitted": 42, "total": 45, "edges_omitted": 0}
+    assert r.size_bytes() <= T.CALL_GRAPH_RESULT_MAX_BYTES
+    assert call(ws, "get_call_graph", {"addr": fun(HUB), "direction": "callees", "depth": 3}).error == "gecersiz_arguman"
+
+
+def test_graf_kenar_tavani_kirpmayi_soyler(tmp_path):
+    nodes = [X(i) for i in range(12)]
+    # 12 düğümlü tam yönlü grafik: 12 × 11 = 132 kenar > 80.
+    ws = T.Workspace(build_ws(tmp_path / "k", {a: {"calls": [b for b in nodes if b != a]} for a in nodes}))
+    r = call(ws, "get_call_graph", {"addr": fun(nodes[0]), "direction": "callees", "depth": 1})
+    cov = r.data["coverage"]
+    assert len(r.data["edges"]) == T.CALL_GRAPH_MAX_EDGES == 80 and cov["edges_total"] == 132
+    assert cov["edges_omitted"] == 52 and r.truncated == {"omitted": 0, "total": 11, "edges_omitted": 52}
+
+
+def test_graf_hatalar_ve_korluk(ws, tmp_path):
+    assert call(ws, "get_call_graph", {"addr": "FUN_0000dead", "direction": "callees"}).error == "bilinmeyen_adres"
+    # thunk'ın decompile dosyası FUN_ değil: grafikte düğüm değildir.
+    assert call(ws, "get_call_graph", {"addr": fun(MALLOC), "direction": "callers"}).error == "veri_yok"
+    grafiksiz = T.Workspace(default_ws(tmp_path / "g0", graph=None))
+    assert call(grafiksiz, "get_call_graph", {"addr": fun(A), "direction": "callees"}).error == "veri_yok"
+    assert call(grafiksiz, "find_path", {"addr": fun(D), "to": fun(B)}).error == "veri_yok"
+    kor = call(ws, "get_call_graph", {"addr": fun(A), "direction": "callers"}, blind_target=B).data
+    # D'nin adı elle verilmiş (köken kaydı başka adı anlatıyor): körlükte gösterilmez.
+    assert [i["name_tag"] for i in kor["items"]] == [None]
+    kor_b = call(ws, "get_call_graph", {"addr": fun(D), "direction": "callees"}, blind_target=B).data
+    assert {i["addr"]: i["name_tag"] for i in kor_b["items"]}[fun(B)] is None
+
+
+def test_yol_elmas_tum_en_kisa_yollar(gws):
+    r = call(gws, "find_path", {"addr": fun(X(0)), "to": fun(X(4))})
+    assert r.ok and r.kind == "olgu"
+    d = r.data
+    assert d["found"] is True and d["length"] == 3 and d["paths_total"] == 2 and r.truncated is None
+    assert d["paths"] == [[fun(X(0)), fun(X(1)), fun(X(3)), fun(X(4))],
+                          [fun(X(0)), fun(X(2)), fun(X(3)), fun(X(4))]]
+    assert [i["addr"] for i in d["items"]] == [fun(X(1)), fun(X(3)), fun(X(4)), fun(X(2))]
+    assert {i["addr"]: i["name_tag"] for i in d["items"]}[fun(X(3))] == "[proven: mid_node]"
+    assert set(touched_refs(r.envelope())) == {fun(X(i)) for i in (1, 2, 3, 4)}
+
+
+def test_yol_derinlik_siniri_ve_yon(gws):
+    assert call(gws, "find_path", {"addr": fun(X(0)), "to": fun(X(10))}).data["length"] == 6
+    uzak = call(gws, "find_path", {"addr": fun(X(0)), "to": fun(X(11))})
+    assert uzak.ok and uzak.data["found"] is False and uzak.data["paths"] == [] and uzak.data["length"] is None
+    assert touched_refs(uzak.envelope()) == []
+    assert call(gws, "find_path", {"addr": fun(X(0)), "to": fun(X(4)), "max_depth": 2}).data["found"] is False
+    # Yön: X4 X0'ı çağırmaz.
+    assert call(gws, "find_path", {"addr": fun(X(4)), "to": fun(X(0))}).data["found"] is False
+    assert call(gws, "find_path", {"addr": fun(X(12)), "to": fun(X(4))}).data["length"] == 4
+    assert call(gws, "find_path", {"addr": fun(X(0)), "to": fun(X(0))}).error == "gecersiz_arguman"
+    assert call(gws, "find_path", {"addr": fun(X(0)), "to": "FUN_0000dead"}).error == "bilinmeyen_adres"
+    assert call(gws, "find_path", {"addr": fun(X(0)), "to": fun(X(4)), "max_depth": 7}).error == "gecersiz_arguman"
+
+
+def test_yol_tavani_kirpmayi_soyler(gws):
+    r = call(gws, "find_path", {"addr": fun(X(0)), "to": fun(X(20))})
+    d = r.data
+    assert d["length"] == 2 and d["paths_total"] == 5 and len(d["paths"]) == T.PATH_MAX_PATHS == 3
+    assert [p[1] for p in d["paths"]] == [fun(X(40)), fun(X(41)), fun(X(42))]
+    assert r.truncated == {"omitted": 2, "total": 5}
