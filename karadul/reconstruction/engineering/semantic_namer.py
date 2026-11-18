@@ -315,10 +315,7 @@ def _declared_variables(code: str) -> set[str]:
     names: set[str] = set()
     sig = _FUNC_SIG_RE.search(code)
     if sig:
-        for raw in sig.group(2).split(","):
-            m = re.search(r"([A-Za-z_]\w*)\s*(?:\[[^\]]*\]\s*)*$", raw.strip())
-            if m and m.group(1) != "void":
-                names.add(m.group(1))
+        names.update(p["name"] for p in _params_from_signature(sig))
         body = code[sig.end():]
     else:
         body = code
@@ -332,23 +329,85 @@ def _declared_variables(code: str) -> set[str]:
 # Fonksiyon imza parser (C kodundan)
 # ---------------------------------------------------------------------------
 
+# Parametre listesi bir düzey iç içe ayraca izin verir: işlev göstericili parametre
+# (``void (*cb)(int)``) fonksiyonu düşürmez (P05b K1).
 _FUNC_SIG_RE = re.compile(
     r"^(?:(?:void|int|uint|long|ulong|char|uchar|short|ushort|byte|bool|float|double|"
     r"size_t|ssize_t|undefined\d?|code\s*\*|undefined\s*\*|"
     r"\w+\s*\*+)\s+)"
-    r"(\w+)\s*\(([^)]*)\)\s*\{",
+    r"(\w+)\s*\(((?:[^()]|\([^()]*\))*)\)\s*\{",
     re.MULTILINE,
 )
 
-# Tek parametre parser: "type name" veya "type *name" veya "type * name"
-_PARAM_PARSE_RE = re.compile(
-    r"^\s*"
-    r"((?:const\s+)?(?:unsigned\s+)?(?:void|int|uint|long|ulong|char|uchar|short|ushort|"
-    r"byte|bool|float|double|size_t|ssize_t|undefined\d?|code|"
-    r"\w+)"
-    r"(?:\s*\*+)?)"          # tip kismi
-    r"\s+(\w+)\s*$"          # isim kismi
+# Parametre bildirimi (P05b K1). Eski ``_PARAM_PARSE_RE`` tip ile ad arasında boşluk istiyordu:
+# Ghidra ``double *param_1`` yazar, desen tutmuyor, yedek ``rsplit`` tipi ``double`` okuyordu.
+# Gerçek koşularda ``ghidra_functions.json``'da ``params`` olmadığı için BÜTÜN işaretçi
+# parametreleri taban tip sayılıyordu (``char *`` → ``bool`` şablonu → ``enabled``).
+# Ayraçlı bildirici: işlev göstericisi ``void (*cb)(int)`` ya da dizi göstericisi
+# ``uint8_t (*p) [16]`` (Ghidra yazar)
+_PARAM_PAREN_DECL_RE = re.compile(
+    r"^(?P<base>.*?)\(\s*(?P<stars>\*+)\s*(?P<name>[A-Za-z_]\w*)\s*\)\s*"
+    r"(?P<suffix>\(.*\)|(?:\[[^\]]*\]\s*)+)$",
+    re.DOTALL,
 )
+_PARAM_NAME_RE = re.compile(r"(?P<name>[A-Za-z_]\w*)\s*(?P<arr>(?:\[[^\]]*\]\s*)*)$")
+_TYPE_QUALIFIERS = frozenset({"const", "volatile", "restrict", "__restrict", "__restrict__"})
+
+
+def _normalize_type(type_text: str) -> str:
+    """Tip metnini eşleşme biçimine getir: niteleyiciler atılır, ``*`` öbeği ``T *`` / ``T **``."""
+    stars = type_text.count("*")
+    words = [w for w in type_text.replace("*", " ").split() if w not in _TYPE_QUALIFIERS]
+    base = " ".join(words)
+    if not stars:
+        return base
+    return f"{base} {'*' * stars}" if base else "*" * stars
+
+
+def _parse_param_decl(raw: str) -> tuple[str, str] | None:
+    """Tek parametre bildirimi → ``(ad, tip)``; parametre değilse ``None`` (P05b K1).
+
+    ``double *param_1`` → ``("param_1", "double *")``; ``const char **argv`` →
+    ``("argv", "char **")``; ``char buf[16]`` → ``("buf", "char *")`` (dizi parametresi
+    işaretçiye iner); ``void (*cb)(int)`` → ``("cb", "code *")`` (Ghidra'nın yazımı);
+    ``uint8_t (*p) [16]`` (dizi göstericisi) → ``("p", "uint8_t **")``.
+    ``void``, ``...`` ve yalnız ad (tipsiz) bildirim parametre değildir.
+    """
+    text = " ".join(raw.split())
+    if not text or text in ("void", "..."):
+        return None
+    fp = _PARAM_PAREN_DECL_RE.match(text)
+    if fp:
+        if fp.group("suffix").startswith("("):
+            return fp.group("name"), "code *"
+        base = fp.group("base").strip()
+        if not base:
+            return None
+        return fp.group("name"), _normalize_type(f"{base} {fp.group('stars')}*")
+    m = _PARAM_NAME_RE.search(text)
+    if not m:
+        return None
+    type_text = text[:m.start()].strip()
+    if not type_text or not re.search(r"[A-Za-z_]", type_text):
+        return None
+    if m.group("arr"):
+        type_text += " *"
+    return m.group("name"), _normalize_type(type_text)
+
+
+def _params_from_signature(sig_match: re.Match[str]) -> list[dict[str, Any]]:
+    """``_FUNC_SIG_RE`` eşleşmesindeki parametreler (ayraç dengeli bölünür; konum = sıra)."""
+    param_str = sig_match.group(2).strip()
+    if not param_str or param_str == "void":
+        return []
+    args = _split_call_args(f"({param_str})", 0) or []
+    params: list[dict[str, Any]] = []
+    for i, raw in enumerate(args):
+        parsed = _parse_param_decl(raw)
+        if parsed is None:
+            continue
+        params.append({"name": parsed[0], "type": parsed[1], "position": i})
+    return params
 
 
 # ---------------------------------------------------------------------------
@@ -1186,22 +1245,29 @@ _TYPE_COMPAT_GROUPS: dict[str, set[str]] = {
 }
 
 
+# Ghidra'nın işaretçiyi gösterebildiği tamsayı tipleri (işaretçi istisnası)
+_GHIDRA_POINTER_INTS = frozenset({"long", "ulong", "undefined8"})
+
+
 def _types_compatible(template_type: str, actual_type: str) -> bool:
-    """Sablon tipi ile gercek tip uyumlu mu."""
-    # Normalize: fazla bosluklari kaldir
-    t_norm = " ".join(template_type.split())
-    a_norm = " ".join(actual_type.split())
+    """Sablon tipi ile gercek tip uyumlu mu.
+
+    Ghidra'nın işaretçi istisnası tek yönlüdür (P05b K1): tamsayı tipli (``long`` / ``ulong`` /
+    ``undefined8``) parametre işaretçi şablonu alabilir (kanıt şartı ``_pointer_template_evidence``).
+    Bildirilen tipi gerçek işaretçi olan parametre skaler şablon ALMAZ: eski "şablon ``long``,
+    gerçek tip işaretçi → uyumlu" istisnası kalktı (işaretçi tipi okunmadığı için gerçek
+    koşularda ölüydü; okununca ``FILE *`` → ``handle`` gibi kanıtsız ad üretirdi).
+    """
+    t_norm = _normalize_type(template_type)
+    a_norm = _normalize_type(actual_type)
     if t_norm == a_norm:
         return True
     # Pointer olup olmadigi
     t_is_ptr = "*" in t_norm
     a_is_ptr = "*" in a_norm
-    # Ikisi de pointer veya ikisi de deger tipi olmali (esnek mod icin long istisna)
     if t_is_ptr != a_is_ptr:
-        # Ghidra bazen pointer'i 'long' olarak gosterir
-        if a_norm in ("long", "ulong", "undefined8") and t_is_ptr:
-            return True
-        if t_norm in ("long", "ulong") and a_is_ptr:
+        # Ghidra bazen pointer'i 'long' olarak gosterir (kanıt şartı ayrıca aranır)
+        if a_norm in _GHIDRA_POINTER_INTS and t_is_ptr:
             return True
         return False
     # Uyumluluk grubu kontrolu
@@ -1564,32 +1630,8 @@ def _worker_get_params(func_name: str) -> list[dict[str, Any]]:
     sig_match = _FUNC_SIG_RE.search(code)
     if not sig_match:
         return []
-
-    param_str = sig_match.group(2).strip()
-    if not param_str or param_str == "void":
-        return []
-
-    params = []
-    for i, raw in enumerate(param_str.split(",")):
-        raw = raw.strip()
-        if not raw:
-            continue
-        pm = _PARAM_PARSE_RE.match(raw)
-        if pm:
-            params.append({
-                "name": pm.group(2),
-                "type": pm.group(1).strip(),
-                "position": i,
-            })
-        else:
-            parts = raw.rsplit(None, 1)
-            if len(parts) == 2:
-                params.append({
-                    "name": parts[1].strip("*").strip(),
-                    "type": parts[0].strip(),
-                    "position": i,
-                })
-    return params
+    # P05b K1: dizisel yolla aynı ayrıştırıcı (işaretçi derinliği korunur)
+    return _params_from_signature(sig_match)
 
 
 def _worker_apply_signature_based(
@@ -2541,34 +2583,9 @@ class SemanticParameterNamer:
         sig_match = _FUNC_SIG_RE.search(code)
         if not sig_match:
             return []
-
-        param_str = sig_match.group(2).strip()
-        if not param_str or param_str == "void":
-            return []
-
-        params = []
-        for i, raw in enumerate(param_str.split(",")):
-            raw = raw.strip()
-            if not raw:
-                continue
-            pm = _PARAM_PARSE_RE.match(raw)
-            if pm:
-                params.append({
-                    "name": pm.group(2),
-                    "type": pm.group(1).strip(),
-                    "position": i,
-                })
-            else:
-                # Parse edilemezse ham haliyle kaydet
-                parts = raw.rsplit(None, 1)
-                if len(parts) == 2:
-                    params.append({
-                        "name": parts[1].strip("*").strip(),
-                        "type": parts[0].strip(),
-                        "position": i,
-                    })
-
-        return params
+        # P05b K1: işaretçi derinliği, niteleyici, dizi ve işlev göstericisi
+        # (``_parse_param_decl``); paralel yolla aynı işlev
+        return _params_from_signature(sig_match)
 
     # ------------------------------------------------------------------
     # v1.7.2 Strateji 0: Signature-Based Parameter Naming

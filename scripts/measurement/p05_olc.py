@@ -249,6 +249,11 @@ def imza_tipleri(kod: str, fonk: str) -> dict[str, str]:
         if fp:
             out[fp.group(2)] = "fn *"
             continue
+        # Dizi göstericisi: ``uint8_t (*p) [16]`` (Ghidra yazar)
+        dg = re.fullmatch(r"(.*?)\(\s*(\*+)\s*(\w+)\s*\)\s*(?:\[[^\]]*\]\s*)+", a)
+        if dg:
+            out[dg.group(3)] = " ".join(dg.group(1).split()) + " " + dg.group(2) + "*"
+            continue
         ad = re.search(r"(\w+)\s*((?:\[[^\]]*\]\s*)*)$", a)
         if not ad or ad.group(1) == "void":
             continue

@@ -1,0 +1,61 @@
+{
+  "_comment": "P05b (anlamsal parametre adları: işaretçi tipi, kanıtsız str, kaybolan doğru adlar, CALLER_NAME_HINTS) onarımlarının mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metninin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p05b.json",
+  "mutants": [
+    {
+      "id": "p05b_k1_isaretci_dusur",
+      "desc": "K1: ayrıştırıcı tipteki * öbeğini atar (eski davranış: double *param_1 → double)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_tip.py::test_bildirim_ayristirma",
+      "find": "    stars = type_text.count(\"*\")\n",
+      "replace": "    stars = 0\n"
+    },
+    {
+      "id": "p05b_k1_niteleyici_kalir",
+      "desc": "K1: const niteleyici tipte kalır (const char * şablonla eşleşmez)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_tip.py::test_tip_uyumu_tek_yonlu_istisna",
+      "find": "_TYPE_QUALIFIERS = frozenset({\"const\", \"volatile\", \"restrict\", \"__restrict\", \"__restrict__\"})",
+      "replace": "_TYPE_QUALIFIERS = frozenset({\"volatile\"})"
+    },
+    {
+      "id": "p05b_k1_dizi_isaretci_degil",
+      "desc": "K1: dizi parametresi işaretçiye inmez",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_tip.py::test_bildirim_ayristirma",
+      "find": "    if m.group(\"arr\"):\n        type_text += \" *\"",
+      "replace": "    if m.group(\"arr\") and False:\n        type_text += \" *\""
+    },
+    {
+      "id": "p05b_k1_islev_gostericisi_yok",
+      "desc": "K1: işlev göstericisi bildirimi tanınmaz",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_tip.py::test_imza_islev_gostericisi_fonksiyonu_dusurmez",
+      "find": "        if fp.group(\"suffix\").startswith(\"(\"):\n            return fp.group(\"name\"), \"code *\"",
+      "replace": "        if fp.group(\"suffix\").startswith(\"(\") and False:\n            return fp.group(\"name\"), \"code *\""
+    },
+    {
+      "id": "p05b_k1_imza_ic_ayrac_yok",
+      "desc": "K1: imza deseni iç içe ayraca izin vermez (işlev göstericili fonksiyon düşer)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_tip.py::test_imza_islev_gostericisi_fonksiyonu_dusurmez",
+      "find": "    r\"(\\w+)\\s*\\(((?:[^()]|\\([^()]*\\))*)\\)\\s*\\{\",",
+      "replace": "    r\"(\\w+)\\s*\\(([^)]*)\\)\\s*\\{\","
+    },
+    {
+      "id": "p05b_k1_ters_istisna",
+      "desc": "K1: eski ters istisna geri gelir (şablon long, gerçek tip işaretçi → uyumlu)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_tip.py::test_sirali_yol_isaretciye_skaler_ad_vermez",
+      "find": "        if a_norm in _GHIDRA_POINTER_INTS and t_is_ptr:\n            return True\n        return False",
+      "replace": "        if a_norm in _GHIDRA_POINTER_INTS and t_is_ptr:\n            return True\n        return t_norm in (\"long\", \"ulong\", \"bool\", \"int\")"
+    },
+    {
+      "id": "p05b_k1_paralel_eski_ayristirici",
+      "desc": "K1: paralel yol taban tipi okur (rsplit, işaretçi düşer)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_tip.py::test_paralel_yol_ayni_ayristirici",
+      "find": "    # P05b K1: dizisel yolla aynı ayrıştırıcı (işaretçi derinliği korunur)\n    return _params_from_signature(sig_match)",
+      "replace": "    return [dict(p, type=p[\"type\"].rstrip(\" *\")) for p in _params_from_signature(sig_match)]"
+    }
+  ]
+}
