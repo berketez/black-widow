@@ -256,16 +256,35 @@ class TestAntiDebug:
         assert "AntiDebug_Timing" not in rules_of(scanner, data)
 
     def test_timing_with_strong_context(self, scanner):
+        rd = b"\x00\x0F\x31\x48\x89\xC1\x0F\x31\x00"
+        data = make_macho(b"\x00PT_DENY_ATTACH\x00" + rd, cputype=0x01000007)
+        got = rules_of(scanner, data)
+        assert {"AntiDebug_Ptrace", "AntiDebug_Timing"} <= got
+        # ayni baytlar AArch64 diliminde x86 komutu degildir
+        arm = make_macho(b"\x00PT_DENY_ATTACH\x00" + rd, cputype=0x0100000C)
+        assert "AntiDebug_Timing" not in rules_of(scanner, arm)
+
+    def test_timing_not_piggybacking_on_sysctl(self, scanner):
+        # Chromium Embedded Framework: BeingDebugged() (sysctl P_TRACED) +
+        # zamanlama icin rdtsc -- "zamanlama anti-debug" degil.
         mib = (b"\xC7\x45\xE0\x01\x00\x00\x00\xC7\x45\xE4\x0E\x00\x00\x00"
                b"\xC7\x45\xE8\x01\x00\x00\x00")
         data = make_macho(b"\x00_sysctl\x00_getpid\x00" + mib
                           + b"\x00\x0F\x31\x48\x89\xC1\x0F\x31\x00", cputype=0x01000007)
         got = rules_of(scanner, data)
-        assert {"AntiDebug_SysctlCheck", "AntiDebug_Timing"} <= got
-        # ayni baytlar AArch64 diliminde x86 komutu degildir
-        arm = make_macho(b"\x00_sysctl\x00_getpid\x00" + mib
-                         + b"\x00\x0F\x31\x48\x89\xC1\x0F\x31\x00", cputype=0x0100000C)
-        assert "AntiDebug_Timing" not in rules_of(scanner, arm)
+        assert "AntiDebug_SysctlCheck" in got
+        assert "AntiDebug_Timing" not in got
+
+    def test_rule_dependency_on_later_rule(self, scanner):
+        # Baska kurala dayanan kosul, o kural listede SONRA gelse de calisir.
+        from karadul.analyzers.yara_scanner import BuiltinRule, has, rule_matched, all_
+        s = YaraScanner()
+        s._yara_available = scanner.yara_available
+        s._yara = scanner._yara
+        s.add_rule(BuiltinRule(name="Dep_A", tags=["t"], string_patterns=[r"\bAAAA\b"],
+                               condition=all_(has("$s0"), rule_matched("Dep_B"))))
+        s.add_rule(BuiltinRule(name="Dep_B", tags=["t"], string_patterns=[r"\bBBBB\b"]))
+        assert {"Dep_A", "Dep_B"} <= set(s.scan_bytes(b"\x00AAAA\x00BBBB\x00").matched_rules)
 
     def test_ptrace_syscall_bytes_need_syscall(self, scanner):
         # bash: tek basina "mov eax, 0x200001A"

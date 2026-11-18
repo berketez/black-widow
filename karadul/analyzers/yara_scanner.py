@@ -845,9 +845,12 @@ def _builtin_rules() -> list[BuiltinRule]:
         ],
         arch=["x86"],
         # rdtsc cifti zamanlama olcumunde de olagan (vim, ssh, top); hukum
-        # yalniz ayni ikilide guclu bir anti-debug kaniti da varsa.
+        # yalniz ayni ikilide yalniz anti-debug amacli bir teknik de varsa
+        # (PT_DENY_ATTACH, CheckRemoteDebuggerPresent). sysctl P_TRACED
+        # baglam sayilmaz: masum yazilim da hata ayiklayiciyi boyle sorar
+        # (Chromium base::debug::BeingDebugged; CEF'te olculdu).
         condition=all_(has("$s0"), rule_matched(
-            "AntiDebug_Ptrace", "AntiDebug_SysctlCheck", "AntiDebug_IsDebuggerPresent")),
+            "AntiDebug_Ptrace", "AntiDebug_IsDebuggerPresent")),
     ))
 
     rules.append(BuiltinRule(
@@ -918,7 +921,7 @@ def _builtin_rules() -> list[BuiltinRule]:
         # Bu API'ler MSVC CRT'de olagan; hukum yalniz ayni ikilide guclu bir
         # anti-debug kaniti da varsa.
         condition=all_(of(2), rule_matched(
-            "AntiDebug_IsDebuggerPresent", "AntiDebug_Ptrace", "AntiDebug_SysctlCheck")),
+            "AntiDebug_IsDebuggerPresent", "AntiDebug_Ptrace")),
     ))
 
     # ===================================================================

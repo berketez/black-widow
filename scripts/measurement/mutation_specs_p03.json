@@ -86,14 +86,14 @@
       "desc": "AntiDebug_Timing başka anti-debug kanıtı olmadan rdtsc çiftiyle hüküm verir",
       "module": "karadul/analyzers/yara_scanner.py",
       "test": "tests/test_p03_yara_kurallari.py::TestAntiDebug::test_timing_rdtsc_pair_alone_is_not_antidebug",
-      "find": "condition=all_(has(\"$s0\"), rule_matched(\n            \"AntiDebug_Ptrace\", \"AntiDebug_SysctlCheck\", \"AntiDebug_IsDebuggerPresent\")),",
-      "replace": "condition=any_(has(\"$s0\"), rule_matched(\n            \"AntiDebug_Ptrace\", \"AntiDebug_SysctlCheck\", \"AntiDebug_IsDebuggerPresent\"), has(\"$x\")),"
+      "find": "condition=all_(has(\"$s0\"), rule_matched(\n            \"AntiDebug_Ptrace\", \"AntiDebug_IsDebuggerPresent\")),",
+      "replace": "condition=any_(has(\"$s0\"), rule_matched(\n            \"AntiDebug_Ptrace\", \"AntiDebug_IsDebuggerPresent\"), has(\"$x\")),"
     },
     {
       "id": "yara_tek_tur",
-      "desc": "başka kurala dayanan koşullar ikinci turda değerlendirilmiyor (Timing, SysctlCheck'ten önce bakılır)",
+      "desc": "başka kurala dayanan koşullar ikinci turda değerlendirilmiyor (listede sonra gelen kurala bağımlılık kırılır)",
       "module": "karadul/analyzers/yara_scanner.py",
-      "test": "tests/test_p03_yara_kurallari.py::TestAntiDebug::test_timing_with_strong_context",
+      "test": "tests/test_p03_yara_kurallari.py::TestAntiDebug::test_rule_dependency_on_later_rule",
       "find": "first = [r for r in rules if \"rule(\" not in r.resolved_condition().describe()]",
       "replace": "first = list(rules)"
     },
@@ -224,6 +224,14 @@
       "test": "tests/test_p03_capa.py::TestNoTool::test_capa_not_installed",
       "find": "\"capa kurulu degil: guvenli dizinlerde capa CLI yok, \"",
       "replace": "\"capa yok: \""
+    },
+    {
+      "id": "yara_timing_sysctl_baglami",
+      "desc": "AntiDebug_Timing bağlamına sysctl P_TRACED geri eklendi (Chromium BeingDebugged üstüne binme)",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestAntiDebug::test_timing_not_piggybacking_on_sysctl",
+      "find": "\"AntiDebug_Ptrace\", \"AntiDebug_IsDebuggerPresent\")),\n    ))\n\n    rules.append(BuiltinRule(\n        name=\"AntiDebug_SysctlCheck\",",
+      "replace": "\"AntiDebug_Ptrace\", \"AntiDebug_IsDebuggerPresent\", \"AntiDebug_SysctlCheck\")),\n    ))\n\n    rules.append(BuiltinRule(\n        name=\"AntiDebug_SysctlCheck\","
     }
   ]
 }
