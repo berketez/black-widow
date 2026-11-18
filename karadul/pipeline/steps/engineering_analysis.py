@@ -64,12 +64,17 @@ class EngineeringAnalysisStep(Step):
 
                 string_data = ctx.artifacts.get("strings_data")
                 domain_strings = _eh.normalize_strings(string_data)
+                # MUH-04: dizgi sinyali yalniz fonksiyonun xref'li dizgileri
+                function_strings = _eh.function_strings_from_xrefs(
+                    ctx.artifacts.get("xrefs_json_path"),
+                )
 
                 domain_clf = DomainClassifier()
                 domain_report = domain_clf.classify(
                     algorithms=all_algo_list,
                     strings=domain_strings,
                     binary_hints=binary_hints,
+                    function_strings=function_strings,
                 )
 
                 formula_rec = FormulaReconstructor()
