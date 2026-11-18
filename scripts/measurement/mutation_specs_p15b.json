@@ -176,6 +176,14 @@
       "test": "tests/test_p14_batch_cli.py::test_failed_target_not_shown_as_success",
       "find": "OUTCOME_FAILED: (\"red\", \"BAŞARISIZ\", \"FAIL\"),",
       "replace": "OUTCOME_FAILED: (\"red\", \"BASARISIZ!\", \"FAIL\"),"
+    },
+    {
+      "id": "k3_deep_deobf_kaydi",
+      "desc": "use_deep_deobfuscation etkisiz kaydından düşüyor (YAML'da yazılırsa uyarı yok)",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15b_etkisiz_bayraklar.py",
+      "find": "    \"analysis.use_deep_deobfuscation\": (\n",
+      "replace": "    \"analysis.use_deep_deobfuscation_eski\": (\n"
     }
   ]
 }

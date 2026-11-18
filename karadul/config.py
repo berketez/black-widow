@@ -370,6 +370,9 @@ class AnalysisConfig:
     deobfuscation_chain: list[str] = field(
         default_factory=lambda: ["beautify", "synchrony", "babel_transforms"]
     )
+    # ETKİSİZ (BORU-13, P15b): okuyan tek yol (stages.py `_execute_legacy` / use_deep)
+    # P-S2'de silindi. Kullanıcı YAML'ı kırılmasın diye alan duruyor; yazılırsa
+    # INERT_SETTINGS uyarısı basılır.
     use_deep_deobfuscation: bool = True
     # NOT (2026-05-13): LLM-Assisted Variable Naming kaldirildi.
     # Berke kalici karari: feedback_no_llm.md — deterministic, CPU-only.
@@ -583,7 +586,7 @@ class BinaryReconstructionConfig:
     pdb_auto_load: bool = True              # Windows PE icin PDB otomatik yukleme
     pdb_search_paths: list[str] = field(default_factory=list)  # Ek PDB arama dizinleri
     enable_function_id: bool = True         # Ghidra FunctionID analyzer
-    function_id_db_paths: list[str] = field(default_factory=list)  # Ek .fidb dosyalari
+    function_id_db_paths: list[str] = field(default_factory=list)  # ETKİSİZ: .fidb Ghidra'ya verilmiyor (INERT_SETTINGS)
     min_naming_confidence: float = 0.7  # NSA-grade: dusuk confidence isim verme, yanlis isim isimsizden kotu
     # Plan v2.2 N1 adım 3 (kanıtlı adlandırma). Üçü de öntanımlı AÇIK (2026-11-10, "aç"):
     # ölçülmüş çapalar ad verir, zayıf alt kanallar susar, ürün eşiği genel adlara uygulanır.
@@ -595,7 +598,7 @@ class BinaryReconstructionConfig:
     enable_subchannel_silencing: bool = True   # N0b'de zayıf çıkan string_context alt kanalları susar
     apply_global_naming_threshold: bool = True  # min_naming_confidence c_namer'ın genel adlarına uygulanır
     max_functions_to_process: int = 0  # 0 = limitsiz, tum fonksiyonlari isle
-    max_decompile_timeout_per_func: int = 30
+    max_decompile_timeout_per_func: int = 30  # fonksiyon başına decompile süresi (ghidra/headless.py okuyor)
     # Harici signature JSON dosyalari (build-signature-db.py ciktilari)
     external_signature_paths: list[str] = field(default_factory=list)
     # BinDiff: referans binary yolu (debug sembollerle). Verilirse karsilastirma yapilir.
@@ -654,8 +657,8 @@ class BinaryReconstructionConfig:
     typeforge_timeout: float = 600.0         # Subprocess timeout (saniye)
     typeforge_min_confidence: float = 0.85   # Merge icin minimum guven esigi
     # v1.10.0 M3 T9: C++ RTTI/vtable reconstruction (Itanium ABI, single inheritance)
-    enable_rtti_recovery: bool = False       # Default kapali, opt-in feature
-    rtti_abi: str = "itanium"                # "itanium" | "msvc" (msvc v1.10.1'de)
+    enable_rtti_recovery: bool = False       # ETKİSİZ: analiz akışına bağlı değil (yalnız `karadul rtti`; P13b bağlayacak)
+    rtti_abi: str = "itanium"                # `karadul rtti` öntanımı: "itanium" | "msvc" (analiz akışında okunmuyor)
     rtti_max_vtable_entries: int = 64        # Vtable basina max okunacak method slot
     # v1.13 Dalga 1: anti-debug + packer fingerprint pipeline step'leri.
     # Default True -- opt-out flag'leri. KARADUL_DISABLE_ANTI_DEBUG vb.
@@ -785,7 +788,7 @@ class ComputationRecoveryConfig:
     constraint_min_confidence: float = 0.6      # Constraint sonucu min guven
     cfg_similarity_threshold: float = 0.93      # CFG cosine similarity esigi (v1.5.1: 0.75->0.93, FP azaltma)
     fusion_min_belief: float = 0.5              # Dempster-Shafer min belief
-    formula_min_complexity: int = 3             # Formul cikarma icin min AST dugum sayisi
+    formula_min_complexity: int = 3             # ETKİSİZ: formül çıkarıcı okumuyor (INERT_SETTINGS)
     # --- Propagasyon ---
     type_propagation_max_depth: int = 5         # BFS ile struct kimlik yayilim derinligi
     # --- Propagasyon (v1.5.9) ---
@@ -824,16 +827,17 @@ class ComputationRecoveryConfig:
     # Node cap (500) ile buyuk CFG'ler zaten VF2 atlar; 30s icin bile
     # pathological graflarda takilma riski yok.
     cfg_iso_vf2_timeout_s: float = 30.0         # Saniye cinsinden VF2 timeout
-    cfg_iso_vf2_node_cap: int = 500             # VF2 max node sayisi; ustunde atla
+    cfg_iso_vf2_node_cap: int = 500             # ETKİSİZ: CFG eşleyici okumuyor (INERT_SETTINGS)
 
 
 @dataclass
 class PipelineConfig:
     """v1.10.0: Step registry pipeline konfigurasyonu.
 
-    use_step_registry=True default (B2, 2026-05-13) — yeni karadul.pipeline
-    paketinden step'ler calisir (canli yol). False ise eski stages.py monolith'i
-    (obsolete; monolith->step migrasyonu henuz tamamen silinmedi).
+    use_step_registry=True default (B2, 2026-05-13) — karadul.pipeline adım
+    koşucusu TEK yoldur. False verilirse yalnız uyarı yazılır ve yine adım
+    koşucusu çalışır: eski stages.py monolit yolu P-S2'de (2026-11-18) silindi
+    (BORU-13, P15b). ``--experimental-step-registry`` bu yüzden etkisizdir.
 
     v1.15-B16 (paralel runner):
         parallel_steps=True default -- topological order'da ayni level'daki
@@ -1068,7 +1072,10 @@ INERT_SETTINGS: dict[str, str] = {
     "analysis.max_file_size_mb": (
         "boyut sınırı security.max_binary_size_bytes'tan okunuyor; bu alan okunmuyor"
     ),
-    "analysis.use_deep_deobfuscation": "deobfuscation zinciri bu bayrağa bakmıyor",
+    "analysis.use_deep_deobfuscation": (
+        "okuyan tek yol (eski monolit, use_deep) P-S2'de silindi; deobfuscation zinciri "
+        "bu bayrağa bakmıyor"
+    ),
     "source_match.consistency_ratio": "kaynak eşleme bu değeri okumuyor",
     "source_match.unpkg_timeout": "kaynak eşleme bu değeri okumuyor",
     "source_match.unpkg_delay_ms": "kaynak eşleme bu değeri okumuyor",
