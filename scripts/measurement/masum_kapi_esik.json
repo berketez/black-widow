@@ -626,7 +626,7 @@
   "dogrudan": {
    "bi": {
     "gelistirme": {
-     "yanlis_toplam": 490,
+     "yanlis_toplam": 455,
      "ikili": 119,
      "kaynaklar": [
       {
@@ -642,10 +642,17 @@
        "tarih": "2026-11-18T09:57:56+03:00",
        "ikili": 119,
        "yanlis": 490
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
+       "ikili": 119,
+       "yanlis": 455
       }
      ],
      "ikililer": {
-      "debian/coreutils/[": 4,
+      "debian/coreutils/[": 3,
       "debian/coreutils/arch": 3,
       "debian/coreutils/b2sum": 3,
       "debian/coreutils/base32": 3,
@@ -666,8 +673,8 @@
       "debian/coreutils/date": 3,
       "debian/coreutils/dd": 3,
       "debian/coreutils/df": 3,
-      "debian/coreutils/dir": 4,
-      "debian/coreutils/dircolors": 4,
+      "debian/coreutils/dir": 3,
+      "debian/coreutils/dircolors": 3,
       "debian/coreutils/dirname": 3,
       "debian/coreutils/du": 3,
       "debian/coreutils/echo": 3,
@@ -688,7 +695,7 @@
       "debian/coreutils/link": 3,
       "debian/coreutils/ln": 3,
       "debian/coreutils/logname": 3,
-      "debian/coreutils/ls": 4,
+      "debian/coreutils/ls": 3,
       "debian/coreutils/md5sum": 3,
       "debian/coreutils/mkdir": 4,
       "debian/coreutils/mkfifo": 3,
@@ -703,7 +710,7 @@
       "debian/coreutils/od": 3,
       "debian/coreutils/paste": 3,
       "debian/coreutils/pathchk": 3,
-      "debian/coreutils/pinky": 5,
+      "debian/coreutils/pinky": 4,
       "debian/coreutils/pr": 3,
       "debian/coreutils/printenv": 3,
       "debian/coreutils/printf": 3,
@@ -711,7 +718,7 @@
       "debian/coreutils/pwd": 3,
       "debian/coreutils/readlink": 3,
       "debian/coreutils/realpath": 3,
-      "debian/coreutils/rm": 4,
+      "debian/coreutils/rm": 3,
       "debian/coreutils/rmdir": 3,
       "debian/coreutils/runcon": 3,
       "debian/coreutils/seq": 3,
@@ -727,47 +734,47 @@
       "debian/coreutils/split": 4,
       "debian/coreutils/stat": 3,
       "debian/coreutils/stdbuf": 3,
-      "debian/coreutils/stty": 5,
+      "debian/coreutils/stty": 3,
       "debian/coreutils/sum": 3,
       "debian/coreutils/sync": 3,
       "debian/coreutils/tac": 3,
       "debian/coreutils/tail": 4,
       "debian/coreutils/tee": 3,
-      "debian/coreutils/test": 4,
-      "debian/coreutils/timeout": 5,
+      "debian/coreutils/test": 3,
+      "debian/coreutils/timeout": 4,
       "debian/coreutils/touch": 3,
       "debian/coreutils/tr": 3,
       "debian/coreutils/true": 3,
       "debian/coreutils/truncate": 3,
       "debian/coreutils/tsort": 3,
-      "debian/coreutils/tty": 4,
+      "debian/coreutils/tty": 3,
       "debian/coreutils/uname": 3,
       "debian/coreutils/unexpand": 3,
       "debian/coreutils/uniq": 3,
       "debian/coreutils/unlink": 3,
-      "debian/coreutils/users": 4,
-      "debian/coreutils/vdir": 4,
+      "debian/coreutils/users": 3,
+      "debian/coreutils/vdir": 3,
       "debian/coreutils/wc": 3,
-      "debian/coreutils/who": 5,
+      "debian/coreutils/who": 4,
       "debian/coreutils/whoami": 3,
       "debian/coreutils/yes": 3,
-      "debian/htop/htop": 5,
-      "debian/openssl/openssl": 18,
-      "debian/redis-tools/redis-benchmark": 8,
-      "debian/redis-tools/redis-check-aof": 26,
-      "debian/redis-tools/redis-check-rdb": 26,
-      "debian/redis-tools/redis-cli": 14,
-      "debian/sqlite3/sqlite3": 14,
+      "debian/htop/htop": 3,
+      "debian/openssl/openssl": 15,
+      "debian/redis-tools/redis-benchmark": 7,
+      "debian/redis-tools/redis-check-aof": 24,
+      "debian/redis-tools/redis-check-rdb": 24,
+      "debian/redis-tools/redis-cli": 11,
+      "debian/sqlite3/sqlite3": 12,
       "debian/tmux/tmux": 6,
       "debian/tree/tree": 2,
       "debian/zstd/pzstd": 3,
-      "debian/zstd/zstd": 10,
-      "mac/htop": 7,
-      "mac/tmux": 9
+      "debian/zstd/zstd": 8,
+      "mac/htop": 5,
+      "mac/tmux": 7
      }
     },
     "macos": {
-     "yanlis_toplam": 242,
+     "yanlis_toplam": 215,
      "ikili": 48,
      "kaynaklar": [
       {
@@ -783,61 +790,68 @@
        "tarih": "2026-11-18T09:57:56+03:00",
        "ikili": 48,
        "yanlis": 242
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
+       "ikili": 48,
+       "yanlis": 215
       }
      ],
      "ikililer": {
-      "/bin/bash": 10,
+      "/bin/bash": 9,
       "/bin/cat": 1,
-      "/bin/chmod": 2,
-      "/bin/cp": 1,
+      "/bin/chmod": 1,
+      "/bin/cp": 0,
       "/bin/date": 0,
       "/bin/dd": 1,
       "/bin/echo": 0,
       "/bin/kill": 0,
-      "/bin/ls": 2,
+      "/bin/ls": 1,
       "/bin/mkdir": 0,
       "/bin/mv": 1,
       "/bin/ps": 1,
       "/bin/pwd": 0,
       "/bin/rm": 0,
-      "/bin/zsh": 8,
+      "/bin/zsh": 6,
       "/usr/bin/awk": 3,
       "/usr/bin/base64": 1,
       "/usr/bin/bc": 2,
-      "/usr/bin/curl": 14,
+      "/usr/bin/curl": 13,
       "/usr/bin/diff": 3,
-      "/usr/bin/file": 13,
+      "/usr/bin/file": 12,
       "/usr/bin/find": 3,
       "/usr/bin/grep": 5,
       "/usr/bin/gzip": 4,
       "/usr/bin/head": 1,
       "/usr/bin/hexdump": 2,
-      "/usr/bin/less": 4,
-      "/usr/bin/openssl": 11,
-      "/usr/bin/rsync": 10,
-      "/usr/bin/sed": 3,
+      "/usr/bin/less": 3,
+      "/usr/bin/openssl": 8,
+      "/usr/bin/rsync": 8,
+      "/usr/bin/sed": 2,
       "/usr/bin/sort": 4,
-      "/usr/bin/sqlite3": 30,
-      "/usr/bin/ssh": 25,
+      "/usr/bin/sqlite3": 26,
+      "/usr/bin/ssh": 23,
       "/usr/bin/tail": 2,
       "/usr/bin/top": 3,
       "/usr/bin/true": 0,
-      "/usr/bin/unzip": 6,
-      "/usr/bin/vim": 17,
+      "/usr/bin/unzip": 5,
+      "/usr/bin/vim": 15,
       "/usr/bin/wc": 0,
-      "/usr/bin/zip": 7,
-      "/usr/lib/dyld": 11,
+      "/usr/bin/zip": 6,
+      "/usr/lib/dyld": 10,
       "/usr/sbin/chown": 0,
       "/usr/sbin/cron": 6,
       "/usr/sbin/ioreg": 2,
       "/usr/sbin/lsof": 3,
       "/usr/sbin/netstat": 8,
-      "/usr/sbin/sshd": 10,
+      "/usr/sbin/sshd": 9,
       "/usr/sbin/sysctl": 2
      }
     },
     "pe": {
-     "yanlis_toplam": 25,
+     "yanlis_toplam": 24,
      "ikili": 21,
      "kaynaklar": [
       {
@@ -853,18 +867,25 @@
        "tarih": "2026-11-18T09:57:56+03:00",
        "ikili": 21,
        "yanlis": 25
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
+       "ikili": 21,
+       "yanlis": 24
       }
      ],
      "ikililer": {
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_24.exe": 0,
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_41.exe": 0,
-      "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/Decompiler/os/win_x86_64/decompile.exe": 5,
-      "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/Decompiler/os/win_x86_64/sleigh.exe": 3,
+      "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/Decompiler/os/win_x86_64/decompile.exe": 4,
+      "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/Decompiler/os/win_x86_64/sleigh.exe": 2,
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/FileFormats/os/win_x86_64/lzfse.exe": 1,
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/Ghidra/Features/PDB/os/win_x86_64/pdb.exe": 0,
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/VersionTracking/WallaceSrc.exe": 0,
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/VersionTracking/WallaceVersion2.exe": 0,
-      "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/WinhelloCPP/WinHelloCPP.exe": 0,
+      "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/docs/GhidraClass/ExerciseFiles/WinhelloCPP/WinHelloCPP.exe": 2,
       "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/t32.exe": 0,
       "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/t64-arm.exe": 2,
       "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/t64.exe": 0,
@@ -873,7 +894,7 @@
       "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w64.exe": 0,
       "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/GenPat.exe": 1,
       "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/MakeLangId.exe": 0,
-      "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/makensis.exe": 5,
+      "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/makensis.exe": 4,
       "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/zip2exe.exe": 2,
       "/opt/homebrew/lib/node_modules/pnpm/dist/vendor/fastlist-0.3.0-x64.exe": 2,
       "/opt/homebrew/lib/node_modules/pnpm/dist/vendor/fastlist-0.3.0-x86.exe": 2
@@ -896,6 +917,13 @@
        "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P02_sonra/masum_kapi.json",
        "commit": "74e87b3da4",
        "tarih": "2026-11-18T10:08:22+03:00",
+       "ikili": 119,
+       "yanlis": 7
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
        "ikili": 119,
        "yanlis": 7
       }
@@ -1039,6 +1067,13 @@
        "tarih": "2026-11-18T10:08:22+03:00",
        "ikili": 48,
        "yanlis": 8
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
+       "ikili": 48,
+       "yanlis": 8
       }
      ],
      "ikililer": {
@@ -1109,6 +1144,13 @@
        "tarih": "2026-11-18T10:08:22+03:00",
        "ikili": 21,
        "yanlis": 55
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
+       "ikili": 21,
+       "yanlis": 55
       }
      ],
      "ikililer": {
@@ -1152,6 +1194,13 @@
        "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P02_sonra/masum_kapi.json",
        "commit": "74e87b3da4",
        "tarih": "2026-11-18T10:08:22+03:00",
+       "ikili": 119,
+       "yanlis": 0
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
        "ikili": 119,
        "yanlis": 0
       }
@@ -1295,6 +1344,13 @@
        "tarih": "2026-11-18T10:08:22+03:00",
        "ikili": 48,
        "yanlis": 0
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
+       "ikili": 48,
+       "yanlis": 0
       }
      ],
      "ikililer": {
@@ -1365,6 +1421,13 @@
        "tarih": "2026-11-18T10:08:22+03:00",
        "ikili": 21,
        "yanlis": 1
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
+       "ikili": 21,
+       "yanlis": 1
       }
      ],
      "ikililer": {
@@ -1408,6 +1471,13 @@
        "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P03_sonra/masum_kapi.json",
        "commit": "5caa091184",
        "tarih": "2026-11-18T10:52:28+03:00",
+       "ikili": 119,
+       "yanlis": 0
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
        "ikili": 119,
        "yanlis": 0
       }
@@ -1551,6 +1621,13 @@
        "tarih": "2026-11-18T10:52:28+03:00",
        "ikili": 48,
        "yanlis": 0
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
+       "ikili": 48,
+       "yanlis": 0
       }
      ],
      "ikililer": {
@@ -1621,6 +1698,13 @@
        "tarih": "2026-11-18T10:52:28+03:00",
        "ikili": 21,
        "yanlis": 0
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
+       "ikili": 21,
+       "yanlis": 0
       }
      ],
      "ikililer": {
@@ -1664,6 +1748,13 @@
        "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P03_sonra/masum_kapi.json",
        "commit": "5caa091184",
        "tarih": "2026-11-18T10:52:28+03:00",
+       "ikili": 119,
+       "yanlis": 0
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
        "ikili": 119,
        "yanlis": 0
       }
@@ -1807,6 +1898,13 @@
        "tarih": "2026-11-18T10:52:28+03:00",
        "ikili": 48,
        "yanlis": 0
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
+       "ikili": 48,
+       "yanlis": 0
       }
      ],
      "ikililer": {
@@ -1875,6 +1973,13 @@
        "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P03_sonra/masum_kapi.json",
        "commit": "5caa091184",
        "tarih": "2026-11-18T10:52:28+03:00",
+       "ikili": 21,
+       "yanlis": 295
+      },
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/ana/P01b_sonra/masum_kapi.json",
+       "commit": "24f02f741c",
+       "tarih": "2026-11-18T11:13:02+03:00",
        "ikili": 21,
        "yanlis": 295
       }
