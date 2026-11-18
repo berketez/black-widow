@@ -260,6 +260,107 @@ def _print_banner() -> None:
     console.print(Panel(banner, border_style="red", padding=(1, 4)))
 
 
+# MEK-01 (2026-11-18): `analyze` çıkış kodları. Eskiden boru hattı başarısız olsa da
+# çıkış 0'dı ve aşama hataları ekrana yazılmıyordu; betikle koşan (toplu koşu, CI,
+# ölçüm) başarısız analizi başarılı sayıyordu.
+#   0  tam: her aşama başarılı ya da bilerek atlandı, hiçbir aşama hata bildirmedi
+#   1  başarısız: en az bir aşama başarısız (hedef bulunamadı / tanınamadı da 1)
+#   2  kullanım ya da ayar dosyası hatası (click ve `_load_config` ile aynı)
+#   3  kısmi: aşamaların hepsi başarılı ya da atlandı ama en az biri hata bildirdi
+#      (StageResult.errors) ya da kendini `partial` işaretledi (reconstruct P-S1)
+#   130 kullanıcı iptali (Ctrl+C)
+EXIT_ANALYSIS_OK = 0
+EXIT_ANALYSIS_FAILED = 1
+EXIT_USAGE = 2
+EXIT_ANALYSIS_PARTIAL = 3
+
+OUTCOME_COMPLETE = "tam"
+OUTCOME_PARTIAL = "kismi"
+OUTCOME_FAILED = "basarisiz"
+
+# Aşama başına ekrana basılan en çok hata satırı (tam liste report.json'da).
+_MAX_ERRORS_PER_STAGE = 5
+
+
+def _analysis_outcome(result: Any) -> dict:
+    """Boru hattı sonucundan analizin durumu, çıkış kodu ve nedenleri.
+
+    Başarısız: ``PipelineResult.get_failed_stages()`` boş değil ya da hiçbir aşama
+    koşmadı. Kısmi: başarısız aşama yok ama atlanmamış bir aşamanın ``errors``
+    listesi dolu ya da ``stats["partial"]`` True (``partial_reasons`` nedenlere
+    katılır). Atlanan aşama hata değildir.
+
+    Returns:
+        ``status`` (tam / kismi / basarisiz), ``exit_code``, ``failed`` ve
+        ``partial`` ({aşama: [neden, ...]}; aşama sırası korunur).
+    """
+    stages = getattr(result, "stages", None) or {}
+    failed: dict[str, list[str]] = {}
+    partial: dict[str, list[str]] = {}
+    for name, sr in stages.items():
+        errors = [str(e) for e in (getattr(sr, "errors", None) or [])]
+        if getattr(sr, "skipped", False):
+            continue
+        if not getattr(sr, "success", False):
+            failed[name] = errors or ["aşama başarısız (neden bildirilmedi)"]
+            continue
+        stats = getattr(sr, "stats", None)
+        reasons = list(errors)
+        if isinstance(stats, dict) and stats.get("partial") is True:
+            for r in stats.get("partial_reasons") or []:
+                if str(r) not in reasons:
+                    reasons.append(str(r))
+            if not reasons:
+                reasons.append("aşama kendini kısmi işaretledi (neden bildirilmedi)")
+        if reasons:
+            partial[name] = reasons
+    if not stages:
+        failed["pipeline"] = ["hiçbir aşama çalışmadı"]
+    if failed:
+        status, code = OUTCOME_FAILED, EXIT_ANALYSIS_FAILED
+    elif partial:
+        status, code = OUTCOME_PARTIAL, EXIT_ANALYSIS_PARTIAL
+    else:
+        status, code = OUTCOME_COMPLETE, EXIT_ANALYSIS_OK
+    return {"status": status, "exit_code": code, "failed": failed, "partial": partial}
+
+
+def _print_analysis_outcome(outcome: dict) -> None:
+    """Başarısız / kısmi analizin aşama hatalarını stderr'e yaz (sessiz kipte de)."""
+    status = outcome["status"]
+    if status == OUTCOME_COMPLETE:
+        return
+    # Satırlar kaydırılmaz (soft_wrap): günlüğe yönlendirilen stderr satır satır okunur.
+    if status == OUTCOME_FAILED:
+        groups = outcome["failed"]
+        err_console.print(
+            f"[bold red]HATA:[/bold red] analiz başarısız (çıkış {outcome['exit_code']}): "
+            f"{len(groups)} aşama başarısız.", soft_wrap=True,
+        )
+    else:
+        groups = outcome["partial"]
+        err_console.print(
+            f"[bold yellow]UYARI:[/bold yellow] analiz kısmi tamamlandı "
+            f"(çıkış {outcome['exit_code']}): çıktı üretildi ama eksik olabilir; "
+            f"{len(groups)} aşama hata bildirdi.", soft_wrap=True,
+        )
+    for stage_name, reasons in groups.items():
+        for reason in reasons[:_MAX_ERRORS_PER_STAGE]:
+            err_console.print(f"  {stage_name}: {' '.join(reason.split())}",
+                              markup=False, soft_wrap=True)
+        if len(reasons) > _MAX_ERRORS_PER_STAGE:
+            err_console.print(
+                f"  {stage_name}: … ve {len(reasons) - _MAX_ERRORS_PER_STAGE} hata daha "
+                "(tamamı reports/pipeline_result.json'da)", markup=False, soft_wrap=True,
+            )
+    if status == OUTCOME_FAILED and outcome["partial"]:
+        for stage_name, reasons in outcome["partial"].items():
+            err_console.print(
+                f"  {stage_name} (başarılı, hata bildirdi): {' '.join(reasons[0].split())}",
+                markup=False, soft_wrap=True,
+            )
+
+
 def _emit_analyze_json(target_info: TargetInfo, result, cfg: Config) -> None:
     """P3: `analyze --json` icin makine-okunur sonuc payload'ini stdout'a yaz.
 
@@ -307,6 +408,7 @@ def _emit_analyze_json(target_info: TargetInfo, result, cfg: Config) -> None:
             entry["skip_reason"] = _skip_reason(sr)
         stages[name] = entry
 
+    outcome = _analysis_outcome(result)
     payload: dict = {
         "target": {
             "name": target_info.name,
@@ -319,6 +421,11 @@ def _emit_analyze_json(target_info: TargetInfo, result, cfg: Config) -> None:
             "size": target_info.file_size,
         },
         "success": bool(result.success),
+        # MEK-01: durum ve çıkış kodu (0 tam / 1 başarısız / 3 kısmi) ve nedenleri.
+        "outcome": outcome["status"],
+        "exit_code": outcome["exit_code"],
+        "failure_reasons": outcome["failed"],
+        "partial_reasons": outcome["partial"],
         "workspace": str(result.workspace_path),
         "computation_recovery_enabled": bool(cfg.computation_recovery.enabled),
         "summary": summary,
@@ -622,7 +729,15 @@ def analyze(
     overrides_path: Optional[str],         # Faz 2: manuel override JSON (acik yol)
     json_output: bool,                     # P3: makine-okunur JSON cikti
 ) -> None:
-    """Hedef uzerinde tam analiz pipeline calistir."""
+    """Hedef üzerinde tam analiz boru hattını çalıştır.
+
+    \b
+    Çıkış kodları:
+      0  tam: her aşama başarılı ya da bilerek atlandı
+      1  başarısız: en az bir aşama başarısız (hatalar stderr'e yazılır)
+      2  kullanım ya da ayar dosyası hatası
+      3  kısmi: çıktı üretildi ama en az bir aşama hata bildirdi
+    """
     # Motor koruma (Faz C): paketlenmis .app'te debugger/frida tespit -> ERKEN reddet
     # (BSim/hedef okuma dahil hicbir sey calismadan). Dev/repo/test'te inert.
     from karadul.core.hardening import check_anti_tamper
@@ -881,6 +996,9 @@ def analyze(
                 on_progress=_on_progress,
             )
 
+    # MEK-01: durum ve çıkış kodu; aşama hataları stderr'e (her kipte).
+    outcome = _analysis_outcome(result)
+
     # P3: --json -> makine-okunur payload (tablo yerine).
     if json_output:
         # Önce JSON basılır: temiz çıktı yazılırken bir hata çıksa bile analiz
@@ -893,6 +1011,9 @@ def analyze(
                 result, clean_output_dir, output_format,
                 out=err_console, quiet=True,
             )
+        _print_analysis_outcome(outcome)
+        if outcome["exit_code"] != EXIT_ANALYSIS_OK:
+            sys.exit(outcome["exit_code"])
         return
 
     # Sonuc tablosu
@@ -900,12 +1021,18 @@ def analyze(
 
     results_table = Table(
         title="Results",
-        border_style="green" if result.success else "yellow",
+        border_style={
+            OUTCOME_COMPLETE: "green", OUTCOME_PARTIAL: "yellow",
+        }.get(outcome["status"], "red"),
         show_header=False,
         padding=(0, 2),
     )
     results_table.add_column("Field", style="bold")
     results_table.add_column("Value")
+    results_table.add_row("Durum", {
+        OUTCOME_COMPLETE: "[green]tam[/green]",
+        OUTCOME_PARTIAL: "[yellow]kısmi (bkz. uyarılar)[/yellow]",
+    }.get(outcome["status"], "[red]başarısız (bkz. hatalar)[/red]"))
 
     # Statik analiz sonuclari
     if "static" in result.stages:
@@ -980,6 +1107,10 @@ def analyze(
         _write_clean_output(
             result, clean_output_dir, output_format, out=console, quiet=False,
         )
+
+    _print_analysis_outcome(outcome)
+    if outcome["exit_code"] != EXIT_ANALYSIS_OK:
+        sys.exit(outcome["exit_code"])
 
 
 # ---------------------------------------------------------------

@@ -1,0 +1,21 @@
+--- a/scripts/measurement/urun_kos.py	2026-11-18 12:03:18
++++ b/scripts/measurement/urun_kos.py	2026-11-18 12:03:24
+@@ -116,13 +116,15 @@
+                                  stderr=subprocess.STDOUT, start_new_session=True)
+         try:
+             kod = surec.wait(timeout=zaman_asimi)
+-            durum = "tamam" if kod == 0 else f"cikis_{kod}"
++            # P15a / MEK-01: `analyze` 0 = tam, 1 = başarısız, 3 = kısmi (çıktı var, en az bir
++            # aşama hata bildirdi). Kısmi koşu bitmiş sayılır ama durumda ayrı görünür.
++            durum = {0: "tamam", 3: "kismi"}.get(kod, f"cikis_{kod}")
+         except subprocess.TimeoutExpired:
+             os.killpg(surec.pid, signal.SIGKILL)
+             surec.wait()
+             durum = "zaman_asimi"
+-    if durum == "tamam":
+-        (hedef / BITTI).write_text("0\n", encoding="utf-8")
++    if durum in ("tamam", "kismi"):
++        (hedef / BITTI).write_text("0\n" if durum == "tamam" else "3\n", encoding="utf-8")
+     return {"anahtar": is_["anahtar"], "durum": durum, "sure_sn": round(time.monotonic() - t0, 1)}
+ 
+ 

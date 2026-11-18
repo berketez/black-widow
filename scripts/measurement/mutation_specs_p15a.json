@@ -1,0 +1,93 @@
+{
+  "_comment": "P15a (2026-11-18) CLI ve ayar katmanı onarımlarının mutasyon koruması: MEK-01 (analyze çıkış kodu ve hata satırları), GHIDRA-04 (katı YAML yükleyici, config validate), MEK-05 / P-GÜV kalanları (etkisiz ayar kaydı, ağ alt izinleri), MEK-09 / TIP-10 / P01 notu. Her mutant bir korumayı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p15a.json",
+  "mutants": [
+    {
+      "id": "m01_basarisiz_gorulmez",
+      "desc": "başarısız aşama başarısız sayılmıyor (eski: çıkış 0)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cikis.py::TestOutcome::test_failed_stage_exit_1_with_reason",
+      "find": "        if not getattr(sr, \"success\", False):\n            failed[name]",
+      "replace": "        if False:\n            failed[name]"
+    },
+    {
+      "id": "m01_atlanan_hata_sayilir",
+      "desc": "atlanan aşama başarısız sayılıyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cikis.py::TestOutcome::test_skipped_stage_is_not_a_failure",
+      "find": "        if getattr(sr, \"skipped\", False):\n            continue\n",
+      "replace": "        if getattr(sr, \"skipped\", False):\n            pass\n"
+    },
+    {
+      "id": "m01_partial_bayragi_okunmaz",
+      "desc": "reconstruct'ın partial bayrağı okunmuyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cikis.py::TestOutcome::test_reconstruct_partial_flag_is_partial",
+      "find": "if isinstance(stats, dict) and stats.get(\"partial\") is True:",
+      "replace": "if False:"
+    },
+    {
+      "id": "m01_kismi_kodu_yok",
+      "desc": "kısmi analiz 0 ile çıkıyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cikis.py::test_partial_run_exits_3_and_warns",
+      "find": "    elif partial:\n        status, code",
+      "replace": "    elif False and partial:\n        status, code"
+    },
+    {
+      "id": "m01_nedensiz_basarisiz_bos",
+      "desc": "hatasız başarısız aşamanın nedeni boş kalıyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cikis.py::TestOutcome::test_failed_stage_without_errors_still_has_a_reason",
+      "find": "failed[name] = errors or [\"aşama başarısız (neden bildirilmedi)\"]",
+      "replace": "failed[name] = errors"
+    },
+    {
+      "id": "m01_bos_hat_basarili",
+      "desc": "hiç aşama koşmayan hat başarılı sayılıyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cikis.py::TestOutcome::test_no_stage_is_failure",
+      "find": "    if not stages:\n        failed[\"pipeline\"]",
+      "replace": "    if False:\n        failed[\"pipeline\"]"
+    },
+    {
+      "id": "m01_json_cikis_kodu_yok",
+      "desc": "--json yolunda çıkış kodu verilmiyor (eski davranış)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cikis.py::test_analyze_empty_file_json_exits_nonzero",
+      "find": "        _print_analysis_outcome(outcome)\n        if outcome[\"exit_code\"] != EXIT_ANALYSIS_OK:\n            sys.exit(outcome[\"exit_code\"])\n        return",
+      "replace": "        return"
+    },
+    {
+      "id": "m01_tablo_cikis_kodu_yok",
+      "desc": "tablo yolunda çıkış kodu verilmiyor (eski davranış)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cikis.py::test_analyze_empty_file_exits_nonzero_and_prints_stage_errors",
+      "find": "\n    if outcome[\"exit_code\"] != EXIT_ANALYSIS_OK:\n        sys.exit(outcome[\"exit_code\"])\n",
+      "replace": "\n    pass\n"
+    },
+    {
+      "id": "m01_hata_satiri_basilmaz",
+      "desc": "aşama hataları stderr'e yazılmıyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cikis.py::test_analyze_empty_file_exits_nonzero_and_prints_stage_errors",
+      "find": "        for reason in reasons[:_MAX_ERRORS_PER_STAGE]:\n            err_console.print(f\"  {stage_name}: {' '.join(reason.split())}\",\n                              markup=False, soft_wrap=True)",
+      "replace": "        for reason in []:\n            pass"
+    },
+    {
+      "id": "m01_satir_kaydirilir",
+      "desc": "uzun hata satırı kaydırılıyor (günlükte bölünür)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cikis.py::test_long_error_line_is_not_wrapped",
+      "find": "            err_console.print(f\"  {stage_name}: {' '.join(reason.split())}\",\n                              markup=False, soft_wrap=True)",
+      "replace": "            err_console.print(f\"  {stage_name}: {' '.join(reason.split())}\",\n                              markup=False)"
+    },
+    {
+      "id": "m01_sinirsiz_satir",
+      "desc": "aşama başına satır sınırı yok",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cikis.py::test_many_errors_are_capped_on_screen",
+      "find": "for reason in reasons[:_MAX_ERRORS_PER_STAGE]:",
+      "replace": "for reason in reasons:"
+    }
+  ]
+}
