@@ -451,6 +451,153 @@ def test_arama_tarama_butcesi_durunca_soyler(ws, monkeypatch):
     assert r.data["scanned_functions"] < r.data["functions_total"]
 
 
+# --------------------------------------------------------------------------------------------
+# (f) O8 get_name_provenance, O10 get_types
+
+@pytest.fixture()
+def proot(tmp_path) -> Path:
+    funcs = {X(i): {"calls": []} for i in range(1, 6)}
+    names = {X(1): "monitor_activity", X(2): "xmalloc", X(3): "hand_name", X(4): "no_record", X(5): "sub_20050"}
+    prov = {
+        X(1): {"new_name": "monitor_activity", "label": "doğrulanmadı", "confidence": 0.8, "source": "candidate",
+               "strategy": "string_context", "sub_channel": "kebap_ad", "evidence": "monitor-activity",
+               "reason": 'String: "monitor-activity"', "n_candidates": 3,
+               "runners_up": [{"new_name": "dup_name", "confidence": 0.5}, {"new_name": "dup_name"},
+                              {"new_name": "other_name"}]},
+        X(2): {"new_name": "xmalloc", "label": "kesin", "confidence": 0.916, "strategy": "ks1",
+               "ks1": {"satirlar": ["func_kalibi"], "rol": "ayirici", "kanitlar": [1, 2]}},
+        X(3): {"new_name": "engine_name", "label": "doğrulanmadı", "strategy": "callee_based"},
+    }
+    root = build_ws(tmp_path / "p", funcs, names=names, provenance=prov)
+    pf = root / "reconstructed" / "src" / "naming_provenance.json"
+    data = json.loads(pf.read_text())
+    data["role_evidence"] = {f"FUN_{X(1)}::param_1": [{"role": "buf", "api": "read", "arg_index": 1,
+                                                      "caller": f"FUN_{X(2)}"}],
+                             f"FUN_{X(4)}": [{"role": "fd", "api": "close", "arg_index": 0, "caller": None}]}
+    pf.write_text(json.dumps(data), encoding="utf-8")
+    pm = {"version": "1.7.2", "schema_version": 2, "functions": {
+        f"FUN_{X(1)}": {"renames": {"param_2": "value"},
+                        "names": {"param_2": {"name": "value", "source": "type_heuristic", "confidence": 0.45,
+                                              "reason": "Type 'long'"}}},
+        # Eski çıktı: anahtar fonksiyonun o anki adı, yalnız "renames".
+        "xmalloc": {"renames": {"param_1": "size"}},
+        f"FUN_{X(4)}": {"renames": {f"param_{i}": f"p{i}" for i in range(25)}},
+    }}
+    (root / "reconstructed" / "param_naming_map.json").write_text(json.dumps(pm), encoding="utf-8")
+    return root
+
+
+def prov(ws, a, **ctx) -> T.ToolResult:
+    return call(ws, "get_name_provenance", {"addr": fun(a)}, **ctx)
+
+
+def test_koken_kanal_kanit_parametre_rol(proot):
+    ws = T.Workspace(proot)
+    r = prov(ws, X(1))
+    assert r.ok and r.kind == "cikarim" and touched_refs(r.envelope()) == []
+    d = r.data
+    assert (d["name"], d["tag"], d["record"]) == ("monitor_activity", "unverified", "eslesti")
+    assert d["channel"] == "string_context/kebap_ad" and d["strategy"] == "string_context"
+    assert d["evidence"] == "monitor-activity" and d["reason"] == 'String: "monitor-activity"'
+    assert d["runners_up"] == ["dup_name", "other_name"] and d["n_candidates"] == 3
+    assert d["params"] == [{"param": "param_2", "name": "value", "source": "type_heuristic", "reason": "Type 'long'"}]
+    assert d["roles"] == [{"local": "param_1", "role": "buf", "api": "read", "arg_index": 1}]
+    assert d["missing"] == [] and r.truncated is None
+    # Sayısal güven hiçbir yerde yok (tasarım §1).
+    assert "confidence" not in json.dumps(r.envelope()) and "0.8" not in json.dumps(r.envelope())
+    k = prov(ws, X(2)).data
+    assert (k["tag"], k["channel"], k["evidence"]) == ("proven", "ks1:func_kalibi", {"rol": "ayirici", "kanit_sayisi": 2})
+    assert k["params"] == [{"param": "param_1", "name": "size", "source": None, "reason": None}]
+
+
+def test_koken_bayat_yok_yer_tutucu_ve_kirpma(proot):
+    ws = T.Workspace(proot)
+    bayat = prov(ws, X(3)).data
+    assert (bayat["name"], bayat["tag"], bayat["record"]) == ("hand_name", "manual", "bayat")
+    assert bayat["channel"] is None and bayat["reason"] is None    # başka adın kanalı gösterilmez
+    yok = prov(ws, X(4))
+    assert (yok.data["tag"], yok.data["record"]) == ("unverified", "yok")
+    assert yok.data["params_total"] == 25 and len(yok.data["params"]) == T.PROVENANCE_PARAMS_MAX
+    assert yok.data["roles"] == [{"local": None, "role": "fd", "api": "close", "arg_index": 0}]
+    assert yok.truncated == {"omitted": 5, "total": 25, "params": 5}
+    yt = prov(ws, X(5)).data   # yer tutucu ad gösterilmez
+    assert (yt["name"], yt["tag"], yt["record"]) == (None, None, None)
+
+
+def test_koken_eksik_dosyalar(proot):
+    (proot / "reconstructed" / "param_naming_map.json").unlink()
+    pf = proot / "reconstructed" / "src" / "naming_provenance.json"
+    data = json.loads(pf.read_text())
+    del data["role_evidence"]
+    pf.write_text(json.dumps(data), encoding="utf-8")
+    d = prov(T.Workspace(proot), X(1)).data
+    assert d["params"] is None and d["roles"] is None and d["record"] == "eslesti"
+    assert d["missing"] == ["reconstructed/param_naming_map.json",
+                            "naming_provenance.json: role_evidence (bu çıktıda yok)"]
+    pf.unlink()
+    d = prov(T.Workspace(proot), X(1)).data
+    assert d["record"] == "yok" and "reconstructed/src/naming_provenance.json" in d["missing"]
+
+
+def test_koken_korluk(proot):
+    ws = T.Workspace(proot)
+    assert prov(ws, X(1), blind_target=X(1)).error == "arac_kapali"
+    assert prov(ws, X(3), blind_target=X(1)).error == "arac_kapali"     # elle verilmiş ad
+    assert prov(ws, X(4), blind_target=X(1)).error == "arac_kapali"     # köken kaydı yok
+    assert prov(ws, X(2), blind_target=X(1)).data["name"] == "xmalloc"  # motor kaydı olan kesin ad
+    assert prov(ws, X(5), blind_target=X(1)).ok                          # adsız: gizlenecek ad yok
+    # Hedefin adı yer tutucu olsa da hedef için araç kapalı (sözleşme §1.5): parametre ve rol kaydı da açılmaz.
+    assert prov(ws, X(5), blind_target=X(5)).error == "arac_kapali"
+
+
+def write_types(root: Path, *, long_fields: bool = False) -> None:
+    w = "f" * 60 if long_fields else ""
+    structs = [{"name": f"rec_{i:02d}", "category": "/a.h", "kind": "union" if i == 1 else "struct", "size": 8 * 20,
+                "fields": [{"name": f"{w}fld_{j}", "type": f"{w}int", "offset": 4 * j, "size": 4} for j in range(20)]}
+               for i in range(12)]
+    enums = [{"name": "color_e", "category": "/c.h", "size": 4,
+              "values": [{"name": f"C_{k}", "value": k} for k in range(30)]}]
+    typedefs = [{"name": "size_t", "category": "/stddef.h", "base_type": "ulong", "size": 8},
+                {"name": "Size_t", "category": "/x.h", "base_type": "uint", "size": 4}]
+    (root / "static" / "ghidra_types.json").write_text(
+        json.dumps({"program": "t", "structures": structs, "enums": enums, "typedefs": typedefs}), encoding="utf-8")
+
+
+def types(ws, **args) -> T.ToolResult:
+    return call(ws, "get_types", args)
+
+
+def test_tipler_sorgu_tur_sayfa(root):
+    write_types(root)
+    ws = T.Workspace(root)
+    r = types(ws, query="size_t")
+    assert r.ok and r.kind == "olgu" and touched_refs(r.envelope()) == []
+    assert [(i["name"], i["kind"], i["base_type"]) for i in r.data["items"]] == [("size_t", "typedef", "ulong")]
+    assert r.data["total"] == 1   # harf duyarlı: Size_t ayrı
+    e = types(ws, kind="enum").data["items"][0]
+    assert e["values_total"] == 30 and len(e["values"]) == T.TYPES_FIELDS_MAX and e["values"][3] == {"name": "C_3", "value": 3}
+    s = types(ws, kind="structure")
+    assert s.data["total"] == 12 and len(s.data["items"]) == T.TYPES_MAX_ROWS
+    assert [i["name"] for i in s.data["items"]][:2] == ["rec_00", "rec_01"] and s.data["items"][1]["kind"] == "union"
+    assert s.data["items"][0]["fields"][2] == {"name": "fld_2", "type": "int", "offset": 8, "size": 4}
+    assert len(s.data["items"][0]["fields"]) == T.TYPES_FIELDS_MAX and s.data["items"][0]["fields_total"] == 20
+    assert s.truncated == {"omitted": 2, "total": 12, "fields_shown_max": T.TYPES_FIELDS_MAX}
+    assert [i["name"] for i in types(ws, kind="structure", offset=10).data["items"]] == ["rec_10", "rec_11"]
+    assert types(ws).data["total"] == 15
+    assert types(ws, query="").error == "gecersiz_arguman"
+
+
+def test_tipler_tavana_sigar_ve_soyler(root):
+    write_types(root, long_fields=True)
+    r = types(T.Workspace(root), kind="structure")
+    assert r.ok and r.size_bytes() <= T.TYPES_RESULT_MAX_BYTES
+    fcap = r.data["fields_shown_max"]
+    assert fcap < T.TYPES_FIELDS_MAX and all(len(i["fields"]) == fcap for i in r.data["items"])
+    assert r.truncated["fields_shown_max"] == fcap
+    (root / "static" / "ghidra_types.json").unlink()
+    assert types(T.Workspace(root)).error == "veri_yok"
+
+
 def test_refs_korluk(ws):
     r = refs(ws, "import", "malloc", )
     kor = call(ws, "find_refs", {"target": "import", "value": "malloc"}, blind_target=A)

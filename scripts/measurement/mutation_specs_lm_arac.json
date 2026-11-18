@@ -360,6 +360,134 @@
       "test": "tests/test_lm_tools_v2.py::test_arama_tarama_butcesi_durunca_soyler",
       "find": "        if scanned_bytes + size > SEARCH_SCAN_MAX_BYTES:",
       "replace": "        if False:"
+    },
+    {
+      "id": "op_bayat",
+      "desc": "başka adı anlatan kaydın kanalı gösterilir",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_koken_bayat_yok_yer_tutucu_ve_kirpma",
+      "find": "        elif rec.get(\"new_name\") != tag[0]:\n            data[\"record\"] = \"bayat\"\n",
+      "replace": ""
+    },
+    {
+      "id": "op_kanal",
+      "desc": "kanal provenance_channel yerine strateji adı",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_koken_kanal_kanit_parametre_rol",
+      "find": "                \"record\": \"eslesti\", \"channel\": provenance_channel(rec),",
+      "replace": "                \"record\": \"eslesti\", \"channel\": rec.get(\"strategy\"),"
+    },
+    {
+      "id": "op_yineleme",
+      "desc": "yinelenen aday adı tekilleştirilmez",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_koken_kanal_kanit_parametre_rol",
+      "find": "                \"runners_up\": list(dict.fromkeys(",
+      "replace": "                \"runners_up\": list(list("
+    },
+    {
+      "id": "op_ad_anahtari",
+      "desc": "param_naming_map'te ad anahtarlı (eski) kayıt okunmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_koken_kanal_kanit_parametre_rol",
+      "find": "    for alias in (ws.raw_name(a), ws.ghidra_name(a)):",
+      "replace": "    for alias in ():"
+    },
+    {
+      "id": "op_rol_yerel",
+      "desc": "rol kanıtının yerel anahtarı atılır",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_koken_kanal_kanit_parametre_rol",
+      "find": "roles.append({\"local\": local or None,",
+      "replace": "roles.append({\"local\": None,"
+    },
+    {
+      "id": "op_param_tavani",
+      "desc": "parametre tavanı uygulanmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_koken_bayat_yok_yer_tutucu_ve_kirpma",
+      "find": "    data[\"params\"] = params[:PROVENANCE_PARAMS_MAX] if params is not None else None",
+      "replace": "    data[\"params\"] = params"
+    },
+    {
+      "id": "op_kirpma_sessiz",
+      "desc": "parametre kırpması truncated'a yazılmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_koken_bayat_yok_yer_tutucu_ve_kirpma",
+      "find": "    if cut:\n        truncated = {",
+      "replace": "    if False:\n        truncated = {"
+    },
+    {
+      "id": "op_eksik_param",
+      "desc": "param haritası yokken eksik listesine yazılmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_koken_eksik_dosyalar",
+      "find": "        missing.append(f\"reconstructed/{PARAM_MAP_FILE}\")",
+      "replace": "        pass"
+    },
+    {
+      "id": "op_eksik_rol",
+      "desc": "role_evidence alanı yokken boş liste uydurulur",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_koken_eksik_dosyalar",
+      "find": "    if isinstance(roles_all, dict):\n        roles = []",
+      "replace": "    if True:\n        roles = []\n        roles_all = roles_all or {}"
+    },
+    {
+      "id": "op_korluk_hedef",
+      "desc": "körlükte hedefin kökeni açılır",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_koken_korluk",
+      "find": "        if a == ctx.blind_target or (tag is not None",
+      "replace": "        if (tag is not None"
+    },
+    {
+      "id": "op_korluk_komsu",
+      "desc": "körlükte elle verilmiş komşu adı açılır",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_koken_korluk",
+      "find": " or (tag is not None and ws.name_lookup(ctx.blind_target)(a) is None):",
+      "replace": ":"
+    },
+    {
+      "id": "ot_tur_suzgeci",
+      "desc": "tür süzgeci uygulanmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_tipler_sorgu_tur_sayfa",
+      "find": "(kind == TYPE_ALL or t[1] == kind)",
+      "replace": "(True)"
+    },
+    {
+      "id": "ot_harf",
+      "desc": "tip sorgusu harf duyarsız",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_tipler_sorgu_tur_sayfa",
+      "find": "(query is None or query in t[0])",
+      "replace": "(query is None or query.lower() in t[0].lower())"
+    },
+    {
+      "id": "ot_alan_tavani",
+      "desc": "alan tavanı uygulanmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_tipler_sorgu_tur_sayfa",
+      "find": "                          for f in fields[:fcap]]",
+      "replace": "                          for f in fields]"
+    },
+    {
+      "id": "ot_sayfa",
+      "desc": "offset uygulanmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_tipler_sorgu_tur_sayfa",
+      "find": "    page = hits[offset:offset + limit]\n    # Alan",
+      "replace": "    page = hits[:limit]\n    # Alan"
+    },
+    {
+      "id": "ot_sigdirma",
+      "desc": "sonuç tavanına sığdırma yok (alan tavanı yarılanmaz)",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_tipler_tavana_sigar_ve_soyler",
+      "find": "        if size + ENVELOPE_OVERHEAD_BYTES <= TYPES_RESULT_MAX_BYTES:",
+      "replace": "        if True:"
     }
   ]
 }

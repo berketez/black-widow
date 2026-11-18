@@ -17,16 +17,19 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Optional
 
-from karadul.lm import LINE_NUMBER_MAX
-from karadul.lm.context import strip_header
+from karadul.core.naming_labels import NAMING_PROVENANCE_FILE, provenance_channel, provenance_evidence
+from karadul.lm import ENVELOPE_OVERHEAD_BYTES, LINE_NUMBER_MAX
+from karadul.lm.context import escape_json, strip_header
 from karadul.lm.tools import (
     ADDR_PATTERN, CALL_GRAPH_MAX_DEPTH, CALL_GRAPH_MAX_EDGES, CALL_GRAPH_MAX_NODES, CALL_GRAPH_RESULT_MAX_BYTES,
-    ERR_BAD_ARGUMENT, ERR_NO_DATA, ERR_STALE, ERR_UNKNOWN_ADDRESS, ERR_UNKNOWN_NAME, FACTS_RESULT_MAX_BYTES,
-    FIND_REFS_MATCHES_PER_ROW, FIND_REFS_MAX_ROWS, FIND_REFS_RESULT_MAX_BYTES, FIND_REFS_STRING_CHARS,
-    IMPORT_NAME_MAX_CHARS, KIND_FACT, KIND_FACT_AND_PROXY, KIND_PROXY, PATH_MAX_DEPTH, PATH_MAX_PATHS,
-    PATH_RESULT_MAX_BYTES, SEARCH_LINE_MAX_CHARS, SEARCH_MAX_ROWS, SEARCH_RESULT_MAX_BYTES, SEARCH_SCAN_MAX_BYTES,
-    SEARCH_TEXT_MAX_CHARS, SEARCH_TEXT_MIN_CHARS, ToolContext, ToolError, ToolOutput, ToolSpec, Workspace,
-    _read_json, format_tag,
+    ERR_BAD_ARGUMENT, ERR_NO_DATA, ERR_STALE, ERR_TOOL_CLOSED, ERR_UNKNOWN_ADDRESS, ERR_UNKNOWN_NAME,
+    FACTS_RESULT_MAX_BYTES, FIND_REFS_MATCHES_PER_ROW, FIND_REFS_MAX_ROWS, FIND_REFS_RESULT_MAX_BYTES,
+    FIND_REFS_STRING_CHARS, IMPORT_NAME_MAX_CHARS, KIND_FACT, KIND_FACT_AND_PROXY, KIND_INFERENCE, KIND_PROXY,
+    PATH_MAX_DEPTH, PATH_MAX_PATHS, PATH_RESULT_MAX_BYTES, PROVENANCE_PARAMS_MAX, PROVENANCE_RESULT_MAX_BYTES,
+    PROVENANCE_ROLES_MAX, PROVENANCE_TEXT_MAX_CHARS, SEARCH_LINE_MAX_CHARS, SEARCH_MAX_ROWS, SEARCH_RESULT_MAX_BYTES,
+    SEARCH_SCAN_MAX_BYTES, SEARCH_TEXT_MAX_CHARS, SEARCH_TEXT_MIN_CHARS, TYPE_QUERY_MAX_CHARS, TYPES_FIELDS_MAX,
+    TYPES_MAX_ROWS, TYPES_RESULT_MAX_BYTES, TYPES_TEXT_MAX_CHARS, ToolContext, ToolError, ToolOutput, ToolSpec,
+    Workspace, _read_json, format_tag,
 )
 from karadul.lm.tools.index import IndexStale, IndexUnavailable
 from karadul.lm.tools.read import ghidra_warnings
@@ -477,6 +480,215 @@ def search_code(ws: Workspace, args: Mapping[str, Any], ctx: ToolContext) -> Too
 
 
 # ---------------------------------------------------------------------------------------------
+# O8 get_name_provenance
+
+SOURCE_PROVENANCE = ("reconstructed/src/naming_map.json; reconstructed/src/naming_provenance.json; "
+                     "reconstructed/param_naming_map.json")
+LIMITS_PROVENANCE = (
+    "Etiket ölçümden gelir; köken kaydı yoksa ad [unverified]'dır. Sayısal güven gösterilmez.",
+    "record: eslesti = kayıt bugünkü adı anlatıyor; bayat = ad sonradan elle verildi (kanal gösterilmez); "
+    "yok = kayıt yok.",
+    "params param_naming_map.json'dandır; yerel değişken adları bu sonuçta yoktur.",
+    "Değeri null olan alanın kaynağı bu çalışma alanında yok: 'missing' hangi dosya / alan olmadığını söyler.",
+)
+PARAM_MAP_FILE = "param_naming_map.json"
+ROLE_EVIDENCE_KEY = "role_evidence"
+
+
+def _clip_opt(v: Any) -> Optional[str]:
+    return clip_text(v, PROVENANCE_TEXT_MAX_CHARS) if isinstance(v, str) and v else None
+
+
+def _provenance_file(ws: Workspace) -> Optional[dict]:
+    def build() -> Optional[dict]:
+        data = _read_json(ws.root / "reconstructed" / "src" / NAMING_PROVENANCE_FILE)
+        return data if isinstance(data, dict) else None
+    return ws.cached("provenance_file", build)
+
+
+def _param_map(ws: Workspace) -> Optional[dict]:
+    def build() -> Optional[dict]:
+        data = _read_json(ws.root / "reconstructed" / PARAM_MAP_FILE)
+        funcs = data.get("functions") if isinstance(data, dict) else None
+        return funcs if isinstance(funcs, dict) else None
+    return ws.cached("param_map", build)
+
+
+def _param_rows(ws: Workspace, a: str) -> Optional[list[dict[str, Any]]]:
+    """``param_naming_map.json``'daki parametre adları. Anahtar ``FUN_<adres>`` ya da (eski çıktılarda)
+    fonksiyonun o anki Karadul / Ghidra adıdır. Şema 2'de kanal ve gerekçe; şema 1'de yalnız ad."""
+    funcs = _param_map(ws)
+    if funcs is None:
+        return None
+    keys = {k for k in funcs if isinstance(k, str) and k.startswith("FUN_") and ws.resolve(k) == a}
+    for alias in (ws.raw_name(a), ws.ghidra_name(a)):
+        if alias and alias in funcs:
+            keys.add(alias)
+    rows: list[dict[str, Any]] = []
+    for k in sorted(keys):
+        entry = funcs[k] if isinstance(funcs[k], dict) else {}
+        names = entry.get("names") if isinstance(entry.get("names"), dict) else {}
+        renames = entry.get("renames") if isinstance(entry.get("renames"), dict) else {}
+        for old in sorted(set(names) | set(renames)):
+            n = names.get(old) if isinstance(names.get(old), dict) else {}
+            new = n.get("name") if isinstance(n.get("name"), str) else renames.get(old)
+            if not isinstance(new, str):
+                continue
+            rows.append({"param": str(old)[:TYPES_TEXT_MAX_CHARS], "name": new[:TYPES_TEXT_MAX_CHARS],
+                         "source": n.get("source") if isinstance(n.get("source"), str) else None,
+                         "reason": _clip_opt(n.get("reason"))})
+    return rows
+
+
+def get_name_provenance(ws: Workspace, args: Mapping[str, Any], ctx: ToolContext) -> ToolOutput:
+    a = _resolve(ws, args.get("addr"))
+    tag = ws.name_tag(a)
+    if ctx.blind_target is not None:
+        # Körlük kipi (sözleşme §1.5): hedef için araç kapalı; körlükte gizlenen bir komşu adı (elle,
+        # model, kaydı başka adı anlatan, hedefle aynı ad) bu araçla da açılmaz.
+        if a == ctx.blind_target or (tag is not None and ws.name_lookup(ctx.blind_target)(a) is None):
+            raise ToolError(ERR_TOOL_CLOSED)
+    src = ws.root / "reconstructed" / "src"
+    missing: list[str] = []
+    if not (src / "naming_map.json").is_file():
+        missing.append("reconstructed/src/naming_map.json")
+    prov_file = _provenance_file(ws)
+    if prov_file is None:
+        missing.append(f"reconstructed/src/{NAMING_PROVENANCE_FILE}")
+    data: dict[str, Any] = {"addr": f"FUN_{a}", "name": tag[0] if tag else None, "tag": tag[1] if tag else None,
+                            "record": None, "channel": None, "strategy": None, "evidence": None, "reason": None,
+                            "runners_up": None, "n_candidates": None}
+    if tag is not None:
+        rec = ws._provenance.get(a)
+        if not isinstance(rec, dict):
+            data["record"] = "yok"
+        elif rec.get("new_name") != tag[0]:
+            data["record"] = "bayat"
+        else:
+            ev = provenance_evidence(rec)
+            runners = rec.get("runners_up") if isinstance(rec.get("runners_up"), list) else []
+            data.update({
+                "record": "eslesti", "channel": provenance_channel(rec),
+                "strategy": rec.get("strategy") if isinstance(rec.get("strategy"), str) else None,
+                "evidence": _clip_opt(ev) if isinstance(ev, str) else ev, "reason": _clip_opt(rec.get("reason")),
+                # Aynı ad birden çok stratejiden gelebilir: ilk geçiş sırasıyla, yinelenmesiz.
+                "runners_up": list(dict.fromkeys(r["new_name"][:TYPES_TEXT_MAX_CHARS] for r in runners
+                                                 if isinstance(r, dict) and isinstance(r.get("new_name"), str)))[:3],
+                "n_candidates": _int_or_none(rec.get("n_candidates")),
+            })
+    params = _param_rows(ws, a)
+    if params is None:
+        missing.append(f"reconstructed/{PARAM_MAP_FILE}")
+    data["params"] = params[:PROVENANCE_PARAMS_MAX] if params is not None else None
+    data["params_total"] = len(params) if params is not None else None
+    roles_all = prov_file.get(ROLE_EVIDENCE_KEY) if prov_file is not None else None
+    roles: Optional[list[dict[str, Any]]] = None
+    if isinstance(roles_all, dict):
+        roles = []
+        for key in sorted(roles_all):
+            head, _, local = str(key).partition("::")
+            if ws.resolve(head) != a or not isinstance(roles_all[key], list):
+                continue
+            for r in roles_all[key]:
+                if isinstance(r, dict):
+                    roles.append({"local": local or None, "role": r.get("role"), "api": r.get("api"),
+                                  "arg_index": _int_or_none(r.get("arg_index"))})
+    elif prov_file is not None:
+        missing.append(f"{NAMING_PROVENANCE_FILE}: {ROLE_EVIDENCE_KEY} (bu çıktıda yok)")
+    data["roles"] = roles[:PROVENANCE_ROLES_MAX] if roles is not None else None
+    data["roles_total"] = len(roles) if roles is not None else None
+    data["missing"] = missing
+    truncated = None
+    cut = {k: data[f"{k}_total"] - len(data[k]) for k in ("params", "roles")
+           if data[k] is not None and data[f"{k}_total"] > len(data[k])}
+    if cut:
+        truncated = {"omitted": sum(cut.values()), "total": sum(data[f"{k}_total"] for k in cut), **cut}
+    return ToolOutput(data=data, kind=KIND_INFERENCE, source=SOURCE_PROVENANCE, limits=LIMITS_PROVENANCE,
+                      truncated=truncated)
+
+
+# ---------------------------------------------------------------------------------------------
+# O10 get_types
+
+SOURCE_TYPES = "static/ghidra_types.json"
+LIMITS_TYPES = (
+    "İkili genelidir; tipin hangi fonksiyonda kullanıldığı bilgisi yoktur.",
+    "Tipler Ghidra'nın veri tipi yöneticisindendir (başlık dosyası, DWARF ya da Ghidra'nın kendi kütüphanesi); "
+    "category kaynağı gösterir.",
+    "query düz alt dizgi, harf duyarlı.",
+)
+TYPE_STRUCTURE, TYPE_ENUM, TYPE_TYPEDEF, TYPE_ALL = "structure", "enum", "typedef", "all"
+_TYPES_DEFAULTS = {"kind": TYPE_ALL, "offset": 0, "limit": TYPES_MAX_ROWS}
+
+
+def _txt(v: Any) -> Optional[str]:
+    return clip_text(v, TYPES_TEXT_MAX_CHARS) if isinstance(v, str) else None
+
+
+def _type_rows(ws: Workspace) -> Optional[list[tuple[str, str, dict]]]:
+    def build() -> Optional[list[tuple[str, str, dict]]]:
+        data = _read_json(ws.static_dir / "ghidra_types.json")
+        if not isinstance(data, dict):
+            return None
+        rows: list[tuple[str, str, dict]] = []
+        for section, kind in (("structures", TYPE_STRUCTURE), ("enums", TYPE_ENUM), ("typedefs", TYPE_TYPEDEF)):
+            for r in data.get(section) or []:
+                if isinstance(r, dict) and isinstance(r.get("name"), str):
+                    rows.append((r["name"], kind, r))
+        return sorted(rows, key=lambda t: (t[0], t[1]))
+    return ws.cached("types", build)
+
+
+def _type_item(name: str, kind: str, r: dict, fcap: int) -> dict[str, Any]:
+    item: dict[str, Any] = {"name": _txt(name), "kind": _txt(r.get("kind")) if kind == TYPE_STRUCTURE else kind,
+                            "size": _int_or_none(r.get("size")), "category": _txt(r.get("category"))}
+    if kind == TYPE_STRUCTURE:
+        fields = [f for f in r.get("fields") or [] if isinstance(f, dict)]
+        item["fields"] = [{"name": _txt(f.get("name")), "type": _txt(f.get("type")),
+                           "offset": _int_or_none(f.get("offset")), "size": _int_or_none(f.get("size"))}
+                          for f in fields[:fcap]]
+        item["fields_total"] = len(fields)
+    elif kind == TYPE_ENUM:
+        values = [v for v in r.get("values") or [] if isinstance(v, dict)]
+        item["values"] = [{"name": _txt(v.get("name")), "value": _int_or_none(v.get("value"))} for v in values[:fcap]]
+        item["values_total"] = len(values)
+    else:
+        item["base_type"] = _txt(r.get("base_type"))
+    return item
+
+
+def get_types(ws: Workspace, args: Mapping[str, Any], ctx: ToolContext) -> ToolOutput:
+    rows = _type_rows(ws)
+    if rows is None:
+        raise ToolError(ERR_NO_DATA)
+    query = args.get("query")
+    kind = args.get("kind", _TYPES_DEFAULTS["kind"])
+    offset = args.get("offset", _TYPES_DEFAULTS["offset"])
+    limit = args.get("limit", _TYPES_DEFAULTS["limit"])
+    hits = [t for t in rows if (kind == TYPE_ALL or t[1] == kind) and (query is None or query in t[0])]
+    page = hits[offset:offset + limit]
+    # Alan / değer tavanı sonuç tavanına sığana kadar yarılanır; sonra satır düşer (ikisi de bildirilir).
+    fcap = TYPES_FIELDS_MAX
+    while True:
+        items = [_type_item(n, k, r, fcap) for n, k, r in page]
+        data = {"query": query, "kind": kind, "items": items, "total": len(hits), "offset": offset,
+                "fields_shown_max": fcap}
+        size = len(escape_json({"data": data, "limits": list(LIMITS_TYPES)}).encode("utf-8"))
+        if size + ENVELOPE_OVERHEAD_BYTES <= TYPES_RESULT_MAX_BYTES:
+            break
+        if fcap > 1:
+            fcap //= 2
+        elif page:
+            page = page[:-1]
+        else:
+            break
+    truncated = None
+    if len(page) < len(hits) or any(i.get("fields_total", i.get("values_total", 0)) > fcap for i in items):
+        truncated = {"omitted": len(hits) - len(page), "total": len(hits), "fields_shown_max": fcap}
+    return ToolOutput(data=data, kind=KIND_FACT, source=SOURCE_TYPES, limits=LIMITS_TYPES, truncated=truncated)
+
+
+# ---------------------------------------------------------------------------------------------
 # Kayıt (v2 tasarımı §3.5; sıra full_registry'nin sırasıdır)
 
 MORE_TOOLS = (
@@ -550,4 +762,29 @@ MORE_TOOLS = (
                                     "limit": {"type": "integer", "minimum": 1, "maximum": SEARCH_MAX_ROWS}},
                      "required": ["text"], "additionalProperties": False},
         max_result_bytes=SEARCH_RESULT_MAX_BYTES, func=search_code, defaults=_SEARCH_DEFAULTS),
+    ToolSpec(
+        name="get_name_provenance", cls="O", signature="get_name_provenance(addr)",
+        description=(
+            'where Karadul\'s name for one function came from. "name" and "tag" as in other results; "record" '
+            '"eslesti" = the record describes this name, "bayat" = the name was later given by hand, "yok" = no '
+            'record; "channel", "strategy", "evidence", "reason" = how the engine chose it; "runners_up" = other '
+            'candidate names; "params" = parameter names Karadul gave and why; "roles" = argument roles seen at '
+            'library calls. A tool result, not proof: an [unverified] name may be wrong.'),
+        args_schema={"type": "object", "properties": {"addr": _ADDR_SCHEMA}, "required": ["addr"],
+                     "additionalProperties": False},
+        max_result_bytes=PROVENANCE_RESULT_MAX_BYTES, func=get_name_provenance),
+    ToolSpec(
+        name="get_types", cls="O", signature="get_types(query, kind, offset, limit)",
+        description=(
+            'data types known to Ghidra for the whole program (not tied to a function). query = plain text '
+            'contained in the type name (case-sensitive; omit to list all); kind "structure" (struct and union, '
+            'with "fields": name, type, offset, size), "enum" (with "values"), "typedef" (with "base_type") or '
+            f'"all". At most {TYPES_MAX_ROWS} types per call; "total" is the full count; use "offset" to read further.'),
+        args_schema={"type": "object",
+                     "properties": {"query": {"type": "string", "minLength": 1, "maxLength": TYPE_QUERY_MAX_CHARS},
+                                    "kind": {"enum": [TYPE_STRUCTURE, TYPE_ENUM, TYPE_TYPEDEF, TYPE_ALL]},
+                                    "offset": {"type": "integer", "minimum": 0, "maximum": LINE_NUMBER_MAX},
+                                    "limit": {"type": "integer", "minimum": 1, "maximum": TYPES_MAX_ROWS}},
+                     "required": [], "additionalProperties": False},
+        max_result_bytes=TYPES_RESULT_MAX_BYTES, func=get_types, defaults=_TYPES_DEFAULTS),
 )
