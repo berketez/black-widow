@@ -308,6 +308,54 @@ def cmd_refdiff(a: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# dispatch: sanal çağrı çözücüsü (MUH-06)
+# ---------------------------------------------------------------------------
+
+def dispatch_bir(kosu: str, anahtar: str, ws: Path) -> dict:
+    from karadul.reconstruction.engineering import VirtualDispatchResolver
+    kayit: dict[str, Any] = {"kosu": kosu, "anahtar": anahtar}
+    dec = _decompiled(ws)
+    if not dec.is_dir():
+        kayit["durum"] = "decompiled yok"
+        return kayit
+    sonuc = VirtualDispatchResolver().resolve(
+        decompiled_dir=dec, functions_json=_sec(ws, "ghidra_functions.json"),
+        call_graph_json=_sec(ws, "ghidra_call_graph.json"),
+        strings_json=_sec(ws, "ghidra_strings.json"))
+    yontem: Counter = Counter(s.resolution_method for s in sonuc.dispatch_sites)
+    tur: Counter = Counter(s.variant for s in sonuc.dispatch_sites)
+    kayitli = _json(ws / "reconstructed" / "dispatch_resolution.json") or {}
+    kayit.update({
+        "site": sonuc.total_dispatch_sites, "cozulen": sonuc.resolved_count,
+        "aday": sonuc.candidate_count, "yeni_kenar": len(sonuc.augmented_edges),
+        "secici_harita": sonuc.selector_map_size, "yontem": dict(yontem), "tur": dict(tur),
+        "kayitli_site": kayitli.get("total_dispatch_sites"),
+        "kayitli_secici": kayitli.get("selector_map_size"),
+        "durum": "calisti" if sonuc.success else "hata"})
+    return kayit
+
+
+def cmd_dispatch(a: argparse.Namespace) -> int:
+    print("karadul:", karadul_denetle())
+    t0 = time.monotonic()
+    kayitlar = _havuz(dispatch_bir, _isler(a), a.paralel)
+    yontem: Counter = Counter()
+    for r in kayitlar:
+        yontem.update(r.get("yontem", {}))
+    ozet = {"ikili": len(kayitlar),
+            "site": sum(r.get("site", 0) for r in kayitlar),
+            "siteli_ikili": {r["anahtar"]: r["site"] for r in kayitlar if r.get("site")},
+            "cozulen": sum(r.get("cozulen", 0) for r in kayitlar),
+            "aday": sum(r.get("aday", 0) for r in kayitlar),
+            "yeni_kenar": sum(r.get("yeni_kenar", 0) for r in kayitlar),
+            "secici_harita_toplam": sum(r.get("secici_harita", 0) for r in kayitlar),
+            "secici_harita_dolu_ikili": sum(1 for r in kayitlar if r.get("secici_harita")),
+            "kayitla_ayni_site": sum(1 for r in kayitlar if r.get("site") == r.get("kayitli_site")),
+            "yontem": dict(yontem)}
+    return _yaz(a, "dispatch", kayitlar, ozet, t0)
+
+
+# ---------------------------------------------------------------------------
 # ortak yazım
 # ---------------------------------------------------------------------------
 
@@ -328,7 +376,7 @@ def _yaz(a: argparse.Namespace, ad: str, kayitlar: list[dict], ozet: dict, t0: f
 def main(argv: Optional[list[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("komut", choices=["muh", "formul", "refdiff"])
+    ap.add_argument("komut", choices=["muh", "formul", "refdiff", "dispatch"])
     ap.add_argument("--etiket", required=True)
     ap.add_argument("--kosu", action="append", choices=sorted(KOSULAR))
     ap.add_argument("--ws", action="append")
@@ -337,7 +385,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     ap.add_argument("--paralel", type=int, default=6)
     ap.add_argument("--cikti", type=Path, default=CIKTI)
     a = ap.parse_args(argv)
-    return {"muh": cmd_muh, "formul": cmd_formul, "refdiff": cmd_refdiff}[a.komut](a)
+    return {"muh": cmd_muh, "formul": cmd_formul, "refdiff": cmd_refdiff, "dispatch": cmd_dispatch}[a.komut](a)
 
 
 if __name__ == "__main__":

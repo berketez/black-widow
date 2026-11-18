@@ -143,10 +143,24 @@ _RE_MSGSEND_SUPER = re.compile(
     r'_?objc_msgSendSuper\d*\s*\(\s*[^,]+\s*,\s*"([^"]+)"',
 )
 
-# Pattern E: C++ vtable dispatch
+# Pattern E: C++ vtable dispatch (MUH-06, P04b): nesnenin ilk sözcüğü (vptr) okunur,
+# ofset eklenir, oradaki işlev göstericisi çağrılır. Ghidra'nın gerçek yazımları:
+#   (**(code **)(*param_1 + 0x10))(param_1);          AArch64 / x86-64, en yaygın
+#   (*(code **)(*(long *)param_1 + 0x10))(param_1);   eski desenin tek tanıdığı
+#   (**(code **)(*(long *)this + 0x18))(this);
+#   (**(code **)(*local_70 + 8))();                    ondalık ofset
+# Yapı alanındaki işlev göstericisi (``(**(code **)(param_1 + 0xe2))``: vptr okuması
+# yok) sanal çağrı değildir, sayılmaz.
 _RE_VTABLE = re.compile(
-    r'\(\*\s*\(\s*(?:code|void)\s*\*+\s*\)\s*\(\s*\*\s*\(\s*long\s*\*\s*\)\s*'
-    r'(\w+)\s*\+\s*(0x[0-9a-fA-F]+)\s*\)\s*\)',
+    r'\(\*+\s*\(\s*(?:code|void)\s*\*+\s*\)\s*\(\s*\*\s*(?:\(\s*\w+\s*\*+\s*\)\s*)?'
+    r'(\w+|\([^()]*\))\s*\+\s*(0x[0-9a-fA-F]+|\d+)\s*\)\s*\)',
+)
+#: vtable çağrı yerinin çözüm yöntemi: vtable içeriği okunmadığı için hedef yok.
+VTABLE_UNSUPPORTED_METHOD: str = "vtable_unsupported_no_vtable_contents"
+
+# İlk yuva (ofset 0): (**(code **)*param_1)(param_1);
+_RE_VTABLE_SLOT0 = re.compile(
+    r'\(\*\*\s*\(\s*(?:code|void)\s*\*\*\s*\)\s*\*\s*(?:\(\s*\w+\s*\*+\s*\)\s*)?(\w+)\s*\)',
 )
 
 # Pattern for alloc/init type propagation
@@ -471,17 +485,21 @@ class VirtualDispatchResolver:
 
             # --- Pattern E: C++ vtable dispatch
             if self.config.enable_vtable_resolution:
-                for m in _RE_VTABLE.finditer(line):
+                found = [(m.group(1), m.group(2)) for m in _RE_VTABLE.finditer(line)]
+                found += [(m.group(1), "0x0") for m in _RE_VTABLE_SLOT0.finditer(line)]
+                for receiver, offset in found:
+                    if offset.isdigit():
+                        offset = hex(int(offset))
                     sites.append(DispatchSite(
                         caller_func=header.func_name,
                         caller_addr=header.address,
                         source_file=str(filepath),
                         line_number=line_no,
                         variant="vtable",
-                        receiver_expr=m.group(1),
+                        receiver_expr=receiver,
                         receiver_type=None,
                         selector=None,
-                        vtable_offset=m.group(2),
+                        vtable_offset=offset,
                     ))
 
         return sites
@@ -561,7 +579,17 @@ class VirtualDispatchResolver:
         self._func_address_map.clear()
         self._func_name_map.clear()
 
-        for fn in data.get("functions", []):
+        functions = data.get("functions", [])
+        # MUH-06 (P04b): düz adlar ancak ikilide ObjC çalışma zamanı izi varsa seçici
+        # sayılır (köşeli parantezli yöntem adı ya da objc_msgSend). Eskiden `_` / `FUN_`
+        # ile başlamayan HER ad seçiciydi (redis'te 4 088, C ikililerinde de dolu).
+        has_objc = any(
+            _RE_BRACKET_METHOD.match(str(fn.get("name", "")))
+            or "objc_msgSend" in str(fn.get("name", ""))
+            for fn in functions
+        )
+
+        for fn in functions:
             name = fn["name"]
             addr = fn.get("address", "0")
             self._func_address_map[name] = addr
@@ -584,7 +612,7 @@ class VirtualDispatchResolver:
             # These don't have class info from the name alone, but we can
             # use the decompiled file header's namespace to recover it.
             # We index them so unique selectors can still be resolved.
-            if not name.startswith("_") and not name.startswith("FUN_"):
+            if has_objc and not name.startswith("_") and not name.startswith("FUN_"):
                 # Could be a selector-style name
                 impl = MethodImpl(
                     class_name="",  # unknown from name alone
@@ -1034,98 +1062,33 @@ class VirtualDispatchResolver:
         site: DispatchSite,
         header: _FileHeader | None,
     ) -> None:
-        """Resolve a C++ vtable dispatch site using RTTI info.
+        """C++ vtable çağrı yeri: sayılır, çözülmez (MUH-06, P04b).
 
-        Strategy:
-        1. If the receiver variable has a known class (from header or
-           type context), look up that class in the vtable map.
-        2. Use the vtable offset to estimate which method slot is being
-           called (offset / pointer_size = slot index).
-        3. Match the slot index against known methods of the class.
-        4. If no exact match, report as vtable_partial with candidates.
+        vtable içeriği okunmadığı için yuva → hedef eşlemesi kurulamaz; yer
+        ``VTABLE_UNSUPPORTED_METHOD`` ile işaretlenir, hedef ve kenar üretilmez.
+        Alıcının sınıfı dosya başlığından biliniyorsa ``receiver_type``'a yazılır.
         """
         receiver = site.receiver_expr.strip()
-        vtable_offset = site.vtable_offset
 
-        # Try to determine the class of the receiver
+        # Alıcının sınıfı yalnız C++ yönteminin kendi nesnesiyse (this / ilk parametre)
+        # dosya başlığından bilinir; yerel değişkende tahmin yapılmaz.
         receiver_class: str | None = None
-
-        # Check if receiver matches a known class variable pattern
-        # e.g. "this" or "param_1" in a C++ method -> header class
         if receiver in ("this", "param_1", "self") and header and header.class_name:
             receiver_class = header.class_name
-        elif header and header.class_name:
-            # In a C++ method, vtable dispatch on local often means self
-            receiver_class = header.class_name
 
-        if receiver_class and receiver_class in self._vtable_map:
-            # We know the class has a vtable. Look up methods.
-            entry = self._class_hierarchy.get(receiver_class, {})
-            methods = entry.get("methods", [])
-
-            if vtable_offset and methods:
-                # Estimate slot index (8 bytes per pointer on 64-bit)
-                try:
-                    offset_val = int(vtable_offset, 16)
-                    # First 2 slots are typically RTTI offset + RTTI pointer
-                    slot_index = (offset_val // 8) - 2
-                    if 0 <= slot_index < len(methods):
-                        method = methods[slot_index]
-                        target_name = f"{receiver_class}::{method['selector']}"
-                        # Check if this function exists in our address map
-                        addr = self._func_address_map.get(target_name)
-                        if addr is None:
-                            # Try bracket notation
-                            target_name_bracket = (
-                                f"-[{receiver_class} {method['selector']}]"
-                            )
-                            addr = self._func_address_map.get(target_name_bracket)
-                            if addr:
-                                target_name = target_name_bracket
-                        site.resolved_targets = [target_name]
-                        site.receiver_type = receiver_class
-                        site.confidence = 0.60
-                        site.resolution_method = "vtable_rtti_slot"
-                        return
-                except (ValueError, IndexError):
-                    pass
-
-            # We know the class but can't pinpoint the slot -- return
-            # all methods as candidates
-            if methods:
-                site.resolved_targets = [
-                    f"{receiver_class}::{m['selector']}" for m in methods[:5]
-                ]
-                site.receiver_type = receiver_class
-                site.confidence = 0.45
-                site.resolution_method = "vtable_rtti_candidates"
-                return
-
-        # If receiver class is known from RTTI hierarchy but not vtable_map,
-        # check if any known C++ class matches
-        if receiver_class and receiver_class in self._class_hierarchy:
-            entry = self._class_hierarchy[receiver_class]
-            methods = entry.get("methods", [])
-            if methods:
-                site.resolved_targets = [
-                    f"{receiver_class}::{m['selector']}" for m in methods[:5]
-                ]
-                site.receiver_type = receiver_class
-                site.confidence = 0.40
-                site.resolution_method = "vtable_class_methods"
-                return
-
-        # Check if any vtable class has methods that could match based
-        # on the decompiled context (last resort)
-        if hasattr(self, '_vtable_map') and self._vtable_map:
-            # At minimum, we know vtable classes exist in the binary
-            site.resolution_method = "vtable_no_receiver_type"
-            site.confidence = 0.15
-            return
-
-        # Truly unresolved vtable
-        site.resolution_method = "vtable_unresolved"
-        site.confidence = 0.1
+        # MUH-06 (P04b): yuva → fonksiyon eşlemesi vtable'ın İÇERİĞİNDEN gelmeli. Sınıf
+        # yöntem listesi ``_ZN`` adlarının fonksiyon listesindeki sırasıyla kuruluyor
+        # (yuva sırası değil); "ofset/8 - 2 = yuva" tahmini ve "ilk 5 yöntem aday"
+        # listesi doğrulanamaz ve çağrı çizgesine sahte kenar ekler. vtable verisi
+        # (``_ZTV`` içeriği) okunmadığı için çözüm yapılmaz: yer sayılır, alıcı sınıfı
+        # biliniyorsa bilgi olarak yazılır, hedef ve kenar üretilmez.
+        if receiver_class and (
+            receiver_class in self._vtable_map or receiver_class in self._class_hierarchy
+        ):
+            site.receiver_type = receiver_class
+        site.resolved_targets = []
+        site.confidence = 0.0
+        site.resolution_method = VTABLE_UNSUPPORTED_METHOD
 
     def _resolve_single_site(
         self,
@@ -1563,6 +1526,12 @@ class VirtualDispatchResolver:
             variant_counts.items(), key=lambda x: -x[1],
         ):
             lines.append(f"  {variant:30s}  {count:5d}")
+        if variant_counts.get("vtable"):
+            lines.append(
+                "  note: 'vtable' = indirect call through a function table read from the "
+                "object's first word (C++ vtable or a C ops table such as sqlite3_io_methods); "
+                "not resolved because vtable contents are not read (no targets, no edges)."
+            )
         lines.append("")
 
         # Top unresolved selectors

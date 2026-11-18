@@ -176,6 +176,30 @@
       "test": "tests/test_p04b_kalibrasyon.py::test_ozet_ham_sayilar",
       "find": "            \"avg_raw_confidence\": round(",
       "replace": "            \"avg_confidence\": round("
+    },
+    {
+      "id": "dispatch_eski_desen",
+      "desc": "vtable deseni yeniden (long *) dönüşümü zorunlu ister (Ghidra'nın (**(code **)(*X + o)) biçimi kaçar)",
+      "module": "karadul/reconstruction/engineering/dispatch_resolver.py",
+      "test": "tests/test_p04b_dispatch.py::test_ghidra_vtable_bicimleri",
+      "find": "    r'\\(\\*+\\s*\\(\\s*(?:code|void)\\s*\\*+\\s*\\)\\s*\\(\\s*\\*\\s*(?:\\(\\s*\\w+\\s*\\*+\\s*\\)\\s*)?'\n    r'(\\w+|",
+      "replace": "    r'\\(\\*+\\s*\\(\\s*(?:code|void)\\s*\\*+\\s*\\)\\s*\\(\\s*\\*\\s*(?:\\(\\s*\\w+\\s*\\*+\\s*\\)\\s*)'\n    r'(\\w+|"
+    },
+    {
+      "id": "dispatch_yuva_tahmini",
+      "desc": "vtable yerine hedef yazılır (doğrulanamayan yuva tahmini geri gelir)",
+      "module": "karadul/reconstruction/engineering/dispatch_resolver.py",
+      "test": "tests/test_p04b_dispatch.py::test_yer_sayilir_hedef_ve_kenar_uretilmez",
+      "find": "        site.resolved_targets = []\n        site.confidence = 0.0\n        site.resolution_method = VTABLE_UNSUPPORTED_METHOD",
+      "replace": "        site.resolved_targets = [f\"{receiver_class}::slot\"] if receiver_class else []\n        site.confidence = 0.6\n        site.resolution_method = VTABLE_UNSUPPORTED_METHOD"
+    },
+    {
+      "id": "dispatch_secici_objc_kapisi",
+      "desc": "ObjC izi olmayan ikilide düz adlar yine seçici sayılır",
+      "module": "karadul/reconstruction/engineering/dispatch_resolver.py",
+      "test": "tests/test_p04b_dispatch.py::test_secici_haritasi_objc_izi_olmadan_kurulmaz",
+      "find": "            if has_objc and not name.startswith(\"_\") and not name.startswith(\"FUN_\"):",
+      "replace": "            if not name.startswith(\"_\") and not name.startswith(\"FUN_\"):"
     }
   ]
 }
