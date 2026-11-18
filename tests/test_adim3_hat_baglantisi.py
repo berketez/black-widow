@@ -480,7 +480,9 @@ def test_gercek_kosucuyla_bayraklar_kapaliyken_cikti_bayt_bayt_ayni(tmp_path, se
     assert acik.stats["naming_silenced"] == {"duz_metin": len(DIZGI_ADLI)}
     assert acik.stats["naming_flags"]["silencing"] is True
     assert acik.stats["naming_flags"]["global_threshold"] == 0.7
-    assert acik.stats["name_merger_below_global_min"] == 0
+    # P12a / AD-02: eşiği geçen tek genel ad FUN_0000c000'ın geri çağrı ROL adıydı; rol artık ad
+    # değil → genel harita boş, birleştirici aday görmeden döner ve eşik sayacını yazmaz.
+    assert harita == {} and "name_merger_below_global_min" not in acik.stats
 
 
 # --------------------------------------------------------------------------------------------

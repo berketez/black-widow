@@ -166,6 +166,11 @@ class _NamingCandidate:
     code_path: str = ""
     rule: str = ""
     evidence_origin: str = ""
+    # Rol kanıtı (P12a / AD-02; yalnız ``api_param_reverse``): fonksiyonun hangi API'ye kaçıncı
+    # argüman olarak verildiği ve onu veren çağıran. Ad DEĞİLDİR; köken kaydına gider.
+    role_api: str = ""
+    role_arg: int = -1
+    role_caller: str = ""
 
 
 @dataclass
@@ -209,6 +214,14 @@ NAMING_PROVENANCE_SCHEMA_VERSION = 1
 # esigi DEGIL: ad secimini etkilemez, yalniz kayit boyutunu sinirlar
 # (G9 is tanimi: "en cok 3 aday").
 NAMING_PROVENANCE_MAX_RUNNERS_UP = 3
+
+# P12a / AD-02: geri çağrı ROLÜ (``qsort`` → ``compare_func``, ``event_set`` → ``event_callback``)
+# fonksiyon adı değildir. Geliştirme setinde (urun-yeni2) bu kanalın 85 adından 1'i doğruydu
+# (aynı API'ye verilen her fonksiyon aynı rolü alıp ``_2``, ``_3`` … ekiyle ayrışıyordu). Rol,
+# öğe kanıtı (rolün NEYİ karşılaştırdığı / hangi olayın geri çağrısı olduğu) olmadan ad olarak
+# yazılmaz; köken kaydının ``role_evidence`` bölümüne kanıt satırı olarak gider. Öğe kanıtı
+# kaynağı bugün tanımlı değil (P12a ön kaydı §4).
+STRATEGY_API_PARAM_REVERSE = "api_param_reverse"
 
 # string_context kanit etiketleri. Her string_context adayi tek bir kod
 # yolundan (code_path) ve o yolun tek bir kuralindan (rule) gelir.
@@ -288,6 +301,8 @@ class _ProvenanceRecorder:
         }
         # esik altinda elenen anahtarlarin TUM adaylari: kapsam -> strateji -> aday adedi
         self.below_min_candidates: dict[str, dict[str, int]] = {}
+        # P12a / AD-02: ad olmayan rol kanıtları: anahtar -> [{role, api, arg_index, caller}]
+        self.role_evidence: dict[str, list[dict[str, Any]]] = {}
         self.candidate_keys = 0
         self.pre_names_given = 0
         self.pre_names_applied = 0
@@ -508,7 +523,41 @@ class _ProvenanceRecorder:
             "per_function": self.per_function,
             "eliminated_keys": self.eliminated_keys,
             "below_min_confidence_candidates": self.below_min_candidates,
+            "role_evidence": self.role_evidence,
         }
+
+
+def _enclosing_call(body: str, token: str) -> tuple[str, int]:
+    """``token``'ın tam bir argüman olarak geçtiği ilk çağrının adı ve argüman sırası (0'dan).
+
+    Bulunamazsa ``("", -1)``. Belirtecin solundan geriye parantez derinliği sayılır: derinlik 0'da
+    rastlanan ``(`` sarmalayan çağrıdır; aradaki derinlik-0 virgülleri argüman sırasını verir.
+    ``;`` ``{`` ``}`` derinlik 0'da görülürse belirteç bir çağrının içinde değildir.
+    """
+    for m in re.finditer(r"\b" + re.escape(token) + r"\b", body):
+        depth = 0
+        commas = 0
+        i = m.start() - 1
+        while i >= 0:
+            ch = body[i]
+            if ch == ")" or ch == "]":
+                depth += 1
+            elif ch == "(" or ch == "[":
+                if depth == 0:
+                    break
+                depth -= 1
+            elif ch == "," and depth == 0:
+                commas += 1
+            elif ch in ";{}" and depth == 0:
+                i = -1
+                break
+            i -= 1
+        if i < 0 or body[i] != "(":
+            continue
+        name = re.search(r"([A-Za-z_][A-Za-z0-9_]*)\s*$", body[:i])
+        if name:
+            return name.group(1), commas
+    return "", -1
 
 
 # ---------------------------------------------------------------------------
@@ -2210,11 +2259,15 @@ class CVariableNamer:
         low_conf = 0
         used_new_names: set[str] = set()  # Cakisma onleme
 
+        # P12a / AD-02: rol adayları ad adayı değildir; listeden ayrılır, kanıt olarak kalır.
+        role_evidence = self._split_role_candidates()
+
         # Isim kokeni kaydi (plan v2.2 N0 b). Yalniz okur ve sayar; asagidaki
         # kararlarin hicbirine girdi degildir.
         prov: _ProvenanceRecorder | None = None
         if getattr(self, "_record_provenance", True):
             prov = _ProvenanceRecorder(self._min_confidence)
+            prov.role_evidence = role_evidence
             prov.candidate_keys = sum(1 for c in self._candidates.values() if c)
             prov.pre_names_given = len(pre_names) if pre_names else 0
 
@@ -3916,16 +3969,43 @@ class CVariableNamer:
                 reason="API parameter propagation (forward)",
             ), func_name=func_info.name)
 
-        # Reverse propagation: FUN_xxx parametre olarak geciyorsa isim ver
+        # Reverse propagation: FUN_xxx bir API'ye geri çağrı olarak geçiyorsa ROLÜ (P12a /
+        # AD-02: ad değil, rol kanıtı; seçimden önce _split_role_candidates ayırır)
         reverse_renames = self._api_param_db.reverse_propagate_function_names(body)
         for old_name, new_name in reverse_renames.items():
+            api, arg = _enclosing_call(body, old_name)
             self._add_candidate(_NamingCandidate(
                 old_name=old_name,
                 new_name=new_name,
                 confidence=0.75,
-                strategy="api_param_reverse",
+                strategy=STRATEGY_API_PARAM_REVERSE,
                 reason="API callback reverse propagation",
+                role_api=api,
+                role_arg=arg,
+                role_caller=func_info.name,
             ), func_name=func_info.name)
+
+    def _split_role_candidates(self) -> dict[str, list[dict[str, Any]]]:
+        """Rol adaylarını (``api_param_reverse``) ad adaylarından ayır (P12a / AD-02).
+
+        Aday listesinden çıkarır; anahtar başına tekrarsız, sıralı rol kanıtı döndürür:
+        ``{"role", "api", "arg_index", "caller"}``. Yalnız rol adayı olan anahtarın listesi boşalır
+        (ad adayı yok sayılır; köken kaydında elenme nedeni değildir).
+        """
+        evidence: dict[str, list[dict[str, Any]]] = {}
+        for key in list(self._candidates):
+            cands = self._candidates[key]
+            roles = [c for c in cands if c.strategy == STRATEGY_API_PARAM_REVERSE]
+            if not roles:
+                continue
+            self._candidates[key] = [c for c in cands if c.strategy != STRATEGY_API_PARAM_REVERSE]
+            rows = {(c.new_name, c.role_api, c.role_arg, c.role_caller) for c in roles}
+            evidence[key] = [
+                {"role": r, "api": a or None, "arg_index": i if i >= 0 else None,
+                 "caller": cl or None}
+                for r, a, i, cl in sorted(rows)
+            ]
+        return dict(sorted(evidence.items()))
 
     # ------------------------------------------------------------------
     # Strateji 11: Gövde-tabanlı Parametre İsimlendirme (confidence: 0.35-0.42)

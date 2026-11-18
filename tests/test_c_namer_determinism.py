@@ -216,7 +216,10 @@ def test_output_independent_of_completion_order(tmp_path, monkeypatch):
     assert sorted(nm["global"][f] for f in _DUP_FUNCS) == [
         "telemetry_sampler_queue", "telemetry_sampler_queue_2",
         "telemetry_sampler_queue_3", "telemetry_sampler_queue_4"]
-    assert nm["global"]["FUN_0000c000"] in ("exit_handler", "signal_handler")
+    # P12a / AD-02: geri çağrı rolü ad değil; iki çağıranın rolü köken kaydında sıralı kanıt
+    assert "FUN_0000c000" not in nm["global"]
+    rol = json.loads(ref["files"]["naming_provenance.json"])["role_evidence"]["FUN_0000c000"]
+    assert rol == [{"role": "exit_handler", "api": "atexit", "arg_index": 0, "caller": "FUN_00005000"}, {"role": "signal_handler", "api": "signal", "arg_index": 1, "caller": "FUN_00006000"}]
     for label in ("ters", "karisik"):
         got = outputs[label]
         assert got["files"].keys() == ref["files"].keys()
@@ -234,8 +237,11 @@ def test_equal_confidence_cross_worker_tie_goes_to_lower_index(tmp_path, monkeyp
     out = tmp_path / "out"
     _run(ws, out)
     nm = json.loads((out / "naming_map.json").read_text(encoding="utf-8"))
-    # FUN_00005000 (atexit) FUN_00006000'dan (signal) önce gönderilir
-    assert nm["global"]["FUN_0000c000"] == "exit_handler"
+    # P12a / AD-02: eskiden eşit güvenli iki geri çağrı ADI yarışıyordu (önce gönderilen
+    # kazanırdı); artık rol ad değil, köken kaydında bitiş sırasından bağımsız sıralı kanıt.
+    assert "FUN_0000c000" not in nm["global"]
+    prov = json.loads((out / c_namer.NAMING_PROVENANCE_FILE).read_text(encoding="utf-8"))
+    assert prov["role_evidence"]["FUN_0000c000"] == [{"role": "exit_handler", "api": "atexit", "arg_index": 0, "caller": "FUN_00005000"}, {"role": "signal_handler", "api": "signal", "arg_index": 1, "caller": "FUN_00006000"}]
     assert nm["global"]["FUN_00001000"] == "telemetry_sampler_queue"
 
 

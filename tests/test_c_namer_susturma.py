@@ -34,8 +34,10 @@ from karadul.reconstruction.tarif import alt_kanal, baglama  # noqa: E402
 # P12a / AD-08 (yerel ad eki fonksiyon başına) bilerek değiştirdi: eski özet
 # 350c1ef4b0ac46e287350f9dd2dacade7692ce5805ee9725d44c1236a626f8de. Fark elle denetlendi: genel
 # adlar aynı (13 / 13); yalnız FUN_00002000-4000'ün yerel adları ``s_2``/``len_2`` … → ``s``/``len``
-# (6 yerel ad ve onların .c satırları).
-ONCEKI_CIKTI_OZETI = "74cc807bde8106369c6a92f1e76fc57aa577fbbb09527a0dc0dc58fe2d795cdb"
+# (6 yerel ad ve onların .c satırları). P12a / AD-02 (geri çağrı rolü ad değil) ikinci kez
+# değiştirdi (AD-08 sonrası özet 74cc807bde8106369c6a92f1e76fc57aa577fbbb09527a0dc0dc58fe2d795cdb):
+# fark yalnız FUN_0000c000 (``exit_handler`` adı düştü; kendi .c'si ve onu çağıran iki .c).
+ONCEKI_CIKTI_OZETI = "d25278c9f9b0423d408dcb0cef84284193f1aaf5e53021b511df4a20f63316a7"
 DIZGI_ADLI = ("FUN_00001000", "FUN_00002000", "FUN_00003000", "FUN_00004000", "FUN_00008000",
               "FUN_00009000")
 
@@ -223,16 +225,20 @@ def test_urun_esigi_yalniz_genel_adlara(tmp_path, seri):
     assert "FUN_00007000" in dusen                                        # proc_7000 (type_based 0,25)
     assert set(harita["global"]) == set(taban_harita["global"]) - dusen
     assert all(res.confidence_map[k] >= 0.7 for k in harita["global"])
-    assert harita["global"]["FUN_0000c000"] == taban_harita["global"]["FUN_0000c000"]   # 0,75 kalır
+    # P12a / AD-02: FUN_0000c000'ın tek ad adayı geri çağrı rolüydü; artık iki kolda da ad yok
+    assert "FUN_0000c000" not in harita["global"] and "FUN_0000c000" not in taban_harita["global"]
     assert prov["global_min_confidence"] == 0.7
     assert sum(prov["eliminated_keys"]["below_global_min_confidence"]["global"].values()) == len(dusen)
     assert "local" not in prov["eliminated_keys"]["below_global_min_confidence"]
     # yerel adlar eşikten etkilenmez (0,15 ile sürer)
     assert harita["per_function"] == taban_harita["per_function"]
     assert _hesap_tutar(prov)
-    # eşiğe eşit güven kalır
-    _, _, esit = _kos(ws, tmp_path / "esit", global_min_confidence=0.75)
-    assert "FUN_0000c000" in esit["global"]
+    # eşiğe eşit güven kalır (P12a / AD-02'den önce araç FUN_0000c000'ın 0,75'lik rol adıydı;
+    # şimdi eşiği geçen ilk genel adın kendi güveni eşik yapılır)
+    anahtar, guven = next((k, v) for k, v in sorted(taban.confidence_map.items())
+                          if k in taban_harita["global"] and v >= 0.7)
+    _, _, esit = _kos(ws, tmp_path / "esit", global_min_confidence=guven)
+    assert anahtar in esit["global"]
 
 
 # --------------------------------------------------------------------------------------------
@@ -332,7 +338,8 @@ def test_uc_ozellik_birlikte(tmp_path, seri):
     res, prov, harita = _kos(ws, tmp_path / "out", pre_names={"FUN_00001000": "telemetry_drain"},
                              meta={"FUN_00001000": _ks1_kunye("telemetry_drain")},
                              silenced_subchannels=alt_kanal.SILENCED_SUBCHANNELS, global_min_confidence=0.7)
-    assert harita["global"] == {"FUN_00001000": "telemetry_drain", "FUN_0000c000": "exit_handler"}
-    assert res.label_map == {"FUN_00001000": "kesin", "FUN_0000c000": "doğrulanmadı"}
+    # P12a / AD-02: geri çağrı rolü (exit_handler) artık ad değil
+    assert harita["global"] == {"FUN_00001000": "telemetry_drain"}
+    assert res.label_map == {"FUN_00001000": "kesin"}
     assert res.silenced_counts == {"duz_metin": 6}       # ön adlı anahtarın adayı da süzgeçte sayılır
     assert _hesap_tutar(prov)

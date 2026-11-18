@@ -289,21 +289,26 @@ def test_reddedilen_adayin_yerine_siradaki_gecerli_aday(tmp_path, seri):
     # önkoşul: aynı biçimde geçerli bir dizgi adı (0,80) geri çağrı adını (0,75) yener
     _, taban_prov, taban = S._kos(kur(tmp_path / "taban", "sampler() failed: %s"), tmp_path / "t_out")
     assert taban["global"]["FUN_0000c000"] == "sampler"
-    assert taban_prov["global"]["FUN_0000c000"]["runners_up"][0]["new_name"] == "exit_handler"
+    # P12a / AD-02: geri çağrı rolü (exit_handler) ad adayı değil, rol kanıtı
+    assert all(r["new_name"] != "exit_handler"
+               for r in taban_prov["global"]["FUN_0000c000"]["runners_up"])
+    assert taban_prov["role_evidence"]["FUN_0000c000"][0]["role"] == "exit_handler"
     assert taban_prov["name_validity"]["rejected"] == []
 
     res, prov, harita = S._kos(kur(tmp_path / "ws", "switch() failed: %s"), tmp_path / "out")
-    assert harita["global"]["FUN_0000c000"] == "exit_handler"
+    # geçersiz dizgi adı düşünce sıradaki aday yarışır: yapısal aday (leaf_c000) genel adda
+    # süzülür; rol ad olmadığı için anahtar ad almaz (eskiden rol adı exit_handler kazanıyordu)
+    assert "FUN_0000c000" not in harita["global"]
     assert res.rejected_name_counts == {nv.REASON_KEYWORD: 1}
-    kazanan = prov["global"]["FUN_0000c000"]
-    assert kazanan["strategy"] != "string_context" and kazanan["confidence"] == 0.75
-    assert all(r["new_name"] != "switch" for r in kazanan["runners_up"])
+    assert prov["role_evidence"]["FUN_0000c000"][0]["role"] == "exit_handler"
     (kayit,) = _reddedilenler(prov)
     assert (kayit["proposed_name"], kayit["confidence"], kayit["rule"]) == ("switch", 0.8, "func_paren")
-    assert prov["eliminated_keys"][GECERSIZ] == {}              # anahtar ad aldı, elenmedi
+    assert prov["eliminated_keys"][GECERSIZ] == {}       # geçerli aday (yapısal) yarıştı, elenmedi
+    # FUN_0000c000'ın kazanan adayı yapısal (call_graph); genel adda süzülür
+    assert prov["eliminated_keys"]["global_structural_filter"]["global"]["call_graph"] == 1
     assert S._hesap_tutar(prov)
-    assert "void exit_handler(void)" in (tmp_path / "out" / "FUN_0000c000.c").read_text()
-    assert "atexit(exit_handler)" in (tmp_path / "out" / "FUN_00005000.c").read_text()
+    assert "void FUN_0000c000(void)" in (tmp_path / "out" / "FUN_0000c000.c").read_text()
+    assert "atexit(FUN_0000c000)" in (tmp_path / "out" / "FUN_00005000.c").read_text()
 
 
 def test_ayni_adi_isteyen_iki_fonksiyon(tmp_path, seri):

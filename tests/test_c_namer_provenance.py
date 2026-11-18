@@ -269,6 +269,8 @@ def test_provenance_file_schema(ws, tmp_path, serial_pool):
         "silencing", "global_min_confidence",
         # ad geçerliliği süzgeci (2026-11-10): yalnız alan eklendi, şema sürümü 1 kaldı
         "name_validity",
+        # P12a / AD-02: geri çağrı rolü ad değil kanıt; yalnız alan eklendi, şema sürümü 1 kaldı
+        "role_evidence",
     }
     assert prov["schema"] == NAMING_PROVENANCE_SCHEMA == "karadul.naming_provenance"
     assert prov["schema_version"] == NAMING_PROVENANCE_SCHEMA_VERSION == 1
