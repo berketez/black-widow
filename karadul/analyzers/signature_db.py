@@ -1572,6 +1572,7 @@ class SignatureDB:
         self._lmdb_path_source: str | None = None
         self._lmdb_symbol_count: int | None = None
         self._lmdb_version: dict[str, Any] = {}
+        self._lmdb_schema_warning: str | None = None
 
         # GHIDRA-14 (P15b): dış imza JSON'ları veri kökünden (``config.data_root``)
         # okunur, çıktı kökünden (``project_root``) değil. Ne yüklendiği / neden
@@ -1612,6 +1613,7 @@ class SignatureDB:
                 is_lmdb_available,
                 read_db_version,
                 resolve_lmdb_path,
+                schema_warning,
             )
         except ImportError as exc:
             logger.warning(
@@ -1626,7 +1628,9 @@ class SignatureDB:
             return
 
         perf = self._config.perf
-        path, path_source = resolve_lmdb_path(perf.sig_lmdb_path)
+        # K-5 (P15b): veri kökündeki signatures.lmdb eski ~/.karadul konumundan önce
+        # gelir (geliştirmede depo kökünde yeni şema 2 veritabanına bağ).
+        path, path_source = resolve_lmdb_path(perf.sig_lmdb_path, self._data_root)
         self._lmdb_path = Path(path)
         self._lmdb_path_source = path_source
 
@@ -1639,6 +1643,13 @@ class SignatureDB:
             stats = self._lmdb_backend.total_entries
             self._lmdb_symbol_count = int(stats["symbols"])
             self._lmdb_version = read_db_version(self._lmdb_backend)
+            # K-5: eski şema sessizce yeğlenmez — uyarı günlükte ve istatistikte.
+            self._lmdb_schema_warning = schema_warning(self._lmdb_version)
+            if self._lmdb_schema_warning:
+                logger.warning(
+                    "İmza veritabanı %s (%s): %s",
+                    path, path_source, self._lmdb_schema_warning,
+                )
             logger.info(
                 "LMDB backend aktif: %s (symbols=%d, string_sigs=%d, "
                 "call_sigs=%d, byte_sigs=%d)",
@@ -3078,6 +3089,10 @@ class SignatureDB:
             "sigdb_schema_version": ver.get("schema_version"),
             "sigdb_build_id": ver.get("build_id"),
             "sigdb_source_hash": ver.get("source_hash"),
+            # K-5 (P15b): açılan veritabanı güncel şemadan eskiyse nedeniyle; değilse None.
+            "sigdb_schema_warning": (
+                self._lmdb_schema_warning if self._lmdb_backend is not None else None
+            ),
         }
 
     def stats(self) -> dict[str, Any]:

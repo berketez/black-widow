@@ -14,6 +14,9 @@
 #   KARADUL_PBS_SHA256  o arşivin beklenen özeti (başka arşiv verilirse ikisi birlikte).
 #   KARADUL_PYCDC_DIR   pycdc + pycdas ikililerinin dizini (varsayılan: <depo>/vendor/pycdc).
 #   GHIDRA_INSTALL_DIR  --full için Ghidra kurulumu (sürümü sabitlenenle AYNI olmalı).
+#   KARADUL_SIG_LMDB_SRC --full'de gömülecek imza veritabanı dizini (varsayılan: veri
+#                       kökündeki <depo>/signatures.lmdb; bağ olabilir). Şema 2 olmalı:
+#                       eski şema (~/.karadul/signatures.lmdb) gömülmez (K-5).
 #   KARADUL_CODESIGN_ID imza kimliği (yoksa ad-hoc).
 set -euo pipefail
 
@@ -89,7 +92,10 @@ RES="$APP/Contents/Resources"; MACOS="$APP/Contents/MacOS"
 PBS="${KARADUL_PBS:-$HOME/HRMA/packaging/runtime/pbs-mac.tar.gz}"
 PBS_SHA256="${KARADUL_PBS_SHA256:-12d6700f7e8f222639f0ee5bbd173082c3041aeb65af8f9828e4216bc8047de6}"
 JDK_SRC="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk"
-LMDB="$HOME/.karadul/signatures.lmdb"
+# K-5 (P15b): imza veritabanı veri kökünden (karadul.config.resolve_sig_lmdb_path ile
+# aynı konum: <depo>/signatures.lmdb). Eskiden ~/.karadul/signatures.lmdb (şema 1)
+# kopyalanıyordu; yeni veritabanı kendiliğinden gömülmüyordu.
+LMDB_SRC="${KARADUL_SIG_LMDB_SRC:-$REPO/signatures.lmdb}"
 NUITKA_VENV="$DIST/nuitka-venv"   # motor koruma derleyicisi (bundle DIŞI, ship edilmez)
 # pycdc/pycdas: scripts/setup_pycdc.sh bunları <depo>/vendor/pycdc altına kurar.
 # vendor/ git-ignore'da -> worktree'de yoktur; başka yerden vermek için KARADUL_PYCDC_DIR.
@@ -196,6 +202,31 @@ if [ $FULL = 1 ]; then
   [ -d "$JDK_SRC" ] || { echo "!! JDK yok: $JDK_SRC"; exit 1; }
 else
   echo "    Ghidra: paketlenmiyor (CORE); sabitlenen ${GH_PIN_VER:-okunamadı} @ ${GH_PIN_DIR_HAM:-okunamadı}"
+fi
+
+# --- imza veritabanı (K-5) --------------------------------------------------
+# Künye kunye.json'dan (plutil JSON okur; python gerekmez). Okunamayan alan boş
+# kalır, uydurulmaz. Eski şema (künyesiz ya da schema_version != 2) --full'de
+# gömülmez: ürün sessizce eski kitaplık iddialarıyla çıkmasın.
+SIG_REAL=""; SIG_SCHEMA=""; SIG_BUILD_ID=""; SIG_SOURCE_HASH=""; SIG_SYMBOLS=""
+_kunye() { /usr/bin/plutil -extract "$1" raw -o - "$SIG_REAL/kunye.json" 2>/dev/null || true; }
+if [ -f "$LMDB_SRC/data.mdb" ]; then
+  SIG_REAL="$(cd -P "$LMDB_SRC" && pwd -P)"
+  SIG_SCHEMA="$(_kunye schema_version)"; SIG_BUILD_ID="$(_kunye build_id)"
+  SIG_SOURCE_HASH="$(_kunye source_hash)"; SIG_SYMBOLS="$(_kunye symbols)"
+  if [ "$SIG_SCHEMA" = "2" ]; then
+    echo "    imza veritabanı: $SIG_REAL (şema 2, $SIG_BUILD_ID, ${SIG_SYMBOLS:-?} ad)"
+  elif [ $FULL = 1 ]; then
+    echo "!! imza veritabanı eski şema (${SIG_SCHEMA:-künyesiz}): $SIG_REAL -> gömülmez"
+    echo "   Şema 2 veritabanını <depo>/signatures.lmdb'ye bağla ya da KARADUL_SIG_LMDB_SRC ile ver."
+    exit 1
+  else
+    echo "    !! UYARI: imza veritabanı eski şema (${SIG_SCHEMA:-künyesiz}): $SIG_REAL (CORE: gömülmez)"
+  fi
+elif [ $FULL = 1 ]; then
+  echo "    !! UYARI: imza veritabanı yok: $LMDB_SRC -> app imza DB'siz gidecek (isimlendirme zayıflar)"
+else
+  echo "    imza veritabanı: paketlenmiyor (CORE); kaynak $LMDB_SRC $([ -e "$LMDB_SRC" ] || echo '(yok)')"
 fi
 
 # --- pycdc ---
@@ -333,14 +364,18 @@ if [ $FULL = 1 ]; then
   cp -R "$GH" "$RES/ghidra"
   echo "[6/9] JDK 21 (yerel Homebrew, indirme yok)"
   [ -d "$RES/jdk" ] || cp -R "$JDK_SRC" "$RES/jdk"
-  echo "[7/9] signatures.lmdb (~2GB)"
+  echo "[7/9] signatures.lmdb (~3GB, şema 2; kaynak ön denetimde)"
   # Sessiz yutma YOK: yarım kopyalanmış DB ile "DONE" demek, app'i kötü
   # isimlendirmeyle ship etmek demek. Kaynak yoksa app yine kurulur ama uyarır.
-  if [ -e "$LMDB" ]; then
-    cp -R "$LMDB" "$RES/signatures.lmdb" || { echo "!! signatures.lmdb kopyalanamadı"; exit 1; }
-    echo "    kopyalandı ($(du -sh "$RES/signatures.lmdb" | cut -f1))"
+  # Kaynak bağ olabilir: çözülmüş fiziksel dizin kopyalanır (cp -R bağı bağ olarak
+  # kopyalardı -> pakette kırık bağ).
+  if [ -n "$SIG_REAL" ]; then
+    cp -R "$SIG_REAL" "$RES/signatures.lmdb" || { echo "!! signatures.lmdb kopyalanamadı"; exit 1; }
+    [ "$(stat -f %z "$RES/signatures.lmdb/data.mdb")" = "$(stat -f %z "$SIG_REAL/data.mdb")" ] \
+      || { echo "!! signatures.lmdb/data.mdb boyutu kaynakla aynı değil (yarım kopya)"; exit 1; }
+    echo "    kopyalandı ($(du -sh "$RES/signatures.lmdb" | cut -f1)) <- $SIG_REAL"
   else
-    echo "    !! UYARI: $LMDB yok -> app imza DB'siz gidiyor (isimlendirme zayıflar)"
+    echo "    !! UYARI: $LMDB_SRC yok -> app imza DB'siz gidiyor (isimlendirme zayıflar)"
   fi
 else
   echo "[5-7/9] ATLANDI (CORE build; analiz için: build_mac_app.sh --full)"
@@ -361,11 +396,17 @@ if [ $FULL = 1 ]; then
   BI_GHIDRA="$(_ghidra_surum "$RES/ghidra")"
   [ -n "$BI_GHIDRA" ] || echo "    !! UYARI: Ghidra sürümü okunamadı -> ghidra_version: null"
 fi
+# K-5: gömülen imza veritabanının kaynağı ve künyesi (gömülmediyse null).
+BI_SIG_EMBEDDED=0
+if [ $FULL = 1 ] && [ -n "$SIG_REAL" ] && [ -f "$RES/signatures.lmdb/data.mdb" ]; then BI_SIG_EMBEDDED=1; fi
 # Bundle python'ı kullan (3.12 garanti); ortamdaki python3'ün sürümüne bağlanma.
 "$PY" -I - "$RES/build-info.json" "$VER" "$BI_COMMIT" \
-        "$([ $FULL = 1 ] && echo full || echo core)" "$BI_GHIDRA" <<'PYEOF'
+        "$([ $FULL = 1 ] && echo full || echo core)" "$BI_GHIDRA" \
+        "$BI_SIG_EMBEDDED" "$SIG_REAL" "$SIG_SCHEMA" "$SIG_BUILD_ID" "$SIG_SOURCE_HASH" \
+        "$SIG_SYMBOLS" <<'PYEOF'
 import datetime, json, sys
 out, ver, commit, flavor, ghidra = sys.argv[1:6]
+sig_embedded, sig_src, sig_schema, sig_build, sig_hash, sig_symbols = sys.argv[6:12]
 # Okunamayan alan UYDURULMAZ -> null. (Sözleşme: /api/about alanları null olabilir.)
 json.dump({
     "version": ver or None,
@@ -373,6 +414,13 @@ json.dump({
     "built_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "flavor": flavor,
     "ghidra_version": ghidra or None,
+    "signature_db": {
+        "source": sig_src or None,
+        "schema_version": int(sig_schema) if sig_schema.isdigit() else None,
+        "build_id": sig_build or None,
+        "source_hash": sig_hash or None,
+        "symbols": int(sig_symbols) if sig_symbols.isdigit() else None,
+    } if sig_embedded == "1" else None,
 }, open(out, "w"), indent=2, ensure_ascii=False)
 PYEOF
 echo "    $(tr -d '\n ' < "$RES/build-info.json")"

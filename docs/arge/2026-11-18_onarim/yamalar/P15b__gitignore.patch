@@ -1,0 +1,11 @@
+--- a/.gitignore
++++ b/.gitignore
+@@ -23,6 +23,8 @@
+ signatures_homebrew_bytes.json
+ signatures_homebrew_bytes_v2.json
+ sigs_macos_system.json
++# K-5 (P15b): veri kökündeki imza veritabanı (bağ ya da dizin; ~3 GB)
++/signatures.lmdb
+
+ # Ghidra proje dosyalari
+ *.gdt

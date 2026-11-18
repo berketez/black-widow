@@ -84,6 +84,46 @@ def resolve_data_root() -> tuple[Path, str]:
     return Path(__file__).resolve().parent.parent, DATA_ROOT_SOURCE_PACKAGE
 
 
+# ---------------------------------------------------------------------------
+# İmza veritabanı (LMDB) yolu (K-5, P15b)
+# ---------------------------------------------------------------------------
+# Tek kaynak burada: lmdb modülünü içe aktarmadan çözülebilsin (arayüzün Hakkında
+# paneli de aynı sırayı kullanır). ``sigdb_lmdb.resolve_lmdb_path`` buna devreder.
+SIG_LMDB_ENV = "KARADUL_SIG_LMDB_PATH"
+SIG_LMDB_FILENAME = "signatures.lmdb"
+#: Eski kullanıcı konumu (P08 öncesi şema 1 veritabanı burada durur).
+SIG_LMDB_LEGACY_PATH = Path.home() / ".karadul" / SIG_LMDB_FILENAME
+SIG_LMDB_SOURCE_CONFIG = "config:perf.sig_lmdb_path"
+SIG_LMDB_SOURCE_ENV = f"env:{SIG_LMDB_ENV}"
+SIG_LMDB_SOURCE_DATA_ROOT = f"data_root:{SIG_LMDB_FILENAME}"
+SIG_LMDB_SOURCE_DEFAULT = "default:~/.karadul/signatures.lmdb"
+
+
+def resolve_sig_lmdb_path(
+    config_path: Optional[Path | str] = None,
+    data_root: Optional[Path | str] = None,
+) -> tuple[Path, str]:
+    """İmza veritabanı yolunu ve kaynağını döndür (lmdb içe aktarılmaz).
+
+    Sıra: ``perf.sig_lmdb_path`` → ``KARADUL_SIG_LMDB_PATH`` (uygulama başlatıcısı
+    bunu ``Contents/Resources/signatures.lmdb``'ye ayarlar) → veri kökündeki
+    ``signatures.lmdb`` (varsa; geliştirmede depo kökünde yeni veritabanına bağ) →
+    ``~/.karadul/signatures.lmdb`` (eski konum). Veri kökü verilmezse üçüncü adım
+    atlanır (eski davranış; ``default_lmdb_path`` ve kurma betiğinin öntanımlı
+    çıktısı). Şemanın denetimi açılışta yapılır (``SignatureDB``: şema 1 uyarısı).
+    """
+    if config_path:
+        return Path(config_path).expanduser(), SIG_LMDB_SOURCE_CONFIG
+    env_path = os.environ.get(SIG_LMDB_ENV)
+    if env_path and env_path.strip():
+        return Path(env_path).expanduser().resolve(), SIG_LMDB_SOURCE_ENV
+    if data_root:
+        cand = Path(data_root).expanduser() / SIG_LMDB_FILENAME
+        if (cand / "data.mdb").is_file():
+            return cand, SIG_LMDB_SOURCE_DATA_ROOT
+    return SIG_LMDB_LEGACY_PATH, SIG_LMDB_SOURCE_DEFAULT
+
+
 def _detect_cpu_cores() -> int:
     """Performans cekirdek sayisini tespit et (E-core haric)."""
     total = os.cpu_count() or 4
@@ -820,7 +860,9 @@ class PerfConfig:
       Gecis icin: scripts/build_sig_lmdb.py ile LMDB olusturulmali.
 
     lmdb_l1_cache_size: Sicak sembol lookup icin in-process LRU cache boyutu.
-    sig_lmdb_path: None ise ~/.karadul/signatures.lmdb kullanilir.
+    sig_lmdb_path: None ise sıra (K-5, ``resolve_sig_lmdb_path``): KARADUL_SIG_LMDB_PATH
+      → veri kökündeki signatures.lmdb → ~/.karadul/signatures.lmdb (eski konum).
+      Açılan veritabanının yolu, kaynağı, şeması ve ad sayısı koşu istatistiğinde.
 
     Naming ThreadPool paralelligi (M2 T2):
       parallel_naming=False default -- eski ProcessPool yolu korunur.

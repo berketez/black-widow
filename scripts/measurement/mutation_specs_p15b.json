@@ -64,6 +64,38 @@
       "test": "tests/test_p15b_veri_koku.py::test_hacker_cli_cikti_kokunu_paket_kokune_cekmez",
       "find": "site-packages'a yazmaz).\n",
       "replace": "site-packages'a yazmaz).\n    config.project_root = Path(__file__).resolve().parent.parent\n"
+    },
+    {
+      "id": "k5_veri_koku_adayi",
+      "desc": "veri kökündeki signatures.lmdb adayı atlanıyor (eski ~/.karadul şema 1 açılır)",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15b_imza_vt.py::test_veri_koku_veritabani_eski_konumdan_once",
+      "find": "    if data_root:\n        cand = Path(data_root).expanduser() / SIG_LMDB_FILENAME",
+      "replace": "    if data_root and False:\n        cand = Path(data_root).expanduser() / SIG_LMDB_FILENAME"
+    },
+    {
+      "id": "k5_signature_db_veri_koku",
+      "desc": "SignatureDB veritabanı yolunu veri kökü vermeden çözüyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15b_imza_vt.py::test_signature_db_veri_kokundeki_sema2_veritabanini_acar",
+      "find": "resolve_lmdb_path(perf.sig_lmdb_path, self._data_root)",
+      "replace": "resolve_lmdb_path(perf.sig_lmdb_path)"
+    },
+    {
+      "id": "k5_sema_uyarisi",
+      "desc": "künyesiz (şema 1) veritabanı güncel sayılıyor (sessizce yeğlenir)",
+      "module": "karadul/analyzers/sigdb_lmdb.py",
+      "test": "tests/test_p15b_imza_vt.py::test_sema1_sessizce_yeglenmez",
+      "find": "    found = version.get(\"schema_version\")\n",
+      "replace": "    found = version.get(\"schema_version\") or CURRENT_SCHEMA_VERSION\n"
+    },
+    {
+      "id": "k5_paket_kaynagi",
+      "desc": "paketleme betiği yeniden eski konumdan (şema 1) kopyalıyor",
+      "module": "packaging/macos/build_mac_app.sh",
+      "test": "tests/test_p15b_imza_vt.py::test_paketleme_betigi_sozdizimi_ve_kaynak",
+      "find": "LMDB_SRC=\"${KARADUL_SIG_LMDB_SRC:-$REPO/signatures.lmdb}\"",
+      "replace": "LMDB_SRC=\"${KARADUL_SIG_LMDB_SRC:-$HOME/.karadul/signatures.lmdb}\""
     }
   ]
 }

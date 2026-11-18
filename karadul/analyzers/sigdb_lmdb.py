@@ -57,6 +57,13 @@ from typing import Any, Iterable, Iterator, Optional
 
 import msgpack
 
+from karadul.config import (
+    SIG_LMDB_SOURCE_CONFIG,
+    SIG_LMDB_SOURCE_DATA_ROOT,
+    SIG_LMDB_SOURCE_DEFAULT,
+    SIG_LMDB_SOURCE_ENV,
+    resolve_sig_lmdb_path,
+)
 from karadul.exceptions import SignatureDBError
 
 # blake3 opsiyonel (hızlı), yoksa hashlib.blake2b fallback
@@ -1120,30 +1127,53 @@ class LMDBSignatureDB:
 def default_lmdb_path() -> Path:
     """Varsayilan LMDB konumu: ~/.karadul/signatures.lmdb.
 
-    ``KARADUL_SIG_LMDB_PATH`` env variable varsa onu kullanir.
+    ``KARADUL_SIG_LMDB_PATH`` env variable varsa onu kullanir. Veri kökü
+    adayına BAKMAZ: kurma betiğinin öntanımlı çıktısı olarak kullanılıyor.
     """
     return resolve_lmdb_path(None)[0]
 
 
 # Veritabanı yolunun nereden geldiği (IMZA-11: koşu istatistiğine yazılır).
-LMDB_PATH_SOURCE_CONFIG = "config:perf.sig_lmdb_path"
-LMDB_PATH_SOURCE_ENV = "env:KARADUL_SIG_LMDB_PATH"
-LMDB_PATH_SOURCE_DEFAULT = "default:~/.karadul/signatures.lmdb"
+# Tek kaynak karadul.config (K-5, P15b): lmdb'siz çözülebilsin.
+LMDB_PATH_SOURCE_CONFIG = SIG_LMDB_SOURCE_CONFIG
+LMDB_PATH_SOURCE_ENV = SIG_LMDB_SOURCE_ENV
+LMDB_PATH_SOURCE_DATA_ROOT = SIG_LMDB_SOURCE_DATA_ROOT
+LMDB_PATH_SOURCE_DEFAULT = SIG_LMDB_SOURCE_DEFAULT
+
+#: Bu şemadan eski veritabanı açılınca istatistiğe uyarı yazılır (K-5).
+CURRENT_SCHEMA_VERSION = "2"
 
 
-def resolve_lmdb_path(config_path: Optional[Path]) -> tuple[Path, str]:
+def resolve_lmdb_path(
+    config_path: Optional[Path], data_root: Optional[Path] = None,
+) -> tuple[Path, str]:
     """İmza veritabanı yolunu ve bu yolun kaynağını döndür.
 
-    Sıra: ``config.perf.sig_lmdb_path`` → ``KARADUL_SIG_LMDB_PATH`` ortam
-    değişkeni (uygulama paketinin başlatıcısı bunu ``Contents/Resources/
-    signatures.lmdb``'ye ayarlar) → ``~/.karadul/signatures.lmdb``.
+    Sıra (``karadul.config.resolve_sig_lmdb_path``): ``config.perf.sig_lmdb_path``
+    → ``KARADUL_SIG_LMDB_PATH`` (uygulama başlatıcısı) → veri kökündeki
+    ``signatures.lmdb`` (``data_root`` verilirse ve varsa) →
+    ``~/.karadul/signatures.lmdb`` (eski konum).
     """
-    if config_path:
-        return Path(config_path).expanduser(), LMDB_PATH_SOURCE_CONFIG
-    env_path = os.environ.get("KARADUL_SIG_LMDB_PATH")
-    if env_path:
-        return Path(env_path).expanduser().resolve(), LMDB_PATH_SOURCE_ENV
-    return _DEFAULT_LMDB_DIR, LMDB_PATH_SOURCE_DEFAULT
+    path, source = resolve_sig_lmdb_path(config_path, data_root)
+    if source == LMDB_PATH_SOURCE_DEFAULT:
+        return _DEFAULT_LMDB_DIR, source
+    return path, source
+
+
+def schema_warning(version: dict[str, Any]) -> Optional[str]:
+    """Açılan veritabanı güncel şemadan eskiyse uyarı metni (K-5); değilse None.
+
+    Şema 1 veritabanlarında ``schema_version`` meta kaydı yoktur (None → şema 1).
+    """
+    found = version.get("schema_version")
+    if found == CURRENT_SCHEMA_VERSION:
+        return None
+    label = found if found else "1 (künyesiz)"
+    return (
+        f"eski şema ({label}): ad başına tek kitaplık tutuluyor; kitaplık iddiaları "
+        f"IMZA-07 düzeltmesi olmadan (şema {CURRENT_SCHEMA_VERSION} veritabanı veri "
+        f"kökündeki signatures.lmdb ya da KARADUL_SIG_LMDB_PATH ile verilir)"
+    )
 
 
 def read_db_version(db: "LMDBSignatureDB") -> dict[str, Any]:
@@ -1201,7 +1231,10 @@ __all__ = [
     "read_db_version",
     "LMDB_PATH_SOURCE_CONFIG",
     "LMDB_PATH_SOURCE_ENV",
+    "LMDB_PATH_SOURCE_DATA_ROOT",
     "LMDB_PATH_SOURCE_DEFAULT",
+    "CURRENT_SCHEMA_VERSION",
+    "schema_warning",
     "is_lmdb_available",
     "open_readonly",
     "pack",
