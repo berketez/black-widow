@@ -523,7 +523,62 @@ def _evidence_kind(a: dict[str, Any]) -> str:
     return "by structure / other"
 
 
+GNULIB_CANDIDATES_SOURCE = "static/gnulib_candidates.json"
+# Raporda tek tek listelenen en çok tutulan aday (fazlası sayıyla; tamamı kaynak yapıtta).
+GNULIB_CANDIDATES_SHOWN = 20
+
+
+def gnulib_candidates(workspace: Any) -> Optional[dict[str, Any]]:
+    """gnulib ön ad kanalının yazmadığı adaylar (P-S3 / P-S3b, K-2: aday kaybolmaz).
+
+    Kaynak ``static/gnulib_candidates.json`` (``stages._write_gnulib_candidates``). Yapıt
+    yoksa ``None`` (kanal koşmadı ya da kaydı yazamadı; 0 aday DEĞİL). Dönen sözlük:
+    ``withheld`` (ad yazılmayan aday sayısı), ``by_reason``, ``presence`` (varlık kanıtı satırı),
+    ``items`` (anahtar, aday ad, kanal, neden, kanıt satırı; en çok ``GNULIB_CANDIDATES_SHOWN``).
+    """
+    data = _load(workspace, "static", "gnulib_candidates")
+    if data is None:
+        return None
+    decisions = [d for d in (data.get("decisions") or []) if isinstance(d, dict)]
+    withheld = [d for d in decisions if d.get("decision") == "withheld"]
+    by_reason: dict[str, int] = {}
+    for d in withheld:
+        r = str(d.get("reason") or "?")
+        by_reason[r] = by_reason.get(r, 0) + 1
+    presence = data.get("presence") if isinstance(data.get("presence"), dict) else {}
+    items = []
+    for d in withheld[:GNULIB_CANDIDATES_SHOWN]:
+        evidence = d.get("evidence_presence") or d.get("evidence_layout") or ""
+        items.append({"key": d.get("key"), "name": d.get("name"), "channel": d.get("channel"),
+                      "reason": d.get("reason"),
+                      "evidence": "; ".join(str(x) for x in (d.get("evidence"), evidence) if x)})
+    return {"source": GNULIB_CANDIDATES_SOURCE, "withheld": len(withheld),
+            "applied": sum(1 for d in decisions if d.get("decision") == "applied"),
+            "by_reason": by_reason, "presence": presence.get("evidence"),
+            "presence_sufficient": presence.get("sufficient"), "items": items}
+
+
+def gnulib_candidates_note(gc: Optional[dict[str, Any]]) -> str:
+    """Ad güvenilirliği özetine eklenen tek cümle (yapıt yoksa boş: kanal koşmadı)."""
+    if not gc:
+        return ""
+    if not gc["withheld"]:
+        return "; gnulib channel: no candidate withheld"
+    reasons = ", ".join(f"{r}: {n}" for r, n in sorted(gc["by_reason"].items()))
+    return (f"; gnulib channel: {gc['withheld']} candidate name(s) withheld, no name written "
+            f"({reasons}; evidence in {gc['source']})")
+
+
 def _naming(result: Any, workspace: Any) -> Section:
+    sec = _naming_labels(result, workspace)
+    gc = gnulib_candidates(workspace)
+    if gc is not None:
+        sec.extra["gnulib_candidates"] = gc
+        sec.summary += gnulib_candidates_note(gc)
+    return sec
+
+
+def _naming_labels(result: Any, workspace: Any) -> Section:
     key, title, src = "naming", "Name Reliability", "reconstruct.stats (naming_by_label, variables_renamed)"
     st = _stage_stats(result, "reconstruct")
     if st is None:

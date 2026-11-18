@@ -72,6 +72,38 @@
    "test": "tests/test_ps3b_full_write.py::test_match_call_shape_dislama",
    "find": "        if any(x in callee_names for x in cs.excluded_callees):\n            continue\n",
    "replace": "        if False:\n            continue\n"
+  },
+  {
+   "id": "ps3b_rapor_aday_eklenmez",
+   "desc": "kalem 5: aday kaydı rapor verisine (Name Reliability) girmez",
+   "module": "karadul/reporting/report_data.py",
+   "test": "tests/test_ps3b_rapor_gnulib.py::test_aday_kaydi_rapor_verisinde",
+   "find": "        sec.extra[\"gnulib_candidates\"] = gc\n        sec.summary += gnulib_candidates_note(gc)\n",
+   "replace": "        sec.extra[\"gnulib_candidate\"] = gc\n"
+  },
+  {
+   "id": "ps3b_rapor_withheld_hepsi",
+   "desc": "kalem 5: uygulanan adlar da 'yazılmadı' sayılır",
+   "module": "karadul/reporting/report_data.py",
+   "test": "tests/test_ps3b_rapor_gnulib.py::test_aday_kaydi_rapor_verisinde",
+   "find": "    withheld = [d for d in decisions if d.get(\"decision\") == \"withheld\"]\n",
+   "replace": "    withheld = [d for d in decisions]\n"
+  },
+  {
+   "id": "ps3b_rapor_yapit_yoksa_sifir",
+   "desc": "kalem 5: yapıt yokken 0 aday yazılır (veri yok yerine)",
+   "module": "karadul/reporting/report_data.py",
+   "test": "tests/test_ps3b_rapor_gnulib.py::test_yapit_yoksa_bolum_aday_iddia_etmez",
+   "find": "    data = _load(workspace, \"static\", \"gnulib_candidates\")\n    if data is None:\n        return None\n",
+   "replace": "    data = _load(workspace, \"static\", \"gnulib_candidates\")\n    if data is None:\n        data = {}\n"
+  },
+  {
+   "id": "ps3b_rapor_tablo_yok",
+   "desc": "kalem 5: Markdown / HTML çıktılarında aday tablosu çizilmez",
+   "module": "karadul/reporting/sections_render.py",
+   "test": "tests/test_ps3b_rapor_gnulib.py::test_aday_kaydi_dort_ciktida",
+   "find": "    if not gc or not gc.get(\"items\"):\n",
+   "replace": "    if True or not gc:\n"
   }
  ]
 }

@@ -12,9 +12,9 @@ Brif: `ONARIM_BRIF.md`. Paket metni: `gonderim/PS3b.md`. Karar: K-2. Önceki pak
 | 0 — ön kayıt | bitti | 7a86f56 |
 | 1 — varlık işaretleri | bitti (H1–H7 tuttu) | 41c8116 |
 | 2 — `usage` gelenek kanalı | bekliyor | |
-| 3 — `sort` `full_write` (`_exit`) | bitti (H8, H9 tuttu) | (kalem 3 commit'i) |
+| 3 — `sort` `full_write` (`_exit`) | bitti (H8, H9 tuttu) | b58e3d5 |
 | 4 — LTO'suz iç adlar | bekliyor | |
-| 5 — aday kaydı raporda | bekliyor | |
+| 5 — aday kaydı raporda | bitti (H12 tuttu) | (kalem 5 commit'i) |
 
 ## Kalem 1 — sürümden ve platformdan bağımsız varlık işaretleri
 
@@ -97,3 +97,47 @@ Brif: `ONARIM_BRIF.md`. Paket metni: `gonderim/PS3b.md`. Karar: K-2. Önceki pak
 - `tests/test_ps3b_full_write.py` (4): sort düzeni ad almaz; `_exit`'siz write sarmalayıcısı (LTO'lu Ubuntu düzeni) `full_write` alır;
   `match_call_shape` dışlaması (`close_stream` etkilenmez); dışlanan çağrı upstream kaynakta yok. **Kalem 1 kodunda 3 / 4 kırmızı**
   (1 bekçi). Mutant: `ps3b_full_write_dislama_yok`, `ps3b_dislama_uygulanmaz` → spec'in tamamı **9 / 9 öldü**.
+
+## Kalem 5 — aday kaydı raporda
+
+### a. Göster
+- `static/gnulib_candidates.json` (P-S3) yalnız diskteydi: rapor verisinde (`report_data.py`), dört raporlayıcıda ve temiz çıktının
+  HTML'inde `gnulib` geçmiyordu (`grep`). Taban B koşularında (6 Mach-O) yazılmayan aday 1-3 / ikili, raporda 0 iz.
+
+### b. Onar
+- `karadul/reporting/report_data.py`: `gnulib_candidates(workspace)` (yapıt yoksa `None`: kanal koşmadı, 0 aday DEĞİL) ve
+  `gnulib_candidates_note`; "Name Reliability" bölümüne (`_naming` → eski gövde `_naming_labels`) `extra["gnulib_candidates"]`
+  (tutulan sayı, nedenlere göre kırılım, varlık kanıtı satırı, en çok 20 aday: anahtar, aday ad, kanal, neden, kanıt) ve özet
+  cümlesi ("N candidate name(s) withheld, no name written (neden: sayı; evidence in static/gnulib_candidates.json)"; tutulan yoksa
+  "no candidate withheld"). Rapor dili İngilizce (bölümün öbür cümleleri gibi).
+- `karadul/reporting/sections_render.py`: `gnulib_candidate_rows`; HTML ve Markdown'da bölümün altında "gnulib candidates (no name
+  written)" tablosu + varlık kanıtı satırı (aday yoksa tablo yok). JSON / SARIF `to_dict` üstünden `extra`'yı zaten taşıyor.
+- Fonksiyon kartı (`ui/**`) bu pakette değil (dokunma listesi); arayüz `naming` bölümünün `extra.gnulib_candidates`'ını okuyabilir.
+
+### c. Ürün koşusu (A; H12)
+- 6 / 6 koşuda (gettext, envsubst, idn2, gsort, gmktemp, xz) `reports/report.md`, `report.json` ve `out/report.html` bölümü taşıyor;
+  sayı `gnulib_candidates.json`'daki `withheld` ile aynı (0, 0, 1, 1, 1, 1); tutulan yoksa tablo yok (`a_denetle.py`). **H12 tuttu.**
+
+### d. Test ve mutasyon
+- `tests/test_ps3b_rapor_gnulib.py` (4; P07 `urun_cat` fikstürü + gerçek ürün kaydından kısaltılmış aday kaydı): rapor verisi
+  (sayı, kırılım, kanıt), dört çıktı (JSON, Markdown, HTML, temiz HTML), tutulan yokken tablo yok, yapıt yokken aday iddiası yok.
+  Eski kodda içe aktarım hatası (4 / 4 kırmızı). Rapor testleri (`*rapor*`, `*report*`, `*sarif*`, P07, P-GUV) 198 geçti.
+- Mutant (spec'e eklendi): aday kaydı rapora girmez, uygulananlar da sayılır, yapıt yokken 0 yazılır, tablo çizilmez → **4 / 4**;
+  spec toplamı 13 / 13.
+
+## Ürün koşusu (B ↔ A, Mach-O kabul seti; `kos_mac.sh`, `a_denetle.py`)
+- B: taban `taban_kod/` (cce2e8c); A: `a_kod/` (kalem 1 + 3 + 5; `karadul/` worktree'yle `diff -rq` aynı, kalem 5 commit'lenmeden
+  önce). `PYTHONHASHSEED=0`, sıralı, koşu başına `KARADUL_CACHE_DIR`. Süreler A: gmktemp 77, idn2 29, gettext 48, envsubst 60, xz 60,
+  gsort 174 sn (B: 95, 40, 53, 63, 68, 157).
+
+| İkili | B: `on_ad:gnulib` | A: `on_ad:gnulib` (GT) | A = yeniden oynatma | B ↔ A değişen genel ad anahtarı |
+|---|---|---|---|---|
+| gettext | 0 | usage, xalloc_die, close_stdout (3 doğru) | evet | 3 (hepsi gnulib) |
+| envsubst | 0 | usage, xalloc_die, close_stdout (3 doğru) | evet | 3 (hepsi gnulib) |
+| idn2 | 0 | 0 (version_etc tutuldu) | evet | 0 |
+| gsort | usage | usage (doğru) | evet | 0 |
+| gmktemp | 0 | usage (doğru) | evet | 1 (gnulib) |
+| xz (gnulib'siz) | 0 | 0 | evet | 0 |
+
+- Taze 5 gnulib'li Mach-O: ürün çıktısında kanal **1 → 8 doğru, 0 yanlış**; başka değişen ad anahtarı 0. xz 0. Yeniden oynatmanın
+  öngörüsü ürün çıktısıyla 6 / 6 aynı.

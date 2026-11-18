@@ -190,6 +190,20 @@ def _limited(rows: list[list[str]]) -> tuple[list[list[str]], int]:
     return rows[:MAX_TABLE_ROWS], max(0, len(rows) - MAX_TABLE_ROWS)
 
 
+def gnulib_candidate_rows(sec: Section) -> tuple[list[str], list[list[str]], int, str]:
+    """Ad güvenilirliği bölümünde gnulib kanalının yazmadığı adaylar (P-S3b kalem 5).
+
+    (başlık, satırlar, tabloda gösterilmeyen aday sayısı, varlık kanıtı satırı); aday yoksa boş.
+    """
+    gc = sec.extra.get("gnulib_candidates") if sec.key == "naming" else None
+    if not gc or not gc.get("items"):
+        return [], [], 0, ""
+    head = ["Function", "Candidate name (not written)", "Channel", "Reason", "Evidence"]
+    rows = [[str(i.get("key") or "?"), str(i.get("name") or "?"), str(i.get("channel") or "-"),
+             str(i.get("reason") or "-"), str(i.get("evidence") or "")[:200]] for i in gc["items"]]
+    return head, rows, max(0, int(gc.get("withheld") or 0) - len(rows)), str(gc.get("presence") or "")
+
+
 # ---------------------------------------------------------------------------
 # HTML
 # ---------------------------------------------------------------------------
@@ -224,6 +238,18 @@ def section_html(sec: Section, result: Any) -> str:
             parts.append("</table>")
             if more:
                 parts.append(f'<div class="sec-source">{more} more row(s) in {_esc(sec.source)}</div>')
+    g_head, g_rows, g_more, g_presence = gnulib_candidate_rows(sec)
+    if g_head:
+        parts.append("<h3>gnulib candidates (no name written)</h3>")
+        if g_presence:
+            parts.append(f'<div class="sec-source">{_esc(g_presence)}</div>')
+        parts.append("<table><tr>" + "".join(f"<th>{_esc(h)}</th>" for h in g_head) + "</tr>")
+        for r in g_rows:
+            parts.append("<tr>" + "".join(f"<td>{_esc(c)}</td>" for c in r) + "</tr>")
+        parts.append("</table>")
+        if g_more:
+            parts.append(f'<div class="sec-source">{g_more} more candidate(s) in '
+                         f'{_esc(sec.extra["gnulib_candidates"]["source"])}</div>')
     parts.append("</div>")
     return "\n".join(parts)
 
@@ -282,6 +308,19 @@ def section_markdown(sec: Section, result: Any) -> list[str]:
                 lines.append("")
                 lines.append(f"*{more} more row(s) in `{sec.source}`*")
             lines.append("")
+    g_head, g_rows, g_more, g_presence = gnulib_candidate_rows(sec)
+    if g_head:
+        lines += ["### gnulib candidates (no name written)", ""]
+        if g_presence:
+            lines += [f"- {g_presence}", ""]
+        lines.append("| " + " | ".join(g_head) + " |")
+        lines.append("|" + "|".join("---" for _ in g_head) + "|")
+        for r in g_rows:
+            lines.append("| " + " | ".join(_md_cell(c, 200) for c in r) + " |")
+        if g_more:
+            lines += ["", f"*{g_more} more candidate(s) in "
+                      f"`{sec.extra['gnulib_candidates']['source']}`*"]
+        lines.append("")
     return lines
 
 
