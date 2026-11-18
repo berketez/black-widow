@@ -184,6 +184,38 @@
       "test": "tests/test_p04a_alan.py::test_mapping_strings_geriye_uyum",
       "find": "if function_strings is None and isinstance(strings, Mapping):",
       "replace": "if function_strings is None and isinstance(strings, str):"
+    },
+    {
+      "id": "blok_sabit_carpan",
+      "desc": "row-major deseni sabit çarpanı yeniden kabul eder (a[i*2 + 1])",
+      "module": "karadul/reconstruction/engineering/block_annotator.py",
+      "test": "tests/test_p04a_blok_yorumu.py::test_yapi_ici_erisim_matris_degil",
+      "find": "\\*\\s*([A-Za-z_]\\w*)\\s*\\+\\s*([A-Za-z_]\\w*)\\s*\\]",
+      "replace": "\\*\\s*(\\w+)\\s*\\+\\s*([A-Za-z_]\\w*)\\s*\\]"
+    },
+    {
+      "id": "blok_sabit_ek",
+      "desc": "row-major deseni sabit eki yeniden kabul eder (M[i*n + 1])",
+      "module": "karadul/reconstruction/engineering/block_annotator.py",
+      "test": "tests/test_p04a_blok_yorumu.py::test_sabit_carpan_ya_da_sabit_ek_matris_degil",
+      "find": "\\*\\s*([A-Za-z_]\\w*)\\s*\\+\\s*([A-Za-z_]\\w*)\\s*\\]",
+      "replace": "\\*\\s*([A-Za-z_]\\w*)\\s*\\+\\s*(\\w+)\\s*\\]"
+    },
+    {
+      "id": "blok_govde_deseni_kapali",
+      "desc": "çok satırlı DOF deseni gövdeye uygulanmaz (eski ölü davranış)",
+      "module": "karadul/reconstruction/engineering/block_annotator.py",
+      "test": "tests/test_p04a_blok_yorumu.py::test_dof_cift_dongusu_govdeye_uygulanir",
+      "find": "for pattern, template, base_conf in ASSEMBLY_BODY_PATTERNS:",
+      "replace": "for pattern, template, base_conf in ASSEMBLY_BODY_PATTERNS[:0]:"
+    },
+    {
+      "id": "blok_govde_satiri",
+      "desc": "gövde deseninin yorumu eşleşmenin sonundaki satıra yazılır",
+      "module": "karadul/reconstruction/engineering/block_annotator.py",
+      "test": "tests/test_p04a_blok_yorumu.py::test_dof_cift_dongusu_govdeye_uygulanir",
+      "find": "i = body.count(\"\\n\", 0, m.start())",
+      "replace": "i = body.count(\"\\n\", 0, m.end())"
     }
   ]
 }

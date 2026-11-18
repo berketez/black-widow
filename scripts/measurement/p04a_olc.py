@@ -15,10 +15,11 @@ Alt komutlar
 ``alan``     ``DomainClassifier.classify``'ı kayıtlı ``engineering_analysis.json``'daki
              tespitlerle (ürünün verdiği aynı listeyle) yeniden koşar; seçilen alanları ve
              "yalnız string_hint kanıtlı alan seçildi" sayısını verir.
-``blok``     ``EngineeringBlockAnnotator._detect_assembly_patterns``'ı kayıtlı
-             ``reconstructed/semantic_named/*.c`` (blok yorumcusunun girdi dizini) üstünde koşar
-             ve betim başına yorum sayısını verir; ürün çıktısındaki (``out/src``) sayımla
-             karşılaştırma için ``--urun`` da sayar.
+``blok``     ``CodeBlockAnnotator._detect_assembly_ops``'u kayıtlı ``reconstructed/annotated/*.c``
+             dosyalarında (yorumcunun eklediği ``// --- … ---`` satırları atılarak = yorumcunun
+             girdisi) koşar ve betim başına yorum sayısını verir; ürün çıktısındaki
+             (``out/src``) sayımı yanında yazar (eski ağaçla ikisi aynı olmalı).
+``alan`` ``--alan-kip urun|yama``: ürünün bugünkü çağrısı ya da önerilen yamanınki.
 """
 from __future__ import annotations
 
@@ -270,29 +271,45 @@ def cmd_alan(args: argparse.Namespace) -> int:
 # blok
 # ---------------------------------------------------------------------------
 
+_BLOK_YORUM_SATIRI = re.compile(r"^\s*// --- .* ---\s*$")
+_URUN_BLOK = re.compile(r"^\s*// --- ([^:\n]{3,60}):", re.M)
+
+
 def blok_bir(ws: Path, out: Path | None) -> dict:
-    import re
-    from karadul.reconstruction.engineering.block_annotator import (
-        EngineeringBlockAnnotator,
-    )
-    girdi = ws / "reconstructed/semantic_named"
+    """Assembly dedektörünün (``_detect_assembly_ops``) yeniden oynatması.
+
+    Girdi: blok yorumcusunun kayıtlı çıktısı ``reconstructed/annotated/*.c``; yorumcunun
+    eklediği ``// --- … ---`` satırları atılınca geriye yorumcunun girdisi kalır (yorumcu
+    yalnız yorum satırı ekler). Dedektör satır satır çalıştığı ve bağlam olarak yalnız
+    alanı (ürün ``domain_report`` geçirmiyor → None) kullandığı için dosyanın bütün
+    satırları tek seferde verilir. Ürün çıktısındaki (``out/src``) yorum sayısı yanında
+    yazılır: eski ağaçla yeniden oynatma onunla aynı olmalı.
+    """
+    from karadul.reconstruction.engineering import block_annotator as ba
+    girdi = ws / "reconstructed/annotated"
     if not girdi.is_dir():
         return {"durum": "yapit_yok"}
-    an = EngineeringBlockAnnotator()
+    an = ba.CodeBlockAnnotator(None)
+    func_meta = an._load_json(ws / "static/ghidra_functions.json", [])
     sayac: Counter = Counter()
     ornek: dict[str, list] = defaultdict(list)
     for f in sorted(girdi.glob("*.c")):
-        kod = f.read_text(encoding="utf-8", errors="replace")
-        for ann in an._detect_assembly_patterns(kod, f.stem):
-            betim = ann.description.split(":")[0]
+        icerik = "\n".join(s for s in f.read_text(encoding="utf-8", errors="replace").splitlines()
+                           if not _BLOK_YORUM_SATIRI.match(s))
+        anlar = []
+        # ürünle aynı: yalnız _extract_functions'ın çıkardığı gövdeler taranır
+        for fn, govde, bas, _adr in an._extract_functions(icerik, func_meta, f.stem):
+            anlar.extend(an._detect_assembly_ops(govde.splitlines(), fn, None, bas))
+        for ann in anlar:
+            m = _URUN_BLOK.match(ann.text)
+            betim = m.group(1).strip() if m else ann.text.strip()
             sayac[betim] += 1
             if len(ornek[betim]) < 2:
-                ornek[betim].append(f"{f.stem}: {ann.description[:80]}")
+                ornek[betim].append(f"{f.stem}: {ann.text.strip()[:90]}")
     urun: Counter = Counter()
     if out is not None and (out / "src").is_dir():
-        desen = re.compile(r"^\s*// --- ([^:\n]{3,60}):", re.M)
         for f in (out / "src").rglob("*.c"):
-            for m in desen.finditer(f.read_text(encoding="utf-8", errors="replace")):
+            for m in _URUN_BLOK.finditer(f.read_text(encoding="utf-8", errors="replace")):
                 urun[m.group(1).strip()] += 1
     return {"durum": "calisti", "yeniden": dict(sayac), "urun_out_src": dict(urun),
             "ornek": dict(ornek)}

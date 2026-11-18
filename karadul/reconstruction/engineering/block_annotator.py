@@ -245,19 +245,14 @@ ASSEMBLY_PATTERNS: list[tuple[re.Pattern, str, float]] = [
         "Scatter to global via pointer: {0}",
         0.72,
     ),
-    # Double nested DOF loop: for(i..ndof) for(j..ndof)
+    # matrix[i*n + j] = ...  (row-major storage pattern). MUH-07 (2026-11-18):
+    # satır uzunluğu (çarpan) ve sütun indeksi (ek) DEĞİŞKEN olmalı; sabit
+    # çarpan/ek (``a[i*2 + 1]``) dizi içindeki yapının alanına erişimdir
+    # (gnulib quotearg yuvası gibi ``struct {size; ptr;}[]``), matris değil.
     (
         re.compile(
-            r"for\s*\([^)]*\b(ndof|dof|neq)\b[^)]*\)\s*\{[^{}]*"
-            r"for\s*\([^)]*\b(ndof|dof|neq)\b",
-            re.DOTALL,
+            r"(\w+)\s*\[\s*(\w+)\s*\*\s*([A-Za-z_]\w*)\s*\+\s*([A-Za-z_]\w*)\s*\]"
         ),
-        "DOF-DOF double loop (stiffness assembly)",
-        0.85,
-    ),
-    # matrix[i*n + j] = ...  (row-major storage pattern)
-    (
-        re.compile(r"(\w+)\s*\[\s*(\w+)\s*\*\s*(\w+)\s*\+\s*(\w+)\s*\]"),
         "Row-major matrix access: {0}[{1}*{2} + {3}]",
         0.60,
     ),
@@ -268,6 +263,22 @@ ASSEMBLY_PATTERNS: list[tuple[re.Pattern, str, float]] = [
         ),
         "Dot product accumulation: {0} += {1}[k] * {2}[k]",
         0.65,
+    ),
+]
+
+# Çok satırlı assembly desenleri: satır satır değil FONKSİYON GÖVDESİNE
+# uygulanır (MUH-07: bu desen eskiden ASSEMBLY_PATTERNS'ta satır satır
+# deneniyordu, iki ``for`` başlığı tek satırda olmadığı için hiç eşleşemezdi).
+ASSEMBLY_BODY_PATTERNS: list[tuple[re.Pattern, str, float]] = [
+    # Double nested DOF loop: for(i..ndof) { for(j..ndof)
+    (
+        re.compile(
+            r"for\s*\([^)]*\b(ndof|dof|neq)\b[^)]*\)\s*\{[^{}]*"
+            r"for\s*\([^)]*\b(ndof|dof|neq)\b",
+            re.DOTALL,
+        ),
+        "DOF-DOF double loop (stiffness assembly)",
+        0.85,
     ),
 ]
 
@@ -1092,6 +1103,29 @@ class CodeBlockAnnotator:
                         source="assembly_detector",
                     ))
                     break
+
+        # Çok satırlı desenler fonksiyon gövdesinin tamamına uygulanır; yorum
+        # eşleşmenin başladığı satıra (dıştaki ``for``) yazılır.
+        body = "\n".join(lines)
+        for pattern, template, base_conf in ASSEMBLY_BODY_PATTERNS:
+            for m in pattern.finditer(body):
+                i = body.count("\n", 0, m.start())
+                text = template
+                if domain == "structural":
+                    text = f"Global assembly: {text}"
+                elif domain == "fluid":
+                    text = f"Flux/residual assembly: {text}"
+                elif domain:
+                    text = f"Assembly ({domain}): {text}"
+                indent = _get_line_indent(lines[i]) if i < len(lines) else ""
+                annotations.append(BlockAnnotation(
+                    annotation_type="assembly_op",
+                    text=f"{indent}{_make_inline_comment(text)}",
+                    line_number=func_start_line + i,
+                    confidence=base_conf,
+                    domain=domain,
+                    source="assembly_detector",
+                ))
 
         return annotations
 
