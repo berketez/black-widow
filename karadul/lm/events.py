@@ -89,6 +89,45 @@ FIELD_CHOICES: dict[tuple[str, str], frozenset[Any]] = {
 TARGET_KEYS = ("fn", "adres")
 
 
+# ``arac_bitti.dokunulan``: araç sonucunda geçen program fonksiyonları. Yalnız Karadul'un yazdığı adres
+# alanları okunur; ikili kökenli metin (dizgi, sabit, ithal adı, Ghidra uyarısı) taranmaz: ikilinin
+# içine gömülü bir "FUN_…" dizgisi örümceği oynatamasın. Alan adına göre (araçtan bağımsız) kural:
+# - liste alanları (``callees`` …): ``FUN_x [etiket: ad]`` / ``api(FUN_x)`` / ``api by FUN_x`` biçimli
+#   metin; etiketteki ad tanımlayıcıdır ve yer tutucu (``FUN_…``) ad gösterilmez (``Workspace.name_tag``),
+# - ``items``: ``{"addr": "FUN_x", …}`` öğeleri,
+# - ``code``: decompile metni; dizgi ve karakter sabitleri atılarak (sabit içi metin ikiliden gelir).
+# Sonucun kendi hedefi (``data.addr``) dokunulan sayılmaz. Yeni bir araç başka bir adres alanı
+# taşırsa kural buraya eklenir (P22d).
+TOUCH_LISTING_FIELDS = ("callees", "callers", "callbacks_given", "callback_of")
+TOUCH_ITEM_FIELDS = ("items",)
+TOUCH_CODE_FIELDS = ("code",)
+_FUN_TOKEN = re.compile(r"\bFUN_[0-9a-fA-F]{3,16}\b")
+_C_LITERAL = re.compile(r'"(?:[^"\\\n]|\\.)*"|\'(?:[^\'\\\n]|\\.)*\'')
+
+
+def touched_refs(envelope: Mapping[str, Any]) -> list[str]:
+    """Araç sonucu zarfındaki program fonksiyonu başvuruları (``FUN_<adres>``), ilk geçiş sırasıyla,
+    yinelenmesiz; sonucun kendi hedefi hariç. Hata zarfında boş liste."""
+    data = envelope.get("data") if envelope.get("ok") else None
+    if not isinstance(data, Mapping):
+        return []
+    own = data.get("addr")
+    found: list[str] = []
+    for key, value in data.items():
+        tokens: list[str] = []
+        if key in TOUCH_LISTING_FIELDS and isinstance(value, str):
+            tokens = _FUN_TOKEN.findall(value)
+        elif key in TOUCH_ITEM_FIELDS and isinstance(value, list):
+            tokens = [x["addr"] for x in value
+                      if isinstance(x, Mapping) and isinstance(x.get("addr"), str) and _FUN_TOKEN.fullmatch(x["addr"])]
+        elif key in TOUCH_CODE_FIELDS and isinstance(value, str):
+            tokens = _FUN_TOKEN.findall(_C_LITERAL.sub('""', value))
+        for t in tokens:
+            if t != own and t not in found:
+                found.append(t)
+    return found
+
+
 class EventError(ValueError):
     """Olay şemaya uymuyor (programlama hatası): bilinmeyen tür, eksik / fazla alan, kapalı kümede
     olmayan değer, JSON'a çevrilemeyen değer."""

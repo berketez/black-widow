@@ -33,8 +33,8 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Iterable, Iterator, Mapping, Optional
 
 from karadul.lm import (
-    BUDGET_TOOL_RESULTS_TOKENS, CONTEXT_TOKENS, CONTEXT_TOKENS_K2, MAX_TOKENS_STEP, MODEL_RETRY_MAX,
-    TASK_TIME_BUDGET_FALLBACK_SEC, TIME_BUDGET_FACTOR, guard, protocol,
+    BUDGET_TOOL_RESULTS_TOKENS, CONTEXT_TOKENS, CONTEXT_TOKENS_K2, EVENT_TOUCHED_MAX, MAX_TOKENS_STEP,
+    MODEL_RETRY_MAX, TASK_TIME_BUDGET_FALLBACK_SEC, TIME_BUDGET_FACTOR, guard, protocol,
 )
 from karadul.lm.audit import AuditLog, canonical_json, sha256_text
 from karadul.lm.backend import STATE_ERROR, STATE_MEMORY_STOPPED, Backend, BackendError, ChatResult, LMError
@@ -42,6 +42,7 @@ from karadul.lm.context import (
     MODE_K0, MODE_K1, MODE_K2, MODES, PROMPT_VERSION, ContextBudget, blind_leaks, estimate_result_tokens,
     estimate_text_tokens, fixed_prefix, max_calls_for, name_question, safe_assistant_content, user_message,
 )
+from karadul.lm.events import CALLER_MODEL, CALLER_SERVER, touched_refs
 from karadul.lm.memory_guard import MemoryGuard
 from karadul.lm.tools import (
     ADDR_PATTERN, ERR_BUDGET, ERR_REPEAT, ERR_TOOL_CLOSED, INVALID_CALL_ERRORS, ToolContext, ToolRegistry,
@@ -65,7 +66,8 @@ STATUS_PROTECTED = "korunan_ad"             # D2: hedefin adı kesin ya da elle 
 # Ayrıca protocol.parse_turn durumları: gecersiz, sema_ihlali, butce_asimi (üretim tavanı), ret.
 
 TASK_NAME = "ad_oner"
-CALLER_SERVER, CALLER_MODEL = "sunucu", "model"
+# CALLER_SERVER ("sunucu"), CALLER_MODEL ("model"): ``karadul.lm.events``'te tanımlı (olay şemasının
+# kapalı kümesi); denetim günlüğü ve olaylar aynı değeri yazar.
 # Körlük taramasına giren kanıt alanları: ad taşıyabilenler. Dizgi alanı girmez (pilot §12 madde 4:
 # aynı adın dizgi sabiti olarak geçmesi meşru kanıttır).
 _BLIND_SCANNED = ("apis", "callees", "callers", "callbacks_given", "callback_of")
@@ -150,6 +152,10 @@ class _Task:
     seen: set[tuple[str, str]] = field(default_factory=set)
     done: bool = False
     deadline: Optional[float] = None    # süre bütçesinin bittiği an (saat değeri); yoksa sınırsız
+    # Olaylar (P22a): çalışan aracın ölçülen süresi (sonuç kimliği → ms) ve son model isteğinin amacı
+    # ile süresi (``model_cevabi`` olayı ayrıştırmadan sonra yayılır).
+    tool_ms: dict[str, int] = field(default_factory=dict)
+    reply_meta: Optional[tuple[str, int]] = None
 
     def finish(self, status: str, error: Optional[str] = None, *, override: bool = False) -> None:
         if self.done and not override:
@@ -169,7 +175,8 @@ class Agent:
                  context_tokens: int = CONTEXT_TOKENS, loop_context_tokens: int = CONTEXT_TOKENS_K2,
                  clock: Callable[[], float] = time.monotonic, cancel: Optional[threading.Event] = None,
                  rejected_names: Optional[Mapping[str, Iterable[str]]] = None,
-                 expected_task_sec: Optional[float] = None):
+                 expected_task_sec: Optional[float] = None,
+                 on_event: Optional[Callable[..., Any]] = None):
         modes = frozenset(enabled_modes)
         if not modes <= frozenset(MODES):
             raise ValueError(f"bilinmeyen ajan kipi: {sorted(modes - frozenset(MODES))}")
@@ -201,6 +208,82 @@ class Agent:
             if a is not None:
                 self.rejected_names.setdefault(a, set()).update(x for x in v if isinstance(x, str))
         self._session_names: dict[str, str] = {}
+        # Olay geri çağrısı (KaradulLM v2 §3.3, §4.1): ``on_event(tur, gorev=<görev kimliği>, **alanlar)``;
+        # ``events.EventStream.emit`` bu imzadadır. Olay yalnız gerçekten olan bir şey için çağrılır.
+        # Geri çağrının hatası programlama hatasıdır: görev sürerken olursa görev ``beklenmeyen_hata`` ile
+        # biter ve arka uç durur; kapanışta olursa görevin denetim kayıtları zaten yazılmıştır (olaylar
+        # kayıtlardan sonra yayılır). İki durumda da hata yükselir; hata yolunda yayılan olayların hatası
+        # asıl hatayı örtmez.
+        self.on_event = on_event
+
+    # --- olaylar (P22a) -----------------------------------------------------------------------
+
+    def _emit(self, tur: str, task: Optional[_Task], **fields: Any) -> None:
+        if self.on_event is not None:
+            self.on_event(tur, gorev=task.result.task_id if task is not None else None, **fields)
+
+    def _target(self, a: Optional[str]) -> dict[str, Optional[str]]:
+        """Olayın ``hedef`` nesnesi: ``fn`` arayüzün düğüm anahtarı (decompile dosyası yoksa ``None``),
+        ``adres`` çalışma alanı yazımı."""
+        return {"fn": self.workspace.ui_name(a) if a is not None else None, "adres": a}
+
+    def _args_target(self, tool: str, args: Any) -> Optional[dict[str, Optional[str]]]:
+        """Çağrının hedefi: argümanlar şemaya uyuyor ve ``addr`` çalışma alanında varsa; yoksa ``None``."""
+        shown = self._shown_args(tool, args)
+        a = self.workspace.resolve(shown.get("addr")) if shown is not None else None
+        return self._target(a) if a is not None else None
+
+    def _shown_args(self, tool: str, args: Any) -> Optional[dict[str, Any]]:
+        """Olaya yazılabilen argümanlar: yalnız şemaya uyanlar (uymayan model çıktısı veridir;
+        denetim günlüğüyle aynı kural, ``_log_tool``)."""
+        spec = self.registry.spec(tool)
+        if spec is None or not isinstance(args, dict) or protocol.validate(args, spec.args_schema):
+            return None
+        return dict(args)
+
+    def _tool_started(self, task: _Task, rid: str, tool: str, args: Any, caller: str, *, runs: bool) -> None:
+        """``arac_basladi``: sunucu bir araç çağrısını ele aldı (denetim günlüğünde bir ``arac_cagrisi``
+        kaydı doğacak). Çalıştırılmadan reddedilen çağrıda (bütçe, tekrar) ``hedef`` ``None``'dır:
+        örümcek yalnız gerçekten okunan fonksiyona gider."""
+        self._emit("arac_basladi", task, sonuc=rid, arac=str(tool)[:64], cagiran=caller,
+                   hedef=self._args_target(tool, args) if runs else None, arguman=self._shown_args(tool, args))
+
+    def _tool_done(self, task: _Task, result: ToolResult) -> None:
+        """``arac_bitti``: modelin (ya da paketin) gördüğü sonucun özeti ve dokunulan fonksiyonlar."""
+        if self.on_event is None:
+            return
+        ws = self.workspace
+        own = ws.ui_name(ws.resolve((result.data or {}).get("addr"))) if result.ok else None
+        fns: list[str] = []
+        for ref in touched_refs(result.envelope()):
+            fn = ws.ui_name(ws.resolve(ref))
+            if fn is not None and fn != own and fn not in fns:
+                fns.append(fn)
+        self._emit("arac_bitti", task, sonuc=result.id, arac=result.tool, tamam=result.ok, hata=result.error,
+                   calistirildi=result.executed, tur_kind=result.kind, bayt=result.size_bytes(),
+                   kirpma=result.truncated, sure_ms=task.tool_ms.get(result.id),
+                   dokunulan=fns[:EVENT_TOUCHED_MAX], dokunulan_toplam=len(fns), icerik_saklandi=None)
+
+    def _reply_done(self, task: _Task, reply: ChatResult, status: str, obj: Optional[Mapping[str, Any]]) -> None:
+        """``model_cevabi`` (başarılı istek): ayrıştırma durumu, ucun gerçek jeton sayıları ve süre.
+        ``niyet`` yalnız şemaya uyan araç dalında modelin yazdığı not."""
+        amac, sure_ms = task.reply_meta or (None, None)
+        niyet = None
+        if status == "gecerli" and isinstance(obj, Mapping) and obj.get("kind") == "call":
+            niyet = obj.get("niyet") if isinstance(obj.get("niyet"), str) else None
+        self._emit("model_cevabi", task, amac=amac, durum=status, bitis_nedeni=reply.finish_reason,
+                   istem_jeton=reply.prompt_tokens, uretim_jeton=reply.completion_tokens,
+                   onbellek_jeton=reply.cached_tokens, sure_ms=sure_ms, niyet=niyet, hata=None)
+
+    def _reply_failed(self, task: _Task, amac: str, sure_ms: int, status: str, error: Optional[str],
+                      reply: Optional[ChatResult] = None) -> None:
+        """``model_cevabi`` (cevap ayrıştırılmadan biten istek: arka uç hatası, iptal, bellek)."""
+        self._emit("model_cevabi", task, amac=amac, durum=status,
+                   bitis_nedeni=reply.finish_reason if reply is not None else None,
+                   istem_jeton=reply.prompt_tokens if reply is not None else None,
+                   uretim_jeton=reply.completion_tokens if reply is not None else None,
+                   onbellek_jeton=reply.cached_tokens if reply is not None else None,
+                   sure_ms=sure_ms, niyet=None, hata=error)
 
     # --- sabit önek ---------------------------------------------------------------------------
 
@@ -273,6 +356,11 @@ class Agent:
                          deadline=t0 + deadline_sec)
             try:
                 try:
+                    # Olay: görev açıldı (tasarım v2 §3.3 adım 1). Hedef çözülemiyorsa adres ve fn None.
+                    self._emit("gorev_basladi", task, gorev_turu=TASK_NAME, kip=mode,
+                               hedef=self._target(self.workspace.resolve(addr)),
+                               butce={"arac": max_calls_for(mode), "sure_sn": deadline_sec,
+                                      "jeton": self.context_tokens if mode == MODE_K0 else self.loop_context_tokens})
                     if mode == MODE_K0:
                         self._execute_k0(task, addr, abstain_allowed)
                     else:
@@ -312,6 +400,14 @@ class Agent:
                              kor=r.blind, sure_sn=r.duration_sec, sure_butcesi_sn=r.time_budget_sec,
                              istem_surumu=PROMPT_VERSION, hukum=r.verdict,
                              arac_kumesi=self.registry.version(), onek_sha256=self.prefix_sha256(r.mode))
+        # Olaylar, denetim günlüğünden SONRA (geri çağrının hatası kaydı yarım bırakmaz). Denetim olayı
+        # dört değerli hükmü ve koşmayan kuralları (``sinanmayan``) taşır: ``sinanamadi`` temiz gösterilmez.
+        if r.guard is not None:
+            self._emit("denetim", task, nesne=r.task_id, **{k: r.guard[k] for k in (
+                "hukum", "bulgular", "bayraklar", "toplu_kabul", "sinanan", "sinanmayan")})
+        self._emit("gorev_bitti", task, durum=r.status, hata=r.error, ad_durumu=r.name_status, cevap=r.answer,
+                   hukum=r.verdict, toplu_kabul=r.guard["toplu_kabul"] if r.guard is not None else None,
+                   sayaclar=asdict(r.counters), sure_ms=int(round(r.duration_sec * 1000)))
 
     # --- araçlar ------------------------------------------------------------------------------
 
@@ -343,9 +439,15 @@ class Agent:
                          **result.audit_fields())
 
     def _run_tool(self, task: _Task, tool: str, args: Any, ctx: ToolContext, caller: str) -> ToolResult:
+        """Aracı çalıştırır, denetim kaydını yazar. ``arac_basladi`` olayı burada; ``arac_bitti`` çağıran
+        sonucun son hâline (körlük / bağlam kararından sonra) karar verince yayılır (``_tool_done``)."""
+        rid = self._new_result_id()
+        self._tool_started(task, rid, tool, args, caller, runs=True)
         t = self._clock()
-        result = self.registry.call(self.workspace, tool, args, result_id=self._new_result_id(), ctx=ctx)
-        self._log_tool(task, result, args, caller, self._clock() - t)
+        result = self.registry.call(self.workspace, tool, args, result_id=rid, ctx=ctx)
+        duration = self._clock() - t
+        task.tool_ms[rid] = int(round(duration * 1000))
+        self._log_tool(task, result, args, caller, duration)
         return result
 
     def _build_package(self, task: _Task, a: str, *, single_shot: bool) -> Optional[list[ToolResult]]:
@@ -355,6 +457,7 @@ class Agent:
         for tool, args in (("get_evidence", {"addr": f"FUN_{a}"}),
                            ("get_decompiled", {"addr": f"FUN_{a}", "part": "bas"})):
             result = self._run_tool(task, tool, args, ctx, CALLER_SERVER)
+            self._tool_done(task, result)
             task.result.counters.package_calls += 1
             task.seen.add(self._call_key(tool, args))
             if not result.ok:
@@ -399,8 +502,12 @@ class Agent:
             task.finish(STATUS_MEMORY, override=True)
 
     def _model_call(self, task: _Task, messages: list[dict[str, str]], schema: dict[str, Any],
-                    purpose: str) -> Optional[ChatResult]:
-        """Tek model isteği; ardından bellek bekçisi. Arka uç hatasında görev biter, ``None`` döner."""
+                    purpose: str, est: Optional[int] = None) -> Optional[ChatResult]:
+        """Tek model isteği; ardından bellek bekçisi. Arka uç hatasında görev biter, ``None`` döner.
+
+        Olaylar: her istek denemesi bir ``model_istegi`` ve bir ``model_cevabi`` üretir. Cevap gelip
+        görev sürüyorsa ``model_cevabi`` çağıran ayrıştırdıktan sonra yayılır (``_reply_done``); hata,
+        iptal ve bellek durumunda burada. ``est`` ajanın istem kestirimidir (gerçek sayı cevaptadır)."""
         if self._memory_stopped():
             # Bellek nedeniyle durmuş sunucu kendiliğinden yeniden başlatılmaz: istek atılmaz. Yeniden
             # denemek için arka uç açıkça başlatılır ve yeni bir bekçi kurulur.
@@ -419,12 +526,19 @@ class Agent:
         attempt = 0
         while True:
             c.model_calls += 1
+            amac = purpose if attempt == 0 else f"{purpose}_yineleme"
+            self._emit("model_istegi", task, amac=amac, istem_kestirim=est)
+            t = self._clock()
             try:
                 # Arka uca listenin kopyası gider: geçmiş sonradan uzasa da gönderilen istek değişmez.
                 reply = self.backend.chat(list(messages), schema=schema, max_tokens=MAX_TOKENS_STEP,
-                                          purpose=purpose if attempt == 0 else f"{purpose}_yineleme")
+                                          purpose=amac)
             except LMError as e:
+                sure_ms = int(round((self._clock() - t) * 1000))
                 if self._may_retry(task, e, attempt):
+                    shown = f"{type(e).__name__}: {e}"
+                    self._reply_failed(task, amac, sure_ms, STATUS_BACKEND_ERROR,
+                                       self.audit.redact(shown) if self.audit is not None else shown)
                     attempt += 1
                     c.retries += 1
                     continue
@@ -432,7 +546,18 @@ class Agent:
                 if attempt:
                     text += f" (yineleme {attempt}/{MODEL_RETRY_MAX} sonrası)"
                 task.finish(STATUS_BACKEND_ERROR, self.audit.redact(text) if self.audit is not None else text)
+                self._reply_failed(task, amac, sure_ms, STATUS_BACKEND_ERROR, task.result.error)
+            except BaseException as e:
+                # Beklenmeyen hata / kesme: istek olayı eşsiz kalmasın. Olay yayımının hatası asıl hatayı
+                # örtmez (``_run`` arka ucu durdurur ve hatayı yükseltir).
+                try:
+                    self._reply_failed(task, amac, int(round((self._clock() - t) * 1000)), STATUS_UNEXPECTED,
+                                       type(e).__name__)
+                except Exception:  # noqa: BLE001
+                    pass
+                raise
             break
+        sure_ms = int(round((self._clock() - t) * 1000))
         self._check_memory(task)
         if reply is None:
             return None
@@ -441,7 +566,12 @@ class Agent:
         task.result.completion_tokens = reply.completion_tokens
         c.prompt_tokens += reply.prompt_tokens or 0
         c.completion_tokens += reply.completion_tokens or 0
-        return None if task.done else reply
+        if task.done:
+            # Cevap geldi ama bellek bekçisi görevi bitirdi: cevap ayrıştırılmaz.
+            self._reply_failed(task, amac, sure_ms, task.result.status, None, reply)
+            return None
+        task.reply_meta = (amac, sure_ms)
+        return reply
 
     def _may_retry(self, task: _Task, error: LMError, attempt: int) -> bool:
         """Geçici arka uç hatasından sonra istek yinelenir mi (LM-02)? Yalnız bağlantı kopması / okuma
@@ -540,10 +670,11 @@ class Agent:
         schema = protocol.build_name_answer_schema(ids, abstain_allowed=abstain_allowed)
         repairs = 0
         while True:
-            reply = self._model_call(task, messages, schema, "k0" if repairs == 0 else "k0_onarim")
+            reply = self._model_call(task, messages, schema, "k0" if repairs == 0 else "k0_onarim", est)
             if reply is None:
                 return None
             parsed = protocol.parse_turn(reply.content, reply.finish_reason, schema)
+            self._reply_done(task, reply, parsed.status, parsed.obj)
             action = protocol.next_action(level, parsed, repairs)
             if action == protocol.ACTION_ACCEPT:
                 return self._accept(task, parsed.obj, reply, abstain_allowed, a)
@@ -609,10 +740,12 @@ class Agent:
                                                    abstain_allowed=abstain_allowed)
             schema = protocol.build_task_envelope({} if forced_final else tool_schemas, finals,
                                                   protocol.NAME_ANSWER_REQUIRED)
-            reply = self._model_call(task, messages, schema, "dongu" if repairs == 0 else "dongu_onarim")
+            reply = self._model_call(task, messages, schema, "dongu" if repairs == 0 else "dongu_onarim",
+                                     prompt_est)
             if reply is None:
                 return None
             parsed = protocol.parse_turn(reply.content, reply.finish_reason, schema)
+            self._reply_done(task, reply, parsed.status, parsed.obj)
             action = protocol.next_action(level, parsed, repairs)
             if action == protocol.ACTION_REPAIR:
                 repairs += 1
@@ -634,11 +767,13 @@ class Agent:
             key = self._call_key(tool, args)
             if c.call_requests > max_calls:
                 result = error_result(self._new_result_id(), tool, ERR_BUDGET)
+                self._tool_started(task, result.id, tool, args, CALLER_MODEL, runs=False)
                 c.budget_exceeded += 1
                 forced_final = True
                 self._log_tool(task, result, args, CALLER_MODEL, 0.0)
             elif key in task.seen:
                 result = error_result(self._new_result_id(), tool, ERR_REPEAT)
+                self._tool_started(task, result.id, tool, args, CALLER_MODEL, runs=False)
                 c.repeats += 1
                 self._log_tool(task, result, args, CALLER_MODEL, 0.0)
             else:
@@ -663,6 +798,8 @@ class Agent:
                     forced_final = True
                 else:
                     tool_tokens += cost
+            # Olay: modelin gördüğü sonuç (körlük / bağlam kararından sonraki hâli).
+            self._tool_done(task, result)
             task.results.append(result)
             messages.append({"role": "user", "content": result.wrapped()})
             prompt_est += estimate_text_tokens(reply.content) + estimate_result_tokens(result.envelope())
