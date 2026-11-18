@@ -45,7 +45,7 @@ from karadul.lm.context import (
 from karadul.lm.memory_guard import MemoryGuard
 from karadul.lm.tools import (
     ADDR_PATTERN, ERR_BUDGET, ERR_REPEAT, ERR_TOOL_CLOSED, INVALID_CALL_ERRORS, ToolContext, ToolRegistry,
-    ToolResult, Workspace, WorkspaceError, default_registry, error_result,
+    ToolResult, Workspace, WorkspaceError, default_registry, error_result, normalize_args,
 )
 
 # --- Görev durumları -------------------------------------------------------------------------
@@ -325,7 +325,8 @@ class Agent:
         spec = self.registry.spec(tool)
         norm = dict(spec.defaults) if spec is not None else {}
         if isinstance(args, dict):
-            norm.update(args)
+            # ``2.0`` ile ``2`` aynı çağrıdır (LM-07; araç da aynı biçime çevirir).
+            norm.update(normalize_args(args, spec.args_schema) if spec is not None else args)
             a = self.workspace.resolve(norm.get("addr"))
             if a is not None:
                 norm["addr"] = f"FUN_{a}"

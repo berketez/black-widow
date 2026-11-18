@@ -482,6 +482,21 @@ class ToolResult:
                 "sonuc_bayt": len(text.encode("utf-8")), "kirpma": self.truncated}
 
 
+def normalize_args(args: Mapping[str, Any], schema: Mapping[str, Any]) -> dict[str, Any]:
+    """Şemada ``integer`` olan alanların tamsayı değerli kayan nokta değerini (``2.0``) ``int``'e çevirir
+    (LM-07). JSON Schema ``2.0``'ı tamsayı sayar ve doğrulayıcı kabul eder; araç ise dilimlemede
+    ``TypeError`` alıp ``ic_hata`` dönüyordu. L3 dilbilgisi ``2.0`` üretmez; L1 / L2 uçlarında olur.
+    Öbür değerler olduğu gibi kalır (doğrulama ayrıca yapılır)."""
+    props = schema.get("properties") if isinstance(schema.get("properties"), Mapping) else {}
+    out = dict(args)
+    for key, value in args.items():
+        sub = props.get(key)
+        if (isinstance(sub, Mapping) and sub.get("type") == "integer" and isinstance(value, float)
+                and value.is_integer()):
+            out[key] = int(value)
+    return out
+
+
 def error_result(result_id: str, tool: str, code: str, *, executed: bool = False) -> ToolResult:
     return ToolResult(id=result_id, tool=tool, ok=False, error=code, executed=executed)
 
@@ -565,6 +580,7 @@ class ToolRegistry:
             return error_result(result_id, str(name)[:64], ERR_TOOL_CLOSED)
         if not isinstance(args, dict) or protocol.validate(args, spec.args_schema):
             return error_result(result_id, name, ERR_BAD_ARGUMENT)
+        args = normalize_args(args, spec.args_schema)
         try:
             out = spec.func(workspace, args, ctx)
         except ToolError as e:
