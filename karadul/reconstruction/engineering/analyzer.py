@@ -13,17 +13,25 @@ v1.7.1: GPU removed -- CPU-only pipeline
 """
 from __future__ import annotations
 
+import bisect
 import json
 import logging
+import math
 import re
 import threading
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from fractions import Fraction
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from karadul.config import CPU_PERF_CORES
-from karadul.reconstruction.c_algorithm_id import AlgorithmMatch, CAlgorithmResult
+from karadul.reconstruction.c_algorithm_id import (
+    STRUCT_MIN_DISTINCT_KINDS,
+    AlgorithmMatch,
+    CAlgorithmResult,
+    _code_only,
+)
 from karadul.reconstruction.engineering.constants import (
     ENGINEERING_CONSTANTS,
     HEX_LOOKUP,
@@ -97,7 +105,7 @@ _FEA_INDICATORS = frozenset({
     "dsyrk", "dgeqrf", "dgels", "dgelsd", "dgbtrf", "dpbtrf", "dstev",
     "spooles", "pardiso", "arpack", "dsaupd", "dseupd", "mumps",
     "dmumps", "cholmod", "umfpack", "metis", "petsc",
-    "kspsolve", "matassemblybegin", "snessolvе", "tssolvе",
+    "kspsolve", "matassemblybegin", "snessolve", "tssolve",
     "mafill", "e_c3d", "nonlingeo", "calculix",
     "hypre", "epetra", "trilinos",
 })
@@ -125,6 +133,158 @@ _ML_INDICATORS = frozenset({
 _ALL_DOMAIN_INDICATORS = (
     _FEA_INDICATORS | _DSP_INDICATORS | _FINANCE_INDICATORS | _ML_INDICATORS
 )
+
+# ---------------------------------------------------------------------------
+# Sabit ve yapısal katman kuralları (P04b, MUH-10; 2026-11-18)
+# ---------------------------------------------------------------------------
+# Eski sabit katmanı ondalık sabiti gövdede ALT DİZGİ olarak arıyordu
+# (``"0" in code``): "0", "4", "6", "8" her gövdede bulunduğu için kapı açıldığında
+# coreutils ``sort``'ta 1 384, 133 masum ikilide 307 448 sahte tespit (RC4, Halton,
+# AES, SM4 …) çıkıyordu. 119 ikilide sessiz kalmasının tek nedeni bozuk alan
+# kapısıydı (``func_meta.keys()`` = ``total/program/functions``).
+#
+# Yeni kural (``c_algorithm_id`` sabit katmanının düzeni, ab986da):
+#   1. Sabit yalnız bütün bir kayan nokta belirteci (``0.5773502691896257``, ``1e-12``,
+#      ``101325.0``; nokta ya da üs zorunlu) ya da 64 bitlik IEEE-754 bit deseni olarak
+#      yazılmış onaltılık belirteç (``0x3fe279a74590331d``; 32 biti aşan) olarak eşleşir.
+#      Tam sayı belirteci (``0``, ``4``, ``10``) double sabit değildir, kanıt sayılmaz.
+#      Dizgi ve yorum içindekiler sayılmaz (``_code_only``).
+#   2. Değer karşılaştırması sayısaldır: belirtecin mutlak değeri sabitinkine
+#      ``ENG_CONST_REL_TOL`` göreli farkla eşit olmalı (``0.95`` ↛ ``0.953``).
+#   3. Zayıf değerler hiçbir zaman kanıt değildir: 0, anlamlı basamağı
+#      ``ENG_CONST_MIN_SIG_DIGITS``'ten az olanlar (0.1, 0.95, 1.4, 100, 1e-6) ve küçük
+#      paydalı ikili kesirler / tam sayılar (``x * 256`` tam sayı ve ``|x| < 65536``:
+#      0.5, 0.375, 2.25, 252, 1708) ve paydası 8'e kadar basit kesirler (1/3, 1/6, 2/3;
+#      CalculiX'te 29 fonksiyona "RK4" yazdırıyordu).
+#   4. Etiket için aynı fonksiyonda algoritmanın en az ``ENG_CONST_MIN_DISTINCT`` farklı
+#      ayırt edici sabiti gerekir (``±x`` tek sabittir).
+#
+# Yapısal katman, ``c_algorithm_id._scan_structural``'ın (P06, TIP-09) kuralıyla:
+#   desenler dizgi ve yorumları örtülmüş kodda koşar; yalnız ad / anahtar sözcük olan
+#   desenler (``\bpid\b``, ``\berror\b``, ``\bvon\ mises\b``) kanıt değildir; etiket için
+#   en az ``STRUCT_MIN_DISTINCT_KINDS`` farklı yapısal desen eşleşmeli.
+#
+# Alan kapısı: göstergeler fonksiyon adlarında (``ghidra_functions.json``'un
+# ``functions`` listesi) ve ilk dosyaların kod tanımlayıcılarında TAM AD ya da ÖNEK
+# belirteci olarak aranır (``fft`` ↛ ``_difftime``).
+
+#: Etiket için aynı fonksiyonda gereken farklı ayırt edici sabit sayısı.
+ENG_CONST_MIN_DISTINCT: int = 2
+#: Bundan az anlamlı basamaklı değerler zayıftır (0.95, 1.4, 1e-6, 100).
+ENG_CONST_MIN_SIG_DIGITS: int = 3
+#: ``x * ENG_CONST_DYADIC_DENOM`` tam sayıysa ve ``|x| < ENG_CONST_DYADIC_MAX`` ise değer
+#: zayıftır (0.5, 0.375, 2.25, tam sayılar).
+ENG_CONST_DYADIC_DENOM: int = 256
+ENG_CONST_DYADIC_MAX: float = 65536.0
+#: Paydası bu değere kadar olan basit kesirler (1/3, 1/6, 2/3) zayıftır. 5/9 ve 8/9
+#: (Gauss 3 nokta ağırlıkları) bu sınırın dışında kalır.
+ENG_CONST_SIMPLE_RATIONAL_MAX_DENOM: int = 8
+#: Kayan nokta belirteci ile sabit arasındaki en büyük göreli fark.
+ENG_CONST_REL_TOL: float = 1e-6
+#: Onaltılık belirteç ancak bu değeri aşarsa (64 bitlik alan) IEEE-754 deseni sayılır.
+ENG_CONST_HEX_MIN: int = 0xFFFFFFFF
+#: Alan göstergesi bu uzunlukta ya da daha uzunsa ad öneki olarak ayraçsız da eşleşir
+#: (``mafill`` → ``mafillsm``); kısa göstergeler tam belirteç ister (``fft`` → ``fft_…``).
+DOMAIN_INDICATOR_BARE_PREFIX_MIN: int = 6
+
+_FLOAT_TOKEN_RE = re.compile(
+    r"(?<![\w.])(?:\d+\.\d*(?:[eE][-+]?\d+)?|\.\d+(?:[eE][-+]?\d+)?|\d+[eE][-+]?\d+)"
+    r"[fFlL]?(?![\w.])"
+)
+_HEX_TOKEN_RE = re.compile(r"(?<![\w.])0[xX]([0-9a-fA-F]+)(?:[uU]?[lL]{0,2})(?![\w.])")
+_MASK64: int = (1 << 64) - 1
+
+
+def _sig_digits(value: float) -> int:
+    """Kısa ondalık gösterimde anlamlı basamak sayısı (``0.095`` → 2, ``101325.0`` → 6)."""
+    mantissa = repr(abs(value)).lower().split("e")[0].replace(".", "")
+    return len(mantissa.strip("0"))
+
+
+def is_weak_double(value: float) -> bool:
+    """Tek başına hiçbir algoritmayı göstermeyen double değer mi (kural 3)?"""
+    if not math.isfinite(value) or value == 0.0:
+        return True
+    mag = abs(value)
+    if _sig_digits(mag) < ENG_CONST_MIN_SIG_DIGITS:
+        return True
+    if (mag * ENG_CONST_DYADIC_DENOM).is_integer() and mag < ENG_CONST_DYADIC_MAX:
+        return True
+    # Küçük paydalı basit kesir (1/3, 1/6, 2/3, 3/7): gövdede her türlü oranda geçer.
+    simple = Fraction(mag).limit_denominator(ENG_CONST_SIMPLE_RATIONAL_MAX_DENOM)
+    return (
+        mag < ENG_CONST_DYADIC_MAX
+        and abs(float(simple) - mag) <= mag * ENG_CONST_REL_TOL
+    )
+
+
+def _magnitude_key(value: float) -> str:
+    return f"{abs(value):.9g}"
+
+
+# Ayırt edici sabitlerin büyüklük dizini (zayıflar dışarıda); ikili arama için sıralı.
+_STRONG_CONSTANTS = sorted(
+    ((abs(c.float_value), c) for c in ENGINEERING_CONSTANTS if not is_weak_double(c.float_value)),
+    key=lambda t: t[0],
+)
+_STRONG_MAGNITUDES = [m for m, _c in _STRONG_CONSTANTS]
+
+
+def _constants_near(magnitude: float) -> list:
+    """``magnitude``'a ``ENG_CONST_REL_TOL`` içinde eşit ayırt edici sabitler."""
+    if magnitude <= 0.0 or not math.isfinite(magnitude):
+        return []
+    lo = bisect.bisect_left(_STRONG_MAGNITUDES, magnitude * (1.0 - ENG_CONST_REL_TOL))
+    hi = bisect.bisect_right(_STRONG_MAGNITUDES, magnitude * (1.0 + ENG_CONST_REL_TOL))
+    return [c for _m, c in _STRONG_CONSTANTS[lo:hi]]
+
+
+# Ad / anahtar sözcük deseni tanıma: kaçışlar, sözcük sınırı, boşluk ve grup sözdizimi
+# atılınca geriye yalnız harf / rakam / alt çizgi kalıyorsa desen bir ad aramasıdır.
+_KEYWORD_REGEX_NOISE = re.compile(
+    r"\\[ \-]|\(\?[aiLmsux]+\)|\\b|\\s[*+?]?|\\w[*+?]?|\[_\\s\][*+?]?|_\?|\(\?:|[()|?]"
+)
+
+
+def is_keyword_regex(pattern: str) -> bool:
+    """Desen yalnız bir ad / anahtar sözcük / sözcük öbeği mi arıyor (kod yapısı değil)?"""
+    rest = _KEYWORD_REGEX_NOISE.sub("", pattern)
+    return bool(rest) and re.fullmatch(r"[A-Za-z0-9_]+", rest) is not None
+
+
+_NAME_PART_RE = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+")
+
+
+def _indicator_matches(name: str, indicator: str) -> bool:
+    """Alan göstergesi adın tamamı ya da önek belirteci mi (alt dizgi değil)?
+
+    ``dgemm_`` / ``_dgemm_`` → ``dgemm`` (tam ad), ``fftw_execute`` → ``fftw`` (``_`` ayracı),
+    ``PetscInitialize`` → ``petsc`` (camelCase belirteci), ``mafillsm`` → ``mafill`` (uzun
+    gösterge, ayraçsız önek). ``_difftime`` ↛ ``fft``.
+    """
+    norm = name.strip("_").lower()
+    ind = indicator.strip("_")
+    if not norm or not ind:
+        return False
+    if norm == ind or norm.startswith(ind + "_"):
+        return True
+    if len(ind) >= DOMAIN_INDICATOR_BARE_PREFIX_MIN and norm.startswith(ind):
+        return True
+    parts = [w.lower() for seg in name.split("_") if seg for w in _NAME_PART_RE.findall(seg)]
+    return bool(parts) and parts[0] == ind
+
+
+def _function_names(func_meta: dict[str, Any]) -> list[str]:
+    """``ghidra_functions.json`` biçimlerinden fonksiyon adları.
+
+    Bugünkü biçim ``{"total", "program", "functions": [{"name", "address", …}]}``;
+    eski biçim ad → bilgi sözlüğü (``_load_json`` listeyi de bu biçime çevirir).
+    """
+    funcs = func_meta.get("functions") if isinstance(func_meta, dict) else None
+    if isinstance(funcs, list):
+        return [str(f.get("name", "")) for f in funcs if isinstance(f, dict) and f.get("name")]
+    return [k for k, v in (func_meta or {}).items() if isinstance(v, (dict, str))]
+
 
 # Ghidra decompile ciktisi fonksiyon baslangic pattern'i
 # CAlgorithmIdentifier._FUNC_RE ile ayni, buraya kopyalanarak
@@ -230,6 +390,15 @@ class EngineeringAlgorithmAnalyzer:
         for sp in ENGINEERING_PATTERNS:
             per_regex_anchors = _extract_per_regex_anchors(sp)
             self._structural_anchors.append(per_regex_anchors)
+        # P04b: yalnız yapısal (ad / anahtar sözcük olmayan) regex'ler, çapalarıyla.
+        self._structural_regexes: list[list[tuple[re.Pattern[str], frozenset[str]]]] = [
+            [
+                (regex, anchors)
+                for regex, anchors in zip(sp.patterns, self._structural_anchors[i])
+                if not is_keyword_regex(regex.pattern)
+            ]
+            for i, sp in enumerate(ENGINEERING_PATTERNS)
+        ]
 
     # ------------------------------------------------------------------
     # Public API
@@ -433,90 +602,64 @@ class EngineeringAlgorithmAnalyzer:
     def _scan_constants(
         self, code: str, func_name: str, address: str,
     ) -> list[AlgorithmMatch]:
-        """Layer 1: IEEE-754 constant detection.
+        """Layer 1: IEEE-754 sabit tespiti (kurallar dosya başında, P04b / MUH-10).
 
-        HEX_LOOKUP ve DECIMAL_PATTERNS kullanarak sabit tespiti yapar.
-        Ayni constant group'tan birden fazla sabit bulunursa
-        confidence boost uygulanir.
+        Sabit yalnız bütün kayan nokta belirteci ya da 64 bitlik IEEE-754 bit deseni
+        (onaltılık) olarak, dizgi ve yorum dışında eşleşir; zayıf değerler kanıt
+        değildir; etiket için aynı fonksiyonda algoritmanın en az
+        ``ENG_CONST_MIN_DISTINCT`` farklı ayırt edici sabiti gerekir.
 
         Ornek:
-            Gauss 2-point sabitleri 0.577... ve -0.577... birlikte
-            bulunursa -> "Gauss Quadrature 2pt" yuksek guvenle tespit edilir.
+            ``x = 0.7745966692414834 * a + 0.5555555555555556 * b`` → Gauss 3 nokta
+            (iki ayırt edici sabit); ``if (x == 0) y = 4;`` → hiçbir şey.
         """
+        clean = _code_only(code)
+        # (algoritma, kategori) -> {büyüklük anahtarı: kanıt}; aynı anahtar bir kez sayılır (±x).
+        found: dict[tuple[str, str], dict[str, str]] = {}
+        best_conf: dict[tuple[str, str], float] = {}
+
+        def _add(ec: Any, evidence: str) -> None:
+            key = (ec.algorithm, ec.category)
+            found.setdefault(key, {}).setdefault(_magnitude_key(ec.float_value), evidence)
+            best_conf[key] = max(best_conf.get(key, 0.0), ec.confidence)
+
+        for m in _FLOAT_TOKEN_RE.finditer(clean):
+            token = m.group(0)
+            try:
+                value = float(token.rstrip("fFlL"))
+            except ValueError:
+                continue
+            for ec in _constants_near(abs(value)):
+                _add(ec, f"float: {token} ({ec.description})")
+
+        for m in _HEX_TOKEN_RE.finditer(clean):
+            raw = int(m.group(1), 16)
+            if raw <= ENG_CONST_HEX_MIN or raw > _MASK64:
+                continue
+            for ec in self._hex_lookup.get(f"{raw:016x}", ()):
+                if is_weak_double(ec.float_value):
+                    continue
+                _add(ec, f"hex: 0x{raw:016x} ({ec.description})")
+
         matches: list[AlgorithmMatch] = []
-
-        # Hex tarama -- 0x ile baslayan sabitleri ara.
-        # NOT: Bu metod sadece O(n) deterministik regex kullaniyor
-        # (karakter sinifi [0-9a-f]+ ve string `in`). Backtracking riski yok,
-        # buyuk body'lerde de guvenle calisir -- boyut siniri GEREKSIZ.
-        # code icinde tek gecis: tum hex literal'leri topla.
-        code_lower = code.lower()
-        hex_literals = set(re.findall(r"0x[0-9a-f]+", code_lower))
-
-        # Her hex literal'i HEX_LOOKUP'ta ara
-        # hits: {(algo_name, category): (max_confidence, group, evidence_list)}
-        hits: dict[tuple[str, str], tuple[float, str, list[str]]] = {}
-
-        for hex_val in hex_literals:
-            # hex_val: "0x3fe279a..." -> lookup key: "3fe279a..."
-            lookup_key = hex_val[2:] if hex_val.startswith("0x") else hex_val
-            entries = self._hex_lookup.get(lookup_key)
-            if not entries:
+        for (algo_name, category), evidence_by_value in found.items():
+            distinct = len(evidence_by_value)
+            if distinct < ENG_CONST_MIN_DISTINCT:
                 continue
-            for ec in entries:
-                key = (ec.algorithm, ec.category)
-                if key not in hits:
-                    hits[key] = (ec.confidence, ec.group, [f"hex: {hex_val} ({ec.description})"])
-                else:
-                    old_conf, old_group, old_ev = hits[key]
-                    old_ev.append(f"hex: {hex_val} ({ec.description})")
-                    new_conf = max(old_conf, ec.confidence)
-                    hits[key] = (new_conf, old_group, old_ev)
-
-        # Decimal tarama -- floating point sabitleri (0.577..., 3.14... vb.)
-        for decimal_str, ec in self._decimal_patterns:
-            if decimal_str in code:
-                key = (ec.algorithm, ec.category)
-                if key not in hits:
-                    hits[key] = (ec.confidence, ec.group, [f"decimal: {decimal_str}"])
-                else:
-                    old_conf, old_group, old_ev = hits[key]
-                    old_ev.append(f"decimal: {decimal_str}")
-                    new_conf = max(old_conf, ec.confidence)
-                    hits[key] = (new_conf, old_group, old_ev)
-
-        # Group boosting: ayni group'tan birden fazla sabit bulunursa
-        # confidence'i artir.
-        group_counts: dict[str, int] = {}
-        for (algo_name, category), (conf, group, evidence) in hits.items():
-            if group:
-                group_counts[group] = group_counts.get(group, 0) + len(evidence)
-
-        for (algo_name, category), (conf, group, evidence) in hits.items():
-            final_conf = conf
-            # Group boost: ayni group'tan 2+ sabit bulunursa +0.15
-            if group and group_counts.get(group, 0) >= 2:
-                final_conf = min(0.90, final_conf + 0.15)
-            # Birden fazla evidence: +0.05 per extra
-            extra = max(0, len(evidence) - 1)
-            if extra > 0:
-                final_conf = min(0.90, final_conf + 0.05 * min(extra, 4))
-
-            # Skip GROUP-ONLY constants that still have 0.0 confidence
-            # (generic values like 0.5, 1.0, 2.0 that weren't boosted by group)
-            if final_conf <= 0.0:
-                continue
-
+            conf = min(
+                0.90,
+                best_conf[(algo_name, category)]
+                + 0.05 * min(distinct - ENG_CONST_MIN_DISTINCT, 4),
+            )
             matches.append(AlgorithmMatch(
                 name=algo_name,
                 category=category,
-                confidence=round(final_conf, 3),
+                confidence=round(conf, 3),
                 detection_method="constant",
-                evidence=evidence[:10],
+                evidence=list(evidence_by_value.values())[:10],
                 function_name=func_name,
                 address=address,
             ))
-
         return matches
 
     # ------------------------------------------------------------------
@@ -526,76 +669,64 @@ class EngineeringAlgorithmAnalyzer:
     def _scan_structural(
         self, code: str, func_name: str, address: str,
     ) -> list[AlgorithmMatch]:
-        """Layer 2: Structural pattern detection.
+        """Layer 2: Yapısal desen tespiti (``c_algorithm_id`` yapısal kuralıyla, P04b).
 
-        ENGINEERING_PATTERNS'deki regex pattern'lerini kod icinde arar.
-        Her pattern icin min_matches esigi vardir.
+        Desenler dizgi ve yorumları örtülmüş kodda (``_code_only``) koşar. Yalnız ad /
+        anahtar sözcük arayan desenler (``is_keyword_regex``) kanıt değildir; etiket için
+        en az ``STRUCT_MIN_DISTINCT_KINDS`` farklı yapısal desen ve toplamda
+        ``min_matches`` eşleşme gerekir. Yapısal tespit tek başına
+        ``_STRUCTURAL_ONLY_CAP`` güveni aşmaz.
 
-        ONEMLI: Structural-only tespit _STRUCTURAL_ONLY_CAP (0.50)
-        ile sinirlanir.  Yuksek guven icin constant veya API kaniti gerekir.
-
-        Optimizasyon: Her pattern icin anchor keyword pre-filter uygular.
-        Anchor keyword'lerden en az biri kodda yoksa regex'i calistirmaz.
-        468 pattern icin ortalama %85+ atlama orani saglar.
+        Optimizasyon: her yapısal regex için çapa sözcükleri; çapası kodda olmayan regex
+        koşmaz.
         """
         matches: list[AlgorithmMatch] = []
-
-        # v1.8.0: ENGINEERING_PATTERNS .* ve .+ icermiyor, tum pattern'ler
-        # [^...] negated char class + \w + \s gibi O(n) safe yapilarda.
-        # Anchor pre-filter ile %85+ atlama orani zaten saglanir.
-        # Boyut siniri kaldirildi -- hicbir fonksiyon atlanmaz.
-
-        code_lower = code.lower()
+        clean = _code_only(code)
+        code_lower = clean.lower()
 
         for idx, sp in enumerate(self._structural_patterns):
-            # Pre-filter: Her regex icin anchor set var.
-            # Pattern calistirilmali eger herhangi bir regex'in anchor
-            # kosuluunu sagliyorsa (anchor bos = her zaman calistir,
-            # anchor dolu = en az biri kodda olmali).
-            per_regex_anchors = self._structural_anchors[idx]
-            should_run = False
-            for regex_anchors in per_regex_anchors:
-                if not regex_anchors:
-                    # Bu regex'in anchor'u yok -> genel pattern, calistir
-                    should_run = True
-                    break
-                if any(a in code_lower for a in regex_anchors):
-                    should_run = True
-                    break
-            if not should_run:
+            regexes = self._structural_regexes[idx]
+            if len(regexes) < STRUCT_MIN_DISTINCT_KINDS:
                 continue
 
+            kinds = 0
             total_hits = 0
             evidence: list[str] = []
+            seen_spans: set[tuple[int, int]] = set()
+            for regex, anchors in regexes:
+                if anchors and not any(a in code_lower for a in anchors):
+                    continue
+                spans = [m.span() for m in regex.finditer(clean)]
+                if not spans:
+                    continue
+                total_hits += len(spans)
+                # Başka bir desenin eşleştiği metnin aynısı ayrı kanıt türü değildir.
+                new_spans = [sp_ for sp_ in spans if sp_ not in seen_spans]
+                seen_spans.update(spans)
+                if not new_spans:
+                    continue
+                kinds += 1
+                start, end = new_spans[0]
+                evidence.append(f"{sp.name}: matched '{clean[start:end][:80]}'")
 
-            for regex in sp.patterns:
-                found = regex.findall(code)
-                if found:
-                    total_hits += len(found)
-                    sample = found[0] if isinstance(found[0], str) else str(found[0])
-                    evidence.append(
-                        f"{sp.name}: matched '{sample[:80]}'"
-                    )
+            if kinds < STRUCT_MIN_DISTINCT_KINDS or total_hits < sp.min_matches:
+                continue
 
-            if total_hits >= sp.min_matches and evidence:
-                # Base confidence from pattern definition
-                base_conf = sp.confidence
-                # Bonus per extra hit beyond minimum
-                bonus = min(0.20, 0.03 * (total_hits - sp.min_matches))
-                conf = base_conf + bonus
+            # Base confidence from pattern definition
+            base_conf = sp.confidence
+            # Bonus per extra hit beyond minimum
+            bonus = min(0.20, 0.03 * (total_hits - sp.min_matches))
+            conf = min(base_conf + bonus, _STRUCTURAL_ONLY_CAP)
 
-                # Structural-only cap
-                conf = min(conf, _STRUCTURAL_ONLY_CAP)
-
-                matches.append(AlgorithmMatch(
-                    name=sp.algorithm,
-                    category=sp.category,
-                    confidence=round(conf, 3),
-                    detection_method="structural",
-                    evidence=evidence[:5],
-                    function_name=func_name,
-                    address=address,
-                ))
+            matches.append(AlgorithmMatch(
+                name=sp.algorithm,
+                category=sp.category,
+                confidence=round(conf, 3),
+                detection_method="structural",
+                evidence=evidence[:5],
+                function_name=func_name,
+                address=address,
+            ))
 
         return matches
 
@@ -847,49 +978,41 @@ class EngineeringAlgorithmAnalyzer:
         func_meta: dict[str, Any],
         c_files: list[Path],
     ) -> bool:
-        """Check if the binary contains scientific/engineering domain indicators.
+        """İkilide bilimsel / mühendislik kitaplığı göstergesi var mı (alan kapısı)?
 
-        Scans function names from metadata AND a quick skim of a few C files
-        for imports/symbols matching known scientific libraries.
+        Göstergeler fonksiyon adlarında (``_function_names``: ``ghidra_functions.json``'un
+        ``functions`` listesi) ve ilk 10 C dosyasının ilk ~50 KB'ındaki kod
+        tanımlayıcılarında (dizgi / yorum dışı) TAM AD ya da ÖNEK belirteci olarak aranır
+        (``_indicator_matches``; ``fft`` ↛ ``_difftime``).
 
-        Returns True if ANY domain indicator is found, meaning we should run
-        the full 3-layer analysis.  Returns False if the binary appears to be
-        non-scientific (e.g. a text editor, game, etc.), in which case only
-        API detection should run.
+        True ise sabit ve yapısal katman da koşar; False ise yalnız API katmanı.
         """
-        # 1. Check function names in metadata
-        if func_meta:
-            func_names_lower = {name.lower() for name in func_meta.keys()}
-            for indicator in _ALL_DOMAIN_INDICATORS:
-                # Check both exact match and substring
-                if indicator in func_names_lower:
-                    logger.debug("Domain indicator found in func_meta: %s", indicator)
-                    return True
-                # Also check if any function name CONTAINS the indicator
-                for fn in func_names_lower:
-                    if indicator in fn:
-                        logger.debug(
-                            "Domain indicator '%s' found in function '%s'",
-                            indicator, fn,
-                        )
-                        return True
+        indicators = sorted(_ALL_DOMAIN_INDICATORS)
 
-        # 2. Quick skim: read first ~50KB of up to 10 C files for library calls
-        sample_files = c_files[:10]
-        for f in sample_files:
+        def _hit(names: Any) -> str | None:
+            for name in names:
+                for indicator in indicators:
+                    if _indicator_matches(name, indicator):
+                        return f"{indicator} <- {name}"
+            return None
+
+        # 1. Fonksiyon adları
+        found = _hit(_function_names(func_meta or {}))
+        if found:
+            logger.debug("Domain indicator in function names: %s", found)
+            return True
+
+        # 2. İlk dosyaların kod tanımlayıcıları (ithal edilen çağrılar)
+        for f in c_files[:10]:
             try:
-                # Read only first 50KB for speed
                 with open(f, "r", encoding="utf-8", errors="replace") as fh:
-                    text = fh.read(50_000).lower()
-                for indicator in _ALL_DOMAIN_INDICATORS:
-                    if indicator in text:
-                        logger.debug(
-                            "Domain indicator '%s' found in %s",
-                            indicator, f.name,
-                        )
-                        return True
+                    text = _code_only(fh.read(50_000))
             except OSError:
                 continue
+            found = _hit(set(re.findall(r"[A-Za-z_]\w*", text)))
+            if found:
+                logger.debug("Domain indicator in %s: %s", f.name, found)
+                return True
 
         return False
 
