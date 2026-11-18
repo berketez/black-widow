@@ -4,7 +4,7 @@
 Bu dosya yaşayan durum kaydıdır: hangi paket kimde, ne birleşti, hangi karar verildi. Oturum yarıda kalırsa buradan sürdürülür.
 
 ## Kurallar (bu oturum, Berke)
-- Aynı anda en çok **5** Opus ajanı (Berke, 2026-11-18 onarım oturumu; tarama oturumundaki sınır 4'tü).
+- Aynı anda en çok **6** Opus ajanı (Berke, 2026-11-18 onarım oturumu: önce 5, 10:0x'te "6 ajana çıkabilirsin"; tarama oturumundaki sınır 4'tü).
 - Her ajan kendi git worktree'sinde (`.claude/worktrees/agent-*`, taban e9d2d08); dosya kümeleri ayrık. Ana oturum ajan commit'lerini doğrulayıp `main`'e alır (cherry-pick).
 - Push her seferinde Berke'ye sorulur. Güvenlik bulgularını içeren rapor, güvenlik onarımları `main`'e girmeden push edilmez (K-7).
 
@@ -26,11 +26,14 @@ Plan dışı yeni paket: **P-GÜV** (hedef çalıştırma ve ağ güvenliği: GH
 
 | Paket | Konu | Durum | Not |
 |---|---|---|---|
-| P00 | Ölçüm zemini (masum ikili kapısı + sağlamlık denetimi) | çalışıyor (1. tur) | |
+| P00 | Ölçüm zemini (masum ikili kapısı + sağlamlık denetimi) | **main'de** (d76c6f1..ddf8b19) | Masum kapı: doğrudan kip 5 katman / 4 set (194 ikili, ~25 sn), çıktı kipi 11 katman, Ghidra'sız yeniden oynatma `bilesim_yeniden` + `algoritma_yeniden` (119/119 aynı). Sağlamlık denetimi bugünkü biçimde (5 şüpheli sayının 5'i bayatlıktı). Testler main'de 33 / 0; mutant 41/41 (ana oturum yeniden koştu). **Notlar:** evrensel macOS ikililerinde ürün x86_64 dilimini analiz ediyor (`lipo -thin arm64` arm64e'de düşüyor; ssh / sshd / ioreg'de fat dosya taranıyor) → P16; kapı iddiaları hüküm / bilgi ayırmadan sayıyor (anti-debug'da kalanların çoğu bilgi düzeyi) → kapı iyileştirmesi; çıktı kipinin eşiği yalnız 14 HEAD ikilisinde → 119 ikililik ürün koşusuyla tamamlanacak; eşik dosyasını yalnız ana oturum yazar. |
 | P19 | Native olmayan hatlar: güvenlik ve tanıma | çalışıyor (1. tur) | |
 | P-GÜV | Hedef çalıştırma ve ağ güvenliği | **main'de** (e8dfbda..ecf8175 + yama 86d0bf4) | 4/4 kalem; ajan: tam takım 8 271 geçti (4 kırmızı node_modules eksikliği, symlink'le geçti), mutant 34/34. Ana oturum: ilgili 175 test main'de geçti; uygulamanın gerçek `karadul.yaml`'ı katı bool ile yükleniyor. **P15'e kalan:** `--enable-network` / arayüz ağ düğmesi `allow_dts_fetch`'i açmıyor (artık `.d.ts` için iki bayrak gerekiyor; karar P15'te), `timeouts.frida_spawn_wait` ve `network.allow_source_match` okunmuyor. Bilinçli değişiklik: kaynak eşleme (Layer 1.5) artık `network.enabled` da istiyor. `TestFridaRealSpawn` gerçek süreç başlattığı için koşulmadı. |
 | P01 | İkili istihbarat | **main'de** (bddd945..a60dbbf) | IMZA-01: geliştirme setinde toplam iddia 2 267 → 646; Bluetooth / OpenGL 119 → 0, Browser Engine 114 → 0; gerçek pozitif 34 beklentinin 33'ü korundu (endpointsecurityd kernel iddiası bilinçli düştü). Ajan: 14/14 mutant, tam takım 8 312 / 0. Ana oturum: BI testleri main'de 69 / 0. Bağımsız masum kapı (P00 aracı, main a60dbbf): bi yanlış (üst sınır) geliştirme 2 102 → 490, macos 701 → 242, pe 203 → 25; Bluetooth / OpenGL / kernel 0. **Kapı DÜŞTÜ:** zorunlu gerçek pozitif `antidebug_x86_64` → `guvenlik:Anti-Debugging` kayboldu (P01'in kendi pozitif setinde yoktu) → P01b kalem 0. **Devam P01b:** (1) conda `strings`/`nm` arm64e Mach-O'da çıkış 1 → `run_strings` her şeyi atıyor (ana oturum doğruladı: bluetoothd'de conda 41 889 satır basıp 1 dönüyor, `/usr/bin/strings` 42 153); (2) kalıntı alt sistem iddiaları (Version Control, Testing Framework, Terminal Emulator, Licensing); (3) `_VULNERABILITY_PATTERNS` iki kanıt kuralı dışında; (4) başarım 75 s → 228 s (196 ikili). P15'e: `hacker_cli.py:351-400` ölü (anahtarlar `architecture` altında). P07'ye: yeni `evidence_kinds` alanı. |
-| P02 | Anti-debug + paketleyici | çalışıyor (1. tur) | |
+| P02 | Anti-debug + paketleyici | **main'de** (…74e87b3) | IMZA-02/03/04: geliştirme MED/HIGH 8 → 0, RDTSC 14 → 0; masum PE MED/HIGH 21 → 0, FSG 30 → 0; UPX 4/4 kaldı. Ajan: mutant 34/34, tam takım 8 363 / 0. Ana oturum: testler main'de 164 / 0; mutant 34/34 yeniden koşuldu; masum kapı antidebug geliştirme 23 → 7, pe 76 → 55 (kalan bilgi düzeyi), packer pe 19 → 1. Eşikler sıkılaştırıldı (bbbf38d). capstone gerekli (`binary` ekstrası; ortamda 5.0.7) → uygulama paketinde var mı, paketleme denetiminde bakılacak. **P02b izleme:** sysctl / prctl argüman kanıtı (bugün `sysctl_import` 0,15 bilgi), ithal tabanlı hükümler çağrı yerine bakmıyor, `makensis.exe` 'NSIS' iddiası (NSIS derleyicisinin kendisi), FSG / Petite desenleri gerçek örnekle doğrulanmadı. |
 | P03 | YARA + capa | çalışıyor (2. tur) | |
 | P06 | Algoritma + güvenlik etiketleri | çalışıyor (2. tur) | |
-| P09, P04a, P01b, P-S1, P08 | sıradakiler | bekliyor | P09 (K-1 bekletme) → P04a (P00'dan sonra) → P01b → P-S1 (P03'ten sonra) |
+| P04a | Bileşim + alan + blok yorumu (K-1 bekletme önce) | çalışıyor (2. tur) | |
+| P09 | Tip ve yapı kurtarma (K-1 bekletme önce; Dalga 4'ten öne alındı) | çalışıyor (2. tur) | |
+| P01b | İkili istihbarat devamı (gerileme, conda strings, kalıntı, başarım) | çalışıyor (2. tur) | |
+| P-S1, P08, P05, P07, P04b, P16 | sıradakiler (3. tur; toplam 16 ajan ilanı) | bekliyor | P-S1 P03'ten sonra (`stages.py` + P03 yaması) |
