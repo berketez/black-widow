@@ -128,10 +128,13 @@ def _make_ws(root: Path, *, kayitlar=_KAYITLAR, adlar=_ADLAR, stats=None,
 
 @pytest.fixture
 def ws(srv, tmp_path, monkeypatch):
-    """Etkin çalışma alanı. Kalıcı elle-ad deposuna (kullanıcının ev dizini) yazılmasın diye ikili
-    özeti kapatılır: ``_do_rename`` yalnız geçici dizindeki haritayı günceller."""
+    """Etkin çalışma alanı. Kalıcı elle-ad deposu (kullanıcının ev dizini) geçici dizine
+    yönlendirilir; P17 / ARAYUZ-14'ten beri özet yoksa ad hiç verilmez, bu yüzden sabit özet."""
     root = _make_ws(tmp_path / "ws")
-    monkeypatch.setattr(srv, "_active_binary_hash", lambda ws=None: None)
+    monkeypatch.setattr(srv, "_active_binary_hash", lambda ws=None: "ab" * 32)
+    ov_dir = tmp_path / "overrides"
+    ov_dir.mkdir()
+    monkeypatch.setattr(srv.overrides, "overrides_dir", lambda: ov_dir)
     srv.activate_workspace(str(root))
     with srv._CACHE_LOCK:
         srv._CACHE.clear()
@@ -299,7 +302,8 @@ def test_elle_degisen_adda_koken_elle_ve_etiket_yok(srv, ws):
     assert _etiketler(srv)[KESIN] == LABEL_CERTAIN
 
     sonuc = srv._do_rename(KESIN, "benim_adim")
-    assert sonuc == {"ok": True, "addr": KESIN, "name": "benim_adim"}
+    assert {k: sonuc[k] for k in ("ok", "addr", "name")} == {
+        "ok": True, "addr": KESIN, "name": "benim_adim"}
     # temiz haritadaki kayıt gerçekten değişmedi (koruma bu yüzden gerekli)
     temiz = json.loads((ws / "clean" / "naming_map.json").read_text(encoding="utf-8"))
     assert temiz["mappings"][KESIN]["new_name"] == "parse_args"

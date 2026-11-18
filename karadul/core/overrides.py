@@ -95,9 +95,23 @@ def _now_iso() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
-def _validate_name(name: str) -> str:
+def _validate_name(name: str, *, local: bool = False) -> str:
+    """Ad bir C tanımlayıcısı olmalı; C anahtar sözcüğü ya da tip adı olamaz (ARAYUZ-14).
+
+    Elle verilen ad sonraki analizde koda zorla uygulanır: ``int`` / ``return`` /
+    ``uint8_t`` derlenmez kod üretirdi. Kurallar adlandırma hattının tek ad kapısından
+    (``karadul.reconstruction.name_validity.lexical_reject_reason``). ``local``: parametre
+    adı (yalnız gövdede geçen tip sözcükleri yasak; ``addr`` gibi dosya düzeyi typedef'ler
+    parametre adı olabilir). Analiz hattı okurken de bu doğrulayıcıyı kullanır (stages.py):
+    eski kayıttaki geçersiz ad uygulanmaz.
+    """
     if not isinstance(name, str) or not _NAME_RE.fullmatch(name):
         raise ValueError(f"geçersiz isim (C tanımlayıcısı olmalı): {name!r}")
+    from karadul.reconstruction.name_validity import lexical_reject_reason
+
+    reason = lexical_reject_reason(name, local=local)
+    if reason is not None:
+        raise ValueError(f"geçersiz isim ({reason}): {name!r}")
     return name
 
 
@@ -200,8 +214,8 @@ def set_param(binary_hash: str, fn_addr: str, param: str, new: str) -> dict:
     params[fn_addr][param] = new. İlgili fonksiyonun param eşlemesini döndürür.
     """
     _validate_addr(fn_addr)
-    _validate_name(param)
-    _validate_name(new)
+    _validate_name(param, local=True)
+    _validate_name(new, local=True)
     with _LOCK:
         data = _read(binary_hash)
         pmap = data["params"].setdefault(fn_addr, {})

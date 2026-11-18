@@ -52,6 +52,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import yaml  # noqa: E402  (config.py hard-import eder -> her zaman kurulu)
 from karadul.config import Config, ConfigValueError  # noqa: E402
 from karadul.core import overrides  # noqa: E402
+from karadul.reconstruction import name_validity  # noqa: E402
 from karadul.core.naming_labels import (  # noqa: E402
     NAME_LABELS,
     PRE_NAME_KIND_MANUAL,
@@ -412,8 +413,50 @@ def _active_run_dir(ws: str | None) -> Path | None:
     return None
 
 
+def _workspace_target_hash(ws: str) -> str | None:
+    """Çalışma alanının KENDİ kaydındaki ikili özeti (sha256); bulunamazsa None.
+
+    Sıra: ``reports/report.json`` → ``target.hash``; ``raw/target_info.json`` → ``file_hash``;
+    UI koşusunun ``clean/report.json``'u; son olarak ``raw/`` altındaki tek ikili kopyanın
+    sha256'sı. Analiz hattı elle verilen adları ``context.target.file_hash`` ile bulur
+    (stages.py); aynı değer budur. İkili ADA göre aranmaz (ARAYUZ-14: ``ls`` →
+    ``/bin/ls`` gibi başka bir dosyanın özetine yazılıyordu).
+    """
+    root = Path(ws)
+
+    def _json_field(p: Path, *keys):
+        try:
+            v = json.loads(p.read_text(encoding="utf-8"))
+            for k in keys:
+                v = v[k]
+            return v if isinstance(v, str) and v else None
+        except (json.JSONDecodeError, KeyError, OSError, TypeError, ValueError):
+            return None
+
+    h = (_json_field(root / "reports" / "report.json", "target", "hash")
+         or _json_field(root / "raw" / "target_info.json", "file_hash"))
+    if not h:
+        rd = _active_run_dir(ws)
+        if rd:
+            h = _json_field(rd / "clean" / "report.json", "target", "hash")
+    if not h:
+        raw = root / "raw"
+        bins = [p for p in raw.iterdir() if p.is_file() and p.name != "target_info.json"] \
+            if raw.is_dir() else []
+        if len(bins) == 1:
+            try:
+                hh = hashlib.sha256()
+                with open(bins[0], "rb") as f:
+                    for chunk in iter(lambda: f.read(1 << 20), b""):
+                        hh.update(chunk)
+                h = hh.hexdigest()
+            except OSError:
+                h = None
+    return h
+
+
 def _active_binary_hash(ws: str | None = None) -> str | None:
-    """Aktif binary'nin STABIL anahtari: report.json target.hash, yoksa sha256.
+    """Aktif binary'nin STABIL anahtari (sha256): yalnız çalışma alanının kendi kaydından.
 
     Ayni WS icin cache'lenir (ayni binary -> ayni hash, rename'de degismez).
     """
@@ -423,24 +466,7 @@ def _active_binary_hash(ws: str | None = None) -> str | None:
     with _CACHE_LOCK:
         if _CACHE.get("bhash_ws") == ws and _CACHE.get("bhash"):
             return _CACHE["bhash"]
-    h: str | None = None
-    rd = _active_run_dir(ws)
-    if rd:
-        try:
-            h = json.loads((rd / "clean" / "report.json").read_text())["target"]["hash"]
-        except (json.JSONDecodeError, KeyError, OSError, TypeError):
-            h = None
-    if not h:  # fallback: cozumlenen binary'nin sha256'si
-        bin_path = resolve_binary(_ws_binary_name(ws))
-        if bin_path:
-            try:
-                hh = hashlib.sha256()
-                with open(bin_path, "rb") as f:
-                    for chunk in iter(lambda: f.read(1 << 20), b""):
-                        hh.update(chunk)
-                h = hh.hexdigest()
-            except OSError:
-                h = None
+    h = _workspace_target_hash(ws)
     if h:
         h = h.lower()
         if not _HASH_HEX_RE.fullmatch(h):  # overrides path guvenligi
@@ -817,6 +843,12 @@ def _do_rename(addr: str, name: str) -> dict:
     nm_path, _ = find_ws(ws)
     if not nm_path:
         return {"__code": 404, "error": "naming_map yok"}
+    # Kalıcı kayıt yazılamayacaksa hiçbir şey yazılmaz (ARAYUZ-14): eskiden naming_map
+    # güncellenip {"ok": true} dönüyor, özet yoksa ya da kayıt patlarsa ad sessizce kayboluyordu.
+    bh = _active_binary_hash(ws)
+    if not bh:
+        return {"__code": 409, "error": "ad kalıcı kaydedilemez: çalışma alanında ikilinin "
+                                        "özeti yok (reports/report.json, raw/) — ad verilmedi"}
     # oku-değiştir-yaz'ı serileştir (ThreadingHTTPServer -> eşzamanlı rename yarışı)
     with _RENAME_LOCK:
         try:
@@ -825,23 +857,60 @@ def _do_rename(addr: str, name: str) -> dict:
             return {"__code": 500, "error": "naming_map okunamadı"}
         if not isinstance(data, dict):
             data = {}
+        names = data.get("global") if isinstance(data.get("global"), dict) else {}
+        reason = _rename_reject_reason(ws, addr, name, names)
+        if reason:
+            return {"__code": 409 if reason.startswith("çakışma") else 400, "error": reason}
+        # önce kalıcı kayıt: yazılamazsa naming_map de değişmez (ikisi birbirini tutar)
+        try:
+            overrides.set_name(bh, addr, name, binary=_ws_binary_name(ws))
+        except (ValueError, OSError) as e:
+            return {"__code": 500, "error": f"ad kalıcı kayda yazılamadı ({e}) — ad verilmedi"}
         data.setdefault("global", {})[addr] = name
         try:
             _atomic_write_json(Path(nm_path), data)
         except OSError as e:
-            return {"__code": 500, "error": f"naming_map yazılamadı: {e}"}
-
-    # kalici override deposu (binary_hash bazli) -- naming_map yeniden
-    # uretilse bile isim geri gelsin diye
-    bh = _active_binary_hash(ws)
-    if bh:
-        try:
-            overrides.set_name(bh, addr, name, binary=_ws_binary_name(ws))
-        except ValueError:
-            pass  # naming_map zaten guncellendi; override best-effort
+            return {"__code": 500, "error": f"naming_map yazılamadı ({e}); ad kalıcı kayda "
+                                            "yazıldı, sonraki analizde uygulanır"}
 
     activate_workspace(ws)  # model cache temizle -> sonraki /api/model taze
-    return {"ok": True, "addr": addr, "name": name}
+    return {"ok": True, "addr": addr, "name": name, "persisted": True,
+            "binary_hash": bh}
+
+
+def _ghidra_function_names(ws: str) -> dict[str, str]:
+    """İkilideki Ghidra fonksiyon adları (ithaller dahil): ad → sahibinin Ghidra adı."""
+    data = _read_static_json(Path(ws), "ghidra_functions")
+    funcs = data.get("functions") if isinstance(data, dict) else None
+    if not isinstance(funcs, list):
+        return {}
+    pairs = [(str(f.get("name") or ""), bool(f.get("is_thunk") or f.get("is_external")))
+             for f in funcs if isinstance(f, dict)]
+    return name_validity.existing_function_names(pairs)
+
+
+def _rename_reject_reason(ws: str, addr: str, name: str, names: dict) -> str | None:
+    """Elle verilen adın ret nedeni (okunur ileti); verilebilirse None.
+
+    Anahtar sözcük / tip adı (``int``, ``return``, ``uint8_t``) ve başka bir fonksiyonun
+    adıyla çakışma reddedilir: sonraki analizde ad zorla uygulanır, çift tanım ya da
+    derlenmez kod üretirdi. Kurallar adlandırma hattının tek ad kapısından
+    (``karadul.reconstruction.name_validity``).
+    """
+    lexical = name_validity.lexical_reject_reason(name)
+    if lexical == name_validity.REASON_KEYWORD:
+        return f"geçersiz isim: '{name}' C anahtar sözcüğü"
+    if lexical == name_validity.REASON_TYPE_NAME:
+        return f"geçersiz isim: '{name}' bir tip adı"
+    if lexical is not None:
+        return "geçersiz isim (C tanımlayıcısı olmalı)"
+    for other, cur in names.items():
+        if other != addr and cur == name:
+            return f"çakışma: '{name}' adı zaten {other} fonksiyonunda"
+    owner = _ghidra_function_names(ws).get(name)
+    if owner is not None and owner != addr:
+        return f"çakışma: '{name}' ikilide var olan bir fonksiyonun adı ({owner})"
+    return None
 
 
 # ---------------------------------------------------------------------------

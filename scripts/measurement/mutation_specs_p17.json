@@ -144,6 +144,70 @@
       "test": "tests/test_p17_guncelleme.py",
       "find": "isinstance(d.get(\"update_check\"), bool)",
       "replace": "d.get(\"update_check\") is not None"
+    },
+    {
+      "id": "a14_rapor_ozeti_okunmaz",
+      "desc": "çalışma alanının report.json özeti okunmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ad_duzeltme.py",
+      "find": "    h = (_json_field(root / \"reports\" / \"report.json\", \"target\", \"hash\")\n         or _json_field(",
+      "replace": "    h = (_json_field("
+    },
+    {
+      "id": "a14_ozet_yokken_devam",
+      "desc": "özet yokken ad yine verilir",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ad_duzeltme.py",
+      "find": "    if not bh:\n        return {\"__code\": 409, \"error\": \"ad kalıcı",
+      "replace": "    if bh is False:\n        return {\"__code\": 409, \"error\": \"ad kalıcı"
+    },
+    {
+      "id": "a14_kayit_hatasi_yutulur",
+      "desc": "kalıcı kayıt hatası yutulup naming_map yazılır",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ad_duzeltme.py",
+      "find": "        except (ValueError, OSError) as e:\n            return {\"__code\": 500, \"error\": f\"ad kalıcı kayda yazılamadı ({e}) — ad verilmedi\"}",
+      "replace": "        except (ValueError, OSError) as e:\n            e = None"
+    },
+    {
+      "id": "a14_sozcuk_denetimi_yok",
+      "desc": "anahtar sözcük / tip adı denetimi atlanır",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ad_duzeltme.py",
+      "find": "    lexical = name_validity.lexical_reject_reason(name)",
+      "replace": "    lexical = None"
+    },
+    {
+      "id": "a14_cakisma_denetimi_yok",
+      "desc": "başka fonksiyonun adı kabul edilir",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ad_duzeltme.py",
+      "find": "        if other != addr and cur == name:",
+      "replace": "        if other == addr and cur == name:"
+    },
+    {
+      "id": "a14_ithal_cakismasi_yok",
+      "desc": "ithal fonksiyon adıyla çakışma kabul edilir",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ad_duzeltme.py",
+      "find": "    if owner is not None and owner != addr:\n        return f\"çakışma",
+      "replace": "    if owner is not None and owner == addr:\n        return f\"çakışma"
+    },
+    {
+      "id": "a14_depo_sozcuk_kabul",
+      "desc": "kalıcı depo anahtar sözcüğü kabul eder",
+      "module": "karadul/core/overrides.py",
+      "test": "tests/test_p17_ad_duzeltme.py",
+      "find": "    if reason is not None:\n        raise ValueError(f\"geçersiz isim ({reason})",
+      "replace": "    if reason is None and False:\n        raise ValueError(f\"geçersiz isim ({reason})"
+    },
+    {
+      "id": "a14_parametre_yerel_degil",
+      "desc": "parametre adı dosya düzeyi kuralla sınanır (addr reddedilir)",
+      "module": "karadul/core/overrides.py",
+      "test": "tests/test_p17_ad_duzeltme.py",
+      "find": "    _validate_name(new, local=True)",
+      "replace": "    _validate_name(new)"
     }
   ]
 }
