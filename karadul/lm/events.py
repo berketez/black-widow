@@ -28,11 +28,14 @@ from __future__ import annotations
 
 import json
 import re
+import threading
+import time
 import unicodedata
-from typing import Any, Mapping, Optional
+from collections import deque
+from typing import Any, Callable, Mapping, Optional
 
-from karadul.lm import DISPLAY_TEXT_MAX_CHARS
-from karadul.lm.audit import _SESSION_ID
+from karadul.lm import DISPLAY_TEXT_MAX_CHARS, EVENT_RING_CAPACITY
+from karadul.lm.audit import _SESSION_ID, now_iso
 
 # --- Zarf ve türler (tasarım §4.1) -------------------------------------------------------------
 ENVELOPE_KEYS = ("seq", "t_ms", "zaman", "oturum", "gorev", "tur")
@@ -212,3 +215,105 @@ def serialize(event: Mapping[str, Any]) -> str:
         return json.dumps(event, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
     except (TypeError, ValueError) as e:
         raise EventError(f"olay JSON'a çevrilemedi: {type(e).__name__}") from None
+
+
+# --- Halka ve uzun yoklama (tasarım §4.1 "Halka", §4.2) ---------------------------------------
+
+
+class EventStream:
+    """Bir oturumun olay akışı: sıra numarası, bellekte halka, uzun yoklama.
+
+    - ``emit`` olayı kurar (şema + arındırma), ``seq``'i verir ve halkaya ekler. Şemaya uymayan olay
+      sıra numarası TÜKETMEZ: ``seq`` boşluksuzdur.
+    - Halka ``capacity`` olay tutar; dolunca en eski olay düşer ve ``dropped`` sayacı artar.
+    - ``since(sonra)`` ``seq > sonra`` olan olayları verir. İstemci geride kaldıysa (istediği olaylar
+      halkadan düşmüşse) cevap ``tasma: True`` ve ``kacan: <düşen ve hiç verilmemiş olay sayısı>``
+      taşır; kayıp gizlenmez (tasarım §4.1, opencode'un "volatile by contract" tutumu + sayım).
+    - ``timeout > 0`` ise yeni olay gelene, akış kapanana ya da süre dolana kadar bekler (uzun
+      yoklama). Olay yoksa boş döner: beklerken hiçbir şey üretilmez.
+
+    Halkada olayın JSON metni saklanır; ``since`` her çağrıda yeni sözlükler döndürür (okuyan, öbür
+    okuyanların gördüğünü değiştiremez). İş parçacığı güvenlidir.
+    """
+
+    def __init__(self, session_id: str, *, capacity: int = EVENT_RING_CAPACITY,
+                 clock: Callable[[], float] = time.monotonic, wall: Callable[[], str] = now_iso):
+        if not isinstance(session_id, str) or not _SESSION_ID.fullmatch(session_id):
+            raise ValueError("oturum kimliği [A-Za-z0-9_-]{1,64} olmalı")
+        if not isinstance(capacity, int) or isinstance(capacity, bool) or capacity < 1:
+            raise ValueError("halka boyu artı tamsayı olmalı")
+        self.session_id = session_id
+        self.capacity = capacity
+        self._ring: deque[tuple[int, str]] = deque(maxlen=capacity)
+        self._seq = 0
+        self._dropped = 0
+        self._closed = False
+        self._clock = clock
+        self._wall = wall
+        self._t0 = clock()
+        self._cond = threading.Condition()
+
+    @property
+    def last_seq(self) -> int:
+        """Son yayılan olayın sırası (hiç olay yoksa 0)."""
+        with self._cond:
+            return self._seq
+
+    @property
+    def dropped(self) -> int:
+        """Halka dolduğu için düşen olayların toplamı."""
+        with self._cond:
+            return self._dropped
+
+    @property
+    def closed(self) -> bool:
+        with self._cond:
+            return self._closed
+
+    def emit(self, tur: str, /, gorev: Optional[str] = None, **fields: Any) -> dict[str, Any]:
+        """Olayı yayar; kurulan (arındırılmış) olayı döndürür. Şema dışı olay ``EventError``."""
+        with self._cond:
+            if self._closed:
+                raise EventError("akış kapalı: olay yayılamaz")
+            t_ms = max(0, int((self._clock() - self._t0) * 1000))
+            event = build_event(tur, fields, seq=self._seq + 1, t_ms=t_ms, zaman=self._wall(),
+                                oturum=self.session_id, gorev=gorev)
+            text = serialize(event)
+            if len(self._ring) == self.capacity:
+                self._dropped += 1
+            self._ring.append((event["seq"], text))
+            self._seq = event["seq"]
+            self._cond.notify_all()
+            return event
+
+    def since(self, after: int, *, timeout: float = 0.0, limit: Optional[int] = None) -> dict[str, Any]:
+        """``seq > after`` olayları: ``{"olaylar", "son", "tasma", "kacan", "kapali"}``.
+
+        ``son``: verilen son olayın sırası (olay yoksa ``after``); istemci bir sonraki istekte bunu
+        verir. ``kacan``: ``after``'dan sonra gelip halkadan düşmüş, bu cevapta da verilemeyen olay
+        sayısı. ``kapali``: akış kapandı ve verilecek olay kalmadı. ``after`` akışın son sırasından
+        büyükse (başka oturumun sırası) ``ValueError``."""
+        if not isinstance(after, int) or isinstance(after, bool) or after < 0:
+            raise ValueError("sonra eksi olmayan tamsayı olmalı")
+        if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 1):
+            raise ValueError("limit artı tamsayı olmalı")
+        with self._cond:
+            if after > self._seq:
+                raise ValueError("istenen sıra akışın ilerisinde (başka oturumun sırası olabilir)")
+            if timeout > 0:
+                self._cond.wait_for(lambda: self._seq > after or self._closed, timeout)
+            oldest = self._seq - len(self._ring) + 1          # halkadaki ilk olayın sırası
+            missed = max(0, oldest - 1 - after)
+            texts = [t for s, t in self._ring if s > after]
+            if limit is not None:
+                texts = texts[:limit]
+            events = [json.loads(t) for t in texts]
+            last = events[-1]["seq"] if events else after
+            return {"olaylar": events, "son": last, "tasma": missed > 0, "kacan": missed,
+                    "kapali": self._closed and last == self._seq}
+
+    def close(self) -> None:
+        """Akışı kapatır: yeni olay yayılamaz, bekleyen yoklamalar hemen döner."""
+        with self._cond:
+            self._closed = True
+            self._cond.notify_all()

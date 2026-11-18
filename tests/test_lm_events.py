@@ -154,3 +154,136 @@ def test_arindirma_ic_ice_ve_anahtarlar():
     assert olay["cevap"] == {"isim": "f\\x1b", "gerekce": "\\u202eters", "kanit": ["r1", "r2"]}
     assert olay["sayaclar"] == {"a\\u2028b": 1}
     assert E.sanitize((True, 1, 1.5, None)) == [True, 1, 1.5, None]
+
+
+# --------------------------------------------------------------------------------------------
+# (c) halka ve uzun yoklama
+
+
+class SahteSaat:
+    def __init__(self, t: float = 100.0):
+        self.t = t
+
+    def __call__(self) -> float:
+        return self.t
+
+
+def akis(kapasite: int = LM.EVENT_RING_CAPACITY, saat=None) -> E.EventStream:
+    return E.EventStream("o1", capacity=kapasite, clock=saat or SahteSaat(), wall=lambda: "2026-11-18T12:00:00+03:00")
+
+
+def satir(a: E.EventStream, n: int) -> list[dict]:
+    return [a.emit("satir", metin=f"s{i}", duzey="bilgi") for i in range(n)]
+
+
+def test_seq_bosluksuz_t_ms_ve_sema_disi_olay_sira_tuketmez():
+    saat = SahteSaat(100.0)
+    a = akis(saat=saat)
+    assert LM.EVENT_RING_CAPACITY == 10000 and a.capacity == 10000
+    e1 = a.emit("satir", metin="ilk", duzey="bilgi")
+    saat.t = 100.25
+    with pytest.raises(E.EventError):
+        a.emit("satir", metin="x", duzey="yanlis")            # sıra numarası tüketmez
+    with pytest.raises(E.EventError):
+        a.emit("satir", metin=float("nan"), duzey="bilgi")
+    e2 = a.emit("iptal", gorev="g1", kaynak="analist")
+    assert (e1["seq"], e1["t_ms"], e2["seq"], e2["t_ms"], e2["gorev"]) == (1, 0, 2, 250, "g1")
+    cevap = a.since(0)
+    assert [e["seq"] for e in cevap["olaylar"]] == [1, 2] and cevap["son"] == 2
+    assert (cevap["tasma"], cevap["kacan"], cevap["kapali"]) == (False, 0, False)
+    assert cevap["olaylar"][0] == e1 and cevap["olaylar"][0] is not e1      # kopya: okuyan değiştiremez
+    cevap["olaylar"][0]["metin"] = "bozuldu"
+    assert a.since(0)["olaylar"][0]["metin"] == "ilk"
+    assert a.last_seq == 2 and a.dropped == 0
+
+
+def test_halka_tasmasi_kacan_sayisi_dogru():
+    """E-2: halka dolunca en eski düşer; geride kalan istemci tasma + doğru kaçan sayısı görür."""
+    a = akis(kapasite=5)
+    satir(a, 12)
+    assert a.dropped == 7 and a.last_seq == 12
+    c = a.since(0)
+    assert [e["seq"] for e in c["olaylar"]] == [8, 9, 10, 11, 12]
+    assert (c["tasma"], c["kacan"], c["son"]) == (True, 7, 12)
+    c = a.since(3)
+    assert (c["tasma"], c["kacan"], [e["seq"] for e in c["olaylar"]]) == (True, 4, [8, 9, 10, 11, 12])
+    c = a.since(7)                                             # tam sınırda: kayıp yok
+    assert (c["tasma"], c["kacan"], len(c["olaylar"])) == (False, 0, 5)
+    c = a.since(10, limit=1)
+    assert ([e["seq"] for e in c["olaylar"]], c["son"], c["tasma"]) == ([11], 11, False)
+    c = a.since(12)
+    assert (c["olaylar"], c["son"], c["tasma"], c["kacan"]) == ([], 12, False, 0)
+    with pytest.raises(ValueError):
+        a.since(13)                                            # başka oturumun sırası
+    for bozuk in (-1, True, "3"):
+        with pytest.raises(ValueError):
+            a.since(bozuk)
+    with pytest.raises(ValueError):
+        a.since(0, limit=0)
+    with pytest.raises(ValueError):
+        E.EventStream("o1", capacity=0)
+    with pytest.raises(ValueError):
+        E.EventStream("../x")
+
+
+def test_yavas_istemci_benzetimi_her_olay_ya_verilir_ya_kacan_sayilir():
+    """E-2: üretici patlamalar hâlinde yayar, istemci küçük sayfalarla okur. Her sıra numarası ya bir
+    kez verilir ya da kaçan sayısına girer; ikisi birden ya da hiçbiri olmaz."""
+    import random
+    rnd = random.Random(20261118)
+    a = akis(kapasite=7)
+    verilen: list[int] = []
+    kacan_toplam = 0
+    son = 0
+    for _ in range(300):
+        satir(a, rnd.randint(0, 6))
+        c = a.since(son, limit=rnd.randint(1, 4))
+        kacan_toplam += c["kacan"]
+        verilen += [e["seq"] for e in c["olaylar"]]
+        son = c["son"]
+    while son < a.last_seq:
+        c = a.since(son, limit=3)
+        kacan_toplam += c["kacan"]
+        verilen += [e["seq"] for e in c["olaylar"]]
+        son = c["son"]
+    assert verilen == sorted(set(verilen))                     # yinelenmez, sırayla
+    assert len(verilen) + kacan_toplam == a.last_seq          # her olay ya verildi ya kaçan sayıldı
+    assert kacan_toplam > 0 and a.dropped >= kacan_toplam
+
+
+def test_uzun_yoklama_olay_gelince_doner_yoksa_bos_doner_kapaninca_doner():
+    import threading
+    import time as _t
+    a = E.EventStream("o1", capacity=10)
+    t0 = _t.monotonic()
+    bos = a.since(0, timeout=0.05)
+    assert bos["olaylar"] == [] and _t.monotonic() - t0 >= 0.04   # olay yokken üretilen bir şey yok
+    sonuc: dict = {}
+
+    def bekle():
+        sonuc["c"] = a.since(0, timeout=10)
+        sonuc["t"] = _t.monotonic()
+
+    th = threading.Thread(target=bekle)
+    th.start()
+    _t.sleep(0.05)
+    t_yay = _t.monotonic()
+    a.emit("satir", metin="geldi", duzey="bilgi")
+    th.join(5)
+    assert not th.is_alive() and [e["metin"] for e in sonuc["c"]["olaylar"]] == ["geldi"]
+    assert sonuc["t"] - t_yay < 2.0                            # olay gelince hemen döner (10 sn beklemez)
+    sonuc.clear()
+    th = threading.Thread(target=lambda: sonuc.update(c=a.since(1, timeout=10)))
+    th.start()
+    _t.sleep(0.05)
+    a.close()                                                  # bekleyen yoklama hemen döner
+    th.join(5)
+    assert not th.is_alive() and sonuc["c"]["olaylar"] == [] and sonuc["c"]["kapali"] is True
+    with pytest.raises(E.EventError):
+        a.emit("satir", metin="kapandıktan sonra", duzey="bilgi")
+    assert a.closed and a.since(0)["kapali"] is True
+    # Kapalı ama verilecek olay kalmışsa (sayfalama) "kapali" henüz True değildir.
+    b = E.EventStream("o2", capacity=10)
+    satir(b, 3)
+    b.close()
+    assert b.since(0, limit=1)["kapali"] is False and b.since(2)["kapali"] is True
