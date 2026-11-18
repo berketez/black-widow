@@ -1286,6 +1286,9 @@ _GHIDRA_AUTO_NAME_RE = re.compile(
     r"^(FUN_|thunk_FUN_|switch_|case_|LAB_|DAT_|PTR_|SUB_)[0-9a-fA-F]+$"
 )
 
+# MEK-11: Ghidra'nın simge tablosundan değil kendinden verdiği adlar.
+_GHIDRA_SYNTHETIC_LABEL_RE = re.compile(r"^(entry|_INIT_\d+|_FINI_\d+)$")
+
 # Underscore-prefixed C symbol (macOS convention)
 _C_SYMBOL_RE = re.compile(r"^_[a-zA-Z]")
 
@@ -2059,6 +2062,11 @@ class SignatureDB:
         """
         # Ghidra auto-name ise skip
         if _GHIDRA_AUTO_NAME_RE.match(func_name):
+            return None
+        # MEK-11: Ghidra'nın yapay etiketleri (giriş noktası ``entry``, .init_array
+        # / .fini_array girdileri) ikilideki bir simge değil; katalogda aynı
+        # yazılışlı bir ad bulunsa bile kitaplık eşleşmesi doğurmaz.
+        if _GHIDRA_SYNTHETIC_LABEL_RE.match(func_name):
             return None
 
         # v1.12.0 sig_db Faz 2 fix: Builtin dict ONCE, LMDB sonra.

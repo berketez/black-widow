@@ -112,6 +112,22 @@
       "test": "tests/test_p08_imza09.py::test_protobuf_namespace_still_matches",
       "find": "                    matched_name=func_name,\n                    library=info[\"lib\"],\n                    confidence=0.85,",
       "replace": "                    matched_name=hit[0] if hit else func_name,\n                    library=info[\"lib\"],\n                    confidence=0.85,"
+    },
+    {
+      "id": "mek11_entry_eslesiyor",
+      "desc": "Ghidra'nın yapay entry etiketi imza eşlemesine giriyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_mek11.py::test_ghidra_entry_label_is_not_a_library_symbol",
+      "find": "_GHIDRA_SYNTHETIC_LABEL_RE = re.compile(r\"^(entry|_INIT_\\d+|_FINI_\\d+)$\")",
+      "replace": "_GHIDRA_SYNTHETIC_LABEL_RE = re.compile(r\"^(_INIT_\\d+|_FINI_\\d+)$\")"
+    },
+    {
+      "id": "mek11_suzgec_cagrilmiyor",
+      "desc": "yapay etiket süzgeci çağrılmıyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_mek11.py::test_ghidra_init_array_labels_are_not_symbols",
+      "find": "        if _GHIDRA_SYNTHETIC_LABEL_RE.match(func_name):\n            return None",
+      "replace": "        if _GHIDRA_SYNTHETIC_LABEL_RE.match(func_name) and False:\n            return None"
     }
   ]
 }
