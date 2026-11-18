@@ -10,8 +10,8 @@ Brif: `ONARIM_BRIF.md`. Karar: K-3 (Berke, 2026-11-18 10:1x: "çöpler hangisiys
 |---|---|---|
 | 0 — ön kayıt | bitti | f4e9ae1 |
 | 1 — A1 ölü monolit + `_execute_legacy` + yalnız onları sınayan testler | bitti | 7c5ed28 |
-| 2 — A1b çift koşan blok (BORU-01) | bitti | (bu commit) |
-| 3 — kalan çağrılmayan metotlar (silinmez, liste) | bekliyor | |
+| 2 — A1b çift koşan blok (BORU-01) | bitti | 059cb4e |
+| 3 — kalan çağrılmayan metotlar (silinmez, liste) | bitti | (bu commit, yalnız belge) |
 
 ## Gürültü tabanı (B0a ↔ B0b, aynı kod 112350e, `PYTHONHASHSEED=0`, `--paralel 1`)
 Karşılaştırıcı: `out/` altındaki her dosya sha256; farklıysa JSON'da oynak alanlar (ön kayıttaki liste) atılıp, metinde zaman / süre / yol maskelenip yeniden; HTML istatistik tablosu ve README istatistik satırı sıralanarak (satır sırası adımların bitiş sırasına bağlı). Ayrıca `pipeline_result.json` aşama istatistikleri anahtar anahtar.
@@ -119,3 +119,31 @@ Girinti değişikliği 6 mutantın `find` metnini, silme 2 mutantın hedefini ka
 - `tests/test_ps2_olu_kod.py::TestCiftKosuYok` (4 test): adımın `timing_struct_recovery` değeri (1,7) ve `computation_fusion_matches` (7) ezilmez, `computation_fusion_injected` yazılmaz; `StructRecoveryEngine.recover` ve `CFGAnalyzer.analyze` aşama kodundan hiç çağrılmaz; stages.py kodunda hesaplama kollarına atıf yok. A1 koduna (7c5ed28) karşı **4/4 kırmızı**, doğru nedenle (`0.0 == 1.7`, `1 == 7`, çağrılar `['cfg_analyze', 'struct_recover']`, yasak adlar bulundu).
 - `tests/test_computation_integration.py`: `TestMaxSMTCandidatePassesToEngine` yeniden yazıldı (aday yolu `struct_recovery` adımının `requires`'ında, stages.py'de kopya yok; eski koda karşı kırmızı); `TestFusionInjectsExtractedNames` silindi (metin testiydi, davranış yoktu; gerekçe dosyada yorum olarak).
 - `mutation_specs_ps2.json` son kodla **8/8 öldü** (A1 4 + A1b 4: süre ezilir, füzyon sayacı ezilir, yapı motoru geri gelir, CFG-iso geri gelir). P10 mutant tanımı son kodla **32/32**; yamalı başka paket tanımları son kodla 50/50, 34/34, 13/13.
+
+## Kalem 3 — silmeden sonra stages.py'de kalan, çağrılmayan kod (SİLİNMEDİ; ayrı onay gerekir)
+Yöntem: `cagiran_tara.py` son ağaçta yeniden koşuldu (iç çağıran + stages.py dışı üretim atfı; testler ayrı); dinamik `getattr` yok.
+
+| Ne | Yer (son ağaç) | Durum | Not |
+|---|---|---|---|
+| `_collect_all_algorithms` (modül fonksiyonu) | stages.py:65-72 | üretimde çağıran **0** (tek çağıranı A1b bloğuydu) | Adımlar kendi kopyalarını kullanıyor (`semantic_naming.py:159` "step-local kopyası", `struct_recovery`, `deep_tracing`, `engineering_annotation`, `_engineering_helpers`); stages.py'den içe aktaran yok. Tek atıf `tests/test_v192_fixes.py::TestStagesModuleLevelHelpers` (4 test). |
+| İkinci `_seed_recovery_pre_names` çağrısı (Faz 2 sonrası) | `_execute_binary` | çalışıyor, etkisiz | Yorumu "guard'lar sayesinde no-op" diyor (`test_main_gnulib_seed_ordering::test_second_call_changes_nothing`). Mutasyona uğrattığı `extracted_names`'i A1b'den sonra okuyan yok (Faz 3 tohumunda yok); dönüş değeri (elle ad haritası) A1'den sonra okunmuyor → **B-C6** ("elle ad birleştirme sonrası zorlanır") bugün hiçbir yerde uygulanmıyor; zorlayan tek yer silinen ölü döngüdeydi. |
+| `deob_dir` yereli, `copy` / `TargetDetector` içe aktarımları, `DynamicAnalysisStage.execute`'ta `dynamic_dir` | stages.py | kullanılmıyor | Bu paketten önce de kullanılmıyordu (pyflakes tabanı); dokunulmadı. |
+
+Bu paketin dosyası olmayan, ama silmeyle ilgili notlar (dokunulmadı):
+- `karadul/pipeline/reconstruction_context.py`: `ReconstructionContext`'in 42 alanı / metodundan (41 alan + `ensure_loop_state`) üretim kodunda `rc.` ile kullanılan 8'i (`artifacts`, `stats`, `errors`, `dirs`, `workspace_dir`, `binary_path`, `static_dir`, `reconstructed_dir`); `start` / `stage_name` kurucu argümanı olarak veriliyor; kalan 32'si (`warnings`, `ph1_artifacts`, `phase1_*`, `sig_matches` … `loop_state`, `ensure_loop_state`) üretimde hiç okunmuyor ya da yazılmıyor (`rc_alanlari.py`). Testleri `tests/test_stages_split_parity.py`'de duruyor. Sahibi `karadul/pipeline/**` (P11).
+- **K-3 "eski deobfuscation zinciri" düzeltmesine ek bulgu:** `DeobfuscationManager.run_chain` (synchrony / babel zinciri) yalnız `ElectronAnalyzer.deobfuscate()` (`analyzers/electron.py:537`) içinden çağrılıyor; `ElectronAnalyzer.deobfuscate()` ve `JavaScriptAnalyzer.deobfuscate()`'in analiz akışındaki tek çağıranı `_execute_legacy` idi (JS ailesi, `use_deep=False`). Yani zincir bu paketten ÖNCE de `karadul analyze`'da hiç koşmuyordu (`ElectronAnalyzer.__init__` yalnız `DeobfuscationManager(config)` kuruyor). Bu paket erişilebilirliği değiştirmedi. Zincirin A (kopya, `deep_pipeline.py` aynı işi yapıyor) mı B (bağlanacak) mı olduğu ayrı karar; `deobfuscators/**` ve `analyzers/**` bu paketin dosyası değil.
+- `config.py:299 use_deep_deobfuscation` hiçbir yerde okunmuyor (A1 öncesi de); `DeobfuscationStage`'den `use_deep` kalktığı için artık hiçbir anlamı yok → P15a / BORU-13 listesine.
+
+## Tam takım
+`PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (son kod 059cb4e'deki hâl, çalışma zamanı verisi symlink'li): **9 143 geçti, 10 atlandı, 153 seçim dışı, 0 kaldı** (291 sn). Bu paketin test sayısına etkisi (`--collect-only`): dokunulan 11 eski dosyada 112350e'de 324 toplanan test → 255 (−69: ölü yolu ya da yalnız onun metnini sınayanlar; 2 dosya bütünüyle), artı yeni `tests/test_ps2_olu_kod.py` 25.
+
+## Ana oturumun bilmesi gerekenler
+1. **Yamalar uygulanmadan başka paketlerin mutant tanımlarında 8 mutant 'error' verir** (girinti değişti / hedef silindi): `yamalar/P-S2__mutation_specs_{adim3_hat,ps1,rapor_sayaclari}.json.patch` (yamalı hâlleri son kodla 50/50, 34/34, 13/13). `rs_tur_*` iki mutantın yerini `mutation_specs_ps2.json`'daki `ps2_a1_tur_sayisi_ezilir` tutuyor.
+2. `DeobfuscationStage` artık argüman almıyor: `scripts/cursor_3bundle_analysis.py:267` yamasız `TypeError` verir → `yamalar/P-S2__cursor_3bundle_analysis.py.patch`.
+3. **B-C6 açık:** elle verilen adı birleştirmeden sonra zorlayan tek kod ölü döngüdeydi; şimdi hiç yok (davranış değişmedi, zaten koşmuyordu). `_seed_recovery_pre_names`'in dönüş değeri okunmuyor.
+4. **Eski deobfuscation zinciri:** K-3 düzeltmesindeki "Electron kullanıyor" yalnız kurucu için doğru; `DeobfuscationManager.run_chain` analiz akışında bu paketten önce de koşmuyordu (tek yol `_execute_legacy` idi). Ayrı karar (kalem 3 notu).
+5. Gürültü: `reconstruct.stats.data_flow_edges` aynı kodla belirlenimci değil (`data_flow.py:783-797`, `as_completed` birleştirme sırası; tree 120 ↔ 128, htop 4 273 ↔ 4 286/4 287) → P12 / P18 (ya da veri akışının sahibi).
+6. Ölçüm araçları depo dışında: `~/karadul_olcum/runs/onarim-2026-11-18/P-S2/{karsilastir.py, anahtar_kumesi.py, ws_yapi_karsilastir.py, veri_akisi_tekrar.py}`; AST kanıt betikleri oturum scratchpad'inde (`cagiran_tara.py`, `kanit_tablosu.py`, `a1_dogrula.py`, `a1b_dogrula.py`, `mutant_uygulanir_mi.py`) — kalıcı değil; sonuçları bu dosyada.
+7. `taban_agac/` (112350e'nin `git clone --shared` kopyası; nesneleri ana depodan alternates ile okur, ana depoya yazmaz) ölçüm kökünde duruyor. Gerekmezse silinebilir (onaya bağlı).
+
+## PAKET BİTTİ
