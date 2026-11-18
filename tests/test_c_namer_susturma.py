@@ -260,7 +260,8 @@ def test_ks1_on_adi_tam_yazilir_ve_kesin_etiketi_tasir(tmp_path, seri):
     assert res.by_strategy["ks1"] == 2 and res.by_strategy["binary_extract"] == 1
     k = prov["global"]["FUN_00001000"]
     assert (k["source"], k["strategy"], k["label"], k["pre_name_kind"]) == ("pre_names", "ks1", "kesin", "ks1")
-    assert k["ks1"]["satirlar"] == ["func_kalibi"] and k["confidence"] == 0.95
+    # P12a / AD-07: güven = func_kalibi kanalının ölçülmüş kesinliğinin alt sınırı (eskiden 0,95)
+    assert k["ks1"]["satirlar"] == ["func_kalibi"] and k["confidence"] == 0.916
     assert "pre_name_kind" not in prov["global"]["FUN_00003000"]
     assert prov["summary"]["labels_global"][nl.LABEL_CERTAIN] == 1
     # ön adı olan anahtarın dizgi adayları yarıştan çıkar

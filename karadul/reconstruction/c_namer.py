@@ -51,6 +51,8 @@ from karadul.core.naming_labels import (
     EXACT_NAME_PATTERN,
     LABEL_UNVERIFIED,
     STRATEGY_KS1,
+    measured_channel_confidence,
+    provenance_channel,
 )
 from karadul.reconstruction import name_validity as _name_validity
 from karadul.reconstruction.aho_replacer import AhoFinder, AhoReplacer
@@ -316,11 +318,13 @@ class _ProvenanceRecorder:
 
     def add_pre_name(
         self, old_name: str, raw_name: Any, new_name: str,
-        strategy: str, confidence: float,
+        strategy: str, confidence: float | None,
         label: str | None = None, meta: dict[str, Any] | None = None,
     ) -> None:
         """pre_names'ten (BinaryNameExtractor / kurtarma tohumu) gelen ad.
 
+        ``confidence``: kanalın ölçülmüş kesinliği; ölçülmemiş kanalda ``None`` (JSON'da
+        ``null``; uydurma sayı yazılmaz, AD-07).
         ``label``: güven etiketi (elle verilen adda ``None``; alan yazılmaz).
         ``meta``: geçerli künye (tür ve KS-1 kanıtı); yoksa ek alan yazılmaz.
         """
@@ -330,7 +334,7 @@ class _ProvenanceRecorder:
                 "source": "pre_names",
                 "new_name": new_name,
                 "strategy": strategy,
-                "confidence": float(confidence),
+                "confidence": None if confidence is None else float(confidence),
                 "reason": "",
                 "n_candidates": 0,
                 "runners_up": [],
@@ -2290,9 +2294,16 @@ class CVariableNamer:
                     naming_map[old_name] = sanitized
                     used_new_names.add(sanitized)
                     by_strategy[strategy] = by_strategy.get(strategy, 0) + 1
-                    # pre_names = FIX-1 main / gnulib fingerprint / boilerplate /
-                    # binary_extractor -> yuksek guven (deterministik kurtarma).
-                    confidence_map[old_name] = 0.95
+                    # P12a / AD-07: güven, ön adın kanalının ölçülmüş kesinliğidir (Wilson %95
+                    # alt sınırı, naming_labels.MEASURED_PRE_NAME_PRECISION); ölçülmemiş kanalda
+                    # güven yazılmaz. Eskiden her ön ada sabit 0,95 yazılıyordu. Ad seçimi güvene
+                    # bakmaz: yalnız gösterilen ve dışa verilen sayı değişir.
+                    pre_conf = measured_channel_confidence(provenance_channel({
+                        "strategy": strategy, "pre_name_kind": kind,
+                        STRATEGY_KS1: (meta or {}).get(STRATEGY_KS1),
+                    }))
+                    if pre_conf is not None:
+                        confidence_map[old_name] = pre_conf
                     strategy_map[old_name] = strategy
                     if label is not None:
                         label_map[old_name] = label
@@ -2300,7 +2311,7 @@ class CVariableNamer:
                     if prov is not None:
                         prov.add_pre_name(
                             old_name, new_name, sanitized,
-                            strategy_map[old_name], confidence_map[old_name],
+                            strategy_map[old_name], pre_conf,
                             label=label, meta=meta,
                         )
                 elif sanitized and sanitized != "unnamed" and prov is not None:

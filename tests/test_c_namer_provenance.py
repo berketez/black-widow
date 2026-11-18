@@ -293,7 +293,11 @@ def test_provenance_file_schema(ws, tmp_path, serial_pool):
         assert rec["key"] == (f"{func}::{old}" if func else old)
         assert rec["source"] in ("candidate", "pre_names")
         assert isinstance(rec["new_name"], str) and rec["new_name"]
-        assert isinstance(rec["confidence"], float)
+        # P12a / AD-07: ölçülmemiş kanaldaki ön adın güveni yazılmaz (null)
+        if rec["source"] == "pre_names":
+            assert rec["confidence"] is None or isinstance(rec["confidence"], float)
+        else:
+            assert isinstance(rec["confidence"], float)
         assert isinstance(rec["n_candidates"], int)
         assert len(rec["runners_up"]) <= 3
         for ru in rec["runners_up"]:
@@ -335,7 +339,8 @@ def test_records_match_naming_map(ws, tmp_path, serial_pool):
         rec = prov["global"][old]
         assert rec["new_name"] == new
         assert rec["strategy"] == result.strategy_map[old]
-        assert rec["confidence"] == result.confidence_map[old]
+        # P12a / AD-07: güveni ölçülmemiş ön ad confidence_map'te yok, kayıtta null
+        assert rec["confidence"] == result.confidence_map.get(old)
 
 
 # ---------------------------------------------------------------------------
@@ -456,7 +461,8 @@ def test_pre_names_record(ws, tmp_path, serial_pool):
     assert rec["new_name"] == _sanitize_c_name("ledger-reconcile") == "ledger_reconcile"
     assert rec["proposed_name"] == "ledger-reconcile"
     assert rec["strategy"] == result.strategy_map["FUN_00005000"] == "binary_extract"
-    assert rec["confidence"] == result.confidence_map["FUN_00005000"]
+    # P12a / AD-07: künyesiz ön adın kanalı ölçülmemiş: güven yok (eskiden sabit 0,95)
+    assert rec["confidence"] is None and "FUN_00005000" not in result.confidence_map
     # pre_names'in yendiği sezgisel aday kayda geçer (string_context, tam kanıt)
     assert rec["runners_up"][0]["strategy"] == "string_context"
     assert rec["runners_up"][0]["evidence"] == PRE_NAMED_STR

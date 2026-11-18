@@ -111,11 +111,15 @@ def test_onyuk_adi_temizlenmeden_yazilir(tmp_path, seri):
     assert harita["global"] == {"FUN_00001000": "_start", "FUN_00002000": "__do_global_dtors_aux",
                                 "FUN_00003000": "register_tm_clones", "FUN_00004000": "gnulib_ic",
                                 "FUN_00005000": "faz1_adi"}
-    # yalnız yazım değişti: etiket "doğrulanmadı", strateji binary_extract, güven 0,95
+    # yalnız yazım değişti: etiket "doğrulanmadı", strateji binary_extract. Güven (P12a /
+    # AD-07) kanalın ölçülmüş kesinliği: önyük 0,992, gnulib 0,706; faz1 ölçülmemiş → yok.
+    beklenen_guven = {"FUN_00001000": 0.992, "FUN_00002000": 0.992, "FUN_00003000": 0.992,
+                      "FUN_00004000": 0.706}
     for key in on:
         assert res.label_map[key] == nl.LABEL_UNVERIFIED
         assert res.strategy_map[key] == "binary_extract"
-        assert res.confidence_map[key] == 0.95
+        assert res.confidence_map.get(key) == beklenen_guven.get(key)
+        assert prov["global"][key]["confidence"] == beklenen_guven.get(key)
     kayit = prov["global"]["FUN_00002000"]
     assert (kayit["source"], kayit["pre_name_kind"], kayit["new_name"]) == (
         "pre_names", ONYUK, "__do_global_dtors_aux")

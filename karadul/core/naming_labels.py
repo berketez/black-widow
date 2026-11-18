@@ -35,6 +35,32 @@ EXACT_NAME_PATTERN = r"[A-Za-z_][A-Za-z0-9_]*"
 
 SOURCE_C_NAMER = "c_namer"
 
+# P12a / AD-07: ön ad kanallarının ölçülmüş tam ad kesinliği. Eskiden her ön ada kanıt gücünden
+# bağımsız sabit 0,95 yazılıyordu (gnulib parmak izinin ölçülmüş kesinliği %73,7 iken).
+# Kaynak: ``docs/arge/2026-11-10_n1_adim3/urun_olcumu_yeni2.md`` "Kanal başına" (geliştirme seti,
+# 119 ikili, HEAD 2be12ed, hüküm tam eşitlik). Değer: (doğru, ad verilen, Wilson %95 alt sınırı;
+# 3 basamak). Güven olarak ALT SINIR yazılır: tek ölçümün belirsizliği taşınsın, küçük n'li kanal
+# (3/3) yüksek görünmesin. Tabloda olmayan kanal ölçülmemiştir: güven yazılmaz (``None``).
+# Kanal anahtarı ``provenance_channel`` biçimindedir. Alt sınırların ``baglama.wilson`` ile aynı
+# olduğunu ``tests/test_p12a_on_ad_guveni.py`` kilitler. Kanal davranışı değişince (ör. gnulib
+# koşulu, AD-03) tablo yeniden ölçülmelidir.
+MEASURED_PRECISION_SOURCE = "docs/arge/2026-11-10_n1_adim3/urun_olcumu_yeni2.md@2be12ed"
+MEASURED_PRE_NAME_PRECISION: dict[str, tuple[int, int, float]] = {
+    "on_ad:gnulib": (621, 843, 0.706),
+    "on_ad:elf_onyuk": (458, 458, 0.992),
+    "on_ad:main_giris": (110, 110, 0.966),
+    "ks1:func_kalibi": (246, 259, 0.916),
+    "ks1:func_aktarma": (33, 33, 0.896),
+    "ks1:func_kalibi+func_aktarma": (3, 3, 0.438),
+    "ks1:assert_ust": (5, 7, 0.359),
+}
+
+
+def measured_channel_confidence(channel: Optional[str]) -> Optional[float]:
+    """Kanalın ölçülmüş kesinliğinin Wilson %95 alt sınırı; ölçülmemiş kanalda ``None``."""
+    row = MEASURED_PRE_NAME_PRECISION.get(channel) if channel else None
+    return row[2] if row else None
+
 
 def provenance_confidence(record: Optional[Mapping[str, Any]]) -> Optional[float]:
     """Köken kaydındaki gerçek güven; kayıt ya da sayı yoksa ``None`` (uydurma değer yazılmaz)."""
