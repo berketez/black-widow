@@ -33,8 +33,8 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Iterable, Iterator, Mapping, Optional
 
 from karadul.lm import (
-    BUDGET_TOOL_RESULTS_TOKENS, CONTEXT_TOKENS, CONTEXT_TOKENS_K2, EVENT_TOUCHED_MAX, MAX_TOKENS_STEP,
-    MODEL_RETRY_MAX, TASK_TIME_BUDGET_FALLBACK_SEC, TIME_BUDGET_FACTOR, guard, protocol,
+    BUDGET_TOOL_RESULTS_TOKENS, CONTEXT_TOKENS, CONTEXT_TOKENS_K2, EVENT_TOKEN_MIN_INTERVAL_SEC, EVENT_TOUCHED_MAX,
+    MAX_TOKENS_STEP, MODEL_RETRY_MAX, TASK_TIME_BUDGET_FALLBACK_SEC, TIME_BUDGET_FACTOR, guard, protocol,
 )
 from karadul.lm.audit import AuditLog, canonical_json, sha256_text
 from karadul.lm.backend import STATE_ERROR, STATE_MEMORY_STOPPED, Backend, BackendError, ChatResult, LMError
@@ -80,6 +80,53 @@ class ModeDisabled(LMError):
 
 class AgentBusy(LMError):
     """Ajan başka bir görev yürütürken ikinci görev istendi (tek yuva, tasarım §2.3 "Sıra")."""
+
+
+class _StreamStop(Exception):
+    """Akış parçası gelirken iptal ya da süre dolması (KaradulLM v2 §3.11): akış okuma döngüsünden
+    çıkılır, arka uç bağlantıyı kapatır. ``LMError`` değildir: yinelenmez, arka uç hatası sayılmaz."""
+
+    def __init__(self, status: str):
+        super().__init__(status)
+        self.status = status
+
+
+class _TokenSink:
+    """Akışlı isteğin parça geri çağrısı (KaradulLM v2 §3.3 adım 5, §3.11, §4.1 ``jeton``).
+
+    - Her parçadan ÖNCE iptal ve süre bütçesi denetlenir; biri tutarsa ``_StreamStop`` (süren istek
+      artık soket zaman aşımını beklemeden kesilir; sunucunun üretimi kesip kesmediği ölçülmedi, Z8).
+    - ``jeton`` olayları birleştirilir: ilk parça hemen, sonrakiler en erken
+      ``EVENT_TOKEN_MIN_INTERVAL_SEC`` aralıkla; akış bitince (ya da kesilince) yayılmamış birikim
+      ``flush`` ile bir kez yayılır. Olay yalnız gerçekten gelen parçadan doğar; parça yoksa olay yok.
+      Sayılan: içerik parçası ve karakter (jeton sayısı değil; o ``model_cevabi``'nda, uçtan)."""
+
+    def __init__(self, agent: "Agent", task: "_Task"):
+        self.agent = agent
+        self.task = task
+        self.parts = 0
+        self.chars = 0
+        self.emitted = 0
+        self.last: Optional[float] = None
+
+    def on_token(self, piece: str) -> None:
+        a = self.agent
+        if a.cancel.is_set():
+            raise _StreamStop(STATUS_CANCELLED)
+        now = a._clock()
+        if self.task.deadline is not None and now > self.task.deadline:
+            raise _StreamStop(STATUS_TIMEOUT)
+        self.parts += 1
+        self.chars += len(piece)
+        if self.last is None or now - self.last >= EVENT_TOKEN_MIN_INTERVAL_SEC:
+            self.last = now
+            self.emitted = self.parts
+            a._emit("jeton", self.task, parca=self.parts, karakter=self.chars)
+
+    def flush(self) -> None:
+        if self.parts > self.emitted:
+            self.emitted = self.parts
+            self.agent._emit("jeton", self.task, parca=self.parts, karakter=self.chars)
 
 
 def time_budget_sec(expected_sec: float) -> float:
@@ -176,7 +223,7 @@ class Agent:
                  clock: Callable[[], float] = time.monotonic, cancel: Optional[threading.Event] = None,
                  rejected_names: Optional[Mapping[str, Iterable[str]]] = None,
                  expected_task_sec: Optional[float] = None,
-                 on_event: Optional[Callable[..., Any]] = None):
+                 on_event: Optional[Callable[..., Any]] = None, stream: Optional[bool] = None):
         modes = frozenset(enabled_modes)
         if not modes <= frozenset(MODES):
             raise ValueError(f"bilinmeyen ajan kipi: {sorted(modes - frozenset(MODES))}")
@@ -215,6 +262,9 @@ class Agent:
         # kayıtlardan sonra yayılır). İki durumda da hata yükselir; hata yolunda yayılan olayların hatası
         # asıl hatayı örtmez.
         self.on_event = on_event
+        # Akışlı model isteği (§3.3 adım 5): öntanım olay geri çağrısı varken açık (canlı görünüm),
+        # yokken kapalı (ölçüm ve pilot eşitliği: pilot ``stream: false`` istiyor, istek gövdesi aynı kalır).
+        self.stream = (on_event is not None) if stream is None else bool(stream)
 
     # --- olaylar (P22a) -----------------------------------------------------------------------
 
@@ -528,13 +578,23 @@ class Agent:
             c.model_calls += 1
             amac = purpose if attempt == 0 else f"{purpose}_yineleme"
             self._emit("model_istegi", task, amac=amac, istem_kestirim=est)
+            sink = _TokenSink(self, task) if self.stream else None
             t = self._clock()
             try:
                 # Arka uca listenin kopyası gider: geçmiş sonradan uzasa da gönderilen istek değişmez.
                 reply = self.backend.chat(list(messages), schema=schema, max_tokens=MAX_TOKENS_STEP,
-                                          purpose=amac)
+                                          purpose=amac, stream=self.stream,
+                                          on_token=sink.on_token if sink is not None else None)
+            except _StreamStop as stop:
+                # Parça başına iptal / süre: akış kesildi, bağlantı kapandı; cevap yok.
+                sure_ms = int(round((self._clock() - t) * 1000))
+                sink.flush()
+                task.finish(stop.status)
+                self._reply_failed(task, amac, sure_ms, stop.status, None)
             except LMError as e:
                 sure_ms = int(round((self._clock() - t) * 1000))
+                if sink is not None:
+                    sink.flush()
                 if self._may_retry(task, e, attempt):
                     shown = f"{type(e).__name__}: {e}"
                     self._reply_failed(task, amac, sure_ms, STATUS_BACKEND_ERROR,
@@ -551,11 +611,15 @@ class Agent:
                 # Beklenmeyen hata / kesme: istek olayı eşsiz kalmasın. Olay yayımının hatası asıl hatayı
                 # örtmez (``_run`` arka ucu durdurur ve hatayı yükseltir).
                 try:
+                    if sink is not None:
+                        sink.flush()
                     self._reply_failed(task, amac, int(round((self._clock() - t) * 1000)), STATUS_UNEXPECTED,
                                        type(e).__name__)
                 except Exception:  # noqa: BLE001
                     pass
                 raise
+            if reply is not None and sink is not None:
+                sink.flush()
             break
         sure_ms = int(round((self._clock() - t) * 1000))
         self._check_memory(task)

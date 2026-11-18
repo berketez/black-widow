@@ -407,10 +407,12 @@ def test_k0_olay_sirasi_ve_alanlar(tmp_path):
                                                                     "prompt_tokens_details": {"cached_tokens": 512}})],
                                       clock=Tik())
     r = ajan.suggest_name(fun(A))
-    assert r.status == "tamam"
+    assert r.status == "tamam" and arka.calls[0]["stream"] is True     # olay geri çağrısı varken akışlı
     assert turler(akis) == ["gorev_basladi", "arac_basladi", "arac_bitti", "arac_basladi", "arac_bitti",
-                            "model_istegi", "model_cevabi", "denetim", "gorev_bitti"]
-    olay = akis.since(0)["olaylar"]
+                            "model_istegi", "jeton", "model_cevabi", "denetim", "gorev_bitti"]
+    olay = [e for e in akis.since(0)["olaylar"] if e["tur"] != "jeton"]
+    jeton = ilk(akis, "jeton")
+    assert (jeton["parca"], jeton["karakter"]) == (1, len(json.dumps(AD, ensure_ascii=False)))
     assert {e["gorev"] for e in olay} == {"g1"} and {e["oturum"] for e in olay} == {"o1"}
     hedef = {"fn": fun(A), "adres": A}
     gb = olay[0]
@@ -430,7 +432,8 @@ def test_k0_olay_sirasi_ve_alanlar(tmp_path):
     mi, mc, de, bit = olay[5:]
     assert (mi["amac"], mi["istem_kestirim"]) == ("k0", r.est_prompt_tokens)
     assert (mc["amac"], mc["durum"], mc["bitis_nedeni"], mc["istem_jeton"], mc["uretim_jeton"], mc["onbellek_jeton"],
-            mc["niyet"], mc["hata"], mc["sure_ms"]) == ("k0", "gecerli", "stop", 900, 30, 512, None, None, 250)
+            mc["niyet"], mc["hata"], mc["sure_ms"]) == ("k0", "gecerli", "stop", 900, 30, 512, None, None, 500)
+    # (model süresi 500: istek boyunca saat iki kez okundu — parça geri çağrısı da saati okur)
     # Denetim: dört değerli hüküm + koşmayan kurallar (D4, D5) arayüze ulaşır.
     assert (de["nesne"], de["hukum"], de["toplu_kabul"]) == ("g1", r.verdict, r.guard["toplu_kabul"])
     assert de["bulgular"] == r.guard["bulgular"] and set(de["sinanmayan"]) == {"D4", "D5"}
@@ -441,20 +444,28 @@ def test_k0_olay_sirasi_ve_alanlar(tmp_path):
 
 
 def test_olay_geri_cagrisi_davranisi_degistirmez(tmp_path):
-    """Olaylı ve olaysız ajan aynı sonucu, aynı istekleri ve aynı denetim kayıtlarını üretir."""
-    sonuc = []
-    for olayli_mi in (False, True):
+    """Olaysız ajan (ölçüm / pilot yolu) ile olaylı ama akışsız ajan aynı sonucu, aynı istek gövdesini ve
+    aynı denetim kayıtlarını üretir. Olaylı ajan öntanımda akışlıdır: istek yalnız ``stream`` ile ve
+    denetim kaydı yalnız akış alanlarıyla ayrılır; sonuç ve iletiler aynıdır."""
+    akis_alanlari = {"akis", "icerik_parca", "ilk_jeton_sn", "son_jeton_sn", "istek"}
+    sonuc = {}
+    for ad, olayli_mi, akisli in (("olaysiz", False, None), ("olayli_akissiz", True, False), ("olayli", True, None)):
         gunluk = AuditLog()
         arka = B.FakeBackend([yanit(AD, usage={"prompt_tokens": 9, "completion_tokens": 3})], audit=gunluk)
         akis = E.EventStream("o1")
-        ajan = G.Agent(arka, T.Workspace(default_ws(tmp_path / str(olayli_mi))),
-                       on_event=akis.emit if olayli_mi else None)
+        ajan = G.Agent(arka, T.Workspace(default_ws(tmp_path / ad)), on_event=akis.emit if olayli_mi else None,
+                       stream=akisli)
         r = ajan.suggest_name(fun(A)).as_dict()
         r.pop("duration_sec")
-        sonuc.append((r, [(c["messages"], c["schema"], c["max_tokens"]) for c in arka.calls],
-                      [{k: v for k, v in x.items() if k not in ("zaman", "sure_sn")} for x in gunluk.records],
-                      akis.last_seq))
-    assert sonuc[0][:3] == sonuc[1][:3] and sonuc[0][3] == 0 and sonuc[1][3] == 9
+        # Saat değerleri (duvar saati saniye çözünürlüklü: koşu saniye sınırına denk gelirse değişir) dışarıda.
+        kayit = [{k: v for k, v in x.items() if k not in ("zaman", "sure_sn", "baslangic")} for x in gunluk.records]
+        sonuc[ad] = (r, [(c["messages"], c["schema"], c["max_tokens"]) for c in arka.calls],
+                     [c["stream"] for c in arka.calls], kayit, turler(akis))
+    assert sonuc["olaysiz"][:4] == sonuc["olayli_akissiz"][:4] and sonuc["olaysiz"][2] == [False]
+    assert sonuc["olaysiz"][4] == [] and "jeton" not in sonuc["olayli_akissiz"][4]
+    assert sonuc["olayli"][:2] == sonuc["olaysiz"][:2] and sonuc["olayli"][2] == [True]
+    kirp = lambda ks: [{k: v for k, v in x.items() if k not in akis_alanlari} for x in ks]  # noqa: E731
+    assert kirp(sonuc["olayli"][3]) == kirp(sonuc["olaysiz"][3]) and "jeton" in sonuc["olayli"][4]
 
 
 def test_dongu_olaylari_model_cagrisi_ret_ve_kor(tmp_path):
@@ -657,4 +668,155 @@ def test_niyet_yalniz_semaya_uyan_arac_dalindan(tmp_path, monkeypatch):
     assert cev[0]["niyet"] == "Çağıranlar adı \\u202eters\\u202c çevirebilir mi?"       # arındırılmış
     assert [e["niyet"] for e in cev[1:]] == [None, None, None]                       # şema dışı / yok / son cevap
     assert [e["amac"] for e in cev] == ["dongu", "dongu", "dongu_onarim", "dongu"]
+    esler_tutarli(akis, gunluk)
+
+
+# --------------------------------------------------------------------------------------------
+# (f) akış: jeton birleştirmesi, parça başına iptal ve süre
+
+
+class AdimliArka(B.FakeBackend):
+    """Her akış parçasından önce sahte saati ilerletir ve isteğe bağlı kancayı çağırır."""
+
+    def __init__(self, yanitlar, *, saat, adimlar=(), kanca=None, **kw):
+        super().__init__(yanitlar, **kw)
+        self.saat, self.adimlar, self.kanca = saat, list(adimlar), kanca
+        self.verilen = 0
+
+    def _chat(self, messages, schema, stream, max_tokens, on_token):
+        if on_token is None:
+            return super()._chat(messages, schema, stream, max_tokens, on_token)
+
+        def sarili(parca):
+            self.verilen += 1
+            if self.adimlar:
+                self.saat.t += self.adimlar.pop(0)
+            if self.kanca is not None:
+                self.kanca(self.verilen)
+            on_token(parca)
+
+        return super()._chat(messages, schema, stream, max_tokens, sarili)
+
+
+def parcalar(metin: str, n: int) -> list[str]:
+    k = -(-len(metin) // n)
+    return [metin[i:i + k] for i in range(0, len(metin), k)]
+
+
+def akisli(tmp_path, yanitlar, *, adimlar=(), kanca=None):
+    saat = SahteSaat(100.0)
+    gunluk = AuditLog()
+    arka = AdimliArka(list(yanitlar), saat=saat, adimlar=adimlar, kanca=kanca, audit=gunluk)
+    akis = E.EventStream("o1", clock=saat)
+    ajan = G.Agent(arka, T.Workspace(default_ws(tmp_path / "ws")), on_event=akis.emit, clock=saat)
+    return ajan, arka, gunluk, akis
+
+
+def test_jeton_olaylari_birlestirilir_ve_son_birikim_yayilir(tmp_path):
+    metin = json.dumps(AD, ensure_ascii=False)
+    p6 = parcalar(metin, 6)
+    assert len(p6) == 6 and "".join(p6) == metin
+    # Parça zamanları 0; 0,05; 0,09; 0,12; 0,13; 0,30 sn: olay ilk parçada, ≥ 0,1 sn sonra (4.) ve
+    # yine ≥ 0,1 sn sonra (6.); son birikim zaten yayılmış.
+    ajan, arka, gunluk, akis = akisli(tmp_path, [B.FakeReply(chunks=p6)], adimlar=[0, .05, .04, .03, .01, .17])
+    assert ajan.suggest_name(fun(A)).status == "tamam" and arka.calls[0]["stream"] is True
+    j = [e for e in akis.since(0)["olaylar"] if e["tur"] == "jeton"]
+    assert LM.EVENT_TOKEN_MIN_INTERVAL_SEC == 0.1
+    assert [(e["parca"], e["karakter"]) for e in j] == [(1, len(p6[0])), (4, len("".join(p6[:4]))), (6, len(metin))]
+    assert [e["t_ms"] for e in j] == [0, 120, 300]
+    # Akış biterken son birikim henüz yayılmadıysa bir kez yayılır (son sayı gerçek toplam).
+    ajan, _, _, akis = akisli(tmp_path / "2", [B.FakeReply(chunks=parcalar(metin, 3))], adimlar=[0, .05, .04])
+    ajan.suggest_name(fun(A))
+    assert [(e["parca"], e["karakter"]) for e in akis.since(0)["olaylar"] if e["tur"] == "jeton"] == [
+        (1, len(parcalar(metin, 3)[0])), (3, len(metin))]
+    # Saat hiç ilerlemiyorsa (aynı anda gelen parçalar): ilk parça + son birikim, iki olay.
+    ajan, _, _, akis = akisli(tmp_path / "3", [B.FakeReply(chunks=parcalar(metin, 9))])
+    ajan.suggest_name(fun(A))
+    assert [e["parca"] for e in akis.since(0)["olaylar"] if e["tur"] == "jeton"] == [1, 9]
+
+
+def test_parca_yoksa_jeton_olayi_yok(tmp_path):
+    ajan, _, gunluk, akis = akisli(tmp_path, [B.FakeReply(content="", chunks=[])])
+    r = ajan.suggest_name(fun(A))
+    assert r.status == "gecersiz" and "jeton" not in turler(akis)
+    assert ilk(akis, "model_cevabi")["durum"] == "gecersiz"
+    esler_tutarli(akis, gunluk)
+
+
+def test_parca_basina_iptal_ve_sure(tmp_path):
+    metin = json.dumps(AD, ensure_ascii=False)
+    ajan = None
+
+    def iptal_et(n):
+        if n == 3:
+            assert ajan.cancel_current() is True
+    ajan, arka, gunluk, akis = akisli(tmp_path, [B.FakeReply(chunks=parcalar(metin, 6)), yanit({**AD, "kanit": []})],
+                                      kanca=iptal_et)
+    r = ajan.suggest_name(fun(A))
+    assert (r.status, r.answer, r.counters.model_calls) == ("iptal", None, 1)
+    assert arka.verilen == 3                                   # 3. parçada kesildi, 4-6 okunmadı
+    mc = ilk(akis, "model_cevabi")
+    assert (mc["durum"], mc["uretim_jeton"]) == ("iptal", None)
+    assert [e["parca"] for e in akis.since(0)["olaylar"] if e["tur"] == "jeton"] == [1, 2]    # gelen 2 parça
+    istek = [k for k in gunluk.records if k["olay"] == "model_istegi"]
+    assert len(istek) == 1 and "_StreamStop" in istek[0]["hata"]
+    assert ilk(akis, "gorev_bitti")["durum"] == "iptal" and arka.stops == []
+    esler_tutarli(akis, gunluk)
+    assert ajan.suggest_name(fun(A)).status == "tamam"           # iptal görev başına: sonraki görev sürer
+    # Süre bütçesi akış sırasında doldu: sure_asimi (soket zaman aşımını beklemez).
+    ajan, arka, gunluk, akis = akisli(tmp_path / "2", [B.FakeReply(chunks=parcalar(metin, 6))], adimlar=[0, 5.0])
+    r = ajan.suggest_name(fun(A), deadline_sec=1.0)
+    assert (r.status, arka.verilen) == ("sure_asimi", 2) and ilk(akis, "model_cevabi")["durum"] == "sure_asimi"
+    esler_tutarli(akis, gunluk)
+
+
+def test_gercek_istemci_yolunda_iptal_baglantiyi_kapatir(tmp_path):
+    """Sahte arka uç değil: ``OpenAIEndpointBackend`` + ``_OpenAIClient`` + ``read_sse`` (taşıyıcı sahte).
+    Parça başına iptal okuma döngüsünden çıkar, yanıt kapatılır, kalan satırlar okunmaz."""
+    metin = json.dumps(AD, ensure_ascii=False)
+    sse = [("data: " + json.dumps({"choices": [{"delta": {"content": p}}]}) + "\n").encode()
+           for p in parcalar(metin, 5)]
+    sse += [b'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":7,"completion_tokens":5}}\n',
+            b"data: [DONE]\n"]
+
+    def tasiyici_kur(kanca=None):
+        durum = {"okunan": 0, "kapandi": 0}
+
+        def satirlar():
+            for s in sse:
+                durum["okunan"] += 1
+                if kanca is not None:
+                    kanca(durum["okunan"])
+                yield s
+
+        def tasiyici(method, url, headers, body, timeout):
+            durum["govde"] = json.loads(body)
+            return B.HttpResponse(status=200, lines=satirlar(), read=lambda: b"",
+                                  close=lambda: durum.__setitem__("kapandi", durum["kapandi"] + 1))
+        return tasiyici, durum
+
+    def kur_(alt, tasiyici):
+        gunluk = AuditLog()
+        uc = B.OpenAIEndpointBackend("http://127.0.0.1:9/v1", model_name="m", transport=tasiyici, audit=gunluk)
+        uc._level, uc._level_source = "L3", "test"
+        akis = E.EventStream("o1")
+        return G.Agent(uc, T.Workspace(default_ws(tmp_path / alt)), on_event=akis.emit), gunluk, akis
+
+    tasiyici, durum = tasiyici_kur()
+    ajan, gunluk, akis = kur_("tam", tasiyici)
+    r = ajan.suggest_name(fun(A))
+    assert r.status == "tamam" and durum["govde"]["stream"] is True and durum["kapandi"] == 1
+    mc = ilk(akis, "model_cevabi")
+    assert (mc["istem_jeton"], mc["uretim_jeton"], mc["durum"]) == (7, 5, "gecerli")
+    assert [e["parca"] for e in akis.since(0)["olaylar"] if e["tur"] == "jeton"][-1] == 5
+    esler_tutarli(akis, gunluk)
+
+    def iptal(n):
+        if n == 3:
+            ajan2.cancel_current()
+    tasiyici, durum = tasiyici_kur(iptal)
+    ajan2, gunluk, akis = kur_("iptal", tasiyici)
+    r = ajan2.suggest_name(fun(A))
+    assert r.status == "iptal" and durum["okunan"] == 3 and durum["kapandi"] == 1    # 7 satırın 3'ü okundu
+    assert [e["parca"] for e in akis.since(0)["olaylar"] if e["tur"] == "jeton"] == [1, 2]
     esler_tutarli(akis, gunluk)
