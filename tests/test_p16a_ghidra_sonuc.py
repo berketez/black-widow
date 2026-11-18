@@ -193,7 +193,7 @@ def test_pyghidra_sifir_fonksiyon_basarisiz(sahte_pyghidra, monkeypatch, tmp_pat
 # static aşaması: Ghidra düşerse aşama düşer; günlük ve durum diske yazılır
 # ---------------------------------------------------------------------------
 
-def _static_kos(monkeypatch, tmp_path, ghidra_sonucu):
+def _static_kos(monkeypatch, tmp_path, ghidra_sonucu, dizgiler=()):
     from karadul.analyzers.macho import MachOAnalyzer
     from karadul.core.target import Language, TargetInfo, TargetType
     from karadul.core.workspace import Workspace
@@ -201,7 +201,7 @@ def _static_kos(monkeypatch, tmp_path, ghidra_sonucu):
 
     for ad in ("_run_otool_libs", "_run_otool_load_commands", "_run_nm", "_run_lief"):
         monkeypatch.setattr(MachOAnalyzer, ad, lambda self, p: None)
-    monkeypatch.setattr(SubprocessRunner, "run_strings", lambda self, p, min_length=None: [])
+    monkeypatch.setattr(SubprocessRunner, "run_strings", lambda self, p, min_length=None: list(dizgiler))
     monkeypatch.setattr(MachOAnalyzer, "_run_ghidra", lambda self, p, ws: ghidra_sonucu)
 
     class _BI:

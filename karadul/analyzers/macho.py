@@ -109,6 +109,9 @@ class MachOAnalyzer(BaseAnalyzer):
         TargetType.BUN_BINARY,
     ]
 
+    # static/strings_raw.json'a yazılan dizgi sınırı (kesilen sayı dosyada yazılır).
+    STRINGS_RAW_LIMIT = 10000
+
     def __init__(self, config: Config) -> None:
         super().__init__(config)
         self.runner = SubprocessRunner(config)
@@ -294,13 +297,24 @@ class MachOAnalyzer(BaseAnalyzer):
             stats["string_extraction_method"] = "subprocess"
 
         if string_list:
+            written = min(len(string_list), self.STRINGS_RAW_LIMIT)
             strings_data = {
                 "total": len(string_list),
-                "strings": string_list[:10000],  # max 10K string
+                # Kayıp sayacı (B-B4): dosya ilk STRINGS_RAW_LIMIT dizgiyi taşır, kalanı
+                # sessizce düşmez, sayısı ve nedeni yazılır.
+                "written": written,
+                "truncated": len(string_list) - written,
+                "truncated_reason": (
+                    "strings_raw.json yalnız ilk %d dizgiyi taşır" % self.STRINGS_RAW_LIMIT
+                    if len(string_list) > written else None
+                ),
+                "strings": string_list[:written],
             }
             str_path = workspace.save_json("static", "strings_raw", strings_data)
             artifacts["strings_raw"] = str_path
             stats["string_count"] = len(string_list)
+            if strings_data["truncated"]:
+                stats["strings_raw_truncated"] = strings_data["truncated"]
 
         # 5. nm: symbol table
         symbols = self._run_nm(binary_path)

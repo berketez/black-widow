@@ -333,6 +333,9 @@ class GhidraHeadless:
                         program, output_dir, timeout,
                         batch_size=self.config.binary_reconstruction.ghidra_batch_size,
                         selective_ops=_pcode_sel,
+                        func_timeout=int(
+                            self.config.binary_reconstruction.max_decompile_timeout_per_func
+                        ),
                     )
                     # _all_functions buyuk olabilir, decompiled.json'a yazmadan once ayir
                     _all_funcs_for_pcode = decomp_data.pop("_all_functions", None)
@@ -951,6 +954,7 @@ class GhidraHeadless:
         program, output_dir: Path, timeout: int,
         batch_size: int = 5000,
         selective_ops: set[str] | None = None,
+        func_timeout: int = 30,
     ) -> dict[str, Any]:
         """Fonksiyonlari PARALEL decompile et, disassembly/xref/stack frame ile zenginlestir.
 
@@ -965,12 +969,12 @@ class GhidraHeadless:
             batch_size: Progress loglama periyodu.
             selective_ops: Verilirse decompile sirasinda bu mnemonic'lere
                 sahip P-Code op'lari compact formatta toplanir (v1.5 JSONL).
+            func_timeout: Fonksiyon başına decompile süresi (saniye);
+                ``binary_reconstruction.max_decompile_timeout_per_func``'tan gelir.
         """
-        from ghidra.app.decompiler import DecompInterface, DecompileOptions
-        from ghidra.util.task import ConsoleTaskMonitor
         from karadul.config import CPU_PERF_CORES
 
-        FUNC_TIMEOUT = 30
+        FUNC_TIMEOUT = max(1, int(func_timeout))
 
         decompiled_dir = output_dir / "decompiled"
         decompiled_dir.mkdir(parents=True, exist_ok=True)
@@ -1024,8 +1028,10 @@ class GhidraHeadless:
 
         fm = program.getFunctionManager()
         start_time = time.time()
+        deadline = start_time + total_timeout if total_timeout and total_timeout > 0 else None
 
-        # Tum fonksiyonlari Python listesine topla
+        # Tum fonksiyonlari Python listesine topla. FunctionManager.getFunctions(True) adres
+        # sirasinda (ileri) yineler; sonuclar bu sirayla birlestirilir (GHIDRA-05).
         all_funcs = []
         func_iter = fm.getFunctions(True)
         while func_iter.hasNext():
@@ -1034,15 +1040,17 @@ class GhidraHeadless:
         actual_count = len(all_funcs)
         logger.info("Fonksiyonlar toplandi: %d", actual_count)
 
+        # Ayni adli fonksiyonlarin dosya adi decompile oncesi, adres sirasiyla belirlenir:
+        # eskiden eksiz ``ad.c`` adini hangi is parcacigi once yazarsa o aliyordu.
+        planned_files = GhidraHeadless._plan_decompile_filenames(
+            (f.getName(), str(f.getEntryPoint())) for f in all_funcs
+        )
+
         # Chunk'lara bol -- her thread kendi DecompInterface'ini kullanacak
         chunk_size = max(1, actual_count // n_threads)
         chunks = []
         for i in range(0, actual_count, chunk_size):
             chunks.append(all_funcs[i:i + chunk_size])
-
-        results = []
-        success_count = 0
-        fail_count = 0
 
         def _process_chunk(chunk_funcs):
             """Bir chunk fonksiyonu decompile et. Her thread kendi decomp'unu acar."""
@@ -1052,24 +1060,27 @@ class GhidraHeadless:
             monitor = ConsoleTaskMonitor()
 
             chunk_results = []
-            chunk_success = 0
-            chunk_fail = 0
+            try:
+                for func in chunk_funcs:
+                    if deadline is not None and time.time() > deadline:
+                        # Toplam sure doldu: kalanlar decompile edilmeden, nedeniyle kaydedilir.
+                        chunk_results.append(GhidraHeadless._lost_entry(
+                            func, "toplam decompile süresi (%d sn) doldu" % total_timeout,
+                            skipped=True,
+                        ))
+                        continue
+                    chunk_results.append(GhidraHeadless._decompile_single_function(
+                        decomp, func, program, decompiled_dir,
+                        func_timeout, monitor,
+                        selective_ops=selective_ops,
+                        file_name=planned_files.get(str(func.getEntryPoint())),
+                    ))
+            finally:
+                decomp.dispose()
+            return chunk_results
 
-            for func in chunk_funcs:
-                entry = GhidraHeadless._decompile_single_function(
-                    decomp, func, program, decompiled_dir,
-                    func_timeout, monitor,
-                    selective_ops=selective_ops,
-                )
-                chunk_results.append(entry)
-                if entry["success"]:
-                    chunk_success += 1
-                else:
-                    chunk_fail += 1
-
-            decomp.dispose()
-            return chunk_results, chunk_success, chunk_fail
-
+        chunk_outputs: list[list[dict[str, Any]] | None] = [None] * len(chunks)
+        chunk_errors: list[dict[str, Any]] = []
         with ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures = {
                 executor.submit(_process_chunk, chunk): i
@@ -1079,47 +1090,128 @@ class GhidraHeadless:
             for future in as_completed(futures):
                 chunk_idx = futures[future]
                 try:
-                    chunk_results, chunk_success, chunk_fail = future.result(
-                        timeout=total_timeout,
-                    )
-                    results.extend(chunk_results)
-                    success_count += chunk_success
-                    fail_count += chunk_fail
+                    chunk_outputs[chunk_idx] = future.result()
                     logger.info(
-                        "Chunk %d/%d tamamlandi: %d basarili, %d basarisiz",
-                        chunk_idx + 1, len(chunks), chunk_success, chunk_fail,
+                        "Chunk %d/%d tamamlandi", chunk_idx + 1, len(chunks),
                     )
                 except Exception as exc:
+                    # Eskiden bu parcadaki fonksiyonlar listeden adsiz dusuyordu; artik her biri
+                    # nedeniyle basarisiz kaydedilir (kayip sayaci).
                     logger.warning("Decompile chunk %d hatasi: %s", chunk_idx, exc)
-                    fail_count += len(chunks[chunk_idx])
+                    chunk_errors.append({
+                        "chunk": chunk_idx, "functions": len(chunks[chunk_idx]),
+                        "error": "%s: %s" % (type(exc).__name__, exc),
+                    })
+                    chunk_outputs[chunk_idx] = [
+                        GhidraHeadless._lost_entry(
+                            f, "decompile parçası düştü: %s: %s" % (type(exc).__name__, exc),
+                        )
+                        for f in chunks[chunk_idx]
+                    ]
 
+        results = [entry for out in chunk_outputs for entry in (out or [])]
         total_time = time.time() - start_time
-        logger.info(
-            "Decompile tamamlandi: %d/%d basarili, %d basarisiz (%.1fs, %d thread)",
-            success_count, actual_count, fail_count, total_time, n_threads,
-        )
 
-        result_dict = {
-            "total_attempted": actual_count,
-            "success": success_count,
-            "failed": fail_count,
-            "skipped": 0,
-            "duration_seconds": round(total_time, 2),
-            "decompiled_dir": str(decompiled_dir),
-            "functions": results[:500],
-            "batch_size": max(1, actual_count // n_threads),
-            "total_batches": len(chunks),
-            "parallel": True,
-            "threads": n_threads,
-        }
+        result_dict = GhidraHeadless._finalize_decompile_result(
+            results, decompiled_dir, total_time,
+            batch_size=chunk_size, total_batches=len(chunks),
+            chunk_errors=chunk_errors,
+        )
+        result_dict["parallel"] = True
+        result_dict["threads"] = n_threads
+        logger.info(
+            "Decompile tamamlandi: %d/%d basarili, %d basarisiz, %d atlandi (%.1fs, %d thread)",
+            result_dict["success"], actual_count, result_dict["failed"],
+            result_dict["skipped"], total_time, n_threads,
+        )
         # v1.5: JSONL pcode icin tum fonksiyon sonuclarina erisim gerekiyor
-        # (functions key'i decompiled.json icin 500'e kesilir, _all_functions tam liste)
+        # (functions key'i decompiled.json icin sinirla kesilir, _all_functions tam liste)
         if selective_ops is not None:
             result_dict["_all_functions"] = results
         return result_dict
 
+    # decompiled.json'a yazilan fonksiyon kaydi siniri (dosya boyutu). Kayitlar adres sirasinda;
+    # kesilen sayi ``functions_truncated`` ile yazilir (B-B4). Tam liste pcode.jsonl'dedir.
+    DECOMPILED_JSON_LIMIT = 500
+
     @staticmethod
-    def _decompile_single_function(decomp, func, program, decompiled_dir, func_timeout, monitor, selective_ops=None):
+    def _plan_decompile_filenames(funcs) -> dict[str, str]:
+        """(ad, adres) dizisinden adres -> dosya adı; aynı ada sahip olanlardan ilki eksiz ad alır.
+
+        Dizi Ghidra'nın adres sırasında verilir. Anahtar büyük/küçük harf duyarsızdır (macOS'un
+        öntanımlı dosya sistemi ``Foo.c`` ile ``foo.c``'yi aynı dosya sayar). Sonuç iş
+        parçacığı zamanlamasından bağımsızdır.
+        """
+        planned: dict[str, str] = {}
+        taken: set[str] = set()
+        for name, addr in funcs:
+            safe = re.sub(r'[^\w\-.]', '_', name)[:200] or "unnamed"
+            fname = safe + ".c"
+            if fname.casefold() in taken:
+                fname = "%s_%s.c" % (safe, addr.replace(":", "_")[-8:])
+            taken.add(fname.casefold())
+            planned[addr] = fname
+        return planned
+
+    @staticmethod
+    def _lost_entry(func, error: str, skipped: bool = False) -> dict[str, Any]:
+        """Decompile edilmeden kalan fonksiyonun kaydı (adı, adresi, nedeni)."""
+        entry = {
+            "name": func.getName(), "address": str(func.getEntryPoint()),
+            "success": False, "error": error,
+        }
+        if skipped:
+            entry["skipped"] = True
+        return entry
+
+    @staticmethod
+    def _finalize_decompile_result(
+        results: list[dict[str, Any]], decompiled_dir: Path, total_time: float,
+        batch_size: int, total_batches: int,
+        chunk_errors: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        """Decompile sonucunun sayaçları ve kayıp kaydı (B-B4, GHIDRA-05).
+
+        ``results`` adres sırasındadır. ``functions`` ilk ``DECOMPILED_JSON_LIMIT`` kayıttır;
+        kesilen sayı ve neden ``losses``'ta. Başarısız ya da atlanan her fonksiyon listede
+        kendi kaydıyla durur (adsız düşme yok).
+        """
+        limit = GhidraHeadless.DECOMPILED_JSON_LIMIT
+        success = sum(1 for r in results if r.get("success"))
+        skipped = sum(1 for r in results if r.get("skipped"))
+        failed = len(results) - success - skipped
+        written = min(limit, len(results))
+        truncated = len(results) - written
+        losses: dict[str, Any] = {
+            "decompiled_json_truncated": {
+                "count": truncated,
+                "reason": "decompiled.json yalnız adres sırasında ilk %d kaydı taşır" % limit,
+            },
+            "decompile_failed": failed,
+            "decompile_skipped": skipped,
+            "body_truncated": 0,
+        }
+        if chunk_errors:
+            losses["chunk_errors"] = chunk_errors
+        return {
+            "total_attempted": len(results),
+            "success": success,
+            "failed": failed,
+            "skipped": skipped,
+            "duration_seconds": round(total_time, 2),
+            "decompiled_dir": str(decompiled_dir),
+            "functions_order": "address",
+            "functions_total": len(results),
+            "functions_written": written,
+            "functions_truncated": truncated,
+            "functions": results[:limit],
+            "losses": losses,
+            "batch_size": batch_size,
+            "total_batches": total_batches,
+        }
+
+    @staticmethod
+    def _decompile_single_function(decomp, func, program, decompiled_dir, func_timeout, monitor, selective_ops=None, file_name=None):
         """Tek bir fonksiyonu decompile et + dosyaya yaz. Thread-safe.
 
         Args:
@@ -1178,7 +1270,9 @@ class GhidraHeadless:
                     safe_name = re.sub(r'[^\w\-.]', '_', func_name)[:200] or "unnamed"
                     # Adres suffix'i ile cakismayi onle (C++ overload, thunk vb.)
                     addr_suffix = func_addr.replace(":", "_")[-8:]
-                    filepath = decompiled_dir / (safe_name + ".c")
+                    # Paralel yolda dosya adı önceden, adres sırasıyla planlanır (file_name);
+                    # O_EXCL aşağıda yine son güvencedir.
+                    filepath = decompiled_dir / (file_name or (safe_name + ".c"))
 
                     header_lines = [
                         "// Function: %s" % func_name,
@@ -1336,56 +1430,43 @@ class GhidraHeadless:
         fm = program.getFunctionManager()
         func_iter = fm.getFunctions(True)
         results = []
-        success_count = 0
-        fail_count = 0
-        skipped_count = 0
         func_index = 0
         start_time = time.time()
+        timed_out = False
 
         while func_iter.hasNext():
             func = func_iter.next()
             func_index += 1
 
-            elapsed = time.time() - start_time
-            if total_timeout > 0 and elapsed > total_timeout:
-                while func_iter.hasNext():
-                    func_iter.next()
-                    skipped_count += 1
-                logger.warning("Zaman asimi: %d islendi, %d atlandi", func_index, skipped_count)
-                break
+            if not timed_out and total_timeout > 0 and time.time() - start_time > total_timeout:
+                timed_out = True
+                logger.warning("Zaman asimi: %d islendi, kalanlar atlaniyor", func_index - 1)
+            if timed_out:
+                # Atlanan fonksiyon adsız düşmez; nedeniyle kaydedilir (kayıp sayacı).
+                results.append(GhidraHeadless._lost_entry(
+                    func, "toplam decompile süresi (%d sn) doldu" % total_timeout, skipped=True,
+                ))
+                continue
 
-            entry = GhidraHeadless._decompile_single_function(
+            results.append(GhidraHeadless._decompile_single_function(
                 decomp, func, program, decompiled_dir, func_timeout, monitor,
                 selective_ops=selective_ops,
-            )
-            results.append(entry)
-            if entry["success"]:
-                success_count += 1
-            else:
-                fail_count += 1
+            ))
 
             if func_index % 500 == 0:
                 logger.info("Seri decompile: %d/%d", func_index, total_func_count)
 
         decomp.dispose()
         total_time = time.time() - start_time
+        result_dict = GhidraHeadless._finalize_decompile_result(
+            results, decompiled_dir, total_time, batch_size=func_index, total_batches=1,
+        )
+        result_dict["parallel"] = False
         logger.info(
             "Decompile tamamlandi (seri): %d/%d basarili, %d basarisiz, %d atlandi (%.1fs)",
-            success_count, func_index, fail_count, skipped_count, total_time,
+            result_dict["success"], func_index, result_dict["failed"],
+            result_dict["skipped"], total_time,
         )
-
-        result_dict = {
-            "total_attempted": func_index + skipped_count,
-            "success": success_count,
-            "failed": fail_count,
-            "skipped": skipped_count,
-            "duration_seconds": round(total_time, 2),
-            "decompiled_dir": str(decompiled_dir),
-            "functions": results[:500],
-            "batch_size": func_index,
-            "total_batches": 1,
-            "parallel": False,
-        }
         # v1.5: JSONL pcode icin tum fonksiyon sonuclarina erisim
         if selective_ops is not None:
             result_dict["_all_functions"] = results
