@@ -152,6 +152,62 @@
       "test": "tests/test_pguv_kapi.py::TestCliGateWarning::test_yaml_open_interactive_refused",
       "find": "            cfg.security.allow_target_execution = False\n            err_console.print(\"[dim]Hedef çalıştırılmayacak",
       "replace": "            pass\n            err_console.print(\"[dim]Hedef çalıştırılmayacak"
+    },
+    {
+      "id": "g13_kapi_yok",
+      "desc": "karadul run çalıştırma kapısına bakmıyor (eski davranış)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_pguv_run.py::TestRunGate::test_gate_closed_by_default_runs_nothing",
+      "find": "    if cfg.security.allow_target_execution is not True:\n        err_console.print(\n            \"[bold red]HATA:[/bold red] `karadul run`",
+      "replace": "    if False:\n        err_console.print(\n            \"[bold red]HATA:[/bold red] `karadul run`"
+    },
+    {
+      "id": "g13_offline_yok",
+      "desc": "ağ kapalıyken npm install kayıt deposundan indiriyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_pguv_run.py::TestRunGate::test_network_off_installs_offline",
+      "find": "        if cfg.network.enabled is not True:\n            install_cmd.append(\"--offline\")",
+      "replace": "        if False:\n            install_cmd.append(\"--offline\")"
+    },
+    {
+      "id": "g13_ignore_scripts_yok",
+      "desc": "npm install kurulum betiklerini çalıştırıyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_pguv_run.py::TestRunGate::test_network_on_installs_with_ignore_scripts",
+      "find": "install_cmd = [npm_path, \"install\", \"--ignore-scripts\"]",
+      "replace": "install_cmd = [npm_path, \"install\"]"
+    },
+    {
+      "id": "g13_traversal_yok",
+      "desc": "hedef adında '..' çalışma alanı dışına çıkabiliyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_pguv_run.py::TestRunTargetResolution::test_dotdot_target_rejected",
+      "find": "        target_dir.relative_to(ws_path)\n    except ValueError:\n        target_dir = ws_path",
+      "replace": "        pass\n    except ValueError:\n        target_dir = ws_path"
+    },
+    {
+      "id": "g13_kok_kabul",
+      "desc": "hedef olarak çalışma alanının kendisi kabul ediliyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_pguv_run.py::TestRunTargetResolution::test_workspace_root_itself_rejected",
+      "find": "    if target_dir == ws_path:\n        err_console.print(\n            f\"[bold red]HATA:[/bold red] Gecersiz hedef adi",
+      "replace": "    if False:\n        err_console.print(\n            f\"[bold red]HATA:[/bold red] Gecersiz hedef adi"
+    },
+    {
+      "id": "g13_calisma_alani_denetimi_yok",
+      "desc": "çalışma alanı yokken açık hata yerine genel 'bulunamadı'",
+      "module": "karadul/cli.py",
+      "test": "tests/test_pguv_run.py::TestRunTargetResolution::test_missing_workspace_is_clean_error",
+      "find": "    if not ws_path.is_dir():",
+      "replace": "    if False:"
+    },
+    {
+      "id": "g13_uyari_kucumser",
+      "desc": "uyarı riski küçümsüyor ('gelebilir'; eski metin)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_pguv_run.py::TestRunGate::test_warning_names_the_risk_even_with_yes",
+      "find": "\"[bold red]UYARI:[/bold red] çalıştırılacak kod, analiz edilen kodun \"\n        \"kendisidir (güvenilmeyen kaynak).",
+      "replace": "\"[bold red]UYARI:[/bold red] çalıştırılacak kod \"\n        \"güvenilmeyen kaynaktan gelebilir."
     }
   ]
 }

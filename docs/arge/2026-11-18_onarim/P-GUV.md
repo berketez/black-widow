@@ -9,7 +9,7 @@
 ## Durum
 - [x] GHIDRA-11
 - [x] GHIDRA-07
-- [ ] GHIDRA-13
+- [x] GHIDRA-13
 - [ ] MEK-03
 
 ## GHIDRA-11 — Frida spawn: kancasız sürdürme, öldürülmeyen süreç
@@ -68,4 +68,30 @@ Ek: kapı YAML'dan açıldığında CLI hiçbir uyarı basmıyordu; `TargetType.
 
 **Mutasyon:** `g07_*` 9 mutant → 9/9 öldü.
 
+**Commit:** `ea1e4a6`
+
 **Kalan (yama):** `analyze`'da bozuk bool değeri artık `ConfigValueError` yığın iziyle düşer (sessiz değil, ama çirkin). `_load_config` dar bölgemin dışında: düzgün "HATA: ayar dosyası: …" + çıkış 2 için yama `yamalar/P-GUV__cli.py.patch`.
+
+## GHIDRA-13 — `karadul run` analiz edilen kodu kapısız ve ağ ayarına bakmadan çalıştırıyordu
+
+**Önce / sonra (gerçek `python -m karadul run` alt süreci, geçici dizin; etkileşimsiz, `--yes`'siz — hiçbir şey çalıştırılamaz):**
+
+| Senaryo | Önce | Sonra |
+|---|---|---|
+| `run yokhedef` (çalışma alanı dizini yok) | rc 1, **Traceback** (`FileNotFoundError`) | kapı kapalı: rc 2, kapının nasıl açılacağı yazılır; kapı açık (`--config`): rc 1, "Çalışma alanı dizini yok", yığın izi yok |
+| `run ../disari` (çalışma alanı dışında `reconstructed/` var) | dışarıdaki `../disari/reconstructed` **bulundu**, yalnız `--yes` eksikliği durdurdu (rc 2) | kapı açıkken de rc 1 "Gecersiz hedef adi (path traversal engellendi)"; dışarıdaki dizine hiç bakılmaz |
+| Kapı (`security.allow_target_execution`) | okunmuyordu; `--yes` + TTY yeterliydi | kapalıyken rc 2, `npm`/`node` hiç çağrılmaz |
+| `npm install` (sahte `safe_run` ile komut satırı) | `npm install --ignore-scripts` (ağ ayarından bağımsız, kayıt deposuna gider) | ağ kapalı: `npm install --ignore-scripts --offline` + uyarı; ağ açık: `npm install --ignore-scripts` |
+| Uyarı metni | "guvenilmeyen kaynaktan **gelebilir**" (yalnız `--yes` yokken, stdout) | "çalıştırılacak kod, analiz edilen kodun kendisidir (güvenilmeyen kaynak). Sandbox yok…" (`--yes` ile de, stderr) |
+
+**Onarım (`karadul/cli.py`, yalnız `run` komutu):**
+- Yeni `--config` seçeneği (analyze ile aynı yükleyici; yoksa çalışma dizinindeki `karadul.yaml`). Katı bool hatası düzgün iletiyle rc 2.
+- Kapı `cfg.security.allow_target_execution is not True` ise rc 2 ve YAML örneğiyle "nasıl açılır" iletisi. `--yes` yalnız onay sorusunu atlar; kapının yerine geçmez.
+- Çalışma alanı dizini yoksa düzgün hata (rc 1). Hedef `(ws / target).resolve()` çalışma alanının ALTINDA bir dizin olmalı (`relative_to`; `clean` ile aynı yöntem; sembolik bağla dışarı çıkış da reddedilir); çalışma alanının kendisi (`.`) da reddedilir. Gereksiz `iterdir` aday taraması kalktı.
+- `npm install` her zaman `--ignore-scripts`; `network.enabled` gerçekten `True` değilse `--offline`.
+- Uyarı metni düzeltildi ve `--yes` ile de basılıyor.
+- Dokunulmayanlar (kapsam dışı, not): `run` hedef tipine bakmadan `reconstructed/*.js` arıyor (kulvarda "Ne" içinde); üretilen README'nin `npm install && npm start` önerisi BICIM-12 (P20).
+
+**Test:** `tests/test_pguv_run.py` 9 test (`safe_run` ve `resolve_tool` sahte; hiçbir komut çalışmaz). Eski `cli.py` ile 9/9 kırmızı, yeni kodla 9/9 yeşil; `tests/test_security_fixes.py` (`run --yes` testleri dahil) + `tests/test_cli.py` ile 90 geçti.
+
+**Mutasyon:** `g13_*` 7 mutant → 7/7 öldü.

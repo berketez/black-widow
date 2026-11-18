@@ -971,26 +971,69 @@ def analyze(
 @click.argument("target")
 @click.option("--workspace-dir", type=click.Path(), default="./workspaces/",
               help="Workspace ust dizini.")
-@click.option("--yes", "-y", is_flag=True, help="Guvenlik uyarisini atla.")
+@click.option("--config", "config_path", type=click.Path(), default=None,
+              help="Config YAML dosyasi (security.allow_target_execution, network.enabled).")
+@click.option("--yes", "-y", is_flag=True,
+              help="Onay sorusunu atla (calistirma kapisi yine acik olmali).")
 @_graceful_interrupt
-def run(target: str, workspace_dir: str, yes: bool) -> None:
-    """Reconstructed projeyi calistir.
+def run(target: str, workspace_dir: str, config_path: Optional[str], yes: bool) -> None:
+    """Analiz edilen hedeften yeniden kurulan projeyi YEREL olarak calistir.
 
-    targets/{name}/reconstructed/ dizininde npm install && npm start yapar.
+    DIKKAT: calistirilan kod, analiz edilen kodun kendisidir (sandbox yok).
+    Yalniz ``security.allow_target_execution: true`` ise calisir.
+    ``npm install`` yalniz ``network.enabled`` acikken agdan indirir
+    (her zaman ``--ignore-scripts``); kapaliyken ``--offline``.
     """
+    # GHIDRA-13 (2026-11-18): bu komut analiz edilen (güvenilmeyen) kodu
+    # analistin makinesinde çalıştırır. Eskiden hiçbir kapıya ve ağ ayarına
+    # bakmıyordu; `npm install` hedefin bağımlılık adlarını kayıt deposundan
+    # indiriyordu; hedef adında `..` denetimi yoktu; çalışma alanı yoksa
+    # yığın izi basıyordu.
+    from karadul.config import ConfigValueError
+
+    try:
+        cfg = Config.load(Path(config_path) if config_path else None)
+    except ConfigValueError as exc:
+        err_console.print(f"[bold red]HATA:[/bold red] ayar dosyası: {exc}")
+        sys.exit(2)
+
+    if cfg.security.allow_target_execution is not True:
+        err_console.print(
+            "[bold red]HATA:[/bold red] `karadul run` analiz edilen kodun kendisini "
+            "bu makinede çalıştırır; hedef çalıştırma kapısı kapalı."
+        )
+        err_console.print(
+            "  Bilerek açmak için bir YAML dosyasına\n"
+            "    security:\n"
+            "      allow_target_execution: true\n"
+            "  yazıp `--config <dosya>` ile verin (ya da çalışma dizinindeki "
+            "karadul.yaml'a ekleyin)."
+        )
+        sys.exit(2)
+
     ws_path = Path(workspace_dir).resolve()
+    if not ws_path.is_dir():
+        err_console.print(f"[bold red]HATA:[/bold red] Çalışma alanı dizini yok: {ws_path}")
+        err_console.print("[dim]--workspace-dir ile analizin çıktı dizinini verin.[/dim]")
+        sys.exit(1)
 
-    # Target'in workspace'ini bul
-    target_dir = ws_path / target
+    # Target'in workspace'ini bul. Path traversal korumasi (clean ile ayni):
+    # hedef, calisma alaninin ALTINDA bir dizin olmali.
+    target_dir = (ws_path / target).resolve()
+    try:
+        target_dir.relative_to(ws_path)
+    except ValueError:
+        target_dir = ws_path
+    if target_dir == ws_path:
+        err_console.print(
+            f"[bold red]HATA:[/bold red] Gecersiz hedef adi (path traversal engellendi): {target}"
+        )
+        sys.exit(1)
 
-    if not target_dir.exists():
-        # Tum alt dizinleri tara
-        candidates = [d for d in ws_path.iterdir() if d.is_dir() and d.name == target]
-        if not candidates:
-            err_console.print(f"[bold red]HATA:[/bold red] Workspace bulunamadi: {target}")
-            err_console.print(f"[dim]Aranan dizin: {ws_path}[/dim]")
-            sys.exit(1)
-        target_dir = candidates[0]
+    if not target_dir.is_dir():
+        err_console.print(f"[bold red]HATA:[/bold red] Workspace bulunamadi: {target}")
+        err_console.print(f"[dim]Aranan dizin: {ws_path}[/dim]")
+        sys.exit(1)
 
     # reconstructed/ dizinini bul (en son timestamp altinda)
     reconstructed = None
@@ -1018,13 +1061,15 @@ def run(target: str, workspace_dir: str, yes: bool) -> None:
         )
         sys.exit(1)
 
-    # Guvenlik uyarisi -- reconstructed kod guvenilmeyen kaynak (CWE-94)
+    # Guvenlik uyarisi -- reconstructed kod guvenilmeyen kaynak (CWE-94).
+    # GHIDRA-13: uyarı --yes ile de basılır; risk küçümsenmez.
+    err_console.print(
+        "[bold red]UYARI:[/bold red] çalıştırılacak kod, analiz edilen kodun "
+        "kendisidir (güvenilmeyen kaynak). Sandbox yok; senin kullanıcı "
+        "yetkinle çalışır."
+    )
+    err_console.print(f"   Dizin: [cyan]{reconstructed}[/cyan]")
     if not yes:
-        console.print(
-            "[bold yellow]UYARI:[/bold yellow] Reconstruct edilmis kod "
-            "guvenilmeyen kaynaktan gelebilir."
-        )
-        console.print(f"   Dizin: [cyan]{reconstructed}[/cyan]")
         # v1.10.0 Batch 3D HIGH: non-interactive ortamda --yes olmadan
         # sessizce abort et (hang yerine). Untrusted kod icin safe default = REFUSE.
         if _is_noninteractive():
@@ -1059,9 +1104,19 @@ def run(target: str, workspace_dir: str, yes: bool) -> None:
         if npm_path is None:
             err_console.print("[bold red]HATA:[/bold red] npm bulunamadi (whitelist path)")
             sys.exit(1)
-        console.print("[dim]npm install --ignore-scripts...[/dim]")
+        # GHIDRA-13: bağımlılık adları analiz edilen koddan çıkarıldı (saldırganın
+        # seçtiği adlar). Ağ kapalıyken kayıt deposuna gidilmez: --offline
+        # yalnız yerel npm önbelleğini kullanır. Kurulum betikleri hep kapalı.
+        install_cmd = [npm_path, "install", "--ignore-scripts"]
+        if cfg.network.enabled is not True:
+            install_cmd.append("--offline")
+            err_console.print(
+                "[yellow]Ağ kapalı (network.enabled):[/yellow] npm install --offline; "
+                "yerel önbellekte olmayan bağımlılık indirilmeyecek."
+            )
+        console.print(f"[dim]npm {' '.join(install_cmd[1:])}...[/dim]")
         proc_install = _safe_run(
-            [npm_path, "install", "--ignore-scripts"],
+            install_cmd,
             cwd=str(reconstructed),
             capture_output=True,
             text=True,
