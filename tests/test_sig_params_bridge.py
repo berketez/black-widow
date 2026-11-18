@@ -73,7 +73,9 @@ def test_match_function_propagates_params(tmp_path: Path) -> None:
 
     match = db.match_function(injected_name)
     assert match is not None
-    assert match.matched_name == injected_name.lstrip("_")
+    # P08 / IMZA-08: platform verilmeyince ad olduğu gibi kalır (eskiden baştaki
+    # bütün alt çizgiler siliniyor, var olmayan bir ad üretiliyordu).
+    assert match.matched_name == injected_name
     assert match.library == "test_lib"
     assert match.params is not None
     assert match.params == injected_params

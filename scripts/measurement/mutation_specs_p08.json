@@ -80,6 +80,22 @@
       "test": "tests/test_p08_sigdb_saglayici.py::test_builder_refuses_to_overwrite_schema1_db",
       "find": "and not _is_schema2_dir(output):",
       "replace": "and False:"
+    },
+    {
+      "id": "imza08_her_platformda_kirpma",
+      "desc": "ad her platformda tek önekten kırpılıyor (ELF __printf_chk → _printf_chk)",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_imza08.py::test_elf_keeps_leading_underscores",
+      "find": "    if target_platform == \"macho\" and func_name.startswith(\"_\"):\n        return func_name[1:]",
+      "replace": "    if func_name.startswith(\"_\"):\n        return func_name[1:]"
+    },
+    {
+      "id": "imza08_butun_alt_cizgiler",
+      "desc": "Mach-O'da baştaki bütün alt çizgiler siliniyor (___stack_chk_fail → stack_chk_fail)",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_imza08.py::test_macho_strips_single_c_prefix",
+      "find": "        return func_name[1:]\n    return func_name",
+      "replace": "        return func_name.lstrip(\"_\")\n    return func_name"
     }
   ]
 }

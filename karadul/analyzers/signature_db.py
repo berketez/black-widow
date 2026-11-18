@@ -335,6 +335,19 @@ def _lib_family(lib: str) -> str:
     return _LIB_FAMILY_ALIASES.get(s, s)
 
 
+def _display_name(func_name: str, target_platform: str | None) -> str:
+    """Eşleşen simgenin gösterilecek adı (IMZA-08).
+
+    Mach-O'da C adları tek ``_`` önekiyle yazılır (``_malloc`` → ``malloc``,
+    ``___stack_chk_fail`` → ``__stack_chk_fail``); yalnız o tek önek atılır.
+    ELF/PE'de baştaki alt çizgiler adın parçasıdır (``__printf_chk``), ad
+    olduğu gibi kalır.
+    """
+    if target_platform == "macho" and func_name.startswith("_"):
+        return func_name[1:]
+    return func_name
+
+
 def _resolve_attribution(
     info: dict[str, Any], target_platform: str | None,
 ) -> tuple[str, str, list[str]] | None:
@@ -2064,7 +2077,7 @@ class SignatureDB:
             ):
                 return SignatureMatch(
                     original_name=func_name,
-                    matched_name=func_name.lstrip("_"),
+                    matched_name=_display_name(func_name, target_platform),
                     library=info["lib"],
                     confidence=0.98,
                     match_method="symbol",
@@ -2104,7 +2117,7 @@ class SignatureDB:
                 if _attr is not None:
                     return SignatureMatch(
                         original_name=func_name,
-                        matched_name=func_name.lstrip("_"),
+                        matched_name=_display_name(func_name, target_platform),
                         library=_attr[0],
                         confidence=0.98,
                         match_method="symbol",
