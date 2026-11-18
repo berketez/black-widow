@@ -25,7 +25,10 @@ from karadul.reconstruction.dts_namer import DtsNamer
 from karadul.reconstruction.naming.pipeline import NamingPipeline
 
 # Gerçek chalk parmak izini tetikleyen küçük modül (min_match 3; burada 8/8).
+# P20 / BICIM-11: "vendor" hükmü (ve .d.ts katmanı) yalnız paketin kendi yol
+# kanıtıyla (smart-webpack-unpack başlığındaki `Module: ./node_modules/chalk/...`).
 _CHALK_MODULE = (
+    "/**\n * Module: ./node_modules/chalk/source/index.js\n */\n"
     '"use strict";\n'
     "var level = process.env.FORCE_COLOR;\n"
     'var names = ["chalk.", "ansi256", "ansi16", "bgRed", "bgGreen", "bgBlue", "chalkStderr"];\n'

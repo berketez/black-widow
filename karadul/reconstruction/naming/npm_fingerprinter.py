@@ -563,22 +563,80 @@ KNOWN_SIGNATURES: dict[str, dict] = {
 }
 
 
+_IDENT_CHAR = re.compile(r"[A-Za-z0-9_$]")
+_IDENT_BOUNDARY_BEFORE = r"(?<![A-Za-z0-9_$])"
+_IDENT_BOUNDARY_AFTER = r"(?![A-Za-z0-9_$])"
+# smart-webpack-unpack.mjs her modülün başına ` * Module: <paket içindeki kimlik>`
+# satırı yazar. Webpack 5 adlı kimlikleri / esbuild __commonJS anahtarları
+# paketleyicinin kaydettiği kaynak yolunu taşır (ör. ./node_modules/chalk/...).
+_MODULE_HEADER_RE = re.compile(r"^\s*\*\s*Module:\s*(.+?)\s*$", re.MULTILINE)
+_HEADER_SCAN_CHARS = 2000
+
+
+def _token_pattern(token: str) -> re.Pattern[str]:
+    """İmza dizgisini belirteç sınırıyla ara (BICIM-11).
+
+    Dizginin başı/sonu tanımlayıcı karakteriyse o yana tanımlayıcı sınırı
+    eklenir: ``pkcs`` artık ``pkcs8`` içinde, ``pem`` ``pemFile`` içinde,
+    ``fetch(`` ``refetch(`` içinde eşleşmez. Harf duyarlı.
+    """
+    pre = _IDENT_BOUNDARY_BEFORE if _IDENT_CHAR.match(token[0]) else ""
+    post = _IDENT_BOUNDARY_AFTER if _IDENT_CHAR.match(token[-1]) else ""
+    return re.compile(pre + re.escape(token) + post)
+
+
+def _bundle_path_attributes(content: str, module_id: str, pkg_name: str) -> str | None:
+    """Paketin kendisi modülü ``node_modules/<paket>/`` yoluna bağlıyor mu?
+
+    Kanıt kaynağı: modül dosyasının başlığındaki ``Module:`` kimliği (paketleyicinin
+    yazdığı kaynak yolu) ya da çağıranın verdiği ham modül kimliği. Döner:
+    eşleşen yol ya da None.
+    """
+    needle = f"node_modules/{pkg_name}/"
+    head = content[:_HEADER_SCAN_CHARS]
+    candidates = [m.group(1) for m in _MODULE_HEADER_RE.finditer(head)]
+    candidates.append(module_id)
+    for cand in candidates:
+        if needle in cand.replace("\\", "/"):
+            return cand
+    return None
+
+
 class NpmFingerprinter:
     """Her modulu bilinen npm paketleriyle eslestirir.
 
     Calisma mantigi:
     1. Modul dosyasini oku
-    2. KNOWN_SIGNATURES sozlugundeki her paketin string'leriyle karsilastir
-    3. En cok eslesen paketi sec
-    4. Eslesme orani min_match'i geciyorsa NamingResult dondur
+    2. KNOWN_SIGNATURES sozlugundeki her paketin imza dizgilerini BELİRTEÇ
+       sınırıyla ara (eskiden düz alt dizgi: ``pkcs8`` içinde ``pkcs``)
+    3. En cok eslesen paketi sec (min_match esigi)
+    4. "Vendor" hükmü (``vendor/<paket>`` kategorisi) yalnız GÜÇLÜ kanıtla:
+       paketin kendisi modülü ``node_modules/<paket>/`` yoluna bağlıyorsa
+       (modül başlığındaki ``Module:`` kimliği). Depoda yayımlanmış paketlerin
+       içerik karması (hash) veritabanı yok; içerik eşitliği doğrulanamıyor.
+    5. Yalnız dizgi benzerliği olan modül "vendor" SAYILMAZ (BICIM-11: zararlı
+       bir modül birkaç tuzak dizgiyle ``vendor/`` altına gönderilip analistin
+       önünden çekilebiliyordu). Bu benzerlik ``hints`` olarak saklanır; modül
+       yapısal katmana (Layer 2) kalır.
     """
 
     def __init__(self, signatures: dict[str, dict] | None = None) -> None:
         self.signatures = signatures or KNOWN_SIGNATURES
+        self._patterns: dict[str, list[tuple[str, re.Pattern[str]]]] = {
+            pkg: [(s, _token_pattern(s)) for s in sig["strings"] if s]
+            for pkg, sig in self.signatures.items()
+        }
+        # Son fingerprint_all koşusunun yalnız-dizgi benzerlikleri:
+        # {module_id: {"package", "matched", "total", "matched_strings", "evidence"}}
+        self.hints: dict[str, dict] = {}
 
     def fingerprint_all(self, modules_dir: Path) -> list[NamingResult]:
-        """Tum modulleri tara ve eslesenleri dondur."""
+        """Tum modulleri tara; yalnız güçlü kanıtlı (vendor) eşleşmeleri döndür.
+
+        Yalnız dizgi benzerliği olanlar ``self.hints``'e yazılır.
+        """
         results: list[NamingResult] = []
+        self.hints = {}
         js_files = sorted(modules_dir.glob("*.js"))
         total = len(js_files)
 
@@ -595,6 +653,10 @@ class NpmFingerprinter:
             result = self._match_module(content, module_id)
             if result is not None:
                 results.append(result)
+            else:
+                hint = self.similarity_hint(content, module_id)
+                if hint is not None:
+                    self.hints[module_id] = hint
 
             if (idx + 1) % 500 == 0:
                 logger.info(
@@ -603,37 +665,54 @@ class NpmFingerprinter:
                 )
 
         logger.info(
-            "NpmFingerprinter tamamlandi: %d/%d modul eslesti",
-            len(results), total,
+            "NpmFingerprinter tamamlandi: %d/%d modul vendor (güçlü kanıt), "
+            "%d modülde yalnız dizgi benzerliği (vendor sayılmadı)",
+            len(results), total, len(self.hints),
         )
         return results
 
-    def _match_module(self, content: str, module_id: str) -> NamingResult | None:
-        """Tek modulu en iyi eslesen paketle eslestirir."""
-        best_match: tuple[str, dict] | None = None
-        best_score: float = 0.0
-        best_matched_count: int = 0
-
+    def _best_string_match(self, content: str) -> tuple[str, dict, list[str]] | None:
+        """Belirteç sınırıyla en çok eşleşen paket (min_match eşiği dahil)."""
+        best: tuple[str, dict, list[str]] | None = None
+        best_score = 0.0
         for pkg_name, sig in self.signatures.items():
-            strings = sig["strings"]
             min_match = sig.get("min_match", 2)
-            matched = sum(1 for s in strings if s in content)
-
-            if matched < min_match:
+            hits = [s for s, pat in self._patterns[pkg_name] if pat.search(content)]
+            if len(hits) < min_match:
                 continue
-
-            score = matched / len(strings)
+            score = len(hits) / len(sig["strings"])
             if score > best_score:
                 best_score = score
-                best_match = (pkg_name, sig)
-                best_matched_count = matched
+                best = (pkg_name, sig, hits)
+        return best
 
-        if best_match is None:
+    def similarity_hint(self, content: str, module_id: str) -> dict | None:
+        """Yalnız dizgi benzerliği (vendor hükmü değil); yoksa None."""
+        best = self._best_string_match(content)
+        if best is None:
+            return None
+        pkg_name, sig, hits = best
+        return {
+            "package": pkg_name,
+            "matched": len(hits),
+            "total": len(sig["strings"]),
+            "matched_strings": hits,
+            "evidence": "yalnız dizgi benzerliği; paket yolu yok, içerik doğrulanmadı",
+        }
+
+    def _match_module(self, content: str, module_id: str) -> NamingResult | None:
+        """Tek modülü pakete bağla: dizgi eşleşmesi + paket yolu kanıtı ŞART."""
+        best = self._best_string_match(content)
+        if best is None:
+            return None
+        pkg_name, sig, hits = best
+        path = _bundle_path_attributes(content, module_id, pkg_name)
+        if path is None:
             return None
 
-        pkg_name, sig = best_match
+        score = len(hits) / len(sig["strings"])
         # Confidence: eslesme orani, kucuk bir boost ile (max 1.0)
-        confidence = min(best_score * 1.2, 1.0)
+        confidence = min(score * 1.2, 1.0)
 
         # Dosya adi: paket adinin kebab-case hali
         new_filename = _sanitize_filename(pkg_name)
@@ -643,7 +722,11 @@ class NpmFingerprinter:
             original_file=f"{module_id}.js",
             new_filename=new_filename,
             category=sig["category"],
-            description=f"Vendored {pkg_name} package ({best_matched_count} string match)",
+            description=(
+                f"Vendored {pkg_name} package (bundle path {path}; "
+                f"{len(hits)}/{len(sig['strings'])} signature tokens; "
+                "content not hash-verified)"
+            ),
             confidence=round(confidence, 3),
             source="npm_fingerprint",
             npm_package=pkg_name,

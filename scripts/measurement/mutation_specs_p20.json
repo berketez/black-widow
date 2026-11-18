@@ -96,6 +96,38 @@
       "test": "tests/test_p20_counters.py::test_params_applied_counts_parameters_not_references",
       "find": "          renameCount += 1; // yalnız parametre",
       "replace": "          renameCount += 1 + bodyRenames; // yalnız parametre"
+    },
+    {
+      "id": "p20_k3_belirtec_siniri_yok",
+      "desc": "BICIM-11: imza dizgisi yine düz alt dizgi (pkcs8 içinde pkcs)",
+      "module": "karadul/reconstruction/naming/npm_fingerprinter.py",
+      "test": "tests/test_p20_npm_vendor.py::test_token_boundary_rejects_substrings",
+      "find": "    return re.compile(pre + re.escape(token) + post)",
+      "replace": "    return re.compile(re.escape(token))"
+    },
+    {
+      "id": "p20_k3_yol_kaniti_aranmaz",
+      "desc": "BICIM-11: yalnız dizgi benzerliği yine vendor hükmü",
+      "module": "karadul/reconstruction/naming/npm_fingerprinter.py",
+      "test": "tests/test_p20_npm_vendor.py::test_bulgu_examples_are_not_vendor",
+      "find": "        if path is None:\n            return None",
+      "replace": "        if path is None and False:\n            return None"
+    },
+    {
+      "id": "p20_k3_yol_paketi_adlandirmaz",
+      "desc": "BICIM-11: herhangi bir node_modules yolu kanıt sayılır",
+      "module": "karadul/reconstruction/naming/npm_fingerprinter.py",
+      "test": "tests/test_p20_npm_vendor.py::test_path_must_name_the_matched_package",
+      "find": "    needle = f\"node_modules/{pkg_name}/\"",
+      "replace": "    needle = \"node_modules/\""
+    },
+    {
+      "id": "p20_k3_ipucu_kaybolur",
+      "desc": "BICIM-11: yalnız benzerlik bilgisi manifest'e yazılmaz",
+      "module": "karadul/reconstruction/naming/pipeline.py",
+      "test": "tests/test_p20_npm_vendor.py::test_pipeline_keeps_suspicious_module_out_of_vendor",
+      "find": "        manifest.npm_hints = dict(getattr(self.fingerprinter, \"hints\", {}) or {})",
+      "replace": "        manifest.npm_hints = {}"
     }
   ]
 }

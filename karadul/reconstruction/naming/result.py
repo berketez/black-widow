@@ -73,6 +73,9 @@ class NamingManifest:
     statistics: dict[str, dict] = field(default_factory=dict)
     source_match_mappings: dict[str, dict[str, str]] = field(default_factory=dict)
     # source_match_mappings: {module_id: {minified_name: original_name}}
+    npm_hints: dict[str, dict] = field(default_factory=dict)
+    # npm_hints (BICIM-11): yalnız dizgi benzerliği olan, bu yüzden "vendor"
+    # SAYILMAYAN modüller: {module_id: {package, matched, total, ...}}
 
     def add_result(self, result: NamingResult) -> None:
         """Tek sonuc ekle. Daha yuksek confidence varsa guncelle."""
@@ -144,6 +147,8 @@ class NamingManifest:
         # Source match mappings varsa kaydet
         if self.source_match_mappings:
             data["source_match_mappings"] = self.source_match_mappings
+        if self.npm_hints:
+            data["npm_hints"] = self.npm_hints
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
@@ -158,6 +163,7 @@ class NamingManifest:
             manifest.results[mid] = NamingResult.from_dict(rdict)
         manifest.statistics = data.get("statistics", {})
         manifest.source_match_mappings = data.get("source_match_mappings", {})
+        manifest.npm_hints = data.get("npm_hints", {})
         return manifest
 
     def summary(self) -> dict[str, Any]:

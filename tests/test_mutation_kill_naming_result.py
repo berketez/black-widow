@@ -77,11 +77,18 @@ def test_min_match_boundary_is_inclusive() -> None:
     fp = NpmFingerprinter(signatures=sigs)
 
     # Iki anchor da var -> matched == 2 == min_match (tam sinir).
-    content = "function m(){ return ALPHA_TOKEN_XZ + BETA_TOKEN_QW; }"
+    # P20 / BICIM-11: vendor hükmü paket yolu kanıtı da ister (başlık satırı).
+    content = (
+        "/**\n * Module: ./node_modules/pkgfoo/index.js\n */\n"
+        "function m(){ return ALPHA_TOKEN_XZ + BETA_TOKEN_QW; }"
+    )
     result = fp._match_module(content, "mod1")
     assert result is not None, "tam-esik (matched==min_match) eslesme uretmeli"
     assert result.npm_package == "pkgfoo"
 
     # Kapi yonu capasi: esik ALTI (matched=1 < 2) eslesmemeli.
-    content_below = "function m(){ return ALPHA_TOKEN_XZ; }"
+    content_below = (
+        "/**\n * Module: ./node_modules/pkgfoo/index.js\n */\n"
+        "function m(){ return ALPHA_TOKEN_XZ; }"
+    )
     assert fp._match_module(content_below, "mod2") is None

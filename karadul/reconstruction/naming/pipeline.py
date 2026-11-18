@@ -124,6 +124,15 @@ class NamingPipeline:
         fp_results = self.fingerprinter.fingerprint_all(modules_dir)
         manifest.add_results(fp_results, "npm_fingerprint")
         named = {r.module_id for r in fp_results}
+        # BICIM-11: yalnız dizgi benzerliği olan modüller "vendor" sayılmaz ve
+        # yapısal katmana (Layer 2) kalır; benzerlik bilgisi kaybolmasın diye
+        # manifest'e not düşülür (vendor/ altına taşınmaz, .d.ts adı uygulanmaz).
+        manifest.npm_hints = dict(getattr(self.fingerprinter, "hints", {}) or {})
+        if manifest.npm_hints:
+            manifest.statistics["npm_similarity_hints"] = {
+                "modules": len(manifest.npm_hints),
+                "counted_as_vendor": 0,
+            }
         logger.info(
             "Layer 1 (npm_fingerprint): %d eslesme (%.1fs)",
             len(fp_results), time.monotonic() - t1,
@@ -319,6 +328,17 @@ class NamingPipeline:
                 "Layer 3 atlandi (LLM devre disi): %d modul isimsiz birakildi",
                 len(remaining_ids),
             )
+
+        # Yalnız dizgi benzerliği olan modülün (Layer 2 adı aldıysa) açıklamasına
+        # benzerlik "doğrulanmadı" diye eklenir; analist hükmü değil ipucunu görür.
+        for mid, hint in manifest.npm_hints.items():
+            res = manifest.results.get(mid)
+            if res is not None and res.source != "npm_fingerprint":
+                res.description = (
+                    f"{res.description} [olası npm benzerliği: {hint['package']} "
+                    f"({hint['matched']}/{hint['total']} dizgi); doğrulanmadı, "
+                    "vendor sayılmadı]"
+                )
 
         # ---- Layer 4: Conflict Resolution ----
         conflicts = manifest.resolve_conflicts()
