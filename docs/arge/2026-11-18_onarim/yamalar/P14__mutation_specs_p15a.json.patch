@@ -1,0 +1,56 @@
+--- a/scripts/measurement/mutation_specs_p15a.json	2026-11-18 13:06:11
++++ b/scripts/measurement/mutation_specs_p15a.json	2026-11-18 13:06:11
+@@ -4,7 +4,7 @@
+     {
+       "id": "m01_basarisiz_gorulmez",
+       "desc": "başarısız aşama başarısız sayılmıyor (eski: çıkış 0)",
+-      "module": "karadul/cli.py",
++      "module": "karadul/core/pipeline.py",
+       "test": "tests/test_p15a_cikis.py::TestOutcome::test_failed_stage_exit_1_with_reason",
+       "find": "        if not getattr(sr, \"success\", False):\n            failed[name]",
+       "replace": "        if False:\n            failed[name]"
+@@ -12,7 +12,7 @@
+     {
+       "id": "m01_atlanan_hata_sayilir",
+       "desc": "atlanan aşama başarısız sayılıyor",
+-      "module": "karadul/cli.py",
++      "module": "karadul/core/pipeline.py",
+       "test": "tests/test_p15a_cikis.py::TestOutcome::test_skipped_stage_is_not_a_failure",
+       "find": "        if getattr(sr, \"skipped\", False):\n            continue\n",
+       "replace": "        if getattr(sr, \"skipped\", False):\n            pass\n"
+@@ -20,7 +20,7 @@
+     {
+       "id": "m01_partial_bayragi_okunmaz",
+       "desc": "reconstruct'ın partial bayrağı okunmuyor",
+-      "module": "karadul/cli.py",
++      "module": "karadul/core/pipeline.py",
+       "test": "tests/test_p15a_cikis.py::TestOutcome::test_reconstruct_partial_flag_is_partial",
+       "find": "if isinstance(stats, dict) and stats.get(\"partial\") is True:",
+       "replace": "if False:"
+@@ -28,7 +28,7 @@
+     {
+       "id": "m01_kismi_kodu_yok",
+       "desc": "kısmi analiz 0 ile çıkıyor",
+-      "module": "karadul/cli.py",
++      "module": "karadul/core/pipeline.py",
+       "test": "tests/test_p15a_cikis.py::test_partial_run_exits_3_and_warns",
+       "find": "    elif partial:\n        status, code",
+       "replace": "    elif False and partial:\n        status, code"
+@@ -36,7 +36,7 @@
+     {
+       "id": "m01_nedensiz_basarisiz_bos",
+       "desc": "hatasız başarısız aşamanın nedeni boş kalıyor",
+-      "module": "karadul/cli.py",
++      "module": "karadul/core/pipeline.py",
+       "test": "tests/test_p15a_cikis.py::TestOutcome::test_failed_stage_without_errors_still_has_a_reason",
+       "find": "failed[name] = errors or [\"aşama başarısız (neden bildirilmedi)\"]",
+       "replace": "failed[name] = errors"
+@@ -44,7 +44,7 @@
+     {
+       "id": "m01_bos_hat_basarili",
+       "desc": "hiç aşama koşmayan hat başarılı sayılıyor",
+-      "module": "karadul/cli.py",
++      "module": "karadul/core/pipeline.py",
+       "test": "tests/test_p15a_cikis.py::TestOutcome::test_no_stage_is_failure",
+       "find": "    if not stages:\n        failed[\"pipeline\"]",
+       "replace": "    if False:\n        failed[\"pipeline\"]"
