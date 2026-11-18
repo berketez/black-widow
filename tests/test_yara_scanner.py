@@ -60,6 +60,14 @@ def _make_binary_with_pattern(pattern: bytes, padding: int = 256) -> bytes:
     return b"\x00" * padding + pattern + b"\x00" * padding
 
 
+def _x86_elf(payload: bytes) -> bytes:
+    """Asgari x86-64 ELF basligi + yuk (mimariye bagli kurallar icin, P03)."""
+    hdr = bytearray(64)
+    hdr[0:6] = b"\x7fELF\x02\x01"
+    hdr[0x12] = 62  # EM_X86_64
+    return bytes(hdr) + payload
+
+
 # ---------------------------------------------------------------------------
 # Temel testler
 # ---------------------------------------------------------------------------
@@ -180,8 +188,10 @@ class TestPackerDetection:
     """Packer/protector tespit testleri."""
 
     def test_upx_magic_detection(self, scanner):
-        """UPX packed binary tespit edilmeli (UPX! magic)."""
-        data = _make_binary_with_pattern(b"UPX!")
+        """UPX: imza + bolum adi iki bagimsiz kanit; tek basina UPX! yetmez (P03)."""
+        assert "UPX_Packed" not in scanner.scan_bytes(
+            _make_binary_with_pattern(b"UPX!")).matched_rules
+        data = _make_binary_with_pattern(b"UPX0\x00\x00\x00\x00UPX!")
         result = scanner.scan_bytes(data)
 
         assert "UPX_Packed" in result.matched_rules
@@ -193,34 +203,38 @@ class TestPackerDetection:
 
         assert "UPX_Packed" in result.matched_rules
 
+    # P03: paketleyici hukmu PE bolum tablosuna / giris noktasina baglidir.
+    # Bicimsiz ham veride bolum adi dizgisi tek basina hukum vermez; dogru
+    # pozitifler sentetik PE ile tests/test_p03_yara_kurallari.py'de.
+
     def test_vmprotect_detection(self, scanner):
-        """VMProtect section names tespit edilmeli."""
+        """Bolum tablosu olmayan ham veride .vmp0 dizgisi VMProtect degildir."""
         data = b"\x00.vmp0\x00.vmp1\x00VMProtect begin\x00"
         result = scanner.scan_bytes(data)
 
-        assert "VMProtect_Packed" in result.matched_rules
+        assert "VMProtect_Packed" not in result.matched_rules
 
     def test_themida_detection(self, scanner):
-        """Themida string tespit edilmeli."""
+        """Bolum tablosu olmayan ham veride Themida dizgisi Themida degildir."""
         data = b"\x00Themida\x00.themida section\x00"
         result = scanner.scan_bytes(data)
 
-        assert "Themida_Packed" in result.matched_rules
+        assert "Themida_Packed" not in result.matched_rules
 
     def test_aspack_byte_pattern(self, scanner):
-        """ASPack entry point byte pattern tespit edilmeli."""
+        """Rastgele 60 E8 00 00 00 00 (debian tree) ASPack degildir."""
         aspack_entry = _hex("60 E8 00 00 00 00")
         data = _make_binary_with_pattern(aspack_entry)
         result = scanner.scan_bytes(data)
 
-        assert "ASPack_Packed" in result.matched_rules
+        assert "ASPack_Packed" not in result.matched_rules
 
     def test_mpress_detection(self, scanner):
-        """MPRESS section name tespit edilmeli."""
-        data = b"\x00.MPRESS1\x00.MPRESS2\x00"
+        """Bolum tablosu olmadan .MPRESS1 dizgisi ve 'compress' MPRESS degildir."""
+        data = b"\x00.MPRESS1\x00.MPRESS2\x00uncompress\x00"
         result = scanner.scan_bytes(data)
 
-        assert "MPRESS_Packed" in result.matched_rules
+        assert "MPRESS_Packed" not in result.matched_rules
 
 
 # ---------------------------------------------------------------------------
@@ -244,8 +258,11 @@ class TestCompilerDetection:
         elenir. Gercek MSVC binary'si zaten PE oldugu icin bu kisit dogru
         pozitifleri etkilemez, yalnizca ELF/Mach-O yanlis pozitiflerini keser.
         """
-        data = b"MZ\x90\x00" + b"\x00" * 60 + \
+        one = b"MZ\x90\x00" + b"\x00" * 60 + \
             b"Microsoft (R) Optimizing Compiler Version 19.29.30148\x00"
+        # P03: Rich basligi yoksa en az iki MSVC dizgisi gerekir.
+        assert "MSVC_Compiler" not in scanner.scan_bytes(one).matched_rules
+        data = one + b"_MSC_VER\x00"
         result = scanner.scan_bytes(data)
 
         assert "MSVC_Compiler" in result.matched_rules
@@ -321,17 +338,20 @@ class TestAntiDebugDetection:
 
     def test_isdebuggerperesent_detection(self, scanner):
         """IsDebuggerPresent string tespit edilmeli."""
-        data = b"\x00IsDebuggerPresent\x00CheckRemoteDebuggerPresent\x00"
+        # P03: yalniz PE; IsDebuggerPresent tek basina (MSVC CRT) yetmez.
+        assert "AntiDebug_IsDebuggerPresent" not in scanner.scan_bytes(
+            b"MZ\x00IsDebuggerPresent\x00").matched_rules
+        data = b"MZ\x00IsDebuggerPresent\x00CheckRemoteDebuggerPresent\x00"
         result = scanner.scan_bytes(data)
 
         assert "AntiDebug_IsDebuggerPresent" in result.matched_rules
 
     def test_timing_antidbg_detection(self, scanner):
-        """Timing-based anti-debug string tespit edilmeli."""
-        data = b"\x00QueryPerformanceCounter\x00GetTickCount\x00"
+        """QPC/GetTickCount (MSVC CRT'de olagan) anti-debug kaniti degildir (P03)."""
+        data = b"MZ\x00QueryPerformanceCounter\x00GetTickCount\x00"
         result = scanner.scan_bytes(data)
 
-        assert "AntiDebug_Timing" in result.matched_rules
+        assert "AntiDebug_Timing" not in result.matched_rules
 
     def test_antivm_detection(self, scanner):
         """VM detection string tespit edilmeli."""
@@ -351,7 +371,10 @@ class TestObfuscationDetection:
     def test_xor_pattern_byte(self, scanner):
         """XOR decode loop byte pattern tespit edilmeli."""
         xor_loop = _hex("30 04 11 42")  # xor [ecx+edx], al; inc edx
-        data = _make_binary_with_pattern(xor_loop)
+        # P03: x86 kodu tasimayan veride (bicimsiz / AArch64) sayilmaz.
+        assert "String_Encryption_XOR" not in scanner.scan_bytes(
+            _make_binary_with_pattern(xor_loop)).matched_rules
+        data = _x86_elf(_make_binary_with_pattern(xor_loop))
         result = scanner.scan_bytes(data)
 
         assert "String_Encryption_XOR" in result.matched_rules
@@ -366,7 +389,10 @@ class TestObfuscationDetection:
     def test_opaque_predicate_pattern(self, scanner):
         """Opaque predicate byte pattern tespit edilmeli."""
         opaque = _hex("33 C0 74")  # xor eax,eax; jz
-        data = _make_binary_with_pattern(opaque)
+        # P03: tek ornek rastlantisal olabilir; x86'da en az 3 ornek.
+        assert "Opaque_Predicates" not in scanner.scan_bytes(
+            _x86_elf(_make_binary_with_pattern(opaque))).matched_rules
+        data = _x86_elf(_make_binary_with_pattern((opaque + b"\x02\x90\x90") * 3))
         result = scanner.scan_bytes(data)
 
         assert "Opaque_Predicates" in result.matched_rules
@@ -379,26 +405,36 @@ class TestObfuscationDetection:
 class TestCompressionDetection:
     """Compression library tespit testleri."""
 
+    # P03: veri imzasi (78 9C, cerceve sihirli sayisi) kitapligin varligini
+    # gostermez (or. `file` ikilisinin sihirli sayi tablosu); kitaplik hukmu
+    # afis / API adi / bagli kitaplik adiyla.
+
     def test_zlib_header_detection(self, scanner):
-        """zlib default compression header tespit edilmeli."""
-        zlib_header = _hex("78 9C")
-        data = _make_binary_with_pattern(zlib_header)
+        """zlib: 78 9C tek basina degil, telif afisi ile."""
+        assert "Zlib_Library" not in scanner.scan_bytes(
+            _make_binary_with_pattern(_hex("78 9C"))).matched_rules
+        data = _make_binary_with_pattern(
+            b" deflate 1.3.1 Copyright 1995-2024 Jean-loup Gailly and Mark Adler ")
         result = scanner.scan_bytes(data)
 
         assert "Zlib_Library" in result.matched_rules
 
     def test_lz4_magic_detection(self, scanner):
-        """LZ4 frame magic tespit edilmeli."""
+        """LZ4: cerceve sihirli sayisi tek basina degil, API adi ile."""
         lz4_magic = _hex("04 22 4D 18")
-        data = _make_binary_with_pattern(lz4_magic)
+        assert "LZ4_Library" not in scanner.scan_bytes(
+            _make_binary_with_pattern(lz4_magic)).matched_rules
+        data = _make_binary_with_pattern(lz4_magic + b"\x00LZ4_compress_default\x00")
         result = scanner.scan_bytes(data)
 
         assert "LZ4_Library" in result.matched_rules
 
     def test_zstd_magic_detection(self, scanner):
-        """Zstandard frame magic tespit edilmeli."""
+        """Zstandard: cerceve sihirli sayisi tek basina degil, API adi ile."""
         zstd_magic = _hex("28 B5 2F FD")
-        data = _make_binary_with_pattern(zstd_magic)
+        assert "Zstd_Library" not in scanner.scan_bytes(
+            _make_binary_with_pattern(zstd_magic)).matched_rules
+        data = _make_binary_with_pattern(zstd_magic + b"\x00ZSTD_decompress\x00")
         result = scanner.scan_bytes(data)
 
         assert "Zstd_Library" in result.matched_rules
@@ -448,7 +484,7 @@ class TestFallbackMode:
         s._yara = None
         s.load_builtin_rules()
 
-        data = _make_binary_with_pattern(b"UPX!")
+        data = _make_binary_with_pattern(b"UPX1\x00\x00\x00\x00UPX!")
         result = s.scan_bytes(data)
 
         assert result.backend == "regex-fallback"
@@ -645,10 +681,11 @@ class TestMultipleDetections:
     def test_packer_and_antidebug_together(self, scanner):
         """Ayni binary'de hem packer hem anti-debug tespit edilmeli."""
         data = (
-            b"\x00" * 50
-            + b"UPX!"
+            b"MZ"
             + b"\x00" * 50
-            + b"IsDebuggerPresent"
+            + b"UPX0\x00\x00\x00\x00UPX!"
+            + b"\x00" * 50
+            + b"CheckRemoteDebuggerPresent"
             + b"\x00" * 50
         )
         result = scanner.scan_bytes(data)

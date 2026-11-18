@@ -11,6 +11,24 @@ Karadul'da kullanim:
 
 YARA kurulu degilse graceful fallback: regex-based scanning.
 
+Hukum modeli (P03 / IMZA-05, 2026-11-18):
+    Eski surumde her dizgi ``nocase`` ve her kuralin kosulu ``any of them``
+    idi; ``compress`` icindeki "mpress" coreutils ``ls``'i "MPRESS ile
+    paketli", ``tObject`` redis'i "Delphi" yapiyordu. Artik:
+
+    - Iki arka uc (yara-python ve regex yedegi) yalnizca *dizgi isabeti*
+      toplar: ``kimlik -> [ofset, ...]``. Kimlikler iki arka uçta aynidir
+      (bayt desenleri ``$b0..``, metin desenleri ``$s0..``).
+    - Hukmu TEK bir Python degerlendiricisi verir (``_evaluate``): bicim
+      (PE/ELF/Mach-O), mimari bolgesi (or. yalniz x86 kod tasiyan dilim),
+      kod imzasi bolgesinin dislanmasi, PE bolum adlari, giris noktasi
+      baytlari, Rich basligi ve kural kosulu (``N of``, ``ve/veya``,
+      baska kuralin eslesmesi). Boylece iki arka uc ayni anlambilimle
+      calisir; YARA kaynagindaki kosul yalnizca gerekli bir on suzgectir.
+    - Metin desenleri ontanimli olarak harf DUYARLIDIR; harf duyarsizlik
+      yalnizca gerektiginde ``(?i)`` onekiyle istenir. ``(?s)`` oneki
+      ``.``'nin her bayta uymasini saglar (YARA'da ``s`` niteleyicisi).
+
 Kullanim:
     scanner = YaraScanner()
     scanner.load_builtin_rules()
@@ -22,12 +40,26 @@ from __future__ import annotations
 
 import logging
 import re
+import struct
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional, Union
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Tarama durumu (P03 durum sozlesmesi; capa_scanner ile ayni degerler)
+# ---------------------------------------------------------------------------
+
+STATUS_RAN = "calisti"              # tarama tamamlandi (0 eslesme = "tarandi, temiz")
+STATUS_NO_TOOL = "arac_yok"         # arac/kural kaynagi yok (YARA'da kullanilmaz: yedek esleyici var)
+STATUS_ERROR = "hata"               # tarama tamamlanamadi; neden ``status_reason``'da
+STATUS_UNSUPPORTED = "desteklenmiyor"  # bicim/mimari aracin kapsami disinda
+
+# Bir kimlik icin saklanan en cok isabet (iki arka uçta ayni sinir).
+_MAX_INSTANCES_PER_STRING = 64
 
 
 # ---------------------------------------------------------------------------
@@ -59,12 +91,25 @@ class YaraMatch:
 
 @dataclass
 class ScanResult:
-    """Tarama sonucu."""
+    """Tarama sonucu.
+
+    Durum alanlari (P03):
+        status: ``calisti`` (tarama bitti; eslesme 0 olabilir = temiz) ya da
+            ``hata`` (dosya okunamadi, kural yok, tarama yarida kaldi).
+        status_reason: ``hata`` ise neden; ``calisti`` ise bos.
+        fallback_reason: yara-python kurulu oldugu halde regex yedegine
+            dusulduyse nedeni (or. derleme hatasi); bos = dusulmedi.
+        target_format: hedefin bicimi (``pe`` / ``elf`` / ``macho`` / ``""``).
+    """
     total_rules: int = 0
     matches: list[YaraMatch] = field(default_factory=list)
     scan_time_ms: float = 0.0
     errors: list[str] = field(default_factory=list)
-    backend: str = ""  # "yara-python" veya "regex-fallback"
+    backend: str = ""  # "yara-python" veya "regex-fallback" (gercekte kullanilan)
+    status: str = STATUS_ERROR
+    status_reason: str = ""
+    fallback_reason: str = ""
+    target_format: str = ""
 
     @property
     def matched_rules(self) -> list[str]:
@@ -73,12 +118,282 @@ class ScanResult:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "status": self.status,
+            "status_reason": self.status_reason,
             "total_rules": self.total_rules,
             "matches": [m.to_dict() for m in self.matches],
             "scan_time_ms": round(self.scan_time_ms, 3),
             "errors": self.errors,
             "backend": self.backend,
+            "fallback_reason": self.fallback_reason,
+            "target_format": self.target_format,
         }
+
+
+def _error_result(reason: str) -> ScanResult:
+    return ScanResult(errors=[reason], status=STATUS_ERROR, status_reason=reason)
+
+
+# ---------------------------------------------------------------------------
+# Ikili yapi bilgisi (bicim, mimari bolgeleri, PE bolumleri, kod imzasi)
+# ---------------------------------------------------------------------------
+# Kotu niyetli girdiye karsi: her okuma sinir denetimli, sayilar ust sinirli,
+# hata -> bos bilgi (istisna disari sizmaz).
+
+_MACHO_THIN_MAGICS = {
+    b"\xfe\xed\xfa\xce": (">", False), b"\xfe\xed\xfa\xcf": (">", True),
+    b"\xce\xfa\xed\xfe": ("<", False), b"\xcf\xfa\xed\xfe": ("<", True),
+}
+_LC_CODE_SIGNATURE = 0x1D
+_CPU_X86 = 7
+_CPU_X86_64 = 0x01000007
+_ELF_X86 = {3, 62}             # EM_386, EM_X86_64
+_PE_X86 = {0x14C, 0x8664}      # IMAGE_FILE_MACHINE_I386 / AMD64
+
+
+@dataclass
+class _PeInfo:
+    sections: list[str] = field(default_factory=list)
+    entry_bytes: bytes = b""
+    e_lfanew: int = 0
+    machine: int = 0
+    security_dir: Optional[tuple[int, int]] = None  # (dosya ofseti, boyut)
+
+
+@dataclass
+class _BinaryInfo:
+    fmt: str = ""
+    # (baslangic, bitis, mimari) -- mimari: "x86" | "other"
+    arch_regions: list[tuple[int, int, str]] = field(default_factory=list)
+    # Programin icerigi olmayan bolgeler (kod imzasi / Authenticode sertifikasi)
+    excluded_regions: list[tuple[int, int]] = field(default_factory=list)
+    pe: Optional[_PeInfo] = None
+
+
+def _detect_format(data: bytes) -> str:
+    """Magic byte'tan binary formatini tespit et: pe | elf | macho | ''."""
+    if data[:2] == b"MZ":
+        return "pe"
+    if data[:4] == b"\x7fELF":
+        return "elf"
+    if data[:4] in _MACHO_THIN_MAGICS or data[:4] in (b"\xca\xfe\xba\xbe", b"\xca\xfe\xba\xbf"):
+        return "macho"
+    return ""
+
+
+def _u(fmt: str, data: bytes, off: int) -> Optional[tuple]:
+    size = struct.calcsize(fmt)
+    if off < 0 or off + size > len(data):
+        return None
+    return struct.unpack_from(fmt, data, off)
+
+
+def _parse_pe(data: bytes) -> Optional[_PeInfo]:
+    hdr = _u("<I", data, 0x3C)
+    if hdr is None:
+        return None
+    e_lfanew = hdr[0]
+    if data[e_lfanew:e_lfanew + 4] != b"PE\x00\x00":
+        return None
+    fh = _u("<HHIIIHH", data, e_lfanew + 4)
+    if fh is None:
+        return None
+    machine, nsec, _, _, _, opt_size, _ = fh
+    opt = e_lfanew + 24
+    magic = _u("<H", data, opt)
+    if magic is None:
+        return None
+    info = _PeInfo(e_lfanew=e_lfanew, machine=machine)
+    ep = _u("<I", data, opt + 16)
+    dd_off = opt + (96 if magic[0] == 0x10B else 112)
+    sec_dir = _u("<II", data, dd_off + 4 * 8)  # IMAGE_DIRECTORY_ENTRY_SECURITY
+    if sec_dir and sec_dir[0] and sec_dir[1]:
+        info.security_dir = (sec_dir[0], sec_dir[1])
+    sec_tab = opt + opt_size
+    sections: list[tuple[str, int, int, int, int]] = []
+    for i in range(min(nsec, 96)):
+        s = _u("<8sIIII", data, sec_tab + 40 * i)
+        if s is None:
+            break
+        name = s[0].rstrip(b"\x00").decode("latin-1")
+        sections.append((name, s[1], s[2], s[3], s[4]))  # vsize, va, rawsize, rawptr
+    info.sections = [s[0] for s in sections]
+    if ep is not None:
+        ep_rva = ep[0]
+        for _, vsize, va, rawsize, rawptr in sections:
+            if va <= ep_rva < va + max(vsize, rawsize):
+                foff = rawptr + (ep_rva - va)
+                info.entry_bytes = data[foff:foff + 16]
+                break
+    return info
+
+
+def _macho_slice(data: bytes, base: int, end: int, info: _BinaryInfo) -> None:
+    """Ince Mach-O dilimi: mimari bolgesi + LC_CODE_SIGNATURE bolgesi."""
+    magic = data[base:base + 4]
+    if magic not in _MACHO_THIN_MAGICS:
+        return
+    endian, is64 = _MACHO_THIN_MAGICS[magic]
+    hdr = _u(endian + "iiIIII", data, base + 4)
+    if hdr is None:
+        return
+    cputype, _, _, ncmds, sizeofcmds, _ = hdr
+    arch = "x86" if cputype in (_CPU_X86, _CPU_X86_64) else "other"
+    info.arch_regions.append((base, end, arch))
+    off = base + (32 if is64 else 28)
+    stop = min(off + sizeofcmds, end)
+    for _ in range(min(ncmds, 4096)):
+        lc = _u(endian + "II", data, off)
+        if lc is None or off + 8 > stop:
+            break
+        cmd, cmdsize = lc
+        if cmd == _LC_CODE_SIGNATURE:
+            ls = _u(endian + "II", data, off + 8)
+            if ls is not None:
+                start = base + ls[0]
+                info.excluded_regions.append((start, start + ls[1]))
+        if cmdsize < 8:
+            break
+        off += cmdsize
+
+
+def _binary_info(data: bytes) -> _BinaryInfo:
+    info = _BinaryInfo(fmt=_detect_format(data))
+    try:
+        if info.fmt == "pe":
+            info.pe = _parse_pe(data)
+            if info.pe is not None:
+                arch = "x86" if info.pe.machine in _PE_X86 else "other"
+                info.arch_regions.append((0, len(data), arch))
+                if info.pe.security_dir:
+                    off, size = info.pe.security_dir
+                    info.excluded_regions.append((off, off + size))
+        elif info.fmt == "elf":
+            ei_data = data[5:6]
+            endian = ">" if ei_data == b"\x02" else "<"
+            em = _u(endian + "H", data, 0x12)
+            arch = "x86" if em and em[0] in _ELF_X86 else "other"
+            info.arch_regions.append((0, len(data), arch))
+        elif info.fmt == "macho":
+            magic = data[:4]
+            if magic in _MACHO_THIN_MAGICS:
+                _macho_slice(data, 0, len(data), info)
+            else:
+                is64 = magic == b"\xca\xfe\xba\xbf"
+                nfat = _u(">I", data, 4)
+                n = nfat[0] if nfat else 0
+                if n <= 64:
+                    for i in range(n):
+                        if is64:
+                            fa = _u(">iiQQI", data, 8 + 32 * i)
+                        else:
+                            fa = _u(">iiIII", data, 8 + 20 * i)
+                        if fa is None:
+                            break
+                        off, size = fa[2], fa[3]
+                        if 0 < off < len(data):
+                            _macho_slice(data, off, min(off + size, len(data)), info)
+    except Exception:  # pragma: no cover - savunma; yapi bilgisi yoksa bos kalir
+        logger.debug("YARA: ikili yapi bilgisi okunamadi", exc_info=True)
+    return info
+
+
+# ---------------------------------------------------------------------------
+# Kural kosullari (iki arka ucun ortak hakemi)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class RuleEvidence:
+    """Bir kural icin toplanan kanit (bolge suzgecinden SONRA)."""
+    hits: dict[str, list[tuple[int, bytes]]]
+    ids: list[str]
+    binfo: _BinaryInfo
+    matched_rules: set[str] = field(default_factory=set)
+
+    def has(self, ident: str) -> bool:
+        return bool(self.hits.get(ident))
+
+    def count(self, ident: str) -> int:
+        return len(self.hits.get(ident, ()))
+
+    def distinct(self, idents: Optional[list[str]] = None) -> int:
+        return sum(1 for i in (idents if idents is not None else self.ids) if self.has(i))
+
+
+class Cond:
+    """Kural kosulu dugumu: ``cond(ev) -> bool`` ve okunur ``describe()``."""
+
+    def __init__(self, fn: Callable[[RuleEvidence], bool], text: str) -> None:
+        self._fn = fn
+        self._text = text
+
+    def __call__(self, ev: RuleEvidence) -> bool:
+        return bool(self._fn(ev))
+
+    def describe(self) -> str:
+        return self._text
+
+
+def of(n: int, *idents: str) -> Cond:
+    """Listelenen kimliklerden (bos = kuralin tum dizgileri) en az ``n`` farkli kimlik."""
+    ids = list(idents) or None
+    label = "them" if ids is None else "(" + ", ".join(ids) + ")"
+    return Cond(lambda ev: ev.distinct(ids) >= n, f"{n} of {label}")
+
+
+def has(ident: str) -> Cond:
+    return Cond(lambda ev: ev.has(ident), ident)
+
+
+def count_at_least(ident: str, n: int) -> Cond:
+    return Cond(lambda ev: ev.count(ident) >= n, f"#{ident[1:]} >= {n}")
+
+
+def all_(*conds: Cond) -> Cond:
+    return Cond(lambda ev: all(c(ev) for c in conds),
+                "(" + " and ".join(c.describe() for c in conds) + ")")
+
+
+def any_(*conds: Cond) -> Cond:
+    return Cond(lambda ev: any(c(ev) for c in conds),
+                "(" + " or ".join(c.describe() for c in conds) + ")")
+
+
+def pe_section(*names: str) -> Cond:
+    """PE bolum tablosunda bu adlardan biri (tam ad, harf duyarli) var."""
+    wanted = set(names)
+    return Cond(
+        lambda ev: ev.binfo.pe is not None and any(s in wanted for s in ev.binfo.pe.sections),
+        "pe.section in {" + ", ".join(sorted(wanted)) + "}",
+    )
+
+
+def pe_section_re(pattern: str) -> Cond:
+    rx = re.compile(pattern)
+    return Cond(
+        lambda ev: ev.binfo.pe is not None and any(rx.fullmatch(s) for s in ev.binfo.pe.sections),
+        f"pe.section =~ /{pattern}/",
+    )
+
+
+def pe_entry(*prefixes: bytes) -> Cond:
+    """PE giris noktasindaki baytlar bu oneklerden biriyle basliyor."""
+    return Cond(
+        lambda ev: ev.binfo.pe is not None
+        and any(ev.binfo.pe.entry_bytes.startswith(p) for p in prefixes),
+        "pe.entry_point starts " + " | ".join(p.hex(" ") for p in prefixes),
+    )
+
+
+def pe_rich_header() -> Cond:
+    """MS bagdastiricisinin Rich basligi: DOS koku ile PE basligi arasinda ``Rich``."""
+    return Cond(lambda ev: ev.has("$rich"), "rich_header")
+
+
+def rule_matched(*names: str) -> Cond:
+    """Ayni dosyada baska bir kuralin eslesmis olmasi (baglam kaniti)."""
+    return Cond(lambda ev: any(n in ev.matched_rules for n in names),
+                "rule(" + " | ".join(names) + ")")
 
 
 # ---------------------------------------------------------------------------
@@ -92,22 +407,54 @@ class BuiltinRule:
     YARA kurulu ise yara.compile() icin kaynak uretilebilir.
     Degilse regex/byte-pattern fallback icin kullanilir.
 
-    Her kuralda ya ``byte_patterns`` (hex string listesi)
-    ya da ``string_patterns`` (text regex listesi) bulunur.
+    Her kuralda ya ``byte_patterns`` (bayt dizisi listesi)
+    ya da ``string_patterns`` (regex listesi) bulunur. Kimlikler:
+    bayt desenleri ``$b0, $b1, ...``, metin desenleri ``$s0, $s1, ...``.
+
+    Metin desenleri harf duyarlidir; ``(?i)`` oneki harf duyarsiz, ``(?s)``
+    oneki "nokta her bayta uyar" anlamina gelir (birlikte: ``(?is)``).
+
+    ``condition``: ``"any"`` | ``"all"`` | ``int`` (N farkli dizgi) | ``Cond``.
+    ``formats``: kuralin gecerli oldugu bicimler (bos = hepsi).
+    ``arch``: ``["x86"]`` ise yalniz x86 kod tasiyan bolgelerdeki
+        (x86 ELF/PE, evrensel Mach-O'nun x86 dilimi) isabetler sayilir.
     """
     name: str
     tags: list[str] = field(default_factory=list)
     meta: dict[str, Any] = field(default_factory=dict)
     byte_patterns: list[bytes] = field(default_factory=list)
     string_patterns: list[str] = field(default_factory=list)
-    condition: str = "any"  # "any" = herhangi biri, "all" = hepsi
+    condition: Union[str, int, Cond] = "any"
     # Bu kuralin yalnizca gecerli oldugu binary formatlari ("pe", "elf",
-    # "macho"). Bos = format-agnostik (her yerde gecerli). PE-only imzalar
-    # (Rich header, MSVC string'leri) ELF/Mach-O'da yanlis eslesir; bu alan
-    # scan_bytes'ta magic-byte ile filtrelenir. Ornek: coreutils `cat`
-    # icindeki "Richard M. Stallman" krediisi `b"Rich"` byte pattern'ine
-    # eslesip ELF'i "MSVC compiled" gosteriyordu.
+    # "macho"). Bos = format-agnostik (her yerde gecerli). Ornek: coreutils
+    # `cat` icindeki "Richard M. Stallman" krediisi `b"Rich"` byte
+    # pattern'ine eslesip ELF'i "MSVC compiled" gosteriyordu.
     formats: list[str] = field(default_factory=list)
+    arch: list[str] = field(default_factory=list)
+
+    def pattern_ids(self) -> list[str]:
+        return ([f"$b{i}" for i in range(len(self.byte_patterns))]
+                + [f"$s{i}" for i in range(len(self.string_patterns))])
+
+    def resolved_condition(self) -> Cond:
+        c = self.condition
+        if isinstance(c, Cond):
+            return c
+        if c == "all":
+            n = len(self.pattern_ids())
+            return Cond(lambda ev: ev.distinct() >= n and n > 0, "all of them")
+        if isinstance(c, int):
+            return of(c)
+        return of(1)
+
+    def yara_prefilter(self) -> str:
+        """YARA kaynagi icin GEREKLI on kosul (son hukmu _evaluate verir)."""
+        c = self.condition
+        if c == "all":
+            return "all of them"
+        if isinstance(c, int) and c > 1:
+            return f"{c} of them"
+        return "any of them"
 
 
 def _hex(s: str) -> bytes:
@@ -115,12 +462,31 @@ def _hex(s: str) -> bytes:
     return bytes.fromhex(s.replace(" ", ""))
 
 
+def _split_flags(pattern: str) -> tuple[str, bool, bool]:
+    """``(?i)``, ``(?s)``, ``(?is)`` onekini ayir -> (desen, nocase, dotall)."""
+    m = re.match(r"^\(\?([is]+)\)", pattern)
+    if not m:
+        return pattern, False, False
+    flags = m.group(1)
+    return pattern[m.end():], "i" in flags, "s" in flags
+
+
+# Rich basligi: DOS koku ile PE basligi arasinda olmali; bu ozel kimlik
+# yalniz MSVC kuralinda, yapisal olarak (Python tarafinda) doldurulur.
+def _rich_header_hit(data: bytes, binfo: _BinaryInfo) -> list[tuple[int, bytes]]:
+    if binfo.pe is None:
+        return []
+    end = min(binfo.pe.e_lfanew, len(data))
+    pos = data.find(b"Rich", 0x40, end)
+    return [(pos, b"Rich")] if pos >= 0 else []
+
+
 def _builtin_rules() -> list[BuiltinRule]:
-    """Karadul dahili YARA kurallarini dondurur (~40 kural)."""
+    """Karadul dahili YARA kurallarini dondurur."""
     rules: list[BuiltinRule] = []
 
     # ===================================================================
-    # CRYPTO KUTUPHANE TESPITI (8 kural)
+    # CRYPTO KUTUPHANE TESPITI
     # ===================================================================
 
     rules.append(BuiltinRule(
@@ -158,9 +524,9 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["crypto", "openssl"],
         meta={"description": "OpenSSL library strings", "severity": "info"},
         string_patterns=[
-            r"OpenSSL\s+\d+\.\d+",
-            r"SSLeay",
-            r"libssl",
+            r"OpenSSL \d+\.\d+\.\d+",          # surum afisi: "OpenSSL 3.5.0 8 Apr 2025"
+            r"\bSSLeay\b",
+            r"\blibssl[.\-](so|dylib|\d)",     # bagli kitaplik adi: libssl.so.3, libssl.3.dylib
         ],
     ))
 
@@ -169,9 +535,9 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["crypto", "wolfssl"],
         meta={"description": "wolfSSL embedded TLS library", "severity": "info"},
         string_patterns=[
-            r"wolfSSL",
-            r"CyaSSL",
-            r"wolfCrypt",
+            r"\bwolfSSL",
+            r"\bCyaSSL",
+            r"\bwolfCrypt",
         ],
     ))
 
@@ -180,10 +546,10 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["crypto", "mbedtls"],
         meta={"description": "Mbed TLS (formerly PolarSSL) library", "severity": "info"},
         string_patterns=[
-            r"mbedTLS",
-            r"mbed TLS",
-            r"PolarSSL",
-            r"mbedtls_ssl_",
+            r"\bmbedTLS\b",
+            r"\bmbed TLS\b",
+            r"\bPolarSSL\b",
+            r"\bmbedtls_ssl_",
         ],
     ))
 
@@ -192,11 +558,13 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["crypto", "libsodium"],
         meta={"description": "libsodium (NaCl) crypto library", "severity": "info"},
         string_patterns=[
-            r"sodium_init",
-            r"crypto_secretbox",
-            r"crypto_box_seal",
-            r"crypto_aead_",
+            r"\bsodium_init\b",
+            r"\bcrypto_secretbox",
+            r"\bcrypto_box_seal",
+            r"\bcrypto_aead_",
         ],
+        # Tek API adi (crypto_aead_ baska NaCl turevlerinde de var) yetmez.
+        condition=2,
     ))
 
     rules.append(BuiltinRule(
@@ -204,13 +572,17 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["crypto", "rsa"],
         meta={"description": "RSA ASN.1 OID or common public exponent", "severity": "info"},
         byte_patterns=[
-            # RSA OID: 1.2.840.113549.1.1.1 (DER encoded)
+            # RSA OID: 1.2.840.113549.1.1.1 (DER encoded). Kod imzasi
+            # (Mach-O LC_CODE_SIGNATURE, PE Authenticode) bolgesindeki
+            # sertifika eslesmeleri genel bolge suzgeciyle dislanir.
             _hex("06 09 2A 86 48 86 F7 0D 01 01 01"),
         ],
     ))
 
     # ===================================================================
-    # PACKER / PROTECTOR TESPITI (7 kural)
+    # PACKER / PROTECTOR TESPITI
+    # Paketleyici hukmu bolum adi / giris noktasi / paketleyici imzasi
+    # gibi bicime bagli kanitla verilir; tek alt dizgi yetmez.
     # ===================================================================
 
     rules.append(BuiltinRule(
@@ -218,13 +590,15 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["packer", "upx"],
         meta={"description": "UPX packed binary", "severity": "warning"},
         byte_patterns=[
-            # UPX magic: "UPX!" header
-            b"UPX!",
+            b"UPX!",                       # $b0: UPX ust bilgi imzasi
         ],
         string_patterns=[
-            r"UPX\d",          # UPX0, UPX1, UPX2 section names
-            r"\$Info: This file is packed with the UPX",
+            r"\bUPX0\b",                   # $s0: bolum adlari
+            r"\bUPX1\b",                   # $s1
+            r"\$Info: This file is packed with the UPX",  # $s2
         ],
+        # Imza + bolum adi ya da imza + $Info: iki bagimsiz kanit.
+        condition=2,
     ))
 
     rules.append(BuiltinRule(
@@ -232,11 +606,12 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["packer", "vmprotect"],
         meta={"description": "VMProtect protected binary", "severity": "warning"},
         string_patterns=[
-            r"\.vmp\d",         # .vmp0, .vmp1 section names
-            r"VMProtect",
-            r"VMProtect begin",
-            r"VMProtect end",
+            r"\.vmp\d",                    # $s0: .vmp0/.vmp1 bolum adlari
+            r"VMProtect begin",            # $s1: SDK isaretleri
+            r"VMProtect end",              # $s2
         ],
+        formats=["pe"],
+        condition=any_(pe_section_re(r"\.vmp\d"), of(2, "$s1", "$s2")),
     ))
 
     rules.append(BuiltinRule(
@@ -244,11 +619,13 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["packer", "themida"],
         meta={"description": "Themida/WinLicense protected binary", "severity": "warning"},
         string_patterns=[
-            r"Themida",
-            r"WinLicense",
-            r"\.themida",
-            r"\.winlice",
+            r"\bThemida\b",                # $s0
+            r"\bWinLicense\b",             # $s1
+            r"\.themida",                  # $s2: bolum adi
+            r"\.winlice",                  # $s3: bolum adi
         ],
+        formats=["pe"],
+        condition=any_(pe_section(".themida", ".winlice"), of(2, "$s0", "$s1")),
     ))
 
     rules.append(BuiltinRule(
@@ -256,13 +633,12 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["packer", "aspack"],
         meta={"description": "ASPack packed binary", "severity": "warning"},
         string_patterns=[
-            r"\.aspack",
-            r"\.adata",
+            r"\.aspack",                   # $s0: bolum adi
+            r"\.adata",                    # $s1: bolum adi
         ],
-        byte_patterns=[
-            # ASPack typical entry: pushad (0x60)
-            _hex("60 E8 00 00 00 00"),
-        ],
+        formats=["pe"],
+        # ASPack: kendi bolumu + giris noktasinda pushad; call (60 E8).
+        condition=all_(pe_section(".aspack", ".adata"), pe_entry(_hex("60 E8"))),
     ))
 
     rules.append(BuiltinRule(
@@ -270,9 +646,11 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["packer", "pecompact"],
         meta={"description": "PECompact packed binary", "severity": "warning"},
         string_patterns=[
-            r"PECompact2",
-            r"PEC2",
+            r"\bPECompact2\b",             # $s0
+            r"\bPEC2",                     # $s1: bolum adi oneki
         ],
+        formats=["pe"],
+        condition=any_(has("$s0"), pe_section("PEC2", "PEC2TO", "PEC2MO")),
     ))
 
     rules.append(BuiltinRule(
@@ -280,10 +658,12 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["packer", "mpress"],
         meta={"description": "MPRESS packed binary", "severity": "warning"},
         string_patterns=[
-            r"\.MPRESS1",
-            r"\.MPRESS2",
-            r"MPRESS",
+            r"\.MPRESS1",                  # $s0: bolum adi
+            r"\.MPRESS2",                  # $s1: bolum adi
         ],
+        formats=["pe"],
+        # MPRESS hukmu yalniz PE bolum tablosundaki .MPRESS1/.MPRESS2 ile.
+        condition=pe_section(".MPRESS1", ".MPRESS2"),
     ))
 
     rules.append(BuiltinRule(
@@ -291,14 +671,15 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["packer", "enigma"],
         meta={"description": "Enigma Protector", "severity": "warning"},
         string_patterns=[
-            r"Enigma protector",
-            r"enigma\d",
-            r"\.enigma\d",
+            r"\bEnigma [Pp]rotector\b",    # $s0
+            r"\.enigma\d",                 # $s1: bolum adi
         ],
+        formats=["pe"],
+        condition=any_(pe_section(".enigma1", ".enigma2"), has("$s0")),
     ))
 
     # ===================================================================
-    # COMPILER TESPITI (8 kural)
+    # COMPILER TESPITI
     # ===================================================================
 
     rules.append(BuiltinRule(
@@ -306,10 +687,10 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["compiler", "gcc"],
         meta={"description": "GCC compiled binary", "severity": "info"},
         string_patterns=[
-            r"GCC:\s*\(",                     # "GCC: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0"
-            r"gcc[\s_\-]version",
-            r"GNU C\d+",
-            r"compiled by GNU C",
+            r"GCC: \(",                       # "GCC: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0"
+            r"\bgcc[ _\-]version\b",
+            r"\bGNU C\d+ \d",
+            r"\bcompiled by GNU C\b",
         ],
     ))
 
@@ -318,22 +699,17 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["compiler", "msvc"],
         meta={"description": "MSVC compiled binary", "severity": "info"},
         string_patterns=[
-            r"Microsoft \(R\) Optimizing Compiler",
-            r"MSVC",
-            r"Visual C\+\+",
-            r"Microsoft Visual",
-            r"_MSC_VER",
+            r"Microsoft \(R\) Optimizing Compiler",   # $s0
+            r"\bMSVC\b",                               # $s1 (MSVCRT/MSVCP140 sayilmaz)
+            r"\bVisual C\+\+",                         # $s2
+            r"\bMicrosoft Visual Studio\b",            # $s3
+            r"\b_MSC_VER\b",                           # $s4
         ],
-        byte_patterns=[
-            # Rich header signature: "Rich". PE'nin DOS stub'i ile NT header'i
-            # arasinda bulunur; ELF/Mach-O'da olmaz. Tek basina "Rich" 4 byte'i
-            # cok yaygin bir alt-dizi ( or. "Richard") -- format kisiti olmadan
-            # yanlis pozitif uretir. `formats=["pe"]` ile korunuyor.
-            b"Rich",
-        ],
-        # MSVC + Rich header yalnizca Windows PE'de anlamli. ELF/Mach-O
-        # hedeflerinde bu kural taranmaz (yanlis "MSVC compiled" tespitini onler).
+        # MSVC + Rich header yalnizca Windows PE'de anlamli. Rich basligi
+        # DOS koku ile PE basligi arasinda aranir (dosyanin herhangi bir
+        # yerindeki "Rich", or. "Richard", sayilmaz).
         formats=["pe"],
+        condition=any_(pe_rich_header(), of(2, "$s0", "$s1", "$s2", "$s3", "$s4")),
     ))
 
     rules.append(BuiltinRule(
@@ -341,10 +717,10 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["compiler", "clang"],
         meta={"description": "Clang/LLVM compiled binary", "severity": "info"},
         string_patterns=[
-            r"clang version \d+",
-            r"Apple LLVM",
-            r"Apple clang",
-            r"Linker: LLD",
+            r"\bclang version \d+",
+            r"\bApple LLVM\b",
+            r"\bApple clang\b",
+            r"\bLinker: LLD\b",
         ],
     ))
 
@@ -353,11 +729,11 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["compiler", "rust"],
         meta={"description": "Rust compiled binary", "severity": "info"},
         string_patterns=[
-            r"rustc/\d+\.\d+",               # "rustc/1.74.0"
-            r"rust_begin_unwind",
-            r"rust_panic",
-            r"core::panicking",
-            r"std::rt::lang_start",
+            r"\brustc/\d+\.\d+",               # "rustc/1.74.0"
+            r"\brust_begin_unwind\b",
+            r"\brust_panic\b",
+            r"\bcore::panicking\b",
+            r"\bstd::rt::lang_start\b",
         ],
     ))
 
@@ -366,12 +742,13 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["compiler", "go"],
         meta={"description": "Go compiled binary", "severity": "info"},
         string_patterns=[
-            r"go\d+\.\d+(\.\d+)?",           # go1.21.0 gibi
-            r"Go build ID:",
-            r"runtime\.gopanic",
-            r"runtime\.goexit",
-            r"runtime/internal/",
+            r"\bgo1\.\d+(\.\d+)?\b",           # go1.21.0 gibi (tek basina zayif)
+            r"Go build ID: ",
+            r"\bruntime\.gopanic\b",
+            r"\bruntime\.goexit\b",
+            r"\bruntime/internal/",
         ],
+        condition=2,
     ))
 
     rules.append(BuiltinRule(
@@ -379,24 +756,32 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["compiler", "swift"],
         meta={"description": "Swift compiled binary", "severity": "info"},
         string_patterns=[
-            r"swift_release",
-            r"swift_retain",
-            r"Swift runtime",
-            r"_swift_allocObject",
-            r"swiftCore",
+            r"\b_?swift_release\b",
+            r"\b_?swift_retain\b",
+            r"\bSwift runtime\b",
+            r"\b_?swift_allocObject\b",
+            r"\bswiftCore\b",
         ],
+        condition=2,
     ))
 
     rules.append(BuiltinRule(
         name="Delphi_Compiler",
         tags=["compiler", "delphi"],
         meta={"description": "Delphi/Object Pascal compiled binary", "severity": "info"},
-        string_patterns=[
-            r"Embarcadero Delphi",
-            r"Borland Delphi",
-            r"TObject",
-            r"System\.SysUtils",
+        byte_patterns=[
+            # $b0: Pascal kisa dizgisi (uzunluk oneki 7) "TObject" -- RTTI tip
+            # adi. C/C++ adlarindaki "TObject"/"tObject" bu bicimde olmaz.
+            b"\x07TObject",
         ],
+        string_patterns=[
+            r"\bEmbarcadero Delphi\b",          # $s0
+            r"\bBorland Delphi\b",              # $s1
+            r"\bSystem\.SysUtils\b",            # $s2: XE2+ birim adi
+            r"(?i)Software\\Borland\\Delphi\\RTL",  # $s3: RTL kayit defteri anahtari
+        ],
+        # Delphi'ye ozgu en az iki bagimsiz kanit.
+        condition=2,
     ))
 
     rules.append(BuiltinRule(
@@ -404,15 +789,18 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["compiler", "nim"],
         meta={"description": "Nim compiled binary", "severity": "info"},
         string_patterns=[
-            r"Nim/\d+\.\d+",
-            r"nimMain",
-            r"NimMain",
-            r"nimGC_",
+            r"\bNim/\d+\.\d+",
+            r"\bnimMain\b",
+            r"\bNimMain",
+            r"\bnimGC_",
         ],
     ))
 
     # ===================================================================
-    # ANTI-DEBUG / ANTI-ANALYSIS (7 kural)
+    # ANTI-DEBUG / ANTI-ANALYSIS
+    # Olagan calisma zamani API'leri (clock_gettime, QueryPerformanceCounter,
+    # GetTickCount, sysctl, IsDebuggerPresent, SetUnhandledExceptionFilter
+    # -- MSVC CRT bunlari her ikiliye koyar) tek basina kanit sayilmaz.
     # ===================================================================
 
     rules.append(BuiltinRule(
@@ -420,14 +808,15 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["antidebug", "linux", "macos"],
         meta={"description": "ptrace-based anti-debugging (PTRACE_DENY_ATTACH)", "severity": "high"},
         string_patterns=[
-            r"PTRACE_DENY_ATTACH",
-            r"PT_DENY_ATTACH",
+            r"\bPTRACE_DENY_ATTACH\b",         # $s0
+            r"\bPT_DENY_ATTACH\b",             # $s1
+            # $s2: dogrudan sistem cagrisi -- mov eax, 0x200001A (macOS
+            # ptrace) ve ardindan 16 bayt icinde syscall (0F 05).
+            r"(?s)\xB8\x1A\x00\x00\x02.{0,16}\x0F\x05",
         ],
-        byte_patterns=[
-            # ptrace(PT_DENY_ATTACH, 0, 0, 0)
-            # syscall number 0x1a (26) on macOS x86_64
-            _hex("B8 1A 00 00 02"),     # mov eax, 0x200001a (macOS ptrace syscall)
-        ],
+        condition=any_(has("$s0"), has("$s1"),
+                       all_(has("$s2"), Cond(lambda ev: ev.binfo.fmt == "macho",
+                                             "macho"))),
     ))
 
     rules.append(BuiltinRule(
@@ -435,11 +824,15 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["antidebug", "windows"],
         meta={"description": "Windows IsDebuggerPresent API call", "severity": "high"},
         string_patterns=[
-            r"IsDebuggerPresent",
-            r"CheckRemoteDebuggerPresent",
-            r"NtQueryInformationProcess",
-            r"OutputDebugString",
+            r"\bCheckRemoteDebuggerPresent\b",  # $s0: tek basina ayirt edici
+            r"\bNtQueryInformationProcess\b",   # $s1
+            r"\bIsDebuggerPresent\b",           # $s2: MSVC CRT'de olagan
+            r"\bOutputDebugString[AW]?\b",      # $s3: MSVC CRT'de olagan
         ],
+        formats=["pe"],
+        # IsDebuggerPresent / OutputDebugString CRT'nin __report_gsfailure
+        # yolunda her ikiliye girer; hukum CheckRemoteDebuggerPresent ile.
+        condition=has("$s0"),
     ))
 
     rules.append(BuiltinRule(
@@ -447,11 +840,14 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["antidebug", "timing"],
         meta={"description": "Timing-based anti-debug checks", "severity": "medium"},
         string_patterns=[
-            r"rdtsc",
-            r"QueryPerformanceCounter",
-            r"GetTickCount",
-            r"clock_gettime",
+            # $s0: 32 bayt icinde iki rdtsc (0F 31) -- olcum + karsilastirma.
+            r"(?s)\x0F\x31.{0,32}\x0F\x31",
         ],
+        arch=["x86"],
+        # rdtsc cifti zamanlama olcumunde de olagan (vim, ssh, top); hukum
+        # yalniz ayni ikilide guclu bir anti-debug kaniti da varsa.
+        condition=all_(has("$s0"), rule_matched(
+            "AntiDebug_Ptrace", "AntiDebug_SysctlCheck", "AntiDebug_IsDebuggerPresent")),
     ))
 
     rules.append(BuiltinRule(
@@ -459,11 +855,18 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["antidebug", "macos"],
         meta={"description": "macOS sysctl-based debugger detection", "severity": "high"},
         string_patterns=[
-            r"kern\.proc\.pid",
-            r"CTL_KERN.*KERN_PROC",
-            r"P_TRACED",
-            r"sysctl\b",
+            r"\b_?sysctl\b",                   # $s0: sysctl simgesi
+            r"\b_?getpid\b",                   # $s1: surecin kendi pid'i
+            # $s2-$s4: mib = {CTL_KERN(1), KERN_PROC(14), KERN_PROC_PID(1)}
+            r"(?s)\xC7\x45.\x01\x00\x00\x00\xC7\x45.\x0E\x00\x00\x00\xC7\x45.\x01\x00\x00\x00",
+            r"(?s)\xC7\x44\x24.\x01\x00\x00\x00\xC7\x44\x24.\x0E\x00\x00\x00\xC7\x44\x24.\x01\x00\x00\x00",
+            r"\x01\x00\x00\x00\x0E\x00\x00\x00\x01\x00\x00\x00",
+            r"\bkern\.proc\.pid\b",            # $s5: sysctlbyname bicimi
         ],
+        formats=["macho"],
+        # sysctl tek basina olagan (ps, top, htop); kendi pid'iyle
+        # KERN_PROC_PID sorgusu = sysctl + getpid + mib kaniti birlikte.
+        condition=all_(has("$s0"), has("$s1"), of(1, "$s2", "$s3", "$s4", "$s5")),
     ))
 
     rules.append(BuiltinRule(
@@ -471,13 +874,15 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["antidebug", "antivm"],
         meta={"description": "Virtual machine detection patterns", "severity": "high"},
         string_patterns=[
-            r"VMware",
-            r"VirtualBox",
-            r"QEMU",
-            r"Hyper-V",
-            r"vboxguest",
-            r"vmtoolsd",
+            r"\bVMware\b",
+            r"\bVirtualBox\b",
+            r"\bQEMU\b",
+            r"\bHyper-V\b",
+            r"(?i)\bvboxguest\b",
+            r"(?i)\bvmtoolsd\b",
         ],
+        # Tek sanal makine adi (yardim metni, uyumluluk listesi) yetmez.
+        condition=2,
     ))
 
     rules.append(BuiltinRule(
@@ -485,11 +890,18 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["antidebug"],
         meta={"description": "Process enumeration for debugger/sandbox detection", "severity": "medium"},
         string_patterns=[
-            r"CreateToolhelp32Snapshot",
-            r"Process32First",
-            r"Process32Next",
-            r"EnumProcesses",
+            r"\bCreateToolhelp32Snapshot\b",   # $s0
+            r"\bProcess32First(W)?\b",         # $s1
+            r"\bProcess32Next(W)?\b",          # $s2
+            r"\bEnumProcesses\b",              # $s3
+            # $s4: aranan analiz araci surec adlari (baglam kaniti)
+            r"(?i)\b(ollydbg|x64dbg|x32dbg|windbg|idaq|idaq64|ida64|immunitydebugger|"
+            r"wireshark|procmon|procmon64|procexp|procexp64|processhacker|fiddler)\.exe\b",
         ],
+        formats=["pe"],
+        # Surec listelemek tek basina hata ayiklayici aramak degildir
+        # (or. pnpm fastlist bir surec listeleyicisidir).
+        condition=all_(of(2, "$s0", "$s1", "$s2", "$s3"), has("$s4")),
     ))
 
     rules.append(BuiltinRule(
@@ -497,15 +909,20 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["antidebug"],
         meta={"description": "SEH/exception-based anti-debug tricks", "severity": "medium"},
         string_patterns=[
-            r"UnhandledExceptionFilter",
-            r"SetUnhandledExceptionFilter",
-            r"RaiseException",
-            r"__try",
+            r"\bUnhandledExceptionFilter\b",
+            r"\bSetUnhandledExceptionFilter\b",
+            r"\bRaiseException\b",
+            r"\b__try\b",
         ],
+        formats=["pe"],
+        # Bu API'ler MSVC CRT'de olagan; hukum yalniz ayni ikilide guclu bir
+        # anti-debug kaniti da varsa.
+        condition=all_(of(2), rule_matched(
+            "AntiDebug_IsDebuggerPresent", "AntiDebug_Ptrace", "AntiDebug_SysctlCheck")),
     ))
 
     # ===================================================================
-    # OBFUSCATION TESPITI (5 kural)
+    # OBFUSCATION TESPITI
     # ===================================================================
 
     rules.append(BuiltinRule(
@@ -516,16 +933,16 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["obfuscation", "xorobf"],
         meta={"description": "XOR-based string encryption pattern", "severity": "medium"},
         byte_patterns=[
-            # xor byte ptr [ecx+edx], al ; inc edx ; cmp edx, SIZE ; jl loop
-            # Genel XOR decode loop'u: xor [reg+reg], reg; inc; cmp; jl
-            _hex("30 04 11 42"),           # xor [ecx+edx], al; inc edx (32-bit)
-            _hex("30 04 0A FF C2"),        # xor [rdx+rcx], al; inc edx (64-bit variant)
+            # xor byte ptr [ecx+edx], al ; inc edx -- XOR cozme dongusu
+            _hex("30 04 11 42"),           # $b0 (32-bit)
+            _hex("30 04 0A FF C2"),        # $b1 (64-bit varyant)
         ],
         string_patterns=[
-            r"xor_decode",
-            r"decrypt_string",
-            r"string_decrypt",
+            r"\bxor_decode\b",
+            r"\bdecrypt_string\b",
+            r"\bstring_decrypt\b",
         ],
+        arch=["x86"],
     ))
 
     rules.append(BuiltinRule(
@@ -533,10 +950,13 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["obfuscation", "rc4"],
         meta={"description": "RC4-based string decryption", "severity": "medium"},
         string_patterns=[
-            r"rc4_crypt",
-            r"RC4_set_key",
-            r"arcfour",
+            r"\brc4_crypt\b",
+            r"\bRC4_set_key\b",
+            r"\barcfour\b",
         ],
+        # Kripto kitapliginin RC4 API'si (OpenSSL RC4_set_key) tek basina
+        # dizgi sifrelemesi degildir.
+        condition=2,
     ))
 
     rules.append(BuiltinRule(
@@ -544,10 +964,10 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["obfuscation", "cff"],
         meta={"description": "Control flow flattening markers", "severity": "medium"},
         string_patterns=[
-            r"__ollvm_",
-            r"OLLVM",
-            r"obfuscator-llvm",
-            r"bogus\s+control\s+flow",
+            r"\b__ollvm_",
+            r"\bOLLVM\b",
+            r"\bobfuscator-llvm\b",
+            r"\bbogus control flow\b",
         ],
     ))
 
@@ -557,9 +977,13 @@ def _builtin_rules() -> list[BuiltinRule]:
         meta={"description": "Opaque predicate patterns (junk code)", "severity": "low"},
         byte_patterns=[
             # Tipik opaque predicate: xor eax,eax; jz always_taken
-            _hex("33 C0 74"),               # xor eax,eax; jz (short)
-            _hex("31 C0 74"),               # xor eax,eax; jz (short) - AT&T
+            _hex("33 C0 74"),               # $b0: xor eax,eax; jz (short)
+            _hex("31 C0 74"),               # $b1: xor eax,eax; jz (short) - AT&T
         ],
+        arch=["x86"],
+        # Tek ornek derleyici ciktisinda rastlantisal olabilir; gizleyici
+        # bunlari cok sayida ekler.
+        condition=any_(count_at_least("$b0", 3), count_at_least("$b1", 3)),
     ))
 
     rules.append(BuiltinRule(
@@ -567,18 +991,21 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["obfuscation", "stackstrings"],
         meta={"description": "Stack-based string construction (anti-static analysis)", "severity": "medium"},
         string_patterns=[
-            r"stack_string",
-            r"stackStrings",
+            r"\bstack_string\b",
+            r"\bstackStrings\b",
+            # mov byte [rbp+d8], 'c' x6 ardisik (yazdirilabilir karakter)
+            r"(?s)(\xC6\x45.[\x20-\x7E]){6}",
+            # mov byte [rsp+d8], 'c' x6 ardisik
+            r"(?s)(\xC6\x44\x24.[\x20-\x7E]){6}",
         ],
-        byte_patterns=[
-            # mov byte [rbp-X], imm8 -- ardisik karakter yukleme (x86-64)
-            # C6 45 XX YY (mov byte ptr [rbp+disp8], imm8) tekrarlayan
-            _hex("C6 45"),
-        ],
+        arch=["x86"],
     ))
 
     # ===================================================================
-    # COMPRESSION TESPITI (3 kural)
+    # COMPRESSION TESPITI
+    # Veri imzasi (zlib 78 9C, LZ4/Zstd cerceve sihirli sayisi) kitapligin
+    # varligini gostermez (or. `file` ikilisinin sihirli sayi tablosu);
+    # yalniz destekleyici kanittir.
     # ===================================================================
 
     rules.append(BuiltinRule(
@@ -586,13 +1013,11 @@ def _builtin_rules() -> list[BuiltinRule]:
         tags=["compression", "zlib"],
         meta={"description": "zlib compression library", "severity": "info"},
         string_patterns=[
-            r"deflate \d+\.\d+",
-            r"inflate \d+\.\d+",
-            r"zlib/\d+",
-        ],
-        byte_patterns=[
-            # zlib magic header: 78 01 (low compression), 78 9C (default), 78 DA (best)
-            _hex("78 9C"),
+            r"\bdeflate \d+\.\d+(\.\d+)? Copyright",  # gomulu zlib telif afisi
+            r"\binflate \d+\.\d+(\.\d+)? Copyright",
+            r"\bzlib/\d+",
+            r"\blibz\.(so\.1|1\.dylib|dylib)\b",     # bagli kitaplik
+            r"\b_?(deflateInit2_|inflateInit2_|inflateInit_|deflateInit_|zlibVersion)\b",
         ],
     ))
 
@@ -600,30 +1025,32 @@ def _builtin_rules() -> list[BuiltinRule]:
         name="LZ4_Library",
         tags=["compression", "lz4"],
         meta={"description": "LZ4 compression library", "severity": "info"},
-        string_patterns=[
-            r"LZ4_compress",
-            r"LZ4_decompress",
-            r"lz4/\d+",
-        ],
         byte_patterns=[
-            # LZ4 frame magic: 04 22 4D 18
-            _hex("04 22 4D 18"),
+            _hex("04 22 4D 18"),            # $b0: cerceve sihirli sayisi (destekleyici)
         ],
+        string_patterns=[
+            r"\b_?LZ4_compress",            # $s0
+            r"\b_?LZ4_decompress",          # $s1
+            r"\blz4/\d+",                   # $s2
+            r"\bliblz4\.(so|\d|dylib)",     # $s3
+        ],
+        condition=of(1, "$s0", "$s1", "$s2", "$s3"),
     ))
 
     rules.append(BuiltinRule(
         name="Zstd_Library",
         tags=["compression", "zstd"],
         meta={"description": "Zstandard compression library", "severity": "info"},
-        string_patterns=[
-            r"ZSTD_compress",
-            r"ZSTD_decompress",
-            r"zstd/\d+",
-        ],
         byte_patterns=[
-            # Zstandard frame magic: 28 B5 2F FD
-            _hex("28 B5 2F FD"),
+            _hex("28 B5 2F FD"),            # $b0: cerceve sihirli sayisi (destekleyici)
         ],
+        string_patterns=[
+            r"\b_?ZSTD_compress",           # $s0
+            r"\b_?ZSTD_decompress",         # $s1
+            r"\bzstd/\d+",                  # $s2
+            r"\blibzstd\.(so|\d|dylib)",    # $s3
+        ],
+        condition=of(1, "$s0", "$s1", "$s2", "$s3"),
     ))
 
     return rules
@@ -715,11 +1142,16 @@ def _rule_to_yara_source(rule: BuiltinRule) -> str:
             meta:
                 description = "..."
             strings:
-                $s0 = { HEX }
-                $s1 = /regex/ nocase
+                $b0 = { HEX }
+                $s0 = /regex/            (harf duyarli)
+                $s1 = /regex/ nocase     (yalniz (?i) onekli desen)
             condition:
-                any of them
+                N of them                (gerekli on kosul)
         }
+
+    Kosulun tamami (bicim, bolum, giris noktasi, mimari, kod imzasi
+    dislamasi, baska kural) Python tarafinda ``_evaluate`` ile iki arka uca
+    ortak uygulanir; buradaki kosul yalniz gerekli bir on suzgectir.
     """
     parts = []
 
@@ -755,32 +1187,101 @@ def _rule_to_yara_source(rule: BuiltinRule) -> str:
                 escaped = _escape_yara_meta(str(v))
                 parts.append(f'        {k} = "{escaped}"')
 
-    # Strings
+    # Strings -- kimlikler regex yedegiyle ayni ($b0.., $s0..)
     string_defs = []
-    idx = 0
-    for bp in rule.byte_patterns:
+    for i, bp in enumerate(rule.byte_patterns):
         hex_str = " ".join(f"{b:02X}" for b in bp)
-        string_defs.append(f"        $b{idx} = {{ {hex_str} }}")
-        idx += 1
-    for sp in rule.string_patterns:
-        escaped_sp = sp.replace("/", "\\/")  # v1.9.1: YARA regex delimiter escape
-        string_defs.append(f"        $s{idx} = /{escaped_sp}/ nocase")
-        idx += 1
+        string_defs.append(f"        $b{i} = {{ {hex_str} }}")
+    for i, sp in enumerate(rule.string_patterns):
+        body, nocase, dotall = _split_flags(sp)
+        escaped_sp = body.replace("/", "\\/")  # v1.9.1: YARA regex delimiter escape
+        regex_lit = f"/{escaped_sp}/" + ("s" if dotall else "")
+        mods = " nocase" if nocase else ""
+        string_defs.append(f"        $s{i} = {regex_lit}{mods}")
 
     if string_defs:
         parts.append("    strings:")
         parts.extend(string_defs)
 
-    # Condition
-    if rule.condition == "all":
-        parts.append("    condition:")
-        parts.append("        all of them")
-    else:
-        parts.append("    condition:")
-        parts.append("        any of them")
+    parts.append("    condition:")
+    parts.append(f"        {rule.yara_prefilter()}")
 
     parts.append("}")
     return "\n".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# Ortak hakem: isabet suzgeci + kosul degerlendirmesi
+# ---------------------------------------------------------------------------
+
+RawHits = dict[str, dict[str, list[tuple[int, bytes]]]]  # kural -> kimlik -> [(ofset, veri)]
+
+
+def _in_regions(off: int, regions: list[tuple[int, int]]) -> bool:
+    return any(a <= off < b for a, b in regions)
+
+
+def _evaluate(
+    rules: list[BuiltinRule], raw: RawHits, data: bytes, binfo: _BinaryInfo,
+) -> list[YaraMatch]:
+    """Iki arka ucun topladigi ham isabetten hukmu ver (tek anlambilim)."""
+    x86_regions = [(a, b) for a, b, arch in binfo.arch_regions if arch == "x86"]
+
+    def _filtered(rule: BuiltinRule) -> dict[str, list[tuple[int, bytes]]]:
+        out: dict[str, list[tuple[int, bytes]]] = {}
+        for ident, inst in raw.get(rule.name, {}).items():
+            keep = []
+            for off, blob in sorted(inst, key=lambda t: t[0]):
+                if _in_regions(off, binfo.excluded_regions):
+                    continue
+                if "x86" in rule.arch and not _in_regions(off, x86_regions):
+                    continue
+                keep.append((off, blob))
+                if len(keep) >= _MAX_INSTANCES_PER_STRING:
+                    break
+            if keep:
+                out[ident] = keep
+        if rule.name == "MSVC_Compiler":
+            rich = _rich_header_hit(data, binfo)
+            if rich:
+                out["$rich"] = rich
+        return out
+
+    matched: list[YaraMatch] = []
+    matched_names: set[str] = set()
+    # Baska kurala dayanan kosullar ikinci turda (tek duzey bagimlilik).
+    first = [r for r in rules if "rule(" not in r.resolved_condition().describe()]
+    second = [r for r in rules if r not in first]
+    for group in (first, second):
+        for rule in group:
+            if rule.formats and binfo.fmt not in rule.formats:
+                continue
+            hits = _filtered(rule)
+            if not hits:
+                continue
+            ev = RuleEvidence(hits=hits, ids=rule.pattern_ids(), binfo=binfo,
+                              matched_rules=set(matched_names))
+            try:
+                ok = rule.resolved_condition()(ev)
+            except Exception:
+                logger.debug("YARA: %s kosulu degerlendirilemedi", rule.name, exc_info=True)
+                ok = False
+            if not ok:
+                continue
+            matched_names.add(rule.name)
+            strings = [(off, ident, blob)
+                       for ident, inst in hits.items() for off, blob in inst]
+            strings.sort(key=lambda t: (t[0], t[1]))
+            meta = dict(rule.meta)
+            meta.setdefault("condition", rule.resolved_condition().describe())
+            matched.append(YaraMatch(
+                rule=rule.name, tags=list(rule.tags), meta=meta,
+                strings=strings, namespace="builtin",
+            ))
+    # Kural tanim sirasini koru (deterministik cikti).
+    order = {r.name: i for i, r in enumerate(rules)}
+    matched.sort(key=lambda m: order.get(m.rule, 0))
+    return matched
 
 
 # ---------------------------------------------------------------------------
@@ -791,7 +1292,8 @@ class YaraScanner:
     """YARA rule scanner -- binary pattern matching.
 
     yara-python kurulu ise native YARA kullanir.
-    Kurulu degilse regex-based fallback kullanir.
+    Kurulu degilse regex-based fallback kullanir. Iki arka uc ayni ham
+    isabeti toplar; hukmu ortak ``_evaluate`` verir.
 
     Attributes:
         yara_available: yara-python kurulu mu?
@@ -801,6 +1303,7 @@ class YaraScanner:
         self._yara_available = False
         self._yara: Any = None           # yara module reference
         self._compiled_rules: Any = None  # yara.Rules nesnesi (veya tuple birlesik)
+        self._compile_error: str = ""
         self._builtin_rules: list[BuiltinRule] = []
         self._external_rule_paths: list[Path] = []
         self._rules_compiled = False
@@ -900,18 +1403,18 @@ class YaraScanner:
             file_path: Taranacak dosya.
 
         Returns:
-            ScanResult: Eslesmeler, sure, hatalar.
+            ScanResult: Eslesmeler, sure, hatalar, durum.
         """
         file_path = Path(file_path)
         if not file_path.exists():
-            return ScanResult(errors=[f"Dosya bulunamadi: {file_path}"])
+            return _error_result(f"Dosya bulunamadi: {file_path}")
         if not file_path.is_file():
-            return ScanResult(errors=[f"Dosya degil: {file_path}"])
+            return _error_result(f"Dosya degil: {file_path}")
 
         try:
             data = file_path.read_bytes()
         except (OSError, PermissionError) as exc:
-            return ScanResult(errors=[f"Dosya okunamadi: {exc}"])
+            return _error_result(f"Dosya okunamadi: {exc}")
 
         return self.scan_bytes(data)
 
@@ -919,6 +1422,7 @@ class YaraScanner:
         """Ham byte verisi tara.
 
         YARA kuruluysa native engine kullanir, yoksa regex fallback.
+        Iki yolda da hukum ``_evaluate`` ile verilir.
 
         Args:
             data: Taranacak byte verisi.
@@ -927,18 +1431,27 @@ class YaraScanner:
             ScanResult
         """
         if not self._builtin_rules and not self._external_rule_paths:
-            return ScanResult(errors=["Kural yuklenmemis. Once load_builtin_rules() cagiriniz."])
+            return _error_result("Kural yuklenmemis. Once load_builtin_rules() cagiriniz.")
 
         start = time.perf_counter()
+        binfo = _binary_info(data)
+        errors: list[str] = []
+        fallback_reason = ""
+        ext_matches: list[YaraMatch] = []
 
+        raw: Optional[RawHits] = None
+        backend = "regex-fallback"
         if self._yara_available:
-            matches, errors = self._scan_with_yara(data)
-            backend = "yara-python"
-        else:
-            matches, errors = self._scan_with_fallback(data)
-            backend = "regex-fallback"
+            raw, ext_matches, yara_errors = self._raw_hits_yara(data)
+            if raw is not None:
+                backend = "yara-python"
+            else:
+                fallback_reason = "; ".join(yara_errors) or "yara-python taramasi basarisiz"
+                errors.extend(yara_errors)
+        if raw is None:
+            raw = self._raw_hits_fallback(data)
 
-        matches = self._filter_by_format(matches, data)
+        matches = _evaluate(self._builtin_rules, raw, data, binfo) + ext_matches
 
         elapsed_ms = (time.perf_counter() - start) * 1000.0
 
@@ -948,6 +1461,10 @@ class YaraScanner:
             scan_time_ms=elapsed_ms,
             errors=errors,
             backend=backend,
+            status=STATUS_RAN,
+            status_reason="",
+            fallback_reason=fallback_reason,
+            target_format=binfo.fmt,
         )
 
     @staticmethod
@@ -956,48 +1473,7 @@ class YaraScanner:
 
         Bos string = bilinmeyen/format-agnostik (ham veri, arsiv vb.).
         """
-        if data[:2] == b"MZ":
-            return "pe"
-        if data[:4] == b"\x7fELF":
-            return "elf"
-        # Mach-O (thin: 32/64 LE+BE) ve fat/universal (0xCAFEBABE)
-        if data[:4] in (
-            b"\xfe\xed\xfa\xce", b"\xfe\xed\xfa\xcf",   # 32/64-bit BE magic
-            b"\xce\xfa\xed\xfe", b"\xcf\xfa\xed\xfe",   # 32/64-bit LE magic
-            b"\xca\xfe\xba\xbe",                          # fat/universal
-        ):
-            return "macho"
-        return ""
-
-    def _filter_by_format(
-        self, matches: list[YaraMatch], data: bytes,
-    ) -> list[YaraMatch]:
-        """Format-kisitli kurallarin yanlis-format eslesmelerini ele.
-
-        `formats` alani dolu olan kurallar yalnizca o formatlarda gecerlidir
-        (or. MSVC/Rich header -> yalnizca PE). Hedefin gercek formati farkliysa
-        (veya tespit edilemiyorsa) bu eslesmeler yanlis pozitiftir ve atilir.
-        Format-agnostik kurallar (formats bos) her zaman gecer.
-        """
-        target_fmt = self._detect_format(data)
-        # Rule adi -> formats kisiti (yalnizca kisitli olanlar).
-        restricted = {
-            r.name: r.formats for r in self._builtin_rules if r.formats
-        }
-        if not restricted:
-            return matches
-
-        kept: list[YaraMatch] = []
-        for m in matches:
-            allowed = restricted.get(m.rule)
-            if allowed and target_fmt not in allowed:
-                logger.debug(
-                    "YARA: '%s' eslesmesi elendi (kural formatlari=%s, hedef=%s)",
-                    m.rule, allowed, target_fmt or "bilinmiyor",
-                )
-                continue
-            kept.append(m)
-        return kept
+        return _detect_format(data)
 
     # ------------------------------------------------------------------
     # Native YARA backend
@@ -1011,6 +1487,7 @@ class YaraScanner:
         yara = self._yara
         assert yara is not None, "_compile_yara called without yara module"
         sources: dict[str, str] = {}
+        self._compile_error = ""
 
         # Dahili kurallar -> YARA kaynak koduna cevir
         if self._builtin_rules:
@@ -1020,184 +1497,120 @@ class YaraScanner:
             sources["builtin"] = builtin_src
 
         try:
+            builtin = yara.compile(sources=sources) if sources else None
+            ext = None
             if self._external_rule_paths:
-                # Harici .yar dosyalari
+                # Not: yara-python tek compile() cagrisinda sources +
+                # filepaths birlestirilemiyor; ayri derlenir.
                 filepaths = {
                     f"ext_{i}": str(p)
                     for i, p in enumerate(self._external_rule_paths)
                 }
-                if sources:
-                    # Hem source hem filepath varsa — ayri compile edip merge
-                    self._compiled_rules = yara.compile(sources=sources)
-                    # Not: yara-python tek compile() cagrisinda
-                    # sources + filepaths birlestirilemiyor.
-                    # Dahili kurallari once compile edip, harici dosyalari
-                    # ayrica compile ederiz.
-                    ext_rules = yara.compile(filepaths=filepaths)
-                    # Ikisini birlestirmek icin her ikisini de tutariz
-                    self._compiled_rules = (self._compiled_rules, ext_rules)
-                else:
-                    self._compiled_rules = yara.compile(filepaths=filepaths)
-            elif sources:
-                self._compiled_rules = yara.compile(sources=sources)
-            else:
-                self._compiled_rules = None
-
+                ext = yara.compile(filepaths=filepaths)
+            self._compiled_rules = (builtin, ext)
             self._rules_compiled = True
         except Exception as exc:
             logger.error("YARA compile hatasi: %s", exc)
+            self._compile_error = f"YARA compile hatasi: {exc}"
             self._compiled_rules = None
             self._rules_compiled = False
 
-    def _scan_with_yara(self, data: bytes) -> tuple[list[YaraMatch], list[str]]:
-        """Native YARA ile tara.
+    @staticmethod
+    def _yara_instances(m: Any) -> dict[str, list[tuple[int, bytes]]]:
+        out: dict[str, list[tuple[int, bytes]]] = {}
+        for s in getattr(m, "strings", []) or []:
+            if hasattr(s, "instances"):
+                # yara-python >= 4.3
+                for inst in s.instances:
+                    out.setdefault(s.identifier, []).append(
+                        (inst.offset, bytes(inst.matched_data)))
+            else:
+                # yara-python < 4.3: (offset, identifier, data) tuple
+                out.setdefault(s[1], []).append((s[0], bytes(s[2])))
+        return out
 
-        Returns:
-            (matches, errors)
-        """
-        errors: list[str] = []
-        matches: list[YaraMatch] = []
-
+    def _raw_hits_yara(
+        self, data: bytes,
+    ) -> tuple[Optional[RawHits], list[YaraMatch], list[str]]:
+        """yara-python ile ham isabet; basarisizsa (None, [], hatalar)."""
         try:
             self._compile_yara()
-        except Exception as exc:
-            errors.append(f"YARA compile hatasi: {exc}")
-            # Fallback'e dus
-            return self._scan_with_fallback(data)
-
+        except Exception as exc:  # pragma: no cover - _compile_yara kendi yakalar
+            return None, [], [f"YARA compile hatasi: {exc}"]
         if self._compiled_rules is None:
-            errors.append("YARA kurallari compile edilemedi")
-            return self._scan_with_fallback(data)
+            return None, [], [self._compile_error or "YARA kurallari compile edilemedi"]
 
-        def _process_yara_matches(yara_matches: list) -> None:
-            for m in yara_matches:
-                strings_data = []
-                if hasattr(m, "strings"):
-                    for s in m.strings:
-                        if hasattr(s, "instances"):
-                            # yara-python >= 4.3
-                            for inst in s.instances:
-                                strings_data.append((
-                                    inst.offset,
-                                    s.identifier,
-                                    bytes(inst.matched_data),
-                                ))
-                        else:
-                            # yara-python < 4.3: (offset, identifier, data) tuple
-                            strings_data.append((s[0], s[1], s[2]))
-
-                matches.append(YaraMatch(
-                    rule=m.rule,
-                    tags=list(m.tags) if hasattr(m, "tags") else [],
-                    meta=dict(m.meta) if hasattr(m, "meta") else {},
-                    strings=strings_data,
-                    namespace=m.namespace if hasattr(m, "namespace") else "",
-                ))
-
+        builtin, ext = self._compiled_rules
+        raw: RawHits = {}
+        ext_matches: list[YaraMatch] = []
         try:
-            if isinstance(self._compiled_rules, tuple):
-                # Birden fazla compiled rules (dahili + harici)
-                for rules_obj in self._compiled_rules:
-                    yara_matches = rules_obj.match(data=data)
-                    _process_yara_matches(yara_matches)
-            else:
-                yara_matches = self._compiled_rules.match(data=data)
-                _process_yara_matches(yara_matches)
+            if builtin is not None:
+                for m in builtin.match(data=data):
+                    raw[m.rule] = self._yara_instances(m)
+            if ext is not None:
+                # Harici .yar kurallari kendi kosuluyla hukmeder (yerlesik
+                # hakemin disinda; kosullari kullanicinin sorumlulugunda).
+                for m in ext.match(data=data):
+                    inst = self._yara_instances(m)
+                    ext_matches.append(YaraMatch(
+                        rule=m.rule,
+                        tags=list(getattr(m, "tags", []) or []),
+                        meta=dict(getattr(m, "meta", {}) or {}),
+                        strings=sorted((o, i, b) for i, lst in inst.items() for o, b in lst),
+                        namespace=getattr(m, "namespace", ""),
+                    ))
         except Exception as exc:
-            errors.append(f"YARA scan hatasi: {exc}")
-            # Fallback'e dus
-            fb_matches, fb_errors = self._scan_with_fallback(data)
-            return fb_matches, errors + fb_errors
-
-        return matches, errors
+            return None, [], [f"YARA scan hatasi: {exc}"]
+        return raw, ext_matches, []
 
     # ------------------------------------------------------------------
     # Regex fallback backend
     # ------------------------------------------------------------------
 
-    def _scan_with_fallback(self, data: bytes) -> tuple[list[YaraMatch], list[str]]:
-        """YARA yoksa regex-based fallback.
+    def _raw_hits_fallback(self, data: bytes) -> RawHits:
+        """YARA yoksa regex-based ham isabet toplama.
 
-        Byte pattern'ler icin basit ``in`` (subsequence) araması,
-        string pattern'ler icin regex araması yapar.
-
-        PERF/MEM (v1.10.0 C5): Eskiden `data.decode("latin-1")` ile tum
-        binary ikinci kez (str kopyasi) RAM'e aliniyordu. 200 MB binary
-        icin +200-400 MB (Python 3 str overhead) OOM riski. Yeni versiyon:
-        regex'i dogrudan bytes uzerinde calistirir (`re.finditer(b"...", data)`).
-
-        Returns:
-            (matches, errors)
+        Bayt desenleri literal, metin desenleri bytes regex olarak (YARA ile
+        ayni kimliklerle) aranir. PERF/MEM (v1.10.0 C5): regex dogrudan bytes
+        uzerinde calisir, `decode` kopyasi yok.
         """
-        errors: list[str] = []
-        matches: list[YaraMatch] = []
-
+        raw: RawHits = {}
         for rule in self._builtin_rules:
-            found_strings: list[tuple[int, str, bytes]] = []
-
-            # Byte pattern eslestirme
+            per: dict[str, list[tuple[int, bytes]]] = {}
             for i, bp in enumerate(rule.byte_patterns):
-                offset = data.find(bp)
-                if offset >= 0:
-                    found_strings.append((offset, f"$b{i}", bp))
-
-            # String/regex pattern eslestirme -- bytes uzerinde
+                inst = self._finditer(re.compile(re.escape(bp), re.DOTALL), data)
+                if inst:
+                    per[f"$b{i}"] = inst
             for i, sp in enumerate(rule.string_patterns):
-                sp_bytes = sp.encode("latin-1") if isinstance(sp, str) else sp
-                # Once bytes regex dene
+                body, nocase, dotall = _split_flags(sp)
+                flags = (re.IGNORECASE if nocase else 0) | (re.DOTALL if dotall else 0)
                 try:
-                    for m in re.finditer(sp_bytes, data, re.IGNORECASE):
-                        found_strings.append((
-                            m.start(),
-                            f"$s{i}",
-                            m.group(),
-                        ))
-                        break  # Kural basina ilk eslesme yeterli
-                    continue
+                    rx = re.compile(body.encode("latin-1"), flags)
                 except re.error:
-                    logger.debug(
-                        "YARA fallback: bytes regex derleme basarisiz, literal fallback",
-                        exc_info=True,
-                    )
-                # Fallback: pattern regex olarak gecerli degil -> literal arama
-                # (re.escape ile literal match; case-insensitive icin re.IGNORECASE.)
-                try:
-                    escaped = re.escape(sp_bytes)
-                    m2 = re.search(escaped, data, re.IGNORECASE)
-                    if m2 is not None:
-                        found_strings.append((
-                            m2.start(),
-                            f"$s{i}",
-                            m2.group(),
-                        ))
-                except Exception:
-                    logger.debug(
-                        "YARA fallback: literal arama basarisiz, atlaniyor",
-                        exc_info=True,
-                    )
+                    logger.debug("YARA fallback: regex derlenemedi (%s), literal", sp)
+                    rx = re.compile(re.escape(body.encode("latin-1")), flags)
+                inst = self._finditer(rx, data)
+                if inst:
+                    per[f"$s{i}"] = inst
+            if per:
+                raw[rule.name] = per
+        return raw
 
-            # Condition kontrolu
-            matched = False
-            if rule.condition == "all":
-                # Tum pattern'ler eslesmeliydi
-                total = len(rule.byte_patterns) + len(rule.string_patterns)
-                if total > 0 and len(found_strings) >= total:
-                    matched = True
-            else:
-                # Herhangi biri yeterli
-                if found_strings:
-                    matched = True
+    @staticmethod
+    def _finditer(rx: re.Pattern, data: bytes) -> list[tuple[int, bytes]]:
+        out: list[tuple[int, bytes]] = []
+        for m in rx.finditer(data):
+            out.append((m.start(), m.group()))
+            # Hakem bolge suzgeci sonrasi en cok _MAX_INSTANCES_PER_STRING
+            # tutar; dislanan bolgeler (kod imzasi) icin pay birakilir.
+            if len(out) >= _MAX_INSTANCES_PER_STRING * 16:
+                break
+        return out
 
-            if matched:
-                matches.append(YaraMatch(
-                    rule=rule.name,
-                    tags=list(rule.tags),
-                    meta=dict(rule.meta),
-                    strings=found_strings,
-                    namespace="builtin",
-                ))
-
-        return matches, errors
+    # Geriye donuk ad: eski testler/araclar _scan_with_fallback cagirabilir.
+    def _scan_with_fallback(self, data: bytes) -> tuple[list[YaraMatch], list[str]]:
+        raw = self._raw_hits_fallback(data)
+        return _evaluate(self._builtin_rules, raw, data, _binary_info(data)), []
 
     # ------------------------------------------------------------------
     # Yardimci

@@ -1,0 +1,141 @@
+{
+  "_comment": "P03 (IMZA-05, IMZA-06) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p03.json",
+  "mutants": [
+    {
+      "id": "yara_mpress_bolumsuz",
+      "desc": "MPRESS hükmü bölüm tablosu yerine herhangi bir dizgiyle (bölümsüz .MPRESS1 dizgisi paketli sayılır)",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestPackers::test_mpress_string_without_section_is_not_mpress",
+      "find": "condition=pe_section(\".MPRESS1\", \".MPRESS2\"),",
+      "replace": "condition=\"any\","
+    },
+    {
+      "id": "yara_aspack_giris_yok",
+      "desc": "ASPack giriş noktası (60 E8) koşulu düştü; .adata bölümü tek başına yeter",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestPackers::test_aspack_section_without_entry_pattern",
+      "find": "condition=all_(pe_section(\".aspack\", \".adata\"), pe_entry(_hex(\"60 E8\"))),",
+      "replace": "condition=pe_section(\".aspack\", \".adata\"),"
+    },
+    {
+      "id": "yara_upx_tek_kanit",
+      "desc": "UPX iki kanıt yerine tek kanıtla (tek UPX! imzası paketli sayılır)",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestPackers::test_upx_needs_two_evidences",
+      "find": "# Imza + bolum adi ya da imza + $Info: iki bagimsiz kanit.\n        condition=2,",
+      "replace": "# Imza + bolum adi ya da imza + $Info: iki bagimsiz kanit.\n        condition=1,  #"
+    },
+    {
+      "id": "yara_delphi_tek_kanit",
+      "desc": "Delphi iki kanıt yerine tek kanıtla",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestCompilers::test_delphi_single_evidence_is_not_delphi",
+      "find": "# Delphi'ye ozgu en az iki bagimsiz kanit.\n        condition=2,",
+      "replace": "# Delphi'ye ozgu en az iki bagimsiz kanit.\n        condition=1,  #"
+    },
+    {
+      "id": "yara_hep_nocase_yedek",
+      "desc": "regex yedeği her deseni harf duyarsız arar (eski nocase davranışı)",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestCompilers::test_case_sensitive_by_default",
+      "find": "flags = (re.IGNORECASE if nocase else 0)",
+      "replace": "flags = (re.IGNORECASE if True else 0)"
+    },
+    {
+      "id": "yara_hep_nocase_uretec",
+      "desc": "önek ayrıştırıcı her deseni nocase sayar (YARA kaynağında her dizgi nocase)",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestGenerator::test_nocase_only_where_requested",
+      "find": "        return pattern, False, False",
+      "replace": "        return pattern, bool(pattern), False"
+    },
+    {
+      "id": "yara_kod_imzasi_dislanmiyor",
+      "desc": "kod imzası bölgesi dışlanmıyor (Apple sertifikasındaki RSA OID'i iddia olur)",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestShortPatterns::test_rsa_oid_in_code_signature_is_excluded",
+      "find": "if _in_regions(off, binfo.excluded_regions):",
+      "replace": "if False and _in_regions(off, binfo.excluded_regions):"
+    },
+    {
+      "id": "yara_mimari_suzgeci_yok",
+      "desc": "x86 bölge süzgeci kapalı (AArch64 baytları x86 komutu sayılır)",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestShortPatterns::test_stack_string_x86_only",
+      "find": "if \"x86\" in rule.arch and not _in_regions(off, x86_regions):",
+      "replace": "if \"x86\" in rule.arch and False:"
+    },
+    {
+      "id": "yara_sysctl_getpid_yok",
+      "desc": "sysctl anti-debug kuralında getpid (kendi pid'i) koşulu düştü",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestAntiDebug::test_sysctl_without_getpid",
+      "find": "condition=all_(has(\"$s0\"), has(\"$s1\"), of(1, \"$s2\", \"$s3\", \"$s4\", \"$s5\")),",
+      "replace": "condition=all_(has(\"$s0\"), of(1, \"$s2\", \"$s3\", \"$s4\", \"$s5\")),"
+    },
+    {
+      "id": "yara_sysctl_mib_yok",
+      "desc": "sysctl anti-debug kuralında KERN_PROC_PID mib kanıtı düştü (sysctl + getpid yeter)",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestAntiDebug::test_sysctl_word_is_not_antidebug",
+      "find": "condition=all_(has(\"$s0\"), has(\"$s1\"), of(1, \"$s2\", \"$s3\", \"$s4\", \"$s5\")),",
+      "replace": "condition=all_(has(\"$s0\"), has(\"$s1\")),"
+    },
+    {
+      "id": "yara_timing_baglamsiz",
+      "desc": "AntiDebug_Timing başka anti-debug kanıtı olmadan rdtsc çiftiyle hüküm verir",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestAntiDebug::test_timing_rdtsc_pair_alone_is_not_antidebug",
+      "find": "condition=all_(has(\"$s0\"), rule_matched(\n            \"AntiDebug_Ptrace\", \"AntiDebug_SysctlCheck\", \"AntiDebug_IsDebuggerPresent\")),",
+      "replace": "condition=any_(has(\"$s0\"), rule_matched(\n            \"AntiDebug_Ptrace\", \"AntiDebug_SysctlCheck\", \"AntiDebug_IsDebuggerPresent\"), has(\"$x\")),"
+    },
+    {
+      "id": "yara_tek_tur",
+      "desc": "başka kurala dayanan koşullar ikinci turda değerlendirilmiyor (Timing, SysctlCheck'ten önce bakılır)",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestAntiDebug::test_timing_with_strong_context",
+      "find": "first = [r for r in rules if \"rule(\" not in r.resolved_condition().describe()]",
+      "replace": "first = list(rules)"
+    },
+    {
+      "id": "yara_isdebuggerpresent_crt",
+      "desc": "IsDebuggerPresent kuralı CRT'de olağan API'lerle de hüküm verir",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestAntiDebug::test_crt_timing_apis_are_not_antidebug",
+      "find": "condition=has(\"$s0\"),",
+      "replace": "condition=of(1),"
+    },
+    {
+      "id": "yara_rich_her_yerde",
+      "desc": "Rich başlığı DOS kökü yerine dosyanın her yerinde aranır (\"Richard\" MSVC olur)",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestCompilers::test_msvc_rich_header_only_in_stub",
+      "find": "pos = data.find(b\"Rich\", 0x40, end)",
+      "replace": "pos = data.find(b\"Rich\")"
+    },
+    {
+      "id": "yara_onkosul_hep_any",
+      "desc": "YARA kaynağında N of them yerine her kuralda any of them",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestGenerator::test_condition_threshold_emitted",
+      "find": "            return f\"{c} of them\"",
+      "replace": "            return \"any of them\""
+    },
+    {
+      "id": "yara_yedege_dusme_sessiz",
+      "desc": "yara-python derleme hatasıyla yedeğe düşüş nedeni yazılmıyor",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestStatus::test_compile_failure_falls_back_and_says_so",
+      "find": "fallback_reason = \"; \".join(yara_errors) or \"yara-python taramasi basarisiz\"",
+      "replace": "fallback_reason = \"\""
+    },
+    {
+      "id": "yara_bolum_adi_nul",
+      "desc": "PE bölüm adındaki NUL dolgu kırpılmıyor (\".aspack\\0\" eşleşmez)",
+      "module": "karadul/analyzers/yara_scanner.py",
+      "test": "tests/test_p03_yara_kurallari.py::TestPackers::test_aspack_section_and_entry",
+      "find": "name = s[0].rstrip(b\"\\x00\").decode(\"latin-1\")",
+      "replace": "name = s[0].decode(\"latin-1\")"
+    }
+  ]
+}
