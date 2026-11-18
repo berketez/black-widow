@@ -3,8 +3,7 @@
 # @description Extract control flow graphs (basic blocks and edges) per function
 #
 # v1.11.0 Jython Sunset Faz 1.3 (Dalga 4): Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/cfg_extraction.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
+# Jython 2.7 yedegi 2026-11-18'de silindi (K-3 A2; Ghidra 12.1.2'de Jython yok).
 #
 # UYARI: Bu script Ghidra JVM icinde PyGhidra engine altinda calisir. Ghidra API
 # objeleri (currentProgram, BasicBlockModel vb.) global scope'ta mevcuttur.

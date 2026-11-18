@@ -3,8 +3,7 @@
 # @description Extract FunctionID matches (library function identification)
 #
 # v1.11.0 Jython Sunset Faz 1.4 (Dalga 6B): Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/function_id_extractor.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
+# Jython 2.7 yedegi 2026-11-18'de silindi (K-3 A2; Ghidra 12.1.2'de Jython yok).
 #
 # NOT: Ghidra'nin otomatik analizinden sonra FunctionID tarafindan
 # taninan kutuphane fonksiyonlarini cikarir.

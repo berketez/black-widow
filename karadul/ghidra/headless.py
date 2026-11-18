@@ -2394,42 +2394,19 @@ class GhidraHeadless:
         return None
 
     def get_default_scripts(self) -> list[Path]:
-        """Varsayilan Ghidra scriptlerinin listesini dondur.
+        """Varsayilan Ghidra betiklerinin listesini dondur (yalnız analyzeHeadless yolu).
 
-        v1.11.0 Jython Sunset Faz 1: config.perf.use_legacy_jython_scripts
-        True ise legacy/ altindaki Jython 2.7 orijinaller kullanilir.
-        Default False -> yeni PyGhidra 3.0 / Python 3 uyumlu script'ler.
-
-        Migrate edilmis script'ler:
-          - Faz 1   (Dalga 2):  function_lister.py
-          - Faz 1.2 (Dalga 3):  string_extractor.py, type_recovery.py
-          - Faz 1.3 (Dalga 4):  call_graph.py, cfg_extraction.py, xref_analysis.py
-          - Faz 1.4 (Dalga 6B): decompile_all.py, export_results.py,
-                                 function_id_extractor.py, pcode_analysis.py
-        Tum 10 Ghidra scripti artik PyGhidra 3.0'a migrate edildi. Legacy
-        bayragi acik oldugunda scripts/legacy/ altindaki Jython 2.7
-        backup'lari yuklenir (rollback icin).
+        Betikler PyGhidra 3 / Python 3'tür. Jython 2.7 yedekleri (``scripts/legacy/``)
+        2026-11-18'de silindi (K-3 A2): sabitlenen Ghidra 12.1.2'de Jython yok, betik
+        yükleyici o dizini yalnız ``perf.use_legacy_jython_scripts`` açıkken okuyordu.
+        Bayrak açık bırakılmışsa etkisizdir ve uyarı yazılır.
         """
         scripts_dir = self.config.ghidra_scripts_dir
-        legacy_dir = scripts_dir / "legacy"
-        use_legacy = getattr(
-            self.config.perf, "use_legacy_jython_scripts", False
-        )
-
-        # v1.11.0 Faz 1.4: Bu set legacy backup'i mevcut olan migrate edilmis
-        # script'leri tutar. Dalga 6B ile 10/10 tamamlandi.
-        migrated_scripts = {
-            "function_lister.py",         # Dalga 2  (v1.11.0 Faz 1)
-            "string_extractor.py",        # Dalga 3  (v1.11.0 Faz 1.2)
-            "type_recovery.py",           # Dalga 3  (v1.11.0 Faz 1.2)
-            "call_graph.py",              # Dalga 4  (v1.11.0 Faz 1.3)
-            "cfg_extraction.py",          # Dalga 4  (v1.11.0 Faz 1.3)
-            "xref_analysis.py",           # Dalga 4  (v1.11.0 Faz 1.3)
-            "decompile_all.py",           # Dalga 6B (v1.11.0 Faz 1.4)
-            "export_results.py",          # Dalga 6B (v1.11.0 Faz 1.4)
-            "function_id_extractor.py",   # Dalga 6B (v1.11.0 Faz 1.4)
-            "pcode_analysis.py",          # Dalga 6B (v1.11.0 Faz 1.4)
-        }
+        if getattr(self.config.perf, "use_legacy_jython_scripts", False):
+            logger.warning(
+                "perf.use_legacy_jython_scripts etkisiz: Jython yedekleri kaldirildi "
+                "(Ghidra 12.1.2'de Jython yok); Python 3 betikleri kullaniliyor",
+            )
 
         ordered_names = [
             "function_lister.py",
@@ -2443,20 +2420,7 @@ class GhidraHeadless:
             "function_id_extractor.py",
             "export_results.py",
         ]
-
-        available: list[Path] = []
-        for name in ordered_names:
-            if use_legacy and name in migrated_scripts:
-                script_path = legacy_dir / name
-                if not script_path.exists():
-                    # Legacy yedek eksik -> yeni script'e fallback
-                    script_path = scripts_dir / name
-            else:
-                script_path = scripts_dir / name
-            if script_path.exists():
-                available.append(script_path)
-
-        return available
+        return [scripts_dir / n for n in ordered_names if (scripts_dir / n).exists()]
 
     @staticmethod
     def pyghidra_available() -> bool:

@@ -6,8 +6,7 @@
 # @toolbar
 #
 # v1.11.0 Jython Sunset Faz 1.4 (Dalga 6B): Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/decompile_all.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
+# Jython 2.7 yedegi 2026-11-18'de silindi (K-3 A2; Ghidra 12.1.2'de Jython yok).
 #
 # NOT: Bu script CLI fallback icin kullanilir. PyGhidra native path
 # karadul/ghidra/headless.py uzerinden bypass edilir. Yine de parity

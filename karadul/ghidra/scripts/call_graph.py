@@ -3,8 +3,7 @@
 # @description Extract call graph (callers and callees for each function)
 #
 # v1.11.0 Jython Sunset Faz 1.3 (Dalga 4): Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/call_graph.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
+# Jython 2.7 yedegi 2026-11-18'de silindi (K-3 A2; Ghidra 12.1.2'de Jython yok).
 #
 # NOT: Bu script CLI fallback icin kullanilir. PyGhidra native path
 # karadul/ghidra/headless.py:253 uzerinden bypass edilir. Yine de

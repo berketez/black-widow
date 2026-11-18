@@ -3,8 +3,7 @@
 # @description Combine all analysis results into a single JSON
 #
 # v1.11.0 Jython Sunset Faz 1.4 (Dalga 6B): Jython 2.7 bagimliligi kaldirildi.
-# Jython 2.7 orijinal backup: karadul/ghidra/scripts/legacy/export_results.py
-# Feature flag: config.perf.use_legacy_jython_scripts=True -> legacy'e dusturur.
+# Jython 2.7 yedegi 2026-11-18'de silindi (K-3 A2; Ghidra 12.1.2'de Jython yok).
 #
 # NOT: Bu script en son calistirilmalidir (diger scriptlerin ciktilarini birlestirir).
 # CLI fallback icin kullanilir; PyGhidra native path karadul/ghidra/headless.py
