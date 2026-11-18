@@ -88,8 +88,10 @@ class TestHarfDuyarliligiIkiYolda:
         found = bi._find_algorithms_in_code("int rsa = 0; char *aes_key = buf; FrontMtx = 1;")
         assert "RSA" not in found
         assert "AES" not in found
-        # Büyük harfli doğru biçim aynı yolda bulunur.
-        found = bi._find_algorithms_in_code("RSA_sign(key); AES_encrypt(in, out, k);")
+        # Büyük harfli doğru biçim aynı yolda bulunur (P01b: fonksiyon başına da iki bağımsız
+        # kanıt; tek RSA_sign / tek AES_encrypt çağrısı yetmez — tests/test_p01b_islev.py).
+        found = bi._find_algorithms_in_code(
+            "RSA_sign(key); RSA_verify(key); AES_set_encrypt_key(k); AES_encrypt(in, out, k);")
         assert "RSA" in found and "AES" in found
 
     def test_kisaltma_buyuk_harf_ve_sinir(self, bi: BinaryIntelligence) -> None:

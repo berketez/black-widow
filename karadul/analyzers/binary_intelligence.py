@@ -1892,6 +1892,109 @@ _COMPILED_VULN: list[tuple[re.Pattern, str, str, str]] = [
     for pat, vtype, desc in _VULNERABILITY_PATTERNS
 ]
 
+# ---------------------------------------------------------------------------
+# Fonksiyon basina kanit (P01b kalem 3) -- dosya duzeyiyle ayni kanit kurali
+# ---------------------------------------------------------------------------
+# Zafiyet API'si tam ad olarak cagrilmali: onunde tanimlayici karakteri yok (``fgets`` /
+# ``BIO_gets`` -> ``gets`` degil, ``sqlite3_exec`` / ``regexec`` -> ``exec`` degil,
+# ``_vasprintf`` -> ``sprintf`` degil); Mach-O ``_`` oneki ve glibc ``__isoc99_`` takma adi serbest.
+_VULN_CALL_PREFIX = r"(?<![A-Za-z0-9_])(?:__isoc99_|_{0,2})"
+# On suzgec anahtari desenin bastaki duz harfleri ("exec[lv]?p?" degil "exec": eski anahtar
+# koseli parantezi duz metin aradigi icin exec ailesi paralel yolda hic calismiyordu).
+_COMPILED_VULN_CALL: list[tuple[re.Pattern, str, str, str]] = [
+    (re.compile(_VULN_CALL_PREFIX + pat), vtype, desc, re.match(r"[A-Za-z_]*", pat).group(0))
+    for pat, vtype, desc in _VULNERABILITY_PATTERNS
+]
+_CODE_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.DOTALL)
+_CODE_STRLIT_RE = re.compile(r'"(?:[^"\\\n]|\\.)*"')
+_CODE_IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+_FUNC_HEADER_RE = re.compile(r"^// Function:\s*(\S+)", re.MULTILINE)
+_ADDR_SUFFIX_RE = re.compile(r"_[0-9a-fA-F]{6,}$")
+
+
+def _own_function_name(file_stem: str, code: str) -> str:
+    """Fonksiyonun kendi adi (Ghidra basligi ``// Function:`` ya da dosya adi, adres eki atilir)."""
+    m = _FUNC_HEADER_RE.search(code)
+    name = m.group(1) if m else _ADDR_SUFFIX_RE.sub("", file_stem)
+    return name.lstrip("_")
+
+
+def _code_parts(code: str) -> tuple[str, list[str]]:
+    """Yorumsuz, dizgi sabitleri bosaltilmis kod + dizgi sabitlerinin icerikleri."""
+    no_comment = _CODE_COMMENT_RE.sub(" ", code)
+    literals = [m.group(0)[1:-1] for m in _CODE_STRLIT_RE.finditer(no_comment)]
+    return _CODE_STRLIT_RE.sub('""', no_comment), literals
+
+
+def _code_items(code: str) -> list[_EvidenceItem]:
+    """Fonksiyon kodundan kanit ogeleri: tanimlayicilar (simge gibi, guclu) + dizgi sabitleri.
+
+    Yorumlar (Ghidra basligi, ``WARNING``, disassembly dokumu) kanit sayilmaz.
+    """
+    bare, literals = _code_parts(code)
+    idents = list(dict.fromkeys(_CODE_IDENT_RE.findall(bare)))
+    return _collect_items(literals, idents, [])
+
+
+def _function_algorithms(code: str, code_lower: str | None = None) -> list[str]:
+    """Fonksiyon basina algoritma etiketleri: dosya duzeyiyle ayni gosterge ve iki kanit kurali.
+
+    Ucuz on suzgec (anahtar sozcuk + ``combined``) gecen algoritma icin fonksiyonun kanit
+    ogeleri (tanimlayicilar, dizgi sabitleri) uzerinde ``_RuleMatch.independent`` aranir: tek
+    ``RSA_sign`` cagrisi ya da tek "aes" gecisi fonksiyonu RSA / AES etiketlemez.
+    """
+    if code_lower is None:
+        code_lower = code.lower()
+    fortran_gate_open: bool | None = None
+    items: list[_EvidenceItem] | None = None
+    found: list[str] = []
+    for algo_name, compiled_pat, keywords in _COMPILED_ALGO:
+        if keywords and not any(kw in code_lower for kw in keywords):
+            continue
+        if not compiled_pat.search(code):
+            continue
+        if ALGORITHM_PATTERNS[algo_name].get("category") == "fortran_runtime":
+            if fortran_gate_open is None:
+                fortran_gate_open = _is_fortran_binary([code])
+            if not fortran_gate_open:
+                continue
+        if items is None:
+            items = _code_items(code)
+        if _match_rule(_ALGO_RULES[algo_name], items).independent():
+            found.append(algo_name)
+    return found
+
+
+def _function_vulnerabilities(code: str, own_name: str = "") -> list[str]:
+    """Fonksiyon basina zafiyet etiketleri: tehlikeli API'nin tam adla CAGRISI.
+
+    Tek cagri ayirt edici guclu kanittir (fonksiyon o API'yi cagiriyor). Yorum ve dizgi sabiti
+    icindeki metin sayilmaz; fonksiyonun kendisi o API ise (ice aktarma thunk'i: ``strcpy`` icinde
+    ``strcpy(...)``) kendi adina yapilan eslesme sayilmaz.
+    """
+    # Yorumsuz kod; dizgi sabitleri yerinde (scanf deseni bicim dizgisindeki %s'i okur) ama
+    # eslesme bir dizgi sabitinin ICINDE baslayamaz.
+    text = _CODE_COMMENT_RE.sub(" ", code)
+    lit_spans = [m.span() for m in _CODE_STRLIT_RE.finditer(text)]
+    lit_starts = [s for s, _ in lit_spans]
+    own = own_name.lstrip("_")
+    found: list[str] = []
+    for compiled_pat, vuln_type, description, pre_kw in _COMPILED_VULN_CALL:
+        if pre_kw and pre_kw not in text:
+            continue
+        for m in compiled_pat.finditer(text):
+            k = bisect_right(lit_starts, m.start()) - 1
+            if k >= 0 and lit_spans[k][0] <= m.start() < lit_spans[k][1]:
+                continue
+            ident = _CODE_IDENT_RE.match(text, m.start())
+            name = ident.group(0) if ident else ""
+            name = name.removeprefix("__isoc99_").lstrip("_")
+            if own and name == own:
+                continue
+            found.append(f"{vuln_type}: {description}")
+            break
+    return found
+
 # _infer_purpose keyword set (lowercase)
 _PURPOSE_KEYWORDS: frozenset[str] = frozenset({
     "error", "fail", "success", "init", "open", "close",
@@ -1913,14 +2016,8 @@ def _analyze_single_file(args: tuple[str, str]) -> dict | None:
 
     code_lower = code.lower()
 
-    # --- Algorithms (pre-filter + compiled regex) ---
-    algorithms: list[str] = []
-    for algo_name, compiled_pat, keywords in _COMPILED_ALGO:
-        # Ucuz pre-filter: keyword'lerden en az biri varsa regex calistir
-        if keywords and not any(kw in code_lower for kw in keywords):
-            continue
-        if compiled_pat.search(code):
-            algorithms.append(algo_name)
+    # --- Algorithms (on suzgec + iki kanit kurali; _find_algorithms_in_code ile ayni) ---
+    algorithms = _function_algorithms(code, code_lower)
 
     # --- System calls (tek tarama, iki sonuc: purpose + syscall listesi) ---
     found_syscalls: list[str] = []
@@ -1951,13 +2048,8 @@ def _analyze_single_file(args: tuple[str, str]) -> dict | None:
             purposes.append("returns a value")
     purpose = "; ".join(purposes[:5]) if purposes else "unknown purpose"
 
-    # --- Vulnerabilities (pre-filter + compiled regex) ---
-    vulnerabilities: list[str] = []
-    for compiled_pat, vuln_type, description, pre_kw in _COMPILED_VULN:
-        if pre_kw and pre_kw not in code:
-            continue
-        if compiled_pat.search(code):
-            vulnerabilities.append(f"{vuln_type}: {description}")
+    # --- Vulnerabilities (tam adla cagri; thunk'in kendi adi sayilmaz) ---
+    vulnerabilities = _function_vulnerabilities(code, _own_function_name(file_stem, code))
 
     return {
         "name": file_stem,
@@ -2459,20 +2551,12 @@ class BinaryIntelligence:
         return "; ".join(purposes[:5]) if purposes else "unknown purpose"
 
     def _find_algorithms_in_code(self, code: str) -> list[str]:
-        """Decompiled kodda kullanilan algoritmalari bul."""
-        found: list[str] = []
-        # v1.10.0 Batch 3D: Fortran binary-type gate (tek fonksiyon scope'unda).
-        fortran_gate_open = _is_fortran_binary([code])
-        for algo_name, algo_data in ALGORITHM_PATTERNS.items():
-            if (
-                algo_data.get("category") == "fortran_runtime"
-                and not fortran_gate_open
-            ):
-                continue
-            # Dosya duzeyiyle ayni gosterge kurali: case_sensitive alani ve belirtec siniri.
-            if _ALGO_RULES[algo_name].combined.search(code):
-                found.append(algo_name)
-        return found
+        """Decompiled kodda kullanilan algoritmalari bul.
+
+        Paralel yol (``_analyze_single_file``) ile ayni: gosterge kurali (case_sensitive, belirtec
+        siniri), Fortran kapisi ve iki bagimsiz kanit (``_function_algorithms``).
+        """
+        return _function_algorithms(code)
 
     def _find_system_calls(self, code: str) -> list[str]:
         """Decompiled kodda cagirilan sistem fonksiyonlarini bul."""
@@ -2483,9 +2567,5 @@ class BinaryIntelligence:
         return found
 
     def _find_vulnerabilities(self, code: str) -> list[str]:
-        """Decompiled kodda potansiyel guvenlik aciklari bul."""
-        found: list[str] = []
-        for pattern_str, vuln_type, description in _VULNERABILITY_PATTERNS:
-            if re.search(pattern_str, code):
-                found.append(f"{vuln_type}: {description}")
-        return found
+        """Decompiled kodda potansiyel guvenlik aciklari bul (paralel yolla ayni kural)."""
+        return _function_vulnerabilities(code, _own_function_name("", code))

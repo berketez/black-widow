@@ -136,6 +136,54 @@
       "test": "tests/test_p01b_kalinti.py::TestAyirtEdiciVarsaKalir::test_tmux_forkpty",
       "find": "            if anchors:\n                # ayirt",
       "replace": "            if False:\n                # ayirt"
+    },
+    {
+      "id": "p01b_k3_sinir_yok",
+      "desc": "zafiyet API'sinde sol tanımlayıcı sınırı yok → fgets / BIO_gets 'gets', sqlite3_exec 'exec'",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_islev.py::TestZafiyetTamAd::test_alt_dizgi_zafiyet_degil",
+      "find": "_VULN_CALL_PREFIX = r\"(?<![A-Za-z0-9_])(?:__isoc99_|_{0,2})\"",
+      "replace": "_VULN_CALL_PREFIX = r\"\""
+    },
+    {
+      "id": "p01b_k3_thunk_kendi_adi",
+      "desc": "içe aktarma thunk'ı kendi adıyla zafiyet alır",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_islev.py::TestZafiyetTamAd::test_thunk_kendi_adi_sayilmaz",
+      "find": "            if own and name == own:",
+      "replace": "            if False and name == own:"
+    },
+    {
+      "id": "p01b_k3_dizgi_sabiti_icinde",
+      "desc": "dizgi sabiti içindeki 'system(' zafiyet sayılır",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_islev.py::TestZafiyetTamAd::test_yorum_ve_dizgi_sabiti_sayilmaz",
+      "find": "            if k >= 0 and lit_spans[k][0] <= m.start() < lit_spans[k][1]:",
+      "replace": "            if False:"
+    },
+    {
+      "id": "p01b_k3_algoritma_tek_kanit",
+      "desc": "fonksiyon başına algoritma tek eşleşmeyle etiketlenir (eski davranış)",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_islev.py::TestAlgoritmaIkiKanit::test_tek_cagri_etiketlemez",
+      "find": "        if _match_rule(_ALGO_RULES[algo_name], items).independent():",
+      "replace": "        if True:"
+    },
+    {
+      "id": "p01b_k3_yorum_kanit",
+      "desc": "Ghidra başlık yorumu (Callees: …) kanıt öğesi olur",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_islev.py::TestAlgoritmaIkiKanit::test_yorumdaki_ad_kanit_degil",
+      "find": "    no_comment = _CODE_COMMENT_RE.sub(\" \", code)",
+      "replace": "    no_comment = code"
+    },
+    {
+      "id": "p01b_k3_exec_on_suzgec_bozuk",
+      "desc": "eski ön süzgeç anahtarı ('exec[lv]?p?' düz metin) → exec ailesi hiç çalışmaz",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_islev.py::TestZafiyetTamAd::test_gercek_cagrilar_kalir",
+      "find": "re.match(r\"[A-Za-z_]*\", pat).group(0))",
+      "replace": "re.split(r'[\\\\()\\s*]', pat)[0])"
     }
   ]
 }

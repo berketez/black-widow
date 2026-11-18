@@ -408,6 +408,7 @@ class TestDecompiledAnalysis:
             c_file = Path(tmpdir) / "encrypt_data.c"
             c_file.write_text(
                 'void encrypt_data(char *buf, int len) {\n'
+                '    AES_set_encrypt_key(key, 128, &aes_key);\n'
                 '    AES_encrypt(buf, len);\n'
                 '    memcpy(output, buf, len);\n'
                 '    printf("encryption complete");\n'
