@@ -1,0 +1,149 @@
+{
+  "_comment": "P02 (anti-debug + paketleyici, 2026-11-18 onarımı) mutasyon koruması. Her mutant bir düzeltmeyi bozar; ilgili test KIRMIZI olmalı (killed). Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p02.json",
+  "mutants": [
+    {
+      "id": "p02_imza02_mimari_kapisi",
+      "desc": "IMZA-02: x86 mimari kapısı kalkar (AArch64 kodu x86 sanılıp taranır)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIslemKoduMimari::test_aarch64_elf_rdtsc_yok",
+      "find": "if layout.arch not in _X86_ARCHES or not layout.regions:",
+      "replace": "if not layout.regions:"
+    },
+    {
+      "id": "p02_imza02_bolge_siniri",
+      "desc": "IMZA-02: tarama kod bölgesinde bitmez, dosya sonuna dek sürer (.rodata tuzağı sayılır)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIslemKoduMimari::test_x86_64_elf_yalniz_text_sayilir",
+      "find": "data[region.start:region.end], 0):",
+      "replace": "data[region.start:], 0):"
+    },
+    {
+      "id": "p02_imza02_elf_execinstr",
+      "desc": "IMZA-02: ELF'te SHF_EXECINSTR denetimi kalkar (.rodata kod sayılır)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIslemKoduMimari::test_x86_64_elf_yalniz_text_sayilir",
+      "find": "if not (sh_flags & _ELF_SHF_EXECINSTR) or sh_type == _ELF_SHT_NOBITS:",
+      "replace": "if sh_type == _ELF_SHT_NOBITS:"
+    },
+    {
+      "id": "p02_imza02_elf_pf_x",
+      "desc": "IMZA-02: bölüm tablosuz ELF'te PF_X denetimi kalkar (salt okunur PT_LOAD kod sayılır)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIslemKoduMimari::test_x86_64_elf_bolum_tablosuz_pt_load",
+      "find": "if p_type != _ELF_PT_LOAD or not (p_flags & _ELF_PF_X) or p_filesz == 0:",
+      "replace": "if p_type != _ELF_PT_LOAD or p_filesz == 0:"
+    },
+    {
+      "id": "p02_imza02_macho_komut_bolumu",
+      "desc": "IMZA-02: Mach-O'da komut özniteliği denetimi kalkar (__const kod sayılır)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIslemKoduMimari::test_macho_const_tuzagi_sayilmaz",
+      "find": "if not (flags & _MACHO_S_ATTR_INSTRUCTIONS):",
+      "replace": "if not (flags >= 0):"
+    },
+    {
+      "id": "p02_imza02_pe_execute",
+      "desc": "IMZA-02: PE'de IMAGE_SCN_MEM_EXECUTE denetimi kalkar (.rdata kod sayılır)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIslemKoduMimari::test_pe_rdata_tuzagi_sayilmaz",
+      "find": "        if not sec.executable:\n            continue\n        rng = sec.file_range(len(data))",
+      "replace": "        rng = sec.file_range(len(data))"
+    },
+    {
+      "id": "p02_imza02_evrensel_dilim",
+      "desc": "IMZA-02: evrensel Mach-O'da x86-64 yerine arm64 dilimi seçilir",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIslemKoduMimari::test_evrensel_macho_yalniz_x86_64_dilimi",
+      "find": "_FAT_SLICE_PREFERENCE = (\"x86_64\", \"x86\")",
+      "replace": "_FAT_SLICE_PREFERENCE = (\"arm64\",)"
+    },
+    {
+      "id": "p02_imza02_komut_siniri",
+      "desc": "IMZA-02: capstone yolu atlanır, kod içindeki her \"0F 31\" baytı rdtsc sayılır",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIslemKoduMimari::test_komut_icindeki_0f31_sayilmaz",
+      "find": "    if capstone is not None:\n        try:\n            return _scan_x86_capstone(capstone, data, layout)",
+      "replace": "    if capstone is None:\n        try:\n            return _scan_x86_capstone(capstone, data, layout)"
+    },
+    {
+      "id": "p02_imza02_rdtsc_ust_sinir",
+      "desc": "IMZA-02/03: çok rdtsc yine 0,45'e (MED) çıkar",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIslemKoduMimari::test_rdtsc_sayisi_zayif_ustunu_gecmez",
+      "find": "_RDTSC_MULTI_CONFIDENCE = 0.30",
+      "replace": "_RDTSC_MULTI_CONFIDENCE = 0.450"
+    },
+    {
+      "id": "p02_imza02_bayt_yedegi_zayif",
+      "desc": "IMZA-02: capstone yokken bayt sayımı da 0,30 alır (komut sınırı doğrulanmadan)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestCapstoneYok::test_bayt_yedegi_zayif_kalir",
+      "find": "if scan.decoder != \"capstone\" or total_rdtsc == 1:",
+      "replace": "if total_rdtsc == 1:"
+    },
+    {
+      "id": "p02_imza02_peb_yalniz_pe",
+      "desc": "IMZA-02: PEB yükleme deseni ELF'te de aranır",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestPEB::test_elf_icinde_peb_deseni_aranmaz",
+      "find": "load_re = _PEB_LOAD_RE[layout.arch] if layout.fmt == \"pe\" else None",
+      "replace": "load_re = _PEB_LOAD_RE[layout.arch]"
+    },
+    {
+      "id": "p02_imza02_peb_denetim_maskesi",
+      "desc": "IMZA-02: NtGlobalFlag maskesi 0x70 yerine 0x1 (UCRT'nin 'test dl, 1' okuması hüküm olur)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestPEB::test_ucrt_peb_okumasi_hukum_degil",
+      "find": "_NTGLOBALFLAG_DEBUG_MASK = 0x70",
+      "replace": "_NTGLOBALFLAG_DEBUG_MASK = 0x1"
+    },
+    {
+      "id": "p02_imza02_peb_being_debugged",
+      "desc": "IMZA-02: BeingDebugged ofseti 2 yerine 0x20 (gerçek denetim kaçar)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestPEB::test_pe_x64_being_debugged_hukum",
+      "find": "_PEB_BEING_DEBUGGED_DISP = 0x2",
+      "replace": "_PEB_BEING_DEBUGGED_DISP = 0x20"
+    },
+    {
+      "id": "p02_imza02_peb_okuma_bilgi",
+      "desc": "IMZA-02: yalnız PEB okuması (denetimsiz) hüküm güveni alır",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestPEB::test_ucrt_peb_okumasi_hukum_degil",
+      "find": "                technique=\"PEB_Read\",\n                category=\"peb\",\n                confidence=_INFO_CONFIDENCE,",
+      "replace": "                technique=\"PEB_Read\",\n                category=\"peb\",\n                confidence=_PEB_CHECK_CONFIDENCE,"
+    },
+    {
+      "id": "p02_imza02_ithal_katalog_macos",
+      "desc": "IMZA-02: macOS kataloğu ELF'te de uygulanır (ELF ptrace → PT_DENY_ATTACH)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIthalKatalogu::test_elf_ptrace_macos_teknigi_olmaz",
+      "find": "use_macos = fmt in (\"macho\", \"unknown\")",
+      "replace": "use_macos = True"
+    },
+    {
+      "id": "p02_imza02_ithal_katalog_linux",
+      "desc": "IMZA-02: Linux kataloğu Mach-O'da da uygulanır (_ptrace → PTRACE_TRACEME)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIthalKatalogu::test_macho_ptrace_linux_teknigi_olmaz",
+      "find": "use_linux = fmt in (\"elf\", \"unknown\")",
+      "replace": "use_linux = True"
+    },
+    {
+      "id": "p02_imza02_sysctl_bilgi",
+      "desc": "IMZA-02: _sysctl ithali yine 0,55 (hüküm) alır",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIthalKatalogu::test_macho_sysctl_yalniz_bilgi",
+      "find": "\"denetimi olabilir; argumani dogrulanmadi, tek basina hukum degil\",\n        0.15,",
+      "replace": "\"denetimi olabilir; argumani dogrulanmadi, tek basina hukum degil\",\n        0.550,"
+    },
+    {
+      "id": "p02_imza02_prctl_kanit_metni",
+      "desc": "IMZA-02: prctl kanıtı 'argüman doğrulanmadı' demez",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_mimari.py::TestIthalKatalogu::test_elf_prctl_yalniz_bilgi",
+      "find": "_ARG_UNVERIFIED_TECHNIQUES = frozenset({\"prctl_import\", \"sysctl_import\"})",
+      "replace": "_ARG_UNVERIFIED_TECHNIQUES = frozenset({\"sysctl_import\"})"
+    }
+  ]
+}

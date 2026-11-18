@@ -320,53 +320,117 @@ def _detect_platform(data: bytes) -> str:
     return "unknown"
 
 
+# PE COFF makine turleri (IMAGE_FILE_MACHINE_*) -> mimari adi.
+PE_MACHINE_ARCH: dict[int, str] = {
+    0x014C: "x86",      # I386
+    0x8664: "x86_64",   # AMD64
+    0xAA64: "arm64",    # ARM64
+    0xA641: "arm64",    # ARM64EC
+    0x01C0: "arm",      # ARM
+    0x01C4: "arm",      # ARMNT (Thumb-2)
+}
+# IMAGE_SCN_MEM_EXECUTE: bolum yurutulebilir kod icerir.
+PE_SCN_MEM_EXECUTE = 0x20000000
+
+
+@dataclass(frozen=True)
+class PESection:
+    """IMAGE_SECTION_HEADER'in bu modulde kullanilan alanlari."""
+    name: str
+    virtual_address: int
+    virtual_size: int
+    raw_size: int
+    raw_ptr: int
+    characteristics: int
+
+    @property
+    def executable(self) -> bool:
+        return bool(self.characteristics & PE_SCN_MEM_EXECUTE)
+
+    def file_range(self, file_size: int) -> Optional[tuple[int, int]]:
+        """Bolumun dosyadaki [baslangic, bitis) araligi (dosya boyutuyla kirpilir)."""
+        if self.raw_ptr == 0 or self.raw_size == 0 or self.raw_ptr >= file_size:
+            return None
+        size = self.raw_size
+        if self.virtual_size:
+            size = min(size, self.virtual_size)
+        return self.raw_ptr, min(self.raw_ptr + size, file_size)
+
+
+@dataclass(frozen=True)
+class PELayout:
+    """PE basliginin en kucuk ozeti: makine, giris RVA'si, bolum tablosu."""
+    machine: int
+    arch: str                    # "x86" | "x86_64" | "arm64" | "arm" | "other"
+    entry_rva: int               # AddressOfEntryPoint (0 = giris yok, ornegin DLL)
+    sections: tuple[PESection, ...]
+
+    def rva_to_offset(self, rva: int, file_size: int) -> Optional[int]:
+        """RVA'yi dosya ofsetine cevir; hicbir bolumun ham verisine dusmuyorsa None."""
+        for sec in self.sections:
+            span = max(sec.virtual_size, sec.raw_size)
+            if sec.virtual_address <= rva < sec.virtual_address + span:
+                delta = rva - sec.virtual_address
+                if delta >= sec.raw_size:
+                    return None  # bolumun bellekte olup dosyada olmayan kismi
+                off = sec.raw_ptr + delta
+                return off if off < file_size else None
+        return None
+
+
+def parse_pe_layout(data: bytes) -> Optional[PELayout]:
+    """PE basligini (DOS + COFF + opsiyonel baslik + bolum tablosu) cozumle.
+
+    Manuel parse — bagimlilik yok. Gecerli bir PE degilse ya da baslik
+    kesikse None doner.
+    """
+    try:
+        if len(data) < 0x40 or data[:2] != _PE_DOS_MAGIC:
+            return None
+        e_lfanew = struct.unpack_from("<I", data, 0x3c)[0]
+        if e_lfanew < 0x40 or e_lfanew + 24 > len(data):
+            return None
+        if data[e_lfanew:e_lfanew + 4] != _PE_NT_MAGIC:
+            return None
+        coff = e_lfanew + 4
+        machine, num_sections = struct.unpack_from("<HH", data, coff)
+        size_opt = struct.unpack_from("<H", data, coff + 16)[0]
+        opt = coff + 20
+        entry_rva = 0
+        # AddressOfEntryPoint opsiyonel baslikta +16'da (PE32 ve PE32+ ayni).
+        if size_opt >= 20 and opt + 20 <= len(data):
+            entry_rva = struct.unpack_from("<I", data, opt + 16)[0]
+        section_table_off = opt + size_opt
+        # PE belirtimi 96 bolum der; 256'da kesip guvende kalalim.
+        sections: list[PESection] = []
+        for i in range(min(num_sections, 256)):
+            off = section_table_off + i * 40  # IMAGE_SECTION_HEADER = 40 bayt
+            if off + 40 > len(data):
+                break
+            raw_name, vsize, va, rsize, rptr = struct.unpack_from("<8sIIII", data, off)
+            chars = struct.unpack_from("<I", data, off + 36)[0]
+            name = raw_name.split(b"\x00", 1)[0].decode("utf-8", errors="replace")
+            sections.append(PESection(name, va, vsize, rsize, rptr, chars))
+        return PELayout(
+            machine=machine,
+            arch=PE_MACHINE_ARCH.get(machine, "other"),
+            entry_rva=entry_rva,
+            sections=tuple(sections),
+        )
+    except (struct.error, IndexError) as exc:
+        logger.debug("PE baslik parse hatasi: %s", exc)
+        return None
+
+
 def _extract_pe_sections(data: bytes) -> list[str]:
     """PE dosyasindaki section adlarini cikar.
 
     Manuel parse — bagimlilik yok. Hata durumunda bos liste doner.
     """
-    sections: list[str] = []
-    try:
-        if len(data) < 0x40 or data[:2] != _PE_DOS_MAGIC:
-            return sections
-
-        # e_lfanew offset (DOS header, 0x3C)
-        e_lfanew = struct.unpack_from("<I", data, 0x3c)[0]
-        if e_lfanew >= len(data) - 4 or e_lfanew < 0x40:
-            return sections
-
-        if data[e_lfanew:e_lfanew + 4] != _PE_NT_MAGIC:
-            return sections
-
-        # COFF header: 4 (signature) + Machine(2) + NumSections(2) ...
-        num_sections_off = e_lfanew + 4 + 2
-        if num_sections_off + 2 > len(data):
-            return sections
-        num_sections = struct.unpack_from("<H", data, num_sections_off)[0]
-
-        # SizeOfOptionalHeader: e_lfanew + 4 + 16 (offset 20'de COFF)
-        size_opt_off = e_lfanew + 4 + 16
-        if size_opt_off + 2 > len(data):
-            return sections
-        size_opt = struct.unpack_from("<H", data, size_opt_off)[0]
-
-        # Section table: COFF header (24 byte) + optional header sonra
-        section_table_off = e_lfanew + 4 + 20 + size_opt
-
-        # PE specs: max 96 section gibi limit, ama biz 256'da kesip guvende olalim
-        num_sections = min(num_sections, 256)
-
-        for i in range(num_sections):
-            entry_off = section_table_off + i * 40  # IMAGE_SECTION_HEADER = 40 byte
-            if entry_off + 8 > len(data):
-                break
-            name_bytes = data[entry_off:entry_off + 8]
-            # null-terminated, UTF-8/ASCII
-            name = name_bytes.split(b"\x00", 1)[0].decode("utf-8", errors="replace")
-            sections.append(name)
-    except (struct.error, UnicodeDecodeError, IndexError) as exc:
-        logger.debug("PE section parse hatasi: %s", exc)
-    return sections
+    layout = parse_pe_layout(data)
+    if layout is None:
+        return []
+    return [sec.name for sec in layout.sections]
 
 
 def _extract_elf_sections(data: bytes) -> list[str]:

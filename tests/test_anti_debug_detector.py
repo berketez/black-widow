@@ -23,6 +23,10 @@ from karadul.analyzers.anti_debug_detector import (
     AntiDebugDetector,
     AntiDebugFinding,
 )
+# P02 / IMZA-02: bayt katmani artik yalniz x86 hedefin yurutulebilir kod
+# bolgesini tarar; fikstur'ler bicimsiz ham bayt yerine gercek bolum tablolu
+# PE / ELF olarak kurulur.
+from tests.test_p02_anti_debug_mimari import EM_X86_64, elf64, pe
 
 
 # ---------------------------------------------------------------------------
@@ -87,46 +91,49 @@ def macos_string_binary(tmp_path):
 
 @pytest.fixture
 def peb_byte_binary(tmp_path):
-    """GS:[60h] PEB pattern iceren binary."""
-    p = tmp_path / "peb.bin"
+    """x86-64 PE .text: GS:[60h] PEB okumasi + BeingDebugged denetimi."""
+    p = tmp_path / "peb.exe"
     # 65 48 8B 04 25 60 00 00 00  = mov rax, gs:[60h]
-    data = (
-        b"\x90" * 1000
+    # 0F B6 40 02                 = movzx eax, byte [rax+2]  (BeingDebugged)
+    code = (
+        b"\x90" * 100
         + b"\x65\x48\x8b\x04\x25\x60\x00\x00\x00"
-        + b"\x90" * 1000
+        + b"\x0f\xb6\x40\x02\x85\xc0"
+        + b"\x90" * 100 + b"\xc3"
     )
-    p.write_bytes(data)
+    p.write_bytes(pe("x86_64", code))
     return p
 
 
 @pytest.fixture
 def fs30_byte_binary(tmp_path):
-    """FS:[30h] PEB pattern (32-bit)."""
-    p = tmp_path / "fs30.bin"
-    # 64 A1 30 00 00 00 = mov eax, fs:[30h]
-    data = b"\x90" * 500 + b"\x64\xa1\x30\x00\x00\x00" + b"\x90" * 500
-    p.write_bytes(data)
+    """32-bit PE .text: FS:[30h] PEB okumasi + BeingDebugged denetimi."""
+    p = tmp_path / "fs30.exe"
+    # 64 A1 30 00 00 00 = mov eax, fs:[30h]; 0F B6 40 02 = movzx eax, byte [eax+2]
+    code = (b"\x90" * 50 + b"\x64\xa1\x30\x00\x00\x00" + b"\x0f\xb6\x40\x02"
+            + b"\x90" * 50 + b"\xc3")
+    p.write_bytes(pe("x86", code))
     return p
 
 
 @pytest.fixture
 def rdtsc_binary(tmp_path):
-    """Cok sayida RDTSC opcode (timing-based)."""
-    p = tmp_path / "rdtsc.bin"
+    """x86-64 ELF .text: cok sayida RDTSC komutu (timing-based)."""
+    p = tmp_path / "rdtsc.elf"
     # 5+ rdtsc ortusmeyen
-    data = b"\x90" * 100
+    code = b"\x90" * 100
     for _ in range(6):
-        data += b"\x0f\x31" + b"\x90" * 50
-    p.write_bytes(data)
+        code += b"\x0f\x31" + b"\x90" * 50
+    p.write_bytes(elf64(EM_X86_64, code + b"\xc3"))
     return p
 
 
 @pytest.fixture
 def int3_cluster_binary(tmp_path):
-    """20 ardisik 0xCC INT3 byte."""
-    p = tmp_path / "int3.bin"
-    data = b"\x90" * 200 + b"\xcc" * 20 + b"\x90" * 200
-    p.write_bytes(data)
+    """x86-64 PE .text: 20 ardisik 0xCC (hizalama siniri disinda biter)."""
+    p = tmp_path / "int3.exe"
+    code = b"\x90" * 200 + b"\xcc" * 20 + b"\x90" * 200 + b"\xc3"
+    p.write_bytes(pe("x86_64", code))
     return p
 
 
@@ -342,14 +349,19 @@ def test_bytes_layer_fs30(fs30_byte_binary):
 
 
 def test_bytes_layer_rdtsc(rdtsc_binary):
-    """6 RDTSC -> 0.45 confidence."""
+    """6 RDTSC -> zayif kanit (0.30).
+
+    P02 / IMZA-03: eskiden 5+ rdtsc 0.45 (MED) veriyordu; ayni turden zayif
+    kanitin sayisi hukme donusmez, ust sinir 0.30.
+    """
     det = AntiDebugDetector(binary_path=rdtsc_binary)
     findings = det.detect_by_bytes()
     techniques = {f.technique for f in findings}
     assert "RDTSC_Timing" in techniques
 
     f = next(f for f in findings if f.technique == "RDTSC_Timing")
-    assert f.confidence >= 0.4
+    assert f.confidence == pytest.approx(0.30)
+    assert f.evidence.startswith("rdtsc x6,")
     assert f.category == "timing"
 
 
