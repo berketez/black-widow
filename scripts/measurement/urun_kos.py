@@ -34,8 +34,10 @@ GHIDRA = Path.home() / "Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC"
 TABAN_DEBIAN = Path.home() / "karadul_olcum/n1_debian13"
 TABAN_MAC = DEPO / "workspaces/olcum_mac/runs/ol7-c-b7faeac"
 # Ağaçta bulunması gereken, git'in izlemediği çalışma zamanı verisi (measure.RUNTIME_DATA ile aynı).
+# signatures.lmdb: P15b'den beri imza veritabanı veri kökünden (ağaç kökü) açılıyor; bağ yoksa ürün
+# eski şema-1 veritabanına (~/.karadul) düşer ve ölçüm yanlış veritabanıyla koşar.
 CALISMA_VERISI = ("sigs", "vendor", "signatures_homebrew.json",
-                  "signatures_homebrew_bytes.json", "sigs_macos_system.json")
+                  "signatures_homebrew_bytes.json", "sigs_macos_system.json", "signatures.lmdb")
 ZAMAN_ASIMI_SN = 3600
 BITTI = "BITTI"
 
