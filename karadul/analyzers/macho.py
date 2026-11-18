@@ -89,6 +89,82 @@ def _elf_nm_letter(
     return "?" if sec_flags & _SHF_WRITE else "N"
 
 
+# Mach-O evrensel (fat) başlığı: <mach-o/fat.h>, <mach/machine.h>.
+_FAT_MAGIC, _FAT_MAGIC_64 = 0xCAFEBABE, 0xCAFEBABF
+_FAT_MAX_ARCH = 64  # 0xCAFEBABE Java sınıf dosyasının da imzası; makul üst sınır
+_CPU_ARCH_ABI64, _CPU_ARCH_ABI64_32 = 0x01000000, 0x02000000
+_CPU_TYPE_X86, _CPU_TYPE_ARM = 7, 12
+_CPU_SUBTYPE_MASK = 0x00FFFFFF
+_MACHO_THIN_MAGICS = (b"\xcf\xfa\xed\xfe", b"\xce\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xfe\xed\xfa\xce")
+
+
+def _fat_arch_name(cputype: int, cpusubtype: int) -> str:
+    """Mimari adı (`lipo -archs` adlarıyla aynı; bilinmeyen alt tür sayısıyla yazılır)."""
+    sub = cpusubtype & _CPU_SUBTYPE_MASK
+    if cputype == _CPU_TYPE_ARM | _CPU_ARCH_ABI64:
+        return {0: "arm64", 1: "arm64v8", 2: "arm64e"}.get(sub, "arm64_sub%d" % sub)
+    if cputype == _CPU_TYPE_X86 | _CPU_ARCH_ABI64:
+        return {3: "x86_64", 8: "x86_64h"}.get(sub, "x86_64_sub%d" % sub)
+    if cputype == _CPU_TYPE_ARM | _CPU_ARCH_ABI64_32:
+        return "arm64_32"
+    if cputype == _CPU_TYPE_X86:
+        return "i386"
+    if cputype == _CPU_TYPE_ARM:
+        return "arm_sub%d" % sub
+    return "cpu%d_sub%d" % (cputype, sub)
+
+
+def _fat_slice_rank(cputype: int, cpusubtype: int) -> int:
+    """Küçük olan önce seçilir: arm64, arm64e, öbür arm64, x86_64, x86_64h, öbürleri."""
+    sub = cpusubtype & _CPU_SUBTYPE_MASK
+    if cputype == _CPU_TYPE_ARM | _CPU_ARCH_ABI64:
+        return {0: 0, 1: 0, 2: 1}.get(sub, 2)
+    if cputype == _CPU_TYPE_X86 | _CPU_ARCH_ABI64:
+        return 3 if sub == 3 else 4
+    return 5
+
+
+def read_fat_slices(path: Path) -> list[dict[str, Any]]:
+    """Evrensel Mach-O başlığındaki dilimler (dosya sırasıyla); başlık geçersizse ValueError."""
+    import struct
+
+    size = path.stat().st_size
+    with open(path, "rb") as fh:
+        head = fh.read(8)
+        if len(head) < 8:
+            raise ValueError("dosya fat başlığı için çok kısa")
+        magic, nfat = struct.unpack(">II", head)
+        if magic not in (_FAT_MAGIC, _FAT_MAGIC_64):
+            raise ValueError("fat imzası yok (0x%08x)" % magic)
+        if not 0 < nfat <= _FAT_MAX_ARCH:
+            raise ValueError("dilim sayısı geçersiz: %d" % nfat)
+        is64 = magic == _FAT_MAGIC_64
+        entry_size = 32 if is64 else 20
+        table = fh.read(entry_size * nfat)
+    if len(table) < entry_size * nfat:
+        raise ValueError("fat dilim tablosu kesik")
+    slices = []
+    for i in range(nfat):
+        rec = table[i * entry_size:(i + 1) * entry_size]
+        if is64:
+            cputype, cpusubtype, offset, length, _align, _res = struct.unpack(">iiQQII", rec)
+        else:
+            cputype, cpusubtype, offset, length, _align = struct.unpack(">iiIII", rec)
+        if length <= 0 or offset + length > size:
+            raise ValueError("dilim %d dosya dışına taşıyor (ofset %d, boy %d)" % (i, offset, length))
+        slices.append({
+            "arch": _fat_arch_name(cputype, cpusubtype), "cputype": cputype,
+            "cpusubtype": cpusubtype & 0xFFFFFFFF, "offset": offset, "size": length,
+            "rank": _fat_slice_rank(cputype, cpusubtype), "index": i,
+        })
+    return slices
+
+
+def select_fat_slice(slices: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Tercih sırasında ilk dilim; eşitlikte dosyadaki ilk (belirlenimci)."""
+    return min(slices, key=lambda s: (s["rank"], s["index"])) if slices else None
+
+
 @register_analyzer(TargetType.MACHO_BINARY)
 @register_analyzer(TargetType.UNIVERSAL_BINARY)
 @register_analyzer(TargetType.ELF_BINARY)
@@ -165,37 +241,19 @@ class MachOAnalyzer(BaseAnalyzer):
         binary_path = target.path
         static_dir = workspace.get_stage_dir("static")
 
-        # 0. Universal binary icin lipo thin -- arm64 slice'i cikar
+        # 0. Evrensel (fat) ikiliden tek mimari dilimi çıkar. Eski kod `lipo -thin arm64`
+        # deniyordu: macOS sistem ikilileri arm64e taşıdığı için bu düşüyor, x86_64'e geçip
+        # dilimi yine `<ad>_arm64` adıyla yazıyordu; yalnız arm64e taşıyanlarda (ssh, sshd,
+        # ioreg) ikisi de düşüp şişman dosya taranıyordu. Şimdi fat başlığı okunur, dilim
+        # tercih sırasıyla seçilir (arm64 > arm64e > öbür arm64 > x86_64 > …) ve baytları
+        # aynen kopyalanır (`lipo -thin` çıktısıyla bayt bayt aynı); dosya adı gerçek
+        # mimariyi söyler. Seçilemezse durum açıkça yazılır.
         if target.target_type == TargetType.UNIVERSAL_BINARY:
-            thin_path = workspace.get_stage_dir("raw") / f"{target.name}_arm64"
-            # B21: resolve_tool whitelist + safe_run (LD_PRELOAD koruma).
-            lipo_path = resolve_tool("lipo")
-            try:
-                if lipo_path is None:
-                    raise FileNotFoundError("lipo whitelist path'te bulunamadi")
-                proc = safe_run(
-                    [lipo_path, str(binary_path), "-thin", "arm64", "-output", str(thin_path)],
-                    capture_output=True, text=True, timeout=30.0,
-                )
-                if proc.returncode == 0 and thin_path.exists():
-                    logger.info("Universal binary: arm64 slice cikarildi -> %s", thin_path)
-                    binary_path = thin_path
-                    stats["lipo_thin"] = "arm64"
-                else:
-                    # arm64 yoksa x86_64 dene
-                    proc = safe_run(
-                        [lipo_path, str(target.path), "-thin", "x86_64", "-output", str(thin_path)],
-                        capture_output=True, text=True, timeout=30.0,
-                    )
-                    if proc.returncode == 0 and thin_path.exists():
-                        logger.info("Universal binary: x86_64 slice cikarildi -> %s", thin_path)
-                        binary_path = thin_path
-                        stats["lipo_thin"] = "x86_64"
-                    else:
-                        logger.warning("lipo thin basarisiz, orijinal binary kullanilacak: %s", proc.stderr)
-            except (subprocess.TimeoutExpired, FileNotFoundError) as exc:
-                logger.warning("lipo thin hatasi: %s", exc)
-                errors.append(f"lipo thin hatasi: {exc}")
+            sliced = self._extract_universal_slice(
+                Path(binary_path), workspace, target.name, stats, errors,
+            )
+            if sliced is not None:
+                binary_path = sliced
 
         # 1. Raw binary'yi isaretle.
         # v1.10.0 Batch 5B HIGH-4: TOCTOU-safe kopyalama. Eski yol
@@ -948,6 +1006,63 @@ class MachOAnalyzer(BaseAnalyzer):
             len(strings), file_mb,
         )
         return strings
+
+    @staticmethod
+    def _extract_universal_slice(
+        fat_path: Path, workspace: Workspace, target_name: str,
+        stats: dict[str, Any], errors: list[str],
+    ) -> Path | None:
+        """Evrensel ikiliden seçilen dilimi ``raw/<ad>_<mimari>``'ye yaz; seçim dosyası static'te.
+
+        Dönüş: dilim yolu; seçilemezse None (çağıran şişman dosyayla sürer, neden ``errors``'ta
+        ve ``stats.universal_slice_error``'da). ``static/universal_slice.json`` aşağı akışın
+        (``binary_prep``) hangi dosyayı kullanacağını söyler.
+        """
+        static_dir = workspace.get_stage_dir("static")
+        try:
+            slices = read_fat_slices(fat_path)
+        except (OSError, ValueError) as exc:
+            reason = "fat başlığı okunamadı: %s" % exc
+            slices, chosen = [], None
+        else:
+            chosen = select_fat_slice(slices)
+            reason = None if chosen else "dilim yok"
+        stats["universal_slices"] = [s["arch"] for s in slices]
+        thin_path: Path | None = None
+        if chosen is not None:
+            thin_path = workspace.get_stage_dir("raw") / f"{target_name}_{chosen['arch']}"
+            try:
+                with open(fat_path, "rb") as src:
+                    src.seek(chosen["offset"])
+                    data = src.read(chosen["size"])
+                if len(data) != chosen["size"] or data[:4] not in _MACHO_THIN_MAGICS:
+                    raise ValueError("dilim %s Mach-O değil ya da kesik" % chosen["arch"])
+                thin_path.write_bytes(data)
+            except (OSError, ValueError) as exc:
+                reason = "dilim %s çıkarılamadı: %s" % (chosen["arch"], exc)
+                thin_path = None
+        record: dict[str, Any] = {
+            "slices": [{k: s[k] for k in ("arch", "cputype", "cpusubtype", "offset", "size")}
+                       for s in slices],
+            "selected": chosen["arch"] if thin_path is not None else None,
+            "path": thin_path.name if thin_path is not None else None,
+            "error": reason,
+        }
+        try:
+            workspace.save_json("static", "universal_slice", record)
+        except Exception as exc:  # pragma: no cover - savunma
+            logger.warning("universal_slice.json yazilamadi (%s): %s", static_dir, exc)
+        if thin_path is None:
+            stats["universal_slice"] = None
+            stats["universal_slice_error"] = reason
+            errors.append("Evrensel ikiliden dilim seçilemedi (%s); şişman dosya analiz edildi"
+                          % reason)
+            logger.warning("Evrensel ikili: dilim secilemedi: %s", reason)
+            return None
+        stats["universal_slice"] = chosen["arch"]
+        logger.info("Evrensel ikili: %s dilimi secildi (%s) -> %s",
+                    chosen["arch"], ", ".join(stats["universal_slices"]), thin_path)
+        return thin_path
 
     @staticmethod
     def _record_ghidra_outcome(

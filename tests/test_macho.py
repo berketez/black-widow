@@ -1322,11 +1322,11 @@ class TestDeobfuscate:
 
 
 class TestUniversalBinaryLipo:
-    """`analyze_static` icindeki lipo thin dispatch dali (macho.py:127-151).
+    """`analyze_static` icindeki evrensel ikili dilim secimi (P16a; eskiden lipo thin dali).
 
     Senaryolar:
-        - lipo arm64 basarisiz -> x86_64 fallback basarili
-        - lipo timeout -> errors listesinde + orijinal binary kullanilir
+        - x86_64 + arm64e -> arm64e secilir, dosya adi gercek mimari
+        - fat basligi okunamaz -> errors listesinde + orijinal binary kullanilir
     """
 
     def _make_universal_target(
@@ -1410,72 +1410,51 @@ class TestUniversalBinaryLipo:
             _BIFake, raising=True,
         )
 
-    def test_macho_universal_lipo_arm64_then_x86_64_fallback(
+    def test_macho_universal_secilen_dilim_analiz_edilir(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        config: Config,
+    ) -> None:
+        """P16a: fat başlığı okunur; x86_64 + arm64e varken arm64e seçilir, adı doğru.
+
+        Eski davranış (lipo -thin arm64 → x86_64 yedeği, dosya adı hep ``_arm64``) yerine.
+        """
+        from tests.test_p16a_evrensel_dilim import ARM64E, X86_64, _fat, _ince
+
+        self._patch_basic_pipeline(monkeypatch)
+        fat = tmp_path / "evrensel"
+        fat.write_bytes(_fat([(X86_64, _ince(b"x86")), (ARM64E, _ince(b"arm64e"))]))
+
+        analyzer = MachOAnalyzer(config)
+        ws = _make_workspace(tmp_path)
+        target = self._make_universal_target(fat)
+        result = analyzer.analyze_static(target, ws)
+
+        assert result.stats.get("universal_slice") == "arm64e"
+        assert result.stats.get("universal_slices") == ["x86_64", "arm64e"]
+        dilim = ws.get_stage_dir("raw") / "evrensel_arm64e"
+        assert dilim.read_bytes() == _ince(b"arm64e")
+        assert not (ws.get_stage_dir("raw") / "evrensel_arm64").exists()
+
+    def test_macho_universal_bozuk_baslik_kaydedilir(
         self,
         monkeypatch: pytest.MonkeyPatch,
         sample_macho_file: Path,
         tmp_path: Path,
         config: Config,
     ) -> None:
-        """Arm64 lipo basarisiz, x86_64 basarili."""
+        """Fat başlığı okunamazsa durum açık: hata listesinde + şişman dosyayla devam."""
         self._patch_basic_pipeline(monkeypatch)
-
-        # subprocess.run: ilk cagri (arm64) returncode=1, ikinci (x86_64) =0
-        call_count = {"n": 0}
-
-        def _fake_run(cmd: Any, **kwargs: Any) -> Any:
-            call_count["n"] += 1
-            # cmd: ["lipo", binary, "-thin", arch, "-output", thin_path]
-            arch = cmd[3] if len(cmd) > 3 else ""
-            if arch == "arm64":
-                return _FakeRunResult(
-                    returncode=1, stdout="",
-                    stderr="lipo: arm64 slice not found",
-                )
-            if arch == "x86_64":
-                # Sahte slice dosyasini fiilen olustur
-                thin_out = Path(cmd[5])
-                thin_out.parent.mkdir(parents=True, exist_ok=True)
-                thin_out.write_bytes(b"x86_64-thin")
-                return _FakeRunResult(returncode=0, stdout="", stderr="")
-            return _FakeRunResult(returncode=2)
-
-        import subprocess as _subprocess
-        monkeypatch.setattr(_subprocess, "run", _fake_run, raising=True)
 
         analyzer = MachOAnalyzer(config)
         ws = _make_workspace(tmp_path)
         target = self._make_universal_target(sample_macho_file)
         result = analyzer.analyze_static(target, ws)
 
-        assert call_count["n"] == 2, "Hem arm64 hem x86_64 denenmeli"
-        # x86_64 basarili oldugu icin stats'a yazilmali
-        assert result.stats.get("lipo_thin") == "x86_64"
-
-    def test_macho_universal_lipo_timeout_recorded(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        sample_macho_file: Path,
-        tmp_path: Path,
-        config: Config,
-    ) -> None:
-        """lipo TimeoutExpired -> errors listesi + pipeline devam."""
-        self._patch_basic_pipeline(monkeypatch)
-
-        import subprocess as _subprocess
-
-        def _fake_run_timeout(cmd: Any, **kwargs: Any) -> Any:
-            raise _subprocess.TimeoutExpired(cmd=list(cmd), timeout=30)
-
-        monkeypatch.setattr(_subprocess, "run", _fake_run_timeout, raising=True)
-
-        analyzer = MachOAnalyzer(config)
-        ws = _make_workspace(tmp_path)
-        target = self._make_universal_target(sample_macho_file)
-        result = analyzer.analyze_static(target, ws)
-
-        # Errors listesinde lipo mesaji var
-        assert any("lipo thin hatasi" in e for e in result.errors)
+        assert any("dilim seçilemedi" in e for e in result.errors)
+        assert result.stats.get("universal_slice") is None
+        assert "fat" in result.stats.get("universal_slice_error", "")
         # Orijinal binary yine raw kopyalandi
         assert "raw_binary" in result.artifacts
 
