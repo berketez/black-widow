@@ -168,6 +168,30 @@
       "test": "tests/test_p05b_yayilim.py::test_yorumdaki_cagri_metni_ad_vermez",
       "find": "            if not text.startswith('\"') or callee not in text:\n                continue\n            body = text[1:-1]",
       "replace": "            if callee not in text:\n                continue\n            body = text[2:-2]"
+    },
+    {
+      "id": "p05b_k4_iki_yonlu_alt_dizgi",
+      "desc": "K4: eski iki yönlü alt dizgi kuralı geri gelir (kısa adlı çağıran ipucu alır)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_ipucu.py::test_ipucu_kisa_cagirana_ad_vermez",
+      "find": "                    if _caller_matches_hint(caller, hint_name):",
+      "replace": "                    if (hint_name.replace(\"_\", \"\") in caller.lower().replace(\"_\", \"\")\n                            or caller.lower().replace(\"_\", \"\") in hint_name.replace(\"_\", \"\")):"
+    },
+    {
+      "id": "p05b_k4_ardisik_degil",
+      "desc": "K4: belirteçler ardışık aranmaz (küme kapsaması: global_assemble eşleşir)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_ipucu.py::test_ipucu_tam_belirtec",
+      "find": "    return any(tokens[i:i + n] == hint for i in range(len(tokens) - n + 1))",
+      "replace": "    return set(hint) <= set(tokens)"
+    },
+    {
+      "id": "p05b_k4_camel_bolunmez",
+      "desc": "K4: küçük → büyük harf geçişinde bölünmez (assembleGlobal eşleşmez)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_ipucu.py::test_ad_belirtecleri",
+      "find": "_NAME_TOKEN_RE = re.compile(r\"[A-Z]?[a-z0-9]+|[A-Z]+(?![a-z])\")",
+      "replace": "_NAME_TOKEN_RE = re.compile(r\"[A-Za-z0-9]+\")"
     }
   ]
 }

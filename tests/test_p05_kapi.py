@@ -212,8 +212,8 @@ def test_yayilim_yalniz_cagiranin_degiskeninden():
 
 
 def test_rapordaki_birim_ornegi_ad_uretmez():
-    # Çağıran FUN_ adlı: CALLER_NAME_HINTS'in iki yönlü alt dizgi kuralı (kapsam dışı; P05.md)
-    # kısa adlı çağıranda ("g" ⊂ "assembleglobal") ipucu verir; burada sınanan yayılım.
+    # Çağıran FUN_ adlı: burada sınanan yayılım. CALLER_NAME_HINTS artık tam belirteç
+    # eşleşmesiyle (P05b K4; kısa adlı çağıran ipucu almaz): tests/test_p05b_ipucu.py.
     caller = (
         "void FUN_00109000(long a,long b,long c)\n{\n  FUN_x(a,(uint64_t)b,0xff,c != 0);\n"
         "  return;\n}\n"

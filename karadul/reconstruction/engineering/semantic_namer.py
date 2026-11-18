@@ -1079,6 +1079,36 @@ CALLER_NAME_HINTS: dict[str, dict[int, str]] = {
     "write_output":          {0: "filename", 1: "data_in", 2: "n_size"},
 }
 
+# Ad belirteçleri: ``_`` ve küçük → büyük harf geçişinde bölünür (P05b K4)
+_NAME_TOKEN_RE = re.compile(r"[A-Z]?[a-z0-9]+|[A-Z]+(?![a-z])")
+
+
+def _name_tokens(name: str) -> tuple[str, ...]:
+    """Adın küçük harf belirteçleri: ``my_assembleGlobal`` → ``("my", "assemble", "global")``."""
+    out: list[str] = []
+    for part in name.strip("_").split("_"):
+        out.extend(t.lower() for t in _NAME_TOKEN_RE.findall(part))
+    return tuple(out)
+
+
+_CALLER_HINT_TOKENS: dict[str, tuple[str, ...]] = {
+    hint: _name_tokens(hint) for hint in CALLER_NAME_HINTS
+}
+
+
+def _caller_matches_hint(caller: str, hint_name: str) -> bool:
+    """İpucu adının belirteç dizisi çağıranın belirteç dizisinde ardışık geçiyor mu (P05b K4).
+
+    ``my_assemble_global_v2`` ↔ ``assemble_global`` evet; ``g`` ↔ ``assemble_global`` hayır
+    (eski iki yönlü alt dizgi kuralı evet diyordu); ``matvecmul`` ↔ ``matvec`` hayır.
+    """
+    hint = _CALLER_HINT_TOKENS.get(hint_name) or _name_tokens(hint_name)
+    tokens = _name_tokens(caller)
+    n = len(hint)
+    if not n or n > len(tokens):
+        return False
+    return any(tokens[i:i + n] == hint for i in range(len(tokens) - n + 1))
+
 
 # ---------------------------------------------------------------------------
 # Strateji 4: Tip + Kullanim oruntu sablonlari
@@ -3112,9 +3142,9 @@ class SemanticParameterNamer:
                 if param_pos not in hint_map:
                     continue
                 for caller in callers:
-                    caller_lower = caller.lower().replace("fun_", "").replace("_", "")
-                    hint_lower = hint_name.lower().replace("_", "")
-                    if hint_lower in caller_lower or caller_lower in hint_lower:
+                    # P05b K4: tam belirteç eşleşmesi (eski iki yönlü alt dizgi kuralında kısa
+                    # adlı çağıran ``g`` ``assembleglobal``'in alt dizgisi olduğu için ipucu alıyordu)
+                    if _caller_matches_hint(caller, hint_name):
                         options.append((
                             base, hint_map[param_pos],
                             f"Caller hint: {caller} matches pattern '{hint_name}', arg {param_pos}",
