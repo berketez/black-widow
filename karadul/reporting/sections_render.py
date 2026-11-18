@@ -166,19 +166,24 @@ def _rows(sec: Section) -> tuple[list[str], list[list[str]]]:
         return head, rows
     if k == "compositions":
         head = ["Composition", "Pattern", "Domain", "Score (uncalibrated)", "Stages: functions"]
-        rows = []
-        for c in sec.items:
-            parts = []
-            for s in c.get("stages") or []:
-                if not isinstance(s, dict):
-                    continue
-                funcs = [str(f) for f in (s.get("functions") or [])]
-                shown = ", ".join(funcs[:6]) + (f" +{len(funcs) - 6}" if len(funcs) > 6 else "")
-                parts.append(f"{s.get('name', '?')}: {shown or 'no function recorded'}")
-            rows.append([str(c.get("name", "?")), str(c.get("pattern") or "-"), str(c.get("domain") or "-"),
-                         _conf(c.get("confidence", 0.0)), " -> ".join(parts)[:400]])
+        rows = [[str(c.get("name", "?")), str(c.get("pattern") or "-"), str(c.get("domain") or "-"),
+                 _conf(c.get("confidence", 0.0)), _composition_stages(c)]
+                for c in sec.items]
         return head, rows
     return [], []
+
+
+def _composition_stages(c: dict[str, Any]) -> str:
+    """Bileşim aşamaları ve her aşamanın fonksiyonları (JSON'da aşama başına ``functions``
+    listesi; eski raporlayıcı olmayan ``function_name`` alanını okuyup "?" basıyordu)."""
+    parts = []
+    for s in c.get("stages") or []:
+        if not isinstance(s, dict):
+            continue
+        funcs = [str(f) for f in (s.get("functions") or [])]
+        shown = ", ".join(funcs[:6]) + (f" +{len(funcs) - 6}" if len(funcs) > 6 else "")
+        parts.append(f"{s.get('name', '?')}: {shown or 'no function recorded'}")
+    return " -> ".join(parts)[:400]
 
 
 def _limited(rows: list[list[str]]) -> tuple[list[list[str]], int]:
@@ -247,6 +252,24 @@ def section_markdown(sec: Section, result: Any) -> list[str]:
             lines += [">", f"> {x}"]
         lines += [">", f"> Gerçek analiz için önce paketi açın: `{cmd}`, sonra açılmış binary'i "
                   "yeniden analiz edin.", ""]
+    if sec.key == "compositions" and sec.has_items:
+        # Masum ikili kapısının "bilesim" katmanı (scripts/measurement/masum_kapi.py) bu biçimi
+        # okur: "### Algorithm Compositions" alt başlığı + "- **ad** (desen, confidence: N%)".
+        # Biçim değişirse kapı kör olur (iddia 0 görünür); tablo yerine bu liste korunur.
+        lines += [f"### Algorithm Compositions ({len(sec.items)} reported)", ""]
+        shown = sec.items[:MAX_TABLE_ROWS]
+        for c in shown:
+            try:
+                pct = f"{float(c.get('confidence', 0.0)):.0%}"
+            except (TypeError, ValueError):
+                pct = "?%"
+            lines.append(f"- **{c.get('name', '?')}** ({c.get('pattern') or 'pipeline'}, "
+                         f"confidence: {pct}) — uncalibrated score, domain {c.get('domain') or '-'}")
+            lines.append(f"  - Stages: {_composition_stages(c)}")
+        if len(sec.items) > len(shown):
+            lines.append(f"*{len(sec.items) - len(shown)} more in `{sec.source}`*")
+        lines.append("")
+        return lines
     if sec.has_items:
         head, rows = _rows(sec)
         if head:

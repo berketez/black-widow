@@ -244,11 +244,29 @@ def test_bilesim_alanlari_ve_bekleyen(tmp_path):
     assert "pipeline" in bolum
 
 
+def _masum_kapi():
+    import importlib.util
+
+    yol = Path(__file__).resolve().parents[1] / "scripts" / "measurement" / "masum_kapi.py"
+    spec = importlib.util.spec_from_file_location("masum_kapi_p07", yol)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def test_bilesim_eski_kayitta_ithal_fonksiyonlar_gorunur(tmp_path):
+    """Eski (P04a öncesi) kayıtta şablon iddiaları görünür kalır, aşama fonksiyonlarıyla; ve
+    masum ikili kapısının "bilesim" katmanı Markdown'u hâlâ okuyabilir (kapı kör olmaz)."""
     sonuc, ws = _kur("head_cat", tmp_path)
-    bolum = _md_bolum(_uret(sonuc, ws)["md"], "Algorithm Compositions")
-    assert "Matrix Solve Pipeline | pipeline" in bolum
-    assert "Allocate: realloc, malloc -> Factor: fflush -> Free: free" in bolum
+    md = _uret(sonuc, ws)["md"]
+    assert "Allocate: realloc, malloc -> Factor: fflush -> Free: free" in md
+    kapi = _masum_kapi()
+    bolum = kapi._BILESIM_BOLUMU.search(md)
+    assert bolum is not None
+    satirlar = kapi._BILESIM_SATIRI.findall(bolum.group(1))
+    assert ("Matrix Solve Pipeline", "pipeline", "48") in satirlar
+    assert {s[0] for s in satirlar} == {"Matrix Solve Pipeline", "Transient CFD Time-Stepping",
+                                        "Rocket / Trajectory Simulation Loop"}
 
 
 
