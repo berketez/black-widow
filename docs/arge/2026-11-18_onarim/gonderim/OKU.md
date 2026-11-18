@@ -30,6 +30,8 @@ Ana oturumun ajanlara verdiği paket metinleri. Oturuma özel geçici dizin sili
 `bekci.py` — CLAUDE.md §27 takılma bekçisi: `python3 bekci.py P18=<ajan_id> P20=<ajan_id> …`, Monitor ile (30 dk'da bir yeniden kurulur). Alt ajan transcript dizini oturuma özeldir: `BEKCI_OTURUM_DIZINI` verilmezse en son değişen oturumun `subagents` dizini alınır.
 
 ## Atanmamış bulgular (gönderimden önce bir pakete yazılacak)
+- **`tarif/evidence.py:80-85`** (P22a yan bulgusu): çağrı argümanındaki dizgi sabitinde geçen `FUN_…` metni geri çağrı sayılıyor; gerçek veride 891 kayıtta 0, ama düşman ikili kanıt paketine sahte geri çağrı ilişkisi sokabilir. Onarım pilotun kanıtını da değiştirir → P12b'ye (tarif/** onun), ölçümle.
+- **P22b'ye:** yeni görev türleri `gorev_turu`'yu sabit `TASK_NAME` ile yazan satırı değiştirmeli (P22a notu). **P22d'ye:** yeni adres alanı gelirse `events.TOUCH_*` kuralı (events.py P22a'nın; yama). **P22e'ye:** `iptal` olayını oturum yaysın (ajan yaymıyor).
 - **İmza veritabanının adsız fonksiyonlara verdiği adlar** (P11 ölçümü): `call_pattern` 0 / 76, `string_ref` 0 / 132 doğru (12 Debian ikilisi); `read_env_var`, `verify_certificate` gibi betimleyici tahminler, güven 0,56–0,86. Ad haritasına girip girmediği, raporda / arayüzde / `signature_matches.json`'da nasıl göründüğü bakılmadı. K-2: kanal susturulmaz, düzeltilir. Dosya `analyzers/signature_db.py` → P15b'ye eklenebilir (o paketin dosyası) ya da ayrı paket.
 - **P15b'ye:** `batch.py` `Config.load` / `--config` (P14 dokunmadı; satır 203-204).
 - **MaxSMT kapsamı** (P11): `binary_reconstruction.pcode_selective_ops`'a `CAST` / `PTRSUB` eklemek erişimlerin %37'sini çözülebilir kılar ama P-code'un öbür tüketicilerini etkiler → ayrı ön kayıtlı ölçüm (`config.py` P15b'nin).
