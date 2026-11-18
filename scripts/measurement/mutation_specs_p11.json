@@ -104,6 +104,126 @@
       "test": "tests/test_p11_maxsmt.py::test_isaretli_sabit",
       "find": "    if value >= 1 << (bits - 1):\n        value -= 1 << bits",
       "replace": "    if value >= 1 << (bits + 1) :\n        value -= 1 << bits"
+    },
+    {
+      "id": "p11_k2_instr_histogram",
+      "desc": "düğüm histogramı yine komut sayısından",
+      "module": "karadul/pipeline/steps/cfg_iso_match.py",
+      "test": "tests/test_p11_cfg_iso.py::test_histogram_gercek_komut_adlarindan",
+      "find": "            mnemonic_histogram=dict(Counter(mnems)),",
+      "replace": "            mnemonic_histogram={\"instr\": ic} if ic else {},"
+    },
+    {
+      "id": "p11_k2_sahte_histogram",
+      "desc": "dökümsüz blokta boş histogram kurulur",
+      "module": "karadul/pipeline/steps/cfg_iso_match.py",
+      "test": "tests/test_p11_cfg_iso.py::test_dokumsuz_blokta_sahte_histogram_kurulmaz",
+      "find": "            if ic > 0:\n                return None",
+      "replace": "            if ic < -1:\n                return None"
+    },
+    {
+      "id": "p11_k2_dokumsuz_blok",
+      "desc": "dökümsüz bloklar haritaya boş liste olarak girer",
+      "module": "karadul/pipeline/steps/cfg_iso_match.py",
+      "test": "tests/test_p11_cfg_iso.py::test_dokum_okunur_dokumsuz_blok_girmez",
+      "find": "            if isinstance(b.get(\"mnemonics\"), list)",
+      "replace": "            if True"
+    },
+    {
+      "id": "p11_k2_uyumluluk",
+      "desc": "uyumluluk denetimi yok (sentetik bankada 'çalıştı, 0')",
+      "module": "karadul/pipeline/steps/cfg_iso_match.py",
+      "test": "tests/test_p11_cfg_iso.py::test_adim_sentetik_bankayla_desteklenmiyor",
+      "find": "                if any(_hist_key(n.mnemonic_histogram) in node_hists for n in q.nodes)",
+      "replace": "                if True"
+    },
+    {
+      "id": "p11_k2_fonksiyon_hatasi",
+      "desc": "fonksiyon hatası sayılmaz",
+      "module": "karadul/pipeline/steps/cfg_iso_match.py",
+      "test": "tests/test_p11_cfg_iso.py::test_adim_fonksiyon_hatasi_sayilir",
+      "find": "                    fn_hata += 1\n",
+      "replace": "                    pass\n"
+    },
+    {
+      "id": "p11_k2_vf2_sure",
+      "desc": "VF2 süre sınırı denetlenmez",
+      "module": "karadul/computation/cfg_iso/vf2_matcher.py",
+      "test": "tests/test_p11_cfg_iso.py::test_vf2_sure_siniri_sureci_icinde_keser",
+      "find": "        if time.monotonic() > deadline:",
+      "replace": "        if time.monotonic() > deadline * 1e6:"
+    },
+    {
+      "id": "p11_k2_json_kaynak",
+      "desc": "JSON şablonları kaynak etiketi taşımaz",
+      "module": "karadul/computation/cfg_iso/template_db.py",
+      "test": "tests/test_p11_cfg_iso.py::test_banka_kaynagi_etiketli",
+      "find": "        source=SOURCE_JSON_SYNTHETIC,\n",
+      "replace": ""
+    },
+    {
+      "id": "p11_k2_eslesme_kaynagi",
+      "desc": "eşleşme şablon kaynağını taşımaz",
+      "module": "karadul/computation/cfg_iso/matcher.py",
+      "test": "tests/test_p11_cfg_iso.py::test_adim_gercek_sablonla_calisti_adres_anahtari",
+      "find": "            template_source=getattr(template, \"source\", \"\"),\n",
+      "replace": ""
+    },
+    {
+      "id": "p11_k3_ad_anahtari",
+      "desc": "imza kanıtı yine ada göre anahtarlanır",
+      "module": "karadul/pipeline/steps/computation_fusion.py",
+      "test": "tests/test_p11_fuzyon.py::test_iki_kaynak_ayni_adreste_tek_adayda_birlesir",
+      "find": "        out.setdefault(address, []).append(Evidence(\n            source=f\"imza:{method}\"",
+      "replace": "        out.setdefault(original, []).append(Evidence(\n            source=f\"imza:{method}\""
+    },
+    {
+      "id": "p11_k3_jenerik_suzgec",
+      "desc": "adı olan fonksiyonun imzası da aday",
+      "module": "karadul/pipeline/steps/computation_fusion.py",
+      "test": "tests/test_p11_fuzyon.py::test_adli_fonksiyon_ve_adressiz_imza_aday_degil",
+      "find": "        if not name or not address or not original.startswith(_GENERIC_PREFIXES):",
+      "replace": "        if not name or not address:"
+    },
+    {
+      "id": "p11_k3_bagimsizlik",
+      "desc": "iki kaynağın alt sınırlarından küçüğü (ya da çarpım) alınır",
+      "module": "karadul/computation/fusion/measured.py",
+      "test": "tests/test_p11_fuzyon.py::test_olasilik_olculmus_alt_sinirdan_bagimsizlik_varsayilmaz",
+      "find": "                fn.probability = round(max(float(p) for p in measured), 4)",
+      "replace": "                fn.probability = round(min([float(p) for p in measured]), 4)"
+    },
+    {
+      "id": "p11_k3_olculmemis",
+      "desc": "ölçülmemiş kaynağa uydurma olasılık",
+      "module": "karadul/computation/fusion/measured.py",
+      "test": "tests/test_p11_fuzyon.py::test_olculmemis_kaynak_cekimser_ve_olasilik_yok",
+      "find": "            if not measured:\n                fn.reason",
+      "replace": "            if not measured:\n                fn.probability = 0.5\n                fn.reason"
+    },
+    {
+      "id": "p11_k3_celiski",
+      "desc": "çelişen adlar kabul edilir",
+      "module": "karadul/computation/fusion/measured.py",
+      "test": "tests/test_p11_fuzyon.py::test_celisen_kabul_adlari_cekimser",
+      "find": "        if accepted and len(rivals) > 1:",
+      "replace": "        if accepted and len(rivals) > 99:"
+    },
+    {
+      "id": "p11_k3_ad_kanali_bayragi",
+      "desc": "kabul edilen adlar bayraksız ad kanalına gider",
+      "module": "karadul/pipeline/steps/computation_fusion.py",
+      "test": "tests/test_p11_fuzyon.py::test_adim_aday_yapiti_ad_kanalina_bagli_degil",
+      "find": "            ] if naming_on else []",
+      "replace": "            ]"
+    },
+    {
+      "id": "p11_k3_sifir_kesinlik",
+      "desc": "ölçülmüş kesinliği 0 olan kaynak reddedilmez",
+      "module": "karadul/computation/fusion/measured.py",
+      "test": "tests/test_p11_fuzyon.py::test_olcumu_sifir_kaynak_reddedilir",
+      "find": "                elif fn.probability < reject_threshold:",
+      "replace": "                elif fn.probability < -1.0:"
     }
   ]
 }

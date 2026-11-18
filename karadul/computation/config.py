@@ -71,6 +71,12 @@ class ComputationConfig:
     # v1.10.0: Berke karari "ship it" -- default AKTIF. Kapatmak icin
     # cli.py --no-computation-fusion veya YAML computation.enable_computation_fusion: false.
     enable_computation_fusion: bool = True
+    # P11 (K-1): füzyonun KABUL ettiği adların ad kanalına (``fusion_name_candidates``
+    # yapıtı) verilmesi. Öntanım KAPALI: kabul olasılığı kaynağın ölçülmüş
+    # kesinliği (``karadul/computation/fusion/measured_precision.py``); bugün
+    # ölçülmüş kaynakların hiçbiri kabul eşiğini geçmiyor. Kapalıyken füzyon
+    # yalnız aday dosyası yazar (reconstructed/computation_fusion_candidates.json).
+    enable_fusion_naming: bool = False
 
     # --- CFG Isomorphism feature flag pass-through ---
     # Eski ``ComputationRecoveryConfig.enable_cfg_iso`` Computation (cfg_iso_match

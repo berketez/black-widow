@@ -1,0 +1,16 @@
+--- a/ui/server.py
++++ b/ui/server.py
+@@ -742,8 +742,11 @@
+     cfm = rs.get("computation_fusion_matches")
+     cfa = rs.get("computation_fusion_accepted") or 0
+     if cfm and not cfa:
+-        signals.append(f"Bu binary genelinde hesaplama füzyonu hiçbir fonksiyona isim "
+-                       f"veremedi ({cfm} aday üretildi, hiçbiri güven eşiğini geçemedi)")
++        # P11 / BORU-03: füzyon adı ad kanalına yalnız computation.enable_fusion_naming
++        # açıkken verir; kabul olasılığı kaynağın ölçülmüş kesinliğidir.
++        signals.append(f"Bu binary genelinde hesaplama füzyonu hiçbir adı kabul etmedi "
++                       f"({cfm} adreste aday; kabul, kaynağın ölçülmüş kesinliğine bağlı ve "
++                       f"füzyon öntanımda ad haritasına bağlı değil)")
+ 
+     # verdict + insan-okunur neden
+     if strong_bsim:
