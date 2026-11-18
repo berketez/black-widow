@@ -67,29 +67,50 @@ class ProjectBuildStep(Step):
         pc.report_progress("Project Build...", 0.85)
 
         step_start = time.monotonic()
+        # P-S1 / BORU-05: proje yolu yalniz kurulum basariliysa doner ve yapit
+        # olarak kaydedilir; aksi halde None + hata + ``project_build_status``.
         project_dir: Path | None = None
+        built = False
 
         try:
             from karadul.reconstruction.c_project_builder import CProjectBuilder
             reconstructed_dir = pc.workspace.get_stage_dir("reconstructed")
             builder = CProjectBuilder(pc.config)
-            project_dir = reconstructed_dir / "project"
+            target_dir = reconstructed_dir / "project"
             build_result = builder.build(
                 source_dir=decompiled_dir,
-                output_dir=project_dir,
+                output_dir=target_dir,
                 workspace=pc.workspace,
                 algorithm_results=algo_result,
             )
             if build_result.success:
+                built = True
+                project_dir = target_dir
                 ctx.stats["project_files"] = build_result.files_written
                 ctx.produce_artifact("project_dir", project_dir)
                 logger.info(
                     "Project built: %d dosya", build_result.files_written,
                 )
             _record_build_report(ctx, build_result)
+            if not built:
+                build_errors = getattr(build_result, "errors", None)
+                if not (isinstance(build_errors, (list, tuple)) and build_errors):
+                    # Kurucu nedensiz basarisiz dondu: hata yine kayda gecsin.
+                    ctx.errors.append(
+                        "C project build basarisiz (kurucu neden bildirmedi)",
+                    )
+                ctx.stats["project_build_status"] = "hata"
+                ctx.stats["project_build_status_reason"] = (
+                    f"kurucu basarisiz dondu ({getattr(build_result, 'files_written', '?')} "
+                    f"dosya yazildi)"
+                )
         except Exception as exc:
             logger.warning("C project build hatasi: %s", exc)
             ctx.errors.append(f"C project build hatasi: {exc}")
+            ctx.stats["project_build_status"] = "hata"
+            ctx.stats["project_build_status_reason"] = f"{type(exc).__name__}: {exc}"
+        if built:
+            ctx.stats["project_build_status"] = "calisti"
 
         timing = round(time.monotonic() - step_start, 1)
         ctx.stats["timing_project_build"] = timing

@@ -25,10 +25,13 @@ def base_ctx(fake_pc):
     ctx = StepContext(pipeline_context=fake_pc)
     # v1.14.0 Dalga 0: artifact'lar produce_artifact ile yeni kanala yazilir
     ctx.produce_artifact("x", "path_x")
+    # P-S1 / BORU-05: basari = proje kuruldu (project_dir yapiti) VE C adlandirma hatasiz
+    ctx.produce_artifact("project_dir", Path("/tmp/project"))
     ctx._write_artifacts({
         "deep_tracing_result": {},
         "engineering_analysis_result": None,
         "project_dir": Path("/tmp/project"),
+        "naming_result": MagicMock(success=True, errors=[]),
         "__stage_name": "binary_reconstruction",
         "__pipeline_start": time.monotonic() - 2.0,
     })
@@ -52,6 +55,10 @@ class TestBasicRun:
         assert "x" in sr.artifacts
         assert sr.success is True
         assert "onceki hata" in sr.errors
+        # Basarili ama bir adim hata bildirdi -> kismi (P-S1 / BORU-05)
+        assert sr.stats["partial"] is True
+        assert sr.stats["partial_reasons"] == ["onceki hata"]
+        assert sr.stats["reconstruct_status"] == "kismi"
 
 
 class TestEmptyArtifacts:

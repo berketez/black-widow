@@ -133,10 +133,13 @@ class TestFinalizeReadsStageArtifacts:
         """produce_artifact ile yazilan artifact'lar finalize'da StageResult'a."""
         ctx = StepContext(pipeline_context=fake_pc)
         ctx.produce_artifact("my_output", Path("/tmp/output.json"))
+        # P-S1 / BORU-05: basari = project_dir yapiti VE C adlandirma hatasiz
+        ctx.produce_artifact("project_dir", Path("/tmp/proj"))
         ctx._write_artifacts({
             "deep_tracing_result": {},
             "engineering_analysis_result": None,
             "project_dir": Path("/tmp/proj"),
+            "naming_result": MagicMock(success=True, errors=[]),
             "__stage_name": "binary_reconstruction",
             "__pipeline_start": time.monotonic() - 1.0,
         })

@@ -208,6 +208,62 @@
       "test": "tests/test_ps1_kapsayici.py::test_synthetic_wheel_is_skipped_not_js",
       "find": "stage_name=self.name, success=False, skipped=True,",
       "replace": "stage_name=self.name, success=True, skipped=False,  # yanlis"
+    },
+    {
+      "id": "basari_yapit_sayisi_asama",
+      "desc": "BORU-05: stages.py başarıyı yine 'en az bir yapıt var mı'dan hesaplar",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_basari.py::TestExecuteBinary::test_failed_project_build_is_stage_failure",
+      "find": "            _finalize_binary_outcome(_stage_result, naming_result, context.config)",
+      "replace": "            _stage_result.success = len(_stage_result.artifacts) > 0  # eski"
+    },
+    {
+      "id": "basari_yapit_sayisi_finalize",
+      "desc": "BORU-05: finalize başarıyı yapıt sayısından hesaplar",
+      "module": "karadul/pipeline/steps/finalize.py",
+      "test": "tests/test_ps1_basari.py::TestFinalizeStep::test_artifact_without_project_is_not_success",
+      "find": "        success = outcome[\"success\"]",
+      "replace": "        success = len(artifacts) > 0  # eski"
+    },
+    {
+      "id": "olcut_proje_aranmaz",
+      "desc": "BORU-05: proje kurulmasa da başarılı",
+      "module": "karadul/pipeline/steps/finalize.py",
+      "test": "tests/test_ps1_basari.py::TestOutcome::test_only_anti_debug_artifact_is_failure",
+      "find": "    if not project_built:",
+      "replace": "    if not project_built and False:"
+    },
+    {
+      "id": "olcut_adlandirma_yoklugu",
+      "desc": "BORU-05: adlandırma sonucu yokken neden yanlış yazılır",
+      "module": "karadul/pipeline/steps/finalize.py",
+      "test": "tests/test_ps1_basari.py::TestOutcome::test_naming_missing_is_failure",
+      "find": "    elif naming_result is None:",
+      "replace": "    elif naming_result is None and False:"
+    },
+    {
+      "id": "olcut_kismi_yok",
+      "desc": "BORU-05: hata bildiren adım 'kismi' işaretlenmez",
+      "module": "karadul/pipeline/steps/finalize.py",
+      "test": "tests/test_ps1_basari.py::TestOutcome::test_errors_make_partial_dedup_capped",
+      "find": "    partial = success and bool(unique_errors)",
+      "replace": "    partial = False and bool(unique_errors)"
+    },
+    {
+      "id": "olcut_kapali_adlandirma_hata",
+      "desc": "BORU-05: ayarla kapatılan adlandırma başarısızlık sayılır",
+      "module": "karadul/pipeline/steps/finalize.py",
+      "test": "tests/test_ps1_basari.py::TestOutcome::test_naming_disabled_is_not_failure",
+      "find": "    if not naming_enabled:",
+      "replace": "    if False:  # bayrak yok sayilir"
+    },
+    {
+      "id": "proje_hatasi_kaydedilmez",
+      "desc": "BORU-05: nedensiz başarısız kurulum hata ve durum yazmaz",
+      "module": "karadul/pipeline/steps/project_build.py",
+      "test": "tests/test_ps1_basari.py::TestProjectBuildStep::test_failed_build_returns_no_dir_and_records",
+      "find": "            if not built:",
+      "replace": "            if False:  # kayit yok"
     }
   ]
 }

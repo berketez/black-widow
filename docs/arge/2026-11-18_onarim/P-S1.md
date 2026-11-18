@@ -10,9 +10,9 @@
 |---|---|---|
 | 1 — IMZA-15 + P03 yaması | bitti | cc452bc |
 | 2 — ARAYUZ-17 kayıt | bitti | c248ad2 |
-| 3 — P19 yaması | bitti | (bu commit) |
+| 3 — P19 yaması | bitti | 8e46604 |
 | 4 — capa K-1 bayrağı | bitti | 7b05980 |
-| 5 — BORU-05 | bekliyor | |
+| 5 — BORU-05 | bitti | (bu commit) |
 
 ## Ortak durum sözlüğü (P-S1; P03 ile aynı dizgiler)
 
@@ -133,3 +133,24 @@ Gerçek kapsayıcılar (K-8 seti; `once/kapsayici/`, `python -m karadul analyze 
 ### d. Test / mutasyon
 - Yeni `tests/test_ps1_kapsayici.py` (4 test): sentetik wheel (gerçek `TargetDetector`) → atlandı, JS hattı çağrılmadı, hata listesi boş; gerçek six wheel + humanizer nupkg → atlandı; kapsayıcı kanıtı olmayan düz zip eski yolu izler.
 - Mutasyon: 2 mutant (JS hattına düşer, "başarılı" görünür) **2/2 öldü**.
+
+## Kalem 5 — BORU-05: `reconstruct` başarı bayrağı
+
+### a. Göster (önce)
+- Gerçek çıktıda kusur görünmez: taban 119 koşunun 119'u `reconstruct.success=True`, 119'unda `project_dir` yapıtı var, 0 hata (sayıldı); bayrak ancak bir şey bozulunca yalan söyler. Kod: `stages.py` Faz 3 sonu `_stage_result.success = len(_stage_result.artifacts) > 0` ve `finalize.py` `success = len(artifacts) > 0`; anti_debug adımı JSON'unu her koşulda yapıt olarak kaydettiği için (kalem 1'den sonra kapalıyken bile) bu fiilen hep True. `project_build` kurulum başarısızken de `project_dir` yolunu döndürüyordu (yapıt kaydetmeden); kurucu nedensiz `success=False` dönerse hiçbir hata yazılmıyordu.
+- Hata enjekte (Ghidra'sız uçtan uca: `_execute_binary`'nin gerçek üç fazı, sahte koşucular, GERÇEK `project_build` + `finalize` adımları, kurucu `success=False` döndürecek biçimde taklit): eski kodda (mutant `basari_yapit_sayisi_asama` / `_finalize`) `reconstruct.success=True`; yeni kodda `False`, `reconstruct_status="basarisiz"`, `reconstruct_project_built=False`, `project_build_status="hata"`. Adlandırma sonucu yok (`naming_result=None`, C adlandırma açık) → eskiden True, şimdi False.
+
+### b. Onarım
+- `karadul/pipeline/steps/finalize.py` `reconstruct_outcome(...)` (tek ölçüt): başarı = `project_dir` yapıtı VAR **ve** C adlandırma hatasız (`naming_result.success is True`; adlandırma ayarla kapalıysa başarıyı düşürmez, `kapali` yazar). Başarılı ama `errors` boş değilse `partial`. `stats`'a: `reconstruct_status` (`tam` / `kismi` / `basarisiz`), `reconstruct_failure_reasons`, `partial` (bool), `partial_reasons` (tekil, en çok 20; tam liste `errors`'ta), `reconstruct_error_count`, `reconstruct_project_built`, `reconstruct_naming_status` (`calisti` / `hata` / `kapali`). `FinalizeStep` bunu Faz 3 görünümüyle uygular (`naming_result` Faz 2 tohumundan gelir).
+- `karadul/stages.py` `_finalize_binary_outcome`: Faz 1/2 hataları ve yapıtları birleştikten sonra aynı ölçütü yeniden uygular (`len(artifacts) > 0` satırı kalktı). Başarısızsa uyarı günlüğüne nedenler.
+- `karadul/pipeline/steps/project_build.py`: proje yolu yalnız kurulum başarılıysa döner ve yapıt olur; başarısızsa `None`, `project_build_status="hata"` + neden; kurucu neden bildirmediyse hata listesine "C project build basarisiz (kurucu neden bildirmedi)". Başarıda `project_build_status="calisti"`.
+- Sonuç: `PipelineResult.success` (`core/result.py`: başarısız aşama yoksa True) artık yarım koşuda False olur; CLI'ın sonuç çerçevesi sarıya döner. `karadul analyze`'ın çıkış kodu başarıya bağlı değil (`cli.py`'de `result.success`'e bağlı `sys.exit` yok), ölçüm koşucusu etkilenmez. `ReportStage` yalnız `identify`'a bağlı; reconstruct başarısız olsa da rapor üretilir.
+
+### c. Yeniden say
+Hata enjekte tablosu yukarıda. Gerçek koşu: "Ölçüm" bölümü (sağlıklı 4 koşuda `reconstruct.success` True kalmalı, `reconstruct_status` ve `partial` yazılmalı).
+
+### d. Test / mutasyon
+- Yeni `tests/test_ps1_basari.py` (18 test): ölçütün saf işlevi (tam, kısmi + tekilleştirme/20 sınırı, yalnız anti_debug yapıtı → başarısız, adlandırma yok / başarısız / kapalı, bayrak okuması), `FinalizeStep` (yapıt var proje yok → False), `ProjectBuildStep` (nedensiz başarısız → `None` + hata + durum; kurucunun hatası tekrarlanmaz; istisna; başarı), `_finalize_binary_outcome` (Faz 1/2 hatası → `partial`; Faz 2 adlandırma hatası → False), **`_execute_binary` uçtan uca** (kurulum başarısız → False; adlandırma çöktü → False; sağlıklı → True).
+- Eski semantiği kodlayan testler güncellendi: `tests/test_step_finalize.py` (fixture'a `project_dir` yapıtı ve `naming_result`; `partial` beklentisi), `tests/test_produce_artifact.py` (aynı), `tests/test_rapor_sayaclari.py` (üç faz koşum kalıbına `naming_result` ve `project_dir`; testlerin konusu sayaçlar, başarı yalnız koşum denetimi).
+- Mutasyon: 7 mutant (aşamada eski ölçüt, finalize'da eski ölçüt, proje aranmaz, adlandırma yokluğu nedeni, kısmi yok, kapalı adlandırma hata sayılır, nedensiz kurulum hatası yazılmaz) **7/7 öldü**.
+- Bu pakette değişmeyen ilgili kusur: `karadul/batch.py:223` toplu koşuda `pipeline_result.success or any(sr.success …)` — herhangi bir aşama başarılıysa ikili "başarılı" sayılıyor (BORU-05'in "toplu çalıştırma" etkisi orada sürüyor; dosya bu paketin değil).

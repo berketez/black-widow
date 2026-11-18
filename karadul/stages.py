@@ -391,6 +391,33 @@ def _run_capa_scan(context: PipelineContext, target: Any, stats: dict[str, Any])
     )
 
 
+def _finalize_binary_outcome(
+    stage_result: StageResult, naming_result: Any, config: Any,
+) -> None:
+    """Binary reconstruct sonucunun basarisini Faz 1-3 birlesmis haliyle yeniden hesapla.
+
+    P-S1 / BORU-05: eskiden ``success = len(artifacts) > 0`` idi (anti_debug
+    JSON'u her kosulda yapit oldugu icin fiilen hep True). Olcut finalize
+    adimindaki ``reconstruct_outcome``'tir (tek kaynak): proje kuruldu VE C
+    adlandirma hatasiz; Faz 1/2 hatalari ``partial`` nedenlerine katilir.
+    """
+    from karadul.pipeline.steps.finalize import c_naming_enabled, reconstruct_outcome
+
+    outcome = reconstruct_outcome(
+        artifacts=stage_result.artifacts,
+        errors=stage_result.errors,
+        naming_result=naming_result,
+        naming_enabled=c_naming_enabled(config),
+    )
+    stage_result.success = outcome["success"]
+    stage_result.stats.update(outcome["stats"])
+    if not stage_result.success:
+        logger.warning(
+            "reconstruct basarisiz: %s",
+            "; ".join(outcome["stats"]["reconstruct_failure_reasons"]),
+        )
+
+
 class StaticAnalysisStage(Stage):
     """Statik analiz stage'i.
 
@@ -5396,7 +5423,7 @@ class ReconstructionStage(Stage):
             _stage_result.stats = {**stats, **_stage_result.stats}
             _stage_result.errors = errors + _stage_result.errors
             _stage_result.artifacts = {**artifacts, **_stage_result.artifacts}
-            _stage_result.success = len(_stage_result.artifacts) > 0
+            _finalize_binary_outcome(_stage_result, naming_result, context.config)
             return _stage_result
 
         # =====================================================================

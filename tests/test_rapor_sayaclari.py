@@ -60,7 +60,8 @@ def _phase2_outcome(tmp_path: Path, convergence_reason: str | None) -> SimpleNam
     final_dir = tmp_path / "loop_final"
     final_dir.mkdir(exist_ok=True)
     artifacts: dict[str, Any] = {
-        "naming_result": None, "computation_result": None,
+        # P-S1 / BORU-05: reconstruct basarisi C adlandirmanin sonucuna bagli
+        "naming_result": SimpleNamespace(success=True, errors=[]), "computation_result": None,
         "updated_algo_result": None, "updated_eng_result": None,
         "final_decompiled_dir": final_dir, "iteration_stats": list(_ITER_DETAILS),
     }
@@ -99,6 +100,8 @@ def _run_three_phases(tmp_path: Path, monkeypatch, convergence_reason: str | Non
                 ctx = StepContext(pipeline_context=context)
                 ctx._write_artifacts(dict(seed_artifacts))
                 ctx.produce_artifact("faz3", tmp_path / "faz3")
+                # P-S1 / BORU-05: basari olcutu proje yapitini da ister
+                ctx.produce_artifact("project_dir", tmp_path / "proje")
                 return SimpleNamespace(artifacts=FinalizeStep().run(ctx))
             return SimpleNamespace(
                 artifacts=_Artifacts(c_files=[], decompiled_dir=decompiled, extracted_names={}),
