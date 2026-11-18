@@ -171,4 +171,26 @@ TASK_TIME_BUDGET_FALLBACK_SEC = float(REQUEST_TIMEOUT_SEC)
 # sunucusu en geç bu süre + STOP_WAIT_SEC içinde kapanır; sunucu ~16 GiB mlock'lu bellek tutar.
 WATCHDOG_POLL_SEC = 1.0
 
+# ============================================================================================
+# KaradulLM v2, P22a: olay omurgası (docs/arge/2026-11-18_karadullm_v2/TASARIM.md §4.1)
+# ============================================================================================
+# Oturum başına bellekteki olay halkasının boyu (§4.1 "Halka" [seçim]). Dolunca en eski olay düşer;
+# düşen olaylar sayılır ve geride kalan istemciye "kaçan" sayısıyla bildirilir (sessiz kayıp yok).
+EVENT_RING_CAPACITY = 10000
+# ``jeton`` olaylarının birleştirme aralığı (sn): saniyede en çok 1 / bu değer olay (§4.1 ≤ 10 olay/sn
+# [seçim]). Her akış parçası ayrı olay değildir; ilk parça hemen, sonrakiler bu aralıkla, son birikim
+# akış bitince yayılır.
+EVENT_TOKEN_MIN_INTERVAL_SEC = 0.1
+# ``arac_bitti.dokunulan`` listesinin tavanı (§4.1 "≤ 40" [seçim]). Kırpma sessiz değildir: toplam
+# ``dokunulan_toplam`` alanında yazar.
+EVENT_TOUCHED_MAX = 40
+# Araç dalında modelin "neden bu aracı çağırıyorum" notu (``niyet``; §4.1 ≤ 80 karakter [seçim];
+# Berke'nin kararı 5 (b): açık). Şemaya girmesi ``protocol.call_branch``'e yama ister (P22a.md).
+INTENT_MAX_CHARS = 80
+# [bu iş] Olayda tek bir metin değerinin görüntü biçimindeki (kaçışlar dahil) en büyük uzunluğu
+# (karakter). Uzunu kesilir ve "… [+N karakter]" eki kaçan karakter sayısını söyler. 2.000: terminal
+# girdisinin tavanıyla aynı (§4.3 G4 [seçim]); modelin gerekçesi (240) ve hata iletisi parçası (300)
+# bunun çok altında. Tam metin olayda değil, içerik deposunda ve görev sonucunda durur.
+DISPLAY_TEXT_MAX_CHARS = 2000
+
 __all__: list[str] = []
