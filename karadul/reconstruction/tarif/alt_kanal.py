@@ -7,8 +7,10 @@ Ne işe yarar
 ------------
 c_namer'ın ``string_context`` stratejisi fonksiyon adını bir dizgiden kurar. N0b (plan v2.2) bu
 adayları kod yolundan ve kanıt dizgisinin biçiminden kurulan 11 ayrık alt kanala böldü ve her
-birinin yanlış oranını ölçtü. Sonuç: yalnız ``oz_ad`` ve ``kebap_ad`` ad vermeyi sürdürür
-("doğrulanmadı" etiketiyle), öbür dokuzu susar. Bu modül o kararın üründeki karşılığıdır:
+birinin yanlış oranını ölçtü. Sonuç: yalnız ``oz_ad`` ve ``kebap_ad`` ad vermeyi sürdürdü
+("doğrulanmadı" etiketiyle), öbür dokuzu sustu. P12b (2026-11-18, AD-01) ``kebap_ad``'ı yeni ölçümle
+``zayif`` yaptı (bkz. "Sonraki kararlar"); bugün yalnız ``oz_ad`` ad verir. Bu modül o kararların
+üründeki karşılığıdır:
 
 - :func:`classify`: bir ``string_context`` adayının alt kanalı;
 - :data:`SUBCHANNEL_DECISIONS`: alt kanal → N0b kararı;
@@ -59,6 +61,31 @@ N0b adım 2 (``docs/arge/2026-10-21_g10_n0b/kesinlik_tablosu.md``; makine okur h
 alt sınırı %10'un üstünde olan (``zayif``) ve hiç ölçülemeyen (``olculemedi``) alt kanal susar;
 ``belirsiz`` ve ``dogrulandi`` kalır. Karar bir ölçüm sonucudur, kullanıcı ayarı değildir: tablo
 burada sabittir ve aynı test onu ``kesinlik_tablosu.json`` ile karşılaştırır.
+
+Sonraki kararlar
+----------------
+N0b kaydı silinmez; yeni ölçüm kararı aynı dosyanın ``sonraki_kararlar`` listesine tarih ve ölçüm
+diziniyle eklenir ve ``ana_kararlar``'ın üstüne sırayla uygulanır (test ikisini birlikte okur).
+
+- P12b (2026-11-18, AD-01): ``kebap_ad`` → ``zayif``. N0b'nin ``belirsiz`` kararı "yalnız alan"
+  etiketini yanlış saymıyordu (74 öğede yanlış 8). Gevşek ölçütte (amacı doğru anlatan ad başarı)
+  aynı etiketlerle başarı 6 / 76; ürün koşusunda (urun-yeni2, 119 ikili) tam eşitlikte 0 / 239.
+  Kebap dizgisi fonksiyonun okuduğu seçeneğin ya da yaydığı olayın adıdır, fonksiyonun kimliği
+  değil. Adın yerine köken kaydına dizginin rolü yazılır (:class:`KebabIndex`).
+
+Dizgi rolü (P12b, rol tanımı sürümü 1)
+--------------------------------------
+Gövdedeki her ``"<kebap>"`` literali için sarmalayan çağrı (çağrılan ad, derinlik-0 argüman
+sırası). İkili genelinde aynı (çağrılan, sıra) çiftine verilen farklı kebap literalleri ``D``:
+
+- ``karsilastirma``: çağrılan ``strcmp`` ailesinden (baştaki ``_`` soyulur);
+- ``olay_yayar``: ``|D| >= 2`` ve D'deki her dizginin son parçası ``ed`` ile biter;
+- ``anahtar_erisimi``: ``|D| >= 3``;
+- ``az_ornekli_cagri``: çağrı var, yukarıdakilerin hiçbiri değil;
+- ``cagri_disi``: dizgi gövdede bir çağrı argümanı olarak geçmiyor.
+
+Rol ad DEĞİLDİR; yalnız kanıttır (analiste "bu fonksiyon ``monitor-silence`` anahtarını
+``FUN_x``'in 2. argümanı olarak verir; o çağrı ikilide 58 farklı anahtar alır").
 """
 
 from __future__ import annotations
@@ -155,8 +182,9 @@ DECISION_LABELS: Mapping[str, str] = {
     DECISION_UNCERTAIN: LABEL_UNVERIFIED,
 }
 
-# --- Karar tablosu: N0b adım 2'nin birleşik (tmux + htop) kararı, alt kanal sırasıyla.
-# Kaynak: docs/arge/2026-10-21_g10_n0b/kesinlik_tablosu.json, "ana_kararlar".
+# --- Karar tablosu: N0b adım 2'nin birleşik (tmux + htop) kararı, alt kanal sırasıyla, üstüne
+# sonraki ölçüm kararları uygulanmış hâli.
+# Kaynak: docs/arge/2026-10-21_g10_n0b/kesinlik_tablosu.json, "ana_kararlar" + "sonraki_kararlar".
 SUBCHANNEL_DECISIONS: Mapping[str, str] = {
     SUB_AGGRESSIVE: DECISION_UNMEASURED,
     SUB_CODE_FRAGMENT: DECISION_WEAK,
@@ -164,7 +192,8 @@ SUBCHANNEL_DECISIONS: Mapping[str, str] = {
     SUB_OWN_NAME: DECISION_UNCERTAIN,
     SUB_SINGLE_WORD: DECISION_WEAK,
     SUB_IDENTIFIER: DECISION_WEAK,
-    SUB_KEBAB_NAME: DECISION_UNCERTAIN,
+    # P12b (2026-11-18): N0b ``belirsiz`` → ``zayif`` (kesinlik_tablosu.json, sonraki_kararlar)
+    SUB_KEBAB_NAME: DECISION_WEAK,
     SUB_ERROR_MESSAGE: DECISION_WEAK,
     SUB_FORMAT_STRING: DECISION_WEAK,
     SUB_PLAIN_TEXT: DECISION_WEAK,
@@ -364,7 +393,7 @@ def silenced_from(decisions: Mapping[str, str]) -> frozenset[str]:
                      if decisions.get(name) not in KEPT_DECISIONS)
 
 
-# Susan ve kalan alt kanallar (N0b: 9 susar, 2 kalır). Kalanlar öncelik sırasıyla.
+# Susan ve kalan alt kanallar (N0b: 9 susar, 2 kalır; P12b'den sonra 10 susar, 1 kalır).
 SILENCED_SUBCHANNELS: frozenset[str] = silenced_from(SUBCHANNEL_DECISIONS)
 KEPT_SUBCHANNELS: tuple[str, ...] = tuple(
     name for name in SUBCHANNEL_NAMES if name not in SILENCED_SUBCHANNELS)
@@ -389,3 +418,108 @@ def label_for(sub_channel: str) -> Optional[str]:
     if is_silenced(sub_channel):
         return None
     return DECISION_LABELS[SUBCHANNEL_DECISIONS[sub_channel]]
+
+
+# --------------------------------------------------------------------------------------------
+# Dizgi rolü (P12b / AD-01; rol tanımı sürümü 1). Ad değil, köken kaydına giden kanıt.
+
+STRING_ROLE_VERSION = 1
+ROLE_COMPARISON = "karsilastirma"
+ROLE_EVENT_EMIT = "olay_yayar"
+ROLE_KEYED_ACCESS = "anahtar_erisimi"
+ROLE_SPARSE_CALL = "az_ornekli_cagri"
+ROLE_NOT_CALL_ARG = "cagri_disi"
+STRING_ROLES = (ROLE_COMPARISON, ROLE_EVENT_EMIT, ROLE_KEYED_ACCESS, ROLE_SPARSE_CALL,
+                ROLE_NOT_CALL_ARG)
+COMPARISON_APIS = frozenset({"strcmp", "strcasecmp", "strncmp", "strncasecmp"})
+EVENT_MIN_DISTINCT = 2          # olay yayıcı en az iki farklı geçmiş zaman dizgisi alır
+KEYED_ACCESS_MIN_DISTINCT = 3   # anahtarlı erişimci en az üç farklı kebap anahtarı alır
+EVENT_SUFFIX = "ed"
+# Gövdedeki kebap literali: sınıflayıcının KEBAB_RE'siyle aynı biçim, tırnak içinde
+KEBAB_LITERAL_RE = re.compile(r'"([a-z][a-z0-9]*(?:-[a-z0-9]+)+)"')
+_CALLEE_NAME_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)\s*$")
+_NOT_CALLS = frozenset({"if", "while", "for", "switch", "return", "sizeof"})
+
+
+def literal_call_site(body: str, pos: int) -> tuple[str, int]:
+    """``pos``'taki literali argüman olarak alan çağrının adı ve argüman sırası (0'dan).
+
+    Literalin solundan geriye parantez derinliği sayılır; derinlik 0'daki ``(`` sarmalayan
+    çağrıdır, aradaki derinlik-0 virgülleri sırayı verir. ``;`` ``{`` ``}`` derinlik 0'da görülürse
+    ya da sarmalayan ``(`` bir çağrı adıyla açılmıyorsa ``("", -1)``.
+    """
+    depth = commas = 0
+    i = pos - 1
+    while i >= 0:
+        ch = body[i]
+        if ch in ")]":
+            depth += 1
+        elif ch in "([":
+            if depth == 0:
+                break
+            depth -= 1
+        elif ch == "," and depth == 0:
+            commas += 1
+        elif ch in ";{}" and depth == 0:
+            return "", -1
+        i -= 1
+    if i < 0 or body[i] != "(":
+        return "", -1
+    m = _CALLEE_NAME_RE.search(body[:i])
+    if not m or m.group(1) in _NOT_CALLS:
+        return "", -1
+    return m.group(1), commas
+
+
+def kebab_call_sites(body: str) -> list[tuple[str, str, int]]:
+    """Gövdedeki kebap literalleri: ``[(dizgi, çağrılan, sıra)]``; çağrı dışında ``("", -1)``."""
+    return [(m.group(1), *literal_call_site(body, m.start()))
+            for m in KEBAB_LITERAL_RE.finditer(body)]
+
+
+class KebabIndex:
+    """İkili genelinde kebap literallerinin çağrı yerleri (rol hesabının girdisi).
+
+    ``bodies``: fonksiyon adı → decompile gövdesi. Yalnız okunur; sıra sonuçları etkilemez.
+    """
+
+    def __init__(self, bodies: Mapping[str, str]) -> None:
+        self.sites: dict[str, list[tuple[str, str, int]]] = {}
+        self.distinct: dict[tuple[str, int], set[str]] = {}
+        self.emitters: dict[tuple[str, str, int], set[str]] = {}
+        for func in sorted(bodies):
+            body = bodies[func] or ""
+            if '"' not in body:
+                continue
+            sites = kebab_call_sites(body)
+            if not sites:
+                continue
+            self.sites[func] = sites
+            for s, callee, arg in sites:
+                if callee:
+                    self.distinct.setdefault((callee, arg), set()).add(s)
+                    self.emitters.setdefault((s, callee, arg), set()).add(func)
+
+    def role(self, func: str, string: str) -> dict[str, Any]:
+        """``func``'ın ``string``'i kullanışının rolü (ilk çağrı yeri; tanım: modül belgesi)."""
+        sites = self.sites.get(func, [])
+        own = len({s for s, _, _ in sites})
+        call = next(((c, a) for s, c, a in sites if s == string and c), None)
+        if call is None:
+            return {"string": string, "role": ROLE_NOT_CALL_ARG, "api": None, "arg_index": None,
+                    "api_distinct_strings": 0, "emitters": 0, "function_kebab_strings": own}
+        callee, arg = call
+        distinct = self.distinct.get(call, set())
+        if callee.lstrip("_") in COMPARISON_APIS:
+            role = ROLE_COMPARISON
+        elif len(distinct) >= EVENT_MIN_DISTINCT and all(
+                d.rsplit("-", 1)[-1].endswith(EVENT_SUFFIX) for d in distinct):
+            role = ROLE_EVENT_EMIT
+        elif len(distinct) >= KEYED_ACCESS_MIN_DISTINCT:
+            role = ROLE_KEYED_ACCESS
+        else:
+            role = ROLE_SPARSE_CALL
+        return {"string": string, "role": role, "api": callee, "arg_index": arg,
+                "api_distinct_strings": len(distinct),
+                "emitters": len(self.emitters.get((string, callee, arg), ())),
+                "function_kebab_strings": own}

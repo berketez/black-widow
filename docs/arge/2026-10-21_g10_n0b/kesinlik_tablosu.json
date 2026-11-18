@@ -7030,5 +7030,36 @@
     }
    }
   }
- }
+ },
+ "sonraki_kararlar": [
+  {
+   "tarih": "2026-11-18",
+   "paket": "P12b",
+   "bulgu": "AD-01",
+   "alt_kanal": "kebap_ad",
+   "onceki_karar": "belirsiz",
+   "karar": "zayif",
+   "urunde": false,
+   "guven_etiketi": null,
+   "olcum_dizini": "~/karadul_olcum/runs/onarim-2026-11-18/P12b",
+   "onkayit": "docs/arge/2026-11-18_onarim/P12b_on_kayit.md",
+   "gerekce": "N0b 'belirsiz' kararı 'yalnız alan' etiketini yanlış saymıyordu (74 öğede yanlış 8). Gevşek ölçütte (amacı doğru anlatan ad: tam + doğru tarif + yakın) aynı kör L1 etiketleriyle başarı 6 / 76 (Mac tmux, rol sınıfıyla birleştirilmiş öğeler); ürün koşusunda (urun-yeni2-f30ac9a, 119 ikili) tam eşitlikte doğru 0 / 239. N0b duyarlılık çözümlemesi de kebap_ad için 'zayif' veriyordu (duyarlilik.ana_karardan_farkli). Kebap dizgisi fonksiyonun okuduğu seçeneğin ya da yaydığı olayın adıdır; ad yerine köken kaydına dizgi rolü yazılır.",
+   "olcum": {
+    "gevsek_l1": {
+     "n": 76,
+     "tam": 0,
+     "dogru_tarif": 6,
+     "yakin": 0,
+     "yalniz_alan": 60,
+     "yanlis": 10,
+     "kaynak": "docs/arge/2026-10-19_g4_etiketleme/veri/etiket_L1_tmux385.jsonl"
+    },
+    "tam_esitlik_urun": {
+     "n": 239,
+     "dogru": 0,
+     "kok": "~/karadul_olcum/runs/urun-yeni2-f30ac9a"
+    }
+   }
+  }
+ ]
 }

@@ -298,13 +298,14 @@ def test_kirilim_etiket_ve_kanal():
 
 
 def test_kanal_grubu_urunun_susan_kumesi():
-    """Grup ürünün karar tablosundan okunur: susan dokuz ``string_context`` alt kanalı, kalan her şey."""
+    """Grup ürünün karar tablosundan okunur: susan ``string_context`` alt kanalları, kalan her şey."""
     g = uo.kanal_grubu
     alt = uo.alt_kanal
     assert {a for a in alt.SUBCHANNEL_NAMES if g(f"string_context/{a}") == "susan"} == set(alt.SILENCED_SUBCHANNELS)
-    assert len(alt.SILENCED_SUBCHANNELS) == 9
+    # N0b'nin dokuzu + P12b'nin (2026-11-18, AD-01) kebap_ad'ı
+    assert len(alt.SILENCED_SUBCHANNELS) == 10
     assert g("string_context/tek_sozcuk") == "susan" and g("string_context/agresif") == "susan"
-    assert g("string_context/oz_ad") == "kalan" and g("string_context/kebap_ad") == "kalan"
+    assert g("string_context/oz_ad") == "kalan" and g("string_context/kebap_ad") == "susan"
     for kanal in ("ks1:func_kalibi", "binary_extract", "api_param_reverse", "on_ad:main_giris",
                   "koken_yok", "string_context", "api_param_reverse/tek_sozcuk"):
         assert g(kanal) == "kalan"

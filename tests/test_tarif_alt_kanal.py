@@ -52,9 +52,10 @@ R = importlib.util.module_from_spec(_spec)
 sys.modules[_spec.name] = R
 _spec.loader.exec_module(R)
 
+# N0b'nin dokuzu + P12b'nin (2026-11-18, AD-01) ``kebap_ad``'ı
 SUSAN = frozenset({"agresif", "kod_parcasi", "bicim_parcasi", "tek_sozcuk", "tanimlayici",
-                   "hata_iletisi", "bicim_dizgisi", "duz_metin", "diger"})
-KALAN = ("oz_ad", "kebap_ad")
+                   "kebap_ad", "hata_iletisi", "bicim_dizgisi", "duz_metin", "diger"})
+KALAN = ("oz_ad",)
 
 
 def klasik(kanit, kaynak="string_ref", **ek):
@@ -78,6 +79,16 @@ def kanal(kanit, **kw):
 
 def _tablo():
     return json.loads(TABLO_YOLU.read_text(encoding="utf-8"))
+
+
+def _guncel_kararlar(tablo):
+    """``ana_kararlar`` + sırayla ``sonraki_kararlar`` (eski kayıt silinmez; yeni karar üstüne)."""
+    kararlar = dict(tablo["ana_kararlar"])
+    for kayit in tablo.get("sonraki_kararlar", []):
+        assert kayit["alt_kanal"] in kararlar
+        assert kararlar[kayit["alt_kanal"]] == kayit["onceki_karar"]
+        kararlar[kayit["alt_kanal"]] = kayit["karar"]
+    return kararlar
 
 
 def _sha256(yol):
@@ -323,7 +334,7 @@ def test_c_namer_adaylari_iki_siniflayicida_ayni_alt_kanala_duser():
 def test_susan_ve_kalan_alt_kanallar():
     assert U.SILENCED_SUBCHANNELS == SUSAN
     assert U.KEPT_SUBCHANNELS == KALAN
-    assert len(U.SILENCED_SUBCHANNELS) == 9
+    assert len(U.SILENCED_SUBCHANNELS) == 10
     assert U.SILENCED_SUBCHANNELS | set(U.KEPT_SUBCHANNELS) == set(U.SUBCHANNEL_NAMES)
     assert not U.SILENCED_SUBCHANNELS & set(U.KEPT_SUBCHANNELS)
     for ad in U.SUBCHANNEL_NAMES:
@@ -334,25 +345,31 @@ def test_kalan_alt_kanallarin_etiketi_dogrulanmadi():
     assert U.LABEL_UNVERIFIED == "doğrulanmadı"
     assert U.LABEL_VERIFIED == "doğrulandı"
     assert U.label_for("oz_ad") == "doğrulanmadı"
-    assert U.label_for("kebap_ad") == "doğrulanmadı"
+    assert U.label_for("kebap_ad") is None          # P12b: susar
     for ad in SUSAN:
         assert U.label_for(ad) is None
 
 
 def test_karar_tablosu_kesinlik_tablosuyla_ayni():
     tablo = _tablo()
-    assert dict(U.SUBCHANNEL_DECISIONS) == tablo["ana_kararlar"]
+    sonraki = {k["alt_kanal"]: k for k in tablo.get("sonraki_kararlar", [])}
+    assert dict(U.SUBCHANNEL_DECISIONS) == _guncel_kararlar(tablo)
     assert list(U.SUBCHANNEL_DECISIONS) == list(U.SUBCHANNEL_NAMES)
     assert U.KEPT_DECISIONS == frozenset(tablo["kural"]["urunde_kalan_kararlar"])
     assert dict(U.DECISION_LABELS) == tablo["kural"]["guven_etiketleri"]
     birlesik = tablo["ana"]["birlesik"]["alt_kanallar"]
     assert list(birlesik) == list(U.SUBCHANNEL_NAMES)
     for ad in U.SUBCHANNEL_NAMES:
-        karar = birlesik[ad]["karar"]
+        # Sonraki karar kaydı varsa ürün onu izler; N0b kaydı yerinde kalır (önceki karar).
+        karar = sonraki.get(ad) or birlesik[ad]["karar"]
+        if ad in sonraki:
+            assert birlesik[ad]["karar"]["karar"] == sonraki[ad]["onceki_karar"]
         assert karar["karar"] == U.SUBCHANNEL_DECISIONS[ad]
         assert U.is_silenced(ad) is (not karar["urunde"]), ad
         assert U.label_for(ad) == karar["guven_etiketi"], ad
     assert tablo["hepsini_kapatir"] is (not U.KEPT_SUBCHANNELS)
+    # P12b kaydı: kebap_ad, ölçüm dizini ve tarihiyle
+    assert sonraki["kebap_ad"]["karar"] == "zayif" and sonraki["kebap_ad"]["tarih"] == "2026-11-18"
 
 
 def test_karar_basvuru_kuraliyla_ayni_yorumlanir():
@@ -379,6 +396,8 @@ def test_silenced_from_karari_eksik_alt_kanal_susar():
     kararlar = dict(U.SUBCHANNEL_DECISIONS)
     del kararlar["oz_ad"]
     assert U.silenced_from(kararlar) == SUSAN | {"oz_ad"}
+    assert U.silenced_from(tablo_ana := _tablo()["ana_kararlar"]) == SUSAN - {"kebap_ad"}
+    assert tablo_ana["kebap_ad"] == "belirsiz"     # N0b kaydı silinmedi
     assert U.silenced_from({}) == frozenset(U.SUBCHANNEL_NAMES)
     # Tabloda fazladan duran, tanımda olmayan ad kümeye girmez.
     assert U.silenced_from(dict(U.SUBCHANNEL_DECISIONS, yeni_kanal="zayif")) == SUSAN

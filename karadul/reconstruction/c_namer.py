@@ -305,6 +305,9 @@ class _ProvenanceRecorder:
         self.below_min_candidates: dict[str, dict[str, int]] = {}
         # P12a / AD-02: ad olmayan rol kanıtları: anahtar -> [{role, api, arg_index, caller}]
         self.role_evidence: dict[str, list[dict[str, Any]]] = {}
+        # P12b / AD-01: kebap dizgisinin fonksiyondaki rolü (ad değil): anahtar -> [{string, role,
+        # api, arg_index, api_distinct_strings, emitters, function_kebab_strings}]
+        self.string_roles: dict[str, list[dict[str, Any]]] = {}
         self.candidate_keys = 0
         self.pre_names_given = 0
         self.pre_names_applied = 0
@@ -526,6 +529,8 @@ class _ProvenanceRecorder:
             "eliminated_keys": self.eliminated_keys,
             "below_min_confidence_candidates": self.below_min_candidates,
             "role_evidence": self.role_evidence,
+            "string_roles": self.string_roles,
+            "string_role_version": _alt_kanal.STRING_ROLE_VERSION,
         }
 
 
@@ -2296,6 +2301,9 @@ class CVariableNamer:
 
         # P12a / AD-02: rol adayları ad adayı değildir; listeden ayrılır, kanıt olarak kalır.
         role_evidence = self._split_role_candidates()
+        # P12b / AD-01: kebap adayının dizgisi bir seçenek / olay adıdır; rolü kanıt olarak kayda
+        # geçer (susturmadan önce; susturma açık da kapalı da). Aday listesine dokunmaz.
+        string_roles = self._kebab_string_roles()
 
         # Isim kokeni kaydi (plan v2.2 N0 b). Yalniz okur ve sayar; asagidaki
         # kararlarin hicbirine girdi degildir.
@@ -2303,6 +2311,7 @@ class CVariableNamer:
         if getattr(self, "_record_provenance", True):
             prov = _ProvenanceRecorder(self._min_confidence)
             prov.role_evidence = role_evidence
+            prov.string_roles = string_roles
             prov.candidate_keys = sum(1 for c in self._candidates.values() if c)
             prov.pre_names_given = len(pre_names) if pre_names else 0
 
@@ -4019,6 +4028,29 @@ class CVariableNamer:
                 role_arg=arg,
                 role_caller=func_info.name,
             ), func_name=func_info.name)
+
+    def _kebab_string_roles(self) -> dict[str, list[dict[str, Any]]]:
+        """Genel anahtarların ``kebap_ad`` adaylarındaki dizginin rolü (P12b / AD-01).
+
+        Kebap dizgisi (``monitor-silence``) fonksiyonun okuduğu seçeneğin ya da yaydığı olayın
+        adıdır; fonksiyonun adı değildir. Rol (``tarif.alt_kanal.KebabIndex``: anahtar erişimi,
+        olay yayar, karşılaştırma …) ikili genelindeki çağrı yerlerinden hesaplanır ve yalnız köken
+        kaydına gider. Aday listesi DEĞİŞMEZ; seçim ve susturma bundan bağımsızdır.
+        """
+        wanted: dict[str, list[str]] = {}
+        for key in sorted(self._candidates):
+            if "::" in key:
+                continue
+            for cand in self._candidates[key]:
+                if self._string_sub_channel(cand) != _alt_kanal.SUB_KEBAB_NAME:
+                    continue
+                string = (cand.evidence or "").strip()
+                if string and string not in wanted.setdefault(key, []):
+                    wanted[key].append(string)
+        if not wanted:
+            return {}
+        index = _alt_kanal.KebabIndex(self._func_bodies)
+        return {key: [index.role(key, s) for s in strings] for key, strings in wanted.items()}
 
     def _split_role_candidates(self) -> dict[str, list[dict[str, Any]]]:
         """Rol adaylarını (``api_param_reverse``) ad adaylarından ayır (P12a / AD-02).

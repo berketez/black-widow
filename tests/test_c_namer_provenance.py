@@ -271,6 +271,8 @@ def test_provenance_file_schema(ws, tmp_path, serial_pool):
         "name_validity",
         # P12a / AD-02: geri çağrı rolü ad değil kanıt; yalnız alan eklendi, şema sürümü 1 kaldı
         "role_evidence",
+        # P12b / AD-01: kebap dizgisinin rolü ad değil kanıt; yalnız alan eklendi, şema sürümü 1
+        "string_roles", "string_role_version",
     }
     assert prov["schema"] == NAMING_PROVENANCE_SCHEMA == "karadul.naming_provenance"
     assert prov["schema_version"] == NAMING_PROVENANCE_SCHEMA_VERSION == 1

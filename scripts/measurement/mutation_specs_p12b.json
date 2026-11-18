@@ -1,0 +1,93 @@
+{
+  "_comment": "P12b (AD-01: kebap_ad kararı zayıf + dizgi rolü kanıtı; kalem 6: tarif/evidence.py dizgi içi FUN_) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p12b.json",
+  "mutants": [
+    {
+      "id": "p12b_kebap_karari_belirsiz",
+      "desc": "AD-01: kebap_ad kararı N0b'nin belirsiz'ine döner (kebap adı yine verilir)",
+      "module": "karadul/reconstruction/tarif/alt_kanal.py",
+      "test": "tests/test_p12b_kebap_rol.py::test_kebap_adi_urunde_ad_olmaz_rol_kanit_olur",
+      "find": "    SUB_KEBAB_NAME: DECISION_WEAK,\n",
+      "replace": "    SUB_KEBAB_NAME: DECISION_UNCERTAIN,\n"
+    },
+    {
+      "id": "p12b_rol_kaydi_yok",
+      "desc": "AD-01: c_namer dizgi rolünü hesaplamaz (köken kaydında string_roles boş)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12b_kebap_rol.py::test_rol_kaydi_susturmadan_bagimsiz_ve_secimi_degistirmez",
+      "find": "        string_roles = self._kebab_string_roles()\n",
+      "replace": "        string_roles: dict[str, list[dict[str, Any]]] = {}\n"
+    },
+    {
+      "id": "p12b_rol_kaydi_yazilmaz",
+      "desc": "AD-01: hesaplanan rol köken dosyasına yazılmaz",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12b_kebap_rol.py::test_kebap_adi_urunde_ad_olmaz_rol_kanit_olur",
+      "find": "            \"string_roles\": self.string_roles,\n",
+      "replace": "            \"string_roles\": {},\n"
+    },
+    {
+      "id": "p12b_rol_yanlis_alt_kanal",
+      "desc": "AD-01: rol yalnız oz_ad adayları için hesaplanır (kebap adayları atlanır)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12b_kebap_rol.py::test_kebap_adi_urunde_ad_olmaz_rol_kanit_olur",
+      "find": "                if self._string_sub_channel(cand) != _alt_kanal.SUB_KEBAB_NAME:\n",
+      "replace": "                if self._string_sub_channel(cand) != _alt_kanal.SUB_OWN_NAME:\n"
+    },
+    {
+      "id": "p12b_olay_esigi_bir",
+      "desc": "Rol: tek geçmiş zaman dizgisi alan çağrı da olay yayıcı sayılır",
+      "module": "karadul/reconstruction/tarif/alt_kanal.py",
+      "test": "tests/test_p12b_kebap_rol.py::test_rol_esikleri",
+      "find": "EVENT_MIN_DISTINCT = 2 ",
+      "replace": "EVENT_MIN_DISTINCT = 1.0 "
+    },
+    {
+      "id": "p12b_erisim_esigi_iki",
+      "desc": "Rol: iki farklı anahtar alan çağrı da anahtar erişimi sayılır",
+      "module": "karadul/reconstruction/tarif/alt_kanal.py",
+      "test": "tests/test_p12b_kebap_rol.py::test_rol_esikleri",
+      "find": "KEYED_ACCESS_MIN_DISTINCT = 3 ",
+      "replace": "KEYED_ACCESS_MIN_DISTINCT = 2.0 "
+    },
+    {
+      "id": "p12b_karsilastirma_macho",
+      "desc": "Rol: Mach-O'daki _strcmp karşılaştırma sayılmaz (baştaki _ soyulmaz)",
+      "module": "karadul/reconstruction/tarif/alt_kanal.py",
+      "test": "tests/test_p12b_kebap_rol.py::test_rol_esikleri",
+      "find": "        if callee.lstrip(\"_\") in COMPARISON_APIS:\n",
+      "replace": "        if callee in COMPARISON_APIS:\n"
+    },
+    {
+      "id": "p12b_anahtar_sozcuk_cagri",
+      "desc": "Çağrı yeri: if / while / return çağrı adı sayılır",
+      "module": "karadul/reconstruction/tarif/alt_kanal.py",
+      "test": "tests/test_p12b_kebap_rol.py::test_literal_call_site_sinirlari",
+      "find": "    if not m or m.group(1) in _NOT_CALLS:\n",
+      "replace": "    if not m:\n"
+    },
+    {
+      "id": "p12b_yayan_dizgi_sayar",
+      "desc": "Rol: aynı olayı yayan fonksiyon yerine dizgi sayılır (emitters hep 1)",
+      "module": "karadul/reconstruction/tarif/alt_kanal.py",
+      "test": "tests/test_p12b_kebap_rol.py::test_rol_esikleri",
+      "find": "                    self.emitters.setdefault((s, callee, arg), set()).add(func)\n",
+      "replace": "                    self.emitters.setdefault((s, callee, arg), set()).add(s)\n"
+    },
+    {
+      "id": "p12b_fonksiyon_dizgi_tekrar",
+      "desc": "Rol: fonksiyondaki kebap dizgisi sayısı tekrarlı literali iki kez sayar",
+      "module": "karadul/reconstruction/tarif/alt_kanal.py",
+      "test": "tests/test_p12b_kebap_rol.py::test_rol_esikleri",
+      "find": "        own = len({s for s, _, _ in sites})\n",
+      "replace": "        own = len(sites)\n"
+    },
+    {
+      "id": "p12b_derinlik_virgul",
+      "desc": "Çağrı yeri: iç çağrının virgülleri argüman sırasına katılır",
+      "module": "karadul/reconstruction/tarif/alt_kanal.py",
+      "test": "tests/test_p12b_kebap_rol.py::test_literal_call_site_sinirlari",
+      "find": "        elif ch == \",\" and depth == 0:\n            commas += 1\n        elif ch in \";{}\" and depth == 0:\n            return \"\", -1\n",
+      "replace": "        elif ch == \",\":\n            commas += 1\n        elif ch in \";{}\" and depth == 0:\n            return \"\", -1\n"
+    }
+  ]
+}
