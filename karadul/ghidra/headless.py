@@ -507,7 +507,12 @@ class GhidraHeadless:
                     combined = {
                         "summary": {
                             "program": prog_info,
-                            "function_count": scripts_output.get("functions", {}).get("total", 0),
+                            # "Kurtarılan fonksiyon" = programın kendi fonksiyonları; içe aktarım
+                            # taslakları (thunk) ayrı sayılır (GHIDRA-10).
+                            "function_count": scripts_output.get("functions", {}).get("program_function_count", 0),
+                            "function_total": scripts_output.get("functions", {}).get("total", 0),
+                            "thunk_count": scripts_output.get("functions", {}).get("thunk_count", 0),
+                            "external_count": scripts_output.get("functions", {}).get("external_count", 0),
                             "string_count": scripts_output.get("strings", {}).get("total", 0),
                             "call_graph_nodes": scripts_output.get("call_graph", {}).get("total_functions", 0),
                             "call_graph_edges": scripts_output.get("call_graph", {}).get("total_edges", 0),
@@ -619,8 +624,27 @@ class GhidraHeadless:
 
         return {
             "total": len(functions),
+            **GhidraHeadless._function_kind_counts(functions),
             "program": str(program.getName()),
             "functions": functions,
+        }
+
+    @staticmethod
+    def _function_kind_counts(functions: list[dict[str, Any]]) -> dict[str, int]:
+        """Ghidra fonksiyon nesnelerini türe ayır (GHIDRA-10).
+
+        Ghidra her içe aktarılan fonksiyon için taslak üretir (ELF'te PLT girişi + EXTERNAL
+        bloktaki 1 baytlık taslak; ikisi de ``is_thunk``). Bunlar programın fonksiyonu değildir;
+        "kurtarılan fonksiyon" sayacına girmemelidir. ``program_function_count`` = thunk da dış
+        da olmayan fonksiyonlar; ``thunk_count`` = thunk'lar; ``external_count`` = thunk olmayan
+        dış fonksiyonlar. Üçünün toplamı ``total``.
+        """
+        thunk = sum(1 for f in functions if f.get("is_thunk"))
+        external = sum(1 for f in functions if f.get("is_external") and not f.get("is_thunk"))
+        return {
+            "program_function_count": len(functions) - thunk - external,
+            "thunk_count": thunk,
+            "external_count": external,
         }
 
     @staticmethod

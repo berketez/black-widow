@@ -349,7 +349,13 @@ class MachOAnalyzer(BaseAnalyzer):
                 combined = ghidra_result.get("scripts_output", {}).get("combined_results", {})
                 if combined:
                     summary = combined.get("summary", {})
+                    # "Kurtarılan fonksiyon" = programın fonksiyonları; içe aktarım taslakları
+                    # (thunk) ayrı alanda (GHIDRA-10). Eski özetlerde ayrım yoksa toplam yazılır.
                     stats["ghidra_function_count"] = summary.get("function_count", 0)
+                    if "function_total" in summary:
+                        stats["ghidra_function_total"] = summary["function_total"]
+                        stats["ghidra_thunk_count"] = summary.get("thunk_count", 0)
+                        stats["ghidra_external_count"] = summary.get("external_count", 0)
                     stats["ghidra_string_count"] = summary.get("string_count", 0)
                     stats["ghidra_call_graph_edges"] = summary.get("call_graph_edges", 0)
                     stats["ghidra_decompiled"] = summary.get("decompiled_success", 0)
