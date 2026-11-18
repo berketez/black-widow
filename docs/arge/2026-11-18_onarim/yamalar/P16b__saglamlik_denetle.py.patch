@@ -1,0 +1,14 @@
+--- a/scripts/measurement/saglamlik_denetle.py
++++ b/scripts/measurement/saglamlik_denetle.py
+@@ -1486,6 +1486,11 @@
+         kusur["ag_indirme_denemesi"] = 1
+     if k5["bsim_yedege_dustu"]:
+         kusur["bsim_yedege_dustu"] = 1
++    # P16b: kilit / meşgul H2 artık lite'a düşürmüyor, BSim'i atlıyor ("BSim atlandi: …";
++    # bsim_matches.json "bsim_status": "skipped_busy"). Atlama da kusur sayılır.
++    k5["bsim_atlandi"] = any("BSim atlandi" in l for l in govde_log)
++    if k5["bsim_atlandi"]:
++        kusur["bsim_atlandi"] = 1
+     k5["durum_alanlari"] = {k: v for k, v in rc.items() if k.endswith("_status")}
+     k5["refdiff"] = rc.get("refdiff_detections")
+     k5["refdiff_sure_s"] = rc.get("timing_reference_differ_iter0")

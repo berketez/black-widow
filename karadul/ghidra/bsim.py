@@ -16,7 +16,9 @@ Depo (P16b, GHIDRA-01/02/03):
     birden cok surec tarafindan paylasilir. Ingest + sorgu oturumu dizin
     kilidini (``fcntl.flock``) alir; alamazsa sinirli sure bekler, sure
     dolarsa BSim ATLANIR ve bu durum sonuca yazilir. Kilit / mesgul H2
-    yuzunden lite'a dusulmez.
+    yuzunden lite'a dusulmez. Oturum sonunda Ghidra'nin H2 baglanti havuzu
+    kapatilir (``release``); kapatilmazsa H2 dosyasi surec bitene dek acik
+    kalir ve kilit tek basina yetmez.
   - Her ingest edilen ikilinin kimligi (md5, sha256, ELF build-id / Mach-O
     LC_UUID) ``<db>.provenance.json`` kaynak kaydina yazilir. Sorguda
     kendisi, ayni dosya ve ayni yapi (ayni build-id / UUID: ornegin ayni
@@ -1065,6 +1067,38 @@ class _BSimNativeWrapper:
             raise RuntimeError(f"BSim DB initialize basarisiz ({name}): {msg}")
         return database
 
+    def release(self, name: str) -> bool:
+        """Bu JVM'deki H2 baglanti havuzunu kapat: H2 dosyasi baska surece acilsin.
+
+        KISIT (Ghidra 12.1.2, ``BSimH2FileDBConnectionManager``, BSim-src.zip):
+        ``FunctionDatabase.close()`` baglantiyi havuza geri verir; havuz
+        (commons-dbcp2 ``BasicDataSource``) acik kaldikca H2 dosyasi bu surecte
+        acik kalir ve baska surec "Database already in use" alir -- surec
+        bitene kadar. Havuz yalniz ``BSimH2FileDataSource.dispose()`` ile (ya
+        da JVM kapanirken) kapanir. Eski kodda paralel kosudaki dususun koku bu.
+        """
+        try:
+            from ghidra.features.bsim.query.file import BSimH2FileDBConnectionManager
+        except Exception:  # noqa: BLE001
+            return False
+        target = os.path.realpath(str(self.db_path / name))
+        released = False
+        for ds in list(BSimH2FileDBConnectionManager.getAllDataSources()):
+            try:
+                db_file = str(ds.getServerInfo().getDBName())
+            except Exception:  # noqa: BLE001
+                continue
+            if db_file.endswith(".mv.db"):
+                db_file = db_file[: -len(".mv.db")]
+            if os.path.realpath(db_file) != target:
+                continue
+            try:
+                ds.dispose()
+                released = True
+            except Exception:  # noqa: BLE001
+                logger.warning("BSim H2 havuzu kapatilamadi: %s", db_file, exc_info=True)
+        return released
+
     def open_client(self, name: str) -> Any:
         """Oturum boyunca acik kalacak istemci (DB yoksa once olusturulur).
 
@@ -1185,6 +1219,7 @@ class _BSimNativeWrapper:
                 database.close()
             except Exception:  # noqa: BLE001
                 logger.debug("BSim DB close basarisiz", exc_info=True)
+            self.release(name)
 
         return db_file
 
@@ -1269,6 +1304,7 @@ class _BSimNativeWrapper:
                     database.close()
                 except Exception:  # noqa: BLE001
                     logger.debug("BSim DB close basarisiz", exc_info=True)
+                self.release(db_name)
 
     def query_function(
         self,
@@ -1383,6 +1419,7 @@ class _BSimNativeWrapper:
                 database.close()
             except Exception:  # noqa: BLE001
                 logger.debug("BSim DB close basarisiz", exc_info=True)
+            self.release(db_name)
 
     def close(self) -> None:
         """Acik veritabani baglantisini kapat."""
@@ -1415,6 +1452,7 @@ def _new_status(mode: str) -> dict[str, Any]:
         "excluded": {"self": 0, "same_file": 0, "same_build": 0},
         "unrecorded_candidates": 0,
         "own_identity": None,
+        "h2_released": None,  # oturum sonunda H2 havuzu kapatıldı mı (None: native istemci yoktu)
     }
 
 
@@ -1526,6 +1564,7 @@ class BSimDatabase:
 
     def _close_client(self) -> None:
         client = getattr(self, "_client", None)
+        db_name = getattr(self, "_client_db", "")
         self._client = None
         self._client_db = ""
         if client is not None:
@@ -1533,6 +1572,10 @@ class BSimDatabase:
                 client.close()
             except Exception:  # noqa: BLE001
                 logger.debug("BSim DB close basarisiz", exc_info=True)
+            # Havuz kapanmazsa H2 dosyasi surec bitene dek bu surecte acik kalir.
+            release = getattr(getattr(self, "_native", None), "release", None)
+            if callable(release):
+                self.status["h2_released"] = bool(release(db_name))
 
     def _end_session(self) -> None:
         self._close_client()
@@ -1972,10 +2015,12 @@ class BSimDatabase:
             self.status["reason"] = f"fonksiyon listesi alinamadi: {exc}"
 
         try:
-            return self._query_functions(program, funcs, min_similarity, max_results, db_name)
+            result = self._query_functions(program, funcs, min_similarity, max_results, db_name)
         finally:
-            # Oturum (ingest'ten beri tutulan kilit) burada biter.
+            # Oturum (ingest'ten beri tutulan kilit) burada biter; H2 havuzu kapanır.
             self._end_session()
+        result.status["h2_released"] = self.status.get("h2_released")
+        return result
 
     def storage_info(self) -> dict[str, Any]:
         """Analizin kullandigi depo (CLI ve arayuz dogru yeri gostersin; GHIDRA-12)."""

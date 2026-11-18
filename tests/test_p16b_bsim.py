@@ -138,6 +138,7 @@ class FakeNative:
         self.query_calls = 0
         self.last_ingest_already = False
         self.clients: list[Any] = []
+        self.released: list[str] = []
 
     def open_client(self, name: str) -> Any:
         self.open_calls += 1
@@ -160,6 +161,10 @@ class FakeNative:
     @staticmethod
     def _iter_real_functions(program: Any) -> list[Any]:
         return _BSimNativeWrapper._iter_real_functions(program)
+
+    def release(self, name: str) -> bool:
+        self.released.append(name)
+        return True
 
     def close(self) -> None:
         pass
@@ -295,6 +300,44 @@ class TestGhidra01Kilit:
         th.join()
         assert got == [True]  # sorgu bitti, kilit bırakıldı
         db.close()
+
+    def test_oturum_sonunda_h2_havuzu_kapatilir(self, native_db) -> None:
+        # Ghidra'nın H2 havuzu açık kalırsa dosya süreç bitene dek kilitli kalır.
+        db, fake = native_db()
+        prog = FakeProgram(md5=MD5_OWN)
+        db.ingest_program(prog, "karadul_bsim")
+        assert fake.released == []  # oturum sürüyor
+        res = db.query_all_functions(prog, 0.7)
+        assert fake.released == ["karadul_bsim"]
+        assert res.status["h2_released"] is True
+        db.close()
+
+    def test_release_yalniz_bu_deponun_havuzunu_kapatir(self, monkeypatch, tmp_path) -> None:
+        disposed: list[str] = []
+
+        class Ds:
+            def __init__(self, path: str) -> None:
+                self._p = path
+
+            def getServerInfo(self):  # noqa: N802
+                return types.SimpleNamespace(getDBName=lambda: self._p)
+
+            def dispose(self) -> None:
+                disposed.append(self._p)
+
+        d = tmp_path / "bsim"
+        d.mkdir()
+        mine = str(d / "karadul_bsim.mv.db")
+        other = str(tmp_path / "baska" / "karadul_bsim.mv.db")
+        mgr = types.SimpleNamespace(getAllDataSources=lambda: [Ds(other), Ds(mine)])
+        for name in ("ghidra", "ghidra.features", "ghidra.features.bsim",
+                     "ghidra.features.bsim.query", "ghidra.features.bsim.query.file"):
+            monkeypatch.setitem(sys.modules, name, types.ModuleType(name))
+        sys.modules["ghidra.features.bsim.query.file"].BSimH2FileDBConnectionManager = mgr
+        w = _BSimNativeWrapper(d)
+        assert w.release("karadul_bsim") is True
+        assert disposed == [mine]
+        assert w.release("yok") is False
 
     def test_surecler_arasi_gercek_kilit(self, tmp_path) -> None:
         d = tmp_path / "bsim"

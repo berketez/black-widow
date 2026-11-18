@@ -58,6 +58,22 @@
       "replace": "\"bsim_status\": None,"
     },
     {
+      "id": "p16b_h2_havuz_acik",
+      "desc": "GHIDRA-01: oturum sonunda Ghidra'nın H2 havuzu kapatılmıyor (dosya süreç bitene dek kilitli)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra01Kilit::test_oturum_sonunda_h2_havuzu_kapatilir",
+      "find": "            if callable(release):",
+      "replace": "            if callable(release) and False:"
+    },
+    {
+      "id": "p16b_h2_yanlis_havuz",
+      "desc": "GHIDRA-01: release başka deponun havuzunu kapatıyor, kendi deposununkini bırakıyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra01Kilit::test_release_yalniz_bu_deponun_havuzunu_kapatir",
+      "find": "            if os.path.realpath(db_file) != target:",
+      "replace": "            if not os.path.realpath(db_file) != target:"
+    },
+    {
       "id": "p16b_kendisi_dislanmaz",
       "desc": "GHIDRA-02: kendi md5'i aday olabiliyor",
       "module": "karadul/ghidra/bsim.py",
