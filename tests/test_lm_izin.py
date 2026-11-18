@@ -255,3 +255,44 @@ def test_sunucu_ikilisi_hedef_olamaz(tmp_path):
         M.check_server_binary(kapali, ws, hedef_sha)
     # hedef özeti bilinmiyorsa yalnız ad ve yer denetlenir
     assert M.check_server_binary(iyi, ws, None) == iyi.resolve()
+
+
+# --------------------------------------------------------------------------------------------
+# (f) süreç düzeyinde: bütün bir oturum akışında hiç süreç başlatılmaz, çalışma alanı değişmez
+
+
+def test_oturum_akisi_surec_baslatmaz_calisma_alanini_degistirmez(tmp_path, monkeypatch):
+    import subprocess
+
+    from karadul.lm import session as S
+    from tests.test_lm_summaries import R, X, ZINCIR_METIN, OzetArka, zincir_ws
+    cagrilar: list[str] = []
+
+    def kaydet(ad):
+        def f(*a, **k):
+            cagrilar.append(ad)
+            raise OSError(f"{ad} bu sınamada yasak")
+        return f
+    for ad in ("Popen", "run", "call", "check_output"):
+        monkeypatch.setattr(subprocess, ad, kaydet(f"subprocess.{ad}"))
+    for ad in ("system", "posix_spawn", "posix_spawnp", "fork", "execv", "execve", "spawnv", "popen", "kill"):
+        if hasattr(os, ad):
+            monkeypatch.setattr(os, ad, kaydet(f"os.{ad}"))
+    kok = zincir_ws(tmp_path / "ws").root
+    once = {p: p.read_bytes() for p in kok.rglob("*") if p.is_file()}
+    s = S.open_session(kok, backend=OzetArka(dict(ZINCIR_METIN)), binary_sha256="ab" * 32,
+                       store_root=tmp_path / "depo", mode="acikla")
+    try:
+        for satir in ("/yardim", f"/acikla FUN_{X} 0", f"/acikla FUN_{R}", "/onayla", f"/not FUN_{X} not",
+                      "/oneriler", "/ac r1", "/kip plan", "/plan dizgi dizgisi", "/onayla", "/durdur",
+                      "karadullm; sh", "/kip adlandir", f"/ad FUN_{X}"):
+            s.submit(satir)
+            assert s.wait_idle(20.0)
+    finally:
+        s.close()
+    assert cagrilar == []
+    assert {p: p.read_bytes() for p in kok.rglob("*") if p.is_file()} == once
+    # oturum yalnız ~/.karadul/lm/<sha>/ karşılığına yazdı
+    yazilan = sorted(str(p.relative_to(tmp_path / "depo")).split("/")[1] for p in (tmp_path / "depo").rglob("*")
+                     if p.is_file())
+    assert set(yazilan) <= {"defter.jsonl", "ozet.jsonl", "sonuclar"}
