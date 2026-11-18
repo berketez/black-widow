@@ -12,6 +12,7 @@ import logging
 import os
 import shutil
 import time
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,7 @@ from karadul.config import CPU_PERF_CORES
 from karadul.pipeline.steps._feedback_naming_candidates import (
     collect_candidates,
 )
+from karadul.reconstruction import name_validity as _name_validity
 
 try:
     from karadul.reconstruction.name_merger import NameMerger
@@ -74,6 +76,165 @@ def drop_below_threshold(
     return kept, len(final_naming_map) - len(kept)
 
 
+MERGER_PROVENANCE_SECTION = "name_merger"
+MERGER_PROVENANCE_VERSION = 1
+
+
+def c_namer_decided(naming_result: Any) -> dict[str, str] | None:
+    """c_namer koştuysa ad verdiği anahtarlar (anahtar → ad); koşmadıysa ``None``.
+
+    "Koştu": sonuç başarılı ve ``naming_map`` bir sözlük. Bu anahtarların adı kodda zaten
+    yazılı (birleştirici c_namer'ın çıktısı üstünde çalışır); karar c_namer'ındır.
+    """
+    if naming_result is None or getattr(naming_result, "success", False) is not True:
+        return None
+    naming_map = getattr(naming_result, "naming_map", None)
+    if not isinstance(naming_map, dict):
+        return None
+    return {k: v for k, v in naming_map.items() if isinstance(k, str) and isinstance(v, str)}
+
+
+def rejected_pre_name_keys(
+    extracted_names: dict[str, str] | None,
+    decided: dict[str, str] | None,
+    bindiff_confidence_map: dict[str, Any] | None,
+    refdiff_naming: dict[str, str] | None,
+) -> frozenset[str]:
+    """c_namer'ın ön ad olarak gördüğü ama ad vermediği anahtarlar (koşmadıysa boş).
+
+    Ön ad sözlüğünde olup c_namer'ın haritasında olmayan anahtar: ad geçerliliği reddetti ya da
+    aynı ad daha öncelikli ön adda kullanıldı. BinDiff / ReferenceDiffer'ın bu yinelemede
+    eklediği anahtarlar c_namer'dan SONRA geldiği için sayılmaz.
+    """
+    if decided is None or not extracted_names:
+        return frozenset()
+    later = set(bindiff_confidence_map or ()) | set(refdiff_naming or ())
+    return frozenset(k for k in extracted_names if k not in decided and k not in later)
+
+
+def _function_index(functions_json: Path | None) -> tuple[dict[str, str], dict[int, str]]:
+    """``ghidra_functions.json``'dan var olan fonksiyon adları ve adres → Ghidra adı."""
+    if functions_json is None or not Path(functions_json).exists():
+        return {}, {}
+    try:
+        data = json.loads(Path(functions_json).read_text(encoding="utf-8", errors="replace"))
+    except (OSError, json.JSONDecodeError):
+        return {}, {}
+    funcs = data.get("functions", []) if isinstance(data, dict) else data
+    pairs: list[tuple[str, bool]] = []
+    by_addr: dict[int, str] = {}
+    for f in funcs if isinstance(funcs, list) else []:
+        if not isinstance(f, dict) or not isinstance(f.get("name"), str):
+            continue
+        pairs.append((f["name"], bool(f.get("is_thunk") or f.get("is_external"))))
+        try:
+            by_addr.setdefault(int(str(f.get("address", "")), 16), f["name"])
+        except ValueError:
+            continue
+    return _name_validity.existing_function_names(pairs), by_addr
+
+
+def validate_merged_names(
+    merged_map: dict[str, str], *, functions_json: Path | None, used: Any,
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Birleştiricinin haritasını c_namer'ın ad kurallarından geçir (AD-05).
+
+    Genel anahtarda: ``name_validity.reject_reason`` (C tanımlayıcısı, anahtar sözcük, tip adı,
+    ikilide başka fonksiyonun adı; anahtarın kendi fonksiyonunun adı çakışma değildir); bu
+    koşuda verilmiş adla çakışan ad ``unique_name`` ile ek alır. Yerel anahtarda (``f::ad``)
+    yalnız sözcük kuralları. Dönen: (süzülmüş harita, {reddedilen anahtar: neden}).
+    """
+    existing, by_addr = _function_index(functions_json)
+    taken = set(used)
+    kept: dict[str, str] = {}
+    rejected: dict[str, str] = {}
+    for key, name in merged_map.items():
+        local = "::" in key
+        own = key
+        if not local and key.startswith("FUN_"):
+            try:
+                own = by_addr.get(int(key[4:], 16), key)
+            except ValueError:
+                own = key
+        reason = _name_validity.reject_reason(
+            name, local=local, existing_functions=None if local else existing, own_name=own)
+        if reason is not None:
+            rejected[key] = reason
+            continue
+        if not local:
+            name = _name_validity.unique_name(name, taken, reserved=existing)
+            taken.add(name)
+        kept[key] = name
+    return kept, rejected
+
+
+def write_merger_provenance(
+    *,
+    decompiled_dir: Path,
+    reconstructed_dir: Path,
+    iter_index: int,
+    merge_result: Any,
+    final_map: dict[str, str],
+    rejected: dict[str, str],
+    excluded: frozenset[str],
+    decided_count: int,
+    threshold: float | None,
+    stats: dict[str, Any],
+) -> None:
+    """Birleştiricinin kararını köken kaydına yaz (``naming_provenance.json`` → ``name_merger``).
+
+    Kayıt c_namer'ın bu yinelemedeki köken kaydına (``decompiled_dir``; c_namer'ın çıktı
+    dizini) eklenir; yoksa (c_namer koşmadı) ``reconstructed/name_merger_provenance[_iterN].json``
+    yazılır. Her karar: ad, birleşik güven, kaynaklar, yöntem ve koda giden haritada olup olmadığı
+    (eşik / ad geçerliliği nedeniyle düşenin nedeni). Yazılamazsa yalnız istatistiğe not düşülür.
+    """
+    decisions: dict[str, Any] = {}
+    for key in sorted(merge_result.merged_names):
+        m = merge_result.merged_names[key]
+        if key in final_map:
+            outcome: Any = None
+        elif key in rejected:
+            outcome = rejected[key]
+        else:
+            outcome = "below_global_min"
+        decisions[key] = {
+            "name": m.final_name,
+            "applied_name": final_map.get(key),
+            "confidence": round(float(m.final_confidence), 4),
+            "sources": sorted(set(m.sources)),
+            "method": m.merge_method,
+            "dropped": outcome,
+        }
+    section = {
+        "version": MERGER_PROVENANCE_VERSION,
+        "iteration": iter_index,
+        "c_namer_decided": decided_count,
+        "excluded_rejected_pre_names": sorted(excluded),
+        "global_min_confidence": threshold,
+        "unk": merge_result.total_unk,
+        "decisions": decisions,
+    }
+    from karadul.core.naming_labels import NAMING_PROVENANCE_FILE
+
+    target = Path(decompiled_dir) / NAMING_PROVENANCE_FILE
+    try:
+        if target.is_file():
+            data = json.loads(target.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError("köken kaydı sözlük değil")
+            data[MERGER_PROVENANCE_SECTION] = section
+        else:
+            suffix = f"_iter{iter_index}" if iter_index > 0 else ""
+            target = Path(reconstructed_dir) / f"name_merger_provenance{suffix}.json"
+            data = {MERGER_PROVENANCE_SECTION: section}
+        # c_namer'ın yazım biçimiyle aynı (indent=1, ensure_ascii, sort_keys)
+        target.write_text(json.dumps(data, indent=1, ensure_ascii=True, sort_keys=True),
+                          encoding="utf-8")
+        stats["name_merger_provenance"] = f"yazildi:{target.name}"
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        stats["name_merger_provenance"] = f"yazilamadi:{type(exc).__name__}"
+
+
 def run_name_merger(
     *,
     ctx: Any,
@@ -126,7 +287,16 @@ def run_name_merger(
             getattr(bsim_cfg, "fusion_max_candidates_per_function", 3),
         )
 
+        # P13a / AD-04 + AD-05: c_namer koştuysa ad verdiği anahtarın kararı onundur (kod o adı
+        # taşıyor; birleştirici yeniden puanlamaz, 0,70 uydurmaz); ön adlar birleştiriciye ikinci
+        # kez (``binary_extractor``) girmez. c_namer'ın gördüğü ama ad vermediği ön ad anahtarı
+        # (ad geçerliliği reddi, aynı ad daha öncelikli ön adda) birleştiriciden ad almaz.
+        decided = c_namer_decided(naming_result)
+        excluded = rejected_pre_name_keys(
+            extracted_names, decided, bindiff_confidence_map, refdiff_naming)
+
         candidates_by_symbol = collect_candidates(
+            pre_names_via_c_namer=decided is not None,
             extracted_names=extracted_names,
             naming_result=naming_result,
             bindiff_confidence_map=bindiff_confidence_map,
@@ -145,11 +315,18 @@ def run_name_merger(
             decompiled_dir=decompiled_dir,
             functions_json=functions_json,
         )
-        if not candidates_by_symbol:
+        decided_map = dict(decided or {})
+        for key in list(candidates_by_symbol):
+            if key in decided_map or key in excluded:
+                del candidates_by_symbol[key]
+        if decided is not None:
+            stats["name_merger_c_namer_decided"] = len(decided_map)
+            stats["name_merger_excluded_rejected_pre_names"] = len(excluded)
+        if not candidates_by_symbol and not decided_map:
             return final_naming_map, current_named_set, decompiled_dir
 
         merge_result = merger.merge(candidates_by_symbol)
-        final_naming_map = merger.to_naming_map(merge_result)
+        merged_map = merger.to_naming_map(merge_result)
         logger.info(
             "Name merger: %d merged (%d exact_multi, %d conflicts)",
             merge_result.total_merged,
@@ -163,17 +340,34 @@ def run_name_merger(
         # Ürün eşiği (bayrak açıksa): c_namer'ın seçimindeki eşiğin aynısı, öbür kaynakların
         # 0,30-0,70 arasında ad yazmasını önler. Bayrak kapalıyken harita değişmez.
         threshold = global_naming_threshold(pc.config.binary_reconstruction)
-        final_naming_map, below = drop_below_threshold(
-            final_naming_map, merge_result.merged_names, threshold,
+        merged_map, below = drop_below_threshold(
+            merged_map, merge_result.merged_names, threshold,
         )
         if threshold is not None:
             stats["name_merger_below_global_min"] = below
 
+        # AD-05: birleştiricinin adı c_namer'ın süzgeçlerinden geçer (ad geçerliliği, var olan
+        # fonksiyon adıyla çakışma, bu koşuda verilmiş adla çakışma → ek).
+        merged_map, rejected = validate_merged_names(
+            merged_map, functions_json=functions_json,
+            used=[v for k, v in decided_map.items() if "::" not in k])
+        if rejected:
+            stats["name_merger_rejected"] = dict(sorted(Counter(rejected.values()).items()))
+
+        # Koda giden harita: c_namer'ın kararları + birleştiricinin süzülmüş kararları.
+        final_naming_map = dict(decided_map)
+        final_naming_map.update(merged_map)
         # Bos/kisa key'leri cikar (regex \b()\b bos string bozulmasini onle)
         final_naming_map = {
             k: v for k, v in final_naming_map.items()
             if k and len(k) >= 2 and v
         }
+        write_merger_provenance(
+            decompiled_dir=decompiled_dir, reconstructed_dir=reconstructed_dir,
+            iter_index=iter_index, merge_result=merge_result, final_map=merged_map,
+            rejected=rejected, excluded=excluded, decided_count=len(decided_map),
+            threshold=threshold, stats=stats,
+        )
         if not final_naming_map:
             return final_naming_map, current_named_set, decompiled_dir
 

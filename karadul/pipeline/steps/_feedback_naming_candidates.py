@@ -44,6 +44,10 @@ def collect_candidates(
     # EngineeringAlgorithmAnalyzer + FormulaReconstructor calistirilir.
     decompiled_dir: Path | None = None,
     functions_json: Path | None = None,
+    # P13a / AD-04: c_namer koştuysa ön adları o zaten işledi (aynı kanıt). True iken
+    # ön adlar (``binary_extractor``) ve c_namer'ın kendi adları birleştiriciye aday
+    # olarak GİRMEZ: c_namer'ın ad verdiği anahtarın kararı c_namer'ındır.
+    pre_names_via_c_namer: bool = False,
 ) -> dict[str, list[Any]]:
     """Tum kaynaklardan candidates_by_symbol sozlugu olustur.
 
@@ -54,8 +58,9 @@ def collect_candidates(
     """
     candidates_by_symbol: dict[str, list[Any]] = {}
 
-    _add_binary_extractor(extracted_names, candidates_by_symbol)
-    _add_c_namer(naming_result, candidates_by_symbol)
+    if not pre_names_via_c_namer:
+        _add_binary_extractor(extracted_names, candidates_by_symbol)
+        _add_c_namer(naming_result, candidates_by_symbol, stats)
     _add_bindiff(bindiff_confidence_map, candidates_by_symbol)
     _add_refdiff(refdiff_naming, candidates_by_symbol)
     _add_fid(fid_json, candidates_by_symbol)
@@ -404,7 +409,14 @@ def _add_binary_extractor(
 
 def _add_c_namer(
     naming_result: Any, candidates: dict[str, list[Any]],
+    stats: dict[str, Any] | None = None,
 ) -> None:
+    """c_namer'ın adları (yalnız c_namer koşmuş sayılmadığında çağrılır; bkz. collect_candidates).
+
+    Güveni ``confidence_map``'te olmayan ad (ölçülmemiş kanaldaki ön ad: Faz 1, elle) aday
+    olmaz: eskiden 0,70 uyduruluyordu (P12a / AD-07 notu; P13a). Sayısı
+    ``name_merger_c_namer_unmeasured`` istatistiğinde.
+    """
     if naming_result is None or not hasattr(naming_result, "naming_map"):
         return
     # FIX (2026-07-12): sabit 0.70 yerine c_namer'in gercek per-isim
@@ -427,8 +439,14 @@ def _add_c_namer(
                 NamingCandidate(new_name, 0.25, "c_namer_structural"),
             )
         else:
+            conf = conf_map.get(old_name)
+            if not isinstance(conf, (int, float)) or isinstance(conf, bool):
+                if stats is not None:
+                    stats["name_merger_c_namer_unmeasured"] = (
+                        stats.get("name_merger_c_namer_unmeasured", 0) + 1)
+                continue
             candidates.setdefault(old_name, []).append(
-                NamingCandidate(new_name, conf_map.get(old_name, 0.70), "c_namer"),
+                NamingCandidate(new_name, float(conf), "c_namer"),
             )
 
 
@@ -928,6 +946,10 @@ def _add_engineering_api_naming(
     return added
 
 
+# Formül adayıyla AYNI eşleşmeden (AlgorithmMatch) doğan kaynaklar
+_SAME_MATCH_SOURCES = frozenset({"engineering_constant", "engineering_api"})
+
+
 def _add_engineering_formula_naming(
     *,
     algorithms: list[Any],
@@ -979,6 +1001,13 @@ def _add_engineering_formula_naming(
             continue
         hint = _algo_name_to_func_hint(algo)
         if not hint or len(hint) < 2:
+            continue
+        # P13a: formül aynı AlgorithmMatch'ten doğar. Aynı fonksiyona aynı adı o eşleşme
+        # zaten (sabit / API) verdiyse ikinci bir bağımsız kaynak DEĞİLDİR; birleştiricide iki
+        # kaynak sayılıp güveni şişirmesin (kulvar AD "Küçükler": 0,60 → 0,709).
+        if any(getattr(c, "name", None) == hint
+               and getattr(c, "source", "") in _SAME_MATCH_SOURCES
+               for c in candidates.get(fname, ())):
             continue
         cand = _make_candidate(
             name=hint,
