@@ -34,7 +34,7 @@ from typing import Any, Callable, Iterable, Iterator, Mapping, Optional
 
 from karadul.lm import (
     BUDGET_TOOL_RESULTS_TOKENS, CONTEXT_TOKENS, CONTEXT_TOKENS_K2, MAX_TOKENS_STEP, MODEL_RETRY_MAX,
-    TIME_BUDGET_FACTOR, guard, protocol,
+    TASK_TIME_BUDGET_FALLBACK_SEC, TIME_BUDGET_FACTOR, guard, protocol,
 )
 from karadul.lm.audit import AuditLog, canonical_json, sha256_text
 from karadul.lm.backend import STATE_ERROR, STATE_MEMORY_STOPPED, Backend, BackendError, ChatResult, LMError
@@ -134,6 +134,7 @@ class TaskResult:
     memory: Optional[dict[str, Any]] = None
     error: Optional[str] = None
     verdict: Optional[str] = None            # denetim hükmü (guard.VERDICTS); denetlenecek cevap yoksa None
+    time_budget_sec: Optional[float] = None  # uygulanan süre bütçesi (LM-06)
     guard: Optional[dict[str, Any]] = None   # GuardReport.as_dict(): bulgular, bayraklar, toplu kabul
 
     def as_dict(self) -> dict[str, Any]:
@@ -167,7 +168,8 @@ class Agent:
                  enabled_modes: Iterable[str] = (MODE_K0,), blind_target: bool = False,
                  context_tokens: int = CONTEXT_TOKENS, loop_context_tokens: int = CONTEXT_TOKENS_K2,
                  clock: Callable[[], float] = time.monotonic, cancel: Optional[threading.Event] = None,
-                 rejected_names: Optional[Mapping[str, Iterable[str]]] = None):
+                 rejected_names: Optional[Mapping[str, Iterable[str]]] = None,
+                 expected_task_sec: Optional[float] = None):
         modes = frozenset(enabled_modes)
         if not modes <= frozenset(MODES):
             raise ValueError(f"bilinmeyen ajan kipi: {sorted(modes - frozenset(MODES))}")
@@ -180,7 +182,13 @@ class Agent:
         self.blind_target = bool(blind_target)
         self.context_tokens = context_tokens
         self.loop_context_tokens = loop_context_tokens
+        # İptal görev başınadır (LM-06): her görevin başında temizlenir; görev yürürken kurulursa o görev
+        # tur arasında "iptal" ile biter. Görev yokken kurulan iptal sonraki görevi etkilemez.
         self.cancel = cancel if cancel is not None else threading.Event()
+        # Hız yoklamasından beklenen tek model turunun süresi (``probe.expected_name_suggest_sec``); verilirse
+        # süre bütçesi TIME_BUDGET_FACTOR × beklenen süredir, verilmezse TASK_TIME_BUDGET_FALLBACK_SEC.
+        self.expected_task_sec = expected_task_sec
+        self._running = False
         self._clock = clock
         self._lock = threading.Lock()
         self._result_seq = 0
@@ -205,11 +213,29 @@ class Agent:
 
     # --- dış arayüz ---------------------------------------------------------------------------
 
-    def suggest_name(self, addr: str, *, abstain_allowed: bool = True) -> TaskResult:
-        """K0 "ad öner": paket kur → model tek çağrı → ayrıştır → sonuç."""
+    def suggest_name(self, addr: str, *, abstain_allowed: bool = True,
+                     deadline_sec: Optional[float] = None) -> TaskResult:
+        """K0 "ad öner": paket kur → model tek çağrı → ayrıştır → sonuç. ``deadline_sec`` verilmezse
+        öntanımlı süre bütçesi (``default_time_budget_sec``)."""
         if MODE_K0 not in self.enabled_modes:
             raise ModeDisabled("K0 bu ajanda etkin değil")
-        return self._run(MODE_K0, addr, abstain_allowed, None)
+        return self._run(MODE_K0, addr, abstain_allowed, deadline_sec)
+
+    def default_time_budget_sec(self, mode: str) -> float:
+        """Öntanımlı süre bütçesi (LM-06): hız ölçüldüyse TIME_BUDGET_FACTOR × beklenen süre × model
+        turu sayısı (K0: 1; döngü: araç bütçesi + son cevap), ölçülmediyse TASK_TIME_BUDGET_FALLBACK_SEC."""
+        e = self.expected_task_sec
+        if isinstance(e, (int, float)) and not isinstance(e, bool) and e > 0:
+            turns = 1 if mode == MODE_K0 else max_calls_for(mode) + 1
+            return time_budget_sec(float(e) * turns)
+        return TASK_TIME_BUDGET_FALLBACK_SEC
+
+    def cancel_current(self) -> bool:
+        """Yürüyen görevi iptal eder (tur arasında biter). Görev yoksa hiçbir şey yapmaz, ``False``."""
+        if not self._running:
+            return False
+        self.cancel.set()
+        return True
 
     def run_loop(self, addr: str, *, mode: str = MODE_K2, abstain_allowed: bool = True,
                  deadline_sec: Optional[float] = None) -> TaskResult:
@@ -234,12 +260,17 @@ class Agent:
     def _run(self, mode: str, addr: str, abstain_allowed: bool, deadline_sec: Optional[float]) -> TaskResult:
         with self._exclusive():
             self._task_seq += 1
+            # İptal görev başınadır: önceki görevin (ya da görev yokken kurulmuş) iptali bu görevi bitirmez.
+            self.cancel.clear()
+            self._running = True
             t0 = self._clock()
+            if deadline_sec is None:
+                deadline_sec = self.default_time_budget_sec(mode)
             # Adres alanına yalnız biçimi doğrulanmış değer yazılır (çağıranın verdiği ham dizgi değil).
             shown = addr if isinstance(addr, str) and _ADDR_RE.fullmatch(addr) else None
             task = _Task(TaskResult(task_id=f"g{self._task_seq}", mode=mode, task=TASK_NAME, addr=shown,
-                                    status="", blind=self.blind_target),
-                         deadline=None if deadline_sec is None else t0 + deadline_sec)
+                                    status="", blind=self.blind_target, time_budget_sec=deadline_sec),
+                         deadline=t0 + deadline_sec)
             try:
                 try:
                     if mode == MODE_K0:
@@ -258,6 +289,8 @@ class Agent:
                     except Exception:  # noqa: BLE001
                         pass
                 raise
+            finally:
+                self._running = False
             self._close(task, t0)
             return task.result
 
@@ -276,7 +309,8 @@ class Agent:
                              ad_durumu=r.name_status, hata=r.error, sayaclar=asdict(r.counters),
                              kestirim_istem_jetonu=r.est_prompt_tokens, kod_kirpildi=r.code_clipped,
                              kirpilan_sonuclar=list(r.truncated_ids), icerik_adsiz=r.empty_content,
-                             kor=r.blind, sure_sn=r.duration_sec, istem_surumu=PROMPT_VERSION, hukum=r.verdict,
+                             kor=r.blind, sure_sn=r.duration_sec, sure_butcesi_sn=r.time_budget_sec,
+                             istem_surumu=PROMPT_VERSION, hukum=r.verdict,
                              arac_kumesi=self.registry.version(), onek_sha256=self.prefix_sha256(r.mode))
 
     # --- araçlar ------------------------------------------------------------------------------
@@ -370,6 +404,14 @@ class Agent:
             # Bellek nedeniyle durmuş sunucu kendiliğinden yeniden başlatılmaz: istek atılmaz. Yeniden
             # denemek için arka uç açıkça başlatılır ve yeni bir bekçi kurulur.
             task.finish(STATUS_MEMORY)
+            return None
+        # İptal ve süre her model isteğinden önce bakılır (K0'ın ilk isteği ve onarım turu dahil; LM-06).
+        # Süren istek kesilmez: tek sınırı isteğin soket zaman aşımıdır.
+        if self.cancel.is_set():
+            task.finish(STATUS_CANCELLED)
+            return None
+        if task.deadline is not None and self._clock() > task.deadline:
+            task.finish(STATUS_TIMEOUT)
             return None
         c = task.result.counters
         reply: Optional[ChatResult] = None

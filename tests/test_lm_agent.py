@@ -231,10 +231,22 @@ def test_k0_durumlar_model_cagrilmadan_ya_da_cevapsiz(tmp_path):
     assert (r.status, n, r.error) == ("paket_hatasi", 0, "get_decompiled:veri_yok")
     r, n, _ = kos([yanit(AD)], fun(A), duzey=None)
     assert (r.status, n, r.counters.package_calls) == ("yetenek_bilinmiyor", 0, 0)
+    # P21 (LM-06): iptal görev başınadır. Görev başlamadan kurulmuş iptal temizlenir; görev yürürken
+    # (burada paket kurulurken) kurulan iptal model çağrılmadan görevi bitirir.
     iptal = threading.Event()
     iptal.set()
     r, n, _ = kos([yanit(AD)], fun(A), cancel=iptal)
-    assert (r.status, n) == ("iptal", 0)
+    assert (r.status, n) == ("tamam", 1) and not iptal.is_set()
+    ajan, arka, _ = kur(tmp_path / "iptal_paket", [yanit(AD)])
+    asil = ajan.registry.call
+
+    def durdur(*a, **k):
+        ajan.cancel.set()
+        return asil(*a, **k)
+
+    ajan.registry.call = durdur
+    r = ajan.suggest_name(fun(A))
+    assert (r.status, len(arka.calls), r.counters.package_calls) == ("iptal", 0, 2)
     with pytest.raises(G.ModeDisabled):
         kur(tmp_path / "k0_kapali", [yanit(AD)], enabled_modes=())[0].suggest_name(fun(A))
 

@@ -153,5 +153,10 @@ LINE_NUMBER_MAX = 999999
 # görev iptal edilmemişse ve süre bütçesi dolmamışsa yinelenir. 1: bir kopma görevi düşürmez; ikinci
 # kopma kalıcı sorun sayılır ve görev "arka_uc_hatasi" ile biter.
 MODEL_RETRY_MAX = 1
+# LM-06: hız ölçülmemişken (ajana beklenen görev süresi verilmemişken) görevin süre bütçesi. Tek
+# model isteğinin soket zaman aşımına eşit: ölçülmüş hız yoksa bir görev, tek bir isteğin en uzun
+# süresinden uzun sürmez (eskiden sınır yoktu; K2 en kötü durumda 9 istek × 900 sn bekleyebilirdi).
+# Hız ölçüldüyse bütçe tasarımın kuralıdır: TIME_BUDGET_FACTOR × beklenen süre (§2.3).
+TASK_TIME_BUDGET_FALLBACK_SEC = float(REQUEST_TIMEOUT_SEC)
 
 __all__: list[str] = []
