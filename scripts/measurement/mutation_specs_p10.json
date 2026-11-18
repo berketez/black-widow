@@ -89,6 +89,103 @@
       "test": "tests/test_p10_yedek.py::TestAdimKaynakAgaci::test_step_routes_phase3_to_output_tree_without_rewrites",
       "find": "if struct_result.output_files:",
       "replace": "if struct_result.rewritten_files:"
+    },
+    {
+      "id": "p10_k4_fonksiyon_kapsami",
+      "desc": "yeniden yazım bağlamayı fonksiyona bakmadan uygular (A'nın yapısı B'nin param_1'ine)",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip05.py::TestYenidenYazim::test_rewrite_only_in_own_function",
+      "find": "var: es for (fn, var), es in binding.items() if fn == func_name",
+      "replace": "var: es for (fn, var), es in binding.items() if True"
+    },
+    {
+      "id": "p10_k4_olcek",
+      "desc": "ofset tabanın öğe boyutuyla ölçeklenmez",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip05.py::TestCikarma::test_offset_scaled_by_declared_pointer_type",
+      "find": "per_var[pat.base_ptr][pat.offset * scale]",
+      "replace": "per_var[pat.base_ptr][pat.offset * 1]"
+    },
+    {
+      "id": "p10_k4_bildirimsiz_kanit",
+      "desc": "bildirimi olmayan / öğe boyutu bilinmeyen taban kanıt sayılır",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip05.py::TestCikarma::test_undeclared_or_unknown_element_base_not_evidence",
+      "find": "scale = _offset_scale(decls.get(pat.base_ptr))",
+      "replace": "scale = _offset_scale(decls.get(pat.base_ptr)) or 1"
+    },
+    {
+      "id": "p10_k4_genislik_catismasi",
+      "desc": "aynı ofsete farklı genişlikte erişim yapıyı durdurmaz",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip05.py::TestCikarma::test_width_conflict_and_overlap_no_struct",
+      "find": "if any(len(ws) > 1 for ws in widths.values()):",
+      "replace": "if False and any(len(ws) > 1 for ws in widths.values()):"
+    },
+    {
+      "id": "p10_k4_ortusme",
+      "desc": "üst üste binen alanlar yapıyı durdurmaz",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip05.py::TestCikarma::test_width_conflict_and_overlap_no_struct",
+      "find": "a + next(iter(widths[a])) > b",
+      "replace": "a + next(iter(widths[a])) > b + 99"
+    },
+    {
+      "id": "p10_k4_dizgi_ortusu",
+      "desc": "çıkarma ham metinde çalışır (dizgi ve yorumdaki erişim metni kanıt olur)",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip05.py::TestCikarma::test_string_and_comment_text_not_evidence",
+      "find": "masked = _mask_noncode(content)",
+      "replace": "masked = content",
+      "occurrence": 1
+    },
+    {
+      "id": "p10_k4_tip_uyumu",
+      "desc": "erişimin tipi alanın gözlenen tipiyle karşılaştırılmaz",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip05.py::TestYenidenYazim::test_type_mismatch_not_rewritten",
+      "find": "if _norm_type(m.group(\"cast_type\")) != _norm_type(observed):",
+      "replace": "if False and _norm_type(m.group(\"cast_type\")) != _norm_type(observed):"
+    },
+    {
+      "id": "p10_k4_bildirim_degisti",
+      "desc": "bildirim çıkarmadakinden farklıyken (ölçek değişmiş) yine yazılır",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip05.py::TestYenidenYazim::test_declaration_change_blocks_rewrite",
+      "find": "if scale is None or (es.base_decl and decls.get(base) != es.base_decl):",
+      "replace": "if scale is None:"
+    },
+    {
+      "id": "p10_k4_yayilim_kaynak",
+      "desc": "çağrı grafiği yayılımı fonksiyonu kaynak sayar (yeniden yazıma girer)",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip05.py::TestYayilim::test_propagation_does_not_make_source_function",
+      "find": "es.propagated_functions.append(target_func)",
+      "replace": "es.source_functions.append(target_func)"
+    },
+    {
+      "id": "p10_k4_param_sirasi",
+      "desc": "yapı taban değişkenin değil ilk parametrenin sırasına bağlanır",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip05.py::TestYayilim::test_param_map_uses_base_var_position",
+      "find": "param_map[names.index(es.base_var)] = es.name",
+      "replace": "param_map[0] = es.name"
+    },
+    {
+      "id": "p10_k4_dolgu",
+      "desc": "tanımda açık dolgu yok (alanlar derleyicinin seçtiği ofsete kayar)",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip05.py::TestYerlesim::test_typedef_offsets_exact",
+      "find": "                lines.append(f\"    uint8_t          _pad_0x{cur:x}[{ef.offset - cur}];\")\n",
+      "replace": "                pass\n"
+    },
+    {
+      "id": "p10_k4_parantezsiz_taban",
+      "desc": "Ghidra'nın parantezsiz *(long *)param_1 yazımı tanınmaz",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip05.py::TestCikarma::test_same_name_in_two_functions_gives_two_structs",
+      "find": "for m in _PTR_DEREF_BARE.finditer(line):",
+      "replace": "for m in _PTR_DEREF_BARE.finditer(\"\"):"
     }
   ]
 }

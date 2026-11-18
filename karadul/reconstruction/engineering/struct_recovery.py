@@ -84,6 +84,10 @@ class EnrichedField:
     confidence: float = 0.5
     source: str = "usage_pattern"
     comment: str = ""
+    # P10 (TIP-05): koddaki erişimin gerçek tipi (şablon adı başka tip önerse de
+    # yerleşim ve yeniden yazımın tip uyumu buna göre) ve erişim sayısı.
+    observed_type: str = ""
+    evidence: int = 0
 
 
 @dataclass
@@ -113,6 +117,14 @@ class EnrichedStruct:
     domain: str | None = None
     confidence: float = 0.5
     typedef_declaration: str = ""
+    # P10: köken (``code`` / ``computation_struct_recovery`` / ``constraint_solver``
+    # / ``type_recoverer``), koddan çıkarılanda taban değişken ve bildirimi;
+    # çağrı grafiğiyle yayılan fonksiyonlar kaynaktan AYRI tutulur (TIP-05:
+    # yayılım argüman akışı kanıtı değil, yeniden yazıma girmez).
+    origin: str = ""
+    base_var: str = ""
+    base_decl: str = ""
+    propagated_functions: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -124,16 +136,22 @@ class EnrichedStruct:
                     "raw_name": f.raw_name,
                     "semantic_name": f.semantic_name,
                     "c_type": f.c_type,
+                    "observed_type": f.observed_type,
                     "size": f.size,
                     "confidence": f.confidence,
                     "source": f.source,
                     "comment": f.comment,
+                    "evidence": f.evidence,
                 }
                 for f in self.fields
             ],
             "total_size": self.total_size,
             "alignment": self.alignment,
             "source_functions": self.source_functions,
+            "propagated_functions": self.propagated_functions,
+            "origin": self.origin,
+            "base_var": self.base_var,
+            "base_decl": self.base_decl,
             "algorithm_context": self.algorithm_context,
             "domain": self.domain,
             "confidence": self.confidence,
@@ -659,9 +677,10 @@ _TYPE_SIZES: dict[str, int] = {
 #   *(int *)(param_18 + 4)
 #   *(double *)(param_8 + buffer_9 * 8)
 #   *(long *)(base + 0x10)
+#   *(char **)(param_1 + 8)     (P10: işaretçi tipli alan da tanınır)
 _PTR_ARITH_SIMPLE = re.compile(
     r"\*\(\s*"
-    r"(?P<cast_type>[a-zA-Z_][\w\s]*?)\s*\*\s*\)"    # cast type: "int", "double" vb.
+    r"(?P<cast_type>[a-zA-Z_][\w\s]*?(?:\s*\*)*)\s*\*\s*\)"    # cast type: "int", "char *" vb.
     r"\(\s*"
     r"(?P<base>\w+)"                                    # base pointer
     r"\s*\+\s*"
@@ -672,7 +691,7 @@ _PTR_ARITH_SIMPLE = re.compile(
 # *(type *)(base + idx * stride) -- array access pattern
 _PTR_ARITH_ARRAY = re.compile(
     r"\*\(\s*"
-    r"(?P<cast_type>[a-zA-Z_][\w\s]*?)\s*\*\s*\)"
+    r"(?P<cast_type>[a-zA-Z_][\w\s]*?(?:\s*\*)*)\s*\*\s*\)"
     r"\(\s*"
     r"(?P<base>\w+)"
     r"\s*\+\s*"
@@ -685,11 +704,162 @@ _PTR_ARITH_ARRAY = re.compile(
 # *(type *)base -- dogrudan base dereference (offset=0)
 _PTR_DEREF_DIRECT = re.compile(
     r"\*\(\s*"
-    r"(?P<cast_type>[a-zA-Z_][\w\s]*?)\s*\*\s*\)"
+    r"(?P<cast_type>[a-zA-Z_][\w\s]*?(?:\s*\*)*)\s*\*\s*\)"
     r"\(\s*"
     r"(?P<base>\w+)"
     r"\s*\)"
 )
+
+# P10: Ghidra'nın asıl yazımı ``*(long *)param_1`` (taban parantezsiz). Ardından
+# sonek işleci (``[``, ``(``, ``->``, ``.``, ``++``, ``--``) gelirse taban başka
+# bir ifadedir; ``*(long *)p + 8`` ise C'de (*(long *)p) + 8 = ofset 0 erişimidir.
+_PTR_DEREF_BARE = re.compile(
+    r"\*\(\s*"
+    r"(?P<cast_type>[a-zA-Z_][\w\s]*?(?:\s*\*)*)\s*\*\s*\)"
+    r"\s*(?P<base>[A-Za-z_]\w*)(?!\w)(?!\s*(?:\[|\(|->|\.|\+\+|--))"
+)
+
+
+# ---------------------------------------------------------------------------
+# P10 (TIP-05): fonksiyon kapsamı, bildirim tipi ve ofset ölçeği yardımcıları
+# ---------------------------------------------------------------------------
+
+# Dizgi, karakter sabiti ve yorumlar: desenler bunların içinde aranmaz.
+_NONCODE_RE = re.compile(
+    r'"(?:\\.|[^"\\\n])*(?:"|(?=\n)|\Z)'
+    r"|'(?:\\.|[^'\\\n])*(?:'|(?=\n)|\Z)"
+    r"|//[^\n]*"
+    r"|/\*.*?(?:\*/|\Z)",
+    re.DOTALL,
+)
+
+# Sütun 0'da başlayan fonksiyon tanımı (Ghidra çıktısı; dönüş tipi serbest).
+_FUNC_SIG_RE = re.compile(
+    r"^(?P<rtype>[A-Za-z_][\w \t\*]*?)[ \t\*]+(?P<fname>[A-Za-z_]\w*)[ \t]*"
+    r"\((?P<params>[^)]*)\)\s*\{",
+    re.MULTILINE,
+)
+_SIG_NOT_FUNC = {"if", "while", "for", "switch", "return", "do", "else", "sizeof"}
+
+# Gövdenin başındaki yerel bildirim satırı: ``  long *plVar1;``
+_LOCAL_DECL_RE = re.compile(
+    r"^[ \t]+(?P<type>(?:(?:const|volatile|unsigned|signed|struct|union|enum)\s+)*"
+    r"[A-Za-z_]\w*(?:[ \t]*\*)*)[ \t]*(?P<var>[A-Za-z_]\w*)[ \t]*(?P<arr>\[[^\]\n]*\])?"
+    r"[ \t]*;[ \t]*$",
+    re.MULTILINE,
+)
+_DECL_NOT_TYPE = {"return", "goto", "case", "else", "do", "break", "continue", "typedef"}
+
+# Öğe boyutu (işaretçi aritmetiğinin ölçeği). ``undefined`` Ghidra'da 1 bayt;
+# ``void *`` aritmetiği GCC'de 1 bayt.
+_ELEM_SIZES: dict[str, int] = {
+    "char": 1, "uchar": 1, "byte": 1, "bool": 1, "_Bool": 1, "undefined": 1,
+    "undefined1": 1, "int8_t": 1, "uint8_t": 1, "signed char": 1, "unsigned char": 1,
+    "short": 2, "ushort": 2, "undefined2": 2, "int16_t": 2, "uint16_t": 2,
+    "unsigned short": 2, "int": 4, "uint": 4, "undefined4": 4, "int32_t": 4,
+    "uint32_t": 4, "float": 4, "unsigned int": 4, "unsigned": 4,
+    "long": 8, "ulong": 8, "undefined8": 8, "longlong": 8, "ulonglong": 8,
+    "int64_t": 8, "uint64_t": 8, "double": 8, "size_t": 8, "ssize_t": 8,
+    "intptr_t": 8, "uintptr_t": 8, "unsigned long": 8, "long long": 8,
+}
+_VOID_ELEM = {"void": 1}
+# İşaretçi olmayan ama adres taşıyabilen (8 bayt tamsayı) bildirimler: bayt aritmetiği.
+_BYTE_ARITH_INT_TYPES = {
+    "long", "ulong", "undefined8", "longlong", "ulonglong", "int64_t", "uint64_t",
+    "size_t", "ssize_t", "intptr_t", "uintptr_t", "unsigned long", "long long",
+}
+
+
+def _mask_noncode(text: str) -> str:
+    """Dizgi/karakter sabiti/yorumu aynı uzunlukta boşlukla ört (satır ve konum korunur)."""
+    return _NONCODE_RE.sub(
+        lambda m: "".join("\n" if c == "\n" else " " for c in m.group(0)), text,
+    )
+
+
+def _split_ptr(c_type: str) -> tuple[str, int]:
+    """``'const long **'`` -> (``'long'``, 2)."""
+    stars = c_type.count("*")
+    base = re.sub(r"\b(?:const|volatile)\b", " ", c_type.replace("*", " "))
+    return re.sub(r"\s+", " ", base).strip(), stars
+
+
+def _norm_type(c_type: str) -> str:
+    base, stars = _split_ptr(c_type)
+    return base + (" " + "*" * stars if stars else "")
+
+
+def _offset_scale(decl_type: str | None) -> int | None:
+    """Bildirimi ``decl_type`` olan tabanda ``taban + N`` kaç bayt ilerler (N başına).
+
+    8 baytlık tamsayı (Ghidra'nın adres taşıyan ``long``'u) -> 1; ``T *`` -> sizeof(T);
+    ``T **`` -> 8. Bilinmiyorsa (bildirim yok, ``FILE *`` gibi boyutu bilinmeyen öğe,
+    4 baytlık tamsayı) ``None``: erişim kanıt sayılmaz.
+    """
+    if not decl_type:
+        return None
+    base, stars = _split_ptr(decl_type)
+    if stars == 0:
+        return 1 if base in _BYTE_ARITH_INT_TYPES else None
+    if stars >= 2:
+        return 8
+    if base == "code":
+        return None
+    return _ELEM_SIZES.get(base, _VOID_ELEM.get(base))
+
+
+def _cast_size(cast_type: str) -> int | None:
+    base, stars = _split_ptr(cast_type)
+    if stars:
+        return 8
+    return _ELEM_SIZES.get(base)
+
+
+def _function_spans(masked: str) -> list[tuple[str, str, int, int]]:
+    """Örtülmüş metinden (ad, parametre metni, '{' konumu, gövde sonu) listesi."""
+    spans: list[tuple[str, str, int, int]] = []
+    last_end = -1
+    for m in _FUNC_SIG_RE.finditer(masked):
+        if m.group("fname") in _SIG_NOT_FUNC or m.start() < last_end:
+            continue
+        rtype = m.group("rtype").strip()
+        if rtype.split()[0] in _SIG_NOT_FUNC:
+            continue
+        start = m.end() - 1
+        depth = 0
+        end = -1
+        for i in range(start, len(masked)):
+            ch = masked[i]
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
+        if end < 0:
+            continue
+        spans.append((m.group("fname"), m.group("params"), start, end))
+        last_end = end
+    return spans
+
+
+def _declared_types(params: str, masked_body: str) -> dict[str, str]:
+    """Fonksiyonun parametre ve yerel bildirimleri: {değişken: tip}. Diziler dahil edilmez."""
+    decls: dict[str, str] = {}
+    for p in params.split(","):
+        p = p.strip()
+        if not p or p in ("void", "..."):
+            continue
+        m = re.match(r"^(?P<type>.*?[\s\*])(?P<var>[A-Za-z_]\w*)\s*$", p)
+        if m and m.group("type").strip():
+            decls[m.group("var")] = _norm_type(m.group("type"))
+    for m in _LOCAL_DECL_RE.finditer(masked_body):
+        t = m.group("type").strip()
+        if t.split()[0] in _DECL_NOT_TYPE or m.group("arr"):
+            continue
+        decls.setdefault(m.group("var"), _norm_type(t))
+    return decls
 
 # Ghidra fonksiyon tanimi
 _FUNC_DEF_RE = re.compile(
@@ -741,6 +911,25 @@ class AccessPattern:
     line_text: str = ""
     line_number: int = 0
     func_name: str = ""
+
+
+@dataclass
+class CodeStructExtraction:
+    """P10 (TIP-05): koddan yapı çıkarmanın sonucu.
+
+    Attributes:
+        structs: (fonksiyon, değişken) başına kurulan yapılar.
+        meta: yapı adı -> {"function", "base_var", "base_decl", "scale", "evidence"}.
+        conflicts: aynı ofsete farklı genişlik ya da üst üste binen erişim yüzünden
+            kurulmayan (fonksiyon, değişken) sayısı.
+        unscaled_accesses: tabanın bildirimi yok ya da öğe boyutu bilinmediği için
+            kanıt sayılmayan erişim sayısı.
+    """
+
+    structs: list[RecoveredStruct] = field(default_factory=list)
+    meta: dict[str, dict[str, Any]] = field(default_factory=dict)
+    conflicts: int = 0
+    unscaled_accesses: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -930,8 +1119,10 @@ class StructRecoveryEngine:
                 )
 
         # Eger hic struct yoksa, C dosyalarindan cikart
+        code_ext: CodeStructExtraction | None = None
         if not base_structs:
-            base_structs = self._extract_structs_from_code(c_files, func_meta, errors)
+            code_ext = self._extract_structs_from_code(c_files, func_meta, errors)
+            base_structs = list(code_ext.structs)
             logger.info(
                 "Kod analizinden %d struct cikarildi", len(base_structs),
             )
@@ -947,8 +1138,23 @@ class StructRecoveryEngine:
         logger.info("Faz 1: Template matching (%d struct, %d algo)", len(base_structs), len(func_algorithms))
         enriched_structs: list[EnrichedStruct] = []
 
+        used_names: set[str] = set()
         for struct in base_structs:
             enriched = self._enrich_struct(struct, func_algorithms, func_domains)
+            meta = code_ext.meta.get(struct.name) if code_ext else None
+            if meta:
+                enriched.origin = "code"
+                enriched.base_var = meta["base_var"]
+                enriched.base_decl = meta["base_decl"]
+                for ef in enriched.fields:
+                    ef.evidence = meta["evidence_by_offset"].get(ef.offset, 0)
+            # Şablon adı (ör. ElementData) iki yapıya verilebilir; ad tekil olmalı
+            # (yeniden yazım ve tanım adı kullanır).
+            base_name, k = enriched.name, 2
+            while enriched.name in used_names:
+                enriched.name = f"{base_name}_{k}"
+                k += 1
+            used_names.add(enriched.name)
             enriched_structs.append(enriched)
 
         # Eslestirme istatistigi
@@ -970,14 +1176,8 @@ class StructRecoveryEngine:
 
         # --- Faz 3: Code Rewrite ---
         logger.info("Faz 3: Code rewrite (%d C dosyasi)", len(c_files))
-        struct_map = {es.name: es for es in enriched_structs}
-        # raw_name -> enriched_name eslesmesi
-        name_map = {es.raw_name: es.name for es in enriched_structs}
-
-        # base_ptr -> struct eslesmesi -- tum dosyalar icin ortak
-        global_ptr_map = self._build_global_ptr_struct_map(
-            c_files, enriched_structs,
-        )
+        # (fonksiyon, değişken) -> yapı; yalnız kendi fonksiyonunda (TIP-05)
+        binding = self._build_binding_map(enriched_structs)
 
         total_rewrites = 0
         rewritten_files: list[Path] = []
@@ -990,9 +1190,7 @@ class StructRecoveryEngine:
                 errors.append(f"Dosya okunamadi: {c_file.name}: {exc}")
                 continue
 
-            rewritten, n_rewrites = self._rewrite_access_patterns(
-                content, struct_map, global_ptr_map,
-            )
+            rewritten, n_rewrites, _per_struct = self._rewrite_file(content, binding)
 
             out_file = output_dir / c_file.name
             out_file.write_text(rewritten, encoding="utf-8")
@@ -1045,15 +1243,21 @@ class StructRecoveryEngine:
         c_files: list[Path],
         func_meta: dict,
         errors: list[str],
-    ) -> list[RecoveredStruct]:
-        """C dosyalarindan pointer aritmetigi pattern'lerini analiz ederek struct cikar.
+    ) -> CodeStructExtraction:
+        """C dosyalarındaki sabit ofsetli erişimlerden yapı adayları çıkar.
 
-        CTypeRecoverer sonucu yoksa bu metod kullanilir.
-        Her base_ptr icin offset+type bilgilerini toplar, yeterli field
-        bulunursa struct olusturur.
+        P10 (TIP-05): anahtar ``(fonksiyon, değişken)``. Ghidra her fonksiyonda
+        ``param_1``, ``lVar3`` gibi adları yeniden kullandığından eski ad tabanlı
+        toplama ilgisiz fonksiyonların erişimlerini tek yapıda birleştiriyordu.
+        Ofset, tabanın fonksiyondaki bildirimine göre bayta çevrilir
+        (``int *p; *(int *)(p + 2)`` -> bayt 8; ``long p`` -> bayt aritmetiği);
+        bildirimi yoksa ya da öğe boyutu bilinmiyorsa erişim kanıt sayılmaz.
+        Aynı ofsete farklı genişlikte ya da üst üste binen erişim varsa yapı
+        kurulmaz. Desenler dizgi ve yorum örtülmüş kodda aranır. Bir yapı için en
+        az iki farklı ofset gerekir.
         """
-        # base_ptr -> [(offset, type, func_name)] toplama
-        all_accesses: dict[str, list[tuple[int, str, str]]] = defaultdict(list)
+        out = CodeStructExtraction()
+        used_names: set[str] = set()
 
         for c_file in c_files:
             try:
@@ -1061,66 +1265,85 @@ class StructRecoveryEngine:
             except OSError as e:
                 logger.debug("struct_recovery: %s dosyasi okunamadi (offset toplama): %s", c_file, e)
                 continue
+            masked = _mask_noncode(content)
 
-            functions = self._extract_functions(content, func_meta, c_file.stem)
+            for func_name, params, b_start, b_end in _function_spans(masked):
+                body = masked[b_start:b_end]
+                decls = _declared_types(params, body)
+                # değişken -> {bayt ofseti: [(tip, genişlik), ...]}
+                per_var: dict[str, dict[int, list[tuple[str, int]]]] = defaultdict(
+                    lambda: defaultdict(list),
+                )
+                for pat in self._extract_access_patterns(body, func_name):
+                    if pat.is_array:  # dizi erişimi alan kanıtı değil
+                        continue
+                    scale = _offset_scale(decls.get(pat.base_ptr))
+                    width = _cast_size(pat.cast_type)
+                    if scale is None or width is None:
+                        out.unscaled_accesses += 1
+                        continue
+                    per_var[pat.base_ptr][pat.offset * scale].append(
+                        (_norm_type(pat.cast_type), width),
+                    )
 
-            for func_name, func_body, _ in functions:
-                patterns = self._extract_access_patterns(func_body, func_name)
-                for pat in patterns:
-                    if not pat.is_array:  # Array erisimlerini struct field olarak sayma
-                        all_accesses[pat.base_ptr].append(
-                            (pat.offset, pat.cast_type, pat.func_name)
-                        )
+                for var in sorted(per_var):
+                    offsets = per_var[var]
+                    if len(offsets) < 2:
+                        continue
+                    widths = {off: {w for _, w in acc} for off, acc in offsets.items()}
+                    if any(len(ws) > 1 for ws in widths.values()):
+                        out.conflicts += 1
+                        continue
+                    ordered = sorted(offsets)
+                    if any(
+                        a + next(iter(widths[a])) > b
+                        for a, b in zip(ordered, ordered[1:])
+                    ):
+                        out.conflicts += 1
+                        continue
+                    fields: list[StructField] = []
+                    evidence = 0
+                    ev_by_off: dict[int, int] = {}
+                    for off in ordered:
+                        acc = offsets[off]
+                        # aynı genişlikte en sık görülen tip (eşitlikte alfabetik)
+                        counts: dict[str, int] = defaultdict(int)
+                        for t, _ in acc:
+                            counts[t] += 1
+                        ct = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
+                        evidence += len(acc)
+                        ev_by_off[off] = len(acc)
+                        fields.append(StructField(
+                            offset=off,
+                            name=f"field_0x{off:x}",
+                            type=ct,
+                            size=next(iter(widths[off])),
+                            confidence=0.0,  # kalibre güven yok
+                        ))
+                    name = re.sub(r"[^0-9A-Za-z_]", "_", f"struct_{func_name}_{var}")
+                    base_name, k = name, 2
+                    while name in used_names:
+                        name = f"{base_name}_{k}"
+                        k += 1
+                    used_names.add(name)
+                    out.structs.append(RecoveredStruct(
+                        name=name,
+                        fields=fields,
+                        total_size=max(f.offset + f.size for f in fields),
+                        source_functions=[func_name],
+                        alignment=8,
+                    ))
+                    out.meta[name] = {
+                        "function": func_name,
+                        "base_var": var,
+                        "base_decl": decls.get(var, ""),
+                        "scale": _offset_scale(decls.get(var)),
+                        "evidence": evidence,
+                        "evidence_by_offset": ev_by_off,
+                        "file": c_file.name,
+                    }
 
-        # base_ptr basina struct olustur (en az 2 farkli offset gerekli)
-        structs: list[RecoveredStruct] = []
-        struct_id = 0
-
-        for base_ptr, accesses in all_accesses.items():
-            # Benzersiz offset'leri topla
-            offset_types: dict[int, str] = {}
-            source_funcs: set[str] = set()
-
-            for offset, cast_type, func_name in accesses:
-                # Ayni offset icin en detayli tipi sec
-                if offset not in offset_types:
-                    offset_types[offset] = cast_type
-                source_funcs.add(func_name)
-
-            if len(offset_types) < 2:
-                continue
-
-            # Field'lari olustur
-            fields: list[StructField] = []
-            for offset in sorted(offset_types.keys()):
-                ct = offset_types[offset].strip()
-                size = _TYPE_SIZES.get(ct, _TYPE_SIZES.get(ct + " *", 8))
-                field_name = f"field_0x{offset:x}"
-                fields.append(StructField(
-                    offset=offset,
-                    name=field_name,
-                    type=ct,
-                    size=size,
-                    confidence=0.6,
-                ))
-
-            # Toplam boyut: son field'in offset + size'i
-            total_size = max(f.offset + f.size for f in fields) if fields else 0
-            # Alignment'a yuvarla
-            alignment = 8
-            if total_size % alignment:
-                total_size += alignment - (total_size % alignment)
-
-            struct_id += 1
-            structs.append(RecoveredStruct(
-                name=f"recovered_struct_{struct_id:03d}",
-                fields=fields,
-                total_size=total_size,
-                source_functions=sorted(source_funcs),
-                alignment=alignment,
-            ))
-
-        return structs
+        return out
 
     # ------------------------------------------------------------------
     # Faz 1: Template Matching -- struct'i zenginlestir
@@ -1279,6 +1502,7 @@ class StructRecoveryEngine:
                     confidence=round(best_score, 3),
                     source="algorithm_context",
                     comment=best_ft.comment,
+                    observed_type=sf.type,
                 ))
             else:
                 # Eslesmemis field: generic isim
@@ -1291,6 +1515,7 @@ class StructRecoveryEngine:
                     confidence=0.2,
                     source="unmatched",
                     comment="",
+                    observed_type=sf.type,
                 ))
 
         # Benzerlik: eslesen field orani * ortalama skor
@@ -1459,6 +1684,7 @@ class StructRecoveryEngine:
                 confidence=confidence,
                 source="generic_heuristic",
                 comment=comment,
+                observed_type=sf.type,
             ))
 
         return enriched
@@ -1527,15 +1753,18 @@ class StructRecoveryEngine:
         Her fonksiyonun parametre listesindeki ptr'leri struct'larla esler.
         source_functions bilgisini kullanir.
         """
-        # struct kaynagi: fonksiyon -> struct listesi
+        # P10 (TIP-05): yalnız taban değişkeni bilinen (koddan çıkarılan) yapı,
+        # o değişken fonksiyonun parametresiyse, o parametrenin sırasına bağlanır.
+        # Eski kural "adında param_ geçen ya da * içeren i'inci parametre = listedeki
+        # i'inci yapı" idi; hangi argümanın yapı olduğuna dair kanıt taşımıyordu.
         func_to_structs: dict[str, list[EnrichedStruct]] = defaultdict(list)
         for es in enriched_structs:
-            for fn in es.source_functions:
-                func_to_structs[fn].append(es)
+            if es.base_var and es.source_functions:
+                func_to_structs[es.source_functions[0]].append(es)
 
-        # Parametre eslesmesi: fonksiyon signature'indaki ptr parametrelerini
-        # struct'larla esle (sira ile -- ilk ptr param = ilk struct)
         func_param_map: dict[str, dict[int, str]] = {}
+        if not func_to_structs:
+            return func_param_map
 
         for c_file in c_files:
             try:
@@ -1544,28 +1773,17 @@ class StructRecoveryEngine:
                 logger.debug("struct_recovery: %s dosyasi okunamadi (param map): %s", c_file, e)
                 continue
 
-            for m in _FUNC_DEF_RE.finditer(content):
-                func_name = m.group(1)
-                params_str = m.group(2)
-
+            for func_name, params_str, _s, _e in _function_spans(_mask_noncode(content)):
                 if func_name not in func_to_structs:
                     continue
-
-                # Parametre listesini parse et
-                params = [p.strip() for p in params_str.split(",") if p.strip()]
-                ptr_param_indices: list[int] = []
-                for i, param in enumerate(params):
-                    if "*" in param or "param_" in param:
-                        ptr_param_indices.append(i)
-
-                structs = func_to_structs[func_name]
+                names: list[str] = []
+                for p in params_str.split(","):
+                    m = re.search(r"([A-Za-z_]\w*)\s*$", p.strip())
+                    names.append(m.group(1) if m else "")
                 param_map: dict[int, str] = {}
-
-                # ptr parametrelerini struct'larla esle (sira ile)
-                for idx, pi in enumerate(ptr_param_indices):
-                    if idx < len(structs):
-                        param_map[pi] = structs[idx].name
-
+                for es in func_to_structs[func_name]:
+                    if es.base_var in names:
+                        param_map[names.index(es.base_var)] = es.name
                 if param_map:
                     func_param_map[func_name] = param_map
 
@@ -1669,11 +1887,14 @@ class StructRecoveryEngine:
                 func_param_map[target_func][param_idx] = struct_name
                 new_mappings += 1
 
-                # Struct'in source_functions listesine ekle
+                # Yayılan fonksiyonu AYRI listeye ekle (P10, TIP-05): yayılım
+                # argüman akışı kanıtı değil; kaynak fonksiyon sayılmaz, yeniden
+                # yazıma girmez.
                 if struct_name in struct_by_name:
                     es = struct_by_name[struct_name]
-                    if target_func not in es.source_functions:
-                        es.source_functions.append(target_func)
+                    if (target_func not in es.source_functions
+                            and target_func not in es.propagated_functions):
+                        es.propagated_functions.append(target_func)
 
                     # Algoritma baglami yayilimi
                     if es.algorithm_context is None:
@@ -1721,187 +1942,122 @@ class StructRecoveryEngine:
     # Faz 3: Code Rewrite
     # ------------------------------------------------------------------
 
-    def _build_global_ptr_struct_map(
-        self,
-        c_files: list[Path],
+    @staticmethod
+    def _build_binding_map(
         enriched_structs: list[EnrichedStruct],
-    ) -> dict[str, EnrichedStruct]:
-        """Tum dosyalar icin base_ptr -> EnrichedStruct eslesmesi olustur.
+    ) -> dict[tuple[str, str], EnrichedStruct]:
+        """(fonksiyon, değişken) -> yapı (P10, TIP-05).
 
-        Her C dosyasindaki pointer aritmetigi pattern'lerini analiz eder,
-        base_ptr'nin offset pattern'ini enriched struct'larla karsilastirir.
+        Yalnız taban değişkeni bilinen yapılar (koddan çıkarılan) bağlanır ve yalnız
+        KENDİ fonksiyonlarında. Eski ``_build_global_ptr_struct_map`` değişkeni
+        adıyla bütün dosyalar boyunca eşliyordu (ilk gelen kazanır): A'nın
+        ``param_1``'i için seçilen yapı B'nin ilgisiz ``param_1``'ini yeniden
+        yazıyordu. Çağrı grafiğiyle yayılan fonksiyonlar bağlanmaz.
         """
-        # struct -> offset seti
-        struct_offset_sets: dict[str, set[int]] = {}
-        struct_by_name: dict[str, EnrichedStruct] = {}
+        binding: dict[tuple[str, str], EnrichedStruct] = {}
         for es in enriched_structs:
-            offsets = {f.offset for f in es.fields}
-            struct_offset_sets[es.name] = offsets
-            struct_by_name[es.name] = es
-
-        # source_functions'dan dogrudan esleme
-        func_to_structs: dict[str, list[EnrichedStruct]] = defaultdict(list)
-        for es in enriched_structs:
-            for fn in es.source_functions:
-                func_to_structs[fn].append(es)
-
-        # base_ptr -> struct eslesmesi: her C dosyasindaki her fonksiyonda
-        # base_ptr'nin eriistigi offset'leri topla, struct'la karsilastir
-        ptr_map: dict[str, EnrichedStruct] = {}
-
-        for c_file in c_files:
-            try:
-                content = c_file.read_text(encoding="utf-8", errors="replace")
-            except OSError as e:
-                logger.debug("struct_recovery: %s dosyasi okunamadi (ptr map): %s", c_file, e)
-                continue
-
-            # Fonksiyonlari cikar
-            for m in _FUNC_DEF_RE.finditer(content):
-                func_name = m.group(1)
-
-                # Bu fonksiyon hangi struct'larla iliskili?
-                possible_structs = func_to_structs.get(func_name, [])
-                if not possible_structs:
-                    continue
-
-                # Fonksiyon body'sini al
-                body_start = m.end() - 1
-                body = self._extract_body(content, body_start)
-                if not body:
-                    continue
-
-                # base_ptr -> erisdigi offset'ler
-                ptr_offsets: dict[str, set[int]] = defaultdict(set)
-                for pat_m in _PTR_ARITH_SIMPLE.finditer(body):
-                    base = pat_m.group("base")
-                    offset_str = pat_m.group("offset")
-                    offset = int(offset_str, 16) if offset_str.startswith("0x") else int(offset_str)
-                    ptr_offsets[base].add(offset)
-
-                # base_ptr'yi en iyi eslesen struct'a ata
-                for base_ptr, offsets in ptr_offsets.items():
-                    if base_ptr in ptr_map:
-                        continue
-
-                    best_struct = None
-                    best_overlap = 0
-
-                    for es in possible_structs:
-                        struct_offsets = struct_offset_sets.get(es.name, set())
-                        overlap = len(offsets & struct_offsets)
-                        if overlap > best_overlap:
-                            best_overlap = overlap
-                            best_struct = es
-
-                    if best_struct and best_overlap >= 1:
-                        ptr_map[base_ptr] = best_struct
-
-        return ptr_map
+            if es.base_var and es.source_functions:
+                binding.setdefault((es.source_functions[0], es.base_var), es)
+        return binding
 
     # Minimum confidence esigi: bu deger altindaki field'lar rewrite edilmez.
     _REWRITE_MIN_CONFIDENCE: float = 0.6
 
-    def _rewrite_access_patterns(
+    def _rewrite_file(
         self,
-        c_code: str,
-        struct_map: dict[str, EnrichedStruct],
-        ptr_struct_map: dict[str, EnrichedStruct],
-    ) -> tuple[str, int]:
-        """C kodundaki pointer aritmetigini struct->field soz dizimine cevir.
+        content: str,
+        binding: dict[tuple[str, str], EnrichedStruct],
+    ) -> tuple[str, int, dict[str, int]]:
+        """Dosyadaki her fonksiyonu YALNIZ kendi bağlamasıyla yeniden yaz.
 
-        *(int *)(param_18 + 4) -> param_18->num_nodes  /* was: *(int *)(param_18 + 4) */
+        ``*(int *)(p + 4)`` -> ``((S *)p)->alan  /* was: *(int *)(p + 4) */``
 
-        Guvenlik kurallari:
-        - Sadece confidence >= 0.6 olan field'lar icin rewrite yapar.
-        - Array erisimleri (idx * stride) donusturulmez -- gercek array erisimi.
-        - Orijinal ifade /* was: ... */ yorumu olarak korunur.
-        - Zaten rewrite edilmis satirlar (icinde "/* was:" var) tekrar islenmez.
+        Kurallar (P10, TIP-05):
+        - Bağlama ``(fonksiyon, değişken)`` anahtarlı; başka fonksiyondaki aynı adlı
+          değişkene dokunulmaz.
+        - Ofset, değişkenin bu fonksiyondaki bildirimine göre bayta çevrilir; bildirim
+          çıkarmadakiyle aynı değilse (ölçek farklıysa) yazılmaz.
+        - Tip uyumu: erişimin tipi alanın koddaki gözlenen tipiyle aynı olmalı.
+        - Biçim ``((S *)taban)->alan``: değişkenin bildirimi değişmez, ifade C'de
+          aynı adresi okur (tanım dolgulu, ofsetler kesin; ``_generate_typedef``).
+        - Alan güveni ``_REWRITE_MIN_CONFIDENCE`` altındaysa yazılmaz.
+        - Dizgi ve yorum içindeki metin değişmez; zaten yeniden yazılmış satır atlanır.
 
         Returns:
-            (rewritten_code, rewrite_count)
+            (yeni_içerik, yeniden_yazım_sayısı, {yapı_adı: yeniden_yazım})
         """
-        rewrite_count = 0
+        if not binding:
+            return content, 0, {}
+        masked = _mask_noncode(content)
         min_conf = self._REWRITE_MIN_CONFIDENCE
+        per_struct: dict[str, int] = defaultdict(int)
+        pieces: list[str] = []
+        cursor = 0
+        total = 0
 
-        # Offset -> field eslesmesi icin hizli lookup
-        struct_field_lookup: dict[str, dict[int, EnrichedField]] = {}
-        for es in struct_map.values():
-            struct_field_lookup[es.name] = {f.offset: f for f in es.fields}
+        for func_name, params, b_start, b_end in _function_spans(masked):
+            fn_bind = {
+                var: es for (fn, var), es in binding.items() if fn == func_name
+            }
+            if not fn_bind:
+                continue
+            body_m = masked[b_start:b_end]
+            decls = _declared_types(params, body_m)
+            edits: list[tuple[int, int, str, str]] = []
 
-        def _replace_match(m: re.Match) -> str:
-            nonlocal rewrite_count
+            def _try(m: re.Match, raw_offset: int) -> None:
+                base = m.group("base")
+                es = fn_bind.get(base)
+                if es is None:
+                    return
+                scale = _offset_scale(decls.get(base))
+                if scale is None or (es.base_decl and decls.get(base) != es.base_decl):
+                    return
+                off = raw_offset * scale
+                ef = next((f for f in es.fields if f.offset == off), None)
+                if ef is None or ef.confidence < min_conf:
+                    return
+                observed = ef.observed_type or ef.c_type
+                if _norm_type(m.group("cast_type")) != _norm_type(observed):
+                    return
+                if _cast_size(m.group("cast_type")) != ef.size:
+                    return
+                s, e = b_start + m.start(), b_start + m.end()
+                line_s = content.rfind("\n", 0, s) + 1
+                line_e = content.find("\n", e)
+                if "/* was:" in content[line_s:line_e if line_e != -1 else len(content)]:
+                    return
+                original = content[s:e]
+                edits.append((
+                    s, e,
+                    f"(({es.name} *){base})->{ef.semantic_name}  /* was: {original} */",
+                    es.name,
+                ))
 
-            # Zaten rewrite edilmis mi?
-            original = m.group(0)
-            # m.string[m.start():] satirda "/* was:" varsa atla
-            line_start = m.string.rfind("\n", 0, m.start()) + 1
-            line_end = m.string.find("\n", m.end())
-            if line_end == -1:
-                line_end = len(m.string)
-            line = m.string[line_start:line_end]
-            if "/* was:" in line:
-                return original
+            for m in _PTR_ARITH_SIMPLE.finditer(body_m):
+                off_s = m.group("offset")
+                _try(m, int(off_s, 16) if off_s.startswith("0x") else int(off_s))
+            taken = [(s, e) for s, e, _n, _k in edits]
+            for rx in (_PTR_DEREF_DIRECT, _PTR_DEREF_BARE):
+                for m in rx.finditer(body_m):
+                    s = b_start + m.start()
+                    if any(a <= s < b for a, b in taken):
+                        continue
+                    _try(m, 0)
 
-            base = m.group("base")
-            offset_str = m.group("offset")
+            for s, e, new, sname in sorted(edits):
+                if s < cursor:
+                    continue
+                pieces.append(content[cursor:s])
+                pieces.append(new)
+                cursor = e
+                total += 1
+                per_struct[sname] += 1
 
-            es = ptr_struct_map.get(base)
-            if es is None:
-                return original  # Donusturme yapma
-
-            offset = int(offset_str, 16) if offset_str.startswith("0x") else int(offset_str)
-            field_map = struct_field_lookup.get(es.name, {})
-            ef = field_map.get(offset)
-
-            if ef is None:
-                return original  # Bu offset struct'ta yok
-
-            # Confidence filtresi: dusuk guvenli field'lari rewrite etme
-            if ef.confidence < min_conf:
-                return original
-
-            rewrite_count += 1
-            return f"{base}->{ef.semantic_name}  /* was: {original} */"
-
-        # Sabit offset erisimlerini degistir
-        result = _PTR_ARITH_SIMPLE.sub(_replace_match, c_code)
-
-        # Dogrudan dereference (offset=0) donusumu
-        def _replace_direct(m: re.Match) -> str:
-            nonlocal rewrite_count
-
-            original = m.group(0)
-            # Zaten rewrite edilmis mi?
-            line_start = m.string.rfind("\n", 0, m.start()) + 1
-            line_end = m.string.find("\n", m.end())
-            if line_end == -1:
-                line_end = len(m.string)
-            line = m.string[line_start:line_end]
-            if "/* was:" in line:
-                return original
-
-            base = m.group("base")
-
-            es = ptr_struct_map.get(base)
-            if es is None:
-                return original
-
-            field_map = struct_field_lookup.get(es.name, {})
-            ef = field_map.get(0)  # offset 0
-
-            if ef is None:
-                return original
-
-            if ef.confidence < min_conf:
-                return original
-
-            rewrite_count += 1
-            return f"{base}->{ef.semantic_name}  /* was: {original} */"
-
-        result = _PTR_DEREF_DIRECT.sub(_replace_direct, result)
-
-        return result, rewrite_count
+        if not total:
+            return content, 0, {}
+        pieces.append(content[cursor:])
+        return "".join(pieces), total, dict(per_struct)
 
     # ------------------------------------------------------------------
     # types.h Emitter
@@ -1974,17 +2130,34 @@ class StructRecoveryEngine:
             lines.append(f"/* Domain: {es.domain} */")
         if es.raw_name != es.name:
             lines.append(f"/* Recovered from: {es.raw_name} */")
+        if es.base_var:
+            src = es.source_functions[0] if es.source_functions else "?"
+            lines.append(
+                f"/* Kaynak: {src} / {es.base_var} (bildirim: {es.base_decl or '?'}) */",
+            )
         lines.append(f"/* Confidence: {es.confidence:.2f} | Size: {es.total_size} bytes | Alignment: {es.alignment} */")
 
+        # P10 (TIP-05): yerleşim kesin olmalı — ``((S *)p)->alan`` yeniden yazımı
+        # alanın gerçek ofsetini okumalı. Aradaki boşluk açık dolguyla, hizasız
+        # alan varsa ``packed`` ile; alan tipi koddaki gözlenen tip (şablonun
+        # önerdiği tip başka genişlikte olabilir).
+        fields = sorted(es.fields, key=lambda f: f.offset)
+        packed = any(
+            f.size in (2, 4, 8) and f.offset % f.size for f in fields
+        )
         lines.append(f"typedef struct {es.name} {{")
 
-        for ef in sorted(es.fields, key=lambda f: f.offset):
-            # Padding hesapla: onceki field ile arada bosluk var mi?
-            ct = ef.c_type
-            # Pointer tipi formatting
-            if "*" in ct and not ct.endswith("*"):
-                # "double *" -> "double *"
-                pass
+        cur = 0
+        for ef in fields:
+            if ef.offset < cur:
+                lines.append(
+                    f"    /* örtüşen alan atlandı: offset 0x{ef.offset:x} "
+                    f"{ef.observed_type or ef.c_type} {ef.semantic_name} */",
+                )
+                continue
+            if ef.offset > cur:
+                lines.append(f"    uint8_t          _pad_0x{cur:x}[{ef.offset - cur}];")
+            ct = ef.observed_type or ef.c_type
 
             field_decl = f"    {ct:<16s} {ef.semantic_name};"
             # Yorum ekle
@@ -1992,15 +2165,23 @@ class StructRecoveryEngine:
             comments.append(f"offset 0x{ef.offset:x}")
             if ef.comment:
                 comments.append(ef.comment)
+            if ef.c_type != ct:
+                comments.append(f"şablon tipi: {ef.c_type}")
             if ef.source == "algorithm_context":
                 comments.append(f"conf={ef.confidence:.2f}")
+            if ef.evidence:
+                comments.append(f"erişim: {ef.evidence}")
             if ef.raw_name != ef.semantic_name:
                 comments.append(f"was: {ef.raw_name}")
 
             field_decl += f"  /* {' | '.join(comments)} */"
             lines.append(field_decl)
+            cur = ef.offset + ef.size
 
-        lines.append(f"}} {es.name};")
+        if es.total_size > cur:
+            lines.append(f"    uint8_t          _pad_0x{cur:x}[{es.total_size - cur}];")
+        attr = " __attribute__((packed))" if packed else ""
+        lines.append(f"}}{attr} {es.name};")
 
         return "\n".join(lines)
 
@@ -2082,6 +2263,19 @@ class StructRecoveryEngine:
                 if _PTR_ARITH_SIMPLE.search(line) or _PTR_ARITH_ARRAY.search(line):
                     continue
 
+                patterns.append(AccessPattern(
+                    base_ptr=m.group("base"),
+                    offset=0,
+                    cast_type=m.group("cast_type").strip(),
+                    is_array=False,
+                    line_text=line.strip(),
+                    line_number=line_num,
+                    func_name=func_name,
+                ))
+
+            # Pattern 4 (P10): parantezsiz taban ``*(long *)param_1`` (Ghidra yazımı).
+            # Öbür biçimlerle örtüşmez (taban '(' ile başlamaz), satır atlanmaz.
+            for m in _PTR_DEREF_BARE.finditer(line):
                 patterns.append(AccessPattern(
                     base_ptr=m.group("base"),
                     offset=0,
