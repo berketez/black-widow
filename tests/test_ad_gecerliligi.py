@@ -344,17 +344,30 @@ def test_dis_fonksiyon_da_ithaldir(tmp_path, seri):
 
 
 def test_yerel_adin_eki_fonksiyon_adina_bakmaz(tmp_path, seri):
-    """Yerel adlar var olan fonksiyon adlarına karşı sınanmaz; ek alırken de atlamaz."""
+    """Yerel adlar var olan fonksiyon adlarına karşı sınanmaz; ek alırken de atlamaz.
+
+    P12a / AD-08: ek fonksiyon başınadır. İki fonksiyonun aynı yerel adı ikisinde de eksizdir;
+    ek yalnız AYNI fonksiyonda ikinci kez istenen ada verilir (eskiden ikinci fonksiyondaki ad
+    ikili genelindeki sayaçla ``len_2`` oluyordu).
+    """
     def govde(ad):
         return (f"int {ad}(char *param_1)\n{{\n  int local_8;\n"
                 "  local_8 = strlen(param_1);\n  return local_8;\n}\n")
 
+    def iki_yerel(ad):
+        return (f"int {ad}(char *param_1)\n{{\n  int local_8;\n  int local_c;\n"
+                "  local_8 = strlen(param_1);\n  local_c = strlen(param_1);\n"
+                "  return local_8 + local_c;\n}\n")
+
     fonklar = [_fonk("len_2", "00000100"), _fonk("len", "00000200"),
                _fonk("FUN_00001000", "00001000", govde=govde("FUN_00001000")),
-               _fonk("FUN_00002000", "00002000", govde=govde("FUN_00002000"))]
+               _fonk("FUN_00002000", "00002000", govde=govde("FUN_00002000")),
+               _fonk("FUN_00003000", "00003000", govde=iki_yerel("FUN_00003000"))]
     res, prov, harita = S._kos(_calisma_alani(tmp_path / "ws", fonklar), tmp_path / "out")
     assert harita["per_function"]["FUN_00001000"]["local_8"] == "len"
-    assert harita["per_function"]["FUN_00002000"]["local_8"] == "len_2"
+    assert harita["per_function"]["FUN_00002000"]["local_8"] == "len"
+    ucuncu = harita["per_function"]["FUN_00003000"]
+    assert sorted((ucuncu["local_8"], ucuncu["local_c"])) == ["len", "len_2"]
     assert res.rejected_name_counts == {} and S._hesap_tutar(prov)
 
 

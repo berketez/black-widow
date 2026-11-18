@@ -124,6 +124,23 @@ class CNamingResult:
 # Dahili veri yapilari
 # ---------------------------------------------------------------------------
 
+class _UsedNames:
+    """İki kümenin birleşimine kopyasız ``in`` sınaması (yerel ad tekilleştirmesi, AD-08).
+
+    ``name_validity.unique_name`` kullanılmış kümede yalnız üyelik sınar; her yerel anahtar için
+    fonksiyonun yerel adları ile ikili genelindeki genel adların birleşimini kopyalamamak için.
+    """
+
+    __slots__ = ("_first", "_second")
+
+    def __init__(self, first: set[str], second: set[str]) -> None:
+        self._first = first
+        self._second = second
+
+    def __contains__(self, name: object) -> bool:
+        return name in self._first or name in self._second
+
+
 @dataclass
 class _NamingCandidate:
     """Bir sembol icin tek bir isimlendirme onerisi."""
@@ -2296,8 +2313,19 @@ class CVariableNamer:
         # (iVar1, param_1 vb.) birbirine karismamasi saglanir.
         per_func_maps: dict[str, dict[str, str]] = {}  # func_name -> {old: new}
         global_map: dict[str, str] = {}  # DAT_, FUN_ gibi globaller
+        # P12a / AD-08: yerel adlar FONKSİYON BAŞINA tekilleştirilir. Eskiden yerel anahtarlar
+        # da ikili genelindeki ``used_new_names``'e yazılıyordu: htop'ta 2 626 yerel adın
+        # 2 442'si ``buf_308`` türü sayaç eki taşıyordu ve bir fonksiyonun eklenip çıkması
+        # sonraki bütün fonksiyonların yerel adlarını kaydırıyordu. Şimdi genel anahtarlar
+        # önce karara bağlanır (``used_new_names`` yalnız genel adları tutar), yerel anahtarlar
+        # sonra; yerel adın kullanılmış kümesi = kendi fonksiyonunun yerel adları ∪ bu koşuda
+        # verilen genel adlar (yerel ad bir genel adı gölgelemesin).
+        local_used: dict[str, set[str]] = {}
+        ordered_keys = [k for k in self._candidates if not self._is_local_name_key(k)]
+        ordered_keys += [k for k in self._candidates if self._is_local_name_key(k)]
 
-        for key, candidates in self._candidates.items():
+        for key in ordered_keys:
+            candidates = self._candidates[key]
             if not candidates:
                 continue
 
@@ -2352,12 +2380,20 @@ class CVariableNamer:
             # Cakisma kontrolu: ayni yeni isim birden fazla eski isme verilmesin.
             # Adı ilk isteyen anahtar eksiz alır, sonraki _2, _3 ... ekini (anahtar sırası
             # belirlenimli: G9). İkili kapsamlı adda ek, var olan fonksiyon adlarını da atlar.
-            new_name = _name_validity.unique_name(
-                best.new_name, used_new_names,
-                () if self._is_local_name_key(key) else existing_functions,
-            )
-
-            used_new_names.add(new_name)
+            # Yerel adda kapsam kendi fonksiyonudur (AD-08; yukarıdaki not).
+            if self._is_local_name_key(key):
+                func_used = local_used.get(func_name)
+                if func_used is None:
+                    func_used = local_used[func_name] = set()
+                new_name = _name_validity.unique_name(
+                    best.new_name, _UsedNames(func_used, used_new_names),
+                )
+                func_used.add(new_name)
+            else:
+                new_name = _name_validity.unique_name(
+                    best.new_name, used_new_names, existing_functions,
+                )
+                used_new_names.add(new_name)
             by_strategy[best.strategy] = by_strategy.get(best.strategy, 0) + 1
             # Gercek confidence + strateji'yi disa aktar (NameMerger'in flat 0.70
             # duzlemesini onlemek icin). Zayif yapisal stratejiler (call_graph,

@@ -31,7 +31,11 @@ from karadul.reconstruction.tarif import alt_kanal, baglama  # noqa: E402
 
 # Değişiklik öncesi (89fd724) c_namer'ın belirlenimcilik fikstüründeki çıktısı: köken kaydı
 # dışındaki bütün dosyaların (ad, içerik) sha256'sı. Köken kaydına alan eklendiği için o hariç.
-ONCEKI_CIKTI_OZETI = "350c1ef4b0ac46e287350f9dd2dacade7692ce5805ee9725d44c1236a626f8de"
+# P12a / AD-08 (yerel ad eki fonksiyon başına) bilerek değiştirdi: eski özet
+# 350c1ef4b0ac46e287350f9dd2dacade7692ce5805ee9725d44c1236a626f8de. Fark elle denetlendi: genel
+# adlar aynı (13 / 13); yalnız FUN_00002000-4000'ün yerel adları ``s_2``/``len_2`` … → ``s``/``len``
+# (6 yerel ad ve onların .c satırları).
+ONCEKI_CIKTI_OZETI = "74cc807bde8106369c6a92f1e76fc57aa577fbbb09527a0dc0dc58fe2d795cdb"
 DIZGI_ADLI = ("FUN_00001000", "FUN_00002000", "FUN_00003000", "FUN_00004000", "FUN_00008000",
               "FUN_00009000")
 
