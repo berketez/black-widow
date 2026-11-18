@@ -79,3 +79,8 @@ karadul-ui-*.png
 
 # Üçüncü taraf metni (Apple `man ld`), depo herkese açık; yeniden üretme ve sha256: llvm_arm64.md kaynak 9
 docs/arge/2026-10-15_makale/derleyici/deney_llvm/out/man_ld.txt
+
+# Arayüzün geliştirme kipinde depo köküne yazdığı kullanıcı dosyaları (P17 notu)
+/karadul.yaml
+/ui_prefs.json
+/update_check_cache.json
