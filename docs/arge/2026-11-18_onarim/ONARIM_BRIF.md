@@ -13,6 +13,7 @@ Karadul (Black Widow) bir tersine mühendislik aracıdır: derlenmiş ikiliyi (E
 
 ## 2. Ortam (ilk komutların)
 1. `pwd` → `…/.claude/worktrees/agent-…` gibi bir yol olmalı. `git log --oneline -1` → taban commit'i not et.
+   **2. tur ve sonrası:** worktree `origin/main`'den açılır; yerel `main` önde (birleşmiş paketler). Dalında henüz commit yokken ilk iş `git merge --ff-only main`; ardından `git log --oneline -1` yerel `main`'in ucunu göstermeli (`git rev-parse main`). İleri sarma olmazsa dur ve bildir.
 2. `python -c "import karadul; print(karadul.__file__)"` worktree yolunu göstermeli. `karadul` paketi ana ağaca editable kurulu: komutları HER ZAMAN worktree kökünden `python -m …` ile koş (`python -m pytest`, `python -m karadul`). Kabuk komutu `karadul …` ana ağacın kodunu yükler: KULLANMA.
 3. **Ana ağaca (`/Users/apple/Black_Widow/…`) YAZMA.** Orada ana oturum ve başka ajanlar çalışıyor. Okumak serbest.
 4. Git'in izlemediği çalışma zamanı verisi worktree'de yok: `scripts/node_modules`, `sigs/`, `vendor/`, `signatures_homebrew*.json`, `sigs_macos_system.json`. Bir test ya da ölçüm gerektirirse worktree'de symlink kur: `ln -s /Users/apple/Black_Widow/<ad> <ad>` (bunlar `.gitignore`'da; asla commit'leme).
