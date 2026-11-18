@@ -103,7 +103,10 @@ def sahte_pyghidra(monkeypatch):
     mod = types.ModuleType("pyghidra")
     mod.open_program = lambda **kw: _Ctx()
     monkeypatch.setitem(sys.modules, "pyghidra", mod)
-    monkeypatch.setattr(headless_mod, "_ensure_pyghidra_started", lambda install: None)
+    monkeypatch.setattr(headless_mod, "_ensure_pyghidra_started", lambda install, **kw: None)
+    # P16c: otomatik analiz Karadul tarafında (TimeoutTaskMonitor); sahte ortamda Ghidra yok.
+    monkeypatch.setattr(GhidraHeadless, "_run_auto_analysis",
+                        lambda self, program, t: {"status": "ok", "timeout_s": t, "duration_s": 0.0})
     cfg = Config()
     cfg.bsim.enabled = False
     cfg.binary_reconstruction.ghidra_data_type_archives = []
@@ -149,7 +152,7 @@ def _yamala_adimlar(monkeypatch, *, dusen: set[str], fonksiyon: int = 2, decompi
 def test_pyghidra_jvm_baslamazsa_neden_sonuca_yazilir(sahte_pyghidra, monkeypatch, tmp_path):
     gh, _ = sahte_pyghidra
 
-    def patla(install):
+    def patla(install, **kw):
         raise RuntimeError("Ghidra JVM baslatilamadi: libjvm yok")
 
     monkeypatch.setattr(headless_mod, "_ensure_pyghidra_started", patla)

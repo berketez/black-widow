@@ -22,6 +22,9 @@ from karadul.core.subprocess_runner import SubprocessRunner
 
 logger = logging.getLogger(__name__)
 
+# AutoAnalysisManager.getTaskTimesString() satırı: "<çözümleyici>   1.234 secs" (P16c).
+_TASK_TIME_LINE = re.compile(r"^\s*(.+?)\s+([0-9]+(?:\.[0-9]+)?)\s+secs?\s*$")
+
 # PyGhidra kontrol
 _PYGHIDRA_AVAILABLE: bool | None = None
 _PYGHIDRA_STARTED: bool = False
@@ -39,12 +42,15 @@ def _check_pyghidra() -> bool:
     return _PYGHIDRA_AVAILABLE
 
 
-def _ensure_pyghidra_started(ghidra_install: Path) -> None:
+def _ensure_pyghidra_started(ghidra_install: Path, heap_mb: int | None = None) -> None:
     """PyGhidra JVM'i baslat (lazy, tek seferlik).
 
     JVM crash/kill sonrasi recovery: JVM zaten olmus ama flag hala True ise
     sifirla ve tekrar dene. JVM ayni process'te yeniden baslatilamazsa
     anlamli hata mesaji ver.
+
+    ``heap_mb``: JVM yığını (``analysis.ghidra_max_heap_mb``; P16c). Verilmezse
+    ``GHIDRA_HEAP_MB`` (ayarın öntanımı da odur). JVM zaten başlamışsa etkisizdir.
     """
     global _PYGHIDRA_STARTED
     if _PYGHIDRA_STARTED:
@@ -73,7 +79,7 @@ def _ensure_pyghidra_started(ghidra_install: Path) -> None:
         f"-XX:ConcGCThreads={conc_threads}",
         "-XX:+UseCompressedOops",
         f"-XX:ActiveProcessorCount={gc_threads}",
-        f"-Xmx{GHIDRA_HEAP_MB}m",
+        f"-Xmx{int(heap_mb) if heap_mb else GHIDRA_HEAP_MB}m",
     )
     try:
         launcher.start()
@@ -261,17 +267,44 @@ class GhidraHeadless:
 
         logger.info("Ghidra (PyGhidra) baslatiliyor: %s", binary_path.name)
 
-        try:
-            _ensure_pyghidra_started(ghidra_install)
+        analysis_info: dict[str, Any] = {"status": "not_run", "timeout_s": int(timeout)}
 
+        try:
+            _ensure_pyghidra_started(
+                ghidra_install,
+                heap_mb=getattr(getattr(self.config, "analysis", None), "ghidra_max_heap_mb", None),
+            )
+
+            # P16c (GHIDRA-06 kalanı): otomatik analiz artık süreli. open_program(analyze=True)
+            # süresizdi; analiz Karadul tarafında TimeoutTaskMonitor ile koşar.
             with pyghidra.open_program(
                 binary_path=str(binary_path),
                 project_location=str(project_dir),
                 project_name=project_name,
-                analyze=True,
+                analyze=False,
             ) as flat_api:
                 program = flat_api.getCurrentProgram()
                 log_lines.append("Program acildi: %s" % program.getName())
+
+                try:
+                    analysis_info = self._run_auto_analysis(program, timeout)
+                except Exception as exc:
+                    analysis_info = {"status": "failed", "timeout_s": int(timeout),
+                                     "error": "%s: %s" % (type(exc).__name__, exc)}
+                    _step_failed("analysis", exc)
+                if analysis_info.get("status") == "timeout":
+                    msg = (
+                        "zaman aşımı: Ghidra otomatik analizi %d sn'de durduruldu; "
+                        "analiz kısmi (sonraki adımlar kısmi programla koştu)"
+                        % int(timeout)
+                    )
+                    step_errors["analysis"] = msg
+                    log_lines.append("WARN: analysis: %s" % msg)
+                    logger.warning("Ghidra otomatik analizi zaman aşımı (%d sn): kısmi", int(timeout))
+                elif analysis_info.get("status") == "ok":
+                    log_lines.append(
+                        "Otomatik analiz: %.1f sn" % float(analysis_info.get("duration_s", 0.0))
+                    )
 
                 # GDT Data Type Archive yukleme
                 gdt_paths = self.config.binary_reconstruction.ghidra_data_type_archives
@@ -563,7 +596,96 @@ class GhidraHeadless:
             "mode": "pyghidra",
             # PyGhidra yolunda süreç yok, çıkış kodu da yok (eski kod 0/1 uyduruyordu).
             "returncode": None,
+            # P16c: otomatik analizin durumu (ok / timeout / already_analyzed / failed /
+            # not_run), süresi, sınırı ve Ghidra'nın çözümleyici başına süreleri.
+            "analysis": analysis_info,
         }
+
+    @staticmethod
+    def _analyzer_task_times(program) -> dict[str, float]:
+        """``AutoAnalysisManager.getTaskTimesString()`` → {çözümleyici: sn} (toplam satırı hariç)."""
+        from ghidra.app.plugin.core.analysis import AutoAnalysisManager
+
+        text = str(AutoAnalysisManager.getAnalysisManager(program).getTaskTimesString())
+        times: dict[str, float] = {}
+        for line in text.splitlines():
+            m = _TASK_TIME_LINE.match(line)
+            if m and "total" not in m.group(1).lower():
+                times[m.group(1).strip()] = float(m.group(2))
+        return times
+
+    @staticmethod
+    def _disable_analyzers(program, names: list[str]) -> dict[str, bool]:
+        """Verilen Ghidra çözümleyicilerini analizden önce kapat (P16c kalem 2; ayar).
+
+        ``analysis.ghidra_disabled_analyzers`` (config yaması; öntanım boş = Ghidra'nın
+        öntanımı). Dönüş: ad -> seçenek programda var mıydı (yanlış yazılan ad görünür kalsın).
+        Kapatmak decompile çıktısını değiştirebilir: ölçüm `P16c.md` kalem 2.
+        """
+        from ghidra.app.plugin.core.analysis import AutoAnalysisManager
+        from ghidra.program.model.listing import Program
+
+        found: dict[str, bool] = {}
+        tx = program.startTransaction("karadul: kapali cozumleyiciler")
+        try:
+            opts = program.getOptions(Program.ANALYSIS_PROPERTIES)
+            for name in names:
+                found[name] = bool(opts.contains(name))
+                if found[name]:
+                    opts.setBoolean(name, False)
+        finally:
+            program.endTransaction(tx, True)
+        AutoAnalysisManager.getAnalysisManager(program).initializeOptions()
+        unknown = [n for n, ok in found.items() if not ok]
+        if unknown:
+            logger.warning("Ghidra'da bulunmayan çözümleyici adı (kapatılamadı): %s", unknown)
+        return found
+
+    def _run_auto_analysis(self, program, timeout_s: int) -> dict[str, Any]:
+        """Ghidra otomatik analizini süre sınırıyla koş (P16c, GHIDRA-06 kalanı).
+
+        pyghidra 3.0.0 ``core._analyze_program`` ile aynı adımlar (``shouldAskToAnalyze``,
+        ``acquireBundleHostReference``, ``analyzeAll``, ``markProgramAnalyzed``); tek fark
+        ``FlatProgramAPI``'nin izleyicisi ``TimeoutTaskMonitor``: süre dolunca analiz
+        iptal edilir ve sonuç ``status = "timeout"`` olur (program kısmi çözümlenmiş
+        kalır, ``markProgramAnalyzed`` çağrılmaz). Öntanımlı sınırla çıktı eskisiyle aynı.
+        """
+        from java.util.concurrent import TimeUnit
+        from ghidra.app.script import GhidraScriptUtil
+        from ghidra.program.flatapi import FlatProgramAPI
+        from ghidra.program.util import GhidraProgramUtilities
+        from ghidra.util.task import TimeoutTaskMonitor
+
+        info: dict[str, Any] = {"status": "not_run", "timeout_s": int(timeout_s)}
+        if not GhidraProgramUtilities.shouldAskToAnalyze(program):
+            info["status"] = "already_analyzed"
+            return info
+        disabled = list(getattr(getattr(self.config, "analysis", None),
+                                "ghidra_disabled_analyzers", None) or [])
+        if disabled:
+            info["disabled_analyzers"] = self._disable_analyzers(program, disabled)
+        monitor = TimeoutTaskMonitor.timeoutIn(max(1, int(timeout_s)), TimeUnit.SECONDS)
+        api = FlatProgramAPI(program, monitor)
+        t0 = time.monotonic()
+        GhidraScriptUtil.acquireBundleHostReference()
+        try:
+            api.analyzeAll(program)
+            timed_out = bool(monitor.didTimeout())
+            if not timed_out:
+                GhidraProgramUtilities.markProgramAnalyzed(program)
+        finally:
+            GhidraScriptUtil.releaseBundleHostReference()
+            try:
+                monitor.finished()
+            except Exception:  # noqa: BLE001
+                logger.debug("TimeoutTaskMonitor.finished basarisiz", exc_info=True)
+        info["duration_s"] = round(time.monotonic() - t0, 3)
+        info["status"] = "timeout" if timed_out else "ok"
+        try:
+            info["analyzer_times"] = self._analyzer_task_times(program)
+        except Exception as exc:  # noqa: BLE001
+            info["analyzer_times_error"] = "%s: %s" % (type(exc).__name__, exc)
+        return info
 
     @staticmethod
     def _judge_outcome(

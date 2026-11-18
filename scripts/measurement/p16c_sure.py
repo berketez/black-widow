@@ -181,6 +181,8 @@ def kapat(program, adlar: list[str], kayit: dict) -> None:
             kayit["kapatilan"][ad] = vardi
     finally:
         program.endTransaction(tx, True)
+    from ghidra.app.plugin.core.analysis import AutoAnalysisManager
+    AutoAnalysisManager.getAnalysisManager(program).initializeOptions()
 
 
 def _ayikla(v):
@@ -232,6 +234,9 @@ def kos(arg) -> int:
     from karadul.config import Config
     from karadul.ghidra import headless as hl
     cfg = Config.load(arg.config) if arg.config else Config()
+    if arg.kapali:
+        # P16c kodu: ayar (config alanı yok, getattr ile okunur); taban kodda `analiz` sarmalı kapatır.
+        cfg.analysis.ghidra_disabled_analyzers = list(arg.kapali)
     kayit: dict = {"adim": {}}
     kur_sarmallar(kayit, arg.kapali)
 
@@ -273,7 +278,7 @@ def kos(arg) -> int:
             "adim_s": {k: round(v, 3) for k, v in sorted(adim.items())},
             "cozumleyici_s": analiz.get("analyzer_times") or kayit.get("cozumleyici") or {},
             "analiz": {k: v for k, v in analiz.items() if k != "analyzer_times"},
-            "kapatilan": kayit.get("kapatilan"),
+            "kapatilan": kayit.get("kapatilan") or analiz.get("disabled_analyzers"),
             "yuk_once": yuk_once,
             "yuk_sonra": yuk(),
             "basari": sonuc.get("success"),
