@@ -335,6 +335,24 @@ def _lib_family(lib: str) -> str:
     return _LIB_FAMILY_ALIASES.get(s, s)
 
 
+def _same_sig_record(a: dict[str, Any], b: dict[str, Any]) -> bool:
+    """İki yerleşik kayıt aynı iddiayı mı taşıyor (kitaplık, kategori, platform)."""
+    return (a.get("lib"), a.get("category", ""), a.get("_platforms")) == (
+        b.get("lib"), b.get("category", ""), b.get("_platforms"))
+
+
+def _is_platform_specific(lib: str, category: str, platforms: Any) -> bool:
+    """Kayıt bir platforma özgü mü (açık platform listesi ya da PE/Mach-O/ELF'e özgü kitaplık)."""
+    if platforms:
+        return True
+    return (
+        lib in _PE_ONLY_LIBS or lib in _MACHO_ONLY_LIBS or lib in _ELF_ONLY_LIBS
+        or any(category.startswith(p) for p in _PE_ONLY_CATEGORY_PREFIXES)
+        or any(category.startswith(p) for p in _MACHO_ONLY_CATEGORY_PREFIXES)
+        or any(category.startswith(p) for p in _ELF_ONLY_CATEGORY_PREFIXES)
+    )
+
+
 def _display_name(func_name: str, target_platform: str | None) -> str:
     """Eşleşen simgenin gösterilecek adı (IMZA-08).
 
@@ -366,9 +384,7 @@ def _resolve_attribution(
         if not _is_platform_compatible(lib, cat, target_platform, info.get("_platforms")):
             return None
         return lib, cat, [lib]
-    fams: list[str] = []
-    libs: list[str] = []
-    cat = ""
+    compat: list[tuple[str, str, Any]] = []
     for p in providers:
         try:
             lib, pcat, plats = p[0], p[1] or "", p[2]
@@ -376,6 +392,16 @@ def _resolve_attribution(
             continue
         if not _is_platform_compatible(lib, pcat, target_platform, plats):
             continue
+        compat.append((lib, pcat, plats))
+    # IMZA-12: hedef platforma özgü bir sağlayıcı varsa platformu belirsiz
+    # (her yerde geçerli sayılan) sağlayıcılar onun önüne geçmez: PE'de
+    # ``_open`` → msvcrt, Mach-O'da (msvcrt elendiği için) → libc.
+    if target_platform is not None and any(_is_platform_specific(*c) for c in compat):
+        compat = [c for c in compat if _is_platform_specific(*c)]
+    fams: list[str] = []
+    libs: list[str] = []
+    cat = ""
+    for lib, pcat, _plats in compat:
         fam = _lib_family(lib)
         if fam in fams:
             continue
@@ -1463,6 +1489,7 @@ class SignatureDB:
         dict[str, dict[str, str]],                              # symbol_db
         dict[frozenset[str], tuple[str, str, str]],             # string_sigs
         list[tuple[frozenset[str], str, str, str, float]],      # call_sigs
+        dict[str, list[dict[str, Any]]],                        # symbol_alts (IMZA-12)
     ]] = {}
 
     def __init__(self, config: Optional[Config] = None, target_platform: str | None = None) -> None:
@@ -1503,6 +1530,12 @@ class SignatureDB:
         self._byte_aho_wildcard_sigs: list[FunctionSignature] = []  # wildcard'lilar (ayri yol)
         self._byte_sigs_version: int = 0
         self._byte_aho_built_version: int = -1
+
+        # IMZA-12: yerleşik sözlükler birleştirilirken aynı adın farklı
+        # kitaplık/kategori kayıtları (ör. POSIX ``_open`` → libc ve MSVC
+        # ``_open`` → msvcrt) birbirini ezmesin diye ad → bütün kayıtlar.
+        # Yalnız birden çok farklı kaydı olan adlar tutulur.
+        self._symbol_alts: dict[str, list[dict[str, Any]]] = {}
 
         # v1.10.0: LMDB backend (opsiyonel, feature flag ile)
         self._lmdb_backend: Any = None  # Optional[LMDBSignatureDB]
@@ -1621,10 +1654,11 @@ class SignatureDB:
 
         # Cache hit: onceden hesaplanmis full DB'yi kopyala
         if cache_key in SignatureDB._full_cache:
-            cached_sym, cached_str, cached_call = SignatureDB._full_cache[cache_key]
+            cached_sym, cached_str, cached_call, cached_alts = SignatureDB._full_cache[cache_key]
             self._symbol_db = dict(cached_sym)
             self._string_sigs = dict(cached_str)
             self._call_sigs = list(cached_call)
+            self._symbol_alts = {k: list(v) for k, v in cached_alts.items()}
             total = len(self._symbol_db)
             logger.info("SignatureDB: %d symbol imzasi cache'ten yuklendi", total)
             return
@@ -1743,6 +1777,16 @@ class SignatureDB:
             _SLIVER_SIGNATURES,
             _COBALTSTRIKE_SIGNATURES,
         ):
+            # IMZA-12: son yazan öncekini ezer; ezilen farklı kayıt kaybolmasın.
+            for _n, _info in db.items():
+                _prev = self._symbol_db.get(_n)
+                if _prev is None or _same_sig_record(_prev, _info):
+                    continue
+                _lst = self._symbol_alts.get(_n)
+                if _lst is None:
+                    _lst = self._symbol_alts[_n] = [_prev]
+                if not any(_same_sig_record(x, _info) for x in _lst):
+                    _lst.append(_info)
             self._symbol_db.update(db)
 
         # Protobuf: isimler namespace'li, _ prefix yok
@@ -1771,6 +1815,7 @@ class SignatureDB:
             dict(self._symbol_db),
             dict(self._string_sigs),
             list(self._call_sigs),
+            {k: list(v) for k, v in self._symbol_alts.items()},
         )
 
     # ------------------------------------------------------------------
@@ -2055,6 +2100,30 @@ class SignatureDB:
     # Katman 0: Symbol-based matching
     # ------------------------------------------------------------------
 
+    def _builtin_attribution(
+        self, name: str, info: dict[str, Any], target_platform: str | None,
+    ) -> tuple[dict[str, Any], tuple[str, str, list[str]]] | None:
+        """Yerleşik sözlük kaydı için (kaynak kayıt, kitaplık iddiası) (IMZA-12).
+
+        Ad birden çok yerleşik sözlükte farklı kitaplıkla geçiyorsa bütün
+        kayıtları platformla süzülür (``_resolve_attribution``); tek kayıtlı
+        adda davranış eskisiyle aynıdır. Hiçbir kayıt uyumlu değilse None.
+        """
+        records = list(self._symbol_alts.get(name) or ())
+        if not records:
+            records = [info]
+        elif not any(_same_sig_record(r, info) for r in records):
+            records.append(info)  # dış JSON'un yazdığı güncel kayıt
+        attr = _resolve_attribution(
+            {"providers": [[r.get("lib", ""), r.get("category", ""), r.get("_platforms"), i]
+                           for i, r in enumerate(records)]},
+            target_platform,
+        )
+        if attr is None:
+            return None
+        src = next((r for r in records if r.get("lib", "") == attr[0]), info) if attr[0] else info
+        return src, attr
+
     def _match_by_symbol(
         self, func_name: str, *, target_platform: str | None = None,
     ) -> Optional[SignatureMatch]:
@@ -2088,19 +2157,19 @@ class SignatureDB:
         # Direkt eslestirme (builtin)
         info = self._symbol_db.get(func_name)
         if info:
-            if _is_platform_compatible(
-                info["lib"], info.get("category", ""), target_platform,
-                info.get("_platforms"),
-            ):
+            _hit = self._builtin_attribution(func_name, info, target_platform)
+            if _hit is not None:
+                _src, _attr = _hit
                 return SignatureMatch(
                     original_name=func_name,
                     matched_name=_display_name(func_name, target_platform),
-                    library=info["lib"],
+                    library=_attr[0],
                     confidence=0.98,
                     match_method="symbol",
-                    purpose=info.get("purpose", ""),
-                    category=info.get("category", ""),
-                    params=info.get("params"),  # v1.10.0 M2 T4
+                    purpose=_src.get("purpose", "") if _attr[0] else "",
+                    category=_attr[1],
+                    params=_src.get("params"),  # v1.10.0 M2 T4
+                    libraries=_attr[2] if len(_attr[2]) > 1 else None,
                 )
             # Platform mismatch -> builtin return etme, LMDB fallback'e dus.
             # Ayni sembol LMDB'de farkli platform ile tanimlanmis olabilir.
@@ -2110,19 +2179,19 @@ class SignatureDB:
             prefixed = f"_{func_name}"
             info_p = self._symbol_db.get(prefixed)
             if info_p:
-                if _is_platform_compatible(
-                    info_p["lib"], info_p.get("category", ""), target_platform,
-                    info_p.get("_platforms"),
-                ):
+                _hit = self._builtin_attribution(prefixed, info_p, target_platform)
+                if _hit is not None:
+                    _src, _attr = _hit
                     return SignatureMatch(
                         original_name=func_name,
                         matched_name=func_name,
-                        library=info_p["lib"],
+                        library=_attr[0],
                         confidence=0.97,
                         match_method="symbol",
-                        purpose=info_p.get("purpose", ""),
-                        category=info_p.get("category", ""),
-                        params=info_p.get("params"),  # v1.10.0 M2 T4
+                        purpose=_src.get("purpose", "") if _attr[0] else "",
+                        category=_attr[1],
+                        params=_src.get("params"),  # v1.10.0 M2 T4
+                        libraries=_attr[2] if len(_attr[2]) > 1 else None,
                     )
 
         # Builtin miss -> LMDB backend (varsa). LMDB'nin amaci external

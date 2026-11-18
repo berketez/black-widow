@@ -136,6 +136,22 @@
       "test": "tests/test_p08_imza10.py::test_cache_does_not_leak_platform_filtered_externals",
       "find": "\"lmdb\" if self._lmdb_backend is not None else f\"dict:{self._target_platform}\",",
       "replace": "\"lmdb\" if self._lmdb_backend is not None else \"dict\","
+    },
+    {
+      "id": "imza12_ezilen_kayit_tutulmuyor",
+      "desc": "yerleşik sözlük birleştirmede ezilen kayıt tutulmuyor (son yazan kazanır)",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_imza12.py::test_posix_names_match_on_macho",
+      "find": "                if _prev is None or _same_sig_record(_prev, _info):\n                    continue",
+      "replace": "                if True:\n                    continue"
+    },
+    {
+      "id": "imza12_ozgulluk_yok",
+      "desc": "platforma özgü sağlayıcı genel sağlayıcının önüne geçmiyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_imza12.py::test_msvc_record_still_wins_on_pe",
+      "find": "    if target_platform is not None and any(_is_platform_specific(*c) for c in compat):",
+      "replace": "    if False and any(_is_platform_specific(*c) for c in compat):"
     }
   ]
 }
