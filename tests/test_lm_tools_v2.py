@@ -598,6 +598,117 @@ def test_tipler_tavana_sigar_ve_soyler(root):
     assert types(T.Workspace(root)).error == "veri_yok"
 
 
+# --------------------------------------------------------------------------------------------
+# (g) kip başına araç alt kümesi (tasarım §3.4) ve izin (§3.9)
+
+KESIF = ("get_evidence", "get_decompiled", "get_xrefs", "get_function_facts", "get_call_graph", "find_path",
+         "find_refs", "search_code", "get_name_provenance", "get_types")
+
+
+def test_kip_kumeleri_tasarimla_ayni():
+    from karadul.lm import events as E
+    assert (T.SIDE_MODEL, T.SIDE_SERVER) == (E.CALLER_MODEL, E.CALLER_SERVER)
+    assert set(T.MODE_TOOLSETS) == {"kesif", "acikla", "adlandir", "plan"}
+    assert T.mode_toolset("kesif").model == KESIF
+    assert T.registry_for_mode("kesif").names() == KESIF == T.full_registry().names()
+    # Hat kiplerinde ve planda modelin aracı yok: sabit önekte araç bloğu yazılmaz.
+    for kip in ("acikla", "adlandir", "plan"):
+        assert T.mode_toolset(kip).model == () and T.registry_for_mode(kip) is None
+    assert T.registry_for_mode("acikla", "sunucu").names() == ("get_evidence", "get_decompiled", "get_function_facts")
+    assert T.registry_for_mode("adlandir", "sunucu").names() == ("get_evidence", "get_decompiled")
+    assert T.registry_for_mode("plan", "sunucu").names() == ("get_call_graph", "find_refs")   # kayıt sırası
+    assert T.registry_for_mode("kesif", "sunucu").names() == ("get_evidence", "get_decompiled")
+    # Kayıtlı her araç en az bir kipte; her kipteki her araç kayıtlı.
+    kullanilan = {n for ts in T.MODE_TOOLSETS.values() for n in (*ts.model, *ts.server)}
+    assert kullanilan == set(T.full_registry().names())
+
+
+def test_kip_izin_kancasi_ve_hatalar():
+    k = T.mode_toolset("kesif")
+    assert k.allows("find_refs", "model") and not k.allows("find_refs", "sunucu")
+    assert k.allows("get_evidence", "sunucu") and not k.allows("get_evidence", "baska")
+    p = T.mode_toolset("plan")
+    assert not any(p.allows(n, "model") for n in T.full_registry().names())
+    assert p.allows("find_refs", "sunucu") and not p.allows("search_code", "sunucu")
+    for bozuk in ("", "KESIF", "dongu", "k1"):
+        with pytest.raises(ValueError):
+            T.mode_toolset(bozuk)
+    with pytest.raises(ValueError):
+        T.registry_for_mode("kesif", "baska")
+    with pytest.raises(ValueError):
+        T.full_registry().subset(["get_evidence", "yok"])
+    # keşif ve plan kipinde `öner` deny (§3.9): kümelerinde yalnız `oku` eylemli araç var.
+    reg = T.full_registry()
+    for kip in ("kesif", "plan"):
+        ts = T.mode_toolset(kip)
+        assert {reg.action(n) for n in (*ts.model, *ts.server)} == {"oku"}
+
+
+def test_kip_kaydi_zarf_ve_onek():
+    reg = T.registry_for_mode("kesif")
+    zarf = P.build_envelope(reg.schemas(), {"text": {"type": "string", "maxLength": 10}}, ["text"])
+    assert len(zarf["anyOf"]) == len(KESIF) + 1
+    assert reg.definition_lines() == tuple(T.full_registry().spec(n).definition_line() for n in KESIF)
+    # Kip araç kümesi sürümü künyede ayrışır; K0 / K1 / K2'nin kümesi (default_registry) değişmedi.
+    assert reg.version() != T.default_registry().version()
+    assert T.registry_for_mode("acikla", "sunucu").version() != T.registry_for_mode("adlandir", "sunucu").version()
+    # K1 kapalı adres listesi yalnız `addr`'a uygulanır; find_path'in `to`'su desenle kalır.
+    sch = reg.schemas(addr_enum=["FUN_00001000"])
+    assert sch["find_path"]["properties"]["addr"] == {"type": "string", "enum": ["FUN_00001000"]}
+    assert sch["find_path"]["properties"]["to"] == {"type": "string", "pattern": T.ADDR_PATTERN}
+
+
+# Süreç başlatma / ağ yok: araç paketi kaynağında yasak içe aktarma ve çağrı (tasarım §3.9 katman 2).
+YASAK_MODUL = {"subprocess", "pty", "socket", "urllib", "http", "multiprocessing", "ctypes", "requests",
+               "karadul.frida", "karadul.core.safe_subprocess", "karadul.core.subprocess_runner", "karadul.ghidra"}
+# ``os.<ad>`` olarak çağrılamayanlar (süreç, sinyal, dosya değiştirme).
+YASAK_OS = {"system", "popen", "fork", "forkpty", "execv", "execve", "execl", "execlp", "execvp", "execvpe",
+            "spawnl", "spawnv", "spawnve", "spawnvp", "posix_spawn", "posix_spawnp", "startfile", "kill",
+            "replace", "rename", "remove", "unlink", "rmdir", "mkdir", "makedirs", "chmod"}
+# Hangi nesnede olursa olsun çağrılamayanlar (dosya yazma / silme, dinamik içe aktarma).
+YASAK_HER_YERDE = {"write_text", "write_bytes", "unlink", "rmdir", "mkdir", "touch", "chmod", "rename",
+                   "import_module", "posix_spawn"}
+YASAK_YERLESIK = {"open", "exec", "eval", "compile", "__import__"}
+
+
+def test_arac_paketi_surec_ag_yazma_yok():
+    import ast
+    kok = Path(T.__file__).resolve().parent
+    dosyalar = sorted(kok.glob("*.py"))
+    assert {p.name for p in dosyalar} >= {"__init__.py", "read.py", "read_more.py", "index.py"}
+    for yol in dosyalar:
+        for d in ast.walk(ast.parse(yol.read_text(encoding="utf-8"))):
+            if isinstance(d, ast.Import):
+                for a in d.names:
+                    assert not any(a.name == m or a.name.startswith(m + ".") for m in YASAK_MODUL), (yol.name, a.name)
+            elif isinstance(d, ast.ImportFrom) and d.module:
+                assert not any(d.module == m or d.module.startswith(m + ".") for m in YASAK_MODUL), (yol.name, d.module)
+                assert not (d.module == "os" and {a.name for a in d.names} & YASAK_OS), yol.name
+            elif isinstance(d, ast.Attribute):
+                assert d.attr not in YASAK_HER_YERDE, (yol.name, d.attr, d.lineno)
+                if isinstance(d.value, ast.Name) and d.value.id in {"os", "shutil"}:
+                    assert d.value.id == "os" and d.attr not in YASAK_OS, (yol.name, d.attr, d.lineno)
+            elif isinstance(d, ast.Call) and isinstance(d.func, ast.Name):
+                assert d.func.id not in YASAK_YERLESIK, (yol.name, d.func.id)
+
+
+def test_araclar_calisma_alanini_degistirmez(root):
+    write_types(root)
+    write_cfg(root, [cfg_record(A)])
+    once = {p: (p.stat().st_mtime_ns, p.read_bytes()) for p in root.rglob("*") if p.is_file()}
+    ws = T.Workspace(root)
+    reg = T.full_registry()
+    cagrilar = [("get_function_facts", {"addr": fun(A)}), ("get_call_graph", {"addr": fun(D), "direction": "callees"}),
+                ("find_path", {"addr": fun(D), "to": fun(B)}), ("find_refs", {"target": "import", "value": "malloc"}),
+                ("find_refs", {"target": "string", "value": "usage"}), ("search_code", {"text": "malloc"}),
+                ("get_name_provenance", {"addr": fun(A)}), ("get_types", {"query": "rec"})]
+    assert {c[0] for c in cagrilar} == set(reg.names()) - set(T.default_registry().names())
+    for ad, args in cagrilar:
+        assert reg.call(ws, ad, args, result_id="r1").ok, ad
+    sonra = {p: (p.stat().st_mtime_ns, p.read_bytes()) for p in root.rglob("*") if p.is_file()}
+    assert sonra == once
+
+
 def test_refs_korluk(ws):
     r = refs(ws, "import", "malloc", )
     kor = call(ws, "find_refs", {"target": "import", "value": "malloc"}, blind_target=A)

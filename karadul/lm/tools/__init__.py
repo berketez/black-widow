@@ -752,3 +752,73 @@ def full_registry() -> ToolRegistry:
     Sıra sabit: kip alt kümeleri bu sırayı korur (``ToolRegistry.subset``)."""
     from karadul.lm.tools import read, read_more
     return ToolRegistry((*read.READ_TOOLS, *read_more.MORE_TOOLS))
+
+
+# ---------------------------------------------------------------------------------------------
+# Kip başına araç alt kümesi (v2 tasarımı §3.4, §3.5; P22d kalem 6)
+
+MODE_EXPLORE, MODE_EXPLAIN, MODE_NAME, MODE_PLAN = "kesif", "acikla", "adlandir", "plan"
+SIDE_MODEL, SIDE_SERVER = "model", "sunucu"   # ``events.CALLER_MODEL`` / ``CALLER_SERVER`` ile aynı yazım
+
+
+@dataclass(frozen=True)
+class ModeTools:
+    """Bir kipin araç kümesi.
+
+    ``model``: sabit önekte TANIMI olan ve modelin zarfta çağırabildiği araçlar. Boşsa kipte araç tanımı
+    hiç yoktur (hat görevleri; tasarım §3.5 "hat görevlerinde araç tanımı hiç yoktur").
+    ``server``: sunucunun bu kipte paket kurarken kendisi çağırabildiği araçlar (modele tanıtılmaz).
+    """
+
+    model: tuple[str, ...]
+    server: tuple[str, ...]
+
+    def allows(self, tool: str, side: str) -> bool:
+        """Araç öncesi kanca (tasarım §3.10 "kip araç kümesinde mi"): ``side`` ∈ {model, sunucu}.
+        Bilinmeyen taraf reddedilir (sessiz izin yok)."""
+        if side == SIDE_MODEL:
+            return tool in self.model
+        if side == SIDE_SERVER:
+            return tool in self.server
+        return False
+
+
+_PACKAGE_TOOLS = ("get_evidence", "get_decompiled")
+MODE_TOOLSETS: Mapping[str, ModeTools] = {
+    # keşif: analistin sorusu; döngü (kapı açılana kadar soru + paketle tek atış). Tasarım §3.4:
+    # O1-O3, O5, O7 (+ O7b), O8, O10, O11, R1. ``öner`` bu kipte deny: Ö sınıfı araç girmez.
+    MODE_EXPLORE: ModeTools(
+        model=("get_evidence", "get_decompiled", "get_xrefs", "get_function_facts", "get_call_graph",
+               "find_path", "find_refs", "search_code", "get_name_provenance", "get_types"),
+        server=_PACKAGE_TOOLS),
+    # açıkla: hat; paketi sunucu kurar (O1, O2 + O5: §3.6 D0 kısa yolunun "‹blok sayısı› blok" satırı).
+    MODE_EXPLAIN: ModeTools(model=(), server=(*_PACKAGE_TOOLS, "get_function_facts")),
+    # adlandır: hat; bugünkü K0 paketi. K1 kapısı açılırsa komşuya bakış bugünkü ``default_registry``
+    # (O1-O3, kapalı adres listesiyle) ile yapılır; kapı kararı bu tabloda değil (P22e).
+    MODE_NAME: ModeTools(model=(), server=_PACKAGE_TOOLS),
+    # plan: model araç görmez (karar 3 (a): belirlenimci plan); sunucu R1 ve O7 sonuçlarını pakete koyar.
+    MODE_PLAN: ModeTools(model=(), server=("find_refs", "get_call_graph")),
+}
+
+
+def mode_toolset(mode: str) -> ModeTools:
+    """Kipin araç kümesi; bilinmeyen kip ``ValueError`` (sessiz öntanım yok)."""
+    try:
+        return MODE_TOOLSETS[mode]
+    except KeyError:
+        raise ValueError(f"bilinmeyen kip: {mode!r}") from None
+
+
+def registry_for_mode(mode: str, side: str = SIDE_MODEL) -> Optional[ToolRegistry]:
+    """Kipin bir tarafının kaydı. ``model`` tarafı: sabit önekin araç tanım satırları
+    (``definition_lines``), zarfın araç dalları (``schemas``) ve araç kümesi sürümü (``version``) bundan.
+    ``sunucu`` tarafı: paket kurarken çağrılabilen araçlar. Küme boşsa ``None``: o kipte o tarafın aracı
+    yoktur ve sabit önekte araç bloğu yazılmaz. Sıra ``full_registry``'ninkidir (kipten bağımsız)."""
+    ts = mode_toolset(mode)
+    if side == SIDE_MODEL:
+        names = ts.model
+    elif side == SIDE_SERVER:
+        names = ts.server
+    else:
+        raise ValueError(f"bilinmeyen taraf: {side!r}")
+    return full_registry().subset(names) if names else None

@@ -488,6 +488,86 @@
       "test": "tests/test_lm_tools_v2.py::test_tipler_tavana_sigar_ve_soyler",
       "find": "        if size + ENVELOPE_OVERHEAD_BYTES <= TYPES_RESULT_MAX_BYTES:",
       "replace": "        if True:"
+    },
+    {
+      "id": "km_kesif_eksik",
+      "desc": "keşif kipinden find_refs çıkar",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools_v2.py::test_kip_kumeleri_tasarimla_ayni",
+      "find": "               \"find_path\", \"find_refs\", \"search_code\", \"get_name_provenance\", \"get_types\"),",
+      "replace": "               \"find_path\", \"search_code\", \"get_name_provenance\", \"get_types\"),"
+    },
+    {
+      "id": "km_hat_araci",
+      "desc": "açıkla kipinde modele araç tanıtılır",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools_v2.py::test_kip_kumeleri_tasarimla_ayni",
+      "find": "    MODE_EXPLAIN: ModeTools(model=(), server=(*_PACKAGE_TOOLS, \"get_function_facts\")),",
+      "replace": "    MODE_EXPLAIN: ModeTools(model=_PACKAGE_TOOLS, server=(*_PACKAGE_TOOLS, \"get_function_facts\")),"
+    },
+    {
+      "id": "km_bos_kayit",
+      "desc": "araçsız kipte None yerine bir kayıt döner",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools_v2.py::test_kip_kumeleri_tasarimla_ayni",
+      "find": "    return full_registry().subset(names) if names else None",
+      "replace": "    return full_registry().subset(names or _PACKAGE_TOOLS)"
+    },
+    {
+      "id": "km_alt_kume_sirasi",
+      "desc": "alt küme kayıt sırasını değil istek sırasını izler",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools_v2.py::test_kip_kumeleri_tasarimla_ayni",
+      "find": "        return ToolRegistry(s for n, s in self._specs.items() if n in wanted)",
+      "replace": "        return ToolRegistry(self._specs[n] for n in names)"
+    },
+    {
+      "id": "km_bilinmeyen_taraf",
+      "desc": "bilinmeyen taraf izin alır",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools_v2.py::test_kip_izin_kancasi_ve_hatalar",
+      "find": "            return tool in self.server\n        return False",
+      "replace": "            return tool in self.server\n        return True"
+    },
+    {
+      "id": "km_bilinmeyen_kip",
+      "desc": "bilinmeyen kip keşfe düşer",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools_v2.py::test_kip_izin_kancasi_ve_hatalar",
+      "find": "        return MODE_TOOLSETS[mode]",
+      "replace": "        return MODE_TOOLSETS.get(mode, MODE_TOOLSETS[MODE_EXPLORE])"
+    },
+    {
+      "id": "km_r_sinifi_oner",
+      "desc": "R sınıfı öner eylemine eşlenir",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools_v2.py::test_kip_izin_kancasi_ve_hatalar",
+      "find": "TOOL_CLASS_ACTIONS = {\"O\": ACTION_READ, \"R\": ACTION_READ, \"Ö\": ACTION_PROPOSE}",
+      "replace": "TOOL_CLASS_ACTIONS = {\"O\": ACTION_READ, \"R\": ACTION_PROPOSE, \"Ö\": ACTION_PROPOSE}"
+    },
+    {
+      "id": "sz_subprocess",
+      "desc": "ters dizin modülü subprocess içe aktarır",
+      "module": "karadul/lm/tools/index.py",
+      "test": "tests/test_lm_tools_v2.py::test_arac_paketi_surec_ag_yazma_yok",
+      "find": "import json\nfrom dataclasses import dataclass",
+      "replace": "import json\nimport subprocess  # noqa\nfrom dataclasses import dataclass"
+    },
+    {
+      "id": "sz_dosya_yazma",
+      "desc": "araç sonucu diske yazılır",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_arac_paketi_surec_ag_yazma_yok",
+      "find": "    return ToolOutput(data=data, kind=KIND_PROXY, source=SOURCE_SEARCH, limits=LIMITS_SEARCH, truncated=truncated)",
+      "replace": "    (ws.root / \"son_arama.txt\").write_text(text)\n    return ToolOutput(data=data, kind=KIND_PROXY, source=SOURCE_SEARCH, limits=LIMITS_SEARCH, truncated=truncated)"
+    },
+    {
+      "id": "sz_calisma_alani_yazma",
+      "desc": "araç çalışma alanına dosya bırakır (işlevsel sınama)",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_araclar_calisma_alanini_degistirmez",
+      "find": "    return ToolOutput(data=data, kind=KIND_PROXY, source=SOURCE_SEARCH, limits=LIMITS_SEARCH, truncated=truncated)",
+      "replace": "    (ws.root / \"son_arama.txt\").write_text(text)\n    return ToolOutput(data=data, kind=KIND_PROXY, source=SOURCE_SEARCH, limits=LIMITS_SEARCH, truncated=truncated)"
     }
   ]
 }
