@@ -7,7 +7,7 @@ sessizce skip.
 Kapsam:
 - Registry kaydi
 - Default disabled (opt-in flag)
-- enable=True ama is_available=False -> status=not_available
+- enable=True ama is_available=False -> status=arac_yok + neden (P13b)
 - Smoke (mock adapter, 2 fn + 1 type) -> status=ok, JSON artifacts
 - Adapter exception -> status=error
 - No binary -> status=no_binary
@@ -87,7 +87,8 @@ class TestNotAvailable:
             fake_adapter,
         ):
             out = BinaryNinjaAnalysisStep().run(ctx)
-        assert out["bn_status"] == "not_available"
+        assert out["bn_status"] == "arac_yok"
+        assert ctx.stats["bn_status_reason"]
         fake_adapter.return_value.extract_all.assert_not_called()
 
 

@@ -3,8 +3,8 @@
 Kapsam:
 - Registry kaydi (requires/produces dogru)
 - Disabled flag -> status=disabled, JSON yazilmaz
-- TRex binary yok -> status=binary_missing
-- Ghidra IL artifact yok -> status=no_lifted_il
+- TRex binary yok (IL var) -> status=arac_yok (P13b)
+- Ghidra IL artifact yok -> status=desteklenmiyor + neden (P13b / BORU-14 c)
 - Smoke (mock adapter): 2 struct -> JSON artifact yazilir, stats dolar
 - Adapter exception -> status=error, errors'a eklenir
 """
@@ -83,8 +83,9 @@ class TestDisabled:
 
 
 class TestBinaryMissing:
-    def test_trex_binary_unavailable_skips(self, fake_pc, base_ctx) -> None:
-        """TRexAdapter.is_available()=False -> status=binary_missing."""
+    def test_trex_binary_unavailable_skips(self, fake_pc, base_ctx, real_lifted: Path) -> None:
+        """IL var, TRexAdapter.is_available()=False -> status=arac_yok (P13b)."""
+        base_ctx._write_artifacts({"ghidra_lifted_il_path": real_lifted})
         fake_adapter = MagicMock()
         fake_adapter.return_value.is_available.return_value = False
         with patch(
@@ -92,8 +93,9 @@ class TestBinaryMissing:
         ):
             out = TrexStructRecoveryStep().run(base_ctx)
         assert out["trex_structs"] == []
-        assert out["trex_status"] == "binary_missing"
-        assert base_ctx.stats["trex_status"] == "binary_missing"
+        assert out["trex_status"] == "arac_yok"
+        assert base_ctx.stats["trex_status"] == "arac_yok"
+        assert base_ctx.stats["trex_status_reason"]
         # Adapter calistirilmis ama analyze cagrilmamali
         fake_adapter.return_value.analyze.assert_not_called()
         fake_pc.workspace.save_json.assert_not_called()
@@ -101,7 +103,7 @@ class TestBinaryMissing:
 
 class TestNoLiftedIL:
     def test_lifted_il_artifact_missing_skips(self, fake_pc, base_ctx) -> None:
-        """ghidra_lifted_il_path artifact yok -> status=no_lifted_il."""
+        """ghidra_lifted_il_path artifact yok -> desteklenmiyor + neden (araç olsa da)."""
         fake_adapter = MagicMock()
         fake_adapter.return_value.is_available.return_value = True
         with patch(
@@ -109,7 +111,8 @@ class TestNoLiftedIL:
         ):
             out = TrexStructRecoveryStep().run(base_ctx)
         assert out["trex_structs"] == []
-        assert out["trex_status"] == "no_lifted_il"
+        assert out["trex_status"] == "desteklenmiyor"
+        assert "ghidra_lifted_il_path" in base_ctx.stats["trex_status_reason"]
         # Analiz cagrilmamali
         fake_adapter.return_value.analyze.assert_not_called()
 
@@ -125,7 +128,7 @@ class TestNoLiftedIL:
             "karadul.analyzers.trex_adapter.TRexAdapter", fake_adapter,
         ):
             out = TrexStructRecoveryStep().run(base_ctx)
-        assert out["trex_status"] == "no_lifted_il"
+        assert out["trex_status"] == "desteklenmiyor"
 
 
 class TestSmoke:

@@ -110,22 +110,25 @@ class BinaryNinjaAnalysisStep(Step):
             adapter = BinaryNinjaAdapter(binary_path)
         except ImportError:
             logger.debug("BinaryNinjaAdapter import edilemedi -> skip")
-            ctx.stats["bn_status"] = "module_missing"
+            # P13b: P-S1 durum sözlüğü (araç yok + neden; sahte "çalıştı" yok)
+            ctx.stats["bn_status"] = "arac_yok"
+            ctx.stats["bn_status_reason"] = "binaryninja_adapter modülü yüklenemedi"
             ctx.stats["timing_binaryninja_analysis"] = round(
                 time.monotonic() - step_start, 3,
             )
-            return {**empty, "bn_status": "module_missing"}
+            return {**empty, "bn_status": "arac_yok"}
 
         if not adapter.is_available():
             logger.info(
                 "binaryninja_analysis: Binary Ninja Python API bulunamadi "
                 "-> skip (lisans + kurulum gerek; release blocker degildir)",
             )
-            ctx.stats["bn_status"] = "not_available"
+            ctx.stats["bn_status"] = "arac_yok"
+            ctx.stats["bn_status_reason"] = "Binary Ninja Python API / lisans yok"
             ctx.stats["timing_binaryninja_analysis"] = round(
                 time.monotonic() - step_start, 3,
             )
-            return {**empty, "bn_status": "not_available"}
+            return {**empty, "bn_status": "arac_yok"}
 
         # 4) Extract
         functions_dicts: list[dict[str, Any]] = []

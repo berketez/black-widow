@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
     produces=[
         "trex_structs",         # list[dict] -- TRexStruct.to_dict() ciktilari
         "trex_structs_path",    # Path | None -- JSON artifact yolu
-        "trex_status",          # str -- "ok"/"disabled"/"binary_missing"/"no_lifted_il"/"error"
+        "trex_status",          # str -- "ok"/"disabled"/"desteklenmiyor"/"arac_yok"/"error"
     ],
     parallelizable_with=[
         # anti_debug ve packer_fingerprint farkli analizler; trex sadece
@@ -84,7 +84,22 @@ class TrexStructRecoveryStep(Step):
             ctx.stats["trex_status"] = "disabled"
             return {**empty, "trex_status": "disabled"}
 
-        # 2) TRex binary varligi (Rust toolchain + cargo build kurulmus mu?)
+        # 2) P13b / BORU-14 (c): TRex'in girdisi Ghidra'nın yükseltilmiş IL'i
+        # (``ghidra_lifted_il_path``). Bunu üreten adım YOK; yapıt gelmedikçe kanal
+        # desteklenmiyor (araç kurulu olsa da çalışacak bir şey yok). Eskiden "no_lifted_il" /
+        # "binary_missing" yazılıyordu; durum P-S1 sözlüğüyle ve nedeniyle yazılır.
+        lifted_path_obj = ctx.artifacts.get("ghidra_lifted_il_path")
+        if not isinstance(lifted_path_obj, Path) or not lifted_path_obj.exists():
+            ctx.stats["trex_status"] = "desteklenmiyor"
+            ctx.stats["trex_status_reason"] = (
+                "ghidra_lifted_il_path üreten adım yok (TRex girdisi üretilmiyor)"
+            )
+            ctx.stats["timing_trex_struct_recovery"] = round(
+                time.monotonic() - step_start, 3,
+            )
+            return {**empty, "trex_status": "desteklenmiyor"}
+
+        # 3) TRex binary varligi (Rust toolchain + cargo build kurulmus mu?)
         adapter = None
         try:
             from karadul.analyzers.trex_adapter import TRexAdapter
@@ -92,38 +107,24 @@ class TrexStructRecoveryStep(Step):
             adapter = TRexAdapter()
         except ImportError:
             logger.debug("TRexAdapter import edilemedi -> skip")
-            ctx.stats["trex_status"] = "module_missing"
+            ctx.stats["trex_status"] = "arac_yok"
+            ctx.stats["trex_status_reason"] = "trex_adapter modülü yüklenemedi"
             ctx.stats["timing_trex_struct_recovery"] = round(
                 time.monotonic() - step_start, 3,
             )
-            return {**empty, "trex_status": "module_missing"}
+            return {**empty, "trex_status": "arac_yok"}
 
         if not adapter.is_available():
             logger.info(
                 "trex_struct_recovery: TRex binary bulunamadi -> skip "
                 "(vendor/trex/BUILD_INSTRUCTIONS.md ile kurulabilir)",
             )
-            ctx.stats["trex_status"] = "binary_missing"
+            ctx.stats["trex_status"] = "arac_yok"
+            ctx.stats["trex_status_reason"] = "TRex ikilisi bulunamadı"
             ctx.stats["timing_trex_struct_recovery"] = round(
                 time.monotonic() - step_start, 3,
             )
-            return {**empty, "trex_status": "binary_missing"}
-
-        # 3) Ghidra IL (lifted) artifact'i mevcut mu?
-        # Bu artifact'i pipeline'da uretecek olan stage henuz yok (v1.15.5
-        # hedefi). Su anda graceful skip ile bekleriz; artifact gelirse
-        # otomatik olarak aktif olur.
-        lifted_path_obj = ctx.artifacts.get("ghidra_lifted_il_path")
-        if not isinstance(lifted_path_obj, Path) or not lifted_path_obj.exists():
-            logger.info(
-                "trex_struct_recovery: Ghidra IL (ghidra_lifted_il_path) "
-                "artifact'i bulunamadi -> skip (v1.15.5'te entegre edilecek)",
-            )
-            ctx.stats["trex_status"] = "no_lifted_il"
-            ctx.stats["timing_trex_struct_recovery"] = round(
-                time.monotonic() - step_start, 3,
-            )
-            return {**empty, "trex_status": "no_lifted_il"}
+            return {**empty, "trex_status": "arac_yok"}
 
         # 4) Analiz cagri
         structs_dicts: list[dict[str, Any]] = []

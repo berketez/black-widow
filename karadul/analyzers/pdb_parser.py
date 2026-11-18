@@ -167,13 +167,19 @@ _PROC_KIND_MAP = {
 
 
 def _parse_addr(line: str) -> tuple[int | None, int | None]:
-    """``addr = SSSS:OOOOOOOO`` -> (section, offset) -- ikisi de int."""
+    """``addr = SSSS:OOOO`` -> (section, offset) -- ikisi de int.
+
+    P13b: ``llvm-pdbutil`` bölümü ve ofseti ONLUK yazar (``formatSegmentOffset``:
+    ``{0:4}:{1:4}``; ör. ``addr = 0001:207056``). Eskiden onaltılık okunuyordu: libz3.pdb'de
+    ``Z3_mk_context`` ofseti 207056 yerine 0x207056 (2 125 910) çıkıyordu; ihraç tablosundaki
+    RVA 0x338d0 = 0x1000 + 207056 onluğu doğrular. Onluk dışı rakam varsa ``None``.
+    """
     m = _ADDR_RE.search(line)
     if not m:
         return None, None
     try:
-        sec = int(m.group("sec"), 16)
-        off = int(m.group("off"), 16)
+        sec = int(m.group("sec"), 10)
+        off = int(m.group("off"), 10)
         return sec, off
     except ValueError:
         return None, None

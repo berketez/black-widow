@@ -19,7 +19,10 @@ from typing import Any
 
 from karadul.config import CPU_PERF_CORES
 from karadul.pipeline.steps._feedback_naming_candidates import (
+    K4_CHANNEL_FLAGS,
+    UNMEASURED_SOURCES,
     collect_candidates,
+    load_ghidra_index,
 )
 from karadul.pipeline.steps._feedback_naming_bindiff import pre_name_meta_of
 from karadul.reconstruction import name_validity as _name_validity
@@ -239,14 +242,20 @@ def write_merger_provenance(
             outcome = rejected[key]
         else:
             outcome = "below_global_min"
+        sources = sorted(set(m.sources))
+        unmeasured = sorted(set(sources) & UNMEASURED_SOURCES)
         decisions[key] = {
             "name": m.final_name,
             "applied_name": final_map.get(key),
-            "confidence": round(float(m.final_confidence), 4),
-            "sources": sorted(set(m.sources)),
+            # P13b / P12a kuralı: güveni ölçülmemiş K-4 kanalı (PDB, DWARF, Rust / Go, BN, TRex,
+            # RTTI) kararın kaynağındaysa birleşik sayı kalibre değildir → null.
+            "confidence": None if unmeasured else round(float(m.final_confidence), 4),
+            "sources": sources,
             "method": m.merge_method,
             "dropped": outcome,
         }
+        if unmeasured:
+            decisions[key]["unmeasured_sources"] = unmeasured
     section = {
         "version": MERGER_PROVENANCE_VERSION,
         "iteration": iter_index,
@@ -275,6 +284,56 @@ def write_merger_provenance(
         stats["name_merger_provenance"] = f"yazildi:{target.name}"
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         stats["name_merger_provenance"] = f"yazilamadi:{type(exc).__name__}"
+
+
+def _as_dict_list(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, list):
+        return [v for v in value if isinstance(v, dict)]
+    return []
+
+
+def k4_inputs(ctx: Any, functions_json: Path | None) -> dict[str, Any]:
+    """P13b / BORU-14 (a): K-4 kanallarının girdileri (bayraklar, Ghidra dizini, üreticiler).
+
+    Bayraklar ``binary_reconstruction.enable_<kanal>_naming`` (yalnız gerçek ``True`` açar;
+    öntanımda hepsi kapalı, K-4: ölçülmeden açılmaz). Üretici listeleri Faz 1 adımlarının
+    yapıtlarından (``pdb_symbols``, ``bn_functions``, ``trex_structs``; Faz 2'ye tohum olarak
+    gelir). Ghidra dizini yalnız en az bir kanal açıkken kurulur.
+    """
+    pc = ctx.pipeline_context
+    br = getattr(pc.config, "binary_reconstruction", None)
+    flags = {src: config_flag(br, flag) for src, flag in K4_CHANNEL_FLAGS.items()}
+    arts = getattr(ctx, "artifacts", None)
+    get = arts.get if arts is not None and hasattr(arts, "get") else (lambda _k: None)
+    binary_path = get("binary_for_byte_match")
+    if not isinstance(binary_path, Path):
+        tp = getattr(getattr(pc, "target", None), "path", None)
+        binary_path = Path(tp) if isinstance(tp, (str, Path)) else None
+    index = None
+    if any(flags.values()):
+        image_base = None
+        try:
+            from karadul.pipeline.steps.byte_pattern import BytePatternStep
+
+            image_base = BytePatternStep._ghidra_load_base(pc=pc, functions_json=functions_json)
+        except Exception:  # görüntü tabanı okunamadı: delta 0 (sayaçlar gösterir)
+            logger.debug("Ghidra görüntü tabanı okunamadı", exc_info=True)
+        index = load_ghidra_index(
+            functions_json, binary_path=binary_path, ghidra_image_base=image_base)
+    rtti = get("rtti_classes")
+    return {
+        "flags": flags,
+        "index": index,
+        "binary_path": binary_path,
+        "pdb_symbols": _as_dict_list(get("pdb_symbols")),
+        "pdb_status": get("pdb_status"),
+        "bn_functions": _as_dict_list(get("bn_functions")),
+        "bn_status": get("bn_status"),
+        "trex_structs": _as_dict_list(get("trex_structs")),
+        "trex_status": get("trex_status"),
+        "rtti_classes": _as_dict_list(rtti),
+        "rtti_status": get("rtti_status"),
+    }
 
 
 def run_name_merger(
@@ -356,6 +415,8 @@ def run_name_merger(
             # uzerinden constant/api/formula naming kanallari uretilir.
             decompiled_dir=decompiled_dir,
             functions_json=functions_json,
+            # P13b / BORU-14 (a): K-4 kanalları gerçek koşuda (bayrağı açık olanlar).
+            k4=k4_inputs(ctx, functions_json),
         )
         decided_map = dict(decided or {})
         for key in list(candidates_by_symbol):

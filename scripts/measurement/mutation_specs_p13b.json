@@ -16,6 +16,86 @@
       "test": "tests/test_step_type_recovery_consumer.py::TestTypeRecoveryConsumerStep::test_counts_every_source",
       "find": "        status = \"active\" if total else \"no-data\"\n",
       "replace": "        status = \"no-data\"\n"
+    },
+    {
+      "id": "p13b_k2_pdb_ofset_anahtar",
+      "desc": "IMZA-13: PDB bölüm içi ofset yine VA sayılır",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_p13b_kanallar.py::test_pdb_section_offset_becomes_ghidra_va_key",
+      "find": "            source=\"pdb\", addr=image_base + rvas[sec - 1] + off, symbol=None,\n",
+      "replace": "            source=\"pdb\", addr=off, symbol=None,\n"
+    },
+    {
+      "id": "p13b_k2_pdb_onaltilik",
+      "desc": "IMZA-13: llvm-pdbutil ofseti yine onaltılık okunur",
+      "module": "karadul/analyzers/pdb_parser.py",
+      "test": "tests/test_p13b_kanallar.py::test_pdb_parser_reads_llvm_pdbutil_offset_as_decimal",
+      "find": "        off = int(m.group(\"off\"), 10)\n",
+      "replace": "        off = int(m.group(\"off\"), 16)\n"
+    },
+    {
+      "id": "p13b_k2_rust_cpp",
+      "desc": "IMZA-13 ek: C++ _ZN adları yine Rust kanalına düşer",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_p13b_kanallar.py::test_rust_channel_excludes_cpp_itanium_names",
+      "find": "    return bool(_RUST_LEGACY_RE.match(symbol) or _RUST_V0_RE.match(symbol))\n",
+      "replace": "    return symbol.startswith((\"_ZN\", \"__ZN\", \"_R\"))\n"
+    },
+    {
+      "id": "p13b_k2_ghidra_adli",
+      "desc": "Ghidra'nın zaten adlandırdığı fonksiyona da aday yazılır",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_p13b_kanallar.py::test_pdb_section_offset_becomes_ghidra_va_key",
+      "find": "        if not _is_unnamed(name):\n            return None, \"ghidra_adli\"\n",
+      "replace": "        if not _is_unnamed(name) and False:\n            return None, \"ghidra_adli\"\n"
+    },
+    {
+      "id": "p13b_k2_trex_function",
+      "desc": "TRex üreticisinin function alanı yine okunmaz",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_p13b_kanallar.py::test_trex_function_field_is_read",
+      "find": "        if st.get(\"function\"):\n            funcs.append(st[\"function\"])\n",
+      "replace": "        if st.get(\"function\") and False:\n            funcs.append(st[\"function\"])\n"
+    },
+    {
+      "id": "p13b_k2_birlestirici_k4_yok",
+      "desc": "BORU-14 a: run_name_merger kanalları yine beslemez",
+      "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+      "test": "tests/test_p13b_kanallar.py::test_run_name_merger_feeds_pdb_channel_when_flag_on",
+      "find": "            k4=k4_inputs(ctx, functions_json),\n",
+      "replace": "            k4=None,\n"
+    },
+    {
+      "id": "p13b_k2_guven_null",
+      "desc": "P12a: ölçülmemiş kanalın güveni yine sayı yazılır",
+      "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+      "test": "tests/test_p13b_kanallar.py::test_run_name_merger_feeds_pdb_channel_when_flag_on",
+      "find": "            \"confidence\": None if unmeasured else round(float(m.final_confidence), 4),\n",
+      "replace": "            \"confidence\": round(float(m.final_confidence), 4),\n"
+    },
+    {
+      "id": "p13b_k2_trex_desteklenmiyor",
+      "desc": "BORU-14 c: IL yokken yine no_lifted_il",
+      "module": "karadul/pipeline/steps/trex_struct_recovery.py",
+      "test": "tests/test_step_trex_struct_recovery.py::TestNoLiftedIL::test_lifted_il_artifact_missing_skips",
+      "find": "            return {**empty, \"trex_status\": \"desteklenmiyor\"}\n",
+      "replace": "            return {**empty, \"trex_status\": \"no_lifted_il\"}\n"
+    },
+    {
+      "id": "p13b_k2_bayrak_simge",
+      "desc": "K-4: kapalı Rust / Go kanalı yine nm koşturur",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_p13b_kanallar.py::test_flags_off_channels_do_no_work",
+      "find": "    if flags.get(\"rust_demangler\") or flags.get(\"go_demangler\"):\n",
+      "replace": "    if True:\n"
+    },
+    {
+      "id": "p13b_k2_bayrak_dwarf",
+      "desc": "K-4: kapalı DWARF kanalı yine çalışır",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_p13b_kanallar.py::test_flags_off_channels_do_no_work",
+      "find": "    if flags.get(\"dwarf\"):\n",
+      "replace": "    if flags.get(\"dwarf\") or 1:\n"
     }
   ]
 }

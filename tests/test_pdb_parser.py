@@ -272,7 +272,7 @@ def test_parse_dump_gproc32(tmp_path: Path) -> None:
     assert s.name == "MyFunction"
     assert s.kind == "function"
     assert s.section == 1
-    assert s.address == 0x10
+    assert s.address == 10  # P13b: llvm-pdbutil ofseti onluk yazar
     assert s.size == 64
     assert s.type_index == 0x1003
 
@@ -295,7 +295,7 @@ def test_parse_dump_data_mix(tmp_path: Path) -> None:
     assert by_name["tls_value"].kind == "thread"
     # adresler dogru parse edilmis mi
     assert by_name["g_counter"].section == 2
-    assert by_name["g_counter"].address == 0x100
+    assert by_name["g_counter"].address == 100  # onluk (P13b)
 
 
 # ---------------------------------------------------------------------------
@@ -312,7 +312,7 @@ def test_parse_dump_pub32(tmp_path: Path) -> None:
     assert syms[0].kind == "public"
     assert syms[0].name == "?foo@@YAHH@Z"  # mangled
     assert syms[0].section == 1
-    assert syms[0].address == 0x10
+    assert syms[0].address == 10  # onluk (P13b)
 
 
 # ---------------------------------------------------------------------------
