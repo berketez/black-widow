@@ -1610,7 +1610,14 @@ class SignatureDB:
         Sonraki instance'lar (ayni project_root) class-level cache'ten
         shallow copy yapar (~0.01s). Bu, test suite'inde ~20s kazandirir.
         """
-        cache_key = str(self._config.project_root)
+        # IMZA-10: dış imzalar (LMDB yokken) hedef platforma göre süzülerek
+        # yüklenir; anahtar yalnız project_root olunca önce PE çözümlenen bir
+        # süreçte ELF hedefi Linux imzalarını kaybediyordu. Anahtar platformu
+        # ve LMDB durumunu da taşır.
+        cache_key = "|".join((
+            str(self._config.project_root),
+            "lmdb" if self._lmdb_backend is not None else f"dict:{self._target_platform}",
+        ))
 
         # Cache hit: onceden hesaplanmis full DB'yi kopyala
         if cache_key in SignatureDB._full_cache:

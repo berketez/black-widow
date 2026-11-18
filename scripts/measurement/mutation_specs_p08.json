@@ -128,6 +128,14 @@
       "test": "tests/test_p08_mek11.py::test_ghidra_init_array_labels_are_not_symbols",
       "find": "        if _GHIDRA_SYNTHETIC_LABEL_RE.match(func_name):\n            return None",
       "replace": "        if _GHIDRA_SYNTHETIC_LABEL_RE.match(func_name) and False:\n            return None"
+    },
+    {
+      "id": "imza10_platform_anahtarda_yok",
+      "desc": "önbellek anahtarı hedef platformu taşımıyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_imza10.py::test_cache_does_not_leak_platform_filtered_externals",
+      "find": "\"lmdb\" if self._lmdb_backend is not None else f\"dict:{self._target_platform}\",",
+      "replace": "\"lmdb\" if self._lmdb_backend is not None else \"dict\","
     }
   ]
 }
