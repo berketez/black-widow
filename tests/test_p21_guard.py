@@ -227,7 +227,7 @@ def test_d0_sinanamadi_ve_toplu_kabul(tmp_path):
     r, _ = oner(tmp_path / "2", "parse_table")
     assert r.verdict == "sinandi_celiski_yok" and r.guard["toplu_kabul"] is True
     assert set(r.guard["sinanmayan"]) == {"D4", "D5"}             # kodlanmayan kurallar her raporda yazılı
-    for kural in ("D0", "D1", "D2", "D3", "D7", "D8", "D9", "D10", "D11", "D12", "D14"):
+    for kural in ("D0", "D1", "D2", "D3", "D6", "D7", "D8", "D9", "D10", "D11", "D12", "D13", "D14"):
         assert kural in r.guard["sinanan"], kural
 
 
