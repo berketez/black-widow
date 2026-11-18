@@ -310,7 +310,8 @@ def test_yalniz_uygulanan_ad_esleme_digerleri_gerekcesiyle_aday(ws, tmp_path):
     assert set(h["mappings"]) | set(h["candidates"]) == {"FUN_00101000"} | {m["original"] for m in imza}
     assert not set(h["mappings"]) & set(h["candidates"])
     assert h["candidates"]["FUN_00102000"] == {
-        "new_name": "update_record", "source": "signature_db", "confidence": 0.79,
+        # P15c (K-2): kaynak etiketi iddia türünü taşır; yöntemsiz / symbol kaydı kimlik iddiasıdır.
+        "new_name": "update_record", "source": "signature_db:kimlik", "confidence": 0.79,
         "library": "sqlite3", "reason": of.CANDIDATE_NOT_IN_CODE}
     assert h["sources"] == ["signature_db", "c_namer"]
 
