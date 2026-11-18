@@ -269,29 +269,37 @@ def _run_yara_scan(target_path: Path, stats: dict[str, Any]) -> None:
         stats["yara_status_reason"] = f"yara_scanner yuklenemedi: {exc}"
         logger.warning("YaraScanner bulunamadi: %s", exc)
         return
+    # Tarama ve sonucun okunmasi tek blokta: beklenmeyen bicimde bir sonuc da
+    # (eksik alan) "hata" olur, asamayi dusurmez ve yarim sayac birakmaz.
     try:
         scanner = YaraScanner()
         scanner.load_builtin_rules()
         yara_result = scanner.scan_file(target_path)
+        out: dict[str, Any] = {
+            "yara_status": yara_result.status,
+            "yara_status_reason": yara_result.status_reason,
+            "yara_backend": yara_result.backend,
+            "yara_rules_loaded": yara_result.total_rules,
+            "yara_scan_time_ms": yara_result.scan_time_ms,
+        }
+        if yara_result.fallback_reason:
+            out["yara_fallback_reason"] = yara_result.fallback_reason
+        tech: list[str] = []
+        if yara_result.status == SCAN_RAN:
+            out["yara_matches"] = len(yara_result.matches)
+            out["yara_hits"] = [_yara_hit_record(m) for m in yara_result.matches]
+            for m in yara_result.matches:
+                tags_str = ",".join(m.tags) if m.tags else "unknown"
+                tech.append(f"{m.rule} ({tags_str})")
     except Exception as exc:
         stats["yara_status"] = SCAN_ERROR
         stats["yara_status_reason"] = f"{type(exc).__name__}: {exc}"
         logger.warning("YARA tarama hatasi (taranamadi): %s", exc)
         return
 
-    stats["yara_status"] = yara_result.status
-    stats["yara_status_reason"] = yara_result.status_reason
-    stats["yara_backend"] = yara_result.backend
-    stats["yara_rules_loaded"] = yara_result.total_rules
-    stats["yara_scan_time_ms"] = yara_result.scan_time_ms
-    if yara_result.fallback_reason:
-        stats["yara_fallback_reason"] = yara_result.fallback_reason
-    if yara_result.status == SCAN_RAN:
-        stats["yara_matches"] = len(yara_result.matches)
-        stats["yara_hits"] = [_yara_hit_record(m) for m in yara_result.matches]
-        for m in yara_result.matches:
-            tags_str = ",".join(m.tags) if m.tags else "unknown"
-            stats.setdefault("detected_tech", []).append(f"{m.rule} ({tags_str})")
+    stats.update(out)
+    if tech:
+        stats.setdefault("detected_tech", []).extend(tech)
     logger.info(
         "YARA: %s, %s kural eslesti (%s backend, %.1fms)%s",
         yara_result.status, stats["yara_matches"], yara_result.backend,
@@ -348,6 +356,8 @@ def _run_capa_scan(context: PipelineContext, target: Any, stats: dict[str, Any])
         )
         # P03: scan() arac yokken de durum dondurur (arac_yok + neden).
         capa_result = capa_scanner.scan(target.path)
+        # Sonucun okunmasi da bu blokta: beklenmeyen bicim "hata" olur.
+        record = capa_result.to_dict()
     except Exception as exc:
         stats["capa_status"] = SCAN_ERROR
         stats["capa_status_reason"] = f"{type(exc).__name__}: {exc}"
@@ -359,7 +369,6 @@ def _run_capa_scan(context: PipelineContext, target: Any, stats: dict[str, Any])
     stats["capa_status_reason"] = capa_result.status_reason
     stats["capa_backend"] = capa_result.backend
     stats["capa_code_feed"] = feed
-    record = capa_result.to_dict()
     record["code_feed"] = {
         "enabled": feed,
         "flag": f"binary_reconstruction.{CAPA_CODE_FEED_FLAG}",

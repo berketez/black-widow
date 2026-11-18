@@ -94,8 +94,16 @@
       "desc": "YARA: tarayıcının hata durumu aşamaya taşınmaz",
       "module": "karadul/stages.py",
       "test": "tests/test_ps1_tarama_durumu.py::TestYaraStageBlock::test_scanner_error_result_is_error",
-      "find": "stats[\"yara_status\"] = yara_result.status",
-      "replace": "stats[\"yara_status\"] = SCAN_RAN  # hep"
+      "find": "\"yara_status\": yara_result.status,",
+      "replace": "\"yara_status\": SCAN_RAN,  # hep"
+    },
+    {
+      "id": "yara_sonuc_okuma_korumasiz",
+      "desc": "YARA: tarayıcı istisnası ya da beklenmeyen sonuç aşamayı düşürür (yalnız ImportError yakalanır)",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestYaraStageBlock::test_malformed_result_is_error_not_crash",
+      "find": "    except Exception as exc:\n        stats[\"yara_status\"] = SCAN_ERROR",
+      "replace": "    except ImportError as exc:\n        stats[\"yara_status\"] = SCAN_ERROR"
     },
     {
       "id": "yara_hatada_sayi",
@@ -126,8 +134,8 @@
       "desc": "YARA: yapılandırılmış isabet kaydı yazılmaz (yalnız düz detected_tech)",
       "module": "karadul/stages.py",
       "test": "tests/test_ps1_yara_kayit.py::TestStageStats::test_hits_parallel_to_legacy_list",
-      "find": "stats[\"yara_hits\"] = [_yara_hit_record(m) for m in yara_result.matches]",
-      "replace": "stats[\"yara_hits\"] = []  # kayit yok"
+      "find": "out[\"yara_hits\"] = [_yara_hit_record(m) for m in yara_result.matches]",
+      "replace": "out[\"yara_hits\"] = []  # kayit yok"
     },
     {
       "id": "yara_kayit_dizgisiz",

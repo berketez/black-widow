@@ -370,6 +370,21 @@ class TestYaraStageBlock:
         assert stats["yara_matches"] is None
         assert "detected_tech" not in stats
 
+    def test_malformed_result_is_error_not_crash(self, unknown_bin: Path, monkeypatch) -> None:
+        """Beklenmeyen bicimde sonuc (eksik alan) asamayi dusurmez, yarim sayac birakmaz."""
+        from types import SimpleNamespace
+
+        from karadul.analyzers import yara_scanner
+        from karadul.stages import _run_yara_scan
+        monkeypatch.setattr(yara_scanner.YaraScanner, "scan_file",
+                            lambda self, p: SimpleNamespace(matches=[]))
+        stats: dict = {}
+        _run_yara_scan(unknown_bin, stats)
+        assert stats["yara_status"] == "hata"
+        assert "AttributeError" in stats["yara_status_reason"]
+        assert stats["yara_matches"] is None
+        assert "yara_backend" not in stats
+
     def test_scanner_error_result_is_error(self, tmp_path: Path) -> None:
         from karadul.stages import _run_yara_scan
         stats: dict = {}
