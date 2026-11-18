@@ -22,9 +22,8 @@ Ayrıca **node cap**: graph > VF2_NODE_CAP ise direkt atla (LSH/WL yeter).
 
 from __future__ import annotations
 
-import multiprocessing
 import os
-import threading
+import time
 from typing import Callable, TYPE_CHECKING
 
 try:
@@ -192,33 +191,30 @@ def _serialize_graph(G) -> tuple[list, list]:
     return nodes, edges
 
 
+class _VF2Deadline(Exception):
+    """Süreç içi VF2 süre sınırı aşıldı (``vf2_match_with_timeout`` içinde yakalanır)."""
+
+
 def vf2_match_with_timeout(
     cfg_a: "AttributedCFG",
     cfg_b: "AttributedCFG",
     node_match_fn: Callable[[dict, dict], bool] | None = None,
     timeout_s: float = 30.0,
 ) -> tuple[bool, bool]:
-    """VF2 subgraph/is_isomorphic kontrolü, HARD-STOP timeout korumasıyla.
+    """VF2 subgraph/is_isomorphic kontrolü, süreç içi süre sınırıyla.
 
-    v1.10.0 C1 (eski): thread + daemon join(timeout). Thread arka planda
-    ölmez, VF2 aramayı bitirene kadar CPU tüketmeye devam ediyordu.
-
-    v1.10.0 Batch 6A (Codex math audit): ``multiprocessing.Process`` ile
-    hard-stop. Timeout dolduysa ``terminate()`` + ``kill()`` ile worker
-    sonlandırılır, kaynak sızıntısı olmaz. Ayrıca node cap: graph > cap
-    ise VF2 direkt atlanır (LSH+WL yeterli, false-positive kabul).
-
-    GEÇİŞ NOTU: custom ``node_match_fn`` parametre olarak geliyorsa,
-    multiprocessing pickle yetersizliğinden dolayi thread-based fallback'a
-    düşülür (default matcher ile çalışıldığında multiprocessing kullanılır
-    — yaygın durum). Default harici matcher'da eski davranış korunur.
+    v1.10.0 C1: thread + join(timeout) (thread ölmüyordu). Batch 6A: her
+    çağrıda ``multiprocessing`` ``spawn`` süreci (hard-stop ama çağrı başına
+    yüzlerce ms; LSH aday döndürünce saatler). P11: arama süreç içinde koşar;
+    düğüm eşleyicisi (varsayılan ya da ``node_match_fn``) her çağrıda saati
+    denetler, süre dolunca arama istisnayla kesilir ve CPU hemen geri gelir.
+    Düğüm sınırı (``_VF2_NODE_CAP``) aşılırsa VF2 hiç koşmaz.
 
     Args:
         cfg_a: Host CFG.
         cfg_b: Pattern CFG.
-        node_match_fn: Özel node karşılaştırıcı. None → default
-            (multiprocessing path). Non-default → thread fallback.
-        timeout_s: Saniye cinsinden maksimum süre. ``<=0`` → timeout yok.
+        node_match_fn: Özel düğüm karşılaştırıcı; None → ``_default_node_match``.
+        timeout_s: Saniye cinsinden en çok süre. ``<=0`` → sınır yok.
 
     Returns:
         ``(matched, timed_out)``.
@@ -244,71 +240,33 @@ def vf2_match_with_timeout(
         # "VF2 atlandi, LSH'e guvenin" diyor.
         return False, True
 
-    # Multiprocessing path (default matcher): HARD-STOP mumkun.
-    if node_match_fn is None and timeout_s is not None and timeout_s > 0:
-        nodes_a, edges_a = _serialize_graph(G_a)
-        nodes_b, edges_b = _serialize_graph(G_b)
-        # spawn context: macOS/Linux/Windows uyumlu, fork overhead'den
-        # kacinir ve child state izolasyonu saglar.
-        ctx = multiprocessing.get_context("spawn")
-        queue = ctx.Queue()
-        proc = ctx.Process(
-            target=_vf2_worker,
-            args=(queue, nodes_a, edges_a, nodes_b, edges_b),
-            daemon=True,
-        )
-        try:
-            proc.start()
-            proc.join(timeout=timeout_s)
-            if proc.is_alive():
-                # HARD-STOP: terminate -> kill ladder.
-                proc.terminate()
-                proc.join(1.0)
-                if proc.is_alive():  # pragma: no cover - terminate genelde yeter
-                    proc.kill()
-                    proc.join(1.0)
-                return False, True
-            try:
-                status, result = queue.get_nowait()
-            except Exception:
-                return False, True
-            if status == "ok":
-                return bool(result), False
-            return False, False  # error path -> no match
-        finally:
-            try:
-                queue.close()
-            except Exception:  # pragma: no cover
-                pass
-
-    # Thread-fallback (custom matcher veya timeout kapali):
-    # custom matcher'i pickle edemeyiz. Eski thread-based semantik korundu
-    # ama artik UYARI loglayalim (caller node_match_fn default'ta birakmali).
+    # P11 (TIP-01 küçük bulgu): eskiden her çağrı ``spawn`` ile yeni bir Python
+    # süreci açıyordu (yüzlerce ms). LSH aday döndürmeye başlayınca fonksiyon ×
+    # aday sayısı kadar süreç = saatler. Artık süreç içi süre sınırı: düğüm
+    # eşleyicisi her çağrıda saati denetler, süre dolunca istisnayla aramayı
+    # keser. VF2 her arama adımında (durum genişletme) anlamsal uygunluğu, yani
+    # düğüm eşleyicisini çağırır; bu yüzden kesme gecikmesi bir adımla sınırlı.
     matcher_fn = node_match_fn or _default_node_match
-    result = [False]
-
-    def _run() -> None:
-        try:
-            gm = DiGraphMatcher(G_a, G_b, node_match=matcher_fn)
-            if G_a.number_of_nodes() == G_b.number_of_nodes():
-                if gm.is_isomorphic():
-                    result[0] = True
-                    return
-            result[0] = bool(gm.subgraph_is_isomorphic())
-        except Exception:  # pragma: no cover
-            result[0] = False
-
     if timeout_s is None or timeout_s <= 0:
-        _run()
-        return result[0], False
+        gm = DiGraphMatcher(G_a, G_b, node_match=matcher_fn)
+        if G_a.number_of_nodes() == G_b.number_of_nodes() and gm.is_isomorphic():
+            return True, False
+        return bool(gm.subgraph_is_isomorphic()), False
 
-    t = threading.Thread(target=_run, daemon=True)
-    t.start()
-    t.join(timeout=timeout_s)
-    if t.is_alive():
-        # Thread arka planda kalir; custom matcher ile multiprocess desteklenemez.
+    deadline = time.monotonic() + float(timeout_s)
+
+    def _with_deadline(attrs_a: dict, attrs_b: dict) -> bool:
+        if time.monotonic() > deadline:
+            raise _VF2Deadline()
+        return matcher_fn(attrs_a, attrs_b)
+
+    try:
+        gm = DiGraphMatcher(G_a, G_b, node_match=_with_deadline)
+        if G_a.number_of_nodes() == G_b.number_of_nodes() and gm.is_isomorphic():
+            return True, False
+        return bool(gm.subgraph_is_isomorphic()), False
+    except _VF2Deadline:
         return False, True
-    return result[0], False
 
 
 def exact_match_confidence(

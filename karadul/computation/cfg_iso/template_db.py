@@ -30,6 +30,9 @@ from .fingerprint import AttributedCFG, CFGNode
 
 logger = logging.getLogger(__name__)
 
+SOURCE_HAND_X86 = "elle_x86_sentetik"
+SOURCE_JSON_SYNTHETIC = "json_sentetik"
+
 
 @dataclass
 class AlgorithmTemplate:
@@ -38,6 +41,11 @@ class AlgorithmTemplate:
     cfg: AttributedCFG
     anchors: dict[str, Any] = field(default_factory=dict)
     family: str = "generic"
+    # P11 / TIP-01: şablonun kaynağı. Bu dosyadaki 8 şablon x86 komut adlarıyla
+    # elle yazılmış ("elle_x86_sentetik"); ``known_algorithms.json`` girdileri 24
+    # sayılık parmak izinden kurulmuş 3 düğümlü yapay grafik ("json_sentetik").
+    # Gerçek derlenmiş koddan kurulan şablon bankada yok.
+    source: str = SOURCE_HAND_X86
 
 
 def _build_cfg(
@@ -382,6 +390,7 @@ def _json_entry_to_template(entry: dict[str, Any]) -> Optional[AlgorithmTemplate
         cfg=cfg,
         anchors=anchors,
         family=category,
+        source=SOURCE_JSON_SYNTHETIC,
     )
 
 

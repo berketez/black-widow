@@ -131,10 +131,18 @@ def extract_function_cfg(func, block_model, monitor) -> dict | None:
             continue
         block_addrs.add(start_str)
 
+        # P11 / TIP-01: blok basina komut adlari (CFG-iso dugum histogrami).
+        mnemonics = []
+        instr_iter = currentProgram.getListing().getInstructions(block, True)  # type: ignore[name-defined]
+        while instr_iter.hasNext():
+            mnemonics.append(str(instr_iter.next().getMnemonicString()).lower())
+
         block_info = {
             "start_address": start_str,
             "end_address": str(end),
             "size": int(block.getNumAddresses()),
+            "instruction_count": len(mnemonics),
+            "mnemonics": mnemonics,
         }
         blocks.append(block_info)
 

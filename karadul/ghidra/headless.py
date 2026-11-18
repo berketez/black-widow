@@ -1883,18 +1883,22 @@ class GhidraHeadless:
                     size = int(block.getNumAddresses())
                     block_addrs.add(start)
 
-                    # Instruction sayisi
+                    # Instruction sayisi + blok basina komut adlari (P11 / TIP-01:
+                    # CFG-iso dugum histogrami gercek komut adlarindan kurulur).
                     instr_count = 0
+                    mnemonics = []
                     instr_iter = listing.getInstructions(block, True)
                     while instr_iter.hasNext():
-                        instr_iter.next()
+                        instr = instr_iter.next()
                         instr_count += 1
+                        mnemonics.append(str(instr.getMnemonicString()).lower())
 
                     blocks_data.append({
                         "start_address": start,
                         "end_address": end,
                         "size": size,
                         "instruction_count": instr_count,
+                        "mnemonics": mnemonics,
                     })
 
                     # Edge'ler

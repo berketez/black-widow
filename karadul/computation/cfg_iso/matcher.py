@@ -40,6 +40,9 @@ class CFGMatch:
     match_type: str
     reasons: list[str] = field(default_factory=list)
     family: str = "generic"
+    # P11: şablonun kaynağı (``AlgorithmTemplate.source``); füzyon ölçülmüş
+    # kesinliği kaynak başına arar (``cfg_iso:<kaynak>``).
+    template_source: str = ""
 
 
 @dataclass
@@ -233,4 +236,5 @@ class HybridCFGMatcher:
             match_type=match_type,
             reasons=reasons,
             family=template.family,
+            template_source=getattr(template, "source", ""),
         )
