@@ -43,6 +43,9 @@ logger = logging.getLogger(__name__)
         "byte_pattern_names",
         "c_files",
         "file_cache",
+        # P11 (K-1): hesaplama füzyonunun KABUL ettiği adlar; yalnız
+        # computation.enable_fusion_naming açıkken dolu (öntanım boş liste).
+        "fusion_name_candidates",
     ],
     produces=[
         "calibrated_matches",
@@ -112,6 +115,19 @@ class ConfidenceFilterStep(Step):
             extracted_names=extracted_names,
             ctx=ctx,
         )
+
+        # 6. Hesaplama füzyonu (P11 / TIP-02, K-1). Liste yalnız
+        # computation.enable_fusion_naming açıkken dolu; kabul olasılığı
+        # kaynağın ölçülmüş kesinliği. Ezmez, yalnız boş slotlara (byte
+        # pattern ile aynı kural); anahtar Ghidra'nın jenerik adı.
+        fusion_added = 0
+        for cand in ctx.artifacts.get("fusion_name_candidates") or []:
+            key = f"FUN_{cand['address']}"
+            if key not in extracted_names:
+                extracted_names[key] = cand["name"]
+                fusion_added += 1
+        if fusion_added:
+            ctx.stats["computation_fusion_named"] = fusion_added
 
         return {
             "calibrated_matches": calibrated_matches,
