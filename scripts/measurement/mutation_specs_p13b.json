@@ -1,0 +1,21 @@
+{
+  "_comment": "P13b (K-4 ad kanalları: BORU-14 a/b + IMZA-13, IMZA-14, IMZA-16, BORU-10 / MUH-08) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p13b.json",
+  "mutants": [
+    {
+      "id": "p13b_k1_requires_yok",
+      "desc": "BORU-14 b: tüketici yine yalnız binary_for_byte_match'i requires eder (üreticilerle aynı düzey)",
+      "module": "karadul/pipeline/steps/type_recovery_consumer.py",
+      "test": "tests/test_p13b_tuketici.py::test_consumer_sees_producer_in_both_modes",
+      "find": "    requires=[\"binary_for_byte_match\", *PRODUCER_ARTIFACTS],\n",
+      "replace": "    requires=[\"binary_for_byte_match\"],\n"
+    },
+    {
+      "id": "p13b_k1_sayim_bos",
+      "desc": "BORU-14 b: tüketici veri gelse de no-data der",
+      "module": "karadul/pipeline/steps/type_recovery_consumer.py",
+      "test": "tests/test_step_type_recovery_consumer.py::TestTypeRecoveryConsumerStep::test_counts_every_source",
+      "find": "        status = \"active\" if total else \"no-data\"\n",
+      "replace": "        status = \"no-data\"\n"
+    }
+  ]
+}
