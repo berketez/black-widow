@@ -4,8 +4,10 @@ Arayüz (``Backend``): ``start``, ``stop``, ``health``, ``chat(messages, schema,
 ``capabilities``, ``identity``. Üç gerçekleme:
 
 - ``LlamaServerBackend``: yerel yalın ``llama-server``. Bayraklar pilotun komutudur
-  (``scripts/measurement/llm_pilot.py:725-734``; eşitliği testle kilitli) + ``--api-key <rastgele>``;
-  kapı boş bir loopback kapısıdır, sunucu yalnız ``127.0.0.1``'e bağlanır. Süreç ``process_group=0``
+  (``scripts/measurement/llm_pilot.py:725-734``; eşitliği testle kilitli); rastgele anahtar komut
+  satırında değil ``LLAMA_API_KEY`` ortam değişkeninde gider ve başlatmada anahtarsız isteğin reddedildiği
+  denetlenir (P21 B-E5). Kapı boş bir loopback kapısıdır, sunucu yalnız ``127.0.0.1``'e bağlanır. Ana süreç
+  ölünce (SIGKILL, ``os._exit``) sunucuyu kapatan ayrı bir ebeveyn bekçisi açılır (P21 LM-05). Süreç ``process_group=0``
   ile açılır; ``start_new_session`` KULLANILMAZ: çok iş parçacıklı süreçte ``setsid`` yolu
   ``posix_spawn`` dışına düşüp macOS'ta ``fork`` kilitlenmesine yol açıyordu
   (``ui/server.py:1812-1818``). PID dosyası yazılır; her hata yolunda süreç kapatılır ve PID dosyası
@@ -34,6 +36,7 @@ import secrets as _secrets
 import signal
 import socket
 import subprocess
+import sys
 import threading
 import time
 import urllib.error
@@ -47,7 +50,7 @@ from typing import Any, Callable, Iterable, Iterator, Mapping, Optional, Sequenc
 from karadul.lm import (
     CAPABILITY_PROBE_MAX_TOKENS, CONTEXT_TOKENS, ERROR_EXCERPT_CHARS, HEALTH_POLL_SEC,
     HEALTH_REQUEST_TIMEOUT_SEC, IDLE_SHUTDOWN_SEC, MAX_TOKENS_STEP, MODEL_SEED, READY_TIMEOUT_SEC,
-    REQUEST_TIMEOUT_SEC, STOP_WAIT_SEC,
+    REQUEST_TIMEOUT_SEC, STOP_WAIT_SEC, WATCHDOG_POLL_SEC,
 )
 from karadul.lm import protocol
 from karadul.lm.audit import REDACTED, AuditLog, canonical_json, now_iso, redact_text, redact_url, sha256_text
@@ -142,10 +145,16 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def build_llama_command(binary: Path, model_path: Path, port: int, api_key: str, *,
+# B-E5: anahtar komut satırında DEĞİL, bu ortam değişkeninde gider. Komut satırı (``ps``) her kullanıcıya
+# açıktır; başka kullanıcının süreç ortamı okunamaz. ``llama-server`` ``--api-key``'in ortam karşılığı.
+API_KEY_ENV = "LLAMA_API_KEY"
+
+
+def build_llama_command(binary: Path, model_path: Path, port: int, *,
                         template_path: Optional[Path] = None, ctx_size: int = CONTEXT_TOKENS) -> list[str]:
     """Yerel sunucunun komutu: pilotun yalın bayrakları (``llm_pilot.LlamaSunucu.komut``,
-    ``llm_pilot.py:725-734``; aynı sıra) ve sonunda ``--api-key``. Kapı ``127.0.0.1``'dedir."""
+    ``llm_pilot.py:725-734``; aynı sıra). Kapı ``127.0.0.1``'dedir. Anahtar komutta yoktur
+    (``API_KEY_ENV``, ``server_env``)."""
     k = [str(binary), "--model", str(model_path), "--host", "127.0.0.1",
          "--port", str(port), "--ctx-size", str(ctx_size), "--n-gpu-layers", "999", "--parallel", "1",
          "--jinja", "--flash-attn", "on", "--cache-ram", "0", "--ctx-checkpoints", "0",
@@ -154,7 +163,71 @@ def build_llama_command(binary: Path, model_path: Path, port: int, api_key: str,
          "--no-webui", "--seed", str(MODEL_SEED)]
     if template_path is not None:
         k += ["--chat-template-file", str(template_path)]
-    return k + ["--api-key", api_key]
+    return k
+
+
+def server_env(api_key: str, base: Optional[Mapping[str, str]] = None) -> dict[str, str]:
+    """Sunucu sürecinin ortamı: çağıranın ortamı + ``API_KEY_ENV``. Ortamda önceden kalmış bir
+    ``API_KEY_ENV`` değeri olsa da bu başlatmanın anahtarı yazılır."""
+    env = dict(os.environ if base is None else base)
+    env[API_KEY_ENV] = api_key
+    return env
+
+
+# LM-05: ebeveyn bekçisi. Ayrı, küçük bir Python süreci (yalnız standart kitaplık, ``-I``): ana süreç
+# ölürse (SIGKILL, ``os._exit``, yakalanmamış sinyal; ``atexit`` bunlarda çalışmaz) bekçi yetim kalır,
+# ``getppid()`` değişir ve yerel model sunucusunu kapatır (SIGTERM, bekle, SIGKILL). Sunucu kendiliğinden
+# biterse bekçi de çıkar. Kendi süreç grubundadır (``process_group=0``): uçbirimin SIGINT'i ana süreçle
+# birlikte bekçiyi öldürmez. Öldürmeden önce sürecin hâlâ bizim sunucumuz olduğu ``ps`` ile denetlenir
+# (ikili yolu ve ``--port``; PID yeniden kullanımı).
+WATCHDOG_SOURCE = r"""
+import os, signal, subprocess, sys, time
+parent, child, binary, port = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3], sys.argv[4]
+poll, wait = float(sys.argv[5]), float(sys.argv[6])
+def ours():
+    try:
+        out = subprocess.run(["ps", "-o", "args=", "-p", str(child)], capture_output=True, text=True,
+                             timeout=10).stdout
+    except Exception:
+        return False
+    return binary in out and ("--port " + port) in out
+def alive():
+    try:
+        os.kill(child, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+while os.getppid() == parent:
+    if not alive():
+        sys.exit(0)
+    time.sleep(poll)
+if not ours():
+    sys.exit(0)
+try:
+    os.kill(child, signal.SIGTERM)
+except ProcessLookupError:
+    sys.exit(0)
+t = time.monotonic()
+while time.monotonic() - t < wait:
+    if not ours():
+        sys.exit(0)
+    time.sleep(0.2)
+if ours():
+    try:
+        os.kill(child, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+"""
+
+
+def spawn_parent_watchdog(server_pid: int, binary: Path, port: int) -> Any:
+    """Ebeveyn bekçisini başlatır (``WATCHDOG_SOURCE``); ``Popen`` nesnesi döner."""
+    return subprocess.Popen([sys.executable, "-I", "-c", WATCHDOG_SOURCE, str(os.getpid()), str(server_pid),
+                             str(binary), str(port), str(WATCHDOG_POLL_SEC), str(STOP_WAIT_SEC)],
+                            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                            close_fds=True, process_group=0)
 
 
 def redact_command(cmd: Sequence[str], api_key: Optional[str]) -> list[str]:
@@ -556,7 +629,8 @@ class LlamaServerBackend(Backend):
                  kill: Callable[[int, int], None] = os.kill, clock: Callable[[], float] = time.monotonic,
                  sleep: Callable[[float], None] = time.sleep, port_finder: Callable[[], int] = find_free_port,
                  key_factory: Callable[[], str] = new_api_key, ready_timeout: float = READY_TIMEOUT_SEC,
-                 idle_shutdown_sec: float = IDLE_SHUTDOWN_SEC, request_timeout: float = REQUEST_TIMEOUT_SEC):
+                 idle_shutdown_sec: float = IDLE_SHUTDOWN_SEC, request_timeout: float = REQUEST_TIMEOUT_SEC,
+                 watchdog: Optional[Callable[[int, Path, int], Any]] = spawn_parent_watchdog):
         super().__init__(audit)
         self.binary = Path(binary)
         self.model_path = Path(model_path)
@@ -579,6 +653,9 @@ class LlamaServerBackend(Backend):
         self._last_activity: Optional[float] = None
         self._lock = threading.RLock()
         self._atexit_registered = False
+        # LM-05: ebeveyn bekçisi (None: bekçi kurulmaz; yalnız testler ve açıkça isteyen çağıran).
+        self._watchdog_factory = watchdog
+        self._watchdog: Any = None
 
     # --- yollar ---------------------------------------------------------------------------
     @property
@@ -643,7 +720,8 @@ class LlamaServerBackend(Backend):
     def _recorded_pid(self) -> Optional[int]:
         """PID dosyasındaki süreç hâlâ bizim llama-server'ımız mı (ikili yolu ve kapı eşleşmeli)?
         Pilotun ``_kayitli_pid`` denetimi (``llm_pilot.py:711-723``); kapı burada dosyadan okunur.
-        ``ps`` çıktısı anahtarı da taşır; yalnız alt dizgi denetiminde kullanılır, hiçbir yere yazılmaz."""
+        ``ps`` çıktısı yalnız alt dizgi denetiminde kullanılır, hiçbir yere yazılmaz (anahtar artık komut
+        satırında değil, ortamdadır)."""
         try:
             rec = json.loads(self.pid_file.read_text(encoding="utf-8"))
             pid, port = int(rec["pid"]), int(rec["port"])
@@ -688,7 +766,7 @@ class LlamaServerBackend(Backend):
         """Bu başlatmanın komutu (anahtar dahil; kayda yalnız ``redact_command`` ile girer)."""
         if self._port is None or self._key is None:
             raise BackendError("komut yalnız başlatma sırasında kurulur")
-        return build_llama_command(self.binary, self.model_path, self._port, self._key,
+        return build_llama_command(self.binary, self.model_path, self._port,
                                    template_path=self.template_path, ctx_size=self.ctx_size)
 
     def start(self) -> None:
@@ -710,12 +788,16 @@ class LlamaServerBackend(Backend):
                 cmd = self.command()
                 self._log = open(self.log_file, "ab")
                 self._proc = self._popen(cmd, stdout=self._log, stderr=subprocess.STDOUT,
-                                         stdin=subprocess.DEVNULL, process_group=0)
+                                         stdin=subprocess.DEVNULL, process_group=0,
+                                         env=server_env(self._key))
                 self._write_pid_file(self._proc.pid, self._port)
+                if self._watchdog_factory is not None:
+                    self._watchdog = self._watchdog_factory(self._proc.pid, self.binary, self._port)
                 self._client = _OpenAIClient(self._root_url() + "/v1/chat/completions", self._key,
                                              self.model_name, self._transport, self._redact,
                                              thinking_control=True, clock=self._clock)
                 self._wait_ready()
+                auth = self._check_auth()
                 if not self._atexit_registered:
                     atexit.register(self._atexit_stop)
                     self._atexit_registered = True
@@ -731,11 +813,34 @@ class LlamaServerBackend(Backend):
                 # except bloğunun dışında: özgün istisna (anahtarlı komut taşıyabilir) bağlama girmez.
                 raise BackendError(failure)
             self._identity = {**ident, "bayraklar": redact_command(cmd[1:], self._key), "host": "127.0.0.1",
-                              "port": self._port, "pid": self._proc.pid, "baslangic": now_iso()}
+                              "port": self._port, "pid": self._proc.pid, "baslangic": now_iso(),
+                              "anahtar_yeri": f"ortam:{API_KEY_ENV}", "anahtar_denetimi": auth,
+                              "ebeveyn_bekcisi": getattr(self._watchdog, "pid", None)}
             self._state = STATE_READY
             self._last_activity = self._clock()
             if self.audit is not None:
                 self.audit.write("kunye", arka_uc=self._identity, yetenek=self.capabilities().as_dict())
+
+    def _check_auth(self) -> str:
+        """Anahtar uygulanıyor mu (B-E5)? Anahtar artık ortamda gittiği için sunucunun onu gerçekten
+        okuduğu denetlenir: anahtarsız ``GET /props`` 401 / 403 dönmeli. 2xx dönerse sunucu anahtarsız
+        çalışıyordur: başlatma hatasıdır. Başka bir cevap (uç yok, 404) "dogrulanamadi" diye künyeye
+        yazılır; uydurma "zorunlu" yazılmaz."""
+        try:
+            resp = self._transport("GET", self._root_url() + "/props", {}, None, HEALTH_REQUEST_TIMEOUT_SEC)
+        except HttpStatusError as e:
+            return "zorunlu" if e.status in (401, 403) else f"dogrulanamadi:http_{e.status}"
+        except LMError:
+            return "dogrulanamadi:baglanti"
+        try:
+            status = resp.status
+        finally:
+            resp.close()
+        if status in (401, 403):
+            return "zorunlu"
+        if 200 <= status < 300:
+            raise BackendError(f"llama-server anahtarsız isteği kabul etti ({API_KEY_ENV} okunmadı)")
+        return f"dogrulanamadi:http_{status}"
 
     def _health_ok(self) -> bool:
         resp = self._transport("GET", self._root_url() + "/health", {"Authorization": f"Bearer {self._key}"},
@@ -762,6 +867,7 @@ class LlamaServerBackend(Backend):
         """Süreci kapatır (SIGTERM → bekle → SIGKILL), PID dosyasını siler, anahtarı unutur.
         Her adım ayrı korunur: biri hata verse de sonrakiler yapılır."""
         proc, self._proc = self._proc, None
+        watchdog, self._watchdog = self._watchdog, None
         try:
             if proc is not None and proc.poll() is None:
                 proc.terminate()
@@ -774,6 +880,13 @@ class LlamaServerBackend(Backend):
                     except subprocess.TimeoutExpired:
                         pass
         finally:
+            if watchdog is not None:
+                try:
+                    if watchdog.poll() is None:
+                        watchdog.terminate()
+                    watchdog.wait(timeout=STOP_WAIT_SEC)
+                except Exception:  # noqa: BLE001 — bekçi kapanamasa da sunucu kapandı; bekçi kendisi çıkar
+                    pass
             try:
                 self.reap_recorded()
             finally:

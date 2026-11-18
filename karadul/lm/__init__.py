@@ -158,5 +158,8 @@ MODEL_RETRY_MAX = 1
 # süresinden uzun sürmez (eskiden sınır yoktu; K2 en kötü durumda 9 istek × 900 sn bekleyebilirdi).
 # Hız ölçüldüyse bütçe tasarımın kuralıdır: TIME_BUDGET_FACTOR × beklenen süre (§2.3).
 TASK_TIME_BUDGET_FALLBACK_SEC = float(REQUEST_TIMEOUT_SEC)
+# LM-05: ebeveyn bekçisinin yoklama aralığı (sn). Ana süreç ölünce (SIGKILL, os._exit) yerel model
+# sunucusu en geç bu süre + STOP_WAIT_SEC içinde kapanır; sunucu ~16 GiB mlock'lu bellek tutar.
+WATCHDOG_POLL_SEC = 1.0
 
 __all__: list[str] = []

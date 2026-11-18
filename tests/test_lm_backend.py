@@ -107,18 +107,24 @@ class SahtePopen:
 
 
 class SahteTasiyici:
-    """Yol sonuna göre cevap verir; ``saglik`` listesinin son öğesi tekrarlanır."""
+    """Yol sonuna göre cevap verir; ``saglik`` listesinin son öğesi tekrarlanır. ``/props`` anahtar
+    denetimidir (P21 B-E5): öntanım 401 (sunucu anahtarı uyguluyor)."""
 
-    def __init__(self, saglik=(200,), sohbet=()):
+    def __init__(self, saglik=(200,), sohbet=(), props=401):
         self.saglik = list(saglik)
         self.sohbet = list(sohbet)
+        self.props = props
         self.cagrilar = []
 
     def __call__(self, method, url, headers, body, timeout):
         self.cagrilar.append({"method": method, "url": url, "headers": dict(headers), "body": body,
                               "timeout": timeout})
         yol = urllib.parse.urlsplit(url).path
-        if yol.endswith(("/health", "/models")):
+        if yol.endswith("/props"):
+            if 400 <= self.props < 600:
+                raise B.HttpStatusError(self.props, "")
+            oge = self.props
+        elif yol.endswith(("/health", "/models")):
             oge = self.saglik.pop(0) if len(self.saglik) > 1 else self.saglik[0]
         else:
             oge = self.sohbet.pop(0)
@@ -189,7 +195,7 @@ def _dosyalar(tmp_path):
 
 
 def _arka_uc(tmp_path, *, popen=None, tasiyici=None, calistirici=None, gunluk=None, oldurucu=None,
-             hazir_suresi=10.0, bosta=600.0):
+             hazir_suresi=10.0, bosta=600.0, bekci=None):
     ikili, model, sablon = _dosyalar(tmp_path)
     saat = Saat()
     cal = calistirici or SahteCalistirici()
@@ -197,8 +203,22 @@ def _arka_uc(tmp_path, *, popen=None, tasiyici=None, calistirici=None, gunluk=No
                              popen=popen or SahtePopen(), transport=tasiyici or SahteTasiyici(), run=cal,
                              kill=oldurucu or SahteOldurucu(cal), clock=saat, sleep=saat.uyu,
                              port_finder=lambda: KAPI, key_factory=lambda: ANAHTAR, ready_timeout=hazir_suresi,
-                             idle_shutdown_sec=bosta)
+                             idle_shutdown_sec=bosta, watchdog=bekci)
     return b, saat
+
+
+class SahteBekci:
+    """Ebeveyn bekçisi yerine (P21 LM-05): gerçek süreç açmaz, çağrıları ve kapatmayı sayar."""
+
+    def __init__(self):
+        self.cagrilar = []
+        self.surecler = []
+
+    def __call__(self, pid, ikili, kapi):
+        self.cagrilar.append((pid, str(ikili), kapi))
+        surec = SahteSurec(pid=9000 + len(self.surecler))
+        self.surecler.append(surec)
+        return surec
 
 
 # --------------------------------------------------------------------------------------------
@@ -207,25 +227,25 @@ def _arka_uc(tmp_path, *, popen=None, tasiyici=None, calistirici=None, gunluk=No
 
 def test_komut_pilot_bayraklariyla_ayni(tmp_path):
     ikili, model, sablon = _dosyalar(tmp_path)
-    urun = B.build_llama_command(ikili, model, KAPI, ANAHTAR, template_path=sablon)
+    urun = B.build_llama_command(ikili, model, KAPI, template_path=sablon)
     pilot = lp.LlamaSunucu(ikili=ikili, sablon=sablon, port=KAPI).komut({"dizin": model.parent, "gguf": model.name})
-    assert urun[:-2] == pilot
-    assert urun[-2:] == ["--api-key", ANAHTAR]
-    sablonsuz = B.build_llama_command(ikili, model, KAPI, ANAHTAR)
-    assert sablonsuz[:-2] == lp.LlamaSunucu(ikili=ikili, port=KAPI).komut({"dizin": model.parent, "gguf": model.name})
+    assert urun == pilot                                   # P21 B-E5: anahtar komutta yok, ortamda
+    sablonsuz = B.build_llama_command(ikili, model, KAPI)
+    assert sablonsuz == lp.LlamaSunucu(ikili=ikili, port=KAPI).komut({"dizin": model.parent, "gguf": model.name})
 
 
 def test_komut_anahtarli_ve_yalniz_loopback(tmp_path):
     ikili, model, _ = _dosyalar(tmp_path)
-    k = B.build_llama_command(ikili, model, KAPI, ANAHTAR)
-    assert k.count("--api-key") == 1 and k[k.index("--api-key") + 1] == ANAHTAR
+    k = B.build_llama_command(ikili, model, KAPI)
+    assert "--api-key" not in k and ANAHTAR not in " ".join(k)
+    assert B.server_env(ANAHTAR, {"PATH": "/bin"}) == {"PATH": "/bin", B.API_KEY_ENV: ANAHTAR}
     assert k.count("--host") == 1 and k[k.index("--host") + 1] == "127.0.0.1"
     assert k[k.index("--port") + 1] == str(KAPI)
     a1, a2 = B.new_api_key(), B.new_api_key()
     assert a1 != a2 and len(a1) == 64 and int(a1, 16) >= 0
     p = B.find_free_port()
     assert 1024 <= p <= 65535
-    assert B.redact_command(k, ANAHTAR).count(A.REDACTED) == 1 and ANAHTAR not in B.redact_command(k, ANAHTAR)
+    assert B.redact_command(k + [ANAHTAR], ANAHTAR).count(A.REDACTED) == 1
 
 
 def test_sabitler_pilotla_ayni():
@@ -265,14 +285,15 @@ def test_baslatma_surec_grubu_pid_dosyasi_ve_kunye(tmp_path):
     cmd, kw = popen.cagrilar[0]
     assert kw["process_group"] == 0 and "start_new_session" not in kw
     assert kw["stdin"] == subprocess.DEVNULL
-    assert cmd[-2:] == ["--api-key", ANAHTAR]
+    assert "--api-key" not in cmd and ANAHTAR not in " ".join(cmd) and kw["env"][B.API_KEY_ENV] == ANAHTAR
     kayit = json.loads(b.pid_file.read_text())
     assert kayit == {"pid": 4321, "port": KAPI, "ikili": str(b.binary)}
     k = b.identity()
     assert k["ikili_sha256"] == hashlib.sha256(IKILI_ICERIK).hexdigest()
     assert k["sablon_sha256"] == hashlib.sha256(b"{{ messages }}").hexdigest()
     assert k["model_sha256"] is None and k["surum"].startswith("version: 0.7.0-dev")
-    assert A.REDACTED in k["bayraklar"] and ANAHTAR not in json.dumps(k)
+    assert "--api-key" not in k["bayraklar"] and ANAHTAR not in json.dumps(k)      # P21 B-E5
+    assert (k["anahtar_yeri"], k["anahtar_denetimi"], k["ebeveyn_bekcisi"]) == ("ortam:LLAMA_API_KEY", "zorunlu", None)
     assert b.state == B.STATE_READY and b.pid == 4321 and b.port == KAPI
     assert [r["olay"] for r in gunluk.records] == ["kunye"]
     b.start()
@@ -328,7 +349,8 @@ def test_popen_hatasi_anahtari_sizdirmaz(tmp_path):
     with pytest.raises(B.BackendError) as ei:
         b.start()
     metin = "".join(traceback.format_exception(ei.value))
-    assert ANAHTAR not in metin and A.REDACTED in str(ei.value)
+    # P21 B-E5: anahtar komutta hiç yok; hata iletisine komut girse de anahtar girmez
+    assert ANAHTAR not in metin and "--api-key" not in str(ei.value) and "llama-server" in str(ei.value)
     assert ei.value.__context__ is None and ei.value.__cause__ is None
     assert ANAHTAR not in (tmp_path / "gunluk.jsonl").read_text()
     assert [r["olay"] for r in gunluk.read_records()] == ["baslatma_hatasi"]
