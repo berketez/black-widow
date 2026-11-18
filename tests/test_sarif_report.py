@@ -62,41 +62,38 @@ def pipeline_result(workspace: Workspace) -> PipelineResult:
             "functions_found": 312,
             "strings_found": 4500,
             "imports_found": 87,
-            "algorithms_detected": [
-                {
-                    "name": "AES-256 CBC",
-                    "address": "0x00401000",
-                    "confidence": 0.95,
-                    "category": "symmetric_cipher",
-                    "method": "constant_based",
-                },
-                {
-                    "name": "SHA-256",
-                    "address": "0x00402000",
-                    "confidence": 0.88,
-                    "category": "hash_function",
-                    "method": "constant_based",
-                },
-            ],
-            "yara_matches": [
-                {
-                    "rule": "UPX_packed",
-                    "tags": ["packer", "upx"],
-                    "description": "UPX packer signature",
-                    "meta": {"author": "test"},
-                },
-                {
-                    "rule": "anti_debug_check",
-                    "tags": ["anti_debug"],
-                    "description": "Anti-debug technique detected",
-                    "meta": {},
-                },
-            ],
-            "detected_tech": [
-                {"name": "UPX 3.96", "type": "packer"},
+            # P07: ürünün gerçekten yazdığı sözleşme (P-S1 ``yara_status`` / ``yara_hits``).
+            # Eskiden bu testler hiç üretilmeyen ``algorithms_detected`` LİSTESİNİ ve
+            # ``yara_matches`` LİSTESİNİ kullanıyordu (ARAYUZ-17: sentetik şema).
+            "yara_status": "calisti",
+            "yara_status_reason": "",
+            "yara_backend": "yara-python",
+            "yara_matches": 2,
+            "yara_hits": [
+                {"rule": "UPX_Packed", "tags": ["packer", "upx"],
+                 "meta": {"description": "UPX packed binary", "severity": "warning",
+                          "condition": "upx_magic and upx_section"},
+                 "namespace": "builtin",
+                 "strings": [{"offset": 1016, "identifier": "$s0", "length": 4,
+                              "data_hex": "55505821", "data_text": "UPX!"}],
+                 "strings_total": 1},
+                {"rule": "AntiDebug_Windows", "tags": ["antidebug", "windows"],
+                 "meta": {"description": "Windows IsDebuggerPresent API call",
+                          "severity": "high", "condition": "2 of them"},
+                 "namespace": "builtin", "strings": [], "strings_total": 0},
             ],
         },
     ))
+    # Algoritma tespiti reconstructed/algorithms.json'a yazar (pipeline/steps/algorithm_id.py).
+    workspace.save_json("reconstructed", "algorithms", {
+        "total": 2,
+        "algorithms": [
+            {"name": "AES-256 CBC", "category": "symmetric_cipher", "confidence": 0.95,
+             "function": "FUN_00401000", "evidence": ["AES S-box constant table"]},
+            {"name": "SHA-256", "category": "hash", "confidence": 0.88,
+             "function": "FUN_00402000", "evidence": ["SHA-256 round constants"]},
+        ],
+    })
 
     # Deobfuscate stage
     result.add_stage_result(StageResult(
@@ -118,7 +115,9 @@ def pipeline_result(workspace: Workspace) -> PipelineResult:
             "modules_extracted": 5,
             "variables_renamed": 120,
             "coverage_percent": 25,
-            "avg_naming_confidence": 0.35,
+            "algorithms_detected": 2,
+            # c_namer etiket dağılımı (pipeline/steps/_feedback_naming.py)
+            "naming_by_label": {"doğrulanmadı": 9, "kesin": 3},
         },
     ))
 
@@ -210,12 +209,12 @@ class TestSARIFRules:
     def test_sarif_rules_defined(
         self, pipeline_result: PipelineResult, workspace: Workspace
     ) -> None:
-        """5 kural tanimlanmis olmali."""
+        """7 kural tanimlanmis olmali (P07: KRDL006 IOC, KRDL007 teknoloji izi)."""
         path = SARIFReporter().generate(pipeline_result, workspace)
         data = _load_sarif(path)
         rules = data["runs"][0]["tool"]["driver"]["rules"]
 
-        assert len(rules) == 5
+        assert len(rules) == 7
 
     def test_sarif_rule_ids(
         self, pipeline_result: PipelineResult, workspace: Workspace
@@ -226,7 +225,7 @@ class TestSARIFRules:
         rules = data["runs"][0]["tool"]["driver"]["rules"]
         rule_ids = {r["id"] for r in rules}
 
-        expected = {"KRDL001", "KRDL002", "KRDL003", "KRDL004", "KRDL005"}
+        expected = {"KRDL001", "KRDL002", "KRDL003", "KRDL004", "KRDL005", "KRDL006", "KRDL007"}
         assert rule_ids == expected
 
     def test_sarif_rules_have_descriptions(
@@ -340,8 +339,9 @@ class TestSARIFResults:
         results = data["runs"][0]["results"]
 
         naming_results = [r for r in results if r["ruleId"] == "KRDL002"]
-        # Reconstruct (avg_confidence=0.35 < 0.5) + deobfuscate (low_confidence_names=14)
-        assert len(naming_results) >= 1
+        # Reconstruct (9/12 ad "doğrulanmadı") + deobfuscate (low_confidence_names=14)
+        assert len(naming_results) == 2
+        assert any("9 of 12" in r["message"]["text"] for r in naming_results)
 
 
 class TestSARIFArtifact:
@@ -422,10 +422,10 @@ class TestSARIFWithRealPipelineResult:
 
         # Tool
         assert run["tool"]["driver"]["name"] == "Black Widow"
-        assert len(run["tool"]["driver"]["rules"]) == 5
+        assert len(run["tool"]["driver"]["rules"]) == 7
 
-        # Results -- en az kripto(2) + yara(2) + detected_tech(1) + naming(2) = 7
-        assert len(run["results"]) >= 7
+        # Results -- kripto(2) + yara(2) + naming(2) = 6
+        assert len(run["results"]) == 6
 
         # Artifacts
         assert len(run["artifacts"]) == 1
@@ -477,10 +477,9 @@ class TestSARIFStagesIntegration:
 
 
 class TestSARIFStringAlgorithms:
-    """Algoritma listesi string olarak gelirse de calismalii."""
+    """Hiç üretilmeyen ``static.stats.algorithms_detected`` listesi okunmaz (P07)."""
 
-    def test_string_algorithms(self, workspace: Workspace) -> None:
-        """algorithms_detected string listesi olarak gelince de calismalii."""
+    def test_static_algorithm_list_is_not_a_source(self, workspace: Workspace) -> None:
         result = PipelineResult(
             target_name="str_test.bin",
             target_hash="f" * 64,
@@ -490,15 +489,13 @@ class TestSARIFStringAlgorithms:
             stage_name="static",
             success=True,
             duration_seconds=1.0,
-            stats={
-                "algorithms_detected": ["AES", "RSA-2048"],
-            },
+            stats={"algorithms_detected": ["AES", "RSA-2048"]},
         ))
         result.total_duration = 1.0
 
         path = SARIFReporter().generate(result, workspace)
         data = _load_sarif(path)
         results = data["runs"][0]["results"]
-
-        algo_results = [r for r in results if r["ruleId"] == "KRDL001"]
-        assert len(algo_results) == 2
+        assert [r for r in results if r["ruleId"] == "KRDL001"] == []
+        secs = data["runs"][0]["properties"]["report_sections"]
+        assert secs["crypto"]["status"] == "no_data"

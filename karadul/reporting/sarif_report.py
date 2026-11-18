@@ -18,6 +18,17 @@ from typing import Any
 from karadul import __version__
 from karadul.core.result import PipelineResult
 from karadul.core.workspace import Workspace
+from karadul.reporting.report_data import (
+    SECTION_CLEAN,
+    SECTION_DISABLED,
+    SECTION_FINDINGS,
+    SECTION_ORDER,
+    SECTION_UNSUPPORTED,
+    ReportData,
+    build_report_data,
+    status_label,
+    to_json_dict,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +95,27 @@ _RULE_DEFINITIONS: list[dict[str, Any]] = [
             "Deobfuscation asamasi uygulanmis olabilir."
         ),
     },
+    {
+        "id": "KRDL006",
+        "name": "KnownMalwareSymbol",
+        "level": "error",
+        "shortDescription": "Bilinen zararli yazilim ailesinin simgesi eslesti",
+        "fullDescription": (
+            "Imza veritabaninin zararli yazilim paketi (Sliver, Cobalt Strike) "
+            "ikilideki bir simge adiyla eslesti (reconstructed/signature_matches.json: "
+            "family / tier)."
+        ),
+    },
+    {
+        "id": "KRDL007",
+        "name": "TechnologyFingerprint",
+        "level": "note",
+        "shortDescription": "Derleyici / kitaplik parmak izi (supheli degil)",
+        "fullDescription": (
+            "YARA kurali ikilide bir derleyici ya da sikistirma kitapliginin izini buldu "
+            "(MSVC, GCC, zlib, zstd ...). Bilgi amaclidir; supheli davranis iddiasi degildir."
+        ),
+    },
 ]
 
 # YARA esine gore kural ID esleme tablosu
@@ -96,10 +128,19 @@ _YARA_TAG_RULE_MAP: dict[str, str] = {
     "vmprotect": "KRDL004",
     "anti_debug": "KRDL003",
     "anti_vm": "KRDL003",
+    # yerlesik YARA kurallarinin gercek etiketleri (analyzers/yara_scanner.py)
+    "antidebug": "KRDL003",
+    "antivm": "KRDL003",
     "suspicious": "KRDL003",
     "obfuscation": "KRDL005",
     "obfuscated": "KRDL005",
     "cff": "KRDL005",  # control flow flattening
+    # Kripto sabiti / kitapligi (AES S-box, SHA-256 sabitleri, OpenSSL dizgileri): KRDL001.
+    "crypto": "KRDL001",
+    # Derleyici / sikistirma kitapligi parmak izi supheli degildir: KRDL007 (note).
+    # Eskiden "MSVC_Compiler", "Zlib_Library" KRDL003 "SuspiciousPattern" uyarisi oluyordu.
+    "compiler": "KRDL007",
+    "compression": "KRDL007",
 }
 
 
@@ -141,14 +182,18 @@ class SARIFReporter:
             SARIF 2.1.0 uyumlu dict.
         """
         now = datetime.now(tz=timezone.utc).isoformat()
-        results = self._build_results(result, workspace)
+        data = build_report_data(result, workspace)
+        results = self._build_results(result, workspace, data)
         artifacts = [self._build_artifact(result)]
 
         invocation: dict[str, Any] = {
             "executionSuccessful": result.success,
             "startTimeUtc": now,
         }
-        skip_notes = self._build_skip_notifications(result)
+        # Atlanan asamalar + taranamayan / verisi olmayan bolumler (IMZA-15: "temiz" ile
+        # "taranmadi" ayrilir; sonuc yoklugu temizlik sanilmasin).
+        skip_notes = (self._build_skip_notifications(result)
+                      + self._build_section_notifications(data))
         if skip_notes:
             invocation["toolExecutionNotifications"] = skip_notes
 
@@ -172,6 +217,8 @@ class SARIFReporter:
                             name for name, sr in result.stages.items()
                             if getattr(sr, "skipped", False)
                         ],
+                        # Bolum durumlari (JSON / HTML / Markdown ile ayni katman ve cumle).
+                        "report_sections": to_json_dict(data),
                     },
                 }
             ],
@@ -202,6 +249,26 @@ class SARIFReporter:
                 "level": "note",
                 "message": {"text": text},
                 "properties": {"stage": name, "skip_reason": reason or None},
+            })
+        return notes
+
+    @staticmethod
+    def _build_section_notifications(data: ReportData) -> list[dict[str, Any]]:
+        """Bulgu ya da temiz sonucu olmayan her bolum icin bildirim (neden ile).
+
+        Desteklenmeyen / kapali bolum "note"; taranamayan / kismi / durumu kaydedilmemis /
+        verisi olmayan bolum "warning".
+        """
+        notes: list[dict[str, Any]] = []
+        for key in SECTION_ORDER:
+            sec = data.sections.get(key)
+            if sec is None or sec.status in (SECTION_FINDINGS, SECTION_CLEAN):
+                continue
+            level = "note" if sec.status in (SECTION_UNSUPPORTED, SECTION_DISABLED) else "warning"
+            notes.append({
+                "level": level,
+                "message": {"text": f"{sec.title}: {status_label(sec.status)} — {sec.summary}"},
+                "properties": {"section": key, "status": sec.status, "source": sec.source},
             })
         return notes
 
@@ -252,218 +319,147 @@ class SARIFReporter:
     # ------------------------------------------------------------------
 
     def _build_results(
-        self, result: PipelineResult, workspace: Workspace
+        self, result: PipelineResult, workspace: Workspace, data: ReportData | None = None,
     ) -> list[dict[str, Any]]:
-        """Pipeline sonuclarindan SARIF result listesi olustur.
+        """Rapor verisi katmanindan SARIF result listesi olustur (P07).
 
-        Kaynaklar:
-        1. Algorithms (crypto tespit) -> KRDL001
-        2. YARA matches / detected_tech -> KRDL003/KRDL004/KRDL005
-        3. Naming stats (dusuk guvenilirlik) -> KRDL002
-        4. packer_fingerprints.json (asil UPX/protector tespiti) -> KRDL004
-
-        Args:
-            result: Pipeline calisma sonucu.
-            workspace: static/*.json artifact'larini okumak icin.
-
-        Returns:
-            SARIF result dict listesi.
+        Kaynaklar (HTML / Markdown / JSON ile ayni bolumler):
+        1. reconstructed/algorithms.json, kripto kategorileri -> KRDL001
+        2. YARA isabetleri (static.stats yara_hits; P-S1 oncesi detected_tech) -> KRDL003/4/5
+           (etiketten: packer -> KRDL004)
+        3. Ad etiket dagilimi (reconstruct.stats naming_by_label) -> KRDL002
+        4. packer_fingerprints.json -> KRDL004
+        5. anti_debug_findings.json -> KRDL003
+        6. signature_matches.json bilinen zararli aile -> KRDL006
+        capa yetenekleri K-1 geregi sonuc olarak yazilmaz (dogrulanmamis aday); durumu
+        bildirimde ve run.properties.report_sections'ta.
         """
-        results: list[dict[str, Any]] = []
+        if data is None:
+            data = build_report_data(result, workspace)
         target_name = result.target_name
-
-        # 1. Kripto algoritma tespitleri (KRDL001)
-        results.extend(self._extract_algorithm_results(result, target_name))
-
-        # 2. YARA match tespitleri (KRDL003/KRDL004/KRDL005)
-        results.extend(self._extract_yara_results(result, target_name))
-
-        # 3. Naming confidence uyarilari (KRDL002)
-        results.extend(self._extract_naming_results(result, target_name))
-
-        # 4. Packer fingerprint artifact'i (KRDL004) — asil UPX tespiti.
-        #    KISIT: eskiden SARIF sadece detected_tech yolundan besleniyordu;
-        #    packer_fingerprints.json (gercek detector ciktisi) hic gorulmuyordu.
-        results.extend(
-            self._extract_packer_fingerprint_results(
-                workspace, target_name
-            )
-        )
-
+        results: list[dict[str, Any]] = []
+        results.extend(self._extract_algorithm_results(data, target_name))
+        results.extend(self._extract_yara_results(data, target_name))
+        results.extend(self._extract_naming_results(result, data, target_name))
+        results.extend(self._extract_packer_fingerprint_results(data, target_name))
+        results.extend(self._extract_anti_debug_results(data, target_name))
+        results.extend(self._extract_ioc_results(data, target_name))
         return results
 
     def _extract_algorithm_results(
-        self, result: PipelineResult, target_name: str
+        self, data: ReportData, target_name: str
     ) -> list[dict[str, Any]]:
-        """Kripto algoritma tespitlerini SARIF result'larina donustur.
+        """reconstructed/algorithms.json'daki kripto tespitleri -> KRDL001.
 
-        PipelineResult.stages["static"].stats icerisindeki
-        algorithms_detected listesinden veya artifacts'taki algorithm
-        JSON'undan bilgi cikarir.
+        Eskiden static.stats.algorithms_detected LISTESI okunuyordu; o alan hic yazilmiyor
+        (algoritma tespiti reconstruct'a SAYI yaziyor) -> openssl'de bile 0 KRDL001
+        (ARAYUZ-17).
         """
+        sec = data.sections["crypto"]
         results: list[dict[str, Any]] = []
-
-        # stats'tan algorithms_detected kontrolu
-        if "static" not in result.stages:
+        if not sec.has_items:
             return results
-
-        static_stats = result.stages["static"].stats
-        algorithms = static_stats.get("algorithms_detected", [])
-
-        if isinstance(algorithms, list):
-            for algo in algorithms:
-                if isinstance(algo, dict):
-                    algo_name = algo.get("name", "Unknown")
-                    address = algo.get("address", "0x00000000")
-                    confidence = algo.get("confidence", 0.0)
-                    category = algo.get("category", "unknown")
-                    method = algo.get("method", "unknown")
-                else:
-                    # String olarak gelirse
-                    algo_name = str(algo)
-                    address = "0x00000000"
-                    confidence = 0.5
-                    category = "unknown"
-                    method = "unknown"
-
-                results.append(self._make_result(
-                    rule_id="KRDL001",
-                    level="note",
-                    message=f"{algo_name} tespit edildi",
-                    target_name=target_name,
-                    address=address,
-                    properties={
-                        "confidence": confidence,
-                        "category": category,
-                        "detection_method": method,
-                    },
-                ))
-
+        for algo in sec.items:
+            name = str(algo.get("name", "Unknown"))
+            func = algo.get("function") or None
+            evidence = [str(e) for e in (algo.get("evidence") or [])]
+            where = f" in {func}" if func else ""
+            ev_txt = f" Evidence: {'; '.join(evidence)[:200]}" if evidence else ""
+            r = self._make_result(
+                rule_id="KRDL001",
+                level="note",
+                message=f"{name} ({algo.get('category', '?')}) detected{where}.{ev_txt}",
+                target_name=target_name,
+                properties={
+                    "confidence": algo.get("confidence"),
+                    "category": algo.get("category"),
+                    "function": func,
+                    "evidence": evidence,
+                    "source": sec.source,
+                },
+            )
+            if func:
+                r["locations"][0]["logicalLocations"] = [{"name": str(func), "kind": "function"}]
+            results.append(r)
         return results
 
     def _extract_yara_results(
-        self, result: PipelineResult, target_name: str
+        self, data: ReportData, target_name: str
     ) -> list[dict[str, Any]]:
-        """YARA eslesmelerini SARIF result'larina donustur.
+        """YARA isabetleri -> KRDL003/004/005 (etiketten).
 
-        PipelineResult.stages["static"].stats icerisindeki
-        yara_matches ve detected_tech bilgilerinden cikarir.
+        P-S1 sonrasi ``yara_hits`` (kural, etiket, meta.condition, dizgi ofsetleri) okunur;
+        oncesinde ``detected_tech`` duz dizgisi ``"<kural> (<etiket>)"`` kural + etikete
+        ayrilir. Eskiden dizgi dalinda tip "unknown" ataniyor, paketleyici isabeti KRDL004
+        yerine KRDL003'e dusuyor, ileti "(unknown)" oluyordu (ARAYUZ-17).
         """
+        sec = data.sections["yara"]
         results: list[dict[str, Any]] = []
-
-        if "static" not in result.stages:
+        if not sec.has_items:
             return results
-
-        static_stats = result.stages["static"].stats
-
-        # yara_matches kontrolu
-        yara_matches = static_stats.get("yara_matches", [])
-        if isinstance(yara_matches, list):
-            for match in yara_matches:
-                if isinstance(match, dict):
-                    rule_name = match.get("rule", "unknown")
-                    tags = match.get("tags", [])
-                    description = match.get("description", rule_name)
-                    meta = match.get("meta", {})
-                else:
-                    rule_name = str(match)
-                    tags = []
-                    description = rule_name
-                    meta = {}
-
-                # YARA tag'lerine gore SARIF kuralini sec
-                sarif_rule_id = self._map_yara_to_rule(rule_name, tags)
-                sarif_level = self._get_rule_level(sarif_rule_id)
-
-                results.append(self._make_result(
-                    rule_id=sarif_rule_id,
-                    level=sarif_level,
-                    message=f"YARA eslesmesi: {description}",
-                    target_name=target_name,
-                    address="0x00000000",
-                    properties={
-                        "yara_rule": rule_name,
-                        "tags": tags if isinstance(tags, list) else [],
-                        "meta": meta if isinstance(meta, dict) else {},
-                    },
-                ))
-
-        # detected_tech kontrolu (packer/protector tespitleri)
-        detected_tech = static_stats.get("detected_tech", [])
-        if isinstance(detected_tech, list):
-            for tech in detected_tech:
-                if isinstance(tech, dict):
-                    tech_name = tech.get("name", "unknown")
-                    tech_type = tech.get("type", "unknown")
-                else:
-                    tech_name = str(tech)
-                    tech_type = "unknown"
-
-                # Packer tespiti
-                if tech_type in ("packer", "protector"):
-                    sarif_rule_id = "KRDL004"
-                elif tech_type == "obfuscator":
-                    sarif_rule_id = "KRDL005"
-                else:
-                    sarif_rule_id = "KRDL003"
-
-                results.append(self._make_result(
-                    rule_id=sarif_rule_id,
-                    level=self._get_rule_level(sarif_rule_id),
-                    message=f"Teknoloji tespit edildi: {tech_name} ({tech_type})",
-                    target_name=target_name,
-                    address="0x00000000",
-                    properties={
-                        "technology_name": tech_name,
-                        "technology_type": tech_type,
-                    },
-                ))
-
+        for hit in sec.items:
+            rule_name = str(hit.get("rule", "unknown"))
+            tags = [str(t) for t in (hit.get("tags") or [])]
+            meta = hit.get("meta") if isinstance(hit.get("meta"), dict) else {}
+            sarif_rule_id = self._map_yara_to_rule(rule_name, tags)
+            offsets = [s.get("offset") for s in (hit.get("strings") or []) if isinstance(s, dict)]
+            parts = [f"YARA rule {rule_name} matched"]
+            if tags:
+                parts.append(f"(tags: {','.join(tags)})")
+            if meta.get("condition"):
+                parts.append(f"condition: {meta['condition']}")
+            if offsets:
+                parts.append(f"file offsets: {', '.join(str(o) for o in offsets[:8])}")
+            if hit.get("legacy"):
+                parts.append("(matched strings not recorded in this run)")
+            level = self._get_rule_level(sarif_rule_id)
+            if str(meta.get("severity", "")).lower() == "info":
+                level = "note"  # kuralin kendi onemi bilgi duzeyi
+            results.append(self._make_result(
+                rule_id=sarif_rule_id,
+                level=level,
+                message=" ".join(parts),
+                target_name=target_name,
+                properties={
+                    "yara_rule": rule_name,
+                    "tags": tags,
+                    "meta": meta,
+                    "strings": hit.get("strings") or [],
+                    "source": "yara",
+                },
+            ))
         return results
 
     def _extract_naming_results(
-        self, result: PipelineResult, target_name: str
+        self, result: PipelineResult, data: ReportData, target_name: str
     ) -> list[dict[str, Any]]:
-        """Dusuk isim guvenilirligi uyarilarini olustur.
+        """Ad guvenilirligi -> KRDL002.
 
-        PipelineResult.stages["reconstruct"].stats veya
-        stages["deobfuscate"].stats icerisindeki naming ile ilgili
-        metrikleri kontrol eder.
+        Eskiden hic uretilmeyen ``coverage_percent`` (ontanimli 100) ve
+        ``avg_naming_confidence`` (ontanimli 1.0) okunuyordu: uyari hicbir kosuda cikmiyordu
+        (ARAYUZ-17). Simdi olculmus etiket dagilimi (naming_by_label) okunur: "dogrulanmadi"
+        etiketli ad varsa ya da ad degistirildigi halde dagilim kaydedilmemisse uyari verilir.
         """
         results: list[dict[str, Any]] = []
+        sec = data.sections["naming"]
+        warn = sec.status == SECTION_FINDINGS or (
+            sec.status != SECTION_CLEAN and bool(sec.extra.get("variables_renamed")))
+        if warn:
+            props: dict[str, Any] = {"section_status": sec.status}
+            props.update({k: v for k, v in sec.extra.items() if v is not None})
+            results.append(self._make_result(
+                rule_id="KRDL002",
+                level="warning",
+                message=f"Recovered names are not verified: {sec.summary}",
+                target_name=target_name,
+                properties=props,
+            ))
 
-        # Reconstruct stage'den naming bilgisi
-        if "reconstruct" in result.stages:
-            recon_stats = result.stages["reconstruct"].stats
-            coverage = recon_stats.get("coverage_percent", 100)
-            variables_renamed = recon_stats.get("variables_renamed", 0)
-            avg_confidence = recon_stats.get("avg_naming_confidence", 1.0)
-
-            # Dusuk naming confidence genel uyarisi
-            if avg_confidence < 0.5 or (variables_renamed > 0 and coverage < 30):
-                results.append(self._make_result(
-                    rule_id="KRDL002",
-                    level="warning",
-                    message=(
-                        f"Isim guvenilirligi dusuk: "
-                        f"ortalama confidence={avg_confidence:.2f}, "
-                        f"coverage={coverage}%"
-                    ),
-                    target_name=target_name,
-                    address="0x00000000",
-                    properties={
-                        "avg_naming_confidence": avg_confidence,
-                        "coverage_percent": coverage,
-                        "variables_renamed": variables_renamed,
-                    },
-                ))
-
-        # Deobfuscate stage'den naming ipucu
+        # Deobfuscate stage'den naming ipucu (JS hatti)
         if "deobfuscate" in result.stages:
             deob_stats = result.stages["deobfuscate"].stats
             low_confidence_count = deob_stats.get("low_confidence_names", 0)
-
-            if low_confidence_count > 0:
+            if isinstance(low_confidence_count, int) and low_confidence_count > 0:
                 results.append(self._make_result(
                     rule_id="KRDL002",
                     level="warning",
@@ -472,52 +468,23 @@ class SARIFReporter:
                         f"fonksiyon/degisken dusuk guvenilirlikli"
                     ),
                     target_name=target_name,
-                    address="0x00000000",
-                    properties={
-                        "low_confidence_count": low_confidence_count,
-                    },
+                    properties={"low_confidence_count": low_confidence_count},
                 ))
-
         return results
 
     def _extract_packer_fingerprint_results(
-        self, workspace: Workspace, target_name: str
+        self, data: ReportData, target_name: str
     ) -> list[dict[str, Any]]:
-        """packer_fingerprints.json -> KRDL004 result'lari.
+        """packer_fingerprints.json -> KRDL004 (karadul'un asil paketleyici tespiti).
 
-        KISIT: Bu, karadul'un ASIL packer tespitidir (packer_fingerprint step).
-        Eski SARIF kodu bu artifact'i hic okumuyordu; sadece stats'taki
-        detected_tech'ten besleniyordu -> gercek UPX tespiti SARIF'e ulasmiyordu.
-
-        Sema: {"fingerprints": [{packer_name, version, confidence,
-               evidence(list[str]), category, layers_matched}]}.
-        Eski sentetik "packers"/"technique" da okunur (geriye donuk uyum).
         confidence -> SARIF level: >=0.7 error, >=0.4 warning, else note.
         """
         results: list[dict[str, Any]] = []
-
-        data = workspace.load_json("static", "packer_fingerprints")
-        if not data:
+        sec = data.sections["packer"]
+        if not sec.has_items:
             return results
-
-        fingerprints = (
-            data.get("fingerprints")
-            or data.get("packers")
-            or data.get("findings")
-            or []
-        )
-        if not isinstance(fingerprints, list):
-            return results
-
-        for fp in fingerprints:
-            if not isinstance(fp, dict):
-                continue
-            name = str(
-                fp.get("packer_name")
-                or fp.get("technique")
-                or fp.get("name")
-                or "unknown"
-            )
+        for fp in sec.items:
+            name = str(fp.get("packer_name") or fp.get("technique") or fp.get("name") or "unknown")
             version = fp.get("version")
             try:
                 conf = float(fp.get("confidence", 0.0) or 0.0)
@@ -525,21 +492,17 @@ class SARIFReporter:
                 conf = 0.0
             category = fp.get("category", "packer")
             layers = fp.get("layers_matched", 0)
-
             ev_raw = fp.get("evidence", "")
             if isinstance(ev_raw, (list, tuple)):
                 ev_text = "; ".join(str(e) for e in ev_raw)
             else:
                 ev_text = str(ev_raw)
-
-            # confidence -> level (note/warning/error)
             if conf >= 0.7:
                 level = "error"
             elif conf >= 0.4:
                 level = "warning"
             else:
                 level = "note"
-
             ver_txt = f" {version}" if version else ""
             msg = (
                 f"Paketlenmis binary tespit edildi: {name}{ver_txt} "
@@ -549,7 +512,6 @@ class SARIFReporter:
             )
             if ev_text:
                 msg += f" Kanit: {ev_text[:200]}"
-
             results.append(self._make_result(
                 rule_id="KRDL004",
                 level=level,
@@ -565,7 +527,58 @@ class SARIFReporter:
                     "source": "packer_fingerprints",
                 },
             ))
+        return results
 
+    def _extract_anti_debug_results(
+        self, data: ReportData, target_name: str
+    ) -> list[dict[str, Any]]:
+        """anti_debug_findings.json -> KRDL003 (HTML / Markdown ile ayni bulgular).
+
+        confidence >= 0.7 warning, alti note (P02 sonrasi kalan bulgularin cogu bilgi duzeyi).
+        """
+        results: list[dict[str, Any]] = []
+        sec = data.sections["anti_debug"]
+        if not sec.has_items:
+            return results
+        for f in sec.items:
+            try:
+                conf = float(f.get("confidence", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                conf = 0.0
+            tech = str(f.get("technique", "?"))
+            results.append(self._make_result(
+                rule_id="KRDL003",
+                level="warning" if conf >= 0.7 else "note",
+                message=(f"Anti-debug technique {tech} ({f.get('category', '?')}, confidence "
+                         f"{conf:.2f}). Evidence: {str(f.get('evidence', ''))[:200]}"),
+                target_name=target_name,
+                properties={"technique": tech, "category": f.get("category"),
+                            "confidence": conf, "evidence": f.get("evidence"),
+                            "source": "anti_debug_findings"},
+            ))
+        return results
+
+    def _extract_ioc_results(
+        self, data: ReportData, target_name: str
+    ) -> list[dict[str, Any]]:
+        """signature_matches.json bilinen zararli aile kayitlari -> KRDL006."""
+        results: list[dict[str, Any]] = []
+        sec = data.sections["ioc"]
+        if not sec.has_items:
+            return results
+        for m in sec.items:
+            sym = str(m.get("original", m.get("symbol", m.get("name", "?"))))
+            results.append(self._make_result(
+                rule_id="KRDL006",
+                level="error",
+                message=(f"Known-malware symbol {sym} (family {m.get('family') or '?'}, tier "
+                         f"{m.get('tier') or '?'}): {str(m.get('purpose', ''))[:160]}"),
+                target_name=target_name,
+                address=str(m.get("address") or "0x00000000"),
+                properties={"symbol": sym, "matched": m.get("matched"),
+                            "family": m.get("family"), "tier": m.get("tier"),
+                            "category": m.get("category"), "source": "signature_matches"},
+            ))
         return results
 
     # ------------------------------------------------------------------

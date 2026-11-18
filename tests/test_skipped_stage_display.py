@@ -307,7 +307,10 @@ def test_sarif_reports_skipped_as_note_not_failure(workspace):
     run = SARIFReporter()._build_sarif(r, workspace)["runs"][0]
     inv = run["invocations"][0]
     assert inv["executionSuccessful"] is True
-    assert inv["toolExecutionNotifications"] == [{
+    # P07: rapor bölümlerinin "veri yok / taranamadı" bildirimleri de aynı listede
+    # (properties.section); aşama bildirimleri properties.stage taşır.
+    stage_notes = [n for n in inv["toolExecutionNotifications"] if "stage" in n["properties"]]
+    assert stage_notes == [{
         "level": "note",
         "message": {"text": f"Stage 'deobfuscate' skipped (not a failure): {_PY_REASON}"},
         "properties": {"stage": "deobfuscate", "skip_reason": _PY_REASON},
@@ -318,7 +321,8 @@ def test_sarif_reports_skipped_as_note_not_failure(workspace):
 def test_sarif_no_notifications_without_skips(workspace):
     run = SARIFReporter()._build_sarif(
         _pipeline(_ok("identify"), _failed("static")), workspace)["runs"][0]
-    assert "toolExecutionNotifications" not in run["invocations"][0]
+    notes = run["invocations"][0].get("toolExecutionNotifications", [])
+    assert [n for n in notes if "stage" in n["properties"]] == []
     assert run["properties"]["skipped_stages"] == []
 
 
