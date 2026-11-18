@@ -96,6 +96,22 @@
       "test": "tests/test_p08_imza08.py::test_macho_strips_single_c_prefix",
       "find": "        return func_name[1:]\n    return func_name",
       "replace": "        return func_name.lstrip(\"_\")\n    return func_name"
+    },
+    {
+      "id": "imza09_ad_sonu_kanit",
+      "desc": "yalnız ad sonu (Get/Init/Reset) protobuf kanıtı sayılıyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_imza09.py::test_generic_method_names_are_not_protobuf",
+      "find": "        if func_name.startswith(_PROTOBUF_NAMESPACE) and \"::\" in func_name:",
+      "replace": "        if func_name.rsplit(\"::\", 1)[-1] in _PROTOBUF_BASENAME_INDEX:"
+    },
+    {
+      "id": "imza09_ad_odunc",
+      "desc": "kısmi eşleşme başka sınıfın yönteminin adını ödünç veriyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_imza09.py::test_protobuf_namespace_still_matches",
+      "find": "                    matched_name=func_name,\n                    library=info[\"lib\"],\n                    confidence=0.85,",
+      "replace": "                    matched_name=hit[0] if hit else func_name,\n                    library=info[\"lib\"],\n                    confidence=0.85,"
     }
   ]
 }

@@ -503,6 +503,8 @@ _PROTOBUF_SIGNATURES: dict[str, dict[str, str]] = _BUILTIN_DATABASE_SIGS["protob
 # Format: {"SerializeToString": ("google::protobuf::MessageLite::SerializeToString",
 #                                 {"lib": "protobuf", ...})}
 _PROTOBUF_BASENAME_INDEX: dict[str, tuple[str, dict[str, Any]]] = {}
+# IMZA-09: kısmi protobuf eşleşmesinin tek kanıtı ad alanının kendisi.
+_PROTOBUF_NAMESPACE = "google::protobuf::"
 
 
 def _build_protobuf_basename_index() -> None:
@@ -2150,31 +2152,28 @@ class SignatureDB:
         # Eski O(n) loop ~60+ signature uzerinde her C++ symbol icin linear
         # scan yapiyordu. Artik: basename cikar -> dict.get. Deterministik
         # sonuc (insertion-order ilk eslesen).
-        if "::" in func_name:
+        # P08 / IMZA-09: eskiden yalnız ad sonu (Get, Init, Reset, Clear...)
+        # kanıt sayılıyordu; her C++ kod tabanındaki MyCache::Get "Google
+        # protobuf" oluyordu. Artık kanıt adın kendi ad alanıdır
+        # (``google::protobuf::``): kitaplık iddiası ondan gelir; ad başka bir
+        # sınıfın yönteminden ÖDÜNÇ alınmaz (matched_name = özgün ad).
+        if func_name.startswith(_PROTOBUF_NAMESPACE) and "::" in func_name:
             _proto_basename = func_name.rsplit("::", 1)[-1]
-        else:
-            _proto_basename = func_name
-        hit = _PROTOBUF_BASENAME_INDEX.get(_proto_basename)
-        if hit is not None:
-            sym_name, info = hit
-            # Original semantic: func_name.endswith(basename). Basename zaten
-            # _proto_basename; True. Ama ust-seviye "::"-li sembol oldugu
-            # kontrolu korunsun (endswith eski formda da vardi).
-            if "::" in sym_name and func_name.endswith(_proto_basename):
-                if _is_platform_compatible(
-                    info["lib"], info.get("category", ""), target_platform,
-                    info.get("_platforms"),
-                ):
-                    return SignatureMatch(
-                        original_name=func_name,
-                        matched_name=sym_name,
-                        library=info["lib"],
-                        confidence=0.85,
-                        match_method="symbol",
-                        purpose=info.get("purpose", ""),
-                        category=info.get("category", ""),
-                        params=info.get("params"),  # v1.10.0 M2 T4
-                    )
+            hit = _PROTOBUF_BASENAME_INDEX.get(_proto_basename)
+            info = hit[1] if hit is not None else {"lib": "protobuf", "category": "serialization"}
+            if _is_platform_compatible(
+                info["lib"], info.get("category", ""), target_platform,
+                info.get("_platforms"),
+            ):
+                return SignatureMatch(
+                    original_name=func_name,
+                    matched_name=func_name,
+                    library=info["lib"],
+                    confidence=0.85,
+                    match_method="symbol",
+                    purpose="",
+                    category=info.get("category", ""),
+                )
 
         return None
 
