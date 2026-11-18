@@ -1091,9 +1091,19 @@ class OutputFormatter:
 
         if "reconstruct" in self._result.stages:
             st = self._result.stages["reconstruct"].stats
-            report["statistics"]["modules_extracted"] = st.get("modules_extracted", 0)
-            report["statistics"]["variables_renamed"] = st.get("variables_renamed", 0)
-            report["statistics"]["coverage_percent"] = st.get("coverage_percent", 0)
+            # ARAYUZ-07 (P07): ikili hedefte modules_extracted / coverage_percent hiç üretilmiyor;
+            # kaynağı olmayan sayaç null ("kapsama %0" diye okunmasın).
+            report["statistics"]["modules_extracted"] = st.get("modules_extracted")
+            report["statistics"]["variables_renamed"] = st.get("variables_renamed")
+            report["statistics"]["coverage_percent"] = st.get("coverage_percent")
+
+        # Rapor verisi katmanı (P07): çalışma alanı raporlarıyla aynı bölüm durumları.
+        try:
+            from karadul.reporting.report_data import build_report_data, to_json_dict
+            report["report_sections"] = to_json_dict(
+                build_report_data(self._result, self._workspace))
+        except Exception as exc:  # rapor bölümü kurulamazsa nedeni yazılır, rapor düşmez
+            report["report_sections"] = {"error": f"{type(exc).__name__}: {exc}"}
 
         return report
 
