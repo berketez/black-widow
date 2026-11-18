@@ -136,6 +136,86 @@
       "test": "tests/test_p19_target_resolver.py::test_spotlight_single_exact_hit_chosen_other_names_ignored",
       "find": "            if p.name != name:",
       "replace": "            if p.name != name and 0:"
+    },
+    {
+      "id": "b06_ad_ayrac",
+      "desc": "BICIM-06: ASAR girdi adında `/` ve `\\` serbest (../escape.txt dışarı yazılır)",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p19_asar.py",
+      "find": "    if \"/\" in name or \"\\\\\" in name or \"\\x00\" in name:",
+      "replace": "    if \"\\x00\" in name:"
+    },
+    {
+      "id": "b06_ad_ust_dizin",
+      "desc": "BICIM-06: `..` adlı dizin girdisi kabul edilir",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p19_asar.py::test_traversal_directory_name_rejected",
+      "find": "    if not isinstance(name, str) or name in (\"\", \".\", \"..\"):",
+      "replace": "    if not isinstance(name, str) or name in (\"\", \".\"):"
+    },
+    {
+      "id": "b06_link",
+      "desc": "BICIM-06: simgesel bağ girdisi ayrı tutulmaz",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p19_asar.py::test_link_entries_not_created",
+      "find": "                if \"link\" in entry:",
+      "replace": "                if \"link\" in entry and 0:"
+    },
+    {
+      "id": "b06_boyut_butcesi",
+      "desc": "BICIM-06: toplam boyut bütçesi fiilen kalkar",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p19_asar.py::test_total_size_budget",
+      "find": "                if total + size > max_total_bytes:",
+      "replace": "                if total + size > max_total_bytes * 9:"
+    },
+    {
+      "id": "b06_sayi_butcesi",
+      "desc": "BICIM-06: dosya sayısı bütçesi fiilen kalkar",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p19_asar.py::test_file_count_budget",
+      "find": "                if written_entries >= max_files:",
+      "replace": "                if written_entries >= max_files * 9:"
+    },
+    {
+      "id": "b06_sinir_disi",
+      "desc": "BICIM-06: ofset + boyut dosya sonu denetimi kalkar",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p19_asar.py::test_out_of_bounds_offset_and_size",
+      "find": "                    if offset < 0 or body_start + offset + size > file_size:",
+      "replace": "                    if offset < 0:"
+    },
+    {
+      "id": "b06_harf_cakismasi",
+      "desc": "BICIM-06: harf duyarsız ad çakışması çözülmez (biri ezilir)",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p19_asar.py::test_casefold_collision_keeps_both",
+      "find": "                key = unicodedata.normalize(\"NFC\", name).casefold()",
+      "replace": "                key = name"
+    },
+    {
+      "id": "b06_unpacked_symlink",
+      "desc": "BICIM-06: .asar.unpacked içindeki simgesel bağ izlenir",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p19_asar.py::test_unpacked_entries",
+      "find": "                    if not stat.S_ISREG(st.st_mode):",
+      "replace": "                    if not stat.S_ISREG(os.stat(src).st_mode):"
+    },
+    {
+      "id": "b06_main_disari",
+      "desc": "BICIM-06 (küçük): package.json main çıkarım dizini dışını gösterebilir",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p19_asar.py::test_package_json_main_outside_extract_dir_ignored",
+      "find": "                        inside = False",
+      "replace": "                        inside = True"
+    },
+    {
+      "id": "b06_rapor",
+      "desc": "BICIM-06: ASAR açma raporu static istatistiğine yazılmaz",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p19_asar.py::test_analyze_static_offline",
+      "find": "                stats[\"asar_extract\"] = self.last_asar_report",
+      "replace": "                pass"
     }
   ]
 }

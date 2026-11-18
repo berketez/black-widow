@@ -6,16 +6,22 @@ analiz eder. JavaScriptAnalyzer ve DeobfuscationManager ile entegre calisir.
 
 Calisma akisi:
 1. .app bundle icinde app.asar'i bul
-2. npx asar extract ile ASAR'i coz
+2. ASAR'i Python'da ac (extract_asar; ag ve alt surec YOK)
 3. Extract edilen JS dosyalarini JavaScriptAnalyzer ile analiz et
 4. Deobfuscation zincirini ana JS dosyalari uzerinde calistir
 """
 
 from __future__ import annotations
 
+import json
 import logging
+import os
+import stat
+import struct
 import time
+import unicodedata
 from pathlib import Path
+from typing import Any
 
 from karadul.analyzers import register_analyzer
 from karadul.analyzers.base import BaseAnalyzer
@@ -46,6 +52,262 @@ _MAIN_JS_CANDIDATES = (
 )
 
 
+# ---------------------------------------------------------------------------
+# ASAR açıcı (BICIM-06)
+# ---------------------------------------------------------------------------
+# Eskiden ASAR `npx --yes @electron/asar extract` ile açılıyordu: ağ kapalıyken
+# bile npm kayıt deposundan sürümü sabitlenmemiş bir paket indirilip
+# ÇALIŞTIRILIYORDU (tedarik zinciri riski; ağ yoksa Electron hattı düşüyordu).
+# Biçim basit: Chromium Pickle.
+#   [0:4]   u32 = 4                (ilk pickle'ın yük boyu)
+#   [4:8]   u32 = header_size      (ikinci pickle'ın toplam boyu)
+#   [8:12]  u32 = payload_size     (ikinci pickle'ın yük boyu)
+#   [12:16] u32 = json_len         (JSON dizgisinin bayt boyu)
+#   [16:16+json_len]  JSON başlık (UTF-8), 4 bayta hizalı dolgu
+#   gövde = 8 + header_size'tan başlar; dosya ofsetleri gövdeye göredir.
+# Girdi düşmandır: yol geçişi (`..`, `/`, mutlak yol), simgesel bağ, toplam
+# boyut ve dosya sayısı bütçesi, harf duyarsız dosya sisteminde ad çakışması.
+_ASAR_MAX_HEADER_BYTES = 64 * 1024 * 1024
+_ASAR_MAX_FILES = 200_000
+_ASAR_MAX_DEPTH = 256
+_ASAR_MAX_NAME_BYTES = 255
+_ASAR_COPY_CHUNK = 1024 * 1024
+
+
+class AsarFormatError(ValueError):
+    """ASAR başlığı geçersiz ya da güvenli biçimde okunamıyor."""
+
+
+def _read_asar_header(fh: Any, file_size: int) -> tuple[dict[str, Any], int, int]:
+    """(başlık JSON'u, gövde başlangıcı, başlık bayt boyu) döndür."""
+    head = fh.read(16)
+    if len(head) < 16:
+        raise AsarFormatError("dosya ASAR başlığı için çok kısa")
+    size_payload, header_size, payload_size, json_len = struct.unpack("<4I", head)
+    if size_payload != 4:
+        raise AsarFormatError(f"ASAR imzası yok (ilk alan {size_payload}, 4 beklenir)")
+    if header_size > _ASAR_MAX_HEADER_BYTES:
+        raise AsarFormatError(f"başlık çok büyük ({header_size} bayt)")
+    if 8 + header_size > file_size:
+        raise AsarFormatError("başlık dosya sonunu aşıyor")
+    if payload_size + 4 > header_size or json_len + 4 > payload_size:
+        raise AsarFormatError("başlık pickle boyutları tutarsız")
+    raw = fh.read(json_len)
+    if len(raw) != json_len:
+        raise AsarFormatError("başlık JSON'u eksik")
+    try:
+        header = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
+        raise AsarFormatError(f"başlık JSON'u çözülemedi: {type(exc).__name__}") from exc
+    if not isinstance(header, dict) or not isinstance(header.get("files"), dict):
+        raise AsarFormatError("başlıkta 'files' sözlüğü yok")
+    return header, 8 + header_size, header_size
+
+
+def _asar_name_ok(name: Any) -> bool:
+    """Tek bileşenli, güvenli girdi adı mı?"""
+    if not isinstance(name, str) or name in ("", ".", ".."):
+        return False
+    if "/" in name or "\\" in name or "\x00" in name:
+        return False
+    if len(name.encode("utf-8", "surrogatepass")) > _ASAR_MAX_NAME_BYTES:
+        return False
+    return True
+
+
+def _copy_exact(src_fh: Any, dest: Path, size: int) -> None:
+    """``src_fh``'nin bulunduğu yerden tam ``size`` baytı ``dest``'e yaz.
+
+    Hedef simgesel bağ İZLENMEDEN açılır (O_NOFOLLOW); kaynak erken biterse
+    OSError (yarım dosya bırakılmaz).
+    """
+    fd = os.open(
+        str(dest),
+        os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0),
+        0o644,
+    )
+    with os.fdopen(fd, "wb") as dfh:
+        remaining = size
+        while remaining > 0:
+            chunk = src_fh.read(min(_ASAR_COPY_CHUNK, remaining))
+            if not chunk:
+                break
+            dfh.write(chunk)
+            remaining -= len(chunk)
+    if remaining:
+        dest.unlink(missing_ok=True)
+        raise OSError(f"kaynak erken bitti ({remaining} bayt eksik)")
+
+
+def extract_asar(
+    asar_path: Path,
+    output_dir: Path,
+    *,
+    max_total_bytes: int,
+    max_files: int = _ASAR_MAX_FILES,
+) -> dict[str, Any]:
+    """ASAR arşivini ``output_dir`` altına Python'da aç (ağ ve alt süreç yok).
+
+    ``<asar>.unpacked/`` altındaki "unpacked" girdiler oradan kopyalanır
+    (yalnız kök içinde kalan, simgesel bağ olmayan düzenli dosyalar).
+    Simgesel bağ girdileri (``link``) oluşturulmaz, sayılır.
+
+    Returns:
+        Rapor sözlüğü: yazılan dosya/dizin/bayt sayıları, atlanan girdiler
+        (nedenine göre), yeniden adlandırılanlar, bütçe kesilmesi.
+
+    Raises:
+        AsarFormatError: Başlık geçersizse.
+        OSError: Arşiv okunamazsa.
+    """
+    report: dict[str, Any] = {
+        "format": "asar",
+        "files_written": 0,
+        "dirs_created": 0,
+        "bytes_written": 0,
+        "unpacked_files": 0,
+        "skipped": {},
+        "renamed": [],
+        "truncated": False,
+        "truncate_reason": None,
+    }
+
+    def skip(reason: str) -> None:
+        report["skipped"][reason] = report["skipped"].get(reason, 0) + 1
+
+    out_root = output_dir.resolve()
+    unpacked_root = asar_path.parent / (asar_path.name + ".unpacked")
+    unpacked_real = unpacked_root.resolve() if unpacked_root.is_dir() else None
+    file_size = asar_path.stat().st_size
+
+    with open(asar_path, "rb") as fh:
+        header, body_start, header_size = _read_asar_header(fh, file_size)
+        report["header_size"] = header_size
+        total = 0
+        written_entries = 0
+        # (json düğümü, hedef dizin, arşiv içi göreli parçalar, derinlik)
+        stack: list[tuple[dict[str, Any], Path, tuple[str, ...], int]] = [
+            (header, out_root, (), 0),
+        ]
+        while stack:
+            node, dest_dir, rel_parts, depth = stack.pop()
+            files = node.get("files")
+            if not isinstance(files, dict):
+                skip("bad_directory")
+                continue
+            used: set[str] = set()
+            for name in sorted(files):
+                entry = files[name]
+                if not _asar_name_ok(name) or not isinstance(entry, dict):
+                    skip("bad_name")
+                    continue
+                if written_entries >= max_files:
+                    report["truncated"] = True
+                    report["truncate_reason"] = f"dosya sayısı bütçesi ({max_files})"
+                    return report
+                key = unicodedata.normalize("NFC", name).casefold()
+                out_name = name
+                if key in used:
+                    k = 2
+                    while f"{key}~{k}" in used:
+                        k += 1
+                    out_name = f"{name}~{k}"
+                    key = f"{key}~{k}"
+                    report["renamed"].append({"from": "/".join(rel_parts + (name,)),
+                                              "to": "/".join(rel_parts + (out_name,))})
+                used.add(key)
+                dest = dest_dir / out_name
+                rel = rel_parts + (name,)
+
+                if "files" in entry:
+                    if depth + 1 > _ASAR_MAX_DEPTH:
+                        skip("too_deep")
+                        continue
+                    if dest.is_symlink():
+                        skip("dest_symlink")
+                        continue
+                    try:
+                        dest.mkdir(exist_ok=True)
+                    except OSError:
+                        skip("write_failed")
+                        continue
+                    if not dest.is_dir():
+                        skip("write_failed")
+                        continue
+                    report["dirs_created"] += 1
+                    written_entries += 1
+                    stack.append((entry, dest, rel, depth + 1))
+                    continue
+                if "link" in entry:
+                    skip("symlink")
+                    continue
+
+                size = entry.get("size")
+                if not isinstance(size, int) or isinstance(size, bool) or size < 0:
+                    skip("bad_size")
+                    continue
+                if total + size > max_total_bytes:
+                    report["truncated"] = True
+                    report["truncate_reason"] = (
+                        f"toplam boyut bütçesi ({max_total_bytes} bayt)"
+                    )
+                    return report
+                if dest.is_symlink():
+                    skip("dest_symlink")
+                    continue
+
+                if entry.get("unpacked"):
+                    if unpacked_real is None:
+                        skip("unpacked_missing")
+                        continue
+                    src = unpacked_root.joinpath(*rel)
+                    try:
+                        st = os.lstat(src)
+                    except OSError:
+                        skip("unpacked_missing")
+                        continue
+                    if not stat.S_ISREG(st.st_mode):
+                        # simgesel bağ ya da özel dosya: izlenmez
+                        skip("unpacked_not_regular")
+                        continue
+                    try:
+                        src.resolve().relative_to(unpacked_real)
+                    except ValueError:
+                        skip("unpacked_outside")
+                        continue
+                    if st.st_size != size:
+                        skip("unpacked_size_mismatch")
+                        continue
+                    try:
+                        with open(src, "rb") as sfh:
+                            _copy_exact(sfh, dest, size)
+                    except OSError:
+                        skip("write_failed")
+                        continue
+                    report["unpacked_files"] += 1
+                else:
+                    offset_raw = entry.get("offset")
+                    try:
+                        offset = int(offset_raw)
+                    except (TypeError, ValueError):
+                        skip("bad_offset")
+                        continue
+                    if offset < 0 or body_start + offset + size > file_size:
+                        skip("out_of_bounds")
+                        continue
+                    fh.seek(body_start + offset)
+                    try:
+                        _copy_exact(fh, dest, size)
+                    except OSError:
+                        skip("write_failed")
+                        continue
+                total += size
+                written_entries += 1
+                report["files_written"] += 1
+                report["bytes_written"] = total
+    return report
+
+
 @register_analyzer(TargetType.ELECTRON_APP)
 class ElectronAnalyzer(BaseAnalyzer):
     """Electron .app bundle analyzer.
@@ -63,6 +325,8 @@ class ElectronAnalyzer(BaseAnalyzer):
         super().__init__(config)
         self._runner = SubprocessRunner(config)
         self._deob_manager = DeobfuscationManager(config)
+        # Son ASAR acma raporu (extract_asar); analyze_static stats'a yazar.
+        self.last_asar_report: dict[str, Any] | None = None
 
     def analyze_static(self, target: TargetInfo, workspace: Workspace) -> StageResult:
         """Electron uygulamasinin statik analizi.
@@ -109,17 +373,31 @@ class ElectronAnalyzer(BaseAnalyzer):
 
             # 2. ASAR'i extract et
             extract_dir = workspace.get_stage_dir("raw") / "asar_extracted"
+            self.last_asar_report = None
             extract_success = self._extract_asar(asar_path, extract_dir)
+            if self.last_asar_report is not None:
+                stats["asar_extract"] = self.last_asar_report
 
             if not extract_success:
-                errors.append(f"ASAR extract basarisiz: {asar_path}")
+                reason = (self.last_asar_report or {}).get("error")
+                errors.append(
+                    f"ASAR extract basarisiz: {asar_path}"
+                    + (f" ({reason})" if reason else "")
+                )
                 return StageResult(
                     stage_name="static",
                     success=False,
                     duration_seconds=time.monotonic() - start,
+                    stats=stats,
                     errors=errors,
                 )
 
+            if (self.last_asar_report or {}).get("truncated"):
+                errors.append(
+                    "ASAR kismen acildi: "
+                    f"{self.last_asar_report['truncate_reason']} asildi; "
+                    f"{self.last_asar_report['files_written']} dosya cikarildi"
+                )
             stats["asar_extracted"] = True
             artifacts["asar_extracted_dir"] = extract_dir
 
@@ -344,55 +622,48 @@ class ElectronAnalyzer(BaseAnalyzer):
         return None
 
     def _extract_asar(self, asar_path: Path, output_dir: Path) -> bool:
-        """ASAR arsivini extract et.
+        """ASAR arsivini extract et (Python'da; ag ve alt surec YOK).
 
-        ``npx asar extract <asar> <output>`` komutunu calistirir.
-        npx yerine ``npx --yes`` kullanilarak package otomatik yuklenir.
+        BICIM-06: Eskiden ``npx --yes @electron/asar extract`` cagriliyordu
+        (surumu sabitlenmemis paketi agdan indirip calistirir). Artik
+        :func:`extract_asar` kullanilir; rapor ``self.last_asar_report``'ta.
 
         Args:
             asar_path: ASAR dosya yolu.
             output_dir: Extract edilecek dizin.
 
         Returns:
-            Basarili ise True.
+            En az bir dosya cikarildiysa True.
         """
         output_dir.mkdir(parents=True, exist_ok=True)
-
-        # npx asar extract
-        npm_path = str(self.config.tools.npm)
-        # npx binary'si npm'in yaninda olmali
-        npx_path = str(Path(npm_path).parent / "npx") if npm_path != "npm" else "npx"
-
-        cmd = [
-            npx_path, "--yes", "@electron/asar",
-            "extract", str(asar_path), str(output_dir),
-        ]
-
         logger.info(
             "ASAR extract baslatiliyor: %s -> %s",
             asar_path.name, output_dir,
         )
-
-        result = self._runner.run_command(cmd, timeout=self.config.timeouts.subprocess)
-
-        if not result.success:
-            logger.error(
-                "ASAR extract basarisiz (code=%d): %s",
-                result.returncode,
-                result.stderr[:500],
+        try:
+            report = extract_asar(
+                asar_path, output_dir,
+                max_total_bytes=int(self.config.security.max_archive_extract_size),
             )
+        except (AsarFormatError, OSError) as exc:
+            self.last_asar_report = {"format": "asar", "error": str(exc)}
+            logger.error("ASAR extract basarisiz: %s", exc)
             return False
+        self.last_asar_report = report
 
-        # Extract edilen dosya sayisini kontrol et
-        extracted_files = list(output_dir.rglob("*"))
-        file_count = sum(1 for f in extracted_files if f.is_file())
-
-        if file_count == 0:
-            logger.error("ASAR extract sonrasi dosya bulunamadi: %s", output_dir)
+        if report["skipped"] or report["renamed"] or report["truncated"]:
+            logger.warning(
+                "ASAR extract: atlanan=%s, yeniden adlandirilan=%d, kesildi=%s",
+                report["skipped"], len(report["renamed"]),
+                report["truncate_reason"] or "hayir",
+            )
+        if report["files_written"] == 0:
+            logger.error("ASAR extract sonrasi dosya yok: %s", output_dir)
             return False
 
         logger.info(
-            "ASAR extract basarili: %d dosya cikarildi", file_count,
+            "ASAR extract basarili: %d dosya cikarildi (%d bayt)",
+            report["files_written"], report["bytes_written"],
         )
         return True
 
@@ -478,10 +749,22 @@ class ElectronAnalyzer(BaseAnalyzer):
             try:
                 with open(pkg_json_path, "r", encoding="utf-8") as f:
                     pkg = json.load(f)
-                main_entry = pkg.get("main", "")
-                if main_entry:
+                main_entry = pkg.get("main", "") if isinstance(pkg, dict) else ""
+                if main_entry and isinstance(main_entry, str):
                     main_path = extract_dir / main_entry
-                    if main_path.exists() and main_path.suffix in (".js", ".mjs", ".cjs"):
+                    # "/abs/x.js" ya da "../../x.js" analistin diskindeki başka
+                    # bir dosyayı "ana JS" seçtirmesin: çıkarım kökünde kalmalı.
+                    try:
+                        main_path.resolve().relative_to(extract_dir.resolve())
+                        inside = True
+                    except (ValueError, OSError):
+                        inside = False
+                    if not inside:
+                        logger.warning(
+                            "package.json main cikarim dizini disini gosteriyor, "
+                            "yok sayildi",
+                        )
+                    elif main_path.exists() and main_path.suffix in (".js", ".mjs", ".cjs"):
                         logger.debug("package.json main: %s", main_entry)
                         return main_path
             except (json.JSONDecodeError, OSError):
