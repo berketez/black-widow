@@ -601,6 +601,21 @@ Seçenekler düşük maliyet / risk → yüksek sırasıyla; ilk sıradaki öner
 | 9 | MCP sunucusu | (a) Yapılmasın. (b) P22f: salt okur, stdio, öntanımlı kapalı | §5; bağımlılık: resmi MCP Python paketi mi, el yazımı JSON-RPC mi |
 | 10 | Bağımsız CLI | (a) Yalnız arayüz paneli. (b) Ayrıca `python -m karadul.lm` (aynı oturum çekirdeği, düz çıktı) | (b) ölçüm ve başsız kullanım için ucuz |
 
+### 11.1 Verilen kararlar (2026-11-18)
+
+| # | Karar | Kim |
+|---|---|---|
+| 1 | (a) Döngü ayırıcı deneye kadar yalnız keşif kipinde | ana oturum (teknik; Berke RE yol ayrımını ölçüme bırakıyor) |
+| 2 | (a) Aşağıdan yukarı özet isteğe bağlı: seçili fonksiyonun kapanışı (derinlik ≤ 2); bütün ikili gece işi ayrı düğme | ana oturum |
+| 3 | (a) Belirlenimci plan; model planı yok (değeri ölçülünce yeniden bakılır) | ana oturum |
+| 4 | **(a) Terminal paneli harita ve kod panelinin altında açılır çekmece** (örümcek görünür kalır) | **Berke** |
+| 5 | **(b) `niyet` satırı AÇIK:** terminal her araç çağrısında "neden bu aracı çağırdı" satırını gösterir | **Berke** |
+| 6 | (b) İçerik deposu ikiliyle birlikte kalır, analist siler | ana oturum (yalnız yerel veri) |
+| 7 | Eşikler ölçümle seçilir (§8) | ana oturum |
+| 8 | **(a) Keşif kipinde yalnız yerel model; bulut ucu yok** (decompile metni makineden çıkmaz) | **Berke** |
+| 9 | **(a) MCP sunucusu şimdilik yapılmasın** (P22f ertelendi) | **Berke** |
+| 10 | (b) Bağımsız CLI `python -m karadul.lm` da olsun (ölçüm ve başsız kullanım) | ana oturum |
+
 ## 12. Doğrulanmayanlar
 
 - Model koşturulmadı. Süreler önceki tasarımın hesaplarıdır; döngü ve özet zincirinin gerçek süresi bilinmiyor.
