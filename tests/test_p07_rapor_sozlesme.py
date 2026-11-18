@@ -157,7 +157,10 @@ def test_ioc_bulgusu_dort_uretecide(tmp_path):
     sembol, kayit = next(iter(_SLIVER_SIGNATURES_DATA.items()))
     yeni = {"original": sembol, "matched": sembol, "library": kayit["lib"], "libraries": None,
             "confidence": 0.9, "purpose": kayit["purpose"], "category": kayit["category"],
-            "family": kayit["family"], "tier": kayit["tier"], "address": "00104000", "method": "string_ref"}
+            "family": kayit["family"], "tier": kayit["tier"], "address": "00104000",
+            # P15c: aile / kademe yalnız simge yolunda (_match_by_symbol) yazılır; string_ref
+            # davranış tahminidir ve IOC sayılmaz (tests/test_p15c_rapor.py).
+            "method": "symbol"}
     assert set(yeni) == set(veri["matches"][0])  # yazıcının alan kümesi
     veri["matches"].append(yeni)
     yol.write_text(json.dumps(veri))

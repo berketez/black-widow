@@ -420,10 +420,57 @@ def _capa(result: Any, workspace: Any) -> Section:
     return sec
 
 
+def _signature_claim(m: dict[str, Any]) -> str:
+    """İmza kaydının iddia türü (P15c): kayıtta yazılıysa o, yoksa yöntemden türetilir.
+
+    ``string_ref`` / ``call_pattern`` → ``davranis`` (betimleyici tahmin, kimlik değil);
+    öbür yöntemler → ``kimlik``. Kural tek yerde: ``signature_db.claim_for_method``.
+    """
+    from karadul.analyzers.signature_db import CLAIM_BEHAVIOR, CLAIM_IDENTITY, claim_for_method
+    claim = m.get("claim")
+    if claim in (CLAIM_IDENTITY, CLAIM_BEHAVIOR):
+        return str(claim)
+    return claim_for_method(str(m.get("method") or m.get("match_method") or ""))
+
+
 def _is_ioc(m: dict[str, Any]) -> bool:
+    # P15c: davranış tahmini (dizgi / çağrı deseni) bilinen bir zararlı simgenin KİMLİĞİ değildir.
+    from karadul.analyzers.signature_db import CLAIM_BEHAVIOR
+    if _signature_claim(m) == CLAIM_BEHAVIOR:
+        return False
     family = str(m.get("family") or "").lower()
     return (family in IOC_FAMILIES or str(m.get("tier") or "") == "1"
             or str(m.get("category") or "").lower() == "malware")
+
+
+def _sigdb_note(db: dict[str, Any], st: Optional[dict[str, Any]]) -> tuple[str, dict[str, Any]]:
+    """İmza veritabanının künyesi (IMZA-11 / P15b): kimlik, şema, uyarı, veri kökü.
+
+    Değer ``signature_matches.json``'daki ``database`` bloğundan, yoksa aşama istatistiğinden;
+    ikisinde de yoksa yazılmaz (uydurulmaz).
+    """
+    def pick(key: str) -> Any:
+        value = db.get(key)
+        return value if value is not None else (st or {}).get(key)
+
+    info = {k: pick(k) for k in ("sigdb_build_id", "sigdb_schema_version", "sigdb_schema_warning",
+                                 "sigdb_path_source", "sigdb_lmdb_symbol_count", "sigdb_data_root",
+                                 "sigdb_data_root_source")}
+    parts: list[str] = []
+    if info["sigdb_build_id"]:
+        parts.append(f"signature database {info['sigdb_build_id']}")
+    if info["sigdb_schema_version"] is not None:
+        parts.append(f"schema {info['sigdb_schema_version']}")
+    if info["sigdb_lmdb_symbol_count"] is not None:
+        parts.append(f"{info['sigdb_lmdb_symbol_count']} names")
+    if info["sigdb_path_source"]:
+        parts.append(f"from {info['sigdb_path_source']}")
+    if info["sigdb_data_root"]:
+        src = f" ({info['sigdb_data_root_source']})" if info["sigdb_data_root_source"] else ""
+        parts.append(f"data root {info['sigdb_data_root']}{src}")
+    if info["sigdb_schema_warning"]:
+        parts.append(f"WARNING: {info['sigdb_schema_warning']}")
+    return ", ".join(parts), {k: v for k, v in info.items() if v is not None}
 
 
 def _ioc(result: Any, workspace: Any) -> Section:
@@ -444,13 +491,16 @@ def _ioc(result: Any, workspace: Any) -> Section:
                        f"signature database {sig_status} ({why})",
                        reason=str(why))
     db = (data or {}).get("database") if isinstance((data or {}).get("database"), dict) else {}
-    build = db.get("sigdb_build_id") or (st or {}).get("sigdb_build_id")
-    db_note = f"signature database {build}" if build else ""
+    # P15c kalem 8: künye, şema uyarısı ve veri kökü raporda (eskiden yalnız build_id).
+    db_note, db_info = _sigdb_note(db, st)
     if data is None:
         if sig_status == "no_match":
-            return Section(key, title, SECTION_CLEAN, src,
-                           "no signature matched, so no known-malware (Sliver / Cobalt Strike) "
-                           "symbol matched" + (f" ({db_note})" if db_note else ""), count=0)
+            sec = Section(key, title, SECTION_CLEAN, src,
+                          "no signature matched, so no known-malware (Sliver / Cobalt Strike) "
+                          "symbol matched" + (f" ({db_note})" if db_note else ""), count=0)
+            if db_info:
+                sec.extra["database"] = db_info
+            return sec
         return _missing(key, title, src, "signature matches not written and signature database "
                         "status not recorded")
     raw = data.get("matches") or data.get("signature_matches") or []
@@ -463,6 +513,15 @@ def _ioc(result: Any, workspace: Any) -> Section:
                         f"(schema {schema or 1}{', legacy static/ path' if legacy_path else ''}): "
                         "IOC matches cannot be told apart")
     iocs = [m for m in matches if _is_ioc(m)]
+    # P15c (K-2): dizgi / çağrı deseni kayıtları fonksiyonun kimliği değil, davranış tahminidir;
+    # sayımda ayrı yazılır ki "N imza eşleşmesi" N kimlik iddiası gibi okunmasın.
+    from karadul.analyzers.signature_db import CLAIM_BEHAVIOR, CLAIM_IDENTITY
+    claims = {CLAIM_IDENTITY: 0, CLAIM_BEHAVIOR: 0}
+    for m in matches:
+        claims[_signature_claim(m)] += 1
+    claim_txt = (f"{claims[CLAIM_IDENTITY]} identity (symbol / byte pattern), "
+                 f"{claims[CLAIM_BEHAVIOR]} behaviour guess(es) (string / call pattern: describes "
+                 "what the function does, not which function it is)")
     if iocs:
         fams: dict[str, int] = {}
         for m in iocs:
@@ -470,14 +529,18 @@ def _ioc(result: Any, workspace: Any) -> Section:
             fams[f] = fams.get(f, 0) + 1
         fam_txt = ", ".join(f"{k}: {v}" for k, v in sorted(fams.items()))
         sec = Section(key, title, SECTION_FINDINGS, src,
-                      f"{len(iocs)} known-malware symbol match(es) ({fam_txt})", items=iocs,
-                      count=len(iocs))
+                      f"{len(iocs)} known-malware symbol match(es) ({fam_txt})"
+                      + (f"; {db_note}" if db_note else ""), items=iocs, count=len(iocs))
         sec.extra["families"] = fams
     else:
         sec = Section(key, title, SECTION_CLEAN, src,
-                      f"{len(matches)} signature match(es), none from a known-malware family "
-                      "(Sliver / Cobalt Strike symbol names)" + (f"; {db_note}" if db_note else ""),
+                      f"{len(matches)} signature match(es) ({claim_txt}), none from a "
+                      "known-malware family (Sliver / Cobalt Strike symbol names)"
+                      + (f"; {db_note}" if db_note else ""),
                       count=0)
+    sec.extra["claims"] = claims
+    if db_info:
+        sec.extra["database"] = db_info
     return sec
 
 

@@ -25,6 +25,7 @@ from karadul.reporting.report_data import (
     SECTION_ORDER,
     SECTION_UNSUPPORTED,
     ReportData,
+    _signature_claim,
     build_report_data,
     status_label,
     to_json_dict,
@@ -577,7 +578,10 @@ class SARIFReporter:
                 address=str(m.get("address") or "0x00000000"),
                 properties={"symbol": sym, "matched": m.get("matched"),
                             "family": m.get("family"), "tier": m.get("tier"),
-                            "category": m.get("category"), "source": "signature_matches"},
+                            "category": m.get("category"), "source": "signature_matches",
+                            # P15c: KRDL006 yalnız kimlik iddiasından (davranış tahmini değil).
+                            "claim": _signature_claim(m),
+                            "method": m.get("method")},
             ))
         return results
 

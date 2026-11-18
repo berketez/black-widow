@@ -136,8 +136,12 @@ def test_sarif_ioc_bulgusu_krdl006(tmp_path):
         "original": sembol, "matched": sembol, "library": kayit["lib"], "libraries": None,
         "confidence": 0.9, "purpose": kayit["purpose"], "category": kayit["category"],
         "family": kayit["family"], "tier": kayit["tier"], "address": "00104000",
-        "method": "string_ref"})
+        # P15c: aile / kademe yalnız simge yolunda yazılır; string_ref IOC sayılmaz.
+        "method": "symbol"})
     yol.write_text(json.dumps(veri))
     k6 = [x for x in _sarif_sonuc(_uret(sonuc, ws)) if x["ruleId"] == "KRDL006"]
     assert len(k6) == 1 and k6[0]["level"] == "error"
     assert k6[0]["properties"]["family"] == "sliver"
+    # P15c: KRDL006 kimlik iddiasıdır; iddia türü ve yöntem özelliklerde.
+    assert k6[0]["properties"]["claim"] == "kimlik"
+    assert k6[0]["properties"]["method"] == "symbol"
