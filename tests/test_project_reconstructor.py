@@ -286,16 +286,18 @@ class TestFindOrCreateEntryPoint:
         assert found == entry
 
     def test_create_when_missing(self, tmp_path: Path):
-        """Entry point yoksa olusturulur."""
+        """Entry point yoksa uydurma dosya YAZILMAZ (P20 / BICIM-12).
+
+        Eskiden hedefle ilgisiz 'console.log("Reconstructed project ready.")'
+        yazılıyordu.
+        """
         project_dir = tmp_path / "project"
         project_dir.mkdir()
 
         found = ProjectReconstructor._find_or_create_entry_point(project_dir)
 
-        assert found.exists()
-        assert found.name == "index.js"
-        content = found.read_text()
-        assert "Karadul" in content
+        assert found is None
+        assert not (project_dir / "src" / "index.js").exists()
 
 
 class TestGenerateReadme:
@@ -315,8 +317,10 @@ class TestGenerateReadme:
 
         assert readme.exists()
         content = readme.read_text()
-        assert "Quick Start" in content
-        assert "npm install" in content
+        # P20 / BICIM-12: çalıştırma önerisi yok, "çalıştırmayın" uyarısı var.
+        assert "Quick Start" not in content
+        assert "npm start\n" not in content
+        assert "Do not run this code" in content
         assert "Karadul" in content
         assert "express" in content
         assert "42" in content  # total_modules

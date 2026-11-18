@@ -14,6 +14,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from karadul import __version__ as KARADUL_VERSION
 from karadul.config import Config
 
 logger = logging.getLogger(__name__)
@@ -181,7 +182,7 @@ class ModuleSplitter:
                 header = (
                     f"/**\n"
                     f" * Module {module_id} - {category}\n"
-                    f" * Reconstructed by Karadul v1.0\n"
+                    f" * Reconstructed by Karadul {KARADUL_VERSION}\n"
                     f" * Original: {module_file.name}\n"
                     f" */\n\n"
                 )
@@ -315,7 +316,7 @@ class ModuleSplitter:
         """
         lines = [
             "/**",
-            " * Auto-generated index - Karadul v1.0 Reconstruction",
+            f" * Auto-generated index - Karadul {KARADUL_VERSION} Reconstruction",
             " */",
             "",
         ]

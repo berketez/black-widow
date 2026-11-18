@@ -1,8 +1,10 @@
-"""Calistiriilabilir proje uretici.
+"""Analiz için proje iskeleti üretici.
 
-Deobfuscate edilmis kodu `npm install && npm start` ile calisabilecek
-bir projeye donusturur. package.json, entry point, README, .env.example
-ve opsiyonel Dockerfile olusturur.
+Deobfuscate edilmiş kodu bir proje düzenine (package.json, giriş dosyası,
+README, .env.example, Dockerfile) yerleştirir. Bu kod ANALİZ EDİLEN
+(güvenilmeyen, zararlı olabilecek) yazılımdır: README çalıştırmayı önermez,
+çalıştırmamayı söyler (BICIM-12). Giriş dosyası bulunamazsa uydurma kod
+yazılmaz.
 """
 
 from __future__ import annotations
@@ -14,6 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from karadul import __version__ as KARADUL_VERSION
 from karadul.config import Config
 from karadul.core.target import TargetInfo
 from karadul.core.workspace import Workspace
@@ -59,6 +62,29 @@ _IMPORT_PATTERN = re.compile(
 )
 _DYNAMIC_IMPORT_PATTERN = re.compile(
     r'import\s*\(\s*["\']([^"\']+)["\']\s*\)',
+)
+
+
+# BICIM-12: üretilen README'lerin başındaki uyarı (ProjectReconstructor da
+# kullanır). Eskiden README "Quick Start: npm install / npm start" ile analiz
+# edilen kodu çalıştırmayı öneriyordu; `npm install` paket betiklerini
+# (postinstall) de çalıştırır.
+UNTRUSTED_CODE_WARNING: tuple[str, ...] = (
+    "## ⚠ Do not run this code / Bu kodu çalıştırmayın",
+    "",
+    "This directory was generated from the **analyzed (untrusted, possibly "
+    "malicious) software**. It is for reading and static analysis only.",
+    "Do **not** run `npm install`, `npm start`, `node` or `docker run` on it on "
+    "your machine: `npm install` also executes package scripts (postinstall) "
+    "and the dependency names are the ones the analyzed code requires.",
+    "If dynamic analysis is needed, use an isolated, disposable environment "
+    "without network access.",
+    "",
+    "Bu dizin **analiz edilen (güvenilmeyen, zararlı olabilecek) yazılımdan** "
+    "üretildi; yalnız okuma ve statik inceleme içindir. Kendi makinenizde "
+    "`npm install`, `npm start`, `node` ya da `docker run` ile çalıştırmayın. "
+    "Dinamik inceleme gerekiyorsa ağsız, yalıtılmış ve atılabilir bir ortam kullanın.",
+    "",
 )
 
 
@@ -108,8 +134,15 @@ class ProjectBuilder:
         target: TargetInfo,
         split_result: Any | None = None,
         gap_result: Any | None = None,
+        named_source: Path | None = None,
     ) -> BuildResult:
-        """Calistiriilabilir proje olustur.
+        """Analiz için proje iskeleti oluştur.
+
+        ``named_source`` (BICIM-12): JS hattının son çıktısı (adlandırılmış /
+        tiplenmiş / yorumlanmış dosya). Verilirse giriş dosyası odur; eskiden
+        giriş tek bir webpack modülünden (``module_0``) kuruluyor, ad adımlarının
+        sonucu projeye hiç girmiyordu. Çağıran (``stages.py`` ``_execute_js``)
+        bunu P-S4'te geçirecek.
 
         1. package.json olustur (isim, dependencies, scripts)
         2. Entry point belirle ve olustur
@@ -150,10 +183,14 @@ class ProjectBuilder:
 
         # Entry point
         entry_path = self._create_entry_point(
-            workspace, project_dir, split_result,
+            workspace, project_dir, split_result, named_source=named_source,
         )
         if entry_path:
             files_created.append(str(entry_path.relative_to(project_dir)))
+        else:
+            # Uydurma giriş yazılmaz (eskiden "ready for development" diyen,
+            # hedefle ilgisiz bir console.log yazılıyordu).
+            errors.append("Giriş dosyası bulunamadı; proje giriş dosyasız kuruldu")
 
         # Environment variable'lar
         env_vars: list[str] = []
@@ -191,14 +228,13 @@ class ProjectBuilder:
         except OSError as exc:
             errors.append(f"README.md olusturulamadi: {exc}")
 
-        # Dockerfile
-        try:
-            docker_path = self._generate_dockerfile(
-                project_dir, entry_path,
-            )
-            files_created.append("Dockerfile")
-        except OSError as exc:
-            errors.append(f"Dockerfile olusturulamadi: {exc}")
+        # Dockerfile (yalnız giriş varsa; yalıtılmış dinamik inceleme içindir)
+        if entry_path is not None:
+            try:
+                self._generate_dockerfile(project_dir, entry_path)
+                files_created.append("Dockerfile")
+            except OSError as exc:
+                errors.append(f"Dockerfile olusturulamadi: {exc}")
 
         # .gitignore
         try:
@@ -287,6 +323,8 @@ class ProjectBuilder:
         workspace: Workspace,
         project_dir: Path,
         split_result: Any | None = None,
+        *,
+        named_source: Path | None = None,
     ) -> Path | None:
         """Ana giris noktasi dosyasi olustur.
 
@@ -294,12 +332,29 @@ class ProjectBuilder:
             workspace: Calisma dizini.
             project_dir: Proje dizini.
             split_result: ModuleSplitter sonucu (varsa).
+            named_source: JS hattının son (adlandırılmış) çıktısı; önceliklidir.
 
         Returns:
-            Entry point dosya yolu veya None.
+            Entry point dosya yolu veya None (aday yoksa; uydurma dosya yazılmaz).
         """
         src_dir = project_dir / "src"
         entry_file = src_dir / "index.js"
+
+        # BICIM-12: ad / tip / yorum adımlarının son çıktısı önce gelir.
+        if named_source is not None and named_source.is_file():
+            try:
+                content = named_source.read_text(encoding="utf-8", errors="replace")
+                header = (
+                    "/**\n"
+                    f" * Entry Point - named output {named_source.name}\n"
+                    f" * Reconstructed by Karadul {KARADUL_VERSION} from the analyzed "
+                    "(untrusted) software. Do not run.\n"
+                    " */\n\n"
+                )
+                entry_file.write_text(header + content, encoding="utf-8")
+                return entry_file
+            except OSError:
+                pass
 
         # split_result'tan entry point varsa kopyala
         if split_result and hasattr(split_result, "entry_point") and split_result.entry_point:
@@ -309,8 +364,8 @@ class ProjectBuilder:
                     content = ep.read_text(encoding="utf-8", errors="replace")
                     header = (
                         "/**\n"
-                        " * Entry Point - Reconstructed by Karadul v1.0\n"
-                        " * This is the main entry point of the reconstructed application.\n"
+                        f" * Entry Point - Reconstructed by Karadul {KARADUL_VERSION}\n"
+                        " * From the analyzed (untrusted) software. Do not run.\n"
                         " */\n\n"
                     )
                     entry_file.write_text(header + content, encoding="utf-8")
@@ -336,7 +391,8 @@ class ProjectBuilder:
                     header = (
                         "/**\n"
                         f" * Entry Point - Reconstructed from {best.name}\n"
-                        " * Reconstructed by Karadul v1.0\n"
+                        f" * Reconstructed by Karadul {KARADUL_VERSION} from the analyzed "
+                        "(untrusted) software. Do not run.\n"
                         " */\n\n"
                     )
                     entry_file.write_text(header + content, encoding="utf-8")
@@ -344,17 +400,9 @@ class ProjectBuilder:
                 except OSError:
                     pass
 
-        # Fallback: bos entry point
-        entry_file.write_text(
-            '/**\n'
-            ' * Entry Point - Karadul v1.0 Reconstruction\n'
-            ' * No entry point could be auto-detected.\n'
-            ' * Add your main code here.\n'
-            ' */\n\n'
-            'console.log("Reconstructed project - ready for development");\n',
-            encoding="utf-8",
-        )
-        return entry_file
+        # Aday yok: uydurma giriş YAZILMAZ (BICIM-12). Eskiden hedefle ilgisiz
+        # 'console.log("Reconstructed project - ready for development")' yazılıyordu.
+        return None
 
     @staticmethod
     def _create_package_json(
@@ -374,29 +422,34 @@ class ProjectBuilder:
         Returns:
             package.json dosya yolu.
         """
-        # Entry point relative path
+        # Entry point relative path (giriş yoksa main / scripts yazılmaz:
+        # var olmayan bir dosyayı gösteren "start" betiği uydurma olurdu)
+        main: str | None = None
         if entry_point:
             try:
                 main = str(entry_point.relative_to(project_dir))
             except ValueError:
                 main = "src/index.js"
-        else:
-            main = "src/index.js"
 
-        pkg = {
+        pkg: dict[str, Any] = {
             "name": f"reconstructed-{target.name.lower().replace(' ', '-')}",
             "version": "1.0.0",
-            "description": f"Reconstructed from {target.name} by Karadul v1.0",
-            "main": main,
-            "scripts": {
-                "start": f"node {main}",
-                "dev": f"node --watch {main}",
-            },
+            "description": (
+                f"Reconstructed from {target.name} by Karadul {KARADUL_VERSION}. "
+                "Analyzed (untrusted) software - do not run outside an isolated environment."
+            ),
             "keywords": ["reconstructed", "karadul"],
             "license": "UNLICENSED",
             "private": True,
             "dependencies": deps,
         }
+        if main is not None:
+            # `karadul run` (kapılı, P-GÜV) bu betiği kullanır; README önermez.
+            pkg["main"] = main
+            pkg["scripts"] = {
+                "start": f"node {main}",
+                "dev": f"node --watch {main}",
+            }
 
         pkg_path = project_dir / "package.json"
         pkg_path.write_text(
@@ -421,7 +474,7 @@ class ProjectBuilder:
         """
         lines = [
             "# Environment Variables",
-            f"# Auto-detected by Karadul v1.0 ({len(env_vars)} variables found)",
+            f"# Auto-detected by Karadul {KARADUL_VERSION} ({len(env_vars)} variables found)",
             "",
         ]
 
@@ -477,31 +530,30 @@ class ProjectBuilder:
         Returns:
             README.md dosya yolu.
         """
-        entry_rel = "src/index.js"
+        entry_rel: str | None = None
         if entry_point:
             try:
                 entry_rel = str(entry_point.relative_to(project_dir))
             except ValueError:
-                pass
+                entry_rel = "src/index.js"
 
         lines = [
             f"# reconstructed-{target.name}",
             "",
-            f"Reconstructed from `{target.name}` using [Karadul v1.0](https://github.com/karadul) reverse engineering suite.",
+            f"Reconstructed from `{target.name}` by Karadul {KARADUL_VERSION} "
+            "(reverse engineering suite).",
             "",
-            "## Quick Start",
-            "",
-            "```bash",
-            "npm install",
-            "npm start",
-            "```",
-            "",
+            *UNTRUSTED_CODE_WARNING,
             "## Project Structure",
             "",
             "```",
-            f"  {entry_rel}   -- Main entry point",
+            (
+                f"  {entry_rel}   -- Entry point (reconstructed)"
+                if entry_rel else
+                "  (no entry point could be identified)"
+            ),
             "  src/              -- Source files",
-            "  package.json      -- Dependencies & scripts",
+            "  package.json      -- Dependencies as required by the analyzed code",
             "```",
             "",
         ]
@@ -521,11 +573,7 @@ class ProjectBuilder:
             lines.extend([
                 "## Environment Variables",
                 "",
-                "Copy `.env.example` to `.env` and fill in the values:",
-                "",
-                "```bash",
-                "cp .env.example .env",
-                "```",
+                "Environment variables read by the analyzed code (see `.env.example`):",
                 "",
                 "| Variable | Description |",
                 "|----------|-------------|",
@@ -539,11 +587,10 @@ class ProjectBuilder:
             "",
             "- This project was automatically reconstructed from an obfuscated/minified source.",
             "- Variable names have been inferred from context and may not match the original.",
-            "- Some functionality may require additional configuration or external services.",
             f"- Original file: `{target.path.name}` ({target.file_size:,} bytes)",
             "",
             "---",
-            "*Generated by Karadul v1.0*",
+            f"*Generated by Karadul {KARADUL_VERSION}*",
             "",
         ])
 
@@ -572,21 +619,24 @@ class ProjectBuilder:
             except ValueError:
                 pass
 
+        # BICIM-12: eskiden `npm ci --only=production` (kilit dosyası yok, zaten
+        # derlenmiyordu) ve uyarısızdı. Bu dosya yalnız yalıtılmış dinamik
+        # inceleme içindir; paket betikleri kapalı kurulur.
         content = f"""\
-# Reconstructed by Karadul v1.0
+# Reconstructed by Karadul {KARADUL_VERSION} from the ANALYZED (untrusted,
+# possibly malicious) software. For isolated dynamic analysis ONLY.
+# Bu kod analiz edilen yazılımdır; yalnız yalıtılmış ortamda çalıştırın.
+# Run without network access, e.g.: docker run --rm --network none <image>
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Dependencies
+# Dependencies (package scripts disabled)
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --ignore-scripts --no-audit --no-fund
 
 # Source
 COPY . .
-
-# Expose port (adjust as needed)
-EXPOSE 3000
 
 CMD ["node", "{entry_rel}"]
 """

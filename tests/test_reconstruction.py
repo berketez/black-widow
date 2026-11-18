@@ -701,8 +701,10 @@ class TestProjectBuilder:
         assert readme_path.exists()
 
         content = readme_path.read_text()
-        assert "Quick Start" in content
-        assert "npm install" in content
+        # P20 / BICIM-12: analiz edilen kodu çalıştırma önerisi yok, uyarı var.
+        assert "Quick Start" not in content
+        assert "npm start\n" not in content
+        assert "Do not run this code" in content
         assert "Karadul" in content
 
     def test_build_creates_env_example(
@@ -742,7 +744,10 @@ class TestProjectBuilder:
 
         content = docker_path.read_text()
         assert "FROM node:" in content
-        assert "npm ci" in content
+        # P20 / BICIM-12: paket betikleri kapalı kurulum + yalıtım uyarısı.
+        assert "npm install --ignore-scripts" in content
+        assert "npm ci" not in content
+        assert "--network none" in content
 
     def test_build_creates_gitignore(
         self, config: Config, workspace: Workspace, target_info: TargetInfo,

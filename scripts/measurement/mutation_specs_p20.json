@@ -128,6 +128,46 @@
       "test": "tests/test_p20_npm_vendor.py::test_pipeline_keeps_suspicious_module_out_of_vendor",
       "find": "        manifest.npm_hints = dict(getattr(self.fingerprinter, \"hints\", {}) or {})",
       "replace": "        manifest.npm_hints = {}"
+    },
+    {
+      "id": "p20_k4_quick_start_geri",
+      "desc": "BICIM-12: ProjectBuilder README yine npm install / npm start öneriyor",
+      "module": "karadul/reconstruction/project_builder.py",
+      "test": "tests/test_p20_project_readme.py::test_builder_readme_warns_instead_of_quick_start",
+      "find": "            *UNTRUSTED_CODE_WARNING,\n            \"## Project Structure\",",
+      "replace": "            \"## Quick Start\", \"\", \"npm install\", \"npm start\", \"\",\n            \"## Project Structure\","
+    },
+    {
+      "id": "p20_k4_uydurma_giris",
+      "desc": "BICIM-12: giriş yokken uydurma console.log yazılıyor",
+      "module": "karadul/reconstruction/project_builder.py",
+      "test": "tests/test_p20_project_readme.py::test_builder_does_not_invent_entry_point",
+      "find": "ready for development\")' yazılıyordu.\n        return None",
+      "replace": "ready for development\")' yazılıyordu.\n        entry_file.write_text('console.log(\"ready\");\\n')\n        return entry_file"
+    },
+    {
+      "id": "p20_k4_ad_ciktisi_yok_sayilir",
+      "desc": "BICIM-12: ad hattının son çıktısı giriş olarak kullanılmıyor",
+      "module": "karadul/reconstruction/project_builder.py",
+      "test": "tests/test_p20_project_readme.py::test_builder_prefers_named_source",
+      "find": "        if named_source is not None and named_source.is_file():",
+      "replace": "        if False and named_source is not None:"
+    },
+    {
+      "id": "p20_k4_paket_betikleri_acik",
+      "desc": "BICIM-12: Dockerfile paket betiklerini çalıştırıyor",
+      "module": "karadul/reconstruction/project_builder.py",
+      "test": "tests/test_p20_project_readme.py::test_builder_dockerfile_disables_scripts_and_warns",
+      "find": "RUN npm install --ignore-scripts --no-audit --no-fund",
+      "replace": "RUN npm install --no-audit --no-fund"
+    },
+    {
+      "id": "p20_k4_reconstructor_quick_start",
+      "desc": "BICIM-12: ProjectReconstructor README yine Quick Start",
+      "module": "karadul/reconstruction/project_reconstructor.py",
+      "test": "tests/test_p20_project_readme.py::test_reconstructor_readme_warns_instead_of_quick_start",
+      "find": "            *UNTRUSTED_CODE_WARNING,\n        ]",
+      "replace": "            \"## Quick Start\",\n        ]"
     }
   ]
 }

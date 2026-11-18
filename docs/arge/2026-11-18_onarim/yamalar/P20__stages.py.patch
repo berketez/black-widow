@@ -1,0 +1,24 @@
+--- a/karadul/stages.py	2026-11-18 18:31:21
++++ b/karadul/stages.py	2026-11-18 18:31:21
+@@ -2553,6 +2553,12 @@
+                 stats["rename_high_confidence"] = naming_result.high_confidence
+                 stats["rename_medium_confidence"] = naming_result.medium_confidence
+                 stats["rename_low_confidence"] = naming_result.low_confidence
++                # P20 / BICIM-03: yukarıdaki üç kova UYGULANAN adlar (toplam ==
++                # variables_renamed); analizcinin eşik öncesi adayları ayrı.
++                stats["rename_candidates_high"] = naming_result.candidates_high
++                stats["rename_candidates_medium"] = naming_result.candidates_medium
++                stats["rename_candidates_low"] = naming_result.candidates_low
++                errors.extend(naming_result.errors)
+                 current_file = naming_result.output_file
+             else:
+                 errors.extend(naming_result.errors)
+@@ -2789,6 +2795,8 @@
+                     context.workspace, context.target,
+                     split_result=split_result,
+                     gap_result=gap_result,
++                    # P20 / BICIM-12: giriş = ad/tip/yorum adımlarının son çıktısı
++                    named_source=current_file,
+                 )
+                 if build_result.success:
+                     stats["project_files"] = build_result.files_created
