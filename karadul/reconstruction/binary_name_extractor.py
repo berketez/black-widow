@@ -730,13 +730,13 @@ class BinaryNameExtractor:
                 if entry.value:  # Bos string'leri atla
                     self._strings.append(entry)
 
-                    # String->fonksiyon mapping olustur (xref-based)
-                    referring_funcs = set()
-                    for xr in xrefs:
-                        if xr.from_function:
-                            referring_funcs.add(xr.from_function)
+                    # String->fonksiyon mapping olustur (xref-based). Sıra xref sırasıdır
+                    # (tekrarlar atılır): eskiden set'ten liste kuruluyordu ve "ilk
+                    # referanslayan" PYTHONHASHSEED'e bağlıydı (P12a).
+                    referring_funcs = list(dict.fromkeys(
+                        xr.from_function for xr in xrefs if xr.from_function))
                     if referring_funcs:
-                        self._string_to_funcs[addr] = list(referring_funcs)
+                        self._string_to_funcs[addr] = referring_funcs
 
             except (ValueError, KeyError):
                 continue
