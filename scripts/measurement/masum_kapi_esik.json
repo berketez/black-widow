@@ -606,7 +606,7 @@
   {
    "ad": "sarif_paket_uyarisi",
    "katman": "sarif",
-   "etiket_re": "^KRDL003:(MPRESS|ASPack|UPX|VMProtect|Themida|PECompact|Enigma)",
+   "etiket_re": "^KRDL00[34]:(MPRESS|ASPack|UPX|VMProtect|Themida|PECompact|Enigma)",
    "rapordaki": "ARAYUZ-17 / IMZA-05: SARIF warning"
   },
   {
