@@ -1065,8 +1065,16 @@ class Agent:
             if i not in refs:
                 refs.append(i)
         task.result.answer = {"ozet": obj["ozet"], "belirsiz": obj["belirsiz"], "kanit": refs}
+        # Denetim (tasarım §3.6 madde 6, §3.10): D8, D9, D13. Çelişkili ya da enjeksiyon bayraklı özet
+        # çağıranın paketine girmez; kayıtta ve olayda görünür.
+        report = guard.check_summary(task.result.answer, [r.envelope() for r in task.results],
+                                     target=task.result.addr[4:],
+                                     known_functions=self.workspace.existing_function_names())
+        task.result.verdict = report.verdict
+        task.result.guard = report.as_dict()
         task.result.summary = {"kaynak": "model", "metin": obj["ozet"], "belirsiz": obj["belirsiz"],
-                               "kanit": refs, "hukum": None, "pakete_girer": True, "depodan": False}
+                               "kanit": refs, "hukum": report.verdict, "pakete_girer": report.bulk_accept,
+                               "depodan": False}
         task.finish(STATUS_DONE)
 
     # --- döngü (K1 / K2) ----------------------------------------------------------------------

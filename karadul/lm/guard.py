@@ -60,6 +60,7 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping, Optional, Sequence
 
 from karadul.lm import protocol
+from karadul.lm.context import SUMMARY_KIND, SUMMARY_TOOL
 
 # --- Hüküm ve etki --------------------------------------------------------------------------
 VERDICT_REJECT = "ret"
@@ -91,6 +92,9 @@ CODE_SESSION_DUPLICATE = "oturumda_baska_fonksiyona_onerildi"
 CODE_SUSPICIOUS_DECOMPILE = "kuskulu_decompile"
 CODE_INJECTION = "enjeksiyon_belirtisi"
 CODE_MODEL_ONLY = "yalniz_model_adlari"
+# P22b (özet; KaradulLM v2 §3.6 madde 6): paketteki ``[model-özet]`` girişi kanıt değildir.
+CODE_SUMMARY_ONLY_REFS = "yalniz_ozet_kaniti"   # D8: gösterilen kanıtın hepsi model özeti
+CODE_UNSEEN_IMPORT = "gorulmemis_ithal"         # D9: özette geçen ithal / kütüphane adı sonuçlarda yok
 
 # Kodlanmayan kurallar ve nedeni (raporda her zaman yazılır).
 NOT_IMPLEMENTED = {
@@ -158,6 +162,7 @@ _GHIDRA_STRING_LABEL_RE = re.compile(r"^[su]_(.+?)(?:_[0-9a-fA-F]{4,16})?$")
 _FUN_HEX_RE = re.compile(r"\bFUN_([0-9a-fA-F]{1,16})\b")
 _QUOTED_RE = re.compile(r"[\"“”«»']([^\"“”«»'\n]{3,120})[\"“”«»']")
 _CALL_LIKE_RE = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]{2,63})\s*\(")
+_STRICT_CALL_RE = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]{2,63})\(")   # P22b özet D9: ad ile ayraç bitişik
 _RESERVED_RE = re.compile(r"^(?:__|_[A-Z])")
 
 
@@ -221,15 +226,39 @@ def _flatten(value: Any) -> list[str]:
     return []
 
 
+def is_summary_result(envelope: Mapping[str, Any]) -> bool:
+    """Zarf sunucunun ``callee_summaries`` girişi mi (P22b)? Böyle bir sonuç kanıt sayılmaz: D9'un
+    "görülmüş" kümesine girmez, D8'de tek başına dayanak olamaz."""
+    return envelope.get("tool") == SUMMARY_TOOL and envelope.get("kind") == SUMMARY_KIND
+
+
+def _evidence_envelopes(envelopes: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    """Kanıt sayılan başarılı sonuçlar: ``[model-özet]`` girişi hariç."""
+    return [e for e in envelopes if e.get("ok") and not is_summary_result(e)]
+
+
 def hostile_texts(envelope: Mapping[str, Any]) -> list[HostileText]:
     """Bir sonuç zarfının ikili kökenli metinleri (alan sınıfı ``HOSTILE_FIELDS``'ten).
 
     Dizgi listesinden her dizgi ayrı öğe; koddan kodun tamamı (``kod``) ve her dizgi sabiti
     (``dizgi``); ad listelerinden her tanımlayıcı (``ad``); öbür alanlar ``metin``. Yapı alanları
-    (``STRUCTURE_FIELDS``) atlanır; tanınmayan alan ``metin`` sayılır."""
+    (``STRUCTURE_FIELDS``) atlanır; tanınmayan alan ``metin`` sayılır. Sunucunun ``callee_summaries``
+    girişinde (P22b) her satırın özet metni ``ozet`` türüdür: modelin ikili metninden türettiği metindir,
+    enjeksiyon taramasına (D13) girer; D6 onu dizgi saymaz (adres alanları yapıdır)."""
     if not envelope.get("ok") or not isinstance(envelope.get("data"), Mapping):
         return []
     rid, tool, data = str(envelope.get("id")), str(envelope.get("tool")), envelope["data"]
+    if is_summary_result(envelope):
+        out_s: list[HostileText] = []
+        for key, value in data.items():
+            if key == "addr":
+                continue
+            if key == "items" and isinstance(value, list):
+                out_s += [HostileText(rid, key, "ozet", item["ozet"]) for item in value
+                          if isinstance(item, Mapping) and isinstance(item.get("ozet"), str)]
+            else:
+                out_s += [HostileText(rid, key, "metin", s) for s in _flatten(value)]
+        return out_s
     classes = HOSTILE_FIELDS.get(tool, {})
     structure = STRUCTURE_FIELDS.get(tool, frozenset())
     out: list[HostileText] = []
@@ -456,6 +485,8 @@ def check_proposal(answer: Mapping[str, Any], envelopes: Sequence[Mapping[str, A
             addrs = [_env_addr(e) for e in cited]
             if cited and all(a is not None and a not in rel for a in addrs):
                 add("D8", CODE_UNRELATED_REFS, EFFECT_CONFLICT, ",".join(r for r in refs if r in by_id))
+            if cited and all(is_summary_result(e) for e in cited):
+                add("D8", CODE_SUMMARY_ONLY_REFS, EFFECT_CONFLICT, ",".join(r for r in refs if r in by_id))
         # D14: gösterilen sonuçlardaki adlı komşuların hepsi model kökenli
         tested.append("D14")
         cited_ids = set(refs)
@@ -471,7 +502,8 @@ def check_proposal(answer: Mapping[str, Any], envelopes: Sequence[Mapping[str, A
     rationale = answer.get("gerekce")
     if isinstance(rationale, str) and rationale:
         tested.append("D9")
-        seen_values = [s for e in ok_envs for s in _all_strings(e.get("data"))]
+        # "Görülmüş" yalnız kanıttır: [model-özet] girişindeki metin sayılmaz (P22b, tasarım §3.6).
+        seen_values = [s for e in _evidence_envelopes(envelopes) for s in _all_strings(e.get("data"))]
         seen_ints = {target_int}
         for s in seen_values:
             seen_ints |= {int(h, 16) for h in _FUN_HEX_RE.findall(s)}
@@ -506,6 +538,83 @@ def check_proposal(answer: Mapping[str, Any], envelopes: Sequence[Mapping[str, A
     tested.insert(0, "D0")
     return GuardReport(_verdict(findings, empty_content), tuple(findings), tuple(dict.fromkeys(tested)),
                        not_tested)
+
+
+def check_summary(answer: Mapping[str, Any], envelopes: Sequence[Mapping[str, Any]], *, target: str,
+                  known_functions: Iterable[str] = ()) -> GuardReport:
+    """Bir "açıkla" / "özet alt görevi" cevabının denetimi (KaradulLM v2 §3.6 madde 6, §3.10).
+
+    ``answer``: ``{ozet, belirsiz, kanit}``. ``envelopes``: bu görevde modele verilen sonuçlar
+    (``callee_summaries`` girişi dahil; o giriş kanıt sayılmaz). ``known_functions``: ikilideki fonksiyon
+    adları (ithal ve Ghidra adları; ``Workspace.existing_function_names``). Uygulanan kurallar:
+
+    - D8 (yalnız özet veren cevapta): ``kanit`` boş → ``celiski`` (tasarım §3.6 "Risk"); verilmemiş kimlik
+      → ``celiski``; gösterilen sonuçların hepsi ``[model-özet]`` girişi → ``celiski``.
+    - D9 (özet metni; belirsiz cevapta da): metindeki ``FUN_`` adresi, tırnaklı metin, boşluksuz çağrı
+      biçimli ad (``ad(``; Türkçe düzyazıdaki "sözcük (açıklama)" çağrı sayılmaz) ya da ikilinin bir
+      fonksiyon / ithal adı (``known_functions``) kanıtta yoksa ``celiski``. Kanıt = ``[model-özet]``
+      girişi DIŞINDAKİ sonuçlar: çağrılanın özetinden kopyalanan olgu görülmemiştir. D7'nin kütüphane
+      sözlüğü (996 ad: ``time``, ``error``, ``log`` …) düzyazıda yanlış alarm verir; kullanılmaz.
+    - D13: sonuçların ikili kökenli metinlerinde (özet satırları dahil) ya da cevabın kendi metninde talimat
+      kalıbı → bayrak; ``toplu_kabul`` (= çağıranın paketine girer mi) kapanır.
+
+    Hüküm ``celiski`` ya da ``sinandi_celiski_yok``; ``ret`` yoktur (ad önerisi değil). Çelişkili ya da
+    enjeksiyon bayraklı özet çağıranın paketine girmez (``bulk_accept`` yanlış)."""
+    findings: list[Finding] = []
+    tested: list[str] = []
+
+    def add(rule: str, code: str, effect: str, ref: Optional[str] = None) -> None:
+        f = Finding(rule, code, effect, ref)
+        if f not in findings:
+            findings.append(f)
+
+    text = answer.get("ozet") if isinstance(answer.get("ozet"), str) else ""
+    unclear = bool(answer.get("belirsiz"))
+    ok_envs = [e for e in envelopes if e.get("ok")]
+    evidence = _evidence_envelopes(envelopes)
+    target_int = int(target, 16)
+    if not unclear:
+        tested.append("D8")
+        refs = [r for r in (answer.get("kanit") or []) if isinstance(r, str)]
+        by_id = {str(e.get("id")): e for e in ok_envs}
+        if not refs:
+            add("D8", CODE_NO_REFS, EFFECT_CONFLICT)
+        for r in refs:
+            if r not in by_id:
+                add("D8", CODE_UNKNOWN_REF, EFFECT_CONFLICT, r)
+        cited = [by_id[r] for r in refs if r in by_id]
+        if cited and all(is_summary_result(e) for e in cited):
+            add("D8", CODE_SUMMARY_ONLY_REFS, EFFECT_CONFLICT, ",".join(r for r in refs if r in by_id))
+    if text:
+        tested.append("D9")
+        seen_values = [s for e in evidence for s in _all_strings(e.get("data"))]
+        seen_ints = {target_int}
+        for s in seen_values:
+            seen_ints |= {int(h, 16) for h in _FUN_HEX_RE.findall(s)}
+        for h in _FUN_HEX_RE.findall(text):
+            if int(h, 16) not in seen_ints:
+                add("D9", CODE_UNSEEN_ADDRESS, EFFECT_CONFLICT)
+        folded = [s.casefold() for s in seen_values]
+        for m in _QUOTED_RE.finditer(text):
+            q = m.group(1).strip().casefold()
+            if q and not any(q in s for s in folded):
+                add("D9", CODE_UNSEEN_QUOTE, EFFECT_CONFLICT)
+        idents = {i for s in seen_values for i in _IDENT_RE.findall(s)}
+        for m in _STRICT_CALL_RE.finditer(text):
+            if m.group(1) not in idents:
+                add("D9", CODE_UNSEEN_CALL, EFFECT_CONFLICT)
+        imports = set(known_functions)
+        bare = {i.lstrip("_") for i in idents}
+        for ident in _IDENT_RE.findall(text):
+            if (ident in imports or ident.lstrip("_") in imports) and ident not in idents \
+                    and ident.lstrip("_") not in bare and not protocol.is_placeholder_name(ident):
+                add("D9", CODE_UNSEEN_IMPORT, EFFECT_CONFLICT)
+    tested.append("D13")
+    for ref in injection_hits([t for e in envelopes for t in hostile_texts(e)]):
+        add("D13", CODE_INJECTION, EFFECT_FLAG, ref)
+    if text and any(p.search(text) for p in INJECTION_PATTERNS):
+        add("D13", CODE_INJECTION, EFFECT_FLAG, "ozet")
+    return GuardReport(_verdict(findings, False), tuple(findings), tuple(tested), dict(NOT_IMPLEMENTED))
 
 
 def _env_addr(envelope: Mapping[str, Any]) -> Optional[int]:
