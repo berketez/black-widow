@@ -1,0 +1,333 @@
+{
+  "_comment": "P00 ölçüm araçlarının (masum_kapi.py, saglamlik_denetle.py) sayım kurallarını bozan mutantlar; her biri ilgili testte KIRMIZI olmalı (killed). Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p00.json",
+  "mutants": [
+    {
+      "id": "mk_pozitif_set_yanlis",
+      "desc": "pozitif setteki iddia da yanlış sayılır",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_hukum_masum_set_yanlis_dogru_listesi_ve_pozitif_set",
+      "find": "if set_adi not in MASUM_SETLER:\n                        i[\"hukum\"] = \"pozitif_set\"",
+      "replace": "if set_adi in ():\n                        i[\"hukum\"] = \"pozitif_set\""
+    },
+    {
+      "id": "mk_dogru_listesi_kapali",
+      "desc": "doğru bilinen iddia kuralı hiç uymaz",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_hukum_masum_set_yanlis_dogru_listesi_ve_pozitif_set",
+      "find": "if \"kanit_re\" not in kural:\n        return True",
+      "replace": "if \"kanit_re\" not in kural:\n        return False"
+    },
+    {
+      "id": "mk_kanit_re_yok_sayilir",
+      "desc": "dogru_iddialar kanit_re koşulu yok sayılır",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_hukum_kanit_re_ve_set_kisiti",
+      "find": "and _kanit_uyar(d, i) for d in dogrular",
+      "replace": "for d in dogrular"
+    },
+    {
+      "id": "mk_set_kisiti_yok",
+      "desc": "dogru_iddialar set kısıtı yok sayılır",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_hukum_kanit_re_ve_set_kisiti",
+      "find": "if kural.get(\"set\") not in (None, set_adi):",
+      "replace": "if False:"
+    },
+    {
+      "id": "mk_katman_esi_yok",
+      "desc": "çıktı katmanı (intel) doğrudan eşinin kuralına uymaz",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_hukum_cikti_katmani_esine_uyar",
+      "find": "if kural.get(\"katman\") not in (None, katman, KATMAN_ESI.get(katman)):",
+      "replace": "if kural.get(\"katman\") not in (None, katman):"
+    },
+    {
+      "id": "mk_yanlisli_ikili_hep",
+      "desc": "yanlışı olmayan ikili de yanlışlı sayılır",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_ozet_sayaclari_ve_adet",
+      "find": "o[\"yanlis_ikili\"] += 1 if y else 0",
+      "replace": "o[\"yanlis_ikili\"] += 1"
+    },
+    {
+      "id": "mk_adet_yok_sayilir",
+      "desc": "adet alanı yok sayılır (iddia sayısı)",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_ozet_sayaclari_ve_adet",
+      "find": "o[\"adet\"] += sum(i.get(\"adet\", 1) for i in iddialar)",
+      "replace": "o[\"adet\"] += len(iddialar)"
+    },
+    {
+      "id": "mk_esik_esitlikte_duser",
+      "desc": "yanlış = üst sınır iken eşik aşılmış sayılır",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_esik_icinde_asildi_ve_esiksiz_ikili",
+      "find": "\"sonuc\": \"asildi\" if yanlis > ust else \"icinde\"",
+      "replace": "\"sonuc\": \"asildi\" if yanlis >= ust else \"icinde\""
+    },
+    {
+      "id": "mk_esiksiz_ikili_sayilir",
+      "desc": "tabanı olmayan ikilinin yanlışı eşiğe katılır",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_esik_icinde_asildi_ve_esiksiz_ikili",
+      "find": "yanlis = sum(n for a, n in ibs.items() if a in taban)",
+      "replace": "yanlis = sum(ibs.values())"
+    },
+    {
+      "id": "mk_pozitif_set_esikte",
+      "desc": "pozitif set eşikle sınanır",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_esik_icinde_asildi_ve_esiksiz_ikili",
+      "find": "continue  # pozitif set yanlışla değil",
+      "replace": "pass  # pozitif set yanlışla değil"
+    },
+    {
+      "id": "mk_olculmeyen_pozitif_dusurur",
+      "desc": "ölçülmeyen zorunlu beklenti de kapıyı düşürür",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_gercek_pozitif_var_yok_olculmedi_ve_es_katman",
+      "find": "if g.get(\"zorunlu\") and g[\"sonuc\"] == \"yok\":",
+      "replace": "if g.get(\"zorunlu\") and g[\"sonuc\"] in (\"yok\", \"olculmedi\"):"
+    },
+    {
+      "id": "mk_girdi_hatasi_yutulur",
+      "desc": "ölçülemeyen girdi kapıyı düşürmez",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_gercek_pozitif_var_yok_olculmedi_ve_es_katman",
+      "find": "if c.get(\"girdi_hatalari\"):\n        nedenler",
+      "replace": "if False:\n        nedenler"
+    },
+    {
+      "id": "mk_pozitif_es_katman_yok",
+      "desc": "gerçek pozitif çıktı kipinde eşinde aranmaz",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_gercek_pozitif_var_yok_olculmedi_ve_es_katman",
+      "find": "adaylar = [b[\"katman\"]] + [c for c, d in KATMAN_ESI.items() if d == b[\"katman\"]]",
+      "replace": "adaylar = [b[\"katman\"]]"
+    },
+    {
+      "id": "mk_antidebug_high_esigi",
+      "desc": "anti-debug HIGH eşiği 0,7'yi dışlar",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_antidebug_seviye_esikleri_ve_teknik_tekilligi",
+      "find": "return \"HIGH\" if puan >= 0.7",
+      "replace": "return \"HIGH\" if puan > 0.7"
+    },
+    {
+      "id": "mk_antidebug_ilk_bulgu",
+      "desc": "aynı teknikte en yüksek güven yerine ilk bulgu",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_antidebug_seviye_esikleri_ve_teknik_tekilligi",
+      "find": "if onceki is None or b.get(\"confidence\", 0) > onceki[\"guven\"]:",
+      "replace": "if onceki is None:"
+    },
+    {
+      "id": "mk_sarif_error_esigi",
+      "desc": "SARIF paketleyici error eşiği 0,7'yi dışlar",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_packer_sarif_duzeyi",
+      "find": "return \"error\" if guven >= 0.7",
+      "replace": "return \"error\" if guven > 0.7"
+    },
+    {
+      "id": "mk_bilesim_sablon_suzgeci",
+      "desc": "çağrı zinciri betimi de bileşim iddiası sayılır",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_cikti_bilesim_yalniz_sablonlar_ve_bolum_siniri",
+      "find": "if ad in sablonlar:\n            iddialar.append",
+      "replace": "if ad:\n            iddialar.append"
+    },
+    {
+      "id": "mk_bilesim_bolum_siniri",
+      "desc": "bileşim bölümü ### başlığında bitmez",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_cikti_bilesim_yalniz_sablonlar_ve_bolum_siniri",
+      "find": "(?=^#{2,3} |\\Z)",
+      "replace": "(?=^## |\\Z)"
+    },
+    {
+      "id": "mk_yara_durum_hep_calisti",
+      "desc": "yara_backend yokken de 'calisti' denir",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_cikti_sarif_ve_yara_durumu",
+      "find": "\"durum\": \"calisti\" if \"yara_backend\" in st else \"bilinmiyor\"",
+      "replace": "\"durum\": \"calisti\""
+    },
+    {
+      "id": "mk_yarim_kosu_gecer",
+      "desc": "künyedeki iş sayısı tutmasa da hata yok",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_cikti_kos_yarim_kosu_hatasi",
+      "find": "if isinstance(beklenen, int) and beklenen != len(ikililer):",
+      "replace": "if False:"
+    },
+    {
+      "id": "mk_bitti_yok_gecer",
+      "desc": "BITTI olmayan ikili hata sayılmaz",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_cikti_kos_yarim_kosu_hatasi",
+      "find": "if not bitti:\n            hatalar.append",
+      "replace": "if False:\n            hatalar.append"
+    },
+    {
+      "id": "mk_izlenen_pozitif_sayar",
+      "desc": "izlenen etiketler pozitif sette de sayılır",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_izlenen_ikili_ve_adet_yalniz_masum_setler",
+      "find": "if iz.get(\"set\", set_adi if set_adi in MASUM_SETLER else None) != set_adi:",
+      "replace": "if iz.get(\"set\", set_adi) != set_adi:"
+    },
+    {
+      "id": "mk_izlenen_es_yok",
+      "desc": "izlenen kural çıktı eşinde sayılmaz",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_izlenen_cikti_esini_de_sayar",
+      "find": "for katman in [iz[\"katman\"]] + [c for c, d in KATMAN_ESI.items() if d == iz[\"katman\"]]:",
+      "replace": "for katman in [iz[\"katman\"]]:"
+    },
+    {
+      "id": "mk_esik_yaz_birlestirmez",
+      "desc": "eşik yazımı önceki ikilileri siler",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_esik_yaz_birlestirir",
+      "find": "ikililer = dict(eski.get(\"ikililer\", {}))",
+      "replace": "ikililer = {}"
+    },
+    {
+      "id": "mk_esik_yaz_pozitif",
+      "desc": "eşik yazımı pozitif seti de eşik yapar",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_esik_yaz_birlestirir",
+      "find": "continue\n                yer = esik.setdefault",
+      "replace": "pass\n                yer = esik.setdefault"
+    },
+    {
+      "id": "mk_yanlis_agac_gecer",
+      "desc": "başka ağaçtan yüklenen karadul durdurulmaz",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_yanlis_agac_durur",
+      "find": "if not str(yuklu).startswith(str(agac) + os.sep):",
+      "replace": "if False:"
+    },
+    {
+      "id": "mk_sha_denetimi_yok",
+      "desc": "sabit girdinin sha256'sı değişse de ölçülür",
+      "module": "scripts/measurement/masum_kapi.py",
+      "test": "tests/test_masum_kapi.py::test_gercek_ornek_true_packer_yara",
+      "find": "if girdi.get(\"sha256\") and gercek != girdi[\"sha256\"]:",
+      "replace": "if False:"
+    },
+    {
+      "id": "sd_kunye_durumu_yok",
+      "desc": "künyede başarısız iş bitmiş sayılır",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_bitti_yoksa_ya_da_kunye_basarisizsa_bitmedi",
+      "find": "if ic is None or (kd and kd.get(\"durum\") != \"tamam\"):",
+      "replace": "if ic is None:"
+    },
+    {
+      "id": "sd_bitti_yok_gecer",
+      "desc": "BITTI olmayan iş bitmiş sayılır",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_bitti_yoksa_ya_da_kunye_basarisizsa_bitmedi",
+      "find": "if ic is None or (kd and kd.get(\"durum\") != \"tamam\"):",
+      "replace": "if (kd and kd.get(\"durum\") != \"tamam\"):"
+    },
+    {
+      "id": "sd_eski_bitti_kurali",
+      "desc": "eski kural: BITTI 'ok' ile başlamalı",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_bitti_sifir_ve_kunye_tamam_bitmis_sayilir",
+      "find": "if ic is None or (kd and kd.get(\"durum\") != \"tamam\"):",
+      "replace": "if not ic or not ic.startswith(\"ok\"):"
+    },
+    {
+      "id": "sd_eski_gunluk_adi",
+      "desc": "eski Mac günlük adı (karadul.log)",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_bitti_sifir_ve_kunye_tamam_bitmis_sayilir",
+      "find": "GUNLUK_DOSYASI = \"kosu.log\"",
+      "replace": "GUNLUK_DOSYASI = \"karadul.log\""
+    },
+    {
+      "id": "sd_harita_kayip_yok",
+      "desc": "son turun adı out'ta hiç yoksa kusur değil",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_harita_sozlesmesi_bozulunca_kusur",
+      "find": "kayip.append(f\"{eski_ad} -> {yeni_ad}\")",
+      "replace": "pass"
+    },
+    {
+      "id": "sd_harita_farkli_yok",
+      "desc": "out'taki farklı yeni ad kusur değil",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_harita_sozlesmesi_bozulunca_kusur",
+      "find": "if out_cn[eski_ad] != yeni_ad:",
+      "replace": "if False:"
+    },
+    {
+      "id": "sd_harita_fazla_yok",
+      "desc": "turda olmayan out eşlemesi kusur değil",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_harita_sozlesmesi_bozulunca_kusur",
+      "find": "for k, v in out_cn.items() if son_degisen.get(k) != v",
+      "replace": "for k, v in out_cn.items() if False"
+    },
+    {
+      "id": "sd_harita_gerekcesiz_yok",
+      "desc": "gerekçesiz aday kusur değil",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_harita_sozlesmesi_bozulunca_kusur",
+      "find": "elif not aday_cn[eski_ad].get(\"reason\"):",
+      "replace": "elif False:"
+    },
+    {
+      "id": "sd_harita_eski_kural",
+      "desc": "eski kural: aday listesi yok sayılır",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_harita_sozlesmesi_temiz",
+      "find": "elif eski_ad in aday_cn:",
+      "replace": "elif False:"
+    },
+    {
+      "id": "sd_readme_sayi_yok",
+      "desc": "README dosya sayısı denetlenmez",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_readme_yapisi_tutuyor_ve_bozuluyor",
+      "find": "if yazilan != disk:",
+      "replace": "if False:"
+    },
+    {
+      "id": "sd_readme_yol_yok",
+      "desc": "README'deki olmayan yol kusur değil",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_readme_yapisi_tutuyor_ve_bozuluyor",
+      "find": "if not os.path.exists(yol):\n            hatalar",
+      "replace": "if False:\n            hatalar"
+    },
+    {
+      "id": "sd_readme_blok_yok",
+      "desc": "yapı bloğu olmayan README temiz sayılır",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_readme_yapisi_tutuyor_ve_bozuluyor",
+      "find": "return [\"yapı bloğu yok\"]",
+      "replace": "return []"
+    },
+    {
+      "id": "sd_readme_kusur_yazilmaz",
+      "desc": "README uyuşmazlığı kusura yazılmaz",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_readme_kusuru_kosu_denetiminde",
+      "find": "if readme and yapi_hatalari:",
+      "replace": "if False:"
+    },
+    {
+      "id": "sd_eksik_secim_gecer",
+      "desc": "istenen ikili kökte yoksa sessizce atlanır",
+      "module": "scripts/measurement/saglamlik_denetle.py",
+      "test": "tests/test_saglamlik_denetle.py::test_kosulari_bul_urun_duzeni",
+      "find": "raise SystemExit(f\"koşu kökünde yok: {eksik}\")",
+      "replace": "pass"
+    }
+  ]
+}
