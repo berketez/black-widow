@@ -768,6 +768,17 @@ def test_dokunulan_ikili_metninden_dogmaz(tmp_path):
     assert {i["addr"] for i in s.data["items"]} == {fun(X(1))} and touched_refs(s.envelope()) == [fun(X(1))]
 
 
+def test_sozlesme_belgesi_her_araci_ve_kipi_anar():
+    belge = (Path(__file__).resolve().parents[1] / "docs" / "arge" / "2026-11-18_karadullm_v2"
+             / "arac_sozlesmeleri_v2.md").read_text(encoding="utf-8")
+    for ad in T.full_registry().names():
+        assert f"`{ad}" in belge, ad
+    for kip in T.MODE_TOOLSETS:
+        assert f"`{kip}`" in belge, kip
+    for kod in ("bilinmeyen_ad", "veri_bayat", "olgu+vekil"):
+        assert kod in belge
+
+
 def test_refs_korluk(ws):
     r = refs(ws, "import", "malloc", )
     kor = call(ws, "find_refs", {"target": "import", "value": "malloc"}, blind_target=A)
