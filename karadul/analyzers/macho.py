@@ -329,7 +329,11 @@ class MachOAnalyzer(BaseAnalyzer):
 
         # 7. Ghidra headless analiz
         ghidra_result = self._run_ghidra(binary_path, workspace)
+        # Ghidra koştu ama başarısız olduysa ``static`` aşaması da başarısızdır (GHIDRA-09):
+        # aşağı akışın tamamı decompile çıktısına dayanır; ham ikili kopyası başarı sayılmaz.
+        ghidra_failed = False
         if ghidra_result is not None:
+            self._record_ghidra_outcome(ghidra_result, workspace, artifacts, stats)
             if ghidra_result.get("success"):
                 # Script ciktilarini artifact olarak kaydet
                 for script_name, output in ghidra_result.get("scripts_output", {}).items():
@@ -349,11 +353,18 @@ class MachOAnalyzer(BaseAnalyzer):
                     stats["ghidra_string_count"] = summary.get("string_count", 0)
                     stats["ghidra_call_graph_edges"] = summary.get("call_graph_edges", 0)
                     stats["ghidra_decompiled"] = summary.get("decompiled_success", 0)
+                # Başarıyı bozmayan ama düşen adımlar (dizgi, tip, xref, CFG, BSim …) görünür olsun.
+                for step, msg in sorted((ghidra_result.get("step_errors") or {}).items()):
+                    errors.append("Ghidra adımı başarısız (%s): %s" % (step, msg))
             else:
-                errors.append(
-                    "Ghidra analiz basarisiz (rc=%d)" % ghidra_result.get("returncode", -1)
-                )
+                ghidra_failed = True
+                reason = ghidra_result.get("error") or "neden bildirilmedi"
+                rc = ghidra_result.get("returncode")
+                if isinstance(rc, int) and not isinstance(rc, bool):
+                    reason = "%s (çıkış kodu %d)" % (reason, rc)
+                errors.append("Ghidra analizi başarısız: %s" % reason)
                 stats["ghidra_success"] = False
+                stats["ghidra_error"] = reason
         else:
             stats["ghidra_available"] = False
 
@@ -422,7 +433,7 @@ class MachOAnalyzer(BaseAnalyzer):
 
         return StageResult(
             stage_name="static",
-            success=len(errors) == 0 or len(artifacts) > 0,
+            success=(not ghidra_failed) and (len(errors) == 0 or len(artifacts) > 0),
             duration_seconds=duration,
             artifacts=artifacts,
             stats=stats,
@@ -918,6 +929,59 @@ class MachOAnalyzer(BaseAnalyzer):
         )
         return strings
 
+    @staticmethod
+    def _record_ghidra_outcome(
+        ghidra_result: dict[str, Any], workspace: Workspace,
+        artifacts: dict[str, Path], stats: dict[str, Any],
+    ) -> None:
+        """Ghidra'nın günlüğünü ve sonuç durumunu başarıdan bağımsız olarak diske yaz (GHIDRA-09).
+
+        ``static/ghidra_log.txt``: her çıkarım adımının OK/WARN/FAIL/FATAL satırı (eskiden hiçbir
+        yere yazılmıyordu). ``static/ghidra_status.json``: başarı, neden, düşen adımlar, fonksiyon
+        sayıları (program / thunk / dış) ve decompile kayıp sayaçları.
+        """
+        log_text = ghidra_result.get("ghidra_log")
+        if log_text:
+            try:
+                artifacts["ghidra_log"] = workspace.save_artifact(
+                    "static", "ghidra_log.txt", log_text,
+                )
+            except Exception as exc:
+                logger.warning("Ghidra gunlugu yazilamadi: %s", exc)
+        out = ghidra_result.get("scripts_output") or {}
+        funcs = out.get("functions") or {}
+        dec = out.get("decompiled") or {}
+        status = {
+            "success": bool(ghidra_result.get("success")),
+            "error": ghidra_result.get("error"),
+            "step_errors": ghidra_result.get("step_errors") or {},
+            "mode": ghidra_result.get("mode"),
+            "returncode": ghidra_result.get("returncode"),
+            "duration_seconds": ghidra_result.get("duration_seconds"),
+            "functions": {
+                k: funcs[k] for k in (
+                    "total", "program_function_count", "thunk_count", "external_count",
+                ) if k in funcs
+            },
+            "decompile": {
+                k: dec[k] for k in (
+                    "total_attempted", "success", "failed", "skipped",
+                    "functions_total", "functions_written", "functions_truncated",
+                    "functions_order", "losses",
+                ) if k in dec
+            },
+            "outputs": sorted(out.keys()),
+        }
+        try:
+            artifacts["ghidra_status"] = workspace.save_json("static", "ghidra_status", status)
+        except Exception as exc:
+            logger.warning("Ghidra durum dosyasi yazilamadi: %s", exc)
+        if status["step_errors"]:
+            stats["ghidra_step_errors"] = dict(sorted(status["step_errors"].items()))
+        truncated = status["decompile"].get("functions_truncated")
+        if truncated:
+            stats["ghidra_decompiled_json_truncated"] = truncated
+
     def _run_ghidra(
         self, binary_path: Path, workspace: Workspace,
     ) -> dict[str, Any] | None:
@@ -1020,11 +1084,18 @@ class MachOAnalyzer(BaseAnalyzer):
         ghidra_proj = GhidraProject(workspace, self.config)
         ghidra_proj.create()
 
-        # Varsayilan scriptleri al
+        # Varsayilan scriptleri al. Betikler yalnız analyzeHeadless (CLI) yolunda koşar;
+        # PyGhidra yolu Ghidra API'sini doğrudan kullanır. Eski kod betik yoksa Ghidra'yı
+        # hiç çalıştırmadan None dönüyordu ve sonuç "Ghidra yok" gibi görünüyordu.
         scripts = self.ghidra.get_default_scripts()
-        if not scripts:
+        pyghidra_ok = bool(getattr(self.ghidra, "pyghidra_available", lambda: False)())
+        if not scripts and not pyghidra_ok:
             logger.warning("Ghidra scriptleri bulunamadi: %s", self.config.ghidra_scripts_dir)
-            return None
+            return {
+                "success": False,
+                "error": "Ghidra betikleri bulunamadı (%s); PyGhidra yokken analyzeHeadless "
+                         "yalnız bu betiklerle çıktı üretir" % self.config.ghidra_scripts_dir,
+            }
 
         try:
             result = self.ghidra.analyze(

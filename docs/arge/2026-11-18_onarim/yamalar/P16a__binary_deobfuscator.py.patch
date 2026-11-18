@@ -1,0 +1,37 @@
+--- a/karadul/deobfuscators/binary_deobfuscator.py	2026-11-18 10:37:38
++++ b/karadul/deobfuscators/binary_deobfuscator.py	2026-11-18 10:37:38
+@@ -112,6 +112,21 @@
+         ghidra_output = static_dir / "ghidra_output"
+         decompiled_src = ghidra_output / "decompiled"
+ 
++        # P16a / GHIDRA-09: statik aşama Ghidra'nın başarısız olduğunu yazdıysa yarım kalmış
++        # decompile dizini "deobfuscate edildi" diye kopyalanmaz; neden aşama hatasına geçer.
++        status_path = static_dir / "ghidra_status.json"
++        if status_path.is_file():
++            try:
++                status = json.loads(status_path.read_text(encoding="utf-8"))
++            except (OSError, ValueError) as exc:
++                status = {"success": False, "error": "ghidra_status.json okunamadı: %s" % exc}
++            if status.get("success") is False:
++                return BinaryDeobfuscationResult(
++                    success=False,
++                    errors=["Ghidra başarısız olduğu için decompile çıktısı kullanılmadı: %s"
++                            % (status.get("error") or "neden bildirilmedi")],
++                )
++
+         if not decompiled_src.exists() or not decompiled_src.is_dir():
+             # Fallback: ghidra_decompiled.json'dan
+             decompiled_json = static_dir / "ghidra_decompiled.json"
+@@ -136,6 +151,12 @@
+         c_files = sorted(decompiled_dest.glob("*.c"))
+         stats["input_files"] = len(c_files)
+         logger.info("Binary deobfuscation: %d C dosyasi isleniyor", len(c_files))
++        if not c_files:
++            # 0 girdiyle "başarılı" deobfuscation boş çıktıyı başarı gibi gösterir (P16a).
++            return BinaryDeobfuscationResult(
++                success=False, stats=stats,
++                errors=["Ghidra decompile dizini boş (0 .c dosyası): %s" % decompiled_src],
++            )
+ 
+         # Ghidra metadata'yi da kopyala
+         for meta_name in ("ghidra_functions.json", "ghidra_strings.json",

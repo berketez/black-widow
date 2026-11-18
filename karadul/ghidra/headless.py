@@ -238,8 +238,17 @@ class GhidraHeadless:
         ghidra_install = self.analyze_headless.parent.parent
         start = time.monotonic()
         log_lines: list[str] = []
-        all_success = True
         scripts_output: dict[str, Any] = {}
+        # Adım adı -> hata metni. Bir adımın düşmesi analizi durdurmaz ama sessiz de kalmaz:
+        # sonuç sözlüğüyle çağırana gider, ``static`` aşaması istatistiğe ve
+        # ``static/ghidra_status.json``'a yazar (GHIDRA-09).
+        step_errors: dict[str, str] = {}
+
+        def _step_failed(step: str, exc: BaseException, level: str = "WARN") -> None:
+            msg = "%s: %s" % (type(exc).__name__, exc)
+            step_errors[step] = msg
+            log_lines.append("%s: %s: %s" % (level, step, msg))
+            logger.warning("Ghidra adimi basarisiz (%s): %s", step, msg)
 
         logger.info("Ghidra (PyGhidra) baslatiliyor: %s", binary_path.name)
 
@@ -274,8 +283,7 @@ class GhidraHeadless:
                                 "PDB yuklendi: tip/isim recovery iyilestirildi"
                             )
                     except Exception as exc:
-                        log_lines.append("WARN: PDB yukleme: %s" % exc)
-                        logger.warning("PDB yukleme hatasi: %s", exc)
+                        _step_failed("pdb", exc)
 
                 # 1. Fonksiyon listesi
                 try:
@@ -286,8 +294,7 @@ class GhidraHeadless:
                         "Fonksiyonlar: %d" % func_data["total"]
                     )
                 except Exception as exc:
-                    log_lines.append("FAIL: fonksiyonlar: %s" % exc)
-                    all_success = False
+                    _step_failed("functions", exc, "FAIL")
 
                 # 2. String extraction (basarisizlik analizi durdurmaz)
                 try:
@@ -296,8 +303,7 @@ class GhidraHeadless:
                     self._save_output(output_dir, "strings.json", str_data)
                     log_lines.append("String'ler: %d" % str_data["total"])
                 except Exception as exc:
-                    log_lines.append("WARN: string'ler: %s" % exc)
-                    logger.warning("String extraction hatasi: %s", exc)
+                    _step_failed("strings", exc)
 
                 # 3. Call graph
                 try:
@@ -311,8 +317,7 @@ class GhidraHeadless:
                         )
                     )
                 except Exception as exc:
-                    log_lines.append("FAIL: call graph: %s" % exc)
-                    all_success = False
+                    _step_failed("call_graph", exc, "FAIL")
 
                 # 4. Decompilation (basarisizlik analizi durdurmaz)
                 try:
@@ -341,8 +346,7 @@ class GhidraHeadless:
                     )
                 except Exception as exc:
                     _all_funcs_for_pcode = None
-                    log_lines.append("WARN: decompile: %s" % exc)
-                    logger.warning("Decompilation hatasi: %s", exc)
+                    _step_failed("decompile", exc, "FAIL")
 
                 # 5. Type recovery (basarisizlik analizi durdurmaz)
                 try:
@@ -357,8 +361,7 @@ class GhidraHeadless:
                         )
                     )
                 except Exception as exc:
-                    log_lines.append("WARN: type recovery: %s" % exc)
-                    logger.warning("Type recovery hatasi: %s", exc)
+                    _step_failed("types", exc)
 
                 # 6. Cross-reference analysis (basarisizlik analizi durdurmaz)
                 try:
@@ -373,8 +376,7 @@ class GhidraHeadless:
                         )
                     )
                 except Exception as exc:
-                    log_lines.append("WARN: xref analysis: %s" % exc)
-                    logger.warning("Xref analysis hatasi: %s", exc)
+                    _step_failed("xrefs", exc)
 
                 # 8. P-Code (v1.5: decompile icinde toplandiysa JSONL yaz)
                 try:
@@ -406,8 +408,7 @@ class GhidraHeadless:
                         )
                     )
                 except Exception as exc:
-                    log_lines.append("WARN: pcode: %s" % exc)
-                    logger.warning("P-Code extraction hatasi: %s", exc)
+                    _step_failed("pcode", exc)
 
                 # 9. CFG extraction (basarisizlik analizi durdurmaz)
                 try:
@@ -422,8 +423,7 @@ class GhidraHeadless:
                         )
                     )
                 except Exception as exc:
-                    log_lines.append("WARN: cfg: %s" % exc)
-                    logger.warning("CFG extraction hatasi: %s", exc)
+                    _step_failed("cfg", exc)
 
                 # 11. FunctionID matches (basarisizlik analizi durdurmaz)
                 if self.config.binary_reconstruction.enable_function_id:
@@ -438,10 +438,7 @@ class GhidraHeadless:
                             % fid_data["total_matches"]
                         )
                     except Exception as exc:
-                        log_lines.append("WARN: function_id: %s" % exc)
-                        logger.warning(
-                            "FunctionID extraction hatasi: %s", exc,
-                        )
+                        _step_failed("function_id", exc)
 
                 # 11.5 BSim ingest + sorgu (opsiyonel)
                 if self.config.bsim.enabled:
@@ -501,11 +498,8 @@ class GhidraHeadless:
                                     exc,
                                 )
                         bsim_db.close()
-                    except ImportError:
-                        log_lines.append("WARN: BSim modulu bulunamadi")
                     except Exception as exc:
-                        log_lines.append("WARN: BSim: %s" % exc)
-                        logger.warning("BSim hatasi: %s", exc)
+                        _step_failed("bsim", exc)
 
                 # 10. Program bilgileri + birlesik sonuc
                 try:
@@ -532,23 +526,59 @@ class GhidraHeadless:
                     scripts_output["combined_results"] = combined
                     self._save_output(output_dir, "combined_results.json", combined)
                 except Exception as exc:
-                    log_lines.append("FAIL: combined results: %s" % exc)
+                    _step_failed("combined_results", exc, "FAIL")
 
         except Exception as exc:
-            all_success = False
-            log_lines.append("FATAL: %s" % exc)
-            logger.error("PyGhidra analiz hatasi: %s", exc)
+            _step_failed("fatal", exc, "FATAL")
+            logger.error("PyGhidra analiz hatasi: %s", step_errors["fatal"])
 
         duration = time.monotonic() - start
+        success, error = self._judge_outcome(scripts_output, step_errors)
+        if error:
+            log_lines.append("SONUC: basarisiz: %s" % error)
 
         return {
-            "success": all_success,
+            "success": success,
+            "error": error,
+            "step_errors": step_errors,
             "scripts_output": scripts_output,
             "ghidra_log": "\n".join(log_lines),
             "duration_seconds": round(duration, 3),
             "mode": "pyghidra",
-            "returncode": 0 if all_success else 1,
+            # PyGhidra yolunda süreç yok, çıkış kodu da yok (eski kod 0/1 uyduruyordu).
+            "returncode": None,
         }
+
+    @staticmethod
+    def _judge_outcome(
+        scripts_output: dict[str, Any], step_errors: dict[str, str],
+    ) -> tuple[bool, str | None]:
+        """Ghidra koşusu başarılı mı; değilse neden (GHIDRA-09).
+
+        Başarı = Ghidra en az bir fonksiyon döndürdü VE en az biri decompile edildi. Ürünün
+        aşağı akışı decompile edilmiş C'ye dayanır; fonksiyon listesi dolu ama hiçbir fonksiyon
+        decompile edilmemişse çıktı "başarılı görünen boş çıktı" olurdu. Öbür adımların
+        (dizgi, tip, xref, CFG, BSim …) düşmesi başarıyı bozmaz ama ``step_errors``'ta kalır.
+        """
+        if "fatal" in step_errors:
+            return False, "Ghidra analizi düştü: %s" % step_errors["fatal"]
+        if "functions" in step_errors:
+            return False, "fonksiyon listesi çıkarılamadı: %s" % step_errors["functions"]
+        funcs = scripts_output.get("functions") or {}
+        if not funcs.get("total"):
+            return False, "Ghidra hiç fonksiyon bulmadı (fonksiyon listesi boş)"
+        if "decompile" in step_errors:
+            return False, "decompile düştü: %s" % step_errors["decompile"]
+        dec = scripts_output.get("decompiled") or {}
+        if not dec.get("success"):
+            first = next(
+                (f.get("error") for f in dec.get("functions") or [] if f.get("error")), None,
+            )
+            return False, (
+                "decompile hiçbir fonksiyonda başarılı olmadı (%d denendi%s)"
+                % (dec.get("total_attempted") or 0, "; ilk hata: %s" % first if first else "")
+            )
+        return True, None
 
     # ------------------------------------------------------------------
     # PyGhidra analiz metodlari
