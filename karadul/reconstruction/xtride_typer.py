@@ -744,6 +744,10 @@ class XTrideTyper:
         """
         self.stats["total_functions"] += 1
         result = XTrideResult(func_name=func_name)
+        # TIP-11: desenler dizgi sabiti ve yorum içinde çalışmaz (``"version 2.5"``
+        # kayan nokta kanıtı değildir).  Sınırlayıcılar kalır, uzunluk korunur.
+        from karadul.reconstruction.c_type_recoverer import mask_noncode
+        func_code = mask_noncode(func_code)
 
         # Her kaynak icin tahminleri topla, sonra birlesik sonuc uret
         # candidates: var -> [(type, confidence, source, evidence), ...]
@@ -1104,15 +1108,20 @@ class XTrideTyper:
         code: str,
         add: Any,
     ) -> None:
-        """Float literal atamasindan tip cikar."""
-        for m in _FLOAT_LITERAL_RE.finditer(code):
-            var = m.group(1)
-            literal = m.group(2)
-            # Basit heuristik: 'f' suffix yoksa double, varsa float
-            if literal.endswith("f") or literal.endswith("F"):
-                add(var, "float", CONFIDENCE_OPERATOR, "float_literal", f"float literal {literal}")
-            else:
-                add(var, "double", CONFIDENCE_OPERATOR, "float_literal", f"float literal {literal}")
+        """Float literal atamasindan tip cikar.
+
+        TIP-11: yalnız sağ tarafında ÜST DÜZEYDE kayan nokta sabiti olan atama
+        (``x = 2.5;``, ``d = (double)l * 0.5;``); çağrı argümanındaki sabit
+        (``x = f(y, 2.5)``) ``x``'in tipini söylemez.  Kural c_type_recoverer ile
+        ortaktır (``float_literal_target``).
+        """
+        from karadul.reconstruction.c_type_recoverer import float_literal_target
+        for line in code.split("\n"):
+            var = float_literal_target(line)
+            if not var:
+                continue
+            typ = "float" if re.search(r"\d+\.\d+[fF]\b", line) else "double"
+            add(var, typ, CONFIDENCE_OPERATOR, "float_literal", "float literal (top level)")
 
     def _infer_sizeof(
         self,

@@ -104,6 +104,86 @@
       "test": "tests/test_p09_yapi.py::test_fonksiyon_tanimi_sutun_sifirdan",
       "find": "    if not head or not (head.isalpha() or head == \"_\"):",
       "replace": "    if not head:"
+    },
+    {
+      "id": "p09_k3_anahtar_ad",
+      "desc": "TIP-06: etiketler yalnız değişken adıyla birleşir",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_tip.py::test_kanit_kendi_fonksiyonuna_yazilir",
+      "find": "                self._type_usage.setdefault((func, var), []).extend(tags)",
+      "replace": "                self._type_usage.setdefault((\"\", var), []).extend(tags)"
+    },
+    {
+      "id": "p09_k3_ortme_yok",
+      "desc": "TIP-06: desenler dizgi ve yorum içinde de çalışır",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_tip.py::test_dizgideki_cagri_metni_kanit_degil",
+      "find": "    code_lines = mask_noncode(content).split(\"\\n\")",
+      "replace": "    code_lines = content.split(\"\\n\")"
+    },
+    {
+      "id": "p09_k3_ust_duzey",
+      "desc": "kayan nokta sabiti çağrı argümanında da sayılır",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_tip.py::test_float_literal_target",
+      "find": "        top_level.append(ch if depth == 0 and ch not in \"()\" else \" \")",
+      "replace": "        top_level.append(ch)"
+    },
+    {
+      "id": "p09_k3_esitlik_atama_degil",
+      "desc": "'a == 1.5' atama sayılır",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_tip.py::test_float_literal_target",
+      "find": "(?P<var>[A-Za-z_]\\w*)\\s*=(?!=)\\s*",
+      "replace": "(?P<var>[A-Za-z_]\\w*)\\s*=\\s*"
+    },
+    {
+      "id": "p09_k3_genislik",
+      "desc": "undefined4'e 8 baytlık işaretçi yazılır",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_tip.py::test_genislik_uyumsuz_tip_yazilmaz",
+      "find": "                if not _same_width(declared_type, inferred):\n                    continue",
+      "replace": "                if 0:\n                    continue"
+    },
+    {
+      "id": "p09_k3_genislik_esitligi",
+      "desc": "_same_width boyut eşitliğine bakmaz",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_tip.py::test_xtride_degisim_kurali",
+      "find": "    return old_w is not None and new_w is not None and old_w == new_w",
+      "replace": "    return old_w is not None and new_w is not None"
+    },
+    {
+      "id": "p09_k3_in_stack_fortran",
+      "desc": "C fonksiyonunda in_stack kanıtsız void * olur",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_tip.py::test_in_stack_c_fonksiyonunda_kanitsiz_isaretci_olmaz",
+      "find": "                var, tags, fortran=func_name.endswith(\"_\"),",
+      "replace": "                var, tags, fortran=True,"
+    },
+    {
+      "id": "p09_k3_xtride_ortme",
+      "desc": "TIP-11: XTRIDE dizgi içinde desen arar",
+      "module": "karadul/reconstruction/xtride_typer.py",
+      "test": "tests/test_p09_tip.py::test_xtride_dizgideki_cagri_kanit_degil",
+      "find": "        func_code = mask_noncode(func_code)",
+      "replace": "        func_code = func_code"
+    },
+    {
+      "id": "p09_k3_xtride_somut",
+      "desc": "TIP-11: long/ulong her tiple değişir",
+      "module": "karadul/pipeline/steps/_feedback_typing_extras.py",
+      "test": "tests/test_p09_tip.py::test_xtride_degisim_kurali",
+      "find": "        return new.endswith(\"*\")",
+      "replace": "        return True"
+    },
+    {
+      "id": "p09_k3_ghidra_genislik",
+      "desc": "katman 2e: Ghidra yüksek değişken tipi genişliğe bakmadan yazılır",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_tip.py::test_ghidra_yuksek_degisken_tipi_genislige_uyar",
+      "find": "                        if not _same_width(undef, resolved_type):\n                            continue",
+      "replace": "                        if 0:\n                            continue"
     }
   ]
 }

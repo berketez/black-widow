@@ -15,6 +15,26 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+_XTRIDE_UNDEFINED_WIDTH = {"undefined1": 1, "undefined2": 2, "undefined4": 4, "undefined8": 8}
+
+
+def xtride_replacement_ok(old_type: str, new_type: str) -> bool:
+    """XTRIDE tahmini Ghidra bildirimini değiştirebilir mi (TIP-11).
+
+    - ``long``/``ulong`` (Ghidra'nın somut 8 baytlık tamsayısı): yalnız işaretçi tipiyle.
+    - ``undefinedN``: yalnız genişliği N olan bilinen tiple (işaretçi = 8).
+    - Düz ``undefined`` (1 bayt, belirsiz) ve genişliği bilinmeyen tip (``struct``): hayır.
+    """
+    from karadul.reconstruction.c_type_recoverer import _same_width
+
+    new = new_type.strip()
+    if old_type in ("long", "ulong"):
+        return new.endswith("*")
+    if old_type not in _XTRIDE_UNDEFINED_WIDTH:
+        return False
+    return _same_width(old_type, new)
+
+
 def run_xtride_typing(
     *,
     ctx: Any,
@@ -36,6 +56,7 @@ def run_xtride_typing(
         xtride = XTrideTyper()
         xtride_total = 0
         xtride_improved = 0
+        xtride_rejected = 0
 
         xfiles = _target_files(decompiled_dir, incremental_files, iter_index)
         pat_cache: dict[str, re.Pattern[str]] = {}
@@ -53,7 +74,7 @@ def run_xtride_typing(
                         continue
                     if xvar not in pat_cache:
                         pat_cache[xvar] = re.compile(
-                            r"^(\s*)(?:undefined[1248]?|long|ulong)\s+"
+                            r"^(\s*)(?P<old>undefined[1248]?|long|ulong)\s+"
                             + re.escape(xvar)
                             + r"(\s*[;=])",
                             re.MULTILINE,
@@ -61,11 +82,19 @@ def run_xtride_typing(
                     decl_pat = pat_cache[xvar]
                     m = decl_pat.search(new_code)
                     if m:
-                        old = m.group(0)
+                        # TIP-11: Ghidra'nın tipi yalnız aynı genişlikte ve daha
+                        # bilgili tiple değişir.  ``long``/``ulong`` Ghidra'nın veri
+                        # akışıyla belirlediği somut tamsayıdır: yalnız işaretçi
+                        # kanıtıyla (8 bayt) değişir; ``double`` / ``uint32_t``'ye
+                        # dönmez.  ``undefinedN`` yalnız N baytlık tiple dolar.
+                        if not xtride_replacement_ok(m.group("old"), xinf.inferred_type):
+                            xtride_rejected += 1
+                            continue
                         new = (
-                            f"{m.group(1)}{xinf.inferred_type} {xvar}{m.group(2)}"
+                            f"{m.group(1)}{xinf.inferred_type} {xvar}{m.group(3)}"
                         )
-                        new_code = new_code.replace(old, new, 1)
+                        # Eşleşmenin kendi konumunda değiştir (ilk metin geçişinde değil).
+                        new_code = new_code[:m.start()] + new + new_code[m.end():]
                         changed = True
                         xtride_improved += 1
                 if changed:
@@ -78,6 +107,7 @@ def run_xtride_typing(
 
         stats["xtride_total_inferences"] = xtride_total
         stats["xtride_type_improvements"] = xtride_improved
+        stats["xtride_rejected_width_or_concrete"] = xtride_rejected
         stats["xtride_pattern_count"] = xtride.pattern_count
         logger.info(
             "  XTRIDE typing (iter %d): %d inferences, %d type improvements "

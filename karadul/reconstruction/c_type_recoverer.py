@@ -80,6 +80,69 @@ def _blank_ghidra_warnings(content: str) -> str:
     return _C_NONCODE_TOKEN.sub(_sub, content)
 
 
+def mask_noncode(content: str) -> str:
+    """Dizgi sabitlerinin İÇİNİ ve yorumların tamamını boşlukla ört.
+
+    Uzunluk ve satırlar korunur; dizgi/karakter sınırlayıcıları (``"``, ``'``)
+    kalır ki argüman konumları ve ``x = "..."`` biçimi görünür kalsın.  Tip
+    desenleri bu metinde çalışır: ``sdscatlen(s,"8.0.2",5)`` satırı artık
+    kayan nokta kanıtı değildir (TIP-06 / TIP-11).
+    """
+
+    def _sub(m: re.Match[str]) -> str:
+        tok = m.group(0)
+        if tok[0] == "'":
+            # Karakter sabiti tip deseni taşıyamaz ('.' ya da '\\0'); XTRIDE'ın
+            # ``x == 'a'`` -> char kuralı onu okur.  Olduğu gibi kalır.
+            return tok
+        if tok[0] == '"':
+            body = "".join("\n" if ch == "\n" else " " for ch in tok[1:-1])
+            end = tok[-1] if len(tok) > 1 and tok[-1] == tok[0] else (
+                " " if len(tok) > 1 and tok[-1] != "\n" else tok[-1:])
+            return tok[0] + body + end if len(tok) > 1 else tok
+        return "".join("\n" if ch == "\n" else " " for ch in tok)
+
+    return _C_NONCODE_TOKEN.sub(_sub, content)
+
+
+_ASSIGN_HEAD = re.compile(r"(?<![\w.>])(?P<var>[A-Za-z_]\w*)\s*=(?!=)\s*(?P<rhs>[^;]*)")
+_FLOAT_LITERAL = re.compile(r"(?<![\w.])\d+\.\d+(?:[eE][+\-]?\d+)?[fF]?(?![\w.])")
+
+
+def float_literal_target(code_line: str) -> str | None:
+    """Sağ tarafında ÜST DÜZEYDE (çağrı argümanı değil) kayan nokta sabiti olan atamanın hedefi.
+
+    ``code_line`` dizgi/yorumu örtülmüş satırdır (``mask_noncode``).  ``x = 2.5;``,
+    ``dVar1 = (double)lVar2 * 0.5;`` -> hedef; ``x = f(y, 2.5);`` -> None (sabit
+    çağrının argümanı, ``x``'in tipini söylemez); ``a == 1.5`` atama değil.
+    """
+    m = _ASSIGN_HEAD.search(code_line)
+    if not m:
+        return None
+    rhs = m.group("rhs")
+    depth = 0
+    i = 0
+    cast_close: set[int] = set()
+    # Tür dönüşümü parantezleri (``(double)``) derinlik saymaz: ``(TİP)`` ardından
+    # bir işlenen gelir.  Basit kural: yalnız tip sözcükleri ve ``*`` içeren
+    # parantez çifti dönüşümdür.
+    for cm in re.finditer(r"\(\s*(?:unsigned\s+|signed\s+|const\s+)*[A-Za-z_]\w*\s*\**\s*\)", rhs):
+        cast_close.add(cm.start())
+        cast_close.add(cm.end() - 1)
+    top_level = []
+    while i < len(rhs):
+        ch = rhs[i]
+        if ch == "(" and i not in cast_close:
+            depth += 1
+        elif ch == ")" and i not in cast_close:
+            depth -= 1
+        top_level.append(ch if depth == 0 and ch not in "()" else " ")
+        i += 1
+    if _FLOAT_LITERAL.search("".join(top_level)):
+        return m.group("var")
+    return None
+
+
 def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
     """Tek bir C dosyasini parse et, pattern'leri topla (process-safe).
 
@@ -125,8 +188,11 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
     switch_vars: dict[str, list[int]] = {}
     compare_vars: dict[str, list[int]] = {}
     string_context: dict[str, str] = {}
-    # type_usages: worker icinde filtrele, sadece match eden (var, tag) dondur
-    type_usages: dict[str, list[str]] = {}  # var -> [tag, ...]
+    # type_usages: {fonksiyon: {değişken: [etiket, ...]}}.  TIP-06: Ghidra her
+    # fonksiyonda uVar1, local_10, param_1 adlarını yeniden kullanır; etiketler
+    # yalnız ada göre birleşince bir fonksiyonun kanıtı başka fonksiyona tip
+    # olarak yazılıyordu.
+    type_usages_by_func: dict[str, dict[str, list[str]]] = {}
     case_comments: dict[str, dict[int, str]] = {}
 
     # Pre-compiled type usage regex'leri (her process'te bir kez)
@@ -143,11 +209,9 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
     _arith_re = re.compile(
         r"(\w+)\s*[+\-*/%]\s*(?:\w+|\d+)"  # var +/- ... arithmetic
     )
-    # v1.8: Float literal assignment -- var = ... * 3.14 veya var = 1.0e-5
-    _float_assign_re = re.compile(
-        r"(\w+)\s*=\s*[^;]*\b(\d+\.\d+(?:e[+\-]?\d+)?)\b",
-        re.IGNORECASE,
-    )
+    # Kayan nokta sabiti ataması: ``float_literal_target`` (üst düzey sabit,
+    # dizgi örtülü satır).  Eski desen satırın herhangi bir yerinde ``\d+.\d+``
+    # görmekle yetiniyordu: ``x = f(x, "8.0.2", 5)`` -> ``double x`` (TIP-06).
     # v1.8: malloc/calloc/realloc return capture: var = (TYPE *)malloc(...)
     _malloc_cast_re = re.compile(
         r"(\w+)\s*=\s*\(\s*([a-zA-Z_][\w\s]*\*)\s*\)\s*(?:malloc|calloc|realloc)\s*\("
@@ -182,8 +246,12 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
     # kurtarma ofseti tabanın bildirilen tipine göre ölçekler (TIP-07).
     declared_types: dict[str, dict[str, str]] = {}
 
-    for line in content.split("\n"):
+    # Desenler dizgi ve yorumu örtülmüş kopyada çalışır (TIP-06); dizgi içeriği
+    # gereken iki desen (``_STRING_ASSIGN``, ``_CASE_COMMENT``) ham satırı okur.
+    code_lines = mask_noncode(content).split("\n")
+    for raw_line, line in zip(content.split("\n"), code_lines):
         stripped = line.strip()
+        type_usages = type_usages_by_func.setdefault(current_func, {})
 
         # Fonksiyon tanimlama tespiti.  KISIT: tanım satırı sütun 0'dan başlar
         # (Ghidra çıktısı).  Eski kod girintisi atılmış satıra bakıyordu:
@@ -192,6 +260,7 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
         func_match = _FUNC_DEF.match(line)
         if func_match and _is_function_definition(func_match):
             current_func = func_match.group("fname")
+            type_usages = type_usages_by_func.setdefault(current_func, {})
             fdecl = declared_types.setdefault(current_func, {})
             for ptype, pvar in _split_params(func_match.group("params")):
                 fdecl.setdefault(pvar, ptype)
@@ -208,14 +277,14 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
             base = m.group("base")
             raw_type = m.group("type").strip()
             offset_str = m.group("offset")
-            field_accesses.append((base, offset_str, raw_type, current_func, line))
+            field_accesses.append((base, offset_str, raw_type, current_func, raw_line))
 
         # 2. Field access (read)
         for m in _FIELD_ACCESS_READ.finditer(line):
             base = m.group("base")
             raw_type = m.group("type").strip()
             offset_str = m.group("offset")
-            field_accesses.append((base, offset_str, raw_type, current_func, line))
+            field_accesses.append((base, offset_str, raw_type, current_func, raw_line))
 
         # 3. VTable assignment
         for m in _VTABLE_ASSIGN.finditer(line):
@@ -241,7 +310,7 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
                     switch_vars[last_var].append(val)
 
         # 4b. Case yorumlarindan enum isimleri
-        for ccm in _CASE_COMMENT.finditer(line):
+        for ccm in _CASE_COMMENT.finditer(raw_line):
             comment_text = ccm.group("comment")
             if comment_text and switch_vars:
                 comment_text = comment_text.strip().rstrip("*/").strip()
@@ -264,7 +333,7 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
                 compare_vars[var].append(val)
 
         # 6. String assigns
-        for sm in _STRING_ASSIGN.finditer(line):
+        for sm in _STRING_ASSIGN.finditer(raw_line):
             string_context[sm.group("var")] = sm.group("str")
 
         # 7. Type usage tracking ��� worker icinde filtrele (IPC azalt)
@@ -308,11 +377,10 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
         if sm_opt:
             var = sm_opt.group(1)
             type_usages.setdefault(var, []).append("arithmetic")
-        # v1.8: Float literal assignment
-        sm_opt = _float_assign_re.search(stripped)
-        if sm_opt:
-            var = sm_opt.group(1)
-            type_usages.setdefault(var, []).append("float_literal_assign")
+        # v1.8: Float literal assignment (üst düzey sabit; dizgi örtülü)
+        float_var = float_literal_target(stripped)
+        if float_var:
+            type_usages.setdefault(float_var, []).append("float_literal_assign")
         # v1.8: Typed malloc cast -- var = (double *)malloc(...)
         sm_opt = _malloc_cast_re.search(stripped)
         if sm_opt:
@@ -361,7 +429,7 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
         "switch_vars": switch_vars,
         "compare_vars": compare_vars,
         "string_context": string_context,
-        "type_usages": type_usages,
+        "type_usages": {f: u for f, u in type_usages_by_func.items() if u},
         "case_comments": case_comments,
         "declared_types": declared_types,
         "errors": errors,
@@ -377,6 +445,40 @@ _DECL_GENERAL = re.compile(
 _NOT_A_TYPE = frozenset({
     "return", "goto", "case", "else", "do", "break", "continue", "typedef", "sizeof",
 })
+
+
+# ``_TYPE_SIZES``'ta olmayan yaygın tip adları (Ghidra ve libc typedef'leri)
+_EXTRA_WIDTHS: dict[str, int] = {
+    "bool": 1, "_Bool": 1, "uchar": 1, "sbyte": 1, "signed char": 1, "unsigned char": 1,
+    "ushort": 2, "unsigned short": 2, "wchar16": 2,
+    "unsigned int": 4, "pid_t": 4, "uid_t": 4, "gid_t": 4, "mode_t": 4, "socklen_t": 4,
+    "wchar_t": 4, "wchar32": 4,
+    "longlong": 8, "ulonglong": 8, "long long": 8, "unsigned long": 8, "size_t": 8,
+    "ssize_t": 8, "off_t": 8, "time_t": 8, "intptr_t": 8, "uintptr_t": 8, "ptrdiff_t": 8,
+}
+
+
+def _same_width(old_type: str, new_type: str) -> bool:
+    """Ghidra'nın ``undefinedN`` tipi yerine yazılacak tip aynı genişlikte mi.
+
+    ``undefined1/2/4/8`` -> 1/2/4/8 bayt; düz ``undefined`` Ghidra'da 1 bayttır.
+    Yeni tipin genişliği bilinmiyorsa (``struct``, tanınmayan ad) False.
+    """
+    old = old_type.strip()
+    widths = {"undefined1": 1, "undefined2": 2, "undefined4": 4, "undefined8": 8,
+              "undefined": 1}
+    if old.endswith("*"):
+        old_w: int | None = 8
+    else:
+        old_w = widths.get(old)
+    new = re.sub(r"^(?:const|volatile)\s+", "", new_type.strip())
+    if new.endswith("*") or ("*" in new and "(" not in new):
+        new_w: int | None = 8
+    elif new == "undefined":
+        new_w = 1
+    else:
+        new_w = _TYPE_SIZES.get(new) or _EXTRA_WIDTHS.get(new)
+    return old_w is not None and new_w is not None and old_w == new_w
 
 
 def _is_function_definition(m: re.Match[str]) -> bool:
@@ -1088,7 +1190,8 @@ class CTypeRecoverer:
         self._compare_vars: dict[str, list[int]] = {}
         self._string_context: dict[str, str] = {}  # var -> string
         self._func_signatures: dict[str, dict[str, Any]] = {}
-        self._type_usage: dict[str, list[str]] = {}  # var -> [kullanim_context]
+        # (fonksiyon, değişken) -> [kullanım etiketi]  (TIP-06)
+        self._type_usage: dict[tuple[str, str], list[str]] = {}
         # case yorum isimleri: {var: {int_val: "kEnterKey"}}
         self._case_comment_names: dict[str, dict[int, str]] = {}
         # v1.8: Ghidra pcode_high_vars -- {func_name: {var_name: resolved_type}}
@@ -1609,11 +1712,10 @@ class CTypeRecoverer:
         # String context
         self._string_context.update(result["string_context"])
 
-        # Type usages — worker zaten filtrelemis, direkt merge et
-        for var, tags in result["type_usages"].items():
-            if var not in self._type_usage:
-                self._type_usage[var] = []
-            self._type_usage[var].extend(tags)
+        # Type usages: anahtar (fonksiyon, değişken) (TIP-06)
+        for func, usages in result["type_usages"].items():
+            for var, tags in usages.items():
+                self._type_usage.setdefault((func, var), []).extend(tags)
 
     # ------------------------------------------------------------------
     # Girdi Yukleme
@@ -2319,29 +2421,27 @@ class CTypeRecoverer:
         struct_signatures = self._build_struct_signatures(structs)
 
         # --- 2a. Context-aware variable type inference ---
-        # Her degisken icin kullanim tag'lerini analiz et
-        for var, tags in self._type_usage.items():
+        # TIP-06: etiketler (fonksiyon, değişken) anahtarlı; tip, kanıtın
+        # görüldüğü fonksiyonun KENDİ bildirimine yazılır.  Eskiden etiketler
+        # yalnız ada göre birleşiyor, tip ``_find_var_function``'ın bulduğu ilk
+        # ``return_in:`` fonksiyonuna yazılıyordu (kanıt bir fonksiyondan,
+        # bildirim başka fonksiyondan).
+        for (func_name, var), tags in self._type_usage.items():
             inferred = self._infer_type_from_context(var, tags, func_meta)
             if not inferred:
                 continue
-
-            # Bu degiskenin hangi fonksiyonlarda kullanildigini bul
-            # ve o fonksiyonlar icin per-func replacement olustur
             for tag in tags:
-                # declared:TYPE tag'inden fonksiyonu bul
-                if tag.startswith("declared:"):
-                    declared_type = tag[len("declared:"):]
-                    # Sadece undefined* tipleri degistir -- zaten dogru tiplere dokunma
-                    if not declared_type.startswith("undefined"):
-                        continue
-                    # Bu var hangi fonksiyonda? return_in veya call_arg tag'inden bul
-                    func_name = self._find_var_function(var, tags)
-                    if func_name:
-                        if func_name not in per_func:
-                            per_func[func_name] = {}
-                        old_decl = f"{declared_type} {var}"
-                        new_decl = f"{inferred} {var}"
-                        per_func[func_name][old_decl] = new_decl
+                if not tag.startswith("declared:"):
+                    continue
+                declared_type = tag[len("declared:"):]
+                # Sadece undefined* tipleri degistir -- zaten dogru tiplere dokunma.
+                # Genişlik uyumu: undefined4'e işaretçi yazılmaz.
+                if not declared_type.startswith("undefined"):
+                    continue
+                if not _same_width(declared_type, inferred):
+                    continue
+                per_func.setdefault(func_name, {})[
+                    f"{declared_type} {var}"] = f"{inferred} {var}"
 
         # --- 2b. Call-graph type propagation ---
         if call_graph and func_meta:
@@ -2357,7 +2457,8 @@ class CTypeRecoverer:
                     # Ghidra: "undefined8 param_1" -> "int param_1"
                     old_decl = f"undefined8 {param_name}"
                     new_decl = f"{param_type} {param_name}"
-                    if old_decl not in per_func[func_name]:
+                    if old_decl not in per_func[func_name] and _same_width(
+                            "undefined8", param_type):
                         per_func[func_name][old_decl] = new_decl
                     # undefined4 de olabilir
                     old_decl4 = f"undefined4 {param_name}"
@@ -2403,12 +2504,12 @@ class CTypeRecoverer:
                               "undefined8 *", "undefined4 *"):
                     old_decl = f"{undef} {var_name}"
                     if old_decl not in per_func[func_name]:
-                        # Boyut uyumu kontrol: undefined4 -> 4-byte tip,
-                        # undefined8 -> 8-byte tip
-                        if undef in ("undefined4", "undefined4 *"):
-                            resolved_size = _TYPE_SIZES.get(resolved_type, 8)
-                            if resolved_size > 4 and "*" not in resolved_type:
-                                continue
+                        # Boyut uyumu: Ghidra'nın yüksek değişken tipi C
+                        # bildirimindeki ``undefinedN`` ile aynı genişlikte
+                        # değilse yazılmaz (P09: ``undefined8 uVar22`` ->
+                        # ``uint`` ve ``undefined4`` -> işaretçi geçiyordu).
+                        if not _same_width(undef, resolved_type):
+                            continue
                         per_func[func_name][old_decl] = f"{resolved_type} {var_name}"
                         _ghidra_applied += 1
         if _ghidra_applied:
@@ -2422,33 +2523,26 @@ class CTypeRecoverer:
         # in_stack_XXXXXX params are extra arguments beyond register-passed ones.
         # For Fortran subs (trailing _), assign void * to all in_stack params.
         _instack_applied = 0
-        for var, tags in self._type_usage.items():
+        for (func_name, var), tags in self._type_usage.items():
             if not var.startswith("in_stack_"):
                 continue
-            # Hangi fonksiyonlarda kullaniliyor?
-            func_names: set[str] = set()
-            for tag in tags:
-                if tag.startswith("in_stack_usage:"):
-                    func_names.add(tag.split(":", 1)[1])
-                elif tag.startswith("return_in:"):
-                    func_names.add(tag.split(":", 1)[1])
-                elif tag.startswith("call_arg:"):
-                    parts = tag.split(":")
-                    if len(parts) >= 4 and parts[3]:
-                        func_names.add(parts[3])
-
-            # in_stack kullanim context'inden daha spesifik tip cikar
-            inferred_type = self._infer_in_stack_type(var, tags)
-
-            for func_name in func_names:
-                if func_name not in per_func:
-                    per_func[func_name] = {}
-                # Tum undefined varyantlarini dene
-                for undef in ("undefined8", "long", "undefined"):
-                    old_decl = f"{undef} {var}"
-                    if old_decl not in per_func[func_name]:
-                        per_func[func_name][old_decl] = f"{inferred_type} {var}"
-                        _instack_applied += 1
+            # in_stack kullanim context'inden daha spesifik tip cikar.  Kanıt
+            # yoksa yalnız Fortran adlı (sonu ``_``) fonksiyonda "başvuruyla
+            # geçirme" varsayımı (void *) uygulanır; C fonksiyonunda yığından
+            # gelen argüman işaretçi değildir.
+            inferred_type = self._infer_in_stack_type(
+                var, tags, fortran=func_name.endswith("_"),
+            )
+            if not inferred_type:
+                continue
+            per_func.setdefault(func_name, {})
+            # Yalnız Ghidra'nın bilinmeyen tipi (aynı genişlik).  ``long`` Ghidra'nın
+            # somut tipidir; kanıtsız ezilmez (TIP-11 kuralı).
+            for undef in ("undefined8",):
+                old_decl = f"{undef} {var}"
+                if old_decl not in per_func[func_name] and _same_width(undef, inferred_type):
+                    per_func[func_name][old_decl] = f"{inferred_type} {var}"
+                    _instack_applied += 1
         if _instack_applied:
             logger.info(
                 "in_stack Fortran param: %d tip degisimi uygulandi",
@@ -2458,11 +2552,8 @@ class CTypeRecoverer:
         # --- 2g. Arithmetic/cast type inference from tags (v1.8) ---
         # float_literal_assign, malloc_cast, cast_deref tags
         _arith_applied = 0
-        for var, tags in self._type_usage.items():
+        for (func_name, var), tags in self._type_usage.items():
             tag_set = set(tags)
-            func_name = self._find_var_function(var, tags)
-            if not func_name:
-                continue
 
             # malloc_cast:TYPE -- typed malloc cast
             for tag in tags:
@@ -2595,28 +2686,7 @@ class CTypeRecoverer:
         return None
 
     @staticmethod
-    def _find_var_function(var: str, tags: list[str]) -> str | None:
-        """Degiskenin ait oldugu fonksiyonu tag'lerden bul.
-
-        v1.7.2: call_arg tag'inde caller ismi de var (4. bolum).
-        """
-        for tag in tags:
-            if tag.startswith("return_in:"):
-                return tag.split(":", 1)[1]
-        # v1.7.2: call_arg:callee:idx:caller formatindan caller al
-        for tag in tags:
-            if tag.startswith("call_arg:"):
-                parts = tag.split(":")
-                if len(parts) >= 4 and parts[3]:
-                    return parts[3]
-        # v1.8: in_stack_usage tag'inden fonksiyon ismi
-        for tag in tags:
-            if tag.startswith("in_stack_usage:"):
-                return tag.split(":", 1)[1]
-        return None
-
-    @staticmethod
-    def _infer_in_stack_type(var: str, tags: list[str]) -> str:
+    def _infer_in_stack_type(var: str, tags: list[str], fortran: bool = True) -> str | None:
         """in_stack degiskeni icin en spesifik tipi cikar.
 
         Fortran pass-by-reference kurali: tum parametreler pointer.
@@ -2648,15 +2718,15 @@ class CTypeRecoverer:
 
         if "string_func_arg" in tag_set:
             return "char *"
-        if "float_literal_assign" in tag_set:
+        if fortran and "float_literal_assign" in tag_set:
             return "double *"
         if tag_set & {"pointer_deref", "pointer_arithmetic", "array_access"}:
             return "void *"
-        if tag_set & {"arithmetic", "comparison"}:
+        if fortran and tag_set & {"arithmetic", "comparison"}:
             return "int *"
 
-        # Varsayilan: Fortran pass-by-reference -> void *
-        return "void *"
+        # Varsayilan: Fortran pass-by-reference -> void *.  Fortran değilse kanıt yok.
+        return "void *" if fortran else None
 
     def _propagate_via_call_graph(
         self,
@@ -2703,7 +2773,7 @@ class CTypeRecoverer:
 
         # Call graph'tan caller -> callee iliskilerini cikar
         # ve type_usages'taki call_arg tag'lerinden propagate et
-        for var, tags in self._type_usage.items():
+        for (var_func, var), tags in self._type_usage.items():
             for tag in tags:
                 if not tag.startswith("call_arg:"):
                     continue
@@ -2727,11 +2797,9 @@ class CTypeRecoverer:
 
                 param_type = known_params[arg_idx]["type"]
 
-                # Caller fonksiyonu belirle
+                # Caller fonksiyonu: etiketin anahtarı (TIP-06)
                 if not caller_func:
-                    caller_func = self._find_var_function(var, tags)
-                if not caller_func:
-                    continue
+                    caller_func = var_func
 
                 if caller_func not in result:
                     result[caller_func] = {}

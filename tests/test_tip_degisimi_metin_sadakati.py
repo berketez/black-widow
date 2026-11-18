@@ -786,13 +786,15 @@ def test_parse_isci_uyari_metnini_kod_sanmaz(tmp_path):
 
     r1 = _parse_c_file_worker(str(with_w))
     r2 = _parse_c_file_worker(str(without_w))
+    # P09 (TIP-06): etiketler fonksiyon başına: {fonksiyon: {değişken: [etiket]}}
+    u1 = {v: t for usages in r1["type_usages"].values() for v, t in usages.items()}
     # Uyarı metninden türeyen sahte değişkenler yok
-    assert "ram" not in r1["type_usages"]
-    assert "instruction" not in r1["type_usages"]
-    assert not any("call_arg:block:" in t for tags in r1["type_usages"].values() for t in tags)
+    assert "ram" not in u1
+    assert "instruction" not in u1
+    assert not any("call_arg:block:" in t for tags in u1.values() for t in tags)
     for key in ("type_usages", "switch_vars", "compare_vars", "string_context",
                 "case_comments", "vtable_entries", "errors"):
         assert r1[key] == r2[key], key
     # Gerçek kullanım hâlâ yakalanıyor
-    assert "string_func_arg" in r1["type_usages"]["param_1"]
-    assert "declared:undefined8" in r1["type_usages"]["uVar1"]
+    assert "string_func_arg" in u1["param_1"]
+    assert "declared:undefined8" in u1["uVar1"]
