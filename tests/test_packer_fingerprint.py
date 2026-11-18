@@ -72,6 +72,12 @@ def _make_pe_with_sections(section_names: list[str], extra_data: bytes = b"") ->
     return dos + pe_sig + coff + opt + sections_blob + extra_data
 
 
+def _pe_entry(code: bytes, mimari: str = "x86") -> bytes:
+    """Giris noktasi .text'in ilk bayti olan gercek bolum tablolu PE (P02)."""
+    from scripts.measurement.p02_pozitif.pe_sentetik import pe_olustur
+    return pe_olustur(mimari, code, {})
+
+
 def _make_elf64_with_sections(section_names: list[str]) -> bytes:
     """Minimal ELF64 dosyasi (LE) section tablosu ile."""
     # E_IDENT: \x7fELF, class=2, data=1, version=1, OSABI=0, ABIVer=0, pad
@@ -349,18 +355,20 @@ class TestStringDetection:
 # ---------------------------------------------------------------------------
 
 class TestEntryPatternDetection:
+    # P02 / IMZA-04: desen artik yalniz PE giris noktasinda aranir; saplama
+    # gercek bolum tablolu 32-bit PE'nin .text basina (AddressOfEntryPoint)
+    # konur. Eski fikstur saplamayi basliklarin hemen ardina koyuyordu.
     def test_aspack_stub(self):
         # ASPack stub: 60 E8 03 00 00 00 E9 EB
         stub = b"\x60\xe8\x03\x00\x00\x00\xe9\xeb\x04\x5d"
-        # PE header'in hemen sonrasina yerlestir (max_offset 0x4000 icinde olmali)
-        data = _make_pe_with_sections([".text"]) + stub + b"\x00" * 100
+        data = _pe_entry(stub + b"\x00" * 100)
         det = PackerFingerprintDetector("dummy", _data=data)
         results = det.detect_by_entry_pattern()
         assert any(r.packer_name == "ASPack" for r in results)
 
     def test_telock_stub(self):
         stub = b"\x60\xe8\x00\x00\x00\x00\x5d\x81\xed"
-        data = _make_pe_with_sections([".text"]) + stub + b"\x00" * 100
+        data = _pe_entry(stub + b"\x00" * 100)
         det = PackerFingerprintDetector("dummy", _data=data)
         results = det.detect_by_entry_pattern()
         assert any(r.packer_name == "tElock" for r in results)
@@ -369,11 +377,9 @@ class TestEntryPatternDetection:
         data = _make_pe_with_sections([".text"]) + b"\x00" * 4096
         det = PackerFingerprintDetector("dummy", _data=data)
         results = det.detect_by_entry_pattern()
-        # bazi cok zayif (FSG = "\xbb") kurallar tetiklenebilir; ama kritik
-        # olanlar (ASPack, tElock) tetiklenmemeli
-        names = [r.packer_name for r in results]
-        assert "ASPack" not in names
-        assert "tElock" not in names
+        # Giris noktasi hesaplanamayan (bolumsuz) PE'de hicbir kural tetiklenmez
+        # (eskiden tek 0xBB bayti "FSG" sayiliyordu).
+        assert results == []
 
 
 # ---------------------------------------------------------------------------

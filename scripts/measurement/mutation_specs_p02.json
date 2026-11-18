@@ -225,6 +225,54 @@
       "find": "\"Exception trick ile debugger varligini tespit eder (zayif: olagan gunluk API'si)\",\n        0.30,",
       "replace": "\"Exception trick ile debugger varligini tespit eder (zayif: olagan gunluk API'si)\",\n        0.400,",
       "occurrence": 0
+    },
+    {
+      "id": "p02_imza04_giris_capasi",
+      "desc": "IMZA-04: desen giriş noktasına çapalanmaz, dosyada her yerde aranır",
+      "module": "karadul/analyzers/packer_fingerprint.py",
+      "test": "tests/test_p02_packer_giris.py::TestGirisNoktasi::test_desen_giris_disinda_aranmaz",
+      "find": "if rule.regex().match(data, entry_off) is None:",
+      "replace": "if rule.regex().search(data) is None:"
+    },
+    {
+      "id": "p02_imza04_mimari_kapisi",
+      "desc": "IMZA-04: kuralın mimarisi PE makine türüyle karşılaştırılmaz",
+      "module": "karadul/analyzers/packer_fingerprint.py",
+      "test": "tests/test_p02_packer_giris.py::TestGirisNoktasi::test_arm64_pe_x86_desenleri_atlanir",
+      "find": "if rule.platform != \"pe\" or rule.arch != layout.arch:",
+      "replace": "if rule.platform != \"pe\":"
+    },
+    {
+      "id": "p02_imza04_en_kisa_desen",
+      "desc": "IMZA-04: 6 bayttan kısa kurallar da kullanılır",
+      "module": "karadul/analyzers/packer_fingerprint.py",
+      "test": "tests/test_p02_packer_giris.py::TestGirisNoktasi::test_kisa_desen_kurali_atlanir",
+      "find": "_ENTRY_MIN_PATTERN_LEN = 6",
+      "replace": "_ENTRY_MIN_PATTERN_LEN = 1 or 1"
+    },
+    {
+      "id": "p02_imza04_upx_iki_bayt",
+      "desc": "IMZA-04: UPX kuralı yine iki bayt (60 BE)",
+      "module": "karadul/analyzers/packer_fingerprint.py",
+      "test": "tests/test_p02_packer_giris.py::TestGirisNoktasi::test_upx_saplamasi_giriste",
+      "find": "_EntryRule(\"60 BE ?? ?? ?? ?? 8D BE ?? ?? ?? ?? 57 83 CD FF\", \"UPX\"",
+      "replace": "_EntryRule(\"60 BE\", \"UPX\""
+    },
+    {
+      "id": "p02_imza04_giris_bolum_disi",
+      "desc": "IMZA-04: giriş RVA'sı hiçbir bölüme düşmese de dosya başı giriş sayılır",
+      "module": "karadul/analyzers/packer_fingerprint.py",
+      "test": "tests/test_p02_packer_giris.py::TestGirisNoktasi::test_giris_bolum_disinda",
+      "find": "        if entry_off is None:\n            return []",
+      "replace": "        if entry_off is None:\n            entry_off = 0x200"
+    },
+    {
+      "id": "p02_imza04_katman_sayaci",
+      "desc": "IMZA-04: aynı katmanın her kuralı ayrı katman sayılır (çok katman artırımı şişer)",
+      "module": "karadul/analyzers/packer_fingerprint.py",
+      "test": "tests/test_p02_packer_giris.py::TestKatmanSayaci::test_ayni_katmanin_kurallari_tek_katman",
+      "find": "                    if first_in_layer:\n                        existing.layers_matched += 1",
+      "replace": "                    if True:\n                        existing.layers_matched += 1"
     }
   ]
 }

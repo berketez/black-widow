@@ -252,38 +252,53 @@ _STRING_RULES: tuple[_StringRule, ...] = (
 # Registry — Entry point byte pattern (heuristic)
 # ---------------------------------------------------------------------------
 #
-# Sadece dosya basinda/PE entry yakininda aranan kisa imzalar.
-# Gercek entry point hesaplamasi pahali (PE header parse). Burada
-# "ilk N byte" + "dosyada en az 1 yerde" kombo aranir; ileride PE entry
-# offset'i parse edilirse confidence artirilabilir.
+# Desen PE'nin GIRIS NOKTASINDA (OptionalHeader.AddressOfEntryPoint -> dosya
+# ofseti) aranir; dosyanin baska bir yerinde aranmaz (IMZA-04: eskiden ilk
+# 0x2000-0x4000 baytin herhangi bir yerinde aranip tek 0xBB bayti "FSG"
+# sayiliyordu, masum PE'lerin 30/39'u). Desen en az _ENTRY_MIN_PATTERN_LEN
+# bayt (maskeli: "??" herhangi bir bayt). Kurallar 32-bit x86 saplama
+# kodudur (PUSHAD = 0x60 x86-64'te gecersiz); makine turu tutmazsa atlanir.
+
+_ENTRY_MIN_PATTERN_LEN = 6
+
 
 @dataclass(frozen=True)
 class _EntryRule:
-    """Entry-point/header byte pattern kuralı."""
-    pattern: bytes              # ilk eslesmesi entry yakini olmali
-    max_offset: int             # dosyanin ilk max_offset byte'inda olmali
+    """Giris noktasi bayt deseni kurali (onaltilik, "??" = joker)."""
+    pattern: str                # or. "60 BE ?? ?? ?? ?? 8D BE"
     packer: str
     category: str
     confidence: float = 0.65
     platform: str = "pe"
+    arch: str = "x86"           # PE makine turu (PE_MACHINE_ARCH degeri)
+
+    def regex(self) -> re.Pattern[bytes]:
+        parts = []
+        for tok in self.pattern.split():
+            parts.append(b"." if tok == "??" else re.escape(bytes([int(tok, 16)])))
+        return re.compile(b"".join(parts), re.DOTALL)
+
+    def length(self) -> int:
+        return len(self.pattern.split())
 
 
 _ENTRY_RULES: tuple[_EntryRule, ...] = (
-    # UPX classic stub: 60 BE ?? ?? ?? ?? 8D BE  (PUSHAD; MOV ESI, imm32; LEA EDI)
-    # Bu pattern UPX'in ana decompression stub baslangicidir (32-bit PE).
-    _EntryRule(b"\x60\xbe", 0x4000, "UPX", "compressor", 0.55, "pe"),
+    # UPX klasik 32-bit saplama: PUSHAD; MOV ESI, imm32; LEA EDI, [ESI+imm32];
+    # PUSH EDI; OR EBP, -1 (UPX 5.3.0 ile paketlenmis w32.exe girisinde dogrulandi).
+    _EntryRule("60 BE ?? ?? ?? ?? 8D BE ?? ?? ?? ?? 57 83 CD FF", "UPX", "compressor", 0.55),
     # ASPack stub: 60 E8 03 00 00 00 E9 EB 04 5D
-    _EntryRule(b"\x60\xe8\x03\x00\x00\x00\xe9\xeb", 0x4000, "ASPack", "compressor", 0.78, "pe"),
-    # FSG stub: BB ?? ?? ?? ?? BF ?? ?? ?? ??
-    _EntryRule(b"\xbb", 0x2000, "FSG", "compressor", 0.30, "pe"),  # cok zayif
-    # Petite stub: B8 ?? ?? ?? ?? 66 9C 60
-    _EntryRule(b"\x66\x9c\x60", 0x2000, "Petite", "compressor", 0.45, "pe"),
-    # MPRESS stub: imm push + jmp pattern (yaklasik)
-    _EntryRule(b"\x60\xe8\x00\x00\x00\x00", 0x4000, "MPRESS", "compressor", 0.40, "pe"),
+    _EntryRule("60 E8 03 00 00 00 E9 EB", "ASPack", "compressor", 0.78),
+    # FSG stub: MOV EBX, imm32; MOV EDI, imm32 (gercek FSG ornegiyle dogrulanmadi;
+    # yerelde FSG yok). Eskiden tek 0xBB bayti araniyordu.
+    _EntryRule("BB ?? ?? ?? ?? BF ?? ?? ?? ??", "FSG", "compressor", 0.30),
+    # Petite stub: MOV EAX, imm32; PUSHFW; PUSHAD (gercek ornekle dogrulanmadi)
+    _EntryRule("B8 ?? ?? ?? ?? 66 9C 60", "Petite", "compressor", 0.45),
+    # MPRESS stub: PUSHAD; CALL $+5 (yaklasik; tElock da boyle baslar)
+    _EntryRule("60 E8 00 00 00 00", "MPRESS", "compressor", 0.40),
     # Themida polymorphic prologue (yaklasik): EB ?? bytes + entropy
     # Saf byte pattern Themida icin guvenilir degil; sadece zayif ipucu.
     # tElock: 60 E8 00 00 00 00 5D 81 ED
-    _EntryRule(b"\x60\xe8\x00\x00\x00\x00\x5d\x81\xed", 0x4000, "tElock", "crypter", 0.78, "pe"),
+    _EntryRule("60 E8 00 00 00 00 5D 81 ED", "tElock", "crypter", 0.78),
 )
 
 
@@ -723,37 +738,49 @@ class PackerFingerprintDetector:
     # ---- katman 3: entry-point byte pattern ------------------------------
 
     def detect_by_entry_pattern(self) -> list[PackerFingerprint]:
-        """Dosya basinda kisa entry-point imzalari ara.
+        """PE giris noktasindaki saplama kodunu bilinen desenlerle karsilastir.
 
-        Not: PE entry RVA hesaplamasi simdilik yapilmiyor; sadece dosyanin ilk
-        `max_offset` byte'inda pattern aranir. Ileride PE parse ile tam entry
-        offset'inde dogrulama yapilirsa confidence artirilabilir.
+        AddressOfEntryPoint bolum tablosuyla dosya ofsetine cevrilir; desen
+        YALNIZ orada (giris noktasinin ilk baytindan baslayarak) aranir.
+        Giris noktasi hesaplanamazsa (PE degil, giris yok, bolum disinda)
+        bulgu uretilmez. Kuralin mimarisi PE makine turuyle tutmazsa atlanir
+        (or. ARM64 / x86-64 PE'de 32-bit x86 saplama desenleri).
         """
         data = self._load_data()
         if not data:
             return []
-        plat = self._get_platform()
+        if self._get_platform() != "pe":
+            return []
+        layout = parse_pe_layout(data)
+        if layout is None or layout.entry_rva == 0:
+            return []
+        entry_off = layout.rva_to_offset(layout.entry_rva, len(data))
+        if entry_off is None:
+            return []
 
         findings: list[PackerFingerprint] = []
         seen: set[str] = set()
 
         for rule in _ENTRY_RULES:
-            if rule.platform != "any" and plat != "unknown" and rule.platform != plat:
+            if rule.platform != "pe" or rule.arch != layout.arch:
                 continue
-            search_window = data[:rule.max_offset]
-            idx = search_window.find(rule.pattern)
-            if idx < 0:
+            if rule.length() < _ENTRY_MIN_PATTERN_LEN:
                 continue
             if rule.packer in seen:
+                continue
+            if rule.regex().match(data, entry_off) is None:
                 continue
             seen.add(rule.packer)
             findings.append(PackerFingerprint(
                 packer_name=rule.packer,
                 version=None,
                 confidence=rule.confidence,
-                evidence=[f"entry pattern @0x{idx:x}: {rule.pattern.hex()}"],
+                evidence=[
+                    f"giris noktasi deseni (RVA 0x{layout.entry_rva:x}, dosya "
+                    f"0x{entry_off:x}): {rule.pattern}"
+                ],
                 category=rule.category,
-                platform=plat if plat != "unknown" else rule.platform,
+                platform="pe",
                 layers_matched=1,
             ))
         return findings
@@ -777,11 +804,15 @@ class PackerFingerprintDetector:
             self.detect_by_entry_pattern(),
         ]
 
-        # packer adina gore aggregate
+        # packer adina gore aggregate. layers_matched = FARKLI katman sayisi:
+        # ayni katmanin birden cok kurali (or. uc UPX dizgisi) tek katmandir.
         merged: dict[str, PackerFingerprint] = {}
+        layers_seen: dict[str, set[int]] = {}
         for layer_idx, results in enumerate(layer_results):
             for fp in results:
                 key = fp.packer_name
+                first_in_layer = layer_idx not in layers_seen.setdefault(key, set())
+                layers_seen[key].add(layer_idx)
                 if key not in merged:
                     # ilk goruste kopyala (layers_matched=1 ile)
                     merged[key] = PackerFingerprint(
@@ -804,7 +835,8 @@ class PackerFingerprintDetector:
                             existing.evidence.append(ev)
                     # confidence: max + boost
                     existing.confidence = max(existing.confidence, fp.confidence)
-                    existing.layers_matched += 1
+                    if first_in_layer:
+                        existing.layers_matched += 1
                     # category/platform: daha spesifik olani tut (bos/any degil)
                     if existing.platform == "any" and fp.platform != "any":
                         existing.platform = fp.platform
