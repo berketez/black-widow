@@ -309,9 +309,11 @@ def _show_stage_result(stage_name: str, stage_result, ts: str) -> None:
     if intel_algorithms:
         lines.append(f"    [timestamp]{ts}[/]   [found]|-- Algorithms: {intel_algorithms}[/]")
     if intel_security and int(str(intel_security)) > 0:
+        # P15a: sayı olağan korumaları (yığın koruması vb.) da içerir; ALERT değil.
+        # Yükseltilmiş / çekirdek düzeyindekiler aşağıda ayrıca ALERT olarak basılır.
         lines.append(
             f"    [timestamp]{ts}[/]   "
-            f"[alert]|-- ALERT: {intel_security} security mechanism(s) detected![/]"
+            f"[found]|-- Güvenlik mekanizması: {intel_security}[/]"
         )
     if intel_app_type:
         lines.append(
@@ -369,33 +371,57 @@ def _show_intelligence_alerts(result, ts: str) -> None:
                 logger.debug("JSON parse basarisiz, atlaniyor", exc_info=True)
                 continue
 
-    if not intel_data:
+    if not isinstance(intel_data, dict) or not intel_data:
+        return
+
+    # P15a (P01 notu): rapor anahtarları kökte değil `architecture` altında ve güvenlik
+    # anahtarının adı `security` (binary_intelligence.IntelligenceReport.to_dict). Bu
+    # blok eskiden kökte `security_mechanisms` / `algorithms` / `subsystems` arıyordu;
+    # hiçbiri yoktu, yani hiçbir satır basılmıyordu (ölü kod).
+    arch = intel_data.get("architecture")
+    if not isinstance(arch, dict):
+        arch = intel_data
+    security = arch.get("security", arch.get("security_mechanisms")) or []
+    algorithms = arch.get("algorithms") or []
+    subsystems = arch.get("subsystems") or []
+    if not (security or algorithms or subsystems):
         return
 
     console.print()
 
-    # Security mechanisms
-    for sec in intel_data.get("security_mechanisms", []):
-        name = sec.get("name", sec) if isinstance(sec, dict) else str(sec)
-        console.print(
-            f"  [alert]!! ALERT: {name} detected![/]"
-        )
+    # Güvenlik mekanizmaları. Yalnız "elevated" / "kernel" düzeyi vurgulanır; bunlar
+    # ikili istihbaratın İDDİASIdır (kanıt sayısıyla birlikte basılır, rapordaki gibi),
+    # kesin bulgu değil. "standard" (ör. yığın koruması) olağan korumadır: bilgi satırı.
+    for sec in security:
+        if isinstance(sec, dict):
+            name = sec.get("name", "?")
+            risk = str(sec.get("risk_level") or "")
+            n_ev = len(sec.get("evidence") or [])
+        else:
+            name, risk, n_ev = str(sec), "", 0
+        if risk in ("elevated", "kernel"):
+            console.print(
+                f"  [alert]!! Güvenlik mekanizması iddiası: {name} ({risk}; kanıt {n_ev})[/]"
+            )
+        else:
+            label = f" ({risk})" if risk else ""
+            console.print(f"  [timestamp]{ts}[/]   [info]|-- Koruma: {name}{label}[/]")
 
-    # Algorithms
-    for algo in intel_data.get("algorithms", [])[:8]:
+    # Algoritmalar (ilk 8): kategori neyse o yazılır; her algoritma şifreleme değildir.
+    for algo in algorithms[:8]:
         if isinstance(algo, dict):
-            name = algo.get("name", "unknown")
+            name = algo.get("name", "?")
             category = algo.get("category", "")
             cat_str = f" ({category})" if category else ""
         else:
             name = str(algo)
             cat_str = ""
         console.print(
-            f"  [found]>> CRYPTO: {name}{cat_str}[/]"
+            f"  [found]>> ALGORİTMA: {name}{cat_str}[/]"
         )
 
     # Subsystems (ilk 5)
-    for sub in intel_data.get("subsystems", [])[:5]:
+    for sub in subsystems[:5]:
         if isinstance(sub, dict):
             name = sub.get("name", sub.get("subsystem", "unknown"))
         else:
