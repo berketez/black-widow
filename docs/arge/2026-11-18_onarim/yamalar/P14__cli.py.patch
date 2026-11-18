@@ -1,0 +1,155 @@
+--- a/karadul/cli.py	2026-11-18 12:58:43
++++ b/karadul/cli.py	2026-11-18 12:59:25
+@@ -286,14 +286,19 @@
+ #   3  kısmi: aşamaların hepsi başarılı ya da atlandı ama en az biri hata bildirdi
+ #      (StageResult.errors) ya da kendini `partial` işaretledi (reconstruct P-S1)
+ #   130 kullanıcı iptali (Ctrl+C)
+-EXIT_ANALYSIS_OK = 0
+-EXIT_ANALYSIS_FAILED = 1
+-EXIT_USAGE = 2
+-EXIT_ANALYSIS_PARTIAL = 3
++# P14: durum dizgileri, çıkış kodları ve kural `karadul.core.pipeline`'da tek kaynak
++# (`karadul batch` aynı kuralı kullanır); buradaki adlar geriye uyum için.
++from karadul.core.pipeline import (  # noqa: E402
++    EXIT_ANALYSIS_FAILED,
++    EXIT_ANALYSIS_OK,
++    EXIT_ANALYSIS_PARTIAL,
++    OUTCOME_COMPLETE,
++    OUTCOME_FAILED,
++    OUTCOME_PARTIAL,
++    analysis_outcome as _core_analysis_outcome,
++)
+ 
+-OUTCOME_COMPLETE = "tam"
+-OUTCOME_PARTIAL = "kismi"
+-OUTCOME_FAILED = "basarisiz"
++EXIT_USAGE = 2
+ 
+ # Aşama başına ekrana basılan en çok hata satırı (tam liste report.json'da).
+ _MAX_ERRORS_PER_STAGE = 5
+@@ -310,36 +315,10 @@
+     Returns:
+         ``status`` (tam / kismi / basarisiz), ``exit_code``, ``failed`` ve
+         ``partial`` ({aşama: [neden, ...]}; aşama sırası korunur).
++
++    Kural ``karadul.core.pipeline.analysis_outcome``'da (P14; ``batch`` ile ortak).
+     """
+-    stages = getattr(result, "stages", None) or {}
+-    failed: dict[str, list[str]] = {}
+-    partial: dict[str, list[str]] = {}
+-    for name, sr in stages.items():
+-        errors = [str(e) for e in (getattr(sr, "errors", None) or [])]
+-        if getattr(sr, "skipped", False):
+-            continue
+-        if not getattr(sr, "success", False):
+-            failed[name] = errors or ["aşama başarısız (neden bildirilmedi)"]
+-            continue
+-        stats = getattr(sr, "stats", None)
+-        reasons = list(errors)
+-        if isinstance(stats, dict) and stats.get("partial") is True:
+-            for r in stats.get("partial_reasons") or []:
+-                if str(r) not in reasons:
+-                    reasons.append(str(r))
+-            if not reasons:
+-                reasons.append("aşama kendini kısmi işaretledi (neden bildirilmedi)")
+-        if reasons:
+-            partial[name] = reasons
+-    if not stages:
+-        failed["pipeline"] = ["hiçbir aşama çalışmadı"]
+-    if failed:
+-        status, code = OUTCOME_FAILED, EXIT_ANALYSIS_FAILED
+-    elif partial:
+-        status, code = OUTCOME_PARTIAL, EXIT_ANALYSIS_PARTIAL
+-    else:
+-        status, code = OUTCOME_COMPLETE, EXIT_ANALYSIS_OK
+-    return {"status": status, "exit_code": code, "failed": failed, "partial": partial}
++    return _core_analysis_outcome(result)
+ 
+ 
+ def _print_analysis_outcome(outcome: dict) -> None:
+@@ -1640,7 +1619,9 @@
+     """
+     import json
+ 
+-    from karadul.batch import resolve_targets, analyze_parallel, PARALLEL_WORKERS, BatchTargetResult
++    from karadul.batch import (
++        STATUS_SKIPPED, analyze_parallel, batch_summary, resolve_targets,
++    )
+ 
+     _print_banner()
+ 
+@@ -1656,13 +1637,20 @@
+ 
+     project_root = Path(output_dir).resolve() if output_dir else Path.cwd()
+ 
++    # P14 / BORU-07: hedef durumu `analyze` ile aynı kuraldan (tam / kısmi / başarısız).
++    _labels = {
++        OUTCOME_COMPLETE: ("green", "TAM", "OK"),
++        OUTCOME_PARTIAL: ("yellow", "KISMI", "PARTIAL"),
++        OUTCOME_FAILED: ("red", "BASARISIZ", "FAIL"),
++        STATUS_SKIPPED: ("yellow", "ATLANDI", "SKIP"),
++    }
++
+     def on_complete(result):
++        color, label, _ = _labels.get(result.status, _labels[OUTCOME_FAILED])
+         if result.skipped:
+-            console.print(f"  [yellow]{result.name}: ATLANDI[/yellow] {result.skip_reason}")
+-        elif result.success:
+-            console.print(f"  [green]{result.name}: BASARILI[/green] ({result.duration:.1f}s)")
++            console.print(f"  [{color}]{result.name}: {label}[/{color}] {result.skip_reason}")
+         else:
+-            console.print(f"  [red]{result.name}: BASARISIZ[/red] ({result.duration:.1f}s)")
++            console.print(f"  [{color}]{result.name}: {label}[/{color}] ({result.duration:.1f}s)")
+ 
+     results = analyze_parallel(
+         resolved, project_root,
+@@ -1682,12 +1670,8 @@
+     summary_table.add_column("Duration", justify="right")
+ 
+     for i, r in enumerate(results, 1):
+-        if r.skipped:
+-            status = "[yellow]SKIP[/yellow]"
+-        elif r.success:
+-            status = "[green]OK[/green]"
+-        else:
+-            status = "[red]FAIL[/red]"
++        color, _, short = _labels.get(r.status, _labels[OUTCOME_FAILED])
++        status = f"[{color}]{short}[/{color}]"
+ 
+         summary_table.add_row(
+             str(i), r.name, r.category, status,
+@@ -1701,16 +1685,30 @@
+     # Rapor kaydet
+     report_path = project_root / "workspaces" / "batch_report.json"
+     report_path.parent.mkdir(parents=True, exist_ok=True)
++    summary = batch_summary(results)
+     report = {
+         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+-        "total_targets": len(results),
+-        "successful": sum(1 for r in results if r.success),
+-        "failed": sum(1 for r in results if not r.success and not r.skipped),
+-        "skipped": sum(1 for r in results if r.skipped),
++        **summary,
+         "results": [r.to_dict() for r in results],
+     }
+     report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False))
+     console.print(f"\n[dim]Rapor: {report_path}[/dim]")
++
++    # Başarısız / kısmi hedeflerin ilk nedeni stderr'e (tamamı batch_report.json'da).
++    for r in results:
++        groups = r.failure_reasons or r.partial_reasons
++        if r.status in (OUTCOME_FAILED, OUTCOME_PARTIAL) and groups:
++            stage_name, reasons = next(iter(groups.items()))
++            first = " ".join(str(reasons[0]).split()) if reasons else ""
++            err_console.print(f"  {r.name} ({r.status}) {stage_name}: {first}",
++                              markup=False, soft_wrap=True)
++    if summary["exit_code"] != EXIT_ANALYSIS_OK:
++        err_console.print(
++            f"Batch: {summary['complete']} tam, {summary['partial']} kısmi, "
++            f"{summary['failed']} başarısız, {summary['skipped']} atlandı "
++            f"(çıkış {summary['exit_code']}).", markup=False, soft_wrap=True,
++        )
++        sys.exit(summary["exit_code"])
+ 
+ 
+ # ---------------------------------------------------------------

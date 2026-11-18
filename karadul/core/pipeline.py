@@ -37,6 +37,66 @@ console = Console()
 
 
 # ---------------------------------------------------------------------------
+# Analiz durumu (tam / kismi / basarisiz) -- tek kaynak
+# ---------------------------------------------------------------------------
+# P14 / BORU-07: `karadul analyze` (P15a, MEK-01) ile `karadul batch` ayni kurali
+# kullanir; reconstruct asamasinin `reconstruct_status`'u (P-S1, finalize.py) da ayni
+# dizgileri tasir.
+OUTCOME_COMPLETE = "tam"
+OUTCOME_PARTIAL = "kismi"
+OUTCOME_FAILED = "basarisiz"
+
+# Cikis kodlari (`analyze --help`'teki anlam; 2 kullanim / ayar hatasi CLI'nin).
+EXIT_ANALYSIS_OK = 0
+EXIT_ANALYSIS_FAILED = 1
+EXIT_ANALYSIS_PARTIAL = 3
+
+
+def analysis_outcome(result: Any) -> dict:
+    """Boru hatti sonucundan analizin durumu, cikis kodu ve nedenleri.
+
+    Basarisiz: atlanmamis bir asama ``success=False`` ya da hicbir asama kosmadi.
+    Kismi: basarisiz asama yok ama atlanmamis bir asamanin ``errors`` listesi dolu
+    ya da ``stats["partial"]`` True (``partial_reasons`` nedenlere katilir; P-S1).
+    Atlanan asama hata degildir. Ghidra'nin dusen alt adimlari (P16a) ``static``
+    asamasinin ``errors``'una yazildigi icin kismi sayilir.
+
+    Returns:
+        ``status`` (tam / kismi / basarisiz), ``exit_code`` (0 / 3 / 1),
+        ``failed`` ve ``partial`` ({asama: [neden, ...]}; asama sirasi korunur).
+    """
+    stages = getattr(result, "stages", None) or {}
+    failed: dict[str, list[str]] = {}
+    partial: dict[str, list[str]] = {}
+    for name, sr in stages.items():
+        errors = [str(e) for e in (getattr(sr, "errors", None) or [])]
+        if getattr(sr, "skipped", False):
+            continue
+        if not getattr(sr, "success", False):
+            failed[name] = errors or ["aşama başarısız (neden bildirilmedi)"]
+            continue
+        stats = getattr(sr, "stats", None)
+        reasons = list(errors)
+        if isinstance(stats, dict) and stats.get("partial") is True:
+            for r in stats.get("partial_reasons") or []:
+                if str(r) not in reasons:
+                    reasons.append(str(r))
+            if not reasons:
+                reasons.append("aşama kendini kısmi işaretledi (neden bildirilmedi)")
+        if reasons:
+            partial[name] = reasons
+    if not stages:
+        failed["pipeline"] = ["hiçbir aşama çalışmadı"]
+    if failed:
+        status, code = OUTCOME_FAILED, EXIT_ANALYSIS_FAILED
+    elif partial:
+        status, code = OUTCOME_PARTIAL, EXIT_ANALYSIS_PARTIAL
+    else:
+        status, code = OUTCOME_COMPLETE, EXIT_ANALYSIS_OK
+    return {"status": status, "exit_code": code, "failed": failed, "partial": partial}
+
+
+# ---------------------------------------------------------------------------
 # Pipeline Context -- stage'ler arasi paylasilan veri
 # ---------------------------------------------------------------------------
 

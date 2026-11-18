@@ -96,6 +96,46 @@
       "test": "tests/test_p14_yaris.py::TestRealPhase3Levels::test_inline_detection_before_semantic_naming",
       "find": "    mutates_inputs = (\"final_decompiled_dir\",)",
       "replace": "    mutates_inputs = ()"
+    },
+    {
+      "id": "p14_07_eski_basari_olcutu",
+      "desc": "BORU-07: hedef başarısı yine 'herhangi bir aşama başarılıysa' (statik düşen hedef başarılı)",
+      "module": "karadul/batch.py",
+      "test": "tests/test_p14_batch.py::TestTargetStatus::test_failed_static_is_not_success",
+      "find": "        result.success = outcome[\"status\"] != OUTCOME_FAILED",
+      "replace": "        result.success = pipeline_result.success or any(sr.success for sr in pipeline_result.stages.values())"
+    },
+    {
+      "id": "p14_07_kismi_tam_sayilir",
+      "desc": "BORU-07: kısmi hedef toplu çıkış kodunu etkilemez (0 döner)",
+      "module": "karadul/batch.py",
+      "test": "tests/test_p14_batch.py::TestSummary",
+      "find": "    elif partial or skipped:",
+      "replace": "    elif skipped:"
+    },
+    {
+      "id": "p14_07_hic_analiz_yok_basarili",
+      "desc": "BORU-07: hiçbir hedef analiz edilmediğinde (hepsi atlandı) çıkış 1 değil",
+      "module": "karadul/batch.py",
+      "test": "tests/test_p14_batch.py::TestSummary",
+      "find": "    if failed or analyzed == 0:",
+      "replace": "    if failed:"
+    },
+    {
+      "id": "p14_07_cokme_yayilir",
+      "desc": "BORU-07: işçi çökmesi bitmemiş bütün hedefleri düşürür (yalıtılmış yeniden koşu yok)",
+      "module": "karadul/batch.py",
+      "test": "tests/test_p14_batch.py::TestWorkerCrashIsolated::test_only_crashing_target_fails",
+      "find": "                broken.append(args)\n                continue",
+      "replace": "                result = _failed_result(name, targets[name], \"Worker hatasi: BrokenProcessPool\")"
+    },
+    {
+      "id": "p14_07_kural_bayragi_okumaz",
+      "desc": "BORU-07 / P-S1: tek kaynak kural aşamanın partial bayrağını okumaz (yalnız bayrakla kısmi aşama 'tam')",
+      "module": "karadul/core/pipeline.py",
+      "test": "tests/test_p14_batch.py::TestTargetStatus::test_status_matches_analyze_rule",
+      "find": "        if isinstance(stats, dict) and stats.get(\"partial\") is True:",
+      "replace": "        if False:"
     }
   ]
 }

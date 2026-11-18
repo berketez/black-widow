@@ -19,16 +19,22 @@ import logging
 import time
 from typing import Any
 
-from karadul.core.pipeline import StageResult
+from karadul.core.pipeline import (  # noqa: F401  (durum dizgileri buradan da ihrac edilir)
+    OUTCOME_COMPLETE,
+    OUTCOME_FAILED,
+    OUTCOME_PARTIAL,
+    StageResult,
+)
 from karadul.pipeline.context import StepContext
 from karadul.pipeline.registry import Step, register_step
 
 logger = logging.getLogger(__name__)
 
-# Durum alaninin degerleri (stats["reconstruct_status"])
-OUTCOME_COMPLETE = "tam"          # basarili, hicbir adim hata bildirmedi
-OUTCOME_PARTIAL = "kismi"         # basarili ama en az bir adim hata bildirdi
-OUTCOME_FAILED = "basarisiz"      # proje kurulamadi ya da C adlandirma hatali
+# Durum alaninin degerleri (stats["reconstruct_status"]) core.pipeline'dan (P14: tek
+# kaynak; analyze / batch analiz durumuyla ayni dizgiler):
+#   OUTCOME_COMPLETE "tam"        basarili, hicbir adim hata bildirmedi
+#   OUTCOME_PARTIAL  "kismi"      basarili ama en az bir adim hata bildirdi
+#   OUTCOME_FAILED   "basarisiz"  proje kurulamadi ya da C adlandirma hatali
 
 # partial_reasons'ta en cok bu kadar (tekillestirilmis) hata iletisi; toplam
 # reconstruct_error_count'ta, tam liste StageResult.errors'ta.
