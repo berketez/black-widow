@@ -1,0 +1,38 @@
+--- a/karadul/cli.py	2026-11-18 18:32:42
++++ b/karadul/cli.py	2026-11-18 18:32:42
+@@ -676,8 +676,6 @@
+ @click.option("--no-lmdb-sigdb", "no_lmdb_sigdb", is_flag=True, default=False,
+               help="[v1.10.0] LMDB signature DB'yi KAPAT -> eski dict-based DB (~3GB RAM). "
+                    "Default LMDB aktif oldugundan asil anlamli bayrak budur; --lmdb-sigdb ile birlikte verilirse bu kazanir.")
+-@click.option("--parallel-naming", is_flag=True, default=False,
+-              help="[v1.10.0] ThreadPool tabanli paralel naming (3-5x hiz).")
+ @click.option("--no-cfg-iso", is_flag=True, default=False,
+               help="[v1.10.0] Default-aktif CFG isomorphism template matching'i KAPAT.")
+ @click.option("--no-computation-fusion", is_flag=True, default=False,
+@@ -718,7 +716,6 @@
+     experimental_step_registry: bool,      # v1.10.0 M4
+     lmdb_sigdb: bool,                      # v1.10.0 M4
+     no_lmdb_sigdb: bool,                   # R4: LMDB'yi kapat (default aktif)
+-    parallel_naming: bool,                 # v1.10.0 M4
+     no_cfg_iso: bool,                      # v1.10.0 M4
+     no_computation_fusion: bool,           # v1.10.0 M4
+     no_maxsmt_struct: bool,                # v1.10.0 M4
+@@ -820,8 +817,6 @@
+     # icin asil anlamli override budur. Ikisi birden verilirse --no kazanir.
+     if no_lmdb_sigdb:
+         cfg.perf.use_lmdb_sigdb = False
+-    if parallel_naming:
+-        cfg.perf.parallel_naming = True
+     if no_cfg_iso:
+         cfg.computation_recovery.enable_cfg_iso = False
+     if no_computation_fusion:
+--- a/tests/test_computation_integration.py	2026-11-18 18:33:14
++++ b/tests/test_computation_integration.py	2026-11-18 18:33:14
+@@ -411,7 +411,6 @@
+         # Yeni v1.10.0 flag'ler
+         assert "experimental_step_registry" in option_names
+         assert "lmdb_sigdb" in option_names
+-        assert "parallel_naming" in option_names
+         assert "no_cfg_iso" in option_names
+         assert "no_computation_fusion" in option_names
+         assert "no_maxsmt_struct" in option_names

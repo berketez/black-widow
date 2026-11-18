@@ -20,10 +20,6 @@ from typing import Any
 
 from karadul.pipeline.steps._feedback_naming_bindiff import run_bindiff
 from karadul.pipeline.steps._feedback_naming_merger import run_name_merger
-from karadul.pipeline.steps._feedback_naming_parallel import (
-    _run_with_parallel_runner,
-    _should_use_parallel_runner,
-)
 from karadul.pipeline.steps._feedback_naming_refdiff import run_reference_differ
 
 logger = logging.getLogger(__name__)
@@ -113,9 +109,8 @@ def run_naming_phase(
         stats=stats, errors=errors, artifacts=artifacts,
         func_count=func_count,
     )
-    # Full mode basariliysa c_namer output_dir'u kullanilir.
-    # v1.10.0 H2: ParallelNamingRunner yolunda output_files bos — disk'e
-    # yazilmadigi icin decompiled_dir yonlendirmesi yapilmamali; aksi halde
+    # Full mode basariliysa c_namer output_dir'u kullanilir. Cikti dosyasi
+    # yazilmadiysa (output_files bos) decompiled_dir yonlendirilmez; aksi halde
     # downstream bos bir dizin ile calisir.
     _has_output = bool(getattr(naming_result, "output_files", None))
     if (
@@ -317,33 +312,21 @@ def _run_c_namer(
             reconstructed_dir, output_dir, iter_index,
         )
 
-        # M2 T2: feature flag aktifse file-level ThreadPool runner,
-        # degilse klasik analyze_and_rename (default).
-        if _should_use_parallel_runner(pc.config, c_namer):
-            naming_result = _run_with_parallel_runner(
-                c_namer=c_namer, namer_dir=namer_dir,
-                namer_output=namer_output,
-                functions_json=functions_json,
-                strings_json=strings_json,
-                call_graph_json=call_graph_json,
-                xrefs_json=xrefs_json,
-                extracted_names=extracted_names,
-                config=pc.config, stats=stats, errors=errors,
-            )
-        else:
-            # Ön ad künyesi (plan v2.2 N1 adım 3): stages.py Faz 2 tohumuna koyar. Yoksa
-            # (KS-1 kapalı) c_namer bugünkü çağrıyla, künyesiz çalışır.
-            meta_kwargs: dict[str, Any] = {}
-            pre_name_meta = _pre_name_meta(ctx)
-            if pre_name_meta is not None:
-                meta_kwargs["pre_name_meta"] = pre_name_meta
-            naming_result = c_namer.analyze_and_rename(
-                namer_dir, functions_json, strings_json,
-                call_graph_json, namer_output,
-                pre_names=extracted_names or None,
-                xrefs_json=xrefs_json if xrefs_json.exists() else None,
-                **meta_kwargs,
-            )
+        # P13a / AD-12 (K-3 A5): paralel ad koşucusu (perf.parallel_naming) silindi; hiç
+        # çalışmıyordu (CVariableNamer'da beklediği dosya başı yöntemler yoktu).
+        # Ön ad künyesi (plan v2.2 N1 adım 3): stages.py Faz 2 tohumuna koyar. Yoksa
+        # (KS-1 kapalı) c_namer bugünkü çağrıyla, künyesiz çalışır.
+        meta_kwargs: dict[str, Any] = {}
+        pre_name_meta = _pre_name_meta(ctx)
+        if pre_name_meta is not None:
+            meta_kwargs["pre_name_meta"] = pre_name_meta
+        naming_result = c_namer.analyze_and_rename(
+            namer_dir, functions_json, strings_json,
+            call_graph_json, namer_output,
+            pre_names=extracted_names or None,
+            xrefs_json=xrefs_json if xrefs_json.exists() else None,
+            **meta_kwargs,
+        )
         if naming_result.success:
             stats["variables_renamed"] = naming_result.total_renamed
             stats["naming_by_strategy"] = naming_result.by_strategy

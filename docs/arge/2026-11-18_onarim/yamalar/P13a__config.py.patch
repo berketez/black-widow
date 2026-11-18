@@ -1,0 +1,22 @@
+--- a/karadul/config.py	2026-11-18 18:32:42
++++ b/karadul/config.py	2026-11-18 18:32:42
+@@ -787,11 +787,6 @@
+ 
+     lmdb_l1_cache_size: Sicak sembol lookup icin in-process LRU cache boyutu.
+     sig_lmdb_path: None ise ~/.karadul/signatures.lmdb kullanilir.
+-
+-    Naming ThreadPool paralelligi (M2 T2):
+-      parallel_naming=False default -- eski ProcessPool yolu korunur.
+-      True ise karadul.naming.ParallelNamingRunner kullanilir (file-level
+-      ThreadPool, 3-5x hiz hedefi).
+ 
+     naming_max_workers: None -> CPU_PERF_CORES kullanilir.
+     naming_chunk_size: Her thread'e verilen c_file sayisi (cache-friendly
+@@ -813,7 +808,6 @@
+     use_lmdb_sigdb: bool = True
+     sig_lmdb_path: Optional[Path] = None
+     lmdb_l1_cache_size: int = 8192
+-    parallel_naming: bool = False
+     naming_max_workers: Optional[int] = None
+     naming_chunk_size: int = 256
+     naming_chunk_timeout: float = 60.0
