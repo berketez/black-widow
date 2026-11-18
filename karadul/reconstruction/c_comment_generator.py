@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from karadul.config import CPU_PERF_CORES, Config
-from karadul.reconstruction.c_algorithm_id import AlgorithmMatch
+from karadul.reconstruction.c_algorithm_id import CRYPTO_APIS, AlgorithmMatch
 
 logger = logging.getLogger(__name__)
 
@@ -1662,10 +1662,20 @@ class CCommentGenerator:
                     f"confidence: {algo.confidence:.0%})"
                 )
 
-        # @security -- hassas islev tespiti
-        security_note = self._detect_security_relevance(func_name, params)
+        # @security -- hassas islev tespiti (kanıt kuralları: _detect_security_relevance).
+        # Ad, ancak Ghidra'nın bu adresteki adıyla aynıysa ikilinin kendi simgesidir.
+        own_symbol = bool(meta) and meta.get("name") == func_name
+        ghidra_params = [
+            p.get("name") for p in (meta.get("parameters") or []) if isinstance(p, dict)
+        ] if own_symbol else []
+        security_note, security_evidence = self._detect_security_relevance(
+            func_name, params, callees=callees, own_symbol=own_symbol,
+            param_names=ghidra_params,
+        )
         if security_note:
             fields.append(f"@security {security_note}")
+            if security_evidence:
+                fields.append(f"@security_evidence {security_evidence}")
 
         # Cok kisa header'lari atla (sadece brief varsa ve generic ise)
         if len(fields) <= 2 and "FUN_" in func_name:
@@ -1816,29 +1826,52 @@ class CCommentGenerator:
         return _split_name(func_name).capitalize()
 
     @staticmethod
-    def _detect_security_relevance(func_name: str, params: str) -> str:
-        """Fonksiyonun guvenlikle ilgili olup olmadigini kontrol et."""
-        name_lower = func_name.lower()
+    def _detect_security_relevance(
+        func_name: str,
+        params: str = "",
+        callees: Any = (),
+        own_symbol: bool = False,
+        param_names: Any = (),
+    ) -> tuple[str, str]:
+        """``@security`` etiketi ve kanıt satırı: ``(etiket, kanıt)``; yoksa ``("", "")``.
 
-        if any(kw in name_lower for kw in ("crypt", "cipher", "aes", "rsa", "sha", "hash")):
-            return "Handles cryptographic operations"
-        if any(kw in name_lower for kw in ("auth", "login", "password", "credential", "token")):
-            return "Handles authentication/credentials"
-        if any(kw in name_lower for kw in ("key", "secret", "private")):
-            return "Handles sensitive key material"
-        if any(kw in name_lower for kw in ("cert", "x509", "ssl", "tls")):
-            return "Handles certificates/TLS"
-        if any(kw in name_lower for kw in ("sandbox", "entitle", "privilege", "root")):
-            return "Handles privilege/sandbox operations"
-        if any(kw in name_lower for kw in ("inject", "hook", "patch", "detour")):
-            return "Code injection/hooking mechanism"
+        Kurallar (bkz. "@security kanıt kuralları", TIP-08):
+        - Güçlü etiket ("Handles ...") yalnız çağrı kanıtıyla: fonksiyonun çağırdıkları
+          arasında o sınıfın gerçek API'si varsa; kanıt satırı API adlarını taşır.
+        - Ad kaynaklı etiket yalnız ad ikilinin KENDİ simgesiyse (``own_symbol``; Karadul'un
+          önerdiği ad değil) ve adın SÖZCÜKLERİNDEN biri sözlükte tam olarak geçiyorsa verilir;
+          metni "By name only: ..." diye nitelenir. Kanca/enjeksiyon etiketi addan verilmez.
+        - Parametre etiketi yalnız Ghidra'nın parametre adlarından (``param_names``), yine
+          "By parameter name only" niteliğiyle. ``params`` (imza metni) kullanılmaz: Karadul'un
+          yeniden adlandırdığı parametreler kanıt değildir.
+        """
+        hits: dict[str, list[str]] = {}
+        for callee in callees or ():
+            if not isinstance(callee, str):
+                continue
+            api = _security_api_name(callee)
+            cls = _security_call_class(api)
+            if cls and api not in hits.setdefault(cls, []):
+                hits[cls].append(api)
+        for cls, _phrase in _SECURITY_CLASSES:
+            if hits.get(cls):
+                return (
+                    _SECURITY_STRONG_LABELS[cls],
+                    "calls " + ", ".join(hits[cls][:_SECURITY_EVIDENCE_MAX]),
+                )
 
-        # Parametre bazli tespit
-        param_lower = params.lower()
-        if any(kw in param_lower for kw in ("password", "key", "secret", "token")):
-            return "Receives sensitive parameters"
+        if own_symbol and func_name and not func_name.startswith("FUN_"):
+            words = _name_words(func_name)
+            for cls, phrase in _SECURITY_CLASSES:
+                vocab = _SECURITY_NAME_WORDS.get(cls)
+                if vocab and _words_match(words, vocab):
+                    return f"By name only: {phrase} (no call evidence)", ""
 
-        return ""
+        for pname in param_names or ():
+            if isinstance(pname, str) and _words_match(_name_words(pname), _SECURITY_PARAM_WORDS):
+                return "By parameter name only: receives sensitive data (no call evidence)", ""
+
+        return "", ""
 
     @staticmethod
     def _index_algorithms(
@@ -2033,6 +2066,167 @@ class CCommentGenerator:
 # ---------------------------------------------------------------------------
 # Modul seviyesi yardimci fonksiyonlar
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# @security kanıt kuralları (2026-11-18 düzeltmesi, TIP-08)
+# ---------------------------------------------------------------------------
+# Eski kural etiketi adın küçük harfli hâlinde alt dize aramasıyla veriyordu: "patch" ⊂
+# "dispatcher" → "Code injection/hooking", "token" ⊂ ifade çözümleyicisi → "authentication",
+# "key" ⊂ Redis anahtar adları → "sensitive key material", "rsa" ⊂ "traversal", "sha" ⊂
+# "shared". 119 ikilide 4 327 etiket; ad Karadul'un kendi (yanlış olabilen) önerisi de
+# olabiliyordu.
+#
+# Yeni kural:
+#   1. "Handles ..." (güçlü) etiketi yalnız ÇAĞRI kanıtıyla: fonksiyonun çağırdıkları arasında
+#      sınıfın gerçek API'si (aşağıdaki tablolar; kripto API'leri c_algorithm_id.CRYPTO_APIS
+#      ile aynı kaynaktan) bulunmalı. API adları "@security_evidence calls ..." satırına yazılır.
+#   2. Ad kaynaklı etiket yalnız ad ikilinin kendi simgesiyse (Ghidra'nın o adresteki adı;
+#      Karadul'un önerdiği ad değil) ve adın sözcüklerinden biri sözlükte TAM geçiyorsa;
+#      metin "By name only: ... (no call evidence)". Belirsiz sözcükler ("key", "token",
+#      "hash", "root", "login", "hook", "patch") sözlükte yok; kanca/enjeksiyon addan verilmez.
+#   3. Parametre etiketi yalnız Ghidra'nın parametre adlarından, "By parameter name only".
+
+#: (sınıf, ad kaynaklı etiket ifadesi); sıra öncelik sırasıdır.
+_SECURITY_CLASSES: tuple[tuple[str, str], ...] = (
+    ("crypto", "cryptographic operations"),
+    ("auth", "authentication/credentials"),
+    ("key", "sensitive key material"),
+    ("tls", "certificates/TLS"),
+    ("privilege", "privilege/sandbox operations"),
+    ("injection", "code injection/hooking"),
+)
+_SECURITY_STRONG_LABELS: dict[str, str] = {
+    "crypto": "Handles cryptographic operations",
+    "auth": "Handles authentication/credentials",
+    "key": "Handles sensitive key material",
+    "tls": "Handles certificates/TLS",
+    "privilege": "Handles privilege/sandbox operations",
+    "injection": "Code injection/hooking mechanism",
+}
+#: Kanıt satırında en çok kaç API adı yazılır.
+_SECURITY_EVIDENCE_MAX: int = 3
+
+_CRYPTO_API_CATEGORIES = frozenset({"symmetric_cipher", "hash", "mac", "kdf", "asymmetric", "random"})
+_SECURITY_CALL_EXACT: dict[str, frozenset[str]] = {
+    "crypto": frozenset(
+        n for n, i in CRYPTO_APIS.items() if i.get("category") in _CRYPTO_API_CATEGORIES
+    ),
+    "tls": frozenset(n for n, i in CRYPTO_APIS.items() if i.get("category") == "protocol"),
+    "key": frozenset(n for n, i in CRYPTO_APIS.items() if i.get("category") == "key_management"),
+    "auth": frozenset({
+        "pam_authenticate", "pam_start", "pam_acct_mgmt", "pam_setcred", "pam_open_session",
+        "pam_chauthtok", "getspnam", "getspnam_r", "crypt", "crypt_r", "getpass",
+        "readpassphrase", "LogonUserA", "LogonUserW", "LsaLogonUser", "CredReadA", "CredReadW",
+        "CredWriteA", "CredWriteW", "AuthorizationCreate", "AuthorizationCopyRights",
+        "SecKeychainFindGenericPassword", "SecKeychainFindInternetPassword",
+    }),
+    "privilege": frozenset({
+        "setuid", "seteuid", "setreuid", "setresuid", "setgid", "setegid", "setregid",
+        "setresgid", "setgroups", "initgroups", "chroot", "sandbox_init",
+        "sandbox_init_with_parameters", "AuthorizationExecuteWithPrivileges",
+        "AdjustTokenPrivileges", "ImpersonateLoggedOnUser", "cap_set_proc", "capset",
+    }),
+    "injection": frozenset({
+        "WriteProcessMemory", "CreateRemoteThread", "CreateRemoteThreadEx",
+        "NtWriteVirtualMemory", "ZwWriteVirtualMemory", "VirtualAllocEx", "VirtualProtectEx",
+        "QueueUserAPC", "NtQueueApcThread", "SetWindowsHookExA", "SetWindowsHookExW",
+        "SetThreadContext", "DetourAttach", "DetourTransactionBegin", "MSHookFunction",
+        "MSHookMessageEx", "rebind_symbols", "mach_vm_write", "thread_create_running",
+    }),
+}
+#: Kitaplık önekleri (büyük/küçük harf duyarlı; önek API ailesinin kendisidir).
+_SECURITY_CALL_PREFIXES: dict[str, tuple[str, ...]] = {
+    "crypto": (
+        "EVP_", "SHA1_", "SHA224_", "SHA256_", "SHA384_", "SHA512_", "MD4_", "MD5_", "HMAC_",
+        "AES_", "DES_", "RSA_", "DSA_", "DH_", "ECDSA_", "ECDH_", "EC_KEY_", "BN_mod_exp",
+        "CC_SHA", "CC_MD5", "CCCrypt", "CCHmac", "CCKeyDerivation", "BCrypt",
+        # Windows CryptoAPI: ailenin kripto işlevleri (A/W ekleri önekle kapsanır).
+        # CryptStringToBinary / CryptBinaryToString kodlamadır (base64), kripto değildir.
+        "CryptAcquireContext", "CryptGenRandom", "CryptCreateHash", "CryptHashData",
+        "CryptDeriveKey", "CryptGenKey", "CryptEncrypt", "CryptDecrypt", "CryptImportKey",
+        "CryptExportKey", "CryptSignHash", "CryptVerifySignature", "CryptProtectData",
+        "CryptUnprotectData",
+        "crypto_", "mbedtls_", "gcry_", "nettle_",
+    ),
+    "tls": (
+        "SSL_", "TLS_", "TLSv1", "DTLS", "X509_", "SecTrust", "SecCertificate", "gnutls_",
+    ),
+    "key": ("SecItem", "SecKeychain"),
+}
+
+
+def _security_api_name(callee: str) -> str:
+    """Çağrı grafiğindeki adı API adına indir: sürüm eki (``@GLIBC_2.17``) ve Mach-O
+    alt çizgisi (``_SHA256_Init``) atılır."""
+    name = callee.split("@", 1)[0].strip()
+    if name.startswith("_") and not name.startswith("__"):
+        name = name[1:]
+    return name
+
+
+def _security_call_class(api: str) -> str:
+    """API adının güvenlik sınıfı (yoksa boş): önce tam ad, sonra kitaplık öneki."""
+    for cls, _phrase in _SECURITY_CLASSES:
+        if api in _SECURITY_CALL_EXACT.get(cls, ()):
+            return cls
+    if "PrivateKey" in api:
+        return "key"
+    for cls, _phrase in _SECURITY_CLASSES:
+        if api.startswith(_SECURITY_CALL_PREFIXES.get(cls, ())):
+            return cls
+    return ""
+
+
+#: Ad sözcükleri (küçük harf, tam sözcük). Sondaki rakamlar atılmış hâli de denenir
+#: (sha256 → sha, aes128 → aes). Belirsiz sözcükler bilerek yok. İkililer ardışık sözcüktür.
+_SECURITY_NAME_WORDS: dict[str, frozenset] = {
+    "crypto": frozenset({
+        "encrypt", "decrypt", "encryption", "decryption", "cipher", "ciphertext", "plaintext",
+        "crypt", "crypto", "aes", "rsa", "dsa", "ecdsa", "ecdh", "sha", "md4", "md5", "hmac",
+        "pbkdf", "pbkdf2", "chacha", "chacha20", "poly1305", "blowfish", "curve25519",
+        "ed25519", "x25519", "rc4", "blake", "evp",
+    }),
+    "auth": frozenset({
+        "password", "passwd", "passphrase", "credential", "credentials", "auth",
+        "authenticate", "authentication", "pam",
+    }),
+    "key": frozenset({"privkey", "privatekey", "secret", "secrets", ("private", "key")}),
+    "tls": frozenset({"x509", "ssl", "tls", "dtls", "cert", "certificate", "certificates"}),
+    "privilege": frozenset({
+        "sandbox", "entitlement", "entitlements", "privilege", "privileges", "setuid",
+        "setgid", "seteuid", "chroot",
+    }),
+}
+_SECURITY_PARAM_WORDS: frozenset = frozenset({
+    "password", "passwd", "passphrase", "secret", "privkey", "privatekey", "credential",
+    "credentials", ("private", "key"),
+})
+
+_NAME_PART_RE = re.compile(r"[A-Z]+\d*(?=[A-Z][a-z])|[A-Z]?[a-z]+\d*|[A-Z]+\d*|\d+")
+
+
+def _name_words(name: str) -> list[str]:
+    """Adı sözcüklere böl (harf/rakam dışı ayraç, camelCase), küçük harf, sırası korunur.
+
+    ``RedisModuleCommandDispatcher`` → redis, module, command, dispatcher;
+    ``SHA256_Update`` → sha256, update; ``RM_ClusterCanonicalKeyNameInSlot`` → rm, cluster, ...
+    """
+    words: list[str] = []
+    for part in re.split(r"[^A-Za-z0-9]+", name):
+        words.extend(w.lower() for w in _NAME_PART_RE.findall(part))
+    return words
+
+
+def _words_match(words: list[str], vocab: frozenset) -> bool:
+    """Sözcüklerden biri (ya da sondaki rakamları atılmış hâli) sözlükte mi; sözlükteki
+    ikililer (``("private", "key")``) ardışık sözcük olarak aranır."""
+    for i, w in enumerate(words):
+        if w in vocab or w.rstrip("0123456789") in vocab:
+            return True
+        if i + 1 < len(words) and (w, words[i + 1]) in vocab:
+            return True
+    return False
+
 
 def _split_name(name: str) -> str:
     """camelCase veya snake_case ismi bosluklu kelimelere donustur.

@@ -72,6 +72,86 @@
       "test": "tests/test_p06_yapisal.py::TestGercekPozitifler::test_keccak_dondurme_ve_secim",
       "find": "\"boolean_choice\": re.compile(r\"~\\s*(?:\\w+|\\([^()\\n;]*\\))\\s*&|&\\s*~\\s*[\\w(]\"),",
       "replace": "\"boolean_choice\": re.compile(r\"~~~\"),"
+    },
+    {
+      "id": "p06_security_tam_sozcuk",
+      "desc": "ad sözcüğü sözlükte alt dize olarak aranır (sha ⊂ shared)",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_p06_security.py::TestAdKaynakli::test_masum_adlar_etiketsiz",
+      "find": "if w in vocab or w.rstrip(\"0123456789\") in vocab:",
+      "replace": "if any(v in w for v in vocab if isinstance(v, str)) or w.rstrip(\"0123456789\") in vocab:"
+    },
+    {
+      "id": "p06_security_kendi_simgesi",
+      "desc": "ad kaynaklı etiket Karadul'un önerdiği ada da verilir",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_p06_security.py::TestAdKaynakli::test_karadul_adi_kanit_degil",
+      "find": "if own_symbol and func_name and not func_name.startswith(\"FUN_\"):",
+      "replace": "if func_name and not func_name.startswith(\"FUN_\"):"
+    },
+    {
+      "id": "p06_security_simge_denetimi",
+      "desc": "başlıkta ad Ghidra'nın adıyla karşılaştırılmaz (her meta kaydı kendi simgesi sayılır)",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_p06_security.py::TestUrunYolu::test_uc_fonksiyon",
+      "find": "own_symbol = bool(meta) and meta.get(\"name\") == func_name",
+      "replace": "own_symbol = bool(meta)"
+    },
+    {
+      "id": "p06_security_cagri_kaniti",
+      "desc": "çağrı kanıtı okunmaz (güçlü etiket hiç verilmez)",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_p06_security.py::TestCagriKaniti::test_kripto_api_cagrisi",
+      "find": "cls = _security_call_class(api)",
+      "replace": "cls = \"\""
+    },
+    {
+      "id": "p06_security_kanit_satiri",
+      "desc": "@security_evidence satırı yazılmaz",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_p06_security.py::TestUrunYolu::test_uc_fonksiyon",
+      "find": "if security_evidence:",
+      "replace": "if False and security_evidence:"
+    },
+    {
+      "id": "p06_security_ad_niteligi",
+      "desc": "ad kaynaklı etiket 'By name only' niteliği olmadan güçlü metinle yazılır",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_p06_security.py::TestAdKaynakli::test_gercek_kripto_adi_nitelikli",
+      "find": "return f\"By name only: {phrase} (no call evidence)\", \"\"",
+      "replace": "return _SECURITY_STRONG_LABELS[cls], \"\""
+    },
+    {
+      "id": "p06_security_imza_parametresi",
+      "desc": "imza metnindeki (Karadul'un adlandırdığı) parametreler kanıt sayılır",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_p06_security.py::TestParametre::test_imza_metni_kanit_degil",
+      "find": "for pname in param_names or ():",
+      "replace": "for pname in list(param_names or ()) + [params]:"
+    },
+    {
+      "id": "p06_security_crypt_oneki",
+      "desc": "Windows 'Crypt' öneki bütün aileyi kapsar (CryptStringToBinary base64'ü kripto sayılır)",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_p06_security.py::TestCagriKaniti::test_siradan_cagrilar_kanit_degil",
+      "find": "\"CryptAcquireContext\", \"CryptGenRandom\",",
+      "replace": "\"Crypt\", \"CryptGenRandom\","
+    },
+    {
+      "id": "p06_security_surum_eki",
+      "desc": "çağrı adındaki sürüm eki (@GLIBC_2.17) atılmaz",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_p06_security.py::TestCagriKaniti::test_macho_alt_cizgi_ve_surum_eki",
+      "find": "name = callee.split(\"@\", 1)[0].strip()",
+      "replace": "name = callee.strip()"
+    },
+    {
+      "id": "p06_security_kanca_addan",
+      "desc": "kanca/enjeksiyon addan verilir (hook, inject, detour)",
+      "module": "karadul/reconstruction/c_comment_generator.py",
+      "test": "tests/test_p06_security.py::TestAdKaynakli::test_kanca_addan_verilmez",
+      "find": "\"setgid\", \"seteuid\", \"chroot\",",
+      "replace": "\"setgid\", \"seteuid\", \"chroot\",}), \"injection\": frozenset({\"hook\", \"inject\", \"detour\","
     }
   ]
 }
