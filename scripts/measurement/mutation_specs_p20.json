@@ -168,6 +168,22 @@
       "test": "tests/test_p20_project_readme.py::test_reconstructor_readme_warns_instead_of_quick_start",
       "find": "            *UNTRUSTED_CODE_WARNING,\n        ]",
       "replace": "            \"## Quick Start\",\n        ]"
+    },
+    {
+      "id": "p20_k5_jsnice_kapisiz",
+      "desc": "jsnice (www.jsnice.org'a düz HTTP) ağ izni olmadan çağrılır",
+      "module": "karadul/reconstruction/jsnice_renamer.py",
+      "test": "tests/test_p20_jsnice_gate.py::test_default_refuses_without_network_permission",
+      "find": "        if not self._allow_network:\n            return JSNiceResult(success=False, errors=[_NETWORK_REFUSAL])",
+      "replace": "        if False:\n            return JSNiceResult(success=False, errors=[_NETWORK_REFUSAL])"
+    },
+    {
+      "id": "p20_k5_jsnice_sayac_uydurulur",
+      "desc": "jsnice yeniden adlandırma sayısı yine sözcük farkıyla uydurulur",
+      "module": "karadul/reconstruction/jsnice_renamer.py",
+      "test": "tests/test_p20_jsnice_gate.py::test_explicit_permission_runs_and_does_not_invent_rename_count",
+      "find": "                variables_renamed=None,",
+      "replace": "                variables_renamed=len(set(output.split()) - set(input_path.read_text().split())),"
     }
   ]
 }

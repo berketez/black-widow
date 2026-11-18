@@ -1,10 +1,18 @@
 """JSNice entegrasyonu — istatistiksel model ile JS değişken isim kurtarma.
 
-JSNice (ETH Zürich) CRF tabanlı küçük model kullanarak minified JavaScript'teki
-değişken isimlerini %48.3 doğrulukla tahmin eder. LLM DEĞİL — lokal çalışır.
+JSNice (ETH Zürich) CRF tabanlı bir modeldir; LLM değildir.
+
+UYARI (P20, 2026-11-18, kaynak okunarak doğrulandı): bu sınıfın çağırdığı
+``jsnice`` komutu (npm ``jsnice`` 0.2.0, /opt/homebrew/lib/node_modules/jsnice)
+YEREL ÇALIŞMAZ: ``lib/index.js`` girdinin tamamını ``http://www.jsnice.org/beautify``
+adresine düz HTTP (port 80) ile POST eder. Eski açıklamadaki "lokal çalışır"
+ve "%48.3 doğruluk" ifadeleri doğrulanmamıştı; ilki yanlıştır. Analiz edilen
+kodu üçüncü tarafa şifresiz göndermek ağ kapısını delmek demektir; bu yüzden
+sınıf açık ağ izni (``allow_network=True``) verilmeden hiçbir süreç başlatmaz.
+Ürün akışına bağlı değildir (bkz. docs/arge/2026-11-18_onarim/P20.md, kalem 5).
 
 Kullanim:
-    renamer = JSNiceRenamer()
+    renamer = JSNiceRenamer(allow_network=True)  # yalnız bilinçli ağ izniyle
     if renamer.is_available:
         result = renamer.rename(input_file, output_file)
 """
@@ -20,11 +28,19 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+_NETWORK_REFUSAL = (
+    "jsnice komutu girdiyi www.jsnice.org'a düz HTTP ile gönderir (yerel değil); "
+    "ağ izni yok (JSNiceRenamer(allow_network=True) gerekir)"
+)
+
+
 @dataclass
 class JSNiceResult:
     success: bool
     output_file: Path | None = None
-    variables_renamed: int = 0
+    # None = ölçülmedi. Eskiden çıktıda geçen her 4+ harfli küçük sözcük
+    # ("function", "return" dahil) "yeniden adlandırılan değişken" sayılıyordu.
+    variables_renamed: int | None = None
     types_inferred: int = 0
     errors: list[str] = field(default_factory=list)
 
@@ -37,12 +53,13 @@ class JSNiceRenamer:
     %48.3 doğruluk, 2.9ms/tahmin.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, allow_network: bool = False) -> None:
         self._jsnice_path = shutil.which("jsnice")
+        self._allow_network = allow_network is True
 
     @property
     def is_available(self) -> bool:
-        return self._jsnice_path is not None
+        return self._jsnice_path is not None and self._allow_network
 
     def rename(self, input_file: Path, output_file: Path) -> JSNiceResult:
         """JSNice ile değişken isimlerini tahmin et.
@@ -54,10 +71,12 @@ class JSNiceRenamer:
         Returns:
             JSNiceResult
         """
+        if not self._allow_network:
+            return JSNiceResult(success=False, errors=[_NETWORK_REFUSAL])
         if self._jsnice_path is None:
             return JSNiceResult(
                 success=False,
-                errors=["jsnice kurulu değil: npm install -g jsnice"],
+                errors=["jsnice kurulu değil"],
             )
 
         input_path = Path(input_file)
@@ -93,18 +112,12 @@ class JSNiceRenamer:
             types_count = output.count("@type")
             params_count = output.count("@param")
 
-            # Kaç değişken rename edildiğini tahmin et
-            # (orijinal vs çıktıdaki farklı identifier'lar)
-            original = input_path.read_text(encoding="utf-8", errors="replace")
-            import re
-            orig_vars = set(re.findall(r'\b([a-z]\w{0,2})\b', original))
-            new_vars = set(re.findall(r'\b([a-z]\w{3,})\b', output))
-            renamed = len(new_vars - orig_vars)
-
+            # Yeniden adlandırılan değişken sayısı ÖLÇÜLMÜYOR (None): eski
+            # sözcük farkı sezgisi anahtar sözcükleri de sayıyordu.
             return JSNiceResult(
                 success=True,
                 output_file=output_path,
-                variables_renamed=renamed,
+                variables_renamed=None,
                 types_inferred=types_count + params_count,
             )
 
@@ -120,8 +133,8 @@ class JSNiceRenamer:
             )
 
     def rename_chunk(self, js_code: str) -> str | None:
-        """JS kod parçasını JSNice'den geçir, sonucu döndür."""
-        if self._jsnice_path is None:
+        """JS kod parçasını JSNice'den geçir, sonucu döndür (ağ izni şart)."""
+        if self._jsnice_path is None or not self._allow_network:
             return None
 
         import tempfile
