@@ -71,15 +71,18 @@ _WINDOWS_APIS: dict[str, tuple[str, str, float]] = {
         "Uzak debugger varligini kontrol eder",
         0.60,
     ),
+    # OutputDebugString + GetLastError hilesi yalniz Vista oncesi Windows'ta
+    # calisir; ithal olagan gunluk API'sidir (masum fastlist, Ghidra lzfse).
+    # Tek ve ayirt edici olmayan kanit: zayif (IMZA-03).
     "OutputDebugStringA": (
         "OutputDebugString",
-        "Exception trick ile debugger varligini tespit eder",
-        0.40,
+        "Exception trick ile debugger varligini tespit eder (zayif: olagan gunluk API'si)",
+        0.30,
     ),
     "OutputDebugStringW": (
         "OutputDebugString",
-        "Exception trick ile debugger varligini tespit eder",
-        0.40,
+        "Exception trick ile debugger varligini tespit eder (zayif: olagan gunluk API'si)",
+        0.30,
     ),
     "GetTickCount": (
         "GetTickCount",
@@ -183,6 +186,28 @@ _WINDOWS_APIS: dict[str, tuple[str, str, float]] = {
         0.50,
     ),
 }
+
+# --- Derleyici calisma zamani (MSVC CRT) ithal kumesi (IMZA-03) ---
+# MSVC ile derlenen hemen her PE, CRT'nin __security_init_cookie yolu icin
+# QueryPerformanceCounter + GetCurrentProcessId + GetCurrentThreadId + bir zaman
+# API'sini, __report_gsfailure / __scrt_fastfail yolu icin IsDebuggerPresent +
+# UnhandledExceptionFilter'i ithal eder. Kume birlikte goruldugunde bu ithaller
+# anti-debug kaniti degildir: "compiler_runtime" kategorisinde bilgi olarak
+# kalir, puana girmez. (Olcum: 39 masum PE'nin 25'inde kume tam; eski CRT'lerde
+# zaman API'si GetTickCount, yenilerde GetSystemTimeAsFileTime.)
+_CRT_COOKIE_CORE = frozenset({
+    "QueryPerformanceCounter", "GetCurrentProcessId", "GetCurrentThreadId",
+})
+_CRT_COOKIE_TIME = frozenset({
+    "GetSystemTimeAsFileTime", "GetSystemTimePreciseAsFileTime",
+    "GetTickCount", "GetTickCount64",
+})
+_CRT_COOKIE_EXPLAINED = frozenset({
+    "QueryPerformanceCounter", "GetTickCount", "GetTickCount64",
+})
+_CRT_FASTFAIL_PAIR = "UnhandledExceptionFilter"
+_CRT_FASTFAIL_EXPLAINED = frozenset({"IsDebuggerPresent"})
+_CRT_CONFIDENCE = 0.10
 
 # Linux libc API'lari (ptrace + /proc tabanli)
 _LINUX_APIS: dict[str, tuple[str, str, float]] = {
@@ -359,6 +384,12 @@ _PEB_LOOKAHEAD = 4
 # fonksiyonu bu sinira hizalar ve araya 0xCC doldurur (IMZA-03).
 _FUNC_ALIGN = 16
 _INT3_MIN_RUN = 8
+# Hizalama icin kullanilan x86 NOP kodlamalari (Intel SDM onerilen cok baytli
+# NOP'lar + 66 onekleri): MSVC'nin el yazmasi rutinleri "CC... + NOP" ile hizalar.
+_X86_NOP_RUN_RE = re.compile(
+    rb"(?:\x90|\x66*\x0f\x1f(?:\x00|\x40\x00|\x44\x00\x00|\x80\x00\x00\x00\x00"
+    rb"|\x84\x00\x00\x00\x00\x00))*"
+)
 
 # --- ELF / Mach-O sabitleri (yalniz kod bolgesi + mimari icin) ---
 _ELF_MACHINE_ARCH: dict[int, str] = {
@@ -875,13 +906,24 @@ class AntiDebugDetector:
             if f.confidence > max_conf:
                 max_conf = f.confidence
 
-        # Toplam anti-debug skoru: max_conf + 0.05 * (technique sayisi - 1)
-        # 1.0 ile sinirla
-        if findings:
+        # Toplam anti-debug skoru (IMZA-03): yalniz zayif ustu (> 0,30) ve
+        # derleyici calisma zamanina ait olmayan bulgular hukme girer:
+        #   max(guclu) + 0.05 * (guclu teknik sayisi - 1), 1.0 ile sinirli.
+        # Zayif / bilgi bulgulari toplanarak yukseltilmez; yalniz onlar varsa
+        # puan en guclusunun guvenidir (<= 0,30 -> rapor INFO).
+        strong = [
+            f for f in findings
+            if f.confidence > _WEAK_MAX_CONFIDENCE and f.category != "compiler_runtime"
+        ]
+        if strong:
+            strong_techniques = {f.technique for f in strong}
             score = min(
                 1.0,
-                max_conf + 0.05 * max(0, len(techniques) - 1),
+                max(f.confidence for f in strong)
+                + 0.05 * max(0, len(strong_techniques) - 1),
             )
+        elif findings:
+            score = max_conf
         else:
             score = 0.0
 
@@ -919,6 +961,8 @@ class AntiDebugDetector:
 
         findings: list[AntiDebugFinding] = []
         seen_techniques: set[tuple[str, str]] = set()
+        crt_explained, crt_note = (
+            self._crt_explained_imports(imports) if fmt == "pe" else (frozenset(), ""))
 
         # Hepsini tek normalleskmis stringe coevir
         for sym in imports:
@@ -932,6 +976,23 @@ class AntiDebugDetector:
             for api_name, (technique, desc, weight) in (
                     _WINDOWS_APIS.items() if use_windows else ()):
                 if sym_clean == api_name or sym_no_leading == api_name:
+                    if api_name in crt_explained:
+                        # Derleyici calisma zamaninin olagan ithali (IMZA-03)
+                        key = (technique, "compiler_runtime")
+                        if key not in seen_techniques:
+                            seen_techniques.add(key)
+                            findings.append(AntiDebugFinding(
+                                technique=technique,
+                                category="compiler_runtime",
+                                confidence=_CRT_CONFIDENCE,
+                                evidence=f"import: {sym_clean} ({crt_note})",
+                                platform="windows",
+                                description=(
+                                    "MSVC CRT'nin olagan ithali; cagri yeri "
+                                    "dogrulanmadi, anti-debug sayilmadi"
+                                ),
+                            ))
+                        break
                     key = (technique, "windows_api")
                     if key in seen_techniques:
                         break
@@ -987,6 +1048,25 @@ class AntiDebugDetector:
                     break
 
         return findings
+
+    @staticmethod
+    def _crt_explained_imports(imports: list[str]) -> tuple[frozenset[str], str]:
+        """MSVC CRT ithal kumesi gorulduyse onun acikladigi API adlari + not.
+
+        Kume: __security_init_cookie (QPC + GetCurrentProcessId +
+        GetCurrentThreadId + bir zaman API'si); IsDebuggerPresent icin ayrica
+        __report_gsfailure / __scrt_fastfail esi UnhandledExceptionFilter.
+        """
+        names = {s.strip() for s in imports}
+        if not (_CRT_COOKIE_CORE <= names and names & _CRT_COOKIE_TIME):
+            return frozenset(), ""
+        explained = set(_CRT_COOKIE_EXPLAINED)
+        parts = ["__security_init_cookie: QPC + GetCurrentProcessId + GetCurrentThreadId + "
+                 + "/".join(sorted(names & _CRT_COOKIE_TIME))]
+        if _CRT_FASTFAIL_PAIR in names:
+            explained |= _CRT_FASTFAIL_EXPLAINED
+            parts.append(f"__report_gsfailure: IsDebuggerPresent + {_CRT_FASTFAIL_PAIR}")
+        return frozenset(explained), "MSVC CRT ithal kumesi; " + "; ".join(parts)
 
     @staticmethod
     def _import_evidence(symbol: str, technique: str) -> str:
@@ -1144,19 +1224,36 @@ class AntiDebugDetector:
                 ),
             ))
 
-        # INT3 cluster: 8+ ardisik 0xCC byte (yalniz kod bolgelerinde)
+        # INT3 cluster: 8+ ardisik 0xCC byte (yalniz kod bolgelerinde).
+        # Fonksiyonlar arasi dolgu sayilmaz (IMZA-03): kosu bir sonraki
+        # fonksiyonun hizali baslangicinda (adres % 16 == 0) ya da kod
+        # bolgesinin sonunda biter, ya da onceki fonksiyonun kosulsuz donus /
+        # atlama komutundan hemen sonra baslar (oraya akis yok; ornek: CRT'nin
+        # el yazmasi rutinlerinde "CC... + cok baytli NOP" hizalamasi, artimli
+        # baglamada "ret; CC...; jmp [thunk]").
         int3_cluster = None
+        padding_runs = 0
         for r in regions:
-            hit = self._find_int3_cluster(data[r.start:r.end], min_run=_INT3_MIN_RUN)
-            if hit is not None and (int3_cluster is None or hit[1] > int3_cluster[1]):
-                int3_cluster = (r.start + hit[0], hit[1])
+            seg = data[r.start:r.end]
+            for rel, run_len in self._int3_runs(seg, _INT3_MIN_RUN):
+                end_rel = rel + run_len
+                # CC'den sonra gelen cok baytli NOP'lar da dolgunun parcasidir
+                nop = _X86_NOP_RUN_RE.match(seg, end_rel)
+                aligned_end = r.vaddr + (nop.end() if nop else end_rel)
+                if (aligned_end % _FUNC_ALIGN == 0 or r.start + end_rel >= r.end
+                        or self._after_function_end(seg, rel)):
+                    padding_runs += 1
+                    continue
+                if int3_cluster is None or run_len > int3_cluster[1]:
+                    int3_cluster = (r.start + rel, run_len)
         if int3_cluster is not None:
             offset, run_len = int3_cluster
             findings.append(AntiDebugFinding(
                 technique="INT3_Cluster",
                 category="timing",
                 confidence=0.25,
-                evidence=f"INT3 (0xCC) x{run_len} @0x{offset:x}",
+                evidence=(f"INT3 (0xCC) x{run_len} @0x{offset:x}; hizalama "
+                          f"dolgusu sayilmadi: {padding_runs} kosu"),
                 platform="any",
                 description=(
                     "Ardisik INT 3 (0xCC) byte cluster'i — debugger "
@@ -1174,11 +1271,16 @@ class AntiDebugDetector:
     def _apply_multilayer_boost(
         self, findings: list[AntiDebugFinding],
     ) -> list[AntiDebugFinding]:
-        """Ayni technique birden fazla kategoride varsa +0.20."""
-        # technique -> kategoriler
+        """Ayni technique birden fazla kategoride varsa +0.20.
+
+        Yalniz zayif ustu (> 0,30) kanitlar sayilir (IMZA-03): iki zayif
+        kanit birlikte hukme donusmez; derleyici calisma zamani hic sayilmaz.
+        """
+        # technique -> kategoriler (yalniz guclu kanitlar)
         tech_categories: dict[str, set[str]] = defaultdict(set)
         for f in findings:
-            tech_categories[f.technique].add(f.category)
+            if f.confidence > _WEAK_MAX_CONFIDENCE and f.category != "compiler_runtime":
+                tech_categories[f.technique].add(f.category)
 
         boosted: list[AntiDebugFinding] = []
         for f in findings:
@@ -1369,6 +1471,26 @@ class AntiDebugDetector:
                 return count
             count += 1
             idx = found + len(needle)
+
+    @staticmethod
+    def _after_function_end(seg: bytes, pos: int) -> bool:
+        """``pos``'tan hemen once kosulsuz akis sonu komutu var mi (bayt duzeyinde).
+
+        ret (C3), ret imm16 (C2 iw), jmp rel8 (EB ib), jmp rel32 (E9 id),
+        jmp [mem] (FF 25 id). Bayt duzeyinde yaklasiktir; yalniz dolguyu
+        DISLAMAK icin kullanilir (yanilirsa zayif INT3 bulgusu kaybolur).
+        """
+        return ((pos >= 1 and seg[pos - 1] == 0xC3)
+                or (pos >= 3 and seg[pos - 3] == 0xC2)
+                or (pos >= 2 and seg[pos - 2] == 0xEB)
+                or (pos >= 5 and seg[pos - 5] == 0xE9)
+                or (pos >= 6 and seg[pos - 6:pos - 4] == b"\xff\x25"))
+
+    @staticmethod
+    def _int3_runs(data: bytes, min_run: int) -> list[tuple[int, int]]:
+        """``min_run`` ve uzeri ardisik 0xCC kosulari: [(ofset, uzunluk)]."""
+        return [(m.start(), m.end() - m.start())
+                for m in re.finditer(b"\xcc{%d,}" % min_run, data)]
 
     @staticmethod
     def _find_int3_cluster(

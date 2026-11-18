@@ -144,6 +144,87 @@
       "test": "tests/test_p02_anti_debug_mimari.py::TestIthalKatalogu::test_elf_prctl_yalniz_bilgi",
       "find": "_ARG_UNVERIFIED_TECHNIQUES = frozenset({\"prctl_import\", \"sysctl_import\"})",
       "replace": "_ARG_UNVERIFIED_TECHNIQUES = frozenset({\"sysctl_import\"})"
+    },
+    {
+      "id": "p02_imza03_crt_kumesi",
+      "desc": "IMZA-03: CRT çerez kümesi şartı kalkar (her PE CRT sayılır)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_crt.py::TestCRTKumesi::test_cerez_kumesi_eksikse_aciklanmaz",
+      "find": "if not (_CRT_COOKIE_CORE <= names and names & _CRT_COOKIE_TIME):",
+      "replace": "if not (_CRT_COOKIE_CORE <= names) and False:"
+    },
+    {
+      "id": "p02_imza03_crt_hic_taninmaz",
+      "desc": "IMZA-03: CRT ithal kümesi hiç tanınmaz (IsDebuggerPresent/QPC/GetTickCount yine teknik sayılır)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_crt.py::TestCRTKumesi::test_crt_kumesi_hukum_degil",
+      "find": "        if not (_CRT_COOKIE_CORE <= names and names & _CRT_COOKIE_TIME):\n            return frozenset(), \"\"",
+      "replace": "        if True:\n            return frozenset(), \"\""
+    },
+    {
+      "id": "p02_imza03_fastfail_esi",
+      "desc": "IMZA-03: UnhandledExceptionFilter eşi aranmadan IsDebuggerPresent CRT'ye yazılır",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_crt.py::TestCRTKumesi::test_fastfail_esi_yoksa_isdebuggerpresent_aciklanmaz",
+      "find": "if _CRT_FASTFAIL_PAIR in names:",
+      "replace": "if True:"
+    },
+    {
+      "id": "p02_imza03_crt_guveni",
+      "desc": "IMZA-03: CRT ithalleri hüküm güveni alır",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_crt.py::TestCRTKumesi::test_crt_kumesi_hukum_degil",
+      "find": "_CRT_CONFIDENCE = 0.10",
+      "replace": "_CRT_CONFIDENCE = 0.550"
+    },
+    {
+      "id": "p02_imza03_zayif_toplama",
+      "desc": "IMZA-03: zayıf kanıtlar puanda toplanır",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_crt.py::TestPuan::test_zayif_kanitlar_toplanmaz",
+      "find": "            if f.confidence > _WEAK_MAX_CONFIDENCE and f.category != \"compiler_runtime\"\n        ]",
+      "replace": "            if f.confidence >= 0.0 and f.category != \"compiler_runtime\"\n        ]"
+    },
+    {
+      "id": "p02_imza03_cok_katman_zayif",
+      "desc": "IMZA-03: çok katman artırımı zayıf kanıtlara da uygulanır",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_crt.py::TestPuan::test_cok_katman_artirimi_zayiflara_uygulanmaz",
+      "find": "            if f.confidence > _WEAK_MAX_CONFIDENCE and f.category != \"compiler_runtime\":\n                tech_categories",
+      "replace": "            if True:\n                tech_categories"
+    },
+    {
+      "id": "p02_imza03_int3_hizalama",
+      "desc": "IMZA-03: hizalı biten 0xCC koşusu dolgu sayılmaz",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_crt.py::TestINT3Dolgusu::test_dolgu_sayilmaz",
+      "find": "if (aligned_end % _FUNC_ALIGN == 0 or",
+      "replace": "if (aligned_end % _FUNC_ALIGN == 99 or"
+    },
+    {
+      "id": "p02_imza03_int3_nop",
+      "desc": "IMZA-03: CC sonrası çok baytlı NOP hizalaması görülmez",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_crt.py::TestINT3Dolgusu::test_dolgu_sayilmaz",
+      "find": "aligned_end = r.vaddr + (nop.end() if nop else end_rel)",
+      "replace": "aligned_end = r.vaddr + end_rel"
+    },
+    {
+      "id": "p02_imza03_int3_ret_sonrasi",
+      "desc": "IMZA-03: ret/jmp sonrası 0xCC koşusu dolgu sayılmaz",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_crt.py::TestINT3Dolgusu::test_dolgu_sayilmaz",
+      "find": "or self._after_function_end(seg, rel)):",
+      "replace": "or False):"
+    },
+    {
+      "id": "p02_imza03_outputdebugstring",
+      "desc": "IMZA-03: OutputDebugString tek ithali yine 0,40 (MED)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02_anti_debug_crt.py::TestCRTKumesi::test_outputdebugstring_tek_basina_zayif",
+      "find": "\"Exception trick ile debugger varligini tespit eder (zayif: olagan gunluk API'si)\",\n        0.30,",
+      "replace": "\"Exception trick ile debugger varligini tespit eder (zayif: olagan gunluk API'si)\",\n        0.400,",
+      "occurrence": 0
     }
   ]
 }
