@@ -366,6 +366,10 @@ class AnalysisConfig:
     max_file_size_mb: int = 500
     string_min_length: int = 4
     ghidra_max_heap_mb: int = field(default_factory=lambda: GHIDRA_HEAP_MB)
+    # P16c: analizden önce kapatılacak Ghidra çözümleyicileri (ad, Ghidra'daki gibi).
+    # Boş = Ghidra öntanımı. Kapatmak decompile çıktısını değiştirebilir (ölçüm:
+    # docs/arge/2026-11-18_onarim/P16c.md kalem 2); bu yüzden öntanım boş.
+    ghidra_disabled_analyzers: list[str] = field(default_factory=list)
     webpack_module_min_size: int = 50
     deobfuscation_chain: list[str] = field(
         default_factory=lambda: ["beautify", "synchrony", "babel_transforms"]
@@ -374,6 +378,10 @@ class AnalysisConfig:
     # P-S2'de silindi. Kullanıcı YAML'ı kırılmasın diye alan duruyor; yazılırsa
     # INERT_SETTINGS uyarısı basılır.
     use_deep_deobfuscation: bool = True
+    # P20 (2026-11-18): derin hatta synchrony ön geçişi (obfuscator.io dize
+    # dizisi / denetim akışı geri alma). Öntanımlı KAPALI; açıkken synchrony
+    # çıktısı yalnız ayrıştırılabiliyorsa kullanılır (deep_pipeline.py).
+    deep_synchrony_prepass: bool = False
     # NOT (2026-05-13): LLM-Assisted Variable Naming kaldirildi.
     # Berke kalici karari: feedback_no_llm.md — deterministic, CPU-only.
 
@@ -615,7 +623,7 @@ class BinaryReconstructionConfig:
     # Ghidra decompile batch boyutu: kac fonksiyon ayni anda islenir.
     # Buyuk binary'lerde tum fonksiyonlari tek seferde decompile etmek
     # JVM heap'i patlatir. 5000'lik batch'lerde GC nefes alir.
-    ghidra_batch_size: int = 5000
+    ghidra_batch_size: int = 5000  # P16c: ETKİSİZ — decompile parçası işçi sayısından (CPU_PERF_CORES); headless artık okumuyor
     # Bu boyutun ustundeki binary'ler "buyuk" kabul edilir (MB).
     # mmap, chunked decompile ve lazy string loading aktif olur.
     large_binary_threshold_mb: int = 100
@@ -725,6 +733,9 @@ class BSimConfig:
     # Fonksiyon basina fusion'a en fazla kac BSim adayi eklenecek.
     # (Cok fazla aday ayni evidence'i birden fazla sayar; top-N ile sinirla.)
     fusion_max_candidates_per_function: int = 3
+    # P16c: native sorgu tek GenSignatures + tek QueryNearest ile (eşleşme kümesi
+    # fonksiyon başına yolla aynı; Mac htop 142 sn -> birkaç sn). False = eski yol.
+    batch_query: bool = True
 
 
 @dataclass
@@ -868,11 +879,6 @@ class PerfConfig:
       → veri kökündeki signatures.lmdb → ~/.karadul/signatures.lmdb (eski konum).
       Açılan veritabanının yolu, kaynağı, şeması ve ad sayısı koşu istatistiğinde.
 
-    Naming ThreadPool paralelligi (M2 T2):
-      parallel_naming=False default -- eski ProcessPool yolu korunur.
-      True ise karadul.naming.ParallelNamingRunner kullanilir (file-level
-      ThreadPool, 3-5x hiz hedefi).
-
     naming_max_workers: None -> CPU_PERF_CORES kullanilir.
     naming_chunk_size: Her thread'e verilen c_file sayisi (cache-friendly
       256 varsayilan).
@@ -893,7 +899,6 @@ class PerfConfig:
     use_lmdb_sigdb: bool = True
     sig_lmdb_path: Optional[Path] = None
     lmdb_l1_cache_size: int = 8192
-    parallel_naming: bool = False
     naming_max_workers: Optional[int] = None
     naming_chunk_size: int = 256
     naming_chunk_timeout: float = 60.0
@@ -1076,6 +1081,10 @@ INERT_SETTINGS: dict[str, str] = {
         "okuyan tek yol (eski monolit, use_deep) P-S2'de silindi; deobfuscation zinciri "
         "bu bayrağa bakmıyor"
     ),
+    "binary_reconstruction.ghidra_batch_size": (
+        "P16c: decompile parça boyu işçi sayısından (fonksiyon sayısı / CPU_PERF_CORES); "
+        "bu değer hiç okunmuyordu, parametre kaldırıldı"
+    ),
     "source_match.consistency_ratio": "kaynak eşleme bu değeri okumuyor",
     "source_match.unpkg_timeout": "kaynak eşleme bu değeri okumuyor",
     "source_match.unpkg_delay_ms": "kaynak eşleme bu değeri okumuyor",
@@ -1141,6 +1150,10 @@ INERT_SETTINGS: dict[str, str] = {
     "decompilers.secondary_backend": "yer tutucu: tek arka uç çağrılıyor",
     "computation.struct_split_weight": "MaxSMT çözücüsü bu ağırlığı okumuyor",
     "computation.struct_min_confidence": "MaxSMT çözücüsü bu eşiği okumuyor",
+    # P13a / AD-12: yalnız silinen paralel ad koşucusu okuyordu (K-3 A5)
+    "perf.naming_max_workers": "paralel ad koşucusu silindi (P13a); hiçbir kod okumuyor",
+    "perf.naming_chunk_size": "paralel ad koşucusu silindi (P13a); hiçbir kod okumuyor",
+    "perf.naming_chunk_timeout": "paralel ad koşucusu silindi (P13a); hiçbir kod okumuyor",
 }
 
 

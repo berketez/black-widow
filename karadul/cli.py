@@ -678,8 +678,6 @@ def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
 @click.option("--no-lmdb-sigdb", "no_lmdb_sigdb", is_flag=True, default=False,
               help="[v1.10.0] LMDB signature DB'yi KAPAT -> eski dict-based DB (~3GB RAM). "
                    "Default LMDB aktif olduğundan asıl anlamlı bayrak budur; --lmdb-sigdb ile birlikte verilirse bu kazanır.")
-@click.option("--parallel-naming", is_flag=True, default=False,
-              help="[v1.10.0] ThreadPool tabanlı paralel naming (3-5x hız).")
 @click.option("--no-cfg-iso", is_flag=True, default=False,
               help="[v1.10.0] Default-aktif CFG isomorphism template matching'i KAPAT.")
 @click.option("--no-computation-fusion", is_flag=True, default=False,
@@ -720,7 +718,6 @@ def analyze(
     experimental_step_registry: bool,      # v1.10.0 M4
     lmdb_sigdb: bool,                      # v1.10.0 M4
     no_lmdb_sigdb: bool,                   # R4: LMDB'yi kapat (default aktif)
-    parallel_naming: bool,                 # v1.10.0 M4
     no_cfg_iso: bool,                      # v1.10.0 M4
     no_computation_fusion: bool,           # v1.10.0 M4
     no_maxsmt_struct: bool,                # v1.10.0 M4
@@ -824,8 +821,6 @@ def analyze(
     # icin asil anlamli override budur. Ikisi birden verilirse --no kazanir.
     if no_lmdb_sigdb:
         cfg.perf.use_lmdb_sigdb = False
-    if parallel_naming:
-        cfg.perf.parallel_naming = True
     if no_cfg_iso:
         cfg.computation_recovery.enable_cfg_iso = False
     if no_computation_fusion:
@@ -1063,25 +1058,31 @@ def analyze(
             f"{strings:>10}" if isinstance(strings, int) else "N/A",
         )
 
-    # Deobfuscation sonuclari
+    # Deobfuscation sonuclari (P20 / BICIM-03: eskiden hiçbir aşamanın
+    # üretmediği "steps_completed" / "modules_extracted" okunuyor, her koşuda
+    # N/A yazılıyordu; artık derin hattın gerçek adım ve modül sayıları).
     if "deobfuscate" in result.stages:
-        st = result.stages["deobfuscate"].stats
-        results_table.add_row("Deobf steps", str(st.get("steps_completed", "N/A")))
+        st = result.stages["deobfuscate"].stats or {}
+        steps = st.get("steps")
+        if isinstance(steps, dict) and steps:
+            done = sum(1 for s in steps.values() if isinstance(s, dict) and s.get("success"))
+            results_table.add_row("Deobf steps", f"{done}/{len(steps)}")
+        else:
+            results_table.add_row("Deobf steps", "N/A")
+        modules = st.get("total_modules")
+        if isinstance(modules, int):
+            failed = st.get("unpack_modules_parse_failed")
+            label = str(modules)
+            if isinstance(failed, int) and failed:
+                label += f" ({failed} ayrıştırılamıyor)"
+            results_table.add_row("Modules extracted", label)
 
-    # Reconstruct sonuclari
+    # Reconstruct sonuclari ("Coverage" ve "Runnable project" satırları
+    # kaldırıldı: hiçbir aşama bu anahtarları üretmiyordu, satırlar kalıcı
+    # N/A / NO idi; ayrıca analiz edilen kod "çalıştırılabilir" sunulmaz, BICIM-12.)
     if "reconstruct" in result.stages:
         st = result.stages["reconstruct"].stats
-        results_table.add_row("Modules extracted", str(st.get("modules_extracted", "N/A")))
         results_table.add_row("Variables renamed", str(st.get("variables_renamed", "N/A")))
-        coverage = st.get("coverage_percent")
-        results_table.add_row(
-            "Coverage",
-            f"{coverage}%" if isinstance(coverage, (int, float)) else "N/A",
-        )
-        results_table.add_row(
-            "Runnable project",
-            "YES" if st.get("runnable_project") else "NO",
-        )
 
     # Computation recovery sonuclari
     if "reconstruct" in result.stages:

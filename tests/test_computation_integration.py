@@ -411,7 +411,6 @@ class TestCLIFlagWiring:
         # Yeni v1.10.0 flag'ler
         assert "experimental_step_registry" in option_names
         assert "lmdb_sigdb" in option_names
-        assert "parallel_naming" in option_names
         assert "no_cfg_iso" in option_names
         assert "no_computation_fusion" in option_names
         assert "no_maxsmt_struct" in option_names

@@ -12,7 +12,3 @@ perf:
   use_lmdb_sigdb: true
   # LMDB host'tan :ro mount edilir (readonly => lock=False, lock.mdb yazılmaz).
   sig_lmdb_path: /root/.karadul/signatures.lmdb
-  # parallel_naming KAPALI: multiprocessing fork + LMDB/lock deadlock yapıyordu
-  # (tüm worker'lar futex_wait'te kilitlendi). Seri naming güvenli; fork/spawn
-  # deadlock'u ayrı bir iş olarak düzeltilecek.
-  parallel_naming: false

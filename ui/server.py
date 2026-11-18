@@ -1393,11 +1393,10 @@ _ABOUT_NOTES = [
     "Araştırma prototipi — üretim ya da adli kullanım için doğrulanmadı.",
     *_measurement_notes(_NAME_MEASUREMENT),
 ]
-# LMDB imza DB varsayilan konumu. TEK GERCEK KAYNAK:
-# karadul/analyzers/sigdb_lmdb.py::default_lmdb_path(). Burada BILEREK
-# tekrarlanir: o modulu import etmek lmdb+bagimliliklarini cekip ~2.7 sn suruyor
-# ve Hakkinda paneli icin DB ACILMIYOR (sadece dosya boyutu okunuyor).
-_SIG_LMDB_DEFAULT = HOME / ".karadul" / "signatures.lmdb"
+# LMDB imza DB konumu (K-5, P15b): motorla AYNI sıra, tek kaynak
+# karadul.config.resolve_sig_lmdb_path (lmdb içe aktarılmaz; DB AÇILMIYOR, yalnız
+# data.mdb boyutu okunuyor). Eskiden burada ~/.karadul/signatures.lmdb sabitti:
+# motor veri kökündeki yeni veritabanını açarken panel eskisini gösterirdi.
 
 
 def _safe(fn, default):
@@ -1951,11 +1950,12 @@ def _jdk_info() -> dict:
 
 def _signatures_info() -> dict:
     """Imza DB: SADECE data.mdb boyutu. LMDB ACILMAZ (2 GB mmap etmeye gerek yok)."""
-    env = os.environ.get("KARADUL_SIG_LMDB_PATH")
-    p = Path(os.path.expanduser(env)) if env else _SIG_LMDB_DEFAULT
+    from karadul.config import resolve_data_root, resolve_sig_lmdb_path
+
+    p, source = resolve_sig_lmdb_path(None, resolve_data_root()[0])
     data = p / "data.mdb"
     size = _safe(lambda: data.stat().st_size if data.is_file() else None, None)
-    return {"present": bool(size), "path": str(p), "size_bytes": size}
+    return {"present": bool(size), "path": str(p), "source": source, "size_bytes": size}
 
 
 def _runs_count(runs: Path) -> int | None:
