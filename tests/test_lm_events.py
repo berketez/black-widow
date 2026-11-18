@@ -327,9 +327,10 @@ def test_ui_name_ghidra_adli_dosya_adres_basligindan(srv, tmp_path):
     """Ghidra'nın adlandırdığı fonksiyonun dosya adı Ghidra adından farklıysa (betik adı arındırmış)
     adres, arayüzün de okuduğu ``// Address:`` başlığından gelir; başlığı ve eşleşen adı olmayan dosya
     eşlenmez (adres uydurulmaz)."""
-    kok = build_ws(tmp_path / "ws", {A: {"calls": [ENTRY]}}, named={ENTRY: "entry"})
+    kok = build_ws(tmp_path / "ws", {A: {"calls": [ENTRY, FB]}, FB: {"calls": []}}, named={ENTRY: "entry"})
     dec = kok / "static" / "ghidra_output" / "decompiled"
     (dec / "entry.c").unlink()
+    (dec / f"{fun(FB)}.c").unlink()                              # decompile dosyası hiç olmayan fonksiyon
     (dec / "entry_arindirilmis.c").write_text(f"// Function: entry\n// Address: {ENTRY}\n\nvoid entry(void) {{}}\n",
                                              encoding="utf-8")
     (dec / "yetim.c").write_text("void yetim(void) {}\n", encoding="utf-8")
@@ -337,6 +338,8 @@ def test_ui_name_ghidra_adli_dosya_adres_basligindan(srv, tmp_path):
     anahtarlar = _arayuz_anahtarlari(srv, kok)
     assert w.ui_name(ENTRY) == "entry_arindirilmis" and "entry_arindirilmis" in anahtarlar
     assert "yetim" in anahtarlar and "yetim" not in {w.ui_name(x) for x in w._functions.values()}
+    assert w.resolve(fun(FB)) is not None and w.ui_name(FB) is None   # dosyasız adrese düğüm adı uydurulmaz
+    assert fun(FB) not in anahtarlar
 
 
 def test_ui_desenleri_arayuzle_ayni(srv):
