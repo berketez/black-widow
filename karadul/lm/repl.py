@@ -255,8 +255,9 @@ def render(event: Mapping[str, Any]) -> list[str]:
     g = event.get("gorev")
     if t == "oturum_basladi":
         hiz = event.get("hiz")
+        baglam = event.get("baglam")
         return [f"KaradulLM · {event.get('arka_uc')} · model {event.get('model') or 'bilinmiyor'} · bağlam "
-                f"{event.get('baglam')} · ağ {event.get('ag')} · {event.get('kip')}",
+                f"{'-' if baglam is None else baglam} · ağ {event.get('ag')} · {event.get('kip')}",
                 "hız: ölçülmedi  [/hiz ile ölç]" if not hiz else f"hız: {hiz}"]
     if t == "arka_uc_durumu":
         b = event.get("bellek_gib")

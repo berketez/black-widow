@@ -188,7 +188,7 @@ def surec_ihlalleri(yol: Path) -> list[str]:
 
 def test_durağan_surec_baslatma_yok():
     var = [n for n in TARANAN if (LM / n).is_file()]
-    assert {"modes.py", "events.py", "summaries.py", "order.py"} <= set(var)
+    assert var == list(TARANAN)                                     # sekiz dosyanın hepsi var ve taranıyor
     for n in var:
         assert surec_ihlalleri(LM / n) == [], n
 

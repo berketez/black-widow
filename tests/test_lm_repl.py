@@ -177,3 +177,45 @@ def test_satir_bicimi_olaylardan():
                  dokunulan_toplam=0, icerik_saklandi=None)
     assert R.render(yok) == ["  ⎿ r2 get_xrefs  hata: tekrar · ? B · ? ms"]
     assert not any("düşün" in x for xs in satirlar for x in xs)
+
+
+# --------------------------------------------------------------------------------------------
+# (e) bağımsız CLI: python -m karadul.lm (karar 10 (b))
+
+
+def test_cli_modelsiz_oturum_ve_acilis_hatalari(tmp_path):
+    import io
+    import os
+
+    from karadul.lm import __main__ as CLI
+    from karadul.lm import session as S
+    from tests.test_lm_tools import default_ws
+    ws = default_ws(tmp_path / "ws")
+    out = io.StringIO()
+    # ikili özeti çalışma alanında yok: uydurulmaz, istenir
+    assert CLI.main(["--calisma-alani", str(ws)], stdin=io.StringIO(""), stdout=out) == 2
+    assert "--ikili-sha256" in out.getvalue()
+    # sunucu ikilisi reddedilir (adı yanlış) — süreç açılmaz
+    kotu = tmp_path / "bin" / "sunucu"
+    kotu.parent.mkdir()
+    kotu.write_bytes(b"#!/bin/sh\n")
+    os.chmod(kotu, 0o755)
+    out = io.StringIO()
+    assert CLI.main(["--calisma-alani", str(ws), "--ikili-sha256", "ab" * 32, "--llama-server", str(kotu),
+                     "--model", "/m.gguf"], stdin=io.StringIO(""), stdout=out) == 2
+    assert "llama-server" in out.getvalue() and S.current_session() is None
+    # modelsiz oturum: yardım, plan, not, öneriler, çık
+    girdi = io.StringIO("/yardim\n/acikla FUN_00001000\n/kip plan\n/plan ithal malloc\n/not FUN_00001000 deneme\n"
+                        "karadullm; sh\n/oneriler\n/cik\n/yardim\n")
+    out = io.StringIO()
+    assert CLI.main(["--calisma-alani", str(ws), "--ikili-sha256", "AB" * 32, "--depo", str(tmp_path / "depo")],
+                    stdin=girdi, stdout=out) == 0
+    metin = out.getvalue()
+    for beklenen in ("KaradulLM · yok · model bilinmiyor", "model yok (arka uç verilmedi)",
+                     "karadullm> /acikla FUN_00001000", "plan: find_refs(import=malloc): 1 fonksiyon",
+                     "not deftere yazıldı: FUN_00001000", "✗ serbest metin yalnız keşif kipinde", "öneri yok",
+                     "oturum kapandı (cik)", "bağlam - ·"):
+        assert beklenen in metin, (beklenen, metin)
+    assert "karadullm> /yardim" in metin and metin.rstrip().endswith("oturum kapandı (cik)")
+    assert metin.count("karadullm> ") == 8                                   # /cik'ten sonraki satır okunmaz
+    assert (tmp_path / "depo" / ("ab" * 32) / "defter.jsonl").exists() and S.current_session() is None
