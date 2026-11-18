@@ -6,6 +6,27 @@ Ana oturumun ajanlara verdiği paket metinleri. Oturuma özel geçici dizin sili
 - `PS3.md` — P-S3, 2026-11-18 12:4x'te gönderildi.
 - **Akşam 1. dalga (18:06):** `P22b.md`, `P22d.md`, `P13a.md`, `P20.md`, `P15b.md` (istemde dosyaya işaret + akşam ek notları: tabanın bugünkü main olması, paralel paketler, "P22e / P-S4 için" başlıkları; P15b'ye P13a yamalarını uygulamaması ve batch `Config.load` kalemi; imza DB adsız adları P15c'ye).
 
+- **Akşam 2. dalga:** `P16c.md` (18:52), `PS3b.md` (19:04), `P22e.md` (19:05), `P13b.md` (19:18), `P12b.md` (19:20), `P15c.md` (19:22). Berke 19:4x: "ajanların hepsi bitince bi duralım bakalım" → başka gönderim yok.
+
+## DURUŞ (2026-11-18 20:3x) — sonraki oturum buradan
+**main'de (akşam):** P20, P22d, P22b, P13a (+ c_namer yaması), P16c, P15b (+ P13a / P20 / P16c / P15b yamaları), P-S3b (+ stages.py yaması), P22e, P13b (+ config yaması), P12b (+ arayüz yamaları), P15c (bkz. DURUM). Her birinde ana oturum: ilgili testler main'de + bağımsız mutasyon main koduyla.
+
+**Gönderilmeyen paketler (sıra önerisi):**
+1. Birleşik ölçümden ÖNCE (ad / tip / belirlenimcilik): `P16d.md` (Ghidra döküm sırası; küçük), `P12c` (YAZILMADI: `c_namer._extract_function_bodies` iki satırlı imzanın gövdesini almıyor — 14 ikilide 697 / 13 832 fonksiyon görünmez; ad değişir → ön kayıtlı ölçüm), `P05c.md` (+ kalem 5 n-gram kökeni), `P18.md` (`undefined8` tip kararı), `P08b.md` (FLIRT seçici VT; K-2), `P10b.md` (K-1 yeniden yazım + MaxSMT).
+2. Tespit / akış: `P02b.md`, `P03b.md`, `PS4.md` (+ `P20__stages.py.patch`; RTTI üretici adımı P13b'den; `_collect_all_algorithms` silme), `P20b.md`.
+3. KaradulLM / arayüz: `P22c.md` (c1 → c2); `P22h` (YAZILMADI: keşif sorusu görevinin ajana bağlanması, oturum bloğunun isteme girmesi, `get_name_provenance`'ın `string_roles`'u okuması — P22e / P12b notları).
+4. Son: `P23.md`, kapanış denetimi (137 bulgu + 105 küçük kalem için durum tablosu; 2 salt okur ajan önerilir), birleşik 119 ölçümü (ön kayıt + `urun_kos --paralel 3`, ayrı ağaç `~/karadul_olcum/urun-<commit>` + `signatures.lmdb` bağı), ARGE listesinin son hâli → Mythos.
+
+**Berke'nin kararını bekleyenler:**
+- Eski deobfuscation zincirinin `beautify` / `babel_transforms` adımları (P20: A, kopya; `babel_transforms` 5/5 girdide hiç çalışmıyor) silinsin mi? (`synchrony` bayrak arkasında bağlandı.)
+- K-2 sonuçları: `kebap_ad` (P12b) ve AD-02 'rol + öğe' için ölçülmüş bir ad kuralı kurulamadı → kanal ad vermiyor, kanıt satırı yazıyor (yanlış ad havuzu %44,7 → %21,1). Kabul mü, yoksa `get_<seçenek>` / `<eylem>_<nesne>` biçimleri bağımsız sınama nüfusu bulunarak (tmux dışı kebap dizgili programlar) araştırılmaya devam mı?
+- K-10 ölü kod (eski füzyon, `_collect_all_algorithms`, VF2 süreç yolu): Berke "herhalde hepsi" dedi; ana oturum önerisi silinmesi (P-S4 / P23'te). İtiraz yok sayılmadı, sorulacak.
+- Silme onayı: `~/karadul_olcum/runs/onarim-2026-11-18/` bugün 28 GB (akşam paketleri: P12b 4,0 GB, P13a 2,4 GB, P15c 2,2 GB, P15b 1,4 GB, P13b 0,9 GB, P16c 0,5 GB, P-S3b 0,4 GB). Öneri: yalnız kod / ağaç kopyaları ve önbellekler silinsin, koşu çıktıları (raporların kanıtı) kalsın. Genel tarama koşusu 2,0 GB onaylı, ajanlar bittiği için silinebilir. Boş alan 243 GB.
+- `sigs/ngram_name_db` uygulama paketine girsin mi (bugün uygulamada n-gram `veri_yok`)? K-5'e benzer.
+- Push.
+
+**Atanmamış yeni bulgular (akşam):** gcat'te `close_stdout` yanlış adı (P-S3b'nin ön kayıtlı önerisi P-S3b.md'de); Ghidra `\'` kaçışı dizgiyi kaynak metinle karşılaştıran öbür kanalları da bozuyor olabilir; Mach-O'da `main` kurtarılmıyor; `string_intel` alt kanalı ayrı ölçüm ister (K-2); P13a'dan devreden iki kalan (c_namer kapalıyken ön ad 0,85; FID `caseD_N` yer tutucuları); RTTI üretici adımı ve parametre adı yayılımının uygulanması (`stages.py` + ölçüm); PDB / Go kanalı gerçek Ghidra koşusunda ölçülmedi; decompile işçi sayısı boş makinede ölçülmedi (P16c); KaradulLM gerçek model duman listeleri P21 / P22b / P22e.md'de.
+
 ## Akşam yazılanlar (2026-11-18 18:1x)
 | Metin | Paket | Önkoşul |
 |---|---|---|
