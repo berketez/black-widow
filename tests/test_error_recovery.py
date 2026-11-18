@@ -266,7 +266,9 @@ class TestErrorRecovery:
         def flaky() -> str:
             count["n"] += 1
             if count["n"] < 2:
-                raise RuntimeError("transient")
+                # P14 / BORU-06: yalniz gecici turler (TRANSIENT_EXCEPTIONS)
+                # yeniden denenir; RuntimeError belirlenimci sayilir.
+                raise ConnectionError("transient")
             return "ok"
 
         assert er.execute(flaky, "op_flaky") == "ok"

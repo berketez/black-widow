@@ -2,7 +2,9 @@
 
 Pipeline, Stage nesnelerini sirali calistirir. Her stage bir oncekinin
 sonuclarina PipelineContext uzerinden erisir. ErrorRecovery ile
-otomatik yeniden deneme ve circuit breaker korumasini saglar.
+circuit breaker korumasi ve yalniz GECICI hatalarda (baglanti / zaman asimi)
+sinirli yeniden deneme saglar; belirlenimci hata asamayi bir kez dusurur
+(P14 / BORU-06).
 """
 
 from __future__ import annotations
@@ -430,7 +432,13 @@ class Pipeline:
         return pipeline_result
 
     def _execute_stage(self, stage: Stage, context: PipelineContext) -> StageResult:
-        """Tek bir stage'i ErrorRecovery ile calistir."""
+        """Tek bir stage'i ErrorRecovery ile calistir.
+
+        Belirlenimci istisna (KeyError, TypeError ...) asamayi yeniden kosturmaz:
+        ilk denemede ``success=False`` + hata iletisi. Yalniz
+        ``error_recovery.TRANSIENT_EXCEPTIONS`` en cok ``retry.max_retries`` kez
+        yeniden denenir.
+        """
         start = time.monotonic()
 
         try:

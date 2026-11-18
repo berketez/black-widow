@@ -4,6 +4,13 @@ Eski error-recovery.js'nin Python portu. Uc bilesenli:
 1. CircuitBreaker: Ardisik hatalarda devreyi acar, belirli sure sonra yeniden dener.
 2. with_retry decorator: Exponential backoff + jitter ile yeniden deneme.
 3. ErrorRecovery: CircuitBreaker + retry birlesimi.
+
+P14 / BORU-06 (2026-11-18): ``ErrorRecovery`` yalniz GECICI hatalari
+(``TRANSIENT_EXCEPTIONS``: baglanti, zaman asimi, kesilen / bekleyen G/C) yeniden
+dener. Belirlenimci bir hata (KeyError, TypeError, ValueError ...) ayni girdiyle
+ayni sonucu verir; eskiden boru hatti asamayi istisna turune bakmadan 4 kez
+(1 + ``max_retries``) bastan kosturuyordu: buyuk ikilide 4 x Ghidra / adlandirma
+suresi ve her denemede yarim yazilmis dosyalarin ustune yazim.
 """
 
 from __future__ import annotations
@@ -216,6 +223,18 @@ def _calculate_delay(
 # Error Recovery (CircuitBreaker + Retry birlesimi)
 # ---------------------------------------------------------------------------
 
+# Yeniden denemeye deger (gecici) hata turleri. ``subprocess.TimeoutExpired``
+# bilerek yok: Ghidra gibi bir alt surecin zaman asimi ayni girdide ve ayni
+# sinirla yine olur (yeniden deneme yalniz sureyi katlar). Diger butun
+# istisnalar belirlenimci sayilir ve hemen yukseltilir.
+TRANSIENT_EXCEPTIONS: tuple[type[BaseException], ...] = (
+    ConnectionError,
+    TimeoutError,
+    BlockingIOError,
+    InterruptedError,
+)
+
+
 class ErrorRecovery:
     """CircuitBreaker + retry mekanizmasinin birlesimidir.
 
@@ -224,13 +243,28 @@ class ErrorRecovery:
 
     Args:
         config: RetryConfig instance'i (Config.retry).
+        retryable_exceptions: Yeniden denenecek istisna turleri (öntanım
+            ``TRANSIENT_EXCEPTIONS``). Bunlarin disindaki hata ilk denemede
+            yukseltilir (devre kesici yine bir hata sayar).
     """
 
-    def __init__(self, config: RetryConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: RetryConfig | None = None,
+        retryable_exceptions: tuple[type[BaseException], ...] | None = None,
+    ) -> None:
         if config is None:
             config = RetryConfig()
         self._config = config
+        self._retryable: tuple[type[BaseException], ...] = (
+            TRANSIENT_EXCEPTIONS if retryable_exceptions is None
+            else tuple(retryable_exceptions)
+        )
         self._breakers: dict[str, CircuitBreaker] = {}
+
+    def is_retryable(self, exc: BaseException) -> bool:
+        """Bu hata yeniden denenir mi? (yalniz gecici turler)"""
+        return isinstance(exc, self._retryable)
 
     def get_breaker(self, operation_id: str) -> CircuitBreaker:
         """Operasyon icin CircuitBreaker dondur (yoksa olustur)."""
@@ -262,7 +296,8 @@ class ErrorRecovery:
 
         Raises:
             CircuitBreakerOpenError: Devre aciksa.
-            Exception: max_retries asilirsa son hata.
+            Exception: Belirlenimci (gecici olmayan) hata ilk denemede;
+                gecici hata ``max_retries`` asilinca.
         """
         breaker = self.get_breaker(operation_id)
         breaker.check()
@@ -284,6 +319,14 @@ class ErrorRecovery:
             except Exception as exc:
                 last_exc = exc
                 breaker.record_failure()
+
+                if not self.is_retryable(exc):
+                    # BORU-06: belirlenimci hata yeniden denenmez.
+                    logger.debug(
+                        "Operasyon [%s]: %s gecici degil, yeniden denenmiyor",
+                        operation_id, type(exc).__name__,
+                    )
+                    raise
 
                 if attempt >= self._config.max_retries:
                     logger.error(

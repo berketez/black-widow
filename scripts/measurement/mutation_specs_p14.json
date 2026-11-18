@@ -1,0 +1,45 @@
+{
+  "_comment": "P14 (çekirdek akış: dürüst başarı, tekrar, yarış) mutasyon koruması. Her mutant bir onarımı geri alır; ilgili test KIRMIZI olmalı (killed). Mutant metni özgününden farklı uzunlukta (.pyc tuzağı). Her 'test' tek bir pytest hedefidir (mutation_probe tek argüman geçirir); hedeflerin mutantsız kodda geçtiği ayrıca denetlendi. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p14.json",
+  "mutants": [
+    {
+      "id": "p14_06_belirlenimci_yeniden_denenir",
+      "desc": "BORU-06: geçici olmayan hata da yeniden denenir (KeyError aşamayı 4 kez koşturur)",
+      "module": "karadul/core/error_recovery.py",
+      "test": "tests/test_p14_tekrar.py::TestPipelineStageRetry::test_keyerror_stage_runs_once_and_fails",
+      "find": "                if not self.is_retryable(exc):",
+      "replace": "                if False and not self.is_retryable(exc):"
+    },
+    {
+      "id": "p14_06_gecici_kume_genis",
+      "desc": "BORU-06: geçici küme bütün istisnaları kapsar (öntanım Exception)",
+      "module": "karadul/core/error_recovery.py",
+      "test": "tests/test_p14_tekrar.py::TestErrorRecoveryTransientOnly",
+      "find": "            TRANSIENT_EXCEPTIONS if retryable_exceptions is None",
+      "replace": "            (Exception,) if retryable_exceptions is None"
+    },
+    {
+      "id": "p14_06_gecici_yeniden_denenmez",
+      "desc": "BORU-06 (öbür yön): geçici hata da yeniden denenmez (sınırlı tekrar kayboldu)",
+      "module": "karadul/core/error_recovery.py",
+      "test": "tests/test_p14_tekrar.py::TestPipelineStageRetry::test_transient_stage_retried",
+      "find": "        return isinstance(exc, self._retryable)",
+      "replace": "        return False"
+    },
+    {
+      "id": "p14_06_tekli_duzey_ozgun_istisna",
+      "desc": "BORU-06: tekli düzeyde adımın özgün istisnası yükselir (stages.py except RuntimeError kaçırır)",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_p14_tekrar.py::test_reconstruct_phase3_keyerror_is_stage_failure",
+      "find": "            raise StepFailedError(spec.name, exc) from exc",
+      "replace": "            raise"
+    },
+    {
+      "id": "p14_06_paralel_duzey_duz_runtimeerror",
+      "desc": "BORU-06: paralel düzey StepFailedError yerine düz RuntimeError (adım adı / tür kaybolur)",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_p14_tekrar.py::TestRunnerUniformError::test_parallel_level_error_same_type",
+      "find": "            raise StepFailedError(\n                first_name, first_exc,\n",
+      "replace": "            raise RuntimeError(\n"
+    }
+  ]
+}

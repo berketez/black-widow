@@ -14,6 +14,7 @@ from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import Any
 
 from karadul.core.pipeline import PipelineContext
+from karadul.exceptions import PipelineStageError
 from karadul.pipeline.context import StepContext
 from karadul.pipeline.registry import StepSpec, get_step
 
@@ -21,6 +22,25 @@ logger = logging.getLogger(__name__)
 
 # Berke kurali: paralel ajan max 7 ile aynı felsefe — paralel step de 7 ile cap.
 _HARD_PARALLEL_CAP = 7
+
+
+class StepFailedError(PipelineStageError):
+    """Bir adimin ``run``'i istisna firlatti (tekli ve paralel duzeyde ayni tur).
+
+    P14 / BORU-06: tekli duzey (ya da ``parallel_steps=False``) eskiden adimin
+    OZGUN istisnasini yukseltiyordu; ``stages.py``'deki ``except RuntimeError``
+    KeyError / TypeError gibi turleri yakalamadigi icin hata asamadan kaciyor ve
+    asama yeniden deneme dongusune dusuyordu. Simdi her iki kipte de bu sinif
+    (``RuntimeError`` alt sinifi) yukseltilir; ozgun istisna ``__cause__`` ve
+    ``original`` alaninda, adim adi ``step_name``'de.
+    """
+
+    def __init__(self, step_name: str, original: BaseException, message: str = "") -> None:
+        self.step_name = step_name
+        self.original = original
+        super().__init__(
+            message or f"Step '{step_name}' basarisiz: {type(original).__name__}: {original}",
+        )
 
 
 class PipelineRunner:
@@ -31,11 +51,12 @@ class PipelineRunner:
     Hata modu:
         - Missing requires → RuntimeError (calistirmadan once)
         - Produces disinda artifact → RuntimeError (step sonrasi)
-        - Step exception (sequential): fail-fast, hata raise edilir, kalan
+        - Step exception (sequential): fail-fast, ``StepFailedError``
+          (RuntimeError; ozgun istisna ``__cause__``) raise edilir, kalan
           step'ler iptal.
         - Step exception (parallel): paralel grup icindeki diger future'lar
-          tamamlanana kadar beklenir, sonra ilk hata raise edilir
-          (errors listesinde hepsi gorunur).
+          tamamlanana kadar beklenir, sonra ilk hata ``StepFailedError`` ile
+          raise edilir (errors listesinde hepsi gorunur).
     """
 
     def __init__(self, steps: list[str]) -> None:
@@ -139,7 +160,8 @@ class PipelineRunner:
         except Exception as exc:
             ctx.errors.append(f"{spec.name}: {exc}")
             logger.exception("Step '%s' basarisiz", spec.name)
-            raise
+            # BORU-06: paralel duzeyle ayni tur (RuntimeError alt sinifi).
+            raise StepFailedError(spec.name, exc) from exc
         finally:
             ctx._current_step_meta = None
 
@@ -237,7 +259,8 @@ class PipelineRunner:
             for name, e in errors:
                 ctx.errors.append(f"{name}: {e}")
             first_name, first_exc = errors[0]
-            raise RuntimeError(
+            raise StepFailedError(
+                first_name, first_exc,
                 f"Paralel level {level_idx}'de {len(errors)} step basarisiz "
                 f"(ilki: '{first_name}'): {first_exc}",
             ) from first_exc
