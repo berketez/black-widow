@@ -264,7 +264,7 @@ def run_pipeline_for_bundle(bundle_name: str, bundle_path: str) -> dict:
         # Stage'leri kaydet (dynamic haric)
         pipeline.register_stage(IdentifyStage())
         pipeline.register_stage(StaticAnalysisStage())
-        pipeline.register_stage(DeobfuscationStage(use_deep=True))
+        pipeline.register_stage(DeobfuscationStage())
 
         try:
             pipeline.register_stage(ReconstructionStage())
