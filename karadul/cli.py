@@ -45,7 +45,7 @@ from karadul.cli_common import (
     format_size,
     make_progress_callbacks,
 )
-from karadul.config import Config
+from karadul.config import INERT_SETTINGS, Config
 
 logger = logging.getLogger("karadul")
 from karadul.core.target import Language, TargetDetector, TargetInfo, TargetType
@@ -164,6 +164,9 @@ def _load_config(config_path: Optional[str]) -> Config:
         # her sorun ayrı satır.
         _print_config_problems(exc)
         sys.exit(2)
+    # P15a / MEK-05: YAML'da yazılmış ama hiçbir yerde okunmayan ayarlar (sessiz değil).
+    for warning in cfg.inert_setting_warnings():
+        err_console.print(f"[bold yellow]Uyarı:[/bold yellow] {warning}", soft_wrap=True)
     return cfg
 
 
@@ -677,14 +680,17 @@ def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
               case_sensitive=False), default=None,
               help="Hesaplama kurtarma modu: full (tum katmanlar), standard (varsayilan), off.")
 @click.option("--deep/--no-deep", default=None,  # v1.6.5
-              help="Derin analiz modu: computation recovery + tum alt-katmanlar aktif.")
+              help="Hesaplama kurtarmayı bütün katmanlarıyla aç (--no-deep: kapat). "
+                   "Derin çağrı izlemeyi değiştirmez: o, "
+                   "binary_reconstruction.enable_engineering_analysis ile açılır.")
 @click.option("--output", "clean_output_dir", type=click.Path(), default=None,
               help="Temiz cikti dizini (src/, report.html, naming_map.json vb.).")
 @click.option("--format", "output_format", type=click.Choice(["clean", "raw"]),
               default="clean", help="Cikti formati: clean (duzenlenmis) veya raw (ham).")
 # v1.10.0 M4 flag'leri (Berke karari: ship-it default TRUE; --no-* ile kapat)
 @click.option("--experimental-step-registry", is_flag=True, default=False,
-              help="[v1.10.0] Yeni step registry pipeline'ini kullan (eski monolith yerine).")
+              help="Etkisiz (geriye uyum): adım kayıt defteri yolu zaten öntanımlı ve tek "
+                   "yol; eski monolit yolu kaldırıldı.")
 @click.option("--lmdb-sigdb", is_flag=True, default=False,
               help="[v1.10.0] LMDB-backed signature DB'yi ZORLA AC (default: zaten aktif; "
                    "LMDB dosyasi varsa ~250MB RAM, yoksa dict fallback). Config'de kapatilmissa override eder.")
@@ -883,10 +889,9 @@ def analyze(
             )
             cfg.computation_recovery.enable_signature_fusion = True
             cfg.computation_recovery.enable_formula_extraction = True
-            cfg.deep_trace.enable_deep_trace = True
-            cfg.deep_trace.enable_dispatch_resolution = True
-            cfg.deep_trace.enable_data_flow = True
-            cfg.deep_trace.enable_composition = True
+            # BORU-13 (P15a): eskiden burada dört deep_trace.enable_* alanı True
+            # yapılıyordu; hiçbirini okuyan yok (zaten öntanımlı True). Derin izleme
+            # binary_reconstruction.enable_engineering_analysis ile açılıp kapanır.
         _compute_resolved = True
 
     if not _compute_resolved and compute_mode is not None:
@@ -957,7 +962,7 @@ def analyze(
         console.print(f"[bold]Size:[/bold]   {format_size(target_info.file_size)}")
         # v1.6.5: compute/deep mode gostergesi
         if deep:
-            console.print("[bold]Mode:[/bold]   [bold magenta]DEEP[/bold magenta] (all layers + deep trace)")
+            console.print("[bold]Mode:[/bold]   [bold magenta]DEEP[/bold magenta] (hesaplama kurtarma: bütün katmanlar)")
         elif cfg.computation_recovery.enabled:
             _mode_label = compute_mode or ("full" if compute_recovery else "enabled")
             console.print(f"[bold]Compute:[/bold] [cyan]{_mode_label}[/cyan]")
@@ -2220,12 +2225,16 @@ def score(
     help="Sonucu JSON olarak stdout'a yaz.",
 )
 @click.option(
-    "--abi", type=click.Choice(["itanium", "msvc"]), default="itanium",
-    help="Kullanilacak RTTI ABI (msvc v1.10.1'de).",
+    "--abi", type=click.Choice(["itanium", "msvc"]), default=None,
+    help="Kullanılacak RTTI ABI (öntanım: ayar dosyasındaki "
+         "binary_reconstruction.rtti_abi, o da yoksa itanium; msvc desteklenmiyor).",
 )
+@click.option("--config", "config_path", type=click.Path(), default=None,
+              help="Config YAML dosyası (rtti_abi, rtti_max_vtable_entries).")
 @click.pass_context
 @_graceful_interrupt
-def rtti(ctx: click.Context, binary: str, json_output: bool, abi: str) -> None:
+def rtti(ctx: click.Context, binary: str, json_output: bool, abi: Optional[str],
+         config_path: Optional[str]) -> None:
     """C++ RTTI/vtable bilgisini cikar ve yazdir (v1.10.0 M3 T9).
 
     Itanium ABI (Linux/macOS g++/clang) destegi. Single inheritance only.
@@ -2236,11 +2245,23 @@ def rtti(ctx: click.Context, binary: str, json_output: bool, abi: str) -> None:
 
     from karadul.analyzers.cpp_rtti import RTTIParser
 
+    # P15a / MEK-05: rtti_abi ve rtti_max_vtable_entries ayar dosyasından okunur
+    # (eskiden komut ayar dosyasını hiç yüklemiyordu; iki alan etkisizdi).
+    cfg = _load_config(config_path)
+    br = cfg.binary_reconstruction
+    if abi is None:
+        abi = br.rtti_abi
+    if abi not in ("itanium", "msvc"):
+        err_console.print(
+            f"[bold red]HATA:[/bold red] binary_reconstruction.rtti_abi: {abi!r} "
+            "tanınmıyor (itanium | msvc)."
+        )
+        sys.exit(2)
     if abi == "msvc":
         err_console.print("[yellow]MSVC ABI henuz desteklenmiyor (v1.10.1 planinda).[/yellow]")
         sys.exit(2)
 
-    parser = RTTIParser(config=None)
+    parser = RTTIParser(config=br)
     hierarchy = parser.parse_itanium(Path(binary))
 
     if json_output:
@@ -2387,7 +2408,12 @@ def config_show(config_path: Optional[str], json_output: bool) -> None:
         "max_functions_to_process", "computation_recovery_enabled",
         "network_enabled",
     ):
-        table.add_row(key, str(knobs[key]))
+        value = str(knobs[key])
+        # ARAYUZ-04 / MEK-05: boru hattının okumadığı ayar "etkisiz" diye gösterilir.
+        inert = INERT_SETTINGS.get(f"binary_reconstruction.{key}")
+        if inert:
+            value += f" [yellow](etkisiz: {inert})[/yellow]"
+        table.add_row(key, value)
     sig = knobs["signature_paths"]
     table.add_row("signature_paths", "\n".join(sig) if sig else "[dim](yok)[/dim]")
     console.print(table)
@@ -2418,8 +2444,9 @@ def config_validate(config_path: Optional[str]) -> None:
     console.print("[green]OK[/green] YAML yüklendi; bütün bölüm ve anahtarlar tanındı, "
                   "değerler tiplerine uyuyor.")
 
-    # 3) Semantik dogrulama (Config.validate: arac varligi + double-counting).
-    warns = cfg.validate()
+    # 3) Semantik dogrulama (Config.validate: arac varligi + double-counting) ve
+    # MEK-05: YAML'da yazilmis ama hicbir kodun okumadigi ayarlar.
+    warns = cfg.validate() + cfg.inert_setting_warnings()
     if warns:
         console.print(Rule("Uyarilar", style="yellow"))
         for w in warns:

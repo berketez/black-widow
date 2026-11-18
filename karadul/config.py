@@ -615,6 +615,11 @@ class BinaryReconstructionConfig:
     enable_address_placement: bool = False
     address_placement_padding_threshold: int = 16   # bayt; dolgu bundan küçük değilse sınır
     address_placement_alignment: int = 32           # bayt; sinyal bandının üst ucu (dışında)
+    # K-1 (P-S1): capa yeteneklerinin koda yorum / ad olarak girmesi. Öntanımlı KAPALI:
+    # PE'de ad haritasının girişlerinin çoğu capa'dandı ve CRT kodundan yanlış adlar
+    # üretiyordu. Okuyan: pipeline/steps/capa_annotation.capa_code_feed_enabled (yalnız
+    # gerçek True açar). `capa_scan.json` bayraktan bağımsız her zaman yazılır.
+    enable_capa_code_feed: bool = False
 
 
 @dataclass
@@ -965,6 +970,101 @@ class DecompilersConfig:
     fallback_chain: list = field(default_factory=lambda: ["ghidra"])
 
 
+# ---------------------------------------------------------------------------
+# P15a / MEK-05 (2026-11-18): etkisiz ayarlar
+# ---------------------------------------------------------------------------
+# Bu alanlar ayar dosyasında yazılabilir ama analiz kodunda HİÇBİR yerde okunmuyor:
+# değiştirmek hiçbir şeyi değiştirmez. Berke kararı (2026-11-18) gereği alanlar
+# silinmez; burada nedenleriyle kayıtlıdır ve YAML'da yazılırsa `config validate`
+# ve `analyze` stderr'e uyarı basar. Bir alan bağlandığında buradan çıkarılmalı:
+# tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate kaydı koda karşı denetler
+# (bağlanan alan kayıtta kalırsa test kırmızı olur; okunmayan alan kayıtta yoksa da).
+_THRESHOLD_IN_CODE = "eşik kodda ayrıca sabit yazılı; merkezî tablo değeri okunmuyor"
+INERT_SETTINGS: dict[str, str] = {
+    "tools.ghidra_run": "Ghidra yalnız tools.ghidra_headless üstünden çağrılıyor",
+    "tools.radare2": "radare2 hiçbir yerde çağrılmıyor",
+    "tools.lipo": "lipo PATH'ten aranıyor (resolve_tool / shutil.which); bu yol okunmuyor",
+    "tools.codesign": "codesign hiçbir yerde çağrılmıyor",
+    "timeouts.frida_spawn_wait": (
+        "P-GÜV'den beri hedef askıda başlatılıyor ve kancalar yüklenince sürdürülüyor; "
+        "bekleme yok"
+    ),
+    "analysis.max_file_size_mb": (
+        "boyut sınırı security.max_binary_size_bytes'tan okunuyor; bu alan okunmuyor"
+    ),
+    "analysis.use_deep_deobfuscation": "deobfuscation zinciri bu bayrağa bakmıyor",
+    "source_match.consistency_ratio": "kaynak eşleme bu değeri okumuyor",
+    "source_match.unpkg_timeout": "kaynak eşleme bu değeri okumuyor",
+    "source_match.unpkg_delay_ms": "kaynak eşleme bu değeri okumuyor",
+    "source_match.npm_pack_fallback": "kaynak eşleme bu değeri okumuyor",
+    "source_match.fingerprint_cache": "kaynak eşleme bu değeri okumuyor",
+    "network.allow_source_match": (
+        "kaynak eşleme (Layer 1.5) bugün source_match.enabled + network.enabled ile "
+        "açılıyor; bağlama yaması yamalar/P15a__pipeline.py.patch (uygulanınca bu satır silinir)"
+    ),
+    "binary_reconstruction.function_id_db_paths": (
+        "FunctionID analizine ek .fidb verilmiyor; yalnız enable_function_id okunuyor"
+    ),
+    "binary_reconstruction.max_functions_to_process": (
+        "boru hattı fonksiyon sayısını sınırlamıyor; değer yalnız gösteriliyor (ARAYUZ-04)"
+    ),
+    "binary_reconstruction.enable_rtti_recovery": (
+        "RTTI kurtarma analiz akışına bağlı değil; yalnız ayrı `karadul rtti` komutu var"
+    ),
+    "deep_trace.max_trace_depth": "derin izleme deep_trace bölümünü okumuyor",
+    "deep_trace.max_trace_targets": "derin izleme deep_trace bölümünü okumuyor",
+    "deep_trace.skip_runtime_functions": "derin izleme deep_trace bölümünü okumuyor",
+    "deep_trace.enable_dispatch_resolution": (
+        "derin izleme yalnız binary_reconstruction.enable_engineering_analysis ile açılıp kapanıyor"
+    ),
+    "deep_trace.enable_data_flow": (
+        "derin izleme yalnız binary_reconstruction.enable_engineering_analysis ile açılıp kapanıyor"
+    ),
+    "deep_trace.enable_composition": (
+        "derin izleme yalnız binary_reconstruction.enable_engineering_analysis ile açılıp kapanıyor"
+    ),
+    "deep_trace.enable_deep_trace": (
+        "derin izleme yalnız binary_reconstruction.enable_engineering_analysis ile açılıp kapanıyor"
+    ),
+    "deep_trace.min_dispatch_confidence": "derin izleme deep_trace bölümünü okumuyor",
+    "deep_trace.composition_min_stages": "derin izleme deep_trace bölümünü okumuyor",
+    "debugger.auto_type_verification": "hata ayıklayıcı köprüsünün tip doğrulamasını çağıran yok",
+    "computation_recovery.formula_min_complexity": "formül çıkarıcı bu eşiği okumuyor",
+    "computation_recovery.cfg_iso_vf2_node_cap": "CFG eşleyici bu sınırı okumuyor",
+    "security.max_download_size": "indirme kodu bu sınırı okumuyor",
+    "security.allowed_download_schemes": "indirme kodu bu listeyi okumuyor",
+    "security.restrict_download_redirects_to_same_host": "indirme kodu bu bayrağı okumuyor",
+    "security.max_flirt_entries": (
+        "FLIRT ayrıştırıcısı aynı değeri kendi sabitinden okuyor (flirt_parser._MAX_FLIRT_ENTRIES)"
+    ),
+    "security.max_flirt_hex_length": (
+        "FLIRT ayrıştırıcısı aynı değeri kendi sabitinden okuyor (flirt_parser._MAX_FLIRT_HEX_LENGTH)"
+    ),
+    "security.max_capa_stderr_bytes": "capa çalıştırıcısı bu sınırı okumuyor",
+    "security.pyinstaller_reserved_names": (
+        "ayıklayıcı kendi listesini kullanıyor (packed_binary._WINDOWS_RESERVED_NAMES)"
+    ),
+    "min_confidence.bindiff_match": _THRESHOLD_IN_CODE,
+    "min_confidence.cfg_iso_matcher": _THRESHOLD_IN_CODE,
+    "min_confidence.reference_differ_detect": _THRESHOLD_IN_CODE,
+    "min_confidence.reference_differ_transfer": _THRESHOLD_IN_CODE,
+    "min_confidence.signature_db_filter": _THRESHOLD_IN_CODE,
+    "min_confidence.byte_pattern_match": _THRESHOLD_IN_CODE,
+    "min_confidence.name_merger_legacy_param": _THRESHOLD_IN_CODE,
+    "min_confidence.param_recovery_apply": _THRESHOLD_IN_CODE,
+    "min_confidence.struct_recovery_rewrite": _THRESHOLD_IN_CODE,
+    "min_confidence.callee_profile": (
+        _THRESHOLD_IN_CODE + " (pipeline/steps/_feedback_naming_candidates.py: 0.30)"
+    ),
+    "min_confidence.binary_intel_subsystem": _THRESHOLD_IN_CODE,
+    "min_confidence.calibrator_floor": _THRESHOLD_IN_CODE,
+    "decompilers.enable_parallel_decomp": "yer tutucu: tek arka uç çağrılıyor",
+    "decompilers.secondary_backend": "yer tutucu: tek arka uç çağrılıyor",
+    "computation.struct_split_weight": "MaxSMT çözücüsü bu ağırlığı okumuyor",
+    "computation.struct_min_confidence": "MaxSMT çözücüsü bu eşiği okumuyor",
+}
+
+
 # GHIDRA-07 (2026-11-18): YAML'dan gelen değer bool tipli bir alana Python
 # doğruluğuyla atanıyordu; "false" / "no" / "0" dizgileri DOĞRU sayılıyor ve
 # ör. ``security.allow_target_execution: "false"`` hedef çalıştırma kapısını
@@ -1186,7 +1286,7 @@ class Config:
     scripts_dir: Path = field(default_factory=lambda: Path(__file__).parent.parent / "scripts")
     ghidra_scripts_dir: Path = field(default_factory=lambda: Path(__file__).parent / "ghidra" / "scripts")
     # P15a: YAML'da açıkça yazılmış anahtarlar ("bölüm.anahtar"). Yükleyici doldurur;
-    # ağ alt izinlerinin öntanımı buna bakar. YAML bölümü değil.
+    # ağ alt izinlerinin öntanımı ve etkisiz ayar uyarıları buna bakar. YAML bölümü değil.
     yaml_keys: frozenset[str] = field(default_factory=frozenset, repr=False, compare=False)
 
     @classmethod
@@ -1313,3 +1413,24 @@ class Config:
             )
         return warnings_list
 
+    def inert_setting_warnings(self) -> list[str]:
+        """YAML'da yazılmış ama etkisi olmayan ayarlar için uyarılar (P15a / MEK-05).
+
+        - ``INERT_SETTINGS``'teki bir anahtar YAML'da yazılmışsa (hiçbir kod okumuyor).
+        - ``network`` alt izni YAML'da açık ama ``network.enabled`` kapalıysa (alt izin
+          tek başına hiçbir şey açmaz).
+        """
+        out: list[str] = []
+        for key in sorted(self.yaml_keys):
+            reason = INERT_SETTINGS.get(key)
+            if reason:
+                out.append(f"{key} etkisiz: {reason}")
+        if self.network.enabled is not True:
+            for name in ("allow_dts_fetch", "allow_reference_download", "allow_source_match"):
+                key = f"network.{name}"
+                if key in self.yaml_keys and getattr(self.network, name) is True:
+                    out.append(
+                        f"{key} açık ama network.enabled kapalı: alt izin tek başına "
+                        "ağı açmaz (etkisiz)"
+                    )
+        return out
