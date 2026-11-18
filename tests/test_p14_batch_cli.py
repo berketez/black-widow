@@ -26,7 +26,7 @@ def _invoke(tmp_path: Path, monkeypatch, results: list[batch.BatchTargetResult])
     monkeypatch.setattr(batch, "resolve_targets", lambda spec: {r.name: r.path for r in results})
 
     def fake_parallel(targets, project_root, skip_dynamic=True, max_workers=None,
-                      callback=None, worker=None):
+                      callback=None, worker=None, config_path=None):
         for r in results:
             if callback:
                 callback(r)

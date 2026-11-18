@@ -230,15 +230,21 @@ def analyze_single_target(
     path_str: str,
     project_root: Path,
     skip_dynamic: bool = True,
+    config_path: str | None = None,
 ) -> BatchTargetResult:
     """Tek bir hedefi pipeline'dan gecir.
 
     Args:
         name: Hedef adi.
         path_str: Hedef dosya yolu.
-        project_root: Workspace'lerin olusturulacagi ust dizin.
+        project_root: Workspace'lerin olusturulacagi ust dizin (yalnız çıktı kökü;
+            veri kökü ``Config.data_root``).
         skip_dynamic: Dinamik analizi atla. False ise DynamicAnalysisStage
             (Frida) pipeline'a eklenir.
+        config_path: Ayar dosyası (P15b kalem 8). ``karadul analyze`` gibi
+            ``Config.load`` ile katı yüklenir; verilmezse çalışma dizinindeki
+            ``karadul.yaml`` (varsa). Eskiden ayar dosyası hiç okunmuyordu
+            (``Config()``).
 
     v1.10.0 H5 fix: Onceden ``skip_dynamic`` parametresi fonksiyon imzasinda
     vardi ama Pipeline kurarken hic kullanilmiyordu; dolayisiyla
@@ -273,7 +279,9 @@ def analyze_single_target(
     start = time.monotonic()
 
     try:
-        cfg = Config()
+        # P15b kalem 8: tek analizdeki gibi ayar dosyasından (katı yükleyici; hata
+        # ConfigValueError -> aşağıdaki except: hedef başarısız, neden yazılı).
+        cfg = Config.load(Path(config_path) if config_path else None)
         cfg.project_root = project_root
 
         pipeline = Pipeline(cfg)
@@ -337,8 +345,9 @@ def analyze_single_target(
 
 def _worker(args: tuple) -> BatchTargetResult:
     """ProcessPoolExecutor icin wrapper (pickle edilebilir fonksiyon)."""
-    name, path_str, project_root, skip_dynamic = args
-    return analyze_single_target(name, path_str, project_root, skip_dynamic)
+    name, path_str, project_root, skip_dynamic = args[:4]
+    config_path = args[4] if len(args) > 4 else None
+    return analyze_single_target(name, path_str, project_root, skip_dynamic, config_path)
 
 
 def analyze_parallel(
@@ -348,6 +357,7 @@ def analyze_parallel(
     max_workers: int | None = None,
     callback=None,
     worker: Callable[[tuple], BatchTargetResult] | None = None,
+    config_path: str | None = None,
 ) -> list[BatchTargetResult]:
     """Birden fazla hedefi PARALEL analiz et.
 
@@ -367,6 +377,7 @@ def analyze_parallel(
         callback: Her analiz tamamlandiginda cagrilan fonksiyon(result).
         worker: Hedef basina cagrilan (pickle edilebilir) isci; varsayilan
             ``_worker`` (testler icin).
+        config_path: Her işçinin yükleyeceği ayar dosyası (P15b kalem 8).
 
     Returns:
         Sonuc listesi (hedef sirasina gore).
@@ -378,7 +389,7 @@ def analyze_parallel(
     workers = min(workers, 3, len(targets))
 
     args_list = [
-        (name, path_str, project_root, skip_dynamic)
+        (name, path_str, project_root, skip_dynamic, config_path)
         for name, path_str in targets.items()
     ]
 

@@ -96,6 +96,38 @@
       "test": "tests/test_p15b_imza_vt.py::test_paketleme_betigi_sozdizimi_ve_kaynak",
       "find": "LMDB_SRC=\"${KARADUL_SIG_LMDB_SRC:-$REPO/signatures.lmdb}\"",
       "replace": "LMDB_SRC=\"${KARADUL_SIG_LMDB_SRC:-$HOME/.karadul/signatures.lmdb}\""
+    },
+    {
+      "id": "k8_isci_config",
+      "desc": "batch işçisi ayar dosyasını yine yüklemiyor (Config())",
+      "module": "karadul/batch.py",
+      "test": "tests/test_p15b_batch_ayar.py::test_calisma_dizinindeki_karadul_yaml_tek_analizdeki_gibi",
+      "find": "cfg = Config.load(Path(config_path) if config_path else None)",
+      "replace": "cfg = Config()"
+    },
+    {
+      "id": "k8_isci_argumani",
+      "desc": "işçi argümanındaki ayar yolu yok sayılıyor",
+      "module": "karadul/batch.py",
+      "test": "tests/test_p15b_batch_ayar.py::test_isci_ayar_dosyasini_yukler",
+      "find": "config_path = args[4] if len(args) > 4 else None",
+      "replace": "config_path = None"
+    },
+    {
+      "id": "k8_cli_dogrulama",
+      "desc": "batch ayar dosyasını hedeflerden önce katı yükleyiciden geçirmiyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15b_batch_ayar.py::test_cli_hatali_ayar_hicbir_hedef_kosmadan_durur",
+      "find": "    _load_config(config_path)\n    if config_path is not None:\n        config_path = str(",
+      "replace": "    pass\n    if config_path is not None:\n        config_path = str("
+    },
+    {
+      "id": "k8_cli_iletim",
+      "desc": "ayar yolu işçilere iletilmiyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15b_batch_ayar.py::test_cli_gecerli_ayar_iscilere_mutlak_yolla_gider",
+      "find": "        callback=on_complete,\n        config_path=config_path,\n",
+      "replace": "        callback=on_complete,\n"
     }
   ]
 }

@@ -1604,12 +1604,17 @@ def batch() -> None:
 @click.option("--targets", "-t", required=True,
               help="Hedef grubu: electron, binary, js, cursor, all veya virgule ayrilmis isimler.")
 @click.option("--output-dir", type=click.Path(), default=None,
-              help="Workspace ust dizini (varsayilan: proje root).")
+              help="Çalışma alanlarının yazılacağı kök (varsayılan: çalışma dizini; altına "
+                   "workspaces/). İmza verisi veri kökünden okunur.")
 @click.option("--skip-dynamic", is_flag=True, default=False,
               help="Dinamik analizi atla (varsayilan: False).")
+@click.option("--config", "config_path", type=click.Path(), default=None,
+              help="Ayar dosyası (karadul.yaml). `analyze` gibi katı yüklenir; "
+                   "verilmezse çalışma dizinindeki karadul.yaml (varsa).")
 @click.pass_context
 @_graceful_interrupt
-def batch_analyze(ctx: click.Context, targets: str, output_dir: Optional[str], skip_dynamic: bool) -> None:
+def batch_analyze(ctx: click.Context, targets: str, output_dir: Optional[str], skip_dynamic: bool,
+                  config_path: Optional[str] = None) -> None:
     """Tum hedefleri toplu analiz et.
 
     Electron uygulamalari, JS bundle'lari ve native binary'leri
@@ -1628,6 +1633,15 @@ def batch_analyze(ctx: click.Context, targets: str, output_dir: Optional[str], s
     )
 
     _print_banner()
+
+    # P15b kalem 8: ayar dosyası tek analizdeki gibi katı yükleyiciden geçer (hata →
+    # çıkış 2, hiçbir hedef koşmaz; etkisiz ayar uyarısı). İşçiler aynı dosyayı
+    # mutlak yoldan yükler. Eskiden batch ayar dosyasını hiç okumuyordu (Config()).
+    if config_path is None and (Path.cwd() / "karadul.yaml").is_file():
+        config_path = str(Path.cwd() / "karadul.yaml")
+    _load_config(config_path)
+    if config_path is not None:
+        config_path = str(Path(config_path).resolve())
 
     resolved = resolve_targets(targets)
 
@@ -1661,6 +1675,7 @@ def batch_analyze(ctx: click.Context, targets: str, output_dir: Optional[str], s
         skip_dynamic=skip_dynamic,
         max_workers=workers,
         callback=on_complete,
+        config_path=config_path,
     )
 
     # Ozet tablosu
