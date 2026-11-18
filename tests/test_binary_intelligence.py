@@ -146,11 +146,15 @@ class TestSubsystemDetection:
         assert "Scanning Engine" in subsystem_names
 
     def test_terminal_subsystems(self, intelligence: BinaryIntelligence) -> None:
-        """Terminal emulator string'lerinden tespit."""
+        """Terminal emulator string'lerinden tespit.
+
+        P01b: genel terminal sözcükleri yetmez; sözde terminal ayıran API (``openpty``) şart
+        (yalnız sözcüklerle kurulmadığı ``tests/test_p01b_kalinti.py``'de sınanır).
+        """
         strings = [
             "pseudo_terminal", "pty_open", "vt100_escape",
             "cursor_position", "terminal_size", "xterm_256color",
-            "shell_command", "bash_history", "ansi_color",
+            "shell_command", "bash_history", "ansi_color", "openpty",
         ]
         report = intelligence.analyze(strings, [], [], "Terminal")
         subsystem_names = [s.name for s in report.architecture.subsystems]

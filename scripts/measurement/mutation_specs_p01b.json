@@ -104,6 +104,38 @@
       "test": "tests/test_p01b_basarim.py::TestOnSuzgecAyniSonuc::test_butun_kurallar_derlemde_ayni",
       "find": "        if len(chars) == 1:",
       "replace": "        if len(chars) <= 2:"
+    },
+    {
+      "id": "p01b_k2_ayirt_edici_sart_yok",
+      "desc": "ayırt edici gösterge şartı kapalı → htop / redis Version Control, stty Terminal Emulator",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_kalinti.py::TestKalintiYanlisYok",
+      "find": "                if not anchors:\n                    continue\n",
+      "replace": "                pass\n"
+    },
+    {
+      "id": "p01b_k2_api_benzeri_sart_yok",
+      "desc": "ayırt edici gösterge düzyazıda da sayılıyor (\"openpty failed: %s\")",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_kalinti.py::TestKalintiYanlisYok::test_yalniz_dizgide_ayirt_edici_yetmez",
+      "find": "anchors = [it for it, _ in (am.hits if am else []) if it.api_like]",
+      "replace": "anchors = [it for it, _ in (am.hits if am else [])]"
+    },
+    {
+      "id": "p01b_k2_tcgetattr_ayirt_edici",
+      "desc": "tcgetattr ayırt edici sayılıyor → her etkileşimli araç Terminal Emulator",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_kalinti.py::TestKalintiYanlisYok::test_coreutils_test_ve_stty",
+      "find": "        \"anchors\": [r\"forkpty\", r\"openpty\", r\"posix_openpt\", r\"ptsname\"],",
+      "replace": "        \"anchors\": [r\"forkpty\", r\"openpty\", r\"posix_openpt\", r\"ptsname\", r\"tcgetattr\"],"
+    },
+    {
+      "id": "p01b_k2_ayirt_edici_kanit_basta_degil",
+      "desc": "ayırt edici kanıt kanıt listesinin başına konmuyor",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_kalinti.py::TestAyirtEdiciVarsaKalir::test_tmux_forkpty",
+      "find": "            if anchors:\n                # ayirt",
+      "replace": "            if False:\n                # ayirt"
     }
   ]
 }

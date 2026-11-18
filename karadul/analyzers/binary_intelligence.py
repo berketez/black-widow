@@ -542,7 +542,12 @@ STRING_PATTERNS: dict[str, dict[str, Any]] = {
             r"submodule", r"worktree",
             r"cherry.?pick", r"bisect",
             r"libgit2", r"git2",
+            r"git_repository_\w+", r"git_libgit2_\w+",
         ],
+        # Ayirt edici gosterge (P01b): yalniz "push", "fetch", "diff", "branch" gibi yaygin
+        # sozcukler (htop collapseAllBranches, redis ListPush, openssl EVP_*_fetch) Version
+        # Control kurmaz; en az biri API benzeri bir ogede libgit2 olmali.
+        "anchors": [r"libgit2", r"git2", r"git_repository_\w+", r"git_libgit2_\w+"],
         "subsystem": "Version Control",
         "description": "Versiyon kontrol sistemi (Git)",
         "category": "vcs",
@@ -572,7 +577,12 @@ STRING_PATTERNS: dict[str, dict[str, Any]] = {
             r"tty", r"termios", r"tcgetattr",
             r"tcsetattr", r"winsize", r"TIOCGWINSZ",
             r"forkpty", r"openpty", r"posix_spawn",
+            r"posix_openpt", r"ptsname",
         ],
+        # Ayirt edici gosterge (P01b): tcgetattr / "shell" / TERM veritabani her etkilesimli
+        # komut satiri aracinda var (ls, stty, less, ssh); terminal emulatoru / coklayici sozde
+        # terminal ayirir: forkpty, openpty, posix_openpt, ptsname (API benzeri ogede).
+        "anchors": [r"forkpty", r"openpty", r"posix_openpt", r"ptsname"],
         "subsystem": "Terminal Emulator",
         "description": "Terminal emulasyonu",
         "category": "terminal",
@@ -826,6 +836,10 @@ STRING_PATTERNS: dict[str, dict[str, Any]] = {
             r"serial.?number", r"product.?key",
             r"license.?check", r"drm",
         ],
+        # Ayirt edici gosterge (P01b): "receipt", "serialNumber", "entitlement", "activation"
+        # X.509 / CMS / macOS yetkilendirmesinde de var (openssl, sqlite3); lisans yonetimi
+        # StoreKit, uygulama ici satin alma, urun anahtari ya da lisans denetimi API'si ister.
+        "anchors": [r"StoreKit", r"in.?app.?purchase", r"product.?key", r"license.?check"],
         "subsystem": "Licensing",
         "description": "Lisans yonetimi ve aktivasyon",
         "category": "business",
@@ -920,6 +934,9 @@ STRING_PATTERNS: dict[str, dict[str, Any]] = {
             r"mock", r"stub", r"spy",
             r"XCTAssert", r"XCTExpect",
         ],
+        # Ayirt edici gosterge (P01b): C assert() (__assert_fail, ___assert_rtn) ve "expected"
+        # hata iletileri her C programinda var; test cercevesi XCTest / unittest ister.
+        "anchors": [r"XCTest", r"unittest", r"XCTAssert", r"XCTExpect"],
         "subsystem": "Testing Framework",
         "description": "Test framework'u",
         "category": "development",
@@ -1832,6 +1849,12 @@ def _match_rule(
 _STRING_RULES: dict[str, _Rule] = {
     g: _compile_rule(d["patterns"], d.get("case_sensitive")) for g, d in STRING_PATTERNS.items()
 }
+# Ayirt edici gosterge isteyen alt sistem gruplari (P01b): iddia icin en az bir ``anchors``
+# gostergesi API benzeri bir ogede (simge, kitaplik, tanimlayici dizgi) eslesmeli.
+_STRING_ANCHORS: dict[str, _Rule] = {
+    g: _compile_rule(d["anchors"], d.get("case_sensitive"))
+    for g, d in STRING_PATTERNS.items() if d.get("anchors")
+}
 _ALGO_RULES: dict[str, _Rule] = {
     n: _compile_rule([d["pattern"]], d.get("case_sensitive")) for n, d in ALGORITHM_PATTERNS.items()
 }
@@ -1995,7 +2018,8 @@ class BinaryIntelligence:
 
         # 2. Alt sistemleri tespit et
         group_matches = {g: _match_rule(r, items, index) for g, r in _STRING_RULES.items()}
-        subsystems = self._detect_subsystems(group_matches, dylibs)
+        anchor_matches = {g: _match_rule(r, items, index) for g, r in _STRING_ANCHORS.items()}
+        subsystems = self._detect_subsystems(group_matches, dylibs, anchor_matches)
 
         # 3. Algoritmalari bul
         all_text = strings + symbols
@@ -2114,10 +2138,13 @@ class BinaryIntelligence:
 
     def _detect_subsystems(
         self, group_matches: dict[str, _RuleMatch], dylibs: list[str],
+        anchor_matches: dict[str, _RuleMatch] | None = None,
     ) -> list[Subsystem]:
         """Grup eslesmelerinden alt sistemleri tespit et.
 
-        Iddia yalniz bagimsiz iki kanitla kurulur (``_RuleMatch.independent``).
+        Iddia yalniz bagimsiz iki kanitla kurulur (``_RuleMatch.independent``). ``anchors``
+        tanimli grup ek olarak en az bir ayirt edici gostergeyi API benzeri bir ogede ister
+        (``anchor_matches``; yoksa iddia kurulmaz); o kanit kanit listesinin basina konur.
         Confidence hesabi:
         - eslesen gosterge / toplam gosterge * 0.7
         - kitaplik bonusu: +0.15 (grubun bir gostergesi bagli kitaplik yolunda eslestiyse)
@@ -2129,6 +2156,12 @@ class BinaryIntelligence:
             m = group_matches.get(group_name)
             if m is None or not m.independent(api_family=False):
                 continue
+            anchors: list[_EvidenceItem] = []
+            if group_name in _STRING_ANCHORS:
+                am = (anchor_matches or {}).get(group_name)
+                anchors = [it for it, _ in (am.hits if am else []) if it.api_like]
+                if not anchors:
+                    continue
 
             total = len(_STRING_RULES[group_name].indicators)
             confidence = len(m.matched_indicators) / max(total, 1) * 0.7
@@ -2141,6 +2174,13 @@ class BinaryIntelligence:
             confidence = min(confidence, 1.0)
 
             evidence, kinds = m.evidence(20)
+            if anchors:
+                # ayirt edici kanit once (analist hangi kanitla kuruldugunu ilk satirda gorur)
+                bas = [(it.text[:200], it.kind) for it in anchors[:3]]
+                kalan = [(e, k) for e, k in zip(evidence, kinds) if (e, k) not in bas]
+                birlesik = (bas + kalan)[:20]
+                evidence = [e for e, _ in birlesik]
+                kinds = [k for _, k in birlesik]
             subsystems.append(Subsystem(
                 name=group_data["subsystem"],
                 description=group_data["description"],

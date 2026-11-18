@@ -49,7 +49,7 @@ def _zor_derlem() -> list[str]:
     """Her göstergenin gerekli dizgisini farklı harf ve bağlamlarla içeren + tuzaklı dizgiler."""
     derlem = [
         "aes128-wrap", "AES-256-CBC", "EVP_aes_128_cbc", "aes192", "_glBindTexture", "glFlush",
-        "vkCreateInstance", "dgemm_", "sgesv_", "S4R", "B31", "BLEScanner", "CBCentralManager",
+        "vkCreateInstance", "dgemm_", "sgesv_", "S4R", "B31", "B21", "BLEScanner", "CBCentralManager",
         "crypto-miner", "cryptominer", "HTTPS", "https://example.com/x", "QUIC", "quicklist",
         "sha256sum", "SHA256_Init", "sha256", "_ptrace", "debugger detected", "PT_DENY_ATTACH",
         "AmIBeingDebugged", "being debugged", "IsDebuggerPresent", "__stack_chk_fail", "iv", "xz",
