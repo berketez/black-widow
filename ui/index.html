@@ -254,6 +254,8 @@
   .iv-ql{display:flex; justify-content:space-between; font-size:9px; letter-spacing:1px; color:var(--dim); margin-bottom:4px}
   .iv-qt{height:4px; border-radius:3px; background:var(--faint); overflow:hidden}
   .iv-qt i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--named),var(--cyan)); transition:width .6s ease}
+  .iv-qlab{margin-top:5px; font-size:9px; letter-spacing:.5px; color:var(--dim); line-height:1.5}
+  .fn.more{cursor:default; color:var(--dim); font-style:italic; justify-content:center}
   .iv-mtag{font-size:8px; letter-spacing:1px; color:var(--named); border:1px solid rgba(56,224,138,.4); border-radius:7px; padding:0 5px; flex-shrink:0}
   /* ad etiketi rozeti — yalnız kayıtta etiket varsa çizilir (k: kesin, v: doğrulandı, u: doğrulanmadı) */
   .lbadge{font-size:8px; letter-spacing:1px; color:var(--dim); border:1px solid var(--border); border-radius:7px; padding:0 5px; flex-shrink:0}
@@ -483,8 +485,8 @@
     <svg class="mk" viewBox="0 0 24 24"><path d="M4 2.5H20L12 12L20 21.5H4L12 12Z" fill="#e51334"/></svg>
     <h1>BLACK<b>WIDOW</b></h1>
     <div class="tag">KARADUL · REVERSE ENGINEERING SUITE</div>
-    <div class="desc">Bir stripped ELF seç. <b>Ghidra</b> ile decompile edilir, kütüphane fonksiyonları
-      <b>deterministik</b> olarak isimlendirilir, çağrı grafiği çıkarılır.</div>
+    <div class="desc">Bir ikili seç (yol ya da uygulama adı). <b>Ghidra</b> ile decompile edilir, fonksiyonlara
+      <b>deterministik</b> olarak ad önerilir (etiketiyle), çağrı grafiği çıkarılır.</div>
     <div class="entrybtns">
       <input class="pathin" id="pathIn" placeholder="binary yolu veya uygulama adı — örn: expr, cat, /bin/ls" spellcheck="false" autocomplete="off">
       <button class="go" id="goBtn" disabled>ANALİZ ET ▸</button>
@@ -520,7 +522,7 @@
     </div>
     <div class="binmeta"><div class="b" id="binName">—</div><div class="p" id="binPath"></div></div>
     <div class="stats">
-      <div class="recov"><div class="lab">RECONSTRUCTED</div><div class="bar"><i id="recovBar"></i></div></div>
+      <div class="recov" title="Ad atanan fonksiyon oranı. Doğruluk değildir: etiket dağılımı sol paneldedir."><div class="lab">AD ATANDI</div><div class="bar"><i id="recovBar"></i></div></div>
       <div class="recov"><div class="pct" id="recovPct">0%</div></div>
       <div class="stat n"><b id="sNamed">0</b><span>NAMED</span></div>
       <div class="stat w"><b id="sWeak">0</b><span>WEAK</span></div>
@@ -534,7 +536,7 @@
     <aside class="console">
       <div class="chdr">D: [SYMBOL.MAP] <span class="r" id="cnt">0</span></div>
       <div class="iv-filters" id="ivFilters"></div>
-      <div class="iv-qbar"><div class="iv-ql"><span>İSİMSİZ İŞ KUYRUĞU</span><span id="ivQTxt">0 / 0 çözüldü</span></div><div class="iv-qt"><i id="ivQFill"></i></div></div>
+      <div class="iv-qbar"><div class="iv-ql"><span>AD KUYRUĞU</span><span id="ivQTxt">—</span></div><div class="iv-qt"><i id="ivQFill"></i></div><div class="iv-qlab" id="ivQLab"></div></div>
       <div class="search"><input id="search" placeholder="fonksiyon / adres ara…" spellcheck="false"></div>
       <div class="fnlist" id="fnlist"></div>
     </aside>
@@ -698,7 +700,44 @@ window.fetch=(url,opts={})=>{
 const $=id=>document.getElementById(id);
 const SVGNS="http://www.w3.org/2000/svg";
 let MODEL=null, BYADDR={}, CENTER=null, HIST=[], SELBIN=null, POLL=null;
-const TRLABEL={named:"İSİMLİ",weak:"ZAYIF",unnamed:"İSİMSİZ"};
+const TRLABEL={named:"İSİMLİ",weak:"ZAYIF",unnamed:"İSİMSİZ",ghidra:"GHIDRA ADI"};
+/* P17-GOSTERIM-BASLA: listede / sayaçlarda gösterilen her şey modelin verisinden (uydurma yok) */
+const LIST_MAX=600;
+// MEK-08: adsız fonksiyonun gösterilen adı Ghidra'nın TAM adıdır (FUN_1000052f4); adresin son
+// hanelerinden kısaltılmış "FUN_0052f4" gibi ikilide olmayan bir ad üretilmez.
+function shownName(f){ return String(f&&f.name!=null?f.name:((f&&f.addr)||'')); }
+// ad kutusu: adsız fonksiyonda boş (yer tutucu Ghidra adını söyler); adlıda o anki ad
+function renameSeed(f){ return (!f||f.cls==='unnamed')?'':String(f.name); }
+// ARAYUZ-12: liste kesilince sayaç "gösterilen / eşleşen"; kesilmediyse yalnız sayı
+function listCountText(shown,matched){ return shown===matched?String(matched):(shown+' / '+matched); }
+function moreRowText(shown,matched){
+  return matched>shown?((matched-shown)+' fonksiyon daha listelenmedi — aramayı ya da süzgeci daralt'):'';
+}
+// ARAYUZ-13: ad atanmış olmak doğru ad demek değil; sayaç ad atanan sayısı + etiket dağılımı
+// (etiket yalnız kayıttan).
+// Ghidra'nın kendi adını taşıyan fonksiyonlar (cls 'ghidra': ithaller, _DT_INIT ...) Karadul'un
+// adlandırma işi değildir; sayaca girmez.
+function nameCounts(functions,manual){
+  const c={total:0,assigned:0,unnamed:0,kesin:0,dogrulandi:0,dogrulanmadi:0,etiketsiz:0,elle:0};
+  for(const f of (functions||[])){
+    if(f.cls==='ghidra') continue;
+    c.total++;
+    if(f.cls==='unnamed'){ c.unnamed++; continue; }
+    c.assigned++;
+    if(manual&&manual.has(f.addr)) c.elle++;
+    else if(f.label==='kesin') c.kesin++;
+    else if(f.label==='doğrulandı') c.dogrulandi++;
+    else if(f.label==='doğrulanmadı') c.dogrulanmadi++;
+    else c.etiketsiz++;
+  }
+  return c;
+}
+function queueTexts(c){
+  return {head:c.assigned+' / '+c.total+' ad atandı',
+          lab:'kesin '+c.kesin+' · doğrulandı '+c.dogrulandi+' · doğrulanmadı '+c.dogrulanmadi+
+              ' · etiketsiz '+c.etiketsiz+' · elle '+c.elle};
+}
+/* P17-GOSTERIM-BITIS */
 /* analist katmanı: aktif filtre + manuel düzeltilen adresler + evidence yarış koruması */
 let FILTER='all'; const MANUAL=new Set(); let EVSEQ=0;
 
@@ -714,13 +753,20 @@ async function init(){
 }
 
 /* ---------- GİRİŞ ---------- */
-function loadSuggestions(){
+/* Öneri çipleri sunucunun bulduğu GERÇEK dosyalardır (/api/binaries: yol + not); çip tam yolu
+   seçer. Eskiden sabit 'expr','cat','ls'… adları vardı: ~/coreutils_gt yoksa macOS sistem
+   ikililerine çözülüyor, analist GNU coreutils sanıyordu. Liste boşsa çip yok. */
+async function loadSuggestions(){
   const box=$('chips'); box.innerHTML='';
-  const names=['expr','cat','ls','sort','wc','tr','date'];
-  const lbl=document.createElement('span'); lbl.className='lbl'; lbl.textContent='HIZLI:'; box.appendChild(lbl);
-  names.forEach(n=>{
-    const c=document.createElement('span'); c.className='chip-s'; c.textContent=n;
-    c.onclick=()=>{ $('pathIn').value=n; SELBIN=n; $('goBtn').disabled=false; $('pathIn').focus(); };
+  let list=[];
+  try{ const j=await (await fetch('/api/binaries')).json(); list=Array.isArray(j&&j.binaries)?j.binaries:[]; }
+  catch(e){ list=[]; }
+  if(!list.length) return;
+  const lbl=document.createElement('span'); lbl.className='lbl'; lbl.textContent='BULUNAN:'; box.appendChild(lbl);
+  list.slice(0,10).forEach(b=>{
+    const c=document.createElement('span'); c.className='chip-s'; c.textContent=String(b.name||b.path);
+    c.title=String(b.path)+(b.note?' — '+b.note:'')+(b.size_h?' · '+b.size_h:'');
+    c.onclick=()=>{ $('pathIn').value=b.path; SELBIN=b.path; $('goBtn').disabled=false; $('pathIn').focus(); };
     box.appendChild(c);
   });
 }
@@ -737,7 +783,7 @@ async function startAnalyze(){
     body:JSON.stringify({binary:SELBIN})})).json(); }
   catch(e){ $('entryWarn').textContent='sunucuya ulaşılamadı'; return; }
   if(j.error){ $('entryWarn').textContent='⚠ '+j.error; return; }
-  $('anBin').textContent=j.binary+'.stripped';
+  $('anBin').textContent=j.binary;
   $('anFail').style.display='none'; $('anBack').style.display='none'; $('anTail').textContent='';
   showView('analyze');
   const job=j.job;
@@ -815,14 +861,11 @@ function enterResult(j){
   $('binName').textContent=j.binary;
   $('binPath').textContent=j.workspace;
   $('tgBin').textContent='['+String(j.binary).slice(0,18).toUpperCase()+']';
-  $('sNamed').textContent=j.named; $('sWeak').textContent=j.weak; $('sUnk').textContent=j.unnamed;
-  const pct=Math.round(100*j.recovered/Math.max(1,j.total));
-  $('recovPct').textContent=pct+'%'; setTimeout(()=>$('recovBar').style.width=pct+'%',300);
-  $('cnt').textContent=j.total;
-  renderSecurityBanner(j);
   showView('result');
+  recount();
+  renderSecurityBanner(j);
   buildList(MODEL.functions);
-  buildFilters(); updateProgress(); loadOverrides();
+  buildFilters(); loadOverrides();
   if(!enterResult._ro){
     enterResult._ro=true; let rot;
     new ResizeObserver(()=>{ clearTimeout(rot); rot=setTimeout(()=>{ if(CENTER) drawRadial(CENTER); },90); })
@@ -869,21 +912,23 @@ $('newBtn').onclick=newAnalysis; $('brandHome').onclick=newAnalysis;
 function buildList(list){
   const q=$('search').value.toLowerCase();
   const box=$('fnlist'); box.innerHTML='';
-  const rows=list.filter(f=>passFilter(f) && (!q||f.name.toLowerCase().includes(q)||f.addr.toLowerCase().includes(q)))
-    .sort((a,b)=> b.out-a.out || b.in-a.in).slice(0,600);
+  const matched=list.filter(f=>passFilter(f) && (!q||f.name.toLowerCase().includes(q)||f.addr.toLowerCase().includes(q)))
+    .sort((a,b)=> b.out-a.out || b.in-a.in);
+  const rows=matched.slice(0,LIST_MAX);
   const frag=document.createDocumentFragment();
   for(const f of rows){
     const d=document.createElement('div');
     d.className='fn '+f.cls+(f.addr===CENTER?' active':''); d.dataset.addr=f.addr;
-    const shown=f.cls==='unnamed'?('FUN_'+f.addr.slice(-6)):f.name;
     const mtag=MANUAL.has(f.addr)?'<span class="iv-mtag">manuel</span>':'';
     const ltag=labelBadge(f.label,true);   // etiket yoksa '' (işaret çizilmez)
-    d.innerHTML=`<span class="dot"></span><span class="nm">${esc(shown)}</span>${ltag}${mtag}<span class="deg"><b>${f.out}</b>↗ ${f.in}↘</span>`;
+    d.innerHTML=`<span class="dot"></span><span class="nm">${esc(shownName(f))}</span>${ltag}${mtag}<span class="deg"><b>${f.out}</b>↗ ${f.in}↘</span>`;
     d.onclick=()=>focus(f.addr);
     frag.appendChild(d);
   }
+  const more=moreRowText(rows.length,matched.length);
+  if(more){ const m=document.createElement('div'); m.className='fn more'; m.id='fnMore'; m.textContent=more; frag.appendChild(m); }
   box.appendChild(frag);
-  $('cnt').textContent=rows.length;
+  $('cnt').textContent=listCountText(rows.length,matched.length);
 }
 
 function focus(addr,noHist){
@@ -904,7 +949,7 @@ function deriveRole(j){
   if(prov && prov.library) return 'kütüphane · '+prov.library;
   if(ext.length) return '→ '+ext.slice(0,2).join(', ');
   if(strs.length) return '"'+trunc(strs[0],24)+'"';
-  if(dg && dg.verdict) return ({bsim_shadow:'BSim adayı var (kapalı)',app_wrapper:'kütüphane sarmalayıcı',app_specific:'uygulamaya özgü'})[dg.verdict]||'';
+  if(dg && dg.verdict) return ({bsim_shadow:'BSim adayı (ad kanalına bağlı değil)',app_wrapper:'kütüphane sarmalayıcı',app_specific:'uygulamaya özgü'})[dg.verdict]||'';
   return '';
 }
 function setMapRole(addr,text){ MAP_ROLE[addr]=text||''; if(addr===CENTER){ const e=document.getElementById('mapRole'); if(e) e.textContent=text||''; } }
@@ -947,7 +992,7 @@ function drawRadial(addr){
       dot.setAttribute('class','ndot '+c.cls); dot.setAttribute('filter','url(#glow)'); dot.style.color=cssvar(c.cls);
       const t=el('text'); t.setAttribute('x',x+(isLeft?-8:8)); t.setAttribute('y',y+3.5);
       t.setAttribute('text-anchor',isLeft?'end':'start'); t.setAttribute('class','nlbl');
-      t.textContent=c.cls==='unnamed'?('·'+c.addr.slice(-5)):trunc(c.name,18);
+      t.textContent=trunc(shownName(c),18);
       g.appendChild(hit); g.appendChild(dot); g.appendChild(t);
       g.style.opacity=0; g.style.animation=`fade .4s ease forwards ${i*0.012+seed+0.2}s`;
       g.onclick=()=>focus(c.addr); gNodes.appendChild(g);
@@ -973,7 +1018,7 @@ function drawRadial(addr){
   ring2.setAttribute('fill',cssvar('widow')); ring2.setAttribute('stroke','#2a0510'); ring2.setAttribute('stroke-width','0.6');
   ring2.setAttribute('filter','url(#glow)'); ring2.style.filter='drop-shadow(0 0 6px var(--widow-glow))';
   const lbl=el('text'); lbl.setAttribute('x',cx); lbl.setAttribute('y',cy-34); lbl.setAttribute('class','corelbl');
-  lbl.textContent=f.cls==='unnamed'?('FUN_'+f.addr.slice(-6)):trunc(f.name,30);
+  lbl.textContent=trunc(shownName(f),30);
   const ad=el('text'); ad.setAttribute('x',cx); ad.setAttribute('y',cy+38); ad.setAttribute('class','coreaddr');
   // çağrı grafiği yoksa sunucu metin yöntemine düşer (calls_source==='text'): sayılar çağrı değil
   ad.textContent=MODEL.calls_source==='text'
@@ -996,7 +1041,7 @@ function crumbs(){
     const f=BYADDR[a]; if(!f) return;
     if(i>0){ const s=document.createElement('span'); s.className='sep'; s.textContent='›'; box.appendChild(s); }
     const c=document.createElement('span'); c.className='crumb'+(a===CENTER?' cur':'');
-    c.textContent=f.cls==='unnamed'?('FUN_'+f.addr.slice(-6)):trunc(f.name,18);
+    c.textContent=trunc(shownName(f),18);
     if(a!==CENTER) c.onclick=()=>{ const idx=HIST.lastIndexOf(a); if(idx>=0)HIST=HIST.slice(0,idx); focus(a,true); };
     box.appendChild(c);
   });
@@ -1004,7 +1049,7 @@ function crumbs(){
 
 async function loadCode(addr){
   const f=BYADDR[addr]; const p=$('codePanel'); p.classList.add('open');
-  $('cTitle').textContent=f.cls==='unnamed'?('FUN_'+f.addr.slice(-6)):f.name;
+  $('cTitle').textContent=shownName(f);
   $('cTitle').className='t '+f.cls;
   const b=$('cBadge'); b.className='badge '+f.cls; b.textContent=TRLABEL[f.cls];
   $('cAddr').textContent=f.addr; $('cInspSub').textContent=f.addr; setRename(f); loadEvidence(addr);
@@ -1092,19 +1137,22 @@ function buildFilters(){
 }
 function updateProgress(){
   if(!MODEL) return;
-  const total=MODEL.total||0, resolved=(MODEL.named||0)+(MODEL.weak||0);
-  $('ivQTxt').textContent=resolved+' / '+total+' çözüldü';
-  $('ivQFill').style.width=(total?Math.round(100*resolved/total):0)+'%';
+  const c=nameCounts(MODEL.functions,MANUAL), t=queueTexts(c);
+  $('ivQTxt').textContent=t.head;
+  $('ivQLab').textContent=t.lab;
+  $('ivQFill').style.width=(c.total?Math.round(100*c.assigned/c.total):0)+'%';
 }
 /* rename sonrası sınıf sayaçlarını + üst-bar istatistiklerini tazele */
 function recount(){
   if(!MODEL) return;
   let n=0,w=0,u=0;
-  for(const f of MODEL.functions){ if(f.cls==='named')n++; else if(f.cls==='weak')w++; else u++; }
+  for(const f of MODEL.functions){ if(f.cls==='named')n++; else if(f.cls==='weak')w++; else if(f.cls==='unnamed')u++; }
   MODEL.named=n; MODEL.weak=w; MODEL.unnamed=u; MODEL.recovered=n+w;
   $('sNamed').textContent=n; $('sWeak').textContent=w; $('sUnk').textContent=u;
-  const pct=Math.round(100*MODEL.recovered/Math.max(1,MODEL.total));
+  const c=nameCounts(MODEL.functions,MANUAL);
+  const pct=Math.round(100*c.assigned/Math.max(1,c.total));
   $('recovPct').textContent=pct+'%'; $('recovBar').style.width=pct+'%';
+  updateProgress();
 }
 /* önceki oturumlardan gelen override'ları işaretle (best-effort, endpoint yoksa sessiz) */
 async function loadOverrides(){
@@ -1114,7 +1162,7 @@ async function loadOverrides(){
     if(ov && typeof ov==='object'){
       let any=false;
       Object.keys(ov).forEach(a=>{ if(BYADDR[a]){ MANUAL.add(a); any=true; } });
-      if(any){ buildFilters(); if(FILTER==='manual') buildList(MODEL.functions); }
+      if(any){ buildFilters(); updateProgress(); if(FILTER==='manual') buildList(MODEL.functions); }
     }
   }catch(e){}
 }
@@ -1122,7 +1170,8 @@ async function loadOverrides(){
 /* ---- rename (düzelt) ---- */
 function setRename(f){
   const inp=$('renameInput'); if(!inp||!f) return;
-  inp.value = f.cls==='unnamed' ? ('FUN_'+f.addr.slice(-6)) : f.name;
+  inp.value = renameSeed(f);
+  inp.placeholder = f.cls==='unnamed' ? ('yeni isim… (Ghidra adı: '+f.name+')') : 'yeni isim…';
   clearRenameErr();
 }
 function showRenameErr(m){ const e=$('renameErr'); e.textContent='⚠ '+m; e.classList.add('on'); }
@@ -1231,7 +1280,7 @@ function renderEvidence(j){
   if(dg && dg.reason){
     const card=document.createElement('div'); card.className='iv-ev iv-diag '+(dg.verdict||'');
     const h=document.createElement('div'); h.className='iv-evh';
-    const VL={bsim_shadow:'BSim kapalı',app_wrapper:'uygulama sarmalayıcı',app_specific:'uygulamaya özgü',ambiguous:'belirsiz'};
+    const VL={bsim_shadow:'BSim adayı',app_wrapper:'uygulama sarmalayıcı',app_specific:'uygulamaya özgü',ambiguous:'belirsiz'};
     h.innerHTML='◇ NEDEN İSİMSİZ?'+(VL[dg.verdict]?`<span class="c">${esc(VL[dg.verdict])}</span>`:'');
     const b=document.createElement('div'); b.className='iv-eb';
     const r=document.createElement('div'); r.className='iv-dreason'; r.textContent=dg.reason; b.appendChild(r);

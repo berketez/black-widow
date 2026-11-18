@@ -776,8 +776,11 @@ def _naming_diagnosis(addr: str, text: str, cmap: dict, cls: str) -> dict:
     # verdict + insan-okunur neden
     if strong_bsim:
         verdict = "bsim_shadow"
-        reason = (f"BSim güçlü benzer buldu ('{bsim['name']}', %{round(sim * 100)}) ama gölge "
-                  "modunda kapalı. İmzalar → BSim'i füzyona açarsan otomatik isimlenebilir.")
+        # ARAYUZ-15: arayüzde karşılığı olmayan ayara ("İmzalar → BSim") yönlendirme ve
+        # ölçülmemiş "otomatik isimlenebilir" vaadi yok; yalnız olgu.
+        reason = (f"BSim adayı: '{bsim['name']}', %{round(sim * 100)} benzer. Aday ad kanalına "
+                  "bağlı değil (gölge kipi) ve bu kanalın doğruluğu ölçülmedi; adı kodla "
+                  "karşılaştırıp elle verin.")
     elif ext:
         verdict = "app_wrapper"
         reason = ("Uygulamaya özgü sarmalayıcı: bilinen kütüphane fonksiyonları çağırıyor ama "

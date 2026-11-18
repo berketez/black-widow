@@ -208,6 +208,62 @@
       "test": "tests/test_p17_ad_duzeltme.py",
       "find": "    _validate_name(new, local=True)",
       "replace": "    _validate_name(new)"
+    },
+    {
+      "id": "g08_kisaltilmis_etiket",
+      "desc": "adsız fonksiyon adresin son 6 hanesiyle gösterilir (eski)",
+      "module": "ui/index.html",
+      "test": "tests/test_p17_gosterim.py",
+      "find": "function shownName(f){ return String(f&&f.name!=null?f.name:((f&&f.addr)||'')); }",
+      "replace": "function shownName(f){ return f.cls==='unnamed'?('FUN_'+f.addr.slice(-6)):String(f.name); }"
+    },
+    {
+      "id": "g08_ad_kutusu_dolu",
+      "desc": "ad kutusu adsız fonksiyonda Ghidra adıyla dolar",
+      "module": "ui/index.html",
+      "test": "tests/test_p17_gosterim.py",
+      "find": "function renameSeed(f){ return (!f||f.cls==='unnamed')?'':String(f.name); }",
+      "replace": "function renameSeed(f){ return String(f.name); }"
+    },
+    {
+      "id": "g12_kesilen_sayi_toplam",
+      "desc": "sayaç kesilmiş sayıyı toplam gibi gösterir",
+      "module": "ui/index.html",
+      "test": "tests/test_p17_gosterim.py",
+      "find": "function listCountText(shown,matched){ return shown===matched?String(matched):(shown+' / '+matched); }",
+      "replace": "function listCountText(shown,matched){ return String(shown); }"
+    },
+    {
+      "id": "g12_daha_satiri_yok",
+      "desc": "kesilen satırlar için satır gösterilmez",
+      "module": "ui/index.html",
+      "test": "tests/test_p17_gosterim.py",
+      "find": "  return matched>shown?((matched-shown)+' fonksiyon daha",
+      "replace": "  return matched<shown?((matched-shown)+' fonksiyon daha"
+    },
+    {
+      "id": "g13_etiketsiz_kesin_sayilir",
+      "desc": "etiketsiz adlar kesin sayılır",
+      "module": "ui/index.html",
+      "test": "tests/test_p17_gosterim.py",
+      "find": "    else if(f.label==='kesin') c.kesin++;",
+      "replace": "    else if(f.label!=='doğrulanmadı') c.kesin++;"
+    },
+    {
+      "id": "g13_ghidra_adi_sayilir",
+      "desc": "Ghidra'nın kendi adları ad atandı sayılır",
+      "module": "ui/index.html",
+      "test": "tests/test_p17_gosterim.py",
+      "find": "    if(f.cls==='ghidra') continue;",
+      "replace": "    if(f.cls==='ghidra_') continue;"
+    },
+    {
+      "id": "g15_imzalar_yonlendirmesi",
+      "desc": "teşhis olmayan ayara yönlendirir (eski metin)",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_gosterim.py",
+      "find": "        reason = (f\"BSim adayı: '{bsim['name']}', %{round(sim * 100)} benzer. Aday ad kanalına \"\n                  \"bağlı değil (gölge kipi) ve bu kanalın doğruluğu ölçülmedi; adı kodla \"\n                  \"karşılaştırıp elle verin.\")",
+      "replace": "        reason = (f\"BSim güçlü benzer buldu ('{bsim['name']}', %{round(sim * 100)}). \"\n                  \"İmzalar → BSim'i füzyona açarsan otomatik isimlenebilir.\")"
     }
   ]
 }
