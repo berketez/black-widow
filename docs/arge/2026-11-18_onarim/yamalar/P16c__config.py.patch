@@ -1,0 +1,34 @@
+diff --git a/karadul/config.py b/karadul/config.py
+index 2a8aa54..549532a 100644
+--- a/karadul/config.py
++++ b/karadul/config.py
+@@ -292,6 +292,10 @@ class AnalysisConfig:
+     max_file_size_mb: int = 500
+     string_min_length: int = 4
+     ghidra_max_heap_mb: int = field(default_factory=lambda: GHIDRA_HEAP_MB)
++    # P16c: analizden önce kapatılacak Ghidra çözümleyicileri (ad, Ghidra'daki gibi).
++    # Boş = Ghidra öntanımı. Kapatmak decompile çıktısını değiştirebilir (ölçüm:
++    # docs/arge/2026-11-18_onarim/P16c.md kalem 2); bu yüzden öntanım boş.
++    ghidra_disabled_analyzers: list[str] = field(default_factory=list)
+     webpack_module_min_size: int = 50
+     deobfuscation_chain: list[str] = field(
+         default_factory=lambda: ["beautify", "synchrony", "babel_transforms"]
+@@ -538,7 +542,7 @@ class BinaryReconstructionConfig:
+     # Ghidra decompile batch boyutu: kac fonksiyon ayni anda islenir.
+     # Buyuk binary'lerde tum fonksiyonlari tek seferde decompile etmek
+     # JVM heap'i patlatir. 5000'lik batch'lerde GC nefes alir.
+-    ghidra_batch_size: int = 5000
++    ghidra_batch_size: int = 5000  # P16c: ETKİSİZ — decompile parçası işçi sayısından (CPU_PERF_CORES); headless artık okumuyor
+     # Bu boyutun ustundeki binary'ler "buyuk" kabul edilir (MB).
+     # mmap, chunked decompile ve lazy string loading aktif olur.
+     large_binary_threshold_mb: int = 100
+@@ -648,6 +652,9 @@ class BSimConfig:
+     # Fonksiyon basina fusion'a en fazla kac BSim adayi eklenecek.
+     # (Cok fazla aday ayni evidence'i birden fazla sayar; top-N ile sinirla.)
+     fusion_max_candidates_per_function: int = 3
++    # P16c: native sorgu tek GenSignatures + tek QueryNearest ile (eşleşme kümesi
++    # fonksiyon başına yolla aynı; Mac htop 142 sn -> birkaç sn). False = eski yol.
++    batch_query: bool = True
+ 
+ 
+ @dataclass

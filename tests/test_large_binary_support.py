@@ -451,21 +451,17 @@ class TestPipelineLargeBinaryDetection:
 class TestDecompileBatchProgress:
     """_decompile_functions batch parametreleri."""
 
-    def test_batch_size_parameter_exists(self) -> None:
-        """_decompile_functions batch_size parametresi kabul etmeli."""
+    def test_olu_batch_size_parametresi_yok(self) -> None:
+        """P16c: ``batch_size`` gövdede hiç okunmuyordu (ölü ayar); parametre kaldırıldı.
+
+        Parça boyu işçi sayısından gelir; ``ghidra_batch_size`` ayarı etkisiz
+        (yamalar/P16c__config.py.patch).
+        """
         from karadul.ghidra.headless import GhidraHeadless
         import inspect
 
         sig = inspect.signature(GhidraHeadless._decompile_functions)
-        assert "batch_size" in sig.parameters
-
-    def test_batch_size_default_5000(self) -> None:
-        """Varsayilan batch_size 5000 olmali."""
-        from karadul.ghidra.headless import GhidraHeadless
-        import inspect
-
-        sig = inspect.signature(GhidraHeadless._decompile_functions)
-        assert sig.parameters["batch_size"].default == 5000
+        assert "batch_size" not in sig.parameters
 
     def test_return_includes_batch_info(self) -> None:
         """Decompile sonucu batch bilgisi icermeli."""

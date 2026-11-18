@@ -373,7 +373,6 @@ class GhidraHeadless:
 
                     decomp_data = self._decompile_functions(
                         program, output_dir, timeout,
-                        batch_size=self.config.binary_reconstruction.ghidra_batch_size,
                         selective_ops=_pcode_sel,
                         func_timeout=int(
                             self.config.binary_reconstruction.max_decompile_timeout_per_func
@@ -1100,7 +1099,6 @@ class GhidraHeadless:
     @staticmethod
     def _decompile_functions(
         program, output_dir: Path, timeout: int,
-        batch_size: int = 5000,
         selective_ops: set[str] | None = None,
         func_timeout: int = 30,
     ) -> dict[str, Any]:
@@ -1114,7 +1112,8 @@ class GhidraHeadless:
             program: Ghidra program nesnesi.
             output_dir: Cikti dizini.
             timeout: Toplam zaman asimi (saniye).
-            batch_size: Progress loglama periyodu.
+            (P16c: eski ``batch_size`` parametresi gövdede hiç kullanılmıyordu, kaldırıldı;
+            parça boyu işçi sayısından: fonksiyon sayısı / ``CPU_PERF_CORES``.)
             selective_ops: Verilirse decompile sirasinda bu mnemonic'lere
                 sahip P-Code op'lari compact formatta toplanir (v1.5 JSONL).
             func_timeout: Fonksiyon başına decompile süresi (saniye);
