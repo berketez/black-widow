@@ -691,14 +691,32 @@ def kosu_denetle(kosu: dict):
             kusur["sayi:" + ad] = 1
 
     ham_adres = set(ham["fonk"])
-    karsilastir("fonksiyon_sayisi",
-                rapor_static=st.get("ghidra_function_count"),
-                functions_json_total=fj.get("total"),
-                functions_json_liste=len(fonksiyonlar),
-                functions_json_tekil_adres=len(adres_kayit),
-                rapor_ozet=ozet_r.get("total_functions"),
-                log=lg.get("fonksiyon"),
-                out_rapor=(out_rapor or {}).get("statistics", {}).get("functions"))
+    if "ghidra_function_total" in st:
+        # P16a / GHIDRA-10: rapordaki "Functions recovered" artık programın fonksiyonları
+        # (thunk ve dış fonksiyon hariç); Ghidra'nın toplamı ``ghidra_function_total``.
+        karsilastir("fonksiyon_sayisi",
+                    rapor_static_toplam=st.get("ghidra_function_total"),
+                    functions_json_total=fj.get("total"),
+                    functions_json_liste=len(fonksiyonlar),
+                    functions_json_tekil_adres=len(adres_kayit))
+        karsilastir("program_fonksiyon_sayisi",
+                    rapor_static=st.get("ghidra_function_count"),
+                    functions_json_program=fj.get("program_function_count"),
+                    functions_json_liste_program=sum(
+                        1 for f in fonksiyonlar
+                        if not f.get("is_thunk") and not f.get("is_external")),
+                    rapor_ozet=ozet_r.get("total_functions"),
+                    log=lg.get("fonksiyon"),
+                    out_rapor=(out_rapor or {}).get("statistics", {}).get("functions"))
+    else:
+        karsilastir("fonksiyon_sayisi",
+                    rapor_static=st.get("ghidra_function_count"),
+                    functions_json_total=fj.get("total"),
+                    functions_json_liste=len(fonksiyonlar),
+                    functions_json_tekil_adres=len(adres_kayit),
+                    rapor_ozet=ozet_r.get("total_functions"),
+                    log=lg.get("fonksiyon"),
+                    out_rapor=(out_rapor or {}).get("statistics", {}).get("functions"))
     karsilastir("decompile_sayisi",
                 rapor_static=st.get("ghidra_decompiled"),
                 decompiled_json_success=dj.get("success"),
@@ -711,7 +729,13 @@ def kosu_denetle(kosu: dict):
     if dj.get("skipped"):
         kusur["decompile_atlanan"] = dj["skipped"]
     k1["decompiled_json_kayit"] = len(dj.get("functions") or [])
-    if dj.get("success") and k1["decompiled_json_kayit"] < dj["success"]:
+    if "functions_truncated" in dj:
+        # P16a / B-B4: kırpma artık adres sırasında ve dosyada yazılı (sessiz değil); kayıt
+        # sayısı kayıtla tutmuyorsa kusur.
+        k1["decompiled_json_kirpik_kayitli"] = dj["functions_truncated"]
+        if dj.get("functions_total", 0) - k1["decompiled_json_kayit"] != dj["functions_truncated"]:
+            kusur["decompiled_json_kirpik_kayitla_tutmuyor"] = 1
+    elif dj.get("success") and k1["decompiled_json_kayit"] < dj["success"]:
         kusur["decompiled_json_kirpik"] = dj["success"] - k1["decompiled_json_kayit"]
     karsilastir("deobf_girdi", rapor=de.get("input_files"), ham_c_dosya=ham["dosya"])
     karsilastir("deobf_cikti", rapor=de.get("output_files"), deobf_c_dosya=coz["deobf"]["dosya"])
