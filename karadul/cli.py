@@ -158,10 +158,24 @@ def _load_config(config_path: Optional[str]) -> Config:
 
     path = Path(config_path) if config_path else None
     try:
-        return Config.load(path)
+        cfg = Config.load(path)
     except ConfigValueError as exc:
-        err_console.print(f"[bold red]HATA:[/bold red] ayar dosyası: {exc}")
+        # P15a / GHIDRA-04: bilinmeyen bölüm / anahtar ve tip hataları da buraya gelir;
+        # her sorun ayrı satır.
+        _print_config_problems(exc)
         sys.exit(2)
+    return cfg
+
+
+def _print_config_problems(exc: Exception) -> None:
+    """``ConfigValueError``'daki her sorunu stderr'e ayrı satır olarak yaz."""
+    problems = list(getattr(exc, "problems", None) or [str(exc)])
+    err_console.print(
+        f"[bold red]HATA:[/bold red] ayar dosyası yüklenemedi ({len(problems)} sorun):",
+        soft_wrap=True,
+    )
+    for problem in problems:
+        err_console.print(f"  - {problem}", markup=False, soft_wrap=True)
 
 
 # v1.10.0 E8: Ctrl+C sirasinda olusan yarim workspace'leri temizlemek ve
@@ -765,9 +779,14 @@ def analyze(
 
     # NOT (2026-05-13): use_llm_naming + enable_llm4decompile kaldirildi (B11)
 
-    # B12: Network master switch
+    # B12: Network master switch. P15a: ana anahtar açılınca YAML'da açıkça
+    # kapatılmamış veri izinleri de açılır (allow_dts_fetch, allow_source_match);
+    # indirip derleyen allow_reference_download yalnız YAML'da açıkça true ise
+    # (NetworkConfig.MASTER_FOLLOWING_PERMISSIONS).
     if enable_network:
-        cfg.network.enabled = True
+        cfg.network.enable(explicit_keys={
+            k.split(".", 1)[1] for k in cfg.yaml_keys if k.startswith("network.")
+        })
         cfg.source_match.enabled = True
 
     # Dinamik analiz hedef programı çalıştırır; yalnız açık istekle (plan v2 §2, madde 3).
@@ -2342,7 +2361,7 @@ def config_show(config_path: Optional[str], json_output: bool) -> None:
     karadul.yaml varsa yuklenir; yoksa dahili varsayilanlar gosterilir.
     """
     p, exists = _discover_config_path(config_path)
-    cfg = Config.load(p if exists else None)
+    cfg = _load_config(str(p) if exists else None)
     knobs = _active_config_knobs(cfg)
 
     if json_output:
@@ -2386,16 +2405,18 @@ def config_validate(config_path: Optional[str]) -> None:
         err_console.print(f"[bold red]HATA:[/bold red] Config dosyasi yok: {p}")
         sys.exit(1)
 
-    # 2) Yukleme (YAML parse hatasi vb. fail-loud).
+    # 2) Yukleme. P15a / GHIDRA-04: bilinmeyen bolum / anahtar, tipe uymayan deger,
+    # bos olmayan ama sozluk olmayan bolum ve YAML ayristirma hatasi -> her sorun
+    # ayri satir, cikis 1. Eskiden bunlarin hepsine "OK" deniyordu.
+    console.print(f"[bold]Yol:[/bold]   {p}"
+                  + ("" if exists else "  [yellow](dosya yok -> varsayilan)[/yellow]"))
     try:
         cfg = Config.load(p if exists else None)
     except Exception as exc:
-        err_console.print(f"[bold red]HATA:[/bold red] Config yuklenemedi: {exc}")
+        _print_config_problems(exc)
         sys.exit(1)
-
-    console.print(f"[bold]Yol:[/bold]   {p}"
-                  + ("" if exists else "  [yellow](dosya yok -> varsayilan)[/yellow]"))
-    console.print("[green]OK[/green] YAML yuklendi ve ayristirildi.")
+    console.print("[green]OK[/green] YAML yüklendi; bütün bölüm ve anahtarlar tanındı, "
+                  "değerler tiplerine uyuyor.")
 
     # 3) Semantik dogrulama (Config.validate: arac varligi + double-counting).
     warns = cfg.validate()

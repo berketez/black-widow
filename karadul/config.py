@@ -339,6 +339,31 @@ class NetworkConfig:
     allow_reference_download: bool = False
     allow_source_match: bool = False
 
+    # P15a (2026-11-18; P-GÜV'ün bıraktığı karar): alt izinlerin öntanımı.
+    #  - Yalnız VERİ indiren izinler ana anahtarı izler: `network.enabled` açıksa
+    #    (YAML ya da `--enable-network` / `--online` / arayüzün ağ düğmesi) ve YAML'da
+    #    açıkça `false` yazılmadıysa açılır. `allow_dts_fetch` (unpkg'den .d.ts metni),
+    #    `allow_source_match` (unpkg'den paket kaynağı, Layer 1.5).
+    #  - İndirdiğini DERLEYİP ÇALIŞTIRAN izin ana anahtarı İZLEMEZ:
+    #    `allow_reference_download` (başvuru kaynağını indirip `./Configure` + `make`)
+    #    yalnız YAML'da açıkça `true` ise açıktır.
+    #  Ana anahtar kapalıyken alt izinlerin hiçbiri etkili değildir (okuyucular
+    #  `enabled` ile birlikte bakar).
+    MASTER_FOLLOWING_PERMISSIONS = ("allow_dts_fetch", "allow_source_match")
+
+    def apply_master_switch(self, explicit_keys: frozenset[str] | set[str] = frozenset()) -> None:
+        """Ana anahtar açıksa, açıkça yazılmamış veri izinlerini aç."""
+        if self.enabled is not True:
+            return
+        for name in self.MASTER_FOLLOWING_PERMISSIONS:
+            if name not in explicit_keys:
+                setattr(self, name, True)
+
+    def enable(self, explicit_keys: frozenset[str] | set[str] = frozenset()) -> None:
+        """Ağı aç (`--enable-network`); açıkça kapatılmamış veri izinleri de açılır."""
+        self.enabled = True
+        self.apply_master_switch(explicit_keys)
+
 
 @dataclass
 class NameMergerConfig:
@@ -951,7 +976,15 @@ _BOOL_FALSE_STRINGS = frozenset({"false", "no", "off", "0"})
 
 
 class ConfigValueError(ValueError):
-    """YAML'daki bir değer alanın tipine katı biçimde dönüştürülemedi."""
+    """YAML'daki bir değer alanın tipine katı biçimde dönüştürülemedi.
+
+    P15a: bilinmeyen bölüm / anahtar da bu hatadır. Yükleyici bütün sorunları
+    toplayıp tek hata verir; ``problems`` her sorunu ayrı satır olarak taşır.
+    """
+
+    def __init__(self, message: str, problems: Optional[list[str]] = None) -> None:
+        super().__init__(message)
+        self.problems: list[str] = list(problems) if problems else [message]
 
 
 def _strict_bool(value: object, where: str) -> bool:
@@ -984,10 +1017,143 @@ def _bool_field_names(obj: object) -> frozenset[str]:
 
 
 def _coerce_field(obj: object, section: str, key: str, value: object) -> object:
-    """``_from_dict`` için ortak atama yolu: bool alanlarda katı dönüşüm."""
-    if key in _bool_field_names(obj):
-        return _strict_bool(value, f"{section}.{key}")
+    """``_from_dict`` için ortak atama yolu: alanın tipine göre katı dönüşüm.
+
+    P15a / GHIDRA-04: yalnız bool değil, her alan dataclass tipine göre denetlenir
+    (``_coerce_value``). Anlaşılmayan değer ``ConfigValueError``.
+    """
+    hints = _field_type_hints(type(obj))
+    if key not in hints:
+        raise ConfigValueError(f"{section}.{key}: bilinmeyen anahtar")
+    return _coerce_value(hints[key], value, f"{section}.{key}", getattr(obj, key, None))
+
+
+# ---------------------------------------------------------------------------
+# P15a / GHIDRA-04 (2026-11-18): katı YAML yükleyicisi
+# ---------------------------------------------------------------------------
+# Eskiden `_from_dict` her bölümde `if hasattr(...): setattr(...)` yapıyordu:
+# yanlış yazılmış bölüm / anahtar sessizce atlanıyor, değer tipine bakılmadan
+# atanıyor (`timeouts.ghidra: "abc"` kabul, Ghidra çağrısında patlıyor),
+# `min_confidence` bölümü hiç yüklenmiyor, boş bölüm (`tools:` → None) bütün
+# komutu `AttributeError` ile düşürüyor, `name_merger.source_weights: {bsim: 0.5}`
+# öbür 36 kaynağın ağırlığını siliyordu. Artık: bölümler `Config`'in dataclass
+# alanlarından türetilir (yenisi eklenince yükleyici kendiliğinden tanır); bilinmeyen
+# bölüm / anahtar ve tipe uymayan değer `ConfigValueError` (hepsi tek iletide);
+# boş bölüm boş sayılır; sözlük alanlar öntanımın ÜSTÜNE birleştirilir.
+
+
+def _field_type_hints(cls: type) -> dict[str, object]:
+    """Dataclass alanlarının çözülmüş tipleri (``from __future__ import annotations``)."""
+    import dataclasses
+    import typing
+
+    cache = _TYPE_HINT_CACHE.get(cls)
+    if cache is None:
+        hints = typing.get_type_hints(cls)
+        cache = {f.name: hints.get(f.name, object) for f in dataclasses.fields(cls)}
+        _TYPE_HINT_CACHE[cls] = cache
+    return cache
+
+
+_TYPE_HINT_CACHE: dict[type, dict[str, object]] = {}
+
+
+def _type_label(tp: object) -> str:
+    return getattr(tp, "__name__", None) or str(tp).replace("typing.", "")
+
+
+def _coerce_value(tp: object, value: object, where: str, default: object = None) -> object:
+    """YAML değerini alanın tipine katı biçimde çevir; uymuyorsa ``ConfigValueError``.
+
+    - ``bool``: ``_strict_bool``.
+    - ``int``: tamsayı (bool değil); tam değerli ondalık (``600.0``) kabul. Dizgi reddedilir.
+    - ``float``: tamsayı ya da ondalık (bool değil). Dizgi reddedilir.
+    - ``str`` / ``Path``: dizgi. ``Optional[X]``: ``None`` ya da X.
+    - ``list[X]`` / ``tuple[X, ...]``: YAML listesi, her öğe X (tek dizgi reddedilir:
+      eskiden harf harf dolaşılıyordu).
+    - ``dict[str, X]``: sözlük, öntanımın üstüne birleştirilir.
+    """
+    import types
+    import typing
+
+    origin = typing.get_origin(tp)
+    args = typing.get_args(tp)
+    if origin is typing.Union or origin is types.UnionType:
+        if value is None and type(None) in args:
+            return None
+        non_none = [a for a in args if a is not type(None)]
+        if len(non_none) == 1:
+            return _coerce_value(non_none[0], value, where, default)
+        for a in non_none:
+            try:
+                return _coerce_value(a, value, where, default)
+            except ConfigValueError:
+                continue
+        raise ConfigValueError(f"{where}: {value!r} beklenen tiplerin hiçbirine uymuyor ({_type_label(tp)})")
+    if tp is bool:
+        return _strict_bool(value, where)
+    if tp is int:
+        if isinstance(value, bool):
+            raise ConfigValueError(f"{where}: {value!r} bir tamsayı değil (doğruluk değeri verilmiş)")
+        if isinstance(value, int):
+            return value
+        if isinstance(value, float) and value.is_integer():
+            return int(value)
+        raise ConfigValueError(f"{where}: {value!r} bir tamsayı değil")
+    if tp is float:
+        if isinstance(value, bool):
+            raise ConfigValueError(f"{where}: {value!r} bir sayı değil (doğruluk değeri verilmiş)")
+        if isinstance(value, (int, float)):
+            return float(value)
+        raise ConfigValueError(f"{where}: {value!r} bir sayı değil")
+    if tp is str:
+        if isinstance(value, str):
+            return value
+        raise ConfigValueError(f"{where}: {value!r} bir dizgi değil")
+    if tp is Path:
+        if isinstance(value, (str, Path)):
+            return Path(value)
+        raise ConfigValueError(f"{where}: {value!r} bir dosya yolu (dizgi) değil")
+    if tp is list or origin is list:
+        if not isinstance(value, list):
+            raise ConfigValueError(f"{where}: {value!r} bir liste değil (YAML'da `- öğe` biçiminde yazın)")
+        if args:
+            return [_coerce_value(args[0], v, f"{where}[{i}]") for i, v in enumerate(value)]
+        return list(value)
+    if tp is tuple or origin is tuple:
+        if not isinstance(value, (list, tuple)):
+            raise ConfigValueError(f"{where}: {value!r} bir liste değil (YAML'da `- öğe` biçiminde yazın)")
+        item_tp = args[0] if args else object
+        return tuple(_coerce_value(item_tp, v, f"{where}[{i}]") for i, v in enumerate(value))
+    if tp is dict or origin is dict:
+        if not isinstance(value, dict):
+            raise ConfigValueError(f"{where}: {value!r} bir sözlük değil")
+        key_tp, val_tp = (args + (object, object))[:2] if args else (object, object)
+        merged = dict(default) if isinstance(default, dict) else {}
+        for k, v in value.items():
+            ck = _coerce_value(key_tp, k, f"{where} anahtarı")
+            merged[ck] = _coerce_value(val_tp, v, f"{where}.{k}")
+        return merged
+    # Tanınmayan tip (object vb.): olduğu gibi.
     return value
+
+
+def _suggest(name: object, choices: list[str]) -> str:
+    import difflib
+
+    close = difflib.get_close_matches(str(name), choices, n=1, cutoff=0.75)
+    return f" (bunu mu demek istediniz: {close[0]!r}?)" if close else ""
+
+
+def _config_sections() -> dict[str, type]:
+    """YAML'da kabul edilen bölümler: ``Config``'in dataclass tipli alanları."""
+    import dataclasses
+
+    hints = _field_type_hints(Config)
+    return {
+        f.name: hints[f.name] for f in dataclasses.fields(Config)
+        if isinstance(hints.get(f.name), type) and dataclasses.is_dataclass(hints[f.name])
+    }
 
 
 @dataclass
@@ -1019,6 +1185,9 @@ class Config:
     project_root: Path = field(default_factory=lambda: Path.cwd())
     scripts_dir: Path = field(default_factory=lambda: Path(__file__).parent.parent / "scripts")
     ghidra_scripts_dir: Path = field(default_factory=lambda: Path(__file__).parent / "ghidra" / "scripts")
+    # P15a: YAML'da açıkça yazılmış anahtarlar ("bölüm.anahtar"). Yükleyici doldurur;
+    # ağ alt izinlerinin öntanımı buna bakar. YAML bölümü değil.
+    yaml_keys: frozenset[str] = field(default_factory=frozenset, repr=False, compare=False)
 
     @classmethod
     def load(cls, path: Optional[Path | str] = None) -> Config:
@@ -1031,103 +1200,94 @@ class Config:
         if path is not None and not isinstance(path, Path):
             path = Path(path)
         if path and path.exists():
-            with open(path) as f:
-                data = yaml.safe_load(f) or {}
-            return cls._from_dict(data)
+            return cls._from_dict(cls._read_yaml(path))
         if path is not None:
             logger.warning("Yapılandırma dosyası bulunamadı: %s; varsayılanlar kullanılıyor", path)
         # Varsayılan config dosyası kontrolü
         default_path = Path.cwd() / "karadul.yaml"
         if default_path.exists():
-            with open(default_path) as f:
-                data = yaml.safe_load(f) or {}
-            return cls._from_dict(data)
+            return cls._from_dict(cls._read_yaml(default_path))
         return cls()
 
+    @staticmethod
+    def _read_yaml(path: Path) -> object:
+        """YAML'ı oku; ayrıştırma hatası da ``ConfigValueError`` (yığın izi yerine ileti)."""
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+        except yaml.YAMLError as exc:
+            raise ConfigValueError(f"{path}: YAML ayrıştırılamadı: {exc}") from exc
+        return {} if data is None else data
+
     @classmethod
-    def _from_dict(cls, data: dict) -> Config:
+    def _from_dict(cls, data: object) -> Config:
+        """YAML sözlüğünü katı biçimde yükle (P15a / GHIDRA-04).
+
+        Bütün sorunlar (bilinmeyen bölüm / anahtar, tipe uymayan değer, bölüm
+        sözlük değil) toplanır ve tek ``ConfigValueError`` ile bildirilir; hiçbir
+        sorun sessizce yutulmaz. Boş bölüm (``tools:`` → ``None``) boş sayılır.
+        YAML'da açıkça yazılan anahtarlar ``cfg.yaml_keys``'te durur.
+        """
+        import dataclasses
+
         cfg = cls()
-        if "tools" in data:
-            for k, v in data["tools"].items():
-                if hasattr(cfg.tools, k):
-                    setattr(cfg.tools, k, Path(v))
-        if "timeouts" in data:
-            for k, v in data["timeouts"].items():
-                if hasattr(cfg.timeouts, k):
-                    setattr(cfg.timeouts, k, _coerce_field(cfg.timeouts, "timeouts", k, v))
-        if "retry" in data:
-            for k, v in data["retry"].items():
-                if hasattr(cfg.retry, k):
-                    setattr(cfg.retry, k, _coerce_field(cfg.retry, "retry", k, v))
-        if "analysis" in data:
-            for k, v in data["analysis"].items():
-                if hasattr(cfg.analysis, k):
-                    setattr(cfg.analysis, k, _coerce_field(cfg.analysis, "analysis", k, v))
-        if "source_match" in data:
-            for k, v in data["source_match"].items():
-                if hasattr(cfg.source_match, k):
-                    setattr(cfg.source_match, k, _coerce_field(cfg.source_match, "source_match", k, v))
-        if "binary_reconstruction" in data:
-            for k, v in data["binary_reconstruction"].items():
-                if hasattr(cfg.binary_reconstruction, k):
-                    setattr(cfg.binary_reconstruction, k, _coerce_field(cfg.binary_reconstruction, "binary_reconstruction", k, v))
-        # v1.15.5: ölü `ml`/LLM4Decompile YAML bloğu kaldırıldı. Config.ml field'ı
-        # B11'de (LLM-free vizyon, feedback_no_llm.md) silinmişti ama bu yükleyici
-        # bloğu kalmıştı → mypy "Config has no attribute ml" + YAML'da "ml" anahtarı
-        # gelirse AttributeError. Karadul LLM kullanmaz, bu blok artık yok.
-        if "name_merger" in data:
-            for k, v in data["name_merger"].items():
-                if hasattr(cfg.name_merger, k):
-                    setattr(cfg.name_merger, k, _coerce_field(cfg.name_merger, "name_merger", k, v))
-        if "deep_trace" in data:
-            for k, v in data["deep_trace"].items():
-                if hasattr(cfg.deep_trace, k):
-                    setattr(cfg.deep_trace, k, _coerce_field(cfg.deep_trace, "deep_trace", k, v))
-        if "bsim" in data:
-            for k, v in data["bsim"].items():
-                if hasattr(cfg.bsim, k):
-                    setattr(cfg.bsim, k, _coerce_field(cfg.bsim, "bsim", k, v))
-        if "debugger" in data:
-            for k, v in data["debugger"].items():
-                if hasattr(cfg.debugger, k):
-                    setattr(cfg.debugger, k, _coerce_field(cfg.debugger, "debugger", k, v))
-        if "computation_recovery" in data:
-            for k, v in data["computation_recovery"].items():
-                if hasattr(cfg.computation_recovery, k):
-                    setattr(cfg.computation_recovery, k, _coerce_field(cfg.computation_recovery, "computation_recovery", k, v))
-        if "network" in data:
-            # NetworkConfig docstring'i "YAML'da network.enabled ile acilir" diyor
-            # ama bu wiring onceden eksikti (UI ayar paneli network toggle'i icin
-            # gerekli; reviewer 2026-07-14). hasattr guard'i sifir-risk kilar.
-            for k, v in data["network"].items():
-                if hasattr(cfg.network, k):
-                    setattr(cfg.network, k, _coerce_field(cfg.network, "network", k, v))
-        if "computation" in data:
-            for k, v in data["computation"].items():
-                if hasattr(cfg.computation, k):
-                    setattr(cfg.computation, k, _coerce_field(cfg.computation, "computation", k, v))
-        if "pipeline" in data:
-            for k, v in data["pipeline"].items():
-                if hasattr(cfg.pipeline, k):
-                    setattr(cfg.pipeline, k, _coerce_field(cfg.pipeline, "pipeline", k, v))
-        if "perf" in data:
-            for k, v in data["perf"].items():
-                if hasattr(cfg.perf, k):
-                    if k == "sig_lmdb_path" and v is not None:
-                        setattr(cfg.perf, k, Path(v))
-                    else:
-                        setattr(cfg.perf, k, _coerce_field(cfg.perf, "perf", k, v))
-        if "decompilers" in data:
-            for k, v in data["decompilers"].items():
-                if hasattr(cfg.decompilers, k):
-                    setattr(cfg.decompilers, k, _coerce_field(cfg.decompilers, "decompilers", k, v))
-        if "security" in data:
-            for k, v in data["security"].items():
-                if hasattr(cfg.security, k):
-                    if k in ("allowed_download_schemes", "pyinstaller_reserved_names") and isinstance(v, list):
-                        setattr(cfg.security, k, tuple(v))
-                    else:
-                        setattr(cfg.security, k, _coerce_field(cfg.security, "security", k, v))
+        if data is None:
+            data = {}
+        if not isinstance(data, dict):
+            raise ConfigValueError(
+                f"ayar dosyasının kökü bölümlerden oluşan bir sözlük olmalı; "
+                f"{type(data).__name__} verildi"
+            )
+        sections = _config_sections()
+        problems: list[str] = []
+        explicit: set[str] = set()
+        for section, body in data.items():
+            if section not in sections:
+                problems.append(
+                    f"{section}: bilinmeyen bölüm{_suggest(section, list(sections))}"
+                )
+                continue
+            if body is None:
+                continue
+            if not isinstance(body, dict):
+                problems.append(
+                    f"{section}: bölüm `anahtar: değer` satırlarından oluşmalı; "
+                    f"{body!r} verildi"
+                )
+                continue
+            obj = getattr(cfg, section)
+            hints = _field_type_hints(type(obj))
+            for key, value in body.items():
+                if key not in hints:
+                    problems.append(
+                        f"{section}.{key}: bilinmeyen anahtar{_suggest(key, list(hints))}"
+                    )
+                    continue
+                try:
+                    setattr(obj, key, _coerce_value(
+                        hints[key], value, f"{section}.{key}", getattr(obj, key, None),
+                    ))
+                except ConfigValueError as exc:
+                    problems.extend(exc.problems)
+                    continue
+                explicit.add(f"{section}.{key}")
+            # Bölümün kendi aralık denetimi (ör. MinConfidencePresets [0,1],
+            # ComputationConfig eşik sırası) yüklenen değerlerle yeniden koşar.
+            post_init = getattr(obj, "__post_init__", None)
+            if callable(post_init) and dataclasses.is_dataclass(obj):
+                try:
+                    post_init()
+                except (ValueError, TypeError) as exc:
+                    problems.append(f"{section}: {exc}")
+        if problems:
+            raise ConfigValueError(
+                "ayar dosyasında %d sorun: %s" % (len(problems), "; ".join(problems)),
+                problems,
+            )
+        cfg.yaml_keys = frozenset(explicit)
+        cfg.network.apply_master_switch(explicit_keys={
+            k.split(".", 1)[1] for k in explicit if k.startswith("network.")
+        })
         return cfg
 
     def validate(self) -> list[str]:
@@ -1152,3 +1312,4 @@ class Config:
                 "D-S'yi kapatin (v1.11.0'da otomatik kaldirilacak)."
             )
         return warnings_list
+
