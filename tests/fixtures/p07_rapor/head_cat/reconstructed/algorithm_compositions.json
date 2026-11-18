@@ -1,0 +1,111 @@
+{
+  "success": true,
+  "total_compositions": 3,
+  "compositions": [
+    {
+      "name": "Matrix Solve Pipeline",
+      "pattern": "pipeline",
+      "domain": "structural",
+      "stages": [
+        {
+          "name": "Allocate",
+          "functions": [
+            "realloc",
+            "malloc"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 1.0
+        },
+        {
+          "name": "Factor",
+          "functions": [
+            "fflush"
+          ],
+          "algorithms": [],
+          "order": 2,
+          "confidence": 0.5556
+        },
+        {
+          "name": "Free",
+          "functions": [
+            "free"
+          ],
+          "algorithms": [],
+          "order": 4,
+          "confidence": 0.8333
+        }
+      ],
+      "total_functions": 4,
+      "confidence": 0.4778,
+      "description": "Matrix Solve Pipeline: a sequential pipeline of 3 stages. Flow: Allocate -> Factor -> Free."
+    },
+    {
+      "name": "Transient CFD Time-Stepping",
+      "pattern": "iterative",
+      "domain": "fluid",
+      "stages": [
+        {
+          "name": "Init",
+          "functions": [
+            "_INIT_0"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 1.0
+        },
+        {
+          "name": "Timestep",
+          "functions": [
+            "_DT_FINI"
+          ],
+          "algorithms": [],
+          "order": 1,
+          "confidence": 0.8333
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.3667,
+      "description": "Transient CFD Time-Stepping: an iterative solution process with 2 stages, repeating until convergence."
+    },
+    {
+      "name": "Rocket / Trajectory Simulation Loop",
+      "pattern": "iterative",
+      "domain": "aerospace",
+      "stages": [
+        {
+          "name": "Aero Calc",
+          "functions": [
+            "close"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 0.303
+        },
+        {
+          "name": "Gravity Calc",
+          "functions": [
+            "__gmon_start__"
+          ],
+          "algorithms": [],
+          "order": 2,
+          "confidence": 0.3704
+        },
+        {
+          "name": "Integrate",
+          "functions": [
+            "_DT_FINI"
+          ],
+          "algorithms": [],
+          "order": 3,
+          "confidence": 0.3333
+        }
+      ],
+      "total_functions": 3,
+      "confidence": 0.2013,
+      "description": "Rocket / Trajectory Simulation Loop: an iterative solution process with 3 stages, repeating until convergence."
+    }
+  ],
+  "unclustered_algorithms": [],
+  "errors": []
+}

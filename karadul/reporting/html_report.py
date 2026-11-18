@@ -16,6 +16,8 @@ from typing import Any
 from karadul import __version__
 from karadul.core.result import PipelineResult
 from karadul.core.workspace import Workspace
+from karadul.reporting.report_data import build_report_data
+from karadul.reporting.sections_render import SECTIONS_CSS, sections_html
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +128,7 @@ details.deep-section > summary:hover { color: #79c0ff; }
 .comp-meta { font-size: 0.85em; color: #8b949e; }
 .comp-stages { font-size: 0.85em; color: #c9d1d9; margin-top: 4px; }
 .dispatch-stat { display: inline-block; margin-right: 16px; }
-"""
+""" + SECTIONS_CSS
 
 
 class HTMLReporter:
@@ -172,10 +174,14 @@ class HTMLReporter:
         # Stats dashboard
         parts.append(self._stats_dashboard(result))
 
-        # v1.13 Dalga 1: Anti-Debug + Packer + Malware IOC sections
-        parts.append(self._anti_debug_section(workspace))
-        parts.append(self._packer_section(result, workspace))
-        parts.append(self._malware_ioc_section(result, workspace))
+        # Rapor verisi katmanı (P07): her bölüm adı belli yapıttan, durumuyla. Bulgu yoksa
+        # bölüm gizlenmez: "temiz / taranamadı / veri yok + neden" yazar. Aynı katmanı
+        # Markdown, SARIF, JSON ve temiz çıktının raporu da okur.
+        data = build_report_data(result, workspace)
+        parts.append(sections_html(
+            data, result,
+            ("packer", "anti_debug", "yara", "capa", "ioc", "crypto", "naming", "compositions"),
+        ))
 
         # Architecture section (Binary Intelligence)
         parts.append(self._architecture_section(result, workspace))
@@ -298,8 +304,12 @@ class HTMLReporter:
 
         if "static" in result.stages:
             st = result.stages["static"].stats
-            stats.append(("Functions", str(st.get("functions_found", st.get("ghidra_function_count", st.get("functions", "N/A"))))))
-            stats.append(("Strings", str(st.get("strings_found", st.get("ghidra_string_count", st.get("string_count", st.get("strings", "N/A")))))))
+            funcs = st.get("functions_found", st.get("ghidra_function_count", st.get("functions")))
+            if funcs is not None:
+                stats.append(("Functions", str(funcs)))
+            strings = st.get("strings_found", st.get("ghidra_string_count", st.get("string_count", st.get("strings"))))
+            if strings is not None:
+                stats.append(("Strings", str(strings)))
             # Binary Intelligence stats
             if st.get("intel_subsystem_count") is not None:
                 stats.append(("Subsystems", str(st.get("intel_subsystem_count", 0))))
@@ -309,15 +319,19 @@ class HTMLReporter:
             sr_deob = result.stages["deobfuscate"]
             if _is_skipped(sr_deob):
                 stats.append(("Deobf Steps", "skipped"))
-            else:
-                st = sr_deob.stats
-                stats.append(("Deobf Steps", str(st.get("steps_completed", "N/A"))))
+            elif sr_deob.stats.get("steps_completed") is not None:
+                # ARAYUZ-07: ikili hedefte bu sayaç üretilmiyor; kaynağı yoksa kutu yok.
+                stats.append(("Deobf Steps", str(sr_deob.stats["steps_completed"])))
 
         if "reconstruct" in result.stages:
             st = result.stages["reconstruct"].stats
-            stats.append(("Modules", str(st.get("modules_extracted", "N/A"))))
-            stats.append(("Vars Renamed", str(st.get("variables_renamed", "N/A"))))
-            stats.append(("Coverage", f"{st.get('coverage_percent', 'N/A')}%"))
+            # ARAYUZ-07: modules_extracted / coverage_percent ikili hedefte üretilmiyor;
+            # "N/A" ya da "N/A%" kutusu yerine kaynağı olan sayaç yazılır.
+            for label, key, unit in (("Modules", "modules_extracted", ""),
+                                     ("Vars Renamed", "variables_renamed", ""),
+                                     ("Coverage", "coverage_percent", "%")):
+                if st.get(key) is not None:
+                    stats.append((label, f"{st[key]}{unit}"))
 
         boxes = "".join(
             f"<div class=\"stat-box\"><div class=\"value\">{_esc(v)}</div><div class=\"label\">{_esc(k)}</div></div>"
@@ -327,322 +341,6 @@ class HTMLReporter:
         return (
             "<h2>Statistics</h2>"
             f"<div class=\"stat-grid\">{boxes}</div>"
-        )
-
-    # ------------------------------------------------------------------
-    # v1.13 Dalga 1 — yeni capability section'lari
-    # ------------------------------------------------------------------
-    @staticmethod
-    def _severity_class(score: float) -> tuple[str, str, str]:
-        """Severity score icin (badge_class, label, color) doner.
-
-        Mevcut .high/.medium/.low CSS class'lari ile uyumlu (subsystem-card).
-        Esikler: >=0.7 high, >=0.4 medium, <0.4 low.
-        """
-        if score >= 0.7:
-            return ("high", "HIGH", "#f85149")
-        if score >= 0.4:
-            return ("medium", "MEDIUM", "#d29922")
-        return ("low", "INFO", "#8b949e")
-
-    @staticmethod
-    def _resolve_score(
-        data: dict, items: list[dict], summary_key: str
-    ) -> float:
-        """Severity skorunu coz (markdown_report ile ayni oncelik).
-
-        KISIT: detector artifact'lari top-level "score" ICERMEZ. Oncelik:
-          1. top-level "score" (eski sentetik test semasi)
-          2. summary[summary_key] (anti_debug_score / score)
-          3. summary.max_confidence
-          4. items icindeki en yuksek confidence
-        """
-        raw = data.get("score")
-        if raw is not None:
-            try:
-                return float(raw)
-            except (TypeError, ValueError):
-                pass
-        summary = data.get("summary")
-        if isinstance(summary, dict):
-            for key in (summary_key, "max_confidence"):
-                val = summary.get(key)
-                if val is not None:
-                    try:
-                        return float(val)
-                    except (TypeError, ValueError):
-                        pass
-        confidences: list[float] = []
-        for it in items:
-            try:
-                confidences.append(float(it.get("confidence", 0.0)))
-            except (TypeError, ValueError):
-                pass
-        return max(confidences) if confidences else 0.0
-
-    def _anti_debug_section(self, workspace: Workspace) -> str:
-        """Anti-Debug findings HTML bolumu (static/anti_debug_findings.json)."""
-        data = workspace.load_json("static", "anti_debug_findings")
-        if not data:
-            return ""
-
-        findings = data.get("findings") or []
-        if not findings:
-            return ""
-
-        # KISIT: skor summary.anti_debug_score altinda; top-level "score" yok
-        score = self._resolve_score(
-            data, findings, summary_key="anti_debug_score"
-        )
-        sev_class, sev_label, sev_color = self._severity_class(score)
-
-        rows: list[str] = [
-            "<tr>"
-            "<th>Technique</th><th>Category</th>"
-            "<th>Confidence</th><th>Evidence</th>"
-            "</tr>"
-        ]
-        for f in findings:
-            tech = _esc(f.get("technique", "?"))
-            cat = _esc(f.get("category", "?"))
-            conf = f.get("confidence", 0.0)
-            try:
-                conf_str = f"{float(conf):.2f}"
-            except (TypeError, ValueError):
-                conf_str = _esc(conf)
-            ev = _esc(str(f.get("evidence", ""))[:200])
-            rows.append(
-                f"<tr><td>{tech}</td><td>{cat}</td>"
-                f"<td>{conf_str}</td><td>{ev}</td></tr>"
-            )
-
-        return (
-            "<h2>Anti-Debug Findings</h2>"
-            f"<div class=\"subsystem-card {sev_class}\">"
-            f"<span class=\"subsystem-name\">Severity: "
-            f"<span style=\"color: {sev_color};\">{sev_label}</span></span>"
-            f"<div class=\"subsystem-meta\">Score: {score:.2f} | "
-            f"{len(findings)} findings</div>"
-            "</div>"
-            f"<table>{''.join(rows)}</table>"
-        )
-
-    @staticmethod
-    def _packer_warning_html(
-        result: PipelineResult,
-        top_name: str,
-        top_version: Any,
-        score: float,
-    ) -> str:
-        """Dürüst uyari banner'i — paketli binary decompile'i yaniltir.
-
-        Berke'nin sessiz-basarisizlik yasagi: kullanici decompile'in yalnizca
-        acici stub'i gosterdigini gormeli (aksi halde az fonksiyon gorup
-        karadul'u bozuk sanir).
-        """
-        name_l = top_name.lower()
-        if "upx" in name_l:
-            unpack_cmd = "upx -d &lt;dosya&gt;"
-        else:
-            unpack_cmd = "ilgili açma aracı ile paketi açın (unpack)"
-        ver = f" {top_version}" if top_version else ""
-
-        func_count = None
-        if "static" in result.stages:
-            st = result.stages["static"].stats
-            func_count = st.get(
-                "functions_found",
-                st.get("ghidra_function_count", st.get("functions")),
-            )
-
-        if func_count is not None:
-            body = (
-                f"Decompile YALNIZCA açıcı (unpacker) stub'ını gösterir. Bu "
-                f"koşuda görülen <strong>{_esc(func_count)} fonksiyon</strong> "
-                f"açıcı stub'a aittir — gerçek program kodu DEĞİL. Gerçek kod "
-                f"sıkıştırılmış/şifreli halde; çalışma anında bellekte açılıyor."
-            )
-        else:
-            body = (
-                "Decompile YALNIZCA açıcı (unpacker) stub'ını gösterir; gerçek "
-                "program kodu sıkıştırılmış/şifreli halde. Statik analiz "
-                "sınırlıdır."
-            )
-
-        return (
-            "<div style=\"background:#3d1417;border:1px solid #f85149;"
-            "border-radius:8px;padding:14px 16px;margin:12px 0;"
-            "color:#ffd7d5;\">"
-            f"<strong style=\"color:#f85149;\">⚠️ Bu binary paketlenmiş — "
-            f"{_esc(top_name)}{_esc(ver)} (güven {score:.2f}).</strong><br>"
-            f"{body}<br>"
-            f"Gerçek analiz için önce paketi açın: <code>{unpack_cmd}</code>, "
-            f"sonra açılmış binary'i yeniden analiz edin."
-            "</div>"
-        )
-
-    def _packer_section(
-        self, result: PipelineResult, workspace: Workspace
-    ) -> str:
-        """Detected Packer HTML bolumu (static/packer_fingerprints.json).
-
-        KISIT: gercek sema "fingerprints"/"packer_name" kullanir; eski sentetik
-        testler "packers"/"technique". Ikisi de okunur. Skor top-level'da yok
-        -> max(confidence). Bu uyusmazlik yuzunden gercek UPX tespiti rapora
-        hic ulasmiyordu.
-        """
-        data = workspace.load_json("static", "packer_fingerprints")
-        if not data:
-            return ""
-
-        packers = (
-            data.get("fingerprints")
-            or data.get("packers")
-            or data.get("findings")
-            or []
-        )
-        if not packers:
-            return ""
-
-        score = self._resolve_score(data, packers, summary_key="score")
-        sev_class, sev_label, sev_color = self._severity_class(score)
-
-        top = packers[0] if packers else {}
-        top_name = str(
-            top.get("packer_name")
-            or top.get("technique")
-            or top.get("name")
-            or "?"
-        )
-        top_version = top.get("version")
-
-        rows: list[str] = [
-            "<tr>"
-            "<th>Packer</th><th>Version</th><th>Category</th>"
-            "<th>Confidence</th><th>Layers</th><th>Evidence</th>"
-            "</tr>"
-        ]
-        for p in packers:
-            name = _esc(
-                p.get("packer_name")
-                or p.get("technique")
-                or p.get("name")
-                or "?"
-            )
-            version = p.get("version")
-            version_str = _esc(version) if version else "-"
-            cat = _esc(p.get("category", "packer"))
-            conf = p.get("confidence", 0.0)
-            try:
-                conf_str = f"{float(conf):.2f}"
-            except (TypeError, ValueError):
-                conf_str = _esc(conf)
-            layers = _esc(p.get("layers_matched", ""))
-            ev_raw = p.get("evidence", "")
-            if isinstance(ev_raw, (list, tuple)):
-                ev_text = "; ".join(str(e) for e in ev_raw)
-            else:
-                ev_text = str(ev_raw)
-            ev = _esc(ev_text[:200])
-            rows.append(
-                f"<tr><td>{name}</td><td>{version_str}</td><td>{cat}</td>"
-                f"<td>{conf_str}</td><td>{layers}</td><td>{ev}</td></tr>"
-            )
-
-        return (
-            "<h2>Detected Packer</h2>"
-            f"<div class=\"subsystem-card {sev_class}\">"
-            f"<span class=\"subsystem-name\">Severity: "
-            f"<span style=\"color: {sev_color};\">{sev_label}</span></span>"
-            f"<div class=\"subsystem-meta\">Score: {score:.2f} | "
-            f"{len(packers)} packers detected</div>"
-            "</div>"
-            + self._packer_warning_html(result, top_name, top_version, score)
-            + f"<table>{''.join(rows)}</table>"
-        )
-
-    def _malware_ioc_section(
-        self, result: PipelineResult, workspace: Workspace
-    ) -> str:
-        """Malware IOC HTML bolumu — Sliver/CS sembol match'lerini filtreler."""
-        matches: list[dict[str, Any]] = []
-
-        sig_data = workspace.load_json("static", "signature_matches")
-        if sig_data:
-            raw = sig_data.get("matches") or sig_data.get("signature_matches") or []
-            if isinstance(raw, list):
-                matches = [m for m in raw if isinstance(m, dict)]
-
-        if not matches and "static" in result.stages:
-            stats = result.stages["static"].stats
-            raw_stats = stats.get("signature_matches")
-            if isinstance(raw_stats, list):
-                matches = [m for m in raw_stats if isinstance(m, dict)]
-
-        if not matches:
-            return ""
-
-        tier1_families = {"sliver", "cobaltstrike"}
-        ioc_matches: list[dict[str, Any]] = []
-        for m in matches:
-            family = str(m.get("family", "")).lower()
-            category = str(m.get("category", "")).lower()
-            tier = str(m.get("tier", ""))
-            if (
-                family in tier1_families
-                or category == "malware"
-                or tier == "1"
-            ):
-                ioc_matches.append(m)
-
-        if not ioc_matches:
-            return ""
-
-        sliver_n = sum(
-            1 for m in ioc_matches
-            if str(m.get("family", "")).lower() == "sliver"
-        )
-        cs_n = sum(
-            1 for m in ioc_matches
-            if str(m.get("family", "")).lower() == "cobaltstrike"
-        )
-
-        sev_class, sev_label, sev_color = self._severity_class(1.0)
-
-        rows: list[str] = [
-            "<tr>"
-            "<th>Symbol</th><th>Family</th><th>Lib</th>"
-            "<th>Tier</th><th>Purpose</th>"
-            "</tr>"
-        ]
-        for m in ioc_matches:
-            sym = _esc(str(m.get("symbol", m.get("name", "?")))[:120])
-            family = _esc(m.get("family", "?"))
-            lib = _esc(m.get("lib", "?"))
-            tier = _esc(m.get("tier", "?"))
-            purpose = _esc(str(m.get("purpose", ""))[:160])
-            rows.append(
-                f"<tr><td><code>{sym}</code></td><td>{family}</td>"
-                f"<td>{lib}</td><td>{tier}</td><td>{purpose}</td></tr>"
-            )
-
-        family_summary = []
-        if sliver_n:
-            family_summary.append(f"Sliver: {sliver_n}")
-        if cs_n:
-            family_summary.append(f"Cobalt Strike: {cs_n}")
-        family_str = " | ".join(family_summary) if family_summary else ""
-
-        return (
-            "<h2>Malware IOC</h2>"
-            f"<div class=\"subsystem-card {sev_class}\">"
-            f"<span class=\"subsystem-name\">Severity: "
-            f"<span style=\"color: {sev_color};\">{sev_label}</span> "
-            "(Tier-1 family fingerprint)</span>"
-            f"<div class=\"subsystem-meta\">Total IOC matches: "
-            f"{len(ioc_matches)}{(' | ' + family_str) if family_str else ''}</div>"
-            "</div>"
-            f"<table>{''.join(rows)}</table>"
         )
 
     def _architecture_section(self, result: PipelineResult, workspace: Workspace) -> str:
@@ -828,10 +526,9 @@ class HTMLReporter:
 
         # Check if we have any deep analysis data
         has_dispatch = "dispatch_sites" in stats
-        has_compositions = "compositions" in stats
         has_traces = "trace_targets" in stats
 
-        if not (has_dispatch or has_compositions or has_traces):
+        if not (has_dispatch or has_traces):
             return ""
 
         parts: list[str] = []
@@ -872,70 +569,7 @@ class HTMLReporter:
             )
             parts.append("</div>")
 
-        # -- 2. Algorithm Compositions --
-        if has_compositions:
-            comp_data = workspace.load_json("reconstructed", "algorithm_compositions")
-            comp_list = []
-            if comp_data:
-                comp_list = comp_data.get("compositions", [])
-
-            parts.append("<div class=\"card\">")
-            parts.append(
-                f"<h3>Algorithm Compositions ({_esc(str(stats.get('compositions', 0)))})</h3>"
-            )
-
-            if comp_list:
-                for comp in comp_list:
-                    comp_name = comp.get("name", "Unknown")
-                    comp_type = comp.get("type", "pipeline")
-                    confidence = comp.get("confidence", 0)
-                    stages = comp.get("stages", [])
-
-                    stage_names = [
-                        s.get("label", s.get("name", "?")) for s in stages
-                    ]
-                    stage_str = " -> ".join(stage_names[:8])
-                    if len(stage_names) > 8:
-                        stage_str += f" ... +{len(stage_names) - 8}"
-
-                    parts.append(
-                        f"<details class=\"deep-section\">"
-                        f"<summary>"
-                        f"<span class=\"comp-name\">{_esc(comp_name)}</span>"
-                        f" <span class=\"tag tag-proto\">{_esc(comp_type)}</span>"
-                        f" <span style=\"font-size:0.8em;color:#8b949e;\">"
-                        f"confidence: {confidence:.0%}</span>"
-                        f"</summary>"
-                        f"<div class=\"comp-card\">"
-                        f"<div class=\"comp-stages\">{_esc(stage_str)}</div>"
-                    )
-
-                    # Show stage details in a small table
-                    if stages:
-                        parts.append(
-                            "<table style=\"font-size:0.85em;margin-top:8px;\">"
-                            "<tr><th>#</th><th>Function</th><th>Label</th><th>Domain</th></tr>"
-                        )
-                        for i, stg in enumerate(stages, 1):
-                            parts.append(
-                                f"<tr>"
-                                f"<td>{i}</td>"
-                                f"<td><code>{_esc(stg.get('function_name', '?'))}</code></td>"
-                                f"<td>{_esc(stg.get('label', stg.get('name', '')))}</td>"
-                                f"<td>{_esc(stg.get('domain', ''))}</td>"
-                                f"</tr>"
-                            )
-                        parts.append("</table>")
-
-                    parts.append("</div></details>")
-            else:
-                parts.append(
-                    f"<div class=\"comp-meta\">"
-                    f"{_esc(str(stats.get('compositions', 0)))} compositions detected."
-                    f"</div>"
-                )
-
-            parts.append("</div>")
+        # -- 2. Algorithm Compositions: ortak bölümde (rapor verisi katmanı, ARAYUZ-01) --
 
         # -- 3. Call Traces (top 3 ASCII trees) --
         if has_traces:

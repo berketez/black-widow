@@ -1,0 +1,130 @@
+{
+ "head_cat/reports/pipeline_result.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/genel-tarama-2026-11-18/debian/coreutils/cat/ws/workspaces/cat/20261118_054607/reports/pipeline_result.json",
+  "sha256": "86e568fbde04662bd3bb52e89dcb409312df14c6baa367e7519a802470584db6"
+ },
+ "head_cat/static/anti_debug_findings.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/genel-tarama-2026-11-18/debian/coreutils/cat/ws/workspaces/cat/20261118_054607/static/anti_debug_findings.json",
+  "sha256": "7a993a0699a6655117089cd5e76e807af1fc6a89eef97a4ddc9870357377449e"
+ },
+ "head_cat/static/packer_fingerprints.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/genel-tarama-2026-11-18/debian/coreutils/cat/ws/workspaces/cat/20261118_054607/static/packer_fingerprints.json",
+  "sha256": "458e8c2dc804ce032a39596ff2142bf5dec9a085aafd725f219245c76a663076"
+ },
+ "head_cat/reconstructed/signature_matches.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/genel-tarama-2026-11-18/debian/coreutils/cat/ws/workspaces/cat/20261118_054607/reconstructed/signature_matches.json",
+  "sha256": "0786cc4d6b48d1dcf678d456540f43c53a50cc3bdba7d03d02069bed6ef93c4c"
+ },
+ "head_cat/reconstructed/algorithms.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/genel-tarama-2026-11-18/debian/coreutils/cat/ws/workspaces/cat/20261118_054607/reconstructed/algorithms.json",
+  "sha256": "5b0cba8d83aa8c4f3df21421beefbf1a7867c2686f1cdf9668d486b178f2f160"
+ },
+ "head_cat/reconstructed/algorithm_compositions.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/genel-tarama-2026-11-18/debian/coreutils/cat/ws/workspaces/cat/20261118_054607/reconstructed/algorithm_compositions.json",
+  "sha256": "39d33d32361ef32e2d00a6691de16200ea4131e78580c4a94df0908f9dd9dd89"
+ },
+ "head_openssl/reports/pipeline_result.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/genel-tarama-2026-11-18/debian/openssl/openssl/ws/workspaces/openssl/20261118_052348/reports/pipeline_result.json",
+  "sha256": "fbe7c2c4b5fe756c5b0c4a879d04c1013c0ec2893e1c075bcf3493319a8af34d"
+ },
+ "head_openssl/static/anti_debug_findings.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/genel-tarama-2026-11-18/debian/openssl/openssl/ws/workspaces/openssl/20261118_052348/static/anti_debug_findings.json",
+  "sha256": "8a147b533f9e652219e1391e02dfad8f4b610f08b524a0c324037ae8a6020a6a"
+ },
+ "head_openssl/static/packer_fingerprints.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/genel-tarama-2026-11-18/debian/openssl/openssl/ws/workspaces/openssl/20261118_052348/static/packer_fingerprints.json",
+  "sha256": "e9bdb8fc119de23747cfe073df56a07e31306e438938a5fc8fda93ead7aa3307"
+ },
+ "head_openssl/reconstructed/algorithms.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/genel-tarama-2026-11-18/debian/openssl/openssl/ws/workspaces/openssl/20261118_052348/reconstructed/algorithms.json",
+  "sha256": "a064e21e1c86c73bb5b6d12ea3fbaf39684d7c5d96076090db42fd6511b2c660"
+ },
+ "urun_openssl/reports/pipeline_result.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/debian/openssl/openssl/ws/workspaces/openssl/20261118_084325/reports/pipeline_result.json",
+  "sha256": "7b975d632401f71d6050acd413f0c6426235f7407b3b02b1ca3b7d83bf66f62d"
+ },
+ "urun_openssl/static/anti_debug_findings.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/debian/openssl/openssl/ws/workspaces/openssl/20261118_084325/static/anti_debug_findings.json",
+  "sha256": "11843cf5615d8f3a92619dd14639f202c8b093825ef2d239f47b0a010a81178d"
+ },
+ "urun_openssl/static/packer_fingerprints.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/debian/openssl/openssl/ws/workspaces/openssl/20261118_084325/static/packer_fingerprints.json",
+  "sha256": "e9bdb8fc119de23747cfe073df56a07e31306e438938a5fc8fda93ead7aa3307"
+ },
+ "urun_openssl/reconstructed/algorithms.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/debian/openssl/openssl/ws/workspaces/openssl/20261118_084325/reconstructed/algorithms.json",
+  "sha256": "fa5eb01b57733372a8116a90c43995318ea2b83c96e63f11b285040d047d4ca1"
+ },
+ "urun_openssl/reconstructed/algorithm_compositions.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/debian/openssl/openssl/ws/workspaces/openssl/20261118_084325/reconstructed/algorithm_compositions.json",
+  "sha256": "74364b105012f9291706e848bba5c4d685d87d4f9aadbabb49b2230bccc862e6"
+ },
+ "urun_cat/reports/pipeline_result.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/debian/coreutils/cat/ws/workspaces/cat/20261118_085909/reports/pipeline_result.json",
+  "sha256": "260f931e1c941deb504c0f32486ab46c9073215f52343d0623f411dd6073dc3a"
+ },
+ "urun_cat/static/anti_debug_findings.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/debian/coreutils/cat/ws/workspaces/cat/20261118_085909/static/anti_debug_findings.json",
+  "sha256": "7a993a0699a6655117089cd5e76e807af1fc6a89eef97a4ddc9870357377449e"
+ },
+ "urun_cat/static/packer_fingerprints.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/debian/coreutils/cat/ws/workspaces/cat/20261118_085909/static/packer_fingerprints.json",
+  "sha256": "458e8c2dc804ce032a39596ff2142bf5dec9a085aafd725f219245c76a663076"
+ },
+ "urun_cat/reconstructed/signature_matches.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/debian/coreutils/cat/ws/workspaces/cat/20261118_085909/reconstructed/signature_matches.json",
+  "sha256": "380110f0be0873623757bb58d1e81dbf36f93c438abb87560b9ca9289abe5b85"
+ },
+ "urun_cat/reconstructed/algorithms.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/debian/coreutils/cat/ws/workspaces/cat/20261118_085909/reconstructed/algorithms.json",
+  "sha256": "5b0cba8d83aa8c4f3df21421beefbf1a7867c2686f1cdf9668d486b178f2f160"
+ },
+ "urun_cat/reconstructed/algorithm_compositions.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/debian/coreutils/cat/ws/workspaces/cat/20261118_085909/reconstructed/algorithm_compositions.json",
+  "sha256": "9654a58cf82fd37a2dd5866f4e34f70e7eaab6300d57bbb825aee0a9dfd199c8"
+ },
+ "p08_cat/reports/pipeline_result.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P08/urun-2beaa02/debian/coreutils/cat/ws/workspaces/cat/20261118_082058/reports/pipeline_result.json",
+  "sha256": "437f7d0ad7c1f316a1ecb811ee73f8dafba060efc156b060df8bf9e07fa8bf6f"
+ },
+ "p08_cat/reconstructed/signature_matches.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P08/urun-2beaa02/debian/coreutils/cat/ws/workspaces/cat/20261118_082058/reconstructed/signature_matches.json",
+  "sha256": "41c185a498ad2e3e74852acd1f4274231d136bb31da224658f936aa1ca3a5835"
+ },
+ "ps1_true/reports/pipeline_result.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P-S1/sonra_v2/debian/coreutils/true/ws/workspaces/true/20261118_083435/reports/pipeline_result.json",
+  "sha256": "d4d8969b551b6a3b2a9bd2ea4ad0b59df709949fecaf3cba15519896c98499be"
+ },
+ "ps1_true/static/anti_debug_findings.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P-S1/sonra_v2/debian/coreutils/true/ws/workspaces/true/20261118_083435/static/anti_debug_findings.json",
+  "sha256": "a4e4cbcc0d69089d0cadd476ef5e0823d182aa36dac7eeb360291ad44312f800"
+ },
+ "ps1_true/static/packer_fingerprints.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P-S1/sonra_v2/debian/coreutils/true/ws/workspaces/true/20261118_083435/static/packer_fingerprints.json",
+  "sha256": "01e0c799fdedbb9c4763e9a3bd7b33dada3f8639cc23d73d324a3dfbbaf5252a"
+ },
+ "ps1_true/static/capa_scan.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P-S1/sonra_v2/debian/coreutils/true/ws/workspaces/true/20261118_083435/static/capa_scan.json",
+  "sha256": "44b4e143d8322bcb99c65db73e1e5b3ee4598dd81f3c10985bfa3289f91694c8"
+ },
+ "ps1_w32/reports/pipeline_result.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P-S1/sonra/pe/w32/ws/workspaces/w32/20261118_082311/reports/pipeline_result.json",
+  "sha256": "cf78ca9e3a8f4268f2b95b9e7ab7d7f5a1ec55a57adb24b9dd036934550b6f32"
+ },
+ "ps1_w32/static/anti_debug_findings.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P-S1/sonra/pe/w32/ws/workspaces/w32/20261118_082311/static/anti_debug_findings.json",
+  "sha256": "85654fa3fa83f6f1d548b0db48f059eb97c1e4a03c95173cc15f148d1da20562"
+ },
+ "ps1_w32/static/packer_fingerprints.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P-S1/sonra/pe/w32/ws/workspaces/w32/20261118_082311/static/packer_fingerprints.json",
+  "sha256": "e5b94f7c8c02318ca50dc070a726d932b1a673df07158c87f7a39a876dfd59b9"
+ },
+ "ps1_w32/static/capa_scan.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P-S1/sonra/pe/w32/ws/workspaces/w32/20261118_082311/static/capa_scan.json",
+  "sha256": "ec2331bae0c0c3f2ce9a99eeb27edd8b664cd69a6625ad44e803f45180528831"
+ },
+ "hata_enjekte/anti_debug_w32.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P-S1/hata_enjekte/anti_debug_w32.json",
+  "sha256": "4a3da24d0f5d64df7c2d1c18607ce7603f6a56c8273aeb34dc81298deb15231e"
+ }
+}

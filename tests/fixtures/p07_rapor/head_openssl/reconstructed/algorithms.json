@@ -1,0 +1,653 @@
+{
+  "total": 72,
+  "algorithms": [
+    {
+      "name": "OpenSSL symmetric decryption",
+      "category": "symmetric_cipher",
+      "confidence": 0.9,
+      "function": "EVP_DecryptInit_ex",
+      "evidence": [
+        "API call: EVP_DecryptInit_ex()"
+      ]
+    },
+    {
+      "name": "OpenSSL symmetric decryption",
+      "category": "symmetric_cipher",
+      "confidence": 0.9,
+      "function": "EVP_DecryptUpdate",
+      "evidence": [
+        "API call: EVP_DecryptUpdate()"
+      ]
+    },
+    {
+      "name": "OpenSSL hash",
+      "category": "hash",
+      "confidence": 0.9,
+      "function": "EVP_DigestFinal",
+      "evidence": [
+        "API call: EVP_DigestFinal()"
+      ]
+    },
+    {
+      "name": "OpenSSL hash",
+      "category": "hash",
+      "confidence": 0.9,
+      "function": "EVP_DigestInit",
+      "evidence": [
+        "API call: EVP_DigestInit()"
+      ]
+    },
+    {
+      "name": "OpenSSL hash",
+      "category": "hash",
+      "confidence": 0.9,
+      "function": "EVP_DigestInit_ex",
+      "evidence": [
+        "API call: EVP_DigestInit_ex()"
+      ]
+    },
+    {
+      "name": "OpenSSL hash",
+      "category": "hash",
+      "confidence": 0.9,
+      "function": "EVP_DigestUpdate",
+      "evidence": [
+        "API call: EVP_DigestUpdate()"
+      ]
+    },
+    {
+      "name": "OpenSSL symmetric encryption",
+      "category": "symmetric_cipher",
+      "confidence": 0.9,
+      "function": "EVP_EncryptInit_ex",
+      "evidence": [
+        "API call: EVP_EncryptInit_ex()"
+      ]
+    },
+    {
+      "name": "OpenSSL symmetric encryption",
+      "category": "symmetric_cipher",
+      "confidence": 0.9,
+      "function": "EVP_EncryptUpdate",
+      "evidence": [
+        "API call: EVP_EncryptUpdate()"
+      ]
+    },
+    {
+      "name": "OpenSSL key context",
+      "category": "asymmetric",
+      "confidence": 0.9,
+      "function": "EVP_PKEY_CTX_new",
+      "evidence": [
+        "API call: EVP_PKEY_CTX_new()"
+      ]
+    },
+    {
+      "name": "TLS session",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_0015202c",
+      "evidence": [
+        "API call: SSL_new()"
+      ]
+    },
+    {
+      "name": "TLS context",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_00154acc",
+      "evidence": [
+        "API call: SSL_CTX_new()"
+      ]
+    },
+    {
+      "name": "OpenSSL hash",
+      "category": "hash",
+      "confidence": 0.9,
+      "function": "FUN_00161868",
+      "evidence": [
+        "API call: EVP_DigestInit_ex()"
+      ]
+    },
+    {
+      "name": "OpenSSL symmetric encryption",
+      "category": "symmetric_cipher",
+      "confidence": 0.9,
+      "function": "FUN_0015d120",
+      "evidence": [
+        "API call: EVP_EncryptInit_ex()"
+      ]
+    },
+    {
+      "name": "OpenSSL key context",
+      "category": "asymmetric",
+      "confidence": 0.9,
+      "function": "FUN_0016a168",
+      "evidence": [
+        "API call: EVP_PKEY_CTX_new()"
+      ]
+    },
+    {
+      "name": "TLS context",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_001716e0",
+      "evidence": [
+        "API call: SSL_CTX_new()"
+      ]
+    },
+    {
+      "name": "OpenSSL hash",
+      "category": "hash",
+      "confidence": 0.9,
+      "function": "FUN_00173fc0",
+      "evidence": [
+        "API call: EVP_DigestInit_ex()"
+      ]
+    },
+    {
+      "name": "CSPRNG (OpenSSL)",
+      "category": "random",
+      "confidence": 0.9,
+      "function": "FUN_0017452c",
+      "evidence": [
+        "API call: RAND_bytes()"
+      ]
+    },
+    {
+      "name": "OpenSSL hash",
+      "category": "hash",
+      "confidence": 0.9,
+      "function": "FUN_0017452c",
+      "evidence": [
+        "API call: EVP_DigestInit_ex()"
+      ]
+    },
+    {
+      "name": "OpenSSL key context",
+      "category": "asymmetric",
+      "confidence": 0.9,
+      "function": "FUN_00179600",
+      "evidence": [
+        "API call: EVP_PKEY_CTX_new()"
+      ]
+    },
+    {
+      "name": "OpenSSL key context",
+      "category": "asymmetric",
+      "confidence": 0.9,
+      "function": "FUN_00179e00",
+      "evidence": [
+        "API call: EVP_PKEY_CTX_new()"
+      ]
+    },
+    {
+      "name": "TLS handshake (client)",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_00188c40",
+      "evidence": [
+        "API call: SSL_connect()"
+      ]
+    },
+    {
+      "name": "TLS handshake (server)",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_00188c40",
+      "evidence": [
+        "API call: SSL_accept()"
+      ]
+    },
+    {
+      "name": "TLS session",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_0018944c",
+      "evidence": [
+        "API call: SSL_new()"
+      ]
+    },
+    {
+      "name": "TLS certificate verification",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_0018944c",
+      "evidence": [
+        "API call: SSL_set_verify()"
+      ]
+    },
+    {
+      "name": "TLS session",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_0018a300",
+      "evidence": [
+        "API call: SSL_new()"
+      ]
+    },
+    {
+      "name": "TLS session",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_0018bb68",
+      "evidence": [
+        "API call: SSL_new()"
+      ]
+    },
+    {
+      "name": "TLS session",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_0018f380",
+      "evidence": [
+        "API call: SSL_new()"
+      ]
+    },
+    {
+      "name": "TLS handshake (client)",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_0018f380",
+      "evidence": [
+        "API call: SSL_connect()"
+      ]
+    },
+    {
+      "name": "CSPRNG (OpenSSL)",
+      "category": "random",
+      "confidence": 0.9,
+      "function": "FUN_0018af40",
+      "evidence": [
+        "API call: RAND_bytes()"
+      ]
+    },
+    {
+      "name": "TLS context",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_0018f580",
+      "evidence": [
+        "API call: SSL_CTX_new()"
+      ]
+    },
+    {
+      "name": "CSPRNG (OpenSSL)",
+      "category": "random",
+      "confidence": 0.9,
+      "function": "FUN_00192180",
+      "evidence": [
+        "API call: RAND_bytes()"
+      ]
+    },
+    {
+      "name": "OpenSSL symmetric encryption",
+      "category": "symmetric_cipher",
+      "confidence": 0.9,
+      "function": "FUN_00193920",
+      "evidence": [
+        "API call: EVP_EncryptUpdate()"
+      ]
+    },
+    {
+      "name": "OpenSSL symmetric decryption",
+      "category": "symmetric_cipher",
+      "confidence": 0.9,
+      "function": "FUN_00194180",
+      "evidence": [
+        "API call: EVP_DecryptInit_ex()"
+      ]
+    },
+    {
+      "name": "OpenSSL symmetric encryption",
+      "category": "symmetric_cipher",
+      "confidence": 0.9,
+      "function": "FUN_00193f64",
+      "evidence": [
+        "API call: EVP_EncryptUpdate()"
+      ]
+    },
+    {
+      "name": "OpenSSL symmetric decryption",
+      "category": "symmetric_cipher",
+      "confidence": 0.9,
+      "function": "FUN_00193f64",
+      "evidence": [
+        "API call: EVP_DecryptUpdate()"
+      ]
+    },
+    {
+      "name": "OpenSSL hash",
+      "category": "hash",
+      "confidence": 0.9,
+      "function": "FUN_00194668",
+      "evidence": [
+        "API call: EVP_DigestInit()"
+      ]
+    },
+    {
+      "name": "OpenSSL key context",
+      "category": "asymmetric",
+      "confidence": 0.9,
+      "function": "FUN_00194c48",
+      "evidence": [
+        "API call: EVP_PKEY_CTX_new()"
+      ]
+    },
+    {
+      "name": "OpenSSL hash",
+      "category": "hash",
+      "confidence": 0.9,
+      "function": "FUN_001962c8",
+      "evidence": [
+        "API call: EVP_DigestUpdate()"
+      ]
+    },
+    {
+      "name": "OpenSSL symmetric encryption",
+      "category": "symmetric_cipher",
+      "confidence": 0.9,
+      "function": "FUN_00196600",
+      "evidence": [
+        "API call: EVP_EncryptInit_ex()"
+      ]
+    },
+    {
+      "name": "CSPRNG (OpenSSL)",
+      "category": "random",
+      "confidence": 0.9,
+      "function": "FUN_00196600",
+      "evidence": [
+        "API call: RAND_bytes()"
+      ]
+    },
+    {
+      "name": "OpenSSL hash",
+      "category": "hash",
+      "confidence": 0.9,
+      "function": "FUN_001a1440",
+      "evidence": [
+        "API call: EVP_DigestInit()"
+      ]
+    },
+    {
+      "name": "TLS session",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "FUN_001a788c",
+      "evidence": [
+        "API call: SSL_new()"
+      ]
+    },
+    {
+      "name": "CSPRNG (OpenSSL)",
+      "category": "random",
+      "confidence": 0.9,
+      "function": "FUN_001b68a0",
+      "evidence": [
+        "API call: RAND_bytes()"
+      ]
+    },
+    {
+      "name": "PBKDF2",
+      "category": "kdf",
+      "confidence": 0.9,
+      "function": "PKCS5_PBKDF2_HMAC",
+      "evidence": [
+        "API call: PKCS5_PBKDF2_HMAC()"
+      ]
+    },
+    {
+      "name": "CSPRNG (OpenSSL)",
+      "category": "random",
+      "confidence": 0.9,
+      "function": "RAND_bytes",
+      "evidence": [
+        "API call: RAND_bytes()"
+      ]
+    },
+    {
+      "name": "TLS context",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "SSL_CTX_new",
+      "evidence": [
+        "API call: SSL_CTX_new()"
+      ]
+    },
+    {
+      "name": "TLS handshake (server)",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "SSL_accept",
+      "evidence": [
+        "API call: SSL_accept()"
+      ]
+    },
+    {
+      "name": "TLS handshake (client)",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "SSL_connect",
+      "evidence": [
+        "API call: SSL_connect()"
+      ]
+    },
+    {
+      "name": "TLS encrypted read",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "SSL_read",
+      "evidence": [
+        "API call: SSL_read()"
+      ]
+    },
+    {
+      "name": "TLS session",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "SSL_new",
+      "evidence": [
+        "API call: SSL_new()"
+      ]
+    },
+    {
+      "name": "TLS certificate verification",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "SSL_set_verify",
+      "evidence": [
+        "API call: SSL_set_verify()"
+      ]
+    },
+    {
+      "name": "TLS encrypted write",
+      "category": "protocol",
+      "confidence": 0.9,
+      "function": "SSL_write",
+      "evidence": [
+        "API call: SSL_write()"
+      ]
+    },
+    {
+      "name": "Base64 encoding/decoding",
+      "category": "encoding",
+      "confidence": 0.75,
+      "function": "FUN_0019e660",
+      "evidence": [
+        "base64_encoding: matched 'b64_decode'"
+      ]
+    },
+    {
+      "name": "Base64 encoding/decoding",
+      "category": "encoding",
+      "confidence": 0.75,
+      "function": "FUN_001b0cac",
+      "evidence": [
+        "base64_encoding: matched 'base64'"
+      ]
+    },
+    {
+      "name": "Base64 encoding/decoding",
+      "category": "encoding",
+      "confidence": 0.75,
+      "function": "FUN_001b1fa8",
+      "evidence": [
+        "base64_encoding: matched 'BASE64'"
+      ]
+    },
+    {
+      "name": "Base64 encoding/decoding",
+      "category": "encoding",
+      "confidence": 0.7,
+      "function": "BIO_f_base64",
+      "evidence": [
+        "base64_encoding: matched 'base64'"
+      ]
+    },
+    {
+      "name": "Base64 encoding/decoding",
+      "category": "encoding",
+      "confidence": 0.7,
+      "function": "FUN_0014f380",
+      "evidence": [
+        "base64_encoding: matched 'b64_decode'"
+      ]
+    },
+    {
+      "name": "Base64 encoding/decoding",
+      "category": "encoding",
+      "confidence": 0.7,
+      "function": "FUN_001653a0",
+      "evidence": [
+        "base64_encoding: matched 'base64'"
+      ]
+    },
+    {
+      "name": "Base64 encoding/decoding",
+      "category": "encoding",
+      "confidence": 0.7,
+      "function": "FUN_0017c000",
+      "evidence": [
+        "base64_encoding: matched 'base64'"
+      ]
+    },
+    {
+      "name": "Base64 encoding/decoding",
+      "category": "encoding",
+      "confidence": 0.7,
+      "function": "NETSCAPE_SPKI_b64_decode",
+      "evidence": [
+        "base64_encoding: matched 'b64_decode'"
+      ]
+    },
+    {
+      "name": "Base64 encoding/decoding",
+      "category": "encoding",
+      "confidence": 0.7,
+      "function": "NETSCAPE_SPKI_b64_encode",
+      "evidence": [
+        "base64_encoding: matched 'b64_encode'"
+      ]
+    },
+    {
+      "name": "Elliptic curve operations (ECDSA, ECDH)",
+      "category": "asymmetric",
+      "confidence": 0.6,
+      "function": "FUN_001b5a00",
+      "evidence": [
+        "elliptic_curve: matched 'Curve Point'"
+      ]
+    },
+    {
+      "name": "Elliptic curve operations (ECDSA, ECDH)",
+      "category": "asymmetric",
+      "confidence": 0.6,
+      "function": "FUN_001b4d4c",
+      "evidence": [
+        "elliptic_curve: matched 'P384'"
+      ]
+    },
+    {
+      "name": "Password-based key derivation (PBKDF2, scrypt)",
+      "category": "kdf",
+      "confidence": 0.55,
+      "function": "FUN_0017452c",
+      "evidence": [
+        "pbkdf_loop: matched 'rounds'"
+      ]
+    },
+    {
+      "name": "Modular exponentiation (RSA, DH)",
+      "category": "asymmetric",
+      "confidence": 0.5,
+      "function": "BN_mod_exp",
+      "evidence": [
+        "modular_exponentiation: matched 'mod_exp'"
+      ]
+    },
+    {
+      "name": "Huffman coding",
+      "category": "compression",
+      "confidence": 0.5,
+      "function": "FUN_00163900",
+      "evidence": [
+        "huffman: matched 'bit length'"
+      ]
+    },
+    {
+      "name": "Password-based key derivation (PBKDF2, scrypt)",
+      "category": "kdf",
+      "confidence": 0.5,
+      "function": "FUN_00175c44",
+      "evidence": [
+        "pbkdf_loop: matched 'Iteration'"
+      ]
+    },
+    {
+      "name": "S-box substitution (AES, DES)",
+      "category": "symmetric_cipher",
+      "confidence": 0.5,
+      "function": "FUN_001b7100",
+      "evidence": [
+        "sbox_lookup: matched 'pcVar6[1] = \"0123456789abcdef\"[(ulong)*pbVar10 & 0xf]'"
+      ]
+    },
+    {
+      "name": "Modular exponentiation (RSA, DH)",
+      "category": "asymmetric",
+      "confidence": 0.5,
+      "function": "FUN_001b8ed0",
+      "evidence": [
+        "modular_exponentiation: matched 'mod_exp'"
+      ]
+    },
+    {
+      "name": "Block cipher mode of operation (CBC, CTR, GCM)",
+      "category": "symmetric_cipher",
+      "confidence": 0.45,
+      "function": "FUN_00188c40",
+      "evidence": [
+        "block_cipher_mode: matched 'ctr'"
+      ]
+    },
+    {
+      "name": "Galois field operations (ECC, AES-GF)",
+      "category": "asymmetric",
+      "confidence": 0.45,
+      "function": "FUN_001ab8a4",
+      "evidence": [
+        "galois_field: matched 'modules_load'"
+      ]
+    },
+    {
+      "name": "Galois field operations (ECC, AES-GF)",
+      "category": "asymmetric",
+      "confidence": 0.4,
+      "function": "FUN_001ab520",
+      "evidence": [
+        "galois_field: matched 'mode'"
+      ]
+    }
+  ]
+}

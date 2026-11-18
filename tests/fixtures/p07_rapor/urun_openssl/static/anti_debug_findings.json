@@ -1,0 +1,14 @@
+{
+  "binary_path": "/Users/apple/karadul_olcum/n1_debian13/openssl/openssl/ws/workspaces/openssl/20261021_094956/raw/openssl",
+  "total_findings": 0,
+  "findings": [],
+  "summary": {
+    "total": 0,
+    "by_category": {},
+    "by_platform": {},
+    "high_confidence": [],
+    "techniques": [],
+    "max_confidence": 0.0,
+    "anti_debug_score": 0.0
+  }
+}

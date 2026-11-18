@@ -1,0 +1,792 @@
+{
+  "status": "calisti",
+  "status_reason": "",
+  "backend": "api:vivisect",
+  "success": true,
+  "total_rules_matched": 23,
+  "total_functions_matched": 35,
+  "duration_seconds": 8.47,
+  "format": "pe",
+  "arch": "i386",
+  "os": "windows",
+  "function_capabilities": {
+    "0x401024": [
+      {
+        "name": "link function at runtime on Windows",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x40107d": [
+      {
+        "name": "link function at runtime on Windows",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x401ff7": [
+      {
+        "name": "link function at runtime on Windows",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x404e86": [
+      {
+        "name": "link function at runtime on Windows",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x404e93": [
+      {
+        "name": "link function at runtime on Windows",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x404ea0": [
+      {
+        "name": "link function at runtime on Windows",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x404ead": [
+      {
+        "name": "link function at runtime on Windows",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x4098a2": [
+      {
+        "name": "link function at runtime on Windows",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x4098c0": [
+      {
+        "name": "link function at runtime on Windows",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x4098d0": [
+      {
+        "name": "link function at runtime on Windows",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x4098e0": [
+      {
+        "name": "link function at runtime on Windows",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x4098f4": [
+      {
+        "name": "link function at runtime on Windows",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x401881": [
+      {
+        "name": "create process on Windows",
+        "namespace": "host-interaction/process/create",
+        "mbc": [
+          {
+            "parts": [
+              "Process",
+              "Create Process"
+            ],
+            "objective": "Process",
+            "behavior": "Create Process",
+            "method": "",
+            "id": "C0017"
+          }
+        ]
+      }
+    ],
+    "0x4010b2": [
+      {
+        "name": "terminate process",
+        "namespace": "host-interaction/process/terminate",
+        "mbc": [
+          {
+            "parts": [
+              "Process",
+              "Terminate Process"
+            ],
+            "objective": "Process",
+            "behavior": "Terminate Process",
+            "method": "",
+            "id": "C0018"
+          }
+        ]
+      }
+    ],
+    "0x40110b": [
+      {
+        "name": "terminate process",
+        "namespace": "host-interaction/process/terminate",
+        "mbc": [
+          {
+            "parts": [
+              "Process",
+              "Terminate Process"
+            ],
+            "objective": "Process",
+            "behavior": "Terminate Process",
+            "method": "",
+            "id": "C0018"
+          }
+        ]
+      }
+    ],
+    "0x40170c": [
+      {
+        "name": "terminate process",
+        "namespace": "host-interaction/process/terminate",
+        "mbc": [
+          {
+            "parts": [
+              "Process",
+              "Terminate Process"
+            ],
+            "objective": "Process",
+            "behavior": "Terminate Process",
+            "method": "",
+            "id": "C0018"
+          }
+        ]
+      },
+      {
+        "name": "get common file path",
+        "namespace": "host-interaction/file-system",
+        "attack": [
+          {
+            "parts": [
+              "Discovery",
+              "File and Directory Discovery"
+            ],
+            "tactic": "Discovery",
+            "technique": "File and Directory Discovery",
+            "subtechnique": "",
+            "id": "T1083"
+          }
+        ],
+        "mbc": [
+          {
+            "parts": [
+              "Discovery",
+              "File and Directory Discovery"
+            ],
+            "objective": "Discovery",
+            "behavior": "File and Directory Discovery",
+            "method": "",
+            "id": "E1083"
+          }
+        ]
+      },
+      {
+        "name": "set current directory",
+        "namespace": "host-interaction/file-system"
+      }
+    ],
+    "0x401ea2": [
+      {
+        "name": "terminate process",
+        "namespace": "host-interaction/process/terminate",
+        "mbc": [
+          {
+            "parts": [
+              "Process",
+              "Terminate Process"
+            ],
+            "objective": "Process",
+            "behavior": "Terminate Process",
+            "method": "",
+            "id": "C0018"
+          }
+        ]
+      }
+    ],
+    "0x402008": [
+      {
+        "name": "terminate process",
+        "namespace": "host-interaction/process/terminate",
+        "mbc": [
+          {
+            "parts": [
+              "Process",
+              "Terminate Process"
+            ],
+            "objective": "Process",
+            "behavior": "Terminate Process",
+            "method": "",
+            "id": "C0018"
+          }
+        ]
+      }
+    ],
+    "0x402e89": [
+      {
+        "name": "terminate process",
+        "namespace": "host-interaction/process/terminate",
+        "mbc": [
+          {
+            "parts": [
+              "Process",
+              "Terminate Process"
+            ],
+            "objective": "Process",
+            "behavior": "Terminate Process",
+            "method": "",
+            "id": "C0018"
+          }
+        ]
+      }
+    ],
+    "0x403e53": [
+      {
+        "name": "terminate process",
+        "namespace": "host-interaction/process/terminate",
+        "mbc": [
+          {
+            "parts": [
+              "Process",
+              "Terminate Process"
+            ],
+            "objective": "Process",
+            "behavior": "Terminate Process",
+            "method": "",
+            "id": "C0018"
+          }
+        ]
+      }
+    ],
+    "0x401b4b": [
+      {
+        "name": "accept command line arguments",
+        "namespace": "host-interaction/cli",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Command and Scripting Interpreter"
+            ],
+            "tactic": "Execution",
+            "technique": "Command and Scripting Interpreter",
+            "subtechnique": "",
+            "id": "T1059"
+          }
+        ],
+        "mbc": [
+          {
+            "parts": [
+              "Execution",
+              "Command and Scripting Interpreter"
+            ],
+            "objective": "Execution",
+            "behavior": "Command and Scripting Interpreter",
+            "method": "",
+            "id": "E1059"
+          }
+        ]
+      }
+    ],
+    "0x403e49": [
+      {
+        "name": "accept command line arguments",
+        "namespace": "host-interaction/cli",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Command and Scripting Interpreter"
+            ],
+            "tactic": "Execution",
+            "technique": "Command and Scripting Interpreter",
+            "subtechnique": "",
+            "id": "T1059"
+          }
+        ],
+        "mbc": [
+          {
+            "parts": [
+              "Execution",
+              "Command and Scripting Interpreter"
+            ],
+            "objective": "Execution",
+            "behavior": "Command and Scripting Interpreter",
+            "method": "",
+            "id": "E1059"
+          }
+        ]
+      },
+      {
+        "name": "parse PE header",
+        "namespace": "load-code/pe",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x405180": [
+      {
+        "name": "parse PE header",
+        "namespace": "load-code/pe",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x404b6c": [
+      {
+        "name": "allocate thread local storage",
+        "namespace": "host-interaction/thread/tls",
+        "mbc": [
+          {
+            "parts": [
+              "Process",
+              "Allocate Thread Local Storage"
+            ],
+            "objective": "Process",
+            "behavior": "Allocate Thread Local Storage",
+            "method": "",
+            "id": "C0040"
+          }
+        ]
+      }
+    ],
+    "0x404e5c": [
+      {
+        "name": "allocate thread local storage",
+        "namespace": "host-interaction/thread/tls",
+        "mbc": [
+          {
+            "parts": [
+              "Process",
+              "Allocate Thread Local Storage"
+            ],
+            "objective": "Process",
+            "behavior": "Allocate Thread Local Storage",
+            "method": "",
+            "id": "C0040"
+          }
+        ]
+      },
+      {
+        "name": "set thread local storage value",
+        "namespace": "host-interaction/thread/tls",
+        "mbc": [
+          {
+            "parts": [
+              "Process",
+              "Set Thread Local Storage Value"
+            ],
+            "objective": "Process",
+            "behavior": "Set Thread Local Storage Value",
+            "method": "",
+            "id": "C0041"
+          }
+        ]
+      }
+    ],
+    "0x404b75": [
+      {
+        "name": "get thread local storage value",
+        "namespace": "host-interaction/process"
+      },
+      {
+        "name": "set thread local storage value",
+        "namespace": "host-interaction/thread/tls",
+        "mbc": [
+          {
+            "parts": [
+              "Process",
+              "Set Thread Local Storage Value"
+            ],
+            "objective": "Process",
+            "behavior": "Set Thread Local Storage Value",
+            "method": "",
+            "id": "C0041"
+          }
+        ]
+      }
+    ],
+    "0x4051c0": [
+      {
+        "name": "enumerate PE sections",
+        "namespace": "load-code/pe",
+        "mbc": [
+          {
+            "parts": [
+              "Discovery",
+              "Code Discovery",
+              "Enumerate PE Sections"
+            ],
+            "objective": "Discovery",
+            "behavior": "Code Discovery",
+            "method": "Enumerate PE Sections",
+            "id": "B0046.001"
+          }
+        ]
+      }
+    ],
+    "0x4052f2": [
+      {
+        "name": "write file on Windows",
+        "namespace": "host-interaction/file-system/write",
+        "mbc": [
+          {
+            "parts": [
+              "File System",
+              "Writes File"
+            ],
+            "objective": "File System",
+            "behavior": "Writes File",
+            "method": "",
+            "id": "C0052"
+          }
+        ]
+      }
+    ],
+    "0x40a60b": [
+      {
+        "name": "write file on Windows",
+        "namespace": "host-interaction/file-system/write",
+        "mbc": [
+          {
+            "parts": [
+              "File System",
+              "Writes File"
+            ],
+            "objective": "File System",
+            "behavior": "Writes File",
+            "method": "",
+            "id": "C0052"
+          }
+        ]
+      }
+    ],
+    "0x406ac2": [
+      {
+        "name": "read file on Windows",
+        "namespace": "host-interaction/file-system/read",
+        "mbc": [
+          {
+            "parts": [
+              "File System",
+              "Read File"
+            ],
+            "objective": "File System",
+            "behavior": "Read File",
+            "method": "",
+            "id": "C0051"
+          }
+        ]
+      }
+    ],
+    "0x40836c": [
+      {
+        "name": "query environment variable",
+        "namespace": "host-interaction/environment-variable",
+        "attack": [
+          {
+            "parts": [
+              "Discovery",
+              "System Information Discovery"
+            ],
+            "tactic": "Discovery",
+            "technique": "System Information Discovery",
+            "subtechnique": "",
+            "id": "T1082"
+          }
+        ],
+        "mbc": [
+          {
+            "parts": [
+              "Discovery",
+              "System Information Discovery"
+            ],
+            "objective": "Discovery",
+            "behavior": "System Information Discovery",
+            "method": "",
+            "id": "E1082"
+          }
+        ]
+      }
+    ],
+    "0x40891f": [
+      {
+        "name": "query environment variable",
+        "namespace": "host-interaction/environment-variable",
+        "attack": [
+          {
+            "parts": [
+              "Discovery",
+              "System Information Discovery"
+            ],
+            "tactic": "Discovery",
+            "technique": "System Information Discovery",
+            "subtechnique": "",
+            "id": "T1082"
+          }
+        ],
+        "mbc": [
+          {
+            "parts": [
+              "Discovery",
+              "System Information Discovery"
+            ],
+            "objective": "Discovery",
+            "behavior": "System Information Discovery",
+            "method": "",
+            "id": "E1082"
+          }
+        ]
+      }
+    ],
+    "0x40984b": [
+      {
+        "name": "link many functions at runtime",
+        "namespace": "linking/runtime-linking",
+        "attack": [
+          {
+            "parts": [
+              "Execution",
+              "Shared Modules"
+            ],
+            "tactic": "Execution",
+            "technique": "Shared Modules",
+            "subtechnique": "",
+            "id": "T1129"
+          }
+        ]
+      }
+    ],
+    "0x40c357": [
+      {
+        "name": "set environment variable",
+        "namespace": "host-interaction/environment-variable",
+        "mbc": [
+          {
+            "parts": [
+              "Operating System",
+              "Environment Variable",
+              "Set Variable"
+            ],
+            "objective": "Operating System",
+            "behavior": "Environment Variable",
+            "method": "Set Variable",
+            "id": "C0034.001"
+          }
+        ]
+      }
+    ],
+    "0x40c642": [
+      {
+        "name": "clear file content",
+        "namespace": "host-interaction/file-system/write",
+        "mbc": [
+          {
+            "parts": [
+              "File System",
+              "Writes File"
+            ],
+            "objective": "File System",
+            "behavior": "Writes File",
+            "method": "",
+            "id": "C0052"
+          }
+        ]
+      }
+    ]
+  },
+  "capability_by_funcname": {},
+  "file_capabilities": [
+    {
+      "name": "contains PDB path",
+      "namespace": "executable/pe/pdb"
+    },
+    {
+      "name": "reference analysis tools strings",
+      "namespace": "anti-analysis",
+      "mbc": [
+        {
+          "parts": [
+            "Discovery",
+            "Analysis Tool Discovery",
+            "Process detection"
+          ],
+          "objective": "Discovery",
+          "behavior": "Analysis Tool Discovery",
+          "method": "Process detection",
+          "id": "B0013.001"
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "code_feed": {
+    "enabled": false,
+    "flag": "binary_reconstruction.enable_capa_code_feed",
+    "note": "K-1: capa sonuclari yalniz raporda; koda ad / yorum olarak girmez"
+  }
+}

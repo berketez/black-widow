@@ -144,4 +144,12 @@ def test_raporlayicilar_beklemedekini_gostermez(tmp_path: Path):
     for ad in SABLON_ADLARI:
         assert ad not in md
         assert ad not in html
-    assert "Algorithm Compositions (0 detected)" in md
+    # P07: bileşimler ortak bölümde (rapor verisi katmanı); bekleyen şablon iddia değil,
+    # yalnız sayısı yazılır.
+    from karadul.reporting.report_data import build_report_data
+    sec = build_report_data(sonuc, ws).sections["compositions"]
+    assert sec.status == "clean" and sec.items == []
+    full_md = MarkdownReporter()._build_markdown(sonuc, ws)
+    full_html = HTMLReporter()._build_html(sonuc, ws)
+    for ad in SABLON_ADLARI:
+        assert ad not in full_md and ad not in full_html

@@ -1,0 +1,2272 @@
+{
+  "success": true,
+  "total_compositions": 35,
+  "compositions": [
+    {
+      "name": "FUN_0017452c -> EVP_DigestInit_ex Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_0017452c",
+          "functions": [
+            "FUN_0017452c"
+          ],
+          "algorithms": [
+            "CSPRNG (OpenSSL)",
+            "OpenSSL hash"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "FUN_00173fc0",
+          "functions": [
+            "FUN_00173fc0"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_DigestInit_ex",
+          "functions": [
+            "EVP_DigestInit_ex"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 2,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 3,
+      "confidence": 0.91,
+      "description": "Pipeline (3 stages, topological order): FUN_0017452c(CSPRNG (OpenSSL),OpenSSL hash) -> FUN_00173fc0(OpenSSL hash) -> EVP_DigestInit_ex(OpenSSL hash)"
+    },
+    {
+      "name": "FUN_0018f580 -> SSL_connect Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_0018f580",
+          "functions": [
+            "FUN_0018f580"
+          ],
+          "algorithms": [
+            "TLS context"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "FUN_0018f380",
+          "functions": [
+            "FUN_0018f380"
+          ],
+          "algorithms": [
+            "TLS session",
+            "TLS handshake (client)"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        },
+        {
+          "name": "SSL_connect",
+          "functions": [
+            "SSL_connect"
+          ],
+          "algorithms": [
+            "TLS handshake (client)"
+          ],
+          "order": 2,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 3,
+      "confidence": 0.91,
+      "description": "Pipeline (3 stages, topological order): FUN_0018f580(TLS context) -> FUN_0018f380(TLS session,TLS handshake (client)) -> SSL_connect(TLS handshake (client))"
+    },
+    {
+      "name": "FUN_0018 Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_0018944c",
+          "functions": [
+            "FUN_0018944c"
+          ],
+          "algorithms": [
+            "TLS session",
+            "TLS certificate verification"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "FUN_00188c40",
+          "functions": [
+            "FUN_00188c40"
+          ],
+          "algorithms": [
+            "TLS handshake (client)",
+            "TLS handshake (server)"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_0018944c(TLS session,TLS certificate verification) -> FUN_00188c40(TLS handshake (client),TLS handshake (server))"
+    },
+    {
+      "name": "FUN_00193920 -> EVP_EncryptUpdate Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_00193920",
+          "functions": [
+            "FUN_00193920"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_EncryptUpdate",
+          "functions": [
+            "EVP_EncryptUpdate"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_00193920(OpenSSL symmetric encryption) -> EVP_EncryptUpdate(OpenSSL symmetric encryption)"
+    },
+    {
+      "name": "FUN_00194180 -> EVP_DecryptInit_ex Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_00194180",
+          "functions": [
+            "FUN_00194180"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric decryption"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_DecryptInit_ex",
+          "functions": [
+            "EVP_DecryptInit_ex"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric decryption"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_00194180(OpenSSL symmetric decryption) -> EVP_DecryptInit_ex(OpenSSL symmetric decryption)"
+    },
+    {
+      "name": "FUN_00193f64 -> EVP_DecryptUpdate Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_00193f64",
+          "functions": [
+            "FUN_00193f64"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption",
+            "OpenSSL symmetric decryption"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_DecryptUpdate",
+          "functions": [
+            "EVP_DecryptUpdate"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric decryption"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_00193f64(OpenSSL symmetric encryption,OpenSSL symmetric decryption) -> EVP_DecryptUpdate(OpenSSL symmetric decryption)"
+    },
+    {
+      "name": "FUN_0016a168 -> EVP_PKEY_CTX_new Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_0016a168",
+          "functions": [
+            "FUN_0016a168"
+          ],
+          "algorithms": [
+            "OpenSSL key context"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_PKEY_CTX_new",
+          "functions": [
+            "EVP_PKEY_CTX_new"
+          ],
+          "algorithms": [
+            "OpenSSL key context"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_0016a168(OpenSSL key context) -> EVP_PKEY_CTX_new(OpenSSL key context)"
+    },
+    {
+      "name": "FUN_0015d120 -> EVP_EncryptInit_ex Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_0015d120",
+          "functions": [
+            "FUN_0015d120"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_EncryptInit_ex",
+          "functions": [
+            "EVP_EncryptInit_ex"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_0015d120(OpenSSL symmetric encryption) -> EVP_EncryptInit_ex(OpenSSL symmetric encryption)"
+    },
+    {
+      "name": "FUN_001a1440 -> EVP_DigestFinal Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_001a1440",
+          "functions": [
+            "FUN_001a1440"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_DigestFinal",
+          "functions": [
+            "EVP_DigestFinal"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_001a1440(OpenSSL hash) -> EVP_DigestFinal(OpenSSL hash)"
+    },
+    {
+      "name": "FUN_00194668 -> EVP_DigestInit Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_00194668",
+          "functions": [
+            "FUN_00194668"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_DigestInit",
+          "functions": [
+            "EVP_DigestInit"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_00194668(OpenSSL hash) -> EVP_DigestInit(OpenSSL hash)"
+    },
+    {
+      "name": "FUN_0017452c -> RAND_bytes Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_0017452c",
+          "functions": [
+            "FUN_0017452c"
+          ],
+          "algorithms": [
+            "CSPRNG (OpenSSL)",
+            "OpenSSL hash"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "RAND_bytes",
+          "functions": [
+            "RAND_bytes"
+          ],
+          "algorithms": [
+            "CSPRNG (OpenSSL)"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_0017452c(CSPRNG (OpenSSL),OpenSSL hash) -> RAND_bytes(CSPRNG (OpenSSL))"
+    },
+    {
+      "name": "FUN_00154acc -> SSL_CTX_new Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_00154acc",
+          "functions": [
+            "FUN_00154acc"
+          ],
+          "algorithms": [
+            "TLS context"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "SSL_CTX_new",
+          "functions": [
+            "SSL_CTX_new"
+          ],
+          "algorithms": [
+            "TLS context"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_00154acc(TLS context) -> SSL_CTX_new(TLS context)"
+    },
+    {
+      "name": "FUN_0018bb68 -> SSL_accept Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_0018bb68",
+          "functions": [
+            "FUN_0018bb68"
+          ],
+          "algorithms": [
+            "TLS session"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "SSL_accept",
+          "functions": [
+            "SSL_accept"
+          ],
+          "algorithms": [
+            "TLS handshake (server)"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_0018bb68(TLS session) -> SSL_accept(TLS handshake (server))"
+    },
+    {
+      "name": "FUN_0018bb68 -> SSL_read Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_0018bb68",
+          "functions": [
+            "FUN_0018bb68"
+          ],
+          "algorithms": [
+            "TLS session"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "SSL_read",
+          "functions": [
+            "SSL_read"
+          ],
+          "algorithms": [
+            "TLS encrypted read"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_0018bb68(TLS session) -> SSL_read(TLS encrypted read)"
+    },
+    {
+      "name": "FUN_0018944c -> SSL_set_verify Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_0018944c",
+          "functions": [
+            "FUN_0018944c"
+          ],
+          "algorithms": [
+            "TLS session",
+            "TLS certificate verification"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "SSL_set_verify",
+          "functions": [
+            "SSL_set_verify"
+          ],
+          "algorithms": [
+            "TLS certificate verification"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_0018944c(TLS session,TLS certificate verification) -> SSL_set_verify(TLS certificate verification)"
+    },
+    {
+      "name": "FUN_0018bb68 -> SSL_write Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_0018bb68",
+          "functions": [
+            "FUN_0018bb68"
+          ],
+          "algorithms": [
+            "TLS session"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "SSL_write",
+          "functions": [
+            "SSL_write"
+          ],
+          "algorithms": [
+            "TLS encrypted write"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_0018bb68(TLS session) -> SSL_write(TLS encrypted write)"
+    },
+    {
+      "name": "FUN_0015202c -> SSL_new Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_0015202c",
+          "functions": [
+            "FUN_0015202c"
+          ],
+          "algorithms": [
+            "TLS session"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "SSL_new",
+          "functions": [
+            "SSL_new"
+          ],
+          "algorithms": [
+            "TLS session"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_0015202c(TLS session) -> SSL_new(TLS session)"
+    },
+    {
+      "name": "FUN_00161868 -> EVP_DigestInit_ex Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_00161868",
+          "functions": [
+            "FUN_00161868"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_DigestInit_ex",
+          "functions": [
+            "EVP_DigestInit_ex"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_00161868(OpenSSL hash) -> EVP_DigestInit_ex(OpenSSL hash)"
+    },
+    {
+      "name": "FUN_001716e0 -> SSL_CTX_new Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_001716e0",
+          "functions": [
+            "FUN_001716e0"
+          ],
+          "algorithms": [
+            "TLS context"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "SSL_CTX_new",
+          "functions": [
+            "SSL_CTX_new"
+          ],
+          "algorithms": [
+            "TLS context"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_001716e0(TLS context) -> SSL_CTX_new(TLS context)"
+    },
+    {
+      "name": "FUN_00179600 -> EVP_PKEY_CTX_new Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_00179600",
+          "functions": [
+            "FUN_00179600"
+          ],
+          "algorithms": [
+            "OpenSSL key context"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_PKEY_CTX_new",
+          "functions": [
+            "EVP_PKEY_CTX_new"
+          ],
+          "algorithms": [
+            "OpenSSL key context"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_00179600(OpenSSL key context) -> EVP_PKEY_CTX_new(OpenSSL key context)"
+    },
+    {
+      "name": "FUN_00179e00 -> EVP_PKEY_CTX_new Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_00179e00",
+          "functions": [
+            "FUN_00179e00"
+          ],
+          "algorithms": [
+            "OpenSSL key context"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_PKEY_CTX_new",
+          "functions": [
+            "EVP_PKEY_CTX_new"
+          ],
+          "algorithms": [
+            "OpenSSL key context"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_00179e00(OpenSSL key context) -> EVP_PKEY_CTX_new(OpenSSL key context)"
+    },
+    {
+      "name": "FUN_0018a300 -> SSL_new Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_0018a300",
+          "functions": [
+            "FUN_0018a300"
+          ],
+          "algorithms": [
+            "TLS session"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "SSL_new",
+          "functions": [
+            "SSL_new"
+          ],
+          "algorithms": [
+            "TLS session"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_0018a300(TLS session) -> SSL_new(TLS session)"
+    },
+    {
+      "name": "FUN_0018af40 -> RAND_bytes Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_0018af40",
+          "functions": [
+            "FUN_0018af40"
+          ],
+          "algorithms": [
+            "CSPRNG (OpenSSL)"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "RAND_bytes",
+          "functions": [
+            "RAND_bytes"
+          ],
+          "algorithms": [
+            "CSPRNG (OpenSSL)"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_0018af40(CSPRNG (OpenSSL)) -> RAND_bytes(CSPRNG (OpenSSL))"
+    },
+    {
+      "name": "FUN_00192180 -> RAND_bytes Pipeline",
+      "pattern": "pipeline",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "FUN_00192180",
+          "functions": [
+            "FUN_00192180"
+          ],
+          "algorithms": [
+            "CSPRNG (OpenSSL)"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "RAND_bytes",
+          "functions": [
+            "RAND_bytes"
+          ],
+          "algorithms": [
+            "CSPRNG (OpenSSL)"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_00192180(CSPRNG (OpenSSL)) -> RAND_bytes(CSPRNG (OpenSSL))"
+    },
+    {
+      "name": "FUN_00194c48 -> EVP_PKEY_CTX_new Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_00194c48",
+          "functions": [
+            "FUN_00194c48"
+          ],
+          "algorithms": [
+            "OpenSSL key context"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_PKEY_CTX_new",
+          "functions": [
+            "EVP_PKEY_CTX_new"
+          ],
+          "algorithms": [
+            "OpenSSL key context"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_00194c48(OpenSSL key context) -> EVP_PKEY_CTX_new(OpenSSL key context)"
+    },
+    {
+      "name": "FUN_001962c8 -> EVP_DigestUpdate Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "FUN_001962c8",
+          "functions": [
+            "FUN_001962c8"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "EVP_DigestUpdate",
+          "functions": [
+            "EVP_DigestUpdate"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 2,
+      "confidence": 0.9,
+      "description": "Pipeline (2 stages, topological order): FUN_001962c8(OpenSSL hash) -> EVP_DigestUpdate(OpenSSL hash)"
+    },
+    {
+      "name": "Fork-Join at FUN_0018bb68",
+      "pattern": "fork_join",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "Fork: FUN_0018bb68",
+          "functions": [
+            "FUN_0018bb68"
+          ],
+          "algorithms": [
+            "TLS session"
+          ],
+          "order": 0,
+          "confidence": 0.65
+        },
+        {
+          "name": "Branch: SSL_new",
+          "functions": [
+            "SSL_new"
+          ],
+          "algorithms": [
+            "TLS session"
+          ],
+          "order": 1,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: SSL_accept",
+          "functions": [
+            "SSL_accept"
+          ],
+          "algorithms": [
+            "TLS handshake (server)"
+          ],
+          "order": 2,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: SSL_read",
+          "functions": [
+            "SSL_read"
+          ],
+          "algorithms": [
+            "TLS encrypted read"
+          ],
+          "order": 3,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: SSL_write",
+          "functions": [
+            "SSL_write"
+          ],
+          "algorithms": [
+            "TLS encrypted write"
+          ],
+          "order": 4,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: SSL_set_verify",
+          "functions": [
+            "SSL_set_verify"
+          ],
+          "algorithms": [
+            "TLS certificate verification"
+          ],
+          "order": 5,
+          "confidence": 0.7
+        }
+      ],
+      "total_functions": 6,
+      "confidence": 0.6917,
+      "description": "Fork-join pattern (dominator): FUN_0018bb68 dispatches to 6 branches, merging at inferred join."
+    },
+    {
+      "name": "Fork-Join at FUN_0018f580",
+      "pattern": "fork_join",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "Fork: FUN_0018f580",
+          "functions": [
+            "FUN_0018f580"
+          ],
+          "algorithms": [
+            "TLS context"
+          ],
+          "order": 0,
+          "confidence": 0.65
+        },
+        {
+          "name": "Branch: SSL_CTX_new",
+          "functions": [
+            "SSL_CTX_new"
+          ],
+          "algorithms": [
+            "TLS context"
+          ],
+          "order": 1,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: FUN_0018f380",
+          "functions": [
+            "FUN_0018f380"
+          ],
+          "algorithms": [
+            "TLS session",
+            "TLS handshake (client)"
+          ],
+          "order": 2,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: SSL_write",
+          "functions": [
+            "SSL_write"
+          ],
+          "algorithms": [
+            "TLS encrypted write"
+          ],
+          "order": 3,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: SSL_read",
+          "functions": [
+            "SSL_read"
+          ],
+          "algorithms": [
+            "TLS encrypted read"
+          ],
+          "order": 4,
+          "confidence": 0.7
+        }
+      ],
+      "total_functions": 5,
+      "confidence": 0.69,
+      "description": "Fork-join pattern (dominator): FUN_0018f580 dispatches to 4 branches, merging at inferred join."
+    },
+    {
+      "name": "Fork-Join at FUN_0017452c",
+      "pattern": "fork_join",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Fork: FUN_0017452c",
+          "functions": [
+            "FUN_0017452c"
+          ],
+          "algorithms": [
+            "CSPRNG (OpenSSL)",
+            "OpenSSL hash"
+          ],
+          "order": 0,
+          "confidence": 0.65
+        },
+        {
+          "name": "Branch: RAND_bytes",
+          "functions": [
+            "RAND_bytes"
+          ],
+          "algorithms": [
+            "CSPRNG (OpenSSL)"
+          ],
+          "order": 1,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: FUN_00173fc0",
+          "functions": [
+            "FUN_00173fc0"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 2,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: EVP_DigestInit_ex",
+          "functions": [
+            "EVP_DigestInit_ex"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 3,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: EVP_DigestUpdate",
+          "functions": [
+            "EVP_DigestUpdate"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 4,
+          "confidence": 0.7
+        }
+      ],
+      "total_functions": 5,
+      "confidence": 0.69,
+      "description": "Fork-join pattern (dominator): FUN_0017452c dispatches to 4 branches, merging at inferred join."
+    },
+    {
+      "name": "Fork-Join at FUN_0018944c",
+      "pattern": "fork_join",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "Fork: FUN_0018944c",
+          "functions": [
+            "FUN_0018944c"
+          ],
+          "algorithms": [
+            "TLS session",
+            "TLS certificate verification"
+          ],
+          "order": 0,
+          "confidence": 0.65
+        },
+        {
+          "name": "Branch: SSL_new",
+          "functions": [
+            "SSL_new"
+          ],
+          "algorithms": [
+            "TLS session"
+          ],
+          "order": 1,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: FUN_00188c40",
+          "functions": [
+            "FUN_00188c40"
+          ],
+          "algorithms": [
+            "TLS handshake (client)",
+            "TLS handshake (server)"
+          ],
+          "order": 2,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: SSL_set_verify",
+          "functions": [
+            "SSL_set_verify"
+          ],
+          "algorithms": [
+            "TLS certificate verification"
+          ],
+          "order": 3,
+          "confidence": 0.7
+        }
+      ],
+      "total_functions": 4,
+      "confidence": 0.6875,
+      "description": "Fork-join pattern (dominator): FUN_0018944c dispatches to 3 branches, merging at inferred join."
+    },
+    {
+      "name": "Fork-Join at FUN_001a1440",
+      "pattern": "fork_join",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Fork: FUN_001a1440",
+          "functions": [
+            "FUN_001a1440"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 0,
+          "confidence": 0.65
+        },
+        {
+          "name": "Branch: EVP_DigestInit",
+          "functions": [
+            "EVP_DigestInit"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 1,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: EVP_DigestUpdate",
+          "functions": [
+            "EVP_DigestUpdate"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 2,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: EVP_DigestFinal",
+          "functions": [
+            "EVP_DigestFinal"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 3,
+          "confidence": 0.7
+        }
+      ],
+      "total_functions": 4,
+      "confidence": 0.6875,
+      "description": "Fork-join pattern (dominator): FUN_001a1440 dispatches to 3 branches, merging at inferred join."
+    },
+    {
+      "name": "Fork-Join at FUN_00193f64",
+      "pattern": "fork_join",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Fork: FUN_00193f64",
+          "functions": [
+            "FUN_00193f64"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption",
+            "OpenSSL symmetric decryption"
+          ],
+          "order": 0,
+          "confidence": 0.65
+        },
+        {
+          "name": "Branch: EVP_DecryptUpdate",
+          "functions": [
+            "EVP_DecryptUpdate"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric decryption"
+          ],
+          "order": 1,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: EVP_EncryptUpdate",
+          "functions": [
+            "EVP_EncryptUpdate"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption"
+          ],
+          "order": 2,
+          "confidence": 0.7
+        }
+      ],
+      "total_functions": 3,
+      "confidence": 0.6833,
+      "description": "Fork-join pattern (dominator): FUN_00193f64 dispatches to 2 branches, merging at inferred join."
+    },
+    {
+      "name": "Fork-Join at FUN_00194180",
+      "pattern": "fork_join",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Fork: FUN_00194180",
+          "functions": [
+            "FUN_00194180"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric decryption"
+          ],
+          "order": 0,
+          "confidence": 0.65
+        },
+        {
+          "name": "Branch: EVP_DecryptInit_ex",
+          "functions": [
+            "EVP_DecryptInit_ex"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric decryption"
+          ],
+          "order": 1,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: EVP_DecryptUpdate",
+          "functions": [
+            "EVP_DecryptUpdate"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric decryption"
+          ],
+          "order": 2,
+          "confidence": 0.7
+        }
+      ],
+      "total_functions": 3,
+      "confidence": 0.6833,
+      "description": "Fork-join pattern (dominator): FUN_00194180 dispatches to 2 branches, merging at inferred join."
+    },
+    {
+      "name": "Fork-Join at FUN_0018f380",
+      "pattern": "fork_join",
+      "domain": "generic",
+      "stages": [
+        {
+          "name": "Fork: FUN_0018f380",
+          "functions": [
+            "FUN_0018f380"
+          ],
+          "algorithms": [
+            "TLS session",
+            "TLS handshake (client)"
+          ],
+          "order": 0,
+          "confidence": 0.65
+        },
+        {
+          "name": "Branch: SSL_connect",
+          "functions": [
+            "SSL_connect"
+          ],
+          "algorithms": [
+            "TLS handshake (client)"
+          ],
+          "order": 1,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: SSL_new",
+          "functions": [
+            "SSL_new"
+          ],
+          "algorithms": [
+            "TLS session"
+          ],
+          "order": 2,
+          "confidence": 0.7
+        }
+      ],
+      "total_functions": 3,
+      "confidence": 0.6833,
+      "description": "Fork-join pattern (dominator): FUN_0018f380 dispatches to 2 branches, merging at inferred join."
+    },
+    {
+      "name": "Fork-Join at FUN_00196600",
+      "pattern": "fork_join",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Fork: FUN_00196600",
+          "functions": [
+            "FUN_00196600"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption",
+            "CSPRNG (OpenSSL)"
+          ],
+          "order": 0,
+          "confidence": 0.65
+        },
+        {
+          "name": "Branch: EVP_EncryptInit_ex",
+          "functions": [
+            "EVP_EncryptInit_ex"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption"
+          ],
+          "order": 1,
+          "confidence": 0.7
+        },
+        {
+          "name": "Branch: RAND_bytes",
+          "functions": [
+            "RAND_bytes"
+          ],
+          "algorithms": [
+            "CSPRNG (OpenSSL)"
+          ],
+          "order": 2,
+          "confidence": 0.7
+        }
+      ],
+      "total_functions": 3,
+      "confidence": 0.6833,
+      "description": "Fork-join pattern (dominator): FUN_00196600 dispatches to 2 branches, merging at inferred join."
+    }
+  ],
+  "unclustered_algorithms": [
+    "TLS session",
+    "CSPRNG (OpenSSL)",
+    "PBKDF2"
+  ],
+  "errors": [],
+  "total_pending": 11,
+  "pending_compositions": [
+    {
+      "name": "VPN Tunnel Setup Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Dns",
+          "functions": [
+            "ASN1_ITEM_lookup",
+            "BIO_lookup_ex",
+            "X509_LOOKUP_ctrl",
+            "X509_LOOKUP_ctrl_ex",
+            "X509_LOOKUP_file",
+            "X509_LOOKUP_hash_dir",
+            "X509_LOOKUP_store",
+            "X509_STORE_add_lookup",
+            "X509_STORE_set_lookup_crls",
+            "X509_VERIFY_PARAM_lookup"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 0.0
+        },
+        {
+          "name": "Tls Handshake",
+          "functions": [
+            "FUN_00188c40",
+            "FUN_0018f380",
+            "SSL_CTX_new",
+            "SSL_CTX_new_ex",
+            "SSL_connect",
+            "SSL_do_handshake",
+            "SSL_new"
+          ],
+          "algorithms": [
+            "TLS handshake (client)",
+            "TLS handshake (server)"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        },
+        {
+          "name": "Authentication",
+          "functions": [
+            "FUN_0018944c",
+            "PKCS7_add_certificate",
+            "SSL_CTX_get0_certificate",
+            "SSL_CTX_use_certificate",
+            "SSL_CTX_use_certificate_file",
+            "SSL_get0_peer_certificate",
+            "SSL_get_certificate",
+            "SSL_set_post_handshake_auth",
+            "SSL_use_certificate",
+            "TS_RESP_get_token"
+          ],
+          "algorithms": [
+            "TLS certificate verification"
+          ],
+          "order": 2,
+          "confidence": 0.9
+        },
+        {
+          "name": "Encryption",
+          "functions": [
+            "FUN_0015d120",
+            "FUN_00193920",
+            "FUN_00193f64",
+            "FUN_00194180",
+            "FUN_00196600",
+            "BIO_f_cipher",
+            "CMS_EncryptedData_decrypt",
+            "CMS_EncryptedData_encrypt_ex",
+            "CMS_decrypt",
+            "CMS_decrypt_set1_key"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption",
+            "OpenSSL symmetric decryption"
+          ],
+          "order": 4,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 37,
+      "confidence": 0.54,
+      "description": "VPN Tunnel Setup Pipeline (pipeline template): 3 of 5 stages backed by algorithm detections (Tls Handshake: TLS handshake (client) in FUN_00188c40; Authentication: TLS certificate verification in FUN_0018944c; Encryption: OpenSSL symmetric encryption in FUN_0015d120); evidence gate not passed (defining stage not backed by an algorithm detection: tunnel_setup). Call order, loops and convergence are not verified.",
+      "evidence_gate": {
+        "passed": false,
+        "backed_stages": {
+          "tls_handshake": [
+            {
+              "function": "FUN_00188c40",
+              "algorithm": "TLS handshake (client)",
+              "kind": "algorithm name"
+            },
+            {
+              "function": "FUN_00188c40",
+              "algorithm": "TLS handshake (server)",
+              "kind": "algorithm name"
+            },
+            {
+              "function": "FUN_0018f380",
+              "algorithm": "TLS handshake (client)",
+              "kind": "algorithm name"
+            }
+          ],
+          "authentication": [
+            {
+              "function": "FUN_0018944c",
+              "algorithm": "TLS certificate verification",
+              "kind": "algorithm name"
+            }
+          ],
+          "encryption": [
+            {
+              "function": "FUN_0015d120",
+              "algorithm": "OpenSSL symmetric encryption",
+              "kind": "algorithm name"
+            },
+            {
+              "function": "FUN_00193920",
+              "algorithm": "OpenSSL symmetric encryption",
+              "kind": "algorithm name"
+            },
+            {
+              "function": "FUN_00193f64",
+              "algorithm": "OpenSSL symmetric decryption",
+              "kind": "algorithm name"
+            }
+          ]
+        },
+        "required_stages": 2,
+        "rejected_detections": {
+          "detection only restates the function's own name": 18
+        },
+        "reason": "defining stage not backed by an algorithm detection: tunnel_setup"
+      }
+    },
+    {
+      "name": "TLS Handshake Protocol",
+      "pattern": "protocol_sequence",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Client Hello",
+          "functions": [
+            "SSL_connect"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 0.0
+        },
+        {
+          "name": "Certificate",
+          "functions": [
+            "FUN_0018944c",
+            "OSSL_CMP_CTX_build_cert_chain",
+            "PKCS7_add_certificate",
+            "SSL_CTX_get0_certificate",
+            "SSL_CTX_use_certificate",
+            "SSL_CTX_use_certificate_file",
+            "SSL_get0_peer_certificate",
+            "SSL_get_certificate",
+            "SSL_get_peer_cert_chain",
+            "SSL_use_certificate"
+          ],
+          "algorithms": [
+            "TLS certificate verification"
+          ],
+          "order": 2,
+          "confidence": 0.9
+        },
+        {
+          "name": "Finished",
+          "functions": [
+            "SSL_is_init_finished"
+          ],
+          "algorithms": [],
+          "order": 4,
+          "confidence": 0.0
+        }
+      ],
+      "total_functions": 12,
+      "confidence": 0.18,
+      "description": "TLS Handshake Protocol (protocol_sequence template): 1 of 5 stages backed by algorithm detections (Certificate: TLS certificate verification in FUN_0018944c); evidence gate not passed (1 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence). Call order, loops and convergence are not verified.",
+      "evidence_gate": {
+        "passed": false,
+        "backed_stages": {
+          "certificate": [
+            {
+              "function": "FUN_0018944c",
+              "algorithm": "TLS certificate verification",
+              "kind": "algorithm name"
+            }
+          ]
+        },
+        "required_stages": 2,
+        "rejected_detections": {
+          "detection only restates the function's own name": 18
+        },
+        "reason": "1 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence"
+      }
+    },
+    {
+      "name": "SSL/TLS Session Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Context Init",
+          "functions": [
+            "SSL_CTX_new",
+            "SSL_CTX_new_ex",
+            "SSL_new"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 0.0
+        },
+        {
+          "name": "Handshake",
+          "functions": [
+            "SSL_accept",
+            "SSL_connect",
+            "SSL_do_handshake"
+          ],
+          "algorithms": [],
+          "order": 1,
+          "confidence": 0.0
+        },
+        {
+          "name": "Data Transfer",
+          "functions": [
+            "SSL_read",
+            "SSL_read_early_data",
+            "SSL_write",
+            "SSL_write_early_data"
+          ],
+          "algorithms": [],
+          "order": 2,
+          "confidence": 0.0
+        },
+        {
+          "name": "Shutdown",
+          "functions": [
+            "BIO_ssl_shutdown",
+            "SSL_CTX_free",
+            "SSL_free",
+            "SSL_shutdown"
+          ],
+          "algorithms": [],
+          "order": 3,
+          "confidence": 0.0
+        }
+      ],
+      "total_functions": 14,
+      "confidence": 0.0,
+      "description": "SSL/TLS Session Pipeline (pipeline template): 0 of 4 stages backed by algorithm detections (none); evidence gate not passed (0 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence). Call order, loops and convergence are not verified.",
+      "evidence_gate": {
+        "passed": false,
+        "backed_stages": {},
+        "required_stages": 2,
+        "rejected_detections": {
+          "detection only restates the function's own name": 18
+        },
+        "reason": "0 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence"
+      }
+    },
+    {
+      "name": "Certificate Chain Validation",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Load Cert",
+          "functions": [
+            "PEM_read_bio",
+            "PEM_read_bio_CMS",
+            "PEM_read_bio_NETSCAPE_CERT_SEQUENCE",
+            "PEM_read_bio_PKCS7",
+            "PEM_read_bio_PKCS8",
+            "PEM_read_bio_PKCS8_PRIV_KEY_INFO",
+            "PEM_read_bio_Parameters",
+            "PEM_read_bio_Parameters_ex",
+            "PEM_read_bio_SSL_SESSION",
+            "PEM_read_bio_X509"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 0.0
+        },
+        {
+          "name": "Build Chain",
+          "functions": [
+            "SSL_get_peer_cert_chain",
+            "X509_STORE_CTX_free",
+            "X509_STORE_CTX_get0_parent_ctx",
+            "X509_STORE_CTX_get0_policy_tree",
+            "X509_STORE_CTX_get1_chain",
+            "X509_STORE_CTX_get_current_cert",
+            "X509_STORE_CTX_get_error",
+            "X509_STORE_CTX_get_error_depth",
+            "X509_STORE_CTX_get_explicit_policy",
+            "X509_STORE_CTX_get_num_untrusted"
+          ],
+          "algorithms": [],
+          "order": 1,
+          "confidence": 0.0
+        },
+        {
+          "name": "Verify Signature",
+          "functions": [
+            "X509_VERIFY_PARAM_add0_policy",
+            "X509_VERIFY_PARAM_clear_flags",
+            "X509_VERIFY_PARAM_free",
+            "X509_VERIFY_PARAM_get0",
+            "X509_VERIFY_PARAM_get0_host",
+            "X509_VERIFY_PARAM_get0_name",
+            "X509_VERIFY_PARAM_get_count",
+            "X509_VERIFY_PARAM_get_flags",
+            "X509_VERIFY_PARAM_lookup",
+            "X509_VERIFY_PARAM_new"
+          ],
+          "algorithms": [],
+          "order": 2,
+          "confidence": 0.0
+        },
+        {
+          "name": "Check Revocation",
+          "functions": [
+            "OCSP_BASICRESP_free",
+            "OCSP_BASICRESP_new",
+            "OCSP_CERTID_free",
+            "OCSP_REQUEST_add_ext",
+            "OCSP_REQUEST_free",
+            "OCSP_REQUEST_it",
+            "OCSP_REQUEST_new",
+            "OCSP_REQUEST_print",
+            "OCSP_RESPONSE_free",
+            "OCSP_RESPONSE_it"
+          ],
+          "algorithms": [],
+          "order": 3,
+          "confidence": 0.0
+        }
+      ],
+      "total_functions": 40,
+      "confidence": 0.0,
+      "description": "Certificate Chain Validation (pipeline template): 0 of 4 stages backed by algorithm detections (none); evidence gate not passed (0 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence). Call order, loops and convergence are not verified.",
+      "evidence_gate": {
+        "passed": false,
+        "backed_stages": {},
+        "required_stages": 2,
+        "rejected_detections": {
+          "detection only restates the function's own name": 18
+        },
+        "reason": "0 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence"
+      }
+    },
+    {
+      "name": "Key Derivation Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Random Gen",
+          "functions": [
+            "RAND_bytes",
+            "RAND_bytes_ex"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 0.0
+        },
+        {
+          "name": "Kdf",
+          "functions": [
+            "EVP_KDF_CTX_free",
+            "EVP_KDF_CTX_new",
+            "EVP_KDF_CTX_set_params",
+            "EVP_KDF_derive",
+            "EVP_KDF_do_all_provided",
+            "EVP_KDF_fetch",
+            "EVP_KDF_free",
+            "EVP_KDF_get0_description",
+            "EVP_KDF_get0_name",
+            "EVP_KDF_get0_provider"
+          ],
+          "algorithms": [],
+          "order": 1,
+          "confidence": 0.0
+        },
+        {
+          "name": "Key Use",
+          "functions": [
+            "FUN_0015d120",
+            "FUN_00193920",
+            "FUN_00193f64",
+            "FUN_00194180",
+            "FUN_00196600",
+            "CMS_EncryptedData_decrypt",
+            "CMS_EncryptedData_encrypt_ex",
+            "CMS_decrypt",
+            "CMS_decrypt_set1_key",
+            "CMS_decrypt_set1_password"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption",
+            "OpenSSL symmetric decryption"
+          ],
+          "order": 3,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 22,
+      "confidence": 0.225,
+      "description": "Key Derivation Pipeline (pipeline template): 1 of 4 stages backed by algorithm detections (Key Use: OpenSSL symmetric encryption in FUN_0015d120); evidence gate not passed (1 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence). Call order, loops and convergence are not verified.",
+      "evidence_gate": {
+        "passed": false,
+        "backed_stages": {
+          "key_use": [
+            {
+              "function": "FUN_0015d120",
+              "algorithm": "OpenSSL symmetric encryption",
+              "kind": "algorithm name"
+            },
+            {
+              "function": "FUN_00193920",
+              "algorithm": "OpenSSL symmetric encryption",
+              "kind": "algorithm name"
+            },
+            {
+              "function": "FUN_00193f64",
+              "algorithm": "OpenSSL symmetric decryption",
+              "kind": "algorithm name"
+            }
+          ]
+        },
+        "required_stages": 2,
+        "rejected_detections": {
+          "detection only restates the function's own name": 18
+        },
+        "reason": "1 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence"
+      }
+    },
+    {
+      "name": "Transient CFD Time-Stepping",
+      "pattern": "iterative",
+      "domain": "fluid",
+      "stages": [
+        {
+          "name": "Init",
+          "functions": [
+            "ASYNC_init_thread",
+            "BIO_sock_init",
+            "ENGINE_init",
+            "EVP_CipherInit_SKEY",
+            "EVP_CipherInit_ex",
+            "EVP_DecryptInit_ex",
+            "EVP_DigestInit",
+            "EVP_DigestInit_ex",
+            "EVP_DigestInit_ex2",
+            "EVP_DigestSignInit"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 0.0
+        },
+        {
+          "name": "Advance",
+          "functions": [
+            "EVP_DecryptUpdate",
+            "EVP_DigestSignUpdate",
+            "EVP_DigestUpdate",
+            "EVP_DigestVerifyUpdate",
+            "EVP_EncryptUpdate",
+            "EVP_MAC_update",
+            "OSSL_CMP_ITAV_new_rootCaKeyUpdate",
+            "OSSL_CMP_MSG_update_recipNonce",
+            "OSSL_CMP_MSG_update_transactionID",
+            "OSSL_CMP_get1_crlUpdate"
+          ],
+          "algorithms": [],
+          "order": 4,
+          "confidence": 0.0
+        }
+      ],
+      "total_functions": 20,
+      "confidence": 0.0,
+      "description": "Transient CFD Time-Stepping (iterative template): 0 of 5 stages backed by algorithm detections (none); evidence gate not passed (0 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence). Call order, loops and convergence are not verified.",
+      "evidence_gate": {
+        "passed": false,
+        "backed_stages": {},
+        "required_stages": 2,
+        "rejected_detections": {
+          "detection only restates the function's own name": 18
+        },
+        "reason": "0 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence"
+      }
+    },
+    {
+      "name": "Audio Codec Pipeline",
+      "pattern": "pipeline",
+      "domain": "dsp",
+      "stages": [
+        {
+          "name": "Decode",
+          "functions": [
+            "ASN1_item_unpack",
+            "NETSCAPE_SPKI_b64_decode",
+            "OSSL_DECODER_CTX_free",
+            "OSSL_DECODER_CTX_new_for_pkey",
+            "OSSL_DECODER_do_all_provided",
+            "OSSL_DECODER_fetch",
+            "OSSL_DECODER_free",
+            "OSSL_DECODER_from_bio",
+            "OSSL_DECODER_get0_description",
+            "OSSL_DECODER_get0_name"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 0.0
+        },
+        {
+          "name": "Encode",
+          "functions": [
+            "NETSCAPE_SPKI_b64_encode",
+            "OSSL_ENCODER_CTX_free",
+            "OSSL_ENCODER_CTX_get_num_encoders",
+            "OSSL_ENCODER_CTX_new_for_pkey",
+            "OSSL_ENCODER_CTX_set_cipher",
+            "OSSL_ENCODER_CTX_set_params",
+            "OSSL_ENCODER_CTX_set_passphrase",
+            "OSSL_ENCODER_CTX_set_passphrase_ui",
+            "OSSL_ENCODER_do_all_provided",
+            "OSSL_ENCODER_fetch"
+          ],
+          "algorithms": [],
+          "order": 3,
+          "confidence": 0.0
+        }
+      ],
+      "total_functions": 20,
+      "confidence": 0.0,
+      "description": "Audio Codec Pipeline (pipeline template): 0 of 4 stages backed by algorithm detections (none); evidence gate not passed (0 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence). Call order, loops and convergence are not verified.",
+      "evidence_gate": {
+        "passed": false,
+        "backed_stages": {},
+        "required_stages": 2,
+        "rejected_detections": {
+          "detection only restates the function's own name": 18
+        },
+        "reason": "0 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence"
+      }
+    },
+    {
+      "name": "Matrix Solve Pipeline",
+      "pattern": "pipeline",
+      "domain": "structural",
+      "stages": [
+        {
+          "name": "Allocate",
+          "functions": [
+            "CRYPTO_malloc"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 0.0
+        },
+        {
+          "name": "Fill",
+          "functions": [
+            "OPENSSL_LH_insert",
+            "OSSL_CRMF_CERTTEMPLATE_fill",
+            "TXT_DB_insert"
+          ],
+          "algorithms": [],
+          "order": 1,
+          "confidence": 0.0
+        },
+        {
+          "name": "Free",
+          "functions": [
+            "ASN1_ENUMERATED_free",
+            "ASN1_GENERALIZEDTIME_free",
+            "ASN1_INTEGER_free",
+            "ASN1_OBJECT_free",
+            "ASN1_OCTET_STRING_free",
+            "ASN1_PCTX_free",
+            "ASN1_STRING_free",
+            "ASN1_TIME_free",
+            "ASN1_TYPE_free",
+            "ASN1_UTCTIME_free"
+          ],
+          "algorithms": [],
+          "order": 4,
+          "confidence": 0.0
+        }
+      ],
+      "total_functions": 14,
+      "confidence": 0.0,
+      "description": "Matrix Solve Pipeline (pipeline template): 0 of 5 stages backed by algorithm detections (none); evidence gate not passed (0 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence). Call order, loops and convergence are not verified.",
+      "evidence_gate": {
+        "passed": false,
+        "backed_stages": {},
+        "required_stages": 2,
+        "rejected_detections": {
+          "detection only restates the function's own name": 18
+        },
+        "reason": "0 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence"
+      }
+    },
+    {
+      "name": "Hash-then-Sign Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Hash",
+          "functions": [
+            "FUN_00161868",
+            "FUN_00173fc0",
+            "FUN_0017452c",
+            "FUN_00194668",
+            "FUN_001962c8",
+            "FUN_001a1440",
+            "CMS_digest_create_ex",
+            "CMS_digest_verify",
+            "CMS_final_digest",
+            "ENGINE_get_digest_engine"
+          ],
+          "algorithms": [
+            "OpenSSL hash"
+          ],
+          "order": 0,
+          "confidence": 0.9
+        },
+        {
+          "name": "Sign",
+          "functions": [
+            "CMS_sign_ex",
+            "CMS_sign_receipt",
+            "EVP_DigestSign",
+            "EVP_DigestSignFinal",
+            "EVP_DigestSignInit",
+            "EVP_DigestSignInit_ex",
+            "EVP_DigestSignUpdate",
+            "EVP_PKEY_sign",
+            "EVP_PKEY_sign_init",
+            "EVP_PKEY_sign_message_init"
+          ],
+          "algorithms": [],
+          "order": 1,
+          "confidence": 0.0
+        },
+        {
+          "name": "Verify",
+          "functions": [
+            "CMS_digest_verify",
+            "CMS_verify",
+            "CMS_verify_receipt",
+            "EVP_DigestVerify",
+            "EVP_DigestVerifyFinal",
+            "EVP_DigestVerifyInit",
+            "EVP_DigestVerifyInit_ex",
+            "EVP_DigestVerifyUpdate",
+            "EVP_PKEY_verify",
+            "EVP_PKEY_verify_init"
+          ],
+          "algorithms": [],
+          "order": 2,
+          "confidence": 0.0
+        }
+      ],
+      "total_functions": 29,
+      "confidence": 0.3,
+      "description": "Hash-then-Sign Pipeline (pipeline template): 1 of 3 stages backed by algorithm detections (Hash: OpenSSL hash in FUN_00161868); evidence gate not passed (1 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence). Call order, loops and convergence are not verified.",
+      "evidence_gate": {
+        "passed": false,
+        "backed_stages": {
+          "hash": [
+            {
+              "function": "FUN_00161868",
+              "algorithm": "OpenSSL hash",
+              "kind": "algorithm name"
+            },
+            {
+              "function": "FUN_00173fc0",
+              "algorithm": "OpenSSL hash",
+              "kind": "algorithm name"
+            },
+            {
+              "function": "FUN_0017452c",
+              "algorithm": "OpenSSL hash",
+              "kind": "algorithm name"
+            }
+          ]
+        },
+        "required_stages": 2,
+        "rejected_detections": {
+          "detection only restates the function's own name": 18
+        },
+        "reason": "1 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence"
+      }
+    },
+    {
+      "name": "Compress-then-Encrypt Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Compress",
+          "functions": [
+            "BIO_f_zlib",
+            "BIO_f_zstd",
+            "CMS_compress",
+            "SSL_CTX_compress_certs",
+            "SSL_get_current_compression"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 0.0
+        },
+        {
+          "name": "Encrypt",
+          "functions": [
+            "FUN_0015d120",
+            "FUN_00193920",
+            "FUN_00193f64",
+            "FUN_00196600",
+            "BIO_f_cipher",
+            "CMS_EncryptedData_decrypt",
+            "CMS_EncryptedData_encrypt_ex",
+            "CMS_encrypt_ex",
+            "ENGINE_get_cipher_engine",
+            "ENGINE_get_ciphers"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption"
+          ],
+          "order": 1,
+          "confidence": 0.9
+        },
+        {
+          "name": "Mac",
+          "functions": [
+            "EVP_MAC_CTX_dup",
+            "EVP_MAC_CTX_free",
+            "EVP_MAC_CTX_get_mac_size",
+            "EVP_MAC_CTX_new",
+            "EVP_MAC_CTX_set_params",
+            "EVP_MAC_do_all_provided",
+            "EVP_MAC_fetch",
+            "EVP_MAC_final",
+            "EVP_MAC_free",
+            "EVP_MAC_get0_description"
+          ],
+          "algorithms": [],
+          "order": 2,
+          "confidence": 0.0
+        }
+      ],
+      "total_functions": 25,
+      "confidence": 0.3,
+      "description": "Compress-then-Encrypt Pipeline (pipeline template): 1 of 3 stages backed by algorithm detections (Encrypt: OpenSSL symmetric encryption in FUN_0015d120); evidence gate not passed (1 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence). Call order, loops and convergence are not verified.",
+      "evidence_gate": {
+        "passed": false,
+        "backed_stages": {
+          "encrypt": [
+            {
+              "function": "FUN_0015d120",
+              "algorithm": "OpenSSL symmetric encryption",
+              "kind": "algorithm name"
+            },
+            {
+              "function": "FUN_00193920",
+              "algorithm": "OpenSSL symmetric encryption",
+              "kind": "algorithm name"
+            },
+            {
+              "function": "FUN_00193f64",
+              "algorithm": "OpenSSL symmetric encryption",
+              "kind": "algorithm name"
+            }
+          ]
+        },
+        "required_stages": 2,
+        "rejected_detections": {
+          "detection only restates the function's own name": 18
+        },
+        "reason": "1 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence"
+      }
+    },
+    {
+      "name": "Cryptographic Key Derivation Pipeline",
+      "pattern": "pipeline",
+      "domain": "crypto",
+      "stages": [
+        {
+          "name": "Salt Generate",
+          "functions": [
+            "OCSP_check_nonce",
+            "OCSP_copy_nonce",
+            "OCSP_request_add1_nonce",
+            "OSSL_CMP_CTX_set1_senderNonce",
+            "OSSL_CMP_HDR_get0_recipNonce",
+            "OSSL_CMP_MSG_update_recipNonce",
+            "RAND_bytes",
+            "RAND_bytes_ex",
+            "TS_REQ_set_nonce"
+          ],
+          "algorithms": [],
+          "order": 0,
+          "confidence": 0.0
+        },
+        {
+          "name": "Key Stretch",
+          "functions": [
+            "EVP_PBE_find",
+            "PBKDF2PARAM_free",
+            "PBKDF2PARAM_it",
+            "PBMAC1_get1_pbkdf2_param",
+            "PKCS12_set_pbmac1_pbkdf2",
+            "PKCS5_PBKDF2_HMAC",
+            "PKCS5_pbe2_set_scrypt",
+            "SCRYPT_PARAMS_free",
+            "SCRYPT_PARAMS_it"
+          ],
+          "algorithms": [],
+          "order": 1,
+          "confidence": 0.0
+        },
+        {
+          "name": "Derive Key",
+          "functions": [
+            "EVP_KDF_CTX_free",
+            "EVP_KDF_CTX_new",
+            "EVP_KDF_CTX_set_params",
+            "EVP_KDF_derive",
+            "EVP_KDF_do_all_provided",
+            "EVP_KDF_fetch",
+            "EVP_KDF_free",
+            "EVP_KDF_get0_description",
+            "EVP_KDF_get0_name",
+            "EVP_KDF_get0_provider"
+          ],
+          "algorithms": [],
+          "order": 2,
+          "confidence": 0.0
+        },
+        {
+          "name": "Encrypt",
+          "functions": [
+            "FUN_0015d120",
+            "FUN_00193920",
+            "FUN_00193f64",
+            "FUN_00196600",
+            "BIO_f_cipher",
+            "CMS_EncryptedData_decrypt",
+            "CMS_EncryptedData_encrypt_ex",
+            "CMS_encrypt_ex",
+            "ENGINE_get_cipher_engine",
+            "ENGINE_get_ciphers"
+          ],
+          "algorithms": [
+            "OpenSSL symmetric encryption"
+          ],
+          "order": 3,
+          "confidence": 0.9
+        }
+      ],
+      "total_functions": 38,
+      "confidence": 0.225,
+      "description": "Cryptographic Key Derivation Pipeline (pipeline template): 1 of 4 stages backed by algorithm detections (Encrypt: OpenSSL symmetric encryption in FUN_0015d120); evidence gate not passed (1 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence). Call order, loops and convergence are not verified.",
+      "evidence_gate": {
+        "passed": false,
+        "backed_stages": {
+          "encrypt": [
+            {
+              "function": "FUN_0015d120",
+              "algorithm": "OpenSSL symmetric encryption",
+              "kind": "algorithm name"
+            },
+            {
+              "function": "FUN_00193920",
+              "algorithm": "OpenSSL symmetric encryption",
+              "kind": "algorithm name"
+            },
+            {
+              "function": "FUN_00193f64",
+              "algorithm": "OpenSSL symmetric encryption",
+              "kind": "algorithm name"
+            }
+          ]
+        },
+        "required_stages": 2,
+        "rejected_detections": {
+          "detection only restates the function's own name": 18
+        },
+        "reason": "1 stage(s) backed by an algorithm detection, 2 required; a name match alone is not evidence"
+      }
+    }
+  ],
+  "pending_note": "Template matches held back by the evidence gate (decision K-1, 2026-11-18): not claims, not reported, not counted in total_compositions. Each entry carries evidence_gate.reason."
+}

@@ -1,0 +1,1652 @@
+{
+  "total": 183,
+  "matches": [
+    {
+      "original": "strlen",
+      "matched": "strlen",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "get string length",
+      "address": "00101b78",
+      "method": "symbol"
+    },
+    {
+      "original": "strlen",
+      "matched": "strlen",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "get string length",
+      "address": "00101b7c",
+      "method": "symbol"
+    },
+    {
+      "original": "exit",
+      "matched": "exit",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "normal process termination",
+      "address": "00101b90",
+      "method": "symbol"
+    },
+    {
+      "original": "exit",
+      "matched": "exit",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "normal process termination",
+      "address": "00101b94",
+      "method": "symbol"
+    },
+    {
+      "original": "__libc_start_main",
+      "matched": "libc_start_main",
+      "library": "musl",
+      "confidence": 0.98,
+      "purpose": "libc entry point",
+      "address": "00101ba8",
+      "method": "symbol"
+    },
+    {
+      "original": "__libc_start_main",
+      "matched": "libc_start_main",
+      "library": "musl",
+      "confidence": 0.98,
+      "purpose": "libc entry point",
+      "address": "00101bac",
+      "method": "symbol"
+    },
+    {
+      "original": "__cxa_finalize",
+      "matched": "cxa_finalize",
+      "library": "libc++abi",
+      "confidence": 0.98,
+      "purpose": "call registered destructors at exit",
+      "address": "00101bc0",
+      "method": "symbol"
+    },
+    {
+      "original": "__cxa_finalize",
+      "matched": "cxa_finalize",
+      "library": "libc++abi",
+      "confidence": 0.98,
+      "purpose": "call registered destructors at exit",
+      "address": "00101bc4",
+      "method": "symbol"
+    },
+    {
+      "original": "__cxa_atexit",
+      "matched": "cxa_atexit",
+      "library": "libc++abi",
+      "confidence": 0.98,
+      "purpose": "register destructor for static/global",
+      "address": "00101bdc",
+      "method": "symbol"
+    },
+    {
+      "original": "lseek",
+      "matched": "lseek",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "reposition file offset",
+      "address": "00101bf0",
+      "method": "symbol"
+    },
+    {
+      "original": "lseek",
+      "matched": "lseek",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "reposition file offset",
+      "address": "00101bf4",
+      "method": "symbol"
+    },
+    {
+      "original": "__fpending",
+      "matched": "fpending",
+      "library": "c",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101c08",
+      "method": "symbol"
+    },
+    {
+      "original": "__fpending",
+      "matched": "fpending",
+      "library": "c",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101c0c",
+      "method": "symbol"
+    },
+    {
+      "original": "stpcpy",
+      "matched": "stpcpy",
+      "library": "_string.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101c20",
+      "method": "symbol"
+    },
+    {
+      "original": "stpcpy",
+      "matched": "stpcpy",
+      "library": "_string.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101c24",
+      "method": "symbol"
+    },
+    {
+      "original": "fileno",
+      "matched": "fileno",
+      "library": "_stdio.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101c38",
+      "method": "symbol"
+    },
+    {
+      "original": "fileno",
+      "matched": "fileno",
+      "library": "_stdio.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101c3c",
+      "method": "symbol"
+    },
+    {
+      "original": "nl_langinfo",
+      "matched": "nl_langinfo",
+      "library": "_langinfo.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101c68",
+      "method": "symbol"
+    },
+    {
+      "original": "nl_langinfo",
+      "matched": "nl_langinfo",
+      "library": "_langinfo.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101c6c",
+      "method": "symbol"
+    },
+    {
+      "original": "malloc",
+      "matched": "malloc",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "allocate heap memory",
+      "address": "00101c80",
+      "method": "symbol"
+    },
+    {
+      "original": "malloc",
+      "matched": "malloc",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "allocate heap memory",
+      "address": "00101c84",
+      "method": "symbol"
+    },
+    {
+      "original": "open",
+      "matched": "open",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "open file and return fd",
+      "address": "00101c98",
+      "method": "symbol"
+    },
+    {
+      "original": "open",
+      "matched": "open",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "open file and return fd",
+      "address": "00101c9c",
+      "method": "symbol"
+    },
+    {
+      "original": "strncmp",
+      "matched": "strncmp",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "compare strings with limit",
+      "address": "00101cb0",
+      "method": "symbol"
+    },
+    {
+      "original": "strncmp",
+      "matched": "strncmp",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "compare strings with limit",
+      "address": "00101cb4",
+      "method": "symbol"
+    },
+    {
+      "original": "bindtextdomain",
+      "matched": "bindtextdomain",
+      "library": "libintl.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101cc8",
+      "method": "symbol"
+    },
+    {
+      "original": "bindtextdomain",
+      "matched": "bindtextdomain",
+      "library": "libintl.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101ccc",
+      "method": "symbol"
+    },
+    {
+      "original": "aligned_alloc",
+      "matched": "aligned_alloc",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "allocate aligned memory (C11)",
+      "address": "00101ce0",
+      "method": "symbol"
+    },
+    {
+      "original": "aligned_alloc",
+      "matched": "aligned_alloc",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "allocate aligned memory (C11)",
+      "address": "00101ce4",
+      "method": "symbol"
+    },
+    {
+      "original": "__printf_chk",
+      "matched": "printf_chk",
+      "library": "opencv_python_headless",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101cf8",
+      "method": "symbol"
+    },
+    {
+      "original": "__printf_chk",
+      "matched": "printf_chk",
+      "library": "opencv_python_headless",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101cfc",
+      "method": "symbol"
+    },
+    {
+      "original": "__fpurge",
+      "matched": "fpurge",
+      "library": "c",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101d10",
+      "method": "symbol"
+    },
+    {
+      "original": "__fpurge",
+      "matched": "fpurge",
+      "library": "c",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101d14",
+      "method": "symbol"
+    },
+    {
+      "original": "copy_file_range",
+      "matched": "copy_file_range",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "server-side file copy (zero-copy)",
+      "address": "00101d44",
+      "method": "symbol"
+    },
+    {
+      "original": "strerror_r",
+      "matched": "strerror_r",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "get error message (reentrant)",
+      "address": "00101d58",
+      "method": "symbol"
+    },
+    {
+      "original": "strerror_r",
+      "matched": "strerror_r",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "get error message (reentrant)",
+      "address": "00101d5c",
+      "method": "symbol"
+    },
+    {
+      "original": "__vfprintf_chk",
+      "matched": "vfprintf_chk",
+      "library": "opencv_python_headless",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101d70",
+      "method": "symbol"
+    },
+    {
+      "original": "__vfprintf_chk",
+      "matched": "vfprintf_chk",
+      "library": "opencv_python_headless",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101d74",
+      "method": "symbol"
+    },
+    {
+      "original": "calloc",
+      "matched": "calloc",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "allocate and zero heap memory",
+      "address": "00101d88",
+      "method": "symbol"
+    },
+    {
+      "original": "calloc",
+      "matched": "calloc",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "allocate and zero heap memory",
+      "address": "00101d8c",
+      "method": "symbol"
+    },
+    {
+      "original": "realloc",
+      "matched": "realloc",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "resize heap memory block",
+      "address": "00101da0",
+      "method": "symbol"
+    },
+    {
+      "original": "realloc",
+      "matched": "realloc",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "resize heap memory block",
+      "address": "00101da4",
+      "method": "symbol"
+    },
+    {
+      "original": "getpagesize",
+      "matched": "getpagesize",
+      "library": "unistd.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101db8",
+      "method": "symbol"
+    },
+    {
+      "original": "getpagesize",
+      "matched": "getpagesize",
+      "library": "unistd.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101dbc",
+      "method": "symbol"
+    },
+    {
+      "original": "__stack_chk_fail",
+      "matched": "stack_chk_fail",
+      "library": "gcc",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101dd0",
+      "method": "symbol"
+    },
+    {
+      "original": "__stack_chk_fail",
+      "matched": "stack_chk_fail",
+      "library": "gcc",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101dd4",
+      "method": "symbol"
+    },
+    {
+      "original": "close",
+      "matched": "close",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "close file descriptor",
+      "address": "00101de8",
+      "method": "symbol"
+    },
+    {
+      "original": "close",
+      "matched": "close",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "close file descriptor",
+      "address": "00101dec",
+      "method": "symbol"
+    },
+    {
+      "original": "strrchr",
+      "matched": "strrchr",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "find last occurrence of character",
+      "address": "00101e00",
+      "method": "symbol"
+    },
+    {
+      "original": "strrchr",
+      "matched": "strrchr",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "find last occurrence of character",
+      "address": "00101e04",
+      "method": "symbol"
+    },
+    {
+      "original": "write",
+      "matched": "write",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "write bytes to file descriptor",
+      "address": "00101e30",
+      "method": "symbol"
+    },
+    {
+      "original": "write",
+      "matched": "write",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "write bytes to file descriptor",
+      "address": "00101e34",
+      "method": "symbol"
+    },
+    {
+      "original": "abort",
+      "matched": "abort",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "abort process (raise SIGABRT)",
+      "address": "00101e48",
+      "method": "symbol"
+    },
+    {
+      "original": "abort",
+      "matched": "abort",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "abort process (raise SIGABRT)",
+      "address": "00101e4c",
+      "method": "symbol"
+    },
+    {
+      "original": "posix_fadvise",
+      "matched": "posix_fadvise",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "advise kernel on file access pattern",
+      "address": "00101e64",
+      "method": "symbol"
+    },
+    {
+      "original": "mbsinit",
+      "matched": "mbsinit",
+      "library": "_wchar.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101e78",
+      "method": "symbol"
+    },
+    {
+      "original": "mbsinit",
+      "matched": "mbsinit",
+      "library": "_wchar.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101e7c",
+      "method": "symbol"
+    },
+    {
+      "original": "__overflow",
+      "matched": "overflow",
+      "library": "musl",
+      "confidence": 0.98,
+      "purpose": "Overflow flush buffer",
+      "address": "00101e90",
+      "method": "symbol"
+    },
+    {
+      "original": "__overflow",
+      "matched": "overflow",
+      "library": "musl",
+      "confidence": 0.98,
+      "purpose": "Overflow flush buffer",
+      "address": "00101e94",
+      "method": "symbol"
+    },
+    {
+      "original": "textdomain",
+      "matched": "textdomain",
+      "library": "libintl.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101ec0",
+      "method": "symbol"
+    },
+    {
+      "original": "textdomain",
+      "matched": "textdomain",
+      "library": "libintl.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101ec4",
+      "method": "symbol"
+    },
+    {
+      "original": "__fprintf_chk",
+      "matched": "fprintf_chk",
+      "library": "opencv_python_headless",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101ef0",
+      "method": "symbol"
+    },
+    {
+      "original": "__fprintf_chk",
+      "matched": "fprintf_chk",
+      "library": "opencv_python_headless",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101ef4",
+      "method": "symbol"
+    },
+    {
+      "original": "strcmp",
+      "matched": "strcmp",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "compare two strings",
+      "address": "00101f08",
+      "method": "symbol"
+    },
+    {
+      "original": "strcmp",
+      "matched": "strcmp",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "compare two strings",
+      "address": "00101f0c",
+      "method": "symbol"
+    },
+    {
+      "original": "__ctype_b_loc",
+      "matched": "ctype_b_loc",
+      "library": "c",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101f20",
+      "method": "symbol"
+    },
+    {
+      "original": "__ctype_b_loc",
+      "matched": "ctype_b_loc",
+      "library": "c",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101f24",
+      "method": "symbol"
+    },
+    {
+      "original": "fseeko",
+      "matched": "fseeko",
+      "library": "_stdio.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101f3c",
+      "method": "symbol"
+    },
+    {
+      "original": "free",
+      "matched": "free",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "free heap memory",
+      "address": "00101f50",
+      "method": "symbol"
+    },
+    {
+      "original": "free",
+      "matched": "free",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "free heap memory",
+      "address": "00101f54",
+      "method": "symbol"
+    },
+    {
+      "original": "__ctype_get_mb_cur_max",
+      "matched": "ctype_get_mb_cur_max",
+      "library": "BrokenLocale",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101f68",
+      "method": "symbol"
+    },
+    {
+      "original": "__ctype_get_mb_cur_max",
+      "matched": "ctype_get_mb_cur_max",
+      "library": "BrokenLocale",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101f6c",
+      "method": "symbol"
+    },
+    {
+      "original": "fflush_unlocked",
+      "matched": "fflush_unlocked",
+      "library": "glibc",
+      "confidence": 0.98,
+      "purpose": "flush (no lock)",
+      "address": "00101f98",
+      "method": "symbol"
+    },
+    {
+      "original": "fflush_unlocked",
+      "matched": "fflush_unlocked",
+      "library": "glibc",
+      "confidence": 0.98,
+      "purpose": "flush (no lock)",
+      "address": "00101f9c",
+      "method": "symbol"
+    },
+    {
+      "original": "fcntl",
+      "matched": "fcntl",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "file descriptor control operations",
+      "address": "00101fb0",
+      "method": "symbol"
+    },
+    {
+      "original": "fcntl",
+      "matched": "fcntl",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "file descriptor control operations",
+      "address": "00101fb4",
+      "method": "symbol"
+    },
+    {
+      "original": "clearerr_unlocked",
+      "matched": "clearerr_unlocked",
+      "library": "_stdio.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101fe0",
+      "method": "symbol"
+    },
+    {
+      "original": "clearerr_unlocked",
+      "matched": "clearerr_unlocked",
+      "library": "_stdio.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00101fe4",
+      "method": "symbol"
+    },
+    {
+      "original": "read",
+      "matched": "read",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "read bytes from file descriptor",
+      "address": "00101ff8",
+      "method": "symbol"
+    },
+    {
+      "original": "read",
+      "matched": "read",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "read bytes from file descriptor",
+      "address": "00101ffc",
+      "method": "symbol"
+    },
+    {
+      "original": "fputc_unlocked",
+      "matched": "fputc_unlocked",
+      "library": "glibc",
+      "confidence": 0.98,
+      "purpose": "write char (no lock)",
+      "address": "00102010",
+      "method": "symbol"
+    },
+    {
+      "original": "fputc_unlocked",
+      "matched": "fputc_unlocked",
+      "library": "glibc",
+      "confidence": 0.98,
+      "purpose": "write char (no lock)",
+      "address": "00102014",
+      "method": "symbol"
+    },
+    {
+      "original": "dcgettext",
+      "matched": "dcgettext",
+      "library": "libintl.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00102028",
+      "method": "symbol"
+    },
+    {
+      "original": "dcgettext",
+      "matched": "dcgettext",
+      "library": "libintl.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "0010202c",
+      "method": "symbol"
+    },
+    {
+      "original": "fputs_unlocked",
+      "matched": "fputs_unlocked",
+      "library": "glibc",
+      "confidence": 0.98,
+      "purpose": "write string (no lock)",
+      "address": "00102040",
+      "method": "symbol"
+    },
+    {
+      "original": "fputs_unlocked",
+      "matched": "fputs_unlocked",
+      "library": "glibc",
+      "confidence": 0.98,
+      "purpose": "write string (no lock)",
+      "address": "00102044",
+      "method": "symbol"
+    },
+    {
+      "original": "__freading",
+      "matched": "freading",
+      "library": "c",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00102058",
+      "method": "symbol"
+    },
+    {
+      "original": "__freading",
+      "matched": "freading",
+      "library": "c",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "0010205c",
+      "method": "symbol"
+    },
+    {
+      "original": "mbrtoc32",
+      "matched": "mbrtoc32",
+      "library": "c++",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00102070",
+      "method": "symbol"
+    },
+    {
+      "original": "mbrtoc32",
+      "matched": "mbrtoc32",
+      "library": "c++",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00102074",
+      "method": "symbol"
+    },
+    {
+      "original": "iswprint",
+      "matched": "iswprint",
+      "library": "___wctype.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00102088",
+      "method": "symbol"
+    },
+    {
+      "original": "iswprint",
+      "matched": "iswprint",
+      "library": "___wctype.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "0010208c",
+      "method": "symbol"
+    },
+    {
+      "original": "__errno_location",
+      "matched": "errno_location",
+      "library": "cffi",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "001020a0",
+      "method": "symbol"
+    },
+    {
+      "original": "__errno_location",
+      "matched": "errno_location",
+      "library": "cffi",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "001020a4",
+      "method": "symbol"
+    },
+    {
+      "original": "uname",
+      "matched": "uname",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "get system identification info",
+      "address": "001020b8",
+      "method": "symbol"
+    },
+    {
+      "original": "uname",
+      "matched": "uname",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "get system identification info",
+      "address": "001020bc",
+      "method": "symbol"
+    },
+    {
+      "original": "fstat",
+      "matched": "fstat",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "get file status by fd",
+      "address": "001020d0",
+      "method": "symbol"
+    },
+    {
+      "original": "fstat",
+      "matched": "fstat",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "get file status by fd",
+      "address": "001020d4",
+      "method": "symbol"
+    },
+    {
+      "original": "ioctl",
+      "matched": "ioctl",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "device-specific I/O control",
+      "address": "001020e8",
+      "method": "symbol"
+    },
+    {
+      "original": "ioctl",
+      "matched": "ioctl",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "device-specific I/O control",
+      "address": "001020ec",
+      "method": "symbol"
+    },
+    {
+      "original": "error",
+      "matched": "error",
+      "library": "Accelerate",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00102380",
+      "method": "symbol"
+    },
+    {
+      "original": "error_at_line",
+      "matched": "error_at_line",
+      "library": "gettext",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00102544",
+      "method": "symbol"
+    },
+    {
+      "original": "nl_langinfo",
+      "matched": "nl_langinfo",
+      "library": "_langinfo.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00107be0",
+      "method": "symbol"
+    },
+    {
+      "original": "strlen",
+      "matched": "strlen",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "get string length",
+      "address": "00121018",
+      "method": "symbol"
+    },
+    {
+      "original": "exit",
+      "matched": "exit",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "normal process termination",
+      "address": "00121020",
+      "method": "symbol"
+    },
+    {
+      "original": "__libc_start_main",
+      "matched": "libc_start_main",
+      "library": "musl",
+      "confidence": 0.98,
+      "purpose": "libc entry point",
+      "address": "00121028",
+      "method": "symbol"
+    },
+    {
+      "original": "_ITM_deregisterTMCloneTable",
+      "matched": "ITM_deregisterTMCloneTable",
+      "library": "gcc",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121038",
+      "method": "symbol"
+    },
+    {
+      "original": "__cxa_finalize",
+      "matched": "cxa_finalize",
+      "library": "libc++abi",
+      "confidence": 0.98,
+      "purpose": "call registered destructors at exit",
+      "address": "00121040",
+      "method": "symbol"
+    },
+    {
+      "original": "__cxa_atexit",
+      "matched": "cxa_atexit",
+      "library": "libc++abi",
+      "confidence": 0.98,
+      "purpose": "register destructor for static/global",
+      "address": "00121048",
+      "method": "symbol"
+    },
+    {
+      "original": "lseek",
+      "matched": "lseek",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "reposition file offset",
+      "address": "00121058",
+      "method": "symbol"
+    },
+    {
+      "original": "__fpending",
+      "matched": "fpending",
+      "library": "c",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121060",
+      "method": "symbol"
+    },
+    {
+      "original": "stpcpy",
+      "matched": "stpcpy",
+      "library": "_string.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121068",
+      "method": "symbol"
+    },
+    {
+      "original": "fileno",
+      "matched": "fileno",
+      "library": "_stdio.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121070",
+      "method": "symbol"
+    },
+    {
+      "original": "nl_langinfo",
+      "matched": "nl_langinfo",
+      "library": "_langinfo.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121088",
+      "method": "symbol"
+    },
+    {
+      "original": "malloc",
+      "matched": "malloc",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "allocate heap memory",
+      "address": "00121090",
+      "method": "symbol"
+    },
+    {
+      "original": "open",
+      "matched": "open",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "open file and return fd",
+      "address": "001210a0",
+      "method": "symbol"
+    },
+    {
+      "original": "strncmp",
+      "matched": "strncmp",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "compare strings with limit",
+      "address": "001210a8",
+      "method": "symbol"
+    },
+    {
+      "original": "bindtextdomain",
+      "matched": "bindtextdomain",
+      "library": "libintl.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "001210b0",
+      "method": "symbol"
+    },
+    {
+      "original": "aligned_alloc",
+      "matched": "aligned_alloc",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "allocate aligned memory (C11)",
+      "address": "001210c0",
+      "method": "symbol"
+    },
+    {
+      "original": "__printf_chk",
+      "matched": "printf_chk",
+      "library": "opencv_python_headless",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "001210c8",
+      "method": "symbol"
+    },
+    {
+      "original": "__fpurge",
+      "matched": "fpurge",
+      "library": "c",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "001210d0",
+      "method": "symbol"
+    },
+    {
+      "original": "copy_file_range",
+      "matched": "copy_file_range",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "server-side file copy (zero-copy)",
+      "address": "001210e0",
+      "method": "symbol"
+    },
+    {
+      "original": "strerror_r",
+      "matched": "strerror_r",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "get error message (reentrant)",
+      "address": "001210e8",
+      "method": "symbol"
+    },
+    {
+      "original": "__vfprintf_chk",
+      "matched": "vfprintf_chk",
+      "library": "opencv_python_headless",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "001210f0",
+      "method": "symbol"
+    },
+    {
+      "original": "calloc",
+      "matched": "calloc",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "allocate and zero heap memory",
+      "address": "001210f8",
+      "method": "symbol"
+    },
+    {
+      "original": "realloc",
+      "matched": "realloc",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "resize heap memory block",
+      "address": "00121100",
+      "method": "symbol"
+    },
+    {
+      "original": "getpagesize",
+      "matched": "getpagesize",
+      "library": "unistd.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121108",
+      "method": "symbol"
+    },
+    {
+      "original": "__stack_chk_fail",
+      "matched": "stack_chk_fail",
+      "library": "gcc",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121110",
+      "method": "symbol"
+    },
+    {
+      "original": "close",
+      "matched": "close",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "close file descriptor",
+      "address": "00121118",
+      "method": "symbol"
+    },
+    {
+      "original": "strrchr",
+      "matched": "strrchr",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "find last occurrence of character",
+      "address": "00121120",
+      "method": "symbol"
+    },
+    {
+      "original": "write",
+      "matched": "write",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "write bytes to file descriptor",
+      "address": "00121138",
+      "method": "symbol"
+    },
+    {
+      "original": "abort",
+      "matched": "abort",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "abort process (raise SIGABRT)",
+      "address": "00121140",
+      "method": "symbol"
+    },
+    {
+      "original": "posix_fadvise",
+      "matched": "posix_fadvise",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "advise kernel on file access pattern",
+      "address": "00121148",
+      "method": "symbol"
+    },
+    {
+      "original": "mbsinit",
+      "matched": "mbsinit",
+      "library": "_wchar.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121150",
+      "method": "symbol"
+    },
+    {
+      "original": "__overflow",
+      "matched": "overflow",
+      "library": "musl",
+      "confidence": 0.98,
+      "purpose": "Overflow flush buffer",
+      "address": "00121158",
+      "method": "symbol"
+    },
+    {
+      "original": "textdomain",
+      "matched": "textdomain",
+      "library": "libintl.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121168",
+      "method": "symbol"
+    },
+    {
+      "original": "__fprintf_chk",
+      "matched": "fprintf_chk",
+      "library": "opencv_python_headless",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121178",
+      "method": "symbol"
+    },
+    {
+      "original": "strcmp",
+      "matched": "strcmp",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "compare two strings",
+      "address": "00121180",
+      "method": "symbol"
+    },
+    {
+      "original": "__ctype_b_loc",
+      "matched": "ctype_b_loc",
+      "library": "c",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121188",
+      "method": "symbol"
+    },
+    {
+      "original": "fseeko",
+      "matched": "fseeko",
+      "library": "_stdio.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121190",
+      "method": "symbol"
+    },
+    {
+      "original": "free",
+      "matched": "free",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "free heap memory",
+      "address": "00121198",
+      "method": "symbol"
+    },
+    {
+      "original": "__ctype_get_mb_cur_max",
+      "matched": "ctype_get_mb_cur_max",
+      "library": "BrokenLocale",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "001211a0",
+      "method": "symbol"
+    },
+    {
+      "original": "fflush_unlocked",
+      "matched": "fflush_unlocked",
+      "library": "glibc",
+      "confidence": 0.98,
+      "purpose": "flush (no lock)",
+      "address": "001211b0",
+      "method": "symbol"
+    },
+    {
+      "original": "fcntl",
+      "matched": "fcntl",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "file descriptor control operations",
+      "address": "001211b8",
+      "method": "symbol"
+    },
+    {
+      "original": "clearerr_unlocked",
+      "matched": "clearerr_unlocked",
+      "library": "_stdio.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "001211c8",
+      "method": "symbol"
+    },
+    {
+      "original": "read",
+      "matched": "read",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "read bytes from file descriptor",
+      "address": "001211d0",
+      "method": "symbol"
+    },
+    {
+      "original": "fputc_unlocked",
+      "matched": "fputc_unlocked",
+      "library": "glibc",
+      "confidence": 0.98,
+      "purpose": "write char (no lock)",
+      "address": "001211e0",
+      "method": "symbol"
+    },
+    {
+      "original": "dcgettext",
+      "matched": "dcgettext",
+      "library": "libintl.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "001211f0",
+      "method": "symbol"
+    },
+    {
+      "original": "fputs_unlocked",
+      "matched": "fputs_unlocked",
+      "library": "glibc",
+      "confidence": 0.98,
+      "purpose": "write string (no lock)",
+      "address": "001211f8",
+      "method": "symbol"
+    },
+    {
+      "original": "__freading",
+      "matched": "freading",
+      "library": "c",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121200",
+      "method": "symbol"
+    },
+    {
+      "original": "mbrtoc32",
+      "matched": "mbrtoc32",
+      "library": "c++",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121208",
+      "method": "symbol"
+    },
+    {
+      "original": "_ITM_registerTMCloneTable",
+      "matched": "ITM_registerTMCloneTable",
+      "library": "gcc",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121210",
+      "method": "symbol"
+    },
+    {
+      "original": "iswprint",
+      "matched": "iswprint",
+      "library": "___wctype.h",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121218",
+      "method": "symbol"
+    },
+    {
+      "original": "__errno_location",
+      "matched": "errno_location",
+      "library": "cffi",
+      "confidence": 0.98,
+      "purpose": "",
+      "address": "00121220",
+      "method": "symbol"
+    },
+    {
+      "original": "uname",
+      "matched": "uname",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "get system identification info",
+      "address": "00121228",
+      "method": "symbol"
+    },
+    {
+      "original": "fstat",
+      "matched": "fstat",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "get file status by fd",
+      "address": "00121230",
+      "method": "symbol"
+    },
+    {
+      "original": "ioctl",
+      "matched": "ioctl",
+      "library": "libc",
+      "confidence": 0.98,
+      "purpose": "device-specific I/O control",
+      "address": "00121238",
+      "method": "symbol"
+    },
+    {
+      "original": "memcpy",
+      "matched": "memcpy",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "copy memory block (non-overlapping)",
+      "address": "00101b30",
+      "method": "symbol"
+    },
+    {
+      "original": "memcpy",
+      "matched": "memcpy",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "copy memory block (non-overlapping)",
+      "address": "00101b34",
+      "method": "symbol"
+    },
+    {
+      "original": "memmove",
+      "matched": "memmove",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "copy memory block (overlap-safe)",
+      "address": "00101b48",
+      "method": "symbol"
+    },
+    {
+      "original": "memmove",
+      "matched": "memmove",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "copy memory block (overlap-safe)",
+      "address": "00101b4c",
+      "method": "symbol"
+    },
+    {
+      "original": "fclose",
+      "matched": "fclose",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "close buffered file stream",
+      "address": "00101c50",
+      "method": "symbol"
+    },
+    {
+      "original": "fclose",
+      "matched": "fclose",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "close buffered file stream",
+      "address": "00101c54",
+      "method": "symbol"
+    },
+    {
+      "original": "memset",
+      "matched": "memset",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "fill memory block with byte",
+      "address": "00101d28",
+      "method": "symbol"
+    },
+    {
+      "original": "memset",
+      "matched": "memset",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "fill memory block with byte",
+      "address": "00101d2c",
+      "method": "symbol"
+    },
+    {
+      "original": "memcmp",
+      "matched": "memcmp",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "compare memory blocks",
+      "address": "00101ea8",
+      "method": "symbol"
+    },
+    {
+      "original": "memcmp",
+      "matched": "memcmp",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "compare memory blocks",
+      "address": "00101eac",
+      "method": "symbol"
+    },
+    {
+      "original": "getopt_long",
+      "matched": "getopt_long",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "Parse long command-line options",
+      "address": "00101ed8",
+      "method": "symbol"
+    },
+    {
+      "original": "getopt_long",
+      "matched": "getopt_long",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "Parse long command-line options",
+      "address": "00101edc",
+      "method": "symbol"
+    },
+    {
+      "original": "fwrite",
+      "matched": "fwrite",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "buffered write to stream",
+      "address": "00101f80",
+      "method": "symbol"
+    },
+    {
+      "original": "fwrite",
+      "matched": "fwrite",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "buffered write to stream",
+      "address": "00101f84",
+      "method": "symbol"
+    },
+    {
+      "original": "fflush",
+      "matched": "fflush",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "flush stream buffer",
+      "address": "00101fcc",
+      "method": "symbol"
+    },
+    {
+      "original": "setlocale",
+      "matched": "setlocale",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "set program locale",
+      "address": "00102100",
+      "method": "symbol"
+    },
+    {
+      "original": "setlocale",
+      "matched": "setlocale",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "set program locale",
+      "address": "00102104",
+      "method": "symbol"
+    },
+    {
+      "original": "memcpy",
+      "matched": "memcpy",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "copy memory block (non-overlapping)",
+      "address": "00121000",
+      "method": "symbol"
+    },
+    {
+      "original": "memmove",
+      "matched": "memmove",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "copy memory block (overlap-safe)",
+      "address": "00121008",
+      "method": "symbol"
+    },
+    {
+      "original": "fclose",
+      "matched": "fclose",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "close buffered file stream",
+      "address": "00121080",
+      "method": "symbol"
+    },
+    {
+      "original": "memset",
+      "matched": "memset",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "fill memory block with byte",
+      "address": "001210d8",
+      "method": "symbol"
+    },
+    {
+      "original": "memcmp",
+      "matched": "memcmp",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "compare memory blocks",
+      "address": "00121160",
+      "method": "symbol"
+    },
+    {
+      "original": "getopt_long",
+      "matched": "getopt_long",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "Parse long command-line options",
+      "address": "00121170",
+      "method": "symbol"
+    },
+    {
+      "original": "fwrite",
+      "matched": "fwrite",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "buffered write to stream",
+      "address": "001211a8",
+      "method": "symbol"
+    },
+    {
+      "original": "fflush",
+      "matched": "fflush",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "flush stream buffer",
+      "address": "001211c0",
+      "method": "symbol"
+    },
+    {
+      "original": "setlocale",
+      "matched": "setlocale",
+      "library": "libc",
+      "confidence": 0.97,
+      "purpose": "set program locale",
+      "address": "00121240",
+      "method": "symbol"
+    }
+  ]
+}

@@ -6,7 +6,7 @@ Test edilen 3 yeni section:
   3. Malware IOC (workspace static/signature_matches.json — Sliver/CS filter)
 
 Davranis:
-  - JSON yoksa bolum atlanir (hata atilmaz)
+  - JSON yoksa bolum "NO DATA" + neden der (P07; eskiden atlaniyordu)
   - Severity: score >= 0.7 high, >= 0.4 medium, < 0.4 info/low
   - Tablo formatinda render: technique/symbol, category, confidence, evidence
 """
@@ -74,9 +74,11 @@ def _write_json(workspace: Workspace, stage: str, name: str, data: dict) -> None
 def test_markdown_anti_debug_skipped_when_json_missing(
     base_result: PipelineResult, workspace: Workspace
 ) -> None:
-    """JSON dosyasi yoksa Anti-Debug section render edilmemeli (hata atmamali)."""
+    """JSON dosyasi yoksa bolum gizlenmez: "veri yok" + neden (P07, ARAYUZ-08 / T2)."""
     md = MarkdownReporter().generate(base_result, workspace).read_text(encoding="utf-8")
-    assert "Anti-Debug Findings" not in md
+    seg = md.split("## Anti-Debug Findings")[1].split("\n## ")[0]
+    assert "NO DATA" in seg and "artifact not written" in seg
+    assert "[HIGH]" not in seg
 
 
 def test_markdown_anti_debug_high_severity(
@@ -132,7 +134,8 @@ def test_markdown_packer_skipped_when_json_missing(
     base_result: PipelineResult, workspace: Workspace
 ) -> None:
     md = MarkdownReporter().generate(base_result, workspace).read_text(encoding="utf-8")
-    assert "Detected Packer" not in md
+    seg = md.split("## Detected Packer")[1].split("\n## ")[0]
+    assert "NO DATA" in seg and "paketlenmiş" not in seg
 
 
 def test_markdown_packer_renders_packers_list(
@@ -163,7 +166,8 @@ def test_markdown_malware_ioc_skipped_when_no_matches(
     base_result: PipelineResult, workspace: Workspace
 ) -> None:
     md = MarkdownReporter().generate(base_result, workspace).read_text(encoding="utf-8")
-    assert "Malware IOC" not in md
+    seg = md.split("## Malware IOC")[1].split("\n## ")[0]
+    assert "NO DATA" in seg and "[HIGH]" not in seg
 
 
 def test_markdown_malware_ioc_filters_sliver_and_cs(
@@ -189,8 +193,7 @@ def test_markdown_malware_ioc_filters_sliver_and_cs(
     md = MarkdownReporter().generate(base_result, workspace).read_text(encoding="utf-8")
     assert "Malware IOC" in md
     assert "[HIGH]" in md
-    assert "**Sliver:** 1 sembol" in md
-    assert "**Cobalt Strike:** 1 sembol" in md
+    assert "cobaltstrike: 1, sliver: 1" in md
     assert "ReflectiveLoader" in md
     # Crypto sembolu IOC bolumune sizmamali
     ioc_section = md.split("## Malware IOC")[1].split("##")[0]
@@ -248,11 +251,11 @@ def test_html_malware_ioc_renders_table(
 def test_html_sections_skipped_when_json_missing(
     base_result: PipelineResult, workspace: Workspace
 ) -> None:
-    """HTML reporter JSON yoksa 3 section'i hic render etmez."""
+    """JSON yoksa bolumler gizlenmez: "veri yok" der (P07; eskiden hic render edilmiyordu)."""
     html = HTMLReporter().generate(base_result, workspace).read_text(encoding="utf-8")
-    assert "Anti-Debug Findings" not in html
-    assert "Detected Packer" not in html
-    assert "Malware IOC" not in html
+    for baslik in ("Anti-Debug Findings", "Detected Packer", "Malware IOC"):
+        seg = html.split(f"<h2>{baslik}</h2>")[1].split("<h2>")[0]
+        assert "NO DATA" in seg
 
 
 if __name__ == "__main__":

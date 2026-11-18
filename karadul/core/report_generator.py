@@ -21,6 +21,8 @@ from typing import Any, Optional
 from karadul import __version__
 from karadul.core.result import PipelineResult
 from karadul.core.workspace import Workspace
+from karadul.reporting.report_data import build_report_data
+from karadul.reporting.sections_render import SECTIONS_CSS, sections_html
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +116,7 @@ code { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; }
     .diff-container { grid-template-columns: 1fr; }
     .stat-grid { grid-template-columns: repeat(2, 1fr); }
 }
-"""
+""" + SECTIONS_CSS
 
 # ---- Inline JS (tab switching) ----
 _JS = """
@@ -169,6 +171,11 @@ class ReportGenerator:
 
         # Stats dashboard
         parts.append(self._stats_dashboard())
+
+        # Güvenlik ve analiz bölümleri (ARAYUZ-08): çalışma alanı raporuyla aynı veri
+        # katmanı ve aynı çizim; paketleyici, anti-debug, YARA, capa, IOC, kripto, ad
+        # güvenilirliği, bileşimler. Bulgu yoksa bölüm durumunu ve nedenini yazar.
+        parts.append(self._security_sections())
 
         # Pipeline timeline
         parts.append(self._pipeline_timeline())
@@ -273,10 +280,12 @@ class ReportGenerator:
 
         if "static" in self._result.stages:
             st = self._result.stages["static"].stats
-            funcs = st.get("functions_found", st.get("ghidra_function_count", st.get("functions", "N/A")))
-            strings = st.get("strings_found", st.get("ghidra_string_count", st.get("string_count", st.get("strings", "N/A"))))
-            stats.append(("Functions", str(funcs)))
-            stats.append(("Strings", str(strings)))
+            funcs = st.get("functions_found", st.get("ghidra_function_count", st.get("functions")))
+            strings = st.get("strings_found", st.get("ghidra_string_count", st.get("string_count", st.get("strings"))))
+            if funcs is not None:
+                stats.append(("Functions", str(funcs)))
+            if strings is not None:
+                stats.append(("Strings", str(strings)))
 
         if "reconstruct" in self._result.stages:
             st = self._result.stages["reconstruct"].stats
@@ -295,9 +304,9 @@ class ReportGenerator:
             sr_deob = self._result.stages["deobfuscate"]
             if sr_deob.skipped:
                 stats.append(("Deobf Steps", "skipped"))
-            else:
-                st = sr_deob.stats
-                stats.append(("Deobf Steps", str(st.get("steps_completed", "N/A"))))
+            elif sr_deob.stats.get("steps_completed") is not None:
+                # ARAYUZ-07: ikili hedefte bu sayaç üretilmiyor; kaynağı yoksa kutu yok.
+                stats.append(("Deobf Steps", str(sr_deob.stats["steps_completed"])))
 
         boxes = "".join(
             f'<div class="stat-box"><div class="value">{_esc(v)}</div><div class="label">{_esc(k)}</div></div>'
@@ -307,6 +316,10 @@ class ReportGenerator:
             "<h2>Statistics</h2>"
             f'<div class="stat-grid">{boxes}</div>'
         )
+
+    def _security_sections(self) -> str:
+        data = build_report_data(self._result, self._workspace)
+        return sections_html(data, self._result)
 
     # ------------------------------------------------------------------
     # Pipeline timeline

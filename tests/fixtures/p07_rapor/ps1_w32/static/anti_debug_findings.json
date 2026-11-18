@@ -1,0 +1,65 @@
+{
+  "binary_path": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+  "status": "calisti",
+  "status_reason": "",
+  "file_size": 91648,
+  "scanned_bytes": 91648,
+  "layers": {
+    "imports": {
+      "status": "calisti",
+      "reason": ""
+    },
+    "strings": {
+      "status": "calisti",
+      "reason": ""
+    },
+    "bytes": {
+      "status": "calisti",
+      "reason": ""
+    }
+  },
+  "total_findings": 3,
+  "findings": [
+    {
+      "technique": "GetTickCount",
+      "category": "compiler_runtime",
+      "confidence": 0.1,
+      "evidence": "import: GetTickCount (MSVC CRT ithal kumesi; __security_init_cookie: QPC + GetCurrentProcessId + GetCurrentThreadId + GetSystemTimeAsFileTime/GetTickCount; __report_gsfailure: IsDebuggerPresent + UnhandledExceptionFilter)",
+      "platform": "windows",
+      "description": "MSVC CRT'nin olagan ithali; cagri yeri dogrulanmadi, anti-debug sayilmadi"
+    },
+    {
+      "technique": "IsDebuggerPresent",
+      "category": "compiler_runtime",
+      "confidence": 0.1,
+      "evidence": "import: IsDebuggerPresent (MSVC CRT ithal kumesi; __security_init_cookie: QPC + GetCurrentProcessId + GetCurrentThreadId + GetSystemTimeAsFileTime/GetTickCount; __report_gsfailure: IsDebuggerPresent + UnhandledExceptionFilter)",
+      "platform": "windows",
+      "description": "MSVC CRT'nin olagan ithali; cagri yeri dogrulanmadi, anti-debug sayilmadi"
+    },
+    {
+      "technique": "QueryPerformanceCounter",
+      "category": "compiler_runtime",
+      "confidence": 0.1,
+      "evidence": "import: QueryPerformanceCounter (MSVC CRT ithal kumesi; __security_init_cookie: QPC + GetCurrentProcessId + GetCurrentThreadId + GetSystemTimeAsFileTime/GetTickCount; __report_gsfailure: IsDebuggerPresent + UnhandledExceptionFilter)",
+      "platform": "windows",
+      "description": "MSVC CRT'nin olagan ithali; cagri yeri dogrulanmadi, anti-debug sayilmadi"
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "by_category": {
+      "compiler_runtime": 3
+    },
+    "by_platform": {
+      "windows": 3
+    },
+    "high_confidence": [],
+    "techniques": [
+      "GetTickCount",
+      "IsDebuggerPresent",
+      "QueryPerformanceCounter"
+    ],
+    "max_confidence": 0.1,
+    "anti_debug_score": 0.1
+  }
+}

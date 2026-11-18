@@ -14,6 +14,8 @@ from typing import Any
 from karadul import __version__
 from karadul.core.result import PipelineResult
 from karadul.core.workspace import Workspace
+from karadul.reporting.report_data import build_report_data
+from karadul.reporting.sections_render import sections_markdown
 
 logger = logging.getLogger(__name__)
 
@@ -102,14 +104,9 @@ class MarkdownReporter:
         # Static Analysis
         lines.extend(self._section_static(result))
 
-        # v1.13 Dalga 1: Anti-Debug Findings (workspace static/anti_debug_findings.json)
-        lines.extend(self._section_anti_debug(workspace))
-
-        # v1.13 Dalga 1: Detected Packer (workspace static/packer_fingerprints.json)
-        lines.extend(self._section_packer(result, workspace))
-
-        # v1.13 Dalga 1: Malware IOC (Sliver / Cobalt Strike sembol match)
-        lines.extend(self._section_malware_ioc(result, workspace))
+        # Rapor verisi katmanı (P07): paketleyici, anti-debug, YARA, capa, IOC, kripto, ad
+        # güvenilirliği, bileşimler. Her bölüm durumuyla yazılır; bulgu yoksa gizlenmez.
+        lines.extend(sections_markdown(build_report_data(result, workspace), result))
 
         # Dynamic Analysis
         lines.extend(self._section_dynamic(result))
@@ -214,10 +211,13 @@ class MarkdownReporter:
             lines.append("")
             return lines
 
-        functions = stats.get('functions_found', stats.get('ghidra_function_count', stats.get('functions', 0)))
-        strings = stats.get('strings_found', stats.get('ghidra_string_count', stats.get('string_count', stats.get('strings', 0))))
-        lines.append(f"- **Functions found:** {functions}")
-        lines.append(f"- **Strings found:** {strings}")
+        # Kaynağı olmayan sayı 0 yazılmaz (ARAYUZ-07): "not recorded".
+        functions = stats.get('functions_found', stats.get('ghidra_function_count', stats.get('functions')))
+        strings = stats.get('strings_found', stats.get('ghidra_string_count', stats.get('string_count', stats.get('strings'))))
+        lines.append(f"- **Functions found:** {functions if functions is not None else 'not recorded'}")
+        if stats.get("ghidra_thunk_count") is not None:
+            lines.append(f"- **Import thunks (not counted above):** {stats['ghidra_thunk_count']}")
+        lines.append(f"- **Strings found:** {strings if strings is not None else 'not recorded'}")
         # imports_found yalnız ithal listesi okunduğunda yazılır (analyzers/macho.py); yoksa sayı
         # bilinmiyor: 0 değil "N/A" (reporting/json_report.py summary.total_imports ile aynı).
         lines.append(f"- **Imports found:** {_safe_get(stats, 'imports_found')}")
@@ -244,10 +244,11 @@ class MarkdownReporter:
             lines.append("")
             return lines
 
-        lines.append(f"- **File accesses:** {_safe_get(stats, 'file_accesses', '0')}")
-        lines.append(f"- **API calls:** {_safe_get(stats, 'api_calls', '0')}")
-        lines.append(f"- **Unique modules:** {_safe_get(stats, 'unique_modules', '0')}")
-        lines.append(f"- **Crypto operations:** {_safe_get(stats, 'crypto_operations', '0')}")
+        for label, key in (("File accesses", "file_accesses"), ("API calls", "api_calls"),
+                           ("Unique modules", "unique_modules"),
+                           ("Crypto operations", "crypto_operations")):
+            if stats.get(key) is not None:  # kaynağı olmayan sayaç yazılmaz (ARAYUZ-07)
+                lines.append(f"- **{label}:** {stats[key]}")
 
         lines.append("")
         return lines
@@ -268,7 +269,9 @@ class MarkdownReporter:
             lines.append("")
             return lines
 
-        lines.append(f"- **Steps completed:** {_safe_get(stats, 'steps_completed', '0')}")
+        # ARAYUZ-07: ikili hedefte steps_completed üretilmiyor; kaynağı yoksa satır yok.
+        if stats.get("steps_completed") is not None:
+            lines.append(f"- **Steps completed:** {stats['steps_completed']}")
 
         if "chain" in stats:
             chain = stats["chain"]
@@ -282,6 +285,10 @@ class MarkdownReporter:
                 ratio = (after / before) * 100
                 lines.append(f"- **Size change:** {_format_size(int(before))} -> {_format_size(int(after))} ({ratio:.0f}%)")
 
+        if len(lines) == 2:
+            # Sayaç yoksa boş başlık bırakılmaz; "0" de yazılmaz (ARAYUZ-07).
+            lines.append("- No step counters recorded for this target type "
+                         "(details: Stage Details in the JSON report).")
         lines.append("")
         return lines
 
@@ -301,10 +308,20 @@ class MarkdownReporter:
             lines.append("")
             return lines
 
-        lines.append(f"- **Modules extracted:** {_safe_get(stats, 'modules_extracted', '0')}")
-        lines.append(f"- **Variables renamed:** {_safe_get(stats, 'variables_renamed', '0')}")
-        lines.append(f"- **Coverage:** {_safe_get(stats, 'coverage_percent', 'N/A')}%")
-        lines.append(f"- **Runnable project:** {'Yes' if stats.get('runnable_project') else 'No'}")
+        # ARAYUZ-07: modules_extracted / coverage_percent / runnable_project ikili hedefte
+        # üretilmiyor; kaynağı olmayan satır yazılmaz ("0" ya da "N/A%" değil).
+        for label, key, unit in (("Modules extracted", "modules_extracted", ""),
+                                 ("Variables renamed", "variables_renamed", ""),
+                                 ("Coverage", "coverage_percent", "%")):
+            if stats.get(key) is not None:
+                lines.append(f"- **{label}:** {stats[key]}{unit}")
+        if "runnable_project" in stats:
+            lines.append(f"- **Runnable project:** {'Yes' if stats.get('runnable_project') else 'No'}")
+        if stats.get("reconstruct_status") is not None:
+            lines.append(f"- **Reconstruction status:** {stats['reconstruct_status']}")
+        if len(lines) == 2:
+            lines.append("- No reconstruction counters recorded "
+                         "(details: Stage Details in the JSON report).")
 
         lines.append("")
         return lines
@@ -321,10 +338,9 @@ class MarkdownReporter:
         stats = result.stages["reconstruct"].stats
 
         has_dispatch = "dispatch_sites" in stats
-        has_compositions = "compositions" in stats
         has_traces = "trace_targets" in stats
 
-        if not (has_dispatch or has_compositions or has_traces):
+        if not (has_dispatch or has_traces):
             return []
 
         lines: list[str] = ["## Deep Algorithm Analysis", ""]
@@ -344,36 +360,7 @@ class MarkdownReporter:
             lines.append(f"| Resolution rate | {rate_str} |")
             lines.append("")
 
-        # -- 2. Algorithm Compositions --
-        if has_compositions:
-            n_comps = stats.get("compositions", 0)
-            lines.append(f"### Algorithm Compositions ({n_comps} detected)")
-            lines.append("")
-
-            comp_data = workspace.load_json("reconstructed", "algorithm_compositions")
-            if comp_data:
-                comp_list = comp_data.get("compositions", [])
-                for comp in comp_list:
-                    comp_name = comp.get("name", "Unknown")
-                    comp_type = comp.get("type", "pipeline")
-                    confidence = comp.get("confidence", 0)
-                    stages = comp.get("stages", [])
-
-                    stage_names = [
-                        s.get("label", s.get("name", "?")) for s in stages
-                    ]
-                    stage_str = " -> ".join(stage_names[:8])
-                    if len(stage_names) > 8:
-                        stage_str += f" ... +{len(stage_names) - 8}"
-
-                    lines.append(
-                        f"- **{comp_name}** ({comp_type}, confidence: {confidence:.0%})"
-                    )
-                    lines.append(f"  - Stages: {stage_str}")
-                    lines.append("")
-            else:
-                lines.append(f"*{n_comps} compositions detected. See compositions.md for details.*")
-                lines.append("")
+        # -- 2. Algorithm Compositions: ortak bölümde (rapor verisi katmanı, ARAYUZ-01) --
 
         # -- 3. Call Trace Summary --
         if has_traces:
@@ -425,360 +412,6 @@ class MarkdownReporter:
                 )
                 lines.append("")
 
-        return lines
-
-    # ------------------------------------------------------------------
-    # v1.13 Dalga 1 — yeni capability section'lari
-    # ------------------------------------------------------------------
-    @staticmethod
-    def _severity_icon(score: float) -> tuple[str, str]:
-        """Severity score icin (icon, label) uretir.
-
-        Esikler: >=0.7 high, >=0.4 medium, <0.4 info.
-        """
-        if score >= 0.7:
-            return ("[HIGH]", "high")
-        if score >= 0.4:
-            return ("[MED]", "medium")
-        return ("[INFO]", "info")
-
-    def _section_anti_debug(self, workspace: Workspace) -> list[str]:
-        """Anti-Debug findings bolumu (static/anti_debug_findings.json).
-
-        KISIT: anti_debug.py step'in yazdigi GERCEK sema top-level "score"
-        ICERMEZ; skor ``summary.anti_debug_score`` altindadir. Eskiden burada
-        ``data.get("score")`` okunuyordu -> her zaman 0.0 -> severity yanlis
-        (hep INFO). Findings anahtari dogru oldugu icin tablo cikiyordu ama
-        severity yaniltiyordu.
-
-        Gercek sema:
-          {
-            "total_findings": int,
-            "findings": [{technique, category, confidence, evidence(str),
-                          platform, description}],
-            "summary": {"anti_debug_score": float, "max_confidence": float, ...}
-          }
-        Eski sentetik testler top-level "score" kullanir; geriye donuk uyum
-        icin oncelik: top-level score -> summary.anti_debug_score ->
-        summary.max_confidence -> findings max(confidence).
-        """
-        data = workspace.load_json("static", "anti_debug_findings")
-        if not data:
-            return []
-
-        findings = data.get("findings") or []
-        if not findings:
-            return []
-
-        score = self._resolve_score(
-            data,
-            findings,
-            summary_key="anti_debug_score",
-        )
-        icon, severity = self._severity_icon(score)
-
-        lines = [
-            f"## Anti-Debug Findings {icon}",
-            "",
-            f"- **Severity:** {severity} (score: {score:.2f})",
-            f"- **Total findings:** {len(findings)}",
-            "",
-            "| Technique | Category | Confidence | Evidence |",
-            "|-----------|----------|------------|----------|",
-        ]
-
-        for f in findings:
-            tech = str(f.get("technique", "?"))
-            cat = str(f.get("category", "?"))
-            conf = f.get("confidence", 0.0)
-            try:
-                conf_str = f"{float(conf):.2f}"
-            except (TypeError, ValueError):
-                conf_str = str(conf)
-            ev = str(f.get("evidence", ""))
-            # Markdown table guvenligi: pipe ve newline temizle
-            ev = ev.replace("|", "\\|").replace("\n", " ")[:120]
-            lines.append(f"| {tech} | {cat} | {conf_str} | {ev} |")
-
-        lines.append("")
-        return lines
-
-    @staticmethod
-    def _resolve_score(
-        data: dict,
-        items: list[dict],
-        summary_key: str,
-    ) -> float:
-        """Severity skorunu coz.
-
-        KISIT: detector step'lerinin yazdigi artifact'ta top-level "score"
-        genelde YOK. Oncelik sirasi:
-          1. top-level "score" (eski sentetik test semasi)
-          2. summary[summary_key] (anti_debug_score gibi)
-          3. summary.max_confidence
-          4. items icindeki en yuksek confidence
-        """
-        raw = data.get("score")
-        if raw is not None:
-            try:
-                return float(raw)
-            except (TypeError, ValueError):
-                pass
-        summary = data.get("summary")
-        if isinstance(summary, dict):
-            for key in (summary_key, "max_confidence"):
-                val = summary.get(key)
-                if val is not None:
-                    try:
-                        return float(val)
-                    except (TypeError, ValueError):
-                        pass
-        confidences: list[float] = []
-        for it in items:
-            try:
-                confidences.append(float(it.get("confidence", 0.0)))
-            except (TypeError, ValueError):
-                pass
-        return max(confidences) if confidences else 0.0
-
-    @staticmethod
-    def _packer_warning(
-        result: PipelineResult,
-        top_name: str,
-        top_version: Any,
-        score: float,
-    ) -> list[str]:
-        """Dürüst uyari blogu — paketli binary'de decompile yaniltir.
-
-        Berke'nin sessiz-basarisizlik yasagi: paketli binary tespit edilince
-        kullanici, decompile'in YALNIZCA acici (unpacker) stub'ini gosterdigini
-        acikca gormeli. Aksi halde "neden 7 fonksiyon / 0 isim" gorup karadul'u
-        bozuk sanir. Sürüm + güven + acma komutu gorunur.
-        """
-        name_l = top_name.lower()
-        if "upx" in name_l:
-            unpack_cmd = "upx -d <dosya>"
-        else:
-            unpack_cmd = "ilgili acma araci ile paketi acin (unpack)"
-        ver = f" {top_version}" if top_version else ""
-
-        # Fonksiyon sayisi — "neden bu kadar az fonksiyon" baglamini ver
-        func_count = None
-        if "static" in result.stages:
-            st = result.stages["static"].stats
-            func_count = st.get(
-                "functions_found",
-                st.get("ghidra_function_count", st.get("functions")),
-            )
-
-        lines = [
-            f"> ⚠️ **Bu binary paketlenmiş — {top_name}{ver} "
-            f"(güven {score:.2f}).**",
-            ">",
-        ]
-        if func_count is not None:
-            lines.append(
-                f"> Decompile YALNIZCA açıcı (unpacker) stub'ını gösterir. Bu "
-                f"koşuda görülen **{func_count} fonksiyon** açıcı stub'a aittir "
-                f"— gerçek program kodu DEĞİL. Gerçek kod sıkıştırılmış/şifreli "
-                f"halde; çalışma anında bellekte açılıyor."
-            )
-        else:
-            lines.append(
-                "> Decompile YALNIZCA açıcı (unpacker) stub'ını gösterir; "
-                "gerçek program kodu sıkıştırılmış/şifreli halde. Statik "
-                "analiz sınırlıdır."
-            )
-        lines.append(">")
-        lines.append(
-            f"> Gerçek analiz için önce paketi açın: `{unpack_cmd}`, sonra "
-            f"açılmış binary'i yeniden analiz edin."
-        )
-        lines.append("")
-        return lines
-
-    def _section_packer(
-        self, result: PipelineResult, workspace: Workspace
-    ) -> list[str]:
-        """Detected Packer bolumu (static/packer_fingerprints.json).
-
-        KISIT: packer_fingerprint.py step'in yazdigi GERCEK sema:
-          {
-            "total_fingerprints": N,
-            "fingerprints": [
-              {packer_name, version, confidence, evidence(list[str]),
-               category, platform, layers_matched},
-              ...
-            ]
-          }
-        Top-level "score" YOK -> max(confidence)'tan turetilir. Eski sentetik
-        testler "packers"/"technique"/"score" kullanir; geriye donuk uyum icin
-        her iki anahtar da okunur. Bu uyusmazlik yuzunden gercek UPX tespiti
-        rapora hic ulasmiyordu (bolum bostu).
-        """
-        data = workspace.load_json("static", "packer_fingerprints")
-        if not data:
-            return []
-
-        packers = (
-            data.get("fingerprints")
-            or data.get("packers")
-            or data.get("findings")
-            or []
-        )
-        if not packers:
-            return []
-
-        score = self._resolve_score(data, packers, summary_key="score")
-        icon, severity = self._severity_icon(score)
-
-        # detect() confidence DESC sort -> ilk eleman en yuksek guven
-        top = packers[0] if packers else {}
-        top_name = str(
-            top.get("packer_name")
-            or top.get("technique")
-            or top.get("name")
-            or "?"
-        )
-        top_version = top.get("version")
-
-        lines = [
-            f"## Detected Packer {icon}",
-            "",
-            f"- **Severity:** {severity} (score: {score:.2f})",
-            f"- **Packers detected:** {len(packers)}",
-            "",
-        ]
-
-        # Dürüst uyari — paketli binary decompile'i yaniltir
-        lines.extend(
-            self._packer_warning(result, top_name, top_version, score)
-        )
-
-        lines.extend([
-            "| Packer | Version | Category | Confidence | Layers | Evidence |",
-            "|--------|---------|----------|------------|--------|----------|",
-        ])
-
-        for p in packers:
-            name = str(
-                p.get("packer_name")
-                or p.get("technique")
-                or p.get("name")
-                or "?"
-            )
-            version = p.get("version")
-            version_str = str(version) if version else "-"
-            cat = str(p.get("category", "packer"))
-            conf = p.get("confidence", 0.0)
-            try:
-                conf_str = f"{float(conf):.2f}"
-            except (TypeError, ValueError):
-                conf_str = str(conf)
-            layers = p.get("layers_matched", "")
-            ev_raw = p.get("evidence", "")
-            if isinstance(ev_raw, (list, tuple)):
-                ev = "; ".join(str(e) for e in ev_raw)
-            else:
-                ev = str(ev_raw)
-            ev = ev.replace("|", "\\|").replace("\n", " ")[:120]
-            lines.append(
-                f"| {name} | {version_str} | {cat} | {conf_str} "
-                f"| {layers} | {ev} |"
-            )
-
-        lines.append("")
-        return lines
-
-    def _section_malware_ioc(
-        self, result: PipelineResult, workspace: Workspace
-    ) -> list[str]:
-        """Malware IOC bolumu — Sliver/CS sembol match'lerini filtreler.
-
-        Kaynak oncelikli sirayla:
-          1. workspace static/signature_matches.json (varsa) -> "matches" listesi
-             icinden category=malware veya tier=1 olanlar.
-          2. result.stages["static"].stats["signature_matches"] -> liste
-
-        Her match icin family + tier + symbol/lib gosterilir.
-        Dosya/veri yoksa bolum atlanir (hata atilmaz).
-        """
-        matches: list[dict[str, Any]] = []
-
-        sig_data = workspace.load_json("static", "signature_matches")
-        if sig_data:
-            raw = sig_data.get("matches") or sig_data.get("signature_matches") or []
-            if isinstance(raw, list):
-                matches = [m for m in raw if isinstance(m, dict)]
-
-        if not matches and "static" in result.stages:
-            stats = result.stages["static"].stats
-            raw_stats = stats.get("signature_matches")
-            if isinstance(raw_stats, list):
-                matches = [m for m in raw_stats if isinstance(m, dict)]
-
-        if not matches:
-            return []
-
-        # Tier-1 malware filtresi: family in {sliver, cobaltstrike} VEYA
-        # category == malware VEYA tier == "1"/1
-        tier1_families = {"sliver", "cobaltstrike"}
-        ioc_matches: list[dict[str, Any]] = []
-        for m in matches:
-            family = str(m.get("family", "")).lower()
-            category = str(m.get("category", "")).lower()
-            tier = str(m.get("tier", ""))
-            if (
-                family in tier1_families
-                or category == "malware"
-                or tier == "1"
-            ):
-                ioc_matches.append(m)
-
-        if not ioc_matches:
-            return []
-
-        # Family bazli sayma
-        sliver_n = sum(
-            1 for m in ioc_matches
-            if str(m.get("family", "")).lower() == "sliver"
-        )
-        cs_n = sum(
-            1 for m in ioc_matches
-            if str(m.get("family", "")).lower() == "cobaltstrike"
-        )
-
-        # Severity: malware IOC bulundugunda her zaman high
-        score = 1.0 if ioc_matches else 0.0
-        icon, severity = self._severity_icon(score)
-
-        lines = [
-            f"## Malware IOC {icon}",
-            "",
-            f"- **Severity:** {severity} (Tier-1 malware family fingerprint)",
-            f"- **Total IOC matches:** {len(ioc_matches)}",
-        ]
-        if sliver_n:
-            lines.append(f"- **Sliver:** {sliver_n} sembol")
-        if cs_n:
-            lines.append(f"- **Cobalt Strike:** {cs_n} sembol")
-        lines.append("")
-        lines.append("| Symbol | Family | Lib | Tier | Purpose |")
-        lines.append("|--------|--------|-----|------|---------|")
-
-        for m in ioc_matches:
-            sym = str(m.get("symbol", m.get("name", "?")))
-            family = str(m.get("family", "?"))
-            lib = str(m.get("lib", "?"))
-            tier = str(m.get("tier", "?"))
-            purpose = str(m.get("purpose", ""))
-            sym = sym.replace("|", "\\|")[:80]
-            purpose = purpose.replace("|", "\\|").replace("\n", " ")[:120]
-            lines.append(
-                f"| `{sym}` | {family} | {lib} | {tier} | {purpose} |"
-            )
-
-        lines.append("")
         return lines
 
     def _section_artifacts(self, result: PipelineResult) -> list[str]:

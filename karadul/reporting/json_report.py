@@ -16,6 +16,7 @@ from karadul import __version__
 from karadul.config import Config, GHIDRA_PINNED_VERSION, ToolPaths, ghidra_install_info
 from karadul.core.result import PipelineResult
 from karadul.core.workspace import Workspace
+from karadul.reporting.report_data import build_report_data, to_json_dict
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,9 @@ class JSONReporter:
 
         # Ozet istatistikler
         summary = self._build_summary(result)
+        # Rapor verisi katmanı (P07): her bölümün durumu, kaynağı ve cümlesi; HTML, Markdown
+        # ve SARIF aynı katmanı okur.
+        report_sections = to_json_dict(build_report_data(result, workspace))
 
         return {
             "karadul_version": __version__,
@@ -90,6 +94,7 @@ class JSONReporter:
             },
             "artifacts": artifacts,
             "summary": summary,
+            "report_sections": report_sections,
         }
 
     def _extract_target_info(self, result: PipelineResult, workspace: Workspace) -> dict[str, Any]:
@@ -155,24 +160,15 @@ class JSONReporter:
             summary["total_strings"] = "N/A"
             summary["total_imports"] = "N/A"
 
-        # Deobfuscation istatistikleri
-        if "deobfuscate" in result.stages:
-            deob_stats = result.stages["deobfuscate"].stats
-            summary["deobfuscation_steps"] = deob_stats.get("steps_completed", "N/A")
-        else:
-            summary["deobfuscation_steps"] = "N/A"
-
-        # Reconstruct istatistikleri
-        if "reconstruct" in result.stages:
-            recon_stats = result.stages["reconstruct"].stats
-            summary["total_modules"] = recon_stats.get("modules_extracted", 0)
-            summary["variables_renamed"] = recon_stats.get("variables_renamed", 0)
-            summary["runnable_project"] = recon_stats.get("runnable_project", False)
-            summary["coverage_percent"] = recon_stats.get("coverage_percent", 0)
-        else:
-            summary["total_modules"] = "N/A"
-            summary["variables_renamed"] = "N/A"
-            summary["runnable_project"] = False
-            summary["coverage_percent"] = "N/A"
+        # ARAYUZ-07: kaynağı olmayan sayaç null (0 ya da "N/A" değil). İkili hedefte
+        # steps_completed / modules_extracted / coverage_percent / runnable_project hiç
+        # üretilmiyor; eskiden "kapsama %0" diye okunuyordu.
+        deob_stats = result.stages["deobfuscate"].stats if "deobfuscate" in result.stages else {}
+        summary["deobfuscation_steps"] = deob_stats.get("steps_completed")
+        recon_stats = result.stages["reconstruct"].stats if "reconstruct" in result.stages else {}
+        summary["total_modules"] = recon_stats.get("modules_extracted")
+        summary["variables_renamed"] = recon_stats.get("variables_renamed")
+        summary["runnable_project"] = recon_stats.get("runnable_project")
+        summary["coverage_percent"] = recon_stats.get("coverage_percent")
 
         return summary

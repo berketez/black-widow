@@ -1,0 +1,29 @@
+{
+  "binary_path": "/Users/apple/karadul_olcum/n1_debian13/openssl/openssl/ws/workspaces/openssl/20261021_094956/raw/openssl",
+  "total_findings": 1,
+  "findings": [
+    {
+      "technique": "RDTSC_Timing",
+      "category": "timing",
+      "confidence": 0.45,
+      "evidence": "rdtsc x0, rdtscp x13",
+      "platform": "any",
+      "description": "RDTSC opcode kullanimi \u2014 timing-based anti-debug (yuksek sayi -> daha guvenilir, FP riski mevcut)"
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "by_category": {
+      "timing": 1
+    },
+    "by_platform": {
+      "any": 1
+    },
+    "high_confidence": [],
+    "techniques": [
+      "RDTSC_Timing"
+    ],
+    "max_confidence": 0.45,
+    "anti_debug_score": 0.45
+  }
+}

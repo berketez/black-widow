@@ -1,0 +1,23 @@
+{
+  "status": "desteklenmiyor",
+  "status_reason": "ELF e_machine=183: capa'nin vivisect arka ucu yalniz i386/amd64 kodunu cozumler",
+  "backend": "",
+  "success": false,
+  "total_rules_matched": 0,
+  "total_functions_matched": 0,
+  "duration_seconds": 0.0,
+  "format": "elf",
+  "arch": "",
+  "os": "",
+  "function_capabilities": {},
+  "capability_by_funcname": {},
+  "file_capabilities": [],
+  "errors": [
+    "ELF e_machine=183: capa'nin vivisect arka ucu yalniz i386/amd64 kodunu cozumler"
+  ],
+  "code_feed": {
+    "enabled": false,
+    "flag": "binary_reconstruction.enable_capa_code_feed",
+    "note": "K-1: capa sonuclari yalniz raporda; koda ad / yorum olarak girmez"
+  }
+}

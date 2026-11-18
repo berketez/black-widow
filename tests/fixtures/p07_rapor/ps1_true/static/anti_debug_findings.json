@@ -1,0 +1,32 @@
+{
+  "binary_path": "/Users/apple/karadul_olcum/n1_debian13/coreutils/true/ws/workspaces/true/20261021_103941/raw/true",
+  "status": "calisti",
+  "status_reason": "",
+  "file_size": 68048,
+  "scanned_bytes": 68048,
+  "layers": {
+    "imports": {
+      "status": "calisti",
+      "reason": ""
+    },
+    "strings": {
+      "status": "calisti",
+      "reason": ""
+    },
+    "bytes": {
+      "status": "desteklenmiyor",
+      "reason": "elf/arm64: x86 islem kodu taramasi (RDTSC, PEB, INT3) bu mimaride uygulanmaz"
+    }
+  },
+  "total_findings": 0,
+  "findings": [],
+  "summary": {
+    "total": 0,
+    "by_category": {},
+    "by_platform": {},
+    "high_confidence": [],
+    "techniques": [],
+    "max_confidence": 0.0,
+    "anti_debug_score": 0.0
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "binary_path": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+  "status": "calisti",
+  "status_reason": "",
+  "file_size": 91648,
+  "scanned_bytes": 91648,
+  "string_scan_bytes": 91648,
+  "total_fingerprints": 0,
+  "fingerprints": []
+}

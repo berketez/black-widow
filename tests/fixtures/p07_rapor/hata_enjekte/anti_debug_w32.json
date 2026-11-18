@@ -1,0 +1,158 @@
+{
+ "temiz/once": [
+  {
+   "binary_path": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+   "total_findings": 3,
+   "findings": [
+    "GetTickCount",
+    "IsDebuggerPresent",
+    "QueryPerformanceCounter"
+   ]
+  },
+  {
+   "anti_debug_total": 3,
+   "anti_debug_top_technique": "GetTickCount",
+   "anti_debug_top_confidence": 0.1,
+   "anti_debug_categories": {
+    "compiler_runtime": 3
+   },
+   "anti_debug_status": "ok"
+  }
+ ],
+ "temiz/sonra": [
+  {
+   "binary_path": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+   "status": "calisti",
+   "status_reason": "",
+   "file_size": 91648,
+   "scanned_bytes": 91648,
+   "layers": {
+    "imports": {
+     "status": "calisti",
+     "reason": ""
+    },
+    "strings": {
+     "status": "calisti",
+     "reason": ""
+    },
+    "bytes": {
+     "status": "calisti",
+     "reason": ""
+    }
+   },
+   "total_findings": 3,
+   "findings": [
+    "GetTickCount",
+    "IsDebuggerPresent",
+    "QueryPerformanceCounter"
+   ]
+  },
+  {
+   "anti_debug_status": "calisti",
+   "anti_debug_total": 3,
+   "anti_debug_top_technique": "GetTickCount",
+   "anti_debug_top_confidence": 0.1,
+   "anti_debug_categories": {
+    "compiler_runtime": 3
+   }
+  }
+ ],
+ "dizgi_katmani_duser/once": [
+  {
+   "binary_path": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+   "total_findings": 3,
+   "findings": [
+    "GetTickCount",
+    "IsDebuggerPresent",
+    "QueryPerformanceCounter"
+   ]
+  },
+  {
+   "anti_debug_total": 3,
+   "anti_debug_top_technique": "GetTickCount",
+   "anti_debug_top_confidence": 0.1,
+   "anti_debug_categories": {
+    "compiler_runtime": 3
+   },
+   "anti_debug_status": "ok"
+  }
+ ],
+ "dizgi_katmani_duser/sonra": [
+  {
+   "binary_path": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+   "status": "kismi",
+   "status_reason": "strings katmani: RuntimeError: enjekte: katman dustu",
+   "file_size": 91648,
+   "scanned_bytes": 91648,
+   "layers": {
+    "imports": {
+     "status": "calisti",
+     "reason": ""
+    },
+    "strings": {
+     "status": "hata",
+     "reason": "RuntimeError: enjekte: katman dustu"
+    },
+    "bytes": {
+     "status": "calisti",
+     "reason": ""
+    }
+   },
+   "total_findings": null,
+   "findings": [
+    "GetTickCount",
+    "IsDebuggerPresent",
+    "QueryPerformanceCounter"
+   ]
+  },
+  {
+   "anti_debug_status": "kismi",
+   "anti_debug_status_reason": "strings katmani: RuntimeError: enjekte: katman dustu",
+   "anti_debug_top_technique": "GetTickCount",
+   "anti_debug_top_confidence": 0.1,
+   "anti_debug_categories": {
+    "compiler_runtime": 3
+   }
+  }
+ ],
+ "hepsi_duser/once": [
+  {
+   "binary_path": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+   "total_findings": 0,
+   "findings": []
+  },
+  {
+   "anti_debug_total": 0,
+   "anti_debug_status": "ok"
+  }
+ ],
+ "hepsi_duser/sonra": [
+  {
+   "binary_path": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+   "status": "hata",
+   "status_reason": "imports katmani: RuntimeError: enjekte: katman dustu; strings katmani: RuntimeError: enjekte: katman dustu; bytes katmani: RuntimeError: enjekte: katman dustu",
+   "file_size": 91648,
+   "scanned_bytes": 91648,
+   "layers": {
+    "imports": {
+     "status": "hata",
+     "reason": "RuntimeError: enjekte: katman dustu"
+    },
+    "strings": {
+     "status": "hata",
+     "reason": "RuntimeError: enjekte: katman dustu"
+    },
+    "bytes": {
+     "status": "hata",
+     "reason": "RuntimeError: enjekte: katman dustu"
+    }
+   },
+   "total_findings": null,
+   "findings": []
+  },
+  {
+   "anti_debug_status": "hata",
+   "anti_debug_status_reason": "imports katmani: RuntimeError: enjekte: katman dustu; strings katmani: RuntimeError: enjekte: katman dustu; bytes katmani: RuntimeError: enjekte: katman dustu"
+  }
+ ]
+}

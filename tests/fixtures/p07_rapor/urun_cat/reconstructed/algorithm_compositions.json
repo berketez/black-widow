@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "total_compositions": 0,
+  "compositions": [],
+  "unclustered_algorithms": [],
+  "errors": [],
+  "total_pending": 0,
+  "pending_compositions": [],
+  "pending_note": "Template matches held back by the evidence gate (decision K-1, 2026-11-18): not claims, not reported, not counted in total_compositions. Each entry carries evidence_gate.reason."
+}
