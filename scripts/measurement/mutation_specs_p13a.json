@@ -1,0 +1,157 @@
+{
+  "_comment": "P13a (ad yan yolları: AD-06 Faz 1 seçimi, AD-09 dizgi kanalı, AD-04/05 birleştirici, AD-11 + B-C6 korunan ön ad ve elle ad zorlaması) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). AD-12 silme olduğu için mutantı yok. c_namer yamasının (yamalar/P13a__c_namer.py.patch) testi yamayla gelir; mutantı yama uygulanınca eklenir. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p13a.json",
+  "mutants": [
+    {
+      "id": "p13a_ad06_ham_liste",
+      "desc": "AD-06: boru hattı yine ham öneri listesini ön ad yapar (son kazanır, eşik yok)",
+      "module": "karadul/pipeline/steps/parallel_algo_eng.py",
+      "test": "tests/test_p13a_faz1_secim.py::test_boru_hatti_cikaricinin_secimini_on_ad_yapar",
+      "find": "            names = extractor.as_pre_name_map()\n",
+      "replace": "            names = {n.original_name: n.recovered_name for n in extract_result.names}\n"
+    },
+    {
+      "id": "p13a_ad06_esik_yok",
+      "desc": "AD-06: seçimde min_naming_confidence eşiği uygulanmaz",
+      "module": "karadul/reconstruction/binary_name_extractor.py",
+      "test": "tests/test_p13a_faz1_secim.py::test_binary_names_json_secilen_kaydi_ve_nedenleri_yazar",
+      "find": "            if name.confidence < self._min_confidence:\n",
+      "replace": "            if name.confidence < -1.0:\n"
+    },
+    {
+      "id": "p13a_ad06_son_kazanir",
+      "desc": "AD-06: aynı fonksiyonda en güvenli değil SON öneri kazanır",
+      "module": "karadul/reconstruction/binary_name_extractor.py",
+      "test": "tests/test_p13a_faz1_secim.py::test_ayni_fonksiyonda_daha_guvenli_oneri_kazanir",
+      "find": "            if existing is None or name.confidence > existing.confidence:\n",
+      "replace": "            if existing is None or name.confidence > -1.0:\n"
+    },
+    {
+      "id": "p13a_ad06_cift_ad",
+      "desc": "AD-06: aynı ad iki fonksiyona verilir (düşük güvenli silinmez)",
+      "module": "karadul/reconstruction/binary_name_extractor.py",
+      "test": "tests/test_p13a_faz1_secim.py::test_boru_hatti_cikaricinin_secimini_on_ad_yapar",
+      "find": "                del naming_map[orig]\n",
+      "replace": "                naming_map.get(orig)\n"
+    },
+    {
+      "id": "p13a_ad09_dizgi_kanali_yok",
+      "desc": "AD-09: hiçbir öneri dizgi kanalı sayılmaz (dizgi adı yine ön ad olur)",
+      "module": "karadul/reconstruction/binary_name_extractor.py",
+      "test": "tests/test_p13a_dizgi_kanali.py::test_class_method_dizgisi_on_ad_olmaz_c_namer_adayi_olur",
+      "find": "    if name.source not in STRING_CHANNEL_SOURCES:\n",
+      "replace": "    if True:\n"
+    },
+    {
+      "id": "p13a_ad09_ihrac_dali",
+      "desc": "AD-09: ihraç simgesi dalı ile dizgi dalı ters sınıflanır",
+      "module": "karadul/reconstruction/binary_name_extractor.py",
+      "test": "tests/test_p13a_dizgi_kanali.py::test_dizgi_kanali_siniflamasi",
+      "find": "    return not (name.source == \"debug_string\"\n",
+      "replace": "    return bool(name.source == \"debug_string\"\n"
+    },
+    {
+      "id": "p13a_ad09_secime_girer",
+      "desc": "AD-09: dizgi önerileri ön ad seçimine yine girer",
+      "module": "karadul/reconstruction/binary_name_extractor.py",
+      "test": "tests/test_p13a_dizgi_kanali.py::test_dizgi_onerisi_ayni_fonksiyondaki_dizgi_disi_oneriyi_ezmez",
+      "find": "[n for n in result.names if not is_string_channel(n)]",
+      "replace": "[n for n in result.names if n is not None]"
+    },
+    {
+      "id": "p13a_ad04_on_ad_iki_kez",
+      "desc": "AD-04: c_namer koşmuşken ön ad ve c_namer adı yine iki kaynak olarak girer",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_p13a_birlestirici.py::test_ad04_bindiff_adi_on_ad_olarak_ikinci_kez_sayilmaz",
+      "find": "    if not pre_names_via_c_namer:\n",
+      "replace": "    if pre_names_via_c_namer or True:\n"
+    },
+    {
+      "id": "p13a_ad05_reddedilen_doner",
+      "desc": "AD-05: c_namer'ın reddettiği ön ad başka kaynaktan geri gelir",
+      "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+      "test": "tests/test_p13a_birlestirici.py::test_ad05_reddedilen_ad_baska_kaynaktan_da_donmez",
+      "find": "            elif key in excluded:\n",
+      "replace": "            elif key in ():\n"
+    },
+    {
+      "id": "p13a_ad05_gecerlilik_yok",
+      "desc": "AD-05: birleştiricinin adı ad geçerliliğinden geçmez",
+      "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+      "test": "tests/test_p13a_birlestirici.py::test_ad05_c_namer_kosmadiysa_birlestirici_ad_gecerliligi_uygular",
+      "find": "            name, local=local, existing_functions=None if local else existing, own_name=own)\n        if reason is not None:\n",
+      "replace": "            name, local=local, existing_functions=None if local else existing, own_name=own)\n        if reason is not None and False:\n"
+    },
+    {
+      "id": "p13a_c_namer_070",
+      "desc": "P12a notu: güveni olmayan c_namer adına yine 0,70 uydurulur",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_p13a_birlestirici.py::test_add_c_namer_guveni_olmayan_ada_sayi_uydurmaz",
+      "find": "            conf = conf_map.get(old_name)\n",
+      "replace": "            conf = conf_map.get(old_name, 0.70)\n"
+    },
+    {
+      "id": "p13a_formul_cift_sayim",
+      "desc": "Aynı eşleşmenin formül adayı sabit adayının yanına ikinci kaynak olarak eklenir",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_p13a_birlestirici.py::test_ayni_eslesme_formul_ve_sabit_iki_kaynak_sayilmaz",
+      "find": "in _SAME_MATCH_SOURCES",
+      "replace": "in frozenset()"
+    },
+    {
+      "id": "p13a_ad05_koken_yok",
+      "desc": "AD-05: birleştiricinin kararı köken kaydına yazılmaz",
+      "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+      "test": "tests/test_p13a_birlestirici.py::test_birlestiricinin_karari_koken_kaydina_yazilir",
+      "find": "        write_merger_provenance(\n",
+      "replace": "        (lambda **_k: None)(\n"
+    },
+    {
+      "id": "p13a_ad11_koruma_yok",
+      "desc": "AD-11: korunan tür sınaması devre dışı (eşleşme elle / main / KS-1 adını ezer)",
+      "module": "karadul/pipeline/steps/_feedback_naming_bindiff.py",
+      "test": "tests/test_p13a_elle_ad.py::test_korunan_tur_ezilmez_digerleri_yazilir",
+      "find": "entry.get(\"kind\") in DIFF_PROTECTED_KINDS",
+      "replace": "entry.get(\"kind\") in ()"
+    },
+    {
+      "id": "p13a_ad11_ks1_korunmaz",
+      "desc": "AD-11: KS-1 korunan türlere girmez",
+      "module": "karadul/pipeline/steps/_feedback_naming_bindiff.py",
+      "test": "tests/test_p13a_elle_ad.py::test_korunan_tur_ezilmez_digerleri_yazilir",
+      "find": "_baglama.PROTECTED_KINDS | {_baglama.KIND_KS1}",
+      "replace": "_baglama.PROTECTED_KINDS | set()"
+    },
+    {
+      "id": "p13a_ad11_bindiff_kunyesiz",
+      "desc": "AD-11: BinDiff künyeyi okumaz (koşulsuz yazar)",
+      "module": "karadul/pipeline/steps/_feedback_naming_bindiff.py",
+      "test": "tests/test_p13a_elle_ad.py::test_uctan_uca_overrides_bindiff_iki_yineleme",
+      "find": "                extracted_names, bindiff_names, pre_name_meta_of(ctx))",
+      "replace": "                extracted_names, bindiff_names, None)"
+    },
+    {
+      "id": "p13a_ad11_refdiff_kunyesiz",
+      "desc": "AD-11: ReferenceDiffer künyeyi okumaz (koşulsuz yazar)",
+      "module": "karadul/pipeline/steps/_feedback_naming_refdiff.py",
+      "test": "tests/test_p13a_elle_ad.py::test_refdiff_de_korur",
+      "find": "                extracted_names, refdiff_naming, pre_name_meta_of(ctx))",
+      "replace": "                extracted_names, refdiff_naming, None)"
+    },
+    {
+      "id": "p13a_bc6_zorlama_yok",
+      "desc": "B-C6: elle ad birleştirmeden sonra haritaya zorlanmaz",
+      "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+      "test": "tests/test_p13a_elle_ad.py::test_birlestirmeden_sonra_elle_ad_zorlanir",
+      "find": "            final_map[key] = name\n            forced += 1\n",
+      "replace": "            forced += 1\n"
+    },
+    {
+      "id": "p13a_bc6_gecerlilik_yok",
+      "desc": "B-C6: geçersiz elle ad (anahtar sözcük) da zorlanır",
+      "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+      "test": "tests/test_p13a_elle_ad.py::test_birlestirmeden_sonra_elle_ad_zorlanir",
+      "find": "        reason = _name_validity.reject_reason(name, existing_functions=existing, own_name=own)\n        if reason is not None:\n",
+      "replace": "        reason = _name_validity.reject_reason(name, existing_functions=existing, own_name=own)\n        if reason is not None and False:\n"
+    }
+  ]
+}

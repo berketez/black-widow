@@ -359,8 +359,18 @@ def run_name_merger(
         )
         decided_map = dict(decided or {})
         for key in list(candidates_by_symbol):
-            if key in decided_map or key in excluded:
+            if key in decided_map:
                 del candidates_by_symbol[key]
+            elif key in excluded:
+                # c_namer'ın reddettiği ön ADI başka kaynak önerse de geri gelmez; anahtara
+                # başka bir ad öneren bağımsız kanıt (FID, hesaplama …) yarışmayı sürdürür.
+                rejected_name = (extracted_names or {}).get(key)
+                kept = [c for c in candidates_by_symbol[key]
+                        if getattr(c, "name", None) != rejected_name]
+                if kept:
+                    candidates_by_symbol[key] = kept
+                else:
+                    del candidates_by_symbol[key]
         if decided is not None:
             stats["name_merger_c_namer_decided"] = len(decided_map)
             stats["name_merger_excluded_rejected_pre_names"] = len(excluded)

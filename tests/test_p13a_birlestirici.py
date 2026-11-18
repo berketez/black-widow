@@ -133,3 +133,56 @@ def test_ayni_eslesme_formul_ve_sabit_iki_kaynak_sayilmaz() -> None:
                                                  candidates=adaylar)
     assert eklenen == 0
     assert [c.source for c in adaylar["FUN_5"]] == ["engineering_constant"]
+
+
+def _kos_adaylarla(tmp_path: Path, monkeypatch, *, extracted, naming_result, ek_adaylar,
+                   bindiff=None):
+    """``collect_candidates``'in döndürdüğüne ek aday enjekte ederek birleştiriciyi koştur."""
+    gercek = FM.collect_candidates
+
+    def sahte(**kw):
+        adaylar = gercek(**kw)
+        for anahtar, liste in ek_adaylar.items():
+            adaylar.setdefault(anahtar, []).extend(liste)
+        return adaylar
+
+    monkeypatch.setattr(FM, "collect_candidates", sahte)
+    dec = tmp_path / "src"
+    dec.mkdir(parents=True)
+    (dec / "a.c").write_text("void FUN_00104000(void){}\n", encoding="utf-8")
+    stats: dict = {}
+    harita, _, _ = FM.run_name_merger(
+        ctx=_ctx(), iter_index=0, decompiled_dir=dec, reconstructed_dir=tmp_path,
+        incremental_files=None, extracted_names=dict(extracted), naming_result=naming_result,
+        bindiff_confidence_map=dict(bindiff or {}), refdiff_naming={},
+        fid_json=tmp_path / "fid.json", computation_result=None, pcode_naming_candidates=[],
+        stats=stats, errors=[], artifacts={}, functions_json=_functions(tmp_path))
+    return harita or {}, stats
+
+
+def test_ad05_reddedilen_ad_baska_kaynaktan_da_donmez(tmp_path, monkeypatch) -> None:
+    from karadul.reconstruction.name_merger import NamingCandidate
+
+    # c_namer ön adı 'dup_ad'ı vermedi (aynı ad daha öncelikli ön adda); FID aynı adı öneriyor
+    harita, _ = _kos_adaylarla(
+        tmp_path, monkeypatch, extracted={"FUN_00104000": "dup_ad"}, naming_result=_cnamer({}),
+        ek_adaylar={"FUN_00104000": [NamingCandidate("dup_ad", 0.9, "function_id")]})
+    assert "FUN_00104000" not in harita
+
+
+def test_ad05_reddedilen_anahtara_baska_ad_yarisir(tmp_path, monkeypatch) -> None:
+    from karadul.reconstruction.name_merger import NamingCandidate
+
+    harita, _ = _kos_adaylarla(
+        tmp_path, monkeypatch, extracted={"FUN_00104000": "dup_ad"}, naming_result=_cnamer({}),
+        ek_adaylar={"FUN_00104000": [NamingCandidate("inflate_fast", 0.9, "function_id")]})
+    assert harita == {"FUN_00104000": "inflate_fast"}
+
+
+def test_ad04_bindiff_adi_on_ad_olarak_ikinci_kez_sayilmaz(tmp_path, monkeypatch) -> None:
+    # BinDiff c_namer'dan SONRA ön ad sözlüğüne yazdı; aynı eşleşme bir kez sayılır
+    harita, stats = _kos_adaylarla(
+        tmp_path, monkeypatch, extracted={"FUN_00104000": "ref_ad"}, naming_result=_cnamer({}),
+        ek_adaylar={}, bindiff={"FUN_00104000": ("ref_ad", 0.8, "string")})
+    assert stats["name_merger_exact_multi"] == 0
+    assert harita == {"FUN_00104000": "ref_ad"}
