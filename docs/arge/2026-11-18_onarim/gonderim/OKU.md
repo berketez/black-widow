@@ -21,10 +21,16 @@ Ana oturumun ajanlara verdiği paket metinleri. Oturuma özel geçici dizin sili
 | `P05c.md` | Parametre adları: kanıtsız genel adlar (K-2) | — | P12b ile aynı anda olabilir (dosyalar ayrık) |
 
 ## Henüz yazılmadı
-- **P-S4** (`stages.py` 4. tur: BICIM-02, 09, 10, 13, BORU-08 + MEK-09 (c) evrensel Mach-O dilimleri, P-S1'in "Analyzer bulunamadi" / "Hedef türü tanınmadı" notu, P13a'nın olası `stages.py` yaması): P-S3 ve P20'den sonra (BICIM-13 ProjectReconstructor BICIM-01'e bağlı). Dosyalar: `stages.py`, `analyzers/app_bundle.py`, `core/target.py`, `analyzers/python_binary.py`.
+- **P-S4** (`stages.py` 4. tur: BICIM-02, 09, 10, 13, BORU-08 + MEK-09 (c) evrensel Mach-O dilimleri, P-S1'in "Analyzer bulunamadi" / "Hedef türü tanınmadı" notu, P13a'nın olası `stages.py` yaması, P14 notu: üç `except RuntimeError` dalı `reconstruct_status: basarisiz` + neden yazsın): P-S3 ve P20'den sonra (BICIM-13 ProjectReconstructor BICIM-01'e bağlı). Dosyalar: `stages.py`, `analyzers/app_bundle.py`, `core/target.py`, `analyzers/python_binary.py`.
 - **P13b** (bağlı olmayan ad kanalları, K-4): P13a'dan sonra.
 - **P22e** (oturum, kipler, izin, terminal ayrıştırıcısı): P22b + P22d'den sonra. **P22c** (arayüz, c1 sunucu → c2 sayfa): P17 + P22e'den sonra. **P22g** ölçüm ön kaydı.
 - **P23** (test, CI, düzen): en son.
 
 ## Bekçi
 `bekci.py` — CLAUDE.md §27 takılma bekçisi: `python3 bekci.py P18=<ajan_id> P20=<ajan_id> …`, Monitor ile (30 dk'da bir yeniden kurulur). Alt ajan transcript dizini oturuma özeldir: `BEKCI_OTURUM_DIZINI` verilmezse en son değişen oturumun `subagents` dizini alınır.
+
+## Atanmamış bulgular (gönderimden önce bir pakete yazılacak)
+- **İmza veritabanının adsız fonksiyonlara verdiği adlar** (P11 ölçümü): `call_pattern` 0 / 76, `string_ref` 0 / 132 doğru (12 Debian ikilisi); `read_env_var`, `verify_certificate` gibi betimleyici tahminler, güven 0,56–0,86. Ad haritasına girip girmediği, raporda / arayüzde / `signature_matches.json`'da nasıl göründüğü bakılmadı. K-2: kanal susturulmaz, düzeltilir. Dosya `analyzers/signature_db.py` → P15b'ye eklenebilir (o paketin dosyası) ya da ayrı paket.
+- **P15b'ye:** `batch.py` `Config.load` / `--config` (P14 dokunmadı; satır 203-204).
+- **MaxSMT kapsamı** (P11): `binary_reconstruction.pcode_selective_ops`'a `CAST` / `PTRSUB` eklemek erişimlerin %37'sini çözülebilir kılar ama P-code'un öbür tüketicilerini etkiler → ayrı ön kayıtlı ölçüm (`config.py` P15b'nin).
+- **Silme onayı bekleyenler (Berke):** `stages.py` `_collect_all_algorithms` (P-S2), `vf2_matcher._vf2_worker` / `_serialize_graph` ve eski `computation/fusion/{fuser,model,features,calibration}.py` (P11), ölçüm kopyaları `~/karadul_olcum/runs/onarim-2026-11-18/P-S2/taban_agac/`, `P14/{agac_taban,agac_sonra,yama_dogrulama,kollar}/` (~320 MB).
