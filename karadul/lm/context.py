@@ -40,7 +40,8 @@ from karadul.lm import (
     BUDGET_SESSION_TOKENS, BUDGET_TOOL_RESULTS_TOKENS, BYTES_PER_TOKEN_CODE, BYTES_PER_TOKEN_TEXT,
     CODE_HEAD_BYTES, CODE_LIMIT_BYTES, CODE_TAIL_BYTES, ESTIMATE_ERROR_FRACTION, EVIDENCE_API_LIMIT,
     EVIDENCE_MAX_CALLBACKS, EVIDENCE_MAX_CALLEES, EVIDENCE_MAX_CALLERS, EVIDENCE_MAX_CONSTANTS,
-    EVIDENCE_MAX_STRINGS, EVIDENCE_STRING_CHARS, MAX_TOOL_CALLS, MAX_TOOL_CALLS_K1, TOKENS_PER_DIGIT,
+    EVIDENCE_MAX_STRINGS, EVIDENCE_STRING_CHARS, INTENT_MAX_CHARS, MAX_TOOL_CALLS, MAX_TOOL_CALLS_K1,
+    TOKENS_PER_DIGIT,
 )
 
 # ============================================================================================
@@ -376,8 +377,9 @@ K0_BLOCK = (
 )
 CALL_BLOCK = (
     "\n"
-    'To call a tool reply {"kind": "call", "tool": "<tool name>", "args": {<arguments>}}. To finish reply '
-    '{"kind": "final", ...} with the fields the task asks for.\n'
+    'To call a tool reply {"kind": "call", "tool": "<tool name>", "args": {<arguments>}, "niyet": "<why you '
+    f'call this tool, in Turkish, at most {INTENT_MAX_CHARS} characters>"}}. To finish reply {{"kind": "final", '
+    '...} with the fields the task asks for.\n'
 )
 K1_LIMIT_LINE = "In this task you may make at most {n} tool calls, and only on the addresses the schema allows.\n"
 

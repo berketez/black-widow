@@ -26,7 +26,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Optional, Sequence
 
-from karadul.lm import RATIONALE_MAX_CHARS, REFS_MAX_ITEMS
+from karadul.lm import INTENT_MAX_CHARS, RATIONALE_MAX_CHARS, REFS_MAX_ITEMS
 
 # ============================================================================================
 # 1. Pilot kopyası (llm_pilot.py:498-557). DEĞİŞTİRME: eşitlik testi pilotla karşılaştırır.
@@ -361,10 +361,17 @@ def matching_branches(value: Any, schema: Mapping[str, Any]) -> list[int]:
     return [i for i, b in enumerate(schema.get("anyOf", [])) if not validate(value, b)]
 
 
+# Araç dalındaki isteğe bağlı "niyet" notu: modelin "bu aracı neden çağırıyorum" cümlesi (KaradulLM v2
+# tasarımı §4.1 ``model_cevabi.niyet``; Berke kararı 5 (b): terminal her araç çağrısında gösterir).
+# Zorunlu değil (tasarım "isteğe bağlı"); yazılmazsa terminal "neden" satırı göstermez, uydurmaz.
+INTENT_SCHEMA = {"type": "string", "maxLength": INTENT_MAX_CHARS}
+
+
 def call_branch(tool: str, args_schema: Mapping[str, Any]) -> dict[str, Any]:
-    """Zarfın bir araç dalı: ``{"kind": "call", "tool": <ad>, "args": {...}}``."""
+    """Zarfın bir araç dalı: ``{"kind": "call", "tool": <ad>, "args": {...}, "niyet"?: "<not>"}``."""
     return {"type": "object",
-            "properties": {"kind": {"const": "call"}, "tool": {"const": tool}, "args": dict(args_schema)},
+            "properties": {"kind": {"const": "call"}, "tool": {"const": tool}, "args": dict(args_schema),
+                           "niyet": dict(INTENT_SCHEMA)},
             "required": ["kind", "tool", "args"], "additionalProperties": False}
 
 
