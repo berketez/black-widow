@@ -326,8 +326,8 @@
       "desc": "start_new_session kullanılır",
       "module": "karadul/lm/backend.py",
       "test": "tests/test_lm_backend.py::test_baslatma_surec_grubu_pid_dosyasi_ve_kunye",
-      "find": "stdin=subprocess.DEVNULL, process_group=0)",
-      "replace": "stdin=subprocess.DEVNULL, start_new_session=True)"
+      "find": "stdin=subprocess.DEVNULL, process_group=0,",
+      "replace": "stdin=subprocess.DEVNULL, start_new_session=True,"
     },
     {
       "id": "b_pid_dosyasi_yok",
@@ -614,8 +614,8 @@
       "desc": "[DONE] sonrası okunmaya devam edilir",
       "module": "karadul/lm/backend.py",
       "test": "tests/test_lm_backend.py::test_akis_okuma_icerik_ve_zaman_damgalari",
-      "find": "        if data == b\"[DONE]\":\n            break",
-      "replace": "        if data == b\"[DONE]\":\n            continue"
+      "find": "        if data == b\"[DONE]\":\n            done = True\n            break",
+      "replace": "        if data == b\"[DONE]\":\n            done = True\n            continue"
     },
     {
       "id": "b_akis_hata_parcasi",

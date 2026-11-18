@@ -12,10 +12,15 @@ Mutasyon koruması: ``scripts/measurement/mutation_specs_p21.json``.
 """
 from __future__ import annotations
 
+import json
 import math
 
 import karadul.lm as LM
+from karadul.lm import agent as G
+from karadul.lm import backend as B
 from karadul.lm import context as C
+from karadul.lm import tools as T
+from tests.test_lm_tools import A, default_ws, fun
 
 # 2026-11-12 K0 dumanının 5 istemi: (o günkü kestirim, bugünkü kestirim, ucun bildirdiği prompt_tokens).
 # Kaynak: ~/karadul_olcum/runs/k0-duman-2026-11-12/k0_duman_sonuc.json + P21 yeniden kurma betiği
@@ -52,3 +57,18 @@ def test_olcumdeki_oranlar_ve_pay():
         assert gercek / yeni < gercek / eski                          # her istemde yaklaştı
         assert gercek / yeni <= 1.07 and yeni + b.margin_for(yeni) >= gercek   # pay en kötü durumu karşılıyor
     assert max(g / e for e, _, g in K0_DUMAN_JETON) > 1.16 and max(g / y for _, y, g in K0_DUMAN_JETON) < 1.07
+
+
+def test_dongude_gercek_sayi_paylanmaz(tmp_path):
+    """Uç gerçek ``usage`` verdiyse yalnız yeni sonucun kestirimi paylanır: 14 820 gerçek jetonluk
+    istemde küçük bir sonuç sığar (14 820 + ~100 + 512 + 256 ≤ 16 384); gerçek sayı da %10 şişirilseydi
+    sığmazdı (≈ 16 412 + 256)."""
+    cagri = B.FakeReply(content=json.dumps({"kind": "call", "tool": "get_xrefs",
+                                            "args": {"addr": fun(A), "direction": "callers"}}),
+                        usage={"prompt_tokens": 14800, "completion_tokens": 20})
+    son = B.FakeReply(content=json.dumps({"kind": "final", "isim": None, "gerekce": "x", "cekimser": True,
+                                          "kanit": []}))
+    ajan = G.Agent(B.FakeBackend([cagri, son]), T.Workspace(default_ws(tmp_path / "ws")),
+                   enabled_modes=("K0", "K2"))
+    r = ajan.run_loop(fun(A))
+    assert r.status == "tamam" and (r.counters.tool_calls, r.counters.context_exceeded) == (1, 0)

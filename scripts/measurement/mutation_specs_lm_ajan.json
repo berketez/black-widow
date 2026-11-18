@@ -302,16 +302,16 @@
       "desc": "Sınırdaki istem sığmaz sayılır",
       "module": "karadul/lm/context.py",
       "test": "tests/test_lm_context.py::test_baglam_butcesi_aritmetigi",
-      "find": "        return prompt_tokens <= self.prompt_room",
-      "replace": "        return prompt_tokens < self.prompt_room"
+      "find": "        return self.context_needed(estimated_tokens, known_tokens) <= self.context_tokens",
+      "replace": "        return self.context_needed(estimated_tokens, known_tokens) < self.context_tokens"
     },
     {
       "id": "c_sonuc_kestirimi_kod",
       "desc": "Sonuç kestiriminde kod metin oranıyla sayılır",
       "module": "karadul/lm/context.py",
       "test": "tests/test_lm_context.py::test_baglam_butcesi_aritmetigi",
-      "find": "    code_bytes = _utf8_len(escape_json(code)) if isinstance(code, str) else 0",
-      "replace": "    code_bytes = 0 if isinstance(code, str) else 0"
+      "find": "    coded = escape_json(code) if isinstance(code, str) else \"\"",
+      "replace": "    coded = \"\" if isinstance(code, str) else \"\""
     },
     {
       "id": "c_dilim_arac_sonuclari",
@@ -806,8 +806,8 @@
       "desc": "K0 iptal isteğine bakmaz",
       "module": "karadul/lm/agent.py",
       "test": "tests/test_lm_agent.py::test_k0_durumlar_model_cagrilmadan_ya_da_cevapsiz",
-      "find": "        if self.cancel.is_set():\n            return task.finish(STATUS_CANCELLED)\n        schema",
-      "replace": "        if False and self.cancel.is_set():\n            return task.finish(STATUS_CANCELLED)\n        schema"
+      "find": "        if self.cancel.is_set():\n            task.finish(STATUS_CANCELLED)\n            return None",
+      "replace": "        if False and self.cancel.is_set():\n            task.finish(STATUS_CANCELLED)\n            return None"
     },
     {
       "id": "a_k0_yetenek",
@@ -1086,7 +1086,7 @@
       "desc": "Döngüde sonucun bağlama sığması denetlenmez",
       "module": "karadul/lm/agent.py",
       "test": "tests/test_lm_agent.py::test_dongu_baglam_butcesi",
-      "find": "                if tool_tokens + cost > BUDGET_TOOL_RESULTS_TOKENS or not budget.fits(now + cost):",
+      "find": "                if tool_tokens + cost > BUDGET_TOOL_RESULTS_TOKENS or not fits:",
       "replace": "                if tool_tokens + cost > BUDGET_TOOL_RESULTS_TOKENS:"
     },
     {
@@ -1094,16 +1094,16 @@
       "desc": "Araç sonuçları dilimi denetlenmez",
       "module": "karadul/lm/agent.py",
       "test": "tests/test_lm_agent.py::test_dongu_baglam_butcesi",
-      "find": "                if tool_tokens + cost > BUDGET_TOOL_RESULTS_TOKENS or not budget.fits(now + cost):",
-      "replace": "                if not budget.fits(now + cost):"
+      "find": "                if tool_tokens + cost > BUDGET_TOOL_RESULTS_TOKENS or not fits:",
+      "replace": "                if not fits:"
     },
     {
       "id": "a_gercek_jeton_yok_sayilir",
       "desc": "Uçtan gelen gerçek jeton sayısı kullanılmaz",
       "module": "karadul/lm/agent.py",
       "test": "tests/test_lm_agent.py::test_dongu_baglam_butcesi",
-      "find": "                now = real if real is not None else prompt_est",
-      "replace": "                now = prompt_est if real is not None else prompt_est"
+      "find": "                fits = budget.fits(cost, real) if real is not None else budget.fits(prompt_est + cost)",
+      "replace": "                fits = budget.fits(prompt_est + cost)"
     },
     {
       "id": "a_istem_kestirimi_birikmez",
@@ -1126,16 +1126,16 @@
       "desc": "Döngü iptal isteğine bakmaz",
       "module": "karadul/lm/agent.py",
       "test": "tests/test_lm_agent.py::test_dongu_iptal_ve_sure",
-      "find": "            if self.cancel.is_set():\n                return task.finish(STATUS_CANCELLED)\n            if deadline",
-      "replace": "            if False and self.cancel.is_set():\n                return task.finish(STATUS_CANCELLED)\n            if deadline"
+      "find": "        if self.cancel.is_set():\n            task.finish(STATUS_CANCELLED)\n            return None",
+      "replace": "        if False and self.cancel.is_set():\n            task.finish(STATUS_CANCELLED)\n            return None"
     },
     {
       "id": "a_sure_esigi",
       "desc": "Süre sınırında görev kesilir",
       "module": "karadul/lm/agent.py",
       "test": "tests/test_lm_agent.py::test_dongu_iptal_ve_sure",
-      "find": "            if deadline is not None and self._clock() > deadline:",
-      "replace": "            if deadline is not None and self._clock() >= deadline:"
+      "find": "        if task.deadline is not None and self._clock() > task.deadline:\n            task.finish(STATUS_TIMEOUT)",
+      "replace": "        if task.deadline is not None and self._clock() >= task.deadline:\n            task.finish(STATUS_TIMEOUT)"
     },
     {
       "id": "a_sure_carpani",

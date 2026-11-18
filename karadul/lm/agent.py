@@ -276,7 +276,7 @@ class Agent:
                     if mode == MODE_K0:
                         self._execute_k0(task, addr, abstain_allowed)
                     else:
-                        self._execute_loop(task, mode, addr, abstain_allowed, task.deadline)
+                        self._execute_loop(task, mode, addr, abstain_allowed)
                 except WorkspaceError as e:
                     task.finish(STATUS_PACKAGE_ERROR, str(e), override=True)
             except BaseException as e:
@@ -536,8 +536,7 @@ class Agent:
         if not ContextBudget(self.context_tokens, MAX_TOKENS_STEP).fits(est):
             # Sessiz kırpma yok: görev başlamadan reddedilir (tasarım §2.3 "Bağlam").
             return task.finish(STATUS_CONTEXT)
-        if self.cancel.is_set():
-            return task.finish(STATUS_CANCELLED)
+        # İptal ve süre model isteğinden hemen önce bakılır (``_model_call``; LM-06).
         schema = protocol.build_name_answer_schema(ids, abstain_allowed=abstain_allowed)
         repairs = 0
         while True:
@@ -572,8 +571,7 @@ class Agent:
                     found.add(c)
         return [f"FUN_{x}" for x in sorted(found, key=lambda x: int(x, 16))]
 
-    def _execute_loop(self, task: _Task, mode: str, addr: str, abstain_allowed: bool,
-                      deadline: Optional[float]) -> None:
+    def _execute_loop(self, task: _Task, mode: str, addr: str, abstain_allowed: bool) -> None:
         a = self.workspace.resolve(addr)
         if a is None:
             return task.finish(STATUS_UNKNOWN_ADDRESS)
@@ -606,10 +604,7 @@ class Agent:
         forced_final = False        # bütçe bitti: model yalnız son cevabı verebilir
         repairs = 0
         while True:
-            if self.cancel.is_set():
-                return task.finish(STATUS_CANCELLED)
-            if deadline is not None and self._clock() > deadline:
-                return task.finish(STATUS_TIMEOUT)
+            # İptal ve süre her turun model isteğinden önce ``_model_call``'da bakılır (LM-06).
             finals = protocol.name_answer_branches([r.id for r in task.results if r.ok],
                                                    abstain_allowed=abstain_allowed)
             schema = protocol.build_task_envelope({} if forced_final else tool_schemas, finals,

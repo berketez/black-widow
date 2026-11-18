@@ -344,13 +344,14 @@ def test_erken_cikista_pid_dosyasi_silinir(tmp_path):
 
 def test_popen_hatasi_anahtari_sizdirmaz(tmp_path):
     gunluk = A.AuditLog(tmp_path / "gunluk.jsonl")
-    popen = SahtePopen(hata=lambda cmd: OSError(f"başlatılamadı: {cmd}"))
+    # P21 B-E5: anahtar komutta yok, ortamda. Hata iletisi anahtarı yankılasa (ör. ortamı döken bir hata)
+    # da anahtar arındırılır.
+    popen = SahtePopen(hata=lambda cmd: OSError(f"başlatılamadı: {cmd} LLAMA_API_KEY={ANAHTAR}"))
     b, _ = _arka_uc(tmp_path, popen=popen, gunluk=gunluk)
     with pytest.raises(B.BackendError) as ei:
         b.start()
     metin = "".join(traceback.format_exception(ei.value))
-    # P21 B-E5: anahtar komutta hiç yok; hata iletisine komut girse de anahtar girmez
-    assert ANAHTAR not in metin and "--api-key" not in str(ei.value) and "llama-server" in str(ei.value)
+    assert ANAHTAR not in metin and A.REDACTED in str(ei.value) and "--api-key" not in str(ei.value)
     assert ei.value.__context__ is None and ei.value.__cause__ is None
     assert ANAHTAR not in (tmp_path / "gunluk.jsonl").read_text()
     assert [r["olay"] for r in gunluk.read_records()] == ["baslatma_hatasi"]
