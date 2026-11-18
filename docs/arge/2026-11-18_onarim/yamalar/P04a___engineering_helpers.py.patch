@@ -1,0 +1,35 @@
+--- a/karadul/pipeline/steps/_engineering_helpers.py	2026-11-18 10:39:44
++++ b/karadul/pipeline/steps/_engineering_helpers.py	2026-11-18 10:39:51
+@@ -61,6 +61,32 @@
+     return None
+ 
+ 
++def function_strings_from_xrefs(xrefs_json: Path | None) -> dict[str, list[str]] | None:
++    """Fonksiyon adi -> referans verdigi dizgiler (``ghidra_xrefs.json``).
++
++    DomainClassifier'in dizgi sinyali yalniz fonksiyonun kendi dizgilerine
++    bakar (MUH-04); ikilinin butun dizgileri her fonksiyona kanit sayilmaz.
++    Dosya yoksa ya da okunamazsa None (sinyal kullanilmaz).
++    """
++    if xrefs_json is None or not Path(xrefs_json).exists():
++        return None
++    try:
++        data = json.loads(Path(xrefs_json).read_text())
++    except (OSError, ValueError) as exc:
++        logger.warning("xrefs okunamadi (%s): dizgi sinyali kapali", exc)
++        return None
++    out: dict[str, list[str]] = {}
++    for entry in (data.get("function_xrefs") or {}).values():
++        name = entry.get("name")
++        if not name:
++            continue
++        out[name] = [
++            s.get("value", "") if isinstance(s, dict) else str(s)
++            for s in entry.get("strings_used") or []
++        ]
++    return out
++
++
+ def normalize_strings(string_data: Any) -> list[Any] | None:
+     """DomainClassifier'a verilecek string listesini hazirla.
+ 

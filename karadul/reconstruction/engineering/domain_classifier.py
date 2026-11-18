@@ -6,7 +6,10 @@ structural, thermal, fluid, finance, ml, dsp, crypto, optimization, generic
 Siniflandirma 3 sinyal kaynagini birlestirir:
 1. Tespit edilen algoritmalarin kategorisi (en guclu sinyal)
 2. Algoritma isimlerinden cikarilan ipuclari
-3. Opsiyonel string referanslari (binary'deki string'lerden domain hint'leri)
+3. Opsiyonel string referanslari: YALNIZ fonksiyonun kendi referans verdigi
+   (xref'li) dizgiler (``function_strings``). Ikilinin butun dizgileri
+   her fonksiyona kanit sayilmaz (MUH-04, 2026-11-18): duz liste fonksiyona
+   atfedilemedigi icin siniflandirmaya girmez.
 
 Bayesian yaklasim:
     P(domain | evidence) propto P(evidence | domain) * P(domain)
@@ -18,6 +21,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 
 from karadul.reconstruction.c_algorithm_id import AlgorithmMatch
@@ -306,6 +310,14 @@ _ALGO_NAME_DOMAIN_HINTS: dict[str, str] = {
 # Classifier
 # -----------------------------------------------------------------------
 
+# Tam esitlikte tercih sirasi (yalniz kanitli alanlar arasinda uygulanir).
+_DOMAIN_PRIORITY: dict[str, int] = {
+    "structural": 9, "fluid": 8, "thermal": 7, "dsp": 6,
+    "finance": 5, "ml": 4, "optimization": 3, "crypto": 2, "generic": 1,
+}
+_TIE_EPS = 1e-9
+
+
 class DomainClassifier:
     """Bayesian multi-domain classifier.
 
@@ -318,17 +330,22 @@ class DomainClassifier:
     def classify(
         self,
         algorithms: list[AlgorithmMatch],
-        strings: list[str] | None = None,
+        strings: list[str] | Mapping[str, Iterable[str]] | None = None,
         binary_hints: dict | None = None,
+        function_strings: Mapping[str, Iterable[str]] | None = None,
     ) -> DomainReport:
         """Tum fonksiyonlari siniflandir.
 
         Args:
             algorithms: Tespit edilen algoritma listesi
                 (EngineeringAlgorithmAnalyzer + CAlgorithmIdentifier ciktilari).
-            strings: Opsiyonel string referanslari (binary strings dump).
+            strings: Geriye uyum. Duz liste (ikilinin butun dizgileri)
+                fonksiyona atfedilemez ve KULLANILMAZ (MUH-04); fonksiyon adi ->
+                dizgiler eslemesi verilirse ``function_strings`` gibi davranir.
             binary_hints: v1.4.2 Binary-level domain override ipuclari.
                 Ornek: {"domain_override": "ml"} -- binary BLAS/ML kutuphanesi.
+            function_strings: Fonksiyon adi -> o fonksiyonun referans verdigi
+                dizgiler (Ghidra ``ghidra_xrefs.json`` ``strings_used``).
 
         Returns:
             DomainReport: Her fonksiyon icin domain siniflandirmasi.
@@ -345,10 +362,16 @@ class DomainClassifier:
         for algo in algorithms:
             func_algos[algo.function_name].append(algo)
 
+        if function_strings is None and isinstance(strings, Mapping):
+            function_strings = strings
+
         classifications: list[DomainClassification] = []
         for func_name in sorted(func_algos.keys()):
+            own = None
+            if function_strings is not None:
+                own = [str(x) for x in (function_strings.get(func_name) or ())]
             dc = self._classify_function(
-                func_name, func_algos[func_name], strings,
+                func_name, func_algos[func_name], own,
                 domain_override=domain_override,
                 override_bonus=override_bonus,
             )
@@ -398,10 +421,14 @@ class DomainClassifier:
         # Raw scores per domain
         scores: dict[str, float] = {d: 0.0 for d in ALL_DOMAINS}
         evidence: list[str] = []
+        # Dizgi disi (kategori / ad / ikili duzeyi) kaniti olan alanlar: birincil
+        # alan yalniz bunlardan secilir (MUH-04: yalniz string_hint'li alan secilmez).
+        strong: set[str] = set()
 
         # v1.4.2 Signal 0: Binary-level domain override
         if domain_override and domain_override in ALL_DOMAINS:
             scores[domain_override] += override_bonus
+            strong.add(domain_override)
             evidence.append(
                 f"binary_override:{domain_override} (bonus={override_bonus:.1f})"
             )
@@ -419,6 +446,7 @@ class DomainClassifier:
                 split_weight = weight / len(domains)
                 for d in domains:
                     scores[d] += split_weight
+                    strong.add(d)
                 evidence.append(
                     f"category:{algo.category}->cross{domains} "
                     f"(conf={algo.confidence:.2f}, split={split_weight:.2f}, algo={algo.name})"
@@ -426,6 +454,7 @@ class DomainClassifier:
             else:
                 domain = CATEGORY_TO_DOMAIN.get(algo.category, "generic")
                 scores[domain] += weight
+                strong.add(domain)
                 evidence.append(
                     f"category:{algo.category}->{domain} "
                     f"(conf={algo.confidence:.2f}, algo={algo.name})"
@@ -437,12 +466,14 @@ class DomainClassifier:
             for hint_key, hint_domain in _ALGO_NAME_DOMAIN_HINTS.items():
                 if hint_key in algo_lower:
                     scores[hint_domain] += 0.3 * algo.confidence
+                    strong.add(hint_domain)
                     evidence.append(
                         f"name_hint:'{hint_key}'->{hint_domain}"
                     )
                     break  # One hint per algorithm is enough
 
-        # Signal 3: String-based hints (weakest signal, 0.2 weight)
+        # Signal 3: String-based hints (weakest signal, 0.2 weight).
+        # ``strings`` yalniz BU fonksiyonun referans verdigi dizgilerdir.
         if strings:
             joined = " ".join(strings).lower()
             for domain, pattern in _COMPILED_STRING_HINTS:
@@ -465,23 +496,17 @@ class DomainClassifier:
             # Hic sinyal yok -> generic
             normalized = {d: (1.0 if d == "generic" else 0.0) for d in ALL_DOMAINS}
 
-        # Primary domain
-        primary = max(normalized, key=lambda d: normalized[d])
-
-        # v1.4.3: Binary-level domain override varsa priority tiebreaker'i ATLA.
-        # Override zaten kesin sinyal veriyor, priority ile degistirmeye gerek yok.
-        if not (domain_override and domain_override in ALL_DOMAINS):
-            # Eger iki domain esit veya cok yakinsa (fark < 0.10), birini sec:
-            # Tercih sirasi: structural > fluid > thermal > dsp > finance > ml > optimization > crypto > generic
-            _PRIORITY = {
-                "structural": 9, "fluid": 8, "thermal": 7, "dsp": 6,
-                "finance": 5, "ml": 4, "optimization": 3, "crypto": 2, "generic": 1,
-            }
-            top_score = normalized[primary]
-            for d, s in normalized.items():
-                if d != primary and abs(s - top_score) < 0.10:
-                    if _PRIORITY.get(d, 0) > _PRIORITY.get(primary, 0):
-                        primary = d
+        # Primary domain: yalniz dizgi disi kaniti olan alanlar arasindan
+        # en yuksek skor. Oncelik bagi YALNIZ tam esitlikte (MUH-04: eski
+        # "fark < 0.10" kurali yalniz string_hint'li structural'i daha yuksek
+        # skorlu finance/crypto'nun onune koyuyordu).
+        candidates = [d for d in ALL_DOMAINS if d in strong] or ["generic"]
+        top_score = max(normalized[d] for d in candidates)
+        tied = [d for d in candidates if abs(normalized[d] - top_score) < _TIE_EPS]
+        if domain_override and domain_override in tied:
+            primary = domain_override
+        else:
+            primary = max(tied, key=lambda d: _DOMAIN_PRIORITY.get(d, 0))
 
         # Sadece sifirdan buyuk domain'leri raporla
         filtered_scores = {

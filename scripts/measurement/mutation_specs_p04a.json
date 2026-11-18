@@ -136,6 +136,54 @@
       "test": "tests/test_p04a_bilesim_kapisi.py::test_gercek_fea_zinciri_sablonu_verir",
       "find": "        gate[\"passed\"] = True",
       "replace": "        gate[\"passed\"] = False"
+    },
+    {
+      "id": "alan_duz_dizgi_listesi",
+      "desc": "ikilinin bütün dizgileri her fonksiyona kanıt olur (eski davranış)",
+      "module": "karadul/reconstruction/engineering/domain_classifier.py",
+      "test": "tests/test_p04a_alan.py::test_duz_liste_skorlari_degistirmez",
+      "find": "            own = None",
+      "replace": "            own = strings if isinstance(strings, list) else None"
+    },
+    {
+      "id": "alan_dizgi_kanitli_aday",
+      "desc": "yalnız string_hint kanıtlı alan birincil seçilebilir",
+      "module": "karadul/reconstruction/engineering/domain_classifier.py",
+      "test": "tests/test_p04a_alan.py::test_yalniz_dizgi_kanitli_alan_secilmez",
+      "find": "candidates = [d for d in ALL_DOMAINS if d in strong] or [\"generic\"]",
+      "replace": "candidates = [d for d in ALL_DOMAINS] or [\"generic\"]"
+    },
+    {
+      "id": "alan_esitlik_payi",
+      "desc": "öncelik bağı yeniden \"fark < 0.10\" ile uygulanır",
+      "module": "karadul/reconstruction/engineering/domain_classifier.py",
+      "test": "tests/test_p04a_alan.py::test_esitlik_yalniz_tam_esitlikte_oncelik",
+      "find": "_TIE_EPS = 1e-9",
+      "replace": "_TIE_EPS = 0.10"
+    },
+    {
+      "id": "alan_esitlik_onceligi",
+      "desc": "tam eşitlikte öncelik ters (crypto structural'ın önüne)",
+      "module": "karadul/reconstruction/engineering/domain_classifier.py",
+      "test": "tests/test_p04a_alan.py::test_esitlik_yalniz_tam_esitlikte_oncelik",
+      "find": "primary = max(tied, key=lambda d: _DOMAIN_PRIORITY.get(d, 0))",
+      "replace": "primary = min(tied, key=lambda d: _DOMAIN_PRIORITY.get(d, 0))"
+    },
+    {
+      "id": "alan_fonksiyon_dizgisi_hepsi",
+      "desc": "function_strings'in bütün dizgileri her fonksiyona gider",
+      "module": "karadul/reconstruction/engineering/domain_classifier.py",
+      "test": "tests/test_p04a_alan.py::test_dizgi_yalniz_kendi_fonksiyonuna_gider",
+      "find": "own = [str(x) for x in (function_strings.get(func_name) or ())]",
+      "replace": "own = [str(x) for v in function_strings.values() for x in v]"
+    },
+    {
+      "id": "alan_mapping_uyum",
+      "desc": "strings olarak verilen fonksiyon → dizgi eşlemesi yok sayılır",
+      "module": "karadul/reconstruction/engineering/domain_classifier.py",
+      "test": "tests/test_p04a_alan.py::test_mapping_strings_geriye_uyum",
+      "find": "if function_strings is None and isinstance(strings, Mapping):",
+      "replace": "if function_strings is None and isinstance(strings, str):"
     }
   ]
 }

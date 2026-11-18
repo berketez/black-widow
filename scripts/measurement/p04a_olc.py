@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from collections import Counter, defaultdict
@@ -165,52 +166,91 @@ def cmd_bilesim(args: argparse.Namespace) -> int:
 # alan
 # ---------------------------------------------------------------------------
 
-def alan_bir(ws: Path) -> dict:
-    """``engineering_analysis.json``'daki sınıflandırmaları yeniden üretir.
+def _fonksiyon_dizgileri(st: Path) -> dict[str, list[str]] | None:
+    """``ghidra_xrefs.json`` → fonksiyon adı → referans verdiği dizgiler (``strings_used``)."""
+    x = _json(st / "ghidra_xrefs.json")
+    if not x:
+        return None
+    out: dict[str, list[str]] = {}
+    for v in (x.get("function_xrefs") or {}).values():
+        out[v.get("name", "")] = [s.get("value", "") for s in v.get("strings_used") or []]
+    return out
 
-    Ürün (``pipeline/steps/engineering_analysis.py``) ``classify(eng_result.algorithms +
-    algo_result.algorithms, func_strings)`` çağırır; sınıflandırma kaydı her fonksiyon için
-    kanıtı (``category:...`` satırları) ve skorları taşır. Tespit listesi
-    ``algorithms.json`` + ``engineering_algorithms.json``'dan, dizgiler
-    ``static/ghidra_strings.json``'dan (ürünün ``normalize_strings`` yolu) gelir.
+
+def alan_bir(ws: Path, kip: str) -> dict:
+    """``engineering_analysis.json``'daki sınıflandırmayı ölçülen ağaçla yeniden üretir.
+
+    Ürün (``pipeline/steps/engineering_analysis.py``): ``classify(algorithms=algo_result +
+    eng_result, strings=normalize_strings(strings_data), binary_hints=
+    collect_binary_hints(functions_data, static_dir))``. Burada tespitler kayıtlı
+    ``algorithms.json`` + ``engineering_algorithms.json``'dan (AlgorithmMatch nesnesi olarak),
+    dizgiler ``static/ghidra_strings.json``'dan, ipucu ``ghidra_functions.json`` +
+    ``dynamic_libraries.json``'dan gelir.
+
+    ``kip``: ``urun`` = ürünün bugünkü çağrısı (düz dizgi listesi); ``yama`` = önerilen
+    yamanın çağrısı (``function_strings`` = ``ghidra_xrefs.json`` ``strings_used``).
     """
-    from karadul.pipeline.steps._engineering_helpers import normalize_strings
+    from karadul.pipeline.steps._engineering_helpers import (
+        collect_binary_hints,
+        normalize_strings,
+    )
+    from karadul.reconstruction.c_algorithm_id import AlgorithmMatch
     from karadul.reconstruction.engineering.domain_classifier import DomainClassifier
     r, st = ws / "reconstructed", ws / "static"
     kayit = _json(r / "engineering_analysis.json")
     if kayit is None:
         return {"durum": "yapit_yok"}
-    algos = ((_json(r / "algorithms.json") or {}).get("algorithms", [])
-             + (_json(r / "engineering_algorithms.json") or {}).get("algorithms", []))
-    for a in algos:  # algorithms.json "function" anahtarını taşır; sınıflandırıcı function_name okur
-        if "function_name" not in a and "function" in a:
-            a["function_name"] = a["function"]
+    ham = ((_json(r / "algorithms.json") or {}).get("algorithms", [])
+           + (_json(r / "engineering_algorithms.json") or {}).get("algorithms", []))
+    algos = [AlgorithmMatch(
+        name=a.get("name", ""), category=a.get("category", ""),
+        confidence=float(a.get("confidence", 0.0) or 0.0),
+        detection_method=a.get("detection_method", ""), evidence=a.get("evidence", []) or [],
+        function_name=a.get("function_name") or a.get("function") or "",
+        address=a.get("address", "")) for a in ham]
     dizgiler = normalize_strings(_json(st / "ghidra_strings.json"))
-    rapor = DomainClassifier().classify(algos, dizgiler)
+    ipucu = collect_binary_hints(_json(st / "ghidra_functions.json"), st)
+    kw: dict[str, Any] = {"algorithms": algos, "strings": dizgiler, "binary_hints": ipucu}
+    if kip == "yama":
+        fs = _fonksiyon_dizgileri(st)
+        if fs is None:
+            return {"durum": "yapit_yok", "neden": "ghidra_xrefs.json yok"}
+        kw["function_strings"] = fs
+    import inspect
+    if "function_strings" in kw and "function_strings" not in inspect.signature(
+            DomainClassifier.classify).parameters:
+        return {"durum": "uygulanmaz", "neden": "eski ağaçta function_strings yok"}
+    rapor = DomainClassifier().classify(**kw)
     sec = Counter(c.primary_domain for c in rapor.classifications)
     yalniz_dizgi = 0
     ornek = []
     for c in rapor.classifications:
-        kanit_alanlari = set()
+        # dizgi dışı kanıtın alanları: "category:x->DOMAIN", "category:x->cross[...]",
+        # "name_hint:'k'->DOMAIN", "binary_override:DOMAIN"
+        guclu = set()
         for e in c.evidence:
-            if e.startswith("category:") or e.startswith("name_pattern:") or e.startswith("api:"):
-                kanit_alanlari.add(e.split("->")[-1].split(" ")[0] if "->" in e else
-                                   e.split(":")[1].split(" ")[0])
-        if c.primary_domain not in kanit_alanlari:
+            if e.startswith("category:") and "->cross" in e:
+                guclu.update(re.findall(r"'(\w+)'", e.split("->cross", 1)[1].split(")")[0]))
+            elif e.startswith("category:") or e.startswith("name_hint:"):
+                guclu.add(e.split("->", 1)[1].split(" ")[0])
+            elif e.startswith("binary_override:"):
+                guclu.add(e.split(":", 1)[1].split(" ")[0])
+        if c.primary_domain not in guclu:
             yalniz_dizgi += 1
             if len(ornek) < 3:
                 ornek.append({"f": c.function_name, "alan": c.primary_domain,
-                              "kanit": c.evidence[:4]})
-    kayitli = Counter(x.get("primary_domain") for x in
-                      (kayit.get("classifications") or kayit.get("domain_report", {})
-                       .get("classifications", []) or []))
+                              "skor": c.domain_scores, "kanit": c.evidence[:4]})
+    kay_list = (kayit.get("domain_classification") or {}).get("classifications", []) or []
+    kayitli = Counter(x.get("primary_domain") for x in kay_list)
+    ornekler = {c.function_name: c.primary_domain for c in rapor.classifications
+                if c.function_name in {"ACLHashPassword"}}
     return {"durum": "calisti", "siniflandirma": len(rapor.classifications),
             "secilen": dict(sec), "kayitli_secilen": dict(kayitli),
-            "kanitsiz_alan_secildi": yalniz_dizgi, "ornek": ornek}
+            "kanitsiz_alan_secildi": yalniz_dizgi, "ornek": ornek, "izlenen": ornekler}
 
 
 def cmd_alan(args: argparse.Namespace) -> int:
-    kayitlar = {anahtar: alan_bir(ws) for anahtar, ws, _o in _ws_listesi(args)}
+    kayitlar = {anahtar: alan_bir(ws, args.alan_kip) for anahtar, ws, _o in _ws_listesi(args)}
     sec = Counter()
     kay = Counter()
     for v in kayitlar.values():
@@ -296,6 +336,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--kosu", action="append", help="urun_kos düzeninde koşu kökü (tekrarlanabilir)")
     ap.add_argument("--ws", action="append", help="tek çalışma dizini (tekrarlanabilir)")
     ap.add_argument("--cikti", default=None, help="<komut>.json ve <komut>_ozet.json buraya")
+    ap.add_argument("--alan-kip", choices=["urun", "yama"], default="urun",
+                    help="alan: urun = bugünkü çağrı (düz dizgi), yama = function_strings")
     ap.add_argument("--tespit-yeniden", action="store_true",
                     help="bilesim: algoritma tespitlerini ölçülen ağaçla yeniden üret")
     args = ap.parse_args(argv)
