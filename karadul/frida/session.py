@@ -36,14 +36,24 @@ class FridaAttachError(RuntimeError):
 class FridaSession:
     """Frida session yonetimi -- attach veya spawn.
 
+    Spawn akışı (GHIDRA-11, 2026-11-18): hedef askıda (suspended) başlatılır,
+    kancalar yüklenir, ANCAK ondan sonra ``resume()`` ile sürdürülür; toplama
+    bitince spawn edilen süreç ``kill()`` ile öldürülür. ``detach()`` spawn
+    edilmiş ve hâlâ öldürülmemiş bir süreç bırakmaz (her çıkış yolunda öldürür).
+    ``attach()`` ile bağlanılan, bizim başlatmadığımız süreç öldürülmez.
+
     Kullanim:
         config = Config()
         session = FridaSession(config)
-        pid = session.spawn("/usr/local/bin/node", args=["app.js"])
-        session.load_script(Path("hooks/nodejs_hooks.js"))
-        session.wait(timeout=10.0)
-        messages = session.messages
-        session.detach()
+        try:
+            pid = session.spawn("/usr/local/bin/node", args=["app.js"])  # askıda
+            session.load_script(Path("hooks/nodejs_hooks.js"))
+            session.resume()
+            elapsed = session.wait(timeout=10.0)
+            messages = session.messages
+            session.kill()
+        finally:
+            session.detach()   # öldürülmemiş spawn süreci kalmaz
 
     Args:
         config: Merkezi konfigurasyon (timeout'lar icin).
@@ -63,6 +73,12 @@ class FridaSession:
         self._errors: list[dict] = []
         self._lock = threading.Lock()
         self._pid: int | None = None
+        # Bizim spawn ettiğimiz ve henüz öldürülmemiş süreç (attach'te None).
+        self._spawned_pid: int | None = None
+        self._resumed = False
+        # Oturum Frida tarafında koptu mu (süreç kendiliğinden bitti / çöktü).
+        self._detached_event = threading.Event()
+        self._detach_reason: str | None = None
 
     def _get_device(self) -> Any:
         """Local device referansini al (lazy init)."""
@@ -87,6 +103,8 @@ class FridaSession:
 
         try:
             logger.info("Frida attach baslatiliyor: %s (timeout=%ds)", pid_or_name, timeout)
+            self._detached_event.clear()
+            self._detach_reason = None
             self._session = device.attach(pid_or_name)
             self._session.on("detached", self._on_detached)
 
@@ -129,7 +147,12 @@ class FridaSession:
         args: list[str] | None = None,
         env: dict[str, str] | None = None,
     ) -> int:
-        """Yeni process spawn et ve attach et.
+        """Yeni process'i ASKIDA spawn et ve attach et (sürdürmez).
+
+        Süreç ilk komutunu çalıştırmadan durur. Kancalar ``load_script`` ile
+        yüklendikten sonra ``resume()`` çağrılmalıdır; böylece başlangıç
+        davranışı (kalıcılık, ilk bağlantı, şifre çözme) da kaydedilir.
+        Attach başarısız olursa askıdaki süreç öldürülür (yetim kalmaz).
 
         Args:
             program: Calistirilacak program yolu.
@@ -142,8 +165,11 @@ class FridaSession:
         Raises:
             FridaAttachError: Spawn veya attach basarisiz olursa.
         """
+        if self._spawned_pid is not None:
+            raise RuntimeError(
+                f"Bu oturumda öldürülmemiş bir spawn süreci var (PID={self._spawned_pid})."
+            )
         device = self._get_device()
-        spawn_wait = self.config.timeouts.frida_spawn_wait
 
         try:
             # Spawn argumanlari
@@ -152,32 +178,86 @@ class FridaSession:
             if env:
                 spawn_kwargs["env"] = env
 
-            logger.info("Frida spawn baslatiliyor: %s", " ".join(spawn_args))
+            logger.info("Frida spawn (askıda) baslatiliyor: %s", " ".join(spawn_args))
             pid = device.spawn(spawn_args, **spawn_kwargs)
             self._pid = pid
+            self._spawned_pid = pid
+            self._resumed = False
+            self._detached_event.clear()
+            self._detach_reason = None
 
-            # Attach
+            # Attach -- süreç hâlâ askıda; resume() kancalar yüklendikten sonra.
             self._session = device.attach(pid)
             self._session.on("detached", self._on_detached)
 
-            # Spawn wait -- script'ler yuklensin diye kisa bekleme
-            time.sleep(spawn_wait)
-
-            # Resume -- process calismasin baslasin
-            device.resume(pid)
-
-            logger.info("Frida spawn basarili: PID=%d, program=%s", pid, program)
+            logger.info("Frida spawn basarili (askıda): PID=%d, program=%s", pid, program)
             return pid
 
         except frida.ExecutableNotFoundError:
             msg = f"Program bulunamadi: {program}"
             logger.error(msg)
+            self._kill_spawned_quietly()
             raise FridaAttachError(msg) from None
 
         except Exception as exc:
             msg = f"Frida spawn hatasi: {type(exc).__name__}: {exc}"
             logger.error(msg)
+            # Spawn başarılı ama attach başarısızsa süreç askıda yetim kalmasın.
+            self._kill_spawned_quietly()
             raise FridaAttachError(msg) from None
+
+    def resume(self) -> None:
+        """Askıda spawn edilmiş süreci sürdür (kancalar yüklendikten SONRA).
+
+        Raises:
+            RuntimeError: Bu oturumda sürdürülecek spawn süreci yoksa.
+        """
+        if self._spawned_pid is None:
+            raise RuntimeError("Sürdürülecek spawn süreci yok. Önce spawn() çağırın.")
+        if self._resumed:
+            return
+        device = self._get_device()
+        device.resume(self._spawned_pid)
+        self._resumed = True
+        logger.info("Frida spawn süreci sürdürüldü: PID=%d", self._spawned_pid)
+
+    def kill(self) -> bool:
+        """Bu oturumun spawn ettiği süreci öldür.
+
+        ``attach()`` ile bağlanılan süreç bizim değildir, öldürülmez.
+
+        Returns:
+            True: öldürme çağrısı başarılı ya da süreç zaten bitmiş.
+            False: öldürülecek spawn süreci yok.
+
+        Raises:
+            RuntimeError: Süreç öldürülemediyse (çağıran bunu hata olarak
+                göstermeli; hedef hâlâ çalışıyor olabilir).
+        """
+        pid = self._spawned_pid
+        if pid is None:
+            return False
+        device = self._get_device()
+        try:
+            device.kill(pid)
+            logger.info("Frida spawn süreci öldürüldü: PID=%d", pid)
+        except Exception as exc:
+            not_found = getattr(frida, "ProcessNotFoundError", None)
+            if not_found is not None and isinstance(exc, not_found):
+                logger.info("Frida spawn süreci zaten bitmiş: PID=%d", pid)
+            else:
+                raise RuntimeError(
+                    f"Hedef süreç öldürülemedi (PID={pid}): {type(exc).__name__}: {exc}"
+                ) from exc
+        self._spawned_pid = None
+        return True
+
+    def _kill_spawned_quietly(self) -> None:
+        """Hata yolunda spawn sürecini öldür; öldürülemezse yüksek sesle günlükle."""
+        try:
+            self.kill()
+        except Exception as exc:
+            logger.error("Spawn süreci temizlenemedi: %s", exc)
 
     def load_script(self, script_path: Path) -> None:
         """JS hook scriptini dosyadan yükle.
@@ -217,7 +297,21 @@ class FridaSession:
         self._scripts.append(script)
 
     def detach(self) -> None:
-        """Oturumu kapat ve tüm scriptleri unload et."""
+        """Spawn süreci varsa öldür, scriptleri unload et, oturumu kapat.
+
+        Öldürme oturum ayrılmadan ÖNCE yapılır: kancasız ve gözetimsiz
+        çalışma penceresi bırakılmaz. Öldürme başarısızsa hata günlüğe
+        yazılır ve yeniden fırlatılır (sessiz yutma yok); scriptler ve oturum
+        yine de kapatılır.
+        """
+        kill_error: Exception | None = None
+        if self._spawned_pid is not None:
+            try:
+                self.kill()
+            except Exception as exc:
+                logger.error("detach: spawn süreci öldürülemedi: %s", exc)
+                kill_error = exc
+
         # Scriptleri unload et
         for script in self._scripts:
             try:
@@ -235,6 +329,8 @@ class FridaSession:
             self._session = None
 
         logger.info("Frida session detach edildi.")
+        if kill_error is not None:
+            raise kill_error
 
     def _on_message(self, message: dict, data: bytes | None) -> None:
         """Frida mesajlarini topla (thread-safe).
@@ -258,10 +354,22 @@ class FridaSession:
                 logger.debug("Frida bilinmeyen mesaj tipi: %s", msg_type)
 
     def _on_detached(self, reason: str, crash: Any = None) -> None:
-        """Session detach callback'i."""
+        """Session detach callback'i (Frida iş parçacığından çağrılır)."""
         logger.info("Frida session detach oldu: reason=%s", reason)
         if crash:
             logger.warning("Process crash: %s", crash)
+        self._detach_reason = str(reason)
+        self._detached_event.set()
+
+    @property
+    def detach_reason(self) -> str | None:
+        """Frida'nın bildirdiği kopma nedeni (ör. ``process-terminated``); kopmadıysa None."""
+        return self._detach_reason
+
+    @property
+    def spawned_pid(self) -> int | None:
+        """Bu oturumun spawn edip henüz öldürmediği süreç (yoksa None)."""
+        return self._spawned_pid
 
     @property
     def messages(self) -> list[dict]:
@@ -285,15 +393,18 @@ class FridaSession:
         """Session aktif mi."""
         return self._session is not None
 
-    def wait(self, timeout: float | None = None) -> None:
+    def wait(self, timeout: float | None = None) -> float:
         """Belirtilen sure boyunca veri topla.
 
-        Process'in mesaj gondermesi icin bekler. Process erken
-        sonlanirsa wait erken doner.
+        Process'in mesaj gondermesi icin bekler. Process erken sonlanirsa
+        (Frida ``detached`` olayı) ya da oturum kapatıldıysa erken doner.
 
         Args:
             timeout: Bekleme suresi (saniye). None ise config'deki
                      frida_attach timeout'u kullanilir.
+
+        Returns:
+            Gerçekten beklenen süre (saniye).
         """
         if timeout is None:
             timeout = float(self.config.timeouts.frida_attach)
@@ -302,14 +413,15 @@ class FridaSession:
         start = time.monotonic()
 
         while (time.monotonic() - start) < timeout:
-            if self._session is None:
+            if self._session is None or self._detached_event.is_set():
                 # Session detach olmus -- process sonlandi
                 logger.info("Session detach oldu, wait erken bitiyor.")
                 break
-            time.sleep(0.1)  # 100ms polling
+            self._detached_event.wait(0.1)  # 100ms polling
 
         elapsed = time.monotonic() - start
         logger.info(
             "Frida wait tamamlandi: %.1fs, %d mesaj, %d hata",
             elapsed, len(self._messages), len(self._errors),
         )
+        return elapsed

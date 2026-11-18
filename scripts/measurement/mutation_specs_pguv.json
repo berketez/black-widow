@@ -1,0 +1,85 @@
+{
+  "_comment": "P-GÜV (2026-11-18) güvenlik onarımlarının mutasyon koruması: GHIDRA-11 (Frida spawn yaşam döngüsü), GHIDRA-07 (çalıştırma kapısı, katı bool), GHIDRA-13 (karadul run), MEK-03 (.d.ts ağ kapısı). Her mutant bir korumayı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Testler gerçek süreç başlatmaz, ağa çıkmaz. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_pguv.json",
+  "mutants": [
+    {
+      "id": "g11_spawn_resume_eder",
+      "desc": "spawn süreci kancasız sürdürüyor (eski davranış)",
+      "module": "karadul/frida/session.py",
+      "test": "tests/test_pguv_frida.py::TestSessionLifecycle::test_spawn_does_not_resume",
+      "find": "logger.info(\"Frida spawn basarili (askıda): PID=%d, program=%s\", pid, program)",
+      "replace": "device.resume(pid)"
+    },
+    {
+      "id": "g11_detach_kill_etmez",
+      "desc": "detach spawn sürecini öldürmüyor",
+      "module": "karadul/frida/session.py",
+      "test": "tests/test_pguv_frida.py::TestSessionLifecycle::test_resume_after_hooks_then_kill_before_detach",
+      "find": "                self.kill()\n            except Exception as exc:\n                logger.error(\"detach:",
+      "replace": "                pass\n            except Exception as exc:\n                logger.error(\"detach:"
+    },
+    {
+      "id": "g11_attach_hatasi_kill_yok",
+      "desc": "attach başarısızsa askıdaki süreç öldürülmüyor (yetim kalır)",
+      "module": "karadul/frida/session.py",
+      "test": "tests/test_pguv_frida.py::TestSessionLifecycle::test_attach_failure_kills_suspended_process",
+      "find": "            # Spawn başarılı ama attach başarısızsa süreç askıda yetim kalmasın.\n            self._kill_spawned_quietly()",
+      "replace": "            # Spawn başarılı ama attach başarısızsa süreç askıda yetim kalmasın."
+    },
+    {
+      "id": "g11_kill_hatasi_yutulur",
+      "desc": "öldürme hatası 'zaten bitmiş' sayılıp yutuluyor",
+      "module": "karadul/frida/session.py",
+      "test": "tests/test_pguv_frida.py::TestSessionLifecycle::test_kill_failure_is_not_swallowed",
+      "find": "if not_found is not None and isinstance(exc, not_found):",
+      "replace": "if True:"
+    },
+    {
+      "id": "g11_wait_erken_bitmez",
+      "desc": "süreç bitince wait erken dönmüyor (toplama süresi hep tam süre)",
+      "module": "karadul/frida/session.py",
+      "test": "tests/test_pguv_frida.py::TestSessionLifecycle::test_wait_returns_early_on_process_exit",
+      "find": "if self._session is None or self._detached_event.is_set():",
+      "replace": "if self._session is None:"
+    },
+    {
+      "id": "g11_asama_resume_yok",
+      "desc": "aşama süreci hiç sürdürmüyor",
+      "module": "karadul/stages.py",
+      "test": "tests/test_pguv_frida.py::TestDynamicStageOrder::test_hooks_loaded_before_resume_and_target_killed",
+      "find": "            session.resume()\n\n            # Veri toplama suresi (gerçek",
+      "replace": "            pass\n\n            # Veri toplama suresi (gerçek"
+    },
+    {
+      "id": "g11_asama_resume_kancadan_once",
+      "desc": "aşama kanca yüklenmeden önce sürdürüyor",
+      "module": "karadul/stages.py",
+      "test": "tests/test_pguv_frida.py::TestDynamicStageOrder::test_hooks_loaded_before_resume_and_target_killed",
+      "find": "            # Hook script yukle -- süreç hâlâ askıda\n",
+      "replace": "            session.resume()\n"
+    },
+    {
+      "id": "g11_asama_kill_yok",
+      "desc": "aşama toplama bitince süreci öldürmüyor",
+      "module": "karadul/stages.py",
+      "test": "tests/test_pguv_frida.py::TestDynamicStageOrder::test_hooks_loaded_before_resume_and_target_killed",
+      "find": "stats[\"target_terminated\"] = session.kill()",
+      "replace": "stats[\"target_terminated\"] = True"
+    },
+    {
+      "id": "g11_asama_sure_yalan",
+      "desc": "toplama süresi olarak gerçek süre yerine zaman aşımı yazılıyor",
+      "module": "karadul/stages.py",
+      "test": "tests/test_pguv_frida.py::TestDynamicStageOrder::test_collect_duration_is_real_elapsed",
+      "find": "stats[\"collect_duration\"] = round(float(elapsed), 3)",
+      "replace": "stats[\"collect_duration\"] = collect_timeout"
+    },
+    {
+      "id": "g11_asama_kanca_yoksa_surdurur",
+      "desc": "kanca yüklenemese de süreç sürdürülüyor",
+      "module": "karadul/stages.py",
+      "test": "tests/test_pguv_frida.py::TestDynamicStageOrder::test_hook_load_failure_never_resumes",
+      "find": "        try:\n            # GHIDRA-11 (2026-11-18): sıra spawn (askıda)",
+      "replace": "        try:\n            session.resume()\n            # GHIDRA-11 (2026-11-18): sıra spawn (askıda)"
+    }
+  ]
+}

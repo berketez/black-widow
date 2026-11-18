@@ -519,6 +519,8 @@ class DynamicAnalysisStage(Stage):
                 start, "hedef programı çalıştırmak için açık izin yok (--dynamic)",
             )
 
+        spawn_plan = self._spawn_plan(context.target, context.config)
+
         # Frida import kontrolu
         try:
             from karadul.frida.session import FridaSession, FridaNotAvailableError, FridaAttachError
@@ -544,54 +546,47 @@ class DynamicAnalysisStage(Stage):
             hook_script = None
 
         skipped = False
+        success = False
 
         try:
-            # Spawn veya attach karari
-            target_path = str(target.path)
-
-            if target.target_type in (TargetType.JS_BUNDLE,):
-                # JS bundle: node ile spawn et
-                node_path = str(context.config.tools.node)
-                pid = session.spawn(node_path, args=[target_path])
-                stats["spawn_method"] = "node_spawn"
-            elif target.target_type in (
-                TargetType.MACHO_BINARY, TargetType.UNIVERSAL_BINARY,
-                TargetType.GO_BINARY,
-                TargetType.ELF_BINARY, TargetType.PE_BINARY,
-            ):
-                # Native binary: dogrudan spawn et
-                pid = session.spawn(target_path)
-                stats["spawn_method"] = "direct_spawn"
-            elif target.target_type == TargetType.ELECTRON_APP:
-                # Electron: ana binary'yi spawn et
-                main_binary = target.metadata.get("main_binary")
-                if main_binary:
-                    pid = session.spawn(main_binary)
-                else:
-                    pid = session.spawn(target_path)
-                stats["spawn_method"] = "electron_spawn"
-            else:
-                # Bilinmeyen tip: dogrudan spawn dene
-                pid = session.spawn(target_path)
-                stats["spawn_method"] = "generic_spawn"
-
+            # GHIDRA-11 (2026-11-18): sıra spawn (askıda) -> kanca yükle ->
+            # resume -> bekle -> kill. Eskiden süreç kancasız sürdürülüyor ve
+            # analiz bitince hiç öldürülmüyordu.
+            program, program_args, spawn_method = spawn_plan
+            pid = session.spawn(program, args=program_args)  # askıda başlar
+            stats["spawn_method"] = spawn_method
             stats["pid"] = pid
 
-            # Hook script yukle
+            # Hook script yukle -- süreç hâlâ askıda
+            loaded_hook: str | None = None
             if hook_script:
                 session.load_script(hook_script)
-                stats["hook_script"] = hook_script.name
+                loaded_hook = hook_script.name
             else:
                 # Generic hooks her zaman yukle
                 generic_hook = hooks_dir / "generic_hooks.js"
                 if generic_hook.exists():
                     session.load_script(generic_hook)
-                    stats["hook_script"] = "generic_hooks.js"
+                    loaded_hook = "generic_hooks.js"
+            if loaded_hook is None:
+                # Kancasız çalıştırmanın gözlem değeri yok, yalnız riski var.
+                raise RuntimeError("kanca betiği yüklenemedi; hedef sürdürülmedi")
+            stats["hook_script"] = loaded_hook
 
-            # Veri toplama suresi
+            # Kancalar yerinde: süreci şimdi sürdür.
+            session.resume()
+
+            # Veri toplama suresi (gerçek süre yazılır; süreç erken biterse kısa)
             collect_timeout = float(context.config.timeouts.frida_attach)
-            session.wait(timeout=collect_timeout)
-            stats["collect_duration"] = collect_timeout
+            elapsed = session.wait(timeout=collect_timeout)
+            stats["collect_timeout"] = collect_timeout
+            stats["collect_duration"] = round(float(elapsed), 3)
+            if session.detach_reason is not None:
+                stats["frida_detach_reason"] = session.detach_reason
+
+            # Toplama bitti: hedef süreç öldürülür (gözetimsiz çalışmaya devam etmez).
+            # True: öldürüldü ya da zaten bitmişti (canlı spawn süreci kalmadı).
+            stats["target_terminated"] = session.kill()
 
             # Mesajlari topla
             messages = session.messages
@@ -648,11 +643,17 @@ class DynamicAnalysisStage(Stage):
             success = False
 
         finally:
-            # Session'i her zaman kapat
+            # Session'i her zaman kapat; detach öldürülmemiş spawn sürecini de
+            # öldürür (istisna yolu dahil). Öldürülemezse bu sessiz geçilmez.
             try:
                 session.detach()
-            except Exception:
-                logger.debug("Frida session detach basarisiz, atlaniyor", exc_info=True)
+            except Exception as exc:
+                logger.error("Frida oturumu kapatılamadı / hedef süreç öldürülemedi: %s", exc)
+                errors.append(
+                    f"Frida oturumu kapatılamadı / hedef süreç öldürülemedi: {exc}"
+                )
+                stats["target_terminated"] = False
+                success = False
 
         # Debugger Bridge: runtime deger yakalama (opsiyonel, v1.2.9+)
         if context.config.debugger.enabled:
@@ -681,6 +682,27 @@ class DynamicAnalysisStage(Stage):
             stats=stats,
             errors=errors,
         )
+
+    @staticmethod
+    def _spawn_plan(target, config) -> tuple[str, list[str], str]:
+        """Hedef tipine göre (program, argümanlar, yöntem)."""
+        target_path = str(target.path)
+        if target.target_type == TargetType.JS_BUNDLE:
+            # JS bundle: node ile spawn et
+            return str(config.tools.node), [target_path], "node_spawn"
+        if target.target_type in (
+            TargetType.MACHO_BINARY, TargetType.UNIVERSAL_BINARY,
+            TargetType.GO_BINARY,
+            TargetType.ELF_BINARY, TargetType.PE_BINARY,
+        ):
+            # Native binary: dogrudan spawn et
+            return target_path, [], "direct_spawn"
+        if target.target_type == TargetType.ELECTRON_APP:
+            # Electron: ana binary'yi spawn et
+            main_binary = (target.metadata or {}).get("main_binary")
+            return str(main_binary or target_path), [], "electron_spawn"
+        # Bilinmeyen tip: dogrudan spawn dene
+        return target_path, [], "generic_spawn"
 
     @staticmethod
     def _select_hook_script(target, hooks_dir: Path) -> Path | None:

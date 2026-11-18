@@ -387,9 +387,11 @@ class TestFridaRealSpawn:
             pytest.skip("Node.js bulunamadi")
 
         try:
+            # GHIDRA-11: spawn süreci askıda bırakır; sürdürme ayrı adımdır.
             pid = session.spawn(node_path, args=["-e", "console.log('hello from frida test')"])
             assert pid > 0
             assert session.is_attached
+            session.resume()
 
             # Kisa bekleme (script hemen cikacak)
             session.wait(timeout=3.0)
