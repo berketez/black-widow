@@ -14,8 +14,44 @@ from pathlib import Path
 from typing import Any
 
 from ..config import Config
+from .safe_subprocess import resolve_tool
 
 logger = logging.getLogger(__name__)
+
+# Ikili inceleme araclari (Mach-O / ELF). Config'te ciplak ad (ontanimli ``Path("strings")``) ise
+# PATH yerine ``safe_subprocess.resolve_tool`` beyaz listesiyle cozulur (/usr/bin once); config'te
+# acik yol verildiyse o kullanilir. Neden (P01b, 2026-11-18): PATH'te conda cctools kopyasi
+# (/opt/anaconda3/bin/strings, nm, otool, lipo) onde; yeni arm64e Mach-O yukleme komutlarinda
+# "malformed object (unknown load command N)" deyip cikis 1 veriyor (nsurlsessiond, xpcproxy,
+# evrensel bluetoothd). Depodaki obur cagiranlar (java_binary, anti_debug_detector, macho otool -l)
+# zaten ``resolve_tool`` kullaniyor; bu, ayni kurali runner'a getirir.
+_BINARY_TOOLS: frozenset[str] = frozenset({"strings", "nm", "otool", "lipo"})
+
+
+def _resolve_binary_tool(cmd0: str) -> str:
+    """Ciplak ikili inceleme araci adini beyaz listedeki yola cevir; obur her sey aynen kalir."""
+    if cmd0 in _BINARY_TOOLS:
+        return resolve_tool(cmd0) or cmd0
+    return cmd0
+
+
+def _tool_status(result: "SubprocessResult", path: str, n_lines: int) -> dict[str, Any]:
+    """Arac cagrisinin durumu: ``tam`` (cikis 0), ``kismi`` (cikis != 0 ama cikti var),
+    ``hata`` (cikis != 0 ve cikti yok)."""
+    if result.success:
+        durum = "tam"
+    elif result.stdout.strip():
+        durum = "kismi"
+    else:
+        durum = "hata"
+    err = result.stderr.strip().splitlines()
+    return {
+        "yol": path,
+        "cikis_kodu": result.returncode,
+        "durum": durum,
+        "satir": n_lines,
+        "hata": err[0][:200] if err else "",
+    }
 
 
 @dataclass
@@ -53,6 +89,9 @@ class SubprocessRunner:
 
     def __init__(self, config: Config) -> None:
         self._config = config
+        # Ikili inceleme araclarinin (strings / nm / otool / lipo) son cagri durumu, arac adina
+        # gore (``_tool_status``). Cagiran istatistige yazar; bos cikti sessiz kalmaz.
+        self.tool_status: dict[str, dict[str, Any]] = {}
 
     def run_command(
         self,
@@ -71,7 +110,27 @@ class SubprocessRunner:
 
         Returns:
             SubprocessResult: Calisma sonucu.
+
+        Ikili inceleme araclari (``_BINARY_TOOLS``) ciplak adla verildiyse beyaz listeden cozulur
+        ve cagri durumu ``self.tool_status[<arac>]`` altina yazilir.
         """
+        argv = [str(c) for c in cmd]
+        name = Path(argv[0]).name if argv else ""  # istenen arac adi (cozumden once)
+        if argv:
+            argv[0] = _resolve_binary_tool(argv[0])
+        result = self._run_argv(argv, timeout, cwd, env)
+        if name in _BINARY_TOOLS:
+            self.tool_status[name] = _tool_status(
+                result, argv[0], len(result.stdout.splitlines()))
+        return result
+
+    def _run_argv(
+        self,
+        argv: list[str],
+        timeout: int | None,
+        cwd: Path | None,
+        env: dict[str, str] | None,
+    ) -> SubprocessResult:
         effective_timeout = timeout or self._config.timeouts.subprocess
 
         import os
@@ -82,16 +141,20 @@ class SubprocessRunner:
         if env:
             run_env = {**os.environ, **env}
 
-        cmd_str = " ".join(str(c) for c in cmd)
+        cmd = argv
+        cmd_str = " ".join(argv)
         logger.info("Subprocess baslatiliyor: %s", cmd_str)
 
         start = time.monotonic()
 
         try:
             proc = subprocess.run(
-                [str(c) for c in cmd],
+                argv,
                 capture_output=True,
                 text=True,
+                # Ikili dizgileri / simgeleri gecerli UTF-8 olmayabilir (macOS nfcd x86_64 dilimi):
+                # katı cozme UnicodeDecodeError ile cagiran adimi dusuruyordu.
+                errors="replace",
                 timeout=effective_timeout,
                 cwd=str(cwd) if cwd else None,
                 env=run_env,
@@ -257,19 +320,31 @@ class SubprocessRunner:
             min_length: Minimum string uzunlugu. None ise Config'deki deger.
 
         Returns:
-            Cikarilan string listesi.
+            Cikarilan string listesi. Arac sifirdan farkli cikis verip yine de cikti bastiysa
+            cikti kullanilir (durum ``kismi``); hic cikti yoksa bos liste (durum ``hata``).
+            Durum ``self.tool_status["strings"]`` altindadir.
         """
         min_len = min_length or self._config.analysis.string_min_length
         strings_path = str(self._config.tools.strings)
         cmd = [strings_path, "-n", str(min_len), str(binary_path)]
 
         result = self.run_command(cmd, timeout=60)
+        lines = result.stdout.splitlines()
 
         if not result.success:
-            logger.warning("strings komutu basarisiz: %s", binary_path)
-            return []
+            durum = self.tool_status.get("strings", {})
+            if lines:
+                logger.warning(
+                    "strings kismi cikti (cikis %d, %d satir kullaniliyor): %s -- %s",
+                    result.returncode, len(lines), binary_path, durum.get("hata", ""),
+                )
+            else:
+                logger.warning(
+                    "strings basarisiz (cikis %d, cikti yok): %s -- %s",
+                    result.returncode, binary_path, durum.get("hata", ""),
+                )
 
-        return result.stdout.splitlines()
+        return lines
 
     def run_otool(
         self,
@@ -283,7 +358,8 @@ class SubprocessRunner:
             flags: otool flag'leri (orn: ["-L"] loaded libraries, ["-l"] load commands).
 
         Returns:
-            otool ciktisi (string).
+            otool ciktisi (string). Sifirdan farkli cikista cikti varsa o kullanilir (durum
+            ``kismi``); yoksa bos dizgi (durum ``hata``). Durum ``self.tool_status["otool"]``.
         """
         otool_path = str(self._config.tools.otool)
         cmd = [otool_path] + (flags or ["-L"]) + [str(binary_path)]
@@ -291,8 +367,14 @@ class SubprocessRunner:
         result = self.run_command(cmd, timeout=30)
 
         if not result.success:
-            logger.warning("otool basarisiz: %s", result.stderr[:200])
-            return ""
+            if result.stdout.strip():
+                logger.warning(
+                    "otool kismi cikti (cikis %d): %s -- %s",
+                    result.returncode, binary_path, result.stderr[:200],
+                )
+            else:
+                logger.warning("otool basarisiz: %s", result.stderr[:200])
+                return ""
 
         return result.stdout
 

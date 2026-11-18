@@ -333,9 +333,101 @@ def cmd_karsilastir(arg) -> int:
     return 0
 
 
+SETLER_JSON = DEPO / "docs/arge/2026-11-18_onarim/P00/setler.json"
+
+
+def _girdi_say_bir(is_: dict) -> dict:
+    """Ürünün statik aşamasındaki girdi: dilim seçimi (``macho.py`` adım 0: önce arm64, sonra
+    x86_64, olmazsa ikilinin kendisi), sonra ``run_strings``, ``_run_nm``, ``_run_otool_libs``.
+
+    Araç yolu ve çıkış durumu ürünün çözümlediği gibi yazılır (P01b kalem 1: PATH'teki conda
+    cctools yeni arm64e yükleme komutlarında çıkış 1 veriyordu).
+    """
+    import subprocess
+    import tempfile
+
+    from karadul.analyzers.macho import MachOAnalyzer
+    from karadul.config import Config
+    from karadul.core.safe_subprocess import resolve_tool
+    from karadul.core.target import TargetDetector, TargetType
+
+    yol = Path(is_["yol"])
+    hedef = TargetDetector().detect(yol)
+    sonuc = {"set": is_["set"], "anahtar": is_["anahtar"], "hedef_tipi": hedef.target_type.value}
+    if hedef.target_type not in (TargetType.MACHO_BINARY, TargetType.UNIVERSAL_BINARY):
+        return {**sonuc, "atla": "mach-o degil"}
+    an = MachOAnalyzer(Config())
+    with tempfile.TemporaryDirectory() as td:
+        ikili, dilim = yol, "kendisi"
+        if hedef.target_type == TargetType.UNIVERSAL_BINARY and is_.get("dilimle", True):
+            lipo = resolve_tool("lipo")
+            for arch in is_.get("mimari", ("arm64", "x86_64")):
+                cikis = Path(td) / f"dilim_{arch}"
+                p = subprocess.run([lipo, str(yol), "-thin", arch, "-output", str(cikis)],
+                                   capture_output=True)
+                if p.returncode == 0 and cikis.exists():
+                    ikili, dilim = cikis, arch
+                    break
+        istisna = {}
+        dizgi, simge, kitap = [], None, None
+        try:
+            dizgi = an.runner.run_strings(ikili)
+        except Exception as exc:  # ürün hatası kayda geçer (ör. UnicodeDecodeError)
+            istisna["strings"] = f"{type(exc).__name__}: {exc}"[:200]
+        try:
+            simge = an._run_nm(ikili)
+        except Exception as exc:
+            istisna["nm"] = f"{type(exc).__name__}: {exc}"[:200]
+        try:
+            kitap = an._run_otool_libs(ikili)
+        except Exception as exc:
+            istisna["otool"] = f"{type(exc).__name__}: {exc}"[:200]
+        durum = dict(getattr(an.runner, "tool_status", {}) or {})
+    return {**sonuc, "dilim": dilim, "istisna": istisna, "n_dizgi": len(dizgi),
+            "n_simge": len((simge or {}).get("symbols", [])),
+            "n_kitaplik": len((kitap or {}).get("libraries", [])),
+            "nm_none": simge is None, "arac_durumu": durum}
+
+
+def cmd_girdi_say(arg) -> int:
+    """P00 setlerindeki Mach-O ikililerinde ürünün gördüğü girdiyi say (kalem 1 önce / sonra)."""
+    setler = json.loads(SETLER_JSON.read_text(encoding="utf-8"))["setler"]
+    isler = [{"set": s, "anahtar": e["anahtar"], "yol": e["yol"], "dilimle": not arg.dilimsiz,
+              "mimari": tuple(arg.mimari.split(","))}
+             for s in arg.set.split(",") if s for e in setler[s]]
+    if arg.ek_yol:  # ek yollar (ör. sistem dizinleri taraması)
+        isler += [{"set": "ek", "anahtar": y, "yol": y, "dilimle": not arg.dilimsiz,
+              "mimari": tuple(arg.mimari.split(","))}
+                  for y in arg.ek_yol.split(",") if Path(y).is_file()]
+    with cf.ProcessPoolExecutor(max_workers=arg.paralel) as ex:
+        sonuclar = [s for s in ex.map(_girdi_say_bir, isler) if not s.get("atla")]
+    arg.cikti.parent.mkdir(parents=True, exist_ok=True)
+    arg.cikti.write_text(json.dumps(sonuclar, indent=1, ensure_ascii=False), encoding="utf-8")
+    bos_d = [s["anahtar"] for s in sonuclar if s["n_dizgi"] == 0]
+    bos_s = [s["anahtar"] for s in sonuclar if s["n_simge"] == 0]
+    print(f"Mach-O {len(sonuclar)}; dizgi 0: {len(bos_d)}; simge 0: {len(bos_s)}; "
+          f"toplam dizgi {sum(s['n_dizgi'] for s in sonuclar)}, "
+          f"simge {sum(s['n_simge'] for s in sonuclar)}, "
+          f"kitaplık {sum(s['n_kitaplik'] for s in sonuclar)}")
+    for s in sonuclar:
+        if s["n_dizgi"] == 0 or s["n_simge"] == 0:
+            print(f"  {s['anahtar']} ({s['dilim']}): dizgi {s['n_dizgi']}, simge {s['n_simge']}")
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     alt = ap.add_subparsers(dest="komut", required=True)
+    p = alt.add_parser("girdi_say")
+    p.add_argument("--set", default="macos,pozitif")
+    p.add_argument("--ek-yol", default="", help="virgülle ayrılmış ek ikili yolları")
+    p.add_argument("--mimari", default="arm64,x86_64",
+                   help="dilim deneme sırası (ürün: arm64,x86_64; doğal dilim için arm64e)")
+    p.add_argument("--dilimsiz", action="store_true",
+                   help="evrensel ikiliyi dilimleme (P01 girdi_cikar gibi ham dosya)")
+    p.add_argument("--cikti", type=Path, required=True)
+    p.add_argument("--paralel", type=int, default=6)
+    p.set_defaults(f=cmd_girdi_say)
     p = alt.add_parser("topla")
     p.add_argument("--kok", type=Path, required=True)
     p.add_argument("--paralel", type=int, default=6)

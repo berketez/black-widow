@@ -24,6 +24,54 @@
       "test": "tests/test_p01b_antidebug.py::TestAntiDebugSahteIddiaYok::test_izleyici_ptrace_sysctl",
       "find": "r\"ptrace|PT_DENY_ATTACH|sysctl.*P_TRACED|anti.?debug\"",
       "replace": "r\"ptrace|PT_DENY_ATTACH|sysctl|anti.?debug\""
+    },
+    {
+      "id": "p01b_k1_path_araci",
+      "desc": "çıplak araç adı beyaz listeden çözülmüyor → PATH'teki (conda) araç koşar",
+      "module": "karadul/core/subprocess_runner.py",
+      "test": "tests/test_p01b_girdi.py::TestAracCozumu::test_ciplak_ad_beyaz_listeden",
+      "find": "            argv[0] = _resolve_binary_tool(argv[0])",
+      "replace": "            argv[0] = argv[0]"
+    },
+    {
+      "id": "p01b_k1_kati_utf8",
+      "desc": "katı UTF-8 çözme → geçersiz baytlı dizgi çıktısı UnicodeDecodeError ile düşürür",
+      "module": "karadul/core/subprocess_runner.py",
+      "test": "tests/test_p01b_girdi.py::TestGecersizUtf8::test_gecersiz_bayt_dusurmez",
+      "find": "                errors=\"replace\",\n",
+      "replace": ""
+    },
+    {
+      "id": "p01b_k1_kismi_atilir",
+      "desc": "sıfırdan farklı çıkışta çıktı atılıyor (eski davranış: [] )",
+      "module": "karadul/core/subprocess_runner.py",
+      "test": "tests/test_p01b_girdi.py::TestKismiCikti::test_cikis_1_ama_cikti_var_kullanilir",
+      "find": "        lines = result.stdout.splitlines()\n",
+      "replace": "        lines = result.stdout.splitlines() if result.success else []\n"
+    },
+    {
+      "id": "p01b_k1_kismi_durumu_yok",
+      "desc": "durum hesabı kısmi çıktıyı 'hata' sayıyor",
+      "module": "karadul/core/subprocess_runner.py",
+      "test": "tests/test_p01b_girdi.py::TestKismiCikti::test_cikis_1_ama_cikti_var_kullanilir",
+      "find": "    elif result.stdout.strip():",
+      "replace": "    elif False:"
+    },
+    {
+      "id": "p01b_k1_otool_kismi_atilir",
+      "desc": "otool sıfırdan farklı çıkışta çıktıyı atıyor",
+      "module": "karadul/core/subprocess_runner.py",
+      "test": "tests/test_p01b_girdi.py::TestKismiCikti::test_otool_kismi_cikti",
+      "find": "            if result.stdout.strip():\n                logger.warning(\n                    \"otool kismi",
+      "replace": "            if False:\n                logger.warning(\n                    \"otool kismi"
+    },
+    {
+      "id": "p01b_k1_durum_kaydi_yok",
+      "desc": "araç durumu kaydedilmiyor (nm, run_command yolu)",
+      "module": "karadul/core/subprocess_runner.py",
+      "test": "tests/test_p01b_girdi.py::TestKismiCikti::test_nm_durumu_run_command_ile_yazilir",
+      "find": "        if name in _BINARY_TOOLS:\n",
+      "replace": "        if name in ():\n"
     }
   ]
 }
