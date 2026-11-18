@@ -64,9 +64,12 @@ def test_rol_ad_olmaz_kanit_olarak_yazilir(tmp_path, seri):
 def test_enclosing_call_cagriyi_ve_arguman_sirasini_bulur():
     govde = ("void f(void){\n  qsort(local_28, (size_t)uVar3, 0x10, FUN_00101000);\n"
              "  event_set(param_1 + 0x48, *(int *)(param_1 + 4), 2, FUN_00102000, param_1);\n"
-             "  x = FUN_00103000;\n  signal(0xf,FUN_00104000);\n}\n")
+             "  x = FUN_00103000;\n  signal(0xf,FUN_00104000);\n"
+             "  for (iVar1 = 0; FUN_00105000 != 0; iVar1++) {\n  }\n}\n")
     assert _enclosing_call(govde, "FUN_00101000") == ("qsort", 3)
     assert _enclosing_call(govde, "FUN_00102000") == ("event_set", 3)
     assert _enclosing_call(govde, "FUN_00103000") == ("", -1)      # çağrı içinde değil
     assert _enclosing_call(govde, "FUN_00104000") == ("signal", 1)
     assert _enclosing_call(govde, "FUN_00109999") == ("", -1)      # gövdede yok
+    # deyim sınırı (``;``) derinlik 0'da: belirteç ``for (`` başlığının argümanı sayılmaz
+    assert _enclosing_call(govde, "FUN_00105000") == ("", -1)

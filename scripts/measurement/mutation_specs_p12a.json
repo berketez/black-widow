@@ -1,0 +1,125 @@
+{
+  "_comment": "P12a (ad çekirdeği: AD-08 fonksiyon başına yerel ad, AD-07 ölçülmüş ön ad güveni, AD-02 rol kanıtı) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Kalem 1'in (binary_name_extractor) testi yamayla birlikte gelir (yamalar/P12a__binary_name_extractor.py.patch); mutantı yama uygulanınca eklenir. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p12a.json",
+  "mutants": [
+    {
+      "id": "p12a_yerel_genel_kume",
+      "desc": "AD-08: yerel ad yine ikili genelindeki kümeye yazılır (eski sayaç eki geri gelir)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_yerel_ad.py::test_farkli_fonksiyonlardaki_ayni_yerel_ad_eksiz",
+      "find": "                func_used.add(new_name)\n",
+      "replace": "                func_used.add(new_name)\n                used_new_names.add(new_name)\n"
+    },
+    {
+      "id": "p12a_yerel_fonksiyon_kumesi_yok",
+      "desc": "AD-08: fonksiyonun kendi yerel adları kümeye eklenmez (aynı fonksiyonda çift ad)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_yerel_ad.py::test_ayni_fonksiyonda_ikinci_istek_ek_alir",
+      "find": "                func_used.add(new_name)\n",
+      "replace": "                func_used.discard(new_name)\n"
+    },
+    {
+      "id": "p12a_yerel_genel_gorulmez",
+      "desc": "AD-08: yerel ad genel adları görmez (genel adı gölgeler)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_yerel_ad.py::test_yerel_ad_genel_adi_golgelemez_ve_genel_ad_eki_yerele_bakmaz",
+      "find": "best.new_name, _UsedNames(func_used, used_new_names),",
+      "replace": "best.new_name, _UsedNames(func_used, set()),"
+    },
+    {
+      "id": "p12a_genel_once_degil",
+      "desc": "AD-08: genel ve yerel anahtarlar eski karışık sırayla (genel ad yerel addan sonra gelirse ek alır)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_yerel_ad.py::test_sezgisel_genel_ad_tabani_alir_yerel_ad_ek_alir",
+      "find": "        ordered_keys = [k for k in self._candidates if not self._is_local_name_key(k)]\n        ordered_keys += [k for k in self._candidates if self._is_local_name_key(k)]\n",
+      "replace": "        ordered_keys = list(self._candidates)\n"
+    },
+    {
+      "id": "p12a_usednames_ikinci_kume",
+      "desc": "AD-08: birleşik üyelik sınaması ikinci kümeye bakmaz",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_yerel_ad.py::test_yerel_ad_genel_adi_golgelemez_ve_genel_ad_eki_yerele_bakmaz",
+      "find": "        return name in self._first or name in self._second",
+      "replace": "        return name in self._first"
+    },
+    {
+      "id": "p12a_sabit_095",
+      "desc": "AD-07: ön ada yine sabit 0,95",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_on_ad_guveni.py::test_on_ad_turune_gore_guven_ve_ad_degismez",
+      "find": "                    if pre_conf is not None:\n                        confidence_map[old_name] = pre_conf\n",
+      "replace": "                    pre_conf = 0.95\n                    confidence_map[old_name] = pre_conf\n"
+    },
+    {
+      "id": "p12a_olculmemis_sayi",
+      "desc": "AD-07: ölçülmemiş kanala uydurma güven (null yerine 0,5)",
+      "module": "karadul/core/naming_labels.py",
+      "test": "tests/test_p12a_on_ad_guveni.py::test_olculmemis_kanal_guven_tasimaz",
+      "find": "    return row[2] if row else None",
+      "replace": "    return row[2] if row else 0.5"
+    },
+    {
+      "id": "p12a_nokta_tahmini",
+      "desc": "AD-07: alt sınır yerine nokta tahmini (k/n)",
+      "module": "karadul/core/naming_labels.py",
+      "test": "tests/test_p12a_on_ad_guveni.py::test_on_ad_turune_gore_guven_ve_ad_degismez",
+      "find": "    return row[2] if row else None",
+      "replace": "    return round(row[0] / row[1], 3) if row else None"
+    },
+    {
+      "id": "p12a_kanal_turu_yok",
+      "desc": "AD-07: kanal anahtarına ön ad türü verilmez (her ön ad ölçülmemiş görünür)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_on_ad_guveni.py::test_on_ad_turune_gore_guven_ve_ad_degismez",
+      "find": "\"strategy\": strategy, \"pre_name_kind\": kind,",
+      "replace": "\"strategy\": strategy, \"pre_name_kind\": None,"
+    },
+    {
+      "id": "p12a_kayit_float_zorla",
+      "desc": "AD-07: köken kaydı null yerine sayı yazar (None → 0.0)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_on_ad_guveni.py::test_on_ad_turune_gore_guven_ve_ad_degismez",
+      "find": "\"confidence\": None if confidence is None else float(confidence),",
+      "replace": "\"confidence\": float(confidence or 0),"
+    },
+    {
+      "id": "p12a_rol_ayrilmaz",
+      "desc": "AD-02: rol adayı ad adayı olarak kalır (rol adı yine fonksiyon adı)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_rol_kaniti.py::test_rol_ad_olmaz_kanit_olarak_yazilir",
+      "find": "            self._candidates[key] = [c for c in cands if c.strategy != STRATEGY_API_PARAM_REVERSE]\n",
+      "replace": "            pass\n"
+    },
+    {
+      "id": "p12a_rol_kaydi_yok",
+      "desc": "AD-02: rol kanıtı köken kaydına yazılmaz",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_rol_kaniti.py::test_rol_ad_olmaz_kanit_olarak_yazilir",
+      "find": "            prov.role_evidence = role_evidence\n",
+      "replace": "            prov.role_evidence = {}\n"
+    },
+    {
+      "id": "p12a_arguman_sirasi",
+      "desc": "AD-02: argüman sırası derinlik-0 virgülleri saymaz",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_rol_kaniti.py::test_enclosing_call_cagriyi_ve_arguman_sirasini_bulur",
+      "find": "            elif ch == \",\" and depth == 0:\n                commas += 1\n",
+      "replace": "            elif ch == \",\" and depth == 99:\n                commas += 1\n"
+    },
+    {
+      "id": "p12a_ic_parantez",
+      "desc": "AD-02: iç parantez (tip dönüşümü) sarmalayan çağrı sanılır",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_rol_kaniti.py::test_enclosing_call_cagriyi_ve_arguman_sirasini_bulur",
+      "find": "            if ch == \")\" or ch == \"]\":\n                depth += 1\n",
+      "replace": "            if ch == \"]\":\n                depth += 1\n"
+    },
+    {
+      "id": "p12a_cagri_disi",
+      "desc": "AD-02: deyim sınırında durmaz (çağrı dışındaki belirteç önceki çağrıya bağlanır)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12a_rol_kaniti.py::test_enclosing_call_cagriyi_ve_arguman_sirasini_bulur",
+      "find": "            elif ch in \";{}\" and depth == 0:",
+      "replace": "            elif ch in \"{}\" and depth == 0:"
+    }
+  ]
+}

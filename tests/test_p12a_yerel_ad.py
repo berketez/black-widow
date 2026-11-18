@@ -87,6 +87,17 @@ def test_yerel_ad_genel_adi_golgelemez_ve_genel_ad_eki_yerele_bakmaz(tmp_path, s
         assert harita["per_function"][f"FUN_{a}"]["local_8"] == "len_2", a
 
 
+def test_sezgisel_genel_ad_tabani_alir_yerel_ad_ek_alir(tmp_path, seri):
+    """Genel ad (dizgiden ``len``) aday sırasında yerel ``len``'den SONRA gelse de tabanı alır;
+    yerel ad ``len_2`` olur (genel adlar önce karara bağlanır; yerel ad genel adı gölgelemez)."""
+    fonklar = [G._fonk("FUN_00001000", "00001000", govde=_govde("FUN_00001000")),
+               G._fonk("FUN_00002000", "00002000", ["len"])]
+    _, prov, harita = S._kos(G._calisma_alani(tmp_path / "ws", fonklar), tmp_path / "out")
+    assert harita["global"]["FUN_00002000"] == "len"
+    assert harita["per_function"]["FUN_00001000"]["local_8"] == "len_2"
+    assert S._hesap_tutar(prov)
+
+
 def test_belirlenimcilik_fiksturunde_yerel_ek_yalniz_fonksiyon_icinde(tmp_path, seri):
     """Belirlenimcilik fikstüründe (G9) her ekli yerel adın tabanı aynı fonksiyonda ya da genel
     adlarda kullanılmış olmalı ("açıklanamayan ek" 0; ön kayıt H2)."""
