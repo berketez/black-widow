@@ -73,9 +73,13 @@ class AlgorithmComposition:
     confidence: float
     description: str            # Human-readable description
     domain: str = "generic"     # Dominant domain tag
+    # Yalnız bilinen şablon eşleşmelerinde dolar (K-1, 2026-11-18): kanıt
+    # kapısının sonucu. ``passed`` True değilse bileşim raporlayıcıların okuduğu
+    # ``compositions`` alanına girmez, ``pending_compositions``'ta bekler.
+    evidence_gate: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        d: dict[str, Any] = {
             "name": self.name,
             "pattern": self.pattern,
             "domain": self.domain,
@@ -84,6 +88,9 @@ class AlgorithmComposition:
             "confidence": round(self.confidence, 4),
             "description": self.description,
         }
+        if self.evidence_gate is not None:
+            d["evidence_gate"] = self.evidence_gate
+        return d
 
 
 @dataclass
@@ -95,6 +102,11 @@ class CompositionResult:
     total_compositions: int
     unclustered_algorithms: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    # K-1 (2026-11-18): kanıt kapısından geçmeyen şablon eşleşmeleri. Bunlar
+    # iddia değildir: ``compositions`` / ``total_compositions`` alanlarına
+    # (raporlayıcıların ve ``stats["compositions"]``'ın okuduğu alanlar) ve
+    # ``generate_report``'a girmez; yalnız burada, kapının gerekçesiyle durur.
+    pending_compositions: list[AlgorithmComposition] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -103,7 +115,19 @@ class CompositionResult:
             "compositions": [c.to_dict() for c in self.compositions],
             "unclustered_algorithms": self.unclustered_algorithms,
             "errors": self.errors,
+            "total_pending": len(self.pending_compositions),
+            "pending_compositions": [
+                c.to_dict() for c in self.pending_compositions
+            ],
+            "pending_note": _PENDING_NOTE,
         }
+
+
+_PENDING_NOTE = (
+    "Template matches held back by the evidence gate (decision K-1, "
+    "2026-11-18): not claims, not reported, not counted in "
+    "total_compositions. Each entry carries evidence_gate.reason."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -764,6 +788,7 @@ class AlgorithmCompositionAnalyzer:
         """
         errors: list[str] = []
         compositions: list[AlgorithmComposition] = []
+        pending: list[AlgorithmComposition] = []
 
         try:
             # Normalize algorithms to dicts
@@ -787,11 +812,22 @@ class AlgorithmCompositionAnalyzer:
                 except Exception as exc:
                     errors.append(f"functions_json load: {exc}")
 
-            # Phase 1: Match known templates
+            # Phase 1: Match known templates. K-1 (2026-11-18): kanıt
+            # kapısından geçmeyen eşleşme iddia değildir; bekletilir.
             template_comps = self._match_known_templates(
                 func_names_set, algo_dicts, adjacency,
             )
-            compositions.extend(template_comps)
+            for comp in template_comps:
+                gate = comp.evidence_gate or {}
+                if gate.get("passed") is True:
+                    compositions.append(comp)
+                    continue
+                if not gate:
+                    comp.evidence_gate = {
+                        "passed": False,
+                        "reason": "no evidence gate evaluated",
+                    }
+                pending.append(comp)
 
             # Phase 2: Detect pipelines from call graph + data flow
             pipeline_comps = self._detect_pipelines(
@@ -852,6 +888,7 @@ class AlgorithmCompositionAnalyzer:
             total_compositions=len(compositions),
             unclustered_algorithms=unclustered,
             errors=errors,
+            pending_compositions=pending,
         )
 
     def generate_report(self, result: CompositionResult) -> str:
