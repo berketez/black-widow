@@ -52,7 +52,7 @@ import logging
 import re
 import shutil
 import subprocess
-from typing import Literal
+from typing import Any, Literal
 
 from karadul.core.safe_subprocess import resolve_tool, safe_run
 
@@ -340,6 +340,11 @@ def _demangle_legacy(symbol: str) -> str | None:
 
     if not parts:
         return None
+    # P13b / IMZA-14: ``E``'den sonra yalnız ``.llvm.N`` gibi bir son ek gelebilir; başka bir şey
+    # (C++ parametre türleri: ``_ZN3foo3barEi``) Rust adı değildir.
+    rest = s[i:]
+    if rest and not rest.startswith("."):
+        return None
 
     # Hash suffix'i kaldir: son segment "h" + 16 hex karakter
     if parts and _LEGACY_HASH_RE.match(parts[-1]):
@@ -348,7 +353,54 @@ def _demangle_legacy(symbol: str) -> str | None:
     if not parts:
         return None
 
-    return "::".join(parts)
+    decoded = [_decode_legacy_component(p) for p in parts]
+    if any(d is None for d in decoded):
+        return None  # bilinmeyen kaçış: yarı çözülmüş adı "tam ad" gibi döndürme
+    return "::".join(decoded)  # type: ignore[arg-type]
+
+
+# rustc-demangle (legacy.rs) kaçış tablosu
+_LEGACY_ESCAPES = {
+    "SP": "@", "BP": "*", "RF": "&", "LT": "<", "GT": ">", "LP": "(", "RP": ")", "C": ",",
+}
+
+
+def _decode_legacy_component(comp: str) -> str | None:
+    """Legacy bileşenindeki ``$…$`` kaçışlarını ve ``..`` → ``::`` dönüşümünü çöz (IMZA-14).
+
+    ``_$`` ile başlayan bileşende baştaki ``_`` atılır (rustc-demangle kuralı). ``$uXX$`` →
+    U+XX. Bilinmeyen kaçış → ``None``.
+    """
+    if comp.startswith("_$"):
+        comp = comp[1:]
+    out: list[str] = []
+    i = 0
+    n = len(comp)
+    while i < n:
+        if comp.startswith("..", i):
+            out.append("::")
+            i += 2
+            continue
+        ch = comp[i]
+        if ch == "$":
+            j = comp.find("$", i + 1)
+            if j < 0:
+                return None
+            esc = comp[i + 1:j]
+            if esc in _LEGACY_ESCAPES:
+                out.append(_LEGACY_ESCAPES[esc])
+            elif len(esc) > 1 and esc[0] == "u" and all(c in "0123456789abcdef" for c in esc[1:]):
+                try:
+                    out.append(chr(int(esc[1:], 16)))
+                except (ValueError, OverflowError):
+                    return None
+            else:
+                return None
+            i = j + 1
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
 
 
 # ---------------------------------------------------------------------------
@@ -465,10 +517,14 @@ class _V0Parser:
         text = self.body[self.pos:self.pos + length]
         self.pos += length
         if is_punycoded:
-            # RFC 2603 punycode decoding -- pragmatic: deflated halini
-            # geri verme zor; ham metni "punycoded:" prefix'i ile dondur.
-            # Cogu Rust sembolu ASCII oldugu icin nadiren tetiklenir.
-            return text  # placeholder: tam decode yapilmadi
+            # P13b / IMZA-14: punycode (RFC 3492; Rust ayırıcı olarak ``-`` yerine son ``_``).
+            # llvm-cxxfilt ile aynı sonucu verir; çözülemezse hata (ham metin ad değildir).
+            basic, sep, encoded = text.rpartition("_")
+            raw = f"{basic}-{encoded}" if sep else text
+            try:
+                return raw.encode("ascii").decode("punycode")
+            except (UnicodeError, ValueError) as exc:
+                raise _V0ParseError(f"punycode cozulemedi: {text!r}") from exc
         return text
 
     def _parse_identifier(self) -> str:
@@ -490,8 +546,25 @@ class _V0Parser:
     # Path
     # ------------------------------------------------------------------
 
-    def _parse_path(self) -> str:
-        """``<path>`` ureticisi -- path string'ini olustur."""
+    def _backref(self, parse: Any) -> str:
+        """``B<base62>_``: gövdede daha ÖNCEKİ bir konumu yeniden ayrıştır (P13b / IMZA-14)."""
+        start = self.pos - 1  # 'B'
+        target = self._read_base62_until_underscore()
+        if target >= start:
+            raise _V0ParseError("ileri ya da kendine geri basvuru")
+        saved = self.pos
+        self.pos = target
+        try:
+            return parse()
+        finally:
+            self.pos = saved
+
+    def _parse_path(self, in_value: bool = True) -> str:
+        """``<path>`` ureticisi -- path string'ini olustur.
+
+        ``in_value``: değer yolundaki jenerik ``::<…>``, tip içindeki ``<…>`` yazılır
+        (rustc-demangle / llvm-cxxfilt biçimi).
+        """
         if self.depth > self.MAX_DEPTH:
             raise _V0ParseError("max derinlige ulasildi")
         self.depth += 1
@@ -510,7 +583,7 @@ class _V0Parser:
                     raise _V0ParseError("namespace tag eksik")
                 ns = self.body[self.pos]
                 self.pos += 1
-                parent = self._parse_path()
+                parent = self._parse_path(in_value)
                 ident = self._parse_identifier()
                 if not ident:
                     return parent
@@ -531,48 +604,35 @@ class _V0Parser:
                 # Y: <type> <path>
                 if tag == "Y":
                     type_str = self._parse_type()
-                    trait = self._parse_path()
+                    trait = self._parse_path(False)
                     return f"<{type_str} as {trait}>"
                 # M/X icin: impl-path -> path
-                impl_parent = self._parse_path()
+                impl_parent = self._parse_path(False)
                 type_str = self._parse_type()
                 if tag == "M":
                     return f"<{type_str}>"
                 # X: trait impl
-                trait = self._parse_path()
+                trait = self._parse_path(False)
                 _ = impl_parent
                 return f"<{type_str} as {trait}>"
 
             if tag == "I":
                 # generic instantiation: <path> <generic-arg>* "E"
-                base = self._parse_path()
-                # Generic argumentleri atla
+                base = self._parse_path(in_value)
+                # P13b: çözülemeyen argüman yarım ad üretmez (hata yukarı çıkar → None)
                 args: list[str] = []
                 while self.pos < len(self.body) and self.body[self.pos] != "E":
-                    try:
-                        args.append(self._parse_generic_arg())
-                    except _V0ParseError:
-                        # Tip parsing hatasi -- generic'i atla
-                        # E'ye kadar zorla ileri sar
-                        self._skip_until("E")
-                        break
+                    args.append(self._parse_generic_arg())
                 if self.pos < len(self.body) and self.body[self.pos] == "E":
                     self.pos += 1
                 if args:
-                    return f"{base}<{', '.join(args)}>"
+                    sep = "::" if in_value else ""
+                    return f"{base}{sep}<{', '.join(args)}>"
                 return base
 
             if tag == "B":
-                # Backref: B<base62>_
-                num = self._read_base62_until_underscore()
-                # Pragmatic: backref'i takip etmek karmasik. Placeholder
-                # ile gosterelim. Cogu kullanim icin bu yeterli.
-                return f"_B{num}"
-
-            if tag == "K":
-                # const generic: K<const>
-                self._skip_const()
-                return "_const"
+                # Backref: B<base62>_ (P13b: gerçekten çözülür; eskiden "_B<n>" yer tutucusu)
+                return self._backref(lambda: self._parse_path(in_value))
 
             # Bilinmeyen tag -> hata
             raise _V0ParseError(f"bilinmeyen path tag: {tag!r}")
@@ -597,8 +657,7 @@ class _V0Parser:
             return "'_"
         if c == "K":
             self.pos += 1
-            self._skip_const()
-            return "_const"
+            return self._parse_const()
         # Aksi halde dogrudan type
         return self._parse_type()
 
@@ -642,8 +701,7 @@ class _V0Parser:
             if c == "A":
                 self.pos += 1
                 inner = self._parse_type()
-                self._skip_const()
-                return f"[{inner}; _]"
+                return f"[{inner}; {self._parse_const()}]"
             # Slice: S<type>
             if c == "S":
                 self.pos += 1
@@ -658,19 +716,57 @@ class _V0Parser:
                 if self.pos < len(self.body) and self.body[self.pos] == "E":
                     self.pos += 1
                 return f"({', '.join(items)})"
-            # Backref
+            # Backref (P13b: gerçekten çözülür)
             if c == "B":
                 self.pos += 1
-                num = self._read_base62_until_underscore()
-                return f"_B{num}"
-            # Diger durumda path olarak dene
-            return self._parse_path()
+                return self._backref(self._parse_type)
+            # Diger durumda path olarak dene (tip içinde: jenerik "<…>")
+            return self._parse_path(False)
         finally:
             self.depth -= 1
 
     # ------------------------------------------------------------------
     # Yardimcilar
     # ------------------------------------------------------------------
+
+    _INT_CONST_TYPES = frozenset("hjmtyoaislxn")
+
+    def _parse_const(self) -> str:
+        """``<const>``: ``p`` (yer tutucu ``_``), geri başvuru ya da ``<tip><onaltılık>_``.
+
+        Tam sayı, ``bool`` ve ``char`` çözülür; başka tür (ör. ``str`` / yapı sabiti) hata
+        (P13b / IMZA-14: eskiden ``_const`` yer tutucusu "tam ad" gibi dönüyordu).
+        """
+        if self.pos >= len(self.body):
+            raise _V0ParseError("const EOF")
+        c = self.body[self.pos]
+        self.pos += 1
+        if c == "p":
+            return "_"
+        if c == "B":
+            return self._backref(self._parse_const)
+        if c not in self._INT_CONST_TYPES and c not in ("b", "c"):
+            raise _V0ParseError(f"desteklenmeyen const tipi: {c!r}")
+        negative = False
+        if self.pos < len(self.body) and self.body[self.pos] == "n":
+            negative = True
+            self.pos += 1
+        end = self.body.find("_", self.pos)
+        if end < 0:
+            raise _V0ParseError("const degeri bitmiyor")
+        digits = self.body[self.pos:end]
+        self.pos = end + 1
+        try:
+            value = int(digits, 16) if digits else 0
+        except ValueError as exc:
+            raise _V0ParseError(f"const degeri onaltilik degil: {digits!r}") from exc
+        if c == "b":
+            if value not in (0, 1):
+                raise _V0ParseError("bool const 0/1 degil")
+            return "true" if value else "false"
+        if c == "c":
+            return repr(chr(value))
+        return str(-value if negative else value)
 
     def _skip_const(self) -> None:
         """Const generic ifadesini atla."""
@@ -730,12 +826,12 @@ def _demangle_v0(symbol: str) -> str | None:
     try:
         result = parser._parse_path()
     except _V0ParseError as exc:
+        # P13b / IMZA-14: çözülemeyen sembol için sezgisel yarım ad "tam ad" gibi dönmez.
         logger.debug("v0 parser hatasi: %s -> %s", symbol, exc)
-        # Fallback: heuristic length-prefixed cikarma
-        return _demangle_v0_heuristic(body)
+        return None
     except RecursionError:
         logger.debug("v0 parser recursion limit: %s", symbol)
-        return _demangle_v0_heuristic(body)
+        return None
 
     # Hash suffix (.llvm.<...>) kaldir
     if "." in result:

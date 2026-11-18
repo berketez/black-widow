@@ -96,6 +96,70 @@
       "test": "tests/test_p13b_kanallar.py::test_flags_off_channels_do_no_work",
       "find": "    if flags.get(\"dwarf\"):\n",
       "replace": "    if flags.get(\"dwarf\") or 1:\n"
+    },
+    {
+      "id": "p13b_k3_kacis_yok",
+      "desc": "IMZA-14: legacy $…$ kaçışları yine çözülmez",
+      "module": "karadul/analyzers/rust_demangler.py",
+      "test": "tests/test_p13b_rust.py::test_legacy_escapes_decoded",
+      "find": "    decoded = [_decode_legacy_component(p) for p in parts]\n",
+      "replace": "    decoded = list(parts)\n"
+    },
+    {
+      "id": "p13b_k3_cpp_rust",
+      "desc": "IMZA-13 ek: E'den sonra parametre taşıyan C++ adı Rust sayılır",
+      "module": "karadul/analyzers/rust_demangler.py",
+      "test": "tests/test_p13b_rust.py::test_cpp_itanium_is_not_rust",
+      "find": "    if rest and not rest.startswith(\".\"):\n",
+      "replace": "    if rest and False:\n"
+    },
+    {
+      "id": "p13b_k3_bilinmeyen_kacis",
+      "desc": "bilinmeyen kaçış yine yarım ad döner",
+      "module": "karadul/analyzers/rust_demangler.py",
+      "test": "tests/test_p13b_rust.py::test_legacy_unknown_escape_is_not_a_full_name",
+      "find": "            else:\n                return None\n            i = j + 1\n",
+      "replace": "            else:\n                out.append(esc)\n            i = j + 1\n"
+    },
+    {
+      "id": "p13b_k3_punycode",
+      "desc": "v0 punycode yine ham metin",
+      "module": "karadul/analyzers/rust_demangler.py",
+      "test": "tests/test_p13b_rust.py::test_v0_matches_llvm_cxxfilt",
+      "find": "                return raw.encode(\"ascii\").decode(\"punycode\")\n",
+      "replace": "                return text\n"
+    },
+    {
+      "id": "p13b_k3_geri_basvuru",
+      "desc": "v0 geri başvuru yine yer tutucu",
+      "module": "karadul/analyzers/rust_demangler.py",
+      "test": "tests/test_p13b_rust.py::test_v0_matches_llvm_cxxfilt",
+      "find": "                return self._backref(lambda: self._parse_path(in_value))\n",
+      "replace": "                return \"_B\"\n"
+    },
+    {
+      "id": "p13b_k3_deger_yolu",
+      "desc": "v0 değer yolunda ::< yerine <",
+      "module": "karadul/analyzers/rust_demangler.py",
+      "test": "tests/test_p13b_rust.py::test_v0_matches_llvm_cxxfilt",
+      "find": "                    sep = \"::\" if in_value else \"\"\n",
+      "replace": "                    sep = \"\"\n"
+    },
+    {
+      "id": "p13b_k3_sabit",
+      "desc": "v0 const yine _const yer tutucusu",
+      "module": "karadul/analyzers/rust_demangler.py",
+      "test": "tests/test_p13b_rust.py::test_v0_matches_llvm_cxxfilt",
+      "find": "            self.pos += 1\n            return self._parse_const()\n",
+      "replace": "            self.pos += 1\n            self._skip_const()\n            return \"_const\"\n"
+    },
+    {
+      "id": "p13b_k3_sezgisel",
+      "desc": "v0 çözülemeyen sembolde yine sezgisel yarım ad",
+      "module": "karadul/analyzers/rust_demangler.py",
+      "test": "tests/test_p13b_rust.py::test_v0_unparsable_returns_none_not_placeholder",
+      "find": "        logger.debug(\"v0 parser hatasi: %s -> %s\", symbol, exc)\n        return None\n",
+      "replace": "        logger.debug(\"v0 parser hatasi: %s -> %s\", symbol, exc)\n        return _demangle_v0_heuristic(body)\n"
     }
   ]
 }
