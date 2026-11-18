@@ -134,3 +134,120 @@ def test_acikla_belirsiz_ve_gecersiz_cevap(tmp_path):
     ajan, arka, gunluk, akis = olayli(tmp_path / "c", [])
     r = ajan.explain("FUN_99999999")
     assert r.status == G.STATUS_UNKNOWN_ADDRESS and not arka.calls and r.task == "acikla"
+
+
+# --------------------------------------------------------------------------------------------
+# (b) özet deposu ve geçersiz kılma
+
+from karadul.lm import summaries as S  # noqa: E402
+
+SHA = "cd" * 32
+PAKET = "ef" * 32
+
+
+def anahtar(**degisen) -> S.SummaryKey:
+    alan = dict(binary_sha256=SHA, addr="1040", prompt_version="KL-1", toolset_version="t1", model="kunye:abc",
+                package_sha256=PAKET, name=None)
+    alan.update(degisen)
+    return S.SummaryKey(**alan)
+
+
+def kayit(key=None, **degisen) -> S.SummaryRecord:
+    alan = dict(key=key or anahtar(), kaynak="model", metin="Tabloyu okur.", belirsiz=False, kanit=("r1",),
+                hukum="sinandi_celiski_yok", pakete_girer=True, gorev="g1")
+    alan.update(degisen)
+    return S.SummaryRecord(**alan)
+
+
+def _izin(p) -> int:
+    return p.stat().st_mode & 0o777
+
+
+def test_model_kimligi_ve_paket_ozeti():
+    sha = "ab" * 32
+    assert S.model_key({"tur": "yerel", "model": "/m.gguf", "model_sha256": sha}) == f"sha256:{sha}"
+    k1 = S.model_key({"tur": "yerel", "model": "/m.gguf", "model_sha256": None, "model_bayt": 1})
+    assert k1.startswith("kunye:") and len(k1) == len("kunye:") + 16
+    assert k1 == S.model_key({"tur": "yerel", "model": "/m.gguf", "model_bayt": 2})   # başlatma öncesi / sonrası
+    assert k1 != S.model_key({"tur": "yerel", "model": "/n.gguf"})
+    assert S.model_key({"tur": "sahte", "betik_uzunlugu": 1}) == S.model_key({"tur": "sahte", "betik_uzunlugu": 5})
+    a = [{"id": "r1", "tool": "get_evidence", "data": {"x": 1}}, {"id": "r2", "tool": "get_decompiled"}]
+    b = [{"id": "r7", "tool": "get_evidence", "data": {"x": 1}}, {"id": "r8", "tool": "get_decompiled"}]
+    assert S.package_digest(a) == S.package_digest(b)                 # sonuç kimliği içerik değil
+    assert S.package_digest(a) != S.package_digest([{**a[0], "data": {"x": 2}}, a[1]])
+    assert S.package_digest(a) != S.package_digest(list(reversed(a)))
+
+
+def test_anahtar_ve_kayit_dogrulama():
+    for bozuk in (dict(binary_sha256="AB" * 32), dict(addr="xyz"), dict(package_sha256="1"), dict(model=""),
+                  dict(name=3)):
+        with pytest.raises(ValueError):
+            anahtar(**bozuk)
+    for bozuk in (dict(kaynak="tahmin"), dict(metin=""), dict(belirsiz=1), dict(kanit=(1,))):
+        with pytest.raises(ValueError):
+            kayit(**bozuk)
+    with pytest.raises(ValueError):
+        S.SummaryStore("kisa")
+    r = kayit()
+    assert S.SummaryRecord.from_dict(json.loads(json.dumps(r.as_dict()))) == r
+
+
+def test_depo_izinler_ve_gecerli_bayat_yok(tmp_path):
+    depo = S.SummaryStore(SHA, root=tmp_path / "lm")
+    assert not (tmp_path / "lm").exists()                     # nesne kurmak dosya açmaz
+    assert depo.get(anahtar()) is None and depo.state(anahtar()) == S.STATE_NONE
+    assert not (tmp_path / "lm").exists()                     # okumak da açmaz
+    ilk_kayit = kayit()
+    depo.put(ilk_kayit)
+    assert depo.path == tmp_path / "lm" / SHA / "ozet.jsonl"
+    assert _izin(depo.path) == 0o600 and _izin(depo.dir) == 0o700 and _izin(tmp_path / "lm") == 0o700
+    assert depo.get(anahtar()) == ilk_kayit and depo.state(anahtar()) == S.STATE_VALID
+    # Anahtarın her alanı değişince eski kayıt verilmez: bayat
+    for alan, deger in (("prompt_version", "KL-2"), ("toolset_version", "t2"), ("model", "sha256:" + "0" * 64),
+                        ("package_sha256", "aa" * 32), ("name", "unverified:parse_table")):
+        yeni = anahtar(**{alan: deger})
+        assert depo.get(yeni) is None and depo.state(yeni) == S.STATE_STALE, alan
+    # Aynı adresin başka yazımı aynı fonksiyondur (bayat); başka adres yok
+    assert depo.state(anahtar(addr="00001040", package_sha256="aa" * 32)) == S.STATE_STALE
+    assert depo.state(anahtar(addr="1044")) == S.STATE_NONE
+    # Yeni anahtarla yazılan kayıt eskisini silmez; ikisi de dosyada, geçerli olan yenisi
+    depo.put(kayit(anahtar(package_sha256="aa" * 32), metin="Yeni özet."))
+    assert len(depo.path.read_text(encoding="utf-8").splitlines()) == 2
+    taze = S.SummaryStore(SHA, root=tmp_path / "lm")
+    assert taze.get(anahtar(package_sha256="aa" * 32)).metin == "Yeni özet."
+    assert taze.get(anahtar()) == ilk_kayit and taze.corrupt_lines == 0
+    # Aynı anahtar ikinci kez yazılırsa en son kayıt geçerlidir
+    depo.put(kayit(metin="Üçüncü."))
+    assert S.SummaryStore(SHA, root=tmp_path / "lm").get(anahtar()).metin == "Üçüncü."
+
+
+def test_depo_bozuk_satir_sayilir_yabanci_ve_sembolik_bag(tmp_path):
+    depo = S.SummaryStore(SHA, root=tmp_path)
+    depo.put(kayit())
+    yabanci = kayit(anahtar(binary_sha256="11" * 32)).as_dict()
+    with depo.path.open("a", encoding="utf-8") as f:
+        f.write("{bozuk\n\n" + json.dumps({"key": {}}) + "\n" + json.dumps(yabanci) + "\n")
+    taze = S.SummaryStore(SHA, root=tmp_path)
+    assert len(taze.records()) == 1 and taze.corrupt_lines == 3
+    with pytest.raises(ValueError):
+        depo.put(kayit(anahtar(binary_sha256="11" * 32)))
+    # Sembolik bağ: okunmaz, yazılmaz; hedef dosya değişmez
+    hedef = tmp_path / "hedef.txt"
+    hedef.write_text("dokunma\n")
+    kok = tmp_path / "b"
+    (kok / SHA).mkdir(parents=True)
+    (kok / SHA / "ozet.jsonl").symlink_to(hedef)
+    bagli = S.SummaryStore(SHA, root=kok)
+    with pytest.raises(OSError):
+        bagli.get(anahtar())
+    bagli._records = []
+    with pytest.raises(OSError):
+        bagli.put(kayit())
+    assert hedef.read_text() == "dokunma\n"
+    kok2 = tmp_path / "c"
+    kok2.mkdir()
+    (tmp_path / "gercek").mkdir()
+    (kok2 / SHA).symlink_to(tmp_path / "gercek")
+    with pytest.raises(OSError):
+        S.SummaryStore(SHA, root=kok2).put(kayit())
+    assert not list((tmp_path / "gercek").iterdir())
