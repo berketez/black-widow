@@ -88,6 +88,54 @@
       "test": "tests/test_p19_build_file_injection.py::test_dotnet_reconstruct_hostile_end_to_end",
       "find": "stats={\"reconstructed\": True, \"rejected_values\": rejected}, errors=[],",
       "replace": "stats={\"reconstructed\": True, \"rejected_values\": []}, errors=[],"
+    },
+    {
+      "id": "b07_yol_gibi_kapali",
+      "desc": "BICIM-07: yol gibi görünen girdi yalnız-dosya-sistemi kuralı kapanır",
+      "module": "karadul/core/target_resolver.py",
+      "test": "tests/test_p19_target_resolver.py",
+      "find": "    if _looks_like_path(name):",
+      "replace": "    if _looks_like_path(name) and 0:"
+    },
+    {
+      "id": "b07_uzanti_yol_degil",
+      "desc": "BICIM-07: uzantılı ad (evil.pyc, a.b) yol sayılmaz",
+      "module": "karadul/core/target_resolver.py",
+      "test": "tests/test_p19_target_resolver.py",
+      "find": "    return Path(name).suffix != \"\"",
+      "replace": "    return False"
+    },
+    {
+      "id": "b07_cwd_site_dizini",
+      "desc": "BICIM-07: çalışma dizini Python paketi arama dizinlerinden çıkarılmaz",
+      "module": "karadul/core/target_resolver.py",
+      "test": "tests/test_p19_target_resolver.py::test_python_package_dirs_exclude_cwd",
+      "find": "        if d == cwd or not d.is_dir() or d in out:",
+      "replace": "        if not d.is_dir() or d in out:"
+    },
+    {
+      "id": "b07_bulanik_app_secilir",
+      "desc": "BICIM-07: adı içeren uygulama yeniden sessizce hedef seçilir",
+      "module": "karadul/core/target_resolver.py",
+      "test": "tests/test_p19_target_resolver.py::test_fuzzy_app_is_suggestion_not_target",
+      "find": "                    suggestions.append(app)",
+      "replace": "                    return _app_main_binary(app)"
+    },
+    {
+      "id": "b07_spotlight_coklu",
+      "desc": "BICIM-07: Spotlight birden çok adaydan ilkini seçer",
+      "module": "karadul/core/target_resolver.py",
+      "test": "tests/test_p19_target_resolver.py::test_spotlight_multiple_exact_hits_not_chosen",
+      "find": "        if len(found) == 1:",
+      "replace": "        if len(found) >= 1:"
+    },
+    {
+      "id": "b07_spotlight_tam_ad",
+      "desc": "BICIM-07: Spotlight tam ad denetimi kalkar (adı içeren başka dosya seçilir)",
+      "module": "karadul/core/target_resolver.py",
+      "test": "tests/test_p19_target_resolver.py::test_spotlight_single_exact_hit_chosen_other_names_ignored",
+      "find": "            if p.name != name:",
+      "replace": "            if p.name != name and 0:"
     }
   ]
 }
