@@ -498,17 +498,113 @@
    "set": "macos",
    "etiket_re": "^kural:RSA_Public_Key_Constants$",
    "rapordaki": "IMZA-05: Apple kod imzası sertifikasındaki OID"
+  },
+  {
+   "ad": "cfd",
+   "katman": "bilesim",
+   "etiket_re": "CFD",
+   "rapordaki": "MUH-03/ARAYUZ-01: 119/119 (Transient CFD)"
+  },
+  {
+   "ad": "roket",
+   "katman": "bilesim",
+   "etiket_re": "^sablon:Rocket",
+   "rapordaki": "MUH-03: 119/119"
+  },
+  {
+   "ad": "matris",
+   "katman": "bilesim",
+   "etiket_re": "^sablon:Matrix Solve",
+   "rapordaki": "MUH-03: 119/119"
+  },
+  {
+   "ad": "vpn",
+   "katman": "bilesim",
+   "etiket_re": "^sablon:VPN Tunnel",
+   "rapordaki": "ARAYUZ-01: 16 ikili"
+  },
+  {
+   "ad": "ses",
+   "katman": "bilesim",
+   "etiket_re": "^sablon:Audio Codec",
+   "rapordaki": "MUH-03: 4"
+  },
+  {
+   "ad": "galois_kod",
+   "katman": "algoritma_kod",
+   "etiket_re": "^algoritma:Galois field",
+   "rapordaki": "MEK HEAD 14: htop 8, sqlite3 10, redis-cli 2, iki tmux 2'şer"
+  },
+  {
+   "ad": "galois_json",
+   "katman": "algoritma_json",
+   "etiket_re": "^algoritma:Galois field",
+   "rapordaki": "TIP-09: 162 etiket, 30 ikili (1.22.1)"
+  },
+  {
+   "ad": "pbkdf2_json",
+   "katman": "algoritma_json",
+   "etiket_re": "^algoritma:Password-based key derivation",
+   "rapordaki": "TIP-09: 6 etiket"
+  },
+  {
+   "ad": "security_kanca",
+   "katman": "security_etiketi",
+   "etiket_re": "^security:Code injection/hooking",
+   "rapordaki": "TIP-08: 9"
+  },
+  {
+   "ad": "security_kimlik",
+   "katman": "security_etiketi",
+   "etiket_re": "^security:Handles authentication/credentials",
+   "rapordaki": "TIP-08: 70"
+  },
+  {
+   "ad": "security_anahtar",
+   "katman": "security_etiketi",
+   "etiket_re": "^security:Handles sensitive key material",
+   "rapordaki": "TIP-08: 869"
+  },
+  {
+   "ad": "row_major",
+   "katman": "blok_yorumu",
+   "etiket_re": "^blok:Row-major matrix access$",
+   "rapordaki": "MUH-07: 370 yorum (1.22.1, 119 ikili)"
+  },
+  {
+   "ad": "recovered_struct",
+   "katman": "types_h",
+   "etiket_re": "^yapi:recovered_struct$",
+   "rapordaki": "TIP-07: 5 585 yapı, 116 ikili (1.22.1); MEK HEAD 14: 4 109"
+  },
+  {
+   "ad": "sarif_paket_uyarisi",
+   "katman": "sarif",
+   "etiket_re": "^KRDL003:(MPRESS|ASPack|UPX|VMProtect|Themida|PECompact|Enigma)",
+   "rapordaki": "ARAYUZ-17 / IMZA-05: SARIF warning"
+  },
+  {
+   "ad": "sarif_antidebug_uyarisi",
+   "katman": "sarif",
+   "etiket_re": "^KRDL003:AntiDebug_",
+   "rapordaki": "MEK HEAD tablosu"
   }
  ],
  "esikler": {
   "dogrudan": {
    "bi": {
     "gelistirme": {
-     "yanlis": 2102,
+     "yanlis_toplam": 2102,
      "ikili": 119,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 119,
+       "yanlis": 2102
+      }
+     ],
      "ikililer": {
       "debian/coreutils/[": 13,
       "debian/coreutils/arch": 14,
@@ -632,11 +728,17 @@
      }
     },
     "macos": {
-     "yanlis": 701,
+     "yanlis_toplam": 701,
      "ikili": 48,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 48,
+       "yanlis": 701
+      }
+     ],
      "ikililer": {
       "/bin/bash": 32,
       "/bin/cat": 6,
@@ -689,11 +791,17 @@
      }
     },
     "pe": {
-     "yanlis": 203,
+     "yanlis_toplam": 203,
      "ikili": 21,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 21,
+       "yanlis": 203
+      }
+     ],
      "ikililer": {
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_24.exe": 8,
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_41.exe": 8,
@@ -721,11 +829,17 @@
    },
    "antidebug": {
     "gelistirme": {
-     "yanlis": 23,
+     "yanlis_toplam": 23,
      "ikili": 119,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 119,
+       "yanlis": 23
+      }
+     ],
      "ikililer": {
       "debian/coreutils/[": 0,
       "debian/coreutils/arch": 0,
@@ -849,11 +963,17 @@
      }
     },
     "macos": {
-     "yanlis": 22,
+     "yanlis_toplam": 22,
      "ikili": 48,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 48,
+       "yanlis": 22
+      }
+     ],
      "ikililer": {
       "/bin/bash": 1,
       "/bin/cat": 0,
@@ -906,11 +1026,17 @@
      }
     },
     "pe": {
-     "yanlis": 76,
+     "yanlis_toplam": 76,
      "ikili": 21,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 21,
+       "yanlis": 76
+      }
+     ],
      "ikililer": {
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_24.exe": 4,
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_41.exe": 4,
@@ -938,11 +1064,17 @@
    },
    "packer": {
     "gelistirme": {
-     "yanlis": 0,
+     "yanlis_toplam": 0,
      "ikili": 119,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 119,
+       "yanlis": 0
+      }
+     ],
      "ikililer": {
       "debian/coreutils/[": 0,
       "debian/coreutils/arch": 0,
@@ -1066,11 +1198,17 @@
      }
     },
     "macos": {
-     "yanlis": 0,
+     "yanlis_toplam": 0,
      "ikili": 48,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 48,
+       "yanlis": 0
+      }
+     ],
      "ikililer": {
       "/bin/bash": 0,
       "/bin/cat": 0,
@@ -1123,11 +1261,17 @@
      }
     },
     "pe": {
-     "yanlis": 19,
+     "yanlis_toplam": 19,
      "ikili": 21,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 21,
+       "yanlis": 19
+      }
+     ],
      "ikililer": {
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_24.exe": 0,
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_41.exe": 1,
@@ -1155,11 +1299,17 @@
    },
    "yara": {
     "gelistirme": {
-     "yanlis": 70,
+     "yanlis_toplam": 70,
      "ikili": 119,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 119,
+       "yanlis": 70
+      }
+     ],
      "ikililer": {
       "debian/coreutils/[": 0,
       "debian/coreutils/arch": 0,
@@ -1283,11 +1433,17 @@
      }
     },
     "macos": {
-     "yanlis": 127,
+     "yanlis_toplam": 127,
      "ikili": 48,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 48,
+       "yanlis": 127
+      }
+     ],
      "ikililer": {
       "/bin/bash": 4,
       "/bin/cat": 1,
@@ -1340,11 +1496,17 @@
      }
     },
     "pe": {
-     "yanlis": 71,
+     "yanlis_toplam": 71,
      "ikili": 21,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 21,
+       "yanlis": 71
+      }
+     ],
      "ikililer": {
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_24.exe": 5,
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_41.exe": 5,
@@ -1372,11 +1534,17 @@
    },
    "capa": {
     "gelistirme": {
-     "yanlis": 0,
+     "yanlis_toplam": 0,
      "ikili": 119,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 119,
+       "yanlis": 0
+      }
+     ],
      "ikililer": {
       "debian/coreutils/[": 0,
       "debian/coreutils/arch": 0,
@@ -1500,11 +1668,17 @@
      }
     },
     "macos": {
-     "yanlis": 0,
+     "yanlis_toplam": 0,
      "ikili": 48,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 48,
+       "yanlis": 0
+      }
+     ],
      "ikililer": {
       "/bin/bash": 0,
       "/bin/cat": 0,
@@ -1557,11 +1731,17 @@
      }
     },
     "pe": {
-     "yanlis": 0,
+     "yanlis_toplam": 0,
      "ikili": 21,
-     "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
-     "commit": "e9d2d08ab5",
-     "tarih": "2026-11-18T09:38:15+03:00",
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_dogrudan/masum_kapi.json",
+       "commit": "27e2e1a900",
+       "tarih": "2026-11-18T09:52:04+03:00",
+       "ikili": 21,
+       "yanlis": 0
+      }
+     ],
      "ikililer": {
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_24.exe": 0,
       "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_41.exe": 0,
@@ -1584,6 +1764,411 @@
       "/opt/homebrew/Cellar/makensis/3.13/share/nsis/Bin/zip2exe.exe": 0,
       "/opt/homebrew/lib/node_modules/pnpm/dist/vendor/fastlist-0.3.0-x64.exe": 0,
       "/opt/homebrew/lib/node_modules/pnpm/dist/vendor/fastlist-0.3.0-x86.exe": 0
+     }
+    }
+   }
+  },
+  "cikti": {
+   "bilesim": {
+    "gelistirme": {
+     "yanlis_toplam": 82,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 82
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 3,
+      "debian/coreutils/expr": 3,
+      "debian/coreutils/ls": 3,
+      "debian/coreutils/sort": 3,
+      "debian/htop/htop": 7,
+      "debian/openssl/openssl": 12,
+      "debian/redis-tools/redis-cli": 13,
+      "debian/sqlite3/sqlite3": 8,
+      "debian/tmux/tmux": 4,
+      "debian/tree/tree": 3,
+      "debian/zstd/pzstd": 4,
+      "debian/zstd/zstd": 7,
+      "mac/htop": 6,
+      "mac/tmux": 6
+     }
+    }
+   },
+   "algoritma_kod": {
+    "gelistirme": {
+     "yanlis_toplam": 29,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 29
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 0,
+      "debian/coreutils/expr": 0,
+      "debian/coreutils/ls": 0,
+      "debian/coreutils/sort": 0,
+      "debian/htop/htop": 2,
+      "debian/openssl/openssl": 13,
+      "debian/redis-tools/redis-cli": 5,
+      "debian/sqlite3/sqlite3": 5,
+      "debian/tmux/tmux": 1,
+      "debian/tree/tree": 0,
+      "debian/zstd/pzstd": 0,
+      "debian/zstd/zstd": 2,
+      "mac/htop": 0,
+      "mac/tmux": 1
+     }
+    }
+   },
+   "algoritma_json": {
+    "gelistirme": {
+     "yanlis_toplam": 45,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 45
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 0,
+      "debian/coreutils/expr": 0,
+      "debian/coreutils/ls": 0,
+      "debian/coreutils/sort": 0,
+      "debian/htop/htop": 2,
+      "debian/openssl/openssl": 21,
+      "debian/redis-tools/redis-cli": 6,
+      "debian/sqlite3/sqlite3": 6,
+      "debian/tmux/tmux": 1,
+      "debian/tree/tree": 0,
+      "debian/zstd/pzstd": 1,
+      "debian/zstd/zstd": 5,
+      "mac/htop": 1,
+      "mac/tmux": 2
+     }
+    }
+   },
+   "security_etiketi": {
+    "gelistirme": {
+     "yanlis_toplam": 22,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 22
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 0,
+      "debian/coreutils/expr": 0,
+      "debian/coreutils/ls": 0,
+      "debian/coreutils/sort": 0,
+      "debian/htop/htop": 3,
+      "debian/openssl/openssl": 5,
+      "debian/redis-tools/redis-cli": 3,
+      "debian/sqlite3/sqlite3": 3,
+      "debian/tmux/tmux": 3,
+      "debian/tree/tree": 0,
+      "debian/zstd/pzstd": 0,
+      "debian/zstd/zstd": 0,
+      "mac/htop": 1,
+      "mac/tmux": 4
+     }
+    }
+   },
+   "sarif": {
+    "gelistirme": {
+     "yanlis_toplam": 37,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 37
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 0,
+      "debian/coreutils/expr": 0,
+      "debian/coreutils/ls": 3,
+      "debian/coreutils/sort": 2,
+      "debian/htop/htop": 3,
+      "debian/openssl/openssl": 4,
+      "debian/redis-tools/redis-cli": 4,
+      "debian/sqlite3/sqlite3": 2,
+      "debian/tmux/tmux": 3,
+      "debian/tree/tree": 2,
+      "debian/zstd/pzstd": 3,
+      "debian/zstd/zstd": 5,
+      "mac/htop": 3,
+      "mac/tmux": 3
+     }
+    }
+   },
+   "blok_yorumu": {
+    "gelistirme": {
+     "yanlis_toplam": 10,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 10
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 1,
+      "debian/coreutils/expr": 1,
+      "debian/coreutils/ls": 1,
+      "debian/coreutils/sort": 1,
+      "debian/htop/htop": 0,
+      "debian/openssl/openssl": 1,
+      "debian/redis-tools/redis-cli": 0,
+      "debian/sqlite3/sqlite3": 0,
+      "debian/tmux/tmux": 1,
+      "debian/tree/tree": 0,
+      "debian/zstd/pzstd": 1,
+      "debian/zstd/zstd": 1,
+      "mac/htop": 0,
+      "mac/tmux": 2
+     }
+    }
+   },
+   "types_h": {
+    "gelistirme": {
+     "yanlis_toplam": 14,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 14
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 1,
+      "debian/coreutils/expr": 1,
+      "debian/coreutils/ls": 1,
+      "debian/coreutils/sort": 1,
+      "debian/htop/htop": 1,
+      "debian/openssl/openssl": 1,
+      "debian/redis-tools/redis-cli": 1,
+      "debian/sqlite3/sqlite3": 1,
+      "debian/tmux/tmux": 1,
+      "debian/tree/tree": 1,
+      "debian/zstd/pzstd": 1,
+      "debian/zstd/zstd": 1,
+      "mac/htop": 1,
+      "mac/tmux": 1
+     }
+    }
+   },
+   "intel": {
+    "gelistirme": {
+     "yanlis_toplam": 353,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 353
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 15,
+      "debian/coreutils/expr": 17,
+      "debian/coreutils/ls": 25,
+      "debian/coreutils/sort": 21,
+      "debian/htop/htop": 28,
+      "debian/openssl/openssl": 43,
+      "debian/redis-tools/redis-cli": 36,
+      "debian/sqlite3/sqlite3": 33,
+      "debian/tmux/tmux": 26,
+      "debian/tree/tree": 12,
+      "debian/zstd/pzstd": 12,
+      "debian/zstd/zstd": 36,
+      "mac/htop": 21,
+      "mac/tmux": 28
+     }
+    }
+   },
+   "antidebug_cikti": {
+    "gelistirme": {
+     "yanlis_toplam": 7,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 7
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 0,
+      "debian/coreutils/expr": 0,
+      "debian/coreutils/ls": 0,
+      "debian/coreutils/sort": 0,
+      "debian/htop/htop": 0,
+      "debian/openssl/openssl": 1,
+      "debian/redis-tools/redis-cli": 1,
+      "debian/sqlite3/sqlite3": 0,
+      "debian/tmux/tmux": 2,
+      "debian/tree/tree": 0,
+      "debian/zstd/pzstd": 1,
+      "debian/zstd/zstd": 1,
+      "mac/htop": 1,
+      "mac/tmux": 0
+     }
+    }
+   },
+   "packer_cikti": {
+    "gelistirme": {
+     "yanlis_toplam": 0,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 0
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 0,
+      "debian/coreutils/expr": 0,
+      "debian/coreutils/ls": 0,
+      "debian/coreutils/sort": 0,
+      "debian/htop/htop": 0,
+      "debian/openssl/openssl": 0,
+      "debian/redis-tools/redis-cli": 0,
+      "debian/sqlite3/sqlite3": 0,
+      "debian/tmux/tmux": 0,
+      "debian/tree/tree": 0,
+      "debian/zstd/pzstd": 0,
+      "debian/zstd/zstd": 0,
+      "mac/htop": 0,
+      "mac/tmux": 0
+     }
+    }
+   },
+   "yara_cikti": {
+    "gelistirme": {
+     "yanlis_toplam": 31,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 31
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 0,
+      "debian/coreutils/expr": 0,
+      "debian/coreutils/ls": 3,
+      "debian/coreutils/sort": 2,
+      "debian/htop/htop": 3,
+      "debian/openssl/openssl": 3,
+      "debian/redis-tools/redis-cli": 3,
+      "debian/sqlite3/sqlite3": 2,
+      "debian/tmux/tmux": 3,
+      "debian/tree/tree": 2,
+      "debian/zstd/pzstd": 1,
+      "debian/zstd/zstd": 3,
+      "mac/htop": 3,
+      "mac/tmux": 3
+     }
+    }
+   },
+   "bilesim_yeniden": {
+    "gelistirme": {
+     "yanlis_toplam": 82,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 82
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 3,
+      "debian/coreutils/expr": 3,
+      "debian/coreutils/ls": 3,
+      "debian/coreutils/sort": 3,
+      "debian/htop/htop": 7,
+      "debian/openssl/openssl": 12,
+      "debian/redis-tools/redis-cli": 13,
+      "debian/sqlite3/sqlite3": 8,
+      "debian/tmux/tmux": 4,
+      "debian/tree/tree": 3,
+      "debian/zstd/pzstd": 4,
+      "debian/zstd/zstd": 7,
+      "mac/htop": 6,
+      "mac/tmux": 6
+     }
+    }
+   },
+   "algoritma_yeniden": {
+    "gelistirme": {
+     "yanlis_toplam": 45,
+     "ikili": 14,
+     "kaynaklar": [
+      {
+       "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P00/taban_cikti_head/masum_kapi.json",
+       "commit": "e9d2d08ab5",
+       "tarih": "2026-11-18T09:48:56+03:00",
+       "ikili": 14,
+       "yanlis": 45
+      }
+     ],
+     "ikililer": {
+      "debian/coreutils/cat": 0,
+      "debian/coreutils/expr": 0,
+      "debian/coreutils/ls": 0,
+      "debian/coreutils/sort": 0,
+      "debian/htop/htop": 2,
+      "debian/openssl/openssl": 21,
+      "debian/redis-tools/redis-cli": 6,
+      "debian/sqlite3/sqlite3": 6,
+      "debian/tmux/tmux": 1,
+      "debian/tree/tree": 0,
+      "debian/zstd/pzstd": 1,
+      "debian/zstd/zstd": 5,
+      "mac/htop": 1,
+      "mac/tmux": 2
      }
     }
    }

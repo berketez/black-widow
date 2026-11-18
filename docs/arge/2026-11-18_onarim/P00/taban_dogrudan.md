@@ -1,33 +1,33 @@
 # Masum ikili kapısı — dogrudan kip
 
-- Zaman: 2026-11-18T09:39:12+03:00 → 2026-11-18T09:39:37+03:00 (25.2 sn)
-- Ağaç: `/Users/apple/Black_Widow/.claude/worktrees/agent-aa796f040812276d2` @ `e9d2d08ab5` (karadul 1.23.1; `/Users/apple/Black_Widow/.claude/worktrees/agent-aa796f040812276d2/karadul/__init__.py`); kirli: 0 dosya
+- Zaman: 2026-11-18T09:52:04+03:00 → 2026-11-18T09:52:32+03:00 (27.8 sn)
+- Ağaç: `/Users/apple/Black_Widow/.claude/worktrees/agent-aa796f040812276d2` @ `27e2e1a900` (karadul 1.23.1; `/Users/apple/Black_Widow/.claude/worktrees/agent-aa796f040812276d2/karadul/__init__.py`); kirli: 3 dosya
 - Kapı: **GEÇTİ** (çıkış 0)
 
 ## Katman × set: yanlış iddia
 
-| Katman | Set | İkili | Durum | İddia | Yanlış | Doğru bilinen | Yanlışlı ikili | Eşik |
-|---|---|---|---|---|---|---|---|---|
-| bi | gelistirme | 119 | calisti 119 | 2267 | 2102 | 165 | 119 | 2102 (icinde) |
-| bi | macos | 48 | calisti 48 | 809 | 701 | 108 | 48 | 701 (icinde) |
-| bi | pe | 21 | calisti 20, uygulanmaz 1 | 203 | 203 | 0 | 20 | 203 (icinde) |
-| bi | pozitif | 6 | calisti 6 | 154 | 0 | 0 | 0 | — |
-| antidebug | gelistirme | 119 | calisti 119 | 23 | 23 | 0 | 16 | 23 (icinde) |
-| antidebug | macos | 48 | calisti 48 | 22 | 22 | 0 | 18 | 22 (icinde) |
-| antidebug | pe | 21 | calisti 21 | 76 | 76 | 0 | 21 | 76 (icinde) |
-| antidebug | pozitif | 6 | calisti 6 | 9 | 0 | 0 | 0 | — |
-| packer | gelistirme | 119 | calisti 119 | 0 | 0 | 0 | 0 | 0 (icinde) |
-| packer | macos | 48 | calisti 48 | 0 | 0 | 0 | 0 | 0 (icinde) |
-| packer | pe | 21 | calisti 21 | 19 | 19 | 0 | 18 | 19 (icinde) |
-| packer | pozitif | 6 | calisti 6 | 5 | 0 | 0 | 0 | — |
-| yara | gelistirme | 119 | calisti 119 | 81 | 70 | 11 | 31 | 70 (icinde) |
-| yara | macos | 48 | calisti 48 | 132 | 127 | 5 | 48 | 127 (icinde) |
-| yara | pe | 21 | calisti 21 | 92 | 71 | 21 | 20 | 71 (icinde) |
-| yara | pozitif | 6 | calisti 6 | 21 | 0 | 0 | 0 | — |
-| capa | gelistirme | 119 | calismadi 119 | 0 | 0 | 0 | 0 | 0 (icinde) |
-| capa | macos | 48 | calismadi 48 | 0 | 0 | 0 | 0 | 0 (icinde) |
-| capa | pe | 21 | calismadi 21 | 0 | 0 | 0 | 0 | 0 (icinde) |
-| capa | pozitif | 6 | calismadi 6 | 0 | 0 | 0 | 0 | — |
+| Katman | Set | İkili | Durum | İddia | Yanlış | Doğru bilinen | Yanlışlı ikili | Adet (yanlış) | Eşik |
+|---|---|---|---|---|---|---|---|---|---|
+| bi | gelistirme | 119 | calisti 119 | 2267 | 2102 | 165 | 119 | 2267 (2102) | 2102 ≤ 2102 (icinde; 119 ikili) |
+| bi | macos | 48 | calisti 48 | 809 | 701 | 108 | 48 | 809 (701) | 701 ≤ 701 (icinde; 48 ikili) |
+| bi | pe | 21 | calisti 20, uygulanmaz 1 | 203 | 203 | 0 | 20 | 203 (203) | 203 ≤ 203 (icinde; 21 ikili) |
+| bi | pozitif | 6 | calisti 6 | 154 | 0 | 0 | 0 | 154 (0) | — |
+| antidebug | gelistirme | 119 | calisti 119 | 23 | 23 | 0 | 16 | 23 (23) | 23 ≤ 23 (icinde; 119 ikili) |
+| antidebug | macos | 48 | calisti 48 | 22 | 22 | 0 | 18 | 22 (22) | 22 ≤ 22 (icinde; 48 ikili) |
+| antidebug | pe | 21 | calisti 21 | 76 | 76 | 0 | 21 | 76 (76) | 76 ≤ 76 (icinde; 21 ikili) |
+| antidebug | pozitif | 6 | calisti 6 | 9 | 0 | 0 | 0 | 9 (0) | — |
+| packer | gelistirme | 119 | calisti 119 | 0 | 0 | 0 | 0 | 0 (0) | 0 ≤ 0 (icinde; 119 ikili) |
+| packer | macos | 48 | calisti 48 | 0 | 0 | 0 | 0 | 0 (0) | 0 ≤ 0 (icinde; 48 ikili) |
+| packer | pe | 21 | calisti 21 | 19 | 19 | 0 | 18 | 19 (19) | 19 ≤ 19 (icinde; 21 ikili) |
+| packer | pozitif | 6 | calisti 6 | 5 | 0 | 0 | 0 | 5 (0) | — |
+| yara | gelistirme | 119 | calisti 119 | 81 | 70 | 11 | 31 | 81 (70) | 70 ≤ 70 (icinde; 119 ikili) |
+| yara | macos | 48 | calisti 48 | 132 | 127 | 5 | 48 | 132 (127) | 127 ≤ 127 (icinde; 48 ikili) |
+| yara | pe | 21 | calisti 21 | 92 | 71 | 21 | 20 | 92 (71) | 71 ≤ 71 (icinde; 21 ikili) |
+| yara | pozitif | 6 | calisti 6 | 21 | 0 | 0 | 0 | 21 (0) | — |
+| capa | gelistirme | 119 | calismadi 119 | 0 | 0 | 0 | 0 | 0 (0) | 0 ≤ 0 (icinde; 119 ikili) |
+| capa | macos | 48 | calismadi 48 | 0 | 0 | 0 | 0 | 0 (0) | 0 ≤ 0 (icinde; 48 ikili) |
+| capa | pe | 21 | calismadi 21 | 0 | 0 | 0 | 0 | 0 (0) | 0 ≤ 0 (icinde; 21 ikili) |
+| capa | pozitif | 6 | calismadi 6 | 0 | 0 | 0 | 0 | 0 (0) | — |
 
 ## En sık etiketler (ikili sayısı değil, iddia sayısı; bir ikilide etiket bir kez)
 
@@ -57,50 +57,50 @@
 
 ## İzlenen yanlış etiketler (rapordaki bulgular; ikili sayısı)
 
-| Ad | Katman | Set | Etiket | İkili / ölçülen | Rapordaki |
-|---|---|---|---|---|---|
-| bluetooth | bi | gelistirme | `^altsistem:Bluetooth$` | 119 / 119 | IMZA-01: 119/119 (gelistirme) |
-| bluetooth | bi | macos | `^altsistem:Bluetooth$` | 28 / 48 | IMZA-01: 119/119 (gelistirme) |
-| bluetooth | bi | pe | `^altsistem:Bluetooth$` | 18 / 21 | IMZA-01: 119/119 (gelistirme) |
-| encryption | bi | gelistirme | `^altsistem:Encryption$` | 108 / 108 | IMZA-01: 119/119; burada kriptosuz alt küme |
-| encryption | bi | macos | `^altsistem:Encryption$` | 14 / 15 | IMZA-01: 119/119; burada kriptosuz alt küme |
-| opengl | bi | gelistirme | `^algoritma:OpenGL$` | 119 / 119 | IMZA-01: 119/119 |
-| opengl | bi | macos | `^algoritma:OpenGL$` | 14 / 48 | IMZA-01: 119/119 |
-| opengl | bi | pe | `^algoritma:OpenGL$` | 7 / 21 | IMZA-01: 119/119 |
-| sha256_yardim_metni | bi | gelistirme | `^algoritma:SHA-256$` | 104 / 106 | IMZA-01: 107 (gelistirme, tümü); burada coreutils |
-| kernel_riskli | bi | gelistirme | `^guvenlik:(SIP \(System Integrity\)|Kernel Extension)$` | 5 / 119 | IMZA-01: SIP 5, Kernel Extension 3 |
-| kernel_riskli | bi | macos | `^guvenlik:(SIP \(System Integrity\)|Kernel Extension)$` | 2 / 48 | IMZA-01: SIP 5, Kernel Extension 3 |
-| kernel_riskli | bi | pe | `^guvenlik:(SIP \(System Integrity\)|Kernel Extension)$` | 0 / 21 | IMZA-01: SIP 5, Kernel Extension 3 |
-| ipsec | bi | gelistirme | `^protokol:IPsec$` | 46 / 119 | IMZA-01: 46 |
-| ipsec | bi | macos | `^protokol:IPsec$` | 12 / 48 | IMZA-01: 46 |
-| ipsec | bi | pe | `^protokol:IPsec$` | 1 / 21 | IMZA-01: 46 |
-| rdtsc | antidebug | gelistirme | `^teknik:RDTSC_Timing$` | 14 / 119 | IMZA-02: 14 (gelistirme, AArch64) |
-| rdtsc | antidebug | macos | `^teknik:RDTSC_Timing$` | 15 / 48 | IMZA-02: 14 (gelistirme, AArch64) |
-| rdtsc | antidebug | pe | `^teknik:RDTSC_Timing$` | 2 / 21 | IMZA-02: 14 (gelistirme, AArch64) |
-| sysctl_tek_ithal | antidebug | gelistirme | `^teknik:sysctl_kinfo_proc$` | 1 / 119 | IMZA-02: mac/htop, top, sysctl, vim |
-| sysctl_tek_ithal | antidebug | macos | `^teknik:sysctl_kinfo_proc$` | 6 / 48 | IMZA-02: mac/htop, top, sysctl, vim |
-| sysctl_tek_ithal | antidebug | pe | `^teknik:sysctl_kinfo_proc$` | 0 / 21 | IMZA-02: mac/htop, top, sysctl, vim |
-| pe_crt_ithal | antidebug | pe | `^teknik:(IsDebuggerPresent|QueryPerformanceCounter|GetTickCount|INT3_Cluster)$` | 21 / 21 | IMZA-03 |
-| fsg | packer | gelistirme | `^paketleyici:FSG$` | 0 / 119 | IMZA-04 |
-| fsg | packer | macos | `^paketleyici:FSG$` | 0 / 48 | IMZA-04 |
-| fsg | packer | pe | `^paketleyici:FSG$` | 18 / 21 | IMZA-04 |
-| imza11_fsg | packer | pe | `^paketleyici:FSG$` | 10 / 11 | IMZA-04: 10/11 (makensisw.exe yerine makensis.exe) |
-| mpress | yara | gelistirme | `^kural:MPRESS_Packed$` | 13 / 119 | IMZA-05: 13 (gelistirme) |
-| mpress | yara | macos | `^kural:MPRESS_Packed$` | 16 / 48 | IMZA-05: 13 (gelistirme) |
-| mpress | yara | pe | `^kural:MPRESS_Packed$` | 3 / 21 | IMZA-05: 13 (gelistirme) |
-| aspack | yara | gelistirme | `^kural:ASPack_Packed$` | 1 / 119 | IMZA-05: 1 (tree) |
-| aspack | yara | macos | `^kural:ASPack_Packed$` | 0 / 48 | IMZA-05: 1 (tree) |
-| aspack | yara | pe | `^kural:ASPack_Packed$` | 0 / 21 | IMZA-05: 1 (tree) |
-| delphi | yara | gelistirme | `^kural:Delphi_Compiler$` | 2 / 119 | IMZA-05: 2 (redis) |
-| delphi | yara | macos | `^kural:Delphi_Compiler$` | 1 / 48 | IMZA-05: 2 (redis) |
-| delphi | yara | pe | `^kural:Delphi_Compiler$` | 1 / 21 | IMZA-05: 2 (redis) |
-| yara_antidebug | yara | gelistirme | `^kural:AntiDebug_` | 24 / 119 | IMZA-05: Timing 23, SysctlCheck 4 |
-| yara_antidebug | yara | macos | `^kural:AntiDebug_` | 16 / 48 | IMZA-05: Timing 23, SysctlCheck 4 |
-| yara_antidebug | yara | pe | `^kural:AntiDebug_` | 18 / 21 | IMZA-05: Timing 23, SysctlCheck 4 |
-| stack_string | yara | gelistirme | `^kural:Stack_String_Construction$` | 19 / 119 | IMZA-05: 19 |
-| stack_string | yara | macos | `^kural:Stack_String_Construction$` | 30 / 48 | IMZA-05: 19 |
-| stack_string | yara | pe | `^kural:Stack_String_Construction$` | 12 / 21 | IMZA-05: 19 |
-| rsa_oid_imza | yara | macos | `^kural:RSA_Public_Key_Constants$` | 48 / 48 | IMZA-05: Apple kod imzası sertifikasındaki OID |
+| Ad | Katman | Set | Etiket | İkili / ölçülen | Adet | Rapordaki |
+|---|---|---|---|---|---|---|
+| bluetooth | bi | gelistirme | `^altsistem:Bluetooth$` | 119 / 119 | 119 | IMZA-01: 119/119 (gelistirme) |
+| bluetooth | bi | macos | `^altsistem:Bluetooth$` | 28 / 48 | 28 | IMZA-01: 119/119 (gelistirme) |
+| bluetooth | bi | pe | `^altsistem:Bluetooth$` | 18 / 21 | 18 | IMZA-01: 119/119 (gelistirme) |
+| encryption | bi | gelistirme | `^altsistem:Encryption$` | 108 / 108 | 108 | IMZA-01: 119/119; burada kriptosuz alt küme |
+| encryption | bi | macos | `^altsistem:Encryption$` | 14 / 15 | 14 | IMZA-01: 119/119; burada kriptosuz alt küme |
+| opengl | bi | gelistirme | `^algoritma:OpenGL$` | 119 / 119 | 119 | IMZA-01: 119/119 |
+| opengl | bi | macos | `^algoritma:OpenGL$` | 14 / 48 | 14 | IMZA-01: 119/119 |
+| opengl | bi | pe | `^algoritma:OpenGL$` | 7 / 21 | 7 | IMZA-01: 119/119 |
+| sha256_yardim_metni | bi | gelistirme | `^algoritma:SHA-256$` | 104 / 106 | 104 | IMZA-01: 107 (gelistirme, tümü); burada coreutils |
+| kernel_riskli | bi | gelistirme | `^guvenlik:(SIP \(System Integrity\)|Kernel Extension)$` | 5 / 119 | 8 | IMZA-01: SIP 5, Kernel Extension 3 |
+| kernel_riskli | bi | macos | `^guvenlik:(SIP \(System Integrity\)|Kernel Extension)$` | 2 / 48 | 2 | IMZA-01: SIP 5, Kernel Extension 3 |
+| kernel_riskli | bi | pe | `^guvenlik:(SIP \(System Integrity\)|Kernel Extension)$` | 0 / 21 | 0 | IMZA-01: SIP 5, Kernel Extension 3 |
+| ipsec | bi | gelistirme | `^protokol:IPsec$` | 46 / 119 | 46 | IMZA-01: 46 |
+| ipsec | bi | macos | `^protokol:IPsec$` | 12 / 48 | 12 | IMZA-01: 46 |
+| ipsec | bi | pe | `^protokol:IPsec$` | 1 / 21 | 1 | IMZA-01: 46 |
+| rdtsc | antidebug | gelistirme | `^teknik:RDTSC_Timing$` | 14 / 119 | 14 | IMZA-02: 14 (gelistirme, AArch64) |
+| rdtsc | antidebug | macos | `^teknik:RDTSC_Timing$` | 15 / 48 | 15 | IMZA-02: 14 (gelistirme, AArch64) |
+| rdtsc | antidebug | pe | `^teknik:RDTSC_Timing$` | 2 / 21 | 2 | IMZA-02: 14 (gelistirme, AArch64) |
+| sysctl_tek_ithal | antidebug | gelistirme | `^teknik:sysctl_kinfo_proc$` | 1 / 119 | 1 | IMZA-02: mac/htop, top, sysctl, vim |
+| sysctl_tek_ithal | antidebug | macos | `^teknik:sysctl_kinfo_proc$` | 6 / 48 | 6 | IMZA-02: mac/htop, top, sysctl, vim |
+| sysctl_tek_ithal | antidebug | pe | `^teknik:sysctl_kinfo_proc$` | 0 / 21 | 0 | IMZA-02: mac/htop, top, sysctl, vim |
+| pe_crt_ithal | antidebug | pe | `^teknik:(IsDebuggerPresent|QueryPerformanceCounter|GetTickCount|INT3_Cluster)$` | 21 / 21 | 60 | IMZA-03 |
+| fsg | packer | gelistirme | `^paketleyici:FSG$` | 0 / 119 | 0 | IMZA-04 |
+| fsg | packer | macos | `^paketleyici:FSG$` | 0 / 48 | 0 | IMZA-04 |
+| fsg | packer | pe | `^paketleyici:FSG$` | 18 / 21 | 18 | IMZA-04 |
+| imza11_fsg | packer | pe | `^paketleyici:FSG$` | 10 / 11 | 10 | IMZA-04: 10/11 (makensisw.exe yerine makensis.exe) |
+| mpress | yara | gelistirme | `^kural:MPRESS_Packed$` | 13 / 119 | 13 | IMZA-05: 13 (gelistirme) |
+| mpress | yara | macos | `^kural:MPRESS_Packed$` | 16 / 48 | 16 | IMZA-05: 13 (gelistirme) |
+| mpress | yara | pe | `^kural:MPRESS_Packed$` | 3 / 21 | 3 | IMZA-05: 13 (gelistirme) |
+| aspack | yara | gelistirme | `^kural:ASPack_Packed$` | 1 / 119 | 1 | IMZA-05: 1 (tree) |
+| aspack | yara | macos | `^kural:ASPack_Packed$` | 0 / 48 | 0 | IMZA-05: 1 (tree) |
+| aspack | yara | pe | `^kural:ASPack_Packed$` | 0 / 21 | 0 | IMZA-05: 1 (tree) |
+| delphi | yara | gelistirme | `^kural:Delphi_Compiler$` | 2 / 119 | 2 | IMZA-05: 2 (redis) |
+| delphi | yara | macos | `^kural:Delphi_Compiler$` | 1 / 48 | 1 | IMZA-05: 2 (redis) |
+| delphi | yara | pe | `^kural:Delphi_Compiler$` | 1 / 21 | 1 | IMZA-05: 2 (redis) |
+| yara_antidebug | yara | gelistirme | `^kural:AntiDebug_` | 24 / 119 | 27 | IMZA-05: Timing 23, SysctlCheck 4 |
+| yara_antidebug | yara | macos | `^kural:AntiDebug_` | 16 / 48 | 18 | IMZA-05: Timing 23, SysctlCheck 4 |
+| yara_antidebug | yara | pe | `^kural:AntiDebug_` | 18 / 21 | 52 | IMZA-05: Timing 23, SysctlCheck 4 |
+| stack_string | yara | gelistirme | `^kural:Stack_String_Construction$` | 19 / 119 | 19 | IMZA-05: 19 |
+| stack_string | yara | macos | `^kural:Stack_String_Construction$` | 30 / 48 | 30 | IMZA-05: 19 |
+| stack_string | yara | pe | `^kural:Stack_String_Construction$` | 12 / 21 | 12 | IMZA-05: 19 |
+| rsa_oid_imza | yara | macos | `^kural:RSA_Public_Key_Constants$` | 48 / 48 | 48 | IMZA-05: Apple kod imzası sertifikasındaki OID |
 
 ## Rapora yansıyan düzeyler
 

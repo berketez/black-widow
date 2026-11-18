@@ -1,0 +1,1676 @@
+{
+ "arac": "masum_kapi",
+ "surum": 1,
+ "baslangic": "2026-11-18T09:48:56+03:00",
+ "agac": {
+  "agac": "/Users/apple/Black_Widow/.claude/worktrees/agent-aa796f040812276d2",
+  "commit": "27e2e1a900bab3148319168e18170065a0d31a9b",
+  "kirli": [
+   "M scripts/measurement/masum_kapi.py",
+   " M scripts/measurement/masum_kapi_esik.json"
+  ],
+  "karadul_dosyasi": "/Users/apple/Black_Widow/.claude/worktrees/agent-aa796f040812276d2/karadul/__init__.py",
+  "karadul_surumu": "1.23.1"
+ },
+ "python": "3.12.7",
+ "esik_dosyasi": "/Users/apple/Black_Widow/.claude/worktrees/agent-aa796f040812276d2/scripts/measurement/masum_kapi_esik.json",
+ "kip": "cikti",
+ "kosu": {
+  "kok": "/Users/apple/karadul_olcum/runs/genel-tarama-2026-11-18",
+  "commit": "e9d2d08ab5c524520ab8d440eeb116273c9bc936",
+  "surum": "1.23.1",
+  "ikili": 14,
+  "katmanlar": [
+   "bilesim",
+   "algoritma_kod",
+   "algoritma_json",
+   "security_etiketi",
+   "sarif",
+   "blok_yorumu",
+   "types_h",
+   "intel",
+   "antidebug_cikti",
+   "packer_cikti",
+   "yara_cikti",
+   "bilesim_yeniden",
+   "algoritma_yeniden"
+  ],
+  "set": "gelistirme",
+  "sablon_sayisi": 21,
+  "agac_farkli": true
+ },
+ "ozet": {
+  "bilesim": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "calisti": 14
+    },
+    "neden": {},
+    "iddia": 82,
+    "yanlis": 82,
+    "dogru_bilinen": 0,
+    "yanlis_ikili": 14,
+    "adet": 82,
+    "yanlis_adet": 82,
+    "etiket": {
+     "sablon:Matrix Solve Pipeline": 14,
+     "sablon:Rocket / Trajectory Simulation Loop": 14,
+     "sablon:Transient CFD Time-Stepping": 14,
+     "sablon:Compress-then-Encrypt Pipeline": 8,
+     "sablon:Cryptographic Key Derivation Pipeline": 5,
+     "sablon:VPN Tunnel Setup Pipeline": 5,
+     "sablon:Hash-then-Sign Pipeline": 3,
+     "sablon:Key Derivation Pipeline": 3,
+     "sablon:Audio Codec Pipeline": 2,
+     "sablon:FFT Signal Processing Pipeline": 2,
+     "sablon:ML Training Loop": 2,
+     "sablon:Nonlinear Static FEA Solution": 2,
+     "sablon:SSL/TLS Session Pipeline": 2,
+     "sablon:Steady RANS CFD Solution": 2,
+     "sablon:TLS Handshake Protocol": 2,
+     "sablon:Certificate Chain Validation": 1,
+     "sablon:Linear Static FEA Pipeline": 1
+    },
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 3,
+     "debian/coreutils/expr": 3,
+     "debian/coreutils/ls": 3,
+     "debian/coreutils/sort": 3,
+     "debian/htop/htop": 7,
+     "debian/openssl/openssl": 12,
+     "debian/redis-tools/redis-cli": 13,
+     "debian/sqlite3/sqlite3": 8,
+     "debian/tmux/tmux": 4,
+     "debian/tree/tree": 3,
+     "debian/zstd/pzstd": 4,
+     "debian/zstd/zstd": 7,
+     "mac/htop": 6,
+     "mac/tmux": 6
+    }
+   }
+  },
+  "algoritma_kod": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "calisti": 14
+    },
+    "neden": {},
+    "iddia": 29,
+    "yanlis": 29,
+    "dogru_bilinen": 0,
+    "yanlis_ikili": 7,
+    "adet": 46,
+    "yanlis_adet": 46,
+    "etiket": {
+     "algoritma:Galois field operations (ECC, AES-GF)": 5,
+     "algoritma:Base64 encoding/decoding": 2,
+     "algoritma:LZ-family compression (LZ77, LZW, zlib)": 2,
+     "algoritma:TLS context": 2,
+     "algoritma:TLS handshake (client)": 2,
+     "algoritma:Block cipher mode of operation (CBC, CTR, GCM)": 1,
+     "algoritma:CSPRNG (OpenSSL)": 1,
+     "algoritma:Elliptic curve operations (ECDSA, ECDH)": 1,
+     "algoritma:Huffman coding": 1,
+     "algoritma:OpenSSL hash": 1,
+     "algoritma:OpenSSL key context": 1,
+     "algoritma:OpenSSL symmetric decryption": 1,
+     "algoritma:OpenSSL symmetric encryption": 1,
+     "algoritma:Password-based key derivation (PBKDF2, scrypt)": 1,
+     "algoritma:TLS encrypted read": 1,
+     "algoritma:TLS encrypted write": 1,
+     "algoritma:TLS handshake (server)": 1,
+     "algoritma:TLS session": 1,
+     "algoritma:XOR-based encryption/decryption": 1,
+     "algoritma:zlib decompression": 1,
+     "algoritma:zlib inflate": 1
+    },
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 0,
+     "debian/coreutils/expr": 0,
+     "debian/coreutils/ls": 0,
+     "debian/coreutils/sort": 0,
+     "debian/htop/htop": 2,
+     "debian/openssl/openssl": 13,
+     "debian/redis-tools/redis-cli": 5,
+     "debian/sqlite3/sqlite3": 5,
+     "debian/tmux/tmux": 1,
+     "debian/tree/tree": 0,
+     "debian/zstd/pzstd": 0,
+     "debian/zstd/zstd": 2,
+     "mac/htop": 0,
+     "mac/tmux": 1
+    }
+   }
+  },
+  "algoritma_json": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "calisti": 14
+    },
+    "neden": {},
+    "iddia": 45,
+    "yanlis": 45,
+    "dogru_bilinen": 0,
+    "yanlis_ikili": 9,
+    "adet": 142,
+    "yanlis_adet": 142,
+    "etiket": {
+     "algoritma:Galois field operations (ECC, AES-GF)": 9,
+     "algoritma:Base64 encoding/decoding": 2,
+     "algoritma:LZ-family compression (LZ77, LZW, zlib)": 2,
+     "algoritma:Password-based key derivation (PBKDF2, scrypt)": 2,
+     "algoritma:TLS context": 2,
+     "algoritma:TLS encrypted read": 2,
+     "algoritma:TLS encrypted write": 2,
+     "algoritma:TLS handshake (client)": 2,
+     "algoritma:TLS session": 2,
+     "algoritma:zlib deflate": 2,
+     "algoritma:zlib inflate": 2,
+     "algoritma:Block cipher mode of operation (CBC, CTR, GCM)": 1,
+     "algoritma:CSPRNG (OpenSSL)": 1,
+     "algoritma:Elliptic curve operations (ECDSA, ECDH)": 1,
+     "algoritma:Huffman coding": 1,
+     "algoritma:Key expansion / key schedule": 1,
+     "algoritma:Modular exponentiation (RSA, DH)": 1,
+     "algoritma:OpenSSL hash": 1,
+     "algoritma:OpenSSL key context": 1,
+     "algoritma:OpenSSL symmetric decryption": 1,
+     "algoritma:OpenSSL symmetric encryption": 1,
+     "algoritma:PBKDF2": 1,
+     "algoritma:S-box substitution (AES, DES)": 1,
+     "algoritma:TLS certificate verification": 1,
+     "algoritma:TLS handshake (server)": 1,
+     "algoritma:XOR-based encryption/decryption": 1,
+     "algoritma:zlib decompression": 1
+    },
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 0,
+     "debian/coreutils/expr": 0,
+     "debian/coreutils/ls": 0,
+     "debian/coreutils/sort": 0,
+     "debian/htop/htop": 2,
+     "debian/openssl/openssl": 21,
+     "debian/redis-tools/redis-cli": 6,
+     "debian/sqlite3/sqlite3": 6,
+     "debian/tmux/tmux": 1,
+     "debian/tree/tree": 0,
+     "debian/zstd/pzstd": 1,
+     "debian/zstd/zstd": 5,
+     "mac/htop": 1,
+     "mac/tmux": 2
+    }
+   }
+  },
+  "security_etiketi": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "calisti": 14
+    },
+    "neden": {},
+    "iddia": 22,
+    "yanlis": 22,
+    "dogru_bilinen": 0,
+    "yanlis_ikili": 7,
+    "adet": 3209,
+    "yanlis_adet": 3209,
+    "etiket": {
+     "security:Handles sensitive key material": 7,
+     "security:Code injection/hooking mechanism": 3,
+     "security:Handles authentication/credentials": 3,
+     "security:Handles certificates/TLS": 3,
+     "security:Handles cryptographic operations": 3,
+     "security:Receives sensitive parameters": 2,
+     "security:Handles privilege/sandbox operations": 1
+    },
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 0,
+     "debian/coreutils/expr": 0,
+     "debian/coreutils/ls": 0,
+     "debian/coreutils/sort": 0,
+     "debian/htop/htop": 3,
+     "debian/openssl/openssl": 5,
+     "debian/redis-tools/redis-cli": 3,
+     "debian/sqlite3/sqlite3": 3,
+     "debian/tmux/tmux": 3,
+     "debian/tree/tree": 0,
+     "debian/zstd/pzstd": 0,
+     "debian/zstd/zstd": 0,
+     "mac/htop": 1,
+     "mac/tmux": 4
+    }
+   }
+  },
+  "sarif": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "calisti": 14
+    },
+    "neden": {},
+    "iddia": 37,
+    "yanlis": 37,
+    "dogru_bilinen": 0,
+    "yanlis_ikili": 12,
+    "adet": 37,
+    "yanlis_adet": 37,
+    "etiket": {
+     "KRDL003:Stack_String_Construction": 11,
+     "KRDL003:MPRESS_Packed": 8,
+     "KRDL003:AntiDebug_Timing": 6,
+     "KRDL003:Zlib_Library": 6,
+     "KRDL003:OpenSSL_Library": 2,
+     "KRDL003:Zstd_Library": 2,
+     "KRDL003:ASPack_Packed": 1,
+     "KRDL003:AntiDebug_SysctlCheck": 1
+    },
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 0,
+     "debian/coreutils/expr": 0,
+     "debian/coreutils/ls": 3,
+     "debian/coreutils/sort": 2,
+     "debian/htop/htop": 3,
+     "debian/openssl/openssl": 4,
+     "debian/redis-tools/redis-cli": 4,
+     "debian/sqlite3/sqlite3": 2,
+     "debian/tmux/tmux": 3,
+     "debian/tree/tree": 2,
+     "debian/zstd/pzstd": 3,
+     "debian/zstd/zstd": 5,
+     "mac/htop": 3,
+     "mac/tmux": 3
+    }
+   }
+  },
+  "blok_yorumu": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "calisti": 14
+    },
+    "neden": {},
+    "iddia": 10,
+    "yanlis": 10,
+    "dogru_bilinen": 0,
+    "yanlis_ikili": 9,
+    "adet": 101,
+    "yanlis_adet": 101,
+    "etiket": {
+     "blok:Row-major matrix access": 9,
+     "blok:Iteration loop": 1
+    },
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 1,
+     "debian/coreutils/expr": 1,
+     "debian/coreutils/ls": 1,
+     "debian/coreutils/sort": 1,
+     "debian/htop/htop": 0,
+     "debian/openssl/openssl": 1,
+     "debian/redis-tools/redis-cli": 0,
+     "debian/sqlite3/sqlite3": 0,
+     "debian/tmux/tmux": 1,
+     "debian/tree/tree": 0,
+     "debian/zstd/pzstd": 1,
+     "debian/zstd/zstd": 1,
+     "mac/htop": 0,
+     "mac/tmux": 2
+    }
+   }
+  },
+  "types_h": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "calisti": 14
+    },
+    "neden": {},
+    "iddia": 14,
+    "yanlis": 14,
+    "dogru_bilinen": 0,
+    "yanlis_ikili": 14,
+    "adet": 4109,
+    "yanlis_adet": 4109,
+    "etiket": {
+     "yapi:recovered_struct": 14
+    },
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 1,
+     "debian/coreutils/expr": 1,
+     "debian/coreutils/ls": 1,
+     "debian/coreutils/sort": 1,
+     "debian/htop/htop": 1,
+     "debian/openssl/openssl": 1,
+     "debian/redis-tools/redis-cli": 1,
+     "debian/sqlite3/sqlite3": 1,
+     "debian/tmux/tmux": 1,
+     "debian/tree/tree": 1,
+     "debian/zstd/pzstd": 1,
+     "debian/zstd/zstd": 1,
+     "mac/htop": 1,
+     "mac/tmux": 1
+    }
+   }
+  },
+  "intel": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "calisti": 14
+    },
+    "neden": {},
+    "iddia": 396,
+    "yanlis": 353,
+    "dogru_bilinen": 43,
+    "yanlis_ikili": 14,
+    "adet": 396,
+    "yanlis_adet": 353,
+    "etiket": {
+     "algoritma:OpenGL": 14,
+     "altsistem:Bluetooth": 14,
+     "altsistem:Encryption": 14,
+     "altsistem:File System Operations": 14,
+     "altsistem:Memory Management": 14,
+     "altsistem:Terminal Emulator": 14,
+     "guvenlik:Stack Protection": 14,
+     "protokol:IPsec": 12,
+     "altsistem:HTTP Client": 11,
+     "altsistem:Process Management": 11,
+     "altsistem:Browser Engine": 10,
+     "altsistem:Digital Signatures": 10,
+     "altsistem:Testing Framework": 10,
+     "altsistem:Clipboard": 9,
+     "altsistem:Localization": 9,
+     "altsistem:Version Control": 9,
+     "protokol:HTTPS": 9,
+     "altsistem:Cryptographic Hashing": 8,
+     "altsistem:Shell Integration": 8,
+     "altsistem:Update System": 8,
+     "altsistem:DNS Resolution": 7,
+     "altsistem:Licensing": 7,
+     "altsistem:Code Editor": 6,
+     "algoritma:SHA-256": 5,
+     "algoritma:SHA-512": 5,
+     "altsistem:Cloud Sync": 5,
+     "altsistem:Compression": 5,
+     "altsistem:Concurrency": 5,
+     "altsistem:Firewall": 5,
+     "altsistem:Local Database": 5,
+     "altsistem:TCP/UDP Networking": 5,
+     "guvenlik:ASLR": 5,
+     "protokol:NTP": 5,
+     "algoritma:Regular Expressions": 4,
+     "altsistem:Extension System": 4,
+     "altsistem:Inter-Process Communication": 4,
+     "altsistem:Swift Runtime": 4,
+     "protokol:DNS": 4,
+     "algoritma:Zstandard": 3,
+     "algoritma:zlib": 3,
+     "altsistem:Crash Reporting": 3,
+     "altsistem:Logging & Telemetry": 3,
+     "altsistem:Real-time Protection": 3,
+     "guvenlik:Anti-Tampering": 3,
+     "algoritma:LZ4": 2,
+     "algoritma:LZMA": 2,
+     "algoritma:MD5": 2,
+     "algoritma:OpenSSL API": 2,
+     "algoritma:SHA-1": 2,
+     "algoritma:TLS 1.2": 2,
+     "algoritma:TLS 1.3": 2,
+     "altsistem:Audio/Video": 2,
+     "altsistem:Debugger": 2,
+     "altsistem:Scanning Engine": 2,
+     "altsistem:Spreadsheet Engine": 2,
+     "altsistem:Web Protection": 2,
+     "altsistem:macOS System Integration": 2,
+     "guvenlik:SIP (System Integrity)": 2,
+     "guvenlik:TCC (Privacy)": 2,
+     "protokol:HTTP/3": 2,
+     "protokol:Mach IPC": 2,
+     "algoritma:3DES": 1,
+     "algoritma:AES": 1,
+     "algoritma:BLAKE2": 1,
+     "algoritma:Bloom Filter": 1,
+     "algoritma:Blowfish": 1,
+     "algoritma:Brotli": 1,
+     "algoritma:CRC32": 1,
+     "algoritma:Curve25519": 1,
+     "algoritma:Diffie-Hellman": 1,
+     "algoritma:ECDH": 1,
+     "algoritma:ECDSA": 1,
+     "algoritma:Ed25519": 1,
+     "algoritma:FEA Elements": 1,
+     "algoritma:HMAC": 1,
+     "algoritma:OpenMP (GOMP)": 1,
+     "algoritma:PBKDF2": 1,
+     "algoritma:RSA": 1,
+     "algoritma:Redis Client": 1,
+     "algoritma:SPOOLES": 1,
+     "algoritma:SQLite": 1,
+     "algoritma:xxHash": 1,
+     "altsistem:Accessibility": 1,
+     "altsistem:Configuration": 1,
+     "altsistem:Document Processing": 1,
+     "altsistem:Password Manager": 1,
+     "altsistem:Serialization": 1,
+     "altsistem:USB": 1,
+     "altsistem:User Interface": 1,
+     "guvenlik:Kernel Extension": 1,
+     "protokol:HTTP/2": 1,
+     "protokol:IMAP": 1,
+     "protokol:SMTP": 1
+    },
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 15,
+     "debian/coreutils/expr": 17,
+     "debian/coreutils/ls": 25,
+     "debian/coreutils/sort": 21,
+     "debian/htop/htop": 28,
+     "debian/openssl/openssl": 43,
+     "debian/redis-tools/redis-cli": 36,
+     "debian/sqlite3/sqlite3": 33,
+     "debian/tmux/tmux": 26,
+     "debian/tree/tree": 12,
+     "debian/zstd/pzstd": 12,
+     "debian/zstd/zstd": 36,
+     "mac/htop": 21,
+     "mac/tmux": 28
+    }
+   }
+  },
+  "antidebug_cikti": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "calisti": 14
+    },
+    "neden": {},
+    "iddia": 7,
+    "yanlis": 7,
+    "dogru_bilinen": 0,
+    "yanlis_ikili": 6,
+    "adet": 7,
+    "yanlis_adet": 7,
+    "etiket": {
+     "teknik:RDTSC_Timing": 5,
+     "teknik:prctl_set_dumpable": 1,
+     "teknik:sysctl_kinfo_proc": 1
+    },
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 0,
+     "debian/coreutils/expr": 0,
+     "debian/coreutils/ls": 0,
+     "debian/coreutils/sort": 0,
+     "debian/htop/htop": 0,
+     "debian/openssl/openssl": 1,
+     "debian/redis-tools/redis-cli": 1,
+     "debian/sqlite3/sqlite3": 0,
+     "debian/tmux/tmux": 2,
+     "debian/tree/tree": 0,
+     "debian/zstd/pzstd": 1,
+     "debian/zstd/zstd": 1,
+     "mac/htop": 1,
+     "mac/tmux": 0
+    }
+   }
+  },
+  "packer_cikti": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "calisti": 14
+    },
+    "neden": {},
+    "iddia": 0,
+    "yanlis": 0,
+    "dogru_bilinen": 0,
+    "yanlis_ikili": 0,
+    "adet": 0,
+    "yanlis_adet": 0,
+    "etiket": {},
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 0,
+     "debian/coreutils/expr": 0,
+     "debian/coreutils/ls": 0,
+     "debian/coreutils/sort": 0,
+     "debian/htop/htop": 0,
+     "debian/openssl/openssl": 0,
+     "debian/redis-tools/redis-cli": 0,
+     "debian/sqlite3/sqlite3": 0,
+     "debian/tmux/tmux": 0,
+     "debian/tree/tree": 0,
+     "debian/zstd/pzstd": 0,
+     "debian/zstd/zstd": 0,
+     "mac/htop": 0,
+     "mac/tmux": 0
+    }
+   }
+  },
+  "yara_cikti": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "bilinmiyor": 2,
+     "calisti": 12
+    },
+    "neden": {
+     "yara_backend yok: tarandı mı bilinmiyor": 2
+    },
+    "iddia": 37,
+    "yanlis": 31,
+    "dogru_bilinen": 6,
+    "yanlis_ikili": 12,
+    "adet": 37,
+    "yanlis_adet": 31,
+    "etiket": {
+     "kural:Stack_String_Construction": 11,
+     "kural:MPRESS_Packed": 8,
+     "kural:AntiDebug_Timing": 6,
+     "kural:Zlib_Library": 6,
+     "kural:OpenSSL_Library": 2,
+     "kural:Zstd_Library": 2,
+     "kural:ASPack_Packed": 1,
+     "kural:AntiDebug_SysctlCheck": 1
+    },
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 0,
+     "debian/coreutils/expr": 0,
+     "debian/coreutils/ls": 3,
+     "debian/coreutils/sort": 2,
+     "debian/htop/htop": 3,
+     "debian/openssl/openssl": 3,
+     "debian/redis-tools/redis-cli": 3,
+     "debian/sqlite3/sqlite3": 2,
+     "debian/tmux/tmux": 3,
+     "debian/tree/tree": 2,
+     "debian/zstd/pzstd": 1,
+     "debian/zstd/zstd": 3,
+     "mac/htop": 3,
+     "mac/tmux": 3
+    }
+   }
+  },
+  "bilesim_yeniden": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "calisti": 14
+    },
+    "neden": {},
+    "iddia": 82,
+    "yanlis": 82,
+    "dogru_bilinen": 0,
+    "yanlis_ikili": 14,
+    "adet": 82,
+    "yanlis_adet": 82,
+    "etiket": {
+     "sablon:Matrix Solve Pipeline": 14,
+     "sablon:Rocket / Trajectory Simulation Loop": 14,
+     "sablon:Transient CFD Time-Stepping": 14,
+     "sablon:Compress-then-Encrypt Pipeline": 8,
+     "sablon:Cryptographic Key Derivation Pipeline": 5,
+     "sablon:VPN Tunnel Setup Pipeline": 5,
+     "sablon:Hash-then-Sign Pipeline": 3,
+     "sablon:Key Derivation Pipeline": 3,
+     "sablon:Audio Codec Pipeline": 2,
+     "sablon:FFT Signal Processing Pipeline": 2,
+     "sablon:ML Training Loop": 2,
+     "sablon:Nonlinear Static FEA Solution": 2,
+     "sablon:SSL/TLS Session Pipeline": 2,
+     "sablon:Steady RANS CFD Solution": 2,
+     "sablon:TLS Handshake Protocol": 2,
+     "sablon:Certificate Chain Validation": 1,
+     "sablon:Linear Static FEA Pipeline": 1
+    },
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 3,
+     "debian/coreutils/expr": 3,
+     "debian/coreutils/ls": 3,
+     "debian/coreutils/sort": 3,
+     "debian/htop/htop": 7,
+     "debian/openssl/openssl": 12,
+     "debian/redis-tools/redis-cli": 13,
+     "debian/sqlite3/sqlite3": 8,
+     "debian/tmux/tmux": 4,
+     "debian/tree/tree": 3,
+     "debian/zstd/pzstd": 4,
+     "debian/zstd/zstd": 7,
+     "mac/htop": 6,
+     "mac/tmux": 6
+    }
+   }
+  },
+  "algoritma_yeniden": {
+   "gelistirme": {
+    "ikili": 14,
+    "durum": {
+     "calisti": 14
+    },
+    "neden": {},
+    "iddia": 45,
+    "yanlis": 45,
+    "dogru_bilinen": 0,
+    "yanlis_ikili": 9,
+    "adet": 142,
+    "yanlis_adet": 142,
+    "etiket": {
+     "algoritma:Galois field operations (ECC, AES-GF)": 9,
+     "algoritma:Base64 encoding/decoding": 2,
+     "algoritma:LZ-family compression (LZ77, LZW, zlib)": 2,
+     "algoritma:Password-based key derivation (PBKDF2, scrypt)": 2,
+     "algoritma:TLS context": 2,
+     "algoritma:TLS encrypted read": 2,
+     "algoritma:TLS encrypted write": 2,
+     "algoritma:TLS handshake (client)": 2,
+     "algoritma:TLS session": 2,
+     "algoritma:zlib deflate": 2,
+     "algoritma:zlib inflate": 2,
+     "algoritma:Block cipher mode of operation (CBC, CTR, GCM)": 1,
+     "algoritma:CSPRNG (OpenSSL)": 1,
+     "algoritma:Elliptic curve operations (ECDSA, ECDH)": 1,
+     "algoritma:Huffman coding": 1,
+     "algoritma:Key expansion / key schedule": 1,
+     "algoritma:Modular exponentiation (RSA, DH)": 1,
+     "algoritma:OpenSSL hash": 1,
+     "algoritma:OpenSSL key context": 1,
+     "algoritma:OpenSSL symmetric decryption": 1,
+     "algoritma:OpenSSL symmetric encryption": 1,
+     "algoritma:PBKDF2": 1,
+     "algoritma:S-box substitution (AES, DES)": 1,
+     "algoritma:TLS certificate verification": 1,
+     "algoritma:TLS handshake (server)": 1,
+     "algoritma:XOR-based encryption/decryption": 1,
+     "algoritma:zlib decompression": 1
+    },
+    "ikili_basina_yanlis": {
+     "debian/coreutils/cat": 0,
+     "debian/coreutils/expr": 0,
+     "debian/coreutils/ls": 0,
+     "debian/coreutils/sort": 0,
+     "debian/htop/htop": 2,
+     "debian/openssl/openssl": 21,
+     "debian/redis-tools/redis-cli": 6,
+     "debian/sqlite3/sqlite3": 6,
+     "debian/tmux/tmux": 1,
+     "debian/tree/tree": 0,
+     "debian/zstd/pzstd": 1,
+     "debian/zstd/zstd": 5,
+     "mac/htop": 1,
+     "mac/tmux": 2
+    }
+   }
+  }
+ },
+ "ek_sayaclar": {},
+ "izlenen": [
+  {
+   "ad": "bluetooth",
+   "katman": "intel",
+   "set": "gelistirme",
+   "etiket_re": "^altsistem:Bluetooth$",
+   "ikili": 14,
+   "adet": 14,
+   "olculen": 14,
+   "rapordaki": "IMZA-01: 119/119 (gelistirme)",
+   "ornek": [
+    "debian/coreutils/cat",
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop"
+   ]
+  },
+  {
+   "ad": "encryption",
+   "katman": "intel",
+   "set": "gelistirme",
+   "etiket_re": "^altsistem:Encryption$",
+   "ikili": 6,
+   "adet": 6,
+   "olculen": 6,
+   "rapordaki": "IMZA-01: 119/119; burada kriptosuz alt küme",
+   "ornek": [
+    "debian/coreutils/cat",
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop"
+   ]
+  },
+  {
+   "ad": "opengl",
+   "katman": "intel",
+   "set": "gelistirme",
+   "etiket_re": "^algoritma:OpenGL$",
+   "ikili": 14,
+   "adet": 14,
+   "olculen": 14,
+   "rapordaki": "IMZA-01: 119/119",
+   "ornek": [
+    "debian/coreutils/cat",
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop"
+   ]
+  },
+  {
+   "ad": "sha256_yardim_metni",
+   "katman": "intel",
+   "set": "gelistirme",
+   "etiket_re": "^algoritma:SHA-256$",
+   "ikili": 4,
+   "adet": 4,
+   "olculen": 4,
+   "rapordaki": "IMZA-01: 107 (gelistirme, tümü); burada coreutils",
+   "ornek": [
+    "debian/coreutils/cat",
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort"
+   ]
+  },
+  {
+   "ad": "kernel_riskli",
+   "katman": "intel",
+   "set": "gelistirme",
+   "etiket_re": "^guvenlik:(SIP \\(System Integrity\\)|Kernel Extension)$",
+   "ikili": 2,
+   "adet": 3,
+   "olculen": 14,
+   "rapordaki": "IMZA-01: SIP 5, Kernel Extension 3",
+   "ornek": [
+    "debian/openssl/openssl",
+    "debian/redis-tools/redis-cli"
+   ]
+  },
+  {
+   "ad": "ipsec",
+   "katman": "intel",
+   "set": "gelistirme",
+   "etiket_re": "^protokol:IPsec$",
+   "ikili": 12,
+   "adet": 12,
+   "olculen": 14,
+   "rapordaki": "IMZA-01: 46",
+   "ornek": [
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop",
+    "debian/openssl/openssl"
+   ]
+  },
+  {
+   "ad": "rdtsc",
+   "katman": "antidebug_cikti",
+   "set": "gelistirme",
+   "etiket_re": "^teknik:RDTSC_Timing$",
+   "ikili": 5,
+   "adet": 5,
+   "olculen": 14,
+   "rapordaki": "IMZA-02: 14 (gelistirme, AArch64)",
+   "ornek": [
+    "debian/openssl/openssl",
+    "debian/redis-tools/redis-cli",
+    "debian/tmux/tmux",
+    "debian/zstd/pzstd",
+    "debian/zstd/zstd"
+   ]
+  },
+  {
+   "ad": "sysctl_tek_ithal",
+   "katman": "antidebug_cikti",
+   "set": "gelistirme",
+   "etiket_re": "^teknik:sysctl_kinfo_proc$",
+   "ikili": 1,
+   "adet": 1,
+   "olculen": 14,
+   "rapordaki": "IMZA-02: mac/htop, top, sysctl, vim",
+   "ornek": [
+    "mac/htop"
+   ]
+  },
+  {
+   "ad": "fsg",
+   "katman": "packer_cikti",
+   "set": "gelistirme",
+   "etiket_re": "^paketleyici:FSG$",
+   "ikili": 0,
+   "adet": 0,
+   "olculen": 14,
+   "rapordaki": "IMZA-04",
+   "ornek": []
+  },
+  {
+   "ad": "mpress",
+   "katman": "yara_cikti",
+   "set": "gelistirme",
+   "etiket_re": "^kural:MPRESS_Packed$",
+   "ikili": 8,
+   "adet": 8,
+   "olculen": 14,
+   "rapordaki": "IMZA-05: 13 (gelistirme)",
+   "ornek": [
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop",
+    "debian/openssl/openssl",
+    "debian/sqlite3/sqlite3"
+   ]
+  },
+  {
+   "ad": "aspack",
+   "katman": "yara_cikti",
+   "set": "gelistirme",
+   "etiket_re": "^kural:ASPack_Packed$",
+   "ikili": 1,
+   "adet": 1,
+   "olculen": 14,
+   "rapordaki": "IMZA-05: 1 (tree)",
+   "ornek": [
+    "debian/tree/tree"
+   ]
+  },
+  {
+   "ad": "delphi",
+   "katman": "yara_cikti",
+   "set": "gelistirme",
+   "etiket_re": "^kural:Delphi_Compiler$",
+   "ikili": 0,
+   "adet": 0,
+   "olculen": 14,
+   "rapordaki": "IMZA-05: 2 (redis)",
+   "ornek": []
+  },
+  {
+   "ad": "yara_antidebug",
+   "katman": "yara_cikti",
+   "set": "gelistirme",
+   "etiket_re": "^kural:AntiDebug_",
+   "ikili": 7,
+   "adet": 7,
+   "olculen": 14,
+   "rapordaki": "IMZA-05: Timing 23, SysctlCheck 4",
+   "ornek": [
+    "debian/coreutils/ls",
+    "debian/htop/htop",
+    "debian/redis-tools/redis-cli",
+    "debian/tmux/tmux",
+    "debian/zstd/zstd"
+   ]
+  },
+  {
+   "ad": "stack_string",
+   "katman": "yara_cikti",
+   "set": "gelistirme",
+   "etiket_re": "^kural:Stack_String_Construction$",
+   "ikili": 11,
+   "adet": 11,
+   "olculen": 14,
+   "rapordaki": "IMZA-05: 19",
+   "ornek": [
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop",
+    "debian/openssl/openssl",
+    "debian/redis-tools/redis-cli"
+   ]
+  },
+  {
+   "ad": "cfd",
+   "katman": "bilesim",
+   "set": "gelistirme",
+   "etiket_re": "CFD",
+   "ikili": 14,
+   "adet": 16,
+   "olculen": 14,
+   "rapordaki": "MUH-03/ARAYUZ-01: 119/119 (Transient CFD)",
+   "ornek": [
+    "debian/coreutils/cat",
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop"
+   ]
+  },
+  {
+   "ad": "cfd",
+   "katman": "bilesim_yeniden",
+   "set": "gelistirme",
+   "etiket_re": "CFD",
+   "ikili": 14,
+   "adet": 16,
+   "olculen": 14,
+   "rapordaki": "MUH-03/ARAYUZ-01: 119/119 (Transient CFD)",
+   "ornek": [
+    "debian/coreutils/cat",
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop"
+   ]
+  },
+  {
+   "ad": "roket",
+   "katman": "bilesim",
+   "set": "gelistirme",
+   "etiket_re": "^sablon:Rocket",
+   "ikili": 14,
+   "adet": 14,
+   "olculen": 14,
+   "rapordaki": "MUH-03: 119/119",
+   "ornek": [
+    "debian/coreutils/cat",
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop"
+   ]
+  },
+  {
+   "ad": "roket",
+   "katman": "bilesim_yeniden",
+   "set": "gelistirme",
+   "etiket_re": "^sablon:Rocket",
+   "ikili": 14,
+   "adet": 14,
+   "olculen": 14,
+   "rapordaki": "MUH-03: 119/119",
+   "ornek": [
+    "debian/coreutils/cat",
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop"
+   ]
+  },
+  {
+   "ad": "matris",
+   "katman": "bilesim",
+   "set": "gelistirme",
+   "etiket_re": "^sablon:Matrix Solve",
+   "ikili": 14,
+   "adet": 14,
+   "olculen": 14,
+   "rapordaki": "MUH-03: 119/119",
+   "ornek": [
+    "debian/coreutils/cat",
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop"
+   ]
+  },
+  {
+   "ad": "matris",
+   "katman": "bilesim_yeniden",
+   "set": "gelistirme",
+   "etiket_re": "^sablon:Matrix Solve",
+   "ikili": 14,
+   "adet": 14,
+   "olculen": 14,
+   "rapordaki": "MUH-03: 119/119",
+   "ornek": [
+    "debian/coreutils/cat",
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop"
+   ]
+  },
+  {
+   "ad": "vpn",
+   "katman": "bilesim",
+   "set": "gelistirme",
+   "etiket_re": "^sablon:VPN Tunnel",
+   "ikili": 5,
+   "adet": 5,
+   "olculen": 14,
+   "rapordaki": "ARAYUZ-01: 16 ikili",
+   "ornek": [
+    "debian/htop/htop",
+    "debian/openssl/openssl",
+    "debian/redis-tools/redis-cli",
+    "debian/sqlite3/sqlite3",
+    "mac/htop"
+   ]
+  },
+  {
+   "ad": "vpn",
+   "katman": "bilesim_yeniden",
+   "set": "gelistirme",
+   "etiket_re": "^sablon:VPN Tunnel",
+   "ikili": 5,
+   "adet": 5,
+   "olculen": 14,
+   "rapordaki": "ARAYUZ-01: 16 ikili",
+   "ornek": [
+    "debian/htop/htop",
+    "debian/openssl/openssl",
+    "debian/redis-tools/redis-cli",
+    "debian/sqlite3/sqlite3",
+    "mac/htop"
+   ]
+  },
+  {
+   "ad": "ses",
+   "katman": "bilesim",
+   "set": "gelistirme",
+   "etiket_re": "^sablon:Audio Codec",
+   "ikili": 2,
+   "adet": 2,
+   "olculen": 14,
+   "rapordaki": "MUH-03: 4",
+   "ornek": [
+    "debian/openssl/openssl",
+    "debian/zstd/zstd"
+   ]
+  },
+  {
+   "ad": "ses",
+   "katman": "bilesim_yeniden",
+   "set": "gelistirme",
+   "etiket_re": "^sablon:Audio Codec",
+   "ikili": 2,
+   "adet": 2,
+   "olculen": 14,
+   "rapordaki": "MUH-03: 4",
+   "ornek": [
+    "debian/openssl/openssl",
+    "debian/zstd/zstd"
+   ]
+  },
+  {
+   "ad": "galois_kod",
+   "katman": "algoritma_kod",
+   "set": "gelistirme",
+   "etiket_re": "^algoritma:Galois field",
+   "ikili": 5,
+   "adet": 12,
+   "olculen": 14,
+   "rapordaki": "MEK HEAD 14: htop 8, sqlite3 10, redis-cli 2, iki tmux 2'şer",
+   "ornek": [
+    "debian/htop/htop",
+    "debian/redis-tools/redis-cli",
+    "debian/sqlite3/sqlite3",
+    "debian/tmux/tmux",
+    "mac/tmux"
+   ]
+  },
+  {
+   "ad": "galois_json",
+   "katman": "algoritma_json",
+   "set": "gelistirme",
+   "etiket_re": "^algoritma:Galois field",
+   "ikili": 9,
+   "adet": 39,
+   "olculen": 14,
+   "rapordaki": "TIP-09: 162 etiket, 30 ikili (1.22.1)",
+   "ornek": [
+    "debian/htop/htop",
+    "debian/openssl/openssl",
+    "debian/redis-tools/redis-cli",
+    "debian/sqlite3/sqlite3",
+    "debian/tmux/tmux"
+   ]
+  },
+  {
+   "ad": "galois_json",
+   "katman": "algoritma_yeniden",
+   "set": "gelistirme",
+   "etiket_re": "^algoritma:Galois field",
+   "ikili": 9,
+   "adet": 39,
+   "olculen": 14,
+   "rapordaki": "TIP-09: 162 etiket, 30 ikili (1.22.1)",
+   "ornek": [
+    "debian/htop/htop",
+    "debian/openssl/openssl",
+    "debian/redis-tools/redis-cli",
+    "debian/sqlite3/sqlite3",
+    "debian/tmux/tmux"
+   ]
+  },
+  {
+   "ad": "pbkdf2_json",
+   "katman": "algoritma_json",
+   "set": "gelistirme",
+   "etiket_re": "^algoritma:Password-based key derivation",
+   "ikili": 2,
+   "adet": 3,
+   "olculen": 14,
+   "rapordaki": "TIP-09: 6 etiket",
+   "ornek": [
+    "debian/openssl/openssl",
+    "debian/zstd/zstd"
+   ]
+  },
+  {
+   "ad": "pbkdf2_json",
+   "katman": "algoritma_yeniden",
+   "set": "gelistirme",
+   "etiket_re": "^algoritma:Password-based key derivation",
+   "ikili": 2,
+   "adet": 3,
+   "olculen": 14,
+   "rapordaki": "TIP-09: 6 etiket",
+   "ornek": [
+    "debian/openssl/openssl",
+    "debian/zstd/zstd"
+   ]
+  },
+  {
+   "ad": "security_kanca",
+   "katman": "security_etiketi",
+   "set": "gelistirme",
+   "etiket_re": "^security:Code injection/hooking",
+   "ikili": 3,
+   "adet": 11,
+   "olculen": 14,
+   "rapordaki": "TIP-08: 9",
+   "ornek": [
+    "debian/sqlite3/sqlite3",
+    "debian/tmux/tmux",
+    "mac/tmux"
+   ]
+  },
+  {
+   "ad": "security_kimlik",
+   "katman": "security_etiketi",
+   "set": "gelistirme",
+   "etiket_re": "^security:Handles authentication/credentials",
+   "ikili": 3,
+   "adet": 21,
+   "olculen": 14,
+   "rapordaki": "TIP-08: 70",
+   "ornek": [
+    "debian/openssl/openssl",
+    "debian/sqlite3/sqlite3",
+    "debian/tmux/tmux"
+   ]
+  },
+  {
+   "ad": "security_anahtar",
+   "katman": "security_etiketi",
+   "set": "gelistirme",
+   "etiket_re": "^security:Handles sensitive key material",
+   "ikili": 7,
+   "adet": 618,
+   "olculen": 14,
+   "rapordaki": "TIP-08: 869",
+   "ornek": [
+    "debian/htop/htop",
+    "debian/openssl/openssl",
+    "debian/redis-tools/redis-cli",
+    "debian/sqlite3/sqlite3",
+    "debian/tmux/tmux"
+   ]
+  },
+  {
+   "ad": "row_major",
+   "katman": "blok_yorumu",
+   "set": "gelistirme",
+   "etiket_re": "^blok:Row-major matrix access$",
+   "ikili": 9,
+   "adet": 95,
+   "olculen": 14,
+   "rapordaki": "MUH-07: 370 yorum (1.22.1, 119 ikili)",
+   "ornek": [
+    "debian/coreutils/cat",
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/openssl/openssl"
+   ]
+  },
+  {
+   "ad": "recovered_struct",
+   "katman": "types_h",
+   "set": "gelistirme",
+   "etiket_re": "^yapi:recovered_struct$",
+   "ikili": 14,
+   "adet": 4109,
+   "olculen": 14,
+   "rapordaki": "TIP-07: 5 585 yapı, 116 ikili (1.22.1); MEK HEAD 14: 4 109",
+   "ornek": [
+    "debian/coreutils/cat",
+    "debian/coreutils/expr",
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop"
+   ]
+  },
+  {
+   "ad": "sarif_paket_uyarisi",
+   "katman": "sarif",
+   "set": "gelistirme",
+   "etiket_re": "^KRDL003:(MPRESS|ASPack|UPX|VMProtect|Themida|PECompact|Enigma)",
+   "ikili": 9,
+   "adet": 9,
+   "olculen": 14,
+   "rapordaki": "ARAYUZ-17 / IMZA-05: SARIF warning",
+   "ornek": [
+    "debian/coreutils/ls",
+    "debian/coreutils/sort",
+    "debian/htop/htop",
+    "debian/openssl/openssl",
+    "debian/sqlite3/sqlite3"
+   ]
+  },
+  {
+   "ad": "sarif_antidebug_uyarisi",
+   "katman": "sarif",
+   "set": "gelistirme",
+   "etiket_re": "^KRDL003:AntiDebug_",
+   "ikili": 7,
+   "adet": 7,
+   "olculen": 14,
+   "rapordaki": "MEK HEAD tablosu",
+   "ornek": [
+    "debian/coreutils/ls",
+    "debian/htop/htop",
+    "debian/redis-tools/redis-cli",
+    "debian/tmux/tmux",
+    "debian/zstd/zstd"
+   ]
+  }
+ ],
+ "gercek_pozitifler": [
+  {
+   "set": "pozitif",
+   "ikili": "upx_pe_t32",
+   "katman": "packer",
+   "etiket_re": "^paketleyici:UPX$",
+   "zorunlu": true,
+   "neden": "UPX 5.3 ile paketlenmiş x86 PE32",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "upx_pe_t32",
+   "katman": "yara",
+   "etiket_re": "^kural:UPX_Packed$",
+   "zorunlu": true,
+   "neden": "UPX bölüm adları ve imzası",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "upx_pe_t64",
+   "katman": "packer",
+   "etiket_re": "^paketleyici:UPX$",
+   "zorunlu": true,
+   "neden": "UPX ile paketlenmiş x86-64 PE32+",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "upx_pe_t64",
+   "katman": "yara",
+   "etiket_re": "^kural:UPX_Packed$",
+   "zorunlu": true,
+   "neden": "UPX bölüm adları ve imzası",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "upx_elf_true",
+   "katman": "packer",
+   "etiket_re": "^paketleyici:UPX$",
+   "zorunlu": true,
+   "neden": "UPX ile paketlenmiş ELF AArch64",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "upx_elf_true",
+   "katman": "yara",
+   "etiket_re": "^kural:UPX_Packed$",
+   "zorunlu": true,
+   "neden": "UPX! imzası",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "antidebug_x86_64",
+   "katman": "antidebug",
+   "etiket_re": "^teknik:RDTSC_Timing$",
+   "zorunlu": true,
+   "neden": "__TEXT,__text içinde iki gerçek rdtsc",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "antidebug_x86_64",
+   "katman": "antidebug",
+   "etiket_re": "^teknik:ptrace_pt_deny_attach$",
+   "zorunlu": true,
+   "neden": "ptrace(PT_DENY_ATTACH) çağrısı",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "antidebug_x86_64",
+   "katman": "antidebug",
+   "etiket_re": "^teknik:sysctl_kinfo_proc$",
+   "zorunlu": true,
+   "neden": "sysctl(KERN_PROC_PID) + P_TRACED",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "antidebug_x86_64",
+   "katman": "yara",
+   "etiket_re": "^kural:AntiDebug_SysctlCheck$",
+   "zorunlu": true,
+   "neden": "sysctl + kinfo_proc",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "antidebug_x86_64",
+   "katman": "yara",
+   "etiket_re": "^kural:AntiDebug_(Ptrace|Timing)$",
+   "zorunlu": false,
+   "neden": "istenen; 1.23.1'de çıkmıyor (ptrace ve rdtsc kuralı bu örneği tutmuyor)",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "antidebug_x86_64",
+   "katman": "bi",
+   "etiket_re": "^guvenlik:Anti-Debugging$",
+   "zorunlu": true,
+   "neden": "ptrace/sysctl içe aktarımı",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "libcrypto",
+   "katman": "bi",
+   "etiket_re": "^algoritma:AES$",
+   "zorunlu": true,
+   "neden": "OpenSSL 3 libcrypto",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "libcrypto",
+   "katman": "bi",
+   "etiket_re": "^algoritma:RSA$",
+   "zorunlu": true,
+   "neden": "OpenSSL 3 libcrypto",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "libcrypto",
+   "katman": "bi",
+   "etiket_re": "^algoritma:SHA-256$",
+   "zorunlu": true,
+   "neden": "OpenSSL 3 libcrypto",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "libcrypto",
+   "katman": "yara",
+   "etiket_re": "^kural:OpenSSL_Library$",
+   "zorunlu": true,
+   "neden": "OpenSSL sürüm dizgileri",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "libcrypto",
+   "katman": "yara",
+   "etiket_re": "^kural:(AES_SBox|SHA256_Init_Constants|SHA256_Round_Constants)$",
+   "zorunlu": false,
+   "neden": "istenen; 1.23.1'de sabit kuralları libcrypto'da tutmuyor (incelenmedi)",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "openssl_cli",
+   "katman": "bi",
+   "etiket_re": "^algoritma:AES$",
+   "zorunlu": true,
+   "neden": "openssl enc -aes-*",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "openssl_cli",
+   "katman": "bi",
+   "etiket_re": "^algoritma:RSA$",
+   "zorunlu": true,
+   "neden": "openssl rsa / genpkey",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pozitif",
+   "ikili": "openssl_cli",
+   "katman": "yara",
+   "etiket_re": "^kural:OpenSSL_Library$",
+   "zorunlu": true,
+   "neden": "OpenSSL dizgileri",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "gelistirme",
+   "ikili": "debian/openssl/openssl",
+   "katman": "bi",
+   "etiket_re": "^algoritma:AES$",
+   "zorunlu": true,
+   "neden": "Debian openssl aracı",
+   "olculen_katman": "intel",
+   "sonuc": "var",
+   "bulunan": [
+    "algoritma:AES"
+   ],
+   "katman_durumu": "calisti"
+  },
+  {
+   "set": "gelistirme",
+   "ikili": "debian/openssl/openssl",
+   "katman": "bi",
+   "etiket_re": "^algoritma:RSA$",
+   "zorunlu": true,
+   "neden": "Debian openssl aracı",
+   "olculen_katman": "intel",
+   "sonuc": "var",
+   "bulunan": [
+    "algoritma:RSA"
+   ],
+   "katman_durumu": "calisti"
+  },
+  {
+   "set": "gelistirme",
+   "ikili": "debian/openssl/openssl",
+   "katman": "yara",
+   "etiket_re": "^kural:OpenSSL_Library$",
+   "zorunlu": true,
+   "neden": "libssl/libcrypto bağlı",
+   "olculen_katman": "yara_cikti",
+   "sonuc": "var",
+   "bulunan": [
+    "kural:OpenSSL_Library"
+   ],
+   "katman_durumu": "calisti"
+  },
+  {
+   "set": "macos",
+   "ikili": "/usr/bin/ssh",
+   "katman": "bi",
+   "etiket_re": "^algoritma:(Ed25519|ChaCha20-Poly1305)$",
+   "zorunlu": true,
+   "neden": "OpenSSH",
+   "sonuc": "olculmedi"
+  },
+  {
+   "set": "pe",
+   "ikili": "/opt/anaconda3/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+   "katman": "capa",
+   "etiket_re": "^yetenek:",
+   "zorunlu": false,
+   "neden": "istenen (IMZA-06 'nasıl sınanır'); 1.23.1'de capa hiçbir girdide çalışmıyor",
+   "sonuc": "olculmedi"
+  }
+ ],
+ "esik_sinamasi": [
+  {
+   "katman": "bilesim",
+   "set": "gelistirme",
+   "yanlis": 82,
+   "ust": 82,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  },
+  {
+   "katman": "algoritma_kod",
+   "set": "gelistirme",
+   "yanlis": 29,
+   "ust": 29,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  },
+  {
+   "katman": "algoritma_json",
+   "set": "gelistirme",
+   "yanlis": 45,
+   "ust": 45,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  },
+  {
+   "katman": "security_etiketi",
+   "set": "gelistirme",
+   "yanlis": 22,
+   "ust": 22,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  },
+  {
+   "katman": "sarif",
+   "set": "gelistirme",
+   "yanlis": 37,
+   "ust": 37,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  },
+  {
+   "katman": "blok_yorumu",
+   "set": "gelistirme",
+   "yanlis": 10,
+   "ust": 10,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  },
+  {
+   "katman": "types_h",
+   "set": "gelistirme",
+   "yanlis": 14,
+   "ust": 14,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  },
+  {
+   "katman": "intel",
+   "set": "gelistirme",
+   "yanlis": 353,
+   "ust": 353,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  },
+  {
+   "katman": "antidebug_cikti",
+   "set": "gelistirme",
+   "yanlis": 7,
+   "ust": 7,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  },
+  {
+   "katman": "packer_cikti",
+   "set": "gelistirme",
+   "yanlis": 0,
+   "ust": 0,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  },
+  {
+   "katman": "yara_cikti",
+   "set": "gelistirme",
+   "yanlis": 31,
+   "ust": 31,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  },
+  {
+   "katman": "bilesim_yeniden",
+   "set": "gelistirme",
+   "yanlis": 82,
+   "ust": 82,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  },
+  {
+   "katman": "algoritma_yeniden",
+   "set": "gelistirme",
+   "yanlis": 45,
+   "ust": 45,
+   "sonuc": "icinde",
+   "esikli_ikili": 14,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
+   "artan_ikili": []
+  }
+ ],
+ "girdi_hatalari": [],
+ "kapi": {
+  "sonuc": "GEÇTİ",
+  "cikis_kodu": 0,
+  "nedenler": []
+ },
+ "bitis": "2026-11-18T09:49:22+03:00",
+ "sure_sn": 25.6
+}

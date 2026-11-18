@@ -1,11 +1,15 @@
 {
  "arac": "masum_kapi",
  "surum": 1,
- "baslangic": "2026-11-18T09:39:12+03:00",
+ "baslangic": "2026-11-18T09:52:04+03:00",
  "agac": {
   "agac": "/Users/apple/Black_Widow/.claude/worktrees/agent-aa796f040812276d2",
-  "commit": "e9d2d08ab5c524520ab8d440eeb116273c9bc936",
-  "kirli": [],
+  "commit": "27e2e1a900bab3148319168e18170065a0d31a9b",
+  "kirli": [
+   "M docs/arge/2026-11-18_onarim/P00.md",
+   " M scripts/measurement/masum_kapi.py",
+   " M scripts/measurement/masum_kapi_esik.json"
+  ],
   "karadul_dosyasi": "/Users/apple/Black_Widow/.claude/worktrees/agent-aa796f040812276d2/karadul/__init__.py",
   "karadul_surumu": "1.23.1"
  },
@@ -43,6 +47,8 @@
     "yanlis": 2102,
     "dogru_bilinen": 165,
     "yanlis_ikili": 119,
+    "adet": 2267,
+    "yanlis_adet": 2102,
     "etiket": {
      "algoritma:OpenGL": 119,
      "altsistem:Bluetooth": 119,
@@ -273,6 +279,8 @@
     "yanlis": 701,
     "dogru_bilinen": 108,
     "yanlis_ikili": 48,
+    "adet": 809,
+    "yanlis_adet": 701,
     "etiket": {
      "altsistem:Process Management": 48,
      "altsistem:Encryption": 46,
@@ -446,6 +454,8 @@
     "yanlis": 203,
     "dogru_bilinen": 0,
     "yanlis_ikili": 20,
+    "adet": 203,
+    "yanlis_adet": 203,
     "etiket": {
      "altsistem:Bluetooth": 18,
      "protokol:NTP": 17,
@@ -521,6 +531,8 @@
     "yanlis": 0,
     "dogru_bilinen": 0,
     "yanlis_ikili": 0,
+    "adet": 154,
+    "yanlis_adet": 0,
     "etiket": {
      "altsistem:Encryption": 4,
      "altsistem:HTTP Client": 4,
@@ -628,6 +640,8 @@
     "yanlis": 23,
     "dogru_bilinen": 0,
     "yanlis_ikili": 16,
+    "adet": 23,
+    "yanlis_adet": 23,
     "etiket": {
      "teknik:RDTSC_Timing": 14,
      "teknik:prctl_set_dumpable": 4,
@@ -767,6 +781,8 @@
     "yanlis": 22,
     "dogru_bilinen": 0,
     "yanlis_ikili": 18,
+    "adet": 22,
+    "yanlis_adet": 22,
     "etiket": {
      "teknik:RDTSC_Timing": 15,
      "teknik:sysctl_kinfo_proc": 6,
@@ -833,6 +849,8 @@
     "yanlis": 76,
     "dogru_bilinen": 0,
     "yanlis_ikili": 21,
+    "adet": 76,
+    "yanlis_adet": 76,
     "etiket": {
      "teknik:INT3_Cluster": 19,
      "teknik:QueryPerformanceCounter": 17,
@@ -879,6 +897,8 @@
     "yanlis": 0,
     "dogru_bilinen": 0,
     "yanlis_ikili": 0,
+    "adet": 9,
+    "yanlis_adet": 0,
     "etiket": {
      "teknik:RDTSC_Timing": 5,
      "teknik:INT3_Cluster": 1,
@@ -907,6 +927,8 @@
     "yanlis": 0,
     "dogru_bilinen": 0,
     "yanlis_ikili": 0,
+    "adet": 0,
+    "yanlis_adet": 0,
     "etiket": {},
     "ikili_basina_yanlis": {
      "debian/coreutils/[": 0,
@@ -1040,6 +1062,8 @@
     "yanlis": 0,
     "dogru_bilinen": 0,
     "yanlis_ikili": 0,
+    "adet": 0,
+    "yanlis_adet": 0,
     "etiket": {},
     "ikili_basina_yanlis": {
      "/bin/bash": 0,
@@ -1102,6 +1126,8 @@
     "yanlis": 19,
     "dogru_bilinen": 0,
     "yanlis_ikili": 18,
+    "adet": 19,
+    "yanlis_adet": 19,
     "etiket": {
      "paketleyici:FSG": 18,
      "paketleyici:NSIS": 1
@@ -1140,6 +1166,8 @@
     "yanlis": 0,
     "dogru_bilinen": 0,
     "yanlis_ikili": 0,
+    "adet": 5,
+    "yanlis_adet": 0,
     "etiket": {
      "paketleyici:UPX": 3,
      "paketleyici:FSG": 2
@@ -1165,6 +1193,8 @@
     "yanlis": 70,
     "dogru_bilinen": 11,
     "yanlis_ikili": 31,
+    "adet": 81,
+    "yanlis_adet": 70,
     "etiket": {
      "kural:AntiDebug_Timing": 23,
      "kural:Stack_String_Construction": 19,
@@ -1309,6 +1339,8 @@
     "yanlis": 127,
     "dogru_bilinen": 5,
     "yanlis_ikili": 48,
+    "adet": 132,
+    "yanlis_adet": 127,
     "etiket": {
      "kural:RSA_Public_Key_Constants": 48,
      "kural:Stack_String_Construction": 30,
@@ -1387,6 +1419,8 @@
     "yanlis": 71,
     "dogru_bilinen": 21,
     "yanlis_ikili": 20,
+    "adet": 92,
+    "yanlis_adet": 71,
     "etiket": {
      "kural:MSVC_Compiler": 21,
      "kural:AntiDebug_Timing": 18,
@@ -1432,6 +1466,8 @@
     "yanlis": 0,
     "dogru_bilinen": 0,
     "yanlis_ikili": 0,
+    "adet": 21,
+    "yanlis_adet": 0,
     "etiket": {
      "kural:UPX_Packed": 4,
      "kural:Stack_String_Construction": 3,
@@ -1468,6 +1504,8 @@
     "yanlis": 0,
     "dogru_bilinen": 0,
     "yanlis_ikili": 0,
+    "adet": 0,
+    "yanlis_adet": 0,
     "etiket": {},
     "ikili_basina_yanlis": {
      "debian/coreutils/[": 0,
@@ -1603,6 +1641,8 @@
     "yanlis": 0,
     "dogru_bilinen": 0,
     "yanlis_ikili": 0,
+    "adet": 0,
+    "yanlis_adet": 0,
     "etiket": {},
     "ikili_basina_yanlis": {
      "/bin/bash": 0,
@@ -1667,6 +1707,8 @@
     "yanlis": 0,
     "dogru_bilinen": 0,
     "yanlis_ikili": 0,
+    "adet": 0,
+    "yanlis_adet": 0,
     "etiket": {},
     "ikili_basina_yanlis": {
      "/Users/apple/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC/GPL/DemanglerGnu/os/win_x86_64/demangler_gnu_v2_24.exe": 0,
@@ -1704,6 +1746,8 @@
     "yanlis": 0,
     "dogru_bilinen": 0,
     "yanlis_ikili": 0,
+    "adet": 0,
+    "yanlis_adet": 0,
     "etiket": {},
     "ikili_basina_yanlis": {
      "antidebug_x86_64": 0,
@@ -1769,6 +1813,7 @@
    "set": "gelistirme",
    "etiket_re": "^altsistem:Bluetooth$",
    "ikili": 119,
+   "adet": 119,
    "olculen": 119,
    "rapordaki": "IMZA-01: 119/119 (gelistirme)",
    "ornek": [
@@ -1785,6 +1830,7 @@
    "set": "macos",
    "etiket_re": "^altsistem:Bluetooth$",
    "ikili": 28,
+   "adet": 28,
    "olculen": 48,
    "rapordaki": "IMZA-01: 119/119 (gelistirme)",
    "ornek": [
@@ -1801,6 +1847,7 @@
    "set": "pe",
    "etiket_re": "^altsistem:Bluetooth$",
    "ikili": 18,
+   "adet": 18,
    "olculen": 21,
    "rapordaki": "IMZA-01: 119/119 (gelistirme)",
    "ornek": [
@@ -1817,6 +1864,7 @@
    "set": "gelistirme",
    "etiket_re": "^altsistem:Encryption$",
    "ikili": 108,
+   "adet": 108,
    "olculen": 108,
    "rapordaki": "IMZA-01: 119/119; burada kriptosuz alt küme",
    "ornek": [
@@ -1833,6 +1881,7 @@
    "set": "macos",
    "etiket_re": "^altsistem:Encryption$",
    "ikili": 14,
+   "adet": 14,
    "olculen": 15,
    "rapordaki": "IMZA-01: 119/119; burada kriptosuz alt küme",
    "ornek": [
@@ -1849,6 +1898,7 @@
    "set": "gelistirme",
    "etiket_re": "^algoritma:OpenGL$",
    "ikili": 119,
+   "adet": 119,
    "olculen": 119,
    "rapordaki": "IMZA-01: 119/119",
    "ornek": [
@@ -1865,6 +1915,7 @@
    "set": "macos",
    "etiket_re": "^algoritma:OpenGL$",
    "ikili": 14,
+   "adet": 14,
    "olculen": 48,
    "rapordaki": "IMZA-01: 119/119",
    "ornek": [
@@ -1881,6 +1932,7 @@
    "set": "pe",
    "etiket_re": "^algoritma:OpenGL$",
    "ikili": 7,
+   "adet": 7,
    "olculen": 21,
    "rapordaki": "IMZA-01: 119/119",
    "ornek": [
@@ -1897,6 +1949,7 @@
    "set": "gelistirme",
    "etiket_re": "^algoritma:SHA-256$",
    "ikili": 104,
+   "adet": 104,
    "olculen": 106,
    "rapordaki": "IMZA-01: 107 (gelistirme, tümü); burada coreutils",
    "ornek": [
@@ -1913,6 +1966,7 @@
    "set": "gelistirme",
    "etiket_re": "^guvenlik:(SIP \\(System Integrity\\)|Kernel Extension)$",
    "ikili": 5,
+   "adet": 8,
    "olculen": 119,
    "rapordaki": "IMZA-01: SIP 5, Kernel Extension 3",
    "ornek": [
@@ -1929,6 +1983,7 @@
    "set": "macos",
    "etiket_re": "^guvenlik:(SIP \\(System Integrity\\)|Kernel Extension)$",
    "ikili": 2,
+   "adet": 2,
    "olculen": 48,
    "rapordaki": "IMZA-01: SIP 5, Kernel Extension 3",
    "ornek": [
@@ -1942,6 +1997,7 @@
    "set": "pe",
    "etiket_re": "^guvenlik:(SIP \\(System Integrity\\)|Kernel Extension)$",
    "ikili": 0,
+   "adet": 0,
    "olculen": 21,
    "rapordaki": "IMZA-01: SIP 5, Kernel Extension 3",
    "ornek": []
@@ -1952,6 +2008,7 @@
    "set": "gelistirme",
    "etiket_re": "^protokol:IPsec$",
    "ikili": 46,
+   "adet": 46,
    "olculen": 119,
    "rapordaki": "IMZA-01: 46",
    "ornek": [
@@ -1968,6 +2025,7 @@
    "set": "macos",
    "etiket_re": "^protokol:IPsec$",
    "ikili": 12,
+   "adet": 12,
    "olculen": 48,
    "rapordaki": "IMZA-01: 46",
    "ornek": [
@@ -1984,6 +2042,7 @@
    "set": "pe",
    "etiket_re": "^protokol:IPsec$",
    "ikili": 1,
+   "adet": 1,
    "olculen": 21,
    "rapordaki": "IMZA-01: 46",
    "ornek": [
@@ -1996,6 +2055,7 @@
    "set": "gelistirme",
    "etiket_re": "^teknik:RDTSC_Timing$",
    "ikili": 14,
+   "adet": 14,
    "olculen": 119,
    "rapordaki": "IMZA-02: 14 (gelistirme, AArch64)",
    "ornek": [
@@ -2012,6 +2072,7 @@
    "set": "macos",
    "etiket_re": "^teknik:RDTSC_Timing$",
    "ikili": 15,
+   "adet": 15,
    "olculen": 48,
    "rapordaki": "IMZA-02: 14 (gelistirme, AArch64)",
    "ornek": [
@@ -2028,6 +2089,7 @@
    "set": "pe",
    "etiket_re": "^teknik:RDTSC_Timing$",
    "ikili": 2,
+   "adet": 2,
    "olculen": 21,
    "rapordaki": "IMZA-02: 14 (gelistirme, AArch64)",
    "ornek": [
@@ -2041,6 +2103,7 @@
    "set": "gelistirme",
    "etiket_re": "^teknik:sysctl_kinfo_proc$",
    "ikili": 1,
+   "adet": 1,
    "olculen": 119,
    "rapordaki": "IMZA-02: mac/htop, top, sysctl, vim",
    "ornek": [
@@ -2053,6 +2116,7 @@
    "set": "macos",
    "etiket_re": "^teknik:sysctl_kinfo_proc$",
    "ikili": 6,
+   "adet": 6,
    "olculen": 48,
    "rapordaki": "IMZA-02: mac/htop, top, sysctl, vim",
    "ornek": [
@@ -2069,6 +2133,7 @@
    "set": "pe",
    "etiket_re": "^teknik:sysctl_kinfo_proc$",
    "ikili": 0,
+   "adet": 0,
    "olculen": 21,
    "rapordaki": "IMZA-02: mac/htop, top, sysctl, vim",
    "ornek": []
@@ -2079,6 +2144,7 @@
    "set": "pe",
    "etiket_re": "^teknik:(IsDebuggerPresent|QueryPerformanceCounter|GetTickCount|INT3_Cluster)$",
    "ikili": 21,
+   "adet": 60,
    "olculen": 21,
    "rapordaki": "IMZA-03",
    "ornek": [
@@ -2095,6 +2161,7 @@
    "set": "gelistirme",
    "etiket_re": "^paketleyici:FSG$",
    "ikili": 0,
+   "adet": 0,
    "olculen": 119,
    "rapordaki": "IMZA-04",
    "ornek": []
@@ -2105,6 +2172,7 @@
    "set": "macos",
    "etiket_re": "^paketleyici:FSG$",
    "ikili": 0,
+   "adet": 0,
    "olculen": 48,
    "rapordaki": "IMZA-04",
    "ornek": []
@@ -2115,6 +2183,7 @@
    "set": "pe",
    "etiket_re": "^paketleyici:FSG$",
    "ikili": 18,
+   "adet": 18,
    "olculen": 21,
    "rapordaki": "IMZA-04",
    "ornek": [
@@ -2131,6 +2200,7 @@
    "set": "pe",
    "etiket_re": "^paketleyici:FSG$",
    "ikili": 10,
+   "adet": 10,
    "olculen": 11,
    "rapordaki": "IMZA-04: 10/11 (makensisw.exe yerine makensis.exe)",
    "ornek": [
@@ -2147,6 +2217,7 @@
    "set": "gelistirme",
    "etiket_re": "^kural:MPRESS_Packed$",
    "ikili": 13,
+   "adet": 13,
    "olculen": 119,
    "rapordaki": "IMZA-05: 13 (gelistirme)",
    "ornek": [
@@ -2163,6 +2234,7 @@
    "set": "macos",
    "etiket_re": "^kural:MPRESS_Packed$",
    "ikili": 16,
+   "adet": 16,
    "olculen": 48,
    "rapordaki": "IMZA-05: 13 (gelistirme)",
    "ornek": [
@@ -2179,6 +2251,7 @@
    "set": "pe",
    "etiket_re": "^kural:MPRESS_Packed$",
    "ikili": 3,
+   "adet": 3,
    "olculen": 21,
    "rapordaki": "IMZA-05: 13 (gelistirme)",
    "ornek": [
@@ -2193,6 +2266,7 @@
    "set": "gelistirme",
    "etiket_re": "^kural:ASPack_Packed$",
    "ikili": 1,
+   "adet": 1,
    "olculen": 119,
    "rapordaki": "IMZA-05: 1 (tree)",
    "ornek": [
@@ -2205,6 +2279,7 @@
    "set": "macos",
    "etiket_re": "^kural:ASPack_Packed$",
    "ikili": 0,
+   "adet": 0,
    "olculen": 48,
    "rapordaki": "IMZA-05: 1 (tree)",
    "ornek": []
@@ -2215,6 +2290,7 @@
    "set": "pe",
    "etiket_re": "^kural:ASPack_Packed$",
    "ikili": 0,
+   "adet": 0,
    "olculen": 21,
    "rapordaki": "IMZA-05: 1 (tree)",
    "ornek": []
@@ -2225,6 +2301,7 @@
    "set": "gelistirme",
    "etiket_re": "^kural:Delphi_Compiler$",
    "ikili": 2,
+   "adet": 2,
    "olculen": 119,
    "rapordaki": "IMZA-05: 2 (redis)",
    "ornek": [
@@ -2238,6 +2315,7 @@
    "set": "macos",
    "etiket_re": "^kural:Delphi_Compiler$",
    "ikili": 1,
+   "adet": 1,
    "olculen": 48,
    "rapordaki": "IMZA-05: 2 (redis)",
    "ornek": [
@@ -2250,6 +2328,7 @@
    "set": "pe",
    "etiket_re": "^kural:Delphi_Compiler$",
    "ikili": 1,
+   "adet": 1,
    "olculen": 21,
    "rapordaki": "IMZA-05: 2 (redis)",
    "ornek": [
@@ -2262,6 +2341,7 @@
    "set": "gelistirme",
    "etiket_re": "^kural:AntiDebug_",
    "ikili": 24,
+   "adet": 27,
    "olculen": 119,
    "rapordaki": "IMZA-05: Timing 23, SysctlCheck 4",
    "ornek": [
@@ -2278,6 +2358,7 @@
    "set": "macos",
    "etiket_re": "^kural:AntiDebug_",
    "ikili": 16,
+   "adet": 18,
    "olculen": 48,
    "rapordaki": "IMZA-05: Timing 23, SysctlCheck 4",
    "ornek": [
@@ -2294,6 +2375,7 @@
    "set": "pe",
    "etiket_re": "^kural:AntiDebug_",
    "ikili": 18,
+   "adet": 52,
    "olculen": 21,
    "rapordaki": "IMZA-05: Timing 23, SysctlCheck 4",
    "ornek": [
@@ -2310,6 +2392,7 @@
    "set": "gelistirme",
    "etiket_re": "^kural:Stack_String_Construction$",
    "ikili": 19,
+   "adet": 19,
    "olculen": 119,
    "rapordaki": "IMZA-05: 19",
    "ornek": [
@@ -2326,6 +2409,7 @@
    "set": "macos",
    "etiket_re": "^kural:Stack_String_Construction$",
    "ikili": 30,
+   "adet": 30,
    "olculen": 48,
    "rapordaki": "IMZA-05: 19",
    "ornek": [
@@ -2342,6 +2426,7 @@
    "set": "pe",
    "etiket_re": "^kural:Stack_String_Construction$",
    "ikili": 12,
+   "adet": 12,
    "olculen": 21,
    "rapordaki": "IMZA-05: 19",
    "ornek": [
@@ -2358,6 +2443,7 @@
    "set": "macos",
    "etiket_re": "^kural:RSA_Public_Key_Constants$",
    "ikili": 48,
+   "adet": 48,
    "olculen": 48,
    "rapordaki": "IMZA-05: Apple kod imzası sertifikasındaki OID",
    "ornek": [
@@ -2377,6 +2463,7 @@
    "etiket_re": "^paketleyici:UPX$",
    "zorunlu": true,
    "neden": "UPX 5.3 ile paketlenmiş x86 PE32",
+   "olculen_katman": "packer",
    "sonuc": "var",
    "bulunan": [
     "paketleyici:UPX"
@@ -2390,6 +2477,7 @@
    "etiket_re": "^kural:UPX_Packed$",
    "zorunlu": true,
    "neden": "UPX bölüm adları ve imzası",
+   "olculen_katman": "yara",
    "sonuc": "var",
    "bulunan": [
     "kural:UPX_Packed"
@@ -2403,6 +2491,7 @@
    "etiket_re": "^paketleyici:UPX$",
    "zorunlu": true,
    "neden": "UPX ile paketlenmiş x86-64 PE32+",
+   "olculen_katman": "packer",
    "sonuc": "var",
    "bulunan": [
     "paketleyici:UPX"
@@ -2416,6 +2505,7 @@
    "etiket_re": "^kural:UPX_Packed$",
    "zorunlu": true,
    "neden": "UPX bölüm adları ve imzası",
+   "olculen_katman": "yara",
    "sonuc": "var",
    "bulunan": [
     "kural:UPX_Packed"
@@ -2429,6 +2519,7 @@
    "etiket_re": "^paketleyici:UPX$",
    "zorunlu": true,
    "neden": "UPX ile paketlenmiş ELF AArch64",
+   "olculen_katman": "packer",
    "sonuc": "var",
    "bulunan": [
     "paketleyici:UPX"
@@ -2442,6 +2533,7 @@
    "etiket_re": "^kural:UPX_Packed$",
    "zorunlu": true,
    "neden": "UPX! imzası",
+   "olculen_katman": "yara",
    "sonuc": "var",
    "bulunan": [
     "kural:UPX_Packed"
@@ -2455,6 +2547,7 @@
    "etiket_re": "^teknik:RDTSC_Timing$",
    "zorunlu": true,
    "neden": "__TEXT,__text içinde iki gerçek rdtsc",
+   "olculen_katman": "antidebug",
    "sonuc": "var",
    "bulunan": [
     "teknik:RDTSC_Timing"
@@ -2468,6 +2561,7 @@
    "etiket_re": "^teknik:ptrace_pt_deny_attach$",
    "zorunlu": true,
    "neden": "ptrace(PT_DENY_ATTACH) çağrısı",
+   "olculen_katman": "antidebug",
    "sonuc": "var",
    "bulunan": [
     "teknik:ptrace_pt_deny_attach"
@@ -2481,6 +2575,7 @@
    "etiket_re": "^teknik:sysctl_kinfo_proc$",
    "zorunlu": true,
    "neden": "sysctl(KERN_PROC_PID) + P_TRACED",
+   "olculen_katman": "antidebug",
    "sonuc": "var",
    "bulunan": [
     "teknik:sysctl_kinfo_proc"
@@ -2494,6 +2589,7 @@
    "etiket_re": "^kural:AntiDebug_SysctlCheck$",
    "zorunlu": true,
    "neden": "sysctl + kinfo_proc",
+   "olculen_katman": "yara",
    "sonuc": "var",
    "bulunan": [
     "kural:AntiDebug_SysctlCheck"
@@ -2507,6 +2603,7 @@
    "etiket_re": "^kural:AntiDebug_(Ptrace|Timing)$",
    "zorunlu": false,
    "neden": "istenen; 1.23.1'de çıkmıyor (ptrace ve rdtsc kuralı bu örneği tutmuyor)",
+   "olculen_katman": "yara",
    "sonuc": "yok",
    "bulunan": [],
    "katman_durumu": "calisti"
@@ -2518,6 +2615,7 @@
    "etiket_re": "^guvenlik:Anti-Debugging$",
    "zorunlu": true,
    "neden": "ptrace/sysctl içe aktarımı",
+   "olculen_katman": "bi",
    "sonuc": "var",
    "bulunan": [
     "guvenlik:Anti-Debugging"
@@ -2531,6 +2629,7 @@
    "etiket_re": "^algoritma:AES$",
    "zorunlu": true,
    "neden": "OpenSSL 3 libcrypto",
+   "olculen_katman": "bi",
    "sonuc": "var",
    "bulunan": [
     "algoritma:AES"
@@ -2544,6 +2643,7 @@
    "etiket_re": "^algoritma:RSA$",
    "zorunlu": true,
    "neden": "OpenSSL 3 libcrypto",
+   "olculen_katman": "bi",
    "sonuc": "var",
    "bulunan": [
     "algoritma:RSA"
@@ -2557,6 +2657,7 @@
    "etiket_re": "^algoritma:SHA-256$",
    "zorunlu": true,
    "neden": "OpenSSL 3 libcrypto",
+   "olculen_katman": "bi",
    "sonuc": "var",
    "bulunan": [
     "algoritma:SHA-256"
@@ -2570,6 +2671,7 @@
    "etiket_re": "^kural:OpenSSL_Library$",
    "zorunlu": true,
    "neden": "OpenSSL sürüm dizgileri",
+   "olculen_katman": "yara",
    "sonuc": "var",
    "bulunan": [
     "kural:OpenSSL_Library"
@@ -2583,6 +2685,7 @@
    "etiket_re": "^kural:(AES_SBox|SHA256_Init_Constants|SHA256_Round_Constants)$",
    "zorunlu": false,
    "neden": "istenen; 1.23.1'de sabit kuralları libcrypto'da tutmuyor (incelenmedi)",
+   "olculen_katman": "yara",
    "sonuc": "yok",
    "bulunan": [],
    "katman_durumu": "calisti"
@@ -2594,6 +2697,7 @@
    "etiket_re": "^algoritma:AES$",
    "zorunlu": true,
    "neden": "openssl enc -aes-*",
+   "olculen_katman": "bi",
    "sonuc": "var",
    "bulunan": [
     "algoritma:AES"
@@ -2607,6 +2711,7 @@
    "etiket_re": "^algoritma:RSA$",
    "zorunlu": true,
    "neden": "openssl rsa / genpkey",
+   "olculen_katman": "bi",
    "sonuc": "var",
    "bulunan": [
     "algoritma:RSA"
@@ -2620,6 +2725,7 @@
    "etiket_re": "^kural:OpenSSL_Library$",
    "zorunlu": true,
    "neden": "OpenSSL dizgileri",
+   "olculen_katman": "yara",
    "sonuc": "var",
    "bulunan": [
     "kural:OpenSSL_Library"
@@ -2633,6 +2739,7 @@
    "etiket_re": "^algoritma:AES$",
    "zorunlu": true,
    "neden": "Debian openssl aracı",
+   "olculen_katman": "bi",
    "sonuc": "var",
    "bulunan": [
     "algoritma:AES"
@@ -2646,6 +2753,7 @@
    "etiket_re": "^algoritma:RSA$",
    "zorunlu": true,
    "neden": "Debian openssl aracı",
+   "olculen_katman": "bi",
    "sonuc": "var",
    "bulunan": [
     "algoritma:RSA"
@@ -2659,6 +2767,7 @@
    "etiket_re": "^kural:OpenSSL_Library$",
    "zorunlu": true,
    "neden": "libssl/libcrypto bağlı",
+   "olculen_katman": "yara",
    "sonuc": "var",
    "bulunan": [
     "kural:OpenSSL_Library"
@@ -2672,6 +2781,7 @@
    "etiket_re": "^algoritma:(Ed25519|ChaCha20-Poly1305)$",
    "zorunlu": true,
    "neden": "OpenSSH",
+   "olculen_katman": "bi",
    "sonuc": "var",
    "bulunan": [
     "algoritma:ChaCha20-Poly1305",
@@ -2686,6 +2796,7 @@
    "etiket_re": "^yetenek:",
    "zorunlu": false,
    "neden": "istenen (IMZA-06 'nasıl sınanır'); 1.23.1'de capa hiçbir girdide çalışmıyor",
+   "olculen_katman": "capa",
    "sonuc": "yok",
    "bulunan": [],
    "katman_durumu": "calismadi"
@@ -2698,7 +2809,9 @@
    "yanlis": 2102,
    "ust": 2102,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 119,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2707,7 +2820,9 @@
    "yanlis": 701,
    "ust": 701,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 48,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2716,7 +2831,9 @@
    "yanlis": 203,
    "ust": 203,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 21,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2725,7 +2842,9 @@
    "yanlis": 23,
    "ust": 23,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 119,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2734,7 +2853,9 @@
    "yanlis": 22,
    "ust": 22,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 48,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2743,7 +2864,9 @@
    "yanlis": 76,
    "ust": 76,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 21,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2752,7 +2875,9 @@
    "yanlis": 0,
    "ust": 0,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 119,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2761,7 +2886,9 @@
    "yanlis": 0,
    "ust": 0,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 48,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2770,7 +2897,9 @@
    "yanlis": 19,
    "ust": 19,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 21,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2779,7 +2908,9 @@
    "yanlis": 70,
    "ust": 70,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 119,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2788,7 +2919,9 @@
    "yanlis": 127,
    "ust": 127,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 48,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2797,7 +2930,9 @@
    "yanlis": 71,
    "ust": 71,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 21,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2806,7 +2941,9 @@
    "yanlis": 0,
    "ust": 0,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 119,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2815,7 +2952,9 @@
    "yanlis": 0,
    "ust": 0,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 48,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   },
   {
@@ -2824,7 +2963,9 @@
    "yanlis": 0,
    "ust": 0,
    "sonuc": "icinde",
-   "esiksiz_ikili": [],
+   "esikli_ikili": 21,
+   "esiksiz_ikili": 0,
+   "esiksiz_yanlis": 0,
    "artan_ikili": []
   }
  ],
@@ -2834,6 +2975,6 @@
   "cikis_kodu": 0,
   "nedenler": []
  },
- "bitis": "2026-11-18T09:39:37+03:00",
- "sure_sn": 25.2
+ "bitis": "2026-11-18T09:52:32+03:00",
+ "sure_sn": 27.8
 }

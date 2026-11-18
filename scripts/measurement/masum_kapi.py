@@ -489,7 +489,7 @@ def ikili_olc(girdi: dict, katmanlar: list[str], calisma_koku: str) -> dict:
 # ---------------------------------------------------------------------------
 
 def _uyar(kural: dict, set_adi: str, anahtar: str, katman: str, etiket: str) -> bool:
-    if kural.get("katman") not in (None, katman):
+    if kural.get("katman") not in (None, katman, KATMAN_ESI.get(katman)):
         return False
     if kural.get("set") not in (None, set_adi):
         return False
@@ -532,6 +532,7 @@ def ozetle(kayitlar: dict[str, list[dict]]) -> dict:
                 o = ozet.setdefault(katman, {}).setdefault(set_adi, {
                     "ikili": 0, "durum": collections.Counter(), "neden": collections.Counter(),
                     "iddia": 0, "yanlis": 0, "dogru_bilinen": 0, "yanlis_ikili": 0,
+                    "adet": 0, "yanlis_adet": 0,
                     "etiket": collections.Counter(), "ikili_basina_yanlis": {}})
                 o["ikili"] += 1
                 o["durum"][ks.get("durum", "?")] += 1
@@ -544,6 +545,10 @@ def ozetle(kayitlar: dict[str, list[dict]]) -> dict:
                 o["dogru_bilinen"] += sum(1 for i in iddialar if i.get("hukum") == "dogru_bilinen")
                 o["yanlis_ikili"] += 1 if y else 0
                 o["ikili_basina_yanlis"][kayit["anahtar"]] = y
+                # adet: çıktı katmanlarında bir etiketin ikilideki tekrar sayısı (ör. 8 fonksiyonda
+                # "Galois field"); iddia sayısı ikili başına etiketi bir kez sayar.
+                o["adet"] += sum(i.get("adet", 1) for i in iddialar)
+                o["yanlis_adet"] += sum(i.get("adet", 1) for i in iddialar if i.get("hukum") == "yanlis")
                 for i in iddialar:
                     o["etiket"][i["etiket"]] += 1
     for katman in ozet.values():
@@ -582,17 +587,24 @@ def izlenenleri_say(kayitlar: dict[str, list[dict]], esik: dict) -> list[dict]:
         for set_adi, liste in kayitlar.items():
             if iz.get("set", set_adi if set_adi in MASUM_SETLER else None) != set_adi:
                 continue  # set verilmemişse yalnız masum setler
-            olculen = [k for k in liste if iz["katman"] in k.get("katmanlar", {})
-                       and any(fnmatch.fnmatchcase(k["anahtar"], d) for d in iz.get("ikili", ["*"]))]
-            if not olculen:
-                continue
-            tutan = [k["anahtar"] for k in olculen
-                     if any(re.search(iz["etiket_re"], i["etiket"])
-                            for i in k["katmanlar"][iz["katman"]].get("iddialar", []))]
-            sonuc.append({"ad": iz["ad"], "katman": iz["katman"], "set": set_adi,
-                          "etiket_re": iz["etiket_re"], "ikili": len(tutan),
-                          "olculen": len(olculen), "rapordaki": iz.get("rapordaki"),
-                          "ornek": tutan[:5]})
+            # kural katmanı doğrudan kipteyse çıktı kipteki eşi de sayılır (bi ↔ intel ...)
+            for katman in [iz["katman"]] + [c for c, d in KATMAN_ESI.items() if d == iz["katman"]]:
+                olculen = [k for k in liste if katman in k.get("katmanlar", {})
+                           and any(fnmatch.fnmatchcase(k["anahtar"], d)
+                                   for d in iz.get("ikili", ["*"]))]
+                if not olculen:
+                    continue
+                tutan, adet = [], 0
+                for k in olculen:
+                    uyan = [i for i in k["katmanlar"][katman].get("iddialar", [])
+                            if re.search(iz["etiket_re"], i["etiket"])]
+                    if uyan:
+                        tutan.append(k["anahtar"])
+                        adet += sum(i.get("adet", 1) for i in uyan)
+                sonuc.append({"ad": iz["ad"], "katman": katman, "set": set_adi,
+                              "etiket_re": iz["etiket_re"], "ikili": len(tutan), "adet": adet,
+                              "olculen": len(olculen), "rapordaki": iz.get("rapordaki"),
+                              "ornek": tutan[:5]})
     return sonuc
 
 
@@ -601,13 +613,17 @@ def gercek_pozitifleri_sina(kayitlar: dict[str, list[dict]], esik: dict) -> list
     dizin = {(s, k["anahtar"]): k for s, liste in kayitlar.items() for k in liste}
     for b in esik.get("gercek_pozitifler", []):
         kayit = dizin.get((b["set"], b["ikili"]))
-        if kayit is None or b["katman"] not in kayit.get("katmanlar", {}):
+        # Beklenti doğrudan kip katmanıyla yazılır; çıktı kipinde eşi sınanır (bi → intel ...).
+        adaylar = [b["katman"]] + [c for c, d in KATMAN_ESI.items() if d == b["katman"]]
+        katman = next((k for k in adaylar if kayit and k in kayit.get("katmanlar", {})), None)
+        if katman is None:
+            # Ölçülmeyen beklenti kapıyı düşürmez (alt küme ölçümü); md'de "olculmedi" görünür.
             sonuc.append({**b, "sonuc": "olculmedi"})
             continue
-        ks = kayit["katmanlar"][b["katman"]]
+        ks = kayit["katmanlar"][katman]
         bulunan = [i["etiket"] for i in ks.get("iddialar", []) if re.search(b["etiket_re"], i["etiket"])]
-        sonuc.append({**b, "sonuc": "var" if bulunan else "yok", "bulunan": bulunan[:5],
-                      "katman_durumu": ks.get("durum")})
+        sonuc.append({**b, "olculen_katman": katman, "sonuc": "var" if bulunan else "yok",
+                      "bulunan": bulunan[:5], "katman_durumu": ks.get("durum")})
     return sonuc
 
 
@@ -624,13 +640,17 @@ def esigi_sina(ozet: dict, esik: dict, kip: str) -> list[dict]:
                               "yanlis": o["yanlis"]})
                 continue
             taban = e.get("ikililer", {})
-            esiksiz = [a for a in o["ikili_basina_yanlis"] if a not in taban]
-            ust = sum(taban.get(a, 0) for a in o["ikili_basina_yanlis"])
-            artan = sorted(a for a, n in o["ikili_basina_yanlis"].items()
-                           if a in taban and n > taban[a])
-            sonuc.append({"katman": katman, "set": set_adi, "yanlis": o["yanlis"], "ust": ust,
-                          "sonuc": "asildi" if o["yanlis"] > ust else "icinde",
-                          "esiksiz_ikili": esiksiz, "artan_ikili": artan})
+            ibs = o["ikili_basina_yanlis"]
+            # Eşik yalnız tabanı olan ikililer üstünden; tabansız ikili ayrıca yazılır, düşürmez.
+            yanlis = sum(n for a, n in ibs.items() if a in taban)
+            ust = sum(taban[a] for a in ibs if a in taban)
+            esiksiz = {a: n for a, n in ibs.items() if a not in taban}
+            artan = sorted(a for a, n in ibs.items() if a in taban and n > taban[a])
+            sonuc.append({"katman": katman, "set": set_adi, "yanlis": yanlis, "ust": ust,
+                          "sonuc": "asildi" if yanlis > ust else "icinde",
+                          "esikli_ikili": len(ibs) - len(esiksiz),
+                          "esiksiz_ikili": len(esiksiz),
+                          "esiksiz_yanlis": sum(esiksiz.values()), "artan_ikili": artan})
     return sonuc
 
 
@@ -663,21 +683,30 @@ def markdown(c: dict, en_cok_etiket: int = 8) -> str:
          f"- Ağaç: `{c['agac']['agac']}` @ `{c['agac']['commit'][:10]}` (karadul {c['agac']['karadul_surumu']}; "
          f"`{c['agac']['karadul_dosyasi']}`); kirli: {len(c['agac']['kirli'])} dosya"]
     if c.get("kosu"):
-        s.append(f"- Koşu: `{c['kosu']['kok']}` (koşunun ağacı `{c['kosu'].get('commit') or '?'}`)")
+        s.append(f"- Koşu: `{c['kosu']['kok']}` ({c['kosu']['ikili']} ikili; koşunun ağacı "
+                 f"`{(c['kosu'].get('commit') or '?')[:10]}`, karadul {c['kosu'].get('surum') or '?'})")
+        if c["kosu"].get("agac_farkli"):
+            s.append("  - **Dikkat:** koşuyu üreten commit ölçülen ağaçtan farklı; bileşim şablon "
+                     "listesi ölçülen ağaçtan okunur.")
     s.append(f"- Kapı: **{c['kapi']['sonuc']}** (çıkış {c['kapi']['cikis_kodu']})")
     for n in c["kapi"].get("nedenler", []):
         s.append(f"  - {n}")
     s += ["", "## Katman × set: yanlış iddia", "",
-          "| Katman | Set | İkili | Durum | İddia | Yanlış | Doğru bilinen | Yanlışlı ikili | Eşik |",
-          "|---|---|---|---|---|---|---|---|---|"]
+          "| Katman | Set | İkili | Durum | İddia | Yanlış | Doğru bilinen | Yanlışlı ikili | Adet (yanlış) | Eşik |",
+          "|---|---|---|---|---|---|---|---|---|---|"]
     esik = {(e["katman"], e["set"]): e for e in c["esik_sinamasi"]}
     for katman, setler in c["ozet"].items():
         for set_adi, o in setler.items():
             e = esik.get((katman, set_adi), {})
-            es = (f"{e.get('ust')} ({e['sonuc']})" if "ust" in e else e.get("sonuc", "—"))
+            if "ust" in e:
+                es = f"{e['yanlis']} ≤ {e['ust']} ({e['sonuc']}; {e['esikli_ikili']} ikili)"
+                if e["esiksiz_ikili"]:
+                    es += f"; eşiksiz {e['esiksiz_ikili']} ikilide yanlış {e['esiksiz_yanlis']}"
+            else:
+                es = e.get("sonuc", "—")
             durum = ", ".join(f"{k} {v}" for k, v in o["durum"].items())
             s.append(f"| {katman} | {set_adi} | {o['ikili']} | {durum} | {o['iddia']} | {o['yanlis']} "
-                     f"| {o['dogru_bilinen']} | {o['yanlis_ikili']} | {es} |")
+                     f"| {o['dogru_bilinen']} | {o['yanlis_ikili']} | {o['adet']} ({o['yanlis_adet']}) | {es} |")
     s += ["", "## En sık etiketler (ikili sayısı değil, iddia sayısı; bir ikilide etiket bir kez)", ""]
     for katman, setler in c["ozet"].items():
         for set_adi, o in setler.items():
@@ -689,10 +718,11 @@ def markdown(c: dict, en_cok_etiket: int = 8) -> str:
                 s.append(f"  - neden ({sayi} ikili): {n}")
     if c.get("izlenen"):
         s += ["", "## İzlenen yanlış etiketler (rapordaki bulgular; ikili sayısı)", "",
-              "| Ad | Katman | Set | Etiket | İkili / ölçülen | Rapordaki |", "|---|---|---|---|---|---|"]
+              "| Ad | Katman | Set | Etiket | İkili / ölçülen | Adet | Rapordaki |",
+              "|---|---|---|---|---|---|---|"]
         for z in c["izlenen"]:
             s.append(f"| {z['ad']} | {z['katman']} | {z['set']} | `{z['etiket_re']}` | "
-                     f"{z['ikili']} / {z['olculen']} | {z.get('rapordaki') or '—'} |")
+                     f"{z['ikili']} / {z['olculen']} | {z.get('adet', '—')} | {z.get('rapordaki') or '—'} |")
     if c.get("ek_sayaclar"):
         s += ["", "## Rapora yansıyan düzeyler", ""]
         for ad, setler in c["ek_sayaclar"].items():
@@ -738,10 +768,16 @@ def esik_yaz(kapi_ciktilari: list[Path], esik_yolu: Path) -> list[str]:
             for set_adi, o in setler.items():
                 if set_adi not in MASUM_SETLER:
                     continue
-                esik.setdefault("esikler", {}).setdefault(c["kip"], {}).setdefault(katman, {})[
-                    set_adi] = {"yanlis": o["yanlis"], "ikili": o["ikili"],
-                                "kaynak": str(yol), "commit": c["agac"]["commit"][:10],
-                                "tarih": c["bitis"], "ikililer": o["ikili_basina_yanlis"]}
+                yer = esik.setdefault("esikler", {}).setdefault(c["kip"], {}).setdefault(katman, {})
+                eski = yer.get(set_adi, {})
+                ikililer = dict(eski.get("ikililer", {}))
+                ikililer.update(o["ikili_basina_yanlis"])  # ölçülen ikililer güncellenir, öbürleri kalır
+                commit = (c.get("kosu") or {}).get("commit") or c["agac"]["commit"]
+                kaynaklar = [k for k in eski.get("kaynaklar", []) if k["kaynak"] != str(yol)]
+                kaynaklar.append({"kaynak": str(yol), "commit": (commit or "?")[:10],
+                                  "tarih": c["bitis"], "ikili": o["ikili"], "yanlis": o["yanlis"]})
+                yer[set_adi] = {"yanlis_toplam": sum(ikililer.values()), "ikili": len(ikililer),
+                                "kaynaklar": kaynaklar, "ikililer": dict(sorted(ikililer.items()))}
                 satirlar.append(f"{c['kip']}/{katman}/{set_adi}: yanlış {o['yanlis']} "
                                 f"({o['ikili']} ikili)")
     esik_yolu.write_text(json.dumps(esik, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
@@ -754,7 +790,7 @@ def kapi_hukmu(c: dict) -> dict:
         if e["sonuc"] == "asildi":
             nedenler.append(f"eşik aşıldı: {e['katman']}/{e['set']} yanlış {e['yanlis']} > {e['ust']}")
     for g in c["gercek_pozitifler"]:
-        if g.get("zorunlu") and g["sonuc"] != "var":
+        if g.get("zorunlu") and g["sonuc"] == "yok":
             nedenler.append(f"zorunlu gerçek pozitif {g['sonuc']}: {g['set']}/{g['ikili']} "
                             f"{g['katman']} `{g['etiket_re']}`")
     if c.get("girdi_hatalari"):
@@ -785,8 +821,297 @@ def dogrudan_kos(setler: list[str], katmanlar: list[str], setler_dosyasi: Path, 
     return kayitlar, hatalar
 
 
+# ---------------------------------------------------------------------------
+# Çıktı kipi: bir koşu dizininin yapıtları
+# ---------------------------------------------------------------------------
+
+_BILESIM_BOLUMU = re.compile(r"^### Algorithm Compositions[^\n]*\n(.*?)(?=^#{2,3} |\Z)", re.M | re.S)
+_BILESIM_SATIRI = re.compile(r"^- \*\*(.+?)\*\* \((\w+), confidence: (\d+)%\)", re.M)
+_ALGORITMA_BASLIGI = re.compile(r"^\s*\*\s*@algorithm\s+(.+?)\s+\((\w+), confidence: (\d+)%\)\s*$", re.M)
+_SECURITY_BASLIGI = re.compile(r"^\s*\*\s*@security\s+(.+?)\s*$", re.M)
+_BLOK_YORUMU = re.compile(r"^\s*// --- ([^:\n]{3,60}):", re.M)
+_YAPI_TANIMI = re.compile(r"^struct (recovered_struct_\d+) \{", re.M)
+
+
+def _bilesim_sablonlari() -> set[str]:
+    """Ölçülen ağaçtaki alan şablonu adları (``KNOWN_COMPOSITIONS``); çağrı zinciri adları değil."""
+    from karadul.reconstruction.engineering.composition_analyzer import KNOWN_COMPOSITIONS
+    return {t["name_template"] for t in KNOWN_COMPOSITIONS.values()}
+
+
+def _say(desen: re.Pattern, dosyalar: list[Path], kok: Path) -> dict[str, dict]:
+    """Desenin ilk grubu → {adet, ornek dosyalar}; dosyalar ``kok``'e göreli."""
+    sayac: dict[str, dict] = {}
+    for f in dosyalar:
+        try:
+            metin = f.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for m in desen.finditer(metin):
+            d = sayac.setdefault(m.group(1).strip(), {"adet": 0, "ornek": []})
+            d["adet"] += 1
+            if len(d["ornek"]) < 3:
+                d["ornek"].append(str(f.relative_to(kok)))
+    return sayac
+
+
+def _sayac_iddialari(onek: str, sayac: dict[str, dict]) -> list[dict]:
+    return [_iddia(f"{onek}:{ad}", v["ornek"], adet=v["adet"]) for ad, v in sorted(sayac.items())]
+
+
+def _json_oku(yol: Path) -> Any:
+    return json.loads(yol.read_text(encoding="utf-8")) if yol.is_file() else None
+
+
+def _yok(yapit: str) -> dict:
+    return {"durum": "yapit_yok", "neden": f"{yapit} yok", "iddialar": []}
+
+
+def cikti_bilesim(ws: Path, out: Path, sablonlar: set[str]) -> dict:
+    """MUH-03 / ARAYUZ-01: ``reports/report.md`` "Algorithm Compositions" bölümündeki alan şablonları."""
+    rapor = ws / "reports/report.md"
+    if not rapor.is_file():
+        return _yok("reports/report.md")
+    m = _BILESIM_BOLUMU.search(rapor.read_text(encoding="utf-8", errors="replace"))
+    iddialar, genel = [], 0
+    for ad, desen, guven in (_BILESIM_SATIRI.findall(m.group(1)) if m else []):
+        if ad in sablonlar:
+            iddialar.append(_iddia(f"sablon:{ad}", f"{desen}, confidence {guven}%", guven=int(guven)))
+        else:
+            genel += 1  # "X -> Y Pipeline", "Fork-Join at …": çağrı zinciri betimi, alan iddiası değil
+    return {"durum": "calisti", "iddialar": iddialar, "genel_desen": genel}
+
+
+def _c_dosyalari(out: Path) -> list[Path]:
+    return sorted((out / "src").rglob("*.c")) if (out / "src").is_dir() else []
+
+
+def cikti_algoritma_kod(ws: Path, out: Path, _s) -> dict:
+    """TIP-09: ürün kodundaki ``@algorithm`` başlıkları (adet = etiketli fonksiyon sayısı)."""
+    dosyalar = _c_dosyalari(out)
+    if not dosyalar:
+        return _yok("out/src/**/*.c")
+    return {"durum": "calisti", "iddialar": _sayac_iddialari(
+        "algoritma", _say(_ALGORITMA_BASLIGI, dosyalar, out))}
+
+
+def cikti_algoritma_json(ws: Path, out: Path, _s) -> dict:
+    """TIP-09: ``reconstructed/algorithms.json`` (yapısal kanıt ``: matched`` ayrıca sayılır)."""
+    veri = _json_oku(ws / "reconstructed/algorithms.json")
+    if veri is None:
+        return _yok("reconstructed/algorithms.json")
+    sayac: dict[str, dict] = {}
+    for a in veri.get("algorithms", []) or []:
+        d = sayac.setdefault(a.get("name", "?"), {"adet": 0, "yapisal": 0, "ornek": []})
+        d["adet"] += 1
+        kanit = " ".join(map(str, a.get("evidence", []) or []))
+        d["yapisal"] += 1 if ": matched" in kanit else 0
+        if len(d["ornek"]) < 3:
+            d["ornek"].append(f"{a.get('function')}: {kanit[:80]}")
+    return {"durum": "calisti", "iddialar": [
+        _iddia(f"algoritma:{ad}", v["ornek"], adet=v["adet"], yapisal=v["yapisal"])
+        for ad, v in sorted(sayac.items())]}
+
+
+def cikti_security_etiketi(ws: Path, out: Path, _s) -> dict:
+    """TIP-08: ürün kodundaki ``@security`` başlıkları."""
+    dosyalar = _c_dosyalari(out)
+    if not dosyalar:
+        return _yok("out/src/**/*.c")
+    return {"durum": "calisti", "iddialar": _sayac_iddialari(
+        "security", _say(_SECURITY_BASLIGI, dosyalar, out))}
+
+
+def cikti_blok_yorumu(ws: Path, out: Path, _s) -> dict:
+    """MUH-07: blok yorumcusunun ``// --- <betim>:`` satırları ("Row-major matrix access" ...)."""
+    dosyalar = _c_dosyalari(out)
+    if not dosyalar:
+        return _yok("out/src/**/*.c")
+    return {"durum": "calisti", "iddialar": _sayac_iddialari(
+        "blok", _say(_BLOK_YORUMU, dosyalar, out))}
+
+
+def cikti_types_h(ws: Path, out: Path, _s) -> dict:
+    """TIP-07: ``out/src/include/types.h``'deki ``recovered_struct_NNN`` tanımları (adet)."""
+    yol = out / "src/include/types.h"
+    if not yol.is_file():
+        return _yok("out/src/include/types.h")
+    adlar = _YAPI_TANIMI.findall(yol.read_text(encoding="utf-8", errors="replace"))
+    if not adlar:
+        return {"durum": "calisti", "iddialar": []}
+    return {"durum": "calisti", "iddialar": [
+        _iddia("yapi:recovered_struct", adlar[:3], adet=len(adlar))]}
+
+
+def _sarif_adi(sonuc: dict) -> str:
+    p = sonuc.get("properties", {}) or {}
+    for anahtar in ("technology_name", "packer_name", "yara_rule"):
+        if p.get(anahtar):
+            return str(p[anahtar]).split(" (")[0]
+    return re.sub(r"\s+", " ", sonuc.get("message", {}).get("text", "?"))[:80]
+
+
+def cikti_sarif(ws: Path, out: Path, _s) -> dict:
+    """ARAYUZ-17: ``reports/report.sarif.json`` sonuçları (``KRDL003:MPRESS_Packed`` ...)."""
+    veri = _json_oku(ws / "reports/report.sarif.json")
+    if veri is None:
+        return _yok("reports/report.sarif.json")
+    sayac: dict[str, dict] = {}
+    for run in veri.get("runs", []) or []:
+        for r in run.get("results", []) or []:
+            d = sayac.setdefault(f"{r.get('ruleId')}:{_sarif_adi(r)}",
+                                 {"adet": 0, "duzey": r.get("level"), "ornek": []})
+            d["adet"] += 1
+            if len(d["ornek"]) < 2:
+                d["ornek"].append(r.get("message", {}).get("text", "")[:160])
+    return {"durum": "calisti", "iddialar": [
+        _iddia(e, v["ornek"], adet=v["adet"], duzey=v["duzey"]) for e, v in sorted(sayac.items())]}
+
+
+def cikti_intel(ws: Path, out: Path, _s) -> dict:
+    """IMZA-01'in ürün çıktısı: ``static/intelligence_report.json``."""
+    veri = _json_oku(ws / "static/intelligence_report.json")
+    return _yok("static/intelligence_report.json") if veri is None else {
+        "durum": "calisti", "iddialar": bi_iddialari(veri)}
+
+
+def cikti_antidebug(ws: Path, out: Path, _s) -> dict:
+    veri = _json_oku(ws / "static/anti_debug_findings.json")
+    return _yok("static/anti_debug_findings.json") if veri is None else {
+        "durum": "calisti", "iddialar": antidebug_iddialari(veri)}
+
+
+def cikti_packer(ws: Path, out: Path, _s) -> dict:
+    veri = _json_oku(ws / "static/packer_fingerprints.json")
+    return _yok("static/packer_fingerprints.json") if veri is None else {
+        "durum": "calisti", "iddialar": packer_iddialari(veri)}
+
+
+def cikti_yara(ws: Path, out: Path, _s) -> dict:
+    """IMZA-05'in ürün çıktısı: ``pipeline_result.json`` → ``static.stats.detected_tech``.
+
+    stages.py yalnız eşleşme varsa yazar; boş liste "tarandı, temiz" ile "taranmadı"yı ayırmaz
+    (IMZA-15). ``yara_backend`` alanı varsa durum "calisti", yoksa "bilinmiyor".
+    """
+    veri = _json_oku(ws / "reports/pipeline_result.json")
+    if veri is None:
+        return _yok("reports/pipeline_result.json")
+    st = (veri.get("stages", {}).get("static", {}) or {}).get("stats", {}) or {}
+    iddialar = [_iddia(f"kural:{t.split(' (')[0]}", t) for t in st.get("detected_tech", []) or []]
+    return {"durum": "calisti" if "yara_backend" in st else "bilinmiyor", "iddialar": iddialar,
+            "neden": None if "yara_backend" in st else "yara_backend yok: tarandı mı bilinmiyor"}
+
+
+def cikti_bilesim_yeniden(ws: Path, out: Path, sablonlar: set[str]) -> dict:
+    """MUH-03'ün **yeniden oynatması**: ölçülen ağacın bileşim çözümleyicisi, koşunun kayıtlı
+    girdileriyle (Ghidra'sız). Girdiler ``pipeline/steps/deep_tracing.py``'nin verdikleri:
+    çağrı çizgesi (varsa genişletilmiş), ``algorithms.json`` + ``engineering_algorithms.json``,
+    ``data_flow/data_flow.json``, ``dispatch_resolution.json``. HEAD koşusunda şablon adları
+    14/14 ikilide kayıtlı ``algorithm_compositions.json`` ile aynı (P00.md).
+    """
+    from karadul.reconstruction.engineering import AlgorithmCompositionAnalyzer
+    r, st = ws / "reconstructed", ws / "static"
+    gerekli = [r / "algorithms.json", r / "engineering_algorithms.json", st / "ghidra_call_graph.json"]
+    eksik = [str(p.relative_to(ws)) for p in gerekli if not p.is_file()]
+    if eksik:
+        return _yok(", ".join(eksik))
+    genis = sorted(r.glob("*augmented*")) + sorted(st.glob("*augmented*"))
+    cg = _json_oku(genis[0] if genis else st / "ghidra_call_graph.json")
+    algos = ((_json_oku(r / "algorithms.json") or {}).get("algorithms", [])
+             + (_json_oku(r / "engineering_algorithms.json") or {}).get("algorithms", []))
+    sonuc = AlgorithmCompositionAnalyzer().analyze(
+        call_graph=cg, algorithms=algos, data_flow=_json_oku(r / "data_flow/data_flow.json"),
+        dispatch_result=_json_oku(r / "dispatch_resolution.json"))
+    iddialar = {}
+    for c in sonuc.compositions:
+        if c.name in sablonlar and c.name not in iddialar:
+            iddialar[c.name] = _iddia(f"sablon:{c.name}", [s.name for s in c.stages][:4],
+                                      guven=round(float(c.confidence) * 100))
+    return {"durum": "calisti", "iddialar": list(iddialar.values())}
+
+
+def cikti_algoritma_yeniden(ws: Path, out: Path, _s) -> dict:
+    """TIP-09'un **yeniden oynatması**: ölçülen ağacın ``CAlgorithmIdentifier``'ı, koşunun kayıtlı
+    Ghidra çıktısıyla (``static/ghidra_output/decompiled`` + fonksiyon/dizgi JSON'u; Ghidra'sız).
+    HEAD koşusunda (ad, fonksiyon) çoklu kümesi 14/14 ikilide ``algorithms.json`` ile aynı.
+    """
+    from karadul.config import Config
+    from karadul.reconstruction.c_algorithm_id import CAlgorithmIdentifier
+    st = ws / "static"
+    if not (st / "ghidra_output/decompiled").is_dir():
+        return _yok("static/ghidra_output/decompiled")
+    sonuc = CAlgorithmIdentifier(Config.load(None)).identify(
+        st / "ghidra_output/decompiled", st / "ghidra_functions.json", st / "ghidra_strings.json")
+    sayac: dict[str, dict] = {}
+    for a in sonuc.algorithms:
+        d = sayac.setdefault(a.name, {"adet": 0, "yapisal": 0, "ornek": []})
+        d["adet"] += 1
+        kanit = " ".join(map(str, getattr(a, "evidence", []) or []))
+        d["yapisal"] += 1 if ": matched" in kanit else 0
+        if len(d["ornek"]) < 3:
+            d["ornek"].append(f"{a.function_name}: {kanit[:80]}")
+    return {"durum": "calisti", "iddialar": [
+        _iddia(f"algoritma:{ad}", v["ornek"], adet=v["adet"], yapisal=v["yapisal"])
+        for ad, v in sorted(sayac.items())]}
+
+
+CIKTI_CAGRI: dict[str, Callable[[Path, Path, set], dict]] = {
+    "bilesim": cikti_bilesim, "algoritma_kod": cikti_algoritma_kod,
+    "algoritma_json": cikti_algoritma_json, "security_etiketi": cikti_security_etiketi,
+    "sarif": cikti_sarif, "blok_yorumu": cikti_blok_yorumu, "types_h": cikti_types_h,
+    "intel": cikti_intel, "antidebug_cikti": cikti_antidebug, "packer_cikti": cikti_packer,
+    "yara_cikti": cikti_yara,
+    "bilesim_yeniden": cikti_bilesim_yeniden, "algoritma_yeniden": cikti_algoritma_yeniden,
+}
+CIKTI_KATMANLARI = tuple(CIKTI_CAGRI)
+# Çıktı katmanı → doğrudan kipteki eşi: dogru_iddialar ve izlenen_yanlislar kuralları ikisine de uyar.
+KATMAN_ESI = {"intel": "bi", "antidebug_cikti": "antidebug", "packer_cikti": "packer",
+              "yara_cikti": "yara", "bilesim_yeniden": "bilesim",
+              "algoritma_yeniden": "algoritma_json"}
+
+
+def kosu_ikilileri(kok: Path) -> list[tuple[str, Path, Path, bool]]:
+    """``urun_kos.py`` düzeni: ``<kök>/<anahtar>/{ws,out,BITTI}`` → (anahtar, ws, out, bitti)."""
+    sonuc = []
+    for d in sorted(p.parent for p in kok.rglob("out") if p.is_dir() and (p.parent / "ws").is_dir()):
+        wsler = sorted((d / "ws/workspaces").glob("*/*"))
+        if not wsler:
+            continue
+        sonuc.append((str(d.relative_to(kok)), wsler[-1], d / "out", (d / "BITTI").exists()))
+    return sonuc
+
+
 def cikti_kos(kok: Path, set_adi: str, katmanlar: list[str] | None) -> tuple[dict, list, dict]:
-    raise SystemExit("[kapı] çıktı kipi henüz kurulmadı (P00 İş 1b)")
+    katmanlar = katmanlar or list(CIKTI_KATMANLARI)
+    bilinmeyen = [k for k in katmanlar if k not in CIKTI_CAGRI]
+    if bilinmeyen:
+        raise SystemExit(f"[kapı] bilinmeyen çıktı katmanı: {bilinmeyen}")
+    sablonlar = _bilesim_sablonlari()
+    kunye = _json_oku(kok / "kosu_kunyesi.json") or {}
+    ikililer = kosu_ikilileri(kok)
+    if not ikililer:
+        raise SystemExit(f"[kapı] {kok}: ws/ + out/ taşıyan ikili dizini yok")
+    kayitlar, hatalar = [], []
+    beklenen = kunye.get("secilen_is")
+    if isinstance(beklenen, int) and beklenen != len(ikililer):
+        # yalnız biten kayıtları sayan kapı yarım koşuyu geçirir: beklenen sayıyla karşılaştır
+        hatalar.append(("<koşu>", f"künyede {beklenen} iş, dizinde {len(ikililer)} ikili"))
+    for anahtar, ws, out, bitti in ikililer:
+        kayit: dict[str, Any] = {"anahtar": anahtar, "ws": str(ws), "bitti": bitti, "katmanlar": {}}
+        if not bitti:
+            hatalar.append((anahtar, "BITTI yok: koşu yarım ya da başarısız"))
+        for k in katmanlar:
+            try:
+                kayit["katmanlar"][k] = CIKTI_CAGRI[k](ws, out, sablonlar)
+            except Exception as exc:  # bozuk yapıt kayda geçer, sayım sürer
+                kayit["katmanlar"][k] = {"durum": "hata", "neden": f"{type(exc).__name__}: {exc}",
+                                         "iddialar": []}
+        kayitlar.append(kayit)
+    bilgi = {"kok": str(kok), "commit": (kunye.get("agac") or {}).get("commit"),
+             "surum": (kunye.get("agac") or {}).get("karadul_surumu"),
+             "ikili": len(ikililer), "katmanlar": katmanlar, "set": set_adi,
+             "sablon_sayisi": len(sablonlar)}
+    return {set_adi: kayitlar}, hatalar, bilgi
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -845,6 +1170,8 @@ def main(argv: list[str] | None = None) -> int:
         c["kip"] = "cikti"
         kayitlar, hatalar, kosu_bilgi = cikti_kos(a.kosu.expanduser().resolve(), a.kosu_seti,
                                                   (a.katman.split(",") if a.katman else None))
+        kosu_bilgi["agac_farkli"] = bool(kosu_bilgi.get("commit")) and \
+            kosu_bilgi["commit"] != agac["commit"]
         c["kosu"] = kosu_bilgi
     hukumle(kayitlar, esik)
     c["ozet"] = ozetle(kayitlar)
