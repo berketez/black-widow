@@ -23,7 +23,8 @@ from karadul.lm.tools import (
     ADDR_PATTERN, CALL_GRAPH_MAX_DEPTH, CALL_GRAPH_MAX_EDGES, CALL_GRAPH_MAX_NODES, CALL_GRAPH_RESULT_MAX_BYTES,
     ERR_BAD_ARGUMENT, ERR_NO_DATA, ERR_STALE, ERR_UNKNOWN_ADDRESS, ERR_UNKNOWN_NAME, FACTS_RESULT_MAX_BYTES,
     FIND_REFS_MATCHES_PER_ROW, FIND_REFS_MAX_ROWS, FIND_REFS_RESULT_MAX_BYTES, FIND_REFS_STRING_CHARS,
-    IMPORT_NAME_MAX_CHARS, KIND_FACT, KIND_FACT_AND_PROXY, PATH_MAX_DEPTH, PATH_MAX_PATHS, PATH_RESULT_MAX_BYTES,
+    IMPORT_NAME_MAX_CHARS, KIND_FACT, KIND_FACT_AND_PROXY, KIND_PROXY, PATH_MAX_DEPTH, PATH_MAX_PATHS,
+    PATH_RESULT_MAX_BYTES, SEARCH_LINE_MAX_CHARS, SEARCH_MAX_ROWS, SEARCH_RESULT_MAX_BYTES, SEARCH_SCAN_MAX_BYTES,
     SEARCH_TEXT_MAX_CHARS, SEARCH_TEXT_MIN_CHARS, ToolContext, ToolError, ToolOutput, ToolSpec, Workspace,
     _read_json, format_tag,
 )
@@ -403,6 +404,79 @@ def find_refs(ws: Workspace, args: Mapping[str, Any], ctx: ToolContext) -> ToolO
 
 
 # ---------------------------------------------------------------------------------------------
+# O11 search_code
+
+SOURCE_SEARCH = "static/ghidra_output/decompiled"
+LIMITS_SEARCH = (
+    "Düz alt dizgi, harf duyarlı; düzenli ifade değildir.",
+    "Yorum ve dizgi sabiti içindeki eşleşmeler koddan ayrılmaz.",
+    "Yalnız decompile dosyası olan program fonksiyonları (FUN_) aranır; Karadul'un başlık yorumları aranmaz.",
+    "line_no get_decompiled'in satır numarasıdır (part aralik ile çevresi okunabilir).",
+)
+_SEARCH_DEFAULTS = {"limit": SEARCH_MAX_ROWS}
+
+
+def line_window(line: str, text: str, width: int) -> tuple[str, bool]:
+    """Satırın (baştaki girinti atılmış) en çok ``width`` karakterlik, eşleşmeyi ortalayan penceresi;
+    kesildiyse kesilen uçlarda ``…`` ve ikinci değer ``True`` (sessiz kırpma yok)."""
+    s = line.strip()
+    if len(s) <= width:
+        return s, False
+    at = max(0, s.find(text))   # metin baş / son boşluk taşıyorsa kırpılmış satırda bulunmayabilir
+    start = max(0, min(at - (width - len(text)) // 2, len(s) - width))
+    piece = s[start:start + width]
+    return f"{'…' if start > 0 else ''}{piece}{'…' if start + width < len(s) else ''}", True
+
+
+def search_code(ws: Workspace, args: Mapping[str, Any], ctx: ToolContext) -> ToolOutput:
+    text = args["text"]
+    if any(c in text for c in "\r\n"):
+        raise ToolError(ERR_BAD_ARGUMENT)   # satır içi arama; çok satırlı metin hiçbir satırla eşleşmez
+    limit = args.get("limit", _SEARCH_DEFAULTS["limit"])
+    addrs = ws.program_addresses()
+    items: list[dict[str, Any]] = []
+    total = 0
+    funcs: set[str] = set()
+    scanned = 0
+    scanned_bytes = 0
+    stopped = False
+    for a in addrs:
+        try:
+            size = ws.code_files[a].stat().st_size
+        except OSError:
+            continue
+        if scanned_bytes + size > SEARCH_SCAN_MAX_BYTES:
+            stopped = True
+            break
+        scanned_bytes += size
+        raw = ws.read_code(a)
+        if raw is None:
+            continue
+        scanned += 1
+        if text not in raw:
+            continue
+        for no, line in enumerate(strip_header(raw).splitlines(), 1):
+            if text in line:
+                total += 1
+                funcs.add(a)
+                if len(items) < limit:
+                    shown, cut = line_window(line, text, SEARCH_LINE_MAX_CHARS)
+                    row: dict[str, Any] = {"addr": f"FUN_{a}", "line_no": no, "line": shown}
+                    if cut:
+                        row["cut"] = True
+                    items.append(row)
+    data = {"text": text, "items": items, "total": total, "functions": len(funcs),
+            "scanned_functions": scanned, "functions_total": len(addrs)}
+    truncated: Optional[dict[str, Any]] = None
+    if total > len(items) or stopped:
+        truncated = {"omitted": total - len(items), "total": total}
+        if stopped:
+            # Tarama bütçesi doldu: ``total`` yalnız taranan fonksiyonların sayısıdır.
+            truncated["scan_stopped"] = True
+    return ToolOutput(data=data, kind=KIND_PROXY, source=SOURCE_SEARCH, limits=LIMITS_SEARCH, truncated=truncated)
+
+
+# ---------------------------------------------------------------------------------------------
 # Kayıt (v2 tasarımı §3.5; sıra full_registry'nin sırasıdır)
 
 MORE_TOOLS = (
@@ -462,4 +536,18 @@ MORE_TOOLS = (
                                     "limit": {"type": "integer", "minimum": 1, "maximum": FIND_REFS_MAX_ROWS}},
                      "required": ["target", "value"], "additionalProperties": False},
         max_result_bytes=FIND_REFS_RESULT_MAX_BYTES, func=find_refs, defaults=_REFS_DEFAULTS),
+    ToolSpec(
+        name="search_code", cls="O", signature="search_code(text, limit)",
+        description=(
+            'find lines of decompiled code that contain text, in every program function. text is plain text '
+            f'({SEARCH_TEXT_MIN_CHARS}-{SEARCH_TEXT_MAX_CHARS} characters, case-sensitive, not a regular '
+            f'expression). "items" are matching lines (function, "line_no", "line"), at most {SEARCH_MAX_ROWS}; '
+            '"total" counts all matching lines, "functions" the functions they are in. line_no works with '
+            'get_decompiled part "aralik". Matches inside comments and strings are included.'),
+        args_schema={"type": "object",
+                     "properties": {"text": {"type": "string", "minLength": SEARCH_TEXT_MIN_CHARS,
+                                             "maxLength": SEARCH_TEXT_MAX_CHARS},
+                                    "limit": {"type": "integer", "minimum": 1, "maximum": SEARCH_MAX_ROWS}},
+                     "required": ["text"], "additionalProperties": False},
+        max_result_bytes=SEARCH_RESULT_MAX_BYTES, func=search_code, defaults=_SEARCH_DEFAULTS),
 )

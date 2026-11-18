@@ -1,41 +1,365 @@
 {
   "_comment": "P22d (KaradulLM v2 araç kaydı): O5 get_function_facts, O7 get_call_graph, O7b find_path, R1 find_refs + ters dizin, O11 search_code, O8 get_name_provenance, O10 get_types, kip başına araç alt kümesi, dokunulan alanı. Her mutant bir davranışı bozar; hedef test KIRMIZI olmalı (killed). Mutant metni özgününden farklı uzunlukta (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_lm_arac.json",
   "mutants": [
-    {"id": "kv_h_sinifi", "desc": "kayıt defteri araç sınıfını denetlemez (H girer)", "module": "karadul/lm/tools/__init__.py", "test": "tests/test_lm_tools_v2.py::test_kayit_h_sinifi_ve_bilinmeyen_sinif_giremez", "find": "            if s.cls not in TOOL_CLASS_ACTIONS:", "replace": "            if False and s.cls not in TOOL_CLASS_ACTIONS:"},
-    {"id": "of_ghidra_imza_karisik", "desc": "params_ghidra yerine imza sayısı yazılır", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_facts_cfg_fonksiyon_kaydi_ve_imza", "find": "        \"params_ghidra\": _int_or_none(fn.get(\"param_count\")) if isinstance(fn, dict) else None,", "replace": "        \"params_ghidra\": n_sig,"},
-    {"id": "of_cok_satirli_imza", "desc": "çok satırlı imza birleştirilmez (yalnız son satır)", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_facts_imza_ayristirma", "find": "        if \"(\" in joined and joined.count(\"(\") == joined.count(\")\"):", "replace": "        if True:"},
-    {"id": "of_ic_parantez", "desc": "işlev göstericisi tipindeki iç virgüller de bölünür", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_facts_imza_ayristirma", "find": "        if ch == \",\" and depth == 0:", "replace": "        if ch == \",\":"},
-    {"id": "of_ad_parantezi", "desc": "dönüş tipindeki parantez imza sanılır (ad aranmaz)", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_facts_imza_ayristirma", "find": "    at_name = sig.find(f\"{name}(\") if name else -1", "replace": "    at_name = -1"},
-    {"id": "of_variadic", "desc": "değişken argüman (...) parametre sayılır", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_facts_imza_ayristirma", "find": "    return len(parts) - (1 if variadic else 0), variadic", "replace": "    return len(parts), variadic"},
-    {"id": "of_void", "desc": "(void) bir parametre sayılır", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_facts_imza_ayristirma", "find": "    if inner in (\"\", \"void\"):", "replace": "    if inner in (\"\",):"},
-    {"id": "of_bos_parca", "desc": "boş parametre parçası (bozuk imza) sayıya girer", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_facts_imza_okunamazsa_none", "find": "    if depth != 0 or any(not p for p in parts):", "replace": "    if depth != 0:"},
-    {"id": "of_eksik_cfg", "desc": "cfg dosyası yokken eksik listesine yazılmaz", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_facts_eksik_kaynak_null_ve_adi", "find": "        missing.append(\"static/ghidra_cfg.json\")", "replace": "        pass"},
-    {"id": "of_komut_sayisi", "desc": "eksik komut sayılı blokta toplam 0 sayılır", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_facts_cfg_fonksiyon_kaydi_ve_imza", "find": "        instructions = sum(counts) if counts and all(c is not None for c in counts) else None", "replace": "        instructions = len(counts)"},
-    {"id": "og_oz_cagri", "desc": "öz çağrı (A→A) düğüm sayılır", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_graf_asagi_derinlik_sira_ve_kenarlar", "find": "                if s == d:\n                    continue\n", "replace": ""},
-    {"id": "og_yon_ters", "desc": "callers yönü callees komşuluğunu kullanır", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_graf_yukari_ve_derinlik", "find": "                    out.setdefault(d, set()).add(s)", "replace": "                    out.setdefault(s, set()).add(d)"},
-    {"id": "og_derinlik", "desc": "derinlik argümanı yok sayılır (hep 1 kat)", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_graf_yukari_ve_derinlik", "find": "    for d in range(1, depth + 1):", "replace": "    for d in range(1, 2):"},
-    {"id": "og_sira", "desc": "düğümler derinlikten bağımsız adrese göre sıralanır", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_graf_yukari_ve_derinlik", "find": "key=lambda h: (dist[h], int(h, 16)))", "replace": "key=lambda h: int(h, 16))"},
-    {"id": "og_dugum_tavani", "desc": "max_nodes uygulanmaz", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_graf_dugum_tavani", "find": "    shown = reached[:max_nodes]", "replace": "    shown = reached"},
-    {"id": "og_kenar_tavani_sessiz", "desc": "kenar kırpması truncated'a yazılmaz", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_graf_kenar_tavani_kirpmayi_soyler", "find": "    if len(shown) < len(reached) or len(edges) < len(all_edges):", "replace": "    if len(shown) < len(reached):"},
-    {"id": "og_thunk_dugum", "desc": "decompile dosyası olmayan adres düğüm sayılır", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_graf_hatalar_ve_korluk", "find": "    if a not in ws.code_files:\n        raise ToolError(ERR_NO_DATA)", "replace": "    pass"},
-    {"id": "og_korluk", "desc": "körlük kipi graf etiketlerinde uygulanmaz", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_graf_hatalar_ve_korluk", "find": "    lookup = ws.name_lookup(ctx.blind_target)\n    items = [{\"addr\": f\"FUN_{v}\", \"name_tag\": format_tag(lookup(v)), \"depth\": dist[v]} for v in shown]", "replace": "    lookup = ws.name_lookup(None)\n    items = [{\"addr\": f\"FUN_{v}\", \"name_tag\": format_tag(lookup(v)), \"depth\": dist[v]} for v in shown]"},
-    {"id": "oy_tek_oncul", "desc": "en kısa yolda yalnız ilk öncül tutulur (yol sayısı eksik)", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_yol_elmas_tum_en_kisa_yollar", "find": "                if dist.get(v) == d:\n                    preds.setdefault(v, []).append(u)", "replace": "                if dist.get(v) == d and v not in preds:\n                    preds.setdefault(v, []).append(u)"},
-    {"id": "oy_derinlik_siniri", "desc": "max_depth uygulanmaz", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_yol_derinlik_siniri_ve_yon", "find": "    while frontier and b not in dist and d < max_depth:", "replace": "    while frontier and b not in dist:"},
-    {"id": "oy_ayni_uc", "desc": "aynı başlangıç ve hedef kabul edilir", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_yol_derinlik_siniri_ve_yon", "find": "    if a == b:\n        raise ToolError(ERR_BAD_ARGUMENT)", "replace": "    pass"},
-    {"id": "oy_yol_tavani", "desc": "yol tavanı uygulanmaz", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_yol_tavani_kirpmayi_soyler", "find": "        if len(paths) >= PATH_MAX_PATHS:", "replace": "        if False:"},
-    {"id": "oy_sayim_sessiz", "desc": "kırpılan yollar truncated'a yazılmaz", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_yol_tavani_kirpmayi_soyler", "find": "    truncated = ({\"omitted\": count[b] - len(paths), \"total\": count[b]} if count[b] > len(paths) else None)", "replace": "    truncated = None"},
-    {"id": "oy_dokunulan", "desc": "yol düğümleri items'a girmez (örümcek hedefi boş)", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_yol_elmas_tum_en_kisa_yollar", "find": "        for v in p[1:]:\n            if v not in nodes:", "replace": "        for v in p[-1:]:\n            if v not in nodes:"},
-    {"id": "or_uyelik", "desc": "ikilinin ithal etmediği ad boş liste döner (bilinmeyen_ad yok)", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_refs_ithal_ve_evidence_ile_ayni", "find": "        if not query or query not in idx.imports:", "replace": "        if not query:"},
-    {"id": "or_normalize", "desc": "baştaki alt çizgiler atılmaz", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_refs_ithal_ve_evidence_ile_ayni", "find": "        query = normalize_api(value)", "replace": "        query = value"},
-    {"id": "or_harf_duyarsiz", "desc": "dizgi araması harf duyarsız", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_refs_dizgi_duz_alt_dizgi_harf_duyarli", "find": "            if query in text:", "replace": "            if query.lower() in text.lower():"},
-    {"id": "or_kirpma_sessiz", "desc": "uzun dizgi eki olmadan kesilir", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_refs_dizgi_duz_alt_dizgi_harf_duyarli", "find": "    return s if len(s) <= limit else f\"{s[:limit]}…[+{len(s) - limit}]\"", "replace": "    return s[:limit]"},
-    {"id": "or_kisa_dizgi", "desc": "3 karakterden kısa dizgi kabul edilir", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_refs_dizgi_duz_alt_dizgi_harf_duyarli", "find": "        if len(value) < SEARCH_TEXT_MIN_CHARS or len(value) > SEARCH_TEXT_MAX_CHARS:", "replace": "        if len(value) > SEARCH_TEXT_MAX_CHARS:"},
-    {"id": "or_sayfa", "desc": "offset uygulanmaz", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_refs_sayfalama", "find": "    page = addrs[offset:offset + limit]\n    data = {\"target\"", "replace": "    page = addrs[:limit]\n    data = {\"target\""},
-    {"id": "or_sayfa_sessiz", "desc": "sayfa kırpması truncated'a yazılmaz", "module": "karadul/lm/tools/read_more.py", "test": "tests/test_lm_tools_v2.py::test_refs_sayfalama", "find": "    truncated = {\"omitted\": len(addrs) - len(page), \"total\": len(addrs)} if len(page) < len(addrs) else None\n    return ToolOutput(data=data, kind=KIND_FACT, source=SOURCE_REFS", "replace": "    truncated = None\n    return ToolOutput(data=data, kind=KIND_FACT, source=SOURCE_REFS"},
-    {"id": "ix_bayat_xrefs", "desc": "dizin bayatlığa bakmadan önbellekten verilir", "module": "karadul/lm/tools/index.py", "test": "tests/test_lm_tools_v2.py::test_refs_ters_dizin_bir_kez_kurulur_bayatligi_denetlenir", "find": "    if idx is None or idx.fingerprint != fp:", "replace": "    if idx is None:"},
-    {"id": "ix_her_sorguda_kur", "desc": "dizin her sorguda yeniden kurulur", "module": "karadul/lm/tools/index.py", "test": "tests/test_lm_tools_v2.py::test_refs_ters_dizin_bir_kez_kurulur_bayatligi_denetlenir", "find": "    if idx is None or idx.fingerprint != fp:", "replace": "    if True:"},
-    {"id": "ix_bayat_fonksiyonlar", "desc": "adres tablosu değişince bayat sayılmaz", "module": "karadul/lm/tools/index.py", "test": "tests/test_lm_tools_v2.py::test_refs_ters_dizin_bir_kez_kurulur_bayatligi_denetlenir", "find": "    if _part(fp, FUNCTIONS_FILE) != ws.functions_fingerprint:", "replace": "    if False:"},
-    {"id": "ix_thunk_adres", "desc": "adı ithal listesinde olmayan ama adresi thunk olan çağrı ithal sayılmaz", "module": "karadul/lm/tools/index.py", "test": "tests/test_lm_tools_v2.py::test_refs_ithal_cagri_sayisi", "find": "                if c[\"name\"] in ext_names or ca in ext_addrs:", "replace": "                if c[\"name\"] in ext_names and ca in ext_addrs:"},
-    {"id": "ix_cagri_sayisi", "desc": "çağrı sayısı yerine 1 yazılır", "module": "karadul/lm/tools/index.py", "test": "tests/test_lm_tools_v2.py::test_refs_ithal_cagri_sayisi", "find": "                        row[a] = row.get(a, 0) + 1", "replace": "                        row[a] = 1"}
+    {
+      "id": "kv_h_sinifi",
+      "desc": "kayıt defteri araç sınıfını denetlemez (H girer)",
+      "module": "karadul/lm/tools/__init__.py",
+      "test": "tests/test_lm_tools_v2.py::test_kayit_h_sinifi_ve_bilinmeyen_sinif_giremez",
+      "find": "            if s.cls not in TOOL_CLASS_ACTIONS:",
+      "replace": "            if False and s.cls not in TOOL_CLASS_ACTIONS:"
+    },
+    {
+      "id": "of_ghidra_imza_karisik",
+      "desc": "params_ghidra yerine imza sayısı yazılır",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_facts_cfg_fonksiyon_kaydi_ve_imza",
+      "find": "        \"params_ghidra\": _int_or_none(fn.get(\"param_count\")) if isinstance(fn, dict) else None,",
+      "replace": "        \"params_ghidra\": n_sig,"
+    },
+    {
+      "id": "of_cok_satirli_imza",
+      "desc": "çok satırlı imza birleştirilmez (yalnız son satır)",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_facts_imza_ayristirma",
+      "find": "        if \"(\" in joined and joined.count(\"(\") == joined.count(\")\"):",
+      "replace": "        if True:"
+    },
+    {
+      "id": "of_ic_parantez",
+      "desc": "işlev göstericisi tipindeki iç virgüller de bölünür",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_facts_imza_ayristirma",
+      "find": "        if ch == \",\" and depth == 0:",
+      "replace": "        if ch == \",\":"
+    },
+    {
+      "id": "of_ad_parantezi",
+      "desc": "dönüş tipindeki parantez imza sanılır (ad aranmaz)",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_facts_imza_ayristirma",
+      "find": "    at_name = sig.find(f\"{name}(\") if name else -1",
+      "replace": "    at_name = -1"
+    },
+    {
+      "id": "of_variadic",
+      "desc": "değişken argüman (...) parametre sayılır",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_facts_imza_ayristirma",
+      "find": "    return len(parts) - (1 if variadic else 0), variadic",
+      "replace": "    return len(parts), variadic"
+    },
+    {
+      "id": "of_void",
+      "desc": "(void) bir parametre sayılır",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_facts_imza_ayristirma",
+      "find": "    if inner in (\"\", \"void\"):",
+      "replace": "    if inner in (\"\",):"
+    },
+    {
+      "id": "of_bos_parca",
+      "desc": "boş parametre parçası (bozuk imza) sayıya girer",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_facts_imza_okunamazsa_none",
+      "find": "    if depth != 0 or any(not p for p in parts):",
+      "replace": "    if depth != 0:"
+    },
+    {
+      "id": "of_eksik_cfg",
+      "desc": "cfg dosyası yokken eksik listesine yazılmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_facts_eksik_kaynak_null_ve_adi",
+      "find": "        missing.append(\"static/ghidra_cfg.json\")",
+      "replace": "        pass"
+    },
+    {
+      "id": "of_komut_sayisi",
+      "desc": "eksik komut sayılı blokta toplam 0 sayılır",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_facts_cfg_fonksiyon_kaydi_ve_imza",
+      "find": "        instructions = sum(counts) if counts and all(c is not None for c in counts) else None",
+      "replace": "        instructions = len(counts)"
+    },
+    {
+      "id": "og_oz_cagri",
+      "desc": "öz çağrı (A→A) düğüm sayılır",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_graf_asagi_derinlik_sira_ve_kenarlar",
+      "find": "                if s == d:\n                    continue\n",
+      "replace": ""
+    },
+    {
+      "id": "og_yon_ters",
+      "desc": "callers yönü callees komşuluğunu kullanır",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_graf_yukari_ve_derinlik",
+      "find": "                    out.setdefault(d, set()).add(s)",
+      "replace": "                    out.setdefault(s, set()).add(d)"
+    },
+    {
+      "id": "og_derinlik",
+      "desc": "derinlik argümanı yok sayılır (hep 1 kat)",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_graf_yukari_ve_derinlik",
+      "find": "    for d in range(1, depth + 1):",
+      "replace": "    for d in range(1, 2):"
+    },
+    {
+      "id": "og_sira",
+      "desc": "düğümler derinlikten bağımsız adrese göre sıralanır",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_graf_yukari_ve_derinlik",
+      "find": "key=lambda h: (dist[h], int(h, 16)))",
+      "replace": "key=lambda h: int(h, 16))"
+    },
+    {
+      "id": "og_dugum_tavani",
+      "desc": "max_nodes uygulanmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_graf_dugum_tavani",
+      "find": "    shown = reached[:max_nodes]",
+      "replace": "    shown = reached"
+    },
+    {
+      "id": "og_kenar_tavani_sessiz",
+      "desc": "kenar kırpması truncated'a yazılmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_graf_kenar_tavani_kirpmayi_soyler",
+      "find": "    if len(shown) < len(reached) or len(edges) < len(all_edges):",
+      "replace": "    if len(shown) < len(reached):"
+    },
+    {
+      "id": "og_thunk_dugum",
+      "desc": "decompile dosyası olmayan adres düğüm sayılır",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_graf_hatalar_ve_korluk",
+      "find": "    if a not in ws.code_files:\n        raise ToolError(ERR_NO_DATA)",
+      "replace": "    pass"
+    },
+    {
+      "id": "og_korluk",
+      "desc": "körlük kipi graf etiketlerinde uygulanmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_graf_hatalar_ve_korluk",
+      "find": "    lookup = ws.name_lookup(ctx.blind_target)\n    items = [{\"addr\": f\"FUN_{v}\", \"name_tag\": format_tag(lookup(v)), \"depth\": dist[v]} for v in shown]",
+      "replace": "    lookup = ws.name_lookup(None)\n    items = [{\"addr\": f\"FUN_{v}\", \"name_tag\": format_tag(lookup(v)), \"depth\": dist[v]} for v in shown]"
+    },
+    {
+      "id": "oy_tek_oncul",
+      "desc": "en kısa yolda yalnız ilk öncül tutulur (yol sayısı eksik)",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_yol_elmas_tum_en_kisa_yollar",
+      "find": "                if dist.get(v) == d:\n                    preds.setdefault(v, []).append(u)",
+      "replace": "                if dist.get(v) == d and v not in preds:\n                    preds.setdefault(v, []).append(u)"
+    },
+    {
+      "id": "oy_derinlik_siniri",
+      "desc": "max_depth uygulanmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_yol_derinlik_siniri_ve_yon",
+      "find": "    while frontier and b not in dist and d < max_depth:",
+      "replace": "    while frontier and b not in dist:"
+    },
+    {
+      "id": "oy_ayni_uc",
+      "desc": "aynı başlangıç ve hedef kabul edilir",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_yol_derinlik_siniri_ve_yon",
+      "find": "    if a == b:\n        raise ToolError(ERR_BAD_ARGUMENT)",
+      "replace": "    pass"
+    },
+    {
+      "id": "oy_yol_tavani",
+      "desc": "yol tavanı uygulanmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_yol_tavani_kirpmayi_soyler",
+      "find": "        if len(paths) >= PATH_MAX_PATHS:",
+      "replace": "        if False:"
+    },
+    {
+      "id": "oy_sayim_sessiz",
+      "desc": "kırpılan yollar truncated'a yazılmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_yol_tavani_kirpmayi_soyler",
+      "find": "    truncated = ({\"omitted\": count[b] - len(paths), \"total\": count[b]} if count[b] > len(paths) else None)",
+      "replace": "    truncated = None"
+    },
+    {
+      "id": "oy_dokunulan",
+      "desc": "yol düğümleri items'a girmez (örümcek hedefi boş)",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_yol_elmas_tum_en_kisa_yollar",
+      "find": "        for v in p[1:]:\n            if v not in nodes:",
+      "replace": "        for v in p[-1:]:\n            if v not in nodes:"
+    },
+    {
+      "id": "or_uyelik",
+      "desc": "ikilinin ithal etmediği ad boş liste döner (bilinmeyen_ad yok)",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_refs_ithal_ve_evidence_ile_ayni",
+      "find": "        if not query or query not in idx.imports:",
+      "replace": "        if not query:"
+    },
+    {
+      "id": "or_normalize",
+      "desc": "baştaki alt çizgiler atılmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_refs_ithal_ve_evidence_ile_ayni",
+      "find": "        query = normalize_api(value)",
+      "replace": "        query = value"
+    },
+    {
+      "id": "or_harf_duyarsiz",
+      "desc": "dizgi araması harf duyarsız",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_refs_dizgi_duz_alt_dizgi_harf_duyarli",
+      "find": "            if query in text:",
+      "replace": "            if query.lower() in text.lower():"
+    },
+    {
+      "id": "or_kirpma_sessiz",
+      "desc": "uzun dizgi eki olmadan kesilir",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_refs_dizgi_duz_alt_dizgi_harf_duyarli",
+      "find": "    return s if len(s) <= limit else f\"{s[:limit]}…[+{len(s) - limit}]\"",
+      "replace": "    return s[:limit]"
+    },
+    {
+      "id": "or_kisa_dizgi",
+      "desc": "3 karakterden kısa dizgi kabul edilir",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_refs_dizgi_duz_alt_dizgi_harf_duyarli",
+      "find": "        if len(value) < SEARCH_TEXT_MIN_CHARS or len(value) > SEARCH_TEXT_MAX_CHARS:",
+      "replace": "        if len(value) > SEARCH_TEXT_MAX_CHARS:"
+    },
+    {
+      "id": "or_sayfa",
+      "desc": "offset uygulanmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_refs_sayfalama",
+      "find": "    page = addrs[offset:offset + limit]\n    data = {\"target\"",
+      "replace": "    page = addrs[:limit]\n    data = {\"target\""
+    },
+    {
+      "id": "or_sayfa_sessiz",
+      "desc": "sayfa kırpması truncated'a yazılmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_refs_sayfalama",
+      "find": "    truncated = {\"omitted\": len(addrs) - len(page), \"total\": len(addrs)} if len(page) < len(addrs) else None\n    return ToolOutput(data=data, kind=KIND_FACT, source=SOURCE_REFS",
+      "replace": "    truncated = None\n    return ToolOutput(data=data, kind=KIND_FACT, source=SOURCE_REFS"
+    },
+    {
+      "id": "ix_bayat_xrefs",
+      "desc": "dizin bayatlığa bakmadan önbellekten verilir",
+      "module": "karadul/lm/tools/index.py",
+      "test": "tests/test_lm_tools_v2.py::test_refs_ters_dizin_bir_kez_kurulur_bayatligi_denetlenir",
+      "find": "    if idx is None or idx.fingerprint != fp:",
+      "replace": "    if idx is None:"
+    },
+    {
+      "id": "ix_her_sorguda_kur",
+      "desc": "dizin her sorguda yeniden kurulur",
+      "module": "karadul/lm/tools/index.py",
+      "test": "tests/test_lm_tools_v2.py::test_refs_ters_dizin_bir_kez_kurulur_bayatligi_denetlenir",
+      "find": "    if idx is None or idx.fingerprint != fp:",
+      "replace": "    if True:"
+    },
+    {
+      "id": "ix_bayat_fonksiyonlar",
+      "desc": "adres tablosu değişince bayat sayılmaz",
+      "module": "karadul/lm/tools/index.py",
+      "test": "tests/test_lm_tools_v2.py::test_refs_ters_dizin_bir_kez_kurulur_bayatligi_denetlenir",
+      "find": "    if _part(fp, FUNCTIONS_FILE) != ws.functions_fingerprint:",
+      "replace": "    if False:"
+    },
+    {
+      "id": "ix_thunk_adres",
+      "desc": "adı ithal listesinde olmayan ama adresi thunk olan çağrı ithal sayılmaz",
+      "module": "karadul/lm/tools/index.py",
+      "test": "tests/test_lm_tools_v2.py::test_refs_ithal_cagri_sayisi",
+      "find": "                if c[\"name\"] in ext_names or ca in ext_addrs:",
+      "replace": "                if c[\"name\"] in ext_names and ca in ext_addrs:"
+    },
+    {
+      "id": "ix_cagri_sayisi",
+      "desc": "çağrı sayısı yerine 1 yazılır",
+      "module": "karadul/lm/tools/index.py",
+      "test": "tests/test_lm_tools_v2.py::test_refs_ithal_cagri_sayisi",
+      "find": "                        row[a] = row.get(a, 0) + 1",
+      "replace": "                        row[a] = 1"
+    },
+    {
+      "id": "os_baslik",
+      "desc": "Karadul başlığı da aranır (satır numarası kayar)",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_arama_satir_no_get_decompiled_ile_ayni",
+      "find": "        for no, line in enumerate(strip_header(raw).splitlines(), 1):",
+      "replace": "        for no, line in enumerate(raw.splitlines(), 1):"
+    },
+    {
+      "id": "os_harf",
+      "desc": "arama harf duyarsız",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_arama_uzun_satir_penceresi_ve_hiz",
+      "find": "            if text in line:",
+      "replace": "            if text.lower() in line.lower():"
+    },
+    {
+      "id": "os_yeni_satir",
+      "desc": "satır sonu içeren metin kabul edilir",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_arama_duz_metin_harf_duyarli_baslik_disi",
+      "find": "    if any(c in text for c in \"\\r\\n\"):",
+      "replace": "    if False:"
+    },
+    {
+      "id": "os_limit",
+      "desc": "satır tavanı uygulanmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_arama_tavan_ve_limit",
+      "find": "                if len(items) < limit:",
+      "replace": "                if True:"
+    },
+    {
+      "id": "os_toplam",
+      "desc": "toplam yalnız gösterilen satırları sayar",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_arama_tavan_ve_limit",
+      "find": "                total += 1\n                funcs.add(a)\n                if len(items) < limit:",
+      "replace": "                funcs.add(a)\n                if len(items) < limit:\n                    total += 1"
+    },
+    {
+      "id": "os_pencere",
+      "desc": "uzun satır pencere yerine baştan kesilir",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_arama_uzun_satir_penceresi_ve_hiz",
+      "find": "    start = max(0, min(at - (width - len(text)) // 2, len(s) - width))",
+      "replace": "    start = 0"
+    },
+    {
+      "id": "os_kesim_isareti",
+      "desc": "kesilen satır işaretlenmez",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_arama_uzun_satir_penceresi_ve_hiz",
+      "find": "    return f\"{'…' if start > 0 else ''}{piece}{'…' if start + width < len(s) else ''}\", True",
+      "replace": "    return piece, False"
+    },
+    {
+      "id": "os_butce_sessiz",
+      "desc": "tarama bütçesi dolunca söylenmez",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_arama_tarama_butcesi_durunca_soyler",
+      "find": "            truncated[\"scan_stopped\"] = True",
+      "replace": "            pass"
+    },
+    {
+      "id": "os_butce_yok",
+      "desc": "tarama bütçesi uygulanmaz",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_arama_tarama_butcesi_durunca_soyler",
+      "find": "        if scanned_bytes + size > SEARCH_SCAN_MAX_BYTES:",
+      "replace": "        if False:"
+    }
   ]
 }

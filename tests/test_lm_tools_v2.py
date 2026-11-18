@@ -384,6 +384,73 @@ def test_refs_ters_dizin_bir_kez_kurulur_bayatligi_denetlenir(root):
     assert refs(T.Workspace(root), "import", "malloc").error == "veri_yok"
 
 
+# --------------------------------------------------------------------------------------------
+# (e) O11 search_code
+
+def search(ws, text, **kw) -> T.ToolResult:
+    return call(ws, "search_code", {"text": text, **kw})
+
+
+def test_arama_satir_no_get_decompiled_ile_ayni(ws):
+    r = search(ws, "malloc")
+    assert r.ok and r.kind == "vekil" and r.source == "static/ghidra_output/decompiled"
+    assert r.data["items"] == [{"addr": fun(A), "line_no": 5, "line": "p = malloc(0x20);"}]
+    assert (r.data["total"], r.data["functions"]) == (1, 1) and r.truncated is None
+    dec = call(ws, "get_decompiled", {"addr": fun(A), "part": "aralik", "line_from": 5, "line_to": 5})
+    assert dec.data["code"].strip() == "p = malloc(0x20);"
+    assert set(touched_refs(r.envelope())) == {fun(A)}
+    assert r.data["functions_total"] == r.data["scanned_functions"] == len(ws.program_addresses())
+
+
+def test_arama_duz_metin_harf_duyarli_baslik_disi(ws):
+    assert search(ws, "MALLOC").data["total"] == 0
+    assert search(ws, "Address:").data["total"] == 0          # Karadul başlığı aranmaz
+    assert search(ws, "(0x20)").data["total"] == 1             # parantez harfiyen
+    assert search(ws, "p = .*").data["total"] == 0             # düzenli ifade değil
+    assert search(ws, "(a+)+$").data["total"] == 0
+    for bozuk in ("ab", "x" * 65, "mal\nloc"):
+        assert search(ws, bozuk).error == "gecersiz_arguman"
+
+
+def test_arama_tavan_ve_limit(ws):
+    r = search(ws, "param_1 +")
+    assert r.data["total"] == 400 and r.data["functions"] == 1 and len(r.data["items"]) == T.SEARCH_MAX_ROWS
+    assert r.truncated == {"omitted": 380, "total": 400}
+    assert [i["line_no"] for i in r.data["items"]] == list(range(4, 24))
+    assert len(search(ws, "param_1 +", limit=5).data["items"]) == 5
+    assert search(ws, "param_1 +", limit=21).error == "gecersiz_arguman"
+    assert r.size_bytes() <= T.SEARCH_RESULT_MAX_BYTES
+
+
+def test_arama_uzun_satir_penceresi_ve_hiz(tmp_path):
+    uzun = "a" * 300 + " NEEDLE " + "b" * 300
+    dev = "a" * 200_000
+    root = build_ws(tmp_path / "u", {X(1): {"code": body(X(1), [uzun])}, X(2): {"code": body(X(2), [dev])}})
+    ws = T.Workspace(root)
+    row = search(ws, "NEEDLE").data["items"][0]
+    assert row["cut"] is True and "NEEDLE" in row["line"]
+    assert row["line"].startswith("…") and row["line"].endswith("…")
+    assert len(row["line"]) == T.SEARCH_LINE_MAX_CHARS + 2
+    kisa = search(ws, "return").data["items"][0]
+    assert "cut" not in kisa and kisa["line"] == "return;"
+    # Aynı dosyada iki yazım: yalnız harfi harfine tutan satır sayılır.
+    root2 = build_ws(tmp_path / "h", {X(3): {"code": body(X(3), ["Foo_bar();", "foo_bar();"])}})
+    h = search(T.Workspace(root2), "Foo_bar").data
+    assert h["total"] == 1 and h["items"][0]["line"] == "Foo_bar();"
+    import time
+    t0 = time.perf_counter()
+    assert search(ws, "a" * 63 + "b").data["total"] == 0
+    assert time.perf_counter() - t0 < 1.0
+
+
+def test_arama_tarama_butcesi_durunca_soyler(ws, monkeypatch):
+    boyutlar = sorted(p.stat().st_size for p in ws.code_files.values())
+    monkeypatch.setattr(RM, "SEARCH_SCAN_MAX_BYTES", sum(boyutlar[:3]))
+    r = search(ws, "return")
+    assert r.truncated["scan_stopped"] is True
+    assert r.data["scanned_functions"] < r.data["functions_total"]
+
+
 def test_refs_korluk(ws):
     r = refs(ws, "import", "malloc", )
     kor = call(ws, "find_refs", {"target": "import", "value": "malloc"}, blind_target=A)
