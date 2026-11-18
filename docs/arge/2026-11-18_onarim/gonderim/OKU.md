@@ -32,6 +32,9 @@ Ana oturumun ajanlara verdiği paket metinleri. Oturuma özel geçici dizin sili
 3. ARGE soru listesi (`docs/arge/2026-11-18_arge_soru_listesi.md`, şu an ARA SÜRÜM) bu sayılarla yeniden güncellenir.
 4. Sonra Mythos devreye girer.
 
+## Sürüm (yapılmadı)
+1.23.1 → 1.24.1 (özellik + düzeltme). Önce P-S3 birleşir ve tam takım geçer; sonra `python3 docs/arge/2026-11-18_onarim/gonderim/surum_yukselt.py` (pyproject, `__init__`, public API testi, kılavuz, Info.plist yedek değerleri) ve `changelog_1241_taslak.md` → `CHANGELOG.md` başına (TAKIM, GNULIB, KARADULLM_P22A yer tutucuları doldurulur). Push Berke'ye sorulur.
+
 ## Bekçi
 `bekci.py` — CLAUDE.md §27 takılma bekçisi: `python3 bekci.py P18=<ajan_id> P20=<ajan_id> …`, Monitor ile (30 dk'da bir yeniden kurulur). Alt ajan transcript dizini oturuma özeldir: `BEKCI_OTURUM_DIZINI` verilmezse en son değişen oturumun `subagents` dizini alınır.
 
