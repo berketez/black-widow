@@ -40,6 +40,70 @@
       "test": "tests/test_p09_bekletme.py::test_bagsiz_yapi_types_h_ye_girmez",
       "find": "        total = len(header_structs) + len(enums) + len(vtables)",
       "replace": "        total = len(structs) + len(enums) + len(vtables)"
+    },
+    {
+      "id": "p09_k2_olcek_yok",
+      "desc": "TIP-07: işaretçi tabanında ofset ölçeklenmez (öğe boyutu yerine 1)",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_yapi.py::test_ofset_isaretci_tipine_gore_olceklenir",
+      "find": "            return size if size and pointee != \"undefined\" else None",
+      "replace": "            return 1"
+    },
+    {
+      "id": "p09_k2_bilinmeyen_taban",
+      "desc": "TIP-07: bildirimi bilinmeyen taban da bayt tabanı sayılır",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_yapi.py::test_bildirimsiz_taban_kanit_sayilmaz",
+      "find": "        if not declared:\n            return None",
+      "replace": "        if not declared:\n            return 1"
+    },
+    {
+      "id": "p09_k2_anahtar_ad",
+      "desc": "TIP-07: anahtar yalnız değişken adı (fonksiyonlar arası birleşir)",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_yapi.py::test_farkli_fonksiyonlarin_ayni_adli_degiskeni_birlesmez",
+      "find": "            key = (func, base)",
+      "replace": "            key = (\"\", base)"
+    },
+    {
+      "id": "p09_k2_ortusme_denetimi",
+      "desc": "ARAYUZ-18: üst üste binen alanlı yapı yine kurulur",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_yapi.py::test_ortusen_alanlar_yapi_uretmez",
+      "find": "            if overlap:\n",
+      "replace": "            if overlap and 0:\n"
+    },
+    {
+      "id": "p09_k2_genislik_catismasi",
+      "desc": "aynı ofsete farklı genişlik çatışma sayılmaz",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_yapi.py::test_ayni_ofsete_farkli_genislik_yapi_uretmez",
+      "find": "                    existing[\"conflict\"] = True",
+      "replace": "                    existing[\"conflict\"] = False"
+    },
+    {
+      "id": "p09_k2_baglama_geri",
+      "desc": "K-1/TIP-07: yapı bildirime bağlanır, erişim metni kalır (C anlamı değişir)",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_yapi.py::test_bagalama_bildirimi_degistirmez",
+      "find": "        self._struct_binding_proposals = self._apply_struct_types(struct_signatures)",
+      "replace": "        per_func.update(self._apply_struct_types(struct_signatures))"
+    },
+    {
+      "id": "p09_k2_tanim_return",
+      "desc": "'return foo(x);' satırı fonksiyon tanımı sayılır (erişim yanlış fonksiyona)",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_yapi.py::test_fonksiyon_tanimi_sutun_sifirdan",
+      "find": "    return bool(first) and first[0] not in _NOT_A_TYPE",
+      "replace": "    return bool(first) and first[0] not in ()"
+    },
+    {
+      "id": "p09_k2_tanim_sutun0",
+      "desc": "girintili yerel prototip fonksiyon tanımı sayılır (sütun 0 kuralı yok)",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_yapi.py::test_fonksiyon_tanimi_sutun_sifirdan",
+      "find": "    if not head or not (head.isalpha() or head == \"_\"):",
+      "replace": "    if not head:"
     }
   ]
 }

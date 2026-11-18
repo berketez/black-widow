@@ -241,10 +241,8 @@ def dogrula(ws: Path, typed: Path) -> dict:
 # Yapı sayımı
 # ---------------------------------------------------------------------------
 
-def yapi_say(typed: Path) -> dict:
-    th = typed / "types.h"
-    metin = th.read_text(encoding="utf-8", errors="replace") if th.exists() else ""
-    tanimlar = _YAPI_TANIM.findall(metin)
+def ortusen_say(metin: str) -> int:
+    """Alanları açıklamadaki ofset ve tip boyutuyla üst üste binen ``recovered_struct`` sayısı."""
     ortusen = 0
     for blok in re.split(r"^struct ", metin, flags=re.MULTILINE)[1:]:
         if not blok.startswith("recovered_struct_"):
@@ -265,6 +263,14 @@ def yapi_say(typed: Path) -> dict:
                 ortusen += 1
                 break
             onceki_son = off + boy
+    return ortusen
+
+
+def yapi_say(typed: Path) -> dict:
+    th = typed / "types.h"
+    metin = th.read_text(encoding="utf-8", errors="replace") if th.exists() else ""
+    tanimlar = _YAPI_TANIM.findall(metin)
+    ortusen = ortusen_say(metin)
     adlar = set(tanimlar)
     bagli: set[str] = set()
     if adlar:
@@ -273,10 +279,11 @@ def yapi_say(typed: Path) -> dict:
             for ad in desen.findall(kod_ort(c.read_text(encoding="utf-8", errors="replace"))):
                 bagli.add(ad)
     aday = typed / YAPI_ADAY_DOSYA_ADI
-    aday_sayi = None
+    aday_sayi = aday_ortusen = None
     if aday.exists():
-        aday_sayi = len(re.findall(r"^struct \w+ \{$", aday.read_text(encoding="utf-8"),
-                                   re.MULTILINE))
+        aday_metin = aday.read_text(encoding="utf-8")
+        aday_sayi = len(re.findall(r"^struct \w+ \{$", aday_metin, re.MULTILINE))
+        aday_ortusen = ortusen_say(aday_metin)
     return {
         "types_h_recovered_struct": len(tanimlar),
         "types_h_sabit_080": metin.count("confidence: 0.80"),
@@ -284,6 +291,7 @@ def yapi_say(typed: Path) -> dict:
         "koda_bagli": len(bagli & adlar),
         "kodda_tanimsiz_yapi_adi": len(bagli - adlar),
         "aday_dosyasi": aday_sayi,
+        "aday_ortusen": aday_ortusen,
     }
 
 

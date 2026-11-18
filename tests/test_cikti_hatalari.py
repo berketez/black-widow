@@ -452,11 +452,13 @@ class TestTypesHBelirlenimli:
         h = _types_h(tmp_path, monkeypatch, "ters", ters=True)
         bloklar = _re.findall(
             r"\* Sources: ([^\n]*)\n \*/\nstruct (recovered_struct_\d+) \{\n(.*?)\n\};", h, _re.S)
-        # alpha (ilk dosya) 001, gamma (iki dosya) 002, beta (ikinci dosya) 003
+        # P09 (TIP-07): anahtar (fonksiyon, değişken).  alpha 001, ilk dosyadaki gamma 002,
+        # beta 003; ikinci dosyadaki gamma tek erişim (yapı değil) ve ilk dosyanınkiyle
+        # BİRLEŞMEZ (eskiden iki fonksiyonun gamma'sı tek yapıydı).
         assert [(s, n) for s, n, _ in bloklar] == [
             ("FUN_00001000", "recovered_struct_001"),
-            ("FUN_00001000, FUN_00002000", "recovered_struct_002"),
+            ("FUN_00001000", "recovered_struct_002"),
             ("FUN_00002000", "recovered_struct_003"),
         ]
-        # gamma + 0x8: ilk dosyadaki int kalır (ikinci dosyadaki char değil)
+        # gamma + 0x8: ilk dosyadaki int (ikinci dosyadaki char başka değişkenin erişimi)
         assert "    int field_0x08;" in bloklar[1][2]

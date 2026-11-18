@@ -942,10 +942,14 @@ class TestCTypeRecoverer:
         recoverer = CTypeRecoverer(config)
         result = recoverer.recover(decompiled_dir, func_json, tmp_path / "out")
         assert result.success is True
-        # 3 field access -> struct kurtarilmis olmali
-        assert len(result.structs) >= 1
-        # Struct ismi per-func replacement'a eklenmis olmali
+        # 3 field access -> struct kurtarilmis olmali.  P09 (TIP-07, K-1): yapı
+        # koda BAĞLANMAZ (bildirimi yapı işaretçisine çevirip erişim metnini
+        # bırakmak C'de tamsayı aritmetiğini işaretçi aritmetiğine çevirir);
+        # aday olarak kalır.
+        assert len(result.struct_candidates) >= 1
+        assert result.structs == []
         out_content = (tmp_path / "out" / "FUN_00060000.c").read_text()
+        assert "recovered_struct" not in out_content
         # param_1 artik undefined8 degil, struct pointer olmali
         # (ya da en azindan uint64_t global replace olmus olmali)
         assert "undefined8" not in out_content

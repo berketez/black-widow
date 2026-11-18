@@ -178,13 +178,30 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
         r"(?:\s*\*)*)\s+(?P<var>\w+)\s*[;=]"
     )
 
+    # Fonksiyon başına bildirilen tipler: {fonksiyon: {değişken: tip}}.  Yapı
+    # kurtarma ofseti tabanın bildirilen tipine göre ölçekler (TIP-07).
+    declared_types: dict[str, dict[str, str]] = {}
+
     for line in content.split("\n"):
         stripped = line.strip()
 
-        # Fonksiyon tanimlama tespiti
-        func_match = _FUNC_DEF.match(stripped)
-        if func_match:
+        # Fonksiyon tanimlama tespiti.  KISIT: tanım satırı sütun 0'dan başlar
+        # (Ghidra çıktısı).  Eski kod girintisi atılmış satıra bakıyordu:
+        # "  return foo(x);" -> fonksiyon "foo", "else if (x)" -> "if"; sonraki
+        # bütün erişim ve etiketler yanlış fonksiyona yazılıyordu.
+        func_match = _FUNC_DEF.match(line)
+        if func_match and _is_function_definition(func_match):
             current_func = func_match.group("fname")
+            fdecl = declared_types.setdefault(current_func, {})
+            for ptype, pvar in _split_params(func_match.group("params")):
+                fdecl.setdefault(pvar, ptype)
+        else:
+            dm_general = _DECL_GENERAL.match(line)
+            if dm_general and dm_general.group("type").split()[0] not in _NOT_A_TYPE:
+                gtype = (dm_general.group("type") + " " + dm_general.group("ptr")).strip()
+                declared_types.setdefault(current_func, {}).setdefault(
+                    dm_general.group("var"), CTypeRecoverer._normalize_type(gtype),
+                )
 
         # 1. Field access (write)
         for m in _FIELD_ACCESS_WRITE.finditer(line):
@@ -346,8 +363,44 @@ def _parse_c_file_worker(c_file_path: str) -> dict[str, Any]:
         "string_context": string_context,
         "type_usages": type_usages,
         "case_comments": case_comments,
+        "declared_types": declared_types,
         "errors": errors,
     }
+
+
+# Bildirim satırı (yerel): "  uint64_t *puVar1;", "  long lVar2;", "  char local_28 [16];"
+_DECL_GENERAL = re.compile(
+    r"^[ \t]+(?P<type>(?:(?:const|unsigned|signed|struct|union|enum)\s+)*[A-Za-z_]\w*)"
+    r"\s*(?P<ptr>(?:\*\s*)*)(?P<var>[A-Za-z_]\w*)\s*(?:\[[^\]\n]*\]\s*)*;\s*$"
+)
+# Tip olmayan ilk sözcükler ("return x;", "goto LAB_1;")
+_NOT_A_TYPE = frozenset({
+    "return", "goto", "case", "else", "do", "break", "continue", "typedef", "sizeof",
+})
+
+
+def _is_function_definition(m: re.Match[str]) -> bool:
+    """``_FUNC_DEF`` eşleşmesi gerçek bir tanım mı (sütun 0; denetim deyimi, return değil)."""
+    head = m.string[m.start():m.start() + 1]
+    if not head or not (head.isalpha() or head == "_"):
+        return False
+    if m.group("fname") in _C_CONTROL_KEYWORDS:
+        return False
+    first = m.group("rtype").split()
+    return bool(first) and first[0] not in _NOT_A_TYPE
+
+
+def _split_params(params: str) -> list[tuple[str, str]]:
+    """İmza parametre listesi -> [(tip, ad)].  ``void``/boş -> []."""
+    out: list[tuple[str, str]] = []
+    params = params.strip()
+    if not params or params == "void":
+        return out
+    for p in params.split(","):
+        pm = re.match(r"^(?P<type>.*?[\s\*])(?P<var>[A-Za-z_]\w*)\s*$", p.strip())
+        if pm and pm.group("type").strip():
+            out.append((CTypeRecoverer._normalize_type(pm.group("type")), pm.group("var")))
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -781,6 +834,10 @@ class RecoveredStruct:
     total_size: int
     source_functions: list[str]
     alignment: int = 8
+    # Desen kaynaklı yapı: kurulduğu tek (fonksiyon, değişken) ve değişkenin
+    # o fonksiyondaki bildirimi (TIP-07: anahtar artık yalnız ad değil).
+    source_variable: str = ""
+    source_declared_type: str = ""
 
 
 @dataclass
@@ -837,12 +894,18 @@ class CTypeRecoveryResult:
             ``struct_candidates_file``'a yazılır.
         struct_candidates_file: Aday dosyası (``STRUCT_CANDIDATES_FILENAME``);
             aday yoksa None.
+        struct_unscaled_accesses: Tabanın bildirimi bulunamadığı ya da öğe
+            boyutu bilinmediği için yapı kanıtı sayılmayan erişim sayısı.
+        struct_conflicts: Alanları üst üste bindiği ya da aynı ofsete farklı
+            genişlikte erişildiği için yapı kurulmayan (fonksiyon, değişken).
     """
 
     success: bool
     structs: list[RecoveredStruct] = field(default_factory=list)
     struct_candidates: list[RecoveredStruct] = field(default_factory=list)
     struct_candidates_file: Path | None = None
+    struct_unscaled_accesses: int = 0
+    struct_conflicts: int = 0
     enums: list[RecoveredEnum] = field(default_factory=list)
     vtables: list[RecoveredVTable] = field(default_factory=list)
     type_replacements: dict[str, str] = field(default_factory=dict)
@@ -1015,8 +1078,11 @@ class CTypeRecoverer:
         self.min_enum_values = min_enum_values
 
         # Ic state -- recover() baslangicinda sifirlanir
-        # FIX 1: _field_accesses artik dict[str, dict[int, dict]] -- key=offset (O(1) lookup)
-        self._field_accesses: dict[str, dict[int, dict[str, Any]]] = {}
+        # Anahtar (fonksiyon, değişken) -> {ofset: erişim}  (TIP-07)
+        self._field_accesses: dict[tuple[str, str], dict[int, dict[str, Any]]] = {}
+        self._unscaled_accesses = 0
+        self._struct_conflicts = 0
+        self._struct_binding_proposals: dict[str, dict[str, str]] = {}
         self._vtable_entries: dict[str, list[dict[str, Any]]] = {}
         self._switch_vars: dict[str, list[int]] = {}
         self._compare_vars: dict[str, list[int]] = {}
@@ -1346,6 +1412,8 @@ class CTypeRecoverer:
             structs=header_structs,
             struct_candidates=candidates,
             struct_candidates_file=candidates_file if candidates else None,
+            struct_unscaled_accesses=self._unscaled_accesses,
+            struct_conflicts=self._struct_conflicts,
             enums=enums,
             vtables=vtables,
             type_replacements=type_replacements,
@@ -1446,6 +1514,8 @@ class CTypeRecoverer:
     def _reset_state(self) -> None:
         """Ic state'i sifirla (her recover() cagirisinda)."""
         self._field_accesses.clear()
+        self._unscaled_accesses = 0
+        self._struct_conflicts = 0
         self._vtable_entries.clear()
         self._switch_vars.clear()
         self._compare_vars.clear()
@@ -1461,32 +1531,48 @@ class CTypeRecoverer:
         FIX 1: _field_accesses artik dict[str, dict[int, dict]] --
         key=offset int, O(1) lookup (eskiden list scan O(N*M) idi).
         """
-        # Field accesses — _record_field_access ile ayni mantik
+        # Field accesses.  TIP-07 onarımı:
+        # - Anahtar (fonksiyon, değişken).  Ghidra her fonksiyonda param_1,
+        #   lVar3 adlarını yeniden kullanır; yalnız ada göre birleştirmek
+        #   ilgisiz fonksiyonların erişimlerini tek yapıya yığıyordu.
+        # - Ofset, tabanın o fonksiyondaki bildirilen tipine göre ölçeklenir:
+        #   ``uint64_t *p; *(int *)(p + 1)`` bayt 8'dir, 1 değil.  Bildirimi
+        #   bulunamayan ya da öğe boyutu bilinmeyen taban kanıt sayılmaz.
+        declared = result.get("declared_types", {})
         for base, offset_str, raw_type, func, line in result["field_accesses"]:
-            offset = self._parse_int(offset_str)
+            decl = declared.get(func, {}).get(base)
+            scale = self._offset_scale(decl)
+            if scale is None:
+                self._unscaled_accesses += 1
+                continue
+            offset = self._parse_int(offset_str) * scale
             c_type = self._normalize_type(raw_type)
             c_type = self._deref_cast_type(c_type)
             size = self._get_type_size(c_type)
 
-            if base not in self._field_accesses:
-                self._field_accesses[base] = {}
+            key = (func, base)
+            if key not in self._field_accesses:
+                self._field_accesses[key] = {}
 
-            # FIX 1: O(1) dict lookup yerine eski O(N) list scan
             # Kanıt: erişim sayısı ve fonksiyonlar.  Sabit bir "güven" yazılmaz
             # (TIP-07: her alana 0,80 veriliyordu, kanıtla ilgisi yoktu).
-            if offset in self._field_accesses[base]:
-                existing = self._field_accesses[base][offset]
+            if offset in self._field_accesses[key]:
+                existing = self._field_accesses[key][offset]
                 if c_type != "undefined8" and existing["type"] == "undefined8":
                     existing["type"] = c_type
                     existing["size"] = size
+                elif c_type != "undefined8" and size != existing["size"]:
+                    # Aynı ofsete farklı genişlikte erişim: tek alan değil.
+                    existing["conflict"] = True
                 existing["count"] += 1
                 existing["sources"].add(func)
             else:
-                self._field_accesses[base][offset] = {
+                self._field_accesses[key][offset] = {
                     "offset": offset, "type": c_type, "size": size,
                     "count": 1,
                     "sources": {func},
                     "line_sample": line.strip()[:120],
+                    "declared": decl,
                 }
 
         # VTable entries
@@ -1839,17 +1925,16 @@ class CTypeRecoverer:
         structs: list[RecoveredStruct] = []
         counter = 0
 
-        for base_var, accesses_by_offset in self._field_accesses.items():
+        for (func_name, base_var), accesses_by_offset in self._field_accesses.items():
             # dict.values() -> list gibi iterate et
             accesses = list(accesses_by_offset.values())
 
             # VTable offset'lerini belirle (struct'tan dislamak icin degil,
-            # vtable pointer field olarak isaretlemek icin)
-            vtable_offsets: set[int] = set()
-            if base_var in self._vtable_entries:
-                vtable_offsets = {
-                    e["offset"] for e in self._vtable_entries[base_var]
-                }
+            # vtable pointer field olarak isaretlemek icin) -- aynı fonksiyon.
+            vtable_offsets: set[int] = {
+                e["offset"] for e in self._vtable_entries.get(base_var, [])
+                if e.get("source_func") == func_name
+            }
 
             # Non-vtable field sayisi yeterli mi?
             non_vtable_count = sum(
@@ -1860,6 +1945,18 @@ class CTypeRecoverer:
 
             # Offset'e gore sirala
             sorted_accesses = sorted(accesses, key=lambda a: a["offset"])
+
+            # TIP-07 / ARAYUZ-18: üst üste binen alanlar (ofset < önceki alanın
+            # sonu) ya da aynı ofsete farklı genişlikte erişim tek bir yapı
+            # yerleşimi değildir (birlik, dizi ya da yanlış ölçek).  Yapı
+            # kurulmaz; sayaçta görünür.
+            overlap = any(a.get("conflict") for a in sorted_accesses) or any(
+                b["offset"] < a["offset"] + a["size"]
+                for a, b in zip(sorted_accesses, sorted_accesses[1:])
+            )
+            if overlap:
+                self._struct_conflicts += 1
+                continue
 
             # Field'lari olustur (padding ile)
             fields: list[StructField] = []
@@ -1930,6 +2027,8 @@ class CTypeRecoverer:
                 total_size=total_size,
                 source_functions=sorted(all_sources),
                 alignment=self.alignment,
+                source_variable=base_var,
+                source_declared_type=sorted_accesses[0].get("declared") or "",
             )
             structs.append(struct)
 
@@ -2267,12 +2366,15 @@ class CTypeRecoverer:
                         if size == 4:
                             per_func[func_name][old_decl4] = new_decl
 
-        # --- 2c. Struct type application ---
-        struct_apps = self._apply_struct_types(struct_signatures)
-        for func_name, replacements_dict in struct_apps.items():
-            if func_name not in per_func:
-                per_func[func_name] = {}
-            per_func[func_name].update(replacements_dict)
+        # --- 2c. Struct type application: YAZILMAZ (K-1, TIP-07) ---
+        # Eski davranış ``undefined8 param_1`` bildirimini ``recovered_struct_N *``
+        # yapıyor, erişim metnine (``*(int *)(param_1 + 8)``) dokunmuyordu.  C'de
+        # bu, tamsayı aritmetiğini işaretçi aritmetiğine çevirir: ``param_1 + 8``
+        # artık 8 * sizeof(yapı) bayt ileri demektir, kodun anlamı değişir.
+        # Erişimleri alan erişimine çevirmeden bağlama doğru olamaz; yapı
+        # kurtarma ölçülüp doğrulanana kadar (K-1) yapılar aday dosyasında
+        # kalır.  ``_apply_struct_types`` yalnız aday dosyasına not düşer.
+        self._struct_binding_proposals = self._apply_struct_types(struct_signatures)
 
         # --- 2d. Return type propagation ---
         # Fonksiyon return tipi bilinen ise, o fonksiyonu cagiran yerde
@@ -2672,7 +2774,7 @@ class CTypeRecoverer:
         """
         result: dict[str, dict[str, str]] = {}
 
-        for base_var, accesses_by_offset in self._field_accesses.items():
+        for (func_key, base_var), accesses_by_offset in self._field_accesses.items():
             offsets = frozenset(accesses_by_offset.keys())
             if len(offsets) < 2:
                 continue
@@ -2693,10 +2795,9 @@ class CTypeRecoverer:
             if not best_match or best_score < 0.5:
                 continue
 
-            # Bu base_var hangi fonksiyonlarda kullanilmis?
-            func_names: set[str] = set()
-            for acc in accesses_by_offset.values():
-                func_names.update(acc.get("sources", set()))
+            # Anahtar zaten fonksiyonu taşır (TIP-07): başka fonksiyondaki aynı
+            # adlı değişkene öneri yapılmaz.
+            func_names: set[str] = {func_key}
 
             for func_name in func_names:
                 if func_name not in result:
@@ -2916,11 +3017,22 @@ class CTypeRecoverer:
             " * Bu dosya derlenmez; hiçbir kaynak dosya onu içermez. Yapı",
             " * kurtarma ölçülüp doğrulanana kadar (karar K-1, 2026-11-18)",
             " * bu tanımlar types.h'ye ve koda yazılmaz.",
+            " * Her aday tek bir (fonksiyon, değişken)'in erişimlerinden kurulur;",
+            " * ofsetler değişkenin bildirilen tipine göre bayta çevrilmiştir.",
+            " * Koda bağlamak için bildirim değişikliği yetmez: erişim metni",
+            " * (*(T *)(p + N)) alan erişimine çevrilmeden C anlamı değişir.",
             f" * Aday sayısı: {len(candidates)}",
             " * ============================================================= */",
             "",
         ]
         for struct in candidates:
+            if struct.source_variable:
+                fn = struct.source_functions[0] if struct.source_functions else "?"
+                decl = struct.source_declared_type or "?"
+                lines.append(
+                    f"/* Kaynak: {fn} / {struct.source_variable} "
+                    f"(bildirim: {decl}) */"
+                )
             lines.extend(self._format_struct_lines(struct))
         path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -2934,6 +3046,46 @@ class CTypeRecoverer:
     # ------------------------------------------------------------------
     # Utility
     # ------------------------------------------------------------------
+
+    # Bayt işaretçisi sayılan öğe tipleri: ``p + N`` = N bayt.
+    _BYTE_POINTEES = frozenset({
+        "char", "uchar", "byte", "undefined", "undefined1", "void", "uint8_t",
+        "int8_t", "bool", "_Bool", "sbyte", "signed char", "unsigned char",
+    })
+    # Tamsayı taban (Ghidra bayt aritmetiği): ``long p; p + N`` = N bayt.
+    # Yalnız işaretçi genişliğinde (8 bayt) tamsayılar; 4 baytlık tamsayı
+    # 64 bitte adres taşıyamaz.
+    _BYTE_ADDRESS_INTS = frozenset({
+        "long", "ulong", "undefined8", "uint64_t", "int64_t", "longlong",
+        "ulonglong", "int64_t", "size_t", "ssize_t", "intptr_t", "uintptr_t",
+        "long long", "unsigned long",
+    })
+
+    @classmethod
+    def _offset_scale(cls, declared: str | None) -> int | None:
+        """``*(T *)(base + N)`` için N'nin bayt çarpanı; bilinemiyorsa None.
+
+        Taban bildirimi işaretçiyse çarpan öğe boyutudur (C işaretçi
+        aritmetiği); 8 baytlık tamsayıysa 1 (Ghidra'nın bayt aritmetiği).
+        Bildirim yok, öğe boyutu bilinmiyor (``struct X *``) ya da taban
+        işaretçi taşıyamayacak bir tipse None: o erişim yapı kanıtı sayılmaz.
+        """
+        if not declared:
+            return None
+        t = cls._normalize_type(declared)
+        t = re.sub(r"^(?:const|volatile) ", "", t)
+        if t.endswith("*"):
+            pointee = t[:-1].strip()
+            pointee = re.sub(r"^(?:const|volatile) ", "", pointee)
+            if pointee in cls._BYTE_POINTEES:
+                return 1
+            if pointee.endswith("*"):
+                return 8
+            size = _TYPE_SIZES.get(pointee)
+            return size if size and pointee != "undefined" else None
+        if t in cls._BYTE_ADDRESS_INTS:
+            return 1
+        return None
 
     @staticmethod
     def _parse_int(s: str) -> int:
