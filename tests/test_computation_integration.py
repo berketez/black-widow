@@ -211,11 +211,12 @@ class TestEnabledWithValidInputs:
         )
 
         sig = SignatureMatch(
-            original_name="FUN_001000",
+            original_name="FUN_00101000",
             matched_name="strcpy",
             library="libc",
             confidence=0.95,
             match_method="byte_pattern",
+            address="00101000",
         )
 
         cfg = Config()
@@ -225,26 +226,29 @@ class TestEnabledWithValidInputs:
         )
         out = ComputationFusionStep().run(ctx)
         fused = out["fused_matches"]
-        assert "FUN_001000" in fused
-        assert len(fused["FUN_001000"]) == 1
-        fm = fused["FUN_001000"][0]
-        # calibrated probability valid range
-        assert 0.0 <= fm.calibrated_probability <= 1.0
-        assert fm.decision in ("accept", "reject", "abstain")
+        # P11 / BORU-03: anahtar fonksiyon adresi.
+        assert "00101000" in fused
+        assert len(fused["00101000"]) == 1
+        fm = fused["00101000"][0]
+        # byte_pattern kaynağının ölçümü yok: olasılık yok, karar çekimser.
+        assert fm.probability is None
+        assert fm.decision == "abstain"
+        assert out["fusion_name_candidates"] == []   # K-1: ad kanalı öntanımda kapalı
 
     def test_fusion_combines_sig_and_cfg(self) -> None:
-        """Ayni key'e hem sig hem cfg candidate -> 2 FusedMatch fuse edilir."""
+        """Aynı adrese imza + CFG kanıtı, aynı ad -> TEK aday, iki kaynak (P11)."""
         from karadul.analyzers.signature_db import SignatureMatch
         from karadul.pipeline.steps.computation_fusion import (
             ComputationFusionStep,
         )
 
         sig = SignatureMatch(
-            original_name="foo",
+            original_name="FUN_00101000",
             matched_name="quicksort",
             library="stdlib",
             confidence=0.90,
             match_method="byte_pattern",
+            address="00101000",
         )
         # CFGMatch sahte
         cfg_match = SimpleNamespace(
@@ -253,17 +257,20 @@ class TestEnabledWithValidInputs:
             match_type="exact",
             reasons=[],
             family="sort",
+            template_source="elle_x86_sentetik",
         )
         cfg = Config()
         ctx = _make_ctx(
             cfg,
-            artifacts={"sig_matches": [sig], "cfg_iso_matches": {"foo": cfg_match}},
+            artifacts={"sig_matches": [sig], "cfg_iso_matches": {"00101000": cfg_match}},
         )
         out = ComputationFusionStep().run(ctx)
         fused = out["fused_matches"]
-        assert "foo" in fused
-        # 2 aday var (sig + cfg), 2 FusedMatch uretilir
-        assert len(fused["foo"]) == 2
+        assert list(fused) == ["00101000"]
+        assert len(fused["00101000"]) == 1
+        assert fused["00101000"][0].sources == [
+            "cfg_iso:elle_x86_sentetik", "imza:byte_pattern",
+        ]
 
     def test_cfg_iso_match_with_synthetic_cfg(self) -> None:
         """CFGAnalysisResult verip step calissin — en az 1 template denenir."""
@@ -532,7 +539,11 @@ class TestPcodeExtractionHelper:
         assert out == []
 
     def test_extract_accesses_from_load_op(self) -> None:
-        """LOAD op + constant offset input -> 1 MemoryAccess."""
+        """LOAD(ram, base + 8) -> ofset 8 (P11 / TIP-03).
+
+        Ghidra'da LOAD'un ``input0``'ı adres alanı kimliğidir (``ram`` = 433),
+        ofset değil; ofset işaretçinin (``input1``) tanımındadır.
+        """
         from karadul.analyzers.pcode_analyzer import (
             FunctionPcode,
             PcodeAnalysisResult,
@@ -546,18 +557,33 @@ class TestPcodeExtractionHelper:
         output_vn = VarnodeInfo(
             space="register", offset=0, size=4,
             is_constant=False, is_register=True, is_unique=False,
-            high_variable="v1",
+        )
+        space_id = VarnodeInfo(
+            space="const", offset=433, size=4,
+            is_constant=True, is_register=False, is_unique=False,
+        )
+        base = VarnodeInfo(
+            space="register", offset=0x4000, size=8,
+            is_constant=False, is_register=True, is_unique=False,
         )
         const_off = VarnodeInfo(
             space="const", offset=8, size=8,
             is_constant=True, is_register=False, is_unique=False,
         )
-        op = PcodeOpInfo(
-            mnemonic="LOAD", seq_num=0, address="0x1000",
-            output=output_vn, inputs=[const_off],
+        ptr = VarnodeInfo(
+            space="unique", offset=0x100, size=8,
+            is_constant=False, is_register=False, is_unique=True,
         )
-        fn = FunctionPcode(name="foo", address="0x1000", ops=[op])
-        res = PcodeAnalysisResult(total_functions=1, total_pcode_ops=1, functions=[fn])
+        add = PcodeOpInfo(
+            mnemonic="INT_ADD", seq_num=0, address="0x1000",
+            output=ptr, inputs=[base, const_off],
+        )
+        op = PcodeOpInfo(
+            mnemonic="LOAD", seq_num=1, address="0x1000",
+            output=output_vn, inputs=[space_id, ptr],
+        )
+        fn = FunctionPcode(name="foo", address="0x1000", ops=[add, op])
+        res = PcodeAnalysisResult(total_functions=1, total_pcode_ops=2, functions=[fn])
         out = _extract_accesses_from_pcode(res)
         assert len(out) == 1
         assert out[0].offset == 8
