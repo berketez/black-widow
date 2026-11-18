@@ -207,6 +207,19 @@ class SignatureMatch:
     # aile ve kademe bilgisi; rapordaki IOC bölümü bunlarla süzer. Boş = yok.
     family: str = ""
     tier: str = ""
+    # P15c / K-2: iddia türü. ``kimlik`` = fonksiyonun KENDİSİ tanındı (simge adı, bayt
+    # deseni); ``davranis`` = fonksiyonun ne yaptığına dair betimleyici tahmin (dizgi /
+    # çağrı deseni: ``read_env_var``, ``copy_buffer``). Boşsa yöntemden türetilir.
+    claim: str = ""
+    # Davranış tahmininin kanıt satırları (eşleşen dizgiler / çağrılan API'ler). None = yok.
+    evidence: list[str] | None = None
+    # Ham eşleşme puanı (kalibre değil). Davranış kaydında ``confidence`` ölçülmüş
+    # kesinliğin Wilson alt sınırıdır; eski puan burada kalır. None = ayrı puan yok.
+    match_score: float | None = None
+
+    def __post_init__(self) -> None:
+        if not self.claim:
+            self.claim = claim_for_method(self.match_method)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -223,7 +236,84 @@ class SignatureMatch:
             "libraries": self.libraries,
             "family": self.family,
             "tier": self.tier,
+            "claim": self.claim,
+            "evidence": self.evidence,
+            "match_score": self.match_score,
         }
+
+
+# ---------------------------------------------------------------------------
+# P15c / K-2: kimlik iddiası ↔ davranış tahmini
+# ---------------------------------------------------------------------------
+# Yerleşik dizgi (246) ve çağrı deseni (98) imzalarının adları betimleyicidir: "bu fonksiyon
+# ortam değişkeni okuyor" (``read_env_var``), "malloc + memcpy + free çağırıyor"
+# (``copy_buffer``). Fonksiyonun gerçek adını iddia etmezler. Geliştirme setinde (P15c, 236
+# kayıt) tam ad 0 / 236 doğru; gevşek ölçütle (amaç doğru mu) call_pattern 19 / 83, string_ref
+# 5 / 153. Bu yüzden bu yöntemlerin kaydı ``davranis`` etiketi taşır ve güveni ölçülmüş
+# kesinliğin alt sınırıdır; tüketiciler (ad haritası, rapor, SARIF) etiketi gösterir.
+CLAIM_IDENTITY = "kimlik"
+CLAIM_BEHAVIOR = "davranis"
+BEHAVIOR_METHODS: frozenset[str] = frozenset({"string_ref", "call_pattern"})
+SIGNATURE_SOURCE_PREFIX = "signature_db"
+
+
+def claim_for_method(method: str) -> str:
+    """Eşleşme yönteminin iddia türü: dizgi / çağrı deseni davranış, öbürleri kimlik."""
+    return CLAIM_BEHAVIOR if method in BEHAVIOR_METHODS else CLAIM_IDENTITY
+
+
+def signature_source_label(method: str) -> str:
+    """Tüketicilerin kaynak etiketi: ``signature_db:kimlik`` ya da ``signature_db:davranis``."""
+    return f"{SIGNATURE_SOURCE_PREFIX}:{claim_for_method(method)}"
+
+
+_BEHAVIOR_PRECISION_CACHE: dict[str, Optional[float]] = {}
+
+
+def behavior_confidence(method: str) -> Optional[float]:
+    """Davranış yönteminin ölçülmüş gevşek doğru oranının Wilson alt sınırı.
+
+    Kaynak ``karadul.computation.fusion.measured_precision`` (``davranis`` bölümü, anahtar
+    ``imza:<yöntem>``). Ölçülmemiş yöntemde None (sayı uydurulmaz).
+    """
+    if method in _BEHAVIOR_PRECISION_CACHE:
+        return _BEHAVIOR_PRECISION_CACHE[method]
+    value: Optional[float] = None
+    try:
+        from karadul.computation.fusion.measured_precision import MEASURED_PRECISION
+        row = ((MEASURED_PRECISION.get("davranis") or {}).get("kaynaklar") or {}).get(
+            f"imza:{method}")
+        if isinstance(row, dict) and isinstance(row.get("wilson_alt"), (int, float)):
+            value = float(row["wilson_alt"])
+    except ImportError:  # pragma: no cover — paket bölünmüşse
+        value = None
+    _BEHAVIOR_PRECISION_CACHE[method] = value
+    return value
+
+
+def _as_behavior(match: "SignatureMatch", evidence: list[str]) -> "SignatureMatch":
+    """Dizgi / çağrı deseni eşleşmesini davranış kaydına çevir (ad değişmez).
+
+    ``match_score`` ham puanı korur; ``confidence`` ölçülmüş alt sınır (ölçüm yoksa ham puan
+    kalır ve ``match_score`` None — iki ayrı sayı uydurulmaz).
+    """
+    measured = behavior_confidence(match.match_method)
+    match.claim = CLAIM_BEHAVIOR
+    match.evidence = evidence
+    if measured is not None:
+        match.match_score = match.confidence
+        match.confidence = measured
+    return match
+
+
+def _selection_score(match: "SignatureMatch") -> float:
+    """Aday seçimi puanı: ham eşleşme puanı varsa o (davranış kaydı), yoksa ``confidence``."""
+    return match.match_score if match.match_score is not None else match.confidence
+
+
+def _quote_evidence(text: str, limit: int = 80) -> str:
+    t = text.replace("\n", "\\n")
+    return t if len(t) <= limit else t[: limit - 1] + "…"
 
 
 # ---------------------------------------------------------------------------
@@ -2637,6 +2727,7 @@ class SignatureDB:
 
         best_match: Optional[SignatureMatch] = None
         best_score = 0.0
+        best_keywords: frozenset[str] = frozenset()
 
         # v1.15-E B14: Aho-Corasick aday daraltma. Tum string_sigs'i scan etmek
         # yerine, func string'lerinde bulunan keyword'lerden hareket ederek
@@ -2730,6 +2821,16 @@ class SignatureDB:
                         match_method="string_ref",
                         purpose=purpose,
                     )
+                    best_keywords = keywords
+
+        if best_match is not None:
+            # P15c: davranış kaydı — kanıt, anahtar sözcüğü içeren fonksiyon dizgileri.
+            ev: list[str] = []
+            for kw in sorted(best_keywords):
+                hit = next((s for s in strings_used if kw.lower() in s.lower()), None)
+                ev.append(f'dizgi: "{_quote_evidence(hit)}" (anahtar "{kw}")' if hit is not None
+                          else f'anahtar "{kw}"')
+            return _as_behavior(best_match, ev)
 
         # v1.10.0 C3: LMDB'deki string_sigs DB'sini de sorgula (builtin
         # miss durumunda / builtin yuklenmedigi senaryolarda). Exact
@@ -2745,14 +2846,15 @@ class SignatureDB:
                 # Exact-set match -> builtin "all keywords matched" ile ayni
                 # confidence skalasi. Kume boyutunu bilmiyoruz; orta deger.
                 conf = min(0.92, 0.65 + len(set(strings_used)) * 0.07)
-                return SignatureMatch(
+                return _as_behavior(SignatureMatch(
                     original_name="",
                     matched_name=matched_name,
                     library=library,
                     confidence=conf,
                     match_method="string_ref",
                     purpose=purpose,
-                )
+                ), [f'dizgi kümesi tam eşleşti: "{_quote_evidence(s)}"'
+                    for s in sorted(set(strings_used))[:5]])
 
         return best_match
 
@@ -2782,6 +2884,7 @@ class SignatureDB:
 
         best_match: Optional[SignatureMatch] = None
         best_conf = 0.0
+        best_pattern: frozenset[str] = frozenset()
 
         for pattern_callees, matched_name, library, purpose, base_conf in self._call_sigs:
             # Pattern'deki her callee, fonksiyonun callees'inde olmali
@@ -2802,6 +2905,14 @@ class SignatureDB:
                         match_method="call_pattern",
                         purpose=purpose,
                     )
+                    best_pattern = pattern_callees
+
+        if best_match is not None:
+            # P15c: davranış kaydı — kanıt, desenin fonksiyonda gerçekten çağrılan API'leri.
+            return _as_behavior(best_match, [
+                "çağırır: " + ", ".join(sorted(best_pattern)),
+                f"desen kapsaması: {len(best_pattern)} / {len(callees_set)} farklı çağrı",
+            ])
 
         # v1.10.0 C3: LMDB call_sigs DB'sini de sorgula (exact canonical
         # kume eslestirme). builtin miss ise LMDB'de dogrudan kume aranir.
@@ -2814,14 +2925,14 @@ class SignatureDB:
                 matched_name, library, purpose, base_conf = hit
                 # Exact kume match -> coverage=1.0
                 conf = min(0.95, base_conf * 1.0)
-                return SignatureMatch(
+                return _as_behavior(SignatureMatch(
                     original_name="",
                     matched_name=matched_name,
                     library=library,
                     confidence=conf,
                     match_method="call_pattern",
                     purpose=purpose,
-                )
+                ), ["çağrı kümesi tam eşleşti: " + ", ".join(sorted(set(callees))[:12])])
 
         return best_match
 
@@ -2900,8 +3011,11 @@ class SignatureDB:
             if not candidates:
                 return None
 
-            # En yuksek confidence'li sonucu dondur
-            return max(candidates, key=lambda m: m.confidence)
+            # En yuksek puanli sonucu dondur. P15c: davranış kaydında ``confidence`` ölçülmüş
+            # alt sınırdır; seçim ham eşleşme puanıyla (``match_score``) yapılır ki ad davranışı
+            # değişmesin (geliştirme setinde ölçülmüş kesinlikle seçmek gevşek doğruyu 2 düşürdü:
+            # sqlite3 shell_exec, zstd FIO_compressFilename_srcFile).
+            return max(candidates, key=_selection_score)
 
     # ------------------------------------------------------------------
     # Toplu eslestirme (public)

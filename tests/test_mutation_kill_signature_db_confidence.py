@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import pytest
 
-from karadul.analyzers.signature_db import SignatureDB
+from karadul.analyzers.signature_db import SignatureDB, behavior_confidence
 
 
 def _clean_db() -> SignatureDB:
@@ -75,7 +75,9 @@ def test_match_function_returns_highest_confidence_candidate() -> None:
         f"max(confidence) YUKSEK adayi (CALL_HIGH 0.90) secmeliydi, "
         f"donen: {match.matched_name!r} @ {match.confidence}"
     )
-    assert match.confidence == pytest.approx(0.90)
+    # P15c: ham puan ``match_score``'da; ``confidence`` davranış kaydında ölçülmüş alt sınır.
+    assert match.match_score == pytest.approx(0.90)
+    assert match.confidence == pytest.approx(behavior_confidence("call_pattern"))
 
 
 # ---------------------------------------------------------------------------
@@ -97,8 +99,8 @@ def test_match_by_strings_confidence_scales_with_keyword_count() -> None:
 
     assert match is not None
     assert match.matched_name == "THREE_KW"
-    assert match.confidence == pytest.approx(0.86), (
-        f"3-keyword conf 0.65+3*0.07=0.86 olmaliydi, donen: {match.confidence}"
+    assert match.match_score == pytest.approx(0.86), (
+        f"3-keyword conf 0.65+3*0.07=0.86 olmaliydi, donen: {match.match_score}"
     )
 
 
@@ -125,10 +127,10 @@ def test_match_by_calls_confidence_scaled_by_coverage() -> None:
     assert match is not None
     assert match.matched_name == "SUBSET_HIT"
     expected = base * (0.7 + 0.3 * 0.5)  # 0.68
-    assert match.confidence == pytest.approx(expected), (
-        f"coverage=0.5 -> conf {expected} olmaliydi, donen: {match.confidence}"
+    assert match.match_score == pytest.approx(expected), (
+        f"coverage=0.5 -> conf {expected} olmaliydi, donen: {match.match_score}"
     )
-    assert match.confidence < base, (
+    assert match.match_score < base, (
         "STRICT subset (coverage<1) icin conf base_conf'un ALTINDA olmali; "
-        f"donen {match.confidence} >= base {base}"
+        f"donen {match.match_score} >= base {base}"
     )

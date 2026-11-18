@@ -1,0 +1,15 @@
+--- a/karadul/pipeline/steps/ghidra_metadata.py	2026-11-18 19:46:59
++++ b/karadul/pipeline/steps/ghidra_metadata.py	2026-11-18 19:47:09
+@@ -257,6 +257,12 @@
+                                 # Eşleşmenin yolu (symbol: fonksiyonun var olan adı aranır;
+                                 # string_ref / call_pattern). Rapor bu dökümü yazar.
+                                 "method": m.match_method,
++                                # P15c (K-2): iddia türü (kimlik ↔ davranis), davranış
++                                # tahmininin kanıtı ve ham eşleşme puanı (davranış kaydında
++                                # ``confidence`` ölçülmüş kesinliğin alt sınırıdır).
++                                "claim": getattr(m, "claim", None),
++                                "evidence": getattr(m, "evidence", None),
++                                "match_score": getattr(m, "match_score", None),
+                             }
+                             for m in sig_matches
+                         ],
