@@ -1,0 +1,25 @@
+--- a/karadul/reconstruction/engineering/block_annotator.py	2026-11-18 11:32:14
++++ b/karadul/reconstruction/engineering/block_annotator.py	2026-11-18 11:32:14
+@@ -890,14 +890,15 @@
+             # Formula bul
+             formula_text = None
+             fi = formula_index.get(algo.name.lower())
++            if fi is None:
++                # MUH-12 (P04b): alt dizgi yedeği yok ("S-box (AES, DES)" ↛ DES);
++                # yalnız tam ad / alias eşitliği ve belirsiz olmayan tespit adı.
++                tkey = self._formula_reconstructor.match_detection(algo.name)
++                if tkey is not None:
++                    fi = formula_index.get(FORMULA_TEMPLATES[tkey].algorithm.lower())
+             if fi:
+-                formula_text = fi.ascii
+-            else:
+-                # Fuzzy match -- algo.name icinde template key'i ara
+-                for tkey, tinfo in FORMULA_TEMPLATES.items():
+-                    if tkey.replace("_", " ") in algo.name.lower():
+-                        formula_text = tinfo.ascii
+-                        break
++                # ASCII işleç kaybettiyse (ascii_omitted) boş gelir; kutuya formül yazılmaz.
++                formula_text = fi.ascii or None
+ 
+             extra_lines: list[str] = []
+             extra_lines.append(f"Confidence: {algo.confidence:.2f}")

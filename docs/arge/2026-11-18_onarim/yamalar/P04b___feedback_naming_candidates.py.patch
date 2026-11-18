@@ -1,0 +1,49 @@
+--- a/karadul/pipeline/steps/_feedback_naming_candidates.py	2026-11-18 11:33:14
++++ b/karadul/pipeline/steps/_feedback_naming_candidates.py	2026-11-18 11:33:36
+@@ -943,13 +943,25 @@
+     """
+     if not formulas:
+         return 0
+-    # Hangi algoritma adlari formula match yapti? (lowercase normalize)
+-    formula_algos: set[str] = set()
++    # MUH-12 (P04b): formül, kendisini doğuran (tespit adı, fonksiyon) çiftlerini
++    # taşır (FormulaInfo.detected_as / functions). Alt dizgi eşleşmesi yok: "Password-
++    # based key derivation (PBKDF2, scrypt)" başka bir fonksiyonun PBKDF2 formülünden
++    # ad almaz.
++    # Kaynak taşımayan (eski biçim) formülde yalnız ad TAM eşitliği.
++    formula_sources: set[tuple[str, str]] = set()
++    exact_names: set[str] = set()
+     for f in formulas:
+-        algo_name = getattr(f, "algorithm", "") or ""
+-        if algo_name:
+-            formula_algos.add(algo_name.strip().lower())
+-    if not formula_algos:
++        names = [n.strip().lower() for n in (getattr(f, "detected_as", None) or [])]
++        funcs = list(getattr(f, "functions", None) or [])
++        if names and funcs:
++            for n in names:
++                for fn in funcs:
++                    formula_sources.add((n, fn))
++        else:
++            algo_name = (getattr(f, "algorithm", "") or "").strip().lower()
++            if algo_name:
++                exact_names.add(algo_name)
++    if not formula_sources and not exact_names:
+         return 0
+ 
+     added = 0
+@@ -959,13 +971,7 @@
+         conf = float(getattr(m, "confidence", 0.0) or 0.0)
+         if not algo or not fname:
+             continue
+-        # Formula listesi exact match OR substring match (Reconstructor da
+-        # boyle yapar).
+-        matched = (
+-            algo in formula_algos
+-            or any(fa in algo or algo in fa for fa in formula_algos)
+-        )
+-        if not matched:
++        if (algo, fname) not in formula_sources and algo not in exact_names:
+             continue
+         if not _is_unnamed(fname):
+             continue
