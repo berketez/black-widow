@@ -1,0 +1,17 @@
+--- a/ui/server.py	2026-11-18 20:10:26
++++ b/ui/server.py	2026-11-18 20:10:31
+@@ -798,8 +798,13 @@
+         try:
+             matches = json.loads(p.read_text()).get("matches")
+             if isinstance(matches, list):
++                # P15c: dizgi / çağrı deseni kaydı fonksiyonun kimliği değil davranış tahminidir;
++                # "imza eşleşmesi var" sayılmaz (yalnız kimlik iddiası: simge / bayt deseni).
++                from karadul.analyzers.signature_db import CLAIM_BEHAVIOR, claim_for_method
+                 out = {str(m.get("original")) for m in matches
+-                       if isinstance(m, dict) and m.get("original")}
++                       if isinstance(m, dict) and m.get("original")
++                       and (m.get("claim") or claim_for_method(str(m.get("method") or "")))
++                       != CLAIM_BEHAVIOR}
+         except (json.JSONDecodeError, OSError, TypeError, ValueError, AttributeError):
+             out = None
+     with _CACHE_LOCK:
