@@ -8,8 +8,23 @@ listelerini analiz ederek uygulamanin:
 - Iletisim protokollerini (HTTPS, XPC, gRPC vb.)
 tespit eder ve mimari harita olusturur.
 
-Pattern matching case-insensitive yapilir. Her tespit icin evidence
-(hangi string'ler eslesti) ve confidence skoru verilir.
+Kanıt modeli (2026-11-18 onarımı, IMZA-01):
+- Her desen alternatiflerine (``|``) ayrılır; her alternatif bir "gösterge"dir.
+- Belirteç sınırı: harf/rakamla başlayan gösterge, önünde harf/rakam yokken (``_`` sınır sayılır)
+  ya da camelCase geçişinde başlar; 4 karakterden kısa düz kısaltma (``BLE``, ``der``, ``pie``)
+  aynı kuralla biter. ``\\b`` de harf/rakam sınırı olarak okunur (``_`` sınırdır).
+- Harf duyarlılığı: desende ``case_sensitive`` alanı varsa o geçerli (iki yolda da: dosya düzeyi
+  ve fonksiyon başına); yoksa büyük harf içeren gösterge (API adı, kısaltma) harf duyarlı,
+  tamamı küçük harfli gösterge harf duyarsızdır.
+- Bilinen gürültü kanıt sayılmaz: derleyici / çalışma zamanı simgeleri
+  (``_ITM_deregisterTMCloneTable``, ``__gmon_start__`` ...), araç zinciri sürüm düğümleri
+  (``GLIBC_2.17``), ELF bölüm adları, devingen yükleyici yolu.
+- Tek kanıtla hüküm yok: bir iddia ya iki ayrı kanıt öğesinin iki ayrı göstergeyi karşılamasıyla
+  ya da simge tablosundan / bağlı kitaplıktan gelen iki ayrı öğeyle kurulur.
+- Çekirdek ve yükseltilmiş risk düzeyli güvenlik iddiası en az bir güçlü kanıt (simge tablosu ya
+  da bağlı kitaplık) ister; yalnız dizgiyle kurulamaz.
+- Her iddia kanıtını taşır: ``evidence`` (eşleşen simge / dizgi / kitaplık yolu) ve paralel
+  ``evidence_kinds`` (``symbol`` | ``library`` | ``string``).
 """
 
 from __future__ import annotations
@@ -39,6 +54,8 @@ class Subsystem:
     evidence: list[str]      # bu cikarimi destekleyen string'ler
     confidence: float        # 0.0 - 1.0
     category: str            # "core", "network", "ui", "update", "security"
+    # evidence ile paralel: her kanıtın kaynağı ("symbol" | "library" | "string")
+    evidence_kinds: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -51,6 +68,7 @@ class Algorithm:
     category: str            # "hash", "encryption", "pattern_matching", "compression"
     evidence: list[str]
     usage_hint: str          # "virus signature verification", "config encryption"
+    evidence_kinds: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -63,6 +81,7 @@ class SecurityMechanism:
     description: str
     risk_level: str          # "standard", "elevated", "kernel"
     evidence: list[str]
+    evidence_kinds: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -74,6 +93,7 @@ class Protocol:
     name: str               # "HTTPS", "Protobuf", "gRPC", "XPC", "WebSocket"
     usage: str              # "update server communication", "inter-process communication"
     evidence: list[str]
+    evidence_kinds: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -251,7 +271,7 @@ STRING_PATTERNS: dict[str, dict[str, Any]] = {
     "hashing": {
         "patterns": [
             r"sha.?256", r"sha.?512", r"sha.?384", r"sha.?1",
-            r"md5", r"blake2", r"xxhash", r"crc32",
+            r"md5", r"blake2[bs]?", r"xxhash", r"crc32[bc]?",
             r"murmurhash", r"siphash", r"fnv", r"sha.?3",
             r"keccak", r"ripemd", r"whirlpool",
             r"hmac", r"pbkdf2", r"bcrypt", r"scrypt",
@@ -945,17 +965,17 @@ ALGORITHM_PATTERNS: dict[str, dict[str, Any]] = {
     "SHA-512": {"pattern": r"sha.?512|SHA512|CC_SHA512", "category": "hash", "usage": "extended hash operations"},
     "SHA-1": {"pattern": r"sha.?1\b|SHA1|CC_SHA1", "category": "hash", "usage": "legacy hash (deprecated for security)"},
     "MD5": {"pattern": r"\bmd5\b|MD5|CC_MD5", "category": "hash", "usage": "legacy checksum (not for security)"},
-    "BLAKE2": {"pattern": r"blake2|BLAKE2", "category": "hash", "usage": "fast modern hash"},
+    "BLAKE2": {"pattern": r"blake2[bs]?|BLAKE2[bsBS]?", "category": "hash", "usage": "fast modern hash"},
     "xxHash": {"pattern": r"xxhash|XXH32|XXH64", "category": "hash", "usage": "non-cryptographic fast hash"},
-    "CRC32": {"pattern": r"crc32|CRC32", "category": "hash", "usage": "checksum for data integrity"},
+    "CRC32": {"pattern": r"crc32[bc]?|CRC32[BCbc]?", "category": "hash", "usage": "checksum for data integrity"},
     "MurmurHash": {"pattern": r"murmurhash|MurmurHash", "category": "hash", "usage": "hash table lookups"},
     "HMAC": {"pattern": r"\bhmac\b|HMAC|CCHmac", "category": "hash", "usage": "message authentication"},
     "PBKDF2": {"pattern": r"pbkdf2|PBKDF2|CCKeyDerivationPBKDF", "category": "kdf", "usage": "password-based key derivation"},
     "bcrypt": {"pattern": r"\bbcrypt\b", "category": "kdf", "usage": "password hashing"},
-    "Argon2": {"pattern": r"argon2|Argon2", "category": "kdf", "usage": "modern password hashing"},
+    "Argon2": {"pattern": r"argon2(?:id|i|d)?|Argon2(?:id|i|d)?", "category": "kdf", "usage": "modern password hashing"},
 
     # Simetrik sifreleme
-    "AES": {"pattern": r"\bAES[_\b]|kCCAlgorithmAES|[Aa][Ee][Ss]_[Ee]ncrypt|[Aa][Ee][Ss]_[Dd]ecrypt|AES_set_encrypt_key|EVP_aes_", "category": "encryption", "usage": "symmetric block cipher", "case_sensitive": True},
+    "AES": {"pattern": r"\bAES[_\b]|kCCAlgorithmAES|[Aa][Ee][Ss]_[Ee]ncrypt|[Aa][Ee][Ss]_[Dd]ecrypt|AES_set_encrypt_key|EVP_aes_|[Aa][Ee][Ss]-?(?:128|192|256)", "category": "encryption", "usage": "symmetric block cipher", "case_sensitive": True},
     "AES-GCM": {"pattern": r"aes.?gcm|AES.?GCM", "category": "encryption", "usage": "authenticated encryption"},
     "AES-CBC": {"pattern": r"aes.?cbc|AES.?CBC|kCCModeCBC", "category": "encryption", "usage": "block cipher mode"},
     "ChaCha20": {"pattern": r"chacha20|ChaCha20", "category": "encryption", "usage": "stream cipher"},
@@ -1190,7 +1210,7 @@ SECURITY_PATTERNS: dict[str, dict[str, str]] = {
         "risk_level": "standard",
     },
     "SIP (System Integrity)": {
-        "pattern": r"system.?integrity|SIP|csrutil|rootless",
+        "pattern": r"system.?integrity|SIP|csrutil|rootless|csr_check|csr_get_active_config",
         "description": "System Integrity Protection",
         "risk_level": "kernel",
     },
@@ -1242,7 +1262,7 @@ SECURITY_PATTERNS: dict[str, dict[str, str]] = {
 # ---------------------------------------------------------------------------
 
 PROTOCOL_PATTERNS: dict[str, dict[str, str]] = {
-    "HTTPS": {"pattern": r"https://|NSURLSession|URLSession|CFNetwork", "usage": "secure web communication"},
+    "HTTPS": {"pattern": r"https://|\bHTTPS\b|NSURLSession|URLSession|CFNetwork", "usage": "secure web communication"},
     "HTTP/2": {"pattern": r"http/2|h2c|ALPN|nghttp2", "usage": "modern HTTP protocol"},
     "HTTP/3": {"pattern": r"http/3|QUIC|quic", "usage": "next-gen HTTP over QUIC"},
     "WebSocket": {"pattern": r"websocket|ws://|wss://", "usage": "bidirectional real-time communication"},
@@ -1427,14 +1447,290 @@ def _is_fortran_binary(symbols_or_strings) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Kanit modeli (2026-11-18 onarimi, IMZA-01) -- modul basindaki aciklamaya bakin
+# ---------------------------------------------------------------------------
+
+# Harf/rakam siniri (``_`` sinir sayilir); ``\b`` bu anlamla okunur.
+_ALNUM_BOUNDARY = r"(?:(?<=[A-Za-z0-9])(?![A-Za-z0-9])|(?<![A-Za-z0-9])(?=[A-Za-z0-9]))"
+# Belirtec baslangici: onunde harf/rakam yok ya da camelCase gecisi (kucuk harf -> Buyuk harf).
+_TOKEN_LEFT = r"(?:(?<![A-Za-z0-9])|(?<=[a-z])(?=[A-Z]))"
+# Belirtec sonu: kucuk harfle biten belirtecten sonra kucuk harf/rakam yok; buyuk harf/rakamla
+# bitenden sonra harf/rakam yok ya da BUYUKHarf gecisi ("BLEScanner": BLE + Scanner).
+_TOKEN_RIGHT = (
+    r"(?:(?<=[a-z])(?![a-z0-9])|(?<=[A-Z0-9])(?![A-Za-z0-9])|(?<=[A-Z0-9])(?=[A-Z][a-z]))"
+)
+# Bu uzunluga kadar duz (yalniz harf/rakam) gosterge iki yandan belirtec siniri ister.
+_SHORT_TOKEN_MAX = 4
+_PLAIN_TOKEN_RE = re.compile(r"[A-Za-z0-9]+")
+# Simge tablosu olmayan bicimlerde (PE) ice aktarim adlari yalniz dizgide durur: C tanimlayicisi
+# biciminde dizgi "API benzeri" kanit sayilir.
+_IDENT_RE = re.compile(r"_*[A-Za-z][A-Za-z0-9_]{3,}")
+
+# Bilinen gurultu: derleyici / calisma zamani baglama simgeleri, arac zinciri surum dugumleri,
+# ELF bolum adlari, devingen yukleyici yolu, GCC kunye dizgisi. Bunlar her ikilide bulunur;
+# hicbir alt sistem / algoritma / protokol icin kanit degildir.
+_NOISE_RE = re.compile(
+    r"""^(?:
+        _*ITM_(?:de)?registerTMCloneTable
+      | _*gmon_start__
+      | _*cxa_finalize | _*cxa_atexit
+      | _*libc_start_main | _*libc_csu_(?:init|fini)
+      | _*Jv_RegisterClasses | _*dso_handle | _*TMC_END__
+      | _*bss_start | _*data_start | _IO_stdin_used | _*FRAME_END__ | _*GNU_EH_FRAME_HDR
+      | _DYNAMIC | _GLOBAL_OFFSET_TABLE_ | _?_?edata | _?_?end | _init | _fini
+      | (?:GLIBC|GLIBCXX|CXXABI|GCC|LIBGCC|GLIBC_PRIVATE|GLIBC_ABI_DT_RELR)(?:_[0-9A-Z_.]+)?
+      | GCC:\s.*
+      | .*\bld-linux[\w.-]*\.so[\w.]*
+      | \.(?:text|rodata|data|bss|init|fini|init_array|fini_array|preinit_array|dynamic
+            |dynsym|dynstr|interp|got|got\.plt|plt|plt\.got|plt\.sec|rela?\.[\w.]+
+            |eh_frame|eh_frame_hdr|gcc_except_table|tbss|tdata|data\.rel\.ro|comment
+            |shstrtab|symtab|strtab|jcr|tm_clone_table|gnu\.[\w.]+|note\.[\w.-]+
+            |gnu_debuglink|gnu_debugaltlink|debug_\w+|ARM\.\w+)
+    )$""",
+    re.VERBOSE,
+)
+
+_STRONG_KINDS = frozenset({"symbol", "library"})
+# Bu risk duzeyleri yalniz guclu kanitla (simge tablosu / bagli kitaplik) iddia edilir.
+_RISK_NEEDS_STRONG = frozenset({"kernel", "elevated"})
+# Bir iddianin bagimsizligini olcerken bakilan en cok kanit ogesi (buyuk ikilide bellek siniri).
+_MAX_HITS_PER_RULE = 200
+
+
+def _split_alternatives(pattern: str) -> list[str]:
+    """Deseni ust duzey ``|`` alternatiflerine ayir (parantez / karakter sinifi icine bakmaz)."""
+    parts: list[str] = []
+    buf: list[str] = []
+    depth = 0
+    in_class = False
+    i = 0
+    while i < len(pattern):
+        c = pattern[i]
+        if c == "\\" and i + 1 < len(pattern):
+            buf.append(pattern[i:i + 2])
+            i += 2
+            continue
+        if in_class:
+            if c == "]":
+                in_class = False
+        elif c == "[":
+            in_class = True
+        elif c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+        elif c == "|" and depth == 0:
+            parts.append("".join(buf))
+            buf = []
+            i += 1
+            continue
+        buf.append(c)
+        i += 1
+    parts.append("".join(buf))
+    return [p for p in parts if p]
+
+
+def _has_upper_literal(alt: str) -> bool:
+    """Gosterge kacis dizisi disinda buyuk harf iceriyor mu (``\\W`` gibi kacislar sayilmaz)."""
+    i = 0
+    while i < len(alt):
+        if alt[i] == "\\":
+            i += 2
+            continue
+        if alt[i].isupper():
+            return True
+        i += 1
+    return False
+
+
+def _convert_word_boundaries(alt: str) -> str:
+    """Karakter sinifi disindaki ``\\b``'yi harf/rakam sinirina cevir (``_`` sinir olur)."""
+    out: list[str] = []
+    in_class = False
+    i = 0
+    while i < len(alt):
+        c = alt[i]
+        if c == "\\" and i + 1 < len(alt):
+            esc = alt[i:i + 2]
+            out.append(_ALNUM_BOUNDARY if (esc == r"\b" and not in_class) else esc)
+            i += 2
+            continue
+        if in_class:
+            if c == "]":
+                in_class = False
+        elif c == "[":
+            in_class = True
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def _indicator_source(alt: str, case_sensitive: bool | None) -> str:
+    """Tek gostergenin kendi icinde bayrakli (scoped) regex kaynagi.
+
+    Sinir bakislari harf duyarli kapsamin DISINDA durur; boylece ``[a-z]`` buyuk harfi tutmaz.
+    """
+    plain = _PLAIN_TOKEN_RE.fullmatch(alt) is not None
+    if case_sensitive is None:
+        case_sensitive = _has_upper_literal(alt)
+    core = _convert_word_boundaries(alt)
+    flag = "-i" if case_sensitive else "i"
+    src = f"(?{flag}:{core})"
+    if alt[:1].isalnum():
+        src = _TOKEN_LEFT + src
+    # Kisa kisaltma ve rakamla biten ad (sha256, crc32, x509) belirtecin sonunda biter:
+    # "sha256sum" bir program adidir, SHA-256 kullanimi degildir.
+    ends_digit = alt[-1:].isdigit() and alt[-2:-1] != "\\"
+    if (plain and len(alt) <= _SHORT_TOKEN_MAX) or ends_digit:
+        src = src + _TOKEN_RIGHT
+    return src
+
+
+@dataclass(frozen=True)
+class _Rule:
+    """Bir iddianin gostergeleri: ``combined`` on suzgec, ``indicators`` tek tek."""
+    combined: re.Pattern
+    indicators: tuple[re.Pattern, ...]
+
+
+def _compile_rule(patterns: list[str], case_sensitive: bool | None = None) -> _Rule:
+    """Desen listesini (ya da tek desenin alternatiflerini) gosterge kuralina derle."""
+    sources: list[str] = []
+    for pat in patterns:
+        for alt in _split_alternatives(pat):
+            sources.append(_indicator_source(alt, case_sensitive))
+    indicators = tuple(re.compile(s) for s in sources)
+    combined = re.compile("|".join(f"(?:{s})" for s in sources))
+    return _Rule(combined=combined, indicators=indicators)
+
+
+@dataclass(frozen=True)
+class _EvidenceItem:
+    text: str
+    kind: str  # "symbol" | "library" | "string"
+
+    @property
+    def api_like(self) -> bool:
+        """Simge, kitaplik ya da C tanimlayicisi bicimli dizgi (PE ice aktarim adi gibi)."""
+        return self.kind in _STRONG_KINDS or _IDENT_RE.fullmatch(self.text) is not None
+
+
+def _is_noise(text: str) -> bool:
+    return _NOISE_RE.match(text) is not None
+
+
+def _collect_items(
+    strings: list[str], symbols: list[str], dylibs: list[str], self_name: str = "",
+) -> list[_EvidenceItem]:
+    """Kanit ogeleri: gurultu atilir, ayni ad bir kez sayilir (simge > kitaplik > dizgi).
+
+    Mach-O simgesindeki onek ``_`` ile dizgi tablosundaki ayni ad tek oge sayilir.
+    ``otool -L`` evrensel ikilide her mimari icin ikilinin kendi yolunu da yazar; adi
+    ``self_name`` olan "kitaplik" ikilinin kendisidir, kanit sayilmaz.
+    """
+    items: list[_EvidenceItem] = []
+    seen: set[str] = set()
+    if self_name:
+        dylibs = [d for d in dylibs if d.rsplit("/", 1)[-1] != self_name]
+
+    def _add(text: str, kind: str) -> None:
+        if not text or len(text) < 3 or _is_noise(text):
+            return
+        key = text.lstrip("_")
+        if key in seen:
+            return
+        seen.add(key)
+        items.append(_EvidenceItem(text=text, kind=kind))
+
+    for s in symbols:
+        _add(s, "symbol")
+    for d in dylibs:
+        _add(d, "library")
+    for s in strings:
+        _add(s, "string")
+    return items
+
+
+@dataclass
+class _RuleMatch:
+    """Bir kuralin kanit ogeleri ustundeki eslesmesi."""
+    hits: list[tuple[_EvidenceItem, frozenset[int]]]
+
+    @property
+    def matched_indicators(self) -> set[int]:
+        out: set[int] = set()
+        for _, idx in self.hits:
+            out |= idx
+        return out
+
+    @property
+    def strong(self) -> bool:
+        return any(it.kind in _STRONG_KINDS for it, _ in self.hits)
+
+    def independent(self, api_family: bool = True) -> bool:
+        """Iki bagimsiz kanit.
+
+        - Gosterge yolu: en az iki ogenin eslestigi gosterge kumeleri birbirinden farkli
+          (ayni gosterge ciftini ortusen iki oge -- ``__swift_1`` / ``__swift_2`` -- tek
+          kanit turudur).
+        - API yolu (yalniz ``api_family`` kurallari: algoritma, guvenlik, protokol): iki ayri
+          API benzeri oge (simge, kitaplik, tanimlayici dizgi; ``EVP_aes_128_cbc`` +
+          ``EVP_aes_256_gcm``).
+        - Alt sistem anahtar sozcuk gruplarinda (``api_family=False``) ayni sozcugu ("remote",
+          "copy", "update") tasiyan iki API adi bagimsiz sayilmaz ve en az bir oge API benzeri
+          olmalidir: yalniz yardim metni / URL alt sistem kurmaz.
+        """
+        if len(self.hits) < 2:
+            return False
+        n_api = sum(1 for it, _ in self.hits if it.api_like)
+        if api_family and n_api >= 2:
+            return True
+        if not api_family and n_api == 0:
+            return False
+        return len({idx for _, idx in self.hits}) >= 2
+
+    def evidence(self, limit: int) -> tuple[list[str], list[str]]:
+        ordered = sorted(self.hits, key=lambda h: h[0].kind not in _STRONG_KINDS)[:limit]
+        return [it.text[:200] for it, _ in ordered], [it.kind for it, _ in ordered]
+
+
+def _match_rule(rule: _Rule, items: list[_EvidenceItem]) -> _RuleMatch:
+    hits: list[tuple[_EvidenceItem, frozenset[int]]] = []
+    for it in items:
+        if not rule.combined.search(it.text):
+            continue
+        idx = frozenset(i for i, rx in enumerate(rule.indicators) if rx.search(it.text))
+        if idx:
+            hits.append((it, idx))
+            if len(hits) >= _MAX_HITS_PER_RULE:
+                break
+    return _RuleMatch(hits=hits)
+
+
+# Iddia kurallari (modul duzeyinde bir kez derlenir).
+_STRING_RULES: dict[str, _Rule] = {
+    g: _compile_rule(d["patterns"], d.get("case_sensitive")) for g, d in STRING_PATTERNS.items()
+}
+_ALGO_RULES: dict[str, _Rule] = {
+    n: _compile_rule([d["pattern"]], d.get("case_sensitive")) for n, d in ALGORITHM_PATTERNS.items()
+}
+_SECURITY_RULES: dict[str, _Rule] = {
+    n: _compile_rule([d["pattern"]], d.get("case_sensitive")) for n, d in SECURITY_PATTERNS.items()
+}
+_PROTOCOL_RULES: dict[str, _Rule] = {
+    n: _compile_rule([d["pattern"]], d.get("case_sensitive")) for n, d in PROTOCOL_PATTERNS.items()
+}
+
+
+# ---------------------------------------------------------------------------
 # Pre-compiled patterns (module-level, bir kez derlenir)
 # ---------------------------------------------------------------------------
 
 # Algo patterns: {name: (compiled_re, pre_filter_keywords)}
+# Fonksiyon basina yol da dosya duzeyindeki gosterge kuralini (case_sensitive dahil) kullanir.
 _COMPILED_ALGO: list[tuple[str, re.Pattern, list[str]]] = []
 for _name, _data in ALGORITHM_PATTERNS.items():
-    _flags = 0 if _data.get("case_sensitive") else re.IGNORECASE
-    _pat = re.compile(_data["pattern"], _flags)
+    _pat = _ALGO_RULES[_name].combined
     # Pattern'den basit keyword'ler cikar (pre-filter icin)
     _raw = re.sub(r'\\[bBdDwWsS]', ' ', _data["pattern"])
     _keywords = [k.lower() for k in re.split(r'[|.?()[\]^$+*{}\\ ]', _raw) if len(k) >= 3]
@@ -1548,11 +1844,10 @@ class BinaryIntelligence:
         self._compile_all_patterns()
 
     def _compile_all_patterns(self) -> None:
-        """Tum regex pattern'lerini bir kez compile et."""
-        for group_name, group_data in STRING_PATTERNS.items():
-            self._compiled_patterns[group_name] = [
-                re.compile(p, re.IGNORECASE) for p in group_data["patterns"]
-            ]
+        """Alt sistem gostergeleri modul duzeyinde derli (``_STRING_RULES``); burada yalniz
+        grup -> gosterge listesi baglanir (sinir ve harf duyarliligi kurali dahil)."""
+        for group_name, rule in _STRING_RULES.items():
+            self._compiled_patterns[group_name] = list(rule.indicators)
 
     def analyze(
         self,
@@ -1572,38 +1867,30 @@ class BinaryIntelligence:
         Returns:
             IntelligenceReport: Tam analiz raporu.
         """
-        # 1. String'leri kategorize et
-        clusters = self._cluster_strings(strings)
-
-        # Symbol'leri de string havuzuna ekle (ayri clusterla)
-        symbol_clusters = self._cluster_strings(symbols)
-        # Merge: symbol cluster'larini ana cluster'lara ekle
-        for group_name, items in symbol_clusters.items():
-            if group_name in clusters:
-                clusters[group_name].extend(items)
-            else:
-                clusters[group_name] = items
+        # 1. Kanit ogeleri: gurultu atilir, simge / kitaplik / dizgi tek kez sayilir
+        items = _collect_items(strings, symbols, dylibs, self_name=target_name)
 
         # 2. Alt sistemleri tespit et
-        subsystems = self._detect_subsystems(clusters, dylibs)
+        group_matches = {g: _match_rule(r, items) for g, r in _STRING_RULES.items()}
+        subsystems = self._detect_subsystems(group_matches, dylibs)
 
         # 3. Algoritmalari bul
         all_text = strings + symbols
-        algorithms = self._detect_algorithms(all_text)
+        algorithms = self._detect_algorithms(all_text, items=items)
 
         # 4. Guvenlik mekanizmalarini belirle
-        security = self._detect_security(all_text, dylibs)
+        security = self._detect_security(all_text, dylibs, items=items)
 
         # 5. Protokolleri tespit et
-        protocols = self._detect_protocols(all_text)
+        protocols = self._detect_protocols(all_text, items=items)
 
         # 6. Mimari harita olustur
         architecture = self._build_architecture(
             target_name, subsystems, algorithms, security, protocols,
         )
 
-        # Cluster sayilarini raporla
-        cluster_counts = {k: len(v) for k, v in clusters.items()}
+        # Grup basina eslesen (gurultusuz, tekil) kanit ogesi sayisi
+        cluster_counts = {g: len(m.hits) for g, m in group_matches.items() if m.hits}
 
         return IntelligenceReport(
             architecture=architecture,
@@ -1685,24 +1972,16 @@ class BinaryIntelligence:
     def _cluster_strings(self, strings: list[str]) -> dict[str, list[str]]:
         """String'leri pattern gruplarina ayir.
 
-        Her string birden fazla gruba girebilir. Case-insensitive esleme.
-        Evidence olarak gercek eslesen string'ler saklanir.
-        Her gruptaki evidence max 50 ile sinirlidir (rapor sismemesi icin).
+        Her string birden fazla gruba girebilir. Gosterge kurali (belirtec siniri, harf
+        duyarliligi) ve gurultu suzgeci ``analyze`` ile aynidir. Evidence olarak gercek
+        eslesen string'ler saklanir; her gruptaki evidence max 50 ile sinirlidir.
         """
+        items = _collect_items(strings, [], [])
         clusters: dict[str, list[str]] = {}
-
-        for s in strings:
-            if len(s) < 3:
-                continue
-            for group_name, compiled_list in self._compiled_patterns.items():
-                for pattern in compiled_list:
-                    if pattern.search(s):
-                        if group_name not in clusters:
-                            clusters[group_name] = []
-                        if len(clusters[group_name]) < 50:
-                            clusters[group_name].append(s[:200])  # truncate long strings
-                        break  # bu gruptaki ilk eslesme yeterli
-
+        for group_name, rule in _STRING_RULES.items():
+            m = _match_rule(rule, items)
+            if m.hits:
+                clusters[group_name] = [it.text[:200] for it, _ in m.hits[:50]]
         return clusters
 
     # ------------------------------------------------------------------
@@ -1710,63 +1989,41 @@ class BinaryIntelligence:
     # ------------------------------------------------------------------
 
     def _detect_subsystems(
-        self, clusters: dict[str, list[str]], dylibs: list[str],
+        self, group_matches: dict[str, _RuleMatch], dylibs: list[str],
     ) -> list[Subsystem]:
-        """Cluster'lardan alt sistemleri tespit et.
+        """Grup eslesmelerinden alt sistemleri tespit et.
 
+        Iddia yalniz bagimsiz iki kanitla kurulur (``_RuleMatch.independent``).
         Confidence hesabi:
-        - matched_patterns / total_patterns * 0.7 (string esleme agirligi)
-        - dylib bonusu: +0.15 (ilgili framework bulunursa)
-        - evidence sayisi bonusu: +0.15 (5+ evidence varsa)
+        - eslesen gosterge / toplam gosterge * 0.7
+        - kitaplik bonusu: +0.15 (grubun bir gostergesi bagli kitaplik yolunda eslestiyse)
+        - kanit sayisi bonusu: +0.15 (5+ ayri kanit), +0.08 (2+ ayri kanit)
         """
         subsystems: list[Subsystem] = []
-        dylibs_lower = " ".join(dylibs).lower()
 
         for group_name, group_data in STRING_PATTERNS.items():
-            if group_name not in clusters:
+            m = group_matches.get(group_name)
+            if m is None or not m.independent(api_family=False):
                 continue
 
-            evidence = clusters[group_name]
-            total_patterns = len(group_data["patterns"])
-            # Kac farkli pattern eslesti
-            matched_count = 0
-            for compiled_pat in self._compiled_patterns[group_name]:
-                for e in evidence:
-                    if compiled_pat.search(e):
-                        matched_count += 1
-                        break
-
-            # Confidence hesapla
-            pattern_ratio = matched_count / max(total_patterns, 1)
-            confidence = pattern_ratio * 0.7
-
-            # Dylib bonusu
-            subsystem_name = group_data["subsystem"].lower().replace(" ", "")
-            category = group_data["category"].lower()
-            if any(
-                kw in dylibs_lower
-                for kw in [category, subsystem_name, group_name]
-            ):
+            total = len(_STRING_RULES[group_name].indicators)
+            confidence = len(m.matched_indicators) / max(total, 1) * 0.7
+            if any(it.kind == "library" for it, _ in m.hits):
                 confidence += 0.15
-
-            # Evidence sayisi bonusu
-            if len(evidence) >= 5:
+            if len(m.hits) >= 5:
                 confidence += 0.15
-            elif len(evidence) >= 2:
+            elif len(m.hits) >= 2:
                 confidence += 0.08
-
             confidence = min(confidence, 1.0)
 
-            # Minimum esik: en az 2 evidence ve 0.1 confidence
-            if len(evidence) < 2 and confidence < 0.1:
-                continue
-
+            evidence, kinds = m.evidence(20)
             subsystems.append(Subsystem(
                 name=group_data["subsystem"],
                 description=group_data["description"],
-                evidence=evidence[:20],  # en fazla 20 evidence
+                evidence=evidence,
                 confidence=round(confidence, 3),
                 category=group_data["category"],
+                evidence_kinds=kinds,
             ))
 
         # Confidence'a gore sirala (yuksekten dusuge)
@@ -1777,10 +2034,13 @@ class BinaryIntelligence:
     # Private: Algorithm detection
     # ------------------------------------------------------------------
 
-    def _detect_algorithms(self, all_text: list[str]) -> list[Algorithm]:
-        """String ve symbol havuzundan algoritmalar tespit et."""
+    def _detect_algorithms(
+        self, all_text: list[str], items: list[_EvidenceItem] | None = None,
+    ) -> list[Algorithm]:
+        """String ve symbol havuzundan algoritmalar tespit et (iki bagimsiz kanitla)."""
+        if items is None:
+            items = _collect_items(all_text, [], [])
         algorithms: list[Algorithm] = []
-        combined_text = "\n".join(all_text)
         # v1.10.0 Batch 3D: Fortran binary-type gate -- fortran_runtime
         # kategorisi false positive'lerini onle.
         fortran_gate_open = _is_fortran_binary(all_text)
@@ -1792,21 +2052,17 @@ class BinaryIntelligence:
                 and not fortran_gate_open
             ):
                 continue
-            pattern = re.compile(algo_data["pattern"], re.IGNORECASE)
-            matches = pattern.findall(combined_text)
-            if matches:
-                # Gercek eslesen string'leri evidence olarak topla
-                evidence: list[str] = []
-                for s in all_text:
-                    if pattern.search(s) and len(evidence) < 10:
-                        evidence.append(s[:200])
-
-                algorithms.append(Algorithm(
-                    name=algo_name,
-                    category=algo_data["category"],
-                    evidence=evidence,
-                    usage_hint=algo_data["usage"],
-                ))
+            m = _match_rule(_ALGO_RULES[algo_name], items)
+            if not m.independent():
+                continue
+            evidence, kinds = m.evidence(10)
+            algorithms.append(Algorithm(
+                name=algo_name,
+                category=algo_data["category"],
+                evidence=evidence,
+                usage_hint=algo_data["usage"],
+                evidence_kinds=kinds,
+            ))
 
         return algorithms
 
@@ -1816,28 +2072,31 @@ class BinaryIntelligence:
 
     def _detect_security(
         self, all_text: list[str], dylibs: list[str],
+        items: list[_EvidenceItem] | None = None,
     ) -> list[SecurityMechanism]:
-        """Guvenlik mekanizmalarini tespit et."""
+        """Guvenlik mekanizmalarini tespit et.
+
+        Iki bagimsiz kanit ister; cekirdek / yukseltilmis risk duzeyi ek olarak en az bir
+        guclu kanit (simge tablosu ya da bagli kitaplik) ister.
+        """
+        if items is None:
+            items = _collect_items(all_text, [], dylibs)
         mechanisms: list[SecurityMechanism] = []
-        combined = "\n".join(all_text + dylibs)
 
         for mech_name, mech_data in SECURITY_PATTERNS.items():
-            pattern = re.compile(mech_data["pattern"], re.IGNORECASE)
-            if pattern.search(combined):
-                evidence: list[str] = []
-                for s in all_text:
-                    if pattern.search(s) and len(evidence) < 10:
-                        evidence.append(s[:200])
-                for lib in dylibs:
-                    if pattern.search(lib) and len(evidence) < 10:
-                        evidence.append(lib)
-
-                mechanisms.append(SecurityMechanism(
-                    name=mech_name,
-                    description=mech_data["description"],
-                    risk_level=mech_data["risk_level"],
-                    evidence=evidence,
-                ))
+            m = _match_rule(_SECURITY_RULES[mech_name], items)
+            if not m.independent():
+                continue
+            if mech_data["risk_level"] in _RISK_NEEDS_STRONG and not m.strong:
+                continue
+            evidence, kinds = m.evidence(10)
+            mechanisms.append(SecurityMechanism(
+                name=mech_name,
+                description=mech_data["description"],
+                risk_level=mech_data["risk_level"],
+                evidence=evidence,
+                evidence_kinds=kinds,
+            ))
 
         return mechanisms
 
@@ -1845,24 +2104,25 @@ class BinaryIntelligence:
     # Private: Protocol detection
     # ------------------------------------------------------------------
 
-    def _detect_protocols(self, all_text: list[str]) -> list[Protocol]:
-        """Iletisim protokollerini tespit et."""
+    def _detect_protocols(
+        self, all_text: list[str], items: list[_EvidenceItem] | None = None,
+    ) -> list[Protocol]:
+        """Iletisim protokollerini tespit et (iki bagimsiz kanitla)."""
+        if items is None:
+            items = _collect_items(all_text, [], [])
         protocols: list[Protocol] = []
-        combined = "\n".join(all_text)
 
         for proto_name, proto_data in PROTOCOL_PATTERNS.items():
-            pattern = re.compile(proto_data["pattern"], re.IGNORECASE)
-            if pattern.search(combined):
-                evidence: list[str] = []
-                for s in all_text:
-                    if pattern.search(s) and len(evidence) < 10:
-                        evidence.append(s[:200])
-
-                protocols.append(Protocol(
-                    name=proto_name,
-                    usage=proto_data["usage"],
-                    evidence=evidence,
-                ))
+            m = _match_rule(_PROTOCOL_RULES[proto_name], items)
+            if not m.independent():
+                continue
+            evidence, kinds = m.evidence(10)
+            protocols.append(Protocol(
+                name=proto_name,
+                usage=proto_data["usage"],
+                evidence=evidence,
+                evidence_kinds=kinds,
+            ))
 
         return protocols
 
@@ -2036,8 +2296,8 @@ class BinaryIntelligence:
                 and not fortran_gate_open
             ):
                 continue
-            pattern = re.compile(algo_data["pattern"], re.IGNORECASE)
-            if pattern.search(code):
+            # Dosya duzeyiyle ayni gosterge kurali: case_sensitive alani ve belirtec siniri.
+            if _ALGO_RULES[algo_name].combined.search(code):
                 found.append(algo_name)
         return found
 

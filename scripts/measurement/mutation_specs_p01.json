@@ -1,0 +1,117 @@
+{
+  "_comment": "binary_intelligence kanıt modeli (2026-11-18 onarımı, IMZA-01, paket P01) mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metinleri özgününden farklı uzunlukta (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p01.json",
+  "mutants": [
+    {
+      "id": "p01_sol_sinir_yok",
+      "desc": "sol belirteç sınırı kapalı (actor ⊂ refactoring, patch ⊂ dispatch eşleşir)",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestGostergeKurali::test_sol_belirtec_siniri",
+      "find": "_TOKEN_LEFT = r\"(?:(?<![A-Za-z0-9])|(?<=[a-z])(?=[A-Z]))\"",
+      "replace": "_TOKEN_LEFT = r\"\""
+    },
+    {
+      "id": "p01_kisa_sag_sinir_yok",
+      "desc": "kısa kısaltmada sağ sınır yok (quic ⊂ quicklist → HTTP/3)",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestMasumIkiliSahteIddiaYok::test_redis_kisaltma_alt_dizgileri",
+      "find": "if (plain and len(alt) <= _SHORT_TOKEN_MAX) or ends_digit:",
+      "replace": "if ends_digit:"
+    },
+    {
+      "id": "p01_rakam_sonu_sinir_yok",
+      "desc": "rakamla biten ad belirteç sonu istemiyor (sha256sum → SHA-256 / Hashing)",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestMasumIkiliSahteIddiaYok::test_coreutils_true",
+      "find": "ends_digit = alt[-1:].isdigit() and alt[-2:-1] != \"\\\\\"",
+      "replace": "ends_digit = False"
+    },
+    {
+      "id": "p01_gurultu_suzgeci_yok",
+      "desc": "gürültü süzgeci kapalı (GLIBC_, _ITM_, __gmon_start__ kanıt olur)",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestGostergeKurali::test_gurultu_ogeleri_dusurulur",
+      "find": "return _NOISE_RE.match(text) is not None",
+      "replace": "return False"
+    },
+    {
+      "id": "p01_guclu_kanit_sarti_yok",
+      "desc": "çekirdek / yükseltilmiş risk düzeyi güçlü kanıt istemiyor",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestRiskDuzeyiGucluKanit::test_cekirdek_iddiasi_simge_ister",
+      "find": "_RISK_NEEDS_STRONG = frozenset({\"kernel\", \"elevated\"})",
+      "replace": "_RISK_NEEDS_STRONG = frozenset()"
+    },
+    {
+      "id": "p01_alt_sistem_api_yolu",
+      "desc": "alt sistemde aynı sözcüklü iki API adı bağımsız sayılıyor",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestIkiBagimsizKanit::test_alt_sistemde_ayni_sozcuklu_iki_api_yetmez",
+      "find": "if m is None or not m.independent(api_family=False):",
+      "replace": "if m is None or not m.independent():"
+    },
+    {
+      "id": "p01_alt_sistem_duzyazi",
+      "desc": "alt sistem yalnız yardım metni / URL ile kuruluyor",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestIkiBagimsizKanit::test_alt_sistem_yalniz_yardim_metniyle_kurulmaz",
+      "find": "if not api_family and n_api == 0:",
+      "replace": "if False:"
+    },
+    {
+      "id": "p01_ortusen_gosterge",
+      "desc": "aynı gösterge kümesini taşıyan iki öğe bağımsız sayılıyor",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestIkiBagimsizKanit::test_ortusen_gosterge_cifti_tek_kanit_turu",
+      "find": "return len({idx for _, idx in self.hits}) >= 2",
+      "replace": "return len(self.matched_indicators) >= 2"
+    },
+    {
+      "id": "p01_api_yolu_tek",
+      "desc": "API yolu tek API benzeri öğeyle hüküm veriyor",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestGostergeKurali::test_api_yolu_iki_api_benzeri_oge_ister",
+      "find": "if api_family and n_api >= 2:",
+      "replace": "if api_family and n_api > 0:"
+    },
+    {
+      "id": "p01_tekil_kanit_yok",
+      "desc": "dizgi ve simgedeki aynı ad iki kanıt sayılıyor",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestIkiBagimsizKanit::test_dizgi_ve_simge_ayni_ad_tek_kanit",
+      "find": "        if key in seen:\n",
+      "replace": "        if key in ():\n"
+    },
+    {
+      "id": "p01_kendi_yolu_kitaplik",
+      "desc": "ikilinin kendi yolu (otool -L) kitaplık kanıtı sayılıyor",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestKanitTasima::test_ikilinin_kendi_yolu_kitaplik_sayilmaz",
+      "find": "dylibs = [d for d in dylibs if d.rsplit(\"/\", 1)[-1] != self_name]",
+      "replace": "dylibs = list(dylibs)"
+    },
+    {
+      "id": "p01_case_sensitive_okunmuyor",
+      "desc": "algoritma desenindeki case_sensitive alanı okunmuyor",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestGostergeKurali::test_case_sensitive_alani_derlemede_okunur",
+      "find": "n: _compile_rule([d[\"pattern\"]], d.get(\"case_sensitive\")) for n, d in ALGORITHM",
+      "replace": "n: _compile_rule([d[\"pattern\"]], None) for n, d in ALGORITHM"
+    },
+    {
+      "id": "p01_paralel_yol_eski",
+      "desc": "fonksiyon başına paralel yol eski harf duyarsız derlemeye dönüyor",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestGostergeKurali::test_fonksiyon_basina_paralel_yol",
+      "find": "_pat = _ALGO_RULES[_name].combined",
+      "replace": "_pat = re.compile(_data[\"pattern\"], re.I)"
+    },
+    {
+      "id": "p01_kod_yolu_eski",
+      "desc": "_find_algorithms_in_code eski harf duyarsız deseni kullanıyor",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_binary_intelligence_kanit.py::TestHarfDuyarliligiIkiYolda::test_case_sensitive_alani_fonksiyon_basina",
+      "find": "if _ALGO_RULES[algo_name].combined.search(code):",
+      "replace": "if re.search(algo_data[\"pattern\"], code, re.I):"
+    }
+  ]
+}

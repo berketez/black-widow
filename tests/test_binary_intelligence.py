@@ -216,11 +216,19 @@ class TestSecurityDetection:
     """Guvenlik mekanizmasi tespit testleri."""
 
     def test_endpoint_security_detected(self, intelligence: BinaryIntelligence) -> None:
-        """Endpoint Security API tespiti."""
-        strings = ["es_new_client", "endpoint_security_framework", "es_event_type_auth"]
-        report = intelligence.analyze(strings, [], [], "test")
+        """Endpoint Security API tespiti (cekirdek duzeyi: simge tablosundan guclu kanit ister)."""
+        strings = ["endpoint_security_framework", "es_event_type_auth"]
+        report = intelligence.analyze(strings, ["_es_new_client"], [], "test")
         sec_names = [s.name for s in report.architecture.security]
         assert "Endpoint Security API" in sec_names
+
+    def test_endpoint_security_strings_only_not_kernel_claim(
+        self, intelligence: BinaryIntelligence,
+    ) -> None:
+        """Yalniz dizgiyle cekirdek duzeyli iddia kurulmaz (2026-11-18, IMZA-01)."""
+        strings = ["es_new_client", "endpoint_security_framework", "es_event_type_auth"]
+        report = intelligence.analyze(strings, [], [], "test")
+        assert "Endpoint Security API" not in [s.name for s in report.architecture.security]
 
     def test_code_signing_detected(self, intelligence: BinaryIntelligence) -> None:
         """Code signing tespiti."""
@@ -354,14 +362,15 @@ class TestFullAnalyze:
     def test_symbols_merged_with_strings(self, intelligence: BinaryIntelligence) -> None:
         """Symbol'ler de string havuzuna eklenmeli."""
         # Sadece symbol'lerde olan bir pattern
+        # Iki ayri API simgesi = iki bagimsiz kanit (tek simgeyle hukum yok).
         report = intelligence.analyze(
             strings=[],
-            symbols=["_SHA256_Init", "_AES_encrypt"],
+            symbols=["_SHA256_Init", "_SHA256_Final", "_AES_encrypt", "_AES_decrypt"],
             dylibs=[],
             target_name="test",
         )
         algo_names = [a.name for a in report.architecture.algorithms]
-        assert "SHA-256" in algo_names or "AES" in algo_names
+        assert "SHA-256" in algo_names and "AES" in algo_names
 
     def test_summary_generated(self, intelligence: BinaryIntelligence) -> None:
         """Mimari ozet bos olmamali."""
