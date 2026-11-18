@@ -1889,7 +1889,21 @@ def bsim_create(name: str, config_path: Optional[str]) -> None:
 
     cfg = _load_config(config_path)
     db = BSimDatabase(cfg)
-    db_path = db.create_database(name)
+    info = db.storage_info()
+    if db.mode != "native":
+        # P16b (GHIDRA-12 a): bu komut JVM başlatmaz; native H2 deposu yalnız Ghidra
+        # içinden kurulabilir. Analiz, depo yoksa ilk koşuda kendisi kurar. Lite dizinde
+        # "oluşturuldu" demek analizin kullanmadığı bir depo yaratırdı.
+        console.print(
+            "[yellow]Native BSim deposu bu komutla kurulamaz (Ghidra JVM'i gerekir); "
+            "analiz ilk koşuda kendisi kurar.[/yellow]"
+        )
+        console.print(f"[dim]Analizin kullandığı konum: {info['db_path']}[/dim]")
+        if info["native_databases"]:
+            console.print(f"[dim]Var olan native depolar: {', '.join(info['native_databases'])}[/dim]")
+        db.close()
+        sys.exit(2)
+    db.create_database(name)
     console.print(f"[green]BSim veritabani olusturuldu:[/green] {name}")
     console.print(f"[dim]Mod: {db.mode} | Konum: {db.db_path}[/dim]")
     db.close()
@@ -1922,15 +1936,25 @@ def bsim_ingest(binary: str, db_name: str, config_path: Optional[str]) -> None:
         from karadul.ghidra.headless import _ensure_pyghidra_started
         _ensure_pyghidra_started(Path(cfg.tools.ghidra_headless).parent.parent)
 
-        with pyghidra.open_program(str(binary_path)) as flat_api:
+        import tempfile
+
+        with tempfile.TemporaryDirectory(prefix="karadul_bsim_proje_") as proje, \
+                pyghidra.open_program(str(binary_path), project_location=proje,
+                                      project_name=f"{binary_path.name}_ghidra") as flat_api:
             program = flat_api.getCurrentProgram()
             db = BSimDatabase(cfg)
             count = db.ingest_program(program, db_name)
+            durum = db.status.get("status")
+            db.close()
+            if durum not in ("ok", "fallback_lite"):
+                err_console.print(
+                    f"[bold red]BSim ingest yapilmadi:[/bold red] {durum} — {db.status.get('reason')}"
+                )
+                sys.exit(1)
             console.print(
                 f"[green]Basarili:[/green] {count} fonksiyon hash'lendi "
-                f"(mod: {db.mode})"
+                f"(mod: {db.mode}, durum: {durum})"
             )
-            db.close()
     except ImportError:
         err_console.print(
             "[bold red]HATA:[/bold red] PyGhidra bulunamadi. "
@@ -1973,10 +1997,20 @@ def bsim_query(
         from karadul.ghidra.headless import _ensure_pyghidra_started
         _ensure_pyghidra_started(Path(cfg.tools.ghidra_headless).parent.parent)
 
-        with pyghidra.open_program(str(binary_path)) as flat_api:
+        import tempfile
+
+        with tempfile.TemporaryDirectory(prefix="karadul_bsim_proje_") as proje, \
+                pyghidra.open_program(str(binary_path), project_location=proje,
+                                      project_name=f"{binary_path.name}_ghidra") as flat_api:
             program = flat_api.getCurrentProgram()
             db = BSimDatabase(cfg)
-            result = db.query_all_functions(program, min_similarity)
+            result = db.query_all_functions(program, min_similarity, db_name=db_name)
+            durum = result.status.get("status")
+            if durum != "ok":
+                err_console.print(
+                    f"[yellow]BSim durumu: {durum} ({result.mode}) — "
+                    f"{result.status.get('reason') or ''}[/yellow]"
+                )
 
             # Sonuc tablosu
             if result.total_matches > 0:
@@ -2003,9 +2037,11 @@ def bsim_query(
             else:
                 console.print("[yellow]Esleme bulunamadi.[/yellow]")
 
+            ex = result.status.get("excluded") or {}
             console.print(
                 f"\n[dim]Sorgulanan: {result.total_queries} | "
                 f"Eslesen: {result.total_matches} | "
+                f"Dislanan (kendisi / ayni yapi): {ex.get('self', 0)} / {ex.get('same_build', 0)} | "
                 f"Sure: {result.query_duration:.2f}s[/dim]"
             )
             db.close()
@@ -2048,7 +2084,7 @@ def bsim_list(config_path: Optional[str]) -> None:
             str(i),
             db_info.get("name", "?"),
             db_info.get("mode", "?"),
-            str(db_info.get("program_count", "?")),
+            str(db_info.get("program_count", db_info.get("recorded_programs", "?"))),
             str(db_info.get("function_count", "?")),
         )
 
