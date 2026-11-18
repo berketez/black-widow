@@ -256,6 +256,58 @@ def cmd_formul(a: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# refdiff: başvuru karşılaştırması sürüm tespiti (MUH-09)
+# ---------------------------------------------------------------------------
+
+def _kayitli_refdiff(ikili_kok: Path) -> Optional[list]:
+    rapor = _json(ikili_kok / "out" / "report.json")
+
+    def gez(o: Any):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k == "refdiff_detections":
+                    yield v
+                else:
+                    yield from gez(v)
+        elif isinstance(o, list):
+            for x in o:
+                yield from gez(x)
+    bulunan = list(gez(rapor)) if rapor is not None else []
+    return bulunan[0] if bulunan else None
+
+
+def refdiff_bir(kosu: str, anahtar: str, ws: Path) -> dict:
+    from karadul.reconstruction.reference_differ import VersionDetector
+    kayit: dict[str, Any] = {"kosu": kosu, "anahtar": anahtar}
+    veri = _json(_sec(ws, "ghidra_strings.json"))
+    if veri is None:
+        kayit["durum"] = "ghidra_strings yok"
+        return kayit
+    tespit = VersionDetector().detect_from_strings(veri)
+    kayit["tespit"] = [{"lib": d.library, "ver": d.version, "conf": d.confidence,
+                        "not": getattr(d, "version_note", "")} for d in tespit]
+    kok = ws.parents[3] if len(ws.parents) > 3 else ws  # <ikili>/ws/workspaces/<ad>/<zaman>
+    kayit["kayitli"] = _kayitli_refdiff(kok)
+    kayit["durum"] = "calisti"
+    return kayit
+
+
+def cmd_refdiff(a: argparse.Namespace) -> int:
+    print("karadul:", karadul_denetle())
+    t0 = time.monotonic()
+    kayitlar = _havuz(refdiff_bir, _isler(a), a.paralel)
+    tespitli = [r for r in kayitlar if r.get("tespit")]
+    ozet = {"ikili": len(kayitlar), "tespitli_ikili": len(tespitli),
+            "tespit": {r["anahtar"]: [(t["lib"], t["ver"], t["conf"]) for t in r["tespit"]]
+                       for r in tespitli},
+            "kayitli_ile_ayni": sum(
+                1 for r in kayitlar
+                if [(t["lib"], t["ver"], t["conf"]) for t in r.get("tespit", [])]
+                == [(t["lib"], t["ver"], t["conf"]) for t in (r.get("kayitli") or [])])}
+    return _yaz(a, "refdiff", kayitlar, ozet, t0)
+
+
+# ---------------------------------------------------------------------------
 # ortak yazım
 # ---------------------------------------------------------------------------
 
@@ -276,7 +328,7 @@ def _yaz(a: argparse.Namespace, ad: str, kayitlar: list[dict], ozet: dict, t0: f
 def main(argv: Optional[list[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("komut", choices=["muh", "formul"])
+    ap.add_argument("komut", choices=["muh", "formul", "refdiff"])
     ap.add_argument("--etiket", required=True)
     ap.add_argument("--kosu", action="append", choices=sorted(KOSULAR))
     ap.add_argument("--ws", action="append")
@@ -285,7 +337,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     ap.add_argument("--paralel", type=int, default=6)
     ap.add_argument("--cikti", type=Path, default=CIKTI)
     a = ap.parse_args(argv)
-    return {"muh": cmd_muh, "formul": cmd_formul}[a.komut](a)
+    return {"muh": cmd_muh, "formul": cmd_formul, "refdiff": cmd_refdiff}[a.komut](a)
 
 
 if __name__ == "__main__":

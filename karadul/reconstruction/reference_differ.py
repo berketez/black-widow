@@ -122,6 +122,33 @@ _VERSION_PATTERNS: list[tuple[re.Pattern, str, int]] = [
     (re.compile(r"(?:Zstd|zstd|ZSTD)\s+(?:v)?(\d+\.\d+\.\d+)"), "zstd", 1),
 ]
 
+# Sürüm sınırı bağlamı (MUH-09, 2026-11-18): "generate_series() requires SQLite 3.8.12
+# or later" bir alt sınırdır, ikilideki kitaplığın sürümü değildir. Eşleşmenin bulunduğu
+# dizgide bu sözcüklerden biri varsa eşleşme sürüm sayılmaz; kitaplık yalnız sınır
+# dizgisiyle görülmüşse sürüm "unknown" yazılır.
+_VERSION_BOUND_CONTEXT = re.compile(
+    r"\b(?:requires?|required|requirement|needs?|at\s+least|minimum|or\s+(?:later|newer|"
+    r"higher|above|greater|earlier|older)|prior\s+to|older\s+than|newer\s+than|before|"
+    r"since|until|deprecated|obsolete)\b|[<>]=",
+    re.IGNORECASE,
+)
+
+
+def _version_components(version: str) -> Optional[tuple]:
+    """"3.8.12" → (3, 8, 12); "1.1.1k" → (1, 1, 1, 'k'); ayrıştırılamazsa None."""
+    m = re.fullmatch(r"(\d+(?:\.\d+)*)([a-z]?)", version.strip().lower())
+    if not m:
+        return None
+    parts: list = [int(p) for p in m.group(1).split(".")]
+    if m.group(2):
+        parts.append(m.group(2))
+    return tuple(parts)
+
+
+#: En yakın sürüm aramasında ortak olması gereken en az bileşen (major.minor).
+LOOKUP_CLOSEST_MIN_SHARED: int = 2
+
+
 # Dogrulama string'leri: bir kutuphane tespit edildiginde, bu string'lerden
 # birinin de mevcut olup olmadigina bakilir. Confidence artirir.
 _VALIDATION_STRINGS: dict[str, list[str]] = {
@@ -148,9 +175,12 @@ _VALIDATION_STRINGS: dict[str, list[str]] = {
 class Detection:
     """Tespit edilen kutuphane/yazilim bilgisi."""
     library: str         # "sqlite3", "openssl", "zlib", ...
-    version: str         # "3.46.0", "3.1.2", ...
-    confidence: float    # 0.0 - 1.0
+    version: str         # "3.46.0", "3.1.2", ... ya da "unknown"
+    confidence: float    # 0.0 - 1.0 (kitaplığın varlığı; sürümün doğruluğu değil)
     evidence: list[str] = field(default_factory=list)  # Eslesen string'ler
+    # Sürümün nereden geldiği ya da neden bilinmediği (MUH-09): "version string" /
+    # "only a version bound (requirement string): …".
+    version_note: str = ""
 
 
 @dataclass
@@ -437,12 +467,30 @@ class VersionDetector:
             if library in seen_libraries:
                 continue
 
-            match = pattern.search(all_text)
-            if not match:
+            # Sürüm, sınır bağlamında olmayan ilk eşleşmeden (MUH-09). Yalnız sınır
+            # dizgisi varsa kitaplık görülmüş sayılır ama sürüm bilinmez.
+            match = None
+            bound_line = ""
+            for cand in pattern.finditer(all_text):
+                line_start = all_text.rfind("\n", 0, cand.start()) + 1
+                line_end = all_text.find("\n", cand.end())
+                line = all_text[line_start:line_end if line_end != -1 else len(all_text)]
+                if version_group > 0 and _VERSION_BOUND_CONTEXT.search(line):
+                    bound_line = bound_line or line
+                    continue
+                match = cand
+                break
+            if match is None and not bound_line:
                 continue
 
-            version = match.group(version_group) if version_group > 0 else "unknown"
-            evidence = [match.group(0)]
+            if match is not None:
+                version = match.group(version_group) if version_group > 0 else "unknown"
+                evidence = [match.group(0)]
+                version_note = "version string" if version != "unknown" else ""
+            else:
+                version = "unknown"
+                evidence = [bound_line[:160]]
+                version_note = f"only a version bound (requirement string): {bound_line[:160]}"
 
             # Confidence: baz 0.70, validation string'leri bulunursa artirilir
             confidence = 0.70
@@ -476,6 +524,7 @@ class VersionDetector:
                     version=version,
                     confidence=confidence,
                     evidence=evidence,
+                    version_note=version_note,
                 ))
                 seen_libraries.add(library)
 
@@ -593,8 +642,11 @@ class ReferenceDB:
     def lookup_closest(self, library: str, version: str) -> Optional[ReferenceDBEntry]:
         """Exact match yoksa en yakin versiyonu dondur.
 
-        Versiyon karsilastirmasi basit string prefix match: "3.46" -> "3.46.0" eslesiyor.
-        Birden fazla match varsa en uzun (en specifik) olanini al.
+        Sürümler noktalı BİLEŞEN olarak karşılaştırılır (MUH-09): biri öbürünün bileşen
+        öneki olmalı ve en az ``LOOKUP_CLOSEST_MIN_SHARED`` bileşen (major.minor) ortak
+        olmalı; yani yalnız yama düzeyi fark: "3.46" ↔ "3.46.0", "3.8.12" ↔ "3.8.12.1".
+        Dizgi öneki değil: "3.8.12" ↛ "3.8.1", "1.1" ↛ "1.10.0". "unknown" sürüm aranmaz.
+        Birden fazla aday varsa en çok bileşenli (en belirli) olanı, eşitlikte küçük olanı.
         """
         exact = self.lookup(library, version)
         if exact:
@@ -604,17 +656,23 @@ class ReferenceDB:
         if not versions:
             return None
 
-        # Prefix match dene
+        want = _version_components(version)
+        if want is None or len(want) < LOOKUP_CLOSEST_MIN_SHARED:
+            return None
+
         candidates = []
         for v, entry in versions.items():
-            if v.startswith(version) or version.startswith(v):
-                candidates.append((v, entry))
+            have = _version_components(v)
+            if have is None or len(have) < LOOKUP_CLOSEST_MIN_SHARED:
+                continue
+            shorter, longer = (want, have) if len(want) <= len(have) else (have, want)
+            if longer[:len(shorter)] == shorter:
+                candidates.append((v, entry, have))
 
         if not candidates:
             return None
 
-        # En uzun version string = en specifik
-        candidates.sort(key=lambda x: len(x[0]), reverse=True)
+        candidates.sort(key=lambda x: (-len(x[2]), str(x[2])))
         logger.info("ReferenceDB: %s %s bulunamadi, en yakin: %s", library, version, candidates[0][0])
         return candidates[0][1]
 

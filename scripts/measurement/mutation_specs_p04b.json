@@ -136,6 +136,30 @@
       "test": "tests/test_p04b_formul.py::test_otomatik_ascii_isleç_kaybi_gosterilmez",
       "find": "            if f.ascii_omitted or not f.ascii:",
       "replace": "            if False:"
+    },
+    {
+      "id": "refdiff_sinir_baglami",
+      "desc": "gereksinim / sınır dizgisi sürüm sayılır (requires SQLite 3.8.12 or later)",
+      "module": "karadul/reconstruction/reference_differ.py",
+      "test": "tests/test_p04b_refdiff.py::test_gereksinim_dizgisi_surum_degil",
+      "find": "if version_group > 0 and _VERSION_BOUND_CONTEXT.search(line):",
+      "replace": "if version_group > 0 and False:"
+    },
+    {
+      "id": "refdiff_bilesen_oneki",
+      "desc": "en yakın sürüm son bileşeni yok sayar (3.8.12 → 3.8.1)",
+      "module": "karadul/reconstruction/reference_differ.py",
+      "test": "tests/test_p04b_refdiff.py::test_dizgi_oneki_eslesmez",
+      "find": "            if longer[:len(shorter)] == shorter:",
+      "replace": "            if longer[:len(shorter) - 1] == shorter[:-1]:"
+    },
+    {
+      "id": "refdiff_ortak_bilesen",
+      "desc": "tek bileşen ortaklığı yeter (3 ↔ 3.46.0)",
+      "module": "karadul/reconstruction/reference_differ.py",
+      "test": "tests/test_p04b_refdiff.py::test_yalniz_major_ortakligi_yetmez",
+      "find": "LOOKUP_CLOSEST_MIN_SHARED: int = 2",
+      "replace": "LOOKUP_CLOSEST_MIN_SHARED: int = 1 - 1"
     }
   ]
 }
