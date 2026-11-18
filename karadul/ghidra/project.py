@@ -44,12 +44,15 @@ class GhidraProject:
         logger.info("Ghidra proje dizini olusturuldu: %s", self.project_dir)
         return self.project_dir
 
-    def cleanup(self) -> None:
+    def cleanup(self) -> bool:
         """Gecici Ghidra proje dosyalarini temizle.
 
         analyzeHeadless -deleteProject flag'i proje dosyalarini
         siler, ama bazi kalinti dosyalar kalabilir. Bu metod
         proje dizinini tamamen temizler.
+
+        Returns:
+            Dizin artık yoksa True (silindi ya da hiç oluşmadı); silinemediyse False.
         """
         if self.project_dir.exists():
             try:
@@ -60,6 +63,8 @@ class GhidraProject:
                     "Ghidra proje dizini temizlenemedi: %s: %s",
                     self.project_dir, exc,
                 )
+                return False
+        return True
 
     def get_output_dir(self) -> Path:
         """Script ciktilarinin yazildigi dizin.

@@ -1106,6 +1106,8 @@ class MachOAnalyzer(BaseAnalyzer):
                 ) if k in dec
             },
             "outputs": sorted(out.keys()),
+            # B-C4: Ghidra projesinin akıbeti (öntanım: analiz sonunda silinir).
+            "project": ghidra_result.get("project"),
         }
         try:
             artifacts["ghidra_status"] = workspace.save_json("static", "ghidra_status", status)
@@ -1232,6 +1234,7 @@ class MachOAnalyzer(BaseAnalyzer):
                          "yalnız bu betiklerle çıktı üretir" % self.config.ghidra_scripts_dir,
             }
 
+        result: dict[str, Any] | None = None
         try:
             result = self.ghidra.analyze(
                 binary_path=binary_path,
@@ -1243,7 +1246,20 @@ class MachOAnalyzer(BaseAnalyzer):
             return result
         except Exception as exc:
             logger.error("Ghidra analiz hatasi: %s", exc)
-            return {"success": False, "error": str(exc)}
+            result = {"success": False, "error": str(exc)}
+            return result
         finally:
-            # Proje dosyalarini temizle (ciktilar kalsin)
-            ghidra_proj.cleanup()
+            # B-C4: proje (içe aktarılmış ve çözümlenmiş program) analiz sonunda silinir;
+            # çıktılar (ghidra_output/) kalır. Ne olduğu sonuç sözlüğüne ve
+            # static/ghidra_status.json'a yazılır: tek fonksiyonu yeniden derlemek isteyen
+            # ("yeniden hesapla") projeyi bulamazsa nedenini bilir.
+            removed = ghidra_proj.cleanup()
+            if isinstance(result, dict):
+                result["project"] = {
+                    "path": str(ghidra_proj.project_dir),
+                    "kept": not removed,
+                    "reason": (
+                        "analiz sonunda silindi (öntanım; saklama ayarı yok)" if removed
+                        else "silinemedi; dizin yerinde kaldı (günlüğe bakın)"
+                    ),
+                }

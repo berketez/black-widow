@@ -258,6 +258,22 @@
       "replace": "                    key = key[0:]"
     },
     {
+      "id": "bc4_silinemeyen_proje_silindi_sanilir",
+      "desc": "B-C4: proje silinemese de silindi yazılır",
+      "module": "karadul/ghidra/project.py",
+      "test": "tests/test_p16a_proje.py::test_proje_silinemezse_kaldigi_yazilir",
+      "find": "                return False\n        return True",
+      "replace": "                return True\n        return True"
+    },
+    {
+      "id": "bc4_akibet_yazilmaz",
+      "desc": "B-C4: projenin akıbeti sonuca yazılmaz",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_p16a_proje.py::test_proje_silinir_ve_akibeti_yazilir",
+      "find": "            if isinstance(result, dict):\n                result[\"project\"] = {",
+      "replace": "            if isinstance(result, list):\n                result[\"project\"] = {"
+    },
+    {
       "id": "a2_legacy_bayragi_sessiz",
       "desc": "K-3 A2: etkisiz legacy bayrağı uyarısız yutulur",
       "module": "karadul/ghidra/headless.py",
