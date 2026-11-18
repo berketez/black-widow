@@ -313,12 +313,14 @@ class TestIntegration:
     def test_structural_patterns_no_regression(self) -> None:
         """STRUCTURAL_PATTERNS'deki tum pattern'ler hala gecerli
         (compile edilebilir regex'ler, zorunlu field'lar)."""
-        required_fields = {"description", "patterns", "min_matches", "category", "confidence"}
+        # 2026-11-18 (TIP-09): desenler kanıt türü adıyla "evidence" sözlüğünde.
+        required_fields = {"description", "evidence", "min_matches", "category", "confidence"}
         for name, spec in STRUCTURAL_PATTERNS.items():
             for rf in required_fields:
                 assert rf in spec, f"{name} pattern'inde '{rf}' field'i eksik"
             # Pattern'ler compile edilmis regex olmali
-            for pat in spec["patterns"]:
+            tables = [spec["evidence"], spec.get("data_evidence", {})]
+            for pat in (p for t in tables for p in t.values()):
                 assert hasattr(pat, "findall"), (
                     f"{name} pattern'inde compile edilmemis regex var"
                 )

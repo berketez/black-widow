@@ -532,14 +532,54 @@ def _contains_sequence(runs: list[list[set[int]]], sequence: tuple[int, ...]) ->
 # ---------------------------------------------------------------------------
 # Yaklasim 2: Yapi-bazli tanimlar (Structure-Based Identification)
 # ---------------------------------------------------------------------------
+# Yapısal kanıt kuralları (2026-11-18 düzeltmesi, TIP-09)
+#
+# Eski kural desenleri gövdenin TAMAMINDA (dizgi sabitleri ve tanımlayıcılar dahil) sözcük
+# sınırı olmadan arıyordu; birçok desen bir anahtar sözcüktü ("mod", "iteration", "ctr",
+# "affine", "round") ve çoğu algoritma tek eşleşmeyle etiketleniyordu. Sonuç (119 ikililik
+# geliştirme seti): 32 ikilide 172 "Galois field operations (ECC, AES-GF)" (`mode`, `mode_t`,
+# `% 0x3c`), 5 ikilide 6 "PBKDF2" (yardım metnindeki "iteration"), onaltılık yazdırma tablosu
+# "S-box" sayılıyordu; hepsi ürün koduna `@algorithm` / `ALGORITHM:` yorumu olarak giriyordu.
+#
+# Yeni kural:
+#   1. Desenler KOD metninde çalışır: dizgi ve karakter sabitleri boş sabite, yorumlar boşluğa
+#      çevrilir (`_code_only`). Bir dizgi sabitinin içeriği yalnız `data_evidence`'ta, ayırt
+#      edici bir veri olarak (ör. base64 alfabesinin tamamı, dizin olarak kullanılırken)
+#      kanıt sayılır.
+#   2. Her desen bir KANIT TÜRÜDÜR (kod biçimi: XOR'lu tablo okuma, döndürme, indirgeme
+#      polinomu ...). Etiket için en az `min_kinds` FARKLI tür (öntanım
+#      STRUCT_MIN_DISTINCT_KINDS = 2) ve toplamda en az `min_matches` eşleşme gerekir;
+#      `required` türler her zaman bulunmalıdır. Tek bir yapısal eşleşme etiket değildir.
+#   3. Anahtar sözcükler (`context_keywords`) kanıt DEĞİLDİR; yalnız ek koşuldur ve kodun
+#      tanımlayıcılarında TAM SÖZCÜK olarak aranır (`snake_case` / `camelCase` parçalanır;
+#      dizgi ve yorum içindekiler sayılmaz).
+#   4. Desenler belirteç sınırlıdır (`\b`, sabitler tam belirteç: `0x1b` ≠ `0x1b8`).
+
+#: Bir yapısal etiket için aynı fonksiyonda gereken farklı kanıt türü sayısı (öntanım).
+STRUCT_MIN_DISTINCT_KINDS: int = 2
+
+# Ortak yapı taşları (kod metninde; dizgiler boşaltılmış)
+_HEX_OR_DEC = r"(?:0[xX][0-9a-fA-F]+|\d+)"
+# Bir sözcükten bayt çıkaran tablo okuma: T[x & 0xff], T[x >> 0x18], T[(x >> 16) & 0xff]
+_BYTE_LOOKUP = (
+    r"\b\w+\s*\[[^\[\]\n;]*(?:>>\s*(?:0x18|0x10|24|16|8)\b|&\s*0xff\b)[^\[\]\n;]*\]"
+)
+# Ghidra'nın yerinde XOR yazımı: x ^= y, a[i] = a[i] ^ y, *(T *)(p + i) = *(T *)(p + i) ^ y
+_INPLACE_XOR = (
+    r"(?:\]\s*\^=|"
+    r"\b(\w+\s*\[[^\[\]\n;]*\])\s*=\s*\1\s*\^|"
+    r"(\*\s*\([^;=\n]*\)\s*\([^;=\n]*\))\s*=\s*\2\s*\^)"
+)
 
 STRUCTURAL_PATTERNS: dict[str, dict[str, Any]] = {
     "feistel_network": {
         "description": "Feistel cipher (DES, Blowfish, etc.)",
-        "patterns": [
-            re.compile(r"(\w+)\s*=\s*(\w+)\s*\^\s*\w+\(.+\)"),
-            re.compile(r"(\w+)\s*=\s*(\w+);.*\n.*\2\s*="),
-        ],
+        "evidence": {
+            # x = y ^ F(...): yarının tur fonksiyonu çıktısıyla XOR'lanması
+            "xor_with_round_function": re.compile(r"\b\w+\s*=\s*\w+\s*\^\s*\w+\s*\("),
+            # a = b; ardından b = ...: yarıların yer değiştirmesi
+            "half_swap": re.compile(r"\b(\w+)\s*=\s*(\w+)\s*;[^\n]*\n[^\n]*\b\2\s*=(?!=)"),
+        },
         "min_matches": 16,
         "category": "symmetric_cipher",
         "confidence": 0.4,
@@ -548,72 +588,104 @@ STRUCTURAL_PATTERNS: dict[str, dict[str, Any]] = {
     },
     "sbox_lookup": {
         "description": "S-box substitution (AES, DES)",
-        "patterns": [
-            re.compile(r"\w+\[.+\s*&\s*0x[fF]{1,2}\]"),
-            re.compile(r"\w+\[.+>>\s*\d+\s*&\s*0x[fF]+\]"),
-        ],
-        "min_matches": 2,
+        "evidence": {
+            # T[x >> 0x18], T[(x >> 8) & 0xff]: sözcükten bayt çıkarıp tabloya bakma.
+            # 16 girişli (& 0xf) tablolar onaltılık yazdırma tablosudur, sayılmaz.
+            "byte_table_lookup": re.compile(_BYTE_LOOKUP),
+            # T0[a] ^ T1[b]: tablo okumalarının XOR'la birleştirilmesi (tur dönüşümü)
+            "xor_of_lookups": re.compile(r"\]\s*\^\s*\(?\s*\w+\s*\["),
+        },
+        "min_matches": 16,
         "category": "symmetric_cipher",
         "confidence": 0.5,
     },
     "xor_encrypt_loop": {
         "description": "XOR-based encryption/decryption",
-        "patterns": [
-            # v1.7.x: .+ -> [^)]+ -- DOTALL'da .+ tum inputu tuketir, backtracking yapar
-            re.compile(r"for\s*\([^)]+\)\s*\{[^}]*\^=", re.DOTALL),
-            re.compile(r"while\s*\([^)]+\)\s*\{[^}]*\^=", re.DOTALL),
-        ],
-        "min_matches": 1,
+        "evidence": {
+            # tampon öğesinin yerinde XOR'lanması
+            "inplace_buffer_xor": re.compile(_INPLACE_XOR),
+            # anahtarın döngüsel indislenmesi: key[i % len], *(k + i % len)
+            "cyclic_key_index": re.compile(
+                r"\[[^\[\]\n;]*%\s*\w+[^\[\]\n;]*\]|\+\s*\(?\s*\w+\s*%\s*\w+\s*\)?\s*\)"
+            ),
+        },
+        "min_matches": 2,
         "category": "symmetric_cipher",
         "confidence": 0.3,
     },
     "hash_rounds": {
         "description": "Hash function rounds (SHA, MD5)",
-        "patterns": [
-            re.compile(r">>>\s*\d+|<<<\s*\d+|ROTR|ROTL"),
-            re.compile(r">>\s*\d+\s*\|\s*<<\s*\d+"),  # rotate via shift+or
-        ],
+        "evidence": {
+            # döndürme: x << 7 | x >> 0x19 (ya da ters sırada)
+            "rotate": re.compile(
+                rf"<<\s*{_HEX_OR_DEC}\s*\|\s*[^;|\n]*>>\s*{_HEX_OR_DEC}\b"
+                rf"|>>\s*{_HEX_OR_DEC}\s*\|\s*[^;|\n]*<<\s*{_HEX_OR_DEC}\b"
+            ),
+            # seçim / çoğunluk fonksiyonları: (x & y) | (~x & z)
+            "boolean_choice": re.compile(r"~\s*(?:\w+|\([^()\n;]*\))\s*&|&\s*~\s*[\w(]"),
+        },
         "min_matches": 16,
         "category": "hash",
         "confidence": 0.5,
     },
     "galois_field": {
         "description": "Galois field operations (ECC, AES-GF)",
-        "patterns": [
-            re.compile(r"\*\s*\w+\s*%\s*\w+"),
-            re.compile(r"mod\s*\w+|%\s*0x[0-9a-fA-F]+"),
-        ],
-        "min_matches": 3,
+        "evidence": {
+            # GF(2^n) indirgeme polinomu: AES 0x1b / 0x11b, XTS 0x87, GCM 0xe1 (0xe1 << 56)
+            "reduction_polynomial": re.compile(
+                r"(?:\^|&)\s*\(?\s*(?:0x1b|0x11b|0x87|0xe10*)\b", re.IGNORECASE,
+            ),
+            # yüksek bitin sınanması / çıkarılması: x & 0x80, x >> 7, x >> 0x3f
+            "high_bit_test": re.compile(r"&\s*0x80\b|>>\s*(?:7|0x1f|0x3f)\b"),
+            # ikiyle çarpma (xtime): x << 1, x * 2
+            "doubling": re.compile(r"<<\s*1\b|\*\s*2\b"),
+        },
+        "required": ("reduction_polynomial",),
+        "min_matches": 2,
         "category": "asymmetric",
         "confidence": 0.4,
     },
     "key_schedule": {
         "description": "Key expansion / key schedule",
-        "patterns": [
-            re.compile(r"round.?key|key.?schedule|expand.?key", re.IGNORECASE),
-            re.compile(r"for\s*\([^)]*(?:Nk|Nr|round)[^)]*\)", re.IGNORECASE),
-        ],
-        "min_matches": 1,
+        "evidence": {
+            # w[i] = w[i - Nk] ^ t: gecikmeli öğeyle XOR yinelemesi
+            "lagged_xor_recurrence": re.compile(
+                rf"\[\s*\w+\s*-\s*{_HEX_OR_DEC}\s*\]\s*\^|\^\s*\w+\s*\[\s*\w+\s*-\s*{_HEX_OR_DEC}\s*\]"
+            ),
+            # SubWord: anahtar sözcüğünün baytlarının tabloya sokulması
+            "byte_table_lookup": re.compile(_BYTE_LOOKUP),
+        },
+        "min_matches": 4,
         "category": "symmetric_cipher",
         "confidence": 0.4,
     },
     "modular_exponentiation": {
         "description": "Modular exponentiation (RSA, DH)",
-        "patterns": [
-            re.compile(r"pow\s*\(.*,.*,.*\)"),
-            re.compile(r"mod_exp|modpow|montgomery", re.IGNORECASE),
-        ],
-        "min_matches": 1,
+        "evidence": {
+            # r = r * b % m
+            "modular_product": re.compile(r"\b\w+\s*\*\s*\w+\s*%\s*\w+"),
+            # üs bitinin sınanması: e & 1
+            "exponent_bit_test": re.compile(r"\b\w+\s*&\s*1\b(?!\s*[\]\w])"),
+            # üssün yarıya inmesi: e >>= 1, e >> 1, e / 2
+            "exponent_halving": re.compile(r">>=?\s*1\b|/\s*2\b"),
+        },
+        "required": ("modular_product",),
+        "min_kinds": 3,
+        "min_matches": 3,
         "category": "asymmetric",
         "confidence": 0.5,
     },
     "block_cipher_mode": {
         "description": "Block cipher mode of operation (CBC, CTR, GCM)",
-        "patterns": [
-            re.compile(r"iv\s*\^|xor.*iv|prev.*block\s*\^", re.IGNORECASE),
-            re.compile(r"counter\s*\+\+|nonce.*counter", re.IGNORECASE),
-            re.compile(r"cbc|ctr|gcm|ecb|cfb|ofb", re.IGNORECASE),
-        ],
+        "evidence": {
+            # a[i] ^ b[i]: blok öğelerinin XOR'lanması (CBC zinciri, CTR anahtar akışı)
+            "block_xor": re.compile(r"\w+\s*\[[^\[\]\n;]*\]\s*\^\s*\(?\s*\w+\s*\["),
+            # blok boyu adımı: p += 0x10, p + 0x10
+            "block_step": re.compile(r"\+=?\s*(?:0x10|16)\b"),
+            # sayaç artırımı
+            "counter_increment": re.compile(r"\+\+|\+=\s*1\b"),
+        },
+        "min_kinds": 3,
         "min_matches": 12,
         "category": "symmetric_cipher",
         "confidence": 0.4,
@@ -622,59 +694,120 @@ STRUCTURAL_PATTERNS: dict[str, dict[str, Any]] = {
     },
     "pbkdf_loop": {
         "description": "Password-based key derivation (PBKDF2, scrypt)",
-        "patterns": [
-            re.compile(r"iteration|iter.?count|rounds", re.IGNORECASE),
-            re.compile(r"salt.*hash|hash.*salt|derive.*key", re.IGNORECASE),
-        ],
+        "evidence": {
+            # T ^= U: tur çıktılarının tampona XOR'la biriktirilmesi
+            "xor_accumulate": re.compile(_INPLACE_XOR),
+            # HMAC çağrısı (çağrılan fonksiyonun adı; dizgi değil)
+            "hmac_call": re.compile(r"\b\w*hmac\w*\s*\(", re.IGNORECASE),
+        },
         "min_matches": 2,
         "category": "kdf",
         "confidence": 0.5,
     },
     "elliptic_curve": {
         "description": "Elliptic curve operations (ECDSA, ECDH)",
-        "patterns": [
-            re.compile(r"point_add|point_mul|scalar_mul", re.IGNORECASE),
-            re.compile(r"curve.?point|ec.?point|affine", re.IGNORECASE),
-            re.compile(r"secp256|curve25519|ed25519|p384|p521", re.IGNORECASE),
-        ],
-        "min_matches": 1,
+        "evidence": {
+            # nokta toplama çağrısı
+            "point_add_call": re.compile(r"\b\w*point_?add\w*\s*\(", re.IGNORECASE),
+            # nokta ikileme / skaler çarpma çağrısı
+            "point_mul_call": re.compile(
+                r"\b\w*(?:point_?(?:dbl|double|mul)|scalar_?mul)\w*\s*\(", re.IGNORECASE,
+            ),
+        },
+        "min_matches": 2,
         "category": "asymmetric",
         "confidence": 0.6,
     },
     "compression_lz": {
         "description": "LZ-family compression (LZ77, LZW, zlib)",
-        "patterns": [
-            re.compile(r"match.?len|match.?dist|back.?ref", re.IGNORECASE),
-            re.compile(r"sliding.?window|look.?ahead", re.IGNORECASE),
-            re.compile(r"deflate|inflate|z_stream", re.IGNORECASE),
-        ],
+        "evidence": {
+            # geri başvuru kopyası: out[i] = out[i - dist], *p = p[-dist]
+            "back_reference_copy": re.compile(
+                r"\b(\w+)\s*\[\s*(\w+)\s*\]\s*=\s*\1\s*\[\s*\2\s*-\s*\w+\s*\]"
+                r"|\*\s*(\w+)\s*=\s*\3\s*\[\s*-"
+            ),
+            # eşleşme bulucunun çarpımsal karması: (x * 0x9e3779b1) >> (32 - n)
+            "multiplicative_hash": re.compile(
+                r"\*\s*\(?\s*-?0x[0-9a-fA-F]{6,}\s*\)?\s*\)?\s*>>\s*\(?\s*(?:0x[0-9a-fA-F]+|\d+|\w+)"
+            ),
+        },
         "min_matches": 2,
         "category": "compression",
         "confidence": 0.5,
     },
     "huffman": {
         "description": "Huffman coding",
-        "patterns": [
-            re.compile(r"huffman|huff.?tree|code.?len", re.IGNORECASE),
-            re.compile(r"bit.?length|freq.?table", re.IGNORECASE),
-        ],
+        "evidence": {
+            # kanonik kod yinelemesi: code = (code + count[len - 1]) << 1
+            "canonical_code_recurrence": re.compile(
+                r"\(\s*\w+\s*\+\s*\w+\s*\[[^\[\]\n;]*\]\s*\)\s*(?:<<\s*1|\*\s*2)\b"
+            ),
+            # uzunluk histogramı: count[len[i]]++
+            "length_histogram": re.compile(
+                r"\b\w+\s*\[\s*\w+\s*\[[^\[\]\n;]*\]\s*\]\s*(?:\+\+|\+=\s*1\b)"
+            ),
+        },
         "min_matches": 2,
         "category": "compression",
         "confidence": 0.5,
     },
     "base64_encoding": {
         "description": "Base64 encoding/decoding",
-        "patterns": [
-            re.compile(
-                r"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\+/"
+        "data_evidence": {
+            # base64 alfabesinin tamamı, dizin olarak kullanılırken: "A..Z a..z 0..9 +/"[x]
+            # (Ghidra'nın "..." + ofset biçimindeki işaretçi aritmetiği sayılmaz)
+            "alphabet_table": re.compile(
+                r"\"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\+/=?\"\s*\["
             ),
-            re.compile(r"base64|b64.?encode|b64.?decode", re.IGNORECASE),
-        ],
-        "min_matches": 1,
+        },
+        "evidence": {
+            # 6 bitlik grup maskesi
+            "six_bit_mask": re.compile(r"&\s*0x3f\b"),
+            # 6 bitlik grupların kaydırılması: >> 2, >> 4, >> 6, << 4 (Ghidra: * 0x10)
+            "six_bit_shift": re.compile(r">>\s*[246]\b|<<\s*[24]\b|\*\s*0x10\b"),
+        },
+        "required": ("alphabet_table",),
+        "min_matches": 2,
         "category": "encoding",
         "confidence": 0.7,
     },
 }
+
+
+def _code_only(body: str) -> str:
+    """Dizgi ve karakter sabitlerini boş sabite, yorumları boşluğa çevir (satırlar korunur)."""
+
+    def _mask(m: re.Match[str]) -> str:
+        token = m.group(0)
+        if token.startswith('"'):
+            return '""'
+        if token.startswith("'"):
+            return "''"
+        return "\n" * token.count("\n") or " "
+
+    return _C_NONCODE_TOKEN.sub(_mask, body)
+
+
+def _without_comments(body: str) -> str:
+    """Yalnız yorumları çıkar; dizgi sabitleri kalır (``data_evidence`` için)."""
+    return _C_NONCODE_TOKEN.sub(
+        lambda m: m.group(0) if m.group(0)[:1] in ("'", '"') else " ", body,
+    )
+
+
+_IDENTIFIER_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+_CAMEL_SPLIT_RE = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+")
+
+
+def _identifier_words(code: str) -> set[str]:
+    """Kod tanımlayıcılarının sözcükleri, küçük harfle (``left_half`` → left, half;
+    ``roundKey`` → round, key). Dizgi ve yorumlar ``_code_only`` ile önceden çıkarılmış olmalı."""
+    words: set[str] = set()
+    for ident in _IDENTIFIER_RE.findall(code):
+        for part in ident.split("_"):
+            if part:
+                words.update(w.lower() for w in _CAMEL_SPLIT_RE.findall(part))
+    return words
 
 
 # ---------------------------------------------------------------------------
@@ -1296,35 +1429,52 @@ class CAlgorithmIdentifier:
     def _scan_structural(
         self, body: str, func_name: str, address: str,
     ) -> list[AlgorithmMatch]:
-        """Fonksiyon body'sinde yapisal pattern'leri ara."""
+        """Fonksiyon gövdesinde yapısal kanıt ara (kurallar STRUCTURAL_PATTERNS üstünde).
+
+        Desenler dizgi ve yorumları örtülmüş kod metninde çalışır; etiket için en az
+        ``min_kinds`` farklı kanıt türü, ``required`` türlerin hepsi ve toplam
+        ``min_matches`` eşleşme gerekir. Bağlam sözcükleri yalnız ek koşuldur.
+        """
         matches: list[AlgorithmMatch] = []
+        code = _code_only(body)
+        with_strings = _without_comments(body)
+        words: set[str] | None = None
 
         for pattern_name, spec in self._structural.items():
             total_hits = 0
+            kinds: list[str] = []
             evidence: list[str] = []
+            sources = [(spec.get("data_evidence", {}), with_strings), (spec.get("evidence", {}), code)]
+            for table, text in sources:
+                for kind, regex in table.items():
+                    found = list(regex.finditer(text))
+                    if not found:
+                        continue
+                    total_hits += len(found)
+                    kinds.append(kind)
+                    sample = " ".join(found[0].group(0).split())
+                    evidence.append(f"{pattern_name}/{kind}: matched '{sample[:80]}'")
 
-            for regex in spec["patterns"]:
-                hits = regex.findall(body)
-                if hits:
-                    total_hits += len(hits)
-                    # Eslesen ilk birini evidence olarak kaydet
-                    sample = hits[0] if isinstance(hits[0], str) else str(hits[0])
-                    evidence.append(f"{pattern_name}: matched '{sample[:80]}'")
-
+            min_kinds = spec.get("min_kinds", STRUCT_MIN_DISTINCT_KINDS)
+            if len(kinds) < min_kinds or total_hits < spec.get("min_matches", 1):
+                continue
+            if any(req not in kinds for req in spec.get("required", ())):
+                continue
             min_needed = spec.get("min_matches", 1)
-            if total_hits >= min_needed and evidence:
-                # Context keyword verification — pattern icin tanimliysa,
-                # body'de en az 1 keyword yoksa bu tespit false positive'dir.
+            if evidence:
+                # Bağlam sözcükleri kanıt değil, ek koşuldur: kod tanımlayıcılarında
+                # tam sözcük olarak aranır (dizgi ve yorum içindekiler sayılmaz).
                 context_kws = spec.get("context_keywords")
                 if context_kws:
-                    body_lower = body.lower()
-                    if not any(kw.lower() in body_lower for kw in context_kws):
-                        continue  # No context keywords → skip this detection
+                    if words is None:
+                        words = _identifier_words(code)
+                    if not any(kw.lower() in words for kw in context_kws):
+                        continue
 
                 # BLAS/ML suppression — feistel/xor pattern'leri BLAS fonksiyonlarinda
                 # da tetiklenir. suppress_if_blas True ise ve BLAS indikatoru varsa atla.
                 if spec.get("suppress_if_blas"):
-                    combined = (func_name + " " + body).lower()
+                    combined = (func_name + " " + code).lower()
                     blas_indicators = [
                         "blas", "lapack", "dgemm", "sgemm", "dtrsm", "openblas",
                         "cblas", "matmul", "dot_product", "mkl", "accelerate",

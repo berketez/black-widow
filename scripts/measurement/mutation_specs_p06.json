@@ -1,0 +1,77 @@
+{
+  "_comment": "P06 (2026-11-18 onarımı) mutasyon koruması: TIP-09 yapısal algoritma etiketinin kanıt kuralları (c_algorithm_id.py) ve TIP-08 @security etiketinin kanıt kuralları (c_comment_generator.py). Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p06.json",
+  "mutants": [
+    {
+      "id": "p06_yapisal_tur_esigi",
+      "desc": "en az iki farklı kanıt türü kuralı 1'e iner (tek tür çok eşleşmeyle etiket)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_p06_yapisal.py::TestKurallar::test_tek_tur_cok_eslesme_yetmez",
+      "find": "STRUCT_MIN_DISTINCT_KINDS: int = 2",
+      "replace": "STRUCT_MIN_DISTINCT_KINDS: int = 01"
+    },
+    {
+      "id": "p06_yapisal_dizgi_ortusu",
+      "desc": "desenler kod metni yerine ham gövdede çalışır (dizgi ve yorumdaki kod biçimi kanıt olur)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_p06_yapisal.py::TestKurallar::test_dizgi_ve_yorumdaki_kod_bicimi_kanit_degil",
+      "find": "(spec.get(\"evidence\", {}), code)]",
+      "replace": "(spec.get(\"evidence\", {}), body )]"
+    },
+    {
+      "id": "p06_yapisal_zorunlu_tur",
+      "desc": "zorunlu tür denetimi kapalı (indirgeme polinomsuz Galois, alfabesiz base64)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_p06_yapisal.py::TestKurallar::test_zorunlu_tur_olmadan_etiket_yok",
+      "find": "if any(req not in kinds for req in spec.get(\"required\", ())):",
+      "replace": "if False and any(req not in kinds for req in spec.get(\"required\", ())):"
+    },
+    {
+      "id": "p06_yapisal_alfabe_dizini",
+      "desc": "base64 alfabesi dizin olarak kullanılmasa da kanıt (Ghidra'nın \"...\" + ofset yazımı)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_p06_yapisal.py::TestMasumGovdeler::test_isaretci_aritmetigindeki_alfabe_base64_degil",
+      "find": "0123456789\\+/=?\\\"\\s*\\[\"",
+      "replace": "0123456789\\+/=?\\\"\""
+    },
+    {
+      "id": "p06_yapisal_baglam_tam_sozcuk",
+      "desc": "bağlam sözcüğü tanımlayıcı sözcüklerinde değil kod metninde alt dize olarak aranır (background → round)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_p06_yapisal.py::TestMasumGovdeler::test_feistel_baglam_sozcugu_alt_dizge_degil",
+      "find": "if not any(kw.lower() in words for kw in context_kws):",
+      "replace": "if not any(kw.lower() in code.lower() for kw in context_kws):"
+    },
+    {
+      "id": "p06_yapisal_baglam_dizgisiz",
+      "desc": "tanımlayıcı sözcükleri dizgiler de dahil metinden toplanır (dizgideki \"left\" bağlam olur)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_p06_yapisal.py::TestMasumGovdeler::test_feistel_baglam_sozcugu_alt_dizge_degil",
+      "find": "words = _identifier_words(code)",
+      "replace": "words = _identifier_words(with_strings)"
+    },
+    {
+      "id": "p06_yapisal_polinom_belirtec",
+      "desc": "indirgeme polinomu tam belirteç değil (0x1b8 de sayılır)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_p06_yapisal.py::TestKurallar::test_sabit_tam_belirtec",
+      "find": "(?:0x1b|0x11b|0x87|0xe10*)\\b\", re.IGNORECASE,",
+      "replace": "(?:0x1b|0x11b|0x87|0xe10*)\", re.IGNORECASE,"
+    },
+    {
+      "id": "p06_yapisal_min_eslesme",
+      "desc": "toplam eşleşme eşiği (min_matches) denetlenmez",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_p06_yapisal.py::TestKurallar::test_az_eslesme_yetmez",
+      "find": "if len(kinds) < min_kinds or total_hits < spec.get(\"min_matches\", 1):",
+      "replace": "if len(kinds) < min_kinds:"
+    },
+    {
+      "id": "p06_yapisal_secim_turu",
+      "desc": "hash turu seçim fonksiyonu deseni bozulur (gerçek Keccak kaybolur)",
+      "module": "karadul/reconstruction/c_algorithm_id.py",
+      "test": "tests/test_p06_yapisal.py::TestGercekPozitifler::test_keccak_dondurme_ve_secim",
+      "find": "\"boolean_choice\": re.compile(r\"~\\s*(?:\\w+|\\([^()\\n;]*\\))\\s*&|&\\s*~\\s*[\\w(]\"),",
+      "replace": "\"boolean_choice\": re.compile(r\"~~~\"),"
+    }
+  ]
+}
