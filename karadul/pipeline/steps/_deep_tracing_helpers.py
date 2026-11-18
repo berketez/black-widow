@@ -153,10 +153,21 @@ def propagate_param_names(
             call_graph_json=augmented_cg_json or call_graph_json,
             signature_matches=sig_matches if sig_matches else None,
         )
+        # P13b / BORU-10 = MUH-08: yayılım adları HESAPLAR ama hiçbir adım onları koda / ad
+        # haritasına yazmıyor (adım project_build ile aynı düzeyde; uygulamak ad kapısı + adım
+        # sırası değişikliği ister: stages.py, P14 notu). Eskiden ``param_names_propagated``
+        # hesaplanan aday sayısını "yayıldı" diye gösteriyordu (119 ikilide 1 835, kodda 0).
+        # Sayaç gerçeğe çekildi: uygulanan 0, aday sayısı ve neden ayrı.
         if param_prop_result:
-            stats["param_names_propagated"] = len(param_prop_result)
+            stats["param_name_propagation_candidates"] = len(param_prop_result)
+            stats["param_names_propagated"] = 0
+            stats["param_name_propagation_status"] = "uygulanmadi"
+            stats["param_name_propagation_reason"] = (
+                "adaylar ad kapısından geçirilip koda yazılmıyor (deep_tracing project_build "
+                "ile aynı düzeyde; uygulamak adım sırası değişikliği ister)"
+            )
             logger.info(
-                "Param name propagation: %d isim yayildi",
+                "Param name propagation: %d aday hesaplandi (koda uygulanmadi)",
                 len(param_prop_result),
             )
     except ImportError:

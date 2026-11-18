@@ -160,6 +160,14 @@
       "test": "tests/test_p13b_rust.py::test_v0_unparsable_returns_none_not_placeholder",
       "find": "        logger.debug(\"v0 parser hatasi: %s -> %s\", symbol, exc)\n        return None\n",
       "replace": "        logger.debug(\"v0 parser hatasi: %s -> %s\", symbol, exc)\n        return _demangle_v0_heuristic(body)\n"
+    },
+    {
+      "id": "p13b_k5_sayac_yalan",
+      "desc": "BORU-10: uygulanmayan aday yine 'yayıldı' sayılır",
+      "module": "karadul/pipeline/steps/_deep_tracing_helpers.py",
+      "test": "tests/test_p13b_param_yayilim.py::test_counter_reports_applied_zero_and_candidates_separately",
+      "find": "            stats[\"param_names_propagated\"] = 0\n",
+      "replace": "            stats[\"param_names_propagated\"] = len(param_prop_result)\n"
     }
   ]
 }
