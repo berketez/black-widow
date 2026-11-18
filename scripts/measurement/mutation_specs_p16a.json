@@ -242,6 +242,22 @@
       "replace": "            entry[\"function\"] = None"
     },
     {
+      "id": "g08_cikti_yoksa_basari",
+      "desc": "GHIDRA-08: analyzeHeadless 0 ile çıkıp betik çıktısı üretmezse başarılı sayılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_cli_yedegi.py::test_cikis_sifir_ama_betik_ciktisi_yoksa_basarisiz",
+      "find": "        if result.success and \"functions\" in missing:",
+      "replace": "        if False and \"functions\" in missing:"
+    },
+    {
+      "id": "g08_onek_soyulmaz",
+      "desc": "GHIDRA-08: ghidra_cfg / ghidra_pcode anahtarı PyGhidra yoluyla eşitlenmez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_cli_yedegi.py::test_betikler_yazdiysa_basarili_ve_anahtarlar_pyghidra_ile_ayni",
+      "find": "                    key = key[len(\"ghidra_\"):]",
+      "replace": "                    key = key[0:]"
+    },
+    {
       "id": "a2_legacy_bayragi_sessiz",
       "desc": "K-3 A2: etkisiz legacy bayrağı uyarısız yutulur",
       "module": "karadul/ghidra/headless.py",

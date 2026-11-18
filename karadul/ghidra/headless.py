@@ -2348,8 +2348,30 @@ class GhidraHeadless:
         scripts_output = self._collect_outputs(output_dir)
         ghidra_log = result.stdout + "\n" + result.stderr
 
+        # GHIDRA-08: analyzeHeadless betik hatasında ya da Python betiği hiç koşmadığında da
+        # (Ghidra 12'de Python 3 betikleri yalnız PyGhidra ile koşar) 0 ile çıkabilir. Başarı
+        # çıkış koduyla değil, PyGhidra yoluyla aynı kuralla (_judge_outcome) ölçülür.
+        step_errors: dict[str, str] = {}
+        if not result.success:
+            step_errors["fatal"] = "analyzeHeadless çıkış kodu %s; son satır: %s" % (
+                result.returncode, self._last_log_line(ghidra_log),
+            )
+        missing = [k for k in self.CLI_EXPECTED_OUTPUTS if k not in scripts_output]
+        if result.success and "functions" in missing:
+            step_errors["functions"] = (
+                "betik çıktısı yok (%s); Ghidra 12'de analyzeHeadless Python 3 betiklerini "
+                "yalnız PyGhidra ile çalıştırır (pyghidra içe aktarılamadı). Son satır: %s"
+                % (", ".join(missing), self._last_log_line(ghidra_log))
+            )
+        if missing:
+            logger.warning("analyzeHeadless beklenen ciktilari uretmedi: %s", ", ".join(missing))
+        success, error = self._judge_outcome(scripts_output, step_errors)
+
         return {
-            "success": result.success,
+            "success": success,
+            "error": error,
+            "step_errors": step_errors,
+            "missing_outputs": missing,
             "scripts_output": scripts_output,
             "ghidra_log": ghidra_log,
             "duration_seconds": round(duration, 3),
@@ -2357,20 +2379,34 @@ class GhidraHeadless:
             "returncode": result.returncode,
         }
 
+    # analyzeHeadless yolunda varlığı beklenen betik çıktıları (PyGhidra yolunun anahtarları).
+    CLI_EXPECTED_OUTPUTS = ("functions", "strings", "call_graph", "decompiled", "xrefs")
+
+    @staticmethod
+    def _last_log_line(log: str) -> str:
+        lines = [ln.strip() for ln in (log or "").splitlines() if ln.strip()]
+        return lines[-1][:300] if lines else "(günlük boş)"
+
     @staticmethod
     def _collect_outputs(output_dir: Path) -> dict[str, Any]:
         """Script cikti dizinindeki JSON dosyalarini topla."""
         result: dict[str, Any] = {}
         if output_dir.exists():
-            for json_file in output_dir.glob("*.json"):
+            for json_file in sorted(output_dir.glob("*.json")):
+                # GHIDRA-08: cfg_extraction / pcode_analysis betikleri ghidra_cfg.json /
+                # ghidra_pcode.json yazar; PyGhidra yolunun anahtarı cfg / pcode. Önek
+                # soyulmazsa static'te ghidra_ghidra_cfg.json olur ve aşağı akış bulamaz.
+                key = json_file.stem
+                if key.startswith("ghidra_"):
+                    key = key[len("ghidra_"):]
                 try:
                     data = json.loads(json_file.read_text(encoding="utf-8"))
-                    result[json_file.stem] = data
+                    result[key] = data
                 except (json.JSONDecodeError, OSError) as exc:
                     logger.warning(
                         "Script ciktisi okunamadi: %s: %s", json_file.name, exc,
                     )
-                    result[json_file.stem] = {"error": str(exc)}
+                    result[key] = {"error": str(exc)}
         return result
 
     # ------------------------------------------------------------------
