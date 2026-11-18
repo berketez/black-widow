@@ -2,10 +2,10 @@
 
 Kapsam:
 - Registry kaydi (requires/produces dogru)
-- Disabled flag -> bos donus + status=disabled
-- Binary path bulunamaz -> status=no_binary
-- ImportError yakalanir -> status=module_missing
-- Detector hatasi -> errors'a eklenir, status=error
+- Disabled flag -> bos donus + status=kapali (JSON yine yazilir; P-S1)
+- Binary path bulunamaz -> status=hata + neden
+- ImportError yakalanir -> status=arac_yok
+- Detector hatasi -> errors'a eklenir, status=hata
 - Smoke (temiz binary): findings=[] + JSON artifact yazilir
 - Mock detector findings -> stats + artifact
 - target.path fallback (binary_for_byte_match yoksa)
@@ -55,6 +55,36 @@ def base_ctx(fake_pc, real_binary: Path):
     return ctx
 
 
+def _fake_detector() -> MagicMock:
+    """Taklit dedektor sinifi; ``detect()`` gercegi gibi uc katmani cagirir.
+
+    P-S1: adim katman cagrilarini gozleyerek durum yazar; katman cagirmayan
+    bir taklit "katman calismadi" (hata) sayilir. Yerlesim x86-64 (bayt
+    katmani uygulanabilir), okuma siniri gercek dedektorun ontanimlisi.
+    """
+    from karadul.analyzers.anti_debug_detector import (
+        AntiDebugDetector, CodeLayout, CodeRegion,
+    )
+    cls = MagicMock()
+    inst = cls.return_value
+    inst.max_bytes_scan = AntiDebugDetector(binary_path=Path("/dev/null")).max_bytes_scan
+    inst._code_layout.return_value = CodeLayout(
+        "elf", "x86_64", (CodeRegion(".text", 0, 16, 0x1000),))
+    for meth in ("detect_by_imports", "detect_by_strings", "detect_by_bytes"):
+        getattr(inst, meth).return_value = []
+    findings: list = []
+
+    def detect():
+        inst.detect_by_imports()
+        inst.detect_by_strings()
+        inst.detect_by_bytes()
+        return list(findings)
+
+    inst.detect.side_effect = detect
+    cls.findings = findings  # testler bulgu listesini buradan doldurur
+    return cls
+
+
 class TestRegistry:
     def test_registered(self) -> None:
         import karadul.pipeline  # noqa: F401
@@ -71,39 +101,41 @@ class TestDisabled:
         out = AntiDebugStep().run(base_ctx)
         assert out["anti_debug_findings"] == []
         assert out["anti_debug_summary"] == {}
-        assert out["anti_debug_findings_path"] is None
-        assert base_ctx.stats["anti_debug_status"] == "disabled"
+        assert base_ctx.stats["anti_debug_status"] == "kapali"
         assert "timing_anti_debug" in base_ctx.stats
-        # Disabled iken save_json cagrilmamali
-        fake_pc.workspace.save_json.assert_not_called()
+        # P-S1: kapaliyken de durum JSON'a yazilir ("taranmadi" != "temiz")
+        args, _ = fake_pc.workspace.save_json.call_args
+        assert args[2]["status"] == "kapali"
+        assert args[2]["total_findings"] is None
 
 
 class TestNoBinary:
     def test_missing_binary_skips(self, fake_pc, tmp_path: Path) -> None:
-        """binary_for_byte_match yok ve target.path da yok -> status=no_binary."""
+        """binary_for_byte_match yok ve target.path da yok -> status=hata + neden."""
         fake_pc.target.path = None
         ctx = StepContext(pipeline_context=fake_pc)
         # binary_for_byte_match enjekte etmiyoruz
         out = AntiDebugStep().run(ctx)
         assert out["anti_debug_findings"] == []
-        assert ctx.stats["anti_debug_status"] == "no_binary"
+        assert ctx.stats["anti_debug_status"] == "hata"
+        assert "ikili yok" in ctx.stats["anti_debug_status_reason"]
 
     def test_nonexistent_binary_skips(self, fake_pc, tmp_path: Path) -> None:
-        """binary_for_byte_match path mevcut degil -> status=no_binary."""
+        """binary_for_byte_match path mevcut degil -> status=hata + neden."""
         ghost = tmp_path / "ghost.bin"
         fake_pc.target.path = ghost
         ctx = StepContext(pipeline_context=fake_pc)
         ctx._write_artifacts({"binary_for_byte_match": ghost})
         out = AntiDebugStep().run(ctx)
         assert out["anti_debug_findings"] == []
-        assert ctx.stats["anti_debug_status"] == "no_binary"
+        assert ctx.stats["anti_debug_status"] == "hata"
+        assert "ikili yok" in ctx.stats["anti_debug_status_reason"]
 
 
 class TestSmoke:
     def test_clean_binary_no_findings(self, base_ctx, fake_pc) -> None:
         """Detector boş list dondurse pipeline kirilmamali, JSON yazilmali."""
-        fake_detector = MagicMock()
-        fake_detector.return_value.detect.return_value = []
+        fake_detector = _fake_detector()
         fake_detector.return_value.summary.return_value = {}
         with patch(
             "karadul.analyzers.anti_debug_detector.AntiDebugDetector",
@@ -112,12 +144,13 @@ class TestSmoke:
             out = AntiDebugStep().run(base_ctx)
         assert out["anti_debug_findings"] == []
         assert base_ctx.stats["anti_debug_total"] == 0
-        assert base_ctx.stats["anti_debug_status"] == "ok"
+        assert base_ctx.stats["anti_debug_status"] == "calisti"
         # JSON yazilmali (artifact path None olmamali)
         fake_pc.workspace.save_json.assert_called_once()
         args, _ = fake_pc.workspace.save_json.call_args
         assert args[0] == "static"
         assert args[1] == "anti_debug_findings"
+        assert args[2]["total_findings"] == 0
 
 
 class TestDetectionResults:
@@ -142,8 +175,8 @@ class TestDetectionResults:
             "platform": "linux",
             "description": "Linux ptrace anti-debug",
         }
-        fake_detector = MagicMock()
-        fake_detector.return_value.detect.return_value = [f1, f2]
+        fake_detector = _fake_detector()
+        fake_detector.findings.extend([f1, f2])
         fake_detector.return_value.summary.return_value = {
             "total_findings": 2, "categories": ["windows_api", "ptrace"],
         }
@@ -167,21 +200,19 @@ class TestDetectionResults:
 
 
 class TestImportError:
-    def test_import_error_swallowed(self, base_ctx) -> None:
-        """AntiDebugDetector modulu yoksa sessizce gec, JSON yine yazilir (bos)."""
-        with patch(
-            "karadul.analyzers.anti_debug_detector.AntiDebugDetector",
-            side_effect=ImportError,
-        ):
-            out = AntiDebugStep().run(base_ctx)
+    def test_import_error_swallowed(self, base_ctx, monkeypatch) -> None:
+        """AntiDebugDetector modulu yoksa durum ``arac_yok``; JSON yine yazilir."""
+        import sys
+        monkeypatch.setitem(sys.modules, "karadul.analyzers.anti_debug_detector", None)
+        out = AntiDebugStep().run(base_ctx)
         assert out["anti_debug_findings"] == []
-        assert base_ctx.stats["anti_debug_status"] == "module_missing"
+        assert base_ctx.stats["anti_debug_status"] == "arac_yok"
 
 
 class TestDetectorRaises:
     def test_runtime_error_recorded(self, base_ctx) -> None:
         """Detector.detect() patlasa errors'a eklenir, pipeline kirilmaz."""
-        fake_detector = MagicMock()
+        fake_detector = _fake_detector()
         fake_detector.return_value.detect.side_effect = RuntimeError(
             "lief patladi",
         )
@@ -192,7 +223,7 @@ class TestDetectorRaises:
             out = AntiDebugStep().run(base_ctx)
         assert out["anti_debug_findings"] == []
         assert any("lief patladi" in e for e in base_ctx.errors)
-        assert base_ctx.stats["anti_debug_status"] == "error"
+        assert base_ctx.stats["anti_debug_status"] == "hata"
 
 
 class TestTargetPathFallback:
@@ -202,8 +233,7 @@ class TestTargetPathFallback:
         """binary_for_byte_match artifact yok -> target.path kullanilir."""
         ctx = StepContext(pipeline_context=fake_pc)
         # binary_for_byte_match enjekte etmiyoruz
-        fake_detector = MagicMock()
-        fake_detector.return_value.detect.return_value = []
+        fake_detector = _fake_detector()
         fake_detector.return_value.summary.return_value = {}
         with patch(
             "karadul.analyzers.anti_debug_detector.AntiDebugDetector",
@@ -212,10 +242,11 @@ class TestTargetPathFallback:
             out = AntiDebugStep().run(ctx)
         # target.path dogru sekilde kullanildi
         assert out["anti_debug_findings"] == []
-        assert ctx.stats["anti_debug_status"] == "ok"
+        assert ctx.stats["anti_debug_status"] == "calisti"
         # Detector'in init'inde binary_path kwarg dogru gecilmeli
         _, kwargs = fake_detector.call_args
         assert kwargs["binary_path"] == real_binary
+
 
 
 class TestProducesContract:

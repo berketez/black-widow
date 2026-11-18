@@ -2,10 +2,10 @@
 
 Kapsam:
 - Registry kaydi (requires/produces dogru)
-- Disabled flag -> bos donus + status=disabled
-- Binary path bulunamaz -> status=no_binary
-- ImportError yakalanir -> status=module_missing
-- Detector hatasi -> errors'a eklenir, status=error
+- Disabled flag -> bos donus + status=kapali (JSON yine yazilir; P-S1)
+- Binary path bulunamaz -> status=hata + neden
+- ImportError yakalanir -> status=arac_yok
+- Detector hatasi -> errors'a eklenir, status=hata
 - Smoke (temiz binary): fingerprints=[] + JSON yazildi
 - UPX mock: fingerprint listesi + stats (top_name, top_layers, kategori)
 - target.path fallback (binary_for_byte_match yoksa)
@@ -57,6 +57,16 @@ def base_ctx(fake_pc, real_binary: Path):
     return ctx
 
 
+def _fake_detector() -> MagicMock:
+    """Taklit dedektor sinifi; okuma sinirlari gercek sinifinkiler (P-S1: adim
+    taranan bayti bu sabitlerden hesaplar)."""
+    from karadul.analyzers.packer_fingerprint import PackerFingerprintDetector as Real
+    cls = MagicMock()
+    cls.return_value.MAX_READ_BYTES = Real.MAX_READ_BYTES
+    cls.return_value.MAX_STRING_SCAN_BYTES = Real.MAX_STRING_SCAN_BYTES
+    return cls
+
+
 class TestRegistry:
     def test_registered(self) -> None:
         import karadul.pipeline  # noqa: F401
@@ -73,10 +83,12 @@ class TestDisabled:
         out = PackerFingerprintStep().run(base_ctx)
         assert out["packer_fingerprints"] == []
         assert out["packer_top_match"] is None
-        assert out["packer_fingerprints_path"] is None
-        assert base_ctx.stats["packer_fingerprint_status"] == "disabled"
+        assert base_ctx.stats["packer_fingerprint_status"] == "kapali"
         assert "timing_packer_fingerprint" in base_ctx.stats
-        fake_pc.workspace.save_json.assert_not_called()
+        # P-S1: kapaliyken de durum JSON'a yazilir ("taranmadi" != "temiz")
+        args, _ = fake_pc.workspace.save_json.call_args
+        assert args[2]["status"] == "kapali"
+        assert args[2]["total_fingerprints"] is None
 
 
 class TestNoBinary:
@@ -85,7 +97,8 @@ class TestNoBinary:
         ctx = StepContext(pipeline_context=fake_pc)
         out = PackerFingerprintStep().run(ctx)
         assert out["packer_fingerprints"] == []
-        assert ctx.stats["packer_fingerprint_status"] == "no_binary"
+        assert ctx.stats["packer_fingerprint_status"] == "hata"
+        assert "ikili yok" in ctx.stats["packer_fingerprint_status_reason"]
 
     def test_nonexistent_binary_skips(
         self, fake_pc, tmp_path: Path,
@@ -95,12 +108,13 @@ class TestNoBinary:
         ctx = StepContext(pipeline_context=fake_pc)
         ctx._write_artifacts({"binary_for_byte_match": ghost})
         out = PackerFingerprintStep().run(ctx)
-        assert ctx.stats["packer_fingerprint_status"] == "no_binary"
+        assert ctx.stats["packer_fingerprint_status"] == "hata"
+        assert "ikili yok" in ctx.stats["packer_fingerprint_status_reason"]
 
 
 class TestSmoke:
     def test_clean_binary_no_fingerprints(self, base_ctx, fake_pc) -> None:
-        fake_detector = MagicMock()
+        fake_detector = _fake_detector()
         fake_detector.return_value.detect.return_value = []
         with patch(
             "karadul.analyzers.packer_fingerprint.PackerFingerprintDetector",
@@ -110,7 +124,7 @@ class TestSmoke:
         assert out["packer_fingerprints"] == []
         assert out["packer_top_match"] is None
         assert base_ctx.stats["packer_total"] == 0
-        assert base_ctx.stats["packer_fingerprint_status"] == "ok"
+        assert base_ctx.stats["packer_fingerprint_status"] == "calisti"
         # JSON yazilmali (sahte dahi olsa)
         fake_pc.workspace.save_json.assert_called_once()
         args, _ = fake_pc.workspace.save_json.call_args
@@ -141,7 +155,7 @@ class TestUPXMock:
             "platform": "pe",
             "layers_matched": 1,
         }
-        fake_detector = MagicMock()
+        fake_detector = _fake_detector()
         # detect() confidence DESC sirali; UPX once
         fake_detector.return_value.detect.return_value = [fp1, fp2]
         with patch(
@@ -164,19 +178,18 @@ class TestUPXMock:
 
 
 class TestImportError:
-    def test_import_error_swallowed(self, base_ctx) -> None:
-        with patch(
-            "karadul.analyzers.packer_fingerprint.PackerFingerprintDetector",
-            side_effect=ImportError,
-        ):
-            out = PackerFingerprintStep().run(base_ctx)
+    def test_import_error_swallowed(self, base_ctx, monkeypatch) -> None:
+        """Dedektor modulu yuklenemezse durum ``arac_yok`` (P-S1; eskiden module_missing)."""
+        import sys
+        monkeypatch.setitem(sys.modules, "karadul.analyzers.packer_fingerprint", None)
+        out = PackerFingerprintStep().run(base_ctx)
         assert out["packer_fingerprints"] == []
-        assert base_ctx.stats["packer_fingerprint_status"] == "module_missing"
+        assert base_ctx.stats["packer_fingerprint_status"] == "arac_yok"
 
 
 class TestDetectorRaises:
     def test_runtime_error_recorded(self, base_ctx) -> None:
-        fake_detector = MagicMock()
+        fake_detector = _fake_detector()
         fake_detector.return_value.detect.side_effect = RuntimeError(
             "section parse hatasi",
         )
@@ -189,7 +202,7 @@ class TestDetectorRaises:
         assert any(
             "section parse hatasi" in e for e in base_ctx.errors
         )
-        assert base_ctx.stats["packer_fingerprint_status"] == "error"
+        assert base_ctx.stats["packer_fingerprint_status"] == "hata"
 
 
 class TestTargetPathFallback:
@@ -198,7 +211,7 @@ class TestTargetPathFallback:
     ) -> None:
         ctx = StepContext(pipeline_context=fake_pc)
         # binary_for_byte_match enjekte etmiyoruz
-        fake_detector = MagicMock()
+        fake_detector = _fake_detector()
         fake_detector.return_value.detect.return_value = []
         with patch(
             "karadul.analyzers.packer_fingerprint.PackerFingerprintDetector",
@@ -206,7 +219,7 @@ class TestTargetPathFallback:
         ):
             out = PackerFingerprintStep().run(ctx)
         assert out["packer_fingerprints"] == []
-        assert ctx.stats["packer_fingerprint_status"] == "ok"
+        assert ctx.stats["packer_fingerprint_status"] == "calisti"
         # Detector real_binary path'i ile init edilmeli
         args, _ = fake_detector.call_args
         assert args[0] == real_binary

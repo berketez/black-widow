@@ -1,0 +1,125 @@
+{
+  "_comment": "P-S1 (IMZA-15 + P03 yaması, ARAYUZ-17, P19 yaması, capa K-1, BORU-05) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ps1.json",
+  "mutants": [
+    {
+      "id": "ad_kismi_sifir_yazar",
+      "desc": "anti-debug: katman hatasında da total_findings sayı (\"0 bulgu\") yazılır",
+      "module": "karadul/pipeline/steps/anti_debug.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_one_layer_error_is_partial_not_zero",
+      "find": "\"total_findings\": len(findings_dicts) if status == SCAN_RAN else None,",
+      "replace": "\"total_findings\": len(findings_dicts),  # hep sayi"
+    },
+    {
+      "id": "ad_katman_hatasi_sayilmaz",
+      "desc": "anti-debug: yutulan katman istisnası duruma yansımaz (eski davranış)",
+      "module": "karadul/pipeline/steps/anti_debug.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_one_layer_error_is_partial_not_zero",
+      "find": "failed = [(n, s[\"reason\"]) for n, s in layers.items() if s[\"status\"] == SCAN_ERROR]",
+      "replace": "failed = []  # katman hatasi sayilmaz"
+    },
+    {
+      "id": "ad_tum_katman_hata_kismi",
+      "desc": "anti-debug: üç katman da düşerse durum 'hata' değil 'kismi'",
+      "module": "karadul/pipeline/steps/anti_debug.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_all_layers_error_is_error",
+      "find": "if len(failed) == len(layers):",
+      "replace": "if len(failed) > len(layers):"
+    },
+    {
+      "id": "ad_kirpma_gorunmez",
+      "desc": "anti-debug: 50 MB sınırıyla kırpılan tarama 'calisti' görünür",
+      "module": "karadul/pipeline/steps/anti_debug.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_truncated_scan_is_partial",
+      "find": "        if scanned < file_size:",
+      "replace": "        if scanned < file_size and False:"
+    },
+    {
+      "id": "ad_okuma_denetimi_yok",
+      "desc": "okunamayan dosya denetlenmez (dedektör b'' ile 'temiz' döner)",
+      "module": "karadul/pipeline/steps/anti_debug.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_unreadable_file_is_error",
+      "find": "        with open(path, \"rb\") as fh:\n            fh.read(1)\n",
+      "replace": "        pass  # okuma denetimi yok\n"
+    },
+    {
+      "id": "ad_bayt_kapsami_yok",
+      "desc": "anti-debug: x86 dışı ikilide bayt katmanı 'calisti' görünür",
+      "module": "karadul/pipeline/steps/anti_debug.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_clean_scan_reports_ran_and_full_coverage",
+      "find": "            if scope:",
+      "replace": "            if scope and False:"
+    },
+    {
+      "id": "ad_arac_yok_hata_der",
+      "desc": "anti-debug: modül yokken durum 'arac_yok' değil 'hata'",
+      "module": "karadul/pipeline/steps/anti_debug.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_module_missing_is_no_tool",
+      "find": "record[\"status\"] = SCAN_NO_TOOL",
+      "replace": "record[\"status\"] = SCAN_ERROR  # yanlis"
+    },
+    {
+      "id": "pf_hata_sifir_yazar",
+      "desc": "paketleyici: dedektör hatasında total_fingerprints 0 yazılır",
+      "module": "karadul/pipeline/steps/packer_fingerprint.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestPackerStatus::test_detector_error_is_not_zero",
+      "find": "\"total_fingerprints\": len(fingerprints_dicts) if status == SCAN_RAN else None,",
+      "replace": "\"total_fingerprints\": len(fingerprints_dicts),  # hep sayi"
+    },
+    {
+      "id": "pf_dizgi_penceresi_gorunmez",
+      "desc": "paketleyici: 16 MB dizgi penceresi 'calisti' görünür",
+      "module": "karadul/pipeline/steps/packer_fingerprint.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestPackerStatus::test_string_window_smaller_than_file_is_partial",
+      "find": "        if string_scanned < file_size:",
+      "replace": "        if string_scanned < file_size and False:"
+    },
+    {
+      "id": "pf_okuma_denetimi_yok",
+      "desc": "paketleyici: okunamayan dosya 'temiz' görünür",
+      "module": "karadul/pipeline/steps/packer_fingerprint.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestPackerStatus::test_unreadable_file_is_error",
+      "find": "        if read_error:",
+      "replace": "        if read_error and False:"
+    },
+    {
+      "id": "yara_hata_sifir_yazar",
+      "desc": "YARA: istisnada yara_matches 0 (\"0 eşleşme\") kalır",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestYaraStageBlock::test_scan_exception_is_error_not_zero",
+      "find": "    stats[\"yara_matches\"] = None\n",
+      "replace": "    stats[\"yara_matches\"] = 0  # yanlis\n"
+    },
+    {
+      "id": "yara_durum_hep_calisti",
+      "desc": "YARA: tarayıcının hata durumu aşamaya taşınmaz",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestYaraStageBlock::test_scanner_error_result_is_error",
+      "find": "stats[\"yara_status\"] = yara_result.status",
+      "replace": "stats[\"yara_status\"] = SCAN_RAN  # hep"
+    },
+    {
+      "id": "yara_hatada_sayi",
+      "desc": "YARA: hata durumunda da eşleşme sayısı yazılır",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestYaraStageBlock::test_scanner_error_result_is_error",
+      "find": "    if yara_result.status == SCAN_RAN:",
+      "replace": "    if True:  # durumdan bagimsiz"
+    },
+    {
+      "id": "capa_hedef_turu_sessiz",
+      "desc": "capa: aşamanın çağırmadığı hedef türünde durum yazılmaz / yanlış neden",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestCapaStageStatus::test_non_binary_target_is_unsupported",
+      "find": "    if target.target_type not in _CAPA_TARGET_TYPES:",
+      "replace": "    if False:  # hedef turu denetimi yok"
+    },
+    {
+      "id": "capa_istisna_yutulur",
+      "desc": "capa: tarayıcı istisnası 'calisti' görünür",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_tarama_durumu.py::TestCapaStageStatus::test_scanner_exception_is_error",
+      "find": "        stats[\"capa_status\"] = SCAN_ERROR",
+      "replace": "        stats[\"capa_status\"] = SCAN_RAN  # yutuldu"
+    }
+  ]
+}
