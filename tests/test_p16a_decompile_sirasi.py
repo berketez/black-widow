@@ -179,11 +179,12 @@ def test_iki_kosu_ayni_liste_ve_dosya_adlari(tmp_path, sahte_ghidra):
 def test_dosya_adi_plani_buyuk_kucuk_harf_duyarsiz_ve_adres_sirasinda():
     plan = GhidraHeadless._plan_decompile_filenames([
         ("fputs", "00103d40"), ("Foo", "00104000"), ("foo", "00104100"),
-        ("fputs", "00135030"), ("a/b", "00136000"),
+        ("fputs", "00135030"), ("a/b", "00136000"), ("bar", "00137000"), ("BAR", "00138000"),
     ])
     assert plan == {
         "00103d40": "fputs.c", "00104000": "Foo.c", "00104100": "foo_00104100.c",
         "00135030": "fputs_00135030.c", "00136000": "a_b.c",
+        "00137000": "bar.c", "00138000": "BAR_00138000.c",
     }
 
 

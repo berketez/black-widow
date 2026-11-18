@@ -1,0 +1,253 @@
+{
+  "_comment": "P16a (Ghidra köprüsü: dürüst başarı, kayıp sayacı, belirlenimcilik) onarımlarının mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metinleri özgününden farklı uzunlukta (.pyc tuzağı); hepsi sözdizimce geçerli. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p16a.json",
+  "mutants": [
+    {
+      "id": "g09_decompile_sifir_basari_sayilir",
+      "desc": "GHIDRA-09: hiçbir fonksiyon decompile edilmese de başarı",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_ghidra_sonuc.py::test_hicbir_fonksiyon_decompile_edilmediyse_basarisiz_ve_ilk_hata_yazilir",
+      "find": "        if not dec.get(\"success\"):",
+      "replace": "        if dec.get(\"success\") is None:"
+    },
+    {
+      "id": "g09_sifir_fonksiyon_basari_sayilir",
+      "desc": "GHIDRA-09: fonksiyon listesi boşken başarı",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_ghidra_sonuc.py::test_sifir_fonksiyon_basarisiz",
+      "find": "        if not funcs.get(\"total\"):",
+      "replace": "        if funcs.get(\"total\") is None:"
+    },
+    {
+      "id": "g09_fatal_nedeni_kaybolur",
+      "desc": "GHIDRA-09: FATAL nedeni sonuca yazılmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_ghidra_sonuc.py::test_fatal_neden_metniyle_basarisiz",
+      "find": "        if \"fatal\" in step_errors:",
+      "replace": "        if \"fatal_\" in step_errors:"
+    },
+    {
+      "id": "g09_adim_hatasi_kaydedilmez",
+      "desc": "GHIDRA-09: düşen adım step_errors'a kendi adıyla yazılmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_ghidra_sonuc.py::test_pyghidra_yan_adim_duserse_basarili_ama_kayitli",
+      "find": "            step_errors[step] = msg",
+      "replace": "            step_errors.setdefault(\"adim\", msg)"
+    },
+    {
+      "id": "g09_static_ghidra_dususune_bakmaz",
+      "desc": "GHIDRA-09: Ghidra düşse de static aşaması ham ikili yüzünden başarılı",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_p16a_ghidra_sonuc.py::test_static_ghidra_dusunce_asama_basarisiz_ve_neden_yazili",
+      "find": "success=(not ghidra_failed) and (len(errors) == 0 or len(artifacts) > 0),",
+      "replace": "success=(len(errors) == 0 or len(artifacts) > 0),"
+    },
+    {
+      "id": "g09_gunluk_yazilmaz",
+      "desc": "GHIDRA-09: ghidra_log.txt yazılmaz",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_p16a_ghidra_sonuc.py::test_static_ghidra_dusunce_asama_basarisiz_ve_neden_yazili",
+      "find": "        if log_text:",
+      "replace": "        if log_text and False:"
+    },
+    {
+      "id": "g09_dusen_adim_hata_listesine_girmez",
+      "desc": "GHIDRA-09: başarılı koşuda düşen yan adım errors'a yazılmaz",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_p16a_ghidra_sonuc.py::test_static_basarili_ama_dusen_adim_hata_listesinde",
+      "find": "                    errors.append(\"Ghidra adımı başarısız (%s): %s\" % (step, msg))",
+      "replace": "                    logger.debug(\"adim %s: %s\", step, msg)"
+    },
+    {
+      "id": "g09_betik_yoksa_ghidra_kosmaz",
+      "desc": "GHIDRA-09: betik dizini yoksa PyGhidra yolu da koşmaz (eski davranış)",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_p16a_ghidra_sonuc.py::test_betik_yoksa_pyghidra_yolu_yine_kosar",
+      "find": "        if not scripts and not pyghidra_ok:",
+      "replace": "        if not scripts:"
+    },
+    {
+      "id": "g10_thunk_program_fonksiyonu_sayilir",
+      "desc": "GHIDRA-10: thunk'lar program fonksiyonu sayılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_fonksiyon_sayaci.py::test_fonksiyon_listesi_tur_sayaclarini_tasir",
+      "find": "\"program_function_count\": len(functions) - thunk - external,",
+      "replace": "\"program_function_count\": len(functions) - external,"
+    },
+    {
+      "id": "g10_ozet_toplami_sayar",
+      "desc": "GHIDRA-10: birleşik özetin function_count'u Ghidra toplamı",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_fonksiyon_sayaci.py::test_birlesik_ozet_program_fonksiyonunu_sayar",
+      "find": "\"function_count\": scripts_output.get(\"functions\", {}).get(\"program_function_count\", 0),",
+      "replace": "\"function_count\": scripts_output.get(\"functions\", {}).get(\"total\", 0),"
+    },
+    {
+      "id": "g10_istatistik_toplami_karisir",
+      "desc": "GHIDRA-10: ghidra_function_total program sayısını taşır",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_p16a_fonksiyon_sayaci.py::test_static_istatistigi_program_fonksiyonunu_sayar",
+      "find": "stats[\"ghidra_function_total\"] = summary[\"function_total\"]",
+      "replace": "stats[\"ghidra_function_total\"] = summary[\"function_count\"]"
+    },
+    {
+      "id": "g05_parca_sirasi_ters",
+      "desc": "GHIDRA-05: parça sonuçları adres sırasıyla birleşmez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_decompile_sirasi.py::test_liste_adres_sirasinda_ve_kirpma_yazili",
+      "find": "results = [entry for out in chunk_outputs for entry in (out or [])]",
+      "replace": "results = [entry for out in reversed(chunk_outputs) for entry in (out or [])]"
+    },
+    {
+      "id": "bb4_kirpma_sayaci_sifir",
+      "desc": "B-B4: kırpılan kayıt sayısı yazılmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_decompile_sirasi.py::test_liste_adres_sirasinda_ve_kirpma_yazili",
+      "find": "        truncated = len(results) - written",
+      "replace": "        truncated = 0"
+    },
+    {
+      "id": "g05_dosya_adi_harf_duyarli",
+      "desc": "GHIDRA-05: dosya adı planı harf duyarlı (macOS'ta Foo.c / foo.c çakışır)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_decompile_sirasi.py::test_dosya_adi_plani_buyuk_kucuk_harf_duyarsiz_ve_adres_sirasinda",
+      "find": "            if fname.casefold() in taken:",
+      "replace": "            if fname in taken:"
+    },
+    {
+      "id": "g05_dosya_adi_plani_bos",
+      "desc": "GHIDRA-05: dosya adı planı alınan adları tutmaz (hepsi eksiz ad)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_decompile_sirasi.py::test_dosya_adi_plani_buyuk_kucuk_harf_duyarsiz_ve_adres_sirasinda",
+      "find": "            taken.add(fname.casefold())",
+      "replace": "            taken.add(fname.casefold() + \"#\")"
+    },
+    {
+      "id": "bb4_dusen_parca_adsiz",
+      "desc": "B-B4: düşen parçanın fonksiyonları adsız kaydedilir",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_decompile_sirasi.py::test_dusen_parcanin_fonksiyonlari_adiyla_kalir",
+      "find": "            \"name\": func.getName(), \"address\": str(func.getEntryPoint()),\n            \"success\": False, \"error\": error,",
+      "replace": "            \"name\": None, \"address\": str(func.getEntryPoint()),\n            \"success\": False, \"error\": error,"
+    },
+    {
+      "id": "g06_toplam_sure_olu",
+      "desc": "GHIDRA-06: paralel decompile'da toplam süre fiilen uygulanmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_decompile_sirasi.py::test_toplam_sure_dolunca_kalanlar_atlandi_diye_kaydedilir",
+      "find": "if deadline is not None and time.time() > deadline:",
+      "replace": "if deadline is not None and time.time() > deadline + 3600:"
+    },
+    {
+      "id": "g06_seri_toplam_sure_olu",
+      "desc": "GHIDRA-06: seri yedekte toplam süre uygulanmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_decompile_sirasi.py::test_seri_yedekte_sure_dolunca_atlanan_sayilir",
+      "find": "time.time() - start_time > total_timeout:",
+      "replace": "time.time() - start_time > total_timeout + 3600:"
+    },
+    {
+      "id": "g06_fonksiyon_suresi_sabit",
+      "desc": "GHIDRA-06: max_decompile_timeout_per_func okunmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_decompile_sirasi.py::test_fonksiyon_basi_sure_ayardan_gecer",
+      "find": "        FUNC_TIMEOUT = max(1, int(func_timeout))",
+      "replace": "        FUNC_TIMEOUT = 30"
+    },
+    {
+      "id": "bb4_strings_raw_kirpma_sessiz",
+      "desc": "B-B4: strings_raw.json kırpması yazılmaz",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_p16a_decompile_sirasi.py::test_strings_raw_kirpmasi_yazili",
+      "find": "                \"truncated\": len(string_list) - written,",
+      "replace": "                \"truncated\": 0,"
+    },
+    {
+      "id": "evrensel_x86_64_tercih",
+      "desc": "Evrensel dilim: arm64e x86_64'ün arkasına düşer",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_p16a_evrensel_dilim.py::test_x86_64_ve_arm64e_varken_arm64e_secilir_ve_adi_dogru",
+      "find": "        return {0: 0, 1: 0, 2: 1}.get(sub, 2)",
+      "replace": "        return {0: 0, 1: 0, 2: 9}.get(sub, 2)"
+    },
+    {
+      "id": "evrensel_ad_hep_arm64",
+      "desc": "Evrensel dilim: arm64e dilimi arm64 adıyla yazılır",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_p16a_evrensel_dilim.py::test_x86_64_ve_arm64e_varken_arm64e_secilir_ve_adi_dogru",
+      "find": "{0: \"arm64\", 1: \"arm64v8\", 2: \"arm64e\"}",
+      "replace": "{0: \"arm64\", 1: \"arm64v8\", 2: \"arm64\"}"
+    },
+    {
+      "id": "evrensel_macho_imzasi_denetlenmez",
+      "desc": "Evrensel dilim: Mach-O olmayan dilim kabul edilir",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_p16a_evrensel_dilim.py::test_macho_olmayan_dilim_reddedilir",
+      "find": "if len(data) != chosen[\"size\"] or data[:4] not in _MACHO_THIN_MAGICS:",
+      "replace": "if len(data) != chosen[\"size\"]:"
+    },
+    {
+      "id": "evrensel_sinir_denetimi_yok",
+      "desc": "Evrensel dilim: dosya dışına taşan dilim reddedilmez",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_p16a_evrensel_dilim.py::test_dosya_disina_tasan_dilim_reddedilir",
+      "find": "        if length <= 0 or offset + length > size:",
+      "replace": "        if length <= 0:"
+    },
+    {
+      "id": "evrensel_esitlikte_son_dilim",
+      "desc": "Evrensel dilim: eşitlikte dosyadaki son dilim (belirlenimci ama tersine)",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_p16a_evrensel_dilim.py::test_secim_belirlenimci",
+      "find": "key=lambda s: (s[\"rank\"], s[\"index\"])",
+      "replace": "key=lambda s: (s[\"rank\"], -s[\"index\"])"
+    },
+    {
+      "id": "evrensel_binary_prep_kaydi_okumaz",
+      "desc": "Evrensel dilim: binary_prep seçilen dilimi kullanmaz",
+      "module": "karadul/pipeline/steps/binary_prep.py",
+      "test": "tests/test_p16a_evrensel_dilim.py::test_binary_prep_secilen_dilimi_kullanir",
+      "find": "            if thin is not None and thin.is_file():",
+      "replace": "            if thin is not None and thin.is_file() and False:"
+    },
+    {
+      "id": "mek02_rapor_ikilinin_yanina",
+      "desc": "MEK-02: rapor ikilinin dizinine yazılır",
+      "module": "karadul/ghidra/program_diff.py",
+      "test": "tests/test_p16a_program_diff.py::test_diff_ikilinin_dizinine_yazmaz_projeler_gecici",
+      "find": "        effective_output = output_dir or Path.cwd()",
+      "replace": "        effective_output = output_dir or binary1.parent"
+    },
+    {
+      "id": "mek02_proje_konumu_verilmez",
+      "desc": "MEK-02: Ghidra projesi ikilinin dizinine kurulur",
+      "module": "karadul/ghidra/program_diff.py",
+      "test": "tests/test_p16a_program_diff.py::test_diff_ikilinin_dizinine_yazmaz_projeler_gecici",
+      "find": "                project_location=str(project_location) if project_location else None,",
+      "replace": "                project_location=None,"
+    },
+    {
+      "id": "g16_xref_sirasi_yok",
+      "desc": "GHIDRA-16: başvurular adres sırasına konmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_dizgi_bagi.py::test_dizgi_fonksiyon_bagi_baslananlardan",
+      "find": "            xrefs.sort(key=lambda x: _address_sort_key(x[\"from_address\"]))",
+      "replace": "            xrefs.sort(key=lambda x: 0)"
+    },
+    {
+      "id": "g16_fonksiyon_bagi_bos",
+      "desc": "GHIDRA-16: dizginin fonksiyon alanı boş kalır (eski davranış)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_dizgi_bagi.py::test_dizgi_fonksiyon_bagi_baslananlardan",
+      "find": "            entry[\"function\"] = first[\"from_function\"] if first else None",
+      "replace": "            entry[\"function\"] = None"
+    },
+    {
+      "id": "a2_legacy_bayragi_sessiz",
+      "desc": "K-3 A2: etkisiz legacy bayrağı uyarısız yutulur",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_jython_migration.py::TestFeatureFlag::test_legacy_flag_etkisiz_yeni_betikler_ve_uyari",
+      "find": "        if getattr(self.config.perf, \"use_legacy_jython_scripts\", False):",
+      "replace": "        if False:"
+    }
+  ]
+}
