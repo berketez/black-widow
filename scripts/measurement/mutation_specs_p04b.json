@@ -1,0 +1,109 @@
+{
+  "_comment": "P04b (MUH-10 mühendislik sabit / yapısal katmanı ve alan kapısı, MUH-12 formül, MUH-09 sürüm tespiti, MUH-06 sanal çağrı, MUH-05 kalibrasyon) mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metninin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p04b.json",
+  "mutants": [
+    {
+      "id": "sabit_tek_kanit",
+      "desc": "tek ayırt edici sabit etiket verir",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_tek_ayirt_edici_sabit_etiket_vermez",
+      "find": "if distinct < ENG_CONST_MIN_DISTINCT:",
+      "replace": "if distinct < 1:"
+    },
+    {
+      "id": "sabit_dizgi_ortme",
+      "desc": "sabit taraması dizgi ve yorumları da tarar",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_dizgi_ve_yorumdaki_sabit_sayilmaz",
+      "find": "        clean = _code_only(code)\n        # (algoritma",
+      "replace": "        clean = code\n        # (algoritma"
+    },
+    {
+      "id": "sabit_anlamli_basamak",
+      "desc": "az anlamlı basamaklı değerler (0.95, 1.4) zayıf sayılmaz",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_zayif_degerler",
+      "find": "if _sig_digits(mag) < ENG_CONST_MIN_SIG_DIGITS:",
+      "replace": "if _sig_digits(mag) < 0:"
+    },
+    {
+      "id": "sabit_basit_kesir",
+      "desc": "1/3, 1/6 basit kesirleri zayıf sayılmaz (CalculiX'te RK4)",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_basit_kesirler_rk4_degil",
+      "find": "ENG_CONST_SIMPLE_RATIONAL_MAX_DENOM: int = 8",
+      "replace": "ENG_CONST_SIMPLE_RATIONAL_MAX_DENOM: int = 1 + 0"
+    },
+    {
+      "id": "sabit_isaret_esi",
+      "desc": "±x iki ayrı sabit sayılır",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_isaret_esi_tek_sabit",
+      "find": "found.setdefault(key, {}).setdefault(_magnitude_key(ec.float_value), evidence)",
+      "replace": "found.setdefault(key, {}).setdefault(evidence, evidence)"
+    },
+    {
+      "id": "sabit_tam_sayi_belirteci",
+      "desc": "tam sayı belirteci de double sabit sayılır (eski 'decimal: 0' davranışı; nokta isteğe bağlı)",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_tam_sayi_belirteci_double_sabit_degil",
+      "find": "    r\"(?<![\\w.])(?:\\d+\\.\\d*(?:[eE][-+]?\\d+)?|",
+      "replace": "    r\"(?<![\\w.])(?:\\d+\\.?\\d*(?:[eE][-+]?\\d+)?|"
+    },
+    {
+      "id": "yapisal_anahtar_sozcuk",
+      "desc": "ad / anahtar sözcük desenleri yapısal kanıt sayılır",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_anahtar_sozcuk_deseni_kanit_degil",
+      "find": "                if not is_keyword_regex(regex.pattern)\n",
+      "replace": "                if regex.pattern\n"
+    },
+    {
+      "id": "yapisal_ayni_metin",
+      "desc": "aynı metni eşleyen ikinci desen ayrı kanıt türü sayılır",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_ayni_metin_iki_desen_iki_kanit_degil",
+      "find": "                if not new_spans:\n                    continue",
+      "replace": "                if not spans:\n                    continue"
+    },
+    {
+      "id": "yapisal_tek_tur",
+      "desc": "tek yapısal kanıt türü etiket verir",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_ayni_metin_iki_desen_iki_kanit_degil",
+      "find": "if kinds < STRUCT_MIN_DISTINCT_KINDS or total_hits < sp.min_matches:",
+      "replace": "if kinds < 1 or total_hits < sp.min_matches:"
+    },
+    {
+      "id": "yapisal_dizgi_ortme",
+      "desc": "yapısal desenler dizgi içinde de koşar",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_dizgideki_yapi_sayilmaz",
+      "find": "        clean = _code_only(code)\n        code_lower = clean.lower()",
+      "replace": "        clean = code\n        code_lower = clean.lower()"
+    },
+    {
+      "id": "kapi_json_bicimi",
+      "desc": "kapı yeniden üst anahtarları (total/program/functions) ad sanır",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_kapi_bugunku_json_bicimini_okur",
+      "find": "found = _hit(_function_names(func_meta or {}))",
+      "replace": "found = _hit(list(func_meta or {}))"
+    },
+    {
+      "id": "kapi_alt_dizgi",
+      "desc": "gösterge adın içinde alt dizgi olarak eşleşir (fft ⊂ _difftime)",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_kapi_alt_dizgiyle_acilmaz",
+      "find": "    if len(ind) >= DOMAIN_INDICATOR_BARE_PREFIX_MIN and norm.startswith(ind):",
+      "replace": "    if ind in norm:"
+    },
+    {
+      "id": "kapi_dosya_dizgi",
+      "desc": "kapının dosya taraması dizgi içindeki gösterge adını sayar",
+      "module": "karadul/reconstruction/engineering/analyzer.py",
+      "test": "tests/test_p04b_sabit.py::test_kapi_dosya_taramasi_dizgiyi_saymaz",
+      "find": "text = _code_only(fh.read(50_000))",
+      "replace": "text = fh.read(50_000)"
+    }
+  ]
+}
