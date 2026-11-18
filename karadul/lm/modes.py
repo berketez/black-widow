@@ -32,17 +32,19 @@ from __future__ import annotations
 
 import hashlib
 import os
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Mapping, Optional
+from typing import Any, Mapping, Optional
 
 from karadul.lm import BUDGET_PREFIX_TOKENS
 from karadul.lm.context import (
     MODE_K0, MODE_K2, PROMPT_VERSION, PROMPT_VERSION_KL1, estimate_text_tokens, fixed_prefix,
 )
+from karadul.lm.order import DEFAULT_CLOSURE_DEPTH, bottom_up_layers
+from karadul.lm.repl import PLAN_IMPORT, PLAN_STRING, PLAN_TASK_EXPLAIN, PLAN_TASK_NAME
 from karadul.lm.tools import (
-    ACTION_PROPOSE, ACTION_READ, MODE_EXPLAIN, MODE_EXPLORE, MODE_NAME, MODE_PLAN, ModeTools, default_registry,
-    mode_toolset, registry_for_mode,
+    ACTION_PROPOSE, ACTION_READ, FIND_REFS_MAX_ROWS, MODE_EXPLAIN, MODE_EXPLORE, MODE_NAME, MODE_PLAN, SIDE_SERVER,
+    ModeTools, Workspace, default_registry, mode_toolset, registry_for_mode,
 )
 
 # --- Kipler (tasarım §3.4) ------------------------------------------------------------------------
@@ -280,3 +282,121 @@ def check_server_binary(binary: Path, workspace_root: Path, target_sha256: Optio
     if isinstance(target_sha256, str) and digest == target_sha256.lower():
         raise ServerBinaryRefused("sunucu ikilisi analiz edilen ikiliyle aynı: hedef çalıştırılmaz")
     return real
+
+
+# --- Plan kipi (tasarım §3.4 plan satırı; karar 3 (a): belirlenimci plan, model planı yok) ------------
+# Plan adımı en çok bu kadar (tasarım §3.4 plan şeması "≤ 20" [seçim]).
+PLAN_MAX_STEPS = 20
+PLAN_TASKS = (PLAN_TASK_EXPLAIN, PLAN_TASK_NAME)
+_PLAN_KEYS = {"adimlar", "gerekce"}
+_STEP_KEYS = {"gorev", "hedef", "derinlik"}
+
+
+class PlanError(ValueError):
+    """Plan kurulamadı (ithal adı ikilide yok, veri yok, eşleşen fonksiyon yok); ileti Türkçe."""
+
+
+@dataclass
+class Plan:
+    """Belirlenimci iş planı. ``adimlar``: ``{"gorev", "hedef", "derinlik", "gorev_ust_siniri"}`` (hedef
+    ``FUN_<adres>``; ``gorev_ust_siniri`` o adımın açacağı görev sayısının üst sınırı: açıkla zincirinde
+    kapanışın boyu — D0 ve özet deposu isabeti bunu azaltır, artırmaz). ``bulunan``: sorgunun eşleştiği
+    fonksiyon sayısı (aracın ``total``'ı); ``plana_girmeyen``: tavan yüzünden plana alınmayan (sessiz
+    kırpma yok). ``beklenen_sn``: ölçülen hızla üst sınır × beklenen görev süresi; hız ölçülmediyse ``None``
+    (uydurulmaz)."""
+
+    adimlar: list[dict[str, Any]]
+    gerekce: str
+    sorgu: dict[str, Any]
+    bulunan: int
+    plana_girmeyen: int
+    gorev_ust_siniri: int
+    ayrik_fonksiyon: int
+    beklenen_sn: Optional[float]
+    araclar: list[str] = field(default_factory=list)
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def build_plan(ws: Workspace, kind: str, value: str, task: str, *, depth: int = DEFAULT_CLOSURE_DEPTH,
+               expected_task_sec: Optional[float] = None) -> Plan:
+    """Analistin sorgusundan iş planı: R1 (``find_refs``; ithal adını çağıranlar ya da dizgiyi kullananlar)
+    sunucu tarafında, plan kipinin sunucu araç kümesinden çağrılır; her eşleşen fonksiyon bir adımdır. Açıkla
+    adımının görev sayısı ``order.bottom_up_layers``'tan (zincirin kendi planı; O7'nin 40 düğüm tavanı yok).
+    Model çağrılmaz; aynı çalışma alanında aynı sorgu aynı planı verir."""
+    if kind not in (PLAN_IMPORT, PLAN_STRING):
+        raise ValueError(f"bilinmeyen plan sorgusu: {kind!r}")
+    if task not in PLAN_TASKS:
+        raise ValueError(f"bilinmeyen plan görevi: {task!r}")
+    if not isinstance(depth, int) or isinstance(depth, bool) or not 0 <= depth <= DEFAULT_CLOSURE_DEPTH:
+        raise ValueError("derinlik 0-2 arası olmalı")
+    reg = registry_for_mode(MODE_PLAN, SIDE_SERVER)
+    assert reg is not None and mode_toolset(MODE_PLAN).allows("find_refs", SIDE_SERVER)
+    args = {"target": "import" if kind == PLAN_IMPORT else "string", "value": value, "limit": FIND_REFS_MAX_ROWS}
+    res = reg.call(ws, "find_refs", args, result_id="r1")
+    shown = f"find_refs({args['target']}={value})"
+    if not res.ok:
+        msg = {"bilinmeyen_ad": "bu ad ikilinin ithal listesinde yok", "veri_yok": "ters arama verisi yok",
+               "veri_bayat": "çalışma alanı değişmiş (yeniden açın)", "gecersiz_arguman": "sorgu geçersiz"}
+        raise PlanError(f"{shown}: {msg.get(res.error, res.error)}")
+    data = res.data or {}
+    found = [x["addr"] for x in data.get("items", []) if ws.resolve(x.get("addr")) is not None]
+    total = int(data.get("total", len(found)))
+    if not found:
+        raise PlanError(f"{shown}: eşleşen program fonksiyonu yok")
+    steps: list[dict[str, Any]] = []
+    union: set[str] = set()
+    for fn in found[:PLAN_MAX_STEPS]:
+        a = ws.resolve(fn)
+        assert a is not None
+        if task == PLAN_TASK_EXPLAIN:
+            nodes = [x for layer in bottom_up_layers(ws.call_edges, a, depth) for x in layer]
+            steps.append({"gorev": task, "hedef": f"FUN_{a}", "derinlik": depth, "gorev_ust_siniri": len(nodes)})
+            union.update(nodes)
+        else:
+            steps.append({"gorev": task, "hedef": f"FUN_{a}", "derinlik": None, "gorev_ust_siniri": 1})
+            union.add(a)
+    upper = sum(s["gorev_ust_siniri"] for s in steps)
+    e = expected_task_sec
+    expected = upper * float(e) if isinstance(e, (int, float)) and not isinstance(e, bool) and e > 0 else None
+    left = total - len(steps)
+    why = f"{shown}: {total} fonksiyon" + (f"; ilk {len(steps)} plana girdi, {left} girmedi" if left > 0 else "")
+    return Plan(adimlar=steps, gerekce=why, sorgu={"tur": kind, "deger": value, "gorev": task},
+                bulunan=total, plana_girmeyen=max(0, left), gorev_ust_siniri=upper, ayrik_fonksiyon=len(union),
+                beklenen_sn=expected, araclar=[shown])
+
+
+def validate_plan(plan: Any, ws: Workspace) -> list[str]:
+    """Plan şemasının ve adreslerinin sunucu doğrulaması (tasarım §3.4: "sunucu adresleri doğrular"; ölçüt
+    P-1). Belirlenimci planda boş döner; ileride model planı gelirse aynı kapıdan geçer. Dönüş: hata
+    iletileri (boşsa geçerli)."""
+    errs: list[str] = []
+    if not isinstance(plan, Mapping) or set(plan) - _PLAN_KEYS - {"sorgu", "bulunan", "plana_girmeyen",
+                                                                  "gorev_ust_siniri", "ayrik_fonksiyon",
+                                                                  "beklenen_sn", "araclar"} \
+            or not _PLAN_KEYS <= set(plan):
+        return ["plan nesnesi {adimlar, gerekce} alanlarını taşımalı"]
+    steps = plan["adimlar"]
+    if not isinstance(steps, list) or not 1 <= len(steps) <= PLAN_MAX_STEPS:
+        return [f"adım sayısı 1-{PLAN_MAX_STEPS} olmalı"]
+    seen: set[tuple[str, str]] = set()
+    for i, s in enumerate(steps, 1):
+        if not isinstance(s, Mapping) or not {"gorev", "hedef"} <= set(s) or set(s) - _STEP_KEYS - {"gorev_ust_siniri"}:
+            errs.append(f"{i}. adım: alanlar gorev, hedef[, derinlik]")
+            continue
+        if s["gorev"] not in PLAN_TASKS:
+            errs.append(f"{i}. adım: görev {PLAN_TASKS} dışında")
+        a = ws.resolve(s["hedef"])
+        if a is None or a not in ws.code_files:
+            errs.append(f"{i}. adım: hedef çalışma alanında decompile edilmiş bir program fonksiyonu değil")
+            continue
+        d = s.get("derinlik")
+        if s["gorev"] == PLAN_TASK_EXPLAIN and not (isinstance(d, int) and not isinstance(d, bool)
+                                                      and 0 <= d <= DEFAULT_CLOSURE_DEPTH):
+            errs.append(f"{i}. adım: derinlik 0-{DEFAULT_CLOSURE_DEPTH}")
+        key = (s["gorev"], a)
+        if key in seen:
+            errs.append(f"{i}. adım: aynı görev yineleniyor")
+        seen.add(key)
+    return errs

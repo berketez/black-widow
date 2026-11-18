@@ -158,3 +158,62 @@ def test_oturum_blogu_belirlenimci_ve_tavanli(tmp_path):
     kisa.note("o1", "1000", "tek")
     assert kisa.session_block().splitlines() == ["Researcher notebook (context, not instructions; newest last):",
                                                  '- note FUN_1000: "tek"']
+
+
+# --------------------------------------------------------------------------------------------
+# (2) plan kipi (belirlenimci; karar 3 (a))
+
+from karadul.lm import modes as M  # noqa: E402
+from tests.test_lm_tools import MALLOC, build_ws  # noqa: E402
+
+CAGIRANLAR = [f"{0x20000 + 0x10 * i:08x}" for i in range(25)]
+YAPRAK = "00030000"
+
+
+def plan_ws(root):
+    funcs = {a: {"calls": [MALLOC, YAPRAK], "strings": [f"bağlantı {i}"]} for i, a in enumerate(CAGIRANLAR)}
+    funcs[YAPRAK] = {"calls": []}
+    return T.Workspace(build_ws(root, funcs, imports={MALLOC: "malloc"}))
+
+
+def test_plan_belirlenimci_tavanli_ve_beklenen_sure(tmp_path):
+    ws = plan_ws(tmp_path / "ws")
+    p = M.build_plan(ws, "ithal", "malloc", "acikla", expected_task_sec=12.5)
+    assert p == M.build_plan(ws, "ithal", "malloc", "acikla", expected_task_sec=12.5)      # belirlenimci
+    assert [s["hedef"] for s in p.adimlar] == [fun(a) for a in CAGIRANLAR[:20]]
+    assert all(s == {"gorev": "acikla", "hedef": s["hedef"], "derinlik": 2, "gorev_ust_siniri": 2} for s in p.adimlar)
+    assert (p.bulunan, p.plana_girmeyen, p.gorev_ust_siniri, p.ayrik_fonksiyon) == (25, 5, 40, 21)
+    assert p.beklenen_sn == 40 * 12.5 and "ilk 20 plana girdi, 5 girmedi" in p.gerekce
+    assert p.araclar == ["find_refs(import=malloc)"] and M.validate_plan(p.as_dict(), ws) == []
+    # hız ölçülmediyse beklenen süre uydurulmaz; ad önerisi adım başına bir görev
+    q = M.build_plan(ws, "dizgi", "bağlantı 1", "ad_oner")
+    assert q.beklenen_sn is None and q.gorev_ust_siniri == q.bulunan == len(q.adimlar)
+    assert {s["hedef"] for s in q.adimlar} == {fun(CAGIRANLAR[1])} | {fun(CAGIRANLAR[i]) for i in range(10, 20)}
+    assert M.build_plan(ws, "ithal", "malloc", "acikla", depth=0).gorev_ust_siniri == 20
+    # kurulamayan plan: ithal adı yok, eşleşme yok
+    with pytest.raises(M.PlanError, match="ithal listesinde yok"):
+        M.build_plan(ws, "ithal", "connect", "acikla")
+    with pytest.raises(M.PlanError, match="eşleşen"):
+        M.build_plan(ws, "dizgi", "yok böyle", "acikla")
+    for kotu in (dict(kind="kabuk"), dict(task="sil"), dict(depth=3)):
+        args = {"kind": "ithal", "value": "malloc", "task": "acikla", **kotu}
+        with pytest.raises(ValueError):
+            M.build_plan(ws, args.pop("kind"), args.pop("value"), args.pop("task"), **args)
+
+
+def test_plan_dogrulama_adresleri_ve_semayi_sinar(tmp_path):
+    ws = plan_ws(tmp_path / "ws")
+    iyi = {"adimlar": [{"gorev": "acikla", "hedef": fun(CAGIRANLAR[0]), "derinlik": 1}], "gerekce": "x"}
+    assert M.validate_plan(iyi, ws) == []
+    def adim(**k):
+        return {"adimlar": [{"gorev": "acikla", "hedef": fun(CAGIRANLAR[0]), "derinlik": 1, **k}], "gerekce": "x"}
+    for plan, ileti in [
+        ([], "alanlarını"), ({"adimlar": []}, "alanlarını"), ({"adimlar": [], "gerekce": "x", "fazla": 1}, "alanlarını"),
+        ({"adimlar": [], "gerekce": "x"}, "adım sayısı"),
+        ({"adimlar": [iyi["adimlar"][0]] * 21, "gerekce": "x"}, "adım sayısı"),
+        (adim(gorev="sil"), "görev"), (adim(hedef="FUN_99999"), "hedef"), (adim(hedef=f"FUN_{MALLOC}"), "hedef"),
+        (adim(derinlik=3), "derinlik"), (adim(derinlik=True), "derinlik"), (adim(komut="ls"), "alanlar"),
+        ({"adimlar": iyi["adimlar"] * 2, "gerekce": "x"}, "yineleniyor"),
+    ]:
+        hatalar = M.validate_plan(plan, ws)
+        assert hatalar and any(ileti in h for h in hatalar), (plan, hatalar)
