@@ -1,0 +1,109 @@
+{
+  "_comment": "P15c mutasyon koruması (imza veritabanının dizgi / çağrı deseni kayıtları: kimlik ↔ davranış, ölçülmüş güven, kanıt; rapor / SARIF etiketi ve künye; FortranParamDB veri kökü). Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p15c.json",
+  "mutants": [
+    {
+      "id": "k3_iddia_hep_kimlik",
+      "desc": "dizgi / çağrı deseni kaydı yeniden kimlik iddiası sayılıyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15c_iddia.py::test_yontemden_iddia_turu",
+      "find": "return CLAIM_BEHAVIOR if method in BEHAVIOR_METHODS else CLAIM_IDENTITY",
+      "replace": "return CLAIM_IDENTITY"
+    },
+    {
+      "id": "k3_ham_guven",
+      "desc": "davranış kaydının güveni yeniden ham (kalibre olmayan) puan",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15c_iddia.py::test_dizgi_kaydi_davranis_kanitli_olculmus_guven",
+      "find": "        match.confidence = measured\n",
+      "replace": "        match.confidence = match.confidence\n"
+    },
+    {
+      "id": "k3_dizgi_kanit_yok",
+      "desc": "dizgi eşleşmesi davranış kaydına çevrilmiyor (kanıt ve ölçülmüş güven yok)",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15c_iddia.py::test_dizgi_kaydi_davranis_kanitli_olculmus_guven",
+      "find": "            return _as_behavior(best_match, ev)",
+      "replace": "            return best_match"
+    },
+    {
+      "id": "k3_cagri_kanit_bos",
+      "desc": "çağrı deseni kanıtı çağrılan API'leri yazmıyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15c_iddia.py::test_cagri_kaydi_davranis_kanitli_olculmus_guven",
+      "find": "\"çağırır: \" + \", \".join(sorted(best_pattern)),",
+      "replace": "\"çağırır: \","
+    },
+    {
+      "id": "k3_lmdb_dizgi_kanit",
+      "desc": "LMDB yedek yolunda dizgi kümesi kanıtı yazılmıyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15c_iddia.py::test_lmdb_yedek_yolu_da_davranis",
+      "find": "f'dizgi kümesi tam eşleşti: \"{_quote_evidence(s)}\"'",
+      "replace": "f'dizgi: \"{s}\"'"
+    },
+    {
+      "id": "k3_secim_olculmus",
+      "desc": "aday seçimi ölçülmüş güvenle (ad davranışı değişir; geliştirmede gevşek doğru −2)",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15c_iddia.py::test_iki_yontem_eslesince_secim_ham_puanla_ad_degismez",
+      "find": "return max(candidates, key=_selection_score)",
+      "replace": "return max(candidates, key=lambda m: m.confidence)"
+    },
+    {
+      "id": "k5_tablo_ham_oran",
+      "desc": "ölçüm tablosunda alt sınır yerine ham oran (0,229)",
+      "module": "karadul/computation/fusion/measured_precision.py",
+      "test": "tests/test_p15c_iddia.py::test_olcum_tablosu_wilson_ile_tutarli_eski_kayit_duruyor",
+      "find": "\"yalniz_alan\": 30, \"wilson_alt\": 0.1517}",
+      "replace": "\"yalniz_alan\": 30, \"wilson_alt\": 0.229}"
+    },
+    {
+      "id": "k4_davranis_ioc",
+      "desc": "davranış tahmini (aile / kademe taşısa) yeniden IOC sayılıyor",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p15c_rapor.py::test_davranis_kaydi_ioc_olamaz_kimlik_kaydi_olur",
+      "find": "    if _signature_claim(m) == CLAIM_BEHAVIOR:\n        return False\n",
+      "replace": "    if False:\n        return False\n"
+    },
+    {
+      "id": "k4_sayim_tek",
+      "desc": "IOC özetinde davranış kayıtları kimlik diye sayılıyor",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p15c_rapor.py::test_davranis_tahmini_kimlikten_ayri_sayilir",
+      "find": "        claims[_signature_claim(m)] += 1",
+      "replace": "        claims[CLAIM_IDENTITY] += 1"
+    },
+    {
+      "id": "k4_sarif_iddia",
+      "desc": "SARIF KRDL006 iddia türünü yazmıyor",
+      "module": "karadul/reporting/sarif_report.py",
+      "test": "tests/test_p07_sarif.py::test_sarif_ioc_bulgusu_krdl006",
+      "find": "\"claim\": _signature_claim(m),",
+      "replace": "\"claim\": None,"
+    },
+    {
+      "id": "k8_veri_koku",
+      "desc": "rapor künyesi veri kökünü yazmıyor",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p15c_rapor.py::test_kunye_sema_ve_veri_koku_raporda",
+      "find": "parts.append(f\"data root {info['sigdb_data_root']}{src}\")",
+      "replace": "parts.append(src)"
+    },
+    {
+      "id": "k8_sema_uyarisi",
+      "desc": "rapor eski şema uyarısını yazmıyor",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p15c_rapor.py::test_eski_sema_uyarisi_istatistikten_raporda",
+      "find": "parts.append(f\"WARNING: {info['sigdb_schema_warning']}\")",
+      "replace": "parts.append(\"\")"
+    },
+    {
+      "id": "k7_paket_koku",
+      "desc": "FortranParamDB yeniden yalnız paket kökünden okuyor (ortam değişkeni izlenmiyor)",
+      "module": "karadul/reconstruction/fortran_param_db.py",
+      "test": "tests/test_p15c_fortran_veri_koku.py::test_ortam_degiskeni_veri_kokunu_izler",
+      "find": "            data_root = resolve_data_root()[0]",
+      "replace": "            data_root = Path(__file__).resolve().parents[2]"
+    }
+  ]
+}

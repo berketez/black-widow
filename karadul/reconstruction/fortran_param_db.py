@@ -41,7 +41,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -414,11 +414,19 @@ class FortranParamDB:
     gfortran runtime, BLAS Level 1-3, LAPACK, ARPACK, PARDISO vb.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, data_root: Optional[Path] = None) -> None:
         self._db: dict[str, list[str]] = dict(_ALL_FORTRAN_PARAMS)
 
-        # v1.9.0: sigs/fortran_params.json varsa otomatik yukle
-        _sigs_dir = Path(__file__).resolve().parents[2] / "sigs"
+        # v1.9.0: sigs/fortran_params*.json varsa otomatik yukle.
+        # P15c (P15b kalanı, GHIDRA-14): veri kökünden okunur — ``KARADUL_SIG_DATA_DIR`` ya da
+        # paket kökü (``karadul.config.resolve_data_root``; ``Config.data_root`` ile aynı kaynak).
+        # Eskiden yalnız paket köküydü; ortam değişkeni izlenmiyordu.
+        if data_root is None:
+            from karadul.config import resolve_data_root
+            data_root = resolve_data_root()[0]
+        self.data_root: Path = Path(data_root)
+        self.loaded_files: list[str] = []
+        _sigs_dir = self.data_root / "sigs"
         for _fp in sorted(_sigs_dir.glob("fortran_params*.json")):
             try:
                 import json as _json
@@ -426,6 +434,7 @@ class FortranParamDB:
                 if isinstance(_data, dict):
                     _before = len(self._db)
                     self._db.update(_data)
+                    self.loaded_files.append(str(_fp))
                     _added = len(self._db) - _before
                     if _added > 0:
                         logger.info("FortranParamDB: %s'den %d fonksiyon eklendi", _fp.name, _added)
