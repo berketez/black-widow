@@ -11,7 +11,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = REPO_ROOT / "karadul" / "ghidra" / "scripts"
-LEGACY_DIR = SCRIPTS_DIR / "legacy"
+# Jython 2.7 yedekleri (scripts/legacy/) 2026-11-18'de silindi (K-3 A2); onlarla
+# karşılaştıran parite testleri kaldırıldı, yeni betiklerin kendi şema / API testleri kaldı.
 
 
 def _collect_top_level_defs(script_path: Path) -> dict[str, list[str]]:
@@ -40,30 +41,6 @@ def _extract_dict_keys(script_path: Path) -> set[str]:
     return keys
 
 
-class TestStaticParity:
-    REQUIRED_FUNCS = (
-        "get_output_dir",
-        "varnode_to_dict",
-        "extract_pcode_ops",
-        "extract_high_variables",
-        "extract_pcode_for_all_functions",
-        "main",
-    )
-
-    def test_same_top_level_functions(self) -> None:
-        legacy_funcs = _collect_top_level_defs(LEGACY_DIR / "pcode_analysis.py")
-        new_funcs = _collect_top_level_defs(SCRIPTS_DIR / "pcode_analysis.py")
-        for required in self.REQUIRED_FUNCS:
-            assert required in legacy_funcs, f"{required} legacy'de yok"
-            assert required in new_funcs, f"{required} migrate'de yok"
-
-    def test_function_arg_counts_match(self) -> None:
-        legacy_funcs = _collect_top_level_defs(LEGACY_DIR / "pcode_analysis.py")
-        new_funcs = _collect_top_level_defs(SCRIPTS_DIR / "pcode_analysis.py")
-        for fname in self.REQUIRED_FUNCS:
-            assert len(legacy_funcs[fname]) == len(new_funcs[fname]), (
-                f"{fname} arg count mismatch"
-            )
 
 
 class TestJSONSchemaStability:
@@ -124,14 +101,6 @@ class TestJSONSchemaStability:
         missing = self.EXPECTED_STATS_KEYS - keys
         assert not missing, f"Stats anahtar eksik: {missing}"
 
-    def test_key_set_parity_legacy_vs_migrated(self) -> None:
-        legacy_keys = _extract_dict_keys(LEGACY_DIR / "pcode_analysis.py")
-        new_keys = _extract_dict_keys(SCRIPTS_DIR / "pcode_analysis.py")
-        assert legacy_keys == new_keys, (
-            f"JSON schema delta! "
-            f"only_legacy={legacy_keys - new_keys} "
-            f"only_new={new_keys - legacy_keys}"
-        )
 
 
 class TestMigrationHeaders:

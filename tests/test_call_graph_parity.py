@@ -24,7 +24,8 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = REPO_ROOT / "karadul" / "ghidra" / "scripts"
-LEGACY_DIR = SCRIPTS_DIR / "legacy"
+# Jython 2.7 yedekleri (scripts/legacy/) 2026-11-18'de silindi (K-3 A2); onlarla
+# karşılaştıran parite testleri kaldırıldı, yeni betiklerin kendi şema / API testleri kaldı.
 
 
 def _collect_top_level_defs(script_path: Path) -> dict[str, list[str]]:
@@ -38,36 +39,6 @@ def _collect_top_level_defs(script_path: Path) -> dict[str, list[str]]:
     return funcs
 
 
-class TestStaticParity:
-    """Legacy ve migrated scriptler ayni API surface'ina sahip olmali."""
-
-    REQUIRED_FUNCS = (
-        "extract_call_graph",
-        "find_root_functions",
-        "find_leaf_functions",
-        "get_output_dir",
-        "main",
-    )
-
-    def test_same_top_level_functions(self) -> None:
-        """Kritik fonksiyon adlari degisemez."""
-        legacy_funcs = _collect_top_level_defs(LEGACY_DIR / "call_graph.py")
-        new_funcs = _collect_top_level_defs(SCRIPTS_DIR / "call_graph.py")
-
-        for required in self.REQUIRED_FUNCS:
-            assert required in legacy_funcs, f"{required} legacy'de yok"
-            assert required in new_funcs, f"{required} migrate edilmisde yok"
-
-    def test_function_arg_counts_match(self) -> None:
-        """Her fonksiyonun parametre sayisi iki dosyada da esit olmali."""
-        legacy_funcs = _collect_top_level_defs(LEGACY_DIR / "call_graph.py")
-        new_funcs = _collect_top_level_defs(SCRIPTS_DIR / "call_graph.py")
-
-        for fname in self.REQUIRED_FUNCS:
-            assert len(legacy_funcs[fname]) == len(new_funcs[fname]), (
-                f"{fname} arg count mismatch: "
-                f"legacy={legacy_funcs[fname]} vs new={new_funcs[fname]}"
-            )
 
 
 class TestJSONSchemaStability:
@@ -119,19 +90,6 @@ class TestJSONSchemaStability:
         missing = self.EXPECTED_EDGE_KEYS - keys
         assert not missing, f"Edge dict anahtarlari eksik: {missing}"
 
-    def test_key_set_parity_legacy_vs_migrated(self) -> None:
-        """Legacy ve migrated scriptler ESIT dict anahtar kumesine sahip olmali."""
-        legacy_keys = self._extract_dict_keys_from_source(
-            LEGACY_DIR / "call_graph.py"
-        )
-        new_keys = self._extract_dict_keys_from_source(
-            SCRIPTS_DIR / "call_graph.py"
-        )
-        assert legacy_keys == new_keys, (
-            f"JSON schema key delta! "
-            f"only_legacy={legacy_keys - new_keys} "
-            f"only_new={new_keys - legacy_keys}"
-        )
 
 
 class TestMigrationHeaders:
@@ -154,11 +112,6 @@ class TestMigrationHeaders:
         assert 'encoding="utf-8"' in content
         assert "ensure_ascii=False" in content
 
-    def test_legacy_retains_jython_header(self) -> None:
-        """Legacy backup Jython 2.7 header'ini korumali (rollback garantisi)."""
-        legacy = LEGACY_DIR / "call_graph.py"
-        content = legacy.read_text(encoding="utf-8")
-        assert "Jython 2.7" in content
 
 
 @pytest.mark.integration

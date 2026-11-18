@@ -25,7 +25,8 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = REPO_ROOT / "karadul" / "ghidra" / "scripts"
-LEGACY_DIR = SCRIPTS_DIR / "legacy"
+# Jython 2.7 yedekleri (scripts/legacy/) 2026-11-18'de silindi (K-3 A2); onlarla
+# karşılaştıran parite testleri kaldırıldı, yeni betiklerin kendi şema / API testleri kaldı.
 
 
 def _collect_top_level_defs(script_path: Path) -> dict[str, list[str]]:
@@ -39,38 +40,6 @@ def _collect_top_level_defs(script_path: Path) -> dict[str, list[str]]:
     return funcs
 
 
-class TestStaticParity:
-    """Legacy ve migrated scriptler ayni API surface'ina sahip olmali."""
-
-    REQUIRED_FUNCS = (
-        "get_output_dir",
-        "extract_structures",
-        "extract_enums",
-        "extract_typedefs",
-        "extract_function_definitions",
-        "summarize_categories",
-        "main",
-    )
-
-    def test_same_top_level_functions(self) -> None:
-        """7 kritik fonksiyon -> her iki dosyada da AYNI isimlerle mevcut olmali."""
-        legacy_funcs = _collect_top_level_defs(LEGACY_DIR / "type_recovery.py")
-        new_funcs = _collect_top_level_defs(SCRIPTS_DIR / "type_recovery.py")
-
-        for required in self.REQUIRED_FUNCS:
-            assert required in legacy_funcs, f"{required} legacy'de yok"
-            assert required in new_funcs, f"{required} migrate edilmisde yok"
-
-    def test_function_arg_counts_match(self) -> None:
-        """Her fonksiyonun parametre sayisi iki dosyada da esit olmali."""
-        legacy_funcs = _collect_top_level_defs(LEGACY_DIR / "type_recovery.py")
-        new_funcs = _collect_top_level_defs(SCRIPTS_DIR / "type_recovery.py")
-
-        for fname in self.REQUIRED_FUNCS:
-            assert len(legacy_funcs[fname]) == len(new_funcs[fname]), (
-                f"{fname} arg count mismatch: "
-                f"legacy={legacy_funcs[fname]} vs new={new_funcs[fname]}"
-            )
 
 
 class TestJSONSchemaStability:
@@ -169,23 +138,6 @@ class TestJSONSchemaStability:
         missing = self.EXPECTED_CATEGORY_ITEM - keys
         assert not missing, f"Category item anahtarlar eksik: {missing}"
 
-    def test_key_set_parity_legacy_vs_migrated(self) -> None:
-        """Legacy ve migrated scriptler ESIT dict anahtar kumesine sahip olmali.
-
-        Recursive tiplerin (Structure.fields, FunctionDefinition.parameters)
-        icteki anahtarlari da dahil — tum string literal'lar tek set'te.
-        """
-        legacy_keys = self._extract_dict_keys_from_source(
-            LEGACY_DIR / "type_recovery.py"
-        )
-        new_keys = self._extract_dict_keys_from_source(
-            SCRIPTS_DIR / "type_recovery.py"
-        )
-        assert legacy_keys == new_keys, (
-            f"JSON schema key delta! "
-            f"only_legacy={legacy_keys - new_keys} "
-            f"only_new={new_keys - legacy_keys}"
-        )
 
 
 class TestMigrationHeaders:

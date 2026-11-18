@@ -24,7 +24,8 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = REPO_ROOT / "karadul" / "ghidra" / "scripts"
-LEGACY_DIR = SCRIPTS_DIR / "legacy"
+# Jython 2.7 yedekleri (scripts/legacy/) 2026-11-18'de silindi (K-3 A2); onlarla
+# karşılaştıran parite testleri kaldırıldı, yeni betiklerin kendi şema / API testleri kaldı.
 
 
 def _collect_top_level_defs(script_path: Path) -> dict[str, list[str]]:
@@ -38,30 +39,6 @@ def _collect_top_level_defs(script_path: Path) -> dict[str, list[str]]:
     return funcs
 
 
-class TestStaticParity:
-    """Legacy ve migrated scriptler ayni API surface'ina sahip olmali."""
-
-    def test_same_top_level_functions(self) -> None:
-        """extract_functions, get_output_dir, main -> her iki dosyada da
-        AYNI isimlerle mevcut olmali."""
-        legacy_funcs = _collect_top_level_defs(LEGACY_DIR / "function_lister.py")
-        new_funcs = _collect_top_level_defs(SCRIPTS_DIR / "function_lister.py")
-
-        # Kritik 3 fonksiyon adi degisemez
-        for required in ("extract_functions", "get_output_dir", "main"):
-            assert required in legacy_funcs, f"{required} legacy'de yok"
-            assert required in new_funcs, f"{required} migrate edilmisde yok"
-
-    def test_function_arg_counts_match(self) -> None:
-        """Her fonksiyonun parametre sayisi iki dosyada da esit olmali."""
-        legacy_funcs = _collect_top_level_defs(LEGACY_DIR / "function_lister.py")
-        new_funcs = _collect_top_level_defs(SCRIPTS_DIR / "function_lister.py")
-
-        for fname in ("extract_functions", "get_output_dir", "main"):
-            assert len(legacy_funcs[fname]) == len(new_funcs[fname]), (
-                f"{fname} arg count mismatch: "
-                f"legacy={legacy_funcs[fname]} vs new={new_funcs[fname]}"
-            )
 
 
 class TestJSONSchemaStability:
@@ -117,20 +94,6 @@ class TestJSONSchemaStability:
         missing = self.EXPECTED_PARAM_KEYS - keys
         assert not missing, f"Parametre dict anahtarlari eksik: {missing}"
 
-    def test_key_set_parity_legacy_vs_migrated(self) -> None:
-        """Legacy ve migrated scriptler ESIT dict anahtar kumesine sahip olmali."""
-        legacy_keys = self._extract_dict_keys_from_source(
-            LEGACY_DIR / "function_lister.py"
-        )
-        new_keys = self._extract_dict_keys_from_source(
-            SCRIPTS_DIR / "function_lister.py"
-        )
-        # Migrate sirasinda HIC ANAHTAR EKLENMEDI / SILINMEDI
-        assert legacy_keys == new_keys, (
-            f"JSON schema key delta! "
-            f"only_legacy={legacy_keys - new_keys} "
-            f"only_new={new_keys - legacy_keys}"
-        )
 
 
 @pytest.mark.integration
