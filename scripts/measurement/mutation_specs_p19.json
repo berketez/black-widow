@@ -272,6 +272,54 @@
       "test": "tests/test_p19_carchive_budget.py::test_size_checked_before_reading",
       "find": "        if file_size > sec.max_binary_size_bytes:",
       "replace": "        if file_size > sec.max_binary_size_bytes * 99:"
+    },
+    {
+      "id": "b05_jadx_basari",
+      "desc": "BICIM-05: jadx .java üretmese de başarılı",
+      "module": "karadul/analyzers/java_binary.py",
+      "test": "tests/test_p19_decompiler_success.py",
+      "find": "            if java_files:",
+      "replace": "            if java_files or True:"
+    },
+    {
+      "id": "b05_jadx_kismi",
+      "desc": "BICIM-05: jadx sıfır dışı kodla bitip dosya ürettiğinde kısmi işaretlenmez",
+      "module": "karadul/analyzers/java_binary.py",
+      "test": "tests/test_p19_decompiler_success.py",
+      "find": "                if proc.returncode != 0:",
+      "replace": "                if proc.returncode != 0 and 0:"
+    },
+    {
+      "id": "b05_jadx_hata_kaydi",
+      "desc": "BICIM-05: jadx başarısızlığı static hatalarına yazılmaz",
+      "module": "karadul/analyzers/java_binary.py",
+      "test": "tests/test_p19_decompiler_success.py::test_jadx_crash_static_stats_and_reconstruct",
+      "find": "                errors.append(f\"jadx basarisiz: {decompiled.get('error')}\")",
+      "replace": "                pass"
+    },
+    {
+      "id": "b05_ilspy_basari",
+      "desc": "BICIM-05: ILSpy .cs üretmese de başarılı",
+      "module": "karadul/analyzers/dotnet_binary.py",
+      "test": "tests/test_p19_decompiler_success.py",
+      "find": "            if cs_files:",
+      "replace": "            if cs_files or True:"
+    },
+    {
+      "id": "b05_ilspy_kismi",
+      "desc": "BICIM-05: ILSpy sıfır dışı kodla bitip dosya ürettiğinde kısmi işaretlenmez",
+      "module": "karadul/analyzers/dotnet_binary.py",
+      "test": "tests/test_p19_decompiler_success.py",
+      "find": "                if proc.returncode != 0:",
+      "replace": "                if proc.returncode != 0 and 0:"
+    },
+    {
+      "id": "b05_ilspy_hata_kaydi",
+      "desc": "BICIM-05: ILSpy başarısızlığı static hatalarına yazılmaz",
+      "module": "karadul/analyzers/dotnet_binary.py",
+      "test": "tests/test_p19_decompiler_success.py::test_ilspy_crash_static_stats",
+      "find": "                errors.append(f\"ILSpy basarisiz: {decompiled.get('error')}\")",
+      "replace": "                pass"
     }
   ]
 }

@@ -81,6 +81,15 @@ _KNOWN_NUGET_PACKAGES: dict[str, str] = {
 _KNOWN_NUGET_IDS = frozenset(_KNOWN_NUGET_PACKAGES.values())
 
 
+def _first_line(text: Optional[str], limit: int = 300) -> str:
+    """Araç stderr'inin ilk boş olmayan satırı (kısaltılmış); yoksa ''."""
+    for line in (text or "").splitlines():
+        line = line.strip()
+        if line:
+            return line[:limit]
+    return ""
+
+
 def _rejected_value_record(field_name: str, value: Any, reason: str) -> dict[str, Any]:
     """Reddedilen düşman değer için zararsız kayıt (yüzde kodlu önizleme)."""
     from urllib.parse import quote
@@ -693,6 +702,10 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
             decompile_dir = workspace.get_stage_dir("static") / "decompiled_dotnet"
             decompiled = self._decompile_with_ilspy(target_path, decompile_dir)
             result_data["decompiled"] = decompiled
+            if not decompiled.get("success"):
+                errors.append(f"ILSpy basarisiz: {decompiled.get('error')}")
+            elif decompiled.get("partial"):
+                errors.append(f"ILSpy kismi basari: {decompiled.get('error')}")
         elif self._monodis_path:
             il_output = self._disassemble_with_monodis(target_path, workspace)
             result_data["il_output"] = il_output
@@ -735,6 +748,7 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
                 "functions_found": metadata.get("method_count", 0),
                 "obfuscated": obf.get("detected", False),
                 "decompiled": bool(result_data.get("decompiled", {}).get("success")),
+                "decompiled_partial": bool(result_data.get("decompiled", {}).get("partial")),
                 "has_cli_header": cli_info.get("has_cli", False),
                 "runtime_version": cli_info.get("runtime_version"),
             },
@@ -914,13 +928,29 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
                 timeout=self.config.timeouts.subprocess,
             )
 
-            if proc.returncode == 0 or output_dir.exists():
-                cs_files = list(output_dir.rglob("*.cs"))
+            # BICIM-05: Eskiden `returncode == 0 or output_dir.exists()` idi;
+            # dizin yukarida yaratildigi icin hep True. Basari = en az bir .cs;
+            # kod != 0 ise kismi + stderr'in ilk satiri.
+            cs_files = list(output_dir.rglob("*.cs"))
+            result["source_files"] = len(cs_files)
+            result["returncode"] = proc.returncode
+            stderr_first = _first_line(proc.stderr)
+            if cs_files:
                 result["success"] = True
-                result["source_files"] = len(cs_files)
-                logger.info("ILSpy decompile basarili: %d .cs dosyasi", len(cs_files))
+                if proc.returncode != 0:
+                    result["partial"] = True
+                    result["error"] = stderr_first or f"ILSpy cikis kodu {proc.returncode}"
+                    logger.warning(
+                        "ILSpy kismi basari (kod %d): %d .cs; %s",
+                        proc.returncode, len(cs_files), result["error"],
+                    )
+                else:
+                    logger.info("ILSpy decompile basarili: %d .cs dosyasi", len(cs_files))
             else:
-                result["error"] = proc.stderr[:500] if proc.stderr else "Unknown"
+                result["error"] = stderr_first or (
+                    f"ILSpy cikis kodu {proc.returncode}, hic .cs uretilmedi"
+                )
+                logger.warning("ILSpy basarisiz: %s", result["error"])
         except subprocess.TimeoutExpired:
             result["error"] = "ILSpy timeout"
         except Exception as e:

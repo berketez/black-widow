@@ -94,6 +94,15 @@ _MAX_GENERATED_NAME_LEN = 255
 _REJECTED_PREVIEW_LEN = 120
 
 
+def _first_line(text: Optional[str], limit: int = 300) -> str:
+    """Araç stderr'inin ilk boş olmayan satırı (kısaltılmış); yoksa ''."""
+    for line in (text or "").splitlines():
+        line = line.strip()
+        if line:
+            return line[:limit]
+    return ""
+
+
 def _rejected_value_record(field_name: str, value: Any, reason: str) -> dict[str, Any]:
     """Reddedilen düşman değer için zararsız kayıt (yüzde kodlu önizleme)."""
     from urllib.parse import quote
@@ -373,6 +382,10 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
             result_data["decompiled"] = decompiled
             if decompiled.get("success"):
                 result_data["source_files"] = decompiled.get("source_files", 0)
+                if decompiled.get("partial"):
+                    errors.append(f"jadx kismi basari: {decompiled.get('error')}")
+            else:
+                errors.append(f"jadx basarisiz: {decompiled.get('error')}")
         elif not is_single_class:
             errors.append("jadx bulunamadi — 'brew install jadx' ile kurun")
             result_data["classes_from_strings"] = self._extract_classes_from_strings(target_path)
@@ -406,6 +419,7 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
             "functions_found": total_methods,
             "obfuscated": obf_info.get("detected", False),
             "decompiled": bool(result_data.get("decompiled", {}).get("success")),
+            "decompiled_partial": bool(result_data.get("decompiled", {}).get("partial")),
             "kotlin_detected": jar_info.get("kotlin_detected", False),
         }
 
@@ -699,14 +713,28 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
                 timeout=self.config.timeouts.subprocess,
             )
 
-            if proc.returncode == 0 or output_dir.exists():
-                # Decompile edilen .java dosyalarini say
-                java_files = list(output_dir.rglob("*.java"))
+            # BICIM-05: Eskiden `returncode == 0 or output_dir.exists()` idi;
+            # dizin yukarida yaratildigi icin hep True -> arac coksa da
+            # "basarili". Basari = en az bir .java; kod != 0 ise kismi.
+            java_files = list(output_dir.rglob("*.java"))
+            result["source_files"] = len(java_files)
+            result["returncode"] = proc.returncode
+            stderr_first = _first_line(proc.stderr)
+            if java_files:
                 result["success"] = True
-                result["source_files"] = len(java_files)
-                logger.info("jadx decompile basarili: %d .java dosyasi", len(java_files))
+                if proc.returncode != 0:
+                    result["partial"] = True
+                    result["error"] = stderr_first or f"jadx cikis kodu {proc.returncode}"
+                    logger.warning(
+                        "jadx kismi basari (kod %d): %d .java; %s",
+                        proc.returncode, len(java_files), result["error"],
+                    )
+                else:
+                    logger.info("jadx decompile basarili: %d .java dosyasi", len(java_files))
             else:
-                result["error"] = proc.stderr[:500] if proc.stderr else "Unknown error"
+                result["error"] = stderr_first or (
+                    f"jadx cikis kodu {proc.returncode}, hic .java uretilmedi"
+                )
                 logger.warning("jadx basarisiz: %s", result["error"])
         except subprocess.TimeoutExpired:
             result["error"] = "jadx timeout"
