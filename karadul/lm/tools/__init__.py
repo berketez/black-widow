@@ -242,6 +242,19 @@ class Workspace:
         """Decompile dosyası olan program fonksiyonlarının adresleri (adrese göre artan)."""
         return sorted(self.code_files, key=lambda a: int(a, 16))
 
+    def ui_name(self, hexaddr: Any) -> Optional[str]:
+        """Arayüzün bu fonksiyon için kullandığı düğüm anahtarı: decompile dosyasının adı, ``.c``
+        atılmış (``ui/server.py::build_model`` ``addrs``; ``ui/index.html`` ``BYADDR``). Olaylardaki
+        ``hedef.fn`` budur: örümcek simgesi bu anahtarla düğüm bulur (KaradulLM v2 tasarımı §4.1, §4.5).
+
+        Anahtar ``FUN_<adres>`` diye KURULMAZ, dosyanın kendi adından okunur: ``ghidra_functions.json``'
+        daki adres yazımı (``103cc0``) ile dosya adının yazımı (``FUN_00103cc0``) farklı olabilir.
+        Decompile dosyası olmayan adres (ithal, thunk, Ghidra'nın adlandırdığı fonksiyon) ya da
+        çalışma alanında olmayan adres için ``None``: arayüzde o adresin düğümü yoktur."""
+        a = self._canon(hexaddr)
+        p = self.code_files.get(a) if a is not None else None
+        return None if p is None else p.name[:-2]
+
     def read_code(self, hexaddr: str) -> Optional[str]:
         """Fonksiyonun ham decompile metni; dosya yoksa ya da okunamıyorsa ``None``."""
         p = self.code_files.get(hexaddr)

@@ -27,6 +27,10 @@ import pytest
 
 import karadul.lm as LM
 from karadul.lm import events as E
+from karadul.lm import tools as T
+from tests.test_lm_tools import (  # noqa: F401 — srv bir pytest fikstürü
+    A, B as FB, CB, D, ENTRY, MALLOC, SIGNAL, build_ws, default_ws, fun, srv,
+)
 
 # Tasarım §4.1 tablosu (+ P22a eklemeleri, P22a.md "Şema"). Şemanın değişmesi bu testi kırar.
 TASARIM_ALANLARI = {
@@ -287,3 +291,43 @@ def test_uzun_yoklama_olay_gelince_doner_yoksa_bos_doner_kapaninca_doner():
     satir(b, 3)
     b.close()
     assert b.since(0, limit=1)["kapali"] is False and b.since(2)["kapali"] is True
+
+
+# --------------------------------------------------------------------------------------------
+# (d) hedef.fn = arayüzün BYADDR anahtarı (Workspace.ui_name)
+
+
+def _arayuz_anahtarlari(srv, kok) -> set[str]:
+    srv._CACHE.clear()
+    srv.activate_workspace(str(kok))
+    return {f["addr"] for f in srv.build_model()["functions"]}
+
+
+def test_ui_name_arayuzun_byaddr_anahtariyla_ayni(srv, tmp_path):
+    kok = default_ws(tmp_path / "ws")
+    w = T.Workspace(kok)
+    anahtarlar = _arayuz_anahtarlari(srv, kok)
+    dolu = {a: w.ui_name(a) for a in w._functions.values() if w.ui_name(a) is not None}
+    assert set(dolu.values()) == anahtarlar                    # her düğüme ulaşılır, düğümü olmayan ad yok
+    assert len(set(dolu.values())) == len(dolu)                 # iki adres aynı düğüme gitmez
+    assert dolu[A] == fun(A) and w.ui_name("0x" + A.upper()) == fun(A) == w.ui_name(A.lstrip("0"))
+    # Decompile dosyası olmayan (ithal thunk, Ghidra'nın adlandırdığı) ve çalışma alanında olmayan adres: None.
+    for a in (MALLOC, SIGNAL, ENTRY, "00fff000", "zz", None, 4096):
+        assert w.ui_name(a) is None, a
+
+
+def test_ui_name_dosya_adindan_okunur_adres_yaziminden_kurulmaz(srv, tmp_path):
+    """ghidra_functions.json dolgusuz adres yazıyor (``1000``), dosya ``FUN_00001000.c``: eski yol
+    (``f"FUN_{adres}"``) arayüzde olmayan bir anahtar verirdi; ui_name dosya adını verir."""
+    kok = build_ws(tmp_path / "ws", {A: {"calls": [FB]}, FB: {"calls": []}})
+    yol = kok / "static" / "ghidra_functions.json"
+    veri = json.loads(yol.read_text(encoding="utf-8"))
+    for f in veri["functions"]:
+        f["address"] = f["address"].lstrip("0")
+    yol.write_text(json.dumps(veri), encoding="utf-8")
+    w = T.Workspace(kok)
+    anahtarlar = _arayuz_anahtarlari(srv, kok)
+    a = w.resolve(fun(A))
+    assert a == "1000" and f"FUN_{a}" not in anahtarlar        # eski yol: düğüm bulunamazdı
+    assert w.ui_name(a) == fun(A) and w.ui_name(a) in anahtarlar
+    assert {w.ui_name(x) for x in w._functions.values()} == anahtarlar
