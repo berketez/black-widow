@@ -301,16 +301,24 @@ def _run_yara_scan(target_path: Path, stats: dict[str, Any]) -> None:
 
 
 def _run_capa_scan(context: PipelineContext, target: Any, stats: dict[str, Any]) -> None:
-    """capa yetenek taramasi; durum ve sayaclar ``stats``'a.
+    """capa yetenek taramasi; durum ``stats``'a, kayit ``static/capa_scan.json``'a.
 
     Her kosulda ``capa_status`` + ``capa_status_reason`` yazilir: tarayicinin
     dondurdugu (``calisti`` / ``arac_yok`` / ``hata`` / ``desteklenmiyor``) ya da
     asama duzeyinde ``kapali`` (``enable_capa=False``) ve ``desteklenmiyor``
-    (asama capa'yi bu hedef turunde cagirmiyor). Basarida sonuc
-    ``static/capa_capabilities.json``'a yazilir (P03 yamasi).
+    (asama capa'yi bu hedef turunde cagirmiyor).
+
+    K-1: tarayicinin tam sonucu her zaman ``static/capa_scan.json``'a (rapor
+    icin) yazilir. Ad birlestiricinin ve ``capa_annotation`` adiminin girdisi
+    ``static/capa_capabilities.json`` ise YALNIZ ``enable_capa_code_feed``
+    acikken yazilir (``capa_annotation.capa_code_feed_enabled``; ontanimli
+    kapali): olculene kadar capa koda ad ya da yorum olarak girmez.
     """
     from karadul.pipeline.steps.anti_debug import (
         SCAN_DISABLED, SCAN_ERROR, SCAN_NO_TOOL, SCAN_RAN, SCAN_UNSUPPORTED,
+    )
+    from karadul.pipeline.steps.capa_annotation import (
+        CAPA_CODE_FEED_FLAG, capa_code_feed_enabled,
     )
 
     br = context.config.binary_reconstruction
@@ -346,9 +354,22 @@ def _run_capa_scan(context: PipelineContext, target: Any, stats: dict[str, Any])
         logger.warning("CAPA scan hatasi (taranamadi): %s", exc)
         return
 
+    feed = capa_code_feed_enabled(context.config)
     stats["capa_status"] = capa_result.status
     stats["capa_status_reason"] = capa_result.status_reason
     stats["capa_backend"] = capa_result.backend
+    stats["capa_code_feed"] = feed
+    record = capa_result.to_dict()
+    record["code_feed"] = {
+        "enabled": feed,
+        "flag": f"binary_reconstruction.{CAPA_CODE_FEED_FLAG}",
+        "note": ("capa sonuclari koda ad / yorum olarak girer" if feed else
+                 "K-1: capa sonuclari yalniz raporda; koda ad / yorum olarak girmez"),
+    }
+    try:
+        context.workspace.save_json("static", "capa_scan", record)
+    except Exception as exc:  # pragma: no cover - defansif
+        logger.warning("capa_scan.json yazilamadi: %s", exc)
     if capa_result.status != SCAN_RAN:
         logger.info("CAPA %s: %s", capa_result.status, capa_result.status_reason)
         return
@@ -356,14 +377,17 @@ def _run_capa_scan(context: PipelineContext, target: Any, stats: dict[str, Any])
     stats["capa_functions_matched"] = capa_result.total_functions_matched
     stats["capa_file_capabilities"] = len(capa_result.file_capabilities)
     stats["capa_duration"] = round(capa_result.duration_seconds, 1)
-    # Sonuclari workspace'e kaydet (reconstruction kullanacak)
-    context.workspace.save_json(
-        "static", "capa_capabilities", capa_result.to_dict(),
-    )
+    if feed:
+        # Ad birlestirici (run_capa_merge) ve capa_annotation bu dosyayi okur.
+        context.workspace.save_json(
+            "static", "capa_capabilities", capa_result.to_dict(),
+        )
     logger.info(
-        "CAPA: %d kural eslesti, %d fonksiyonda capability (%.1fs, format=%s)",
+        "CAPA: %d kural eslesti, %d fonksiyonda capability (%.1fs, format=%s); "
+        "koda besleme %s",
         capa_result.total_rules_matched, capa_result.total_functions_matched,
         capa_result.duration_seconds, capa_result.format_,
+        "acik" if feed else "kapali (K-1)",
     )
 
 

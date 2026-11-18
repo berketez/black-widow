@@ -54,9 +54,25 @@ class TestConfigDisabled:
 
 
 class TestInjectCalled:
-    def test_inject_helper_called(self, base_ctx) -> None:
+    def test_inject_helper_called(self, base_ctx, fake_pc) -> None:
+        """K-1 bayragi acikken (``enable_capa_code_feed=True``) yorum yazilir."""
+        fake_pc.config.binary_reconstruction.enable_capa_code_feed = True
         with patch(
             "karadul.stages._inject_capa_comments", return_value=5,
         ):
             out = CapaAnnotationStep().run(base_ctx)
         assert base_ctx.stats["capa_comments_added"] == 5
+
+    def test_feed_flag_off_by_default_no_injection(self, base_ctx) -> None:
+        """K-1 (P-S1): bayrak ontanimli kapali -> veri olsa da koda yorum girmez.
+
+        ``fake_pc``'de bayrak atanmadi: taklit nesnenin dondurdugu MagicMock
+        ``True`` degildir, kanal kapali sayilir.
+        """
+        with patch(
+            "karadul.stages._inject_capa_comments", return_value=5,
+        ) as inj:
+            CapaAnnotationStep().run(base_ctx)
+        inj.assert_not_called()
+        assert "capa_comments_added" not in base_ctx.stats
+        assert "enable_capa_code_feed" in base_ctx.stats["capa_comments_skipped"]

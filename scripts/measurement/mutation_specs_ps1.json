@@ -152,6 +152,46 @@
       "test": "tests/test_ps1_yara_kayit.py::TestRecord::test_fields_and_truncation",
       "find": "\"meta\": {str(k): _json_safe(v) for k, v in dict(meta).items()},",
       "replace": "\"meta\": dict(meta),  # ham"
+    },
+    {
+      "id": "capa_besleme_hep_acik",
+      "desc": "K-1 kapısı yok: capa_capabilities.json bayraktan bağımsız yazılır (ad birleştirici beslenir)",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_capa_k1.py::TestStaticBlockGate::test_flag_off_report_only",
+      "find": "    if feed:\n        # Ad birlestirici",
+      "replace": "    if True:  # K-1 yok\n        # Ad birlestirici"
+    },
+    {
+      "id": "capa_ontanimli_acik",
+      "desc": "K-1 bayrağının öntanımlısı açık",
+      "module": "karadul/pipeline/steps/capa_annotation.py",
+      "test": "tests/test_ps1_capa_k1.py::TestStaticBlockGate::test_flag_off_report_only",
+      "find": "CAPA_CODE_FEED_DEFAULT = False",
+      "replace": "CAPA_CODE_FEED_DEFAULT = True  # acik"
+    },
+    {
+      "id": "capa_bayrak_gevsek",
+      "desc": "bayrak doğruluk değeriyle okunur: YAML 'true' dizgisi / taklit nesne kanalı açar",
+      "module": "karadul/pipeline/steps/capa_annotation.py",
+      "test": "tests/test_ps1_capa_k1.py::TestFlag::test_only_real_true_opens",
+      "find": "return getattr(recon, CAPA_CODE_FEED_FLAG, CAPA_CODE_FEED_DEFAULT) is True",
+      "replace": "return bool(getattr(recon, CAPA_CODE_FEED_FLAG, CAPA_CODE_FEED_DEFAULT))"
+    },
+    {
+      "id": "capa_yorum_bayraksiz",
+      "desc": "capa_annotation bayrağa bakmadan @capability yorumu yazar",
+      "module": "karadul/pipeline/steps/capa_annotation.py",
+      "test": "tests/test_step_capa_annotation.py::TestInjectCalled::test_feed_flag_off_by_default_no_injection",
+      "find": "if capa_capabilities and feed and pc.config.binary_reconstruction.enable_capa:",
+      "replace": "if capa_capabilities and pc.config.binary_reconstruction.enable_capa:"
+    },
+    {
+      "id": "capa_rapor_kaydi_yok",
+      "desc": "capa sonucu rapor kaydına (capa_scan.json) yazılmaz",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_capa_k1.py::TestStaticBlockGate::test_flag_off_report_only",
+      "find": "        context.workspace.save_json(\"static\", \"capa_scan\", record)",
+      "replace": "        record = None  # kayit yazilmaz"
     }
   ]
 }
