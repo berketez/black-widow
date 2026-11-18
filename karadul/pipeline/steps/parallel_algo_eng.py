@@ -139,35 +139,24 @@ def _run_binary_name_extraction(
             call_graph_json=call_graph_json,
         )
         if extract_result.success and extract_result.names:
-            names = {
-                n.original_name: n.recovered_name
-                for n in extract_result.names
-            }
+            # P13a / AD-06: ön ad, çıkarıcının KENDİ seçimidir (eşik, fonksiyon başına en
+            # güvenli öneri, aynı ad tek fonksiyonda). Eskiden bütün stratejilerin ham listesi
+            # sözlüğe çevriliyordu: eşik altı öneri geçiyor, aynı fonksiyonda listedeki SON
+            # öneri kazanıyor, aynı ad birden çok fonksiyona gidiyordu.
+            names = extractor.as_naming_map()
             extract_path = pc.workspace.save_json(
-                "reconstructed", "binary_names",
-                {
-                    "total": len(names),
-                    "names": {
-                        n.original_name: {
-                            "recovered": n.recovered_name,
-                            "source": n.source,
-                            "confidence": n.confidence,
-                            "class": n.class_name,
-                        }
-                        for n in extract_result.names
-                    },
-                    "classes": extract_result.class_methods,
-                },
+                "reconstructed", "binary_names", extractor.selection_record(),
             )
             logger.info(
-                "Binary Name Extraction: %d isim, %d class",
-                len(names), len(extract_result.class_methods),
+                "Binary Name Extraction: %d isim (%d öneriden), %d class",
+                len(names), len(extract_result.names), len(extract_result.class_methods),
             )
             return {
                 "success": True,
                 "result": names,
                 "stats": {
                     "binary_names_extracted": len(names),
+                    "binary_name_proposals": len(extract_result.names),
                     "classes_detected": len(extract_result.class_methods),
                 },
                 "artifacts": {"binary_names": extract_path},

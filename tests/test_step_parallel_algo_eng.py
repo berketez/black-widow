@@ -77,6 +77,9 @@ class TestWorkerIsolation:
 
         fake_ext = MagicMock()
         fake_ext.return_value.extract.return_value = fake_res
+        # P13a / AD-06: ön ad çıkarıcının kendi seçimi (as_naming_map), ham liste değil
+        fake_ext.return_value.as_naming_map.return_value = {"FUN_1000": "validate_input"}
+        fake_ext.return_value.selection_record.return_value = {"total": 1}
 
         with patch(
             "karadul.reconstruction.binary_name_extractor.BinaryNameExtractor",
@@ -140,6 +143,8 @@ class TestStepOrchestration:
 
         fake_ext = MagicMock()
         fake_ext.return_value.extract.return_value = fake_name_res
+        fake_ext.return_value.as_naming_map.return_value = {"FUN_1": "foo"}
+        fake_ext.return_value.selection_record.return_value = {"total": 1}
 
         # Engineering
         fake_eng_res = MagicMock()

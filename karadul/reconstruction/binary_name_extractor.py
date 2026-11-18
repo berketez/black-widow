@@ -161,6 +161,11 @@ _MANGLED_SYMBOL_RE = re.compile(r'\b(__?_Z[A-Za-z0-9_]{4,})\b')
 # Ghidra otomatik isimleri (yeniden adlandirma gereken)
 _GHIDRA_AUTO_FUNC_RE = re.compile(r'^FUN_[0-9a-fA-F]+$')
 
+# Seçilmeyen önerinin nedeni (``binary_names.json`` → ``candidates[].reason``; P13a / AD-06)
+REASON_BELOW_MIN = "esik_alti"               # güveni min_naming_confidence altında
+REASON_BETTER_EXISTS = "daha_iyisi_var"      # aynı fonksiyona daha güvenli öneri var
+REASON_NAME_ELSEWHERE = "ad_baska_fonksiyonda"  # aynı ad daha güvenli başka fonksiyona verildi
+
 # C++ isim normalizasyon yardimcilari
 _SNAKE_CASE_RE = re.compile(r'[a-z0-9]+(?:_[a-z0-9]+)+')
 _CAMEL_BOUNDARY_RE = re.compile(r'([a-z])([A-Z])')
@@ -457,6 +462,9 @@ class BinaryNameExtractor:
         # Cikarim sonuclari
         self._result: ExtractionResult | None = None
         self._naming_map: dict[str, str] = {}
+        # Fonksiyon başına seçilen öneri ve seçilmeyenler (nedeniyle); ``selection_record``
+        self._selected: dict[str, ExtractedName] = {}
+        self._unselected: list[tuple[ExtractedName, str]] = []
 
         # Dahili state
         self._strings: list[_StringEntry] = []
@@ -2579,31 +2587,87 @@ class BinaryNameExtractor:
     # Sonuc birlestirme
     # ===================================================================
 
+    def _select(
+        self, names: list[ExtractedName],
+    ) -> tuple[dict[str, str], dict[str, ExtractedName], list[tuple[ExtractedName, str]]]:
+        """Önerilerden fonksiyon başına tek ad seç (eşik, en yüksek güven, çift ad temizliği).
+
+        Dönen: (``{eski: yeni}``, ``{eski: seçilen öneri}``, ``[(seçilmeyen öneri, neden)]``).
+        Eşit güvende önce gelen öneri kalır (liste sırası belirlenimci: strateji sırası).
+        """
+        unselected: list[tuple[ExtractedName, str]] = []
+        best_by_func: dict[str, ExtractedName] = {}
+        for name in names:
+            if name.confidence < self._min_confidence:
+                unselected.append((name, REASON_BELOW_MIN))
+                continue
+            existing = best_by_func.get(name.original_name)
+            if existing is None or name.confidence > existing.confidence:
+                if existing is not None:
+                    unselected.append((existing, REASON_BETTER_EXISTS))
+                best_by_func[name.original_name] = name
+            else:
+                unselected.append((name, REASON_BETTER_EXISTS))
+
+        naming_map: dict[str, str] = {}
+        for orig_name, extracted in best_by_func.items():
+            # Ayni isimle yeniden adlandirma yapma
+            if extracted.recovered_name != orig_name:
+                naming_map[orig_name] = extracted.recovered_name
+
+        # Aynı ad birden çok fonksiyona verilmez: en yüksek güvenli kalır (eşitlikte ilk).
+        reverse_map: dict[str, tuple[str, float]] = {}  # recovered -> (original, conf)
+        for orig, recovered in list(naming_map.items()):
+            extracted = best_by_func[orig]
+            prev_entry = reverse_map.get(recovered)
+            if prev_entry is None or extracted.confidence > prev_entry[1]:
+                if prev_entry:
+                    naming_map.pop(prev_entry[0], None)
+                    unselected.append((best_by_func[prev_entry[0]], REASON_NAME_ELSEWHERE))
+                reverse_map[recovered] = (orig, extracted.confidence)
+            else:
+                del naming_map[orig]
+                unselected.append((extracted, REASON_NAME_ELSEWHERE))
+
+        selected = {orig: best_by_func[orig] for orig in naming_map}
+        return naming_map, selected, unselected
+
+    def selection_record(self) -> dict[str, Any]:
+        """``binary_names.json`` gövdesi: fonksiyon başına SEÇİLEN kayıt ve seçilmeyen öneriler.
+
+        ``names`` yalnız ``as_naming_map()``'teki adları taşır (ön ad kanalına giden ad); her
+        seçilmeyen öneri ``candidates``'te nedeniyle durur (ad yerine kanıt satırı).
+        ``extract()`` çağrılmadan boş kayıt döner.
+        """
+        def _row(n: ExtractedName) -> dict[str, Any]:
+            return {"recovered": n.recovered_name, "source": n.source,
+                    "confidence": n.confidence, "class": n.class_name,
+                    "evidence": n.evidence}
+
+        names = {orig: _row(n) for orig, n in self._selected.items()}
+        candidates = [
+            dict(_row(n), original=n.original_name, reason=reason)
+            for n, reason in self._unselected
+        ]
+        candidates.sort(key=lambda r: (r["original"], r["reason"], r["recovered"],
+                                       r["source"], -r["confidence"]))
+        return {
+            "total": len(names),
+            "min_confidence": self._min_confidence,
+            "names": names,
+            "candidates": candidates,
+            "classes": dict(self._result.class_methods) if self._result else {},
+        }
+
     def _merge_results(self, result: ExtractionResult) -> None:
         """Tum stratejilerdeki sonuclari birlestir.
 
         Ayni fonksiyon icin birden fazla isim onerisi varsa,
-        en yuksek confidence'a sahip olani sec.
+        en yuksek confidence'a sahip olani sec (``_select``).
 
         Ayrica class-method, member-var ve source-file bilgilerini topla.
         """
-        # Fonksiyon basi en iyi ismi sec
-        best_by_func: dict[str, ExtractedName] = {}
-
-        for name in result.names:
-            if name.confidence < self._min_confidence:
-                continue
-
-            existing = best_by_func.get(name.original_name)
-            if existing is None or name.confidence > existing.confidence:
-                best_by_func[name.original_name] = name
-
-        # Naming map olustur
-        self._naming_map = {}
-        for orig_name, extracted in best_by_func.items():
-            # Ayni isimle yeniden adlandirma yapma
-            if extracted.recovered_name != orig_name:
-                self._naming_map[orig_name] = extracted.recovered_name
+        self._naming_map, self._selected, self._unselected = self._select(result.names)
 
         # Class-method bilgilerini result'a aktar
         if hasattr(self, '_collected_class_methods'):
@@ -2619,21 +2683,6 @@ class BinaryNameExtractor:
         if hasattr(self, '_collected_source_files'):
             for filename, classes in self._collected_source_files.items():
                 result.source_files[filename] = sorted(classes)
-
-        # Duplicate isimleri engelle: Ayni recovered_name birden fazla
-        # fonksiyona atanmis olabilir. Sadece en yuksek confidence olani tut.
-        reverse_map: dict[str, tuple[str, float]] = {}  # recovered -> (original, conf)
-        for orig, recovered in list(self._naming_map.items()):
-            extracted = best_by_func[orig]
-            prev_entry = reverse_map.get(recovered)
-            if prev_entry is None or extracted.confidence > prev_entry[1]:
-                # Oncekini kaldir
-                if prev_entry:
-                    self._naming_map.pop(prev_entry[0], None)
-                reverse_map[recovered] = (orig, extracted.confidence)
-            else:
-                # Bu daha dusuk confidence -- kaldir
-                del self._naming_map[orig]
 
         logger.debug(
             "Merge sonucu: %d isim eslemesi, %d class, %d member var, %d source file",
