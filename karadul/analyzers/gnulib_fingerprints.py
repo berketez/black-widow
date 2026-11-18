@@ -368,6 +368,19 @@ PRESENCE_KIND_STRING = "dizgi"
 PRESENCE_KIND_CALL = "cagri"
 MIN_PRESENCE_MODULES = 2
 
+# P-S3b (2026-11-18): Ghidra decompile çıktısında dizgi değişmezindeki tırnakları kaçırır
+# ("Try \'%s --help\' ..."). İşaretler kaynaktaki metinle yazıldığı için karşılaştırma kaçışı
+# çözülmüş metinde yapılır; yoksa tek tırnaklı işaret (xstrtol-error, getopt) hiç eşleşmez
+# (geliştirme setinde xstrtol-error: ham 0, çözülmüş 8 coreutils ikilisi).
+_GHIDRA_QUOTE_ESCAPES = (("\\'", "'"), ('\\"', '"'))
+
+
+def unescape_ghidra_quotes(text: str) -> str:
+    """Ghidra'nın dizgi değişmezindeki tırnak kaçışlarını (``\\'``, ``\\"``) çöz."""
+    for kacis, karakter in _GHIDRA_QUOTE_ESCAPES:
+        text = text.replace(kacis, karakter)
+    return text
+
 
 @dataclass(frozen=True)
 class GnulibPresenceMarker:
@@ -379,12 +392,17 @@ class GnulibPresenceMarker:
         kind: ``dizgi`` (ikilinin dizgi değişmezlerinde alt dizgi) ya da ``cagri`` (çağrı
             çizgesinde çağrılan ad, tam eşitlik).
         anchors: herhangi biri (OR) bulunursa modül var sayılır.
+        glibc_shared: işaretin metni glibc'nin kendi kaynağında da aynı (getopt.c, error.c).
+            Glibc'li Linux'ta dinamik bağlı programda bu metin libc.so'da kalır, macOS'ta gnulib
+            onu ikiliye derler; ama statik glibc'li gnulib'siz bir program da taşıyabilir. Bu
+            yüzden yalnız böyle modüllerden oluşan kanıt yetmez (``presence_evidence``).
     """
 
     module: str
     source: str
     kind: str
     anchors: tuple[str, ...]
+    glibc_shared: bool = False
 
 
 GNULIB_PRESENCE_MARKERS: tuple[GnulibPresenceMarker, ...] = (
@@ -392,11 +410,14 @@ GNULIB_PRESENCE_MARKERS: tuple[GnulibPresenceMarker, ...] = (
         "progname", "progname.c", PRESENCE_KIND_STRING,
         ("A NULL argv[0] was passed through an exec system call",),
     ),
+    # "Written by %s, %s, and %s." version_etc_arn'ın dizgisi (P-S3b): emit_bug_reporting_address
+    # olmayan programda da version-etc'yi tanır. Aynı modül; modül sayısı değişmez.
     GnulibPresenceMarker(
         "version-etc", "version-etc.c", PRESENCE_KIND_STRING,
         ("General help using GNU software",
          "License GPLv3+: GNU GPL version 3 or later <%s>",
-         "Packaged by %s"),
+         "Packaged by %s",
+         "Written by %s, %s, and %s."),
     ),
     GnulibPresenceMarker(
         "argmatch", "argmatch.c", PRESENCE_KIND_STRING,
@@ -415,6 +436,24 @@ GNULIB_PRESENCE_MARKERS: tuple[GnulibPresenceMarker, ...] = (
     GnulibPresenceMarker(
         "freading", "freading.h", PRESENCE_KIND_CALL, ("__freading",),
     ),
+    # P-S3b (2026-11-18): sürümden ve platformdan bağımsız işaretler. P-S3'ün işaretleri Homebrew
+    # coreutils 9.12'de (Mach-O, gnulib 2024+) yalnız 1 modül buldu: progname iletisi yeni gnulib'de
+    # yok, __fpending / __freading macOS'ta gnulib'in kendi (adsız) fonksiyonu. getopt (uzun seçenek
+    # iletilerinin '%s%s' biçimi, 2017+) ve error modülleri macOS'ta ikiliye derlenir. Dağılım
+    # (P-S3b ön kaydı): geliştirme setinin 13 gnulib'siz programında ve /usr/bin'in 640 Mach-O
+    # dosyasında 0. Metin glibc'yle ortak -> glibc_shared.
+    GnulibPresenceMarker(
+        "getopt", "getopt.c", PRESENCE_KIND_STRING,
+        ("%s: option '%s%s' doesn't allow an argument",
+         "%s: unrecognized option '%s%s'",
+         "%s: option '%s%s' requires an argument",
+         "%s: option '%s%s' is ambiguous"),
+        glibc_shared=True,
+    ),
+    GnulibPresenceMarker(
+        "error", "error.c", PRESENCE_KIND_STRING, ("Unknown system error",),
+        glibc_shared=True,
+    ),
 )
 
 
@@ -423,11 +462,14 @@ class GnulibPresence:
     """İkilideki gnulib varlık kanıtı.
 
     ``found``: bulunan her modül için ``(module, source, kind, eşleşen işaret)``, katalog sırasıyla.
-    ``sufficient``: bulunan modül sayısı ``MIN_PRESENCE_MODULES``'e ulaştı mı.
+    ``sufficient``: en az ``MIN_PRESENCE_MODULES`` modül bulundu VE en az biri glibc ile ortak
+    olmayan (gnulib'e özgü) modül.
+    ``glibc_shared_modules``: bulunanlardan metni glibc'yle ortak olanlar.
     """
 
     found: tuple[tuple[str, str, str, str], ...]
     sufficient: bool
+    glibc_shared_modules: tuple[str, ...] = ()
 
     def evidence_line(self) -> str:
         """Kanıt satırı (insan okur; ``static/gnulib_candidates.json`` ve günlük)."""
@@ -435,27 +477,39 @@ class GnulibPresence:
             return f"gnulib varlık kanıtı yok (gereken {MIN_PRESENCE_MODULES} bağımsız modül)"
         parcalar = "; ".join(f"{m} ({src}, {k}: '{a}')" for m, src, k, a in self.found)
         hukum = "yeterli" if self.sufficient else "yetersiz"
+        ek = ""
+        if (not self.sufficient and len(self.found) >= MIN_PRESENCE_MODULES
+                and len(self.glibc_shared_modules) == len(self.found)):
+            ek = " (hepsi glibc ile ortak; gnulib'e özgü modül yok)"
         return (f"gnulib varlık kanıtı {hukum}: {len(self.found)} / {MIN_PRESENCE_MODULES} "
-                f"bağımsız modül — {parcalar}")
+                f"bağımsız modül{ek} — {parcalar}")
 
 
 def presence_evidence(literals, callee_names) -> GnulibPresence:
     """İkilinin dizgi değişmezleri ve çağrılan adlarından gnulib varlık kanıtı.
 
+    Dizgi işaretleri, değişmezlerin Ghidra tırnak kaçışları çözülmüş metninde aranır.
+    Yeterlilik: en az ``MIN_PRESENCE_MODULES`` bağımsız modül ve bunlardan en az biri glibc ile
+    ortak olmayan modül (yalnız getopt + error: statik glibc'li gnulib'siz program da taşır).
+
     Args:
         literals: ikilinin decompile edilmiş bütün fonksiyonlarındaki dizgi değişmezleri.
         callee_names: çağrı çizgesinde çağrılan bütün adlar.
     """
-    blob = "\n".join(sorted(set(literals or ())))
+    blob = unescape_ghidra_quotes("\n".join(sorted(set(literals or ()))))
     callees = set(callee_names or ())
     found: list[tuple[str, str, str, str]] = []
+    shared: list[str] = []
     for marker in GNULIB_PRESENCE_MARKERS:
         for anchor in marker.anchors:
             hit = (anchor in blob) if marker.kind == PRESENCE_KIND_STRING else (anchor in callees)
             if hit:
                 found.append((marker.module, marker.source, marker.kind, anchor))
+                if marker.glibc_shared:
+                    shared.append(marker.module)
                 break
-    return GnulibPresence(tuple(found), len(found) >= MIN_PRESENCE_MODULES)
+    sufficient = len(found) >= MIN_PRESENCE_MODULES and len(shared) < len(found)
+    return GnulibPresence(tuple(found), sufficient, tuple(shared))
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,61 @@
+{
+ "_comment": "P-S3b (2026-11-18): gnulib varlık kanıtı sürümden ve platformdan bağımsız (getopt, error, kaçış çözümü, glibc koşulu). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ps3b.json",
+ "mutants": [
+  {
+   "id": "ps3b_kacis_cozulmez",
+   "desc": "dizgi işaretleri Ghidra kaçışlı ham metinde aranır (P-S3 davranışı: tek tırnaklı işaret eşleşmez)",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3b_gnulib_varlik.py::TestKacisCozumu::test_tek_tirnakli_isaret_ghidra_kacisiyla_eslesir",
+   "find": "    blob = unescape_ghidra_quotes(\"\\n\".join(sorted(set(literals or ()))))\n",
+   "replace": "    blob = (\"\\n\".join(sorted(set(literals or ()))))\n"
+  },
+  {
+   "id": "ps3b_unescape_etkisiz",
+   "desc": "kaçış çözücü metni değiştirmez",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3b_gnulib_varlik.py::TestKacisCozumu::test_unescape",
+   "find": "        text = text.replace(kacis, karakter)\n",
+   "replace": "        text = text\n"
+  },
+  {
+   "id": "ps3b_glibc_kosulu_yok",
+   "desc": "yalnız glibc ile ortak modüller (getopt + error) yeterli sayılır",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3b_gnulib_varlik.py::TestMachOGnulib::test_yalniz_glibc_ortak_moduller_yetmez",
+   "find": "    sufficient = len(found) >= MIN_PRESENCE_MODULES and len(shared) < len(found)\n",
+   "replace": "    sufficient = len(found) >= MIN_PRESENCE_MODULES\n"
+  },
+  {
+   "id": "ps3b_getopt_glibc_ortak_degil",
+   "desc": "getopt modülü glibc ile ortak işaretlenmez",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3b_gnulib_varlik.py::TestMachOGnulib::test_yalniz_glibc_ortak_moduller_yetmez",
+   "find": "        glibc_shared=True,\n    ),\n    GnulibPresenceMarker(\n        \"error\"",
+   "replace": "        glibc_shared=False,\n    ),\n    GnulibPresenceMarker(\n        \"error\""
+  },
+  {
+   "id": "ps3b_getopt_isareti_eslesmez",
+   "desc": "getopt işareti kaynakta olmayan metne döner (Mach-O coreutils yine 1 modül)",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3b_gnulib_varlik.py::TestMachOGnulib::test_version_etc_ve_getopt_yeter",
+   "find": "        (\"%s: option '%s%s' doesn't allow an argument\",\n",
+   "replace": "        (\"%s: option '%s%s' does not allow an argument\",\n"
+  },
+  {
+   "id": "ps3b_error_isareti_eslesmez",
+   "desc": "error.c işareti eşleşmez",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3b_gnulib_varlik.py::TestMachOGnulib::test_version_etc_ve_error_yeter",
+   "find": "        \"error\", \"error.c\", PRESENCE_KIND_STRING, (\"Unknown system error\",),\n",
+   "replace": "        \"error\", \"error.c\", PRESENCE_KIND_STRING, (\"Unknown system failure\",),\n"
+  },
+  {
+   "id": "ps3b_written_by_yok",
+   "desc": "version_etc_arn'ın 'Written by' dizgisi version-etc işareti değil",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3b_gnulib_varlik.py::TestMachOGnulib::test_version_etc_arn_dizgisi_version_etc_sayilir",
+   "find": "         \"Written by %s, %s, and %s.\"),\n",
+   "replace": "         \"Written by nobody\"),\n"
+  }
+ ]
+}
