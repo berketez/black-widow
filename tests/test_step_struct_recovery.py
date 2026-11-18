@@ -39,6 +39,9 @@ def base_ctx(fake_pc, tmp_path: Path):
         "updated_algo_result": None,
         "updated_eng_result": None,
         "computation_result": None,
+        # P10 (BORU-04): MaxSMT yapıtları (bayrak kapalıyken üretici böyle verir)
+        "recovered_struct_candidates": [],
+        "computation_struct_result": None,
     })
     return ctx
 

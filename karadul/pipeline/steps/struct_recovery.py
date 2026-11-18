@@ -1,13 +1,21 @@
 """StructRecoveryStep — algoritma-bazli struct field isimlendirme.
 
-stages.py L3356-3404'ten tasindi. Davranis birebir korundu:
-StructRecoveryEngine algoritma bilgisine dayanarak struct field'larini
-anlamli isimlerle yeniden adlandirir ve types_header enrich eder.
+stages.py L3356-3404'ten tasindi. StructRecoveryEngine algoritma bilgisine
+dayanarak struct field'larini anlamli isimlerle yeniden adlandirir ve
+types_header enrich eder.
+
+P10 (BORU-04): MaxSMT yapı adaylarını (``computation_struct_recovery``
+adımının ``recovered_struct_candidates`` / ``computation_struct_result``
+yapıtları) motora ileten tek yol bu adımdır. Önceden bu iş yalnız
+``stages.py``'deki "eski monolit" kopyada, çözücü ikinci kez koşturularak
+yapılıyordu; o blok silindiğinde ``--maxsmt-struct`` etkisiz kalırdı.
+Bayrak kapalıyken (öntanım) üretici adım boş liste döndürür; davranış aynı.
 """
 
 from __future__ import annotations
 
 import logging
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -16,6 +24,72 @@ from karadul.pipeline.context import StepContext
 from karadul.pipeline.registry import Step, register_step
 
 logger = logging.getLogger(__name__)
+
+
+_IDENT_UNSAFE = re.compile(r"[^0-9A-Za-z_]")
+
+
+def maxsmt_structs_for_engine(
+    per_fn_results: Any, candidates: Any,
+) -> list[dict[str, Any]]:
+    """MaxSMT sonucunu ``StructRecoveryEngine.recover(computation_structs=)`` biçimine çevir.
+
+    Motorun okuduğu anahtarlar: ``name``, ``total_size``, ``fields`` (her biri
+    ``offset``, ``size``, ``type``, ``confidence``), ``source_functions``.
+    (Silinecek ``stages.py`` kopyası ``size`` / ``type_hint`` yazıyordu; motor
+    bunları okumadığı için boyut 0, tip ``undefined8`` oluyordu.)
+
+    Kaynak fonksiyon ``computation_struct_result``'tan ({fonksiyon:
+    RecoveredStructLayout}) gelir; adaylar fonksiyon başına çözüldüğü için ad
+    çakışmasın diye ada fonksiyon ve tip ailesi eklenir (motor aynı adlı ikinci
+    yapıyı atlar). ``type_hint`` yalnız genişlik söylediği için (``int32``)
+    alan tipi Ghidra'nın "N baytlık bilinmeyen" tipi ``undefinedN`` olur.
+    Sonuç dict değilse düz aday listesi kaynak fonksiyonsuz kullanılır.
+    """
+    def _fields(cand: Any) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
+        for f in getattr(cand, "fields", None) or []:
+            size = int(getattr(f, "size", 0) or 0)
+            if size <= 0:
+                continue
+            out.append({
+                "offset": int(getattr(f, "offset", 0) or 0),
+                "size": size,
+                "type": f"undefined{size}" if size in (1, 2, 4, 8) else "undefined",
+                "type_hint": getattr(f, "type_hint", None),
+                "confidence": 0.0,  # kalibre güven yok (TIP-03 düzelene kadar)
+            })
+        return out
+
+    result: list[dict[str, Any]] = []
+    if isinstance(per_fn_results, dict) and per_fn_results:
+        for fn_key in sorted(per_fn_results, key=str):
+            layout = per_fn_results[fn_key]
+            assigned = getattr(layout, "assigned_structs", None) or {}
+            for family in sorted(assigned, key=str):
+                cand = assigned[family]
+                name = _IDENT_UNSAFE.sub(
+                    "_", f"maxsmt_{fn_key}_{getattr(cand, 'name', family)}",
+                )
+                result.append({
+                    "name": name,
+                    "total_size": int(getattr(cand, "size", 0) or 0),
+                    "fields": _fields(cand),
+                    "source_functions": [str(fn_key)],
+                    "source": "computation_struct_recovery",
+                })
+        return result
+    for i, cand in enumerate(candidates or []):
+        result.append({
+            "name": _IDENT_UNSAFE.sub(
+                "_", f"maxsmt_{i}_{getattr(cand, 'name', 'struct')}",
+            ),
+            "total_size": int(getattr(cand, "size", 0) or 0),
+            "fields": _fields(cand),
+            "source_functions": [],
+            "source": "computation_struct_recovery",
+        })
+    return result
 
 
 @register_step(
@@ -28,6 +102,10 @@ logger = logging.getLogger(__name__)
         "updated_algo_result",
         "updated_eng_result",
         "computation_result",
+        # P10 (BORU-04): MaxSMT adayları. Üretici adım bayrak kapalıyken
+        # boş liste / None verir; bu bağımlılık sırayı da açıkça kurar.
+        "recovered_struct_candidates",
+        "computation_struct_result",
     ],
     produces=[
         "struct_recovery_decompiled_dir",
@@ -49,6 +127,8 @@ class StructRecoveryStep(Step):
         algo_result: Any = a["updated_algo_result"]
         eng_result: Any = a["updated_eng_result"]
         computation_result: Any = a["computation_result"]
+        maxsmt_candidates: Any = a["recovered_struct_candidates"]
+        maxsmt_per_fn: Any = a["computation_struct_result"]
 
         step_start = time.monotonic()
         struct_result: Any = None
@@ -74,6 +154,22 @@ class StructRecoveryStep(Step):
                         comp_structs_for_eng = [
                             s.to_dict() for s in cs_layer.structs
                         ]
+
+                # P10 (BORU-04): MaxSMT adaylarını EK aday olarak geçir.
+                maxsmt_structs = maxsmt_structs_for_engine(
+                    maxsmt_per_fn, maxsmt_candidates,
+                )
+                if maxsmt_structs:
+                    comp_structs_for_eng = (
+                        list(comp_structs_for_eng or []) + maxsmt_structs
+                    )
+                    ctx.stats["struct_maxsmt_candidates_passed"] = len(
+                        maxsmt_structs,
+                    )
+                    logger.debug(
+                        "StructRecoveryEngine'e %d MaxSMT adayi gecildi",
+                        len(maxsmt_structs),
+                    )
 
                 struct_result = struct_engine.recover(
                     decompiled_dir=decompiled_dir,

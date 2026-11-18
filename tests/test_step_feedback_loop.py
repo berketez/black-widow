@@ -320,8 +320,14 @@ class TestFeedbackLoopRunnerIntegration:
         produces contract'ina uymali."""
         from karadul.pipeline import PipelineRunner
         fake_pc.config.binary_reconstruction.enable_struct_recovery = False
-        runner = PipelineRunner(steps=["feedback_loop", "struct_recovery"])
-        step_ctx = runner.run(fake_pc, seed_artifacts=base_artifacts)
+        # P10 (BORU-04): struct_recovery MaxSMT yapıtlarını ister; üründeki Faz 2
+        # listesi (stages.py) computation_struct_recovery'yi içerir. Bayrak kapalı.
+        runner = PipelineRunner(steps=[
+            "feedback_loop", "computation_struct_recovery", "struct_recovery",
+        ])
+        step_ctx = runner.run(
+            fake_pc, seed_artifacts={**base_artifacts, "pcode_result": None},
+        )
 
         # feedback_loop produces
         assert "naming_result" in step_ctx.artifacts

@@ -1,0 +1,54 @@
+{
+  "_comment": "P10 (2026-11-18 onarımı) mutasyon koruması: BORU-04 (MaxSMT adayları adım tarafından motora), BORU-02 (yedek kaynak ağacın dışında; inline_detection yalnız kaynak; girdi = çıktı reddi), TIP-04 (Ghidra adları korunur, taban koddan, bağlanmayan sayılmaz, K-1 bekletme), TIP-05 (anahtar (fonksiyon, değişken), fonksiyon kapsamı, tip uyumu). Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı. Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p10.json",
+  "mutants": [
+    {
+      "id": "p10_k1_requires",
+      "desc": "struct_recovery MaxSMT yapıtlarını istemez (sıra ve bağımlılık açık değil)",
+      "module": "karadul/pipeline/steps/struct_recovery.py",
+      "test": "tests/test_p10_maxsmt.py::TestRegistry::test_struct_recovery_requires_maxsmt_artifacts",
+      "find": "        \"recovered_struct_candidates\",\n        \"computation_struct_result\",\n    ],",
+      "replace": "    ],"
+    },
+    {
+      "id": "p10_k1_per_fn",
+      "desc": "fonksiyon başına sonuç kullanılmaz (adayın kaynak fonksiyonu kaybolur)",
+      "module": "karadul/pipeline/steps/struct_recovery.py",
+      "test": "tests/test_p10_maxsmt.py::TestStepPath::test_candidate_reaches_engine_report",
+      "find": "maxsmt_per_fn, maxsmt_candidates,",
+      "replace": "None, maxsmt_candidates,"
+    },
+    {
+      "id": "p10_k1_gecir",
+      "desc": "MaxSMT adayları motora geçirilmez (eski davranış: adım yolu boş)",
+      "module": "karadul/pipeline/steps/struct_recovery.py",
+      "test": "tests/test_p10_maxsmt.py::TestStepPath::test_candidate_reaches_engine_report",
+      "find": "list(comp_structs_for_eng or []) + maxsmt_structs",
+      "replace": "list(comp_structs_for_eng or []) + []"
+    },
+    {
+      "id": "p10_k1_total_size",
+      "desc": "boyut motorun okumadığı 'size' anahtarına yazılır (eski stages.py kopyasının kusuru)",
+      "module": "karadul/pipeline/steps/struct_recovery.py",
+      "test": "tests/test_p10_maxsmt.py::TestConversion::test_per_function_keys_and_types",
+      "find": "\"total_size\": int(getattr(cand, \"size\", 0) or 0),",
+      "replace": "\"size\": int(getattr(cand, \"size\", 0) or 0),",
+      "occurrence": 1
+    },
+    {
+      "id": "p10_k1_alan_tipi",
+      "desc": "alan tipi motorun okuduğu 'type' anahtarına yazılmaz",
+      "module": "karadul/pipeline/steps/struct_recovery.py",
+      "test": "tests/test_p10_maxsmt.py::TestConversion::test_per_function_keys_and_types",
+      "find": "\"type\": f\"undefined{size}\" if size in (1, 2, 4, 8) else \"undefined\",",
+      "replace": "\"type_hint2\": f\"undefined{size}\" if size in (1, 2, 4, 8) else \"undefined\","
+    },
+    {
+      "id": "p10_k1_ad_cakismasi",
+      "desc": "aday adına fonksiyon eklenmez (iki fonksiyonun cand_0'ı çakışır, motor ikinciyi atlar)",
+      "module": "karadul/pipeline/steps/struct_recovery.py",
+      "test": "tests/test_p10_maxsmt.py::TestConversion::test_per_function_keys_and_types",
+      "find": "f\"maxsmt_{fn_key}_{getattr(cand, 'name', family)}\"",
+      "replace": "f\"maxsmt_{getattr(cand, 'name', family)}\""
+    }
+  ]
+}
