@@ -48,6 +48,54 @@
       "test": "tests/test_p20_webpack_modules.py::test_step_without_counter_does_not_invent_zero",
       "find": "            if \"modules_parse_failed\" in json_result:",
       "replace": "            if True:"
+    },
+    {
+      "id": "p20_k2_kapsam_kovasi_sayilmaz",
+      "desc": "BICIM-03: scope-aware kipte uygulanan ad kovaya sayılmaz",
+      "module": "scripts/apply-names.mjs",
+      "test": "tests/test_p20_counters.py::test_apply_names_scope_aware_reports_applied_distribution",
+      "find": "        countAppliedConfidence(appliedByConfidence, rename.confidence);\n",
+      "replace": ""
+    },
+    {
+      "id": "p20_k2_kova_aday_sayisi",
+      "desc": "BICIM-03: düşük kova yine analizcinin aday sayısından",
+      "module": "karadul/reconstruction/context_namer.py",
+      "test": "tests/test_p20_counters.py::test_confidence_buckets_sum_to_applied_renames",
+      "find": "            low_confidence=low,",
+      "replace": "            low_confidence=stats.get(\"named_low_confidence\", 0),"
+    },
+    {
+      "id": "p20_k2_bilinmeyen_sifir",
+      "desc": "BICIM-03: dağılım yokken 0 uydurulur",
+      "module": "karadul/reconstruction/context_namer.py",
+      "test": "tests/test_p20_counters.py::test_buckets_unknown_when_applier_does_not_report",
+      "find": "            high = medium = low = None",
+      "replace": "            high = medium = low = 0"
+    },
+    {
+      "id": "p20_k2_tutarsizlik_bildirilmez",
+      "desc": "BICIM-03: kova toplamı tutmazsa bildirilmez",
+      "module": "karadul/reconstruction/context_namer.py",
+      "test": "tests/test_p20_counters.py::test_inconsistent_distribution_is_reported",
+      "find": "            if high + medium + low != renamed_count:",
+      "replace": "            if False:"
+    },
+    {
+      "id": "p20_k2_flat_basvuru_sayisi",
+      "desc": "BICIM-03: flat kipte renamed yine başvuru sayısı",
+      "module": "scripts/apply-names.mjs",
+      "test": "tests/test_p20_counters.py::test_apply_names_flat_mode_counts_names_not_references",
+      "find": "    renamed: Object.keys(appliedMappings).length,\n    references_renamed: renameCount,",
+      "replace": "    renamed: renameCount,\n    references_renamed: renameCount,"
+    },
+    {
+      "id": "p20_k2_param_govde_toplanir",
+      "desc": "BICIM-03: params_applied yine parametre + gövde başvurusu",
+      "module": "scripts/apply-params.mjs",
+      "test": "tests/test_p20_counters.py::test_params_applied_counts_parameters_not_references",
+      "find": "          renameCount += 1; // yalnız parametre",
+      "replace": "          renameCount += 1 + bodyRenames; // yalnız parametre"
     }
   ]
 }

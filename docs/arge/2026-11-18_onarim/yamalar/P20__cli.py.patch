@@ -1,0 +1,48 @@
+--- a/karadul/cli.py	2026-11-18 18:18:50
++++ b/karadul/cli.py	2026-11-18 18:18:59
+@@ -1059,25 +1059,31 @@
+             f"{strings:>10}" if isinstance(strings, int) else "N/A",
+         )
+ 
+-    # Deobfuscation sonuclari
++    # Deobfuscation sonuclari (P20 / BICIM-03: eskiden hiçbir aşamanın
++    # üretmediği "steps_completed" / "modules_extracted" okunuyor, her koşuda
++    # N/A yazılıyordu; artık derin hattın gerçek adım ve modül sayıları).
+     if "deobfuscate" in result.stages:
+-        st = result.stages["deobfuscate"].stats
+-        results_table.add_row("Deobf steps", str(st.get("steps_completed", "N/A")))
++        st = result.stages["deobfuscate"].stats or {}
++        steps = st.get("steps")
++        if isinstance(steps, dict) and steps:
++            done = sum(1 for s in steps.values() if isinstance(s, dict) and s.get("success"))
++            results_table.add_row("Deobf steps", f"{done}/{len(steps)}")
++        else:
++            results_table.add_row("Deobf steps", "N/A")
++        modules = st.get("total_modules")
++        if isinstance(modules, int):
++            failed = st.get("unpack_modules_parse_failed")
++            label = str(modules)
++            if isinstance(failed, int) and failed:
++                label += f" ({failed} ayrıştırılamıyor)"
++            results_table.add_row("Modules extracted", label)
+ 
+-    # Reconstruct sonuclari
++    # Reconstruct sonuclari ("Coverage" ve "Runnable project" satırları
++    # kaldırıldı: hiçbir aşama bu anahtarları üretmiyordu, satırlar kalıcı
++    # N/A / NO idi; ayrıca analiz edilen kod "çalıştırılabilir" sunulmaz, BICIM-12.)
+     if "reconstruct" in result.stages:
+         st = result.stages["reconstruct"].stats
+-        results_table.add_row("Modules extracted", str(st.get("modules_extracted", "N/A")))
+         results_table.add_row("Variables renamed", str(st.get("variables_renamed", "N/A")))
+-        coverage = st.get("coverage_percent")
+-        results_table.add_row(
+-            "Coverage",
+-            f"{coverage}%" if isinstance(coverage, (int, float)) else "N/A",
+-        )
+-        results_table.add_row(
+-            "Runnable project",
+-            "YES" if st.get("runnable_project") else "NO",
+-        )
+ 
+     # Computation recovery sonuclari
+     if "reconstruct" in result.stages:

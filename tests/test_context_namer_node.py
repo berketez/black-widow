@@ -782,7 +782,11 @@ def test_flat_fallback_emits_single_accurate_report(
     assert report["scope_aware"] is False, report
     assert any("Scope-aware rename hatasi" in e for e in report["errors"]), report["errors"]
     assert report["mappings"] == {"a": "fileSystem"}, report
-    assert report["renamed"] == 3  # flat kip: param, let ve return'deki üç `a`
+    # P20 / BICIM-03: flat kipte "renamed" ad sayısıdır (bir ad: `a`); param,
+    # let ve return'deki üç başvuru ayrı alanda. Eskiden renamed == 3 (başvuru)
+    # yazılıyor, variables_renamed'e de böyle geçiyordu.
+    assert report["renamed"] == 1
+    assert report["references_renamed"] == 3
     assert re.search(r"\bfunction f\(fileSystem\)", out.read_text(encoding="utf-8"))
 
     # Python yolu (SubprocessRunner son JSON satırını okur) aynı raporu görmeli

@@ -55,6 +55,19 @@ for (let i = 0; i < args.length; i++) {
 const MIN_CONFIDENCE = parseFloat(flags.get("--min-confidence") || "0.4");
 const DRY_RUN = flags.has("--dry-run");
 
+// Güven kovaları context-analyzer.mjs'tekiyle aynı eşikler: >= 0.5 yüksek,
+// >= 0.2 orta, altı düşük. Burada yalnız UYGULANAN adlar sayılır (BICIM-03).
+function newConfidenceBuckets() {
+  return { high: 0, medium: 0, low: 0 };
+}
+
+function countAppliedConfidence(buckets, confidence) {
+  const conf = Math.min(Number(confidence) || 0, 1.0);
+  if (conf >= 0.5) buckets.high++;
+  else if (conf >= 0.2) buckets.medium++;
+  else buckets.low++;
+}
+
 function emit(obj) {
   process.stdout.write(JSON.stringify(obj) + "\n");
 }
@@ -653,6 +666,7 @@ if (isScopeAware) {
     pendingRenames.sort((a, b) => b.confidence - a.confidence);
 
     const appliedMappings = {};
+    const appliedByConfidence = newConfidenceBuckets();
     const renamedKeys = new Set();
     let renameCount = 0;
     let shadowSkipped = 0;
@@ -680,6 +694,7 @@ if (isScopeAware) {
         applyRename(rename.binding, rename.oldName, chosen);
         renamedKeys.add(rename.key);
         renameCount++;
+        countAppliedConfidence(appliedByConfidence, rename.confidence);
         appliedMappings[rename.key] = { from: rename.oldName, to: chosen };
       } catch (err) {
         errors.push(`Rename basarisiz ${rename.oldName}->${rename.newName} in ${rename.scopeId}: ${err.message}`);
@@ -712,6 +727,8 @@ if (isScopeAware) {
       shadow_skipped: shadowSkipped,
       shadow_suffixed: shadowSuffixed,
       export_skipped: exportSkipped,
+      // BICIM-03: UYGULANAN adların güven dağılımı (toplam == renamed).
+      applied_by_confidence: appliedByConfidence,
       mappings: appliedMappings,
       output: DRY_RUN ? null : outputPath,
       dry_run: DRY_RUN,
@@ -755,6 +772,9 @@ function flatRename(variableNames) {
   }
 
   const appliedMappings = {};
+  // BICIM-03: flat kipte renameCount BAŞVURU (identifier düğümü) sayısıydı ve
+  // "renamed" diye raporlanıyordu. Artık renamed = yeniden adlandırılan ad
+  // sayısı; başvuru sayısı ayrı alanda (references_renamed).
   let renameCount = 0;
   const renamedNodes = new Set();
 
@@ -799,7 +819,8 @@ function flatRename(variableNames) {
       writeFileSync(outputPath, code, "utf-8");
     } catch (err) {
       emit({
-        success: false, renamed: renameCount, skipped,
+        success: false, renamed: Object.keys(appliedMappings).length,
+        references_renamed: renameCount, skipped,
         scope_aware: false, mappings: appliedMappings,
         errors: [...errors, `Code generation hatasi: ${err.message}`],
       });
@@ -807,9 +828,17 @@ function flatRename(variableNames) {
     }
   }
 
+  const appliedByConfidence = newConfidenceBuckets();
+  for (const name of Object.keys(appliedMappings)) {
+    const info = globalRenames.get(name);
+    countAppliedConfidence(appliedByConfidence, info ? info.confidence : 0);
+  }
+
   emit({
     success: true,
-    renamed: renameCount,
+    renamed: Object.keys(appliedMappings).length,
+    references_renamed: renameCount,
+    applied_by_confidence: appliedByConfidence,
     skipped,
     scope_aware: false,
     duplicates_fixed: duplicatesFixed,

@@ -40,9 +40,14 @@ class NamingResult:
     Attributes:
         success: Islem basarili mi.
         variables_renamed: Yeniden adlandirilan degisken sayisi.
-        high_confidence: Yuksek guvenle (>= 0.5) isimlendirilen sayisi.
-        medium_confidence: Orta guvenle (0.2 - 0.5) isimlendirilen sayisi.
-        low_confidence: Dusuk guvenle (< 0.2) isimlendirilen sayisi.
+        high_confidence: UYGULANAN adlardan yüksek güvenli (>= 0.5) olanlar.
+        medium_confidence: UYGULANAN adlardan orta güvenli (0.2 - 0.5) olanlar.
+        low_confidence: UYGULANAN adlardan düşük güvenli (< 0.2) olanlar.
+            Üçünün toplamı ``variables_renamed``'e eşittir (BICIM-03). Uygulayıcı
+            dağılımı bildirmezse üçü de None (bilinmiyor; 0 uydurulmaz).
+        candidates_high / candidates_medium / candidates_low: Analizcinin
+            (context-analyzer.mjs) eşik ÖNCESİ önerdiği aday sayıları; bunlar
+            uygulanan ad sayısı değildir.
         unnamed: Isimlendirilemeyen kisa degisken sayisi.
         total_variables: Toplam degisken sayisi.
         mappings: apply-names.mjs'nin uyguladığı eşleşmeler. Scope-aware
@@ -56,9 +61,12 @@ class NamingResult:
 
     success: bool
     variables_renamed: int = 0
-    high_confidence: int = 0
-    medium_confidence: int = 0
-    low_confidence: int = 0
+    high_confidence: int | None = 0
+    medium_confidence: int | None = 0
+    low_confidence: int | None = 0
+    candidates_high: int = 0
+    candidates_medium: int = 0
+    candidates_low: int = 0
     unnamed: int = 0
     total_variables: int = 0
     mappings: dict[str, dict[str, str] | str] = field(default_factory=dict)
@@ -332,12 +340,31 @@ class ContextNamer:
         for old, new in list(mappings.items())[:15]:
             logger.info("  %s -> %s", old, new)
 
+        # BICIM-03: kovalar UYGULANAN adlardan (apply-names.mjs
+        # applied_by_confidence). Eskiden analizcinin eşik öncesi aday sayıları
+        # yazılıyordu: örnekte uygulanan 3 ad yanında "low 20, medium 1".
+        applied = apply_result.get("applied_by_confidence")
+        if isinstance(applied, dict):
+            high = int(applied.get("high", 0))
+            medium = int(applied.get("medium", 0))
+            low = int(applied.get("low", 0))
+            if high + medium + low != renamed_count:
+                all_errors.append(
+                    "apply-names.mjs güven dağılımı uygulanan ad sayısını "
+                    f"tutmuyor ({high}+{medium}+{low} != {renamed_count})"
+                )
+        else:
+            high = medium = low = None
+
         return NamingResult(
             success=True,
             variables_renamed=renamed_count,
-            high_confidence=stats.get("named_high_confidence", 0),
-            medium_confidence=stats.get("named_medium_confidence", 0),
-            low_confidence=stats.get("named_low_confidence", 0),
+            high_confidence=high,
+            medium_confidence=medium,
+            low_confidence=low,
+            candidates_high=stats.get("named_high_confidence", 0),
+            candidates_medium=stats.get("named_medium_confidence", 0),
+            candidates_low=stats.get("named_low_confidence", 0),
             unnamed=stats.get("unnamed", 0),
             total_variables=stats.get("total_variables", 0),
             mappings=mappings,

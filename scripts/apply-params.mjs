@@ -348,7 +348,11 @@ function renameInBody(bodyNode, oldName, newName, maxDepth = 20) {
 // =====================================================================
 
 const appliedMappings = {};
+// BICIM-03: renameCount = yeniden adlandırılan PARAMETRE sayısı (eskiden
+// parametre + gövde başvurusu toplanıp "renamed" diye raporlanıyordu ve
+// kurtarılan parametre sayısını aşıyordu). Gövde başvuruları ayrı sayılır.
 let renameCount = 0;
+let referencesRenamed = 0;
 let functionsTouched = 0;
 
 try {
@@ -415,7 +419,8 @@ try {
           // Body icindeki referanslari rename et
           const bodyRenames = renameInBody(node.body, currentName, newName);
 
-          renameCount += 1 + bodyRenames; // parametre + body referanslari
+          renameCount += 1; // yalnız parametre
+          referencesRenamed += bodyRenames; // gövde başvuruları ayrı
           touched = true;
 
           appliedMappings[`${funcKey}::${rec.paramIdx}`] = {
@@ -451,6 +456,7 @@ if (!DRY_RUN) {
     emit({
       success: false,
       renamed: renameCount,
+      references_renamed: referencesRenamed,
       skipped,
       functions_touched: functionsTouched,
       mappings: appliedMappings,
@@ -463,6 +469,7 @@ if (!DRY_RUN) {
 emit({
   success: true,
   renamed: renameCount,
+  references_renamed: referencesRenamed,
   skipped,
   functions_touched: functionsTouched,
   mappings: appliedMappings,
