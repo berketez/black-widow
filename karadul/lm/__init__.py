@@ -20,7 +20,10 @@ Modüller:
   veri / talimat ayrımı (kaçışlama, sarmalama), kod kırpma, bağlam bütçesi.
 - ``tools``: araç kaydı, saklı çalışma alanının salt okunur görünümü ve üç okuyan araç
   (``get_evidence``, ``get_decompiled``, ``get_xrefs``).
-- ``agent``: K0 iş akışı ve bütçeli döngü (K1 / K2 öntanımlı kapalı).
+- ``agent``: K0 iş akışı ve bütçeli döngü (K1 / K2 öntanımlı kapalı); isteğe bağlı olay geri çağrısı,
+  akışlı istek ve içerik deposu (KaradulLM v2, P22a).
+- ``events``: olay zarfı ve türleri, görüntü arındırması, olay halkası (uzun yoklama), içerik deposu
+  (``docs/arge/2026-11-18_karadullm_v2/TASARIM.md`` §4.1).
 
 İçe aktarma yan etkisizdir: sunucu başlatılmaz, ağ açılmaz, dosya yazılmaz. Alt modüller burada
 içe aktarılmaz; yalnız sabitler tanımlıdır.

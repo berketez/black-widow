@@ -22,6 +22,12 @@ her görev de birer kayıttır (K-L1). Her model çağrısından sonra bellek be
 nedeniyle durmuş sunucuya yeni istek atılmaz (kendiliğinden yeniden başlatma yok). Arka uç hatası
 (``LMError``) görevi ``arka_uc_hatasi`` ile bitirir, ajan yeni göreve hazır kalır. Beklenmeyen her
 hata ve kesmede arka uç ``hata`` nedeniyle durdurulur (yetim süreç kalmaz) ve hata yükselir.
+
+Olaylar (KaradulLM v2, P22a; ``karadul.lm.events``): ``on_event`` verilirse görev, araç (dokunulan
+fonksiyonlarla), model isteği / cevabı, akış parçası (``jeton``), denetim ve görev sonu olayları yayılır;
+model isteği öntanımda akışlıdır ve iptal / süre her akış parçasında denetlenir. ``on_event`` yoksa istek
+gövdesi ve kayıtlar değişmez. ``content_store`` verilirse modelin gördüğü her araç sonucu tam zarfıyla
+saklanır.
 """
 from __future__ import annotations
 

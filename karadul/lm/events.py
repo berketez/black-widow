@@ -44,7 +44,7 @@ from karadul.lm.protocol import RESULT_ID_PATTERN
 # --- Zarf ve türler (tasarım §4.1) -------------------------------------------------------------
 ENVELOPE_KEYS = ("seq", "t_ms", "zaman", "oturum", "gorev", "tur")
 
-# Türlerin ek alanları. Tasarım tablosundan; P22a'da eklenenler "[P22a]" notlu (P22a.md "Şema").
+# Türlerin ek alanları. Tasarım tablosundan; P22a'da eklenenler "[P22a]" notlu (gerekçe: P22a.md kalem 1).
 EVENT_FIELDS: dict[str, tuple[str, ...]] = {
     # Oturum (P22e yayar)
     "oturum_basladi": ("kip", "model", "arka_uc", "baglam", "ag", "hiz"),
@@ -77,7 +77,7 @@ EVENT_FIELDS: dict[str, tuple[str, ...]] = {
 EVENT_TYPES = frozenset(EVENT_FIELDS)
 
 CALLER_SERVER, CALLER_MODEL = "sunucu", "model"
-# Kapalı değer kümeleri (tasarım §4.1). ``None`` yalnız ayrıca izin verilen alanlarda.
+# Kapalı değer kümeleri (tasarım §4.1); bu alanlarda ``None`` da kabul edilmez.
 FIELD_CHOICES: dict[tuple[str, str], frozenset[Any]] = {
     ("gorev_basladi", "gorev_turu"): frozenset({"acikla", "ad_oner", "ozet_alt", "soru", "plan"}),
     ("arac_basladi", "cagiran"): frozenset({CALLER_SERVER, CALLER_MODEL}),
