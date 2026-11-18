@@ -41,6 +41,11 @@ from dataclasses import dataclass
 # Drift-guard: tests/test_gnulib_fingerprints.py bu commit'i vendor HEAD ile
 # karsilastirir -> yanlislikla master'a fetch edilirse test kirilir.
 GNULIB_REF_COMMIT = "bb5bb43a1ebb9f502b5ce38c0b8c8778d13b9f6e"
+# Yalnız oracle'ın (vendor pin) kimliği; ürün bunu DENETLEMEZ, denetlemesi de gerekmez
+# (P-S3, 2026-11-18, GT ile): geliştirme seti coreutils 9.7 (gnulib 2025) ve buradaki yedi
+# girdi orada doğru ad veriyor; doğruluğu değişen üç girdi (version_etc, hard_locale,
+# full_write) AYNI sürümde (9.4) LTO'ya göre değişiyor (Debian 9.4 0/11, Ubuntu 9.4 14/14).
+# Ayrım sürümle değil yerleşimle: bkz. LAYOUT_DEPENDENT_NAMES / lto_less_layout.
 EXPECTED_COREUTILS = "9.4"
 
 
@@ -341,3 +346,141 @@ def disambiguate(name: str, candidates: dict[str, set[str]]) -> str | None:
         and not any(x in callees for x in rule.exclude_callees)
     ]
     return survivors[0] if len(survivors) == 1 else None
+
+
+# ---------------------------------------------------------------------------
+# P-S3 (AD-03, 2026-11-18): gnulib VARLIK kanıtı
+# ---------------------------------------------------------------------------
+# Yukarıdaki parmak izleri "bu fonksiyon hangi gnulib fonksiyonu?" sorusunu cevaplar; ikilinin
+# gnulib içerip içermediğini sormaz. Sorulmadığı için `write` çağıran 2-4 dallı tek fonksiyon her
+# programda `full_write`, "write error" taşıyan tek fonksiyon `close_stdout` oluyordu (tmux, Mach-O
+# tmux, redis-cli, openssl, zstd). Kanal artık yalnız ikilide en az MIN_PRESENCE_MODULES BAĞIMSIZ
+# gnulib modülünün işareti varsa ad yazar. Tek dizgi yetmez; platform (ELF / Mach-O) koşul değildir
+# (Homebrew'un GNU araçları Mach-O'da da gnulib içerir).
+#
+# İşaretler gnulib UPSTREAM kaynağından seçildi (leakage-safe; her biri vendor/gnulib-ref/lib/
+# <source>'da birebir geçer, testle denetlenir) ve gnulib'e özgü kod metnidir. Genel dizgiler
+# ("write error", "memory exhausted", "Usage: %s") bilerek YOK: bison ve başka programlar da taşır.
+# Çağrı işaretleri, gnulib'in glibc'de çağırdığı ve başka kodun pek çağırmadığı stdio_ext
+# fonksiyonlarıdır (close-stream: __fpending, freading: __freading).
+
+PRESENCE_KIND_STRING = "dizgi"
+PRESENCE_KIND_CALL = "cagri"
+MIN_PRESENCE_MODULES = 2
+
+
+@dataclass(frozen=True)
+class GnulibPresenceMarker:
+    """Bir gnulib modülünün ikilideki izi.
+
+    Args:
+        module: gnulib modülü (kanıt satırında görünen ad).
+        source: işaretin birebir geçtiği gnulib ``lib/`` kaynak dosyası.
+        kind: ``dizgi`` (ikilinin dizgi değişmezlerinde alt dizgi) ya da ``cagri`` (çağrı
+            çizgesinde çağrılan ad, tam eşitlik).
+        anchors: herhangi biri (OR) bulunursa modül var sayılır.
+    """
+
+    module: str
+    source: str
+    kind: str
+    anchors: tuple[str, ...]
+
+
+GNULIB_PRESENCE_MARKERS: tuple[GnulibPresenceMarker, ...] = (
+    GnulibPresenceMarker(
+        "progname", "progname.c", PRESENCE_KIND_STRING,
+        ("A NULL argv[0] was passed through an exec system call",),
+    ),
+    GnulibPresenceMarker(
+        "version-etc", "version-etc.c", PRESENCE_KIND_STRING,
+        ("General help using GNU software",
+         "License GPLv3+: GNU GPL version 3 or later <%s>",
+         "Packaged by %s"),
+    ),
+    GnulibPresenceMarker(
+        "argmatch", "argmatch.c", PRESENCE_KIND_STRING,
+        ("invalid argument %s for %s", "ambiguous argument %s for %s", "Valid arguments are:"),
+    ),
+    GnulibPresenceMarker(
+        "closein", "closein.c", PRESENCE_KIND_STRING, ("error closing file",),
+    ),
+    GnulibPresenceMarker(
+        "xstrtol-error", "xstrtol-error.c", PRESENCE_KIND_STRING,
+        ("invalid suffix in %s%s argument '%s'", "%s%s argument '%s' too large"),
+    ),
+    GnulibPresenceMarker(
+        "close-stream", "close-stream.c", PRESENCE_KIND_CALL, ("__fpending",),
+    ),
+    GnulibPresenceMarker(
+        "freading", "freading.h", PRESENCE_KIND_CALL, ("__freading",),
+    ),
+)
+
+
+@dataclass(frozen=True)
+class GnulibPresence:
+    """İkilideki gnulib varlık kanıtı.
+
+    ``found``: bulunan her modül için ``(module, source, kind, eşleşen işaret)``, katalog sırasıyla.
+    ``sufficient``: bulunan modül sayısı ``MIN_PRESENCE_MODULES``'e ulaştı mı.
+    """
+
+    found: tuple[tuple[str, str, str, str], ...]
+    sufficient: bool
+
+    def evidence_line(self) -> str:
+        """Kanıt satırı (insan okur; ``static/gnulib_candidates.json`` ve günlük)."""
+        if not self.found:
+            return f"gnulib varlık kanıtı yok (gereken {MIN_PRESENCE_MODULES} bağımsız modül)"
+        parcalar = "; ".join(f"{m} ({src}, {k}: '{a}')" for m, src, k, a in self.found)
+        hukum = "yeterli" if self.sufficient else "yetersiz"
+        return (f"gnulib varlık kanıtı {hukum}: {len(self.found)} / {MIN_PRESENCE_MODULES} "
+                f"bağımsız modül — {parcalar}")
+
+
+def presence_evidence(literals, callee_names) -> GnulibPresence:
+    """İkilinin dizgi değişmezleri ve çağrılan adlarından gnulib varlık kanıtı.
+
+    Args:
+        literals: ikilinin decompile edilmiş bütün fonksiyonlarındaki dizgi değişmezleri.
+        callee_names: çağrı çizgesinde çağrılan bütün adlar.
+    """
+    blob = "\n".join(sorted(set(literals or ())))
+    callees = set(callee_names or ())
+    found: list[tuple[str, str, str, str]] = []
+    for marker in GNULIB_PRESENCE_MARKERS:
+        for anchor in marker.anchors:
+            hit = (anchor in blob) if marker.kind == PRESENCE_KIND_STRING else (anchor in callees)
+            if hit:
+                found.append((marker.module, marker.source, marker.kind, anchor))
+                break
+    return GnulibPresence(tuple(found), len(found) >= MIN_PRESENCE_MODULES)
+
+
+# ---------------------------------------------------------------------------
+# P-S3 (B-A3, 2026-11-18): yerleşime bağlı girdiler
+# ---------------------------------------------------------------------------
+# version_etc ("Written by"), hard_locale (setlocale) ve full_write (write) LTO'lu yapıda doğru
+# fonksiyonda ateşlenir (iç fonksiyon dışarıdakine satır içine alınır); LTO'suz yapıda dizgi /
+# çağrı İÇ fonksiyonda (version_etc_arn, setlocale_null_r, safe_write) kalır, dış ad onu çağıran
+# ince sarmalayıcınındır. GT: Debian 9.4 (LTO'suz) 0/11, Ubuntu 9.4 (LTO'lu) 14/14, geliştirme seti
+# (Debian 13, LTO'suz) 0/217 (docs/arge/2026-11-11_on_ad_onarimi/sonuc.md, P-S3.md).
+# GT'siz ayırt edici: LTO'suz yapıda ateşlenen fonksiyonun BÜTÜN çağıranları ince sarmalayıcıdır
+# (en çok THIN_CALLER_MAX_CALLEES fonksiyon çağırır); LTO'lu yapıda çağıran main gibi geniş bir
+# fonksiyondur. Kural yalnız bu üç girdiye uygulanır; çağıranı olmayan ateşlemede karar verilemez.
+# İç ad (version_etc_arn ...) burada üretilmez: gnulib sürümüne bağlı (setlocale_null_r ↔
+# setlocale_null_r_unlocked) ve ayrı ölçüm ister.
+
+LAYOUT_DEPENDENT_NAMES = frozenset({"version_etc", "hard_locale", "full_write"})
+THIN_CALLER_MAX_CALLEES = 2
+
+
+def lto_less_layout(caller_callee_counts) -> bool:
+    """Ateşlenen fonksiyonun bütün çağıranları ince sarmalayıcı mı (LTO'suz yerleşim)?
+
+    ``caller_callee_counts``: çağıranların çağırdığı fonksiyon sayıları. Çağıran yoksa ``False``
+    (yerleşim kanıtı yok; eski davranış).
+    """
+    counts = list(caller_callee_counts or ())
+    return bool(counts) and all(c <= THIN_CALLER_MAX_CALLEES for c in counts)

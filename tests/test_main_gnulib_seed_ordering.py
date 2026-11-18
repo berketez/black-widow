@@ -145,12 +145,25 @@ def _write_c(decompiled: Path, fun_key: str, body: str) -> None:
     )
 
 
+def _gnulib_varlik(decompiled: Path) -> None:
+    """gnulib varlık kanıtı (P-S3, AD-03): iki bağımsız modülün işareti (progname, version-etc).
+
+    Kanal artık yalnız gnulib'li ikilide ad yazar. İşaretler adlı (FUN_ olmayan) fonksiyonlarda:
+    parmak izi adayı olmazlar, yalnız varlık kanıtına girerler.
+    """
+    _write_c(decompiled, "set_program_name",
+             '  fputs("A NULL argv[0] was passed through an exec system call.\\n",stderr);')
+    _write_c(decompiled, "emit_bug_reporting_address",
+             '  printf("General help using GNU software: <%s>\\n",url);')
+
+
 class TestSeedRecoveryGnulib:
     def _gnulib_static_dir(self, tmp_path: Path) -> Path:
-        """Unique-in-binary gnulib anchor'li minimal decompiled workspace."""
+        """Unique-in-binary gnulib anchor'li minimal decompiled workspace (gnulib'li ikili)."""
         static_dir = tmp_path / "static"
         decompiled = static_dir / "decompiled"
         decompiled.mkdir(parents=True)
+        _gnulib_varlik(decompiled)
         # Her anchor gnulib upstream lib/<src>'da birebir gecer (dogrulandi):
         _write_c(decompiled, "FUN_00201000", '  error(1,0,"memory exhausted");')      # xalloc_die
         _write_c(decompiled, "FUN_00202000", '  printf("Usage: %s [OPTION]...");')     # usage
@@ -232,8 +245,9 @@ class TestSeedRecoveryGnulib:
         (decompiled / "FUN_00102cc0.c").write_text(_START_C, encoding="utf-8")
         # main govdesi (version string)
         (decompiled / "FUN_00101b00.c").write_text(_MAIN_C, encoding="utf-8")
-        # gnulib anchor
+        # gnulib anchor (+ gnulib varlık kanıtı: gnulib'li ikili)
         _write_c(decompiled, "FUN_00201000", '  error(1,0,"memory exhausted");')
+        _gnulib_varlik(decompiled)
 
         extracted: dict[str, str] = {}
         stats: dict = {}

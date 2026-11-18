@@ -1721,9 +1721,23 @@ class ReconstructionStage(Stage):
         ``FUN_`` ile eslesirse atanir; birden fazla aday varsa belirsiz kabul
         edilip call-shape katmanina (FIX-2b) birakilir.
 
+        P-S3 (AD-03, B-A3; 2026-11-18) iki kanıt koşulu, tek karar noktasında (``_offer``):
+          1. **gnulib varlık kanıtı**: ikilide en az ``MIN_PRESENCE_MODULES`` bağımsız gnulib
+             modülünün işareti yoksa (``presence_evidence``) kanal hiç ad yazmaz. Eskiden
+             gnulib'siz programlarda da ateşleniyordu (tmux ``close_stdout``, redis-cli
+             ``full_write``; Mach-O dahil).
+          2. **LTO yerleşimi**: ``version_etc`` / ``hard_locale`` / ``full_write`` ateşlendiği
+             fonksiyonun bütün çağıranları ince sarmalayıcıysa (``lto_less_layout``) ad
+             yazılmaz: LTO'suz yapıda dizgi / çağrı iç fonksiyonda kalır, ad yanlış olurdu.
+        Yazılmayan aday kaybolmaz: kanıt satırı ve nedeniyle ``static/gnulib_candidates.json``'a
+        yazılır (uygulananlar da kanıtıyla); varlık kanıtı ``stats["gnulib_evidence"]``'da.
+        Bir katmanın önerdiği anahtar (uygulansın ya da tutulsun) sonraki gnulib katmanlarına
+        aday olmaz: tutulan bir dizgi adayı zayıf bir çağrı şekliyle yeniden adlanmaz.
+
         Isim ``pre_names`` kanalina (``extracted_names``) yazilir; c_namer guard'i
         davranissal namer'in ezmesini engeller (``_recover_main_from_entry`` ile
         ayni mekanizma). Onceden atanmis pre_name'ler (FIX-1 ``main`` dahil) EZILMEZ.
+        Iki kez cagri idempotent: ad zaten ayniysa yeniden yazilmaz, karar kaydi ayni kalir.
         """
         try:
             if not isinstance(extracted_names, dict) or static_dir is None:
@@ -1732,23 +1746,36 @@ class ReconstructionStage(Stage):
             if decompiled_dir is None:
                 return
             from karadul.analyzers.gnulib_fingerprints import (
+                GNULIB_CALL_SHAPES,
+                GNULIB_DISAMBIGUATORS,
+                GNULIB_FINGERPRINTS,
+                LAYOUT_DEPENDENT_NAMES,
+                MIN_PRESENCE_MODULES,
+                THIN_CALLER_MAX_CALLEES,
                 disambiguate,
                 extract_string_literals,
+                lto_less_layout,
                 match_call_shape,
                 match_function,
+                presence_evidence,
             )
 
-            # name -> [fun_key, ...]  (unique-in-binary degerlendirmesi icin)
+            # name -> [fun_key, ...]  (unique-in-binary degerlendirmesi icin). Ayni taramada
+            # ikilinin BUTUN dizgi degismezleri toplanir (P-S3: varlik kaniti). Dosyalar sirali
+            # taranir: aday listeleri ve ekleme sirasi dosya sistemine bagli olmasin.
             candidates: dict[str, list[str]] = {}
-            for c in decompiled_dir.rglob("*.c"):
-                fun_key = c.stem  # dosya adi = kanonik FUN_00xxxxxx
-                if not fun_key.startswith("FUN_"):
-                    continue
+            all_literals: set[str] = set()
+            for c in sorted(decompiled_dir.rglob("*.c")):
                 try:
                     txt = c.read_text(errors="ignore")
                 except Exception:
                     continue
-                name = match_function(extract_string_literals(txt))
+                literals = extract_string_literals(txt)
+                all_literals.update(literals)
+                fun_key = c.stem  # dosya adi = kanonik FUN_00xxxxxx
+                if not fun_key.startswith("FUN_"):
+                    continue
+                name = match_function(literals)
                 if name == "version_etc" and "getopt_long" in txt:
                     # FIX-4 (2026-07-12): "Written by" string'i normalde version_etc'e
                     # aittir; ama parse_long_options, --version isini .constprop ile
@@ -1761,6 +1788,98 @@ class ReconstructionStage(Stage):
                 if name:
                     candidates.setdefault(name, []).append(fun_key)
 
+            # Cagri cizgesi: varlik kaniti (cagrilan adlar), call-shape ve yerlesim (cagiranlar).
+            cg_path = None
+            _roots = [static_dir]
+            if static_dir.parent and static_dir.parent != static_dir:
+                _roots.append(static_dir.parent)
+            for _root in _roots:
+                found = next(_root.rglob("call_graph.json"), None)
+                if found is not None:
+                    cg_path = found
+                    break
+            nodes: dict = {}
+            if cg_path is not None:
+                try:
+                    nodes = json.loads(cg_path.read_text()).get("nodes", {}) or {}
+                except Exception:
+                    nodes = {}
+            node_by_key: dict[str, dict] = {}
+            callees_by_key: dict[str, set[str]] = {}
+            all_callees: set[str] = set()
+            for addr_key, node in nodes.items():
+                if not isinstance(node, dict):
+                    continue
+                try:
+                    fk = f"FUN_{int(str(addr_key), 16):08x}"
+                except (ValueError, TypeError):
+                    continue
+                names = {
+                    c.get("name", "")
+                    for c in node.get("callees", [])
+                    if isinstance(c, dict)
+                }
+                node_by_key[fk] = node
+                callees_by_key[fk] = names
+                all_callees.update(names)
+
+            presence = presence_evidence(all_literals, all_callees)
+            presence_line = presence.evidence_line()
+            decisions: list[dict] = []
+            proposed: set[str] = set()
+
+            def _caller_counts(fk: str) -> list[int]:
+                counts: list[int] = []
+                for caller in (node_by_key.get(fk) or {}).get("callers", []) or []:
+                    if not isinstance(caller, dict):
+                        continue
+                    try:
+                        ck = f"FUN_{int(str(caller.get('address')), 16):08x}"
+                    except (ValueError, TypeError):
+                        continue
+                    if ck in node_by_key:
+                        counts.append(int(node_by_key[ck].get("callee_count", 0)))
+                return counts
+
+            def _offer(fk: str, nm: str, channel: str, evidence: str) -> bool:
+                """Tek karar noktasi: adi yaz ya da gerekcesiyle tut; yazildiysa True."""
+                proposed.add(fk)
+                rec: dict = {"key": fk, "name": nm, "channel": channel, "evidence": evidence}
+                current = extracted_names.get(fk)
+                if current is not None and current != nm:
+                    rec.update(decision="skipped", reason="on_ad_dolu", existing=current)
+                    decisions.append(rec)
+                    return False
+                if not presence.sufficient:
+                    rec.update(decision="withheld", reason="gnulib_kaniti_yetersiz",
+                               evidence_presence=presence_line)
+                    decisions.append(rec)
+                    return False
+                if nm in LAYOUT_DEPENDENT_NAMES:
+                    counts = _caller_counts(fk)
+                    if lto_less_layout(counts):
+                        rec.update(
+                            decision="withheld", reason="lto_yerlesimi",
+                            caller_callee_counts=counts,
+                            evidence_layout=(
+                                f"çağıranların hepsi ince sarmalayıcı (≤ {THIN_CALLER_MAX_CALLEES} "
+                                f"çağrı; çağrı sayıları {counts}): LTO'suz yerleşim, "
+                                f"{nm} adı bu fonksiyonun değil onu çağıranın"
+                            ),
+                        )
+                        decisions.append(rec)
+                        return False
+                rec.update(decision="applied")
+                decisions.append(rec)
+                if current == nm:
+                    return False  # ikinci cagri: ad zaten yazili (idempotent)
+                extracted_names[fk] = nm
+                return True
+
+            fp_by_name = {fp.name: fp for fp in GNULIB_FINGERPRINTS}
+            cs_by_name = {cs.name: cs for cs in GNULIB_CALL_SHAPES}
+            dis_by_name = {d.name: d for d in GNULIB_DISAMBIGUATORS}
+
             assigned = 0
             ambiguous: list[str] = []
             for name, keys in candidates.items():
@@ -1768,10 +1887,10 @@ class ReconstructionStage(Stage):
                     ambiguous.append(name)  # belirsiz -> call-shape'e (FIX-2b) birak
                     continue
                 fun_key = keys[0]
-                if extracted_names.get(fun_key) is not None:
-                    continue  # onceki pre_name (FIX-1 main / binary_extractor) korunur
-                extracted_names[fun_key] = name
-                assigned += 1
+                fp = fp_by_name[name]
+                if _offer(fun_key, name, "dizgi_parmak_izi",
+                          f"dizgi parmak izi {list(fp.anchors)} ({fp.source}); ikilide tek aday"):
+                    assigned += 1
             if assigned:
                 stats["gnulib_recovered"] = assigned
             if ambiguous:
@@ -1787,50 +1906,32 @@ class ReconstructionStage(Stage):
             # String sabiti olmayan/paylasan gnulib fonksiyonlari icin ikinci
             # kanal: cagirdiklari ayirt-edici libc callee'leri (close_stream ->
             # __fpending, gettext_quote -> nl_langinfo). String-fp'den SONRA
-            # calisir; zaten isimlenmis (main/string) fonksiyonlar aday sayilmaz.
-            cg_path = None
-            _roots = [static_dir]
-            if static_dir.parent and static_dir.parent != static_dir:
-                _roots.append(static_dir.parent)
-            for _root in _roots:
-                found = next(_root.rglob("call_graph.json"), None)
-                if found is not None:
-                    cg_path = found
-                    break
+            # calisir; zaten isimlenmis (main/string) ya da string-fp'nin onerdigi
+            # fonksiyonlar aday sayilmaz.
             if cg_path is not None:
-                import json as _json
-
-                try:
-                    nodes = _json.loads(cg_path.read_text()).get("nodes", {})
-                except Exception:
-                    nodes = {}
                 cs_candidates: dict[str, list[str]] = {}
-                for addr_key, node in nodes.items():
-                    if not isinstance(node, dict):
+                for fun_key, node in node_by_key.items():
+                    if fun_key in proposed:
                         continue
-                    try:
-                        fun_key = f"FUN_{int(str(addr_key), 16):08x}"
-                    except (ValueError, TypeError):
+                    nm = match_call_shape(callees_by_key[fun_key],
+                                          int(node.get("callee_count", 0)))
+                    if not nm:
                         continue
-                    if extracted_names.get(fun_key) is not None:
+                    current = extracted_names.get(fun_key)
+                    if current is not None and current != nm:
                         continue  # zaten isimli (main/string-fp) -> aday degil
-                    callees = {
-                        c.get("name", "")
-                        for c in node.get("callees", [])
-                        if isinstance(c, dict)
-                    }
-                    nm = match_call_shape(callees, int(node.get("callee_count", 0)))
-                    if nm:
-                        cs_candidates.setdefault(nm, []).append(fun_key)
+                    cs_candidates.setdefault(nm, []).append(fun_key)
                 cs_assigned = 0
                 for nm, keys in cs_candidates.items():
                     if len(keys) != 1:
                         continue  # unique-in-binary
                     fk = keys[0]
-                    if extracted_names.get(fk) is not None:
-                        continue
-                    extracted_names[fk] = nm
-                    cs_assigned += 1
+                    cs = cs_by_name[nm]
+                    fanout = int(node_by_key[fk].get("callee_count", 0))
+                    if _offer(fk, nm, "cagri_bicimi",
+                              f"çağrı şekli: {list(cs.required_callees)} çağırır, çağrı sayısı "
+                              f"{fanout} ({cs.source}); ikilide tek aday"):
+                        cs_assigned += 1
                 if cs_assigned:
                     stats["gnulib_callshape_recovered"] = cs_assigned
                     logger.info(
@@ -1847,30 +1948,25 @@ class ReconstructionStage(Stage):
                 # Savunmaci: yalniz TEK aday hayatta kalirsa VE hedef hala
                 # isimsizse atar -> wrong->correct duzeltmesi, dusus-risksiz.
                 if ambiguous:
-                    fk_callees: dict[str, set[str]] = {}
-                    for addr_key, node in nodes.items():
-                        if not isinstance(node, dict):
-                            continue
-                        try:
-                            fk = f"FUN_{int(str(addr_key), 16):08x}"
-                        except (ValueError, TypeError):
-                            continue
-                        fk_callees[fk] = {
-                            c.get("name", "")
-                            for c in node.get("callees", [])
-                            if isinstance(c, dict)
-                        }
                     disamb_assigned = 0
                     for amb_name in ambiguous:
                         cand_fks = candidates.get(amb_name, [])
                         if len(cand_fks) < 2:
                             continue
                         cands = {
-                            fk: fk_callees.get(fk, set()) for fk in cand_fks
+                            fk: callees_by_key.get(fk, set()) for fk in cand_fks
                         }
                         winner = disambiguate(amb_name, cands)
-                        if winner and extracted_names.get(winner) is None:
-                            extracted_names[winner] = amb_name
+                        if not winner or winner in proposed:
+                            continue
+                        current = extracted_names.get(winner)
+                        if current is not None and current != amb_name:
+                            continue
+                        rule = dis_by_name[amb_name]
+                        if _offer(winner, amb_name, "ayristirma",
+                                  f"dizgi parmak izi {len(cand_fks)} adayda; ayrıştırma: "
+                                  f"{list(rule.require_callees)} çağırır, "
+                                  f"{list(rule.exclude_callees)} çağırmaz ({rule.source})"):
                             disamb_assigned += 1
                     if disamb_assigned:
                         stats["gnulib_disambiguated"] = disamb_assigned
@@ -1878,8 +1974,66 @@ class ReconstructionStage(Stage):
                             "gnulib disambiguation: %d fonksiyon kurtarildi",
                             disamb_assigned,
                         )
+
+            withheld = [d for d in decisions if d["decision"] == "withheld"]
+            stats["gnulib_evidence"] = {
+                "sufficient": presence.sufficient,
+                "modules": [m for m, _src, _kind, _anchor in presence.found],
+                "min_modules": MIN_PRESENCE_MODULES,
+            }
+            if withheld:
+                stats["gnulib_withheld"] = len(withheld)
+                logger.info(
+                    "gnulib: %d aday yazılmadı (%s); kanıtlarıyla gnulib_candidates.json'da",
+                    len(withheld),
+                    ", ".join(sorted({d["reason"] for d in withheld})),
+                )
+            self._write_gnulib_candidates(static_dir, presence, presence_line, decisions,
+                                          ambiguous, candidates)
         except Exception as exc:  # pragma: no cover -- savunmaci
             logger.debug("gnulib fingerprint kurtarma hatasi: %s", exc)
+
+    GNULIB_CANDIDATES_FILE = "gnulib_candidates.json"
+
+    @classmethod
+    def _write_gnulib_candidates(cls, static_dir: Path, presence: Any, presence_line: str,
+                                 decisions: list, ambiguous: list, candidates: dict) -> None:
+        """gnulib kanalının kararlarını kanıt satırlarıyla ``static/``'e yaz (K-2: aday kaybolmaz).
+
+        Biçim (``schema_version`` 1): varlık kanıtı (modüller, eşik, kanıt satırı), her öneri
+        için karar (``applied`` / ``withheld`` / ``skipped``), neden, kanıt satırı; belirsiz adlar
+        ve aday anahtarları. Ad ve anahtar ürün koşusunun kendi verisidir (GT yok).
+        """
+        from karadul.analyzers.gnulib_fingerprints import (
+            LAYOUT_DEPENDENT_NAMES,
+            MIN_PRESENCE_MODULES,
+            THIN_CALLER_MAX_CALLEES,
+        )
+
+        doc = {
+            "schema": "karadul.gnulib_candidates",
+            "schema_version": 1,
+            "presence": {
+                "sufficient": presence.sufficient,
+                "min_modules": MIN_PRESENCE_MODULES,
+                "found": [
+                    {"module": m, "source": src, "kind": kind, "anchor": anchor}
+                    for m, src, kind, anchor in presence.found
+                ],
+                "evidence": presence_line,
+            },
+            "layout_rule": {
+                "names": sorted(LAYOUT_DEPENDENT_NAMES),
+                "thin_caller_max_callees": THIN_CALLER_MAX_CALLEES,
+            },
+            "decisions": decisions,
+            "ambiguous": {nm: list(candidates.get(nm, [])) for nm in ambiguous},
+        }
+        try:
+            (static_dir / cls.GNULIB_CANDIDATES_FILE).write_text(
+                json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        except OSError as exc:
+            logger.warning("gnulib aday kaydı yazılamadı (%s): %s", static_dir, exc)
 
     def _recover_elf_boilerplate(
         self, extracted_names: dict, static_dir: "Path | None", stats: dict
