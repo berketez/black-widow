@@ -368,7 +368,7 @@ def _stage_with_fake(tmp_path: Path, monkeypatch, scenario: dict) -> StageResult
                         language=Language.JAVASCRIPT, file_size=src.stat().st_size,
                         file_hash="0" * 64)
     ctx = PipelineContext(target=target, workspace=ws, config=cfg)
-    return DeobfuscationStage(use_deep=True)._execute_deep(ctx, time.monotonic())
+    return DeobfuscationStage()._execute_deep(ctx, time.monotonic())
 
 
 class TestStageResultIsHonest:
@@ -431,7 +431,7 @@ class TestRealToolchain:
 
     def test_sample_main_output_success(self, tmp_path: Path):
         ctx = _real_ctx(tmp_path, "sample.js", _FIXTURE_JS.read_bytes())
-        sr = DeobfuscationStage(use_deep=True)._execute_deep(ctx, time.monotonic())
+        sr = DeobfuscationStage()._execute_deep(ctx, time.monotonic())
         steps = sr.stats["steps"]
         assert sr.success is True
         assert steps["deep_deobfuscate"]["success"] is True
@@ -445,7 +445,7 @@ class TestRealToolchain:
         olarak yazılıyor, tek başına ayrıştırılamıyor; eski kod 3/3 "renamed" diyordu.
         """
         ctx = _real_ctx(tmp_path, "sample.js", _FIXTURE_JS.read_bytes())
-        sr = DeobfuscationStage(use_deep=True)._execute_deep(ctx, time.monotonic())
+        sr = DeobfuscationStage()._execute_deep(ctx, time.monotonic())
         mods = sorted((ctx.workspace.get_stage_dir("deobfuscated")
                        / "webpack_modules" / "modules").glob("*.js"))
         assert mods
@@ -465,7 +465,7 @@ class TestRealToolchain:
     def test_real_beautify_crash_is_reported_partial(self, tmp_path: Path):
         ctx = _real_ctx(tmp_path, "jsx.js",
                         (_FIXTURE_JS.read_text() + _JSX_BREAKS_BEAUTIFY).encode())
-        sr = DeobfuscationStage(use_deep=True)._execute_deep(ctx, time.monotonic())
+        sr = DeobfuscationStage()._execute_deep(ctx, time.monotonic())
         deob = ctx.workspace.get_stage_dir("deobfuscated")
         beautify = sr.stats["steps"]["beautify"]
         assert beautify["success"] is False
@@ -477,7 +477,7 @@ class TestRealToolchain:
 
     def test_binary_content_is_failed(self, tmp_path: Path):
         ctx = _real_ctx(tmp_path, "bin.js", _ELF_LIKE)
-        sr = DeobfuscationStage(use_deep=True)._execute_deep(ctx, time.monotonic())
+        sr = DeobfuscationStage()._execute_deep(ctx, time.monotonic())
         assert sr.success is False
         assert sr.stats["status"] == STATUS_FAILED
         assert "output_file" not in sr.artifacts
@@ -486,7 +486,7 @@ class TestRealToolchain:
     def test_non_js_text_beautified_but_not_deobfuscated_is_failed(self, tmp_path: Path):
         """beautify Python'u da "biçimler"; bu tek başına başarı değildir."""
         ctx = _real_ctx(tmp_path, "py.js", b"def foo(x):\n    return x + 1\n")
-        sr = DeobfuscationStage(use_deep=True)._execute_deep(ctx, time.monotonic())
+        sr = DeobfuscationStage()._execute_deep(ctx, time.monotonic())
         assert sr.stats["steps"]["beautify"]["success"] is True
         assert sr.success is False
         assert sr.stats["status"] == STATUS_FAILED

@@ -91,10 +91,11 @@ class TestTargetTypeImportScoping:
         assert "TargetType" not in code.co_varnames, (
             "TargetType hala _execute_binary'de local!"
         )
-        # GLOBAL olarak erisilebilir olmali
-        assert "TargetType" in code.co_names, (
-            "TargetType, _execute_binary'de global isimler arasinda yok!"
-        )
+        # Eskiden "TargetType global olarak okunuyor" da denetleniyordu; tek okuyan
+        # ölü assembly dalıydı (2026-11-18'de silindi, K-3 A1, P-S2). Global ad
+        # modülde kaldı (diğer aşamalar kullanıyor).
+        import karadul.stages as stages_mod
+        assert stages_mod.TargetType is not None
 
 
 # ---------------------------------------------------------------

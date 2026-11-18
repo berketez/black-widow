@@ -8,7 +8,8 @@ PyInstaller'da deobfuscated/ altına ~30 MB, .NET'te ~59 MB çöp yazılıyordu.
 ReconstructionStage'deki aynı tuzak 61f6bba'da düzeltilmişti.
 
 Bu dosya:
-- her TargetType için beklenen yolu (deep/legacy modunda) kilitler,
+- her TargetType için beklenen yolu kilitler (eski ``use_deep=False`` / legacy JS yolu
+  2026-11-18'de silindi: K-3 A1, P-S2; hiçbir yerde kurulmuyordu),
 - JS-dışı türlerin JS hattına hiç ulaşmadığını gerçek koşuyla (dosya sistemi) gösterir,
 - "atlandı" sonucunun sözleşmesini (skipped=True, hata değil) doğrular,
 - JS/Electron davranış-nötrlüğünü gerçek JS hattıyla karşılaştırır.
@@ -36,36 +37,35 @@ from karadul.stages import DeobfuscationStage
 
 _FIXTURE_JS = Path(__file__).parent / "fixtures" / "sample_minified.js"
 
-# (use_deep=True yolu, use_deep=False yolu). "skipped" = aşama atlandı.
-_EXPECTED_ROUTE: dict[TargetType, tuple[tuple[str, ...], tuple[str, ...]]] = {
-    # JS ailesi: derin / legacy JS hattı (değişmedi)
-    TargetType.JS_BUNDLE: (("deep",), ("legacy",)),
-    TargetType.ELECTRON_APP: (("deep",), ("legacy",)),
+# Beklenen yol. "skipped" = aşama atlandı.
+_EXPECTED_ROUTE: dict[TargetType, tuple[str, ...]] = {
+    # JS ailesi: derin JS hattı (değişmedi)
+    TargetType.JS_BUNDLE: ("deep",),
+    TargetType.ELECTRON_APP: ("deep",),
     # Native: BinaryDeobfuscator (değişmedi)
-    TargetType.MACHO_BINARY: (("binary",), ("binary",)),
-    TargetType.UNIVERSAL_BINARY: (("binary",), ("binary",)),
-    TargetType.ELF_BINARY: (("binary",), ("binary",)),
-    TargetType.PE_BINARY: (("binary",), ("binary",)),
-    TargetType.BUN_BINARY: (("binary",), ("binary",)),
-    TargetType.DELPHI_BINARY: (("binary",), ("binary",)),
+    TargetType.MACHO_BINARY: ("binary",),
+    TargetType.UNIVERSAL_BINARY: ("binary",),
+    TargetType.ELF_BINARY: ("binary",),
+    TargetType.PE_BINARY: ("binary",),
+    TargetType.BUN_BINARY: ("binary",),
+    TargetType.DELPHI_BINARY: ("binary",),
     # Go hibrit (değişmedi)
-    TargetType.GO_BINARY: (("go", "binary"), ("go", "binary")),
-    # JVM/Dalvik: kendi analizcisi (eskiden deep modda JS hattı)
-    TargetType.JAVA_JAR: (("analyzer",), ("analyzer",)),
-    TargetType.ANDROID_APK: (("analyzer",), ("analyzer",)),
-    # Anlamlı deobfuscation yok: atlandı (eskiden deep modda JS hattı)
-    TargetType.DOTNET_ASSEMBLY: (("skipped",), ("skipped",)),
-    TargetType.PYTHON_PACKED: (("skipped",), ("skipped",)),
-    TargetType.APP_BUNDLE: (("skipped",), ("skipped",)),
-    TargetType.UNKNOWN: (("skipped",), ("skipped",)),
+    TargetType.GO_BINARY: ("go", "binary"),
+    # JVM/Dalvik: kendi analizcisi (eskiden JS hattı)
+    TargetType.JAVA_JAR: ("analyzer",),
+    TargetType.ANDROID_APK: ("analyzer",),
+    # Anlamlı deobfuscation yok: atlandı (eskiden JS hattı)
+    TargetType.DOTNET_ASSEMBLY: ("skipped",),
+    TargetType.PYTHON_PACKED: ("skipped",),
+    TargetType.APP_BUNDLE: ("skipped",),
+    TargetType.UNKNOWN: ("skipped",),
 }
 
 _JS_FAMILY = {TargetType.JS_BUNDLE, TargetType.ELECTRON_APP}
-_SKIP_TYPES = [tt for tt, (deep, _) in _EXPECTED_ROUTE.items() if deep == ("skipped",)]
+_SKIP_TYPES = [tt for tt, route in _EXPECTED_ROUTE.items() if route == ("skipped",)]
 
 _HANDLERS = (
     ("_execute_deep", "deep"),
-    ("_execute_legacy", "legacy"),
     ("_execute_binary", "binary"),
     ("_execute_go_binary", "go"),
     ("_execute_analyzer_deobfuscate", "analyzer"),
@@ -90,13 +90,13 @@ def _make_ctx(
     return PipelineContext(target=target, workspace=ws, config=Config())
 
 
-def _route(target_type, tmp_path: Path, *, use_deep: bool) -> tuple[tuple[str, ...], StageResult]:
+def _route(target_type, tmp_path: Path) -> tuple[tuple[str, ...], StageResult]:
     """execute()'un hangi handler(lar)ı çağırdığını ölç.
 
     Handler'lar kayıt tutan sentinel'lerle değiştirilir (gerçek iş koşmaz).
     _skipped sentinel'lenmez: gerçek "atlandı" sonucu döner.
     """
-    stage = DeobfuscationStage(use_deep=use_deep)
+    stage = DeobfuscationStage()
     calls: list[str] = []
 
     def _recorder(label: str):
@@ -129,22 +129,19 @@ class TestRoutingTable:
         """Yeni bir TargetType eklenirse bu tablo (ve yönlendirme kararı) güncellenmeli."""
         assert set(_EXPECTED_ROUTE) == set(TargetType)
 
-    @pytest.mark.parametrize("use_deep", [True, False], ids=["deep", "legacy"])
     @pytest.mark.parametrize("target_type", list(TargetType), ids=lambda t: t.value)
-    def test_route(self, target_type, use_deep, tmp_path: Path):
-        calls, _ = _route(target_type, tmp_path, use_deep=use_deep)
-        deep_route, legacy_route = _EXPECTED_ROUTE[target_type]
-        assert calls == (deep_route if use_deep else legacy_route)
+    def test_route(self, target_type, tmp_path: Path):
+        calls, _ = _route(target_type, tmp_path)
+        assert calls == _EXPECTED_ROUTE[target_type]
 
-    @pytest.mark.parametrize("use_deep", [True, False], ids=["deep", "legacy"])
     @pytest.mark.parametrize(
         "target_type",
         [tt for tt in TargetType if tt not in _JS_FAMILY],
         ids=lambda t: t.value,
     )
-    def test_non_js_types_never_reach_js_pipeline(self, target_type, use_deep, tmp_path: Path):
-        calls, _ = _route(target_type, tmp_path, use_deep=use_deep)
-        assert "deep" not in calls and "legacy" not in calls
+    def test_non_js_types_never_reach_js_pipeline(self, target_type, tmp_path: Path):
+        calls, _ = _route(target_type, tmp_path)
+        assert "deep" not in calls
 
     def test_type_outside_all_tables_is_skipped_not_js(self, tmp_path: Path):
         """Tablolarda olmayan (gelecekte eklenecek) bir tür JS hattına değil atlamaya düşer."""
@@ -152,7 +149,7 @@ class TestRoutingTable:
         class _FutureType(Enum):
             NEW_FORMAT = "yeni_format"
 
-        calls, result = _route(_FutureType.NEW_FORMAT, tmp_path, use_deep=True)
+        calls, result = _route(_FutureType.NEW_FORMAT, tmp_path)
         assert calls == ("skipped",)
         assert "yeni_format" in result.stats["skip_reason"]
 
@@ -166,7 +163,7 @@ class TestSkippedIsHonest:
     @pytest.mark.parametrize("target_type", _SKIP_TYPES, ids=lambda t: t.value)
     def test_skip_result_contract(self, target_type, tmp_path: Path):
         """Ne sahte başarı ne başarısızlık: success=False + skipped=True, hata yok, gerekçe var."""
-        _, result = _route(target_type, tmp_path, use_deep=True)
+        _, result = _route(target_type, tmp_path)
         assert result.skipped is True
         assert result.success is False
         assert result.errors == []
@@ -175,7 +172,7 @@ class TestSkippedIsHonest:
 
     @pytest.mark.parametrize("target_type", _SKIP_TYPES, ids=lambda t: t.value)
     def test_skip_does_not_fail_pipeline(self, target_type, tmp_path: Path):
-        _, result = _route(target_type, tmp_path, use_deep=True)
+        _, result = _route(target_type, tmp_path)
         pr = PipelineResult(target_name="sample", target_hash="0" * 64)
         pr.add_stage_result(StageResult("identify", True, 0.0))
         pr.add_stage_result(result)
@@ -183,11 +180,10 @@ class TestSkippedIsHonest:
         assert pr.get_failed_stages() == []
         assert pr.get_skipped_stages() == ["deobfuscate"]
 
-    @pytest.mark.parametrize("use_deep", [True, False], ids=["deep", "legacy"])
-    def test_python_packed_real_run_writes_nothing(self, use_deep, tmp_path: Path):
+    def test_python_packed_real_run_writes_nothing(self, tmp_path: Path):
         """Gerçek execute (sentinel yok): JS hattı koşsaydı deobfuscated/00_original kopyası olurdu."""
         ctx = _make_ctx(tmp_path, TargetType.PYTHON_PACKED, language=Language.PYTHON)
-        result = DeobfuscationStage(use_deep=use_deep).execute(ctx)
+        result = DeobfuscationStage().execute(ctx)
         assert result.skipped is True
         assert _deob_files(ctx) == []
 
@@ -362,32 +358,23 @@ def _electron_ctx(base: Path) -> PipelineContext:
 
 @pytest.mark.skipif(not _js_toolchain_available(), reason="node veya scripts/node_modules yok")
 class TestJsBehaviourNeutral:
-    """execute() JS ailesinde yönlendirme öncesi yolla (doğrudan _execute_deep /
-    _execute_legacy) BİREBİR aynı çıktıyı üretmeli: dosya md5'leri + stats + hatalar."""
+    """execute() JS ailesinde yönlendirme öncesi yolla (doğrudan _execute_deep)
+    BİREBİR aynı çıktıyı üretmeli: dosya md5'leri + stats + hatalar."""
 
     def test_js_bundle_deep_equals_direct_deep(self, tmp_path: Path):
         ctx_a = _js_bundle_ctx(tmp_path / "a")
         ctx_b = _js_bundle_ctx(tmp_path / "b")
-        via_execute = DeobfuscationStage(use_deep=True).execute(ctx_a)
-        direct = DeobfuscationStage(use_deep=True)._execute_deep(ctx_b, time.monotonic())
+        via_execute = DeobfuscationStage().execute(ctx_a)
+        direct = DeobfuscationStage()._execute_deep(ctx_b, time.monotonic())
         fp = _fingerprint(ctx_a, via_execute)
         assert fp == _fingerprint(ctx_b, direct)
         assert fp["success"] is True and fp["files"]  # boş-boşa eşitlik değil
 
-    def test_js_bundle_legacy_equals_direct_legacy(self, tmp_path: Path):
-        ctx_a = _js_bundle_ctx(tmp_path / "a")
-        ctx_b = _js_bundle_ctx(tmp_path / "b")
-        via_execute = DeobfuscationStage(use_deep=False).execute(ctx_a)
-        direct = DeobfuscationStage(use_deep=False)._execute_legacy(ctx_b, time.monotonic())
-        fp = _fingerprint(ctx_a, via_execute)
-        assert fp == _fingerprint(ctx_b, direct)
-        assert fp["success"] is True and fp["files"]
-
     def test_electron_deep_equals_direct_deep(self, tmp_path: Path):
         ctx_a = _electron_ctx(tmp_path / "a")
         ctx_b = _electron_ctx(tmp_path / "b")
-        via_execute = DeobfuscationStage(use_deep=True).execute(ctx_a)
-        direct = DeobfuscationStage(use_deep=True)._execute_deep(ctx_b, time.monotonic())
+        via_execute = DeobfuscationStage().execute(ctx_a)
+        direct = DeobfuscationStage()._execute_deep(ctx_b, time.monotonic())
         fp = _fingerprint(ctx_a, via_execute)
         assert fp == _fingerprint(ctx_b, direct)
         assert fp["success"] is True and fp["files"]

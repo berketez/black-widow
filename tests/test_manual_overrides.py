@@ -222,8 +222,9 @@ def test_auto_discover_rejects_hand_edited_invalid_name(_tmp_home):
 
 # ---------------------------------------------------------------------------
 # 10) MAJOR-1 kontrati: metot uyguladigi DOGRULANMIS map'i DONDURUR
-#     (cagiran bu map'i merge SONRASI final_naming_map'e kosulsuz zorlar --
-#     bindiff/refdiff clobber + Bayesian merge bypass).
+#     (dönen map'i merge SONRASI final_naming_map'e zorlayan tek yer ölü
+#     monolit döngüsüydü; döngü 2026-11-18'de silindi (K-3 A1, P-S2). Bugün
+#     hiçbir çağıran map'i zorlamıyor: B-C6 açık, sözleşme yalnız metodun dönüşü.)
 # ---------------------------------------------------------------------------
 def test_returns_validated_manual_map(_tmp_home, tmp_path):
     overrides.set_name(TEST_HASH, "FUN_00104df0", "auto_name")   # auto-discover

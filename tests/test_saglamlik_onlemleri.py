@@ -74,9 +74,10 @@ def test_hicbir_cagri_kosulsuz_indirme_acmaz():
         if "auto_populate=True" in satir.replace(" ", "") and not satir.lstrip().startswith("#")
     ]
     assert bulunan == []
-    # eski hat (stages.py) da aynı kuralı kullanır
+    # stages.py'deki ikinci ReferenceDiffer çağrısı ölü monolit döngüsündeydi; döngü
+    # 2026-11-18'de silindi (K-3 A1, P-S2). Tek yol refdiff adımı (yukarıdaki test).
     stages = (kok / "stages.py").read_text(encoding="utf-8")
-    assert "auto_populate=_ref_dl_allowed(context.config)" in stages
+    assert "ReferenceDiffer" not in stages
 
 # --------------------------------------------------------------------------------------------
 # 3. Boş proje ağacı: temiz çıktı boş kalmaz, kalırsa "başarılı" denmez

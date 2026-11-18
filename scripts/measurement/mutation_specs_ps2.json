@@ -1,0 +1,37 @@
+{
+ "_comment": "P-S2 (2026-11-18): stages.py ölü kod silme (K-3 A1) ve çift koşan blok (K-3 A1b, BORU-01). Kalan tek yolun bozulmadığını ve silinen kopyanın yerine adım değerlerinin ezilmediğini sınar. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ps2.json",
+ "mutants": [
+  {
+   "id": "ps2_a1_uyari_susar",
+   "desc": "use_step_registry=False artık uyarı vermez (sessiz zorlama)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps2_olu_kod.py::TestTekYol::test_step_registry_kapali_uyarir_ve_adim_yolunu_kosar",
+   "find": "            logger.warning(\n                \"use_step_registry=False artik desteklenmiyor",
+   "replace": "            logger.info(\n                \"use_step_registry=False artik desteklenmiyor"
+  },
+  {
+   "id": "ps2_a1_uyari_kosulsuz",
+   "desc": "uyarı her koşuda basılır (koşul kalkar)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps2_olu_kod.py::TestTekYol::test_step_registry_acik_uyarmaz",
+   "find": "        if not _use_step_registry:\n            # use_step_registry=False yolu yok",
+   "replace": "        if True:\n            # use_step_registry=False yolu yok"
+  },
+  {
+   "id": "ps2_a1_js_derin_hatta_gitmez",
+   "desc": "JS ailesi derin hatta yönlenmez (legacy silinince tek yol bu)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_deobfuscation_routing.py::TestRoutingTable",
+   "find": "            return self._execute_deep(context, start)",
+   "replace": "            return self._skipped(start, \"JS yolu yok\")"
+  },
+  {
+   "id": "ps2_a1_tur_sayisi_ezilir",
+   "desc": "Faz 2'nin tur sayısı aşama kodunda 0 ile ezilir (silinen döngü sonu bloğunun yaptığı; rapor_sayaclari rs_tur_* mutantlarının yerine)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_rapor_sayaclari.py::TestTurSayisi",
+   "find": "        _seed: dict[str, Any] = {\n",
+   "replace": "        stats[\"pipeline_iterations_run\"] = 0\n        _seed: dict[str, Any] = {\n"
+  }
+ ]
+}

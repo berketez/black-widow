@@ -15,7 +15,8 @@ Kanıt ve önce/sonra sayıları: ``docs/arge/2026-11-12_cikti_hatalari/sonuc.md
    üretiyordu (133 kaydın 63'ü). ``SignatureMatch.address`` zaten doluydu (``match_all``);
    kaydı yazan iki yer (etkin ``pipeline/steps/ghidra_metadata.py`` ve emekli monolit yolunun
    ``stages._run_signature_matching``'i) alanı yazmıyordu. Kayıt artık ``address`` taşır;
-   okuyucular anahtarla okuduğu için davranışları değişmez.
+   okuyucular anahtarla okuduğu için davranışları değişmez. (Emekli monolit yolu ve onun
+   eşlik testleri 2026-11-18'de silindi: K-3 A1, P-S2.)
 3. Temiz çıktının biçimlendiricisi dili C, JS ya da Swift olmayan hedefi genel dala gönderiyordu;
    genel dal ``reconstructed/`` altındaki bütün kaynakları düz ``src/<dosya adı>`` yoluna
    kopyaladığı için aynı adlı dosyalar birbirini eziyordu (Debian ``pzstd``, dil ``cpp``:
@@ -117,30 +118,6 @@ class TestImzaKaydiAdres:
         assert len({json.dumps(r, sort_keys=True) for r in rec}) == len(rec)
         assert all(r["address"] for r in rec)
         assert ctx.stats["signature_matches"] == len(rec)
-
-    def test_monolit_yolu_adres_yazar(self, tmp_path) -> None:
-        """Emekli monolit yolu (``_run_signature_matching``) aynı kaydı yazar (eşlik testi)."""
-        from karadul.core.target import TargetType
-        from karadul.pipeline.reconstruction_context import ReconstructionContext
-        from karadul.stages import ReconstructionStage
-
-        ws = _workspace(tmp_path)
-        funcs, strings, cg, dec = _ghidra_inputs(tmp_path)
-        context = SimpleNamespace(
-            config=Config(), workspace=ws, report_progress=lambda *a, **k: None,
-            target=SimpleNamespace(target_type=TargetType.ELF_BINARY),
-        )
-        rc = ReconstructionContext()
-        rc.ph1_artifacts.update({
-            "functions_json_path": funcs, "strings_json_path": strings,
-            "call_graph_json_path": cg, "decompiled_dir": dec,
-        })
-        ReconstructionStage()._run_signature_matching(context, rc)
-        rec = _records(ws)
-        assert rec and all("address" in r for r in rec)
-        assert sorted(r["address"] for r in rec if r["original"] == "getcwd") == [
-            "00103d00", "00135010"]
-        assert [r["address"] for r in rec] == [m.address for m in rc.sig_matches]
 
     def test_okuyucular_adres_alanindan_etkilenmez(self, tmp_path) -> None:
         """Adres alanı eklenince ad haritası, HTML aday tablosu ve arayüz aday kümesi aynı kalır."""
@@ -301,27 +278,6 @@ class TestImzaKaydiYontem:
         assert rec and all("method" in r for r in rec)
         assert {r["original"]: r["method"] for r in rec}["getcwd"] == "symbol"
         assert all(r["method"] for r in rec)
-
-    def test_monolit_yolu_yontem_yazar(self, tmp_path) -> None:
-        from karadul.core.target import TargetType
-        from karadul.pipeline.reconstruction_context import ReconstructionContext
-        from karadul.stages import ReconstructionStage
-
-        ws = _workspace(tmp_path)
-        funcs, strings, cg, dec = _ghidra_inputs(tmp_path)
-        context = SimpleNamespace(
-            config=Config(), workspace=ws, report_progress=lambda *a, **k: None,
-            target=SimpleNamespace(target_type=TargetType.ELF_BINARY),
-        )
-        rc = ReconstructionContext()
-        rc.ph1_artifacts.update({
-            "functions_json_path": funcs, "strings_json_path": strings,
-            "call_graph_json_path": cg, "decompiled_dir": dec,
-        })
-        ReconstructionStage()._run_signature_matching(context, rc)
-        rec = _records(ws)
-        assert rec and all("method" in r for r in rec)
-        assert [r["method"] for r in rec] == [m.match_method for m in rc.sig_matches]
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,11 @@
+--- a/scripts/cursor_3bundle_analysis.py
++++ b/scripts/cursor_3bundle_analysis.py
+@@ -264,7 +264,7 @@
+         # Stage'leri kaydet (dynamic haric)
+         pipeline.register_stage(IdentifyStage())
+         pipeline.register_stage(StaticAnalysisStage())
+-        pipeline.register_stage(DeobfuscationStage(use_deep=True))
++        pipeline.register_stage(DeobfuscationStage())
+ 
+         try:
+             pipeline.register_stage(ReconstructionStage())

@@ -365,21 +365,9 @@ class TestPlatformInference:
 class TestStagesModuleLevelHelpers:
     """stages.py: module-level fonksiyonlar ve sabitler."""
 
-    def test_target_platform_map_is_module_level(self) -> None:
-        """_TARGET_PLATFORM_MAP module-level constant olmali."""
-        import karadul.stages as stages_mod
-        assert hasattr(stages_mod, "_TARGET_PLATFORM_MAP"), (
-            "_TARGET_PLATFORM_MAP module-level olarak tanimlanmamis"
-        )
-        assert isinstance(stages_mod._TARGET_PLATFORM_MAP, dict)
-
-    def test_target_platform_map_contents(self) -> None:
-        """Map'te macho, elf, pe platformlari olmali."""
-        import karadul.stages as stages_mod
-        values = set(stages_mod._TARGET_PLATFORM_MAP.values())
-        assert "macho" in values, "macho platform map'te eksik"
-        assert "elf" in values, "elf platform map'te eksik"
-        assert "pe" in values, "pe platform map'te eksik"
+    # _TARGET_PLATFORM_MAP testleri 2026-11-18'de kalktı (K-3 A1, P-S2): sabit
+    # stages.py'de yalnız silinen _run_signature_matching'de okunuyordu; etkin
+    # okuyucu pipeline/steps/ghidra_metadata.py (karadul.core.platform_map).
 
     def test_merge_stage_results_is_module_level(self) -> None:
         """_merge_stage_results module-level fonksiyon olmali."""
