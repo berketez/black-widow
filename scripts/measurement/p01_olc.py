@@ -202,11 +202,31 @@ def _topla_bir(is_: dict, kok: Path) -> str:
     return satir
 
 
-def kos_bir(girdi_yolu: Path) -> dict:
+def _bi_sinifi(modul: str | None):
+    """``BinaryIntelligence``: ağacın kendi modülü ya da (başarım tabanı için) verilen dosya.
+
+    Eski sürümler yalnız ``karadul.config``'i içe aktardığı için tek dosya olarak yüklenebilir
+    (ör. ``git show e9d2d08:karadul/analyzers/binary_intelligence.py > /tmp/x.py``).
+    """
+    if not modul:
+        from karadul.analyzers.binary_intelligence import BinaryIntelligence
+        return BinaryIntelligence
+    import importlib.util
+
+    ad = "bi_taban_" + hashlib.sha256(modul.encode()).hexdigest()[:8]
+    if ad not in sys.modules:
+        spec = importlib.util.spec_from_file_location(ad, modul)
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[ad] = mod
+        spec.loader.exec_module(mod)
+    return sys.modules[ad].BinaryIntelligence
+
+
+def kos_bir(girdi_yolu: Path, modul: str | None = None) -> dict:
     import karadul
-    from karadul.analyzers.binary_intelligence import BinaryIntelligence
     from karadul.config import Config
 
+    BinaryIntelligence = _bi_sinifi(modul)
     with gzip.open(girdi_yolu, "rt", encoding="utf-8") as f:
         g = json.load(f)
     if g.get("hata"):
@@ -219,6 +239,9 @@ def kos_bir(girdi_yolu: Path) -> dict:
         target_name=Path(g["yol"]).name,
     ).to_dict()
     sure = round(time.monotonic() - t0, 2)
+    # Tam karşılaştırma için raporun tamamının (kanıt sırası, güven, sayaçlar dahil) özeti
+    tam_ozet = hashlib.sha256(
+        json.dumps(rapor, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
     mimari = rapor["architecture"]
     iddialar = {}
     for kat in ("subsystems", "algorithms", "security", "protocols"):
@@ -227,9 +250,9 @@ def kos_bir(girdi_yolu: Path) -> dict:
             for d in mimari[kat]
         ]
     return {"kume": g["kume"], "anahtar": g["anahtar"], "hedef_tipi": g["hedef_tipi"],
-            "karadul": karadul.__file__, "sure_sn": sure, "app_type": mimari["app_type"],
+            "karadul": modul or karadul.__file__, "sure_sn": sure, "app_type": mimari["app_type"],
             "n_dizgi": len(g["strings"]), "n_simge": len(g["symbols"]),
-            "n_kitaplik": len(g["dylibs"]), "iddialar": iddialar}
+            "n_kitaplik": len(g["dylibs"]), "rapor_sha256": tam_ozet, "iddialar": iddialar}
 
 
 def kume_sayimi(sonuclar: list[dict]) -> dict:
@@ -283,15 +306,27 @@ def cmd_kos(arg) -> int:
     kok = arg.kok.expanduser()
     cikti = kok / arg.etiket
     cikti.mkdir(parents=True, exist_ok=True)
-    girdiler = sorted((kok / "girdiler").glob("*.json.gz"))
+    girdi_kok = (arg.girdi_kok or kok).expanduser()
+    girdiler = sorted((girdi_kok / "girdiler").glob("*.json.gz"))
+    modul = str(arg.modul.expanduser().resolve()) if arg.modul else None
     sonuclar = []
+    t0 = time.monotonic()
     with cf.ProcessPoolExecutor(max_workers=arg.paralel) as ex:
-        for s in ex.map(kos_bir, girdiler):
+        for s in ex.map(kos_bir, girdiler, [modul] * len(girdiler)):
             sonuclar.append(s)
             print(f"{s['anahtar']}: {s.get('sure_sn', s.get('hata'))}", flush=True)
+    duvar = round(time.monotonic() - t0, 1)
     sonuclar.sort(key=lambda s: (s["kume"], s["anahtar"]))
     (cikti / "ikililer.json").write_text(json.dumps(sonuclar, indent=1, ensure_ascii=False),
                                          encoding="utf-8")
+    sureler = [s.get("sure_sn", 0) for s in sonuclar if not s.get("hata")]
+    (cikti / "sure.json").write_text(json.dumps({
+        "modul": modul or "agac", "paralel": arg.paralel, "ikili": len(sureler),
+        "toplam_analiz_sn": round(sum(sureler), 2), "duvar_sn": duvar,
+        "en_buyuk": sorted(((s.get("sure_sn", 0), s["anahtar"]) for s in sonuclar
+                            if not s.get("hata")), reverse=True)[:5],
+    }, indent=1, ensure_ascii=False), encoding="utf-8")
+    print(f"toplam analiz {sum(sureler):.1f} sn ({len(sureler)} ikili), duvar {duvar} sn")
     sayim = kume_sayimi(sonuclar)
     (cikti / "sayim.json").write_text(json.dumps(sayim, indent=1, ensure_ascii=False),
                                       encoding="utf-8")
@@ -302,6 +337,76 @@ def cmd_kos(arg) -> int:
         for iddia, n in sorted(v["iddia"].items(), key=lambda x: (-x[1], x[0]))[:25]:
             print(f"  {n:4d}  {iddia}")
     return 0
+
+
+GENEL_TARAMA = Path.home() / "karadul_olcum/runs/genel-tarama-2026-11-18"
+
+
+def cmd_islev_say(arg) -> int:
+    """Fonksiyon başına etiketler (``analyze_decompiled``): kayıtlı rapor ve ağacın kodu.
+
+    Kayıtlı koşudaki ``static/ghidra_output/decompiled`` dizinleri (ürünün okuduğu yer) yeniden
+    analiz edilir; kayıtlı ``intelligence_report.json``'daki ``function_analyses`` ile yan yana.
+    Ghidra koşusu yok.
+    """
+    from karadul.config import Config
+
+    BinaryIntelligence = _bi_sinifi(None)  # alt süreçler modülü adıyla içe aktarır: yalnız ağaç
+    bi = BinaryIntelligence(Config())
+    satirlar = []
+    for rapor in sorted(arg.kosu.expanduser().rglob("static/intelligence_report.json")):
+        dizin = rapor.parent / "ghidra_output" / "decompiled"
+        if not dizin.is_dir():
+            continue
+        anahtar = str(rapor.relative_to(arg.kosu.expanduser())).split("/ws/")[0]
+        kayitli = json.loads(rapor.read_text("utf-8"))["architecture"].get("function_analyses", [])
+        yeni = [f.to_dict() for f in bi.analyze_decompiled(dizin)]
+
+        def say(fa, alan):
+            c = Counter()
+            for f in fa:
+                for e in f.get(alan, []):
+                    c[e.split(":")[0]] += 1
+            return c
+
+        satirlar.append({
+            "anahtar": anahtar, "n_islev": len(yeni), "n_islev_kayitli": len(kayitli),
+            "algoritma_kayitli": dict(say(kayitli, "algorithms")),
+            "algoritma": dict(say(yeni, "algorithms")),
+            "zafiyet_kayitli": dict(say(kayitli, "vulnerabilities")),
+            "zafiyet": dict(say(yeni, "vulnerabilities")),
+            "zafiyet_ornek": [(f["name"], f["vulnerabilities"]) for f in yeni
+                              if f["vulnerabilities"]][:5],
+        })
+        print(f"{anahtar}: {len(yeni)} işlev; algoritma etiketi "
+              f"{sum(satirlar[-1]['algoritma'].values())} (kayıtlı "
+              f"{sum(satirlar[-1]['algoritma_kayitli'].values())}); zafiyet "
+              f"{sum(satirlar[-1]['zafiyet'].values())} (kayıtlı "
+              f"{sum(satirlar[-1]['zafiyet_kayitli'].values())})", flush=True)
+    arg.cikti.parent.mkdir(parents=True, exist_ok=True)
+    arg.cikti.write_text(json.dumps(satirlar, indent=1, ensure_ascii=False), encoding="utf-8")
+    for alan in ("algoritma_kayitli", "algoritma", "zafiyet_kayitli", "zafiyet"):
+        top = Counter()
+        for s in satirlar:
+            top.update(s[alan])
+        print(f"{alan}: {sum(top.values())} — {top.most_common(12)}")
+    return 0
+
+
+def cmd_ayni_mi(arg) -> int:
+    """İki koşunun her ikilide raporunun TAMAMI aynı mı (``rapor_sha256``); çıkış 0 = hepsi aynı."""
+    kok = arg.kok.expanduser()
+    a = {s["anahtar"]: s for s in json.loads((kok / arg.a / "ikililer.json").read_text("utf-8"))}
+    b = {s["anahtar"]: s for s in json.loads((kok / arg.b / "ikililer.json").read_text("utf-8"))}
+    farkli = [k for k in sorted(set(a) | set(b))
+              if a.get(k, {}).get("rapor_sha256") != b.get(k, {}).get("rapor_sha256")
+              or a.get(k, {}).get("hata") != b.get(k, {}).get("hata")]
+    olculen = [k for k in a if a[k].get("rapor_sha256")]
+    print(f"{arg.a} ↔ {arg.b}: {len(set(a) | set(b))} ikili, raporu olan {len(olculen)}, "
+          f"farklı {len(farkli)}")
+    for k in farkli[:20]:
+        print("  FARKLI", k)
+    return 1 if farkli else 0
 
 
 def cmd_karsilastir(arg) -> int:
@@ -436,7 +541,20 @@ def main(argv=None) -> int:
     p.add_argument("--kok", type=Path, required=True)
     p.add_argument("--etiket", required=True)
     p.add_argument("--paralel", type=int, default=6)
+    p.add_argument("--girdi-kok", type=Path, default=None,
+                   help="saklı girdiler başka kökten okunur (ör. P01'in girdileri)")
+    p.add_argument("--modul", type=Path, default=None,
+                   help="başarım tabanı: BinaryIntelligence bu dosyadan yüklenir")
     p.set_defaults(f=cmd_kos)
+    p = alt.add_parser("islev_say")
+    p.add_argument("--kosu", type=Path, default=GENEL_TARAMA)
+    p.add_argument("--cikti", type=Path, required=True)
+    p.set_defaults(f=cmd_islev_say)
+    p = alt.add_parser("ayni_mi")
+    p.add_argument("--kok", type=Path, required=True)
+    p.add_argument("--a", required=True)
+    p.add_argument("--b", required=True)
+    p.set_defaults(f=cmd_ayni_mi)
     p = alt.add_parser("karsilastir")
     p.add_argument("--kok", type=Path, required=True)
     p.add_argument("--once", required=True)

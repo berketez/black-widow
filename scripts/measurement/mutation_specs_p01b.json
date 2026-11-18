@@ -72,6 +72,38 @@
       "test": "tests/test_p01b_girdi.py::TestKismiCikti::test_nm_durumu_run_command_ile_yazilir",
       "find": "        if name in _BINARY_TOOLS:\n",
       "replace": "        if name in ():\n"
+    },
+    {
+      "id": "p01b_k4_ascii_olmayan_aday_degil",
+      "desc": "ASCII olmayan öğe aday sayılmıyor → Unicode harf katlaması (ſha256) eşleşmesi kaçar",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_basarim.py::TestOnSuzgecAyniSonuc::test_butun_kurallar_derlemde_ayni",
+      "find": "        if self.non_ascii:",
+      "replace": "        if False:"
+    },
+    {
+      "id": "p01b_k4_tekrar_gerekli_sayilir",
+      "desc": "isteğe bağlı tekrar (-?) gerekli dizgiye katılıyor → aes128 aday olmaz",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_basarim.py::TestGerekliDizgi::test_her_gosterge_icin_gerekli",
+      "find": "            if op == _sre_c.SUBPATTERN:",
+      "replace": "            if op in (_sre_c.SUBPATTERN, _sre_c.MAX_REPEAT):"
+    },
+    {
+      "id": "p01b_k4_yanlis_oge",
+      "desc": "eşleşme yanlış öğeye (sonrakine) eşlenir",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_basarim.py::TestOnSuzgecAyniSonuc::test_butun_kurallar_derlemde_ayni",
+      "find": "            out.append(i)\n",
+      "replace": "            out.append(min(i + 1, n - 1))\n"
+    },
+    {
+      "id": "p01b_k4_sinif_tek_harf_degil",
+      "desc": "iki farklı karakterli sınıf ([23]) tek gerekli karakter sayılıyor",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_basarim.py::TestOnSuzgecAyniSonuc::test_butun_kurallar_derlemde_ayni",
+      "find": "        if len(chars) == 1:",
+      "replace": "        if len(chars) <= 2:"
     }
   ]
 }

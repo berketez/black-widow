@@ -32,7 +32,10 @@ from __future__ import annotations
 import json
 import logging
 import re
+from bisect import bisect_right
 from concurrent.futures import ProcessPoolExecutor
+from re import _constants as _sre_c  # Python >= 3.11 (pyproject)
+from re import _parser as _sre_parser
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any
@@ -1596,20 +1599,119 @@ def _indicator_source(alt: str, case_sensitive: bool | None) -> str:
 
 @dataclass(frozen=True)
 class _Rule:
-    """Bir iddianin gostergeleri: ``combined`` on suzgec, ``indicators`` tek tek."""
+    """Bir iddianin gostergeleri: ``combined`` on suzgec, ``indicators`` tek tek.
+
+    ``prefilter`` (P01b basarim): her gostergenin her eslesmesinde kucuk harfle bulunmasi GEREKEN
+    duz dizgilerin birlesimi. Yalniz bu dizgilerden birini iceren ogede ``combined`` aranir; sonuc
+    bayt bayt aynidir (gerekli kosul). Bir gostergeden dizgi cikarilamazsa ``None`` (suzgec yok).
+    """
     combined: re.Pattern
     indicators: tuple[re.Pattern, ...]
+    prefilter: re.Pattern | None = None
+
+
+def _literal_char(op: Any, av: Any) -> str | None:
+    """Tek karakterlik dugum kucuk harfle hangi karakteri zorunlu kilar (``a`` ya da ``[Aa]``)."""
+    if op == _sre_c.LITERAL:
+        return chr(av).lower()
+    if op == _sre_c.IN and av and all(o == _sre_c.LITERAL for o, _ in av):
+        chars = {chr(v).lower() for _, v in av}
+        if len(chars) == 1:
+            return chars.pop()
+    return None
+
+
+def _required_literal(alt: str) -> str:
+    """Gostergenin her eslesmesinde (kucuk harfle) bulunan en uzun duz dizgi; yoksa ``""``.
+
+    Ust duzey dizideki ardisik tek karakterlik dugumler (gruplar duzlestirilir) zorunlu ve bitisiktir;
+    tekrar, dal, karakter sinifi, sinir dugumu diziyi keser (kisa ama yine gerekli parca kalir).
+    """
+    try:
+        seq = list(_sre_parser.parse(alt))
+    except (re.error, RecursionError):
+        return ""
+    best = ""
+    cur: list[str] = []
+
+    def walk(nodes) -> None:
+        nonlocal best, cur
+        for op, av in nodes:
+            ch = _literal_char(op, av)
+            if ch is not None and ch != "\n":
+                cur.append(ch)
+                continue
+            if op == _sre_c.SUBPATTERN:
+                walk(av[-1])
+                continue
+            if len(cur) > len(best):
+                best = "".join(cur)
+            cur = []
+
+    walk(seq)
+    if len(cur) > len(best):
+        best = "".join(cur)
+    return best
 
 
 def _compile_rule(patterns: list[str], case_sensitive: bool | None = None) -> _Rule:
     """Desen listesini (ya da tek desenin alternatiflerini) gosterge kuralina derle."""
     sources: list[str] = []
+    literals: list[str] = []
     for pat in patterns:
         for alt in _split_alternatives(pat):
             sources.append(_indicator_source(alt, case_sensitive))
+            literals.append(_required_literal(alt))
     indicators = tuple(re.compile(s) for s in sources)
     combined = re.compile("|".join(f"(?:{s})" for s in sources))
-    return _Rule(combined=combined, indicators=indicators)
+    prefilter = None
+    if literals and all(literals):
+        uniq = sorted(set(literals), key=lambda s: (-len(s), s))
+        prefilter = re.compile("|".join(re.escape(s) for s in uniq))
+    return _Rule(combined=combined, indicators=indicators, prefilter=prefilter)
+
+
+class _ItemIndex:
+    """Kanit ogelerinin kucuk harfli birlesik metni: kural basina tek C taramasiyla aday oge bulunur.
+
+    Ayirac ``\\n`` (gerekli dizgilerde ``\\n`` yok, ogeler arasi eslesme olamaz). ASCII olmayan
+    ogeler her kural icin adaydir (Unicode harf katlamasi kucuk harfe birebir donmeyebilir).
+    """
+
+    __slots__ = ("text", "starts", "non_ascii", "n")
+
+    def __init__(self, items: list[_EvidenceItem]) -> None:
+        parts: list[str] = []
+        starts: list[int] = []
+        non_ascii: list[int] = []
+        pos = 0
+        for i, it in enumerate(items):
+            low = it.text.lower()
+            if not it.text.isascii():
+                non_ascii.append(i)
+            starts.append(pos)
+            parts.append(low)
+            pos += len(low) + 1
+        self.text = "\n".join(parts)
+        self.starts = starts
+        self.non_ascii = non_ascii
+        self.n = len(items)
+
+    def candidates(self, prefilter: re.Pattern) -> list[int]:
+        """``prefilter`` dizgilerinden birini iceren ogeler (artan sirada) + ASCII olmayanlar."""
+        out: list[int] = []
+        text, starts, n = self.text, self.starts, self.n
+        search = prefilter.search
+        m = search(text)
+        while m is not None:
+            i = bisect_right(starts, m.start()) - 1
+            out.append(i)
+            if i + 1 >= n:
+                break
+            m = search(text, starts[i + 1])
+        if self.non_ascii:
+            out = sorted(set(out).union(self.non_ascii))
+        return out
 
 
 @dataclass(frozen=True)
@@ -1702,9 +1804,20 @@ class _RuleMatch:
         return [it.text[:200] for it, _ in ordered], [it.kind for it, _ in ordered]
 
 
-def _match_rule(rule: _Rule, items: list[_EvidenceItem]) -> _RuleMatch:
+def _match_rule(
+    rule: _Rule, items: list[_EvidenceItem], index: _ItemIndex | None = None,
+) -> _RuleMatch:
+    """Kuralin ogeler ustundeki eslesmesi (oge sirasiyla).
+
+    ``index`` verilirse ve kuralin gerekli dizgi suzgeci varsa yalniz aday ogeler aranir; aday
+    olmayan oge gerekli dizgiyi icermedigi icin ``combined`` ile de eslesemez (sonuc ayni).
+    """
     hits: list[tuple[_EvidenceItem, frozenset[int]]] = []
-    for it in items:
+    if index is not None and rule.prefilter is not None:
+        pool = [items[i] for i in index.candidates(rule.prefilter)]
+    else:
+        pool = items
+    for it in pool:
         if not rule.combined.search(it.text):
             continue
         idx = frozenset(i for i, rx in enumerate(rule.indicators) if rx.search(it.text))
@@ -1877,20 +1990,22 @@ class BinaryIntelligence:
         """
         # 1. Kanit ogeleri: gurultu atilir, simge / kitaplik / dizgi tek kez sayilir
         items = _collect_items(strings, symbols, dylibs, self_name=target_name)
+        # Kural basina aday oge taramasi icin birlesik kucuk harfli metin (bir kez kurulur)
+        index = _ItemIndex(items)
 
         # 2. Alt sistemleri tespit et
-        group_matches = {g: _match_rule(r, items) for g, r in _STRING_RULES.items()}
+        group_matches = {g: _match_rule(r, items, index) for g, r in _STRING_RULES.items()}
         subsystems = self._detect_subsystems(group_matches, dylibs)
 
         # 3. Algoritmalari bul
         all_text = strings + symbols
-        algorithms = self._detect_algorithms(all_text, items=items)
+        algorithms = self._detect_algorithms(all_text, items=items, index=index)
 
         # 4. Guvenlik mekanizmalarini belirle
-        security = self._detect_security(all_text, dylibs, items=items)
+        security = self._detect_security(all_text, dylibs, items=items, index=index)
 
         # 5. Protokolleri tespit et
-        protocols = self._detect_protocols(all_text, items=items)
+        protocols = self._detect_protocols(all_text, items=items, index=index)
 
         # 6. Mimari harita olustur
         architecture = self._build_architecture(
@@ -1985,9 +2100,10 @@ class BinaryIntelligence:
         eslesen string'ler saklanir; her gruptaki evidence max 50 ile sinirlidir.
         """
         items = _collect_items(strings, [], [])
+        index = _ItemIndex(items)
         clusters: dict[str, list[str]] = {}
         for group_name, rule in _STRING_RULES.items():
-            m = _match_rule(rule, items)
+            m = _match_rule(rule, items, index)
             if m.hits:
                 clusters[group_name] = [it.text[:200] for it, _ in m.hits[:50]]
         return clusters
@@ -2044,10 +2160,13 @@ class BinaryIntelligence:
 
     def _detect_algorithms(
         self, all_text: list[str], items: list[_EvidenceItem] | None = None,
+        index: _ItemIndex | None = None,
     ) -> list[Algorithm]:
         """String ve symbol havuzundan algoritmalar tespit et (iki bagimsiz kanitla)."""
         if items is None:
             items = _collect_items(all_text, [], [])
+        if index is None:
+            index = _ItemIndex(items)
         algorithms: list[Algorithm] = []
         # v1.10.0 Batch 3D: Fortran binary-type gate -- fortran_runtime
         # kategorisi false positive'lerini onle.
@@ -2060,7 +2179,7 @@ class BinaryIntelligence:
                 and not fortran_gate_open
             ):
                 continue
-            m = _match_rule(_ALGO_RULES[algo_name], items)
+            m = _match_rule(_ALGO_RULES[algo_name], items, index)
             if not m.independent():
                 continue
             evidence, kinds = m.evidence(10)
@@ -2081,6 +2200,7 @@ class BinaryIntelligence:
     def _detect_security(
         self, all_text: list[str], dylibs: list[str],
         items: list[_EvidenceItem] | None = None,
+        index: _ItemIndex | None = None,
     ) -> list[SecurityMechanism]:
         """Guvenlik mekanizmalarini tespit et.
 
@@ -2089,10 +2209,12 @@ class BinaryIntelligence:
         """
         if items is None:
             items = _collect_items(all_text, [], dylibs)
+        if index is None:
+            index = _ItemIndex(items)
         mechanisms: list[SecurityMechanism] = []
 
         for mech_name, mech_data in SECURITY_PATTERNS.items():
-            m = _match_rule(_SECURITY_RULES[mech_name], items)
+            m = _match_rule(_SECURITY_RULES[mech_name], items, index)
             if not m.independent():
                 continue
             if mech_data["risk_level"] in _RISK_NEEDS_STRONG and not m.strong:
@@ -2114,14 +2236,17 @@ class BinaryIntelligence:
 
     def _detect_protocols(
         self, all_text: list[str], items: list[_EvidenceItem] | None = None,
+        index: _ItemIndex | None = None,
     ) -> list[Protocol]:
         """Iletisim protokollerini tespit et (iki bagimsiz kanitla)."""
         if items is None:
             items = _collect_items(all_text, [], [])
+        if index is None:
+            index = _ItemIndex(items)
         protocols: list[Protocol] = []
 
         for proto_name, proto_data in PROTOCOL_PATTERNS.items():
-            m = _match_rule(_PROTOCOL_RULES[proto_name], items)
+            m = _match_rule(_PROTOCOL_RULES[proto_name], items, index)
             if not m.independent():
                 continue
             evidence, kinds = m.evidence(10)
