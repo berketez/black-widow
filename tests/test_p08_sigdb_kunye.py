@@ -22,6 +22,7 @@ lmdb = pytest.importorskip("lmdb")
 def _cfg(tmp_path: Path, *, use_lmdb: bool, lmdb_path: Path | None) -> Config:
     cfg = Config()
     cfg.project_root = tmp_path  # sigs/ yok: yalnız yerleşik sözlük
+    cfg.data_root = tmp_path  # GHIDRA-14: dış imzalar veri kökünden
     cfg.perf.use_lmdb_sigdb = use_lmdb
     cfg.perf.sig_lmdb_path = lmdb_path
     return cfg

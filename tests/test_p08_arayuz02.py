@@ -33,6 +33,7 @@ def _run(tmp_path: Path, names: list[str]):
 
     cfg = Config()
     cfg.project_root = tmp_path
+    cfg.data_root = tmp_path  # GHIDRA-14: dış imzalar veri kökünden
     cfg.perf.use_lmdb_sigdb = False
     fj = tmp_path / "ghidra_functions.json"
     fj.write_text(json.dumps({"functions": [

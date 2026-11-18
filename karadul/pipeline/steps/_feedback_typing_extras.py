@@ -231,8 +231,7 @@ def run_ngram_naming(
         # AD-10: veritabanı eskiden yalnız ``project_root/sigs`` altında aranıyordu;
         # ``--output-dir`` verilince project_root çıktı dizini olur ve kanal
         # SESSİZCE hiç çalışmazdı (istatistik yok, uyarı yok).  Artık durum
-        # istatistiğe yazılır.  Veri kökü ayrımı (``data_root``) P15'in işi; o
-        # alan eklenince ilk orada aranır.
+        # istatistiğe yazılır.  GHIDRA-14 (P15b): yalnız veri kökünde aranır.
         aranan = ngram_db_dirs(pc.config)
         ngram_db_dir = next((d for d in aranan if d.is_dir()), None)
         if ngram_db_dir is None:
@@ -304,16 +303,16 @@ def run_ngram_naming(
 
 
 def ngram_db_dirs(config: Any) -> list[Path]:
-    """N-gram ad veritabanının aranacağı dizinler, sırayla (AD-10).
+    """N-gram ad veritabanının aranacağı dizin (AD-10, GHIDRA-14).
 
-    ``data_root`` (P15'in ekleyeceği veri kökü) varsa önce o; sonra ``project_root``.
+    Yalnız veri kökü (``config.data_root``; yoksa ``resolve_data_root``). Çıktı kökü
+    (``project_root``) ve çalışma dizini ARANMAZ: aynı ikilinin yerel adları
+    komutun hangi dizinden / girişten koşulduğuna bağlı olmasın.
     """
-    dirs: list[Path] = []
-    data_root = getattr(config, "data_root", None)
-    if data_root:
-        dirs.append(Path(data_root) / "sigs" / "ngram_name_db")
-    dirs.append(Path(config.project_root) / "sigs" / "ngram_name_db")
-    return dirs
+    from karadul.analyzers.signature_db import _config_data_root
+
+    data_root = _config_data_root(config)
+    return [Path(data_root) / "sigs" / "ngram_name_db"] if data_root is not None else []
 
 
 _IDENT = re.compile(r"[A-Za-z_]\w*")

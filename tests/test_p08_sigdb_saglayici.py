@@ -71,6 +71,7 @@ def built(tmp_path_factory):
     summary = mod.build(project_root=root, output=out, rebuild=True, map_size=32 * 1024 * 1024)
     cfg = Config()
     cfg.project_root = root / "bos"
+    cfg.data_root = root / "bos"  # GHIDRA-14: dış imzalar veri kökünden
     cfg.perf.use_lmdb_sigdb = True
     cfg.perf.sig_lmdb_path = out
     return {"root": root, "out": out, "summary": summary, "cfg": cfg, "mod": mod}

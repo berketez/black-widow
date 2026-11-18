@@ -15,6 +15,7 @@ from karadul.config import Config
 def _cfg(root: Path) -> Config:
     cfg = Config()
     cfg.project_root = root
+    cfg.data_root = root  # GHIDRA-14: dış imzalar veri kökünden
     cfg.perf.use_lmdb_sigdb = False
     return cfg
 

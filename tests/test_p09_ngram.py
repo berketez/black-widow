@@ -18,9 +18,10 @@ from karadul.pipeline.steps import _feedback_typing_extras as fte
 from karadul.reconstruction import ngram_namer as nn
 
 
-def _ctx(project_root: Path) -> SimpleNamespace:
+def _ctx(root: Path) -> SimpleNamespace:
     cfg = Config()
-    cfg.project_root = project_root
+    cfg.project_root = root
+    cfg.data_root = root  # GHIDRA-14 (P15b): veritabanı yalnız veri kökünde aranır
     return SimpleNamespace(pipeline_context=SimpleNamespace(config=cfg))
 
 
@@ -36,10 +37,10 @@ def test_veri_yoksa_durum_yazilir(tmp_path: Path) -> None:
 
 
 def test_data_root_once_aranir(tmp_path: Path) -> None:
+    # GHIDRA-14 (P15b): çıktı kökü (project_root) artık hiç aranmaz.
     cfg = SimpleNamespace(project_root=tmp_path / "ws", data_root=tmp_path / "veri")
     assert fte.ngram_db_dirs(cfg) == [
         tmp_path / "veri" / "sigs" / "ngram_name_db",
-        tmp_path / "ws" / "sigs" / "ngram_name_db",
     ]
 
 

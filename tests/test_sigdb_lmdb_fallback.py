@@ -44,6 +44,7 @@ def _make_config_with_lmdb(tmp_path, lmdb_path):
     """SignatureDB'yi LMDB backend ile acmak icin Config."""
     cfg = Config()
     cfg.project_root = tmp_path  # cache key ayri olsun
+    cfg.data_root = tmp_path  # GHIDRA-14: dış imzalar veri kökünden
     cfg.perf.use_lmdb_sigdb = True
     cfg.perf.sig_lmdb_path = lmdb_path
     return cfg
@@ -242,6 +243,7 @@ class TestH4ParamsPropagation:
         """Format 1 (list) signatures'taki params field'i symbol_db'ye tasinmali."""
         cfg = Config()
         cfg.project_root = tmp_path
+        cfg.data_root = tmp_path  # GHIDRA-14: dış imzalar veri kökünden
         sigdb = SignatureDB(cfg)
 
         jsonp = tmp_path / "sigs_fmt1.json"
@@ -269,6 +271,7 @@ class TestH4ParamsPropagation:
         """Format 3 (flat) top-level entry'lerindeki params symbol_db'ye tasinmali."""
         cfg = Config()
         cfg.project_root = tmp_path
+        cfg.data_root = tmp_path  # GHIDRA-14: dış imzalar veri kökünden
         sigdb = SignatureDB(cfg)
 
         jsonp = tmp_path / "sigs_fmt3.json"
@@ -294,6 +297,7 @@ class TestH4ParamsPropagation:
         """Format 2 (dict) zaten calisiyordu -- regression yok."""
         cfg = Config()
         cfg.project_root = tmp_path
+        cfg.data_root = tmp_path  # GHIDRA-14: dış imzalar veri kökünden
         sigdb = SignatureDB(cfg)
 
         jsonp = tmp_path / "sigs_fmt2.json"

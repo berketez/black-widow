@@ -1,0 +1,69 @@
+{
+  "_comment": "P15b mutasyon koruması (veri kökü GHIDRA-14, imza veritabanı K-5, CLI / ayar kalanları). Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p15b.json",
+  "mutants": [
+    {
+      "id": "v_onbellek_anahtari",
+      "desc": "SignatureDB önbellek anahtarı veri kökünü taşımıyor (farklı veri kökü aynı imza kümesini alır)",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15b_veri_koku.py::test_onbellek_anahtari_veri_koku",
+      "find": "f\"data_root={self._data_root}\",",
+      "replace": "f\"data_root=\","
+    },
+    {
+      "id": "v_dis_json_cikti_koku",
+      "desc": "signatures_*.json yeniden çıktı kökünden (project_root) aranıyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15b_veri_koku.py::test_dis_imza_veri_kokunden_yuklenir_cikti_kokunden_degil",
+      "find": "for sig_file in (sorted(data_root.glob(\"signatures_*.json\")) if data_root else []):",
+      "replace": "for sig_file in (sorted(self._config.project_root.glob(\"signatures_*.json\")) if data_root else []):"
+    },
+    {
+      "id": "v_lmdb_atlandi_sifir",
+      "desc": "LMDB etkinken atlanan dış JSON için uydurma 0 yazılıyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15b_veri_koku.py::test_lmdb_etkinken_dis_json_atlandi_yazilir",
+      "find": "\"files\": None,",
+      "replace": "\"files\": 0,"
+    },
+    {
+      "id": "v_flirt_bekletme",
+      "desc": "veri kökündeki bayt imzaları yeniden otomatik yükleniyor (B-D3 bekletmesi kalkar)",
+      "module": "karadul/pipeline/steps/byte_pattern.py",
+      "test": "tests/test_p15b_veri_koku.py::test_flirt_veri_koku_bekletilir_depo_kokunden_kosuda_da",
+      "find": "ext_paths = pc.config.binary_reconstruction.external_signature_paths",
+      "replace": "ext_paths = list(pc.config.binary_reconstruction.external_signature_paths) + [str(Path(pc.config.data_root) / _FLIRT_BYTES_FILE)]"
+    },
+    {
+      "id": "v_ngram_cikti_koku",
+      "desc": "n-gram veritabanı yeniden çıktı kökünde aranıyor",
+      "module": "karadul/pipeline/steps/_feedback_typing_extras.py",
+      "test": "tests/test_p15b_veri_koku.py::test_ngram_cikti_kokune_bakmaz",
+      "find": "return [Path(data_root) / \"sigs\" / \"ngram_name_db\"] if data_root is not None else []",
+      "replace": "return [Path(config.project_root) / \"sigs\" / \"ngram_name_db\"] if data_root is not None else []"
+    },
+    {
+      "id": "v_config_cwd",
+      "desc": "veri kökü öntanımı çalışma dizini",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15b_veri_koku.py::test_veri_koku_calisma_dizininden_bagimsiz",
+      "find": "data_root: Path = field(default_factory=lambda: resolve_data_root()[0])",
+      "replace": "data_root: Path = field(default_factory=lambda: Path.cwd())"
+    },
+    {
+      "id": "v_ortam_adi",
+      "desc": "veri kökü KARADUL_DATA_DIR'e bağlanıyor (yazma dizini / önbellek yedeğiyle aynı ad)",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15b_veri_koku.py::test_ortam_degiskeni_ve_karadul_data_dir_ayrimi",
+      "find": "DATA_ROOT_ENV = \"KARADUL_SIG_DATA_DIR\"",
+      "replace": "DATA_ROOT_ENV = \"KARADUL_DATA_DIR\""
+    },
+    {
+      "id": "v_hacker_cli_paket_koku",
+      "desc": "etkileşimli konsol çıktı kökünü yeniden paket köküne çekiyor",
+      "module": "karadul/hacker_cli.py",
+      "test": "tests/test_p15b_veri_koku.py::test_hacker_cli_cikti_kokunu_paket_kokune_cekmez",
+      "find": "site-packages'a yazmaz).\n",
+      "replace": "site-packages'a yazmaz).\n    config.project_root = Path(__file__).resolve().parent.parent\n"
+    }
+  ]
+}

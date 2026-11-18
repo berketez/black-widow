@@ -50,6 +50,40 @@ def resolve_cache_root() -> Path:
     return Path.home() / ".cache" / Path(*_DEFAULT_CACHE_SUBDIR)
 
 
+# ---------------------------------------------------------------------------
+# Veri kökü (GHIDRA-14, P15b): salt okur başvuru verisi
+# ---------------------------------------------------------------------------
+# ``Config.project_root`` eskiden hem çıktı kökü hem veri köküydü: ``--output-dir``
+# (arayüz ve ölçüm her zaman veriyor) onu çıktı dizinine çekince dış imza JSON'ları,
+# FLIRT bayt imzaları ve n-gram veritabanı sessizce bulunmuyordu; sonuç komutun
+# hangi dizinden / girişten koşulduğuna bağlıydı. Artık ``project_root`` YALNIZ çıktı
+# kökü, başvuru verisi ``data_root``'tan okunur.
+#
+# Ortam değişkeni bilerek ``KARADUL_DATA_DIR`` DEĞİL: o ad bugün yazılabilir veri
+# dizinidir (arayüzün ``karadul.yaml`` / ``_runs`` dizini, ``ui/server.py``; uygulamada
+# ``~/Library/Application Support/BlackWidow``) ve önbellek kökünün yedeğidir
+# (``resolve_cache_root``). Başvuru verisini oraya bağlamak uygulamada imzaları
+# kullanıcının yazma dizininde aratırdı; ayrı ve salt okur bir ad gerekir.
+DATA_ROOT_ENV = "KARADUL_SIG_DATA_DIR"
+DATA_ROOT_SOURCE_ENV = f"env:{DATA_ROOT_ENV}"
+#: ``karadul`` paketinin bir üst dizini: geliştirmede depo kökü, kurulumda site-packages.
+DATA_ROOT_SOURCE_PACKAGE = "package"
+DATA_ROOT_SOURCE_CONFIG = "config"
+
+
+def resolve_data_root() -> tuple[Path, str]:
+    """Başvuru verisinin kökünü ve kaynağını döndür (çalışma dizininden bağımsız).
+
+    Sıra: ``KARADUL_SIG_DATA_DIR`` → ``karadul`` paketinin bir üst dizini.
+    Bu kökte aranır: ``signatures_*.json``, ``sigs/**`` (dış imza JSON'ları,
+    ``sigs/ngram_name_db``), FLIRT bayt imzaları, ``signatures.lmdb``.
+    """
+    raw = os.environ.get(DATA_ROOT_ENV)
+    if raw and raw.strip():
+        return Path(raw).expanduser().resolve(), DATA_ROOT_SOURCE_ENV
+    return Path(__file__).resolve().parent.parent, DATA_ROOT_SOURCE_PACKAGE
+
+
 def _detect_cpu_cores() -> int:
     """Performans cekirdek sayisini tespit et (E-core haric)."""
     total = os.cpu_count() or 4
@@ -1278,7 +1312,12 @@ class Config:
     perf: PerfConfig = field(default_factory=PerfConfig)
     decompilers: DecompilersConfig = field(default_factory=DecompilersConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
+    # GHIDRA-14 (P15b): YALNIZ çıktı kökü (``workspaces/`` bunun altında; ``--output-dir``
+    # bunu değiştirir). Veri okumak için kullanılmaz: başvuru verisi ``data_root``'ta.
     project_root: Path = field(default_factory=lambda: Path.cwd())
+    # GHIDRA-14 (P15b): salt okur başvuru verisinin kökü (``resolve_data_root``). YAML
+    # bölümü değil; ortam değişkeni ``KARADUL_SIG_DATA_DIR`` ya da programla verilir.
+    data_root: Path = field(default_factory=lambda: resolve_data_root()[0])
     scripts_dir: Path = field(default_factory=lambda: Path(__file__).parent.parent / "scripts")
     ghidra_scripts_dir: Path = field(default_factory=lambda: Path(__file__).parent / "ghidra" / "scripts")
     # P15a: YAML'da açıkça yazılmış anahtarlar ("bölüm.anahtar"). Yükleyici doldurur;
@@ -1385,6 +1424,19 @@ class Config:
             k.split(".", 1)[1] for k in explicit if k.startswith("network.")
         })
         return cfg
+
+    def data_root_info(self) -> dict[str, str]:
+        """Koşu istatistiği için veri kökü ve kaynağı (GHIDRA-14)."""
+        env_root, source = resolve_data_root()
+        mine = Path(self.data_root).expanduser()
+        try:
+            same = mine.resolve() == env_root
+        except OSError:
+            same = False
+        return {
+            "data_root": str(mine),
+            "data_root_source": source if same else DATA_ROOT_SOURCE_CONFIG,
+        }
 
     def validate(self) -> list[str]:
         """Kritik araçların varlığını kontrol et."""

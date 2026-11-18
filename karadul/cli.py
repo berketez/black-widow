@@ -641,7 +641,9 @@ def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
               help="Dinamik analizi aç: hedef program Frida ile ÇALIŞTIRILIR. "
                    "Yalnız güvendiğin ikililerde kullan (varsayılan: kapalı).")
 @click.option("--output-dir", type=click.Path(), default=None,
-              help="Workspace cikti dizini (varsayilan: proje_root/workspaces).")
+              help="Çalışma alanının yazılacağı kök (varsayılan: çalışma dizini; altına "
+                   "workspaces/). Yalnız çıktı yerini değiştirir; imza / n-gram verisi "
+                   "veri kökünden okunur (paket kökü ya da KARADUL_SIG_DATA_DIR).")
 @click.option("--config", "config_path", type=click.Path(), default=None,
               help="Config YAML dosyasi.")
 @click.option("--verbose", is_flag=True, help="Debug log.")
@@ -759,6 +761,8 @@ def analyze(
         err_console.print(f"[bold red]HATA:[/bold red] {exc}")
         sys.exit(1)
 
+    # GHIDRA-14 (P15b): project_root yalnız çıktı kökü; veri kökü (cfg.data_root)
+    # --output-dir'den etkilenmez.
     if output_dir:
         cfg.project_root = Path(output_dir).resolve()
 

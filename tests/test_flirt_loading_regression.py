@@ -112,10 +112,11 @@ def no_binary_symbols(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def _step_ctx(
     tmp_path: Path, *, project_root: Path, binary: Path, functions_json: Path,
-    static_dir: Path, trie_threshold: int = 50,
+    static_dir: Path, trie_threshold: int = 50, ext_paths: list[str] | None = None,
 ) -> StepContext:
     cfg = BinaryReconstructionConfig()
     cfg.flirt_trie_threshold = trie_threshold
+    cfg.external_signature_paths = list(ext_paths or [])
     pc = MagicMock()
     pc.config = MagicMock()
     pc.config.project_root = project_root
@@ -227,7 +228,11 @@ class TestCounterSingleSource:
     def test_step_counters_reflect_matching(
         self, tmp_path: Path, no_binary_symbols: None, trie_threshold: int,
     ) -> None:
-        """İmzalar testin kendi project_root'unda: yüklenen, giren, taranan, isimlenen."""
+        """İmzalar açıkça verilen dosyada: yüklenen, giren, taranan, isimlenen.
+
+        GHIDRA-14 (P15b): veri kökündeki bayt imzaları B-D3 kararıyla bekletildiği
+        için eşleştiriciyi koşturan tek yol ``external_signature_paths``.
+        """
         proj = tmp_path / "proj"
         sig_file = _write_bytes_sigs(proj, [("_zstd_like_func", PATTERN), ("_other_func", OTHER_PATTERN)])
         static_dir = tmp_path / "static"
@@ -236,7 +241,7 @@ class TestCounterSingleSource:
         fj = _make_functions_json(tmp_path / "functions.json", GHIDRA_PIE_BASE + CODE_OFFSET)
         ctx = _step_ctx(tmp_path, project_root=proj, binary=binary,
                         functions_json=fj, static_dir=static_dir,
-                        trie_threshold=trie_threshold)
+                        trie_threshold=trie_threshold, ext_paths=[str(sig_file)])
 
         out = BytePatternStep().run(ctx)
 

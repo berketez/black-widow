@@ -18,8 +18,9 @@ FLIRT yükleme bug'ı (2026-09-25):
   StaticAnalysisStage sayacı eşleşmeye hiç girmeyen, bayt deseni olmayan
   2,46M isim imzasını sayıyordu.
 - PIE ELF: Ghidra image base'i matcher'a verilir (``load_base``).
-- Bilinen, bilinçli bekletilen: imza kökü yalnız ``config.project_root``;
-  ``--output-dir`` ile imzalar bulunmaz (bkz. ``_collect_flirt_signatures``).
+- GHIDRA-14 (P15b): veri kökü ``config.data_root``; çıktı kökü (``project_root``)
+  aranmaz. Veri kökündeki bayt imzaları B-D3 kararıyla otomatik yüklenmez; bu artık
+  giriş noktasından bağımsız ve istatistikte (``flirt_data_root_status``) yazılı.
 """
 
 from __future__ import annotations
@@ -36,9 +37,15 @@ from karadul.pipeline.registry import Step, register_step
 
 logger = logging.getLogger(__name__)
 
-# Bayt desenli FLIRT kaynakları (config.project_root'a göre göreli).
+# Bayt desenli FLIRT kaynakları (veri köküne, ``config.data_root``'a göre göreli).
 _FLIRT_BYTES_FILE = "signatures_homebrew_bytes.json"
 _FLIRT_SIGS_DIR = "sigs"
+# GHIDRA-14 / B-D3: veri kökündeki bayt imzaları otomatik yüklenmez (gerekçe istatistikte).
+_FLIRT_DATA_ROOT_HOLD = (
+    "bekletildi (B-D3): veri kökündeki bayt imzaları seçici değil "
+    "(2026-09-25 ölçümü: redis-server 162 ad / 0 doğru); açmak için dosyayı "
+    "binary_reconstruction.external_signature_paths ile açıkça ver"
+)
 
 
 @register_step(
@@ -94,6 +101,7 @@ class BytePatternStep(Step):
             # anahtarının yokluğundan okunur.
             ctx.stats["flirt_signatures_loaded"] = len(all_byte_sigs)
             ctx.stats["flirt_signature_sources"] = sources
+            ctx.stats.update(self._data_root_report(pc=pc))
             ctx.stats["flirt_load_seconds"] = round(time.monotonic() - load_start, 3)
             ctx.stats["flirt_signatures_matchable"] = 0
             ctx.stats["flirt_functions_scanned"] = 0
@@ -185,7 +193,10 @@ class BytePatternStep(Step):
     def _collect_flirt_signatures(
         *, pc: Any, binary_for_byte_match: Path,
     ) -> tuple[list[Any], dict[str, int]]:
-        """FLIRT imzalarını homebrew_bytes + sigs/*.pat + harici yollar + binary'den topla.
+        """FLIRT imzalarını açıkça verilen harici yollardan + ikilinin kendisinden topla.
+
+        Veri kökündeki homebrew_bytes / sigs/*.pat B-D3 kararıyla bekletilir
+        (``_data_root_report``).
 
         Returns:
             (imza listesi, {kaynak dosya: imza sayısı}). Kaynak sözlüğü
@@ -199,31 +210,22 @@ class BytePatternStep(Step):
             all_byte_sigs.extend(sig_list)
             sources[str(source)] = sources.get(str(source), 0) + len(sig_list)
 
-        project_root = pc.config.project_root
         try:
             from karadul.analyzers.flirt_parser import FLIRTParser
             fp = FLIRTParser()
 
-            # İmza kökü yalnız config.project_root (HEAD davranışı).
-            # --output-dir project_root'u ezdiği için imzalar bulunmuyor (bilinen,
-            # bilinçli bekletiliyor: imza DB'si seçici değil, redis-server 162/0
-            # yanlış isim; veri kökü ayrıştırması ölçüm zemininde FLIRT +
-            # ngram_name_db birlikte ele alınacak).
-
-            # Byte pattern'li signature'lar (build_byte_signatures.py ciktisi)
-            homebrew_bytes_sigs = project_root / _FLIRT_BYTES_FILE
-            if homebrew_bytes_sigs.exists():
-                _add(homebrew_bytes_sigs, fp.load_json_signatures(homebrew_bytes_sigs))
-
+            # GHIDRA-14 (P15b): veri kökündeki bayt imzaları (signatures_homebrew_bytes.json,
+            # sigs/**/*.pat) OTOMATİK YÜKLENMEZ — B-D3 bekletmesi (imza veritabanı seçici
+            # değil; 2026-09-25: redis-server 162 ad / 0 doğru). Bekletme eskiden yalnız
+            # ``--output-dir``'in project_root'u ezmesine dayanıyordu; depo kökünden
+            # ``--output-dir``'siz koşuda imzalar yükleniyor ve yanlış ad üretiyordu.
+            # Artık giriş noktasından bağımsız ve istatistikte gerekçesiyle yazılı
+            # (``_data_root_report``). Bilerek açmak: dosyayı
+            # ``binary_reconstruction.external_signature_paths`` ile açıkça ver.
+            #
             # NOT (perf denetimi 2026-07-13): signatures_homebrew.json (158K imza)
-            # ve sigs/ .json'lari ISIM-tabanli, byte-pattern'leri YOK -> trie matcher
-            # (byte_pattern>=16 filtresi) hepsini atiyordu (~8s + bellek bosa). Byte
-            # matcher'a yalniz gercek byte-pattern'li kaynaklar girmeli: yukaridaki
-            # homebrew_bytes.json + sigs/ altindaki .pat dosyalari.
-            sigs_dir = project_root / _FLIRT_SIGS_DIR
-            if sigs_dir.is_dir():
-                for pat_file in sorted(sigs_dir.rglob("*.pat")):
-                    _add(pat_file, fp.load_pat_file(pat_file))
+            # ve sigs/ .json'lari ISIM-tabanli, byte-pattern'leri YOK -> byte
+            # matcher'a yalniz gercek byte-pattern'li kaynaklar girmeli.
 
             ext_paths = pc.config.binary_reconstruction.external_signature_paths
             for ext_path in ext_paths:
@@ -242,12 +244,37 @@ class BytePatternStep(Step):
             logger.debug("FLIRT signature toplama hatasi: %s", exc)
 
         logger.info(
-            "FLIRT: %d imza yüklendi (project_root=%s; %s)",
+            "FLIRT: %d imza yüklendi (%s); veri kökündeki bayt imzaları bekletiliyor (B-D3)",
             len(all_byte_sigs),
-            project_root,
             ", ".join(f"{Path(k).name}={v}" for k, v in sources.items()) or "kaynak yok",
         )
         return all_byte_sigs, sources
+
+    @staticmethod
+    def _data_root_report(*, pc: Any) -> dict[str, Any]:
+        """Veri kökündeki FLIRT bayt imzalarının durumu (GHIDRA-14 / B-D3).
+
+        Dosyalar yüklenmez, yalnız varlıkları yazılır: analist "imza yok" ile
+        "imza var ama bilerek bekletiliyor"u ayırt edebilsin. Çıktı kökü
+        (``project_root``) ve çalışma dizini aranmaz.
+        """
+        from karadul.analyzers.signature_db import _config_data_root
+
+        data_root = _config_data_root(pc.config)
+        held: list[str] = []
+        if data_root is not None:
+            if (data_root / _FLIRT_BYTES_FILE).is_file():
+                held.append(_FLIRT_BYTES_FILE)
+            sigs_dir = data_root / _FLIRT_SIGS_DIR
+            if sigs_dir.is_dir():
+                held.extend(
+                    str(p.relative_to(data_root)) for p in sorted(sigs_dir.rglob("*.pat"))
+                )
+        return {
+            "flirt_data_root": str(data_root) if data_root is not None else None,
+            "flirt_data_root_status": _FLIRT_DATA_ROOT_HOLD,
+            "flirt_data_root_held_files": held,
+        }
 
     @staticmethod
     def _ghidra_load_base(*, pc: Any, functions_json: Any) -> Optional[int]:

@@ -1082,8 +1082,10 @@ def analyze_with_live_output(target_path: str) -> None:
     from karadul.core.target import TargetDetector, TargetType
 
     config = Config.load()  # karadul.yaml varsa yukler, yoksa default
-    # project_root'u karadul paket kokune set et -- CWD'ye bagli olmamasi icin
-    config.project_root = Path(__file__).resolve().parent.parent
+    # GHIDRA-14 (P15b): eskiden project_root burada paket köküne çekiliyordu (imzalar
+    # bulunsun diye); o alan artık yalnız çıktı kökü. Başvuru verisi config.data_root'tan
+    # (paket kökü / KARADUL_SIG_DATA_DIR) okunur; çıktı `karadul analyze` gibi
+    # çalışma dizininin workspaces/ altına gider (kurulu pakette site-packages'a yazmaz).
     target_file = Path(target_path).resolve()
 
     # v1.5.5: Computation recovery interaktif soru

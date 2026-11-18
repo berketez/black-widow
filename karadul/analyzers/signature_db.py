@@ -106,6 +106,7 @@ Kullanim:
 from __future__ import annotations
 
 import logging
+import os
 import re
 import threading
 from dataclasses import dataclass, field
@@ -420,6 +421,19 @@ def _resolve_attribution(
     if len(fams) == 1:
         return libs[0], cat, libs
     return "", "", libs
+
+
+def _config_data_root(config: Any) -> Path | None:
+    """Config'in veri kökü (GHIDRA-14); alan yoksa / yol değilse ``resolve_data_root``.
+
+    ``project_root`` (çıktı kökü) hiçbir durumda veri kökü yerine geçmez.
+    """
+    from karadul.config import resolve_data_root
+
+    raw = getattr(config, "data_root", None)
+    if isinstance(raw, (str, os.PathLike)) and str(raw):
+        return Path(raw).expanduser()
+    return resolve_data_root()[0]
 
 
 def _infer_platform_from_filename(filename: str) -> list[str] | None:
@@ -1490,13 +1504,17 @@ class SignatureDB:
 
     # Class-level cache: builtin + external imzalar sadece 1 kez yuklenir.
     # Sonraki instance'lar shallow copy ile baslatilir (~0.01s vs ~1.3s).
-    # Cache key = project_root str (farkli proje kokleri farkli external'lar yukler).
+    # Cache key = veri kökü + açık dış yollar + arka uç/platform (GHIDRA-14;
+    # eskiden project_root, yani çıktı kökü).
     _full_cache: dict[str, tuple[
         dict[str, dict[str, str]],                              # symbol_db
         dict[frozenset[str], tuple[str, str, str]],             # string_sigs
         list[tuple[frozenset[str], str, str, str, float]],      # call_sigs
         dict[str, list[dict[str, Any]]],                        # symbol_alts (IMZA-12)
     ]] = {}
+    # GHIDRA-14 (P15b): aynı anahtarın dış imza yükleme künyesi (önbellekten gelen
+    # örnek de "ne yüklendi" sorusunu cevaplayabilsin).
+    _external_info_cache: dict[str, dict[str, Any]] = {}
 
     def __init__(self, config: Optional[Config] = None, target_platform: str | None = None) -> None:
         self._config = config or Config()
@@ -1554,6 +1572,12 @@ class SignatureDB:
         self._lmdb_path_source: str | None = None
         self._lmdb_symbol_count: int | None = None
         self._lmdb_version: dict[str, Any] = {}
+
+        # GHIDRA-14 (P15b): dış imza JSON'ları veri kökünden (``config.data_root``)
+        # okunur, çıktı kökünden (``project_root``) değil. Ne yüklendiği / neden
+        # yüklenmediği ``backend_info()`` ile istatistiğe yazılır.
+        self._data_root: Path | None = _config_data_root(self._config)
+        self._external_info: dict[str, Any] = {}
 
         # Feature flag: config.perf.use_lmdb_sigdb
         # True ise LMDB backend kullanilir (dict RAM'e yuklenmez), False'da eski yol
@@ -1653,8 +1677,17 @@ class SignatureDB:
         # yüklenir; anahtar yalnız project_root olunca önce PE çözümlenen bir
         # süreçte ELF hedefi Linux imzalarını kaybediyordu. Anahtar platformu
         # ve LMDB durumunu da taşır.
+        # GHIDRA-14 (P15b): dış imzalar veri kökünden ve açık yollardan gelir;
+        # anahtar çıktı kökünü (project_root) DEĞİL bunları taşır.
+        try:
+            _ext_paths = tuple(
+                str(p) for p in (self._config.binary_reconstruction.external_signature_paths or ())
+            )
+        except Exception:  # noqa: BLE001 — eksik/garip config: açık yol yok sayılır
+            _ext_paths = ()
         cache_key = "|".join((
-            str(self._config.project_root),
+            f"data_root={self._data_root}",
+            f"ext={_ext_paths!r}",
             "lmdb" if self._lmdb_backend is not None else f"dict:{self._target_platform}",
         ))
 
@@ -1665,6 +1698,7 @@ class SignatureDB:
             self._string_sigs = dict(cached_str)
             self._call_sigs = list(cached_call)
             self._symbol_alts = {k: list(v) for k, v in cached_alts.items()}
+            self._external_info = dict(SignatureDB._external_info_cache.get(cache_key, {}))
             total = len(self._symbol_db)
             logger.info("SignatureDB: %d symbol imzasi cache'ten yuklendi", total)
             return
@@ -1815,6 +1849,13 @@ class SignatureDB:
         # zaten vaad ediyordu ama gate eksikti (perf denetimi 2026-07-13).
         if self._lmdb_backend is None:
             self._load_external_auto(target_platform=self._target_platform)
+        else:
+            # GHIDRA-14: atlanan yükleme de istatistikte görünür (sayı uydurulmaz).
+            self._external_info = {
+                "status": "atlandı: LMDB etkin (dış imza JSON'ları yüklenmez)",
+                "files": None,
+                "signatures": None,
+            }
 
         # Full DB'yi (builtin + external) class-level cache'e kaydet
         SignatureDB._full_cache[cache_key] = (
@@ -1823,6 +1864,7 @@ class SignatureDB:
             list(self._call_sigs),
             {k: list(v) for k, v in self._symbol_alts.items()},
         )
+        SignatureDB._external_info_cache[cache_key] = dict(self._external_info)
 
     # ------------------------------------------------------------------
     # FindCrypt-Ghidra Crypto Constants (v1.2.2)
@@ -1887,12 +1929,15 @@ class SignatureDB:
     # ------------------------------------------------------------------
 
     def _load_external_auto(self, target_platform: str | None = None) -> None:
-        """Config ve proje dizinindeki external signature'lari otomatik yukle.
+        """Config'teki ve veri kökündeki external signature'lari otomatik yukle.
 
         Yuklenecek kaynaklar (sirayla):
           1. config.binary_reconstruction.external_signature_paths
-          2. Proje dizinindeki signatures_*.json dosyalari
-          3. Proje dizinindeki sigs/**/*.json ve sigs/**/*.pat dosyalari (alt dizinler dahil)
+          2. Veri kökündeki (``config.data_root``; GHIDRA-14) signatures_*.json dosyalari
+          3. Veri kökündeki sigs/**/*.json ve sigs/**/*.pat dosyalari (alt dizinler dahil)
+
+        Çıktı kökü (``project_root``) ve çalışma dizini aranmaz: sonuç giriş
+        noktasından bağımsızdır. Yüklenen dosya / imza sayısı ``backend_info()``'da.
 
         Her kaynak try/except ile korunur; birinin basarisiz olmasi
         diger kaynaklarin yuklenmesini engellemez.
@@ -1903,6 +1948,7 @@ class SignatureDB:
                 "generic" platform her zaman yuklenir.
         """
         external_added = 0
+        files_loaded = 0
 
         # 1. Config'teki explicit external path'ler
         try:
@@ -1914,30 +1960,35 @@ class SignatureDB:
                         if p.is_file() and p.suffix == ".json":
                             added = self.load_external_signatures(p)
                             external_added += added
+                            files_loaded += 1
                         elif p.is_dir():
                             added = self.load_flirt_signatures([str(p)])
                             external_added += added
+                            files_loaded += 1
                     except Exception as exc:
                         logger.debug("External path yuklenemedi: %s -- %s", path_str, exc)
         except Exception:
             logger.debug("Signature eslestirme basarisiz, atlaniyor", exc_info=True)
 
-        # 2. Proje kokunde signatures_*.json dosyalari
+        # GHIDRA-14 (P15b): veri kökü (çıktı kökü / çalışma dizini DEĞİL).
+        data_root = self._data_root
+
+        # 2. Veri kökünde signatures_*.json dosyalari
         try:
-            project_root = self._config.project_root
-            for sig_file in sorted(project_root.glob("signatures_*.json")):
+            for sig_file in (sorted(data_root.glob("signatures_*.json")) if data_root else []):
                 try:
                     added = self.load_external_signatures(sig_file)
                     external_added += added
+                    files_loaded += 1
                 except Exception as exc:
                     logger.debug("Signature dosyasi yuklenemedi: %s -- %s", sig_file, exc)
         except Exception:
             logger.debug("Signature eslestirme basarisiz, atlaniyor", exc_info=True)
 
-        # 3. Proje kokunde sigs/ dizini (alt dizinler dahil -- rglob)
+        # 3. Veri kökünde sigs/ dizini (alt dizinler dahil -- rglob)
         try:
-            sigs_dir = self._config.project_root / "sigs"
-            if sigs_dir.is_dir():
+            sigs_dir = (data_root / "sigs") if data_root else None
+            if sigs_dir is not None and sigs_dir.is_dir():
                 _skipped_platform = 0
                 for sig_file in sorted(sigs_dir.rglob("*.json")):
                     # v1.9.2: Platform filtresi — hedef platformla uyumsuz dosyalari atla
@@ -1953,6 +2004,7 @@ class SignatureDB:
                     try:
                         added = self.load_external_signatures(sig_file)
                         external_added += added
+                        files_loaded += 1
                     except Exception as exc:
                         logger.debug("sigs/ dosyasi yuklenemedi: %s -- %s", sig_file, exc)
                 if _skipped_platform > 0:
@@ -1966,16 +2018,24 @@ class SignatureDB:
                     try:
                         added = self.load_flirt_signatures([str(f) for f in pat_files])
                         external_added += added
+                        files_loaded += len(pat_files)
                     except Exception as exc:
                         logger.debug("sigs/*.pat yuklenemedi: %s", exc)
         except Exception:
             logger.debug("Signature eslestirme basarisiz, atlaniyor", exc_info=True)
 
-        if external_added > 0:
-            logger.info(
-                "SignatureDB: %d external signature otomatik yuklendi (toplam: %d)",
-                external_added, len(self._symbol_db),
-            )
+        self._external_info = {
+            "status": (
+                "yüklendi" if files_loaded
+                else "dosya yok: veri kökünde ve açık yollarda dış imza dosyası bulunmadı"
+            ),
+            "files": files_loaded,
+            "signatures": external_added,
+        }
+        logger.info(
+            "SignatureDB: %d dış imza dosyasından %d imza yüklendi (veri kökü: %s; toplam: %d)",
+            files_loaded, external_added, data_root, len(self._symbol_db),
+        )
 
     # ------------------------------------------------------------------
     # Kullanici API: byte pattern ekleme
@@ -2988,12 +3048,26 @@ class SignatureDB:
           * ``sigdb_path`` / ``sigdb_path_source``: denenen LMDB yolu ve kaynağı.
           * ``sigdb_schema_version`` / ``sigdb_build_id`` / ``sigdb_source_hash``:
             veritabanının künyesi (okunamazsa None; uydurulmaz).
+          * GHIDRA-14: ``sigdb_data_root`` / ``sigdb_data_root_source`` (veri kökü ve
+            kaynağı), ``sigdb_external_status`` (dış imza JSON'ları yüklendi mi,
+            neden değil), ``sigdb_external_files`` / ``sigdb_external_signatures``
+            (yüklenmediyse None).
         """
         with self._lock:
             dict_count = len(self._symbol_db)
         lmdb_count = self._lmdb_symbol_count if self._lmdb_backend is not None else None
         ver = self._lmdb_version if self._lmdb_backend is not None else {}
+        info_fn = getattr(self._config, "data_root_info", None)
+        root_info = info_fn() if callable(info_fn) else {}
+        if not isinstance(root_info, dict):
+            root_info = {}
+        ext = self._external_info
         return {
+            "sigdb_data_root": str(self._data_root) if self._data_root is not None else None,
+            "sigdb_data_root_source": root_info.get("data_root_source"),
+            "sigdb_external_status": ext.get("status"),
+            "sigdb_external_files": ext.get("files"),
+            "sigdb_external_signatures": ext.get("signatures"),
             "sigdb_backend": "lmdb" if self._lmdb_backend is not None else "builtin_dict",
             "sigdb_symbol_count": dict_count + (lmdb_count or 0),
             "sigdb_dict_symbol_count": dict_count,
