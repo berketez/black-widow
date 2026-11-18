@@ -672,6 +672,20 @@ class TestGhidra03LiteDizini:
                    for src, dst in calls)
         assert not list(tmp_path.glob("*.tmp"))
 
+    def test_atomik_yazim_izinleri_korur(self, tmp_path) -> None:
+        f = tmp_path / "bsim_lite_index.json"
+        f.write_text(json.dumps({"version": 1, "databases": {}}))
+        os.chmod(f, 0o640)
+        lite = _BSimLiteIndex(tmp_path)
+        lite.ingest_function("db", "p", "f", "1", "int a;")
+        lite.save()
+        assert f.stat().st_mode & 0o777 == 0o640  # mkstemp'in 0600'ü değil
+        g = tmp_path / "yeni" / "bsim_lite_index.json"
+        lite2 = _BSimLiteIndex(g.parent)
+        lite2.ingest_function("db", "p", "f", "1", "int a;")
+        lite2.save()
+        assert g.stat().st_mode & 0o777 == 0o644
+
     def test_degisiklik_yoksa_kapanista_yazmaz(self, tmp_path, lite_mode) -> None:
         d = tmp_path / "bsim"
         d.mkdir()

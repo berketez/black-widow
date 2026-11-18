@@ -82,6 +82,8 @@ _H2_BUSY_MARKERS = ("already in use",)
 _LITE_INDEX_NAME = "bsim_lite_index.json"
 _PROVENANCE_SUFFIX = ".provenance.json"
 _QUARANTINE_INFIX = ".bozuk-"
+# Yeni JSON dosyalarının izni (eski write_text davranışı: 0644, umask 022).
+_NEW_FILE_MODE = 0o644
 
 # Kimlik okuma sinirlari (guvenilmeyen ikili; yalniz basliklar okunur).
 _NOTE_READ_CAP = 1 << 20
@@ -526,12 +528,18 @@ def _is_busy_error(exc: BaseException) -> bool:
 def _atomic_write_json(path: Path, data: Any, indent: Optional[int] = 2) -> None:
     """Gecici dosyaya yaz + ``os.replace``: okuyan hicbir zaman yarim dosya gormez."""
     path.parent.mkdir(parents=True, exist_ok=True)
+    # mkstemp 0600 açar; var olan dosyanın izinleri korunur (yoksa 0644).
+    try:
+        mode = path.stat().st_mode & 0o777
+    except FileNotFoundError:
+        mode = _NEW_FILE_MODE
     fd, tmp = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=str(path.parent))
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(data, fh, indent=indent, ensure_ascii=False)
             fh.flush()
             os.fsync(fh.fileno())
+        os.chmod(tmp, mode)
         os.replace(tmp, path)
     except BaseException:
         try:

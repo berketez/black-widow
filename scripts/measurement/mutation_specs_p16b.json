@@ -162,6 +162,14 @@
       "replace": "self.quarantined = None"
     },
     {
+      "id": "p16b_izin_0600",
+      "desc": "GHIDRA-03: atomik yazım dosya iznini mkstemp'in 0600'üne çeviriyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra03LiteDizini::test_atomik_yazim_izinleri_korur",
+      "find": "        os.chmod(tmp, mode)",
+      "replace": "        os.chmod(tmp, 0o600)"
+    },
+    {
       "id": "p16b_temizken_yazar",
       "desc": "GHIDRA-12 e: değişiklik yokken kapanışta dizin yeniden yazılıyor",
       "module": "karadul/ghidra/bsim.py",

@@ -192,8 +192,13 @@ class TestBSimDatabaseInit:
         assert db._closed is False
         db.close()
 
-    def test_bsim_database_default_path(self, config: Config) -> None:
+    def test_bsim_database_default_path(
+        self, config: Config, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
         """db_path bossa ~/.cache/karadul/bsim/ kullanilmali."""
+        # Test takımı önbelleği yalıtırsa (KARADUL_CACHE_DIR) öntanımlı yol görünmez.
+        monkeypatch.delenv("KARADUL_CACHE_DIR", raising=False)
+        monkeypatch.delenv("KARADUL_DATA_DIR", raising=False)
         config.bsim.db_path = ""
         db = BSimDatabase(config)
         expected = Path.home() / ".cache" / "karadul" / "bsim"

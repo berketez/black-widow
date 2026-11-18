@@ -1,6 +1,6 @@
 --- a/tests/test_bsim.py
 +++ b/tests/test_bsim.py
-@@ -728,8 +728,13 @@
+@@ -733,8 +733,13 @@
  
          runner = CliRunner()
          result = runner.invoke(main, ["bsim", "create", "test_cli_db"])

@@ -1,0 +1,31 @@
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -17,6 +17,28 @@
+ # ---------------------------------------------------------------------------
+ 
+ @pytest.fixture(scope="session", autouse=True)
++def _isolated_cache_root(tmp_path_factory: pytest.TempPathFactory) -> Generator[None, None, None]:
++    """Test takımı kullanıcının ortak önbelleğine (``~/.cache/karadul``) yazmasın.
++
++    P16b: Ghidra'yı gerçekten koşan testler (``sample_macho``,
++    ``hello_macho_arm64_stripped`` …) öntanımlı ayarla BSim ingest yapıyor ve
++    örnek ikilileri kullanıcının ortak BSim deposuna ekliyordu (GHIDRA-02'deki
++    ``rust_macho_arm64_stripped`` / ``hashbench_O2.stripped`` kayıtları oradan).
++    ``resolve_cache_root()`` bu değişkeni okur; dışarıdan verilmişse dokunulmaz.
++    """
++    import os
++
++    if os.environ.get("KARADUL_CACHE_DIR"):
++        yield
++        return
++    os.environ["KARADUL_CACHE_DIR"] = str(tmp_path_factory.mktemp("karadul_cache"))
++    try:
++        yield
++    finally:
++        os.environ.pop("KARADUL_CACHE_DIR", None)
++
++
++@pytest.fixture(scope="session", autouse=True)
+ def _warm_signature_db_cache() -> None:
+     """SignatureDB class-level cache'ini test suite basinda doldur.
+ 
