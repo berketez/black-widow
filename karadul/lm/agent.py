@@ -608,8 +608,9 @@ class Agent:
         return f"r{self._result_seq}"
 
     def _call_key(self, tool: str, args: Any) -> tuple[str, str]:
-        """Tekrar tespitinin anahtarı: araç + öntanımları doldurulmuş, adresi tek yazıma çevrilmiş
-        argümanlar. ``FUN_1000`` ile ``FUN_00001000`` aynı çağrıdır."""
+        """Tekrar tespitinin anahtarı: araç + öntanımları doldurulmuş, adresleri tek yazıma çevrilmiş
+        argümanlar. ``FUN_1000`` ile ``FUN_00001000`` aynı çağrıdır; ``addr`` dışındaki adres argümanları
+        da (şemasında deseni ``ADDR_PATTERN`` olan her alan; ör. ``find_path``'in ``to``'su) çevrilir."""
         spec = self.registry.spec(tool)
         norm = dict(spec.defaults) if spec is not None else {}
         if isinstance(args, dict):
@@ -618,6 +619,14 @@ class Agent:
             a = self.workspace.resolve(norm.get("addr"))
             if a is not None:
                 norm["addr"] = f"FUN_{a}"
+            # P22e (P22d bulgusu): öbür adres argümanları da tek yazıma; yoksa aynı çağrının başka
+            # yazımlı tekrarı yakalanmaz, yalnız bütçe harcar.
+            props = spec.args_schema.get("properties", {}) if spec is not None else {}
+            for k, sub in props.items():
+                if k != "addr" and isinstance(sub, Mapping) and sub.get("pattern") == ADDR_PATTERN:
+                    b = self.workspace.resolve(norm.get(k))
+                    if b is not None:
+                        norm[k] = f"FUN_{b}"
         return tool, canonical_json(norm)
 
     def _log_tool(self, task: _Task, result: ToolResult, args: Any, caller: str, duration: float) -> None:
