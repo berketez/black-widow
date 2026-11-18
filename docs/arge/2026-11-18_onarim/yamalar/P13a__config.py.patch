@@ -1,5 +1,5 @@
 --- a/karadul/config.py	2026-11-18 18:32:42
-+++ b/karadul/config.py	2026-11-18 18:32:42
++++ b/karadul/config.py	2026-11-18 18:52:38
 @@ -787,11 +787,6 @@
  
      lmdb_l1_cache_size: Sicak sembol lookup icin in-process LRU cache boyutu.
@@ -20,3 +20,14 @@
      naming_max_workers: Optional[int] = None
      naming_chunk_size: int = 256
      naming_chunk_timeout: float = 60.0
+@@ -1058,6 +1052,10 @@
+     "decompilers.secondary_backend": "yer tutucu: tek arka uç çağrılıyor",
+     "computation.struct_split_weight": "MaxSMT çözücüsü bu ağırlığı okumuyor",
+     "computation.struct_min_confidence": "MaxSMT çözücüsü bu eşiği okumuyor",
++    # P13a / AD-12: yalnız silinen paralel ad koşucusu okuyordu (K-3 A5)
++    "perf.naming_max_workers": "paralel ad koşucusu silindi (P13a); hiçbir kod okumuyor",
++    "perf.naming_chunk_size": "paralel ad koşucusu silindi (P13a); hiçbir kod okumuyor",
++    "perf.naming_chunk_timeout": "paralel ad koşucusu silindi (P13a); hiçbir kod okumuyor",
+ }
+ 
+ 
