@@ -1,5 +1,5 @@
 {
-  "_comment": "P13a (ad yan yolları: AD-06 Faz 1 seçimi, AD-09 dizgi kanalı, AD-04/05 birleştirici, AD-11 + B-C6 korunan ön ad ve elle ad zorlaması) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). AD-12 silme olduğu için mutantı yok. c_namer yamasının (yamalar/P13a__c_namer.py.patch) testi yamayla gelir; mutantı yama uygulanınca eklenir. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p13a.json",
+  "_comment": "P13a (ad yan yolları: AD-06 Faz 1 seçimi, AD-09 dizgi kanalı, AD-04/05 birleştirici, AD-11 + B-C6 korunan ön ad ve elle ad zorlaması) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). AD-12 silme olduğu için mutantı yok. c_namer yamasının (yamalar/P13a__c_namer.py.patch) testi yamayla gelir; mutantı yama uygulanınca eklenir. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p13a.json Kalem 6: 808a7f8 (GHIDRA-16) dala alındığı için P16a'dan çıkarılan iki g16 mutantı burada (mutation_specs_p16a.json P16a'nın).",
   "mutants": [
     {
       "id": "p13a_ad06_ham_liste",
@@ -152,6 +152,30 @@
       "test": "tests/test_p13a_elle_ad.py::test_birlestirmeden_sonra_elle_ad_zorlanir",
       "find": "        reason = _name_validity.reject_reason(name, existing_functions=existing, own_name=own)\n        if reason is not None:\n",
       "replace": "        reason = _name_validity.reject_reason(name, existing_functions=existing, own_name=own)\n        if reason is not None and False:\n"
+    },
+    {
+      "id": "p13a_g16_xref_sirasi_yok",
+      "desc": "GHIDRA-16: başvurular adres sırasına konmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_dizgi_bagi.py::test_dizgi_fonksiyon_bagi_baslananlardan",
+      "find": "            xrefs.sort(key=lambda x: _address_sort_key(x[\"from_address\"]))",
+      "replace": "            xrefs.sort(key=lambda x: 0)"
+    },
+    {
+      "id": "p13a_g16_fonksiyon_bagi_bos",
+      "desc": "GHIDRA-16: dizginin fonksiyon alanı boş kalır (eski davranış)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16a_dizgi_bagi.py::test_dizgi_fonksiyon_bagi_baslananlardan",
+      "find": "            entry[\"function\"] = first[\"from_function\"] if first else None",
+      "replace": "            entry[\"function\"] = None"
+    },
+    {
+      "id": "p13a_p12a_xref_sirasi_set",
+      "desc": "P12a sıra yaması (808a7f8 ile anlam kazanır): başvuran fonksiyonlar yine set sırasıyla",
+      "module": "karadul/reconstruction/binary_name_extractor.py",
+      "test": "tests/test_p12a_extractor_sirasi.py",
+      "find": "                    referring_funcs = list(dict.fromkeys(",
+      "replace": "                    referring_funcs = list(set("
     }
   ]
 }
