@@ -10,8 +10,8 @@
 |---|---|---|
 | 1 — IMZA-15 + P03 yaması | bitti | cc452bc |
 | 2 — ARAYUZ-17 kayıt | bitti | c248ad2 |
-| 3 — P19 yaması | bekliyor | |
-| 4 — capa K-1 bayrağı | bitti | (bu commit) |
+| 3 — P19 yaması | bitti | (bu commit) |
+| 4 — capa K-1 bayrağı | bitti | 7b05980 |
 | 5 — BORU-05 | bekliyor | |
 
 ## Ortak durum sözlüğü (P-S1; P03 ile aynı dizgiler)
@@ -118,3 +118,18 @@ Yani P03 main'e girdiği andan beri capa, ölçülmeden, PE'lerde ürünün adla
 - Yeni `tests/test_ps1_capa_k1.py` (12 test): bayrak öntanımlısı ve katı okuma (None / False / "true" / 1 / taklit → kapalı, yalnız `True` açık); statik blok gerçek `Workspace`'e yazar, ad birleştiricinin capa kaynağı (`run_capa_merge`) aynı çalışma alanından okur → bayrak kapalıyken **0 ad, 0 yetenek**, açıkken 2 ad; capa `calisti` olmayan durumda bayrak açık olsa da besleme yok; **gerçek capa + gerçek `w32.exe`** (taklit yok): yetenekler `capa_scan.json`'da, `capa_capabilities.json` yok, ad birleştirici 0 ad.
 - `tests/test_step_capa_annotation.py`: bayrak açıkken yorum, kapalıyken (öntanımlı) yazılmıyor.
 - Mutasyon: 5 mutant (kapı yok, öntanımlı açık, gevşek bayrak okuması, yorumda bayrak yok, rapor kaydı yok) **5/5 öldü**.
+
+## Kalem 3 — P19 yaması: tanınan kapsayıcı reconstruct'ta "atlandı"
+
+### a. Göster (önce)
+Gerçek kapsayıcılar (K-8 seti; `once/kapsayici/`, `python -m karadul analyze --skip-dynamic`): six 1.16.0 wheel ve humanizer.core 2.14.1 nupkg — ikisinde de `reconstruct: success=False`, hata **"Deobfuscate edilmis dosya bulunamadi"** (2/2): kapsayıcı tanındığı hâlde (P19: `UNKNOWN` + `metadata.container`) JS hattına düşüyordu.
+
+### b. Onarım
+`yamalar/P19__stages.py.patch` gözden geçirildi ve temiz uygulandı (`ReconstructionStage.execute`, JS dalından önce): `UNKNOWN` + `metadata["container"]` → `StageResult(success=False, skipped=True)`, `stats`: `skip_reason` (kapsayıcı türü + `unsupported_reason`), `container`, `container_executables`. Ek: `container_executables_total` (liste `core/target.py`'de ilk 50 ile sınırlı; toplam ayrıca yazılmazsa analist kırpılmış listeyi tam sanabilir).
+
+### c. Yeniden say (sonra, `sonra/kapsayici/`)
+İki gerçek kapsayıcıda da `reconstruct: skipped=True`, hata yok, neden "Kapsayici tanindi (python_wheel / nuget_package) ama dogrudan analiz hatti yok: …" (2/2). Kalan (bu kalemin dışı; `stages.py`'nin başka bölgeleri / başka aşamalar): `static` aşaması aynı kapsayıcıda "Analyzer bulunamadi: No analyzer registered for TargetType.UNKNOWN" hatası, `deobfuscate` "Hedef türü tanınmadı" diyor; kapsayıcı tanındığı için ikisi de aynı "atlandı" düzenine geçmeli (P-S2 ya da P19 izleme).
+
+### d. Test / mutasyon
+- Yeni `tests/test_ps1_kapsayici.py` (4 test): sentetik wheel (gerçek `TargetDetector`) → atlandı, JS hattı çağrılmadı, hata listesi boş; gerçek six wheel + humanizer nupkg → atlandı; kapsayıcı kanıtı olmayan düz zip eski yolu izler.
+- Mutasyon: 2 mutant (JS hattına düşer, "başarılı" görünür) **2/2 öldü**.

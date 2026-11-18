@@ -192,6 +192,22 @@
       "test": "tests/test_ps1_capa_k1.py::TestStaticBlockGate::test_flag_off_report_only",
       "find": "        context.workspace.save_json(\"static\", \"capa_scan\", record)",
       "replace": "        record = None  # kayit yazilmaz"
+    },
+    {
+      "id": "kapsayici_js_hattina",
+      "desc": "P19: tanınan kapsayıcı yine JS hattına düşer",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_kapsayici.py::test_synthetic_wheel_is_skipped_not_js",
+      "find": "if target.target_type == TargetType.UNKNOWN and (target.metadata or {}).get(\"container\"):",
+      "replace": "if False and (target.metadata or {}).get(\"container\"):"
+    },
+    {
+      "id": "kapsayici_basarili_sayilir",
+      "desc": "P19: atlanan kapsayıcı 'başarılı' görünür",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_kapsayici.py::test_synthetic_wheel_is_skipped_not_js",
+      "find": "stage_name=self.name, success=False, skipped=True,",
+      "replace": "stage_name=self.name, success=True, skipped=False,  # yanlis"
     }
   ]
 }

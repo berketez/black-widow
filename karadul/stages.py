@@ -1326,6 +1326,26 @@ class ReconstructionStage(Stage):
         ):
             return self._execute_analyzer_reconstruct(context, start)
 
+        # P19 / BICIM-10: tanınan ama analiz hattı olmayan kapsayıcı (wheel, IPA,
+        # nupkg, AAB, XAPK; target.metadata["container"]) JS hattına düşüp
+        # "Deobfuscate edilmis dosya bulunamadi" demesin: açık "atlandı".
+        if target.target_type == TargetType.UNKNOWN and (target.metadata or {}).get("container"):
+            meta = target.metadata
+            return StageResult(
+                stage_name=self.name, success=False, skipped=True,
+                duration_seconds=time.monotonic() - start,
+                stats={
+                    "skip_reason": (
+                        f"Kapsayici tanindi ({meta['container']}) ama dogrudan analiz "
+                        f"hatti yok: {meta.get('unsupported_reason', '')}"
+                    ),
+                    "container": meta["container"],
+                    "container_executables": meta.get("container_executables", []),
+                    # Liste ilk 50 ile sinirli (core/target.py); toplam ayrica.
+                    "container_executables_total": meta.get("container_executables_total"),
+                },
+            )
+
         return self._execute_js(context, start)
 
     def _execute_app_bundle(self, context: PipelineContext, start: float) -> StageResult:
