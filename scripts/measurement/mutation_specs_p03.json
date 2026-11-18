@@ -136,6 +136,94 @@
       "test": "tests/test_p03_yara_kurallari.py::TestPackers::test_aspack_section_and_entry",
       "find": "name = s[0].rstrip(b\"\\x00\").decode(\"latin-1\")",
       "replace": "name = s[0].decode(\"latin-1\")"
+    },
+    {
+      "id": "capa_backend_auto",
+      "desc": "API yolu yeniden backend=\"auto\" geçiyor (capa 9.4: unexpected backend)",
+      "module": "karadul/analyzers/capa_scanner.py",
+      "test": "tests/test_p03_capa.py::test_real_api_on_x86_pe",
+      "find": "backend = capa.loader.BACKEND_DOTNET if input_format == \"dotnet\" else capa.loader.BACKEND_VIV",
+      "replace": "backend = \"auto\""
+    },
+    {
+      "id": "capa_api_mimari_yok",
+      "desc": "API yolunda vivisect mimari denetimi düştü (AArch64'te 0 yetenekli 'temiz')",
+      "module": "karadul/analyzers/capa_scanner.py",
+      "test": "tests/test_p03_capa.py::test_real_api_rejects_aarch64_elf",
+      "find": "if arch not in _VIV_ARCHES:",
+      "replace": "if False and arch not in _VIV_ARCHES:"
+    },
+    {
+      "id": "capa_macho_kabul",
+      "desc": "başlık denetimi Mach-O'yu kabul ediyor (capa'ya gidiyor)",
+      "module": "karadul/analyzers/capa_scanner.py",
+      "test": "tests/test_p03_capa.py::TestUnsupported::test_scan_reports_unsupported",
+      "find": "return False, \"macho\", \"Mach-O: capa statik analizde yalniz PE/ELF/.NET destekler\"",
+      "replace": "return True, \"macho\", \"\""
+    },
+    {
+      "id": "capa_elf_aarch64_kabul",
+      "desc": "ELF başlık denetimi AArch64'ü kabul ediyor",
+      "module": "karadul/analyzers/capa_scanner.py",
+      "test": "tests/test_p03_capa.py::TestUnsupported::test_scan_reports_unsupported",
+      "find": "if machine not in (3, 62):  # EM_386, EM_X86_64",
+      "replace": "if machine not in (3, 62, 183):"
+    },
+    {
+      "id": "capa_pe_arm64_kabul",
+      "desc": "PE başlık denetimi ARM64'ü kabul ediyor",
+      "module": "karadul/analyzers/capa_scanner.py",
+      "test": "tests/test_p03_capa.py::TestUnsupported::test_scan_reports_unsupported",
+      "find": "if machine not in (0x14C, 0x8664):  # I386, AMD64",
+      "replace": "if machine not in (0x14C, 0x8664, 0xAA64):"
+    },
+    {
+      "id": "capa_dotnet_reddedilir",
+      "desc": "CLR başlıklı (.NET) x86 dışı PE reddediliyor",
+      "module": "karadul/analyzers/capa_scanner.py",
+      "test": "tests/test_p03_capa.py::TestUnsupported::test_x86_and_dotnet_pass_header_check",
+      "find": "if len(pe_hdr) >= clr_off + 8 and struct.unpack_from(\"<I\", pe_hdr, clr_off)[0]:",
+      "replace": "if False:"
+    },
+    {
+      "id": "capa_cli_o_secenegi",
+      "desc": "CLI komutuna capa 9.x'te olmayan -o seçeneği geri eklendi",
+      "module": "karadul/analyzers/capa_scanner.py",
+      "test": "tests/test_p03_capa.py::TestCli::test_cli_json_from_stdout",
+      "find": "\"-q\",                                # quiet (progress bar yok)\n        ]",
+      "replace": "\"-q\", \"-o\", str(output_file),\n        ]"
+    },
+    {
+      "id": "capa_cli_cikis_kodlari",
+      "desc": "CLI 'desteklenmiyor' çıkış kodları yanlış (17 = E_INVALID_FILE_ARCH hata sayılır)",
+      "module": "karadul/analyzers/capa_scanner.py",
+      "test": "tests/test_p03_capa.py::TestCli::test_cli_unsupported_exit",
+      "find": "if (proc.returncode in (16, 17, 18)",
+      "replace": "if (proc.returncode in (14, 15)"
+    },
+    {
+      "id": "capa_durum_calisti_yok",
+      "desc": "başarılı taramada durum 'calisti' yazılmıyor",
+      "module": "karadul/analyzers/capa_scanner.py",
+      "test": "tests/test_p03_capa.py::TestCli::test_cli_json_from_stdout",
+      "find": "            result.status = STATUS_RAN\n            result.status_reason = \"\"",
+      "replace": "            result.status_reason = \"\""
+    },
+    {
+      "id": "capa_arac_yok_hata",
+      "desc": "araç/kural yokken durum 'arac_yok' yerine 'hata'",
+      "module": "karadul/analyzers/capa_scanner.py",
+      "test": "tests/test_p03_capa.py::TestNoTool::test_rules_missing",
+      "find": "return _fail(STATUS_NO_TOOL,\n                         self.unavailable_reason or",
+      "replace": "return _fail(STATUS_ERROR,\n                         self.unavailable_reason or"
+    },
+    {
+      "id": "capa_kurulu_degil_nedensiz",
+      "desc": "capa kurulu değilken neden metni kayboluyor",
+      "module": "karadul/analyzers/capa_scanner.py",
+      "test": "tests/test_p03_capa.py::TestNoTool::test_capa_not_installed",
+      "find": "\"capa kurulu degil: guvenli dizinlerde capa CLI yok, \"",
+      "replace": "\"capa yok: \""
     }
   ]
 }

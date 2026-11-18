@@ -27,6 +27,7 @@ import json
 import logging
 import re
 import shutil
+import struct
 import subprocess
 import time
 from dataclasses import dataclass, field
@@ -36,6 +37,71 @@ from typing import Any
 from karadul.core.safe_subprocess import resolve_tool, safe_run
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Tarama durumu (P03 / IMZA-06 durum sozlesmesi; yara_scanner ile ayni degerler)
+# ---------------------------------------------------------------------------
+# Tarayici her kosulda bir durum dondurur; "0 yetenek" ancak STATUS_RAN ile
+# birlikte "tarandi, bulgu yok" anlamina gelir.
+STATUS_RAN = "calisti"                 # capa analizi tamamlandi
+STATUS_NO_TOOL = "arac_yok"            # capa (CLI/Python modulu) ya da kural dizini yok
+STATUS_ERROR = "hata"                  # capa calistirildi ama tamamlanamadi
+STATUS_UNSUPPORTED = "desteklenmiyor"  # bicim/mimari capa'nin statik kapsami disinda
+
+# capa'nin vivisect arka ucunun cozumleyebildigi mimariler (capa 9.4:
+# capa ``aarch64``'u gecerli sayar ama vivisect AArch64 kodunu cozemez;
+# 24 sn calisip her PLT girisinde "Unsupported Instruction" ile 0 yetenek
+# dondurur -- bu "temiz" gibi gorunur, oysa analiz yapilmamistir).
+_VIV_ARCHES = frozenset({"i386", "amd64"})
+
+
+def _header_support(binary_path: Path) -> tuple[bool, str, str]:
+    """Dosya basligindan capa statik analizinin kapsamini belirle.
+
+    Returns:
+        (destekleniyor_mu, bicim, neden). ``bicim``: pe | elf | macho | "".
+        Destekleniyorsa ``neden`` bos.
+    """
+    try:
+        with open(binary_path, "rb") as fh:
+            head = fh.read(4096)
+            pe_hdr = b""
+            if head[:2] == b"MZ" and len(head) >= 0x40:
+                e_lfanew = struct.unpack_from("<I", head, 0x3C)[0]
+                # PE imzasi + dosya basligi + en buyuk istege bagli baslik
+                fh.seek(e_lfanew)
+                pe_hdr = fh.read(4 + 20 + 240)
+    except OSError as exc:
+        return False, "", f"dosya okunamadi: {exc}"
+
+    if head[:4] in (b"\xfe\xed\xfa\xce", b"\xfe\xed\xfa\xcf", b"\xce\xfa\xed\xfe",
+                    b"\xcf\xfa\xed\xfe", b"\xca\xfe\xba\xbe", b"\xca\xfe\xba\xbf"):
+        return False, "macho", "Mach-O: capa statik analizde yalniz PE/ELF/.NET destekler"
+    if head[:4] == b"\x7fELF":
+        if len(head) < 0x14:
+            return False, "elf", "ELF basligi kisa"
+        endian = ">" if head[5:6] == b"\x02" else "<"
+        machine = struct.unpack_from(endian + "H", head, 0x12)[0]
+        if machine not in (3, 62):  # EM_386, EM_X86_64
+            return False, "elf", (
+                f"ELF e_machine={machine}: capa'nin vivisect arka ucu yalniz "
+                "i386/amd64 kodunu cozumler")
+        return True, "elf", ""
+    if head[:2] == b"MZ":
+        if pe_hdr[:4] != b"PE\x00\x00" or len(pe_hdr) < 26:
+            return False, "pe", "MZ basligi var ama PE imzasi yok"
+        machine = struct.unpack_from("<H", pe_hdr, 4)[0]
+        # .NET (CLR basligi, veri dizini 14) mimariden bagimsiz: dotnet arka ucu
+        magic = struct.unpack_from("<H", pe_hdr, 24)[0]
+        clr_off = 24 + (96 if magic == 0x10B else 112) + 14 * 8
+        if len(pe_hdr) >= clr_off + 8 and struct.unpack_from("<I", pe_hdr, clr_off)[0]:
+            return True, "pe", ""
+        if machine not in (0x14C, 0x8664):  # I386, AMD64
+            return False, "pe", (
+                f"PE Machine=0x{machine:04x}: capa'nin vivisect arka ucu yalniz "
+                "i386/amd64 kodunu cozumler")
+        return True, "pe", ""
+    return False, "", "bicim taninmadi (PE/ELF degil)"
 
 # Varsayilan capa kurallarinin bulundugu dizin
 DEFAULT_RULES_PATH = Path.home() / ".cache" / "karadul" / "capa-rules"
@@ -228,9 +294,17 @@ class CAPAScanResult:
     format_: str = ""
     arch: str = ""
     os_: str = ""
+    # P03 durum sozlesmesi: calisti / arac_yok / hata / desteklenmiyor
+    status: str = STATUS_ERROR
+    status_reason: str = ""
+    # Kullanilan yol: "cli:<yol>" ya da "api:<arka uc>" (or. "api:vivisect")
+    backend: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "status": self.status,
+            "status_reason": self.status_reason,
+            "backend": self.backend,
             "success": self.success,
             "total_rules_matched": self.total_rules_matched,
             "total_functions_matched": self.total_functions_matched,
@@ -249,6 +323,12 @@ class CAPAScanResult:
             "file_capabilities": [c.to_dict() for c in self.file_capabilities],
             "errors": self.errors,
         }
+
+
+def _fail(status: str, reason: str, backend: str = "") -> CAPAScanResult:
+    """Basarisiz/kapsam disi sonuc: durum + neden her zaman dolu."""
+    return CAPAScanResult(success=False, errors=[reason], status=status,
+                          status_reason=reason, backend=backend)
 
 
 class CAPAScanner:
@@ -287,13 +367,18 @@ class CAPAScanner:
         # is_available() birden fazla kez cagirilabildiginden eskiden
         # 1000+ .yml dosyasi her cagrida tekrar tariandi.
         self._yml_count: int | None = None
+        # is_available() False ise nedeni (durum raporu icin)
+        self.unavailable_reason: str = ""
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
     def is_available(self) -> bool:
-        """CAPA kullanilabilir mi kontrol et (kural + binary/modul)."""
+        """CAPA kullanilabilir mi kontrol et (kural + binary/modul).
+
+        False ise neden ``unavailable_reason``'da.
+        """
         if self._capa_available is not None:
             return self._capa_available
 
@@ -302,6 +387,7 @@ class CAPAScanner:
             logger.debug(
                 "CAPA kurallar dizini bulunamadi: %s", self._rules_path,
             )
+            self.unavailable_reason = f"capa kural dizini yok: {self._rules_path}"
             self._capa_available = False
             return False
 
@@ -314,6 +400,8 @@ class CAPAScanner:
                 "CAPA kurallar dizininde yeterli kural yok (%d < 10): %s",
                 yml_count, self._rules_path,
             )
+            self.unavailable_reason = (
+                f"capa kural dizininde yeterli kural yok ({yml_count} < 10): {self._rules_path}")
             self._capa_available = False
             return False
 
@@ -336,6 +424,9 @@ class CAPAScanner:
             pass
 
         logger.debug("CAPA ne CLI ne Python API mevcut degil")
+        self.unavailable_reason = (
+            "capa kurulu degil: guvenli dizinlerde capa CLI yok, "
+            "flare-capa Python modulu import edilemiyor")
         self._capa_available = False
         return False
 
@@ -356,21 +447,27 @@ class CAPAScanner:
         Returns:
             CAPAScanResult: Scan sonuclari.
         """
+        binary_path = Path(binary_path)
         if not self.is_available():
-            return CAPAScanResult(
-                success=False,
-                errors=["CAPA mevcut degil veya kurallar bulunamadi"],
-            )
+            return _fail(STATUS_NO_TOOL,
+                         self.unavailable_reason or "CAPA mevcut degil veya kurallar bulunamadi")
 
-        if not binary_path.exists():
-            return CAPAScanResult(
-                success=False,
-                errors=[f"Binary bulunamadi: {binary_path}"],
-            )
+        if not binary_path.is_file():
+            return _fail(STATUS_ERROR, f"Binary bulunamadi: {binary_path}")
+
+        # Kapsam disi bicim/mimari: capa'yi hic calistirma, acik durum dondur
+        # (eskiden ya extractor hatasi ya da AArch64'te 0 yetenekli "temiz"
+        # gorunen bos sonuc uretiyordu).
+        supported, fmt, why = _header_support(binary_path)
+        if not supported:
+            res = _fail(STATUS_ERROR if why.startswith("dosya okunamadi") else STATUS_UNSUPPORTED,
+                        why)
+            res.format_ = fmt
+            return res
 
         start = time.monotonic()
 
-        # CLI varsa onu tercih et (tum format'lari destekler)
+        # CLI varsa onu tercih et (ayri surec + zaman asimi)
         if self._cli_path:
             result = self._scan_via_cli(binary_path)
         else:
@@ -382,6 +479,12 @@ class CAPAScanner:
                 result.function_capabilities, functions_data,
             )
 
+        # Durum sozlesmesi: sessiz sonuc yok.
+        if result.success:
+            result.status = STATUS_RAN
+            result.status_reason = ""
+        elif not result.status_reason:
+            result.status_reason = result.errors[0] if result.errors else "capa basarisiz (neden yok)"
         result.duration_seconds = time.monotonic() - start
         return result
 
@@ -504,194 +607,193 @@ class CAPAScanner:
     def _scan_via_cli(self, binary_path: Path) -> CAPAScanResult:
         """capa CLI ile JSON ciktisi al ve parse et.
 
-        PERF/MEM (v1.10.0 C6): Eskiden `capture_output=True` ile tum JSON
-        (100+ MB olabilir) stdout uzerinden Python bellegine aktariliyordu.
-        Yeni versiyon `-o/--output-file` flag'ini kullanip diske yazdirir,
-        sonra dosyayi stream ile okur. Subprocess stderr hala yakalanir
-        (kucuk, hata mesaji icin), stdout `DEVNULL`'a yonlendirilir.
+        PERF/MEM (v1.10.0 C6): JSON (100+ MB olabilir) Python bellegine
+        boru uzerinden alinmaz; capa'nin stdout'u gecici bir DOSYAYA
+        yonlendirilir, sonra dosyadan okunur. P03: capa 9.x CLI'inda
+        ``-o/--output`` secenegi YOK (eski komut argparse hatasiyla exit 2
+        veriyordu); JSON stdout'a yazilir.
         """
-        # mypy: çağıran taraf (374) `_cli_path` non-None garantisi sağlar
+        # mypy: çağıran taraf `_cli_path` non-None garantisi sağlar
         assert self._cli_path is not None, "_scan_via_cli before CLI resolved"
-        # CAPA cikti dosyasi: binary ile ayni dizinde gecici dosya
+        backend = f"cli:{self._cli_path}"
         import tempfile as _tempfile
         tmp_out = _tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", prefix="capa_out_",
-            delete=False, encoding="utf-8",
+            mode="wb", suffix=".json", prefix="capa_out_", delete=False,
         )
-        tmp_out.close()
         output_file = Path(tmp_out.name)
 
         cmd = [
             self._cli_path,
             str(binary_path),
-            "-j",                                # JSON output
+            "-j",                                # JSON output (stdout)
             "-r", str(self._rules_path),         # kural dizini
             "-q",                                # quiet (progress bar yok)
-            "-o", str(output_file),              # JSON dosyaya yaz (stdout degil)
         ]
 
         logger.info("CAPA CLI calistiriliyor: %s", " ".join(cmd))
 
         try:
-            # v1.10.0 Batch 5B MED-19: stderr unbounded koruma.
-            # stderr text=True + PIPE -> rich Python string build, kotu
-            # durumda ~1GB olabilir. Bytes mode okuyup cap uyguluyoruz.
-            proc = safe_run(
-                cmd,
-                stdout=subprocess.DEVNULL,          # stdout bellege almama
-                stderr=subprocess.PIPE,             # stderr byte mode
-                text=False,
-                timeout=self._timeout,
-            )
-            # stderr kap limitle, unicode-decode errors replace
-            _stderr_cap = 1 * 1024 * 1024  # 1MB, SecurityConfig ile uyumlu
-            _raw_stderr = proc.stderr or b""
-            if len(_raw_stderr) > _stderr_cap:
-                logger.warning(
-                    "CAPA stderr %d > cap %d, kirpiliyor", len(_raw_stderr), _stderr_cap,
+            try:
+                # v1.10.0 Batch 5B MED-19: stderr unbounded koruma -- bytes
+                # okunur, 1 MB'de kirpilir.
+                proc = safe_run(
+                    cmd,
+                    stdout=tmp_out,                     # JSON dosyaya (bellege degil)
+                    stderr=subprocess.PIPE,
+                    text=False,
+                    timeout=self._timeout,
                 )
-                _raw_stderr = _raw_stderr[:_stderr_cap]
-            # proc.stderr (str) alanini override et downstream caller'lar icin
-            proc_stderr_decoded = _raw_stderr.decode("utf-8", errors="replace")
-            # Yeniden atamak icin CompletedProcess'in stderr'ini override
-            # bir namedtuple degil, basit attribute; direkt yazabiliriz.
-            try:
-                proc.stderr = proc_stderr_decoded
-            except AttributeError:
-                pass
+            finally:
+                tmp_out.close()
         except subprocess.TimeoutExpired:
-            try:
-                output_file.unlink(missing_ok=True)
-            except OSError:
-                pass
-            return CAPAScanResult(
-                success=False,
-                errors=[
-                    f"CAPA timeout ({self._timeout}s) -- "
-                    f"binary cok buyuk olabilir: {binary_path.name}",
-                ],
+            output_file.unlink(missing_ok=True)
+            return _fail(STATUS_ERROR,
+                         f"CAPA timeout ({self._timeout}s) -- binary cok buyuk olabilir: "
+                         f"{binary_path.name}", backend)
+        except OSError as exc:
+            output_file.unlink(missing_ok=True)
+            return _fail(STATUS_NO_TOOL, f"capa CLI calistirilamadi: {exc}", backend)
+
+        _stderr_cap = 1 * 1024 * 1024  # 1MB, SecurityConfig ile uyumlu
+        _raw_stderr = proc.stderr or b""
+        if len(_raw_stderr) > _stderr_cap:
+            logger.warning(
+                "CAPA stderr %d > cap %d, kirpiliyor", len(_raw_stderr), _stderr_cap,
             )
-        except FileNotFoundError:
-            try:
-                output_file.unlink(missing_ok=True)
-            except OSError:
-                pass
-            return CAPAScanResult(
-                success=False,
-                errors=["capa CLI bulunamadi"],
-            )
+            _raw_stderr = _raw_stderr[:_stderr_cap]
+        stderr = _raw_stderr.decode("utf-8", errors="replace").strip()
 
         try:
             if proc.returncode != 0:
-                stderr = (proc.stderr or "").strip()
-                # Bazi hatalar beklenen: format desteklenmiyor vb.
-                if "UnsupportedFormatError" in stderr or "not appear to be a supported" in stderr:
-                    return CAPAScanResult(
-                        success=False,
-                        errors=[
-                            f"CAPA bu binary formatini desteklemiyor: "
-                            f"{binary_path.name} (sadece PE/ELF/shellcode)"
-                        ],
-                    )
-                return CAPAScanResult(
-                    success=False,
-                    errors=[f"CAPA CLI hatasi (exit {proc.returncode}): {stderr[:500]}"],
-                )
+                # capa 9.4 cikis kodlari (capa/main.py): 16 E_INVALID_FILE_TYPE,
+                # 17 E_INVALID_FILE_ARCH, 18 E_INVALID_FILE_OS
+                if (proc.returncode in (16, 17, 18)
+                        or "UnsupportedFormatError" in stderr
+                        or "not appear to be a supported" in stderr):
+                    return _fail(STATUS_UNSUPPORTED,
+                                 f"capa bu girdiyi desteklemiyor (exit {proc.returncode}): "
+                                 f"{stderr[:300]}", backend)
+                return _fail(STATUS_ERROR,
+                             f"CAPA CLI hatasi (exit {proc.returncode}): {stderr[:500]}", backend)
 
-            # JSON parse -- dosyadan stream
             try:
                 if not output_file.exists() or output_file.stat().st_size == 0:
-                    return CAPAScanResult(
-                        success=False,
-                        errors=["CAPA bos cikti uretti"],
-                    )
+                    return _fail(STATUS_ERROR, "CAPA bos cikti uretti", backend)
                 with output_file.open("r", encoding="utf-8") as fh:
                     data = json.load(fh)
             except (OSError, json.JSONDecodeError) as exc:
-                return CAPAScanResult(
-                    success=False,
-                    errors=[f"CAPA JSON parse hatasi: {exc}"],
-                )
+                return _fail(STATUS_ERROR, f"CAPA JSON parse hatasi: {exc}", backend)
 
-            return self._parse_json_output(data)
+            result = self._parse_json_output(data)
+            result.backend = backend
+            return result
         finally:
-            try:
-                output_file.unlink(missing_ok=True)
-            except OSError:
-                pass
+            output_file.unlink(missing_ok=True)
 
     # ------------------------------------------------------------------
     # Python API scan (fallback)
     # ------------------------------------------------------------------
 
     def _scan_via_api(self, binary_path: Path) -> CAPAScanResult:
-        """capa Python API ile in-process scan."""
+        """capa Python API ile in-process scan.
+
+        P03 / IMZA-06: capa 9.x ``get_extractor`` ``backend="auto"`` kabul
+        etmez (``ValueError: unexpected backend: auto``; 194/194 girdide
+        boyle dusuyordu). Bicim, arka uc ve isletim sistemi capa'nin kendi
+        CLI'inin yaptigi gibi secilir: ``get_auto_format`` -> ``.NET`` ise
+        ``dotnet``, aksi halde ``vivisect``; OS ``get_os``.
+
+        Not: bu yol surec ici calisir; ``timeout`` uygulanamaz (CLI yolu
+        ayri surecte ve zaman asimli).
+        """
         try:
             import capa.rules as capa_rules
             import capa.rules.cache  # noqa: F401 -- side-effect import
+            import capa.helpers
             import capa.loader
-            import capa.main as capa_main
+            import capa.capabilities.common as capa_caps
             import capa.render.json as capa_json
-        except ImportError as exc:
-            return CAPAScanResult(
-                success=False,
-                errors=[f"CAPA Python modulu import edilemedi: {exc}"],
+            from capa.exceptions import (
+                UnsupportedArchError,
+                UnsupportedFormatError,
+                UnsupportedOSError,
             )
+        except ImportError as exc:
+            return _fail(STATUS_NO_TOOL, f"CAPA Python modulu import edilemedi: {exc}")
+
+        # Bicim ve arka uc (capa.main.get_input_format_from_cli /
+        # get_backend_from_cli ile ayni secim)
+        try:
+            input_format = capa.helpers.get_auto_format(binary_path)
+        except UnsupportedFormatError:
+            return _fail(STATUS_UNSUPPORTED, "capa bu bicimi desteklemiyor (get_auto_format)")
+        except Exception as exc:
+            return _fail(STATUS_ERROR, f"CAPA bicim tespiti hatasi: {type(exc).__name__}: {exc}")
+        backend = capa.loader.BACKEND_DOTNET if input_format == "dotnet" else capa.loader.BACKEND_VIV
+        label = f"api:{backend}"
+        if backend == capa.loader.BACKEND_VIV:
+            arch = capa.loader.get_arch(binary_path)
+            if arch not in _VIV_ARCHES:
+                return _fail(STATUS_UNSUPPORTED,
+                             f"mimari {arch}: capa'nin vivisect arka ucu yalniz i386/amd64 "
+                             "kodunu cozumler", label)
+        os_ = capa.loader.get_os(binary_path)
 
         # Kurallari yukle
         try:
             ruleset = capa_rules.get_rules([self._rules_path])
         except Exception as exc:
-            return CAPAScanResult(
-                success=False,
-                errors=[f"CAPA kural yukleme hatasi: {exc}"],
-            )
+            return _fail(STATUS_ERROR, f"CAPA kural yukleme hatasi: {exc}", label)
 
         # Extractor olustur
         try:
             extractor = capa.loader.get_extractor(
                 input_path=binary_path,
-                input_format="auto",
-                os_="auto",
-                backend="auto",
+                input_format=input_format,
+                os_=os_,
+                backend=backend,
                 sigpaths=[],
                 disable_progress=True,
             )
+        except (UnsupportedFormatError, UnsupportedArchError, UnsupportedOSError) as exc:
+            return _fail(STATUS_UNSUPPORTED,
+                         f"capa bu girdiyi desteklemiyor: {type(exc).__name__}", label)
         except Exception as exc:
-            return CAPAScanResult(
-                success=False,
-                errors=[f"CAPA extractor hatasi (format desteklenmiyor olabilir): {exc}"],
-            )
+            return _fail(STATUS_ERROR,
+                         f"CAPA extractor hatasi: {type(exc).__name__}: {exc}", label)
 
         # Capability'leri bul
         try:
-            capabilities = capa_main.find_capabilities(
+            capabilities = capa_caps.find_capabilities(
                 ruleset, extractor, disable_progress=True,
             )
         except Exception as exc:
-            return CAPAScanResult(
-                success=False,
-                errors=[f"CAPA analiz hatasi: {exc}"],
-            )
+            return _fail(STATUS_ERROR, f"CAPA analiz hatasi: {type(exc).__name__}: {exc}", label)
 
         # JSON render et ve parse et (en stabil format)
         try:
             meta = capa.loader.collect_metadata(
                 argv=[],
                 input_path=binary_path,
-                input_format="auto",
-                os_="auto",
+                input_format=input_format,
+                os_=os_,
                 rules_path=[self._rules_path],
                 extractor=extractor,
                 capabilities=capabilities,
             )
+            meta.analysis.layout = capa.loader.compute_layout(
+                ruleset, extractor, capabilities.matches)
             json_str = capa_json.render(meta, ruleset, capabilities.matches)
             data = json.loads(json_str)
-            return self._parse_json_output(data)
+            result = self._parse_json_output(data)
         except Exception as exc:
             # JSON render basarisiz olursa ham capabilities'den parse et
             logger.warning("CAPA JSON render hatasi, ham parse deneniyor: %s", exc)
-            return self._parse_raw_capabilities(capabilities, ruleset)
+            result = self._parse_raw_capabilities(capabilities, ruleset)
+        result.backend = label
+        if not result.format_:
+            result.format_ = input_format
+        return result
 
     # ------------------------------------------------------------------
     # JSON parsing

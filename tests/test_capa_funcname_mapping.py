@@ -196,6 +196,15 @@ class TestCAPAScanResultParallelKeys:
 # ---------------------------------------------------------------------------
 
 
+# P03: scan() artik baslik denetimi yapiyor (Mach-O / x86 disi -> desteklenmiyor);
+# sahte girdi gecerli bir x86 PE basligi tasimali.
+_MINI_PE_X86 = (
+    b"MZ" + b"\x00" * 0x3A + (0x40).to_bytes(4, "little")
+    + b"PE\x00\x00" + (0x14C).to_bytes(2, "little") + b"\x00" * 18
+    + (0x10B).to_bytes(2, "little")
+)
+
+
 class TestScanWithoutFunctionsData:
     """functions_data verilmediginde capability_by_funcname bos kalmali."""
 
@@ -221,7 +230,7 @@ class TestScanWithoutFunctionsData:
 
         # functions_data vermeden cagir
         binary = tmp_path / "fake.bin"
-        binary.write_bytes(b"MZ\x00\x00")
+        binary.write_bytes(_MINI_PE_X86)
 
         result = scanner.scan(binary, functions_data=None)
         assert result.success is True
@@ -242,7 +251,7 @@ class TestScanWithoutFunctionsData:
         monkeypatch.setattr(scanner, "_scan_via_api", lambda p: mock_result)
 
         binary = tmp_path / "fake.bin"
-        binary.write_bytes(b"MZ\x00\x00")
+        binary.write_bytes(_MINI_PE_X86)
 
         fd = {"00401234": {"name": "fetch_url"}}
         result = scanner.scan(binary, functions_data=fd)
