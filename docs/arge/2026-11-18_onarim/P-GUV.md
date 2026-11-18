@@ -125,3 +125,25 @@ Ek: kapı YAML'dan açıldığında CLI hiçbir uyarı basmıyordu; `TargetType.
 **Test:** `tests/test_pguv_ag.py` 8 test (gerçek `NpmFingerprinter` ile `run` + `apply` uçtan uca; ağ bekçisi). Eski kodda 7'si kırmızı; pozitif küme testi (iki bayrak açıkken yol bağlı) eski kodda da yeşil, bilerek. Yeni kodla 8/8; `test_dts_namer.py`, `test_cursor_deobf_enhancements.py`, `test_pipeline_integrations.py`, `test_security_fixes_v1100.py` ile 119 + 8 geçti.
 
 **Mutasyon:** `m03_*` 8 mutant → 8/8 öldü.
+
+**Commit:** `8e10387`
+
+## Tam takım ve mutasyon (son HEAD `8e10387`)
+
+- `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (worktree kökü): **8 271 geçti, 4 kırmızı, 56 atlandı, 153 seçilmedi** (164 sn).
+  - 4 kırmızı (`tests/test_deobfuscator.py` 3, `tests/test_pipeline.py::TestPipelineExecution::test_identify_and_static`) `scripts/deobfuscate.mjs` alt sürecinin `scripts/node_modules` bulamamasından; worktree'de bu dizin yoktu. Brif §2.4'e göre `scripts/node_modules -> /Users/apple/Black_Widow/scripts/node_modules` symlink'i kuruldu, iki dosya yeniden koşuldu: **33/33 geçti**. Bu paketle ilgisiz; toplam 8 275 geçti, değişiklikten kaynaklı kırmızı yok.
+  - Symlink worktree'de duruyor ve izlenmiyor; `.gitignore`'daki `scripts/node_modules/` kalıbı sondaki eğik çizgi yüzünden symlink'i eşlemiyor, `git status`'ta `?? scripts/node_modules` görünür. Commit'lenmedi.
+  - Ara koşuda görülen `tests/test_bsim.py` lite/native 3 kırmızısı tam takım sırasında çıkmadı (tabanda da aynı sıra bağımlılığı var; GHIDRA-07 bölümünde).
+- `PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_pguv.json`: **34/34 öldü** (g11 10, g07 9, g13 7, m03 8). Çalışma ağacı sonra temiz.
+
+## Ana oturum için notlar
+
+1. **Yama:** `yamalar/P-GUV__cli.py.patch` — `_load_config` `ConfigValueError`'ı yakalayıp "HATA: ayar dosyası: …" ve çıkış 2 verir (bugün `analyze` bozuk bool değerinde yığın iziyle düşüyor; sessiz değil ama çirkin). `git apply --check` temiz.
+2. **Davranış değişikliği (bilinçli):** `--enable-network` / `--online` ve arayüzün ağ düğmesi `allow_dts_fetch`'i açmıyor; `.d.ts` indirmesi için YAML'da `network.allow_dts_fetch: true` da gerekir. Eskiden bu indirme ayardan bağımsız hep açıktı. `--enable-network`'ün bu bayrağı da açıp açmayacağı P15 / Berke kararı.
+3. **Davranış değişikliği (bilinçli):** `NamingPipeline()` config'siz kurulursa kaynak eşleme artık kapalı; YAML'da `source_match.enabled: true` olsa da `network.enabled` kapalıysa kaynak eşleme koşmaz (bilgi günlüğe yazılır).
+4. **Davranış değişikliği (bilinçli):** YAML'da bool alanda `true/false/yes/no/on/off/1/0` dışındaki değer artık yüklemeyi durdurur (`ConfigValueError`). Depodaki tek ayar biçimli YAML (`docker/measurement/karadul.yaml`) yükleniyor; arayüz bool'ları gerçek bool yazıyor.
+5. **P15'e:** `timeouts.frida_spawn_wait` artık okunmuyor; `network.allow_source_match` hiç okunmuyor; bilinmeyen anahtar / öbür tip doğrulaması dokunulmadı.
+6. **Açık kalan (başka paket):** Electron ASAR açma `npx --yes @electron/asar` (BICIM-06'nın öbür yarısı, `karadul/analyzers/electron.py`) ağ bayrağına hâlâ bakmıyor. `karadul run` hedef tipine bakmadan `reconstructed/*.js` arıyor (GHIDRA-13 "Ne" içinde, kapsam dışı bırakıldı; kapı artık önünde).
+7. Frida ile gerçek süreç hiç başlatılmadı; `tests/test_frida.py::TestFridaRealSpawn` (entegrasyon, varsayılan takımda seçilmiyor) yeni sözleşmeye (`spawn` sonrası `resume`) uyduruldu ama koşturulmadı.
+
+## PAKET BİTTİ
