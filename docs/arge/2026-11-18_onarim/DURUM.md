@@ -55,7 +55,7 @@ Plan dışı yeni paket: **P-GÜV** (hedef çalıştırma ve ağ güvenliği: GH
 | P12a | Ad çekirdeği: belirlenimcilik, AD-07, AD-08, AD-02 | çalışıyor (5. tur) | |
 | P22a | KaradulLM olay omurgası | çalışıyor (5. tur) | |
 | P17 | Arayüz: içerik ve ayarlar (+ K-6: güncelleme sorgusu öntanımlı kapalı) | çalışıyor (6. tur) | |
-| P18, P20, P15b, P16c, P12b, P13a, P13b, P-S4, P22b, P22d, P22e, P22c, P23 | sıradakiler | bekliyor | P18 / P20 bağımsız; P15b P14'ten, P16c P11'den, P13a / P12b P12a'dan (B-C6 AD-11 ile P13a'ya), P-S4 P-S3 ve P20'den (BICIM-13 ProjectReconstructor BICIM-01'e bağlı), P22b ∥ P22d P22a'dan sonra | P16c (yeni): Ghidra hızlandırma — analiz seçenekleri / çözümleyiciler / otomatik analiz süre sınırı, ölçerek (Berke: gerekirse Ghidra'da özelleştirme) | P07 P-S1'den sonra; P15 P08 + P09'dan sonra (GHIDRA-14 veri kökü onların dosyalarına dokunuyor) |
+| P18, P20, P15b, P16c, P12b, P13a, P13b, P-S4, P22b, P22d, P22e, P22c, P23 (+ izleme P02b, P03b, P05c) | sıradakiler | **yarın** (Berke 12:5x: "bu ajanların hepsi bitince duralım, yarın devam ederiz"); hazır metinler ve önkoşullar `gonderim/OKU.md` | P18 / P20 bağımsız; P15b P14'ten, P16c P11'den, P13a / P12b P12a'dan (B-C6 AD-11 ile P13a'ya), P-S4 P-S3 ve P20'den (BICIM-13 ProjectReconstructor BICIM-01'e bağlı), P22b ∥ P22d P22a'dan sonra | P16c (yeni): Ghidra hızlandırma — analiz seçenekleri / çözümleyiciler / otomatik analiz süre sınırı, ölçerek (Berke: gerekirse Ghidra'da özelleştirme) | P07 P-S1'den sonra; P15 P08 + P09'dan sonra (GHIDRA-14 veri kökü onların dosyalarına dokunuyor) |
 
 ## Ara noktalar
 | Zaman | main | Tam takım | Not |
