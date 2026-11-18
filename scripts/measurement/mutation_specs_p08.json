@@ -1,0 +1,37 @@
+{
+  "_comment": "P08 (imza veritabanı) onarımlarının mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p08.json",
+  "mutants": [
+    {
+      "id": "imza11_istatistik_yazilmiyor",
+      "desc": "adım veritabanı künyesini istatistiğe yazmıyor (IMZA-11 öncesi davranış)",
+      "module": "karadul/pipeline/steps/ghidra_metadata.py",
+      "test": "tests/test_p08_sigdb_kunye.py::test_step_writes_backend_stats_on_no_match",
+      "find": "ctx.stats.update(sig_db.backend_info())",
+      "replace": "pass  # mutant: künye yazılmıyor"
+    },
+    {
+      "id": "imza11_bulunamadi_sessiz",
+      "desc": "LMDB bulunamayınca neden kaydedilmiyor (sessiz geri düşüş)",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_sigdb_kunye.py::test_missing_lmdb_is_reported_not_silent",
+      "find": "self._lmdb_error = f\"bulunamadı: {path}\"",
+      "replace": "self._lmdb_error = None"
+    },
+    {
+      "id": "imza11_eslesme_yok_ayrilmiyor",
+      "desc": "eşleşme yokken de durum 'matched' yazılıyor",
+      "module": "karadul/pipeline/steps/ghidra_metadata.py",
+      "test": "tests/test_p08_sigdb_kunye.py::test_step_writes_backend_stats_on_no_match",
+      "find": "ctx.stats[\"sigdb_status\"] = \"matched\" if sig_matches else \"no_match\"",
+      "replace": "ctx.stats[\"sigdb_status\"] = \"matched\""
+    },
+    {
+      "id": "imza11_lmdb_sayisi_eksik",
+      "desc": "toplam ad sayısına LMDB eklenmiyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_sigdb_kunye.py::test_lmdb_backend_counts_and_version",
+      "find": "\"sigdb_symbol_count\": dict_count + (lmdb_count or 0),",
+      "replace": "\"sigdb_symbol_count\": dict_count,"
+    }
+  ]
+}

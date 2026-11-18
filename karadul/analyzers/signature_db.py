@@ -1417,6 +1417,15 @@ class SignatureDB:
         # v1.10.0: LMDB backend (opsiyonel, feature flag ile)
         self._lmdb_backend: Any = None  # Optional[LMDBSignatureDB]
 
+        # IMZA-11: koşunun hangi veritabanıyla yapıldığı. LMDB açılamazsa
+        # neden burada tutulur ve ``backend_info()`` ile istatistiğe yazılır;
+        # "eşleşme yok" ile "veritabanı yok" ayırt edilebilsin.
+        self._lmdb_error: str | None = None
+        self._lmdb_path: Path | None = None
+        self._lmdb_path_source: str | None = None
+        self._lmdb_symbol_count: int | None = None
+        self._lmdb_version: dict[str, Any] = {}
+
         # Feature flag: config.perf.use_lmdb_sigdb
         # True ise LMDB backend kullanilir (dict RAM'e yuklenmez), False'da eski yol
         _perf = getattr(self._config, "perf", None)
@@ -1424,6 +1433,8 @@ class SignatureDB:
 
         if _use_lmdb:
             self._init_lmdb_backend()
+        else:
+            self._lmdb_error = "kapalı: perf.use_lmdb_sigdb=False"
 
         # Builtin + external DB yukle (cache'ten veya ilk kez)
         # LMDB aktifken sadece builtin (kod-embedded) yuklenir, external yol atlanir
@@ -1445,21 +1456,26 @@ class SignatureDB:
         try:
             from karadul.analyzers.sigdb_lmdb import (
                 LMDBSignatureDB,
-                default_lmdb_path,
                 is_lmdb_available,
+                read_db_version,
+                resolve_lmdb_path,
             )
         except ImportError as exc:
             logger.warning(
                 "LMDB backend import edilemedi: %s. Eski dict yolu kullaniliyor.", exc,
             )
+            self._lmdb_error = f"içe aktarılamadı: {exc}"
             return
 
         if not is_lmdb_available():
             logger.warning("lmdb modulu yuklu degil. Eski dict yolu kullaniliyor.")
+            self._lmdb_error = "lmdb modülü yüklü değil"
             return
 
         perf = self._config.perf
-        path = perf.sig_lmdb_path or default_lmdb_path()
+        path, path_source = resolve_lmdb_path(perf.sig_lmdb_path)
+        self._lmdb_path = Path(path)
+        self._lmdb_path_source = path_source
 
         try:
             self._lmdb_backend = LMDBSignatureDB(
@@ -1468,6 +1484,8 @@ class SignatureDB:
                 l1_cache_size=perf.lmdb_l1_cache_size,
             )
             stats = self._lmdb_backend.total_entries
+            self._lmdb_symbol_count = int(stats["symbols"])
+            self._lmdb_version = read_db_version(self._lmdb_backend)
             logger.info(
                 "LMDB backend aktif: %s (symbols=%d, string_sigs=%d, "
                 "call_sigs=%d, byte_sigs=%d)",
@@ -1478,14 +1496,18 @@ class SignatureDB:
             # v1.10.0 M2: use_lmdb_sigdb=True default olunca LMDB dosyasi
             # olmayan kullanicilarda bu log her acilista tetiklenir -- gurultu
             # olmaması icin INFO seviyesine dusur. Graceful fallback zaten var.
+            # IMZA-11: sessiz değil — neden istatistiğe yazılır.
             logger.info(
                 "LMDB bulunamadi: %s. scripts/build_sig_lmdb.py ile olusturun. "
                 "Simdilik eski dict yolu kullaniliyor.", path,
             )
+            self._lmdb_error = f"bulunamadı: {path}"
         except Exception as exc:
             logger.warning(
                 "LMDB acilamadi (%s). Eski dict yolu kullaniliyor.", exc,
             )
+            self._lmdb_backend = None
+            self._lmdb_error = f"açılamadı: {type(exc).__name__}: {exc}"
 
     # ------------------------------------------------------------------
     # DB yukleme
@@ -2777,6 +2799,36 @@ class SignatureDB:
     # ------------------------------------------------------------------
     # Istatistik
     # ------------------------------------------------------------------
+
+    def backend_info(self) -> dict[str, Any]:
+        """Koşunun hangi imza veritabanıyla yapıldığı (IMZA-11).
+
+        Her koşuda adım istatistiğine yazılır. Alanlar:
+          * ``sigdb_backend``: ``"lmdb"`` ya da ``"builtin_dict"`` (LMDB yok/kapalı).
+          * ``sigdb_symbol_count``: sorgulanabilen ad sayısı (sözlük + LMDB; örtüşme
+            ayıklanmadı).
+          * ``sigdb_dict_symbol_count`` / ``sigdb_lmdb_symbol_count`` (LMDB yoksa None).
+          * ``sigdb_lmdb_error``: LMDB kullanılmıyorsa nedeni; kullanılıyorsa None.
+          * ``sigdb_path`` / ``sigdb_path_source``: denenen LMDB yolu ve kaynağı.
+          * ``sigdb_schema_version`` / ``sigdb_build_id`` / ``sigdb_source_hash``:
+            veritabanının künyesi (okunamazsa None; uydurulmaz).
+        """
+        with self._lock:
+            dict_count = len(self._symbol_db)
+        lmdb_count = self._lmdb_symbol_count if self._lmdb_backend is not None else None
+        ver = self._lmdb_version if self._lmdb_backend is not None else {}
+        return {
+            "sigdb_backend": "lmdb" if self._lmdb_backend is not None else "builtin_dict",
+            "sigdb_symbol_count": dict_count + (lmdb_count or 0),
+            "sigdb_dict_symbol_count": dict_count,
+            "sigdb_lmdb_symbol_count": lmdb_count,
+            "sigdb_lmdb_error": self._lmdb_error,
+            "sigdb_path": str(self._lmdb_path) if self._lmdb_path is not None else None,
+            "sigdb_path_source": self._lmdb_path_source,
+            "sigdb_schema_version": ver.get("schema_version"),
+            "sigdb_build_id": ver.get("build_id"),
+            "sigdb_source_hash": ver.get("source_hash"),
+        }
 
     def stats(self) -> dict[str, Any]:
         """Veritabani istatistiklerini dondur (thread-safe snapshot)."""

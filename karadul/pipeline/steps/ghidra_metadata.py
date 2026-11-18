@@ -204,10 +204,16 @@ class GhidraMetadataStep(Step):
 
         platform = _TARGET_PLATFORM_MAP.get(target.target_type)
 
+        # IMZA-11: "eşleşme yok" ile "veritabanı yok / hata" ayrılsın. Durum her
+        # koşuda yazılır; hata yolunda da sonda "error" kalır.
+        ctx.stats["sigdb_status"] = "error"
         try:
             from karadul.analyzers.signature_db import SignatureDB
 
             sig_db = SignatureDB(pc.config, target_platform=platform)
+            # Hangi veritabanıyla koşulduğu (arka uç, ad sayısı, LMDB'nin
+            # açılamama nedeni, yol ve künye) her koşuda istatistiğe girer.
+            ctx.stats.update(sig_db.backend_info())
             sig_matches = sig_db.match_all(
                 functions_json,
                 strings_json,
@@ -216,6 +222,7 @@ class GhidraMetadataStep(Step):
                 target_platform=platform,
             )
             ctx.stats["signature_matches"] = len(sig_matches)
+            ctx.stats["sigdb_status"] = "matched" if sig_matches else "no_match"
             if sig_matches:
                 sig_path = pc.workspace.save_json(
                     "reconstructed", "signature_matches",
@@ -243,8 +250,10 @@ class GhidraMetadataStep(Step):
                 logger.info(
                     "Signature DB: %d fonksiyon tanindi", len(sig_matches),
                 )
-        except ImportError:
+        except ImportError as exc:
             logger.debug("SignatureDB modulu bulunamadi, atlaniyor")
+            ctx.stats["sigdb_status"] = "unavailable"
+            ctx.stats["sigdb_lmdb_error"] = f"SignatureDB içe aktarılamadı: {exc}"
         except Exception as exc:
             logger.warning("Signature DB hatasi: %s", exc)
             ctx.errors.append(f"Signature DB hatasi: {exc}")

@@ -1122,10 +1122,60 @@ def default_lmdb_path() -> Path:
 
     ``KARADUL_SIG_LMDB_PATH`` env variable varsa onu kullanir.
     """
+    return resolve_lmdb_path(None)[0]
+
+
+# Veritabanı yolunun nereden geldiği (IMZA-11: koşu istatistiğine yazılır).
+LMDB_PATH_SOURCE_CONFIG = "config:perf.sig_lmdb_path"
+LMDB_PATH_SOURCE_ENV = "env:KARADUL_SIG_LMDB_PATH"
+LMDB_PATH_SOURCE_DEFAULT = "default:~/.karadul/signatures.lmdb"
+
+
+def resolve_lmdb_path(config_path: Optional[Path]) -> tuple[Path, str]:
+    """İmza veritabanı yolunu ve bu yolun kaynağını döndür.
+
+    Sıra: ``config.perf.sig_lmdb_path`` → ``KARADUL_SIG_LMDB_PATH`` ortam
+    değişkeni (uygulama paketinin başlatıcısı bunu ``Contents/Resources/
+    signatures.lmdb``'ye ayarlar) → ``~/.karadul/signatures.lmdb``.
+    """
+    if config_path:
+        return Path(config_path).expanduser(), LMDB_PATH_SOURCE_CONFIG
     env_path = os.environ.get("KARADUL_SIG_LMDB_PATH")
     if env_path:
-        return Path(env_path).expanduser().resolve()
-    return _DEFAULT_LMDB_DIR
+        return Path(env_path).expanduser().resolve(), LMDB_PATH_SOURCE_ENV
+    return _DEFAULT_LMDB_DIR, LMDB_PATH_SOURCE_DEFAULT
+
+
+def read_db_version(db: "LMDBSignatureDB") -> dict[str, Any]:
+    """Veritabanının sürüm künyesini oku (meta DB + dizindeki ``version.txt``).
+
+    Okunamayan alan uydurulmaz: ``None`` kalır. Şema 2'den önceki
+    veritabanlarında ``schema_version`` meta kaydı yoktur.
+    """
+    out: dict[str, Any] = {
+        "schema_version": None,
+        "build_id": None,
+        "source_hash": None,
+        "build_time": None,
+    }
+    for key in ("schema_version", "build_id", "source_hash", "build_time"):
+        try:
+            raw = db.get_metadata(key)
+        except Exception:  # noqa: BLE001 — künye okunamazsa None kalır
+            raw = None
+        if raw:
+            try:
+                out[key] = bytes(raw).decode("utf-8")
+            except UnicodeDecodeError:
+                out[key] = None
+    if out["source_hash"] is None:
+        vfile = db.path / "version.txt"
+        try:
+            first = vfile.read_text("utf-8").splitlines()[0].strip()
+            out["source_hash"] = first or None
+        except (OSError, IndexError):
+            pass
+    return out
 
 
 def is_lmdb_available() -> bool:
@@ -1147,6 +1197,11 @@ __all__ = [
     "canonical_call_key",
     "byte_prefix_key",
     "default_lmdb_path",
+    "resolve_lmdb_path",
+    "read_db_version",
+    "LMDB_PATH_SOURCE_CONFIG",
+    "LMDB_PATH_SOURCE_ENV",
+    "LMDB_PATH_SOURCE_DEFAULT",
     "is_lmdb_available",
     "open_readonly",
     "pack",
