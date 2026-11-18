@@ -161,6 +161,11 @@ class StructRecoveryResult:
     field_access_rewrites: int = 0
     total_structs: int = 0
     errors: list[str] = field(default_factory=list)
+    # P10 (BORU-01/02): çıktı dizinine yazılan bütün kaynak dosyalar (değişmemiş
+    # kopyalar dahil). ``rewritten_files`` yalnız en az bir yeniden yazım alanları
+    # tutar; eskiden her kopya "yeniden yazıldı" sayılıyordu.
+    output_files: list[Path] = field(default_factory=list)
+    originals_dir: Path | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -168,6 +173,8 @@ class StructRecoveryResult:
             "enriched_structs": [s.to_dict() for s in self.enriched_structs],
             "types_header_path": str(self.types_header_path) if self.types_header_path else None,
             "rewritten_files": [str(p) for p in self.rewritten_files],
+            "output_files": [str(p) for p in self.output_files],
+            "originals_dir": str(self.originals_dir) if self.originals_dir else None,
             "field_access_rewrites": self.field_access_rewrites,
             "total_structs": self.total_structs,
             "errors": self.errors,
@@ -786,6 +793,7 @@ class StructRecoveryEngine:
         algorithm_matches: list[AlgorithmMatch] | None = None,
         domain_report: DomainReport | None = None,
         computation_structs: list[dict] | None = None,
+        originals_dir: Path | None = None,
     ) -> StructRecoveryResult:
         """Tam struct recovery pipeline'i calistir.
 
@@ -803,6 +811,11 @@ class StructRecoveryEngine:
                 ``ConstraintStruct.to_dict()`` formatinda olmali:
                 ``{name, fields: [{offset, type, size, confidence}], total_size,
                 source_functions, has_overlap, alignment}``.
+            originals_dir: Yeniden yazılan dosyaların özgünlerinin yedeği. Öntanım
+                çıktı dizininin KARDEŞİ ``<output_dir>_originals/`` (P10, BORU-02):
+                çıktı dizini sonraki aşamaların kaynak ağacıdır; yedek onun içinde
+                olursa ``rglob`` ile kaynak sanılıyordu. Yalnız gerçekten
+                değişen dosyalar yedeklenir.
 
         Returns:
             StructRecoveryResult: Zenginlestirilmis struct'lar ve yeniden yazilan dosyalar.
@@ -819,12 +832,36 @@ class StructRecoveryEngine:
                 errors=[f"Decompiled dizini bulunamadi: {decompiled_dir}"],
             )
 
-        c_files = sorted(decompiled_dir.rglob("*.c"))
+        # P10 (BORU-01): girdi = çıktı çağrısı (stages.py'deki ikinci çağrı) kendi
+        # çıktısını girdi sayar, yedeği ezer ve dosyaları iki kez işler. Reddet.
+        if output_dir.exists() and decompiled_dir.resolve() == output_dir.resolve():
+            return StructRecoveryResult(
+                success=False,
+                errors=[
+                    "Girdi ve çıktı dizini aynı; yapı kurtarma yerinde yeniden "
+                    f"koşturulmaz: {decompiled_dir}",
+                ],
+            )
+
+        # P10 (BORU-02): yalnız kaynak dosyalar (üst düzey). Decompile dizinleri düz;
+        # alt dizindeki .c (ör. eski koşuların originals/ yedeği) kaynak değildir.
+        c_files = sorted(decompiled_dir.glob("*.c"))
+        nested = [
+            p for p in decompiled_dir.rglob("*.c") if p.parent != decompiled_dir
+        ]
+        if nested:
+            logger.warning(
+                "Yapı kurtarma: alt dizinlerdeki %d .c dosyası kaynak sayılmadı (%s)",
+                len(nested), decompiled_dir,
+            )
         if not c_files:
             return StructRecoveryResult(
                 success=False,
                 errors=[f"Dizinde C dosyasi bulunamadi: {decompiled_dir}"],
             )
+        if originals_dir is None:
+            originals_dir = output_dir.parent / f"{output_dir.name}_originals"
+        originals_dir = Path(originals_dir)
 
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -944,10 +981,7 @@ class StructRecoveryEngine:
 
         total_rewrites = 0
         rewritten_files: list[Path] = []
-
-        # Orijinal dosyalari yedekle: output_dir/originals/
-        originals_dir = output_dir / "originals"
-        originals_dir.mkdir(parents=True, exist_ok=True)
+        output_files: list[Path] = []
 
         for c_file in c_files:
             try:
@@ -956,22 +990,23 @@ class StructRecoveryEngine:
                 errors.append(f"Dosya okunamadi: {c_file.name}: {exc}")
                 continue
 
-            # Orijinali yedekle
-            backup_path = originals_dir / c_file.name
-            backup_path.write_text(content, encoding="utf-8")
-
             rewritten, n_rewrites = self._rewrite_access_patterns(
                 content, struct_map, global_ptr_map,
             )
 
             out_file = output_dir / c_file.name
             out_file.write_text(rewritten, encoding="utf-8")
-            rewritten_files.append(out_file)
-            total_rewrites += n_rewrites
+            output_files.append(out_file)
+            if n_rewrites and rewritten != content:
+                # Özgünü kaynak ağacın DIŞINA yedekle (BORU-02); yalnız değişen dosya.
+                originals_dir.mkdir(parents=True, exist_ok=True)
+                (originals_dir / c_file.name).write_text(content, encoding="utf-8")
+                rewritten_files.append(out_file)
+                total_rewrites += n_rewrites
 
         logger.info(
-            "Code rewrite: %d donusum yapildi, orijinaller: %s",
-            total_rewrites, originals_dir,
+            "Code rewrite: %d donusum, %d/%d dosya degisti, orijinaller: %s",
+            total_rewrites, len(rewritten_files), len(output_files), originals_dir,
         )
 
         # --- types.h olustur ---
@@ -989,6 +1024,8 @@ class StructRecoveryEngine:
             field_access_rewrites=total_rewrites,
             total_structs=len(enriched_structs),
             errors=errors,
+            output_files=output_files,
+            originals_dir=originals_dir if rewritten_files else None,
         )
         self._write_report(result, report_path)
 

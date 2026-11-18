@@ -49,6 +49,46 @@
       "test": "tests/test_p10_maxsmt.py::TestConversion::test_per_function_keys_and_types",
       "find": "f\"maxsmt_{fn_key}_{getattr(cand, 'name', family)}\"",
       "replace": "f\"maxsmt_{getattr(cand, 'name', family)}\""
+    },
+    {
+      "id": "p10_k2_motor_rglob",
+      "desc": "motor alt dizinlerdeki .c'yi de kaynak sayar (eski yedekler girdi olur)",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_yedek.py::TestYedek::test_nested_c_files_are_not_sources",
+      "find": "c_files = sorted(decompiled_dir.glob(\"*.c\"))",
+      "replace": "c_files = sorted(decompiled_dir.rglob(\"*.c\"))"
+    },
+    {
+      "id": "p10_k2_yerinde_red",
+      "desc": "girdi = çıktı çağrısı reddedilmez (stages.py ikinci çağrısı raporu ezer)",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_yedek.py::TestYedek::test_in_place_call_refused",
+      "find": "if output_dir.exists() and decompiled_dir.resolve() == output_dir.resolve():",
+      "replace": "if False and output_dir.exists() and decompiled_dir.resolve() == output_dir.resolve():"
+    },
+    {
+      "id": "p10_k2_degismeyen_sayilir",
+      "desc": "değişmemiş kopya 'yeniden yazıldı' sayılır (eski yalan sayaç)",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_yedek.py::TestYedek::test_unchanged_copies_are_not_rewritten_files",
+      "find": "            output_files.append(out_file)\n",
+      "replace": "            output_files.append(out_file); rewritten_files.append(out_file)\n"
+    },
+    {
+      "id": "p10_k2_inline_rglob",
+      "desc": "inline_detection alt dizinleri de tarar (yedekleri yorumlar, desenleri iki kez sayar)",
+      "module": "karadul/pipeline/steps/inline_detection.py",
+      "test": "tests/test_p10_yedek.py::TestInlineYalnizKaynak::test_backup_subdir_not_annotated_or_counted",
+      "find": "                sorted(decompiled_dir.glob(\"*.c\"))\n",
+      "replace": "                sorted(decompiled_dir.rglob(\"*.c\"))\n"
+    },
+    {
+      "id": "p10_k2_adim_kaynak",
+      "desc": "adım Faz 3 kaynağını rewritten_files'a göre seçer (yeniden yazım yoksa girdi dizini yerinde yazılır)",
+      "module": "karadul/pipeline/steps/struct_recovery.py",
+      "test": "tests/test_p10_yedek.py::TestAdimKaynakAgaci::test_step_routes_phase3_to_output_tree_without_rewrites",
+      "find": "if struct_result.output_files:",
+      "replace": "if struct_result.rewritten_files:"
     }
   ]
 }

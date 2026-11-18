@@ -51,11 +51,24 @@ class InlineDetectionStep(Step):
             from karadul.analyzers.inline_detector import InlineDetector
 
             # Feedback loop sonrası decompiled_dir degismis olabilir (struct,
-            # semantic_named vb. yonlendirmeler). Guncel rglob.
+            # semantic_named vb. yonlendirmeler).
+            # P10 (BORU-02): yalnız kaynak dosyalar (üst düzey). Decompile dizinleri
+            # düz; alt dizindeki .c (eski koşularda yapı kurtarmanın originals/
+            # yedeği) kaynak sanılıp yorumlanıyor ve desenler iki kez sayılıyordu.
             inline_c_files = (
-                sorted(decompiled_dir.rglob("*.c"))
+                sorted(decompiled_dir.glob("*.c"))
                 if decompiled_dir.exists() else []
             )
+            nested = (
+                sum(1 for p in decompiled_dir.rglob("*.c") if p.parent != decompiled_dir)
+                if decompiled_dir.exists() else 0
+            )
+            if nested:
+                ctx.stats["inline_detection_nested_skipped"] = nested
+                logger.warning(
+                    "Inline detection: alt dizinlerdeki %d .c dosyasi kaynak sayilmadi (%s)",
+                    nested, decompiled_dir,
+                )
 
             def _inline_detect_one(c_file: Path) -> int:
                 """Tek dosyada inline pattern tespit et ve annotate et."""

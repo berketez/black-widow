@@ -190,7 +190,9 @@ class StructRecoveryStep(Step):
                             "enriched_types_header",
                             struct_result.types_header_path,
                         )
-                    if struct_result.rewritten_files:
+                    # P10: Faz 3 kaynağı çıktı ağacıdır (değişmemiş kopyalar dahil);
+                    # rewritten_files artık yalnız gerçekten değişen dosyaları tutar.
+                    if struct_result.output_files:
                         resulting_dir = struct_dir
                     logger.info(
                         "Struct Recovery: %d struct, %d field rewrite",
