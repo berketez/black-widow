@@ -174,6 +174,8 @@ class GnulibCallShape:
         source: davranisi dogrulayan gnulib ``lib/`` kaynak dosyasi.
         max_fanout: opsiyonel ust sinir. Kucuk wrapper'lari (ornegin
             ``full_write``) daha buyuk fonksiyonlardan ayirmak icin.
+        excluded_callees: fonksiyonun cagirMAMASI gereken adlar (NOR). Kaynakta
+            (``source``) bu cagri YOK; cagiran fonksiyon o gnulib fonksiyonu olamaz.
         note: kisa aciklama.
     """
 
@@ -182,6 +184,7 @@ class GnulibCallShape:
     source: str
     min_fanout: int = 2
     max_fanout: int | None = None
+    excluded_callees: tuple[str, ...] = ()
     note: str = ""
 
 
@@ -210,10 +213,13 @@ GNULIB_CALL_SHAPES: tuple[GnulibCallShape, ...] = (
         note="aktif locale 'C'/'POSIX' disinda mi -- KUCUK fonksiyon (cc<=6); "
              "usage() de setlocale cagirir ama cc>=8, max_fanout ile ayrilir",
     ),
+    # P-S3b (2026-11-18): `_exit` dışlaması. full-write.c / safe-write.c `_exit` çağırmaz;
+    # geliştirme setinde (coreutils sort) `strlen` + `write` + `_exit` yapan bir hata yolu tek
+    # aday olup `full_write` adını alıyordu (GT'ye göre yanlış; P-S3'ün kalan tek yanlışı).
     GnulibCallShape(
         "full_write", ("write",), "full-write.c",
-        min_fanout=2, max_fanout=4,
-        note="kismi yazmalari toparlayan write wrapper'i",
+        min_fanout=2, max_fanout=4, excluded_callees=("_exit",),
+        note="kismi yazmalari toparlayan write wrapper'i; _exit cagirmaz",
     ),
     # KALDIRILDI: quotearg_buffer_restyled call-shape'i (eski anchor: iswprint).
     # 2026-07-14 vendor pin sonrasi drift-guard yakaladi: 2026 kaynaginda bu fonksiyon
@@ -270,6 +276,8 @@ def match_call_shape(callee_names: set[str], fanout: int) -> str | None:
         if fanout < cs.min_fanout:
             continue
         if cs.max_fanout is not None and fanout > cs.max_fanout:
+            continue
+        if any(x in callee_names for x in cs.excluded_callees):
             continue
         if all(c in callee_names for c in cs.required_callees):
             return cs.name

@@ -56,6 +56,22 @@
    "test": "tests/test_ps3b_gnulib_varlik.py::TestMachOGnulib::test_version_etc_arn_dizgisi_version_etc_sayilir",
    "find": "         \"Written by %s, %s, and %s.\"),\n",
    "replace": "         \"Written by nobody\"),\n"
+  },
+  {
+   "id": "ps3b_full_write_dislama_yok",
+   "desc": "kalem 3: full_write çağrı şeklinde _exit dışlaması yok (sort'taki hata yolu full_write olur)",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3b_full_write.py::test_exit_cagiran_write_sarmalayici_full_write_olmaz",
+   "find": "        min_fanout=2, max_fanout=4, excluded_callees=(\"_exit\",),\n",
+   "replace": "        min_fanout=2, max_fanout=4,\n"
+  },
+  {
+   "id": "ps3b_dislama_uygulanmaz",
+   "desc": "kalem 3: match_call_shape dışlanan çağrıya bakmaz",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3b_full_write.py::test_match_call_shape_dislama",
+   "find": "        if any(x in callee_names for x in cs.excluded_callees):\n            continue\n",
+   "replace": "        if False:\n            continue\n"
   }
  ]
 }

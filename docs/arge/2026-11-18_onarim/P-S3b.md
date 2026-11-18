@@ -10,9 +10,9 @@ Brif: `ONARIM_BRIF.md`. Paket metni: `gonderim/PS3b.md`. Karar: K-2. Önceki pak
 | Kalem | Durum | Commit |
 |---|---|---|
 | 0 — ön kayıt | bitti | 7a86f56 |
-| 1 — varlık işaretleri | bitti (H1–H7 tuttu) | (kalem 1 commit'i) |
+| 1 — varlık işaretleri | bitti (H1–H7 tuttu) | 41c8116 |
 | 2 — `usage` gelenek kanalı | bekliyor | |
-| 3 — `sort` `full_write` (`_exit`) | bekliyor | |
+| 3 — `sort` `full_write` (`_exit`) | bitti (H8, H9 tuttu) | (kalem 3 commit'i) |
 | 4 — LTO'suz iç adlar | bekliyor | |
 | 5 — aday kaydı raporda | bekliyor | |
 
@@ -73,3 +73,27 @@ Brif: `ONARIM_BRIF.md`. Paket metni: `gonderim/PS3b.md`. Karar: K-2. Önceki pak
   getopt glibc'siz, getopt işareti eşleşmez, error işareti eşleşmez, "Written by" yok). P-S3'ün `mutation_specs_ps3.json`'u
   yeni kodla 17 / 17, `mutation_specs_on_ad_onarimi.json` 15 / 15. Koşum sonrası dosya sha256 yine `3e1e6e1e…`.
 - İlgili testler (`test_ps3b_gnulib_varlik`, `test_ps3_gnulib_kanit`, `test_gnulib_fingerprints`, `test_main_gnulib_seed_ordering`): 75 geçti.
+
+## Kalem 3 — `sort`'ta `full_write` yanlışı (`_exit` dışlaması)
+
+### a. Göster
+- Yeniden oynatma (kalem 1 kodu): geliştirme setinin TEK kalan gnulib yanlışı coreutils `sort` `FUN_001079e0` = `full_write`.
+  Çağrı çizgesi (`urun-yeni2` sort): `callee_count` 4 — `strlen`, `write`, `_exit`, `FUN_0010e300`; çağıranlar 0x108a20,
+  0x108cd0 (geniş; yerleşim kuralı tutmuyor). gnulib `full-write.c`, `safe-write.c`, `safe-read.c`'de `_exit` YOK (grep).
+
+### b. Onar
+- `gnulib_fingerprints.py`: `GnulibCallShape.excluded_callees` (NOR); `full_write` için `("_exit",)`; `match_call_shape` dışlanan
+  çağrıyı yapan fonksiyonu o şekle eşlemez. Öbür şekiller değişmedi.
+
+### c. Yeniden say (Ghidra'sız; `yeniden_kos.sh k3`, kod `k3_kod/`, sha256 `8820e7ce…` = commit'lenen dosya)
+| # | Ölçü | Kalem 1 sonrası | Kalem 3 sonrası | Hüküm |
+|---|---|---|---|---|
+| H8 | geliştirme seti coreutils doğru / yanlış | 620 / 1 | **620 / 0** | tuttu |
+| H9 | Ubuntu 9.4 `cat` `full_write` (GT doğru) | var | var | tuttu |
+| H9 | k1 ↔ k3 değişen ad (bütün setler) | — | yalnız sort `FUN_001079e0` (`full_write` gitti; yerine başka gnulib adı yok) | tuttu |
+| — | Mach-O kabul (taze 5 / gcat / xz) | 8/0, 1/1, 0 | aynı | — |
+
+### d. Test ve mutasyon
+- `tests/test_ps3b_full_write.py` (4): sort düzeni ad almaz; `_exit`'siz write sarmalayıcısı (LTO'lu Ubuntu düzeni) `full_write` alır;
+  `match_call_shape` dışlaması (`close_stream` etkilenmez); dışlanan çağrı upstream kaynakta yok. **Kalem 1 kodunda 3 / 4 kırmızı**
+  (1 bekçi). Mutant: `ps3b_full_write_dislama_yok`, `ps3b_dislama_uygulanmaz` → spec'in tamamı **9 / 9 öldü**.
