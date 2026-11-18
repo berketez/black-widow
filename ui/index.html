@@ -1429,6 +1429,29 @@ function renderEvidence(j){
     b.appendChild(row); box.appendChild(card);
   }
 
+  // 1b) ad olmayan rol kanıtı (P12b string_roles, P12a role_evidence): yalnız gerçek kayıt
+  const nr=j.naming_roles||{};
+  const ROL={anahtar_erisimi:'anahtar erişimi',olay_yayar:'olay yayar',karsilastirma:'karşılaştırma',
+             az_ornekli_cagri:'az örnekli çağrı',cagri_disi:'çağrı dışı'};
+  const roleRows=[];
+  (Array.isArray(nr.string_roles)?nr.string_roles:[]).forEach(r=>{
+    if(!r||!r.string) return;
+    let t=`"${r.string}" · ${ROL[r.role]||r.role}`;
+    if(r.api) t+=` · ${r.api} (${(r.arg_index|0)+1}. argüman; bu çağrı ikilide ${r.api_distinct_strings} farklı anahtar alıyor)`;
+    if(r.role==='olay_yayar') t+=` · aynı olayı yayan fonksiyon: ${r.emitters}`;
+    roleRows.push(t);
+  });
+  (Array.isArray(nr.role_evidence)?nr.role_evidence:[]).forEach(r=>{
+    if(!r||!r.role) return;
+    roleRows.push(`${r.role} · ${r.api||'?'} (${(r.arg_index|0)+1}. argüman)`+(r.caller?` · veren: ${r.caller}`:''));
+  });
+  if(roleRows.length){
+    const {card,b}=_evCard('◈ ROL KANITI (AD DEĞİL)', roleRows.length);
+    roleRows.forEach(t=>{ const d=document.createElement('div'); d.className='iv-dsig';
+      d.innerHTML=`<span class="di">•</span><span>${esc(t)}</span>`; b.appendChild(d); });
+    box.appendChild(card);
+  }
+
   // 2) referans string'ler → chip'ler
   const strs=Array.isArray(j.strings)?j.strings.filter(s=>s!=null&&String(s).length):[];
   if(strs.length){

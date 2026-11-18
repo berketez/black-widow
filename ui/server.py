@@ -708,6 +708,36 @@ def _decompiled_text(addr: str) -> str:
         return ""
 
 
+_NAMING_ROLE_FIELDS = ("string_roles", "role_evidence")   # P12b dizgi rolü, P12a geri çağrı rolü
+_NAMING_ROLES_MAX = 20
+
+
+def _naming_roles(addr: str) -> dict | None:
+    """addr için köken kaydındaki AD OLMAYAN rol kanıtları (yalnız gerçek veri; yoksa None).
+
+    ``string_roles`` (P12b / AD-01): fonksiyonun kebap dizgisini hangi çağrıya kaçıncı argüman
+    olarak verdiği ve o çağrının ikilide kaç farklı anahtar aldığı. ``role_evidence`` (P12a /
+    AD-02): fonksiyonun hangi API'ye geri çağrı olarak verildiği.
+    """
+    nm, _ = find_ws(WS) if WS else (None, None)
+    if nm is None:
+        return None
+    try:
+        data = json.loads(nm.with_name("naming_provenance.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    out: dict = {}
+    for alan in _NAMING_ROLE_FIELDS:
+        rows = data.get(alan)
+        if isinstance(rows, dict) and isinstance(rows.get(addr), list):
+            kept = [r for r in rows[addr] if isinstance(r, dict)]
+            if kept:
+                out[alan] = kept[:_NAMING_ROLES_MAX]
+    return out or None
+
+
 def _extract_strings(text: str, cap: int = 20) -> list[str]:
     """Decompiled koddan string sabitlerini cikar (dedup, sirali, cap'li)."""
     out: list[str] = []
@@ -947,6 +977,8 @@ def _evidence(addr: str) -> dict:
         "callees": callees,
         "strings": _extract_strings(text),
         "provenance": prov,
+        # ad olmayan rol kanıtı (P12a role_evidence, P12b string_roles); yoksa None
+        "naming_roles": _naming_roles(addr),
         "hints": _external_call_hints(text, cmap),
         # neden isimsiz/zayif kaldi? (yalnizca isimli olmayanlar icin)
         # Ghidra'nın kendi adı (ithal taslağı, entry ...) Karadul'un adlandırma işi değil: teşhis yok
