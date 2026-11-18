@@ -951,6 +951,15 @@ def _sarif_adi(sonuc: dict) -> str:
     return re.sub(r"\s+", " ", sonuc.get("message", {}).get("text", "?"))[:80]
 
 
+# P07 sonrası SARIF, başka katmanların zaten kapıdan geçirdiği yapıtları da yansıtıyor: kripto
+# (KRDL001, ``reconstructed/algorithms.json`` -> algoritma_json katmanı), anti-debug (KRDL003,
+# ``anti_debug_findings`` -> antidebug_cikti katmanı). Bunlar burada yeniden sayılmaz (çift
+# sayım); KRDL002 aracın kendi ad güvenilirliği uyarısıdır, ikili hakkında iddia değildir.
+# Bu katman YARA, paketleyici izi ve IOC sonuçlarını sayar.
+_SARIF_BASKA_KATMAN_KAYNAGI = frozenset({"reconstructed/algorithms.json", "anti_debug_findings"})
+_SARIF_IDDIA_DEGIL = frozenset({"KRDL002"})
+
+
 def cikti_sarif(ws: Path, out: Path, _s) -> dict:
     """ARAYUZ-17: ``reports/report.sarif.json`` sonuçları (``KRDL003:MPRESS_Packed`` ...)."""
     veri = _json_oku(ws / "reports/report.sarif.json")
@@ -959,6 +968,9 @@ def cikti_sarif(ws: Path, out: Path, _s) -> dict:
     sayac: dict[str, dict] = {}
     for run in veri.get("runs", []) or []:
         for r in run.get("results", []) or []:
+            if r.get("ruleId") in _SARIF_IDDIA_DEGIL or (
+                    (r.get("properties") or {}).get("source") in _SARIF_BASKA_KATMAN_KAYNAGI):
+                continue
             d = sayac.setdefault(f"{r.get('ruleId')}:{_sarif_adi(r)}",
                                  {"adet": 0, "duzey": r.get("level"), "ornek": []})
             d["adet"] += 1
