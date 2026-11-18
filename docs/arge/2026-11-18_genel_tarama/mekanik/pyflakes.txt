@@ -1,0 +1,307 @@
+karadul/batch.py:11:1: 'os' imported but unused
+karadul/stages.py:10:1: 'copy' imported but unused
+karadul/stages.py:18:1: 'concurrent.futures.as_completed' imported but unused
+karadul/stages.py:27:1: 'karadul.core.target.TargetDetector' imported but unused
+karadul/stages.py:614:13: local variable 'dynamic_dir' is assigned to but never used
+karadul/stages.py:3073:9: local variable 'deob_dir' is assigned to but never used
+karadul/stages.py:3292:13: local variable 'binary_for_byte_match' is assigned to but never used
+karadul/stages.py:3301:13: local variable 'pcode_json' is assigned to but never used
+karadul/stages.py:3322:13: local variable 'byte_pattern_names' is assigned to but never used
+karadul/stages.py:3331:13: local variable '_cfg_result' is assigned to but never used
+karadul/stages.py:3336:13: local variable 'calibrated_matches' is assigned to but never used
+karadul/stages.py:3501:9: local variable '_cfile_by_name' is assigned to but never used
+karadul/cli.py:19:1: 'subprocess' imported but unused
+karadul/cli.py:985:13: f-string is missing placeholders
+karadul/cli.py:1367:5: 'karadul.batch.PARALLEL_WORKERS' imported but unused
+karadul/cli.py:1367:5: 'karadul.batch.BatchTargetResult' imported but unused
+karadul/cli.py:1616:5: local variable 'db_path' is assigned to but never used
+karadul/cli.py:1806:19: f-string is missing placeholders
+karadul/hacker_cli.py:21:1: 'threading' imported but unused
+karadul/hacker_cli.py:26:1: 'typing.Optional' imported but unused
+karadul/hacker_cli.py:28:1: 'rich.console.Group' imported but unused
+karadul/hacker_cli.py:29:1: 'rich.layout.Layout' imported but unused
+karadul/hacker_cli.py:32:1: 'rich.progress.BarColumn' imported but unused
+karadul/hacker_cli.py:32:1: 'rich.progress.Progress' imported but unused
+karadul/hacker_cli.py:32:1: 'rich.progress.SpinnerColumn' imported but unused
+karadul/hacker_cli.py:32:1: 'rich.progress.TextColumn' imported but unused
+karadul/hacker_cli.py:32:1: 'rich.progress.TimeElapsedColumn' imported but unused
+karadul/hacker_cli.py:33:1: 'rich.prompt.Prompt' imported but unused
+karadul/hacker_cli.py:34:1: 'rich.table.Table' imported but unused
+karadul/hacker_cli.py:179:9: 'tty' imported but unused
+karadul/hacker_cli.py:831:5: local variable 'BG' is assigned to but never used
+karadul/hacker_cli.py:1056:5: 'karadul.core.target.TargetType' imported but unused
+karadul/hacker_cli.py:1156:14: local variable 'live' is assigned to but never used
+karadul/hacker_cli.py:1235:17: f-string is missing placeholders
+karadul/pipeline/registry.py:20:1: 'dataclasses.field' imported but unused
+karadul/pipeline/__init__.py:20:1: 'karadul.pipeline.steps as _steps' imported but unused
+karadul/pipeline/steps/engineering_analysis.py:11:1: 'pathlib.Path' imported but unused
+karadul/pipeline/steps/ghidra_metadata.py:19:1: 'karadul.core.target.TargetType' imported but unused
+karadul/pipeline/steps/_feedback_naming_refdiff.py:46:9: 'karadul.reconstruction.reference_differ.ReferenceDiffer' imported but unused
+karadul/pipeline/steps/__init__.py:11:1: 'karadul.pipeline.steps.type_recovery_consumer' imported but unused
+karadul/pipeline/steps/_feedback_naming_merger.py:14:1: 'time' imported but unused
+karadul/analyzers/anti_debug_detector.py:43:1: 'dataclasses.field' imported but unused
+karadul/analyzers/anti_debug_detector.py:45:1: 'typing.Iterable' imported but unused
+karadul/analyzers/macho.py:13:1: 'json' imported but unused
+karadul/analyzers/macho.py:163:9: local variable 'static_dir' is assigned to but never used
+karadul/analyzers/java_binary.py:39:1: 'karadul.core.safe_subprocess.safe_env' imported but unused
+karadul/analyzers/java_binary.py:789:13: local variable 'minor' is assigned to but never used
+karadul/analyzers/java_binary.py:875:13: local variable 'access_flags' is assigned to but never used
+karadul/analyzers/java_binary.py:907:17: local variable 'f_access' is assigned to but never used
+karadul/analyzers/java_binary.py:932:17: local variable 'm_access' is assigned to but never used
+karadul/analyzers/inline_detector.py:447:9: local variable 'lines' is assigned to but never used
+karadul/analyzers/pcode_analyzer.py:315:9: local variable 'chains' is assigned to but never used
+karadul/analyzers/delphi_binary.py:18:1: 'io' imported but unused
+karadul/analyzers/delphi_binary.py:24:1: 'pathlib.Path' imported but unused
+karadul/analyzers/signature_db.py:111:1: 'dataclasses.field' imported but unused
+karadul/analyzers/signature_db.py:1013:1: 'karadul.analyzers.sigdb_builtin.vm_runtime.SIGNATURES as _BUILTIN_VM_RUNTIME_SIGNATURES' imported but unused
+karadul/analyzers/__init__.py:14:1: 'typing.Any' imported but unused
+karadul/analyzers/__init__.py:44:1: 'karadul.analyzers.javascript' imported but unused
+karadul/analyzers/__init__.py:45:1: 'karadul.analyzers.electron' imported but unused
+karadul/analyzers/__init__.py:46:1: 'karadul.analyzers.macho' imported but unused
+karadul/analyzers/__init__.py:47:1: 'karadul.analyzers.go_binary' imported but unused
+karadul/analyzers/__init__.py:48:1: 'karadul.analyzers.swift_binary' imported but unused
+karadul/analyzers/__init__.py:49:1: 'karadul.analyzers.java_binary' imported but unused
+karadul/analyzers/__init__.py:50:1: 'karadul.analyzers.dotnet_binary' imported but unused
+karadul/analyzers/__init__.py:51:1: 'karadul.analyzers.rust_binary' imported but unused
+karadul/analyzers/__init__.py:52:1: 'karadul.analyzers.delphi_binary' imported but unused
+karadul/analyzers/__init__.py:53:1: 'karadul.analyzers.app_bundle' imported but unused
+karadul/analyzers/__init__.py:55:5: 'karadul.analyzers.python_binary' imported but unused
+karadul/analyzers/__init__.py:60:1: 'karadul.analyzers.dwarf_extractor.DwarfExtractor' imported but unused
+karadul/analyzers/__init__.py:60:1: 'karadul.analyzers.dwarf_extractor.DwarfFunction' imported but unused
+karadul/analyzers/__init__.py:60:1: 'karadul.analyzers.dwarf_extractor.DwarfVariable' imported but unused
+karadul/analyzers/go_binary.py:467:17: local variable 'file_ref' is assigned to but never used
+karadul/analyzers/binary_intelligence.py:17:1: 'json' imported but unused
+karadul/analyzers/dotnet_binary.py:33:1: 'dataclasses.dataclass' imported but unused
+karadul/analyzers/dotnet_binary.py:33:1: 'dataclasses.field' imported but unused
+karadul/analyzers/dotnet_binary.py:35:1: 'typing.Optional' imported but unused
+karadul/analyzers/dotnet_binary.py:45:1: redefinition of unused 'resolve_tool' from line 39
+karadul/analyzers/dotnet_binary.py:107:9: local variable 'machine' is assigned to but never used
+karadul/analyzers/dotnet_binary.py:111:9: local variable 'characteristics' is assigned to but never used
+karadul/analyzers/dotnet_binary.py:187:9: local variable 'cb' is assigned to but never used
+karadul/analyzers/dotnet_binary.py:193:9: local variable 'metadata_size' is assigned to but never used
+karadul/analyzers/dotnet_binary.py:223:9: local variable 'flags_meta' is assigned to but never used
+karadul/analyzers/dotnet_binary.py:311:9: local variable 'reserved' is assigned to but never used
+karadul/analyzers/dotnet_binary.py:312:9: local variable 'major' is assigned to but never used
+karadul/analyzers/dotnet_binary.py:313:9: local variable 'minor' is assigned to but never used
+karadul/analyzers/dotnet_binary.py:324:9: local variable 'sorted_tables' is assigned to but never used
+karadul/analyzers/dotnet_binary.py:395:9: local variable 'module_row_size' is assigned to but never used
+karadul/analyzers/dotnet_binary.py:398:9: local variable 'typeref_row_size' is assigned to but never used
+karadul/analyzers/dotnet_binary.py:446:21: local variable 'rva' is assigned to but never used
+karadul/analyzers/dotnet_binary.py:447:21: local variable 'impl_flags' is assigned to but never used
+karadul/analyzers/packer_fingerprint.py:398:13: local variable 'sh_name_size' is assigned to but never used
+karadul/analyzers/packer_fingerprint.py:398:27: local variable 'sh_offset_size' is assigned to but never used
+karadul/analyzers/capa_scanner.py:29:1: 'shutil' imported but unused
+karadul/analyzers/capa_scanner.py:331:13: 'capa.loader' imported but unused
+karadul/analyzers/packed_binary.py:2134:9: local variable 'errors' is assigned to but never used
+karadul/analyzers/assembly_analyzer.py:21:1: 'typing.Any' imported but unused
+karadul/analyzers/assembly_analyzer.py:21:1: 'typing.Optional' imported but unused
+karadul/analyzers/assembly_analyzer.py:123:13: 'capstone' imported but unused
+karadul/analyzers/yara_scanner.py:28:1: 'typing.Optional' imported but unused
+karadul/analyzers/flirt_parser.py:59:1: 'shutil' imported but unused
+karadul/analyzers/javascript.py:185:9: local variable 'static_dir' is assigned to but never used
+karadul/analyzers/rust_binary.py:15:1: 'pathlib.Path' imported but unused
+karadul/analyzers/rust_binary.py:18:1: 'karadul.analyzers.register_analyzer' imported but unused
+karadul/analyzers/rust_binary.py:21:1: 'karadul.config.Config' imported but unused
+karadul/analyzers/rust_demangler.py:53:1: 'shutil' imported but unused
+karadul/analyzers/container_classifier.py:41:1: 'xml.etree.ElementTree as ET' imported but unused
+karadul/analyzers/container_classifier.py:214:5: local variable 'style_count' is assigned to but never used
+karadul/analyzers/container_classifier.py:322:5: local variable 'name_idx_in_ext' is assigned to but never used
+karadul/analyzers/container_classifier.py:943:9: local variable 'manifest_target' is assigned to but never used
+karadul/reporting/html_report.py:10:1: 'json' imported but unused
+karadul/reporting/html_report.py:800:29: f-string is missing placeholders
+karadul/core/chunked_processor.py:13:1: 'time' imported but unused
+karadul/core/subprocess_runner.py:12:1: 'dataclasses.field' imported but unused
+karadul/core/output_formatter.py:40:1: 'karadul.core.result.StageResult' imported but unused
+karadul/core/output_formatter.py:388:13: local variable 'category' is assigned to but never used
+karadul/core/output_formatter.py:1144:13: f-string is missing placeholders
+karadul/core/output_formatter.py:1145:13: f-string is missing placeholders
+karadul/quality/metrics/param_names.py:21:5: 'pycparser.c_ast' imported but unused
+karadul/quality/metrics/param_names.py:21:5: 'pycparser.c_parser' imported but unused
+karadul/frida/collectors/function_tracer.py:15:1: 'typing.Any' imported but unused
+karadul/frida/collectors/memory_scanner.py:19:5: 'frida' imported but unused
+karadul/deobfuscators/binary_deobfuscator.py:9:1: 'json' imported but unused
+karadul/deobfuscators/binary_deobfuscator.py:159:17: local variable 'original_len' is assigned to but never used
+karadul/deobfuscators/opaque_predicate.py:25:1: 'typing.Optional' imported but unused
+karadul/deobfuscators/opaque_predicate.py:116:17: 'z3' imported but unused
+karadul/deobfuscators/cff_deflattener.py:30:1: 'typing.Optional' imported but unused
+karadul/deobfuscators/string_decryptor.py:22:1: 'typing.Optional' imported but unused
+karadul/computation/struct_recovery/field_namer.py:37:1: 'karadul.computation.struct_recovery.types.StructCandidate' imported but unused
+karadul/computation/cfg_iso/vf2_matcher.py:40:5: '.fingerprint.CFGNode' imported but unused
+karadul/decompilers/angr_backend.py:54:13: 'angr' imported but unused
+karadul/ghidra/headless.py:14:1: 'os' imported but unused
+karadul/ghidra/headless.py:35:13: 'pyghidra' imported but unused
+karadul/ghidra/headless.py:915:9: 'ghidra.app.decompiler.DecompInterface' imported but unused
+karadul/ghidra/headless.py:915:9: 'ghidra.app.decompiler.DecompileOptions' imported but unused
+karadul/ghidra/headless.py:916:9: 'ghidra.util.task.ConsoleTaskMonitor' imported but unused
+karadul/ghidra/headless.py:1961:25: local variable 'cat_path' is assigned to but never used
+karadul/ghidra/debugger_bridge.py:26:1: 'time' imported but unused
+karadul/ghidra/bsim_native_probe.py:176:9: 'ghidra.features.bsim.query.BSimServerInfo' imported but unused
+karadul/ghidra/program_diff.py:29:1: 'typing.Optional' imported but unused
+karadul/ghidra/program_diff.py:47:13: 'pyghidra' imported but unused
+karadul/ghidra/bsim.py:26:1: 'os' imported but unused
+karadul/ghidra/bsim.py:28:1: 'dataclasses.asdict' imported but unused
+karadul/ghidra/bsim.py:28:1: 'dataclasses.field' imported but unused
+karadul/ghidra/bsim.py:53:13: 'ghidra.features.bsim.query.BSimServerInfo' imported but unused
+karadul/ghidra/scripts/type_recovery.py:28:1: 'ghidra.program.model.data.Pointer' imported but unused
+karadul/ghidra/scripts/type_recovery.py:253:11: undefined name 'currentProgram'
+karadul/ghidra/scripts/type_recovery.py:263:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/function_id_extractor.py:69:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/function_id_extractor.py:124:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/function_lister.py:18:1: 'sys' imported but unused
+karadul/ghidra/scripts/function_lister.py:57:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/function_lister.py:99:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/decompile_all.py:99:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/decompile_all.py:146:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/decompile_all.py:147:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/decompile_all.py:264:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/decompile_all.py:267:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/pcode_analysis.py:239:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/pcode_analysis.py:242:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/pcode_analysis.py:248:5: local variable 'skip_count' is assigned to but never used
+karadul/ghidra/scripts/pcode_analysis.py:302:9: local variable 'e' is assigned to but never used
+karadul/ghidra/scripts/pcode_analysis.py:322:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/export_results.py:76:12: undefined name 'currentProgram'
+karadul/ghidra/scripts/xref_analysis.py:20:1: 'ghidra.program.model.symbol.RefType' imported but unused
+karadul/ghidra/scripts/xref_analysis.py:68:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/xref_analysis.py:69:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/xref_analysis.py:70:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/xref_analysis.py:184:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/xref_analysis.py:185:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/xref_analysis.py:186:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/xref_analysis.py:259:17: undefined name 'currentProgram'
+karadul/ghidra/scripts/xref_analysis.py:260:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/xref_analysis.py:261:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/xref_analysis.py:262:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/xref_analysis.py:436:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/call_graph.py:64:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/call_graph.py:65:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/call_graph.py:186:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/string_extractor.py:21:1: 'ghidra.program.model.data.StringDataType' imported but unused
+karadul/ghidra/scripts/string_extractor.py:67:52: undefined name 'currentProgram'
+karadul/ghidra/scripts/string_extractor.py:92:19: undefined name 'currentProgram'
+karadul/ghidra/scripts/string_extractor.py:93:14: undefined name 'currentProgram'
+karadul/ghidra/scripts/string_extractor.py:166:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/cfg_extraction.py:208:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/cfg_extraction.py:210:35: undefined name 'currentProgram'
+karadul/ghidra/scripts/cfg_extraction.py:322:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/type_recovery.py:18:1: 'ghidra.program.model.data.Pointer' imported but unused
+karadul/ghidra/scripts/legacy/type_recovery.py:230:11: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/type_recovery.py:240:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/function_id_extractor.py:55:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/function_id_extractor.py:110:20: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/function_lister.py:11:1: 'sys' imported but unused
+karadul/ghidra/scripts/legacy/function_lister.py:44:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/function_lister.py:85:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/decompile_all.py:84:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/decompile_all.py:131:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/decompile_all.py:132:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/decompile_all.py:249:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/decompile_all.py:252:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/pcode_analysis.py:224:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/pcode_analysis.py:227:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/pcode_analysis.py:233:5: local variable 'skip_count' is assigned to but never used
+karadul/ghidra/scripts/legacy/pcode_analysis.py:287:9: local variable 'e' is assigned to but never used
+karadul/ghidra/scripts/legacy/pcode_analysis.py:307:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/export_results.py:56:12: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/xref_analysis.py:13:1: 'ghidra.program.model.symbol.RefType' imported but unused
+karadul/ghidra/scripts/legacy/xref_analysis.py:57:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/xref_analysis.py:58:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/xref_analysis.py:59:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/xref_analysis.py:171:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/xref_analysis.py:172:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/xref_analysis.py:173:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/xref_analysis.py:242:17: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/xref_analysis.py:243:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/xref_analysis.py:244:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/xref_analysis.py:245:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/xref_analysis.py:418:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/call_graph.py:48:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/call_graph.py:49:15: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/call_graph.py:170:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/string_extractor.py:13:1: 'ghidra.program.model.data.StringDataType' imported but unused
+karadul/ghidra/scripts/legacy/string_extractor.py:55:52: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/string_extractor.py:77:19: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/string_extractor.py:78:14: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/string_extractor.py:151:24: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/cfg_extraction.py:200:10: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/cfg_extraction.py:202:35: undefined name 'currentProgram'
+karadul/ghidra/scripts/legacy/cfg_extraction.py:314:24: undefined name 'currentProgram'
+karadul/reconstruction/c_project_builder.py:1491:13: f-string is missing placeholders
+karadul/reconstruction/binary_name_extractor.py:37:1: 'typing.Any' imported but unused
+karadul/reconstruction/binary_name_extractor.py:37:1: 'typing.Optional' imported but unused
+karadul/reconstruction/binary_name_extractor.py:946:17: local variable 'owner_class' is assigned to but never used
+karadul/reconstruction/binary_name_extractor.py:1055:17: local variable 'method_name' is assigned to but never used
+karadul/reconstruction/binary_name_extractor.py:1141:13: local variable 'namespace' is assigned to but never used
+karadul/reconstruction/binary_name_extractor.py:1320:9: local variable 'emsg_enums' is assigned to but never used
+karadul/reconstruction/binary_name_extractor.py:2809:13: local variable 'func_addr' is assigned to but never used
+karadul/reconstruction/c_algorithm_id.py:1135:13: local variable 'start' is assigned to but never used
+karadul/reconstruction/dynamic_namer.py:31:1: 'dataclasses.field' imported but unused
+karadul/reconstruction/c_comment_generator.py:19:1: 'os' imported but unused
+karadul/reconstruction/c_comment_generator.py:25:1: 'karadul.config.CPU_PERF_CORES' imported but unused
+karadul/reconstruction/c_comment_generator.py:810:12: f-string is missing placeholders
+karadul/reconstruction/go_reconstructor.py:59:9: local variable 'packages_data' is assigned to but never used
+karadul/reconstruction/gap_filler.py:14:1: 'pathlib.Path' imported but unused
+karadul/reconstruction/gap_filler.py:125:13: local variable 'reconstructed_dir' is assigned to but never used
+karadul/reconstruction/api_param_db.py:20:1: 'dataclasses.dataclass' imported but unused
+karadul/reconstruction/api_param_db.py:21:1: 'pathlib.Path' imported but unused
+karadul/reconstruction/module_splitter.py:11:1: 'json' imported but unused
+karadul/reconstruction/fortran_param_db.py:44:1: 'typing.Any' imported but unused
+karadul/reconstruction/fortran_param_db.py:652:9: local variable 'errors' is assigned to but never used
+karadul/reconstruction/dependency_resolver.py:14:1: 'json' imported but unused
+karadul/reconstruction/dts_namer.py:371:9: local variable 'dts_names' is assigned to but never used
+karadul/reconstruction/dts_namer.py:399:9: local variable 'remaining_dts_names' is assigned to but never used
+karadul/reconstruction/project_builder.py:181:17: local variable 'env_path' is assigned to but never used
+karadul/reconstruction/project_builder.py:187:13: local variable 'readme_path' is assigned to but never used
+karadul/reconstruction/project_builder.py:196:13: local variable 'docker_path' is assigned to but never used
+karadul/reconstruction/string_intelligence.py:32:1: 'dataclasses.field' imported but unused
+karadul/reconstruction/reference_populator.py:32:1: 'hashlib' imported but unused
+karadul/reconstruction/reference_populator.py:41:1: 'tempfile' imported but unused
+karadul/reconstruction/reference_populator.py:49:1: 'karadul.reconstruction.reference_differ.ReferenceDB' imported but unused
+karadul/reconstruction/ngram_namer.py:440:9: local variable 'entry_size' is assigned to but never used
+karadul/reconstruction/reference_differ.py:42:1: 'hashlib' imported but unused
+karadul/reconstruction/c_namer.py:59:1: 'karadul.reconstruction.c_namer_patterns.LOG_HINTS as _LOG_HINTS' imported but unused
+karadul/reconstruction/c_namer.py:1745:5: local variable 'exc' is assigned to but never used
+karadul/reconstruction/c_namer.py:2802:13: local variable 'func_name' is assigned to but never used
+karadul/reconstruction/c_namer.py:3642:17: local variable 'param_type' is assigned to but never used
+karadul/reconstruction/c_namer.py:3808:28: f-string is missing placeholders
+karadul/reconstruction/c_namer.py:3970:13: 'karadul.reconstruction.fortran_param_db._IN_STACK_RE' imported but unused
+karadul/reconstruction/c_type_recoverer.py:165:5: local variable '_sizeof_cast_re' is assigned to but never used
+karadul/reconstruction/c_type_recoverer.py:2776:30: f-string is missing placeholders
+karadul/reconstruction/c_type_recoverer.py:2791:30: f-string is missing placeholders
+karadul/reconstruction/c_type_recoverer.py:2808:30: f-string is missing placeholders
+karadul/reconstruction/c_type_recoverer.py:2817:30: f-string is missing placeholders
+karadul/reconstruction/source_matcher/name_mapper.py:18:1: 'dataclasses.field' imported but unused
+karadul/reconstruction/naming/npm_fingerprinter.py:10:1: 're' imported but unused
+karadul/reconstruction/naming/pipeline.py:26:1: '.result.NamingResult' imported but unused
+karadul/reconstruction/recovery_layers/cfg_fingerprint.py:806:9: local variable 'header_set' is assigned to but never used
+karadul/reconstruction/recovery_layers/formula_extractor.py:3198:13: local variable 'op_type' is assigned to but never used
+karadul/reconstruction/recovery_layers/constraint_solver.py:24:1: 'os' imported but unused
+karadul/reconstruction/recovery_layers/signature_fusion.py:27:1: 'math' imported but unused
+karadul/reconstruction/recovery_layers/signature_fusion.py:422:13: local variable 'raw_confidence' is assigned to but never used
+karadul/reconstruction/engineering/confidence_calibrator.py:1030:9: local variable 'func_name_set' is assigned to but never used
+karadul/reconstruction/engineering/patterns.py:18:1: 'dataclasses.field' imported but unused
+karadul/reconstruction/engineering/struct_recovery.py:36:1: 'shutil' imported but unused
+karadul/reconstruction/engineering/struct_recovery.py:39:1: 'concurrent.futures.ThreadPoolExecutor' imported but unused
+karadul/reconstruction/engineering/struct_recovery.py:39:1: 'concurrent.futures.as_completed' imported but unused
+karadul/reconstruction/engineering/struct_recovery.py:44:1: 'karadul.config.CPU_PERF_CORES' imported but unused
+karadul/reconstruction/engineering/struct_recovery.py:51:1: 'karadul.reconstruction.engineering.domain_classifier.DomainClassification' imported but unused
+karadul/reconstruction/engineering/struct_recovery.py:938:9: local variable 'name_map' is assigned to but never used
+karadul/reconstruction/engineering/struct_recovery.py:1292:9: local variable 'ptr_count' is assigned to but never used
+karadul/reconstruction/engineering/composition_analyzer.py:26:1: 'itertools' imported but unused
+karadul/reconstruction/engineering/composition_analyzer.py:29:1: 're' imported but unused
+karadul/reconstruction/engineering/composition_analyzer.py:962:9: local variable 'combined_text' is assigned to but never used
+karadul/reconstruction/engineering/composition_analyzer.py:1995:9: local variable 'reachable' is assigned to but never used
+karadul/reconstruction/engineering/composition_analyzer.py:2723:9: local variable 'chain_set' is assigned to but never used
+karadul/reconstruction/engineering/constants.py:3992:1: 'struct as _struct' imported but unused
+karadul/reconstruction/engineering/analyzer.py:21:1: 'dataclasses.dataclass' imported but unused
+karadul/reconstruction/engineering/analyzer.py:21:1: 'dataclasses.field' imported but unused
+karadul/reconstruction/engineering/analyzer.py:27:1: 'karadul.reconstruction.engineering.constants.ENGINEERING_CONSTANTS' imported but unused
+karadul/reconstruction/engineering/analyzer.py:725:13: local variable 'has_structural' is assigned to but never used
+karadul/reconstruction/engineering/data_flow.py:1571:13: local variable 'obj_var' is assigned to but never used
+karadul/reconstruction/engineering/formula_reconstructor.py:16:1: 're' imported but unused
+karadul/reconstruction/engineering/formula_reconstructor.py:17:1: 'dataclasses.field' imported but unused
+karadul/reconstruction/engineering/formula_reconstructor.py:5102:26: f-string is missing placeholders
+karadul/reconstruction/engineering/formula_reconstructor.py:5104:26: f-string is missing placeholders
+karadul/reconstruction/engineering/formula_reconstructor.py:5107:26: f-string is missing placeholders
+karadul/reconstruction/engineering/formula_reconstructor.py:5109:26: f-string is missing placeholders
+karadul/reconstruction/engineering/block_annotator.py:39:1: 'karadul.reconstruction.engineering.domain_classifier.DomainClassification' imported but unused

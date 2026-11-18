@@ -1,0 +1,12 @@
+============================= slowest 15 durations =============================
+SKIPPED [1] tests/test_binaryninja_adapter.py:445: binaryninja module not available -- license required
+SKIPPED [1] tests/test_python_pipeline_hardening.py:209: gerçek binary yok: /private/tmp/pycdc_e2e/py312/dist/hello
+SKIPPED [1] tests/test_python_pipeline_hardening.py:302: gerçek binary yok: /private/tmp/pycdc_e2e/py312/dist/hello
+SKIPPED [1] tests/test_python_pipeline_hardening.py:1067: gerçek binary yok: /private/tmp/pycdc_e2e/py312/dist/hello
+SKIPPED [1] tests/test_python_pipeline_hardening.py:1099: gerçek binary yok: /private/tmp/pycdc_e2e/py312/dist/hello
+SKIPPED [1] tests/test_pyz_archive.py:675: gerçek binary yok: /private/tmp/pycdc_e2e/py312_mod/dist/app
+SKIPPED [1] tests/test_stages_split_parity.py:292: Faz 2'de aktif olacak: split implementasyonu bittiginde golden ile live output SHA256 karsilastirilacak
+SKIPPED [1] tests/test_typeforge_adapter_integration.py:158: TypeForge kurulu degil. Kurulum: 'bash scripts/setup_typeforge.sh' ve 'export KARADUL_TYPEFORGE_PATH=~/.karadul/typeforge/typeforge'
+SKIPPED [1] tests/test_typeforge_adapter_integration.py:176: TypeForge kurulu degil. Kurulum: 'bash scripts/setup_typeforge.sh' ve 'export KARADUL_TYPEFORGE_PATH=~/.karadul/typeforge/typeforge'
+SKIPPED [1] tests/test_typeforge_adapter_integration.py:200: TypeForge kurulu degil. Kurulum: 'bash scripts/setup_typeforge.sh' ve 'export KARADUL_TYPEFORGE_PATH=~/.karadul/typeforge/typeforge'
+=== 8289 passed, 10 skipped, 153 deselected, 2 warnings in 185.06s (0:03:05) ===

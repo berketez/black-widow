@@ -1,0 +1,27 @@
+toplam test fonksiyonu: 7127 | doğrulamasız: 16
+    5  tests/test_hacker_cli.py
+    3  tests/test_signature_db_empty_name.py
+    2  tests/test_ghidra_sabitleme.py
+    1  tests/test_debugger_bridge_security.py
+    1  tests/test_function_id_extractor_parity.py
+    1  tests/test_pcode_analysis_parity.py
+    1  tests/test_sigdb_lmdb_security.py
+    1  tests/test_surum_oncesi_hatalar.py
+    1  tests/test_yerlesim_adres.py
+örnekler:
+   ('tests/test_debugger_bridge_security.py', 339, 'test_lldb_no_function_name_accepted', 20)
+   ('tests/test_function_id_extractor_parity.py', 126, 'test_py3_compile', 5)
+   ('tests/test_ghidra_sabitleme.py', 181, 'test_allows_other_version_when_explicit', 3)
+   ('tests/test_ghidra_sabitleme.py', 185, 'test_accepts_pinned_version', 3)
+   ('tests/test_hacker_cli.py', 90, 'test_build_logo_no_exception', 4)
+   ('tests/test_hacker_cli.py', 169, 'test_quit_command_breaks_loop', 16)
+   ('tests/test_hacker_cli.py', 186, 'test_exit_command_breaks_loop', 12)
+   ('tests/test_hacker_cli.py', 199, 'test_q_shortcut_breaks_loop', 12)
+   ('tests/test_hacker_cli.py', 212, 'test_eof_breaks_loop', 19)
+   ('tests/test_pcode_analysis_parity.py', 148, 'test_py3_compile', 5)
+   ('tests/test_sigdb_lmdb_security.py', 74, 'test_normal_permissions_ok', 4)
+   ('tests/test_signature_db_empty_name.py', 49, 'test_valid_signature_accepted', 7)
+   ('tests/test_signature_db_empty_name.py', 90, 'test_valid_signature_accepted', 7)
+   ('tests/test_signature_db_empty_name.py', 131, 'test_valid_pattern_accepted', 8)
+   ('tests/test_surum_oncesi_hatalar.py', 496, 'test_her_komut_cli_ayristiricisindan_gecer', 2)
+   ('tests/test_yerlesim_adres.py', 568, 'test_gecersiz_sayilarla_eski_yerlesim', 6)

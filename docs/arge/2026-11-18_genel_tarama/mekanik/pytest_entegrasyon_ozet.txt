@@ -1,0 +1,13 @@
+SKIPPED [1] tests/benchmark/test_benchmark_integration.py:952: libsqlite3 sistemde bulunamadi
+SKIPPED [1] tests/benchmark/test_benchmark_integration.py:984: libsqlite3 sistemde bulunamadi
+SKIPPED [1] tests/test_call_graph_parity.py:174: Runtime parity test'i PyGhidra 3.0 + Ghidra 12.0.4 kurulu CI image'inda kosulmalidir (v1.11.0 Faz 1.3 Dalga 4).
+SKIPPED [1] tests/test_cfg_extraction_parity.py:222: Runtime parity test'i PyGhidra 3.0 + Ghidra 12.0.4 kurulu CI image'inda kosulmalidir (v1.11.0 Faz 1.3 Dalga 4).
+SKIPPED [1] tests/test_decompile_all_parity.py:194: Runtime parity test'i PyGhidra 3.0 + Ghidra 12.0.4 kurulu CI image'inda kosulmalidir (v1.11.0 Faz 1.4 Dalga 6B).
+SKIPPED [1] tests/test_export_results_parity.py:185: Runtime parity test'i PyGhidra 3.0 + Ghidra 12.0.4 kurulu CI image'inda kosulmalidir (v1.11.0 Faz 1.4 Dalga 6B).
+SKIPPED [1] tests/test_frida.py:399: Frida spawn basarisiz (muhtemelen SIP): Frida spawn hatasi: TimedOutError: unexpectedly timed out while initializing suspended process
+SKIPPED [1] tests/test_function_lister_parity.py:146: Runtime parity test'i PyGhidra 3.0 + Ghidra 12.0.4 kurulu CI image'inda kosulmalidir (v1.11.0 Faz 1 Gun 5).
+SKIPPED [1] tests/test_pipeline_e2e.py:246: Full binary pipeline karsilastirmasi benchmark suite'inde calisir; bu test yer tutucudur.
+SKIPPED [1] tests/test_string_extractor_parity.py:178: Runtime parity test'i PyGhidra 3.0 + Ghidra 12.0.4 kurulu CI image'inda kosulmalidir (v1.11.0 Faz 1.2 Dalga 3).
+SKIPPED [1] tests/test_type_recovery_parity.py:235: Runtime parity test'i PyGhidra 3.0 + Ghidra 12.0.4 kurulu CI image'inda kosulmalidir (v1.11.0 Faz 1.2 Dalga 3).
+SKIPPED [1] tests/test_xref_analysis_parity.py:209: Runtime parity test'i PyGhidra 3.0 + Ghidra 12.0.4 kurulu CI image'inda kosulmalidir (v1.11.0 Faz 1.3 Dalga 4).
+========= 141 passed, 12 skipped, 8299 deselected in 130.21s (0:02:10) =========

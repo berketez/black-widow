@@ -1,0 +1,25 @@
+karadul.analyzers.container_classifier                                    1148
+karadul.analyzers.demangler_registry                                       276
+karadul.analyzers.sigdb_builtin.serialization                               13
+karadul.computation.struct_recovery.field_namer                            315
+karadul.core.content_store                                                  88
+karadul.lm                                                                 150
+karadul.lm.agent                                                           545
+karadul.lm.audit                                                           179
+karadul.lm.backend                                                        1069
+karadul.lm.context                                                         526
+karadul.lm.memory_guard                                                    165
+karadul.lm.probe                                                           327
+karadul.lm.protocol                                                        549
+karadul.lm.tools                                                           552
+karadul.lm.tools.read                                                      262
+karadul.pipeline.steps._capa_comment_inject                                135
+karadul.pipeline.steps.trex_export                                          76
+karadul.reconstruction.engineering.confidence_calibration                  806
+karadul.reconstruction.jsnice_renamer                                      144
+karadul.reconstruction.ts_declarations_namer                                33
+karadul.resources                                                            5
+karadul.scripts.audit_pipeline_dag                                         298
+karadul.scripts.multi_binary_runner                                        310
+karadul.scripts.quick_f1_eval                                              178
+TOPLAM erişilmeyen: 46 modül; 8149 satır (ghidra betikleri hariç)
