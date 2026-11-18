@@ -20,9 +20,19 @@ from pathlib import Path
 _CALL = re.compile(r"\b(_{0,3}[A-Za-z]\w*)\s*\(([^;{}]*)\)")
 # Argüman olarak geçen (çağrılmayan) fonksiyon adresi
 _FNREF = re.compile(r"\b(?:FUN|LAB)_([0-9a-f]+)\b(?!\s*\()")
+# Dizgi ve karakter sabitleri (kaçışlar dahil). İçlerindeki metin kod değildir: ``"FUN_00401000"``
+# bir fonksiyon başvurusu değil, veridir (P12b / P22a yan bulgusu: düşman ikili sahte geri çağrı
+# ilişkisi sokamasın). Çağrı ve başvuru aranmadan önce boşaltılır; sabitin yeri ("") kalır.
+_STR_LIT = re.compile(r'"(?:[^"\\\n]|\\.)*"|\'(?:[^\'\\\n]|\\.)*\'')
 _HEX = re.compile(r"\b0x[0-9a-fA-F]{5,}\b")
 _GENERIC = re.compile(r"^(FUN|thunk_FUN|LAB|SUB|sub)_[0-9a-fA-F]+$")
 _C_KEYWORDS = {"if", "while", "for", "switch", "return", "sizeof"}
+
+
+def _blank_literal(m: re.Match[str]) -> str:
+    """Sabitin tırnaklarını tutar, içini boşaltır (``"a;b"`` → ``""``)."""
+    q = m.group(0)[0]
+    return q + q
 
 
 def normalize_api(name: str) -> str:
@@ -78,7 +88,7 @@ def build_evidence(static_dir: Path) -> dict[str, EvidencePack]:
         code_path = code_dir / f"FUN_{a}.c"
         code = code_path.read_text(errors="replace") if code_path.exists() else ""
         registrations = []
-        for m in _CALL.finditer(code):
+        for m in _CALL.finditer(_STR_LIT.sub(_blank_literal, code)):
             callee, args = m.group(1), m.group(2)
             if _GENERIC.match(callee.lstrip("_")) or callee in _C_KEYWORDS:
                 continue

@@ -88,6 +88,22 @@
       "test": "tests/test_p12b_kebap_rol.py::test_literal_call_site_sinirlari",
       "find": "        elif ch == \",\" and depth == 0:\n            commas += 1\n        elif ch in \";{}\" and depth == 0:\n            return \"\", -1\n",
       "replace": "        elif ch == \",\":\n            commas += 1\n        elif ch in \";{}\" and depth == 0:\n            return \"\", -1\n"
+    },
+    {
+      "id": "p12b_evidence_ham_govde",
+      "desc": "Kalem 6: çağrılar dizgi sabitleri boşaltılmadan ham gövdede aranır (dizgideki FUN_ geri çağrı sayılır)",
+      "module": "karadul/reconstruction/tarif/evidence.py",
+      "test": "tests/test_p12b_evidence_dizgi.py::test_dizgi_icindeki_fun_geri_cagri_sayilmaz",
+      "find": "        for m in _CALL.finditer(_STR_LIT.sub(_blank_literal, code)):\n",
+      "replace": "        for m in _CALL.finditer(code):\n"
+    },
+    {
+      "id": "p12b_evidence_kacis_yok",
+      "desc": "Kalem 6: dizgi sabiti kaçışlı tırnağı tanımaz (kaçışlı tırnak dizgiyi erken bitirir)",
+      "module": "karadul/reconstruction/tarif/evidence.py",
+      "test": "tests/test_p12b_evidence_dizgi.py::test_kacisli_tirnak_dizgiyi_erken_bitirmez",
+      "find": "_STR_LIT = re.compile(r'\"(?:[^\"\\\\\\n]|\\\\.)*\"|",
+      "replace": "_STR_LIT = re.compile(r'\"(?:[^\"\\n])*\"|"
     }
   ]
 }
