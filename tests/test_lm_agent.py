@@ -106,7 +106,9 @@ def test_k0_tek_cagri_paket_ve_sonuc(tmp_path):
     assert kullanici["content"].startswith(C.RESULT_OPEN + "\n")
     assert r.est_prompt_tokens == (C.estimate_text_tokens(sistem["content"]) + C.estimate_text_tokens(soru)
                                    + sum(C.estimate_result_tokens(z) for z in zarflar))
-    assert [k["olay"] for k in gunluk.records] == ["arac_cagrisi", "arac_cagrisi", "model_istegi", "gorev"]
+    # P21 (LM-01): cevap denetimden geçer; "denetim" kaydı görev kaydından önce yazılır
+    assert [k["olay"] for k in gunluk.records] == ["arac_cagrisi", "arac_cagrisi", "model_istegi", "denetim", "gorev"]
+    assert r.verdict == "sinandi_celiski_yok" and r.guard["bayraklar"] == ["kuskulu_decompile"]
     assert r.as_dict()["counters"]["model_calls"] == 1 and r.as_dict()["answer"] == AD
     cekimser = kur(tmp_path / "2", [yanit(YOK)])[0].suggest_name(fun(A))
     assert cekimser.status == "tamam" and cekimser.name_status == "cekimser" and cekimser.answer == YOK
@@ -163,14 +165,14 @@ def test_k0_kanit_semasi_o_istegin_kimlikleriyle(tmp_path):
                                    yanit({**AD, "kanit": ["r5", "r6", "r5"]})])
     assert ajan.suggest_name(fun(A)).answer["kanit"] == ["r1"]
     # ikinci görev: kimlikler r3, r4; önceki görevin kimliği (r1) artık geçersiz
-    ikinci = ajan.suggest_name(fun(FB))
+    ikinci = ajan.suggest_name(fun(CB))       # FB kesin etiketli: D2 (P21) modeli çağırmaz
     assert ikinci.result_ids == ("r3", "r4") and ikinci.status == "sema_ihlali" and ikinci.answer is None
     for dal in arka.calls[1]["schema"]["anyOf"]:
         assert dal["properties"]["kanit"] == {"type": "array", "items": {"type": "string", "enum": ["r3", "r4"]},
                                               "maxItems": 2}
     assert '"kanit" may only contain these ids: r3, r4.' in arka.calls[1]["messages"][1]["content"]
     # yinelenen kimlik: şema (uniqueItems yok) kabul eder, sonuçta tekilleştirilir; sınırı aşan dizi reddedilir
-    ucuncu = ajan.suggest_name(fun(FB))
+    ucuncu = ajan.suggest_name(fun(CB))
     assert ucuncu.result_ids == ("r5", "r6") and ucuncu.status == "sema_ihlali"
     dorduncu = kur(tmp_path / "4", [yanit({**AD, "kanit": ["r2", "r2"]})])[0].suggest_name(fun(A))
     assert dorduncu.status == "tamam" and dorduncu.answer["kanit"] == ["r2"]
@@ -252,10 +254,12 @@ def test_k0_baglam_asimi_baslamadan_reddedilir(tmp_path):
 
 
 def test_k0_bos_pakette_cekimser_eki(tmp_path):
-    # FB: ithal çağrı yok, dizgi yok (D0, envanterin icerik_adsiz tanımı) → zorunlu istense de çekimser açık
+    # CB: ithal çağrı yok, dizgi yok (D0, envanterin icerik_adsiz tanımı) → zorunlu istense de çekimser açık.
+    # (FB de boştur ama adı kesin etiketli: D2 ön denetimi modeli çağırmaz, P21.)
     ajan, arka, _ = kur(tmp_path, [yanit(YOK), yanit(YOK), yanit(AD0)])
-    bos = ajan.suggest_name(fun(FB), abstain_allowed=False)
+    bos = ajan.suggest_name(fun(CB), abstain_allowed=False)
     assert bos.empty_content and bos.status == "tamam" and bos.name_status == "cekimser"
+    assert bos.verdict == "sinanamadi"                                # D0: sınanacak kanıt yok
     assert len(arka.calls[0]["schema"]["anyOf"]) == 2 and "abstain instead" in arka.calls[0]["messages"][1]["content"]
     # A'nın paketi dolu: zorunlu koşulda tek dal; çekimser cevap şemaya uymaz
     dolu = ajan.suggest_name(fun(A), abstain_allowed=False)
@@ -294,9 +298,9 @@ def test_korluk_kipinde_istemde_hedef_adi_yok(tmp_path):
     assert all(k["kor"] is True for k in olaylar(gunluk, "gorev"))
     # kör olmayan ajan: hedefin kendi adı yine yok (pilot kuralı), komşuların elle adları var
     acik, arka2, _ = kur(tmp_path / "acik", [yanit(YOK), yanit(YOK)])
-    acik.suggest_name(fun(FB))
+    acik.suggest_name(fun(CB))                # FB kesin etiketli: kör olmayan ajanda D2 modeli çağırmaz (P21)
     acik.suggest_name(fun(A))
-    assert not _sozcuk_var(arka2.calls[0]["messages"][1]["content"], "parse_header")
+    assert not _sozcuk_var(arka2.calls[0]["messages"][1]["content"], "on_signal")
     a_istem = arka2.calls[1]["messages"][1]["content"]
     assert _sozcuk_var(a_istem, "renamed_by_hand") and _sozcuk_var(a_istem, "parse_header")
     assert not _sozcuk_var(a_istem, "run_main")
@@ -416,14 +420,14 @@ def test_mesgulken_ikinci_gorev_reddedilir(tmp_path):
 
     def araya_gir(_s):
         try:
-            ajan.suggest_name(fun(FB))
+            ajan.suggest_name(fun(CB))
         except G.AgentBusy as e:
             gorulen.append(e)
 
     arka._sleep = araya_gir
     assert ajan.suggest_name(fun(A)).status == "tamam"
     assert len(gorulen) == 1 and len(arka.calls) == 1 and isinstance(gorulen[0], B.LMError)
-    assert ajan.suggest_name(fun(FB)).status == "tamam"
+    assert ajan.suggest_name(fun(CB)).status == "tamam"
 
 
 # --------------------------------------------------------------------------------------------

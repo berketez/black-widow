@@ -30,10 +30,11 @@ import threading
 import time
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
-from typing import Any, Callable, Iterable, Iterator, Optional
+from typing import Any, Callable, Iterable, Iterator, Mapping, Optional
 
 from karadul.lm import (
-    BUDGET_TOOL_RESULTS_TOKENS, CONTEXT_TOKENS, CONTEXT_TOKENS_K2, MAX_TOKENS_STEP, TIME_BUDGET_FACTOR, protocol,
+    BUDGET_TOOL_RESULTS_TOKENS, CONTEXT_TOKENS, CONTEXT_TOKENS_K2, MAX_TOKENS_STEP, TIME_BUDGET_FACTOR, guard,
+    protocol,
 )
 from karadul.lm.audit import AuditLog, canonical_json, sha256_text
 from karadul.lm.backend import STATE_MEMORY_STOPPED, Backend, ChatResult, LMError
@@ -60,6 +61,7 @@ STATUS_CANCELLED = "iptal"                  # araştırmacı durdurdu
 STATUS_TIMEOUT = "sure_asimi"               # süre bütçesi doldu
 STATUS_BUDGET = "butce_asildi"              # araç ya da bağlam bütçesi bitti ve model son cevabı vermedi
 STATUS_UNEXPECTED = "beklenmeyen_hata"      # beklenmeyen hata ya da kesme; arka uç durduruldu, hata yükseldi
+STATUS_PROTECTED = "korunan_ad"             # D2: hedefin adı kesin ya da elle verilmiş; model çağrılmadı
 # Ayrıca protocol.parse_turn durumları: gecersiz, sema_ihlali, butce_asimi (üretim tavanı), ret.
 
 TASK_NAME = "ad_oner"
@@ -103,7 +105,12 @@ class Counters:
 
 @dataclass
 class TaskResult:
-    """Bir görevin sonucu. ``answer`` yalnız ``status == "tamam"`` iken doludur."""
+    """Bir görevin sonucu. ``answer`` yalnız ``status == "tamam"`` iken doludur.
+
+    ``answer`` modelin ÖNERİSİDİR, doğrulanmış ad değildir: araştırmacıya gösterilmeden önce ``verdict``
+    okunur (denetim katmanı, ``guard``; tasarım §5.1). ``ret`` kabul edilemez; ``celiski`` uyarı
+    rozetiyle ve toplu kabul dışında; ``guard["toplu_kabul"]`` toplu kabule girip giremeyeceğini söyler.
+    """
 
     task_id: str
     mode: str
@@ -125,6 +132,8 @@ class TaskResult:
     duration_sec: float = 0.0
     memory: Optional[dict[str, Any]] = None
     error: Optional[str] = None
+    verdict: Optional[str] = None            # denetim hükmü (guard.VERDICTS); denetlenecek cevap yoksa None
+    guard: Optional[dict[str, Any]] = None   # GuardReport.as_dict(): bulgular, bayraklar, toplu kabul
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -155,7 +164,8 @@ class Agent:
                  audit: Optional[AuditLog] = None, memory_guard: Optional[MemoryGuard] = None,
                  enabled_modes: Iterable[str] = (MODE_K0,), blind_target: bool = False,
                  context_tokens: int = CONTEXT_TOKENS, loop_context_tokens: int = CONTEXT_TOKENS_K2,
-                 clock: Callable[[], float] = time.monotonic, cancel: Optional[threading.Event] = None):
+                 clock: Callable[[], float] = time.monotonic, cancel: Optional[threading.Event] = None,
+                 rejected_names: Optional[Mapping[str, Iterable[str]]] = None):
         modes = frozenset(enabled_modes)
         if not modes <= frozenset(MODES):
             raise ValueError(f"bilinmeyen ajan kipi: {sorted(modes - frozenset(MODES))}")
@@ -173,6 +183,14 @@ class Agent:
         self._lock = threading.Lock()
         self._result_seq = 0
         self._task_seq = 0
+        # Denetim (guard) oturum belleği: D10 araştırmacının reddettiği adlar (adres → adlar; arayüz
+        # doldurur), D11 bu oturumda önerilmiş adlar (küçük harfli ad → adres).
+        self.rejected_names: dict[str, set[str]] = {}
+        for k, v in (rejected_names or {}).items():
+            a = workspace.resolve(k) if isinstance(k, str) else None
+            if a is not None:
+                self.rejected_names.setdefault(a, set()).update(x for x in v if isinstance(x, str))
+        self._session_names: dict[str, str] = {}
 
     # --- sabit önek ---------------------------------------------------------------------------
 
@@ -246,12 +264,17 @@ class Agent:
         r.duration_sec = round(self._clock() - t0, 3)
         r.result_ids = tuple(x.id for x in task.results)
         r.truncated_ids = tuple(x.id for x in task.results if x.truncated is not None)
+        if self.audit is not None and r.guard is not None:
+            # Tasarım §5.4 "Denetim": kural bulguları ve hüküm. Ad, gerekçe ve ikili metni yazılmaz.
+            self.audit.write("denetim", gorev=r.task_id, hukum=r.verdict, bulgular=r.guard["bulgular"],
+                             bayraklar=r.guard["bayraklar"], toplu_kabul=r.guard["toplu_kabul"],
+                             sinanmayan=r.guard["sinanmayan"])
         if self.audit is not None:
             self.audit.write("gorev", kimlik=r.task_id, kip=r.mode, tur=r.task, adres=r.addr, durum=r.status,
                              ad_durumu=r.name_status, hata=r.error, sayaclar=asdict(r.counters),
                              kestirim_istem_jetonu=r.est_prompt_tokens, kod_kirpildi=r.code_clipped,
                              kirpilan_sonuclar=list(r.truncated_ids), icerik_adsiz=r.empty_content,
-                             kor=r.blind, sure_sn=r.duration_sec, istem_surumu=PROMPT_VERSION,
+                             kor=r.blind, sure_sn=r.duration_sec, istem_surumu=PROMPT_VERSION, hukum=r.verdict,
                              arac_kumesi=self.registry.version(), onek_sha256=self.prefix_sha256(r.mode))
 
     # --- araçlar ------------------------------------------------------------------------------
@@ -383,7 +406,41 @@ class Agent:
         # Pilotun puanlayıcısının göreceği durum sınıfı (K-P1: aynı ayrıştırıcı).
         task.result.name_status = protocol.parse_name_answer(
             reply.content, reply.finish_reason, abstain_allowed=abstain_allowed, address=a)["durum"]
+        self._audit_answer(task, a)
         task.finish(STATUS_DONE)
+
+    # --- denetim katmanı (tasarım §5) -----------------------------------------------------------
+
+    def _audit_answer(self, task: _Task, a: str) -> None:
+        """Cevabı model dışı denetimden geçirir; hüküm ve bulgular sonuca yazılır (LM-01, LM-03)."""
+        answer = task.result.answer or {}
+        ws = self.workspace
+        related = [x[4:] for x in self._neighbours(a)]
+        report = guard.check_proposal(
+            answer, [r.envelope() for r in task.results], target=a, target_tag=ws.name_tag(a),
+            existing_functions=ws.existing_function_names(), own_ghidra_name=ws.ghidra_name(a),
+            assigned_names=ws.assigned_names(), related=related, empty_content=task.result.empty_content,
+            session_names=self._session_names, rejected=self.rejected_names.get(a, ()))
+        task.result.verdict = report.verdict
+        task.result.guard = report.as_dict()
+        name = answer.get("isim")
+        if isinstance(name, str) and not answer.get("cekimser") and report.acceptable:
+            self._session_names.setdefault(name.casefold(), a)
+
+    def _protected(self, task: _Task, a: str) -> bool:
+        """D2 ön denetimi: hedefin adı ``kesin`` ya da elle verilmişse model çağrılmaz. Körlük kipinde
+        (ölçüm) uygulanmaz: hedefin adı orada sunucu tarafında bile örneklemi değiştirmemeli; cevap yine
+        denetlenir ve D2 ``ret`` hükmü sonuca yazılır."""
+        if self.blind_target:
+            return False
+        tag = self.workspace.name_tag(a)
+        if tag is None or tag[1] not in guard.PROTECTED_TAGS:
+            return False
+        report = guard.protected_report(tag[1])
+        task.result.verdict = report.verdict
+        task.result.guard = report.as_dict()
+        task.finish(STATUS_PROTECTED, f"D2: hedefin adı '{tag[1]}' etiketli; öneri istenmez")
+        return True
 
     # --- K0 -----------------------------------------------------------------------------------
 
@@ -392,6 +449,8 @@ class Agent:
         if a is None:
             return task.finish(STATUS_UNKNOWN_ADDRESS)
         task.result.addr = f"FUN_{a}"
+        if self._protected(task, a):
+            return None
         level = self._level(task)
         if level is None:
             return None
@@ -453,6 +512,8 @@ class Agent:
         if a is None:
             return task.finish(STATUS_UNKNOWN_ADDRESS)
         task.result.addr = f"FUN_{a}"
+        if self._protected(task, a):
+            return None
         level = self._level(task)
         if level is None:
             return None

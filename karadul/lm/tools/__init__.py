@@ -168,10 +168,16 @@ class Workspace:
         if not isinstance(funcs, list):
             raise WorkspaceError("static/ghidra_functions.json okunamadı ya da 'functions' listesi yok")
         self._functions: dict[int, str] = {}
+        # Ghidra adı ve ithal mi (thunk ya da dış): denetimin D1'i (``guard``), ad geçerliliğiyle aynı
+        # kaynaktan (``name_validity.existing_function_names``: ``ghidra_functions.json``).
+        self._ghidra: list[tuple[str, bool, int]] = []
         for f in funcs:
             n = _hex_int(f.get("address")) if isinstance(f, dict) else None
             if n is not None:
                 self._functions.setdefault(n, f"{f['address']}".lower().removeprefix("0x"))
+                name = f.get("name")
+                if isinstance(name, str) and name:
+                    self._ghidra.append((name, bool(f.get("is_thunk") or f.get("is_external")), n))
         self._cache: dict[str, Any] = {}
 
     # --- adresler -----------------------------------------------------------------------------
@@ -185,6 +191,32 @@ class Workspace:
 
     def function_count(self) -> int:
         return len(self._functions)
+
+    def ghidra_name(self, hexaddr: str) -> str:
+        """Fonksiyonun ``ghidra_functions.json``'daki adı; yoksa ``FUN_<adres>``."""
+        n = int(hexaddr, 16)
+        for name, _imp, a in self._ghidra:
+            if a == n:
+                return name
+        return f"FUN_{hexaddr}"
+
+    def existing_function_names(self) -> dict[str, str]:
+        """İkilide var olan fonksiyon adları → sahibinin Ghidra adı
+        (``name_validity.existing_function_names``; ithal adı ``_``'sız yazımıyla da)."""
+        if "existing" not in self._cache:
+            from karadul.reconstruction.name_validity import existing_function_names
+            self._cache["existing"] = existing_function_names((n, imp) for n, imp, _a in self._ghidra)
+        return self._cache["existing"]
+
+    def assigned_names(self) -> dict[str, str]:
+        """Karadul'un ad haritasındaki adlar → adres (ilk geçen adres). Yer tutucular dahil değildir."""
+        if "assigned" not in self._cache:
+            out: dict[str, str] = {}
+            for a, name in self._names.items():
+                if isinstance(name, str) and name and not protocol.is_placeholder_name(name):
+                    out.setdefault(name, a)
+            self._cache["assigned"] = out
+        return self._cache["assigned"]
 
     def _canon(self, hexaddr: Any) -> Optional[str]:
         n = _hex_int(hexaddr)
