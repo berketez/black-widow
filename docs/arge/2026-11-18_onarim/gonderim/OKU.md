@@ -4,6 +4,19 @@ Ana oturumun ajanlara verdiği paket metinleri. Oturuma özel geçici dizin sili
 
 ## Gönderilmiş (kayıt için)
 - `PS3.md` — P-S3, 2026-11-18 12:4x'te gönderildi.
+- **Akşam 1. dalga (18:06):** `P22b.md`, `P22d.md`, `P13a.md`, `P20.md`, `P15b.md` (istemde dosyaya işaret + akşam ek notları: tabanın bugünkü main olması, paralel paketler, "P22e / P-S4 için" başlıkları; P15b'ye P13a yamalarını uygulamaması ve batch `Config.load` kalemi; imza DB adsız adları P15c'ye).
+
+## Akşam yazılanlar (2026-11-18 18:1x)
+| Metin | Paket | Önkoşul |
+|---|---|---|
+| `PS3b.md` | gnulib kanalı: platformdan bağımsız varlık kanıtı, `usage`, `full_write`, LTO'suz iç adlar, aday kaydının rapora taşınması | — (stages.py yaması → P-S4) |
+| `P15c.md` | İmza veritabanının adsız fonksiyonlara verdiği adlar (K-2) | P15b (`signature_db.py`) |
+| `P10b.md` | Yeniden yazımın açılma kararı (K-1 ad kaynağı ölçümü) + MaxSMT CAST / PTRSUB | — (config yaması → P15b sonrası) |
+| `P13b.md` | Bağlı olmayan ad kanalları (K-4) + parametre adı yayılımı | P13a |
+| `PS4.md` | `stages.py` 4. tur + bekleyen stages yamaları + `_collect_all_algorithms` silme | P13a, P20, P-S3b (P13b yaması varsa o da) |
+| `P22e.md` | KaradulLM oturum / kipler / izin / repl / defter | P22b, P22d |
+| `P22c.md` | KaradulLM arayüzü: c1 sunucu → c2 sayfa | P22e |
+| `P23.md` | Test, CI, düzen + onaylı ölü kod silme (eski füzyon, VF2 süreç yolu) | dosya sahibi paketler |
 
 ## Gönderime hazır
 | Metin | Paket | Önkoşul (bitmiş olmalı) | Göndermeden önce |
