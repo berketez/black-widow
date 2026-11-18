@@ -7,7 +7,6 @@ onceki stage sonuclarina erisir.
 
 from __future__ import annotations
 
-import copy
 import json
 import logging
 import re
@@ -18,7 +17,7 @@ from typing import Any
 from karadul.analyzers import get_analyzer
 from karadul.core.pipeline import PipelineContext, Stage
 from karadul.core.result import StageResult
-from karadul.core.target import TargetDetector, TargetType, Language
+from karadul.core.target import TargetType, Language
 from karadul.pipeline.reconstruction_context import ReconstructionContext
 
 logger = logging.getLogger(__name__)
@@ -739,8 +738,7 @@ class DynamicAnalysisStage(Stage):
             stats["crypto_operations"] = len(trace_report.get("crypto_operations", []))
             stats["call_stats"] = trace_report.get("stats", {})
 
-            # Sonuclari workspace'e kaydet
-            dynamic_dir = context.workspace.get_stage_dir("dynamic")
+            # Sonuclari workspace'e kaydet (save_json "dynamic" dizinini kendisi kurar)
 
             # Ana rapor
             report_path = context.workspace.save_json("dynamic", "trace_report", trace_report)
@@ -2224,7 +2222,6 @@ class ReconstructionStage(Stage):
         assert rc.static_dir is not None, "_prepare_workspace static_dir set etmedi"
         assert rc.reconstructed_dir is not None, "_prepare_workspace reconstructed_dir set etmedi"
         static_dir: Path = rc.static_dir
-        deob_dir: Path = rc.dirs["deobfuscated"]
 
         _use_step_registry = bool(
             getattr(context.config, "pipeline", None)
