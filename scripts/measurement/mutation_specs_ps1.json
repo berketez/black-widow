@@ -120,6 +120,38 @@
       "test": "tests/test_ps1_tarama_durumu.py::TestCapaStageStatus::test_scanner_exception_is_error",
       "find": "        stats[\"capa_status\"] = SCAN_ERROR",
       "replace": "        stats[\"capa_status\"] = SCAN_RAN  # yutuldu"
+    },
+    {
+      "id": "yara_kayit_yok",
+      "desc": "YARA: yapılandırılmış isabet kaydı yazılmaz (yalnız düz detected_tech)",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_yara_kayit.py::TestStageStats::test_hits_parallel_to_legacy_list",
+      "find": "stats[\"yara_hits\"] = [_yara_hit_record(m) for m in yara_result.matches]",
+      "replace": "stats[\"yara_hits\"] = []  # kayit yok"
+    },
+    {
+      "id": "yara_kayit_dizgisiz",
+      "desc": "YARA kaydı eşleşen dizgileri taşımaz",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_yara_kayit.py::TestRecord::test_fields_and_truncation",
+      "find": "        \"strings\": shown,",
+      "replace": "        \"strings\": [],  # dizgi yok"
+    },
+    {
+      "id": "yara_kayit_kirpmasiz",
+      "desc": "YARA kaydı dizgi sayısını sınırlamaz (pipeline_result.json şişer)",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_yara_kayit.py::TestRecord::test_fields_and_truncation",
+      "find": "for off, ident, data in raw[:_YARA_HIT_MAX_STRINGS]:",
+      "replace": "for off, ident, data in raw:"
+    },
+    {
+      "id": "yara_kayit_meta_ham",
+      "desc": "YARA meta değerleri JSON'a uygun hâle getirilmez (bytes)",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_yara_kayit.py::TestRecord::test_fields_and_truncation",
+      "find": "\"meta\": {str(k): _json_safe(v) for k, v in dict(meta).items()},",
+      "replace": "\"meta\": dict(meta),  # ham"
     }
   ]
 }

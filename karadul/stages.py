@@ -188,12 +188,59 @@ class IdentifyStage(Stage):
 # ayrilir (IMZA-15). Sozluk P03'un tarayicilariyla ve tarama adimlariyla ayni
 # (karadul.pipeline.steps.anti_debug.SCAN_*).
 
+# YARA isabet kaydinda (ARAYUZ-17) isabet basina en cok bu kadar eslesen dizgi
+# ve dizgi basina en cok bu kadar bayt yazilir; toplam ``strings_total``'da.
+_YARA_HIT_MAX_STRINGS = 8
+_YARA_HIT_MAX_DATA = 64
+
 # capa'nin statik asamada cagrildigi hedef turleri (v1.8.6'dan beri ayni liste).
 _CAPA_TARGET_TYPES = (
     TargetType.MACHO_BINARY, TargetType.UNIVERSAL_BINARY,
     TargetType.ELF_BINARY, TargetType.PE_BINARY, TargetType.GO_BINARY,
     TargetType.BUN_BINARY,
 )
+
+
+def _json_safe(value: Any) -> Any:
+    """YARA meta degerleri JSON'a yazilabilir olsun (bytes -> onaltilik)."""
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, (bytes, bytearray)):
+        return bytes(value).hex()
+    return str(value)
+
+
+def _yara_hit_record(match: Any) -> dict[str, Any]:
+    """Tek YARA isabetinin yapilandirilmis kaydi (ARAYUZ-17).
+
+    Alanlar: ``rule``, ``tags`` (liste), ``meta`` (kuralin meta'si; P03'te
+    ``condition`` = hukmun okunur kosulu), ``namespace``, ``strings`` (en cok
+    ``_YARA_HIT_MAX_STRINGS`` eslesme: ``offset``, ``identifier``, ``length``,
+    ``data_hex`` (en cok ``_YARA_HIT_MAX_DATA`` bayt), ``data_text`` (yalniz
+    yazdirilabilir ASCII ise, degilse None)), ``strings_total``.
+    """
+    raw = list(getattr(match, "strings", None) or [])
+    shown: list[dict[str, Any]] = []
+    for off, ident, data in raw[:_YARA_HIT_MAX_STRINGS]:
+        data = bytes(data or b"")
+        head = data[:_YARA_HIT_MAX_DATA]
+        printable = bool(head) and all(0x20 <= b < 0x7F for b in head)
+        shown.append({
+            "offset": int(off),
+            "identifier": str(ident),
+            "length": len(data),
+            "data_hex": head.hex(),
+            "data_text": head.decode("ascii") if printable else None,
+        })
+    meta = getattr(match, "meta", None) or {}
+    return {
+        "rule": str(match.rule),
+        "tags": [str(t) for t in (getattr(match, "tags", None) or [])],
+        "meta": {str(k): _json_safe(v) for k, v in dict(meta).items()},
+        "namespace": str(getattr(match, "namespace", "") or ""),
+        "strings": shown,
+        "strings_total": len(raw),
+    }
 
 
 def _run_yara_scan(target_path: Path, stats: dict[str, Any]) -> None:
@@ -203,13 +250,18 @@ def _run_yara_scan(target_path: Path, stats: dict[str, Any]) -> None:
     ayrica ``yara_backend``, ``yara_rules_loaded``, ``yara_scan_time_ms``,
     yedege dusulduyse ``yara_fallback_reason``.
 
-    ``yara_matches`` (int) yalniz ``calisti``da sayidir; ``hata`` /
-    ``arac_yok``da ``None`` ("0 eslesme" yazilmaz). Isabetler ``detected_tech``
-    (``"<kural> (<etiketler>)"``) listesine yazilir.
+    ``yara_matches`` (int) ve ``yara_hits`` (yapilandirilmis liste, ARAYUZ-17)
+    yalniz ``calisti``da sayidir; ``hata`` / ``arac_yok``da ``None``
+    ("0 eslesme" yazilmaz). Gecis icin eski duz liste ``detected_tech``
+    (``"<kural> (<etiketler>)"``) da yazilir: okuyanlar ``sarif_report.py``,
+    ``scripts/measurement/masum_kapi.py`` (``cikti_yara``),
+    ``scripts/measurement/saglamlik_denetle.py``. Yeni okuyucu ``yara_hits``'i
+    kullanir; ikisi birlikte okunursa ayni isabet iki kez sayilir.
     """
     from karadul.pipeline.steps.anti_debug import SCAN_ERROR, SCAN_NO_TOOL, SCAN_RAN
 
     stats["yara_matches"] = None
+    stats["yara_hits"] = None
     try:
         from karadul.analyzers.yara_scanner import YaraScanner
     except ImportError as exc:
@@ -236,6 +288,7 @@ def _run_yara_scan(target_path: Path, stats: dict[str, Any]) -> None:
         stats["yara_fallback_reason"] = yara_result.fallback_reason
     if yara_result.status == SCAN_RAN:
         stats["yara_matches"] = len(yara_result.matches)
+        stats["yara_hits"] = [_yara_hit_record(m) for m in yara_result.matches]
         for m in yara_result.matches:
             tags_str = ",".join(m.tags) if m.tags else "unknown"
             stats.setdefault("detected_tech", []).append(f"{m.rule} ({tags_str})")

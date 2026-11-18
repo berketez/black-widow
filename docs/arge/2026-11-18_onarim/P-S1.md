@@ -8,8 +8,8 @@
 
 | Kalem | Durum | Commit |
 |---|---|---|
-| 1 — IMZA-15 + P03 yaması | bitti | (bu commit) |
-| 2 — ARAYUZ-17 kayıt | bekliyor | |
+| 1 — IMZA-15 + P03 yaması | bitti | cc452bc |
+| 2 — ARAYUZ-17 kayıt | bitti | (bu commit) |
 | 3 — P19 yaması | bekliyor | |
 | 4 — capa K-1 bayrağı | bekliyor | |
 | 5 — BORU-05 | bekliyor | |
@@ -60,3 +60,31 @@ Hata enjekte tablosu yukarıda (sonra sütunu). Gerçek koşu sonuçları kalem 
 - `tests/test_step_anti_debug.py`, `tests/test_step_packer_fingerprint.py`: durum değerleri yeni sözlüğe; taklit dedektörler gerçeği gibi katmanları çağırıyor ve okuma sınırlarını gerçek sınıftan alıyor; kapalıyken JSON yazılması beklenir.
 - Mutasyon `scripts/measurement/mutation_specs_ps1.json`: kalem 1'in 15 mutantı **15/15 öldü** (ilk koşuda `ad_okuma_denetimi_yok` yaşadı: mutant yalnız `read(1)`'i siliyordu, `open()` izin hatasını yine veriyordu; mutant `open` dahil bütün denetimi silecek biçimde düzeltildi → öldü).
 - İlgili takım (11 dosya, 185 test) geçti.
+
+## Kalem 2 — ARAYUZ-17 (kayıt kısmı): YARA isabetleri yapılandırılmış
+
+### a. Göster (önce)
+YARA isabetleri `static.stats.detected_tech`'e yalnız düz dizgi olarak gidiyordu (`"MSVC_Compiler (compiler,msvc)"`; `once/pe/w32`). Kuralın meta'sı (P03'ün `condition` alanı, önem), eşleşen dizgi ve ofsetler hiçbir çıktıda yoktu; SARIF dizgi dalı `tech_type="unknown"` atıyor, paketleyici isabetini KRDL004 yerine KRDL003'e düşürüyordu (taban 119 SARIF: bütün sonuçlar KRDL003, rapordaki sayım). `yara_matches` int; `sarif_report.py:360` liste bekliyor (ölü dal).
+
+### b. Onarım (`karadul/stages.py` `_yara_hit_record`, `_run_yara_scan`)
+`static.stats.yara_hits` — liste; her öğe:
+
+| Alan | Tip | Anlamı |
+|---|---|---|
+| `rule` | str | kural adı |
+| `tags` | list[str] | kuralın etiketleri (`packer`, `compiler`, `antidebug` …) |
+| `meta` | dict | kuralın meta'sı (P03: `condition` = hükmün okunur koşulu, `description`, `severity` …); değerler JSON'a uygun (bytes → onaltılık) |
+| `namespace` | str | YARA ad alanı |
+| `strings` | list | en çok 8 eşleşme; her biri `offset` (dosya ofseti, int), `identifier` (`$s0`, `$b1` …), `length` (eşleşmenin tam boyu), `data_hex` (ilk en çok 64 bayt, onaltılık), `data_text` (o baytlar yazdırılabilir ASCII ise metin, değilse `null`) |
+| `strings_total` | int | toplam eşleşme sayısı (8'den fazlaysa kayıt kırpılmıştır) |
+
+Durum ilişkisi: `yara_status == "calisti"` → `yara_hits` liste (boş = tarandı, temiz), `yara_matches == len(yara_hits)`; başka durumda ikisi de `null`.
+
+**Geçiş:** `detected_tech` (düz dizgi) aynı isabetlerden, aynı sırayla yazılmaya devam ediyor. Okuyanlar: `karadul/reporting/sarif_report.py:392` (P07), `scripts/measurement/masum_kapi.py` `cikti_yara`, `scripts/measurement/saglamlik_denetle.py:1468`. **P07 için:** SARIF `yara_hits`'i okumalı ve `detected_tech`'in YARA kökenli öğelerini ayrıca saymamalı (aynı isabet iki kez çıkar); `yara_matches` artık int ya da `null` (liste değil). Paketleyici ayrımı `tags`'ten (`packer`), kanıt `strings[].data_text` / `offset`'ten, hükmün gerekçesi `meta.condition`'dan. `detected_tech`, P07 ve ölçüm betikleri `yara_hits`'e geçtikten sonra kaldırılabilir (o zaman masum kapının `cikti_yara`'sı da güncellenmeli).
+
+### c. Yeniden say
+Sentetik UPX PE ve gerçek `w32.exe`: `yara_hits` öğesi kural, etiket, `meta.condition`, dizgi ofsetleri (dosya içinde) taşıyor; gerçek koşu sayıları "Ölçüm"de.
+
+### d. Test / mutasyon
+- Yeni `tests/test_ps1_yara_kayit.py` (6 test): alanlar ve kırpma (12 eşleşme → 8, 160 bayt → 64), ikili veri → `data_text` null, bytes meta → onaltılık, aşamada `yara_hits` ↔ `detected_tech` eşliği (aynı sıra), temiz → `[]`, hata → `null`, gerçek PE'de ofsetler dosya içinde.
+- Mutasyon: 4 mutant (kayıt yok, dizgisiz, kırpmasız, ham meta) **4/4 öldü**.
