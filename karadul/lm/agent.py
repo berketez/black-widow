@@ -34,7 +34,7 @@ from __future__ import annotations
 import re
 import threading
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Iterable, Iterator, Mapping, Optional
 
@@ -412,7 +412,9 @@ class Agent:
 
     def prefix(self, mode: str, version: str = PROMPT_VERSION) -> str:
         """Kipin sabit öneki (sistem iletisi); ``version`` istem sürümü (KL-0 / KL-1)."""
-        return fixed_prefix(mode, self.registry.definition_lines(), version)
+        if version != PROMPT_VERSION:
+            return fixed_prefix(mode, self.registry.definition_lines(), version)
+        return fixed_prefix(mode, self.registry.definition_lines())
 
     def prefix_sha256(self, mode: str, version: str = PROMPT_VERSION) -> str:
         return sha256_text(self.prefix(mode, version))
@@ -509,58 +511,59 @@ class Agent:
                 self._chain_active = False
             return run
 
-    def _run(self, mode: str, addr: str, abstain_allowed: bool, deadline_sec: Optional[float], *,
-             task_type: str = TASK_NAME, **extra: Any) -> TaskResult:
-        with self._exclusive():
-            return self._run_unlocked(mode, addr, abstain_allowed, deadline_sec, task_type=task_type, **extra)
-
     def _run_unlocked(self, mode: str, addr: str, abstain_allowed: bool, deadline_sec: Optional[float], *,
                       task_type: str = TASK_NAME, **extra: Any) -> TaskResult:
-        """Tek görev (çağıran ajanın kilidini tutar). ``task_type``: ``ad_oner`` | ``acikla`` | ``ozet_alt``;
-        olay akışına ve görev kaydına bu tür yazılır (P22a notu: sabit ``TASK_NAME`` değil)."""
-        self._task_seq += 1
-        # İptal görev başınadır: önceki görevin (ya da görev yokken kurulmuş) iptali bu görevi bitirmez.
-        self.cancel.clear()
-        self._running = True
-        t0 = self._clock()
-        if deadline_sec is None:
-            deadline_sec = self.default_time_budget_sec(mode)
-        # Adres alanına yalnız biçimi doğrulanmış değer yazılır (çağıranın verdiği ham dizgi değil).
-        shown = addr if isinstance(addr, str) and _ADDR_RE.fullmatch(addr) else None
-        version = PROMPT_VERSION_KL1 if task_type in SUMMARY_TASKS else PROMPT_VERSION
-        task = _Task(TaskResult(task_id=f"g{self._task_seq}", mode=mode, task=task_type, addr=shown,
-                                status="", blind=self.blind_target, time_budget_sec=deadline_sec,
-                                prompt_version=version),
-                     deadline=t0 + deadline_sec)
-        try:
+        """Tek görev; çağıran (zincir) ajanın kilidini zaten tutuyor."""
+        return self._run(mode, addr, abstain_allowed, deadline_sec, task_type=task_type, locked=True, **extra)
+
+    def _run(self, mode: str, addr: str, abstain_allowed: bool, deadline_sec: Optional[float], *,
+             task_type: str = TASK_NAME, locked: bool = False, **extra: Any) -> TaskResult:
+        """Tek görev. ``task_type``: ``ad_oner`` | ``acikla`` | ``ozet_alt``; olay akışına ve görev kaydına
+        bu tür yazılır (P22a notu: sabit ``TASK_NAME`` değil). ``locked``: kilit çağıranda (zincir)."""
+        with (nullcontext() if locked else self._exclusive()):
+            self._task_seq += 1
+            # İptal görev başınadır: önceki görevin (ya da görev yokken kurulmuş) iptali bu görevi bitirmez.
+            self.cancel.clear()
+            self._running = True
+            t0 = self._clock()
+            if deadline_sec is None:
+                deadline_sec = self.default_time_budget_sec(mode)
+            # Adres alanına yalnız biçimi doğrulanmış değer yazılır (çağıranın verdiği ham dizgi değil).
+            shown = addr if isinstance(addr, str) and _ADDR_RE.fullmatch(addr) else None
+            version = PROMPT_VERSION_KL1 if task_type in SUMMARY_TASKS else PROMPT_VERSION
+            task = _Task(TaskResult(task_id=f"g{self._task_seq}", mode=mode, task=task_type, addr=shown,
+                                    status="", blind=self.blind_target, time_budget_sec=deadline_sec,
+                                    prompt_version=version),
+                         deadline=t0 + deadline_sec)
             try:
-                # Olay: görev açıldı (tasarım v2 §3.3 adım 1). Hedef çözülemiyorsa adres ve fn None.
-                self._emit("gorev_basladi", task, gorev_turu=task_type, kip=mode,
-                           hedef=self._target(self.workspace.resolve(addr)),
-                           butce={"arac": max_calls_for(mode), "sure_sn": deadline_sec,
-                                  "jeton": self.context_tokens if mode == MODE_K0 else self.loop_context_tokens})
-                if task_type in SUMMARY_TASKS:
-                    self._execute_explain(task, addr, **extra)
-                elif mode == MODE_K0:
-                    self._execute_k0(task, addr, abstain_allowed)
-                else:
-                    self._execute_loop(task, mode, addr, abstain_allowed)
-            except WorkspaceError as e:
-                task.finish(STATUS_PACKAGE_ERROR, str(e), override=True)
-        except BaseException as e:
-            # Beklenmeyen hata ya da kesme: sunucu açık kalmasın (tasarım §2.2 "her hata yolunda").
-            # Kapatma ve kayıt hataları asıl hatayı örtmez.
-            task.finish(STATUS_UNEXPECTED, type(e).__name__, override=True)
-            for step in (lambda: self.backend.stop("hata"), lambda: self._close(task, t0)):
                 try:
-                    step()
-                except Exception:  # noqa: BLE001
-                    pass
-            raise
-        finally:
-            self._running = False
-        self._close(task, t0)
-        return task.result
+                    # Olay: görev açıldı (tasarım v2 §3.3 adım 1). Hedef çözülemiyorsa adres ve fn None.
+                    self._emit("gorev_basladi", task, gorev_turu=task_type, kip=mode,
+                               hedef=self._target(self.workspace.resolve(addr)),
+                               butce={"arac": max_calls_for(mode), "sure_sn": deadline_sec,
+                                      "jeton": self.context_tokens if mode == MODE_K0 else self.loop_context_tokens})
+                    if task_type in SUMMARY_TASKS:
+                        self._execute_explain(task, addr, **extra)
+                    elif mode == MODE_K0:
+                        self._execute_k0(task, addr, abstain_allowed)
+                    else:
+                        self._execute_loop(task, mode, addr, abstain_allowed)
+                except WorkspaceError as e:
+                    task.finish(STATUS_PACKAGE_ERROR, str(e), override=True)
+            except BaseException as e:
+                # Beklenmeyen hata ya da kesme: sunucu açık kalmasın (tasarım §2.2 "her hata yolunda").
+                # Kapatma ve kayıt hataları asıl hatayı örtmez.
+                task.finish(STATUS_UNEXPECTED, type(e).__name__, override=True)
+                for step in (lambda: self.backend.stop("hata"), lambda: self._close(task, t0)):
+                    try:
+                        step()
+                    except Exception:  # noqa: BLE001
+                        pass
+                raise
+            finally:
+                self._running = False
+            self._close(task, t0)
+            return task.result
 
     def _close(self, task: _Task, t0: float) -> None:
         r = task.result
@@ -951,7 +954,7 @@ class Agent:
                             kind=SUMMARY_KIND, source=SUMMARY_SOURCE, limits=SUMMARY_LIMITS, truncated=truncated,
                             executed=True)
         duration = self._clock() - t
-        task.tool_ms[rid] = int(round(duration * 1000))
+        task.tool_ms[rid] = round(duration * 1000)
         if self.audit is not None:
             self.audit.write("arac_cagrisi", gorev=task.result.task_id, cagiran=CALLER_SERVER, argumanlar=args,
                              gecerli=True, sure_sn=round(duration, 4), **result.audit_fields())
@@ -1036,7 +1039,9 @@ class Agent:
         est = (estimate_text_tokens(system) + estimate_text_tokens(question)
                + sum(estimate_result_tokens(r.envelope()) for r in package))
         task.result.est_prompt_tokens = est
-        if not ContextBudget(self.context_tokens, MAX_TOKENS_STEP).fits(est):
+        budget = ContextBudget(self.context_tokens, MAX_TOKENS_STEP)
+        if not budget.fits(est):
+            # Sessiz kırpma yok: görev başlamadan reddedilir.
             return task.finish(STATUS_CONTEXT)
         schema = protocol.build_explain_answer_schema(ids)
         repairs = 0
@@ -1052,18 +1057,15 @@ class Agent:
                 return self._store_summary(task, key)
             if action != protocol.ACTION_REPAIR:
                 return task.finish(parsed.status)
-            repairs += 1
+            # Onarım turu (L2'de bir kez): modelin ham çıktısı değil, güvenli biçimi geçmişe yazılır.
             task.result.counters.repairs += 1
-            messages = messages + [
-                {"role": "assistant", "content": safe_assistant_content(reply.content, parsed.obj)},
-                protocol.repair_message(parsed)]
+            repairs += 1
+            previous = {"role": "assistant", "content": safe_assistant_content(reply.content, parsed.obj)}
+            messages = messages + [previous, protocol.repair_message(parsed)]
 
     def _accept_summary(self, task: _Task, obj: Mapping[str, Any]) -> None:
         """Geçerli KL-1 cevabı: model önerisi (``answer``) ve özet kaydı (``summary``)."""
-        refs: list[str] = []
-        for i in obj["kanit"]:
-            if i not in refs:
-                refs.append(i)
+        refs: list[str] = list(dict.fromkeys(obj["kanit"]))     # yinelenen kimlik bir kez
         task.result.answer = {"ozet": obj["ozet"], "belirsiz": obj["belirsiz"], "kanit": refs}
         # Denetim (tasarım §3.6 madde 6, §3.10): D8, D9, D13. Çelişkili ya da enjeksiyon bayraklı özet
         # çağıranın paketine girmez; kayıtta ve olayda görünür.

@@ -578,7 +578,7 @@ def check_summary(answer: Mapping[str, Any], envelopes: Sequence[Mapping[str, An
         refs = [r for r in (answer.get("kanit") or []) if isinstance(r, str)]
         by_id = {str(e.get("id")): e for e in ok_envs}
         if not refs:
-            add("D8", CODE_NO_REFS, EFFECT_CONFLICT)
+            add("D8", CODE_NO_REFS, EFFECT_CONFLICT, None)
         for r in refs:
             if r not in by_id:
                 add("D8", CODE_UNKNOWN_REF, EFFECT_CONFLICT, r)
@@ -591,18 +591,15 @@ def check_summary(answer: Mapping[str, Any], envelopes: Sequence[Mapping[str, An
         seen_ints = {target_int}
         for s in seen_values:
             seen_ints |= {int(h, 16) for h in _FUN_HEX_RE.findall(s)}
-        for h in _FUN_HEX_RE.findall(text):
-            if int(h, 16) not in seen_ints:
-                add("D9", CODE_UNSEEN_ADDRESS, EFFECT_CONFLICT)
+        if [h for h in _FUN_HEX_RE.findall(text) if int(h, 16) not in seen_ints]:
+            add("D9", CODE_UNSEEN_ADDRESS, EFFECT_CONFLICT)
         folded = [s.casefold() for s in seen_values]
-        for m in _QUOTED_RE.finditer(text):
-            q = m.group(1).strip().casefold()
-            if q and not any(q in s for s in folded):
-                add("D9", CODE_UNSEEN_QUOTE, EFFECT_CONFLICT)
+        quotes = [m.group(1).strip().casefold() for m in _QUOTED_RE.finditer(text)]
+        if [q for q in quotes if q and not any(q in s for s in folded)]:
+            add("D9", CODE_UNSEEN_QUOTE, EFFECT_CONFLICT)
         idents = {i for s in seen_values for i in _IDENT_RE.findall(s)}
-        for m in _STRICT_CALL_RE.finditer(text):
-            if m.group(1) not in idents:
-                add("D9", CODE_UNSEEN_CALL, EFFECT_CONFLICT)
+        if [c for c in _STRICT_CALL_RE.findall(text) if c not in idents]:
+            add("D9", CODE_UNSEEN_CALL, EFFECT_CONFLICT)
         imports = set(known_functions)
         bare = {i.lstrip("_") for i in idents}
         for ident in _IDENT_RE.findall(text):

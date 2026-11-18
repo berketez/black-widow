@@ -519,7 +519,7 @@ def explain_question(addr: str, evidence_ids: Sequence[str]) -> str:
     if not _FUN_ADDR.fullmatch(addr):
         raise ValueError("soru yalnız doğrulanmış FUN_<adres> ile kurulur")
     ids = list(evidence_ids)
-    if not ids or any(not re.fullmatch(r"r[0-9]{1,9}", i) for i in ids):
+    if not ids or not all(isinstance(i, str) and re.fullmatch(r"r[0-9]{1,9}", i) for i in ids):
         raise ValueError("soru en az bir sonuç kimliği ister (r<sayı>)")
     return _QUESTION_EXPLAIN.format(addr=addr, n=RATIONALE_MAX_CHARS) + _QUESTION_IDS.format(ids=", ".join(ids))
 

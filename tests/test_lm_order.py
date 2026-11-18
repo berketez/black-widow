@@ -48,6 +48,9 @@ def test_dugum_kumesi_disindaki_kenar_yok_sayilir_ve_bos():
     e = {"10": ["20", "ff"], "20": []}
     assert O.layers(["10", "20"], e) == [("20",), ("10",)]
     assert O.layers([], e) == [] and O.strongly_connected_components([], e) == []
+    # Sıra adresin sayı değeridir, yazımı değil ("ff" < "100"; dizgi sırası tersini verirdi)
+    assert O.layers(["100", "ff", "0a"], {}) == [("0a", "ff", "100")]
+    assert O.callee_closure({"1": ["100", "ff"]}, "1", 1) == ["1", "ff", "100"]
     with pytest.raises(ValueError):
         O.layers(["10", "xyz"], {})
     with pytest.raises(ValueError):

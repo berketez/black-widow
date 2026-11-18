@@ -1,0 +1,413 @@
+{
+ "_comment": "P22b (KaradulLM v2 görevler ve aşağıdan yukarı özet): katman sıralayıcı, özet deposu ve geçersiz kılma, KL-1 / açıkla şeması, zincir ve [model-özet] girişi, D0, körlük, özet denetimi (D8 / D9 / D13). Her mutant bir davranışı bozar; hedef test KIRMIZI olmalı. Mutant metni özgününden farklı uzunlukta (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_lm_ozet.json",
+ "mutants": [
+  {
+   "id": "or_low_min",
+   "desc": "Tarjan low değeri ardılın indeksinden güncellenmez (bileşenler bozulur)",
+   "module": "karadul/lm/order.py",
+   "test": "tests/test_lm_order.py",
+   "find": "                    low[v] = min(low[v], index[w])",
+   "replace": "                    low[v] = min(low[v], low[v] + 0)"
+  },
+  {
+   "id": "or_katman_artisi",
+   "desc": "katman çağrılanın katmanından bir fazla değil",
+   "module": "karadul/lm/order.py",
+   "test": "tests/test_lm_order.py",
+   "find": "        level[i] = 1 + max(level[j] for j in deps) if deps else 0",
+   "replace": "        level[i] = max(level[j] for j in deps) if deps else 0"
+  },
+  {
+   "id": "or_kendi_bileseni",
+   "desc": "bileşenin kendi içi kenarı bağımlılık sayılır",
+   "module": "karadul/lm/order.py",
+   "test": "tests/test_lm_order.py",
+   "find": "if b in owner and owner[b] != i}",
+   "replace": "if b in owner}"
+  },
+  {
+   "id": "or_derinlik",
+   "desc": "kapanış bir adım fazla iner",
+   "module": "karadul/lm/order.py",
+   "test": "tests/test_lm_order.py",
+   "find": "    for _ in range(depth):",
+   "replace": "    for _ in range(depth + 1):"
+  },
+  {
+   "id": "or_grafik_yok",
+   "desc": "grafik yokken kök de verilmez",
+   "module": "karadul/lm/order.py",
+   "test": "tests/test_lm_order.py",
+   "find": "        return [(root,)]",
+   "replace": "        return []"
+  },
+  {
+   "id": "or_siralama",
+   "desc": "sıralama adresin sayı değeri yerine yazımıyla",
+   "module": "karadul/lm/order.py",
+   "test": "tests/test_lm_order.py",
+   "find": "        return int(a, 16), a",
+   "replace": "        int(a, 16)\n        return 0, a"
+  },
+  {
+   "id": "sm_kimlik_dislanir",
+   "desc": "paket özeti sonuç kimliğini de katar (depo hiç isabet etmez)",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "    body = [{k: v for k, v in e.items() if k != _RESULT_ID_KEY} for e in envelopes]",
+   "replace": "    body = [dict(e) for e in envelopes]"
+  },
+  {
+   "id": "sm_tam_anahtar",
+   "desc": "kayıt yalnız adres eşleşince verilir (bayat kayıt geçerli sayılır)",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "            if rec.key == key:",
+   "replace": "            if rec.key.addr == key.addr:"
+  },
+  {
+   "id": "sm_bayat_yok",
+   "desc": "bayat durumu hiç bildirilmez",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "        if any(int(r.key.addr, 16) == int(key.addr, 16) for r in self._load()):",
+   "replace": "        if False:"
+  },
+  {
+   "id": "sm_dosya_izni",
+   "desc": "depo dosyası 0644",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "getattr(os, \"O_NOFOLLOW\", 0), 0o600)",
+   "replace": "getattr(os, \"O_NOFOLLOW\", 0), 0o0644)"
+  },
+  {
+   "id": "sm_dizin_izni",
+   "desc": "depo dizini 0755",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "                d.mkdir(mode=0o700)",
+   "replace": "                d.mkdir(mode=0o0755)"
+  },
+  {
+   "id": "sm_nofollow",
+   "desc": "dosya sembolik bağsa izlenir",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, \"O_NOFOLLOW\", 0)",
+   "replace": "os.O_WRONLY | os.O_APPEND | os.O_CREAT"
+  },
+  {
+   "id": "sm_bozuk_sayilmaz",
+   "desc": "bozuk satır sayılmaz",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "            except (ValueError, KeyError, TypeError):\n                corrupt += 1",
+   "replace": "            except (ValueError, KeyError, TypeError):\n                corrupt += 0 * 1"
+  },
+  {
+   "id": "sm_yabanci_ikili",
+   "desc": "başka ikilinin kaydı okunur",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "            if rec.key.binary_sha256 != self.binary_sha256:\n                corrupt += 1",
+   "replace": "            if False:\n                corrupt += 1"
+  },
+  {
+   "id": "sm_d0_grafik_yok",
+   "desc": "grafik yokken D0 uygulanır",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "    if pack is None or graph_callees is None or list(graph_callees):",
+   "replace": "    if pack is None or list(graph_callees or ()):"
+  },
+  {
+   "id": "sm_d0_geri_cagri",
+   "desc": "geri çağrı kaydı D0'ı engellemez",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "    if list(pack.internal_callees) or list(pack.callback_registrations):",
+   "replace": "    if list(pack.internal_callees):"
+  },
+  {
+   "id": "sm_d0_bos_dizgi",
+   "desc": "boş dizgi D0'ı engeller",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "any(s for s in (getattr(pack, \"strings\", None) or []))",
+   "replace": "bool(getattr(pack, \"strings\", None))"
+  },
+  {
+   "id": "sm_blok_uydurma",
+   "desc": "blok sayısı yoksa 0 yazılır",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "    block = f\"{blocks} blok\" if isinstance(blocks, int) else \"blok sayısı bilinmiyor\"",
+   "replace": "    block = f\"{blocks or 0} blok\""
+  },
+  {
+   "id": "sm_model_sha",
+   "desc": "model sha256'sı kimliğe girmez",
+   "module": "karadul/lm/summaries.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "        return f\"sha256:{sha}\"",
+   "replace": "        return \"kunye:\" + sha[:16]"
+  },
+  {
+   "id": "cx_kl1_yeri",
+   "desc": "9. kural istemin sonuna eklenir (Reply paragrafından sonra)",
+   "module": "karadul/lm/context.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "SYSTEM_PROMPT_KL1 = SYSTEM_PROMPT_KL0.replace(_KL0_REPLY_PARAGRAPH, SUMMARY_RULE_KL1 + _KL0_REPLY_PARAGRAPH, 1)",
+   "replace": "SYSTEM_PROMPT_KL1 = SYSTEM_PROMPT_KL0 + SUMMARY_RULE_KL1"
+  },
+  {
+   "id": "cx_kl1_dongu",
+   "desc": "KL-1 döngü kipinde de kabul edilir",
+   "module": "karadul/lm/context.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "    if version != PROMPT_VERSION and mode != MODE_K0:",
+   "replace": "    if False:"
+  },
+  {
+   "id": "cx_belirsiz_metin",
+   "desc": "belirsiz özetin 'ne eksik' metni çağırana taşınır",
+   "module": "karadul/lm/context.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "\"ozet\": SUMMARY_UNCLEAR_TEXT if unclear else text})",
+   "replace": "\"ozet\": text})"
+  },
+  {
+   "id": "cx_satir_tavani",
+   "desc": "özet satırları tavansız",
+   "module": "karadul/lm/context.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "    if len(rows) > limit:",
+   "replace": "    if len(rows) > limit + 1000:"
+  },
+  {
+   "id": "cx_etiket_ad",
+   "desc": "kökün adı etiketiyle atılmaz (yalnız etiket türüne bakılır)",
+   "module": "karadul/lm/context.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "        if m.group(1) in hidden_tags or m.group(2) in hidden_names or m.group(2).lstrip(\"_\") in hidden_names:",
+   "replace": "        if m.group(1) in hidden_tags:"
+  },
+  {
+   "id": "cx_kalan_etiket",
+   "desc": "kalan yasak etiket sayılmaz",
+   "module": "karadul/lm/context.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "    return sum(1 for t in texts for m in _NAME_TAG_RE.finditer(t) if m.group(1) in hidden)",
+   "replace": "    return 0"
+  },
+  {
+   "id": "pr_ozet_tavan",
+   "desc": "özet metni tavansız",
+   "module": "karadul/lm/protocol.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "_SUMMARY_TEXT = {\"type\": \"string\", \"minLength\": 1, \"maxLength\": RATIONALE_MAX_CHARS}",
+   "replace": "_SUMMARY_TEXT = {\"type\": \"string\", \"minLength\": 1}"
+  },
+  {
+   "id": "pr_belirsiz_dal",
+   "desc": "belirsiz dalı belirsiz: false ister",
+   "module": "karadul/lm/protocol.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "    unclear = {\"ozet\": dict(_SUMMARY_TEXT), \"belirsiz\": {\"const\": True}",
+   "replace": "    unclear = {\"ozet\": dict(_SUMMARY_TEXT), \"belirsiz\": {\"const\": False}"
+  },
+  {
+   "id": "ag_gorev_turu",
+   "desc": "olay akışına sabit 'ad_oner' yazılır (P22a notu)",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "                    self._emit(\"gorev_basladi\", task, gorev_turu=task_type, kip=mode,",
+   "replace": "                    self._emit(\"gorev_basladi\", task, gorev_turu=str(TASK_NAME), kip=mode,"
+  },
+  {
+   "id": "ag_kl1_secimi",
+   "desc": "açıkla / özet görevi KL-0 istemiyle kaydedilir",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "            version = PROMPT_VERSION_KL1 if task_type in SUMMARY_TASKS else PROMPT_VERSION",
+   "replace": "            version = PROMPT_VERSION"
+  },
+  {
+   "id": "ag_d9_quote_ozet",
+   "desc": "özet denetimi D9 tırnaklı metni kanıtla karşılaştırmaz",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "        if [q for q in quotes if q and not any(q in s for s in folded)]:",
+   "replace": "        if False:"
+  },
+  {
+   "id": "ag_istem_surumu",
+   "desc": "görev kaydına sabit KL-0 yazılır",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "istem_surumu=r.prompt_version, hukum=r.verdict,",
+   "replace": "istem_surumu=PROMPT_VERSION, hukum=r.verdict,"
+  },
+  {
+   "id": "ag_alt_katman",
+   "desc": "aynı katmandaki (döngü ortağı) özet pakete girer",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "chain.layer.get(c, mine) >= mine or not s[\"pakete_girer\"]:",
+   "replace": "chain.layer.get(c, mine) > mine or not s[\"pakete_girer\"]:"
+  },
+  {
+   "id": "ag_pakete_girer",
+   "desc": "denetimden geçmeyen özet de pakete girer",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "chain.layer.get(c, mine) >= mine or not s[\"pakete_girer\"]:",
+   "replace": "chain.layer.get(c, mine) >= mine:"
+  },
+  {
+   "id": "ag_depo_isabet",
+   "desc": "depodaki aynı anahtarlı özet kullanılmaz",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "        stored = self.summary_store.get(key) if key is not None else None",
+   "replace": "        stored = None"
+  },
+  {
+   "id": "ag_d0",
+   "desc": "D0 kısa yolu uygulanmaz",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "        fact = self._d0_fact(a)",
+   "replace": "        fact = None"
+  },
+  {
+   "id": "ag_kor_strip",
+   "desc": "körlükte kanıttan yasak adlar atılmaz",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "            if blind_root is not None and tool == \"get_evidence\":",
+   "replace": "            if False:"
+  },
+  {
+   "id": "ag_kor_kok",
+   "desc": "körlükte kökün değil görevin adı gizlenir",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "        root = chain.root if chain is not None else a",
+   "replace": "        root = a"
+  },
+  {
+   "id": "ag_kor_ozet",
+   "desc": "kökün adını taşıyan özet pakete girer",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "            if hidden and blind_leaks([s[\"metin\"]], [hidden]):",
+   "replace": "            if False:"
+  },
+  {
+   "id": "ag_denetim_kapisi",
+   "desc": "özet denetimin hükmünden bağımsız pakete girer",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "\"pakete_girer\": report.bulk_accept,",
+   "replace": "\"pakete_girer\": True,"
+  },
+  {
+   "id": "ag_zincir_iptal",
+   "desc": "görevler arasındaki iptal zinciri durdurmaz",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "                    if self._chain_stop.is_set():",
+   "replace": "                    if False:"
+  },
+  {
+   "id": "ag_ozet_kaydi_ad",
+   "desc": "anahtara fonksiyonun adı girmez",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "                          name=None if tag is None else f\"{tag[1]}:{tag[0]}\")",
+   "replace": "                          name=None)"
+  },
+  {
+   "id": "gd_ozet_kanit",
+   "desc": "[model-özet] girişi kanıt sayılır (D9 görülmüş kümesi)",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "    return [e for e in envelopes if e.get(\"ok\") and not is_summary_result(e)]",
+   "replace": "    return [e for e in envelopes if e.get(\"ok\")]"
+  },
+  {
+   "id": "gd_yalniz_ozet",
+   "desc": "yalnız özete dayanan kanıt çelişki sayılmaz (özet denetimi)",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "        if cited and all(is_summary_result(e) for e in cited):\n            add(\"D8\", CODE_SUMMARY_ONLY_REFS, EFFECT_CONFLICT, \",\".join(r for r in refs if r in by_id))\n    if text:",
+   "replace": "        if False:\n            add(\"D8\", CODE_SUMMARY_ONLY_REFS, EFFECT_CONFLICT, \",\".join(r for r in refs if r in by_id))\n    if text:"
+  },
+  {
+   "id": "gd_yalniz_ozet_ad",
+   "desc": "ad önerisinde yalnız özete dayanan kanıt çelişki sayılmaz",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "            if cited and all(is_summary_result(e) for e in cited):",
+   "replace": "            if False:"
+  },
+  {
+   "id": "gd_bos_kanit",
+   "desc": "özet veren cevapta boş kanıt geçer",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "        if not refs:\n            add(\"D8\", CODE_NO_REFS, EFFECT_CONFLICT, None)\n        for r in refs:",
+   "replace": "        if False:\n            add(\"D8\", CODE_NO_REFS, EFFECT_CONFLICT, None)\n        for r in refs:"
+  },
+  {
+   "id": "gd_d9_ithal",
+   "desc": "özette geçen görülmemiş ithal adı yakalanmaz",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "            if (ident in imports or ident.lstrip(\"_\") in imports) and ident not in idents \\",
+   "replace": "            if False and (ident in imports or ident.lstrip(\"_\") in imports) and ident not in idents \\"
+  },
+  {
+   "id": "gd_d13_ozet_metni",
+   "desc": "cevabın kendi metnindeki talimat kalıbı bayraklanmaz",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "    if text and any(p.search(text) for p in INJECTION_PATTERNS):",
+   "replace": "    if False:"
+  },
+  {
+   "id": "gd_ozet_turu",
+   "desc": "özet satırı 'metin' türü sayılır",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "                out_s += [HostileText(rid, key, \"ozet\", item[\"ozet\"]) for item in value",
+   "replace": "                out_s += [HostileText(rid, key, \"metin\", item[\"ozet\"]) for item in value"
+  },
+  {
+   "id": "gd_bitisik_cagri",
+   "desc": "Türkçe 'sözcük (açıklama)' çağrı sayılır",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "_STRICT_CALL_RE = re.compile(r\"\\b([A-Za-z_][A-Za-z0-9_]{2,63})\\(\")",
+   "replace": "_STRICT_CALL_RE = re.compile(r\"\\b([A-Za-z_][A-Za-z0-9_]{2,63})\\s*\\(\")"
+  },
+  {
+   "id": "gd_belirsiz_d8",
+   "desc": "belirsiz cevapta da D8 koşar",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "    if not unclear:\n        tested.append(\"D8\")",
+   "replace": "    if True:\n        tested.append(\"D8\")"
+  },
+  {
+   "id": "gd_ad_onerisi_d9",
+   "desc": "ad önerisinde [model-özet] girişi görülmüş sayılır",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_lm_summaries.py",
+   "find": "        seen_values = [s for e in _evidence_envelopes(envelopes) for s in _all_strings(e.get(\"data\"))]",
+   "replace": "        seen_values = [s for e in ok_envs for s in _all_strings(e.get(\"data\"))]"
+  }
+ ]
+}

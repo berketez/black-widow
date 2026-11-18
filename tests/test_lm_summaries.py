@@ -352,6 +352,36 @@ def test_zincir_sirasi_ve_model_ozet_girisi(tmp_path):
     assert [e["metin"] for e in olay if e["tur"] == "ozet"] == [ZINCIR_METIN[a] for a in (L, X, Y, Z, R)]
 
 
+def test_ozet_satirlari_tavanli_ve_kaynak_denetimli():
+    girdiler = [(f"{0x5000 + i:x}", C.SUMMARY_SOURCE_MODEL, f"ozet {i}", False) for i in range(45)]
+    satir, kirpma = C.summary_items(list(reversed(girdiler)))
+    assert len(satir) == 40 and kirpma == {"omitted": 5, "total": 45}
+    assert satir[0] == {"addr": "FUN_5000", "kaynak": "model-özet", "ozet": "ozet 0"}   # adrese göre sıralı
+    assert C.summary_items(girdiler[:3])[1] is None
+    with pytest.raises(ValueError):
+        C.summary_items([("5000", "tahmin", "x", False)])
+
+
+def test_zincir_gorev_arasinda_iptal_kalanini_durdurur(tmp_path):
+    ajan, arka, gunluk, akis = zincir_ajan(zincir_ws(tmp_path / "ws"))
+    emit = ajan.on_event
+    sonuc = []
+
+    def kanca(tur, **kw):
+        emit(tur, **kw)
+        if tur == "gorev_bitti" and kw["gorev"] == "g1":
+            sonuc.append(ajan.cancel_current())        # görevler ARASINDA: yürüyen görev yok, zincir var
+
+    ajan.on_event = kanca
+    run = ajan.explain(fun(R))
+    assert sonuc == [True] and run.stopped == G.STATUS_CANCELLED
+    assert [r.addr for r in run.results] == [fun(L)] and arka.istenen == [L] and run.root_result is None
+    assert ajan.cancel_current() is False                  # zincir bitti: iptal edilecek bir şey yok
+    # Sonraki zincir etkilenmez (iptal zincir başına)
+    ajan.on_event = emit
+    assert ajan.explain(fun(R)).stopped is None
+
+
 def test_zincir_belirsiz_ozet_ve_derinlik(tmp_path):
     ajan, arka, _, _ = zincir_ajan(zincir_ws(tmp_path / "ws"), {**ZINCIR_METIN, X: None})
     run = ajan.explain(fun(R))
