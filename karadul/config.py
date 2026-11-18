@@ -998,10 +998,6 @@ INERT_SETTINGS: dict[str, str] = {
     "source_match.unpkg_delay_ms": "kaynak eşleme bu değeri okumuyor",
     "source_match.npm_pack_fallback": "kaynak eşleme bu değeri okumuyor",
     "source_match.fingerprint_cache": "kaynak eşleme bu değeri okumuyor",
-    "network.allow_source_match": (
-        "kaynak eşleme (Layer 1.5) bugün source_match.enabled + network.enabled ile "
-        "açılıyor; bağlama yaması yamalar/P15a__pipeline.py.patch (uygulanınca bu satır silinir)"
-    ),
     "binary_reconstruction.function_id_db_paths": (
         "FunctionID analizine ek .fidb verilmiyor; yalnız enable_function_id okunuyor"
     ),

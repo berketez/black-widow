@@ -71,6 +71,8 @@ class NamingPipeline:
         # açık geliyordu. Artık:
         #   - uzak .d.ts: network.enabled VE network.allow_dts_fetch
         #   - kaynak eşleme: source_match.enabled VE network.enabled (ana anahtar)
+        #     VE network.allow_source_match (P15a: ana anahtar açılınca, YAML'da açıkça
+        #     false yazılmadıysa açılır; NetworkConfig.MASTER_FOLLOWING_PERMISSIONS)
         #   - config yoksa hiçbir ağ katmanı açılmaz.
         net_cfg = getattr(config, "network", None) if config is not None else None
         self._network_enabled = getattr(net_cfg, "enabled", False) is True
@@ -83,13 +85,22 @@ class NamingPipeline:
         if config is not None:
             sm_cfg = getattr(config, "source_match", None)
             if sm_cfg is not None:
+                source_match_allowed = (
+                    getattr(net_cfg, "allow_source_match", False) is True
+                )
                 self._source_match_enabled = (
                     getattr(sm_cfg, "enabled", False) is True and self._network_enabled
+                    and source_match_allowed
                 )
                 if getattr(sm_cfg, "enabled", False) is True and not self._network_enabled:
                     logger.info(
                         "Layer 1.5 (source_match): source_match.enabled açık ama "
                         "network.enabled kapalı; kaynak indirme yapılmayacak."
+                    )
+                elif getattr(sm_cfg, "enabled", False) is True and not source_match_allowed:
+                    logger.info(
+                        "Layer 1.5 (source_match): network.allow_source_match kapalı; "
+                        "kaynak indirme yapılmayacak."
                     )
 
     def run(self, modules_dir: Path) -> NamingManifest:
