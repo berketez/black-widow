@@ -56,6 +56,46 @@
       "test": "tests/test_p14_workspace.py::TestUniqueWorkspace::test_third_gets_suffix_3",
       "find": "                suffix += 1\n                candidate = f\"{stem}_{suffix}\"",
       "replace": "                (parent / f\"{stem}_2\").mkdir(exist_ok=True)\n                return parent / f\"{stem}_2\""
+    },
+    {
+      "id": "p14_11_cakisma_gorulmez",
+      "desc": "BORU-11: yerinde yazım çakışması hiç görülmez (yazıcı ve okuyucu yine eşzamanlı)",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_p14_yaris.py::TestInPlaceWriterSerialized::test_writer_and_reader_not_concurrent_list_order",
+      "find": "            if any(cls._paths_overlap(w, t) for w in written for t in touched):\n                return True",
+      "replace": "            if False:\n                return True"
+    },
+    {
+      "id": "p14_11_alfabetik_sira",
+      "desc": "BORU-11: düzey içi sıra yine alfabetik (adım listesindeki sıra yok sayılır)",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_p14_yaris.py::TestInPlaceWriterSerialized::test_writer_and_reader_not_concurrent_list_order",
+      "find": "        ordered = sorted(level, key=lambda s: position.get(s.name, len(position)))",
+      "replace": "        ordered = sorted(level, key=lambda s: s.name)"
+    },
+    {
+      "id": "p14_11_ic_ice_yol_ortusmez",
+      "desc": "BORU-11: iç içe yollar örtüşme sayılmaz (yalnız aynı yol)",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_p14_yaris.py::TestInPlaceWriterSerialized::test_nested_path_is_conflict",
+      "find": "        return a == b or a in b.parents or b in a.parents",
+      "replace": "        return a == b"
+    },
+    {
+      "id": "p14_11_onbellekten_okur",
+      "desc": "BORU-11(b): inline_detection yine file_cache'ten okur (yapı kurtarmanın yeniden yazımı ezilir)",
+      "module": "karadul/pipeline/steps/inline_detection.py",
+      "test": "tests/test_p14_yaris.py::TestInlineReadsDisk::test_struct_rewrite_survives_inline_annotation",
+      "find": "                    content = c_file.read_text(encoding=\"utf-8\", errors=\"replace\")",
+      "replace": "                    content = ctx.artifacts.get(\"file_cache\", {}).get(c_file.name) or c_file.read_text(encoding=\"utf-8\", errors=\"replace\")"
+    },
+    {
+      "id": "p14_11_bildirim_yok",
+      "desc": "BORU-11: inline_detection yerinde yazımı bildirmez (semantic_naming ile yine aynı dalgada)",
+      "module": "karadul/pipeline/steps/inline_detection.py",
+      "test": "tests/test_p14_yaris.py::TestRealPhase3Levels::test_inline_detection_before_semantic_naming",
+      "find": "    mutates_inputs = (\"final_decompiled_dir\",)",
+      "replace": "    mutates_inputs = ()"
     }
   ]
 }

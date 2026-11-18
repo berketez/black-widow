@@ -4,6 +4,16 @@ stages.py L3391-3431 'den tasindi. Davranis birebir korundu.
 InlineDetector ile her decompiled C dosyasinda compiler tarafindan inline
 edilen abs/strlen/memcpy gibi fonksiyonlari regex ile bulur ve yorum olarak
 ekler. ThreadPoolExecutor ile paralel isler.
+
+P14 / BORU-11:
+- Icerik DISKTEN okunur. Eskiden ``file_cache``'ten okunuyordu; bu onbellek
+  ``feedback_loop`` sonunda, yapi kurtarmadan ONCE doldurulur. Desen bulunan
+  dosya onbellekteki eski icerikle yeniden yaziliyor, yapi kurtarmanin (ya da
+  baska bir Faz 2 adiminin) o dosyadaki yeniden yazimi sessizce geri aliniyordu
+  (K-1 bekletmesi kalkinca ``p->alan`` yeniden yazimlari kaybolurdu).
+- Adim ``final_decompiled_dir``'i YERINDE degistirir ve bunu ``mutates_inputs``
+  ile bildirir; kosucu ayni dizini okuyan ``semantic_naming``'i ayni anda
+  degil, adim listesindeki sirayla (once bu adim) kosturur.
 """
 
 from __future__ import annotations
@@ -28,8 +38,8 @@ logger = logging.getLogger(__name__)
         # ciktisi uzerinde calismali — eski "decompiled_dir" feedback oncesi
         # hale isaret ediyordu, bu yuzden yeniden adlandirilmis dosyalarda
         # pattern match yapamayabiliyor ve stale file_cache okuyabiliyordu.
+        # P14 / BORU-11: file_cache artik okunmuyor (icerik diskten).
         "final_decompiled_dir",
-        "file_cache",
     ],
     produces=[
         "inline_patterns_detected",
@@ -40,9 +50,11 @@ logger = logging.getLogger(__name__)
 class InlineDetectionStep(Step):
     """Compiler inline pattern'lerini tespit et (abs, strlen, memcpy, ...)."""
 
+    # Kosucuya: bu girdinin dizinindeki dosyalar yerinde yeniden yazilir (BORU-11).
+    mutates_inputs = ("final_decompiled_dir",)
+
     def run(self, ctx: StepContext) -> dict[str, Any]:
         decompiled_dir: Path = ctx.artifacts["final_decompiled_dir"]
-        file_cache: dict[str, str] = ctx.artifacts["file_cache"]
 
         step_start = time.monotonic()
         total_inline_detected = 0
@@ -75,11 +87,8 @@ class InlineDetectionStep(Step):
                 try:
                     # Thread-safe: her thread kendi InlineDetector instance'i.
                     det = InlineDetector()
-                    # v1.9.2 QW5: file_cache'den oku (disk I/O tekrari yok)
-                    content = (
-                        file_cache.get(c_file.name)
-                        or c_file.read_text(encoding="utf-8", errors="replace")
-                    )
+                    # BORU-11: yeniden yazilacak dosyanin GUNCEL icerigi (diskten).
+                    content = c_file.read_text(encoding="utf-8", errors="replace")
                     matches = det.detect_in_code(content)
                     if matches:
                         annotated = det.annotate_code(content)

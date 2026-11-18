@@ -11,6 +11,7 @@ import logging
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Any
 
 from karadul.core.pipeline import PipelineContext
@@ -43,10 +44,24 @@ class StepFailedError(PipelineStageError):
         )
 
 
+# Adim sinifi bu ozniteligi tasirsa, adlari verilen girdi yapitlarinin
+# gosterdigi dizini / dosyayi YERINDE degistirdigini bildirir (or.
+# ``inline_detection``: ``final_decompiled_dir``'deki .c dosyalarini yeniden yazar).
+MUTATES_INPUTS_ATTR = "mutates_inputs"
+
+
 class PipelineRunner:
     """Step listesini requires/produces grafina gore siralar ve calistirir.
 
     M1: sequential.  M2: topological level'lar, level icinde paralel.
+
+    P14 / BORU-11: ayni duzeydeki adimlar grafa gore bagimsiz olsa da ayni dosya
+    sistemi yolunu paylasabilir. Bir adim girdisini yerinde degistiriyorsa
+    (``mutates_inputs``) ve ayni duzeydeki baska bir adimin girdisi o yolla
+    ortusuyorsa (ayni yol ya da biri obuerunun altinda) ikisi ESZAMANLI
+    kosmaz: verilen adim listesindeki sirayla ayri "dalga"larda kosar. Duzey
+    icindeki kosu sirasi da (sirali kipte) alfabetik degil adim listesindeki
+    siradir; boylece ``parallel_steps`` True / False ayni ciktiyi verir.
 
     Hata modu:
         - Missing requires → RuntimeError (calistirmadan once)
@@ -123,24 +138,103 @@ class PipelineRunner:
                         f"{sorted(produced_so_far)}",
                     )
 
-            if len(level) == 1 or not parallel_enabled:
-                # Sequential: tek step veya paralel kapali
-                for spec in level:
-                    new_artifacts = self._execute_step(spec, ctx)
-                    ctx._write_artifacts(new_artifacts)
-                    produced_so_far.update(new_artifacts.keys())
-            else:
-                # Paralel: ayni level'daki step'leri ThreadPool ile calistir
-                level_results = self._execute_level_parallel(
-                    level, ctx, level_idx, configured_workers,
+            # BORU-11: yerinde yazim cakismasi olan adimlar ayri dalgalarda,
+            # adim listesindeki sirayla.
+            waves = self._waves(level, ctx.artifacts)
+            if len(waves) > 1:
+                logger.info(
+                    "Pipeline level %d: yerinde yazim cakismasi, %d sirali dalga: %s",
+                    level_idx, len(waves), [[s.name for s in w] for w in waves],
                 )
-                # Merge artifact'lar deterministik sirayla (step adina gore)
-                for spec_name in sorted(level_results.keys()):
-                    new_artifacts = level_results[spec_name]
-                    ctx._write_artifacts(new_artifacts)
-                    produced_so_far.update(new_artifacts.keys())
+
+            for wave in waves:
+                if len(wave) == 1 or not parallel_enabled:
+                    # Sequential: tek step veya paralel kapali (liste sirasiyla)
+                    for spec in wave:
+                        new_artifacts = self._execute_step(spec, ctx)
+                        ctx._write_artifacts(new_artifacts)
+                        produced_so_far.update(new_artifacts.keys())
+                else:
+                    # Paralel: dalgadaki step'leri ThreadPool ile calistir
+                    level_results = self._execute_level_parallel(
+                        wave, ctx, level_idx, configured_workers,
+                    )
+                    # Merge artifact'lar deterministik sirayla (step adina gore)
+                    for spec_name in sorted(level_results.keys()):
+                        new_artifacts = level_results[spec_name]
+                        ctx._write_artifacts(new_artifacts)
+                        produced_so_far.update(new_artifacts.keys())
 
         return ctx
+
+    # --- BORU-11: yerinde yazim cakismasi ------------------------------
+
+    @staticmethod
+    def _artifact_paths(
+        names: tuple[str, ...], artifacts: Any,
+    ) -> list[Path]:
+        """Adlari verilen yapitlardan ``Path`` olanlarin cozulmus yollari."""
+        out: list[Path] = []
+        for name in names:
+            value = artifacts.get(name) if hasattr(artifacts, "get") else None
+            if isinstance(value, Path):
+                try:
+                    out.append(value.resolve())
+                except OSError:
+                    out.append(value.absolute())
+        return out
+
+    @staticmethod
+    def _paths_overlap(a: Path, b: Path) -> bool:
+        return a == b or a in b.parents or b in a.parents
+
+    @classmethod
+    def _mutated_inputs(cls, spec: StepSpec) -> tuple[str, ...]:
+        raw = getattr(spec.cls, MUTATES_INPUTS_ATTR, ())
+        if isinstance(raw, str):
+            raw = (raw,)
+        try:
+            return tuple(r for r in raw if isinstance(r, str))
+        except TypeError:
+            return ()
+
+    @classmethod
+    def _conflict(cls, a: StepSpec, b: StepSpec, artifacts: Any) -> bool:
+        """``a`` ile ``b`` ayni anda kosarsa biri obuerunun okudugu / yazdigi yolu
+        yerinde degistirir mi?"""
+        for writer, other in ((a, b), (b, a)):
+            mutated = cls._mutated_inputs(writer)
+            if not mutated:
+                continue
+            written = cls._artifact_paths(mutated, artifacts)
+            touched = cls._artifact_paths(
+                tuple(other.requires) + cls._mutated_inputs(other), artifacts,
+            )
+            if any(cls._paths_overlap(w, t) for w in written for t in touched):
+                return True
+        return False
+
+    def _waves(self, level: list[StepSpec], artifacts: Any) -> list[list[StepSpec]]:
+        """Duzeyi, cakisan adimlar ayni dalgada olmayacak bicimde dalgalara bol.
+
+        Adimlar adim listesindeki sirayla ele alinir; bir adim kendisinden once
+        listelenmis ve onunla cakisan her adimin dalgasindan SONRAKI ilk dalgaya
+        girer. Cakisma yoksa tek dalga (duzeyin tamami, liste sirasiyla).
+        """
+        position = {name: i for i, name in reversed(list(enumerate(self._step_names)))}
+        ordered = sorted(level, key=lambda s: position.get(s.name, len(position)))
+        wave_of: dict[str, int] = {}
+        waves: list[list[StepSpec]] = []
+        for idx, spec in enumerate(ordered):
+            target = 0
+            for prev in ordered[:idx]:
+                if self._conflict(prev, spec, artifacts):
+                    target = max(target, wave_of[prev.name] + 1)
+            wave_of[spec.name] = target
+            while len(waves) <= target:
+                waves.append([])
+            waves[target].append(spec)
+        return waves
 
     # --- internals -----------------------------------------------------
 

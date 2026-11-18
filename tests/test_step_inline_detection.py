@@ -43,7 +43,9 @@ class TestRegistry:
         spec = get_step("inline_detection")
         # v1.10.0 H5+H6: artik feedback_loop'un ciktisi uzerinde calisiyor
         assert "final_decompiled_dir" in spec.requires
-        assert "file_cache" in spec.requires
+        # P14 / BORU-11: icerik diskten okunur; yapi kurtarma oncesi doldurulan
+        # file_cache artik girdi degil (bkz. tests/test_p14_yaris.py).
+        assert "file_cache" not in spec.requires
         assert "inline_patterns_detected" in spec.produces
 
 
