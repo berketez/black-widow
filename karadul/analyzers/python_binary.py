@@ -623,6 +623,22 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
 
         # 1. Paketleyici tespiti
         packer_info = self._detect_packer(binary_data)
+        # BICIM-10: hedef tanıma (TargetDetector) ayırt edici kanıtla karar
+        # verdiyse onu kullan: tek .pyc (sihirli sayı) ve cx_Freeze (yanındaki
+        # lib/library.zip'te cx_Freeze'e özgü modüller; ikilide dizgi olmayabilir).
+        meta = target.metadata or {}
+        if meta.get("packer") == "pyc":
+            packer_info = {
+                "packer": "pyc", "confidence": "high",
+                "details": {"pyc_header": True,
+                            "python_version": meta.get("python_version")},
+            }
+        elif meta.get("packer") == "cx_freeze" and packer_info["packer"] != "cx_freeze":
+            packer_info = {
+                "packer": "cx_freeze", "confidence": "high",
+                "details": {**(packer_info.get("details") or {}),
+                            "target_evidence": meta.get("packer_evidence")},
+            }
         stats["packer"] = packer_info["packer"]
         stats["packer_confidence"] = packer_info["confidence"]
         if packer_info.get("details"):
@@ -799,6 +815,34 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 logger.debug("PyInstaller extraction basarisiz: %s", exc, exc_info=True)
                 extract_errors.append(f"{type(exc).__name__}: {exc}")
 
+        # BICIM-10: tek .pyc -- kopyala + aynı deterministik decompile zinciri.
+        elif packer == "pyc":
+            try:
+                from karadul.analyzers.packed_binary import ExtractedFile
+                limit = int(self.config.security.max_binary_size_bytes)
+                if target.path.stat().st_size > limit:
+                    raise ValueError(f".pyc boyutu ust siniri ({limit}) asiyor")
+                data = target.path.read_bytes()
+                ext_dir = output_dir / "extracted"
+                ext_dir.mkdir(parents=True, exist_ok=True)
+                dest = ext_dir / (target.path.stem + ".pyc")
+                dest.write_bytes(data)
+                ef = ExtractedFile(
+                    path=dest, original_name=target.path.stem, file_type="pyc",
+                    size=len(data),
+                    metadata={"module_category": "user", "source": "single_pyc"},
+                )
+                extracted_count = 1
+                modules_summary = _extracted_modules_summary(
+                    [ef], output_dir, detected_version,
+                )
+                decompile_summary = self._decompile_pyc_files(
+                    [ef], output_dir, py_version=detected_version,
+                )
+            except Exception as exc:
+                logger.debug("Tek .pyc islenemedi: %s", exc, exc_info=True)
+                extract_errors.append(f"{type(exc).__name__}: {exc}")
+
         # cx_Freeze: lib/library.zip (standart ZIP) + lib/ altindaki serbest .pyc'ler
         elif packer == "cx_freeze":
             try:
@@ -853,7 +897,7 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                     _modules_note(modules_summary), _pyinstaller_note(decompile_summary),
                     _pyz_note(pyz), _cxfreeze_note(cxfreeze),
                 )))
-                if packer in ("pyinstaller", "cx_freeze") else
+                if packer in ("pyinstaller", "cx_freeze", "pyc") else
                 f"Paketleyici '{packer}': .pyc extraction yalnizca PyInstaller ve cx_Freeze "
                 "icin destekli (Nuitka native derler -> .pyc yok, decompile edilemez)."
             ),

@@ -368,6 +368,102 @@
       "test": "tests/test_p19_dotnet_detection.py::test_analyzer_rejects_native_pe",
       "find": "            return TargetDetector._is_dotnet(path)",
       "replace": "            return True"
+    },
+    {
+      "id": "b10_fat64",
+      "desc": "BICIM-10: FAT_MAGIC_64 evrensel sayılmaz",
+      "module": "karadul/core/target.py",
+      "test": "tests/test_p19_target_recognition.py::test_fat64_is_universal",
+      "find": "        if magic in (_UNIVERSAL_MAGIC, _FAT_MAGIC_64):",
+      "replace": "        if magic in (_UNIVERSAL_MAGIC,):"
+    },
+    {
+      "id": "b10_evrensel_pyi",
+      "desc": "BICIM-10: evrensel dilimde PyInstaller bulunsa da PYTHON_PACKED'e gitmez",
+      "module": "karadul/core/target.py",
+      "test": "tests/test_p19_target_recognition.py::test_universal_pyinstaller_cookie_deep_in_tail",
+      "find": "                if found[\"pyinstaller\"]:",
+      "replace": "                if found[\"pyinstaller\"] and 0:"
+    },
+    {
+      "id": "b10_dilim_kuyruk",
+      "desc": "BICIM-10: dilim kuyruğu yine 256 KB (imzalı Mach-O'da çerez kaçar)",
+      "module": "karadul/core/target.py",
+      "test": "tests/test_p19_target_recognition.py::test_universal_pyinstaller_cookie_deep_in_tail",
+      "find": "                    tail_len = min(sz, _PYI_TAIL_SCAN)",
+      "replace": "                    tail_len = min(sz, 262_144)"
+    },
+    {
+      "id": "b10_ince_kuyruk",
+      "desc": "BICIM-10: ince Mach-O'da kuyruk yine 256 KB",
+      "module": "karadul/core/target.py",
+      "test": "tests/test_p19_target_recognition.py::test_thin_macho_pyinstaller_cookie_beyond_256k",
+      "find": "                f.seek(max(0, size - _PYI_TAIL_SCAN))",
+      "replace": "                f.seek(max(0, size - 262_144))"
+    },
+    {
+      "id": "b10_go_dilim",
+      "desc": "BICIM-10: evrensel dilimde Go bölüm adı aranmaz",
+      "module": "karadul/core/target.py",
+      "test": "tests/test_p19_target_recognition.py",
+      "find": "                    if b\"__gopclntab\" in head or b\"__go_buildinfo\" in head:",
+      "replace": "                    if b\"__gopclntab_x\" in head:"
+    },
+    {
+      "id": "b10_pyc",
+      "desc": "BICIM-10: tek .pyc tanınmaz",
+      "module": "karadul/core/target.py",
+      "test": "tests/test_p19_target_recognition.py",
+      "find": "        return version_from_pyc_bytes(head)",
+      "replace": "        return None"
+    },
+    {
+      "id": "b10_kapsayici_bagli_degil",
+      "desc": "BICIM-10: container_classifier hedef tanımaya bağlı değil",
+      "module": "karadul/core/target.py",
+      "test": "tests/test_p19_target_recognition.py",
+      "find": "            container_meta = self._classify_container(path)",
+      "replace": "            container_meta = {}"
+    },
+    {
+      "id": "b10_cx_freeze_tek_kanit",
+      "desc": "BICIM-10: lib/library.zip'in varlığı tek başına cx_Freeze sayılır",
+      "module": "karadul/core/target.py",
+      "test": "tests/test_p19_target_recognition.py::test_lib_zip_without_cx_freeze_modules_stays_native",
+      "find": "        if \"__startup__.pyc\" in base or \"BUILD_CONSTANTS.pyc\" in base:",
+      "replace": "        if base:"
+    },
+    {
+      "id": "b10_wheel_iki_kanit",
+      "desc": "BICIM-10: wheel için tek dosya (WHEEL) yeter",
+      "module": "karadul/analyzers/container_classifier.py",
+      "test": "tests/test_p19_target_recognition.py::test_wheel_needs_two_independent_files",
+      "find": "            if f\"{di}/WHEEL\" in names and f\"{di}/METADATA\" in names:",
+      "replace": "            if f\"{di}/WHEEL\" in names:"
+    },
+    {
+      "id": "b10_nupkg_iki_kanit",
+      "desc": "BICIM-10: [Content_Types].xml tek başına NuGet sayılır (docx yanlış pozitif)",
+      "module": "karadul/analyzers/container_classifier.py",
+      "test": "tests/test_p19_target_recognition.py::test_ooxml_docx_is_not_nupkg",
+      "find": "        if root_nuspecs and has_content_types:",
+      "replace": "        if root_nuspecs or has_content_types:"
+    },
+    {
+      "id": "b10_python_pyc_paketleyici",
+      "desc": "BICIM-10: python analizörü hedefin pyc kararını kullanmaz",
+      "module": "karadul/analyzers/python_binary.py",
+      "test": "tests/test_p19_target_recognition.py::test_single_pyc_python_pipeline",
+      "find": "        if meta.get(\"packer\") == \"pyc\":",
+      "replace": "        if meta.get(\"packer\") == \"pyc_x\":"
+    },
+    {
+      "id": "b10_python_pyc_reconstruct",
+      "desc": "BICIM-10: tek .pyc reconstruct dalı çalışmaz",
+      "module": "karadul/analyzers/python_binary.py",
+      "test": "tests/test_p19_target_recognition.py::test_single_pyc_python_pipeline",
+      "find": "        elif packer == \"pyc\":",
+      "replace": "        elif packer == \"pyc_x\":"
     }
   ]
 }

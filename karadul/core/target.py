@@ -64,6 +64,13 @@ _MACHO_64_CIGAM = 0xCFFAEDFE
 _MACHO_32_CIGAM = 0xCEFAEDFE
 
 _MACHO_MAGICS = {_MACHO_64_MAGIC, _MACHO_32_MAGIC, _MACHO_64_CIGAM, _MACHO_32_CIGAM}
+# BICIM-10: 64 bit ofsetli evrensel başlık (FAT_MAGIC_64)
+_FAT_MAGIC_64 = 0xCAFEBABF
+_MAX_FAT_ARCHS = 32
+_MEI_MAGIC = b"MEI\x0c\x0b\x0a\x0b\x0e"
+# PyInstaller çerezi için dosya/dilim sonundan taranan bayt (imzalı Mach-O'da
+# çerezden sonra kod imzası gelir; 256 KB yetmiyordu).
+_PYI_TAIL_SCAN = 8 * 1024 * 1024
 
 # ELF / PE / ZIP (JAR/APK) magic bytes
 _ELF_MAGIC = b'\x7fELF'
@@ -444,13 +451,50 @@ class TargetDetector:
                 metadata={"format": "class"},
             )
 
+        # --- Tek .pyc (BICIM-10): bilinen sihirli sayı + "\r\n" (32 bit) ---
+        pyc_version = self._pyc_version(path)
+        if pyc_version is not None:
+            return TargetInfo(
+                path=path, name=path.stem,
+                target_type=TargetType.PYTHON_PACKED,
+                language=Language.PYTHON,
+                file_size=file_size, file_hash=file_hash,
+                metadata={"format": "pyc", "packer": "pyc",
+                          "python_version": pyc_version},
+            )
+
         # --- Mach-O ---
-        if magic == _UNIVERSAL_MAGIC:
+        if magic in (_UNIVERSAL_MAGIC, _FAT_MAGIC_64):
             target_type = TargetType.UNIVERSAL_BINARY
             language = self._detect_language_from_binary(path)
             metadata: dict[str, Any] = {"arch": "universal"}
             if magic is not None:
                 metadata["magic"] = f"0x{magic:08X}"
+            # BICIM-10: dilim dilim özel hat denetimi (eskiden hiç yapılmıyordu).
+            slices = self._fat_slices(path)
+            if slices:
+                metadata["slices"] = [
+                    {"cputype": c, "offset": o, "size": s} for o, s, c in slices
+                ]
+                found = self._fat_slice_markers(path, slices)
+                if found["pyinstaller"]:
+                    # PyInstaller çıkarıcısı evrensel dosyada çalışıyor (son MEI
+                    # çerezi): Python katmanı açılsın.
+                    metadata["native_format"] = "macho_universal"
+                    metadata["packer"] = "pyinstaller"
+                    return TargetInfo(
+                        path=path, name=path.stem,
+                        target_type=TargetType.PYTHON_PACKED,
+                        language=Language.PYTHON,
+                        file_size=file_size, file_hash=file_hash,
+                        metadata=metadata,
+                    )
+                # Go/Bun analizörleri evrensel dosyayı açmıyor (dilim ayırma
+                # yalnız Mach-O hattında): tür UNIVERSAL kalır, bulgu kayda geçer.
+                if found["go"]:
+                    metadata["go_slice"] = True
+                if found["bun"]:
+                    metadata["bun_slice"] = True
             return TargetInfo(
                 path=path, name=path.stem, target_type=target_type,
                 language=language, file_size=file_size, file_hash=file_hash,
@@ -496,6 +540,9 @@ class TargetDetector:
                     file_size=file_size, file_hash=file_hash,
                     metadata=metadata,
                 )
+            cx = self._cx_freeze_target(path, metadata, "macho", file_size, file_hash)
+            if cx is not None:
+                return cx
             return TargetInfo(
                 path=path, name=path.stem, target_type=TargetType.MACHO_BINARY,
                 language=language, file_size=file_size, file_hash=file_hash,
@@ -528,6 +575,9 @@ class TargetDetector:
                     file_size=file_size, file_hash=file_hash,
                     metadata=metadata,
                 )
+            cx = self._cx_freeze_target(path, metadata, "elf", file_size, file_hash)
+            if cx is not None:
+                return cx
             return TargetInfo(
                 path=path, name=path.stem, target_type=TargetType.ELF_BINARY,
                 language=language, file_size=file_size, file_hash=file_hash,
@@ -585,6 +635,9 @@ class TargetDetector:
                     file_size=file_size, file_hash=file_hash,
                     metadata=metadata,
                 )
+            cx = self._cx_freeze_target(path, metadata, "pe", file_size, file_hash)
+            if cx is not None:
+                return cx
             return TargetInfo(
                 path=path, name=path.stem, target_type=TargetType.PE_BINARY,
                 language=language, file_size=file_size, file_hash=file_hash,
@@ -610,12 +663,17 @@ class TargetDetector:
                     file_size=file_size, file_hash=file_hash,
                     metadata={"format": "jar"},
                 )
-            # ZIP ama ne JAR ne APK -- unknown olarak dondur
-            pass
+            # ZIP ama ne JAR ne APK: kapsayıcı sınıflayıcı (BICIM-10; wheel,
+            # IPA, nupkg, AAB, XAPK). Bu türler için analiz hattı yok: tür
+            # UNKNOWN kalır ama ne olduğu ve içindeki çalıştırılabilirler
+            # metadata'ya yazılır (analist "tanınmadı" yerine bunu görür).
+            container_meta = self._classify_container(path)
+        else:
+            container_meta = {}
 
         # --- Bilinmeyen format ---
         language = self._detect_language_from_binary(path)
-        metadata = {}
+        metadata = dict(container_meta)
         if magic is not None:
             metadata["magic"] = f"0x{magic:08X}"
 
@@ -743,14 +801,178 @@ class TargetDetector:
                 head = f.read(2_097_152)  # 2 MB
                 if mei_magic in head:
                     return True
-                # MEI cookie dosya sonunda: son 256 KB'yi tara
+                # MEI cookie arşivin sonunda; imzalı Mach-O'da ardından kod
+                # imzası gelir (37 MB'lık gerçek yt-dlp_macos'ta ~300 KB). Son
+                # _PYI_TAIL_SCAN baytı tara (BICIM-10; eskiden 256 KB).
                 f.seek(0, 2)
                 size = f.tell()
-                f.seek(max(0, size - 262_144))
+                f.seek(max(0, size - _PYI_TAIL_SCAN))
                 tail = f.read()
         except OSError:
             return False
         return mei_magic in tail
+
+    @staticmethod
+    def _pyc_version(path: Path) -> Optional[str]:
+        """Tek .pyc mi? Bilinen sihirli sayı + ``\\r\\n`` ise Python sürümü (BICIM-10).
+
+        Karar 4 baytlık başlıkla verilir (16 bit bilinen sihirli sayı + CRLF;
+        uzantıya bakılmaz) ve dosya en az 3.7+ başlığı kadar (16 bayt) olmalı.
+        """
+        try:
+            with open(path, "rb") as f:
+                head = f.read(16)
+        except OSError:
+            return None
+        if len(head) < 16:
+            return None
+        from karadul.analyzers.pyc_decompiler import version_from_pyc_bytes
+        return version_from_pyc_bytes(head)
+
+    @staticmethod
+    def _fat_slices(path: Path) -> list[tuple[int, int, int]]:
+        """Evrensel (fat) Mach-O dilimleri: [(ofset, boyut, cputype)] (BICIM-10).
+
+        FAT_MAGIC (32 bit ofset) ve FAT_MAGIC_64 desteklenir; dosya dışına
+        taşan ya da sayısı makul olmayan dilimler atlanır.
+        """
+        try:
+            with open(path, "rb") as f:
+                head = f.read(8 + _MAX_FAT_ARCHS * 32)
+                f.seek(0, 2)
+                size = f.tell()
+        except OSError:
+            return []
+        if len(head) < 8:
+            return []
+        magic, nfat = struct.unpack_from(">II", head, 0)
+        if magic not in (_UNIVERSAL_MAGIC, _FAT_MAGIC_64) or not 0 < nfat <= _MAX_FAT_ARCHS:
+            return []
+        out: list[tuple[int, int, int]] = []
+        entry = 20 if magic == _UNIVERSAL_MAGIC else 32
+        for i in range(nfat):
+            pos = 8 + i * entry
+            if pos + entry > len(head):
+                break
+            if magic == _UNIVERSAL_MAGIC:
+                cputype, _sub, off, sz, _align = struct.unpack_from(">iiIII", head, pos)
+            else:
+                cputype, _sub, off, sz, _align, _res = struct.unpack_from(">iiQQII", head, pos)
+            if sz == 0 or off + sz > size:
+                continue
+            out.append((off, sz, cputype))
+        return out
+
+    @staticmethod
+    def _fat_slice_markers(
+        path: Path, slices: list[tuple[int, int, int]],
+    ) -> dict[str, bool]:
+        """Her dilimde PyInstaller / Go / Bun imleri (BICIM-10).
+
+        PyInstaller: dilimin ilk 2 MB'ı ya da son ``_PYI_TAIL_SCAN`` baytında MEI
+        çerezi (ince Mach-O ile aynı karar sinyali). Go: dilimin ilk 2 MB'ında Mach-O
+        bölüm adı ``__gopclntab`` / ``__go_buildinfo`` (yükleme komutları).
+        Bun: dilimin ilk 64 KB'ında ``__BUN`` segment adı.
+        """
+        found = {"pyinstaller": False, "go": False, "bun": False}
+        try:
+            with open(path, "rb") as f:
+                for off, sz, _cpu in slices:
+                    f.seek(off)
+                    head = f.read(min(sz, 2_097_152))
+                    tail_len = min(sz, _PYI_TAIL_SCAN)
+                    f.seek(off + sz - tail_len)
+                    tail = f.read(tail_len)
+                    if _MEI_MAGIC in head or _MEI_MAGIC in tail:
+                        found["pyinstaller"] = True
+                    if b"__gopclntab" in head or b"__go_buildinfo" in head:
+                        found["go"] = True
+                    if b"__BUN" in head[:65536]:
+                        found["bun"] = True
+        except OSError:
+            pass
+        return found
+
+    @staticmethod
+    def _classify_container(path: Path) -> dict[str, Any]:
+        """ZIP kapsayıcıyı tanı (container_classifier; BICIM-10). Tanınmazsa {}."""
+        try:
+            from karadul.analyzers.container_classifier import (
+                ContainerError, ContainerType, classify_container,
+            )
+        except ImportError:  # pragma: no cover - paket her zaman var
+            return {}
+        try:
+            info = classify_container(path)
+        except ContainerError as exc:
+            return {"container_error": str(exc)[:200]}
+        except Exception:  # sınıflayıcı hatası tanımayı düşürmesin
+            logger.debug("Kapsayici siniflama hatasi", exc_info=True)
+            return {}
+        if info.container_type == ContainerType.UNKNOWN:
+            return {}
+        notes = {
+            ContainerType.IPA: "iOS IPA: icindeki Mach-O ikiliyi cikarip ayrica analiz edin",
+            ContainerType.AAB: "Android App Bundle: dogrudan analiz hatti yok",
+            ContainerType.XAPK: "XAPK: icindeki APK'yi cikarip ayrica analiz edin",
+            ContainerType.WHEEL: "Python wheel: .py kaynaklari acik; native uzantilari ayrica analiz edin",
+            ContainerType.NUPKG: "NuGet paketi: lib/ altindaki .NET derlemelerini ayrica analiz edin",
+            ContainerType.APK: "APK duzeni (JAR/APK denetiminden gecmedi)",
+        }
+        return {
+            "format": "zip_container",
+            "container": info.container_type.value,
+            "container_confidence": round(info.confidence, 3),
+            "container_evidence": list(info.evidence),
+            "container_package_id": info.package_id,
+            "container_version": info.version,
+            "container_executables": [str(p) for p in info.executables[:50]],
+            "container_executables_total": len(info.executables),
+            "unsupported_reason": notes.get(info.container_type, "analiz hatti yok"),
+        }
+
+    def _cx_freeze_target(
+        self, path: Path, metadata: dict[str, Any], native_format: str,
+        file_size: int, file_hash: str,
+    ) -> Optional[TargetInfo]:
+        """cx_Freeze kanıtı varsa PYTHON_PACKED TargetInfo, yoksa None."""
+        evidence = self._cx_freeze_evidence(path)
+        if evidence is None:
+            return None
+        return TargetInfo(
+            path=path, name=path.stem,
+            target_type=TargetType.PYTHON_PACKED,
+            language=Language.PYTHON,
+            file_size=file_size, file_hash=file_hash,
+            metadata={**metadata, "native_format": native_format,
+                      "packer": "cx_freeze", "packer_evidence": evidence},
+        )
+
+    @staticmethod
+    def _cx_freeze_evidence(path: Path) -> Optional[str]:
+        """cx_Freeze dağıtımı mı? Ayırt edici kanıt adı ya da None (BICIM-10).
+
+        cx_Freeze tek dosya değil dizin dağıtır: çalıştırılabilir + yanında
+        ``lib/library.zip``. Karar ZIP'in içindeki cx_Freeze'e özgü modüllerle
+        verilir (``__startup__``, ``BUILD_CONSTANTS``, ``cx_Freeze*``); yalnız
+        ikilideki ``cx_Freeze`` dizgisi yetmez.
+        """
+        import zipfile
+
+        lib_zip = path.parent / "lib" / "library.zip"
+        try:
+            if not lib_zip.is_file() or lib_zip.is_symlink():
+                return None
+            with zipfile.ZipFile(lib_zip) as zf:
+                names = zf.namelist()[:200_000]
+        except (zipfile.BadZipFile, OSError, ValueError):
+            return None
+        base = {n.rsplit("/", 1)[-1] for n in names}
+        if "__startup__.pyc" in base or "BUILD_CONSTANTS.pyc" in base:
+            return "lib/library.zip: __startup__ / BUILD_CONSTANTS"
+        if any(n.startswith("cx_Freeze") for n in names):
+            return "lib/library.zip: cx_Freeze paketi"
+        return None
 
     @staticmethod
     def _pe_clr_evidence(path: Path) -> dict[str, Any]:

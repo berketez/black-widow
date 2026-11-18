@@ -1,0 +1,27 @@
+--- a/karadul/stages.py	2026-11-18 10:08:47
++++ b/karadul/stages.py	2026-11-18 10:08:56
+@@ -1138,6 +1138,24 @@
+             TargetType.PYTHON_PACKED,
+         ):
+             return self._execute_analyzer_reconstruct(context, start)
++
++        # P19 / BICIM-10: tanınan ama analiz hattı olmayan kapsayıcı (wheel, IPA,
++        # nupkg, AAB, XAPK; target.metadata["container"]) JS hattına düşüp
++        # "Deobfuscate edilmis dosya bulunamadi" demesin: açık "atlandı".
++        if target.target_type == TargetType.UNKNOWN and (target.metadata or {}).get("container"):
++            meta = target.metadata
++            return StageResult(
++                stage_name=self.name, success=False, skipped=True,
++                duration_seconds=time.monotonic() - start,
++                stats={
++                    "skip_reason": (
++                        f"Kapsayici tanindi ({meta['container']}) ama dogrudan analiz "
++                        f"hatti yok: {meta.get('unsupported_reason', '')}"
++                    ),
++                    "container": meta["container"],
++                    "container_executables": meta.get("container_executables", []),
++                },
++            )
+ 
+         return self._execute_js(context, start)
+ 

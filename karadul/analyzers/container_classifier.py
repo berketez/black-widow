@@ -100,6 +100,9 @@ class ContainerType(Enum):
     APK = "apk"
     AAB = "aab"
     XAPK = "xapk"
+    # BICIM-10: hedef tanımada bağlandı (yalnız tanıma; açma yok)
+    WHEEL = "python_wheel"
+    NUPKG = "nuget_package"
     UNKNOWN = "unknown"
 
 
@@ -706,6 +709,8 @@ class ContainerClassifier:
                     self._fill_apk(info)
                 elif ctype == ContainerType.AAB:
                     self._fill_aab(info)
+                elif ctype in (ContainerType.WHEEL, ContainerType.NUPKG):
+                    self._fill_listing(info)
 
                 return info
         except zipfile.BadZipFile as e:
@@ -822,7 +827,64 @@ class ContainerClassifier:
             ev.append("android_manifest")
             return ContainerType.APK, 0.65, ev
 
+        # BICIM-10: Python wheel (PEP 427): <dağıtım>-<sürüm>.dist-info/ altında
+        # WHEEL + METADATA (+ RECORD). İki bağımsız dosya birlikte aranır.
+        dist_infos = {
+            n.split("/", 1)[0] for n in names
+            if "/" in n and n.split("/", 1)[0].endswith(".dist-info")
+        }
+        for di in sorted(dist_infos):
+            if f"{di}/WHEEL" in names and f"{di}/METADATA" in names:
+                ev.extend(["dist_info_wheel", "dist_info_metadata"])
+                score = 0.95
+                if f"{di}/RECORD" in names:
+                    ev.append("dist_info_record")
+                    score = 0.98
+                return ContainerType.WHEEL, score, ev
+
+        # BICIM-10: NuGet paketi (OPC): kökte tek .nuspec + [Content_Types].xml.
+        root_nuspecs = [n for n in names if "/" not in n and n.lower().endswith(".nuspec")]
+        has_content_types = "[Content_Types].xml" in names
+        if root_nuspecs and has_content_types:
+            ev.extend(["root_nuspec", "content_types_xml"])
+            score = 0.95
+            if any(n.startswith("_rels/") for n in names):
+                ev.append("opc_rels")
+                score = 0.98
+            return ContainerType.NUPKG, score, ev
+
         return ContainerType.UNKNOWN, 0.0, ["unknown_zip_layout"]
+
+    def _fill_listing(self, info: ContainerInfo) -> None:
+        """Wheel / NuGet: yalnız ad listesinden doldur (içerik açılmaz, ayrıştırılmaz).
+
+        Wheel: ``<ad>-<sürüm>.dist-info`` adından dağıtım adı ve sürüm; native
+        uzantılar (.so/.pyd/.dylib) çalıştırılabilir sayılır. NuGet: kökteki
+        ``<id>.nuspec`` adından kimlik; ``lib/`` ve ``runtimes/`` altındaki
+        ``.dll``/``.exe`` derlemeleri çalıştırılabilir sayılır.
+        """
+        names = self._namelist or []
+        if info.container_type == ContainerType.WHEEL:
+            for n in names:
+                top = n.split("/", 1)[0]
+                if top.endswith(".dist-info") and "-" in top:
+                    stem = top[: -len(".dist-info")]
+                    info.package_id, _, info.version = stem.partition("-")
+                    break
+            info.executables = [
+                Path(n) for n in names
+                if n.lower().endswith((".so", ".pyd", ".dylib"))
+            ][:500]
+            info.native_libs = [str(p) for p in info.executables]
+        else:
+            nuspec = next((n for n in names if "/" not in n and n.lower().endswith(".nuspec")), None)
+            if nuspec:
+                info.package_id = nuspec[: -len(".nuspec")]
+            info.executables = [
+                Path(n) for n in names
+                if n.lower().startswith(("lib/", "runtimes/", "tools/"))
+                and n.lower().endswith((".dll", ".exe"))
+            ][:500]
 
     # -----------------------------------------------------------------------
     # IPA dolgulama
