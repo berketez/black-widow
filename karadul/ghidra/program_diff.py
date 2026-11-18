@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import logging
+import tempfile
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -173,7 +174,8 @@ class GhidraProgramDiff:
         Args:
             binary1: Birinci (eski) binary dosyasi.
             binary2: Ikinci (yeni) binary dosyasi.
-            output_dir: Rapor cikti dizini. None ise binary1'in yanina yazar.
+            output_dir: Rapor cikti dizini. None ise calisma dizini (cwd); incelenen
+                ikilinin dizinine hicbir sey yazilmaz (MEK-02).
 
         Returns:
             DiffReport: Karsilastirma raporu.
@@ -196,7 +198,10 @@ class GhidraProgramDiff:
         if not binary2.exists():
             raise FileNotFoundError(f"Binary bulunamadi: {binary2}")
 
-        effective_output = output_dir or binary1.parent
+        # MEK-02: eskiden rapor ve Ghidra projeleri (diff_prog1/2) ilk ikilinin yanına
+        # yazılıyordu: salt okur dizinde komut düşüyor, yazılabilir dizinde kanıt dizini
+        # kirleniyordu. Rapor öntanımlı olarak çalışma dizinine, projeler geçici dizine.
+        effective_output = output_dir or Path.cwd()
         effective_output = Path(effective_output).resolve()
         effective_output.mkdir(parents=True, exist_ok=True)
 
@@ -211,13 +216,16 @@ class GhidraProgramDiff:
 
         import pyghidra
 
-        # Her binary icin ayri proje olustur
-        funcs1 = self._extract_functions_pyghidra(
-            pyghidra, binary1, project_name="diff_prog1",
-        )
-        funcs2 = self._extract_functions_pyghidra(
-            pyghidra, binary2, project_name="diff_prog2",
-        )
+        # Her binary icin ayri proje; ikisi de gecici dizinde, is bitince silinir.
+        with tempfile.TemporaryDirectory(prefix="karadul_diff_") as project_root:
+            funcs1 = self._extract_functions_pyghidra(
+                pyghidra, binary1, project_name="diff_prog1",
+                project_location=Path(project_root),
+            )
+            funcs2 = self._extract_functions_pyghidra(
+                pyghidra, binary2, project_name="diff_prog2",
+                project_location=Path(project_root),
+            )
 
         # Eslestirme ve karsilastirma
         matched, added, removed = self._match_functions(funcs1, funcs2)
@@ -303,6 +311,7 @@ class GhidraProgramDiff:
         pyghidra_mod: Any,
         binary_path: Path,
         project_name: str,
+        project_location: Path | None = None,
     ) -> list[_FuncInfo]:
         """PyGhidra ile binary'den fonksiyon bilgilerini cikarir.
 
@@ -310,6 +319,8 @@ class GhidraProgramDiff:
             pyghidra_mod: pyghidra modulu (import edilmis).
             binary_path: Binary dosya yolu.
             project_name: Ghidra proje adi (cakismamasi icin farkli olmali).
+            project_location: Ghidra projesinin dizini. Verilmezse pyghidra projeyi
+                ikilinin dizinine kurar; ``diff`` her zaman gecici dizin verir.
 
         Returns:
             list[_FuncInfo]: Fonksiyon listesi.
@@ -318,6 +329,7 @@ class GhidraProgramDiff:
         try:
             with pyghidra_mod.open_program(
                 str(binary_path),
+                project_location=str(project_location) if project_location else None,
                 project_name=project_name,
                 analyze=True,
             ) as flat_api:
