@@ -466,6 +466,35 @@ def build_name_answer_schema(evidence_ids: Iterable[Any], *, abstain_allowed: bo
     return schema
 
 
+# "Açıkla" ve "özet alt görevi" cevabı (KaradulLM v2 tasarımı §3.4 açıkla satırı, §3.6 madde 3):
+# ``{"ozet": <metin>, "belirsiz": <bool>, "kanit": [<sonuç kimlikleri>]}``; ``ozet`` en çok
+# RATIONALE_MAX_CHARS (240) karakter. İki düz dal: özet veren (``belirsiz: false``) ve belirsiz
+# (``belirsiz: true``: metin neyin eksik olduğunu söyler; çağıranın paketine "özet yok (belirsiz)" girer).
+# ``kanit`` şeması "ad öner"inkiyle aynıdır (yalnız o istekte verilen kimlikler). Özet veren dalda boş
+# ``kanit`` şemayla yasaklanmaz: denetim katmanı onu ``celiski`` sayar (D8; tasarım §3.6 "Risk"), böylece
+# L1 / L2 uçlarında da aynı kural geçer.
+EXPLAIN_ANSWER_REQUIRED = ("ozet", "belirsiz", "kanit")
+_SUMMARY_TEXT = {"type": "string", "minLength": 1, "maxLength": RATIONALE_MAX_CHARS}
+
+
+def explain_answer_branches(evidence_ids: Iterable[Any]) -> list[dict[str, Any]]:
+    """"Açıkla" / "özet alt görevi" cevabının iki düz dalının ``properties`` sözlükleri."""
+    ids = checked_result_ids(evidence_ids)
+    given = {"ozet": dict(_SUMMARY_TEXT), "belirsiz": {"const": False}, "kanit": refs_schema(ids)}
+    unclear = {"ozet": dict(_SUMMARY_TEXT), "belirsiz": {"const": True}, "kanit": refs_schema(ids)}
+    return [given, unclear]
+
+
+def build_explain_answer_schema(evidence_ids: Iterable[Any]) -> dict[str, Any]:
+    """"Açıkla" / "özet alt görevi" cevap şeması, o istekte verilen sonuç kimlikleriyle."""
+    schema = {"anyOf": [
+        {"type": "object", "properties": props, "required": list(EXPLAIN_ANSWER_REQUIRED),
+         "additionalProperties": False}
+        for props in explain_answer_branches(evidence_ids)]}
+    check_schema(schema)
+    return schema
+
+
 # ============================================================================================
 # 3. Tur ayrıştırma ve yetenek düzeyine göre kural
 # ============================================================================================

@@ -41,7 +41,7 @@ from karadul.lm import (
     CODE_HEAD_BYTES, CODE_LIMIT_BYTES, CODE_TAIL_BYTES, ESTIMATE_ERROR_FRACTION, EVIDENCE_API_LIMIT,
     EVIDENCE_MAX_CALLBACKS, EVIDENCE_MAX_CALLEES, EVIDENCE_MAX_CALLERS, EVIDENCE_MAX_CONSTANTS,
     EVIDENCE_MAX_STRINGS, EVIDENCE_STRING_CHARS, INTENT_MAX_CHARS, MAX_TOOL_CALLS, MAX_TOOL_CALLS_K1,
-    TOKENS_PER_DIGIT,
+    RATIONALE_MAX_CHARS, TOKENS_PER_DIGIT,
 )
 
 # ============================================================================================
@@ -337,6 +337,27 @@ SYSTEM_PROMPT_KL0 = (
     "meant for the researcher in Turkish; identifiers stay in English.\n"
 )
 
+# KL-1 (KaradulLM v2 tasarımı §3.6 madde 3 ve 7): "açıkla" ve "özet alt görevi"nin istemi. KL-0'ın
+# bayt bayt aynısı + 9. kural; kural "Reply with ..." paragrafından önce, 8. kuraldan sonra girer. KL-0
+# ("ad öner", pilotun istemi) DEĞİŞMEZ: K0 öneki ve pilot eşitliği korunur. 9. kural KL-0'ın 5. kuralının
+# uzantısıdır: ``[model-özet]`` kaynaklı özet modelin kendi çıkarımıdır, tek başına dayanak olamaz.
+PROMPT_VERSION_KL1 = "KL-1"
+PROMPT_VERSIONS = (PROMPT_VERSION, PROMPT_VERSION_KL1)
+SUMMARY_TOOL = "callee_summaries"     # sunucunun pakete koyduğu komşu özetleri girişi (model çağıramaz)
+SUMMARY_KIND = "model-ozet"           # o girişin "kind" değeri
+SUMMARY_SOURCE_MODEL = "model-özet"   # girişteki satırın kaynağı: modelin yazdığı özet (kanıt DEĞİL)
+SUMMARY_SOURCE_FACT = "olgu"          # girişteki satırın kaynağı: modelsiz hesaplanan olgu satırı (D0)
+SUMMARY_RULE_KL1 = (
+    '9. A result from the tool "' + SUMMARY_TOOL + '" (kind "' + SUMMARY_KIND + '") lists short summaries of '
+    'functions this function calls. An entry with "kaynak": "' + SUMMARY_SOURCE_MODEL + '" was written earlier by a '
+    "language model from that function's own results. It is not evidence: it may be wrong, it never supports a "
+    "claim on its own, and you never repeat a call, string or address from it unless another result shows it "
+    'too. An entry with "kaynak": "' + SUMMARY_SOURCE_FACT + '" was computed by Karadul without a model.\n'
+)
+_KL0_REPLY_PARAGRAPH = "\nReply with exactly one JSON object"
+SYSTEM_PROMPT_KL1 = SYSTEM_PROMPT_KL0.replace(_KL0_REPLY_PARAGRAPH, SUMMARY_RULE_KL1 + _KL0_REPLY_PARAGRAPH, 1)
+_SYSTEM_PROMPTS = {PROMPT_VERSION: SYSTEM_PROMPT_KL0, PROMPT_VERSION_KL1: SYSTEM_PROMPT_KL1}
+
 # Tasarım §4.1: K1 ve K2'de eklenen blok (519 bayt).
 TOOLS_BLOCK_KL0 = (
     "\n"
@@ -384,17 +405,22 @@ CALL_BLOCK = (
 K1_LIMIT_LINE = "In this task you may make at most {n} tool calls, and only on the addresses the schema allows.\n"
 
 
-def fixed_prefix(mode: str, tool_lines: Sequence[str]) -> str:
+def fixed_prefix(mode: str, tool_lines: Sequence[str], version: str = PROMPT_VERSION) -> str:
     """Sabit önek: sistem istemi + (K1/K2'de araç bloğu) + sonuç anlatımı + araç tanımları.
 
-    Yalnız ``mode`` ve ``tool_lines``'a (araç kaydının tanım satırları) bağlıdır. Çalışma alanından,
-    oturumdan ya da saatten hiçbir şey almaz: aynı girdide bayt bayt aynıdır (K-B1)."""
+    Yalnız ``mode``, ``tool_lines`` (araç kaydının tanım satırları) ve istem sürümüne (``version``: KL-0
+    "ad öner", KL-1 "açıkla" / "özet alt görevi") bağlıdır. Çalışma alanından, oturumdan ya da saatten
+    hiçbir şey almaz: aynı girdide bayt bayt aynıdır (K-B1). KL-1 yalnız K0'da (belirlenimci hat)."""
     if mode not in MODES:
         raise ValueError(f"bilinmeyen ajan kipi: {mode!r}")
+    if version not in _SYSTEM_PROMPTS:
+        raise ValueError(f"bilinmeyen istem sürümü: {version!r}")
+    if version != PROMPT_VERSION and mode != MODE_K0:
+        raise ValueError("KL-1 yalnız K0 (belirlenimci hat) kipinde")
     lines = list(tool_lines)
     if not lines or any((not isinstance(s, str)) or "\n" in s or not s for s in lines):
         raise ValueError("araç tanım satırları boş olmayan tek satırlık dizgiler olmalı")
-    body = SYSTEM_PROMPT_KL0
+    body = _SYSTEM_PROMPTS[version]
     if mode != MODE_K0:
         body += TOOLS_BLOCK_KL0
     body += RESULTS_BLOCK + TOOL_DEFINITIONS_HEADER + "".join(f"- {s}\n" for s in lines)
@@ -445,6 +471,28 @@ def name_question(addr: str, evidence_ids: Sequence[str], *, abstain_allowed: bo
     text = _QUESTION_NAME.format(addr=addr, kind=kind)
     text += _QUESTION_ABSTAIN.format(kind=kind) if abstain_allowed else _QUESTION_FORCED
     return text + (_QUESTION_IDS_LOOP if final_kind else _QUESTION_IDS.format(ids=", ".join(ids)))
+
+
+_QUESTION_EXPLAIN = (
+    "Task: explain what the function {addr} does. The results above describe it.\n"
+    "Answer format:\n"
+    '{{"ozet": "<what the function does, in Turkish, at most {n} characters>", "belirsiz": false, '
+    '"kanit": [<ids of the results you relied on>]}}\n'
+    "If the results do not show what the function does, say so instead:\n"
+    '{{"ozet": "<what is missing, in Turkish, at most {n} characters>", "belirsiz": true, "kanit": []}}\n'
+)
+
+
+def explain_question(addr: str, evidence_ids: Sequence[str]) -> str:
+    """"Açıkla" / "özet alt görevi" sorusu ve cevap biçimi (KL-1; şema ``protocol.build_explain_answer_schema``).
+    ``addr`` sunucunun doğruladığı ``FUN_<adres>``'tir. İki görev türü aynı soruyu sorar: ``ozet_alt``
+    zincirin iç düğümü, ``acikla`` araştırmacının seçtiği kök; özet deposu ikisini aynı anahtarla tutar."""
+    if not _FUN_ADDR.fullmatch(addr):
+        raise ValueError("soru yalnız doğrulanmış FUN_<adres> ile kurulur")
+    ids = list(evidence_ids)
+    if not ids or any(not re.fullmatch(r"r[0-9]{1,9}", i) for i in ids):
+        raise ValueError("soru en az bir sonuç kimliği ister (r<sayı>)")
+    return _QUESTION_EXPLAIN.format(addr=addr, n=RATIONALE_MAX_CHARS) + _QUESTION_IDS.format(ids=", ".join(ids))
 
 
 def user_message(package: Sequence[str], question: str, session_block: str = "") -> str:

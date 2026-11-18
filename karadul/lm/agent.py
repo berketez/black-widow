@@ -45,8 +45,9 @@ from karadul.lm import (
 from karadul.lm.audit import AuditLog, canonical_json, sha256_text
 from karadul.lm.backend import STATE_ERROR, STATE_MEMORY_STOPPED, Backend, BackendError, ChatResult, LMError
 from karadul.lm.context import (
-    MODE_K0, MODE_K1, MODE_K2, MODES, PROMPT_VERSION, ContextBudget, blind_leaks, estimate_result_tokens,
-    estimate_text_tokens, fixed_prefix, max_calls_for, name_question, safe_assistant_content, user_message,
+    MODE_K0, MODE_K1, MODE_K2, MODES, PROMPT_VERSION, PROMPT_VERSION_KL1, ContextBudget, blind_leaks,
+    estimate_result_tokens, estimate_text_tokens, explain_question, fixed_prefix, max_calls_for, name_question,
+    safe_assistant_content, user_message,
 )
 from karadul.lm.events import CALLER_MODEL, CALLER_SERVER, ContentStore, touched_refs
 from karadul.lm.memory_guard import MemoryGuard
@@ -72,6 +73,12 @@ STATUS_PROTECTED = "korunan_ad"             # D2: hedefin adı kesin ya da elle 
 # Ayrıca protocol.parse_turn durumları: gecersiz, sema_ihlali, butce_asimi (üretim tavanı), ret.
 
 TASK_NAME = "ad_oner"
+# KaradulLM v2 belirlenimci hattın görevleri (tasarım §3.2, §3.6): ``acikla`` araştırmacının seçtiği
+# fonksiyonun ne yaptığı; ``ozet_alt`` aşağıdan yukarı zincirin iç düğümü. İkisi aynı soruyu (KL-1) ve
+# aynı cevap şemasını kullanır; tür olay akışında (``gorev_basladi.gorev_turu``) ve kayıtta ayrı yazılır.
+TASK_EXPLAIN = "acikla"
+TASK_SUMMARY = "ozet_alt"
+SUMMARY_TASKS = (TASK_EXPLAIN, TASK_SUMMARY)
 # CALLER_SERVER ("sunucu"), CALLER_MODEL ("model"): ``karadul.lm.events``'te tanımlı (olay şemasının
 # kapalı kümesi); denetim günlüğü ve olaylar aynı değeri yazar.
 # Körlük taramasına giren kanıt alanları: ad taşıyabilenler. Dizgi alanı girmez (pilot §12 madde 4:
@@ -191,6 +198,11 @@ class TaskResult:
     verdict: Optional[str] = None            # denetim hükmü (guard.VERDICTS); denetlenecek cevap yoksa None
     time_budget_sec: Optional[float] = None  # uygulanan süre bütçesi (LM-06)
     guard: Optional[dict[str, Any]] = None   # GuardReport.as_dict(): bulgular, bayraklar, toplu kabul
+    prompt_version: str = PROMPT_VERSION     # istem sürümü: "ad öner" KL-0, açıkla / özet alt görevi KL-1
+    # Açıkla / özet alt görevinin özet kaydı (P22b): {"kaynak": "model" | "olgu", "metin", "belirsiz",
+    # "kanit", "hukum", "pakete_girer", "depodan"}. Model önerisi değildir; çağıranın paketine yalnız
+    # ``pakete_girer`` doğruysa girer. Özet yoksa None.
+    summary: Optional[dict[str, Any]] = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -356,12 +368,12 @@ class Agent:
 
     # --- sabit önek ---------------------------------------------------------------------------
 
-    def prefix(self, mode: str) -> str:
-        """Kipin sabit öneki (sistem iletisi)."""
-        return fixed_prefix(mode, self.registry.definition_lines())
+    def prefix(self, mode: str, version: str = PROMPT_VERSION) -> str:
+        """Kipin sabit öneki (sistem iletisi); ``version`` istem sürümü (KL-0 / KL-1)."""
+        return fixed_prefix(mode, self.registry.definition_lines(), version)
 
-    def prefix_sha256(self, mode: str) -> str:
-        return sha256_text(self.prefix(mode))
+    def prefix_sha256(self, mode: str, version: str = PROMPT_VERSION) -> str:
+        return sha256_text(self.prefix(mode, version))
 
     # --- dış arayüz ---------------------------------------------------------------------------
 
@@ -409,47 +421,65 @@ class Agent:
         finally:
             self._lock.release()
 
-    def _run(self, mode: str, addr: str, abstain_allowed: bool, deadline_sec: Optional[float]) -> TaskResult:
+    def explain(self, addr: str, *, deadline_sec: Optional[float] = None) -> TaskResult:
+        """"Açıkla" (KL-1, belirlenimci hat; tasarım §3.2): paket kur → model tek çağrı → ayrıştır →
+        denetim → özet. K0 kipinde koşar (model araç çağıramaz); ``K0`` etkin değilse ``ModeDisabled``."""
+        if MODE_K0 not in self.enabled_modes:
+            raise ModeDisabled("K0 bu ajanda etkin değil")
+        return self._run(MODE_K0, addr, True, deadline_sec, task_type=TASK_EXPLAIN)
+
+    def _run(self, mode: str, addr: str, abstain_allowed: bool, deadline_sec: Optional[float], *,
+             task_type: str = TASK_NAME, **extra: Any) -> TaskResult:
         with self._exclusive():
-            self._task_seq += 1
-            # İptal görev başınadır: önceki görevin (ya da görev yokken kurulmuş) iptali bu görevi bitirmez.
-            self.cancel.clear()
-            self._running = True
-            t0 = self._clock()
-            if deadline_sec is None:
-                deadline_sec = self.default_time_budget_sec(mode)
-            # Adres alanına yalnız biçimi doğrulanmış değer yazılır (çağıranın verdiği ham dizgi değil).
-            shown = addr if isinstance(addr, str) and _ADDR_RE.fullmatch(addr) else None
-            task = _Task(TaskResult(task_id=f"g{self._task_seq}", mode=mode, task=TASK_NAME, addr=shown,
-                                    status="", blind=self.blind_target, time_budget_sec=deadline_sec),
-                         deadline=t0 + deadline_sec)
+            return self._run_unlocked(mode, addr, abstain_allowed, deadline_sec, task_type=task_type, **extra)
+
+    def _run_unlocked(self, mode: str, addr: str, abstain_allowed: bool, deadline_sec: Optional[float], *,
+                      task_type: str = TASK_NAME, **extra: Any) -> TaskResult:
+        """Tek görev (çağıran ajanın kilidini tutar). ``task_type``: ``ad_oner`` | ``acikla`` | ``ozet_alt``;
+        olay akışına ve görev kaydına bu tür yazılır (P22a notu: sabit ``TASK_NAME`` değil)."""
+        self._task_seq += 1
+        # İptal görev başınadır: önceki görevin (ya da görev yokken kurulmuş) iptali bu görevi bitirmez.
+        self.cancel.clear()
+        self._running = True
+        t0 = self._clock()
+        if deadline_sec is None:
+            deadline_sec = self.default_time_budget_sec(mode)
+        # Adres alanına yalnız biçimi doğrulanmış değer yazılır (çağıranın verdiği ham dizgi değil).
+        shown = addr if isinstance(addr, str) and _ADDR_RE.fullmatch(addr) else None
+        version = PROMPT_VERSION_KL1 if task_type in SUMMARY_TASKS else PROMPT_VERSION
+        task = _Task(TaskResult(task_id=f"g{self._task_seq}", mode=mode, task=task_type, addr=shown,
+                                status="", blind=self.blind_target, time_budget_sec=deadline_sec,
+                                prompt_version=version),
+                     deadline=t0 + deadline_sec)
+        try:
             try:
+                # Olay: görev açıldı (tasarım v2 §3.3 adım 1). Hedef çözülemiyorsa adres ve fn None.
+                self._emit("gorev_basladi", task, gorev_turu=task_type, kip=mode,
+                           hedef=self._target(self.workspace.resolve(addr)),
+                           butce={"arac": max_calls_for(mode), "sure_sn": deadline_sec,
+                                  "jeton": self.context_tokens if mode == MODE_K0 else self.loop_context_tokens})
+                if task_type in SUMMARY_TASKS:
+                    self._execute_explain(task, addr, **extra)
+                elif mode == MODE_K0:
+                    self._execute_k0(task, addr, abstain_allowed)
+                else:
+                    self._execute_loop(task, mode, addr, abstain_allowed)
+            except WorkspaceError as e:
+                task.finish(STATUS_PACKAGE_ERROR, str(e), override=True)
+        except BaseException as e:
+            # Beklenmeyen hata ya da kesme: sunucu açık kalmasın (tasarım §2.2 "her hata yolunda").
+            # Kapatma ve kayıt hataları asıl hatayı örtmez.
+            task.finish(STATUS_UNEXPECTED, type(e).__name__, override=True)
+            for step in (lambda: self.backend.stop("hata"), lambda: self._close(task, t0)):
                 try:
-                    # Olay: görev açıldı (tasarım v2 §3.3 adım 1). Hedef çözülemiyorsa adres ve fn None.
-                    self._emit("gorev_basladi", task, gorev_turu=TASK_NAME, kip=mode,
-                               hedef=self._target(self.workspace.resolve(addr)),
-                               butce={"arac": max_calls_for(mode), "sure_sn": deadline_sec,
-                                      "jeton": self.context_tokens if mode == MODE_K0 else self.loop_context_tokens})
-                    if mode == MODE_K0:
-                        self._execute_k0(task, addr, abstain_allowed)
-                    else:
-                        self._execute_loop(task, mode, addr, abstain_allowed)
-                except WorkspaceError as e:
-                    task.finish(STATUS_PACKAGE_ERROR, str(e), override=True)
-            except BaseException as e:
-                # Beklenmeyen hata ya da kesme: sunucu açık kalmasın (tasarım §2.2 "her hata yolunda").
-                # Kapatma ve kayıt hataları asıl hatayı örtmez.
-                task.finish(STATUS_UNEXPECTED, type(e).__name__, override=True)
-                for step in (lambda: self.backend.stop("hata"), lambda: self._close(task, t0)):
-                    try:
-                        step()
-                    except Exception:  # noqa: BLE001
-                        pass
-                raise
-            finally:
-                self._running = False
-            self._close(task, t0)
-            return task.result
+                    step()
+                except Exception:  # noqa: BLE001
+                    pass
+            raise
+        finally:
+            self._running = False
+        self._close(task, t0)
+        return task.result
 
     def _close(self, task: _Task, t0: float) -> None:
         r = task.result
@@ -467,13 +497,22 @@ class Agent:
                              kestirim_istem_jetonu=r.est_prompt_tokens, kod_kirpildi=r.code_clipped,
                              kirpilan_sonuclar=list(r.truncated_ids), icerik_adsiz=r.empty_content,
                              kor=r.blind, sure_sn=r.duration_sec, sure_butcesi_sn=r.time_budget_sec,
-                             istem_surumu=PROMPT_VERSION, hukum=r.verdict,
-                             arac_kumesi=self.registry.version(), onek_sha256=self.prefix_sha256(r.mode))
+                             istem_surumu=r.prompt_version, hukum=r.verdict,
+                             arac_kumesi=self.registry.version(),
+                             onek_sha256=self.prefix_sha256(r.mode, r.prompt_version),
+                             **({} if r.summary is None else {"ozet": {
+                                 k: r.summary[k] for k in ("kaynak", "belirsiz", "pakete_girer", "depodan")}}))
         # Olaylar, denetim günlüğünden SONRA (geri çağrının hatası kaydı yarım bırakmaz). Denetim olayı
         # dört değerli hükmü ve koşmayan kuralları (``sinanmayan``) taşır: ``sinanamadi`` temiz gösterilmez.
         if r.guard is not None:
             self._emit("denetim", task, nesne=r.task_id, **{k: r.guard[k] for k in (
                 "hukum", "bulgular", "bayraklar", "toplu_kabul", "sinanan", "sinanmayan")})
+        if r.summary is not None:
+            # Tasarım §3.3 adım 8: denetimden sonra özet olayı. Metin modelin (ya da D0'ın) gerçek metnidir.
+            s = r.summary
+            self._emit("ozet", task, hedef=self._target(self.workspace.resolve(r.addr)), metin=s["metin"],
+                       belirsiz=s["belirsiz"], kanit=list(s["kanit"]), hukum=s["hukum"],
+                       kaynak="olgu" if s["kaynak"] == "olgu" else "model")
         self._emit("gorev_bitti", task, durum=r.status, hata=r.error, ad_durumu=r.name_status, cevap=r.answer,
                    hukum=r.verdict, toplu_kabul=r.guard["toplu_kabul"] if r.guard is not None else None,
                    sayaclar=asdict(r.counters), sure_ms=int(round(r.duration_sec * 1000)))
@@ -768,6 +807,61 @@ class Agent:
             messages = messages + [
                 {"role": "assistant", "content": safe_assistant_content(reply.content, parsed.obj)},
                 protocol.repair_message(parsed)]
+
+    # --- açıkla / özet alt görevi (KL-1; KaradulLM v2 §3.2, §3.6) ---------------------------------
+
+    def _execute_explain(self, task: _Task, addr: str) -> None:
+        """Belirlenimci hattın tek görevi: paket (kanıt + kod) → KL-1 sorusu → tek model çağrısı (L2'de bir
+        onarım) → özet. Model araç çağıramaz. Bağlama sığmayan görev başlamadan reddedilir."""
+        a = self.workspace.resolve(addr)
+        if a is None:
+            return task.finish(STATUS_UNKNOWN_ADDRESS)
+        task.result.addr = f"FUN_{a}"
+        level = self._level(task)
+        if level is None:
+            return None
+        package = self._build_package(task, a, single_shot=True)
+        if package is None:
+            return None
+        ids = [r.id for r in package]
+        system = self.prefix(MODE_K0, PROMPT_VERSION_KL1)
+        question = explain_question(f"FUN_{a}", ids)
+        messages = [{"role": "system", "content": system},
+                    {"role": "user", "content": user_message([r.wrapped() for r in package], question)}]
+        est = (estimate_text_tokens(system) + estimate_text_tokens(question)
+               + sum(estimate_result_tokens(r.envelope()) for r in package))
+        task.result.est_prompt_tokens = est
+        if not ContextBudget(self.context_tokens, MAX_TOKENS_STEP).fits(est):
+            return task.finish(STATUS_CONTEXT)
+        schema = protocol.build_explain_answer_schema(ids)
+        repairs = 0
+        while True:
+            reply = self._model_call(task, messages, schema, "k0" if repairs == 0 else "k0_onarim", est)
+            if reply is None:
+                return None
+            parsed = protocol.parse_turn(reply.content, reply.finish_reason, schema)
+            self._reply_done(task, reply, parsed.status, parsed.obj)
+            action = protocol.next_action(level, parsed, repairs)
+            if action == protocol.ACTION_ACCEPT:
+                return self._accept_summary(task, parsed.obj)
+            if action != protocol.ACTION_REPAIR:
+                return task.finish(parsed.status)
+            repairs += 1
+            task.result.counters.repairs += 1
+            messages = messages + [
+                {"role": "assistant", "content": safe_assistant_content(reply.content, parsed.obj)},
+                protocol.repair_message(parsed)]
+
+    def _accept_summary(self, task: _Task, obj: Mapping[str, Any]) -> None:
+        """Geçerli KL-1 cevabı: model önerisi (``answer``) ve özet kaydı (``summary``)."""
+        refs: list[str] = []
+        for i in obj["kanit"]:
+            if i not in refs:
+                refs.append(i)
+        task.result.answer = {"ozet": obj["ozet"], "belirsiz": obj["belirsiz"], "kanit": refs}
+        task.result.summary = {"kaynak": "model", "metin": obj["ozet"], "belirsiz": obj["belirsiz"],
+                               "kanit": refs, "hukum": None, "pakete_girer": True, "depodan": False}
+        task.finish(STATUS_DONE)
 
     # --- döngü (K1 / K2) ----------------------------------------------------------------------
 
