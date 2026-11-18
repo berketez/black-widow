@@ -429,7 +429,13 @@ def _types_h(tmp_path: Path, monkeypatch, etiket: str, ters: bool) -> str:
     out = tmp_path / etiket
     res = CTypeRecoverer(Config()).recover(dec, tmp_path / "yok.json", out)
     assert res.success, res.errors
-    return (out / "types.h").read_text(encoding="utf-8")
+    # K-1 bekletmesi (P09): koda bağlanmayan yapılar types.h'ye değil aday dosyasına gider;
+    # belirlenimlilik ikisinde birden aranır.
+    from karadul.reconstruction.c_type_recoverer import STRUCT_CANDIDATES_FILENAME
+
+    aday = out / STRUCT_CANDIDATES_FILENAME
+    return (out / "types.h").read_text(encoding="utf-8") + (
+        aday.read_text(encoding="utf-8") if aday.exists() else "")
 
 
 class TestTypesHBelirlenimli:

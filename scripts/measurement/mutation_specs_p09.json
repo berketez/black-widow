@@ -1,0 +1,45 @@
+{
+  "_comment": "P09 (tip ve yapı kurtarma) onarımlarının mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metninin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p09.json",
+  "mutants": [
+    {
+      "id": "p09_k1_bagsiz_types_h",
+      "desc": "K-1: bağlanmayan yapı da types.h'ye yazılır",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_bekletme.py::test_bagsiz_yapi_types_h_ye_girmez",
+      "find": "header_structs = [s for s in structs if id(s) in ghidra_ids or s.name in bound_names]",
+      "replace": "header_structs = [s for s in structs if id(s) in ghidra_ids or s.name not in ()]"
+    },
+    {
+      "id": "p09_k1_aday_dosyasi_yazilmaz",
+      "desc": "K-1: aday dosyası yazılmaz (bağlanmayan yapı iz bırakmadan kaybolur)",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_bekletme.py::test_bagsiz_yapi_types_h_ye_girmez",
+      "find": "        if candidates:\n            self._write_candidates_file(candidates_file, candidates)",
+      "replace": "        if not candidates:\n            self._write_candidates_file(candidates_file, candidates)"
+    },
+    {
+      "id": "p09_k1_kanit_sayaci",
+      "desc": "TIP-07: erişim sayısı artmıyor (kanıt yerine sabit)",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_bekletme.py::test_aday_alani_kanit_sayisini_yazar",
+      "find": "existing[\"count\"] += 1",
+      "replace": "existing[\"count\"] = 1"
+    },
+    {
+      "id": "p09_k1_kanit_yazilmaz",
+      "desc": "TIP-07: alan satırına kanıt sayısı yazılmıyor",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_bekletme.py::test_aday_alani_kanit_sayisini_yazar",
+      "find": "            if f.evidence_count:\n",
+      "replace": "            if not f.evidence_count:\n"
+    },
+    {
+      "id": "p09_k1_sonuc_sayaci",
+      "desc": "K-1: sonuç nesnesi (rapor sayacı) bağlanmayan yapıları da sayar",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p09_bekletme.py::test_bagsiz_yapi_types_h_ye_girmez",
+      "find": "        total = len(header_structs) + len(enums) + len(vtables)",
+      "replace": "        total = len(structs) + len(enums) + len(vtables)"
+    }
+  ]
+}

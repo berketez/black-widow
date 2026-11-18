@@ -747,7 +747,12 @@ class StructField:
         name: Field adi (orn: ``field_10``, ``name``).
         type: C tipi (orn: ``long``, ``char *``).
         size: Field boyutu (byte).
-        confidence: Tespit guven skoru (0.0-1.0).
+        confidence: Dış kaynağın (Ghidra, çözücü) verdiği güven.  Erişim
+            deseninden kurulan alanda 0.0: kalibre edilmiş bir güven yoktur,
+            kanıt ``evidence_count`` / ``evidence_functions``'tadır (TIP-07:
+            eskiden her alana sabit 0,80 yazılıyordu).
+        evidence_count: Bu ofsete görülen erişim sayısı (desen kaynaklı alan).
+        evidence_functions: Erişimin görüldüğü fonksiyon sayısı.
     """
 
     offset: int
@@ -755,6 +760,8 @@ class StructField:
     type: str
     size: int
     confidence: float = 0.8
+    evidence_count: int = 0
+    evidence_functions: int = 0
 
 
 @dataclass
@@ -825,10 +832,17 @@ class CTypeRecoveryResult:
             değişiminden önce ve sonra aynı) bozulduğu için özgün metniyle
             yazılan dosyalar.  Beklenen 0.
         reverted_files: Geri alınan dosyaların girdi yolları.
+        struct_candidates: Kurulan ama koda bağlanmayan yapılar (K-1
+            bekletmesi).  ``types.h``'ye ve ``structs``'a girmez; yalnız
+            ``struct_candidates_file``'a yazılır.
+        struct_candidates_file: Aday dosyası (``STRUCT_CANDIDATES_FILENAME``);
+            aday yoksa None.
     """
 
     success: bool
     structs: list[RecoveredStruct] = field(default_factory=list)
+    struct_candidates: list[RecoveredStruct] = field(default_factory=list)
+    struct_candidates_file: Path | None = None
     enums: list[RecoveredEnum] = field(default_factory=list)
     vtables: list[RecoveredVTable] = field(default_factory=list)
     type_replacements: dict[str, str] = field(default_factory=dict)
@@ -961,6 +975,12 @@ _UNDEFINED_DEFAULTS: dict[str, str] = {
     "undefined8": "uint64_t",
     "undefined": "uint64_t",
 }
+
+# K-1 bekletmesi (Berke, 2026-11-18): koda bağlanmayan yapı adayları
+# ``types.h``'ye değil bu dosyaya yazılır.  Uzantı bilerek ``.h``/``.c`` değil:
+# sonraki adımlar (c_comment_generator, c_algorithm_id, output_formatter) tip
+# dizinini ``*.c``/``*.h`` diye tarar; aday dosyası koda karışmamalı.
+STRUCT_CANDIDATES_FILENAME = "types_candidates.txt"
 
 
 # ---------------------------------------------------------------------------
@@ -1243,12 +1263,9 @@ class CTypeRecoverer:
             len(type_replacements), len(per_func_replacements),
         )
 
-        # 7. types.h olustur
-        types_header = output_dir / "types.h"
-        self._write_types_header(types_header, structs, enums, vtables)
-        logger.info("types.h yazildi: %s", types_header)
-
-        # 8. C dosyalarindaki tipleri degistir (paralel -- ProcessPool)
+        # 7. C dosyalarindaki tipleri degistir (paralel -- ProcessPool)
+        # (types.h artık tip değişiminden SONRA yazılır: hangi yapının koda
+        # gerçekten bağlandığı ancak çıktı dosyalarından okunabilir.)
         # FIX 4: fut.result(timeout=120) + crash recovery
         num_workers = os.cpu_count() or CPU_PERF_CORES
         logger.info(
@@ -1290,20 +1307,45 @@ class CTypeRecoverer:
                 except Exception as exc:
                     errors.append(f"Apply worker hatasi ({apply_args[i][0]}): {exc}")
 
-        total = len(structs) + len(enums) + len(vtables)
+        # 8. K-1 bekletmesi: Karadul'un kurduğu yapılardan (desen + hesaplama)
+        # yalnız çıktı kodunda gerçekten kullanılanlar types.h'ye girer.
+        # Ghidra'nın kendi yapıları (ghidra_types.json) Karadul iddiası değil;
+        # Ghidra kodu onları adıyla kullanır, types.h'de kalır.
+        ghidra_ids = {id(s) for s in ghidra_structs}
+        claimed = [s for s in structs if id(s) not in ghidra_ids]
+        bound_names = self._find_bound_struct_names(
+            output_files, {s.name for s in claimed},
+        )
+        bound = [s for s in claimed if s.name in bound_names]
+        candidates = [s for s in claimed if s.name not in bound_names]
+        header_structs = [s for s in structs if id(s) in ghidra_ids or s.name in bound_names]
+
+        types_header = output_dir / "types.h"
+        self._write_types_header(types_header, header_structs, enums, vtables)
+        logger.info("types.h yazildi: %s", types_header)
+        candidates_file = output_dir / STRUCT_CANDIDATES_FILENAME
+        if candidates:
+            self._write_candidates_file(candidates_file, candidates)
+        else:
+            candidates_file.unlink(missing_ok=True)
+
+        total = len(header_structs) + len(enums) + len(vtables)
 
         logger.info(
-            "CTypeRecovery tamamlandi: %d struct (%d ghidra + %d pattern), "
+            "CTypeRecovery tamamlandi: %d struct types.h'de (%d ghidra + %d "
+            "koda bağlı), %d yapı adayı bağlanmadı (types.h dışında), "
             "%d enum (%d ghidra + %d pattern), %d vtable, %d tip degisimi, "
             "%d dosyada tip değişimi geri alındı",
-            len(structs), len(ghidra_structs), len(pattern_structs),
+            len(header_structs), len(ghidra_structs), len(bound), len(candidates),
             len(enums), len(ghidra_enums), len(pattern_enums),
             len(vtables), len(type_replacements), len(reverted_files),
         )
 
         return CTypeRecoveryResult(
             success=True,
-            structs=structs,
+            structs=header_structs,
+            struct_candidates=candidates,
+            struct_candidates_file=candidates_file if candidates else None,
             enums=enums,
             vtables=vtables,
             type_replacements=type_replacements,
@@ -1314,6 +1356,24 @@ class CTypeRecoverer:
             type_recovery_reverted=len(reverted_files),
             reverted_files=reverted_files,
         )
+
+    @staticmethod
+    def _find_bound_struct_names(
+        output_files: list[Path], names: set[str],
+    ) -> set[str]:
+        """Çıktı C dosyalarının KODUNDA (dizgi ve yorum dışı) geçen yapı adları."""
+        if not names:
+            return set()
+        found: set[str] = set()
+        ident = re.compile(r"[A-Za-z_]\w*")
+        for path in output_files:
+            try:
+                text = Path(path).read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            code = _C_NONCODE_TOKEN.sub(" ", text)
+            found.update(names.intersection(ident.findall(code)))
+        return found
 
     # ------------------------------------------------------------------
     # v1.10.0 M3 T8: TypeForge merge hook (opsiyonel, harici kaynak)
@@ -1412,17 +1472,19 @@ class CTypeRecoverer:
                 self._field_accesses[base] = {}
 
             # FIX 1: O(1) dict lookup yerine eski O(N) list scan
+            # Kanıt: erişim sayısı ve fonksiyonlar.  Sabit bir "güven" yazılmaz
+            # (TIP-07: her alana 0,80 veriliyordu, kanıtla ilgisi yoktu).
             if offset in self._field_accesses[base]:
                 existing = self._field_accesses[base][offset]
                 if c_type != "undefined8" and existing["type"] == "undefined8":
                     existing["type"] = c_type
                     existing["size"] = size
-                    existing["confidence"] = min(existing["confidence"] + 0.1, 1.0)
+                existing["count"] += 1
                 existing["sources"].add(func)
             else:
                 self._field_accesses[base][offset] = {
                     "offset": offset, "type": c_type, "size": size,
-                    "confidence": 0.8,
+                    "count": 1,
                     "sources": {func},
                     "line_sample": line.strip()[:120],
                 }
@@ -1807,7 +1869,6 @@ class CTypeRecoverer:
                 offset = acc["offset"]
                 size = acc["size"]
                 c_type = acc["type"]
-                confidence = acc["confidence"]
 
                 # Onceki field'in bitisi ile bu field arasinda bosluk varsa padding ekle
                 if offset > prev_end:
@@ -1817,14 +1878,13 @@ class CTypeRecoverer:
                         name=f"padding_0x{prev_end:02x}",
                         type=f"char[{gap}]" if gap > 1 else "char",
                         size=gap,
-                        confidence=0.3,
+                        confidence=0.0,
                     ))
 
                 # VTable offset'indeki field'lari function pointer olarak isaretle
                 if offset in vtable_offsets:
                     field_name = f"func_ptr_0x{offset:02x}"
                     c_type = "void (*)(void *)"
-                    confidence = 0.9
                 else:
                     # Field ismi: string context'ten veya generic
                     field_name = self._infer_field_name(base_var, offset, c_type)
@@ -1834,7 +1894,9 @@ class CTypeRecoverer:
                     name=field_name,
                     type=c_type,
                     size=size,
-                    confidence=confidence,
+                    confidence=0.0,
+                    evidence_count=acc["count"],
+                    evidence_functions=len(acc["sources"]),
                 ))
 
                 prev_end = offset + size
@@ -1853,7 +1915,7 @@ class CTypeRecoverer:
                     name=f"padding_0x{raw_size:02x}",
                     type=f"char[{total_size - raw_size}]",
                     size=total_size - raw_size,
-                    confidence=0.2,
+                    confidence=0.0,
                 ))
 
             # Kaynak fonksiyonlar
@@ -2786,27 +2848,7 @@ class CTypeRecoverer:
             lines.append("/* ---- Structs ---- */")
             lines.append("")
             for struct in structs:
-                lines.append(f"/* Size: 0x{struct.total_size:X} ({struct.total_size} bytes)")
-                lines.append(f" * Sources: {', '.join(struct.source_functions[:5])}")
-                lines.append(f" */")
-                lines.append(f"struct {struct.name} {{")
-                for f in struct.fields:
-                    conf_str = f"/* confidence: {f.confidence:.2f} */"
-                    # Array tip ise ozel format
-                    if f.type.endswith("]") and "[" in f.type:
-                        # char[16] gibi
-                        base_type, arr_part = f.type.split("[", 1)
-                        lines.append(
-                            f"    {base_type} {f.name}[{arr_part};"
-                            f"  /* 0x{f.offset:02X} */ {conf_str}"
-                        )
-                    else:
-                        lines.append(
-                            f"    {f.type} {f.name};"
-                            f"  /* 0x{f.offset:02X} */ {conf_str}"
-                        )
-                lines.append(f"}};")
-                lines.append("")
+                lines.extend(self._format_struct_lines(struct))
 
         # VTables
         if vtables:
@@ -2826,6 +2868,60 @@ class CTypeRecoverer:
         lines.append("#endif /* RECOVERED_TYPES_H */")
         lines.append("")
 
+        path.write_text("\n".join(lines), encoding="utf-8")
+
+    @staticmethod
+    def _format_struct_lines(struct: RecoveredStruct) -> list[str]:
+        """Bir yapının C tanımı.
+
+        Alan açıklaması ofset ve (desen kaynaklı alanda) kanıt sayısıdır.  Sabit
+        bir güven değeri yazılmaz (TIP-07: her alana "confidence: 0.80"
+        basılıyordu; kanıtla ilgisi yoktu).
+        """
+        lines = [
+            f"/* Size: 0x{struct.total_size:X} ({struct.total_size} bytes)",
+            f" * Sources: {', '.join(struct.source_functions[:5])}",
+            " */",
+            f"struct {struct.name} {{",
+        ]
+        for f in struct.fields:
+            note = f"/* 0x{f.offset:02X} */"
+            if f.evidence_count:
+                note += (
+                    f" /* erişim: {f.evidence_count}, fonksiyon: "
+                    f"{f.evidence_functions} */"
+                )
+            # Array tip ise ozel format (char[16] gibi)
+            if f.type.endswith("]") and "[" in f.type:
+                base_type, arr_part = f.type.split("[", 1)
+                lines.append(f"    {base_type} {f.name}[{arr_part};  {note}")
+            else:
+                lines.append(f"    {f.type} {f.name};  {note}")
+        lines.append("};")
+        lines.append("")
+        return lines
+
+    def _write_candidates_file(
+        self, path: Path, candidates: list[RecoveredStruct],
+    ) -> None:
+        """Koda bağlanmayan yapı adaylarını ayrı dosyaya yaz (K-1 bekletmesi).
+
+        Dosya derlenmez, hiçbir kaynak dosya onu içermez; uzantısı bu yüzden
+        ``.h`` değil (bkz. ``STRUCT_CANDIDATES_FILENAME``).
+        """
+        lines = [
+            "/* =============================================================",
+            " * doğrulanmamış aday, koda bağlanmadı",
+            " * Karadul CTypeRecoverer yapı adayları (kod erişim desenlerinden).",
+            " * Bu dosya derlenmez; hiçbir kaynak dosya onu içermez. Yapı",
+            " * kurtarma ölçülüp doğrulanana kadar (karar K-1, 2026-11-18)",
+            " * bu tanımlar types.h'ye ve koda yazılmaz.",
+            f" * Aday sayısı: {len(candidates)}",
+            " * ============================================================= */",
+            "",
+        ]
+        for struct in candidates:
+            lines.extend(self._format_struct_lines(struct))
         path.write_text("\n".join(lines), encoding="utf-8")
 
     # ------------------------------------------------------------------
