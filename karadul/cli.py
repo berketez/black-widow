@@ -646,10 +646,41 @@ def analyze(
         cfg.source_match.enabled = True
 
     # Dinamik analiz hedef programı çalıştırır; yalnız açık istekle (plan v2 §2, madde 3).
+    # GHIDRA-07 (2026-11-18): kapı hangi kaynaktan açılırsa açılsın uyarı basılır
+    # (stderr; --json/--quiet'te de). Ayar dosyasından açılmış ama --dynamic
+    # verilmemişse açık onay istenir; etkileşimsiz ortamda hedef çalıştırılmaz.
+    _dynamic_in_plan = "dynamic" in filter_stages(stop_after=stage, skip_dynamic=skip_dynamic)
     if dynamic:
         cfg.security.allow_target_execution = True
-        if not quiet:
-            console.print("[yellow]Uyarı:[/yellow] --dynamic: hedef program Frida ile çalıştırılacak.")
+        _gate_source = "--dynamic"
+    elif cfg.security.allow_target_execution is True and _dynamic_in_plan:
+        _gate_source = "ayar dosyası (security.allow_target_execution)"
+        err_console.print(
+            "[bold yellow]Uyarı:[/bold yellow] ayar dosyasında "
+            "security.allow_target_execution açık ama --dynamic verilmedi."
+        )
+        if _is_noninteractive() or quiet:
+            cfg.security.allow_target_execution = False
+            err_console.print(
+                "[bold yellow]Uyarı:[/bold yellow] etkileşimsiz ortam: onay alınamadı, "
+                "hedef program ÇALIŞTIRILMAYACAK (dinamik aşama atlanır). "
+                "Bilerek çalıştırmak için --dynamic ver."
+            )
+        elif not click.confirm(
+            "Analiz edilen hedef program bu makinede (sandbox olmadan) Frida ile "
+            "çalıştırılsın mı?",
+            default=False, err=True,
+        ):
+            cfg.security.allow_target_execution = False
+            err_console.print("[dim]Hedef çalıştırılmayacak; dinamik aşama atlanır.[/dim]")
+    else:
+        _gate_source = "ayar dosyası (security.allow_target_execution)"
+    if cfg.security.allow_target_execution is True and _dynamic_in_plan:
+        err_console.print(
+            f"[bold red]UYARI:[/bold red] hedef program bu makinede Frida ile "
+            f"ÇALIŞTIRILACAK (kaynak: {_gate_source}). Sandbox yok; analiz edilen "
+            f"kod senin kullanıcı yetkinle koşar. Yalnız güvendiğin ikililerde kullan."
+        )
 
     # v1.10.0 M4 flag'leri -> config'e aktar
     if experimental_step_registry:

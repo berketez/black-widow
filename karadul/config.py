@@ -940,6 +940,56 @@ class DecompilersConfig:
     fallback_chain: list = field(default_factory=lambda: ["ghidra"])
 
 
+# GHIDRA-07 (2026-11-18): YAML'dan gelen değer bool tipli bir alana Python
+# doğruluğuyla atanıyordu; "false" / "no" / "0" dizgileri DOĞRU sayılıyor ve
+# ör. ``security.allow_target_execution: "false"`` hedef çalıştırma kapısını
+# AÇIYORDU. Artık bool alanlar yalnız aşağıdaki değerleri kabul eder; geri
+# kalan her şey açık hata verir (sessiz yutma yok). Bilinmeyen anahtar ve öbür
+# tipler için doğrulama P15'in işi.
+_BOOL_TRUE_STRINGS = frozenset({"true", "yes", "on", "1"})
+_BOOL_FALSE_STRINGS = frozenset({"false", "no", "off", "0"})
+
+
+class ConfigValueError(ValueError):
+    """YAML'daki bir değer alanın tipine katı biçimde dönüştürülemedi."""
+
+
+def _strict_bool(value: object, where: str) -> bool:
+    """Değeri katı biçimde bool'a çevir; anlaşılmayan değer ``ConfigValueError``."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int) and value in (0, 1):
+        return bool(value)
+    if isinstance(value, str):
+        norm = value.strip().lower()
+        if norm in _BOOL_TRUE_STRINGS:
+            return True
+        if norm in _BOOL_FALSE_STRINGS:
+            return False
+    raise ConfigValueError(
+        f"{where}: {value!r} bir doğruluk değeri değil; kabul edilenler: "
+        "true/false, yes/no, on/off, 1/0"
+    )
+
+
+def _bool_field_names(obj: object) -> frozenset[str]:
+    """Dataclass nesnesinin ``bool`` tipli alan adları."""
+    import dataclasses
+
+    if not dataclasses.is_dataclass(obj):
+        return frozenset()
+    return frozenset(
+        f.name for f in dataclasses.fields(obj) if f.type in (bool, "bool")
+    )
+
+
+def _coerce_field(obj: object, section: str, key: str, value: object) -> object:
+    """``_from_dict`` için ortak atama yolu: bool alanlarda katı dönüşüm."""
+    if key in _bool_field_names(obj):
+        return _strict_bool(value, f"{section}.{key}")
+    return value
+
+
 @dataclass
 class Config:
     """Ana konfigürasyon."""
@@ -1004,23 +1054,23 @@ class Config:
         if "timeouts" in data:
             for k, v in data["timeouts"].items():
                 if hasattr(cfg.timeouts, k):
-                    setattr(cfg.timeouts, k, v)
+                    setattr(cfg.timeouts, k, _coerce_field(cfg.timeouts, "timeouts", k, v))
         if "retry" in data:
             for k, v in data["retry"].items():
                 if hasattr(cfg.retry, k):
-                    setattr(cfg.retry, k, v)
+                    setattr(cfg.retry, k, _coerce_field(cfg.retry, "retry", k, v))
         if "analysis" in data:
             for k, v in data["analysis"].items():
                 if hasattr(cfg.analysis, k):
-                    setattr(cfg.analysis, k, v)
+                    setattr(cfg.analysis, k, _coerce_field(cfg.analysis, "analysis", k, v))
         if "source_match" in data:
             for k, v in data["source_match"].items():
                 if hasattr(cfg.source_match, k):
-                    setattr(cfg.source_match, k, v)
+                    setattr(cfg.source_match, k, _coerce_field(cfg.source_match, "source_match", k, v))
         if "binary_reconstruction" in data:
             for k, v in data["binary_reconstruction"].items():
                 if hasattr(cfg.binary_reconstruction, k):
-                    setattr(cfg.binary_reconstruction, k, v)
+                    setattr(cfg.binary_reconstruction, k, _coerce_field(cfg.binary_reconstruction, "binary_reconstruction", k, v))
         # v1.15.5: ölü `ml`/LLM4Decompile YAML bloğu kaldırıldı. Config.ml field'ı
         # B11'de (LLM-free vizyon, feedback_no_llm.md) silinmişti ama bu yükleyici
         # bloğu kalmıştı → mypy "Config has no attribute ml" + YAML'da "ml" anahtarı
@@ -1028,56 +1078,56 @@ class Config:
         if "name_merger" in data:
             for k, v in data["name_merger"].items():
                 if hasattr(cfg.name_merger, k):
-                    setattr(cfg.name_merger, k, v)
+                    setattr(cfg.name_merger, k, _coerce_field(cfg.name_merger, "name_merger", k, v))
         if "deep_trace" in data:
             for k, v in data["deep_trace"].items():
                 if hasattr(cfg.deep_trace, k):
-                    setattr(cfg.deep_trace, k, v)
+                    setattr(cfg.deep_trace, k, _coerce_field(cfg.deep_trace, "deep_trace", k, v))
         if "bsim" in data:
             for k, v in data["bsim"].items():
                 if hasattr(cfg.bsim, k):
-                    setattr(cfg.bsim, k, v)
+                    setattr(cfg.bsim, k, _coerce_field(cfg.bsim, "bsim", k, v))
         if "debugger" in data:
             for k, v in data["debugger"].items():
                 if hasattr(cfg.debugger, k):
-                    setattr(cfg.debugger, k, v)
+                    setattr(cfg.debugger, k, _coerce_field(cfg.debugger, "debugger", k, v))
         if "computation_recovery" in data:
             for k, v in data["computation_recovery"].items():
                 if hasattr(cfg.computation_recovery, k):
-                    setattr(cfg.computation_recovery, k, v)
+                    setattr(cfg.computation_recovery, k, _coerce_field(cfg.computation_recovery, "computation_recovery", k, v))
         if "network" in data:
             # NetworkConfig docstring'i "YAML'da network.enabled ile acilir" diyor
             # ama bu wiring onceden eksikti (UI ayar paneli network toggle'i icin
             # gerekli; reviewer 2026-07-14). hasattr guard'i sifir-risk kilar.
             for k, v in data["network"].items():
                 if hasattr(cfg.network, k):
-                    setattr(cfg.network, k, v)
+                    setattr(cfg.network, k, _coerce_field(cfg.network, "network", k, v))
         if "computation" in data:
             for k, v in data["computation"].items():
                 if hasattr(cfg.computation, k):
-                    setattr(cfg.computation, k, v)
+                    setattr(cfg.computation, k, _coerce_field(cfg.computation, "computation", k, v))
         if "pipeline" in data:
             for k, v in data["pipeline"].items():
                 if hasattr(cfg.pipeline, k):
-                    setattr(cfg.pipeline, k, v)
+                    setattr(cfg.pipeline, k, _coerce_field(cfg.pipeline, "pipeline", k, v))
         if "perf" in data:
             for k, v in data["perf"].items():
                 if hasattr(cfg.perf, k):
                     if k == "sig_lmdb_path" and v is not None:
                         setattr(cfg.perf, k, Path(v))
                     else:
-                        setattr(cfg.perf, k, v)
+                        setattr(cfg.perf, k, _coerce_field(cfg.perf, "perf", k, v))
         if "decompilers" in data:
             for k, v in data["decompilers"].items():
                 if hasattr(cfg.decompilers, k):
-                    setattr(cfg.decompilers, k, v)
+                    setattr(cfg.decompilers, k, _coerce_field(cfg.decompilers, "decompilers", k, v))
         if "security" in data:
             for k, v in data["security"].items():
                 if hasattr(cfg.security, k):
                     if k in ("allowed_download_schemes", "pyinstaller_reserved_names") and isinstance(v, list):
                         setattr(cfg.security, k, tuple(v))
                     else:
-                        setattr(cfg.security, k, v)
+                        setattr(cfg.security, k, _coerce_field(cfg.security, "security", k, v))
         return cfg
 
     def validate(self) -> list[str]:

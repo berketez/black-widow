@@ -8,7 +8,7 @@
 
 ## Durum
 - [x] GHIDRA-11
-- [ ] GHIDRA-07
+- [x] GHIDRA-07
 - [ ] GHIDRA-13
 - [ ] MEK-03
 
@@ -37,3 +37,35 @@
 **Test:** `tests/test_pguv_frida.py` 12 test (8 oturum düzeyi + 4 aşama düzeyi). Taban kodda 10'u kırmızı, 2'si yeşil (yabancı PID öldürülmez; istisnada detach — ikisi eski kodda da doğru olan davranışı kilitliyor). Yeni kodla 12/12 yeşil; `tests/test_frida.py` + `tests/test_robustness_fixes.py` ile birlikte 63 geçti.
 
 **Mutasyon:** `scripts/measurement/mutation_specs_pguv.json` içinde `g11_*` 10 mutant → 10/10 öldü.
+
+**Commit:** `4b30822`
+
+## GHIDRA-07 — Çalıştırma kapısı: "false" dizgisi kapıyı açıyordu
+
+**Önce / sonra (gerçek `Config.load` ile geçici YAML; `security.allow_target_execution: <değer>`):**
+
+| YAML değeri | Önce (yüklenen değer → kapı) | Sonra |
+|---|---|---|
+| `"false"` | `'false'` → AÇIK | `False` → kapalı |
+| `"no"` | `'no'` → AÇIK | `False` → kapalı |
+| `"0"` | `'0'` → AÇIK | `False` → kapalı |
+| `"off"` | `'off'` → AÇIK | `False` → kapalı |
+| `"kapalı"` | `'kapalı'` → AÇIK | `ConfigValueError` (açık hata) |
+| `false` (tırnaksız) | `False` → kapalı | `False` → kapalı |
+| `true` / `"true"` | `True` / `'true'` → açık | `True` → açık |
+| **"Kapalı" niyetli ama kapıyı açan değer sayısı** | **5 / 5** | **0 / 5** |
+
+Ek: kapı YAML'dan açıldığında CLI hiçbir uyarı basmıyordu; `TargetType.UNKNOWN` hedef `generic_spawn` ile başlatılıyordu (kod izlemesi; sınama aşağıda).
+
+**Onarım:**
+- `karadul/config.py`: `_strict_bool` + `_coerce_field` + `ConfigValueError`. `Config._from_dict`'in 16 bölüm döngüsündeki genel `setattr` hepsi `_coerce_field` üstünden geçer (bütün bölümlerde aynı yol); dataclass alan tipi `bool` olan 70 alanın her biri katı dönüşümde. Kabul: bool, 0/1 tamsayı, `true/false/yes/no/on/off/1/0` dizgileri (büyük-küçük harf ve boşluk duyarsız). Geri kalan her şey (`"kapalı"`, `2`, `1.0`, `""`, liste, değersiz anahtar = None) `ConfigValueError` ile reddedilir. Bilinmeyen anahtar / öbür tipler P15'te.
+- `karadul/stages.py` (dinamik aşama): kapı `is not True` ile; `_spawn_plan()` `TargetType.UNKNOWN` için `None` döner ve aşama "bilinmeyen tip çalıştırılmaz" nedeniyle atlanır (Frida oturumu açılmaz). Tanınan öbür tipler (BUN, Delphi, PyInstaller paketi, JAR, APK, .NET, .app) eski `generic_spawn` yolunda kaldı: brif yalnız bilinmeyen tipi kapatmayı istiyor, kapsam küçültülmedi.
+- `karadul/cli.py` (`analyze`, yalnız dinamik kapı bloğu): kapı hangi kaynaktan açılırsa açılsın ve dinamik aşama planda ise stderr'e kaynağıyla birlikte "ÇALIŞTIRILACAK" uyarısı (`--json`/`--quiet`'te de; stdout temiz kalır). YAML'dan açık ama `--dynamic` yoksa: etkileşimsiz ortamda (ya da `--json`/`--quiet`'te) kapı bu koşu için kapatılır ve "ÇALIŞTIRILMAYACAK" denir; etkileşimli ortamda `click.confirm(default=False)` sorulur, "hayır" kapıyı kapatır. `--skip-dynamic` ya da `--stage` dinamiği plandan çıkarıyorsa soru sorulmaz.
+- Giriş noktası taraması: arayüz (`ui/server.py:1800`) analizi hep `--skip-dynamic` ile koşturuyor; `batch` varsayılan `Config()` kullanıyor; `hacker_cli` `skip_dynamic=True`. YAML'dan kapının açılabildiği tek giriş `analyze`.
+- Depodaki ayar biçimli YAML'lar katı yükleyiciyle yükleniyor: `docker/measurement/karadul.yaml` OK (ayar biçimli tek dosya).
+
+**Test:** `tests/test_pguv_kapi.py` 38 test (katı bool 25, aşama kapısı 8, CLI 5). Eski kodda 30'u kırmızı; 8 yeşil olanlar eski kodda da doğru olan davranışı kilitliyor (tırnaksız YAML bool'ları, bool olmayan alan, gerçek True oturuma ulaşır, tanınan yerel tip, `--skip-dynamic`'te soru yok). Yeni kodla 38/38. Config yükleyen 17 mevcut test dosyası: 481 geçti, 3 kırmızı (`tests/test_bsim.py` lite/native — taban `e9d2d08`'de aynı sırayla da aynı 3 kırmızı; tek başına koşunca yeşil; sıra bağımlı JVM durumu, bu paketle ilgisiz).
+
+**Mutasyon:** `g07_*` 9 mutant → 9/9 öldü.
+
+**Kalan (yama):** `analyze`'da bozuk bool değeri artık `ConfigValueError` yığın iziyle düşer (sessiz değil, ama çirkin). `_load_config` dar bölgemin dışında: düzgün "HATA: ayar dosyası: …" + çıkış 2 için yama `yamalar/P-GUV__cli.py.patch`.

@@ -514,12 +514,22 @@ class DynamicAnalysisStage(Stage):
 
         # Hedef program yalnız açık istekle çalıştırılır (CLI --dynamic). Bilinmeyen
         # ya da zararlı bir ikili analiz edilirken varsayılan olarak çalışmamalı.
-        if not context.config.security.allow_target_execution:
+        # GHIDRA-07: yalnız gerçek ``True`` kapıyı açar ("false" dizgisi gibi
+        # doğruluk değeri taşıyan her şey kapalı sayılır).
+        if context.config.security.allow_target_execution is not True:
             return self._skipped(
                 start, "hedef programı çalıştırmak için açık izin yok (--dynamic)",
             )
 
+        # Bilinmeyen tipte hedef hiçbir koşulda çalıştırılmaz (GHIDRA-07).
         spawn_plan = self._spawn_plan(context.target, context.config)
+        if spawn_plan is None:
+            return self._skipped(
+                start,
+                "hedef tipi (%s) için tanımlı çalıştırma yolu yok; bilinmeyen tip "
+                "çalıştırılmaz" % getattr(context.target.target_type, "value",
+                                          context.target.target_type),
+            )
 
         # Frida import kontrolu
         try:
@@ -684,8 +694,14 @@ class DynamicAnalysisStage(Stage):
         )
 
     @staticmethod
-    def _spawn_plan(target, config) -> tuple[str, list[str], str]:
-        """Hedef tipine göre (program, argümanlar, yöntem)."""
+    def _spawn_plan(target, config) -> tuple[str, list[str], str] | None:
+        """Hedef tipine göre (program, argümanlar, yöntem); bilinmeyen tipte None.
+
+        GHIDRA-07: eskiden ``TargetType.UNKNOWN`` da ``generic_spawn`` ile
+        doğrudan başlatılıyordu. Artık tanınmayan dosya hiçbir koşulda
+        çalıştırılmaz; dinamik aşama atlanır. Tanınan öbür tipler (BUN, Delphi,
+        PyInstaller paketi vb.) eskisi gibi ``generic_spawn`` yolundadır.
+        """
         target_path = str(target.path)
         if target.target_type == TargetType.JS_BUNDLE:
             # JS bundle: node ile spawn et
@@ -701,7 +717,9 @@ class DynamicAnalysisStage(Stage):
             # Electron: ana binary'yi spawn et
             main_binary = (target.metadata or {}).get("main_binary")
             return str(main_binary or target_path), [], "electron_spawn"
-        # Bilinmeyen tip: dogrudan spawn dene
+        if target.target_type == TargetType.UNKNOWN:
+            return None
+        # Tanınan öbür tipler: dogrudan spawn dene (eski davranış)
         return target_path, [], "generic_spawn"
 
     @staticmethod
