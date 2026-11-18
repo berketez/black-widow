@@ -24,6 +24,86 @@
       "test": "tests/test_p17_hakkinda.py",
       "find": "({_tr_pct(m['wrong'] / m['named'])};",
       "replace": "({_tr_pct(m['wrong'] / m['population'])};"
+    },
+    {
+      "id": "a06_birlestirme_yok",
+      "desc": "kayıt mevcut dosyayı okumadan yazar (eski davranış)",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ayar.py",
+      "find": "merged, notes = _merge_settings(_settings_raw_yaml(), panel)",
+      "replace": "merged, notes = _merge_settings({}, panel)"
+    },
+    {
+      "id": "a06_bozuk_dosya_ezilir",
+      "desc": "ayrıştırılamayan dosya boş sayılıp ezilir",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ayar.py",
+      "find": "        raise SettingsFileError(f\"{p} YAML olarak ayrıştırılamadı: {e}\") from e",
+      "replace": "        return {}"
+    },
+    {
+      "id": "a06_sozluk_olmayan_bolum_ezilir",
+      "desc": "sözlük olmayan bölüm sessizce ezilir",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ayar.py",
+      "find": "        if not isinstance(cur, dict):\n            raise SettingsFileError(",
+      "replace": "        if False:\n            raise SettingsFileError("
+    },
+    {
+      "id": "a06_yukleyici_hatasi_yutulur",
+      "desc": "yükleyicinin reddettiği dosyayla analiz başlatılır",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ayar.py",
+      "find": "        if _s.get(\"errors\"):",
+      "replace": "        if _s.get(\"errors\") and False:"
+    },
+    {
+      "id": "a06_cwd_dosyasina_duser",
+      "desc": "ayar dosyası yokken cwd'deki karadul.yaml okunur",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ayar.py",
+      "find": "    if not _SETTINGS_YAML.is_file():\n        return Config(), []",
+      "replace": "    if False:\n        return Config(), []"
+    },
+    {
+      "id": "a04_etkisiz_anahtar_silinmez",
+      "desc": "etkisiz max_functions_to_process dosyada kalır",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ayar.py",
+      "find": "            del sec[key]\n",
+      "replace": "            sec.get(key)\n"
+    },
+    {
+      "id": "a04_panel_maks_yazar",
+      "desc": "panel etkisiz anahtarı yeniden yazar",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ayar.py",
+      "find": "            \"external_signature_paths\": ext_paths,\n            \"ghidra_data_type_archives\"",
+      "replace": "            \"external_signature_paths\": ext_paths, \"max_functions_to_process\": 0,\n            \"ghidra_data_type_archives\""
+    },
+    {
+      "id": "a05_acik_izin_yok_sayilir",
+      "desc": "YAML'da açıkça kapatılan izin ağ etkisinde açık görünür",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ayar.py",
+      "find": "        net.enable(explicit_keys={k.split(\".\", 1)[1] for k in cfg.yaml_keys\n                                  if k.startswith(\"network.\")})",
+      "replace": "        net.enable()"
+    },
+    {
+      "id": "a05_cli_kaynak_eslemesi_yansimaz",
+      "desc": "CLI'ın --enable-network ile kaynak eşlemeyi açması etkiye yansımaz",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_ayar.py",
+      "find": "        source_match = True\n    return {",
+      "replace": "        source_match = bool(source_match)\n    return {"
+    },
+    {
+      "id": "a05_js_etki_ters",
+      "desc": "arayüz ağ etkisini ters okur",
+      "module": "ui/index.html",
+      "test": "tests/test_p17_ayar.py",
+      "find": "  if(!e.enabled) return 'Şu an: ağ kapalı",
+      "replace": "  if(e.enabled) return 'Şu an: ağ kapalı"
     }
   ]
 }

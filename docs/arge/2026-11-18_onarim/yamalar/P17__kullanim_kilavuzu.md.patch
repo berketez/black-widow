@@ -1,0 +1,11 @@
+--- a/docs/kullanim_kilavuzu.md	2026-11-18 12:46:39
++++ b/docs/kullanim_kilavuzu.md	2026-11-18 12:46:43
+@@ -82,7 +82,7 @@
+ 3. **Arama ve süzgeç:** ad ya da adres ara. Süzgeçler: Tümü, İsimsiz, Zayıf, Düzeltilen.
+ 4. **Kod paneli:** fonksiyona tıklayınca decompile edilmiş kod açılır. Adsız fonksiyonda en üstte **NEDEN İSİMSİZ?** bölümü, altında kanıt görünür: çağırdıkları, çağıranları, başvurduğu dizgiler.
+ 5. **Ad düzeltme:** kod panelinde yeni adı yaz. Ad kalıcıdır (`~/.karadul/overrides/<sha256>.json`); aynı ikiliyi yeniden analiz edince geri gelir ve "manuel" rozetiyle görünür.
+-6. **Ayarlar (⚙):** profil (Hızlı, Dengeli, Derin), ad güven eşiği, kendi imza dosyaların, disk erişimi. Komut satırındaki `karadul config` ile aynı dosyayı yazar.
++6. **Ayarlar (⚙):** profil (Hızlı, Dengeli, Derin), ad güven eşiği, ağ erişimi, güncelleme denetimi, kendi imza dosyaların, disk erişimi. Ayarlar veri dizinindeki `karadul.yaml`'a yazılır (Hakkında → Yollar → Veri dizini); kayıt yalnız paneldeki anahtarları değiştirir, dosyadaki öbür ayarlar korunur. Komut satırı bu dosyayı `--config <yol>` ile okur.
+ 
+ ## 6. Sorun çıkarsa
+ 

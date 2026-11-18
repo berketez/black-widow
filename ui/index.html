@@ -605,17 +605,14 @@
         <div class="lab"><div class="n">İterasyon sayısı</div><div class="d">İsim ↔ tip çıkarım döngüsü kaç tur (1 = tek geçiş)</div></div>
         <div class="ctl"><input type="number" class="setnum" id="cfgIter" min="1" step="1"></div>
       </div>
-      <div class="setrow">
-        <div class="lab"><div class="n">Maks. fonksiyon</div><div class="d">İşlenecek en fazla fonksiyon (0 = limitsiz)</div></div>
-        <div class="ctl"><input type="number" class="setnum" id="cfgMaxF" min="0" step="1"></div>
-      </div>
       <div class="setsep"></div>
       <div class="setrow">
-        <div class="lab"><div class="n">Hesaplama-bazlı kurtarma</div><div class="d">Sabit / CFG analiziyle daha doğru tip çıkarımı — yavaşlatır</div></div>
+        <div class="lab"><div class="n">Hesaplama-bazlı kurtarma</div><div class="d">Hesaplama kollarını (sabit / CFG eşleme) açar; ad ve tipe katkısı ölçülmedi — yavaşlatır</div></div>
         <div class="ctl"><div class="settog" id="cfgComp"></div></div>
       </div>
       <div class="setrow">
-        <div class="lab"><div class="n">Çevrimiçi kaynak eşleştirme</div><div class="d">İnternetten kaynak/paket indirip eşleştir (varsayılan çevrimdışı)</div></div>
+        <div class="lab"><div class="n">Ağ erişimi (çevrimiçi)</div><div class="d">Ana anahtar (<b>network.enabled</b>; öntanımlı kapalı). Kapalıyken analiz ve uygulama ağa çıkmaz. Açıkken JS / npm hedeflerinde tip tanımları (.d.ts) ve paket kaynakları unpkg.com'dan indirilip eşleştirilir; ELF / Mach-O / PE ikililerinde bu iki izin etkisizdir. Başvuru kaynağını indirip derlemek ayrıca ayar dosyasında <b>network.allow_reference_download: true</b> ister.</div>
+          <div class="d" id="cfgNetEff"></div></div>
         <div class="ctl"><div class="settog" id="cfgNet"></div></div>
       </div>
       <div class="setsep"></div>
@@ -1324,21 +1321,41 @@ $('cInspToggle').onclick=()=>$('cInspect').classList.toggle('open');
    AYARLAR · modal (Faz 3 knob paneli + Faz 4 imza yolları)
    ======================================================================== */
 const SET_DEFAULT={min_naming_confidence:0.7,unk_threshold:0.30,pipeline_iterations:3,
-  max_functions_to_process:0,computation_recovery_enabled:false,network_enabled:false,signature_paths:[]};
+  computation_recovery_enabled:false,network_enabled:false,signature_paths:[]};
 /* profiller formu doldurur (preset) — sadece çekirdek alanlar, gerisi olduğu gibi kalır */
 const SET_PROFILES={
   fast:{pipeline_iterations:1,computation_recovery_enabled:false},
   balanced:{min_naming_confidence:0.7,unk_threshold:0.30,pipeline_iterations:3,
-            max_functions_to_process:0,computation_recovery_enabled:false},
+            computation_recovery_enabled:false},
   deep:{pipeline_iterations:3,computation_recovery_enabled:true},
 };
+/* P17-AYAR-BASLA: sunucunun bildirdiği ağ etkisi ve yükleyici uyarıları (yalnız gelen veri) */
+function netEffectText(e){
+  if(!e||typeof e!=='object') return '';
+  if(!e.enabled) return 'Şu an: ağ kapalı — analiz ağa çıkmaz.';
+  const on=b=>b?'açık':'kapalı';
+  return 'Şu an: .d.ts indirme '+on(e.dts_fetch)+' · kaynak eşleme '+on(e.source_match)+
+    ' · başvuru kaynağı indirip derleme '+on(e.reference_download)+'.';
+}
+function settingsNotes(j){
+  const out=[];
+  (Array.isArray(j&&j.errors)?j.errors:[]).forEach(x=>out.push({cls:'err',text:'Yükleyici reddediyor (analiz bu dosyayla başlamaz): '+x}));
+  (Array.isArray(j&&j.warnings)?j.warnings:[]).forEach(x=>out.push({cls:'warn',text:String(x)}));
+  return out;
+}
+/* P17-AYAR-BITIS */
+function showSettingsInfo(j){
+  $('cfgNetEff').textContent=netEffectText(j&&j.network_effect);
+  const notes=settingsNotes(j), w=$('setWarn');
+  if(notes.length){ w.innerHTML=notes.map(n=>'⚠ '+esc(n.text)).join('<br>'); w.classList.add('on'); }
+  else{ w.innerHTML=''; w.classList.remove('on'); }
+}
 function setTog(id,on){ $(id).classList.toggle('on',!!on); }
 function fillSettings(k){
   k=Object.assign({},SET_DEFAULT,k||{});
   $('cfgConf').value=k.min_naming_confidence; $('cfgConfV').textContent=Number(k.min_naming_confidence).toFixed(2);
   $('cfgUnk').value=k.unk_threshold; $('cfgUnkV').textContent=Number(k.unk_threshold).toFixed(2);
   $('cfgIter').value=k.pipeline_iterations;
-  $('cfgMaxF').value=k.max_functions_to_process;
   setTog('cfgComp',k.computation_recovery_enabled);
   setTog('cfgNet',k.network_enabled);
   $('cfgPaths').value=(Array.isArray(k.signature_paths)?k.signature_paths:[]).join('\n');
@@ -1348,7 +1365,6 @@ function gatherSettings(){
     min_naming_confidence:parseFloat($('cfgConf').value),
     unk_threshold:parseFloat($('cfgUnk').value),
     pipeline_iterations:parseInt($('cfgIter').value,10),
-    max_functions_to_process:parseInt($('cfgMaxF').value,10),
     computation_recovery_enabled:$('cfgComp').classList.contains('on'),
     network_enabled:$('cfgNet').classList.contains('on'),
     signature_paths:$('cfgPaths').value.split('\n').map(s=>s.trim()).filter(Boolean),
@@ -1356,8 +1372,8 @@ function gatherSettings(){
 }
 async function openSettings(){
   $('setMsg').textContent=''; $('setMsg').className='msg'; $('setWarn').className='setwarn'; $('setWarn').innerHTML='';
-  try{ const j=await (await fetch('/api/settings')).json(); fillSettings(j&&j.knobs); }
-  catch(e){ fillSettings(SET_DEFAULT); }
+  try{ const j=await (await fetch('/api/settings')).json(); fillSettings(j&&j.knobs); showSettingsInfo(j); }
+  catch(e){ fillSettings(SET_DEFAULT); $('cfgNetEff').textContent=''; $('setMsg').textContent='⚠ ayarlar okunamadı — gösterilen değerler öntanımlıdır'; }
   loadDiskAccess();          // FDA durumu (asenkron; modal beklemez)
   $('settings').classList.add('on');
 }
@@ -1404,10 +1420,8 @@ async function saveSettings(){
     if(!r.ok||(j&&j.error)){ $('setMsg').textContent='⚠ '+((j&&j.error)||('reddedildi ('+r.status+')')); }
     else{
       fillSettings(j.knobs);                       // clamp/normalize edilmiş değerleri geri yansıt
-      const w=Array.isArray(j.warnings)?j.warnings:[];
-      if(w.length){ $('setWarn').innerHTML='⚠ '+w.map(esc).join('<br>⚠ '); $('setWarn').classList.add('on'); }
-      else $('setWarn').classList.remove('on');
-      $('setMsg').className='msg ok'; $('setMsg').textContent='✓ kaydedildi — sıradaki analizde geçerli';
+      showSettingsInfo(j);                         // ağ etkisi + yükleyici uyarı/hataları
+      $('setMsg').className='msg ok'; $('setMsg').textContent='✓ kaydedildi — dosyanın öbür ayarları korundu; sıradaki analizde geçerli';
     }
   }catch(e){ $('setMsg').textContent='⚠ sunucuya ulaşılamadı'; }
   finally{ btn.textContent=prev; btn.disabled=false; }

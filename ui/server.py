@@ -22,6 +22,8 @@ Tarayici:   http://127.0.0.1:8000
 """
 from __future__ import annotations
 
+import copy
+import dataclasses
 import glob
 import hashlib
 import hmac
@@ -48,7 +50,7 @@ from pathlib import Path
 # ayar paneli için Config yükleyici (Faz 3). yaml çekirdek bağımlılık (config.py:10).
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import yaml  # noqa: E402  (config.py hard-import eder -> her zaman kurulu)
-from karadul.config import Config  # noqa: E402
+from karadul.config import Config, ConfigValueError  # noqa: E402
 from karadul.core import overrides  # noqa: E402
 from karadul.core.naming_labels import (  # noqa: E402
     NAME_LABELS,
@@ -845,15 +847,33 @@ def _do_rename(addr: str, name: str) -> dict:
 # ---------------------------------------------------------------------------
 # Ayar paneli (Faz 3) + kendi imza yollari (Faz 4) -- SADE, tek YAML dosyasi
 #
-# 7 knob karadul.yaml'a BOLUMLU (sectioned) yazilir. Cogu Config._from_dict ile
-# yuklenir; iki istisna DURUSTCE ele alinir:
-#   * computation_recovery.enabled  -> YAML yuklenir AMA suffix'siz hedeflerde
-#     cli.py:507 non-interactive guard False'a zorlar. Bu yuzden analiz'e ayrica
-#     --compute-recovery / --no-compute-recovery CLI flag'i gecilir (deterministik).
-#   * network.enabled               -> Config._from_dict "network" bolumunu HIC
-#     islemiyor (loader boslugu, config.py'ye dokunamiyoruz). YAML'a yalnizca UI
-#     durumu icin yazilir; gercek etki --enable-network CLI flag'iyle saglanir.
+# Paneldeki düğmeler karadul.yaml'a BÖLÜMLÜ yazılır ve analiz bu dosyayı --config ile
+# yükler (P15a'nın katı yükleyicisi). Kayıt dosyayı BİRLEŞTİREREK yazar (ARAYUZ-06): yalnız
+# panelin anahtarları değişir, dosyadaki öbür bölüm ve anahtarlar (Ghidra yolu, deney
+# bayrakları, network.allow_reference_download ...) yerinde kalır. Ayrıca:
+#   * computation_recovery.enabled -> suffix'siz hedeflerde etkileşimsiz koruma False'a
+#     zorlayabildiği için analize ayrıca --compute-recovery / --no-compute-recovery geçilir.
+#   * network.enabled -> yükleyici okur (P15a: veri indiren alt izinler ana anahtarı izler);
+#     açıksa analize --enable-network de geçilir (CLI bu bayrakla kaynak eşlemeyi de açar).
+#     Panel ağın bugünkü etkisini `network_effect` ile gösterir (ARAYUZ-05).
+#   * binary_reconstruction.max_functions_to_process panelden kaldırıldı (ARAYUZ-04): boru
+#     hattı okumuyor (config.INERT_SETTINGS). Panel eskiden dosyaya yazıyordu; kayıt anahtarı
+#     dosyadan siler ve bunu uyarıyla bildirir.
 # ---------------------------------------------------------------------------
+# Panelin yazdığı anahtarlar (bölüm -> anahtarlar). Kayıt yalnız bunlara dokunur.
+_SETTINGS_KEYS = {
+    "binary_reconstruction": ("min_naming_confidence", "pipeline_iterations",
+                              "external_signature_paths", "ghidra_data_type_archives"),
+    "computation_recovery": ("enabled",),
+    "network": ("enabled",),
+    "name_merger": ("unk_threshold",),
+}
+# Eskiden panelin yazdığı, bugün etkisiz anahtar: kayıtta dosyadan silinir (ARAYUZ-04).
+_SETTINGS_RETIRED = (("binary_reconstruction", "max_functions_to_process"),)
+
+
+class SettingsFileError(ValueError):
+    """karadul.yaml okunamıyor ya da birleştirilemiyor (kayıt dosyayı değiştirmez)."""
 def _as_float01(v, default: float) -> float:
     """v'yi [0,1] float'a getir; sayisal degilse/NaN ise default."""
     try:
@@ -881,12 +901,15 @@ def _as_bool(v) -> bool:
 
 
 def _atomic_write_yaml(path: Path, obj) -> None:
-    """obj'i path'e atomik YAML yaz (tmp + os.replace) -> yarim/bozuk dosya olmaz."""
+    """obj'i path'e atomik YAML yaz (tmp + os.replace) -> yarim/bozuk dosya olmaz.
+
+    Anahtar sırası korunur (sort_keys=False): birleştirilen dosyada kullanıcının sırası kalır.
+    """
     tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.tmp")
     try:
         with open(tmp, "w", encoding="utf-8") as f:
             yaml.safe_dump(obj, f, default_flow_style=False,
-                           allow_unicode=True, sort_keys=True)
+                           allow_unicode=True, sort_keys=False)
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp, path)
@@ -899,40 +922,93 @@ def _atomic_write_yaml(path: Path, obj) -> None:
 
 
 def _settings_raw_yaml() -> dict:
-    """karadul.yaml'i HAM oku (network.enabled gibi loader'in atladigi alanlar icin)."""
+    """karadul.yaml'i HAM oku. Dosya yoksa {}; okunamıyor, ayrıştırılamıyor ya da kökü
+    sözlük değilse ``SettingsFileError`` (kayıt böyle bir dosyanın üstüne yazmaz)."""
     p = _SETTINGS_YAML
     if not p.is_file():
         return {}
     try:
-        d = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
-    except (OSError, yaml.YAMLError):
+        d = yaml.safe_load(p.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError) as e:
+        raise SettingsFileError(f"{p} okunamadı: {e}") from e
+    except yaml.YAMLError as e:
+        raise SettingsFileError(f"{p} YAML olarak ayrıştırılamadı: {e}") from e
+    if d is None:
         return {}
-    return d if isinstance(d, dict) else {}
+    if not isinstance(d, dict):
+        raise SettingsFileError(f"{p}: kök bir sözlük değil ({type(d).__name__})")
+    return d
+
+
+def _settings_config() -> tuple[Config, list[str]]:
+    """Analizin yükleyeceği yapılandırma ve yükleyicinin sorunları.
+
+    Dosya yoksa öntanımlar (``Config.load``'un cwd'deki karadul.yaml'a düşmesi istenmez:
+    analiz yalnız bu dosyayı --config ile alır). Yükleyici reddederse öntanımlar + sorunlar.
+    """
+    if not _SETTINGS_YAML.is_file():
+        return Config(), []
+    try:
+        return Config.load(_SETTINGS_YAML), []
+    except ConfigValueError as e:
+        problems = [str(p) for p in (getattr(e, "problems", None) or [])] or [str(e)]
+        return Config(), problems
+
+
+def _network_effect(cfg: Config) -> dict:
+    """Ağ düğmesinin bu ayarlarla analizde açacağı izinler (ARAYUZ-05).
+
+    Düğme açıkken analize --enable-network geçilir; CLI o bayrakla ``network.enable`` ve
+    ``source_match.enabled = True`` yapar (karadul/cli.py analyze). Burada aynısı kopya
+    yapılandırma üstünde uygulanır; sonuç okuyucuların baktığı koşullardır:
+    .d.ts indirme (``naming/pipeline.py``), kaynak eşleme (Layer 1.5), başvuru kaynağını
+    indirip derleme (``_feedback_naming_refdiff.reference_download_allowed``).
+    """
+    net = cfg.network
+    enabled = net.enabled is True
+    source_match = bool(cfg.source_match.enabled)
+    if enabled:
+        net = dataclasses.replace(net)
+        net.enable(explicit_keys={k.split(".", 1)[1] for k in cfg.yaml_keys
+                                  if k.startswith("network.")})
+        source_match = True
+    return {
+        "enabled": enabled,
+        "dts_fetch": enabled and net.allow_dts_fetch is True,
+        "source_match": enabled and source_match and net.allow_source_match is True,
+        "reference_download": enabled and net.allow_reference_download is True,
+    }
 
 
 def _read_settings() -> dict:
-    """Aktif 7 knob'u dondur. Config-yuklu 6 knob Config.load'dan (gercek etkin
-    deger), network ham YAML'dan (loader boslugu)."""
-    cfg = Config.load(_SETTINGS_YAML)   # dosya yoksa saf default
+    """Panel düğmeleri: değerler yükleyicinin gerçekten kuracağı yapılandırmadan.
+
+    ``warnings``: yükleyicinin etkisiz saydığı anahtarlar (``inert_setting_warnings``);
+    ``errors``: yükleyicinin reddettiği anahtarlar (analiz bu dosyayla başlamaz).
+    """
+    cfg, problems = _settings_config()
     br = cfg.binary_reconstruction
     cr = cfg.computation_recovery
     nm = cfg.name_merger
-    raw = _settings_raw_yaml()
-    net = raw.get("network")
-    net_enabled = bool(net.get("enabled")) if isinstance(net, dict) else False
     # tek UI alani: external + gdt yollarini birlestir (POST tekrar ayirir)
     sig_paths = [str(p) for p in br.external_signature_paths] + \
                 [str(p) for p in br.ghidra_data_type_archives]
+    try:
+        warnings = list(cfg.inert_setting_warnings())
+    except Exception:  # noqa: BLE001 -- uyarı listesi paneli düşürmez
+        warnings = []
     return {
         "knobs": {
             "min_naming_confidence": round(float(br.min_naming_confidence), 4),
             "unk_threshold": round(float(nm.unk_threshold), 4),
             "pipeline_iterations": int(br.pipeline_iterations),
-            "max_functions_to_process": int(br.max_functions_to_process),
             "computation_recovery_enabled": bool(cr.enabled),
-            "network_enabled": net_enabled,
+            "network_enabled": cfg.network.enabled is True,
             "signature_paths": sig_paths,
         },
+        "network_effect": _network_effect(cfg),
+        "warnings": warnings,
+        "errors": problems,
         "path": str(_SETTINGS_YAML),
         "exists": _SETTINGS_YAML.is_file(),
     }
@@ -974,20 +1050,54 @@ def _classify_sig_paths(raw) -> tuple[list, list, list]:
     return ext, gdt, warns
 
 
-def _write_settings(knobs) -> dict:
-    """7 knob'u WHITELIST + tip/aralik dogrulamayla karadul.yaml'a atomik yaz.
+def _merge_settings(raw: dict, panel: dict) -> tuple[dict, list[str]]:
+    """Paneldeki değerleri mevcut YAML sözlüğüne birleştir (ARAYUZ-06).
 
-    SADECE bilinen anahtarlar bolumlu dict'e girer (keyfi/kotu anahtar asla yazilmaz).
+    Yalnız ``_SETTINGS_KEYS``'teki anahtarlar yazılır; dosyadaki öbür bölüm ve anahtarlar
+    olduğu gibi kalır. ``_SETTINGS_RETIRED`` anahtarları silinir (bildirilir). Bölüm boşsa
+    (``tools:`` -> None) sözlük açılır; sözlük olmayan bir değer taşıyorsa ``SettingsFileError``
+    (üstüne yazmak kullanıcının değerini siler).
+    """
+    merged = copy.deepcopy(raw)   # YAML'ın tarih vb. tipleri de korunur
+    notes: list[str] = []
+    for section, values in panel.items():
+        cur = merged.get(section)
+        if cur is None:
+            cur = {}
+        if not isinstance(cur, dict):
+            raise SettingsFileError(
+                f"karadul.yaml: '{section}' bir bölüm (sözlük) değil; panel bu dosyaya yazmaz")
+        for key, value in values.items():
+            cur[key] = value
+        merged[section] = cur
+    for section, key in _SETTINGS_RETIRED:
+        sec = merged.get(section)
+        if isinstance(sec, dict) and key in sec:
+            del sec[key]
+            notes.append(f"{section}.{key} dosyadan kaldırıldı: boru hattı bu ayarı okumuyor "
+                         "(etkisiz; panelden de kaldırıldı)")
+    return merged, notes
+
+
+def _write_settings(knobs) -> dict:
+    """Panel düğmelerini WHITELIST + tip/aralık doğrulamayla karadul.yaml'a BİRLEŞTİREREK yaz.
+
+    Yalnız panelin anahtarları değişir (keyfi/kötü anahtar yazılmaz); dosyanın geri kalanı
+    korunur. Dosya ayrıştırılamıyorsa hiçbir şey yazılmaz (409).
     """
     if not isinstance(knobs, dict):
         return {"__code": 400, "error": "knobs sözlük değil"}
     ext_paths, gdt_paths, warns = _classify_sig_paths(knobs.get("signature_paths"))
-    # WHITELIST: cikti dict'i SADECE bu sabit iskeletten kurulur (injection guard).
-    data = {
+    base = Config()   # öntanımlar tek kaynaktan (karadul/config.py)
+    # WHITELIST: yazılan değerler SADECE bu sabit iskeletten kurulur (injection guard).
+    panel = {
         "binary_reconstruction": {
-            "min_naming_confidence": _as_float01(knobs.get("min_naming_confidence"), 0.7),
-            "pipeline_iterations": _as_int(knobs.get("pipeline_iterations"), 1, 3),
-            "max_functions_to_process": _as_int(knobs.get("max_functions_to_process"), 0, 0),
+            "min_naming_confidence": _as_float01(
+                knobs.get("min_naming_confidence"),
+                base.binary_reconstruction.min_naming_confidence),
+            "pipeline_iterations": _as_int(
+                knobs.get("pipeline_iterations"), 1,
+                base.binary_reconstruction.pipeline_iterations),
             "external_signature_paths": ext_paths,
             "ghidra_data_type_archives": gdt_paths,
         },
@@ -998,16 +1108,21 @@ def _write_settings(knobs) -> dict:
             "enabled": _as_bool(knobs.get("network_enabled")),
         },
         "name_merger": {
-            "unk_threshold": _as_float01(knobs.get("unk_threshold"), 0.30),
+            "unk_threshold": _as_float01(knobs.get("unk_threshold"),
+                                         base.name_merger.unk_threshold),
         },
     }
     try:
-        _atomic_write_yaml(_SETTINGS_YAML, data)
+        merged, notes = _merge_settings(_settings_raw_yaml(), panel)
+    except SettingsFileError as e:
+        return {"__code": 409, "error": f"{e} — dosya değiştirilmedi"}
+    try:
+        _atomic_write_yaml(_SETTINGS_YAML, merged)
     except OSError as e:
         return {"__code": 500, "error": f"karadul.yaml yazılamadı: {e}"}
-    out = _read_settings()   # geri-oku (round-trip dogrulanmis deger)
+    out = _read_settings()   # geri-oku: yükleyicinin gerçekten kurduğu değerler
     out["ok"] = True
-    out["warnings"] = warns
+    out["warnings"] = warns + notes + out.get("warnings", [])
     return out
 
 
@@ -1851,13 +1966,18 @@ def start_analysis(binary: str) -> dict:
     if _SETTINGS_YAML.is_file():
         cmd += ["--config", str(_SETTINGS_YAML)]
         try:
-            _k = _read_settings()["knobs"]
-            cmd += (["--compute-recovery"] if _k["computation_recovery_enabled"]
-                    else ["--no-compute-recovery"])
-            if _k["network_enabled"]:
-                cmd += ["--enable-network"]
-        except Exception:
-            pass   # ayar okunamazsa --config yeter, best-effort flag'ler
+            _s = _read_settings()
+        except SettingsFileError as e:
+            return {"error": f"ayar dosyası okunamadı: {e}"}
+        if _s.get("errors"):
+            # analiz bu dosyayla çıkış 2 verir; başlatmadan söyle (sessiz başarısızlık yok)
+            return {"error": "ayar dosyası yükleyiciden geçmiyor: "
+                             + "; ".join(_s["errors"][:3])}
+        _k = _s["knobs"]
+        cmd += (["--compute-recovery"] if _k["computation_recovery_enabled"]
+                else ["--no-compute-recovery"])
+        if _k["network_enabled"]:
+            cmd += ["--enable-network"]
     lf = None
     try:
         lf = open(log_path, "w")
