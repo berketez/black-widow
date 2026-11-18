@@ -1005,6 +1005,8 @@ def _read_settings() -> dict:
             "computation_recovery_enabled": bool(cr.enabled),
             "network_enabled": cfg.network.enabled is True,
             "signature_paths": sig_paths,
+            # uygulama tercihi (ui_prefs.json; karadul.yaml'a yazılmaz) -- MEK-04
+            "update_check": _read_ui_prefs()["update_check"],
         },
         "network_effect": _network_effect(cfg),
         "warnings": warnings,
@@ -1120,6 +1122,11 @@ def _write_settings(knobs) -> dict:
         _atomic_write_yaml(_SETTINGS_YAML, merged)
     except OSError as e:
         return {"__code": 500, "error": f"karadul.yaml yazılamadı: {e}"}
+    if "update_check" in knobs:
+        try:
+            _write_ui_prefs({"update_check": _as_bool(knobs.get("update_check"))})
+        except OSError as e:
+            return {"__code": 500, "error": f"arayüz tercihi yazılamadı: {e}"}
     out = _read_settings()   # geri-oku: yükleyicinin gerçekten kurduğu değerler
     out["ok"] = True
     out["warnings"] = warns + notes + out.get("warnings", [])
@@ -1445,16 +1452,61 @@ def _recompute_status(result: dict, current) -> dict:
     return result
 
 
+# ---------------------------------------------------------------------------
+# Güncelleme sorgusunun izni (MEK-04 / ARAYUZ-16, K-6): öntanımlı KAPALI ve ağ ayarına bağlı.
+#   * network.enabled kapalıysa (karadul.yaml) hiçbir güncelleme isteği gitmez; menüden
+#     "Güncellemeleri Kontrol Et" de gitmez, kullanıcıya nedeni söylenir.
+#   * Açılıştaki otomatik sorgu ayrıca arayüz tercihini ister (``update_check``; öntanım
+#     False). Tercih analiz ayarı değil, uygulama ayarıdır: karadul.yaml'a yazılmaz (katı
+#     yükleyici bilinmeyen bölümü reddeder), veri kökündeki ui_prefs.json'da durur.
+#   * Menüden açıkça istenen sorgu ve "İndir ve Aç" (explicit) yalnız ağ iznini ister.
+# ---------------------------------------------------------------------------
+_UI_PREFS_DEFAULT = {"update_check": False}
+
+
+def _ui_prefs_path() -> Path:
+    return _DATA_ROOT / "ui_prefs.json"
+
+
+def _read_ui_prefs() -> dict:
+    """Arayüz tercihleri; dosya yok / bozuk / tipe uymuyorsa öntanım (kapalı)."""
+    out = dict(_UI_PREFS_DEFAULT)
+    try:
+        d = json.loads(_ui_prefs_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return out
+    if isinstance(d, dict) and isinstance(d.get("update_check"), bool):
+        out["update_check"] = d["update_check"]
+    return out
+
+
+def _write_ui_prefs(prefs: dict) -> None:
+    data = {**_read_ui_prefs(), **{k: v for k, v in prefs.items() if k in _UI_PREFS_DEFAULT}}
+    _atomic_write_json(_ui_prefs_path(), data)
+
+
+def _update_check_block_reason(explicit: bool) -> str | None:
+    """Güncelleme sorgusu şimdi ağa çıkabilir mi? Çıkamazsa okunur neden; çıkabilirse None."""
+    cfg, problems = _settings_config()
+    if problems or cfg.network.enabled is not True:
+        return ("ağ erişimi kapalı (Ayarlar → Ağ erişimi): güncelleme sorgusu gönderilmedi")
+    if not explicit and not _read_ui_prefs()["update_check"]:
+        return ("açılışta güncelleme denetimi kapalı (Ayarlar → Güncelleme denetimi)")
+    return None
+
+
 def _update_check(timeout: float = 4.0, *, force: bool = False,
-                  cache_path: Path | None = None) -> dict:
+                  cache_path: Path | None = None, explicit: bool = False) -> dict:
     """Uzak manifest'ten son surumu al, mevcut surumle kiyasla.
 
     Donus (sozlesme):
       {status, current, latest, url, error,
        dmg_url, sha256, size_bytes, notes_url, published_at, min_os,
        checked_at, from_cache}
-      status: "update_available" | "up_to_date" | "unknown"
+      status: "update_available" | "up_to_date" | "unknown" | "disabled"
 
+    "disabled": izin yok (``_update_check_block_reason``); ağa ÇIKILMAZ, önbellek de
+    okunmaz, neden ``error``'da. ``explicit``: kullanıcı açıkça istedi (menü / indirme).
     Throttle: cache 24 saatten yeni ve force=False ise ag ATLANIR (cache doner).
     ?force=1 -> cache atlanir, taze cekilir. ASLA exception yaymaz -- ag/parse
     hatasinda status="unknown". dmg_url/notes_url SSRF guard'dan gecmezse None.
@@ -1467,6 +1519,12 @@ def _update_check(timeout: float = 4.0, *, force: bool = False,
         "notes_url": None, "published_at": None, "min_os": None,
         "checked_at": None, "from_cache": False,
     }
+    blocked = _safe(lambda: _update_check_block_reason(explicit),
+                    "güncelleme izni okunamadı: sorgu gönderilmedi")
+    if blocked:
+        result["status"] = "disabled"
+        result["error"] = blocked
+        return result
     cp = cache_path or _update_cache_path()
 
     # --- Throttle: taze cache varsa AG'A HIC CIKMA ---
@@ -1618,7 +1676,10 @@ def _start_update_download() -> dict:
     Once SSRF + sha256 dogrulanabilirlik guard'lari: dmg_url izinli degilse ya da
     sha256 yoksa INDIRME BASLATMAZ (butunluk dogrulanamayacaksa hic inme).
     """
-    info = _safe(_update_check, {}) or {}
+    info = _safe(lambda: _update_check(explicit=True), {}) or {}
+    if info.get("status") == "disabled":
+        return {"status": "error", "error": info.get("error") or "güncelleme sorgusu kapalı",
+                "downloaded": 0, "total": 0}
     if info.get("status") != "update_available":
         return {"status": "error", "error": "guncelleme yok",
                 "downloaded": 0, "total": 0}
@@ -2278,7 +2339,10 @@ class Handler(BaseHTTPRequestHandler):
             qs = self.path.split("?", 1)[1] if "?" in self.path else ""
             q = dict(x.split("=", 1) for x in qs.split("&") if "=" in x)
             force = q.get("force") in ("1", "true", "yes")
-            self._json(_safe(lambda: _update_check(force=force), {"status": "unknown",
+            # force=1 yalnız menünün "Güncellemeleri Kontrol Et"inden gelir: açık istek.
+            # Açılıştaki otomatik sorgu (force yok) ayrıca update_check tercihini ister.
+            self._json(_safe(lambda: _update_check(force=force, explicit=force),
+                             {"status": "unknown",
                        "current": _safe(_current_version, None), "latest": None,
                        "url": _RELEASES_URL, "error": "ic hata"}))
         elif path == "/api/update-download-status":

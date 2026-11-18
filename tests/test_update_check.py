@@ -33,6 +33,16 @@ def srv():
     return mod
 
 
+@pytest.fixture(autouse=True)
+def update_allowed(srv, monkeypatch):
+    """Bu dosya sorgunun İÇERİĞİNİ sınar: izin kapısı açık varsayılır.
+
+    P17 / MEK-04'ten beri sorgu öntanımlı kapalı ve ağ ayarına bağlı; kapının kendisi
+    tests/test_p17_guncelleme.py'de sınanır.
+    """
+    monkeypatch.setattr(srv, "_update_check_block_reason", lambda explicit: None)
+
+
 @pytest.fixture
 def reset_dl(srv):
     """Modül-seviyesi indirme durumunu (global _UPDATE_DL) test öncesi/sonrası sıfırla."""

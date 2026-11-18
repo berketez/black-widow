@@ -104,6 +104,46 @@
       "test": "tests/test_p17_ayar.py",
       "find": "  if(!e.enabled) return 'Şu an: ağ kapalı",
       "replace": "  if(e.enabled) return 'Şu an: ağ kapalı"
+    },
+    {
+      "id": "m04_ag_ayari_okunmaz",
+      "desc": "güncelleme sorgusu ağ ayarına bakmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_guncelleme.py",
+      "find": "    if problems or cfg.network.enabled is not True:",
+      "replace": "    if problems:"
+    },
+    {
+      "id": "m04_tercih_okunmaz",
+      "desc": "açılış sorgusu tercihe bakmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_guncelleme.py",
+      "find": "    if not explicit and not _read_ui_prefs()[\"update_check\"]:",
+      "replace": "    if False and not explicit:"
+    },
+    {
+      "id": "m04_acilis_acik_istek_sayilir",
+      "desc": "uç her sorguyu açık istek sayar",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_guncelleme.py",
+      "find": "_update_check(force=force, explicit=force)",
+      "replace": "_update_check(force=force, explicit=True)"
+    },
+    {
+      "id": "m04_indirme_nedeni_yutulur",
+      "desc": "indirme reddinin nedeni yutulur",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_guncelleme.py",
+      "find": "    if info.get(\"status\") == \"disabled\":",
+      "replace": "    if info.get(\"status\") == \"disabled_yok\":"
+    },
+    {
+      "id": "m04_tercih_dizgi_kabul",
+      "desc": "bozuk tercih dosyasındaki dizgi açık sayılır",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_guncelleme.py",
+      "find": "isinstance(d.get(\"update_check\"), bool)",
+      "replace": "d.get(\"update_check\") is not None"
     }
   ]
 }

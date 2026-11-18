@@ -192,6 +192,9 @@ def _check_update_async() -> None:
     ASLA UI'ı bloklamaz, ASLA istisna yaymaz. Kendi server'ımızın
     ``/api/update-check`` ucunu çağırır (semver mantığı orada, tek yerde).
     Güncelleme yoksa/ağ yoksa sessizce döner -- kullanıcı hiçbir şey görmez.
+    MEK-04: dışarıya istek yalnız ağ erişimi VE "Güncelleme denetimi (açılışta)"
+    tercihi açıksa gider; karar sunucuda (``_update_check_block_reason``), kapalıysa
+    yanıt ``status: disabled`` ve ağa çıkılmaz. Öntanım kapalı.
     """
     try:
         req = urllib.request.Request(f"{URL}/api/update-check", headers=_API_HEADERS)
@@ -254,6 +257,9 @@ def _act_check_update() -> None:
             _js("window.bwShowUpdate && window.bwShowUpdate(%s)" % json.dumps(payload))
         elif isinstance(info, dict) and info.get("status") == "up_to_date":
             _notify("En güncel sürümü kullanıyorsunuz (%s)." % (info.get("current") or "?"))
+        elif isinstance(info, dict) and info.get("status") == "disabled":
+            # MEK-04: izin yok -> sunucu ağa çıkmadı; neden (ör. ağ erişimi kapalı) olduğu gibi
+            _notify("Güncelleme denetlenmedi: %s." % (info.get("error") or "sorgu kapalı"))
         else:
             _notify("Güncelleme kontrol edilemedi. İnternet bağlantısını kontrol edin.")
 

@@ -615,6 +615,10 @@
           <div class="d" id="cfgNetEff"></div></div>
         <div class="ctl"><div class="settog" id="cfgNet"></div></div>
       </div>
+      <div class="setrow">
+        <div class="lab"><div class="n">Güncelleme denetimi (açılışta)</div><div class="d">Açıksa uygulama açılınca (günde en çok bir kez) GitHub'dan son sürümü sorar. Öntanımlı kapalı; ağ erişimi kapalıyken hiç sorulmaz. Menüdeki "Güncellemeleri Kontrol Et" yalnız ağ erişimini ister.</div></div>
+        <div class="ctl"><div class="settog" id="cfgUpd"></div></div>
+      </div>
       <div class="setsep"></div>
       <div class="sethead">KENDİ İMZA DOSYALARIN</div>
       <textarea class="setpaths" id="cfgPaths" spellcheck="false" placeholder="/yol/imzalar.json&#10;/yol/flirt-dizini&#10;/yol/tipler.gdt"></textarea>
@@ -1321,7 +1325,7 @@ $('cInspToggle').onclick=()=>$('cInspect').classList.toggle('open');
    AYARLAR · modal (Faz 3 knob paneli + Faz 4 imza yolları)
    ======================================================================== */
 const SET_DEFAULT={min_naming_confidence:0.7,unk_threshold:0.30,pipeline_iterations:3,
-  computation_recovery_enabled:false,network_enabled:false,signature_paths:[]};
+  computation_recovery_enabled:false,network_enabled:false,update_check:false,signature_paths:[]};
 /* profiller formu doldurur (preset) — sadece çekirdek alanlar, gerisi olduğu gibi kalır */
 const SET_PROFILES={
   fast:{pipeline_iterations:1,computation_recovery_enabled:false},
@@ -1358,6 +1362,7 @@ function fillSettings(k){
   $('cfgIter').value=k.pipeline_iterations;
   setTog('cfgComp',k.computation_recovery_enabled);
   setTog('cfgNet',k.network_enabled);
+  setTog('cfgUpd',k.update_check);
   $('cfgPaths').value=(Array.isArray(k.signature_paths)?k.signature_paths:[]).join('\n');
 }
 function gatherSettings(){
@@ -1367,6 +1372,7 @@ function gatherSettings(){
     pipeline_iterations:parseInt($('cfgIter').value,10),
     computation_recovery_enabled:$('cfgComp').classList.contains('on'),
     network_enabled:$('cfgNet').classList.contains('on'),
+    update_check:$('cfgUpd').classList.contains('on'),
     signature_paths:$('cfgPaths').value.split('\n').map(s=>s.trim()).filter(Boolean),
   };
 }
@@ -1430,6 +1436,7 @@ $('cfgConf').oninput=e=>$('cfgConfV').textContent=Number(e.target.value).toFixed
 $('cfgUnk').oninput=e=>$('cfgUnkV').textContent=Number(e.target.value).toFixed(2);
 $('cfgComp').onclick=()=>$('cfgComp').classList.toggle('on');
 $('cfgNet').onclick=()=>$('cfgNet').classList.toggle('on');
+$('cfgUpd').onclick=()=>$('cfgUpd').classList.toggle('on');
 document.querySelectorAll('.setprof').forEach(el=>el.onclick=()=>applyProfile(el.dataset.prof));
 $('setSave').onclick=saveSettings;
 $('setClose').onclick=closeSettings;
