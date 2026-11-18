@@ -1,0 +1,22 @@
+diff --git a/tests/test_lm_tools.py b/tests/test_lm_tools.py
+index 5999544..e30a87b 100644
+--- a/tests/test_lm_tools.py
++++ b/tests/test_lm_tools.py
+@@ -491,7 +491,7 @@ def test_hata_kodlari(ws, tmp_path):
+     for yon in ("callers", "callees", "address_refs"):
+         r = call(grafiksiz, "get_xrefs", {"addr": fun(A), "direction": yon})
+         assert (r.ok, r.error) == (False, "veri_yok")
+-    assert T.INVALID_CALL_ERRORS == {"bilinmeyen_adres", "gecersiz_arguman", "arac_kapali"}
++    assert T.INVALID_CALL_ERRORS == {"bilinmeyen_adres", "gecersiz_arguman", "arac_kapali", "bilinmeyen_ad"}
+ 
+ 
+ def test_arac_hatasi_ve_tavani_asan_sonuc_isteme_girmez(ws):
+@@ -622,7 +622,7 @@ def _ice_aktarilanlar(yol: Path) -> set[str]:
+ 
+ def test_arac_paketi_yalniz_standart_kitaplik_ve_karadul():
+     dosyalar = sorted((KOK / "karadul" / "lm" / "tools").glob("*.py")) + [KOK / "karadul" / "lm" / "context.py"]
+-    assert len(dosyalar) == 3
++    assert len(dosyalar) == 5   # __init__, index (P22d), read, read_more (P22d) + context
+     for yol in dosyalar:
+         ice_aktarma_siniri(yol)
+ 

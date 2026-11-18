@@ -2,6 +2,11 @@
 
 Sözleşme: ``docs/arge/2026-11-11_karadullm/arac_sozlesmeleri.md`` §1 (ortak kurallar) ve §5 (ilk
 dilimin araç kümesi: O1 ``get_evidence``, O2 ``get_decompiled``, O3 ``get_xrefs``; ``read.py``).
+Araç kaydı v2 (KaradulLM v2 tasarımı §3.5, P22d): ``docs/arge/2026-11-18_karadullm_v2/arac_sozlesmeleri_v2.md``;
+yeni okuyan araçlar ``read_more.py``'de (O5, O7, O7b, R1, O11, O8, O10), R1'in ters dizini
+``index.py``'de. Kip başına araç alt kümesi (tasarım §3.4) bu dosyanın sonunda: ``MODE_TOOLSETS``,
+``mode_toolset``, ``registry_for_mode``. ``default_registry`` bugünkü K0 / K1 / K2 kümesidir (O1-O3)
+ve değişmedi: sabit önekleri bayt bayt aynı kalır.
 
 Kurallar (sözleşme §1.1-1.5, tasarım §6.2):
 
@@ -40,6 +45,50 @@ KIND_FACT = "olgu"              # Ghidra'nın ya da ikilinin doğrudan söyledi�
 KIND_PROXY = "vekil"            # decompile metninden düzenli ifadeyle çıkarılan
 KIND_INFERENCE = "cikarim"      # Karadul'un etiketli adı
 KIND_FACT_AND_INFERENCE = f"{KIND_FACT}+{KIND_INFERENCE}"
+KIND_FACT_AND_PROXY = f"{KIND_FACT}+{KIND_PROXY}"   # O5: CFG olgusu + imzadan okunan parametre sayısı
+
+# --- Araç sınıfları ve izin eylemleri (sözleşme §1.1; v2 tasarımı §3.9) --------------------------
+# O: okuyan; R: ters arama (okuyan; ayrı sınıf, çünkü ikilinin geneline sorulur, adres almaz);
+# Ö: öneri kaydı açar (henüz kayıtlı aracı yok; P22e). H (yeniden hesapla) kayıt defterine GİREMEZ:
+# ilk sürümde kayıtlı aracı yoktur (sözleşme §4) ve süreç başlatan araç hiçbir kipte yoktur (§3.9).
+ACTION_READ, ACTION_PROPOSE = "oku", "oner"
+TOOL_CLASS_ACTIONS = {"O": ACTION_READ, "R": ACTION_READ, "Ö": ACTION_PROPOSE}
+
+# --- Araç kaydı v2 sınırları (P22d) -------------------------------------------------------------
+# Paketin sayısal sabitleri ``karadul/lm/__init__.py``'de durur (tasarım §3.1); o dosya bu paketin
+# yazma listesinde değildi. Bu sınırlar YALNIZ burada tanımlıdır; araçlar ve testler buradan alır.
+# Kökler: "tasarım" = v2 tasarımı §3.5 / eski sözleşme §2'nin değeri; [seçim] = tasarımın Berke'ye
+# bıraktığı başlangıç değeri; [bu iş] = bu pakette konmuş, gerekçesi yanında.
+FACTS_RESULT_MAX_BYTES = 3000           # [bu iş] O5 sonucu sabit boyutlu; uyarılar 8 × 160 karakter
+CALL_GRAPH_MAX_DEPTH = 2                # tasarım O7: derinlik ≤ 2
+CALL_GRAPH_MAX_NODES = 40               # tasarım O7: ≤ 40 düğüm
+CALL_GRAPH_MAX_EDGES = 2 * CALL_GRAPH_MAX_NODES   # [bu iş] gösterilen düğümler arası kenar tavanı
+CALL_GRAPH_RESULT_MAX_BYTES = 16000     # [bu iş] 40 düğüm × ~190 bayt + 80 kenar × ~40 bayt + zarf
+PATH_MAX_PATHS = 3                      # tasarım O7b: ≤ 3 yol [seçim]
+PATH_MAX_DEPTH = 6                      # tasarım O7b: derinlik ≤ 6 [seçim]
+PATH_RESULT_MAX_BYTES = 8000            # [bu iş] 3 yol × 7 düğüm + düğüm etiketleri
+FIND_REFS_MAX_ROWS = 30                 # [bu iş] get_xrefs'in sayfa tavanıyla aynı büyüklük
+FIND_REFS_MATCHES_PER_ROW = 3           # [bu iş] dizgi aramasında satır başına gösterilen eşleşme
+FIND_REFS_STRING_CHARS = 120            # eski sözleşme O4: dizgi 120 karakter
+FIND_REFS_RESULT_MAX_BYTES = 24000      # [bu iş] 30 satır × (etiketli ad + 3 × 120 karakter, kaçışlı)
+IMPORT_NAME_MAX_CHARS = 128             # [bu iş] ithal adı argümanının tavanı (C++ adları uzun olabilir)
+SEARCH_TEXT_MIN_CHARS = 3               # tasarım O11: düz alt dizgi 3-64 karakter
+SEARCH_TEXT_MAX_CHARS = 64              # tasarım O11
+SEARCH_MAX_ROWS = 20                    # tasarım O11: ≤ 20 satır
+SEARCH_LINE_MAX_CHARS = 160             # eski sözleşme O11: satır 160 karakter
+# [bu iş] Tek search_code çağrısının okuyabileceği decompile metni (bayt). Aşılırsa tarama durur ve
+# sonuç bunu söyler (sessiz eksik yok). Geliştirme setindeki ölçüm P22d.md kalem 4'te.
+SEARCH_SCAN_MAX_BYTES = 64 * 1024 * 1024
+SEARCH_RESULT_MAX_BYTES = SEARCH_MAX_ROWS * (6 * SEARCH_LINE_MAX_CHARS + 96) + 2048   # en kötü kaçış
+PROVENANCE_TEXT_MAX_CHARS = 160         # [bu iş] köken kaydındaki gerekçe / kanıt metni
+PROVENANCE_PARAMS_MAX = 20              # [bu iş] gösterilen parametre adı kaydı
+PROVENANCE_ROLES_MAX = 10               # [bu iş] gösterilen rol kanıtı (P12a role_evidence)
+PROVENANCE_RESULT_MAX_BYTES = 16000     # [bu iş]
+TYPES_MAX_ROWS = 10                     # [bu iş] eski sözleşme O10 "20 kayıt"tı; alanlarla birlikte sığsın
+TYPES_FIELDS_MAX = 12                   # [bu iş] tip başına gösterilen alan / enum değeri
+TYPES_TEXT_MAX_CHARS = 64               # [bu iş] tip / alan adı ve tip metni
+TYPE_QUERY_MAX_CHARS = 64               # [bu iş]
+TYPES_RESULT_MAX_BYTES = 16000          # [bu iş]
 
 # --- Hata kodları ---------------------------------------------------------------------------
 # Sözleşme §1.3'teki beş kod:
@@ -51,8 +100,11 @@ ERR_INTERNAL = "ic_hata"
 # Bu işte eklenen iki kod (sözleşmede karşılığı yok; asama1b.md §2):
 ERR_NO_DATA = "veri_yok"                # adres biliniyor ama istenen saklı dosya yok
 ERR_BAD_ARGUMENT = "gecersiz_arguman"   # şemaya uymayan ya da anlamsız argüman birleşimi
+# Araç kaydı v2 (P22d) ile eklenen iki kod (arac_sozlesmeleri_v2.md §1.3):
+ERR_UNKNOWN_NAME = "bilinmeyen_ad"      # R1: ithal adı ikilinin ithal listesinde yok
+ERR_STALE = "veri_bayat"                # çalışma alanının dosyası oturum açıldıktan sonra değişti
 # Geçersiz çağrı sayılan hatalar (K-A1'in "anlam" payı).
-INVALID_CALL_ERRORS = frozenset({ERR_UNKNOWN_ADDRESS, ERR_BAD_ARGUMENT, ERR_TOOL_CLOSED})
+INVALID_CALL_ERRORS = frozenset({ERR_UNKNOWN_ADDRESS, ERR_BAD_ARGUMENT, ERR_TOOL_CLOSED, ERR_UNKNOWN_NAME})
 
 # --- Ad etiketleri (sözleşme §1.6) ----------------------------------------------------------
 TAG_PROVEN, TAG_VERIFIED, TAG_UNVERIFIED = "proven", "verified", "unverified"
@@ -109,6 +161,19 @@ def _read_json(path: Path) -> Any:
         return json.loads(path.read_text(encoding="utf-8", errors="replace"))
     except (OSError, ValueError):
         return None
+
+
+Fingerprint = tuple[str, Optional[int], Optional[int], Optional[int]]
+
+
+def file_fingerprint(path: Path) -> Fingerprint:
+    """Dosyanın parmak izi: (ad, boyut, değişiklik zamanı ns, düğüm no); okunamıyorsa ``None``'lar.
+    İçerik okunmaz (bayatlık denetimi her sorguda yalnız bir ``stat``)."""
+    try:
+        st = Path(path).stat()
+    except OSError:
+        return (Path(path).name, None, None, None)
+    return (Path(path).name, st.st_size, st.st_mtime_ns, st.st_ino)
 
 
 def call_graph_edges(data: Any, addr_set: set[str]) -> Optional[dict[str, set[str]]]:
@@ -169,6 +234,9 @@ class Workspace:
         self.root = Path(root)
         self.static_dir = self.root / "static"
         self.code_dir = self.static_dir / "ghidra_output" / "decompiled"
+        # Adres tablosunun dayandığı dosyanın parmak izi (okumadan önce): ters dizin bayatlığı buna
+        # bakar (``index.reverse_index``).
+        self.functions_fingerprint = file_fingerprint(self.static_dir / "ghidra_functions.json")
         data = _read_json(self.static_dir / "ghidra_functions.json")
         funcs = data.get("functions") if isinstance(data, dict) else None
         if not isinstance(funcs, list):
@@ -227,6 +295,12 @@ class Workspace:
     def _canon(self, hexaddr: Any) -> Optional[str]:
         n = _hex_int(hexaddr)
         return None if n is None else self._functions.get(n)
+
+    def cached(self, key: str, build: Callable[[], Any]) -> Any:
+        """Nesne ömrünce saklanan türetilmiş veri (``read_more`` araçlarının yüklediği dosyalar)."""
+        if key not in self._cache:
+            self._cache[key] = build()
+        return self._cache[key]
 
     # --- decompile metni ----------------------------------------------------------------------
 
@@ -586,6 +660,8 @@ class ToolRegistry:
                 raise ValueError(f"{s.name}: tanım tek satır olmalı")
             if s.max_result_bytes <= 0:
                 raise ValueError(f"{s.name}: sonuç boyut sınırı artı olmalı")
+            if s.cls not in TOOL_CLASS_ACTIONS:
+                raise ValueError(f"{s.name}: araç sınıfı {s.cls!r} kayıt defterine giremez")
             protocol.check_schema(s.args_schema)
             if s.args_schema.get("type") != "object" or s.args_schema.get("additionalProperties") is not False:
                 raise ValueError(f"{s.name}: argüman şeması kapalı bir nesne olmalı")
@@ -595,6 +671,20 @@ class ToolRegistry:
 
     def names(self) -> tuple[str, ...]:
         return tuple(self._specs)
+
+    def subset(self, names: Iterable[str]) -> "ToolRegistry":
+        """Bu kayıttan seçilmiş araçlar, BU kaydın sırasıyla (kip araç kümesi; sabit önek sırası kipten
+        bağımsız). Bilinmeyen ad ``ValueError``; boş küme de ``ValueError`` (kayıt boş olamaz)."""
+        wanted = set(names)
+        unknown = wanted - set(self._specs)
+        if unknown:
+            raise ValueError(f"kayıtta olmayan araç: {sorted(unknown)}")
+        return ToolRegistry(s for n, s in self._specs.items() if n in wanted)
+
+    def action(self, name: str) -> Optional[str]:
+        """Aracın izin eylemi (``oku`` / ``oner``; v2 tasarımı §3.9); kayıtsız araçta ``None``."""
+        s = self._specs.get(name)
+        return None if s is None else TOOL_CLASS_ACTIONS[s.cls]
 
     def spec(self, name: str) -> Optional[ToolSpec]:
         return self._specs.get(name)
@@ -647,6 +737,13 @@ class ToolRegistry:
 
 
 def default_registry() -> ToolRegistry:
-    """İlk dilimin araç kümesi (sözleşme §5): O1, O2, O3."""
+    """İlk dilimin araç kümesi (sözleşme §5): O1, O2, O3. Bugünkü K0 / K1 / K2 bunu kullanır."""
     from karadul.lm.tools import read
     return ToolRegistry(read.READ_TOOLS)
+
+
+def full_registry() -> ToolRegistry:
+    """Araç kaydı v2'nin bütün okuyan araçları (v2 tasarımı §3.5): O1-O3 + O5, O7, O7b, R1, O11, O8, O10.
+    Sıra sabit: kip alt kümeleri bu sırayı korur (``ToolRegistry.subset``)."""
+    from karadul.lm.tools import read, read_more
+    return ToolRegistry((*read.READ_TOOLS, *read_more.MORE_TOOLS))
