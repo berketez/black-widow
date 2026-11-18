@@ -11,9 +11,9 @@ Brif: `ONARIM_BRIF.md`. Paket metni: `gonderim/PS3b.md`. Karar: K-2. Önceki pak
 |---|---|---|
 | 0 — ön kayıt | bitti | 7a86f56 |
 | 1 — varlık işaretleri | bitti (H1–H7 tuttu) | 41c8116 |
-| 2 — `usage` gelenek kanalı | ölçüldü; kural yamada (H10 tuttu) | (kalem 2 + 4 commit'i) + yama |
+| 2 — `usage` gelenek kanalı | ölçüldü; kural yamada (H10 tuttu) | b402a02 + yama |
 | 3 — `sort` `full_write` (`_exit`) | bitti (H8, H9 tuttu) | b58e3d5 |
-| 4 — LTO'suz iç adlar | ölçüldü; tablo commit, davranış yamada (H11) | (kalem 2 + 4 commit'i) + yama |
+| 4 — LTO'suz iç adlar | ölçüldü; tablo commit, davranış yamada (H11) | b402a02 + yama |
 | 5 — aday kaydı raporda | bitti (H12 tuttu) | 212e301 |
 
 ## Kalem 1 — sürümden ve platformdan bağımsız varlık işaretleri
@@ -244,3 +244,49 @@ Brif: `ONARIM_BRIF.md`. Paket metni: `gonderim/PS3b.md`. Karar: K-2. Önceki pak
 - **Ölçüm önerisi:** yama birleşince geliştirme setinde `on_ad:gnulib` doğru ad 620 → 732 beklenir (yeniden oynatma); birleşik ölçümde
   gnulib kanalının güven etiketi (`naming_labels.MEASURED_PRE_NAME_PRECISION`, şu an 0,706) yenilenmeli: P-S3 + P-S3b sonrası
   geliştirme seti katı kesinlik 620 / 620 (yamasız), 732 / 732 (yamalı).
+
+## Ön kayıt hükümleri
+| # | Hüküm | Not |
+|---|---|---|
+| H1 | tuttu | gnulib'siz 13: 0 ad, 0 modül |
+| H2 | tuttu | coreutils 620 / 1 (kalem 1); kalem 3'le 620 / 0 |
+| H3 | tuttu | /usr/bin 640 Mach-O: yeterli 0 (hepsi 0 modül) |
+| H4 | tuttu | taze gnulib'li Mach-O 5 / 5 yeterli (taban 2 / 5); gcat yeterli |
+| H5 | tuttu | taze 5: kanal 8 doğru / 0 yanlış (taban 1 / 0); ürün koşusu aynı |
+| H6 | tuttu | xz 0 ad |
+| H7 | tuttu | korpuslar aynı |
+| H8 | tuttu | coreutils yanlış 1 → 0 |
+| H9 | tuttu | Ubuntu 9.4 `full_write` korunur; değişen tek ad sort'unki |
+| H10 | tuttu (yamalı) | gnulib'siz `usage` 1 doğru / 0 yanlış (zstd); xz tutulur |
+| H11 | tuttu | version_etc_arn 113 / 113, safe_write 9 / 9 → yama; setlocale_null_r katı 5 / 110 → tablo dışı |
+| H12 | tuttu | 6 / 6 raporda bölüm, sayılar eşit |
+| Aykırı öncül 1 | çürütüldü | getopt / error gnulib'siz Mach-O'da (/usr/bin 640, xz) bulunmadı |
+| Aykırı öncül 2 | çürütüldü | gettext 1.0 ve libidn2 de getopt + error (+ version-etc) taşıyor: 5 / 5 |
+| Aykırı öncül 3 | taze sette çürütüldü, gcat'te kısmen doğrulandı | taze 5'te yanlış 0; gcat'te 1 yanlış (`write_error`, ek bulgu) |
+
+## Tam takım
+`PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (worktree, b402a02; çalışma zamanı verisi symlink'li): **9 759 geçti, 10 atlandı, 153 seçim dışı, 0 kaldı** (1 007 sn; makinede başka ajanların koşularıyla eşzamanlı). Main ucunda (cce2e8c) tam takım DURUM.md'ye göre 9 653; fark bu paketin ve P20 / P22d'nin yeni testleri.
+
+## Ana oturumun bilmesi gerekenler
+1. **Yama (P-S4):** `yamalar/P-S3b__stages.py.patch` + iki test yaması; gerekçe ve testler "P-S4 için"de. Yamasız main'de kalem 2 (zstd
+   `usage`) ve kalem 4 (123 iç ad) ürün davranışına girmez; kalem 1, 3, 5 girer.
+2. **Ek bulgu (gcat `close_stdout` → GT `write_error`):** Mach-O coreutils'te "write error" tek fonksiyonda kalınca ayrıştırıcı
+   devreye girmiyor. Taze 5 ikilide görülmedi; ayrı ön kayıtla onarılmalı (öneri yukarıda). Kalem 1'den önce bu yanlış gcat'te yoktu
+   (kanal susuyordu) — kalem 1 gcat'te 1 doğru + 1 yanlış getirdi; taze sette 8 / 0.
+3. **Güven etiketi:** gnulib kanalının ölçülmüş kesinliği (`naming_labels`, 0,706) P-S3 + P-S3b sonrası bayat: geliştirme seti katı
+   620 / 620 (yamasız), taze Mach-O 8 / 8. Birleşik ölçümde yenilenmeli (dokunma listesinde).
+4. **Kaçış kusuru genel olabilir:** Ghidra'nın `\'` kaçışı, decompile dizgisini kaynak metniyle karşılaştıran öbür kanallarda da
+   (ör. dizgi parmak izleri, KS-1 dizgi çapaları) eşleşmeyi bozabilir. Bu pakette yalnız varlık işaretlerinde çözüldü; parmak izi
+   çapaları (`GNULIB_FINGERPRINTS`) tek tırnak içermiyor (denetlendi: hiçbirinde `'` yok), öbür kanallara bakılmadı.
+5. **Mach-O'da `main` kurtarılmıyor** (`_recover_main_from_entry`, `usage` adayı olan 6 Mach-O ikilinin hiçbirinde `main` bulmadı): kalem 2'nin gelenek kanalı Mach-O'da çalışmaz;
+   ayrı iş.
+6. **Ölçüm hijyeni:** salt okur kökler (`urun-yeni2-f30ac9a`, `aday-f893d72`, `on-ad-onarimi-2026-11-11`, `P-S3`) bu paketin
+   başından beri 0 yeni / değişen dosya (`find -newer`). Kabul seti kopyaları ve GT `P-S3b/mac_kabul/` altında; ürün koşuları
+   `P-S3b/B`, `P-S3b/A`; dondurulmuş ağaçlar `taban_kod/`, `k1_kod/`, `k3_kod/`, `a_kod/`, `yama_kod/` (silinebilir, onaya bağlı).
+7. Ölçüm betikleri depo dışında (`P-S3b/`): `isaret_tarama.py`, `usr_bin_varlik.py`, `gnulib_yeniden.py` (P-S3'ün uyarlaması,
+   `--mac-kabul`), `yeniden_kos.sh`, `ozet.py`, `kos_mac.sh`, `a_denetle.py`, `ic_ad_olc.py`, `usage_olc.py`, `yama_fark.py`,
+   `mutation_specs_ps3b_yama.json`.
+8. `~/.claude/team-state/discussion.md`'ye yazılmadı (paket metni `~/.claude/**` yazmayı yasaklıyor).
+9. Süre: hedef 90 dk aşıldı (yaklaşık 2,5 saat); kalem 1 erkenden commit'lendi.
+
+## PAKET BİTTİ
