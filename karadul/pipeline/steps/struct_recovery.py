@@ -181,9 +181,21 @@ class StructRecoveryStep(Step):
                     computation_structs=comp_structs_for_eng,
                 )
                 if struct_result.success:
+                    # P10 (TIP-04): yalnız koda bağlanan yapılar "kurtarıldı";
+                    # K-1 bekletmesinde 0. Adaylar ve Ghidra'nın kendi yapıları
+                    # ayrı satır (sessiz kaybolmasın, iddia sayılmasın).
                     ctx.stats["structs_enriched"] = struct_result.total_structs
                     ctx.stats["field_access_rewrites"] = (
                         struct_result.field_access_rewrites
+                    )
+                    ctx.stats["struct_candidates"] = len(
+                        getattr(struct_result, "candidate_structs", []) or [],
+                    )
+                    ctx.stats["struct_rewrites_proposed"] = getattr(
+                        struct_result, "proposed_field_access_rewrites", 0,
+                    )
+                    ctx.stats["struct_reference_ghidra"] = len(
+                        getattr(struct_result, "reference_structs", []) or [],
                     )
                     if struct_result.types_header_path:
                         ctx.produce_artifact(

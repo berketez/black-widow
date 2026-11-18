@@ -55,6 +55,10 @@ from karadul.reconstruction.engineering.domain_classifier import (
 
 logger = logging.getLogger(__name__)
 
+# P10 (K-1): bağlanmayan yapı adaylarının dosyası. Kaynak ağacın DIŞINDA
+# (``<çıktı>_candidates/``) ve bilerek ``.h`` değil (sonraki adımlar *.c/*.h tarıyor).
+STRUCT_CANDIDATES_FILENAME = "struct_candidates.txt"
+
 
 # ---------------------------------------------------------------------------
 # Veri Yapilari
@@ -184,6 +188,16 @@ class StructRecoveryResult:
     # tutar; eskiden her kopya "yeniden yazıldı" sayılıyordu.
     output_files: list[Path] = field(default_factory=list)
     originals_dir: Path | None = None
+    # P10 (TIP-04): ``enriched_structs`` / ``total_structs`` yalnız koda BAĞLANAN
+    # (en az bir erişimi koda yazılan) yapılar. Bağlanmayanlar aday; Ghidra'nın
+    # kendi yapıları referans (Karadul iddiası değil, adları aynen).
+    candidate_structs: list[EnrichedStruct] = field(default_factory=list)
+    reference_structs: list[RecoveredStruct] = field(default_factory=list)
+    proposed_field_access_rewrites: int = 0
+    rewrites_applied: bool = False
+    candidate_dir: Path | None = None
+    struct_conflicts: int = 0
+    unscaled_accesses: int = 0
 
     def to_dict(self) -> dict:
         return {
@@ -195,6 +209,24 @@ class StructRecoveryResult:
             "originals_dir": str(self.originals_dir) if self.originals_dir else None,
             "field_access_rewrites": self.field_access_rewrites,
             "total_structs": self.total_structs,
+            "rewrites_applied": self.rewrites_applied,
+            "proposed_field_access_rewrites": self.proposed_field_access_rewrites,
+            "candidate_structs": [s.to_dict() for s in self.candidate_structs],
+            "candidate_dir": str(self.candidate_dir) if self.candidate_dir else None,
+            "reference_structs": [
+                {
+                    "name": s.name,
+                    "origin": "ghidra",
+                    "total_size": s.total_size,
+                    "fields": [
+                        {"offset": f.offset, "name": f.name, "type": f.type, "size": f.size}
+                        for f in s.fields
+                    ],
+                }
+                for s in self.reference_structs
+            ],
+            "struct_conflicts": self.struct_conflicts,
+            "unscaled_accesses": self.unscaled_accesses,
             "errors": self.errors,
         }
 
@@ -955,6 +987,13 @@ class StructRecoveryEngine:
         max_propagation_iterations: Call graph yayilim maks iterasyon sayisi.
     """
 
+    # K-1 (Berke, 2026-11-18): yapı kurtarma onarılıp ölçülene (masum ikili kapısı +
+    # yerleşimin DWARF'la ölçümü) kadar yapılar koda iddia olarak YAZILMAZ. Motor
+    # koşar, önerilen yeniden yazımları ``<çıktı>_candidates/`` dizinine yazar;
+    # Faz 3'ün kaynak ağacı girdinin aynısıdır. Bekletmeyi kaldırmak ana oturumun
+    # kararıdır (bu değer ya da ``recover(apply_rewrites=True)``).
+    APPLY_REWRITES: bool = False
+
     def __init__(
         self,
         config: Config,
@@ -983,6 +1022,7 @@ class StructRecoveryEngine:
         domain_report: DomainReport | None = None,
         computation_structs: list[dict] | None = None,
         originals_dir: Path | None = None,
+        apply_rewrites: bool | None = None,
     ) -> StructRecoveryResult:
         """Tam struct recovery pipeline'i calistir.
 
@@ -1071,23 +1111,49 @@ class StructRecoveryEngine:
             for dc in domain_report.classifications:
                 func_domains[dc.function_name] = dc.primary_domain
 
-        # --- Faz 0: Mevcut struct'lari al (CTypeRecoverer'dan veya Ghidra'dan) ---
-        base_structs: list[RecoveredStruct] = []
+        if apply_rewrites is None:
+            apply_rewrites = self.APPLY_REWRITES
+
+        # --- Faz 0: yapılar ---
+        # P10 (TIP-04): Ghidra'nın (DWARF / tip kitaplığı) yapıları KARADUL İDDİASI
+        # DEĞİL: kaynak koda zaten Ghidra'nın kendisi uyguluyor (``FILE *``,
+        # ``p->_flags``). Ayrı tutulur (``reference_structs``), alan adları aynen
+        # kalır, sezgisel adla zenginleştirilmez ve "kurtarıldı" sayılmaz. Eski
+        # kod bunları taban alıyordu: her ELF'te ``_IO_FILE`` vb. olduğu için
+        # koddan çıkarma hiç çalışmıyor, 21 354 gerçek alan adı ``size_1`` /
+        # ``field_0x0`` gibi adlarla eziliyordu.
+        reference_structs: list[RecoveredStruct] = list(
+            ghidra_types.get("ghidra_structs", []),
+        )
+
+        # Karadul'un ADAY yapıları: koddan çıkarılan (her zaman), tip kurtarıcının
+        # ve hesaplama kollarının (constraint_solver, MaxSMT) verdikleri.
+        candidate_base: list[RecoveredStruct] = []
+        origins: dict[str, str] = {}
         if existing_type_result and existing_type_result.structs:
-            base_structs = existing_type_result.structs
+            for s in existing_type_result.structs:
+                candidate_base.append(s)
+                origins[s.name] = "type_recoverer"
             logger.info(
-                "CTypeRecoverer'dan %d struct alindi", len(base_structs),
+                "CTypeRecoverer'dan %d struct alindi", len(existing_type_result.structs),
             )
 
-        # Ghidra'nin dogrudan verdigi struct'lari da ekle
-        for gs in ghidra_types.get("ghidra_structs", []):
-            base_structs.append(gs)
+        # Kullanıcı kodundan çıkarma (TIP-05 kurallarıyla) — her ikilide.
+        code_ext = self._extract_structs_from_code(c_files, func_meta, errors)
+        for s in code_ext.structs:
+            candidate_base.append(s)
+            origins[s.name] = "code"
+        logger.info(
+            "Kod analizinden %d struct cikarildi (%d catisma, %d olceksiz erisim)",
+            len(code_ext.structs), code_ext.conflicts, code_ext.unscaled_accesses,
+        )
 
-        # v1.5.2: Computation Recovery constraint solver struct'larini ekle.
-        # ConstraintStruct.to_dict() formatindan RecoveredStruct'a donustur.
-        # Ayni isimli struct zaten varsa ATLANIYOR (CTypeRecoverer/Ghidra oncelikli).
+        # v1.5.2 + P10 (BORU-04): hesaplama kollarının yapıları.
+        # Ayni isimli struct zaten varsa ATLANIYOR.
         if computation_structs:
-            existing_names = {s.name for s in base_structs}
+            existing_names = {s.name for s in candidate_base} | {
+                s.name for s in reference_structs
+            }
             _comp_added = 0
             for cs in computation_structs:
                 cs_name = cs.get("name", "")
@@ -1106,44 +1172,31 @@ class StructRecoveryEngine:
                     name=cs_name,
                     fields=cs_fields,
                     total_size=cs.get("total_size", 0),
-                    source_functions=cs.get("source_functions", []),
+                    source_functions=list(cs.get("source_functions", [])),
                     alignment=cs.get("alignment", 8),
                 )
-                base_structs.append(rs)
+                candidate_base.append(rs)
+                origins[cs_name] = str(cs.get("source") or "constraint_solver")
                 existing_names.add(cs_name)
                 _comp_added += 1
             if _comp_added:
                 logger.info(
-                    "Computation Recovery'den %d struct eklendi (base_structs: %d)",
-                    _comp_added, len(base_structs),
+                    "Computation Recovery'den %d struct eklendi (aday: %d)",
+                    _comp_added, len(candidate_base),
                 )
 
-        # Eger hic struct yoksa, C dosyalarindan cikart
-        code_ext: CodeStructExtraction | None = None
-        if not base_structs:
-            code_ext = self._extract_structs_from_code(c_files, func_meta, errors)
-            base_structs = list(code_ext.structs)
-            logger.info(
-                "Kod analizinden %d struct cikarildi", len(base_structs),
-            )
-
-        if not base_structs:
-            logger.warning("Struct bulunamadi, bos sonuc donuluyor")
-            return StructRecoveryResult(
-                success=True,
-                errors=errors,
-            )
-
-        # --- Faz 1: Template Matching -- struct'lari algoritma sablonlarina esle ---
-        logger.info("Faz 1: Template matching (%d struct, %d algo)", len(base_structs), len(func_algorithms))
+        # --- Faz 1: Template Matching -- adayları algoritma şablonlarına eşle ---
+        logger.info(
+            "Faz 1: Template matching (%d aday, %d algo)",
+            len(candidate_base), len(func_algorithms),
+        )
         enriched_structs: list[EnrichedStruct] = []
-
-        used_names: set[str] = set()
-        for struct in base_structs:
+        used_names: set[str] = {s.name for s in reference_structs}
+        for struct in candidate_base:
             enriched = self._enrich_struct(struct, func_algorithms, func_domains)
-            meta = code_ext.meta.get(struct.name) if code_ext else None
+            enriched.origin = origins.get(struct.name, "")
+            meta = code_ext.meta.get(struct.name)
             if meta:
-                enriched.origin = "code"
                 enriched.base_var = meta["base_var"]
                 enriched.base_decl = meta["base_decl"]
                 for ef in enriched.fields:
@@ -1155,19 +1208,18 @@ class StructRecoveryEngine:
                 enriched.name = f"{base_name}_{k}"
                 k += 1
             used_names.add(enriched.name)
+            enriched.typedef_declaration = self._generate_typedef(enriched)
             enriched_structs.append(enriched)
 
-        # Eslestirme istatistigi
         matched_count = sum(1 for es in enriched_structs if es.algorithm_context)
         logger.info(
             "Template matching: %d/%d struct eslesti",
             matched_count, len(enriched_structs),
         )
 
-        # --- Faz 2: Call Graph Propagation ---
-        if call_graph:
+        # --- Faz 2: Call Graph Propagation (yalnız bilgi; bağlamaya girmez) ---
+        if call_graph and enriched_structs:
             logger.info("Faz 2: Call graph propagation (max %d iter)", self.max_propagation_iterations)
-            # base_ptr -> struct_name eslesmesi olustur
             base_ptr_struct_map = self._build_ptr_struct_map(c_files, enriched_structs)
             func_param_map = self._build_func_param_map(c_files, enriched_structs, base_ptr_struct_map)
             enriched_structs = self._propagate_through_call_graph(
@@ -1175,11 +1227,17 @@ class StructRecoveryEngine:
             )
 
         # --- Faz 3: Code Rewrite ---
-        logger.info("Faz 3: Code rewrite (%d C dosyasi)", len(c_files))
         # (fonksiyon, değişken) -> yapı; yalnız kendi fonksiyonunda (TIP-05)
         binding = self._build_binding_map(enriched_structs)
+        candidate_dir = output_dir.parent / f"{output_dir.name}_candidates"
+        logger.info(
+            "Faz 3: Code rewrite (%d C dosyasi, %d bagli degisken, uygula=%s)",
+            len(c_files), len(binding), apply_rewrites,
+        )
 
-        total_rewrites = 0
+        total_rewrites = 0          # koda YAZILAN
+        proposed_rewrites = 0       # hesaplanan (bekletmede yalnız aday dizininde)
+        per_struct_rewrites: dict[str, int] = defaultdict(int)
         rewritten_files: list[Path] = []
         output_files: list[Path] = []
 
@@ -1190,49 +1248,113 @@ class StructRecoveryEngine:
                 errors.append(f"Dosya okunamadi: {c_file.name}: {exc}")
                 continue
 
-            rewritten, n_rewrites, _per_struct = self._rewrite_file(content, binding)
+            rewritten, n_rewrites, per_struct = self._rewrite_file(content, binding)
+            changed = bool(n_rewrites) and rewritten != content
+            if changed:
+                proposed_rewrites += n_rewrites
+                for sname, cnt in per_struct.items():
+                    per_struct_rewrites[sname] += cnt
 
             out_file = output_dir / c_file.name
-            out_file.write_text(rewritten, encoding="utf-8")
-            output_files.append(out_file)
-            if n_rewrites and rewritten != content:
+            if changed and apply_rewrites:
+                out_file.write_text(rewritten, encoding="utf-8")
                 # Özgünü kaynak ağacın DIŞINA yedekle (BORU-02); yalnız değişen dosya.
                 originals_dir.mkdir(parents=True, exist_ok=True)
                 (originals_dir / c_file.name).write_text(content, encoding="utf-8")
                 rewritten_files.append(out_file)
                 total_rewrites += n_rewrites
+            else:
+                # K-1 bekletme: kaynak ağacına girdi aynen; öneri aday dizininde.
+                out_file.write_text(content, encoding="utf-8")
+                if changed:
+                    candidate_dir.mkdir(parents=True, exist_ok=True)
+                    (candidate_dir / c_file.name).write_text(rewritten, encoding="utf-8")
+            output_files.append(out_file)
+
+        # Koda BAĞLANAN yapı = en az bir erişimi koda yazılan (TIP-04 c).
+        # Bekletmede hiçbiri; geri kalanı aday.
+        bound_names = (
+            {n for n, c in per_struct_rewrites.items() if c} if apply_rewrites else set()
+        )
+        bound = [es for es in enriched_structs if es.name in bound_names]
+        candidates = [es for es in enriched_structs if es.name not in bound_names]
 
         logger.info(
-            "Code rewrite: %d donusum, %d/%d dosya degisti, orijinaller: %s",
-            total_rewrites, len(rewritten_files), len(output_files), originals_dir,
+            "Code rewrite: %d yazildi, %d onerildi, %d/%d dosya degisti; "
+            "bagli %d, aday %d, Ghidra %d",
+            total_rewrites, proposed_rewrites, len(rewritten_files), len(output_files),
+            len(bound), len(candidates), len(reference_structs),
         )
 
-        # --- types.h olustur ---
+        # --- types.h: yalnız koda bağlanan yapılar ---
         types_header = output_dir / "types.h"
-        self._emit_types_header(enriched_structs, types_header)
-        logger.info("Enriched types.h yazildi: %s", types_header)
+        self._emit_types_header(bound, types_header)
+
+        # --- aday dosyası: kaynak ağacın DIŞINDA, .h değil ---
+        if candidates:
+            candidate_dir.mkdir(parents=True, exist_ok=True)
+            self._write_candidates(
+                candidates, per_struct_rewrites, apply_rewrites,
+                candidate_dir / STRUCT_CANDIDATES_FILENAME,
+            )
 
         # --- struct_recovery.json ---
         report_path = output_dir / "struct_recovery.json"
         result = StructRecoveryResult(
             success=True,
-            enriched_structs=enriched_structs,
+            enriched_structs=bound,
             types_header_path=types_header,
             rewritten_files=rewritten_files,
             field_access_rewrites=total_rewrites,
-            total_structs=len(enriched_structs),
+            total_structs=len(bound),
             errors=errors,
             output_files=output_files,
             originals_dir=originals_dir if rewritten_files else None,
+            candidate_structs=candidates,
+            reference_structs=reference_structs,
+            proposed_field_access_rewrites=proposed_rewrites,
+            rewrites_applied=bool(apply_rewrites),
+            candidate_dir=candidate_dir if candidate_dir.exists() else None,
+            struct_conflicts=code_ext.conflicts,
+            unscaled_accesses=code_ext.unscaled_accesses,
         )
         self._write_report(result, report_path)
 
         logger.info(
-            "StructRecoveryEngine tamamlandi: %d enriched struct, %d rewrite, %d dosya",
-            len(enriched_structs), total_rewrites, len(rewritten_files),
+            "StructRecoveryEngine tamamlandi: %d bagli, %d aday, %d yazim, %d dosya",
+            len(bound), len(candidates), total_rewrites, len(rewritten_files),
         )
 
         return result
+
+    def _write_candidates(
+        self,
+        candidates: list[EnrichedStruct],
+        per_struct_rewrites: dict[str, int],
+        applied: bool,
+        path: Path,
+    ) -> None:
+        """Bağlanmayan adayları (doğrulanmamış) kaynağıyla yaz (K-1)."""
+        lines = [
+            "/*",
+            " * Karadul yapı kurtarma ADAYLARI — doğrulanmamış, koda bağlanmadı.",
+            " * K-1 bekletme: yapı kurtarma ölçülüp masum ikili kapısından geçene kadar",
+            " * bu yapılar koda ve types.h'ye iddia olarak yazılmaz. Önerilen yeniden",
+            " * yazımlar aynı dizindeki .c dosyalarında.",
+            f" * Aday: {len(candidates)}; uygulama: {'açık' if applied else 'kapalı'}",
+            " */",
+            "",
+        ]
+        for es in sorted(candidates, key=lambda s: s.name):
+            src = ", ".join(es.source_functions) or "?"
+            lines.append(
+                f"/* Köken: {es.origin or '?'}; kaynak: {src}"
+                + (f" / {es.base_var}" if es.base_var else "")
+                + f"; önerilen yeniden yazım: {per_struct_rewrites.get(es.name, 0)} */",
+            )
+            lines.append(es.typedef_declaration or self._generate_typedef(es))
+            lines.append("")
+        path.write_text("\n".join(lines), encoding="utf-8")
 
     # ------------------------------------------------------------------
     # Faz 0: Struct Extraction from Code
@@ -2089,6 +2211,8 @@ class StructRecoveryEngine:
             " *",
             " * Algorithm-aware struct recovery: pointer arithmetic patterns",
             " * matched against known engineering algorithm templates.",
+            " * Yalnız koda bağlanan yapılar (P10). K-1 bekletmesinde koda yazım",
+            " * yapılmaz; doğrulanmamış adaylar <çıktı>_candidates/ dizininde.",
             " *",
             f" * Total structs: {len(structs)} ({high_conf} high-confidence)",
             f" * Total fields:  {total_fields}",
@@ -2135,7 +2259,10 @@ class StructRecoveryEngine:
             lines.append(
                 f"/* Kaynak: {src} / {es.base_var} (bildirim: {es.base_decl or '?'}) */",
             )
-        lines.append(f"/* Confidence: {es.confidence:.2f} | Size: {es.total_size} bytes | Alignment: {es.alignment} */")
+        # P10: güven yalnız şablon benzerliği hesaplandıysa yazılır; şablonsuz
+        # yapının 0,30'u sabit bir taban değerdi (ölçülmüş güven değil).
+        conf = f"Confidence: {es.confidence:.2f} | " if es.algorithm_context else ""
+        lines.append(f"/* {conf}Size: {es.total_size} bytes | Alignment: {es.alignment} */")
 
         # P10 (TIP-05): yerleşim kesin olmalı — ``((S *)p)->alan`` yeniden yazımı
         # alanın gerçek ofsetini okumalı. Aradaki boşluk açık dolguyla, hizasız

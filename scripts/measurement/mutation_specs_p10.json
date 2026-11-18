@@ -186,6 +186,78 @@
       "test": "tests/test_p10_tip05.py::TestCikarma::test_same_name_in_two_functions_gives_two_structs",
       "find": "for m in _PTR_DEREF_BARE.finditer(line):",
       "replace": "for m in _PTR_DEREF_BARE.finditer(\"\"):"
+    },
+    {
+      "id": "p10_k3_ghidra_aday",
+      "desc": "Ghidra yapıları yine aday tabanına girer (sezgisel adla zenginleşir)",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip04.py::TestGhidraYapilari::test_ghidra_field_names_kept_and_not_counted",
+      "find": "candidate_base: list[RecoveredStruct] = []",
+      "replace": "candidate_base: list[RecoveredStruct] = list(ghidra_types.get(\"ghidra_structs\", []))"
+    },
+    {
+      "id": "p10_k3_kod_cikarma",
+      "desc": "koddan çıkarma koşmaz (eski: taban doluysa hiç koşmuyordu)",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip04.py::TestKoddanCikarma::test_code_extraction_runs_with_ghidra_structs_present",
+      "find": "code_ext = self._extract_structs_from_code(c_files, func_meta, errors)",
+      "replace": "code_ext = CodeStructExtraction()"
+    },
+    {
+      "id": "p10_k3_bagli_sayim",
+      "desc": "bekletmede önerisi olan yapı 'bağlı' (kurtarıldı) sayılır",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip04.py::TestBekletme::test_hold_keeps_source_tree_and_writes_proposals_aside",
+      "find": "{n for n, c in per_struct_rewrites.items() if c} if apply_rewrites else set()",
+      "replace": "{n for n, c in per_struct_rewrites.items() if c} if True else set()"
+    },
+    {
+      "id": "p10_k3_bekletme",
+      "desc": "K-1 bekletmesi yok: öneri Faz 3 kaynak ağacına yazılır",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip04.py::TestBekletme::test_hold_keeps_source_tree_and_writes_proposals_aside",
+      "find": "if changed and apply_rewrites:",
+      "replace": "if changed:"
+    },
+    {
+      "id": "p10_k3_ontanim",
+      "desc": "motorun öntanımı uygulamak (bekletme kapalı)",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip04.py::TestBekletme::test_engine_default_is_hold",
+      "find": "APPLY_REWRITES: bool = False",
+      "replace": "APPLY_REWRITES: bool = True"
+    },
+    {
+      "id": "p10_k3_aday_dizini",
+      "desc": "aday dizini kaynak ağacın içinde (sonraki adımlar tarar)",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip04.py::TestBekletme::test_hold_keeps_source_tree_and_writes_proposals_aside",
+      "find": "candidate_dir = output_dir.parent / f\"{output_dir.name}_candidates\"",
+      "replace": "candidate_dir = output_dir / \"candidates\""
+    },
+    {
+      "id": "p10_k3_types_h",
+      "desc": "types.h bağlanmayan adayları da tanımlar",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip04.py::TestBekletme::test_hold_keeps_source_tree_and_writes_proposals_aside",
+      "find": "self._emit_types_header(bound, types_header)",
+      "replace": "self._emit_types_header(enriched_structs, types_header)"
+    },
+    {
+      "id": "p10_k3_bos_cikti",
+      "desc": "yapı yoksa çıktı ağacı yazılmadan dönülür (Faz 3 girdi dizinini yerinde yazar)",
+      "module": "karadul/reconstruction/engineering/struct_recovery.py",
+      "test": "tests/test_p10_tip04.py::TestKaynakAgaci::test_output_tree_written_even_without_any_struct",
+      "find": "        # --- Faz 1: Template Matching -- adayları algoritma şablonlarına eşle ---\n",
+      "replace": "        if not candidate_base and not reference_structs:\n            return StructRecoveryResult(success=True, errors=errors)\n        # --- Faz 1: Template Matching -- adayları algoritma şablonlarına eşle ---\n"
+    },
+    {
+      "id": "p10_k3_adim_aday_sayaci",
+      "desc": "adım aday sayısını istatistiğe yazmaz (bağlanmayanlar sessiz kaybolur)",
+      "module": "karadul/pipeline/steps/struct_recovery.py",
+      "test": "tests/test_p10_tip04.py::TestAdimIstatistikleri::test_step_stats_separate_candidates_and_reference",
+      "find": "ctx.stats[\"struct_candidates\"] = len(",
+      "replace": "ctx.stats[\"struct_candidates_x\"] = len("
     }
   ]
 }
