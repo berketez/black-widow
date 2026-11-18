@@ -14,6 +14,7 @@ Mutasyon koruması: ``scripts/measurement/mutation_specs_lm_ozet.json``.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -392,3 +393,70 @@ def test_zincir_depo_yeniden_kullanim_ve_gecersiz_kilma(tmp_path):
     assert arka.istenen == [L, X, Z]
     d = S.SummaryStore(SHA, root=tmp_path / "lm")
     assert len(d.records()) == 5 + 3 + 3 and d.corrupt_lines == 0
+
+
+# --------------------------------------------------------------------------------------------
+# (d) D0 kısa yolu
+
+# K → M (ithal yok, dizgi yok, çağrı yok: D0), N (dizgi var), I (ithal çağrı var), Q (yalnız M'yi çağırır)
+K, M, N, I, Q, MAL = "00003000", "00003100", "00003200", "00003300", "00003400", "00003900"
+
+
+def d0_ws(root, *, cfg: bool = True, graph: str | None = "edges"):
+    funcs = {K: {"calls": [M, N, I, Q], "strings": ["kok"]}, M: {"calls": []}, N: {"calls": [], "strings": ["n"]},
+             I: {"calls": [MAL]}, Q: {"calls": [M]}}
+    kok = build_ws(root, funcs, imports={MAL: "malloc"}, graph=graph)
+    if cfg:
+        (kok / "static" / "ghidra_cfg.json").write_text(json.dumps({"functions": [
+            {"address": M, "block_count": 3}, {"address": "0x" + K, "block_count": 9}, {"address": N}]}),
+            encoding="utf-8")
+    return T.Workspace(kok)
+
+
+def test_d0_kisa_yolu_model_cagirmaz_olgu_satiri(tmp_path):
+    depo = S.SummaryStore(SHA, root=tmp_path / "lm")
+    ajan, arka, gunluk, akis = zincir_ajan(d0_ws(tmp_path / "ws"), {K: "Kök.", N: "N.", I: "I.", Q: "Q."}, depo=depo)
+    run = ajan.explain(fun(K))
+    assert [r.addr for r in run.results] == [fun(M), fun(N), fun(I), fun(Q), fun(K)]
+    assert arka.istenen == [N, I, Q, K]                       # M için model çağrılmadı
+    m = run.results[0]
+    assert m.status == G.STATUS_DONE and m.counters.model_calls == 0 and m.verdict is None
+    assert m.summary == {"kaynak": "olgu", "metin": "ithal çağrı yok, dizgi yok, program içi çağrı yok, 3 blok",
+                         "belirsiz": False, "kanit": [m.result_ids[0]], "hukum": None, "pakete_girer": True,
+                         "depodan": False, "depoya_yazildi": True}
+    oz = [e for e in akis.since(0)["olaylar"] if e["tur"] == "ozet"][0]
+    assert oz["kaynak"] == "olgu" and oz["hukum"] is None
+    # Çağıranların paketine [olgu] satırı girer ([model-özet] değil)
+    assert ozet_girisi(arka.paketler[Q])["data"]["items"] == [
+        {"addr": fun(M), "kaynak": "olgu", "ozet": "ithal çağrı yok, dizgi yok, program içi çağrı yok, 3 blok"}]
+    assert [x["kaynak"] for x in ozet_girisi(arka.paketler[K])["data"]["items"]] == [
+        "olgu", "model-özet", "model-özet", "model-özet"]
+    assert depo.records()[0].kaynak == "olgu"
+    esler_tutarli(akis, gunluk)
+    # cfg yoksa blok sayısı uydurulmaz
+    ajan, arka, _, _ = zincir_ajan(d0_ws(tmp_path / "ws2", cfg=False), {K: "Kök.", N: "N.", I: "I.", Q: "Q."})
+    run = ajan.explain(fun(M), depth=0)
+    assert run.root_result.summary["metin"] == "ithal çağrı yok, dizgi yok, program içi çağrı yok, blok sayısı bilinmiyor"
+    assert arka.istenen == []
+    # Çağrı grafiği yoksa "çağrılanı yok" bilinmiyor: kısa yol yok, model çağrılır
+    ajan, arka, _, _ = zincir_ajan(d0_ws(tmp_path / "ws3", graph=None), {M: "M."})
+    run = ajan.explain(fun(M))
+    assert arka.istenen == [M] and run.root_result.summary["kaynak"] == "model"
+
+
+def test_d0_kosullari():
+    class Paket:
+        def __init__(self, **kw):
+            self.api_counts = kw.get("api_counts", {})
+            self.strings = kw.get("strings", [])
+            self.internal_callees = kw.get("internal_callees", [])
+            self.callback_registrations = kw.get("callback_registrations", [])
+
+    assert S.d0_fact(Paket(), [], 2) == "ithal çağrı yok, dizgi yok, program içi çağrı yok, 2 blok"
+    assert S.d0_fact(Paket(strings=["", ""]), [], None).endswith("blok sayısı bilinmiyor")   # boş dizgi sayılmaz
+    for bozuk, grafik in ((Paket(api_counts={"malloc": 1}), []), (Paket(strings=["x"]), []),
+                          (Paket(internal_callees=["1000"]), []), (Paket(callback_registrations=[{"api": "a"}]), []),
+                          (Paket(), ["1000"]), (Paket(), None), (None, [])):
+        assert S.d0_fact(bozuk, grafik, 1) is None
+    assert S.cfg_block_counts(Path("/nonexistent")) is None
+

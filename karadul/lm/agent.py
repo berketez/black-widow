@@ -53,8 +53,8 @@ from karadul.lm.context import (
 from karadul.lm.events import CALLER_MODEL, CALLER_SERVER, ContentStore, touched_refs
 from karadul.lm.memory_guard import MemoryGuard
 from karadul.lm.order import DEFAULT_CLOSURE_DEPTH, bottom_up_layers, layer_of
-from karadul.lm.summaries import SOURCE_FACT, SOURCE_MODEL, SummaryKey, SummaryRecord, SummaryStore, model_key, \
-    package_digest
+from karadul.lm.summaries import SOURCE_FACT, SummaryKey, SummaryRecord, SummaryStore, cfg_block_counts, d0_fact, \
+    model_key, package_digest
 from karadul.lm.tools import (
     ADDR_PATTERN, ERR_BUDGET, ERR_REPEAT, ERR_TOOL_CLOSED, INVALID_CALL_ERRORS, ToolContext, ToolRegistry,
     ToolResult, Workspace, WorkspaceError, default_registry, error_result, normalize_args,
@@ -327,6 +327,9 @@ class Agent:
         # Zincir (aşağıdan yukarı özet) yürürken ``cancel_current`` zincirin kalanını da durdurur.
         self._chain_active = False
         self._chain_stop = threading.Event()
+        # D0 satırının blok sayıları (``ghidra_cfg.json``; ilk kullanımda okunur, yoksa None).
+        self._blocks: Optional[dict[int, int]] = None
+        self._blocks_read = False
 
     # --- olaylar (P22a) -----------------------------------------------------------------------
 
@@ -922,6 +925,15 @@ class Agent:
         task.result.counters.package_calls += 1
         return result
 
+    def _d0_fact(self, a: str) -> Optional[str]:
+        """D0 olgu satırı (``summaries.d0_fact``) ya da ``None``. Blok sayısı ``ghidra_cfg.json``'dan
+        (çalışma alanı başına bir kez okunur)."""
+        if not self._blocks_read:
+            self._blocks = cfg_block_counts(self.workspace.static_dir)
+            self._blocks_read = True
+        blocks = self._blocks.get(int(a, 16)) if self._blocks is not None else None
+        return d0_fact(self.workspace.packs.get(a), self.workspace.callees(a), blocks)
+
     def _summary_key(self, a: str, package: list[ToolResult]) -> Optional[SummaryKey]:
         """Özet deposunun anahtarı (``summaries`` modül belgesi); depo yoksa ``None``."""
         if self.summary_store is None:
@@ -956,6 +968,14 @@ class Agent:
         package = self._build_package(task, a, single_shot=True)
         if package is None:
             return None
+        fact = self._d0_fact(a)
+        if fact is not None:
+            # D0 kısa yolu (tasarım §3.6 madde 2): model çağrılmaz; kayıt modelsiz olgu satırıdır ([olgu],
+            # [model-özet] değil). Dayanağı kanıt paketidir (ilk sonuç).
+            task.result.summary = {"kaynak": SOURCE_FACT, "metin": fact, "belirsiz": False,
+                                   "kanit": [package[0].id], "hukum": None, "pakete_girer": True, "depodan": False}
+            task.finish(STATUS_DONE)
+            return self._store_summary(task, self._summary_key(a, package))
         if chain is not None:
             entry = self._summary_entry(task, a, chain)
             if entry is not None:

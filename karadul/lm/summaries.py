@@ -45,6 +45,47 @@ STATE_VALID, STATE_STALE, STATE_NONE = "gecerli", "bayat", "yok"
 _RESULT_ID_KEY = "id"
 
 
+def cfg_block_counts(static_dir: Path) -> Optional[dict[int, int]]:
+    """``static/ghidra_cfg.json``'dan fonksiyon başına temel blok sayısı (adresin sayı değeri → blok);
+    dosya yoksa ya da biçimi beklenen değilse ``None`` (uydurma yok). Tasarımın O5 aracı (P22d) aynı
+    dosyayı okuyacak; D0 satırı ona bağımlı olmasın diye burada yalnız blok sayısı okunur."""
+    try:
+        data = json.loads((Path(static_dir) / "ghidra_cfg.json").read_text(encoding="utf-8", errors="replace"))
+    except (OSError, ValueError):
+        return None
+    funcs = data.get("functions") if isinstance(data, dict) else None
+    if not isinstance(funcs, list):
+        return None
+    out: dict[int, int] = {}
+    for f in funcs:
+        if not isinstance(f, dict):
+            continue
+        addr, n = f.get("address"), f.get("block_count")
+        if isinstance(addr, str) and isinstance(n, int) and not isinstance(n, bool) and n >= 0:
+            try:
+                out.setdefault(int(addr.lower().removeprefix("0x"), 16), n)
+            except ValueError:
+                continue
+    return out
+
+
+def d0_fact(pack: Any, graph_callees: Optional[Iterable[str]], blocks: Optional[int]) -> Optional[str]:
+    """D0 kısa yolu (tasarım §3.6 madde 2): ithal çağrısı yok, dizgi yok, program içi çağrılanı yok →
+    model çağrılmaz; modelsiz olgu satırı döner. Koşullardan biri tutmazsa ya da bilinmiyorsa ``None``.
+
+    "Program içi çağrılanı yok" iki kaynaktan birden aranır: çağrı grafiği (``graph_callees``; grafik
+    yoksa ``None`` → bilinmiyor → kısa yol YOK) ve kanıt paketinin çağrılanları ile geri çağrı kayıtları
+    (fonksiyon işaretçisiyle başka bir program fonksiyonuna iş veren fonksiyon da "yalnız" değildir)."""
+    if pack is None or graph_callees is None or list(graph_callees):
+        return None
+    if pack.api_counts or any(s for s in (getattr(pack, "strings", None) or [])):
+        return None
+    if list(pack.internal_callees) or list(pack.callback_registrations):
+        return None
+    block = f"{blocks} blok" if isinstance(blocks, int) else "blok sayısı bilinmiyor"
+    return f"ithal çağrı yok, dizgi yok, program içi çağrı yok, {block}"
+
+
 def model_key(identity: Mapping[str, Any]) -> str:
     """Arka ucun künyesinden model kimliği. ``model_sha256`` varsa o (``sha256:<…>``); yoksa künyenin
     model alanlarının özeti (``kunye:<16 onaltılık>``: tür, model yolu ya da adı, uç). Yerel sunucu model
