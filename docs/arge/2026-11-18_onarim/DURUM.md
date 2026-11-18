@@ -61,3 +61,4 @@ Plan dışı yeni paket: **P-GÜV** (hedef çalıştırma ve ağ güvenliği: GH
 |---|---|---|---|
 | 2026-11-18 10:2x | b778366 (P-GÜV, P01, P00, P02, P19) | **8 615 geçti / 10 atlandı / 0 kaldı** (216 sn; başlangıç 8 289) | Bağımsız mutasyon: P-GÜV 34/34, P00 41/41, P02 34/34, P19 58/58 (P01 14/14 ajan beyanı). |
 | 2026-11-18 11:3x | 28cd8a9 (+ P06, P03, P09, P04a, P01b, P16a, P08) | **8 985 geçti / 10 atlandı / 0 kaldı** (267 sn) | Bağımsız mutasyon: P06 19/19, P03 29/29, P09 27/27, P04a 27/27, P01b 23/23, P16a 35/35, P08 22/22; P01 14/14 yeniden koşuldu. Masum kapı bütün katmanlarda geçiyor (P01b sonrası). |
+| 2026-11-18 12:3x | 70ad091 (+ P10, P04b, P22-T, P07, P-S1, P05, P15a, P16b + yamalar) | **9 323 geçti / 10 atlandı / 0 kaldı** (285 sn) | Bağımsız mutasyon: P07 22/22, P10 32/32, P04b 25/25, P-S1 34/34, P05 20/20, P15a 45/45, P16b 24/24, P21 38/38. |
