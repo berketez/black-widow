@@ -617,16 +617,8 @@ def process_deb(pkg_name: str, pkg_info: dict, stats: dict):
                     }
                 sym_count += 1
 
-            # Undefined (imported) semboller -- sadece baska yerde defined degilse ekle
-            for sym in undefined_syms:
-                if sym not in results:
-                    results[sym] = {
-                        "lib": so_lib_clean,
-                        "purpose": "",
-                        "category": category,
-                        "_undef": True,  # merge sirasinda defined tarafindan ezilebilir
-                    }
-                sym_count += 1
+            # P08 / IMZA-07: içe aktarılan (SHN_UNDEF) simgeler kitaplık kanıtı
+            # değildir ve '_undef' işareti yazılmadan önce siliniyordu; hiç eklenmez.
 
     except Exception as e:
         print(f"    [WARN] tar iteration hatasi: {e}")

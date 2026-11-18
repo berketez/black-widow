@@ -213,10 +213,10 @@ def extract_elf_symbols(data: bytes, filename: str) -> list[str]:
             if binding not in ("STB_GLOBAL", "STB_WEAK"):
                 continue
 
-            # Undefined (imported) semboller: st_shndx == SHN_UNDEF
-            # Bunlari da alalim (hangi fonksiyonlari kullandigini gosterir)
-            # Ama exported olanlari ayri isaretleme sansimiz var
-            # Simdilik hepsini alalim
+            # P08 / IMZA-07: içe aktarılan (SHN_UNDEF) simge kitaplık kanıtı
+            # değildir; yalnız bu .so'da TANIMLI olanlar yazılır.
+            if sym.entry.st_shndx == "SHN_UNDEF":
+                continue
 
             name = sym.name
             if not name:
