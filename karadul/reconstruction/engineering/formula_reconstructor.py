@@ -14,7 +14,7 @@ Kullanim:
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from karadul.reconstruction.c_algorithm_id import AlgorithmMatch
@@ -35,6 +35,11 @@ class FormulaInfo:
         method: Yontemin kisa aciklamasi.
         reference: Akademik referans (kitap/makale).
         parameters: Opsiyonel parametre tablosu.
+        functions: Formülü doğuran tespitlerin fonksiyonları (``reconstruct`` doldurur).
+        detected_as: Formüle eşlenen tespit adları.
+        detection_confidence: Bu tespitlerin en yüksek güveni (kalibre edilmemiş, ham).
+        ascii_omitted: Otomatik üretilmiş ASCII işleç kaybettiği için gösterilmiyor
+            (yalnız LaTeX doğru; MUH-12).
     """
     algorithm: str
     latex: str
@@ -42,6 +47,10 @@ class FormulaInfo:
     method: str
     reference: str
     parameters: dict[str, str] | None = None
+    functions: list[str] = field(default_factory=list)
+    detected_as: list[str] = field(default_factory=list)
+    detection_confidence: float | None = None
+    ascii_omitted: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
@@ -53,6 +62,15 @@ class FormulaInfo:
         }
         if self.parameters:
             d["parameters"] = self.parameters
+        if self.functions:
+            d["functions"] = list(self.functions)
+        if self.detected_as:
+            d["detected_as"] = list(self.detected_as)
+        if self.detection_confidence is not None:
+            d["detection_confidence"] = self.detection_confidence
+            d["confidence_note"] = "uncalibrated detector score"
+        if self.ascii_omitted:
+            d["ascii_omitted"] = True
         return d
 
 
@@ -5028,6 +5046,82 @@ _build_name_map()
 
 
 # -----------------------------------------------------------------------
+# Formül eşleme kuralları (P04b, MUH-12; 2026-11-18)
+# -----------------------------------------------------------------------
+# Eski eşleme tespit adında alias'ı ALT DİZGİ olarak arıyordu (ve ters yönde
+# ``ad in alias``): c_algorithm_id'nin belirsiz yapısal tahmini "S-box substitution
+# (AES, DES)" DES formülüne, "Password-based key derivation (PBKDF2, scrypt)" PBKDF2
+# formülüne yükseltiliyordu (redis'te `dumpX86Calls`, `from_chars_advanced`).
+#
+# Yeni kural:
+#   1. Formül yalnız tespit adının şablon anahtarına ya da bir alias'a TAM eşitliğiyle.
+#   2. Birden çok algoritma sayan belirsiz tespit adı ("(AES, DES)", "BLAKE2/SHA-512")
+#      formül almaz: hangi algoritma olduğu bilinmiyor.
+#   3. Her formül kaynak fonksiyonlarını ve tespit güvenini (ham) taşır.
+#   4. Otomatik üretilmiş ("Auto-generated") şablonlarda ASCII, LaTeX'teki bir işleci
+#      (``\oplus``, ``\frac``, ``\ln`` …) karşılıksız bırakıyorsa ASCII gösterilmez
+#      (``ascii_omitted``); LaTeX doğru kaynak olarak kalır.
+
+#: LaTeX işleci → ASCII'de kabul edilen karşılıkları (küçük harfle aranır).
+_LATEX_OPERATOR_ASCII: dict[str, tuple[str, ...]] = {
+    r"\oplus": ("xor", "^", "⊕"),
+    r"\frac": ("/",),
+    r"\lll": ("<<<", "rotl", "rol"),
+    r"\ggg": (">>>", "rotr", "ror"),
+    r"\ll": ("<<",),
+    r"\gg": (">>",),
+    r"\ldots": ("...", "…"),
+    r"\cdots": ("...", "…"),
+    r"\dots": ("...", "…"),
+    r"\sum": ("sum", "σ", "Σ"),
+    r"\prod": ("prod", "π", "Π"),
+    r"\sqrt": ("sqrt", "√"),
+    r"\ln": ("ln", "log"),
+    r"\log": ("log", "ln"),
+    r"\exp": ("exp", "e^"),
+    r"\sin": ("sin",),
+    r"\cos": ("cos",),
+    r"\tan": ("tan",),
+    r"\wedge": ("&", "and", "∧"),
+    r"\land": ("&", "and", "∧"),
+    r"\vee": ("|", "or", "∨"),
+    r"\lor": ("|", "or", "∨"),
+    r"\neg": ("~", "!", "not", "¬"),
+    r"\boxplus": ("+",),
+    r"\int": ("int", "∫"),
+    r"\max": ("max",),
+    r"\min": ("min",),
+    r"\Delta": ("delta", "Δ"),
+    r"\nabla": ("grad", "nabla", "∇"),
+}
+_LATEX_COMMAND_RE = re.compile(r"\\[A-Za-z]+")
+_AUTO_GENERATED_MARK = "Auto-generated"
+_AMBIGUOUS_LIST_RE = re.compile(r"\([^()]*[,/][^()]*\)")
+
+
+def ascii_lost_operators(latex: str, ascii_text: str) -> list[str]:
+    """LaTeX'te olup ASCII'de hiçbir karşılığı bulunmayan işleçler."""
+    low = ascii_text.lower()
+    return sorted(
+        cmd for cmd in set(_LATEX_COMMAND_RE.findall(latex))
+        if cmd in _LATEX_OPERATOR_ASCII
+        and not any(r.lower() in low for r in _LATEX_OPERATOR_ASCII[cmd])
+    )
+
+
+def is_ambiguous_detection_name(name: str) -> bool:
+    """Tespit adı birden çok algoritma sayıyor mu ("S-box (AES, DES)", "BLAKE2/SHA-512")?"""
+    return "/" in name or _AMBIGUOUS_LIST_RE.search(name) is not None
+
+
+#: ASCII'si işleç kaybeden otomatik şablonlar (import anında hesaplanır).
+ASCII_OMITTED_TEMPLATES: frozenset[str] = frozenset(
+    key for key, t in FORMULA_TEMPLATES.items()
+    if _AUTO_GENERATED_MARK in t.reference and ascii_lost_operators(t.latex, t.ascii)
+)
+
+
+# -----------------------------------------------------------------------
 # FormulaReconstructor
 # -----------------------------------------------------------------------
 
@@ -5051,21 +5145,45 @@ class FormulaReconstructor:
             Eslesen FormulaInfo listesi.  Formulu olmayan algoritmalar
             atlanir (kripto vb. engineering formulu yok).
         """
-        results: list[FormulaInfo] = []
-        seen: set[str] = set()  # Avoid duplicate formulas
-
+        # Şablon başına bir formül; kaynak fonksiyonlar ve tespit adları birikir.
+        groups: dict[str, dict[str, Any]] = {}
         for algo in algorithms:
-            template_key = self._match_template(algo.name)
+            name = getattr(algo, "name", "") or ""
+            template_key = self.match_detection(name)
             if template_key is None:
                 continue
-            if template_key in seen:
-                continue
-            seen.add(template_key)
+            g = groups.setdefault(
+                template_key, {"functions": [], "names": [], "confidence": None},
+            )
+            func = getattr(algo, "function_name", "") or ""
+            if func and func not in g["functions"]:
+                g["functions"].append(func)
+            if name not in g["names"]:
+                g["names"].append(name)
+            conf = getattr(algo, "confidence", None)
+            if isinstance(conf, (int, float)):
+                g["confidence"] = conf if g["confidence"] is None else max(g["confidence"], conf)
 
+        results: list[FormulaInfo] = []
+        for template_key, g in groups.items():
             template = FORMULA_TEMPLATES[template_key]
-            results.append(template)
-
+            omitted = template_key in ASCII_OMITTED_TEMPLATES
+            results.append(replace(
+                template,
+                ascii="" if omitted else template.ascii,
+                ascii_omitted=omitted,
+                functions=list(g["functions"]),
+                detected_as=list(g["names"]),
+                detection_confidence=g["confidence"],
+            ))
         return results
+
+    def match_detection(self, algo_name: str) -> str | None:
+        """Tespit adı → şablon anahtarı (MUH-12 kuralı): belirsiz ad formül almaz,
+        yalnız tam ad / alias eşitliği."""
+        if is_ambiguous_detection_name(algo_name):
+            return None
+        return self._match_template(algo_name)
 
     def generate_report(self, formulas: list[FormulaInfo]) -> str:
         """Generate markdown report section.
@@ -5098,10 +5216,26 @@ class FormulaReconstructor:
             lines.append("")
             lines.append(f"**Method:** {f.method}")
             lines.append("")
-            lines.append("**Formula (ASCII):**")
-            lines.append(f"```")
-            lines.append(f"{f.ascii}")
-            lines.append(f"```")
+            if f.functions:
+                shown = ", ".join(f"`{fn}`" for fn in f.functions[:10])
+                more = f" (+{len(f.functions) - 10} more)" if len(f.functions) > 10 else ""
+                lines.append(f"**Detected in:** {shown}{more}")
+                lines.append("")
+            if f.detected_as:
+                conf = ""
+                if f.detection_confidence is not None:
+                    conf = (f"; detector score {f.detection_confidence:.2f} "
+                            "(uncalibrated)")
+                lines.append(f"**Detection:** {', '.join(f.detected_as[:5])}{conf}")
+                lines.append("")
+            if f.ascii_omitted or not f.ascii:
+                lines.append("**Formula (ASCII):** omitted — the automatic conversion "
+                             "lost operators; see LaTeX.")
+            else:
+                lines.append("**Formula (ASCII):**")
+                lines.append(f"```")
+                lines.append(f"{f.ascii}")
+                lines.append(f"```")
             lines.append("")
             lines.append("**Formula (LaTeX):**")
             lines.append(f"$$")
@@ -5133,38 +5267,29 @@ class FormulaReconstructor:
     def _match_template(algo_name: str) -> str | None:
         """Algoritma adini sablon anahtarina esle.
 
-        1. Exact match (normalized lowercase)
-        2. Alias lookup (_NAME_TO_TEMPLATE)
-        3. Substring fuzzy match (en uzun eslesen alias)
+        1. Şablon anahtarına tam eşitlik (küçük harf; boşluk / tire alt çizgiye)
+        2. Alias'a tam eşitlik (_NAME_TO_TEMPLATE)
+
+        Alt dizgi ve ters yönde alt dizgi eşleşmesi kaldırıldı (MUH-12): "S-box
+        substitution (AES, DES)" DES'e, "Password-based key derivation (PBKDF2,
+        scrypt)" PBKDF2'ye yükseltiliyordu.
 
         Returns:
             Template key or None.
         """
         normalized = algo_name.lower().strip()
+        if not normalized:
+            return None
 
         # 1. Direct template key match
         if normalized in FORMULA_TEMPLATES:
             return normalized
+        as_key = re.sub(r"[\s\-]+", "_", normalized)
+        if as_key in FORMULA_TEMPLATES:
+            return as_key
 
         # 2. Alias lookup
         if normalized in _NAME_TO_TEMPLATE:
             return _NAME_TO_TEMPLATE[normalized]
-
-        # 3. Fuzzy substring match -- algo_name icinde bir alias var mi?
-        #    En uzun eslesen alias tercih edilir (specificity).
-        best_key: str | None = None
-        best_len = 0
-        for alias, template_key in _NAME_TO_TEMPLATE.items():
-            if alias in normalized and len(alias) > best_len:
-                best_key = template_key
-                best_len = len(alias)
-
-        if best_key is not None:
-            return best_key
-
-        # 4. Ters yonde: normalized, bir alias'in icinde mi?
-        for alias, template_key in _NAME_TO_TEMPLATE.items():
-            if normalized in alias and len(normalized) >= 3:
-                return template_key
 
         return None

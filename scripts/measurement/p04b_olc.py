@@ -198,6 +198,64 @@ def cmd_muh(a: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# formul: formül çıkarıcı (MUH-12)
+# ---------------------------------------------------------------------------
+
+def _algoritmalar(ws: Path) -> list:
+    """Kayıtlı ``algorithms.json`` + ``engineering_algorithms.json`` → ``AlgorithmMatch`` listesi
+    (ürünün ``collect_algorithm_list`` sırasıyla)."""
+    from karadul.reconstruction.c_algorithm_id import AlgorithmMatch
+    out = []
+    for ad in ("algorithms.json", "engineering_algorithms.json"):
+        for a in (_json(ws / "reconstructed" / ad) or {}).get("algorithms", []) or []:
+            out.append(AlgorithmMatch(
+                name=a.get("name", ""), category=a.get("category", ""),
+                confidence=float(a.get("confidence", 0.0) or 0.0),
+                detection_method=a.get("detection_method", a.get("method", "")),
+                evidence=list(a.get("evidence", []) or []),
+                function_name=a.get("function_name", a.get("function", "")),
+                address=a.get("address", "")))
+    return out
+
+
+def formul_bir(kosu: str, anahtar: str, ws: Path) -> dict:
+    from karadul.reconstruction.engineering import FormulaReconstructor
+    kayit: dict[str, Any] = {"kosu": kosu, "anahtar": anahtar}
+    algos = _algoritmalar(ws)
+    fr = FormulaReconstructor()
+    formuller = fr.reconstruct(algos)
+    kayitli = _json(ws / "reconstructed" / "engineering_analysis.json")
+    kayit["kayitli_formul"] = None if kayitli is None else kayitli.get("total_formulas")
+    kayit["formul"] = [
+        {"algoritma": f.algorithm,
+         "kaynak": [a.name for a in algos if fr._match_template(a.name) is not None
+                    and FormulaReconstructor._match_template(a.name)
+                    == FormulaReconstructor._match_template(f.algorithm)][:3],
+         "fonksiyon": list(getattr(f, "functions", []) or [])[:3],
+         "ascii_bos": not bool(f.ascii)}
+        for f in formuller]
+    kayit["durum"] = "calisti"
+    return kayit
+
+
+def cmd_formul(a: argparse.Namespace) -> int:
+    print("karadul:", karadul_denetle())
+    t0 = time.monotonic()
+    kayitlar = _havuz(formul_bir, _isler(a), a.paralel)
+    ad: Counter = Counter()
+    for r in kayitlar:
+        ad.update(f["algoritma"] for f in r.get("formul", []))
+    ozet = {"ikili": len(kayitlar),
+            "formul": sum(len(r.get("formul", [])) for r in kayitlar),
+            "formullu_ikili": sum(1 for r in kayitlar if r.get("formul")),
+            "kayitli_ile_ayni": sum(1 for r in kayitlar
+                                    if r.get("kayitli_formul") == len(r.get("formul", []))),
+            "kayitli_var": sum(1 for r in kayitlar if r.get("kayitli_formul") is not None),
+            "algoritma": dict(ad.most_common())}
+    return _yaz(a, "formul", kayitlar, ozet, t0)
+
+
+# ---------------------------------------------------------------------------
 # ortak yazım
 # ---------------------------------------------------------------------------
 
@@ -218,7 +276,7 @@ def _yaz(a: argparse.Namespace, ad: str, kayitlar: list[dict], ozet: dict, t0: f
 def main(argv: Optional[list[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("komut", choices=["muh"])
+    ap.add_argument("komut", choices=["muh", "formul"])
     ap.add_argument("--etiket", required=True)
     ap.add_argument("--kosu", action="append", choices=sorted(KOSULAR))
     ap.add_argument("--ws", action="append")
@@ -227,7 +285,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     ap.add_argument("--paralel", type=int, default=6)
     ap.add_argument("--cikti", type=Path, default=CIKTI)
     a = ap.parse_args(argv)
-    return {"muh": cmd_muh}[a.komut](a)
+    return {"muh": cmd_muh, "formul": cmd_formul}[a.komut](a)
 
 
 if __name__ == "__main__":
