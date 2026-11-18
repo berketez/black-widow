@@ -1353,44 +1353,137 @@ class _BSimNativeWrapper:
                     f"BSim QueryNearest basarisiz: {self._last_error(database)}"
                 )
 
-            query_name = str(func.getName())
-            query_addr = str(func.getEntryPoint())
-            matches: list[BSimMatch] = []
             # ResponseNearest.result -> List<SimilarityResult>
             # SimilarityResult iterable -> SimilarityNote (similarity+significance)
-            for sim_result in response.result:
-                for note in sim_result:
-                    fdesc = note.getFunctionDescription()
-                    exe = fdesc.getExecutableRecord()
-                    md5 = _hex_or_empty(_call_str(lambda: exe.getMd5()), 32) if exe else ""
-                    rec = exclusion.provenance.get(md5) if (exclusion and md5) else None
-                    if exclusion is not None:
-                        reason = exclusion.classify(md5)
-                        if reason:
-                            exclusion.counts[reason] = exclusion.counts.get(reason, 0) + 1
-                            continue
-                    try:
-                        m_addr = format(int(fdesc.getAddress()), "x")
-                    except Exception:  # noqa: BLE001
-                        m_addr = ""
-                    matches.append(BSimMatch(
-                        query_function=query_name,
-                        query_address=query_addr,
-                        matched_function=str(fdesc.getFunctionName()),
-                        matched_program=str(exe.getNameExec()) if exe else "",
-                        similarity=float(note.getSimilarity()),
-                        significance=float(note.getSignificance()),
-                        matched_address=m_addr,
-                        matched_exe_md5=md5,
-                        matched_exe_sha256=str((rec or {}).get("sha256") or ""),
-                        matched_source=SOURCE_RECORDED if rec else SOURCE_UNRECORDED,
-                    ))
-            out = matches[:max_results]
+            notes = [note for sim_result in response.result for note in sim_result]
+            return self._matches_from_notes(
+                str(func.getName()), str(func.getEntryPoint()), notes,
+                max_results, exclusion,
+            )
+        finally:
+            try:
+                gen.dispose()
+            except Exception:  # noqa: BLE001
+                logger.debug("GenSignatures dispose basarisiz", exc_info=True)
+
+    @staticmethod
+    def _matches_from_notes(
+        query_name: str,
+        query_addr: str,
+        notes: Any,
+        max_results: int,
+        exclusion: Optional[_Exclusion],
+    ) -> list[BSimMatch]:
+        """Bir sorgu fonksiyonunun ``SimilarityNote``'larını adaylara çevir.
+
+        Dışlama (kendisi / aynı dosya / aynı yapı) not sırasıyla uygulanır ve sayılır,
+        kalanlar ``max_results``'a kırpılır. Tekli ve toplu sorgu aynı yolu kullanır
+        (P16c: toplu sorgu eşleşme kümesini değiştirmemeli).
+        """
+        matches: list[BSimMatch] = []
+        for note in notes:
+            fdesc = note.getFunctionDescription()
+            exe = fdesc.getExecutableRecord()
+            md5 = _hex_or_empty(_call_str(lambda: exe.getMd5()), 32) if exe else ""
+            rec = exclusion.provenance.get(md5) if (exclusion and md5) else None
             if exclusion is not None:
-                exclusion.unrecorded_candidates += sum(
-                    1 for m in out if m.matched_source == SOURCE_UNRECORDED
+                reason = exclusion.classify(md5)
+                if reason:
+                    exclusion.counts[reason] = exclusion.counts.get(reason, 0) + 1
+                    continue
+            try:
+                m_addr = format(int(fdesc.getAddress()), "x")
+            except Exception:  # noqa: BLE001
+                m_addr = ""
+            matches.append(BSimMatch(
+                query_function=query_name,
+                query_address=query_addr,
+                matched_function=str(fdesc.getFunctionName()),
+                matched_program=str(exe.getNameExec()) if exe else "",
+                similarity=float(note.getSimilarity()),
+                significance=float(note.getSignificance()),
+                matched_address=m_addr,
+                matched_exe_md5=md5,
+                matched_exe_sha256=str((rec or {}).get("sha256") or ""),
+                matched_source=SOURCE_RECORDED if rec else SOURCE_UNRECORDED,
+            ))
+        out = matches[:max_results]
+        if exclusion is not None:
+            exclusion.unrecorded_candidates += sum(
+                1 for m in out if m.matched_source == SOURCE_UNRECORDED
+            )
+        return out
+
+    def query_functions(
+        self,
+        database: Any,
+        program: Any,
+        funcs: list[Any],
+        min_similarity: float = 0.7,
+        max_results: int = 5,
+        significance_threshold: float = _DEFAULT_SIGNIFICANCE_THRESHOLD,
+        exclusion: Optional[_Exclusion] = None,
+        extra_slots: int = 0,
+    ) -> tuple[list[BSimMatch], int]:
+        """Bütün fonksiyonlar için TEK ``GenSignatures`` + TEK ``QueryNearest`` (P16c).
+
+        Eski yol (``query_function`` döngüsü) her fonksiyon için ayrı bir
+        ``GenSignatures`` kuruyordu (``openProgram`` + kendi decompiler'ı): Debian
+        ``cat``'te 107 fonksiyon 26,5 sn, fonksiyon başına ≈ 0,25 sn. Burada imzalar bir
+        kez üretilir, sorgu bir kez koşar; ``ResponseNearest.result`` içindeki her
+        ``SimilarityResult``'ın tabanı (``getBase()``) sorgu fonksiyonudur ve giriş
+        adresiyle fonksiyona eşlenir. Adaylar fonksiyon sırasıyla, tekli yolla aynı
+        dışlama ve kırpmadan geçer.
+
+        Returns:
+            (adaylar, taranamayan fonksiyon sayısı)
+        """
+        from ghidra.features.bsim.query.protocol import QueryNearest
+
+        gen = self._gen_signatures(database, program)
+        scan_failed = 0
+        try:
+            scanned: list[Any] = []
+            for func in funcs:
+                try:
+                    gen.scanFunction(func)
+                    scanned.append(func)
+                except Exception:
+                    scan_failed += 1
+                    logger.debug("BSim sorgu fonksiyonu taranamadi", exc_info=True)
+            if not scanned:
+                return [], scan_failed
+
+            query = QueryNearest()
+            query.manage = gen.getDescriptionManager()
+            query.thresh = float(min_similarity)
+            query.signifthresh = float(significance_threshold)
+            query.max = int(max_results + max(0, extra_slots))
+
+            response = query.execute(database)
+            if response is None:
+                raise RuntimeError(
+                    f"BSim QueryNearest (toplu) basarisiz: {self._last_error(database)}"
                 )
-            return out
+
+            by_addr: dict[int, list[Any]] = {}
+            for sim_result in response.result:
+                base = sim_result.getBase()
+                try:
+                    key = int(base.getAddress())
+                except Exception:  # noqa: BLE001
+                    continue
+                by_addr.setdefault(key, []).extend(note for note in sim_result)
+
+            matches: list[BSimMatch] = []
+            for func in scanned:
+                entry = func.getEntryPoint()
+                matches.extend(self._matches_from_notes(
+                    str(func.getName()), str(entry),
+                    by_addr.get(int(entry.getOffset()), []),
+                    max_results, exclusion,
+                ))
+            return matches, scan_failed
         finally:
             try:
                 gen.dispose()
@@ -1815,6 +1908,11 @@ class BSimDatabase:
             logger.debug("BSim instruction toplama basarisiz, atlaniyor", exc_info=True)
         return instructions
 
+    def _batch_query_enabled(self) -> bool:
+        # P16c: toplu sorgu öntanımlı açık; ``bsim.batch_query`` alanı config.py'de
+        # yok (yama: yamalar/P16c__config.py.patch), eklenirse getattr ile okunur.
+        return bool(self._bsim_cfg_value("batch_query", True))
+
     def _significance(self) -> float:
         # KISIT: BSimConfig'de henuz min_significance alani YOK (config.py
         # bu paketin yetkisi disinda). getattr ile okuyoruz: alan sonradan
@@ -1893,15 +1991,41 @@ class BSimDatabase:
                     return self._result(db_name, len(funcs), [], t0, exclusion)
                 slots = exclusion.extra_slots()
                 signif = self._significance()
-                for func in funcs:
+                batch_done = False
+                if self._batch_query_enabled() and len(funcs) > 1:
+                    # P16c: tek GenSignatures + tek QueryNearest. Düşerse eski tekli
+                    # yola geçilir; dışlama sayaçları baştan sayılsın diye sıfırlanır.
+                    counts_before = dict(exclusion.counts)
+                    unrecorded_before = exclusion.unrecorded_candidates
                     try:
-                        all_matches.extend(self._native.query_function(
-                            client, program, func, min_similarity, max_results,
+                        batch_matches, scan_failed = self._native.query_functions(
+                            client, program, funcs, min_similarity, max_results,
                             signif, exclusion, slots,
-                        ))
-                    except Exception:
-                        self.status["query_errors"] = int(self.status.get("query_errors", 0)) + 1
-                        logger.debug("BSim tek fonksiyon sorgusu basarisiz", exc_info=True)
+                        )
+                        all_matches.extend(batch_matches)
+                        if scan_failed:
+                            self.status["query_scan_failed"] = scan_failed
+                        self.status["query_mode"] = "batch"
+                        batch_done = True
+                    except Exception as exc:  # noqa: BLE001
+                        exclusion.counts = counts_before
+                        exclusion.unrecorded_candidates = unrecorded_before
+                        self.status["batch_query_error"] = "%s: %s" % (type(exc).__name__, exc)
+                        logger.warning(
+                            "BSim toplu sorgu basarisiz, fonksiyon basina sorguya "
+                            "geciliyor: %s", exc,
+                        )
+                if not batch_done:
+                    self.status["query_mode"] = "per_function"
+                    for func in funcs:
+                        try:
+                            all_matches.extend(self._native.query_function(
+                                client, program, func, min_similarity, max_results,
+                                signif, exclusion, slots,
+                            ))
+                        except Exception:
+                            self.status["query_errors"] = int(self.status.get("query_errors", 0)) + 1
+                            logger.debug("BSim tek fonksiyon sorgusu basarisiz", exc_info=True)
                 if self.status.get("status") == STATUS_NOT_RUN:
                     self.status["status"] = STATUS_OK
                 return self._result(db_name, len(funcs), all_matches, t0, exclusion)
