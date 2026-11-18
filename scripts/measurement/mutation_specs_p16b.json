@@ -1,0 +1,174 @@
+{
+  "_comment": "P16b (BSim deposu: kilit, aday kaynağı, atomik lite dizini, API) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p16b.json",
+  "mutants": [
+    {
+      "id": "p16b_kilit_paylasimli",
+      "desc": "GHIDRA-01: özel kilit yerine paylaşımlı kilit (iki süreç aynı anda girer)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra01Kilit::test_kilit_alinamazsa_atlanir_lite_yok",
+      "find": "fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)",
+      "replace": "fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB | 0)"
+    },
+    {
+      "id": "p16b_kilit_sure_yok",
+      "desc": "GHIDRA-01: bekleme süresi aşılsa da beklemeye devam (atlama yok)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra01Kilit::test_kilit_alinamazsa_atlanir_lite_yok",
+      "find": "if waited >= timeout_s:",
+      "replace": "if waited >= timeout_s * 99:"
+    },
+    {
+      "id": "p16b_mesgul_lite",
+      "desc": "GHIDRA-01: H2 meşgulken yine lite'a sessiz düşüş",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra01Kilit::test_h2_mesgul_yeniden_dener_sonra_atlar_lite_yok",
+      "find": "                    if _is_busy_error(exc):",
+      "replace": "                    if False and _is_busy_error(exc):"
+    },
+    {
+      "id": "p16b_mesgul_tekrar_yok",
+      "desc": "GHIDRA-01: H2 meşgulken yeniden deneme yok",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra01Kilit::test_h2_mesgul_sonra_bosalir",
+      "find": "if not _is_busy_error(exc) or time.monotonic()",
+      "replace": "if True or not _is_busy_error(exc) or time.monotonic()"
+    },
+    {
+      "id": "p16b_oturum_erken_biter",
+      "desc": "GHIDRA-01: kilit ingest sonunda bırakılıyor (sorgu kilitsiz)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra01Kilit::test_oturum_kilidi_ingestten_sorgu_sonuna_kadar",
+      "find": "keep_session = bool(self._bsim_cfg_value(\"auto_query\", True))",
+      "replace": "keep_session = False and bool(self._bsim_cfg_value(\"auto_query\", True))"
+    },
+    {
+      "id": "p16b_istemci_her_sorguda",
+      "desc": "GHIDRA-01: H2 istemcisi her fonksiyonda yeniden açılıyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra01Kilit::test_oturum_kilidi_ingestten_sorgu_sonuna_kadar",
+      "find": "if self._client is not None and self._client_db == db_name:",
+      "replace": "if self._client is not None and self._client_db == db_name and False:"
+    },
+    {
+      "id": "p16b_durum_yazilmaz",
+      "desc": "GHIDRA-01: bsim_status çıktıya yazılmıyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra01Kilit::test_kilit_alinamazsa_atlanir_lite_yok",
+      "find": "\"bsim_status\": status.get(\"status\") or None,",
+      "replace": "\"bsim_status\": None,"
+    },
+    {
+      "id": "p16b_kendisi_dislanmaz",
+      "desc": "GHIDRA-02: kendi md5'i aday olabiliyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra02Kimlik::test_native_sorgu_kendisini_ve_ayni_yapiyi_dislar",
+      "find": "if self.own.md5 and md5 and md5 == self.own.md5:",
+      "replace": "if self.own.md5 and md5 and md5 == self.own.md5 + \"x\":"
+    },
+    {
+      "id": "p16b_ayni_yapi_dislanmaz",
+      "desc": "GHIDRA-02: aynı build-id/UUID'li sembollü kopya aday olabiliyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra02Kimlik::test_native_sorgu_kendisini_ve_ayni_yapiyi_dislar",
+      "find": "if self.own.build_ids and bids and set(bids) & set(self.own.build_ids):",
+      "replace": "if self.own.build_ids and bids and not bids:"
+    },
+    {
+      "id": "p16b_yuva_eki_yok",
+      "desc": "GHIDRA-02: dışlananlar sonuç yuvasını yiyor (ek yuva istenmiyor)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra02Kimlik::test_native_sorgu_kendisini_ve_ayni_yapiyi_dislar",
+      "find": "query.max = int(max_results + max(0, extra_slots))",
+      "replace": "query.max = int(max_results)"
+    },
+    {
+      "id": "p16b_elf_build_id",
+      "desc": "GHIDRA-02: ELF GNU build-id notu okunmuyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra02Kimlik::test_elf_build_id",
+      "find": "name.rstrip(b\"\\0\") == b\"GNU\"",
+      "replace": "name.rstrip(b\"\\0\") == b\"GNUX\""
+    },
+    {
+      "id": "p16b_macho_uuid",
+      "desc": "GHIDRA-02: Mach-O LC_UUID okunmuyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra02Kimlik::test_macho_uuid_ve_evrensel",
+      "find": "if cmd == _LC_UUID and cmdsize >= 24",
+      "replace": "if cmd == _LC_UUID + 1 and cmdsize >= 24"
+    },
+    {
+      "id": "p16b_lite_ad_anahtari",
+      "desc": "GHIDRA-02: lite dizini program adıyla anahtarlanıyor (aynı adlı ikililer ezilir)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra02Kimlik::test_lite_ayni_adli_iki_ikili_birbirini_ezmez",
+      "find": "key = identity.md5 if identity is not None and identity.md5 else program_name",
+      "replace": "key = program_name"
+    },
+    {
+      "id": "p16b_lite_addan_dislama",
+      "desc": "GHIDRA-02: lite dışlaması kimlik yerine adla",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra02Kimlik::test_lite_kimlikle_dislar_adla_degil",
+      "find": "by_identity = exclusion is not None and bool(exclusion.own.md5)",
+      "replace": "by_identity = False"
+    },
+    {
+      "id": "p16b_kaynak_etiketi",
+      "desc": "GHIDRA-02: kaynak kaydı olmayan aday 'recorded' görünüyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra02Kimlik::test_native_sorgu_kendisini_ve_ayni_yapiyi_dislar",
+      "find": "matched_source=SOURCE_RECORDED if rec else SOURCE_UNRECORDED,",
+      "replace": "matched_source=SOURCE_RECORDED,"
+    },
+    {
+      "id": "p16b_shadow_kaynak",
+      "desc": "GHIDRA-02: gölge çıktıda aday kaynağı düşüyor",
+      "module": "karadul/ghidra/_bsim_shadow.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra02Kimlik::test_shadow_durum_ve_kaynak_tasir",
+      "find": "\"source\": str(m.get(\"matched_source\", \"\") or \"\"),",
+      "replace": "\"source\": \"\","
+    },
+    {
+      "id": "p16b_lite_birlestirme_yok",
+      "desc": "GHIDRA-03: diskteki son hal okunmadan yazılıyor (son yazan kazanır)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra03LiteDizini::test_eszamanli_iki_yazici_ikisi_de_kalir",
+      "find": "disk, err = _read_json_dict(self.index_file)",
+      "replace": "disk, err = None, \"\""
+    },
+    {
+      "id": "p16b_bozuk_ezilir",
+      "desc": "GHIDRA-03: bozuk dizin yedeğe taşınmadan eziliyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra03LiteDizini::test_bozuk_dizin_ezilmez_yedege_tasinir",
+      "find": "self.quarantined = _quarantine(self.index_file)",
+      "replace": "self.quarantined = None"
+    },
+    {
+      "id": "p16b_temizken_yazar",
+      "desc": "GHIDRA-12 e: değişiklik yokken kapanışta dizin yeniden yazılıyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra03LiteDizini::test_degisiklik_yoksa_kapanista_yazmaz",
+      "find": "if not self.dirty:",
+      "replace": "if not self.dirty and False:"
+    },
+    {
+      "id": "p16b_native_liste_yok",
+      "desc": "GHIDRA-12: lite kipte native .mv.db listelenmiyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra12API::test_list_lite_kipte_native_dosyayi_gosterir",
+      "find": "f.name.endswith(\".mv.db\"):",
+      "replace": "f.name.endswith(\".mv.dbx\"):"
+    },
+    {
+      "id": "p16b_db_adi_yok_sayilir",
+      "desc": "GHIDRA-12: query_all_functions verilen db adını yok sayıyor",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16b_bsim.py::TestGhidra12API::test_query_all_functions_db_adini_kullanir",
+      "find": "db_name = db_name or self._default_db_name()",
+      "replace": "db_name = self._default_db_name()",
+      "occurrence": 2
+    }
+  ]
+}

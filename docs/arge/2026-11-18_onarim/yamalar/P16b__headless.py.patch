@@ -1,0 +1,46 @@
+--- a/karadul/ghidra/headless.py
++++ b/karadul/ghidra/headless.py
+@@ -449,28 +449,27 @@
+                         from karadul.ghidra.bsim import BSimDatabase
+                         bsim_db = BSimDatabase(self.config)
+                         ingested = bsim_db.ingest_program(program, self.config.bsim.default_database)
+-                        log_lines.append("BSim: %d fonksiyon hash'lendi" % ingested)
++                        # P16b (GHIDRA-01): kip ve durum günlükte ve bsim_matches.json'da;
++                        # kilit / meşgul durumunda BSim atlanır, sessizce lite'a düşülmez.
++                        log_lines.append(
++                            "BSim: %d fonksiyon hash'lendi (kip: %s, durum: %s)"
++                            % (ingested, bsim_db.status.get("mode"), bsim_db.status.get("status"))
++                        )
+                         if self.config.bsim.auto_query:
+                             bsim_result = bsim_db.query_all_functions(
+                                 program, self.config.bsim.min_similarity,
++                                db_name=self.config.bsim.default_database,
+                             )
+-                            bsim_data = {
+-                                "total_matches": bsim_result.total_matches,
+-                                "database": bsim_result.database_name,
+-                                "matches": [
+-                                    {
+-                                        "query_function": m.query_function,
+-                                        "query_address": m.query_address,
+-                                        "matched_function": m.matched_function,
+-                                        "matched_program": m.matched_program,
+-                                        "similarity": m.similarity,
+-                                    }
+-                                    for m in bsim_result.matches
+-                                ],
+-                            }
++                            # Eski beş alan + aday kaynağı (GHIDRA-02) + bsim_mode /
++                            # bsim_status / bsim_detail (GHIDRA-01).
++                            bsim_data = bsim_result.to_payload()
+                             scripts_output["bsim"] = bsim_data
+                             self._save_output(output_dir, "bsim_matches.json", bsim_data)
+-                            log_lines.append("BSim query: %d esleme" % bsim_result.total_matches)
++                            log_lines.append(
++                                "BSim query: %d esleme (kip: %s, durum: %s)"
++                                % (bsim_result.total_matches, bsim_data.get("bsim_mode"),
++                                   bsim_data.get("bsim_status"))
++                            )
+                             # v1.11.0 Hafta 2: legacy yolda da shadow dump
+                             # uretilsin ki use_step_registry=False olan
+                             # kosumlarda bsim_shadow.json eksik kalmasin

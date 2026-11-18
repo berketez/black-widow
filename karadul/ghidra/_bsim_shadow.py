@@ -47,10 +47,19 @@ def build_shadow_payload(
           "matches": [
             {"function_addr": hex-str, "function_name": str,
              "bsim_candidates": [
-                {"name": str, "similarity": float, "binary": str}, ...
+                {"name": str, "similarity": float, "binary": str,
+                 "exe_md5": str, "exe_sha256": str, "source": str}, ...
              ]}, ...
-          ]
+          ],
+          "bsim_mode": "native" | "lite" | None,
+          "bsim_status": "ok" | "fallback_lite" | "skipped_busy" | ... | None,
+          "bsim_detail": {...} | None
         }
+
+    ``bsim_mode`` / ``bsim_status`` / ``bsim_detail`` ham veride yoksa (eski
+    headless) ``None`` yazilir: "bilinmiyor", "basarili" degil (P16b).
+    Adayin kaynagi (``exe_md5``, ``exe_sha256``, ``source``) ham kayitta
+    yoksa bos dizgi kalir.
     """
     mode = "shadow" if shadow_mode else "live-dump-only"
     now = datetime.now(timezone.utc).isoformat()
@@ -62,12 +71,20 @@ def build_shadow_payload(
         "database": "",
         "total_matches": 0,
         "matches": [],
+        "bsim_mode": None,
+        "bsim_status": None,
+        "bsim_detail": None,
     }
 
     if not raw_data or not isinstance(raw_data, dict):
         return base
 
     base["database"] = str(raw_data.get("database", "") or "")
+    for key in ("bsim_mode", "bsim_status"):
+        val = raw_data.get(key)
+        base[key] = str(val) if val else None
+    detail = raw_data.get("bsim_detail")
+    base["bsim_detail"] = detail if isinstance(detail, dict) else None
     raw_matches = raw_data.get("matches") or []
     if not isinstance(raw_matches, list):
         return base
@@ -95,6 +112,9 @@ def build_shadow_payload(
             "name": str(m.get("matched_function", "") or ""),
             "similarity": sim,
             "binary": str(m.get("matched_program", "") or ""),
+            "exe_md5": str(m.get("matched_exe_md5", "") or ""),
+            "exe_sha256": str(m.get("matched_exe_sha256", "") or ""),
+            "source": str(m.get("matched_source", "") or ""),
         })
         total += 1
 
