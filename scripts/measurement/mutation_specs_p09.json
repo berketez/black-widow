@@ -184,6 +184,38 @@
       "test": "tests/test_p09_tip.py::test_ghidra_yuksek_degisken_tipi_genislige_uyar",
       "find": "                        if not _same_width(undef, resolved_type):\n                            continue",
       "replace": "                        if 0:\n                            continue"
+    },
+    {
+      "id": "p09_k4_sessiz_donus",
+      "desc": "AD-10: veri yokken durum yazılmaz (sessiz dönüş)",
+      "module": "karadul/pipeline/steps/_feedback_typing_extras.py",
+      "test": "tests/test_p09_ngram.py::test_veri_yoksa_durum_yazilir",
+      "find": "            stats[\"ngram_naming_durum\"] = \"veri_yok\"\n",
+      "replace": "            pass\n"
+    },
+    {
+      "id": "p09_k4_dizgi_degisir",
+      "desc": "AD-10: ad dizgi ve yorum içinde de değişir",
+      "module": "karadul/pipeline/steps/_feedback_typing_extras.py",
+      "test": "tests/test_p09_ngram.py::test_ad_yalniz_kodda_suzgecli_ve_cakismasiz",
+      "find": "    for m in pattern.finditer(masked):",
+      "replace": "    for m in pattern.finditer(code):"
+    },
+    {
+      "id": "p09_k4_gecerlilik",
+      "desc": "AD-10: geçersiz ad süzülmez",
+      "module": "karadul/pipeline/steps/_feedback_typing_extras.py",
+      "test": "tests/test_p09_ngram.py::test_ad_yalniz_kodda_suzgecli_ve_cakismasiz",
+      "find": "        if lexical_reject_reason(name, local=True) is not None:",
+      "replace": "        if False:"
+    },
+    {
+      "id": "p09_k4_cakisma",
+      "desc": "AD-10: dosyada zaten kullanılan ad verilir",
+      "module": "karadul/pipeline/steps/_feedback_typing_extras.py",
+      "test": "tests/test_p09_ngram.py::test_ad_yalniz_kodda_suzgecli_ve_cakismasiz",
+      "find": "        if name in used or name in taken:",
+      "replace": "        if name in taken:"
     }
   ]
 }

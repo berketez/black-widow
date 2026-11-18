@@ -228,16 +228,32 @@ def run_ngram_naming(
 
     try:
         from karadul.reconstruction.ngram_namer import NgramNamer
-        ngram_db_dir = pc.config.project_root / "sigs" / "ngram_name_db"
-        if not ngram_db_dir.is_dir():
+        # AD-10: veritabanı eskiden yalnız ``project_root/sigs`` altında aranıyordu;
+        # ``--output-dir`` verilince project_root çıktı dizini olur ve kanal
+        # SESSİZCE hiç çalışmazdı (istatistik yok, uyarı yok).  Artık durum
+        # istatistiğe yazılır.  Veri kökü ayrımı (``data_root``) P15'in işi; o
+        # alan eklenince ilk orada aranır.
+        aranan = ngram_db_dirs(pc.config)
+        ngram_db_dir = next((d for d in aranan if d.is_dir()), None)
+        if ngram_db_dir is None:
+            stats["ngram_naming_durum"] = "veri_yok"
+            stats["ngram_db_aranan"] = [str(d) for d in aranan]
+            logger.warning(
+                "N-gram adlandırma çalışmadı: veritabanı bulunamadı (%s)",
+                ", ".join(str(d) for d in aranan),
+            )
             stats[f"timing_ngram_naming_iter{iter_index}"] = round(
                 time.monotonic() - step_start, 1,
             )
             return
+        stats["ngram_naming_durum"] = "calisti"
+        stats["ngram_db_dizini"] = str(ngram_db_dir)
 
         ngram_namer = NgramNamer(db_dir=ngram_db_dir)
         ngram_total = 0
         ngram_applied = 0
+        ngram_rejected_invalid = 0
+        ngram_rejected_collision = 0
         ngram_threshold = (
             pc.config.binary_reconstruction.ngram_confidence_threshold
         )
@@ -245,7 +261,6 @@ def run_ngram_naming(
         ngram_files = _target_files(
             decompiled_dir, incremental_files, iter_index,
         )
-        pat_cache: dict[str, re.Pattern[str]] = {}
         for nf in ngram_files:
             try:
                 ncode = nf.read_text(encoding="utf-8", errors="replace")
@@ -253,21 +268,16 @@ def run_ngram_naming(
                 ngram_total += nresult.total_predicted
                 if not nresult.predictions:
                     continue
-                changed = False
-                for nvar, npred in nresult.predictions.items():
-                    if npred.confidence < ngram_threshold:
-                        continue
-                    if nvar not in pat_cache:
-                        pat_cache[nvar] = re.compile(
-                            r"\b" + re.escape(nvar) + r"\b",
-                        )
-                    npat = pat_cache[nvar]
-                    nnew, nsubs = npat.subn(npred.predicted_name, ncode)
-                    if nsubs > 0:
-                        ncode = nnew
-                        changed = True
-                        ngram_applied += 1
-                if changed:
+                accepted = {
+                    nvar: npred.predicted_name
+                    for nvar, npred in nresult.predictions.items()
+                    if npred.confidence >= ngram_threshold
+                }
+                ncode, applied, bad, clash = apply_local_renames(ncode, accepted)
+                ngram_applied += applied
+                ngram_rejected_invalid += bad
+                ngram_rejected_collision += clash
+                if applied:
                     nf.write_text(ncode, encoding="utf-8")
             except Exception:
                 logger.debug(
@@ -277,9 +287,13 @@ def run_ngram_naming(
 
         stats["ngram_total_predictions"] = ngram_total
         stats["ngram_names_applied"] = ngram_applied
+        stats["ngram_rejected_invalid"] = ngram_rejected_invalid
+        stats["ngram_rejected_collision"] = ngram_rejected_collision
         logger.info(
-            "  N-gram naming (iter %d): %d predictions, %d applied (%d files)",
-            iter_index + 1, ngram_total, ngram_applied, len(ngram_files),
+            "  N-gram naming (iter %d): %d predictions, %d applied, %d geçersiz, "
+            "%d çakışma (%d files)",
+            iter_index + 1, ngram_total, ngram_applied, ngram_rejected_invalid,
+            ngram_rejected_collision, len(ngram_files),
         )
     except Exception as exc:
         logger.warning("N-gram naming hatasi (atlaniyor): %s", exc)
@@ -287,6 +301,68 @@ def run_ngram_naming(
     stats[f"timing_ngram_naming_iter{iter_index}"] = round(
         time.monotonic() - step_start, 1,
     )
+
+
+def ngram_db_dirs(config: Any) -> list[Path]:
+    """N-gram ad veritabanının aranacağı dizinler, sırayla (AD-10).
+
+    ``data_root`` (P15'in ekleyeceği veri kökü) varsa önce o; sonra ``project_root``.
+    """
+    dirs: list[Path] = []
+    data_root = getattr(config, "data_root", None)
+    if data_root:
+        dirs.append(Path(data_root) / "sigs" / "ngram_name_db")
+    dirs.append(Path(config.project_root) / "sigs" / "ngram_name_db")
+    return dirs
+
+
+_IDENT = re.compile(r"[A-Za-z_]\w*")
+
+
+def apply_local_renames(code: str, renames: dict[str, str]) -> tuple[str, int, int, int]:
+    """Yerel değişken adlarını yalnız KODDA değiştir (AD-10).
+
+    Eski uygulama ``re.subn(r"\bvar\b", ad, kod)`` ile bütün dosyaya yazıyordu:
+    dizgi ve yorum içi de değişiyordu, ``int`` gibi geçersiz ad ya da dosyada
+    zaten kullanılan bir ad süzülmüyordu.  Kurallar:
+    - ad ``name_validity.lexical_reject_reason(local=True)``'dan geçer;
+    - ad dosyanın kodunda zaten geçmez ve aynı dosyada iki değişkene verilmez;
+    - değişim dizgi sabiti ve yorum içinde yapılmaz.
+
+    Returns:
+        (yeni kod, uygulanan, geçersiz ad, çakışma)
+    """
+    from karadul.reconstruction.c_type_recoverer import mask_noncode
+    from karadul.reconstruction.name_validity import lexical_reject_reason
+
+    masked = mask_noncode(code)
+    used = set(_IDENT.findall(masked))
+    taken: set[str] = set()
+    plan: dict[str, str] = {}
+    bad = clash = 0
+    for var, name in sorted(renames.items()):
+        if var not in used or name == var:
+            continue
+        if lexical_reject_reason(name, local=True) is not None:
+            bad += 1
+            continue
+        if name in used or name in taken:
+            clash += 1
+            continue
+        taken.add(name)
+        plan[var] = name
+    if not plan:
+        return code, 0, bad, clash
+    pattern = re.compile(r"\b(" + "|".join(re.escape(v) for v in plan) + r")\b")
+    parts: list[str] = []
+    last = 0
+    # Örtülü metinde eşleşen konumlar özgün metinde de aynıdır (uzunluk korunur).
+    for m in pattern.finditer(masked):
+        parts.append(code[last:m.start()])
+        parts.append(plan[m.group(1)])
+        last = m.end()
+    parts.append(code[last:])
+    return "".join(parts), len(plan), bad, clash
 
 
 def _target_files(
