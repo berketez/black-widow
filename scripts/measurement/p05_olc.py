@@ -50,6 +50,32 @@ dosyasındaki ``// Address:`` başlığıyla bulunur; ``eslesme == "tam"`` param
   harf) ya da biri öbürünün en az 3 harflik öneki (``buf`` ↔ ``buffer``, ``str`` ↔ ``string``).
 - ``yanlis``: geri kalan.
 
+P05b ek ölçüleri (``kos``; ön kayıt ``docs/arge/2026-11-18_onarim/P05b_on_kayit.md``)
+------------------------------------------------------------------------------------------
+Her ad için parametrenin girdi imzasındaki bildirilen tipi (``imza_tipleri``: betiğin KENDİ
+ayrıştırıcısı; ürünün ``_PARAM_PARSE_RE``'sinden bağımsız) ve tip sınıfı (``tip_sinifi``):
+``isaretci`` (``*``, dizi ya da işlev göstericisi), ``tamsayi8`` (Ghidra'nın işaretçi istisnası
+olabilen 8 baytlık tamsayı: ``long`` / ``ulong`` / ``undefined8`` / ``uint64_t`` / ``int64_t`` /
+``longlong`` / ``ulonglong``), ``diger``.
+
+``str_ailesi``
+    Ad tabanı (``_N`` eki atılmış) ``str`` / ``text`` / ``name`` / ``string``. Sınıf:
+    ``char_isaretci`` (bildirilen tip ``char *`` / ``const char *``: Ghidra'nın tip kanıtı),
+    ``kanitli`` (başka tip, betiğin bağımsız dizgi kanıtı var), ``kanitsiz`` (başka tip, kanıt yok).
+    Bağımsız dizgi kanıtı (``dizgi_kaniti``): parametre (çıplak ya da tek cast'li) bir dizgi
+    işlevinin dizgi konumunda argüman (``STR_FONK``), ``*(char *)`` erişimi ya da ``*p`` /
+    ``p[i]`` bir karakter sabitiyle karşılaştırılıyor.
+``isaretciye_skaler``
+    ``type_heuristic`` adı skaler bir şablondan (``SKALER_ADLAR``) ve parametrenin bildirilen tipi
+    ``isaretci``: ürün işaretçiyi taban tip okuduğu için ``char *`` → ``enabled`` (bool şablonu),
+    ``int *`` → ``count`` gibi adlar.
+``ipucu``
+    Gerekçesi ``Caller hint`` olan ad (``CALLER_NAME_HINTS``).
+
+DWARF hükmünde parametre sayısı betiğin kendi imza ayrıştırıcısından alınır (ürünün
+ayrıştırıcısı P05b'de değişiyor; ölçü ondan bağımsız kalmalı). Değişmemiş kodda iki sayım aynı
+sonucu verir (``once`` kolunda P05 ``k2`` ile aynı hüküm sayıları beklenir).
+
 Alt komutlar
 ------------
     say          --kosu <kayıtlı koşu kökü> [--yalniz a,b] [--json <yol>]
@@ -70,7 +96,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Iterable
 
-ARAC = "p05_olc/1"
+ARAC = "p05_olc/2"
 DEPO = Path(__file__).resolve().parents[2]
 if str(DEPO) not in sys.path:
     sys.path.insert(0, str(DEPO))
@@ -103,6 +129,31 @@ TANIMLAYICI = re.compile(r"\b[A-Za-z_]\w*\b")
 ADRES = re.compile(r"^// Address:\s*([0-9a-fA-F]+)\s*$", re.MULTILINE)
 SAYI_EKI = re.compile(r"_\d+$")
 BELIRTEC = re.compile(r"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\d+")
+
+# P05b ölçüleri (ön kayıt P05b_on_kayit.md §2)
+STR_AILESI = frozenset({"str", "text", "name", "string"})
+SKALER_ADLAR = frozenset({
+    "count", "value", "status", "counter", "n_size", "enabled", "threshold", "scalar",
+    "factor", "flags", "buffer_size", "handle",
+})
+TAMSAYI8 = frozenset({"long", "ulong", "undefined8", "uint64_t", "int64_t", "longlong",
+                      "ulonglong"})
+CHAR_ISARETCI = frozenset({"char *", "const char *"})
+# Dizgi işlevi → dizgi argümanının konumları (C / POSIX prototipleri). ``_`` önekli Mach-O
+# biçimi aynı konumları kullanır; ``__X_chk`` sürümlerinde biçim dizgisi bayrak + uzunluk
+# argümanları yüzünden kayar (ayrı yazıldı).
+STR_FONK: dict[str, tuple[int, ...]] = {
+    "strlen": (0,), "strnlen": (0,), "strcmp": (0, 1), "strncmp": (0, 1),
+    "strcasecmp": (0, 1), "strncasecmp": (0, 1), "strcoll": (0, 1), "strcpy": (0, 1),
+    "strncpy": (0, 1), "stpcpy": (0, 1), "strcat": (0, 1), "strncat": (0, 1),
+    "strchr": (0,), "strrchr": (0,), "strstr": (0, 1), "strspn": (0, 1), "strcspn": (0, 1),
+    "strpbrk": (0, 1), "strtok": (0, 1), "strdup": (0,), "strndup": (0,), "strtol": (0,),
+    "strtoul": (0,), "strtoll": (0,), "strtoull": (0,), "strtod": (0,), "atoi": (0,),
+    "atol": (0,), "atof": (0,), "puts": (0,), "fputs": (0,), "getenv": (0,), "fopen": (0, 1),
+    "open": (0,), "printf": (0,), "fprintf": (1,), "sprintf": (1,), "snprintf": (2,),
+    "__printf_chk": (1,), "__fprintf_chk": (2,), "__sprintf_chk": (3,),
+    "__snprintf_chk": (4,), "__strcpy_chk": (0, 1), "__strcat_chk": (0, 1),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -150,6 +201,104 @@ def ad_hukmu(ad: str, gt: str) -> str:
             if len(kisa) >= 3 and uzun.startswith(kisa):
                 return "yakin"
     return "yanlis"
+
+
+def _arg_bol(metin: str, ac: int) -> list[str] | None:
+    """``metin[ac] == '('`` olan ayraç içindeki üst düzey argümanlar (dizgi içi sayılmaz)."""
+    derin, bas, out, i = 0, ac + 1, [], ac
+    while i < len(metin):
+        c = metin[i]
+        if c in "\"'":
+            j = i + 1
+            while j < len(metin) and metin[j] != c:
+                j += 2 if metin[j] == "\\" else 1
+            i = j + 1
+            continue
+        if c in "([{":
+            derin += 1
+        elif c in ")]}":
+            derin -= 1
+            if derin == 0:
+                son = metin[bas:i].strip()
+                if son or out:
+                    out.append(son)
+                return out
+        elif c == "," and derin == 1:
+            out.append(metin[bas:i].strip())
+            bas = i + 1
+        i += 1
+    return None
+
+
+def imza_tipleri(kod: str, fonk: str) -> dict[str, str]:
+    """Fonksiyonun imzasındaki parametre adı → bildirilen tip (betiğin kendi ayrıştırıcısı).
+
+    Tip, bildirimden ad çıkarılarak yazılır; ``*`` öncesi tek boşluk (``char *``,
+    ``char **``); dizi parametresi işaretçiye iner (``char buf[16]`` → ``char *``); işlev
+    göstericisi (``void (*cb)(int)``) ``fn *``.
+    """
+    ortu = kod_ort(kod)
+    m = re.search(rf"\b{re.escape(fonk)}\s*\(", ortu)
+    if not m:
+        return {}
+    args = _arg_bol(ortu, m.end() - 1)
+    out: dict[str, str] = {}
+    for a in args or []:
+        a = " ".join(a.split())
+        fp = re.fullmatch(r"(.*?)\(\s*\*+\s*(\w+)\s*\)\s*\(.*\)", a)
+        if fp:
+            out[fp.group(2)] = "fn *"
+            continue
+        ad = re.search(r"(\w+)\s*((?:\[[^\]]*\]\s*)*)$", a)
+        if not ad or ad.group(1) == "void":
+            continue
+        tip = a[:ad.start()].strip()
+        if ad.group(2):
+            tip += " *"
+        tip = re.sub(r"\s*\*", " *", tip)
+        tip = re.sub(r"\*\s+\*", "**", tip)
+        tip = re.sub(r"\*\s+\*", "**", tip)
+        out[ad.group(1)] = " ".join(tip.split())
+    return out
+
+
+def tip_sinifi(tip: str | None) -> str:
+    if not tip:
+        return "bilinmiyor"
+    if "*" in tip:
+        return "isaretci"
+    if tip in TAMSAYI8:
+        return "tamsayi8"
+    return "diger"
+
+
+_CAST_AT = re.compile(r"^\(\s*(?:const\s+)?(?:unsigned\s+)?\w+\s*\*+\s*\)\s*")
+
+
+def dizgi_kaniti(kod: str, p: str) -> bool:
+    """Betiğin bağımsız dizgi kanıtı (ön kayıt §2): dizgi işlevine dizgi argümanı,
+    ``*(char *)`` erişimi ya da karakter sabitiyle karşılaştırma."""
+    # Yorum örtülür, dizgi sabiti boş dizgiye iner (içindeki metin çağrı sayılmaz), karakter
+    # sabiti kalır (karşılaştırma kanıtı)
+    ortu = KOD_DISI.sub(
+        lambda m: m.group(0) if m.group(0)[0] == "'" else ('""' if m.group(0)[0] == '"' else " "),
+        kod,
+    )
+    ad = re.escape(p)
+    for m in re.finditer(r"\b(_?\w+)\s*\(", ortu):
+        f = m.group(1)
+        konum = STR_FONK.get(f) or (STR_FONK.get(f[1:]) if f.startswith("_") else None)
+        if not konum:
+            continue
+        args = _arg_bol(ortu, m.end() - 1) or []
+        for k in konum:
+            if k < len(args) and _CAST_AT.sub("", args[k]) == p:
+                return True
+    if re.search(rf"\*\s*\(\s*(?:const\s+)?char\s*\*\s*\)\s*\(?\s*{ad}\b", ortu):
+        return True
+    if re.search(rf"(?:\*\s*{ad}\b|\b{ad}\s*\[[^\]]*\])\s*[!=]=\s*'", ortu):
+        return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -357,8 +506,30 @@ def yeniden_oynat(kosu: Path, hedef: Path, gt: dict[int, dict] | None) -> dict[s
     kaynak_hukum: dict[str, Counter] = defaultdict(Counter)
     hukum: Counter = Counter()
     ogeler: list[dict] = []
+    str_ailesi: Counter = Counter()
+    isaretciye_skaler: Counter = Counter()
+    ipucu = 0
+    tip_onbellek: dict[str, dict[str, str]] = {}
     for sn in sonuc.names:
         ad = sn.semantic_name
+        kod_f = namer._func_codes.get(sn.function_name, "")
+        if sn.function_name not in tip_onbellek:
+            tip_onbellek[sn.function_name] = imza_tipleri(kod_f, sn.function_name)
+        tip = tip_onbellek[sn.function_name].get(sn.original_name)
+        tsinif = tip_sinifi(tip)
+        taban = SAYI_EKI.sub("", ad)
+        kanit = None
+        if taban in STR_AILESI:
+            if tip in CHAR_ISARETCI:
+                kanit = "char_isaretci"
+            else:
+                kanit = "kanitli" if dizgi_kaniti(kod_f, sn.original_name) else "kanitsiz"
+            str_ailesi[f"{sn.source}|{kanit}"] += 1
+            str_ailesi[kanit] += 1
+        if sn.source == "type_heuristic" and taban in SKALER_ADLAR and tsinif == "isaretci":
+            isaretciye_skaler[taban] += 1
+        if (sn.reason or "").startswith("Caller hint"):
+            ipucu += 1
         sinif = ad_sinifi(ad)
         if sinif is None:
             kod = namer._func_codes.get(sn.function_name, "")
@@ -371,6 +542,7 @@ def yeniden_oynat(kosu: Path, hedef: Path, gt: dict[int, dict] | None) -> dict[s
             sayac["matris_vektor"] += 1
         kaynak[sn.source] += 1
         h = None
+        gt_ad = None
         if gt is not None:
             adr = adresler.get(sn.function_name)
             f = gt.get(adr) if adr is not None else None
@@ -378,8 +550,9 @@ def yeniden_oynat(kosu: Path, hedef: Path, gt: dict[int, dict] | None) -> dict[s
             if f is None or m is None:
                 h = "gt_yok"
             else:
-                params = namer._get_function_params(sn.function_name)
-                if f["n"] != len(params):
+                # Parametre sayısı betiğin kendi imza ayrıştırıcısından (ürününki P05b'de
+                # değişiyor; ölçü ondan bağımsız kalmalı)
+                if f["n"] != len(tip_onbellek[sn.function_name]):
                     h = "imza_uyusmadi"
                 else:
                     gt_ad = f["params"].get(int(m.group(1)))
@@ -388,9 +561,12 @@ def yeniden_oynat(kosu: Path, hedef: Path, gt: dict[int, dict] | None) -> dict[s
             kaynak_hukum[sn.source][h] += 1
         ogeler.append({"f": sn.function_name, "eski": sn.original_name, "ad": ad,
                        "kaynak": sn.source, "guven": sn.confidence,
-                       "sinif": sinif, "hukum": h})
+                       "sinif": sinif, "hukum": h, "gt": gt_ad, "tip": tip,
+                       "tip_sinifi": tsinif, "dizgi": kanit,
+                       "gerekce": (sn.reason or "")[:100]})
     return {"durum": "tamam", "sure_sn": sure, "dogrulama": dogrulama, "koken_esit": koken_esit,
-            "sayac": dict(sayac),
+            "sayac": dict(sayac), "str_ailesi": dict(str_ailesi),
+            "isaretciye_skaler": dict(isaretciye_skaler), "ipucu": ipucu,
             "kaynak": dict(kaynak), "hukum": dict(hukum) if gt is not None else None,
             "kaynak_hukum": {k: dict(v) for k, v in kaynak_hukum.items()},
             "ogeler": ogeler}
@@ -422,7 +598,13 @@ def cmd_kos(args: argparse.Namespace) -> int:
     dogrulama: Counter = Counter()
     durum: Counter = Counter()
     ikili_sayilari: Counter = Counter()
+    str_ailesi: Counter = Counter()
+    isaretciye_skaler: Counter = Counter()
+    ipucu = 0
     for s in ikililer.values():
+        str_ailesi.update(s.get("str_ailesi", {}))
+        isaretciye_skaler.update(s.get("isaretciye_skaler", {}))
+        ipucu += s.get("ipucu", 0)
         durum[s.get("durum")] += 1
         dogrulama[s.get("dogrulama", "-")] += 1
         ikili_sayilari[f"koken_esit_{s.get('koken_esit')}"] += 1
@@ -443,7 +625,10 @@ def cmd_kos(args: argparse.Namespace) -> int:
             "ikili": len(ikililer), "durum": dict(durum), "dogrulama": dict(dogrulama),
             "sayac": dict(toplam), "kaynak": dict(kaynak), "hukum": dict(hukum),
             "kaynak_hukum": {k: dict(v) for k, v in kaynak_hukum.items()},
-            "ikili_sayilari": dict(ikili_sayilari), "ikililer": ikililer}
+            "ikili_sayilari": dict(ikili_sayilari), "str_ailesi": dict(str_ailesi),
+            "isaretciye_skaler": dict(isaretciye_skaler),
+            "isaretciye_skaler_toplam": sum(isaretciye_skaler.values()), "ipucu": ipucu,
+            "ikililer": ikililer}
     (kok / "ozet.json").write_text(json.dumps(ozet, ensure_ascii=False, indent=1, sort_keys=True),
                                    encoding="utf-8")
     print(json.dumps({k: v for k, v in ozet.items() if k != "ikililer"}, ensure_ascii=False,
@@ -476,11 +661,12 @@ def cmd_karsilastir(args: argparse.Namespace) -> int:
         if ha in dogru and hb not in dogru:
             kayip.append({"anahtar": k[0], "f": k[1], "eski": k[2], "once": a["ad"],
                           "once_kaynak": a["kaynak"], "sonra": b["ad"] if b else None,
-                          "sonra_hukum": hb})
+                          "sonra_hukum": hb, "gt": a.get("gt")})
         if hb in dogru and ha not in dogru:
             kazanc.append({"anahtar": k[0], "f": k[1], "eski": k[2], "sonra": b["ad"],
                            "sonra_kaynak": b["kaynak"], "once": a["ad"] if a else None,
-                           "once_hukum": ha})
+                           "once_hukum": ha, "gt": b.get("gt"),
+                           "gerekce": b.get("gerekce")})
         if a and b and a["ad"] != b["ad"]:
             degisen["ad_degisti"] += 1
         elif a and not b:
