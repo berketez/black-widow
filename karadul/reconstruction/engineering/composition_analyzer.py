@@ -23,9 +23,11 @@ Kullanim:
 """
 from __future__ import annotations
 
+import bisect
 import itertools
 import json
 import logging
+import math
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -733,6 +735,272 @@ _MAX_COMPOSITION_SIZE = 200  # Sanity cap
 
 
 # ---------------------------------------------------------------------------
+# Şablon kanıt kapısı (MUH-03, 2026-11-18)
+# ---------------------------------------------------------------------------
+# Eski eşleşme göstergeyi her fonksiyon adında ALT DİZGİ olarak arıyordu:
+# ``dt`` → ``_DT_INIT``, ``gm`` → ``__gmon_start__``, ``lu`` → ``fflush``,
+# ``cl`` → ``_ITM_deregisterTMCloneTable``; 119 ikilinin 119'una CFD, roket
+# ve matris çözücü bileşimi yazılıyordu. Kapının kuralları:
+#   1. Ad eşleşmesi tam belirteçtir (``_``/noktalama/camelCase ile bölünmüş
+#      parçalar; göstergenin belirteçleri ardışık ve eşit olmalı). Tek
+#      belirteçli ve en az ``_GATE_INFLECTION_MIN`` harfli gösterge, bir
+#      belirtecin başında çekim eki alabilir (``encrypt`` → ``encryption``).
+#   2. İçe aktarılan ve derleyici çalışma zamanı adları gösterge değildir.
+#   3. Bir aşama yalnız o aşamaya uyan GERÇEK bir algoritma tespitiyle
+#      sayılır (ad tek başına yetmez). Gerçek tespit: yerel fonksiyonda;
+#      kendi adını yineleyen "API call" değil (içe aktarım kütüğü); yalnız
+#      sabit parmak izi değil (MUH-10: ``decimal: 0`` → RC4); yalnız çıplak
+#      sözcük eşleşmesi değil (``isa_atmosphere: matched 'DENSITY'``).
+#      Tespit aşamaya üç yoldan bağlanır: tespit adı göstergeyle eşleşir
+#      (parantez içi "şunlarda kullanılır" listesi hariç), aşamanın dar
+#      kategorisi (``_STAGE_CATEGORIES``) ya da fonksiyon adı göstergeyle
+#      eşleşir. Her yolda tespitin alanı şablonun alanıyla aynı olmalı.
+#   4. En az ``_GATE_MIN_STAGES`` aşama (ve aşamaların ``_GATE_MIN_STAGE_
+#      FRACTION`` oranı), şablona adını veren aşama(lar) (``_TEMPLATE_
+#      DEFINING_STAGES``), en az iki ayrı fonksiyon ve iki ayrı tespit.
+#   5. Kanıtlı aşamaların fonksiyonları çağrı çizgesinde bağlı: hepsine
+#      ``_GATE_LINK_DEPTH`` adımda inen ortak bir sürücü (biri öbürünü
+#      çağırıyorsa sürücü odur; program girişi/çalışma zamanı sürücü olamaz).
+#      Çağrı çizgesi çağrı yeri sırası taşımadığı için zaman sırası ve
+#      döngü/yakınsama doğrulanmaz; açıklama bunu iddia etmez.
+_GATE_MIN_STAGES = 2          # en az iki kanıtlı aşama (tek kanıtla şablon yok)
+_GATE_MIN_STAGE_FRACTION = 0.4  # şablon aşamalarının en az bu oranı
+_GATE_LINK_DEPTH = 2          # ortak sürücüden aşama fonksiyonuna en çok adım
+_GATE_INFLECTION_MIN = 6      # çekim eki toleransı için en kısa gösterge
+_GATE_MAX_STAGE_FUNCS = 10    # aşama başına raporlanan en çok fonksiyon
+
+# Şablonu şablon yapan (adını veren) aşamalar: kanıtlı olmaları ŞART.
+# Her iç demet seçeneklidir (biri yeter); dış demetin hepsi gerekir.
+# Örnek: openssl'de TLS el sıkışması + sertifika + simetrik şifreleme
+# kanıtlı, ama tünel aşaması yok → "VPN Tunnel Setup" denmez.
+_TEMPLATE_DEFINING_STAGES: dict[str, tuple[tuple[str, ...], ...]] = {
+    "vpn_setup": (("tunnel_setup",),),
+    "tls_handshake": (("client_hello", "server_hello"),),
+    "ssl_session": (("handshake",),),
+    "certificate_validation": (("build_chain",),),
+    "key_derivation": (("kdf",),),
+    "fea_nonlinear_static": (("assembly",), ("convergence_check",)),
+    "fea_linear_static": (("assembly",), ("solve",)),
+    "fea_eigenvalue": (("eigensolve",),),
+    "contact_analysis": (("detect",),),
+    "cfd_steady_rans": (("turbulence",),),
+    "cfd_transient": (("timestep",),),
+    "fft_pipeline": (("fft",),),
+    "audio_codec": (("transform",),),
+    "ml_training_loop": (("backward",),),
+    "ml_inference": (("forward",),),
+    "options_pricing": (("price",),),
+    "matrix_solve_pipeline": (("factor", "solve"),),
+    "hash_then_sign": (("hash",), ("sign",)),
+    "compress_then_encrypt": (("compress",), ("encrypt",)),
+    "crypto_kdf": (("key_stretch",),),
+    "rocket_simulation": (("thrust_calc", "gravity_calc"),),
+}
+
+# Aşama ↔ tespit kategorisi: kategorinin kendisi aşamanın işini adlandırıyorsa
+# (``kdf`` kategorili tespit "kdf" aşamasını kanıtlar). Yalnız dar kategoriler;
+# ``symmetric_cipher`` gibi geniş kategoriler (XOR, S-box) burada YOK.
+_STAGE_CATEGORIES: dict[str, tuple[str, ...]] = {
+    "kdf": ("kdf",),
+    "key_stretch": ("kdf",),
+    "derive_key": ("kdf",),
+    "compress": ("compression",),
+    "hash": ("hash",),
+    "mac": ("mac",),
+}
+
+# Aşamanın kendi alanı şablonunkinden farklıysa (Compress-then-Encrypt'in
+# sıkıştırma aşaması "crypto" değildir). Yoksa şablonun alanı geçerlidir.
+_STAGE_DOMAINS: dict[str, tuple[str, ...]] = {
+    "compress": ("compression",),
+}
+
+_TOKEN_SPLIT = re.compile(r"[^0-9A-Za-z]+")
+# Tespit adındaki parantez "şunlardan biri / şunlarda kullanılır" listesidir
+# ("Galois field operations (ECC, AES-GF)"): ayırt edici değil, eşleşmeye girmez.
+_PARENTHETICAL = re.compile(r"\([^)]*\)")
+_CAMEL_SPLIT = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
+# "isa_atmosphere: matched 'DENSITY'", "aes_cbc: matched 'iv'": yapı değil, sözcük.
+_KEYWORD_ONLY_EVIDENCE = re.compile(r"^\s*[\w.+-]+: matched '[A-Za-z0-9_ ]*'\s*$")
+_API_EVIDENCE = re.compile(r"^\s*API call:\s*([A-Za-z_][\w.]*)")
+
+# Derleyici / bağlayıcı çalışma zamanı adları (ELF crt, Mach-O, PE CRT).
+_RUNTIME_PREFIXES: tuple[str, ...] = (
+    "_dt_", "_init_", "_fini_", "_itm_", "__gmon", "__cxa_", "__libc_",
+    "__stack_chk", "__do_global", "_global_", "__x86.", "_dl_", "__imp_",
+    "thunk_", "__security_", "__gshandler", "___chkstk", "__chkstk",
+    "__register_frame", "__deregister_frame", "_objc_", "__objc_",
+)
+_RUNTIME_EXACT: frozenset[str] = frozenset({
+    "_start", "start", "entry", "_init", "_fini", "frame_dummy",
+    "register_tm_clones", "deregister_tm_clones", "call_weak_fn",
+    "__do_global_dtors_aux", "_mh_execute_header", "dyld_stub_binder",
+})
+# Sık içe aktarılan C/POSIX kitaplık adları (baştaki ``_`` atılarak karşılaştırılır).
+_LIBC_IMPORTS: frozenset[str] = frozenset({
+    "malloc", "calloc", "realloc", "reallocarray", "free", "aligned_alloc",
+    "posix_memalign", "memcpy", "memmove", "memset", "memcmp", "memchr",
+    "strlen", "strcmp", "strncmp", "strcpy", "strncpy", "strcat", "strdup",
+    "strchr", "strrchr", "strstr", "strtol", "strtoul", "strtod",
+    "printf", "fprintf", "sprintf", "snprintf", "vfprintf", "vsnprintf",
+    "puts", "fputs", "putchar", "fputc", "fwrite", "fread", "fopen",
+    "fclose", "fflush", "fflush_unlocked", "fseek", "ftell", "fileno",
+    "open", "close", "read", "write", "lseek", "stat", "fstat", "lstat",
+    "mmap", "munmap", "exit", "_exit", "abort", "atexit", "getenv",
+    "setlocale", "bindtextdomain", "textdomain", "dcgettext", "gettext",
+    "mbsinit", "mbrtowc", "wcwidth", "iswprint", "clock_gettime",
+    "gettimeofday", "time", "gmtime_r", "localtime_r", "strftime",
+    "pthread_mutex_init", "pthread_mutex_destroy", "pthread_mutex_lock",
+    "pthread_mutex_unlock", "pthread_create", "pthread_join",
+    "pthread_sigmask", "sigaction", "signal", "raise", "kill",
+    "getaddrinfo", "freeaddrinfo", "gethostbyname", "socket", "connect",
+    "bind", "listen", "accept", "send", "recv", "select", "poll",
+    "error", "err", "warn", "perror", "qsort", "bsearch", "rand", "srand",
+})
+
+
+def _name_tokens(name: str) -> tuple[str, ...]:
+    """Adı küçük harfli belirteçlere böler (``_``, noktalama, camelCase)."""
+    out: list[str] = []
+    for part in _TOKEN_SPLIT.split(name or ""):
+        if not part:
+            continue
+        out.extend(p.lower() for p in _CAMEL_SPLIT.split(part) if p)
+    return tuple(out)
+
+
+def _tokens_match(indicator: tuple[str, ...], tokens: tuple[str, ...]) -> bool:
+    """Göstergenin belirteçleri adın belirteçlerinde ardışık mı (tam belirteç)."""
+    n = len(indicator)
+    if n == 0 or n > len(tokens):
+        return False
+    if n == 1:
+        ind = indicator[0]
+        if len(ind) >= _GATE_INFLECTION_MIN:
+            return any(t == ind or t.startswith(ind) for t in tokens)
+        return ind in tokens
+    for i in range(len(tokens) - n + 1):
+        if tokens[i:i + n] == indicator:
+            return True
+    return False
+
+
+def _is_runtime_or_import_name(name: str) -> bool:
+    """Derleyici çalışma zamanı ya da sık içe aktarılan kitaplık adı mı."""
+    low = (name or "").lower()
+    if not low:
+        return True
+    if low in _RUNTIME_EXACT or low.startswith(_RUNTIME_PREFIXES):
+        return True
+    bare = low.lstrip("_")
+    if bare in _LIBC_IMPORTS:
+        return True
+    # Fortified libc (``__printf_chk``, ``___strcat_chk``)
+    return low.startswith("__") and bare.endswith("_chk")
+
+
+def _detection_rejection(algo: dict) -> str | None:
+    """Tespit bileşim kanıtı sayılamıyorsa nedeni, sayılıyorsa None."""
+    func = algo.get("function_name", "") or ""
+    if not func:
+        return "detection without function"
+    if _is_runtime_or_import_name(func):
+        return "detection in runtime/import function"
+    evidence = [str(e) for e in (algo.get("evidence") or [])]
+    if evidence:
+        own = _name_tokens(func)
+        api_names = [m.group(1) for m in (_API_EVIDENCE.match(e) for e in evidence) if m]
+        if api_names and len(api_names) == len(evidence) and all(
+            _name_tokens(a) == own for a in api_names
+        ):
+            return "detection only restates the function's own name"
+        if (algo.get("detection_method") == "structural"
+                and all(_KEYWORD_ONLY_EVIDENCE.match(e) for e in evidence)):
+            return "structural detection matched a bare keyword"
+    if algo.get("detection_method") == "constant":
+        # Sabit parmak izi tek fonksiyonluk bir ipucudur; mühendislik sabit
+        # katmanı bugün alt dizgiyle eşleşiyor (MUH-10: "decimal: 0" → RC4).
+        # Mimari iddia (bileşim) için API çağrısı ya da kod yapısı gerekir.
+        return "constant-only detection"
+    return None
+
+
+# Kapının alan denetimi için kategori → alan (``_CATEGORY_TO_DOMAIN``'a ek;
+# ``_infer_domain`` eskisi gibi yalnız o tabloyu kullanır).
+_GATE_CRYPTO_CATEGORIES: frozenset[str] = frozenset({
+    "symmetric_encryption", "asymmetric_encryption", "aead", "elliptic_curve",
+    "digital_signature", "key_exchange", "hardware_crypto", "pki", "protocol",
+    "network_security", "random", "post_quantum",
+})
+_GATE_FINANCE_CATEGORIES: frozenset[str] = frozenset({
+    "finance", "option_pricing", "risk_measure", "credit_fixed_income",
+    "volatility", "yield_curve", "portfolio_optimization", "finance_statistics",
+})
+_GATE_STRUCTURAL_CATEGORIES: frozenset[str] = frozenset({
+    "finite_element", "structural_dynamics", "fracture_mechanics",
+})
+
+
+def _category_domain(category: str) -> str:
+    """Tespit kategorisinin alanı (kapının alan tutarlılığı denetimi için)."""
+    cat = (category or "").lower()
+    if cat == "compression":
+        return "compression"
+    if cat in _CATEGORY_TO_DOMAIN:
+        return _CATEGORY_TO_DOMAIN[cat]
+    if cat in _GATE_CRYPTO_CATEGORIES:
+        return "crypto"
+    if cat in _GATE_FINANCE_CATEGORIES:
+        return "finance"
+    if cat in _GATE_STRUCTURAL_CATEGORIES or cat.startswith("fea_"):
+        return "structural"
+    if cat.startswith("cfd_"):
+        return "fluid"
+    if cat.startswith("dsp"):
+        return "dsp"
+    if cat.startswith("ml_"):
+        return "ml"
+    return "generic"
+
+
+class _TokenIndex:
+    """Ad belirteçleri üstünde ters dizin: gösterge → tam belirteçle eşleşen adlar."""
+
+    def __init__(self, names: Any) -> None:
+        self._tokens: dict[str, tuple[str, ...]] = {}
+        self._by_token: dict[str, set[str]] = defaultdict(set)
+        for n in names:
+            toks = _name_tokens(n)
+            self._tokens[n] = toks
+            for t in toks:
+                self._by_token[t].add(n)
+        self._vocab = sorted(self._by_token)
+        self._cache: dict[tuple[str, ...], frozenset[str]] = {}
+
+    def matches(self, indicator: tuple[str, ...]) -> frozenset[str]:
+        hit = self._cache.get(indicator)
+        if hit is not None:
+            return hit
+        out: set[str] = set()
+        if len(indicator) == 1:
+            ind = indicator[0]
+            if len(ind) >= _GATE_INFLECTION_MIN:
+                i = bisect.bisect_left(self._vocab, ind)
+                while i < len(self._vocab) and self._vocab[i].startswith(ind):
+                    out |= self._by_token[self._vocab[i]]
+                    i += 1
+            else:
+                out |= self._by_token.get(ind, set())
+        elif indicator:
+            for n in self._by_token.get(indicator[0], ()):
+                if _tokens_match(indicator, self._tokens[n]):
+                    out.add(n)
+        hit = frozenset(out)
+        self._cache[indicator] = hit
+        return hit
+
+
+# ---------------------------------------------------------------------------
 # AlgorithmCompositionAnalyzer
 # ---------------------------------------------------------------------------
 
@@ -989,124 +1257,247 @@ class AlgorithmCompositionAnalyzer:
         algo_dicts: list[dict],
         adjacency: dict[str, list[str]],
     ) -> list[AlgorithmComposition]:
-        """Match binary functions against known composition templates."""
+        """Bilinen şablonları kanıt kapısıyla eşle (MUH-03).
+
+        Aday: en az iki aşamada tam belirteçli ad ya da tespit adı isabeti
+        (eski eşik). Her aday ``evidence_gate`` taşır; ``passed`` yalnız
+        modül başındaki kapı kurallarının hepsi tutunca True olur, aksi
+        halde ``analyze`` adayı ``pending_compositions``'a koyar.
+        """
         results: list[AlgorithmComposition] = []
-        all_names_lower = {n.lower() for n in func_names}
-        all_algo_names_lower = {
-            a.get("name", "").lower() for a in algo_dicts
+        name_index = _TokenIndex(
+            fn for fn in func_names if fn and not _is_runtime_or_import_name(fn))
+
+        # Kanıt sayılabilen tespitler; red nedenleri kapı kaydına yazılır
+        evidence_by_func: dict[str, list[dict]] = defaultdict(list)
+        algos_by_name: dict[str, list[dict]] = defaultdict(list)
+        algos_by_category: dict[str, list[dict]] = defaultdict(list)
+        rejected: dict[str, int] = defaultdict(int)
+        for a in algo_dicts:
+            why = _detection_rejection(a)
+            if why is None:
+                evidence_by_func[a["function_name"]].append(a)
+                algos_by_name[a.get("name", "")].append(a)
+                algos_by_category[(a.get("category") or "").lower()].append(a)
+            else:
+                rejected[why] += 1
+        algo_name_tokens = {
+            nm: _name_tokens(_PARENTHETICAL.sub(" ", nm)) for nm in algos_by_name
         }
-        # Build combined searchable text
-        combined_text = " ".join(all_names_lower | all_algo_names_lower)
+
+        reverse_adj: dict[str, list[str]] = defaultdict(list)
+        for caller, callees in adjacency.items():
+            for callee in callees:
+                reverse_adj[callee].append(caller)
 
         for tpl_key, tpl in KNOWN_COMPOSITIONS.items():
-            stage_scores: dict[str, float] = {}
-            stage_functions: dict[str, list[str]] = defaultdict(list)
-            stage_algorithms: dict[str, list[str]] = defaultdict(list)
+            tpl_domain = tpl.get("domain", "generic")
+            n_stages = len(tpl["stages"])
+            need = max(_GATE_MIN_STAGES,
+                       math.ceil(n_stages * _GATE_MIN_STAGE_FRACTION))
 
+            name_hits: dict[str, list[str]] = {}
+            # aşama -> [(fonksiyon, tespit adı, güven, kanıt türü)]
+            backed: dict[str, list[tuple[str, str, float, str]]] = {}
             for stage_name in tpl["stages"]:
-                indicators = tpl["indicators"].get(stage_name, [])
-                if not indicators:
-                    continue
+                inds = [_name_tokens(i) for i in tpl["indicators"].get(stage_name, [])]
+                inds = [i for i in inds if i]
+                stage_domains = _STAGE_DOMAINS.get(stage_name, (tpl_domain,))
+                hit_set: set[str] = set()
+                for ind in inds:
+                    hit_set |= name_index.matches(ind)
+                if hit_set:
+                    name_hits[stage_name] = sorted(hit_set)
+                ev: dict[tuple[str, str], tuple[str, str, float, str]] = {}
+                for nm, toks in algo_name_tokens.items():
+                    if any(_tokens_match(i, toks) for i in inds):
+                        for a in algos_by_name[nm]:
+                            if _category_domain(a.get("category", "")) not in stage_domains:
+                                continue  # alan dışı tespit (ör. CG "gradient" → ML)
+                            key = (a["function_name"], nm)
+                            ev.setdefault(key, (key[0], nm, float(
+                                a.get("confidence", 0.0) or 0.0), "algorithm name"))
+                for fn in hit_set:
+                    for a in evidence_by_func.get(fn, []):
+                        if _category_domain(a.get("category", "")) not in stage_domains:
+                            continue
+                        key = (fn, a.get("name", ""))
+                        ev.setdefault(key, (fn, key[1], float(
+                            a.get("confidence", 0.0) or 0.0), "function name + domain"))
+                for cat in _STAGE_CATEGORIES.get(stage_name, ()):
+                    for a in algos_by_category.get(cat, []):
+                        if _category_domain(a.get("category", "")) not in stage_domains:
+                            continue
+                        key = (a["function_name"], a.get("name", ""))
+                        ev.setdefault(key, (key[0], key[1], float(
+                            a.get("confidence", 0.0) or 0.0), "algorithm category"))
+                if ev:
+                    backed[stage_name] = sorted(
+                        ev.values(), key=lambda e: (-e[2], e[0], e[1]))
 
-                matched_count = 0
-                for indicator in indicators:
-                    indicator_lower = indicator.lower()
-                    # Check in function names
-                    for fn in func_names:
-                        if indicator_lower in fn.lower():
-                            stage_functions[stage_name].append(fn)
-                            matched_count += 1
-                            break
-                    # Check in algorithm names
-                    for a in algo_dicts:
-                        aname = a.get("name", "").lower()
-                        if indicator_lower in aname:
-                            stage_algorithms[stage_name].append(a.get("name", ""))
-                            matched_count += 1
-                            break
+            candidate_stages = [s for s in tpl["stages"] if s in name_hits or s in backed]
+            if len(candidate_stages) < need:
+                continue  # aday bile değil (eski eşik, tam belirteçle)
 
-                # Confidence for this stage = fraction of indicators matched
-                if indicators:
-                    stage_scores[stage_name] = min(
-                        1.0, matched_count / max(1, len(indicators) * 0.3)
-                    )
+            gate = self._evaluate_template_gate(
+                backed, need, _TEMPLATE_DEFINING_STAGES.get(tpl_key, ()),
+                reverse_adj, rejected)
 
-            # Overall template confidence: fraction of stages with score > 0
-            matched_stages = [
-                s for s, sc in stage_scores.items() if sc > 0.1
-            ]
-            if len(matched_stages) < max(2, len(tpl["stages"]) * 0.4):
-                continue  # Not enough stages matched
-
-            overall_conf = sum(stage_scores.values()) / len(tpl["stages"])
-            overall_conf = min(0.95, overall_conf)
-
-            # Build stages
             stages: list[CompositionStage] = []
             for order, stage_name in enumerate(tpl["stages"]):
-                if stage_scores.get(stage_name, 0) < 0.05:
+                if stage_name not in candidate_stages:
                     continue
-                # Deduplicate
-                funcs = list(dict.fromkeys(stage_functions.get(stage_name, [])))
-                algos = list(dict.fromkeys(stage_algorithms.get(stage_name, [])))
+                ev = backed.get(stage_name, [])
+                funcs = list(dict.fromkeys(
+                    [e[0] for e in ev] + name_hits.get(stage_name, [])))
+                algos = list(dict.fromkeys(e[1] for e in ev))
                 stages.append(CompositionStage(
                     name=stage_name.replace("_", " ").title(),
-                    functions=funcs[:10],
+                    functions=funcs[:_GATE_MAX_STAGE_FUNCS],
                     algorithms=algos[:5],
                     order=order,
-                    confidence=stage_scores.get(stage_name, 0.0),
+                    confidence=round(ev[0][2], 4) if ev else 0.0,
                 ))
 
-            if len(stages) < _MIN_COMPOSITION_SIZE:
-                continue
-
-            total_funcs = sum(len(s.functions) for s in stages)
-            domain = tpl.get("domain", "generic")
-
-            # Generate description
-            desc = self._describe_template_match(tpl, stages)
+            backed_conf = [backed[s][0][2] for s in tpl["stages"] if s in backed]
+            # Kalibre edilmemiş oran: kanıtlı aşama payı × en güçlü tespitlerin
+            # ortalaması (MUH-05: güvenler bir veri setine bağlı değil).
+            conf = 0.0
+            if backed_conf:
+                conf = (len(backed_conf) / n_stages) * (sum(backed_conf) / len(backed_conf))
 
             results.append(AlgorithmComposition(
                 name=tpl["name_template"],
                 pattern=tpl["pattern"],
                 stages=stages,
-                total_functions=total_funcs,
-                confidence=round(overall_conf, 4),
-                description=desc,
-                domain=domain,
+                total_functions=len({f for s in stages for f in s.functions}),
+                confidence=round(min(0.95, conf), 4),
+                description=self._describe_template_match(tpl, stages, gate, backed),
+                domain=tpl_domain,
+                evidence_gate=gate,
             ))
 
         return results
+
+    def _evaluate_template_gate(
+        self,
+        backed: dict[str, list[tuple[str, str, float, str]]],
+        need: int,
+        defining: tuple[tuple[str, ...], ...],
+        reverse_adj: dict[str, list[str]],
+        rejected: dict[str, int],
+    ) -> dict[str, Any]:
+        """Kanıt kapısı (modül başındaki kurallar 3-5). Sonuç JSON'a yazılır."""
+        gate: dict[str, Any] = {
+            "passed": False,
+            "backed_stages": {
+                s: [{"function": e[0], "algorithm": e[1], "kind": e[3]} for e in ev[:3]]
+                for s, ev in backed.items()
+            },
+            "required_stages": need,
+        }
+        if rejected:
+            gate["rejected_detections"] = dict(sorted(rejected.items()))
+        if len(backed) < need:
+            gate["reason"] = (
+                f"{len(backed)} stage(s) backed by an algorithm detection, "
+                f"{need} required; a name match alone is not evidence")
+            return gate
+        if not defining:
+            gate["reason"] = "template has no defining stage"
+            return gate
+        missing = [
+            "/".join(group) for group in defining
+            if not any(st in backed for st in group)
+        ]
+        if missing:
+            gate["reason"] = (
+                f"defining stage not backed by an algorithm detection: "
+                f"{', '.join(missing)}")
+            return gate
+        funcs = {e[0] for ev in backed.values() for e in ev}
+        dets = {(e[0], e[1]) for ev in backed.values() for e in ev}
+        if len(funcs) < 2 or len(dets) < 2:
+            gate["reason"] = "single piece of evidence (needs >= 2 functions and detections)"
+            return gate
+        driver = self._common_driver(
+            [{e[0] for e in ev} for ev in backed.values()], reverse_adj)
+        if driver is None:
+            gate["reason"] = (
+                f"backed stages are not linked in the call graph "
+                f"(no common caller within {_GATE_LINK_DEPTH} calls)")
+            return gate
+        gate["passed"] = True
+        gate["driver"] = driver
+        gate["reason"] = (
+            f"{len(backed)} stages backed by algorithm detections in "
+            f"{len(funcs)} functions, linked via {driver}")
+        return gate
+
+    @staticmethod
+    def _common_driver(
+        stage_funcs: list[set[str]],
+        reverse_adj: dict[str, list[str]],
+    ) -> str | None:
+        """Her aşamanın en az bir fonksiyonuna ``_GATE_LINK_DEPTH`` adımda inen düğüm.
+
+        Fonksiyonun kendisi de sayılır (biri öbürünü çağırıyorsa sürücü odur).
+        Belirlenimli: aday adlara göre sıralı ilk düğüm.
+        """
+        common: set[str] | None = None
+        for funcs in stage_funcs:
+            seen: set[str] = set(funcs)
+            frontier = set(funcs)
+            for _ in range(_GATE_LINK_DEPTH):
+                nxt: set[str] = set()
+                for f in frontier:
+                    for caller in reverse_adj.get(f, []):
+                        if caller not in seen:
+                            seen.add(caller)
+                            nxt.add(caller)
+                frontier = nxt
+                if not frontier:
+                    break
+            common = seen if common is None else (common & seen)
+            if not common:
+                return None
+        # Program girişi / çalışma zamanı (``entry``, ``_start``) bütün programa
+        # iner: ortak sürücü sayılırsa bağ kanıtı anlamsızlaşır.
+        common = {c for c in (common or ()) if not _is_runtime_or_import_name(c)}
+        return sorted(common)[0] if common else None
 
     def _describe_template_match(
         self,
         template: dict,
         stages: list[CompositionStage],
+        gate: dict[str, Any] | None = None,
+        backed: dict[str, list[tuple[str, str, float, str]]] | None = None,
     ) -> str:
-        """Generate human-readable description for a template match."""
-        stage_names = [s.name for s in stages]
-        pattern = template["pattern"]
-        name = template["name_template"]
+        """Şablon eşleşmesinin betimi: yalnız doğrulananı söyler.
 
-        if pattern == "pipeline":
-            flow = " -> ".join(stage_names)
-            return (
-                f"{name}: a sequential pipeline of {len(stages)} stages. "
-                f"Flow: {flow}."
-            )
-        elif pattern == "protocol_sequence":
-            flow = " -> ".join(stage_names)
-            return (
-                f"{name}: a protocol with {len(stages)} sequential stages. "
-                f"Sequence: {flow}."
-            )
-        elif pattern == "iterative":
-            return (
-                f"{name}: an iterative solution process with "
-                f"{len(stages)} stages, repeating until convergence."
-            )
+        Çağrı çizgesi çağrı yeri sırası taşımaz: zaman sırası, döngü ve
+        yakınsama doğrulanmaz, bu yüzden "repeating until convergence" ya da
+        "Flow: A -> B" gibi bir iddia yazılmaz.
+        """
+        name = template["name_template"]
+        n_total = len(template["stages"])
+        backed = backed or {}
+        parts = []
+        for s in template["stages"]:
+            if s in backed:
+                fn, algo = backed[s][0][0], backed[s][0][1]
+                parts.append(f"{s.replace('_', ' ').title()}: {algo} in {fn}")
+        ev_str = "; ".join(parts) if parts else "none"
+        gate = gate or {}
+        if gate.get("passed"):
+            link = f"linked in the call graph via {gate.get('driver')}"
         else:
-            return f"{name}: {len(stages)} stages detected."
+            link = f"evidence gate not passed ({gate.get('reason', 'not evaluated')})"
+        return (
+            f"{name} ({template['pattern']} template): {len(backed)} of "
+            f"{n_total} stages backed by algorithm detections ({ev_str}); "
+            f"{link}. Call order, loops and convergence are not verified."
+        )
 
     # ------------------------------------------------------------------
     # Pipeline detection
@@ -2686,6 +3077,11 @@ class AlgorithmCompositionAnalyzer:
         result: list[dict] = []
         for a in algorithms:
             if isinstance(a, dict):
+                # ``algorithms.json`` fonksiyonu ``function`` anahtarıyla
+                # yazar; ürün nesne geçirir (``function_name``). Kayıtlı
+                # yapıttan yeniden oynatma ürünle aynı haritayı kursun.
+                if not a.get("function_name") and a.get("function"):
+                    a = {**a, "function_name": a["function"]}
                 result.append(a)
             elif hasattr(a, "name"):
                 result.append({

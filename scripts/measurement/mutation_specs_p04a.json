@@ -1,0 +1,141 @@
+{
+  "_comment": "P04a (MUH-03 bileşim şablonu bekletmesi ve kanıt kapısı, MUH-04 alan sınıflandırıcı, MUH-07 row-major yorumu) mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metninin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p04a.json",
+  "mutants": [
+    {
+      "id": "bilesim_bekletme_kapali",
+      "desc": "kapıdan geçmeyen (passed=False) şablon raporlanan alana girer",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bekletme.py::test_beklemedeki_sablon_gerekcesiyle_ayri_alanda",
+      "find": "if gate.get(\"passed\") is True:",
+      "replace": "if gate.get(\"passed\") is not None:"
+    },
+    {
+      "id": "bilesim_bekleyen_sayaci",
+      "desc": "to_dict total_pending sabit 0 (bekleyenler sayılmaz)",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bekletme.py::test_beklemedeki_sablon_gerekcesiyle_ayri_alanda",
+      "find": "\"total_pending\": len(self.pending_compositions),",
+      "replace": "\"total_pending\": 0,"
+    },
+    {
+      "id": "bilesim_alt_dizgi",
+      "desc": "kısa tek belirteçli gösterge yeniden alt dizgiyle eşleşir (lu → fflush)",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_tam_belirtec_alt_dizgiyi_eslemez",
+      "find": "        return ind in tokens",
+      "replace": "        return any(ind in t for t in tokens)"
+    },
+    {
+      "id": "bilesim_cekim_eki_sinir",
+      "desc": "çekim eki toleransı 2 harfe iner (init → initialize)",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_tam_belirtec_alt_dizgiyi_eslemez",
+      "find": "_GATE_INFLECTION_MIN = 6 ",
+      "replace": "_GATE_INFLECTION_MIN = 2 + 0 "
+    },
+    {
+      "id": "bilesim_calisma_zamani_onekleri",
+      "desc": "_DT_/_INIT_/_ITM_/__gmon önekleri gösterge sayılır",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_calisma_zamani_ve_ithal_adlari",
+      "find": "if low in _RUNTIME_EXACT or low.startswith(_RUNTIME_PREFIXES):",
+      "replace": "if low in _RUNTIME_EXACT:"
+    },
+    {
+      "id": "bilesim_libc_ithali",
+      "desc": "libc ithalleri (fflush, malloc, free) gösterge sayılır",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_calisma_zamani_ve_ithal_adlari",
+      "find": "if bare in _LIBC_IMPORTS:",
+      "replace": "if bare in _LIBC_IMPORTS and False:"
+    },
+    {
+      "id": "bilesim_kendi_adi_api",
+      "desc": "kendi adını yineleyen API tespiti (içe aktarım kütüğü) ters çevrilir",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_kanit_sayilmayan_tespitler",
+      "find": "and len(api_names) == len(evidence) and all(",
+      "replace": "and len(api_names) == len(evidence) and not all("
+    },
+    {
+      "id": "bilesim_sabit_tespit",
+      "desc": "yalnız sabit parmak izi (MUH-10 deseni) bileşim kanıtı sayılır",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_kanit_sayilmayan_tespitler",
+      "find": "if algo.get(\"detection_method\") == \"constant\":",
+      "replace": "if algo.get(\"detection_method\") == \"constant-x\":"
+    },
+    {
+      "id": "bilesim_ciplak_sozcuk",
+      "desc": "çıplak sözcük eşleşmesi (matched 'DENSITY') yapısal kanıt sayılır",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_kanit_sayilmayan_tespitler",
+      "find": "matched '[A-Za-z0-9_ ]*'\\s*$\")",
+      "replace": "matched '[A-Za-z0-9_ ]*'\\s*$NEVER\")"
+    },
+    {
+      "id": "bilesim_parantez",
+      "desc": "tespit adındaki parantez listesi eşleşmeye girer (Galois (ECC, AES-GF) → AES)",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_galois_parantezi_sifreleme_asamasi_sayilmaz",
+      "find": "nm: _name_tokens(_PARENTHETICAL.sub(\" \", nm)) for nm in algos_by_name",
+      "replace": "nm: _name_tokens(nm) for nm in algos_by_name"
+    },
+    {
+      "id": "bilesim_tanimlayici_asama",
+      "desc": "şablona adını veren aşama şartı kapalı (tünelsiz VPN)",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_tanimlayici_asama_yoksa_vpn_denmez",
+      "find": "        if missing:",
+      "replace": "        if missing and False:"
+    },
+    {
+      "id": "bilesim_tek_fonksiyon",
+      "desc": "tek fonksiyonluk kanıtla şablon",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_tek_fonksiyonluk_kanit_sablon_degil",
+      "find": "if len(funcs) < 2 or len(dets) < 2:",
+      "replace": "if len(funcs) < 1 or len(dets) < 1:"
+    },
+    {
+      "id": "bilesim_bag_denetimi",
+      "desc": "çağrı çizgesi bağı denetimi kapalı",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_bagsiz_kanit_sablon_degil",
+      "find": "        if driver is None:",
+      "replace": "        if driver is None and False:"
+    },
+    {
+      "id": "bilesim_giris_surucu",
+      "desc": "program girişi (entry) ortak sürücü sayılır",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_program_girisi_surucu_sayilmaz",
+      "find": "if not _is_runtime_or_import_name(c)}",
+      "replace": "if c}"
+    },
+    {
+      "id": "bilesim_alan_tutarliligi",
+      "desc": "alan dışı tespit (CG → ML backward) aşamayı kanıtlar",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_alan_disi_tespit_asamayi_kanitlamaz",
+      "find": "continue  # alan dışı tespit",
+      "replace": "pass  # alan dışı tespit"
+    },
+    {
+      "id": "bilesim_json_function_anahtari",
+      "desc": "algorithms.json'un function anahtarı okunmaz (yeniden oynatma ürünle ayrışır)",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_kayitli_json_function_anahtari",
+      "find": "if not a.get(\"function_name\") and a.get(\"function\"):",
+      "replace": "if not a.get(\"function_name\") and a.get(\"function_x\"):"
+    },
+    {
+      "id": "bilesim_olumlu_zincir",
+      "desc": "kapı her şeyi bekletir (olumlu zincir kaybolur)",
+      "module": "karadul/reconstruction/engineering/composition_analyzer.py",
+      "test": "tests/test_p04a_bilesim_kapisi.py::test_gercek_fea_zinciri_sablonu_verir",
+      "find": "        gate[\"passed\"] = True",
+      "replace": "        gate[\"passed\"] = False"
+    }
+  ]
+}

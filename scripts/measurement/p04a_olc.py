@@ -58,8 +58,33 @@ def _ws_listesi(args: argparse.Namespace) -> list[tuple[str, Path, Path | None]]
 # bilesim
 # ---------------------------------------------------------------------------
 
-def bilesim_bir(ws: Path) -> dict:
-    """Tek çalışma dizininde bileşim yeniden oynatması (masum kapının girdileriyle)."""
+def _tespitleri_yeniden_uret(st: Path) -> list[dict]:
+    """Ölçülen ağacın iki tespitçisini kayıtlı Ghidra çıktısında koşar (Ghidra'sız).
+
+    Ürünün ``parallel_algo_eng`` adımıyla aynı çağrılar: ``CAlgorithmIdentifier.identify`` ve
+    ``EngineeringAlgorithmAnalyzer.identify`` (``static/ghidra_output/decompiled`` +
+    ``ghidra_functions.json`` [+ ``ghidra_strings.json``]).
+    """
+    from karadul.config import Config
+    from karadul.reconstruction.c_algorithm_id import CAlgorithmIdentifier
+    from karadul.reconstruction.engineering import EngineeringAlgorithmAnalyzer
+    dec = st / "ghidra_output/decompiled"
+    c = CAlgorithmIdentifier(Config.load(None)).identify(
+        dec, st / "ghidra_functions.json", st / "ghidra_strings.json")
+    e = EngineeringAlgorithmAnalyzer().identify(dec, st / "ghidra_functions.json")
+    out = []
+    for res in (c, e):
+        if res and getattr(res, "success", False):
+            out.extend(a.to_dict() for a in res.algorithms)
+    return out
+
+
+def bilesim_bir(ws: Path, tespit_yeniden: bool = False) -> dict:
+    """Tek çalışma dizininde bileşim yeniden oynatması (masum kapının girdileriyle).
+
+    ``tespit_yeniden``: algoritma listesi kayıtlı JSON'dan değil, ölçülen ağacın
+    tespitçilerinden (``_tespitleri_yeniden_uret``) gelir.
+    """
     from karadul.reconstruction.engineering import AlgorithmCompositionAnalyzer
     from karadul.reconstruction.engineering.composition_analyzer import KNOWN_COMPOSITIONS
     sablonlar = {t["name_template"] for t in KNOWN_COMPOSITIONS.values()}
@@ -70,10 +95,15 @@ def bilesim_bir(ws: Path) -> dict:
         if aday.is_file():
             cg_yol = aday
             break
-    if cg_yol is None or not (r / "algorithms.json").is_file():
-        return {"durum": "yapit_yok"}
-    algos = ((_json(r / "algorithms.json") or {}).get("algorithms", [])
-             + (_json(r / "engineering_algorithms.json") or {}).get("algorithms", []))
+    if tespit_yeniden:
+        if cg_yol is None or not (st / "ghidra_output/decompiled").is_dir():
+            return {"durum": "yapit_yok"}
+        algos = _tespitleri_yeniden_uret(st)
+    else:
+        if cg_yol is None or not (r / "algorithms.json").is_file():
+            return {"durum": "yapit_yok"}
+        algos = ((_json(r / "algorithms.json") or {}).get("algorithms", [])
+                 + (_json(r / "engineering_algorithms.json") or {}).get("algorithms", []))
     t0 = time.monotonic()
     sonuc = AlgorithmCompositionAnalyzer().analyze(
         call_graph=_json(cg_yol), algorithms=algos,
@@ -103,7 +133,7 @@ def bilesim_bir(ws: Path) -> dict:
 def cmd_bilesim(args: argparse.Namespace) -> int:
     kayitlar = {}
     for anahtar, ws, _out in _ws_listesi(args):
-        kayitlar[anahtar] = bilesim_bir(ws)
+        kayitlar[anahtar] = bilesim_bir(ws, tespit_yeniden=args.tespit_yeniden)
     rap = Counter()
     bek = Counter()
     neden = Counter()
@@ -266,6 +296,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--kosu", action="append", help="urun_kos düzeninde koşu kökü (tekrarlanabilir)")
     ap.add_argument("--ws", action="append", help="tek çalışma dizini (tekrarlanabilir)")
     ap.add_argument("--cikti", default=None, help="<komut>.json ve <komut>_ozet.json buraya")
+    ap.add_argument("--tespit-yeniden", action="store_true",
+                    help="bilesim: algoritma tespitlerini ölçülen ağaçla yeniden üret")
     args = ap.parse_args(argv)
     if not (args.kosu or args.ws):
         ap.error("--kosu ya da --ws gerekli")
